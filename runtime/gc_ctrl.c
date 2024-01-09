@@ -265,7 +265,6 @@ static value gc_full_major_exn(void)
   /* In general, it can require up to 3 GC cycles for a
      currently-unreachable object to be collected. */
   for (i = 0; i < 3; i++) {
-    caml_empty_minor_heaps_once();
     caml_finish_major_cycle(0);
     exn = caml_process_pending_actions_exn();
     if (Is_exception_result(exn)) break;
@@ -297,7 +296,15 @@ CAMLprim value caml_gc_compaction(value v)
   Caml_check_caml_state();
   CAML_EV_BEGIN(EV_EXPLICIT_GC_COMPACT);
   CAMLassert (v == Val_unit);
-  value exn = gc_major_exn(1);
+  value exn = Val_unit;
+  int i;
+  /* We do a full major before this compaction. See [caml_full_major_exn] for
+     why this needs three iterations. */
+  for (i = 0; i < 3; i++) {
+    caml_finish_major_cycle(i == 2);
+    exn = caml_process_pending_actions_exn();
+    if (Is_exception_result(exn)) break;
+  }
   ++ Caml_state->stat_forced_major_collections;
   CAML_EV_END(EV_EXPLICIT_GC_COMPACT);
   return caml_raise_if_exception(exn);
