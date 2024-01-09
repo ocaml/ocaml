@@ -15,6 +15,11 @@ _______________
 
 ### Tools:
 
+### Toplevel:
+
+- #12891: Improved styling for initial prompt
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:

@@ -385,13 +385,15 @@ let process_phrases ppf snap phrs =
     end
 
 let loop ppf =
+  Misc.Style.setup !Clflags.color;
   Clflags.debug := true;
   Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
-    fprintf ppf "OCaml version %s%s%s@.Enter #help;; for help.@.@."
+    fprintf ppf "OCaml version %s%s%s@.Enter %a for help.@.@."
       Config.version
       (if Topeval.implementation_label = "" then "" else " - ")
-      Topeval.implementation_label;
+      Topeval.implementation_label
+      Misc.Style.inline_code "#help;;";
   begin
     try initialize_toplevel_env ()
     with Env.Error _ | Typetexp.Error _ as exn ->
