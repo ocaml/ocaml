@@ -64,12 +64,6 @@ OCaml 5.2.0
 
 ### Runtime system:
 
-- #12850: Update Gc.quick_stat data at the end of major cycles and compaction
-  This PR adds an additional caml_collect_gc_stats_sample_stw to the major heap
-  cycling stw. This means that Gc.quick_stat now actually reflects the state of
-  the heap after a major cycle or compaction.
-  (Sadiq Jaffer, review by Miod Vallat and Gabriel Scherer)
-
 - #12193: Re-introduce GC compaction for shared pools
   Adds a parallel compactor for the shared pools (which contain major heap
   blocks sized less than 128 words). Explicit only for now, on calls to
@@ -77,6 +71,16 @@ OCaml 5.2.0
   (Sadiq Jaffer, Nick Barnes, review by Anil Madhavapeddy, Damien Doligez,
    David Allsopp, Miod Vallat, Artem Pianykh, Stephen Dolan, Mark Shinwell
    and KC Sivaramakrishnan)
+
+- #12850: Update Gc.quick_stat data at the end of major cycles and compaction
+  This PR adds an additional caml_collect_gc_stats_sample_stw to the major heap
+  cycling stw. This means that Gc.quick_stat now actually reflects the state of
+  the heap after a major cycle or compaction.
+  (Sadiq Jaffer, review by Miod Vallat and Gabriel Scherer)
+
+- #12859: Ensure Gc.compact does a full major before the compactor runs
+  (Sadiq Jaffer, review by Leo White, Mark Shinwell, Gabriel Scherer,
+   Josh Berdine, David Allsopp and KC Sivaramakrishnan)
 
 - #10111: Increase the detail of location information for debugging events to
   allow the end line number and character offset to be reported.
