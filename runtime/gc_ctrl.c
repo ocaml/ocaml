@@ -298,9 +298,8 @@ CAMLprim value caml_gc_compaction(value v)
   CAMLassert (v == Val_unit);
   value exn = Val_unit;
   int i;
-  /* We do a full major before this compaction.
-     See [caml_full_major_exn] for this needs
-     three iterations. */
+  /* We do a full major before this compaction. See [caml_full_major_exn] for
+     why this needs three iterations. */
   for (i = 0; i < 3; i++) {
     caml_finish_major_cycle(i == 2);
     exn = caml_process_pending_actions_exn();
