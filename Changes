@@ -7,6 +7,10 @@ _______________
 
 ### Runtime system:
 
+- #12859: Ensure Gc.compact does a full major before the compactor runs
+  (Sadiq Jaffer, review by Leo White, Mark Shinwell, Gabriel Scherer,
+   Josh Berdine, David Allsopp and KC Sivaramakrishnan)
+
 ### Code generation and optimizations:
 
 ### Standard library:
