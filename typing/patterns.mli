@@ -37,21 +37,35 @@ module Non_empty_row : sig
 end
 
 module Simple : sig
-  type view = [
+
+  type core_view = [
     | `Any
     | `Constant of constant
     | `Tuple of pattern list
     | `Construct of
         Longident.t loc * constructor_description * pattern list
     | `Variant of label * pattern option * row_desc ref
-    | `Record of
-        (Longident.t loc * label_description * pattern) list * closed_flag
     | `Array of pattern list
     | `Lazy of pattern
   ]
-  type pattern = view pattern_data
 
-  val omega : [> view ] pattern_data
+  type record_view = [
+      `Record of
+        (Longident.t loc * label_description * pattern) list * closed_flag
+  ]
+
+  type expanded_record_view = [
+      `Expanded_record of
+        (Longident.t loc * label_description * pattern) list
+  ]
+
+  type view = [ core_view | expanded_record_view ]
+  type nonexpanded_view = [ view | record_view ]
+  type pattern = view pattern_data
+  type nonexpanded_pattern = nonexpanded_view pattern_data
+
+  val omega : [> `Any ] pattern_data
+
 end
 
 module Half_simple : sig
@@ -59,12 +73,21 @@ module Half_simple : sig
     | Simple.view
     | `Or of pattern * pattern * row_desc option
   ]
+
+  type nonexpanded_view = [
+    | Simple.nonexpanded_view
+    | `Or of pattern * pattern * row_desc option
+  ]
+
   type pattern = view pattern_data
+  type nonexpanded_pattern = nonexpanded_view pattern_data
+
 end
 
 module General : sig
   type view = [
     | Half_simple.view
+    | Simple.record_view
     | `Var of Ident.t * string loc
     | `Alias of pattern * Ident.t * string loc
   ]
@@ -73,7 +96,7 @@ module General : sig
   val view : Typedtree.pattern -> pattern
   val erase : [< view ] pattern_data -> Typedtree.pattern
 
-  val strip_vars : pattern -> Half_simple.pattern
+  val strip_vars : pattern -> Half_simple.nonexpanded_pattern
 end
 
 module Head : sig
@@ -94,16 +117,22 @@ module Head : sig
 
   type t = desc pattern_data
 
-  val arity : t -> int
+  type expanded = private t
+
+  val arity : expanded -> int
+  val simple_to_head: Simple.pattern -> expanded
+  val desc: expanded -> desc
 
   (** [deconstruct p] returns the head of [p] and the list of sub patterns.
 
-      @raise [Invalid_arg _] if [p] is an or- or an exception-pattern.  *)
-  val deconstruct : Simple.pattern -> t * pattern list
+      @raises [Invalid_arg _] if [p] is an or- or an exception-pattern.  *)
+  val nonexpanded_deconstruct :
+    Simple.nonexpanded_view pattern_data -> t * pattern list
+  val deconstruct : Simple.view pattern_data -> expanded * pattern list
 
   (** reconstructs a pattern, putting wildcards as sub-patterns. *)
   val to_omega_pattern : t -> pattern
 
-  val omega : t
+  val omega : expanded
 
 end
