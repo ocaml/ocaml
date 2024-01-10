@@ -19,6 +19,7 @@
 
 #include "caml/mlvalues.h"
 #include "caml/memory.h"
+#include "caml/platform.h"
 #include "caml/roots.h"
 #include "caml/globroots.h"
 #include "caml/skiplist.h"

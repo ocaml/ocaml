@@ -16,6 +16,7 @@
 
 #define CAML_INTERNALS
 
+#include <string.h>
 #include "caml/config.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
