@@ -13,14 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Shape
-
 (** The result of reducing a shape and looking for its uid *)
 type result =
-  | Resolved of Uid.t (** Shape reduction succeeded and a uid was found *)
-  | Resolved_alias of Uid.t list (** Reduction led to an alias chain *)
-  | Unresolved of t (** Result still contains [Comp_unit] terms *)
-  | Approximated of Uid.t option
+  | Resolved of Shape.Uid.t (** Shape reduction succeeded and a uid was found *)
+  | Resolved_alias of Shape.Uid.t list (** Reduction led to an alias chain *)
+  | Unresolved of Shape.t (** Result still contains [Comp_unit] terms *)
+  | Approximated of Shape.Uid.t option
     (** Reduction failed: it can arrive with first-clsss modules for example *)
   | Internal_error_missing_uid
     (** Reduction succeeded but no uid was found, this should never happen *)
@@ -44,19 +42,19 @@ val print_result : Format.formatter -> result -> unit
 module Make(_ : sig
     val fuel : int
 
-    val read_unit_shape : unit_name:string -> t option
+    val read_unit_shape : unit_name:string -> Shape.t option
   end) : sig
-  val reduce : Env.t -> t -> t
+  val reduce : Env.t -> Shape.t -> Shape.t
 
   (** Perform weak reduction and return the head's uid if any. If reduction was
     incomplete the partially reduced shape is returned. *)
-  val reduce_for_uid : Env.t -> t -> result
+  val reduce_for_uid : Env.t -> Shape.t -> result
 end
 
 (** [local_reduce] will not reduce shapes that require loading external
   compilation units. *)
-val local_reduce : Env.t -> t -> t
+val local_reduce : Env.t -> Shape.t -> Shape.t
 
 (** [local_reduce_for_uid] will not reduce shapes that require loading external
   compilation units. *)
-val local_reduce_for_uid : Env.t -> t -> result
+val local_reduce_for_uid : Env.t -> Shape.t -> result
