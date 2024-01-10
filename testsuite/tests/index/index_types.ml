@@ -17,7 +17,7 @@ check-program-output;
 
 type t = int
 
-let x : t = 42 (* FIXME? duplicate Tpat_extra_constraint / Texp_constraint *)
+let x : t = 42
 
 module M = struct end
 

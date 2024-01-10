@@ -220,6 +220,9 @@ let iter_on_occurrences
       | Texp_extension_constructor _ | Texp_open _ -> ());
       default_iterator.expr sub e);
 
+  (* Remark: some types get iterated over twice due to how constraints are
+      encoded in the typedtree. For example, in [let x : t = 42], [t] is
+      present in both a [Tpat_constraint] and a [Texp_constraint] node) *)
   typ =
     (fun sub ({ ctyp_desc; ctyp_env; _ } as ct) ->
       (match ctyp_desc with
