@@ -19,6 +19,11 @@ _______________
 
 ### Tools:
 
+### Toplevel:
+
+- #12891: Improved styling for initial prompt
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #12868: Manual: simplify style colours of the post-processed manual and API
