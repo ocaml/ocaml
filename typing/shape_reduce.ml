@@ -336,11 +336,6 @@ end) = struct
 end
 
 module Local_reduce =
-  (* Note: this definition with [type env = unit] is only suitable for
-     reduction of toplevel shapes -- shapes of compilation units,
-     where free variables are only Comp_unit names. If we wanted to
-     reduce shapes inside module signatures, we would need to take
-     a typing environment as parameter. *)
   Make(struct
     let fuel = 10
     let read_unit_shape ~unit_name:_ = None

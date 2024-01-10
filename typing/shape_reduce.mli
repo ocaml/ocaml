@@ -35,6 +35,11 @@ val print_result : Format.formatter -> result -> unit
     - some fuel, which is used to bound recursion when dealing with recursive
       shapes introduced by recursive modules. (FTR: merlin currently uses a
       fuel of 10, which seems to be enough for most practical examples)
+
+    Usage warning: To ensure good performances, every reduction made with the
+    same instance of that functor share the same ident-based memoization tables.
+    Such an instance should only be used to perform reduction inside a unique
+    compilation unit to prevent conflicting entries in these memoization tables.
 *)
 module Make(_ : sig
     val fuel : int
