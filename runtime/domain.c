@@ -1912,6 +1912,11 @@ static void domain_terminate (void)
 
       CAMLassert (domain_self->backup_thread_running);
       domain_self->backup_thread_running = 0;
+
+      /* We must signal domain termination before releasing [all_domains_lock]:
+         after that, this domain will no longer take part in STWs and emitting
+         an event could race with runtime events teardown. */
+      CAML_EV_LIFECYCLE(EV_DOMAIN_TERMINATE, getpid());
     }
     caml_plat_unlock(&all_domains_lock);
   }
@@ -1936,7 +1941,6 @@ static void domain_terminate (void)
   caml_free_intern_state();
   caml_free_extern_state();
   caml_teardown_major_gc();
-  CAML_EV_LIFECYCLE(EV_DOMAIN_TERMINATE, getpid());
 
   caml_teardown_shared_heap(domain_state->shared_heap);
   domain_state->shared_heap = 0;
