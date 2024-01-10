@@ -272,10 +272,11 @@ let of_path ~find_shape ~namespace path =
   let rec aux : Sig_component_kind.t -> Path.t -> t = fun ns -> function
     | Pident id -> find_shape ns id
     | Pdot (path, name) ->
-        let namespace : Sig_component_kind.t =
-          if ns = Sig_component_kind.Constructor then Type
-          else if ns = Sig_component_kind.Label then Type
-          else Module
+        let namespace :  Sig_component_kind.t =
+          match (ns : Sig_component_kind.t) with
+          | Constructor -> Type
+          | Label -> Type
+          | _ -> Module
         in
         proj (aux namespace path) (name, ns)
     | Papply (p1, p2) -> app (aux Module p1) ~arg:(aux Module p2)
