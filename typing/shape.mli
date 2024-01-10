@@ -49,12 +49,11 @@
     a talk about the reduction strategy
 *)
 
-(** A [Uid.t] is associated with every declaration in signatures and
-    implementations, they uniquely identify bindings in the program.
-    When associated with these bindings' locations they are useful to
-    external tools when trying to jump to the declaration of
-    definitions of identifiers. They are stored to that effect in the
-    [uid_to_decl] table of cmt files. *)
+(** A [Uid.t] is associated to every declaration in signatures and
+    implementations. They uniquely identify bindings in the program. When
+    associated with these bindings' locations they are useful to external tools
+    when trying to jump to an identifier's declaration or definition. They are
+    stored to that effect in the [uid_to_decl] table of cmt files. *)
 module Uid : sig
   type t = private
     | Compilation_unit of string
@@ -92,8 +91,10 @@ module Sig_component_kind : sig
   val can_appear_in_types : t -> bool
 end
 
-(** Shape's items are elements of a structure. These structures models module
-    components and nested types' constructors and labels *)
+(** Shape's items are elements of a structure or, in the case of constructors
+  and labels, elements of a record or variants definition seen as a structure.
+  These structures model module components and nested types' constructors and
+  labels. *)
 module Item : sig
   type t = string * Sig_component_kind.t
   val name : t -> string
