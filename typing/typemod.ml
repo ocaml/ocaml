@@ -1550,9 +1550,7 @@ and transl_signature ?(toplevel = false) env sg =
               decls rem,
             final_env
         | Psig_modtype pmtd ->
-            let newenv, mtd, (decl : modtype_declaration) =
-              transl_modtype_decl env pmtd
-            in
+            let newenv, mtd, decl = transl_modtype_decl env pmtd in
             Signature_names.check_modtype names pmtd.pmtd_loc mtd.mtd_id;
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_modtype mtd) env loc :: trem,
