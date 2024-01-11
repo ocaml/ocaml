@@ -1,4 +1,6 @@
 Indexed shapes:
+Resolved: Index_objects.21 :
+  ins (File "index_objects.ml", line 48, characters 21-24)
 Resolved: Index_objects.28 :
   self (File "index_objects.ml", line 47, characters 20-24)
 Resolved: Index_objects.26 :

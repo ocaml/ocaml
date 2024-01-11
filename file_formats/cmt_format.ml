@@ -211,10 +211,16 @@ let iter_on_occurrences
       | Texp_setinstvar  (_self_path, path, name, _) ->
           let lid = { name with txt = Longident.Lident name.txt } in
           f ~namespace:Value exp_env path lid
+      | Texp_override (_self_path, modifs) ->
+          List.iter (fun (id, (name : string Location.loc), _exp) ->
+            let lid = { name with txt = Longident.Lident name.txt } in
+            f ~namespace:Value exp_env (Path.Pident id) lid)
+            modifs
+
       | Texp_constant _ | Texp_let _ | Texp_function _ | Texp_apply _
       | Texp_match _ | Texp_try _ | Texp_tuple _ | Texp_variant _ | Texp_array _
       | Texp_ifthenelse _ | Texp_sequence _ | Texp_while _ | Texp_for _
-      | Texp_send _ | Texp_override _
+      | Texp_send _
       | Texp_letmodule _ | Texp_letexception _ | Texp_assert _ | Texp_lazy _
       | Texp_object _ | Texp_pack _ | Texp_letop _ | Texp_unreachable
       | Texp_extension_constructor _ | Texp_open _ -> ());
