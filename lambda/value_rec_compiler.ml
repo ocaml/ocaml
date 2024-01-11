@@ -439,6 +439,11 @@ let rec split_static_function block_var local_idents lam :
           (succ i, Ident.Map.add var access subst, Lvar var :: fields))
         local_free_vars (0, Ident.Map.empty, [])
     in
+    (* Note: When there are no local free variables, we don't need the
+       substitution and we don't need to generate code for pre-allocating
+       and backpatching a block of size 0.
+       However, the general scheme also works and it's unlikely to be
+       noticeably worse, so we use it for simplicity. *)
     let new_fun =
       lfunction_with_body lfun
         (Lambda.subst (fun _ _ env -> env) subst lfun.body)
