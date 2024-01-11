@@ -34,12 +34,12 @@ module F (X : sig type t end) = X
 module F' = F
 [%%expect{|
 {
- "F"[module] -> Abs<.6>(X/282, X/282<.5>);
+ "F"[module] -> Abs<.6>(X, X<.5>);
  }
 module F : functor (X : sig type t end) -> sig type t = X.t end
 {
  "F'"[module] -> Alias(<.7>
-                       Abs<.6>(X/282, X/282<.5>));
+                       Abs<.6>(X, X<.5>));
  }
 module F' = F
 |}]
@@ -83,9 +83,9 @@ module D = C
 module G (X : sig type t end) = struct include X end
 [%%expect{|
 {
- "G"[module] -> Abs<.13>(X/294, {
-                                 "t"[type] -> X/294<.12> . "t"[type];
-                                 });
+ "G"[module] -> Abs<.13>(X, {
+                             "t"[type] -> X<.12> . "t"[type];
+                             });
  }
 module G : functor (X : sig type t end) -> sig type t = X.t end
 |}]

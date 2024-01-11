@@ -12,7 +12,7 @@ module App = F(List)
  }
 module M : sig end
 {
- "F"[module] -> Abs<.2>(X/278, {<.0>});
+ "F"[module] -> Abs<.2>(X, {<.0>});
  }
 module F : functor (X : sig end) -> sig end
 {
@@ -31,9 +31,9 @@ module App = F(List)
  }
 module M : sig end
 {
- "F"[module] -> Abs<.7>(X/352, {
-                                "t"[type] -> <.6>;
-                                });
+ "F"[module] -> Abs<.7>(X, {
+                            "t"[type] -> <.6>;
+                            });
  }
 module F : functor (X : sig end) -> sig type t end
 {
@@ -53,7 +53,7 @@ module App = F(M)
  }
 module M : sig end
 {
- "F"[module] -> Abs<.11>(X/366, X/366<.10>);
+ "F"[module] -> Abs<.11>(X, X<.10>);
  }
 module F : functor (X : sig end) -> sig end
 {
@@ -68,7 +68,7 @@ module Struct = struct
 end
 [%%expect{|
 {
- "Id"[module] -> Abs<.14>(X/371, X/371<.13>);
+ "Id"[module] -> Abs<.14>(X, X<.13>);
  }
 module Id : functor (X : sig end) -> sig end
 {
@@ -102,9 +102,9 @@ module N = F(struct end)
 module O = N.M
 [%%expect{|
 {
- "F"[module] -> Abs<.21>(X/381, {
-                                 "M"[module] -> X/381<.19>;
-                                 });
+ "F"[module] -> Abs<.21>(X, {
+                             "M"[module] -> X<.19>;
+                             });
  }
 module F : functor (X : sig end) -> sig module M : sig end end
 {

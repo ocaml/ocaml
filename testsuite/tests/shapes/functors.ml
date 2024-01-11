@@ -17,7 +17,7 @@ module type S = sig type t val x : t end
 module Falias (X : S) = X
 [%%expect{|
 {
- "Falias"[module] -> Abs<.4>(X/282, X/282<.3>);
+ "Falias"[module] -> Abs<.4>(X, X<.3>);
  }
 module Falias : functor (X : S) -> sig type t = X.t val x : t end
 |}]
@@ -29,11 +29,10 @@ end
 {
  "Finclude"[module] ->
    Abs<.6>
-      (X/286,
-       {
-        "t"[type] -> X/286<.5> . "t"[type];
-        "x"[value] -> X/286<.5> . "x"[value];
-        });
+      (X, {
+           "t"[type] -> X<.5> . "t"[type];
+           "x"[value] -> X<.5> . "x"[value];
+           });
  }
 module Finclude : functor (X : S) -> sig type t = X.t val x : t end
 |}]
@@ -44,11 +43,10 @@ module Fredef (X : S) = struct
 end
 [%%expect{|
 {
- "Fredef"[module] ->
-   Abs<.10>(X/293, {
-                    "t"[type] -> <.8>;
-                    "x"[value] -> <.9>;
-                    });
+ "Fredef"[module] -> Abs<.10>(X, {
+                                  "t"[type] -> <.8>;
+                                  "x"[value] -> <.9>;
+                                  });
  }
 module Fredef : functor (X : S) -> sig type t = X.t val x : X.t end
 |}]
@@ -61,7 +59,7 @@ end
 {
  "Fignore"[module] ->
    Abs<.14>
-      (()/1,
+      ((),
        {
         "t"[type] -> {<.11>
                       "Fresh"[constructor] -> {<.12>};
@@ -185,7 +183,7 @@ end
 {
  "Fgen"[module] ->
    Abs<.30>
-      (()/1,
+      ((),
        {
         "t"[type] -> {<.27>
                       "Fresher"[constructor] -> {<.28>};
@@ -245,9 +243,9 @@ module Big_to_small1 : B2S = functor (X : Big) -> X
 [%%expect{|
 {
  "Big_to_small1"[module] ->
-   Abs<.40>(X/388, {<.39>
-                    "t"[type] -> X/388<.39> . "t"[type];
-                    });
+   Abs<.40>(X, {<.39>
+                "t"[type] -> X<.39> . "t"[type];
+                });
  }
 module Big_to_small1 : B2S
 |}]
@@ -255,10 +253,9 @@ module Big_to_small1 : B2S
 module Big_to_small2 : B2S = functor (X : Big) -> struct include X end
 [%%expect{|
 {
- "Big_to_small2"[module] ->
-   Abs<.42>(X/391, {
-                    "t"[type] -> X/391<.41> . "t"[type];
-                    });
+ "Big_to_small2"[module] -> Abs<.42>(X, {
+                                         "t"[type] -> X<.41> . "t"[type];
+                                         });
  }
 module Big_to_small2 : B2S
 |}]

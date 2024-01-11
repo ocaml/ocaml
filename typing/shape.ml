@@ -154,7 +154,7 @@ let print fmt t =
   let rec aux fmt { uid; desc } =
     match desc with
     | Var id ->
-        Format.fprintf fmt "%a%a" Ident.print id print_uid_opt uid
+        Format.fprintf fmt "%s%a" (Ident.name id) print_uid_opt uid
     | Abs (id, t) ->
         let rec collect_idents = function
           | { uid = None; desc = Abs(id, t) } ->
@@ -165,8 +165,9 @@ let print fmt t =
         in
         let (other_idents, body) = collect_idents t in
         let pp_idents fmt idents =
+          let idents_names = List.map Ident.name idents in
           let pp_sep fmt () = Format.fprintf fmt ",@ " in
-          Format.pp_print_list ~pp_sep Ident.print fmt idents
+          Format.pp_print_list ~pp_sep Format.pp_print_string fmt idents_names
         in
         Format.fprintf fmt "Abs@[%a@,(@[%a,@ @[%a@]@])@]"
           print_uid_opt uid pp_idents (id :: other_idents) aux body
