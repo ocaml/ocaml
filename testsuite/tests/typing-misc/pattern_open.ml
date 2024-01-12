@@ -2,7 +2,7 @@
  expect;
 *)
 
-let pp fmt = Format.printf (fmt^^"@.")
+let pp fmt = Format.(printf (fmt^^"@."))
 
 type 'a box = B of 'a
 (* Basic tests *)
@@ -18,7 +18,9 @@ module N = struct
 end
 open N;;
 [%%expect {|
-val pp : ('a, Format.formatter, unit, unit, unit, unit) format6 -> 'a = <fun>
+val pp :
+  ('a, Format.formatter, unit, unit, unit, unit) Format_string.format6 -> 'a =
+  <fun>
 type 'a box = B of 'a
 module M : sig type c = C type t = { x : c box; } end
 module N : sig type d = D val d : d type t = { x : d box; } end

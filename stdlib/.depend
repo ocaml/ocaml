@@ -336,6 +336,7 @@ stdlib__Format.cmo : format.ml \
     stdlib__Queue.cmi \
     stdlib__List.cmi \
     stdlib__Int.cmi \
+    stdlib__Format_string.cmi \
     stdlib__Either.cmi \
     stdlib__Domain.cmi \
     camlinternalFormatBasics.cmi \
@@ -352,6 +353,7 @@ stdlib__Format.cmx : format.ml \
     stdlib__Queue.cmx \
     stdlib__List.cmx \
     stdlib__Int.cmx \
+    stdlib__Format_string.cmx \
     stdlib__Either.cmx \
     stdlib__Domain.cmx \
     camlinternalFormatBasics.cmx \
@@ -363,9 +365,18 @@ stdlib__Format.cmx : format.ml \
 stdlib__Format.cmi : format.mli \
     stdlib.cmi \
     stdlib__Seq.cmi \
+    stdlib__Format_string.cmi \
     stdlib__Either.cmi \
     stdlib__Domain.cmi \
     stdlib__Buffer.cmi
+stdlib__Format_string.cmo : format_string.ml \
+    camlinternalFormatBasics.cmi \
+    stdlib__Format_string.cmi
+stdlib__Format_string.cmx : format_string.ml \
+    camlinternalFormatBasics.cmx \
+    stdlib__Format_string.cmi
+stdlib__Format_string.cmi : format_string.mli \
+    camlinternalFormatBasics.cmi
 stdlib__Fun.cmo : fun.ml \
     stdlib__Printexc.cmi \
     stdlib__Fun.cmi
@@ -606,6 +617,7 @@ stdlib__Printexc.cmo : printexc.ml \
     stdlib.cmi \
     stdlib__Printf.cmi \
     stdlib__Obj.cmi \
+    stdlib__Format_string.cmi \
     stdlib__Buffer.cmi \
     stdlib__Atomic.cmi \
     stdlib__Array.cmi \
@@ -614,6 +626,7 @@ stdlib__Printexc.cmx : printexc.ml \
     stdlib.cmx \
     stdlib__Printf.cmx \
     stdlib__Obj.cmx \
+    stdlib__Format_string.cmx \
     stdlib__Buffer.cmx \
     stdlib__Atomic.cmx \
     stdlib__Array.cmx \
@@ -621,16 +634,19 @@ stdlib__Printexc.cmx : printexc.ml \
 stdlib__Printexc.cmi : printexc.mli \
     stdlib__Obj.cmi
 stdlib__Printf.cmo : printf.ml \
+    stdlib__Format_string.cmi \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
     stdlib__Buffer.cmi \
     stdlib__Printf.cmi
 stdlib__Printf.cmx : printf.ml \
+    stdlib__Format_string.cmx \
     camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx \
     stdlib__Buffer.cmx \
     stdlib__Printf.cmi
 stdlib__Printf.cmi : printf.mli \
+    stdlib__Format_string.cmi \
     stdlib__Buffer.cmi
 stdlib__Queue.cmo : queue.ml \
     stdlib__Seq.cmi \
@@ -681,6 +697,7 @@ stdlib__Scanf.cmo : scanf.ml \
     stdlib.cmi \
     stdlib__Printf.cmi \
     stdlib__Int.cmi \
+    stdlib__Format_string.cmi \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \
     stdlib__Bytes.cmi \
@@ -691,13 +708,15 @@ stdlib__Scanf.cmx : scanf.ml \
     stdlib.cmx \
     stdlib__Printf.cmx \
     stdlib__Int.cmx \
+    stdlib__Format_string.cmx \
     camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx \
     stdlib__Bytes.cmx \
     stdlib__Buffer.cmx \
     stdlib__Scanf.cmi
 stdlib__Scanf.cmi : scanf.mli \
-    stdlib.cmi
+    stdlib.cmi \
+    stdlib__Format_string.cmi
 stdlib__Semaphore.cmo : semaphore.ml \
     stdlib__Mutex.cmi \
     stdlib__Condition.cmi \

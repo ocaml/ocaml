@@ -15,6 +15,10 @@
 
 (** Formatted output functions. *)
 
+[@@@warning "-44"]
+open Format_string
+
+
 val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 (** [fprintf outchan format arg1 ... argN] formats the arguments
    [arg1] to [argN] according to the format string [format], and
@@ -187,6 +191,15 @@ val ikbprintf : (Buffer.t -> 'd) -> Buffer.t ->
    Useful to ignore some material when conditionally printing.
    @since 4.11
 *)
+
+val ( ^^ ) :
+  ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+  ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
+  ('a, 'b, 'c, 'd, 'g, 'h) format6
+(** See {!Format_string.(^^)}.
+  @since 5.2
+*)
+
 
 (** Deprecated *)
 

@@ -24,7 +24,7 @@ open CamlinternalFormat
     but the ambiguity warning doesn't care)
 *)
 type ('a, 'b, 'c, 'd, 'e, 'f) format6 =
-  ('a, 'b, 'c, 'd, 'e, 'f) Stdlib.format6
+  ('a, 'b, 'c, 'd, 'e, 'f) Format_string.format6
 
 
 (* The run-time library for scanners. *)

@@ -604,6 +604,7 @@ module Ephemeron      = Ephemeron
 module Filename       = Filename
 module Float          = Float
 module Format         = Format
+module Format_string  = Format_string
 module Fun            = Fun
 module Gc             = Gc
 module Hashtbl        = Hashtbl

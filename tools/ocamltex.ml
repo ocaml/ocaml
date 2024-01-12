@@ -175,7 +175,7 @@ module Toplevel = struct
   let fatal ic oc fmt =
     Format.kfprintf
       (fun ppf -> Format.fprintf ppf "@]@."; close_in ic; close_out oc; exit 1)
-      self_error_fmt ("@[<hov 2>  Error " ^^ fmt)
+      self_error_fmt Format.("@[<hov 2>  Error " ^^ fmt)
 
   let init () =
     Location.report_printer := (fun () -> report_printer);

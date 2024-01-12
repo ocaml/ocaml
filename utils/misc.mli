@@ -25,7 +25,7 @@
 val fatal_error: string -> 'a
   (** Raise the [Fatal_error] exception with the given string. *)
 
-val fatal_errorf: ('a, Format.formatter, unit, 'b) format4 -> 'a
+val fatal_errorf: ('a, Format.formatter, unit, 'b) Format_string.t4 -> 'a
   (** Format the arguments according to the given format string
       and raise [Fatal_error] with the resulting string. *)
 

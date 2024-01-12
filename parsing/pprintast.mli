@@ -21,7 +21,7 @@
 
 *)
 
-type space_formatter = (unit, Format.formatter, unit) format
+type space_formatter = (unit, Format.formatter, unit) Format_string.t
 
 val longident : Format.formatter -> Longident.t -> unit
 val expression : Format.formatter -> Parsetree.expression -> unit
