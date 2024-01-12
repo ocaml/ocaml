@@ -111,7 +111,6 @@ CAMLextern void caml_channel_unlock(struct channel *);
 CAMLextern void caml_channel_cleanup_on_raise(void);
 
 CAMLextern struct channel * caml_all_opened_channels;
-CAMLextern caml_plat_mutex caml_all_opened_channels_mutex;
 
 /* Conversion between file_offset and int64_t */
 

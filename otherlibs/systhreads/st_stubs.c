@@ -413,7 +413,6 @@ static void caml_thread_reinitialize(void)
   /* Reinitialize IO mutexes, in case the fork happened while another thread
      had locked the channel. If so, we're likely in an inconsistent state,
      but we may be able to proceed anyway. */
-  caml_plat_mutex_init(&caml_all_opened_channels_mutex);
   for (chan = caml_all_opened_channels;
        chan != NULL;
        chan = chan->next) {
