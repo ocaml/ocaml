@@ -19,7 +19,7 @@ let o = object
   method pop () = ()
 end
 
-(* FIXME: the Typedtree lacks required information to index method usages *)
+(* FIXME: method usages are not indexed yet *)
 let () = o#pop ()
 
 class c = object
