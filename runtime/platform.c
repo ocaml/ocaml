@@ -312,15 +312,21 @@ void caml_plat_latch_release(caml_plat_binary_latch* latch) {
   }
 }
 
-void caml_plat_latch_wait(caml_plat_binary_latch* latch) {
+Caml_inline void latchlike_wait(caml_plat_futex *ftx,
+                                caml_plat_futex_value unreleased,
+                                caml_plat_futex_value contested) {
   /* indicate that we are about to block */
-  caml_plat_futex_value expected = Latch_unreleased;
+  caml_plat_futex_value expected = unreleased;
   (void)atomic_compare_exchange_strong
-    (&latch->value, &expected, Latch_contested);
-  /* it's either already released (== Latch_released), or we are
-     going to block (== Latch_contested), futex_wait() here will
-     take care of both */
-  caml_plat_futex_wait(latch, Latch_contested);
+    (&ftx->value, &expected, contested);
+  /* ftx is either already released (neither [unreleased] nor
+     [contested]), or we are going to block (== [contested]),
+     [futex_wait()] here will take care of both */
+  caml_plat_futex_wait(ftx, contested);
+}
+
+void caml_plat_latch_wait(caml_plat_binary_latch* latch) {
+  latchlike_wait(latch, Latch_unreleased, Latch_contested);
 }
 
 /* Sense-reversing barrier */
@@ -353,12 +359,7 @@ void caml_plat_barrier_flip(caml_plat_barrier* barrier,
 
 void caml_plat_barrier_wait_sense(caml_plat_barrier* barrier,
                                   barrier_status sense_bit) {
-  /* indicate that we are about to block */
-  caml_plat_futex_value expected = sense_bit;
-  (void)atomic_compare_exchange_strong
-    (&barrier->futex.value, &expected, sense_bit | 1);
-  /* wait until the sense changes */
-  caml_plat_futex_wait(&barrier->futex, sense_bit | 1);
+  latchlike_wait(&barrier->futex, sense_bit, sense_bit | 1);
 }
 
 /* Memory management */

@@ -737,7 +737,7 @@ static void minor_gc_leave_barrier
   /* Spin a bit longer, which is far less fruitful if we're waiting on
      more than one thread */
   unsigned spins =
-    participating_count == 2 ? Max_spins_medium : Max_spins_short;
+    participating_count == 2 ? Max_spins_long : Max_spins_medium;
   SPIN_WAIT_NTIMES(spins) {
     if (caml_plat_barrier_is_released(&minor_gc_end_barrier)) {
       return;

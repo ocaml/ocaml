@@ -199,7 +199,7 @@ struct caml_plat_futex {
 typedef caml_plat_futex caml_plat_binary_latch;
 
 /* Released state */
-#define Latch_released 0
+#define Latch_released 0 /* must be zero, see barrier initialisation */
 /* Unreleased state, no [latch_wait()] callers */
 #define Latch_unreleased 1
 /* Unreleased state, at least one [latch_wait()] caller */
@@ -274,8 +274,12 @@ typedef struct caml_plat_barrier {
   caml_plat_futex futex;
   atomic_uintnat arrived; /* includes sense bit */
 } caml_plat_barrier;
+
+/* This initialises both a single-sense and sense-reversing barrier, for
+   single-sense this is the released state ([Latch_released], which must be 0)
+   and for sense-reversing it is just a valid initialised state. */
 #define CAML_PLAT_BARRIER_INITIALIZER \
-  { CAML_PLAT_FUTEX_INITIALIZER(0), 0 }
+  { CAML_PLAT_FUTEX_INITIALIZER(Latch_released), 0 }
 
 typedef uintnat barrier_status;
 #define BARRIER_SENSE_BIT 0x100000
