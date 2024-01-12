@@ -245,7 +245,7 @@ OCaml 5.2.0
   (Miod Vallat, review by Tim McGilchrist)
 
 - #12886: Reinitialize IO mutexes after fork
-  (Max Slater, review by -)
+  (Max Slater, review by Guillaume Munch-Maccagnoni and Xavier Leroy)
 
 ### Code generation and optimizations:
 
