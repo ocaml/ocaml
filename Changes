@@ -193,9 +193,9 @@ OCaml 5.2.0
    Ojeda Bar)
 
 - #11911, #12382, #12383: Restore statmemprof functionality in part
-  (backtrace buffers, per-thread and per-domain data
-  structures). (Nick Barnes, review by Gabriel Scherer, Fabrice Buoro,
-  Sadiq Jaffer, and Guillaume Munch-Maccagnoni).
+  (backtrace buffers, per-thread and per-domain data structures).
+  (Nick Barnes, review by Gabriel Scherer, Fabrice Buoro, Sadiq
+   Jaffer, and Guillaume Munch-Maccagnoni).
 
 - #12735: Store both ends of the stack chain in continuations
   (Leo White, review by Miod Vallat and KC Sivaramakrishnan)
@@ -218,6 +218,17 @@ OCaml 5.2.0
 - #12815: Correctly format multi-line locations in exception backtraces, in the
   style that the compiler driver uses.
   (David Allsopp, review by Gabriel Scherer)
+
+- #12773, #12830, #12834: Rewrite `caml_c_thread_(un)register` to fix
+  various bugs.
+  (Guillaume Munch-Maccagnoni, reported by Miod Vallat, suggested by
+   Hari Hara Naveen S, reviewed by Fabrice Buoro, Gabriel Scherer and
+   Miod Vallat)
+
+- #12839: Remove ATOMIC_UINTNAT_INIT from camlatomic.h (as part of a larger
+  cleanup of camlatomic.h)
+  (David Allsopp, review by Antonin Décimo, Sébastien Hinderer, Samuel Hym,
+   Guillaume Munch-Maccagnoni and Miod Vallat)
 
 ### Code generation and optimizations:
 
