@@ -2,7 +2,7 @@
    setup-ocamlc.byte-build-env;
    compile_only = "true";
    ocamlc.byte;
-   program = "${ocaml}";
+   program = "${ocamlrun} ${ocaml}";
    arguments = "gpr12887.cmo";
    exit_status = "2";
    run;
