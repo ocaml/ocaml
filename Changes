@@ -38,6 +38,9 @@ _______________
 
 ### Bug fixes:
 
+- #12888: fix printing of uncaught exceptions in `.cmo` files passed on the
+  command-line of the toplevel.
+  (Nicolás Ojeda Bär, review by Florian Angeletti, report by Daniel Bünzli)
 
 OCaml 5.2.0
 ------------
