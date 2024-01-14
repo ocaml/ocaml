@@ -89,7 +89,7 @@ let main () =
   Clflags.add_arguments __LOC__ Options.list;
   Compenv.parse_arguments ~current argv file_argument program;
   Compmisc.read_clflags_from_env ();
-  if not (Toploop.prepare Format.err_formatter) then raise (Compenv.Exit_with_status 2);
+  if not (Toploop.prepare ppf) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();
   Toploop.loop Format.std_formatter
 
