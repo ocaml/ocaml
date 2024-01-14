@@ -4,6 +4,7 @@
    ocamlc.byte;
    flags = "gpr12887.cmo";
    ocaml_exit_status = "2";
+   ocamlrunparam = "b=0";
    ocaml;
    check-ocaml-output;
 *)
