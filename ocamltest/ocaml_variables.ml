@@ -147,9 +147,6 @@ let ocamlopt_byte = make ("ocamlopt_byte",
 let ocamlrun = make ("ocamlrun",
   "Path of the ocamlrun executable")
 
-let ocaml = make ("ocaml",
-  "Path of the ocaml executable")
-
 let ocamlc_flags = make ("ocamlc_flags",
   "Flags passed to ocamlc.byte and ocamlc.opt")
 

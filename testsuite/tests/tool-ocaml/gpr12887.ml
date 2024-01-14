@@ -2,11 +2,10 @@
    setup-ocamlc.byte-build-env;
    compile_only = "true";
    ocamlc.byte;
-   program = "${ocamlrun} ${ocaml}";
-   arguments = "gpr12887.cmo";
-   exit_status = "2";
-   run;
-   check-program-output;
+   flags = "gpr12887.cmo";
+   ocaml_exit_status = "2";
+   ocaml;
+   check-ocaml-output;
 *)
 
 let () = failwith "Print me"

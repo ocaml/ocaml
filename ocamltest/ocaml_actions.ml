@@ -963,7 +963,7 @@ let compile_module compiler compilername compileroutput log env
       (Result.fail_with_reason reason, env)
     end in
   match module_filetype with
-    | Ocaml_filetypes.Interface ->
+    | Ocaml_filetypes.Interface  ->
       let interface_name =
         Ocaml_filetypes.make_filename
           (module_basename, Ocaml_filetypes.Interface) in
@@ -1108,7 +1108,6 @@ let config_variables _log env =
   [
     Ocaml_variables.arch, Ocamltest_config.arch;
     Ocaml_variables.ocamlrun, Ocaml_files.ocamlrun;
-    Ocaml_variables.ocaml, Ocaml_files.ocaml;
     Ocaml_variables.ocamlc_byte, Ocaml_files.ocamlc;
     Ocaml_variables.ocamlopt_byte, Ocaml_files.ocamlopt;
     Ocaml_variables.bytecc_libs, Ocamltest_config.bytecc_libs;
