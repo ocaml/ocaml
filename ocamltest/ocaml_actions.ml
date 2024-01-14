@@ -963,7 +963,7 @@ let compile_module compiler compilername compileroutput log env
       (Result.fail_with_reason reason, env)
     end in
   match module_filetype with
-    | Ocaml_filetypes.Interface  ->
+    | Ocaml_filetypes.Interface ->
       let interface_name =
         Ocaml_filetypes.make_filename
           (module_basename, Ocaml_filetypes.Interface) in
