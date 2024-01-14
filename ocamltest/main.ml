@@ -268,7 +268,11 @@ let test_file test_filename =
            tsl_ast
        in
        let common_prefix = " ... testing '" ^ test_basename ^ "'" in
-       Printf.printf "%s => %s\n%!" common_prefix (string_of_summary summary);
+       Printf.printf "%s => %s%s\n%!" common_prefix (string_of_summary summary)
+         (if Options.show_timings && summary = No_failure then
+            let wall_clock_duration = Unix.gettimeofday () -. start in
+            Printf.sprintf " (wall clock: %.02fs)" wall_clock_duration
+          else "");
        if summary = Some_failure then
          List.iter (Printf.printf "%s with %s\n%!" common_prefix)
            (List.rev !msgs);
@@ -283,11 +287,7 @@ let test_file test_filename =
   | No_failure | All_skipped ->
       if not Options.keep_test_dir_on_success then
         clean_test_build_directory ()
-  end;
-  if Options.show_timings && summary = No_failure then
-    let wall_clock_duration = Unix.gettimeofday () -. start in
-    Printf.eprintf "Wall clock: %s took %.02fs\n%!"
-                   test_filename wall_clock_duration
+  end
 
 let is_test filename =
   let input_channel = open_in filename in
