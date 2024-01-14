@@ -104,16 +104,20 @@ let join_summaries sa sb =
   | All_skipped, All_skipped -> All_skipped
   | _ -> No_failure
 
-let rec run_test_tree log common_prefix behavior env summ ast =
+let string_of_summary = function
+  | No_failure -> "passed"
+  | Some_failure -> "failed"
+  | All_skipped -> "skipped"
+
+let rec run_test_tree log add_msg behavior env summ ast =
   match ast with
   | Ast (Environment_statement s :: stmts, subs) ->
     begin match interpret_environment_statement env s with
     | env ->
-      run_test_tree log common_prefix behavior env summ (Ast (stmts, subs))
+      run_test_tree log add_msg behavior env summ (Ast (stmts, subs))
     | exception e ->
       let line = s.loc.Location.loc_start.Lexing.pos_lnum in
-      Printf.printf "%s line %d %!" common_prefix line;
-      Printf.printf "%s\n%!" (report_error s.loc e);
+      Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e);
       Some_failure
     end
   | Ast (Test (_, name, mods) :: stmts, subs) ->
@@ -123,7 +127,6 @@ let rec run_test_tree log common_prefix behavior env summ ast =
       else
         Printf.sprintf "line %d" name.loc.Location.loc_start.Lexing.pos_lnum
     in
-    Printf.printf "%s %s (%s) %!" common_prefix locstr name.node;
     let (msg, children_behavior, newenv, result) =
       match behavior with
       | Skip_all -> ("=> n/a", Skip_all, env, Result.skip)
@@ -138,13 +141,13 @@ let rec run_test_tree log common_prefix behavior env summ ast =
         with e -> (report_error name.loc e, Skip_all, env, Result.fail)
         end
     in
-    Printf.printf "%s\n%!" msg;
+    Printf.ksprintf add_msg "%s (%s) %s" locstr name.node msg;
     let newsumm = join_result summ result in
     let newast = Ast (stmts, subs) in
-    run_test_tree log common_prefix children_behavior newenv newsumm newast
+    run_test_tree log add_msg children_behavior newenv newsumm newast
   | Ast ([], subs) ->
     List.fold_left join_summaries summ
-      (List.map (run_test_tree log common_prefix behavior env All_skipped) subs)
+      (List.map (run_test_tree log add_msg behavior env All_skipped) subs)
 
 let get_test_source_directory test_dirname =
   if (Filename.is_relative test_dirname) then
@@ -238,32 +241,37 @@ let test_file test_filename =
              Builtin_variables.promote, promote;
              Builtin_variables.timeout, default_timeout;
            ] in
-       let common_prefix = " ... testing '" ^ test_basename ^ "' with" in
        let initial_status = if skip_test then Skip_all else Run in
        let rootenv =
          Environments.initialize Environments.Pre log initial_environment
        in
-       let rootenv, initial_status =
+       let msgs = ref [] in
+       let add_msg s = msgs := s :: !msgs in
+       let rootenv, initial_status, initial_summary =
          let rec loop env stmts =
            match stmts with
-           | [] -> (env, initial_status)
+           | [] -> (env, initial_status, All_skipped)
            | s :: t ->
              begin match interpret_environment_statement env s with
              | env -> loop env t
              | exception e ->
                let line = s.loc.Location.loc_start.Lexing.pos_lnum in
-               Printf.printf "%s line %d %!" common_prefix line;
-               Printf.printf "%s\n%!" (report_error s.loc e);
-               (env, Skip_all)
+               Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e);
+               (env, Skip_all, Some_failure)
              end
          in
          loop rootenv rootenv_statements
        in
        let rootenv = Environments.initialize Environments.Post log rootenv in
        let summary =
-         run_test_tree log common_prefix initial_status rootenv All_skipped
+         run_test_tree log add_msg initial_status rootenv initial_summary
            tsl_ast
        in
+       let common_prefix = " ... testing '" ^ test_basename ^ "'" in
+       Printf.printf "%s => %s\n%!" common_prefix (string_of_summary summary);
+       if summary = Some_failure then
+         List.iter (Printf.printf "%s with %s\n%!" common_prefix)
+           (List.rev !msgs);
        Actions.clear_all_hooks();
        summary
     ) in
