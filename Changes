@@ -633,13 +633,9 @@ OCaml 5.2.0
 - #12764: Move all installable headers in `caml/` sub-directories.
   (Antonin Décimo, review by Gabriel Scherer and David Allsopp)
 
-- #12508 : Complete the annotation of Typedtree nodes with uids. Delay the
-  creation of the Cmt_format.cmt_uid_to_loc table to an iteration performed
-  after typing. This table now contains entire declaration nodes instead of only
-  locations. Add an option -bin-annot-occurrences to the driver which triggers
-  the indexing of values, modules, types, labels and constructors usages and
-  store that index to the cmt files. Document shapes, make the interface more
-  precise and share memoization tables to improve reduction perofrmance.
+- #12508 : Add compiler-side support for project-wide occurrences in Merlin, by
+  generating index tables of all identifier occurrences. This extra data in .cmt
+  files is only added when the new flag -bin-annot-occurrences is passed.
   (Ulysse Gérard, Nathanaëlle Courant, suggestions by Gabriel Scherer and Thomas
   Refis, review by Florian Angeletti, Gabriel Scherer and Thomas Refis)
 
