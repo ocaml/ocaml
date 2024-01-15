@@ -87,16 +87,15 @@ let () =
   ()
 
 (* check that MaxQueue is indeed a max-pqueue *)
-let () = Pqueue.MaxQueue.(
+let () =
+  let open Pqueue.MaxQueue in
   let q = create () in
   add q 2 "b"; add q 1 "a"; add q 4 "d"; add q 3 "c";
   for i = 4 downto 1 do let x = pop_min q in assert (fst x = i) done
-  )
 
 let () =
   let module E = struct type _ t = string let compare = String.compare end in
-  let module PQ = Pqueue.MakePoly(E) in
-  PQ.(
+  let open Pqueue.MakePoly(E) in
   let a = [| "b"; "bar"; "a"; "aa"; "foo"; "ocaml" |] in
   let n = Array.length a in
   let q = create () in
@@ -108,7 +107,6 @@ let () =
                           | Some x -> assert (x = a.(i))
   done;
   assert (is_empty q)
-  )
 
 (* check that the code snippet in the documentation type-checks *)
 module IntPQ = Pqueue.MakePoly(struct
