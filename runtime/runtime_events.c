@@ -123,9 +123,6 @@ static value user_events = Val_none;
 static caml_plat_mutex user_events_lock;
 
 /* Custom type write buffer */
-static value write_buffer = Val_none;
-static caml_plat_mutex write_buffer_lock;
-
 static void write_to_ring(ev_category category, ev_message_type type,
                           int event_id, int event_length, uint64_t *content,
                           int word_offset);
@@ -137,8 +134,6 @@ void caml_runtime_events_init(void) {
 
   caml_plat_mutex_init(&user_events_lock);
   caml_register_generational_global_root(&user_events);
-
-  caml_plat_mutex_init(&write_buffer_lock);
 
   runtime_events_path = caml_secure_getenv(T("OCAML_RUNTIME_EVENTS_DIR"));
 
@@ -710,9 +705,10 @@ CAMLprim value caml_runtime_events_user_register(value event_name,
   CAMLreturn(event);
 }
 
-CAMLprim value caml_runtime_events_user_write(value event, value event_content)
+CAMLprim value caml_runtime_events_user_write(
+  value write_buffer, value event, value event_content)
 {
-  CAMLparam2(event, event_content);
+  CAMLparam3(write_buffer, event, event_content);
   CAMLlocal3(event_id, event_type, res);
 
   if ( !ring_is_active() )
@@ -743,18 +739,9 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
     value record = Field(event_type, 0);
     value serializer = Field(record, 0);
 
-    caml_plat_lock(&write_buffer_lock);
-
-    if (write_buffer == Val_none) {
-      write_buffer = caml_alloc_string(RUNTIME_EVENTS_MAX_MSG_LENGTH);
-      caml_register_generational_global_root(&write_buffer);
-    }
-
     res = caml_callback2_exn(serializer, write_buffer, event_content);
 
     if (Is_exception_result(res)) {
-      caml_plat_unlock(&write_buffer_lock);
-
       res = Extract_exception(res);
       caml_raise(res);
     }
@@ -766,8 +753,6 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
     write_to_ring(EV_USER, (ev_message_type){.user=EV_USER_MSG_TYPE_CUSTOM},
       Int_val(event_id), len_64bit_word, (uint64_t *) Bytes_val(write_buffer),
       0);
-
-    caml_plat_unlock(&write_buffer_lock);
 
   } else {
     // Unit | Int | Span
