@@ -252,6 +252,159 @@ name:
         ld      TRAP_PTR, Caml_state(exn_handler)
 .endm
 
+#if defined(WITH_THREAD_SANITIZER) /* { */
+
+/* Push the current value of the return address to the stack. */
+.macro TSAN_SETUP_C_CALL
+        addi    sp, sp, -16
+        CFI_ADJUST(16)
+        CFI_OFFSET(ra, 8)
+        sd      ra, 8(sp)
+.endm
+
+/* Restore the value of the return address from the stack. */
+.macro TSAN_CLEANUP_AFTER_C_CALL
+        ld      ra, 8(sp)
+        addi    sp, sp, 16
+        CFI_ADJUST(-16)
+.endm
+
+/* Invoke a C function, switching back and forth the OCaml and C stacks. */
+.macro TSAN_C_CALL fun
+        SWITCH_OCAML_TO_C
+        TSAN_SETUP_C_CALL
+        call    PLT(\fun)
+        TSAN_CLEANUP_AFTER_C_CALL
+        SWITCH_C_TO_OCAML
+.endm
+
+/* Invoke __tsan_func_entry(return address in the caller) */
+.macro TSAN_ENTER_FUNCTION
+        mv      a0, ra  /* arg1: return address in caller */
+        TSAN_C_CALL __tsan_func_entry
+.endm
+
+/* Invoke __tsan_func_exit(0) */
+.macro TSAN_EXIT_FUNCTION
+        mv      a0, x0
+        TSAN_C_CALL __tsan_func_exit
+.endm
+
+/* This is similar to SAVE_ALL_REGS, but only saving the caller-saved
+   registers. */
+.macro TSAN_SAVE_CALLER_REGS
+    /* First, save the young_ptr & exn_handler */
+        sd      ALLOC_PTR, Caml_state(young_ptr)
+        sd      TRAP_PTR, Caml_state(exn_handler)
+    /* Now, use TMP to point to the gc_regs bucket */
+        ld      TMP, Caml_state(gc_regs_buckets)
+        ld      TMP2, 0(TMP) /* next ptr */
+        sd      TMP2, Caml_state(gc_regs_buckets)
+    /* Save allocatable integer registers */
+        sd      a0, (2*8)(TMP)
+        sd      a1, (3*8)(TMP)
+        sd      a2, (4*8)(TMP)
+        sd      a3, (5*8)(TMP)
+        sd      a4, (6*8)(TMP)
+        sd      a5, (7*8)(TMP)
+        sd      a6, (8*8)(TMP)
+        sd      a7, (9*8)(TMP)
+        sd      t2, (18*8)(TMP)
+        sd      t3, (19*8)(TMP)
+        sd      t4, (20*8)(TMP)
+        sd      t5, (21*8)(TMP)
+        sd      t6, (22*8)(TMP)
+    /* Save caller-save floating-point registers
+       (callee-saves are preserved by C functions) */
+        fsd     ft0, (24*8)(TMP)
+        fsd     ft1, (25*8)(TMP)
+        fsd     ft2, (26*8)(TMP)
+        fsd     ft3, (27*8)(TMP)
+        fsd     ft4, (28*8)(TMP)
+        fsd     ft5, (29*8)(TMP)
+        fsd     ft6, (30*8)(TMP)
+        fsd     ft7, (31*8)(TMP)
+        fsd     fa0, (32*8)(TMP)
+        fsd     fa1, (33*8)(TMP)
+        fsd     fa2, (34*8)(TMP)
+        fsd     fa3, (35*8)(TMP)
+        fsd     fa4, (36*8)(TMP)
+        fsd     fa5, (37*8)(TMP)
+        fsd     fa6, (38*8)(TMP)
+        fsd     fa7, (39*8)(TMP)
+        fsd     ft8, (40*8)(TMP)
+        fsd     ft9, (41*8)(TMP)
+        fsd     ft10, (42*8)(TMP)
+        fsd     ft11, (43*8)(TMP)
+        addi    TMP, TMP, 16
+        sd      TMP, Caml_state(gc_regs)
+.endm
+
+/* This is similar to RESTORE_ALL_REGS, but only restoring the caller-saved
+   registers. */
+.macro TSAN_RESTORE_CALLER_REGS
+    /* Restore a0, a1, freeing up the next ptr slot */
+        ld      TMP, Caml_state(gc_regs)
+        addi    TMP, TMP, -16
+    /* Restore registers */
+        ld      a0, (2*8)(TMP)
+        ld      a1, (3*8)(TMP)
+        ld      a2, (4*8)(TMP)
+        ld      a3, (5*8)(TMP)
+        ld      a4, (6*8)(TMP)
+        ld      a5, (7*8)(TMP)
+        ld      a6, (8*8)(TMP)
+        ld      a7, (9*8)(TMP)
+        ld      t2, (18*8)(TMP)
+        ld      t3, (19*8)(TMP)
+        ld      t4, (20*8)(TMP)
+        ld      t5, (21*8)(TMP)
+        ld      t6, (22*8)(TMP)
+        fld     ft0, (24*8)(TMP)
+        fld     ft1, (25*8)(TMP)
+        fld     ft2, (26*8)(TMP)
+        fld     ft3, (27*8)(TMP)
+        fld     ft4, (28*8)(TMP)
+        fld     ft5, (29*8)(TMP)
+        fld     ft6, (30*8)(TMP)
+        fld     ft7, (31*8)(TMP)
+        fld     fa0, (32*8)(TMP)
+        fld     fa1, (33*8)(TMP)
+        fld     fa2, (34*8)(TMP)
+        fld     fa3, (35*8)(TMP)
+        fld     fa4, (36*8)(TMP)
+        fld     fa5, (37*8)(TMP)
+        fld     fa6, (38*8)(TMP)
+        fld     fa7, (39*8)(TMP)
+        fld     ft8, (40*8)(TMP)
+        fld     ft9, (41*8)(TMP)
+        fld     ft10, (42*8)(TMP)
+        fld     ft11, (43*8)(TMP)
+    /* Put gc_regs struct back in bucket linked list */
+        ld      TMP2, Caml_state(gc_regs_buckets)
+        sd      TMP2, 0(TMP) /* next ptr */
+        sd      TMP, Caml_state(gc_regs_buckets)
+    /* Reload new allocation pointer & exn handler */
+        ld      ALLOC_PTR, Caml_state(young_ptr)
+        ld      TRAP_PTR, Caml_state(exn_handler)
+.endm
+
+#else /* } { */
+
+.macro TSAN_ENTER_FUNCTION
+.endm
+
+.macro TSAN_EXIT_FUNCTION
+.endm
+
+.macro TSAN_SAVE_CALLER_REGS
+.endm
+
+.macro TSAN_RESTORE_CALLER_REGS
+.endm
+
+#endif /* } WITH_THREAD_SANITIZER */
+
         .section        .text
 /* Invoke the garbage collector. */
 
@@ -351,6 +504,9 @@ L(caml_c_call):
         addi    sp, sp, -16
         sd      ra, 8(sp)
         CFI_ADJUST(16)
+        TSAN_SAVE_CALLER_REGS
+        TSAN_ENTER_FUNCTION
+        TSAN_RESTORE_CALLER_REGS
     /* Switch form OCaml to C */
         SWITCH_OCAML_TO_C
     /* Make the exception handler alloc ptr available to the C code */
@@ -362,6 +518,23 @@ L(caml_c_call):
         ld      ALLOC_PTR, Caml_state(young_ptr)
     /* Load ocaml stack */
         SWITCH_C_TO_OCAML
+#if defined(WITH_THREAD_SANITIZER)
+    /* Save return value registers. Since the called function could be
+       anything, it may have returned its result (if any) either in a0
+       or fa0:fa1. */
+        addi    sp, sp, -32
+        CFI_ADJUST(32)
+        sd      a0, 0(sp)
+        fsd     fa0, 16(sp)
+        fsd     fa1, 24(sp)
+        TSAN_EXIT_FUNCTION
+    /* Restore return value registers */
+        fld     fa1, 24(sp)
+        fld     fa0, 16(sp)
+        ld      a0, 0(sp)
+        addi    sp, sp, 32
+        CFI_ADJUST(-32)
+#endif
     /* Return */
         ld      ra, 8(sp)
         addi    sp, sp, 16
@@ -413,6 +586,20 @@ END_FUNCTION(caml_c_call_stack_args)
 /* Start the OCaml program */
 
 FUNCTION(caml_start_program)
+#if defined(WITH_THREAD_SANITIZER)
+        addi    sp, sp, -16
+        CFI_ADJUST(16)
+        sd      a0, 0(sp)
+    /* We can't use the TSAN_ENTER_FUNCTION macro here, as it assumes to run
+       on an OCaml stack, yet we are still on a C stack at this point. */
+        mv      a0, ra
+        TSAN_SETUP_C_CALL
+        call    PLT(__tsan_func_entry)
+        TSAN_CLEANUP_AFTER_C_CALL
+        ld      a0, 0(sp)
+        addi    sp, sp, 16
+        CFI_ADJUST(-16)
+#endif
     /* domain state is passed as arg from C */
         mv      TMP, C_ARG_1
         la      TMP2, caml_program
@@ -512,6 +699,20 @@ L(return_result):
         addi    sp, sp, 32
         CFI_ADJUST(-32)
         sd      t2, Caml_state(c_stack)
+#if defined(WITH_THREAD_SANITIZER)
+    /* We can't use the TSAN_EXIT_FUNCTION macro here, as it assumes to run
+       on an OCaml stack, and we are back to a C stack at this point. */
+        addi    sp, sp, -16
+        CFI_ADJUST(16)
+        sd      a0, 0(sp)
+        mv      a0, x0
+        TSAN_SETUP_C_CALL
+        call    PLT(__tsan_func_exit)
+        TSAN_CLEANUP_AFTER_C_CALL
+        ld      a0, 0(sp)
+        addi    sp, sp, 16
+        CFI_ADJUST(-16)
+#endif
     /* Reload callee-save register and return address */
         ld      s0, (2*8)(sp)
         ld      s1, (3*8)(sp)
@@ -602,6 +803,21 @@ FUNCTION(caml_reraise_exn)
         JUMP_TO_TRAP_PTR
 END_FUNCTION(caml_reraise_exn)
 
+#if defined(WITH_THREAD_SANITIZER)
+/* When TSan support is enabled, this routine should be called just before
+   raising an exception. It calls __tsan_func_exit for every OCaml frame about
+   to be exited due to the exception.
+   Takes no arguments, clobbers a0, a1, a2 and potentially all
+   caller-saved registers of the C calling convention. */
+FUNCTION(caml_tsan_exit_on_raise_asm)
+        mv      a0, ra          /* arg1: pc of raise */
+        mv      a1, sp          /* arg2: sp of raise */
+        mv      a2, TRAP_PTR    /* arg3: sp of handler */
+        TSAN_C_CALL caml_tsan_exit_on_raise
+        ret
+END_FUNCTION(caml_tsan_exit_on_raise_asm)
+#endif
+
 /* Raise an exception from C */
 
 FUNCTION(caml_raise_exception)
@@ -616,6 +832,24 @@ FUNCTION(caml_raise_exception)
         ld      TMP, Caml_state(current_stack)
         ld      TMP, Stack_sp(TMP)
         mv      sp, TMP
+#if defined(WITH_THREAD_SANITIZER)
+        addi    sp, sp, -16
+        CFI_ADJUST(16)
+        sd      a0, 0(sp)       /* preserve exception bucket */
+    /* Call __tsan_func_exit for every OCaml stack frame exited due to the
+       exception */
+        mv      a1, TMP
+        ld      a0, 8(a1)       /* arg1: pc of raise */
+        /* This stack address adjustment is required to compensate the
+           saving of ra in SWITCH_OCAML_STACKS, which causes Stack_sp()
+           to be 16 bytes lower than expected. */
+        addi    a1, a1, 16      /* arg2: sp of raise */
+        mv      a2, TRAP_PTR    /* arg3: sp of handler */
+        TSAN_C_CALL caml_tsan_exit_on_raise
+        ld      a0, 0(sp)
+        addi    sp, sp, 16
+        CFI_ADJUST(-16)
+#endif
     /* Restore frame and link on return to OCaml */
         ld      ra, 8(sp)
         addi    sp, sp, 16
@@ -625,6 +859,23 @@ END_FUNCTION(caml_raise_exception)
 /* Callback from C to OCaml */
 
 FUNCTION(caml_callback_asm)
+#if defined(WITH_THREAD_SANITIZER)
+    /* Save non-callee-saved registers a0, a1, a2 and ra before C call */
+        addi    sp, sp, -32
+        CFI_ADJUST(32)
+        sd      a0, 0(sp)
+        sd      a1, 8(sp)
+        sd      a2, 16(sp)
+        sd      ra, 24(sp)
+        mv      a0, ra
+        call    PLT(__tsan_func_entry)
+        ld      ra, 24(sp)
+        ld      a2, 16(sp)
+        ld      a1, 8(sp)
+        ld      a0, 0(sp)
+        addi    sp, sp, 32
+        CFI_ADJUST(-32)
+#endif
     /* Initial shuffling of arguments */
     /* (a0 = Caml_state, a1 = closure, 0(a2) = first arg) */
         mv      TMP, a0
@@ -635,6 +886,23 @@ FUNCTION(caml_callback_asm)
 END_FUNCTION(caml_callback_asm)
 
 FUNCTION(caml_callback2_asm)
+#if defined(WITH_THREAD_SANITIZER)
+    /* Save non-callee-saved registers a0, a1, a2 and ra before C call */
+        addi    sp, sp, -32
+        CFI_ADJUST(32)
+        sd      a0, 0(sp)
+        sd      a1, 8(sp)
+        sd      a2, 16(sp)
+        sd      ra, 24(sp)
+        mv      a0, ra
+        call    PLT(__tsan_func_entry)
+        ld      ra, 24(sp)
+        ld      a2, 16(sp)
+        ld      a1, 8(sp)
+        ld      a0, 0(sp)
+        addi    sp, sp, 32
+        CFI_ADJUST(-32)
+#endif
     /* Initial shuffling of arguments */
     /* (a0 = Caml_state, a1 = closure, 0(a2) = arg1, 8(a2) = arg2) */
         mv      TMP, a0
@@ -647,6 +915,23 @@ FUNCTION(caml_callback2_asm)
 END_FUNCTION(caml_callback2_asm)
 
 FUNCTION(caml_callback3_asm)
+#if defined(WITH_THREAD_SANITIZER)
+    /* Save non-callee-saved registers a0, a1, a2 and ra before C call */
+        addi    sp, sp, -32
+        CFI_ADJUST(32)
+        sd      a0, 0(sp)
+        sd      a1, 8(sp)
+        sd      a2, 16(sp)
+        sd      ra, 24(sp)
+        mv      a0, ra
+        call    PLT(__tsan_func_entry)
+        ld      ra, 24(sp)
+        ld      a2, 16(sp)
+        ld      a1, 8(sp)
+        ld      a0, 0(sp)
+        addi    sp, sp, 32
+        CFI_ADJUST(-32)
+#endif
     /* Initial shuffling of arguments */
     /* (a0 = Caml_state, a1 = closure, 0(a2) = arg1, 8(a2) = arg2,
         16(a2) = arg3) */
@@ -700,10 +985,38 @@ L(do_perform):
         a1: continuation
         a2: old_stack
         a3: last_fiber */
-
+#if defined(WITH_THREAD_SANITIZER)
+    /* Signal to TSan all stack frames exited by the perform. */
+        TSAN_SAVE_CALLER_REGS
+        mv      a0, ra          /* arg1: pc of perform */
+        mv      a1, sp          /* arg2: sp of perform */
+        TSAN_C_CALL caml_tsan_exit_on_perform
+        TSAN_RESTORE_CALLER_REGS
+#endif
         ld      t3, Stack_handler(a2)  /* t3 := old stack -> handler */
         ld      t4, Handler_parent(t3) /* t4 := parent stack */
         beqz    t4, 1f
+#if defined(WITH_THREAD_SANITIZER)
+    /* Save non-callee-saved registers a0-a3, t3 and t4 */
+        addi    sp, sp, -48
+        CFI_ADJUST(48)
+        sd      a0, 0(sp)
+        sd      a1, 8(sp)
+        sd      a2, 16(sp)
+        sd      a3, 24(sp)
+        sd      t3, 32(sp)
+        sd      t4, 40(sp)
+    /* Match the TSan-enter made from caml_runstack */
+        TSAN_EXIT_FUNCTION
+        ld      t4, 40(sp)
+        ld      t3, 32(sp)
+        ld      a3, 24(sp)
+        ld      a2, 16(sp)
+        ld      a1, 8(sp)
+        ld      a0, 0(sp)
+        addi    sp, sp, 48
+        CFI_ADJUST(-48)
+#endif
         SWITCH_OCAML_STACKS a2, t4
     /*  we have to null the Handler_parent after the switch because
         the Handler_parent is needed to unwind the stack for backtraces */
@@ -720,6 +1033,20 @@ L(do_perform):
         ld      t3, Caml_state(current_stack)
         SWITCH_OCAML_STACKS t3, t4
     /*  No parent stack. Raise Effect.Unhandled. */
+#if defined(WITH_THREAD_SANITIZER)
+    /* We must let the TSan runtime know that we switched back to the
+       original performer stack. For that, we perform the necessary calls
+       to __tsan_func_entry via caml_tsan_entry_on_resume.
+       Note that, from TSan's point of view, we just exited all stack frames,
+       including those of the main fiber. This is ok, because we will re-enter
+       them immediately via caml_tsan_entry_on_resume below. */
+        TSAN_SAVE_CALLER_REGS
+        mv      a0, ra          /* arg1: pc of perform */
+        mv      a1, sp          /* arg2: sp of perform */
+        mv      a2, t4          /* arg3: performer stack */
+        TSAN_C_CALL caml_tsan_entry_on_resume
+        TSAN_RESTORE_CALLER_REGS
+#endif
         la      ADDITIONAL_ARG, caml_raise_unhandled_effect
         j       L(caml_c_call)
 END_FUNCTION(caml_perform)
@@ -744,6 +1071,36 @@ FUNCTION(caml_resume)
         ld      a4, 0(a1)  /* code pointer */
     /* Check if stack null, then already used */
         beqz    a0, 1f
+#if defined(WITH_THREAD_SANITIZER)
+    /* Save non-callee-saved registers a0-a4 */
+        addi    sp, sp, -48
+        CFI_ADJUST(48)
+        sd      a0, 0(sp)
+        sd      a1, 8(sp)
+        sd      a2, 16(sp)
+        sd      a3, 24(sp)
+        sd      a4, 32(sp)
+    /* Necessary to include the caller of caml_resume in the TSan backtrace */
+        TSAN_ENTER_FUNCTION
+        ld      a4, 32(sp)
+        ld      a3, 24(sp)
+        ld      a2, 16(sp)
+        ld      a1, 8(sp)
+        ld      a0, 0(sp)
+        addi    sp, sp, 48
+        CFI_ADJUST(-48)
+        TSAN_SAVE_CALLER_REGS
+    /* Signal to TSan all stack frames exited by the perform. */
+        mv      a2, a0                  /* arg3: fiber */
+        ld      a1, Stack_sp(a0)
+        ld      a0, 8(a1)               /* arg1: pc of perform */
+        /* This stack address adjustment is required to compensate the
+           saving of ra in SWITCH_OCAML_STACKS, which causes Stack_sp()
+           to be 16 bytes lower than expected. */
+        addi    a1, a1, 16              /* arg2: sp at perform */
+        TSAN_C_CALL caml_tsan_entry_on_resume
+        TSAN_RESTORE_CALLER_REGS
+#endif
     /* Add current stack to the end */
         addi    a3, a3, -1 /* a3 = Ptr_val(a3) */
         ld      t2, Stack_handler(a3)
@@ -759,6 +1116,21 @@ END_FUNCTION(caml_resume)
 /* Run a function on a new stack, then either
    return the value or invoke exception handler */
 FUNCTION(caml_runstack)
+#if defined(WITH_THREAD_SANITIZER)
+    /* Save non-callee-saved registers a0-a2 */
+        addi    sp, sp, -32
+        CFI_ADJUST(32)
+        sd      a0, 0(sp)
+        sd      a1, 8(sp)
+        sd      a2, 16(sp)
+    /* Necessary to include the caller of caml_runstack in the TSan backtrace */
+        TSAN_ENTER_FUNCTION
+        ld      a2, 16(sp)
+        ld      a1, 8(sp)
+        ld      a0, 0(sp)
+        addi    sp, sp, 32
+        CFI_ADJUST(-32)
+#endif
     /*  a0: fiber
         a1: fun
         a2: arg */
@@ -811,11 +1183,14 @@ L(frame_runstack):
         ld      TMP, Caml_state(c_stack)
         mv      sp, TMP
         call    PLT(caml_free_stack)
-    /* switch directly to parent stack with correct return */
-        mv      a0, s3
-        mv      a1, s2
+    /* switch directly to parent stack */
         mv      sp, s4
         CFI_RESTORE_STATE
+    /* Signal to TSan that we exit caml_runstack (no registers to save here) */
+        TSAN_EXIT_FUNCTION
+    /* pick correct return value */
+        mv      a0, s3
+        mv      a1, s2
         ld      TMP, 0(s2)  /* code pointer */
     /* Invoke handle_value (or handle_exn) */
         ld      ra, 8(sp)
