@@ -1517,9 +1517,9 @@ and transl_signature ?(toplevel = false) env sg =
             in
             Signature_names.check_module ~info names pms.pms_name.loc id;
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_modsubst {ms_id=id; ms_name=pms.pms_name; ms_uid=md.md_uid;
-                                  ms_manifest=path; ms_txt=pms.pms_manifest;
-                                  ms_loc=pms.pms_loc;
+            mksig (Tsig_modsubst {ms_id=id; ms_name=pms.pms_name;
+                                  ms_uid=md.md_uid; ms_manifest=path;
+                                  ms_txt=pms.pms_manifest; ms_loc=pms.pms_loc;
                                   ms_attributes=pms.pms_attributes})
               env loc :: trem,
             rem,
