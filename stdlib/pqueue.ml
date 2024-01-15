@@ -36,8 +36,8 @@ end) =
     let length =
       Dynarray.length
 
-    let is_empty h =
-      length h = 0
+    let is_empty =
+      Dynarray.is_empty
 
     let clear =
       Dynarray.clear
@@ -83,11 +83,11 @@ end) =
     exception Empty
 
     let min_elt h =
-      if Dynarray.length h = 0 then raise Empty;
+      if Dynarray.is_empty h then raise Empty;
       Dynarray.get h 0
 
     let min_elt_opt h =
-      if Dynarray.length h = 0 then None else Some (Dynarray.get h 0)
+      if Dynarray.is_empty h then None else Some (Dynarray.get h 0)
 
     let lt h i j =
       E.compare (Dynarray.get h i) (Dynarray.get h j) < 0
