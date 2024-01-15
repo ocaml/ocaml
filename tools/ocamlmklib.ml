@@ -165,7 +165,9 @@ let parse_arguments argv =
     else if s = "-framework" then
       (let a = next_arg s in c_opts := a :: s :: !c_opts)
     else if s = "-fsanitize=thread" then
-      c_opts := s :: !c_opts
+    (* Ignore TSAN option as it is already passed to ocamlc and ocamlopt;
+       creating a shared library does not need the option *)
+      ()
     else if starts_with s "-" then
       prerr_endline ("Unknown option " ^ s)
     else
