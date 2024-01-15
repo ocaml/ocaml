@@ -40,7 +40,7 @@ let mk_annot f =
 let mk_binannot f =
   "-bin-annot", Arg.Unit f, " Save typedtree in <filename>.cmt"
 
-let mk_store_occurrences f =
+let mk_binannot_occurrences f =
   "-bin-annot-occurrences", Arg.Unit f,
   " Store every occurrence of a bound name in the .cmt file.\n\
     This information can be used by external tools to provide\n\
@@ -827,7 +827,7 @@ module type Compiler_options = sig
   val _a : unit -> unit
   val _annot : unit -> unit
   val _binannot : unit -> unit
-  val _store_occurrences : unit -> unit
+  val _binannot_occurrences : unit -> unit
   val _c : unit -> unit
   val _cc : string -> unit
   val _cclib : string -> unit
@@ -1023,7 +1023,7 @@ struct
     mk_no_absname F._no_absname;
     mk_annot F._annot;
     mk_binannot F._binannot;
-    mk_store_occurrences F._store_occurrences;
+    mk_binannot_occurrences F._binannot_occurrences;
     mk_c F._c;
     mk_cc F._cc;
     mk_cclib F._cclib;
@@ -1217,7 +1217,7 @@ struct
     mk_afl_inst_ratio F._afl_inst_ratio;
     mk_annot F._annot;
     mk_binannot F._binannot;
-    mk_store_occurrences F._store_occurrences;
+    mk_binannot_occurrences F._binannot_occurrences;
     mk_inline_branch_factor F._inline_branch_factor;
     mk_c F._c;
     mk_cc F._cc;
@@ -1746,7 +1746,7 @@ module Default = struct
     let _args = Arg.read_arg
     let _args0 = Arg.read_arg0
     let _binannot = set binary_annotations
-    let _store_occurrences = set store_occurrences
+    let _binannot_occurrences = set store_occurrences
     let _c = set compile_only
     let _cc s = c_compiler := (Some s)
     let _cclib s = Compenv.defer (ProcessObjects (Misc.rev_split_words s))
