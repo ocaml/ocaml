@@ -1218,14 +1218,12 @@ typing/shape.cmi : \
     typing/ident.cmi
 typing/shape_reduce.cmo : \
     typing/shape.cmi \
-    utils/misc.cmi \
     utils/local_store.cmi \
     typing/ident.cmi \
     typing/env.cmi \
     typing/shape_reduce.cmi
 typing/shape_reduce.cmx : \
     typing/shape.cmx \
-    utils/misc.cmx \
     utils/local_store.cmx \
     typing/ident.cmx \
     typing/env.cmx \
@@ -3253,10 +3251,12 @@ asmcomp/split.cmi : \
 asmcomp/stackframe.cmo : \
     asmcomp/stackframegen.cmi \
     asmcomp/mach.cmi \
+    utils/config.cmi \
     asmcomp/stackframe.cmi
 asmcomp/stackframe.cmx : \
     asmcomp/stackframegen.cmx \
     asmcomp/mach.cmx \
+    utils/config.cmi \
     asmcomp/stackframe.cmi
 asmcomp/stackframe.cmi : \
     asmcomp/stackframegen.cmi \
@@ -4075,6 +4075,7 @@ file_formats/cmt_format.cmo : \
     typing/tast_iterator.cmi \
     typing/shape_reduce.cmi \
     typing/shape.cmi \
+    typing/predef.cmi \
     typing/path.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
@@ -4096,6 +4097,7 @@ file_formats/cmt_format.cmx : \
     typing/tast_iterator.cmx \
     typing/shape_reduce.cmx \
     typing/shape.cmx \
+    typing/predef.cmx \
     typing/path.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
