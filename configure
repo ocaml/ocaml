@@ -16666,9 +16666,7 @@ esac
 fi
 
 # ThreadSanitizer support is currently only available for Linux/FreeBSD/macOS
-# on amd64, Linux/macOS on arm64 and Linux on POWER and riscv64.
-# ThreadSanitizer supports more architectures but the OCaml client side is not
-# implemented (yet).
+# on amd64, Linux/macOS on arm64 and Linux on POWER, riscv64 and s390x.
 if test "x$enable_tsan" = "xyes"
 then :
   case "$arch" in #(
@@ -16715,6 +16713,20 @@ esac ;; #(
         ;;
 esac ;; #(
   riscv) :
+    case "$system" in #(
+  linux) :
+    case "$ocaml_cv_cc_vendor" in #(
+  gcc-*|clang-*) :
+    tsan=true ;; #(
+  *) :
+    as_fn_error $? "thread sanitizer not supported with vendor=$ocaml_cv_cc_vendor\"" "$LINENO" 5
+          ;;
+esac ;; #(
+  *) :
+    as_fn_error $? "thread sanitizer not supported on system $system" "$LINENO" 5
+        ;;
+esac ;; #(
+  s390x) :
     case "$system" in #(
   linux) :
     case "$ocaml_cv_cc_vendor" in #(
@@ -16870,6 +16882,8 @@ fi
     libunwind_ldflags="-lunwind -lunwind-ppc64" ;; #(
   "riscv") :
     libunwind_ldflags="-lunwind -lunwind-riscv" ;; #(
+  "s390x") :
+    libunwind_ldflags="-lunwind -lunwind-s390x" ;; #(
   *) :
      ;;
 esac ;;
