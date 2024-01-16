@@ -73,11 +73,16 @@ Test () {
   if [ "$1" = "sequential" ]; then
     echo Running the testsuite sequentially
     $MAKE -C testsuite all
-  else
-    echo Running the testsuite
+    cd ..
+  elif [ "$1" = "parallel" ]; then
+    echo Running the testsuite in parallel
     $MAKE -C testsuite parallel
+    cd ..
+  else
+    echo "Error: unexpected argument '$1' to function Test(). " \
+         "It should be 'sequential' or 'parallel'."
+    exit 1
   fi
-  cd ..
 }
 
 # By default, TestPrefix will attempt to run the tests
@@ -173,7 +178,7 @@ BasicCompiler () {
 case $1 in
 configure) Configure;;
 build) Build;;
-test) Test;;
+test) Test parallel;;
 test_sequential) Test sequential;;
 test_prefix) TestPrefix $2;;
 api-docs) API_Docs;;
