@@ -946,6 +946,7 @@ static void mark_slice_darken(struct mark_stack* stk, value child,
   /* This part of the code is duplicated in do_some_marking for performance
    * reasons.
    * Changes here should probably be reflected in do_some_marking. */
+    CAML_TSAN_ANNOTATE_HAPPENS_AFTER(Hp_val(child));
     chd = Hd_val(child);
     if (Tag_hd(chd) == Infix_tag) {
       child -= Infix_offset_hd(chd);
@@ -1007,6 +1008,7 @@ Caml_noinline static intnat do_some_marking(struct mark_stack* stk,
       /* This part of the code is a duplicate of mark_slice_darken for
        * performance reasons.
        * Changes here should probably be reflected here in mark_slice_darken. */
+      CAML_TSAN_ANNOTATE_HAPPENS_AFTER(Hp_val(block));
       header_t hd = Hd_val(block);
 
       if (Tag_hd(hd) == Infix_tag) {
