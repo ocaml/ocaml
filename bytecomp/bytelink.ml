@@ -478,13 +478,6 @@ let output_cds_file outfile =
 
 (* Output a bytecode executable as a C file *)
 
-(* Primitives declared in the included headers but re-declared in the
-   primitives table need to be guarded and not declared twice. *)
-let guarded_primitives = [
-    "caml_get_public_method", "caml__get_public_method";
-    "caml_set_oo_id", "caml__set_oo_id";
-  ]
-
 let link_bytecode_as_c tolink outfile with_main =
   let outchan = open_out outfile in
   Misc.try_finally
@@ -492,23 +485,22 @@ let link_bytecode_as_c tolink outfile with_main =
     ~exceptionally:(fun () -> remove_file outfile)
     (fun () ->
        (* The bytecode *)
-       output_string outchan "\
-#define CAML_INTERNALS\n\
-#define CAMLDLLIMPORT\
-\n\
-\n#ifdef __cplusplus\
-\nextern \"C\" {\
-\n#endif";
-       List.iter (fun (f, f') -> Printf.fprintf outchan "\n#define %s %s" f f')
-         guarded_primitives;
-       output_string outchan "\
-\n#include <caml/mlvalues.h>\
-\n#include <caml/startup.h>\
-\n#include <caml/sys.h>\
-\n#include <caml/misc.h>\n";
-       List.iter (fun (f, _) -> Printf.fprintf outchan "\n#undef %s" f)
-         guarded_primitives;
-       output_string outchan "\nstatic int caml_code[] = {\n";
+       output_string outchan
+{|#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define CAML_INTERNALS
+#define CAMLDLLIMPORT
+#define CAML_INTERNALS_NO_PRIM_DECLARATIONS
+
+#include <caml/mlvalues.h>
+#include <caml/startup.h>
+#include <caml/sys.h>
+#include <caml/misc.h>
+
+static int caml_code[] = {
+|};
        Symtable.init();
        clear_crc_interfaces ();
        let currpos = ref 0 in
@@ -518,12 +510,16 @@ let link_bytecode_as_c tolink outfile with_main =
        and currpos_fun () = !currpos in
        List.iter (link_file output_fun currpos_fun) tolink;
        (* The final STOP instruction *)
-       Printf.fprintf outchan "\n0x%x};\n\n" Opcodes.opSTOP;
+       Printf.fprintf outchan "\n0x%x};\n" Opcodes.opSTOP;
        (* The table of global data *)
-       output_string outchan "static char caml_data[] = {\n";
+       output_string outchan {|
+static char caml_data[] = {
+|};
        output_data_string outchan
          (Marshal.to_string (Symtable.initial_global_table()) []);
-       output_string outchan "\n};\n\n";
+       output_string outchan {|
+};
+|};
        (* The sections *)
        let sections : (string * Obj.t) list =
          [ Bytesections.Name.to_string SYMB,
@@ -533,68 +529,76 @@ let link_bytecode_as_c tolink outfile with_main =
            Bytesections.Name.to_string CRCS,
            Obj.repr(extract_crc_interfaces()) ]
        in
-       output_string outchan "static char caml_sections[] = {\n";
+       output_string outchan {|
+static char caml_sections[] = {
+|};
        output_data_string outchan
          (Marshal.to_string sections []);
-       output_string outchan "\n};\n\n";
+       output_string outchan {|
+};
+
+|};
        (* The table of primitives *)
        Symtable.output_primitive_table outchan;
        (* The entry point *)
        if with_main then begin
-         output_string outchan "\
-\nint main_os(int argc, char_os **argv)\
-\n{\
-\n  caml_byte_program_mode = COMPLETE_EXE;\
-\n  caml_startup_code(caml_code, sizeof(caml_code),\
-\n                    caml_data, sizeof(caml_data),\
-\n                    caml_sections, sizeof(caml_sections),\
-\n                    /* pooling */ 0,\
-\n                    argv);\
-\n  caml_do_exit(0);\
-\n  return 0; /* not reached */\
-\n}\n"
+         output_string outchan {|
+int main_os(int argc, char_os **argv)
+{
+  caml_byte_program_mode = COMPLETE_EXE;
+  caml_startup_code(caml_code, sizeof(caml_code),
+                    caml_data, sizeof(caml_data),
+                    caml_sections, sizeof(caml_sections),
+                    /* pooling */ 0,
+                    argv);
+  caml_do_exit(0);
+  return 0; /* not reached */
+}
+|}
        end else begin
-         output_string outchan "\
-\nvoid caml_startup(char_os ** argv)\
-\n{\
-\n  caml_startup_code(caml_code, sizeof(caml_code),\
-\n                    caml_data, sizeof(caml_data),\
-\n                    caml_sections, sizeof(caml_sections),\
-\n                    /* pooling */ 0,\
-\n                    argv);\
-\n}\
-\n\
-\nvalue caml_startup_exn(char_os ** argv)\
-\n{\
-\n  return caml_startup_code_exn(caml_code, sizeof(caml_code),\
-\n                               caml_data, sizeof(caml_data),\
-\n                               caml_sections, sizeof(caml_sections),\
-\n                               /* pooling */ 0,\
-\n                               argv);\
-\n}\
-\n\
-\nvoid caml_startup_pooled(char_os ** argv)\
-\n{\
-\n  caml_startup_code(caml_code, sizeof(caml_code),\
-\n                    caml_data, sizeof(caml_data),\
-\n                    caml_sections, sizeof(caml_sections),\
-\n                    /* pooling */ 1,\
-\n                    argv);\
-\n}\
-\n\
-\nvalue caml_startup_pooled_exn(char_os ** argv)\
-\n{\
-\n  return caml_startup_code_exn(caml_code, sizeof(caml_code),\
-\n                               caml_data, sizeof(caml_data),\
-\n                               caml_sections, sizeof(caml_sections),\
-\n                               /* pooling */ 1,\
-\n                               argv);\
-\n}\n"
+         output_string outchan {|
+void caml_startup(char_os ** argv)
+{
+  caml_startup_code(caml_code, sizeof(caml_code),
+                    caml_data, sizeof(caml_data),
+                    caml_sections, sizeof(caml_sections),
+                    /* pooling */ 0,
+                    argv);
+}
+
+value caml_startup_exn(char_os ** argv)
+{
+  return caml_startup_code_exn(caml_code, sizeof(caml_code),
+                               caml_data, sizeof(caml_data),
+                               caml_sections, sizeof(caml_sections),
+                               /* pooling */ 0,
+                               argv);
+}
+
+void caml_startup_pooled(char_os ** argv)
+{
+  caml_startup_code(caml_code, sizeof(caml_code),
+                    caml_data, sizeof(caml_data),
+                    caml_sections, sizeof(caml_sections),
+                    /* pooling */ 1,
+                    argv);
+}
+
+value caml_startup_pooled_exn(char_os ** argv)
+{
+  return caml_startup_code_exn(caml_code, sizeof(caml_code),
+                               caml_data, sizeof(caml_data),
+                               caml_sections, sizeof(caml_sections),
+                               /* pooling */ 1,
+                               argv);
+}
+|}
        end;
-       output_string outchan "\
-\n#ifdef __cplusplus\
-\n}\
-\n#endif\n";
+       output_string outchan {|
+#ifdef __cplusplus
+}
+#endif
+|};
     );
   if not with_main && !Clflags.debug then
     output_cds_file ((Filename.chop_extension outfile) ^ ".cds")
@@ -606,23 +610,21 @@ let build_custom_runtime prim_name exec_name =
     if not !Clflags.with_runtime
     then ""
     else "-lcamlrun" ^ !Clflags.runtime_variant in
-  let debug_prefix_map =
-    if Config.c_has_debug_prefix_map && not !Clflags.keep_camlprimc_file then
-      let flag =
-        [Printf.sprintf "-fdebug-prefix-map=%s=camlprim.c" prim_name]
-      in
-        if Ccomp.linker_is_flexlink then
-          "-link" :: flag
-        else
-          flag
+  let stable_name =
+    if not !Clflags.keep_camlprimc_file then
+      Some "camlprim.c"
     else
-      [] in
-  let exitcode =
-    (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
+      None
   in
-  Ccomp.call_linker Ccomp.Exe exec_name
-    (debug_prefix_map @ [prim_name] @ List.rev !Clflags.ccobjs @ [runtime_lib])
-    exitcode = 0
+  let prims_obj = Filename.temp_file "camlprim" Config.ext_obj in
+  let result =
+    Ccomp.compile_file ~output:prims_obj ?stable_name prim_name = 0
+    && Ccomp.call_linker Ccomp.Exe exec_name
+        ([prims_obj] @ List.rev !Clflags.ccobjs @ [runtime_lib])
+        (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries) = 0
+  in
+  remove_file prims_obj;
+  result
 
 let append_bytecode bytecode_name exec_name =
   let oc = open_out_gen [Open_wronly; Open_append; Open_binary] 0 exec_name in
@@ -686,24 +688,21 @@ let link objfiles output_name =
          let poc = open_out prim_name in
          (* note: builds will not be reproducible if the C code contains macros
             such as __FILE__. *)
-         output_string poc "\
-         #ifdef __cplusplus\n\
-         extern \"C\" {\n\
-         #endif\n\
-         #ifdef _WIN64\n\
-         #ifdef __MINGW32__\n\
-         typedef long long value;\n\
-         #else\n\
-         typedef __int64 value;\n\
-         #endif\n\
-         #else\n\
-         typedef long value;\n\
-         #endif\n";
+         output_string poc
+{|#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define CAML_INTERNALS_NO_PRIM_DECLARATIONS
+#include <caml/mlvalues.h>
+
+|};
          Symtable.output_primitive_table poc;
-         output_string poc "\
-         #ifdef __cplusplus\n\
-         }\n\
-         #endif\n";
+         output_string poc {|
+#ifdef __cplusplus
+}
+#endif
+|};
          close_out poc;
          let exec_name = fix_exec_name output_name in
          if not (build_custom_runtime prim_name exec_name)
