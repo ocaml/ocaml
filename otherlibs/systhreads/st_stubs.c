@@ -413,6 +413,7 @@ static void caml_thread_reinitialize(void)
      are hopeless.)
   */
 
+  struct channel * chan;
   caml_thread_t th, next;
 
   th = Active_thread->next;
@@ -437,9 +438,15 @@ static void caml_thread_reinitialize(void)
      effort. */
   if (st_masterlock_init(m) != 0)
     caml_fatal_error("Unix.fork: failed to reinitialize master lock");
-  /* FIXME: The same should be done (or not) for IO mutexes (as in the
-     pre-multicore world). However there they might be locked by
-     someone else, and we are probably in an inconsistent state. */
+
+  /* Reinitialize IO mutexes, in case the fork happened while another thread
+     had locked the channel. If so, we're likely in an inconsistent state,
+     but we may be able to proceed anyway. */
+  for (chan = caml_all_opened_channels;
+       chan != NULL;
+       chan = chan->next) {
+    caml_plat_mutex_init(&chan->mutex);
+  }
 }
 
 CAMLprim value caml_thread_join(value th);
