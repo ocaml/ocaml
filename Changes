@@ -234,6 +234,9 @@ OCaml 5.2.0
   (David Allsopp, review by Antonin Décimo, Sébastien Hinderer, Samuel Hym,
    Guillaume Munch-Maccagnoni and Miod Vallat)
 
+- #12886: Reinitialize IO mutexes after fork
+  (Max Slater, review by Guillaume Munch-Maccagnoni and Xavier Leroy)
+
 - #12907: Port ThreadSanitizer support to Linux on RiscV
   (Miod Vallat, review by Nicolás Ojeda Bär and Fabrice Buoro)
 

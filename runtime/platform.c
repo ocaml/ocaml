@@ -46,7 +46,7 @@ void caml_plat_fatal_error(const char * action, int err)
 
 /* Mutexes */
 
-void caml_plat_mutex_init(caml_plat_mutex * m)
+CAMLexport void caml_plat_mutex_init(caml_plat_mutex * m)
 {
   int rc;
   pthread_mutexattr_t attr;
