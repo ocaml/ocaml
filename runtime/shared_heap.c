@@ -253,7 +253,6 @@ static void calc_pool_stats(pool* a, sizeclass sz, struct heap_stats* s)
 }
 
 /* Initialize a pool and its object freelist */
-CAMLno_tsan  /* Disable TSan reports from this function (see #11040) */
 Caml_inline void pool_initialize(pool* r,
                                  sizeclass sz,
                                  caml_domain_state* owner)
@@ -426,7 +425,6 @@ static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
   return (char*)a + LARGE_ALLOC_HEADER_SZ;
 }
 
-CAMLno_tsan /* Disable TSan reports from this function (see #11040) */
 value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
                              tag_t tag, reserved_t reserved)
 {
