@@ -70,8 +70,13 @@ Build () {
 }
 
 Test () {
-  echo Running the testsuite
-  $MAKE -C testsuite parallel
+  if [ "$1" = "sequential" ]; then
+    echo Running the testsuite sequentially
+    $MAKE -C testsuite all
+  else
+    echo Running the testsuite
+    $MAKE -C testsuite parallel
+  fi
   cd ..
 }
 
@@ -169,6 +174,7 @@ case $1 in
 configure) Configure;;
 build) Build;;
 test) Test;;
+test_sequential) Test sequential;;
 test_prefix) TestPrefix $2;;
 api-docs) API_Docs;;
 install) Install;;
