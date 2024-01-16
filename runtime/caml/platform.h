@@ -103,7 +103,7 @@ Caml_inline uintnat atomic_fetch_add_verify_ge0(atomic_uintnat* p, uintnat v) {
 
 typedef pthread_mutex_t caml_plat_mutex;
 #define CAML_PLAT_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
-void caml_plat_mutex_init(caml_plat_mutex*);
+CAMLextern void caml_plat_mutex_init(caml_plat_mutex*);
 Caml_inline void caml_plat_lock(caml_plat_mutex*);
 Caml_inline int caml_plat_try_lock(caml_plat_mutex*);
 void caml_plat_assert_locked(caml_plat_mutex*);
