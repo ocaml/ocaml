@@ -19,6 +19,11 @@ _______________
 
 ### Tools:
 
+- #12904: Run the testsuite with ThreadSanitizer on a PR when label
+  `run-thread-sanitizer` is added
+  (Olivier Nicole, suggested by Sébastien Hinderer and David Allsopp, review by
+   Gabriel Scherer)
+
 ### Toplevel:
 
 - #12891: Improved styling for initial prompt
