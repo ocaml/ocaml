@@ -190,7 +190,7 @@ void caml_register_dyn_globals(void **globals, int nglobals) {
 static void scan_native_globals(scanning_action f, void* fdata)
 {
   int i, j;
-  static link* dyn_globals;
+  link* dyn_globals;
   value* glob;
   link* lnk;
 
