@@ -45,6 +45,10 @@ _______________
   bytecode linker in `-custom` and `-output-*` modes.
   (David Allsopp, Antonin Décimo and Samuel Hym, review by Vincent Laviron)
 
+- #xxxxx: Slightly change the s390x assembly dialect in order to build with
+  Clang's integrated assembler.
+  (Miod Vallat, review by TBD)
+
 ### Build system:
 
 ### Bug fixes:
