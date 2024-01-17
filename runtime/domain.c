@@ -1180,10 +1180,6 @@ static void* domain_thread_func(void* v)
 
   domain_create(caml_params->init_minor_heap_wsz, p->parent->state);
 
-  if (!domain_self) {
-    caml_fatal_error("Failed to create domain");
-  }
-
   /* this domain is now part of the STW participant set */
   p->newdom = domain_self;
 
