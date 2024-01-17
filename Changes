@@ -47,6 +47,10 @@ _______________
 
 ### Build system:
 
+- #12909: Reorganise how MKEXE_VIA_CC is built to make it correct for MSVC by
+  grouping all the linker flags at the end of the C compiler commandline
+  (David Allsopp and Samuel Hym, review by Nicolás Ojeda Bär)
+
 ### Bug fixes:
 
 
