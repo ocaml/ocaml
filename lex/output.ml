@@ -20,6 +20,10 @@ open Lexgen
 open Compact
 open Common
 
+type c_short_type = Short | Unsigned_short
+
+exception Table_overflow
+
 (* To output an array of short ints, encoded as a string *)
 
 let output_byte oc b =
@@ -28,14 +32,26 @@ let output_byte oc b =
   output_char oc (Char.chr(48 + (b / 10) mod 10));
   output_char oc (Char.chr(48 + b mod 10))
 
-let output_array oc v =
+let output_array c_type oc v =
   output_string oc "   \"";
   for i = 0 to Array.length v - 1 do
     output_byte oc (v.(i) land 0xFF);
     output_byte oc ((v.(i) asr 8) land 0xFF);
+    let () =
+      let unsigned_number =
+        match c_type with
+        | Short -> v.(i) + 1 lsl 15
+        | Unsigned_short -> v.(i)
+      in
+      if unsigned_number < 0 || unsigned_number >= 1 lsl 16
+      then raise Table_overflow
+    in
     if i land 7 = 7 then output_string oc "\\\n    "
   done;
   output_string oc "\""
+
+let output_array_s = output_array Short
+let output_array_u = output_array Unsigned_short
 
 let output_byte_array oc v =
   output_string oc "   \"";
@@ -50,21 +66,21 @@ let output_byte_array oc v =
 let output_tables oc tbl =
   output_string oc "let __ocaml_lex_tables = {\n";
 
-  fprintf oc "  Lexing.lex_base =\n%a;\n" output_array tbl.tbl_base;
-  fprintf oc "  Lexing.lex_backtrk =\n%a;\n" output_array tbl.tbl_backtrk;
-  fprintf oc "  Lexing.lex_default =\n%a;\n" output_array tbl.tbl_default;
-  fprintf oc "  Lexing.lex_trans =\n%a;\n" output_array tbl.tbl_trans;
-  fprintf oc "  Lexing.lex_check =\n%a;\n" output_array tbl.tbl_check;
-  fprintf oc "  Lexing.lex_base_code =\n%a;\n" output_array tbl.tbl_base_code;
+  fprintf oc "  Lexing.lex_base =\n%a;\n" output_array_s tbl.tbl_base;
+  fprintf oc "  Lexing.lex_backtrk =\n%a;\n" output_array_s tbl.tbl_backtrk;
+  fprintf oc "  Lexing.lex_default =\n%a;\n" output_array_s tbl.tbl_default;
+  fprintf oc "  Lexing.lex_trans =\n%a;\n" output_array_s tbl.tbl_trans;
+  fprintf oc "  Lexing.lex_check =\n%a;\n" output_array_s tbl.tbl_check;
+  fprintf oc "  Lexing.lex_base_code =\n%a;\n" output_array_u tbl.tbl_base_code;
 
   fprintf oc "  Lexing.lex_backtrk_code =\n%a;\n"
-    output_array tbl.tbl_backtrk_code;
+    output_array_u tbl.tbl_backtrk_code;
   fprintf oc "  Lexing.lex_default_code =\n%a;\n"
-    output_array tbl.tbl_default_code;
+    output_array_u tbl.tbl_default_code;
   fprintf oc "  Lexing.lex_trans_code =\n%a;\n"
-    output_array tbl.tbl_trans_code;
+    output_array_u tbl.tbl_trans_code;
   fprintf oc "  Lexing.lex_check_code =\n%a;\n"
-    output_array tbl.tbl_check_code;
+    output_array_s tbl.tbl_check_code;
   fprintf oc "  Lexing.lex_code =\n%a;\n" output_byte_array tbl.tbl_code;
 
   output_string oc "}\n\n"
@@ -116,8 +132,6 @@ let output_entry some_mem_code ic oc has_refill oci e =
       e.auto_name output_args e.auto_args
 
 (* Main output function *)
-
-exception Table_overflow
 
 let output_lexdef ic oc oci header rh tables entry_points trailer =
   if not !Common.quiet_mode then
