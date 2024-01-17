@@ -174,6 +174,10 @@ CAMLextern void caml_runtime_events_pause(void);
    is written during this call. */
 CAMLextern void caml_runtime_events_resume(void);
 
+/* Returns [1] if runtime events are currently active (started and not paused),
+   [0] otherwise. */
+CAMLextern int caml_runtime_events_are_active(void);
+
 #ifdef CAML_INTERNALS
 
 struct runtime_events_buffer_header {

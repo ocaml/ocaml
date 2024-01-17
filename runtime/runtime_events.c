@@ -447,6 +447,16 @@ CAMLexport void caml_runtime_events_resume(void) {
   }
 }
 
+static inline int ring_is_active(void) {
+    return
+      atomic_load_relaxed(&runtime_events_enabled)
+      && !atomic_load_relaxed(&runtime_events_paused);
+}
+
+CAMLexport int caml_runtime_events_are_active(void) {
+  return (ring_is_active ());
+}
+
 /* Make the three functions above callable from OCaml */
 
 CAMLprim value caml_ml_runtime_events_start(value vunit) {
@@ -460,6 +470,11 @@ CAMLprim value caml_ml_runtime_events_pause(value vunit) {
 CAMLprim value caml_ml_runtime_events_resume(value vunit) {
   caml_runtime_events_resume(); return Val_unit;
 }
+
+CAMLprim value caml_ml_runtime_events_are_active(void) {
+  return Val_bool(caml_runtime_events_are_active());
+}
+
 
 static struct runtime_events_buffer_header *get_ring_buffer_by_domain_id
                                                               (int domain_id) {
@@ -565,12 +580,6 @@ static void write_to_ring(ev_category category, ev_message_type type,
 }
 
 /* Functions for putting runtime data on to the runtime_events */
-
-static inline int ring_is_active(void) {
-    return
-      atomic_load_relaxed(&runtime_events_enabled)
-      && !atomic_load_relaxed(&runtime_events_paused);
-}
 
 void caml_ev_begin(ev_runtime_phase phase) {
   if ( ring_is_active() ) {
