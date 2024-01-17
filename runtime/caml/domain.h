@@ -100,12 +100,16 @@ Caml_inline intnat caml_domain_alone(void)
 int caml_domain_is_in_stw(void);
 #endif
 
+int caml_domain_terminating(caml_domain_state *);
+int caml_domain_is_terminating(void);
+
 int caml_try_run_on_all_domains_with_spin_work(
   int sync,
   void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
   void* data,
   void (*leader_setup)(caml_domain_state*),
-  void (*enter_spin_callback)(caml_domain_state*, void*),
+  /* return nonzero if there may still be useful work to do while spinning */
+  int (*enter_spin_callback)(caml_domain_state*, void*),
   void* enter_spin_data);
 int caml_try_run_on_all_domains(
   void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
@@ -166,16 +170,46 @@ int caml_try_run_on_all_domains(
 */
 
 
-/* barriers */
-typedef uintnat barrier_status;
-void caml_global_barrier(void);
-barrier_status caml_global_barrier_begin(void);
-int caml_global_barrier_is_final(barrier_status);
-void caml_global_barrier_end(barrier_status);
-int caml_global_barrier_num_domains(void);
+/* Barriers */
 
-int caml_domain_terminating(caml_domain_state *);
-int caml_domain_is_terminating(void);
+/* Get the number of parties expected to arrive into the barrier, i.e. the
+   number of domains participating in the STW section. In most cases the barrier
+   is used directly from an STW callback that already has the number of
+   participating domains at hand, which should be used instead. */
+int caml_global_barrier_num_participating(void);
+
+/* Arrive at the barrier and wait for all parties */
+void caml_global_barrier(void);
+/* Arrive at the barrier and wait iff there is more than one party */
+#define Caml_maybe_global_barrier(num_participating)                    \
+  do { if ((num_participating) != 1) caml_global_barrier(); } while(0)
+
+typedef uintnat barrier_status;
+/* Arrive at the barrier and wait, returning zero after, unless we are the final
+   party, in which case the status (which is nonzero) to be passed to
+   [release_as_final()] is returned instead */
+barrier_status caml_global_barrier_wait_unless_final(int num_participating);
+/* Release the barrier with the given status */
+void caml_global_barrier_release_as_final(barrier_status);
+/* Arrive at the global barrier and run the body if we are the final party
+
+   Example usage:
+
+   Caml_global_barrier_if_final(num_participating) {
+     do_something_in_final_domain();
+   }
+ */
+#define Caml_global_barrier_if_final(num_participating)                 \
+  /* fast path when alone */                                            \
+  int CAML_GENSYM(alone) = (num_participating) == 1;                    \
+  barrier_status CAML_GENSYM(b) = 0;                                    \
+  if (CAML_GENSYM(alone) ||                                             \
+      (CAML_GENSYM(b)                                                   \
+       = caml_global_barrier_wait_unless_final(num_participating)))     \
+    for (int CAML_GENSYM(continue) = 1; CAML_GENSYM(continue);          \
+         ((CAML_GENSYM(alone) ? (void)0 :                               \
+           caml_global_barrier_release_as_final(CAML_GENSYM(b))),       \
+          CAML_GENSYM(continue) = 0))
 
 #endif /* CAML_INTERNALS */
 

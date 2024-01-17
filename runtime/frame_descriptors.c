@@ -195,13 +195,9 @@ static void stw_register_frametables(
     int participating_count,
     caml_domain_state** participating)
 {
-  barrier_status b = caml_global_barrier_begin ();
-
-  if (caml_global_barrier_is_final(b)) {
+  Caml_global_barrier_if_final(participating_count) {
     register_frametables_from_stw_single((frametable_array*) frametables);
   }
-
-  caml_global_barrier_end(b);
 }
 
 void caml_register_frametables(void **table, int ntables) {

@@ -116,6 +116,10 @@ OCaml 5.2.0
 
 ### Runtime system:
 
+- #12579: OS-based Synchronisation for Stop-the-World Sections
+  (B. Szilvasy, review by Miod Vallat, Nick Barnes, Olivier Nicole and
+   Gabriel Scherer)
+
 - #12193: Re-introduce GC compaction for shared pools
   Adds a parallel compactor for the shared pools (which contain major heap
   blocks sized less than 128 words). Explicit only for now, on calls to
