@@ -35,7 +35,7 @@
 
 #define LBL(x) .L##x
 #define G(r) r
-#define GREL(r) r@GOTENT
+#define GREL(r) r@GOT
 #define GCALL(r) r@PLT
 #define TEXT_SECTION(name)
 #define FUNCTION(name) \
