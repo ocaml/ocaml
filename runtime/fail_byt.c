@@ -140,6 +140,15 @@ CAMLexport void caml_failwith_value (value msg)
   CAMLnoreturn;
 }
 
+CAMLexport void caml_failwith_format (const char * format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  value msg = caml_alloc_vsprintf(format, args);
+  va_end(args);
+  caml_failwith_value(msg);
+}
+
 Caml_inline value caml_get_invalid_argument_tag (char const *msg)
 {
   check_global_data_param("Invalid_argument", msg);
@@ -157,6 +166,15 @@ CAMLexport void caml_invalid_argument_value (value msg)
   value tag = caml_get_invalid_argument_tag(String_val(msg));
   caml_raise_with_arg(tag, msg);
   CAMLnoreturn;
+}
+
+CAMLexport void caml_invalid_argument_format (const char * format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  value msg = caml_alloc_vsprintf(format, args);
+  va_end(args);
+  caml_invalid_argument_value(msg);
 }
 
 CAMLexport void caml_array_bound_error(void)

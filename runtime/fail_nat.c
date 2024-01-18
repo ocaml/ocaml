@@ -140,6 +140,15 @@ void caml_failwith_value (value msg)
   caml_raise_with_arg((value) caml_exn_Failure, msg);
 }
 
+void caml_failwith_format (const char * format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  value msg = caml_alloc_vsprintf(format, args);
+  va_end(args);
+  caml_failwith_value(msg);
+}
+
 void caml_invalid_argument (char const *msg)
 {
   caml_raise_with_string((value) caml_exn_Invalid_argument, msg);
@@ -148,6 +157,15 @@ void caml_invalid_argument (char const *msg)
 void caml_invalid_argument_value (value msg)
 {
   caml_raise_with_arg((value) caml_exn_Invalid_argument, msg);
+}
+
+void caml_invalid_argument_format (const char * format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  value msg = caml_alloc_vsprintf(format, args);
+  va_end(args);
+  caml_invalid_argument_value(msg);
 }
 
 void caml_raise_out_of_memory(void)
