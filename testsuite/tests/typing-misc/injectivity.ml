@@ -435,3 +435,46 @@ end =
 [%%expect{|
 module rec A : sig type _ t = Foo : 'a -> 'a A.s t type 'a s = T of 'a end
 |}]
+
+(* #12878 *)
+module Priv1 :
+sig
+  type !'a t = private [`T of 'a t]
+  val eql : (int t, string t) eql
+end =
+struct
+  type 'a t = [`T of 'a t]
+  let eql = Refl
+end
+
+let boom_1 = let module U = Uninj (Priv1) in print_endline (coerce (U.uninj Priv1.eql) 0)
+;;
+[%%expect{|
+Line 3, characters 2-35:
+3 |   type !'a t = private [`T of 'a t]
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, expected parameter variances are not satisfied.
+       The 1st type parameter was expected to be injective invariant,
+       but it is invariant.
+|}]
+
+module Priv2 :
+sig
+  type !'a t = private <m:'a t>
+  val eql : (int t, string t) eql
+end =
+struct
+  type 'a t = <m:'a t>
+  let eql = Refl
+end
+
+let boom_2 = let module U = Uninj (Priv2) in print_endline (coerce (U.uninj Priv2.eql) 0)
+;;
+[%%expect{|
+Line 3, characters 2-31:
+3 |   type !'a t = private <m:'a t>
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, expected parameter variances are not satisfied.
+       The 1st type parameter was expected to be injective invariant,
+       but it is invariant.
+|}]
