@@ -1495,9 +1495,6 @@ Some of those changes will benefit all OCaml packages.
 - #11691, #11706: use __asm__ instead of asm for strict ISO C conformance
   (Xavier Leroy, report by Gregg Reynolds , review by Sadiq Jaffer)
 
-- #11764: add prototypes to old-style C function definitions and declarations
-  (Antonin Décimo, review by Xavier Leroy)
-
 - #11693: Remove use of C99 Variable Length Arrays (VLAs) in the runtime.
   (David Allsopp, review by Xavier Leroy, Guillaume Munch-Maccagnoni,
    Stefan Muenzel and Gabriel Scherer)
@@ -1566,11 +1563,6 @@ Some of those changes will benefit all OCaml packages.
 - #10856: Add location, attribute(s) visitors to Tast_mapper/Tast_iterator
   (Yan Dong, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
-- #11763, #11759, #11861: Enable stricter C compilation warnings, use
-  strict prototypes on primitives.
-  (Antonin Décimo, review by Xavier Leroy, David Allsopp and Sébastien
-  Hinderer)
-
 - #11933: Use the correct machtype when reading the code pointer from closures
   (Nathanaëlle Courant, review by Gabriel Scherer and Vincent Laviron)
 
@@ -1607,10 +1599,6 @@ Some of those changes will benefit all OCaml packages.
   lists for simpler printing of manual references
   (Stefan Muenzel, review by Florian Angeletti)
 
-- #12509: Use strict prototypes on primitives when generating a standalone
-  bytecode executable (`ocamlc -custom`).
-  (Antonin Décimo, review by Xavier Leroy)
-
 ### Build system:
 
 - #11844: Reduce verbosity of `make` logs by printing program invocations in
@@ -1618,9 +1606,6 @@ Some of those changes will benefit all OCaml packages.
   full command-lines).
   (Xavier Leroy, Nicolás Ojeda Bär, review by Sébastien Hinderer)
 
-
-- #11590: Allow installing to a destination path containing spaces.
-   (Élie Brami, review by Sébastien Hinderer and David Allsopp)
 
 - #11243, #11248, #11268, #11420, #11675: merge the sub-makefiles into
   the root Makefile.
@@ -1635,11 +1620,6 @@ Some of those changes will benefit all OCaml packages.
   library flags for the Windows ports, allowing Windows OCaml to be configured
   with ZSTD support.
   (David Allsopp, review by Sébastien Hinderer)
-
-- #12372: Pass option -no-execute-only to the linker for OpenBSD >= 7.3
-  so that code sections remain readable, as needed for closure marshaling.
-  (Xavier Leroy and Anil Madhavapeddy, review by Anil Madhavapeddy and
-  Sébastien Hinderer)
 
 ### Bug fixes:
 
@@ -2158,9 +2138,6 @@ OCaml 5.0.0 (15 December 2022)
   (Sébastien Hinderer, review by David Allsopp, Florian Angeletti and
   Xavier Leroy)
 
-- #11184, #11670: Stop calling ranlib on created / installed libraries
-  (Sébastien Hinderer and Xavier Leroy, review by the same)
-
 - #11253: Deprecate `ocaml script` and `ocamlnat` script where `script` has no
   extension and is an implicit basename.
   (David Allsopp, review by Florian Angeletti and Sébastien Hinderer)
@@ -2233,21 +2210,10 @@ OCaml 5.0.0 (15 December 2022)
 - #11294: Switch minimum required autoconf to 2.71.
   (David Allsopp, review by Xavier Leroy)
 
-- #11370, #11373: Don't pass CFLAGS to flexlink during configure.
-  (David Allsopp, report by William Hu, review by Xavier Leroy and
-   Sébastien Hinderer)
-
-- #11487: Thwart FMA test optimization during configure
-  (William Hu, review by David Allsopp and Sébastien Hinderer)
-
 - #11097: Build native-code compilers on NetBSD/aarch64
   (Kate Deplaix, review by Anil Madhavapeddy)
 
 ### Bug fixes:
-
-- #10768, #11340: Fix typechecking regression when combining first class
-  modules and GADTs.
-  (Jacques Garrigue, report by François Thiré, review by Matthew Ryan)
 
 - #10790: don't drop variance and injectivity annotations when pretty printing
   `with` constraints (for example, `with type +!'a t = ...`).
@@ -2289,22 +2255,6 @@ OCaml 5.0.0 (15 December 2022)
   socket and deadlock the parent.
   (Antonin Décimo, review by Xavier Leroy)
 
-- #11194, #11609: Fix inconsistent type variable names in "unbound type var"
-  messages
-  (Ulysse Gérard and Florian Angeletti, review Florian Angeletti and
-   Gabriel Scherer)
-
-- #11204: Fix regression introduced in 4.14.0 that would trigger Warning 17 when
-  calling virtual methods introduced by constraining the self type from within
-  the class definition.
-  (Nicolás Ojeda Bär, review by Leo White)
-
-- #11263, #11267: caml/misc.h: check whether `_MSC_VER` is defined before using
-  it to ensure that the headers can always be used in code which turns on
-  -Wundef (or equivalent).
-  (David Allsopp and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär and
-   Sébastien Hinderer)
-
 - #11289, #11405: fix some leaks on systhread termination
   (Fabrice Buoro, Enguerrand Decorne, Gabriel Scherer,
    review by Xavier Leroy and Florian Angeletti, report by Romain Beauxis)
@@ -2320,6 +2270,91 @@ OCaml 5.0.0 (15 December 2022)
   of both shadowing warnings and the `-bin-annot` compiler flag.
   (Florian Angeletti, report by Christophe Raffalli, review by Gabriel Scherer)
 
+- #11482, #11542: Fix random crash in large closure allocation
+  (Damien Doligez, report by Thierry Martinez and Vincent Laviron, review by
+   Xavier Leroy)
+
+- #11508, #11509: make Bytes.escaped domain-safe
+  (Christiano Haesbaert and Gabriel Scherer,
+   review by Xavier Leroy,
+   report by Jan Midtgaard and Tom Kelly)
+
+- #11576: Fix bug in Bigarray.Genarray.init in the the case of zero-dimensional
+  arrays.
+  (Nicolás Ojeda Bär, Jeremy Yallop, report by Masayuki Takeda, review by Jeremy
+  Yallop and Florian Angeletti)
+
+- #11587: Prevent integer comparison from being used on pointers
+  (Vincent Laviron, review by Gabriel Scherer)
+
+- #11662, #11673: fix a memory leak when using Dynlink,
+  the bug was only present in development version of OCaml 5.
+  (Stephen Dolan, report by Andre Maroneze, review by Gabriel Scherer)
+
+
+OCaml 4.14 maintenance version
+------------------------------
+
+### Runtime system:
+
+- #11764, #12577: Add prototypes to old-style C function definitions
+   and declarations.
+  (Antonin Décimo, review by Xavier Leroy and Nick Barnes)
+
+- #11763, #11759, #11861, #12509, #12577: Use strict prototypes on primitives.
+  (Antonin Décimo, review by Xavier Leroy, David Allsopp, Sébastien
+   Hinderer and Nick Barnes)
+
+### Build system:
+
+- #11590: Allow installing to a destination path containing spaces.
+  (Élie Brami, review by Sébastien Hinderer and David Allsopp)
+
+- #12372: Pass option -no-execute-only to the linker for OpenBSD >= 7.3
+  so that code sections remain readable, as needed for closure marshaling.
+  (Xavier Leroy and Anil Madhavapeddy, review by Anil Madhavapeddy and
+  Sébastien Hinderer)
+
+### Bug fixes:
+
+- #12264, #12289: Fix compact_allocate to avoid a pathological case
+  that causes very slow compaction.
+  (Damien Doligez, report by Arseniy Alekseyev, review by Sadiq Jaffer)
+
+OCaml 4.14.1 (20 December 2022)
+------------------------------
+
+### Compiler user-interface and warnings:
+
+- #11184, #11670: Stop calling ranlib on created / installed libraries
+  (Sébastien Hinderer and Xavier Leroy, review by the same)
+
+### Build system:
+
+- #11370, #11373: Don't pass CFLAGS to flexlink during configure.
+  (David Allsopp, report by William Hu, review by Xavier Leroy and
+   Sébastien Hinderer)
+
+- #11487: Thwart FMA test optimization during configure
+  (William Hu, review by David Allsopp and Sébastien Hinderer)
+
+### Bug fixes:
+
+- #10768, #11340: Fix typechecking regression when combining first class
+  modules and GADTs.
+  (Jacques Garrigue, report by François Thiré, review by Matthew Ryan)
+
+- #11204: Fix regression introduced in 4.14.0 that would trigger Warning 17 when
+  calling virtual methods introduced by constraining the self type from within
+  the class definition.
+  (Nicolás Ojeda Bär, review by Leo White)
+
+- #11263, #11267: caml/{memory,misc}.h: check whether `_MSC_VER` is defined
+  before using it to ensure that the headers can always be used in code which
+  turns on -Wundef (or equivalent).
+  (David Allsopp and Nicolás Ojeda Bär, review by Nicolás Ojeda Bär and
+   Sébastien Hinderer)
+
 - #11392, #11392: assertion failure with -rectypes and external definitions
   (Gabriel Scherer, review by Florian Angeletti, report by Dmitrii Kosarev)
 
@@ -2330,33 +2365,20 @@ OCaml 5.0.0 (15 December 2022)
   mingw-w64 i686 port.
   (David Allsopp, review by Xavier Leroy and Sébastien Hinderer)
 
-- #11482, #11542: Fix random crash in large closure allocation
-  (Damien Doligez, report by Thierry Martinez and Vincent Laviron, review by
-   Xavier Leroy)
-
-- #11508, #11509: make Bytes.escaped domain-safe
-  (Christiano Haesbaert and Gabriel Scherer,
-   review by Xavier Leroy,
-   report by Jan Midtgaard and Tom Kelly)
+- #11489, #11496: More prudent deallocation of alternate signal stack
+  (Xavier Leroy, report by @rajdakin, review by Florian Angeletti)
 
 - #11516, #11524: Fix the `deprecated_mutable` attribute.
   (Chris Casinghino, review by Nicolás Ojeda Bär and Florian Angeletti)
 
-- #11576: Fix bug in Bigarray.Genarray.init in the the case of zero-dimensional
-  arrays.
-  (Nicolás Ojeda Bär, Jeremy Yallop, report by Masayuki Takeda, review by Jeremy
-  Yallop and Florian Angeletti)
-
-- #11587: Prevent integer comparison from being used on pointers
-  (Vincent Laviron, review by Gabriel Scherer)
+- #11194, #11609: Fix inconsistent type variable names in "unbound type var"
+  messages
+  (Ulysse Gérard and Florian Angeletti, review Florian Angeletti and
+   Gabriel Scherer)
 
 - #11622: Prevent stack overflow when printing a constructor or record
   mismatch error involving recursive types.
   (Florian Angeletti, review by Gabriel Scherer)
-
-- #11662, #11673: fix a memory leak when using Dynlink,
-  the bug was only present in development version of OCaml 5.
-  (Stephen Dolan, report by Andre Maroneze, review by Gabriel Scherer)
 
 - #11732: Ensure that types from packed modules are always generalised
   (Stephen Dolan and Leo White, review by Jacques Garrigue)
@@ -2372,6 +2394,15 @@ OCaml 5.0.0 (15 December 2022)
   (this had stopped working in 4.14.0)
   (Gabriel Scherer, review by Jacques Garrigue and Florian Angeletti,
    report by Yaron Minsky)
+
+- #11768, #11788: Fix crash at start-up of bytecode programs in
+  no-naked-pointers mode caused by wrong initialization of caml_global_data
+  (Xavier Leroy, report by Etienne Millon, review by Gabriel Scherer)
+
+- #11803, #11808: on x86, the destination of an integer comparison must be
+  a register, it cannot be a stack slot.
+  (Vincent Laviron, review by Xavier Leroy, report by
+   Emilio Jesús Gallego Arias)
 
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
