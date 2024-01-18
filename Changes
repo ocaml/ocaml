@@ -1959,10 +1959,6 @@ OCaml 5.0.0 (15 December 2022)
   Guillaume Munch-Maccagnoni, Eduardo Rafael, Stephen Dolan and
   Gabriel Scherer)
 
-* #10845 Emit frametable size on amd64 BSD (OpenBSD, FreeBSD, NetBSD) systems
-  (emitted for Linux in #8805)
-  (Hannes Mehnert, review by Nicolás Ojeda Bär)
-
 ### Standard library:
 
 - #10742: Use LXM as the pseudo-random number generator for module Random.
@@ -2322,6 +2318,11 @@ OCaml 4.14 maintenance version
 - #12264, #12289: Fix compact_allocate to avoid a pathological case
   that causes very slow compaction.
   (Damien Doligez, report by Arseniy Alekseyev, review by Sadiq Jaffer)
+
+* #10845 Emit frametable size on amd64 BSD (OpenBSD, FreeBSD, NetBSD) systems
+  (emitted for Linux in #8805)
+  (Hannes Mehnert, review by Nicolás Ojeda Bär)
+
 
 OCaml 4.14.1 (20 December 2022)
 ------------------------------
