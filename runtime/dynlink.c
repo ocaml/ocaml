@@ -175,7 +175,10 @@ void caml_build_primitive_table(char_os * lib_path,
      - directories specified on the command line with the -I option
      - directories specified in the CAML_LD_LIBRARY_PATH
      - directories specified in the executable
-     - directories specified in the file <stdlib>/ld.conf */
+     - directories specified in the file <stdlib>/ld.conf
+
+     caml_shared_libs_path and caml_prim_name_table are not freed afterwards:
+     they may later be used by caml_dynlink_get_bytecode_sections. */
   caml_decompose_path(&caml_shared_libs_path,
                       caml_secure_getenv(T("CAML_LD_LIBRARY_PATH")));
   if (lib_path != NULL)
@@ -220,30 +223,16 @@ void caml_free_shared_libs(void)
     caml_dlclose(shared_libs.contents[--shared_libs.size]);
 }
 
-static value list_of_ext_table(struct ext_table* tbl)
-{
-  CAMLparam0();
-  CAMLlocal3(list, tmp, str);
-  int i;
-  for (i = tbl->size - 1; i >= 0; i--) {
-    str = caml_copy_string(tbl->contents[i]);
-    tmp = caml_alloc_small(2, 0);
-    Field(tmp, 0) = str;
-    Field(tmp, 1) = list;
-    list = tmp;
-  }
-  CAMLreturn (list);
-}
-
 CAMLprim value caml_dynlink_get_bytecode_sections(value unit)
 {
   CAMLparam1(unit);
-  CAMLlocal2(ret, tbl);
+  CAMLlocal4(ret, tbl, list, str);
+  int i, j;
   ret = caml_alloc(4, 0);
 
   if (caml_params->section_table != NULL) {
+    /* cf. Symtable.bytecode_sections */
     const char* sec_names[] = {"SYMB", "CRCS"};
-    int i, j;
     tbl = caml_input_value_from_block(caml_params->section_table,
                                       caml_params->section_table_size);
     for (i = 0; i < sizeof(sec_names)/sizeof(sec_names[0]); i++) {
@@ -291,10 +280,19 @@ CAMLprim value caml_dynlink_get_bytecode_sections(value unit)
     close(fd);
   }
 
-  Store_field(ret, 2,
-    list_of_ext_table(&caml_prim_name_table));
-  Store_field(ret, 3,
-    list_of_ext_table(&caml_shared_libs_path));
+  list = Val_emptylist;
+  for (i = caml_prim_name_table.size - 1; i >= 0; i--) {
+    str = caml_copy_string(caml_prim_name_table.contents[i]);
+    list = caml_alloc_2(Tag_cons, str, list);
+  }
+  Store_field(ret, 2, list);
+
+  list = Val_emptylist;
+  for (i = caml_shared_libs_path.size - 1; i >= 0; i--) {
+    str = caml_copy_string_of_os(caml_shared_libs_path.contents[i]);
+    list = caml_alloc_2(Tag_cons, str, list);
+  }
+  Store_field(ret, 3, list);
 
   CAMLreturn (ret);
 }
