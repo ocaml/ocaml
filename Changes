@@ -1,8 +1,3 @@
-* #10845 Emit frametable size on amd64 BSD (OpenBSD, FreeBSD, NetBSD) systems
-  (emitted for Linux in #8805)
-  (Hannes Mehnert, review by Nicolás Ojeda Bär)
-
-
 OCaml 4.14 maintenance version
 
 ### Runtime system:
@@ -42,6 +37,11 @@ OCaml 4.14 maintenance version
 
 - #12636, #12646: More prudent reinitialization of I/O mutexes after a fork()
   (Xavier Leroy, report by Zach Baylin, review by Enguerrand Decorne)
+
+* #10845 Emit frametable size on amd64 BSD (OpenBSD, FreeBSD, NetBSD) systems
+  (emitted for Linux in #8805)
+  (Hannes Mehnert, review by Nicolás Ojeda Bär)
+
 
 OCaml 4.14.1 (20 December 2022)
 ------------------------------
