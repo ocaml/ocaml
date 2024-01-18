@@ -638,6 +638,10 @@ OCaml 5.2.0
   (Ulysse Gérard, Nathanaëlle Courant, suggestions by Gabriel Scherer and Thomas
   Refis, review by Florian Angeletti, Gabriel Scherer and Thomas Refis)
 
+- #12914: Slightly change the s390x assembly dialect in order to build with
+  Clang's integrated assembler.
+  (Miod Vallat, review by Gabriel Scherer)
+
 ### Build system:
 
 - #12198, #12321, #12586, #12616, #12706: continue the merge of the
