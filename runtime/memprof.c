@@ -15,7 +15,10 @@
 
 #define CAML_INTERNALS
 
+#include <math.h>
 #include <stdbool.h>
+#include "caml/alloc.h"
+#include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/memprof.h"
 #include "caml/mlvalues.h"
@@ -43,23 +46,66 @@ struct memprof_thread_s {
   memprof_thread_t next;
 };
 
-/* A memprof configuration is held in an object on the Caml
- * heap. These are getter macros for each field. */
+/* A memprof configuration is held in an object on the Caml heap, of
+ * type Gc.Memprof.t. Here we define getter macros for each field, and
+ * a setter macro for the status field (which is updated). */
 
-#define Stopped(config)          Bool_val(Field(config, 0))
-#define Sampling(config)         ((config != Val_unit) && !Stopped(config))
-#define Lambda(config)           Double_val(Field(config, 1))
-#define One_log1m_lambda(config) Double_val(Field(config, 2))
-#define Callstack_size(config)   Int_val(Field(config, 3)
-#define Alloc_minor(config)      Field(config, 4)
-#define Alloc_major(config)      Field(config, 5)
-#define Promote(config)          Field(config, 6)
-#define Dealloc_minor(config)    Field(config, 7)
-#define Dealloc_major(config)    Field(config, 8)
+#define CONFIG_FIELDS 9
 
-/* The 'stopped' field is the only one we ever update. */
+#define CONFIG_FIELD_STATUS        0
+#define CONFIG_FIELD_LAMBDA        1
+#define CONFIG_FIELD_1LOG1ML       2
+#define CONFIG_FIELD_STACK_FRAMES  3
+#define CONFIG_FIELD_ALLOC_MINOR   4
+#define CONFIG_FIELD_ALLOC_MAJOR   5
+#define CONFIG_FIELD_PROMOTE       6
+#define CONFIG_FIELD_DEALLOC_MINOR 7
+#define CONFIG_FIELD_DEALLOC_MAJOR 8
 
-#define Set_stopped(config, flag) (Field(config, 0) = Val_bool(flag))
+#define CONFIG_FIELD_FIRST_CALLBACK CONFIG_FIELD_ALLOC_MINOR
+#define CONFIG_FIELD_LAST_CALLBACK CONFIG_FIELD_DEALLOC_MAJOR
+
+#define CONFIG_STATUS_SAMPLING 0
+#define CONFIG_STATUS_STOPPED 1
+#define CONFIG_STATUS_DISCARDED 2
+
+#define CONFIG_NONE Val_unit
+
+#define Status(config)          Int_val(Field(config, CONFIG_FIELD_STATUS))
+#define Sampling(config)        ((config != CONFIG_NONE) && \
+                                 (Status(config) == CONFIG_STATUS_SAMPLING))
+
+/* The 'status' field is the only one we ever update. */
+
+#define Set_status(config, stat) \
+  Store_field(config, CONFIG_FIELD_STATUS, Val_int(stat))
+
+/* lambda: the fraction of allocated words to sample.  0 <= lambda <= 1 */
+#define Lambda(config) \
+  Double_val(Field(config, CONFIG_FIELD_LAMBDA))
+
+/* 1/ln(1-lambda), pre-computed for use in the geometric RNG */
+#define One_log1m_lambda(config) \
+  Double_val(Field(config, CONFIG_FIELD_1LOG1ML))
+
+/* If lambda is zero or very small, computing one_log1m_lambda
+ * underflows.  It should always be treated as negative infinity in
+ * that case, (effectively turning sampling off). */
+#define MIN_ONE_LOG1M_LAMBDA (-INFINITY)
+
+#define Min_lambda(config) \
+  (One_log1m_lambda(config) == MIN_ONE_LOG1M_LAMBDA)
+
+/* The number of stack frames to record for each allocation site */
+#define Callstack_size(config) \
+  Int_val(Field(config, CONFIG_FIELD_STACK_FRAMES))
+
+/* callbacks */
+#define Alloc_minor(config)   Field(config, CONFIG_FIELD_ALLOC_MINOR)
+#define Alloc_major(config)   Field(config, CONFIG_FIELD_ALLOC_MAJOR)
+#define Promote(config)       Field(config, CONFIG_FIELD_PROMOTE)
+#define Dealloc_minor(config) Field(config, CONFIG_FIELD_DEALLOC_MINOR)
+#define Dealloc_major(config) Field(config, CONFIG_FIELD_DEALLOC_MAJOR)
 
 /* Per-domain memprof state */
 
@@ -76,11 +122,25 @@ struct memprof_domain_s {
      site of caml_memprof_leave_thread() in st_stubs.c. */
   memprof_thread_t current;
 
-  /* TODO: More fields to add here */
-
   /* The current profiling configuration for this domain. */
   value config;
+
+  /* TODO: More fields to add here */
 };
+
+/* Return configuration for a domain. If it's been discarded (e.g. by
+   another domain) then reset it to CONFIG_NONE and return that.
+*/
+
+static value domain_config(memprof_domain_t domain)
+{
+  value config = domain->config;
+  if ((config != CONFIG_NONE) &&
+      (Status(config) == CONFIG_STATUS_DISCARDED)) {
+    config = domain->config = CONFIG_NONE;
+  }
+  return config;
+}
 
 /**** Create and destroy thread state structures ****/
 
@@ -144,7 +204,7 @@ static memprof_domain_t domain_create(caml_domain_state *caml_state)
   domain->caml_state = caml_state;
   domain->threads = NULL;
   domain->current = NULL;
-  domain->config = Val_unit;
+  domain->config = CONFIG_NONE;
 
   /* create initial thread for domain */
   memprof_thread_t thread = thread_create(domain);
@@ -166,6 +226,9 @@ void caml_memprof_scan_roots(scanning_action f,
                              bool weak,
                              bool global)
 {
+  memprof_domain_t domain = state->memprof;
+
+  f(fdata, domain->config, &domain->config);
 }
 
 void caml_memprof_after_minor_gc(caml_domain_state *state, bool global)
@@ -240,8 +303,7 @@ Caml_inline bool sampling(memprof_domain_t domain)
   memprof_thread_t thread = domain->current;
 
   if (thread && !thread->suspended) {
-    value config = domain->config;
-    return Sampling(config);
+    return Sampling(domain_config(domain));
   }
   return false;
 }
@@ -290,16 +352,18 @@ void caml_memprof_sample_young(uintnat wosize, int from_caml,
 
 CAMLexport memprof_thread_t caml_memprof_new_thread(caml_domain_state *state)
 {
+  CAMLassert(state->memprof);
   return thread_create(state->memprof);
 }
 
 CAMLexport memprof_thread_t caml_memprof_main_thread(caml_domain_state *state)
 {
   memprof_domain_t domain = state->memprof;
+  CAMLassert(domain);
   memprof_thread_t thread = domain->threads;
+  CAMLassert(thread);
 
   /* There should currently be just one thread in this domain */
-  CAMLassert(thread);
   CAMLassert(thread->next == NULL);
   return thread;
 }
@@ -311,25 +375,105 @@ CAMLexport void caml_memprof_delete_thread(memprof_thread_t thread)
 
 CAMLexport void caml_memprof_enter_thread(memprof_thread_t thread)
 {
+  CAMLassert(thread);
   thread->domain->current = thread;
   update_suspended(thread->domain, thread->suspended);
 }
 
 /**** Interface to OCaml ****/
 
-#include "caml/fail.h"
-
-CAMLprim value caml_memprof_start(value lv, value szv, value tracker_param)
+CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
 {
-  caml_failwith("Gc.Memprof.start: not implemented in multicore");
+  CAMLparam3(lv, szv, tracker);
+  CAMLlocal1(one_log1m_lambda_v);
+
+  double lambda = Double_val(lv);
+  intnat sz = Long_val(szv);
+
+  /* Checks that [lambda] is within range (and not NaN). */
+  if (sz < 0 || !(lambda >= 0.0 && lambda <= 1.0))
+    caml_invalid_argument("Gc.Memprof.start");
+
+  memprof_domain_t domain = Caml_state->memprof;
+  CAMLassert(domain);
+  CAMLassert(domain->current);
+
+  if (Sampling(domain_config(domain))) {
+    caml_failwith("Gc.Memprof.start: already started.");
+  }
+
+  double one_log1m_lambda = lambda == 1.0 ? 0.0 : 1.0/caml_log1p(-lambda);
+  /* Buggy implementations of caml_log1p could produce a
+   * one_log1m_lambda which is positive infinity or NaN, which would
+   * cause chaos in the RNG, so we check against this and set
+   * one_log1m_lambda to negative infinity (which we can test for). We
+   * preserve the user's value of Lambda for inspection or
+   * debugging. */
+  if (!(one_log1m_lambda <= 0.0)) { /* catches NaN, +Inf, +ve */
+    one_log1m_lambda = MIN_ONE_LOG1M_LAMBDA; /* negative infinity */
+  }
+
+  one_log1m_lambda_v = caml_copy_double(one_log1m_lambda);
+
+  value config = caml_alloc_shr(CONFIG_FIELDS, 0);
+  caml_initialize(&Field(config, CONFIG_FIELD_STATUS),
+                  Val_int(CONFIG_STATUS_SAMPLING));
+  caml_initialize(&Field(config, CONFIG_FIELD_LAMBDA), lv);
+  caml_initialize(&Field(config, CONFIG_FIELD_1LOG1ML), one_log1m_lambda_v);
+  caml_initialize(&Field(config, CONFIG_FIELD_STACK_FRAMES), szv);
+  for (int i = CONFIG_FIELD_FIRST_CALLBACK;
+       i <= CONFIG_FIELD_LAST_CALLBACK; ++i) {
+    caml_initialize(&Field(config, i), Field(tracker,
+                                             i - CONFIG_FIELD_FIRST_CALLBACK));
+  }
+
+  domain->config = config;
+
+  caml_memprof_renew_minor_sample(Caml_state);
+
+  CAMLreturn(config);
 }
 
 CAMLprim value caml_memprof_stop(value unit)
 {
-  caml_failwith("Gc.Memprof.stop: not implemented in multicore");
+  memprof_domain_t domain = Caml_state->memprof;
+  CAMLassert(domain);
+  CAMLassert(domain->current);
+  value config = domain_config(domain);
+
+  if (config == CONFIG_NONE || Status(config) != CONFIG_STATUS_SAMPLING) {
+    caml_failwith("Gc.Memprof.stop: no profile running.");
+  }
+  Set_status(config, CONFIG_STATUS_STOPPED);
+
+  caml_memprof_renew_minor_sample(Caml_state);
+
+  return Val_unit;
 }
 
-CAMLprim value caml_memprof_discard(value profile)
+CAMLprim value caml_memprof_discard(value config)
 {
-  caml_failwith("Gc.Memprof.discard: not implemented in multicore");
+  uintnat status = Status(config);
+  CAMLassert((status == CONFIG_STATUS_STOPPED) ||
+             (status == CONFIG_STATUS_SAMPLING) ||
+             (status == CONFIG_STATUS_DISCARDED));
+
+  switch (status) {
+  case CONFIG_STATUS_STOPPED: /* correct case */
+    break;
+  case CONFIG_STATUS_SAMPLING:
+    caml_failwith("Gc.Memprof.discard: profile not stopped.");
+  case CONFIG_STATUS_DISCARDED:
+    caml_failwith("Gc.Memprof.discard: profile already discarded.");
+  }
+
+  Set_status(config, CONFIG_STATUS_DISCARDED);
+
+  /* The config pointer from the domain state is cleared lazily (see
+   * domain_config()). However, in the common case, we are discarding
+   * the profile of the current domain, so let's clear that pointer
+   * now. */
+  (void)domain_config(Caml_state->memprof);
+
+  return Val_unit;
 }
