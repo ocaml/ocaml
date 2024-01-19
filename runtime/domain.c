@@ -620,6 +620,8 @@ static void domain_create(uintnat initial_minor_heap_wsize,
   atomic_store_explicit(&s->interrupt_word, &domain_state->young_limit,
                         memory_order_release);
 
+  domain_state->id = d->id;
+
   /* Tell memprof system about the new domain before either (a) new
    * domain can allocate anything or (b) parent domain can go away. */
   caml_memprof_new_domain(parent, domain_state);
@@ -627,7 +629,6 @@ static void domain_create(uintnat initial_minor_heap_wsize,
     goto init_memprof_failure;
   }
 
-  domain_state->id = d->id;
   CAMLassert(!s->interrupt_pending);
 
   domain_state->extra_heap_resources = 0.0;
