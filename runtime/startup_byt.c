@@ -655,7 +655,7 @@ CAMLexport value caml_startup_code_exn(
   caml_load_main_debug_info();
   /* ensure all globals are in major heap */
   caml_minor_collection();
-  /* Record the sections (for caml_get_section_table in meta.c) */
+  /* Record the sections (for caml_dynlink_get_bytecode_sections) */
   caml_init_section_table(section_table, section_table_size);
   /* Execute the program */
   caml_debugger(PROGRAM_START, Val_unit);

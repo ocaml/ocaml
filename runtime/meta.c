@@ -45,13 +45,6 @@ CAMLprim value caml_get_global_data(value unit)
   return caml_global_data;
 }
 
-CAMLprim value caml_get_section_table(value unit)
-{
-  if (caml_params->section_table == NULL) caml_raise_not_found();
-  return caml_input_value_from_block(caml_params->section_table,
-                                     caml_params->section_table_size);
-}
-
 struct bytecode {
   code_t prog;
   asize_t len;
@@ -213,12 +206,6 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
 value caml_get_global_data(value unit)
 {
   caml_invalid_argument("Meta.get_global_data");
-  return Val_unit; /* not reached */
-}
-
-value caml_get_section_table(value unit)
-{
-  caml_invalid_argument("Meta.get_section_table");
   return Val_unit; /* not reached */
 }
 
