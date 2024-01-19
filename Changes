@@ -29,6 +29,10 @@ _______________
   (Kate Deplaix and Oscar Butler-Aldridge review by Nicolás Ojeda Bär,
    Craig Ferguson and Gabriel Scherer)
 
+- #11911, #12923: Multicore statistical memory profiling (Nick Barnes,
+  review by Stephen Dolan, Gabriel Scherer, Jacques-Henri Jourdan,
+  Guillaume Munch-Maccagnoni).
+
 ### Other libraries:
 
 ### Tools:
@@ -282,8 +286,9 @@ OCaml 5.2.0
    review by Damien Doligez, Sébastien Hinderer, Jacques-Henri Jourdan, Luc
    Maranget, Guillaume Munch-Maccagnoni, Gabriel Scherer)
 
-- #11911, #12381: Restore statmemprof functionality in part
-   (API changes in Gc.Memprof). (Nick Barnes)
+- #11911, #12381: Restore statmemprof functionality in part (API
+   changes in Gc.Memprof). (Nick Barnes, review by Jacques-Henri
+   Jourdan and Guillaume Munch-Maccagnoni).
 
 - #12430: Simplify dynamic bytecode loading in Meta.reify_bytecode
   (Stephen Dolan, review by Sébastien Hinderer, Vincent Laviron and Xavier
