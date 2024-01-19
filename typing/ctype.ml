@@ -1945,7 +1945,8 @@ let rec unify_univar t1 t2 = function
       | _ ->
           raise Cannot_unify_universal_variables
       end
-  | [] -> raise Cannot_unify_universal_variables
+  | [] ->
+     Misc.fatal_error "Ctype.unify_univar: univar not in scope"
 
 (* The same as [unify_univar], but raises the appropriate exception instead of
    [Cannot_unify_universal_variables] *)
@@ -2059,8 +2060,16 @@ let univars_escape env univar_pairs vl ty =
   occur ty
   end
 
+let univar_pairs = ref []
+
+let with_univar_pairs pairs f =
+  let old = !univar_pairs in
+  univar_pairs := pairs;
+  Misc.try_finally f
+    ~always:(fun () -> univar_pairs := old)
+
 (* Wrapper checking that no variable escapes and updating univar_pairs *)
-let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
+let enter_poly env t1 tl1 t2 tl2 f =
   let old_univars = !univar_pairs in
   let known_univars =
     List.fold_left (fun s (cl,_) -> add_univars s cl)
@@ -2072,16 +2081,14 @@ let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
     univars_escape env old_univars tl2 (newty(Tpoly(t1,tl1)));
   let cl1 = List.map (fun t -> t, ref None) tl1
   and cl2 = List.map (fun t -> t, ref None) tl2 in
-  univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
-  Misc.try_finally (fun () -> f t1 t2)
-    ~always:(fun () -> univar_pairs := old_univars)
+  with_univar_pairs
+    ((cl1,cl2) :: (cl2,cl1) :: old_univars)
+    (fun () -> f t1 t2)
 
-let enter_poly_for tr_exn env univar_pairs t1 tl1 t2 tl2 f =
+let enter_poly_for tr_exn env t1 tl1 t2 tl2 f =
   try
-    enter_poly env univar_pairs t1 tl1 t2 tl2 f
+    enter_poly env t1 tl1 t2 tl2 f
   with Escape e -> raise_for tr_exn (Escape e)
-
-let univar_pairs = ref []
 
 (**** Instantiate a generic type into a poly type ***)
 
@@ -2344,7 +2351,7 @@ let rec mcomp type_pairs env t1 t2 =
             mcomp type_pairs env t1 t2
         | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
             (try
-               enter_poly env univar_pairs
+               enter_poly env
                  t1 tl1 t2 tl2 (mcomp type_pairs env)
              with Escape _ -> raise Incompatible)
         | (Tunivar _, Tunivar _) ->
@@ -2905,7 +2912,7 @@ and unify3 uenv t1 t1' t2 t2' =
       | (Tpoly (t1, []), Tpoly (t2, [])) ->
           unify uenv t1 t2
       | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-          enter_poly_for Unify (get_env uenv) univar_pairs t1 tl1 t2 tl2
+          enter_poly_for Unify (get_env uenv) t1 tl1 t2 tl2
             (unify uenv)
       | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
           begin match
@@ -3231,7 +3238,6 @@ let unify uenv ty1 ty2 =
       raise (Unify (expand_to_unification_error (get_env uenv) trace))
 
 let unify_gadt (penv : Pattern_env.t) ty1 ty2 =
-  univar_pairs := [];
   let equated_types = TypePairs.create 0 in
   let equations_generation = Allowed { equated_types } in
   let uenv = Pattern
@@ -3240,8 +3246,9 @@ let unify_gadt (penv : Pattern_env.t) ty1 ty2 =
         assume_injective = true;
         unify_eq_set = TypePairs.create 11; }
   in
-  unify uenv ty1 ty2;
-  equated_types
+  with_univar_pairs [] (fun () ->
+    unify uenv ty1 ty2;
+    equated_types)
 
 let unify_var uenv t1 t2 =
   if eq_type t1 t2 then () else
@@ -3273,8 +3280,8 @@ let unify_var env ty1 ty2 =
   unify_var (Expression {env; in_subst = false}) ty1 ty2
 
 let unify_pairs env ty1 ty2 pairs =
-  univar_pairs := pairs;
-  unify (Expression {env; in_subst = false}) ty1 ty2
+  with_univar_pairs pairs (fun () ->
+    unify (Expression {env; in_subst = false}) ty1 ty2)
 
 let unify env ty1 ty2 =
   unify_pairs env ty1 ty2 []
@@ -3787,7 +3794,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           | (Tpoly (t1, []), Tpoly (t2, [])) ->
               moregen inst_nongen type_pairs env t1 t2
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-              enter_poly_for Moregen env univar_pairs t1 tl1 t2 tl2
+              enter_poly_for Moregen env t1 tl1 t2 tl2
                 (moregen inst_nongen type_pairs env)
           | (Tunivar _, Tunivar _) ->
               unify_univar_for Moregen t1' t2' !univar_pairs
@@ -3950,8 +3957,8 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
 
 (* Must empty univar_pairs first *)
 let moregen inst_nongen type_pairs env patt subj =
-  univar_pairs := [];
-  moregen inst_nongen type_pairs env patt subj
+  with_univar_pairs [] (fun () ->
+    moregen inst_nongen type_pairs env patt subj)
 
 (*
    Non-generic variable can be instantiated only if [inst_nongen] is
@@ -4141,7 +4148,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           | (Tpoly (t1, []), Tpoly (t2, [])) ->
               eqtype rename type_pairs subst env t1 t2
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-              enter_poly_for Equality env univar_pairs t1 tl1 t2 tl2
+              enter_poly_for Equality env t1 tl1 t2 tl2
                 (eqtype rename type_pairs subst env)
           | (Tunivar _, Tunivar _) ->
               unify_univar_for Equality t1' t2' !univar_pairs
@@ -4277,11 +4284,11 @@ and eqtype_row rename type_pairs subst env row1 row2 =
 
 (* Must empty univar_pairs first *)
 let eqtype_list rename type_pairs subst env tl1 tl2 =
-  univar_pairs := [];
-  let snap = Btype.snapshot () in
-  Misc.try_finally
-    ~always:(fun () -> backtrack snap)
-    (fun () -> eqtype_list rename type_pairs subst env tl1 tl2)
+  with_univar_pairs [] (fun () ->
+    let snap = Btype.snapshot () in
+    Misc.try_finally
+      ~always:(fun () -> backtrack snap)
+      (fun () -> eqtype_list rename type_pairs subst env tl1 tl2))
 
 let eqtype rename type_pairs subst env t1 t2 =
   eqtype_list rename type_pairs subst env [t1] [t2]
@@ -4916,7 +4923,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
         subtype_rec env trace u1' u2 cstrs
     | (Tpoly (u1, tl1), Tpoly (u2,tl2)) ->
         begin try
-          enter_poly env univar_pairs u1 tl1 u2 tl2
+          enter_poly env u1 tl1 u2 tl2
             (fun t1 t2 -> subtype_rec env trace t1 t2 cstrs)
         with Escape _ ->
           (trace, t1, t2, !univar_pairs)::cstrs
@@ -5062,19 +5069,19 @@ and subtype_row env trace row1 row2 cstrs =
 
 let subtype env ty1 ty2 =
   TypePairs.clear subtypes;
-  univar_pairs := [];
-  (* Build constraint set. *)
-  let cstrs =
-    subtype_rec env [Subtype.Diff {got = ty1; expected = ty2}] ty1 ty2 []
-  in
-  TypePairs.clear subtypes;
-  (* Enforce constraints. *)
-  function () ->
-    List.iter
-      (function (trace0, t1, t2, pairs) ->
-         try unify_pairs env t1 t2 pairs with Unify {trace} ->
-           subtype_error ~env ~trace:trace0 ~unification_trace:(List.tl trace))
-      (List.rev cstrs)
+  with_univar_pairs [] (fun () ->
+    (* Build constraint set. *)
+    let cstrs =
+      subtype_rec env [Subtype.Diff {got = ty1; expected = ty2}] ty1 ty2 []
+    in
+    TypePairs.clear subtypes;
+    (* Enforce constraints. *)
+    function () ->
+      List.iter
+        (function (trace0, t1, t2, pairs) ->
+           try unify_pairs env t1 t2 pairs with Unify {trace} ->
+             subtype_error ~env ~trace:trace0 ~unification_trace:(List.tl trace))
+        (List.rev cstrs))
 
                               (*******************)
                               (*  Miscellaneous  *)
