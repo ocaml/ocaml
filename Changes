@@ -2307,6 +2307,10 @@ OCaml 4.14 maintenance version
   (Xavier Leroy and Anil Madhavapeddy, review by Anil Madhavapeddy and
   Sébastien Hinderer)
 
+- #12903: Disable control flow integrity on OpenBSD >= 7.4 to avoid
+  illegal instruction errors on certain CPUs.
+  (Michael Hendricks, review by Miod Vallat)
+
 ### Bug fixes:
 
 - #12878: fix incorrect treatment of injectivity for private recursive types.
