@@ -23,7 +23,7 @@
 #define ALLOC_PTR %r11
 #define TRAP_PTR %r13
 #define TMP %r1
-#define TMP2 %r12
+#define TMP2 %r12       /* callee-saved register, use with caution */
 #define TMP3 %r0
 /* Don't use TMP3 for indexed access in form of offset(TMP3) */
 
@@ -169,7 +169,6 @@ caml_system__code_begin:
 /* Stack switching operations */
 /******************************************************************************/
 
-/* Switch from OCaml to C stack. Clobbers %r1, %r12. */
 #ifdef ASM_CFI_SUPPORTED
 #define SWITCH_OCAML_TO_C_CFI                                   \
         CFI_REMEMBER_STATE;                                     \
@@ -181,6 +180,7 @@ caml_system__code_begin:
 #define SWITCH_OCAML_TO_C_CFI
 #endif
 
+/* Switch from OCaml to C stack. Clobbers %r1, %r12. */
 #define SWITCH_OCAML_TO_C                                  \
     /* Fill in Caml_state->current_stack->sp */            \
         lg      TMP,  Caml_state(current_stack);           \
@@ -693,10 +693,10 @@ CFI_STARTPROC
     /* Initial shuffling of arguments */
     /* (%r2 = Caml_state, %r3 = closure, 0(%r4) = arg1, 8(%r4) = arg2) */
         lgr     TMP3, C_ARG_1       /* Caml_state */
-        lgr     TMP2, C_ARG_2
+        lgr     TMP, C_ARG_2
         lg      C_ARG_1, 0(C_ARG_3) /* first argument */
         lg      C_ARG_2, 8(C_ARG_3) /* second argument */
-        lgr     C_ARG_3, TMP2       /* closure */
+        lgr     C_ARG_3, TMP        /* closure */
         LEA_VAR(caml_apply2, TMP)   /* code pointer */
         brcl    15, LBL(caml_start_program)
 CFI_ENDPROC
