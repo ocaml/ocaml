@@ -14884,6 +14884,17 @@ case $host in #(
      ;;
 esac
 
+# Disable control flow integrity
+
+case $host in #(
+  *-*-openbsd7.[4-9]|*-*-openbsd[89].*) :
+    oc_ldflags="$oc_ldflags -Wl,-z,nobtcfi"
+     natdynlinkopts="$natdynlinkopts -Wl,-z,nobtcfi" ;; #(
+  *) :
+     ;;
+esac
+
+
 # Configure native dynlink
 
 natdynlink=false
