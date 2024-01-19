@@ -121,7 +121,8 @@ OCaml 5.2.0
   is given. This allows to work around problems with GADTs in as-patterns.
   (Jacques Garrigue, report by Leo White, review by Gabriel Scherer)
 
-- #11891, #12507: Allow to name closed types in constructor type annotations.
+- #11891, #12507: Allow to name new locally abstract types in constructor type
+  annotations.
   (Jacques Garrigue, report and review by Gabriel Scherer and Florian Angeletti)
 
 ### Runtime system:
