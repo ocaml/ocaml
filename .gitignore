@@ -210,6 +210,7 @@ META
 /opt/**
 
 /otherlibs/*/.dep
+/otherlibs/dynlink/dynlink_config.ml
 /otherlibs/dynlink/dynlink_platform_intf.mli
 /otherlibs/dynlink/byte/dynlink.mli
 /otherlibs/dynlink/native/dynlink.mli

@@ -51,6 +51,12 @@ sed -e s/'...|magic}'/"$new_num|magic}"/ \
   utils/config.common.ml > utils/config.common.ml.tmp
 mv utils/config.common.ml.tmp utils/config.common.ml
 
+# Bump magic numbers in otherlibs/dynlink/dynlink_config.ml
+
+sed -e s/'...|magic}'/"$new_num|magic}"/ \
+  otherlibs/dynlink/dynlink_config.ml > otherlibs/dynlink/dynlink_config.ml.tmp
+mv otherlibs/dynlink/dynlink_config.ml.tmp otherlibs/dynlink/dynlink_config.ml
+
 # Bump magic numbers in build-aux/ocaml_version.m4
 
 sed -e s/'m4_define(\[MAGIC_NUMBER__VERSION\], \[...\])'/"m4_define([MAGIC_NUMBER__VERSION], [$new_num])"/ \
