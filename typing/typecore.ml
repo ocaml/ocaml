@@ -757,16 +757,17 @@ let solve_constructor_annotation
   let expansion_scope = penv.equations_scope in
   (* Introduce fresh type names that expand to type variables.
      They should eventually be bound to ground types. *)
-  let ids =
+  let ids_decls =
     List.map
       (fun name ->
+        let tv = newvar () in
         let decl =
           new_local_type ~loc:name.loc Definition
-            ~manifest_and_scope:(newvar (),Ident.lowest_scope) in
+            ~manifest_and_scope:(tv, Ident.lowest_scope) in
         let (id, new_env) =
           Env.enter_type ~scope:expansion_scope name.txt decl !!penv in
         Pattern_env.set_env penv new_env;
-        {name with txt = id})
+        ({name with txt = id}, (decl, tv)))
       name_list
   in
   (* Translate the type annotation using these type names. *)
@@ -790,23 +791,17 @@ let solve_constructor_annotation
           Ttuple tyl -> tyl
         | _ -> assert false
   in
-  if ids <> [] then ignore begin
-    let get_decl_manifest id env =
-      let decl =
-        try Env.find_type (Path.Pident id) env with Not_found -> assert false in
-      match decl.type_manifest with
-        None -> assert false
-      | Some ty -> (decl, ty)
-    in
-    let ids = List.map (fun x -> x.txt) ids in
+  if ids_decls <> [] then begin
+    let ids_decls = List.map (fun (x,dm) -> (x.txt,dm)) ids_decls in
+    let ids = List.map fst ids_decls in
     let rem =
       (* First process the existentials introduced by this constructor.
          Just need to make their definitions abstract. *)
       List.fold_left
         (fun rem tv ->
           match get_desc tv with
-            Tconstr(Path.Pident id, [], _) when List.mem id rem ->
-              let decl, tv' = get_decl_manifest id !!penv in
+            Tconstr(Path.Pident id, [], _) when List.mem_assoc id rem ->
+              let decl, tv' = List.assoc id ids_decls in
               let env =
                 Env.add_type ~check:false id
                   {decl with type_manifest = None} !!penv
@@ -816,17 +811,16 @@ let solve_constructor_annotation
               Btype.cleanup_abbrev ();
               (* Since id is now abstract, this does not create a cycle *)
               unify_pat_types cty.ctyp_loc env tv tv';
-              list_remove id rem
+              List.remove_assoc id rem
           | _ ->
               raise (Error (cty.ctyp_loc, !!penv,
                             Unbound_existential (ids, ty))))
-        ids ty_ex
+        ids_decls ty_ex
     in
     (* The other type names should be bound to newly introduced existentials. *)
     let bound_ids = ref ids in
     List.iter
-      (fun id ->
-        let decl, tv' = get_decl_manifest id !!penv in
+      (fun (id, (decl, tv')) ->
         let tv' = expand_head !!penv tv' in
         begin match get_desc tv' with
         | Tconstr (Path.Pident id', [], _) ->
@@ -852,7 +846,7 @@ let solve_constructor_annotation
       rem;
     if rem <> [] then Btype.cleanup_abbrev ();
   end;
-  ty_args, Some (ids, cty)
+  ty_args, Some (List.map fst ids_decls, cty)
 
 let solve_Ppat_construct ~refine tps penv loc constr no_existentials
         existential_styp expected_ty =

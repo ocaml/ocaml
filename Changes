@@ -122,7 +122,7 @@ OCaml 5.2.0
   (Jacques Garrigue, report by Leo White, review by Gabriel Scherer)
 
 - #11891, #12507: Allow to name closed types in constructor type annotations.
-  (Jacques Garrigue, report and review by Gabriel Scherer)
+  (Jacques Garrigue, report and review by Gabriel Scherer and Florian Angeletti)
 
 ### Runtime system:
 
