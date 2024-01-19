@@ -111,6 +111,9 @@ let stamp = function
   | Scoped { stamp; _ } -> stamp
   | _ -> 0
 
+let compare_stamp id1 id2 =
+  compare (stamp id1) (stamp id2)
+
 let scope = function
   | Scoped { scope; _ } -> scope
   | Local _ -> highest_scope
