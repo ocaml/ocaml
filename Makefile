@@ -75,6 +75,7 @@ utils_SOURCES = $(addprefix utils/, \
   ccomp.mli ccomp.ml \
   warnings.mli warnings.ml \
   consistbl.mli consistbl.ml \
+  linkdeps.mli linkdeps.ml \
   strongly_connected_components.mli strongly_connected_components.ml \
   targetint.mli targetint.ml \
   int_replace_polymorphic_compare.mli int_replace_polymorphic_compare.ml \

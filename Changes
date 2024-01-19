@@ -37,6 +37,9 @@ _______________
 
 ### Compiler user-interface and warnings:
 
+* #12084: Check link order when creating archive and when using ocamlopt
+  (Hugo Heuzard, review by Stefan Muenzel and Sébastien Hinderer)
+
 ### Internal/compiler-libs changes:
 
 - #12896: Simplify the compilation of custom bytecode runtimes by explicitly

@@ -37,10 +37,8 @@ type error =
   | Custom_runtime
   | File_exists of filepath
   | Cannot_open_dll of filepath
-  | Required_compunit_unavailable of (compunit * compunit)
   | Camlheader of string * filepath
-  | Wrong_link_order of DepSet.t
-  | Multiple_definition of compunit * filepath * filepath
+  | Link_error of Linkdeps.error
 
 exception Error of error
 
@@ -97,37 +95,24 @@ let add_ccobjs origin l =
 
 (* First pass: determine which units are needed *)
 
-let missing_compunits = ref Compunit.Map.empty
-let provided_compunits = ref Compunit.Set.empty
-let badly_ordered_dependencies : DepSet.t ref = ref DepSet.empty
+let required compunit =
+  (Symtable.required_compunits compunit.cu_reloc
+   @ compunit.cu_required_compunits)
+  |> List.map (fun (Compunit i) -> i)
 
-let record_badly_ordered_dependency dep =
-  badly_ordered_dependencies := DepSet.add dep !badly_ordered_dependencies
-
-let is_required (rel, _pos) =
+let provided compunit =
+  List.filter_map (fun (rel, _pos) ->
   match rel with
-    | Reloc_setcompunit cu ->
-      Compunit.Map.mem cu !missing_compunits
-    | _ -> false
+    | Reloc_setcompunit (Compunit id) -> Some id
+    | _ -> None) compunit.cu_reloc
 
-let add_required compunit =
-  let add cu =
-    if Compunit.Set.mem cu !provided_compunits then
-      record_badly_ordered_dependency (cu, compunit.cu_name);
-    missing_compunits :=
-      Compunit.Map.add cu compunit.cu_name !missing_compunits
-  in
-  List.iter add (Symtable.required_compunits compunit.cu_reloc);
-  List.iter add compunit.cu_required_compunits
+let linkdeps_unit ldeps ~filename compunit =
+  let requires = required compunit in
+  let provides = provided compunit in
+  let Compunit compunit = compunit.cu_name in
+  Linkdeps.add ldeps ~filename ~compunit ~requires ~provides
 
-let remove_required (rel, _pos) =
-  match rel with
-    Reloc_setcompunit cu ->
-      missing_compunits := Compunit.Map.remove cu !missing_compunits;
-      provided_compunits := Compunit.Set.add cu !provided_compunits;
-  | _ -> ()
-
-let scan_file obj_name tolink =
+let scan_file ldeps obj_name tolink =
   let file_name =
     try
       Load_path.find obj_name
@@ -144,8 +129,7 @@ let scan_file obj_name tolink =
       seek_in ic compunit_pos;
       let compunit = (input_value ic : compilation_unit) in
       close_in ic;
-      add_required compunit;
-      List.iter remove_required compunit.cu_reloc;
+      linkdeps_unit ldeps ~filename:obj_name compunit;
       Link_object(file_name, compunit) :: tolink
     end
     else if buffer = cma_magic_number then begin
@@ -159,12 +143,12 @@ let scan_file obj_name tolink =
       let required =
         List.fold_right
           (fun compunit reqd ->
+             let Compunit name = compunit.cu_name in
             if compunit.cu_force_link
             || !Clflags.link_everything
-            || List.exists is_required compunit.cu_reloc
+            || Linkdeps.required ldeps name
             then begin
-              add_required compunit;
-              List.iter remove_required compunit.cu_reloc;
+              linkdeps_unit ldeps ~filename:obj_name compunit;
               compunit :: reqd
             end else
               reqd)
@@ -184,15 +168,9 @@ module Consistbl = Consistbl.Make (Misc.Stdlib.String)
 
 let crc_interfaces = Consistbl.create ()
 let interfaces = ref ([] : string list)
-let implementations_defined = ref ([] : (compunit * string) list)
 
 let check_consistency file_name cu =
-  begin try
-    let source = List.assoc cu.cu_name !implementations_defined in
-    raise (Error (Multiple_definition(cu.cu_name, file_name, source)));
-  with Not_found -> ()
-  end;
-  begin try
+  try
     List.iter
       (fun (name, crco) ->
         interfaces := name :: !interfaces;
@@ -206,9 +184,6 @@ let check_consistency file_name cu =
       original_source = auth;
     } ->
     raise(Error(Inconsistent_import(name, user, auth)))
-  end;
-  implementations_defined :=
-    (cu.cu_name, file_name) :: !implementations_defined
 
 let extract_crc_interfaces () =
   Consistbl.extract !interfaces crc_interfaces
@@ -655,17 +630,11 @@ let link objfiles output_name =
     | false, true, false -> "stdlib.cma" :: objfiles
     | _                  -> "stdlib.cma" :: objfiles @ ["std_exit.cmo"]
   in
-  let tolink = List.fold_right scan_file objfiles [] in
-  begin
-    match Compunit.Map.bindings !missing_compunits with
-    | [] -> ()
-    | missing_dependency :: _ ->
-        if DepSet.is_empty !badly_ordered_dependencies
-        then
-            raise (Error (Required_compunit_unavailable missing_dependency))
-        else
-            raise (Error (Wrong_link_order !badly_ordered_dependencies))
-  end;
+  let ldeps = Linkdeps.create ~complete:true in
+  let tolink = List.fold_right (scan_file ldeps) objfiles [] in
+  (match Linkdeps.check ldeps with
+   | None -> ()
+   | Some e -> raise (Error (Link_error e)));
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs; (* put user's libs last *)
   Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
                                                    (* put user's opts first *)
@@ -797,31 +766,12 @@ let report_error ppf = function
   | Cannot_open_dll file ->
       fprintf ppf "Error on dynamically loaded library: %a"
         Location.print_filename file
-  | Required_compunit_unavailable
-    (Compunit unavailable, Compunit required_by) ->
-      fprintf ppf "Module %a is unavailable (required by %a)"
-        Style.inline_code unavailable
-        Style.inline_code required_by
   | Camlheader (msg, header) ->
       fprintf ppf "System error while copying file %a: %a"
         Style.inline_code header
         Style.inline_code msg
-  | Wrong_link_order depset ->
-      let l = DepSet.elements depset in
-      let depends_on ppf (dep, depending) =
-        fprintf ppf "%a depends on %a"
-        Style.inline_code (Compunit.name depending)
-        Style.inline_code (Compunit.name dep)
-      in
-      fprintf ppf "@[<hov 2>Wrong link order: %a@]"
-        (pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ",@ ") depends_on) l
-  | Multiple_definition(compunit, file1, file2) ->
-      fprintf ppf
-        "@[<hov>Files %a@ and %a@ both define a module named %a@]"
-        (Style.as_inline_code Location.print_filename) file1
-        (Style.as_inline_code Location.print_filename) file2
-        Style.inline_code (Compunit.name compunit)
-
+  | Link_error e ->
+      Linkdeps.report_error ~print_filename:Location.print_filename ppf e
 
 let () =
   Location.register_error_of_exn
@@ -834,8 +784,6 @@ let reset () =
   lib_ccobjs := [];
   lib_ccopts := [];
   lib_dllibs := [];
-  missing_compunits := Compunit.Map.empty;
   Consistbl.clear crc_interfaces;
-  implementations_defined := [];
   debug_info := [];
   output_code_string_counter := 0
