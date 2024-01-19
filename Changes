@@ -245,6 +245,10 @@ OCaml 5.2.0
   (KC Sivaramakrishnan, report by Gabriel Scherer, review by Gabriel Scherer,
   Sadiq Jaffer and Fabrice Buoro)
 
+- #12599: Refactor Dynlink startup to avoid parsing bytecode sections twice
+  (Stephen Dolan, review by David Allsopp, Hugo Heuzard, Damien Doligez and
+   Xavier Leroy)
+
 - #12681: Fix TSan false positives due to volatile write handling
   (Olivier Nicole, Fabrice Buoro and Anmol Sahoo, review by Luc Maranget,
    Gabriel Scherer, Hernan Ponce de Leon and Xavier Leroy)

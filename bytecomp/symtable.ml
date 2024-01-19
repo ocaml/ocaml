@@ -164,10 +164,9 @@ let all_primitives () =
 let data_primitive_names () =
   all_primitives()
   |> Array.to_list
-  |> concat_null_terminated
 
 let output_primitive_names outchan =
-  output_string outchan (data_primitive_names())
+  output_string outchan (data_primitive_names() |> concat_null_terminated)
 
 open Printf
 
@@ -336,65 +335,24 @@ let update_global_table () =
     !literal_table;
   literal_table := []
 
-(* Recover data for toplevel initialization.  Data can come either from
-   executable file (normal case) or from linked-in data (-output-obj). *)
+type bytecode_sections =
+  { symb: GlobalMap.t;
+    crcs: (string * Digest.t option) list;
+    prim: string list;
+    dlpt: string list }
 
-type section_reader = {
-  read_string: Bytesections.Name.t -> string;
-  read_struct: Bytesections.Name.t -> Obj.t;
-  close_reader: unit -> unit
-}
-
-let read_sections () =
-  try
-    let sections =
-      List.map
-        (fun (n,o) -> Bytesections.Name.of_string n, o)
-        (Meta.get_section_table ())
-    in
-    { read_string =
-        (fun name ->
-           (Obj.magic(List.assoc name sections) : string));
-      read_struct =
-        (fun name -> List.assoc name sections);
-      close_reader =
-        (fun () -> ()) }
-  with Not_found ->
-    let ic = open_in_bin Sys.executable_name in
-    let section_table = Bytesections.read_toc ic in
-    { read_string = Bytesections.read_section_string section_table ic;
-      read_struct = Bytesections.read_section_struct section_table ic;
-      close_reader = fun () -> close_in ic }
+external get_bytecode_sections : unit -> bytecode_sections =
+  "caml_dynlink_get_bytecode_sections"
 
 (* Initialize the linker for toplevel use *)
 
 let init_toplevel () =
-  try
-    let sect = read_sections () in
-    (* Locations of globals *)
-    global_table :=
-      (Obj.magic (sect.read_struct Bytesections.Name.SYMB) : GlobalMap.t);
-    (* Primitives *)
-    let prims =
-      Misc.split_null_terminated (sect.read_string Bytesections.Name.PRIM) in
-    c_prim_table := PrimMap.empty;
-    List.iter set_prim_table prims;
-    (* DLL initialization *)
-    let dllpaths =
-      try Misc.split_null_terminated (sect.read_string Bytesections.Name.DLPT)
-      with Not_found -> [] in
-    Dll.init_toplevel dllpaths;
-    (* Recover CRC infos for interfaces *)
-    let crcintfs =
-      try
-        (Obj.magic (sect.read_struct Bytesections.Name.CRCS)
-         : (string * Digest.t option) list)
-      with Not_found -> [] in
-    (* Done *)
-    sect.close_reader();
-    crcintfs
-  with Bytesections.Bad_magic_number | Not_found | Failure _ ->
-    fatal_error "Toplevel bytecode executable is corrupted"
+  let sect = get_bytecode_sections () in
+  global_table := sect.symb;
+  c_prim_table := PrimMap.empty;
+  List.iter set_prim_table sect.prim;
+  Dll.init_toplevel sect.dlpt;
+  sect.crcs
 
 (* Find the value of a global identifier *)
 
