@@ -19,6 +19,8 @@
 
 open! Dynlink_compilerlibs
 
+module Config = Dynlink_config
+
 module DC = Dynlink_common
 module DT = Dynlink_types
 

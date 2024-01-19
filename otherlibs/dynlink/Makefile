@@ -41,10 +41,10 @@ OPTCOMPFLAGS += -I native
 
 LOCAL_SRC=dynlink_compilerlibs
 
-OBJS=byte/dynlink_compilerlibs.cmo dynlink_types.cmo \
+OBJS=byte/dynlink_compilerlibs.cmo dynlink_config.cmo dynlink_types.cmo \
   dynlink_platform_intf.cmo dynlink_common.cmo byte/dynlink.cmo
 
-NATOBJS=native/dynlink_compilerlibs.cmx dynlink_types.cmx \
+NATOBJS=native/dynlink_compilerlibs.cmx dynlink_config.cmx dynlink_types.cmx \
   dynlink_platform_intf.cmx dynlink_common.cmx native/dynlink.cmx
 
 # We need/desire access to compilerlibs for various reasons:
@@ -297,7 +297,7 @@ clean: partialclean
 
 .PHONY: distclean
 distclean: clean
-	rm -f META
+	rm -f META dynlink_config.ml
 
 .PHONY: beforedepend
 beforedepend: dynlink_platform_intf.mli
