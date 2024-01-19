@@ -93,7 +93,7 @@ static void fixup_endianness_trailer(uint32_t * p)
 #endif
 }
 
-static int read_trailer(int fd, struct exec_trailer *trail)
+int caml_read_trailer(int fd, struct exec_trailer *trail)
 {
   if (lseek(fd, (long) -TRAILER_SIZE, SEEK_END) == -1)
     return BAD_BYTECODE;
@@ -144,7 +144,7 @@ int caml_attempt_open(char_os **name, struct exec_trailer *trail,
       return BAD_BYTECODE;
     }
   }
-  err = read_trailer(fd, trail);
+  err = caml_read_trailer(fd, trail);
   if (err != 0) {
     close(fd);
     caml_stat_free(truename);
@@ -618,6 +618,7 @@ CAMLexport value caml_startup_code_exn(
 #endif
   caml_init_custom_operations();
   caml_init_os_params();
+  caml_ext_table_init(&caml_shared_libs_path, 8);
 
   /* Initialize the abstract machine */
   caml_init_gc ();
