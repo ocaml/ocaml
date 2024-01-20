@@ -1035,6 +1035,28 @@ let check_redefined_unit (td: Parsetree.type_declaration) =
   | _ ->
       ()
 
+let check_redefined_boolean (td : Parsetree.type_declaration) =
+  let redefined_boolean_constructor ({ txt; loc = _ } : _ Asttypes.loc) =
+    match txt with
+    | "true" -> Some true
+    | "false" -> Some false
+    | _ -> None
+  in
+  match td with
+  | { ptype_name = _;
+      ptype_manifest = None;
+      ptype_kind = Ptype_variant cds } ->
+      List.iter
+        (fun cd ->
+         match redefined_boolean_constructor cd.pcd_name with
+         | Some boolean -> Location.prerr_warning td.ptype_loc
+           (Warnings.Redefining_boolean boolean)
+         | None -> ())
+       cds
+  | _ ->
+      ()
+
+
 let add_types_to_env decls env =
   List.fold_right
     (fun (id, decl) env -> add_type ~check:true id decl env)
@@ -1043,6 +1065,7 @@ let add_types_to_env decls env =
 (* Translate a set of type declarations, mutually recursive or not *)
 let transl_type_decl env rec_flag sdecl_list =
   List.iter check_redefined_unit sdecl_list;
+  List.iter check_redefined_boolean sdecl_list;
   (* Add dummy types for fixed rows *)
   let fixed_types = List.filter is_fixed_type sdecl_list in
   let sdecl_list =

@@ -1,0 +1,33 @@
+File "w74.ml", line 12, characters 0-13:
+12 | type a = true
+     ^^^^^^^^^^^^^
+Warning 74 [redefining-boolean]: This type declaration is defining a new 'true' constructor,
+which shadows the existing constructor.
+
+File "w74.ml", line 13, characters 0-14:
+13 | type b = false
+     ^^^^^^^^^^^^^^
+Warning 74 [redefining-boolean]: This type declaration is defining a new 'false' constructor,
+which shadows the existing constructor.
+
+File "w74.ml", lines 15-17, characters 0-9:
+15 | type c =
+16 |   | true
+17 |   | false
+Warning 74 [redefining-boolean]: This type declaration is defining a new 'true' constructor,
+which shadows the existing constructor.
+
+File "w74.ml", lines 15-17, characters 0-9:
+15 | type c =
+16 |   | true
+17 |   | false
+Warning 74 [redefining-boolean]: This type declaration is defining a new 'false' constructor,
+which shadows the existing constructor.
+
+File "w74.ml", lines 19-22, characters 0-5:
+19 | type d =
+20 |   | A
+21 |   | true
+22 |   | C
+Warning 74 [redefining-boolean]: This type declaration is defining a new 'true' constructor,
+which shadows the existing constructor.

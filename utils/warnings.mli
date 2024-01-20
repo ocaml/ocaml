@@ -116,6 +116,7 @@ type t =
   | Unused_tmc_attribute                    (* 71 *)
   | Tmc_breaks_tailcall                     (* 72 *)
   | Generative_application_expects_unit     (* 73 *)
+  | Redefining_boolean of bool              (* 74 *)
 
 type alert = {kind:string; message:string; def:loc; use:loc}
 

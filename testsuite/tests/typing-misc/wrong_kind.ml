@@ -19,6 +19,7 @@ module Record = struct
 end
 
 module Bool = struct
+  [@@@warning "-74"]
   type t = true | false
 
   let get _ _ = true

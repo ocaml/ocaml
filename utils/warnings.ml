@@ -15,7 +15,7 @@
 
 (* When you change this, you need to update:
    - the list 'description' at the bottom of this file
-   - man/ocamlc.m
+   - man/ocamlc.1
 *)
 
 type loc = {
@@ -109,6 +109,7 @@ type t =
   | Unused_tmc_attribute                    (* 71 *)
   | Tmc_breaks_tailcall                     (* 72 *)
   | Generative_application_expects_unit     (* 73 *)
+  | Redefining_boolean of bool              (* 74 *)
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
    the numbers of existing warnings.
@@ -190,12 +191,13 @@ let number = function
   | Unused_tmc_attribute -> 71
   | Tmc_breaks_tailcall -> 72
   | Generative_application_expects_unit -> 73
+  | Redefining_boolean _ -> 74
 ;;
 (* DO NOT REMOVE the ;; above: it is used by
    the testsuite/ests/warnings/mnemonics.mll test to determine where
    the  definition of the number function above ends *)
 
-let last_warning_number = 73
+let last_warning_number = 74
 
 type description =
   { number : int;
@@ -534,6 +536,11 @@ let descriptions = [
     description = "A generative functor is applied to an empty structure \
                    (struct end) rather than to ().";
     since = since 5 1 };
+  { number = 74;
+    names = ["redefining-boolean"];
+    description = "Type declaration defining a new 'true' or 'false' \
+                   constructor.";
+    since = since 5 2 };
 ]
 
 let name_to_number =
@@ -1136,6 +1143,11 @@ let message = function
   | Generative_application_expects_unit ->
       "A generative functor\n\
        should be applied to '()'; using '(struct end)' is deprecated."
+  | Redefining_boolean redefined_boolean ->
+      Printf.sprintf
+        "This type declaration is defining a new '%B' constructor,\n\
+         which shadows the existing constructor."
+       redefined_boolean
 ;;
 
 let nerrors = ref 0
