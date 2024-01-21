@@ -20,9 +20,10 @@ open Lexgen
 open Compact
 open Common
 
-type c_short_type = Short | Unsigned_short
-
 exception Table_overflow
+
+let check_overflow ~min ~max v =
+  Array.iter (fun n -> if n < min || n > max then raise Table_overflow) v
 
 (* To output an array of short ints, encoded as a string *)
 
@@ -32,28 +33,25 @@ let output_byte oc b =
   output_char oc (Char.chr(48 + (b / 10) mod 10));
   output_char oc (Char.chr(48 + b mod 10))
 
-let output_array c_type oc v =
+let output_array oc v =
   output_string oc "   \"";
   for i = 0 to Array.length v - 1 do
     output_byte oc (v.(i) land 0xFF);
     output_byte oc ((v.(i) asr 8) land 0xFF);
-    let () =
-      let unsigned_number =
-        match c_type with
-        | Short -> v.(i) + 1 lsl 15
-        | Unsigned_short -> v.(i)
-      in
-      if unsigned_number < 0 || unsigned_number >= 1 lsl 16
-      then raise Table_overflow
-    in
     if i land 7 = 7 then output_string oc "\\\n    "
   done;
   output_string oc "\""
 
-let output_array_s = output_array Short
-let output_array_u = output_array Unsigned_short
+let output_array_u oc v =
+  check_overflow ~min:0 ~max: 0xFFFF v;
+  output_array oc v
+
+let output_array_s oc v =
+  check_overflow ~min:(-0x8000) ~max: 0x7FFF v;
+  output_array oc v
 
 let output_byte_array oc v =
+  check_overflow ~min:0 ~max:0xFF v;
   output_string oc "   \"";
   for i = 0 to Array.length v - 1 do
     output_byte oc (v.(i) land 0xFF);
