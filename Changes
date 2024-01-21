@@ -453,6 +453,10 @@ OCaml 5.2.0
 - #12744: ocamltest: run tests in recursive subdirs more eagerly
   (Nick Roberts, review by Nicolás Ojeda Bär)
 
+- #12901, 12908: ocamllex: add overflow checks to prevent generating incorrect
+  lexers; use unsigned numbers in the table encoding when possible.
+  (Vincent Laviron, report by Edwin Török, review by Xavier Leroy)
+
 ### Manual and documentation:
 
 - #12338: clarification of the documentation of process related function in
