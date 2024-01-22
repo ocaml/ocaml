@@ -117,11 +117,6 @@ let run_script ppf name args =
   let filename = filename_of_input name in
   Compmisc.init_path ~dir:(Filename.dirname filename) ();
                    (* Note: would use [Filename.abspath] here, if we had it. *)
-  begin
-    try toplevel_env := Compmisc.initial_env()
-    with Env.Error _ | Typetexp.Error _ as exn ->
-      Location.report_exception ppf exn; raise (Compenv.Exit_with_status 2)
-  end;
   Sys.interactive := false;
   run_hooks After_setup;
   let explicit_name =
@@ -399,7 +394,6 @@ let loop ppf =
       (if Topeval.implementation_label = "" then "" else " - ")
       Topeval.implementation_label
       Misc.Style.inline_code "#help;;";
-  initialize_toplevel_env_or_exit ppf;
   let lb = Lexing.from_function refill_lexbuf in
   Location.init lb "//toplevel//";
   Location.input_name := "//toplevel//";
