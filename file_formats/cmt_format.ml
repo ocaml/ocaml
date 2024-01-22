@@ -216,14 +216,15 @@ let iter_on_occurrences
             let lid = { name with txt = Longident.Lident name.txt } in
             f ~namespace:Value exp_env (Path.Pident id) lid)
             modifs
-
+      | Texp_extension_constructor (lid, path) ->
+          f ~namespace:Extension_constructor exp_env path lid
       | Texp_constant _ | Texp_let _ | Texp_function _ | Texp_apply _
       | Texp_match _ | Texp_try _ | Texp_tuple _ | Texp_variant _ | Texp_array _
       | Texp_ifthenelse _ | Texp_sequence _ | Texp_while _ | Texp_for _
       | Texp_send _
       | Texp_letmodule _ | Texp_letexception _ | Texp_assert _ | Texp_lazy _
       | Texp_object _ | Texp_pack _ | Texp_letop _ | Texp_unreachable
-      | Texp_extension_constructor _ | Texp_open _ -> ());
+      | Texp_open _ -> ());
       default_iterator.expr sub e);
 
   (* Remark: some types get iterated over twice due to how constraints are
