@@ -29,3 +29,4 @@ let f x = match x with
   | exception E -> ()
 
 let _ = None
+let _ = [%extension_constructor M.F]
