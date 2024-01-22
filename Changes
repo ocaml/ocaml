@@ -665,6 +665,12 @@ OCaml 5.2.0
 - #12764: Move all installable headers in `caml/` sub-directories.
   (Antonin Décimo, review by Gabriel Scherer and David Allsopp)
 
+- #12508 : Add compiler-side support for project-wide occurrences in Merlin, by
+  generating index tables of all identifier occurrences. This extra data in .cmt
+  files is only added when the new flag -bin-annot-occurrences is passed.
+  (Ulysse Gérard, Nathanaëlle Courant, suggestions by Gabriel Scherer and Thomas
+  Refis, review by Florian Angeletti, Gabriel Scherer and Thomas Refis)
+
 ### Build system:
 
 - #12198, #12321, #12586, #12616, #12706: continue the merge of the

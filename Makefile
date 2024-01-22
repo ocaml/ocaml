@@ -138,6 +138,7 @@ typing_SOURCES = \
   typing/tast_iterator.mli typing/tast_iterator.ml \
   typing/tast_mapper.mli typing/tast_mapper.ml \
   typing/stypes.mli typing/stypes.ml \
+  typing/shape_reduce.mli typing/shape_reduce.ml \
   file_formats/cmt_format.mli file_formats/cmt_format.ml \
   typing/cmt2annot.mli typing/cmt2annot.ml \
   typing/untypeast.mli typing/untypeast.ml \

@@ -114,6 +114,7 @@ COMPILERLIBS_SOURCES=\
   file_formats/cmi_format.ml \
   typing/persistent_env.ml \
   typing/env.ml \
+  typing/shape_reduce.ml \
   typing/typedtree.ml \
   lambda/debuginfo.ml \
   lambda/lambda.ml \
