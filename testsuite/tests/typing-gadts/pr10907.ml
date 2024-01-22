@@ -45,9 +45,10 @@ val t : 'a some_iso = Iso (<fun>, <fun>)
 let unsound_cast : 'a 'b. 'a -> 'b = fun x ->
   match t with Iso (g, h) -> h (g x)
 [%%expect{|
-Lines 1-2, characters 37-36:
-1 | .....................................fun x ->
+Line 2, characters 29-36:
 2 |   match t with Iso (g, h) -> h (g x)
-Error: This definition has type "'c. 'c -> 'c" which is less general than
-         "'a 'b. 'a -> 'b"
+                                 ^^^^^^^
+Error: This expression has type "$a" but an expression was expected of type "$b"
+       Hint: "$a" and "$b" are abstract types
+         bound by the polymorphic annotation on "unsound_cast".
 |}]

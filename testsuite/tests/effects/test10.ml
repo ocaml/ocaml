@@ -13,17 +13,17 @@ let rec c i = b i + Random.int i
 let rec d i =
   Random.int i +
   try_with c i
-  { effc = fun (type a) (e : a t) ->
+  { effc = fun e ->
       match e with
-      | Poke -> Some (fun (k : (a,_) continuation) -> continue k ())
+      | Poke -> Some (fun k -> continue k ())
       | _ -> None }
 
 let rec e i =
   Random.int i +
   try_with d i
-  { effc = fun (type a) (e : a t) ->
+  { effc = fun e ->
       match e with
-      | Peek -> Some (fun (k : (a,_) continuation) ->
+      | Peek -> Some (fun k ->
           ignore (Deep.get_callstack k 100);
           continue k 42)
       | _ -> None }

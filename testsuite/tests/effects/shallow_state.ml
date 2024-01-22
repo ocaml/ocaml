@@ -23,11 +23,11 @@ let handle_state init f x =
       continue_with k x
       { retc = (fun result -> result, state);
         exnc = (fun e -> raise e);
-        effc = (fun (type b) (eff : b t) ->
+        effc = (fun eff ->
           match eff with
-          | Get -> Some (fun (k : (b,r) continuation) ->
+          | Get -> Some (fun k ->
               loop state k state)
-          | Set new_state -> Some (fun (k : (b,r) continuation) ->
+          | Set new_state -> Some (fun k ->
               loop new_state k ())
           | e -> None) }
   in

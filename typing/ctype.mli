@@ -162,7 +162,7 @@ val check_scope_escape : Env.t -> int -> type_expr -> unit
            to the level [lvl] without any scope escape.
            Raises [Escape] otherwise *)
 
-val instance: ?partial:bool -> type_expr -> type_expr
+val instance: ?partial:bool -> ?keep_names:bool -> type_expr -> type_expr
         (* Take an instance of a type scheme *)
         (* partial=None  -> normal
            partial=false -> newvar() for non generic subterms
@@ -206,14 +206,37 @@ val instance_class:
         type_expr list -> class_type -> type_expr list * class_type
 
 val instance_poly:
-        ?keep_names:bool -> fixed:bool ->
-        type_expr list -> type_expr -> type_expr list * type_expr
+        keep_names:bool -> type_expr list -> type_expr -> type_expr
         (* Take an instance of a type scheme containing free univars *)
+
+type poly_instance =
+  { env : Env.t;
+    ids : (Ident.t * string option) list;
+    vars : type_expr list;
+    ty : type_expr; }
+
+val instance_poly_abstract:
+        Env.t -> scope:int -> binding_name:string option
+        -> type_expr list -> type_expr -> poly_instance
+
+val instance_poly_flexible:
+        Env.t -> type_expr list -> type_expr -> poly_instance
+
 val polyfy: Env.t -> type_expr -> type_expr list -> type_expr * bool
 val instance_label:
-        fixed:bool ->
         label_description -> type_expr list * type_expr * type_expr
         (* Same, for a label *)
+
+type abstract_label_instance =
+  { env : Env.t;
+    ids : (Ident.t * string option) list;
+    vars : type_expr list;
+    arg : type_expr;
+    res : type_expr; }
+
+val instance_label_abstract:
+        Env.t -> scope:int -> label_description -> abstract_label_instance
+
 val apply:
         ?use_current_level:bool ->
         Env.t -> type_expr list -> type_expr -> type_expr list -> type_expr

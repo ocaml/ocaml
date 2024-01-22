@@ -10,9 +10,9 @@ let () =
   match_with (fun _ -> perform E; 42) ()
   { retc = (fun n -> assert (n = 42));
     exnc = (fun e -> raise e);
-    effc = fun (type a) (e : a t) ->
+    effc = fun e ->
       match e with
-      | E -> Some (fun (k : (a,_) continuation) ->
+      | E -> Some (fun k ->
           continue k ();
           r := Some (k : (unit, unit) continuation);
           Gc.full_major ();

@@ -21,7 +21,7 @@ let () =
   Printf.printf "%b\n%!" !ok2;
 
   try_with (f E) ok3 {
-    effc = fun (type a) (e : a t) ->
+    effc = fun e ->
       match e with
       | F -> Some (fun k -> assert false)
       | _ -> None

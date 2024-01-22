@@ -495,6 +495,8 @@ and type_origin =
     Definition
   | Rec_check_regularity       (* See Typedecl.transl_type_decl *)
   | Existential of string
+  | Polymorphic_record_field of string
+  | Polymorphic_binding of string option
 
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)

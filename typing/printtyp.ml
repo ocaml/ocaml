@@ -853,43 +853,99 @@ end = struct
         end
     | Pdot _ | Papply _ | Pextra_ty _ -> ()
 
+  let print_explanation kind origin ppf constr out_idents =
+    match out_idents with
+    | [] -> ()
+    | [out_ident] ->
+        fprintf ppf
+          "@ @[<2>@{<hint>Hint@}:@ %a@ is an %s type@ \
+               bound by the %s@ %a.@]"
+              (Style.as_inline_code !Oprint.out_ident) out_ident
+              kind origin
+              Style.inline_code constr
+    | out_ident :: out_idents ->
+        fprintf ppf
+          "@ @[<2>@{<hint>Hint@}:@ %a@ and %a@ are %s types@ \
+           bound by the %s@ %a.@]"
+          (Format.pp_print_list
+             ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
+             (Style.as_inline_code !Oprint.out_ident))
+          (List.rev out_idents)
+          (Style.as_inline_code !Oprint.out_ident) out_ident
+          kind origin
+          Style.inline_code constr
+
+  let print_anon_explanation kind origin ppf out_idents =
+    match out_idents with
+    | [] -> ()
+    | [out_ident] ->
+        fprintf ppf
+          "@ @[<2>@{<hint>Hint@}:@ %a@ is an %s type@ \
+               bound by a %s.@]"
+              (Style.as_inline_code !Oprint.out_ident) out_ident
+              kind origin
+    | out_ident :: out_idents ->
+        fprintf ppf
+          "@ @[<2>@{<hint>Hint@}:@ %a@ and %a@ are %s types@ \
+           bound by a %s.@]"
+          (Format.pp_print_list
+             ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
+             (Style.as_inline_code !Oprint.out_ident))
+          (List.rev out_idents)
+          (Style.as_inline_code !Oprint.out_ident) out_ident
+          kind origin
+
   let print_explanations env ppf =
-    let constrs =
+    let ext_constrs, poly_fields, poly_binds, anon_poly_binds =
       Ident.Set.fold
         (fun id acc ->
           let p = Pident id in
           match Env.find_type p env with
           | exception Not_found -> acc
           | decl ->
+              let (ext_constrs, poly_fields, poly_binds, anon_poly_binds) =
+                acc
+              in
               match type_origin decl with
               | Existential constr ->
-                  let prev = String.Map.find_opt constr acc in
-                  let prev = Option.value ~default:[] prev in
-                  String.Map.add constr (tree_of_path None p :: prev) acc
+                  let ext_constrs =
+                    String.Map.add_to_list
+                      constr (tree_of_path None p) ext_constrs
+                  in
+                  (ext_constrs, poly_fields, poly_binds, anon_poly_binds)
+              | Polymorphic_record_field field ->
+                  let poly_fields =
+                    String.Map.add_to_list
+                      field (tree_of_path None p) poly_fields
+                  in
+                  (ext_constrs, poly_fields, poly_binds, anon_poly_binds)
+              | Polymorphic_binding (Some bind) ->
+                  let poly_binds =
+                    String.Map.add_to_list
+                      bind (tree_of_path None p) poly_binds
+                  in
+                  (ext_constrs, poly_fields, poly_binds, anon_poly_binds)
+              | Polymorphic_binding None ->
+                  let anon_poly_binds =
+                    (tree_of_path None p) :: anon_poly_binds
+                  in
+                  (ext_constrs, poly_fields, poly_binds, anon_poly_binds)
+
               | Definition | Rec_check_regularity -> acc)
-        !names String.Map.empty
+        !names
+        (String.Map.empty, String.Map.empty, String.Map.empty, [])
     in
     String.Map.iter
-      (fun constr out_idents ->
-        match out_idents with
-        | [] -> ()
-        | [out_ident] ->
-            fprintf ppf
-              "@ @[<2>@{<hint>Hint@}:@ %a@ is an existential type@ \
-               bound by the constructor@ %a.@]"
-              (Style.as_inline_code !Oprint.out_ident) out_ident
-              Style.inline_code constr
-        | out_ident :: out_idents ->
-            fprintf ppf
-              "@ @[<2>@{<hint>Hint@}:@ %a@ and %a@ are existential types@ \
-               bound by the constructor@ %a.@]"
-              (Format.pp_print_list
-                 ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
-                 (Style.as_inline_code !Oprint.out_ident))
-              (List.rev out_idents)
-              (Style.as_inline_code !Oprint.out_ident) out_ident
-              Style.inline_code constr)
-      constrs
+      (print_explanation "existential" "constructor" ppf)
+      ext_constrs;
+    String.Map.iter
+      (print_explanation "abstract" "polymorphic record field" ppf)
+      poly_fields;
+    String.Map.iter
+      (print_explanation "abstract" "polymorphic annotation on" ppf)
+      poly_binds;
+    print_anon_explanation "abstract" "polymorphic type annotation"
+      ppf anon_poly_binds
 
 end
 
@@ -2514,7 +2570,8 @@ let warn_on_missing_def env ppf t =
               "@,@[<hov>Type %a was considered abstract@ when checking\
                @ constraints@ in this@ recursive type definition.@]"
               (Style.as_inline_code path) p
-        | Definition | Existential _ -> ()
+        | Definition | Existential _
+          | Polymorphic_record_field _ | Polymorphic_binding _-> ()
       end
   | _ -> ()
 

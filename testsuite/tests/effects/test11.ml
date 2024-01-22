@@ -10,9 +10,9 @@ type _ t += E : int t
 
 let handle comp =
   try_with comp ()
-  { effc = fun (type a) (e : a t) ->
+  { effc = fun e ->
       match e with
-      | E -> Some (fun (k : (a,_) continuation) -> continue k 10)
+      | E -> Some (fun k -> continue k 10)
       | _ -> None }
 
 let () =

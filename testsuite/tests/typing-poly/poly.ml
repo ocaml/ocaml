@@ -517,10 +517,12 @@ class ['a] id1 = object
 end
 ;;
 [%%expect {|
-Line 3, characters 12-17:
+Line 3, characters 16-17:
 3 |   method id x = x
-                ^^^^^
-Error: This method has type "'a -> 'a" which is less general than "'b. 'b -> 'a"
+                    ^
+Error: This expression has type "$b" but an expression was expected of type "'a"
+       The type constructor "$b" would escape its scope
+       Hint: "$b" is an abstract type bound by a polymorphic type annotation.
 |}];;
 
 class id2 (x : 'a) = object
@@ -529,10 +531,12 @@ class id2 (x : 'a) = object
 end
 ;;
 [%%expect {|
-Line 3, characters 12-17:
+Line 3, characters 16-17:
 3 |   method id x = x
-                ^^^^^
-Error: This method has type "'a -> 'a" which is less general than "'b. 'b -> 'a"
+                    ^
+Error: This expression has type "$b" but an expression was expected of type "'a"
+       The type constructor "$b" would escape its scope
+       Hint: "$b" is an abstract type bound by a polymorphic type annotation.
 |}];;
 
 class id3 x = object
@@ -542,10 +546,12 @@ class id3 x = object
 end
 ;;
 [%%expect {|
-Line 4, characters 12-17:
+Line 4, characters 16-17:
 4 |   method id _ = x
-                ^^^^^
-Error: This method has type "'b -> 'b" which is less general than "'a. 'a -> 'a"
+                    ^
+Error: This expression has type "'a" but an expression was expected of type "$a"
+       The type constructor "$a" would escape its scope
+       Hint: "$a" is an abstract type bound by a polymorphic type annotation.
 |}];;
 
 class id4 () = object
@@ -558,12 +564,12 @@ class id4 () = object
 end
 ;;
 [%%expect {|
-Lines 4-7, characters 12-17:
-4 | ............x =
-5 |     match r with
+Line 6, characters 24-25:
 6 |       None -> r <- Some x; x
-7 |     | Some y -> y
-Error: This method has type "'b -> 'b" which is less general than "'a. 'a -> 'a"
+                            ^
+Error: This expression has type "$a" but an expression was expected of type "'a"
+       The type constructor "$a" would escape its scope
+       Hint: "$a" is an abstract type bound by a polymorphic type annotation.
 |}];;
 
 class c = object
@@ -1380,11 +1386,12 @@ type 'a t = Leaf of 'a | Node of ('a * 'a) t
 val depth : 'a t -> int = <fun>
 val depth : 'a t -> int = <fun>
 val d : ('a * 'a) t -> int = <fun>
-Line 9, characters 2-46:
+Line 9, characters 39-46:
 9 |   function Leaf x -> x | Node x -> 1 + depth x;; (* fails *)
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type "int t -> int" which is less general than
-         "'a. 'a t -> int"
+                                           ^^^^^^^
+Error: This expression has type "$a" but an expression was expected of type "int"
+       Hint: "$a" is an abstract type bound by the polymorphic annotation on
+         "depth".
 |}];;
 
 (* compare with records (should be the same) *)
@@ -1452,8 +1459,10 @@ type t = { f : 'a. 'a -> unit; }
 Line 3, characters 19-20:
 3 | let f ?x y = y in {f};; (* fail *)
                        ^
-Error: This field value has type "unit -> unit" which is less general than
-         "'a. 'a -> unit"
+Error: This expression has type "$a -> $a"
+       but an expression was expected of type "$a -> unit"
+       Type "$a" is not compatible with type "unit"
+       Hint: "$a" is an abstract type bound by the polymorphic record field "f".
 |}];;
 
 (* Polux Moon caml-list 2011-07-26 *)
@@ -1985,9 +1994,11 @@ Line 3, characters 4-6:
 3 |   | `Y -> x
         ^^
 Error: This pattern matches values of type "[? `Y ]"
-       but a pattern was expected which matches values of type "[> `X of 'a ]"
-       The second variant type is bound to the universal type variable "'b",
+       but a pattern was expected which matches values of type "[> `X of $a ]"
+       The second variant type is bound to the universal type variable "'a",
        it may not allow the tag(s) "`Y"
+       Hint: "$a" is an abstract type bound by the polymorphic annotation on
+         "fail".
 |}]
 
 let fail_example_corrected: 'a . 'a -> [< `X of 'a | `Y ] -> 'a = fun x y ->
@@ -2010,11 +2021,11 @@ val discrepancy : < x : 'a; y : unit -> 'b; .. > -> 'a = <fun>
 
 let explicitly_quantified_row: 'a 'r. (<x:'a; ..> as 'r) -> 'a = fun o -> o#y (); o#x
 [%%expect {|
-Line 1, characters 65-85:
+Line 1, characters 74-75:
 1 | let explicitly_quantified_row: 'a 'r. (<x:'a; ..> as 'r) -> 'a = fun o -> o#y (); o#x
-                                                                     ^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type "'b. < x : 'b; y : unit -> 'c; .. > -> 'b"
-       which is less general than "'a 'd. (< x : 'a; .. > as 'd) -> 'a"
+                                                                              ^
+Error: This expression has type "< x : $a; .. >"
+       It has no method "y"
 |}]
 
 
@@ -2038,4 +2049,36 @@ Error: Some type variables are unbound in this type:
            < n : 'irr.
                    ('irr -> unit) * ((< x : 'a; y : 'b; .. > as 'c) -> 'a) >"
        where "'c" is unbound
+|}]
+
+
+(** A function that requires locally abstract types to get its intended type *)
+let coerce : ('a, 'b) Type.eq -> 'a -> 'b = fun Type.Equal x -> x
+[%%expect {|
+val coerce : ('b, 'b) Type.eq -> 'b -> 'b = <fun>
+|}]
+
+(** Polymorphic annotations give locally abstract types *)
+let coerce : 'a 'b. ('a, 'b) Type.eq -> 'a -> 'b =
+  fun Equal x -> x
+[%%expect {|
+val coerce : ('a, 'b) Type.eq -> 'a -> 'b = <fun>
+|}]
+
+(** Polymorphic method annotations give locally abstract types *)
+class c = object
+  method coerce : 'a 'b. ('a, 'b) Type.eq -> 'a -> 'b =
+    fun Equal x -> x
+end
+[%%expect {|
+class c : object method coerce : ('a, 'b) Type.eq -> 'a -> 'b end
+|}]
+
+(** Polymorphic record field types give locally abstract types *)
+type t = { coerce : 'a 'b. ('a, 'b) Type.eq -> 'a -> 'b }
+
+let t = { coerce = fun Equal x -> x }
+[%%expect {|
+type t = { coerce : 'a 'b. ('a, 'b) Type.eq -> 'a -> 'b; }
+val t : t = {coerce = <fun>}
 |}]

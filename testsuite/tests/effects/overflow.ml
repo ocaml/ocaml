@@ -33,7 +33,7 @@ let () =
   match_with (fun _ -> f 1 2 3 4 5 6 7 8) ()
   { retc = (fun n -> Printf.printf "%d\n" n);
     exnc = (fun e -> raise e);
-    effc = fun (type a) (e : a t) ->
+    effc = fun e ->
       match e with
       | E -> Some (fun k -> assert false)
       | _ -> None }

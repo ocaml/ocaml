@@ -1233,14 +1233,14 @@ let rec copy ?partial ?keep_names copy_scope ty =
 
 (**** Variants of instantiations ****)
 
-let instance ?partial sch =
+let instance ?partial ?keep_names sch =
   let partial =
     match partial with
       None -> None
     | Some keep -> Some (compute_univars sch, keep)
   in
   For_copy.with_scope (fun copy_scope ->
-    copy ?partial copy_scope sch)
+    copy ?partial ?keep_names copy_scope sch)
 
 let generic_instance sch =
   let old = !current_level in
@@ -1255,18 +1255,30 @@ let instance_list schl =
 
 (* Create unique names to new type constructors.
    Used for existential types and local constraints. *)
-let get_new_abstract_name env s =
-  let name index =
-    if index = 0 && s <> "" && s.[String.length s - 1] <> '$' then s else
-    Printf.sprintf "%s%d" s index
-  in
+let get_new_abstract_name_gen env naming_fn =
   let check index =
-    match Env.find_type_by_name (Longident.Lident (name index)) env with
+    let name = naming_fn index in
+    match Env.find_type_by_name (Longident.Lident name) env with
     | _ -> false
     | exception Not_found -> true
   in
   let index = Misc.find_first_mono check in
-  name index
+  naming_fn index
+
+let get_new_abstract_name env s =
+  get_new_abstract_name_gen env
+    (fun index ->
+      if index = 0 && s <> "" && s.[String.length s - 1] <> '$' then s
+      else Printf.sprintf "%s%d" s index)
+
+let get_new_anonymous_abstract_name env =
+  get_new_abstract_name_gen env
+    (fun index -> "$" ^ Misc.letter_of_int index)
+
+let existential_name env ty =
+  match get_desc ty with
+  | Tvar (Some name) -> get_new_abstract_name env ("$" ^ name)
+  | _ -> get_new_anonymous_abstract_name env
 
 let new_local_type ?(loc = Location.none) ?manifest_and_scope origin =
   let manifest, expansion_scope =
@@ -1291,24 +1303,12 @@ let new_local_type ?(loc = Location.none) ?manifest_and_scope origin =
     type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
   }
 
-let existential_name name_counter ty =
-  let name =
-    match get_desc ty with
-    | Tvar (Some name) -> name
-    | _ ->
-        let name = Misc.letter_of_int !name_counter in
-        incr name_counter;
-        name
-  in
-  "$" ^ name
-
 type existential_treatment =
   | Keep_existentials_flexible
   | Make_existentials_abstract of Pattern_env.t
 
 let instance_constructor existential_treatment cstr =
   For_copy.with_scope (fun copy_scope ->
-    let name_counter = ref 0 in
     let copy_existential =
       match existential_treatment with
       | Keep_existentials_flexible -> copy copy_scope
@@ -1317,9 +1317,9 @@ let instance_constructor existential_treatment cstr =
             let env = penv.env in
             let fresh_constr_scope = penv.equations_scope in
             let decl = new_local_type (Existential cstr.cstr_name) in
-            let name = existential_name name_counter existential in
+            let name = existential_name env existential in
             let (id, new_env) =
-              Env.enter_type (get_new_abstract_name env name) decl env
+              Env.enter_type name decl env
                 ~scope:fresh_constr_scope in
             Pattern_env.set_env penv new_env;
             let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
@@ -1488,17 +1488,66 @@ let instance_poly' copy_scope ~keep_names ~fixed univars sch =
   let ty = copy_sep ~copy_scope ~fixed ~visited sch in
   vars, ty
 
-let instance_poly ?(keep_names=false) ~fixed univars sch =
+let abstract_poly_vars env origin ~scope vars =
+  let abstract_var (env, ids) var =
+    match get_desc var with
+    | Tvar var_name ->
+        let decl = new_local_type origin in
+        let name = existential_name env var in
+        let id, env = Env.enter_type name decl env ~scope in
+        let ty = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
+        link_type var ty;
+        env, (id, var_name) :: ids
+    | _ ->
+        env, ids
+  in
+  let named_vars, unnamed_vars =
+    List.partition
+      (fun var ->
+        match get_desc var with
+        | Tvar (Some _) -> true
+        | _ -> false)
+      vars
+  in
+  let acc = List.fold_left abstract_var (env, []) named_vars in
+  List.fold_left abstract_var acc unnamed_vars
+
+let instance_poly_gen ~fixed ~keep_names univars sch =
   For_copy.with_scope (fun copy_scope ->
     instance_poly' copy_scope ~keep_names ~fixed univars sch
   )
 
-let instance_label ~fixed lbl =
+let instance_poly ~keep_names univars sch =
+  snd (instance_poly_gen ~keep_names ~fixed:false univars sch)
+
+type poly_instance =
+  { env : Env.t;
+    ids : (Ident.t * string option) list;
+    vars : type_expr list;
+    ty : type_expr; }
+
+let instance_poly_abstract env ~scope ~binding_name univars sch =
+    let vars, ty =
+      instance_poly_gen ~fixed:true ~keep_names:true univars sch
+    in
+    let env, ids =
+      abstract_poly_vars env (Polymorphic_binding binding_name) ~scope vars
+    in
+    { env; ids; vars; ty }
+
+let instance_poly_flexible env univars sch =
+    let vars, ty =
+      instance_poly_gen ~fixed:true ~keep_names:true univars sch
+    in
+    let ids = [] in
+    { env; ids; vars; ty }
+
+let instance_label_gen ~fixed ~keep_names lbl =
   For_copy.with_scope (fun copy_scope ->
     let vars, ty_arg =
       match get_desc lbl.lbl_arg with
         Tpoly (ty, tl) ->
-          instance_poly' copy_scope ~keep_names:false ~fixed tl ty
+          instance_poly' copy_scope ~keep_names ~fixed tl ty
       | _ ->
           [], copy copy_scope lbl.lbl_arg
     in
@@ -1506,6 +1555,26 @@ let instance_label ~fixed lbl =
     let ty_res = copy copy_scope lbl.lbl_res in
     (vars, ty_arg, ty_res)
   )
+
+let instance_label lbl =
+  instance_label_gen ~fixed:false ~keep_names:false lbl
+
+type abstract_label_instance =
+  { env : Env.t;
+    ids : (Ident.t * string option) list;
+    vars : type_expr list;
+    arg : type_expr;
+    res : type_expr; }
+
+let instance_label_abstract env ~scope lbl =
+    let vars, arg, res =
+      instance_label_gen ~fixed:true ~keep_names:true lbl
+    in
+    let env, ids =
+      abstract_poly_vars
+        env (Polymorphic_record_field lbl.lbl_name) ~scope vars
+    in
+    { env; ids; vars; arg; res }
 
 (**** Instantiation with parameter substitution ****)
 
@@ -4906,7 +4975,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (Tpoly (u1, []), Tpoly (u2, [])) ->
         subtype_rec env trace u1 u2 cstrs
     | (Tpoly (u1, tl1), Tpoly (u2, [])) ->
-        let _, u1' = instance_poly ~fixed:false tl1 u1 in
+        let u1' = instance_poly ~keep_names:false tl1 u1 in
         subtype_rec env trace u1' u2 cstrs
     | (Tpoly (u1, tl1), Tpoly (u2,tl2)) ->
         begin try
