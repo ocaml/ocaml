@@ -1719,10 +1719,10 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   in
   let no_row = not (is_fixed_type sdecl) in
   let (tman, man) =  match sdecl.ptype_manifest with
-      None -> None, None
+      None -> Misc.fatal_error "Typedecl.transl_with_constraint: no manifest"
     | Some sty ->
         let cty = transl_simple_type env ~closed:no_row sty in
-        Some cty, Some cty.ctyp_type
+        cty, cty.ctyp_type
   in
   (* In the second part, we check the consistency between the two
      declarations and compute a "merged" declaration; we now need to
@@ -1756,7 +1756,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   && sdecl.ptype_private = Private then
     Location.deprecated loc "spurious use of private";
   let type_kind, type_unboxed_default =
-    if arity_ok && man <> None then
+    if arity_ok then
       sig_decl.type_kind, sig_decl.type_unboxed_default
     else
       Type_abstract Definition, false
@@ -1766,7 +1766,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
       type_arity = arity;
       type_kind;
       type_private = priv;
-      type_manifest = man;
+      type_manifest = Some man;
       type_variance = [];
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
@@ -1826,7 +1826,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     typ_type = new_sig_decl;
     typ_cstrs = constraints;
     typ_loc = loc;
-    typ_manifest = tman;
+    typ_manifest = Some tman;
     typ_kind = Ttype_abstract;
     typ_private = sdecl.ptype_private;
     typ_attributes = sdecl.ptype_attributes;
