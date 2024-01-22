@@ -157,8 +157,8 @@ let fuse_method_arity parent_params parent_body =
 
 let rec iter_exn_names f pat =
   match pat.pat_desc with
-  | Tpat_var (id, _) -> f id
-  | Tpat_alias (p, id, _) ->
+  | Tpat_var (id, _, _) -> f id
+  | Tpat_alias (p, id, _, _) ->
       f id;
       iter_exn_names f p
   | _ -> ()
@@ -927,8 +927,8 @@ and transl_let ~scopes ?(in_structure=false) rec_flag pat_expr_list =
       let idlist =
         List.map
           (fun {vb_pat=pat} -> match pat.pat_desc with
-              Tpat_var (id,_) -> id
-            | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
+              Tpat_var (id,_,_) -> id
+            | Tpat_alias ({pat_desc=Tpat_any}, id,_,_) -> id
             | _ -> assert false)
         pat_expr_list in
       let transl_case {vb_expr=expr; vb_attributes; vb_rec_kind = rkind;
@@ -1069,9 +1069,9 @@ and transl_match ~scopes e arg pat_expr_list partial =
         (* Simplif doesn't like it if binders are not uniq, so we make sure to
            use different names in the value and the exception branches. *)
         let ids_full = Typedtree.pat_bound_idents_full pv in
-        let ids = List.map (fun (id, _, _) -> id) ids_full in
+        let ids = List.map (fun (id, _, _, _) -> id) ids_full in
         let ids_kinds =
-          List.map (fun (id, _, ty) -> id, Typeopt.value_kind pv.pat_env ty)
+          List.map (fun (id, _, ty, _) -> id, Typeopt.value_kind pv.pat_env ty)
             ids_full
         in
         let vids = List.map Ident.rename ids in

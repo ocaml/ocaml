@@ -206,11 +206,11 @@ module Type = struct
 
   let int = Int
 
-  let next_id = ref 3
+  let next_id = Atomic.make 3
 
   let register ~encode ~decode =
-    incr next_id;
-    Custom { serialize = encode; deserialize = decode; id = !next_id - 1}
+    let id = Atomic.fetch_and_add next_id 1 in
+    Custom { serialize = encode; deserialize = decode; id; }
 
   let id: type a. a t -> int = function
     | Unit -> 0

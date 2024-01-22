@@ -286,7 +286,7 @@ CAMLexport void caml_adjust_minor_gc_speed (mlsize_t res, mlsize_t max)
   }
 }
 
-/* You must use [caml_intialize] to store the initial value in a field of a
+/* You must use [caml_initialize] to store the initial value in a field of a
    block, unless you are sure the value is not a young block, in which case a
    plain assignment would do.
 

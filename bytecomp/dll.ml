@@ -174,10 +174,7 @@ let init_compile nostdlib =
 (* Initialization for linking in core (dynlink or toplevel) *)
 
 let init_toplevel dllpaths =
-  search_path :=
-    ld_library_path_contents() @
-    dllpaths @
-    ld_conf_contents();
+  search_path := dllpaths;
   opened_dlls :=
     List.map (fun dll -> "", Execution dll)
       (Array.to_list (get_current_dlls()));

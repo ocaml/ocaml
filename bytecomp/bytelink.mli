@@ -25,6 +25,8 @@ val link : filepath list -> filepath -> unit
 val reset : unit -> unit
 
 val check_consistency: filepath -> Cmo_format.compilation_unit -> unit
+val linkdeps_unit :
+  Linkdeps.t -> filename:string -> Cmo_format.compilation_unit -> unit
 
 val extract_crc_interfaces: unit -> crcs
 
@@ -37,10 +39,8 @@ type error =
   | Custom_runtime
   | File_exists of filepath
   | Cannot_open_dll of filepath
-  | Required_compunit_unavailable of (Cmo_format.compunit * Cmo_format.compunit)
   | Camlheader of string * filepath
-  | Wrong_link_order of DepSet.t
-  | Multiple_definition of Cmo_format.compunit * filepath * filepath
+  | Link_error of Linkdeps.error
 
 exception Error of error
 

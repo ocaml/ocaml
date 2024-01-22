@@ -34,7 +34,8 @@ CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) $(STDLIBFLAGS) -I otherlibs/dynlink
 ARCHES=amd64 arm64 power s390x riscv
 VPATH = utils parsing typing bytecomp file_formats lambda middle_end \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types \
-  asmcomp driver toplevel tools $(addprefix otherlibs/, $(ALL_OTHERLIBS))
+  asmcomp driver toplevel tools runtime \
+  $(addprefix otherlibs/, $(ALL_OTHERLIBS))
 INCLUDES = $(addprefix -I ,$(VPATH))
 
 ifeq "$(strip $(NATDYNLINKOPTS))" ""
@@ -74,6 +75,7 @@ utils_SOURCES = $(addprefix utils/, \
   ccomp.mli ccomp.ml \
   warnings.mli warnings.ml \
   consistbl.mli consistbl.ml \
+  linkdeps.mli linkdeps.ml \
   strongly_connected_components.mli strongly_connected_components.ml \
   targetint.mli targetint.ml \
   int_replace_polymorphic_compare.mli int_replace_polymorphic_compare.ml \
@@ -136,6 +138,7 @@ typing_SOURCES = \
   typing/tast_iterator.mli typing/tast_iterator.ml \
   typing/tast_mapper.mli typing/tast_mapper.ml \
   typing/stypes.mli typing/stypes.ml \
+  typing/shape_reduce.mli typing/shape_reduce.ml \
   file_formats/cmt_format.mli file_formats/cmt_format.ml \
   typing/cmt2annot.mli typing/cmt2annot.ml \
   typing/untypeast.mli typing/untypeast.ml \

@@ -1,0 +1,14 @@
+Indexed shapes:
+Resolved: Index_modules.0 :
+  A.x (File "index_modules.ml", line 22, characters 17-20)
+Resolved: Index_modules.0 :
+  x (File "index_modules.ml", line 22, characters 13-14)
+Unresolved: CU Stdlib . "+"[value]  :
+  (+) (File "index_modules.ml", line 22, characters 15-16)
+Unresolved: CU Stdlib . "print_int"[value]  :
+  print_int (File "index_modules.ml", line 22, characters 2-11)
+Resolved: Index_modules.1 :
+  A (File "index_modules.ml", line 21, characters 11-12)
+
+Uid of decls:
+Index_modules.0: x (File "index_modules.ml", line 20, characters 28-29)

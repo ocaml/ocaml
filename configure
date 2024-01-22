@@ -864,7 +864,6 @@ ocamlc_cppflags
 ocamlc_cflags
 native_ldflags
 cclibs
-oc_exe_ldflags
 oc_dll_ldflags
 oc_ldflags
 oc_cppflags
@@ -873,6 +872,7 @@ tsan
 oc_cflags
 toolchain
 ccomptype
+mkexe_via_cc_extra_cmd
 mkexe_via_cc_ldflags
 mkexe_extra_flags
 mkexedebugflag
@@ -15429,6 +15429,17 @@ case $host in #(
      ;;
 esac
 
+# Disable control flow integrity
+
+case $host in #(
+  *-*-openbsd7.[4-9]|*-*-openbsd[89].*) :
+    oc_ldflags="$oc_ldflags -Wl,-z,nobtcfi"
+     natdynlinkopts="$natdynlinkopts -Wl,-z,nobtcfi" ;; #(
+  *) :
+     ;;
+esac
+
+
 # Configure native dynlink
 
 natdynlink=false
@@ -20512,19 +20523,12 @@ fi
   mkdll_exp="$mkdll_exp $mkdll_ldflags_exp"
   mkmaindll="$mkmaindll $mkdll_ldflags_exp"
   mkmaindll_exp="$mkmaindll_exp $mkdll_ldflags_exp"
-  # Do similarly with $mkexe_via_cc_ldflags_prefix, but this is only needed for
-  # the msvc ports.
-  if test -n "$mkexe_via_cc_ldflags_prefix"
+  mkexe_via_cc_ldflags="${mkexe_via_cc_ldflags_prefix}"
+  if test -n "${oc_exe_ldflags}"
 then :
-
-    mkexe_via_cc_ldflags=\
-"\$(addprefix ${mkexe_via_cc_ldflags_prefix},\$(OC_LDFLAGS) \$(LDFLAGS))"
-
-else $as_nop
-
-    mkexe_via_cc_ldflags='$(OC_LDFLAGS) $(LDFLAGS)'
-
+  mkexe_via_cc_ldflags="${mkexe_via_cc_ldflags}${oc_exe_ldflags} "
 fi
+  mkexe_via_cc_ldflags="${mkexe_via_cc_ldflags}\$(OC_LDFLAGS) \$(LDFLAGS)"
   # cl requires linker flags after the objects.
   if test "$ccomptype" = 'msvc'
 then :
@@ -20533,10 +20537,6 @@ then :
 else $as_nop
   mkexe_via_cc_ldflags=\
 "$mkexe_via_cc_ldflags \$(OUTPUTEXE)\$(1) \$(2)"
-fi
-  if test -n "$mkexe_via_cc_extra_cmd"
-then :
-  mkexe_via_cc_ldflags="$mkexe_via_cc_ldflags $mkexe_via_cc_extra_cmd"
 fi
 
 

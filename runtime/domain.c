@@ -600,10 +600,6 @@ static void domain_create(uintnat initial_minor_heap_wsize,
     domain_state = d->state;
   }
 
-  s->unique_id = fresh_domain_unique_id();
-  s->running = 1;
-  atomic_fetch_add(&caml_num_domains_running, 1);
-
   /* Note: until we take d->domain_lock, the domain_state may still be
    * shared with a domain which is terminating (see
    * domain_terminate). */
@@ -632,8 +628,7 @@ static void domain_create(uintnat initial_minor_heap_wsize,
   }
 
   domain_state->id = d->id;
-  domain_state->unique_id = d->interruptor.unique_id;
-  CAMLassert(!d->interruptor.interrupt_pending);
+  CAMLassert(!s->interrupt_pending);
 
   domain_state->extra_heap_resources = 0.0;
   domain_state->extra_heap_resources_minor = 0.0;
@@ -685,6 +680,14 @@ static void domain_create(uintnat initial_minor_heap_wsize,
   if(domain_state->current_stack == NULL) {
     goto alloc_main_stack_failure;
   }
+
+  /* No remaining failure cases: domain creation is going to succeed,
+   * so we can update globally-visible state without needing to unwind
+   * it. */
+  s->unique_id = fresh_domain_unique_id();
+  domain_state->unique_id = s->unique_id;
+  s->running = 1;
+  atomic_fetch_add(&caml_num_domains_running, 1);
 
   domain_state->c_stack = NULL;
   domain_state->exn_handler = NULL;
@@ -1169,10 +1172,6 @@ static void* domain_thread_func(void* v)
 #endif
 
   domain_create(caml_params->init_minor_heap_wsz, p->parent->state);
-
-  if (!domain_self) {
-    caml_fatal_error("Failed to create domain");
-  }
 
   /* this domain is now part of the STW participant set */
   p->newdom = domain_self;
