@@ -1,0 +1,24 @@
+Indexed shapes:
+Resolved: Index_vb.4 : c (File "index_vb.ml", line 22, characters 43-44)
+Unresolved: CU Stdlib . "int_of_string"[value]  :
+  int_of_string (File "index_vb.ml", line 22, characters 29-42)
+Resolved: Index_vb.5 : d (File "index_vb.ml", line 22, characters 24-25)
+Unresolved: CU Stdlib . "*"[value]  : ( *
+  ) (File "index_vb.ml", line 22, characters 26-27)
+Resolved: Index_vb.3 : a (File "index_vb.ml", line 22, characters 20-21)
+Unresolved: CU Stdlib . "+"[value]  :
+  (+) (File "index_vb.ml", line 22, characters 22-23)
+Unresolved: CU Stdlib . "print_int"[value]  :
+  print_int (File "index_vb.ml", line 22, characters 9-18)
+Resolved: Index_vb.2 : b (File "index_vb.ml", line 20, characters 34-35)
+Resolved: Index_vb.1 : a (File "index_vb.ml", line 20, characters 26-27)
+Resolved: Index_vb.2 : b (File "index_vb.ml", line 20, characters 9-10)
+Resolved: Index_vb.1 : a (File "index_vb.ml", line 20, characters 6-7)
+
+Uid of decls:
+Index_vb.3: a (File "index_vb.ml", line 20, characters 6-7)
+Index_vb.1: a (File "index_vb.ml", line 18, characters 11-12)
+Index_vb.0: t (File "index_vb.ml", line 18, characters 5-6)
+Index_vb.2: b (File "index_vb.ml", line 18, characters 20-21)
+Index_vb.5: a (File "index_vb.ml", line 20, characters 6-7)
+Index_vb.4: a (File "index_vb.ml", line 20, characters 6-7)

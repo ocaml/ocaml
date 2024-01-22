@@ -66,6 +66,7 @@ type iterator =
     value_bindings: iterator -> (rec_flag * value_binding list) -> unit;
     value_description: iterator -> value_description -> unit;
     with_constraint: iterator -> with_constraint -> unit;
+    item_declaration: iterator -> item_declaration -> unit;
   }
 
 val default_iterator: iterator
