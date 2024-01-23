@@ -4,7 +4,7 @@ File "pr6293_bad.ml", line 10, characters 18-37:
 Error: In this "with" constraint, the new definition of "t"
        does not match its original definition in the constrained signature:
        Type declarations do not match:
-         type t
+         type t = int
        is not included in
          type t = { a : int; b : int; }
        The first is abstract, but the second is a record.

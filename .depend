@@ -1751,6 +1751,7 @@ typing/typemod.cmo : \
     typing/typetexp.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/typedecl_immediacy.cmi \
     typing/typedecl.cmi \
     typing/typecore.cmi \
     typing/typeclass.cmi \
@@ -1787,6 +1788,7 @@ typing/typemod.cmx : \
     typing/typetexp.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
+    typing/typedecl_immediacy.cmx \
     typing/typedecl.cmx \
     typing/typecore.cmx \
     typing/typeclass.cmx \

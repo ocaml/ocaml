@@ -38,7 +38,6 @@ type m = (module S with type M.t = int)
 |}];;
 
 (* It should respect immediacy - [m1] should typecheck but not [m2]. *)
-(* This is fixed in subsequent commit. *)
 module type S = sig
   type t [@@immediate]
 end
@@ -47,13 +46,14 @@ type m1 = (module S with type t = int)
 type m2 = (module S with type t = string);;
 [%%expect{|
 module type S = sig type t [@@immediate] end
-Line 5, characters 10-38:
-5 | type m1 = (module S with type t = int)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+type m1 = (module S with type t = int)
+Line 6, characters 10-41:
+6 | type m2 = (module S with type t = string);;
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this "with" constraint, the new definition of "t"
        does not match its original definition in the constrained signature:
        Type declarations do not match:
-         type t
+         type t = string
        is not included in
          type t [@@immediate]
        The first is not an immediate type.
@@ -70,14 +70,8 @@ module type S = sig type t = int end
 Line 5, characters 9-40:
 5 | type m = (module S with type t = string);;
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this "with" constraint, the new definition of "t"
-       does not match its original definition in the constrained signature:
-       Type declarations do not match: type t is not included in type t = int
-       The type "t/2" is not equal to the type "int"
-       Line 2, characters 2-14:
-         Definition of type "t"
-       Line 5, characters 9-40:
-         Definition of type "t/2"
+Error: In the constrained signature, type "t" is defined to be "int".
+       Package "with" constraints may only be used on abstract types.
 |}];;
 
 (* Even if your constraint would be satisfied. *)
@@ -92,14 +86,8 @@ module type S = sig type t = int end
 Line 5, characters 9-37:
 5 | type m = (module S with type t = int);;
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this "with" constraint, the new definition of "t"
-       does not match its original definition in the constrained signature:
-       Type declarations do not match: type t is not included in type t = int
-       The type "t/2" is not equal to the type "int"
-       Line 2, characters 2-14:
-         Definition of type "t"
-       Line 5, characters 9-37:
-         Definition of type "t/2"
+Error: In the constrained signature, type "t" is defined to be "int".
+       Package "with" constraints may only be used on abstract types.
 |}];;
 
 (* And even if the manifest is not obvious in the original definition. *)
@@ -118,14 +106,8 @@ module type S = sig module P = M end
 Line 9, characters 9-39:
 9 | type m = (module S with type P.t = int);;
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this "with" constraint, the new definition of "P.t"
-       does not match its original definition in the constrained signature:
-       Type declarations do not match: type t is not included in type t = M.t
-       The type "t/2" is not equal to the type "M.t"
-       Line 2, characters 2-8:
-         Definition of type "t"
-       Line 9, characters 9-39:
-         Definition of type "t/2"
+Error: In the constrained signature, type "P.t" is defined to be "M.t".
+       Package "with" constraints may only be used on abstract types.
 |}];;
 
 (* If writing a package constraint in a mutually recursive group of type decls,
@@ -146,7 +128,7 @@ Line 6, characters 9-36:
 Error: In this "with" constraint, the new definition of "t"
        does not match its original definition in the constrained signature:
        Type declarations do not match:
-         type t
+         type t = t1
        is not included in
          type t [@@immediate]
        The first is not an immediate type.
