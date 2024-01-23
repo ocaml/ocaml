@@ -309,4 +309,3 @@ let () =
   assert (to_string b = Buffer.contents b);
 
   print_endline "Buffer iter_chunks: tests passed"
-
