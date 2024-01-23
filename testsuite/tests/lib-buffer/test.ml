@@ -286,3 +286,27 @@ let () =
   Buffer.add_substitute b f " $(abc";
   assert (Buffer.contents b
             = {| FOO hash hash nil $foo \$foo \\$foo $ $! $(abc|})
+
+(* Tests for iter_chunks *)
+let () =
+  (* aggregate chunks into a string *)
+  let to_string b =
+    let chunks = ref [] in
+    Buffer.iter_chunks b (fun chunk off len ->
+      chunks := Bytes.sub_string chunk off len :: !chunks);
+    String.concat "" @@ List.rev !chunks
+  in
+
+  let b = Buffer.create 32 in
+  assert (to_string b = "");
+
+  Buffer.add_string b "hello world";
+  assert (to_string b = "hello world");
+
+  for i=1 to 100 do
+    Buffer.add_string b "another addition"
+  done;
+  assert (to_string b = Buffer.contents b);
+
+  print_endline "Buffer iter_chunks: tests passed"
+
