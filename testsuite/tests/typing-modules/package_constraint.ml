@@ -137,7 +137,6 @@ Error: In this "with" constraint, the new definition of "t"
 (* When using a package with constraint to give an abstract type a definition
    that is immediate, that immediacy information should be usable after
    unpacking. *)
-(* This is fixed in a subsequent commit. *)
 module type S = sig
   type t
 end
@@ -151,9 +150,7 @@ end;;
 [%%expect{|
 module type S = sig type t end
 type m = (module S with type t = int)
-Line 9, characters 2-28:
-9 |   type t = M.t [@@immediate]
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Types marked with the immediate attribute must be non-pointer types
-       like "int" or "bool".
+module F :
+  functor (X : sig val x : m end) ->
+    sig module M : sig type t = int end type t = M.t [@@immediate] end
 |}];;

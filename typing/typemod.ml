@@ -2089,7 +2089,9 @@ let rec package_constraints_sig env loc sg constrs =
       | Sig_type (id, ({type_params=[]} as td), rs, priv)
         when List.mem_assoc [Ident.name id] constrs ->
           let ty = List.assoc [Ident.name id] constrs in
-          Sig_type (id, {td with type_manifest = Some ty}, rs, priv)
+          let td = {td with type_manifest = Some ty} in
+          let type_immediate = Typedecl_immediacy.compute_decl env td in
+          Sig_type (id, {td with type_immediate}, rs, priv)
       | Sig_module (id, pres, md, rs, priv) ->
           let rec aux = function
             | (m :: ((_ :: _) as l), t) :: rest when m = Ident.name id ->
