@@ -3386,7 +3386,6 @@ and type_expect_
                     types added to [new_env].
                  *)
                 let bound_exp = vb.vb_expr in
-                generalize_structure_exp bound_exp;
                 let bound_exp_type = Ctype.instance bound_exp.exp_type in
                 let loc = proper_exp_loc bound_exp in
                 let outer_var = newvar2 outer_level in
