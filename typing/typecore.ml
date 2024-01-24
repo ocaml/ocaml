@@ -5046,12 +5046,8 @@ and type_label_exp create env loc ty_expected
           (lid, label, sarg) =
   (* Here also ty_expected may be at generic_level *)
   let separate = !Clflags.principal || Env.has_local_constraints env in
-  (* #4682: we try two type-checking approaches for [arg] using backtracking:
-     - first try: we try with [ty_arg] as expected type;
-     - second try; if that fails, we backtrack and try without
-  *)
   let (_, arg) =
-    (* try the first approach *)
+    (* raise level to check univars *)
     with_local_level begin fun () ->
       let (vars, ty_arg) =
         with_local_level_iter_if separate begin fun () ->
