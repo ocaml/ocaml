@@ -1320,7 +1320,11 @@ static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
     s->overhead += POOL_SLAB_WOFFSET(sz);
 
     while (p + wh <= end) {
-      header_t hd = (header_t)*p;
+      /* This header can be read here and concurrently marked by the GC, but
+         this is fine: marking can only turn UNMARKED objects into MARKED or
+         NOT_MARKABLE, which is of no consequence for this verification
+         (namely, that there is no garbage left). */
+      header_t hd = Hd_hp(p);
       CAMLassert(hd == 0 || !Has_status_hd(hd, caml_global_heap_state.GARBAGE));
       if (hd) {
         s->live += Whsize_hd(hd);
