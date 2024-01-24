@@ -1,4 +1,12 @@
-(* TEST *)
+(* TEST
+ no-tsan;
+ {
+   bytecode;
+ }
+ {
+   native;
+ }
+*)
 
 (* Compaction crash when there is only one heap chunk and it is fully used. *)
 let c = ref []
