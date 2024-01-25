@@ -581,7 +581,7 @@ let repr t =
 (* scope_field and marks *)
 
 let scope_mask = (1 lsl 27) - 1
-let marks_mask = -1 lxor scope_mask
+let marks_mask = (-1) lxor scope_mask
 type type_mark = int
 let type_marks = List.map (fun x -> 1 lsl x) [27; 28; 29; 30]
 let available_marks = ref type_marks
@@ -608,6 +608,7 @@ module Transient_expr = struct
   let set_desc ty d = ty.desc <- d
   let set_stub_desc ty d = assert (ty.desc = Tvar None); ty.desc <- d
   let set_level ty lv = ty.level <- lv
+  let set_scope_field ty sc = ty.scope <- sc
   let get_scope ty = ty.scope land scope_mask
   let set_scope ty sc =
     assert (sc land marks_mask = 0);
@@ -777,7 +778,7 @@ let undo_change = function
     Ctype  (ty, desc) -> Transient_expr.set_desc ty desc
   | Ccompress (ty, desc, _) -> Transient_expr.set_desc ty desc
   | Clevel (ty, level) -> Transient_expr.set_level ty level
-  | Cscope (ty, scope) -> Transient_expr.set_scope ty scope
+  | Cscope (ty, scope) -> Transient_expr.set_scope_field ty scope
   | Cname  (r, v)    -> r := v
   | Crow   r         -> r := RFnone
   | Ckind  (FKvar r) -> r.field_kind <- FKprivate
@@ -827,20 +828,29 @@ let set_level ty level =
     if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
     Transient_expr.set_level ty level
   end
-(* TODO: introduce a guard and rename it to set_higher_scope? *)
-let set_scope ty scope =
-  let ty = repr ty in
+
+let set_scope_field ty scope =
   if scope <> ty.scope then begin
     if ty.id <= !last_snapshot then log_change (Cscope (ty, ty.scope));
-    Transient_expr.set_scope ty scope
+    Transient_expr.set_scope_field ty scope
   end
+
+(* TODO: introduce a guard and rename it to set_higher_scope? *)
+let set_scope ty scope =
+  assert (scope land marks_mask = 0);
+  let ty = repr ty in
+  let scope' = scope lor (ty.scope land marks_mask) in
+  set_scope_field ty scope'
+
 let set_univar rty ty =
   log_change (Cuniv (rty, !rty)); rty := Some ty
 let set_name nm v =
   log_change (Cname (nm, !nm)); nm := v
 
 let try_logged_mark_node mark ty =
-  (not_marked_node mark ty) && (set_scope ty (get_scope ty lxor mark); true)
+  let ty = repr ty in
+  (Transient_expr.not_marked_node mark ty) &&
+  (set_scope_field ty (ty.scope lxor mark); true)
 
 let rec link_row_field_ext ~(inside : row_field) (v : row_field) =
   match inside with

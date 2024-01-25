@@ -416,8 +416,9 @@ let check_well_formed_module env loc context mty =
       | _ :: rem ->
           check_signature env rem
     in
-    (* we do not use marks here *)
-    let env, super = with_type_mark (fun mark -> iterator_with_env mark env) in
+    (* we are not using marks here ... *)
+    with_type_mark begin fun mark ->
+    let env, super = iterator_with_env mark env in
     { super with
       it_type_expr = (fun _self _ty -> ());
       it_signature = (fun self sg ->
@@ -426,6 +427,7 @@ let check_well_formed_module env loc context mty =
         check_signature env sg;
         super.it_signature self sg);
     }
+    end
   in
   iterator.it_module_type iterator mty
 
