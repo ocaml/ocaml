@@ -444,8 +444,7 @@ let is_nonrec_type id td =
     with_type_mark begin fun mark ->
       let it = Btype.{(type_iterators mark) with it_path} in
       it.it_type_declaration it td;
-      let unmark = Btype.unmark_iterators mark in
-      unmark.it_type_declaration unmark td
+      Btype.unmark_type_decl mark td
     end
   in
   match !recursive_use, !nonrecursive_use with

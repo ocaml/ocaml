@@ -259,6 +259,7 @@ module Transient_expr : sig
 
   val create: type_desc -> level: int -> scope: int -> id: int -> transient_expr
   val get_scope: transient_expr -> int
+  val get_marks: transient_expr -> int
   val set_desc: transient_expr -> type_desc -> unit
   val set_level: transient_expr -> int -> unit
   val set_scope: transient_expr -> int -> unit

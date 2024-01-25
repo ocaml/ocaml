@@ -584,7 +584,7 @@ let scope_mask = (1 lsl 27) - 1
 let marks_mask = (-1) lxor scope_mask
 type type_mark = int
 let type_marks = List.map (fun x -> 1 lsl x) [27; 28; 29; 30]
-let available_marks = ref type_marks
+let available_marks = Local_store.s_ref type_marks
 let with_type_mark f =
   match !available_marks with
   | [] -> failwith "with_type_mark : no marks available"
@@ -610,6 +610,7 @@ module Transient_expr = struct
   let set_level ty lv = ty.level <- lv
   let set_scope_field ty sc = ty.scope <- sc
   let get_scope ty = ty.scope land scope_mask
+  let get_marks ty = ty.scope lsr 27
   let set_scope ty sc =
     assert (sc land marks_mask = 0);
     ty.scope <- (ty.scope land marks_mask) lor sc

@@ -913,12 +913,14 @@ let check_well_founded_decl  ~abs_env env loc path decl to_check =
          type declaration that have common subexpressions. *)
       ref TypeMap.empty in
     let it =
-      {super with it_type_expr =
+      {super with it_do_type_expr =
        (fun self ty ->
          check_well_founded ~abs_env env loc path to_check visited ty;
          super.it_do_type_expr self ty
        )} in
-    it.it_type_declaration it (Ctype.generic_instance_declaration decl)
+    let decl = Ctype.generic_instance_declaration decl in
+    it.it_type_declaration it decl;
+    unmark_type_decl mark decl
   end
 
 (* Check for non-regular abbreviations; an abbreviation
