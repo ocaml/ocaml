@@ -494,7 +494,7 @@ let rec raw_type ppf ty =
   if List.memq ty !visited then fprintf ppf "{id=%d}" ty.id else begin
     visited := ty :: !visited;
     fprintf ppf "@[<1>{id=%d;level=%d;scope=%d;desc=@,%a}@]" ty.id ty.level
-      ty.scope raw_type_desc ty.desc
+      (Transient_expr.get_scope ty) raw_type_desc ty.desc
   end
 and raw_type_list tl = raw_list raw_type tl
 and raw_lid_type_list tl =

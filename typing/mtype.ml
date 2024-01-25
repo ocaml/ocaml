@@ -456,6 +456,8 @@ let collect_arg_paths mty =
   and bindings = ref Ident.empty in
   (* let rt = Ident.create "Root" in
      and prefix = ref (Path.Pident rt) in *)
+  with_type_mark begin fun mark ->
+  let type_iterators = type_iterators mark in
   let it_path p = paths := Path.Set.union (get_arg_paths p) !paths
   and it_signature_item it si =
     type_iterators.it_signature_item it si;
@@ -473,9 +475,10 @@ let collect_arg_paths mty =
   in
   let it = {type_iterators with it_path; it_signature_item} in
   it.it_module_type it mty;
-  it.it_module_type unmark_iterators mty;
+  it.it_module_type (unmark_iterators mark) mty;
   Path.Set.fold (fun p -> Ident.Set.union (collect_ids !subst !bindings p))
     !paths Ident.Set.empty
+  end
 
 type remove_alias_args =
     { mutable modified: bool;
@@ -552,6 +555,8 @@ let scrape_for_type_of ~remove_aliases env mty =
 
 let lower_nongen nglev mty =
   let open Btype in
+  with_type_mark begin fun mark ->
+  let type_iterators = type_iterators mark in
   let it_type_expr it ty =
     match get_desc ty with
       Tvar _ ->
@@ -562,4 +567,5 @@ let lower_nongen nglev mty =
   in
   let it = {type_iterators with it_type_expr} in
   it.it_module_type it mty;
-  it.it_module_type unmark_iterators mty
+  it.it_module_type (unmark_iterators mark) mty
+  end

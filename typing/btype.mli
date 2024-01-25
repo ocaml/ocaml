@@ -154,10 +154,10 @@ type type_iterators =
     it_do_type_expr: type_iterators -> type_expr -> unit;
     it_type_expr: type_iterators -> type_expr -> unit;
     it_path: Path.t -> unit; }
-val type_iterators: type_iterators
+val type_iterators: type_mark -> type_iterators
         (* Iteration on arbitrary type information.
            [it_type_expr] calls [mark_node] to avoid loops. *)
-val unmark_iterators: type_iterators
+val unmark_iterators: type_mark -> type_iterators
         (* Unmark any structure containing types. See [unmark_type] below. *)
 
 val copy_type_desc:
@@ -185,38 +185,18 @@ module For_copy : sig
 end
 
 val lowest_level: int
-        (* Marked type: ty.level < lowest_level *)
+        (* lowest level for type nodes *)
 
-val not_marked_node: type_expr -> bool
-        (* Return true if a type node is not yet marked *)
-
-val logged_mark_node: type_expr -> unit
-        (* Mark a type node, logging the marking so it can be backtracked *)
-val try_logged_mark_node: type_expr -> bool
-        (* Mark a type node if it is not yet marked, logging the marking so it
-           can be backtracked.
-           Return false if it was already marked *)
-
-val flip_mark_node: type_expr -> unit
-        (* Mark a type node.
-           The marking is not logged and will have to be manually undone using
-           one of the various [unmark]'ing functions below. *)
-val try_mark_node: type_expr -> bool
-        (* Mark a type node if it is not yet marked.
-           The marking is not logged and will have to be manually undone using
-           one of the various [unmark]'ing functions below.
-
-           Return false if it was already marked *)
-val mark_type: type_expr -> unit
+val mark_type: type_mark -> type_expr -> unit
         (* Mark a type recursively *)
-val mark_type_params: type_expr -> unit
+val mark_type_params: type_mark -> type_expr -> unit
         (* Mark the sons of a type node recursively *)
 
-val unmark_type: type_expr -> unit
-val unmark_type_decl: type_declaration -> unit
-val unmark_extension_constructor: extension_constructor -> unit
-val unmark_class_type: class_type -> unit
-val unmark_class_signature: class_signature -> unit
+val unmark_type: type_mark -> type_expr -> unit
+val unmark_type_decl: type_mark -> type_declaration -> unit
+val unmark_extension_constructor: type_mark -> extension_constructor -> unit
+val unmark_class_type: type_mark -> class_type -> unit
+val unmark_class_signature: type_mark -> class_signature -> unit
         (* Remove marks from a type *)
 
 (**** Memorization of abbreviation expansion ****)

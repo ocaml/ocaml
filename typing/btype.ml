@@ -102,11 +102,7 @@ let print_raw =
 (**** Type level management ****)
 
 let generic_level = Ident.highest_scope
-
-(* Used to mark a type during a traversal. *)
 let lowest_level = Ident.lowest_scope
-let pivot_level = 2 * lowest_level - 1
-    (* pivot_level - lowest_level < lowest_level *)
 
 (**** Some type creators ****)
 
@@ -715,62 +711,44 @@ let instance_variable_type label sign =
                   (*  Utilities for level-marking   *)
                   (**********************************)
 
-let not_marked_node ty = get_level ty >= lowest_level
-    (* type nodes with negative levels are "marked" *)
+let rec mark_type mark ty =
+  if try_mark_node mark ty then iter_type_expr (mark_type mark) ty
 
-let flip_mark_node ty =
-  let ty = Transient_expr.repr ty in
-  Transient_expr.set_level ty (pivot_level - ty.level)
-let logged_mark_node ty =
-  set_level ty (pivot_level - get_level ty)
+let mark_type_params mark ty =
+  iter_type_expr (mark_type mark) ty
 
-let try_mark_node ty = not_marked_node ty && (flip_mark_node ty; true)
-let try_logged_mark_node ty = not_marked_node ty && (logged_mark_node ty; true)
-
-let rec mark_type ty =
-  if not_marked_node ty then begin
-    flip_mark_node ty;
-    iter_type_expr mark_type ty
-  end
-
-let mark_type_params ty =
-  iter_type_expr mark_type ty
-
-let type_iterators =
+let type_iterators mark =
   let it_type_expr it ty =
-    if try_mark_node ty then it.it_do_type_expr it ty
+    if try_mark_node mark ty then it.it_do_type_expr it ty
   in
   {type_iterators with it_type_expr}
 
-
 (* Remove marks from a type. *)
-let rec unmark_type ty =
-  if get_level ty < lowest_level then begin
-    (* flip back the marked level *)
-    flip_mark_node ty;
-    iter_type_expr unmark_type ty
-  end
+let rec unmark_type mark ty =
+  if try_unmark_node mark ty then iter_type_expr (unmark_type mark) ty
 
-let unmark_iterators =
-  let it_type_expr _it ty = unmark_type ty in
-  {type_iterators with it_type_expr}
+let unmark_iterators mark =
+  let it_type_expr _it ty = unmark_type mark ty in
+  {(type_iterators mark) with it_type_expr}
 
-let unmark_type_decl decl =
-  unmark_iterators.it_type_declaration unmark_iterators decl
+let unmark_type_decl mark decl =
+  let it = unmark_iterators mark in
+  it.it_type_declaration it decl
 
-let unmark_extension_constructor ext =
-  List.iter unmark_type ext.ext_type_params;
-  iter_type_expr_cstr_args unmark_type ext.ext_args;
-  Option.iter unmark_type ext.ext_ret_type
+let unmark_extension_constructor mark ext =
+  List.iter (unmark_type mark) ext.ext_type_params;
+  iter_type_expr_cstr_args (unmark_type mark) ext.ext_args;
+  Option.iter (unmark_type mark) ext.ext_ret_type
 
-let unmark_class_signature sign =
-  unmark_type sign.csig_self;
-  unmark_type sign.csig_self_row;
-  Vars.iter (fun _l (_m, _v, t) -> unmark_type t) sign.csig_vars;
-  Meths.iter (fun _l (_m, _v, t) -> unmark_type t) sign.csig_meths
+let unmark_class_signature mark sign =
+  unmark_type mark sign.csig_self;
+  unmark_type mark sign.csig_self_row;
+  Vars.iter (fun _l (_m, _v, t) -> unmark_type mark t) sign.csig_vars;
+  Meths.iter (fun _l (_m, _v, t) -> unmark_type mark t) sign.csig_meths
 
-let unmark_class_type cty =
-  unmark_iterators.it_class_type unmark_iterators cty
+let unmark_class_type mark cty =
+  let it = unmark_iterators mark in
+  it.it_class_type it cty
 
 (**** Type information getter ****)
 

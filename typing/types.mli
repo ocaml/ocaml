@@ -223,16 +223,27 @@ val get_id: type_expr -> int
 
 (** Access to marks. They are stored in the scope field. *)
 type type_mark
-val copy_mark: type_mark
+val with_type_mark: (type_mark -> 'a) -> 'a
+        (* run a computation using exclusively an available type mark *)
+
 val not_marked_node: type_mark -> type_expr -> bool
-val mark_node: type_mark -> type_expr -> bool
-        (* [not_marked_node] and [may_mark_node] return true if the node
-           was not marked. Additionally, [may_mark_node] sets the node in
-           that case, without logging it for backtracking. *)
-val unmark_node: type_mark -> type_expr -> bool
-        (* [unmark_node] returns true if the node was marked *)
-val logged_mark_node: type_mark -> type_expr -> bool
-        (* same as [mark_node] but the change is logged for backtracking *)
+        (* Return true if a type node is not yet marked *)
+
+val try_mark_node: type_mark -> type_expr -> bool
+        (* Mark a type node if it is not yet marked.
+           The marking is not logged and will have to be manually undone using
+           one of the various [unmark]'ing functions below.
+
+           Return false if it was already marked *)
+
+val try_unmark_node: type_mark -> type_expr -> bool
+        (* Same as [try_mark_node] for unmarking.
+           Return false if it was not marked *)
+
+val try_logged_mark_node: type_mark -> type_expr -> bool
+        (* Mark a type node if it is not yet marked, logging the marking so it
+           can be backtracked.
+           Return false if it was already marked *)
 
 (** Transient [type_expr].
     Should only be used immediately after [Transient_expr.repr] *)
@@ -255,12 +266,14 @@ module Transient_expr : sig
   val type_expr: transient_expr -> type_expr
   val coerce: type_expr -> transient_expr
       (** Coerce without normalizing with [repr] *)
+
   val set_stub_desc: type_expr -> type_desc -> unit
       (** Instantiate a not yet instantiated stub.
           Fail if already instantiated. *)
+
   val not_marked_node: type_mark -> transient_expr -> bool
-  val mark_node: type_mark -> transient_expr -> bool
-  val unmark_node: type_mark -> transient_expr -> bool
+  val try_mark_node: type_mark -> transient_expr -> bool
+  val try_unmark_node: type_mark -> transient_expr -> bool
 end
 
 val create_expr: type_desc -> level: int -> scope: int -> id: int -> type_expr

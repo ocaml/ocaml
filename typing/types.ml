@@ -578,10 +578,20 @@ let repr t =
      repr_link1 t t'
  | _ -> t
 
-(* scope_field *)
+(* scope_field and marks *)
+
 let scope_mask = (1 lsl 27) - 1
-let marks_mask = (-1) - scope_mask
-let copy_mark = 1 lsl 27
+let marks_mask = -1 lxor scope_mask
+type type_mark = int
+let type_marks = List.map (fun x -> 1 lsl x) [27; 28; 29; 30]
+let available_marks = ref type_marks
+let with_type_mark f =
+  match !available_marks with
+  | [] -> failwith "with_type_mark : no marks available"
+  | mark :: rem as old ->
+      available_marks := rem;
+      try let r = f mark in available_marks := old; r
+      with e -> available_marks := old; raise e
 
 (* getters for type_expr *)
 
@@ -598,13 +608,14 @@ module Transient_expr = struct
   let set_desc ty d = ty.desc <- d
   let set_stub_desc ty d = assert (ty.desc = Tvar None); ty.desc <- d
   let set_level ty lv = ty.level <- lv
+  let get_scope ty = ty.scope land scope_mask
   let set_scope ty sc =
     assert (sc land marks_mask = 0);
     ty.scope <- (ty.scope land marks_mask) lor sc
   let not_marked_node mark t = (t.scope land mark = 0)
-  let mark_node mark ty =
+  let try_mark_node mark ty =
     (not_marked_node mark ty) && (ty.scope <- ty.scope lxor mark; true)
-  let unmark_node mark ty =
+  let try_unmark_node mark ty =
     not (not_marked_node mark ty) && (ty.scope <- ty.scope lxor mark; true)
   let coerce ty = ty
   let repr = repr
@@ -613,8 +624,8 @@ end
 
 (* setting marks *)
 
-let mark_node mark t = Transient_expr.mark_node mark (repr t)
-let unmark_node mark t = Transient_expr.unmark_node mark (repr t)
+let try_mark_node mark t = Transient_expr.try_mark_node mark (repr t)
+let try_unmark_node mark t = Transient_expr.try_unmark_node mark (repr t)
 
 (* Comparison for [type_expr]; cannot be used for functors *)
 
@@ -828,7 +839,7 @@ let set_univar rty ty =
 let set_name nm v =
   log_change (Cname (nm, !nm)); nm := v
 
-let logged_mark_node mark ty =
+let try_logged_mark_node mark ty =
   (not_marked_node mark ty) && (set_scope ty (get_scope ty lxor mark); true)
 
 let rec link_row_field_ext ~(inside : row_field) (v : row_field) =
