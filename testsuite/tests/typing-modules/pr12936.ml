@@ -34,8 +34,8 @@ Error: Signature mismatch:
          sig end
        is not included in
          sig type t val x : t val y : t end
+       In module "N":
        The type "t" is required but not provided
        The value "x" is required but not provided
-       In module "N":
        The value "y" is required but not provided
 |}];;
