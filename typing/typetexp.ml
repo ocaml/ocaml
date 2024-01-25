@@ -784,10 +784,7 @@ let rec make_fixed_univars mark ty =
     end
 
 let make_fixed_univars ty =
-  with_type_mark begin fun mark ->
-    make_fixed_univars mark ty;
-    Btype.unmark_type mark ty
-  end
+  with_type_mark (fun mark -> make_fixed_univars mark ty)
 
 let transl_type env policy styp =
   transl_type env ~policy ~row_context:[] styp

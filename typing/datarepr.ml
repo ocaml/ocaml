@@ -40,8 +40,7 @@ let free_vars ?(param=false) ty =
         | _ ->
             iter_type_expr loop ty
     in
-    loop ty;
-    unmark_type mark ty
+    loop ty
   end;
   !ret
 

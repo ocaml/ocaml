@@ -582,7 +582,7 @@ let repr t =
 
 let scope_mask = (1 lsl 27) - 1
 let marks_mask = (-1) lxor scope_mask
-type type_mark = int
+type type_mark = Mark of {mark: int; mutable marked: type_expr list}
 let type_marks = List.map (fun x -> 1 lsl x) [27; 28; 29; 30]
 let available_marks = Local_store.s_ref type_marks
 let with_type_mark f =
@@ -590,8 +590,12 @@ let with_type_mark f =
   | [] -> failwith "with_type_mark : no marks available"
   | mark :: rem as old ->
       available_marks := rem;
-      try let r = f mark in available_marks := old; r
-      with e -> available_marks := old; raise e
+      let mk = Mark {mark; marked=[]} in
+      Misc.try_finally (fun () -> f mk) ~always: begin fun () ->
+        available_marks := old;
+        match mk with Mark {marked} ->
+          List.iter (fun ty -> ty.scope <- ty.scope lxor mark) marked
+      end
 
 (* getters for type_expr *)
 
@@ -599,7 +603,6 @@ let get_desc t = (repr t).desc
 let get_level t = (repr t).level
 let get_scope t = (repr t).scope land scope_mask
 let get_id t = (repr t).id
-let not_marked_node mark t = ((repr t).scope land mark = 0)
 
 (* transient type_expr *)
 
@@ -614,11 +617,12 @@ module Transient_expr = struct
   let set_scope ty sc =
     assert (sc land marks_mask = 0);
     ty.scope <- (ty.scope land marks_mask) lor sc
-  let not_marked_node mark t = (t.scope land mark = 0)
+  let not_marked_node mark t =
+    match mark with Mark {mark} -> t.scope land mark = 0
   let try_mark_node mark ty =
-    (not_marked_node mark ty) && (ty.scope <- ty.scope lxor mark; true)
-  let try_unmark_node mark ty =
-    not (not_marked_node mark ty) && (ty.scope <- ty.scope lxor mark; true)
+    (not_marked_node mark ty) &&
+    (match mark with Mark mk ->
+      ty.scope <- ty.scope lxor mk.mark; mk.marked <- ty :: mk.marked; true)
   let coerce ty = ty
   let repr = repr
   let type_expr ty = ty
@@ -626,8 +630,8 @@ end
 
 (* setting marks *)
 
+let not_marked_node mark t = Transient_expr.not_marked_node mark (repr t)
 let try_mark_node mark t = Transient_expr.try_mark_node mark (repr t)
-let try_unmark_node mark t = Transient_expr.try_unmark_node mark (repr t)
 
 (* Comparison for [type_expr]; cannot be used for functors *)
 
@@ -851,7 +855,7 @@ let set_name nm v =
 let try_logged_mark_node mark ty =
   let ty = repr ty in
   (Transient_expr.not_marked_node mark ty) &&
-  (set_scope_field ty (ty.scope lxor mark); true)
+  (match mark with Mark{mark} -> set_scope_field ty (ty.scope lxor mark); true)
 
 let rec link_row_field_ext ~(inside : row_field) (v : row_field) =
   match inside with

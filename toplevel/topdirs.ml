@@ -443,8 +443,7 @@ let is_nonrec_type id td =
   let () =
     with_type_mark begin fun mark ->
       let it = Btype.{(type_iterators mark) with it_path} in
-      it.it_type_declaration it td;
-      Btype.unmark_type_decl mark td
+      it.it_type_declaration it td
     end
   in
   match !recursive_use, !nonrecursive_use with
@@ -546,13 +545,9 @@ let is_rec_module id md =
   in
   with_type_mark begin fun mark ->
     let it =  Btype.{(type_iterators mark) with it_path} in
-    let rs = match it.it_module_declaration it md with
+    match it.it_module_declaration it md with
     | () -> Trec_not
     | exception Exit -> Trec_first
-    in
-    let unmark = Btype.unmark_iterators mark in
-    unmark.it_module_declaration unmark md;
-    rs
   end
 
 let secretly_the_same_path env path1 path2 =

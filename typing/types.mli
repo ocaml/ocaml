@@ -231,14 +231,10 @@ val not_marked_node: type_mark -> type_expr -> bool
 
 val try_mark_node: type_mark -> type_expr -> bool
         (* Mark a type node if it is not yet marked.
-           The marking is not logged and will have to be manually undone using
-           one of the various [unmark]'ing functions below.
+           Marks will be automatically removed when leaving the
+           scope of [with_type_mark].
 
            Return false if it was already marked *)
-
-val try_unmark_node: type_mark -> type_expr -> bool
-        (* Same as [try_mark_node] for unmarking.
-           Return false if it was not marked *)
 
 val try_logged_mark_node: type_mark -> type_expr -> bool
         (* Mark a type node if it is not yet marked, logging the marking so it
@@ -274,7 +270,6 @@ module Transient_expr : sig
 
   val not_marked_node: type_mark -> transient_expr -> bool
   val try_mark_node: type_mark -> transient_expr -> bool
-  val try_unmark_node: type_mark -> transient_expr -> bool
 end
 
 val create_expr: type_desc -> level: int -> scope: int -> id: int -> type_expr

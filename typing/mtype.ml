@@ -475,7 +475,6 @@ let collect_arg_paths mty =
   in
   let it = {type_iterators with it_path; it_signature_item} in
   it.it_module_type it mty;
-  it.it_module_type (unmark_iterators mark) mty;
   Path.Set.fold (fun p -> Ident.Set.union (collect_ids !subst !bindings p))
     !paths Ident.Set.empty
   end
@@ -566,6 +565,5 @@ let lower_nongen nglev mty =
         type_iterators.it_type_expr it ty
   in
   let it = {type_iterators with it_type_expr} in
-  it.it_module_type it mty;
-  it.it_module_type (unmark_iterators mark) mty
+  it.it_module_type it mty
   end

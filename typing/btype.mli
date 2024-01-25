@@ -157,8 +157,6 @@ type type_iterators =
 val type_iterators: type_mark -> type_iterators
         (* Iteration on arbitrary type information.
            [it_type_expr] calls [mark_node] to avoid loops. *)
-val unmark_iterators: type_mark -> type_iterators
-        (* Unmark any structure containing types. See [unmark_type] below. *)
 
 val copy_type_desc:
     ?keep_names:bool -> (type_expr -> type_expr) -> type_desc -> type_desc
@@ -191,13 +189,6 @@ val mark_type: type_mark -> type_expr -> unit
         (* Mark a type recursively *)
 val mark_type_params: type_mark -> type_expr -> unit
         (* Mark the sons of a type node recursively *)
-
-val unmark_type: type_mark -> type_expr -> unit
-val unmark_type_decl: type_mark -> type_declaration -> unit
-val unmark_extension_constructor: type_mark -> extension_constructor -> unit
-val unmark_class_type: type_mark -> class_type -> unit
-val unmark_class_signature: type_mark -> class_signature -> unit
-        (* Remove marks from a type *)
 
 (**** Memorization of abbreviation expansion ****)
 

@@ -918,9 +918,7 @@ let check_well_founded_decl  ~abs_env env loc path decl to_check =
          check_well_founded ~abs_env env loc path to_check visited ty;
          super.it_do_type_expr self ty
        )} in
-    let decl = Ctype.generic_instance_declaration decl in
-    it.it_type_declaration it decl;
-    unmark_type_decl mark decl
+    it.it_type_declaration it (Ctype.generic_instance_declaration decl)
   end
 
 (* Check for non-regular abbreviations; an abbreviation

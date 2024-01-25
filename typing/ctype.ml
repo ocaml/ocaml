@@ -581,11 +581,7 @@ let free_vars ?env mark ty =
   in fv ~kind:Type_variable [] ty
 
 let free_variables ?env ty =
-  with_type_mark begin fun mark ->
-    let tl = List.map fst (free_vars ?env mark ty) in
-    unmark_type mark ty;
-    tl
-  end
+  with_type_mark (fun mark -> List.map fst (free_vars ?env mark ty))
 
 let closed_type mark ty =
   match free_vars mark ty with
@@ -595,10 +591,7 @@ let closed_type mark ty =
 let closed_parameterized_type params ty =
   with_type_mark begin fun mark ->
     List.iter (mark_type mark) params;
-    let ok =
-      try closed_type mark ty; true with Non_closed _ -> false in
-    List.iter (unmark_type mark) (ty :: params);
-    ok
+    try closed_type mark ty; true with Non_closed _ -> false
   end
 
 let closed_type_decl decl =
@@ -627,10 +620,8 @@ let closed_type_decl decl =
       None    -> ()
     | Some ty -> closed_type mark ty
     end;
-    unmark_type_decl mark decl;
     None
   with Non_closed (ty, _) ->
-    unmark_type_decl mark decl;
     Some ty
   end
 
@@ -641,10 +632,8 @@ let closed_extension_constructor ext =
     | Some _ -> ()
     | None -> iter_type_expr_cstr_args (closed_type mark) ext.ext_args
     end;
-    unmark_extension_constructor mark ext;
     None
   with Non_closed (ty, _) ->
-    unmark_extension_constructor mark ext;
     Some ty
   end
 
@@ -671,12 +660,8 @@ let closed_class params sign =
             })
         end)
       sign.csig_meths;
-    List.iter (unmark_type mark) params;
-    unmark_class_signature mark sign;
     None
   with CCFailure reason ->
-    List.iter (unmark_type mark) params;
-    unmark_class_signature mark sign;
     Some reason
   end
 
@@ -1093,9 +1078,7 @@ let fully_generic ty =
         if get_level ty = generic_level then iter_type_expr aux ty
         else raise Exit
     in
-    let res = try aux ty; true with Exit -> false in
-    unmark_type mark ty;
-    res
+    try aux ty; true with Exit -> false
   end
 
 
@@ -2020,8 +2003,7 @@ let occur_univar ?(inj_only=false) env ty =
           end
       | _ -> iter_type_expr (occur_rec bound) ty
   in
-  Misc.try_finally (fun () -> occur_rec TypeSet.empty ty)
-    ~always:(fun () -> unmark_type mark ty)
+  occur_rec TypeSet.empty ty
   end
 
 let has_free_univars env ty =
@@ -2197,9 +2179,9 @@ let deep_occur t0 ty =
     end
   in
   try
-    occur_rec ty; unmark_type mark ty; false
+    occur_rec ty; false
   with Occur ->
-    unmark_type mark ty; true
+    true
   end
 
 
@@ -2518,7 +2500,7 @@ let find_lowest_level ty =
         if level < !lowest then lowest := level;
         iter_type_expr find ty
       end
-    in find ty; unmark_type mark ty
+    in find ty
   end;
   !lowest
 
@@ -3732,9 +3714,9 @@ let moregen_occur env level ty =
       if try_mark_node mark ty then iter_type_expr occur ty
     in
     try
-      occur ty; unmark_type mark ty
+      occur ty
     with Occur ->
-      unmark_type mark ty; raise_unexplained_for Moregen
+      raise_unexplained_for Moregen
   end;
   (* also check for free univars *)
   occur_univar_for Moregen env ty;
@@ -4038,7 +4020,7 @@ let rec rigidify_rec mark vars ty =
 
 let rigidify ty =
   let vars = ref TypeSet.empty in
-  with_type_mark (fun mark -> rigidify_rec mark vars ty; unmark_type mark ty);
+  with_type_mark (fun mark -> rigidify_rec mark vars ty);
   TypeSet.elements !vars
 
 let all_distinct_vars env vars =

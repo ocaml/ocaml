@@ -723,33 +723,6 @@ let type_iterators mark =
   in
   {type_iterators with it_type_expr}
 
-(* Remove marks from a type. *)
-let rec unmark_type mark ty =
-  if try_unmark_node mark ty then iter_type_expr (unmark_type mark) ty
-
-let unmark_iterators mark =
-  let it_type_expr _it ty = unmark_type mark ty in
-  {(type_iterators mark) with it_type_expr}
-
-let unmark_type_decl mark decl =
-  let it = unmark_iterators mark in
-  it.it_type_declaration it decl
-
-let unmark_extension_constructor mark ext =
-  List.iter (unmark_type mark) ext.ext_type_params;
-  iter_type_expr_cstr_args (unmark_type mark) ext.ext_args;
-  Option.iter (unmark_type mark) ext.ext_ret_type
-
-let unmark_class_signature mark sign =
-  unmark_type mark sign.csig_self;
-  unmark_type mark sign.csig_self_row;
-  Vars.iter (fun _l (_m, _v, t) -> unmark_type mark t) sign.csig_vars;
-  Meths.iter (fun _l (_m, _v, t) -> unmark_type mark t) sign.csig_meths
-
-let unmark_class_type mark cty =
-  let it = unmark_iterators mark in
-  it.it_class_type it cty
-
 (**** Type information getter ****)
 
 let cstr_type_path cstr =

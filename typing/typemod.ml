@@ -379,9 +379,7 @@ let do_check_after_substitution env ~loc ~lid paths unpackable_modtype sg =
        let error p = With_cannot_remove_packed_modtype(p,mty) in
        check_usage_of_module_types ~error ~paths ~loc env iterator
   in
-  iterator.Btype.it_signature iterator sg;
-  let unmark_it = Btype.unmark_iterators mark in
-  unmark_it.Btype.it_signature unmark_it sg
+  iterator.Btype.it_signature iterator sg
   end
 
 let check_usage_after_substitution env ~loc ~lid paths unpackable_modtype sg =
@@ -1192,9 +1190,7 @@ end = struct
           check_usage_of_module_types ~loc ~error ~paths
             (ref (lazy env)) (Btype.type_iterators mark)
         in
-        iterator.Btype.it_signature_item iterator component;
-        let unmark = Btype.unmark_iterators mark in
-        unmark.Btype.it_signature_item unmark component
+        iterator.Btype.it_signature_item iterator component
       end
 
   (* We usually require name uniqueness of signature components (e.g. types,

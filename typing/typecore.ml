@@ -2957,8 +2957,7 @@ let generalizable level ty =
       if try_mark_node mark ty then
         if get_level ty <= level then raise Exit else iter_type_expr check ty
     in
-    try check ty; unmark_type mark ty; true
-    with Exit -> unmark_type mark ty; false
+    try check ty; true with Exit -> false
   end
 
 (* Hack to allow coercion of self. Will clean-up later. *)
@@ -2982,8 +2981,7 @@ let contains_variant_either ty =
           iter_type_expr loop ty
       end
   in
-  try loop ty; unmark_type mark ty; false
-  with Exit -> unmark_type mark ty; true
+  try loop ty; false with Exit -> true
   end
 
 let shallow_iter_ppat f p =
