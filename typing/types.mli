@@ -236,11 +236,6 @@ val try_mark_node: type_mark -> type_expr -> bool
 
            Return false if it was already marked *)
 
-val try_logged_mark_node: type_mark -> type_expr -> bool
-        (* Mark a type node if it is not yet marked, logging the marking so it
-           can be backtracked.
-           Return false if it was already marked *)
-
 (** Transient [type_expr].
     Should only be used immediately after [Transient_expr.repr] *)
 type transient_expr = private

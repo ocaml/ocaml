@@ -852,11 +852,6 @@ let set_univar rty ty =
 let set_name nm v =
   log_change (Cname (nm, !nm)); nm := v
 
-let try_logged_mark_node mark ty =
-  let ty = repr ty in
-  (Transient_expr.not_marked_node mark ty) &&
-  (match mark with Mark{mark} -> set_scope_field ty (ty.scope lxor mark); true)
-
 let rec link_row_field_ext ~(inside : row_field) (v : row_field) =
   match inside with
   | RFeither {ext = {contents = RFnone} as e} ->

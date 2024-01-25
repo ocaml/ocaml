@@ -780,7 +780,7 @@ let rec normalize_package_path env p =
 
 let rec check_scope_escape mark env level ty =
   let orig_level = get_level ty in
-  if try_logged_mark_node mark ty then begin
+  if try_mark_node mark ty then begin
     if level < get_scope ty then
       raise_scope_escape_exn ty;
     begin match get_desc ty with
@@ -802,11 +802,9 @@ let rec check_scope_escape mark env level ty =
   end
 
 let check_scope_escape env level ty =
-  let snap = snapshot () in
   with_type_mark begin fun mark -> try
-    check_scope_escape mark env level ty; backtrack snap
+    check_scope_escape mark env level ty
   with Escape e ->
-    backtrack snap;
     raise (Escape { e with context = Some ty })
   end
 
