@@ -221,18 +221,33 @@ val get_level: type_expr -> int
 val get_scope: type_expr -> int
 val get_id: type_expr -> int
 
+(** Access to marks. They are stored in the scope field. *)
+type type_mark
+val copy_mark: type_mark
+val not_marked_node: type_mark -> type_expr -> bool
+val mark_node: type_mark -> type_expr -> bool
+        (* [not_marked_node] and [may_mark_node] return true if the node
+           was not marked. Additionally, [may_mark_node] sets the node in
+           that case, without logging it for backtracking. *)
+val unmark_node: type_mark -> type_expr -> bool
+        (* [unmark_node] returns true if the node was marked *)
+val logged_mark_node: type_mark -> type_expr -> bool
+        (* same as [mark_node] but the change is logged for backtracking *)
+
 (** Transient [type_expr].
     Should only be used immediately after [Transient_expr.repr] *)
 type transient_expr = private
       { mutable desc: type_desc;
         mutable level: int;
-        mutable scope: int;
+        mutable scope: scope_field;
         id: int }
+and scope_field (* abstract *)
 
 module Transient_expr : sig
   (** Operations on [transient_expr] *)
 
   val create: type_desc -> level: int -> scope: int -> id: int -> transient_expr
+  val get_scope: transient_expr -> int
   val set_desc: transient_expr -> type_desc -> unit
   val set_level: transient_expr -> int -> unit
   val set_scope: transient_expr -> int -> unit
@@ -240,10 +255,12 @@ module Transient_expr : sig
   val type_expr: transient_expr -> type_expr
   val coerce: type_expr -> transient_expr
       (** Coerce without normalizing with [repr] *)
-
   val set_stub_desc: type_expr -> type_desc -> unit
       (** Instantiate a not yet instantiated stub.
           Fail if already instantiated. *)
+  val not_marked_node: type_mark -> transient_expr -> bool
+  val mark_node: type_mark -> transient_expr -> bool
+  val unmark_node: type_mark -> transient_expr -> bool
 end
 
 val create_expr: type_desc -> level: int -> scope: int -> id: int -> type_expr

@@ -16,7 +16,7 @@
 open Local_store
 
 let lowest_scope  = 0
-let highest_scope = 100000000
+let highest_scope = 100_000_000
 
 type t =
   | Local of { name: string; stamp: int }

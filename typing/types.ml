@@ -22,8 +22,11 @@ open Asttypes
 type transient_expr =
   { mutable desc: type_desc;
     mutable level: int;
-    mutable scope: int;
+    mutable scope: scope_field;
     id: int }
+
+and scope_field = int
+  (* bit field: 27 bits for scope and 4 marks *)
 
 and type_expr = transient_expr
 
@@ -575,12 +578,18 @@ let repr t =
      repr_link1 t t'
  | _ -> t
 
+(* scope_field *)
+let scope_mask = (1 lsl 27) - 1
+let marks_mask = (-1) - scope_mask
+let copy_mark = 1 lsl 27
+
 (* getters for type_expr *)
 
 let get_desc t = (repr t).desc
 let get_level t = (repr t).level
-let get_scope t = (repr t).scope
+let get_scope t = (repr t).scope land scope_mask
 let get_id t = (repr t).id
+let not_marked_node mark t = ((repr t).scope land mark = 0)
 
 (* transient type_expr *)
 
@@ -589,11 +598,23 @@ module Transient_expr = struct
   let set_desc ty d = ty.desc <- d
   let set_stub_desc ty d = assert (ty.desc = Tvar None); ty.desc <- d
   let set_level ty lv = ty.level <- lv
-  let set_scope ty sc = ty.scope <- sc
+  let set_scope ty sc =
+    assert (sc land marks_mask = 0);
+    ty.scope <- (ty.scope land marks_mask) lor sc
+  let not_marked_node mark t = (t.scope land mark = 0)
+  let mark_node mark ty =
+    (not_marked_node mark ty) && (ty.scope <- ty.scope lxor mark; true)
+  let unmark_node mark ty =
+    not (not_marked_node mark ty) && (ty.scope <- ty.scope lxor mark; true)
   let coerce ty = ty
   let repr = repr
   let type_expr ty = ty
 end
+
+(* setting marks *)
+
+let mark_node mark t = Transient_expr.mark_node mark (repr t)
+let unmark_node mark t = Transient_expr.unmark_node mark (repr t)
 
 (* Comparison for [type_expr]; cannot be used for functors *)
 
@@ -806,6 +827,9 @@ let set_univar rty ty =
   log_change (Cuniv (rty, !rty)); rty := Some ty
 let set_name nm v =
   log_change (Cname (nm, !nm)); nm := v
+
+let logged_mark_node mark ty =
+  (not_marked_node mark ty) && (set_scope ty (get_scope ty lxor mark); true)
 
 let rec link_row_field_ext ~(inside : row_field) (v : row_field) =
   match inside with
