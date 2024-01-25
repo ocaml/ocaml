@@ -541,7 +541,10 @@ static intnat large_alloc_sweep(struct caml_heap_state* local) {
   local->unswept_large = a->next;
 
   p = (value*)((char*)a + LARGE_ALLOC_HEADER_SZ);
-  hd = (header_t)*p;
+  /* The header being read here may be concurrently written by a thread doing
+     marking. This is fine because marking can only make UNMARKED objects
+     MARKED or NOT_MARKABLE, all of which are treated identically here. */
+  hd = Hd_hp(p);
   if (Has_status_hd(hd, caml_global_heap_state.GARBAGE)) {
     if (Tag_hd (hd) == Custom_tag) {
       void (*final_fun)(value) = Custom_ops_val(Val_hp(p))->finalize;
