@@ -264,9 +264,8 @@ let path_is_strict_prefix =
        Ident.same ident1 ident2
        && list_is_strict_prefix l1 ~prefix:l2
 
-let iterator_with_env mark env =
+let iterator_with_env super env =
   let env = ref (lazy env) in
-  let super = Btype.type_iterators mark in
   env, { super with
     Btype.it_signature = (fun self sg ->
       (* add all items to the env before recursing down, to handle recursive
@@ -360,7 +359,7 @@ let check_usage_of_module_types ~error ~paths ~loc env super =
 
 let do_check_after_substitution env ~loc ~lid paths unpackable_modtype sg =
   with_type_mark begin fun mark ->
-  let env, iterator = iterator_with_env mark env in
+  let env, iterator = iterator_with_env (Btype.type_iterators mark) env in
   let last, rest = match List.rev paths with
     | [] -> assert false
     | last :: rest -> last, rest
@@ -414,18 +413,15 @@ let check_well_formed_module env loc context mty =
       | _ :: rem ->
           check_signature env rem
     in
-    (* we are not using marks here ... *)
-    with_type_mark begin fun mark ->
-    let env, super = iterator_with_env mark env in
+    let env, super =
+      iterator_with_env Btype.type_iterators_without_type_expr env in
     { super with
-      it_type_expr = (fun _self _ty -> ());
       it_signature = (fun self sg ->
         let env_before = !env in
         let env = lazy (Env.add_signature sg (Lazy.force env_before)) in
         check_signature env sg;
         super.it_signature self sg);
     }
-    end
   in
   iterator.it_module_type iterator mty
 

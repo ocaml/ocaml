@@ -299,23 +299,28 @@ let rec iter_abbrev f = function
   | Mcons(_, _, ty, ty', rem) -> f ty; f ty'; iter_abbrev f rem
   | Mlink rem              -> iter_abbrev f !rem
 
-type type_iterators =
-  { it_signature: type_iterators -> signature -> unit;
-    it_signature_item: type_iterators -> signature_item -> unit;
-    it_value_description: type_iterators -> value_description -> unit;
-    it_type_declaration: type_iterators -> type_declaration -> unit;
-    it_extension_constructor: type_iterators -> extension_constructor -> unit;
-    it_module_declaration: type_iterators -> module_declaration -> unit;
-    it_modtype_declaration: type_iterators -> modtype_declaration -> unit;
-    it_class_declaration: type_iterators -> class_declaration -> unit;
-    it_class_type_declaration: type_iterators -> class_type_declaration -> unit;
-    it_functor_param: type_iterators -> functor_parameter -> unit;
-    it_module_type: type_iterators -> module_type -> unit;
-    it_class_type: type_iterators -> class_type -> unit;
-    it_type_kind: type_iterators -> type_decl_kind -> unit;
-    it_do_type_expr: type_iterators -> type_expr -> unit;
-    it_type_expr: type_iterators -> type_expr -> unit;
+type 'a type_iterators =
+  { it_signature: 'a type_iterators -> signature -> unit;
+    it_signature_item: 'a type_iterators -> signature_item -> unit;
+    it_value_description: 'a type_iterators -> value_description -> unit;
+    it_type_declaration: 'a type_iterators -> type_declaration -> unit;
+    it_extension_constructor:
+        'a type_iterators -> extension_constructor -> unit;
+    it_module_declaration: 'a type_iterators -> module_declaration -> unit;
+    it_modtype_declaration: 'a type_iterators -> modtype_declaration -> unit;
+    it_class_declaration: 'a type_iterators -> class_declaration -> unit;
+    it_class_type_declaration:
+        'a type_iterators -> class_type_declaration -> unit;
+    it_functor_param: 'a type_iterators -> functor_parameter -> unit;
+    it_module_type: 'a type_iterators -> module_type -> unit;
+    it_class_type: 'a type_iterators -> class_type -> unit;
+    it_type_kind: 'a type_iterators -> type_decl_kind -> unit;
+    it_do_type_expr: 'a type_iterators -> 'a;
+    it_type_expr: 'a type_iterators -> type_expr -> unit;
     it_path: Path.t -> unit; }
+
+type type_iterators_full = (type_expr -> unit) type_iterators
+type type_iterators_without_type_expr = (unit -> unit) type_iterators
 
 let iter_type_expr_cstr_args f = function
   | Cstr_tuple tl -> List.iter f tl
@@ -341,7 +346,7 @@ let iter_type_expr_kind f = function
       ()
 
 
-let type_iterators =
+let type_iterators_without_type_expr =
   let it_signature it =
     List.iter (it.it_signature_item it)
   and it_signature_item it = function
@@ -401,19 +406,9 @@ let type_iterators =
         it.it_class_type it cty
   and it_type_kind it kind =
     iter_type_expr_kind (it.it_type_expr it) kind
-  and it_do_type_expr it ty =
-    iter_type_expr (it.it_type_expr it) ty;
-    match get_desc ty with
-      Tconstr (p, _, _)
-    | Tobject (_, {contents=Some (p, _)})
-    | Tpackage (p, _) ->
-        it.it_path p
-    | Tvariant row ->
-        Option.iter (fun (p,_) -> it.it_path p) (row_name row)
-    | _ -> ()
   and it_path _p = ()
   in
-  { it_path; it_type_expr = it_do_type_expr; it_do_type_expr;
+  { it_path; it_type_expr = (fun _ _ -> ()); it_do_type_expr = (fun _ _ -> ());
     it_type_kind; it_class_type; it_functor_param; it_module_type;
     it_signature; it_class_type_declaration; it_class_declaration;
     it_modtype_declaration; it_module_declaration; it_extension_constructor;
@@ -720,8 +715,18 @@ let mark_type_params mark ty =
 let type_iterators mark =
   let it_type_expr it ty =
     if try_mark_node mark ty then it.it_do_type_expr it ty
+  and it_do_type_expr it ty =
+    iter_type_expr (it.it_type_expr it) ty;
+    match get_desc ty with
+      Tconstr (p, _, _)
+    | Tobject (_, {contents=Some (p, _)})
+    | Tpackage (p, _) ->
+        it.it_path p
+    | Tvariant row ->
+        Option.iter (fun (p,_) -> it.it_path p) (row_name row)
+    | _ -> ()
   in
-  {type_iterators with it_type_expr}
+  {type_iterators_without_type_expr with it_type_expr; it_do_type_expr}
 
 (**** Type information getter ****)
 

@@ -137,26 +137,36 @@ val map_type_expr_cstr_args: (type_expr -> type_expr) ->
   (constructor_arguments -> constructor_arguments)
 
 
-type type_iterators =
-  { it_signature: type_iterators -> signature -> unit;
-    it_signature_item: type_iterators -> signature_item -> unit;
-    it_value_description: type_iterators -> value_description -> unit;
-    it_type_declaration: type_iterators -> type_declaration -> unit;
-    it_extension_constructor: type_iterators -> extension_constructor -> unit;
-    it_module_declaration: type_iterators -> module_declaration -> unit;
-    it_modtype_declaration: type_iterators -> modtype_declaration -> unit;
-    it_class_declaration: type_iterators -> class_declaration -> unit;
-    it_class_type_declaration: type_iterators -> class_type_declaration -> unit;
-    it_functor_param: type_iterators -> functor_parameter -> unit;
-    it_module_type: type_iterators -> module_type -> unit;
-    it_class_type: type_iterators -> class_type -> unit;
-    it_type_kind: type_iterators -> type_decl_kind -> unit;
-    it_do_type_expr: type_iterators -> type_expr -> unit;
-    it_type_expr: type_iterators -> type_expr -> unit;
+type 'a type_iterators =
+  { it_signature: 'a type_iterators -> signature -> unit;
+    it_signature_item: 'a type_iterators -> signature_item -> unit;
+    it_value_description: 'a type_iterators -> value_description -> unit;
+    it_type_declaration: 'a type_iterators -> type_declaration -> unit;
+    it_extension_constructor:
+        'a type_iterators -> extension_constructor -> unit;
+    it_module_declaration: 'a type_iterators -> module_declaration -> unit;
+    it_modtype_declaration: 'a type_iterators -> modtype_declaration -> unit;
+    it_class_declaration: 'a type_iterators -> class_declaration -> unit;
+    it_class_type_declaration:
+        'a type_iterators -> class_type_declaration -> unit;
+    it_functor_param: 'a type_iterators -> functor_parameter -> unit;
+    it_module_type: 'a type_iterators -> module_type -> unit;
+    it_class_type: 'a type_iterators -> class_type -> unit;
+    it_type_kind: 'a type_iterators -> type_decl_kind -> unit;
+    it_do_type_expr: 'a type_iterators -> 'a;
+    it_type_expr: 'a type_iterators -> type_expr -> unit;
     it_path: Path.t -> unit; }
-val type_iterators: type_mark -> type_iterators
-        (* Iteration on arbitrary type information.
+
+type type_iterators_full = (type_expr -> unit) type_iterators
+type type_iterators_without_type_expr = (unit -> unit) type_iterators
+
+val type_iterators: type_mark -> type_iterators_full
+        (* Iteration on arbitrary type information, including [type_expr].
            [it_type_expr] calls [mark_node] to avoid loops. *)
+
+val type_iterators_without_type_expr: type_iterators_without_type_expr
+        (* Iteration on arbitrary type information.
+           Cannot recurse on [type_expr]. *)
 
 val copy_type_desc:
     ?keep_names:bool -> (type_expr -> type_expr) -> type_desc -> type_desc
