@@ -41,7 +41,7 @@ _______________
   (Hugo Heuzard, review by Stefan Muenzel and Sébastien Hinderer)
 
 * #12942: Fix an line ordering in some module inclusion error messages
-  (Nick Roberts, review by ???, report by Carl Eastlund)
+  (Nick Roberts, review by Florian Angeletti, report by Carl Eastlund)
 
 ### Internal/compiler-libs changes:
 
