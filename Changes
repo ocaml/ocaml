@@ -40,9 +40,6 @@ _______________
 * #12084: Check link order when creating archive and when using ocamlopt
   (Hugo Heuzard, review by Stefan Muenzel and Sébastien Hinderer)
 
-* #12942: Fix an line ordering in some module inclusion error messages
-  (Nick Roberts, review by Florian Angeletti, report by Carl Eastlund)
-
 ### Internal/compiler-libs changes:
 
 - #12896: Simplify the compilation of custom bytecode runtimes by explicitly
@@ -565,6 +562,9 @@ OCaml 5.2.0
 - #12777: Add details about the actual and expected method types to the method
   mismatch error messages.
   (Javier Chávarri, review by Gabriel Scherer and Florian Angeletti)
+
+* #12942: Fix an line ordering in some module inclusion error messages
+  (Nick Roberts, review by Florian Angeletti, report by Carl Eastlund)
 
 ### Internal/compiler-libs changes:
 
