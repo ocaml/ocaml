@@ -53,7 +53,7 @@ _______________
   (Miod Vallat, review by TBD)
 
 - #12932: Remove useless code in Typecore.type_label_exp (was a fix for #4862)
-  (Jacques Garrigue, review by ???)
+  (Jacques Garrigue, review by Gabriel Scherer)
 
 ### Build system:
 
