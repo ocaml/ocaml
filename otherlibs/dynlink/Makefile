@@ -35,7 +35,8 @@ ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
 endif
 
-COMPFLAGS += -I byte
+%.cmo: COMPFLAGS += -I byte
+%.cmi: COMPFLAGS += -I byte
 OPTCOMPFLAGS += -I native
 
 LOCAL_SRC=dynlink_compilerlibs
@@ -88,6 +89,7 @@ COMPILERLIBS_SOURCES=\
   utils/warnings.ml \
   utils/int_replace_polymorphic_compare.ml \
   utils/lazy_backtrack.ml \
+  utils/compression.ml \
   parsing/location.ml \
   parsing/unit_info.ml \
   parsing/longident.ml \
@@ -125,6 +127,16 @@ COMPILERLIBS_SOURCES=\
   bytecomp/dll.ml \
   bytecomp/meta.ml \
   bytecomp/symtable.ml
+
+# For the native-code version of this library, we need much fewer modules
+MINI_COMPILERLIBS_INTFS=\
+  file_formats/cmxs_format.mli
+
+MINI_COMPILERLIBS_SOURCES=\
+  utils/binutils.ml \
+  utils/config.ml \
+  utils/build_path_prefix_map.ml \
+  utils/misc.ml
 
 # Rules to make a local copy of the .ml and .mli files required.  We also
 # provide .ml files for .mli-only modules---without this, such modules do
@@ -171,6 +183,10 @@ COMPILERLIBS_SOURCES_INTFS=\
 COMPILERLIBS_COPIED_SOURCES_INTFS=\
   $(addsuffix i, $(COMPILERLIBS_COPIED_SOURCES))
 
+MINI_COMPILERLIBS_COPIED_SOURCES=\
+  $(addprefix $(LOCAL_SRC)/, $(notdir $(MINI_COMPILERLIBS_SOURCES))) \
+  $(addprefix $(LOCAL_SRC)/, $(notdir $(MINI_COMPILERLIBS_INTFS)))
+
 # $(LOCAL_SRC)/Makefile uses the variables above in dependencies, so must be
 # include'd after they've been defined.
 -include $(LOCAL_SRC)/Makefile
@@ -179,7 +195,7 @@ COMPILERLIBS_COPIED_SOURCES_INTFS=\
 # that the resulting .cm{o,x} files can be packed.
 
 COMPILERLIBS_CMO=$(COMPILERLIBS_COPIED_SOURCES:.ml=.cmo)
-COMPILERLIBS_CMX=$(COMPILERLIBS_COPIED_SOURCES:.ml=.cmx)
+COMPILERLIBS_CMX=$(MINI_COMPILERLIBS_COPIED_SOURCES:.ml=.cmx)
 
 $(LOCAL_SRC)/%.cmi: $(LOCAL_SRC)/%.mli
 	$(V_OCAMLC)$(OCAMLC) -c -for-pack Dynlink_compilerlibs $(COMPFLAGS) \
