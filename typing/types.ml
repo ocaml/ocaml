@@ -26,7 +26,8 @@ type transient_expr =
     id: int }
 
 and scope_field = int
-  (* bit field: 27 bits for scope and 4 marks *)
+  (* bit field: 27 bits for scope (Ident.highest_scope = 100_000_000)
+     and at least 4 marks *)
 
 and type_expr = transient_expr
 
@@ -594,6 +595,7 @@ let with_type_mark f =
       Misc.try_finally (fun () -> f mk) ~always: begin fun () ->
         available_marks := old;
         match mk with Mark {marked} ->
+          (* unmark marked type nodes *)
           List.iter
             (fun ty -> ty.scope <- ty.scope land ((-1) lxor mark))
             marked
@@ -605,6 +607,8 @@ let get_desc t = (repr t).desc
 let get_level t = (repr t).level
 let get_scope t = (repr t).scope land scope_mask
 let get_id t = (repr t).id
+let not_marked_node mark t =
+  match mark with Mark {mark} -> (repr t).scope land mark = 0
 
 (* transient type_expr *)
 
@@ -616,22 +620,19 @@ module Transient_expr = struct
   let get_scope ty = ty.scope land scope_mask
   let get_marks ty = ty.scope lsr 27
   let set_scope ty sc =
-    assert (sc land marks_mask = 0);
+    if (sc land marks_mask <> 0) then
+      invalid_arg "Types.Transient_expr.set_scope";
     ty.scope <- (ty.scope land marks_mask) lor sc
-  let not_marked_node mark t =
-    match mark with Mark {mark} -> t.scope land mark = 0
   let try_mark_node mark ty =
-    (not_marked_node mark ty) &&
-    (match mark with Mark mk ->
-      ty.scope <- ty.scope lor mk.mark; mk.marked <- ty :: mk.marked; true)
+    match mark with Mark ({mark} as mk) ->
+      (ty.scope land mark = 0) && (* mark type node when not marked *)
+      (ty.scope <- ty.scope lor mark; mk.marked <- ty :: mk.marked; true)
   let coerce ty = ty
   let repr = repr
   let type_expr ty = ty
 end
 
 (* setting marks *)
-
-let not_marked_node mark t = Transient_expr.not_marked_node mark (repr t)
 let try_mark_node mark t = Transient_expr.try_mark_node mark (repr t)
 
 (* Comparison for [type_expr]; cannot be used for functors *)

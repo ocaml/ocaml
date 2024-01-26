@@ -263,7 +263,6 @@ module Transient_expr : sig
       (** Instantiate a not yet instantiated stub.
           Fail if already instantiated. *)
 
-  val not_marked_node: type_mark -> transient_expr -> bool
   val try_mark_node: type_mark -> transient_expr -> bool
 end
 

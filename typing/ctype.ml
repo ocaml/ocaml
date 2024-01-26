@@ -5211,9 +5211,8 @@ let nongen_vars_in_class_declaration cty =
 
 (* Normalize a type before printing, saving... *)
 (* Cannot use mark_type because deep_occur uses it too *)
-let rec normalize_type_rec visited ty =
-  if not (TypeSet.mem ty !visited) then begin
-    visited := TypeSet.add ty !visited;
+let rec normalize_type_rec mark ty =
+  if try_mark_node mark ty then begin
     let tm = row_of_type ty in
     begin if not (is_Tconstr ty) && is_constr_row ~allow_ident:false tm then
       match get_desc tm with (* PR#7348 *)
@@ -5272,11 +5271,11 @@ let rec normalize_type_rec visited ty =
         set_type_desc fi (get_desc fi')
     | _ -> ()
     end;
-    iter_type_expr (normalize_type_rec visited) ty;
+    iter_type_expr (normalize_type_rec mark) ty;
   end
 
 let normalize_type ty =
-  normalize_type_rec (ref TypeSet.empty) ty
+  with_type_mark (fun mark -> normalize_type_rec mark ty)
 
 
                               (*************************)
