@@ -75,6 +75,11 @@ _______________
 - #12932: Remove useless code in Typecore.type_label_exp (was a fix for #4862)
   (Jacques Garrigue, review by Gabriel Scherer)
 
+- #12943: Make transient_expr.scope a bitfield, and use it to store marks.
+  Marks are automatically allocated, and removed when leaving their scope.
+  Falls back to using TransientTypeSet when marks are exhausted.
+  (Jacques Garrigue and Takafumi Saikawa, review by ???)
+
 ### Build system:
 
 - #12909: Reorganise how MKEXE_VIA_CC is built to make it correct for MSVC by

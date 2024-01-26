@@ -589,11 +589,11 @@ type type_mark =
   | Mark of {mark: int; mutable marked: type_expr list}
   | Set of {mutable visited: TransientTypeSet.t}
 let type_marks =
+  (* All the bits in marks_mask *)
   List.init (Sys.int_size - 27) (fun x -> 1 lsl (x + 27))
 let available_marks = Local_store.s_ref type_marks
 let with_type_mark f =
   match !available_marks with
-  | [] -> f (Set {visited = TransientTypeSet.empty})
   | mark :: rem as old ->
       available_marks := rem;
       let mk = Mark {mark; marked = []} in
@@ -607,6 +607,9 @@ let with_type_mark f =
               marked
         | Set _ -> ()
       end
+  | [] ->
+      (* When marks are exhausted, fall back to using a set *)
+      f (Set {visited = TransientTypeSet.empty})
 
 (* getters for type_expr *)
 
