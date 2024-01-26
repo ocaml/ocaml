@@ -2082,9 +2082,9 @@ let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
       TypeSet.empty old_univars
   in
   if List.exists (fun t -> TypeSet.mem t known_univars) tl1 then
-     univars_escape env old_univars tl1 (newty(Tpoly(t2,tl2)));
+    univars_escape env old_univars tl1 (newgenty(Tpoly(t2,tl2)));
   if List.exists (fun t -> TypeSet.mem t known_univars) tl2 then
-    univars_escape env old_univars tl2 (newty(Tpoly(t1,tl1)));
+    univars_escape env old_univars tl2 (newgenty(Tpoly(t1,tl1)));
   let cl1 = List.map (fun t -> t, ref None) tl1
   and cl2 = List.map (fun t -> t, ref None) tl2 in
   univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
