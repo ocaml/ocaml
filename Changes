@@ -406,6 +406,13 @@ OCaml 5.2.0
 - #12625: Remove the Closure module from Obj
   (Vincent Laviron, review by Xavier Leroy)
 
+- #12758: Remove the `Marshal.Compression` flag to the
+  `Marshal.to_*` functions.  The compilers are still able to use
+  ZSTD compression for compilation artefacts.
+  This is a forward port and clean-up of the emergency fix that was introduced
+  in OCaml 5.1.1 by #12734.
+  (Xavier Leroy, review by Damien Doligez)
+
 - #12784: Fix computation of minor-heap allocation in Gc.counters()
   and Gc.allocated_bytes(). (Nick Barnes, review by Gabriel Scherer)
 
