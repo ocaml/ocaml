@@ -58,6 +58,9 @@ end
 (**** Levels ****)
 
 val generic_level: int
+        (* level of polymorphic variables; = Ident.highest_scope *)
+val lowest_level: int
+        (* lowest level for type nodes; = Ident.lowest_scope *)
 
 val newgenty: type_desc -> type_expr
         (* Create a generic type *)
@@ -66,13 +69,6 @@ val newgenvar: ?name:string -> unit -> type_expr
 val newgenstub: scope:int -> type_expr
         (* Return a fresh generic node, to be instantiated
            by [Transient_expr.set_stub_desc] *)
-
-(* Use Tsubst instead
-val newmarkedvar: int -> type_expr
-        (* Return a fresh marked variable *)
-val newmarkedgenvar: unit -> type_expr
-        (* Return a fresh marked generic variable *)
-*)
 
 (**** Types ****)
 
@@ -136,6 +132,14 @@ val iter_type_expr_cstr_args: (type_expr -> unit) ->
 val map_type_expr_cstr_args: (type_expr -> type_expr) ->
   (constructor_arguments -> constructor_arguments)
 
+(**** Utilities for type marking ****)
+
+val mark_type: type_mark -> type_expr -> unit
+        (* Mark a type recursively *)
+val mark_type_params: type_mark -> type_expr -> unit
+        (* Mark the sons of a type node recursively *)
+
+(**** (Object-oriented) iterator ****)
 
 type 'a type_iterators =
   { it_signature: 'a type_iterators -> signature -> unit;
@@ -168,6 +172,8 @@ val type_iterators_without_type_expr: type_iterators_without_type_expr
         (* Iteration on arbitrary type information.
            Cannot recurse on [type_expr]. *)
 
+(**** Utilities for copying ****)
+
 val copy_type_desc:
     ?keep_names:bool -> (type_expr -> type_expr) -> type_desc -> type_desc
         (* Copy on types *)
@@ -191,14 +197,6 @@ module For_copy : sig
         (* [with_scope f] calls [f] and restores saved type descriptions
            before returning its result. *)
 end
-
-val lowest_level: int
-        (* lowest level for type nodes *)
-
-val mark_type: type_mark -> type_expr -> unit
-        (* Mark a type recursively *)
-val mark_type_params: type_mark -> type_expr -> unit
-        (* Mark the sons of a type node recursively *)
 
 (**** Memorization of abbreviation expansion ****)
 

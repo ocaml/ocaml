@@ -285,6 +285,8 @@ module TransientTypeOps : sig
   val hash : t -> int
 end
 
+module TransientTypeSet : Set.S with type elt = transient_expr
+
 (** Comparisons for [type_expr]; cannot be used for functors *)
 
 val eq_type: type_expr -> type_expr -> bool
