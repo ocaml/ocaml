@@ -594,7 +594,9 @@ let with_type_mark f =
       Misc.try_finally (fun () -> f mk) ~always: begin fun () ->
         available_marks := old;
         match mk with Mark {marked} ->
-          List.iter (fun ty -> ty.scope <- ty.scope lxor mark) marked
+          List.iter
+            (fun ty -> ty.scope <- ty.scope land ((-1) lxor mark))
+            marked
       end
 
 (* getters for type_expr *)
@@ -611,7 +613,6 @@ module Transient_expr = struct
   let set_desc ty d = ty.desc <- d
   let set_stub_desc ty d = assert (ty.desc = Tvar None); ty.desc <- d
   let set_level ty lv = ty.level <- lv
-  let set_scope_field ty sc = ty.scope <- sc
   let get_scope ty = ty.scope land scope_mask
   let get_marks ty = ty.scope lsr 27
   let set_scope ty sc =
@@ -622,7 +623,7 @@ module Transient_expr = struct
   let try_mark_node mark ty =
     (not_marked_node mark ty) &&
     (match mark with Mark mk ->
-      ty.scope <- ty.scope lxor mk.mark; mk.marked <- ty :: mk.marked; true)
+      ty.scope <- ty.scope lor mk.mark; mk.marked <- ty :: mk.marked; true)
   let coerce ty = ty
   let repr = repr
   let type_expr ty = ty
@@ -783,7 +784,7 @@ let undo_change = function
     Ctype  (ty, desc) -> Transient_expr.set_desc ty desc
   | Ccompress (ty, desc, _) -> Transient_expr.set_desc ty desc
   | Clevel (ty, level) -> Transient_expr.set_level ty level
-  | Cscope (ty, scope) -> Transient_expr.set_scope_field ty scope
+  | Cscope (ty, scope) -> Transient_expr.set_scope ty scope
   | Cname  (r, v)    -> r := v
   | Crow   r         -> r := RFnone
   | Ckind  (FKvar r) -> r.field_kind <- FKprivate
@@ -834,18 +835,14 @@ let set_level ty level =
     Transient_expr.set_level ty level
   end
 
-let set_scope_field ty scope =
-  if scope <> ty.scope then begin
-    if ty.id <= !last_snapshot then log_change (Cscope (ty, ty.scope));
-    Transient_expr.set_scope_field ty scope
-  end
-
 (* TODO: introduce a guard and rename it to set_higher_scope? *)
 let set_scope ty scope =
-  assert (scope land marks_mask = 0);
   let ty = repr ty in
-  let scope' = scope lor (ty.scope land marks_mask) in
-  set_scope_field ty scope'
+  let prev_scope = ty.scope land marks_mask in
+  if scope <> prev_scope then begin
+    if ty.id <= !last_snapshot then log_change (Cscope (ty, prev_scope));
+    Transient_expr.set_scope ty scope
+  end
 
 let set_univar rty ty =
   log_change (Cuniv (rty, !rty)); rty := Some ty
