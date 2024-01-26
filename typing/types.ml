@@ -91,6 +91,8 @@ module TransientTypeOps = struct
   let equal t1 t2 = t1 == t2
 end
 
+module TransientTypeSet = Set.Make(TransientTypeOps)
+
 (* *)
 
 module Uid = Shape.Uid
@@ -583,22 +585,27 @@ let repr t =
 
 let scope_mask = (1 lsl 27) - 1
 let marks_mask = (-1) lxor scope_mask
-type type_mark = Mark of {mark: int; mutable marked: type_expr list}
-let type_marks = List.map (fun x -> 1 lsl x) [27; 28; 29; 30]
+type type_mark =
+  | Mark of {mark: int; mutable marked: type_expr list}
+  | Set of {mutable visited: TransientTypeSet.t}
+let type_marks =
+  List.init (Sys.int_size - 27) (fun x -> 1 lsl (x + 27))
 let available_marks = Local_store.s_ref type_marks
 let with_type_mark f =
   match !available_marks with
-  | [] -> failwith "with_type_mark : no marks available"
+  | [] -> f (Set {visited = TransientTypeSet.empty})
   | mark :: rem as old ->
       available_marks := rem;
-      let mk = Mark {mark; marked=[]} in
+      let mk = Mark {mark; marked = []} in
       Misc.try_finally (fun () -> f mk) ~always: begin fun () ->
         available_marks := old;
-        match mk with Mark {marked} ->
-          (* unmark marked type nodes *)
-          List.iter
-            (fun ty -> ty.scope <- ty.scope land ((-1) lxor mark))
-            marked
+        match mk with
+        | Mark {marked} ->
+            (* unmark marked type nodes *)
+            List.iter
+              (fun ty -> ty.scope <- ty.scope land ((-1) lxor mark))
+              marked
+        | Set _ -> ()
       end
 
 (* getters for type_expr *)
@@ -608,7 +615,9 @@ let get_level t = (repr t).level
 let get_scope t = (repr t).scope land scope_mask
 let get_id t = (repr t).id
 let not_marked_node mark t =
-  match mark with Mark {mark} -> (repr t).scope land mark = 0
+  match mark with
+  | Mark {mark} -> (repr t).scope land mark = 0
+  | Set {visited} -> not (TransientTypeSet.mem (repr t) visited)
 
 (* transient type_expr *)
 
@@ -624,9 +633,13 @@ module Transient_expr = struct
       invalid_arg "Types.Transient_expr.set_scope";
     ty.scope <- (ty.scope land marks_mask) lor sc
   let try_mark_node mark ty =
-    match mark with Mark ({mark} as mk) ->
-      (ty.scope land mark = 0) && (* mark type node when not marked *)
-      (ty.scope <- ty.scope lor mark; mk.marked <- ty :: mk.marked; true)
+    match mark with
+    | Mark ({mark} as mk) ->
+        (ty.scope land mark = 0) && (* mark type node when not marked *)
+        (ty.scope <- ty.scope lor mark; mk.marked <- ty :: mk.marked; true)
+    | Set ({visited} as mk) ->
+        not (TransientTypeSet.mem ty visited) &&
+        (mk.visited <- TransientTypeSet.add ty visited; true)
   let coerce ty = ty
   let repr = repr
   let type_expr ty = ty
