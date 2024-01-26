@@ -2033,10 +2033,9 @@ let get_univar_family univar_pairs univars =
 (* Whether a family of univars escapes from a type *)
 let univars_escape env univar_pairs vl ty =
   let family = get_univar_family univar_pairs vl in
-  let visited = ref TypeSet.empty in
+  with_type_mark begin fun mark ->
   let rec occur t =
-    if TypeSet.mem t !visited then () else begin
-      visited := TypeSet.add t !visited;
+    if try_mark_node mark t then begin
       match get_desc t with
         Tpoly (t, tl) ->
           if List.exists (fun t -> TypeSet.mem t family) tl then ()
@@ -2058,6 +2057,7 @@ let univars_escape env univar_pairs vl ty =
     end
   in
   occur ty
+  end
 
 (* Wrapper checking that no variable escapes and updating univar_pairs *)
 let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
