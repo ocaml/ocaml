@@ -3386,7 +3386,6 @@ and type_expect_
                     types added to [new_env].
                  *)
                 let bound_exp = vb.vb_expr in
-                generalize_structure_exp bound_exp;
                 let bound_exp_type = Ctype.instance bound_exp.exp_type in
                 let loc = proper_exp_loc bound_exp in
                 let outer_var = newvar2 outer_level in
@@ -5046,12 +5045,8 @@ and type_label_exp create env loc ty_expected
           (lid, label, sarg) =
   (* Here also ty_expected may be at generic_level *)
   let separate = !Clflags.principal || Env.has_local_constraints env in
-  (* #4682: we try two type-checking approaches for [arg] using backtracking:
-     - first try: we try with [ty_arg] as expected type;
-     - second try; if that fails, we backtrack and try without
-  *)
-  let (vars, ty_arg, snap, arg) =
-    (* try the first approach *)
+  let (_, arg) =
+    (* raise level to check univars *)
     with_local_level begin fun () ->
       let (vars, ty_arg) =
         with_local_level_iter_if separate begin fun () ->
@@ -5080,45 +5075,17 @@ and type_label_exp create env loc ty_expected
           raise (Error(loc, env, Private_type ty_expected))
         else
           raise (Error(lid.loc, env, Private_label(lid.txt, ty_expected)));
-      let snap = if vars = [] then None else Some (Btype.snapshot ()) in
       let arg = type_argument env sarg ty_arg (instance ty_arg) in
-      (vars, ty_arg, snap, arg)
+      (vars, arg)
     end
-    (* Note: there is no generalization logic here as could be expected,
-       because it is part of the backtracking logic below. *)
-  in
-  let arg =
-    try
-      if (vars = []) then arg
+    ~post:(fun (vars, arg) ->
+      if vars = [] then enforce_current_level env arg.exp_type
       else begin
-        (* We detect if the first try failed here,
-           during generalization. *)
-        if maybe_expansive arg then
-          lower_contravariant env arg.exp_type;
+        if maybe_expansive arg then lower_contravariant env arg.exp_type;
         generalize_and_check_univars env "field value" arg label.lbl_arg vars;
-        {arg with exp_type = instance arg.exp_type}
-      end
-    with first_try_exn when maybe_expansive arg -> try
-      (* backtrack and try the second approach *)
-      Option.iter Btype.backtrack snap;
-      let arg = with_local_level (fun () -> type_exp env sarg)
-          ~post:(fun arg -> lower_contravariant env arg.exp_type)
-      in
-      let arg =
-        with_local_level begin fun () ->
-          let arg = {arg with exp_type = instance arg.exp_type} in
-          unify_exp env arg (instance ty_arg);
-          arg
-        end
-        ~post: begin fun arg ->
-          generalize_and_check_univars env "field value" arg label.lbl_arg vars
-        end
-      in
-      {arg with exp_type = instance arg.exp_type}
-    with Error (_, _, Less_general _) as e -> raise e
-    | _ -> raise first_try_exn
+      end)
   in
-  (lid, label, arg)
+  (lid, label, {arg with exp_type = instance arg.exp_type})
 
 and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
   (* ty_expected' may be generic *)
