@@ -62,9 +62,8 @@ let to_string n = format "%d" n
 
 external of_string: string -> nativeint = "caml_nativeint_of_string"
 
-let of_string_opt s =
-  try Some (of_string s)
-  with Failure _ -> None
+external of_string_opt: string -> nativeint option
+  = "caml_nativeint_of_string_opt"
 
 type t = nativeint
 

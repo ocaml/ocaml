@@ -10,6 +10,8 @@ _______________
 ### Code generation and optimizations:
 
 ### Standard library:
+- #11163: Add (int/int32/Nativeint)_of_string_opt primitives.
+  (Bikal Gurung, review by ???)
 
 - #12869: Add List.take, List.drop, List.take_while and List.drop_while
   (Kate Deplaix and Oscar Butler-Aldridge review by Nicolás Ojeda Bär,

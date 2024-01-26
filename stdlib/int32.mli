@@ -174,7 +174,7 @@ external of_string : string -> int32 = "caml_int32_of_string"
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [int32]. *)
 
-val of_string_opt: string -> int32 option
+external of_string_opt: string -> int32 option = "caml_int32_of_string_opt"
 (** Same as [of_string], but return [None] instead of raising.
     @since 4.05 *)
 
