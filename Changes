@@ -494,6 +494,9 @@ OCaml 5.2.0
   mismatch error messages.
   (Javier Chávarri, review by Gabriel Scherer and Florian Angeletti)
 
+* #12942: Fix an line ordering in some module inclusion error messages
+  (Nick Roberts, review by Florian Angeletti, report by Carl Eastlund)
+
 ### Internal/compiler-libs changes:
 
 - #12639: parsing: Attach a location to the RHS of Ptyp_alias
