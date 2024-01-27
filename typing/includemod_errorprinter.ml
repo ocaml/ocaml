@@ -780,10 +780,11 @@ and functor_symptom ~expansion_token ~env ~before ~ctx = function
 and signature ~expansion_token ~env:_ ~before ~ctx sgs =
   Printtyp.wrap_printing_env ~error:true sgs.env (fun () ->
       match sgs.missings, sgs.incompatibles with
-      | a :: l , _ ->
+      | _ :: _ as missings, _ ->
           if expansion_token then
-            with_context ctx missing_field a
-            :: List.map (Location.msg "%a" missing_field) l
+            let init_missings, last_missing = Misc.split_last missings in
+            List.map (Location.msg "%a" missing_field) init_missings
+            @ [ with_context ctx missing_field last_missing ]
             @ before
           else
             before
