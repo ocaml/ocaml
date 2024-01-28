@@ -898,6 +898,10 @@ OCaml 5.2.0
   optional arguments and default values in the Closure backend
   (Alain Frisch, review by Vincent Laviron)
 
+- #12677, #12889: make Domain.DLS thread-safe
+  (Gabriel Scherer, review by Olivier Nicole and Damien Doligez,
+   report by Vesa Karvonen)
+
 - #12561: Fix crash when combining TSan and frame-pointers
   (Fabrice Buoro and Olivier Nicole, report by Jan Midtgaard, review by Miod
   Vallat and Gabriel Scherer)
