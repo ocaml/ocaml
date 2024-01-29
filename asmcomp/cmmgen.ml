@@ -20,7 +20,6 @@
 open Misc
 open Asttypes
 open Primitive
-open Types
 open Lambda
 open Clambda
 open Clambda_primitives
@@ -125,121 +124,6 @@ let min_mut x y =
 let get_field env mut ptr n dbg =
   let mut = min_mut mut (mut_from_env env ptr) in
   get_field_gen mut ptr n dbg
-
-type rhs_kind =
-  | RHS_block of int
-  | RHS_infix of { blocksize : int; offset : int }
-  | RHS_floatblock of int
-  | RHS_nonrec
-  | RHS_unreachable
-
- (* We expect Rec_check to associate Dynamic mode to branches with multiple
-    returning paths, which translates to RHS_nonrec. *)
-let join_rhs_kind k1 k2 =
-  match k1, k2 with
-  | RHS_unreachable, k | k, RHS_unreachable -> k
-  | _, _ -> RHS_nonrec
-
-let rec expr_size env = function
-  | Uvar id ->
-      begin try V.find_same id env with Not_found -> RHS_nonrec end
-  | Uclosure(fundecls, clos_vars) ->
-      RHS_block (fundecls_size fundecls + List.length clos_vars)
-  | Ulet(_str, _kind, id, exp, body) ->
-      expr_size (V.add (VP.var id) (expr_size env exp) env) body
-  | Uphantom_let (_id, _def, body) ->
-      expr_size env body
-  | Uletrec(bindings, body) ->
-      let env =
-        List.fold_right
-          (fun (id, _, exp) env -> V.add (VP.var id) (expr_size env exp) env)
-          bindings env
-      in
-      expr_size env body
-  | Uprim(Pmakeblock _, args, _) ->
-      RHS_block (List.length args)
-  | Uprim(Pmakearray((Paddrarray | Pintarray), _), args, _) ->
-      RHS_block (List.length args)
-  | Uprim(Pmakearray(Pfloatarray, _), args, _) ->
-      RHS_floatblock (List.length args)
-  | Uprim(Pmakearray(Pgenarray, _), _, _) ->
-     (* Pgenarray is excluded from recursive bindings by the
-        check in Translcore.check_recursive_lambda *)
-     RHS_nonrec
-  | Uprim (Pduprecord ((Record_regular | Record_inlined _), sz), _, _) ->
-      RHS_block sz
-  | Uprim (Pduprecord (Record_unboxed _, _), _, _) ->
-      assert false
-  | Uprim (Pduprecord (Record_extension _, sz), _, _) ->
-      RHS_block (sz + 1)
-  | Uprim (Pduprecord (Record_float, sz), _, _) ->
-      RHS_floatblock sz
-  | Uprim (Pccall { prim_name; _ }, closure::_, _)
-        when prim_name = "caml_check_value_is_closure" ->
-      (* Used for "-clambda-checks". *)
-      expr_size env closure
-  | Uprim (Praise _, _args, _dbg) -> RHS_unreachable
-  | Uprim (_prim, _args, _dbg) -> RHS_nonrec
-  | Usequence(_exp, exp') ->
-      expr_size env exp'
-  | Uoffset (exp, offset) ->
-      (match expr_size env exp with
-      | RHS_block blocksize -> RHS_infix { blocksize; offset }
-      | RHS_nonrec -> RHS_nonrec
-      | _ -> assert false)
-  | Uswitch (_arg, switch, _dbg) ->
-      let size_consts =
-        Array.fold_left (fun acc expr ->
-            join_rhs_kind acc (expr_size env expr))
-          RHS_unreachable
-          switch.us_actions_consts
-      in
-      let size_blocks =
-        Array.fold_left (fun acc expr ->
-            join_rhs_kind acc (expr_size env expr))
-          RHS_unreachable
-          switch.us_actions_blocks
-      in
-      join_rhs_kind size_consts size_blocks
-  | Ustringswitch (_arg, cases, default) ->
-      List.fold_left (fun acc (_string, act) ->
-          join_rhs_kind acc (expr_size env act))
-        (match default with
-         | None -> RHS_unreachable
-         | Some act -> expr_size env act)
-        cases
-  | Ucatch (_, _, body, handler)
-  | Utrywith (body, _, handler) ->
-      let size_body = expr_size env body in
-      let size_handler = expr_size env handler in
-      join_rhs_kind size_body size_handler
-  | Uifthenelse (_cond, ifso, ifnot) ->
-      let size_ifso = expr_size env ifso in
-      let size_ifnot = expr_size env ifnot in
-      join_rhs_kind size_ifso size_ifnot
-  | Ustaticfail (_nfail, _args) -> RHS_unreachable
-  | Uconst _ | Udirect_apply _ | Ugeneric_apply _ | Uwhile _ | Ufor _
-  | Uassign _ | Usend _ -> RHS_nonrec
-  | Uunreachable -> RHS_unreachable
-
-let expr_size_of_binding (clas : Value_rec_types.recursive_binding_kind) expr =
-  match clas with
-  | Not_recursive | Constant -> RHS_nonrec
-  | Class ->
-       (* Actual size is always 4, but [transl_class] only generates
-          explicit allocations when the classes are actually recursive.
-          Computing the size means that we don't go through pre-allocation
-          when the classes are not recursive. *)
-      expr_size V.empty expr
-  | Static ->
-      let result = expr_size V.empty expr in
-      (* Patching Closure to properly propagate Constant kinds is too complex;
-         for now, just live with the fact that Static expressions may not always
-         be statically allocated with Closure.
-         Forthcoming patches will remove all this logic anyway. *)
-      if Config.flambda then
-        assert (result <> RHS_nonrec);
-      result
 
 (* Translate structured constants to Cmm data items *)
 
@@ -523,8 +407,6 @@ let rec transl env e =
           Some defining_expr
       in
       Cphantom_let (var, defining_expr, transl env body)
-  | Uletrec(bindings, body) ->
-      transl_letrec env bindings (transl env body)
 
   (* Primitives *)
   | Uprim(prim, args, dbg) ->
@@ -1488,45 +1370,6 @@ and transl_switch dbg env arg index cases = match Array.length cases with
     let cases = Array.map (transl env) cases in
     transl_switch_clambda dbg arg index cases
 
-and transl_letrec env bindings cont =
-  let dbg = Debuginfo.none in
-  let bsz =
-    List.map (fun (id, clas, exp) -> (id, exp, expr_size_of_binding clas exp))
-      bindings
-  in
-  let op_alloc prim args =
-    Cop(Cextcall(prim, typ_val, [], true), args, dbg) in
-  let rec init_blocks = function
-    | [] -> fill_nonrec bsz
-    | (id, _exp, RHS_block sz) :: rem ->
-        Clet(id, op_alloc "caml_alloc_dummy" [int_const dbg sz],
-          init_blocks rem)
-    | (id, _exp, RHS_infix { blocksize; offset}) :: rem ->
-        Clet(id, op_alloc "caml_alloc_dummy_infix"
-             [int_const dbg blocksize; int_const dbg offset],
-             init_blocks rem)
-    | (id, _exp, RHS_floatblock sz) :: rem ->
-        Clet(id, op_alloc "caml_alloc_dummy_float" [int_const dbg sz],
-          init_blocks rem)
-    | (id, _exp, (RHS_nonrec | RHS_unreachable)) :: rem ->
-        Clet (id, Cconst_int (1, dbg), init_blocks rem)
-  and fill_nonrec = function
-    | [] -> fill_blocks bsz
-    | (_id, _exp,
-       (RHS_block _ | RHS_infix _ | RHS_floatblock _)) :: rem ->
-        fill_nonrec rem
-    | (id, exp, (RHS_nonrec | RHS_unreachable)) :: rem ->
-        Clet(id, transl env exp, fill_nonrec rem)
-  and fill_blocks = function
-    | [] -> cont
-    | (id, exp, (RHS_block _ | RHS_infix _ | RHS_floatblock _)) :: rem ->
-        let op =
-          Cop(Cextcall("caml_update_dummy", typ_void, [], false),
-              [Cvar (VP.var id); transl env exp], dbg) in
-        Csequence(op, fill_blocks rem)
-    | (_id, _exp, (RHS_nonrec | RHS_unreachable)) :: rem ->
-        fill_blocks rem
-  in init_blocks bsz
 
 (* Translate a function definition *)
 

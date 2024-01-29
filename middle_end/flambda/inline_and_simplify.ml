@@ -1134,24 +1134,6 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
           body;
           contents_kind },
       r)
-  | Let_rec (defs, body) ->
-    let defs, sb = Freshening.add_variables3 (E.freshening env) defs in
-    let env = E.set_freshening env sb in
-    let def_env =
-      List.fold_left (fun env_acc (id, _rkind, _lam) ->
-          E.add env_acc id (A.value_unknown Other))
-        env defs
-    in
-    let defs, body_env, r =
-      List.fold_right (fun (id, rkind, lam) (defs, env_acc, r) ->
-          let lam, r = simplify_named def_env r lam in
-          let defs = (id, rkind, lam) :: defs in
-          let env_acc = E.add env_acc id (R.approx r) in
-          defs, env_acc, r)
-        defs ([], env, r)
-    in
-    let body, r = simplify body_env r body in
-    Let_rec (defs, body), r
   | Static_raise (i, args) ->
     let i = Freshening.apply_static_exception (E.freshening env) i in
     simplify_free_variables env args ~f:(fun _env args _args_approxs ->

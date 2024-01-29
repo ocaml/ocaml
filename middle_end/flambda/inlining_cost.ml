@@ -85,9 +85,6 @@ let lambda_smaller' lam ~than:threshold =
       lambda_named_size defining_expr;
       lambda_size body
     | Let_mutable { body } -> lambda_size body
-    | Let_rec (bindings, body) ->
-      List.iter (fun (_, _, lam) -> lambda_named_size lam) bindings;
-      lambda_size body
     | Switch (_, sw) ->
       let cost cases =
         let size = List.length cases in
@@ -266,7 +263,7 @@ module Benefit = struct
     | Switch _ | String_switch _ | Static_raise _ | Try_with _
     | If_then_else _ | While _ | For _ -> b := remove_branch !b
     | Apply _ | Send _ -> b := remove_call !b
-    | Let _ | Let_mutable _ | Let_rec _ | Proved_unreachable | Var _
+    | Let _ | Let_mutable _ | Proved_unreachable | Var _
     | Static_catch _ -> ()
 
   let remove_code_helper_named b (named : Flambda.named) =
