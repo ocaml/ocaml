@@ -937,9 +937,9 @@ and transl_let ~scopes ?(in_structure=false) rec_flag pat_expr_list =
         let def =
           Translattribute.add_function_attributes def vb_loc vb_attributes
         in
-        { id; rkind; def } in
+        ( id, rkind, def ) in
       let lam_bds = List.map2 transl_case pat_expr_list idlist in
-      fun body -> Lletrec(lam_bds, body)
+      fun body -> Value_rec_compiler.compile_letrec lam_bds body
 
 and transl_setinstvar ~scopes loc self var expr =
   Lprim(Psetfield_computed (maybe_pointer expr, Assignment),

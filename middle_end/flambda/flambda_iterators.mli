@@ -95,12 +95,12 @@ val iter_on_set_of_closures_of_program
   -> f:(constant:bool -> Flambda.set_of_closures -> unit)
   -> unit
 
-val iter_all_immutable_let_and_let_rec_bindings
+val iter_all_immutable_let_bindings
    : Flambda.t
   -> f:(Variable.t -> Flambda.named -> unit)
   -> unit
 
-val iter_all_toplevel_immutable_let_and_let_rec_bindings
+val iter_all_toplevel_immutable_let_bindings
    : Flambda.t
   -> f:(Variable.t -> Flambda.named -> unit)
   -> unit

@@ -5173,7 +5173,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
       re { texp with exp_type = ty_fun; exp_desc =
            Texp_let (Nonrecursive,
                      [{vb_pat=let_pat; vb_expr=texp; vb_attributes=[];
-                       vb_loc=Location.none; vb_rec_kind = Not_recursive;
+                       vb_loc=Location.none; vb_rec_kind = Dynamic;
                       }],
                      func let_var) }
       end
@@ -5987,7 +5987,7 @@ and type_let ?check ?check_strict
       (fun (p, (e, _)) pvb ->
         (* vb_rec_kind will be computed later for recursive bindings *)
         {vb_pat=p; vb_expr=e; vb_attributes=pvb.pvb_attributes;
-         vb_loc=pvb.pvb_loc; vb_rec_kind = Not_recursive;
+         vb_loc=pvb.pvb_loc; vb_rec_kind = Dynamic;
         })
       l spat_sexp_list
   in
