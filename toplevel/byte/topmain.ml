@@ -159,7 +159,8 @@ let input_argument name =
       in
       Compenv.readenv ppf Before_link;
       Compmisc.read_clflags_from_env ();
-      if Toploop.prepare ppf && Toploop.run_script ppf name newargs
+      if Toploop.prepare ppf ~input:name () &&
+         Toploop.run_script ppf name newargs
       then raise (Compenv.Exit_with_status 0)
       else raise (Compenv.Exit_with_status 2)
     end
@@ -195,7 +196,7 @@ let main () =
   Compenv.parse_arguments ~current argv file_argument program;
   Compenv.readenv ppf Before_link;
   Compmisc.read_clflags_from_env ();
-  if not (Toploop.prepare ppf) then raise (Compenv.Exit_with_status 2);
+  if not (Toploop.prepare ppf ()) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();
   Toploop.loop Format.std_formatter
 

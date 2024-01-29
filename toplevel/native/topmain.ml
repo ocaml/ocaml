@@ -52,7 +52,8 @@ let input_argument name =
                               (Array.length !argv - !Arg.current)
       in
       Compmisc.read_clflags_from_env ();
-      if Toploop.prepare ppf && Toploop.run_script ppf name newargs
+      if Toploop.prepare ppf ~input:name () &&
+         Toploop.run_script ppf name newargs
       then raise (Compenv.Exit_with_status 0)
       else raise (Compenv.Exit_with_status 2)
     end
@@ -89,7 +90,7 @@ let main () =
   Clflags.add_arguments __LOC__ Options.list;
   Compenv.parse_arguments ~current argv file_argument program;
   Compmisc.read_clflags_from_env ();
-  if not (Toploop.prepare ppf) then raise (Compenv.Exit_with_status 2);
+  if not (Toploop.prepare ppf ()) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();
   Toploop.loop Format.std_formatter
 

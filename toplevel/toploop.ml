@@ -421,8 +421,9 @@ let loop ppf =
 
 let preload_objects = ref []
 
-let prepare ppf =
-  Topcommon.set_paths ();
+let prepare ppf ?input () =
+  let dir = Option.map (fun inp -> Filename.dirname (filename_of_input inp)) input in
+  Topcommon.set_paths ?dir ();
   initialize_toplevel_env_or_exit ppf;
   try
     let res =
