@@ -449,6 +449,9 @@ CAMLexport intnat caml_really_getblock(struct channel *chan, char *p, intnat n)
 CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
 {
   file_offset res;
+  /* If the desired position happens to live within our input buffer,
+     we don't need to actually call [lseek] on the file descriptor, it
+     suffices to move the current position within the buffer. */
   if (dest >= channel->offset - (channel->max - channel->buff)
       && dest <= channel->offset
       && (channel->flags & CHANNEL_TEXT_MODE) == 0) {
