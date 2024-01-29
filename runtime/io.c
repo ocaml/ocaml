@@ -234,6 +234,17 @@ static void check_descriptor_is_open(int fd)
   if (fd == -1) { errno = EBADF; caml_sys_error(NO_ARG); }
 }
 
+static void close_channel_buffer(struct channel *channel) {
+  /* Ensure that every read or write on the channel will cause an
+     immediate caml_flush_partial or caml_refill, thus raising a Sys_error
+     exception.`
+
+     This 'closed' configuration will also let the finalizer reclaim
+     the channel. */
+  channel->curr = channel->end = channel->buff;
+  if (channel->max != NULL) channel->max = channel->buff;
+}
+
 /* Output */
 
 /* Attempt to flush the buffer. This will make room in the buffer for
@@ -246,7 +257,7 @@ CAMLexport int caml_flush_partial(struct channel *channel)
   int towrite, written;
  again:
   check_pending(channel);
-
+  check_descriptor_is_open(channel->fd);
   towrite = channel->curr - channel->buff;
   CAMLassert (towrite >= 0);
   if (towrite > 0) {
@@ -258,7 +269,7 @@ CAMLexport int caml_flush_partial(struct channel *channel)
         /* This is a permanent failure: retrying the flush later will not
            make it go away.  Just discard the buffered data, so that
            the finalizer can reclaim the channel. */
-        channel->curr = channel->buff;
+        close_channel_buffer(channel);
       }
       caml_sys_io_error(NO_ARG);
     }
@@ -371,6 +382,7 @@ CAMLexport unsigned char caml_refill(struct channel *channel)
   int n;
  again:
   check_pending(channel);
+  check_descriptor_is_open(channel->fd);
   n = caml_read_fd(channel->fd, channel->flags,
                    channel->buff, channel->end - channel->buff);
   if (n == -1) {
@@ -714,11 +726,7 @@ CAMLprim value caml_ml_close_channel(value vchannel)
   struct channel * channel = Channel(vchannel);
 
   caml_channel_lock(channel);
-  /* Ensure that every read or write on the channel will cause an
-     immediate caml_flush_partial or caml_refill, thus raising a Sys_error
-     exception */
-  channel->curr = channel->max = channel->end;
-
+  close_channel_buffer(channel);
   /* If already closed, we are done */
   if (channel->fd != -1) {
     fd = channel->fd;
