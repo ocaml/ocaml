@@ -99,32 +99,23 @@ function record_unexp() {
     errored = 1;
 }
 
+/^ ... testing '[^']*' with / {
+    if (in_test) record_unexp();
+    next;
+}
+
 /^ ... testing '[^']*'/ {
     if (in_test) record_unexp();
     match($0, /... testing '[^']*'/);
     curfile = substr($0, RSTART+13, RLENGTH-14);
-    if (match($0, /... testing '[^']*' with [^:=]*/)){
-        curfile = substr($0, RSTART+12, RLENGTH-12);
+    if (match($0, /\(wall clock: .*s\)/)){
+        duration = substr($0, RSTART+13, RLENGTH-15);
+        if (duration + 0.0 > 10.0)
+          slow[slowcount++] = sprintf("%s: %s", curfile, duration);
     }
     key = sprintf ("%s/%s", curdir, curfile);
     DIRS[key] = curdir;
     in_test = 1;
-}
-
-/^ ... testing (with|[^'])/ {
-    if (in_test) record_unexp();
-    key = curdir;
-    DIRS[key] = curdir;
-    in_test = 1;
-}
-
-/^Wall clock:/ {
-  match($0, /: .* took /);
-  curfile = substr($0, RSTART+2, RLENGTH-8);
-  match($0, / took .*s/);
-  duration = substr($0, RSTART+6, RLENGTH-7);
-  if (duration + 0.0 > 10.0)
-    slow[slowcount++] = sprintf("%s: %s", curfile, duration);
 }
 
 /=> passed/ {
