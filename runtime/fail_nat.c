@@ -199,7 +199,7 @@ CAMLexport value caml_raise_if_exception(value res)
    for the ccall to [caml_array_bound_error]).  */
 static value array_bound_exn(void)
 {
-  static atomic_uintnat exn_cache = ATOMIC_UINTNAT_INIT(0);
+  static atomic_uintnat exn_cache = 0;
   const value* exn = (const value*)atomic_load_acquire(&exn_cache);
   if (!exn) {
     exn = caml_named_value("Pervasives.array_bound_error");

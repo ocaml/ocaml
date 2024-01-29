@@ -121,7 +121,7 @@ let emit_stack env r =
 
 let emit_load_symbol_addr reg s =
   if !pic_code then
-  `	lgrl	{emit_reg reg}, {emit_symbol s}@GOTENT\n`
+  `	lgrl	{emit_reg reg}, {emit_symbol s}@GOT\n`
   else
   `	larl	{emit_reg reg}, {emit_symbol s}\n`
 

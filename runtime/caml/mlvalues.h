@@ -155,8 +155,7 @@ where 0 <= R <= 31 is HEADER_RESERVED_BITS, set with the
 #define Hd_with_color(hd, color) (((hd) &~ HEADER_COLOR_MASK) | (color))
 
 #define Hp_atomic_val(val) ((atomic_uintnat *)(val) - 1)
-CAMLno_tsan /* Disable TSan instrumentation for performance. */
-Caml_inline header_t Hd_val(value val)
+CAMLno_tsan_for_perf Caml_inline header_t Hd_val(value val)
 {
   return atomic_load_explicit(Hp_atomic_val(val), memory_order_relaxed);
 }
@@ -257,12 +256,16 @@ Caml_inline header_t Hd_val(value val)
 #define Object_tag 248
 #define Class_val(val) Field((val), 0)
 #define Oid_val(val) Long_val(Field((val), 1))
+/* Allow the bytecode linker to include mlvalues.h without the primitive
+   declarations. */
+#ifndef CAML_INTERNALS_NO_PRIM_DECLARATIONS
 CAMLextern value caml_get_public_method (value obj, value tag);
 /* Called as:
    caml_callback(caml_get_public_method(obj, caml_hash_variant(name)), obj) */
 /* caml_get_public_method returns 0 if tag not in the table.
    Note however that tags being hashed, same tag does not necessarily mean
    same method name. */
+#endif
 
 Caml_inline value Val_ptr(void* p)
 {
@@ -450,7 +453,11 @@ CAMLextern value caml_atom(tag_t);
 #define Is_none(v) ((v) == Val_none)
 #define Is_some(v) Is_block(v)
 
+/* Allow the bytecode linker to include mlvalues.h without the primitive
+   declarations. */
+#ifndef CAML_INTERNALS_NO_PRIM_DECLARATIONS
 CAMLextern value caml_set_oo_id(value obj);
+#endif
 
 /* Header for out-of-heap blocks. */
 

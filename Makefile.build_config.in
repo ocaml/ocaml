@@ -86,10 +86,9 @@ OC_NATIVE_CFLAGS=@native_cflags@
 # our own symbols):
 OC_LDFLAGS=@oc_ldflags@
 OC_DLL_LDFLAGS=@oc_dll_ldflags@
-OC_EXE_LDFLAGS=@oc_exe_ldflags@
 
 MKEXE_VIA_CC=\
-  $(CC) $(OC_EXE_LDFLAGS) $(OC_CFLAGS) $(CFLAGS) @mkexe_via_cc_ldflags@
+  $(CC) $(OC_CFLAGS) $(CFLAGS) @mkexe_via_cc_ldflags@ @mkexe_via_cc_extra_cmd@
 
 # Which tool to use to display differences between files
 DIFF=@DIFF@

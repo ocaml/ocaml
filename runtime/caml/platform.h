@@ -53,17 +53,6 @@ Caml_inline void cpu_relax(void) {
 #endif
 }
 
-/* Loads and stores with acquire, release and relaxed semantics */
-
-#define atomic_load_acquire(p)                    \
-  atomic_load_explicit((p), memory_order_acquire)
-#define atomic_load_relaxed(p)                    \
-  atomic_load_explicit((p), memory_order_relaxed)
-#define atomic_store_release(p, v)                      \
-  atomic_store_explicit((p), (v), memory_order_release)
-#define atomic_store_relaxed(p, v)                      \
-  atomic_store_explicit((p), (v), memory_order_relaxed)
-
 /* Spin-wait loops */
 
 #define Max_spins 1000
@@ -103,7 +92,7 @@ Caml_inline uintnat atomic_fetch_add_verify_ge0(atomic_uintnat* p, uintnat v) {
 
 typedef pthread_mutex_t caml_plat_mutex;
 #define CAML_PLAT_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
-void caml_plat_mutex_init(caml_plat_mutex*);
+CAMLextern void caml_plat_mutex_init(caml_plat_mutex*);
 Caml_inline void caml_plat_lock(caml_plat_mutex*);
 Caml_inline int caml_plat_try_lock(caml_plat_mutex*);
 void caml_plat_assert_locked(caml_plat_mutex*);

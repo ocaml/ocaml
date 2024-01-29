@@ -96,6 +96,11 @@ type existential_restriction =
   | In_class_def  (** or in [class c = let ... in ...] *)
   | In_self_pattern (** or in self pattern *)
 
+type existential_binding =
+  | Bind_already_bound
+  | Bind_not_in_scope
+  | Bind_non_locally_abstract
+
 type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * Errortrace.unification_error
@@ -189,6 +194,7 @@ type error =
   | Andop_type_clash of string * Errortrace.unification_error
   | Bindings_type_clash of Errortrace.unification_error
   | Unbound_existential of Ident.t list * type_expr
+  | Bind_existential of existential_binding * Ident.t * type_expr
   | Missing_type_constraint
   | Wrong_expected_kind of wrong_kind_sort * wrong_kind_context * type_expr
   | Expr_not_a_record_type of type_expr
@@ -470,6 +476,7 @@ type pattern_variable =
     pv_loc: Location.t;
     pv_as_var: bool;
     pv_attributes: attributes;
+    pv_uid : Uid.t;
   }
 
 type module_variable =
@@ -589,13 +596,15 @@ let enter_variable ?(is_module=false) ?(is_as_variable=false) tps loc name ty
     end else
       Ident.create_local name.txt
   in
+  let pv_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) in
   tps.tps_pattern_variables <-
     {pv_id = id;
      pv_type = ty;
      pv_loc = loc;
      pv_as_var = is_as_variable;
-     pv_attributes = attrs} :: tps.tps_pattern_variables;
-  id
+     pv_attributes = attrs;
+     pv_uid} :: tps.tps_pattern_variables;
+  id, pv_uid
 
 let sort_pattern_variables vs =
   List.sort
@@ -665,7 +674,7 @@ and build_as_type_extra env p = function
 
 and build_as_type_aux (env : Env.t) p =
   match p.pat_desc with
-    Tpat_alias(p1,_, _) -> build_as_type env p1
+    Tpat_alias(p1,_, _, _) -> build_as_type env p1
   | Tpat_tuple pl ->
       let tyl = List.map (build_as_type env) pl in
       newty (Ttuple tyl)
@@ -747,23 +756,31 @@ let solve_Ppat_tuple (type a) ~refine loc env (args : a list) expected_ty =
   vars
 
 let solve_constructor_annotation
-    tps (penv : Pattern_env.t) name_list sty ty_args ty_ex =
+    tps (penv : Pattern_env.t) name_list sty ty_args ty_ex unify_res =
   let expansion_scope = penv.equations_scope in
-  let ids =
+  (* Introduce fresh type names that expand to type variables.
+     They should eventually be bound to ground types. *)
+  let ids_decls =
     List.map
       (fun name ->
-        let decl = new_local_type ~loc:name.loc Definition in
+        let tv = newvar () in
+        let decl =
+          new_local_type ~loc:name.loc Definition
+            ~manifest_and_scope:(tv, Ident.lowest_scope) in
         let (id, new_env) =
           Env.enter_type ~scope:expansion_scope name.txt decl !!penv in
         Pattern_env.set_env penv new_env;
-        {name with txt = id})
+        ({name with txt = id}, (decl, tv)))
       name_list
   in
+  (* Translate the type annotation using these type names. *)
   let cty, ty, force =
     with_local_level ~post:(fun (_,ty,_) -> generalize_structure ty)
       (fun () -> Typetexp.transl_simple_type_delayed !!penv sty)
   in
   tps.tps_pattern_force <- force :: tps.tps_pattern_force;
+  (* Only unify the return type after generating the ids *)
+  unify_res ();
   let ty_args =
     let ty1 = instance ty and ty2 = instance ty in
     match ty_args with
@@ -777,24 +794,62 @@ let solve_constructor_annotation
           Ttuple tyl -> tyl
         | _ -> assert false
   in
-  if ids <> [] then ignore begin
-    let ids = List.map (fun x -> x.txt) ids in
+  if ids_decls <> [] then begin
+    let ids_decls = List.map (fun (x,dm) -> (x.txt,dm)) ids_decls in
+    let ids = List.map fst ids_decls in
     let rem =
+      (* First process the existentials introduced by this constructor.
+         Just need to make their definitions abstract. *)
       List.fold_left
         (fun rem tv ->
           match get_desc tv with
-            Tconstr(Path.Pident id, [], _) when List.mem id rem ->
-              list_remove id rem
+            Tconstr(Path.Pident id, [], _) when List.mem_assoc id rem ->
+              let decl, tv' = List.assoc id ids_decls in
+              let env =
+                Env.add_type ~check:false id
+                  {decl with type_manifest = None} !!penv
+              in
+              Pattern_env.set_env penv env;
+              (* We have changed the definition, so clean up *)
+              Btype.cleanup_abbrev ();
+              (* Since id is now abstract, this does not create a cycle *)
+              unify_pat_types cty.ctyp_loc env tv tv';
+              List.remove_assoc id rem
           | _ ->
               raise (Error (cty.ctyp_loc, !!penv,
                             Unbound_existential (ids, ty))))
-        ids ty_ex
+        ids_decls ty_ex
     in
-    if rem <> [] then
-      raise (Error (cty.ctyp_loc, !!penv,
-                    Unbound_existential (ids, ty)))
+    (* The other type names should be bound to newly introduced existentials. *)
+    let bound_ids = ref ids in
+    List.iter
+      (fun (id, (decl, tv')) ->
+        let tv' = expand_head !!penv tv' in
+        begin match get_desc tv' with
+        | Tconstr (Path.Pident id', [], _) ->
+              if List.exists (Ident.same id') !bound_ids then
+                raise (Error (cty.ctyp_loc, !!penv,
+                              Bind_existential (Bind_already_bound, id, tv')));
+              (* Both id and id' are Scoped identifiers, so their stamps grow *)
+              if Ident.scope id' <> penv.equations_scope
+              || Ident.compare_stamp id id' > 0 then
+                raise (Error (cty.ctyp_loc, !!penv,
+                              Bind_existential (Bind_not_in_scope, id, tv')));
+              bound_ids := id' :: !bound_ids
+        | _ ->
+            raise (Error (cty.ctyp_loc, !!penv,
+                          Bind_existential
+                            (Bind_non_locally_abstract, id, tv')));
+        end;
+        let env =
+          Env.add_type ~check:false id
+            {decl with type_manifest = Some (correct_levels tv')} !!penv
+        in
+        Pattern_env.set_env penv env)
+      rem;
+    if rem <> [] then Btype.cleanup_abbrev ();
   end;
-  ty_args, Some (ids, cty)
+  ty_args, Some (List.map fst ids_decls, cty)
 
 let solve_Ppat_construct ~refine tps penv loc constr no_existentials
         existential_styp expected_ty =
@@ -832,11 +887,12 @@ let solve_Ppat_construct ~refine tps penv loc constr no_existentials
             let ty_args, ty_res, ty_ex =
               instance_constructor existential_treatment constr
             in
-            let equated_types = unify_res ty_res expected_ty in
+            let equated_types = lazy (unify_res ty_res expected_ty) in
             let ty_args, existential_ctyp =
               solve_constructor_annotation tps penv name_list sty ty_args ty_ex
+                (fun () -> ignore (Lazy.force equated_types))
             in
-            ty_args, ty_res, equated_types, existential_ctyp
+            ty_args, ty_res, Lazy.force equated_types, existential_ctyp
       in
       if constr.cstr_existentials <> [] then
         lower_variables_only !!penv penv.Pattern_env.equations_scope ty_res;
@@ -1588,9 +1644,9 @@ and type_pat_aux
         pat_env = !!penv }
   | Ppat_var name ->
       let ty = instance expected_ty in
-      let id = enter_variable tps loc name ty sp.ppat_attributes in
+      let id, uid = enter_variable tps loc name ty sp.ppat_attributes in
       rvp {
-        pat_desc = Tpat_var (id, name);
+        pat_desc = Tpat_var (id, name, uid);
         pat_loc = loc; pat_extra=[];
         pat_type = ty;
         pat_attributes = sp.ppat_attributes;
@@ -1611,11 +1667,11 @@ and type_pat_aux
           (* We're able to pass ~is_module:true here without an error because
              [Ppat_unpack] is a case identified by [may_contain_modules]. See
              the comment on [may_contain_modules]. *)
-          let id =
+          let id, uid =
             enter_variable tps loc v t ~is_module:true sp.ppat_attributes
           in
           rvp {
-            pat_desc = Tpat_var (id, v);
+            pat_desc = Tpat_var (id, v, uid);
             pat_loc = sp.ppat_loc;
             pat_extra=[Tpat_unpack, loc, sp.ppat_attributes];
             pat_type = t;
@@ -1628,8 +1684,8 @@ and type_pat_aux
       (* explicitly polymorphic type *)
       let cty, ty, ty' =
         solve_Ppat_poly_constraint tps !!penv lloc sty expected_ty in
-      let id = enter_variable tps lloc name ty' attrs in
-      rvp { pat_desc = Tpat_var (id, name);
+      let id, uid = enter_variable tps lloc name ty' attrs in
+      rvp { pat_desc = Tpat_var (id, name, uid);
             pat_loc = lloc;
             pat_extra = [Tpat_constraint cty, loc, sp.ppat_attributes];
             pat_type = ty;
@@ -1638,11 +1694,11 @@ and type_pat_aux
   | Ppat_alias(sq, name) ->
       let q = type_pat tps Value sq expected_ty in
       let ty_var = solve_Ppat_alias !!penv q in
-      let id =
+      let id, uid =
         enter_variable
           ~is_as_variable:true tps name.loc name ty_var sp.ppat_attributes
       in
-      rvp { pat_desc = Tpat_alias(q, id, name);
+      rvp { pat_desc = Tpat_alias(q, id, name, uid);
             pat_loc = loc; pat_extra=[];
             pat_type = q.pat_type;
             pat_attributes = sp.ppat_attributes;
@@ -1903,12 +1959,12 @@ and type_pat_aux
       let p = type_pat tps category sp expected_ty' in
       let extra = (Tpat_constraint cty, loc, sp.ppat_attributes) in
       begin match category, (p : k general_pattern) with
-      | Value, {pat_desc = Tpat_var (id,s); _} ->
+      | Value, {pat_desc = Tpat_var (id,s,uid); _} ->
           { p with
             pat_type = ty;
             pat_desc =
             Tpat_alias
-              ({p with pat_desc = Tpat_any; pat_attributes = []}, id,s);
+              ({p with pat_desc = Tpat_any; pat_attributes = []}, id,s, uid);
             pat_extra = [extra];
           }
       | _, p ->
@@ -1949,12 +2005,12 @@ let iter_pattern_variables_type f : pattern_variable list -> unit =
 
 let add_pattern_variables ?check ?check_as env pv =
   List.fold_right
-    (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes} env ->
+    (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes; pv_uid} env ->
        let check = if pv_as_var then check_as else check in
        Env.add_value ?check pv_id
          {val_type = pv_type; val_kind = Val_reg; Types.val_loc = pv_loc;
           val_attributes = pv_attributes;
-          val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+          val_uid = pv_uid;
          } env
     )
     pv env
@@ -2286,7 +2342,7 @@ let rec check_counter_example_pat
           in
           check_rec ~info:(decrease 5) tp expected_ty k
       end
-  | Tpat_alias (p, _, _) -> check_rec ~info p expected_ty k
+  | Tpat_alias (p, _, _, _) -> check_rec ~info p expected_ty k
   | Tpat_constant cst ->
       let cst = constant_or_raise !!penv loc (Untypeast.constant cst) in
       k @@ solve_expected (mp (Tpat_constant cst) ~pat_type:(type_constant cst))
@@ -3040,8 +3096,8 @@ let rec name_pattern default = function
     [] -> Ident.create_local default
   | p :: rem ->
     match p.pat_desc with
-      Tpat_var (id, _) -> id
-    | Tpat_alias(_, id, _) -> id
+      Tpat_var (id, _, _) -> id
+    | Tpat_alias(_, id, _, _) -> id
     | _ -> name_pattern default rem
 
 let name_cases default lst =
@@ -3330,7 +3386,6 @@ and type_expect_
                     types added to [new_env].
                  *)
                 let bound_exp = vb.vb_expr in
-                generalize_structure_exp bound_exp;
                 let bound_exp_type = Ctype.instance bound_exp.exp_type in
                 let loc = proper_exp_loc bound_exp in
                 let outer_var = newvar2 outer_level in
@@ -3952,10 +4007,12 @@ and type_expect_
                 | _ -> Mp_present
               in
               let scope = create_scope () in
+              let md_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) in
+              let md_shape = Shape.set_uid_if_none md_shape md_uid in
               let md =
                 { md_type = modl.mod_type; md_attributes = [];
                   md_loc = name.loc;
-                  md_uid = Uid.mk ~current_unit:(Env.get_unit_name ()); }
+                  md_uid; }
               in
               let (id, new_env) =
                 match name.txt with
@@ -3991,7 +4048,7 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_letexception(cd, sbody) ->
-      let (cd, newenv) = Typedecl.transl_exception env cd in
+      let (cd, newenv, _shape) = Typedecl.transl_exception env cd in
       let body = type_expect newenv sbody ty_expected_explained in
       re {
         exp_desc = Texp_letexception(cd, body);
@@ -4988,12 +5045,8 @@ and type_label_exp create env loc ty_expected
           (lid, label, sarg) =
   (* Here also ty_expected may be at generic_level *)
   let separate = !Clflags.principal || Env.has_local_constraints env in
-  (* #4682: we try two type-checking approaches for [arg] using backtracking:
-     - first try: we try with [ty_arg] as expected type;
-     - second try; if that fails, we backtrack and try without
-  *)
-  let (vars, ty_arg, snap, arg) =
-    (* try the first approach *)
+  let (_, arg) =
+    (* raise level to check univars *)
     with_local_level begin fun () ->
       let (vars, ty_arg) =
         with_local_level_iter_if separate begin fun () ->
@@ -5022,45 +5075,17 @@ and type_label_exp create env loc ty_expected
           raise (Error(loc, env, Private_type ty_expected))
         else
           raise (Error(lid.loc, env, Private_label(lid.txt, ty_expected)));
-      let snap = if vars = [] then None else Some (Btype.snapshot ()) in
       let arg = type_argument env sarg ty_arg (instance ty_arg) in
-      (vars, ty_arg, snap, arg)
+      (vars, arg)
     end
-    (* Note: there is no generalization logic here as could be expected,
-       because it is part of the backtracking logic below. *)
-  in
-  let arg =
-    try
-      if (vars = []) then arg
+    ~post:(fun (vars, arg) ->
+      if vars = [] then enforce_current_level env arg.exp_type
       else begin
-        (* We detect if the first try failed here,
-           during generalization. *)
-        if maybe_expansive arg then
-          lower_contravariant env arg.exp_type;
+        if maybe_expansive arg then lower_contravariant env arg.exp_type;
         generalize_and_check_univars env "field value" arg label.lbl_arg vars;
-        {arg with exp_type = instance arg.exp_type}
-      end
-    with first_try_exn when maybe_expansive arg -> try
-      (* backtrack and try the second approach *)
-      Option.iter Btype.backtrack snap;
-      let arg = with_local_level (fun () -> type_exp env sarg)
-          ~post:(fun arg -> lower_contravariant env arg.exp_type)
-      in
-      let arg =
-        with_local_level begin fun () ->
-          let arg = {arg with exp_type = instance arg.exp_type} in
-          unify_exp env arg (instance ty_arg);
-          arg
-        end
-        ~post: begin fun arg ->
-          generalize_and_check_univars env "field value" arg label.lbl_arg vars
-        end
-      in
-      {arg with exp_type = instance arg.exp_type}
-    with Error (_, _, Less_general _) as e -> raise e
-    | _ -> raise first_try_exn
+      end)
   in
-  (lid, label, arg)
+  (lid, label, {arg with exp_type = instance arg.exp_type})
 
 and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
   (* ty_expected' may be generic *)
@@ -5128,7 +5153,10 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
           }
         in
         let exp_env = Env.add_value id desc env in
-        {pat_desc = Tpat_var (id, mknoloc name); pat_type = ty;pat_extra=[];
+        {pat_desc =
+          Tpat_var (id, mknoloc name, desc.val_uid);
+         pat_type = ty;
+         pat_extra=[];
          pat_attributes = [];
          pat_loc = Location.none; pat_env = env},
         {exp_type = ty; exp_loc = Location.none; exp_env = exp_env;
@@ -5987,7 +6015,7 @@ and type_let ?check ?check_strict
     List.iter
       (fun {vb_pat=pat} -> match pat.pat_desc with
            Tpat_var _ -> ()
-         | Tpat_alias ({pat_desc=Tpat_any}, _, _) -> ()
+         | Tpat_alias ({pat_desc=Tpat_any}, _, _, _) -> ()
          | _ -> raise(Error(pat.pat_loc, env, Illegal_letrec_pat)))
       l;
   List.iter (fun vb ->
@@ -6864,6 +6892,20 @@ let report_error ~loc env = function
         "@[<2>%s:@ %a@]"
         "This type does not bind all existentials in the constructor"
         (Style.as_inline_code pp_type) (ids, ty)
+  | Bind_existential (reason, id, ty) ->
+      let reason1, reason2 = match reason with
+      | Bind_already_bound -> "the name", "that is already bound"
+      | Bind_not_in_scope -> "the name", "that was defined before"
+      | Bind_non_locally_abstract -> "the type",
+          "that is not a locally abstract type"
+      in
+      Location.errorf ~loc
+        "@[<hov0>The local name@ %a@ %s@ %s.@ %s@ %s@ %a@ %s.@]"
+        (Style.as_inline_code Printtyp.ident) id
+        "can only be given to an existential variable"
+        "introduced by this GADT constructor"
+        "The type annotation tries to bind it to"
+        reason1 (Style.as_inline_code Printtyp.type_expr) ty reason2
   | Missing_type_constraint ->
       Location.errorf ~loc
         "@[%s@ %s@]"

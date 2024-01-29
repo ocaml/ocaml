@@ -156,6 +156,7 @@ AC_SUBST([mkexe_exp])
 AC_SUBST([mkexedebugflag])
 AC_SUBST([mkexe_extra_flags])
 AC_SUBST([mkexe_via_cc_ldflags])
+AC_SUBST([mkexe_via_cc_extra_cmd])
 AC_SUBST([ccomptype])
 AC_SUBST([toolchain])
 AC_SUBST([oc_cflags])
@@ -164,9 +165,9 @@ AC_SUBST([tsan_native_runtime_c_sources])
 AC_SUBST([oc_cppflags])
 AC_SUBST([oc_ldflags])
 AC_SUBST([oc_dll_ldflags])
-AC_SUBST([oc_exe_ldflags])
 AC_SUBST([cclibs])
 AC_SUBST([native_ldflags])
+AC_SUBST([zstd_libs])
 AC_SUBST([ocamlc_cflags])
 AC_SUBST([ocamlc_cppflags])
 AC_SUBST([flexdll_source_dir])
@@ -546,7 +547,7 @@ AC_ARG_WITH([flexdll],
 
 AC_ARG_WITH([zstd],
   [AS_HELP_STRING([--without-zstd],
-    [disable compression of marshaled data])])
+    [disable compression of compilation artefacts])])
 
 AS_IF([test x"$enable_unix_lib" = "xno"],
   [AS_IF([test x"$enable_ocamldebug" = "xyes"],
@@ -1050,8 +1051,6 @@ AC_CHECK_HEADER([dirent.h], [AC_DEFINE([HAS_DIRENT])], [],
 AC_CHECK_HEADER([sys/select.h], [AC_DEFINE([HAS_SYS_SELECT_H])], [],
   [#include <sys/types.h>])
 
-AC_CHECK_HEADER([stdatomic.h], [AC_DEFINE([HAS_STDATOMIC_H])])
-
 AC_CHECK_HEADER([sys/mman.h], [AC_DEFINE([HAS_SYS_MMAN_H])])
 
 # Checks for types
@@ -1212,6 +1211,14 @@ AS_CASE([$host],
   [[*-*-openbsd7.[3-9]|*-*-openbsd[89].*]],
     [oc_ldflags="$oc_ldflags -Wl,--no-execute-only"
      natdynlinkopts="$natdynlinkopts -Wl,--no-execute-only"])
+
+# Disable control flow integrity
+
+AS_CASE([$host],
+  [[*-*-openbsd7.[4-9]|*-*-openbsd[89].*]],
+    [oc_ldflags="$oc_ldflags -Wl,-z,nobtcfi"
+     natdynlinkopts="$natdynlinkopts -Wl,-z,nobtcfi"])
+
 
 # Configure native dynlink
 
@@ -2144,6 +2151,8 @@ AC_PATH_TOOL([PKG_CONFIG], [pkg-config], [false])
 ## ZSTD compression library
 
 zstd_status=""
+zstd_libs=""
+
 AS_IF([test x"$with_zstd" != "xno"],
   # Try pkg-config first, as it gives the most reliable results
   AS_IF([${PKG_CONFIG} libzstd 2>/dev/null],
@@ -2165,8 +2174,7 @@ AS_IF([test x"$with_zstd" != "xno"],
       [zstd_status="zstd library not found"])]))
 
 AS_IF([test x"$zstd_status" = "xok"],
-  [AC_MSG_NOTICE([compressed marshaling supported])
-   cclibs="$cclibs $zstd_libs"
+  [AC_MSG_NOTICE([compressed compilation artefacts supported])
    internal_cppflags="$internal_cppflags $zstd_flags"
    AC_DEFINE([HAS_ZSTD])],
   [AS_CASE(["$with_zstd"],
@@ -2175,7 +2183,7 @@ AS_IF([test x"$zstd_status" = "xok"],
      [yes],
        [AC_MSG_ERROR([$zstd_status])],
      [AC_MSG_WARN([$zstd_status])
-      AC_MSG_WARN([compressed marshaling not supported])])])
+      AC_MSG_WARN([compressed compilation artefacts not supported])])])
 
 ## Determine whether the debugger should/can be built
 
@@ -2577,22 +2585,16 @@ ${mkdll_ldflags}"
   mkdll_exp="$mkdll_exp $mkdll_ldflags_exp"
   mkmaindll="$mkmaindll $mkdll_ldflags_exp"
   mkmaindll_exp="$mkmaindll_exp $mkdll_ldflags_exp"
-  # Do similarly with $mkexe_via_cc_ldflags_prefix, but this is only needed for
-  # the msvc ports.
-  AS_IF([test -n "$mkexe_via_cc_ldflags_prefix"],[
-    mkexe_via_cc_ldflags=\
-"\$(addprefix ${mkexe_via_cc_ldflags_prefix},\$(OC_LDFLAGS) \$(LDFLAGS))"
-  ],[
-    mkexe_via_cc_ldflags='$(OC_LDFLAGS) $(LDFLAGS)'
-  ])
+  mkexe_via_cc_ldflags="${mkexe_via_cc_ldflags_prefix}"
+  AS_IF([test -n "${oc_exe_ldflags}"],
+    [mkexe_via_cc_ldflags="${mkexe_via_cc_ldflags}${oc_exe_ldflags} "])
+  mkexe_via_cc_ldflags="${mkexe_via_cc_ldflags}\$(OC_LDFLAGS) \$(LDFLAGS)"
   # cl requires linker flags after the objects.
   AS_IF([test "$ccomptype" = 'msvc'],
     [mkexe_via_cc_ldflags=\
 "\$(OUTPUTEXE)\$(1) \$(2) $mkexe_via_cc_ldflags"],
     [mkexe_via_cc_ldflags=\
 "$mkexe_via_cc_ldflags \$(OUTPUTEXE)\$(1) \$(2)"])
-  AS_IF([test -n "$mkexe_via_cc_extra_cmd"],
-    [mkexe_via_cc_ldflags="$mkexe_via_cc_ldflags $mkexe_via_cc_extra_cmd"])
 ])
 
 AC_OUTPUT

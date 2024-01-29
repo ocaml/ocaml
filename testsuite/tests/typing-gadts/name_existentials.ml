@@ -37,9 +37,10 @@ let ko2 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
 Line 1, characters 42-50:
 1 | let ko2 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
                                               ^^^^^^^^
-Error: This pattern matches values of type "a ty * b"
-       but a pattern was expected which matches values of type "a ty * a"
-       Type "b" is not compatible with type "a"
+Error: The local name "b" can only be given to an existential variable
+       introduced by this GADT constructor.
+       The type annotation tries to bind it to the name "a"
+       that is already bound.
 |}]
 
 type u = C : 'a * ('a -> 'b list) -> u
@@ -84,7 +85,10 @@ let rec test : type a. a expr -> a = function
 Line 2, characters 22-23:
 2 |   | Int (type b) (n : a) -> n
                           ^
-Error: This type does not bind all existentials in the constructor: "type b. a"
+Error: The local name "b" can only be given to an existential variable
+       introduced by this GADT constructor.
+       The type annotation tries to bind it to the type "'a"
+       that is not a locally abstract type.
 |}]
 
 (* Strange wildcard *)
@@ -116,4 +120,126 @@ let f = function Pair (x, y : int * _) -> x + y
 [%%expect{|
 type ('a, 'b) pair = Pair of 'a * 'b
 val f : (int, int) pair -> int = <fun>
+|}]
+
+
+(* #11891: allow naming more types *)
+(* We stillonly allow to name freshly introduced existentials *)
+
+type _ ty =
+  | Int : int ty
+  | Pair : 'b ty * 'c ty -> ('b * 'c) ty
+let rec example : type a . a ty -> a = function
+| Int -> 0
+| Pair (x, y) -> (example x, example y)
+let rec example : type a . a ty -> a = function
+| Int -> 0
+| Pair (type b c) (x, y : b ty * c ty) -> (example x, example y)
+[%%expect{|
+type _ ty = Int : int ty | Pair : 'b ty * 'c ty -> ('b * 'c) ty
+val example : 'a ty -> 'a = <fun>
+val example : 'a ty -> 'a = <fun>
+|}]
+
+let rec example : type a . a ty -> a = function
+| Int -> 0
+| Pair (type b c) (x, y : b ty * c ty) -> (example x, example (*error*)x)
+[%%expect{|
+Line 3, characters 54-72:
+3 | | Pair (type b c) (x, y : b ty * c ty) -> (example x, example (*error*)x)
+                                                          ^^^^^^^^^^^^^^^^^^
+Error: This expression has type "b" = "$0" but an expression was expected of type
+         "$1"
+|}]
+
+type _ th =
+  | Thunk : 'a * ('a -> 'b) -> 'b th
+let f1 (type a) : a th -> a = function
+  | Thunk (type b) (x, f : b * (b -> _)) -> f x
+let f2 (type a) : a th -> a = function
+  | Thunk (type b c) (x, f : b * (b -> c)) -> f x
+[%%expect{|
+type _ th = Thunk : 'a * ('a -> 'b) -> 'b th
+val f1 : 'a th -> 'a = <fun>
+Line 6, characters 29-41:
+6 |   | Thunk (type b c) (x, f : b * (b -> c)) -> f x
+                                 ^^^^^^^^^^^^
+Error: The local name "c" can only be given to an existential variable
+       introduced by this GADT constructor.
+       The type annotation tries to bind it to the name "a"
+       that was defined before.
+|}]
+(* Do not allow to deduce extra assumptions *)
+let ko1 (type a) : a th -> a = function
+  | Thunk (type b c) (x, f : b * (b -> c option)) -> f x
+[%%expect{|
+Line 2, characters 29-48:
+2 |   | Thunk (type b c) (x, f : b * (b -> c option)) -> f x
+                                 ^^^^^^^^^^^^^^^^^^^
+Error: This pattern matches values of type "b * (b -> c option)"
+       but a pattern was expected which matches values of type "b * (b -> a)"
+       Type "c option" is not compatible with type "a"
+|}]
+(* Can only name fresh existentials *)
+let ko2 = function
+  | Thunk (type b c) (x, f : b * (b -> c)) -> f x
+[%%expect{|
+Line 2, characters 29-41:
+2 |   | Thunk (type b c) (x, f : b * (b -> c)) -> f x
+                                 ^^^^^^^^^^^^
+Error: The local name "c" can only be given to an existential variable
+       introduced by this GADT constructor.
+       The type annotation tries to bind it to the type "'a"
+       that is not a locally abstract type.
+|}]
+let ko3 () =
+  match [] with
+  | [Thunk (type b c) (x, f : b * (b -> c))] -> f x
+  | _ -> assert false
+[%%expect{|
+Line 3, characters 30-42:
+3 |   | [Thunk (type b c) (x, f : b * (b -> c))] -> f x
+                                  ^^^^^^^^^^^^
+Error: The local name "c" can only be given to an existential variable
+       introduced by this GADT constructor.
+       The type annotation tries to bind it to the type "'a"
+       that is not a locally abstract type.
+|}]
+
+type _ tho =
+  | Thunk_opt : 'b * ('b -> 'c option) -> 'c option tho
+let f3 (type a) : a tho -> a = function
+  | Thunk_opt (type b c) (x, f : b * (b -> c option)) -> f x
+[%%expect{|
+type _ tho = Thunk_opt : 'b * ('b -> 'c option) -> 'c option tho
+val f3 : 'a tho -> 'a = <fun>
+|}]
+
+
+(* check locality *)
+type 'a wrap = Wrap of 'a
+type _ ty = Int : int ty | Pair : ('b ty * 'c ty) wrap -> ('b * 'c) ty
+(* ok *)
+let rec default : type a. a ty -> a = function
+  | Int -> 0
+  | Pair (type b c) (Wrap (b, c) : (b ty * c ty) wrap) ->
+      (default b : b), (default c : c)
+[%%expect{|
+type 'a wrap = Wrap of 'a
+type _ ty = Int : int ty | Pair : ('b ty * 'c ty) wrap -> ('b * 'c) ty
+val default : 'a ty -> 'a = <fun>
+|}]
+(* ko *)
+let rec default : type a. a ty -> a = function
+  | Int -> 0
+  | Pair (Wrap (type b c) (b, c : b ty * c ty)) ->
+      (default b : b), (default c : c)
+[%%expect{|
+Line 3, characters 34-45:
+3 |   | Pair (Wrap (type b c) (b, c : b ty * c ty)) ->
+                                      ^^^^^^^^^^^
+Error: The local name "b" can only be given to an existential variable
+       introduced by this GADT constructor.
+       The type annotation tries to bind it to the name "$0"
+       that was defined before.
 |}]

@@ -139,7 +139,7 @@ module Bytecode = struct
           if compunit.cu_debug = 0 then [| |]
           else begin
             seek_in ic compunit.cu_debug;
-            [| input_value ic |]
+            [| (Compression.input_value ic : Instruct.debug_event list) |]
           end in
         if priv then Symtable.hide_additions old_state;
         let _, clos = Meta.reify_bytecode code events (Some digest) in

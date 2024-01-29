@@ -32,13 +32,12 @@ val extract_crc_implementations: unit -> crcs
 type error =
   | File_not_found of filepath
   | Not_an_object_file of filepath
-  | Missing_implementations of (modname * string list) list
   | Inconsistent_interface of modname * filepath * filepath
   | Inconsistent_implementation of modname * filepath * filepath
   | Assembler_error of filepath
   | Linking_error of int
-  | Multiple_definition of modname * filepath * filepath
   | Missing_cmx of filepath * modname
+  | Link_error of Linkdeps.error
 
 exception Error of error
 

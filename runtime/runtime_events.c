@@ -22,6 +22,7 @@
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
+#include "caml/platform.h"
 #include "caml/startup_aux.h"
 
 #include <fcntl.h>

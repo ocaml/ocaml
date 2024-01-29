@@ -45,6 +45,11 @@ utils/clflags.cmx : \
 utils/clflags.cmi : \
     utils/profile.cmi \
     utils/misc.cmi
+utils/compression.cmo : \
+    utils/compression.cmi
+utils/compression.cmx : \
+    utils/compression.cmi
+utils/compression.cmi :
 utils/config.common.cmo :
 utils/config.common.cmx :
 utils/config.fixed.cmo :
@@ -114,6 +119,13 @@ utils/lazy_backtrack.cmo : \
 utils/lazy_backtrack.cmx : \
     utils/lazy_backtrack.cmi
 utils/lazy_backtrack.cmi :
+utils/linkdeps.cmo : \
+    utils/misc.cmi \
+    utils/linkdeps.cmi
+utils/linkdeps.cmx : \
+    utils/misc.cmx \
+    utils/linkdeps.cmi
+utils/linkdeps.cmi :
 utils/load_path.cmo : \
     utils/misc.cmi \
     utils/local_store.cmi \
@@ -1216,6 +1228,21 @@ typing/shape.cmi : \
     typing/path.cmi \
     utils/identifiable.cmi \
     typing/ident.cmi
+typing/shape_reduce.cmo : \
+    typing/shape.cmi \
+    utils/local_store.cmi \
+    typing/ident.cmi \
+    typing/env.cmi \
+    typing/shape_reduce.cmi
+typing/shape_reduce.cmx : \
+    typing/shape.cmx \
+    utils/local_store.cmx \
+    typing/ident.cmx \
+    typing/env.cmx \
+    typing/shape_reduce.cmi
+typing/shape_reduce.cmi : \
+    typing/shape.cmi \
+    typing/env.cmi
 typing/signature_group.cmo : \
     typing/types.cmi \
     typing/ident.cmi \
@@ -1491,6 +1518,7 @@ typing/typedecl.cmo : \
     typing/typedecl_immediacy.cmi \
     typing/type_immediacy.cmi \
     typing/subst.cmi \
+    typing/shape.cmi \
     typing/printtyp.cmi \
     typing/primitive.cmi \
     typing/predef.cmi \
@@ -1528,6 +1556,7 @@ typing/typedecl.cmx : \
     typing/typedecl_immediacy.cmx \
     typing/type_immediacy.cmx \
     typing/subst.cmx \
+    typing/shape.cmx \
     typing/printtyp.cmx \
     typing/primitive.cmx \
     typing/predef.cmx \
@@ -1559,6 +1588,7 @@ typing/typedecl.cmi : \
     typing/typedecl_variance.cmi \
     typing/typedecl_separability.cmi \
     typing/typedecl_immediacy.cmi \
+    typing/shape.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     parsing/longident.cmi \
@@ -1726,6 +1756,7 @@ typing/typemod.cmo : \
     typing/typeclass.cmi \
     typing/subst.cmi \
     typing/signature_group.cmi \
+    typing/shape_reduce.cmi \
     typing/shape.cmi \
     typing/printtyp.cmi \
     typing/path.cmi \
@@ -1761,6 +1792,7 @@ typing/typemod.cmx : \
     typing/typeclass.cmx \
     typing/subst.cmx \
     typing/signature_group.cmx \
+    typing/shape_reduce.cmx \
     typing/shape.cmx \
     typing/printtyp.cmx \
     typing/path.cmx \
@@ -2020,6 +2052,7 @@ bytecomp/bytelibrarian.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
+    utils/linkdeps.cmi \
     bytecomp/emitcode.cmi \
     utils/config.cmi \
     file_formats/cmo_format.cmi \
@@ -2030,24 +2063,28 @@ bytecomp/bytelibrarian.cmx : \
     utils/misc.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
+    utils/linkdeps.cmx \
     bytecomp/emitcode.cmx \
     utils/config.cmx \
     file_formats/cmo_format.cmi \
     utils/clflags.cmx \
     bytecomp/bytelink.cmx \
     bytecomp/bytelibrarian.cmi
-bytecomp/bytelibrarian.cmi :
+bytecomp/bytelibrarian.cmi : \
+    utils/linkdeps.cmi
 bytecomp/bytelink.cmo : \
     bytecomp/symtable.cmi \
     bytecomp/opcodes.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
+    utils/linkdeps.cmi \
     bytecomp/instruct.cmi \
     bytecomp/emitcode.cmi \
     bytecomp/dll.cmi \
     utils/consistbl.cmi \
     utils/config.cmi \
+    utils/compression.cmi \
     file_formats/cmo_format.cmi \
     utils/clflags.cmi \
     utils/ccomp.cmi \
@@ -2059,11 +2096,13 @@ bytecomp/bytelink.cmx : \
     utils/misc.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
+    utils/linkdeps.cmx \
     bytecomp/instruct.cmx \
     bytecomp/emitcode.cmx \
     bytecomp/dll.cmx \
     utils/consistbl.cmx \
     utils/config.cmx \
+    utils/compression.cmx \
     file_formats/cmo_format.cmi \
     utils/clflags.cmx \
     utils/ccomp.cmx \
@@ -2072,6 +2111,7 @@ bytecomp/bytelink.cmx : \
 bytecomp/bytelink.cmi : \
     bytecomp/symtable.cmi \
     utils/misc.cmi \
+    utils/linkdeps.cmi \
     file_formats/cmo_format.cmi
 bytecomp/bytepackager.cmo : \
     parsing/unit_info.cmi \
@@ -2090,6 +2130,7 @@ bytecomp/bytepackager.cmo : \
     typing/env.cmi \
     bytecomp/emitcode.cmi \
     utils/config.cmi \
+    utils/compression.cmi \
     file_formats/cmo_format.cmi \
     utils/clflags.cmi \
     bytecomp/bytelink.cmi \
@@ -2112,6 +2153,7 @@ bytecomp/bytepackager.cmx : \
     typing/env.cmx \
     bytecomp/emitcode.cmx \
     utils/config.cmx \
+    utils/compression.cmx \
     file_formats/cmo_format.cmi \
     utils/clflags.cmx \
     bytecomp/bytelink.cmx \
@@ -2151,6 +2193,7 @@ bytecomp/emitcode.cmo : \
     typing/ident.cmi \
     typing/env.cmi \
     utils/config.cmi \
+    utils/compression.cmi \
     file_formats/cmo_format.cmi \
     utils/clflags.cmi \
     bytecomp/bytegen.cmi \
@@ -2170,6 +2213,7 @@ bytecomp/emitcode.cmx : \
     typing/ident.cmx \
     typing/env.cmx \
     utils/config.cmx \
+    utils/compression.cmx \
     file_formats/cmo_format.cmi \
     utils/clflags.cmx \
     bytecomp/bytegen.cmx \
@@ -2246,7 +2290,6 @@ bytecomp/symtable.cmo : \
     utils/config.cmi \
     file_formats/cmo_format.cmi \
     utils/clflags.cmi \
-    bytecomp/bytesections.cmi \
     bytecomp/symtable.cmi
 bytecomp/symtable.cmx : \
     lambda/runtimedef.cmx \
@@ -2260,7 +2303,6 @@ bytecomp/symtable.cmx : \
     utils/config.cmx \
     file_formats/cmo_format.cmi \
     utils/clflags.cmx \
-    bytecomp/bytesections.cmx \
     bytecomp/symtable.cmi
 bytecomp/symtable.cmi : \
     lambda/lambda.cmi \
@@ -2426,6 +2468,7 @@ asmcomp/asmlibrarian.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
+    utils/linkdeps.cmi \
     middle_end/flambda/export_info.cmi \
     utils/config.cmi \
     middle_end/compilenv.cmi \
@@ -2439,6 +2482,7 @@ asmcomp/asmlibrarian.cmx : \
     utils/misc.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
+    utils/linkdeps.cmx \
     middle_end/flambda/export_info.cmx \
     utils/config.cmx \
     middle_end/compilenv.cmx \
@@ -2448,7 +2492,8 @@ asmcomp/asmlibrarian.cmx : \
     utils/ccomp.cmx \
     asmcomp/asmlink.cmx \
     asmcomp/asmlibrarian.cmi
-asmcomp/asmlibrarian.cmi :
+asmcomp/asmlibrarian.cmi : \
+    utils/linkdeps.cmi
 asmcomp/asmlink.cmo : \
     asmcomp/thread_sanitizer.cmi \
     lambda/runtimedef.cmi \
@@ -2456,6 +2501,7 @@ asmcomp/asmlink.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
+    utils/linkdeps.cmi \
     asmcomp/emitaux.cmi \
     asmcomp/emit.cmi \
     utils/consistbl.cmi \
@@ -2475,6 +2521,7 @@ asmcomp/asmlink.cmx : \
     utils/misc.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
+    utils/linkdeps.cmx \
     asmcomp/emitaux.cmx \
     asmcomp/emit.cmx \
     utils/consistbl.cmx \
@@ -2489,6 +2536,7 @@ asmcomp/asmlink.cmx : \
     asmcomp/asmlink.cmi
 asmcomp/asmlink.cmi : \
     utils/misc.cmi \
+    utils/linkdeps.cmi \
     file_formats/cmx_format.cmi
 asmcomp/asmpackager.cmo : \
     parsing/unit_info.cmi \
@@ -4036,12 +4084,14 @@ file_formats/cmi_format.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/config.cmi \
+    utils/compression.cmi \
     file_formats/cmi_format.cmi
 file_formats/cmi_format.cmx : \
     typing/types.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
     utils/config.cmx \
+    utils/compression.cmx \
     file_formats/cmi_format.cmi
 file_formats/cmi_format.cmi : \
     typing/types.cmi \
@@ -4052,37 +4102,55 @@ file_formats/cmt_format.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/tast_mapper.cmi \
+    typing/tast_iterator.cmi \
+    typing/shape_reduce.cmi \
     typing/shape.cmi \
+    typing/predef.cmi \
+    typing/path.cmi \
     utils/misc.cmi \
+    parsing/longident.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
     parsing/lexer.cmi \
+    typing/ident.cmi \
     typing/env.cmi \
     utils/config.cmi \
+    utils/compression.cmi \
     file_formats/cmi_format.cmi \
     utils/clflags.cmi \
+    typing/btype.cmi \
     file_formats/cmt_format.cmi
 file_formats/cmt_format.cmx : \
     parsing/unit_info.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
     typing/tast_mapper.cmx \
+    typing/tast_iterator.cmx \
+    typing/shape_reduce.cmx \
     typing/shape.cmx \
+    typing/predef.cmx \
+    typing/path.cmx \
     utils/misc.cmx \
+    parsing/longident.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
     parsing/lexer.cmx \
+    typing/ident.cmx \
     typing/env.cmx \
     utils/config.cmx \
+    utils/compression.cmx \
     file_formats/cmi_format.cmx \
     utils/clflags.cmx \
+    typing/btype.cmx \
     file_formats/cmt_format.cmi
 file_formats/cmt_format.cmi : \
     parsing/unit_info.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/shape_reduce.cmi \
     typing/shape.cmi \
     utils/misc.cmi \
+    parsing/longident.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
     typing/env.cmi \
@@ -6671,6 +6739,7 @@ toplevel/byte/topeval.cmo : \
     toplevel/topcommon.cmi \
     bytecomp/symtable.cmi \
     lambda/simplif.cmi \
+    typing/shape_reduce.cmi \
     typing/shape.cmi \
     typing/printtyped.cmi \
     typing/printtyp.cmi \
@@ -6705,6 +6774,7 @@ toplevel/byte/topeval.cmx : \
     toplevel/topcommon.cmx \
     bytecomp/symtable.cmx \
     lambda/simplif.cmx \
+    typing/shape_reduce.cmx \
     typing/shape.cmx \
     typing/printtyped.cmx \
     typing/printtyp.cmx \
@@ -6808,6 +6878,7 @@ toplevel/native/topeval.cmo : \
     toplevel/native/tophooks.cmi \
     toplevel/topcommon.cmi \
     lambda/simplif.cmi \
+    typing/shape_reduce.cmi \
     typing/shape.cmi \
     typing/printtyped.cmi \
     typing/printtyp.cmi \
@@ -6839,6 +6910,7 @@ toplevel/native/topeval.cmx : \
     toplevel/native/tophooks.cmx \
     toplevel/topcommon.cmx \
     lambda/simplif.cmx \
+    typing/shape_reduce.cmx \
     typing/shape.cmx \
     typing/printtyped.cmx \
     typing/printtyp.cmx \
@@ -7073,6 +7145,7 @@ tools/dumpobj.cmo : \
     parsing/location.cmi \
     bytecomp/instruct.cmi \
     utils/config.cmi \
+    utils/compression.cmi \
     file_formats/cmo_format.cmi \
     bytecomp/bytesections.cmi \
     tools/dumpobj.cmi
@@ -7084,6 +7157,7 @@ tools/dumpobj.cmx : \
     parsing/location.cmx \
     bytecomp/instruct.cmx \
     utils/config.cmx \
+    utils/compression.cmx \
     file_formats/cmo_format.cmi \
     bytecomp/bytesections.cmx \
     tools/dumpobj.cmi
@@ -7131,11 +7205,15 @@ tools/make_opcodes.cmx : \
     tools/make_opcodes.cmi
 tools/make_opcodes.cmi :
 tools/objinfo.cmo : \
+    typing/typedtree.cmi \
     bytecomp/symtable.cmi \
     middle_end/symbol.cmi \
+    typing/shape_reduce.cmi \
     typing/shape.cmi \
     middle_end/printclambda.cmi \
+    parsing/pprintast.cmi \
     utils/misc.cmi \
+    parsing/location.cmi \
     middle_end/linkage_name.cmi \
     typing/ident.cmi \
     middle_end/flambda/export_info.cmi \
@@ -7149,11 +7227,15 @@ tools/objinfo.cmo : \
     utils/binutils.cmi \
     tools/objinfo.cmi
 tools/objinfo.cmx : \
+    typing/typedtree.cmx \
     bytecomp/symtable.cmx \
     middle_end/symbol.cmx \
+    typing/shape_reduce.cmx \
     typing/shape.cmx \
     middle_end/printclambda.cmx \
+    parsing/pprintast.cmx \
     utils/misc.cmx \
+    parsing/location.cmx \
     middle_end/linkage_name.cmx \
     typing/ident.cmx \
     middle_end/flambda/export_info.cmx \

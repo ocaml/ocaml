@@ -34,7 +34,8 @@ CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) $(STDLIBFLAGS) -I otherlibs/dynlink
 ARCHES=amd64 arm64 power s390x riscv
 VPATH = utils parsing typing bytecomp file_formats lambda middle_end \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types \
-  asmcomp driver toplevel tools $(addprefix otherlibs/, $(ALL_OTHERLIBS))
+  asmcomp driver toplevel tools runtime \
+  $(addprefix otherlibs/, $(ALL_OTHERLIBS))
 INCLUDES = $(addprefix -I ,$(VPATH))
 
 ifeq "$(strip $(NATDYNLINKOPTS))" ""
@@ -74,6 +75,7 @@ utils_SOURCES = $(addprefix utils/, \
   ccomp.mli ccomp.ml \
   warnings.mli warnings.ml \
   consistbl.mli consistbl.ml \
+  linkdeps.mli linkdeps.ml \
   strongly_connected_components.mli strongly_connected_components.ml \
   targetint.mli targetint.ml \
   int_replace_polymorphic_compare.mli int_replace_polymorphic_compare.ml \
@@ -81,7 +83,8 @@ utils_SOURCES = $(addprefix utils/, \
   binutils.mli binutils.ml \
   lazy_backtrack.mli lazy_backtrack.ml \
   diffing.mli diffing.ml \
-  diffing_with_keys.mli diffing_with_keys.ml)
+  diffing_with_keys.mli diffing_with_keys.ml \
+  compression.mli compression.ml)
 
 parsing_SOURCES = $(addprefix parsing/, \
   location.mli location.ml \
@@ -136,6 +139,7 @@ typing_SOURCES = \
   typing/tast_iterator.mli typing/tast_iterator.ml \
   typing/tast_mapper.mli typing/tast_mapper.ml \
   typing/stypes.mli typing/stypes.ml \
+  typing/shape_reduce.mli typing/shape_reduce.ml \
   file_formats/cmt_format.mli file_formats/cmt_format.ml \
   typing/cmt2annot.mli typing/cmt2annot.ml \
   typing/untypeast.mli typing/untypeast.ml \
@@ -411,6 +415,15 @@ beforedepend:: utils/config_main.mli utils/config_boot.mli
 
 $(addprefix compilerlibs/ocamlcommon., cma cmxa): \
   OC_COMMON_LINKFLAGS += -linkall
+
+COMPRESSED_MARSHALING_FLAGS=-cclib -lcomprmarsh \
+           $(patsubst %, -ccopt %, $(filter-out -l%,$(ZSTD_LIBS))) \
+           $(patsubst %, -cclib %, $(filter -l%,$(ZSTD_LIBS))) \
+
+compilerlibs/ocamlcommon.cmxa: \
+  OC_NATIVE_LINKFLAGS += $(COMPRESSED_MARSHALING_FLAGS)
+
+compilerlibs/ocamlcommon.cmxa: stdlib/libcomprmarsh.$(A)
 
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cma
@@ -925,8 +938,6 @@ ocamlc_SOURCES = driver/main.mli driver/main.ml
 
 ocamlc$(EXE): OC_BYTECODE_LINKFLAGS += -compat-32 -g
 
-ocamlc.opt$(EXE): OC_NATIVE_LINKFLAGS += $(addprefix -cclib ,$(BYTECCLIBS))
-
 partialclean::
 	rm -f ocamlc ocamlc.exe ocamlc.opt ocamlc.opt.exe
 
@@ -1138,7 +1149,8 @@ runtime_BYTECODE_ONLY_C_SOURCES = \
   fail_byt \
   fix_code \
   interp \
-  startup_byt
+  startup_byt \
+  zstd
 runtime_BYTECODE_C_SOURCES = \
   $(runtime_COMMON_C_SOURCES:%=runtime/%.c) \
   $(runtime_BYTECODE_ONLY_C_SOURCES:%=runtime/%.c)
@@ -1169,7 +1181,8 @@ runtime_PROGRAMS = runtime/ocamlrun$(EXE)
 runtime_BYTECODE_STATIC_LIBRARIES = $(addprefix runtime/, \
   ld.conf libcamlrun.$(A))
 runtime_BYTECODE_SHARED_LIBRARIES =
-runtime_NATIVE_STATIC_LIBRARIES = runtime/libasmrun.$(A)
+runtime_NATIVE_STATIC_LIBRARIES = \
+  runtime/libasmrun.$(A) runtime/libcomprmarsh.$(A)
 runtime_NATIVE_SHARED_LIBRARIES =
 
 ifeq "$(RUNTIMED)" "true"
@@ -1219,6 +1232,8 @@ libasmruni_OBJECTS = \
 
 libasmrunpic_OBJECTS = $(runtime_NATIVE_C_SOURCES:.c=.npic.$(O)) \
   $(runtime_ASM_OBJECTS:.$(O)=_libasmrunpic.$(O))
+
+libcomprmarsh_OBJECTS = runtime/zstd.n.o
 
 ## General (non target-specific) assembler and compiler flags
 
@@ -1335,6 +1350,9 @@ runtime/libasmrun_pic.$(A): $(libasmrunpic_OBJECTS)
 
 runtime/libasmrun_shared.$(SO): $(libasmrunpic_OBJECTS)
 	$(V_MKDLL)$(MKDLL) -o $@ $^ $(NATIVECCLIBS)
+
+runtime/libcomprmarsh.$(A): $(libcomprmarsh_OBJECTS)
+	$(V_MKLIB)$(call MKLIB,$@, $^)
 
 ## Runtime target-specific preprocessor and compiler flags
 
@@ -1492,9 +1510,12 @@ runtimeopt: stdlib/libasmrun.$(A)
 makeruntimeopt: runtime-allopt
 stdlib/libasmrun.$(A): runtime-allopt
 	cd stdlib; $(LN) ../runtime/libasmrun.$(A) .
+stdlib/libcomprmarsh.$(A): runtime/libcomprmarsh.$(A)
+	cd stdlib; $(LN) ../runtime/libcomprmarsh.$(A) .
 
 clean::
 	rm -f stdlib/libasmrun.a stdlib/libasmrun.lib
+	rm -f stdlib/libcomprmarsh.a stdlib/libcomprmarsh.lib
 
 # Dependencies
 

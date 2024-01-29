@@ -502,8 +502,9 @@ let dump_obj ic =
     List.iter print_reloc cu.cu_reloc;
   if cu.cu_debug > 0 then begin
     seek_in ic cu.cu_debug;
-    let evl = (input_value ic : debug_event list) in
-    ignore (input_value ic); (* Skip the list of absolute directory names *)
+    let evl = (Compression.input_value ic : debug_event list) in
+    ignore (Compression.input_value ic);
+                (* Skip the list of absolute directory names *)
     record_events 0 evl
   end;
   seek_in ic cu.cu_pos;
@@ -530,9 +531,9 @@ let dump_exe ic =
         let num_eventlists = input_binary_int ic in
         for _i = 1 to num_eventlists do
           let orig = input_binary_int ic in
-          let evl = (input_value ic : debug_event list) in
+          let evl = (Compression.input_value ic : debug_event list) in
           (* Skip the list of absolute directory names *)
-          ignore (input_value ic);
+          ignore (Compression.input_value ic);
           record_events orig evl
         done
   end;

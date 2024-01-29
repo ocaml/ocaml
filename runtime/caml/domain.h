@@ -27,7 +27,6 @@ extern "C" {
 #include "config.h"
 #include "mlvalues.h"
 #include "domain_state.h"
-#include "platform.h"
 
 /* The runtime currently has a hard limit on the number of domains.
    This hard limit may go away in the future. */

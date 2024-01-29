@@ -327,7 +327,7 @@ void caml_tsan_exit_on_perform(uintnat pc, char* sp)
    of iteration.
    - [pc] is the program counter where `caml_perform` was called.
    - [sp] is the stack pointer at the perform point. */
-CAMLreally_no_tsan void caml_tsan_entry_on_resume(uintnat pc, char* sp,
+CAMLno_tsan void caml_tsan_entry_on_resume(uintnat pc, char* sp,
     struct stack_info const* stack)
 {
   caml_frame_descrs fds = caml_get_frame_descrs();
@@ -373,7 +373,7 @@ extern uint##bitsize##_t __tsan_atomic##bitsize##_load(void*, int);            \
 extern uint##bitsize##_t __tsan_atomic##bitsize##_fetch_add(                   \
     volatile void*, uint##bitsize##_t, memory_order);                          \
                                                                                \
-CAMLreally_no_tsan void __tsan_volatile_read##size(void *ptr)                  \
+CAMLno_tsan void __tsan_volatile_read##size(void *ptr)                         \
 {                                                                              \
   const bool is_atomic = size <= sizeof(long long) && is_aligned(ptr, 8);      \
   if (is_atomic)                                                               \
@@ -381,11 +381,11 @@ CAMLreally_no_tsan void __tsan_volatile_read##size(void *ptr)                  \
   else                                                                         \
     __tsan_read##size(ptr);                                                    \
 }                                                                              \
-CAMLreally_no_tsan void __tsan_unaligned_volatile_read##size(void *ptr)        \
+CAMLno_tsan void __tsan_unaligned_volatile_read##size(void *ptr)               \
 {                                                                              \
   __tsan_volatile_read##size(ptr);                                             \
 }                                                                              \
-CAMLreally_no_tsan void __tsan_volatile_write##size(void *ptr)                 \
+CAMLno_tsan void __tsan_volatile_write##size(void *ptr)                        \
 {                                                                              \
   const bool is_atomic = size <= sizeof(long long) && is_aligned(ptr, 8);      \
   if (is_atomic) {                                                             \
@@ -396,7 +396,7 @@ CAMLreally_no_tsan void __tsan_volatile_write##size(void *ptr)                 \
   } else                                                                       \
     __tsan_write##size(ptr);                                                   \
 }                                                                              \
-CAMLreally_no_tsan void __tsan_unaligned_volatile_write##size(void *ptr)       \
+CAMLno_tsan void __tsan_unaligned_volatile_write##size(void *ptr)              \
 {                                                                              \
   __tsan_volatile_write##size(ptr);                                            \
 }
@@ -416,19 +416,19 @@ DEFINE_TSAN_VOLATILE_READ_WRITE(8, 64);
 extern void __tsan_read16(void*);
 extern void __tsan_write16(void*);
 
-CAMLreally_no_tsan void __tsan_volatile_read16(void *ptr)
+CAMLno_tsan void __tsan_volatile_read16(void *ptr)
 {
     __tsan_read16(ptr);
 }
-CAMLreally_no_tsan void __tsan_unaligned_volatile_read16(void *ptr)
+CAMLno_tsan void __tsan_unaligned_volatile_read16(void *ptr)
 {
   __tsan_read16(ptr);
 }
-CAMLreally_no_tsan void __tsan_volatile_write16(void *ptr)
+CAMLno_tsan void __tsan_volatile_write16(void *ptr)
 {
     __tsan_write16(ptr);
 }
-CAMLreally_no_tsan void __tsan_unaligned_volatile_write16(void *ptr)
+CAMLno_tsan void __tsan_unaligned_volatile_write16(void *ptr)
 {
   __tsan_write16(ptr);
 }
