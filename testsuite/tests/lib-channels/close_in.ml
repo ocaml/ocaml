@@ -10,9 +10,9 @@ let () =
   let ic = open_in_bin Sys.argv.(0) in
   seek_in ic nb_bytes;
   close_in ic;
-  seek_in ic 0;
   assert (
     try
+      seek_in ic 0;
       ignore (input_byte ic);
       false
     with

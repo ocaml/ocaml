@@ -228,6 +228,12 @@ CAMLexport int caml_channel_binary_mode(struct channel *channel)
   return channel->flags & CHANNEL_TEXT_MODE ? 0 : 1;
 }
 
+/* [fd == -1] means that the channel was closed by the user. */
+static void check_descriptor_is_open(int fd)
+{
+  if (fd == -1) { errno = EBADF; caml_sys_error(NO_ARG); }
+}
+
 /* Output */
 
 /* Attempt to flush the buffer. This will make room in the buffer for
@@ -455,6 +461,8 @@ CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
   if (dest >= channel->offset - (channel->max - channel->buff)
       && dest <= channel->offset
       && (channel->flags & CHANNEL_TEXT_MODE) == 0) {
+    /* Even if the fast path, we prefer to fail if the channel was closed. */
+    check_descriptor_is_open(channel->fd);
     channel->curr = channel->max - (channel->offset - dest);
   } else {
     caml_enter_blocking_section_no_pending();
@@ -692,7 +700,7 @@ CAMLprim value caml_ml_out_channels_list (value unit)
 CAMLprim value caml_channel_descriptor(value vchannel)
 {
   int fd = Channel(vchannel)->fd;
-  if (fd == -1) { errno = EBADF; caml_sys_error(NO_ARG); }
+  check_descriptor_is_open(fd);
   return Val_int(fd);
 }
 
@@ -710,9 +718,6 @@ CAMLprim value caml_ml_close_channel(value vchannel)
      immediate caml_flush_partial or caml_refill, thus raising a Sys_error
      exception */
   channel->curr = channel->max = channel->end;
-  /* Prevent any seek backward that would mark the last bytes of the
-   * channel buffer as valid */
-  channel->offset = 0;
 
   /* If already closed, we are done */
   if (channel->fd != -1) {
