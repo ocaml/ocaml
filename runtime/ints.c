@@ -142,19 +142,19 @@ CAMLprim value caml_int_compare(value v1, value v2)
 CAMLprim value caml_int_of_string(value s)
 {
   intnat res;
-  if (0 == parse_intnat(s, 8 * sizeof(value) - 1, &res)) {
-    return Val_long(res);
+  if (0 != parse_intnat(s, 8 * sizeof(value) - 1, &res)) {
+    caml_failwith(INT_ERRMSG);
   }
-  caml_failwith(INT_ERRMSG);
+  return Val_long(res);
 }
 
 CAMLprim value caml_int_of_string_opt(value s)
 {
   intnat res;
-  if (0 == parse_intnat(s, 8 * sizeof(value) - 1, &res)) {
-    return caml_alloc_some(Val_long(res));
+  if (0 != parse_intnat(s, 8 * sizeof(value) - 1, &res)) {
+    return Val_none;
   }
-  return Val_none;
+  return caml_alloc_some(Val_long(res));
 }
 
 #define FORMAT_BUFFER_SIZE 32
@@ -355,19 +355,19 @@ CAMLprim value caml_int32_format(value fmt, value arg)
 CAMLprim value caml_int32_of_string(value s)
 {
   intnat res;
-  if (0 == parse_intnat(s, 32, &res)) {
-    return caml_copy_int32((int32_t) res);
+  if (0 != parse_intnat(s, 32, &res)) {
+    caml_failwith(INT32_ERRMSG);
   }
-  caml_failwith(INT32_ERRMSG);
+  return caml_copy_int32((int32_t) res);
 }
 
 CAMLprim value caml_int32_of_string_opt(value s)
 {
   intnat res;
-  if (0 == parse_intnat(s, 32, &res)) {
-    return caml_alloc_some(caml_copy_int32((int32_t) res));
+  if (0 != parse_intnat(s, 32, &res)) {
+    return Val_none;
   }
-  return Val_none;
+  return caml_alloc_some(caml_copy_int32((int32_t) res));
 }
 
 int32_t caml_int32_bits_of_float_unboxed(double d)
@@ -870,17 +870,17 @@ CAMLprim value caml_nativeint_format(value fmt, value arg)
 CAMLprim value caml_nativeint_of_string(value s)
 {
   intnat res;
-  if (0 == parse_intnat(s, 8 * sizeof(value), &res)) {
-    return caml_copy_nativeint(res);
+  if (0 != parse_intnat(s, 8 * sizeof(value), &res)) {
+    caml_failwith(INTNAT_ERRMSG);
   }
-  caml_failwith(INTNAT_ERRMSG);
+  return caml_copy_nativeint(res);
 }
 
 CAMLprim value caml_nativeint_of_string_opt(value s)
 {
   intnat res;
-  if (0 == parse_intnat(s, 8 * sizeof(value), &res)) {
-    return caml_alloc_some(caml_copy_nativeint(res));
+  if (0 != parse_intnat(s, 8 * sizeof(value), &res)) {
+    return Val_none;
   }
-  return Val_none;
+  return caml_alloc_some(caml_copy_nativeint(res));
 }
