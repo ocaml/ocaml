@@ -18,3 +18,16 @@ let () =
     with
     | Sys_error _ -> true
     | _           -> false)
+
+
+(* A variant of #11878, which #11965 failed to fix. *)
+let () =
+  let ic = open_in_bin Sys.argv.(0) in
+  close_in ic;
+  begin try
+    seek_in ic (-1);
+    ignore (input_byte ic);
+    assert false;
+  with
+  | Sys_error _ -> ()
+  end
