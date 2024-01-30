@@ -39,10 +39,6 @@
     The {!Stack} module provides a last-in first-out data structure
     that can be easily implemented on top of dynamic arrays.
 
-    {b Warning.} In their current implementation, the memory layout
-    of dynamic arrays differs from the one of {!Array}s. See the
-    {{!section:memory_layout} Memory Layout} section for more information.
-
     @since 5.2
 *)
 
@@ -493,34 +489,6 @@ val reset : 'a t -> unit
     particular, no user-provided values are "leaked" by being present
     in the backing array in position [length a] or later.
 *)
-
-(** {2:memory_layout Memory layout of dynarrays}
-
-    In the current implementation, the backing array of an
-    ['a Dynarray.t] is not an ['a array], but something with the same
-    representation as an ['a option array] or ['a ref array].
-    Each element is in a "box", allocated when the element is first
-    added to the array -- see the implementation for more details.
-
-    Using an ['a array] would be delicate, as there is no obvious
-    type-correct way to represent the empty space at the end of the
-    backing array -- using user-provided values would either
-    complicate the API or violate the {{!section:noleaks}no leaks}
-    guarantee. The constraint of remaining memory-safe under
-    unsynchronized concurrent usage makes it even more
-    difficult. Various unsafe ways to do this have been discussed,
-    with no consensus on a standard implementation so far.
-
-    On a realistic automated-theorem-proving program that relies
-    heavily on dynamic arrays, we measured the overhead of this extra
-    "boxing" as at most 25%. We believe that the overhead for most
-    uses of dynarray is much smaller, negligible in many cases, but
-    you may still prefer to use your own specialized implementation
-    for performance. (If you know that you do not need the
-    {{:noleaks}no leaks} guarantee, you can also speed up deleting
-    elements.)
-*)
-
 
 
 (** {1:examples Code examples}

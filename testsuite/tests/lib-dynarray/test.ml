@@ -374,4 +374,46 @@ let () =
   done;
   A.fit_capacity a;
   assert (A.length a = 201);
-  assert (A.length a = A.capacity a);
+  assert (A.length a = A.capacity a);;
+
+
+(** check that comparisons and marshalling-with-sharing work as
+    expected. *)
+
+let () =
+  (** Comparison.
+
+      We expect physically-equal dynarrays to be found equal,
+      and structurally-distinct dynarrays to be found distinct.
+  *)
+  let a = A.of_list [42] in
+  let b = A.of_list [21] in
+  assert (Stdlib.compare a a = 0);
+  assert (Stdlib.compare a b <> 0);
+  assert (a = a);
+  assert (a <> b);
+
+  (** On the other hand, we do not specify that comparison is fully
+      structural, it may find structurally-equal values distinct, and
+      in fact it does.
+
+      This is not part of our specification, but we document the
+      current behavior through tests below. *)
+  let a' = A.create () in
+  A.ensure_capacity a' 10000;
+  A.append_list a' [42];
+  assert (A.to_list a = A.to_list a');
+  assert (a <> a');
+  assert (Stdlib.compare a a' <> 0);
+  ();;
+
+let () =
+  (** Marshalling. *)
+  let a = A.of_list [42] in
+  let buf = Marshal.to_string a [] in
+  let c = Marshal.from_string buf 0 in
+  (* Note: currently the equality of dynarrays is *not* stable by
+     marshalling-unmarshalling. *)
+  assert (Stdlib.compare a c <> 0);
+  assert (a <> c);
+  ();;
