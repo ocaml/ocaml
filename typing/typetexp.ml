@@ -218,7 +218,6 @@ end = struct
         promoted vars
 
   let check_poly_univars env loc vars =
-    vars |> List.iter (fun (_, p) -> generalize p.univar);
     let univars =
       vars |> List.map (fun (name, {univar=ty1; _ }) ->
       let v = Btype.proxy ty1 in

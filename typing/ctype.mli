@@ -139,6 +139,7 @@ val filter_row_fields:
         bool -> (label * row_field) list -> (label * row_field) list
 
 val generalize: type_expr -> unit
+      [@@ocaml.deprecated "Use Ctype.with_local_level_generalize"]
         (* Generalize in-place the given type *)
 val lower_contravariant: Env.t -> type_expr -> unit
         (* Lower level of type variables inside contravariant branches;
@@ -148,9 +149,11 @@ val lower_variables_only: Env.t -> int -> type_expr -> unit
 val enforce_current_level: Env.t -> type_expr -> unit
         (* Lower whole type to !current_level *)
 val generalize_structure: type_expr -> unit
+      [@@ocaml.deprecated "Use Ctype.with_local_level_generalize_structure"]
         (* Generalize the structure of a type, lowering variables
            to !current_level *)
 val generalize_class_type: class_type -> unit
+      [@@ocaml.deprecated "Use Ctype.with_local_level_generalize"]
         (* Generalize the components of a class type *)
 val generalize_class_signature_spine: Env.t -> class_signature -> unit
        (* Special function to generalize methods during inference *)
