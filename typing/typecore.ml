@@ -3215,7 +3215,6 @@ let with_explanation explanation f =
         raise (Error (loc', env', err))
 
 (* Generalize expressions *)
-let generalize_structure_exp exp = generalize_structure exp.exp_type
 let may_lower_contravariant env exp =
   if maybe_expansive exp then lower_contravariant env exp.exp_type
 
