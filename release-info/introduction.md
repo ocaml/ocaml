@@ -1,75 +1,79 @@
-# What does an OCaml version number mean?
+# What does an OCaml version mean?
 
-OCaml releases follow a linux-like scheme for its version string. The OCaml
-version string consists in three numbers, optionally followed by either a
-prerelease or development tag (`%i.%i.%i[~alpha%i|~beta%i|~rc%i|+%s]`).
+OCaml releases follow a linux-like scheme for its version string. The
+OCaml version string consists in three numbers, optionally followed by
+either a prerelease or development tag
+(`%i.%i.%i[~alpha%i|~beta%i|~rc%i|+%s]`). For example, 4.14.1,
+5.1.0~alpha2 and 5.3.0+dev0-2023-12-22 are OCaml versions.
 
-- The first version number is the major version of OCaml.
+- The first version number (4 in 4.14.1) is the major version of OCaml.
   This version number is updated when major new features are added to the OCaml
   language. For instance, OCaml 5 added shared memory parallelism and effect
   handlers and OCaml 4 introduced GADTs (Generalised Abstract Data Types).
 
-- The second version number is the minor version of OCaml.
+- The second version number (14 in 4.14.1) is the minor version of OCaml.
   This number is increased for every new release of OCaml. In particular, a new
   minor version of OCaml can contain breaking changes. However, we strive to
   maintain backward compatibility as much as possible.
 
-- The last number is the bugfix number.
+- The last number (1 in 4.14.1) is the bugfix number.
   Updating to the latest bugfix release is always safe, those bugfix versions
   are meant to be completely backward compatible and only contain important or
   very safe bug fixes.
 
-- The prerelease tag `~alpha%i`, `~beta%i`, `~rc%i` describes a prerelease
-  version of the compiler that is currently being tested. See [below](##
-  Prerelease versions) for a more thorough explanation.
+- The prerelease tag `~alpha%i`, `~beta%i`, `~rc%i` (~alpha2 in
+  5.1.0~alpha2) describes a prerelease version of the compiler that is
+  currently being tested. See [below](## Prerelease versions) for
+  a more thorough explanation.
 
 - The development tag `+tag` indicates a development or experimental version of
-  the compiler.
-  For instance, the compiler uses `+dev%i-%i-%i-%i` for its development
+  the compiler. +dev0-2023-12-22 in 5.3.0+dev0-2023-12-22 is an example of the
+  tags of the form +dev%i-%date used by the compiler for its development
   versions.
 
-# When new versions are released?
+
+# When are new versions released?
 
 Since OCaml 4.03, we are using a time-based release schedule:
-a new (minor) version of OCaml is released every six months.
+a new minor version of OCaml is released every six months.
 
 At the date of writing, the next planned releases of OCaml are:
 
 - OCaml 5.2: around April 2024
 - OCaml 5.3: around October 2024
 
-Our past experiences are that releases are often late however.
+The timing is approximate, as we often delay a release to ensure quality when
+unforeseen issues come up. In consequence, releases are often late, typically by
+up to two months.
+
+We may release bugfix releases at any time.
 
 
-# What happen between releases?
+# What happens between minor releases?
 
-##  Feature freeze
+## Feature freeze
 
-Three months before a new release, we create a separate branch for the next
-version of OCaml. This new branch is feature frozen: between the branching and
-the official release of this branch, only bug fixes (and documentation updates)
-are merged in this branch.
+All PRs go to the development branch of the compiler, called 'trunk'. (This was
+the standard name in the SVN era, and it remains more descriptive than 'main'.)
 
-We sometimes make an exception for specific PRs with a nearly finished review
-at the time of the freeze, but it is better to not rely on such review extension.
+Three months before a new release, that is, at the half of the time window
+between two releases, we create a separate branch for the next version of
+OCaml. The intention (there are always exceptions) is that the release should
+correspond to the state of 'trunk' at the time this branch was created, but we
+wait three more months for quality analysis, to get feedback and integrate
+bugfixes.
 
-During this period, new features are still accepted in the development branch of
-the compiler (called trunk for historical reasons).
+We do not integrate new features in the release branch, to avoid unplanned
+regressions coming from last-minute changes. Only bugfixes and documentation
+improvements go to the release branch -- by cherry-picking them from 'trunk'.
 
-The objective of those dual branches is to stabilise the released versions of
-OCaml, while still integrating new features in the trunk branch, and
-acknowledging that we don't have the resources to maintain more than one dev
-branch, one prelease branch, and one LTS branch.
+We do not have the resources to maintain more than one dev branch, one prelease
+branch, and one LTS branch.
 
+### Example
 
-At the date of writing, the last feature freeze was the one for
-
-- OCaml 5.2, on December 2023
-
-and the next planned feature freeze should be:
-
-- OCaml 5.3 feature freeze: around July 2024
-- OCaml 5.4 feature freeze: around January 2025
+5.1.0 was released in September 2023, and the feature freeze for 5.2 happened on
+December 2023, for a 5.2 release planned around April 2024.
 
 ## Prerelease versions
 
@@ -94,7 +98,7 @@ stability guarantees, and which can be tested by an increasingly wider audience:
    * no new features, problematic features might be removed at this stage
    * bug fixes very welcome
    * documentation PRs still accepted
-   * aimed to core development tools (merlin, ppxlib, dune) to unlock the rest
+   * intended for core development tools (merlin, ppxlib, dune) to unlock the rest
      of the opam ecosystem
 
 - `beta` releases:
@@ -102,7 +106,7 @@ stability guarantees, and which can be tested by an increasingly wider audience:
   * stable set of features
   * bug fixes very welcome
   * documentation PRs still accepted
-  * aimed to early adopters: opam library authors should be able to test their
+  * intended for early adopters: opam library authors should be able to test their
     libraries at this point.
 
 - `rc` releases:
@@ -110,12 +114,13 @@ stability guarantees, and which can be tested by an increasingly wider audience:
   * stable feature sets
   * only emergency bug fixes
   * documentation PRs postponed to after the release
-  * aimed to wide tests (and detecting deployment or production issues among
+  * inteded for wide testing (and detecting deployment or production issues among
     large private code base)
 
 Starting from the first alpha release, there is a small team effort to try to
-test every package available on opam with the new release. This has been
-incredibly useful in the past to catch bugs or usability regressions.
+build and test every package available on opam with the new release, with the
+bulk of the work done by Kate Deplaix. This has been incredibly useful in the
+past to catch bugs or usability regressions.
 
 ## Bugfix versions
 
@@ -124,11 +129,15 @@ the use of the initially released version. In that situation, it is not uncommon
 that we backport safe bug fixes that were integrated in the trunk after the
 release.
 
+Most bugfix releases are M.m.1 releases that happened one or two months after
+the M.m.0 minor release, to fix an important issue that was not found during
+prerelease testing.
+
 Users are strongly encouraged to switch to the last bugfix versions as soon as
-possible.
+possible. We make this easy by doing our best to avoid any regression there.
 
 
-## LTS versions
+# LTS versions
 
 Switching from OCaml 4 to OCaml 5 required a full rewrite of the OCaml runtime.
 This has negatively affected the stability of the releases of OCaml 5 in term of
@@ -142,8 +151,11 @@ To keep a stable version easily available, we are still maintaining OCaml 4.14
 as the long term support version of OCaml. New bugfix versions of OCaml 4.14
 will be released in the future until OCaml 5 is considered mature enough.
 
+User feedback is welcome on which fixes from OCaml 5 should be also included in 4.14.
+
 Currently, we expect to support OCaml 4.14 until OCaml 5.4 (around April 2025).
 
-# How new versions of OCaml are released?
 
-See [the release howto](https://github.com/ocaml/ocaml/release-info/howto.md)
+# How are new versions of OCaml released?
+
+The release process is documented in [the release howto](https://github.com/ocaml/ocaml/release-info/howto.md)
