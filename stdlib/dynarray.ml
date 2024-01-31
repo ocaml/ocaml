@@ -291,7 +291,6 @@ let pop_last a =
   let last = length - 1 in
   (* We know [length > 0] so [last >= 0]. *)
   match Array.unsafe_get arr last with
-  (* At this point we know that [last] is a valid index in [arr]. *)
   | Empty ->
       Error.missing_element ~i:last ~length
   | Elem s ->
