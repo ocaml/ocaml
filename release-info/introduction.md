@@ -90,7 +90,7 @@ At last, just before the official release, we publish a release candidate (e.g.
 `5.2.0~rc1`) to have one last check with the hopefully final version
 of the branch.
 
-Our idea for alpha, beta, and rc releases is to have release with increasing
+Our idea for alpha, beta, and rc releases is to have releases with increasing
 stability guarantees, and which can be tested by an increasingly wider audience:
 
 - `alpha` releases:
