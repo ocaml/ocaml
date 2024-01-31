@@ -37,7 +37,7 @@ either a prerelease or development tag
 Since OCaml 4.03, we are using a time-based release schedule:
 a new minor version of OCaml is released every six months.
 
-At the date of writing, the next planned releases of OCaml are:
+For instance, at the date of writing, the next planned releases of OCaml are:
 
 - OCaml 5.2: around April 2024
 - OCaml 5.3: around October 2024
