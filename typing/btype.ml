@@ -122,17 +122,26 @@ let with_new_pool ~level f =
   let p = !pool in
   (r, p)
 
+let register_last_pool ~level =
+  leveled_type_pool := IntMap.add level !last_pool !leveled_type_pool
+
+let with_last_pool ~level f =
+  let old_type_pool = !leveled_type_pool in
+  register_last_pool ~level;
+  Misc.try_finally f ~always:(fun () -> leveled_type_pool := old_type_pool)
+
 let add_to_pool ~level ty =
   if level >= generic_level - 1 || level <= 0 then () else
   let pool =
     if level >= !last_level then !last_pool else
     try IntMap.find level !leveled_type_pool
-    with Not_found -> !last_pool
+    with Not_found ->
+      (* Format.eprintf "@[<2>Level %d not in pool: %a@]@." level
+        (fun ppf -> List.iter (Format.fprintf ppf "@ %d"))
+        (List.map fst (IntMap.bindings !leveled_type_pool)); *)
+      invalid_arg "Btype.add_to_pool"
   in
   pool := ty :: !pool
-  (* Format.eprintf "@[<2>Level %d not in pool: %a@]@." level
-        (fun ppf -> List.iter (Format.fprintf ppf "@ %d"))
-        (List.map fst (IntMap.bindings !leveled_type_pool)) *)
 
 (**** Some type creators ****)
 

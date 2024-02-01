@@ -197,12 +197,15 @@ let end_def () =
   current_level := cl; nongen_level := nl
 let create_scope () =
   let level = !current_level + 1 in
+  register_last_pool ~level;
   init_def level;
   level
 
-let wrap_end_def f = Misc.try_finally f ~always:end_def
+let wrap_end_def_gen f = Misc.try_finally f ~always:end_def
 let wrap_end_def_new_pool f =
-  wrap_end_def (fun _ -> with_new_pool ~level:!current_level f)
+  wrap_end_def_gen (fun _ -> with_new_pool ~level:!current_level f)
+let wrap_end_def f =
+  wrap_end_def_gen (fun _ -> with_last_pool ~level:!current_level f)
 
 let with_local_level_gen ~begin_def ~structure ?before_generalize f =
   begin_def ();

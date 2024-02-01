@@ -63,6 +63,12 @@ val lowest_level: int
         (* lowest level for type nodes; = Ident.lowest_scope *)
 
 val with_new_pool: level:int -> (unit -> 'a) -> 'a * transient_expr list
+        (* [with_new_pool ~level f] executes [f] and returns the nodes
+           that were created at level [level] and above *)
+val register_last_pool: level:int -> unit
+val with_last_pool: level:int -> (unit -> 'a) -> 'a
+        (* register [level] so that its nodes are added to the same pool as
+           the previous level *)
 val add_to_pool: level:int -> transient_expr -> unit
         (* Only types with [level < generic_level - 1] are tracked *)
 
