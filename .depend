@@ -565,6 +565,7 @@ typing/annot.cmi : \
 typing/btype.cmo : \
     typing/types.cmi \
     typing/path.cmi \
+    utils/misc.cmi \
     utils/local_store.cmi \
     typing/ident.cmi \
     parsing/asttypes.cmi \
@@ -572,6 +573,7 @@ typing/btype.cmo : \
 typing/btype.cmx : \
     typing/types.cmx \
     typing/path.cmx \
+    utils/misc.cmx \
     utils/local_store.cmx \
     typing/ident.cmx \
     parsing/asttypes.cmx \

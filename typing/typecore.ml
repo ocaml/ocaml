@@ -1941,6 +1941,8 @@ and type_pat_aux
          forces. *)
       let tps1 = copy_type_pat_state tps in
       let tps2 = {(copy_type_pat_state tps) with tps_pattern_force = []} in
+      (* Introduce a new level to avoid keeping nodes at intermediate levels *)
+      let pat_desc = with_local_level_generalize begin fun () ->
       (* Introduce a new scope using with_local_level without generalizations *)
       let env1, p1, env2, p2 =
         with_local_level begin fun () ->
@@ -1983,7 +1985,10 @@ and type_pat_aux
           }
         ~dst:tps;
       let p2 = alpha_pat alpha_env p2 in
-      rp { pat_desc = Tpat_or (p1, p2, None);
+      Tpat_or (p1, p2, None)
+      end
+      in
+      rp { pat_desc = pat_desc;
            pat_loc = loc; pat_extra = [];
            pat_type = instance expected_ty;
            pat_attributes = sp.ppat_attributes;
@@ -3404,7 +3409,7 @@ and type_expect_
            introduced by those unpacks. The below code checks for scope escape
            via both of these pathways (body, bound expressions).
         *)
-        with_local_level_if may_contain_modules begin fun () ->
+        with_local_level_generalize_if may_contain_modules begin fun () ->
           let allow_modules =
             if may_contain_modules
             then
@@ -3448,7 +3453,7 @@ and type_expect_
           end;
           (pat_exp_list, body, new_env)
         end
-        ~post:(fun (_pat_exp_list, body, new_env) ->
+        ~before_generalize:(fun (_pat_exp_list, body, new_env) ->
           (* The "body" component of the scope escape check. *)
           unify_exp new_env body (newvar ()))
       in
@@ -4081,7 +4086,7 @@ and type_expect_
   | Pexp_letmodule(name, smodl, sbody) ->
       let lv = get_current_level () in
       let (id, pres, modl, _, body) =
-        with_local_level begin fun () ->
+        with_local_level_generalize begin fun () ->
           let modl, pres, id, new_env =
             Typetexp.TyVarEnv.with_local_scope begin fun () ->
               let modl, md_shape = !type_module env smodl in
@@ -4120,7 +4125,7 @@ and type_expect_
           let body = type_expect new_env sbody ty_expected_explained in
           (id, pres, modl, new_env, body)
         end
-        ~post: begin fun (_id, _pres, _modl, new_env, body) ->
+        ~before_generalize: begin fun (_id, _pres, _modl, new_env, body) ->
           (* Ensure that local definitions do not leak. *)
           (* required for implicit unpack *)
           enforce_current_level new_env body.exp_type
@@ -4413,11 +4418,12 @@ and type_coerce
     in
     let arg, arg_type, gen =
       let lv = get_current_level () in
-      with_local_level begin fun () ->
+      with_local_level_generalize begin fun () ->
           let arg, arg_type = type_without_constraint env in
           arg, arg_type, generalizable lv arg_type
         end
-        ~post:(fun (_, arg_type, _) -> enforce_current_level env arg_type)
+        ~before_generalize:
+         (fun (_, arg_type, _) -> enforce_current_level env arg_type)
     in
     begin match !self_coercion, get_desc ty' with
       | ((path, r) :: _, Tconstr (path', _, _))
@@ -4523,8 +4529,8 @@ and type_newtype
     else
       newvar ()
   in
-  (* Use [with_local_level] just for scoping *)
-  with_local_level begin fun () ->
+  (* Use [with_local_level_generalize] just for scoping *)
+  with_local_level_generalize begin fun () ->
     (* Create a fake abstract type declaration for [name]. *)
     let decl = new_local_type ~loc Definition in
     let scope = create_scope () in
@@ -4547,6 +4553,7 @@ and type_newtype
     replace ety;
     (result, ety)
   end
+  ~before_generalize:(fun (_,ety) -> enforce_current_level env ety)
 
 and type_ident env ?(recarg=Rejected) lid =
   let (path, desc) = Env.lookup_value ~loc:lid.loc lid.txt env in
@@ -5467,7 +5474,7 @@ and type_application env funct sargs =
      with Filter_arrow_failed _ -> false)
   in
   (* Extra scope to check for non-returning functions *)
-  with_local_level begin fun () ->
+  with_local_level_generalize begin fun () ->
     match sargs with
     | (* Special case for ignore: avoid discarding warning *)
       [Nolabel, sarg] when is_ignore funct ->
@@ -5480,6 +5487,7 @@ and type_application env funct sargs =
         let ty = funct.exp_type in
         type_args [] ty (instance ty) sargs
   end
+  ~before_generalize:(fun (_, ty) -> enforce_current_level env ty)
 
 and type_construct env loc lid sarg ty_expected_explained attrs =
   let { ty = ty_expected; explanation } = ty_expected_explained in
@@ -5588,24 +5596,24 @@ and type_statement ?explanation env sexp =
     | _ -> false
   in
   (* Raise the current level to detect non-returning functions *)
-  let exp = with_local_level (fun () -> type_exp env sexp) in
-  let subexp = final_subexpression exp in
-  let ty = expand_head env exp.exp_type in
-  if is_Tvar ty
-     && get_level ty > get_current_level ()
-     && not (allow_polymorphic subexp) then
-    Location.prerr_warning
-      subexp.exp_loc
-      Warnings.Nonreturning_statement;
-  if !Clflags.strict_sequence then
-    let expected_ty = instance Predef.type_unit in
-    with_explanation explanation (fun () ->
-      unify_exp env exp expected_ty);
-    exp
-  else begin
-    check_partial_application ~statement:true exp;
-    enforce_current_level env ty;
-    exp
+  with_local_level_generalize (fun () -> type_exp env sexp)
+  ~before_generalize: begin fun exp ->
+    let subexp = final_subexpression exp in
+    let ty = expand_head env exp.exp_type in
+    if is_Tvar ty
+    && get_level ty > get_current_level ()
+    && not (allow_polymorphic subexp) then
+      Location.prerr_warning
+        subexp.exp_loc
+        Warnings.Nonreturning_statement;
+    if !Clflags.strict_sequence then
+      let expected_ty = instance Predef.type_unit in
+      with_explanation explanation (fun () ->
+        unify_exp env exp expected_ty)
+    else begin
+      check_partial_application ~statement:true exp;
+      enforce_current_level env ty
+    end
   end
 
 (* Most of the arguments are the same as [type_cases].
@@ -6073,7 +6081,7 @@ and type_let ?check ?check_strict
     end
     ~before_generalize: begin fun (pat_list, exp_list, _, _) ->
       List.iter2 (fun pat (exp, vars) ->
-        if maybe_expansive exp then begin 
+        if maybe_expansive exp then begin
           lower_contravariant env pat.pat_type;
           if vars <> None then lower_contravariant env exp.exp_type
         end)
