@@ -1,4 +1,6 @@
-(* TEST *)
+(* TEST
+ no-tsan; (* Takes too much time with tsan, at least on Linux/riscv64 *)
+*)
 
 (* Compaction crash when there is only one heap chunk and it is fully used. *)
 let c = ref []
