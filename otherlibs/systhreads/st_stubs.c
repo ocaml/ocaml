@@ -224,7 +224,8 @@ static void restore_runtime_state(caml_thread_t th)
   Caml_state->local_roots = th->local_roots;
   Caml_state->backtrace_pos = th->backtrace_pos;
   Caml_state->backtrace_buffer = th->backtrace_buffer;
-  Caml_state->backtrace_last_exn = th->backtrace_last_exn;
+  caml_modify_generational_global_root
+    (&Caml_state->backtrace_last_exn, th->backtrace_last_exn);
 #ifndef NATIVE_CODE
   Caml_state->trap_sp_off = th->trap_sp_off;
   Caml_state->trap_barrier_off = th->trap_barrier_off;
