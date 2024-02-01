@@ -150,7 +150,7 @@ static const struct socket_option * sockopt_table[] = {
   sockopt_unix_error
 };
 
-static char * getsockopt_fun_name[] = {
+static const char * getsockopt_fun_name[] = {
   "getsockopt",
   "getsockopt_int",
   "getsockopt_optint",
@@ -158,7 +158,7 @@ static char * getsockopt_fun_name[] = {
   "getsockopt_error"
 };
 
-static char * setsockopt_fun_name[] = {
+static const char * setsockopt_fun_name[] = {
   "setsockopt",
   "setsockopt_int",
   "setsockopt_optint",
@@ -172,7 +172,7 @@ union option_value {
   struct timeval tv;
 };
 
-CAMLexport value caml_unix_getsockopt_aux(char * name,
+CAMLexport value caml_unix_getsockopt_aux(const char * name,
                                      enum option_type ty, int level, int option,
                                      value socket)
 {
@@ -230,7 +230,7 @@ CAMLexport value caml_unix_getsockopt_aux(char * name,
   CAMLreturn(res);
 }
 
-CAMLexport value caml_unix_setsockopt_aux(char * name,
+CAMLexport value caml_unix_setsockopt_aux(const char * name,
                                      enum option_type ty, int level, int option,
                                      value socket, value val)
 {
