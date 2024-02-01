@@ -68,7 +68,7 @@ regressions coming from last-minute changes. Only bugfixes and documentation
 improvements go to the release branch -- by cherry-picking them from 'trunk'.
 
 We do not have the resources to maintain more than one dev branch, one prelease
-branch, and one LTS branch.
+branch, and [one exceptional LTS branch](# Exceptional LTS versions).
 
 ### Example
 
@@ -137,7 +137,7 @@ Users are strongly encouraged to switch to the last bugfix versions as soon as
 possible. We make this easy by doing our best to avoid any regression there.
 
 
-# LTS versions
+# Exceptional LTS versions
 
 Switching from OCaml 4 to OCaml 5 required a full rewrite of the OCaml runtime.
 This has negatively affected the stability of the releases of OCaml 5 in term of
@@ -147,12 +147,14 @@ This has negatively affected the stability of the releases of OCaml 5 in term of
 - performance stability
 - number of runtime bugs
 
-To keep a stable version easily available, we are still maintaining OCaml 4.14
-as the long term support version of OCaml. New bugfix versions of OCaml 4.14
-will be released in the future until OCaml 5 is considered mature enough.
+To keep a stable version easily available, we are exceptionally maintaining
+OCaml 4.14 as a long term support version of OCaml. New bugfix versions of OCaml
+4.14 will be released in the future until OCaml 5 is considered mature enough.
 
-User feedback is welcome on which fixes from OCaml 5 should be also included in 4.14.
+User feedback is welcome on which fixes from OCaml 5 should be also included in
+4.14.
 
+Once OCaml 5 is stabilized, this extended support of OCaml 4.14  will stop.
 Currently, we expect to support OCaml 4.14 until OCaml 5.4 (around April 2025).
 
 
