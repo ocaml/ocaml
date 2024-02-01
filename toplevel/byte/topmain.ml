@@ -120,8 +120,6 @@ let _ = Topcommon.add_directive "untrace_all"
 (* --- *)
 
 
-let preload_objects = ref []
-
 (* Position of the first non expanded argument *)
 let first_nonexpanded_pos = ref 0
 
@@ -140,29 +138,12 @@ let expand_position pos len =
     (* New last position *)
     first_nonexpanded_pos := pos + len + 2
 
-let prepare ppf =
-  Topcommon.set_paths ();
-  try
-    let res =
-      let objects =
-        List.rev (!preload_objects @ !Compenv.first_objfiles)
-      in
-      List.for_all (Topeval.load_file false ppf) objects
-    in
-    Topcommon.run_hooks Topcommon.Startup;
-    res
-  with x ->
-    try Location.report_exception ppf x; false
-    with x ->
-      Format.fprintf ppf "Uncaught exception: %s\n" (Printexc.to_string x);
-      false
-
 let input_argument name =
   let filename = Toploop.filename_of_input name in
   let ppf = Format.err_formatter in
   if Filename.check_suffix filename ".cmo"
           || Filename.check_suffix filename ".cma"
-  then preload_objects := filename :: !preload_objects
+  then Toploop.preload_objects := filename :: !Toploop.preload_objects
   else if is_expanded !current then begin
     (* Script files are not allowed in expand options because otherwise the
        check in override arguments may fail since the new argv can be larger
@@ -178,7 +159,8 @@ let input_argument name =
       in
       Compenv.readenv ppf Before_link;
       Compmisc.read_clflags_from_env ();
-      if prepare ppf && Toploop.run_script ppf name newargs
+      if Toploop.prepare ppf ~input:name () &&
+         Toploop.run_script ppf name newargs
       then raise (Compenv.Exit_with_status 0)
       else raise (Compenv.Exit_with_status 2)
     end
@@ -214,7 +196,7 @@ let main () =
   Compenv.parse_arguments ~current argv file_argument program;
   Compenv.readenv ppf Before_link;
   Compmisc.read_clflags_from_env ();
-  if not (prepare ppf) then raise (Compenv.Exit_with_status 2);
+  if not (Toploop.prepare ppf ()) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();
   Toploop.loop Format.std_formatter
 

@@ -32,7 +32,8 @@ val filename_of_input: input -> string
 
 (* Set the load paths, before running anything *)
 
-val set_paths : ?auto_include:Load_path.auto_include_callback -> unit -> unit
+val set_paths :
+  ?auto_include:Load_path.auto_include_callback -> ?dir:string -> unit -> unit
 
 (* The interactive toplevel loop *)
 
@@ -203,3 +204,11 @@ val split_path : string -> string list
     double-quoted (which allows semicolons in filenames to be quoted). The
     double-quote characters are stripped (i.e. [f"o"o = foo]; also
     [split_path "foo\";\";bar" = ["foo;"; "bar"]) *)
+
+val preload_objects : string list ref
+(** List of compilation units to be loaded before entering the interactive
+    loop. *)
+
+val prepare : Format.formatter -> ?input:input -> unit -> bool
+(** Setup the load paths and initial toplevel environment and load compilation
+    units in {!preload_objects}. *)
