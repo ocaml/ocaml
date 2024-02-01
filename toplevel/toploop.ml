@@ -379,11 +379,6 @@ let process_phrases ppf snap phrs =
         (fun () -> List.iter process rest)
     end
 
-let initialize_toplevel_env_or_exit ppf =
-  try initialize_toplevel_env ()
-  with Env.Error _ | Typetexp.Error _ as exn ->
-    Location.report_exception ppf exn; raise (Compenv.Exit_with_status 2)
-
 let loop ppf =
   Misc.Style.setup !Clflags.color;
   Clflags.debug := true;
@@ -425,7 +420,11 @@ let prepare ppf ?input () =
   let dir =
     Option.map (fun inp -> Filename.dirname (filename_of_input inp)) input in
   Topcommon.set_paths ?dir ();
-  initialize_toplevel_env_or_exit ppf;
+  begin try
+    initialize_toplevel_env ()
+  with Env.Error _ | Typetexp.Error _ as exn ->
+    Location.report_exception ppf exn; raise (Compenv.Exit_with_status 2)
+  end;
   try
     let res =
       let objects =
