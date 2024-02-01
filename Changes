@@ -35,6 +35,11 @@ _______________
   HTML pages, and fix the search button icon
   (Yawar Amin, review by Simon Grondin, Gabriel Scherer, and Florian Angeletti)
 
+- #12949: document OCaml release cycles and version strings in
+   `release-info/introduction.md`.
+  (Florian Angeletti, review by Fabrice Buoro, Kate Deplaix, Damien Doligez, and
+   Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 * #12084: Check link order when creating archive and when using ocamlopt

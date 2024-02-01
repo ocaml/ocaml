@@ -90,6 +90,9 @@ page](https://github.com/orgs/ocaml/teams/ocaml-dev/members), plus
 Anil as co-owner of the github/ocaml/ organization. Oddly enough,
 Github does not make the page publicly accessible. -->
 
+### Releases
+
+For more information about when and how new releases are published, see [the release introduction](release-info/introduction.md).
 
 ## Coding guidelines
 
