@@ -1,10 +1,10 @@
 # What does an OCaml version mean?
 
-OCaml releases follow a linux-like scheme for its version string. The
+OCaml releases follow a linux-like scheme for their version string. The
 OCaml version string consists in three numbers, optionally followed by
 either a prerelease or development tag
 (`%i.%i.%i[~alpha%i|~beta%i|~rc%i|+%s]`). For example, 4.14.1,
-5.1.0~alpha2 and 5.3.0+dev0-2023-12-22 are OCaml versions.
+5.1.0~alpha2 and 5.3.0+dev0-2023-12-22 are valid OCaml versions.
 
 - The first version number (4 in 4.14.1) is the major version of OCaml.
   This version number is updated when major new features are added to the OCaml
