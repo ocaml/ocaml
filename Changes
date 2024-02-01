@@ -229,11 +229,6 @@ OCaml 5.2.0
    Hari Hara Naveen S, reviewed by Fabrice Buoro, Gabriel Scherer and
    Miod Vallat)
 
-- #12839: Remove ATOMIC_UINTNAT_INIT from camlatomic.h (as part of a larger
-  cleanup of camlatomic.h)
-  (David Allsopp, review by Antonin Décimo, Sébastien Hinderer, Samuel Hym,
-   Guillaume Munch-Maccagnoni and Miod Vallat)
-
 - #12886: Reinitialize IO mutexes after fork
   (Max Slater, review by Guillaume Munch-Maccagnoni and Xavier Leroy)
 
