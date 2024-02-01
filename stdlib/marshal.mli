@@ -191,6 +191,6 @@ val total_size : bytes -> int -> int
     Care must be taken when marshaling a mutable value that may be modified by
     a different domain. Mutating a value that is being marshaled (i.e., turned
     into a sequence of bytes) is a programming error and might result in
-    suprising values (when unmarshaling) due to tearing, since marshaling
+    surprising values (when unmarshaling) due to tearing, since marshaling
     involves byte-per-byte copy.
 *)

@@ -16,7 +16,7 @@ So: please contribute!
 
 Obviously, proposals made to evolve the standard library will be
 evaluated with very high standards, similar to those applied to the
-evolution of the surface langage, and much higher than those for
+evolution of the surface language, and much higher than those for
 internal compiler changes (optimizations, etc).
 
 A key property of the standard library is its stability.  Backward

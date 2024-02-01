@@ -483,7 +483,7 @@ let append_array_if_room a b =
          reserved-but-not-yet-filled space, it will get a clean "missing
          element" error. This is worse than with the fill-then-notify
          approach where the new elements would only become visible
-         (to iterators, for removal, etc.) alltogether at the end of
+         (to iterators, for removal, etc.) altogether at the end of
          loop.
 
        To summarise, "reserve before fill" is better on add-add races,

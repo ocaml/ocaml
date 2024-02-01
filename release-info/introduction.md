@@ -114,7 +114,7 @@ stability guarantees, and which can be tested by an increasingly wider audience:
   * stable feature sets
   * only emergency bug fixes
   * documentation PRs postponed to after the release
-  * inteded for wide testing (and detecting deployment or production issues among
+  * intended for wide testing (and detecting deployment or production issues among
     large private code base)
 
 Starting from the first alpha release, there is a small team effort to try to

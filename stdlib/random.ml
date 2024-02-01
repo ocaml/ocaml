@@ -143,7 +143,7 @@ module State = struct
      * we use rejection sampling on the greatest interval [ [0, k*n-1] ]
      * that fits in [ [0, mask] ].  That is, we reject the
      * sample if it falls outside of this interval, and draw again.
-     * This is what the test below does, while carefuly avoiding
+     * This is what the test below does, while carefully avoiding
      * overflows and sparing a division [mask / n]. *)
     if r - v > mask - n + 1 then int_aux s n mask else v
 

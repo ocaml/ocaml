@@ -354,7 +354,7 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
       /* attentive readers will have noticed that we assume memory is aligned to
        * atleast even addresses. This is certainly the case on glibc amd64 and
        * Visual C++ on Windows though I can find no guarantees for other
-         platorms. */
+         platforms. */
       struct lf_skipcell *new_cell = caml_stat_alloc(
           SIZEOF_LF_SKIPCELL + (top_level + 1) * sizeof(struct lf_skipcell *));
       new_cell->top_level = top_level;

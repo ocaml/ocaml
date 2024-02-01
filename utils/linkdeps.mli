@@ -51,7 +51,7 @@ type error =
 
 val check : t -> error option
 (** [check t] should be called once all the compilation units to be linked
-    have been added.  It retuns some error if:
+    have been added.  It returns some error if:
     - There are some missing implementations
       and [complete] is [true]
     - Some implementation appear

@@ -159,7 +159,7 @@
      the FFI rules on the condition that the GC does not run between the
      allocation and the end of initialization) and a conflicting access is made
      from OCaml after publication to other threads. There should be no data
-     race thanks to data dependency (see [MMOC] coment in memory.c), but TSan
+     race thanks to data dependency (see [MMOC] comment in memory.c), but TSan
      does not take data dependencies into account.
    - A field is accessed from C with `Field`, or more generally using a
      `volatile value *` or a relaxed atomic access, and that field is modified
