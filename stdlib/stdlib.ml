@@ -268,7 +268,7 @@ let string_of_int n =
 external int_of_string : string -> int = "caml_int_of_string"
 
 let int_of_string_opt s =
-  (* TODO: provide this directly as a non-raising primitive. *)
+  (* Trashes current backtrace *)
   try Some (int_of_string s)
   with Failure _ -> None
 
@@ -289,7 +289,7 @@ let string_of_float f = valid_float_lexem (format_float "%.12g" f)
 external float_of_string : string -> float = "caml_float_of_string"
 
 let float_of_string_opt s =
-  (* TODO: provide this directly as a non-raising primitive. *)
+  (* Trashes current backtrace *)
   try Some (float_of_string s)
   with Failure _ -> None
 
