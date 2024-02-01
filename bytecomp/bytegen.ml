@@ -18,7 +18,6 @@
 open Misc
 open Asttypes
 open Primitive
-open Types
 open Lambda
 open Switch
 open Instruct
@@ -189,141 +188,6 @@ let rec push_dummies n k = match n with
 | 0 -> k
 | _ -> Kconst const_unit::Kpush::push_dummies (n-1) k
 
-
-(**** Auxiliary for compiling "let rec" ****)
-
-type rhs_kind =
-  | RHS_block of int
-  | RHS_infix of { blocksize : int; offset : int }
-  | RHS_floatblock of int
-  | RHS_nonrec
-  | RHS_function of int * int
-  | RHS_unreachable
-
- (* We expect Rec_check to associate Dynamic mode to branches with multiple
-    returning paths, which translates to RHS_nonrec. *)
-let join_rhs_kind k1 k2 =
-  match k1, k2 with
-  | RHS_unreachable, k | k, RHS_unreachable -> k
-  | _, _ -> RHS_nonrec
-
-let rec check_recordwith_updates id e =
-  match e with
-  | Lsequence (Lprim ((Psetfield _ | Psetfloatfield _), [Lvar id2; _], _), cont)
-      -> id2 = id && check_recordwith_updates id cont
-  | Lvar id2 -> id2 = id
-  | _ -> false
-
-let rec size_of_lambda env = function
-  | Lvar id ->
-      begin try Ident.find_same id env with Not_found -> RHS_nonrec end
-  | Lconst _ ->
-      (* This is a constant, so obviously not recursive. But Rec_check might
-         have treated it as Static. We rely on the fact that the compilation
-         of non-recursive values (RHS_nonrec) already handles that case
-         correctly, and return RHS_nonrec. *)
-      RHS_nonrec
-  | Lfunction{params} as funct ->
-      RHS_function (2 + Ident.Set.cardinal(free_variables funct),
-                    List.length params)
-  | Llet (Strict, _k, id, Lprim (Pduprecord (kind, size), _, _), body)
-    when check_recordwith_updates id body ->
-      begin match kind with
-      | Record_regular | Record_inlined _ -> RHS_block size
-      | Record_unboxed _ -> assert false
-      | Record_float -> RHS_floatblock size
-      | Record_extension _ -> RHS_block (size + 1)
-      end
-  | Llet(_str, _k, id, arg, body) ->
-      size_of_lambda (Ident.add id (size_of_lambda env arg) env) body
-  | Lmutlet (_kind, _id, _def, body) ->
-      size_of_lambda env body
-  (* See the Lletrec case of comp_expr *)
-  | Lletrec(bindings, body) when
-      List.for_all
-        (function { def = Lfunction _ } -> true | _ -> false)
-        bindings ->
-      (* let rec of functions *)
-      let fv =
-        Ident.Set.elements (free_variables (Lletrec(bindings, lambda_unit))) in
-      (* See Instruct(CLOSUREREC) in interp.c *)
-      let blocksize = List.length bindings * 3 - 1 + List.length fv in
-      let offsets = List.mapi (fun i { id } -> (id, i * 3)) bindings in
-      let env = List.fold_right (fun (id, offset) env ->
-        Ident.add id (RHS_infix { blocksize; offset }) env) offsets env in
-      size_of_lambda env body
-  | Lletrec(bindings, body) ->
-      let env = List.fold_right
-        (fun { id; rkind=_; def } env ->
-          Ident.add id (size_of_lambda env def) env)
-        bindings env
-      in
-      size_of_lambda env body
-  | Lprim(Pmakeblock _, args, _) -> RHS_block (List.length args)
-  | Lprim (Pmakearray ((Paddrarray|Pintarray), _), args, _) ->
-      RHS_block (List.length args)
-  | Lprim (Pmakearray (Pfloatarray, _), args, _) ->
-      RHS_floatblock (List.length args)
-  | Lprim (Pmakearray (Pgenarray, _), _, _) ->
-     (* Pgenarray is excluded from recursive bindings by the
-        check in Translcore.check_recursive_lambda *)
-      RHS_nonrec
-  | Lprim (Pduprecord ((Record_regular | Record_inlined _), size), _, _) ->
-      RHS_block size
-  | Lprim (Pduprecord (Record_unboxed _, _), _, _) ->
-      assert false
-  | Lprim (Pduprecord (Record_extension _, size), _, _) ->
-      RHS_block (size + 1)
-  | Lprim (Pduprecord (Record_float, size), _, _) -> RHS_floatblock size
-  | Lprim (Praise _, _, _) -> RHS_unreachable
-  | Lprim (_, _, _) -> RHS_nonrec
-  | Levent (lam, _) -> size_of_lambda env lam
-  | Lsequence (_lam, lam') -> size_of_lambda env lam'
-  | Lifthenelse (_cond, ifso, ifnot) ->
-      let size_ifso = size_of_lambda env ifso in
-      let size_ifnot = size_of_lambda env ifnot in
-      join_rhs_kind size_ifso size_ifnot
-  | Lstaticraise (_, _) -> RHS_unreachable
-  | Lstaticcatch (body, _, handler)
-  | Ltrywith (body, _, handler) ->
-      (* For Lstaticcatch, we could refine the sizes of the parameters by
-         propagating the sizes from the Lstaticraise sites. *)
-      let size_body = size_of_lambda env body in
-      let size_handler = size_of_lambda env handler in
-      join_rhs_kind size_body size_handler
-  | Lswitch (_arg, sw, _loc) ->
-      List.fold_left (fun acc (_const, act) ->
-          join_rhs_kind acc (size_of_lambda env act))
-        (List.fold_left (fun acc (_tag, act) ->
-             join_rhs_kind acc (size_of_lambda env act))
-           (match sw.sw_failaction with
-            | None -> RHS_unreachable
-            | Some act -> size_of_lambda env act)
-           sw.sw_blocks)
-        sw.sw_consts
-  | Lstringswitch (_arg, cases, default, _loc) ->
-      List.fold_left (fun acc (_string, act) ->
-          join_rhs_kind acc (size_of_lambda env act))
-        (match default with
-         | None -> RHS_unreachable
-         | Some act -> size_of_lambda env act)
-        cases
-  | Lmutvar _ | Lapply _ | Lwhile _ | Lfor _ | Lassign _ | Lsend _
-  | Lifused _ -> RHS_nonrec
-
-let size_of_rec_binding clas expr =
-  match (clas : Value_rec_types.recursive_binding_kind) with
-  | Not_recursive | Constant -> RHS_nonrec
-  | Class ->
-       (* Actual size is always 4, but [transl_class] only generates
-          explicit allocations when the classes are actually recursive.
-          Computing the size means that we don't go through pre-allocation
-          when the classes are not recursive. *)
-      size_of_lambda Ident.empty expr
-  | Static ->
-      let result = size_of_lambda Ident.empty expr in
-      assert (result <> RHS_nonrec);
-      result
 
 (**** Merging consecutive events ****)
 
@@ -741,84 +605,28 @@ let rec comp_expr stack_info env exp sz cont =
           (add_pop 1 cont))
   | Lletrec(decl, body) ->
       let ndecl = List.length decl in
-      if List.for_all (function { def = Lfunction _ } -> true | _ -> false)
-                      decl then begin
-        (* let rec of functions *)
-        let fv =
-          Ident.Set.elements (free_variables (Lletrec(decl, lambda_unit))) in
-        let rec_idents = List.map (fun { id } -> id) decl in
-        let entries =
-          closure_entries (Multiple_recursive rec_idents) fv
-        in
-        let rec comp_fun pos = function
-            [] -> []
-          | { def = Lfunction{params; body} } :: rem ->
-              let lbl = new_label() in
-              let to_compile =
-                { params = List.map fst params; body = body; label = lbl;
-                  entries = entries; rec_pos = pos} in
-              Stack.push to_compile functions_to_compile;
-              lbl :: comp_fun (pos + 1) rem
-          | _ -> assert false in
-        let lbls = comp_fun 0 decl in
-        comp_args stack_info env (List.map (fun n -> Lvar n) fv) sz
-          (Kclosurerec(lbls, List.length fv) ::
-           (comp_expr stack_info
-              (add_vars rec_idents (sz+1) env) body (sz + ndecl)
-              (add_pop ndecl cont)))
-      end else begin
-        let decl_size =
-          List.map (fun { id; rkind; def } ->
-              (id, def, size_of_rec_binding rkind def))
-            decl
-        in
-        let rec comp_init new_env sz = function
-          | [] -> comp_nonrec new_env sz ndecl decl_size
-          | (id, _exp, RHS_floatblock blocksize) :: rem ->
-              Kconst(Const_base(Const_int blocksize)) ::
-              Kccall("caml_alloc_dummy_float", 1) :: Kpush ::
-              comp_init (add_var id (sz+1) new_env) (sz+1) rem
-          | (id, _exp, RHS_block blocksize) :: rem ->
-              Kconst(Const_base(Const_int blocksize)) ::
-              Kccall("caml_alloc_dummy", 1) :: Kpush ::
-              comp_init (add_var id (sz+1) new_env) (sz+1) rem
-          | (id, _exp, RHS_infix { blocksize; offset }) :: rem ->
-              Kconst(Const_base(Const_int offset)) ::
-              Kpush ::
-              Kconst(Const_base(Const_int blocksize)) ::
-              Kccall("caml_alloc_dummy_infix", 2) :: Kpush ::
-              comp_init (add_var id (sz+1) new_env) (sz+1) rem
-          | (id, _exp, RHS_function (blocksize,arity)) :: rem ->
-              Kconst(Const_base(Const_int arity)) ::
-              Kpush ::
-              Kconst(Const_base(Const_int blocksize)) ::
-              Kccall("caml_alloc_dummy_function", 2) :: Kpush ::
-              comp_init (add_var id (sz+1) new_env) (sz+1) rem
-          | (id, _exp, (RHS_nonrec | RHS_unreachable)) :: rem ->
-              Kconst(Const_base(Const_int 0)) :: Kpush ::
-              comp_init (add_var id (sz+1) new_env) (sz+1) rem
-        and comp_nonrec new_env sz i = function
-          | [] -> comp_rec new_env sz ndecl decl_size
-          | (_id, _exp, (RHS_block _ | RHS_infix _ |
-                         RHS_floatblock _ | RHS_function _))
-            :: rem ->
-              comp_nonrec new_env sz (i-1) rem
-          | (_id, exp, (RHS_nonrec | RHS_unreachable)) :: rem ->
-              comp_expr stack_info new_env exp sz
-                (Kassign (i-1) :: comp_nonrec new_env sz (i-1) rem)
-        and comp_rec new_env sz i = function
-          | [] -> comp_expr stack_info new_env body sz (add_pop ndecl cont)
-          | (_id, exp, (RHS_block _ | RHS_infix _ |
-                        RHS_floatblock _ | RHS_function _))
-            :: rem ->
-              comp_expr stack_info new_env exp sz
-                (Kpush :: Kacc i :: Kccall("caml_update_dummy", 2) ::
-                 comp_rec new_env sz (i-1) rem)
-          | (_id, _exp, (RHS_nonrec | RHS_unreachable)) :: rem ->
-              comp_rec new_env sz (i-1) rem
-        in
-        comp_init env sz decl_size
-      end
+      let fv =
+        Ident.Set.elements (free_variables (Lletrec(decl, lambda_unit))) in
+      let rec_idents = List.map (fun { id } -> id) decl in
+      let entries =
+        closure_entries (Multiple_recursive rec_idents) fv
+      in
+      let rec comp_fun pos = function
+          [] -> []
+        | { def = {params; body} } :: rem ->
+            let lbl = new_label() in
+            let to_compile =
+              { params = List.map fst params; body = body; label = lbl;
+                entries = entries; rec_pos = pos} in
+            Stack.push to_compile functions_to_compile;
+            lbl :: comp_fun (pos + 1) rem
+      in
+      let lbls = comp_fun 0 decl in
+      comp_args stack_info env (List.map (fun n -> Lvar n) fv) sz
+        (Kclosurerec(lbls, List.length fv) ::
+         (comp_expr stack_info
+            (add_vars rec_idents (sz+1) env) body (sz + ndecl)
+            (add_pop ndecl cont)))
   | Lprim(Popaque, [arg], _) ->
       comp_expr stack_info env arg sz cont
   | Lprim(Pignore, [arg], _) ->

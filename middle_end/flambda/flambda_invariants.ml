@@ -29,8 +29,6 @@ type flambda_kind =
 *)
 (* CR-someday pchambart: for sum types, we should probably add an exhaustive
    pattern in ignores functions to be reminded if a type change *)
-let already_added_bound_variable_to_env (_ : Variable.t) = ()
-let will_traverse_named_expression_later (_ : Flambda.named) = ()
 let ignore_variable (_ : Variable.t) = ()
 let ignore_call_kind (_ : Flambda.call_kind) = ()
 let ignore_debuginfo (_ : Debuginfo.t) = ()
@@ -160,17 +158,6 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       ignore_value_kind contents_kind;
       check_variable_is_bound env var;
       loop (add_mutable_binding_occurrence env mut_var) body
-    | Let_rec (defs, body) ->
-      let env =
-        List.fold_left (fun env (var, _rkind, def) ->
-            will_traverse_named_expression_later def;
-            add_binding_occurrence env var)
-          env defs
-      in
-      List.iter (fun (var, _rkind, def) ->
-        already_added_bound_variable_to_env var;
-        loop_named env def) defs;
-      loop env body
     | For { bound_var; from_value; to_value; direction; body; } ->
       ignore_direction_flag direction;
       check_variable_is_bound env from_value;

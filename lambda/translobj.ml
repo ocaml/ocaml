@@ -162,7 +162,7 @@ let oo_add_class id =
   classes := id :: !classes;
   (!top_env, !cache_required)
 
-let oo_wrap env req f x =
+let oo_wrap_gen env req f x =
   if !wrapping then
     if !cache_required then f x else
       Misc.protect_refs [Misc.R (cache_required, true)] (fun () ->
@@ -174,7 +174,7 @@ let oo_wrap env req f x =
          cache_required := req;
          classes := [];
          method_ids := Ident.Set.empty;
-         let lambda = f x in
+         let lambda, other = f x in
          let lambda =
            List.fold_left
              (fun lambda id ->
@@ -185,8 +185,12 @@ let oo_wrap env req f x =
                      lambda))
              lambda !classes
          in
-         lambda
+         lambda, other
       )
+
+let oo_wrap env req f x =
+  let lam, () = oo_wrap_gen env req (fun x -> f x, ()) x in
+  lam
 
 let reset () =
   Hashtbl.clear consts;

@@ -537,24 +537,8 @@ let rec lam ppf = function
         apply_tailcall_attribute ap.ap_tailcall
         apply_inlined_attribute ap.ap_inlined
         apply_specialised_attribute ap.ap_specialised
-  | Lfunction{kind; params; return; body; attr} ->
-      let pr_params ppf params =
-        match kind with
-        | Curried ->
-            List.iter (fun (param, k) ->
-                fprintf ppf "@ %a%a" Ident.print param value_kind k) params
-        | Tupled ->
-            fprintf ppf " (";
-            let first = ref true in
-            List.iter
-              (fun (param, k) ->
-                if !first then first := false else fprintf ppf ",@ ";
-                Ident.print ppf param;
-                value_kind ppf k)
-              params;
-            fprintf ppf ")" in
-      fprintf ppf "@[<2>(function%a@ %a%a%a)@]" pr_params params
-        function_attribute attr return_kind return lam body
+  | Lfunction lfun ->
+      lfunction ppf lfun
   | Llet(_, k, id, arg, body)
   | Lmutlet(k, id, arg, body) as l ->
       let let_kind = begin function
@@ -581,16 +565,9 @@ let rec lam ppf = function
       let bindings ppf id_arg_list =
         let spc = ref false in
         List.iter
-          (fun { id; rkind; def } ->
+          (fun { id; def } ->
             if !spc then fprintf ppf "@ " else spc := true;
-            let rec_annot =
-              match rkind with
-              | Static -> ""
-              | Not_recursive -> "[Nonrec]"
-              | Constant -> "[Cst]"
-              | Class -> "[Class]"
-            in
-            fprintf ppf "@[<2>%a%s@ %a@]" Ident.print id rec_annot lam def)
+            fprintf ppf "@[<2>%a@ %a@]" Ident.print id lfunction def)
           id_arg_list in
       fprintf ppf
         "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
@@ -707,6 +684,26 @@ and sequence ppf = function
       fprintf ppf "%a@ %a" sequence l1 sequence l2
   | l ->
       lam ppf l
+
+and lfunction ppf {kind; params; return; body; attr} =
+  let pr_params ppf params =
+    match kind with
+    | Curried ->
+        List.iter (fun (param, k) ->
+            fprintf ppf "@ %a%a" Ident.print param value_kind k) params
+    | Tupled ->
+        fprintf ppf " (";
+        let first = ref true in
+        List.iter
+          (fun (param, k) ->
+             if !first then first := false else fprintf ppf ",@ ";
+             Ident.print ppf param;
+             value_kind ppf k)
+          params;
+            fprintf ppf ")" in
+  fprintf ppf "@[<2>(function%a@ %a%a%a)@]" pr_params params
+    function_attribute attr return_kind return lam body
+
 
 let structured_constant = struct_const
 

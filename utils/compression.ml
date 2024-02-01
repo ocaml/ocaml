@@ -2,9 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt           *)
+(*        Xavier Leroy, Collège de France and Inria project Cambium       *)
 (*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2023 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -13,19 +13,19 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Typedtree
-open Lambda
-open Debuginfo.Scoped_location
+external zstd_initialize: unit -> bool = "caml_zstd_initialize"
 
-val transl_class :
-  scopes:scopes -> Ident.t list -> Ident.t ->
-  string list -> class_expr -> Asttypes.virtual_flag ->
-  lambda * Value_rec_types.recursive_binding_kind
+let compression_supported = zstd_initialize ()
 
-type error = Tags of string * string
+type [@warning "-unused-constructor"] extern_flags =
+    No_sharing                          (** Don't preserve sharing *)
+  | Closures                            (** Send function closures *)
+  | Compat_32                           (** Ensure 32-bit compatibility *)
+  | Compression                         (** Optional compression *)
 
-exception Error of Location.t * error
+external to_channel: out_channel -> 'a -> extern_flags list -> unit
+                   = "caml_output_value"
 
-open Format
+let output_value ch v = to_channel ch v [Compression]
 
-val report_error: formatter -> error -> unit
+let input_value = Stdlib.input_value

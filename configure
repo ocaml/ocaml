@@ -862,6 +862,7 @@ bootstrapping_flexdll
 flexdll_source_dir
 ocamlc_cppflags
 ocamlc_cflags
+zstd_libs
 native_ldflags
 cclibs
 oc_dll_ldflags
@@ -1715,7 +1716,7 @@ Optional Packages:
   --with-target-bindir    location of binary programs on target system
   --with-afl              use the AFL fuzzer
   --with-flexdll          bootstrap FlexDLL from the given sources
-  --without-zstd          disable compression of marshaled data
+  --without-zstd          disable compression of compilation artefacts
   --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
                           both]
   --with-aix-soname=aix|svr4|both
@@ -3361,6 +3362,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L033
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -16640,8 +16642,8 @@ esac
 
 fi
 
-# ThreadSanitizer support is only for Linux/FreeBSD/macOS on amd64, as well as
-# Linux/macOS on arm64.
+# ThreadSanitizer support is currently only available for Linux/FreeBSD/macOS
+# on amd64, Linux/macOS on arm64 and Linux on riscv64.
 # ThreadSanitizer supports more architectures but the OCaml client side is not
 # implemented (yet).
 if test "x$enable_tsan" = "xyes"
@@ -16664,6 +16666,20 @@ esac ;; #(
   arm64) :
     case "$system" in #(
   linux|macosx) :
+    case "$ocaml_cv_cc_vendor" in #(
+  gcc-*|clang-*) :
+    tsan=true ;; #(
+  *) :
+    as_fn_error $? "thread sanitizer not supported with vendor=$ocaml_cv_cc_vendor\"" "$LINENO" 5
+          ;;
+esac ;; #(
+  *) :
+    as_fn_error $? "thread sanitizer not supported on system $system" "$LINENO" 5
+        ;;
+esac ;; #(
+  riscv) :
+    case "$system" in #(
+  linux) :
     case "$ocaml_cv_cc_vendor" in #(
   gcc-*|clang-*) :
     tsan=true ;; #(
@@ -16813,6 +16829,8 @@ fi
     libunwind_ldflags="-lunwind -lunwind-x86_64" ;; #(
   "arm64") :
     libunwind_ldflags="-lunwind -lunwind-aarch64" ;; #(
+  "riscv") :
+    libunwind_ldflags="-lunwind -lunwind-riscv" ;; #(
   *) :
      ;;
 esac ;;
@@ -18601,6 +18619,8 @@ fi
 ## ZSTD compression library
 
 zstd_status=""
+zstd_libs=""
+
 if test x"$with_zstd" != "xno"
 then :
   # Try pkg-config first, as it gives the most reliable results
@@ -18674,9 +18694,8 @@ fi
 
 if test x"$zstd_status" = "xok"
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: compressed marshaling supported" >&5
-printf "%s\n" "$as_me: compressed marshaling supported" >&6;}
-   cclibs="$cclibs $zstd_libs"
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: compressed compilation artefacts supported" >&5
+printf "%s\n" "$as_me: compressed compilation artefacts supported" >&6;}
    internal_cppflags="$internal_cppflags $zstd_flags"
    printf "%s\n" "#define HAS_ZSTD 1" >>confdefs.h
 
@@ -18689,8 +18708,8 @@ else $as_nop
   *) :
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: $zstd_status" >&5
 printf "%s\n" "$as_me: WARNING: $zstd_status" >&2;}
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: compressed marshaling not supported" >&5
-printf "%s\n" "$as_me: WARNING: compressed marshaling not supported" >&2;} ;;
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: compressed compilation artefacts not supported" >&5
+printf "%s\n" "$as_me: WARNING: compressed compilation artefacts not supported" >&2;} ;;
 esac
 fi
 
