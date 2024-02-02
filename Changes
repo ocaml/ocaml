@@ -3,6 +3,12 @@ _______________
 
 (Changes that can break existing programs are marked with a "*")
 
+### Restored backend:
+
+- #12954: Restore the MSVC port
+  (David Allsopp, Antonin Décimo, Samuel Hym, and Miod Vallat, review by Nicolás
+   Ojeda Bär)
+
 ### Language features:
 
 ### Runtime system:
