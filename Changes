@@ -716,6 +716,13 @@ OCaml 5.2.0
   (Sébastien Hinderer, review by Antonin Décimo, David Allsopp and Florian
   Angeletti)
 
+* #12751: --with-target-bindir configure option implemented. This option
+  refers to the location of the runtime binaries on the target system for a
+  cross-compiler and is embedded in executables produced by ocamlc. It does
+  not affect the bytecode executables installed as part of the build. The old
+  mechanism `make TARGET_BINDIR=..` no longer works.
+  (David Allsopp, review by Damien Doligez, Xavier Leroy and Olivier Nicole)
+
 - #12768: Detect mingw-w64 coupling with GCC or LLVM, detect clang-cl,
   and fix C compiler feature detection on macOS.
   (Antonin Décimo, review by Miod Vallat and Sébastien Hinderer)
@@ -836,6 +843,11 @@ OCaml 5.2.0
 
 - #12727, #12730: fix bug with value let-rec and labelled applications
   (Vincent Laviron, review by Gabriel Scherer)
+
+* #12751: Always keep within the 128 character limit for shebang lines. Previous
+  fix in #8622 handled building the compiler with a long prefix; this patch
+  extends this to the bytecode executables emitted by that compiler.
+  (David Allsopp, review by Damien Doligez, Xavier Leroy and Olivier Nicole)
 
 - #12755: Fix data race on global pools arrays of pool_freelist
   (Fabrice Buoro and Olivier Nicole, review by Gabriel Scherer)
