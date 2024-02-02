@@ -68,6 +68,10 @@ _______________
 
 ### Bug fixes:
 
+- #12934: Fix data races between marking and sweeping functions
+  (Olivier Nicole, suggested by Stephen Dolan, review by Gabriel Scherer,
+   Miod Vallat and Damien Doligez)
+
 - #12888: fix printing of uncaught exceptions in `.cmo` files passed on the
   command-line of the toplevel.
   (Nicolás Ojeda Bär, review by Florian Angeletti, report by Daniel Bünzli)

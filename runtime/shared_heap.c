@@ -541,7 +541,10 @@ static intnat large_alloc_sweep(struct caml_heap_state* local) {
   local->unswept_large = a->next;
 
   p = (value*)((char*)a + LARGE_ALLOC_HEADER_SZ);
-  hd = (header_t)*p;
+  /* The header being read here may be concurrently written by a thread doing
+     marking. This is fine because marking can only make UNMARKED objects
+     MARKED or NOT_MARKABLE, all of which are treated identically here. */
+  hd = Hd_hp(p);
   if (Has_status_hd(hd, caml_global_heap_state.GARBAGE)) {
     if (Tag_hd (hd) == Custom_tag) {
       void (*final_fun)(value) = Custom_ops_val(Val_hp(p))->finalize;
@@ -1320,7 +1323,11 @@ static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
     s->overhead += POOL_SLAB_WOFFSET(sz);
 
     while (p + wh <= end) {
-      header_t hd = (header_t)*p;
+      /* This header can be read here and concurrently marked by the GC, but
+         this is fine: marking can only turn UNMARKED objects into MARKED or
+         NOT_MARKABLE, which is of no consequence for this verification
+         (namely, that there is no garbage left). */
+      header_t hd = Hd_hp(p);
       CAMLassert(hd == 0 || !Has_status_hd(hd, caml_global_heap_state.GARBAGE));
       if (hd) {
         s->live += Whsize_hd(hd);

@@ -64,11 +64,9 @@ jobs:
           - id: normal
             name: normal
             dependencies: libunwind-dev
-          # Running with the debug runtime is disabled until the data races in
-          # it are fixed (see #12902).
-          #- id: debug
-          #  name: debug runtime
-          #  dependencies: libunwind-dev
+          - id: debug
+            name: debug runtime
+            dependencies: libunwind-dev
     steps:
       - name: Download Artifact
         uses: actions/download-artifact@v3
