@@ -644,8 +644,8 @@ let rec choice ctx t =
            not in tail-call position (after it returns
            we need to remove the exception handler),
            so it is not transformed here *)
-        let l1 = traverse ctx l1 in
-        let+ l2 = choice ctx ~tail l2 in
+        let+ l1 = choice ctx ~tail:false l1
+        and+ l2 = choice ctx ~tail l2 in
         Ltrywith (l1, id, l2)
     | Lstaticcatch (l1, ids, l2) ->
         (* In [static-catch l1 with ids -> l2],
