@@ -642,8 +642,7 @@ let rec choice ctx t =
     | Ltrywith (l1, id, l2) ->
         (* in [try l1 with id -> l2], the term [l1] is
            not in tail-call position (after it returns
-           we need to remove the exception handler),
-           so it is not transformed here *)
+           we need to remove the exception handler) *)
         let+ l1 = choice ctx ~tail:false l1
         and+ l2 = choice ctx ~tail l2 in
         Ltrywith (l1, id, l2)
