@@ -49,6 +49,11 @@ OCaml 4.14 maintenance version
   (emitted for Linux in #8805)
   (Hannes Mehnert, review by Nicolás Ojeda Bär)
 
+- #12958: Fix tail-modulo-cons compilation of try-with, && and ||
+  expressions.
+  (Gabriel Scherer and Nicolás Ojeda Bär, report by Sylvain Boilard, review by
+  Gabriel Scherer)
+
 
 OCaml 4.14.1 (20 December 2022)
 ------------------------------
