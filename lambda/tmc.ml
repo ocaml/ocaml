@@ -642,10 +642,9 @@ let rec choice ctx t =
     | Ltrywith (l1, id, l2) ->
         (* in [try l1 with id -> l2], the term [l1] is
            not in tail-call position (after it returns
-           we need to remove the exception handler),
-           so it is not transformed here *)
-        let l1 = traverse ctx l1 in
-        let+ l2 = choice ctx ~tail l2 in
+           we need to remove the exception handler) *)
+        let+ l1 = choice ctx ~tail:false l1
+        and+ l2 = choice ctx ~tail l2 in
         Ltrywith (l1, id, l2)
     | Lstaticcatch (l1, ids, l2) ->
         (* In [static-catch l1 with ids -> l2],
@@ -836,13 +835,6 @@ let rec choice ctx t =
           | _ -> invalid_arg "choice_prim" in
         let+ l1 = choice ctx ~tail l1 in
         Lprim (Popaque, [l1], loc)
-    | (Psequand | Psequor) as shortcutop ->
-        let l1, l2 = match primargs with
-          |  [l1; l2] -> l1, l2
-          | _ -> invalid_arg "choice_prim" in
-        let l1 = traverse ctx l1 in
-        let+ l2 = choice ctx ~tail l2 in
-        Lprim (shortcutop, [l1; l2], loc)
 
     (* in common cases we just return *)
     | Pbytes_to_string | Pbytes_of_string
@@ -902,6 +894,7 @@ let rec choice ctx t =
     | Pbswap16
     | Pbbswap _
     | Pint_as_pointer
+    | Psequand | Psequor
       ->
         let primargs = traverse_list ctx primargs in
         Choice.lambda (Lprim (prim, primargs, loc))
