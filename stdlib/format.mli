@@ -240,7 +240,7 @@ val print_substring : pos:int -> len:int -> string -> unit
 (** [pp_print_substring ~pos ~len ppf s] prints the substring of [s] that starts
     at position [pos] and stops at position [pos+len] in the current
     pretty-printing box.
-  @since 5.1
+  @since 5.3
 *)
 
 val pp_print_bytes : formatter -> bytes -> unit

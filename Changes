@@ -11,6 +11,10 @@ _______________
 
 ### Standard library:
 
+- #12133: Expose support for printing substrings in Format
+  (Florian Angeletti, review by Daniel Bünzli, Gabriel Scherer
+   and Nicolás Ojeda Bär)
+
 - #12869: Add List.take, List.drop, List.take_while and List.drop_while
   (Kate Deplaix and Oscar Butler-Aldridge review by Nicolás Ojeda Bär,
    Craig Ferguson and Gabriel Scherer)
@@ -371,10 +375,6 @@ OCaml 5.2.0
   check that margin is less than pp_infinity when setting or checking geometry.
   (Janith Petangoda, reported by Simmo Saan, reviewed by Florian Angeletti,
   Simmo Saan, Josh Berdine and Gabriel Scherer)
-
-- #12133: Expose support for printing substrings in Format
-  (Florian Angeletti, review by Daniel Bünzli, Gabriel Scherer
-   and Nicolás Ojeda Bär)
 
 - #12217: Add `Array.shuffle`.
   (Daniel Bünzli, review by Nicolás Ojeda Bär, David Allsopp and Alain Frisch)
