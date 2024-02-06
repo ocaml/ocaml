@@ -71,6 +71,7 @@ struct mark_stack {
   addrmap_iterator compressed_stack_iter;
 };
 
+/* Default speed setting for the major GC. */
 uintnat caml_percent_free = Percent_free_def;
 
 /* This variable is only written with the world stopped, so it need not be

@@ -39,7 +39,6 @@
 #include "caml/startup_aux.h"
 #include "caml/sys.h"
 
-extern int caml_parser_trace;
 extern char caml_system__code_begin, caml_system__code_end;
 /* The two symbols above are defined in runtime/$ARCH.S.
    They use the old `__` separator convention because the new convention
