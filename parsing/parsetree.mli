@@ -22,7 +22,7 @@
 
 open Asttypes
 
-type constant =
+type constant_desc =
   | Pconst_integer of string * char option
       (** Integer constants such as [3] [3l] [3L] [3n].
 
@@ -42,6 +42,11 @@ type constant =
      Suffixes [g-z][G-Z] are accepted by the parser.
      Suffixes are rejected by the typechecker.
   *)
+
+type constant = {
+  pconst_desc : constant_desc;
+  pconst_loc : Location.t;
+}
 
 type location_stack = Location.t list
 

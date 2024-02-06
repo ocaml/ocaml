@@ -144,7 +144,8 @@ module OCaml_refs = struct
     then None
     else begin match attr.attr_payload with
       | PStr [{pstr_desc= Pstr_eval
-                 ({ pexp_desc = Pexp_constant Pconst_string (s,_,_) },_) } ] ->
+                 ({ pexp_desc = Pexp_constant
+                        { pconst_desc = Pconst_string (s,_,_); _ } },_) } ] ->
           Some s
       | _ -> print_error (Wrong_attribute_payload attr.attr_loc);
           Some "" (* triggers an error *)
@@ -159,7 +160,8 @@ module OCaml_refs = struct
   let int e =
     let open Parsetree in
     match e.pexp_desc with
-    | Pexp_constant Pconst_integer (s, _ ) -> int_of_string s
+    | Pexp_constant { pconst_desc = Pconst_integer (s, _ ); _ } ->
+        int_of_string s
     | _ -> raise Exit
 
   let int_list l =
@@ -193,7 +195,7 @@ module OCaml_refs = struct
         | None -> tuple_expected (); []
         | Some pos -> pos
         end
-    | Parsetree.Pexp_constant Pconst_integer (n,_) ->
+    | Parsetree.Pexp_constant { pconst_desc = Pconst_integer (n,_); _ } ->
         [int_of_string n]
     | _ ->
         begin match list_expression e  with

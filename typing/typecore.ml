@@ -275,7 +275,8 @@ let type_constant = function
   | Const_int64 _ -> instance Predef.type_int64
   | Const_nativeint _ -> instance Predef.type_nativeint
 
-let constant : Parsetree.constant -> (Asttypes.constant, error) result =
+let constant_desc
+  : Parsetree.constant_desc -> (Asttypes.constant, error) result =
   function
   | Pconst_integer (i,None) ->
      begin
@@ -302,6 +303,8 @@ let constant : Parsetree.constant -> (Asttypes.constant, error) result =
   | Pconst_string (s,loc,d) -> Ok (Const_string (s,loc,d))
   | Pconst_float (f,None)-> Ok (Const_float f)
   | Pconst_float (f,Some c) -> Error (Unknown_literal (f, c))
+
+let constant const = constant_desc const.pconst_desc
 
 let constant_or_raise env loc cst =
   match constant cst with
@@ -1711,14 +1714,15 @@ and type_pat_aux
         pat_type = type_constant cst;
         pat_attributes = sp.ppat_attributes;
         pat_env = !!penv }
-  | Ppat_interval (Pconst_char c1, Pconst_char c2) ->
-      let open Ast_helper.Pat in
+  | Ppat_interval ({pconst_desc = Pconst_char c1; _},
+                   {pconst_desc = Pconst_char c2; _}) ->
+      let open Ast_helper in
       let gloc = {loc with Location.loc_ghost=true} in
       let rec loop c1 c2 =
-        if c1 = c2 then constant ~loc:gloc (Pconst_char c1)
+        if c1 = c2 then Pat.constant ~loc:gloc (Const.char ~loc:gloc c1)
         else
-          or_ ~loc:gloc
-            (constant ~loc:gloc (Pconst_char c1))
+          Pat.or_ ~loc:gloc
+            (Pat.constant ~loc:gloc (Const.char ~loc:gloc c1))
             (loop (Char.chr(Char.code c1 + 1)) c2)
       in
       let p = if c1 <= c2 then loop c1 c2 else loop c2 c1 in
@@ -3296,7 +3300,7 @@ and type_expect_
         exp_type = instance desc.val_type;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_constant(Pconst_string (str, _, _) as cst) -> (
+  | Pexp_constant({pconst_desc = Pconst_string (str, _, _); _} as cst) -> (
     let cst = constant_or_raise env loc cst in
     (* Terrible hack for format strings *)
     let ty_exp = expand_head env (protect_expansion env ty_expected) in
@@ -4820,7 +4824,9 @@ and type_format loc str env =
           | [ e ]       -> Some e
           | _ :: _ :: _ -> Some (mk_exp_loc (Pexp_tuple args)) in
         mk_exp_loc (Pexp_construct (mk_lid_loc lid, arg)) in
-      let mk_cst cst = mk_exp_loc (Pexp_constant cst) in
+      let mk_cst cst =
+        mk_exp_loc (Pexp_constant {pconst_desc = cst; pconst_loc = loc})
+      in
       let mk_int n = mk_cst (Pconst_integer (Int.to_string n, None))
       and mk_string str = mk_cst (Pconst_string (str, loc, None))
       and mk_char chr = mk_cst (Pconst_char chr) in
@@ -6339,7 +6345,7 @@ let type_clash_of_trace trace =
    To avoid confusion, it is disabled on float literals
    and when the expected type is `int` *)
 let report_literal_type_constraint expected_type const =
-  let const_str = match const with
+  let const_str = match const.pconst_desc with
     | Pconst_integer (s, _) -> Some s
     | _ -> None
   in
