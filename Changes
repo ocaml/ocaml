@@ -1767,7 +1767,7 @@ Some of those changes will benefit all OCaml packages.
 
 - #11846: Mark rbx as destroyed at C call for Win64 (mingw-w64 and Cygwin64).
   Reserve the shadow store for the ABI in the c_stack_link struct instead of
-  explictly when calling C functions. This simultaneously reduces the number of
+  explicitly when calling C functions. This simultaneously reduces the number of
   stack pointer manipulations and also fixes a bug when calling noalloc
   functions where the shadow store was not being reserved.
   (David Allsopp, report by Vesa Karvonen, review by Xavier Leroy and
@@ -2783,7 +2783,7 @@ OCaml 4.14.0 (28 March 2022)
 - #8516: Change representation of class signatures
   (Leo White, review by Thomas Refis)
 
-- #9444: -dtypedtree, print more explictly extra nodes in pattern ast.
+- #9444: -dtypedtree, print more explicitly extra nodes in pattern ast.
   (Frédéric Bour, review by Gabriel Scherer)
 
 - #10337: Normalize type_expr nodes on access

@@ -31,7 +31,7 @@ let () =
   assert (tst02 "\000\000\000\003" = 3) ;
   ()
 
-(* Keword reckognition *)
+(* Keyword recognition *)
 
 let s00 = "get_const"
 let t00 = "set_congt"

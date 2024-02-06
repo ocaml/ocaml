@@ -284,7 +284,7 @@ endef # _OCAML_COMMON_BASE
 # Each program foo is characterised by the foo_LIBRARIES and foo_SOURCES
 # variables. The following macros provide the infrastructure to build foo
 # from the object files whose names are derived from these two
-# varialbes. In particular, the following macros define several
+# variables. In particular, the following macros define several
 # variables whose names are prefixed with foo_ to compute the
 # different lists of files used to build foo.
 

@@ -1329,7 +1329,7 @@ Error: Signature mismatch:
 type w = private float
 type q = private (int * w)
 type u = private (int * q)
-module M : sig (* Confussing error message :( *)
+module M : sig (* Confusing error message :( *)
   type t = private (int * (int * int))
 end = struct
   type t = private u

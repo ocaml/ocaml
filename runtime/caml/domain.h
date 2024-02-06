@@ -118,7 +118,7 @@ int caml_try_run_on_all_domains(
    [caml_try_run_on_all_domains*] runners, it will
    run on all participant domains in parallel.
 
-   The "STW critical section" is the runtime interval betweeen the
+   The "STW critical section" is the runtime interval between the
    start of the execution of the STW callback and the last barrier in
    the callback. During this interval, mutator code from registered
    participants cannot be running in parallel.

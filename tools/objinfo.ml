@@ -435,7 +435,7 @@ let dump_obj filename =
 
 let arg_list = [
   "-quiet", Arg.Set quiet,
-    " Only print explicitely required information";
+    " Only print explicitly required information";
   "-no-approx", Arg.Set no_approx,
     " Do not print module approximation information";
   "-no-code", Arg.Set no_code,

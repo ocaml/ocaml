@@ -14,7 +14,8 @@
 (**************************************************************************)
 
 (** This module provides some facilities for creating references (and hash
-    tables) which can easily be snapshoted and restored to an arbitrary version.
+    tables) which can easily be snapshotted and restored to an arbitrary
+    version.
 
     It is used throughout the frontend (read: typechecker), to register all
     (well, hopefully) the global state. Thus making it easy for tools like

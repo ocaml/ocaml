@@ -154,7 +154,7 @@ let classify_expression : Typedtree.expression -> sd =
         (* Note on module presence:
            For absent modules (i.e. module aliases), the module being bound
            does not have a physical representation, but its size can still be
-           derived from the alias itself, so we can re-use the same code as
+           derived from the alias itself, so we can reuse the same code as
            for modules that are present. *)
         let size = classify_module_expression env mexp in
         let env = Ident.add mid size env in
