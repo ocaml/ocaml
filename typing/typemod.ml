@@ -735,7 +735,7 @@ let merge_package_constraint initial_env loc sg lid cty =
       when Ident.name id = s ->
         let sig_env = Env.add_signature sg_for_env outer_sig_env in
         let sg = extract_sig sig_env loc md.md_type in
-        let ((), newsg) = merge_signature sig_env sg namelist in
+        let newsg = merge_signature sig_env sg namelist in
         let item =
           match md.md_type with
             Mty_alias _ ->
@@ -752,15 +752,15 @@ let merge_package_constraint initial_env loc sg lid cty =
     match
       Signature_group.replace_in_place (patch_item namelist env sg) sg
     with
-    | Some (x,sg) -> x, sg
+    | Some ((),sg) -> sg
     | None -> raise(Error(loc, env, With_no_component lid.txt))
   in
   try
     let names = Longident.flatten lid.txt in
-    let (tcstr, sg) = merge_signature initial_env sg names in
+    let sg = merge_signature initial_env sg names in
     check_well_formed_module initial_env loc "this instantiated signature"
       (Mty_signature sg);
-    (tcstr, sg)
+    sg
   with Includemod.Error explanation ->
     raise(Error(loc, initial_env, With_mismatch(lid.txt, explanation)))
 
@@ -769,7 +769,7 @@ let check_package_with_type_constraints loc env mty constraints =
   let sg =
     List.fold_left
       (fun sg (lid, cty) ->
-         snd (merge_package_constraint env loc sg lid cty))
+         merge_package_constraint env loc sg lid cty)
       sg constraints
   in
   let scope = Ctype.create_scope () in
