@@ -728,7 +728,6 @@ OCaml 5.2.0
   optional arguments and default values in the Closure backend
   (Alain Frisch, review by Vincent Laviron)
 
-
 - #12561: Fix crash when combining TSan and frame-pointers
   (Fabrice Buoro and Olivier Nicole, report by Jan Midtgaard, review by Miod
   Vallat and Gabriel Scherer)
@@ -794,6 +793,9 @@ OCaml 5.2.0
   expressions.
   (Gabriel Scherer and Nicolás Ojeda Bär, report by Sylvain Boilard, review by
   Gabriel Scherer)
+
+- #12919: Fix register corruption in caml_callback2_asm on s390x.
+  (Miod Vallat, review by Gabriel Scherer)
 
 OCaml 5.1.1 (8 December 2023)
 ----------------------------
