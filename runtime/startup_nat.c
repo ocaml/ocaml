@@ -93,10 +93,6 @@ value caml_startup_common(char_os **argv, int pooling)
   /* Determine options */
   caml_parse_ocamlrunparam();
 
-#ifdef DEBUG
-  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
-  caml_gc_message (-1, "### set OCAMLRUNPARAM=v=0 to silence this message\n");
-#endif
   if (caml_params->cleanup_on_exit)
     pooling = 1;
   if (!caml_startup_aux(pooling))
