@@ -68,6 +68,12 @@ _______________
 
 ### Bug fixes:
 
+- #11040: Silences false data race observed between caml_shared_try_alloc
+  and oldify. Introduces macros to call tsan annotations which help annotate
+  a ``happens before'' relationship.
+  (Hari Hara Naveen S and Olivier Nicole,
+   review by Gabriel Scherer and Miod Vallat)
+
 - #12888: fix printing of uncaught exceptions in `.cmo` files passed on the
   command-line of the toplevel.
   (Nicolás Ojeda Bär, review by Florian Angeletti, report by Daniel Bünzli)

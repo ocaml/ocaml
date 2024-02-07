@@ -453,6 +453,10 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
   }
   colour = caml_global_heap_state.MARKED;
   Hd_hp (p) = Make_header_with_reserved(wosize, tag, colour, reserved);
+  /* Annotating a release barrier on `p` because TSan does not see the
+   * happens-before relationship established by address dependencies
+   * between the initializing writes here and the read in major_gc.c
+   * marking (#12894) */
   CAML_TSAN_ANNOTATE_HAPPENS_BEFORE(p);
 #ifdef DEBUG
   {
