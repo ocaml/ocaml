@@ -313,12 +313,13 @@ type s = Foo of s
 Line 10, characters 23-35:
 10 | module type T = S with type M.t = s
                             ^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "s"
-       Constructors do not match:
-         "Foo of s"
-       is not the same as:
-         "Foo of M.r"
-       The type "s" is not equal to the type "M.r" = "M.t"
+Error:
+  This variant or record definition does not match that of type "s"
+  Constructors do not match:
+    "Foo of s"
+  is not the same as:
+    "Foo of M.r"
+  The type "s" is not equal to the type "M.r" = "M.t"
 |}]
 
 (* Should succeed *)
@@ -339,15 +340,16 @@ type s = [ `Foo of s ]
 Line 10, characters 16-35:
 10 | module type T = S with type M.t = s
                      ^^^^^^^^^^^^^^^^^^^
-Error: In this "with" constraint, the new definition of "M.t"
-       does not match its original definition in the constrained signature:
-       Type declarations do not match:
-         type t = s
-       is not included in
-         type t = private [ `Foo of M.r ]
-       The type "s" = "[ `Foo of s ]" is not equal to the type "[ `Foo of M.r ]"
-       Type "s" = "[ `Foo of s ]" is not equal to type "M.r" = "M.t"
-       Types for tag "`Foo" are incompatible
+Error:
+  In this "with" constraint, the new definition of "M.t"
+  does not match its original definition in the constrained signature:
+  Type declarations do not match:
+    type t = s
+  is not included in
+    type t = private [ `Foo of M.r ]
+  The type "s" = "[ `Foo of s ]" is not equal to the type "[ `Foo of M.r ]"
+  Type "s" = "[ `Foo of s ]" is not equal to type "M.r" = "M.t"
+  Types for tag "`Foo" are incompatible
 |}]
 
 (* Should succeed *)
@@ -374,19 +376,20 @@ module X : sig type t = [ `Foo of t ] end
 Line 10, characters 16-37:
 10 | module type T = S with module M.N = X
                      ^^^^^^^^^^^^^^^^^^^^^
-Error: In this "with" constraint, the new definition of "M.N"
-       does not match its original definition in the constrained signature:
-       Modules do not match:
-         sig type t = [ `Foo of t ] end
-       is not included in
-         sig type t = private [ `Foo of M.r ] end
-       Type declarations do not match:
-         type t = [ `Foo of t ]
-       is not included in
-         type t = private [ `Foo of M.r ]
-       The type "[ `Foo of t ]" is not equal to the type "[ `Foo of M.r ]"
-       Type "t" = "[ `Foo of t ]" is not equal to type "M.r" = "M.N.t"
-       Types for tag "`Foo" are incompatible
+Error:
+  In this "with" constraint, the new definition of "M.N"
+  does not match its original definition in the constrained signature:
+  Modules do not match:
+    sig type t = [ `Foo of t ] end
+  is not included in
+    sig type t = private [ `Foo of M.r ] end
+  Type declarations do not match:
+    type t = [ `Foo of t ]
+  is not included in
+    type t = private [ `Foo of M.r ]
+  The type "[ `Foo of t ]" is not equal to the type "[ `Foo of M.r ]"
+  Type "t" = "[ `Foo of t ]" is not equal to type "M.r" = "M.N.t"
+  Types for tag "`Foo" are incompatible
 |}]
 
 (* Should succeed *)
@@ -410,15 +413,16 @@ module X : sig type t type s = t end
 Line 10, characters 16-37:
 10 | module type T = S with module M.N = X
                      ^^^^^^^^^^^^^^^^^^^^^
-Error: In this "with" constraint, the new definition of "M.N"
-       does not match its original definition in the constrained signature:
-       Modules do not match:
-         sig type t = X.t type s = t end
-       is not included in
-         sig type t = M.r type s end
-       Type declarations do not match:
-         type t = X.t
-       is not included in
-         type t = M.r
-       The type "X.t" is not equal to the type "M.r" = "M.N.s"
+Error:
+  In this "with" constraint, the new definition of "M.N"
+  does not match its original definition in the constrained signature:
+  Modules do not match:
+    sig type t = X.t type s = t end
+  is not included in
+    sig type t = M.r type s end
+  Type declarations do not match:
+    type t = X.t
+  is not included in
+    type t = M.r
+  The type "X.t" is not equal to the type "M.r" = "M.N.s"
 |}]

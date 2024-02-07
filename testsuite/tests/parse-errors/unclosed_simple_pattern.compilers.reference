@@ -1,7 +1,8 @@
 Line 7, characters 0-2:
 7 | ;;
     ^^
-Error: Syntax error: ")" expected
+Error:
+  Syntax error: ")" expected
 Line 6, characters 9-10:
 6 |   | List.(_
              ^
@@ -9,7 +10,8 @@ Line 6, characters 9-10:
 Line 4, characters 0-2:
 4 | ;;
     ^^
-Error: Syntax error: ")" expected
+Error:
+  Syntax error: ")" expected
 Line 3, characters 4-5:
 3 |   | (_
         ^
@@ -17,7 +19,8 @@ Line 3, characters 4-5:
 Line 4, characters 0-2:
 4 | ;;
     ^^
-Error: Syntax error: ")" expected
+Error:
+  Syntax error: ")" expected
 Line 3, characters 4-5:
 3 |   | (_ : int
         ^
@@ -25,11 +28,13 @@ Line 3, characters 4-5:
 Line 6, characters 18-25:
 6 |   | (module Foo : sig end
                       ^^^^^^^
-Error: invalid package type: only module type identifier and "with type" constraints are supported
+Error:
+  invalid package type: only module type identifier and "with type" constraints are supported
 Line 7, characters 0-2:
 7 | ;;
     ^^
-Error: Syntax error: "}" expected
+Error:
+  Syntax error: "}" expected
 Line 6, characters 4-5:
 6 |   | { foo; bar;
         ^
@@ -37,7 +42,8 @@ Line 6, characters 4-5:
 Line 4, characters 0-2:
 4 | ;;
     ^^
-Error: Syntax error: "]" expected
+Error:
+  Syntax error: "]" expected
 Line 3, characters 4-5:
 3 |   | [ 1; 2;
         ^
@@ -45,7 +51,8 @@ Line 3, characters 4-5:
 Line 4, characters 0-2:
 4 | ;;
     ^^
-Error: Syntax error: "|]" expected
+Error:
+  Syntax error: "|]" expected
 Line 3, characters 4-6:
 3 |   | [| 3; 4;
         ^^

@@ -78,8 +78,9 @@ let () =
 Line 3, characters 4-5:
 3 |   | A | B | C -> ();;
         ^
-Error: This pattern should not be a constructor, the expected type is
-       "'a -> Constr.t"
+Error:
+  This pattern should not be a constructor, the expected type is
+  "'a -> Constr.t"
 |}]
 
 let () =
@@ -89,8 +90,8 @@ let () =
 Line 3, characters 4-12:
 3 |   | { a; _ } -> ();;
         ^^^^^^^^
-Error: This pattern should not be a record, the expected type is
-       "'a -> Record.t"
+Error:
+  This pattern should not be a record, the expected type is "'a -> Record.t"
 |}]
 
 let () =
@@ -100,8 +101,9 @@ let () =
 Line 3, characters 4-8:
 3 |   | true -> ();;
         ^^^^
-Error: This pattern should not be a boolean literal, the expected type is
-       "'a -> Bool.t"
+Error:
+  This pattern should not be a boolean literal, the expected type is
+  "'a -> Bool.t"
 |}]
 
 let () =
@@ -111,8 +113,9 @@ let () =
 Line 3, characters 4-9:
 3 |   | false -> ();;
         ^^^^^
-Error: This pattern should not be a boolean literal, the expected type is
-       "'a -> Bool.t"
+Error:
+  This pattern should not be a boolean literal, the expected type is
+  "'a -> Bool.t"
 |}]
 
 let () =
@@ -122,8 +125,9 @@ let () =
 Line 3, characters 4-6:
 3 |   | [] -> ();;
         ^^
-Error: This pattern should not be a list literal, the expected type is
-       "'a -> 'b List.t"
+Error:
+  This pattern should not be a list literal, the expected type is
+  "'a -> 'b List.t"
 |}]
 
 let () =
@@ -133,8 +137,9 @@ let () =
 Line 3, characters 4-10:
 3 |   | _ :: _ -> ();;
         ^^^^^^
-Error: This pattern should not be a list literal, the expected type is
-       "'a -> 'b List.t"
+Error:
+  This pattern should not be a list literal, the expected type is
+  "'a -> 'b List.t"
 |}]
 
 let () =
@@ -144,8 +149,9 @@ let () =
 Line 3, characters 4-6:
 3 |   | () -> ();;
         ^^
-Error: This pattern should not be a unit literal, the expected type is
-       "'a -> Unit.t"
+Error:
+  This pattern should not be a unit literal, the expected type is
+  "'a -> Unit.t"
 |}]
 
 let () = Constr.put A;;
@@ -153,8 +159,9 @@ let () = Constr.put A;;
 Line 1, characters 20-21:
 1 | let () = Constr.put A;;
                         ^
-Error: This expression should not be a constructor, the expected type is
-       "unit -> Constr.t"
+Error:
+  This expression should not be a constructor, the expected type is
+  "unit -> Constr.t"
 |}]
 
 let () = Record.put { a = 0; b = 0; c = 0 };;
@@ -162,8 +169,9 @@ let () = Record.put { a = 0; b = 0; c = 0 };;
 Line 1, characters 20-43:
 1 | let () = Record.put { a = 0; b = 0; c = 0 };;
                         ^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression should not be a record, the expected type is
-       "unit -> Record.t"
+Error:
+  This expression should not be a record, the expected type is
+  "unit -> Record.t"
 |}]
 
 let () = Bool.put true;;
@@ -171,8 +179,9 @@ let () = Bool.put true;;
 Line 1, characters 18-22:
 1 | let () = Bool.put true;;
                       ^^^^
-Error: This expression should not be a boolean literal, the expected type is
-       "unit -> Bool.t"
+Error:
+  This expression should not be a boolean literal, the expected type is
+  "unit -> Bool.t"
 |}]
 
 let () = Bool.put false;;
@@ -180,8 +189,9 @@ let () = Bool.put false;;
 Line 1, characters 18-23:
 1 | let () = Bool.put false;;
                       ^^^^^
-Error: This expression should not be a boolean literal, the expected type is
-       "unit -> Bool.t"
+Error:
+  This expression should not be a boolean literal, the expected type is
+  "unit -> Bool.t"
 |}]
 
 let () = List.put [];;
@@ -189,8 +199,9 @@ let () = List.put [];;
 Line 1, characters 18-20:
 1 | let () = List.put [];;
                       ^^
-Error: This expression should not be a list literal, the expected type is
-       "unit -> int List.t"
+Error:
+  This expression should not be a list literal, the expected type is
+  "unit -> int List.t"
 |}]
 
 let () = List.put (1 :: 2);;
@@ -198,8 +209,9 @@ let () = List.put (1 :: 2);;
 Line 1, characters 18-26:
 1 | let () = List.put (1 :: 2);;
                       ^^^^^^^^
-Error: This expression should not be a list literal, the expected type is
-       "unit -> int List.t"
+Error:
+  This expression should not be a list literal, the expected type is
+  "unit -> int List.t"
 |}]
 
 let () = Unit.put ();;
@@ -207,8 +219,9 @@ let () = Unit.put ();;
 Line 1, characters 18-20:
 1 | let () = Unit.put ();;
                       ^^
-Error: This expression should not be a unit literal, the expected type is
-       "unit -> Unit.t"
+Error:
+  This expression should not be a unit literal, the expected type is
+  "unit -> Unit.t"
 |}]
 
 let () =
@@ -244,6 +257,7 @@ let foo x =
 Line 2, characters 13-29:
 2 |   Record.put { x with a = 5 };;
                  ^^^^^^^^^^^^^^^^
-Error: This expression should not be a record, the expected type is
-       "unit -> Record.t"
+Error:
+  This expression should not be a record, the expected type is
+  "unit -> Record.t"
 |}]

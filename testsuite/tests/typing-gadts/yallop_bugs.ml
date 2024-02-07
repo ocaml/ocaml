@@ -40,8 +40,8 @@ let magic : 'a 'b. 'a -> 'b =
 Line 1, characters 0-36:
 1 | type (_, +_) eq = Refl : ('a, 'a) eq
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this GADT definition, the variance of some parameter
-       cannot be checked
+Error:
+  In this GADT definition, the variance of some parameter cannot be checked
 |}];;
 
 (* Record patterns *)
@@ -60,7 +60,8 @@ Lines 5-7, characters 39-23:
 5 | .......................................function
 6 |   | BoolLit, false -> false
 7 |   | IntLit , 6 -> false
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (BoolLit, true)
 
@@ -79,7 +80,8 @@ Lines 3-5, characters 45-38:
 3 | .............................................function
 4 |   | {fst = BoolLit; snd = false} -> false
 5 |   | {fst = IntLit ; snd =  6} -> false
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {fst=BoolLit; snd=true}
 

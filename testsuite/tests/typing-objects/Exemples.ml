@@ -101,15 +101,12 @@ Lines 1-5, characters 0-3:
 3 |   method get = x
 4 |   method set y = x <- y
 5 | end..
-Error: Some type variables are unbound in this type:
-         class ref :
-           'a ->
-           object
-             val mutable x : 'a
-             method get : 'a
-             method set : 'a -> unit
-           end
-       The method "get" has type "'a" where "'a" is unbound
+Error:
+  Some type variables are unbound in this type:
+    class ref :
+      'a ->
+      object val mutable x : 'a method get : 'a method set : 'a -> unit end
+  The method "get" has type "'a" where "'a" is unbound
 |}];;
 
 class ref (x_init:int) = object
@@ -207,9 +204,10 @@ let c'' = new color_circle p;;
 Line 1, characters 27-28:
 1 | let c'' = new color_circle p;;
                                ^
-Error: This expression has type "point" but an expression was expected of type
-         "#color_point"
-       The first object type has no method "color"
+Error:
+  This expression has type "point" but an expression was expected of type
+    "#color_point"
+  The first object type has no method "color"
 |}];;
 let c'' = new color_circle p';;
 [%%expect{|
@@ -225,30 +223,32 @@ val c'' : color_point color_circle = <obj>
 Line 1, characters 0-21:
 1 | (c'' :> point circle);;
     ^^^^^^^^^^^^^^^^^^^^^
-Error: Type
-         "color_point color_circle" =
-           "< center : color_point; color : string; move : int -> unit;
-             set_center : color_point -> unit >"
-       is not a subtype of
-         "point circle" =
-           "< center : point; move : int -> unit; set_center : point -> unit >"
-       Type "point" is not a subtype of "color_point"
-       The first object type has no method "color"
+Error:
+  Type
+    "color_point color_circle" =
+      "< center : color_point; color : string; move : int -> unit;
+        set_center : color_point -> unit >"
+  is not a subtype of
+    "point circle" =
+      "< center : point; move : int -> unit; set_center : point -> unit >"
+  Type "point" is not a subtype of "color_point"
+  The first object type has no method "color"
 |}];;                 (* Fail *)
 fun x -> (x : color_point color_circle :> point circle);;
 [%%expect{|
 Line 1, characters 9-55:
 1 | fun x -> (x : color_point color_circle :> point circle);;
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type
-         "color_point color_circle" =
-           "< center : color_point; color : string; move : int -> unit;
-             set_center : color_point -> unit >"
-       is not a subtype of
-         "point circle" =
-           "< center : point; move : int -> unit; set_center : point -> unit >"
-       Type "point" is not a subtype of "color_point"
-       The first object type has no method "color"
+Error:
+  Type
+    "color_point color_circle" =
+      "< center : color_point; color : string; move : int -> unit;
+        set_center : color_point -> unit >"
+  is not a subtype of
+    "point circle" =
+      "< center : point; move : int -> unit; set_center : point -> unit >"
+  Type "point" is not a subtype of "color_point"
+  The first object type has no method "color"
 |}];;
 
 class printable_point y = object (s)
@@ -290,7 +290,8 @@ end;;
 Line 3, characters 2-36:
 3 |   inherit printable_point y as super
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 13 [instance-variable-override]: the following instance variables are overridden by the class printable_point :
+Warning 13 [instance-variable-override]:
+  the following instance variables are overridden by the class printable_point :
   x
 
 class printable_color_point :
@@ -542,16 +543,17 @@ l#add (c2 :> int_comparable);;
 Line 1, characters 6-28:
 1 | l#add (c2 :> int_comparable);;
           ^^^^^^^^^^^^^^^^^^^^^^
-Error: Type
-         "int_comparable2" =
-           "< cmp : int_comparable2 -> int; set_x : int -> unit; x : int >"
-       is not a subtype of
-         "int_comparable" = "< cmp : int_comparable -> int; x : int >"
-       Type "int_comparable" = "< cmp : int_comparable -> int; x : int >"
-       is not a subtype of
-         "int_comparable2" =
-           "< cmp : int_comparable2 -> int; set_x : int -> unit; x : int >"
-       The first object type has no method "set_x"
+Error:
+  Type
+    "int_comparable2" =
+      "< cmp : int_comparable2 -> int; set_x : int -> unit; x : int >"
+  is not a subtype of
+    "int_comparable" = "< cmp : int_comparable -> int; x : int >"
+  Type "int_comparable" = "< cmp : int_comparable -> int; x : int >"
+  is not a subtype of
+    "int_comparable2" =
+      "< cmp : int_comparable2 -> int; set_x : int -> unit; x : int >"
+  The first object type has no method "set_x"
 |}];;      (* Fail : 'a comp2 is not a subtype *)
 (new sorted_list ())#add c2;;
 [%%expect{|
@@ -588,15 +590,15 @@ l#add (c3 :> int_comparable);;
 Line 1, characters 25-27:
 1 | (new sorted_list ())#add c3;;
                              ^^
-Error: This expression has type
-         "int_comparable3" =
-           "< cmp : int_comparable -> int; setx : int -> unit; x : int >"
-       but an expression was expected of type
-         "#comparable as 'a" = "< cmp : 'a -> int; .. >"
-       Type "int_comparable" = "< cmp : int_comparable -> int; x : int >"
-       is not compatible with type
-         "#comparable as 'a" = "< cmp : 'a -> int; .. >"
-       The first object type has no method "setx"
+Error:
+  This expression has type
+    "int_comparable3" =
+      "< cmp : int_comparable -> int; setx : int -> unit; x : int >"
+  but an expression was expected of type
+    "#comparable as 'a" = "< cmp : 'a -> int; .. >"
+  Type "int_comparable" = "< cmp : int_comparable -> int; x : int >"
+  is not compatible with type "#comparable as 'a" = "< cmp : 'a -> int; .. >"
+  The first object type has no method "setx"
 |}];;   (* Error; strange message with -principal *)
 
 let sort (l : #comparable list) = List.sort (fun x -> x#cmp) l;;

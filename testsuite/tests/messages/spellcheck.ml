@@ -57,8 +57,9 @@ let x : int option = Same 42
 Line 1, characters 21-25:
 1 | let x : int option = Same 42
                          ^^^^
-Error: This variant expression is expected to have type "int option"
-       There is no constructor "Same" within type "option"
+Error:
+  This variant expression is expected to have type "int option"
+  There is no constructor "Same" within type "option"
 Hint: Did you mean "Some"?
 |}];;
 
@@ -76,8 +77,9 @@ let x : int ref = { content = 42 }
 Line 1, characters 20-27:
 1 | let x : int ref = { content = 42 }
                         ^^^^^^^
-Error: This record expression is expected to have type "int ref"
-       There is no field "content" within type "ref"
+Error:
+  This record expression is expected to have type "int ref"
+  There is no field "content" within type "ref"
 Hint: Did you mean "contents"?
 |}];;
 
@@ -185,7 +187,8 @@ type baz = K of { foobar : int; }
 Line 2, characters 12-18:
 2 | let _ = K { foobaz = 42 }
                 ^^^^^^
-Error: The field "foobaz" is not part of the record argument for the "baz.K" constructor
+Error:
+  The field "foobaz" is not part of the record argument for the "baz.K" constructor
 Hint: Did you mean "foobar"?
 |}];;
 

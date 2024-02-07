@@ -23,10 +23,11 @@ fun b -> if b then "x" else format_of_string "y"
 Line 1, characters 28-48:
 1 | fun b -> if b then "x" else format_of_string "y"
                                 ^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type
-         "('a, 'b, 'c, 'd, 'd, 'a) format6" =
-           "('a, 'b, 'c, 'd, 'd, 'a) CamlinternalFormatBasics.format6"
-       but an expression was expected of type "string"
+Error:
+  This expression has type
+    "('a, 'b, 'c, 'd, 'd, 'a) format6" =
+      "('a, 'b, 'c, 'd, 'd, 'a) CamlinternalFormatBasics.format6"
+  but an expression was expected of type "string"
 |}]
 ;;
 

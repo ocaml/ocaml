@@ -16,8 +16,8 @@ Lines 3-6, characters 0-3:
 4 | object
 5 |   method b v = x := Some v
 6 | end
-Error: The type of this class,
-       "class test : object method b : '_weak1 -> unit end",
-       contains the non-generalizable type variable(s): "'_weak1".
-       (see manual section 6.1.2)
+Error:
+  The type of this class, "class test : object method b : '_weak1 -> unit end",
+  contains the non-generalizable type variable(s): "'_weak1".
+  (see manual section 6.1.2)
 |}]

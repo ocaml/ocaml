@@ -23,9 +23,10 @@ type _ t = Nil : nil t | Cons : ('x, 'fx) elt * 'x t -> 'fx t
 Line 9, characters 11-18:
 9 |   let Cons(Elt dim, _) = sh in ()
                ^^^^^^^
-Error: This pattern matches values of type "($x, 'a -> $x) elt"
-       but a pattern was expected which matches values of type
-         "($x, 'a -> $'b -> nil) elt"
-       The type constructor "$'b" would escape its scope
-       Hint: "$x" is an existential type bound by the constructor "Cons".
+Error:
+  This pattern matches values of type "($x, 'a -> $x) elt"
+  but a pattern was expected which matches values of type
+    "($x, 'a -> $'b -> nil) elt"
+  The type constructor "$'b" would escape its scope
+  Hint: "$x" is an existential type bound by the constructor "Cons".
 |}];;

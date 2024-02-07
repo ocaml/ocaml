@@ -736,14 +736,11 @@ let batch_mode_printer : report_printer =
        to be aligned with the main message box
     *)
     print_updating_num_loc_lines ppf (fun ppf () ->
-      Format.fprintf ppf "@[<v>%a%a%a: %a%a%a%a@]@."
-      Format.pp_open_tbox ()
+      Format.fprintf ppf "@[<v>%a@]@[<hv>%a:@;<1 2>%a%a@]@."
       (self.pp_main_loc self report) report.main.loc
       (self.pp_report_kind self report) report.kind
-      Format.pp_set_tab ()
       (self.pp_main_txt self report) report.main.txt
       (self.pp_submsgs self report) report.sub
-      Format.pp_close_tbox ()
     ) ()
   in
   let pp_report_kind _self _ ppf = function

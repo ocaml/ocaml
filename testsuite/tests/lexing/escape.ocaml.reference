@@ -1,7 +1,8 @@
 Line 7, characters 15-17:
 7 | let invalid = "\99" ;;
                    ^^
-Warning 14 [illegal-backslash]: illegal backslash escape in string.
+Warning 14 [illegal-backslash]:
+  illegal backslash escape in string.
 Hint: Single backslashes \ are reserved for escape sequences
 (\n, \r, ...). Did you check the list of OCaml escape sequences?
 To get a backslash character, escape it with a second backslash: \\.
@@ -10,15 +11,18 @@ val invalid : string = "\\99"
 Line 1, characters 15-19:
 1 | let invalid = "\999" ;;
                    ^^^^
-Error: Illegal backslash escape in string or character (\999): 999 is outside the range of legal characters (0-255).
+Error:
+  Illegal backslash escape in string or character (\999): 999 is outside the range of legal characters (0-255).
 Line 1, characters 15-20:
 1 | let invalid = "\o777" ;;
                    ^^^^^
-Error: Illegal backslash escape in string or character (\o777): o777 (=511) is outside the range of legal characters (0-255).
+Error:
+  Illegal backslash escape in string or character (\o777): o777 (=511) is outside the range of legal characters (0-255).
 Line 1, characters 15-17:
 1 | let invalid = "\o77" ;;
                    ^^
-Warning 14 [illegal-backslash]: illegal backslash escape in string.
+Warning 14 [illegal-backslash]:
+  illegal backslash escape in string.
 Hint: Single backslashes \ are reserved for escape sequences
 (\n, \r, ...). Did you check the list of OCaml escape sequences?
 To get a backslash character, escape it with a second backslash: \\.
@@ -27,7 +31,8 @@ val invalid : string = "\\o77"
 Line 1, characters 15-17:
 1 | let invalid = "\o99" ;;
                    ^^
-Warning 14 [illegal-backslash]: illegal backslash escape in string.
+Warning 14 [illegal-backslash]:
+  illegal backslash escape in string.
 Hint: Single backslashes \ are reserved for escape sequences
 (\n, \r, ...). Did you check the list of OCaml escape sequences?
 To get a backslash character, escape it with a second backslash: \\.

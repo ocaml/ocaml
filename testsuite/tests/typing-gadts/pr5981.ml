@@ -15,7 +15,8 @@ end;;
 Lines 7-8, characters 47-21:
 7 | ...............................................match l, r with
 8 |     | A, B -> "f A B"
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (A, A)
 
@@ -43,7 +44,8 @@ end;;
 Lines 10-11, characters 15-21:
 10 | ...............match l, r with
 11 |     | A, B -> "f A B"
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (A, A)
 

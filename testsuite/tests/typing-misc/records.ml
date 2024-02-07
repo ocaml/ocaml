@@ -26,8 +26,9 @@ Error: Unbound record field "z"
 Line 1, characters 6-14:
 1 | {x=3; contents=2};;
           ^^^^^^^^
-Error: The record field "contents" belongs to the type "'a ref"
-       but is mixed here with fields of type "t"
+Error:
+  The record field "contents" belongs to the type "'a ref"
+  but is mixed here with fields of type "t"
 |}];;
 
 (* private types *)
@@ -73,8 +74,8 @@ type foo = { mutable y : int; }
 Line 2, characters 17-18:
 2 | let f (r: int) = r.y <- 3;;
                      ^
-Error: This expression has type "int" but an expression was expected of type
-         "foo"
+Error:
+  This expression has type "int" but an expression was expected of type "foo"
 |}];;
 
 let f (r: int) =
@@ -84,8 +85,9 @@ let f (r: int) =
 Line 3, characters 4-20:
 3 |   | { contents = 3 } -> ()
         ^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type "int ref"
-       but a pattern was expected which matches values of type "int"
+Error:
+  This pattern matches values of type "int ref"
+  but a pattern was expected which matches values of type "int"
 |}];;
 
 
@@ -100,8 +102,8 @@ type bar = { x : int; }
 Line 3, characters 20-21:
 3 | let f (r: bar) = ({ r with z = 3 } : foo)
                         ^
-Error: This expression has type "bar" but an expression was expected of type
-         "foo"
+Error:
+  This expression has type "bar" but an expression was expected of type "foo"
 |}];;
 
 type foo = { x: int };;
@@ -159,9 +161,10 @@ val x : int t = {f = 12; g = 43}
 Line 3, characters 0-19:
 3 | {x with f = "hola"};;
     ^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "string t"
-       but an expression was expected of type "int t"
-       Type "string" is not compatible with type "int"
+Error:
+  This expression has type "string t" but an expression was expected of type
+    "int t"
+  Type "string" is not compatible with type "int"
 |}]
 
 (* PR#7696 *)
@@ -170,7 +173,8 @@ let r = { (assert false) with contents = 1 } ;;
 Line 1, characters 8-44:
 1 | let r = { (assert false) with contents = 1 } ;;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 23 [useless-record-with]: all the fields are explicitly listed in this record:
+Warning 23 [useless-record-with]:
+  all the fields are explicitly listed in this record:
 the 'with' clause is useless.
 
 Exception: Assert_failure ("", 1, 10).
@@ -186,9 +190,10 @@ type ('a, 'b) def = { x : int; } constraint 'b = [> `A ]
 Line 3, characters 0-38:
 3 | type arity = (int, [`A]) def = {x:int};;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type
-         "(int, [ `A ]) def"
-       They have different arities.
+Error:
+  This variant or record definition does not match that of type
+    "(int, [ `A ]) def"
+  They have different arities.
 |}]
 
 type ('a,'b) ct = (int,'b) def = {x:int};;
@@ -196,10 +201,11 @@ type ('a,'b) ct = (int,'b) def = {x:int};;
 Line 1, characters 0-40:
 1 | type ('a,'b) ct = (int,'b) def = {x:int};;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type
-         "(int, [> `A ]) def"
-       Their parameters differ
-       The type "int" is not equal to the type "'a"
+Error:
+  This variant or record definition does not match that of type
+    "(int, [> `A ]) def"
+  Their parameters differ
+  The type "int" is not equal to the type "'a"
 |}]
 
 type ('a,'b) kind = ('a, 'b) def = A constraint 'b = [> `A];;
@@ -207,9 +213,10 @@ type ('a,'b) kind = ('a, 'b) def = A constraint 'b = [> `A];;
 Line 1, characters 0-59:
 1 | type ('a,'b) kind = ('a, 'b) def = A constraint 'b = [> `A];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type
-         "('a, [> `A ]) def"
-       The original is a record, but this is a variant.
+Error:
+  This variant or record definition does not match that of type
+    "('a, [> `A ]) def"
+  The original is a record, but this is a variant.
 |}]
 
 type d = { x:int; y : int }
@@ -219,12 +226,13 @@ type d = { x : int; y : int; }
 Line 2, characters 0-37:
 2 | type mut = d = {x:int; mutable y:int}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "d"
-       Fields do not match:
-         "y : int;"
-       is not the same as:
-         "mutable y : int;"
-       This is mutable and the original is not.
+Error:
+  This variant or record definition does not match that of type "d"
+  Fields do not match:
+    "y : int;"
+  is not the same as:
+    "mutable y : int;"
+  This is mutable and the original is not.
 |}]
 
 type missing = d = { x:int }
@@ -232,8 +240,9 @@ type missing = d = { x:int }
 Line 1, characters 0-28:
 1 | type missing = d = { x:int }
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "d"
-       An extra field, "y", is provided in the original definition.
+Error:
+  This variant or record definition does not match that of type "d"
+  An extra field, "y", is provided in the original definition.
 |}]
 
 type wrong_type = d = {x:float}
@@ -241,13 +250,14 @@ type wrong_type = d = {x:float}
 Line 1, characters 0-31:
 1 | type wrong_type = d = {x:float}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "d"
-       1. Fields do not match:
-         "x : int;"
-       is not the same as:
-         "x : float;"
-       The type "int" is not equal to the type "float"
-       2. An extra field, "y", is provided in the original definition.
+Error:
+  This variant or record definition does not match that of type "d"
+  1. Fields do not match:
+    "x : int;"
+  is not the same as:
+    "x : float;"
+  The type "int" is not equal to the type "float"
+  2. An extra field, "y", is provided in the original definition.
 |}]
 
 type mono = {foo:int}
@@ -257,9 +267,10 @@ type mono = { foo : int; }
 Line 2, characters 0-43:
 2 | type unboxed = mono = {foo:int} [@@unboxed]
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "mono"
-       Their internal representations differ:
-       this definition uses unboxed representation.
+Error:
+  This variant or record definition does not match that of type "mono"
+  Their internal representations differ:
+  this definition uses unboxed representation.
 |}]
 
 type perm = d = {y:int; x:int}
@@ -267,8 +278,9 @@ type perm = d = {y:int; x:int}
 Line 1, characters 0-30:
 1 | type perm = d = {y:int; x:int}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "d"
-       Fields "x" and "y" have been swapped.
+Error:
+  This variant or record definition does not match that of type "d"
+  Fields "x" and "y" have been swapped.
 |}]
 
 type t = { f1 : int ; f2 : int }

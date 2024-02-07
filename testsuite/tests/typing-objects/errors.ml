@@ -7,11 +7,12 @@ class type virtual ['a] c = object constraint 'a = [<`A of int & float] end
 Line 1, characters 0-75:
 1 | class type virtual ['a] c = object constraint 'a = [<`A of int & float] end
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type of this class,
-       "class virtual ['_a] c :
-         object constraint '_a = [< `A of int & float ] as '_weak1 end",
-       contains non-collapsible conjunctive types in constraints.
-       Type "int" is not compatible with type "float"
+Error:
+  The type of this class,
+  "class virtual ['_a] c :
+    object constraint '_a = [< `A of int & float ] as '_weak1 end",
+  contains non-collapsible conjunctive types in constraints.
+  Type "int" is not compatible with type "float"
 |}]
 
 class type ct = object
@@ -27,12 +28,13 @@ Lines 5-7, characters 32-3:
 5 | ................................object
 6 |   method x = y
 7 | end
-Error: The class type object method x : 'a * float end
-       is not matched by the class type ct
-       The class type object method x : 'a * float end
-       is not matched by the class type object method x : int end
-       The method x has type "'a * float" but is expected to have type "int"
-       Type "'a * float" is not compatible with type "int"
+Error:
+  The class type object method x : 'a * float end
+  is not matched by the class type ct
+  The class type object method x : 'a * float end
+  is not matched by the class type object method x : int end
+  The method x has type "'a * float" but is expected to have type "int"
+  Type "'a * float" is not compatible with type "int"
 |}]
 
 let foo = 42#m;;
@@ -58,8 +60,9 @@ class empty : object  end
 Line 2, characters 26-40:
 2 | class also_empty = object inherit! empty end
                               ^^^^^^^^^^^^^^
-Error: This inheritance does not override any methods or instance variables
-       but is explicitly marked as overriding with "!".
+Error:
+  This inheritance does not override any methods or instance variables
+  but is explicitly marked as overriding with "!".
 |}]
 
 
@@ -70,8 +73,8 @@ class ['a] c : object val x : 'a list ref end
 Line 2, characters 0-67:
 2 | class ['a] x = let r = ref [] in object val x : 'a list ref = r end
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type of this class,
-       "class ['_a] x : object val x : '_a list ref end",
-       contains the non-generalizable type variable(s): "'_a".
-       (see manual section 6.1.2)
+Error:
+  The type of this class, "class ['_a] x : object val x : '_a list ref end",
+  contains the non-generalizable type variable(s): "'_a".
+  (see manual section 6.1.2)
 |}]

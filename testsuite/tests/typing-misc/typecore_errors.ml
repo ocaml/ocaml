@@ -25,8 +25,9 @@ let f = function None None -> 0
 Line 1, characters 17-26:
 1 | let f = function None None -> 0
                      ^^^^^^^^^
-Error: The constructor "None" expects 0 argument(s),
-       but is applied here to 1 argument(s)
+Error:
+  The constructor "None" expects 0 argument(s),
+  but is applied here to 1 argument(s)
 |}]
 
 let x = None None
@@ -34,8 +35,9 @@ let x = None None
 Line 1, characters 8-17:
 1 | let x = None None
             ^^^^^^^^^
-Error: The constructor "None" expects 0 argument(s),
-       but is applied here to 1 argument(s)
+Error:
+  The constructor "None" expects 0 argument(s),
+  but is applied here to 1 argument(s)
 |}]
 
 (** Inline record escape *)
@@ -47,7 +49,8 @@ type t = A of { x : int; }
 Line 2, characters 20-25:
 2 | let f = function (A (x:_)) -> 0
                         ^^^^^
-Error: This form is not allowed as the type of the inlined record could escape.
+Error:
+  This form is not allowed as the type of the inlined record could escape.
 |}]
 
 
@@ -77,8 +80,9 @@ let rec f x = ( (), () : _ -> _ -> _ )
 Line 3, characters 14-38:
 3 | let rec f x = ( (), () : _ -> _ -> _ )
                   ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "'a * 'b"
-       but an expression was expected of type "'c -> 'd -> 'e"
+Error:
+  This expression has type "'a * 'b" but an expression was expected of type
+    "'c -> 'd -> 'e"
 |}]
 
 let rec g x = ( ((), ()) : _ -> _ :> _ )
@@ -86,8 +90,9 @@ let rec g x = ( ((), ()) : _ -> _ :> _ )
 Line 1, characters 14-40:
 1 | let rec g x = ( ((), ()) : _ -> _ :> _ )
                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "'a * 'b"
-       but an expression was expected of type "'c -> 'd"
+Error:
+  This expression has type "'a * 'b" but an expression was expected of type
+    "'c -> 'd"
 |}]
 
 
@@ -279,9 +284,10 @@ let g f = f ~x:0 ~y:0; f ~y:0 ~x:0
 Line 1, characters 23-24:
 1 | let g f = f ~x:0 ~y:0; f ~y:0 ~x:0
                            ^
-Error: This function is applied to arguments
-       in an order different from other calls.
-       This is only allowed when the real type is known.
+Error:
+  This function is applied to arguments
+  in an order different from other calls.
+  This is only allowed when the real type is known.
 |}]
 
 (** Inlined record *)
@@ -325,8 +331,9 @@ type t = A of int | B of float | C
 Line 2, characters 6-15:
 2 | let f (A x|B x) = 0
           ^^^^^^^^^
-Error: The variable "x" on the left-hand side of this or-pattern has type "
-       int" but on the right-hand side it has type "float"
+Error:
+  The variable "x" on the left-hand side of this or-pattern has type "int"
+  but on the right-hand side it has type "float"
 |}]
 
 (** Orphan pattern variable *)
@@ -374,9 +381,9 @@ let x = ([`B]:>[`A])
 Line 3, characters 9-13:
 3 | let x = ([`B]:>[`A])
              ^^^^
-Error: This expression cannot be coerced to type ""[ `A ]""; it has type
-         "[> `B ] list"
-       but is here used with type "[< `A ]"
+Error:
+  This expression cannot be coerced to type ""[ `A ]""; it has type "[> `B ] list"
+  but is here used with type "[< `A ]"
 |}]
 
 (** Unbound instance variable *)
@@ -399,8 +406,9 @@ let x = function
 Line 3, characters 4-12:
 3 |   | `c7diagq -> ()
         ^^^^^^^^
-Error: Variant tags "`azdwbie" and "`c7diagq" have the same hash value.
-       Change one of them.
+Error:
+  Variant tags "`azdwbie" and "`c7diagq" have the same hash value.
+  Change one of them.
 |}]
 
 
@@ -409,8 +417,9 @@ let x =  `azdwbie = `c7diagq
 Line 1, characters 20-28:
 1 | let x =  `azdwbie = `c7diagq
                         ^^^^^^^^
-Error: Variant tags "`azdwbie" and "`c7diagq" have the same hash value.
-       Change one of them.
+Error:
+  Variant tags "`azdwbie" and "`c7diagq" have the same hash value.
+  Change one of them.
 |}]
 
 type 'a x =
@@ -426,8 +435,9 @@ type 'a x = X : [> `azdwbie ] x | Y : [> `c7diagq ] x
 Line 7, characters 4-5:
 7 |   | Y  -> ()
         ^
-Error: Variant tags "`azdwbie" and "`c7diagq" have the same hash value.
-       Change one of them.
+Error:
+  Variant tags "`azdwbie" and "`c7diagq" have the same hash value.
+  Change one of them.
 |}]
 
 
@@ -440,8 +450,9 @@ type s = { y : unit; }
 Line 3, characters 21-22:
 3 | let f = function {x; y} -> x
                          ^
-Error: The record field "y" belongs to the type "s"
-       but is mixed here with fields of type "t"
+Error:
+  The record field "y" belongs to the type "s"
+  but is mixed here with fields of type "t"
 |}]
 
 

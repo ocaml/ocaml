@@ -21,26 +21,28 @@ let ko1 = function Dyn (type a) (w, x) -> ()
 Line 1, characters 32-38:
 1 | let ko1 = function Dyn (type a) (w, x) -> ()
                                     ^^^^^^
-Error: Existential types introduced in a constructor pattern
-       must be bound by a type constraint on the argument.
+Error:
+  Existential types introduced in a constructor pattern
+  must be bound by a type constraint on the argument.
 |}]
 let ko1 = function Dyn (type a) (w, x : _) -> ()
 [%%expect{|
 Line 1, characters 40-41:
 1 | let ko1 = function Dyn (type a) (w, x : _) -> ()
                                             ^
-Error: This type does not bind all existentials in the constructor:
-         "type a. 'a ty * 'a"
+Error:
+  This type does not bind all existentials in the constructor:
+    "type a. 'a ty * 'a"
 |}]
 let ko2 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
 [%%expect{|
 Line 1, characters 42-50:
 1 | let ko2 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
                                               ^^^^^^^^
-Error: The local name "b" can only be given to an existential variable
-       introduced by this GADT constructor.
-       The type annotation tries to bind it to the name "a"
-       that is already bound.
+Error:
+  The local name "b" can only be given to an existential variable
+  introduced by this GADT constructor.
+  The type annotation tries to bind it to the name "a" that is already bound.
 |}]
 
 type u = C : 'a * ('a -> 'b list) -> u
@@ -55,8 +57,9 @@ let f = function C (type a) (x, f : a * (a -> a list)) -> ignore (x : a)
 Line 1, characters 36-53:
 1 | let f = function C (type a) (x, f : a * (a -> a list)) -> ignore (x : a)
                                         ^^^^^^^^^^^^^^^^^
-Error: This type does not bind all existentials in the constructor:
-         "type a. a * (a -> a list)"
+Error:
+  This type does not bind all existentials in the constructor:
+    "type a. a * (a -> a list)"
 |}]
 
 (* with GADT unification *)
@@ -85,10 +88,11 @@ let rec test : type a. a expr -> a = function
 Line 2, characters 22-23:
 2 |   | Int (type b) (n : a) -> n
                           ^
-Error: The local name "b" can only be given to an existential variable
-       introduced by this GADT constructor.
-       The type annotation tries to bind it to the type "'a"
-       that is not a locally abstract type.
+Error:
+  The local name "b" can only be given to an existential variable
+  introduced by this GADT constructor.
+  The type annotation tries to bind it to the type "'a"
+  that is not a locally abstract type.
 |}]
 
 (* Strange wildcard *)
@@ -102,8 +106,9 @@ let () =
 Line 4, characters 4-31:
 4 |   | None (type a) (_ : a * int) -> ()
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The constructor "None" expects 0 argument(s),
-       but is applied here to 1 argument(s)
+Error:
+  The constructor "None" expects 0 argument(s),
+  but is applied here to 1 argument(s)
 |}]
 
 let () =
@@ -148,8 +153,8 @@ let rec example : type a . a ty -> a = function
 Line 3, characters 54-72:
 3 | | Pair (type b c) (x, y : b ty * c ty) -> (example x, example (*error*)x)
                                                           ^^^^^^^^^^^^^^^^^^
-Error: This expression has type "b" = "$0" but an expression was expected of type
-         "$1"
+Error:
+  This expression has type "b" = "$0" but an expression was expected of type "$1"
 |}]
 
 type _ th =
@@ -164,10 +169,10 @@ val f1 : 'a th -> 'a = <fun>
 Line 6, characters 29-41:
 6 |   | Thunk (type b c) (x, f : b * (b -> c)) -> f x
                                  ^^^^^^^^^^^^
-Error: The local name "c" can only be given to an existential variable
-       introduced by this GADT constructor.
-       The type annotation tries to bind it to the name "a"
-       that was defined before.
+Error:
+  The local name "c" can only be given to an existential variable
+  introduced by this GADT constructor.
+  The type annotation tries to bind it to the name "a" that was defined before.
 |}]
 (* Do not allow to deduce extra assumptions *)
 let ko1 (type a) : a th -> a = function
@@ -176,9 +181,10 @@ let ko1 (type a) : a th -> a = function
 Line 2, characters 29-48:
 2 |   | Thunk (type b c) (x, f : b * (b -> c option)) -> f x
                                  ^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type "b * (b -> c option)"
-       but a pattern was expected which matches values of type "b * (b -> a)"
-       Type "c option" is not compatible with type "a"
+Error:
+  This pattern matches values of type "b * (b -> c option)"
+  but a pattern was expected which matches values of type "b * (b -> a)"
+  Type "c option" is not compatible with type "a"
 |}]
 (* Can only name fresh existentials *)
 let ko2 = function
@@ -187,10 +193,11 @@ let ko2 = function
 Line 2, characters 29-41:
 2 |   | Thunk (type b c) (x, f : b * (b -> c)) -> f x
                                  ^^^^^^^^^^^^
-Error: The local name "c" can only be given to an existential variable
-       introduced by this GADT constructor.
-       The type annotation tries to bind it to the type "'a"
-       that is not a locally abstract type.
+Error:
+  The local name "c" can only be given to an existential variable
+  introduced by this GADT constructor.
+  The type annotation tries to bind it to the type "'a"
+  that is not a locally abstract type.
 |}]
 let ko3 () =
   match [] with
@@ -200,10 +207,11 @@ let ko3 () =
 Line 3, characters 30-42:
 3 |   | [Thunk (type b c) (x, f : b * (b -> c))] -> f x
                                   ^^^^^^^^^^^^
-Error: The local name "c" can only be given to an existential variable
-       introduced by this GADT constructor.
-       The type annotation tries to bind it to the type "'a"
-       that is not a locally abstract type.
+Error:
+  The local name "c" can only be given to an existential variable
+  introduced by this GADT constructor.
+  The type annotation tries to bind it to the type "'a"
+  that is not a locally abstract type.
 |}]
 
 type _ tho =
@@ -238,8 +246,9 @@ let rec default : type a. a ty -> a = function
 Line 3, characters 34-45:
 3 |   | Pair (Wrap (type b c) (b, c : b ty * c ty)) ->
                                       ^^^^^^^^^^^
-Error: The local name "b" can only be given to an existential variable
-       introduced by this GADT constructor.
-       The type annotation tries to bind it to the name "$0"
-       that was defined before.
+Error:
+  The local name "b" can only be given to an existential variable
+  introduced by this GADT constructor.
+  The type annotation tries to bind it to the name "$0"
+  that was defined before.
 |}]

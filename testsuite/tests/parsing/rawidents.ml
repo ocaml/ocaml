@@ -27,16 +27,17 @@ module M : sig type \#and = int end = struct type \#and = string end
 Line 1, characters 38-68:
 1 | module M : sig type \#and = int end = struct type \#and = string end
                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Signature mismatch:
-       Modules do not match:
-         sig type \#and = string end
-       is not included in
-         sig type \#and = int end
-       Type declarations do not match:
-         type \#and = string
-       is not included in
-         type \#and = int
-       The type "string" is not equal to the type "int"
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type \#and = string end
+  is not included in
+    sig type \#and = int end
+  Type declarations do not match:
+    type \#and = string
+  is not included in
+    type \#and = int
+  The type "string" is not equal to the type "int"
 |}]
 
 let x = (`\#let `\#and : [ `\#let of [ `\#and ] ])

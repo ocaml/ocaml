@@ -81,8 +81,9 @@ type baz = bar = ..
 Line 1, characters 0-19:
 1 | type baz = bar = ..
     ^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "bar"
-       The original is abstract, but this is an extensible variant.
+Error:
+  This variant or record definition does not match that of type "bar"
+  The original is abstract, but this is an extensible variant.
 |}]
 
 (* Abbreviations need to match parameters *)
@@ -99,8 +100,9 @@ type ('a, 'b) bar = 'a foo = ..
 Line 1, characters 0-31:
 1 | type ('a, 'b) bar = 'a foo = ..
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "'a foo"
-       They have different arities.
+Error:
+  This variant or record definition does not match that of type "'a foo"
+  They have different arities.
 |}]
 
 type ('a, 'b) foo = ..
@@ -115,10 +117,10 @@ type ('a, 'b) bar = ('a, 'a) foo = ..
 Line 1, characters 0-37:
 1 | type ('a, 'b) bar = ('a, 'a) foo = ..
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type
-         "('a, 'a) foo"
-       Their parameters differ
-       The type "'a" is not equal to the type "'b"
+Error:
+  This variant or record definition does not match that of type "('a, 'a) foo"
+  Their parameters differ
+  The type "'a" is not equal to the type "'b"
 |}]
 
 (* Check that signatures can hide exstensibility *)
@@ -170,13 +172,14 @@ module M_S = (M : S)
 Line 1, characters 14-15:
 1 | module M_S = (M : S)
                   ^
-Error: Signature mismatch:
-       Modules do not match: sig type foo = M.foo end is not included in S
-       Type declarations do not match:
-         type foo = M.foo
-       is not included in
-         type foo = ..
-       The first is abstract, but the second is an extensible variant.
+Error:
+  Signature mismatch:
+  Modules do not match: sig type foo = M.foo end is not included in S
+  Type declarations do not match:
+    type foo = M.foo
+  is not included in
+    type foo = ..
+  The first is abstract, but the second is an extensible variant.
 |}]
 
 (* Check that signatures can make exstensibility private *)
@@ -228,16 +231,17 @@ module M_S = (M : S)
 Line 1, characters 14-15:
 1 | module M_S = (M : S)
                   ^
-Error: Signature mismatch:
-       Modules do not match:
-         sig type foo = M.foo = private .. end
-       is not included in
-         S
-       Type declarations do not match:
-         type foo = M.foo = private ..
-       is not included in
-         type foo = ..
-       A private extensible variant would be revealed.
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type foo = M.foo = private .. end
+  is not included in
+    S
+  Type declarations do not match:
+    type foo = M.foo = private ..
+  is not included in
+    type foo = ..
+  A private extensible variant would be revealed.
 |}]
 
 
@@ -261,16 +265,17 @@ module M_S = (M : S)
 Line 1, characters 14-15:
 1 | module M_S = (M : S)
                   ^
-Error: Signature mismatch:
-       Modules do not match:
-         sig type 'a foo = 'a M.foo = .. type 'a bar = 'a foo = .. end
-       is not included in
-         S
-       Type declarations do not match:
-         type 'a foo = 'a M.foo = ..
-       is not included in
-         type 'a foo = ..
-       Their variances do not agree.
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type 'a foo = 'a M.foo = .. type 'a bar = 'a foo = .. end
+  is not included in
+    S
+  Type declarations do not match:
+    type 'a foo = 'a M.foo = ..
+  is not included in
+    type 'a foo = ..
+  Their variances do not agree.
 |}]
 
 (* Exn is an open type *)
@@ -307,7 +312,8 @@ type foo += Foo
 Line 3, characters 8-26:
 3 | let f = function Foo -> ()
             ^^^^^^^^^^^^^^^^^^
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 *extension*
 Matching over values of extensible variant types (the *extension* above)
@@ -329,7 +335,8 @@ Lines 1-4, characters 8-11:
 2 |   | [Foo] -> 1
 3 |   | _::_::_ -> 3
 4 |   | [] -> 2
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 *extension*::[]
 Matching over values of extensible variant types (the *extension* above)
@@ -353,7 +360,8 @@ let f = function IPair (i, j) -> Format.sprintf "(%d, %d)" i j ;;
 Line 1, characters 8-62:
 1 | let f = function IPair (i, j) -> Format.sprintf "(%d, %d)" i j ;;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 *extension*
 Matching over values of extensible variant types (the *extension* above)

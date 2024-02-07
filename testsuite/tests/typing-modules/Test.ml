@@ -71,16 +71,17 @@ module M : sig type -'a t = private int end =
 Line 2, characters 2-37:
 2 |   struct type +'a t = private int end
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Signature mismatch:
-       Modules do not match:
-         sig type +'a t = private int end
-       is not included in
-         sig type -'a t = private int end
-       Type declarations do not match:
-         type +'a t = private int
-       is not included in
-         type -'a t = private int
-       Their variances do not agree.
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type +'a t = private int end
+  is not included in
+    sig type -'a t = private int end
+  Type declarations do not match:
+    type +'a t = private int
+  is not included in
+    type -'a t = private int
+  Their variances do not agree.
 |}];;
 
 (* PR#6005 *)
@@ -94,12 +95,13 @@ type u = X of bool
 Line 3, characters 23-33:
 3 | module type B = A with type t = u;; (* fail *)
                            ^^^^^^^^^^
-Error: This variant or record definition does not match that of type "u"
-       Constructors do not match:
-         "X of bool"
-       is not the same as:
-         "X of int"
-       The type "bool" is not equal to the type "int"
+Error:
+  This variant or record definition does not match that of type "u"
+  Constructors do not match:
+    "X of bool"
+  is not the same as:
+    "X of int"
+  The type "bool" is not equal to the type "int"
 |}];;
 
 (* PR#5815 *)
@@ -110,8 +112,9 @@ module type S = sig exception Foo of int  exception Foo of bool end;;
 Line 1, characters 42-63:
 1 | module type S = sig exception Foo of int  exception Foo of bool end;;
                                               ^^^^^^^^^^^^^^^^^^^^^
-Error: Multiple definition of the extension constructor name "Foo".
-       Names must be unique in a given structure or signature.
+Error:
+  Multiple definition of the extension constructor name "Foo".
+  Names must be unique in a given structure or signature.
 |}];;
 
 (* PR#6410 *)
@@ -136,20 +139,21 @@ module M : sig type t += E end = struct type t += E of int end;;
 Line 1, characters 33-62:
 1 | module M : sig type t += E end = struct type t += E of int end;;
                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t += E of int end
-       is not included in
-         sig type t += E end
-       Extension declarations do not match:
-         type t += E of int
-       is not included in
-         type t += E
-       Constructors do not match:
-         "E of int"
-       is not the same as:
-         "E"
-       They have different arities.
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type t += E of int end
+  is not included in
+    sig type t += E end
+  Extension declarations do not match:
+    type t += E of int
+  is not included in
+    type t += E
+  Constructors do not match:
+    "E of int"
+  is not the same as:
+    "E"
+  They have different arities.
 |}];;
 
 module M : sig type t += E of char end = struct type t += E of int end;;
@@ -157,20 +161,21 @@ module M : sig type t += E of char end = struct type t += E of int end;;
 Line 1, characters 41-70:
 1 | module M : sig type t += E of char end = struct type t += E of int end;;
                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t += E of int end
-       is not included in
-         sig type t += E of char end
-       Extension declarations do not match:
-         type t += E of int
-       is not included in
-         type t += E of char
-       Constructors do not match:
-         "E of int"
-       is not the same as:
-         "E of char"
-       The type "int" is not equal to the type "char"
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type t += E of int end
+  is not included in
+    sig type t += E of char end
+  Extension declarations do not match:
+    type t += E of int
+  is not included in
+    type t += E of char
+  Constructors do not match:
+    "E of int"
+  is not the same as:
+    "E of char"
+  The type "int" is not equal to the type "char"
 |}];;
 
 module M : sig type t += C of int end = struct type t += E of int end;;
@@ -178,12 +183,13 @@ module M : sig type t += C of int end = struct type t += E of int end;;
 Line 1, characters 40-69:
 1 | module M : sig type t += C of int end = struct type t += E of int end;;
                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t += E of int end
-       is not included in
-         sig type t += C of int end
-       The extension constructor "C" is required but not provided
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type t += E of int end
+  is not included in
+    sig type t += C of int end
+  The extension constructor "C" is required but not provided
 |}];;
 
 module M : sig
@@ -196,18 +202,19 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type t += E of int
 5 | end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t += E of int end
-       is not included in
-         sig type t += E of { x : int; } end
-       Extension declarations do not match:
-         type t += E of int
-       is not included in
-         type t += E of { x : int; }
-       Constructors do not match:
-         "E of int"
-       is not the same as:
-         "E of { x : int; }"
-       The second uses inline records and the first doesn't.
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type t += E of int end
+  is not included in
+    sig type t += E of { x : int; } end
+  Extension declarations do not match:
+    type t += E of int
+  is not included in
+    type t += E of { x : int; }
+  Constructors do not match:
+    "E of int"
+  is not the same as:
+    "E of { x : int; }"
+  The second uses inline records and the first doesn't.
 |}];;

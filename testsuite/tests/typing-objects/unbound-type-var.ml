@@ -13,7 +13,8 @@ Lines 1-4, characters 0-3:
 2 | object
 3 |   method b = c
 4 | end
-Error: Some type variables are unbound in this type:
-         class test : 'a -> 'b -> object method b : 'b end
-       The method "b" has type "'b" where "'b" is unbound
+Error:
+  Some type variables are unbound in this type:
+    class test : 'a -> 'b -> object method b : 'b end
+  The method "b" has type "'b" where "'b" is unbound
 |}]

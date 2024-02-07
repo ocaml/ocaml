@@ -1,7 +1,8 @@
 File "deprecated_module_use.ml", line 18, characters 5-22:
 18 | open Deprecated_module
           ^^^^^^^^^^^^^^^^^
-Alert deprecated: module Deprecated_module
+Alert deprecated:
+  module Deprecated_module
 
   As you could guess, Deprecated_module is deprecated.
   Please use something else!

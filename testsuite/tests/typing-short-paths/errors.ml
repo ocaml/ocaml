@@ -14,8 +14,9 @@ type t = M.t
 Line 5, characters 14-15:
 5 | let x : M.t = S
                   ^
-Error: This variant expression is expected to have type "t"
-       There is no constructor "S" within type "t"
+Error:
+  This variant expression is expected to have type "t"
+  There is no constructor "S" within type "t"
 |}]
 
 module M = struct
@@ -51,8 +52,9 @@ type pair = Pair : 'a ty * 'a -> pair
 Line 9, characters 22-23:
 9 |   | Pair (Char, x) -> x + 1
                           ^
-Error: This expression has type "$a" but an expression was expected of type "int"
-       Hint: "$a" is an existential type bound by the constructor "Pair".
+Error:
+  This expression has type "$a" but an expression was expected of type "int"
+  Hint: "$a" is an existential type bound by the constructor "Pair".
 |}]
 
 type _ ty = Char : char ty
@@ -68,10 +70,10 @@ type pair = Pair : 'a ty * 'a -> pair
 Line 7, characters 35-36:
 7 |   | Pair (Char, x) -> if true then x else 'd'
                                        ^
-Error: This expression has type "$a" but an expression was expected of type "'a"
-       This instance of "$a" is ambiguous:
-       it would escape the scope of its equation
-       Hint: "$a" is an existential type bound by the constructor "Pair".
+Error:
+  This expression has type "$a" but an expression was expected of type "'a"
+  This instance of "$a" is ambiguous: it would escape the scope of its equation
+  Hint: "$a" is an existential type bound by the constructor "Pair".
 |}]
 
 (** Cycle type definitions *)
@@ -94,14 +96,15 @@ and 'a z = 'a t
 Line 1, characters 0-16:
 1 | type 'a t = 'a u
     ^^^^^^^^^^^^^^^^
-Error: The type abbreviation "t" is cyclic:
-         "'a t" = "'a u",
-         "'a u" = "'a v * 'a",
-         "'a v * 'a" contains "'a v",
-         "'a v" = "'a w list",
-         "'a w list" contains "'a w",
-         "'a w" = "'a option z",
-         "'a option z" = "'a option t"
+Error:
+  The type abbreviation "t" is cyclic:
+    "'a t" = "'a u",
+    "'a u" = "'a v * 'a",
+    "'a v * 'a" contains "'a v",
+    "'a v" = "'a w list",
+    "'a w list" contains "'a w",
+    "'a w" = "'a option z",
+    "'a option z" = "'a option t"
 |}]
 
 
@@ -111,10 +114,11 @@ and 'a t = 'a t u;;
 Line 2, characters 0-17:
 2 | and 'a t = 'a t u;;
     ^^^^^^^^^^^^^^^^^
-Error: The type abbreviation "t" is cyclic:
-         "'a t u" contains "'a t",
-         "'a t" = "'a t u",
-         "'a t u" contains "'a t"
+Error:
+  The type abbreviation "t" is cyclic:
+    "'a t u" contains "'a t",
+    "'a t" = "'a t u",
+    "'a t u" contains "'a t"
 |}];; (* fails since 4.04 *)
 
 
@@ -124,10 +128,11 @@ module rec A : sig type t = B.t -> int end = struct type t = B.t -> int end
 Line 1, characters 0-75:
 1 | module rec A : sig type t = B.t -> int end = struct type t = B.t -> int end
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of "A.t" contains a cycle:
-         "B.t -> int" contains "B.t",
-         "B.t" = "B.t",
-         "B.t" = "B.t -> int",
-         "B.t -> int" contains "B.t",
-         "B.t" = "B.t"
+Error:
+  The definition of "A.t" contains a cycle:
+    "B.t -> int" contains "B.t",
+    "B.t" = "B.t",
+    "B.t" = "B.t -> int",
+    "B.t -> int" contains "B.t",
+    "B.t" = "B.t"
 |}]

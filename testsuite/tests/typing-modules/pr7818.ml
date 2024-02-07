@@ -115,13 +115,14 @@ Lines 2-5, characters 57-3:
 3 |   module Id = T'.T.Id
 4 |   module Id2 = Id
 5 | end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig module Id : sig end module Id2 = Id end
-       is not included in
-         sig module Id2 = T'.Term0.Id end
-       In module "Id2":
-       Module "T'.Term0.Id" cannot be aliased
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig module Id : sig end module Id2 = Id end
+  is not included in
+    sig module Id2 = T'.Term0.Id end
+  In module "Id2":
+  Module "T'.Term0.Id" cannot be aliased
 |}]
 
 module Make3 (T' : S) = struct
@@ -321,13 +322,14 @@ module Desc : sig type t = int val compare : int -> int -> int end
 Line 15, characters 0-69:
 15 | module rec M1 : S' with module Term0 := Asc and module T := Desc = M1;;
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "M.t"
-       Constructors do not match:
-         "E of (MkT(M.T).t, MkT(M.T).t) eq"
-       is not the same as:
-         "E of (MkT(Desc).t, MkT(Desc).t) eq"
-       The type "(MkT(M.T).t, MkT(M.T).t) eq" is not equal to the type
-         "(MkT(Desc).t, MkT(Desc).t) eq"
-       Type "MkT(M.T).t" = "Set.Make(M.Term0).t" is not equal to type
-         "MkT(Desc).t" = "Set.Make(Desc).t"
+Error:
+  This variant or record definition does not match that of type "M.t"
+  Constructors do not match:
+    "E of (MkT(M.T).t, MkT(M.T).t) eq"
+  is not the same as:
+    "E of (MkT(Desc).t, MkT(Desc).t) eq"
+  The type "(MkT(M.T).t, MkT(M.T).t) eq" is not equal to the type
+    "(MkT(Desc).t, MkT(Desc).t) eq"
+  Type "MkT(M.T).t" = "Set.Make(M.Term0).t" is not equal to type
+    "MkT(Desc).t" = "Set.Make(Desc).t"
 |}]

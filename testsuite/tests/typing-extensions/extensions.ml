@@ -79,8 +79,9 @@ type ('a, 'b) foo += A of int
 Line 1, characters 0-29:
 1 | type ('a, 'b) foo += A of int
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This extension does not match the definition of type "foo"
-       They have different arities.
+Error:
+  This extension does not match the definition of type "foo"
+  They have different arities.
 |}]
 
 (* In a signature the type can be private *)
@@ -231,8 +232,9 @@ let a = A 9
 Line 1, characters 10-11:
 1 | let a = A 9
               ^
-Error: This expression has type "int" but an expression was expected of type
-         "[> `Var ]"
+Error:
+  This expression has type "int" but an expression was expected of type
+    "[> `Var ]"
 |}]
 
 type 'a foo += B : int foo
@@ -311,20 +313,21 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type ('a, 'b) bar += A of float
 5 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig type ('a, 'b) bar += A of float end
-       is not included in
-         sig type ('a, 'b) bar += A of int end
-       Extension declarations do not match:
-         type ('a, 'b) bar += A of float
-       is not included in
-         type ('a, 'b) bar += A of int
-       Constructors do not match:
-         "A of float"
-       is not the same as:
-         "A of int"
-       The type "float" is not equal to the type "int"
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type ('a, 'b) bar += A of float end
+  is not included in
+    sig type ('a, 'b) bar += A of int end
+  Extension declarations do not match:
+    type ('a, 'b) bar += A of float
+  is not included in
+    type ('a, 'b) bar += A of int
+  Constructors do not match:
+    "A of float"
+  is not the same as:
+    "A of int"
+  The type "float" is not equal to the type "int"
 |}]
 
 module M : sig
@@ -337,20 +340,21 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type ('a, 'b) bar += A of 'b
 5 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig type ('a, 'b) bar += A of 'b end
-       is not included in
-         sig type ('a, 'b) bar += A of 'a end
-       Extension declarations do not match:
-         type ('a, 'b) bar += A of 'b
-       is not included in
-         type ('a, 'b) bar += A of 'a
-       Constructors do not match:
-         "A of 'b"
-       is not the same as:
-         "A of 'a"
-       The type "'b" is not equal to the type "'a"
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type ('a, 'b) bar += A of 'b end
+  is not included in
+    sig type ('a, 'b) bar += A of 'a end
+  Extension declarations do not match:
+    type ('a, 'b) bar += A of 'b
+  is not included in
+    type ('a, 'b) bar += A of 'a
+  Constructors do not match:
+    "A of 'b"
+  is not the same as:
+    "A of 'a"
+  The type "'b" is not equal to the type "'a"
 |}]
 
 module M : sig
@@ -363,20 +367,21 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type ('b, 'a) bar = A of 'a
 5 | end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig type ('b, 'a) bar = A of 'a end
-       is not included in
-         sig type ('a, 'b) bar = A of 'a end
-       Type declarations do not match:
-         type ('b, 'a) bar = A of 'a
-       is not included in
-         type ('a, 'b) bar = A of 'a
-       Constructors do not match:
-         "A of 'a"
-       is not the same as:
-         "A of 'a"
-       The type "'a" is not equal to the type "'b"
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type ('b, 'a) bar = A of 'a end
+  is not included in
+    sig type ('a, 'b) bar = A of 'a end
+  Type declarations do not match:
+    type ('b, 'a) bar = A of 'a
+  is not included in
+    type ('a, 'b) bar = A of 'a
+  Constructors do not match:
+    "A of 'a"
+  is not the same as:
+    "A of 'a"
+  The type "'a" is not equal to the type "'b"
 |}];;
 
 
@@ -390,20 +395,21 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type ('a, 'b) bar += A : 'd -> ('c, 'd) bar
 5 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig type ('a, 'b) bar += A : 'd -> ('c, 'd) bar end
-       is not included in
-         sig type ('a, 'b) bar += A : 'c -> ('c, 'd) bar end
-       Extension declarations do not match:
-         type ('a, 'b) bar += A : 'd -> ('c, 'd) bar
-       is not included in
-         type ('a, 'b) bar += A : 'c -> ('c, 'd) bar
-       Constructors do not match:
-         "A : 'd -> ('c, 'd) bar"
-       is not the same as:
-         "A : 'c -> ('c, 'd) bar"
-       The type "'d" is not equal to the type "'c"
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type ('a, 'b) bar += A : 'd -> ('c, 'd) bar end
+  is not included in
+    sig type ('a, 'b) bar += A : 'c -> ('c, 'd) bar end
+  Extension declarations do not match:
+    type ('a, 'b) bar += A : 'd -> ('c, 'd) bar
+  is not included in
+    type ('a, 'b) bar += A : 'c -> ('c, 'd) bar
+  Constructors do not match:
+    "A : 'd -> ('c, 'd) bar"
+  is not the same as:
+    "A : 'c -> ('c, 'd) bar"
+  The type "'d" is not equal to the type "'c"
 |}]
 
 (* Extensions can be rebound *)
@@ -542,9 +548,10 @@ type 'a foo += B of ('a -> int)
 Line 1, characters 0-31:
 1 | type 'a foo += B of ('a -> int)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this definition, expected parameter variances are not satisfied.
-       The 1st type parameter was expected to be covariant,
-       but it is injective contravariant.
+Error:
+  In this definition, expected parameter variances are not satisfied.
+  The 1st type parameter was expected to be covariant,
+  but it is injective contravariant.
 |}]
 
 type _ foo += C : ('a -> int) -> 'a foo
@@ -553,9 +560,10 @@ type _ foo += C : ('a -> int) -> 'a foo
 Line 1, characters 0-39:
 1 | type _ foo += C : ('a -> int) -> 'a foo
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this definition, expected parameter variances are not satisfied.
-       The 1st type parameter was expected to be covariant,
-       but it is injective contravariant.
+Error:
+  In this definition, expected parameter variances are not satisfied.
+  The 1st type parameter was expected to be covariant,
+  but it is injective contravariant.
 |}]
 
 type 'a bar = ..
@@ -570,8 +578,9 @@ type +'a bar += D of (int -> 'a)
 Line 1, characters 0-32:
 1 | type +'a bar += D of (int -> 'a)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This extension does not match the definition of type "bar"
-       Their variances do not agree.
+Error:
+  This extension does not match the definition of type "bar"
+  Their variances do not agree.
 |}]
 
 type -'a poly_and_contravariant = .. constraint <x: 'a. 'a -> 'a; ..> = 'a
@@ -581,11 +590,12 @@ type -'b poly_and_contravariant = .. constraint 'b = < x : 'a. 'a -> 'a; .. >
 Line 2, characters 0-45:
 2 | type 'a poly_and_contravariant += A | X of 'a
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In the extension constructor
-         type 'a poly_and_contravariant += X of 'a
-       the type variable "'a" has a variance that
-       is not reflected by its occurrence in type parameters.
-       It was expected to be contravariant, but it is covariant.
+Error:
+  In the extension constructor
+    type 'a poly_and_contravariant += X of 'a
+  the type variable "'a" has a variance that
+  is not reflected by its occurrence in type parameters.
+  It was expected to be contravariant, but it is covariant.
 |}]
 
 (* Exceptions are compatible with extensions *)

@@ -20,6 +20,7 @@ Command exited with code 1.
 File "(command-output)", line 1, characters 5-6:
 1 | 1 :: x
          ^
-Error: This expression has type "int" but an expression was expected of type
-         "int list"
+Error:
+  This expression has type "int" but an expression was expected of type
+    "int list"
 |}];;

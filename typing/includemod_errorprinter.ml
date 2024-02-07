@@ -532,15 +532,11 @@ module Functor_suberror = struct
   end
 
   let subcase sub ~expansion_token env (pos, diff) =
-    Location.msg "%a%a%a%a@[<hv 2>%t@]%a"
-      Format.pp_print_tab ()
-      Format.pp_open_tbox ()
+    Location.msg "%a@[<hv 2>%t@]"
       Diffing.prefix (pos, Diffing.classify diff)
-      Format.pp_set_tab ()
       (Printtyp.wrap_printing_env env ~error:true
          (fun () -> sub ~expansion_token env diff)
       )
-     Format.pp_close_tbox ()
 
   let onlycase sub ~expansion_token env (_, diff) =
     Location.msg "%a@[<hv 2>%t@]"

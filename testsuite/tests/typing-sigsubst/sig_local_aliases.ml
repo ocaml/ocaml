@@ -117,7 +117,8 @@ type 'a s = 'b list constraint 'a = (int, 'b) foo
 Line 6, characters 2-26:
 6 |   type 'a t := 'a s * bool
       ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Destructive substitutions are not supported for constrained
-       types (other than when replacing a type constructor with
-       a type constructor with the same arguments).
+Error:
+  Destructive substitutions are not supported for constrained
+  types (other than when replacing a type constructor with
+  a type constructor with the same arguments).
 |}]

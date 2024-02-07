@@ -32,8 +32,9 @@ module G (X : sig end) : S = F ();; (* fail *)
 Line 1, characters 29-33:
 1 | module G (X : sig end) : S = F ();; (* fail *)
                                  ^^^^
-Error: This expression creates fresh types.
-       It is not allowed inside applicative functors.
+Error:
+  This expression creates fresh types.
+  It is not allowed inside applicative functors.
 |}];;
 module H() = F();; (* ok *)
 [%%expect{|
@@ -50,7 +51,8 @@ module M1 : S
 Line 3, characters 14-24:
 3 | module M2 = F(struct end);; (* accepted with a warning *)
                   ^^^^^^^^^^
-Warning 73 [generative-application-expects-unit]: A generative functor
+Warning 73 [generative-application-expects-unit]:
+  A generative functor
 should be applied to '()'; using '(struct end)' is deprecated.
 
 module M2 : S
@@ -71,12 +73,13 @@ module F1 : functor (X : sig end) -> sig end
 Line 2, characters 28-30:
 2 | module F2 : () -> sig end = F1;; (* fail *)
                                 ^^
-Error: Signature mismatch:
-       Modules do not match:
-         functor (X : sig end) -> ...
-       is not included in
-         functor () -> ...
-       The functor was expected to be generative at this position
+Error:
+  Signature mismatch:
+  Modules do not match:
+    functor (X : sig end) -> ...
+  is not included in
+    functor () -> ...
+  The functor was expected to be generative at this position
 |}];;
 module F3 () = struct end;;
 module F4 : functor (X : sig end) -> sig end = F3;; (* fail *)
@@ -85,12 +88,13 @@ module F3 : functor () -> sig end
 Line 2, characters 47-49:
 2 | module F4 : functor (X : sig end) -> sig end = F3;; (* fail *)
                                                    ^^
-Error: Signature mismatch:
-       Modules do not match:
-         functor () -> ...
-       is not included in
-         functor (X : sig end) -> ...
-       The functor was expected to be applicative at this position
+Error:
+  Signature mismatch:
+  Modules do not match:
+    functor () -> ...
+  is not included in
+    functor (X : sig end) -> ...
+  The functor was expected to be applicative at this position
 |}];;
 
 (* tests for shortened functor notation () *)

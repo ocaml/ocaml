@@ -30,8 +30,8 @@ module type Bad_constraint = sig val c : 'a . 'a constrained end
 Line 1, characters 41-60:
 1 | module type Bad_constraint = sig val c : 'a . 'a constrained end
                                              ^^^^^^^^^^^^^^^^^^^
-Error: The universal type variable "'a" cannot be generalized: it is bound to
-       "int".
+Error:
+  The universal type variable "'a" cannot be generalized: it is bound to "int".
 |}]
 
 (* with the usual caveat for row variables *)
@@ -42,8 +42,8 @@ module type Row = sig val poly : [> `Foo of int ] * 'b end
 Line 2, characters 36-60:
 2 | module type NotRow = sig val poly : 'a 'b . (int as 'a) * 'b end
                                         ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The universal type variable "'a" cannot be generalized: it is bound to
-       "int".
+Error:
+  The universal type variable "'a" cannot be generalized: it is bound to "int".
 |}]
 
 (* If present, the quantifier must quantify all variables *)
