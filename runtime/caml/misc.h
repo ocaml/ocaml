@@ -504,13 +504,13 @@ int caml_runtime_warnings_active(void);
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR
-#define Debug_tag(x) (0xD700D7D7D700D6D7ull \
+#define Debug_tag(x) (0xD700D7D7D700D6D8ull \
                       | ((uintnat) (x) << 16) \
                       | ((uintnat) (x) << 48))
-#define Is_debug_tag(x) (((x) & 0xff00ffffff00ffffull) == 0xD700D7D7D700D6D7ull)
+#define Is_debug_tag(x) (((x) & 0xff00ffffff00ffffull) == 0xD700D7D7D700D6D8ull)
 #else
-#define Debug_tag(x) (0xD700D6D7ul | ((uintnat) (x) << 16))
-#define Is_debug_tag(x) (((x) & 0xff00fffful) == 0xD700D6D7ul)
+#define Debug_tag(x) (0xD700D6D8ul | ((uintnat) (x) << 16))
+#define Is_debug_tag(x) (((x) & 0xff00fffful) == 0xD700D6D8ul)
 #endif /* ARCH_SIXTYFOUR */
 
 /*

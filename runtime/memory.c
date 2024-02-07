@@ -301,7 +301,8 @@ CAMLexport CAMLweakdef void caml_initialize (volatile value *fp, value val)
   /* Previous value should not be a pointer.
      In the debug runtime, it can be either a TMC placeholder,
      or an uninitialized value canary (Debug_uninit_{major,minor}). */
-  CAMLassert(Is_long(*fp));
+  CAMLassert(Is_long(*fp) || *fp == Debug_uninit_major
+             || *fp == Debug_uninit_minor);
 #endif
   *fp = val;
   if (!Is_young((value)fp) && Is_block_and_young (val))
