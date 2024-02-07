@@ -93,6 +93,15 @@ let take_opt q =
 let pop =
   take
 
+let drop q =
+  match q.first with
+  | Nil -> raise Empty
+  | Cons { content = _; next = Nil } ->
+    clear q
+  | Cons { content = _; next } ->
+    q.length <- q.length - 1;
+    q.first <- next
+
 let copy =
   let rec copy q_res prev cell =
     match cell with
