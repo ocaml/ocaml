@@ -169,3 +169,30 @@ type t = (module S with type M.t = int)
 module type S = sig module type S1 = sig type t end module M : S1 end
 type t = (module S with type M.t = int)
 |}];;
+
+(* Ghosts haunted type definitions *)
+module type Private_row = sig
+  type a
+  and t = private [< `A | `B ]
+  and b
+  and d = private [< `C ]
+end
+
+(* This is fine, the ghost type `t#row` is removed silently *)
+module type Test = Private_row with type t = [ `A ]
+
+(* This fails currently.  If we ever allow it, make sure the ghost type is
+   removed as above. *)
+type fail = (module Private_row with type t = [ `A ] )
+
+[%%expect{|
+module type Private_row =
+  sig type a and t = private [< `A | `B ] and b and d = private [< `C ] end
+module type Test =
+  sig type a and t = [ `A ] and b and d = private [< `C ] end
+Line 13, characters 12-54:
+13 | type fail = (module Private_row with type t = [ `A ] )
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In the constrained signature, type "t" is defined to be "[< `A | `B ]".
+       Package "with" constraints may only be used on abstract types.
+|}]

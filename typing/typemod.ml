@@ -714,7 +714,7 @@ let merge_constraint initial_env loc sg lid constr =
 let merge_package_constraint initial_env loc sg lid cty =
   let rec patch_item namelist outer_sig_env sg_for_env ~ghosts item =
     let return replace_by =
-      Some ((), {Signature_group.ghosts; replace_by})
+      Some ((), {Signature_group.ghosts; replace_by=Some replace_by})
     in
     match item, namelist with
     | Sig_type(id, sig_decl, rs, priv) , [s]
@@ -730,7 +730,7 @@ let merge_package_constraint initial_env loc sg lid cty =
         check_type_decl outer_sig_env sg_for_env loc id None
           new_sig_decl sig_decl;
         let new_sig_decl = { new_sig_decl with type_manifest = None } in
-        return (Some(Sig_type(id, new_sig_decl, rs, priv)))
+        return (Sig_type(id, new_sig_decl, rs, priv))
     | Sig_module(id, _, md, rs, priv) as item, s :: namelist
       when Ident.name id = s ->
         let sig_env = Env.add_signature sg_for_env outer_sig_env in
@@ -746,7 +746,7 @@ let merge_package_constraint initial_env loc sg lid cty =
               let newmd = {md with md_type = Mty_signature newsg} in
               Sig_module(id, Mp_present, newmd, rs, priv)
         in
-        return (Some item)
+        return item
     | _ -> None
   and merge_signature env sg namelist =
     match
@@ -3383,8 +3383,8 @@ let report_error ~loc _env = function
         Misc.print_see_manual manual_ref
   | With_package_manifest (lid, ty) ->
       Location.errorf ~loc
-        "@[In the constrained signature, type %a is defined to be %a.@ \
-         Package %a constraints may only be used on abstract types.@]"
+        "In the constrained signature, type %a is defined to be %a.@ \
+         Package %a constraints may only be used on abstract types."
         (Style.as_inline_code longident) lid
         (Style.as_inline_code Printtyp.type_expr) ty
         Style.inline_code "with"
