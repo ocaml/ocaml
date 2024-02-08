@@ -136,6 +136,9 @@ OCaml 5.2.0
   (Guillaume Munch-Maccagnoni, bug reports and suggestion by Mark
    Shinwell, review by Nick Barnes and Stephen Dolan)
 
+- #12876: Port ThreadSanitizer support to Linux on POWER
+  (Miod Vallat, review by Tim McGilchrist)
+
 - #12408: `Domain.spawn` no longer leaks its functional argument for
   the whole duration of the children domain lifetime.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
