@@ -123,9 +123,6 @@ static value user_events = Val_none;
 static caml_plat_mutex user_events_lock;
 
 /* Custom type write buffer */
-static value write_buffer = Val_none;
-static caml_plat_mutex write_buffer_lock;
-
 static void write_to_ring(ev_category category, ev_message_type type,
                           int event_id, int event_length, uint64_t *content,
                           int word_offset);
@@ -137,8 +134,6 @@ void caml_runtime_events_init(void) {
 
   caml_plat_mutex_init(&user_events_lock);
   caml_register_generational_global_root(&user_events);
-
-  caml_plat_mutex_init(&write_buffer_lock);
 
   runtime_events_path = caml_secure_getenv(T("OCAML_RUNTIME_EVENTS_DIR"));
 
@@ -447,6 +442,16 @@ CAMLexport void caml_runtime_events_resume(void) {
   }
 }
 
+static inline int ring_is_active(void) {
+    return
+      atomic_load_relaxed(&runtime_events_enabled)
+      && !atomic_load_relaxed(&runtime_events_paused);
+}
+
+CAMLexport int caml_runtime_events_are_active(void) {
+  return (ring_is_active ());
+}
+
 /* Make the three functions above callable from OCaml */
 
 CAMLprim value caml_ml_runtime_events_start(value vunit) {
@@ -460,6 +465,11 @@ CAMLprim value caml_ml_runtime_events_pause(value vunit) {
 CAMLprim value caml_ml_runtime_events_resume(value vunit) {
   caml_runtime_events_resume(); return Val_unit;
 }
+
+CAMLprim value caml_ml_runtime_events_are_active(void) {
+  return Val_bool(caml_runtime_events_are_active());
+}
+
 
 static struct runtime_events_buffer_header *get_ring_buffer_by_domain_id
                                                               (int domain_id) {
@@ -565,12 +575,6 @@ static void write_to_ring(ev_category category, ev_message_type type,
 }
 
 /* Functions for putting runtime data on to the runtime_events */
-
-static inline int ring_is_active(void) {
-    return
-      atomic_load_relaxed(&runtime_events_enabled)
-      && !atomic_load_relaxed(&runtime_events_paused);
-}
 
 void caml_ev_begin(ev_runtime_phase phase) {
   if ( ring_is_active() ) {
@@ -701,9 +705,10 @@ CAMLprim value caml_runtime_events_user_register(value event_name,
   CAMLreturn(event);
 }
 
-CAMLprim value caml_runtime_events_user_write(value event, value event_content)
+CAMLprim value caml_runtime_events_user_write(
+  value write_buffer, value event, value event_content)
 {
-  CAMLparam2(event, event_content);
+  CAMLparam3(write_buffer, event, event_content);
   CAMLlocal3(event_id, event_type, res);
 
   if ( !ring_is_active() )
@@ -734,18 +739,9 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
     value record = Field(event_type, 0);
     value serializer = Field(record, 0);
 
-    caml_plat_lock(&write_buffer_lock);
-
-    if (write_buffer == Val_none) {
-      write_buffer = caml_alloc_string(RUNTIME_EVENTS_MAX_MSG_LENGTH);
-      caml_register_generational_global_root(&write_buffer);
-    }
-
     res = caml_callback2_exn(serializer, write_buffer, event_content);
 
     if (Is_exception_result(res)) {
-      caml_plat_unlock(&write_buffer_lock);
-
       res = Extract_exception(res);
       caml_raise(res);
     }
@@ -757,8 +753,6 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
     write_to_ring(EV_USER, (ev_message_type){.user=EV_USER_MSG_TYPE_CUSTOM},
       Int_val(event_id), len_64bit_word, (uint64_t *) Bytes_val(write_buffer),
       0);
-
-    caml_plat_unlock(&write_buffer_lock);
 
   } else {
     // Unit | Int | Span
