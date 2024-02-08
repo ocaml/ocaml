@@ -27,20 +27,21 @@ Lines 7-13, characters 6-3:
 11 |
 12 |   let o = new c
 13 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig
-           type t = < x : int >
-           class c : object method x : int method y : bool end
-           val o : c
-         end
-       is not included in
-         sig
-           type t = < x : int >
-           class c : object method x : int method y : bool end
-           val o : t
-         end
-       Values do not match: val o : c is not included in val o : t
-       The type "c" is not compatible with the type "t"
-       The second object type has no method "y"
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig
+      type t = < x : int >
+      class c : object method x : int method y : bool end
+      val o : c
+    end
+  is not included in
+    sig
+      type t = < x : int >
+      class c : object method x : int method y : bool end
+      val o : t
+    end
+  Values do not match: val o : c is not included in val o : t
+  The type "c" is not compatible with the type "t"
+  The second object type has no method "y"
 |}]

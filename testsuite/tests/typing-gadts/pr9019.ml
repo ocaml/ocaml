@@ -36,7 +36,8 @@ Lines 4-8, characters 2-18:
 6 |   | MAB, _, A -> 2
 7 |   | _,  AB, B -> 3
 8 |   | _, MAB, B -> 4
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (AB, MAB, A)
 
@@ -169,7 +170,8 @@ Lines 9-11, characters 2-37:
  9 | ..match a, a_or_b, x with
 10 |   | Not_A, A_or_B, `B i -> print_int i
 11 |   | _, A_or_B, `A s -> print_string s
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (A, A_or_B, `B _)
 
@@ -201,7 +203,8 @@ Lines 9-11, characters 2-18:
  9 | ..match b, x, y with
 10 |   | B, `B String_option, Some s -> print_string s
 11 |   | A, `A, _ -> ()
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (B, `B String_option, None)
 
@@ -222,7 +225,8 @@ type 'a a = private [< `A of 'a ]
 Line 2, characters 18-44:
 2 | let f (x : _ a) = match x with `A None -> ();;
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 `A (Some _)
 
@@ -234,7 +238,8 @@ let f (x : [> `A] a) = match x with `A `B -> ();;
 Line 1, characters 23-47:
 1 | let f (x : [> `A] a) = match x with `A `B -> ();;
                            ^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 `A `A
 

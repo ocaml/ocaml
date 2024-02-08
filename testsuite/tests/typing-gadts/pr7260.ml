@@ -25,6 +25,7 @@ Lines 8-12, characters 2-5:
 10 |       match ty with
 11 |       | Int -> (this :> bar)
 12 |   end.................................
-Error: This non-virtual class has undeclared virtual methods.
-       The following methods were not declared : "bar"
+Error:
+  This non-virtual class has undeclared virtual methods.
+  The following methods were not declared : "bar"
 |}];;

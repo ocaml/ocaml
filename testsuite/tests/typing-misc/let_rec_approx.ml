@@ -17,8 +17,8 @@ and g (x : string) = f ()
 Line 1, characters 17-19:
 1 | let rec f () = g 42
                      ^^
-Error: This expression has type "int" but an expression was expected of type
-         "string"
+Error:
+  This expression has type "int" but an expression was expected of type "string"
 |}]
 
 let rec opt_error ?(opt : string) () = f ?opt ()
@@ -26,8 +26,9 @@ let rec opt_error ?(opt : string) () = f ?opt ()
 Line 1, characters 20-32:
 1 | let rec opt_error ?(opt : string) () = f ?opt ()
                         ^^^^^^^^^^^^
-Error: This pattern matches values of type "string"
-       but a pattern was expected which matches values of type "'a option"
+Error:
+  This pattern matches values of type "string"
+  but a pattern was expected which matches values of type "'a option"
 |}]
 
 let rec opt_ok_f () = opt_ok_g ~foo:A ~bar:A ()

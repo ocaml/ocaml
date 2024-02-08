@@ -3,5 +3,6 @@ Error: Wrong link order: "Lib" (lib.cmo) depends on "Main" (main.cmo)
 File "_none_", line 1:
 Error: Wrong link order: "Lib" (lib.cmo) depends on "Main" (main.cmo)
 File "_none_", line 1:
-Error: No implementation provided for the following modules:
-         "Main" referenced from "Lib" (lib.cmo)
+Error:
+  No implementation provided for the following modules:
+    "Main" referenced from "Lib" (lib.cmo)

@@ -29,7 +29,8 @@ type ('env, 'a) typ =
 Line 15, characters 5-6:
 15 |    | _ -> .   (* error *)
           ^
-Error: This match case could not be refuted.
-       Here is an example of a value that would reach it: "(Tint, Tvar Zero)"
+Error:
+  This match case could not be refuted.
+  Here is an example of a value that would reach it: "(Tint, Tvar Zero)"
 |}];;
 (* let x = f Tint (Tvar Zero) ;; *)

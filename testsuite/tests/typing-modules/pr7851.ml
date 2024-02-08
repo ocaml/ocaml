@@ -26,12 +26,13 @@ module rec M1 : S with type x = int and type y = bool = M1;;
 Line 1, characters 0-58:
 1 | module rec M1 : S with type x = int and type y = bool = M1;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "M1.t"
-       Constructors do not match:
-         "E of M1.x"
-       is not the same as:
-         "E of M1.y"
-       The type "M1.x" = "int" is not equal to the type "M1.y" = "bool"
+Error:
+  This variant or record definition does not match that of type "M1.t"
+  Constructors do not match:
+    "E of M1.x"
+  is not the same as:
+    "E of M1.y"
+  The type "M1.x" = "int" is not equal to the type "M1.y" = "bool"
 |}]
 
 let bool_of_int x =
@@ -78,11 +79,12 @@ cast eq 3;;
 Line 1, characters 0-58:
 1 | module rec M1 : S with type x = int and type y = bool = M1;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "M1.t"
-       Constructors do not match:
-         "E of (M1.x, M1.x) eq"
-       is not the same as:
-         "E of (M1.x, M1.y) eq"
-       The type "(M1.x, M1.x) eq" is not equal to the type "(M1.x, M1.y) eq"
-       Type "M1.x" = "int" is not equal to type "M1.y" = "bool"
+Error:
+  This variant or record definition does not match that of type "M1.t"
+  Constructors do not match:
+    "E of (M1.x, M1.x) eq"
+  is not the same as:
+    "E of (M1.x, M1.y) eq"
+  The type "(M1.x, M1.x) eq" is not equal to the type "(M1.x, M1.y) eq"
+  Type "M1.x" = "int" is not equal to type "M1.y" = "bool"
 |}]

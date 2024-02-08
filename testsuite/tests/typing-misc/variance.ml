@@ -50,9 +50,10 @@ type !'a i
 Line 5, characters 0-26:
 5 | type +'a error_np = 'a n p;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this definition, expected parameter variances are not satisfied.
-       The 1st type parameter was expected to be covariant,
-       but it is contravariant.
+Error:
+  In this definition, expected parameter variances are not satisfied.
+  The 1st type parameter was expected to be covariant,
+  but it is contravariant.
 |}]
 
 
@@ -61,9 +62,10 @@ type +'a error_pn = 'a p n;;
 Line 1, characters 0-26:
 1 | type +'a error_pn = 'a p n;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this definition, expected parameter variances are not satisfied.
-       The 1st type parameter was expected to be covariant,
-       but it is contravariant.
+Error:
+  In this definition, expected parameter variances are not satisfied.
+  The 1st type parameter was expected to be covariant,
+  but it is contravariant.
 |}]
 
 type -'a error_pp = 'a p p;;
@@ -71,9 +73,10 @@ type -'a error_pp = 'a p p;;
 Line 1, characters 0-26:
 1 | type -'a error_pp = 'a p p;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this definition, expected parameter variances are not satisfied.
-       The 1st type parameter was expected to be contravariant,
-       but it is covariant.
+Error:
+  In this definition, expected parameter variances are not satisfied.
+  The 1st type parameter was expected to be contravariant,
+  but it is covariant.
 |}]
 
 type -'a error_nn = 'a n n;;
@@ -81,9 +84,10 @@ type -'a error_nn = 'a n n;;
 Line 1, characters 0-26:
 1 | type -'a error_nn = 'a n n;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this definition, expected parameter variances are not satisfied.
-       The 1st type parameter was expected to be contravariant,
-       but it is covariant.
+Error:
+  In this definition, expected parameter variances are not satisfied.
+  The 1st type parameter was expected to be contravariant,
+  but it is covariant.
 |}]
 
 type !'a inj_in = 'a i n
@@ -91,9 +95,10 @@ type !'a inj_in = 'a i n
 Line 1, characters 0-24:
 1 | type !'a inj_in = 'a i n
     ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this definition, expected parameter variances are not satisfied.
-       The 1st type parameter was expected to be injective invariant,
-       but it is invariant.
+Error:
+  In this definition, expected parameter variances are not satisfied.
+  The 1st type parameter was expected to be injective invariant,
+  but it is invariant.
 |}]
 
 type !'a inj_in = 'a n i
@@ -101,9 +106,10 @@ type !'a inj_in = 'a n i
 Line 1, characters 0-24:
 1 | type !'a inj_in = 'a n i
     ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this definition, expected parameter variances are not satisfied.
-       The 1st type parameter was expected to be injective invariant,
-       but it is invariant.
+Error:
+  In this definition, expected parameter variances are not satisfied.
+  The 1st type parameter was expected to be injective invariant,
+  but it is invariant.
 |}]
 
 module Make_covariant(M: sig type 'a t end): sig
@@ -119,7 +125,7 @@ module Positive_ref = Make_covariant(struct type 'a t = 'a ref end)
 Line 6, characters 2-23:
 6 |   type +'a t = 'a i M.t
       ^^^^^^^^^^^^^^^^^^^^^
-Error: In this definition, expected parameter variances are not satisfied.
-       The 1st type parameter was expected to be covariant,
-       but it is invariant.
+Error:
+  In this definition, expected parameter variances are not satisfied.
+  The 1st type parameter was expected to be covariant, but it is invariant.
 |}]

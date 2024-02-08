@@ -31,8 +31,9 @@ foo (fun ?opt () -> ()) ;; (* fails *)
 Line 1, characters 4-23:
 1 | foo (fun ?opt () -> ()) ;; (* fails *)
         ^^^^^^^^^^^^^^^^^^^
-Error: This function should have type "unit -> unit"
-       but its first argument is labeled "?opt" instead of being unlabeled
+Error:
+  This function should have type "unit -> unit"
+  but its first argument is labeled "?opt" instead of being unlabeled
 |}];;
 
 (* filter_arrow *)
@@ -42,8 +43,9 @@ let (f : x:int -> int) = fun y -> y
 Line 1, characters 25-35:
 1 | let (f : x:int -> int) = fun y -> y
                              ^^^^^^^^^^
-Error: This function should have type "x:int -> int"
-       but its first argument is unlabeled instead of being labeled "~x"
+Error:
+  This function should have type "x:int -> int"
+  but its first argument is unlabeled instead of being labeled "~x"
 |}];;
 
 let (f : int -> int) = fun ~y -> y
@@ -51,8 +53,9 @@ let (f : int -> int) = fun ~y -> y
 Line 1, characters 23-34:
 1 | let (f : int -> int) = fun ~y -> y
                            ^^^^^^^^^^^
-Error: This function should have type "int -> int"
-       but its first argument is labeled "~y" instead of being unlabeled
+Error:
+  This function should have type "int -> int"
+  but its first argument is labeled "~y" instead of being unlabeled
 |}];;
 
 let (f : x:int -> int) = fun ~y -> y
@@ -60,8 +63,9 @@ let (f : x:int -> int) = fun ~y -> y
 Line 1, characters 25-36:
 1 | let (f : x:int -> int) = fun ~y -> y
                              ^^^^^^^^^^^
-Error: This function should have type "x:int -> int"
-       but its first argument is labeled "~y" instead of "~x"
+Error:
+  This function should have type "x:int -> int"
+  but its first argument is labeled "~y" instead of "~x"
 |}];;
 
 (* More examples *)
@@ -71,9 +75,10 @@ let f g = ignore (g ?x:(Some 2) ()); g ~x:3 () ;;
 Line 1, characters 37-38:
 1 | let f g = ignore (g ?x:(Some 2) ()); g ~x:3 () ;;
                                          ^
-Error: This function is applied to arguments
-       in an order different from other calls.
-       This is only allowed when the real type is known.
+Error:
+  This function is applied to arguments
+  in an order different from other calls.
+  This is only allowed when the real type is known.
 |}];;
 
 let f g = let _ = g ?x:(Some 2) () in g ~x:3 () ;;
@@ -81,9 +86,10 @@ let f g = let _ = g ?x:(Some 2) () in g ~x:3 () ;;
 Line 1, characters 38-39:
 1 | let f g = let _ = g ?x:(Some 2) () in g ~x:3 () ;;
                                           ^
-Error: This function is applied to arguments
-       in an order different from other calls.
-       This is only allowed when the real type is known.
+Error:
+  This function is applied to arguments
+  in an order different from other calls.
+  This is only allowed when the real type is known.
 |}];;
 
 (* principality warning *)
@@ -106,7 +112,8 @@ val f : (?x:int -> unit -> int) -> int = <fun>
 Line 1, characters 46-47:
 1 | let f g = ignore (g : ?x:int -> unit -> int); g ();;
                                                   ^
-Warning 19 [non-principal-labels]: eliminated optional argument without principality.
+Warning 19 [non-principal-labels]:
+  eliminated optional argument without principality.
 
 val f : (?x:int -> unit -> int) -> int = <fun>
 |}];;

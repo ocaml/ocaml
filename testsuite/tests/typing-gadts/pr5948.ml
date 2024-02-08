@@ -42,11 +42,12 @@ type _ wrapPoly =
 Line 25, characters 23-27:
 25 |     | WrapPoly ATag -> intA
                             ^^^^
-Error: This expression has type "[< `TagA of 'a ] -> 'a"
-       but an expression was expected of type "a -> int"
-       Type "[< `TagA of 'a ]" is not compatible with type
-         "a" = "[< `TagA of int | `TagB ]"
-       The first variant type does not allow tag(s) "`TagB"
+Error:
+  This expression has type "[< `TagA of 'a ] -> 'a"
+  but an expression was expected of type "a -> int"
+  Type "[< `TagA of 'a ]" is not compatible with type
+    "a" = "[< `TagA of int | `TagB ]"
+  The first variant type does not allow tag(s) "`TagB"
 |}];;
 
 let _ =  example6 (WrapPoly AandBTags) `TagB (* This causes a seg fault *)

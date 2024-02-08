@@ -100,7 +100,8 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included type "t/2" by "t".
+Error:
+  Illegal shadowing of included type "t/2" by "t".
 Line 2, characters 2-11:
 2 |   include S
       ^^^^^^^^^
@@ -144,7 +145,8 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included module "M/2" by "M".
+Error:
+  Illegal shadowing of included module "M/2" by "M".
 Line 2, characters 2-11:
 2 |   include S
       ^^^^^^^^^
@@ -189,7 +191,8 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included module type "T/2" by "T".
+Error:
+  Illegal shadowing of included module type "T/2" by "T".
 Line 2, characters 2-11:
 2 |   include S
       ^^^^^^^^^
@@ -210,7 +213,8 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included type "ext/2" by "ext".
+Error:
+  Illegal shadowing of included type "ext/2" by "ext".
 Line 2, characters 2-11:
 2 |   include S
       ^^^^^^^^^
@@ -506,7 +510,8 @@ end
 Line 8, characters 2-8:
 8 |   type t
       ^^^^^^
-Error: Illegal shadowing of included type "t/4" by "t".
+Error:
+  Illegal shadowing of included type "t/4" by "t".
 Lines 2-5, characters 2-5:
 2 | ..include struct
 3 |     type t = A

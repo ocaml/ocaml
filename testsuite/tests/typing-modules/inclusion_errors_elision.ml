@@ -26,22 +26,23 @@ Lines 9-13, characters 15-3:
 11 |     type a and b and c and d and e and f and g and h
 12 |   end
 13 | end
-Error: Signature mismatch:
-       ...
-       In module "B":
-       Modules do not match:
-         sig
-           type a = B.a
-           and b = B.b
-           and c = B.c
-           and d = B.d
-           and e = B.e
-           and f = B.f
-           and g = B.g
-           and h = B.h
-         end
-       is not included in
-         (module A)
+Error:
+  Signature mismatch:
+  ...
+  In module "B":
+  Modules do not match:
+    sig
+      type a = B.a
+      and b = B.b
+      and c = B.c
+      and d = B.d
+      and e = B.e
+      and f = B.f
+      and g = B.g
+      and h = B.h
+    end
+  is not included in
+    (module A)
 |}]
 
 module A = struct
@@ -72,22 +73,23 @@ Lines 11-17, characters 15-3:
 15 |     end
 16 |   end
 17 | end
-Error: Signature mismatch:
-       ...
-       ...
-       ...
-       At position "module type B = sig module C : <here> end"
-       Modules do not match:
-         sig
-           type a = C.a
-           and b = C.b
-           and c = C.c
-           and d = C.d
-           and e = C.e
-           and f = C.f
-           and g = C.g
-           and h = C.h
-         end
-       is not included in
-         (module A)
+Error:
+  Signature mismatch:
+  ...
+  ...
+  ...
+  At position "module type B = sig module C : <here> end"
+  Modules do not match:
+    sig
+      type a = C.a
+      and b = C.b
+      and c = C.c
+      and d = C.d
+      and e = C.e
+      and f = C.f
+      and g = C.g
+      and h = C.h
+    end
+  is not included in
+    (module A)
 |}]

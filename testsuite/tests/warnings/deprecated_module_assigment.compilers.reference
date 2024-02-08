@@ -1,7 +1,8 @@
 File "deprecated_module_assigment.ml", line 17, characters 33-34:
 17 | module Y : sig val x : int end = X
                                       ^
-Alert deprecated: x
+Alert deprecated:
+  x
 DEPRECATED
 File "deprecated_module_assigment.ml", line 12, characters 2-41:
 12 |   val x : int [@@deprecated "DEPRECATED"]
@@ -15,7 +16,8 @@ File "deprecated_module_assigment.ml", line 17, characters 15-26:
 File "deprecated_module_assigment.ml", line 23, characters 13-14:
 23 | module B = F(X)
                   ^
-Alert deprecated: x
+Alert deprecated:
+  x
 DEPRECATED
 File "deprecated_module_assigment.ml", line 12, characters 2-41:
 12 |   val x : int [@@deprecated "DEPRECATED"]
@@ -29,7 +31,8 @@ File "deprecated_module_assigment.ml", line 21, characters 17-28:
 File "deprecated_module_assigment.ml", line 33, characters 39-78:
 33 | module CSTR : sig type t = A | B end = struct type t = A [@deprecated] | B end
                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Alert deprecated: A
+Alert deprecated:
+  A
 File "deprecated_module_assigment.ml", line 33, characters 55-70:
 33 | module CSTR : sig type t = A | B end = struct type t = A [@deprecated] | B end
                                                             ^^^^^^^^^^^^^^^
@@ -42,7 +45,8 @@ File "deprecated_module_assigment.ml", line 33, characters 27-28:
 File "deprecated_module_assigment.ml", line 37, characters 2-20:
 37 |   type s = t = A | B
        ^^^^^^^^^^^^^^^^^^
-Alert deprecated: A
+Alert deprecated:
+  A
 File "deprecated_module_assigment.ml", line 36, characters 11-26:
 36 |   type t = A [@deprecated] | B
                 ^^^^^^^^^^^^^^^
@@ -55,7 +59,8 @@ File "deprecated_module_assigment.ml", line 37, characters 15-16:
 File "deprecated_module_assigment.ml", line 45, characters 0-58:
 45 | struct type t = {mutable x: int [@deprecated_mutable]} end
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Alert deprecated: mutating field x
+Alert deprecated:
+  mutating field x
 File "deprecated_module_assigment.ml", line 45, characters 17-53:
 45 | struct type t = {mutable x: int [@deprecated_mutable]} end
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -68,7 +73,8 @@ File "deprecated_module_assigment.ml", line 44, characters 14-28:
 File "deprecated_module_assigment.ml", line 49, characters 2-31:
 49 |   type s = t = {mutable x: int}
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Alert deprecated: mutating field x
+Alert deprecated:
+  mutating field x
 File "deprecated_module_assigment.ml", line 48, characters 12-48:
 48 |   type t = {mutable x: int [@deprecated_mutable]}
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -81,7 +87,8 @@ File "deprecated_module_assigment.ml", line 49, characters 16-30:
 File "deprecated_module_assigment.ml", line 54, characters 37-75:
 54 | module TYPE : sig type t = int end = struct type t = int [@@deprecated] end
                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Alert deprecated: t
+Alert deprecated:
+  t
 File "deprecated_module_assigment.ml", line 54, characters 44-71:
 54 | module TYPE : sig type t = int end = struct type t = int [@@deprecated] end
                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -94,7 +101,8 @@ File "deprecated_module_assigment.ml", line 54, characters 18-30:
 File "deprecated_module_assigment.ml", line 60, characters 0-52:
 60 | struct class c = object end [@@deprecated "FOO"] end
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Alert deprecated: c
+Alert deprecated:
+  c
 FOO
 File "deprecated_module_assigment.ml", line 60, characters 7-48:
 60 | struct class c = object end [@@deprecated "FOO"] end
@@ -108,7 +116,8 @@ File "deprecated_module_assigment.ml", line 59, characters 4-24:
 File "deprecated_module_assigment.ml", line 64, characters 0-57:
 64 | struct class type c = object end [@@deprecated "FOO"] end
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Alert deprecated: c
+Alert deprecated:
+  c
 FOO
 File "deprecated_module_assigment.ml", line 64, characters 7-53:
 64 | struct class type c = object end [@@deprecated "FOO"] end
@@ -122,7 +131,8 @@ File "deprecated_module_assigment.ml", line 63, characters 4-29:
 File "deprecated_module_assigment.ml", line 71, characters 0-55:
 71 | struct module type S = sig end [@@deprecated "FOO"] end
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Alert deprecated: S
+Alert deprecated:
+  S
 FOO
 File "deprecated_module_assigment.ml", line 71, characters 7-51:
 71 | struct module type S = sig end [@@deprecated "FOO"] end
@@ -136,7 +146,8 @@ File "deprecated_module_assigment.ml", line 70, characters 4-27:
 File "deprecated_module_assigment.ml", line 82, characters 0-53:
 82 | struct module M = struct end [@@deprecated "FOO"] end
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Alert deprecated: M
+Alert deprecated:
+  M
 FOO
 File "deprecated_module_assigment.ml", line 82, characters 7-49:
 82 | struct module M = struct end [@@deprecated "FOO"] end

@@ -9,27 +9,30 @@ type ab = [ `A | `B ]
 Line 2, characters 32-35:
 2 | let f (x : [`A]) = match x with #ab -> 1;;
                                     ^^^
-Error: This pattern matches values of type "[? `A | `B ]"
-       but a pattern was expected which matches values of type "[ `A ]"
-       The second variant type does not allow tag(s) "`B"
+Error:
+  This pattern matches values of type "[? `A | `B ]"
+  but a pattern was expected which matches values of type "[ `A ]"
+  The second variant type does not allow tag(s) "`B"
 |}];;
 let f x = ignore (match x with #ab -> 1); ignore (x : [`A]);;
 [%%expect{|
 Line 1, characters 31-34:
 1 | let f x = ignore (match x with #ab -> 1); ignore (x : [`A]);;
                                    ^^^
-Error: This pattern matches values of type "[? `B ]"
-       but a pattern was expected which matches values of type "[ `A ]"
-       The second variant type does not allow tag(s) "`B"
+Error:
+  This pattern matches values of type "[? `B ]"
+  but a pattern was expected which matches values of type "[ `A ]"
+  The second variant type does not allow tag(s) "`B"
 |}];;
 let f x = ignore (match x with `A|`B -> 1); ignore (x : [`A]);;
 [%%expect{|
 Line 1, characters 34-36:
 1 | let f x = ignore (match x with `A|`B -> 1); ignore (x : [`A]);;
                                       ^^
-Error: This pattern matches values of type "[? `B ]"
-       but a pattern was expected which matches values of type "[ `A ]"
-       The second variant type does not allow tag(s) "`B"
+Error:
+  This pattern matches values of type "[? `B ]"
+  but a pattern was expected which matches values of type "[ `A ]"
+  The second variant type does not allow tag(s) "`B"
 |}];;
 
 let f (x : [< `A | `B]) = match x with `A | `B | `C -> 0;; (* warn *)
@@ -46,9 +49,10 @@ let f (x : [`A | `B]) = match x with `A | `B | `C -> 0;; (* fail *)
 Line 1, characters 47-49:
 1 | let f (x : [`A | `B]) = match x with `A | `B | `C -> 0;; (* fail *)
                                                    ^^
-Error: This pattern matches values of type "[? `C ]"
-       but a pattern was expected which matches values of type "[ `A | `B ]"
-       The second variant type does not allow tag(s) "`C"
+Error:
+  This pattern matches values of type "[? `C ]"
+  but a pattern was expected which matches values of type "[ `A | `B ]"
+  The second variant type does not allow tag(s) "`C"
 |}];;
 
 (* imported from in poly.ml *)
@@ -74,7 +78,8 @@ type t = A | B
 Line 9, characters 0-41:
 9 | function (`A|`B), _ -> 0 | _,(`A|`B) -> 1;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (`AnyOtherTag, `AnyOtherTag)
 
@@ -82,7 +87,8 @@ Here is an example of a case that is not matched:
 Line 10, characters 0-29:
 10 | function `B,1 -> 1 | _,1 -> 2;;
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (_, 0)
 
@@ -95,7 +101,8 @@ Warning 11 [redundant-case]: this match case is unused.
 Line 11, characters 0-29:
 11 | function 1,`B -> 1 | 1,_ -> 2;;
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (0, _)
 
@@ -144,7 +151,8 @@ type t = private [> `A of string ]
 Line 2, characters 0-24:
 2 | function (`A x : t) -> x;;
     ^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 `<some private tag>
 
@@ -156,7 +164,8 @@ let f = function `AnyOtherTag, _ -> 1 | _, (`AnyOtherTag|`AnyOtherTag') -> 2;;
 Line 1, characters 8-76:
 1 | let f = function `AnyOtherTag, _ -> 1 | _, (`AnyOtherTag|`AnyOtherTag') -> 2;;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Warning 8 [partial-match]:
+  this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (`AnyOtherTag', `AnyOtherTag'')
 
@@ -168,9 +177,10 @@ let x:(([`A] as 'a)* ([`B] as 'a)) = [`A]
 Line 1, characters 30-32:
 1 | let x:(([`A] as 'a)* ([`B] as 'a)) = [`A]
                                   ^^
-Error: This alias is bound to type "[ `B ]" but is used as an instance of type
-         "[ `A ]"
-       These two variant types have no intersection
+Error:
+  This alias is bound to type "[ `B ]" but is used as an instance of type
+    "[ `A ]"
+  These two variant types have no intersection
 |}]
 
 type t = private [< `A]
@@ -180,9 +190,9 @@ type t = private [< `A ]
 Line 2, characters 30-31:
 2 | let f: t -> [ `A ] = fun x -> x
                                   ^
-Error: This expression has type "t" but an expression was expected of type
-         "[ `A ]"
-       The first variant type is private, it may not allow the tag(s) "`A"
+Error:
+  This expression has type "t" but an expression was expected of type "[ `A ]"
+  The first variant type is private, it may not allow the tag(s) "`A"
 |}]
 
 
@@ -195,18 +205,19 @@ and  ('a,'b,'c,'d,'e) c = [ `C of ('a,'b,'c,'d,'e) a ]
 Line 3, characters 0-54:
 3 | type ('a,'b,'c,'d,'e) a = [ `A of ('d,'a,'e,'c,'b) b ]
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This recursive type is not regular.
-       The type constructor "a" is defined as
-         type "('a, 'b, 'c, 'd, 'e) a"
-       but it is used as
-         "('e, 'c, 'b, 'd, 'a) a"
-       after the following expansion(s):
-         "[ `A of ('d, 'a, 'e, 'c, 'b) b ]" contains "('d, 'a, 'e, 'c, 'b) b",
-         "('d, 'a, 'e, 'c, 'b) b" = "[ `B of ('e, 'c, 'b, 'd, 'a) c ]",
-         "[ `B of ('e, 'c, 'b, 'd, 'a) c ]" contains "('e, 'c, 'b, 'd, 'a) c",
-         "('e, 'c, 'b, 'd, 'a) c" = "[ `C of ('e, 'c, 'b, 'd, 'a) a ]",
-         "[ `C of ('e, 'c, 'b, 'd, 'a) a ]" contains "('e, 'c, 'b, 'd, 'a) a"
-       All uses need to match the definition for the recursive type to be regular.
+Error:
+  This recursive type is not regular.
+  The type constructor "a" is defined as
+    type "('a, 'b, 'c, 'd, 'e) a"
+  but it is used as
+    "('e, 'c, 'b, 'd, 'a) a"
+  after the following expansion(s):
+    "[ `A of ('d, 'a, 'e, 'c, 'b) b ]" contains "('d, 'a, 'e, 'c, 'b) b",
+    "('d, 'a, 'e, 'c, 'b) b" = "[ `B of ('e, 'c, 'b, 'd, 'a) c ]",
+    "[ `B of ('e, 'c, 'b, 'd, 'a) c ]" contains "('e, 'c, 'b, 'd, 'a) c",
+    "('e, 'c, 'b, 'd, 'a) c" = "[ `C of ('e, 'c, 'b, 'd, 'a) a ]",
+    "[ `C of ('e, 'c, 'b, 'd, 'a) a ]" contains "('e, 'c, 'b, 'd, 'a) a"
+  All uses need to match the definition for the recursive type to be regular.
 |}]
 
 (* PR 10762 *)
@@ -242,9 +253,10 @@ let f (x:[`X of int]) = (x:[`X])
 Line 5, characters 25-26:
 5 | let f (x:[`X of int]) = (x:[`X])
                              ^
-Error: This expression has type "[ `X of int ]"
-       but an expression was expected of type "[ `X ]"
-       Types for tag "`X" are incompatible
+Error:
+  This expression has type "[ `X of int ]"
+  but an expression was expected of type "[ `X ]"
+  Types for tag "`X" are incompatible
 |}]
 
 
@@ -253,9 +265,10 @@ let f (x:[`X of int]) = (x:[<`X of & int])
 Line 1, characters 25-26:
 1 | let f (x:[`X of int]) = (x:[<`X of & int])
                              ^
-Error: This expression has type "[ `X of int ]"
-       but an expression was expected of type "[< `X of & int ]"
-       Types for tag "`X" are incompatible
+Error:
+  This expression has type "[ `X of int ]"
+  but an expression was expected of type "[< `X of & int ]"
+  Types for tag "`X" are incompatible
 |}]
 
 (** Inconsistent type *)
@@ -265,9 +278,10 @@ let f (x:[<`X of & int & float]) = (x:[`X])
 Line 3, characters 36-37:
 3 | let f (x:[<`X of & int & float]) = (x:[`X])
                                         ^
-Error: This expression has type "[< `X of & int & float ]"
-       but an expression was expected of type "[ `X ]"
-       Types for tag "`X" are incompatible
+Error:
+  This expression has type "[< `X of & int & float ]"
+  but an expression was expected of type "[ `X ]"
+  Types for tag "`X" are incompatible
 |}]
 
 
@@ -282,9 +296,10 @@ val f : ([< `A | `B of string | `R of 'a ] as 'a) -> int = <fun>
 Line 4, characters 30-31:
 4 | let g (x:[`A | `R of rt]) = f x
                                   ^
-Error: This expression has type "[ `A | `R of rt ]"
-       but an expression was expected of type "[< `A | `R of 'a ] as 'a"
-       Type "rt" = "[ `A | `B of string | `R of rt ]" is not compatible with type
-         "[< `A | `R of 'a ] as 'a"
-       The second variant type does not allow tag(s) "`B"
+Error:
+  This expression has type "[ `A | `R of rt ]"
+  but an expression was expected of type "[< `A | `R of 'a ] as 'a"
+  Type "rt" = "[ `A | `B of string | `R of rt ]" is not compatible with type
+    "[< `A | `R of 'a ] as 'a"
+  The second variant type does not allow tag(s) "`B"
 |}]

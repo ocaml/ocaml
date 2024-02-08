@@ -40,7 +40,8 @@ end;;
 Line 4, characters 2-8:
 4 |   open M (* used by line below; shadow constructor A *)
       ^^^^^^
-Warning 45 [open-shadow-label-constructor]: this open statement shadows the constructor A (which is later used)
+Warning 45 [open-shadow-label-constructor]:
+  this open statement shadows the constructor A (which is later used)
 
 Line 2, characters 2-13:
 2 |   type t0 = A  (* unused type and constructor *)
@@ -90,7 +91,8 @@ end;;
 Line 4, characters 2-8:
 4 |   open M (* shadow constructor A *)
       ^^^^^^
-Warning 45 [open-shadow-label-constructor]: this open statement shadows the constructor A (which is later used)
+Warning 45 [open-shadow-label-constructor]:
+  this open statement shadows the constructor A (which is later used)
 
 Line 2, characters 2-13:
 2 |   type t0 = A (* unused type and constructor *)

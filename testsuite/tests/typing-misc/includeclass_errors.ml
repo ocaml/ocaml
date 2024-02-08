@@ -19,16 +19,17 @@ Lines 8-10, characters 6-3:
  8 | ......struct
  9 |   class type ct = object end
 10 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig class type ct = object  end end
-       is not included in
-         sig class type ct = object val m : string end end
-       Class type declarations do not match:
-         class type ct = object  end
-       does not match
-         class type ct = object val m : string end
-       The first class type has no instance variable m
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig class type ct = object  end end
+  is not included in
+    sig class type ct = object val m : string end end
+  Class type declarations do not match:
+    class type ct = object  end
+  does not match
+    class type ct = object val m : string end
+  The first class type has no instance variable m
 |}]
 
 module M: sig
@@ -48,16 +49,17 @@ Lines 5-9, characters 6-3:
 7 |     method virtual a: string
 8 |   end
 9 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig class virtual c : object method virtual a : string end end
-       is not included in
-         sig class c : object method a : string end end
-       Class declarations do not match:
-         class virtual c : object method virtual a : string end
-       does not match
-         class c : object method a : string end
-       A class cannot be changed from virtual to concrete
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig class virtual c : object method virtual a : string end end
+  is not included in
+    sig class c : object method a : string end end
+  Class declarations do not match:
+    class virtual c : object method virtual a : string end
+  does not match
+    class c : object method a : string end
+  A class cannot be changed from virtual to concrete
 |}]
 
 class type ['a] ct = object val x: 'a end
@@ -75,16 +77,17 @@ Lines 5-7, characters 6-3:
 5 | ......struct
 6 |   class type c = object end
 7 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig class type c = object  end end
-       is not included in
-         sig class type ['a] c = object  end end
-       Class type declarations do not match:
-         class type c = object  end
-       does not match
-         class type ['a] c = object  end
-       The classes do not have the same number of type parameters
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig class type c = object  end end
+  is not included in
+    sig class type ['a] c = object  end end
+  Class type declarations do not match:
+    class type c = object  end
+  does not match
+    class type ['a] c = object  end
+  The classes do not have the same number of type parameters
 |}]
 
 module Confusing: sig
@@ -98,20 +101,21 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   class ['y, 'x] c  = object method private id (x : 'y) = x + 1 end
 5 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig
-           class ['a, 'x] c :
-             object constraint 'a = int method private id : 'a -> int end
-         end
-       is not included in
-         sig class ['x, 'y] c : object  end end
-       Class declarations do not match:
-         class ['a, 'x] c :
-           object constraint 'a = int method private id : 'a -> int end
-       does not match
-         class ['x, 'y] c : object  end
-       The 1st type parameter has type "int" but is expected to have type "'x"
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig
+      class ['a, 'x] c :
+        object constraint 'a = int method private id : 'a -> int end
+    end
+  is not included in
+    sig class ['x, 'y] c : object  end end
+  Class declarations do not match:
+    class ['a, 'x] c :
+      object constraint 'a = int method private id : 'a -> int end
+  does not match
+    class ['x, 'y] c : object  end
+  The 1st type parameter has type "int" but is expected to have type "'x"
 |}]
 
 module M: sig
@@ -125,16 +129,17 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   class ['a] c = object end
 5 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig class ['a] c : object  end end
-       is not included in
-         sig class ['a] c : object constraint 'a = int end end
-       Class declarations do not match:
-         class ['a] c : object  end
-       does not match
-         class ['a] c : object constraint 'a = int end
-       The 1st type parameter has type "'a" but is expected to have type "int"
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig class ['a] c : object  end end
+  is not included in
+    sig class ['a] c : object constraint 'a = int end end
+  Class declarations do not match:
+    class ['a] c : object  end
+  does not match
+    class ['a] c : object constraint 'a = int end
+  The 1st type parameter has type "'a" but is expected to have type "int"
 |}]
 
 module M: sig
@@ -148,16 +153,17 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   class ['a, 'b] c = object end
 5 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig class ['a, 'b] c : object  end end
-       is not included in
-         sig class ['a, 'b] c : object constraint 'b = int end end
-       Class declarations do not match:
-         class ['a, 'b] c : object  end
-       does not match
-         class ['a, 'b] c : object constraint 'b = int end
-       The 2nd type parameter has type "'b" but is expected to have type "int"
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig class ['a, 'b] c : object  end end
+  is not included in
+    sig class ['a, 'b] c : object constraint 'b = int end end
+  Class declarations do not match:
+    class ['a, 'b] c : object  end
+  does not match
+    class ['a, 'b] c : object constraint 'b = int end
+  The 2nd type parameter has type "'b" but is expected to have type "int"
 |}]
 
 module M: sig
@@ -171,16 +177,17 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   class c (x : float) = object end
 5 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig class c : float -> object  end end
-       is not included in
-         sig class c : int -> object  end end
-       Class declarations do not match:
-         class c : float -> object  end
-       does not match
-         class c : int -> object  end
-       The 1st parameter has type "float" but is expected to have type "int"
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig class c : float -> object  end end
+  is not included in
+    sig class c : int -> object  end end
+  Class declarations do not match:
+    class c : float -> object  end
+  does not match
+    class c : int -> object  end
+  The 1st parameter has type "float" but is expected to have type "int"
 |}]
 
 module M: sig
@@ -194,16 +201,17 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   class c (_ : int) (x : float) = object end
 5 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig class c : int -> float -> object  end end
-       is not included in
-         sig class c : int -> int -> object  end end
-       Class declarations do not match:
-         class c : int -> float -> object  end
-       does not match
-         class c : int -> int -> object  end
-       The 2nd parameter has type "float" but is expected to have type "int"
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig class c : int -> float -> object  end end
+  is not included in
+    sig class c : int -> int -> object  end end
+  Class declarations do not match:
+    class c : int -> float -> object  end
+  does not match
+    class c : int -> int -> object  end
+  The 2nd parameter has type "float" but is expected to have type "int"
 |}]
 
 class virtual foo: foo_t =
@@ -219,10 +227,11 @@ Lines 2-5, characters 4-7:
 3 |         method foo = "foo"
 4 |         method private virtual cast: int
 5 |     end
-Error: The class type
-         object method private virtual cast : int method foo : string end
-       is not matched by the class type foo_t
-       The virtual method cast cannot be hidden
+Error:
+  The class type
+    object method private virtual cast : int method foo : string end
+  is not matched by the class type foo_t
+  The virtual method cast cannot be hidden
 |}]
 
 class type foo_t2 =
@@ -241,9 +250,10 @@ Lines 7-9, characters 4-7:
 7 | ....object
 8 |         method foo = "foo"
 9 |     end
-Error: The class type object method foo : string end
-       is not matched by the class type foo_t2
-       The public method foo cannot become private
+Error:
+  The class type object method foo : string end
+  is not matched by the class type foo_t2
+  The public method foo cannot become private
 |}]
 
 class virtual foo: foo_t =
@@ -256,9 +266,10 @@ Lines 2-4, characters 4-7:
 2 | ....object
 3 |         method virtual foo: string
 4 |     end
-Error: The class type object method virtual foo : string end
-       is not matched by the class type foo_t
-       The virtual method foo cannot become concrete
+Error:
+  The class type object method virtual foo : string end
+  is not matched by the class type foo_t
+  The virtual method foo cannot become concrete
 |}]
 
 class type foo_t3 =
@@ -277,9 +288,10 @@ Lines 7-9, characters 4-7:
 7 | ....object
 8 |         val x = 1
 9 |     end
-Error: The class type object val x : int end is not matched by the class type
-         foo_t3
-       The non-mutable instance variable x cannot become mutable
+Error:
+  The class type object val x : int end is not matched by the class type
+    foo_t3
+  The non-mutable instance variable x cannot become mutable
 |}]
 
 class type foo_t4 =
@@ -298,9 +310,10 @@ Lines 7-9, characters 4-7:
 7 | ....object
 8 |         val virtual x : int
 9 |     end
-Error: The class type object val virtual x : int end
-       is not matched by the class type foo_t4
-       The virtual instance variable x cannot become concrete
+Error:
+  The class type object val virtual x : int end
+  is not matched by the class type foo_t4
+  The virtual instance variable x cannot become concrete
 |}]
 
 module M: sig
@@ -314,14 +327,15 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   class type c = object method private m: string end
 5 | end
-Error: Signature mismatch:
-       Modules do not match:
-         sig class type c = object method private m : string end end
-       is not included in
-         sig class type c = object method m : string end end
-       Class type declarations do not match:
-         class type c = object method private m : string end
-       does not match
-         class type c = object method m : string end
-       The private method m cannot become public
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig class type c = object method private m : string end end
+  is not included in
+    sig class type c = object method m : string end end
+  Class type declarations do not match:
+    class type c = object method private m : string end
+  does not match
+    class type c = object method m : string end
+  The private method m cannot become public
 |}]

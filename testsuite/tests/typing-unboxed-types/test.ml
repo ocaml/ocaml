@@ -56,8 +56,9 @@ type t5 = D of int * string [@@ocaml.unboxed];; (* more than one argument *)
 Line 1, characters 0-45:
 1 | type t5 = D of int * string [@@ocaml.unboxed];; (* more than one argument *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       its constructor has more than one argument.
+Error:
+  This type cannot be unboxed because
+  its constructor has more than one argument.
 |}];;
 type t5 = E | F [@@ocaml.unboxed];;          (* more than one constructor *)
 [%%expect{|
@@ -87,8 +88,9 @@ type t9 = K of { j : string; l : int } [@@ocaml.unboxed];;
 Line 1, characters 0-56:
 1 | type t9 = K of { j : string; l : int } [@@ocaml.unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This type cannot be unboxed because
-       its constructor has more than one field.
+Error:
+  This type cannot be unboxed because
+  its constructor has more than one field.
 |}];;
 
 (* let rec must be rejected *)
@@ -115,17 +117,18 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type t = A of string [@@ocaml.unboxed]
 5 | end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t = A of string [@@unboxed] end
-       is not included in
-         sig type t = A of string end
-       Type declarations do not match:
-         type t = A of string [@@unboxed]
-       is not included in
-         type t = A of string
-       Their internal representations differ:
-       the first declaration uses unboxed representation.
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type t = A of string [@@unboxed] end
+  is not included in
+    sig type t = A of string end
+  Type declarations do not match:
+    type t = A of string [@@unboxed]
+  is not included in
+    type t = A of string
+  Their internal representations differ:
+  the first declaration uses unboxed representation.
 |}];;
 
 module N : sig
@@ -138,17 +141,18 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type t = A of string
 5 | end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t = A of string end
-       is not included in
-         sig type t = A of string [@@unboxed] end
-       Type declarations do not match:
-         type t = A of string
-       is not included in
-         type t = A of string [@@unboxed]
-       Their internal representations differ:
-       the second declaration uses unboxed representation.
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type t = A of string end
+  is not included in
+    sig type t = A of string [@@unboxed] end
+  Type declarations do not match:
+    type t = A of string
+  is not included in
+    type t = A of string [@@unboxed]
+  Their internal representations differ:
+  the second declaration uses unboxed representation.
 |}];;
 
 module O : sig
@@ -161,17 +165,18 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type t = { f : string } [@@ocaml.unboxed]
 5 | end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t = { f : string; } [@@unboxed] end
-       is not included in
-         sig type t = { f : string; } end
-       Type declarations do not match:
-         type t = { f : string; } [@@unboxed]
-       is not included in
-         type t = { f : string; }
-       Their internal representations differ:
-       the first declaration uses unboxed representation.
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type t = { f : string; } [@@unboxed] end
+  is not included in
+    sig type t = { f : string; } end
+  Type declarations do not match:
+    type t = { f : string; } [@@unboxed]
+  is not included in
+    type t = { f : string; }
+  Their internal representations differ:
+  the first declaration uses unboxed representation.
 |}];;
 
 module P : sig
@@ -184,17 +189,18 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type t = { f : string }
 5 | end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t = { f : string; } end
-       is not included in
-         sig type t = { f : string; } [@@unboxed] end
-       Type declarations do not match:
-         type t = { f : string; }
-       is not included in
-         type t = { f : string; } [@@unboxed]
-       Their internal representations differ:
-       the second declaration uses unboxed representation.
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type t = { f : string; } end
+  is not included in
+    sig type t = { f : string; } [@@unboxed] end
+  Type declarations do not match:
+    type t = { f : string; }
+  is not included in
+    type t = { f : string; } [@@unboxed]
+  Their internal representations differ:
+  the second declaration uses unboxed representation.
 |}];;
 
 module Q : sig
@@ -207,17 +213,18 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type t = A of { f : string } [@@ocaml.unboxed]
 5 | end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t = A of { f : string; } [@@unboxed] end
-       is not included in
-         sig type t = A of { f : string; } end
-       Type declarations do not match:
-         type t = A of { f : string; } [@@unboxed]
-       is not included in
-         type t = A of { f : string; }
-       Their internal representations differ:
-       the first declaration uses unboxed representation.
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type t = A of { f : string; } [@@unboxed] end
+  is not included in
+    sig type t = A of { f : string; } end
+  Type declarations do not match:
+    type t = A of { f : string; } [@@unboxed]
+  is not included in
+    type t = A of { f : string; }
+  Their internal representations differ:
+  the first declaration uses unboxed representation.
 |}];;
 
 module R : sig
@@ -230,17 +237,18 @@ Lines 3-5, characters 6-3:
 3 | ......struct
 4 |   type t = A of { f : string }
 5 | end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t = A of { f : string; } end
-       is not included in
-         sig type t = A of { f : string; } [@@unboxed] end
-       Type declarations do not match:
-         type t = A of { f : string; }
-       is not included in
-         type t = A of { f : string; } [@@unboxed]
-       Their internal representations differ:
-       the second declaration uses unboxed representation.
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type t = A of { f : string; } end
+  is not included in
+    sig type t = A of { f : string; } [@@unboxed] end
+  Type declarations do not match:
+    type t = A of { f : string; }
+  is not included in
+    type t = A of { f : string; } [@@unboxed]
+  Their internal representations differ:
+  the second declaration uses unboxed representation.
 |}];;
 
 
@@ -297,17 +305,18 @@ Lines 4-7, characters 6-3:
 5 |   type t = A of float [@@ocaml.unboxed]
 6 |   type u = { f1 : t; f2 : t }
 7 | end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t = A of float [@@unboxed] type u = { f1 : t; f2 : t; } end
-       is not included in
-         sig type t type u = { f1 : t; f2 : t; } end
-       Type declarations do not match:
-         type u = { f1 : t; f2 : t; }
-       is not included in
-         type u = { f1 : t; f2 : t; }
-       Their internal representations differ:
-       the first declaration uses unboxed float representation.
+Error:
+  Signature mismatch:
+  Modules do not match:
+    sig type t = A of float [@@unboxed] type u = { f1 : t; f2 : t; } end
+  is not included in
+    sig type t type u = { f1 : t; f2 : t; } end
+  Type declarations do not match:
+    type u = { f1 : t; f2 : t; }
+  is not included in
+    type u = { f1 : t; f2 : t; }
+  Their internal representations differ:
+  the first declaration uses unboxed float representation.
 |}];;
 
 (* implementing [@@immediate] with [@@ocaml.unboxed]: this works because the

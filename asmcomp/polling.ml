@@ -305,24 +305,25 @@ let report_error ppf = function
                       | Alloc | Function_call | External_call -> 0
       ) 0 instrs in
       let num_user_polls = (List.length instrs) - num_inserted_polls in
+      fprintf ppf "@[<v 2>";
       if num_user_polls = 0 then
         fprintf ppf "Function with poll-error attribute contains polling \
-        points (inserted by the compiler)\n"
+        points (inserted by the compiler)"
       else begin
         fprintf ppf
-        "Function with poll-error attribute contains polling points:\n";
+        "Function with poll-error attribute contains polling points:";
         List.iter (fun (p,dbg) ->
           begin match p with
           | Poll -> ()
           | Alloc | Function_call | External_call ->
-            fprintf ppf "\t%s at " (instr_type p);
-            Location.print_loc ppf (Debuginfo.to_location dbg);
-            fprintf ppf "\n"
+            fprintf ppf "@,%s at %a" (instr_type p)
+            Location.print_loc (Debuginfo.to_location dbg)
           end
         ) instrs;
         if num_inserted_polls > 0 then
-          fprintf ppf "\t(plus compiler-inserted polling point(s) in prologue \
-          and/or loop back edges)\n"
+          fprintf ppf "@,(plus compiler-inserted polling point(s) in prologue \
+          and/or loop back edges)";
+        fprintf ppf "@]"
       end
   end
 
