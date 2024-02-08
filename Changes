@@ -7,6 +7,9 @@ _______________
 
 ### Runtime system:
 
+- #12876: Port ThreadSanitizer support to Linux on POWER
+  (Miod Vallat, review by Tim McGilchrist)
+
 ### Code generation and optimizations:
 
 ### Standard library:
