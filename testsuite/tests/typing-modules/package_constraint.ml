@@ -154,3 +154,18 @@ module F :
   functor (X : sig val x : m end) ->
     sig module M : sig type t = int end type t = M.t [@@immediate] end
 |}];;
+
+(* Checking such a constraint may require expanding definitions from the module
+   being updated. *)
+module type S = sig
+  module type S1 = sig
+    type t
+  end
+  module M : S1
+end
+
+type t = (module S with type M.t = int)
+[%%expect{|
+module type S = sig module type S1 = sig type t end module M : S1 end
+type t = (module S with type M.t = int)
+|}];;
