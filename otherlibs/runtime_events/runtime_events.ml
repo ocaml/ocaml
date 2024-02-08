@@ -12,6 +12,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+external runtime_events_are_active : unit -> bool
+  = "caml_ml_runtime_events_are_active" [@@noalloc]
+
 type runtime_counter =
 | EV_C_FORCE_MINOR_ALLOC_SMALL
 | EV_C_FORCE_MINOR_MAKE_VECT
@@ -236,12 +239,66 @@ module User = struct
   }
 
   external user_register : string -> tag option -> 'a Type.t -> 'a t
-                         = "caml_runtime_events_user_register"
-  external user_write : 'a t -> 'a -> unit = "caml_runtime_events_user_write"
+    = "caml_runtime_events_user_register"
+  external user_write : bytes -> 'a t -> 'a -> unit
+    = "caml_runtime_events_user_write"
 
   let register name tag typ = user_register name (Some tag) typ
 
-  let write event value = user_write event value
+  let with_write_buffer =
+    (* [caml_runtime_events_user_write] needs a write buffer in which
+       the user-provided serializer will write its data. The user may
+       want to write a lot of custom events fast, so we want to cache
+       the write buffer across calls.
+
+       To be safe for multi-domain programs, we use domain-local
+       storage for the write buffer. To accomodate for multi-threaded
+       programs (without depending on the Thread module), we store
+       a list of caches for each domain. This might leak a bit of
+       memory: the number of buffers for a domain is equal to the
+       maximum number of threads that requested a buffer concurrently,
+       and we never free those buffers. *)
+    let create_buffer () = Bytes.create 1024 in
+    let write_buffer_cache = Domain.DLS.new_key (fun () -> ref []) in
+    let pop_or_create buffers =
+      (* intended to be thread-safe *)
+      (* begin atomic *)
+      match !buffers with
+      | [] ->
+          (* end atomic *)
+          create_buffer ()
+      | b::bs ->
+          buffers := bs;
+          (* end atomic *)
+          b
+    in
+    let[@poll error] compare_and_set r old_val new_val =
+      if !r == old_val then (r := new_val; true)
+      else false
+    in
+    let rec push buffers buf =
+      (* intended to be thread-safe *)
+      let old_buffers = !buffers in
+      let new_buffers = buf :: old_buffers in
+      (* retry if !buffers changed under our feet: *)
+      if compare_and_set buffers old_buffers new_buffers
+      then ()
+      else push buffers buf
+    in
+    fun consumer ->
+      let buffers = Domain.DLS.get write_buffer_cache in
+      let buf = pop_or_create buffers in
+      Fun.protect ~finally:(fun () -> push buffers buf)
+        (fun () -> consumer buf)
+
+  let write (type a) (event : a t) (value : a) =
+    if runtime_events_are_active () then
+    (* only custom events need a write buffer *)
+    match event.typ with
+    | Type.Custom _ ->
+        with_write_buffer (fun buf -> user_write buf event value)
+    | Type.Unit | Type.Int | Type.Span ->
+        user_write Bytes.empty event value
 
   let name ev = ev.name
 

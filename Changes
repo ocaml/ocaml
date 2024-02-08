@@ -783,6 +783,11 @@ OCaml 5.2.0
   Changes type of type parameters in outcometree.mli.
   (Jacques Garrigue, review by Richard Eisenberg)
 
+- #12897: fix locking bugs in Runtime_events
+  (Gabriel Scherer and Thomas Leonard,
+   review by Olivier Nicole, Vincent Laviron and Damien Doligez,
+   report by Thomas Leonard)
+
 - #12851: Fix race between runtime events teardown and event emission
   (Olivier Nicole, review by Miod Vallat and Gabriel Scherer)
 
