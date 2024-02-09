@@ -250,6 +250,9 @@ OCaml 5.2.0
 - #12907: Port ThreadSanitizer support to Linux on RiscV
   (Miod Vallat, review by Nicolás Ojeda Bär and Fabrice Buoro)
 
+- #12915: Port ThreadSanitizer support to Linux on s390x
+  (Miod Vallat, review by Tim McGilchrist)
+
 - #12934: Fix data races between marking and sweeping functions
   (Olivier Nicole, suggested by Stephen Dolan, review by Gabriel Scherer,
    Miod Vallat and Damien Doligez)
