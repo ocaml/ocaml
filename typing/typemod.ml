@@ -467,11 +467,14 @@ type with_info =
   | With_modsubst of Longident.t loc * Path.t * Types.module_declaration
   | With_modtype of Typedtree.module_type
   | With_modtypesubst of Typedtree.module_type
+  | With_type_package of Typedtree.core_type
+    (* Package with type constraints only use this last case.  Normal module
+       with constraints never use it. *)
 
 let merge_constraint initial_env loc sg lid constr =
   let destructive_substitution =
     match constr with
-    | With_type _ | With_module _ | With_modtype _ -> false
+    | With_type _ | With_type_package _ | With_module _ | With_modtype _ -> false
     | With_typesubst _ | With_modsubst _ | With_modtypesubst _  -> true
   in
   let real_ids = ref [] in
@@ -545,7 +548,7 @@ let merge_constraint initial_env loc sg lid constr =
         in
         return ~ghosts
           ~replace_by:(Some (Sig_type(id, newdecl, rs, priv)))
-          (Pident id, lid, Twith_type tdecl)
+          (Pident id, lid, Some (Twith_type tdecl))
     | Sig_type(id, sig_decl, rs, priv) , [s],
        (With_type sdecl | With_typesubst sdecl as constr)
       when Ident.name id = s ->
@@ -562,12 +565,26 @@ let merge_constraint initial_env loc sg lid constr =
           With_type _ ->
             return ~ghosts
               ~replace_by:(Some(Sig_type(id, newdecl, rs, priv)))
-              (Pident id, lid, Twith_type tdecl)
+              (Pident id, lid, Some (Twith_type tdecl))
         | (* With_typesubst *) _ ->
             real_ids := [Pident id];
             return ~ghosts ~replace_by:None
-              (Pident id, lid, Twith_typesubst tdecl)
+              (Pident id, lid, Some (Twith_typesubst tdecl))
         end
+    | Sig_type(id, sig_decl, rs, priv), [s], With_type_package cty
+      when Ident.name id = s ->
+        begin match sig_decl.type_manifest with
+        | None -> ()
+        | Some ty ->
+          raise (Error(loc, outer_sig_env, With_package_manifest (lid.txt, ty)))
+        end;
+        let tdecl =
+          Typedecl.transl_package_constraint ~loc outer_sig_env cty.ctyp_type
+        in
+        check_type_decl outer_sig_env sg_for_env loc id None tdecl sig_decl;
+        let tdecl = { tdecl with type_manifest = None } in
+        return ~ghosts ~replace_by:(Some(Sig_type(id, tdecl, rs, priv)))
+          (Pident id, lid, None)
     | Sig_modtype(id, mtd, priv), [s],
       (With_modtype mty | With_modtypesubst mty)
       when Ident.name id = s ->
@@ -589,7 +606,7 @@ let merge_constraint initial_env loc sg lid constr =
           in
           return
             ~replace_by:(Some(Sig_modtype(id, mtd', priv)))
-            (Pident id, lid, Twith_modtype mty)
+            (Pident id, lid, Some (Twith_modtype mty))
         else begin
           let path = Pident id in
           real_ids := [path];
@@ -597,7 +614,8 @@ let merge_constraint initial_env loc sg lid constr =
           | Mty_ident _ -> ()
           | mty -> unpackable_modtype := Some mty
           end;
-          return ~replace_by:None (Pident id, lid, Twith_modtypesubst mty)
+          return ~replace_by:None
+            (Pident id, lid, Some (Twith_modtypesubst mty))
         end
     | Sig_module(id, pres, md, rs, priv), [s],
       With_module {lid=lid'; md=md'; path; remove_aliases}
@@ -611,7 +629,7 @@ let merge_constraint initial_env loc sg lid constr =
                  newmd.md_type md.md_type);
         return
           ~replace_by:(Some(Sig_module(id, pres, newmd, rs, priv)))
-          (Pident id, lid, Twith_module (path, lid'))
+          (Pident id, lid, Some (Twith_module (path, lid')))
     | Sig_module(id, _, md, _rs, _), [s], With_modsubst (lid',path,md')
       when Ident.name id = s ->
         let sig_env = Env.add_signature sg_for_env outer_sig_env in
@@ -620,7 +638,8 @@ let merge_constraint initial_env loc sg lid constr =
           (Includemod.strengthened_module_decl ~loc ~mark:Mark_both
              ~aliasable sig_env md' path md);
         real_ids := [Pident id];
-        return ~replace_by:None (Pident id, lid, Twith_modsubst (path, lid'))
+        return ~replace_by:None
+          (Pident id, lid, Some (Twith_modsubst (path, lid')))
     | Sig_module(id, _, md, rs, priv) as item, s :: namelist, constr
       when Ident.name id = s ->
         let sig_env = Env.add_signature sg_for_env outer_sig_env in
@@ -655,7 +674,7 @@ let merge_constraint initial_env loc sg lid constr =
         !unpackable_modtype sg;
     let sg =
     match tcstr with
-    | (_, _, Twith_typesubst tdecl) ->
+    | (_, _, Some (Twith_typesubst tdecl)) ->
        let how_to_extend_subst =
          let sdecl =
            match constr with
@@ -684,7 +703,7 @@ let merge_constraint initial_env loc sg lid constr =
           making it local makes it unlikely that we will ever use the result of
           this function unfreshened without issue. *)
        Subst.signature Make_local sub sg
-    | (_, _, Twith_modsubst (real_path, _)) ->
+    | (_, _, Some (Twith_modsubst (real_path, _))) ->
        let sub = Subst.change_locs Subst.identity loc in
        let sub =
          List.fold_left
@@ -694,7 +713,7 @@ let merge_constraint initial_env loc sg lid constr =
        in
        (* See explanation in the [Twith_typesubst] case above. *)
        Subst.signature Make_local sub sg
-    | (_, _, Twith_modtypesubst tmty) ->
+    | (_, _, Some (Twith_modtypesubst tmty)) ->
         let add s p = Subst.add_modtype_path p tmty.mty_type s in
         let sub = Subst.change_locs Subst.identity loc in
         let sub = List.fold_left add sub !real_ids in
@@ -708,61 +727,9 @@ let merge_constraint initial_env loc sg lid constr =
   with Includemod.Error explanation ->
     raise(Error(loc, initial_env, With_mismatch(lid.txt, explanation)))
 
-(* A simplified version of [merge_constraint] for the case of packages. Package
-   constraints are much simpler - they must be "with type" constraints for types
-   with no parameters and can only update abstract types. *)
 let merge_package_constraint initial_env loc sg lid cty =
-  let rec patch_item namelist outer_sig_env sg_for_env ~ghosts item =
-    let return replace_by =
-      Some ((), {Signature_group.ghosts; replace_by=Some replace_by})
-    in
-    match item, namelist with
-    | Sig_type(id, sig_decl, rs, priv) , [s]
-      when Ident.name id = s ->
-        begin match sig_decl.type_manifest with
-        | None -> ()
-        | Some ty ->
-          raise (Error(loc, outer_sig_env, With_package_manifest (lid.txt, ty)))
-        end;
-        let new_sig_decl =
-          Typedecl.transl_package_constraint ~loc outer_sig_env cty.ctyp_type
-        in
-        check_type_decl outer_sig_env sg_for_env loc id None
-          new_sig_decl sig_decl;
-        let new_sig_decl = { new_sig_decl with type_manifest = None } in
-        return (Sig_type(id, new_sig_decl, rs, priv))
-    | Sig_module(id, _, md, rs, priv) as item, s :: namelist
-      when Ident.name id = s ->
-        let sig_env = Env.add_signature sg_for_env outer_sig_env in
-        let sg = extract_sig sig_env loc md.md_type in
-        let newsg = merge_signature sig_env sg namelist in
-        let item =
-          match md.md_type with
-            Mty_alias _ ->
-              (* A module alias cannot be refined, so keep it
-                 and just check that the constraint is correct *)
-              item
-          | _ ->
-              let newmd = {md with md_type = Mty_signature newsg} in
-              Sig_module(id, Mp_present, newmd, rs, priv)
-        in
-        return item
-    | _ -> None
-  and merge_signature env sg namelist =
-    match
-      Signature_group.replace_in_place (patch_item namelist env sg) sg
-    with
-    | Some ((),sg) -> sg
-    | None -> raise(Error(loc, env, With_no_component lid.txt))
-  in
-  try
-    let names = Longident.flatten lid.txt in
-    let sg = merge_signature initial_env sg names in
-    check_well_formed_module initial_env loc "this instantiated signature"
-      (Mty_signature sg);
-    sg
-  with Includemod.Error explanation ->
-    raise(Error(loc, initial_env, With_mismatch(lid.txt, explanation)))
+  let _, s = merge_constraint initial_env loc sg lid (With_type_package cty) in
+  s
 
 let check_package_with_type_constraints loc env mty constraints =
   let sg = extract_sig env loc mty in
@@ -1428,8 +1395,10 @@ and transl_with ~loc env remove_aliases (rev_tcstrs,sg) constr =
         let mty = transl_modtype env smty in
         l, With_modtypesubst mty
   in
-  let (tcstr, sg) = merge_constraint env loc sg lid with_info in
-  (tcstr :: rev_tcstrs, sg)
+  let ((path, lid, tcstr), sg) = merge_constraint env loc sg lid with_info in
+  (* Only package with constraints result in None here. *)
+  let tcstr = Option.get tcstr in
+  ((path, lid, tcstr) :: rev_tcstrs, sg)
 
 
 

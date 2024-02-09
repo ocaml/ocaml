@@ -196,3 +196,46 @@ Line 13, characters 12-54:
 Error: In the constrained signature, type "t" is defined to be "[< `A | `B ]".
        Package "with" constraints may only be used on abstract types.
 |}]
+
+(* More row type examples to consider, if we ever start allowing package type
+   constraints to replace compatible manifests. *)
+module type Private_row = sig
+  type t = private [< `A ]
+end
+
+type t1 = (module Private_row with type t = [ `A ])
+[%%expect{|
+module type Private_row = sig type t = private [< `A ] end
+Line 5, characters 10-51:
+5 | type t1 = (module Private_row with type t = [ `A ])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In the constrained signature, type "t" is defined to be "[< `A ]".
+       Package "with" constraints may only be used on abstract types.
+|}]
+
+type t2 = (module Private_row with type t = [< `A ])
+[%%expect{|
+Line 1, characters 10-52:
+1 | type t2 = (module Private_row with type t = [< `A ])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In the constrained signature, type "t" is defined to be "[< `A ]".
+       Package "with" constraints may only be used on abstract types.
+|}]
+
+type 'a t3 = (module Private_row with type t = [< `A ]) as 'a
+[%%expect{|
+Line 1, characters 13-55:
+1 | type 'a t3 = (module Private_row with type t = [< `A ]) as 'a
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In the constrained signature, type "t" is defined to be "[< `A ]".
+       Package "with" constraints may only be used on abstract types.
+|}]
+
+type 'a t4 = (module Private_row with type t = [< `A ] as 'a)
+[%%expect{|
+Line 1, characters 13-61:
+1 | type 'a t4 = (module Private_row with type t = [< `A ] as 'a)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In the constrained signature, type "t" is defined to be "[< `A ]".
+       Package "with" constraints may only be used on abstract types.
+|}]

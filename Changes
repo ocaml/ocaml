@@ -78,7 +78,8 @@ _______________
 
 - #12924, #12930: Rework package constraint checking to improve interaction with
   immediacy
-  (Chris Casinghino, review by Florian Angeletti and Richard Eisenberg)
+  (Chris Casinghino and Florian Angeletti, review by Florian Angeletti and
+   Richard Eisenberg)
 
 OCaml 5.2.0
 ------------
