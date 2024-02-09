@@ -1679,10 +1679,6 @@ Optional Features:
                           build the native toplevel
   --enable-frame-pointers use frame pointers in runtime and generated code
   --disable-cfi           disable the CFI directives in assembly files
-  --enable-imprecise-c99-float-ops
-                          enables potentially imprecise replacement
-                          implementations of C99 float ops if unavailable on
-                          this platform
   --enable-installing-source-artifacts
                           install *.cmt* and *.mli files
   --enable-installing-bytecode-programs
@@ -3960,7 +3956,10 @@ fi
 # Check whether --enable-imprecise-c99-float-ops was given.
 if test ${enable_imprecise_c99_float_ops+y}
 then :
-  enableval=$enable_imprecise_c99_float_ops;
+  enableval=$enable_imprecise_c99_float_ops; if test x"$enableval" != 'xno'
+then :
+  as_fn_error $? "OCaml has required C99 float operations since 5.2." "$LINENO" 5
+fi
 fi
 
 
@@ -16147,11 +16146,9 @@ fi
 
 done
 
-if $has_c99_float_ops
-then :
-  printf "%s\n" "#define HAS_C99_FLOAT_OPS 1" >>confdefs.h
-
-  # Check whether round works (known bug in mingw-w64)
+case $has_c99_float_ops,$host in #(
+  true,*-*-mingw32) :
+    # Check whether round works (known bug in mingw-w64)
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether round works" >&5
 printf %s "checking whether round works... " >&6; }
@@ -16196,8 +16193,6 @@ printf "%s\n" "no" >&6; }
     case $enable_imprecise_c99_float_ops,$target in #(
   no,*) :
     hard_error=true ;; #(
-  yes,*) :
-    hard_error=false ;; #(
   *,x86_64-w64-mingw32*) :
     hard_error=false ;; #(
   *) :
@@ -16205,7 +16200,7 @@ printf "%s\n" "no" >&6; }
 esac
     if test x"$hard_error" = "xtrue"
 then :
-  as_fn_error $? "round does not work, enable emulation with --enable-imprecise-c99-float-ops" "$LINENO" 5
+  as_fn_error $? "round does not work" "$LINENO" 5
 else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: round does not work; emulation enabled" >&5
 printf "%s\n" "$as_me: WARNING: round does not work; emulation enabled" >&2;}
@@ -16217,132 +16212,12 @@ fi
 
   cross_compiling="$old_cross_compiling"
 
-
-  # Check whether fma works (regressed in mingw-w64 8.0.0; present, but broken,
-  # in VS2013-2017 and present but unimplemented in Cygwin64)
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether fma works" >&5
-printf %s "checking whether fma works... " >&6; }
-
-  old_cross_compiling="$cross_compiling"
-  if test "x$host_runnable" = 'xtrue'
-then :
-  cross_compiling='no'
-fi
-  if test "$cross_compiling" = yes
-then :
-  case $target in #(
-  x86_64-w64-mingw32*|x86_64-*-cygwin*) :
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: cross-compiling; assume not" >&5
-printf "%s\n" "cross-compiling; assume not" >&6; } ;; #(
+ ;; #(
+  false,*) :
+    as_fn_error $? "OCaml requires C99 float operations" "$LINENO" 5 ;; #(
   *) :
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: cross-compiling; assume yes" >&5
-printf "%s\n" "cross-compiling; assume yes" >&6; }
-      printf "%s\n" "#define HAS_WORKING_FMA 1" >>confdefs.h
- ;;
+     ;;
 esac
-else $as_nop
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <math.h>
-int main (void) {
-  /* Tests 264-266 from testsuite/tests/fma/fma.ml. These tests trigger the
-     broken implementations of Cygwin64, mingw-w64 (x86_64) and VS2013-2017.
-     The static volatile variables aim to thwart GCC's constant folding. */
-  static volatile double x, y, z;
-  volatile double t264, t265, t266;
-  x = 0x3.bd5b7dde5fddap-496;
-  y = 0x3.bd5b7dde5fddap-496;
-  z = -0xd.fc352bc352bap-992;
-  t264 = fma(x, y, z);
-  x = 0x3.bd5b7dde5fddap-504;
-  y = 0x3.bd5b7dde5fddap-504;
-  z = -0xd.fc352bc352bap-1008;
-  t265 = fma(x, y, z);
-  x = 0x8p-540;
-  y = 0x4p-540;
-  z = 0x4p-1076;
-  t266 = fma(x, y, z);
-  return (!(t264 == 0x1.0989687cp-1044 ||
-            t264 == 0x0.000004277ca1fp-1022 || /* Acceptable emulated values */
-            t264 == 0x0.00000428p-1022)
-       || !(t265 == 0x1.0988p-1060 ||
-            t265 == 0x0.0000000004278p-1022 ||  /* Acceptable emulated values */
-            t265 == 0x0.000000000428p-1022)
-       || !(t266 == 0x8p-1076));
-}
-
-_ACEOF
-if ac_fn_c_try_run "$LINENO"
-then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-    printf "%s\n" "#define HAS_WORKING_FMA 1" >>confdefs.h
-
-else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-    case $enable_imprecise_c99_float_ops,$target in #(
-  no,*) :
-    hard_error=true ;; #(
-  yes,*) :
-    hard_error=false ;; #(
-  *,x86_64-w64-mingw32*|*,x86_64-*-cygwin*) :
-    hard_error=false ;; #(
-  *) :
-    case $ocaml_cv_cc_vendor in #(
-  msvc-*) :
-    if test "${ocaml_cv_cc_vendor#msvc-}" -lt 1920
-then :
-  hard_error=false
-else $as_nop
-  hard_error=true
-fi ;; #(
-  *) :
-    hard_error=true ;;
-esac ;;
-esac
-    if test x"$hard_error" = "xtrue"
-then :
-  as_fn_error $? "fma does not work, enable emulation with --enable-imprecise-c99-float-ops" "$LINENO" 5
-else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: fma does not work; emulation enabled" >&5
-printf "%s\n" "$as_me: WARNING: fma does not work; emulation enabled" >&2;}
-fi
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-  cross_compiling="$old_cross_compiling"
-
-
-else $as_nop
-  if test x"$enable_imprecise_c99_float_ops" != "xyes"
-then :
-  case $enable_imprecise_c99_float_ops,$ocaml_cv_cc_vendor in #(
-  no,*) :
-    hard_error=true ;; #(
-  ,msvc-*) :
-    if test "${ocaml_cv_cc_vendor#msvc-}" -lt 1800
-then :
-  hard_error=false
-else $as_nop
-  hard_error=true
-fi ;; #(
-  *) :
-    hard_error=true ;;
-esac
-     if test x"$hard_error" = 'xtrue'
-then :
-  as_fn_error $? "C99 float ops unavailable, enable replacements with --enable-imprecise-c99-float-ops" "$LINENO" 5
-else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: C99 float ops unavailable, replacements enabled (ancient Visual Studio)" >&5
-printf "%s\n" "$as_me: WARNING: C99 float ops unavailable, replacements enabled (ancient Visual Studio)" >&2;}
-fi
-fi
-fi
 
 ## getentropy
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CC options needed to detect all undeclared functions" >&5

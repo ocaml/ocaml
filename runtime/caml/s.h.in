@@ -48,18 +48,21 @@
    including across DLLs. This is not the case with macOS and with Windows +
    MinGW-w64. */
 
-#undef HAS_C99_FLOAT_OPS
+#define HAS_C99_FLOAT_OPS 1
 
-/* Define HAS_C99_FLOAT_OPS if <math.h> conforms to ISO C99.
+/* Since OCaml 5.2, <math.h> must conform to ISO C99.
    In particular, it should provide expm1(), log1p(), hypot(), fma(),
    exp2(), log2(), cbrt(), acosh(), asinh(), atanh(), erf(), erfc(),
    trunc(), round(), copysign(). */
 
-#undef HAS_WORKING_FMA
+#define HAS_WORKING_FMA 1
 
-/* Define HAS_WORKING_FMA if the fma function is correctly implemented. The
-   newlib library (intentionally) just has return x * y + z. This hatch is
-   also used for https://sourceforge.net/p/mingw-w64/bugs/848/ */
+/* Since OCaml 5.2, the fma function is assumed to work correctly.
+   For Cygwin, the newlib library (intentionally) just has return x * y + z.
+   For mingw-w64, bug https://sourceforge.net/p/mingw-w64/bugs/848/ tracks known
+   issues in its software implementation and there's no known version of the
+   Microsoft Visual C Runtime with a working implementation. On Windows,
+   hardware support is required for fma. */
 
 #undef HAS_WORKING_ROUND
 

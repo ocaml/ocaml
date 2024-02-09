@@ -1110,6 +1110,7 @@ runtime_COMMON_C_SOURCES = \
   fiber \
   finalise \
   floats \
+  fma \
   gc_ctrl \
   gc_stats \
   globroots \
@@ -1435,6 +1436,12 @@ $(eval $(call COMPILE_C_FILE,runtime/$(UNIX_OR_WIN32)_non_shared.%, \
 $(foreach runtime_OBJECT_TYPE,$(subst %,,$(runtime_OBJECT_TYPES)), \
   $(eval \
     runtime/dynlink$(runtime_OBJECT_TYPE).$(O): $(ROOTDIR)/Makefile.config))
+
+ifneq "$(filter cygwin% mingw%, $(SYSTEM))" ""
+runtime/fma.%.o: OC_CFLAGS += -mfma
+endif
+
+runtime/fma.%.obj: OC_CFLAGS += -arch:AVX2
 
 ## Compilation of runtime assembly files
 

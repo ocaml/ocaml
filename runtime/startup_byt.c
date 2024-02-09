@@ -534,6 +534,9 @@ CAMLexport void caml_main(char_os **argv)
   Caml_state->external_raise = NULL;
   /* Setup signal handling */
   caml_init_signals();
+#if defined(__MINGW32__) || defined(__CYGWIN__)
+  caml_win32_fma_detection();
+#endif
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -626,6 +629,9 @@ CAMLexport value caml_startup_code_exn(
   Caml_state->external_raise = NULL;
   /* Setup signal handling */
   caml_init_signals();
+#if defined(__MINGW32__) || defined(__CYGWIN__)
+  caml_win32_fma_detection();
+#endif
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */

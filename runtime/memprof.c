@@ -292,6 +292,7 @@ CAMLprim value caml_memprof_discard(value profile)
 /* FIXME: integrate memprof with multicore */
 #if 0
 
+#include <math.h>
 #include <string.h>
 #include "caml/memprof.h"
 #include "caml/fail.h"
@@ -1275,7 +1276,7 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker_param)
 
   lambda = l;
   if (l > 0) {
-    one_log1m_lambda = l == 1 ? 0 : 1/caml_log1p(-l);
+    one_log1m_lambda = l == 1 ? 0 : 1/log1p(-l);
     rand_pos = RAND_BLOCK_SIZE;
     /* next_rand_geom can be zero if the next word is to be sampled,
        but rand_geom always returns a value >= 1. Subtract 1 to correct. */

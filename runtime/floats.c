@@ -75,10 +75,6 @@
 #endif
 #endif
 
-#ifndef M_LOG2E
-#define M_LOG2E 1.44269504088896340735992468100 /* log_2 (e) */
-#endif
-
 #ifdef ARCH_ALIGN_DOUBLE
 
 CAMLexport double caml_Double_val(value val)
@@ -466,11 +462,7 @@ CAMLprim value caml_exp_float(value f)
 
 CAMLexport double caml_exp2(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return exp2(x);
-#else
-  return pow(2, x);
-#endif
 }
 
 CAMLprim value caml_exp2_float(value f)
@@ -480,11 +472,7 @@ CAMLprim value caml_exp2_float(value f)
 
 CAMLexport double caml_trunc(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return trunc(x);
-#else
-  return (x >= 0.0)? floor(x) : ceil(x);
-#endif
 }
 
 CAMLprim value caml_trunc_float(value f)
@@ -537,216 +525,7 @@ CAMLprim value caml_nextafter_float(value x, value y)
   return caml_copy_double(caml_nextafter(Double_val(x), Double_val(y)));
 }
 
-#ifndef HAS_WORKING_FMA
-union double_as_int64 { double d; uint64_t i; };
-#define IEEE754_DOUBLE_BIAS 0x3ff
-#define IEEE_EXPONENT(N) (((N) >> 52) & 0x7ff)
-#define IEEE_NEGATIVE(N) ((N) >> 63)
-//C99 hexa float literals cannot be used, use pow() instead.
-#define FL53    (pow(2,53)) //0x1p53
-#define FLM53   (pow(2,-53)) //0x1p-53
-#define FL54    (pow(2,54)) //0x1p54
-#define FLM54   (pow(2,-54)) //0x1p-54
-#define FL108   (pow(2,108)) //0x1p108
-#define FLM108  (pow(2,-108)) //0x1p-108
-#define FLM1074 (pow(2,-1074)) //0x1p-1074
-#endif
-
-CAMLexport double caml_fma(double x, double y, double z)
-{
-#ifdef HAS_WORKING_FMA
-  return fma(x, y, z);
-#else // Emulation of FMA, from S. Boldo and G. Melquiond, "Emulation
-      // of a FMA and Correctly Rounded Sums: Proved Algorithms Using
-      // Rounding to Odd," in IEEE Transactions on Computers, vol. 57,
-      // no. 4, pp. 462-471, April 2008. Special cases implementation
-      // comes from glibc's IEEE754 FMA emulation.
-      // Only valid for double precision and round-to-nearest mode.
-
-  union double_as_int64 u, v, w;
-  union double_as_int64 ora;
-  double mh, ml, xh, xl, yh, yl, t;
-  double ah, al;
-  double orah, oral;
-  double t1, t2;
-  double tiny;
-  int neg, adjust = 0;
-  u.d = x;
-  v.d = y;
-  w.d = z;
-
-  if ( IEEE_EXPONENT(u.i) + IEEE_EXPONENT(v.i) >= 0x7FF +
-       IEEE754_DOUBLE_BIAS - DBL_MANT_DIG
-       || IEEE_EXPONENT(u.i) >= 0x7ff - DBL_MANT_DIG
-       || IEEE_EXPONENT(v.i) >= 0x7ff - DBL_MANT_DIG
-       || IEEE_EXPONENT(w.i) >= 0x7ff - DBL_MANT_DIG
-       || IEEE_EXPONENT(u.i) + IEEE_EXPONENT(v.i) <=
-         IEEE754_DOUBLE_BIAS + DBL_MANT_DIG )
-    {
-      /* If z is Inf, but x and y are finite, the result should be z
-       * rather than NaN. */
-      if (IEEE_EXPONENT(w.i) == 0x7ff &&
-          IEEE_EXPONENT(u.i) != 0x7ff &&
-          IEEE_EXPONENT(v.i) != 0x7ff)
-              return (z + x) + y;
-      /* If z is zero and x and y are nonzero, compute the result as
-         x * y to avoid the wrong sign of a zero result if x * y
-         underflows to 0. */
-      if (z == 0 && x != 0 && y != 0)
-        return x * y;
-      /* If x or y or z is Inf/NaN, or if x * y is zero, compute as
-         x * y + z.  */
-      if (IEEE_EXPONENT(u.i) == 0x7ff
-          || IEEE_EXPONENT(v.i) == 0x7ff
-          || IEEE_EXPONENT(w.i) == 0x7ff
-          || x == 0
-          || y == 0)
-        return x * y + z;
-      /* If fma will certainly overflow, compute as x * y. */
-      if ((IEEE_EXPONENT(u.i) + IEEE_EXPONENT(v.i))
-          > 0x7ff + IEEE754_DOUBLE_BIAS)
-        return x * y;
-      /* If x * y is less than 1/4 of DBL_TRUE_MIN, neither the result
-         nor whether there is underflow depends on its exact value,
-         only on its sign. */
-      if (IEEE_EXPONENT(u.i) + IEEE_EXPONENT(v.i)
-          < IEEE754_DOUBLE_BIAS - DBL_MANT_DIG - 2)
-        {
-          neg = IEEE_NEGATIVE(u.i) ^ IEEE_NEGATIVE(v.i) ;
-          tiny = neg ? -FLM1074 : FLM1074;
-          if (IEEE_EXPONENT(w.i) >= 3)
-            return tiny + z;
-          /* Scaling up, adding TINY and scaling down produces the
-             correct result, because in round-to-nearest mode adding
-             TINY has no effect and in other modes double rounding is
-             harmless. But it may not produce required underflow
-             exceptions. */
-          v.d = z * FL54 + tiny;
-          return v.d * FLM54;
-        }
-      if (IEEE_EXPONENT(u.i) + IEEE_EXPONENT(v.i)
-          >= 0x7ff + IEEE754_DOUBLE_BIAS - DBL_MANT_DIG)
-        {
-          /* Compute 1p-53 times smaller result and multiply at the
-             end.  */
-          if (IEEE_EXPONENT(u.i) > IEEE_EXPONENT(v.i))
-            x *= FLM53;
-          else
-            y *= FLM53;
-          /* If x + y exponent is very large and z exponent is very small,
-             it doesn't matter if we don't adjust it.  */
-          if (IEEE_EXPONENT(w.i) > DBL_MANT_DIG)
-            z *= FLM53;
-          adjust = 1;
-        }
-      else if (IEEE_EXPONENT(w.i) >= 0x7ff - DBL_MANT_DIG)
-        {
-          /* Similarly. If z exponent is very large and x and y
-             exponents are very small, adjust them up to avoid
-             spurious underflows, rather than down.  */
-          if (IEEE_EXPONENT(u.i) + IEEE_EXPONENT(v.i)
-              <= IEEE754_DOUBLE_BIAS + 2 * DBL_MANT_DIG)
-            {
-              if (IEEE_EXPONENT(u.i) > IEEE_EXPONENT(v.i))
-                x *= FL108;
-              else
-                y *= FL108;
-            }
-          else if (IEEE_EXPONENT(u.i) > IEEE_EXPONENT(v.i))
-            {
-              if (IEEE_EXPONENT(u.i) > DBL_MANT_DIG)
-                x *= FLM53;
-            }
-          else if (IEEE_EXPONENT(v.i) > DBL_MANT_DIG)
-            y *= FLM53;
-          z *= FLM53;
-          adjust = 1;
-        }
-      else if (IEEE_EXPONENT(u.i) >= 0x7ff - DBL_MANT_DIG)
-        {
-          x *= FLM53;
-          y *= FL53;
-        }
-      else if (IEEE_EXPONENT(v.i) >= 0x7ff - DBL_MANT_DIG)
-        {
-          y *= FLM53;
-          x *= FL53;
-        }
-      else /* if (IEEE_EXPONENT(u.i) + IEEE_EXPONENT(v.i) <=
-              IEEE754_DOUBLE_BIAS + DBL_MANT_DIG) */
-        {
-          if (IEEE_EXPONENT(u.i) > IEEE_EXPONENT(v.i))
-            x *= FL108;
-          else
-            y *= FL108;
-          if (IEEE_EXPONENT(w.i) <= 4 * DBL_MANT_DIG + 6)
-            {
-              z *= FL108;
-              adjust = -1;
-            }
-        }
-    }
-
-  /* Ensure correct sign of exact 0 + 0.  */
-  if ((x == 0 || y == 0) && z == 0)
-    return x * y + z;
-
-  // Error-free multiplication: mh + ml = x * y
-  mh = x * y;
-  t = x * 134217729.0;
-  xh = t - (t - x);
-  xl = x - xh;
-  t = y * 134217729.0;
-  yh = t - (t - y);
-  yl = y - yh;
-  ml = xl * yl - (((mh - xh * yh) - xl * yh) - xh * yl);
-  // Error-free addition: ah + al = z + mh
-  ah = z + mh;
-  t = ah - z;
-  al = (z - (ah - t)) + (mh - t);
-
-  /* If the result is an exact zero, ensure it has the correct sign. */
-  if (ah == 0 && ml == 0)
-    return z + mh;
-
-  // Normalize ah, al, ml.
-  t1 = al + ml;
-  t = t1 - al;
-  t2 = (al - (t1 - t)) + (ml - t);
-  al = t1;
-  ml = t2;
-  t1 = ah + al;
-  t = t1 - ah;
-  t2 = (ah - (t1 - t)) + (al - t);
-  ah = t1;
-  al = t2;
-
-  // Odd-rounded addition: ora = al + ml.
-  orah = al + ml;
-  oral = (al - orah) + ml;
-
-  if ( oral != 0.0 )
-    {
-      ora.d = orah;
-      if ( !(ora.i & 1) )
-        {
-          if ( (oral > 0.0) ^ (orah < 0.0) )
-            ora.i++;
-          else
-            ora.i--;
-          orah = ora.d;
-        }
-    }
-
-  // Rounded addition: ra = ah + orah.
-  if ( adjust > 0 )
-    return (ah + orah) * FL53;
-  else if ( adjust < 0 )
-    return (ah + orah) * FLM108;
-  else
-    return ah + orah;
-#endif
-}
+extern double caml_fma(double, double, double);
 
 CAMLprim value caml_fma_float(value f1, value f2, value f3)
 {
@@ -797,11 +576,7 @@ CAMLprim value caml_log10_float(value f)
 
 CAMLexport double caml_log2(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return log2(x);
-#else
-  return log(x) * M_LOG2E;
-#endif
 }
 
 CAMLprim value caml_log2_float(value f)
@@ -829,20 +604,9 @@ CAMLprim value caml_sqrt_float(value f)
   return caml_copy_double(sqrt(Double_val(f)));
 }
 
-CAMLexport double caml_cbrt(double x)
-{
-#ifdef HAS_C99_FLOAT_OPS
-  return cbrt(x);
-#else
-  static const double third = 1.0 / 3.0;
-  double res = exp(third * log(fabs(x)));
-  return (x >= 0) ? res : -res;
-#endif
-}
-
 CAMLprim value caml_cbrt_float(value f)
 {
-  return caml_copy_double(caml_cbrt(Double_val(f)));
+  return caml_copy_double(cbrt(Double_val(f)));
 }
 
 CAMLprim value caml_power_float(value f, value g)
@@ -885,18 +649,9 @@ CAMLprim value caml_asin_float(value f)
   return caml_copy_double(asin(Double_val(f)));
 }
 
-CAMLexport double caml_asinh(double x)
-{
-#ifdef HAS_C99_FLOAT_OPS
-  return asinh(x);
-#else
-  return log(x + sqrt(x * x + 1.0));
-#endif
-}
-
 CAMLprim value caml_asinh_float(value f)
 {
-  return caml_copy_double(caml_asinh(Double_val(f)));
+  return caml_copy_double(asinh(Double_val(f)));
 }
 
 CAMLprim value caml_acos_float(value f)
@@ -904,18 +659,9 @@ CAMLprim value caml_acos_float(value f)
   return caml_copy_double(acos(Double_val(f)));
 }
 
-CAMLexport double caml_acosh(double x)
-{
-#ifdef HAS_C99_FLOAT_OPS
-  return acosh(x);
-#else
-  return log(x + sqrt(x * x - 1.0));
-#endif
-}
-
 CAMLprim value caml_acosh_float(value f)
 {
-  return caml_copy_double(caml_acosh(Double_val(f)));
+  return caml_copy_double(acosh(Double_val(f)));
 }
 
 CAMLprim value caml_atan_float(value f)
@@ -923,18 +669,9 @@ CAMLprim value caml_atan_float(value f)
   return caml_copy_double(atan(Double_val(f)));
 }
 
-CAMLexport double caml_atanh(double x)
-{
-#ifdef HAS_C99_FLOAT_OPS
-  return atanh(x);
-#else
-  return 0.5 * log((1.0 + x) / (1.0 - x));
-#endif
-}
-
 CAMLprim value caml_atanh_float(value f)
 {
-  return caml_copy_double(caml_atanh(Double_val(f)));
+  return caml_copy_double(atanh(Double_val(f)));
 }
 
 CAMLprim value caml_atan2_float(value f, value g)
@@ -947,152 +684,39 @@ CAMLprim value caml_ceil_float(value f)
   return caml_copy_double(ceil(Double_val(f)));
 }
 
-CAMLexport double caml_hypot(double x, double y)
-{
-#ifdef HAS_C99_FLOAT_OPS
-  return hypot(x, y);
-#else
-  double tmp, ratio;
-  x = fabs(x); y = fabs(y);
-  if (x != x) /* x is NaN */
-    return y > DBL_MAX ? y : x;  /* PR#6321 */
-  if (y != y) /* y is NaN */
-    return x > DBL_MAX ? x : y;  /* PR#6321 */
-  if (x < y) { tmp = x; x = y; y = tmp; }
-  if (x == 0.0) return 0.0;
-  ratio = y / x;
-  return x * sqrt(1.0 + ratio * ratio);
-#endif
-}
-
 CAMLprim value caml_hypot_float(value f, value g)
 {
-  return caml_copy_double(caml_hypot(Double_val(f), Double_val(g)));
-}
-
-/* These emulations of expm1() and log1p() are due to William Kahan.
-   See http://www.plunk.org/~hatch/rightway.php */
-CAMLexport double caml_expm1(double x)
-{
-#ifdef HAS_C99_FLOAT_OPS
-  return expm1(x);
-#else
-  double u = exp(x);
-  if (u == 1.)
-    return x;
-  if (u - 1. == -1.)
-    return -1.;
-  return (u - 1.) * x / log(u);
-#endif
-}
-
-CAMLexport double caml_log1p(double x)
-{
-#ifdef HAS_C99_FLOAT_OPS
-  return log1p(x);
-#else
-  double u = 1. + x;
-  if (u == 1.)
-    return x;
-  else
-    return log(u) * x / (u - 1.);
-#endif
+  return caml_copy_double(hypot(Double_val(f), Double_val(g)));
 }
 
 CAMLprim value caml_expm1_float(value f)
 {
-  return caml_copy_double(caml_expm1(Double_val(f)));
+  return caml_copy_double(expm1(Double_val(f)));
 }
 
 CAMLprim value caml_log1p_float(value f)
 {
-  return caml_copy_double(caml_log1p(Double_val(f)));
-}
-
-#ifndef HAS_C99_FLOAT_OPS
-Caml_inline double simple_erf(double x)
-{
-  /* This algorithm for calculating the error function is based on formula
-     7.1.26 from the "Handbook of Mathematical Functions" by Abramowitz
-     and Stegun.  The implementation using Horner's method for evaluating the
-     polynomial approximation is derived from Python code by John D. Cook. */
-  double a1 =  0.254829592, a2 = -0.284496736, a3 = 1.421413741,
-         a4 = -1.453152027, a5 =  1.061405429, p  = 0.3275911,
-         t, y;
-
-  int sign = (x >= 0) ? 1 : -1;
-  x = fabs(x);
-  t = 1.0 / (1.0 + p * x);
-  y = 1.0 - (((((a5 *t  + a4) * t) + a3) * t + a2) * t + a1) * t * exp(-x * x);
-  return sign * y;
-}
-#endif
-
-CAMLexport double caml_erf(double x)
-{
-#ifdef HAS_C99_FLOAT_OPS
-  return erf(x);
-#else
-  return simple_erf(x);
-#endif
+  return caml_copy_double(log1p(Double_val(f)));
 }
 
 CAMLprim value caml_erf_float(value f)
 {
-  return caml_copy_double(caml_erf(Double_val(f)));
-}
-
-CAMLexport double caml_erfc(double x)
-{
-#ifdef HAS_C99_FLOAT_OPS
-  return erfc(x);
-#else
-  return 1.0 - simple_erf(x);
-#endif
+  return caml_copy_double(erf(Double_val(f)));
 }
 
 CAMLprim value caml_erfc_float(value f)
 {
-  return caml_copy_double(caml_erfc(Double_val(f)));
-}
-
-union double_as_two_int32 {
-    double d;
-#if defined(ARCH_BIG_ENDIAN) || (defined(__arm__) && !defined(__ARM_EABI__))
-    struct { uint32_t h; uint32_t l; } i;
-#else
-    struct { uint32_t l; uint32_t h; } i;
-#endif
-};
-
-CAMLexport double caml_copysign(double x, double y)
-{
-#ifdef HAS_C99_FLOAT_OPS
-  return copysign(x, y);
-#else
-  union double_as_two_int32 ux, uy;
-  ux.d = x;
-  uy.d = y;
-  ux.i.h &= 0x7FFFFFFFU;
-  ux.i.h |= (uy.i.h & 0x80000000U);
-  return ux.d;
-#endif
+  return caml_copy_double(erfc(Double_val(f)));
 }
 
 CAMLprim value caml_copysign_float(value f, value g)
 {
-  return caml_copy_double(caml_copysign(Double_val(f), Double_val(g)));
+  return caml_copy_double(copysign(Double_val(f), Double_val(g)));
 }
 
 CAMLprim value caml_signbit(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return Val_bool(signbit(x));
-#else
-  union double_as_two_int32 ux;
-  ux.d = x;
-  return Val_bool(ux.i.h >> 31);
-#endif
 }
 
 CAMLprim value caml_signbit_float(value f)
@@ -1128,6 +752,15 @@ CAMLprim value caml_float_compare(value vf, value vg)
 {
   return Val_int(caml_float_compare_unboxed(Double_val(vf),Double_val(vg)));
 }
+
+union double_as_two_int32 {
+    double d;
+#if defined(ARCH_BIG_ENDIAN) || (defined(__arm__) && !defined(__ARM_EABI__))
+    struct { uint32_t h; uint32_t l; } i;
+#else
+    struct { uint32_t l; uint32_t h; } i;
+#endif
+};
 
 enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };
 

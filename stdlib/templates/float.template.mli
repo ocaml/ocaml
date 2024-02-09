@@ -72,10 +72,10 @@ external fma : float -> float -> float -> float =
    instructions (providing full IEEE compliance) or a software
    emulation.
 
-   On 64-bit Cygwin, 64-bit mingw-w64 and MSVC 2017 and earlier, this function
-   may be emulated owing to known bugs on limitations on these platforms.
-   Note: since software emulation of the fma is costly, make sure that you are
-   using hardware fma support if performance matters.
+   On Windows (including Cygwin), this function requires the Intel FMA
+   instruction set extension, available since the Haswell (Intel) and
+   Piledriver (AMD) microarchitectures in 2012/13. When run on CPUs which don't
+   support this extension, the function always returns {!Float.nan}.
 
    @since 4.08 *)
 
@@ -221,7 +221,7 @@ external sqrt : float -> float = "caml_sqrt_float" "sqrt"
 [@@unboxed] [@@noalloc]
 (** Square root. *)
 
-external cbrt : float -> float = "caml_cbrt_float" "caml_cbrt"
+external cbrt : float -> float = "caml_cbrt_float" "cbrt"
   [@@unboxed] [@@noalloc]
 (** Cube root.
 
@@ -252,12 +252,12 @@ external log2 : float -> float = "caml_log2_float" "caml_log2"
     @since 4.13
 *)
 
-external expm1 : float -> float = "caml_expm1_float" "caml_expm1"
+external expm1 : float -> float = "caml_expm1_float" "expm1"
 [@@unboxed] [@@noalloc]
 (** [expm1 x] computes [exp x -. 1.0], giving numerically-accurate results
     even if [x] is close to [0.0]. *)
 
-external log1p : float -> float = "caml_log1p_float" "caml_log1p"
+external log1p : float -> float = "caml_log1p_float" "log1p"
 [@@unboxed] [@@noalloc]
 (** [log1p x] computes [log(1.0 +. x)] (natural logarithm),
     giving numerically-accurate results even if [x] is close to [0.0]. *)
@@ -292,7 +292,7 @@ external atan2 : float -> float -> float = "caml_atan2_float" "atan2"
     and [y] are used to determine the quadrant of the result.
     Result is in radians and is between [-pi] and [pi]. *)
 
-external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot"
+external hypot : float -> float -> float = "caml_hypot_float" "hypot"
 [@@unboxed] [@@noalloc]
 (** [hypot x y] returns [sqrt(x *. x +. y *. y)], that is, the length
     of the hypotenuse of a right-angled triangle with sides of length
@@ -312,7 +312,7 @@ external tanh : float -> float = "caml_tanh_float" "tanh"
 [@@unboxed] [@@noalloc]
 (** Hyperbolic tangent.  Argument is in radians. *)
 
-external acosh : float -> float = "caml_acosh_float" "caml_acosh"
+external acosh : float -> float = "caml_acosh_float" "acosh"
   [@@unboxed] [@@noalloc]
 (** Hyperbolic arc cosine.  The argument must fall within the range
     [[1.0, inf]].
@@ -321,7 +321,7 @@ external acosh : float -> float = "caml_acosh_float" "caml_acosh"
     @since 4.13
 *)
 
-external asinh : float -> float = "caml_asinh_float" "caml_asinh"
+external asinh : float -> float = "caml_asinh_float" "asinh"
   [@@unboxed] [@@noalloc]
 (** Hyperbolic arc sine.  The argument and result range over the entire
     real line.
@@ -330,7 +330,7 @@ external asinh : float -> float = "caml_asinh_float" "caml_asinh"
     @since 4.13
 *)
 
-external atanh : float -> float = "caml_atanh_float" "caml_atanh"
+external atanh : float -> float = "caml_atanh_float" "atanh"
   [@@unboxed] [@@noalloc]
 (** Hyperbolic arc tangent.  The argument must fall within the range
     [[-1.0, 1.0]].
@@ -339,15 +339,14 @@ external atanh : float -> float = "caml_atanh_float" "caml_atanh"
     @since 4.13
 *)
 
-external erf : float -> float = "caml_erf_float" "caml_erf"
-  [@@unboxed] [@@noalloc]
+external erf : float -> float = "caml_erf_float" "erf" [@@unboxed] [@@noalloc]
 (** Error function.  The argument ranges over the entire real line.
     The result is always within [[-1.0, 1.0]].
 
     @since 4.13
 *)
 
-external erfc : float -> float = "caml_erfc_float" "caml_erfc"
+external erfc : float -> float = "caml_erfc_float" "erfc"
   [@@unboxed] [@@noalloc]
 (** Complementary error function ([erfc x = 1 - erf x]).
     The argument ranges over the entire real line.
@@ -404,7 +403,7 @@ external next_after : float -> float -> float
    @since 4.08 *)
 
 external copy_sign : float -> float -> float
-  = "caml_copysign_float" "caml_copysign"
+  = "caml_copysign_float" "copysign"
 [@@unboxed] [@@noalloc]
 (** [copy_sign x y] returns a float whose absolute value is that of [x]
     and whose sign is that of [y].  If [x] is [nan], returns [nan].

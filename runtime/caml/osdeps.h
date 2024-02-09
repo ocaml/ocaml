@@ -155,6 +155,11 @@ extern uint64_t caml_time_counter(void);
 
 extern void caml_init_os_params(void);
 
+#if defined(__MINGW32__) || defined(__CYGWIN__)
+extern void caml_win32_fma_detection(void);
+extern void caml_win32_unregister_fma_detection(void);
+#endif
+
 #endif /* CAML_INTERNALS */
 
 #ifdef _WIN32
