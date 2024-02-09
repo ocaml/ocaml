@@ -474,7 +474,8 @@ type with_info =
 let merge_constraint initial_env loc sg lid constr =
   let destructive_substitution =
     match constr with
-    | With_type _ | With_type_package _ | With_module _ | With_modtype _ -> false
+    | With_type _ | With_module _ | With_modtype _
+    | With_type_package _ -> false
     | With_typesubst _ | With_modsubst _ | With_modtypesubst _  -> true
   in
   let real_ids = ref [] in
