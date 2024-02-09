@@ -1729,7 +1729,14 @@ and type_pat_aux
       let p = {p with ppat_loc=loc} in
       type_pat tps category p expected_ty
         (* TODO: record 'extra' to remember about interval *)
-  | Ppat_interval _ ->
+  | Ppat_interval (c1, c2) ->
+      let loc =
+        match c1, c2 with
+        | {pconst_desc = Pconst_char _; _}, {pconst_loc; _}
+        | {pconst_loc; _}, {pconst_desc = Pconst_char _; _} ->
+            pconst_loc
+        | _, _ -> loc
+      in
       raise (Error (loc, !!penv, Invalid_interval))
   | Ppat_tuple spl ->
       assert (List.length spl >= 2);
