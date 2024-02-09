@@ -58,8 +58,9 @@ let unsigned_to_int =
     else
       None
 
-external format : string -> int64 -> string = "caml_int64_format"
-let to_string n = format "%d" n
+(*external format : string -> int64 -> string = "caml_int64_format"*)
+external to_string: (int64 [@unboxed]) -> string =
+    "caml_int64_to_string" "unboxed_caml_int64_to_string"
 
 external of_string : string -> int64 = "caml_int64_of_string"
 
