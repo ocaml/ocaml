@@ -22,28 +22,37 @@
 #include "mlvalues.h"
 #include "roots.h"
 
-/*** Track allocations ***/
+/*** Sample allocations ***/
 
-/* Possibly track an allocation on the major heap. Called on every
- * major-heap allocation, after the header has been written. */
+/* [Gc.Memprof.allocation_source] */
 
-/* Possibly track an allocation of a custom block. Called on every
- * custom block allocation, after the header has been written. */
 enum { CAML_MEMPROF_SRC_NORMAL = 0,
        CAML_MEMPROF_SRC_MARSHAL = 1, /* interning */
        CAML_MEMPROF_SRC_CUSTOM = 2 /* custom memory */ };
 
+/* Respond to the allocation of any block. Does not call callbacks.
+ * `block` is the allocated block, to be tracked by memprof if
+ * sampled. `allocated_words` is the number of words allocated, to be
+ * passed to the allocation callback. `sampled_words` is the number of
+ * words to use when computing the number of samples (this will
+ * normally be one more than `allocated words` due to the header word,
+ * but may not be for out-of-heap memory). `source` is one of the
+ * `CAML_MEMPROF_SRC_* constants above. */
 
 void caml_memprof_sample_block(value block, size_t allocated_words,
                                size_t sampled_words, int source);
 
-/* Track a minor heap "Comballoc" (combined allocation). Called when
+/* Sample a minor heap "Comballoc" (combined allocation). Called when
  * the memprof trigger is hit (before the allocation is actually
  * performed, which may require a GC). `allocs` and `alloc_lens`
  * describe the combined allocation. Runs allocation callbacks. */
 
 extern void caml_memprof_sample_young(uintnat wosize, int from_caml,
                                       int allocs, unsigned char* alloc_lens);
+
+/* Suspend or unsuspend sampling (for the current thread). */
+
+extern void caml_memprof_update_suspended(_Bool);
 
 
 /*** GC interface ***/
@@ -85,6 +94,11 @@ extern void caml_memprof_after_minor_gc(caml_domain_state *state, _Bool global);
 
 extern void caml_memprof_after_major_gc(caml_domain_state *state, _Bool global);
 
+/* Freshly set the trigger (sampling point) on the minor heap of the
+ * domain `state`. */
+
+extern void caml_memprof_renew_minor_sample(caml_domain_state *state);
+
 
 /*** Callbacks ***/
 
@@ -93,25 +107,47 @@ extern void caml_memprof_after_major_gc(caml_domain_state *state, _Bool global);
 
 extern value caml_memprof_run_callbacks_exn(void);
 
-/* Suspend or unsuspend profiling */
-extern void caml_memprof_update_suspended(_Bool);
 
-/* Freshly set sampling point on minor heap */
-extern void caml_memprof_renew_minor_sample(caml_domain_state *state);
+/*** Multi-domain support. ***/
 
-/* Multi-domain support. */
+/* Notify memprof of the creation of a new domain `domain`. If there
+ * was an existing domain (from which to inherit profiling behaviour),
+ * it is passed in `parent`. Called before the new domain allocates
+ * anything, and before the parent domain continues. Also creates
+ * memprof thread state for the initial thread of the domain. */
 
 extern void caml_memprof_new_domain(caml_domain_state *parent,
                                     caml_domain_state *domain);
+
+/* Notify memprof that the domain `domain` is terminating. Called
+ * after the last allocation by the domain. */
+
 extern void caml_memprof_delete_domain(caml_domain_state *domain);
 
-/* Multi-thread support */
+
+/*** Multi-thread support ***/
+
+/* Opaque type of memprof state for a single thread. */
 
 typedef struct memprof_thread_s *memprof_thread_t;
 
-CAMLextern memprof_thread_t caml_memprof_main_thread(caml_domain_state *domain);
+/* Notify memprof that a new thread is being created. Returns a
+ * pointer to memprof state for the new thread. */
+
 CAMLextern memprof_thread_t caml_memprof_new_thread(caml_domain_state *domain);
+
+/* Obtain the memprof state for the initial thread of a domain. Called
+ * when there is only one such thread. */
+
+CAMLextern memprof_thread_t caml_memprof_main_thread(caml_domain_state *domain);
+
+/* Notify memprof that the current domain is switching to the given
+ * thread. */
+
 CAMLextern void caml_memprof_enter_thread(memprof_thread_t);
+
+/* Notify memprof that the given thread is being deleted. */
+
 CAMLextern void caml_memprof_delete_thread(memprof_thread_t);
 
 #endif
