@@ -46,7 +46,7 @@ struct memprof_thread_s {
  * heap. These are getter macros for each field. */
 
 #define Stopped(config)          Bool_val(Field(config, 0))
-#define Running(config)          ((config != Val_unit) && !Stopped(config))
+#define Sampling(config)         ((config != Val_unit) && !Stopped(config))
 #define Lambda(config)           Double_val(Field(config, 1))
 #define One_log1m_lambda(config) Double_val(Field(config, 2))
 #define Callstack_size(config)   Int_val(Field(config, 3)
@@ -208,13 +208,13 @@ void caml_memprof_update_suspended(bool s) {
 
 /**** Sampling procedures ****/
 
-Caml_inline bool running(memprof_domain_t domain)
+Caml_inline bool sampling(memprof_domain_t domain)
 {
   memprof_thread_t thread = domain->current;
 
   if (thread && !thread->suspended) {
     value config = domain->config;
-    return Running(config);
+    return Sampling(config);
   }
   return false;
 }
@@ -232,7 +232,7 @@ void caml_memprof_renew_minor_sample(caml_domain_state *state)
 {
   memprof_domain_t domain = state->memprof;
   value *trigger = state->young_start;
-  if (running(domain)) {
+  if (sampling(domain)) {
     /* set trigger based on geometric distribution */
   }
   CAMLassert((trigger >= state->young_start) &&
