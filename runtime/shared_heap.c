@@ -15,6 +15,7 @@
 /**************************************************************************/
 #define CAML_INTERNALS
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -27,6 +28,7 @@
 #include "caml/globroots.h"
 #include "caml/major_gc.h"
 #include "caml/memory.h"
+#include "caml/memprof.h"
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
 #include "caml/roots.h"
@@ -1221,6 +1223,10 @@ void caml_compact_heap(caml_domain_state* domain_state,
 
   /* First we do roots (locals and finalisers) */
   caml_do_roots(&compact_update_value, 0, NULL, Caml_state, 1);
+
+  /* Memprof roots and "weak" pointers to tracked blocks */
+  caml_memprof_scan_roots(&compact_update_value, 0, NULL,
+                          Caml_state, true, participants[0] == Caml_state);
 
   /* Next, one domain does the global roots */
   if (participants[0] == Caml_state) {

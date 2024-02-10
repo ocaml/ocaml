@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include "caml/memory.h"
 #include "caml/memprof.h"
+#include "caml/mlvalues.h"
 
 /* type aliases for the hierarchy of structures for managing memprof status. */
 
@@ -156,6 +157,25 @@ static memprof_domain_t domain_create(caml_domain_state *caml_state)
   return domain;
 }
 
+/**** GC interface ****/
+
+void caml_memprof_scan_roots(scanning_action f,
+                             scanning_action_flags fflags,
+                             void* fdata,
+                             caml_domain_state *state,
+                             bool weak,
+                             bool global)
+{
+}
+
+void caml_memprof_after_minor_gc(caml_domain_state *state, bool global)
+{
+}
+
+void caml_memprof_after_major_gc(caml_domain_state *state, bool global)
+{
+}
+
 /**** Interface to domain module ***/
 
 void caml_memprof_new_domain(caml_domain_state *parent,
@@ -239,6 +259,24 @@ void caml_memprof_renew_minor_sample(caml_domain_state *state)
              (trigger <= state->young_ptr));
   state->memprof_young_trigger = trigger;
   caml_reset_young_limit(state);
+}
+
+/* Respond to the allocation of any block. Does not call callbacks. */
+
+void caml_memprof_sample_block(value block,
+                               size_t allocated_words,
+                               size_t sampled_words,
+                               int source)
+{
+}
+
+/* Respond to hitting the memprof trigger on the minor heap. May
+ * sample several distinct blocks in the combined allocation. Runs
+ * allocation callbacks. */
+
+void caml_memprof_sample_young(uintnat wosize, int from_caml,
+                               int allocs, unsigned char* encoded_lens)
+{
 }
 
 /**** Interface with systhread. ****/

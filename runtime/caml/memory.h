@@ -200,6 +200,9 @@ enum caml_alloc_small_flags {
 #define Alloc_small_enter_GC(dom_st, wosize)    \
   Alloc_small_enter_GC_flags(CAML_DO_TRACK | CAML_FROM_C, dom_st, wosize)
 
+#define Alloc_small_enter_GC_no_track(dom_st, wosize)    \
+  Alloc_small_enter_GC_flags(CAML_DONT_TRACK | CAML_FROM_C, dom_st, wosize)
+
 #define Alloc_small_with_reserved(result, wosize, tag, GC, reserved) do{    \
                                                 CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \

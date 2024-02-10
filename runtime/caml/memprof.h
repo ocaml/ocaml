@@ -22,6 +22,73 @@
 #include "mlvalues.h"
 #include "roots.h"
 
+/*** Track allocations ***/
+
+/* Possibly track an allocation on the major heap. Called on every
+ * major-heap allocation, after the header has been written. */
+
+/* Possibly track an allocation of a custom block. Called on every
+ * custom block allocation, after the header has been written. */
+enum { CAML_MEMPROF_SRC_NORMAL = 0,
+       CAML_MEMPROF_SRC_MARSHAL = 1, /* interning */
+       CAML_MEMPROF_SRC_CUSTOM = 2 /* custom memory */ };
+
+
+void caml_memprof_sample_block(value block, size_t allocated_words,
+                               size_t sampled_words, int source);
+
+/* Track a minor heap "Comballoc" (combined allocation). Called when
+ * the memprof trigger is hit (before the allocation is actually
+ * performed, which may require a GC). `allocs` and `alloc_lens`
+ * describe the combined allocation. Runs allocation callbacks. */
+
+extern void caml_memprof_sample_young(uintnat wosize, int from_caml,
+                                      int allocs, unsigned char* alloc_lens);
+
+
+/*** GC interface ***/
+
+/* Apply `f(fdata, r, &r)` to each GC root `r` within memprof data
+ * structures for the domain `state`.
+ *
+ * `fflags` is used to decide whether to only scan roots which may
+ * point to minor heaps (the `SCANNING_ONLY_YOUNG_VALUES` flag).
+ *
+ * If `weak` is false then only scan strong roots. If `weak`
+ * is true then also scan weak roots.
+ *
+ * If `global` is false then only scan roots for `state`. If `global`
+ * is true then also scan roots shared between all domains. */
+
+extern void caml_memprof_scan_roots(scanning_action f,
+                                    scanning_action_flags fflags,
+                                    void* fdata,
+                                    caml_domain_state *state,
+                                    _Bool weak,
+                                    _Bool global);
+
+/* Update memprof data structures for the domain `state`, to reflect
+ * survival and promotion, after a minor GC is completed.
+ *
+ * If `global` is false then only update structures for `state`. If
+ * `global` is true then also update structures shared between all
+ * domains. */
+
+extern void caml_memprof_after_minor_gc(caml_domain_state *state, _Bool global);
+
+/* Update memprof data structures for the domain `state`, to reflect
+ * survival, after a minor GC is completed.
+ *
+ * If `global` is false then only update structures for `state`. If
+ * `global` is true then also update structures shared between all
+ * domains. */
+
+extern void caml_memprof_after_major_gc(caml_domain_state *state, _Bool global);
+
+extern void caml_memprof_set_suspended(int);
+
+extern value caml_memprof_handle_postponed_exn(void);
+
 /* Suspend or unsuspend profiling */
 extern void caml_memprof_update_suspended(_Bool);
 

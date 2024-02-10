@@ -342,9 +342,10 @@ OCaml 5.2.0
    Ojeda Bar)
 
 - #11911, #12382, #12383: Restore statmemprof functionality in part
-  (backtrace buffers, per-thread and per-domain data structures).
-  (Nick Barnes, review by Gabriel Scherer, Fabrice Buoro, Sadiq
-   Jaffer, and Guillaume Munch-Maccagnoni).
+  (backtrace buffers, per-thread and per-domain data structures,
+  GC/allocation interface). (Nick Barnes, review by Gabriel Scherer,
+  Fabrice Buoro, Sadiq Jaffer, Guillaume Munch-Maccagnoni, and
+  Jacques-Henri Jourdan).
 
 - #12735: Store both ends of the stack chain in continuations
   (Leo White, review by Miod Vallat and KC Sivaramakrishnan)
