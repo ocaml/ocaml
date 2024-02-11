@@ -235,8 +235,8 @@ and pattern : type k . _ -> _ -> k general_pattern -> unit = fun i ppf x ->
   end;
   match x.pat_desc with
   | Tpat_any -> line i ppf "Tpat_any\n";
-  | Tpat_var (s,_) -> line i ppf "Tpat_var \"%a\"\n" fmt_ident s;
-  | Tpat_alias (p, s,_) ->
+  | Tpat_var (s,_,_) -> line i ppf "Tpat_var \"%a\"\n" fmt_ident s;
+  | Tpat_alias (p, s,_,_) ->
       line i ppf "Tpat_alias \"%a\"\n" fmt_ident s;
       pattern i ppf p;
   | Tpat_constant (c) -> line i ppf "Tpat_constant %a\n" fmt_constant c;
@@ -341,7 +341,7 @@ and expression i ppf x =
   | Texp_constant (c) -> line i ppf "Texp_constant %a\n" fmt_constant c;
   | Texp_let (rf, l, e) ->
       line i ppf "Texp_let %a\n" fmt_rec_flag rf;
-      list i value_binding ppf l;
+      list i (value_binding rf) ppf l;
       expression i ppf e;
   | Texp_function (params, body) ->
       line i ppf "Texp_function\n";
@@ -648,7 +648,7 @@ and class_expr i ppf x =
       list i label_x_expression ppf l;
   | Tcl_let (rf, l1, l2, ce) ->
       line i ppf "Tcl_let %a\n" fmt_rec_flag rf;
-      list i value_binding ppf l1;
+      list i (value_binding rf) ppf l1;
       list i ident_x_expression_def ppf l2;
       class_expr i ppf ce;
   | Tcl_constraint (ce, Some ct, _, _, _) ->
@@ -868,7 +868,7 @@ and structure_item i ppf x =
       expression i ppf e;
   | Tstr_value (rf, l) ->
       line i ppf "Tstr_value %a\n" fmt_rec_flag rf;
-      list i value_binding ppf l;
+      list i (value_binding rf) ppf l;
   | Tstr_primitive vd ->
       line i ppf "Tstr_primitive\n";
       value_description i ppf vd;
@@ -954,8 +954,12 @@ and case
   end;
   expression (i+1) ppf c_rhs;
 
-and value_binding i ppf x =
-  line i ppf "<def>\n";
+and value_binding rec_flag i ppf x =
+  begin match rec_flag, x.vb_rec_kind with
+  | Nonrecursive, _ -> line i ppf "<def>\n"
+  | Recursive, Static -> line i ppf "<def_rec>\n"
+  | Recursive, Dynamic -> line i ppf "<def_rec_dynamic>\n"
+  end;
   attributes (i+1) ppf x.vb_attributes;
   pattern (i+1) ppf x.vb_pat;
   expression (i+1) ppf x.vb_expr

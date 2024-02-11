@@ -249,7 +249,7 @@ variable "'a" during typing:
 type ('arg,'result,'aux) fn =
   | Fun: ('a ->'b) -> ('a,'b,unit) fn
   | Mem1: ('a ->'b) * 'a * 'b -> ('a, 'b, 'a * 'b) fn
- let apply: ('arg,'result, _ ) fn -> 'arg -> 'result = fun f x ->
+let apply: ('arg,'result, _ ) fn -> 'arg -> 'result = fun f x ->
   match f with
   | Fun f -> f x
   | Mem1 (f,y,fy) -> if x = y then fy else f x
@@ -272,9 +272,22 @@ explicitly. For instance, the following code names the type of the argument of
 type _ closure = Closure : ('a -> 'b) * 'a -> 'b closure
 let eval = fun (Closure (type a) (f, x : (a -> _) * _)) -> f (x : a)
 \end{caml_example*}
-All existential type variables of the constructor must by introduced by
+All existential type variables of the constructor must be introduced by
 the ("type" ...) construct and bound by a type annotation on the
 outside of the constructor argument.
+
+One can additionally bind existentials that were freshly introduced
+by the refinement of another existential type, if they appear in the
+type of the arguments.
+\begin{caml_example*}{verbatim}
+type _ ty =
+  | Int : int ty
+  | Pair : 'b ty * 'c ty -> ('b * 'c) ty
+let rec default : type a. a ty -> a = function
+  | Int -> 0
+  | Pair (type b c) (b, c : b ty * c ty) ->
+      (default b : b), (default c : c)
+\end{caml_example*}
 
 \section{s:gadt-equation-nonlocal-abstract}{Equations on non-local abstract types}
 

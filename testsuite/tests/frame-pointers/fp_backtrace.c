@@ -126,7 +126,7 @@ void fp_backtrace(value argv0)
     if (!is_from_executable(symbol, execname))
       goto skip;
 
-    /* Exctract the full function name */
+    /* Extract the full function name */
     regmatch_t funcname = func_name_from_symbol(symbol);
     if (funcname.rm_so == -1)
       goto skip;

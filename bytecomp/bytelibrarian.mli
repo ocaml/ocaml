@@ -27,6 +27,7 @@ val create_archive: string list -> string -> unit
 type error =
     File_not_found of string
   | Not_an_object_file of string
+  | Link_error of Linkdeps.error
 
 exception Error of error
 

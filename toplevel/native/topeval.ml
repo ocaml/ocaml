@@ -129,7 +129,7 @@ let name_expression ~loc ~attrs exp =
    in
    let sg = [Sig_value(id, vd, Exported)] in
    let pat =
-     { pat_desc = Tpat_var(id, mknoloc name);
+     { pat_desc = Tpat_var(id, mknoloc name, vd.val_uid);
        pat_loc = loc;
        pat_extra = [];
        pat_type = exp.exp_type;
@@ -139,7 +139,7 @@ let name_expression ~loc ~attrs exp =
    let vb =
      { vb_pat = pat;
        vb_expr = exp;
-       vb_rec_kind = Not_recursive;
+       vb_rec_kind = Dynamic;
        vb_attributes = attrs;
        vb_loc = loc; }
    in
@@ -171,7 +171,7 @@ let execute_phrase print_outcome ppf phr =
       let sg' = Typemod.Signature_names.simplify newenv names sg in
       ignore (Includemod.signatures oldenv ~mark:Mark_positive sg sg');
       Typecore.force_delayed_checks ();
-      let shape = Shape.local_reduce shape in
+      let shape = Shape_reduce.local_reduce Env.empty shape in
       if !Clflags.dump_shape then Shape.print ppf shape;
       (* `let _ = <expression>` or even just `<expression>` require special
          handling in toplevels, or nothing is displayed. In bytecode, the

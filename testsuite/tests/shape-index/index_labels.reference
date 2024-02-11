@@ -1,0 +1,25 @@
+Indexed shapes:
+Resolved: Index_labels.2 :
+  b (File "index_labels.ml", line 26, characters 14-15)
+Resolved: Index_labels.1 :
+  a (File "index_labels.ml", line 26, characters 6-7)
+Resolved: Index_labels.3 :
+  x (File "index_labels.ml", line 23, characters 2-3)
+Resolved: Index_labels.1 :
+  a (File "index_labels.ml", line 23, characters 4-5)
+Resolved: Index_labels.3 :
+  x (File "index_labels.ml", line 22, characters 2-3)
+Resolved: Index_labels.1 :
+  a (File "index_labels.ml", line 22, characters 4-5)
+Resolved: Index_labels.2 :
+  b (File "index_labels.ml", line 20, characters 18-19)
+Resolved: Index_labels.1 :
+  a (File "index_labels.ml", line 20, characters 10-11)
+
+Uid of decls:
+Index_labels.5: f (File "index_labels.ml", line 25, characters 4-5)
+Index_labels.2: b (File "index_labels.ml", line 18, characters 27-28)
+Index_labels.3: x (File "index_labels.ml", line 20, characters 4-5)
+Index_labels.1: a (File "index_labels.ml", line 18, characters 19-20)
+Index_labels.4: _y (File "index_labels.ml", line 21, characters 4-6)
+Index_labels.0: t (File "index_labels.ml", line 18, characters 5-6)

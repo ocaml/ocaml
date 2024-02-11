@@ -591,7 +591,7 @@ static uintnat next_rand_geom;
    lambda].  We could use more a involved algorithm, but this should
    be good enough since, in the average use case, [lambda] <= 0.01 and
    therefore the generation of the binomial variable is amortized by
-   the initialialization of the corresponding block.
+   the initialization of the corresponding block.
 
    If needed, we could use algorithm BTRS from the paper:
      Hormann, Wolfgang. "The generation of binomial random variates."

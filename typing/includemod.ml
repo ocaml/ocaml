@@ -745,6 +745,8 @@ and signature_components  ~in_eq ~loc old_env ~mark env subst
               type_declarations ~loc ~old_env env ~mark subst id1 tydec1 tydec2
             in
             let item = mark_error_as_unrecoverable item in
+            (* Right now we don't filter hidden constructors / labels from the
+            shape. *)
             let shape_map = Shape.Map.add_type_proj shape_map id1 orig_shape in
             id1, item, shape_map, false
         | Sig_typext(id1, ext1, _, _), Sig_typext(_id2, ext2, _, _) ->

@@ -51,7 +51,7 @@
 	    background: rgb(228, 217, 211);
 	}
 	/* must be same as <pre>: */
-	background: linear-gradient(to left, white 0%, rgb(237, 232, 229) 100%);
+	background-color: #ede8e6;
 	width: 100%;
 	td {
 	    padding-left: 1ex;
@@ -108,9 +108,8 @@
     }
     
     .sig_block {
-	border-left: 4px solid #e69c7f;
 	padding-left: 1em;
-	background: linear-gradient(to left, white 0%, rgb(237, 232, 229) 100%);
+	background-color: #ede8e6;
 	// PROBLEM the sig_block ends too soon, it should actually
 	// include the "end)" line ==> REPORT THIS
 	// (eg: compilerlibref/Arg_helper.html)
@@ -162,7 +161,7 @@
 	list-style-position: outside
     }
     ul>li {
-	margin-left: 22px;
+	margin-left: 2rem;
     }
     ol>li {
 	margin-left: 27.2px;
@@ -199,7 +198,7 @@
 	/*box-shadow: 0 0px 0 1px rgba(255, 215, 181, 0.8) !important;*/
 	border-radius: 1px;
 	/*border-bottom: 4px solid rgb(255, 215, 181);*/
-	box-shadow: 0 4px 0 0px rgb(255, 215, 181);
+	background-color: #ffd6b5;
 	z-index: 0;
 	@if $ocamlorg {
 	    /* Because of fixed banner in the ocaml.org site, we have to offset the targets. See https://stackoverflow.com/questions/10732690/offsetting-an-html-anchor-to-adjust-for-fixed-header */
@@ -321,7 +320,7 @@
     }
 
     pre {
-	border-left: 4px solid #e69c7f;
+	border-top: 1px solid #e69c7f;
 	white-space: pre-wrap;
 	word-wrap: break-word;
 	padding-left: 1ex;
@@ -352,6 +351,7 @@
     /* Code lexemes */
 
     .keyword {
+  font-family: $font-sans;
 	font-weight: 500;
 	color: inherit;
     }
@@ -711,7 +711,7 @@
 	display: inline-block;
     } 
     pre {
-	background: linear-gradient(to left, white 0%, rgb(237, 232, 229) 100%);
+	background-color: #ede8e6;
     }
 
     #search_results li.match::before {
@@ -886,7 +886,7 @@
     .search_comment #search_help {
 	overflow: hidden;
 	font-size: smaller;
-	background: linear-gradient(to bottom, white 0%, rgb(237, 232, 229) 100%);
+	background-color: #ede8e6;
 	transition: all 0.5s;
     }
     #help_icon {

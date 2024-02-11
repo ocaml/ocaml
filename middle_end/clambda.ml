@@ -54,11 +54,6 @@ and ulambda =
       * ulambda * ulambda
   | Uphantom_let of Backend_var.With_provenance.t
       * uphantom_defining_expr option * ulambda
-  | Uletrec of
-      (Backend_var.With_provenance.t *
-       Value_rec_types.recursive_binding_kind *
-       ulambda) list
-      * ulambda
   | Uprim of Clambda_primitives.primitive * ulambda list * Debuginfo.t
   | Uswitch of ulambda * ulambda_switch * Debuginfo.t
   | Ustringswitch of ulambda * (string * ulambda) list * ulambda option

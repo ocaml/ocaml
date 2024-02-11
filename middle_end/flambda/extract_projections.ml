@@ -106,7 +106,7 @@ let rec analyse_expr ~which_variables expr =
     | For { from_value; to_value; _ } ->
       check_free_variable from_value;
       check_free_variable to_value
-    | Let _ | Let_rec _ | Static_catch _ | While _ | Try_with _
+    | Let _ | Static_catch _ | While _ | Try_with _
     | Proved_unreachable -> ()
   in
   let for_named (named : Flambda.named) =

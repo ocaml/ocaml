@@ -30,6 +30,7 @@
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
+#include "caml/platform.h"
 #include "caml/roots.h"
 #include "caml/signals.h"
 #include "caml/sys.h"

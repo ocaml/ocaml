@@ -291,7 +291,6 @@ let pop_last a =
   let last = length - 1 in
   (* We know [length > 0] so [last >= 0]. *)
   match Array.unsafe_get arr last with
-  (* At this point we know that [last] is a valid index in [arr]. *)
   | Empty ->
       Error.missing_element ~i:last ~length
   | Elem s ->
@@ -484,7 +483,7 @@ let append_array_if_room a b =
          reserved-but-not-yet-filled space, it will get a clean "missing
          element" error. This is worse than with the fill-then-notify
          approach where the new elements would only become visible
-         (to iterators, for removal, etc.) alltogether at the end of
+         (to iterators, for removal, etc.) altogether at the end of
          loop.
 
        To summarise, "reserve before fill" is better on add-add races,
@@ -722,6 +721,7 @@ let to_array a =
 
 let of_list li =
   let a = create () in
+  ensure_capacity a (List.length li);
   List.iter (fun x -> add_last a x) li;
   a
 

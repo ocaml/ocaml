@@ -174,6 +174,10 @@ CAMLextern void caml_runtime_events_pause(void);
    is written during this call. */
 CAMLextern void caml_runtime_events_resume(void);
 
+/* Returns [1] if runtime events are currently active (started and not paused),
+   [0] otherwise. */
+CAMLextern int caml_runtime_events_are_active(void);
+
 #ifdef CAML_INTERNALS
 
 struct runtime_events_buffer_header {
@@ -302,7 +306,9 @@ CAMLextern value caml_runtime_events_user_register(value event_name,
 /* Write event data to ring buffer. Should not be called when the runtime lock
    is not held, i.e., after [caml_enter_blocking_section()] and before
    [caml_leave_blocking_section()]. */
-CAMLextern value caml_runtime_events_user_write(value event,
+CAMLextern value caml_runtime_events_user_write(
+   value buf,
+   value event,
    value event_content);
 
 /* Resolve an event name to the associated event value using known registered

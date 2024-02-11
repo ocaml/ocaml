@@ -117,11 +117,6 @@ let run_script ppf name args =
   let filename = filename_of_input name in
   Compmisc.init_path ~dir:(Filename.dirname filename) ();
                    (* Note: would use [Filename.abspath] here, if we had it. *)
-  begin
-    try toplevel_env := Compmisc.initial_env()
-    with Env.Error _ | Typetexp.Error _ as exn ->
-      Location.report_exception ppf exn; raise (Compenv.Exit_with_status 2)
-  end;
   Sys.interactive := false;
   run_hooks After_setup;
   let explicit_name =
@@ -385,18 +380,15 @@ let process_phrases ppf snap phrs =
     end
 
 let loop ppf =
+  Misc.Style.setup !Clflags.color;
   Clflags.debug := true;
   Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
-    fprintf ppf "OCaml version %s%s%s@.Enter #help;; for help.@.@."
+    fprintf ppf "OCaml version %s%s%s@.Enter %a for help.@.@."
       Config.version
       (if Topeval.implementation_label = "" then "" else " - ")
-      Topeval.implementation_label;
-  begin
-    try initialize_toplevel_env ()
-    with Env.Error _ | Typetexp.Error _ as exn ->
-      Location.report_exception ppf exn; raise (Compenv.Exit_with_status 2)
-  end;
+      Topeval.implementation_label
+      Misc.Style.inline_code "#help;;";
   let lb = Lexing.from_function refill_lexbuf in
   Location.init lb "//toplevel//";
   Location.input_name := "//toplevel//";
@@ -421,3 +413,29 @@ let loop ppf =
     | PPerror -> ()
     | x -> Location.report_exception ppf x; Btype.backtrack !snap
   done
+
+let preload_objects = ref []
+
+let prepare ppf ?input () =
+  let dir =
+    Option.map (fun inp -> Filename.dirname (filename_of_input inp)) input in
+  Topcommon.set_paths ?dir ();
+  begin try
+    initialize_toplevel_env ()
+  with Env.Error _ | Typetexp.Error _ as exn ->
+    Location.report_exception ppf exn; raise (Compenv.Exit_with_status 2)
+  end;
+  try
+    let res =
+      let objects =
+        List.rev (!preload_objects @ !Compenv.first_objfiles)
+      in
+      List.for_all (Topeval.load_file false ppf) objects
+    in
+    Topcommon.run_hooks Topcommon.Startup;
+    res
+  with x ->
+    try Location.report_exception ppf x; false
+    with x ->
+      Format.fprintf ppf "Uncaught exception: %s\n" (Printexc.to_string x);
+      false

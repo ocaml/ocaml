@@ -50,8 +50,8 @@ module Typedtree_search =
 
     let iter_val_pattern = function
       | Typedtree.Tpat_any -> None
-      | Typedtree.Tpat_var (name, _)
-      | Typedtree.Tpat_alias (_, name, _)  -> Some (Name.from_ident name)
+      | Typedtree.Tpat_var (name, _, _)
+      | Typedtree.Tpat_alias (_, name, _, _)  -> Some (Name.from_ident name)
       | Typedtree.Tpat_tuple _ -> None (* FIXME when we will handle tuples *)
       | _ -> None
 
@@ -251,14 +251,14 @@ module Analyser =
     let tt_param_info_from_pattern env f_desc pat =
       let rec iter_pattern pat =
         match pat.pat_desc with
-          Typedtree.Tpat_var (ident, _) ->
+          Typedtree.Tpat_var (ident, _, _) ->
             let name = Name.from_ident ident in
             Simple_name { sn_name = name ;
                           sn_text = f_desc name ;
                           sn_type = Odoc_env.subst_type env pat.pat_type
                         }
 
-        | Typedtree.Tpat_alias (pat, _, _) ->
+        | Typedtree.Tpat_alias (pat, _, _, _) ->
             iter_pattern pat
 
         | Typedtree.Tpat_tuple patlist ->
@@ -334,7 +334,7 @@ module Analyser =
        let (pat, exp) = pat_exp in
        let comment_opt = Odoc_sig.analyze_alerts comment_opt attrs in
        match pat.pat_desc with
-       | Tpat_var (ident, _) | Tpat_alias (_, ident, _) ->
+       | Tpat_var (ident, _, _) | Tpat_alias (_, ident, _, _) ->
           begin match exp.exp_desc with
           | Texp_function (params, body) ->
 
@@ -673,11 +673,11 @@ module Analyser =
               a default value. In this case, we look for the good parameter pattern *)
            let (parameter, next_tt_class_exp) =
              match pat.Typedtree.pat_desc with
-               Typedtree.Tpat_var (ident, _) when Name.from_ident ident = "*opt*" ->
+               Typedtree.Tpat_var (ident, _, _) when Name.from_ident ident = "*opt*" ->
                  (
                   (* there must be a Tcl_let just after *)
                   match tt_class_expr2.Typedtree.cl_desc with
-                    Typedtree.Tcl_let (_, {vb_pat={pat_desc = Typedtree.Tpat_var (id,_) };
+                    Typedtree.Tcl_let (_, {vb_pat={pat_desc = Typedtree.Tpat_var (id,_,_) };
                                            vb_expr=exp} :: _, _, tt_class_expr3) ->
                       let name = Name.from_ident id in
                       let new_param = Simple_name

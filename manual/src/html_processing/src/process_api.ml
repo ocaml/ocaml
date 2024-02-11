@@ -25,12 +25,12 @@ let search_widget with_description =
   let search_decription = if with_description
     then {|<span class="search_comment">(search values, type signatures, and descriptions - case sensitive)<span id="help_icon" onclick="showHelp()">ⓘ</span><div id="search_help" class="hide"><ul><li>You may search bare values, like <code>map</code>, or indicate the module, like <code>List.map</code>, or type signatures, like <code>int -> float</code>.</li><li>To combine several keywords, just separate them by a space. Quotes can be used to prevent from splitting words at spaces. For instance, <code>int array</code> will search for <code>int</code> and/or <code>array</code>, while <code>"int array"</code> will only list functions whose signature contains the <code>int array</code> type.</li><li>You may use the special chars <code>^</code> and <code>$</code> to indicate where the matched string should start or end, respectively. For instance <code>^zip</code> will not show you the <code>unzip</code> function.</li></ul></div></span>|}
     else "" in
-  sprintf {|<div class="api_search"><input type="text" name="apisearch" id="api_search" class="api_search"
+  sprintf {|<div class="api_search"><input type="search" name="apisearch" id="api_search" class="api_search"
 	 oninput    = "mySearch(%b);"
          onkeypress = "this.oninput();"
          onclick    = "this.oninput();"
 	 onpaste    = "this.oninput();">
-<img src="search_icon.svg" alt="Search" class="api_search svg" onclick="mySearch(%b)">%s</div>
+<button onclick="mySearch(%b)" style="cursor:pointer">Search <span aria-hidden="true">🔎</span></button> %s</div>
 <div id="search_results"></div>|} with_description with_description search_decription
   |> parse
 

@@ -68,7 +68,6 @@ let description_of_toplevel_node (expr : Flambda.t) =
   | Proved_unreachable -> "unreachable"
   | Let { var; _ } -> Format.asprintf "let %a" Variable.print var
   | Let_mutable _ -> "let_mutable"
-  | Let_rec _ -> "letrec"
   | If_then_else _ -> "if"
   | Switch _ -> "switch"
   | String_switch _ -> "stringswitch"
@@ -110,9 +109,6 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
       && Lambda.equal_value_kind ck1 ck2
       && same b1 b2
   | Let_mutable _, _ | _, Let_mutable _ -> false
-  | Let_rec (bl1, a1), Let_rec (bl2, a2) ->
-    Misc.Stdlib.List.equal samebinding bl1 bl2 && same a1 a2
-  | Let_rec _, _ | _, Let_rec _ -> false
   | Switch (a1, s1), Switch (a2, s2) ->
     Variable.equal a1 a2 && sameswitch s1 s2
   | Switch _, _ | _, Switch _ -> false
@@ -221,23 +217,6 @@ and same_move_within_set_of_closures (m1 : Flambda.move_within_set_of_closures)
     && Closure_id.equal m1.start_from m2.start_from
     && Closure_id.equal m1.move_to m2.move_to
 
-and samebinding (v1, rkind1, n1) (v2, rkind2, n2) =
-  let equal_rkind rkind1 rkind2 =
-    match (rkind1 : Value_rec_types.recursive_binding_kind),
-          (rkind2 : Value_rec_types.recursive_binding_kind) with
-    | Not_recursive, Not_recursive
-    | Static, Static
-    | Constant, Constant
-    | Class, Class ->
-        true
-    | Not_recursive, (Static | Constant | Class)
-    | Static, (Not_recursive | Constant | Class)
-    | Constant, (Not_recursive | Static | Class)
-    | Class, (Not_recursive | Static | Constant) ->
-        false
-  in
-  Variable.equal v1 v2 && equal_rkind rkind1 rkind2 && same_named n1 n2
-
 and sameswitch (fs1 : Flambda.switch) (fs2 : Flambda.switch) =
   let samecase (n1, a1) (n2, a2) = n1 = n2 && same a1 a2 in
   Numbers.Int.Set.equal fs1.numconsts fs2.numconsts
@@ -289,7 +268,7 @@ let toplevel_substitution sb tree =
       let args = List.map sb args in
       Static_raise (static_exn, args)
     | Static_catch _ | Try_with _ | While _
-    | Let _ | Let_rec _ | Proved_unreachable -> flam
+    | Let _ | Proved_unreachable -> flam
   in
   let aux_named (named : Flambda.named) : Flambda.named =
     match named with
@@ -650,35 +629,6 @@ let substitute_read_symbol_field_for_variables
         (Let_mutable { let_mutable with initial_value = fresh })
     | Let_mutable _ ->
       expr
-    | Let_rec (defs, body) ->
-      let free_variables_of_defs =
-        List.fold_left (fun set (_, _, named) ->
-            Variable.Set.union set (Flambda.free_variables_named named))
-          Variable.Set.empty defs
-      in
-      let to_substitute =
-        Variable.Set.filter
-          (fun v -> Variable.Map.mem v substitution)
-          free_variables_of_defs
-      in
-      if Variable.Set.is_empty to_substitute then
-        expr
-      else begin
-        let bindings =
-          Variable.Map.of_set (fun var -> Variable.rename var) to_substitute
-        in
-        let defs =
-          List.map (fun (var, rkind, named) ->
-              var, rkind, substitute_named bindings named)
-            defs
-        in
-        let expr =
-          Flambda.Let_rec (defs, body)
-        in
-        Variable.Map.fold (fun to_substitute fresh expr ->
-            bind to_substitute fresh expr)
-          bindings expr
-      end
     | If_then_else (cond, ifso, ifnot)
         when Variable.Map.mem cond substitution ->
       let fresh = Variable.rename cond in

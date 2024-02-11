@@ -19,6 +19,13 @@ module type s = sig
  [%%missing_rhs]
 end;;
 
+let x: [%empty_poly_binder] = 0;;
+
+let f (x:[%empty_poly_binder]) = 0;;
+
+let f x = (x:[%empty_poly_binder]);;
+let g: int -> [%empty_poly_binder] = fun n x -> x;;
+
 (* TEST
  readonly_files = "illegal_ppx.ml";
  setup-ocamlc.byte-build-env;

@@ -244,19 +244,6 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
     let id, env_body = Env.add_fresh_mutable_ident env mut_var in
     let def = subst_var env var in
     Ulet (Mutable, contents_kind, VP.create id, def, to_clambda t env_body body)
-  | Let_rec (defs, body) ->
-    let env, defs =
-      List.fold_right (fun (var, rkind, def) (env, defs) ->
-          let id, env = Env.add_fresh_ident env var in
-          env, (id, var, rkind, def) :: defs)
-        defs (env, [])
-    in
-    let defs =
-      List.map (fun (id, var, rkind, def) ->
-          VP.create id, rkind, to_clambda_named t env var def)
-        defs
-    in
-    Uletrec (defs, to_clambda t env body)
   | Apply { func; args; kind = Direct direct_func; dbg = dbg } ->
     (* The closure _parameter_ of the function is added by cmmgen.
        At the call site, for a direct call, the closure argument must be

@@ -97,7 +97,7 @@ m4_define([OCAML__RELEASE_EXTRA],
 # - A 3-bytes version number
 
 m4_define([MAGIC_NUMBER__PREFIX], [Caml1999])
-m4_define([MAGIC_NUMBER__VERSION], [033])
+m4_define([MAGIC_NUMBER__VERSION], [035])
 
 # The following macro is used to define all our magic numbers
 # Its first argument is the name of the file type described by that

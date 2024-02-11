@@ -41,13 +41,13 @@ type cmm_label = int
   (* Do not introduce a dependency to Cmm *)
 
 type specific_operation =
-  | Ifar_poll of { return_label: cmm_label option }
-  | Ifar_alloc of { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
-  | Ifar_intop_checkbound
-  | Ifar_intop_imm_checkbound of { bound : int; }
+  | Ipoll_far of { return_label: cmm_label option }
+  | Ialloc_far of { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
+  | Icheckbound_far
+  | Icheckbound_imm_far of { bound : int; }
   | Ishiftarith of arith_operation * int
   | Ishiftcheckbound of { shift : int; }
-  | Ifar_shiftcheckbound of { shift : int; }
+  | Ishiftcheckbound_far of { shift : int; }
   | Imuladd       (* multiply and add *)
   | Imulsub       (* multiply and subtract *)
   | Inegmulf      (* floating-point negate and multiply *)

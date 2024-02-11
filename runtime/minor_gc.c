@@ -171,7 +171,7 @@ static void spin_on_header(value v) {
   }
 }
 
-CAMLno_tsan /* Disable TSan instrumentation for performance. */
+CAMLno_tsan_for_perf
 Caml_inline header_t get_header_val(value v) {
   header_t hd = atomic_load_acquire(Hp_atomic_val(v));
   if (!Is_update_in_progress(hd))
@@ -382,7 +382,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
    Note that [oldify_one] itself is called by oldify_mopup, so we
    have to be careful to remove the first entry from the list before
    oldifying its fields. */
-CAMLno_tsan /* Disable TSan instrumentation for performance. */
+CAMLno_tsan_for_perf
 static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
 {
   value v, new_v, f;

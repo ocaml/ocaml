@@ -42,7 +42,7 @@ method virtual trap_handler_size : int
    by treating them as non-tail calls, even if they are implemented as
    tail calls.
 
-   This method can be overriden in [Stackframe] to implement target-specific
+   This method can be overridden in [Stackframe] to implement target-specific
    behaviors. *)
 
 method is_call = function
@@ -61,7 +61,7 @@ method is_call = function
    This is the case if it contains calls, but also if it allocates
    variables on the stack.
 
-   This method can be overriden in [Stackframe] to implement target-specific
+   This method can be overridden in [Stackframe] to implement target-specific
    behaviors. *)
 
 method frame_required f contains_calls =

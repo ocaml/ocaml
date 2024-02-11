@@ -36,5 +36,3 @@ type link_mode =
   | Partial
 
 val call_linker: link_mode -> string -> string list -> string -> int
-
-val linker_is_flexlink : bool
