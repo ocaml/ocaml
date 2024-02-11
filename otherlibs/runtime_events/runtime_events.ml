@@ -252,7 +252,7 @@ module User = struct
        the write buffer across calls.
 
        To be safe for multi-domain programs, we use domain-local
-       storage for the write buffer. To accomodate for multi-threaded
+       storage for the write buffer. To accommodate for multi-threaded
        programs (without depending on the Thread module), we store
        a list of caches for each domain. This might leak a bit of
        memory: the number of buffers for a domain is equal to the
