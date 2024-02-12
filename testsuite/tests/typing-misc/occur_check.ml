@@ -67,8 +67,10 @@ val wrong_to_seq : ('a Seq.t as 'a) Seq.t t -> 'a Seq.t Seq.t = <fun>
 
 let strange x = Seq.[cons x empty; cons empty x];;
 [%%expect{|
-Uncaught exception: Ctype.Escape(_)
-
-|}, Principal{|
-val strange : 'a Seq.t Seq.t -> 'a Seq.t Seq.t Seq.t list = <fun>
+Line 1, characters 12-48:
+1 | let strange x = Seq.[cons x empty; cons empty x];;
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type "('a Seq.t as 'a) Seq.t -> 'a Seq.t Seq.t list"
+       but an expression was expected of type
+         "('a Seq.t as 'a) Seq.t -> 'a Seq.t Seq.t list"
 |}];;
