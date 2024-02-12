@@ -117,6 +117,11 @@ and ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
     (bool -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      bool -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
+| Bytes_ty :                                                (* %y  *)
+    ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+     'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
+    (bytes -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
+     bytes -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
 | Format_arg_ty :                                           (* %{...%} *)
     ('g, 'h, 'i, 'j, 'k, 'l) fmtty *
     ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
@@ -205,6 +210,9 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
 | Bool :                                                   (* %[bB] *)
     ('x, bool -> 'a) padding * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
       ('x, 'b, 'c, 'd, 'e, 'f) fmt
+| Bytes :                                                  (* %y *)
+    ('x, bytes -> 'a) padding * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+      ('x, 'b, 'c, 'd, 'e, 'f) fmt
 | Flush :                                                  (* %! *)
     ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
       ('a, 'b, 'c, 'd, 'e, 'f) fmt
@@ -290,6 +298,8 @@ and ('a, 'b, 'c, 'd, 'e, 'f) ignored =
   | Ignored_float :
       pad_option * prec_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_bool :
+      pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
+  | Ignored_binary :
       pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_format_arg :
       pad_option * ('g, 'h, 'i, 'j, 'k, 'l) fmtty ->
