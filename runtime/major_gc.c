@@ -1184,8 +1184,12 @@ void caml_darken_cont(value cont)
     SPIN_WAIT {
       header_t hd = atomic_load_relaxed(Hp_atomic_val(cont));
       CAMLassert(!Has_status_hd(hd, caml_global_heap_state.GARBAGE));
-      if (Has_status_hd(hd, caml_global_heap_state.MARKED))
-        break;
+      if (Has_status_hd(hd, caml_global_heap_state.MARKED)) {
+        /* Perform an acquire load to synchronize with the marking domain */
+        hd = atomic_load_acquire(Hp_atomic_val(cont));
+        if (Has_status_hd(hd, caml_global_heap_state.MARKED))
+          break;
+      }
       if (Has_status_hd(hd, caml_global_heap_state.UNMARKED) &&
           atomic_compare_exchange_strong(
               Hp_atomic_val(cont), &hd,
