@@ -767,6 +767,8 @@ WINDOWS_UNICODE_MODE
 LIBUNWIND_LDFLAGS
 LIBUNWIND_CPPFLAGS
 DLLIBS
+PASS_THRU_CPPFLAGS
+PASS_THRU_CFLAGS
 PARTIALLD
 csc
 target_os
@@ -1026,6 +1028,8 @@ target_alias
 AS
 ASPP
 PARTIALLD
+PASS_THRU_CFLAGS
+PASS_THRU_CPPFLAGS
 DLLIBS
 LIBUNWIND_CPPFLAGS
 LIBUNWIND_LDFLAGS
@@ -1734,6 +1738,12 @@ Some influential environment variables:
   AS          which assembler to use
   ASPP        which assembler (with preprocessor) to use
   PARTIALLD   how to build partial (relocatable) object files
+  PASS_THRU_CFLAGS
+              Additional C compiler flags that OCaml compilers will use on
+              user programs
+  PASS_THRU_CPPFLAGS
+              Additional C preprocessor flags that OCaml compilers will use on
+              user programs
   DLLIBS      which libraries to use (in addition to -ldl) to load dynamic
               libs
   LIBUNWIND_CPPFLAGS
@@ -3764,6 +3774,8 @@ esac
 fi
 
 # Environment variables that are taken into account
+
+
 
 
 
@@ -20253,8 +20265,9 @@ fi
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
-ocamlc_cflags="$ocamlc_cflags $common_cflags $sharedlib_cflags $CFLAGS"
-ocamlc_cppflags="$common_cppflags $CPPFLAGS"
+ocamlc_cflags="$ocamlc_cflags $common_cflags $sharedlib_cflags \
+$PASS_THRU_CFLAGS"
+ocamlc_cppflags="$common_cppflags $PASS_THRU_CPPFLAGS"
 
 case $host in #(
   *-*-mingw32*) :

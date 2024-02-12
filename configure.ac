@@ -338,6 +338,10 @@ AS_IF([test -n "$csc"],
 AC_ARG_VAR([AS], [which assembler to use])
 AC_ARG_VAR([ASPP], [which assembler (with preprocessor) to use])
 AC_ARG_VAR([PARTIALLD], [how to build partial (relocatable) object files])
+AC_ARG_VAR([PASS_THRU_CFLAGS], [Additional C compiler flags that OCaml
+            compilers will use on user programs])
+AC_ARG_VAR([PASS_THRU_CPPFLAGS], [Additional C preprocessor flags that
+            OCaml compilers will use on user programs])
 
 # Command-line arguments to configure
 
@@ -2501,8 +2505,9 @@ AS_IF([test "$ccomptype" != "msvc"],
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
-ocamlc_cflags="$ocamlc_cflags $common_cflags $sharedlib_cflags $CFLAGS"
-ocamlc_cppflags="$common_cppflags $CPPFLAGS"
+ocamlc_cflags="$ocamlc_cflags $common_cflags $sharedlib_cflags \
+$PASS_THRU_CFLAGS"
+ocamlc_cppflags="$common_cppflags $PASS_THRU_CPPFLAGS"
 
 AS_CASE([$host],
   [*-*-mingw32*],
