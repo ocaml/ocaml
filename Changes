@@ -87,6 +87,9 @@ _______________
   command-line of the toplevel.
   (Nicolás Ojeda Bär, review by Florian Angeletti, report by Daniel Bünzli)
 
+- #12969: Fix a data race in caml_darken_cont
+  (Fabrice Buoro and Olivier Nicole, review by Gabriel Scherer and Miod Vallat)
+
 OCaml 5.2.0
 ------------
 
