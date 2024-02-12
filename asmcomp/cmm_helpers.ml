@@ -202,7 +202,6 @@ let rec mul_int c1 c2 dbg =
   | (c1, c2) ->
       Cop(Cmuli, [c1; c2], dbg)
 
-
 let ignore_low_bit_int = function
     Cop(Caddi,
         [(Cop(Clsl, [_; Cconst_int (n, _)], _) as c); Cconst_int (1, _)], _)
@@ -234,6 +233,39 @@ let asr_int c1 c2 dbg =
       Cop(Casr, [ignore_low_bit_int c1; c2], dbg)
   | _ ->
       Cop(Casr, [c1; c2], dbg)
+
+let add_float c1 c2 dbg =
+  Cop(Caddf, [c1; c2], dbg)
+
+let sub_float c1 c2 dbg =
+  Cop(Csubf, [c1; c2], dbg)
+
+let mul_float c1 c2 dbg =
+  match (c1, c2) with
+  | (c, Cconst_float(2.0, _)) | (Cconst_float(2.0, _), c) ->
+     (* We transform x *. 2.0 into x +. x, by creating a temporary variable and
+        outputting let tmp = x in tmp +. tmp to avoid calculating x twice. *)
+     let tmp_var = V.create_local "tmp" in
+     let var = Cvar tmp_var in
+     Clet (VP.create tmp_var, c, add_float var var dbg)
+  | _, _ ->
+      Cop(Cmulf, [c1; c2], dbg)
+
+let div_float c1 c2 dbg =
+  match (c1, c2) with
+  | c, Cconst_float(f, _) ->
+      let x, exp = Float.frexp f in (* x = 0.5 if and only if f is a power of 2 *)
+      (* We can transform x/.2^{N} into x*.2^{-N} if and only if |N| <= 1023,
+         because otherwise one of them may not be a valid floating point number
+         (2.**1024. evaluates to +infinity). Here, N=exp-1. *)
+      let n = exp - 1 in
+      if x = 0.5 && abs n <= 1023
+      then
+        mul_float c (Cconst_float(Float.ldexp 1.0 (- n), dbg)) dbg
+      else
+        Cop(Cdivf, [c1; c2], dbg)
+  | _, _ ->
+      Cop(Cdivf, [c1; c2], dbg)
 
 let tag_int i dbg =
   match i with
@@ -2217,6 +2249,18 @@ let asr_int_caml arg1 arg2 dbg =
 let int_comp_caml cmp arg1 arg2 dbg =
   tag_int(Cop(Ccmpi cmp,
               [arg1; arg2], dbg)) dbg
+
+let add_float_caml arg1 arg2 dbg =
+  box_float dbg (add_float arg1 arg2 dbg)
+
+let sub_float_caml arg1 arg2 dbg =
+  box_float dbg (sub_float arg1 arg2 dbg)
+
+let mul_float_caml arg1 arg2 dbg =
+  box_float dbg (mul_float arg1 arg2 dbg)
+
+let div_float_caml arg1 arg2 dbg =
+  box_float dbg (div_float arg1 arg2 dbg)
 
 let stringref_unsafe arg1 arg2 dbg =
   tag_int(Cop(mk_load_mut Byte_unsigned,
