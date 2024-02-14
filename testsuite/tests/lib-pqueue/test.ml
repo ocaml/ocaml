@@ -91,7 +91,7 @@ let () =
   let open Pqueue.MaxQueue in
   let q = create () in
   add q 2 "b"; add q 1 "a"; add q 4 "d"; add q 3 "c";
-  for i = 4 downto 1 do let x = pop_min q in assert (fst x = i) done
+  for i = 4 downto 1 do let x = pop_max q in assert (fst x = i) done
 
 let () =
   let module E = struct type _ t = string let compare = String.compare end in
@@ -112,6 +112,11 @@ let () =
 module IntPQ = Pqueue.MakePoly(struct
     type _ t = int
     let compare = Int.compare
+  end)
+
+module IntMaxPQ = Pqueue.MakePoly(struct
+    type _ t = int
+    let compare = Fun.flip Int.compare
   end)
 
 let () = print_endline "OK"

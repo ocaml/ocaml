@@ -16,15 +16,14 @@
 
     The {!Pqueue} module implements a data structure of priority queues,
     given a totally ordered type for priorities. This is a mutable
-    data structure. Smaller values are considered to have a higher
-    priority (i.e., these are min-priority queues).
+    data structure. Both min- and max-priority queues are provided.
 
     The implementation uses a heap stored in a dynamic array, and is
-    therefore reasonably efficient: accessing the minimum element
-    takes constant time, and insertion and removal take time
-    logarithmic in the size of the priority queue. Note that
-    [of_array] runs in linear time (and thus must be preferred to
-    repeated insertions with [add]).
+    therefore reasonably efficient: accessing the minimum
+    (resp. maximum) element takes constant time, and insertion and
+    removal take time logarithmic in the size of the priority
+    queue. Note that [of_array] runs in linear time (and thus must be
+    preferred to repeated insertions with [add]).
 
     It is fine to have several elements with the same priority.
     It is guaranteed that the element returned by [min_elt] (or
@@ -45,21 +44,20 @@ module type OrderedType =
       (** A total ordering function to compare priorities.
 
           This is a two-argument function [f] such that [f p1 p2] is
-          zero if the priorities [p1] and [p2] are equal,
-          [f p1 p2] is strictly negative if [p1] has higher priority than
-          [p2], and [f p1 p2] is strictly positive if [p1]
-          has lower priority than [p2].
+          zero if the priorities [p1] and [p2] are equal, [f p1 p2] is
+          strictly negative if [p1] is smaller than [p2], and [f p1
+          p2] is strictly positive if [p1] is greater than [p2].
 
           The generic structural comparison function {!Stdlib.compare}
-          is a suitable ordering function to get min-priority queues
-          with priority types such as [int] or [string] for instance. *)
+          is a suitable ordering function for priority types such as
+          [int] or [string]. *)
   end
-(** Input signature of the functor {!Make}. *)
+(** Input signature of the functors {!MakeMin} and {!MakeMax}. *)
 
-module type S =
+module type Min =
   sig
 
-    (** {1:pqueue Priority queues} *)
+    (** {1:pqueue Min-priority queues} *)
 
     type prio
     (** The type of priorities. *)
@@ -154,16 +152,46 @@ module type S =
         unspecified order. *)
 
   end
-(** Output signature of the functor {!Make}. *)
+(** Output signature of the functor {!MakeMin}. *)
 
-module Make (Prio : OrderedType) : S with type prio = Prio.t
-(** Functor building an implementation of the priority queue structure
-    given a totally ordered type. *)
+module MakeMin (Prio : OrderedType) : Min with type prio = Prio.t
+(** Functor building an implementation of the min-priority queue
+    structure given a totally ordered type for priorities. *)
 
-module MinQueue : S with type prio = int
+module MinQueue : Min with type prio = int
 (** Min-priority queues with integer priorities. *)
 
-module MaxQueue : S with type prio = int
+module type Max =
+  sig
+    type prio
+    type 'a t
+    val create: unit -> 'a t
+    val length: 'a t -> int
+    val is_empty: 'a t -> bool
+    val add: 'a t -> prio -> 'a -> unit
+    val add_seq: 'a t -> (prio * 'a) Seq.t -> unit
+    exception Empty
+    val max_elt: 'a t -> prio * 'a
+    val max_elt_opt: 'a t -> (prio * 'a) option
+    val pop_max: 'a t -> prio * 'a
+    val pop_max_opt: 'a t -> (prio * 'a) option
+    val remove_max: 'a t -> unit
+    val clear: 'a t -> unit
+    val copy: 'a t -> 'a t
+    val of_array: (prio * 'a) array -> 'a t
+    val of_list: (prio * 'a) list -> 'a t
+    val of_seq: (prio * 'a) Seq.t -> 'a t
+    val iter: (prio -> 'a -> unit) -> 'a t -> unit
+    val fold: ('acc -> prio -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
+    val to_seq: 'a t -> (prio * 'a) Seq.t
+end
+(** Output signature of the functor {!MakeMax}. *)
+
+module MakeMax (Prio : OrderedType) : Max with type prio = Prio.t
+(** Functor building an implementation of the max-priority queue
+    structure given a totally ordered type for priorities. *)
+
+module MaxQueue : Max with type prio = int
 (** Max-priority queues with integer priorities. *)
 
 module MakePoly (E : sig
@@ -192,7 +220,7 @@ module MakePoly (E : sig
     val fold: ('acc -> 'a elt -> 'acc) -> 'acc -> 'a t -> 'acc
     val to_seq: 'a t -> 'a elt Seq.t
   end
-(** Functor building an implementation of priority queues
+(** Functor building an implementation of min-priority queues
     given a totally ordered type of elements. This is convenient when
     the type of elements is already equipped with a comparison function.
     For instance, we get priority queues with integer elements as follows:
@@ -205,4 +233,17 @@ module MakePoly (E : sig
 ]}
 
     Note that we cannot apply functor [MakePoly] to module [Int] directly,
-    as the type of elements is polymorphic. *)
+    as the type of elements is polymorphic.
+
+    There is no similar functor to get max-priority queues, but it is
+    straightforward to inverse the comparison (yet at the cost of
+    operations with names involving [min] instead of [max]), as follows:
+
+{[
+  module IntMaxPQ = Pqueue.MakePoly(struct
+    type _ t = int
+    let compare = Fun.flip Int.compare
+  end)
+]}
+
+*)
