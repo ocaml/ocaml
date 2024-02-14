@@ -9,7 +9,6 @@ else
 endif
 
 WEBDIR = ../webman
-WEBDIRMAN = $(WEBDIR)/manual
 WEBDIRAPI = $(WEBDIR)/api
 WEBDIRCOMP = $(WEBDIRAPI)/compilerlibref
 
@@ -23,26 +22,26 @@ all: css js img
 $(WEBDIR)/%:
 	mkdir -p $@
 
-$(WEBDIRMAN)/manual.css: scss/_common.scss scss/manual.scss | $(WEBDIRMAN)
-	sass scss/manual.scss > $(WEBDIRMAN)/manual.css
+$(WEBDIR)/manual.css: scss/_common.scss scss/manual.scss | $(WEBDIR)
+	sass scss/manual.scss > $(WEBDIR)/manual.css
 
 $(WEBDIRAPI)/style.css: scss/_common.scss scss/style.scss | $(WEBDIRAPI) $(WEBDIRCOMP)
 	sass scss/style.scss > $(WEBDIRAPI)/style.css
 	cp $(WEBDIRAPI)/style.css $(WEBDIRCOMP)/style.css
 
-css: $(WEBDIRMAN)/manual.css $(WEBDIRAPI)/style.css
+css: $(WEBDIRAPI)/style.css $(WEBDIR)/manual.css
 
 # Just copy the JS files:
 #
 JS_FILES0 := scroll.js navigation.js
 JS_FILES1 := $(JS_FILES0) search.js
-JS_FILES := $(addprefix $(WEBDIRAPI)/, $(JS_FILES1)) $(addprefix $(WEBDIRCOMP)/, $(JS_FILES1)) $(addprefix $(WEBDIRMAN)/, $(JS_FILES0))
+JS_FILES := $(addprefix $(WEBDIRAPI)/, $(JS_FILES1)) $(addprefix $(WEBDIRCOMP)/, $(JS_FILES1)) $(addprefix $(WEBDIR)/, $(JS_FILES0))
 
 # There must be a more clever way
 $(WEBDIRAPI)/%.js: js/%.js | $(WEBDIRAPI)
 	cp $< $@
 
-$(WEBDIRMAN)/%.js: js/%.js | $(WEBDIRMAN)
+$(WEBDIR)/%.js: js/%.js | $(WEBDIR)
 	cp $< $@
 
 $(WEBDIRCOMP)/%.js: js/%.js | $(WEBDIRCOMP)
@@ -56,19 +55,19 @@ CURL = curl -s
 $(WEBDIRCOMP)/%: $(WEBDIRAPI)/% | $(WEBDIRCOMP)
 	cp $< $@
 
-$(WEBDIRMAN)/%: $(WEBDIRAPI)/% | $(WEBDIRMAN)
+$(WEBDIR)/%: $(WEBDIRAPI)/% | $(WEBDIR)
 	cp $< $@
 
 LOGO := colour-logo.svg
-$(WEBDIRAPI)/colour-logo.svg: | $(WEBDIRAPI) $(WEBDIRMAN) $(WEBDIRCOMP)
+$(WEBDIRAPI)/colour-logo.svg: | $(WEBDIRAPI) $(WEBDIR) $(WEBDIRCOMP)
 	$(CURL) "https://raw.githubusercontent.com/ocaml/ocaml-logo/master/Colour/SVG/colour-logo.svg" > $(WEBDIRAPI)/$(LOGO)
 
 ICON := favicon.ico
-$(WEBDIRAPI)/favicon.ico: | $(WEBDIRAPI) $(WEBDIRMAN) $(WEBDIRCOMP)
+$(WEBDIRAPI)/favicon.ico: | $(WEBDIRAPI) $(WEBDIR) $(WEBDIRCOMP)
 	$(CURL) "https://raw.githubusercontent.com/ocaml/ocaml-logo/master/Colour/Favicon/32x32.ico" > $(WEBDIRAPI)/$(ICON)
 
 IMG_FILES0 := colour-logo.svg
-IMG_FILES := $(addprefix $(WEBDIRAPI)/, $(IMG_FILES0)) $(addprefix $(WEBDIRCOMP)/, $(IMG_FILES0)) $(addprefix $(WEBDIRMAN)/, $(IMG_FILES0)) 
+IMG_FILES := $(addprefix $(WEBDIRAPI)/, $(IMG_FILES0)) $(addprefix $(WEBDIRCOMP)/, $(IMG_FILES0)) $(addprefix $(WEBDIR)/, $(IMG_FILES0))
 
 img: $(WEBDIRAPI)/favicon.ico $(WEBDIRCOMP)/favicon.ico $(IMG_FILES)
 
