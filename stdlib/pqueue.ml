@@ -265,4 +265,3 @@ module MakeMax(Prio: OrderedType) : Max with type prio = Prio.t =
 
 module MinQueue = MakeMin(Int)
 module MaxQueue = MakeMax(Int)
-

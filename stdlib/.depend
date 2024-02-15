@@ -603,13 +603,11 @@ stdlib__Parsing.cmi : parsing.mli \
 stdlib__Pqueue.cmo : pqueue.ml \
     stdlib__Seq.cmi \
     stdlib__Int.cmi \
-    stdlib__Fun.cmi \
     stdlib__Dynarray.cmi \
     stdlib__Pqueue.cmi
 stdlib__Pqueue.cmx : pqueue.ml \
     stdlib__Seq.cmx \
     stdlib__Int.cmx \
-    stdlib__Fun.cmx \
     stdlib__Dynarray.cmx \
     stdlib__Pqueue.cmi
 stdlib__Pqueue.cmi : pqueue.mli \
