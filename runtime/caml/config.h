@@ -223,8 +223,14 @@ typedef uint64_t uintnat;
 
 
 /* Minimum size of the minor zone (words).
-   This must be at least [Max_young_wosize + 1]. */
-#define Minor_heap_min (Max_young_wosize + 1)
+   This must be at least [Max_young_wosize + 1], however a higher value is
+   set to simplify reasoning about allocations in the minor heap: in
+   particular, a single allocation cannot now start in the first half of the
+   heap and exactly fill the whole heap.  Consequentially, the assertion in
+   caml_reset_young_limit can be strictly less than, which has been shown
+   to catch bugs.
+   */
+#define Minor_heap_min (Max_young_wosize * 2)
 
 /* Default size of the minor zone. (words)  */
 #define Minor_heap_def 262144
