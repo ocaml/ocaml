@@ -27,8 +27,10 @@ let ( // ) = Filename.concat
 
 let process_dir = Filename.current_dir_name
 
+let ocaml_version = "5.3.0"
+
 (* Output directory *)
-let web_dir = Filename.parent_dir_name // "webman"
+let web_dir = Filename.parent_dir_name // ocaml_version
 
 (* Output for manual *)
 let docs_maindir = web_dir
@@ -38,7 +40,7 @@ let docs_file = ( // ) docs_maindir
 let api_dir = web_dir // "api"
 
 (* How to go from manual to api *)
-let api_page_url = "../webman/api"
+let api_page_url = "../" ^ ocaml_version ^ "/api"
 
 (* How to go from api to manual *)
 let manual_page_url = ".."

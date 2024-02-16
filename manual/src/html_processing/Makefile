@@ -8,7 +8,9 @@ else
     DBG=quiet
 endif
 
-WEBDIR = ../webman
+VERSION = 5.3.0
+
+WEBDIR = ../$(VERSION)
 WEBDIRAPI = $(WEBDIR)/api
 WEBDIRCOMP = $(WEBDIRAPI)/compilerlibref
 
