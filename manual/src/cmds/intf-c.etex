@@ -1268,16 +1268,18 @@ has taken place since "r" was allocated.
 
 \subsection{ss:c-process-pending-actions}{Pending actions and asynchronous exceptions}
 
-Since 4.10, allocation functions are guaranteed not to call any OCaml
-callbacks from C, including finalisers and signal handlers, and delay
-their execution instead.
+Since 4.10, allocation functions are guaranteed not to run any OCaml
+code, including finalisers, signal handlers and other threads running
+on the same domain. Instead, their execution is delayed to a later
+safe point.
 
 The function \verb"caml_process_pending_actions" from
 "<caml/signals.h>" executes any pending signal handlers and
-finalisers, Memprof callbacks, and requested minor and major garbage
-collections. In particular, it can raise asynchronous exceptions. It
-is recommended to call it regularly at safe points inside long-running
-non-blocking C code.
+finalisers, Memprof callbacks, preemptive systhread switching, and
+requested minor and major garbage collections. In particular, it can
+raise asynchronous exceptions and cause mutations on the OCaml heap
+from the same domain. It is recommended to call it regularly at safe
+points inside long-running non-blocking C code.
 
 The variant \verb"caml_process_pending_actions_exn" is provided, that
 returns the exception instead of raising it directly into OCaml code.
