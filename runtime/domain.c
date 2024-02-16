@@ -1644,20 +1644,22 @@ void caml_reset_young_limit(caml_domain_state * dom_st)
      achieves the proper synchronisation. */
   atomic_exchange(&dom_st->young_limit, (uintnat)trigger);
 
+  /* For non-delayable asynchronous actions, we immediately interrupt
+     the domain again. */
   dom_internal * d = &all_domains[dom_st->id];
   if (atomic_load_relaxed(&d->interruptor.interrupt_pending)
       || dom_st->requested_minor_gc
       || dom_st->requested_major_slice
-      || dom_st->major_slice_epoch < atomic_load (&caml_major_slice_epoch)
-      || atomic_load_relaxed(&dom_st->requested_external_interrupt)) {
+      || dom_st->major_slice_epoch < atomic_load (&caml_major_slice_epoch)) {
     interrupt_domain_local(dom_st);
   }
-  /* We might be here due to a recently-recorded signal, so we
-     need to remember that we must run signal handlers. In
-     addition, in the case of long-running C code (that may
-     regularly poll with caml_process_pending_actions), we want to
-     force a query of all callbacks at every minor collection or
-     major slice (similarly to the OCaml behaviour). */
+  /* We might be here due to a recently-recorded signal or forced
+     systhread switching, so we need to remember that we must run
+     signal handlers or systhread's yield. In addition, in the case of
+     long-running C code (that may regularly poll with
+     caml_process_pending_actions), we want to force a query of all
+     callbacks at every minor collection or major slice (similarly to
+     the OCaml behaviour). */
   caml_set_action_pending(dom_st);
 }
 
@@ -1749,9 +1751,6 @@ void caml_poll_gc_work(void)
        caml_poll_gc_work is called. */
   }
 
-  if (atomic_load_acquire(&d->requested_external_interrupt)) {
-    caml_domain_external_interrupt_hook();
-  }
   caml_reset_young_limit(d);
 }
 
@@ -1767,6 +1766,14 @@ void caml_handle_gc_interrupt(void)
   }
 
   caml_poll_gc_work();
+}
+
+/* Preemptive systhread switching */
+void caml_process_external_interrupt(void)
+{
+  if (atomic_load_acquire(&Caml_state->requested_external_interrupt)) {
+    caml_domain_external_interrupt_hook();
+  }
 }
 
 CAMLexport int caml_bt_is_in_blocking_section(void)

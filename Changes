@@ -221,6 +221,14 @@ OCaml 5.2.0
   (Guillaume Munch-Maccagnoni, review by Anil Madhavapeddy and KC
    Sivaramakrishnan)
 
+- #12875, #12879, #12882: Execute preemptive systhread switching as a
+  delayed pending action. This ensures that one can reason within the
+  FFI that no mutation happens on the same domain when allocating on
+  the OCaml heap from C, consistently with OCaml 4. This also fixes
+  further bugs with the multicore systhreads implementation.
+  (Guillaume Munch-Maccagnoni, bug reports and suggestion by Mark
+   Shinwell, review by Nick Barnes and Stephen Dolan)
+
 - #12408: `Domain.spawn` no longer leaks its functional argument for
   the whole duration of the children domain lifetime.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
@@ -247,7 +255,7 @@ OCaml 5.2.0
 
 - #11307: Finish adapting the implementation of asynchronous actions for
   multicore: soundness, liveness, and performance issues.
-  Do not crash if a signal handler is  called from an unregistered C
+  Do not crash if a signal handler is called from an unregistered C
   thread, and other possible soundness issues. Prevent issues where join
   on other domains could make the toplevel unresponsible to Ctrl-C. Avoid
   needless repeated polling in C code when callbacks cannot run
