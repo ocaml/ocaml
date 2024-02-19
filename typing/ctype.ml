@@ -4047,37 +4047,35 @@ let moregen inst_nongen type_pairs env patt subj =
    is unimportant.  So, no need to propagate abbreviations.
 *)
 let moregeneral env inst_nongen pat_sch subj_sch =
-  let old_level = !current_level in
-  current_level := generic_level - 1;
-  (*
-     Generic variables are first duplicated with [instance].  So,
-     their levels are lowered to [generic_level - 1].  The subject is
-     then copied with [duplicate_type].  That way, its levels won't be
-     changed.
-  *)
-  let subj_inst = instance subj_sch in
-  let subj = duplicate_type subj_inst in
-  current_level := generic_level;
-  (* Duplicate generic variables *)
-  let patt = instance pat_sch in
-
-  Misc.try_finally
-    (fun () ->
-       try
-         moregen inst_nongen (TypePairs.create 13) env patt subj
-       with Moregen_trace trace ->
-         (* Moregen splits the generic level into two finer levels:
-            [generic_level] and [generic_level - 1].  In order to properly
-            detect and print weak variables when printing this error, we need to
-            merge them back together, by regeneralizing the levels of the types
-            after they were instantiated at [generic_level - 1] above.  Because
-            [moregen] does some unification that we need to preserve for more
-            legible error messages, we have to manually perform the
-            regeneralization rather than backtracking. *)
-         current_level := generic_level - 2;
-         generalize subj_inst;
-         raise (Moregen (expand_to_moregen_error env trace)))
-    ~always:(fun () -> current_level := old_level)
+  (* Start at level [generic_level - 2] so that we only generalize nodes
+     at level [generic_level - 1] *)
+  with_level ~level:(generic_level - 2) begin fun () ->
+    (* Moregen splits the generic level into two finer levels:
+       [generic_level] and [generic_level - 1].  In order to properly
+       detect and print weak variables when printing errors, we need to
+       merge them back together, by regeneralizing the levels of the types
+       after they were instantiated at [generic_level - 1] above.  Because
+       [moregen] does some unification that we need to preserve for more
+       legible error messages, we rely on automatic generalization
+       rather than backtracking. *)
+    match with_local_level_generalize begin fun () ->
+      assert (!current_level = generic_level - 1);
+      (*
+        Generic variables are first duplicated with [instance].  So,
+        their levels are lowered to [generic_level - 1].  The subject is
+        then copied with [duplicate_type].  That way, its levels won't be
+        changed.
+       *)
+      let subj_inst = instance subj_sch in
+      let subj = duplicate_type subj_inst in
+      (* Duplicate generic variables *)
+      let patt = generic_instance pat_sch in
+      try Ok (moregen inst_nongen (TypePairs.create 13) env patt subj)
+      with Moregen_trace trace -> Error trace
+    end with
+    | Ok () -> ()
+    | Error trace -> raise (Moregen (expand_to_moregen_error env trace))
+  end
 
 let is_moregeneral env inst_nongen pat_sch subj_sch =
   match moregeneral env inst_nongen pat_sch subj_sch with
@@ -4538,48 +4536,46 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
   let errors = match_class_sig_shape ~strict:false sign1 sign2 in
   match errors with
   | [] ->
-      let old_level = !current_level in
-      current_level := generic_level - 1;
-      (*
-         Generic variables are first duplicated with [instance].  So,
-         their levels are lowered to [generic_level - 1].  The subject is
-         then copied with [duplicate_type].  That way, its levels won't be
-         changed.
-      *)
-      let (_, subj_inst) = instance_class [] subj_sch in
-      let subj = duplicate_class_type subj_inst in
-      current_level := generic_level;
-      (* Duplicate generic variables *)
-      let (_, patt) = instance_class [] pat_sch in
-      let type_pairs = TypePairs.create 53 in
-      let sign1 = signature_of_class_type patt in
-      let sign2 = signature_of_class_type subj in
-      let self1 = sign1.csig_self in
-      let self2 = sign2.csig_self in
-      let row1 = sign1.csig_self_row in
-      let row2 = sign2.csig_self_row in
-      TypePairs.add type_pairs (self1, self2);
-      (* Always succeeds *)
-      moregen true type_pairs env row1 row2;
-      let res =
-        match moregen_clty trace type_pairs env patt subj with
-        | () -> []
-        | exception Failure res ->
-          (* We've found an error.  Moregen splits the generic level into two
-             finer levels: [generic_level] and [generic_level - 1].  In order
-             to properly detect and print weak variables when printing this
-             error, we need to merge them back together, by regeneralizing the
-             levels of the types after they were instantiated at
-             [generic_level - 1] above.  Because [moregen] does some
-             unification that we need to preserve for more legible error
-             messages, we have to manually perform the regeneralization rather
-             than backtracking. *)
-          current_level := generic_level - 2;
-          generalize_class_type subj_inst;
-          res
-      in
-      current_level := old_level;
-      res
+      with_level ~level:(generic_level - 2) begin fun () ->
+        (* Moregen splits the generic level into two finer levels:
+           [generic_level] and [generic_level - 1].  In order to properly
+           detect and print weak variables when printing errors, we need to
+           merge them back together, by regeneralizing the levels of the types
+           after they were instantiated at [generic_level - 1] above.  Because
+           [moregen] does some unification that we need to preserve for more
+           legible error messages, we rely on automatic generalization
+           rather than backtracking. *)
+        match with_local_level_generalize begin fun () ->
+          assert (!current_level = generic_level - 1);
+          (*
+            Generic variables are first duplicated with [instance].  So,
+            their levels are lowered to [generic_level - 1].  The subject is
+            then copied with [duplicate_type].  That way, its levels won't be
+            changed.
+           *)
+          let (_, subj_inst) = instance_class [] subj_sch in
+          let subj = duplicate_class_type subj_inst in
+          (* Duplicate generic variables *)
+          let (_, patt) =
+            with_level ~level:generic_level
+              (fun () -> instance_class [] pat_sch) in
+          let type_pairs = TypePairs.create 53 in
+          let sign1 = signature_of_class_type patt in
+          let sign2 = signature_of_class_type subj in
+          let self1 = sign1.csig_self in
+          let self2 = sign2.csig_self in
+          let row1 = sign1.csig_self_row in
+          let row2 = sign2.csig_self_row in
+          TypePairs.add type_pairs (self1, self2);
+          (* Always succeeds *)
+          moregen true type_pairs env row1 row2;
+          (* May fail *)
+          try Ok (moregen_clty trace type_pairs env patt subj)
+          with Failure res -> Error res
+        end with
+        | Ok () -> []
+        | Error res -> res
+      end
   | errors ->
       CM_Class_type_mismatch (env, pat_sch, subj_sch) :: errors
 

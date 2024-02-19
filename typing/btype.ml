@@ -101,9 +101,9 @@ let lowest_level = Ident.lowest_scope
 (**** leveled type pool ****)
 
 module IntMap = Map.Make(Int)
-let leveled_type_pool = s_ref IntMap.empty
 let last_pool = s_ref (ref [])
 let last_level = s_ref 0
+let leveled_type_pool = s_ref IntMap.(add !last_level !last_pool empty)
 
 let with_new_pool ~level f =
   let old_type_pool = !leveled_type_pool in
@@ -126,12 +126,13 @@ let register_last_pool ~level =
   leveled_type_pool := IntMap.add level !last_pool !leveled_type_pool
 
 let with_last_pool ~level f =
+  if level >= generic_level then f () else
   let old_type_pool = !leveled_type_pool in
   register_last_pool ~level;
   Misc.try_finally f ~always:(fun () -> leveled_type_pool := old_type_pool)
 
 let add_to_pool ~level ty =
-  if level >= generic_level - 1 || level <= 0 then () else
+  if level >= generic_level || level <= 0 then () else
   let pool =
     if level >= !last_level then !last_pool else
     try IntMap.find level !leveled_type_pool
