@@ -177,15 +177,23 @@ module Subtype = struct
   type trace       = type_expr t
   type error_trace = expanded_type t
 
-  type unification_error_trace = unification error (** To avoid shadowing *)
+  type package_error =
+    | Package_cannot_scrape of Path.t
+    | Package_inclusion of (Format.formatter -> unit)
+    | Package_coercion of (Format.formatter -> unit)
+
+  type 'a secondary_trace =
+    | Unification of 'a
+    | Package of package_error
+  type unification_secondary_trace = unification error secondary_trace
 
   type nonrec error =
     { trace             : error_trace
-    ; unification_trace : unification error }
+    ; secondary_trace : unification_secondary_trace }
 
-  let error ~trace ~unification_trace =
+  let error ~trace ~secondary_trace =
   assert (trace <> []);
-  { trace; unification_trace }
+  { trace; secondary_trace }
 
   let map_elt f = function
     | Diff x -> Diff (map_diff f x)

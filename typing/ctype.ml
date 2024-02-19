@@ -2610,8 +2610,9 @@ let unify_package env unify_list lv1 p1 fl1 lv2 p2 fl2 =
   and ntl1 = complete_type_list env fl2 lv1 (Mty_ident p1) fl1 in
   unify_list (List.map snd ntl1) (List.map snd ntl2);
   if eq_package_path env p1 p2
-  || !package_subtype env p1 fl1 p2 fl2
-  && !package_subtype env p2 fl2 p1 fl1 then () else raise Not_found
+  || Result.is_ok (!package_subtype env p1 fl1 p2 fl2)
+  && Result.is_ok (!package_subtype env p2 fl2 p1 fl1) then ()
+  else raise Not_found
 
 
 (* force unification in Reither when one side has a non-conjunctive type *)
@@ -4817,10 +4818,22 @@ let enlarge_type env ty =
 
 let subtypes = TypePairs.create 17
 
-let subtype_error ~env ~trace ~unification_trace =
+type subtype_constraints =
+  | Unify_cstr of {
+      trace:Types.type_expr Errortrace.Subtype.elt list;
+      t1:Types.type_expr;
+      t2:Types.type_expr;
+      univar_pairs: ((((Types.type_expr * Types.type_expr option ref) list) as 'm) * 'm) list
+    }
+  | Package_error of {
+      trace:Types.type_expr Errortrace.Subtype.elt list;
+      error: Errortrace.Subtype.package_error
+    }
+let cstr trace t1 t2 = Unify_cstr {trace;t1;t2;univar_pairs= !univar_pairs}
+let subtype_error ~env ~trace ~secondary_trace =
   raise (Subtype (Subtype.error
                     ~trace:(expand_subtype_trace env (List.rev trace))
-                    ~unification_trace))
+                    ~secondary_trace))
 
 let rec subtype_rec env trace t1 t2 cstrs =
   if eq_type t1 t2 then cstrs else
@@ -4831,7 +4844,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
     TypePairs.add subtypes (t1, t2);
     match (get_desc t1, get_desc t2) with
       (Tvar _, _) | (_, Tvar _) ->
-        (trace, t1, t2, !univar_pairs)::cstrs
+        cstr trace t1 t2::cstrs
     | (Tarrow(l1, t1, u1, _), Tarrow(l2, t2, u2, _)) when l1 = l2
       || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
         let cstrs =
@@ -4864,8 +4877,9 @@ let rec subtype_rec env trace t1 t2 cstrs =
               let (co, cn) = Variance.get_upper v in
               if co then
                 if cn then
-                  (trace, newty2 ~level:(get_level t1) (Ttuple[t1]),
-                   newty2 ~level:(get_level t2) (Ttuple[t2]), !univar_pairs)
+                  cstr trace
+                    (newty2 ~level:(get_level t1) (Ttuple[t1]))
+                    (newty2 ~level:(get_level t2) (Ttuple[t2]))
                   :: cstrs
                 else
                   subtype_rec
@@ -4883,8 +4897,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
                     cstrs
                 else cstrs)
             cstrs decl.type_variance (List.combine tl1 tl2)
-        with Not_found ->
-          (trace, t1, t2, !univar_pairs)::cstrs
+        with Not_found -> cstr trace t1 t2 :: cstrs
         end
     | (Tconstr(p1, _, _), _)
       when generic_private_abbrev env p1 && safe_abbrev_opt env t1 ->
@@ -4894,14 +4907,13 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (Tobject (f1, _), Tobject (f2, _))
       when is_Tvar (object_row f1) && is_Tvar (object_row f2) ->
         (* Same row variable implies same object. *)
-        (trace, t1, t2, !univar_pairs)::cstrs
+        cstr trace t1 t2 ::cstrs
     | (Tobject (f1, _), Tobject (f2, _)) ->
         subtype_fields env trace f1 f2 cstrs
     | (Tvariant row1, Tvariant row2) ->
         begin try
           subtype_row env trace row1 row2 cstrs
-        with Exit ->
-          (trace, t1, t2, !univar_pairs)::cstrs
+        with Exit -> cstr trace t1 t2 :: cstrs
         end
     | (Tpoly (u1, []), Tpoly (u2, [])) ->
         subtype_rec env trace u1 u2 cstrs
@@ -4912,8 +4924,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
         begin try
           enter_poly env univar_pairs u1 tl1 u2 tl2
             (fun t1 t2 -> subtype_rec env trace t1 t2 cstrs)
-        with Escape _ ->
-          (trace, t1, t2, !univar_pairs)::cstrs
+        with Escape _ -> cstr trace t1 t2::cstrs
         end
     | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
         begin try
@@ -4924,29 +4935,34 @@ let rec subtype_rec env trace t1 t2 cstrs =
               ~allow_absent:true in
           let cstrs' =
             List.map
-              (fun (n2,t2) -> (trace, List.assoc n2 ntl1, t2, !univar_pairs))
+              (fun (n2,t2) -> cstr trace (List.assoc n2 ntl1) t2)
               ntl2
           in
           if eq_package_path env p1 p2 then cstrs' @ cstrs
           else begin
             (* need to check module subtyping *)
             let snap = Btype.snapshot () in
-            match List.iter (fun (_, t1, t2, _) -> unify env t1 t2) cstrs' with
-            | () when !package_subtype env p1 fl1 p2 fl2 ->
-              Btype.backtrack snap; cstrs' @ cstrs
-            | () | exception Unify _ ->
-              Btype.backtrack snap; raise Not_found
+            let apply_cstr = function
+              | Unify_cstr r -> unify env r.t1 r.t2
+              | Package_error _ -> Btype.backtrack snap; raise Not_found
+            in
+            match List.iter apply_cstr cstrs' with
+            | exception Unify _ -> Btype.backtrack snap; raise Not_found
+            | () ->
+                match !package_subtype env p1 fl1 p2 fl2 with
+                | Ok () -> Btype.backtrack snap; cstrs' @ cstrs
+                | Error x ->
+                    Btype.backtrack snap;
+                    Package_error { trace; error=x }::cstrs
           end
-        with Not_found ->
-          (trace, t1, t2, !univar_pairs)::cstrs
+        with Not_found -> cstr trace t1 t2::cstrs
         end
-    | (_, _) ->
-        (trace, t1, t2, !univar_pairs)::cstrs
+    | (_, _) -> cstr trace t1 t2::cstrs
   end
 
 and subtype_list env trace tl1 tl2 cstrs =
   if List.length tl1 <> List.length tl2 then
-    subtype_error ~env ~trace ~unification_trace:[];
+    subtype_error ~env ~trace ~secondary_trace:(Errortrace.Subtype.Unification []);
   List.fold_left2
     (fun cstrs t1 t2 ->
        subtype_rec
@@ -4969,14 +4985,11 @@ and subtype_fields env trace ty1 ty2 cstrs =
         (Subtype.Diff {got = rest1; expected = rest2} :: trace)
         rest1 rest2
         cstrs
-    else
-      (trace, build_fields (get_level ty1) miss1 rest1, rest2,
-       !univar_pairs) :: cstrs
+    else cstr trace (build_fields (get_level ty1) miss1 rest1) rest2 :: cstrs
   in
   let cstrs =
     if miss2 = [] then cstrs else
-    (trace, rest1, build_fields (get_level ty2) miss2 (newvar ()),
-     !univar_pairs) :: cstrs
+    cstr trace rest1 (build_fields (get_level ty2) miss2 (newvar ())) :: cstrs
   in
   List.fold_left
     (fun cstrs (_, _k1, t1, _k2, t2) ->
@@ -5063,12 +5076,15 @@ let subtype env ty1 ty2 =
   in
   TypePairs.clear subtypes;
   (* Enforce constraints. *)
-  function () ->
-    List.iter
-      (function (trace0, t1, t2, pairs) ->
-         try unify_pairs env t1 t2 pairs with Unify {trace} ->
-           subtype_error ~env ~trace:trace0 ~unification_trace:(List.tl trace))
-      (List.rev cstrs)
+  let apply_constraint = function
+    | Package_error e ->
+        subtype_error ~env ~trace:e.trace ~secondary_trace:(Package e.error)
+    | Unify_cstr c ->
+        try unify_pairs env c.t1 c.t2 c.univar_pairs with Unify {trace} ->
+           subtype_error ~env ~trace:c.trace
+             ~secondary_trace:(Unification (List.tl trace))
+  in
+  fun () -> List.iter apply_constraint  (List.rev cstrs)
 
                               (*******************)
                               (*  Miscellaneous  *)

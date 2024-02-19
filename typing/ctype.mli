@@ -466,7 +466,8 @@ val immediacy : Env.t -> type_expr -> Type_immediacy.t
 (* Stubs *)
 val package_subtype :
     (Env.t -> Path.t -> (Longident.t * type_expr) list ->
-      Path.t -> (Longident.t * type_expr) list -> bool) ref
+      Path.t -> (Longident.t * type_expr) list ->
+     (unit,Errortrace.Subtype.package_error) Result.t) ref
 
 (* Raises [Incompatible] *)
 val mcomp : Env.t -> type_expr -> type_expr -> unit

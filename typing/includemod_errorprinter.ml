@@ -64,10 +64,10 @@ module Context = struct
   let alt_pp ppf cxt =
     if cxt = [] then () else
     if List.for_all (function Module _ -> true | _ -> false) cxt then
-      Format.fprintf ppf "in module %a,"
+      Format.fprintf ppf ",@ in module %a"
         (Style.as_inline_code Printtyp.path) (path_of_context cxt)
     else
-      Format.fprintf ppf "@[<hv 2>at position@ %a,@]"
+      Format.fprintf ppf ",@ @[<hv 2>at position@ %a@]"
         (Style.as_inline_code context) cxt
 
   let pp ppf cxt =
@@ -95,43 +95,50 @@ module Illegal_permutation = struct
     | None -> g y
     | Some _ as v -> v
 
+  type change =
+    | Transposition of int * int
+    | Primitive_coercion of string
+    | Alias_coercion of Path.t
+
   (** We extract a lone transposition from a full tree of permutations. *)
   let rec transposition_under path (coerc:Typedtree.module_coercion) =
     match coerc with
     | Tcoerce_structure(c,_) ->
-        either
-          (not_fixpoint path 0) c
-          (first_non_id path 0) c
+          (either
+             (not_fixpoint path 0) c
+             (first_non_id path 0) c
+          )
     | Tcoerce_functor(arg,res) ->
         either
           (transposition_under (InArg::path)) arg
           (transposition_under (InBody::path)) res
     | Tcoerce_none -> None
-    | Tcoerce_alias _ | Tcoerce_primitive _ ->
-        (* these coercions are not inversible, and raise an error earlier when
-           checking for module type equivalence *)
-        assert false
+    | Tcoerce_alias _ | Tcoerce_primitive _ -> None
+    (* those two coercions cannot happen at toplevel *)
+
   (* we search the first point which is not invariant at the current level *)
   and not_fixpoint path pos = function
     | [] -> None
     | (n, _) :: q ->
-        if n = pos then
+        if n < 0 || n = pos then
           not_fixpoint path (pos+1) q
         else
-          Some(List.rev path, pos, n)
+          Some(List.rev path, Transposition (pos, n))
   (* we search the first item with a non-identity inner coercion *)
   and first_non_id path pos = function
     | [] -> None
     | (_, Typedtree.Tcoerce_none) :: q -> first_non_id path (pos + 1) q
+    | (_, Typedtree.Tcoerce_alias (_,p,_)) :: _ ->
+        Some (List.rev path, Alias_coercion p)
+    | (_, Typedtree.Tcoerce_primitive p) :: _ ->
+        let name = Primitive.byte_name p.pc_desc in
+        Some (List.rev path, Primitive_coercion name)
     | (_,c) :: q ->
         either
           (transposition_under (Item pos :: path)) c
           (first_non_id path (pos + 1)) q
 
-  let transposition c =
-    match transposition_under [] c with
-    | None -> raise Not_found
-    | Some x -> x
+  let transposition c = transposition_under [] c
 
   let rec runtime_item k = function
     | [] -> raise Not_found
@@ -173,17 +180,58 @@ module Illegal_permutation = struct
       Style.inline_code (Ident.name id)
 
   let pp ctx_printer env ppf (mty,c) =
+    match transposition c with
+    | None | Some (_, (Primitive_coercion _ | Alias_coercion _)) ->
+        (* those kind coercions are not inversible, and raise an error earlier when
+           checking for module type equivalence *)
+        assert false
+    | Some (path, Transposition (k,l)) ->
     try
-      let p, k, l = transposition c in
-      let ctx, mt = find env p mty in
+      let ctx, mt = find env path mty in
       Format.fprintf ppf
         "@[<hv 2>Illegal permutation of runtime components in a module type.@ \
-         @[For example,@ %a@]@ @[the %a@ and the %a are not in the same order@ \
+         @[For example%a,@]@ @[the %a@ and the %a are not in the same order@ \
          in the expected and actual module types.@]@]"
         ctx_printer ctx pp_item (item mt k) pp_item (item mt l)
     with Not_found -> (* this should not happen *)
       Format.fprintf ppf
         "Illegal permutation of runtime components in a module type."
+
+  let coercion_in_package_subtype ctx_printer env mty c ppf =
+    match transposition c with
+    | None ->
+        (* The coercion looks like the identity but was not simplified to
+           [Tcoerce_none], this only happens when the two first-class module
+           types differ by runtime size *)
+        Format.fprintf ppf
+          "The two first-class module types differ by their runtime size."
+    | Some (path, c) ->
+  try
+    let ctx, mt = find env path mty in
+    match c with
+    | Primitive_coercion prim_name ->
+        Format.fprintf ppf
+          "@[The two first-class module types differ by a coercion of@ \
+           the primitive %a@ to a value%a.@]"
+          Style.inline_code prim_name
+          ctx_printer ctx
+    | Alias_coercion path ->
+        Format.fprintf ppf
+          "@[The two first-class module types differ by a coercion of@ \
+           a module alias %a@ to a module%a.@]"
+          (Style.as_inline_code Printtyp.path) path
+          ctx_printer ctx
+    | Transposition (k,l) ->
+        Format.fprintf ppf
+          "@[@[The two first-class module types do not share@ \
+           the same position for runtime components.@]@ \
+           @[For example,%a@ the %a@ occurs at the expected position of@ \
+           the %a.@]@]"
+          ctx_printer ctx pp_item (item mt l) pp_item (item mt k)
+  with Not_found ->
+    Format.fprintf ppf
+      "@[The two packages types do not share@ \
+       the@ same@ position@ for@ runtime@ components.@]"
 
 end
 
@@ -964,6 +1012,9 @@ let report_apply_error ~loc env (app_name, mty_f, args) =
            do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"
           intro
           actual expected
+
+let coercion_in_package_subtype env mty c ppf =
+    Illegal_permutation.coercion_in_package_subtype Context.alt_pp env mty c ppf
 
 let register () =
   Location.register_error_of_exn

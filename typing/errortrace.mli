@@ -155,14 +155,22 @@ module Subtype : sig
   type trace       = type_expr t
   type error_trace = expanded_type t
 
-  type unification_error_trace = unification error (** To avoid shadowing *)
+  type package_error =
+    | Package_cannot_scrape of Path.t
+    | Package_inclusion of (Format.formatter -> unit)
+    | Package_coercion of (Format.formatter -> unit)
+
+  type 'a secondary_trace =
+    | Unification of 'a
+    | Package of package_error
+  type unification_secondary_trace = unification error secondary_trace
 
   type nonrec error = private
     { trace             : error_trace
-    ; unification_trace : unification error }
+    ; secondary_trace : unification_secondary_trace }
 
   val error :
-    trace:error_trace -> unification_trace:unification_error_trace -> error
+    trace:error_trace -> secondary_trace:unification_secondary_trace -> error
 
   val map : ('a -> 'b) -> 'a t -> 'b t
 end
