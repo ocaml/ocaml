@@ -4545,7 +4545,7 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
            [moregen] does some unification that we need to preserve for more
            legible error messages, we rely on automatic generalization
            rather than backtracking. *)
-        match with_local_level_generalize begin fun () ->
+        with_local_level_generalize begin fun () ->
           assert (!current_level = generic_level - 1);
           (*
             Generic variables are first duplicated with [instance].  So,
@@ -4570,11 +4570,9 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
           (* Always succeeds *)
           moregen true type_pairs env row1 row2;
           (* May fail *)
-          try Ok (moregen_clty trace type_pairs env patt subj)
-          with Failure res -> Error res
-        end with
-        | Ok () -> []
-        | Error res -> res
+          try moregen_clty trace type_pairs env patt subj; []
+          with Failure res -> res
+        end
       end
   | errors ->
       CM_Class_type_mismatch (env, pat_sch, subj_sch) :: errors
