@@ -733,52 +733,6 @@ let duplicate_class_type ty =
                          (*  Type level manipulation  *)
                          (*****************************)
 
-(*
-   It would be a bit more efficient to remove abbreviation expansions
-   rather than generalizing them: these expansions will usually not be
-   used anymore. However, this is not possible in the general case, as
-   [expand_abbrev] (via [subst]) requires these expansions to be
-   preserved. Does it worth duplicating this code ?
-*)
-let rec generalize ty =
-  let level = get_level ty in
-  if (level > !current_level) && (level <> generic_level) then begin
-    set_level ty generic_level;
-    (* recur into abbrev for the speed *)
-    begin match get_desc ty with
-      Tconstr (_, _, abbrev) ->
-        iter_abbrev generalize !abbrev
-    | _ -> ()
-    end;
-    iter_type_expr generalize ty
-  end
-
-let generalize ty =
-  simple_abbrevs := Mnil;
-  generalize ty
-
-(* Generalize the structure and lower the variables *)
-(* Used in principal mode to track types that do not depend on environment *)
-
-let rec generalize_structure ty =
-  let level = get_level ty in
-  if level <> generic_level then begin
-    if is_Tvar ty && level > !current_level then
-      set_level ty !current_level
-    else if level > !current_level then begin
-      begin match get_desc ty with
-        Tconstr (_, _, abbrev) ->
-          abbrev := Mnil
-      | _ -> ()
-      end;
-      set_level ty generic_level;
-      iter_type_expr generalize_structure ty
-    end
-  end
-
-let generalize_structure ty =
-  simple_abbrevs := Mnil;
-  generalize_structure ty
 
 (* Generalize the spine of a function, if the level >= !current_level *)
 
@@ -1031,11 +985,11 @@ let lower_contravariant env ty =
   simple_abbrevs := Mnil;
   lower_contravariant env !nongen_level (Hashtbl.create 7) false ty
 
-let rec generalize_class_type' gen =
+let rec generalize_class_type gen =
   function
     Cty_constr (_, params, cty) ->
       List.iter gen params;
-      generalize_class_type' gen cty
+      generalize_class_type gen cty
   | Cty_signature csig ->
       gen csig.csig_self;
       gen csig.csig_self_row;
@@ -1043,14 +997,7 @@ let rec generalize_class_type' gen =
       Meths.iter (fun _ (_, _, ty) -> gen ty) csig.csig_meths
   | Cty_arrow (_, ty, cty) ->
       gen ty;
-      generalize_class_type' gen cty
-
-let generalize_class_type cty =
-  generalize_class_type' generalize cty
-(*
-let generalize_class_type_structure cty =
-  generalize_class_type' generalize_structure cty
-*)
+      generalize_class_type gen cty
 
 (* Correct the levels of type [ty]. *)
 let correct_levels ty =
@@ -1098,7 +1045,7 @@ let limited_generalize ty0 ~inside:ty =
     graph
 
 let limited_generalize_class_type rv ~inside:cty =
-  generalize_class_type' (fun inside -> limited_generalize rv ~inside) cty
+  generalize_class_type (fun inside -> limited_generalize rv ~inside) cty
 
 (* Compute statically the free univars of all nodes in a type *)
 (* This avoids doing it repeatedly during instantiation *)
