@@ -8,7 +8,7 @@ else
     DBG=quiet
 endif
 
-VERSION = 5.3.0
+VERSION=$(shell grep 'OCAML_VERSION_SHORT=' ../../../configure | awk -F'=' '{print $$2}')
 
 WEBDIR = ../$(VERSION)
 WEBDIRAPI = $(WEBDIR)/api

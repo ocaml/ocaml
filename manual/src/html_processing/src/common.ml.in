@@ -27,7 +27,7 @@ let ( // ) = Filename.concat
 
 let process_dir = Filename.current_dir_name
 
-let ocaml_version = "5.3.0"
+let ocaml_version = "@OCAML_VERSION_SHORT@"
 
 (* Output directory *)
 let web_dir = Filename.parent_dir_name // ocaml_version
