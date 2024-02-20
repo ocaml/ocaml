@@ -3790,6 +3790,9 @@ let generalize_class_signature_spine _env sign =
                         (*  Matching between type schemes  *)
                         (***********************************)
 
+(* Level of the subject, should be just below generic_level *)
+let subject_level = generic_level - 1
+
 (*
    Update the level of [ty]. First check that the levels of generic
    variables from the subject are not lowered.
@@ -3799,7 +3802,7 @@ let moregen_occur env level ty =
     let rec occur ty =
       let lv = get_level ty in
       if lv <= level then () else
-      if is_Tvar ty && lv >= generic_level - 1 then raise Occur else
+      if is_Tvar ty && lv >= subject_level then raise Occur else
       if try_mark_node mark ty then iter_type_expr occur ty
     in
     try
@@ -3813,7 +3816,7 @@ let moregen_occur env level ty =
 
 let may_instantiate inst_nongen t1 =
   let level = get_level t1 in
-  if inst_nongen then level <> generic_level - 1
+  if inst_nongen then level <> subject_level
                  else level =  generic_level
 
 let rec moregen inst_nongen type_pairs env t1 t2 =
@@ -4047,22 +4050,22 @@ let moregen inst_nongen type_pairs env patt subj =
    is unimportant.  So, no need to propagate abbreviations.
 *)
 let moregeneral env inst_nongen pat_sch subj_sch =
-  (* Start at level [generic_level - 2] so that we only generalize nodes
-     at level [generic_level - 1] *)
-  with_level ~level:(generic_level - 2) begin fun () ->
+  (* Start at level [subject_level - 1] so that we only generalize nodes
+     at level [subject_level] *)
+  with_level ~level:(subject_level - 1) begin fun () ->
     (* Moregen splits the generic level into two finer levels:
-       [generic_level] and [generic_level - 1].  In order to properly
+       [generic_level] and [subject_level].  In order to properly
        detect and print weak variables when printing errors, we need to
        merge them back together, by regeneralizing the levels of the types
-       after they were instantiated at [generic_level - 1] above.  Because
+       after they were instantiated at [subject_level] above.  Because
        [moregen] does some unification that we need to preserve for more
        legible error messages, we rely on automatic generalization
        rather than backtracking. *)
     match with_local_level_generalize begin fun () ->
-      assert (!current_level = generic_level - 1);
+      assert (!current_level = subject_level);
       (*
         Generic variables are first duplicated with [instance].  So,
-        their levels are lowered to [generic_level - 1].  The subject is
+        their levels are lowered to [subject_level].  The subject is
         then copied with [duplicate_type].  That way, its levels won't be
         changed.
        *)
@@ -4536,20 +4539,20 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
   let errors = match_class_sig_shape ~strict:false sign1 sign2 in
   match errors with
   | [] ->
-      with_level ~level:(generic_level - 2) begin fun () ->
+      with_level ~level:(subject_level - 1) begin fun () ->
         (* Moregen splits the generic level into two finer levels:
-           [generic_level] and [generic_level - 1].  In order to properly
+           [generic_level] and [subject_level].  In order to properly
            detect and print weak variables when printing errors, we need to
            merge them back together, by regeneralizing the levels of the types
-           after they were instantiated at [generic_level - 1] above.  Because
+           after they were instantiated at [subject_level] above.  Because
            [moregen] does some unification that we need to preserve for more
            legible error messages, we rely on automatic generalization
            rather than backtracking. *)
         with_local_level_generalize begin fun () ->
-          assert (!current_level = generic_level - 1);
+          assert (!current_level = subject_level);
           (*
             Generic variables are first duplicated with [instance].  So,
-            their levels are lowered to [generic_level - 1].  The subject is
+            their levels are lowered to [subject_level].  The subject is
             then copied with [duplicate_type].  That way, its levels won't be
             changed.
            *)
