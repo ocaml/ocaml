@@ -80,9 +80,8 @@ module Context = struct
         (Style.as_inline_code context) cxt
 end
 
-module Illegal_permutation = struct
-  (** Extraction of information in case of illegal permutation
-      in a module type *)
+module Runtime_coercion = struct
+  (** Extraction of a small change from a non-identity runtime coercion *)
 
   (** When examining coercions, we only have runtime component indices,
       we use thus a limited version of {!pos}. *)
@@ -100,26 +99,28 @@ module Illegal_permutation = struct
     | Primitive_coercion of string
     | Alias_coercion of Path.t
 
-  (** We extract a lone transposition from a full tree of permutations. *)
-  let rec transposition_under path (coerc:Typedtree.module_coercion) =
+  (** We extract a small change from a full coercion. *)
+  let rec first_change_under path (coerc:Typedtree.module_coercion) =
     match coerc with
     | Tcoerce_structure(c,_) ->
         either
-          (not_fixpoint path 0) c
+          (first_item_transposition path 0) c
           (first_non_id path 0) c
     | Tcoerce_functor(arg,res) ->
         either
-          (transposition_under (InArg::path)) arg
-          (transposition_under (InBody::path)) res
+          (first_change_under (InArg::path)) arg
+          (first_change_under (InBody::path)) res
     | Tcoerce_none -> None
     | Tcoerce_alias _ | Tcoerce_primitive _ -> None
 
   (* we search the first point which is not invariant at the current level *)
-  and not_fixpoint path pos = function
+  and first_item_transposition path pos = function
     | [] -> None
     | (n, _) :: q ->
         if n < 0 || n = pos then
-          not_fixpoint path (pos+1) q
+          (* when n < 0, this is not a transposition but a kind coercion,
+            which will be covered in the first_non_id case *)
+          first_item_transposition path (pos+1) q
         else
           Some(List.rev path, Transposition (pos, n))
   (* we search the first item with a non-identity inner coercion *)
@@ -133,10 +134,10 @@ module Illegal_permutation = struct
         Some (List.rev path, Primitive_coercion name)
     | (_,c) :: q ->
         either
-          (transposition_under (Item pos :: path)) c
+          (first_change_under (Item pos :: path)) c
           (first_non_id path (pos + 1)) q
 
-  let transposition c = transposition_under [] c
+  let first_change c = first_change_under [] c
 
   let rec runtime_item k = function
     | [] -> raise Not_found
@@ -177,8 +178,8 @@ module Illegal_permutation = struct
       (Includemod.kind_of_field_desc kind)
       Style.inline_code (Ident.name id)
 
-  let pp ctx_printer env ppf (mty,c) =
-    match transposition c with
+  let illegal_permutation ctx_printer env ppf (mty,c) =
+    match first_change c with
     | None | Some (_, (Primitive_coercion _ | Alias_coercion _)) ->
         (* those kind coercions are not inversible, and raise an error earlier when
            checking for module type equivalence *)
@@ -195,8 +196,8 @@ module Illegal_permutation = struct
       Format.fprintf ppf
         "Illegal permutation of runtime components in a module type."
 
-  let coercion_in_package_subtype ctx_printer env mty c ppf =
-    match transposition c with
+  let in_package_subtype ctx_printer env mty c ppf =
+    match first_change c with
     | None ->
         (* The coercion looks like the identity but was not simplified to
            [Tcoerce_none], this only happens when the two first-class module
@@ -871,7 +872,7 @@ and module_type_decl ~expansion_token ~env ~before ~ctx id diff =
       | None -> assert false
       | Some mty ->
           with_context (Modtype id::ctx)
-            (Illegal_permutation.pp Context.alt_pp env) (mty,c)
+            (Runtime_coercion.illegal_permutation Context.alt_pp env) (mty,c)
           :: before
       end
 
@@ -920,7 +921,7 @@ let module_type_subst ~env id diff =
       let mty = diff.got in
       let main =
         with_context [Modtype id]
-          (Illegal_permutation.pp Context.alt_pp env) (mty,c) in
+          (Runtime_coercion.illegal_permutation Context.alt_pp env) (mty,c) in
       [main]
 
 let all env = function
@@ -1012,7 +1013,7 @@ let report_apply_error ~loc env (app_name, mty_f, args) =
           actual expected
 
 let coercion_in_package_subtype env mty c ppf =
-    Illegal_permutation.coercion_in_package_subtype Context.alt_pp env mty c ppf
+    Runtime_coercion.in_package_subtype Context.alt_pp env mty c ppf
 
 let register () =
   Location.register_error_of_exn
