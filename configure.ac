@@ -122,6 +122,9 @@ AC_SUBST([CMXS_MAGIC_NUMBER], [CMXS__MAGIC_NUMBER])
 AC_SUBST([CMT_MAGIC_NUMBER], [CMT__MAGIC_NUMBER])
 AC_SUBST([LINEAR_MAGIC_NUMBER], [LINEAR__MAGIC_NUMBER])
 AC_SUBST([CC])
+AC_SUBST([SAK_CC])
+AC_SUBST([SAK_CFLAGS])
+AC_SUBST([SAK_LINK])
 AC_SUBST([DIFF_FLAGS])
 AC_SUBST([CSC])
 AC_SUBST([CSCFLAGS])
@@ -851,6 +854,20 @@ dnl nefarious single quotes which may appear in any of the strings.
 '$(echo "$target_launch_method" | sed -e "s/'/'\"'\"'/g")'
   ocaml_bindir='$(echo "$ocaml_bindir" | sed -e "s/'/'\"'\"'/g")'
   target_bindir='$(echo "$target_bindir" | sed -e "s/'/'\"'\"'/g")'])
+
+# How to build sak
+
+AS_IF(
+  [test x"$build" = x"$target" -o x"$target_runnable" = xtrue],
+    [SAK_CC='$(CC)'
+    SAK_CFLAGS='$(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS)'
+    SAK_LINK='$(MKEXE_VIA_CC)'],
+    [AC_MSG_NOTICE([detecting the C toolchain for build])
+    AX_PROG_CC_FOR_BUILD
+    SAK_CC="$CC_FOR_BUILD"
+    SAK_CFLAGS="$CFLAGS_FOR_BUILD $CPPFLAGS_FOR_BUILD"
+    # Note that *-pc-windows is not supported for _build_ so we can use '-o'
+    SAK_LINK='$(SAK_CC) $(SAK_CFLAGS) -o $(1) $(2)'])
 
 # Checks for programs
 
