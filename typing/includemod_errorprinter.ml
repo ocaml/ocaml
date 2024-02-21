@@ -104,17 +104,15 @@ module Illegal_permutation = struct
   let rec transposition_under path (coerc:Typedtree.module_coercion) =
     match coerc with
     | Tcoerce_structure(c,_) ->
-          (either
-             (not_fixpoint path 0) c
-             (first_non_id path 0) c
-          )
+        either
+          (not_fixpoint path 0) c
+          (first_non_id path 0) c
     | Tcoerce_functor(arg,res) ->
         either
           (transposition_under (InArg::path)) arg
           (transposition_under (InBody::path)) res
     | Tcoerce_none -> None
     | Tcoerce_alias _ | Tcoerce_primitive _ -> None
-    (* those two coercions cannot happen at toplevel *)
 
   (* we search the first point which is not invariant at the current level *)
   and not_fixpoint path pos = function

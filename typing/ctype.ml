@@ -2091,7 +2091,9 @@ let enter_poly_for tr_exn env univar_pairs t1 tl1 t2 tl2 f =
     enter_poly env univar_pairs t1 tl1 t2 tl2 f
   with Escape e -> raise_for tr_exn (Escape e)
 
-let univar_pairs = ref []
+type univar_pair =
+  (((Types.type_expr * Types.type_expr option ref) list) as 'm) * 'm
+let univar_pairs: univar_pair list ref = ref []
 
 (**** Instantiate a generic type into a poly type ***)
 
@@ -4823,13 +4825,15 @@ type subtype_constraints =
       trace:Types.type_expr Errortrace.Subtype.elt list;
       t1:Types.type_expr;
       t2:Types.type_expr;
-      univar_pairs: ((((Types.type_expr * Types.type_expr option ref) list) as 'm) * 'm) list
+      univar_pairs:univar_pair list
     }
   | Package_error of {
       trace:Types.type_expr Errortrace.Subtype.elt list;
       error: Errortrace.Subtype.package_error
     }
+
 let cstr trace t1 t2 = Unify_cstr {trace;t1;t2;univar_pairs= !univar_pairs}
+
 let subtype_error ~env ~trace ~secondary_trace =
   raise (Subtype (Subtype.error
                     ~trace:(expand_subtype_trace env (List.rev trace))

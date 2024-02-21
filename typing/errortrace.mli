@@ -163,6 +163,7 @@ module Subtype : sig
   type 'a secondary_trace =
     | Unification of 'a
     | Package of package_error
+
   type unification_secondary_trace = unification error secondary_trace
 
   type nonrec error = private
