@@ -65,8 +65,8 @@ Line 4, characters 2-34:
 Error: Type "(module S4)" is not a subtype of "(module S5)"
        The two first-class module types do not share
        the same position for runtime components.
-       For example, the value "y" occurs at the expected position of
-       the value "mid".
+       For example, the value "mid" occurs at the expected position of
+       the value "y".
 |}];;
 
 

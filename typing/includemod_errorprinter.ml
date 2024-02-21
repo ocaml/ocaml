@@ -226,7 +226,7 @@ module Runtime_coercion = struct
            the same position for runtime components.@]@ \
            @[For example,%a@ the %a@ occurs at the expected position of@ \
            the %a.@]@]"
-          ctx_printer ctx pp_item (item mt l) pp_item (item mt k)
+          ctx_printer ctx pp_item (item mt k) pp_item (item mt l)
   with Not_found ->
     Format.fprintf ppf
       "@[The two packages types do not share@ \
