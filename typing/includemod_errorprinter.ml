@@ -230,7 +230,7 @@ module Runtime_coercion = struct
   with Not_found ->
     Format.fprintf ppf
       "@[The two packages types do not share@ \
-       the@ same@ position@ for@ runtime@ components.@]"
+       the@ same@ positions@ for@ runtime@ components.@]"
 
 end
 
