@@ -2062,17 +2062,17 @@ let package_subtype env p1 fl1 p2 fl2 =
   in
   match mkmty p1 fl1, mkmty p2 fl2 with
   | exception Error(_, _, Cannot_scrape_package_type r) ->
-      Result.Error (Errortrace.Subtype.Package_cannot_scrape r)
+      Result.Error (Errortrace.Package_cannot_scrape r)
   | mty1, mty2 ->
     let loc = Location.none in
     match Includemod.modtypes ~loc ~mark:Mark_both env mty1 mty2 with
     | Tcoerce_none -> Ok ()
     | c ->
         let msg = Includemod_errorprinter.coercion_in_package_subtype env mty1 c in
-        Result.Error (Errortrace.Subtype.Package_coercion msg)
+        Result.Error (Errortrace.Package_coercion msg)
     | exception Includemod.Error e ->
         let msg = Includemod_errorprinter.err_msgs e in
-        Result.Error (Errortrace.Subtype.Package_inclusion msg)
+        Result.Error (Errortrace.Package_inclusion msg)
 
 let () = Ctype.package_subtype := package_subtype
 

@@ -558,7 +558,7 @@ Error: Signature mismatch:
          val f : (module s/2) -> unit
        The type "(module s) -> unit" is not compatible with the type
          "(module s/2) -> unit"
-       Type "(module s)" is not compatible with type "(module s/2)"
+       Modules do not match: s is not included in s/2
        Line 6, characters 4-17:
          Definition of module type "s"
        Line 2, characters 2-15:

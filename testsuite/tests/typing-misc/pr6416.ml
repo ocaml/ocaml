@@ -154,7 +154,7 @@ Error: Signature mismatch:
          val f : (module s/2) -> t/2 -> t/2
        The type "(module s) -> t/2 -> t" is not compatible with the type
          "(module s/2) -> t/2 -> t/2"
-       Type "(module s)" is not compatible with type "(module s/2)"
+       Modules do not match: s is not included in s/2
        Line 5, characters 23-33:
          Definition of type "t"
        Line 3, characters 2-12:

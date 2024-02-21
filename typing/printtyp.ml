@@ -2449,6 +2449,18 @@ let explain_incompatible_fields name (diff: Types.type_expr Errortrace.diff) =
     (Style.as_inline_code type_expr_with_reserved_names) diff.got
     (Style.as_inline_code type_expr_with_reserved_names) diff.expected
 
+let explain_first_class_module = function
+  | Errortrace.Package_cannot_scrape p -> Some(
+      dprintf "@,@[The module alias %a could not be expanded@]"
+        Style.(as_inline_code path) p
+    )
+  | Errortrace.Package_inclusion pr ->
+      Some(dprintf "@,@[%t@]" pr)
+  | Errortrace.Package_coercion pr ->
+      Some(dprintf "@,@[%t@]" pr)
+
+
+
 let explanation (type variety) intro prev env
   : (Errortrace.expanded_type, variety) Errortrace.elt -> _ = function
   | Errortrace.Diff {got; expected} ->
@@ -2471,6 +2483,8 @@ let explanation (type variety) intro prev env
     explain_variant v
   | Errortrace.Obj o ->
     explain_object o
+  | Errortrace.First_class_module fm ->
+    explain_first_class_module fm
   | Errortrace.Rec_occur(x,y) ->
     reserve_names x;
     reserve_names y;
@@ -2618,10 +2632,7 @@ module Subtype = struct
   let printing_status = function
     | Errortrace.Subtype.Diff d -> diff_printing_status d
 
-  let prepare_unification_trace f = function
-    | Errortrace.Subtype.Package _ as pe -> pe
-    | Errortrace.Subtype.Unification utrace ->
-        Errortrace.Subtype.Unification (prepare_trace f utrace)
+  let prepare_unification_trace = prepare_trace
 
   let prepare_trace f tr =
     prepare_any_trace printing_status (Errortrace.Subtype.map f tr)
@@ -2664,39 +2675,29 @@ module Subtype = struct
     | Errortrace.Subtype.Diff diff ->
         Some (Errortrace.map_diff (trees_of_type_expansion Type) diff)
 
-  module ErrSub = Errortrace.Subtype
-
   let report_error
         ppf
         env
-        (ErrSub.{trace = tr_sub; secondary_trace})
+        (Errortrace.Subtype.{trace = tr_sub; unification_trace = tr_unif})
         txt1 =
     wrap_printing_env ~error:true env (fun () ->
       reset ();
       let tr_sub = prepare_trace prepare_expansion tr_sub in
-      let s_trace = prepare_unification_trace prepare_expansion secondary_trace in
-      let keep_first = match s_trace with
-        | Unification ([Obj _ | Variant _ | Escape _ ] | []) | Package _ -> true
+      let tr_unif = prepare_unification_trace prepare_expansion tr_unif in
+      let keep_first = match tr_unif with
+        | [Obj _ | Variant _ | Escape _ ] | [] -> true
         | _ -> false in
       fprintf ppf "@[<v>%a"
         (trace filter_subtype_trace subtype_get_diff true keep_first txt1)
         tr_sub;
-      begin match s_trace with
-      | ErrSub.Unification [] -> ()
-      | ErrSub.Unification tr_unif ->
-          let mis = mismatch (dprintf "Within this type") env tr_unif in
-          fprintf ppf "%a%t%t"
-            (trace filter_trace unification_get_diff false
-               (mis = None) "is not compatible with type") tr_unif
-            (explain mis)
-            Conflicts.print_explanations
-      | ErrSub.Package (Package_cannot_scrape p) ->
-          fprintf ppf "@,Module type %s could not be expanded." (Path.name p)
-      | ErrSub.Package (Package_coercion pr | Package_inclusion pr) ->
-          fprintf ppf "@,%t" pr
-      end;
-      fprintf ppf "@]"
-      )
+      if tr_unif = [] then fprintf ppf "@]" else
+        let mis = mismatch (dprintf "Within this type") env tr_unif in
+        fprintf ppf "%a%t%t@]"
+          (trace filter_trace unification_get_diff false
+             (mis = None) "is not compatible with type") tr_unif
+          (explain mis)
+          Conflicts.print_explanations
+    )
 end
 
 let report_ambiguous_type_error ppf env tp0 tpl txt1 txt2 txt3 =
