@@ -900,6 +900,10 @@ OCaml 5.2.0
 - #12851: Fix race between runtime events teardown and event emission
   (Olivier Nicole, review by Miod Vallat and Gabriel Scherer)
 
+- #12860: Fix an assertion that wasn't taking into account the possibility of an
+  ephemeron pointing at static data.
+  (Mark Shinwell, review by Gabriel Scherer and KC Sivaramakrishnan)
+
 - #12861: Fix a possible crash in the `threads` library.
   (Mark Shinwell, review by Gabriel Scherer and KC Sivaramakrishnan)
 
