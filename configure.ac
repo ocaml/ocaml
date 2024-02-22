@@ -297,6 +297,17 @@ AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 
+# Override cross_compiling and ac_tool_prefix variables since the C toolchain is
+# used to generate target code when building a cross compiler
+cross_compiling=no
+AS_IF([test x"$target_alias" != x],
+  [AS_IF([test x"$build_alias" = x],
+    [cross_compiling=maybe],
+    [AS_IF([test x"$build_alias" != x"$target_alias"],
+      [cross_compiling=yes])])])
+AS_IF([test -n "$target_alias"],
+  [ac_tool_prefix=$target_alias-])
+
 # Ensure that AC_CONFIG_LINKS will either create symlinks which are compatible
 # with native Windows (i.e. NTFS symlinks, not WSL or Cygwin-emulated ones) or
 # use its fallback mechanisms. Native Windows versions of ocamlc/ocamlopt cannot
@@ -614,6 +625,16 @@ AS_IF([test x"$enable_ocamldoc" = "xno"],
 # Allow the MSVC linker to be found even if ld isn't installed.
 # User-specified LD still takes precedence.
 AC_CHECK_TOOLS([LD],[ld link])
+# libtool will detect a build-to-host C toolchain but when building an OCaml
+# cross compiler we need the C toolchain to build the target runtime so we
+# temporarily define host* values as macros for target* values so that the
+# proper toolchain is configured. Note that host=target unless we are building a
+# cross compiler so this is transparent for the usual use case.
+pushdef([host], target)dnl
+pushdef([host_alias], target_alias)dnl
+pushdef([host_cpu], target_cpu)dnl
+pushdef([host_vendor], target_vendor)dnl
+pushdef([host_os], target_os)dnl
 # libtool expects host_os=mingw for native Windows
 # Also, it has been observed that, on some platforms (e.g. msvc) LT_INIT
 # alters the CFLAGS variable, so we save its value before calling the macro
@@ -624,6 +645,11 @@ saved_CFLAGS="$CFLAGS"
 LT_INIT
 CFLAGS="$saved_CFLAGS"
 host_os=$old_host_os
+popdef([host_os])dnl
+popdef([host_vendor])dnl
+popdef([host_cpu])dnl
+popdef([host_alias])dnl
+popdef([host])dnl
 
 AS_CASE([$host],
   [sparc-sun-solaris*],
