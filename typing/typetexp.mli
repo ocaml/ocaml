@@ -102,3 +102,7 @@ val transl_modtype_longident:  (* from Typemod *)
     (Location.t -> Env.t -> Longident.t -> Path.t) ref
 val transl_modtype: (* from Typemod *)
     (Env.t -> Parsetree.module_type -> Typedtree.module_type) ref
+val check_package_with_type_constraints: (* from Typemod *)
+    (Location.t -> Env.t -> Types.module_type ->
+     (Longident.t Asttypes.loc * Typedtree.core_type) list ->
+     Types.module_type) ref

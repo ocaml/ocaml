@@ -839,6 +839,11 @@ OCaml 5.2.0
 - #12919: Fix register corruption in caml_callback2_asm on s390x.
   (Miod Vallat, review by Gabriel Scherer)
 
+- #12924, #12930: Rework package constraint checking to improve interaction with
+  immediacy
+  (Chris Casinghino and Florian Angeletti, review by Florian Angeletti and
+   Richard Eisenberg)
+
 - #12969: Fix a data race in caml_darken_cont
   (Fabrice Buoro and Olivier Nicole, review by Gabriel Scherer and Miod Vallat)
 

@@ -73,9 +73,7 @@ type in_place_patch = {
 
 (**
   [!replace_in_place patch sg] replaces the first element of the signature
-   for which [patch ~rec_group ~ghosts component] returns [Some (value,patch)].
-   The [rec_group] argument is the remaining part of the mutually
-   recursive group of [component].
+   for which [patch ~ghosts component] returns [Some (value,patch)].
    The [ghosts] list is the current prefix of ghost components associated to
    [component]
 *)
