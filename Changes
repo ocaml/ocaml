@@ -87,6 +87,11 @@ _______________
   command-line of the toplevel.
   (Nicolás Ojeda Bär, review by Florian Angeletti, report by Daniel Bünzli)
 
+- #12924, #12930: Rework package constraint checking to improve interaction with
+  immediacy
+  (Chris Casinghino and Florian Angeletti, review by Florian Angeletti and
+   Richard Eisenberg)
+
 OCaml 5.2.0
 ------------
 
