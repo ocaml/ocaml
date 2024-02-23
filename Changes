@@ -1038,7 +1038,7 @@ OCaml 5.1.0 (14 September 2023)
   `Seq.find_mapi`, `Seq.find_index`, `Array.find_mapi`, `Array.find_index`,
   `Float.Array.find_opt`, `Float.Array.find_index`, `Float.Array.find_map`,
   `Float.Array.find_mapi`.
-  (Sima Kinsart, review by Daniel Bünzli and Nicolás Ojeda Bär)
+  (Tima Kinsart, review by Daniel Bünzli and Nicolás Ojeda Bär)
 
 - #11410: Add Set.to_list, Map.to_list, Map.of_list,
   `Map.add_to_list: key -> 'a -> 'a list t -> 'a list t`.
@@ -3261,7 +3261,7 @@ OCaml 4.13.0 (24 September 2021)
 
 - #10250, #10266: Dynamically allocate alternate signal stacks to
    accommodate changes in Glibc 2.34.
-  (Xavier Leroy, reports by Tomasz Kłoczko and R.W.M. Jones, review by Anil
+  (Xavier Leroy, reports by Tomasz Kłoczko and Richard Jones, review by Anil
    Madhavapeddy, Stephen Dolan, and Florian Angeletti)
 
 ### Code generation and optimizations:
@@ -8204,7 +8204,7 @@ OCaml 4.06.0 (3 Nov 2017):
   (Leo White)
 
 - #7261: Warn on type constraints in GADT declarations
-  (Jacques Garrigue, report by Fabrice Le Botlan)
+  (Jacques Garrigue, report by Didier Le Botlan)
 
 - #7321: Private type in signature clashes with type definition via
   functor instantiation
@@ -11271,7 +11271,7 @@ Bug fixes:
 - #4788: wrong error message when executable file is not found for backtrace
   (Damien Doligez, report by Claudio Sacerdoti Coen)
 - #4812: otherlibs/unix: add extern int code_of_unix_error (value error);
-  (Goswin von Berdelow)
+  (Goswin von Brederlow)
 - #4887: input_char after close_in crashes ocaml (msvc runtime)
   (Alain Frisch and Christoph Bauer, report by ygrek)
 - #4994: ocaml-mode doesn't work with xemacs21
