@@ -268,7 +268,7 @@ Line 1, characters 0-30:
 1 | type perm = d = {y:int; x:int}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type "d"
-       Field "y" has been moved from position 1 to 2.
+       Fields "x" and "y" have been swapped.
 |}]
 
 type t = { f1 : int ; f2 : int }
