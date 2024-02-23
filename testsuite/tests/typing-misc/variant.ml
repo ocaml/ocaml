@@ -124,7 +124,7 @@ Line 1, characters 0-35:
 1 | type perm = d = Y of int | X of int
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type "d"
-       Constructors "X" and "Y" have been swapped.
+       Constructor "Y" has been moved from position 1 to 2.
 |}]
 
 module M : sig

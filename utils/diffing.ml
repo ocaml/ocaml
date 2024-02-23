@@ -346,7 +346,7 @@ let compute_inner_cell tbl i j =
     compute_proposition (i-1) (j-1) diff
   in
   let*! newweight, (diff, localstate) =
-    select_best_proposition [diag;del;insert]
+    select_best_proposition [del;insert;diag]
   in
   let state = update diff localstate in
   Matrix.set tbl i j ~weight:newweight ~state ~diff:(Some diff)
