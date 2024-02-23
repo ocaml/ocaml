@@ -1,0 +1,72 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                          Samuel Hym, Tarides                           *
+#*                                                                        *
+#*   Copyright 2024 Tarides                                               *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# Recipes to build a cross compiler (_not_ cross-compiling the compiler), aka
+# generating code that will run on `target`, assuming that a non-cross OCaml
+# compiler (so targetting our build machine) of the same version is available in
+# $PATH
+
+# As the cross compiler will be linked with the _build_ version of libcomprmarsh
+# so we cannot rely on the detection of zstd done during `configure` (as it
+# would have detected the _target_ version). So we must "discover" the flags to
+# link with zstd if it was set up in the non-cross compiler. This doesn't run
+# the full logic in `configure` to discover how to link with zstd, only the most
+# common one, namely calling out to pkg-config.
+# When pkg-config is not the proper way to get those flags, HOST_ZSTD_FLAGS
+# can be explicitly overridden.
+# Note that the call to pkg-config is a variable that is used only once, so it
+# doesn't have to be lazier.
+PKG_CONFIG := pkg-config
+HOST_ZSTD_FLAGS=$(shell $(PKG_CONFIG) --libs libzstd)
+NATIVE_ZSTD_LIBS=ZSTD_LIBS="$(HOST_ZSTD_FLAGS)"
+# As the libcomprmarsh built by the C cross compiler will not be linked in, we
+# can build an empty one
+NO_ZSTD=libcomprmarsh_OBJECTS=
+
+CROSS_OVERRIDES=OCAMLRUN=ocamlrun NEW_OCAMLRUN=ocamlrun \
+  BOOT_OCAMLLEX=ocamllex OCAMLYACC=ocamlyacc
+CROSS_COMPILER_OVERRIDES=$(CROSS_OVERRIDES) CAMLC=ocamlc CAMLOPT=ocamlopt \
+  BEST_OCAMLC=ocamlc BEST_OCAMLOPT=ocamlopt BEST_OCAMLLEX=ocamllex
+
+.PHONY: crossopt
+crossopt:
+	$(MAKE) runtime-all $(NO_ZSTD)
+	$(MAKE) ocamlc $(TOOLS_BYTECODE_TARGETS) expunge$(EXE) \
+	  $(CROSS_COMPILER_OVERRIDES)
+	$(MAKE) library $(CROSS_OVERRIDES)
+	$(MAKE) ocamlyacc $(CROSS_OVERRIDES)
+	$(MAKE) ocamllex $(CROSS_COMPILER_OVERRIDES)
+	$(MAKE) ocaml $(CROSS_COMPILER_OVERRIDES)
+	$(MAKE) dynlink-all $(CROSS_OVERRIDES)
+	$(MAKE) -C otherlibs all $(CROSS_OVERRIDES)
+	$(MAKE) runtimeopt $(NO_ZSTD)
+	$(MAKE) ocamlc.opt ocamlopt.opt $(TOOLS_NATIVE_TARGETS) \
+	  $(NO_ZSTD) $(CROSS_COMPILER_OVERRIDES) $(NATIVE_ZSTD_LIBS)
+	$(MAKE) libraryopt $(NO_ZSTD) $(CROSS_OVERRIDES)
+	$(MAKE) otherlibrariesopt ocamltoolsopt $(NO_ZSTD) $(CROSS_OVERRIDES)
+	$(MAKE) tools-allopt.opt $(NO_ZSTD) $(CROSS_COMPILER_OVERRIDES)
+
+INSTALL_OVERRIDES=build_ocamldoc=false WITH_DEBUGGER= OCAMLRUN=ocamlrun
+
+.PHONY: installcross
+installcross:
+	# Create dummy files to keep `install` happy
+	touch \
+	  $(addprefix toplevel/, \
+	    $(foreach ext,cmi cmt cmti cmx, native/nat__dummy__.$(ext)) \
+	      all__dummy__.cmx topstart.o native/tophooks.cmi)
+	$(LN) `which ocamllex` lex/ocamllex.opt$(EXE)
+	$(LN) `which ocamlyacc` yacc/ocamlyacc.opt$(EXE)
+	# Real installation
+	$(MAKE) install $(INSTALL_OVERRIDES)

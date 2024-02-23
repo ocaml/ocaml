@@ -2967,6 +2967,11 @@ endif
 
 include .depend
 
+# Include the cross-compiler recipes only when relevant
+ifneq "$(HOST)" "$(TARGET)"
+include Makefile.cross
+endif
+
 Makefile.config Makefile.build_config: config.status
 config.status:
 	@echo "Please refer to the installation instructions:"
