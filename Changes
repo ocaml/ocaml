@@ -55,6 +55,10 @@ _______________
 * #12084: Check link order when creating archive and when using ocamlopt
   (Hugo Heuzard, review by Stefan Muenzel and Sébastien Hinderer)
 
+- #12980: Explain type mismatch involving first-class modules by including
+  the module level error message
+  (Florian Angeletti, review by Vincent Laviron)
+
 ### Internal/compiler-libs changes:
 
 - #11129, #11148: enforce that ppxs do not produce `parsetree`s with
