@@ -2459,8 +2459,6 @@ let explain_first_class_module = function
   | Errortrace.Package_coercion pr ->
       Some(dprintf "@,@[%t@]" pr)
 
-
-
 let explanation (type variety) intro prev env
   : (Errortrace.expanded_type, variety) Errortrace.elt -> _ = function
   | Errortrace.Diff {got; expected} ->

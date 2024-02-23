@@ -2922,6 +2922,7 @@ and unify3 uenv t1 t1' t2 t2' =
           | Error fm_err ->
               if not (in_pattern_mode uenv) then
                 raise_for Unify (Errortrace.First_class_module fm_err);
+              List.iter (fun (_n, ty) -> reify uenv ty) (fl1 @ fl2);
           | exception Not_found ->
             if not (in_pattern_mode uenv) then raise_unexplained_for Unify;
             List.iter (fun (_n, ty) -> reify uenv ty) (fl1 @ fl2);
