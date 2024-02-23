@@ -133,7 +133,6 @@ val companion_cmi: Artifact.t -> Artifact.t
  the other functions which only remove the rightmost extension.
  In other words, the companion cmi of a file [something.d.cmo] is
  [something.cmi] and not [something.d.cmi].
- This is done for bacward compatibility reason for pack users.
 *)
 
 (** {1:ml_mli_cmi_interaction Mli and cmi derived from implementation files } *)
