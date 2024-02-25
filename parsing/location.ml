@@ -578,6 +578,24 @@ let lines_around
   loop ();
   List.rev !lines
 
+(* Get lines from a file *)
+let lines_around_from_file
+    ~(start_pos: position) ~(end_pos: position)
+    (filename: string):
+  input_line list
+  =
+  try
+    let cin = open_in_bin filename in
+    let read_char () =
+      try Some (input_char cin) with End_of_file -> None
+    in
+    let lines =
+      lines_around ~start_pos ~end_pos ~seek:(seek_in cin) ~read_char
+    in
+    close_in cin;
+    lines
+  with Sys_error _ -> []
+
 (* Attempt to get lines from the lexing buffer. *)
 let lines_around_from_lexbuf
     ~(start_pos: position) ~(end_pos: position)
@@ -627,8 +645,18 @@ let lines_around_from_current_input ~start_pos ~end_pos =
       lines_around_from_phrasebuf pb ~start_pos ~end_pos
   | Some lb, _, _ ->
       lines_around_from_lexbuf lb ~start_pos ~end_pos
-  | None, _, _ ->
-      []
+  | None, _, filename ->
+      (* A situation where we have no input buffer and no phrase buffer
+         is when the compiler is getting the binary AST directly as input. *)
+      (* Be a bit defensive, and do not try to open one of the possible
+         [!input_name] values that we know do not denote valid filenames. *)
+      let file_valid = match filename with
+        | "//toplevel//" | "_none_" | "" -> false
+        | _ -> true
+      in
+      if file_valid
+      then lines_around_from_file filename ~start_pos ~end_pos
+      else []
 
 (******************************************************************************)
 (* Reporting errors and warnings *)
