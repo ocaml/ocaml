@@ -75,17 +75,17 @@ method! is_immediate op n =
   | Icomp _ | Icheckbound -> is_immediate n
   | _ -> super#is_immediate op n
 
-method! is_simple_expr = function
+method! is_simple_expr env = function
   (* inlined floating-point ops are simple if their arguments are *)
   | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
-      List.for_all self#is_simple_expr args
-  | e -> super#is_simple_expr e
+      List.for_all (self#is_simple_expr env) args
+  | e -> super#is_simple_expr env e
 
-method! effects_of e =
+method! effects_of env e =
   match e with
   | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
-      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
-  | e -> super#effects_of e
+      Selectgen.Effect_and_coeffect.join_list_map args (self#effects_of env)
+  | e -> super#effects_of env e
 
 method select_addressing chunk = function
   | Cop((Caddv | Cadda), [Cconst_symbol (s, _); Cconst_int (n, _)], _)
