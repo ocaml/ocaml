@@ -62,6 +62,9 @@ OCaml 4.14 maintenance version
   (Gabriel Scherer and Nicolás Ojeda Bär, report by Sylvain Boilard, review by
   Gabriel Scherer)
 
+- #12116, #????: explicitly build non PIE executables on x86 32bits
+  architectures
+  (Florian Angeletti, review by ????)
 
 OCaml 4.14.1 (20 December 2022)
 ------------------------------
