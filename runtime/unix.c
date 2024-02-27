@@ -47,7 +47,7 @@
 #endif
 #ifdef HAS_POSIX_MONOTONIC_CLOCK
 #include <time.h>
-#elif HAS_CLOCK_GETTIME_NSEC_NP
+#elif defined(HAS_CLOCK_GETTIME_NSEC_NP)
 #include <time.h>
 #endif
 #ifdef HAS_DIRENT
