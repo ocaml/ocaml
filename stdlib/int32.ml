@@ -71,7 +71,8 @@ let unsigned_to_int =
 external format : string -> int32 -> string = "caml_int32_format"
 let to_string n = format "%d" n
 
-external of_string : string -> int32 = "caml_int32_of_string"
+external of_string : string -> (int32[@unboxed])
+  = "caml_int32_of_string" "caml_int32_of_string_unboxed"
 
 let of_string_opt s =
   try Some (of_string s)

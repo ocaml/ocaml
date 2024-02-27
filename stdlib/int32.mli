@@ -157,7 +157,8 @@ external to_float : int32 -> float
   [@@unboxed] [@@noalloc]
 (** Convert the given 32-bit integer to a floating-point number. *)
 
-external of_string : string -> int32 = "caml_int32_of_string"
+external of_string : string -> (int32[@unboxed])
+  = "caml_int32_of_string" "caml_int32_of_string_unboxed"
 (** Convert the given string to a 32-bit integer.
    The string is read in decimal (by default, or if the string
    begins with [0u]) or in hexadecimal, octal or binary if the

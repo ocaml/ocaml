@@ -177,7 +177,8 @@ external to_nativeint : int64 -> nativeint = "%int64_to_nativeint"
    is taken modulo 2{^32}.  On 64-bit platforms,
    the conversion is exact. *)
 
-external of_string : string -> int64 = "caml_int64_of_string"
+external of_string : string -> (int64[@unboxed])
+  = "caml_int64_of_string" "caml_int64_of_string_unboxed"
 (** Convert the given string to a 64-bit integer.
    The string is read in decimal (by default, or if the string
    begins with [0u]) or in hexadecimal, octal or binary if the
