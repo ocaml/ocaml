@@ -18801,9 +18801,51 @@ esac
 
 ## Determine how to link with the POSIX threads library
 
+link_gcc_eh=''
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for printf in -lgcc_eh" >&5
+printf %s "checking for printf in -lgcc_eh... " >&6; }
+if test ${ac_cv_lib_gcc_eh_printf+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lgcc_eh  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char printf ();
+int
+main (void)
+{
+return printf ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_gcc_eh_printf=yes
+else $as_nop
+  ac_cv_lib_gcc_eh_printf=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gcc_eh_printf" >&5
+printf "%s\n" "$ac_cv_lib_gcc_eh_printf" >&6; }
+if test "x$ac_cv_lib_gcc_eh_printf" = xyes
+then :
+  link_gcc_eh="-lgcc_eh"
+fi
+
+
 case $host in #(
   *-*-mingw32*) :
-    PTHREAD_LIBS="-l:libpthread.a -lgcc_eh" ;; #(
+    PTHREAD_LIBS="-l:libpthread.a $link_gcc_eh" ;; #(
   *-pc-windows) :
     PTHREAD_LIBS="-l:libpthread.lib" ;; #(
   *) :
