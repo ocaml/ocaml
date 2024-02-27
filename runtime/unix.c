@@ -27,13 +27,12 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
+#include "caml/config.h"
 #ifdef HAS_GETTIMEOFDAY
 #include <sys/time.h>
 #endif
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <errno.h>
-#include "caml/config.h"
 #if defined(SUPPORT_DYNAMIC_LINKING) && !defined(BUILDING_LIBCAMLRUNS)
 #define WITH_DYNAMIC_LINKING
 #ifdef __CYGWIN__
