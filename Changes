@@ -692,9 +692,10 @@ OCaml 5.2.0
   in runtime/io.c
   (Gabriel Scherer, review by Xavier Leroy)
 
-- #12389, #12544: centralize the handling of metadata for compilation units and
-  artifacts in preparation for better unicode support for OCaml source files.
-  (Florian Angeletti, review by Gabriel Scherer)
+- #12389, #12544, #12984, #12987: centralize the handling of metadata for
+  compilation units and artifacts in preparation for better unicode support for
+  OCaml source files.
+  (Florian Angeletti, review by Vincent Laviron and Gabriel Scherer)
 
 - #12532, #12553: improve readability of the pattern-matching debug output
   (Gabriel Scherer, review by Thomas Refis)
