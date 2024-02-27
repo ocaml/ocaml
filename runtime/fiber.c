@@ -659,13 +659,6 @@ void caml_continuation_replace(value cont, struct stack_info* stk)
   (void)b; /* squash unused warning */
 }
 
-CAMLprim value caml_drop_continuation (value cont)
-{
-  struct stack_info* stk = Ptr_val(caml_continuation_use(cont));
-  caml_free_stack(stk);
-  return Val_unit;
-}
-
 static const value * _Atomic caml_unhandled_effect_exn = NULL;
 static const value * _Atomic caml_continuation_already_resumed_exn = NULL;
 
