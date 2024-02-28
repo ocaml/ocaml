@@ -92,6 +92,9 @@ _______________
   (Chris Casinghino and Florian Angeletti, review by Florian Angeletti and
    Richard Eisenberg)
 
+- #12994: Remove un-used and unsafe caml_drop_continuation
+  (Tim McGilchrist, reviewed by Gabriel Scherer and Miod Vallat)
+
 OCaml 5.2.0
 ------------
 
