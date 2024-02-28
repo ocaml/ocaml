@@ -81,6 +81,9 @@ _______________
   grouping all the linker flags at the end of the C compiler commandline
   (David Allsopp and Samuel Hym, review by Nicolás Ojeda Bär)
 
+- #12996: Only link gcc_eh when available.
+  (Romain Beauxis, review by David Allsop and Miod Vallat)
+
 ### Bug fixes:
 
 - #12888: fix printing of uncaught exceptions in `.cmo` files passed on the
