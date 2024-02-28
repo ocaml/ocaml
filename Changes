@@ -95,6 +95,11 @@ _______________
 - #12994: Remove un-used and unsafe caml_drop_continuation
   (Tim McGilchrist, reviewed by Gabriel Scherer and Miod Vallat)
 
+- #12963: Restore caml_runtime_parameters implementation. This primitive allows
+  programs to query the runtime parameters supplied to an OCaml program.
+  Implementation missing since OCaml 5.0.
+  (Tim McGilchrist, reviewed by David Allsopp and Miod Vallat)
+
 OCaml 5.2.0
 ------------
 
