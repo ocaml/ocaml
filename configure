@@ -18801,8 +18801,10 @@ esac
 
 ## Determine how to link with the POSIX threads library
 
-link_gcc_eh=''
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for printf in -lgcc_eh" >&5
+case $host in #(
+  *-*-mingw32*) :
+    link_gcc_eh=''
+     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for printf in -lgcc_eh" >&5
 printf %s "checking for printf in -lgcc_eh... " >&6; }
 if test ${ac_cv_lib_gcc_eh_printf+y}
 then :
@@ -18842,10 +18844,7 @@ then :
   link_gcc_eh="-lgcc_eh"
 fi
 
-
-case $host in #(
-  *-*-mingw32*) :
-    PTHREAD_LIBS="-l:libpthread.a $link_gcc_eh" ;; #(
+     PTHREAD_LIBS="-l:libpthread.a $link_gcc_eh" ;; #(
   *-pc-windows) :
     PTHREAD_LIBS="-l:libpthread.lib" ;; #(
   *) :

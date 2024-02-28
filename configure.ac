@@ -2268,12 +2268,11 @@ AS_CASE([$enable_debug_runtime],
 
 ## Determine how to link with the POSIX threads library
 
-link_gcc_eh=''
-AC_CHECK_LIB([gcc_eh], [printf], [link_gcc_eh="-lgcc_eh"])
-
 AS_CASE([$host],
   [*-*-mingw32*],
-    [PTHREAD_LIBS="-l:libpthread.a $link_gcc_eh"],
+    [link_gcc_eh=''
+     AC_CHECK_LIB([gcc_eh], [printf], [link_gcc_eh="-lgcc_eh"])
+     PTHREAD_LIBS="-l:libpthread.a $link_gcc_eh"],
   [*-pc-windows],
     [PTHREAD_LIBS="-l:libpthread.lib"],
   [AX_PTHREAD(
