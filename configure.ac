@@ -970,8 +970,11 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
     OCAML_TEST_FLEXLINK([$flexlink], [$flexdll_chain],
                         [$internal_cppflags], [$host])
 
-    AS_CASE([$host],
-      [*-w64-mingw32*|*-pc-windows],
+    # When building on Cygwin/MSYS2, flexlink may be a shell script which
+    # then cannot be executed by ocamlc/ocamlopt. Having located flexlink,
+    # ensure it can be executed from a native Windows process.
+    AS_CASE([$build],
+      [*-pc-msys|*-pc-cygwin*],
         [flexlink_where="$(cmd /c "$flexlink" -where 2>/dev/null)"
         AS_IF([test -z "$flexlink_where"],
           [AC_MSG_ERROR(m4_normalize([$flexlink is not executable from a native

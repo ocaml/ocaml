@@ -14274,8 +14274,11 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
 
 
-    case $host in #(
-  *-w64-mingw32*|*-pc-windows) :
+    # When building on Cygwin/MSYS2, flexlink may be a shell script which
+    # then cannot be executed by ocamlc/ocamlopt. Having located flexlink,
+    # ensure it can be executed from a native Windows process.
+    case $build in #(
+  *-pc-msys|*-pc-cygwin*) :
     flexlink_where="$(cmd /c "$flexlink" -where 2>/dev/null)"
         if test -z "$flexlink_where"
 then :
