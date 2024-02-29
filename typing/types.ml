@@ -589,7 +589,7 @@ let () = assert (Ident.highest_scope land marks_mask = 0)
 
 type type_mark =
   | Mark of {mark: int; mutable marked: type_expr list}
-  | Set of {visited: unit TransientTypeHash.t}
+  | Hash of {visited: unit TransientTypeHash.t}
 let type_marks =
   (* All the bits in marks_mask *)
   List.init (Sys.int_size - 27) (fun x -> 1 lsl (x + 27))
@@ -607,11 +607,11 @@ let with_type_mark f =
             List.iter
               (fun ty -> ty.scope <- ty.scope land ((-1) lxor mark))
               marked
-        | Set _ -> ()
+        | Hash _ -> ()
       end
   | [] ->
       (* When marks are exhausted, fall back to using a set *)
-      f (Set {visited = TransientTypeHash.create 1})
+      f (Hash {visited = TransientTypeHash.create 1})
 
 (* getters for type_expr *)
 
@@ -622,7 +622,7 @@ let get_id t = (repr t).id
 let not_marked_node mark t =
   match mark with
   | Mark {mark} -> (repr t).scope land mark = 0
-  | Set {visited} -> not (TransientTypeHash.mem visited (repr t))
+  | Hash {visited} -> not (TransientTypeHash.mem visited (repr t))
 
 (* transient type_expr *)
 
@@ -642,7 +642,7 @@ module Transient_expr = struct
     | Mark ({mark} as mk) ->
         (ty.scope land mark = 0) && (* mark type node when not marked *)
         (ty.scope <- ty.scope lor mark; mk.marked <- ty :: mk.marked; true)
-    | Set {visited} ->
+    | Hash {visited} ->
         not (TransientTypeHash.mem visited ty) &&
         (TransientTypeHash.add visited ty (); true)
   let coerce ty = ty
