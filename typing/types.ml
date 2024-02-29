@@ -610,7 +610,7 @@ let with_type_mark f =
         | Hash _ -> ()
       end
   | [] ->
-      (* When marks are exhausted, fall back to using a set *)
+      (* When marks are exhausted, fall back to using a hash table *)
       f (Hash {visited = TransientTypeHash.create 1})
 
 (* getters for type_expr *)
