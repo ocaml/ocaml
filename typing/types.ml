@@ -596,7 +596,7 @@ let type_marks =
 let available_marks = Local_store.s_ref type_marks
 let with_type_mark f =
   match !available_marks with
-  | mark :: rem as old when false ->
+  | mark :: rem as old ->
       available_marks := rem;
       let mk = Mark {mark; marked = []} in
       Misc.try_finally (fun () -> f mk) ~always: begin fun () ->
@@ -609,7 +609,7 @@ let with_type_mark f =
               marked
         | Set _ -> ()
       end
-  | _ ->
+  | [] ->
       (* When marks are exhausted, fall back to using a set *)
       f (Set {visited = TransientTypeHash.create 1})
 
