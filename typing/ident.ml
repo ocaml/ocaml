@@ -17,6 +17,7 @@ open Local_store
 
 let lowest_scope  = 0
 let highest_scope = 100_000_000
+  (* assumed to fit in 27 bits, see Types.scope_field *)
 
 type t =
   | Local of { name: string; stamp: int }

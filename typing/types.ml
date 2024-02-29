@@ -91,7 +91,7 @@ module TransientTypeOps = struct
   let equal t1 t2 = t1 == t2
 end
 
-module TransientTypeSet = Set.Make(TransientTypeOps)
+module TransientTypeHash = Hashtbl.Make(TransientTypeOps)
 
 (* *)
 
@@ -585,16 +585,18 @@ let repr t =
 
 let scope_mask = (1 lsl 27) - 1
 let marks_mask = (-1) lxor scope_mask
+let () = assert (Ident.highest_scope land marks_mask = 0)
+
 type type_mark =
   | Mark of {mark: int; mutable marked: type_expr list}
-  | Set of {mutable visited: TransientTypeSet.t}
+  | Set of {visited: unit TransientTypeHash.t}
 let type_marks =
   (* All the bits in marks_mask *)
   List.init (Sys.int_size - 27) (fun x -> 1 lsl (x + 27))
 let available_marks = Local_store.s_ref type_marks
 let with_type_mark f =
   match !available_marks with
-  | mark :: rem as old ->
+  | mark :: rem as old when false ->
       available_marks := rem;
       let mk = Mark {mark; marked = []} in
       Misc.try_finally (fun () -> f mk) ~always: begin fun () ->
@@ -607,9 +609,9 @@ let with_type_mark f =
               marked
         | Set _ -> ()
       end
-  | [] ->
+  | _ ->
       (* When marks are exhausted, fall back to using a set *)
-      f (Set {visited = TransientTypeSet.empty})
+      f (Set {visited = TransientTypeHash.create 1})
 
 (* getters for type_expr *)
 
@@ -620,7 +622,7 @@ let get_id t = (repr t).id
 let not_marked_node mark t =
   match mark with
   | Mark {mark} -> (repr t).scope land mark = 0
-  | Set {visited} -> not (TransientTypeSet.mem (repr t) visited)
+  | Set {visited} -> not (TransientTypeHash.mem visited (repr t))
 
 (* transient type_expr *)
 
@@ -640,9 +642,9 @@ module Transient_expr = struct
     | Mark ({mark} as mk) ->
         (ty.scope land mark = 0) && (* mark type node when not marked *)
         (ty.scope <- ty.scope lor mark; mk.marked <- ty :: mk.marked; true)
-    | Set ({visited} as mk) ->
-        not (TransientTypeSet.mem ty visited) &&
-        (mk.visited <- TransientTypeSet.add ty visited; true)
+    | Set {visited} ->
+        not (TransientTypeHash.mem visited ty) &&
+        (TransientTypeHash.add visited ty (); true)
   let coerce ty = ty
   let repr = repr
   let type_expr ty = ty

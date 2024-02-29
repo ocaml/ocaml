@@ -285,7 +285,7 @@ module TransientTypeOps : sig
   val hash : t -> int
 end
 
-module TransientTypeSet : Set.S with type elt = transient_expr
+module TransientTypeHash : Hashtbl.S with type key = transient_expr
 
 (** Comparisons for [type_expr]; cannot be used for functors *)
 

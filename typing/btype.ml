@@ -25,6 +25,7 @@ open Local_store
 let wrap_repr f ty = f (Transient_expr.repr ty)
 let wrap_type_expr f tty = f (Transient_expr.type_expr tty)
 
+module TransientTypeSet = Set.Make(TransientTypeOps)
 module TypeSet = struct
   include TransientTypeSet
   let add = wrap_repr add
@@ -42,7 +43,6 @@ module TypeMap = struct
   let singleton ty = wrap_repr singleton ty
   let fold f = TransientTypeMap.fold (wrap_type_expr f)
 end
-module TransientTypeHash = Hashtbl.Make(TransientTypeOps)
 module TypeHash = struct
   include TransientTypeHash
   let mem hash = wrap_repr (mem hash)
