@@ -78,7 +78,7 @@ _______________
 - #12943: Make transient_expr.scope a bitfield, and use it to store marks.
   Marks are automatically allocated, and removed when leaving their scope.
   Falls back to using TransientTypeSet when marks are exhausted.
-  (Jacques Garrigue and Takafumi Saikawa, review by ???)
+  (Jacques Garrigue and Takafumi Saikawa, review by Basile Clément)
 
 ### Build system:
 
