@@ -1861,7 +1861,7 @@ $(asmgen_OBJECT): $(asmgen_SOURCE)
 	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) -o $@ $< || $(ASPP_ERROR)
 endif
 
-ocamltest/ocamltest$(EXE): OC_BYTECODE_LINKFLAGS += -custom
+ocamltest/ocamltest$(EXE): OC_BYTECODE_LINKFLAGS += -custom -g
 
 ocamltest/ocamltest$(EXE): ocamlc ocamlyacc ocamllex
 
