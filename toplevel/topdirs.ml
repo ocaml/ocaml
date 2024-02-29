@@ -440,10 +440,11 @@ let is_nonrec_type id td =
           nonrecursive_use:= true
     | _ -> ()
   in
-  let it =  Btype.{type_iterators with it_path } in
   let () =
-    it.it_type_declaration it td;
-    Btype.unmark_iterators.it_type_declaration Btype.unmark_iterators td
+    with_type_mark begin fun mark ->
+      let it = Btype.{(type_iterators mark) with it_path} in
+      it.it_type_declaration it td
+    end
   in
   match !recursive_use, !nonrecursive_use with
   | false, true -> Trec_not
@@ -542,13 +543,12 @@ let is_rec_module id md =
     | Path.Pident id' -> if (Ident.same id id') then raise Exit
     | _ -> ()
   in
-  let it =  Btype.{type_iterators with it_path } in
-  let rs = match it.it_module_declaration it md with
+  with_type_mark begin fun mark ->
+    let it =  Btype.{(type_iterators mark) with it_path} in
+    match it.it_module_declaration it md with
     | () -> Trec_not
     | exception Exit -> Trec_first
-  in
-  Btype.unmark_iterators.it_module_declaration Btype.unmark_iterators md;
-  rs
+  end
 
 let secretly_the_same_path env path1 path2 =
   let norm path = Printtyp.rewrite_double_underscore_paths env path in

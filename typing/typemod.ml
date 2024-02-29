@@ -264,9 +264,8 @@ let path_is_strict_prefix =
        Ident.same ident1 ident2
        && list_is_strict_prefix l1 ~prefix:l2
 
-let iterator_with_env env =
+let iterator_with_env super env =
   let env = ref (lazy env) in
-  let super = Btype.type_iterators in
   env, { super with
     Btype.it_signature = (fun self sg ->
       (* add all items to the env before recursing down, to handle recursive
@@ -359,7 +358,8 @@ let check_usage_of_module_types ~error ~paths ~loc env super =
   { super with Btype.it_do_type_expr }
 
 let do_check_after_substitution env ~loc ~lid paths unpackable_modtype sg =
-  let env, iterator = iterator_with_env env in
+  with_type_mark begin fun mark ->
+  let env, iterator = iterator_with_env (Btype.type_iterators mark) env in
   let last, rest = match List.rev paths with
     | [] -> assert false
     | last :: rest -> last, rest
@@ -378,8 +378,8 @@ let do_check_after_substitution env ~loc ~lid paths unpackable_modtype sg =
        let error p = With_cannot_remove_packed_modtype(p,mty) in
        check_usage_of_module_types ~error ~paths ~loc env iterator
   in
-  iterator.Btype.it_signature iterator sg;
-  Btype.(unmark_iterators.it_signature unmark_iterators) sg
+  iterator.Btype.it_signature iterator sg
+  end
 
 let check_usage_after_substitution env ~loc ~lid paths unpackable_modtype sg =
   match paths, unpackable_modtype with
@@ -413,9 +413,9 @@ let check_well_formed_module env loc context mty =
       | _ :: rem ->
           check_signature env rem
     in
-    let env, super = iterator_with_env env in
+    let env, super =
+      iterator_with_env Btype.type_iterators_without_type_expr env in
     { super with
-      it_type_expr = (fun _self _ty -> ());
       it_signature = (fun self sg ->
         let env_before = !env in
         let env = lazy (Env.add_signature sg (Lazy.force env_before)) in
@@ -1175,19 +1175,19 @@ end = struct
     should raise an error.
   *)
   let check_unpackable_modtypes ~loc ~env to_remove component =
-    if not (Ident.Set.is_empty to_remove.unpackable_modtypes) then begin
-      let iterator =
-        let error p = Unpackable_local_modtype_subst p in
-        let paths =
-          List.map (fun id -> Pident id)
-            (Ident.Set.elements to_remove.unpackable_modtypes)
+    if not (Ident.Set.is_empty to_remove.unpackable_modtypes) then
+      with_type_mark begin fun mark ->
+        let iterator =
+          let error p = Unpackable_local_modtype_subst p in
+          let paths =
+            List.map (fun id -> Pident id)
+              (Ident.Set.elements to_remove.unpackable_modtypes)
+          in
+          check_usage_of_module_types ~loc ~error ~paths
+            (ref (lazy env)) (Btype.type_iterators mark)
         in
-        check_usage_of_module_types ~loc ~error ~paths
-          (ref (lazy env)) Btype.type_iterators
-      in
-      iterator.Btype.it_signature_item iterator component;
-      Btype.(unmark_iterators.it_signature_item unmark_iterators) component
-    end
+        iterator.Btype.it_signature_item iterator component
+      end
 
   (* We usually require name uniqueness of signature components (e.g. types,
      modules, etc), however in some situation reusing the name is allowed: if

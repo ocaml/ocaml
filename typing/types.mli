@@ -221,18 +221,36 @@ val get_level: type_expr -> int
 val get_scope: type_expr -> int
 val get_id: type_expr -> int
 
+(** Access to marks. They are stored in the scope field. *)
+type type_mark
+val with_type_mark: (type_mark -> 'a) -> 'a
+        (* run a computation using exclusively an available type mark *)
+
+val not_marked_node: type_mark -> type_expr -> bool
+        (* Return true if a type node is not yet marked *)
+
+val try_mark_node: type_mark -> type_expr -> bool
+        (* Mark a type node if it is not yet marked.
+           Marks will be automatically removed when leaving the
+           scope of [with_type_mark].
+
+           Return false if it was already marked *)
+
 (** Transient [type_expr].
     Should only be used immediately after [Transient_expr.repr] *)
 type transient_expr = private
       { mutable desc: type_desc;
         mutable level: int;
-        mutable scope: int;
+        mutable scope: scope_field;
         id: int }
+and scope_field (* abstract *)
 
 module Transient_expr : sig
   (** Operations on [transient_expr] *)
 
   val create: type_desc -> level: int -> scope: int -> id: int -> transient_expr
+  val get_scope: transient_expr -> int
+  val get_marks: transient_expr -> int
   val set_desc: transient_expr -> type_desc -> unit
   val set_level: transient_expr -> int -> unit
   val set_scope: transient_expr -> int -> unit
@@ -244,6 +262,8 @@ module Transient_expr : sig
   val set_stub_desc: type_expr -> type_desc -> unit
       (** Instantiate a not yet instantiated stub.
           Fail if already instantiated. *)
+
+  val try_mark_node: type_mark -> transient_expr -> bool
 end
 
 val create_expr: type_desc -> level: int -> scope: int -> id: int -> type_expr
@@ -264,6 +284,8 @@ module TransientTypeOps : sig
   val equal : t -> t -> bool
   val hash : t -> int
 end
+
+module TransientTypeHash : Hashtbl.S with type key = transient_expr
 
 (** Comparisons for [type_expr]; cannot be used for functors *)
 

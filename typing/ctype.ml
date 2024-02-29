@@ -550,9 +550,9 @@ exception Non_closed of type_expr * variable_kind
    [free_variables] below drops the type/row information
    and only returns a [variable list].
  *)
-let free_vars ?env ty =
+let free_vars ?env mark ty =
   let rec fv ~kind acc ty =
-    if not (try_mark_node ty) then acc
+    if not (try_mark_node mark ty) then acc
     else match get_desc ty, env with
       | Tvar _, _ ->
           (ty, kind) :: acc
@@ -581,26 +581,22 @@ let free_vars ?env ty =
   in fv ~kind:Type_variable [] ty
 
 let free_variables ?env ty =
-  let tl = List.map fst (free_vars ?env ty) in
-  unmark_type ty;
-  tl
+  with_type_mark (fun mark -> List.map fst (free_vars ?env mark ty))
 
-let closed_type ty =
-  match free_vars ty with
+let closed_type mark ty =
+  match free_vars mark ty with
       []           -> ()
   | (v, real) :: _ -> raise (Non_closed (v, real))
 
 let closed_parameterized_type params ty =
-  List.iter mark_type params;
-  let ok =
-    try closed_type ty; true with Non_closed _ -> false in
-  List.iter unmark_type params;
-  unmark_type ty;
-  ok
+  with_type_mark begin fun mark ->
+    List.iter (mark_type mark) params;
+    try closed_type mark ty; true with Non_closed _ -> false
+  end
 
 let closed_type_decl decl =
-  try
-    List.iter mark_type decl.type_params;
+  with_type_mark begin fun mark -> try
+    List.iter (mark_type mark) decl.type_params;
     begin match decl.type_kind with
       Type_abstract _ ->
         ()
@@ -611,36 +607,35 @@ let closed_type_decl decl =
             | Some _ -> ()
             | None ->
                 match cd_args with
-                | Cstr_tuple l ->  List.iter closed_type l
-                | Cstr_record l -> List.iter (fun l -> closed_type l.ld_type) l
+                | Cstr_tuple l ->  List.iter (closed_type mark) l
+                | Cstr_record l ->
+                    List.iter (fun l -> closed_type mark l.ld_type) l
           )
           v
     | Type_record(r, _rep) ->
-        List.iter (fun l -> closed_type l.ld_type) r
+        List.iter (fun l -> closed_type mark l.ld_type) r
     | Type_open -> ()
     end;
     begin match decl.type_manifest with
       None    -> ()
-    | Some ty -> closed_type ty
+    | Some ty -> closed_type mark ty
     end;
-    unmark_type_decl decl;
     None
   with Non_closed (ty, _) ->
-    unmark_type_decl decl;
     Some ty
+  end
 
 let closed_extension_constructor ext =
-  try
-    List.iter mark_type ext.ext_type_params;
+  with_type_mark begin fun mark -> try
+    List.iter (mark_type mark) ext.ext_type_params;
     begin match ext.ext_ret_type with
     | Some _ -> ()
-    | None -> iter_type_expr_cstr_args closed_type ext.ext_args
+    | None -> iter_type_expr_cstr_args (closed_type mark) ext.ext_args
     end;
-    unmark_extension_constructor ext;
     None
   with Non_closed (ty, _) ->
-    unmark_extension_constructor ext;
     Some ty
+  end
 
 type closed_class_failure = {
   free_variable: type_expr * variable_kind;
@@ -650,13 +645,14 @@ type closed_class_failure = {
 exception CCFailure of closed_class_failure
 
 let closed_class params sign =
-  List.iter mark_type params;
-  ignore (try_mark_node sign.csig_self_row);
+  with_type_mark begin fun mark ->
+  List.iter (mark_type mark) params;
+  ignore (try_mark_node mark sign.csig_self_row);
   try
     Meths.iter
       (fun lab (priv, _, ty) ->
         if priv = Mpublic then begin
-          try closed_type ty with Non_closed (ty0, variable_kind) ->
+          try closed_type mark ty with Non_closed (ty0, variable_kind) ->
             raise (CCFailure {
               free_variable = (ty0, variable_kind);
               meth = lab;
@@ -664,14 +660,10 @@ let closed_class params sign =
             })
         end)
       sign.csig_meths;
-    List.iter unmark_type params;
-    unmark_class_signature sign;
     None
   with CCFailure reason ->
-    List.iter unmark_type params;
-    unmark_class_signature sign;
     Some reason
-
+  end
 
                             (**********************)
                             (*  Type duplication  *)
@@ -786,35 +778,35 @@ let rec normalize_package_path env p =
           normalize_package_path env (Path.Pdot (p1', s))
       | _ -> p
 
-let rec check_scope_escape env level ty =
+let rec check_scope_escape mark env level ty =
   let orig_level = get_level ty in
-  if try_logged_mark_node ty then begin
+  if try_mark_node mark ty then begin
     if level < get_scope ty then
       raise_scope_escape_exn ty;
     begin match get_desc ty with
     | Tconstr (p, _, _) when level < Path.scope p ->
         begin match !forward_try_expand_safe env ty with
         | ty' ->
-            check_scope_escape env level ty'
+            check_scope_escape mark env level ty'
         | exception Cannot_expand ->
             raise_escape_exn (Constructor p)
         end
     | Tpackage (p, fl) when level < Path.scope p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise_escape_exn (Module_type p);
-        check_scope_escape env level
+        check_scope_escape mark env level
           (newty2 ~level:orig_level (Tpackage (p', fl)))
     | _ ->
-        iter_type_expr (check_scope_escape env level) ty
+        iter_type_expr (check_scope_escape mark env level) ty
     end;
   end
 
 let check_scope_escape env level ty =
-  let snap = snapshot () in
-  try check_scope_escape env level ty; backtrack snap
+  with_type_mark begin fun mark -> try
+    check_scope_escape mark env level ty
   with Escape e ->
-    backtrack snap;
     raise (Escape { e with context = Some ty })
+  end
 
 let rec update_scope scope ty =
   if get_scope ty < scope then begin
@@ -1078,15 +1070,14 @@ let compute_univars ty =
 
 
 let fully_generic ty =
-  let rec aux ty =
-    if not_marked_node ty then
-      if get_level ty = generic_level then
-        (flip_mark_node ty; iter_type_expr aux ty)
-      else raise Exit
-  in
-  let res = try aux ty; true with Exit -> false in
-  unmark_type ty;
-  res
+  with_type_mark begin fun mark ->
+    let rec aux ty =
+      if try_mark_node mark ty then
+        if get_level ty = generic_level then iter_type_expr aux ty
+        else raise Exit
+    in
+    try aux ty; true with Exit -> false
+  end
 
 
                               (*******************)
@@ -1967,10 +1958,11 @@ let unify_univar_for tr_exn t1 t2 univar_pairs =
 (* If [inj_only=true], only check injective positions *)
 let occur_univar ?(inj_only=false) env ty =
   let visited = ref TypeMap.empty in
+  with_type_mark begin fun mark ->
   let rec occur_rec bound ty =
-    if not_marked_node ty then
+    if not_marked_node mark ty then
       if TypeSet.is_empty bound then
-        (flip_mark_node ty; occur_desc bound ty)
+        (ignore (try_mark_node mark ty); occur_desc bound ty)
       else try
         let bound' = TypeMap.find ty !visited in
         if not (TypeSet.subset bound' bound) then begin
@@ -2009,10 +2001,8 @@ let occur_univar ?(inj_only=false) env ty =
           end
       | _ -> iter_type_expr (occur_rec bound) ty
   in
-  Misc.try_finally (fun () ->
-      occur_rec TypeSet.empty ty
-    )
-    ~always:(fun () -> unmark_type ty)
+  occur_rec TypeSet.empty ty
+  end
 
 let has_free_univars env ty =
   try occur_univar ~inj_only:false env ty; false with Escape _ -> true
@@ -2043,10 +2033,9 @@ let get_univar_family univar_pairs univars =
 (* Whether a family of univars escapes from a type *)
 let univars_escape env univar_pairs vl ty =
   let family = get_univar_family univar_pairs vl in
-  let visited = ref TypeSet.empty in
+  with_type_mark begin fun mark ->
   let rec occur t =
-    if TypeSet.mem t !visited then () else begin
-      visited := TypeSet.add t !visited;
+    if try_mark_node mark t then begin
       match get_desc t with
         Tpoly (t, tl) ->
           if List.exists (fun t -> TypeSet.mem t family) tl then ()
@@ -2068,6 +2057,7 @@ let univars_escape env univar_pairs vl ty =
     end
   in
   occur ty
+  end
 
 (* Wrapper checking that no variable escapes and updating univar_pairs *)
 let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
@@ -2179,16 +2169,18 @@ let unexpanded_diff ~got ~expected =
 
 (* Return whether [t0] occurs in [ty]. Objects are also traversed. *)
 let deep_occur t0 ty =
+  with_type_mark begin fun mark ->
   let rec occur_rec ty =
-    if get_level ty >= get_level t0 && try_mark_node ty then begin
+    if get_level ty >= get_level t0 && try_mark_node mark ty then begin
       if eq_type ty t0 then raise Occur;
       iter_type_expr occur_rec ty
     end
   in
   try
-    occur_rec ty; unmark_type ty; false
+    occur_rec ty; false
   with Occur ->
-    unmark_type ty; true
+    true
+  end
 
 
 (* A local constraint can be added only if the rhs
@@ -2499,14 +2491,16 @@ let mcomp_for tr_exn env t1 t2 =
 
 let find_lowest_level ty =
   let lowest = ref generic_level in
-  let rec find ty =
-    if not_marked_node ty then begin
-      let level = get_level ty in
-      if level < !lowest then lowest := level;
-      flip_mark_node ty;
-      iter_type_expr find ty
-    end
-  in find ty; unmark_type ty; !lowest
+  with_type_mark begin fun mark ->
+    let rec find ty =
+      if try_mark_node mark ty then begin
+        let level = get_level ty in
+        if level < !lowest then lowest := level;
+        iter_type_expr find ty
+      end
+    in find ty
+  end;
+  !lowest
 
 (* This function can be called only in [Pattern] mode. *)
 let add_gadt_equation uenv source destination =
@@ -3710,16 +3704,17 @@ let generalize_class_signature_spine env sign =
    variables from the subject are not lowered.
 *)
 let moregen_occur env level ty =
-  let rec occur ty =
-    let lv = get_level ty in
-    if lv <= level then () else
-    if is_Tvar ty && lv >= generic_level - 1 then raise Occur else
-    if try_mark_node ty then iter_type_expr occur ty
-  in
-  begin try
-    occur ty; unmark_type ty
-  with Occur ->
-    unmark_type ty; raise_unexplained_for Moregen
+  with_type_mark begin fun mark ->
+    let rec occur ty =
+      let lv = get_level ty in
+      if lv <= level then () else
+      if is_Tvar ty && lv >= generic_level - 1 then raise Occur else
+      if try_mark_node mark ty then iter_type_expr occur ty
+    in
+    try
+      occur ty
+    with Occur ->
+      raise_unexplained_for Moregen
   end;
   (* also check for free univars *)
   occur_univar_for Moregen env ty;
@@ -3999,8 +3994,8 @@ let is_moregeneral env inst_nongen pat_sch subj_sch =
    and check validity after unification *)
 (* Simpler, no? *)
 
-let rec rigidify_rec vars ty =
-  if try_mark_node ty then
+let rec rigidify_rec mark vars ty =
+  if try_mark_node mark ty then
     begin match get_desc ty with
     | Tvar _ ->
         if not (TypeSet.mem ty !vars) then vars := TypeSet.add ty !vars
@@ -4013,18 +4008,17 @@ let rec rigidify_rec vars ty =
               ~name ~closed
           in link_type more (newty2 ~level:(get_level ty) (Tvariant row'))
         end;
-        iter_row (rigidify_rec vars) row;
+        iter_row (rigidify_rec mark vars) row;
         (* only consider the row variable if the variant is not static *)
         if not (static_row row) then
-          rigidify_rec vars (row_more row)
+          rigidify_rec mark vars (row_more row)
     | _ ->
-        iter_type_expr (rigidify_rec vars) ty
+        iter_type_expr (rigidify_rec mark vars) ty
     end
 
 let rigidify ty =
   let vars = ref TypeSet.empty in
-  rigidify_rec vars ty;
-  unmark_type ty;
+  with_type_mark (fun mark -> rigidify_rec mark vars ty);
   TypeSet.elements !vars
 
 let all_distinct_vars env vars =
@@ -5217,9 +5211,8 @@ let nongen_vars_in_class_declaration cty =
 
 (* Normalize a type before printing, saving... *)
 (* Cannot use mark_type because deep_occur uses it too *)
-let rec normalize_type_rec visited ty =
-  if not (TypeSet.mem ty !visited) then begin
-    visited := TypeSet.add ty !visited;
+let rec normalize_type_rec mark ty =
+  if try_mark_node mark ty then begin
     let tm = row_of_type ty in
     begin if not (is_Tconstr ty) && is_constr_row ~allow_ident:false tm then
       match get_desc tm with (* PR#7348 *)
@@ -5278,11 +5271,11 @@ let rec normalize_type_rec visited ty =
         set_type_desc fi (get_desc fi')
     | _ -> ()
     end;
-    iter_type_expr (normalize_type_rec visited) ty;
+    iter_type_expr (normalize_type_rec mark) ty;
   end
 
 let normalize_type ty =
-  normalize_type_rec (ref TypeSet.empty) ty
+  with_type_mark (fun mark -> normalize_type_rec mark ty)
 
 
                               (*************************)
