@@ -41,18 +41,15 @@
 uintnat caml_max_stack_wsize;
 uintnat caml_fiber_wsz;
 
-extern uintnat caml_major_heap_increment; /* percent or words; see major_gc.c */
-extern uintnat caml_percent_free;         /*        see major_gc.c */
-extern uintnat caml_percent_max;          /*        see compact.c */
-extern uintnat caml_allocation_policy;    /*        see freelist.c */
-extern uintnat caml_custom_major_ratio;   /* see custom.c */
-extern uintnat caml_custom_minor_ratio;   /* see custom.c */
+extern uintnat caml_percent_free; /* see major_gc.c */
+extern uintnat caml_custom_major_ratio; /* see custom.c */
+extern uintnat caml_custom_minor_ratio; /* see custom.c */
 extern uintnat caml_custom_minor_max_bsz; /* see custom.c */
-extern uintnat caml_minor_heap_max_wsz;   /* see domain.c */
+extern uintnat caml_minor_heap_max_wsz; /* see domain.c */
 
 CAMLprim value caml_gc_quick_stat(value v)
 {
-  CAMLparam0 ();
+  CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
   /* get a copy of these before allocating anything... */
@@ -351,31 +348,6 @@ void caml_init_gc (void)
   caml_init_frame_descriptors();
   #endif
   caml_init_domains(caml_params->init_minor_heap_wsz);
-/*
-  caml_major_heap_increment = major_incr;
-  caml_percent_free = norm_pfree (percent_fr);
-  caml_percent_max = norm_pmax (percent_m);
-  caml_init_major_heap (major_heap_size);
-  caml_gc_message (0x20, "Initial minor heap size: %luk bytes\n",
-                   Caml_state->minor_heap_size / 1024);
-  caml_gc_message (0x20, "Initial major heap size: %luk bytes\n",
-                   major_heap_size / 1024);
-  caml_gc_message (0x20, "Initial space overhead: %"
-                   ARCH_INTNAT_PRINTF_FORMAT "u%%\n", caml_percent_free);
-  caml_gc_message (0x20, "Initial max overhead: %"
-                   ARCH_INTNAT_PRINTF_FORMAT "u%%\n", caml_percent_max);
-  if (caml_major_heap_increment > 1000){
-    caml_gc_message (0x20, "Initial heap increment: %"
-                     ARCH_INTNAT_PRINTF_FORMAT "uk words\n",
-                     caml_major_heap_increment / 1024);
-  }else{
-    caml_gc_message (0x20, "Initial heap increment: %"
-                     ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
-                     caml_major_heap_increment);
-  }
-  caml_gc_message (0x20, "Initial allocation policy: %d\n",
-                   caml_allocation_policy);
-*/
 }
 
 /* FIXME After the startup_aux.c unification, move these functions there. */
@@ -392,16 +364,33 @@ CAMLprim value caml_runtime_variant (value unit)
 #endif
 }
 
-extern int caml_parser_trace;
-
 CAMLprim value caml_runtime_parameters (value unit)
 {
 #define F_Z ARCH_INTNAT_PRINTF_FORMAT
 #define F_S ARCH_SIZET_PRINTF_FORMAT
 
   CAMLassert (unit == Val_unit);
-  /* TODO KC */
-  return caml_alloc_sprintf ("caml_runtime_parameters not implemented: %d", 0);
+  return caml_alloc_sprintf
+      ("b=%d,c=%"F_Z"u,e=%"F_Z"u,l=%"F_Z"u,M=%"F_Z"u,m=%"F_Z"u,n=%"F_Z"u,"
+       "o=%"F_Z"u,p=%d,s=%"F_S"u,t=%"F_Z"u,v=%"F_Z"u,V=%"F_Z"u,W=%"F_Z"u",
+       /* b */ (int) Caml_state->backtrace_active,
+       /* c */ caml_params->cleanup_on_exit,
+       /* e */ caml_params->runtime_events_log_wsize,
+       /* l */ caml_max_stack_wsize,
+       /* M */ caml_custom_major_ratio,
+       /* m */ caml_custom_minor_ratio,
+       /* n */ caml_custom_minor_max_bsz,
+       /* o */ caml_percent_free,
+       /* p */ Caml_state->parser_trace,
+       /* R */ /* missing */
+       /* s */ Caml_state->minor_heap_wsz,
+       /* t */ caml_params->trace_level,
+       /* v */ caml_verb_gc,
+       /* V */ caml_params->verify_heap,
+       /* W */ caml_runtime_warnings
+       );
+#undef F_Z
+#undef F_S
 }
 
 /* Control runtime warnings */
