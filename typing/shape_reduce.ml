@@ -271,6 +271,22 @@ end) = struct
     | NComp_unit s -> Comp_unit s
     | NError s -> Error s
 
+  (* When interested only of in the uids of aliased modules we do not read_back
+    the entire shape of the module, just enough to unroll the chain of aliases.
+  *)
+  let read_back_aliases_uids env (nf : nf) =
+    let force (Thunk (local_env, t)) =
+      reduce_ { env with local_env } t
+    in
+    let rec aux acc (nf : nf) = match nf with
+      | { uid = Some uid; desc = NAlias dnf; _ } ->
+          aux (uid::acc) (force dnf)
+      | { uid = Some uid; _ } ->
+          Resolved_alias (List.rev (uid::acc))
+      | { uid = None; _ } -> Internal_error_missing_uid
+    in
+    aux [] nf
+
   (* Sharing the memo tables is safe at the level of a compilation unit since
     idents should be unique *)
   let reduce_memo_table = Local_store.s_table Hashtbl.create 42
@@ -300,14 +316,6 @@ end) = struct
     | NError _ -> false
     | NLeaf -> false
 
-  let get_aliases_uids (t : t) =
-    let rec aux acc (t : t) = match t with
-      | { uid = Some uid; desc = Alias t; _ } -> aux (uid::acc) t
-      | { uid = Some uid; _ } -> Resolved_alias (List.rev (uid::acc))
-      | _ -> Internal_error_missing_uid
-    in
-    aux [] t
-
   let reduce_for_uid global_env t =
     let fuel = ref Params.fuel in
     let local_env = Ident.Map.empty in
@@ -323,7 +331,7 @@ end) = struct
       Unresolved (read_back env nf)
     else match nf with
       | { desc = NAlias _; approximated = false; _ } ->
-          get_aliases_uids (read_back env nf)
+          read_back_aliases_uids env nf
       | { uid = Some uid; approximated = false; _ } ->
           Resolved uid
       | { uid; approximated = true; _ } ->
