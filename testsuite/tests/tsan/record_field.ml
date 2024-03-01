@@ -1,6 +1,5 @@
 (* TEST
 
- include unix;
  set TSAN_OPTIONS="detect_deadlocks=0";
 
  tsan;
