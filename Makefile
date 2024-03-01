@@ -1232,7 +1232,7 @@ libasmruni_OBJECTS = \
 libasmrunpic_OBJECTS = $(runtime_NATIVE_C_SOURCES:.c=.npic.$(O)) \
   $(runtime_ASM_OBJECTS:.$(O)=_libasmrunpic.$(O))
 
-libcomprmarsh_OBJECTS = runtime/zstd.n.$(O)
+libcomprmarsh_OBJECTS = runtime/zstd.npic.$(O)
 
 ## General (non target-specific) assembler and compiler flags
 
