@@ -1,5 +1,6 @@
 (* TEST
  include unix;
+ hasunix;
  flags += "-strict-sequence -w +A -warn-error +A";
  windows-unicode;
  toplevel;
