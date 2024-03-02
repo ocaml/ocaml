@@ -54,5 +54,5 @@ Line 1, characters 25-31:
                              ^^^^^^
 Warning 34 [unused-type-declaration]: unused type s.
 
-module F : functor (X : sig type t type s end) -> sig type t = X.t end
+module F : (X : sig type t type s end) -> sig type t = X.t end
 |}]

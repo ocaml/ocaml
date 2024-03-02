@@ -30,7 +30,7 @@ module F(X : sig type t end) = struct
   type t = X.t
 end;;
 [%%expect{|
-module F : functor (X : sig type t end) -> sig type t = X.t end
+module F : (X : sig type t end) -> sig type t = X.t end
 |}]
 
 module type Accepted2 = sig

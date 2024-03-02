@@ -77,43 +77,41 @@ end
 ;;
 [%%expect{|
 module Assume :
-  functor
-    (Given : sig
-               module Make_range :
-                 functor (Endpoint : Endpoint_intf) ->
-                   sig
-                     module Endpoint : sig type t = Endpoint.t end
-                     type finite = [ `Before of Endpoint.t ]
-                     type infinite = [ `Until_infinity ]
-                     type +'a range = private { until : 'a; }
-                       constraint 'a =
-                         [< `Before of Endpoint.t | `Until_infinity ]
-                     val until :
-                       ([< `Before of Endpoint.t | `Until_infinity ] as 'a)
-                       range -> 'a
-                   end
-               module Make_ranged :
-                 functor (Range : S) ->
-                   sig
-                     module Endpoint : sig type t = Range.Endpoint.t end
-                     module Range :
-                       sig
-                         module Endpoint : sig type t = Range.Endpoint.t end
-                         type finite = [ `Before of Endpoint.t ]
-                         type infinite = [ `Until_infinity ]
-                         type +'a range =
-                           'a Range.range = private {
-                           until : 'a;
-                         }
-                           constraint 'a =
-                             [< `Before of Endpoint.t | `Until_infinity ]
-                         val until :
-                           ([< `Before of Endpoint.t | `Until_infinity ]
-                            as 'a)
-                           range -> 'a
-                       end
-                   end
-             end)
+  (Given : sig
+             module Make_range :
+               (Endpoint : Endpoint_intf) ->
+                 sig
+                   module Endpoint : sig type t = Endpoint.t end
+                   type finite = [ `Before of Endpoint.t ]
+                   type infinite = [ `Until_infinity ]
+                   type +'a range = private { until : 'a; }
+                     constraint 'a =
+                       [< `Before of Endpoint.t | `Until_infinity ]
+                   val until :
+                     ([< `Before of Endpoint.t | `Until_infinity ] as 'a)
+                     range -> 'a
+                 end
+             module Make_ranged :
+               (Range : S) ->
+                 sig
+                   module Endpoint : sig type t = Range.Endpoint.t end
+                   module Range :
+                     sig
+                       module Endpoint : sig type t = Range.Endpoint.t end
+                       type finite = [ `Before of Endpoint.t ]
+                       type infinite = [ `Until_infinity ]
+                       type +'a range =
+                         'a Range.range = private {
+                         until : 'a;
+                       }
+                         constraint 'a =
+                           [< `Before of Endpoint.t | `Until_infinity ]
+                       val until :
+                         ([< `Before of Endpoint.t | `Until_infinity ] as 'a)
+                         range -> 'a
+                     end
+                 end
+           end)
     ->
     sig
       module Point : sig type t end
