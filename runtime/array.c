@@ -198,7 +198,7 @@ CAMLprim value caml_floatarray_create(value len)
 }
 
 /* [len] is a [value] representing number of words or floats */
-CAMLprim value caml_make_vect(value len, value init)
+CAMLprim value caml_array_make(value len, value init)
 {
   CAMLparam2 (len, init);
   CAMLlocal1 (res);
@@ -247,7 +247,7 @@ CAMLprim value caml_make_vect(value len, value init)
 
 /* [len] is a [value] representing number of floats */
 /* [ int -> float array ] */
-CAMLprim value caml_make_float_vect(value len)
+CAMLprim value caml_array_create_float(value len)
 {
 #ifdef FLAT_FLOAT_ARRAY
   return caml_floatarray_create (len);
@@ -274,7 +274,7 @@ CAMLprim value caml_make_float_vect(value len)
    boxed floats and returns the corresponding flat-allocated [float array].
    In all other cases, it just returns its argument unchanged.
 */
-CAMLprim value caml_make_array(value init)
+CAMLprim value caml_array_of_uniform_array(value init)
 {
 #ifdef FLAT_FLOAT_ARRAY
   CAMLparam1 (init);
@@ -309,6 +309,26 @@ CAMLprim value caml_make_array(value init)
   return init;
 #endif
 }
+
+
+/* #13003: previous names for array-creation primitives,
+   kept for backward-compatibility only. */
+
+CAMLprim value caml_make_vect(value len, value init)
+{
+  return caml_array_make(len, init);
+}
+
+CAMLprim value caml_make_float_vect(value len)
+{
+  return caml_array_create_float(len);
+}
+
+CAMLprim value caml_make_array(value array)
+{
+  return caml_array_of_uniform_array(array);
+}
+
 
 /* Blitting */
 
