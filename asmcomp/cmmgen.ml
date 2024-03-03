@@ -710,7 +710,7 @@ and transl_catch env nfail ids body handler dbg =
 and transl_make_array dbg env kind args =
   match kind with
   | Pgenarray ->
-      Cop(Cextcall("caml_make_array", typ_val, [], true),
+      Cop(Cextcall("caml_array_of_uniform_array", typ_val, [], true),
           [make_alloc dbg 0 (List.map (transl env) args)], dbg)
   | Paddrarray | Pintarray ->
       make_alloc dbg 0 (List.map (transl env) args)
