@@ -694,7 +694,7 @@ let rec comp_expr stack_info env exp sz cont =
           then Kmakeblock(0, 0) :: cont
           else comp_args stack_info env args sz
                  (Kmakeblock(List.length args, 0) ::
-                  Kccall("caml_make_array", 1) :: cont)
+                  Kccall("caml_array_of_uniform_array", 1) :: cont)
       end
   | Lprim(Presume, args, _) ->
       let nargs = List.length args - 1 in
