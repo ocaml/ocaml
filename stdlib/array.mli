@@ -63,7 +63,7 @@ external make : int -> 'a -> 'a array = "caml_array_make"
    If the value of [x] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2].*)
 
-external create_float: int -> float array = "caml_make_float_vect"
+external create_float: int -> float array = "caml_array_create_float"
 (** [create_float n] returns a fresh float array of length [n],
     with uninitialized data.
     @since 4.03 *)
