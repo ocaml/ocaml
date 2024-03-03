@@ -264,7 +264,7 @@ CAMLprim value caml_array_create_float(value len)
 #endif
   };
   value some_float = Val_hp(some_float_contents);
-  return caml_make_vect (len, some_float);
+  return caml_array_make (len, some_float);
 #endif
 }
 
