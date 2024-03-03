@@ -32,7 +32,7 @@ external unsafe_blit :
   'a array -> int -> 'a array -> int -> int -> unit = "caml_array_blit"
 external unsafe_fill :
   'a array -> int -> int -> 'a -> unit = "caml_array_fill"
-external create_float: int -> float array = "caml_make_float_vect"
+external create_float: int -> float array = "caml_array_create_float"
 
 module Floatarray = struct
   external create : int -> floatarray = "caml_floatarray_create"
