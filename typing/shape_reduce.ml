@@ -152,17 +152,19 @@ end) = struct
      obtained by the same term traversal, adding binders in the same
      order, giving the same balanced trees: the environments have the
      same hash.
-*)
+  *)
+
+  and force env (Thunk (local_env, t)) =
+    reduce_ { env with local_env } t
 
   and reduce__
     ({fuel; global_env; local_env; _} as env) (t : t) =
     let reduce env t = reduce_ env t in
     let delay_reduce env t = Thunk (env.local_env, t) in
-    let force (Thunk (local_env, t)) = reduce { env with local_env } t in
     let return desc = { uid = t.uid; desc; approximated = t.approximated } in
     let rec force_aliases nf = match nf.desc with
       | NAlias delayed_nf ->
-          let nf = force delayed_nf in
+          let nf = force env delayed_nf in
           force_aliases nf
       | _ -> nf
     in
@@ -197,7 +199,7 @@ end) = struct
           | NStruct (items) ->
               begin match Item.Map.find item items with
               | exception Not_found -> nored ()
-              | nf -> force nf |> reset_uid_if_new_binding
+              | nf -> force env nf |> reset_uid_if_new_binding
               end
           | _ ->
               nored ()
@@ -218,7 +220,7 @@ end) = struct
              their binding-time [Uid.t]. *)
           | None -> return (NVar id)
           | Some def ->
-              begin match force def with
+              begin match force env def with
               | { uid = Some _; _  } as nf -> nf
                   (* This var already has a binding uid *)
               | { uid = None; _ } as nf -> { nf with uid = t.uid }
@@ -253,8 +255,7 @@ end) = struct
 
   and read_back_desc env desc =
     let read_back nf = read_back env nf in
-    let read_back_force (Thunk (local_env, t)) =
-      read_back (reduce_ { env with local_env } t) in
+    let read_back_force dnf = read_back (force env dnf) in
     match desc with
     | NVar v ->
         Var v
@@ -271,16 +272,10 @@ end) = struct
     | NComp_unit s -> Comp_unit s
     | NError s -> Error s
 
-  (* When interested only of in the uids of aliased modules we do not read_back
-    the entire shape of the module, just enough to unroll the chain of aliases.
-  *)
-  let read_back_aliases_uids env (nf : nf) =
-    let force (Thunk (local_env, t)) =
-      reduce_ { env with local_env } t
-    in
+  let reduce_aliases_for_uid env (nf : nf) =
     let rec aux acc (nf : nf) = match nf with
       | { uid = Some uid; desc = NAlias dnf; _ } ->
-          aux (uid::acc) (force dnf)
+          aux (uid::acc) (force env dnf)
       | { uid = Some uid; _ } ->
           Resolved_alias (List.rev (uid::acc))
       | { uid = None; _ } -> Internal_error_missing_uid
@@ -331,7 +326,7 @@ end) = struct
       Unresolved (read_back env nf)
     else match nf with
       | { desc = NAlias _; approximated = false; _ } ->
-          read_back_aliases_uids env nf
+          reduce_aliases_for_uid env nf
       | { uid = Some uid; approximated = false; _ } ->
           Resolved uid
       | { uid; approximated = true; _ } ->
