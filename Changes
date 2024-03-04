@@ -13,6 +13,9 @@ _______________
 - #12915: Port ThreadSanitizer support to Linux on s390x
   (Miod Vallat, review by Tim McGilchrist)
 
+- #13010: Force all domain threads to terminate upon caml program exit.
+  (Miod Vallat, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 ### Standard library:

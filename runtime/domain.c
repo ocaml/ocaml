@@ -1091,6 +1091,13 @@ static void install_backup_thread (dom_internal* di)
   }
 }
 
+static void terminate_backup_thread (dom_internal *di)
+{
+  atomic_store_release(&di->backup_thread_msg, BT_TERMINATE);
+  /* Wakeup backup thread if it is sleeping */
+  caml_plat_signal(&di->domain_cond);
+}
+
 static void caml_domain_initialize_default(void)
 {
   return;
@@ -1624,6 +1631,27 @@ void caml_interrupt_all_signal_safe(void)
   }
 }
 
+static void stw_terminate_domain(caml_domain_state *domain, void *data,
+  int participating_count,
+  caml_domain_state **participating)
+{
+  if (!pthread_equal(pthread_self(), *(pthread_t *)data)) {
+    /* Domains threads forced to exit here will not have a chance to
+       run domain_terminate(), so we need to ask the backup thread to
+       terminate here. */
+    terminate_backup_thread(domain_self);
+    pthread_exit(0);
+  }
+}
+
+void caml_terminate_all_domains(void)
+{
+  if (!caml_domain_alone()) {
+    pthread_t myself = pthread_self();
+    caml_try_run_on_all_domains(stw_terminate_domain, &myself, NULL);
+  }
+}
+
 /* To avoid any risk of forgetting an action through a race,
    [caml_reset_young_limit] is the only way (apart from setting
    young_limit to -1 for immediate interruption) through which
@@ -1972,8 +2000,7 @@ static void domain_terminate (void)
   /* signal the domain termination to the backup thread
      NB: for a program with no additional domains, the backup thread
      will not have been started */
-  atomic_store_release(&domain_self->backup_thread_msg, BT_TERMINATE);
-  caml_plat_signal(&domain_self->domain_cond);
+  terminate_backup_thread(domain_self);
   caml_plat_unlock(&domain_self->domain_lock);
 
   caml_plat_assert_all_locks_unlocked();

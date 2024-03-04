@@ -178,6 +178,8 @@ int caml_global_barrier_num_domains(void);
 int caml_domain_terminating(caml_domain_state *);
 int caml_domain_is_terminating(void);
 
+void caml_terminate_all_domains(void);
+
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
