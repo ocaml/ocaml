@@ -65,9 +65,9 @@ debugging information, i.e. was compiled and linked with the
 .B \-g
 option to
 .BR ocamlc (1)
-set.  This option is equivalent to setting the
-.B b
-flag in the OCAMLRUNPARAM environment variable (see below).
+set.  This option is equivalent to setting
+.B b=1
+in the OCAMLRUNPARAM environment variable (see below).
 .TP
 .BI \-I " dir"
 Search the directory
@@ -126,14 +126,13 @@ Set the runtime system options and garbage collection parameters.
 (If OCAMLRUNPARAM is not set, CAMLRUNPARAM will be used instead.)
 This variable must be a sequence of parameter specifications separated
 by commas.
-A parameter specification is a letter, optionally followed by an =
-sign, a decimal number (or a hexadecimal number prefixed by
+For convenience, commas at the beginning and end of the variable are ignored,
+and multiple runs of commas are interpreted as a single one.
+A parameter specification is an option letter followed by an =
+sign, a decimal number (or an hexadecimal number prefixed by
 .BR 0x ),
-and an optional multiplier. If the letter is followed by anything
-else, the corresponding option is set to 1. Unknown letters
-are ignored.
-The options are documented below; the options
-.BR a , i , l , m , M , n , o , O , s , v , w
+and an optional multiplier. The options are documented below; the options
+.BR l , m , M , n , o , s , v
 correspond to the fields of the
 .B control
 record documented in
@@ -142,58 +141,62 @@ chapter "Standard Library", section "Gc".
 
 .RS 7
 .TP
-.BR a " (allocation_policy)"
-The policy used for allocating in the OCaml heap.  Possible values
-are 0 for the next-fit policy, 1 for the first-fit
-policy, and 2 for the best-fit policy. The default is 2.
-See the Gc module documentation for details.
-.TP
 .B b
 Trigger the printing of a stack backtrace
 when an uncaught exception aborts the program.
-This option takes no argument.
+The argument is used as follows:
+.B b=0
+turns backtrace printing off;
+.BR b=1 " (or " b )
+turns backtrace printing on;
+.B b=2
+turns backtrace printing on
+and forces the runtime system to load debugging information at program
+startup time instead of at backtrace printing time.
+.B b=2
+can be used if
+the runtime is unable to load debugging information at backtrace
+printing time, for example if there are no file descriptors available or,
+on some platforms, if the program is launched with a relative path and
+changes its working directory.
 .TP
-.B c
-(cleanup_on_exit) Shut the runtime down gracefully on exit. The option
+.BR c " (cleanup_on_exit)"
+Shut the runtime down gracefully on exit. The option
 also enables pooling (as in caml_startup_pooled). This mode can be used
 to detect leaks with a third-party memory debugger.
 .TP
-.BR h
-The initial size of the major heap (in words).
-.TP
-.BR H
-Allocate heap chunks by mmapping huge pages. Huge pages are locked into
-memory, and are not swapped.
-.TP
-.BR i " (major_heap_increment)"
-The default size increment for the major heap (in words if greater than 1000,
-else in percents of the heap size).
+.BR e " (runtime_events_log_wsize)"
+Size of the per-domain runtime events ring
+buffers in log powers of two words. Defaults to 16, giving 64k word or
+512kb buffers on 64-bit systems.
 .TP
 .BR l " (stack_limit)"
-The limit (in words) of the stack size.
+The limit (in words) of the stack size. This is only
+relevant to the byte-code runtime, as the native code runtime uses the
+operating system's stack.
 .TP
 .BR m " (custom_minor_ratio)"
 Bound on floating garbage for out-of-heap memory
 held by custom values in the minor heap. A minor GC is triggered
 when this much memory is held by custom values located in the minor
 heap. Expressed as a percentage of minor heap size.
+Default: 100.
 Note: this only applies to values allocated with
 .B caml_alloc_custom_mem
 (e.g. bigarrays).
-Default: 100.
 .TP
 .BR M " (custom_major_ratio)"
 Target ratio of floating garbage to
 major heap size for out-of-heap memory held by custom values
+(e.g. bigarrays)
 located in the major heap. The GC speed is adjusted
 to try to use this much memory for dead values that are not yet
 collected. Expressed as a percentage of major heap size.
-The default value keeps the out-of-heap floating garbage about the
+The default value (44) keeps the out-of-heap floating garbage about the
 same size as the in-heap overhead.
 Note: this only applies to values allocated with
 .B caml_alloc_custom_mem
 (e.g. bigarrays).
-Default: 44.
 .TP
 .BR n " (custom_minor_max_size)"
 Maximum amount of out-of-heap
@@ -203,32 +206,29 @@ bytes, only this value is counted against
 .B custom_minor_ratio
 and the rest is directly counted against
 .BR custom_major_ratio .
+Default: 8192 bytes.
 Note: this only applies to values allocated with
 .B caml_alloc_custom_mem
 (e.g. bigarrays).
-Default: 8192 bytes.
 .TP
 .BR o " (space_overhead)"
 The major GC speed setting.
-.TP
-.BR O " (max_overhead)"
-The heap compaction trigger setting.
+See the Gc module documentation for details.
 .TP
 .B p
 Turn on debugging support for
 .BR ocamlyacc -generated
-parsers.  When this option is on,
+parsers.  When this option is nonzero,
 the pushdown automaton that executes the parsers prints a
-trace of its actions.  This option takes no argument.
+trace of its actions.
 .TP
 .BR R
 Turn on randomization of all hash tables by default (see the
 .B Hashtbl
-module of the standard library). This option takes no
-argument.
+module of the standard library).
 .TP
 .BR s " (minor_heap_size)"
-The size of the minor heap (in words).
+Size of the minor heap (in words).
 .TP
 .B t
 Set the trace level for the debug runtime (ignored by the standard
@@ -279,9 +279,10 @@ GC debugging messages.
 Address space reservation changes.
 
 .TP
-.BR w " (window_size)"
-Set size of the window used by major GC for smoothing out variations in
-its workload. This is an integer between 1 and 50. (Default: 1)
+.BR V " (verify_heap)"
+Run an integrity check on the heap just after
+the completion of each major GC cycle.
+
 .TP
 .BR W
 Print runtime warnings to stderr (such as Channel opened on file dies without
