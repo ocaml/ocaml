@@ -107,6 +107,8 @@ let update_head ?(search = false) soup =
   |> append_child head;
   create_element "script" ~attributes:["src","navigation.js"]
   |> append_child head;
+  create_element "script" ~attributes:["src", "https://plausible.ci.dev/js/script.js"; "defer data-domain", "ocaml.org"]
+  |> append_child head;
   add_favicon head
 
 (* Add version number *)
