@@ -181,8 +181,8 @@ module Runtime_coercion = struct
   let illegal_permutation ctx_printer env ppf (mty,c) =
     match first_change c with
     | None | Some (_, (Primitive_coercion _ | Alias_coercion _)) ->
-        (* those kind coercions are not inversible, and raise an error earlier when
-           checking for module type equivalence *)
+        (* those kind coercions are not inversible, and raise an error earlier
+           when checking for module type equivalence *)
         assert false
     | Some (path, Transposition (k,l)) ->
     try

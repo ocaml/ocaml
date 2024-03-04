@@ -2068,7 +2068,9 @@ let package_subtype env p1 fl1 p2 fl2 =
     match Includemod.modtypes ~loc ~mark:Mark_both env mty1 mty2 with
     | Tcoerce_none -> Ok ()
     | c ->
-        let msg = Includemod_errorprinter.coercion_in_package_subtype env mty1 c in
+        let msg =
+          Includemod_errorprinter.coercion_in_package_subtype env mty1 c
+        in
         Result.Error (Errortrace.Package_coercion msg)
     | exception Includemod.Error e ->
         let msg = Includemod_errorprinter.err_msgs e in
