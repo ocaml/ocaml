@@ -223,7 +223,7 @@ module Runtime_coercion = struct
     | Transposition (k,l) ->
         Format.fprintf ppf
           "@[@[The two first-class module types do not share@ \
-           the same position for runtime components.@]@ \
+           the same positions for runtime components.@]@ \
            @[For example,%a@ the %a@ occurs at the expected position of@ \
            the %a.@]@]"
           ctx_printer ctx pp_item (item mt k) pp_item (item mt l)
