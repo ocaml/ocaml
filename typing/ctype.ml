@@ -2603,10 +2603,10 @@ let unify_package env unify_list lv1 p1 fl1 lv2 p2 fl2 =
   let ntl2 = complete_type_list env fl1 lv2 (Mty_ident p2) fl2
   and ntl1 = complete_type_list env fl2 lv1 (Mty_ident p1) fl1 in
   unify_list (List.map snd ntl1) (List.map snd ntl2);
-  if eq_package_path env p1 p2
-  || !package_subtype env p1 fl1 p2 fl2
-  && !package_subtype env p2 fl2 p1 fl1 then () else raise Not_found
-
+  if eq_package_path env p1 p2 then Ok ()
+  else Result.bind
+      (!package_subtype env p1 fl1 p2 fl2)
+      (fun () -> !package_subtype env p2 fl2 p1 fl1)
 
 (* force unification in Reither when one side has a non-conjunctive type *)
 (* Code smell: this could also be put in unification_environment.
@@ -2908,10 +2908,16 @@ and unify3 uenv t1 t1' t2 t2' =
           enter_poly_for Unify (get_env uenv) univar_pairs t1 tl1 t2 tl2
             (unify uenv)
       | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
-          begin try
+          begin match
             unify_package (get_env uenv) (unify_list uenv)
               (get_level t1) p1 fl1 (get_level t2) p2 fl2
-          with Not_found ->
+          with
+          | Ok () -> ()
+          | Error fm_err ->
+              if not (in_pattern_mode uenv) then
+                raise_for Unify (Errortrace.First_class_module fm_err);
+              List.iter (fun (_n, ty) -> reify uenv ty) (fl1 @ fl2);
+          | exception Not_found ->
             if not (in_pattern_mode uenv) then raise_unexplained_for Unify;
             List.iter (fun (_n, ty) -> reify uenv ty) (fl1 @ fl2);
             (* if !generate_equations then List.iter2 (mcomp !env) tl1 tl2 *)
@@ -3759,10 +3765,13 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
                 when Path.same p1 p2 ->
               moregen_list inst_nongen type_pairs env tl1 tl2
           | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
-              begin try
+              begin match
                 unify_package env (moregen_list inst_nongen type_pairs env)
                   (get_level t1') p1 fl1 (get_level t2') p2 fl2
-              with Not_found -> raise_unexplained_for Moregen
+              with
+              | Ok () -> ()
+              | Error fme -> raise_for Moregen (First_class_module fme)
+              | exception Not_found -> raise_unexplained_for Moregen
               end
           | (Tnil,  Tconstr _ ) -> raise_for Moregen (Obj (Abstract_row Second))
           | (Tconstr _,  Tnil ) -> raise_for Moregen (Obj (Abstract_row First))
@@ -4108,10 +4117,13 @@ let rec eqtype rename type_pairs subst env t1 t2 =
                 when Path.same p1 p2 ->
               eqtype_list rename type_pairs subst env tl1 tl2
           | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
-              begin try
+              begin match
                 unify_package env (eqtype_list rename type_pairs subst env)
                   (get_level t1') p1 fl1 (get_level t2') p2 fl2
-              with Not_found -> raise_unexplained_for Equality
+              with
+              | Ok () -> ()
+              | Error fme -> raise_for Equality (First_class_module fme)
+              | exception Not_found -> raise_unexplained_for Equality
               end
           | (Tnil,  Tconstr _ ) ->
               raise_for Equality (Obj (Abstract_row Second))
@@ -4926,7 +4938,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
             (* need to check module subtyping *)
             let snap = Btype.snapshot () in
             match List.iter (fun (_, t1, t2, _) -> unify env t1 t2) cstrs' with
-            | () when !package_subtype env p1 fl1 p2 fl2 ->
+            | () when Result.is_ok (!package_subtype env p1 fl1 p2 fl2) ->
               Btype.backtrack snap; cstrs' @ cstrs
             | () | exception Unify _ ->
               Btype.backtrack snap; raise Not_found

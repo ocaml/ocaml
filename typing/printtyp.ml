@@ -2454,6 +2454,16 @@ let explain_incompatible_fields name (diff: Types.type_expr Errortrace.diff) =
     (Style.as_inline_code type_expr_with_reserved_names) diff.got
     (Style.as_inline_code type_expr_with_reserved_names) diff.expected
 
+let explain_first_class_module = function
+  | Errortrace.Package_cannot_scrape p -> Some(
+      dprintf "@,@[The module alias %a could not be expanded@]"
+        Style.(as_inline_code path) p
+    )
+  | Errortrace.Package_inclusion pr ->
+      Some(dprintf "@,@[%t@]" pr)
+  | Errortrace.Package_coercion pr ->
+      Some(dprintf "@,@[%t@]" pr)
+
 let explanation (type variety) intro prev env
   : (Errortrace.expanded_type, variety) Errortrace.elt -> _ = function
   | Errortrace.Diff {got; expected} ->
@@ -2476,6 +2486,8 @@ let explanation (type variety) intro prev env
     explain_variant v
   | Errortrace.Obj o ->
     explain_object o
+  | Errortrace.First_class_module fm ->
+    explain_first_class_module fm
   | Errortrace.Rec_occur(x,y) ->
     reserve_names x;
     reserve_names y;
