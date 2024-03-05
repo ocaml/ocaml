@@ -1,3 +1,5 @@
+include ../../../Makefile.config
+
 DUNE_CMD := $(if $(wildcard dune/dune.exe),dune/dune.exe,dune)
 DUNE ?= $(DUNE_CMD)
 
@@ -8,7 +10,7 @@ else
     DBG=quiet
 endif
 
-VERSION=$(shell grep 'OCAML_VERSION_SHORT=' ../../../configure | awk -F'=' '{print $$2}')
+VERSION := $(OCAML_VERSION_MAJOR).$(OCAML_VERSION_MINOR)
 
 WEBDIR = ../$(VERSION)
 WEBDIRAPI = $(WEBDIR)/api
