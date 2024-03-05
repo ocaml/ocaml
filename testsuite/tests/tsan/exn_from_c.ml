@@ -1,6 +1,7 @@
 (* TEST
 
  ocamlopt_flags = "-g -ccopt -fsanitize=thread -ccopt -O1 -ccopt -fno-omit-frame-pointer -ccopt -g";
+
  set TSAN_OPTIONS="detect_deadlocks=0";
 
  tsan;
