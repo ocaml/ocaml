@@ -189,23 +189,26 @@ let is_c_file (_filename, filetype) = filetype=Ocaml_filetypes.C
 
 let cmas_need_dynamic_loading directories libraries =
   let loads_c_code library =
-    let library = Misc.find_in_path directories library in
-    let ic = open_in_bin library in
-    try
-      let len_magic_number = String.length Config.cma_magic_number in
-      let magic_number = really_input_string ic len_magic_number in
-      if magic_number = Config.cma_magic_number then
-        let toc_pos = input_binary_int ic in
-        seek_in ic toc_pos;
-        let toc = (input_value ic : Cmo_format.library) in
-        close_in ic;
-        if toc.Cmo_format.lib_dllibs <> [] then Some (Ok ()) else None
-      else
-        raise End_of_file
-    with End_of_file
-       | Sys_error _ ->
-         begin try close_in ic with Sys_error _ -> () end;
-         Some (Error ("Corrupt or non-CMA file: " ^ library))
+    match Misc.find_in_path directories library with
+    | exception Not_found ->
+      Some (Error ("file not found in include path: " ^ library))
+    | library ->
+      let ic = open_in_bin library in
+      try
+        let len_magic_number = String.length Config.cma_magic_number in
+        let magic_number = really_input_string ic len_magic_number in
+        if magic_number = Config.cma_magic_number then
+          let toc_pos = input_binary_int ic in
+          seek_in ic toc_pos;
+          let toc = (input_value ic : Cmo_format.library) in
+          close_in ic;
+          if toc.Cmo_format.lib_dllibs <> [] then Some (Ok ()) else None
+        else
+          raise End_of_file
+      with End_of_file
+         | Sys_error _ ->
+           begin try close_in ic with Sys_error _ -> () end;
+           Some (Error ("Corrupt or non-CMA file: " ^ library))
   in
   List.find_map loads_c_code (String.words libraries)
 
