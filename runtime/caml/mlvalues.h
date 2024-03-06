@@ -105,6 +105,8 @@ typedef struct {
 #define Result_value(v) (caml_result){ .is_exception = 0, .data = v }
 #define Result_exception(exn) (caml_result){ .is_exception = 1, .data = exn }
 
+#define Result_unit Result_value(Val_unit)
+
 /* returns the value or raises the exception. */
 CAMLextern value caml_run_result(caml_result res);
 
