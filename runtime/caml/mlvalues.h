@@ -84,12 +84,56 @@ typedef opcode_t * code_t;
 #define Unsigned_long_val(x) ((uintnat)(x) >> 1)
 #define Unsigned_int_val(x)  ((int) Unsigned_long_val(x))
 
-/* Encoded exceptional return values, when functions are suffixed with
-   _exn. Encoded exceptions are invalid values and must not be seen
-   by the garbage collector. */
+/* A 'result' type for OCaml computations. */
+
+/* The [caml_result] type represents the result of computing an OCaml
+   term -- either a value or an exception:
+   - if [is_exception] is false,
+     the computation resulted in a value stored in [data]
+   - if [is_exception] is true,
+     the computation resulted in an exception stored in [data]
+
+   This plays a similar role to the [('a, exn) result] type in OCaml,
+   with a different representation. Returning this type, instead of
+   raising exceptions directly, lets the caller implement proper
+   cleanup and propagate the exception themselves. */
+typedef struct {
+  _Bool is_exception;
+  value data;
+} caml_result;
+
+#define Result_value(v) (caml_result){ .is_exception = 0, .data = v }
+#define Result_exception(exn) (caml_result){ .is_exception = 1, .data = exn }
+
+/* returns the value or raises the exception. */
+CAMLextern value caml_run_result(caml_result res);
+
+/* Before caml_result was available, we used an unsafe encoding of it
+   into the 'value' type, where encoded exceptions have their second
+   bit set. These encoded exceptions are invalid values and must not
+   be seen by the garbage collector. This is unsafe, and the
+   C type-checker does not help. We strongly recommend using the
+   caml_result type above instead. It is GC-safe and more
+   type-safe. */
+
 #define Make_exception_result(v) ((v) | 2)
 #define Is_exception_result(v) (((v) & 3) == 2)
 #define Extract_exception(v) ((v) & ~3)
+
+Caml_inline value Encoded_result(caml_result res) {
+  if (res.is_exception)
+    return Make_exception_result(res.data);
+  else
+    return res.data;
+}
+
+Caml_inline caml_result Result_encoded(value encoded)
+{
+  if (Is_exception_result(encoded))
+    return Result_exception(Extract_exception(encoded));
+  else
+    return Result_value(encoded);
+}
 
 /* Structure of the header:
 
