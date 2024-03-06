@@ -19,19 +19,18 @@ open Shape
 
 type result =
   | Resolved of Uid.t
-  | Resolved_alias of Uid.t list
+  | Resolved_alias of Uid.t * result
   | Unresolved of t
   | Approximated of Uid.t option
   | Internal_error_missing_uid
 
-let print_result fmt result =
+let rec print_result fmt result =
   match result with
   | Resolved uid ->
       Format.fprintf fmt "@[Resolved: %a@]@;" Uid.print uid
-  | Resolved_alias uids ->
-      Format.fprintf fmt "@[Resolved_alias: %a@]@;"
-        Format.(pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt "@ -> ")
-        Uid.print) uids
+  | Resolved_alias (uid, r) ->
+      Format.fprintf fmt "@[Alias: %a -> %a@]@;"
+        Uid.print uid print_result r
   | Unresolved shape ->
       Format.fprintf fmt "@[Unresolved: %a@]@;" print shape
   | Approximated (Some uid) ->
@@ -272,16 +271,6 @@ end) = struct
     | NComp_unit s -> Comp_unit s
     | NError s -> Error s
 
-  let reduce_aliases_for_uid env (nf : nf) =
-    let rec aux acc (nf : nf) = match nf with
-      | { uid = Some uid; desc = NAlias dnf; _ } ->
-          aux (uid::acc) (force env dnf)
-      | { uid = Some uid; _ } ->
-          Resolved_alias (List.rev (uid::acc))
-      | { uid = None; _ } -> Internal_error_missing_uid
-    in
-    aux [] nf
-
   (* Sharing the memo tables is safe at the level of a compilation unit since
     idents should be unique *)
   let reduce_memo_table = Local_store.s_table Hashtbl.create 42
@@ -311,6 +300,21 @@ end) = struct
     | NError _ -> false
     | NLeaf -> false
 
+  let rec reduce_aliases_for_uid env (nf : nf) =
+    match nf with
+    | { uid = Some uid; desc = NAlias dnf; approximated = false; _ } ->
+        let result = reduce_aliases_for_uid env (force env dnf) in
+        Resolved_alias (uid, result)
+    | { uid = Some uid; approximated = false; _ } -> Resolved uid
+    | { uid; approximated = true } -> Approximated uid
+    | { uid = None; approximated = false; _ } ->
+      (* A missing Uid after a complete reduction means the Uid was first
+         missing in the shape which is a code error. Having the
+         [Missing_uid] reported will allow Merlin (or another tool working
+         with the index) to ask users to report the issue if it does happen.
+      *)
+      Internal_error_missing_uid
+
   let reduce_for_uid global_env t =
     let fuel = ref Params.fuel in
     let local_env = Ident.Map.empty in
@@ -324,20 +328,8 @@ end) = struct
     let nf = reduce_ env t in
     if is_stuck_on_comp_unit nf then
       Unresolved (read_back env nf)
-    else match nf with
-      | { desc = NAlias _; approximated = false; _ } ->
-          reduce_aliases_for_uid env nf
-      | { uid = Some uid; approximated = false; _ } ->
-          Resolved uid
-      | { uid; approximated = true; _ } ->
-          Approximated uid
-      | { uid = None; approximated = false; _ } ->
-          (* A missing Uid after a complete reduction means the Uid was first
-             missing in the shape which is a code error. Having the
-             [Missing_uid] reported will allow Merlin (or another tool working
-             with the index) to ask users to report the issue if it does happen.
-          *)
-          Internal_error_missing_uid
+    else
+      reduce_aliases_for_uid env nf
 end
 
 module Local_reduce =
