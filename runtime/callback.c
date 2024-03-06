@@ -308,6 +308,33 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[]) {
 
 #endif
 
+/* Result-returning variants of the above */
+
+CAMLexport caml_result caml_callbackN_result(
+  value closure, int narg, value args[])
+{
+  return Result_encoded(caml_callbackN_exn(closure, narg, args));
+}
+
+CAMLexport caml_result caml_callback_result(
+  value closure, value arg)
+{
+  return Result_encoded(caml_callback_exn(closure, arg));
+}
+
+CAMLexport caml_result caml_callback2_result(
+  value closure, value arg1, value arg2)
+{
+  return Result_encoded(caml_callback2_exn(closure, arg1, arg2));
+}
+
+CAMLexport caml_result caml_callback3_result(
+  value closure, value arg1, value arg2, value arg3)
+{
+  return Result_encoded(caml_callback3_exn(closure, arg1, arg2, arg3));
+}
+
+
 /* Exception-propagating variants of the above */
 
 CAMLexport value caml_callback (value closure, value arg)
