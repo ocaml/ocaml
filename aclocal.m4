@@ -437,7 +437,9 @@ AC_DEFUN([OCAML_C99_CHECK_FMA], [
 #include <math.h>
 int main (void) {
   /* Tests 264-266 from testsuite/tests/fma/fma.ml. These tests trigger the
-     broken implementations of Cygwin64, mingw-w64 (x86_64) and VS2013-2017.
+     broken implementations of Cygwin64, mingw-w64 (x86_64) Visual Studio
+     (VS2019+ use hardware support when available, but the library function
+     remains broken).
      The static volatile variables aim to thwart GCC's constant folding. */
   static volatile double x, y, z;
   volatile double t264, t265, t266;
@@ -468,12 +470,9 @@ int main (void) {
     AS_CASE([$enable_imprecise_c99_float_ops,$target],
       [no,*], [hard_error=true],
       [yes,*], [hard_error=false],
-      [*,x86_64-w64-mingw32|*,x86_64-*-cygwin*], [hard_error=false],
-      [AS_CASE([$ocaml_cv_cc_vendor],
-        [msvc-*], [AS_IF([test "${ocaml_cv_cc_vendor#msvc-}" -lt 1920 ],
-          [hard_error=false],
-          [hard_error=true])],
-        [hard_error=true])])
+      [*,x86_64-w64-mingw32|*,x86_64-*-cygwin*|*,*-pc-windows],
+        [hard_error=false],
+      [hard_error=true])
     AS_IF([test x"$hard_error" = "xtrue"],
       [AC_MSG_ERROR(m4_normalize([
         fma does not work, enable emulation with

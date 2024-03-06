@@ -14852,7 +14852,9 @@ else
 #include <math.h>
 int main (void) {
   /* Tests 264-266 from testsuite/tests/fma/fma.ml. These tests trigger the
-     broken implementations of Cygwin64, mingw-w64 (x86_64) and VS2013-2017.
+     broken implementations of Cygwin64, mingw-w64 (x86_64) Visual Studio
+     (VS2019+ use hardware support when available, but the library function
+     remains broken).
      The static volatile variables aim to thwart GCC's constant folding. */
   static volatile double x, y, z;
   volatile double t264, t265, t266;
@@ -14891,19 +14893,10 @@ $as_echo "no" >&6; }
     hard_error=true ;; #(
   yes,*) :
     hard_error=false ;; #(
-  *,x86_64-w64-mingw32|*,x86_64-*-cygwin*) :
+  *,x86_64-w64-mingw32|*,x86_64-*-cygwin*|*,*-pc-windows) :
     hard_error=false ;; #(
   *) :
-    case $ocaml_cv_cc_vendor in #(
-  msvc-*) :
-    if test "${ocaml_cv_cc_vendor#msvc-}" -lt 1920 ; then :
-  hard_error=false
-else
-  hard_error=true
-fi ;; #(
-  *) :
     hard_error=true ;;
-esac ;;
 esac
     if test x"$hard_error" = "xtrue"; then :
   as_fn_error $? "fma does not work, enable emulation with --enable-imprecise-c99-float-ops" "$LINENO" 5

@@ -47,6 +47,13 @@ OCaml 4.14 maintenance version
   that causes very slow compaction.
   (Damien Doligez, report by Arseniy Alekseyev, review by Sadiq Jaffer)
 
+- #12513, #12518: Automatically enable emulated `fma` for Visual Studio 2019+
+  to allow configuration with either pre-Haswell/pre-Piledriver CPUs or running
+  in VirtualBox. Restores parity with the other Windows ports, which don't
+  require explicit `--enable-imprecise-c99-float-ops`.
+  (David Allsopp, report by Jonah Beckford and Kate Deplaix, review by
+   Sébastien Hinderer)
+
 - #11633, #11636: bugfix in caml_unregister_frametable
   (Frédéric Recoules, review by Gabriel Scherer)
 
