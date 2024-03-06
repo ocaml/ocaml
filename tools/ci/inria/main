@@ -190,12 +190,14 @@ case "${OCAML_ARCH}" in
     host='--host=i686-pc-windows'
     instdir='C:/ocamlms'
     cleanup=true
+    init_submodule=true
   ;;
   msvc64)
     build='--build=x86_64-pc-cygwin'
     host='--host=x86_64-pc-windows'
     instdir='C:/ocamlms64'
     cleanup=true
+    init_submodule=true
   ;;
   *) arch_error;;
 esac
