@@ -127,6 +127,10 @@ _______________
   new lld when using threads.cma of duplicated libraries.
   (David Allsopp, review by Nicolás Ojeda Bär)
 
+- #13012: parsing: Fix dropped attributes after a '-' or '+'
+  The syntax '-(1 [@foo])' was incorrectly parsed as '-1'.
+  (Jules Aguillon, reviewed by Gabriel Scherer, report by Gabriel Scherer)
+
 OCaml 5.2.0
 ------------
 
