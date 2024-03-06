@@ -739,12 +739,7 @@ CAMLprim value caml_runtime_events_user_write(
     value record = Field(event_type, 0);
     value serializer = Field(record, 0);
 
-    res = caml_callback2_exn(serializer, write_buffer, event_content);
-
-    if (Is_exception_result(res)) {
-      res = Extract_exception(res);
-      caml_raise(res);
-    }
+    res = caml_callback2(serializer, write_buffer, event_content);
 
     uintnat len_bytes = Int_val(res);
     uintnat len_64bit_word = (len_bytes + sizeof(uint64_t)) / sizeof(uint64_t);
