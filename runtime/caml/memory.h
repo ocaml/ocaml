@@ -405,6 +405,10 @@ struct caml__roots_block {
     x[caml__i_##x] = Val_unit; \
   }
 
+#define CAMLlocalresult(res) \
+  res.data = Val_unit; \
+  CAMLxparam1 (res.data);
+
 #define CAMLdrop do{              \
   *caml_local_roots_ptr = caml__frame; \
 }while (0)
