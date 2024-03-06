@@ -99,16 +99,16 @@ static intnat compare_val(value v1, value v2, int total)
 static void run_pending_actions(struct compare_stack* stk,
                                 struct compare_item* sp)
 {
-  value exn;
+  caml_result result;
   value* roots_start = (value*)(stk->stack);
   size_t roots_length =
     (sp - stk->stack)
     * sizeof(struct compare_item) / sizeof(value);
   Begin_roots_block(roots_start, roots_length);
-  exn = caml_do_pending_actions_exn();
+  result = caml_do_pending_actions_result();
   End_roots();
-  if (Is_exception_result(exn)) {
-    exn = Extract_exception(exn);
+  if (result.is_exception) {
+    value exn = result.data;
     compare_free_stack(stk);
     caml_raise(exn);
   }

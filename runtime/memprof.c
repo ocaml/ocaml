@@ -1869,7 +1869,7 @@ static value entries_run_callbacks_exn(memprof_thread_t thread,
  * change the various indexes into an entries table while iterating
  * over it, whereas domain_apply_actions assumes that can't happen. */
 
-value caml_memprof_run_callbacks_exn(void)
+static value run_callbacks_exn(void)
 {
   memprof_domain_t domain = Caml_state->memprof;
   CAMLassert(domain);
@@ -1917,6 +1917,11 @@ value caml_memprof_run_callbacks_exn(void)
   orphans_update_pending(domain);
   update_suspended(domain, false);
   return res;
+}
+
+caml_result caml_memprof_run_callbacks_result(void)
+{
+  return Result_encoded(run_callbacks_exn());
 }
 
 /**** Sampling ****/

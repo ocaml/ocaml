@@ -38,10 +38,11 @@ CAMLexport void caml_raise(value v)
 
   caml_channel_cleanup_on_raise();
 
-  // avoid calling caml_raise recursively
-  v = caml_process_pending_actions_with_root_exn(v);
-  if (Is_exception_result(v))
-    v = Extract_exception(v);
+  caml_result result = caml_process_pending_actions_with_root_result(v);
+  /* If the result is a value, we want to assign it to [v].
+     If the result is an exception, we want to raise it instead of [v].
+     The line below does both these things at once. */
+  v = result.data;
 
   if (Caml_state->external_raise == NULL) {
     caml_terminate_signals();
