@@ -25,6 +25,7 @@
 # Other environment variables that are honored:
 #   OCAML_CONFIGURE_OPTIONS   additional options for configure
 #   OCAML_JOBS                number of jobs to run in parallel (make -j)
+#   OCAML_4_ONLY              build only OCaml 4.x, not OCaml 5
 
 # Command-line arguments:
 # -conf configure-option  add configure-option to configure cmd line
@@ -56,6 +57,22 @@ kill_task()
 quote1 () {
   printf "'%s'" "`printf %s "$1" | sed -e "s/'/'\\\\\\\\''/g"`";
 }
+
+#########################################################################
+# Log our parameters and environment variables
+echo "tools/ci/inria/main:"
+echo "arguments: $*"
+echo "OCAML_CONFIGURE_OPTIONS=$OCAML_CONFIGURE_OPTIONS"
+echo "OCAML_JOBS=$OCAML_JOBS"
+echo "OCAML_4_ONLY=$OCAML_4_ONLY"
+
+#########################################################################
+# Stop now if the platform doesn't support OCaml 5
+case "$OCAML_4_ONLY" in
+  true) echo "This machine/OS does not support OCaml 5. Stopping now."
+        exit 0
+        ;;
+esac
 
 #########################################################################
 # Display environment information
