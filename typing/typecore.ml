@@ -1714,9 +1714,15 @@ and type_pat_aux
         pat_type = type_constant cst;
         pat_attributes = sp.ppat_attributes;
         pat_env = !!penv }
-  | Ppat_interval ({pconst_desc = Pconst_char c1; _},
-                   {pconst_desc = Pconst_char c2; _}) ->
+  | Ppat_interval (c1, c2) ->
       let open Ast_helper in
+      let get_bound = function
+        | {pconst_desc = Pconst_char c; _} -> c
+        | {pconst_loc = loc; _} ->
+            raise (Error (loc, !!penv, Invalid_interval))
+      in
+      let c1 = get_bound c1 in
+      let c2 = get_bound c2 in
       let gloc = {loc with Location.loc_ghost=true} in
       let rec loop c1 c2 =
         if c1 = c2 then Pat.constant ~loc:gloc (Const.char ~loc:gloc c1)
@@ -1729,15 +1735,6 @@ and type_pat_aux
       let p = {p with ppat_loc=loc} in
       type_pat tps category p expected_ty
         (* TODO: record 'extra' to remember about interval *)
-  | Ppat_interval (c1, c2) ->
-      let loc =
-        match c1, c2 with
-        | {pconst_desc = Pconst_char _; _}, {pconst_loc; _}
-        | {pconst_loc; _}, {pconst_desc = Pconst_char _; _} ->
-            pconst_loc
-        | _, _ -> loc
-      in
-      raise (Error (loc, !!penv, Invalid_interval))
   | Ppat_tuple spl ->
       assert (List.length spl >= 2);
       let expected_tys =

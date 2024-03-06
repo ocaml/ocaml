@@ -153,9 +153,10 @@ let neg_string f =
 
 let mkuminus ~sloc ~oploc name arg =
   match name, arg.pexp_desc with
-  | "-", Pexp_constant({pconst_desc = Pconst_integer (n,m); _}) ->
+  | "-", Pexp_constant({pconst_desc = Pconst_integer (n,m); pconst_loc=_}) ->
       Pexp_constant(mkconst ~loc:sloc (Pconst_integer(neg_string n, m)))
-  | ("-" | "-."), Pexp_constant({pconst_desc = Pconst_float (f, m); _}) ->
+  | ("-" | "-."),
+    Pexp_constant({pconst_desc = Pconst_float (f, m); pconst_loc=_}) ->
       Pexp_constant(mkconst ~loc:sloc (Pconst_float(neg_string f, m)))
   | _ ->
       Pexp_apply(mkoperator ~loc:oploc ("~" ^ name), [Nolabel, arg])
@@ -163,8 +164,9 @@ let mkuminus ~sloc ~oploc name arg =
 let mkuplus ~sloc ~oploc name arg =
   let desc = arg.pexp_desc in
   match name, desc with
-  | "+", Pexp_constant({pconst_desc = Pconst_integer _ as desc; _})
-  | ("+" | "+."), Pexp_constant({pconst_desc = Pconst_float _ as desc; _}) ->
+  | "+", Pexp_constant({pconst_desc = Pconst_integer _ as desc; pconst_loc=_})
+  | ("+" | "+."),
+    Pexp_constant({pconst_desc = Pconst_float _ as desc; pconst_loc=_}) ->
       Pexp_constant(mkconst ~loc:sloc desc)
   | _ ->
       Pexp_apply(mkoperator ~loc:oploc ("~" ^ name), [Nolabel, arg])
