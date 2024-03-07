@@ -1,8 +1,9 @@
 (* TEST
 include unix
 flags += "-strict-sequence -safe-string -w +A -warn-error +A"
-* windows-unicode
-** toplevel
+* hasunix
+** windows-unicode
+*** toplevel
 *)
 
 let foreign_names =
