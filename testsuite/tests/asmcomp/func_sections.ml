@@ -17,6 +17,10 @@
    arch_i386;
    reference = "${test_source_directory}/func_sections.reference";
    native;
+ }{
+   arch_riscv64;
+   reference = "${test_source_directory}/func_sections.reference";
+   native;
  }
 *)
 

@@ -197,6 +197,13 @@ let arch_power = make
     "Target is POWER architecture"
     "Target is not POWER architecture")
 
+let arch_riscv64 = make
+  ~name:"arch_riscv64"
+  ~description:"Pass if target is a RiscV64 architecture"
+  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "riscv64")
+     "Target is RiscV64 architecture"
+     "Target is not RiscV64 architecture")
+
 let function_sections = make
   ~name:"function_sections"
   ~description:"Pass if target supports function sections"
@@ -356,6 +363,7 @@ let _ =
     arch_amd64;
     arch_i386;
     arch_power;
+    arch_riscv64;
     function_sections;
     frame_pointers;
     file_exists;

@@ -63,10 +63,29 @@
 
 #define Caml_state(var) (8*domain_field_caml_##var)(DOMAIN_STATE_PTR)
 
+#if defined(FUNCTION_SECTIONS)
+#define TEXT_SECTION(name) \
+        .section .text.caml.##name,"ax",@progbits
+#else
+#define TEXT_SECTION(name) \
+        .section .text
+#endif
+
+#if defined(FUNCTION_SECTIONS)
+        TEXT_SECTION(caml_hot.code_begin)
+        .globl caml_hot.code_begin
+caml_hot.code_begin:
+
+        TEXT_SECTION(caml_hot.code_end)
+        .globl caml_hot.code_end
+caml_hot.code_end:
+#endif
+
 /* Globals and labels */
 #define L(lbl) .L##lbl
 
 #define FUNCTION(name) \
+        TEXT_SECTION(name); \
         .align 2; \
         .globl name; \
         .type  name, @function; \
@@ -405,9 +424,9 @@ name:
 
 #endif /* } WITH_THREAD_SANITIZER */
 
-        .section        .text
 /* Invoke the garbage collector. */
 
+        TEXT_SECTION(caml_system__code_begin)
         .globl  caml_system__code_begin
 caml_system__code_begin:
 
@@ -1210,6 +1229,7 @@ FUNCTION(caml_ml_array_bound_error)
         j       L(caml_c_call)
 END_FUNCTION(caml_ml_array_bound_error)
 
+        TEXT_SECTION(caml_system__code_end)
         .globl  caml_system__code_end
 caml_system__code_end:
 
