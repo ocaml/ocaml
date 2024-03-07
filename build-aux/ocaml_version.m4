@@ -36,7 +36,7 @@ m4_define([OCAML__VERSION_MINOR], [14])
 m4_define([OCAML__VERSION_PATCHLEVEL], [2])
 # Note that the OCAML__VERSION_EXTRA string defined below is always empty
 # for officially-released versions of OCaml.
-m4_define([OCAML__VERSION_EXTRA], [dev0-2022-12-19])
+m4_define([OCAML__VERSION_EXTRA], [dev1-2024-03-07])
 
 # The OCAML__VERSION_EXTRA_PREFIX macro defined below should be a
 # single character:
