@@ -46,7 +46,7 @@ struct channel {
   struct channel * next, * prev;/* Double chaining of channels (flush_all) */
   uintnat refcount;             /* Number of custom blocks owning the channel */
   int flags;                    /* Bitfield */
-  char buff[IO_BUFFER_SIZE];    /* The buffer itself */
+  char * buff;                  /* The buffer */
   char * name;                  /* Optional name (to report fd leaks) */
 };
 

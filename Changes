@@ -313,6 +313,10 @@ OCaml 5.2.0
   (Stephen Dolan, review by David Allsopp, Hugo Heuzard, Damien Doligez and
    Xavier Leroy)
 
+- #12678, #12898: free channel buffers on close rather than on finalization
+  (Damien Doligez, review by Jan Midtgaard and Gabriel Scherer, report
+   by Jan Midtgaard)
+
 - #12681: Fix TSan false positives due to volatile write handling
   (Olivier Nicole, Fabrice Buoro and Anmol Sahoo, review by Luc Maranget,
    Gabriel Scherer, Hernan Ponce de Leon and Xavier Leroy)
