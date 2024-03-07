@@ -37,7 +37,25 @@
 #define G(r) r
 #define GREL(r) r@GOT
 #define GCALL(r) r@PLT
-#define TEXT_SECTION(name)
+
+#if defined(FUNCTION_SECTIONS)
+#define TEXT_SECTION(name) \
+        .section .text.caml.##name,"ax",@progbits
+#else
+#define TEXT_SECTION(name) \
+        .section .text
+#endif
+
+#if defined(FUNCTION_SECTIONS)
+        TEXT_SECTION(caml_hot.code_begin)
+        .globl caml_hot.code_begin
+caml_hot.code_begin:
+
+        TEXT_SECTION(caml_hot.code_end)
+        .globl caml_hot.code_end
+caml_hot.code_end:
+#endif
+
 #define FUNCTION(name) \
         TEXT_SECTION(name); \
         .globl name; \
@@ -153,10 +171,9 @@
 
 #define Caml_state(var) 8*domain_field_caml_##var(%r10)
 
-        .section ".text"
-
 /* Invoke the garbage collector. */
 
+        TEXT_SECTION(caml_system__code_begin)
         .globl  caml_system__code_begin
 caml_system__code_begin:
 
@@ -1223,6 +1240,7 @@ CFI_STARTPROC
 CFI_ENDPROC
 ENDFUNCTION(G(caml_ml_array_bound_error))
 
+        TEXT_SECTION(caml_system__code_end)
         .globl  caml_system__code_end
 caml_system__code_end:
 

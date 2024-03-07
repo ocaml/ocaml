@@ -204,6 +204,13 @@ let arch_riscv64 = make
      "Target is RiscV64 architecture"
      "Target is not RiscV64 architecture")
 
+let arch_s390x = make
+  ~name:"arch_s390x"
+  ~description:"Pass if target is a S390x architecture"
+  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "s390x")
+     "Target is S390x architecture"
+     "Target is not S390x architecture")
+
 let function_sections = make
   ~name:"function_sections"
   ~description:"Pass if target supports function sections"
@@ -364,6 +371,7 @@ let _ =
     arch_i386;
     arch_power;
     arch_riscv64;
+    arch_s390x;
     function_sections;
     frame_pointers;
     file_exists;

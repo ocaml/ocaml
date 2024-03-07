@@ -25,6 +25,10 @@
    arch_riscv64;
    reference = "${test_source_directory}/func_sections.reference";
    native;
+ }{
+   arch_s390x;
+   reference = "${test_source_directory}/func_sections.reference";
+   native;
  }
 *)
 
