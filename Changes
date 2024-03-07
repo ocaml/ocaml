@@ -15,6 +15,10 @@ _______________
 
 ### Code generation and optimizations:
 
+- #####: Enable compile-time option -function-sections on all previously
+  unsupported native backends (POWER, riscv64 and s390x)
+  (Miod Vallat, review by TBD)
+
 ### Standard library:
 
 - #12133: Expose support for printing substrings in Format
