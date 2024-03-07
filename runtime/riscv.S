@@ -1226,3 +1226,6 @@ OBJECT(caml_system.frametable)
         .short  0                 /* no roots */
         .align  3
 END_OBJECT(caml_system.frametable)
+
+/* Mark stack as non-executable */
+        .section .note.GNU-stack,"",%progbits
