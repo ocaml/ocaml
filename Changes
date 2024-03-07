@@ -39,6 +39,12 @@ _______________
 - #13003: new, more consistent names for array-creation C functions
   (Gabriel Scherer, review by Olivier Nicole)
 
+- #13013: introduce a `caml_result` type to supersede the
+  use of 'encoded exception values' in the FFI.
+  (Gabriel Scherer, review by Damien Doligez,
+   Guillaume Munch-Maccagnoni and Xavier Leroy,
+   suggested by Guillaume Munch-Maccagnoni)
+
 - #13086: Avoid spurious major GC slices.
   (Damien Doligez, report by Stephen Dolan, review by Gabriel Scherer
    and Stephen Dolan)
@@ -91,7 +97,7 @@ _______________
    and Nicolás Ojeda Bär)
 
 - #12869: Add List.take, List.drop, List.take_while and List.drop_while
-  (Kate Deplaix and Oscar Butler-Aldridge review by Nicolás Ojeda Bär,
+  (Kate Deplaix and Oscar Butler-Aldridge, review by Nicolás Ojeda Bär,
    Craig Ferguson and Gabriel Scherer)
 
 - #12885: move Dynarray to an unboxed representation
