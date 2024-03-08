@@ -73,6 +73,10 @@ OCaml 4.14 maintenance version
   architectures
   (Florian Angeletti, review by David Allsopp)
 
+- #13018: Don't pass duplicate libraries to the linker when compiling ocamlc.opt
+  and when using systhreads (new versions of lld emit a warning).
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
 OCaml 4.14.1 (20 December 2022)
 ------------------------------
 
