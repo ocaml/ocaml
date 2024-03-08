@@ -703,7 +703,7 @@ beforedepend:: parsing/lexer.ml
 
 ocamlc.opt$(EXE): compilerlibs/ocamlcommon.cmxa \
                   compilerlibs/ocamlbytecomp.cmxa $(BYTESTART:.cmo=.cmx)
-	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^ -cclib "$(BYTECCLIBS)"
+	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^ $(PTHREAD_CAML_LIBS)
 
 partialclean::
 	rm -f ocamlc.opt$(EXE)
