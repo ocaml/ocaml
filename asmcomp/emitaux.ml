@@ -474,3 +474,16 @@ let mk_env f : Emitenv.per_function_env =
     float_literals = [];
     int_literals = [];
   }
+
+let emit_named_text_section func_name prefix_char =
+  if !Clflags.function_sections then begin
+    emit_string "\t.section .text.caml.";
+    emit_symbol func_name;
+    emit_char ',';
+    emit_string_literal "ax";
+    emit_char ',';
+    emit_char prefix_char;
+    emit_string "progbits\n";
+  end
+  else
+    emit_string "\t.text\n"

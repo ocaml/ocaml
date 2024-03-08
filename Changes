@@ -17,7 +17,7 @@ _______________
 
 - #####: Enable compile-time option -function-sections on all previously
   unsupported native backends (POWER, riscv64 and s390x)
-  (Miod Vallat, review by TBD)
+  (Miod Vallat, review by Nicolás Ojeda Bär)
 
 ### Standard library:
 

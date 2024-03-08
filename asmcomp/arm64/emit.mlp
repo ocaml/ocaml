@@ -638,14 +638,8 @@ let assembly_code_for_poll env i ~far ~return_label =
       gc_return_lbl = lbl_after_poll;
       gc_frame_lbl = lbl_frame; } :: env.call_gc_sites
 
-(* Output .text section directive, or named .text.caml.<name> if enabled. *)
-
 let emit_named_text_section func_name =
-  if !Clflags.function_sections then begin
-    `	.section .text.caml.{emit_symbol func_name},{emit_string_literal "ax"},%progbits\n`
-  end
-  else
-    `	.text\n`
+  Emitaux.emit_named_text_section func_name '%'
 
 (* Emit code to load an emitted literal *)
 
