@@ -66,23 +66,14 @@ all: lib$(LIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
 allopt: lib$(LIBNAME)nat.$(A) $(LIBNAME).cmxa $(CMIFILES)
 
 lib$(LIBNAME).$(A): $(BYTECODE_C_OBJS)
-	$(MKLIB_CMD) -o $(LIBNAME) $(BYTECODE_C_OBJS) $(PTHREAD_LIBS)
+	$(MKLIB_CMD) -o $(LIBNAME) $(BYTECODE_C_OBJS)
 
 lib$(LIBNAME)nat.$(A): $(NATIVECODE_C_OBJS)
 	$(MKLIB_CMD) -o $(LIBNAME)nat $^
 
+# Bytecode programs always link with pthread libraries
 $(LIBNAME).cma: $(THREADS_BCOBJS)
-ifeq "$(UNIX_OR_WIN32)" "unix"
-	$(MKLIB) -o $(LIBNAME) -ocamlc '$(CAMLC)' -cclib -lunix -linkall \
-	  $(PTHREAD_CAML_LIBS) $^
-# TODO: Figure out why -cclib -lunix is used here.
-# It may be because of the threadsUnix module which is deprecated.
-# It may hence be good to figure out whether this module shouldn't be
-# removed, and then -cclib -lunix arguments.
-else # Windows
-	$(MKLIB) -o $(LIBNAME) -ocamlc "$(CAMLC)" -linkall \
-	  $(PTHREAD_CAML_LIBS) $^
-endif
+	$(MKLIB) -o $(LIBNAME) -ocamlc '$(CAMLC)' -linkall $^
 
 # See remark above: force static linking of libthreadsnat.a
 $(LIBNAME).cmxa: $(THREADS_NCOBJS)
