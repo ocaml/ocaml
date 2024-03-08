@@ -608,6 +608,8 @@ FUNCTION(G(caml_call_realloc_stack))
 CFI_STARTPROC
         CFI_SIGNAL_FRAME
         ENTER_FUNCTION
+    /* SAVE_ALL_REGS / RESTORE_ALL_REGS saves more than is needed for a C_call,
+       but it's simpler than having a dedicated macro for this non-hot path */
         SAVE_ALL_REGS
         movq    RETADDR_ENTRY_SIZE(%rsp), C_ARG_1 /* argument */
         SWITCH_OCAML_TO_C
