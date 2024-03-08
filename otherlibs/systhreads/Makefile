@@ -66,14 +66,14 @@ all: lib$(LIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
 allopt: lib$(LIBNAME)nat.$(A) $(LIBNAME).cmxa $(CMIFILES)
 
 lib$(LIBNAME).$(A): $(BYTECODE_C_OBJS)
-	$(MKLIB_CMD) -o $(LIBNAME) $(BYTECODE_C_OBJS) $(PTHREAD_LIBS)
+	$(MKLIB_CMD) -o $(LIBNAME) $(BYTECODE_C_OBJS)
 
 lib$(LIBNAME)nat.$(A): $(NATIVECODE_C_OBJS)
 	$(MKLIB_CMD) -o $(LIBNAME)nat $^
 
+# Bytecode programs always link with pthread libraries
 $(LIBNAME).cma: $(THREADS_BCOBJS)
-	$(MKLIB) -o $(LIBNAME) -ocamlc '$(CAMLC)' -linkall \
-	  $(PTHREAD_CAML_LIBS) $^
+	$(MKLIB) -o $(LIBNAME) -ocamlc '$(CAMLC)' -linkall $^
 
 # See remark above: force static linking of libthreadsnat.a
 $(LIBNAME).cmxa: $(THREADS_NCOBJS)
