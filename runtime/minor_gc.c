@@ -129,8 +129,11 @@ void caml_set_minor_heap_size (asize_t wsize)
 
   if (domain_state->young_ptr != domain_state->young_end) {
     CAML_EV_COUNTER (EV_C_FORCE_MINOR_SET_MINOR_HEAP_SIZE, 1);
-    caml_minor_collection();
+    // Don't call caml_minor_collection, since that can run the
+    // caml_domain_external_interrupt_hook, which can allocate.
+    caml_empty_minor_heaps_once();
   }
+  CAMLassert (domain_state->young_ptr == domain_state->young_end);
 
   if(caml_reallocate_minor_heap(wsize) < 0) {
     caml_fatal_error("Fatal error: No memory for minor heap");
@@ -768,6 +771,7 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
 
   CAML_EV_END(EV_MINOR_CLEAR);
   caml_gc_log("finished stw empty_minor_heap");
+  CAMLassert(domain->young_ptr == domain->young_end);
 }
 
 static void caml_stw_empty_minor_heap (caml_domain_state* domain, void* unused,
