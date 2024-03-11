@@ -346,6 +346,21 @@ let compute_inner_cell tbl i j =
     compute_proposition (i-1) (j-1) diff
   in
   let*! newweight, (diff, localstate) =
+    (* The order of propositions is important here:
+       the call [select_best_proposition [P_0, ...; P_n]] keeps the first
+       proposition with minimal weight as the representative path for this
+       weight class at the current matrix position.
+
+       By induction, the representative path for the minimal weight class will
+       be the smallest path according to the reverse lexical order induced by
+       the element order [[P_0;...; P_n]].
+
+       This is why we choose to start with the [Del] case since path ending with
+       [Del+] suffix are likely to correspond to parital application in the
+       functor application case.
+       Similarly, large block of deletions or insertions at the end of the
+       definitions might point toward incomplete definitions.
+       Thus this seems a good overall setting. *)
     select_best_proposition [del;insert;diag]
   in
   let state = update diff localstate in
