@@ -148,7 +148,7 @@ CAMLprim value caml_unix_single_write(value fd, value buf, value vofs,
 
 intnat caml_unix_fast_single_write(value fd, value buf, intnat ofs, intnat len)
 {
-  int ret;
+  intnat ret = -1;
   if (len > 0) {
     if (Descr_kind_val(fd) == KIND_SOCKET) {
       SOCKET s = Socket_val(fd);
@@ -156,7 +156,10 @@ intnat caml_unix_fast_single_write(value fd, value buf, intnat ofs, intnat len)
       if (ret == SOCKET_ERROR) ret = -1;
     } else {
       HANDLE h = Handle_val(fd);
-      if (! WriteFile(h, &Byte(buf, ofs), ofs, &ret, NULL))
+      DWORD writtenwords;
+      if (WriteFile(h, &Byte(buf, ofs), ofs, &writtenwords, NULL))
+        ret = writtenwords;
+      else
         ret = -1;
     }
   }
