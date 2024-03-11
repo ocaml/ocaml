@@ -222,6 +222,9 @@ val with_cmm_invariants : bool
 val reserved_header_bits : int
 (** How many bits of a block's header are reserved *)
 
+val with_bti : bool
+(** Whether to use indirect branch target control flow enforcement *)
+
 val flat_float_array : bool
 (** Whether the compiler and runtime automagically flatten float
     arrays *)

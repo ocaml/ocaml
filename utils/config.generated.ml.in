@@ -76,6 +76,7 @@ let asm = {@QS@|@AS@|@QS@}
 let asm_cfi_supported = @asm_cfi_supported@
 let with_frame_pointers = @frame_pointers@
 let reserved_header_bits = @reserved_header_bits@
+let with_bti = @bti@
 
 let ext_exe = {@QS@|@exeext@|@QS@}
 let ext_obj = "." ^ {@QS@|@OBJEXT@|@QS@}

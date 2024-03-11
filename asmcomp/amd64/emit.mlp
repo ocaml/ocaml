@@ -146,6 +146,9 @@ let rel_plt s =
 
 let emit_call s = I.call (rel_plt s)
 
+let emit_endbr64 () =
+  if Config.with_bti then I.endbr64 ()
+
 let emit_jump s = I.jmp (rel_plt s)
 
 let load_symbol_addr s arg =
@@ -749,7 +752,8 @@ let emit_instr env fallthrough i =
         I.ret ()
       end
   | Llabel lbl ->
-      emit_Llabel env fallthrough lbl; I.endbr64 ();
+      emit_Llabel env fallthrough lbl;
+      emit_endbr64 ()
   | Lbranch lbl ->
       I.jmp (label lbl)
   | Lcondbranch(tst, lbl) ->
@@ -897,7 +901,7 @@ let fundecl fundecl =
     D.global (emit_symbol fundecl.fun_name);
   D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
-  I.endbr64 ();
+  emit_endbr64 ();
   cfi_startproc ();
   if !Clflags.runtime_variant = "d" then
     emit_call "caml_assert_stack_invariants";

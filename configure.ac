@@ -249,6 +249,7 @@ AC_SUBST([ocaml_libdir])
 AC_SUBST([QS])
 AC_SUBST([ar_supports_response_files])
 AC_SUBST([target_bindir])
+AC_SUBST([bti])
 
 ## Generated files
 
@@ -1249,6 +1250,22 @@ AS_CASE([$host],
   [[aarch64-*-openbsd7.[4-9]|aarch64-*-openbsd[89].*]],
     [oc_ldflags="$oc_ldflags -Wl,-z,nobtcfi"
      natdynlinkopts="$natdynlinkopts -Wl,-z,nobtcfi"])
+
+# Check for indirect branch tracking control flow features
+
+bti=false
+AC_MSG_CHECKING([for bti support])
+AS_CASE([$host],
+  [x86_64-*-*],
+    [AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+      int main(void) { asm ("endbr64"); return 0; }
+    ]])],
+        [bti=true
+        AC_DEFINE([WITH_BTI])
+        AC_MSG_RESULT(m4_normalize([found]))],
+      [AC_MSG_RESULT(m4_normalize([not supported]))])]
+  [*],
+    [AC_MSG_RESULT(m4_normalize([unsupported platform]))])
 
 
 # Configure native dynlink

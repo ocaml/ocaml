@@ -781,6 +781,7 @@ build_os
 build_vendor
 build_cpu
 build
+bti
 target_bindir
 ar_supports_response_files
 QS
@@ -3439,6 +3440,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 
 
  # TODO: rename this variable
+
 
 
 
@@ -15465,6 +15467,37 @@ case $host in #(
      natdynlinkopts="$natdynlinkopts -Wl,-z,nobtcfi" ;; #(
   *) :
      ;;
+esac
+
+# Check for indirect branch tracking control flow features
+
+bti=false
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for bti support" >&5
+printf %s "checking for bti support... " >&6; }
+case $host in #(
+  x86_64-*-*) :
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+      int main(void) { asm ("endbr64"); return 0; }
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  bti=true
+        printf "%s\n" "#define WITH_BTI 1" >>confdefs.h
+
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: found" >&5
+printf "%s\n" "found" >&6; }
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: not supported" >&5
+printf "%s\n" "not supported" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+  * ;; #(
+  *) :
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: unsupported platform" >&5
+printf "%s\n" "unsupported platform" >&6; } ;;
 esac
 
 

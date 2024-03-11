@@ -97,3 +97,5 @@
 #undef SUPPORTS_TREE_VECTORIZE
 
 #undef USE_MMAP_MAP_STACK
+
+#undef WITH_BTI
