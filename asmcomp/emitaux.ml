@@ -361,7 +361,11 @@ let is_cfi_enabled () =
 
 let cfi_startproc () =
   if is_cfi_enabled () then
-    emit_string "\t.cfi_startproc\n"
+  begin
+    emit_string "\t.cfi_startproc\n";
+    if Config.architecture = "amd64" then
+      emit_string "endbr64;";
+  end
 
 let cfi_endproc () =
   if is_cfi_enabled () then

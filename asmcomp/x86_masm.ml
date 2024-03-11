@@ -135,6 +135,7 @@ let print_instr b = function
   | CVTTSD2SI (arg1, arg2) -> i2 b "cvttsd2si" arg1 arg2
   | DEC arg -> i1 b "dec" arg
   | DIVSD (arg1, arg2) -> i2 b "divsd" arg1 arg2
+  | ENDBR64 -> i0 b "endbr64"
   | FABS -> i0 b "fabs"
   | FADD arg -> i1 b "fadd" arg
   | FADDP (arg1, arg2)  -> i2 b "faddp" arg1 arg2
@@ -221,6 +222,7 @@ let print_line b = function
   | Align (_data,n) -> bprintf b "\tALIGN\t%d" n
   | Byte n -> bprintf b "\tBYTE\t%a" cst n
   | Bytes s -> buf_bytes_directive b "BYTE" s
+  | Cfi_startproc -> bprintf b "\tendbr64\n"
   | Comment s -> bprintf b " ; %s " s
   | Global s -> bprintf b "\tPUBLIC\t%s" s
   | Long n -> bprintf b "\tDWORD\t%a" cst n
@@ -241,7 +243,6 @@ let print_line b = function
   (* gas only *)
   | Cfi_adjust_cfa_offset _
   | Cfi_endproc
-  | Cfi_startproc
   | Cfi_def_cfa_register _
   | Cfi_def_cfa_offset _
   | Cfi_remember_state

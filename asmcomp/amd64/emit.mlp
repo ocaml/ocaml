@@ -749,7 +749,7 @@ let emit_instr env fallthrough i =
         I.ret ()
       end
   | Llabel lbl ->
-      emit_Llabel env fallthrough lbl
+      emit_Llabel env fallthrough lbl; I.endbr64 ();
   | Lbranch lbl ->
       I.jmp (label lbl)
   | Lcondbranch(tst, lbl) ->
