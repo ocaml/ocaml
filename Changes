@@ -842,6 +842,11 @@ OCaml 5.2.0
   invalid programs forming recursive types.
   (Gabriel Scherer, review by Florian Angeletti, report by Neven Villani)
 
+- #13019: Remove linking instructions for the Unix library from threads.cma
+  (this was done for threads.cmxa in OCaml 3.11). Eliminates warnings from
+  new lld when using threads.cma of duplicated libraries.
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
 OCaml 5.1.1 (8 December 2023)
 ----------------------------
 
