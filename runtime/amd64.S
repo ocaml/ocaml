@@ -70,8 +70,8 @@
         .globl name; \
         .type name,@function; \
         .align FUNCTION_ALIGN; \
-        endbr64; \
-        name:
+        name: \
+        endbr64;
 
 #endif
 
