@@ -222,7 +222,6 @@ let print_line b = function
   | Align (_data,n) -> bprintf b "\tALIGN\t%d" n
   | Byte n -> bprintf b "\tBYTE\t%a" cst n
   | Bytes s -> buf_bytes_directive b "BYTE" s
-  | Cfi_startproc -> bprintf b "\tendbr64\n"
   | Comment s -> bprintf b " ; %s " s
   | Global s -> bprintf b "\tPUBLIC\t%s" s
   | Long n -> bprintf b "\tDWORD\t%a" cst n
@@ -247,6 +246,7 @@ let print_line b = function
   | Cfi_def_cfa_offset _
   | Cfi_remember_state
   | Cfi_restore_state
+  | Cfi_startproc
   | File _
   | Indirect_symbol _
   | Loc _

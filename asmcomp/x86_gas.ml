@@ -258,7 +258,7 @@ let print_line b = function
   | Comment s -> bprintf b "\t\t\t\t/* %s */" s
   | Global s -> bprintf b "\t.globl\t%s" s;
   | Long n -> bprintf b "\t.long\t%a" cst n
-  | NewLabel (s, _) -> bprintf b "%s:\n" s
+  | NewLabel (s, _) -> bprintf b "%s:" s
   | Quad n -> bprintf b "\t.quad\t%a" cst n
   | Section ([".data" ], _, _) -> bprintf b "\t.data"
   | Section ([".text" ], _, _) -> bprintf b "\t.text"
@@ -282,7 +282,7 @@ let print_line b = function
   (* gas only *)
   | Cfi_adjust_cfa_offset n -> bprintf b "\t.cfi_adjust_cfa_offset %d" n
   | Cfi_endproc -> bprintf b "\t.cfi_endproc"
-  | Cfi_startproc -> bprintf b "\t.cfi_startproc\n\tendbr64"
+  | Cfi_startproc -> bprintf b "\t.cfi_startproc"
   | Cfi_remember_state -> bprintf b "\t.cfi_remember_state"
   | Cfi_restore_state -> bprintf b "\t.cfi_restore_state"
   | Cfi_def_cfa_register reg -> bprintf b "\t.cfi_def_cfa_register %%%s" reg

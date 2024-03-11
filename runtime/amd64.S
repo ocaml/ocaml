@@ -70,6 +70,7 @@
         .globl name; \
         .type name,@function; \
         .align FUNCTION_ALIGN; \
+        endbr64; \
         name:
 
 #endif
@@ -82,9 +83,7 @@
 #endif
 
 #ifdef ASM_CFI_SUPPORTED
-#define CFI_STARTPROC \
-        .cfi_startproc; \
-        endbr64
+#define CFI_STARTPROC .cfi_startproc
 #define CFI_ENDPROC .cfi_endproc
 #define CFI_ADJUST(n) .cfi_adjust_cfa_offset n
 #define CFI_OFFSET(r, n) .cfi_offset r, n
@@ -441,12 +440,10 @@
         TEXT_SECTION(caml_hot.code_begin)
         .globl  G(caml_hot.code_begin)
 G(caml_hot.code_begin):
-        endbr64
 
         TEXT_SECTION(caml_hot.code_end)
         .globl  G(caml_hot.code_end)
 G(caml_hot.code_end):
-        endbr64
 #endif
 
 /******************************************************************************/
@@ -1395,7 +1392,7 @@ G(caml_system.frametable):
         .globl  G(caml_negf_mask)
         .align  SIXTEEN_ALIGN
 G(caml_negf_mask):
-        .quad   0x8000000000000000
+        .quad   0x8000000000000000, 0
         .globl  G(caml_absf_mask)
         .align  SIXTEEN_ALIGN
 G(caml_absf_mask):
