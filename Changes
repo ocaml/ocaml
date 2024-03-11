@@ -7,6 +7,13 @@ OCaml 5.1.2
   (Lucas Pluvinage, Sadiq Jaffer and Olivier Nicole, review by Gabriel Scherer,
    David Allsopp, Tim McGilchrist and Thomas Leonard)
 
+### Bug fixes:
+
+- #13019: Remove linking instructions for the Unix library from threads.cma
+  (this was done for threads.cmxa in OCaml 3.11). Eliminates warnings from
+  new lld when using threads.cma of duplicated libraries.
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
 OCaml 5.1.1 (8 December 2023)
 ----------------------------
 
