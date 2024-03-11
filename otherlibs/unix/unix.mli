@@ -136,7 +136,6 @@ val handle_unix_error : ('a -> 'b) -> 'a -> 'b
    If the exception {!Unix_error} is raised, it prints a message
    describing the error and exits with code 2. *)
 
-
 (** {1 Access to the process environment} *)
 
 
@@ -390,6 +389,12 @@ val read_bigarray :
 (** Same as {!read}, but read the data into a bigarray.
     @since 5.2 *)
 
+val nonblock_read : file_descr -> bytes -> int -> int -> int
+(** Same as {!read}, but does not release the global lock nor copy the
+    bytes read. It is only safe to use with non blocking file descriptor,
+    or in purely sequential programs, as no other code can run until it
+    returns. *)
+
 val write : file_descr -> bytes -> int -> int -> int
 (** [write fd buf pos len] writes [len] bytes to descriptor [fd],
     taking them from byte sequence [buf], starting at position [pos]
@@ -408,6 +413,12 @@ val single_write : file_descr -> bytes -> int -> int -> int
 (** Same as {!write}, but attempts to write only once.
    Thus, if an error occurs, [single_write] guarantees that no data
    has been written. *)
+
+val nonblock_single_write : file_descr -> bytes -> int -> int -> int
+(** Same as {!single_write}, but does not release the global lock nor copy the
+    bytes to write. It is only safe to use with non blocking file descriptor,
+    or in purely sequential programs, as no other code can run until it
+    returns. *)
 
 val write_substring : file_descr -> string -> int -> int -> int
 (** Same as {!write}, but take the data from a string instead of a byte

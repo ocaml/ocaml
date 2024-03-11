@@ -31,6 +31,10 @@ _______________
 
 ### Other libraries:
 
+- #XXX: add [Unix.nonblock_single_write] and [Unix.nonblock_single_read] that
+  do not release the global lock nor copy bytes.
+  (Christophe Raffalli, review by XXX)
+
 ### Tools:
 
 - #12904: Run the testsuite with ThreadSanitizer on a PR when label

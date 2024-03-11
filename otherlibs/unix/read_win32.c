@@ -103,3 +103,25 @@ CAMLprim value caml_unix_read_bigarray(value fd, value vbuf,
   }
   CAMLreturn(Val_int(numread));
 }
+
+intnat caml_unix_fast_read(value fd, value buf, intnat ofs, intnat len)
+{
+  int ret;
+
+  if (Descr_kind_val(fd) == KIND_SOCKET) {
+    SOCKET s = Socket_val(fd);
+    ret = recv(s, &Byte(buf, ofs), len, 0);
+    if (ret == SOCKET_ERROR) ret = -1
+  } else {
+    HANDLE h = Handle_val(fd);
+    if (! ReadFile(h, &Byte(buf, ofs), len, &ret, NULL))
+      ret = -1;
+  }
+  return ret  return read(Int_val(fd), &Byte(buf, ofs), len);
+}
+
+CAMLprim value caml_byte_unix_fast_read(value fd, value buf, value vofs,
+				   value vlen) {
+  CAMLparam0();
+  CAMLreturn(Int_val(caml_unix_fast_read(fd,buf,Int_val(vofs),Int_val(vlen))));
+}

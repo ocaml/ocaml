@@ -145,3 +145,27 @@ CAMLprim value caml_unix_single_write(value fd, value buf, value vofs,
   }
   CAMLreturn(Val_long(written));
 }
+
+intnat caml_unix_fast_single_write(value fd, value buf, intnat ofs, intnat len)
+{
+  int ret;
+  if (len > 0) {
+    if (Descr_kind_val(fd) == KIND_SOCKET) {
+      SOCKET s = Socket_val(fd);
+      ret = send(s, &Byte(buf, ofs), len, 0);
+      if (ret == SOCKET_ERROR) ret = -1;
+    } else {
+      HANDLE h = Handle_val(fd);
+      if (! WriteFile(h, &Byte(buf, ofs), ofs, &ret, NULL))
+        ret = -1;
+    }
+  }
+  return ret;
+}
+
+CAMLprim value caml_byte_unix_fast_single_write(value fd, value buf, value vofs,
+				   value vlen) {
+  CAMLparam0();
+  CAMLreturn(Int_val(caml_unix_fast_single_write(fd,buf,Int_val(vofs),
+						 Int_val(vlen))));
+}
