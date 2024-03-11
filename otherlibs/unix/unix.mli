@@ -136,6 +136,7 @@ val handle_unix_error : ('a -> 'b) -> 'a -> 'b
    If the exception {!Unix_error} is raised, it prints a message
    describing the error and exits with code 2. *)
 
+
 (** {1 Access to the process environment} *)
 
 
@@ -414,7 +415,8 @@ val single_write : file_descr -> bytes -> int -> int -> int
    Thus, if an error occurs, [single_write] guarantees that no data
    has been written. *)
 
-val nonblock_single_write : file_descr -> bytes -> int -> int -> int
+val nonblock_single_write :
+  file_descr -> bytes -> int -> int -> int
 (** Same as {!single_write}, but does not release the global lock nor copy the
     bytes to write. It is only safe to use with non blocking file descriptor,
     or in purely sequential programs, as no other code can run until it

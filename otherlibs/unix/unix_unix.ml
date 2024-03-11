@@ -263,10 +263,10 @@ external unsafe_read : file_descr -> bytes -> int -> int -> int
 external unsafe_read_bigarray :
   file_descr -> _ Bigarray.Array1.t -> int -> int -> int
   = "caml_unix_read_bigarray"
-external unsafe_fast_read
-         : file_descr -> bytes -> (int [@untagged]) -> (int [@untagged])
-           -> (int [@untagged])
-   = "caml_byte_unix_fast_read" "caml_unix_fast_read" [@@noalloc]
+external unsafe_fast_read :
+  file_descr -> bytes -> (int [@untagged]) -> (int [@untagged])
+  -> (int [@untagged])
+  = "caml_byte_unix_fast_read" "caml_unix_fast_read" [@@noalloc]
 external unsafe_write : file_descr -> bytes -> int -> int -> int
                       = "caml_unix_write"
 external unsafe_write_bigarray :
@@ -274,10 +274,10 @@ external unsafe_write_bigarray :
   = "caml_unix_write_bigarray"
 external unsafe_single_write : file_descr -> bytes -> int -> int -> int
    = "caml_unix_single_write"
-external unsafe_fast_single_write
-         : file_descr -> bytes -> (int [@untagged]) -> (int [@untagged])
-           -> (int [@untagged])
-   = "caml_byte_unix_fast_single_write" "caml_unix_fast_single_write" [@@noalloc]
+external unsafe_fast_single_write :
+  file_descr -> bytes -> (int [@untagged]) -> (int [@untagged])
+  -> (int [@untagged])
+  = "caml_byte_unix_fast_single_write" "caml_unix_fast_single_write" [@@noalloc]
 
 let read fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bytes.length buf - len

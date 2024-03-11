@@ -287,9 +287,9 @@ external unsafe_read_bigarray :
   file_descr -> _ Bigarray.Array1.t -> int -> int -> int
   = "caml_unix_read_bigarray"
 external unsafe_fast_read :
-         : file_descr -> bytes -> (int [@untagged]) -> (int [@untagged])
-           -> (int [@untagged])
-   = "caml_byte_unix_fast_read" "caml_unix_fast_read" [@@noalloc]
+  file_descr -> bytes -> (int [@untagged]) -> (int [@untagged])
+  -> (int [@untagged])
+  = "caml_byte_unix_fast_read" "caml_unix_fast_read" [@@noalloc]
 external unsafe_write : file_descr -> bytes -> int -> int -> int
                       = "caml_unix_write"
 external unsafe_write_bigarray :
@@ -297,10 +297,10 @@ external unsafe_write_bigarray :
   = "caml_unix_write_bigarray"
 external unsafe_single_write : file_descr -> bytes -> int -> int -> int
                       = "caml_unix_single_write"
-external unsafe_fast_single_write
-         : file_descr -> bytes -> (int [@untagged]) -> (int [@untagged])
-           -> (int [@untagged])
-   = "caml_byte_unix_fast_single_write" "caml_unix_fast_single_write" [@@noalloc]
+external unsafe_fast_single_write :
+  file_descr -> bytes -> (int [@untagged]) -> (int [@untagged])
+  -> (int [@untagged])
+  = "caml_byte_unix_fast_single_write" "caml_unix_fast_single_write" [@@noalloc]
 
 let read fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
@@ -336,7 +336,7 @@ let nonblock_single_write fd buf ofs len =
   if ofs < 0 || len < 0 || ofs+len > Bytes.length buf then
     invalid_arg "single_write";
   let ret = unsafe_fast_single_write fd buf ofs len in
-  if ret == -1 then raise_unix_error "Unix.nonblock_single_write" "");
+  if ret == -1 then raise_unix_error "Unix.nonblock_single_write" "";
   ret
 
 let write_substring fd buf ofs len =
