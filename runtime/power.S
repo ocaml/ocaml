@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#include "caml/m.h"
+
         .abiversion 2
 
 #if _CALL_ELF != 2
@@ -65,8 +67,26 @@
 
 /* Function definitions */
 
-.macro FUNCTION name
+.macro TEXT_SECTION name
+#if defined(FUNCTION_SECTIONS)
+        .section ".text.caml.\name","ax",@progbits
+#else
         .section ".text"
+#endif
+.endm
+
+#if defined(FUNCTION_SECTIONS)
+        TEXT_SECTION caml_hot.code_begin
+        .globl caml_hot.code_begin
+caml_hot.code_begin:
+
+        TEXT_SECTION caml_hot.code_end
+        .globl caml_hot.code_end
+caml_hot.code_end:
+#endif
+
+.macro FUNCTION name
+        TEXT_SECTION \name
         .globl \name
         .type \name, @function
 \name:
@@ -353,7 +373,7 @@
 
 #endif /* } WITH_THREAD_SANITIZER */
 
-        .section ".text"
+        TEXT_SECTION caml_system__code_begin
         .globl  caml_system__code_begin
 caml_system__code_begin:
 
@@ -1143,9 +1163,9 @@ FUNCTION caml_ml_array_bound_error
         TSAN_ENTER_FUNCTION /* needed since we skip caml_c_call entry */
         Addrglobal(C_CALL_FUN, caml_array_bound_error_asm)
         b       .Lcaml_c_call
-ENDFUNCTION caml_resume
+ENDFUNCTION caml_ml_array_bound_error
 
-        .section ".text"
+        TEXT_SECTION caml_system__code_end
         .globl  caml_system__code_end
 caml_system__code_end:
 

@@ -90,3 +90,6 @@ exception Error of error
 val report_error: Format.formatter -> error -> unit
 
 val mk_env : Linear.fundecl -> Emitenv.per_function_env
+
+(* Output .text section directive, or named .text.caml.<name> if enabled. *)
+val emit_named_text_section : string -> char -> unit
