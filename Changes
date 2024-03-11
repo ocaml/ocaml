@@ -31,7 +31,7 @@ _______________
 
 ### Other libraries:
 
-- #XXX: add [Unix.nonblock_single_write] and [Unix.nonblock_single_read] that
+- #13024: add [Unix.nonblock_single_write] and [Unix.nonblock_single_read] that
   do not release the global lock nor copy bytes.
   (Christophe Raffalli, review by XXX)
 
