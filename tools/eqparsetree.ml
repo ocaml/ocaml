@@ -60,7 +60,8 @@ end
 module Asttypes = struct
   open Asttypes
   let eq_constant : (constant * constant) -> 'result =
-    function
+    fun (a, b) ->
+    match a.pconst_desc, b.pconst_desc with
     | (Const_int a0, Const_int b0) -> eq_int (a0, b0)
     | (Const_char a0, Const_char b0) -> eq_char (a0, b0)
     | (Const_string a0, Const_string b0) -> eq_string (a0, b0)

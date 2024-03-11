@@ -22,7 +22,12 @@
 
 open Asttypes
 
-type constant =
+type constant = {
+  pconst_desc : constant_desc;
+  pconst_loc : Location.t;
+}
+
+and constant_desc =
   | Pconst_integer of string * char option
       (** Integer constants such as [3] [3l] [3L] [3n].
 

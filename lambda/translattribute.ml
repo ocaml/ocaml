@@ -80,7 +80,8 @@ let get_id_from_exp =
 let get_int_from_exp =
   let open Parsetree in
   function
-    | { pexp_desc = Pexp_constant (Pconst_integer(s, None)) } ->
+    | { pexp_desc = Pexp_constant
+            {pconst_desc = Pconst_integer(s, None); _} } ->
         begin match Misc.Int_literal_converter.int s with
         | n -> Result.Ok n
         | exception (Failure _) -> Result.Error ()

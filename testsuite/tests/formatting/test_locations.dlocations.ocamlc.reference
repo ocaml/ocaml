@@ -15,11 +15,17 @@
                 pattern (test_locations.ml[18,557+4]..[18,557+9])
                   Ppat_or
                   pattern (test_locations.ml[18,557+4]..[18,557+5])
-                    Ppat_constant PConst_int (0,None)
+                    Ppat_constant
+                    constant (test_locations.ml[18,557+4]..[18,557+5])
+                      PConst_int (0,None)
                   pattern (test_locations.ml[18,557+8]..[18,557+9])
-                    Ppat_constant PConst_int (1,None)
+                    Ppat_constant
+                    constant (test_locations.ml[18,557+8]..[18,557+9])
+                      PConst_int (1,None)
                 expression (test_locations.ml[18,557+13]..[18,557+14])
-                  Pexp_constant PConst_int (1,None)
+                  Pexp_constant
+                  constant (test_locations.ml[18,557+13]..[18,557+14])
+                    PConst_int (1,None)
               <case>
                 pattern (test_locations.ml[19,572+4]..[19,572+5])
                   Ppat_var "n" (test_locations.ml[19,572+4]..[19,572+5])
@@ -49,7 +55,9 @@
                                 <arg>
                                 Nolabel
                                   expression (test_locations.ml[19,572+18]..[19,572+19])
-                                    Pexp_constant PConst_int (1,None)
+                                    Pexp_constant
+                                    constant (test_locations.ml[19,572+18]..[19,572+19])
+                                      PConst_int (1,None)
                               ]
                         ]
                     <arg>
@@ -73,7 +81,9 @@
                                 <arg>
                                 Nolabel
                                   expression (test_locations.ml[19,572+32]..[19,572+33])
-                                    Pexp_constant PConst_int (2,None)
+                                    Pexp_constant
+                                    constant (test_locations.ml[19,572+32]..[19,572+33])
+                                      PConst_int (2,None)
                               ]
                         ]
                   ]

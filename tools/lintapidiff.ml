@@ -85,7 +85,8 @@ module Doc = struct
 
   let get_doc lst attrs = match find_attr lst attrs with
     | Some { attr_payload = PStr [{pstr_desc=Pstr_eval(
-        {pexp_desc=Pexp_constant(Pconst_string (doc, _,_));_}, _);_}]}
+        {pexp_desc=Pexp_constant
+             {pconst_desc=Pconst_string (doc, _,_)};_}, _);_}]}
       when doc <> "/*" && doc <> "" -> Some doc
     | _ -> None
 

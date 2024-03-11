@@ -15,11 +15,17 @@
                 pattern 
                   Ppat_or
                   pattern 
-                    Ppat_constant PConst_int (0,None)
+                    Ppat_constant
+                    constant 
+                      PConst_int (0,None)
                   pattern 
-                    Ppat_constant PConst_int (1,None)
+                    Ppat_constant
+                    constant 
+                      PConst_int (1,None)
                 expression 
-                  Pexp_constant PConst_int (1,None)
+                  Pexp_constant
+                  constant 
+                    PConst_int (1,None)
               <case>
                 pattern 
                   Ppat_var "n" 
@@ -49,7 +55,9 @@
                                 <arg>
                                 Nolabel
                                   expression 
-                                    Pexp_constant PConst_int (1,None)
+                                    Pexp_constant
+                                    constant 
+                                      PConst_int (1,None)
                               ]
                         ]
                     <arg>
@@ -73,7 +81,9 @@
                                 <arg>
                                 Nolabel
                                   expression 
-                                    Pexp_constant PConst_int (2,None)
+                                    Pexp_constant
+                                    constant 
+                                      PConst_int (2,None)
                               ]
                         ]
                   ]

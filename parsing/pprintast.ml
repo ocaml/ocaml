@@ -232,7 +232,7 @@ let rec longident f = function
 
 let longident_loc f x = pp f "%a" longident x.txt
 
-let constant f = function
+let constant_desc f = function
   | Pconst_char i ->
       pp f "%C"  i
   | Pconst_string (i, _, None) ->
@@ -247,6 +247,8 @@ let constant f = function
       paren (first_is '-' i) (fun f -> pp f "%s") f i
   | Pconst_float (i, Some m) ->
       paren (first_is '-' i) (fun f (i,m) -> pp f "%s%c" i m) f (i,m)
+
+let constant f const = constant_desc f const.pconst_desc
 
 (* trailing space*)
 let mutable_flag f = function

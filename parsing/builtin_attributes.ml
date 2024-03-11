@@ -93,7 +93,8 @@ let register_attr current_phase name =
     if is_builtin_attr name.txt then
       Attribute_table.replace unused_attrs name ()
 
-let string_of_cst = function
+let string_of_cst const =
+  match const.pconst_desc with
   | Pconst_string(s, _, _) -> Some s
   | _ -> None
 
@@ -113,7 +114,8 @@ let error_of_extension ext =
            (({txt = ("ocaml.error"|"error"); loc}, p), _)} ->
         begin match p with
         | PStr([{pstr_desc=Pstr_eval
-                     ({pexp_desc=Pexp_constant(Pconst_string(msg,_,_))}, _)}
+                     ({pexp_desc=Pexp_constant
+                           {pconst_desc=Pconst_string(msg, _, _); _}}, _)}
                ]) ->
             { Location.loc; txt = fun ppf -> Format.pp_print_text ppf msg }
         | _ ->
@@ -134,7 +136,8 @@ let error_of_extension ext =
       begin match p with
       | PStr [] -> raise Location.Already_displayed_error
       | PStr({pstr_desc=Pstr_eval
-                  ({pexp_desc=Pexp_constant(Pconst_string(msg,_,_))}, _)}::
+                  ({pexp_desc=Pexp_constant
+                      {pconst_desc=Pconst_string(msg, _, _)}}, _)}::
              inner) ->
           let sub = List.map (submessage_from loc txt) inner in
           Location.error_of_printer ~loc ~sub Format.pp_print_text msg
@@ -185,7 +188,8 @@ let kind_and_message = function
          Pstr_eval
            ({pexp_desc=Pexp_apply
                  ({pexp_desc=Pexp_ident{txt=Longident.Lident id}},
-                  [Nolabel,{pexp_desc=Pexp_constant (Pconst_string(s,_,_))}])
+                  [Nolabel,{pexp_desc=Pexp_constant
+                                {pconst_desc=Pconst_string(s,_,_); _}}])
             },_)}] ->
       Some (id, s)
   | PStr[
@@ -293,7 +297,7 @@ let warning_attribute ?(ppwarning = true) =
   let process_alert loc name = function
     | PStr[{pstr_desc=
               Pstr_eval(
-                {pexp_desc=Pexp_constant(Pconst_string(s,_,_))},
+                {pexp_desc=Pexp_constant {pconst_desc=Pconst_string(s,_,_); _}},
                 _)
            }] ->
         begin
@@ -326,7 +330,7 @@ let warning_attribute ?(ppwarning = true) =
       begin match attr_payload with
       | PStr [{ pstr_desc=
                   Pstr_eval({pexp_desc=Pexp_constant
-                                         (Pconst_string (s, _, _))},_);
+                                 {pconst_desc=Pconst_string (s, _, _); _}},_);
                 pstr_loc }] ->
         (mark_used attr_name;
          Location.prerr_warning pstr_loc (Warnings.Preprocessor s))
