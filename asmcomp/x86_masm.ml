@@ -242,11 +242,11 @@ let print_line b = function
   (* gas only *)
   | Cfi_adjust_cfa_offset _
   | Cfi_endproc
+  | Cfi_startproc
   | Cfi_def_cfa_register _
   | Cfi_def_cfa_offset _
   | Cfi_remember_state
   | Cfi_restore_state
-  | Cfi_startproc
   | File _
   | Indirect_symbol _
   | Loc _
