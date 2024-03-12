@@ -1251,23 +1251,6 @@ AS_CASE([$host],
     [oc_ldflags="$oc_ldflags -Wl,-z,nobtcfi"
      natdynlinkopts="$natdynlinkopts -Wl,-z,nobtcfi"])
 
-# Check for indirect branch tracking control flow features
-
-bti=false
-AC_MSG_CHECKING([for bti support])
-AS_CASE([$host],
-  [x86_64-*-*],
-    [AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-      int main(void) { asm ("endbr64"); return 0; }
-    ]])],
-        [bti=true
-        AC_DEFINE([WITH_BTI])
-        AC_MSG_RESULT(m4_normalize([found]))],
-      [AC_MSG_RESULT(m4_normalize([not supported]))])]
-  [*],
-    [AC_MSG_RESULT(m4_normalize([unsupported platform]))])
-
-
 # Configure native dynlink
 
 natdynlink=false
@@ -2359,6 +2342,12 @@ AS_IF([$native_compiler],
     [*-*-mingw32*|*-pc-windows], [],
     [OCAML_AS_HAS_DEBUG_PREFIX_MAP
     OCAML_AS_HAS_CFI_DIRECTIVES])])
+
+## Check for indirect branch tracking control flow features
+bti=false
+AS_CASE([$host],
+  [x86_64-*-*], [OCAML_AS_SUPPORTS_ENDBR64])
+AS_IF([$bti], [AC_DEFINE([WITH_BTI])])
 
 ## Frame pointers
 

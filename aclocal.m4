@@ -570,3 +570,26 @@ AC_DEFUN([OCAML_CC_SUPPORTS_ATOMIC], [
    AC_MSG_RESULT([no])])
   LIBS="$saved_LIBS"
 ])
+
+AC_DEFUN([OCAML_AS_SUPPORTS_ENDBR64], [
+  AC_MSG_CHECKING([whether the assembler supports endbr64])
+
+  OCAML_CC_SAVE_VARIABLES
+
+  CC="$AS"
+  CFLAGS="-o conftest.$ac_objext"
+  CPPFLAGS=""
+  ac_ext="S"
+  ac_compile='$CC $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+
+  AC_COMPILE_IFELSE(
+    [AC_LANG_SOURCE([
+    .text
+    endbr64
+    ])],
+    [bti=true
+    AC_MSG_RESULT([yes])],
+    [AC_MSG_RESULT([no])])
+
+  OCAML_CC_RESTORE_VARIABLES
+])
