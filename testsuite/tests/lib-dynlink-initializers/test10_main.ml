@@ -64,41 +64,42 @@ let () =
  shared-libraries;
  {
    setup-ocamlc.byte-build-env;
-   {
-     module = "test10_main.ml";
-     ocamlc.byte;
-   }{
-     module = "test10_plugin.ml";
-     ocamlc.byte;
-   }{
-     program = "${test_build_directory}/test10.byte";
-     libraries = "dynlink";
-     all_modules = "test10_main.cmo";
-     ocamlc.byte;
-     run;
-     reference = "${test_source_directory}/test10_main.byte.reference";
-     check-program-output;
-   }
+
+   module = "test10_main.ml";
+   ocamlc.byte;
+
+   module = "test10_plugin.ml";
+   ocamlc.byte;
+
+   unset module;
+   program = "${test_build_directory}/test10.byte";
+   libraries = "dynlink";
+   all_modules = "test10_main.cmo";
+   ocamlc.byte;
+   run;
+   reference = "${test_source_directory}/test10_main.byte.reference";
+   check-program-output;
  }{
    no-flambda;
    native-dynlink;
    setup-ocamlopt.byte-build-env;
-   {
-     module = "test10_main.ml";
-     ocamlopt.byte;
-   }{
-     program = "test10_plugin.cmxs";
-     flags = "-shared";
-     all_modules = "test10_plugin.ml";
-     ocamlopt.byte;
-   }{
-     program = "${test_build_directory}/test10.exe";
-     libraries = "dynlink";
-     all_modules = "test10_main.cmx";
-     ocamlopt.byte;
-     run;
-     reference = "${test_source_directory}/test10_main.native.reference";
-     check-program-output;
-   }
+
+   module = "test10_main.ml";
+   ocamlopt.byte;
+
+   unset module;
+   program = "test10_plugin.cmxs";
+   flags = "-shared";
+   all_modules = "test10_plugin.ml";
+   ocamlopt.byte;
+
+   program = "${test_build_directory}/test10.exe";
+   unset flags;
+   libraries = "dynlink";
+   all_modules = "test10_main.cmx";
+   ocamlopt.byte;
+   run;
+   reference = "${test_source_directory}/test10_main.native.reference";
+   check-program-output;
  }
 *)
