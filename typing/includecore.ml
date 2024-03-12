@@ -557,7 +557,7 @@ module Record_diffing = struct
              over [Move]s.
 
            - For some D and a large enough R,
-                 [Delete^D Match^R Insert^D < Change^(D+R)]
+                 [Delete^D Keep^R Insert^D < Change^(D+R)]
               => [ Change > (2 D)/(D+R) Delete ].
              Note that the case [D=1,R=1] is incompatible with the inequation
              above. If we choose [R = D + 1] for [D<5], we can specialize the
