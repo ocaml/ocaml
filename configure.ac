@@ -174,6 +174,7 @@ AC_SUBST([flexdll_source_dir])
 AC_SUBST([bootstrapping_flexdll])
 AC_SUBST([flexdll_dir])
 AC_SUBST([flexlink_flags])
+AC_SUBST([winpthreads_source_dir])
 AC_SUBST([shebangscripts])
 AC_SUBST([AR])
 AC_SUBST([mklib])
@@ -301,8 +302,6 @@ AS_CASE([$host],
 # Systems that are known not to work, even in bytecode only.
 
 AS_CASE([$host],
-  [*-pc-windows],
-    [AC_MSG_ERROR([the MSVC compiler is not supported currently], 69)],
   [i386-*-solaris*],
     [AC_MSG_ERROR([Building for 32 bits target is not supported. \
 If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
@@ -554,6 +553,11 @@ AC_ARG_WITH([flexdll],
   [AS_HELP_STRING([--with-flexdll],
     [bootstrap FlexDLL from the given sources])],
   [AS_IF([test x"$withval" = 'xyes'],[with_flexdll=flexdll])])
+
+AC_ARG_WITH([winpthreads-msvc],
+  [AS_HELP_STRING([--with-winpthreads-msvc],
+    [build winpthreads (only for the MSVC port) from the given sources])],
+  [AS_IF([test x"$withval" = 'xyes'], [with_winpthreads_msvc=winpthreads])])
 
 AC_ARG_WITH([zstd],
   [AS_HELP_STRING([--without-zstd],
@@ -851,13 +855,19 @@ AS_CASE([$ocaml_cv_cc_vendor],
     internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
   [mingw-*],
     [AC_MSG_ERROR([Unsupported C compiler for a MinGW-w64 build])],
+  [msvc-0*|msvc-1[[0-8]]*|msvc-19[[012]]*|msvc-193[[0-7]]],
+    # No C11 atomics support
+    [AC_MSG_ERROR(m4_normalize([This version of MSVC is too old.
+    Please use Visual Studio version 17.8 or above.]), 69)],
   [msvc-*],
     [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
     common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
     internal_cppflags='-DUNICODE -D_UNICODE'
+    internal_cflags='-experimental:c11atomics -std:c11'
+    CFLAGS="$CFLAGS -experimental:c11atomics -std:c11"
     OCAML_CL_HAS_VOLATILE_METADATA
     AS_IF([test "x$cl_has_volatile_metadata" = "xtrue"],
-          [internal_cflags='-d2VolatileMetadata-'])
+          [internal_cflags="$internal_cflags -d2VolatileMetadata-"])
     internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
     internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
   [xlc-*],
@@ -1054,6 +1064,46 @@ AS_CASE([$ocaml_cv_cc_vendor,$host],
   [gcc-*,powerpc-*-linux*],
     [oc_ldflags="-mbss-plt"])
 
+# Winpthreads emulation library for the MSVC port
+AC_MSG_CHECKING([for winpthreads sources])
+AS_IF([test x"$with_winpthreads_msvc" = "xno"],
+  [winpthreads_source_dir=''
+  AC_MSG_RESULT([disabled])],
+  [winpthreadmsg=''
+  AS_CASE([$target],
+    [*-pc-windows],
+    [dnl When bootstrapping from the git submodule (winpthreads directory),
+     dnl just use that, however if another directory has been specified with
+     dnl --with-winpthreads-msvc=<path> then copy the contents of <path> to
+     dnl winpthreads-sources.
+    AS_IF([m4_normalize([test x"$with_winpthreads_msvc" = 'x'
+                          || test x"$with_winpthreads_msvc" = x'winpthreads'])],
+      [AS_IF([test -f 'winpthreads/src/winpthread_internal.h'],
+        [winpthreads_source_dir=winpthreads
+        iwinpthreadsdir="$ocamlsrcdir\winpthreads\include"],
+        [AC_MSG_RESULT([required but not available (uninitialized submodule?)])
+        AC_MSG_ERROR([exiting])])],
+      [rm -rf winpthreads-sources
+      AS_IF([test -f "$with_winpthreads_msvc/src/winpthread_internal.h"],
+        [mkdir -p winpthreads-sources/src winpthreads-sources/include
+        cp "$with_winpthreads_msvc"/src/*.c winpthreads-sources/src
+        cp "$with_winpthreads_msvc"/src/*.h winpthreads-sources/src
+        cp "$with_winpthreads_msvc"/include/*.h winpthreads-sources/include
+        winpthreads_source_dir='winpthreads-sources'
+        iwinpthreadsdir="$ocamlsrcdir\\winpthreads-sources\\include"
+        winpthreadsmsg=" (from $with_winpthreads_msvc)"],
+        [AC_MSG_RESULT([requested but not available])
+        AC_MSG_ERROR([exiting])])])
+    AS_IF([test x"$winpthreads_source_dir" = 'x'],
+      [AC_MSG_RESULT([no])],
+      [AC_MSG_RESULT([$winpthreads_source_dir$winpthreadmsg])
+      OCAML_TEST_WINPTHREADS_PTHREAD_H([$iwinpthreadsdir])
+      internal_cppflags="$internal_cppflags -I$iwinpthreadsdir"])],
+    [AS_IF([test x"$with_winpthreads_msvc" != 'x'],
+      [AC_MSG_RESULT([requested but not supported])
+      AC_MSG_ERROR([exiting])],
+      [AC_MSG_RESULT([skipping on that platform])])])])
+
 ## Program to use to install files
 AC_PROG_INSTALL
 
@@ -1167,7 +1217,7 @@ AS_IF([! $cc_supports_atomic],
 # macOS and MinGW-w64 have problems with thread local storage accessed from DLLs
 
 AS_CASE([$host],
-  [*-apple-darwin*|*-mingw32*], [],
+  [*-apple-darwin*|*-mingw32*|*-pc-windows], [],
   [AC_DEFINE([HAS_FULL_THREAD_VARIABLES])]
 )
 
@@ -1339,7 +1389,7 @@ AS_CASE([$host],
   [i686-pc-windows],
     [arch=i386; system=win32],
   [x86_64-pc-windows],
-    [arch=amd64; system=win64],
+    [has_native_backend=yes; arch=amd64; system=win64],
   [[powerpc64le*-*-linux*]],
     [has_native_backend=yes; arch=power; model=ppc64le; system=linux],
   [[powerpc64*-*-linux-musl*]],
@@ -2277,7 +2327,7 @@ AS_CASE([$host],
      AC_CHECK_LIB([gcc_eh], [printf], [link_gcc_eh="-lgcc_eh"])
      PTHREAD_LIBS="-l:libpthread.a $link_gcc_eh"],
   [*-pc-windows],
-    [PTHREAD_LIBS="-l:libpthread.lib"],
+    [PTHREAD_LIBS=''],
   [AX_PTHREAD(
     [common_cflags="$common_cflags $PTHREAD_CFLAGS"
     # The two following lines add flags and libraries for pthread to the
@@ -2513,9 +2563,9 @@ AS_CASE([$host],
   [*-*-mingw32*],
     [cclibs="$cclibs -lole32 -luuid -lversion"],
   [*-pc-windows],
-    [# For whatever reason, flexlink includes -ladvapi32 for mingw-w64, but
-    # doesn't include advapi32.lib for MSVC
-    cclibs="$cclibs ole32.lib uuid.lib advapi32.lib version.lib"])
+    [# For whatever reason, flexlink includes -ladvapi32 and -lshell32 for
+    # mingw-w64, but doesn't include advapi32.lib and shell32.lib for MSVC
+    cclibs="$cclibs ole32.lib uuid.lib advapi32.lib shell32.lib version.lib"])
 
 AC_CONFIG_COMMANDS_PRE([cclibs="$cclibs $mathlib $DLLIBS $PTHREAD_LIBS"])
 
