@@ -502,3 +502,63 @@ Error: Signature mismatch:
          "A : { a : 'a; b : 'b; x : 'b; } -> t"
        Field "x" has been moved from position 3 to 1.
 |}]
+
+
+module Imperfect_match: sig
+  type t = { a:unit; b:int }
+end = struct
+ type t = { a:unit; r:unit; c:int; s:unit; b:float }
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |  type t = { a:unit; r:unit; c:int; s:unit; b:float }
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type t = { a : unit; r : unit; c : int; s : unit; b : float; }
+         end
+       is not included in
+         sig type t = { a : unit; b : int; } end
+       Type declarations do not match:
+         type t = { a : unit; r : unit; c : int; s : unit; b : float; }
+       is not included in
+         type t = { a : unit; b : int; }
+       2. An extra field, "r", is provided in the first declaration.
+       3. An extra field, "c", is provided in the first declaration.
+       4. An extra field, "s", is provided in the first declaration.
+       5. Fields do not match:
+         "b : float;"
+       is not the same as:
+         "b : int;"
+       The type "float" is not equal to the type "int"
+|}]
+
+
+module Very_imperfect_match: sig
+  type t = { a:unit; b:int }
+end = struct
+ type t = { a:unit; r:unit; c:float; s:unit; d:int }
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |  type t = { a:unit; r:unit; c:float; s:unit; d:int }
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type t = { a : unit; r : unit; c : float; s : unit; d : int; }
+         end
+       is not included in
+         sig type t = { a : unit; b : int; } end
+       Type declarations do not match:
+         type t = { a : unit; r : unit; c : float; s : unit; d : int; }
+       is not included in
+         type t = { a : unit; b : int; }
+       2. An extra field, "r", is provided in the first declaration.
+       3. An extra field, "c", is provided in the first declaration.
+       4. An extra field, "s", is provided in the first declaration.
+       5. Fields have different names, "d" and "b".
+|}]
