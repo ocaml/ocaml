@@ -410,3 +410,58 @@ Error: Signature mismatch:
        The type "float" is not equal to the type "int"
        3->6. Constructor "C" has been moved from position 3 to 6.
 |}]
+
+
+module Imperfect_match: sig
+  type t = A | B of int
+end = struct
+ type t = A | R | C of int | S | B of float
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |  type t = A | R | C of int | S | B of float
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = A | R | C of int | S | B of float end
+       is not included in
+         sig type t = A | B of int end
+       Type declarations do not match:
+         type t = A | R | C of int | S | B of float
+       is not included in
+         type t = A | B of int
+       2. An extra constructor, "R", is provided in the first declaration.
+       3. An extra constructor, "C", is provided in the first declaration.
+       4. An extra constructor, "S", is provided in the first declaration.
+       5. Constructors do not match:
+         "B of float"
+       is not the same as:
+         "B of int"
+       The type "float" is not equal to the type "int"
+|}]
+
+module Very_imperfect_match: sig
+  type t = A | B of int
+end = struct
+ type t = A | R | C of float | S | D of int
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |  type t = A | R | C of float | S | D of int
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = A | R | C of float | S | D of int end
+       is not included in
+         sig type t = A | B of int end
+       Type declarations do not match:
+         type t = A | R | C of float | S | D of int
+       is not included in
+         type t = A | B of int
+       2. An extra constructor, "R", is provided in the first declaration.
+       3. An extra constructor, "C", is provided in the first declaration.
+       4. An extra constructor, "S", is provided in the first declaration.
+       5. Constructors have different names, "D" and "B".
+|}]

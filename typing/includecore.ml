@@ -543,13 +543,37 @@ module Record_diffing = struct
       | None -> Ok ()
 
   let weight: Diff.change -> _ = function
-    | Insert _ -> 100
-    | Delete _ -> 100
+    | Insert _ | Delete _ ->
+     (* Insertion and deletion are symmetrical for definitions *)
+        100
     | Keep _ -> 0
-    | Change (_,_,Diffing_with_keys.Name _) -> 99
-    | Change (_,_,Diffing_with_keys.Type _) -> 50
+     (* [Keep] must have the smallest weight. *)
+    | Change (_,_,c) ->
+        (* Constraints:
+           - [ Change < Insert + Delete ], otherwise [Change] are never optimal
 
+           - [ Swap < Move ] => [ 2 Change < Insert + Delete ] =>
+             [ Change < Delete ], in order to favour consecutive [Swap]s
+             over [Move]s.
 
+           - For some D and a large enough R,
+                 [Delete^D Match^R Insert^D < Change^(D+R)]
+              => [ Change > (2 D)/(D+R) Delete ].
+             Note that the case [D=1,R=1] is incompatible with the inequation
+             above. If we choose [R = D + 1] for [D<5], we can specialize the
+             inequation to [ Change > 10 / 11 Delete ]. *)
+      match c with
+        (* With [Type<Name with type<Name], we pick constructor with the right
+           name over the one with the right type. *)
+        | Diffing_with_keys.Name t ->
+            if t.types_match then 98 else 99
+        | Diffing_with_keys.Type _ -> 50
+         (* With the uniqueness constraint on keys, the only relevant constraint
+            is [Type-only change < Name change]. Indeed, names can only match at
+            one position. In other words, if a [ Type ] patch is admissible, the
+            only admissible patches at this position are of the form [Delete^D
+            Name_change]. And with the constranit [Type_change < Name_change],
+            we have [Type_change Delete^D < Delete^D Name_change]. *)
 
   let key (x: Defs.left) = Ident.name x.ld_id
   let diffing loc env params1 params2 cstrs_1 cstrs_2 =
@@ -661,11 +685,12 @@ module Variant_diffing = struct
   let update _ st = st
 
   let weight: D.change -> _ = function
-    | Insert _ -> 100
-    | Delete _ -> 100
+    | Insert _ | Delete _ -> 100
     | Keep _ -> 0
-    | Change (_,_,Diffing_with_keys.Name _) -> 99
+    | Change (_,_,Diffing_with_keys.Name c) ->
+        if c.types_match then 98 else 99
     | Change (_,_,Diffing_with_keys.Type _) -> 50
+    (** See {!Variant_diffing.weight} for an explanation *)
 
   let test loc env (params1,params2)
       ({pos; data=cd1}: D.left)
