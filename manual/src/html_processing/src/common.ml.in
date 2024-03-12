@@ -30,7 +30,7 @@ let process_dir = Filename.current_dir_name
 let ocaml_version = "@OCAML_VERSION_SHORT@"
 
 (* Output directory *)
-let web_dir = Filename.parent_dir_name // ocaml_version
+let web_dir = Filename.parent_dir_name // "webman" // ocaml_version
 
 (* Output for manual *)
 let docs_maindir = web_dir
