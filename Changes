@@ -63,6 +63,9 @@ _______________
   the module level error message
   (Florian Angeletti, review by Vincent Laviron)
 
+- #12985, #12988: Better error messages for partially applied functors.
+  (Florian Angeletti, report by Arthur Wendling, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #11129, #11148: enforce that ppxs do not produce `parsetree`s with
