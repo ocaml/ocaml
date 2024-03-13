@@ -114,8 +114,7 @@ typedef struct { pthread_cond_t cond; caml_plat_mutex* mutex; } caml_plat_cond;
 #define CAML_PLAT_COND_INITIALIZER(m) { PTHREAD_COND_INITIALIZER, m }
 void caml_plat_cond_init(caml_plat_cond*, caml_plat_mutex*);
 void caml_plat_wait(caml_plat_cond*);
-/* like caml_plat_wait, but if nanoseconds surpasses the second parameter
-   without a signal, then this function returns 1. */
+int caml_plat_timedwait(caml_plat_cond*, const struct timespec *);
 void caml_plat_broadcast(caml_plat_cond*);
 void caml_plat_signal(caml_plat_cond*);
 void caml_plat_cond_free(caml_plat_cond*);
