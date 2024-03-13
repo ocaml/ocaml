@@ -115,6 +115,15 @@ void caml_plat_wait(caml_plat_cond* cond)
   check_err("wait", pthread_cond_wait(&cond->cond, cond->mutex));
 }
 
+int caml_plat_timedwait(caml_plat_cond* cond, const struct timespec *deadline)
+{
+  int res;
+  caml_plat_assert_locked(cond->mutex);
+  res = pthread_cond_timedwait(&cond->cond, cond->mutex, deadline);
+  if (res != ETIMEDOUT) check_err("timedwait", res);
+  return res;
+}
+
 void caml_plat_broadcast(caml_plat_cond* cond)
 {
   caml_plat_assert_locked(cond->mutex);

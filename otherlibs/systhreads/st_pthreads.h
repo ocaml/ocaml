@@ -15,6 +15,8 @@
 
 /* POSIX thread implementation of the "st" interface */
 
+#include <sys/time.h>
+
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
@@ -28,15 +30,31 @@
 
 typedef int st_retcode;
 
-/* Variables used to stop "tick" threads */
-static atomic_uintnat tick_thread_stop[Max_domains];
-#define Tick_thread_stop tick_thread_stop[Caml_state->id]
+/* States of the tick thread control record. */
+enum tick_state {
+  Tick_uninitialized = 0,
+  Tick_run,
+  Tick_stop,
+};
+
+/* Control records used to stop tick threads */
+struct tick_control {
+  caml_plat_mutex mu;
+  caml_plat_cond cond;
+  enum tick_state state;
+};
+static struct tick_control tick_thread_control[Max_domains];
+#define Tick_thread_control tick_thread_control[Caml_state->id]
 
 /* OS-specific initialization */
 
 static int st_initialize(void)
 {
-  atomic_store_release(&Tick_thread_stop, 0);
+  if (Tick_thread_control.state == Tick_uninitialized){
+    caml_plat_mutex_init (&Tick_thread_control.mu);
+    caml_plat_cond_init (&Tick_thread_control.cond, &Tick_thread_control.mu);
+    Tick_thread_control.state = Tick_run;
+  }
   return 0;
 }
 
@@ -297,15 +315,27 @@ static int st_event_wait(st_event e)
 static void * caml_thread_tick(void * arg)
 {
   int *domain_id = (int *) arg;
+  struct timeval curtime;
+  struct timespec deadline;
 
   caml_init_domain_self(*domain_id);
   caml_domain_state *domain = Caml_state;
 
-  while(! atomic_load_acquire(&Tick_thread_stop)) {
-    st_msleep(Thread_timeout);
-
+  caml_plat_lock (&Tick_thread_control.mu);
+  while(1){
+    if (Tick_thread_control.state == Tick_stop) break;
+    gettimeofday (&curtime, NULL);
+    deadline.tv_nsec = 1000 * (curtime.tv_usec + 1000 * Thread_timeout);
+    if (deadline.tv_nsec > 1000000000){
+      deadline.tv_nsec -= 1000000000;
+      deadline.tv_sec = curtime.tv_sec + 1;
+    }else{
+      deadline.tv_sec = curtime.tv_sec;
+    }
+    (void) caml_plat_timedwait (&Tick_thread_control.cond, &deadline);
     atomic_store_release(&domain->requested_external_interrupt, 1);
     caml_interrupt_self();
   }
+  caml_plat_unlock (&Tick_thread_control.mu);
   return NULL;
 }
