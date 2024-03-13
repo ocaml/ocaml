@@ -255,7 +255,7 @@ let new_scoped_ty scope desc = newty3 ~level:!current_level ~scope desc
 let newvar ?name ()         = newty2 ~level:!current_level (Tvar name)
 let newvar2 ?name level     = newty2 ~level:level (Tvar name)
 let new_global_var ?name () = newty2 ~level:!global_level (Tvar name)
-let newstub ~scope          = newty3 ~level:!current_level ~scope (Tvar None)
+let newstub ~level ~scope   = newty3 ~level ~scope (Tvar None)
 
 let newobj fields      = newty (Tobject (fields, ref None))
 
@@ -690,22 +690,24 @@ let duplicate_class_type ty =
    [expand_abbrev] (via [subst]) requires these expansions to be
    preserved. Does it worth duplicating this code ?
 *)
-let rec generalize ty =
-  let level = get_level ty in
-  if (level > !current_level) && (level <> generic_level) then begin
+let rec generalize ~outer_level ty =
+  let ty_level = get_level ty in
+  if (ty_level > outer_level) && (ty_level <> generic_level) then begin
     set_level ty generic_level;
     (* recur into abbrev for the speed *)
     begin match get_desc ty with
       Tconstr (_, _, abbrev) ->
-        iter_abbrev generalize !abbrev
+        iter_abbrev (generalize ~outer_level) !abbrev
     | _ -> ()
     end;
-    iter_type_expr generalize ty
+    iter_type_expr (generalize ~outer_level) ty
   end
 
-let generalize ty =
+(* Note: the public version of this function is called with
+   [outer_level] = [!current_level] *)
+let generalize ~outer_level ty =
   simple_abbrevs := Mnil;
-  generalize ty
+  generalize ~outer_level ty
 
 (* Generalize the structure and lower the variables *)
 
@@ -975,8 +977,10 @@ let rec generalize_class_type' gen =
       gen ty;
       generalize_class_type' gen cty
 
-let generalize_class_type cty =
-  generalize_class_type' generalize cty
+(* Note: the public version of this function is called with
+   [outer_level] = [!current_level] *)
+let generalize_class_type ~outer_level cty =
+  generalize_class_type' (generalize ~outer_level) cty
 
 let generalize_class_type_structure cty =
   generalize_class_type' generalize_structure cty
@@ -1113,26 +1117,26 @@ let abbreviations = ref (ref Mnil)
 
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
-let rec copy ?partial ?keep_names copy_scope ty =
-  let copy = copy ?partial ?keep_names copy_scope in
+let rec copy ?partial ?keep_names ~level copy_scope ty =
+  let copy = copy ?partial ?keep_names ~level copy_scope in
   match get_desc ty with
     Tsubst (ty, _) -> ty
   | desc ->
-    let level = get_level ty in
-    if level <> generic_level && partial = None then ty else
+    let ty_level = get_level ty in
+    if ty_level <> generic_level && partial = None then ty else
     (* We only forget types that are non generic and do not contain
        free univars *)
     let forget =
-      if level = generic_level then generic_level else
+      if ty_level = generic_level then generic_level else
       match partial with
         None -> assert false
       | Some (free_univars, keep) ->
           if TypeSet.is_empty (free_univars ty) then
-            if keep then level else !current_level
+            if keep then ty_level else level
           else generic_level
     in
     if forget <> generic_level then newty2 ~level:forget (Tvar None) else
-    let t = newstub ~scope:(get_scope ty) in
+    let t = newstub ~level ~scope:(get_scope ty) in
     For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
     let desc' =
       match desc with
@@ -1178,7 +1182,7 @@ let rec copy ?partial ?keep_names copy_scope ty =
                 | Tconstr _ | Tnil ->
                     copy more
                 | Tvar _ | Tunivar _ ->
-                    if keep then more else newty mored
+                    if keep then more else newty2 ~level mored
                 |  _ -> assert false
               in
               let row =
@@ -1202,7 +1206,7 @@ let rec copy ?partial ?keep_names copy_scope ty =
                     if row_closed row && not (is_fixed row)
                     && TypeSet.is_empty (free_univars ty)
                     && not (List.for_all not_reither fields) then
-                      let more' = newvar () in
+                      let more' = newvar2 level in
                       (more',
                        create_row ~fields:(List.filter not_reither fields)
                          ~more:more' ~closed:false ~fixed:None ~name:None)
@@ -1224,25 +1228,23 @@ let rec copy ?partial ?keep_names copy_scope ty =
 
 (**** Variants of instantiations ****)
 
-let instance ?partial sch =
+(* Note: the public version of this function is called with
+   [level] = [!current_level] *)
+let instance ?partial ~level sch =
   let partial =
     match partial with
       None -> None
     | Some keep -> Some (compute_univars sch, keep)
   in
   For_copy.with_scope (fun copy_scope ->
-    copy ?partial copy_scope sch)
+    copy ?partial ~level copy_scope sch)
 
 let generic_instance sch =
-  let old = !current_level in
-  current_level := generic_level;
-  let ty = instance sch in
-  current_level := old;
-  ty
+  instance ~level:generic_level sch
 
 let instance_list schl =
   For_copy.with_scope (fun copy_scope ->
-    List.map (fun t -> copy copy_scope t) schl)
+    List.map (fun t -> copy ~level:!current_level copy_scope t) schl)
 
 (* Create unique names to new type constructors.
    Used for existential types and local constraints. *)
@@ -1298,11 +1300,12 @@ type existential_treatment =
   | Make_existentials_abstract of Pattern_env.t
 
 let instance_constructor existential_treatment cstr =
+  let level = !current_level in
   For_copy.with_scope (fun copy_scope ->
     let name_counter = ref 0 in
     let copy_existential =
       match existential_treatment with
-      | Keep_existentials_flexible -> copy copy_scope
+      | Keep_existentials_flexible -> copy ~level copy_scope
       | Make_existentials_abstract penv ->
           fun existential ->
             let env = penv.env in
@@ -1313,22 +1316,26 @@ let instance_constructor existential_treatment cstr =
               Env.enter_type (get_new_abstract_name env name) decl env
                 ~scope:fresh_constr_scope in
             Pattern_env.set_env penv new_env;
-            let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
-            let tv = copy copy_scope existential in
+            let to_unify =
+              newty2 ~level (Tconstr (Path.Pident id,[],ref Mnil)) in
+            let tv = copy ~level copy_scope existential in
             assert (is_Tvar tv);
             link_type tv to_unify;
             tv
     in
     let ty_ex = List.map copy_existential cstr.cstr_existentials in
-    let ty_res = copy copy_scope cstr.cstr_res in
-    let ty_args = List.map (copy copy_scope) cstr.cstr_args in
+    let ty_res = copy ~level copy_scope cstr.cstr_res in
+    let ty_args = List.map (copy ~level copy_scope) cstr.cstr_args in
     (ty_args, ty_res, ty_ex)
   )
 
-let instance_parameterized_type ?keep_names sch_args sch =
+(* Note: the public version of this function is called with
+   [level] = [!current_level] *)
+let instance_parameterized_type ?keep_names ~level sch_args sch =
   For_copy.with_scope (fun copy_scope ->
-    let ty_args = List.map (fun t -> copy ?keep_names copy_scope t) sch_args in
-    let ty = copy copy_scope sch in
+    let ty_args =
+      List.map (fun t -> copy ?keep_names ~level copy_scope t) sch_args in
+    let ty = copy ~level copy_scope sch in
     (ty_args, ty)
   )
 
@@ -1352,44 +1359,44 @@ let map_kind f = function
           ) fl, rr)
 
 
-let instance_declaration decl =
+(* Note: the public version of this function is called with
+   [level] = [!current_level] *)
+let instance_declaration ~level decl =
   For_copy.with_scope (fun copy_scope ->
-    {decl with type_params = List.map (copy copy_scope) decl.type_params;
-     type_manifest = Option.map (copy copy_scope) decl.type_manifest;
-     type_kind = map_kind (copy copy_scope) decl.type_kind;
+    {decl with type_params = List.map (copy ~level copy_scope) decl.type_params;
+     type_manifest = Option.map (copy ~level copy_scope) decl.type_manifest;
+     type_kind = map_kind (copy ~level copy_scope) decl.type_kind;
     }
   )
 
 let generic_instance_declaration decl =
-  let old = !current_level in
-  current_level := generic_level;
-  let decl = instance_declaration decl in
-  current_level := old;
-  decl
+  instance_declaration ~level:generic_level decl
 
-let instance_class params cty =
+(* Note: the public version of this function is called with
+   [level] = [!current_level] *)
+let instance_class ~level params cty =
   let rec copy_class_type copy_scope = function
     | Cty_constr (path, tyl, cty) ->
-        let tyl' = List.map (copy copy_scope) tyl in
+        let tyl' = List.map (copy ~level copy_scope) tyl in
         let cty' = copy_class_type copy_scope cty in
         Cty_constr (path, tyl', cty')
     | Cty_signature sign ->
         Cty_signature
-          {csig_self = copy copy_scope sign.csig_self;
-           csig_self_row = copy copy_scope sign.csig_self_row;
+          {csig_self = copy ~level copy_scope sign.csig_self;
+           csig_self_row = copy ~level copy_scope sign.csig_self_row;
            csig_vars =
              Vars.map
-               (function (m, v, ty) -> (m, v, copy copy_scope ty))
+               (function (m, v, ty) -> (m, v, copy ~level copy_scope ty))
                sign.csig_vars;
            csig_meths =
              Meths.map
-               (function (p, v, ty) -> (p, v, copy copy_scope ty))
+               (function (p, v, ty) -> (p, v, copy ~level copy_scope ty))
                sign.csig_meths}
     | Cty_arrow (l, ty, cty) ->
-        Cty_arrow (l, copy copy_scope ty, copy_class_type copy_scope cty)
+        Cty_arrow (l, copy ~level copy_scope ty, copy_class_type copy_scope cty)
   in
   For_copy.with_scope (fun copy_scope ->
-    let params' = List.map (copy copy_scope) params in
+    let params' = List.map (copy ~level copy_scope) params in
     let cty' = copy_class_type copy_scope cty in
     (params', cty')
   )
@@ -1422,20 +1429,21 @@ let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) sch =
   let delayed_copies = ref [] in
   let add_delayed_copy t ty =
     delayed_copies :=
-      (fun () -> Transient_expr.set_stub_desc t (Tlink (copy copy_scope ty))) ::
+      (fun () -> Transient_expr.set_stub_desc
+          t (Tlink (copy ~level:!current_level copy_scope ty))) ::
       !delayed_copies
   in
   let rec copy_rec ~may_share (ty : type_expr) =
     let univars = free ty in
     if is_Tvar ty || may_share && TypeSet.is_empty univars then
       if get_level ty <> generic_level then ty else
-      let t = newstub ~scope:(get_scope ty) in
+      let t = newstub ~level:!current_level ~scope:(get_scope ty) in
       add_delayed_copy t ty;
       t
     else try
       TypeHash.find visited ty
     with Not_found -> begin
-      let t = newstub ~scope:(get_scope ty) in
+      let t = newstub ~level:!current_level ~scope:(get_scope ty) in
       TypeHash.add visited ty t;
       let desc' =
         match get_desc ty with
@@ -1485,16 +1493,17 @@ let instance_poly ?(keep_names=false) ~fixed univars sch =
   )
 
 let instance_label ~fixed lbl =
+  let level = !current_level in
   For_copy.with_scope (fun copy_scope ->
     let vars, ty_arg =
       match get_desc lbl.lbl_arg with
         Tpoly (ty, tl) ->
           instance_poly' copy_scope ~keep_names:false ~fixed tl ty
       | _ ->
-          [], copy copy_scope lbl.lbl_arg
+          [], copy ~level copy_scope lbl.lbl_arg
     in
     (* call [copy] after [instance_poly] to avoid introducing [Tsubst] *)
-    let ty_res = copy copy_scope lbl.lbl_res in
+    let ty_res = copy ~level copy_scope lbl.lbl_res in
     (vars, ty_arg, ty_res)
   )
 
@@ -1506,9 +1515,7 @@ let unify_var' = (* Forward declaration *)
 
 let subst env level priv abbrev oty params args body =
   if List.length params <> List.length args then raise Cannot_subst;
-  let old_level = !current_level in
-  current_level := level;
-  let body0 = newvar () in          (* Stub *)
+  let body0 = newvar2 level in          (* Stub *)
   let undo_abbrev =
     match oty with
     | None -> fun () -> () (* No abbreviation added *)
@@ -1521,16 +1528,14 @@ let subst env level priv abbrev oty params args body =
         | _ -> assert false
   in
   abbreviations := abbrev;
-  let (params', body') = instance_parameterized_type params body in
+  let (params', body') = instance_parameterized_type ~level params body in
   abbreviations := ref Mnil;
   let uenv = Expression {env; in_subst = true} in
   try
     !unify_var' uenv body0 body';
     List.iter2 (!unify_var' uenv) params' args;
-    current_level := old_level;
     body'
   with Unify _ ->
-    current_level := old_level;
     undo_abbrev ();
     raise Cannot_subst
 
@@ -2067,9 +2072,9 @@ let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
       TypeSet.empty old_univars
   in
   if List.exists (fun t -> TypeSet.mem t known_univars) tl1 then
-     univars_escape env old_univars tl1 (newty(Tpoly(t2,tl2)));
+    univars_escape env old_univars tl1 (newgenty(Tpoly(t2,tl2)));
   if List.exists (fun t -> TypeSet.mem t known_univars) tl2 then
-    univars_escape env old_univars tl2 (newty(Tpoly(t1,tl1)));
+    univars_escape env old_univars tl2 (newgenty(Tpoly(t1,tl1)));
   let cl1 = List.map (fun t -> t, ref None) tl1
   and cl2 = List.map (fun t -> t, ref None) tl2 in
   univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
@@ -2099,7 +2104,7 @@ let polyfy env ty vars =
   let vars = List.map (expand_head env) vars in
   For_copy.with_scope (fun copy_scope ->
     let vars' = List.filter_map (subst_univar copy_scope) vars in
-    let ty = copy copy_scope ty in
+    let ty = copy ~level:!current_level copy_scope ty in
     let ty = newty2 ~level:(get_level ty) (Tpoly(ty, vars')) in
     let complete = List.length vars = List.length vars' in
     ty, complete
@@ -2547,11 +2552,7 @@ let rec concat_longident lid1 =
 let nondep_instance env level id ty =
   let ty = !nondep_type' env [id] ty in
   if level = generic_level then duplicate_type ty else
-  let old = !current_level in
-  current_level := level;
-  let ty = instance ty in
-  current_level := old;
-  ty
+  instance ~level ty
 
 (* Find the type paths nl1 in the module type mty2, and add them to the
    list (nl2, tl2). raise Not_found if impossible *)
@@ -3962,37 +3963,30 @@ let moregen inst_nongen type_pairs env patt subj =
    is unimportant.  So, no need to propagate abbreviations.
 *)
 let moregeneral env inst_nongen pat_sch subj_sch =
-  let old_level = !current_level in
-  current_level := generic_level - 1;
   (*
      Generic variables are first duplicated with [instance].  So,
      their levels are lowered to [generic_level - 1].  The subject is
      then copied with [duplicate_type].  That way, its levels won't be
      changed.
   *)
-  let subj_inst = instance subj_sch in
+  let subj_inst = instance ~level:(generic_level - 1) subj_sch in
   let subj = duplicate_type subj_inst in
-  current_level := generic_level;
   (* Duplicate generic variables *)
-  let patt = instance pat_sch in
+  let patt = instance ~level:generic_level pat_sch in
 
-  Misc.try_finally
-    (fun () ->
-       try
-         moregen inst_nongen (TypePairs.create 13) env patt subj
-       with Moregen_trace trace ->
-         (* Moregen splits the generic level into two finer levels:
-            [generic_level] and [generic_level - 1].  In order to properly
-            detect and print weak variables when printing this error, we need to
-            merge them back together, by regeneralizing the levels of the types
-            after they were instantiated at [generic_level - 1] above.  Because
-            [moregen] does some unification that we need to preserve for more
-            legible error messages, we have to manually perform the
-            regeneralization rather than backtracking. *)
-         current_level := generic_level - 2;
-         generalize subj_inst;
-         raise (Moregen (expand_to_moregen_error env trace)))
-    ~always:(fun () -> current_level := old_level)
+  try
+    moregen inst_nongen (TypePairs.create 13) env patt subj
+  with Moregen_trace trace ->
+    (* Moregen splits the generic level into two finer levels:
+       [generic_level] and [generic_level - 1].  In order to properly
+       detect and print weak variables when printing this error, we need to
+       merge them back together, by regeneralizing the levels of the types
+       after they were instantiated at [generic_level - 1] above.  Because
+       [moregen] does some unification that we need to preserve for more
+       legible error messages, we have to manually perform the
+       regeneralization rather than backtracking. *)
+    generalize ~outer_level:(generic_level - 2) subj_inst;
+    raise (Moregen (expand_to_moregen_error env trace))
 
 let is_moregeneral env inst_nongen pat_sch subj_sch =
   match moregeneral env inst_nongen pat_sch subj_sch with
@@ -4453,19 +4447,17 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
   let errors = match_class_sig_shape ~strict:false sign1 sign2 in
   match errors with
   | [] ->
-      let old_level = !current_level in
-      current_level := generic_level - 1;
       (*
          Generic variables are first duplicated with [instance].  So,
          their levels are lowered to [generic_level - 1].  The subject is
          then copied with [duplicate_type].  That way, its levels won't be
          changed.
       *)
-      let (_, subj_inst) = instance_class [] subj_sch in
+      let (_, subj_inst) =
+        instance_class ~level:(generic_level - 1) [] subj_sch in
       let subj = duplicate_class_type subj_inst in
-      current_level := generic_level;
       (* Duplicate generic variables *)
-      let (_, patt) = instance_class [] pat_sch in
+      let (_, patt) = instance_class ~level:generic_level [] pat_sch in
       let type_pairs = TypePairs.create 53 in
       let sign1 = signature_of_class_type patt in
       let sign2 = signature_of_class_type subj in
@@ -4476,10 +4468,9 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
       TypePairs.add type_pairs (self1, self2);
       (* Always succeeds *)
       moregen true type_pairs env row1 row2;
-      let res =
-        match moregen_clty trace type_pairs env patt subj with
-        | () -> []
-        | exception Failure res ->
+      begin match moregen_clty trace type_pairs env patt subj with
+      | () -> []
+      | exception Failure res ->
           (* We've found an error.  Moregen splits the generic level into two
              finer levels: [generic_level] and [generic_level - 1].  In order
              to properly detect and print weak variables when printing this
@@ -4489,12 +4480,9 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
              unification that we need to preserve for more legible error
              messages, we have to manually perform the regeneralization rather
              than backtracking. *)
-          current_level := generic_level - 2;
-          generalize_class_type subj_inst;
+          generalize_class_type ~outer_level:(generic_level - 2) subj_inst;
           res
-      in
-      current_level := old_level;
-      res
+      end
   | errors ->
       CM_Class_type_mismatch (env, pat_sch, subj_sch) :: errors
 
@@ -5596,3 +5584,16 @@ let immediacy env typ =
       else
         Type_immediacy.Always
   | _ -> Type_immediacy.Unknown
+
+(* hide [level, outer_level] arguments *)
+let instance ?partial sch =
+  instance ?partial ~level:!current_level sch
+let instance_parameterized_type ?keep_names sch_args sch =
+  instance_parameterized_type ?keep_names ~level:!current_level sch_args sch
+let instance_class params cty =
+  instance_class ~level:!current_level params cty
+let instance_declaration decl =
+  instance_declaration ~level:!current_level decl
+let generalize ty = generalize ~outer_level:!current_level ty
+let generalize_class_type cty =
+  generalize_class_type ~outer_level:!current_level cty
