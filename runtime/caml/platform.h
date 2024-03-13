@@ -16,8 +16,8 @@
 
 /* Platform-specific concurrency and memory primitives */
 
-#ifndef CAML_PLAT_THREADS_H
-#define CAML_PLAT_THREADS_H
+#ifndef CAML_PLATFORM_H
+#define CAML_PLATFORM_H
 
 #ifdef CAML_INTERNALS
 
@@ -30,7 +30,7 @@
 #else
 #include <pthread.h>
 #endif
-
+#include <time.h>
 #include <errno.h>
 #include <string.h>
 #include <stdbool.h>
@@ -288,6 +288,10 @@ void caml_plat_mutex_free(caml_plat_mutex*);
 CAMLextern void caml_plat_mutex_reinit(caml_plat_mutex*);
 void caml_plat_cond_init(caml_plat_cond*);
 void caml_plat_wait(caml_plat_cond*, caml_plat_mutex*); /* blocking */
+clockid_t caml_plat_get_cond_clockid (void);
+int caml_plat_timedwait(caml_plat_cond*, caml_plat_mutex *,
+                        const struct timespec *);
+  /* blocking; returns ETIMEDOUT on timeout, 0 otherwise. */
 void caml_plat_broadcast(caml_plat_cond*);
 void caml_plat_signal(caml_plat_cond*);
 void caml_plat_cond_free(caml_plat_cond*);

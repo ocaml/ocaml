@@ -2735,6 +2735,9 @@ AC_CHECK_FUNCS([pthread_cancel])
 
 AC_CHECK_FUNCS([pthread_setname_np pthread_set_name_np], [break])
 
+# pthread_condattr_getclock is not implemented on MacOS
+AC_CHECK_FUNCS([pthread_condattr_getclock])
+
 ## prctl
 AC_CHECK_FUNCS(
   [prctl],
