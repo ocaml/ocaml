@@ -1637,16 +1637,17 @@ static void stw_terminate_domain(caml_domain_state *domain, void *data,
 {
   if (!pthread_equal(pthread_self(), *(pthread_t *)data)) {
     /* Domains threads forced to exit here will not have a chance to
-       run domain_terminate(), so we need to ask the backup thread to
-       terminate here. */
+       run domain_terminate() on their own, so we need to ask the backup
+       thread to terminate here. */
     terminate_backup_thread(domain_self);
+    atomic_fetch_add(&caml_num_domains_running, -1);
     pthread_exit(0);
   }
 }
 
 void caml_terminate_all_domains(void)
 {
-  if (!caml_domain_alone()) {
+  while (!caml_domain_alone()) {
     pthread_t myself = pthread_self();
     caml_try_run_on_all_domains(stw_terminate_domain, &myself, NULL);
   }
