@@ -805,7 +805,7 @@ OCaml 5.2.0
   mechanism `make TARGET_BINDIR=..` no longer works.
   (David Allsopp, review by Damien Doligez, Xavier Leroy and Olivier Nicole)
 
-- #12768: Detect mingw-w64 coupling with GCC or LLVM, detect clang-cl,
+- #12768, #13030: Detect mingw-w64 coupling with GCC or LLVM, detect clang-cl,
   and fix C compiler feature detection on macOS.
   (Antonin Décimo, review by Miod Vallat and Sébastien Hinderer)
 
