@@ -1,4 +1,4 @@
-4.14.2+dev3-2024-03-14
+4.14.2
 
 # Starting with OCaml 4.14, although the version string that appears above is
 # still correct and this file can thus still be used to figure it out,

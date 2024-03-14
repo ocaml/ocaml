@@ -1,7 +1,7 @@
 opam-version: "2.0"
-version: "4.14.2+trunk"
+version: "4.14.2"
 license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
-synopsis: "OCaml 4.14 maintenance version"
+synopsis: "Official release of OCaml 4.14.2"
 depends: [
   "ocaml" {= "4.14.2" & post}
   "base-unix" {post}
