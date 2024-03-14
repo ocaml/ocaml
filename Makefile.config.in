@@ -214,7 +214,6 @@ FLAT_FLOAT_ARRAY=@flat_float_array@
 FUNCTION_SECTIONS=@function_sections@
 AWK=@AWK@
 NAKED_POINTERS=false
-WITH_BTI=@bti@
 
 # Deprecated variables
 

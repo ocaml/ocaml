@@ -98,4 +98,4 @@
 
 #undef USE_MMAP_MAP_STACK
 
-#undef WITH_BTI
+#undef HAS_CET_H

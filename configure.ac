@@ -1244,6 +1244,12 @@ AS_CASE([$host],
     [oc_ldflags="$oc_ldflags -Wl,--no-execute-only"
      natdynlinkopts="$natdynlinkopts -Wl,--no-execute-only"])
 
+## Check for indirect branch tracking control flow features
+bti=false
+AS_CASE([$host],
+  [x86_64-*-*], [AC_CHECK_HEADER([cet.h],
+    [AC_DEFINE([HAS_CET_H]) bti=true], [])])
+
 # Disable control flow integrity
 
 AS_CASE([$host],
@@ -2342,12 +2348,6 @@ AS_IF([$native_compiler],
     [*-*-mingw32*|*-pc-windows], [],
     [OCAML_AS_HAS_DEBUG_PREFIX_MAP
     OCAML_AS_HAS_CFI_DIRECTIVES])])
-
-## Check for indirect branch tracking control flow features
-bti=false
-AS_CASE([$host],
-  [x86_64-*-*], [OCAML_AS_SUPPORTS_ENDBR64])
-AS_IF([$bti], [AC_DEFINE([WITH_BTI])])
 
 ## Frame pointers
 

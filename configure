@@ -15459,6 +15459,21 @@ case $host in #(
      ;;
 esac
 
+## Check for indirect branch tracking control flow features
+bti=false
+case $host in #(
+  x86_64-*-*) :
+    ac_fn_c_check_header_compile "$LINENO" "cet.h" "ac_cv_header_cet_h" "$ac_includes_default"
+if test "x$ac_cv_header_cet_h" = xyes
+then :
+  printf "%s\n" "#define HAS_CET_H 1" >>confdefs.h
+ bti=true
+fi
+ ;; #(
+  *) :
+     ;;
+esac
+
 # Disable control flow integrity
 
 case $host in #(
@@ -19881,71 +19896,6 @@ fi
 
 fi ;;
 esac
-fi
-
-# Check for indirect branch tracking control flow features
-bti=false
-case $host in #(
-  x86_64-*-*) :
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the assembler supports endbr64" >&5
-printf %s "checking whether the assembler supports endbr64... " >&6; }
-
-
-  saved_CC="$CC"
-  saved_CFLAGS="$CFLAGS"
-  saved_CPPFLAGS="$CPPFLAGS"
-  saved_LIBS="$LIBS"
-  saved_ac_ext="$ac_ext"
-  saved_ac_compile="$ac_compile"
-  # Move the content of confdefs.h to another file so it does not
-  # get included
-  mv confdefs.h confdefs.h.bak
-  touch confdefs.h
-
-
-  CC="$AS"
-  CFLAGS="-o conftest.$ac_objext"
-  CPPFLAGS=""
-  ac_ext="S"
-  ac_compile='$CC $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-    .text
-    endbr64
-
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-  bti=true
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-
-
-  # Restore the content of confdefs.h
-  mv confdefs.h.bak confdefs.h
-  ac_compile="$saved_ac_compile"
-  ac_ext="$saved_ac_ext"
-  CPPFLAGS="$saved_CPPFLAGS"
-  CFLAGS="$saved_CFLAGS"
-  CC="$saved_CC"
-  LIBS="$saved_LIBS"
-
- ;; #(
-  *) :
-     ;;
-esac
-if $bti
-then :
-  printf "%s\n" "#define WITH_BTI 1" >>confdefs.h
-
 fi
 
 ## Frame pointers
