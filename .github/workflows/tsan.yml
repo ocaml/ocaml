@@ -84,7 +84,7 @@ jobs:
         if: matrix.id == 'normal'
         # Run testsuite with 30-minute timeout per test
         run: |
-          TIMEOUT=1800 TSAN_OPTIONS=history_size=6 MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test_sequential
+          TIMEOUT=1800 TSAN_OPTIONS=history_size=6 OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test_sequential
       - name: Run the testsuite (debug runtime)
         if: matrix.id == 'debug'
         env:
