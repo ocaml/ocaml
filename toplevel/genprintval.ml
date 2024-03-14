@@ -257,6 +257,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
       let nest f = nest_gen (Oval_stuff "<cycle>") f in
 
+      let mk_persistent m v =
+        List.fold_left (fun p c -> Pdot(p, c)) (Pident (Ident.create_persistent m)) v
+      in
+
       let rec tree_of_val depth obj ty =
         decr printer_steps;
         if !printer_steps < 0 || depth < 0 then Oval_ellipsis
@@ -322,6 +326,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               when Path.same path Predef.path_bytes ->
             let s = Bytes.to_string (O.obj obj : bytes) in
             Oval_string (s, !printer_steps, Ostr_bytes)
+
+          | Tconstr (path, [], _)
+              when Path.same path (mk_persistent "Stdlib__Uchar" ["t"]) ->
+            Oval_constr
+              (Oide_ident (Out_name.create "Uchar.of_int"),
+              [Oval_printer (fun ppf -> fprintf ppf "0x%04X" (O.obj obj : int))])
 
           | Tconstr (path, [ty_arg], _)
             when Path.same path Predef.path_lazy_t ->
