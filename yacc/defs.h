@@ -13,6 +13,10 @@
 /*                                                                        */
 /**************************************************************************/
 
+#ifndef YACC_DEFS_H
+#define YACC_DEFS_H
+
+
 /* Based on public-domain code from Berkeley Yacc */
 
 #ifndef DEBUG
@@ -363,3 +367,5 @@ extern void unterminated_text (int t_lineno, char *t_line, char *t_cptr) Noretur
 extern void used_reserved (char *s) Noreturn;
 extern void verbose (void);
 extern void write_section (char **section);
+
+#endif /* YACC_DEFS_H */
