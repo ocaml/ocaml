@@ -13,6 +13,10 @@
 /*                                                                        */
 /**************************************************************************/
 
+#ifndef YACC_DEFS_H
+#define YACC_DEFS_H
+
+
 /* Based on public-domain code from Berkeley Yacc */
 
 #include <assert.h>
@@ -363,3 +367,5 @@ CAMLnoret extern void used_reserved (char *s);
 extern void verbose (void);
 extern void write_section (char **section);
 CAMLnoret extern void invalid_literal(int s_lineno, char *s_line, char *s_cptr);
+
+#endif /* YACC_DEFS_H */
