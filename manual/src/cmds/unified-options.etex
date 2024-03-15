@@ -885,13 +885,33 @@ Print the location of the standard library, then exit.
 
 \notop{%
 \item["-with-runtime"]
-Include the runtime system in the generated program. This is the default.
+The pair of options \texttt{-with-runtime} and \texttt{-without-runtime} give
+precise control over the way the runtime is linked. \texttt{-with-runtime} is
+the default. In summary, it instructs to include the runtime system, or a
+reference to the default path of the runtime system, in the generated
+program/executable/object file. The detailed behaviour depends on the compiler
+and options used:
+
+For ocamlc, in its default linking mode (no use of \texttt{-custom} or
+\texttt{-output-*}), \texttt{-with-runtime} creates a file which can be
+executed, whereas \texttt{-without-runtime} creates a pure bytecode image which
+must be explicitly passed to a runtime (i.e. \texttt{./foo} vs \texttt{ocamlrun
+./foo}).
+
+For all other uses of ocamlc and ocamlopt, \texttt{-with-runtime} and
+\texttt{-without-runtime} control whether the compiler passes flags for linking
+with the installed runtime (\texttt{-with-runtime}) or whether the user is
+required to pass them (\texttt{-without-runtime}).
+
+For more information about the options \texttt{-custom} and \texttt{-output-*},
+see their documentation and section~\ref{ss:c-embedded-code} of the manual.
 }
 
 \notop{%
 \item["-without-runtime"]
 The compiler does not include the runtime system (nor a reference to it) in the
-generated program; it must be supplied separately.
+generated program, executable or object file; it must be supplied separately.
+See option \texttt{-with-runtime} for details.
 }
 
 \item["-" \var{file}]
