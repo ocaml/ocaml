@@ -989,6 +989,7 @@ LBL(do_perform):
         TSAN_C_CALL(caml_tsan_exit_on_perform)
         TSAN_RESTORE_CALLER_REGS
 #endif
+        stg     %r5, 8(%r3) /* Set the last fiber field in the continuation */
         lg      %r9, Stack_handler(%r4)  /* %r9 := old stack -> handler */
         lg      %r8, Handler_parent(%r9)
         clgfi   %r8, 0   /* %r8 := parent stack; is parent NULL? */

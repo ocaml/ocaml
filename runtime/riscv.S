@@ -1012,6 +1012,7 @@ L(do_perform):
         TSAN_C_CALL caml_tsan_exit_on_perform
         TSAN_RESTORE_CALLER_REGS
 #endif
+        sd      a3, 8(a1) /* Set the last fiber field in the continuation */
         ld      t3, Stack_handler(a2)  /* t3 := old stack -> handler */
         ld      t4, Handler_parent(t3) /* t4 := parent stack */
         beqz    t4, 1f
