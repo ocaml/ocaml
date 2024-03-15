@@ -72,11 +72,14 @@ sunc __SUNPRO_C __SUNPRO_C
 unknown
 #endif]
     )],
-    [AC_CACHE_VAL([ocaml_cv_cc_vendor],
-      [ocaml_cv_cc_vendor=`sed -e '/^#/d' conftest.i | tr -s '[:space:]' '-' \
-                             | sed -e 's/^-//' -e 's/-$//'`])],
+    [AC_CACHE_VAL([ocaml_cv_cc_vendor2],
+      [ocaml_cv_cc_vendor2=`sed -e '/^#/d' conftest.i | tr -s '[:space:]' '-' \
+                             | sed -e 's/^-//' -e 's/-$//'`])
+    # Domain of values was changed in #12768, so the cache key became different
+    # from the variable
+    ocaml_cc_vendor="$ocaml_cv_cc_vendor2"],
     [AC_MSG_FAILURE([unexpected preprocessor failure])])
-  AC_MSG_RESULT([$ocaml_cv_cc_vendor])
+  AC_MSG_RESULT([$ocaml_cc_vendor])
 ])
 
 AC_DEFUN([OCAML_SIGNAL_HANDLERS_SEMANTICS], [
@@ -515,8 +518,8 @@ int main (void) {
       [no,*], [hard_error=true],
       [yes,*], [hard_error=false],
       [*,x86_64-w64-mingw32*|*,x86_64-*-cygwin*], [hard_error=false],
-      [AS_CASE([$ocaml_cv_cc_vendor],
-        [msvc-*], [AS_IF([test "${ocaml_cv_cc_vendor#msvc-}" -lt 1920 ],
+      [AS_CASE([$ocaml_cc_vendor],
+        [msvc-*], [AS_IF([test "${ocaml_cc_vendor#msvc-}" -lt 1920 ],
           [hard_error=false],
           [hard_error=true])],
         [hard_error=true])])
