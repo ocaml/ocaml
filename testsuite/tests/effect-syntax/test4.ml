@@ -3,7 +3,7 @@
 open Effect
 open Effect.Deep
 
-type _ t += Foo : int -> int t
+effect Foo : int -> int
 
 let r =
   match (perform (Foo 3)) with

@@ -3,7 +3,7 @@
 open Effect
 open Effect.Deep
 
-type _ t += Foo : int -> int t
+effect Foo : int -> int
 
 let f () = (perform (Foo 3)) (* 3 + 1 *)
          + (perform (Foo 3)) (* 3 + 1 *)

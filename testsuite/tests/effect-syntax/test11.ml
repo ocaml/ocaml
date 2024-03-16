@@ -6,7 +6,7 @@
 open Effect
 open Effect.Deep
 
-type _ t += E : int t
+effect E : int
 
 let handle comp =
   match comp () with

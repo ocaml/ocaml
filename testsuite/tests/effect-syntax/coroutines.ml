@@ -13,12 +13,11 @@ type 'a channel = {
 
 let new_channel () = { senders = Queue.create(); receivers = Queue.create() }
 
-type _ eff +=
-  | Spawn : (unit -> unit) -> unit eff
-  | Yield : unit eff
-  | Terminate : unit eff
-  | Send : 'a channel * 'a -> unit eff
-  | Recv : 'a channel -> 'a eff
+effect Spawn     : (unit -> unit) -> unit
+effect Yield     : unit
+effect Terminate : unit
+effect Send      : 'a channel * 'a -> unit
+effect Recv      : 'a channel -> 'a
 
 let spawn f = perform (Spawn f)
 

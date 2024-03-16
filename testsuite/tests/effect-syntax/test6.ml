@@ -3,8 +3,8 @@
 open Effect
 open Effect.Deep
 
-type _ t += E : unit t
-          | F : unit t
+effect E : unit
+effect F : unit
 
 let () =
   let ok1 = ref false

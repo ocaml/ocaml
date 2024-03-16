@@ -13,7 +13,7 @@ module MkReify
      (* A type of operations ['a op]. *)
      type 'a op
      (* An effect name [E]. *)
-     type _ eff += E : 'a op -> 'a eff
+     effect E : 'a op -> 'a
   end)
 = struct
   open Effect
@@ -48,7 +48,7 @@ module PC = struct
     | Yield : data -> unit op
     | Await : data op
 
-  type _ eff += E : 'a op -> 'a eff
+  effect E : 'a op -> 'a
 
 end
 

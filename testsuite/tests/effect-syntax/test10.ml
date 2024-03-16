@@ -3,8 +3,8 @@
 open Effect
 open Effect.Deep
 
-type _ t += Peek : int t
-type _ t += Poke : unit t
+effect Peek : int
+effect Poke : unit
 
 let rec a i = perform Peek + Random.int i
 let rec b i = a i + Random.int i

@@ -7,7 +7,7 @@ open Effect.Deep
 (* Some examples from Matija Pretnar's MFPS 2015 tutorial,
    "An introduction to algebraic effects and handlers". *)
 
-type _ eff += Print : string -> unit eff
+effect Print : string -> unit
 
 let print s = perform (Print s)
 
@@ -34,7 +34,8 @@ let _ =
   printf "%s\n" (collect abc);
   printf "%s\n" (collect (fun () -> reverse abc))
 
-type _ eff += Get : int eff | Set : int -> unit eff
+effect Get : int
+effect Set : int -> unit
 
 let get () = perform Get
 let set n  = perform (Set n)

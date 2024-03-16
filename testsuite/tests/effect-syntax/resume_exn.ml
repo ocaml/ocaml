@@ -6,7 +6,7 @@ open Effect.Deep
 
 (** {1 Resumable exceptions} *)
 
-type _ eff += Conversion_failure : string -> int eff
+effect Conversion_failure : string -> int
 
 let int_of_string s =
   match int_of_string_opt s with

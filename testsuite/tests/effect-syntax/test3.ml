@@ -3,7 +3,7 @@
 open Effect
 open Effect.Deep
 
-type _ t += E : unit t
+effect E : unit
 exception X
 
 let () =

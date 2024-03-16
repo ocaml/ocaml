@@ -4,7 +4,7 @@ open Printf
 open Effect
 open Effect.Deep
 
-type _ t += E : int -> int t
+effect E : int -> int
 
 let f () =
   printf "perform effect (E 0)\n%!";

@@ -31,7 +31,7 @@ let seq_primes : int Seq.t =
 
 (** Implementing [gen_primes] from [iter_prime], using control inversion. *)
 
-type _ eff += Next_prime : int -> unit eff
+effect Next_prime : int -> unit
 
 let gen_primes : int Seq.t =
   match iter_primes (fun n -> perform (Next_prime n)) with
@@ -50,7 +50,7 @@ let iterator_to_sequence
        (type elt) (type collection)
        (iter: (elt -> unit) -> collection -> unit) : collection -> elt Seq.t =
   let module I2S = struct
-    type _ eff += Next : elt -> unit eff
+    effect Next : elt -> unit
     let gen coll =
       match iter (fun elt -> perform (Next elt)) coll with
       | () -> Seq.empty
