@@ -46,6 +46,33 @@ CAMLextern caml_result caml_process_pending_actions_result (void);
    kept around for compatibility. */
 CAMLextern value caml_process_pending_actions_exn (void);
 
+#ifdef CAML_INTERNALS
+value caml_process_pending_actions_with_root (value extra_root); // raises
+/* This is identical to [caml_process_pending_actions], except that it
+   registers its argument as a root and eventually returns it. This is
+   useful to safely process pending actions before returning from
+   functions that manipulate a 'value' without proper rooting.
+
+   This would be incorrect:
+     {
+       value ret;
+       ...
+       caml_process_pending_actions(); // this may call a GC
+       return ret; // 'ret' was not rooted and may have been moved
+     }
+
+   This is correct:
+     {
+       value ret;
+       ...
+       ret = caml_process_pending_actions_with_root(ret);
+       return ret;
+     }
+*/
+
+caml_result caml_process_pending_actions_with_root_result (value extra_root);
+#endif
+
 CAMLextern int caml_check_pending_actions (void);
 /* Returns 1 if there are pending actions, 0 otherwise. */
 
@@ -74,8 +101,6 @@ CAMLextern void caml_record_signal(int signal_number);
 CAMLextern caml_result caml_process_pending_signals_result(void);
 CAMLextern void caml_set_action_pending(caml_domain_state *);
 caml_result caml_do_pending_actions_result(void);
-value caml_process_pending_actions_with_root (value extra_root); // raises
-caml_result caml_process_pending_actions_with_root_result (value extra_root);
 
 void caml_init_signal_handling(void);
 void caml_init_signals(void);

@@ -396,12 +396,17 @@ CAMLprim value caml_process_pending_actions_with_root(value root)
 
 CAMLexport caml_result caml_process_pending_actions_result(void)
 {
-  return caml_process_pending_actions_with_root_result(Val_unit);
+  if (caml_check_pending_actions()) {
+    return caml_do_pending_actions_result();
+  } else {
+    return Result_unit;
+  }
 }
 
 CAMLexport void caml_process_pending_actions(void)
 {
-  caml_process_pending_actions_with_root(Val_unit);
+  caml_run_result(
+    caml_process_pending_actions_result());
 }
 
 /* OS-independent numbering of signals */
