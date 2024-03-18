@@ -253,7 +253,7 @@ CAMLprim value caml_make_float_vect(value len)
   return caml_floatarray_create (len);
 #else
   /* A signaling NaN, statically allocated */
-  static uintnat some_float_contents[] = {
+  static const uintnat some_float_contents[] = {
     Caml_out_of_heap_header(Double_wosize, Double_tag),
 #if defined(ARCH_SIXTYFOUR)
     0x7FF0000000000001

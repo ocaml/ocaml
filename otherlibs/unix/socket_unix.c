@@ -23,7 +23,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-int caml_unix_socket_domain_table[] = {
+const int caml_unix_socket_domain_table[] = {
   PF_UNIX, PF_INET,
 #if defined(HAS_IPV6)
   PF_INET6
@@ -34,7 +34,7 @@ int caml_unix_socket_domain_table[] = {
 #endif
 };
 
-int caml_unix_socket_type_table[] = {
+const int caml_unix_socket_type_table[] = {
   SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET
 };
 

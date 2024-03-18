@@ -1162,7 +1162,7 @@ void caml_plat_mem_unmap(void* mem, uintnat size)
 
 struct error_entry { DWORD win_code; int range; int posix_code; };
 
-static struct error_entry win_error_table[] = {
+static const struct error_entry win_error_table[] = {
   { ERROR_INVALID_FUNCTION, 0, EINVAL},
   { ERROR_FILE_NOT_FOUND, 0, ENOENT},
   { ERROR_PATH_NOT_FOUND, 0, ENOENT},

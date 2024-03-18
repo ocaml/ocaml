@@ -25,8 +25,8 @@
 #include "caml/socketaddr.h"
 #include <ws2tcpip.h>
 
-extern int caml_unix_socket_domain_table[]; /* from socket.c */
-extern int caml_unix_socket_type_table[]; /* from socket.c */
+extern const int caml_unix_socket_domain_table[]; /* from socket.c */
+extern const int caml_unix_socket_type_table[]; /* from socket.c */
 
 #ifdef HAS_SOCKETPAIR
 

@@ -17,11 +17,11 @@
 #include <caml/memory.h>
 #include "caml/unixsupport.h"
 
-int caml_unix_socket_domain_table[] = {
+const int caml_unix_socket_domain_table[] = {
   PF_UNIX, PF_INET, PF_INET6
 };
 
-int caml_unix_socket_type_table[] = {
+const int caml_unix_socket_type_table[] = {
   SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET
 };
 

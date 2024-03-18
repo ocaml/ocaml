@@ -26,7 +26,7 @@
 #define SEEK_END 2
 #endif
 
-static DWORD seek_command_table[] = {
+static const DWORD seek_command_table[] = {
   FILE_BEGIN, FILE_CURRENT, FILE_END
 };
 
