@@ -911,6 +911,12 @@ null-terminated C string, raises the exception \var{id} with a copy of
 the C string \var{s} as argument.
 \end{itemize}
 
+Sometimes, it is necessary to clean-up state and release resources
+before actually raising the exception back into OCaml. To this end,
+alternative functions that return the exception instead of raising it
+directly ("caml_exception_failure", "caml_exception_invalid_argument",
+etc.) are provided.
+
 \section{s:c-gc-harmony}{Living in harmony with the garbage collector}
 
 Unused blocks in the heap are automatically reclaimed by the garbage

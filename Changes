@@ -13,6 +13,12 @@ _______________
 
 ### Runtime system:
 
+- #12407: Resource-handling improvements: add exception-returning
+  variants for all exception-raising functions in `caml/fail.h`, for
+  the purpose of cleaning-up state and resources before raising.
+  (Guillaume Munch-Maccagnoni, review by Damien Doligez, Xavier Leroy and
+   Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #####: Enable compile-time option -function-sections on all previously
