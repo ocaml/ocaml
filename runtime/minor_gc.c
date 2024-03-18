@@ -15,6 +15,7 @@
 
 #define CAML_INTERNALS
 
+#include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -30,6 +31,7 @@
 #include "caml/globroots.h"
 #include "caml/major_gc.h"
 #include "caml/memory.h"
+#include "caml/memprof.h"
 #include "caml/minor_gc.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
@@ -586,6 +588,11 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
                              domain, 0);
   CAML_EV_END(EV_MINOR_FINALIZERS_OLDIFY);
 
+  CAML_EV_BEGIN(EV_MINOR_MEMPROF_ROOTS);
+  caml_memprof_scan_roots(&oldify_one, oldify_scanning_flags, &st,
+                          domain, false, participating[0] == domain);
+  CAML_EV_END(EV_MINOR_MEMPROF_ROOTS);
+
   CAML_EV_BEGIN(EV_MINOR_REMEMBERED_SET_PROMOTE);
   oldify_mopup (&st, 1); /* ephemerons promoted here */
   CAML_EV_END(EV_MINOR_REMEMBERED_SET_PROMOTE);
@@ -619,11 +626,16 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS_PROMOTE);
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS);
 
+  CAML_EV_BEGIN(EV_MINOR_MEMPROF_CLEAN);
+  caml_memprof_after_minor_gc(domain, participating[0] == domain);
+  CAML_EV_END(EV_MINOR_MEMPROF_CLEAN);
+
   domain->young_ptr = domain->young_end;
   /* Trigger a GC poll when half of the minor heap is filled. At that point, a
    * major slice is scheduled. */
   domain->young_trigger = domain->young_start
     + (domain->young_end - domain->young_start) / 2;
+  caml_memprof_set_trigger(domain);
   caml_reset_young_limit(domain);
 
   domain->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
@@ -869,23 +881,25 @@ void caml_alloc_small_dispatch (caml_domain_state * dom_st,
   /* Re-do the allocation: we now have enough space in the minor heap. */
   dom_st->young_ptr -= whsize;
 
-#if 0
   /* Check if the allocated block has been sampled by memprof. */
-  if (dom_st->young_ptr < caml_memprof_young_trigger) {
+  if (dom_st->young_ptr < dom_st->memprof_young_trigger) {
     if(flags & CAML_DO_TRACK) {
-      caml_memprof_track_young(wosize, flags & CAML_FROM_CAML,
-                               nallocs, encoded_alloc_lens);
-      /* Until the allocation actually takes place, the heap is in an invalid
-         state (see comments in [caml_memprof_track_young]). Hence, very little
-         heap operations are allowed before the actual allocation.
+      caml_memprof_sample_young(wosize, flags & CAML_FROM_CAML,
+                                nallocs, encoded_alloc_lens);
+      /* Until the allocation actually takes place, the heap is in an
+         invalid state (see comments in [caml_memprof_sample_young]).
+         Hence, very few heap operations are allowed between this point
+         and the actual allocation.
 
-         Moreover, [Caml_state->young_ptr] should not be modified before the
-         allocation, because its value has been used as the pointer to
-         the sampled block.
+         Specifically, [dom_st->young_ptr] must not now be modified
+         before the allocation, because it has been used to predict
+         addresses of sampled block(s).
       */
-    } else caml_memprof_renew_minor_sample();
+    } else { /* CAML DONT TRACK */
+      caml_memprof_set_trigger(dom_st);
+      caml_reset_young_limit(dom_st);
+    }
   }
-#endif
 }
 
 /* Request a minor collection and enter as if it were an interrupt.
