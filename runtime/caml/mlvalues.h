@@ -96,7 +96,12 @@ typedef opcode_t * code_t;
    This plays a similar role to the [('a, exn) result] type in OCaml,
    with a different representation. Returning this type, instead of
    raising exceptions directly, lets the caller implement proper
-   cleanup and propagate the exception themselves. */
+   cleanup and propagate the exception themselves.
+
+   To extract the value or raise the exception, use
+     value caml_get_value_or_raise(caml_result)
+   from fail.h.
+*/
 typedef struct {
   _Bool is_exception;
   value data;
@@ -106,9 +111,6 @@ typedef struct {
 #define Result_exception(exn) (caml_result){ .is_exception = 1, .data = exn }
 
 #define Result_unit Result_value(Val_unit)
-
-/* returns the value or raises the exception. */
-CAMLextern value caml_run_result(caml_result res);
 
 
 /* Structure of the header:

@@ -68,15 +68,6 @@ Caml_inline void restore_stack_parent(caml_domain_state* domain_state,
   Stack_parent(domain_state->current_stack) = parent_stack;
 }
 
-/* support code for caml_result */
-CAMLexport value caml_run_result(caml_result res)
-{
-  if (res.is_exception)
-    caml_raise(res.data);
-  else
-    return res.data;
-}
-
 #ifndef NATIVE_CODE
 
 /* Bytecode callbacks */
