@@ -110,32 +110,6 @@ typedef struct {
 /* returns the value or raises the exception. */
 CAMLextern value caml_run_result(caml_result res);
 
-/* Before caml_result was available, we used an unsafe encoding of it
-   into the 'value' type, where encoded exceptions have their second
-   bit set. These encoded exceptions are invalid values and must not
-   be seen by the garbage collector. This is unsafe, and the
-   C type-checker does not help. We strongly recommend using the
-   caml_result type above instead. It is GC-safe and more
-   type-safe. */
-
-#define Make_exception_result(v) ((v) | 2)
-#define Is_exception_result(v) (((v) & 3) == 2)
-#define Extract_exception(v) ((v) & ~3)
-
-Caml_inline value Encoded_result(caml_result res) {
-  if (res.is_exception)
-    return Make_exception_result(res.data);
-  else
-    return res.data;
-}
-
-Caml_inline caml_result Result_encoded(value encoded)
-{
-  if (Is_exception_result(encoded))
-    return Result_exception(Extract_exception(encoded));
-  else
-    return Result_value(encoded);
-}
 
 /* Structure of the header:
 
@@ -516,6 +490,36 @@ CAMLextern value caml_set_oo_id(value obj);
 
 #define Caml_out_of_heap_header(wosize, tag)                           \
         Caml_out_of_heap_header_with_reserved(wosize, tag, 0)
+
+
+/* Deprecated/discouraged suppport for unsafe encoded exceptions.
+
+   Before caml_result was available, we used an unsafe encoding of it
+   into the 'value' type, where encoded exceptions have their second
+   bit set. These encoded exceptions are invalid values and must not
+   be seen by the garbage collector. This is unsafe, and the
+   C type-checker does not help. We strongly recommend using the
+   caml_result type above instead. It is GC-safe and more
+   type-safe. */
+
+#define Make_exception_result(v) ((v) | 2)
+#define Is_exception_result(v) (((v) & 3) == 2)
+#define Extract_exception(v) ((v) & ~3)
+
+Caml_inline value Encoded_result(caml_result res) {
+  if (res.is_exception)
+    return Make_exception_result(res.data);
+  else
+    return res.data;
+}
+
+Caml_inline caml_result Result_encoded(value encoded)
+{
+  if (Is_exception_result(encoded))
+    return Result_exception(Extract_exception(encoded));
+  else
+    return Result_value(encoded);
+}
 
 #ifdef __cplusplus
 }
