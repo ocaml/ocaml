@@ -492,7 +492,7 @@ CAMLextern value caml_set_oo_id(value obj);
         Caml_out_of_heap_header_with_reserved(wosize, tag, 0)
 
 
-/* Deprecated/discouraged suppport for unsafe encoded exceptions.
+/* Obsolete -- suppport for unsafe encoded exceptions.
 
    Before caml_result was available, we used an unsafe encoding of it
    into the 'value' type, where encoded exceptions have their second

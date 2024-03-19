@@ -73,8 +73,6 @@ struct caml_exception_context {
 
 int caml_is_special_exception(value exn);
 
-CAMLextern value caml_raise_if_exception(value res);
-
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
