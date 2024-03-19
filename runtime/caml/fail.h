@@ -73,8 +73,6 @@ struct caml_exception_context {
 
 int caml_is_special_exception(value exn);
 
-CAMLextern value caml_raise_if_exception(value res);
-
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
@@ -115,6 +113,19 @@ CAMLnoret CAMLextern void caml_raise_not_found (void);
 CAMLnoret CAMLextern void caml_array_bound_error (void);
 
 CAMLnoret CAMLextern void caml_raise_sys_blocked_io (void);
+
+
+#ifdef CAML_INTERNALS
+/* Returns the value of a [caml_result] or raises the exception.
+   This function replaced [caml_raise_if_exception] in 5.3. */
+Caml_inline value caml_get_value_or_raise (caml_result result)
+{
+  if (result.is_exception)
+    caml_raise(result.data);
+  else
+    return result.data;
+}
+#endif
 
 #ifdef __cplusplus
 }
