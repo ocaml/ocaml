@@ -171,7 +171,7 @@ CAMLexport void caml_enter_blocking_section(void)
          are further async callbacks pending beyond OCaml signal
          handlers. */
       caml_handle_gc_interrupt();
-      caml_run_result(caml_process_pending_signals_result());
+      caml_get_value_or_raise(caml_process_pending_signals_result());
     }
     caml_enter_blocking_section_hook ();
     /* Check again if a signal arrived in the meanwhile. If none,
@@ -390,7 +390,7 @@ caml_result caml_process_pending_actions_with_root_result(value root)
 
 CAMLprim value caml_process_pending_actions_with_root(value root)
 {
-  return caml_run_result(
+  return caml_get_value_or_raise(
     caml_process_pending_actions_with_root_result(root));
 }
 
@@ -405,7 +405,7 @@ CAMLexport caml_result caml_process_pending_actions_result(void)
 
 CAMLexport void caml_process_pending_actions(void)
 {
-  caml_run_result(
+  caml_get_value_or_raise(
     caml_process_pending_actions_result());
 }
 
@@ -715,6 +715,6 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
     caml_plat_unlock(&signal_install_mutex);
   }
-  caml_run_result(caml_process_pending_signals_result());
+  caml_get_value_or_raise(caml_process_pending_signals_result());
   CAMLreturn (res);
 }
