@@ -207,12 +207,6 @@ CAMLexport void caml_raise_sys_blocked_io(void)
   caml_raise_constant(Field(caml_global_data, SYS_BLOCKED_IO));
 }
 
-CAMLexport value caml_raise_if_exception(value res)
-{
-  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
-  return res;
-}
-
 int caml_is_special_exception(value exn) {
   /* this function is only used in caml_format_exception to produce
      a more readable textual representation of some exceptions. It is
