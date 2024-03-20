@@ -2013,6 +2013,18 @@ CAMLprim value caml_domain_dls_get(value unused)
   return Caml_state->dls_root;
 }
 
+CAMLprim value caml_domain_dls_compare_and_set(value old, value new)
+{
+  CAMLnoalloc;
+  value current = Caml_state->dls_root;
+  if (current == old) {
+    caml_modify_generational_global_root(&Caml_state->dls_root, new);
+    return Val_true;
+  } else {
+    return Val_false;
+  }
+}
+
 CAMLprim value caml_recommended_domain_count(value unused)
 {
   intnat n = -1;
