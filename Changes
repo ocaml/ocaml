@@ -115,6 +115,10 @@ _______________
   command-line of the toplevel.
   (Nicolás Ojeda Bär, review by Florian Angeletti, report by Daniel Bünzli)
 
+- #12910, #12920: Fix an unsound interaction between first-class modules
+  and polymorphic records by saving and restoring univar_pairs.
+  (Stephen Dolan, review by Gabriel Scherer, report by Jeremy Yallop)
+
 - #12924, #12930: Rework package constraint checking to improve interaction with
   immediacy
   (Chris Casinghino and Florian Angeletti, review by Florian Angeletti and
