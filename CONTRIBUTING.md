@@ -78,6 +78,7 @@ The current list of maintainers is as follows:
 - @mshinwell Mark Shinwell
 - @nojb Nicolás Ojeda Bär
 - @Octachron Florian Angeletti
+- @OlivierNicole Olivier Nicole
 - @sadiqj Sadiq Jaffer
 - @shindere Sébastien Hinderer
 - @stedolan Stephen Dolan
