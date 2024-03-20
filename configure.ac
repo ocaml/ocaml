@@ -1245,10 +1245,15 @@ AS_CASE([$host],
      natdynlinkopts="$natdynlinkopts -Wl,--no-execute-only"])
 
 ## Check for indirect branch tracking control flow features
+AC_ARG_ENABLE([bti],
+  [AS_HELP_STRING([--enable-bti],
+    [compile with branch target indirection, if supported])])
+
 bti=false
-AS_CASE([$host],
-  [x86_64-*-*], [AC_CHECK_HEADER([cet.h],
-    [AC_DEFINE([HAS_CET_H]) bti=true], [])])
+AS_IF([test "x$enable_bti" = "xyes"],
+  [AS_CASE([$host],
+    [x86_64-*-*], [AC_CHECK_HEADER([cet.h],
+      [AC_DEFINE([HAS_CET_H]) bti=true], [bti=false])])])
 
 # Disable control flow integrity
 
