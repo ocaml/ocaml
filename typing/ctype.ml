@@ -1831,20 +1831,31 @@ let is_contractive env p =
 
 exception Occur
 
+(** [occur_rec ...allow_recursive ... ty0 ty] checks if the node of [ty0] is
+    reachable from the node [ty] follwing a path which is not guarded by allowed
+    recursive constructs. More precisely, recursion under polymorphic variant
+    and object types is always allowed and if [allow_recursive=true] recursion
+    under contractive constructor is also allowed. *)
 let rec occur_rec env allow_recursive visited ty0 ty =
   if eq_type ty ty0 then raise Occur;
   match get_desc ty with
     Tconstr(p, _tl, _abbrev) ->
       if allow_recursive && is_contractive env p then () else
-      if TypeSet.mem ty visited then
-        if allow_recursive then
-          retry_after_expansion env allow_recursive visited ty0 ty
-        else raise Occur
+      if TypeSet.mem ty visited then raise Occur
       else
         let visited = TypeSet.add ty visited in
         begin try
           iter_type_expr (occur_rec env allow_recursive visited ty0) ty
-        with Occur -> retry_after_expansion env allow_recursive visited ty0 ty
+        with Occur -> try
+        (* If [ty0] occurs illegaly in the children nodes of [ty], we retry
+           after expanding [ty]. Indeed, after expansion, the reachable graph
+           might be smaller. However, we don't try this expansion if the node
+           [ty] itself was already visited since in this case the expansion
+           will not change the reachable graph. *)
+          let ty' = try_expand_head try_expand_safe env ty in
+          occur_rec env allow_recursive visited ty0 ty'
+        with Cannot_expand ->
+          raise Occur
         end
   | Tobject _ | Tvariant _ ->
       ()
@@ -1853,12 +1864,6 @@ let rec occur_rec env allow_recursive visited ty0 ty =
         let visited = TypeSet.add ty visited in
         iter_type_expr (occur_rec env allow_recursive visited ty0) ty
       end
-and retry_after_expansion env allow_recursive visited ty0 ty =
-  try
-    let ty' = try_expand_head try_expand_safe env ty in
-    occur_rec env allow_recursive visited ty0 ty'
-  with Cannot_expand ->
-    raise Occur
 
 let type_changed = ref false (* trace possible changes to the studied type *)
 
