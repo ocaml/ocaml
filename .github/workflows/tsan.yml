@@ -34,6 +34,12 @@ jobs:
           persist-credentials: false
       - name: Install libunwind
         run: sudo apt install -y libunwind-dev
+      # This temporary workaround reduces the number of random bits for the base
+      # address of vma regions for mmap allocation, to avoid the
+      # "FATAL: ThreadSanitizer: unexpected memory mapping" TSan error.
+      # See:  https://github.com/google/sanitizers/issues/1716
+      - name: Tune vm.mmap_rnd_bits value for TSan
+        run: sudo sysctl vm.mmap_rnd_bits=28
       - name: Configure tree
         run: |
           MAKE_ARG=-j CONFIG_ARG='--enable-cmm-invariants --enable-dependency-generation --enable-native-toplevel --enable-tsan --enable-ocamltest CFLAGS=-DTSAN_INSTRUMENT_ALL' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
