@@ -39,7 +39,7 @@ let docs_file = ( // ) docs_maindir
 (* Output for API *)
 let api_dir = web_dir // "api"
 
-(* How to go from manual to api *)
+(* How to go from htmlman manual to api *)
 let api_page_url = "../" ^ ocaml_version ^ "/api"
 
 (* How to go from api to manual *)
