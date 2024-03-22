@@ -53,22 +53,6 @@
    SIZEOF_LONGLONG to the sizes in bytes of the C types "int", "long",
    "char *", "short" and "long long" respectively. */
 
-#undef ARCH_INT64_TYPE
-#undef ARCH_UINT64_TYPE
-
-/* Define ARCH_INT64_TYPE and ARCH_UINT64_TYPE to 64-bit integer types,
-   typically "long long" and "unsigned long long" on 32-bit platforms,
-   and "long" and "unsigned long" on 64-bit platforms.
-   If the C compiler doesn't support any 64-bit integer type,
-   leave both ARCH_INT64_TYPE and ARCH_UINT64_TYPE undefined. */
-
-#undef ARCH_INT64_PRINTF_FORMAT
-
-/* Define ARCH_INT64_PRINTF_FORMAT to the printf format used for formatting
-   values of type ARCH_INT64_TYPE.  This is usually "ll" on 32-bit
-   platforms and "l" on 64-bit platforms.
-   Leave undefined if ARCH_INT64_TYPE is undefined.  */
-
 #undef ARCH_ALIGN_INT64
 
 /* Define ARCH_ALIGN_INT64 if the processor requires 64-bit integers to be
