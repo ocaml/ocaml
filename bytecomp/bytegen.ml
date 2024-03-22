@@ -142,7 +142,7 @@ let rec is_tailcall = function
 
 let preserve_tailcall_for_prim = function
   | Popaque | Psequor | Psequand
-  | Prunstack | Pperform | Presume | Preperform ->
+  | Prunstack | Pperform | Presume | Preperform | Ppoll ->
       true
   | Pbytes_to_string | Pbytes_of_string | Pignore | Pgetglobal _ | Psetglobal _
   | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
@@ -493,6 +493,7 @@ let comp_primitive stack_info p sz args =
   | Patomic_cas -> Kccall("caml_atomic_cas", 3)
   | Patomic_fetch_add -> Kccall("caml_atomic_fetch_add", 2)
   | Pdls_get -> Kccall("caml_domain_dls_get", 1)
+  | Ppoll -> Kccall("caml_process_pending_actions_with_root", 1)
   (* The cases below are handled in [comp_expr] before the [comp_primitive] call
      (in the order in which they appear below),
      so they should never be reached in this function. *)

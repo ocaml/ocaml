@@ -161,6 +161,10 @@ type primitive =
   | Popaque
   (* Fetching domain-local state *)
   | Pdls_get
+  (* Poll for runtime actions. May run pending actions such as signal
+     handlers, finalizers, memprof callbacks, etc, as well as GCs and
+     GC slices, so should not be moved or optimised away. *)
+  | Ppoll
 
 and integer_comparison =
     Ceq | Cne | Clt | Cgt | Cle | Cge

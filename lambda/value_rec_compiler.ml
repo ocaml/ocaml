@@ -197,11 +197,12 @@ let compute_static_size lam =
     | Pbytes_set_64 _
     | Pbigstring_set_16 _
     | Pbigstring_set_32 _
-    | Pbigstring_set_64 _ ->
+    | Pbigstring_set_64 _
+    | Ppoll ->
         (* Unit-returning primitives. Most of these are only generated from
            external declarations and not special-cased by [Value_rec_check],
            but it doesn't hurt to be consistent. *)
-        Constant
+      Constant
 
     | Pduprecord (repres, size) ->
         begin match repres with
