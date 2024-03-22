@@ -1,5 +1,6 @@
 (* TEST
    include systhreads;
+   hassysthreads;
 *)
 
 (* This test creates [nb_keys] DLS keys, each storing an atomic integer.
