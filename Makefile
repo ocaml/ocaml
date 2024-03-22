@@ -1760,6 +1760,8 @@ OCAMLDOC_LIBCMTS=$(OCAMLDOC_LIBMLIS:.mli=.cmt) $(OCAMLDOC_LIBMLIS:.mli=.cmti)
 
 ocamldoc/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
+ocamldoc/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
+
 .PHONY: ocamldoc
 ocamldoc: ocamldoc/ocamldoc$(EXE) ocamldoc/odoc_test.cmo
 
@@ -1847,6 +1849,8 @@ $(ocamltest_DEP_FILES): $(DEPDIR)/ocamltest/%.$(D): ocamltest/%.c
 	$(V_CCDEPS)$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@
 
 ocamltest/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
+
+ocamltest/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 
 ocamltest: ocamltest/ocamltest$(EXE) \
   testsuite/lib/lib.cmo testsuite/lib/testing.cma testsuite/tools/expect$(EXE)
