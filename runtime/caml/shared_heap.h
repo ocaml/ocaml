@@ -105,6 +105,17 @@ void caml_cycle_heap(struct caml_heap_state*);
 /* Heap invariant verification (for debugging) */
 void caml_verify_heap_from_stw(caml_domain_state *domain);
 
+/* Forces finalisation of all heap-allocated values,
+   disregarding both local and global roots.
+
+   Warning: finalisation is performed by means of forced sweeping, which may
+   result in pointers referencing nonexistent values; therefore the function
+   should only be used on runtime shutdown.
+*/
+void caml_finalise_heap(struct caml_heap_state *);
+
+void caml_finalise_freelist(void);
+
 #ifdef DEBUG
 /* [is_garbage(v)] returns true if [v] is a garbage value */
 int is_garbage (value);

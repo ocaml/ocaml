@@ -23,6 +23,7 @@ extern "C" {
 
 #ifdef CAML_INTERNALS
 
+#include <stdbool.h>
 #include "camlatomic.h"
 #include "config.h"
 #include "mlvalues.h"
@@ -177,6 +178,8 @@ int caml_global_barrier_num_domains(void);
 
 int caml_domain_terminating(caml_domain_state *);
 int caml_domain_is_terminating(void);
+
+void caml_teardown_domain(caml_domain_state *, bool);
 
 #endif /* CAML_INTERNALS */
 

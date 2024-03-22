@@ -1859,20 +1859,9 @@ int caml_domain_is_terminating (void)
   return domain_terminating(domain_self);
 }
 
-static void domain_terminate (void)
+void caml_teardown_domain(caml_domain_state *domain_state, bool last)
 {
-  caml_domain_state* domain_state = domain_self->state;
-  struct interruptor* s = &domain_self->interruptor;
   int finished = 0;
-
-  caml_gc_log("Domain terminating");
-  s->terminating = 1;
-
-  /* Join ongoing systhreads, if necessary, and then run user-defined
-     termination hooks. No OCaml code can run on this domain after
-     this. */
-  caml_domain_stop_hook();
-  call_timing_hook(&caml_domain_terminated_hook);
 
   while (!finished) {
     caml_finish_sweeping();
@@ -1883,8 +1872,14 @@ static void domain_terminate (void)
 
     caml_finish_marking();
 
+    if (last)
+      caml_finish_major_cycle(1);
+
     caml_orphan_ephemerons(domain_state);
     caml_orphan_finalisers(domain_state);
+
+    if (last)
+      break;
 
     /* take the all_domains_lock to try and exit the STW participant set
        without racing with a STW section being triggered */
@@ -1900,6 +1895,7 @@ static void domain_terminate (void)
        [num_domains_to_sweep] (see major_gc.c).
      */
 
+    struct interruptor *s = &domain_self->interruptor;
     if (!caml_incoming_interrupts_queued() &&
         domain_state->marking_done &&
         domain_state->sweeping_done) {
@@ -1970,6 +1966,23 @@ static void domain_terminate (void)
   }
   caml_free_backtrace_buffer(domain_state->backtrace_buffer);
   caml_free_gc_regs_buckets(domain_state->gc_regs_buckets);
+}
+
+static void domain_terminate (void)
+{
+  caml_domain_state* domain_state = domain_self->state;
+  struct interruptor* s = &domain_self->interruptor;
+
+  caml_gc_log("Domain terminating");
+  s->terminating = 1;
+
+  /* Join ongoing systhreads, if necessary, and then run user-defined
+     termination hooks. No OCaml code can run on this domain after
+     this. */
+  caml_domain_stop_hook();
+  call_timing_hook(&caml_domain_terminated_hook);
+
+  caml_teardown_domain(domain_state, false);
 
   /* signal the domain termination to the backup thread
      NB: for a program with no additional domains, the backup thread
