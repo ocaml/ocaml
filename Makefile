@@ -1733,6 +1733,8 @@ OCAMLDOC_LIBCMTS=$(OCAMLDOC_LIBMLIS:.mli=.cmt) $(OCAMLDOC_LIBMLIS:.mli=.cmti)
 
 ocamldoc/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
+ocamldoc/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
+
 .PHONY: ocamldoc
 ocamldoc: ocamldoc/ocamldoc$(EXE) ocamldoc/odoc_test.cmo
 
@@ -1741,7 +1743,7 @@ ocamldoc/ocamldoc$(EXE): ocamlc ocamlyacc ocamllex
 .PHONY: ocamldoc.opt
 ocamldoc.opt: ocamldoc/ocamldoc.opt$(EXE)
 
-ocamldoc/ocamldoc.opt$(EXE): ocamlc.opt ocamlyacc ocamllex
+ocamldoc/ocamldoc.opt$(EXE): ocamlopt ocamlyacc ocamllex
 
 # OCamltest
 
@@ -1821,6 +1823,8 @@ $(ocamltest_DEP_FILES): $(DEPDIR)/ocamltest/%.$(D): ocamltest/%.c
 
 ocamltest/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
+ocamltest/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
+
 ocamltest: ocamltest/ocamltest$(EXE) \
   testsuite/lib/lib.cmo testsuite/lib/testing.cma testsuite/tools/expect$(EXE)
 
@@ -1866,7 +1870,7 @@ ocamltest/ocamltest$(EXE): ocamlc ocamlyacc ocamllex
 ocamltest.opt: ocamltest/ocamltest.opt$(EXE) \
   testsuite/lib/testing.cmxa $(asmgen_OBJECT) testsuite/tools/codegen$(EXE)
 
-ocamltest/ocamltest.opt$(EXE): ocamlc.opt ocamlyacc ocamllex
+ocamltest/ocamltest.opt$(EXE): ocamlopt ocamlyacc ocamllex
 
 # ocamltest does _not_ want to have access to the Unix interface by default,
 # to ensure functions and types are only used via Ocamltest_stdlib.Unix
