@@ -146,7 +146,7 @@ let wrap_entry_exit expr =
           ( ( Calloc | Caddi | Csubi | Cmuli | Cdivi | Cmodi | Cand | Cmulhi
             | Cor | Cxor | Clsl | Clsr | Casr | Caddv | Cadda | Cnegf | Cabsf
             | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat
-            | Ccheckbound | Copaque | Cdls_get | Capply _ | Cextcall _
+            | Ccheckbound | Copaque | Cdls_get | Cpoll | Capply _ | Cextcall _
             | Cload _ | Cstore _ | Ccmpi _ | Ccmpa _ | Ccmpf _ | Craise _ ),
             _,
             _ )
@@ -254,8 +254,8 @@ let instrument body =
         ( (( Capply _ | Caddi | Calloc | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
            | Cand | Cor | Cxor | Clsl | Clsr | Casr | Caddv | Cadda | Cnegf
            | Cabsf | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat
-           | Ccheckbound | Copaque | Cdls_get | Cextcall _ | Ccmpi _ | Ccmpa _
-           | Ccmpf _ ) as op),
+           | Ccheckbound | Copaque | Cdls_get | Cpoll | Cextcall _ | Ccmpi _
+           | Ccmpa _ | Ccmpf _ ) as op),
           es,
           dbg_none ) ->
       Cop (op, List.map aux es, dbg_none)

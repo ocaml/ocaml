@@ -169,6 +169,7 @@ and operation =
   | Ccheckbound
   | Copaque
   | Cdls_get
+  | Cpoll
 
 type expression =
     Cconst_int of int * Debuginfo.t
