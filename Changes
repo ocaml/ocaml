@@ -70,6 +70,9 @@ _______________
   webman/<version>/api/ for OCaml.org HTML manual generation
   (Shakthi Kannan, review by Hannes Mehnert, and Florian Angeletti)
 
+- #13045: Emphasize caution about behaviour of custom block finalizers.
+  (Nick Barnes)
+
 ### Compiler user-interface and warnings:
 
 * #12084: Check link order when creating archive and when using ocamlopt
