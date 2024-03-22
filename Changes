@@ -798,7 +798,7 @@ OCaml 5.2.0
 
 ### Build system:
 
-- #12198, #12321, #12586, #12616, #12706: continue the merge of the
+- #12198, #12321, #12586, #12616, #12706, #13048: continue the merge of the
   sub-makefiles into the root Makefile started with #11243, #11248,
   #11268, #11420 and #11675.
   (Sébastien Hinderer, review by David Allsopp and Florian Angeletti)
