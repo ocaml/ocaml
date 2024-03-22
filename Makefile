@@ -1768,7 +1768,7 @@ ocamldoc/ocamldoc$(EXE): ocamlc ocamlyacc ocamllex
 .PHONY: ocamldoc.opt
 ocamldoc.opt: ocamldoc/ocamldoc.opt$(EXE)
 
-ocamldoc/ocamldoc.opt$(EXE): ocamlc.opt ocamlyacc ocamllex
+ocamldoc/ocamldoc.opt$(EXE): ocamlopt ocamlyacc ocamllex
 
 # OCamltest
 
@@ -1893,7 +1893,7 @@ ocamltest/ocamltest$(EXE): ocamlc ocamlyacc ocamllex
 ocamltest.opt: ocamltest/ocamltest.opt$(EXE) \
   testsuite/lib/testing.cmxa $(asmgen_OBJECT) testsuite/tools/codegen$(EXE)
 
-ocamltest/ocamltest.opt$(EXE): ocamlc.opt ocamlyacc ocamllex
+ocamltest/ocamltest.opt$(EXE): ocamlopt ocamlyacc ocamllex
 
 # ocamltest does _not_ want to have access to the Unix interface by default,
 # to ensure functions and types are only used via Ocamltest_stdlib.Unix
