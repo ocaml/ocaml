@@ -600,6 +600,18 @@ stdlib__Parsing.cmx : parsing.ml \
 stdlib__Parsing.cmi : parsing.mli \
     stdlib__Obj.cmi \
     stdlib__Lexing.cmi
+stdlib__Pqueue.cmo : pqueue.ml \
+    stdlib__Seq.cmi \
+    stdlib__Int.cmi \
+    stdlib__Dynarray.cmi \
+    stdlib__Pqueue.cmi
+stdlib__Pqueue.cmx : pqueue.ml \
+    stdlib__Seq.cmx \
+    stdlib__Int.cmx \
+    stdlib__Dynarray.cmx \
+    stdlib__Pqueue.cmi
+stdlib__Pqueue.cmi : pqueue.mli \
+    stdlib__Seq.cmi
 stdlib__Printexc.cmo : printexc.ml \
     stdlib.cmi \
     stdlib__Printf.cmi \

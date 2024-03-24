@@ -27,6 +27,8 @@ _______________
 
 ### Standard library:
 
+- #12871: Add the Pqueue module to the stdlib. It implements priority queues.
+  (Jean-Christophe Filliâtre, review by Gabriel Scherer)
 - #12133: Expose support for printing substrings in Format
   (Florian Angeletti, review by Daniel Bünzli, Gabriel Scherer
    and Nicolás Ojeda Bär)
