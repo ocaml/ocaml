@@ -255,7 +255,9 @@ void caml_uerror(const char * cmdname, value cmdarg)
 
 CAMLprim void caml_unix_uerror(value msg, value cmdarg) {
   CAMLparam0();
-  caml_uerror(String_val(msg), cmdarg);
+  DWORD err = GetLastError();
+  caml_win32_maperr(err);
+  caml_uerror("read_bigarray", Nothing);caml_uerror(String_val(msg), cmdarg);
   CAMLreturn0;
 }
 
