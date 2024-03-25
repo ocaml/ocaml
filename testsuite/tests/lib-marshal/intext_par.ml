@@ -81,7 +81,8 @@ let test_out filename =
   output_value oc (Nativeint.of_string "-123456");
   output_value oc (Nativeint.shift_left (Nativeint.of_string "123456789") 32);
   output_value oc (Nativeint.shift_left (Nativeint.of_string "-123456789") 32);
-  let i = Int64.of_string "123456789123456" in output_value oc (i,i);
+  let i = Sys.opaque_identity (Int64.of_string "123456789123456") in
+  output_value oc (i,i);
   close_out oc
 
 

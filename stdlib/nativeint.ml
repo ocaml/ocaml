@@ -60,7 +60,8 @@ let unsigned_to_int =
 external format : string -> nativeint -> string = "caml_nativeint_format"
 let to_string n = format "%d" n
 
-external of_string: string -> nativeint = "caml_nativeint_of_string"
+external of_string: string -> (nativeint[@unboxed])
+  = "caml_nativeint_of_string" "caml_nativeint_of_string_unboxed"
 
 let of_string_opt s =
   try Some (of_string s)
