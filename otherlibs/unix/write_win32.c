@@ -157,7 +157,7 @@ intnat caml_unix_fast_single_write(value fd, value buf, intnat ofs, intnat len)
     } else {
       HANDLE h = Handle_val(fd);
       DWORD writtenwords;
-      if (WriteFile(h, &Byte(buf, ofs), ofs, &writtenwords, NULL))
+      if (WriteFile(h, &Byte(buf, ofs), len, &writtenwords, NULL))
         ret = writtenwords;
       else
         ret = -1;
