@@ -118,7 +118,7 @@ intnat caml_unix_fast_read(value fd, value buf, intnat ofs, intnat len)
     if (ReadFile(h, &Byte(buf, ofs), len, &readwords, NULL))
       ret = readwords;
     else {
-      DWord err = GetLastError();
+      DWORD err = GetLastError();
       if (err == ERROR_BROKEN_PIPE) {
 	      // The write handle for an anonymous pipe has been closed. We match the
 	      // Unix behavior, and treat this as a zero-read instead of a Unix_error.
