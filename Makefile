@@ -120,6 +120,7 @@ typing_SOURCES = \
   typing/shape.mli typing/shape.ml \
   typing/types.mli typing/types.ml \
   typing/rawprinttyp.mli typing/rawprinttyp.ml \
+  typing/gprinttyp.mli typing/gprinttyp.ml \
   typing/btype.mli typing/btype.ml \
   typing/oprint.mli typing/oprint.ml \
   typing/subst.mli typing/subst.ml \
