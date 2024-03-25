@@ -15,6 +15,22 @@ There are two different scripts, `process_manual.ml` and
 manual, while the latter deals with the api generated with `ocamldoc`.
 They both use a common module `common.ml`.
 
+## Prerequisites
+
+In order to do postprocessing of the HTML manual, ensure that you have
+the `sass` package installed. On Debian-based Linux distributions, you
+can install the package by:
+
+```
+apt install sass
+```
+
+The `lambdasoup` package is also required on the local opam switch:
+
+```
+opam install lambdasoup
+```
+
 ## How to build
 
 With dependencies to build the whole manual:
