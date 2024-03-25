@@ -117,8 +117,14 @@ intnat caml_unix_fast_read(value fd, value buf, intnat ofs, intnat len)
     DWORD readwords;
     if (ReadFile(h, &Byte(buf, ofs), len, &readwords, NULL))
       ret = readwords;
-    else
-      ret = -1;
+    else {
+      DWord err = GetLastError();
+      if (err == ERROR_BROKEN_PIPE) {
+	      // The write handle for an anonymous pipe has been closed. We match the
+	      // Unix behavior, and treat this as a zero-read instead of a Unix_error.
+	      ret = 0;
+      }
+    }
   }
   return ret;
 }
