@@ -120,9 +120,9 @@ intnat caml_unix_fast_read(value fd, value buf, intnat ofs, intnat len)
     else {
       DWORD err = GetLastError();
       if (err == ERROR_BROKEN_PIPE) {
-	      // The write handle for an anonymous pipe has been closed. We match the
-	      // Unix behavior, and treat this as a zero-read instead of a Unix_error.
-	      ret = 0;
+	// The write handle for an anonymous pipe has been closed. We match the
+	// Unix behavior, and treat this as a zero-read instead of a Unix_error.
+	ret = 0;
       }
     }
   }
