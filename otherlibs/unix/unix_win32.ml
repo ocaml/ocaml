@@ -311,7 +311,7 @@ let read_bigarray fd buf ofs len =
   then invalid_arg "Unix.read_bigarray"
   else unsafe_read_bigarray fd buf ofs len
 let nonblock_read fd buf ofs len =
-  if ofs < 0 || len < 0 || ofs+len > Bytes.length buf then
+  if ofs < 0 || len < 0 || ofs > Bytes.length buf - len then
     invalid_arg "read";
   let ret = unsafe_fast_read fd buf ofs len in
   if ret == -1 then raise_unix_error "Unix.nonblock_read" "";
