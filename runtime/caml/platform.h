@@ -26,6 +26,9 @@
 #include "config.h"
 #include "mlvalues.h"
 #include "sys.h"
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
 
 #if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
 #define MAP_ANONYMOUS MAP_ANON
@@ -49,6 +52,14 @@ Caml_inline void cpu_relax(void) {
 #else
   /* Just a compiler barrier */
   __asm__ volatile ("" ::: "memory");
+#endif
+#elif defined(_MSC_VER)
+/* It would be better to use YieldProcessor to have a portable implementation
+   but this would require windows.h which we can't include here (it would
+   conflict with caml/instruct.h on ATOM, for instance)
+*/
+#if defined(_M_IX86) || defined(_M_X64)
+  _mm_pause();
 #endif
 #endif
 }

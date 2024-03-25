@@ -462,8 +462,7 @@ module Memprof :
         (** The size of the block, in words, excluding the header. *)
 
         source : allocation_source;
-        (** The cause of the allocation; [Marshal] cannot be produced
-          since OCaml 5. *)
+        (** The cause of the allocation. *)
 
         callstack : Printexc.raw_backtrace
         (** The callstack for the allocation. *)
@@ -507,7 +506,7 @@ module Memprof :
        the sampling rate in samples per word (including headers).
        Usually, with cheap callbacks, a rate of 1e-4 has no visible
        effect on performance, and 1e-3 causes the program to run a few
-       percent slower.
+       percent slower. 0.0 <= sampling_rate <= 1.0.
 
        The parameter [callstack_size] is the length of the callstack
        recorded at every sample. Its default is [max_int].
@@ -515,12 +514,12 @@ module Memprof :
        The parameter [tracker] determines how to track sampled blocks
        over their lifetime in the minor and major heap.
 
-       Sampling is temporarily disabled on the current thread when
-       calling a callback, so callbacks do not need to be re-entrant
-       if the program is single-threaded and single-domain. However,
-       if threads or multiple domains are used, it is possible that
-       several callbacks will run in parallel. In this case, callback
-       functions must be re-entrant.
+       Sampling and running callbacks are temporarily disabled on the
+       current thread when calling a callback, so callbacks do not
+       need to be re-entrant if the program is single-threaded and
+       single-domain. However, if threads or multiple domains are
+       used, it is possible that several callbacks will run in
+       parallel. In this case, callback functions must be re-entrant.
 
        Note that a callback may be postponed slightly after the actual
        event. The callstack passed to an allocation callback always
@@ -528,30 +527,32 @@ module Memprof :
        have evolved between the allocation and the call to the
        callback.
 
-       If a new thread or domain is created when profiling is active,
-       the child thread or domain joins that profile (using the same
-       [sampling_rate], [callstack_size], and [tracker] callbacks).
+       If a new thread or domain is created when the current domain is
+       sampling for a profile, the child thread or domain joins that
+       profile (using the same [sampling_rate], [callstack_size], and
+       [tracker] callbacks).
 
-       An allocation callback is generally run by the thread which
+       An allocation callback is always run by the thread which
        allocated the block. If the thread exits or the profile is
+       stopped before the callback is called, the allocation callback
+       is not called and the block is not tracked.
+
+       Each subsequent callback is generally run by the domain which
+       allocated the block. If the domain terminates or the profile is
        stopped before the callback is called, the callback may be run
-       by a different thread.
+       by a different domain.
 
-       Each callback is generally run by the domain which allocated
-       the block. If the domain terminates or the profile is stopped
-       before the callback is called, the callback may be run by a
-       different domain.
-
-       Different domains may run different profiles simultaneously.
-       *)
+       Different domains may sample for different profiles
+       simultaneously.  *)
 
     val stop : unit -> unit
     (** Stop sampling for the current profile. Fails if no profile is
        sampling in the current domain. Stops sampling in all threads
        and domains sharing the profile.
 
-       Callbacks from a profile may run after [stop] is called, until
-       [discard] is applied to the profile.
+       Promotion and deallocation callbacks from a profile may run
+       after [stop] is called, until [discard] is applied to the
+       profile.
 
        A profile is implicitly stopped (but not discarded) if all
        domains and threads sampling for it are terminated.

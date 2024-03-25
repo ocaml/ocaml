@@ -856,6 +856,7 @@ supports_shared_libraries
 mklib
 AR
 shebangscripts
+winpthreads_source_dir
 flexlink_flags
 flexdll_dir
 bootstrapping_flexdll
@@ -1010,6 +1011,7 @@ enable_function_sections
 enable_mmap_map_stack
 with_afl
 with_flexdll
+with_winpthreads_msvc
 with_zstd
 enable_shared
 enable_static
@@ -1719,6 +1721,8 @@ Optional Packages:
   --with-target-sh        location of Posix sh on the target system
   --with-afl              use the AFL fuzzer
   --with-flexdll          bootstrap FlexDLL from the given sources
+  --with-winpthreads-msvc build winpthreads (only for the MSVC port) from the
+                          given sources
   --without-zstd          disable compression of compilation artefacts
   --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
                           both]
@@ -3438,6 +3442,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 
 
 
+
  # TODO: rename this variable
 
 
@@ -3675,8 +3680,6 @@ esac
 # Systems that are known not to work, even in bytecode only.
 
 case $host in #(
-  *-pc-windows) :
-    as_fn_error 69 "the MSVC compiler is not supported currently" "$LINENO" 5 ;; #(
   i386-*-solaris*) :
     as_fn_error $? "Building for 32 bits target is not supported. \
 If your host is 64 bits, you can try with './configure CC=\"gcc -m64\"' \
@@ -4114,6 +4117,17 @@ then :
   withval=$with_flexdll; if test x"$withval" = 'xyes'
 then :
   with_flexdll=flexdll
+fi
+fi
+
+
+
+# Check whether --with-winpthreads-msvc was given.
+if test ${with_winpthreads_msvc+y}
+then :
+  withval=$with_winpthreads_msvc; if test x"$withval" = 'xyes'
+then :
+  with_winpthreads_msvc=winpthreads
 fi
 fi
 
@@ -13653,14 +13667,17 @@ unknown
 _ACEOF
 if ac_fn_c_try_cpp "$LINENO"
 then :
-  if test ${ocaml_cv_cc_vendor+y}
+  if test ${ocaml_cv_cc_vendor2+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  ocaml_cv_cc_vendor=`sed -e '/^#/d' conftest.i | tr -s '[:space:]' '-' \
+  ocaml_cv_cc_vendor2=`sed -e '/^#/d' conftest.i | tr -s '[:space:]' '-' \
                              | sed -e 's/^-//' -e 's/-$//'`
 fi
 
+    # Domain of values was changed in #12768, so the cache key became different
+    # from the variable
+    ocaml_cc_vendor="$ocaml_cv_cc_vendor2"
 else $as_nop
   { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
@@ -13668,8 +13685,8 @@ as_fn_error $? "unexpected preprocessor failure
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 rm -f conftest.err conftest.i conftest.$ac_ext
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ocaml_cv_cc_vendor" >&5
-printf "%s\n" "$ocaml_cv_cc_vendor" >&6; }
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ocaml_cc_vendor" >&5
+printf "%s\n" "$ocaml_cc_vendor" >&6; }
 
 
 ## In cross-compilation mode, can we run executables produced?
@@ -13717,7 +13734,7 @@ fi
 # We thus figure out how to invoke the C preprocessor directly but
 # let the CPP variable untouched, except for the MSVC port where we set it
 # manually to make sure the backward compatibility is preserved
-case $ocaml_cv_cc_vendor in #(
+case $ocaml_cc_vendor in #(
   xlc-*) :
     CPP="$CC -E -qnoppline" # suppress incompatible XLC line directives
     ocamltest_CPP="$CPP" ;; #(
@@ -13884,7 +13901,7 @@ fi
 
 ## Determine which flags to use for the C compiler
 
-case $ocaml_cv_cc_vendor in #(
+case $ocaml_cc_vendor in #(
   xlc-*) :
     outputobj='-o '
     warn_error_flag=''
@@ -13959,7 +13976,7 @@ esac
 # Concerning optimization level, -O3 is somewhat risky, so take -O2.
 # Concerning language version, recent enough versions of GCC and Clang
 # default to gnu11 (C11 + GNU extensions) or gnu17, which is fine.
-case $ocaml_cv_cc_vendor in #(
+case $ocaml_cc_vendor in #(
   clang-*) :
     common_cflags="-O2 -fno-strict-aliasing -fwrapv";
     internal_cflags="$cc_warnings -fno-common" ;; #(
@@ -13980,10 +13997,15 @@ case $ocaml_cv_cc_vendor in #(
     internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
   mingw-*) :
     as_fn_error $? "Unsupported C compiler for a MinGW-w64 build" "$LINENO" 5 ;; #(
+  msvc-0*|msvc-1[0-8]*|msvc-19[012]*|msvc-193[0-7]) :
+    # No C11 atomics support
+    as_fn_error 69 "This version of MSVC is too old. Please use Visual Studio version 17.8 or above." "$LINENO" 5 ;; #(
   msvc-*) :
     common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
     common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
     internal_cppflags='-DUNICODE -D_UNICODE'
+    internal_cflags='-experimental:c11atomics -std:c11'
+    CFLAGS="$CFLAGS -experimental:c11atomics -std:c11"
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports -d2VolatileMetadata-" >&5
 printf %s "checking whether the C compiler supports -d2VolatileMetadata-... " >&6; }
@@ -14008,7 +14030,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
     if test "x$cl_has_volatile_metadata" = "xtrue"
 then :
-  internal_cflags='-d2VolatileMetadata-'
+  internal_cflags="$internal_cflags -d2VolatileMetadata-"
 fi
     internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
     internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
@@ -14419,7 +14441,7 @@ esac
 
 mkexe_cmd_exp="$CC"
 
-case $ocaml_cv_cc_vendor,$host in #(
+case $ocaml_cc_vendor,$host in #(
   *,x86_64-*-darwin*) :
     oc_ldflags='-Wl,-no_compact_unwind';
     printf "%s\n" "#define HAS_ARCH_CODE32 1" >>confdefs.h
@@ -14480,6 +14502,106 @@ esac
   *) :
      ;;
 esac
+
+# Winpthreads emulation library for the MSVC port
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for winpthreads sources" >&5
+printf %s "checking for winpthreads sources... " >&6; }
+if test x"$with_winpthreads_msvc" = "xno"
+then :
+  winpthreads_source_dir=''
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: disabled" >&5
+printf "%s\n" "disabled" >&6; }
+else $as_nop
+  winpthreadmsg=''
+  case $target in #(
+  *-pc-windows) :
+                       if test x"$with_winpthreads_msvc" = 'x' || test x"$with_winpthreads_msvc" = x'winpthreads'
+then :
+  if test -f 'winpthreads/src/winpthread_internal.h'
+then :
+  winpthreads_source_dir=winpthreads
+        iwinpthreadsdir="$ocamlsrcdir\winpthreads\include"
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: required but not available (uninitialized submodule?)" >&5
+printf "%s\n" "required but not available (uninitialized submodule?)" >&6; }
+        as_fn_error $? "exiting" "$LINENO" 5
+fi
+else $as_nop
+  rm -rf winpthreads-sources
+      if test -f "$with_winpthreads_msvc/src/winpthread_internal.h"
+then :
+  mkdir -p winpthreads-sources/src winpthreads-sources/include
+        cp "$with_winpthreads_msvc"/src/*.c winpthreads-sources/src
+        cp "$with_winpthreads_msvc"/src/*.h winpthreads-sources/src
+        cp "$with_winpthreads_msvc"/include/*.h winpthreads-sources/include
+        winpthreads_source_dir='winpthreads-sources'
+        iwinpthreadsdir="$ocamlsrcdir\\winpthreads-sources\\include"
+        winpthreadsmsg=" (from $with_winpthreads_msvc)"
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: requested but not available" >&5
+printf "%s\n" "requested but not available" >&6; }
+        as_fn_error $? "exiting" "$LINENO" 5
+fi
+fi
+    if test x"$winpthreads_source_dir" = 'x'
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $winpthreads_source_dir$winpthreadmsg" >&5
+printf "%s\n" "$winpthreads_source_dir$winpthreadmsg" >&6; }
+
+
+  saved_CC="$CC"
+  saved_CFLAGS="$CFLAGS"
+  saved_CPPFLAGS="$CPPFLAGS"
+  saved_LIBS="$LIBS"
+  saved_ac_ext="$ac_ext"
+  saved_ac_compile="$ac_compile"
+  # Move the content of confdefs.h to another file so it does not
+  # get included
+  mv confdefs.h confdefs.h.bak
+  touch confdefs.h
+
+
+  if test -n "$iwinpthreadsdir"
+then :
+  CPPFLAGS="-I $iwinpthreadsdir $CPPFLAGS"
+fi
+  ac_fn_c_check_header_compile "$LINENO" "pthread.h" "ac_cv_header_pthread_h" "$ac_includes_default"
+if test "x$ac_cv_header_pthread_h" = xyes
+then :
+
+else $as_nop
+  as_fn_error $? "cannot find or use pthread.h from winpthreads" "$LINENO" 5
+fi
+
+
+
+  # Restore the content of confdefs.h
+  mv confdefs.h.bak confdefs.h
+  ac_compile="$saved_ac_compile"
+  ac_ext="$saved_ac_ext"
+  CPPFLAGS="$saved_CPPFLAGS"
+  CFLAGS="$saved_CFLAGS"
+  CC="$saved_CC"
+  LIBS="$saved_LIBS"
+
+
+      internal_cppflags="$internal_cppflags -I$iwinpthreadsdir"
+fi ;; #(
+  *) :
+    if test x"$with_winpthreads_msvc" != 'x'
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: requested but not supported" >&5
+printf "%s\n" "requested but not supported" >&6; }
+      as_fn_error $? "exiting" "$LINENO" 5
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: skipping on that platform" >&5
+printf "%s\n" "skipping on that platform" >&6; }
+fi ;;
+esac
+fi
 
 ## Program to use to install files
 
@@ -15301,7 +15423,7 @@ fi
 
 if ! $arch64
 then :
-  case $ocaml_cv_cc_vendor in #(
+  case $ocaml_cc_vendor in #(
   gcc-*) :
     cclibs="$cclibs -latomic" ;; #(
   *) :
@@ -15358,7 +15480,7 @@ fi
 # macOS and MinGW-w64 have problems with thread local storage accessed from DLLs
 
 case $host in #(
-  *-apple-darwin*|*-mingw32*) :
+  *-apple-darwin*|*-mingw32*|*-pc-windows) :
      ;; #(
   *) :
     printf "%s\n" "#define HAS_FULL_THREAD_VARIABLES 1" >>confdefs.h
@@ -15393,7 +15515,7 @@ then :
       mkmaindll_exp="flexlink -maindll ${mkdll_flags}"
       mkmaindll="flexlink -maindll ${mkdll_flags}" ;; #(
   powerpc-ibm-aix*) :
-    case $ocaml_cv_cc_vendor in #(
+    case $ocaml_cc_vendor in #(
   xlc*) :
     mkdll_flags='-qmkshrobj -G'
           supports_shared_libraries=true ;; #(
@@ -15409,7 +15531,7 @@ esac ;; #(
   *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*) :
     sharedlib_cflags="-fPIC"
-       case $ocaml_cv_cc_vendor,$host in #(
+       case $ocaml_cc_vendor,$host in #(
   gcc-*,powerpc-*-linux*) :
     mkdll_flags='-shared -mbss-plt' ;; #(
   *,i[3456]86-*) :
@@ -15552,7 +15674,7 @@ case $enable_native_toplevel,$natdynlink in #(
 esac
 
 # Try to work around the Skylake/Kaby Lake processor bug.
-case "$ocaml_cv_cc_vendor,$host" in #(
+case "$ocaml_cc_vendor,$host" in #(
   *gcc*,x86_64-*|*gcc*,i686-*) :
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports -fno-tree-vrp" >&5
@@ -15660,7 +15782,7 @@ case $host in #(
   i686-pc-windows) :
     arch=i386; system=win32 ;; #(
   x86_64-pc-windows) :
-    arch=amd64; system=win64 ;; #(
+    has_native_backend=yes; arch=amd64; system=win64 ;; #(
   powerpc64le*-*-linux*) :
     has_native_backend=yes; arch=power; model=ppc64le; system=linux ;; #(
   powerpc64*-*-linux-musl*) :
@@ -15910,7 +16032,7 @@ fi
 
 if test -z "$PARTIALLD"
 then :
-  case "$host,$ocaml_cv_cc_vendor" in #(
+  case "$host,$ocaml_cc_vendor" in #(
   x86_64-*-darwin*,gcc-*) :
     PACKLD_FLAGS=' -arch x86_64' ;; #(
   powerpc64le*-*-linux*,gcc-*) :
@@ -15929,7 +16051,7 @@ esac
   # output filename. Don't assume that all C compilers understand GNU -ofoo
   # form, so ensure that the definition includes a space at the end (which is
   # achieved using the $(EMPTY) expansion trick in Makefile.config.in).
-  case "$ocaml_cv_cc_vendor" in #(
+  case "$ocaml_cc_vendor" in #(
   msvc-*) :
     # For the Microsoft C compiler there must be no space at the end of the
       # string.
@@ -16000,7 +16122,7 @@ fi
 default_as="$CC -c"
 default_aspp="$CC -c"
 
-case $as_target,$ocaml_cv_cc_vendor in #(
+case $as_target,$ocaml_cc_vendor in #(
   *-*-linux*,gcc-*) :
     case $as_cpu in #(
   x86_64|arm*|aarch64*|i[3-6]86|riscv*) :
@@ -16294,9 +16416,9 @@ printf "%s\n" "no" >&6; }
   *,x86_64-w64-mingw32*|*,x86_64-*-cygwin*) :
     hard_error=false ;; #(
   *) :
-    case $ocaml_cv_cc_vendor in #(
+    case $ocaml_cc_vendor in #(
   msvc-*) :
-    if test "${ocaml_cv_cc_vendor#msvc-}" -lt 1920
+    if test "${ocaml_cc_vendor#msvc-}" -lt 1920
 then :
   hard_error=false
 else $as_nop
@@ -16324,11 +16446,11 @@ fi
 else $as_nop
   if test x"$enable_imprecise_c99_float_ops" != "xyes"
 then :
-  case $enable_imprecise_c99_float_ops,$ocaml_cv_cc_vendor in #(
+  case $enable_imprecise_c99_float_ops,$ocaml_cc_vendor in #(
   no,*) :
     hard_error=true ;; #(
   ,msvc-*) :
-    if test "${ocaml_cv_cc_vendor#msvc-}" -lt 1800
+    if test "${ocaml_cc_vendor#msvc-}" -lt 1800
 then :
   hard_error=false
 else $as_nop
@@ -16676,11 +16798,11 @@ then :
   amd64) :
     case "$system" in #(
   freebsd|linux|macosx) :
-    case "$ocaml_cv_cc_vendor" in #(
+    case "$ocaml_cc_vendor" in #(
   gcc-*|clang-*) :
     tsan=true ;; #(
   *) :
-    as_fn_error $? "thread sanitizer not supported with vendor=$ocaml_cv_cc_vendor\"" "$LINENO" 5
+    as_fn_error $? "thread sanitizer not supported with vendor=$ocaml_cc_vendor\"" "$LINENO" 5
           ;;
 esac ;; #(
   *) :
@@ -16690,11 +16812,11 @@ esac ;; #(
   arm64) :
     case "$system" in #(
   linux|macosx) :
-    case "$ocaml_cv_cc_vendor" in #(
+    case "$ocaml_cc_vendor" in #(
   gcc-*|clang-*) :
     tsan=true ;; #(
   *) :
-    as_fn_error $? "thread sanitizer not supported with vendor=$ocaml_cv_cc_vendor\"" "$LINENO" 5
+    as_fn_error $? "thread sanitizer not supported with vendor=$ocaml_cc_vendor\"" "$LINENO" 5
           ;;
 esac ;; #(
   *) :
@@ -16704,11 +16826,11 @@ esac ;; #(
   power) :
     case "$system" in #(
   linux) :
-    case "$ocaml_cv_cc_vendor" in #(
+    case "$ocaml_cc_vendor" in #(
   gcc-*|clang-*) :
     tsan=true ;; #(
   *) :
-    as_fn_error $? "thread sanitizer not supported with vendor=$ocaml_cv_cc_vendor\"" "$LINENO" 5
+    as_fn_error $? "thread sanitizer not supported with vendor=$ocaml_cc_vendor\"" "$LINENO" 5
           ;;
 esac ;; #(
   *) :
@@ -16718,11 +16840,11 @@ esac ;; #(
   riscv) :
     case "$system" in #(
   linux) :
-    case "$ocaml_cv_cc_vendor" in #(
+    case "$ocaml_cc_vendor" in #(
   gcc-*|clang-*) :
     tsan=true ;; #(
   *) :
-    as_fn_error $? "thread sanitizer not supported with vendor=$ocaml_cv_cc_vendor\"" "$LINENO" 5
+    as_fn_error $? "thread sanitizer not supported with vendor=$ocaml_cc_vendor\"" "$LINENO" 5
           ;;
 esac ;; #(
   *) :
@@ -16732,11 +16854,11 @@ esac ;; #(
   s390x) :
     case "$system" in #(
   linux) :
-    case "$ocaml_cv_cc_vendor" in #(
+    case "$ocaml_cc_vendor" in #(
   gcc-*|clang-*) :
     tsan=true ;; #(
   *) :
-    as_fn_error $? "thread sanitizer not supported with vendor=$ocaml_cv_cc_vendor\"" "$LINENO" 5
+    as_fn_error $? "thread sanitizer not supported with vendor=$ocaml_cc_vendor\"" "$LINENO" 5
           ;;
 esac ;; #(
   *) :
@@ -16753,8 +16875,8 @@ fi
 
 if $tsan
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: using thread sanitizer with vendor=$ocaml_cv_cc_vendor" >&5
-printf "%s\n" "$as_me: using thread sanitizer with vendor=$ocaml_cv_cc_vendor" >&6;}
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: using thread sanitizer with vendor=$ocaml_cc_vendor" >&5
+printf "%s\n" "$as_me: using thread sanitizer with vendor=$ocaml_cc_vendor" >&6;}
 
   # Check for libtsan library files (necessary on some Linux distributions)
   SAVED_LDFLAGS="$LDFLAGS"
@@ -16781,13 +16903,13 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
   LDFLAGS="$SAVED_LDFLAGS"
 
-  case $ocaml_cv_cc_vendor in #(
+  case $ocaml_cc_vendor in #(
   gcc-[0123456789]-*|gcc-10-*|clang-*) :
      ;; #(
   *) :
     oc_tsan_cflags="$oc_tsan_cflags -Wno-tsan" ;;
 esac
-  case $ocaml_cv_cc_vendor in #(
+  case $ocaml_cc_vendor in #(
   gcc*) :
     tsan_distinguish_volatile_cflags="--param=tsan-distinguish-volatile=1" ;; #(
   clang*) :
@@ -17952,7 +18074,7 @@ fi
 
 
 ## -fdebug-prefix-map support by the C compiler
-case $ocaml_cv_cc_vendor,$host in #(
+case $ocaml_cc_vendor,$host in #(
   *,*-*-mingw32*) :
     cc_has_debug_prefix_map=false ;; #(
   *,*-pc-windows) :
@@ -18849,7 +18971,7 @@ fi
 
      PTHREAD_LIBS="-l:libpthread.a $link_gcc_eh" ;; #(
   *-pc-windows) :
-    PTHREAD_LIBS="-l:libpthread.lib" ;; #(
+    PTHREAD_LIBS='' ;; #(
   *) :
 
 
@@ -19886,7 +20008,7 @@ fi
 
 if test x"$enable_frame_pointers" = "xyes"
 then :
-  case "$host,$ocaml_cv_cc_vendor" in #(
+  case "$host,$ocaml_cc_vendor" in #(
   x86_64-*-linux*,gcc-*|x86_64-*-linux*,clang-*) :
     common_cflags="$common_cflags -g  -fno-omit-frame-pointer"
       frame_pointers=true
@@ -20238,7 +20360,7 @@ else $as_nop
            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: No support for function sections on $target." >&5
 printf "%s\n" "$as_me: No support for function sections on $target." >&6;} ;; #(
   *) :
-    case $ocaml_cv_cc_vendor in #(
+    case $ocaml_cc_vendor in #(
   gcc-0123-*|gcc-4-01234567) :
     function_sections=false;
             { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Function sections are not
@@ -20260,9 +20382,9 @@ printf "%s\n" "$as_me: Function sections are not supported
   *) :
     function_sections=false;
           { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Function sections are not supported by
-          $ocaml_cv_cc_vendor." >&5
+          $ocaml_cc_vendor." >&5
 printf "%s\n" "$as_me: Function sections are not supported by
-          $ocaml_cv_cc_vendor." >&6;} ;;
+          $ocaml_cc_vendor." >&6;} ;;
 esac ;;
 esac ;; #(
   *) :
@@ -20304,9 +20426,9 @@ case $host in #(
   *-*-mingw32*) :
     cclibs="$cclibs -lole32 -luuid -lversion" ;; #(
   *-pc-windows) :
-    # For whatever reason, flexlink includes -ladvapi32 for mingw-w64, but
-    # doesn't include advapi32.lib for MSVC
-    cclibs="$cclibs ole32.lib uuid.lib advapi32.lib version.lib" ;; #(
+    # For whatever reason, flexlink includes -ladvapi32 and -lshell32 for
+    # mingw-w64, but doesn't include advapi32.lib and shell32.lib for MSVC
+    cclibs="$cclibs ole32.lib uuid.lib advapi32.lib shell32.lib version.lib" ;; #(
   *) :
      ;;
 esac

@@ -2644,7 +2644,6 @@ asmcomp/cmm_helpers.cmo : \
     utils/targetint.cmi \
     lambda/switch.cmi \
     asmcomp/strmatch.cmi \
-    asmcomp/proc.cmi \
     typing/primitive.cmi \
     utils/numbers.cmi \
     utils/misc.cmi \
@@ -2667,7 +2666,6 @@ asmcomp/cmm_helpers.cmx : \
     utils/targetint.cmx \
     lambda/switch.cmx \
     asmcomp/strmatch.cmx \
-    asmcomp/proc.cmx \
     typing/primitive.cmx \
     utils/numbers.cmx \
     utils/misc.cmx \

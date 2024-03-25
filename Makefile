@@ -893,7 +893,7 @@ endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 
 INSTALL_COMPLIBDIR = $(DESTDIR)$(COMPLIBDIR)
 INSTALL_FLEXDLLDIR = $(INSTALL_LIBDIR)/flexdll
-FLEXDLL_MANIFEST = default_$(ARCH).manifest
+FLEXDLL_MANIFEST = default$(filter-out _i386,_$(ARCH)).manifest
 
 DOC_FILES=\
   Changes \
@@ -1091,6 +1091,24 @@ partialclean::
 
 ## Lists of source files
 
+ifneq "$(WINPTHREADS_SOURCE_DIR)" ""
+winpthreads_SOURCES = $(addprefix $(WINPTHREADS_SOURCE_DIR)/src/, \
+  cond.c \
+  misc.c \
+  mutex.c \
+  rwlock.c \
+  sched.c \
+  spinlock.c \
+  thread.c)
+
+winpthreads_OBJECTS = $(winpthreads_SOURCES:.c=.$(O))
+
+clean::
+	rm -f $(winpthreads_OBJECTS)
+else
+winpthreads_OBJECTS =
+endif
+
 runtime_COMMON_C_SOURCES = \
   addrmap \
   afl \
@@ -1209,30 +1227,37 @@ endif
 
 ## List of object files for each target
 
-libcamlrun_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.b.$(O))
+
+libcamlrun_OBJECTS = \
+  $(runtime_BYTECODE_C_SOURCES:.c=.b.$(O)) $(winpthreads_OBJECTS)
 
 libcamlrun_non_shared_OBJECTS = \
   $(subst $(UNIX_OR_WIN32).b.$(O),$(UNIX_OR_WIN32)_non_shared.b.$(O), \
           $(libcamlrun_OBJECTS))
 
 libcamlrund_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.bd.$(O)) \
-  runtime/instrtrace.bd.$(O)
+  $(winpthreads_OBJECTS) runtime/instrtrace.bd.$(O)
 
-libcamlruni_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.bi.$(O))
+libcamlruni_OBJECTS = \
+  $(runtime_BYTECODE_C_SOURCES:.c=.bi.$(O)) $(winpthreads_OBJECTS)
 
-libcamlrunpic_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.bpic.$(O))
+libcamlrunpic_OBJECTS = \
+  $(runtime_BYTECODE_C_SOURCES:.c=.bpic.$(O)) $(winpthreads_OBJECTS)
 
 libasmrun_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.n.$(O)) $(runtime_ASM_OBJECTS)
+  $(runtime_NATIVE_C_SOURCES:.c=.n.$(O)) $(runtime_ASM_OBJECTS) \
+  $(winpthreads_OBJECTS)
 
 libasmrund_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.nd.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.d.$(O))
+  $(runtime_NATIVE_C_SOURCES:.c=.nd.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.d.$(O)) \
+  $(winpthreads_OBJECTS)
 
 libasmruni_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.ni.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.i.$(O))
+  $(runtime_NATIVE_C_SOURCES:.c=.ni.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.i.$(O)) \
+  $(winpthreads_OBJECTS)
 
 libasmrunpic_OBJECTS = $(runtime_NATIVE_C_SOURCES:.c=.npic.$(O)) \
-  $(runtime_ASM_OBJECTS:.$(O)=_libasmrunpic.$(O))
+  $(runtime_ASM_OBJECTS:.$(O)=_libasmrunpic.$(O)) $(winpthreads_OBJECTS)
 
 libcomprmarsh_OBJECTS = runtime/zstd.npic.$(O)
 
@@ -1735,6 +1760,8 @@ OCAMLDOC_LIBCMTS=$(OCAMLDOC_LIBMLIS:.mli=.cmt) $(OCAMLDOC_LIBMLIS:.mli=.cmti)
 
 ocamldoc/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
+ocamldoc/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
+
 .PHONY: ocamldoc
 ocamldoc: ocamldoc/ocamldoc$(EXE) ocamldoc/odoc_test.cmo
 
@@ -1743,7 +1770,7 @@ ocamldoc/ocamldoc$(EXE): ocamlc ocamlyacc ocamllex
 .PHONY: ocamldoc.opt
 ocamldoc.opt: ocamldoc/ocamldoc.opt$(EXE)
 
-ocamldoc/ocamldoc.opt$(EXE): ocamlc.opt ocamlyacc ocamllex
+ocamldoc/ocamldoc.opt$(EXE): ocamlopt ocamlyacc ocamllex
 
 # OCamltest
 
@@ -1823,6 +1850,8 @@ $(ocamltest_DEP_FILES): $(DEPDIR)/ocamltest/%.$(D): ocamltest/%.c
 
 ocamltest/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
+ocamltest/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
+
 ocamltest: ocamltest/ocamltest$(EXE) \
   testsuite/lib/lib.cmo testsuite/lib/testing.cma testsuite/tools/expect$(EXE)
 
@@ -1868,7 +1897,7 @@ ocamltest/ocamltest$(EXE): ocamlc ocamlyacc ocamllex
 ocamltest.opt: ocamltest/ocamltest.opt$(EXE) \
   testsuite/lib/testing.cmxa $(asmgen_OBJECT) testsuite/tools/codegen$(EXE)
 
-ocamltest/ocamltest.opt$(EXE): ocamlc.opt ocamlyacc ocamllex
+ocamltest/ocamltest.opt$(EXE): ocamlopt ocamlyacc ocamllex
 
 # ocamltest does _not_ want to have access to the Unix interface by default,
 # to ensure functions and types are only used via Ocamltest_stdlib.Unix

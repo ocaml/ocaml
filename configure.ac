@@ -174,6 +174,7 @@ AC_SUBST([flexdll_source_dir])
 AC_SUBST([bootstrapping_flexdll])
 AC_SUBST([flexdll_dir])
 AC_SUBST([flexlink_flags])
+AC_SUBST([winpthreads_source_dir])
 AC_SUBST([shebangscripts])
 AC_SUBST([AR])
 AC_SUBST([mklib])
@@ -301,8 +302,6 @@ AS_CASE([$host],
 # Systems that are known not to work, even in bytecode only.
 
 AS_CASE([$host],
-  [*-pc-windows],
-    [AC_MSG_ERROR([the MSVC compiler is not supported currently], 69)],
   [i386-*-solaris*],
     [AC_MSG_ERROR([Building for 32 bits target is not supported. \
 If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
@@ -555,6 +554,11 @@ AC_ARG_WITH([flexdll],
     [bootstrap FlexDLL from the given sources])],
   [AS_IF([test x"$withval" = 'xyes'],[with_flexdll=flexdll])])
 
+AC_ARG_WITH([winpthreads-msvc],
+  [AS_HELP_STRING([--with-winpthreads-msvc],
+    [build winpthreads (only for the MSVC port) from the given sources])],
+  [AS_IF([test x"$withval" = 'xyes'], [with_winpthreads_msvc=winpthreads])])
+
 AC_ARG_WITH([zstd],
   [AS_HELP_STRING([--without-zstd],
     [disable compression of compilation artefacts])])
@@ -663,7 +667,7 @@ OCAML_HOST_IS_EXECUTABLE
 # We thus figure out how to invoke the C preprocessor directly but
 # let the CPP variable untouched, except for the MSVC port where we set it
 # manually to make sure the backward compatibility is preserved
-AS_CASE([$ocaml_cv_cc_vendor],
+AS_CASE([$ocaml_cc_vendor],
   [xlc-*],
     [CPP="$CC -E -qnoppline" # suppress incompatible XLC line directives
     ocamltest_CPP="$CPP"],
@@ -797,7 +801,7 @@ AS_IF(
 
 ## Determine which flags to use for the C compiler
 
-AS_CASE([$ocaml_cv_cc_vendor],
+AS_CASE([$ocaml_cc_vendor],
   [xlc-*],
     [outputobj='-o '
     warn_error_flag=''
@@ -829,7 +833,7 @@ AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
 # Concerning optimization level, -O3 is somewhat risky, so take -O2.
 # Concerning language version, recent enough versions of GCC and Clang
 # default to gnu11 (C11 + GNU extensions) or gnu17, which is fine.
-AS_CASE([$ocaml_cv_cc_vendor],
+AS_CASE([$ocaml_cc_vendor],
   [clang-*],
     [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
     internal_cflags="$cc_warnings -fno-common"],
@@ -851,13 +855,19 @@ AS_CASE([$ocaml_cv_cc_vendor],
     internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
   [mingw-*],
     [AC_MSG_ERROR([Unsupported C compiler for a MinGW-w64 build])],
+  [msvc-0*|msvc-1[[0-8]]*|msvc-19[[012]]*|msvc-193[[0-7]]],
+    # No C11 atomics support
+    [AC_MSG_ERROR(m4_normalize([This version of MSVC is too old.
+    Please use Visual Studio version 17.8 or above.]), 69)],
   [msvc-*],
     [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
     common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
     internal_cppflags='-DUNICODE -D_UNICODE'
+    internal_cflags='-experimental:c11atomics -std:c11'
+    CFLAGS="$CFLAGS -experimental:c11atomics -std:c11"
     OCAML_CL_HAS_VOLATILE_METADATA
     AS_IF([test "x$cl_has_volatile_metadata" = "xtrue"],
-          [internal_cflags='-d2VolatileMetadata-'])
+          [internal_cflags="$internal_cflags -d2VolatileMetadata-"])
     internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
     internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
   [xlc-*],
@@ -1006,7 +1016,7 @@ AS_CASE([$flexdll_source_dir,$supports_shared_libraries,$flexlink,$host],
 
 mkexe_cmd_exp="$CC"
 
-AS_CASE([$ocaml_cv_cc_vendor,$host],
+AS_CASE([$ocaml_cc_vendor,$host],
   [*,x86_64-*-darwin*],
     [oc_ldflags='-Wl,-no_compact_unwind';
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
@@ -1053,6 +1063,46 @@ AS_CASE([$ocaml_cv_cc_vendor,$host],
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
   [gcc-*,powerpc-*-linux*],
     [oc_ldflags="-mbss-plt"])
+
+# Winpthreads emulation library for the MSVC port
+AC_MSG_CHECKING([for winpthreads sources])
+AS_IF([test x"$with_winpthreads_msvc" = "xno"],
+  [winpthreads_source_dir=''
+  AC_MSG_RESULT([disabled])],
+  [winpthreadmsg=''
+  AS_CASE([$target],
+    [*-pc-windows],
+    [dnl When bootstrapping from the git submodule (winpthreads directory),
+     dnl just use that, however if another directory has been specified with
+     dnl --with-winpthreads-msvc=<path> then copy the contents of <path> to
+     dnl winpthreads-sources.
+    AS_IF([m4_normalize([test x"$with_winpthreads_msvc" = 'x'
+                          || test x"$with_winpthreads_msvc" = x'winpthreads'])],
+      [AS_IF([test -f 'winpthreads/src/winpthread_internal.h'],
+        [winpthreads_source_dir=winpthreads
+        iwinpthreadsdir="$ocamlsrcdir\winpthreads\include"],
+        [AC_MSG_RESULT([required but not available (uninitialized submodule?)])
+        AC_MSG_ERROR([exiting])])],
+      [rm -rf winpthreads-sources
+      AS_IF([test -f "$with_winpthreads_msvc/src/winpthread_internal.h"],
+        [mkdir -p winpthreads-sources/src winpthreads-sources/include
+        cp "$with_winpthreads_msvc"/src/*.c winpthreads-sources/src
+        cp "$with_winpthreads_msvc"/src/*.h winpthreads-sources/src
+        cp "$with_winpthreads_msvc"/include/*.h winpthreads-sources/include
+        winpthreads_source_dir='winpthreads-sources'
+        iwinpthreadsdir="$ocamlsrcdir\\winpthreads-sources\\include"
+        winpthreadsmsg=" (from $with_winpthreads_msvc)"],
+        [AC_MSG_RESULT([requested but not available])
+        AC_MSG_ERROR([exiting])])])
+    AS_IF([test x"$winpthreads_source_dir" = 'x'],
+      [AC_MSG_RESULT([no])],
+      [AC_MSG_RESULT([$winpthreads_source_dir$winpthreadmsg])
+      OCAML_TEST_WINPTHREADS_PTHREAD_H([$iwinpthreadsdir])
+      internal_cppflags="$internal_cppflags -I$iwinpthreadsdir"])],
+    [AS_IF([test x"$with_winpthreads_msvc" != 'x'],
+      [AC_MSG_RESULT([requested but not supported])
+      AC_MSG_ERROR([exiting])],
+      [AC_MSG_RESULT([skipping on that platform])])])])
 
 ## Program to use to install files
 AC_PROG_INSTALL
@@ -1154,7 +1204,7 @@ AS_IF([! $arch64],
 # Atomics library
 
 AS_IF([! $arch64],
-  [AS_CASE([$ocaml_cv_cc_vendor],
+  [AS_CASE([$ocaml_cc_vendor],
     [gcc-*], [cclibs="$cclibs -latomic"])])
 
 # Support for C11 atomic types
@@ -1167,7 +1217,7 @@ AS_IF([! $cc_supports_atomic],
 # macOS and MinGW-w64 have problems with thread local storage accessed from DLLs
 
 AS_CASE([$host],
-  [*-apple-darwin*|*-mingw32*], [],
+  [*-apple-darwin*|*-mingw32*|*-pc-windows], [],
   [AC_DEFINE([HAS_FULL_THREAD_VARIABLES])]
 )
 
@@ -1197,7 +1247,7 @@ AS_IF([test x"$enable_shared" != "xno"],
       mkmaindll_exp="flexlink -maindll ${mkdll_flags}"
       mkmaindll="flexlink -maindll ${mkdll_flags}"],
     [powerpc-ibm-aix*],
-      [AS_CASE([$ocaml_cv_cc_vendor],
+      [AS_CASE([$ocaml_cc_vendor],
         [xlc*],
           [mkdll_flags='-qmkshrobj -G'
           supports_shared_libraries=true])],
@@ -1210,7 +1260,7 @@ AS_IF([test x"$enable_shared" != "xno"],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
-       AS_CASE([$ocaml_cv_cc_vendor,$host],
+       AS_CASE([$ocaml_cc_vendor,$host],
          [gcc-*,powerpc-*-linux*],
            [mkdll_flags='-shared -mbss-plt'],
          [[*,i[3456]86-*]],
@@ -1298,7 +1348,7 @@ AS_CASE([$enable_native_toplevel,$natdynlink],
   [install_ocamlnat=false])
 
 # Try to work around the Skylake/Kaby Lake processor bug.
-AS_CASE(["$ocaml_cv_cc_vendor,$host"],
+AS_CASE(["$ocaml_cc_vendor,$host"],
   [*gcc*,x86_64-*|*gcc*,i686-*],
     [OCAML_CC_HAS_FNO_TREE_VRP
     AS_IF([$cc_has_fno_tree_vrp],
@@ -1339,7 +1389,7 @@ AS_CASE([$host],
   [i686-pc-windows],
     [arch=i386; system=win32],
   [x86_64-pc-windows],
-    [arch=amd64; system=win64],
+    [has_native_backend=yes; arch=amd64; system=win64],
   [[powerpc64le*-*-linux*]],
     [has_native_backend=yes; arch=power; model=ppc64le; system=linux],
   [[powerpc64*-*-linux-musl*]],
@@ -1458,7 +1508,7 @@ AC_DEFINE_UNQUOTED([OCAML_OS_TYPE], ["$ostype"])
 
 AC_CHECK_TOOL([DIRECT_LD],[ld])
 AS_IF([test -z "$PARTIALLD"],
-  [AS_CASE(["$host,$ocaml_cv_cc_vendor"],
+  [AS_CASE(["$host,$ocaml_cc_vendor"],
     [x86_64-*-darwin*,gcc-*], [PACKLD_FLAGS=' -arch x86_64'],
     [powerpc64le*-*-linux*,gcc-*], [PACKLD_FLAGS=' -m elf64lppc'],
     [powerpc*-*-linux*,gcc-*],
@@ -1470,7 +1520,7 @@ AS_IF([test -z "$PARTIALLD"],
   # output filename. Don't assume that all C compilers understand GNU -ofoo
   # form, so ensure that the definition includes a space at the end (which is
   # achieved using the $(EMPTY) expansion trick in Makefile.config.in).
-  AS_CASE(["$ocaml_cv_cc_vendor"],
+  AS_CASE(["$ocaml_cc_vendor"],
     [msvc-*],
       # For the Microsoft C compiler there must be no space at the end of the
       # string.
@@ -1526,7 +1576,7 @@ AS_IF([test -n "$target_alias"],
 default_as="$CC -c"
 default_aspp="$CC -c"
 
-AS_CASE([$as_target,$ocaml_cv_cc_vendor],
+AS_CASE([$as_target,$ocaml_cc_vendor],
   [*-*-linux*,gcc-*],
     [AS_CASE([$as_cpu],
       [x86_64|arm*|aarch64*|i[[3-6]]86|riscv*],
@@ -1578,9 +1628,9 @@ AS_IF([$has_c99_float_ops],
   # in VS2013-2017 and present but unimplemented in Cygwin64)
   OCAML_C99_CHECK_FMA],
   [AS_IF([test x"$enable_imprecise_c99_float_ops" != "xyes" ],
-    [AS_CASE([$enable_imprecise_c99_float_ops,$ocaml_cv_cc_vendor],
+    [AS_CASE([$enable_imprecise_c99_float_ops,$ocaml_cc_vendor],
       [no,*], [hard_error=true],
-      [,msvc-*], [AS_IF([test "${ocaml_cv_cc_vendor#msvc-}" -lt 1800 ],
+      [,msvc-*], [AS_IF([test "${ocaml_cc_vendor#msvc-}" -lt 1800 ],
         [hard_error=false],
         [hard_error=true])],
       [hard_error=true])
@@ -1710,50 +1760,50 @@ AS_IF([test "x$enable_tsan" = "xyes" ],
     [amd64],
       [AS_CASE(["$system"],
         [freebsd|linux|macosx],
-        [AS_CASE(["$ocaml_cv_cc_vendor"],
+        [AS_CASE(["$ocaml_cc_vendor"],
           [gcc-*|clang-*], [tsan=true],
           [AC_MSG_ERROR(m4_normalize([thread sanitizer not supported with
-            vendor=$ocaml_cv_cc_vendor"]))]
+            vendor=$ocaml_cc_vendor"]))]
          )],
         [AC_MSG_ERROR([thread sanitizer not supported on system $system])]
        )],
     [arm64],
       [AS_CASE(["$system"],
         [linux|macosx],
-        [AS_CASE(["$ocaml_cv_cc_vendor"],
+        [AS_CASE(["$ocaml_cc_vendor"],
           [gcc-*|clang-*], [tsan=true],
           [AC_MSG_ERROR(m4_normalize([thread sanitizer not supported with
-            vendor=$ocaml_cv_cc_vendor"]))]
+            vendor=$ocaml_cc_vendor"]))]
          )],
         [AC_MSG_ERROR([thread sanitizer not supported on system $system])]
        )],
     [power],
       [AS_CASE(["$system"],
         [linux],
-        [AS_CASE(["$ocaml_cv_cc_vendor"],
+        [AS_CASE(["$ocaml_cc_vendor"],
           [gcc-*|clang-*], [tsan=true],
           [AC_MSG_ERROR(m4_normalize([thread sanitizer not supported with
-            vendor=$ocaml_cv_cc_vendor"]))]
+            vendor=$ocaml_cc_vendor"]))]
          )],
         [AC_MSG_ERROR([thread sanitizer not supported on system $system])]
        )],
     [riscv],
       [AS_CASE(["$system"],
         [linux],
-        [AS_CASE(["$ocaml_cv_cc_vendor"],
+        [AS_CASE(["$ocaml_cc_vendor"],
           [gcc-*|clang-*], [tsan=true],
           [AC_MSG_ERROR(m4_normalize([thread sanitizer not supported with
-            vendor=$ocaml_cv_cc_vendor"]))]
+            vendor=$ocaml_cc_vendor"]))]
          )],
         [AC_MSG_ERROR([thread sanitizer not supported on system $system])]
        )],
     [s390x],
       [AS_CASE(["$system"],
         [linux],
-        [AS_CASE(["$ocaml_cv_cc_vendor"],
+        [AS_CASE(["$ocaml_cc_vendor"],
           [gcc-*|clang-*], [tsan=true],
           [AC_MSG_ERROR(m4_normalize([thread sanitizer not supported with
-            vendor=$ocaml_cv_cc_vendor"]))]
+            vendor=$ocaml_cc_vendor"]))]
          )],
         [AC_MSG_ERROR([thread sanitizer not supported on system $system])]
        )],
@@ -1762,7 +1812,7 @@ AS_IF([test "x$enable_tsan" = "xyes" ],
   [tsan=false])
 
 AS_IF([$tsan],
-  [AC_MSG_NOTICE([using thread sanitizer with vendor=$ocaml_cv_cc_vendor])
+  [AC_MSG_NOTICE([using thread sanitizer with vendor=$ocaml_cc_vendor])
 
   # Check for libtsan library files (necessary on some Linux distributions)
   SAVED_LDFLAGS="$LDFLAGS"
@@ -1774,11 +1824,11 @@ AS_IF([$tsan],
                    Try installing it on your system.])])
   LDFLAGS="$SAVED_LDFLAGS"
 
-  AS_CASE([$ocaml_cv_cc_vendor],
+  AS_CASE([$ocaml_cc_vendor],
     [gcc-[[0123456789]]-*|gcc-10-*|clang-*],
       [],
     [oc_tsan_cflags="$oc_tsan_cflags -Wno-tsan"])
-  AS_CASE([$ocaml_cv_cc_vendor],
+  AS_CASE([$ocaml_cc_vendor],
     [gcc*],
       [tsan_distinguish_volatile_cflags="--param=tsan-distinguish-volatile=1"],
     [clang*],
@@ -2105,7 +2155,7 @@ AC_CHECK_HEADER([sys/mman.h],
 AC_CHECK_FUNC([pwrite], [AC_DEFINE([HAS_PWRITE])])
 
 ## -fdebug-prefix-map support by the C compiler
-AS_CASE([$ocaml_cv_cc_vendor,$host],
+AS_CASE([$ocaml_cc_vendor,$host],
   [*,*-*-mingw32*], [cc_has_debug_prefix_map=false],
   [*,*-pc-windows], [cc_has_debug_prefix_map=false],
   [xlc*,powerpc-ibm-aix*], [cc_has_debug_prefix_map=false],
@@ -2277,7 +2327,7 @@ AS_CASE([$host],
      AC_CHECK_LIB([gcc_eh], [printf], [link_gcc_eh="-lgcc_eh"])
      PTHREAD_LIBS="-l:libpthread.a $link_gcc_eh"],
   [*-pc-windows],
-    [PTHREAD_LIBS="-l:libpthread.lib"],
+    [PTHREAD_LIBS=''],
   [AX_PTHREAD(
     [common_cflags="$common_cflags $PTHREAD_CFLAGS"
     # The two following lines add flags and libraries for pthread to the
@@ -2346,7 +2396,7 @@ AS_IF([$native_compiler],
 ## Frame pointers
 
 AS_IF([test x"$enable_frame_pointers" = "xyes"],
-  [AS_CASE(["$host,$ocaml_cv_cc_vendor"],
+  [AS_CASE(["$host,$ocaml_cc_vendor"],
     [x86_64-*-linux*,gcc-*|x86_64-*-linux*,clang-*],
       [common_cflags="$common_cflags -g  -fno-omit-frame-pointer"
       frame_pointers=true
@@ -2470,7 +2520,7 @@ AS_IF([test x"$enable_function_sections" = "xno"],
         [*-cygwin*|*-mingw*|*-windows|*-apple-darwin*],
           [function_sections=false;
            AC_MSG_NOTICE([No support for function sections on $target.])],
-        [AS_CASE([$ocaml_cv_cc_vendor],
+        [AS_CASE([$ocaml_cc_vendor],
           [gcc-[0123]-*|gcc-4-[01234567]],
             [function_sections=false;
             AC_MSG_NOTICE([Function sections are not
@@ -2486,7 +2536,7 @@ AS_IF([test x"$enable_function_sections" = "xno"],
             AC_DEFINE([FUNCTION_SECTIONS])],
           [function_sections=false;
           AC_MSG_NOTICE([Function sections are not supported by
-          $ocaml_cv_cc_vendor.])])])],
+          $ocaml_cc_vendor.])])])],
     [function_sections=false]);
   AS_IF([test x"$function_sections" = "xfalse"],
     [AS_IF([test x"$enable_function_sections" = "xyes"],
@@ -2513,9 +2563,9 @@ AS_CASE([$host],
   [*-*-mingw32*],
     [cclibs="$cclibs -lole32 -luuid -lversion"],
   [*-pc-windows],
-    [# For whatever reason, flexlink includes -ladvapi32 for mingw-w64, but
-    # doesn't include advapi32.lib for MSVC
-    cclibs="$cclibs ole32.lib uuid.lib advapi32.lib version.lib"])
+    [# For whatever reason, flexlink includes -ladvapi32 and -lshell32 for
+    # mingw-w64, but doesn't include advapi32.lib and shell32.lib for MSVC
+    cclibs="$cclibs ole32.lib uuid.lib advapi32.lib shell32.lib version.lib"])
 
 AC_CONFIG_COMMANDS_PRE([cclibs="$cclibs $mathlib $DLLIBS $PTHREAD_LIBS"])
 

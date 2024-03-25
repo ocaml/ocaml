@@ -105,6 +105,13 @@ module DLS : sig
         domain will be computed on-demand by the new domain: the first
         [get] call will call the initializer [f] and store that value.
 
+        {b Warning.} [f] may be called several times if another call
+        to [get] occurs during initialization on the same domain. Only
+        the 'first' value computed will be used, the other now-useless
+        values will be discarded. Your initialization function should
+        support this situation, or contain logic to detect this case
+        and fail.
+
         If [split_from_parent] is provided, spawning a domain will
         derive the child value (for this key) from the parent
         value. This computation happens in the parent domain and it
