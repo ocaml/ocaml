@@ -21,6 +21,12 @@ _______________
 
 ### Code generation and optimizations:
 
+- #13050: change mangling of OCaml long identifiers
+  from `camlModule.name_NNN` to `camlModule$name_NNN`. The previous
+  mangling schema, using `.`, conflicted with LLDB on macOS and MASM in
+  the MSVC port. Mangled names are now consistent across all ports.
+  (Tim McGilchrist, reviewed by ????)
+
 - #####: Enable compile-time option -function-sections on all previously
   unsupported native backends (POWER, riscv64 and s390x)
   (Miod Vallat, review by Nicolás Ojeda Bär)
