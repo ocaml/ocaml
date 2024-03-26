@@ -423,6 +423,30 @@ stdlib__Hashtbl.cmx : hashtbl.ml \
     stdlib__Hashtbl.cmi
 stdlib__Hashtbl.cmi : hashtbl.mli \
     stdlib__Seq.cmi
+stdlib__Iarray.cmo : iarray.ml \
+    stdlib.cmi \
+    stdlib__Seq.cmi \
+    stdlib__Array.cmi \
+    stdlib__Iarray.cmi
+stdlib__Iarray.cmx : iarray.ml \
+    stdlib.cmx \
+    stdlib__Seq.cmx \
+    stdlib__Array.cmx \
+    stdlib__Iarray.cmi
+stdlib__Iarray.cmi : iarray.mli \
+    stdlib.cmi \
+    stdlib__Seq.cmi
+stdlib__IarrayLabels.cmo : iarrayLabels.ml \
+    stdlib.cmi \
+    stdlib__Iarray.cmi \
+    stdlib__IarrayLabels.cmi
+stdlib__IarrayLabels.cmx : iarrayLabels.ml \
+    stdlib.cmx \
+    stdlib__Iarray.cmx \
+    stdlib__IarrayLabels.cmi
+stdlib__IarrayLabels.cmi : iarrayLabels.mli \
+    stdlib.cmi \
+    stdlib__Seq.cmi
 stdlib__In_channel.cmo : in_channel.ml \
     stdlib__Sys.cmi \
     stdlib.cmi \
