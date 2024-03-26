@@ -1936,6 +1936,11 @@ when the block becomes unreachable and is about to be reclaimed.
 The block is passed as first argument to the function.
 The "finalize" field can also be "custom_finalize_default" to indicate that no
 finalization function is associated with the block.
+Note the caution below: there are many restrictions on the behaviour
+of these custom block finalizers; they must not allocate on the Caml
+heap, or call OCaml code or allow it to be called (for example, they
+should not call "caml_release_runtime_system()"). For more powerful
+and flexible finalization, use "Gc.finalise" (see \stdmoduleref{Gc}).
 
 \item "int (*compare)(value v1, value v2)" \\
 The "compare" field contains a pointer to a C function that is
@@ -2025,7 +2030,7 @@ specified in the "fixed_length" structure, and do not consume space in
 the serialized output.
 \end{itemize}
 
-Note: the "finalize", "compare", "hash", "serialize", and "deserialize"
+\emph{Caution}: the "finalize", "compare", "hash", "serialize", and "deserialize"
 functions attached to custom blocks descriptors are only allowed limited
 interactions with the OCaml runtime. Within these functions, do not call any of
 the OCaml allocation functions, and do not perform any callback into OCaml
