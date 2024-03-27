@@ -264,14 +264,14 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         try
           find_printer depth env ty obj
         with Not_found ->
-          match get_desc ty with
-          | Tvar _ | Tunivar _ ->
+          match get_desc ty, get_desc (Ctype.expand_head_opt env ty) with
+          | Tvar _, _ | Tunivar _, _ ->
               Oval_stuff "<poly>"
-          | Tarrow _ ->
+          | Tarrow _, _ ->
               Oval_stuff "<fun>"
-          | Ttuple(ty_list) ->
+          | Ttuple(ty_list), _ ->
               Oval_tuple (tree_of_val_list 0 depth obj ty_list)
-          | Tconstr(path, [ty_arg], _)
+          | _, Tconstr(path, [ty_arg], _)
             when Path.same path Predef.path_list ->
               if O.is_block obj then
                 match check_depth depth obj ty with
@@ -293,7 +293,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     Oval_list (List.rev (tree_of_conses [] depth obj ty_arg))
               else
                 Oval_list []
-          | Tconstr(path, [ty_arg], _)
+          | _, Tconstr(path, [ty_arg], _)
             when Path.same path Predef.path_array ->
               let length = O.size obj in
               if length > 0 then
@@ -314,16 +314,16 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               else
                 Oval_array []
 
-          | Tconstr(path, [], _)
+          | _, Tconstr(path, [], _)
               when Path.same path Predef.path_string ->
             Oval_string ((O.obj obj : string), !printer_steps, Ostr_string)
 
-          | Tconstr (path, [], _)
+          | _, Tconstr (path, [], _)
               when Path.same path Predef.path_bytes ->
             let s = Bytes.to_string (O.obj obj : bytes) in
             Oval_string (s, !printer_steps, Ostr_bytes)
 
-          | Tconstr (path, [ty_arg], _)
+          | _, Tconstr (path, [ty_arg], _)
             when Path.same path Predef.path_lazy_t ->
              let obj_tag = O.tag obj in
              (* Lazy values are represented in three possible ways:
@@ -380,7 +380,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                  in
                  Oval_lazy v
                end
-          | Tconstr(path, ty_list, _) -> begin
+          | Tconstr(path, ty_list, _), _ -> begin
               try
                 let decl = Env.find_type path env in
                 match decl with
@@ -449,7 +449,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               | Datarepr.Constr_not_found -> (* raised by find_constr_by_tag *)
                   Oval_stuff "<unknown constructor>"
               end
-          | Tvariant row ->
+          | Tvariant row, _ ->
               if O.is_block obj then
                 let tag : int = O.obj (O.field obj 0) in
                 let rec find = function
@@ -474,13 +474,13 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                       else find fields
                   | [] -> Oval_stuff "<variant>" in
                 find (row_fields row)
-          | Tobject (_, _) ->
+          | Tobject (_, _), _ ->
               Oval_stuff "<obj>"
-          | Tsubst _ | Tfield(_, _, _, _) | Tnil | Tlink _ ->
+          | Tsubst _, _ | Tfield(_, _, _, _), _ | Tnil, _ | Tlink _, _ ->
               fatal_error "Printval.outval_of_value"
-          | Tpoly (ty, _) ->
+          | Tpoly (ty, _), _ ->
               tree_of_val (depth - 1) obj ty
-          | Tpackage _ ->
+          | Tpackage _, _ ->
               Oval_stuff "<module>"
         end
 

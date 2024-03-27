@@ -49,6 +49,9 @@ _______________
 - #12891: Improved styling for initial prompt
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #.....: Improved display of builtin types such as `_ list` when aliased.
+  (Samuel Vivien, review by ...)
+
 ### Manual and documentation:
 
 - #12868: Manual: simplify style colours of the post-processed manual and API
