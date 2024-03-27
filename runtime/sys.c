@@ -191,6 +191,7 @@ CAML_RUNTIME_EVENTS_DESTROY();
 #ifndef NATIVE_CODE
   caml_debugger(PROGRAM_EXIT, Val_unit);
 #endif
+  caml_terminate_all_domains();
   if (caml_params->cleanup_on_exit)
     caml_shutdown();
 #ifdef _WIN32

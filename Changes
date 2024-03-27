@@ -19,6 +19,9 @@ _______________
   (Nick Barnes, review by Stephen Dolan, Jacques-Henri Jourdan
    and Guillaume Munch-Maccagnoni).
 
+- #13010: Force all domain threads to terminate upon caml program exit.
+  (Miod Vallat, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #####: Enable compile-time option -function-sections on all previously
