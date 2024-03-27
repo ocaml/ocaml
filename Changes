@@ -49,8 +49,8 @@ _______________
 - #12891: Improved styling for initial prompt
   (Florian Angeletti, review by Gabriel Scherer)
 
-- #.....: Improved display of builtin types such as `_ list` when aliased.
-  (Samuel Vivien, review by ...)
+- #13053: Improved display of builtin types such as `_ list` when aliased.
+  (Samuel Vivien, review by Florian Angeletti)
 
 ### Manual and documentation:
 
