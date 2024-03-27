@@ -38,7 +38,7 @@
 #include "caml/startup.h"
 #include "caml/fail.h"
 
-uintnat caml_max_stack_wsize;
+atomic_uintnat caml_max_stack_wsize;
 uintnat caml_fiber_wsz;
 
 extern uintnat caml_percent_free; /* see major_gc.c */
@@ -335,7 +335,7 @@ void caml_init_gc (void)
   caml_percent_free = norm_pfree (caml_params->init_percent_free);
   caml_gc_log ("Initial stack limit: %"
                ARCH_INTNAT_PRINTF_FORMAT "uk bytes",
-               caml_max_stack_wsize / 1024 * sizeof (value));
+               caml_params->init_max_stack_wsz / 1024 * sizeof (value));
 
   caml_custom_major_ratio =
       norm_custom_maj (caml_params->init_custom_major_ratio);
