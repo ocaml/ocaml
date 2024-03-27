@@ -496,8 +496,9 @@ int caml_try_realloc_stack(asize_t required_space)
   old_stack = Caml_state->current_stack;
   stack_used = Stack_high(old_stack) - (value*)old_stack->sp;
   wsize = Stack_high(old_stack) - Stack_base(old_stack);
+  uintnat max_stack_wsize = caml_max_stack_wsize;
   do {
-    if (wsize >= caml_max_stack_wsize) return 0;
+    if (wsize >= max_stack_wsize) return 0;
     wsize *= 2;
   } while (wsize < stack_used + required_space);
 
