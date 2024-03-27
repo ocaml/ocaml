@@ -131,7 +131,8 @@ type primitive =
   | Popaque
   (* Fetch domain-local state *)
   | Pdls_get
-
+  (* Poll for runtime actions *)
+  | Ppoll
 
 and integer_comparison = Lambda.integer_comparison =
     Ceq | Cne | Clt | Cgt | Cle | Cge

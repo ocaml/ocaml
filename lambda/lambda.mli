@@ -161,6 +161,8 @@ type primitive =
   | Popaque
   (* Fetching domain-local state *)
   | Pdls_get
+  (* Poll for runtime actions *)
+  | Ppoll
 
 and integer_comparison =
     Ceq | Cne | Clt | Cgt | Cle | Cge

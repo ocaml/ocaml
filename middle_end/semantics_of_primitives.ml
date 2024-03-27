@@ -141,6 +141,9 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Pdls_get ->
       (* only read *)
       No_effects, No_coeffects
+  | Ppoll ->
+      (* Effects to prevent poll from being optimised away *)
+      Arbitrary_effects, Has_coeffects
 
 type return_type =
   | Float

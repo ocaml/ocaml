@@ -151,6 +151,7 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Patomic_fetch_add -> Patomic_fetch_add
   | Popaque -> Popaque
   | Pdls_get -> Pdls_get
+  | Ppoll -> Ppoll
   | Pbytes_to_string
   | Pbytes_of_string
   | Pctconst _

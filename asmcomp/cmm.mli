@@ -168,6 +168,7 @@ and operation =
                    or equal to the bound. *)
   | Copaque (* Sys.opaque_identity *)
   | Cdls_get
+  | Cpoll
 
 (** Every basic block should have a corresponding [Debuginfo.t] for its
     beginning. *)
