@@ -321,6 +321,12 @@ void caml_uerror(const char *cmdname, value cmdarg)
   caml_unix_error(errno, cmdname, cmdarg);
 }
 
+CAMLprim void caml_unix_uerror(value msg, value cmdarg) {
+  CAMLparam0();
+  caml_uerror(String_val(msg), cmdarg);
+  CAMLreturn0;
+}
+
 void caml_unix_check_path(value path, const char * cmdname)
 {
   if (! caml_string_is_c_safe(path)) caml_unix_error(ENOENT, cmdname, path);
