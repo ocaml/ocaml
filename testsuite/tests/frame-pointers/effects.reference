@@ -1,26 +1,26 @@
 # computation f
-camlEffects.f
+camlEffects$f
 caml_runstack
-camlEffects.entry
+camlEffects$entry
 caml_program
 # perform effect (E 0)
 # caught effect (E 0). continuing...
-camlEffects.h_effect_e
-camlEffects.entry
+camlEffects$h_effect_e
+camlEffects$entry
 caml_program
 # perform returns 1
-camlEffects.f
+camlEffects$f
 caml_runstack
-camlEffects.h_effect_e
-camlEffects.entry
+camlEffects$h_effect_e
+camlEffects$entry
 caml_program
 # done 2
-camlEffects.v_retc
-camlEffects.h_effect_e
-camlEffects.entry
+camlEffects$v_retc
+camlEffects$h_effect_e
+camlEffects$entry
 caml_program
 # continue returns 3
-camlEffects.h_effect_e
-camlEffects.entry
+camlEffects$h_effect_e
+camlEffects$entry
 caml_program
 # result=4

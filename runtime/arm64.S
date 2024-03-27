@@ -135,13 +135,13 @@
 #endif
 
 #if defined(FUNCTION_SECTIONS)
-        TEXT_SECTION(caml_hot.code_begin)
-        .globl  G(caml_hot.code_begin)
-G(caml_hot.code_begin):
+        TEXT_SECTION(caml_hot$code_begin)
+        .globl  G(caml_hot$code_begin)
+G(caml_hot$code_begin):
 
-        TEXT_SECTION(caml_hot.code_end)
-        .globl  G(caml_hot.code_end)
-G(caml_hot.code_end):
+        TEXT_SECTION(caml_hot$code_end)
+        .globl  G(caml_hot$code_end)
+G(caml_hot$code_end):
 #endif
 
 #if defined(SYS_macosx)
@@ -443,7 +443,9 @@ G(name):
 
 #endif /* } WITH_THREAD_SANITIZER */
 
-/* Allocation functions and GC interface */
+/* Allocation functions and GC interface.
+   Referenced from C code in runtime/startup_nat.c
+ */
         TEXT_SECTION(caml_system__code_begin)
         .globl  G(caml_system__code_begin)
 G(caml_system__code_begin):
@@ -1249,9 +1251,9 @@ FUNCTION(caml_ml_array_bound_error)
         .globl  G(caml_system__code_end)
 G(caml_system__code_end):
 
-/* GC roots for callback */
-
-OBJECT(caml_system.frametable)
+/* Frametable - GC roots for callback */
+/* Uses the same naming convention as ocamlopt generated modules. */
+OBJECT(caml_system$frametable)
         .quad   2               /* two descriptors */
         .quad   L(caml_retaddr) /* return address into callback */
         .short  -1              /* negative frame size => use callback link */
@@ -1261,7 +1263,7 @@ OBJECT(caml_system.frametable)
         .short  -1              /* negative frame size => use callback link */
         .short  0               /* no roots here */
         .align 3
-        END_OBJECT(caml_system.frametable)
+        END_OBJECT(caml_system$frametable)
 
 #if !defined(SYS_macosx)
 /* Mark stack as non-executable */
