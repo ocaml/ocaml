@@ -40,7 +40,7 @@ let docs_file = ( // ) docs_maindir
 let api_dir = web_dir // "api"
 
 (* How to go from manual to api *)
-let api_page_url = "api" (* "../" ^ ocaml_version ^ "/api" *)
+let api_page_url = "api"
 
 (* How to go from api to manual *)
 let manual_page_url = ".."
