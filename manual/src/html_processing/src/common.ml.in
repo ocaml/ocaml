@@ -39,8 +39,8 @@ let docs_file = ( // ) docs_maindir
 (* Output for API *)
 let api_dir = web_dir // "api"
 
-(* How to go from htmlman manual to api *)
-let api_page_url = "../" ^ ocaml_version ^ "/api"
+(* How to go from manual to api *)
+let api_page_url = "api" (* "../" ^ ocaml_version ^ "/api" *)
 
 (* How to go from api to manual *)
 let manual_page_url = ".."
@@ -96,7 +96,8 @@ let add_favicon head =
          favicon ^ {|">|})
   |> append_child head
 
-(* Update html <head> element with javascript and favicon *)
+(* Update html <head> element with javascript and favicon.
+   Including script.js for OCaml.org's instance of Plausible Analytics. *)
 let update_head ?(search = false) soup =
   let head = soup $ "head" in
   if search then begin
