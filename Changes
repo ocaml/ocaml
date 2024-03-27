@@ -50,6 +50,10 @@ _______________
   (Florian Angeletti, review by Fabrice Buoro, Kate Deplaix, Damien Doligez, and
    Gabriel Scherer)
 
+- #12976: Manual: use webman/<version>/*.html and
+  webman/<version>/api/ for OCaml.org HTML manual generation
+  (Shakthi Kannan, review by Hannes Mehnert, and Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 * #12084: Check link order when creating archive and when using ocamlopt
