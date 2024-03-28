@@ -124,6 +124,7 @@ type instruction =
   | CVTTSD2SI of arg * arg
   | DEC of arg
   | DIVSD of arg * arg
+  | ENDBR64
   | FABS
   | FADD of arg
   | FADDP of arg * arg

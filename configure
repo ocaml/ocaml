@@ -781,6 +781,7 @@ build_os
 build_vendor
 build_cpu
 build
+bti
 target_bindir
 ar_supports_response_files
 QS
@@ -1021,6 +1022,7 @@ with_aix_soname
 with_gnu_ld
 with_sysroot
 enable_libtool_lock
+enable_bti
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1711,6 +1713,7 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --enable-bti            compile with branch target indirection, if supported
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -3444,6 +3447,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 
 
  # TODO: rename this variable
+
 
 
 
@@ -15579,16 +15583,46 @@ case $host in #(
      ;;
 esac
 
+## Check for indirect branch tracking control flow features
+# Check whether --enable-bti was given.
+if test ${enable_bti+y}
+then :
+  enableval=$enable_bti;
+fi
+
+
+#AS_IF([test "x$enable_bti" = "xyes"],
+#  [AC_MSG_NOTICE([HEY!!!!!!!!!!!])],
+#  [bti=false])
+
+bti=false
+if test "x$enable_bti" = "xyes"
+then :
+  case $host in #(
+  x86_64-*-*) :
+    ac_fn_c_check_header_compile "$LINENO" "cet.h" "ac_cv_header_cet_h" "$ac_includes_default"
+if test "x$ac_cv_header_cet_h" = xyes
+then :
+  printf "%s\n" "#define HAS_CET_H 1" >>confdefs.h
+ bti=true
+else $as_nop
+  bti=false
+fi
+ ;; #(
+  *) :
+     ;;
+esac
+fi
+
 # Disable control flow integrity
 
 case $host in #(
-  *-*-openbsd7.[4-9]|*-*-openbsd[89].*) :
+  aarch64-*-openbsd7.[4-9]|aarch64-*-openbsd[89].*) :
     oc_ldflags="$oc_ldflags -Wl,-z,nobtcfi"
      natdynlinkopts="$natdynlinkopts -Wl,-z,nobtcfi" ;; #(
   *) :
      ;;
 esac
-
 
 # Configure native dynlink
 
@@ -22861,5 +22895,4 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 printf "%s\n" "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
-
 

@@ -250,6 +250,7 @@ AC_SUBST([ocaml_libdir])
 AC_SUBST([QS])
 AC_SUBST([ar_supports_response_files])
 AC_SUBST([target_bindir])
+AC_SUBST([bti])
 
 ## Generated files
 
@@ -1293,13 +1294,23 @@ AS_CASE([$host],
     [oc_ldflags="$oc_ldflags -Wl,--no-execute-only"
      natdynlinkopts="$natdynlinkopts -Wl,--no-execute-only"])
 
+## Check for indirect branch tracking control flow features
+AC_ARG_ENABLE([bti],
+  [AS_HELP_STRING([--enable-bti],
+    [compile with branch target indirection, if supported])])
+
+bti=false
+AS_IF([test "x$enable_bti" = "xyes"],
+  [AS_CASE([$host],
+    [x86_64-*-*], [AC_CHECK_HEADER([cet.h],
+      [AC_DEFINE([HAS_CET_H]) bti=true], [bti=false])])])
+
 # Disable control flow integrity
 
 AS_CASE([$host],
-  [[*-*-openbsd7.[4-9]|*-*-openbsd[89].*]],
+  [[aarch64-*-openbsd7.[4-9]|aarch64-*-openbsd[89].*]],
     [oc_ldflags="$oc_ldflags -Wl,-z,nobtcfi"
      natdynlinkopts="$natdynlinkopts -Wl,-z,nobtcfi"])
-
 
 # Configure native dynlink
 
