@@ -1353,7 +1353,7 @@ do_resume: {
       sp = parent_stack->sp;
       Stack_parent(old_stack) = NULL;
       Field(cont, 0) = Val_ptr(old_stack);
-      Field(cont, 1) = Val_long(0);
+      Field(cont, 1) = Val_ptr(old_stack);
 
       domain_state->trap_sp_off = Long_val(sp[0]);
       extra_args = Long_val(sp[1]);
@@ -1398,6 +1398,7 @@ do_resume: {
       CAMLassert(Stack_parent(cont_tail) == NULL);
       Stack_parent(self) = NULL;
       Stack_parent(cont_tail) = self;
+      Field(cont, 1) = Val_ptr(self);
 
       domain_state->trap_sp_off = Long_val(sp[0]);
       extra_args = Long_val(sp[1]);

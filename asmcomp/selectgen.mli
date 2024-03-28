@@ -49,7 +49,7 @@ module Effect_and_coeffect : sig
   val none : t
   val arbitrary : t
 
-  val effect : t -> Effect.t
+  val effect_ : t -> Effect.t
   val coeffect : t -> Coeffect.t
 
   val effect_only : Effect.t -> t

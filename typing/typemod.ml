@@ -1491,6 +1491,16 @@ and transl_signature ?(toplevel = false) env sg =
                        Text_exception,
                        Exported) :: rem,
             final_env
+        | Psig_effect seff ->
+            let (ext, newenv) = Typedecl.transl_effect env seff in
+            let (trem, rem, final_env) = transl_sig newenv srem in
+            (* XXX KC: Should we care about Shadowed? *)
+            mksig (Tsig_effect ext) env loc :: trem,
+            Sig_typext(ext.ext_id,
+                       ext.ext_type,
+                       Text_effect,
+                       Exported) :: rem,
+            final_env
         | Psig_module pmd ->
             let scope = Ctype.create_scope () in
             let tmty =
@@ -2614,6 +2624,12 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
            constructors [],
         shape_map,
          newenv)
+    | Pstr_effect seff ->
+        let (ext, newenv) = Typedecl.transl_effect env seff in
+        Tstr_effect ext,
+        [Sig_typext(ext.ext_id, ext.ext_type, Text_effect, Exported)],
+        shape_map, (* XXX avsm: add to this? *)
+        newenv
     | Pstr_exception sext ->
         let (ext, newenv, shape) = Typedecl.transl_type_exception env sext in
         let constructor = ext.tyexn_constructor in

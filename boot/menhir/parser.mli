@@ -97,6 +97,7 @@ type token =
   | EOF
   | END
   | ELSE
+  | EFFECT
   | DOWNTO
   | DOTOP of (string)
   | DOTDOT

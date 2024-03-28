@@ -26,6 +26,10 @@ val transl_exception:
     Env.t -> Parsetree.extension_constructor ->
     Typedtree.extension_constructor * Env.t * Shape.t
 
+val transl_effect:
+    Env.t ->
+    Parsetree.effect_constructor -> Typedtree.extension_constructor * Env.t
+
 val transl_type_exception:
     Env.t ->
     Parsetree.type_exception -> Typedtree.type_exception * Env.t * Shape.t
