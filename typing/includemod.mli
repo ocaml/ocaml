@@ -155,6 +155,10 @@ val modtypes:
   loc:Location.t -> Env.t -> mark:mark ->
   module_type -> module_type -> module_coercion
 
+
+val modtypes_consistency:
+  loc:Location.t -> Env.t -> module_type -> module_type -> unit
+
 val modtypes_with_shape:
   shape:Shape.t -> loc:Location.t -> Env.t -> mark:mark ->
   module_type -> module_type -> module_coercion * Shape.t

@@ -2722,6 +2722,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
                let mty' =
                  enrich_module_type anchor name.txt modl.mod_type newenv
                in
+               Includemod.modtypes_consistency ~loc:modl.mod_loc newenv
+                mty' mty.mty_type;
                (id, name, mty, modl, mty', attrs, loc, shape, uid))
             decls sbind in
         let newenv = (* allow aliasing recursive modules from outside *)
