@@ -19,6 +19,9 @@ _______________
   (Nick Barnes, review by Stephen Dolan, Jacques-Henri Jourdan
    and Guillaume Munch-Maccagnoni).
 
+- #12789: Restore caml_unregister_frametable from OCaml 4
+  (Frédéric Recoules, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #####: Enable compile-time option -function-sections on all previously
