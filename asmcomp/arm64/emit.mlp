@@ -327,7 +327,9 @@ let float_literal env fl =
 let emit_literals env =
   if env.float_literals <> [] then begin
     if macosx then
-      `	.section	__TEXT,__literal8,8byte_literals\n`;
+      `	.section	__TEXT,__literal8,8byte_literals\n`
+    else
+      `	.section	.rodata\n`;
     `	.align	3\n`;
     List.iter
       (fun { fl; lbl } ->

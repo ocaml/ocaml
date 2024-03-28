@@ -103,6 +103,10 @@ _______________
 - #12968: Attach location to constants in the parsetree
   (Jules Aguillon, review by Gabriel Scherer)
 
+- #13015: Emit floating-point literals in .rodata section on ELF arm64
+  platforms (Linux, *BSD).
+  (Miod Vallat, review by Nicolás Ojeda Bär)
+
 ### Build system:
 
 - #12909: Reorganise how MKEXE_VIA_CC is built to make it correct for MSVC by
