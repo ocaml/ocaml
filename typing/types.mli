@@ -368,11 +368,14 @@ val rf_either_of: type_expr option -> row_field
 val eq_row_field_ext: row_field -> row_field -> bool
 val changed_row_field_exts: row_field list -> (unit -> unit) -> bool
 
+type row_field_cell
 val match_row_field:
     present:(type_expr option -> 'a) ->
     absent:(unit -> 'a) ->
-    either:(bool -> type_expr list -> bool -> row_field option ->'a) ->
+    either:(bool -> type_expr list -> bool ->
+            row_field_cell * row_field option ->'a) ->
     row_field -> 'a
+
 
 (* *)
 

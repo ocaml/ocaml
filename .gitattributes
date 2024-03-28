@@ -83,6 +83,9 @@ Makefile*                typo.makefile-whitespace=may
 
 asmcomp/*/emit.mlp       typo.tab=may typo.long-line=may
 
+# Unicode character used for graphical debugging
+typing/gprinttyp.ml      typo.utf8
+
 # The build-aux directory contains bundled files so do not check it
 build-aux                typo.prune
 

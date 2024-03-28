@@ -55,13 +55,14 @@ and row_desc =
 and fixed_explanation =
   | Univar of type_expr | Fixed_private | Reified of Path.t | Rigid
 and row_field = [`some] row_field_gen
+and row_field_cell = [`some | `none] row_field_gen ref
 and _ row_field_gen =
     RFpresent : type_expr option -> [> `some] row_field_gen
   | RFeither :
       { no_arg: bool;
         arg_type: type_expr list;
         matched: bool;
-        ext: [`some | `none] row_field_gen ref} -> [> `some] row_field_gen
+        ext: row_field_cell} -> [> `some] row_field_gen
   | RFabsent : [> `some] row_field_gen
   | RFnone : [> `none] row_field_gen
 
@@ -779,8 +780,7 @@ let match_row_field ~present ~absent ~either (f : row_field) =
         | RFnone -> None
         | RFeither _ | RFpresent _ | RFabsent as e -> Some e
       in
-      either no_arg arg_type matched e
-
+      either no_arg arg_type matched (ext,e)
 
 (**** Some type creators ****)
 
