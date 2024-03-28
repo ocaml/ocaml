@@ -122,6 +122,12 @@ Caml_inline int sync_condvar_wait(sync_condvar c, sync_mutex m)
   return pthread_cond_wait(c, m);
 }
 
+Caml_inline int sync_condvar_timedwait(sync_condvar c, sync_mutex m,
+                                       const struct timespec * ts)
+{
+  return pthread_cond_timedwait(c, m, ts);
+}
+
 /* Reporting errors */
 
 static void sync_check_error(int retcode, char * msg)

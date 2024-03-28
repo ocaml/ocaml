@@ -68,6 +68,17 @@ val acquire : t -> unit
     is not zero, then atomically decrements the value of [s] and returns.
 *)
 
+val timed_acquire : t -> float -> bool
+(** [timed_acquire s t] is the same as {!acquire}, but only waits up to
+    [t] seconds.
+    If semaphore [s] becomes non-zero within the allowed duration, it
+    atomically decrements the value of [s] and returns [true].
+    If semaphore [s] times out, the semaphore's value remains 0 and it
+    returns [false].
+
+    @since 5.3
+*)
+
 val try_acquire : t -> bool
 (** [try_acquire s] immediately returns [false] if the value of semaphore [s]
     is zero.  Otherwise, the value of [s] is atomically decremented
@@ -129,6 +140,17 @@ val acquire : t -> unit
 (** [acquire s] blocks the calling thread until the semaphore [s]
     has value 1 (is available), then atomically sets it to 0
     and returns.
+*)
+
+val timed_acquire : t -> float -> bool
+(** [timed_acquire s t] is the same as {!acquire}, but only waits up to
+    [t] seconds.
+    If the value of semaphore [s] becomes 1 within the allowed duration, it
+    atomically sets it to 0 and returns [true].
+    If semaphore [s] times out, the semaphore's value remains 0 and it
+    returns [false].
+
+    @since 5.3
 *)
 
 val try_acquire : t -> bool
