@@ -421,7 +421,18 @@ and class_type_aux env virt self_scope scty =
       cltyp (Tcty_signature clsig) typ
 
   | Pcty_arrow (l, sty, scty) ->
-      let cty = transl_simple_type env ~closed:false sty in
+      let ctyp ctyp_desc ctyp_type =
+        { ctyp_desc; ctyp_type; ctyp_env = env;
+          ctyp_loc = sty.ptyp_loc; ctyp_attributes = sty.ptyp_attributes }
+      in
+      let l = transl_label l (Some sty) in
+      let cty =
+        match l with
+        | Position _ ->
+            ctyp Ttyp_call_pos (Ctype.newconstr Predef.path_lexing_location [])
+        | Optional _ | Labelled _ | Nolabel ->
+            transl_simple_type env ~closed:false sty
+      in
       let ty = cty.ctyp_type in
       let ty =
         if Btype.is_optional l
@@ -1116,85 +1127,105 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
           cl_env = val_env;
           cl_attributes = scl.pcl_attributes;
          }
-  | Pcl_fun (l, Some default, spat, sbody) ->
-      let loc = default.pexp_loc in
-      let open Ast_helper in
-      let scases = [
-        Exp.case
-          (Pat.construct ~loc
-             (mknoloc (Longident.(Ldot (mknoloc (Lident "*predef*"),
-                                        mknoloc "Some"))))
-             (Some ([], Pat.var ~loc (mknoloc "*sth*"))))
-          (Exp.ident ~loc (mknoloc (Longident.Lident "*sth*")));
+  | Pcl_fun (untyped_l, default, spat, sbody) ->
+    let l, spat =
+      Typetexp.transl_label_from_pat_and_default untyped_l spat default
+    in
+    (match l, default with
+    | Position _, None ->
+        raise
+          Typecore.(Error (scl.pcl_loc, met_env, Missing_default_for_src_pos))
+    | _ -> ());
+    (match l, default with
+    | (Nolabel | Labelled _), Some _ -> assert false (* Not a valid AST *)
+    | Optional _, Some default ->
+        let loc = default.pexp_loc in
+        let open Ast_helper in
+        let scases = [
+          Exp.case
+            (Pat.construct ~loc
+               (mknoloc (Longident.(Ldot (mknoloc (Lident "*predef*"),
+                                          mknoloc "Some"))))
+               (Some ([], Pat.var ~loc (mknoloc "*sth*"))))
+            (Exp.ident ~loc (mknoloc (Longident.Lident "*sth*")));
 
-        Exp.case
-          (Pat.construct ~loc
-             (mknoloc (Longident.(Ldot (mknoloc (Lident "*predef*"),
-                                                mknoloc "None"))))
-             None)
-          default;
-       ]
-      in
-      let smatch =
-        Exp.match_ ~loc
-          (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
-          scases
-      in
-      let sfun =
-        Cl.fun_ ~loc:scl.pcl_loc
-          l None
-          (Pat.var ~loc (mknoloc "*opt*"))
-          (Cl.let_ ~loc:scl.pcl_loc Nonrecursive [Vb.mk spat smatch] sbody)
-          (* Note: we don't put the '#default' attribute, as it
-             is not detected for class-level let bindings.  See #5975.*)
-      in
-      class_expr cl_num val_env met_env virt self_scope sfun
-  | Pcl_fun (l, None, spat, scl') ->
-      let (pat, pv, val_env', met_env) =
-        Ctype.with_local_level_generalize_structure_if_principal
-          (fun () ->
-            Typecore.type_class_arg_pattern cl_num val_env met_env l spat)
-      in
-      let pv =
-        List.map
-          begin fun (id, id', _ty) ->
-            let path = Pident id' in
-            (* do not mark the value as being used *)
-            let vd = Env.find_value path val_env' in
-            (id,
-             {exp_desc =
-              Texp_ident(path, mknoloc
-                (Longident.Lident (Ident.name id)), vd);
-              exp_loc = Location.none; exp_extra = [];
-              exp_type = Ctype.instance vd.val_type;
-              exp_attributes = []; (* check *)
-              exp_env = val_env'})
-          end
-          pv
-      in
-      let rec not_nolabel_function = function
-        | Cty_arrow(Nolabel, _, _) -> false
-        | Cty_arrow(_, _, cty) -> not_nolabel_function cty
-        | _ -> true
-      in
-      let partial =
-        let dummy = type_exp val_env (Ast_helper.Exp.unreachable ()) in
-        Typecore.check_partial val_env pat.pat_type pat.pat_loc
-          [{c_lhs = pat; c_cont = None; c_guard = None; c_rhs = dummy}]
-      in
-      let cl =
-        Ctype.with_raised_nongen_level
-          (fun () -> class_expr cl_num val_env' met_env virt self_scope scl') in
-      if Btype.is_optional l && not_nolabel_function cl.cl_type then
-        Location.prerr_warning pat.pat_loc
-          Warnings.Unerasable_optional_argument;
-      rc {cl_desc = Tcl_fun (l, pat, pv, cl, partial);
-          cl_loc = scl.pcl_loc;
-          cl_type = Cty_arrow
-            (l, Ctype.instance pat.pat_type, cl.cl_type);
-          cl_env = val_env;
-          cl_attributes = scl.pcl_attributes;
-         }
+          Exp.case
+            (Pat.construct ~loc
+               (mknoloc (Longident.(Ldot (mknoloc (Lident "*predef*"),
+                                                  mknoloc "None"))))
+               None)
+            default;
+         ]
+        in
+        let smatch =
+          Exp.match_ ~loc
+            (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
+            scases
+        in
+        let sfun =
+          Cl.fun_ ~loc:scl.pcl_loc
+            untyped_l None
+            (Pat.var ~loc (mknoloc "*opt*"))
+            (Cl.let_ ~loc:scl.pcl_loc Nonrecursive [Vb.mk spat smatch] sbody)
+            (* Note: we don't put the '#default' attribute, as it
+               is not detected for class-level let bindings.  See #5975.*)
+        in
+        class_expr cl_num val_env met_env virt self_scope sfun
+    | Position _, _ | _, None ->
+        let (pat, pv, val_env', met_env) =
+          Ctype.with_local_level_generalize_structure_if_principal
+            (fun () ->
+              Typecore.type_class_arg_pattern cl_num val_env met_env l spat)
+        in
+        let pv =
+          List.map
+            begin fun (id, id', _ty) ->
+              let path = Pident id' in
+              (* do not mark the value as being used *)
+              let vd = Env.find_value path val_env' in
+              (id,
+               {exp_desc =
+                Texp_ident(path, mknoloc
+                  (Longident.Lident (Ident.name id)), vd);
+                exp_loc = Location.none; exp_extra = [];
+                exp_type = Ctype.instance vd.val_type;
+                exp_attributes = []; (* check *)
+                exp_env = val_env'})
+            end
+            pv
+        in
+        let rec not_nolabel_function = function
+          | Cty_arrow(Nolabel, _, _) -> false
+          | Cty_arrow(_, _, cty) -> not_nolabel_function cty
+          | _ -> true
+        in
+        let partial =
+          let dummy = type_exp val_env (Ast_helper.Exp.unreachable ()) in
+          Typecore.check_partial val_env pat.pat_type pat.pat_loc
+            [{c_lhs = pat; c_cont = None; c_guard = None; c_rhs = dummy}]
+        in
+        let cl =
+          Ctype.with_raised_nongen_level
+            (fun () -> class_expr cl_num val_env' met_env virt self_scope sbody)
+        in
+        if not_nolabel_function cl.cl_type then begin
+          match l with
+          | Nolabel | Labelled _ -> ()
+          | Optional _ ->
+            Location.prerr_warning pat.pat_loc
+              Warnings.Unerasable_optional_argument;
+          | Position _ ->
+            Location.prerr_warning pat.pat_loc
+              Warnings.Unerasable_position_argument;
+        end;
+        rc {cl_desc = Tcl_fun (l, pat, pv, cl, partial);
+            cl_loc = scl.pcl_loc;
+            cl_type = Cty_arrow
+              (l, Ctype.instance pat.pat_type, cl.cl_type);
+            cl_env = val_env;
+            cl_attributes = scl.pcl_attributes;
+           }
+    )
   | Pcl_apply (scl', sargs) ->
       assert (sargs <> []);
       let cl =
@@ -1212,13 +1243,13 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
         !Clflags.classic ||
         let labels = nonopt_labels [] cl.cl_type in
         List.length labels = List.length sargs &&
-        List.for_all (fun (l,_) -> l = Nolabel) sargs &&
+        List.for_all (fun (l,_) -> l = Asttypes.Nolabel) sargs &&
         List.exists (fun l -> l <> Nolabel) labels &&
         begin
           Location.prerr_warning
             cl.cl_loc
             (Warnings.Labels_omitted
-               (List.map Asttypes.string_of_label
+               (List.map Types.string_of_label
                          (List.filter ((<>) Nolabel) labels)));
           true
         end
@@ -1243,21 +1274,31 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
             let eliminate_optional_arg () =
               Arg (option_none val_env ty0 Location.none)
             in
+            let eliminate_position_arg () =
+              let arg =
+                Typecore.src_pos (Location.ghostify scl.pcl_loc) [] val_env
+              in
+              Arg arg
+            in
             let remaining_sargs, arg =
               if ignore_labels then begin
                 match sargs with
                 | [] -> assert false
                 | (l', sarg) :: remaining_sargs ->
+                    let label_is_absent_in_remaining_args () =
+                      not (List.exists
+                            (fun (l, _) -> name = Btype.label_name l)
+                            remaining_sargs)
+                    in
                     if name = Btype.label_name l' ||
                        (not optional && l' = Nolabel)
                     then
                       (remaining_sargs, use_arg sarg l')
-                    else if
-                      optional &&
-                      not (List.exists (fun (l, _) -> name = Btype.label_name l)
-                             remaining_sargs)
-                    then
-                      (sargs, eliminate_optional_arg ())
+                    else if optional && label_is_absent_in_remaining_args ()
+                    then (sargs, eliminate_optional_arg ())
+                    else if Btype.is_position l
+                            && label_is_absent_in_remaining_args ()
+                    then (sargs, eliminate_position_arg ())
                     else
                       raise(Error(sarg.pexp_loc, val_env, Apply_wrong_label l'))
               end else
@@ -1266,12 +1307,15 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
                     if not optional && Btype.is_optional l' then
                       Location.prerr_warning sarg.pexp_loc
                         (Warnings.Nonoptional_label
-                           (Asttypes.string_of_label l));
+                           (Types.string_of_label l));
                     remaining_sargs, use_arg sarg l'
                 | None ->
+                    let is_erased () = List.mem_assoc Nolabel sargs in
                     sargs,
-                    if Btype.is_optional l && List.mem_assoc Nolabel sargs then
+                    if Btype.is_optional l && is_erased () then
                       eliminate_optional_arg ()
+                    else if Btype.is_position l && is_erased () then
+                      eliminate_position_arg ()
                     else
                       Omitted ()
             in
@@ -1296,6 +1340,9 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
       in
       let (args, cty) =
         let (_, ty_fun0) = Ctype.instance_class [] cl.cl_type in
+        let sargs =
+          List.map (fun (label, e) -> transl_label label None, e) sargs
+        in
         type_args [] [] cl.cl_type ty_fun0 sargs
       in
       rc {cl_desc = Tcl_apply (cl, args);
@@ -1420,10 +1467,14 @@ let var_option = Predef.type_option (Btype.newgenvar ())
 
 let rec approx_declaration cl =
   match cl.pcl_desc with
-    Pcl_fun (l, _, _, cl) ->
+    Pcl_fun (l, default, pat, cl) ->
+      let l, _ = Typetexp.transl_label_from_pat_and_default l pat default in
       let arg =
-        if Btype.is_optional l then Ctype.instance var_option
-        else Ctype.newvar () in
+        match l with
+        | Optional _ -> Ctype.instance var_option
+        | Position _ -> Ctype.instance Predef.type_lexing_location
+        | Labelled _ | Nolabel -> Ctype.newvar ()
+      in
       Ctype.newty (Tarrow (l, arg, approx_declaration cl, commu_ok))
   | Pcl_let (_, _, cl) ->
       approx_declaration cl
@@ -1433,7 +1484,8 @@ let rec approx_declaration cl =
 
 let rec approx_description ct =
   match ct.pcty_desc with
-    Pcty_arrow (l, _, ct) ->
+    Pcty_arrow (l, core_type, ct) ->
+      let l = transl_label l (Some core_type) in
       let arg =
         if Btype.is_optional l then Ctype.instance var_option
         else Ctype.newvar () in

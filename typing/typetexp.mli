@@ -53,6 +53,31 @@ val type_open:
 
 val valid_tyvar_name : string -> bool
 
+(** [transl_label lbl ty] produces a Typedtree argument label for an argument
+    with label [lbl] and type [ty].
+
+    Position arguments ([?lbl:[%call_pos] -> ...]) are parsed as
+    {{!Parsetree.arg_label.Labelled}[Optional l]}. This function converts them
+    to {{!Types.arg_label.Position}[Position l]} when the type is of the form
+    [[%call_pos]]. *)
+val transl_label :
+        Asttypes.arg_label -> Parsetree.core_type option -> Types.arg_label
+
+(** [transl_label lbl pat default_value] produces a Typedtree argument label
+    for an argument with label [lbl] with pattern [pat] and default value
+    [default_value]. It is equal to:
+
+    - [Position l, P] when [lbl] is
+      {{!Parsetree.arg_label.Labelled}[Optional l]} and at least one of the
+      following is true: [default_value] is not [None] and represents
+      [[%call_pos]], or [pat] represents [(P : [%call_pos])]. If the latter is
+      not true, then [P = pat].
+    - [transl_label lbl None] otherwise.
+  *)
+val transl_label_from_pat_and_default :
+        Asttypes.arg_label -> Parsetree.pattern -> Parsetree.expression option
+        -> Types.arg_label * Parsetree.pattern
+
 val transl_simple_type:
         Env.t -> ?univars:TyVarEnv.poly_univars -> closed:bool
         -> Parsetree.core_type -> Typedtree.core_type
@@ -93,6 +118,7 @@ type error =
   | Opened_object of Path.t option
   | Not_an_object of type_expr
   | Repeated_tuple_label of string
+  | Invalid_label_for_call_pos of Asttypes.arg_label
 
 exception Error of Location.t * Env.t * error
 

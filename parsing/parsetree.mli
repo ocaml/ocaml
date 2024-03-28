@@ -95,11 +95,11 @@ and core_type_desc =
   | Ptyp_arrow of arg_label * core_type * core_type
       (** [Ptyp_arrow(lbl, T1, T2)] represents:
             - [T1 -> T2]    when [lbl] is
-                                     {{!Asttypes.arg_label.Nolabel}[Nolabel]},
+                                     {{!arg_label.Nolabel}[Nolabel]},
             - [~l:T1 -> T2] when [lbl] is
-                                     {{!Asttypes.arg_label.Labelled}[Labelled]},
+                                     {{!arg_label.Labelled}[Labelled]},
             - [?l:T1 -> T2] when [lbl] is
-                                     {{!Asttypes.arg_label.Optional}[Optional]}.
+                                     {{!arg_label.Optional}[Optional]}.
          *)
   | Ptyp_tuple of (string option * core_type) list
       (** [Ptyp_tuple(tl)] represents a product type:
@@ -346,9 +346,9 @@ and expression_desc =
             represents [E0 ~l1:E1 ... ~ln:En]
 
             [li] can be
-              {{!Asttypes.arg_label.Nolabel}[Nolabel]}   (non labeled argument),
-              {{!Asttypes.arg_label.Labelled}[Labelled]} (labelled arguments) or
-              {{!Asttypes.arg_label.Optional}[Optional]} (optional argument).
+              {{!arg_label.Nolabel}[Nolabel]}   (non labeled argument),
+              {{!arg_label.Labelled}[Labelled]} (labelled arguments) or
+              {{!arg_label.Optional}[Optional]} (optional argument).
 
            Invariant: [n > 0]
          *)
@@ -480,8 +480,12 @@ and function_param_desc =
         when [lbl] is {{!Asttypes.arg_label.Optional}[Optional l]}
         and [exp0] is [Some E0]
 
-      Note: If [E0] is provided, only
-      {{!Asttypes.arg_label.Optional}[Optional]} is allowed.
+      Notes:
+      - If [E0] is provided, only {{!Asttypes.arg_label.Optional}[Optional]}
+        is allowed.
+      - While Position arguments [?(lbl = [%call_pos]) -> ...] are parsed as
+        {{!Asttypes.arg_label.Optional}[Optional l]}, they are converted to
+        {{!Types.arg_label.Position}[Position l]} arguments during typechecking.
   *)
   | Pparam_newtype of string loc
   (** [Pparam_newtype x] represents the parameter [(type x)].
@@ -706,11 +710,11 @@ and class_type_desc =
   | Pcty_arrow of arg_label * core_type * class_type
       (** [Pcty_arrow(lbl, T, CT)] represents:
             - [T -> CT]
-                     when [lbl] is {{!Asttypes.arg_label.Nolabel}[Nolabel]},
+                     when [lbl] is {{!arg_label.Nolabel}[Nolabel]},
             - [~l:T -> CT]
-                     when [lbl] is {{!Asttypes.arg_label.Labelled}[Labelled l]},
+                     when [lbl] is {{!arg_label.Labelled}[Labelled l]},
             - [?l:T -> CT]
-                     when [lbl] is {{!Asttypes.arg_label.Optional}[Optional l]}.
+                     when [lbl] is {{!arg_label.Optional}[Optional l]}.
          *)
   | Pcty_extension of extension  (** [%id] *)
   | Pcty_open of open_description * class_type  (** [let open M in CT] *)
@@ -783,16 +787,16 @@ and class_expr_desc =
   | Pcl_fun of arg_label * expression option * pattern * class_expr
       (** [Pcl_fun(lbl, exp0, P, CE)] represents:
             - [fun P -> CE]
-                     when [lbl]  is {{!Asttypes.arg_label.Nolabel}[Nolabel]}
+                     when [lbl]  is {{!arg_label.Nolabel}[Nolabel]}
                       and [exp0] is [None],
             - [fun ~l:P -> CE]
-                     when [lbl]  is {{!Asttypes.arg_label.Labelled}[Labelled l]}
+                     when [lbl]  is {{!arg_label.Labelled}[Labelled l]}
                       and [exp0] is [None],
             - [fun ?l:P -> CE]
-                     when [lbl]  is {{!Asttypes.arg_label.Optional}[Optional l]}
+                     when [lbl]  is {{!arg_label.Optional}[Optional l]}
                       and [exp0] is [None],
             - [fun ?l:(P = E0) -> CE]
-                     when [lbl]  is {{!Asttypes.arg_label.Optional}[Optional l]}
+                     when [lbl]  is {{!arg_label.Optional}[Optional l]}
                       and [exp0] is [Some E0].
         *)
   | Pcl_apply of class_expr * (arg_label * expression) list

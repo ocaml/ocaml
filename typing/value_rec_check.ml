@@ -183,7 +183,8 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_variant _
     | Texp_tuple _
     | Texp_extension_constructor _
-    | Texp_constant _ ->
+    | Texp_constant _
+    | Texp_src_pos ->
         Static
 
     | Texp_for _
@@ -941,6 +942,7 @@ let rec expression : Typedtree.expression -> term_judg =
       path pth << Dereference
     | Texp_open (od, e) ->
       open_declaration od >> expression e
+    | Texp_src_pos -> empty
 
 (* Function bodies.
 

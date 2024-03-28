@@ -18,7 +18,7 @@
 type printer_type = Types.type_expr -> Types.type_expr
 
 let type_arrow ta tb =
-  Ctype.newty (Tarrow (Asttypes.Nolabel, ta, tb, Types.commu_var ()))
+  Ctype.newty (Tarrow (Types.Nolabel, ta, tb, Types.commu_var ()))
 
 let type_formatter () =
   let format = Path.Pident (Ident.create_persistent "Stdlib__Format") in

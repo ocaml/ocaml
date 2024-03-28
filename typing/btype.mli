@@ -238,7 +238,10 @@ val backtrack: snapshot -> unit
 
 (**** Utilities for labels ****)
 
+val is_optional_parsetree : Asttypes.arg_label -> bool
 val is_optional : arg_label -> bool
+val is_position : arg_label -> bool
+val is_omittable : arg_label -> bool
 val label_name : arg_label -> label
 
 (* Returns the label name with first character '?' or '~' as appropriate. *)

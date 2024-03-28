@@ -46,6 +46,7 @@ type error =
   | Opened_object of Path.t option
   | Not_an_object of type_expr
   | Repeated_tuple_label of string
+  | Invalid_label_for_call_pos of Asttypes.arg_label
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -424,6 +425,60 @@ let type_open :
     ref =
   ref (fun ?used_slot:_ _ -> assert false)
 
+let transl_label (label : Asttypes.arg_label)
+    (arg_opt : Parsetree.core_type option) =
+  match label, arg_opt with
+  | Optional l, Some { ptyp_desc = Ptyp_extension ({txt="call_pos"; _}, _); _}
+      -> Position l
+  | _,
+    Some ({ ptyp_desc = Ptyp_extension ({txt="call_pos"; _}, _); _} as arg) ->
+      raise (Error (arg.ptyp_loc, Env.empty, Invalid_label_for_call_pos label))
+  | Labelled l, _ -> Labelled l
+  | Optional l, _ -> Optional l
+  | Nolabel, _ -> Nolabel
+
+let transl_label_from_pat_and_default
+    (label : Asttypes.arg_label)
+    (pat : Parsetree.pattern)
+    (default : Parsetree.expression option)
+    : Types.arg_label * Parsetree.pattern =
+  let label, inner_pat =
+    match default, pat with
+    | Some { pexp_desc = Pexp_extension ({txt="call_pos"; _}, _); _ },
+      { ppat_desc =
+          Ppat_constraint (
+            inner_pat,
+            ({ ptyp_desc = Ptyp_extension ({txt="call_pos"; _}, _); _} as ty));
+        _ } ->
+        (* Maybe valid case: [?(label = [%call_pos] : [%call_pos])].
+           [transl_label] will check that the argument is optional. *)
+        transl_label label (Some ty), inner_pat
+    | None,
+      { ppat_desc =
+          Ppat_constraint (
+            inner_pat,
+            ({ ptyp_desc = Ptyp_extension ({txt="call_pos"; _}, _); _} as ty));
+        _ } ->
+        (* Maybe an (invalid) expression [fun ?(label : [%call_pos]) -> ...] or
+           a type [?label:[%call_pos] -> ...]. [transl_label] will check that
+           the argument is optional. For the expression case, it is up to this
+           function's caller to reject it due to the missing default
+           expression. *)
+        transl_label label (Some ty), inner_pat
+    | Some { pexp_desc = Pexp_extension ({txt="call_pos"; _}, _); _ }, _ ->
+        (* Maybe valid case: [?(label = [%call_pos])].
+           [transl_label] will check that the argument is optional. *)
+        let ty =
+          { ptyp_desc = Ptyp_extension (Location.mknoloc "call_pos", PStr []);
+            ptyp_loc = Location.none;
+            ptyp_loc_stack = [];
+            ptyp_attributes = [] }
+        in
+        transl_label label (Some ty), pat
+    | _ -> transl_label label None, pat
+  in
+  label, if Btype.is_position label then inner_pat else pat
+
 let rec transl_type env ~policy ?(aliased=false) ~row_context styp =
   Builtin_attributes.warning_scope styp.ptyp_attributes
     (fun () -> transl_type_aux env ~policy ~aliased ~row_context styp)
@@ -451,15 +506,20 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
     in
     ctyp (Ttyp_var name) ty
   | Ptyp_arrow(l, st1, st2) ->
-    let cty1 = transl_type env ~policy ~row_context st1 in
-    let cty2 = transl_type env ~policy ~row_context st2 in
-    let ty1 = cty1.ctyp_type in
-    let ty1 =
+    let l = transl_label l (Some st1) in
+    let arg_cty =
+      if Btype.is_position l then
+        ctyp Ttyp_call_pos (newconstr Predef.path_lexing_location [])
+      else transl_type env ~policy ~row_context st1
+    in
+    let ret_cty = transl_type env ~policy ~row_context st2 in
+    let arg_ty = arg_cty.ctyp_type in
+    let arg_ty =
       if Btype.is_optional l
-      then newty (Tconstr(Predef.path_option,[ty1], ref Mnil))
-      else ty1 in
-    let ty = newty (Tarrow(l, ty1, cty2.ctyp_type, commu_ok)) in
-    ctyp (Ttyp_arrow (l, cty1, cty2)) ty
+      then newty (Tconstr(Predef.path_option, [arg_ty], ref Mnil))
+      else arg_ty in
+    let ty = newty (Tarrow(l, arg_ty, ret_cty.ctyp_type, commu_ok)) in
+    ctyp (Ttyp_arrow (l, arg_cty, ret_cty)) ty
   | Ptyp_tuple stl ->
     assert (List.length stl >= 2);
     Option.iter (fun l -> raise (Error (loc, env, Repeated_tuple_label l)))
@@ -1007,6 +1067,15 @@ let report_error_doc loc env = function
   | Repeated_tuple_label l ->
       Location.errorf ~loc "@[This tuple type has two labels named %a@]"
         Style.inline_code l
+  | Invalid_label_for_call_pos arg_label ->
+      let negation, adjective =
+        match arg_label with
+        | Nolabel -> "not ", "unlabelled"
+        | Optional _ -> assert false
+        | Labelled _ -> "", "optional"
+      in
+      Location.errorf ~loc "A position argument must %sbe %s."
+        negation adjective
 
 let () =
   Location.register_error_of_exn

@@ -1636,6 +1636,7 @@ module Default = struct
     let _no_absname = clear Clflags.absname
     let _no_alias_deps = set transparent_modules
     let _no_app_funct = clear applicative_functors
+    let _directory d = Clflags.directory := Some d
     let _no_principal = clear principal
     let _no_rectypes = clear recursive_types
     let _no_strict_formats = clear strict_formats

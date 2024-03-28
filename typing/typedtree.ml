@@ -102,6 +102,12 @@ and exp_extra =
   | Texp_poly of core_type option
   | Texp_newtype of string
 
+and arg_label = Types.arg_label =
+  | Nolabel
+  | Labelled of string
+  | Optional of string
+  | Position of string
+
 and expression_desc =
     Texp_ident of Path.t * Longident.t loc * Types.value_description
   | Texp_constant of constant
@@ -152,6 +158,7 @@ and expression_desc =
   | Texp_unreachable
   | Texp_extension_constructor of Longident.t loc * Path.t
   | Texp_open of open_declaration * expression
+  | Texp_src_pos
 
 and meth =
   | Tmeth_name of string
@@ -492,6 +499,7 @@ and core_type_desc =
   | Ttyp_poly of string list * core_type
   | Ttyp_package of package_type
   | Ttyp_open of Path.t * Longident.t loc * core_type
+  | Ttyp_call_pos
 
 and package_type = {
   pack_path : Path.t;

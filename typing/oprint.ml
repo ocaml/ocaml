@@ -280,11 +280,11 @@ let ty_var ~non_gen ppf s =
 let pr_vars =
   print_list pr_var (fun ppf -> fprintf ppf "@ ")
 
-let print_arg_label ppf (lbl : Asttypes.arg_label) =
+let print_arg_label ppf (lbl : arg_label) =
   match lbl with
   | Nolabel -> ()
   | Labelled s -> fprintf ppf "%a:" print_lident s
-  | Optional s -> fprintf ppf "?%a:" print_lident s
+  | Optional s | Position s -> fprintf ppf "?%a:" print_lident s
 
 let rec print_out_type ppf =
   function
@@ -304,7 +304,9 @@ and print_out_type_1 ppf =
     Otyp_arrow (lab, ty1, ty2) ->
       pp_open_box ppf 0;
       print_arg_label ppf lab;
-      print_out_type_2 ~arg:true ppf ty1;
+      (match lab with
+      | Nolabel | Labelled _ | Optional _ -> print_out_type_2 ~arg:true ppf ty1
+      | Position _ -> pp_print_string ppf "[%call_pos]");
       pp_print_string ppf " ->";
       pp_print_space ppf ();
       print_out_type_1 ppf ty2;
@@ -475,8 +477,15 @@ let rec print_out_class_type ppf =
       in
       fprintf ppf "@[%a%a@]" pr_tyl tyl print_ident id
   | Octy_arrow (lab, ty, cty) ->
-      fprintf ppf "@[%a%a ->@ %a@]" print_arg_label lab
-        (print_out_type_2 ~arg:true) ty print_out_class_type cty
+      let print_type ppf ty =
+        match lab with
+        | Nolabel | Labelled _ | Optional _ -> print_out_type_2 ~arg:true ppf ty
+        | Position _ -> pp_print_string ppf "[%call_pos]"
+      in
+      fprintf ppf "@[%a%a ->@ %a@]"
+        print_arg_label lab
+        print_type ty
+        print_out_class_type cty
   | Octy_signature (self_ty, csil) ->
       let pr_param ppf =
         function
