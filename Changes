@@ -109,9 +109,9 @@ _______________
   grouping all the linker flags at the end of the C compiler commandline
   (David Allsopp and Samuel Hym, review by Nicolás Ojeda Bär)
 
-- #12992: Check that flexlink can be executed only when building in a native
-  windows environment.
-  (Romain Beauxis, review by David Allsopp)
+- #12992, #13009: Check that flexlink can be executed only when building in a
+  native windows environment.
+  (Romain Beauxis, review by David Allsopp and Sébastien Hinderer)
 
 - #12996: Only link with -lgcc_eh when available.
   (Romain Beauxis, review by David Allsopp and Miod Vallat)
