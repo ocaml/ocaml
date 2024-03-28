@@ -15,7 +15,7 @@ let new_channel () = { senders = Queue.create(); receivers = Queue.create() }
 
 effect Spawn     : (unit -> unit) -> unit
 effect Yield     : unit
-effect Terminate : unit
+exception Terminate
 effect Send      : 'a channel * 'a -> unit
 effect Recv      : 'a channel -> 'a
 
@@ -23,7 +23,7 @@ let spawn f = perform (Spawn f)
 
 let yield () = perform Yield
 
-let terminate () = perform Terminate
+let terminate () = raise Terminate
 
 let send ch v = perform (Send(ch, v))
 
@@ -47,7 +47,7 @@ let rec corun (f: unit -> unit) =
   | () -> restart ()
   | effect Spawn f, k -> suspend (continue k); corun f
   | effect Yield, k -> suspend (continue k); restart ()
-  | effect Terminate, k -> restart ()
+  | exception Terminate -> restart ()
   | effect Send(ch, v), k ->
           begin match Queue.take_opt ch.receivers with
           | Some rc -> suspend (continue k); continue rc v
