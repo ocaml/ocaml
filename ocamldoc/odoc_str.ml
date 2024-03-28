@@ -135,8 +135,8 @@ let string_of_class_params c =
         Printf.bprintf b "%s%s%s%s -> "
           (
            match label with
-             Asttypes.Nolabel -> ""
-           | s -> Asttypes.string_of_label s ^":"
+             Types.Nolabel -> ""
+           | s -> Format.asprintf "%s:" (Types.string_of_label s)
           )
           (if parent then "(" else "")
           (Odoc_print.string_of_type_expr

@@ -95,7 +95,8 @@ let classify env ty : classification =
              | `Extension_constructor | `Continuation
              | `Array | `Floatarray | `Iarray
              | `Atomic_loc
-             | `Todo_info)
+             | `Todo_info
+             | `Textloc)
         -> Addr
       | Some #Predef.data_type_constr | None ->
         try
@@ -275,6 +276,7 @@ let classify_lazy_argument e =
     | Texp_assert _
     | Texp_letop _
     | Texp_unreachable
+    | Texp_src_loc
       -> false
   in
   (* In [let x = e in lazy x], [lazy x] sometimes need to be

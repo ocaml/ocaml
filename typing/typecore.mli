@@ -255,6 +255,8 @@ type error =
   | Cannot_unify_tfunctor_to_tarrow of Errortrace.unification_error
   | Cannot_omit_tfunctor_argument of Ident.Unscoped.t * type_expr
   | Unexpected_hole
+  | Invalid_label_for_src_loc of arg_label
+  | Missing_default_for_src_loc
 
 module Error : sig
   type exn += private In_context of Location.t * Env.t * error
@@ -302,3 +304,6 @@ val annotate_recursive_bindings :
   Env.t -> Typedtree.value_binding list -> Typedtree.value_binding list
 val check_recursive_class_bindings :
   Env.t -> Ident.t list -> Typedtree.class_expr list -> unit
+
+val src_pos :
+  Location.t -> Typedtree.attributes -> Env.t -> Typedtree.expression

@@ -115,8 +115,8 @@ val search_string_backward : pat: string -> s: string -> int
 val remove_option : Types.type_expr -> Types.type_expr
 
 (** Return [true] if the given label is optional.*)
-val is_optional : Asttypes.arg_label -> bool
+val is_optional : Types.arg_label -> bool
 
 (** Return the label name for the given label,
    i.e. removes the beginning '?' if present.*)
-val label_name : Asttypes.arg_label -> string
+val label_name : Types.arg_label -> string
