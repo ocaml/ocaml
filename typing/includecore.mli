@@ -104,9 +104,15 @@ type type_mismatch =
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
 
+val value_descriptions_consistency:
+  Env.t -> value_description -> value_description -> module_coercion
+
 val value_descriptions:
   loc:Location.t -> Env.t -> string ->
   value_description -> value_description -> module_coercion
+
+val type_declarations_consistency:
+  Env.t -> type_declaration -> type_declaration -> type_mismatch option
 
 val type_declarations:
   ?equality:bool ->
