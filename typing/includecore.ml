@@ -70,6 +70,10 @@ type value_mismatch =
 
 exception Dont_match of value_mismatch
 
+(* A value description [vd1] is consistent with the value description [vd2] if
+   there is a context E such that [E |- vd1 <: vd2] for the ordinary subtyping.
+   For values, this is the case as soon as the kind of [vd1] is a subkind of the
+   [vd2] kind. *)
 let value_descriptions_consistency env vd1 vd2 =
   match (vd1.val_kind, vd2.val_kind) with
   | (Val_prim p1, Val_prim p2) -> begin
@@ -913,6 +917,11 @@ let type_manifest env ty1 params1 ty2 params2 priv2 kind2 =
       | () -> None
     end
 
+(* A type declarations [td1] is consistent with the type declaration [td2] if
+   there is a context E such E |- td1 <: td2 for the ordinary subtyping. For
+   types, this is the case as soon as the two type declarations share the same
+   arity and the privacy of [td1] is less than the privacy of [td2] (consider a
+   context E where all type constructors are equal). *)
 let type_declarations_consistency env decl1 decl2 =
   if decl1.type_arity <> decl2.type_arity then Some Arity
   else match privacy_mismatch env decl1 decl2 with
