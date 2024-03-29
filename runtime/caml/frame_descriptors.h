@@ -106,7 +106,22 @@ Caml_inline bool frame_has_debug(frame_descr *d) {
   (((uintnat)(addr) >> 3) & (mask))
 
 void caml_init_frame_descriptors(void);
+
 void caml_register_frametables(void **tables, int ntables);
+void caml_register_frametable(void *table);
+
+/* Create copies of the frametables and register them in the runtime.
+   It writes back the pointers of the new copies of the frametables.
+   Calling 'caml_unregister_frametable(s)' on these copies is safe
+   and will free the allocated memory. */
+void caml_copy_and_register_frametables(void **table, int *sizes, int ntables);
+void* caml_copy_and_register_frametable(void *table, int size);
+
+/* The unregistered frametables can still be in use after calling
+   this function. Thus, you should not free their memory.
+   Note: it may reorder the content of the array 'tables' */
+void caml_unregister_frametables(void **tables, int ntables);
+void caml_unregister_frametable(void *table);
 
 /* a linked list of frametables */
 typedef struct caml_frametable_list {
@@ -115,44 +130,20 @@ typedef struct caml_frametable_list {
 } caml_frametable_list;
 
 /* a hashtable of frame descriptors */
-typedef struct {
-  int num_descr;
-  int mask;
-  frame_descr** descriptors;
-  caml_frametable_list *frametables;
-} caml_frame_descrs;
-/* Let us call 'capacity' the length of the descriptors array.
+typedef struct caml_frame_descrs caml_frame_descrs;
 
-   We maintain the following invariants:
-     capacity = mask + 1
-     capacity = 0 || Is_power_of_2(capacity)
-     num_desc <= 2 * num_descr <= capacity
-
-   For an extensible array we would maintain
-      num_desc <= capacity,
-    but this is a linear-problem hash table, we need to ensure that
-    free slots are frequent enough, so we use a twice-larger capacity:
-      num_desc * 2 <= capacity
-
-   We keep the list of frametables that was used to build the hashtable.
-   We use it when rebuilding the table after resizing.
-
-   Some frame tables in the list may have been unregistered after the
-   hashtable was built, so in general [num_descrs] is an over-approximation
-   of the true number of frame descriptors in the [list].
-*/
-
-caml_frame_descrs caml_get_frame_descrs(void);
+caml_frame_descrs* caml_get_frame_descrs(void);
 
 /* Find the current table of frame descriptors.
    The resulting structure is only valid until the next GC */
-frame_descr* caml_find_frame_descr(caml_frame_descrs fds, uintnat pc);
+frame_descr* caml_find_frame_descr(caml_frame_descrs *fds, uintnat pc);
 
 
 /* Returns the next frame descriptor (or NULL if none is available),
    and updates *pc and *sp to point to the following one.  */
 frame_descr *caml_next_frame_descriptor
-    (caml_frame_descrs fds, uintnat * pc, char ** sp, struct stack_info* stack);
+    (caml_frame_descrs * fds, uintnat * pc, char ** sp,
+     struct stack_info* stack);
 
 #endif /* CAML_INTERNALS */
 
