@@ -106,6 +106,9 @@ _______________
 - #12968: Attach location to constants in the parsetree
   (Jules Aguillon, review by Gabriel Scherer)
 
+- #12959, #13055: Avoid an internal error on recursive module type inconsistency
+  (Florian Angeletti, review by Jacques Garrigue and Gabriel Scherer)
+
 ### Build system:
 
 - #12909: Reorganise how MKEXE_VIA_CC is built to make it correct for MSVC by

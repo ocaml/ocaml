@@ -70,6 +70,26 @@ type value_mismatch =
 
 exception Dont_match of value_mismatch
 
+(* A value description [vd1] is consistent with the value description [vd2] if
+   there is a context E such that [E |- vd1 <: vd2] for the ordinary subtyping.
+   For values, this is the case as soon as the kind of [vd1] is a subkind of the
+   [vd2] kind. *)
+let value_descriptions_consistency env vd1 vd2 =
+  match (vd1.val_kind, vd2.val_kind) with
+  | (Val_prim p1, Val_prim p2) -> begin
+      match primitive_descriptions p1 p2 with
+      | None -> Tcoerce_none
+      | Some err -> raise (Dont_match (Primitive_mismatch err))
+    end
+  | (Val_prim p, _) ->
+      let pc =
+        { pc_desc = p; pc_type = vd2.Types.val_type;
+          pc_env = env; pc_loc = vd1.Types.val_loc; }
+      in
+      Tcoerce_primitive pc
+  | (_, Val_prim _) -> raise (Dont_match Not_a_primitive)
+  | (_, _) -> Tcoerce_none
+
 let value_descriptions ~loc env name
     (vd1 : Types.value_description)
     (vd2 : Types.value_description) =
@@ -81,22 +101,7 @@ let value_descriptions ~loc env name
     name;
   match Ctype.moregeneral env true vd1.val_type vd2.val_type with
   | exception Ctype.Moregen err -> raise (Dont_match (Type err))
-  | () -> begin
-      match (vd1.val_kind, vd2.val_kind) with
-      | (Val_prim p1, Val_prim p2) -> begin
-          match primitive_descriptions p1 p2 with
-          | None -> Tcoerce_none
-          | Some err -> raise (Dont_match (Primitive_mismatch err))
-        end
-      | (Val_prim p, _) ->
-          let pc =
-            { pc_desc = p; pc_type = vd2.Types.val_type;
-              pc_env = env; pc_loc = vd1.Types.val_loc; }
-          in
-          Tcoerce_primitive pc
-      | (_, Val_prim _) -> raise (Dont_match Not_a_primitive)
-      | (_, _) -> Tcoerce_none
-    end
+  | () -> value_descriptions_consistency env vd1 vd2
 
 (* Inclusion between manifest types (particularly for private row types) *)
 
@@ -912,6 +917,17 @@ let type_manifest env ty1 params1 ty2 params2 priv2 kind2 =
       | () -> None
     end
 
+(* A type declarations [td1] is consistent with the type declaration [td2] if
+   there is a context E such E |- td1 <: td2 for the ordinary subtyping. For
+   types, this is the case as soon as the two type declarations share the same
+   arity and the privacy of [td1] is less than the privacy of [td2] (consider a
+   context E where all type constructors are equal). *)
+let type_declarations_consistency env decl1 decl2 =
+  if decl1.type_arity <> decl2.type_arity then Some Arity
+  else match privacy_mismatch env decl1 decl2 with
+    | Some err -> Some (Privacy err)
+    | None -> None
+
 let type_declarations ?(equality = false) ~loc env ~mark name
       decl1 path decl2 =
   Builtin_attributes.check_alerts_inclusion
@@ -920,12 +936,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
     loc
     decl1.type_attributes decl2.type_attributes
     name;
-  if decl1.type_arity <> decl2.type_arity then Some Arity else
-  let err =
-    match privacy_mismatch env decl1 decl2 with
-    | Some err -> Some (Privacy err)
-    | None -> None
-  in
+  let err = type_declarations_consistency env decl1 decl2 in
   if err <> None then err else
   let err = match (decl1.type_manifest, decl2.type_manifest) with
       (_, None) ->
