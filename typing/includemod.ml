@@ -408,11 +408,17 @@ module Sign_diff = struct
     }
 end
 
-(** Core type system subtyping relation *)
+(** Core type system subtyping-like relation that we want to lift at the module
+    level. We have two relations that we want to lift:
+
+  - the normal subtyping relation [<:].
+  - the coarse-grain consistency relation [C], which is defined by
+   [d1 C d2] if there is an environment [E] such that [E |- d1 <: d2]. *)
 type 'a core_incl =
   loc:Location.t -> Env.t -> mark:mark -> Subst.t -> Ident.t ->
   'a -> 'a -> (module_coercion, Error.sigitem_symptom) result
-type core_inclusion = {
+
+type core_relation = {
   value_descriptions: Types.value_description core_incl;
   type_declarations: Types.type_declaration core_incl;
   extension_constructors: Types.extension_constructor core_incl;
