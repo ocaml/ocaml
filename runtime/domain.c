@@ -1014,6 +1014,7 @@ struct domain_startup_params {
                                 parent and child synchronize on this value. */
   struct domain_ml_values* ml_values; /* in */
   uintnat unique_id; /* out */
+  const char *error; /* out: set iff status is Dom_failed */
 };
 
 static void* backup_thread_func(void* v)
@@ -1172,10 +1173,11 @@ static void handshake_success(struct domain_startup_params *p)
   caml_plat_unlock(&p->parent->interruptor.lock);
 }
 
-static void handshake_failure(struct domain_startup_params *p)
+static void handshake_failure(struct domain_startup_params *p, const char *str)
 {
   caml_plat_lock_blocking(&p->parent->interruptor.lock);
   p->status = Dom_failed;
+  p->error = str;
   caml_plat_broadcast(&p->parent->interruptor.cond);
   caml_plat_unlock(&p->parent->interruptor.lock);
   caml_gc_log("Failed to create domain");
@@ -1221,14 +1223,14 @@ static void* domain_thread_func(void* v)
 #ifndef _WIN32
     signal_stack = caml_init_signal_stack();
     if (signal_stack == NULL) {
-      handshake_failure(p);
+      handshake_failure(p, "failed to allocate domain: signal stack");
       goto out1;
     }
 #endif
 
     domain_create(caml_params->init_minor_heap_wsz, p->parent->state);
     if (domain_self == NULL) {
-      handshake_failure(p);
+      handshake_failure(p, "failed to allocate domain: domain_create");
       goto out2;
     }
 
@@ -1346,7 +1348,7 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
     CAMLassert (p.status == Dom_failed);
     /* failed */
     pthread_join(th, 0);
-    caml_failwith("failed to allocate domain");
+    caml_failwith(p.error);
   }
 
   CAMLreturn (Val_long(p.unique_id));
