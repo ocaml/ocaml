@@ -1711,7 +1711,7 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
-  --enable-bti            compile with branch target indirection, if supported
+  --enable-bti            compile with branch target indirection
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -15469,35 +15469,34 @@ then :
 fi
 
 
-#AS_IF([test "x$enable_bti" = "xyes"],
-#  [AC_MSG_NOTICE([HEY!!!!!!!!!!!])],
-#  [bti=false])
-
 bti=false
-if test "x$enable_bti" = "xyes"
-then :
-  case $host in #(
-  x86_64-*-*) :
-    ac_fn_c_check_header_compile "$LINENO" "cet.h" "ac_cv_header_cet_h" "$ac_includes_default"
+
+ac_fn_c_check_header_compile "$LINENO" "cet.h" "ac_cv_header_cet_h" "$ac_includes_default"
 if test "x$ac_cv_header_cet_h" = xyes
 then :
   printf "%s\n" "#define HAS_CET_H 1" >>confdefs.h
- bti=true
-else $as_nop
-  bti=false
-fi
- ;; #(
-  *) :
-     ;;
-esac
+
 fi
 
-# Disable control flow integrity
-
-case $host in #(
+case "x$enable_bti" in #(
+  "xyes") :
+    bti=true ;; #(
+  "xno") :
+    bti=false ;; #(
+  "x") :
+    case $host in #(
   aarch64-*-openbsd7.[4-9]|aarch64-*-openbsd[89].*) :
     oc_ldflags="$oc_ldflags -Wl,-z,nobtcfi"
-     natdynlinkopts="$natdynlinkopts -Wl,-z,nobtcfi" ;; #(
+       natdynlinkopts="$natdynlinkopts -Wl,-z,nobtcfi"
+       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: disabling btcfi on OpenBSD/aarch64 as it is not yet implemented" >&5
+printf "%s\n" "$as_me: disabling btcfi on OpenBSD/aarch64 as it is not yet implemented" >&6;} ;; #(
+  x86_64-*-openbsd7.[4-9]|x86_64-*-openbsd[89].*) :
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: enabling btcfi on OpenBSD/x86_64 as it is mandatory" >&5
+printf "%s\n" "$as_me: enabling btcfi on OpenBSD/x86_64 as it is mandatory" >&6;}
+       bti=true ;; #(
+  *) :
+     ;;
+esac ;; #(
   *) :
      ;;
 esac

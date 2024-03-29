@@ -1247,20 +1247,21 @@ AS_CASE([$host],
 ## Check for indirect branch tracking control flow features
 AC_ARG_ENABLE([bti],
   [AS_HELP_STRING([--enable-bti],
-    [compile with branch target indirection, if supported])])
+    [compile with branch target indirection])])
 
 bti=false
-AS_IF([test "x$enable_bti" = "xyes"],
-  [AS_CASE([$host],
-    [x86_64-*-*], [AC_CHECK_HEADER([cet.h],
-      [AC_DEFINE([HAS_CET_H]) bti=true], [bti=false])])])
 
-# Disable control flow integrity
-
-AS_CASE([$host],
-  [[aarch64-*-openbsd7.[4-9]|aarch64-*-openbsd[89].*]],
-    [oc_ldflags="$oc_ldflags -Wl,-z,nobtcfi"
-     natdynlinkopts="$natdynlinkopts -Wl,-z,nobtcfi"])
+AC_CHECK_HEADER([cet.h], AC_DEFINE([HAS_CET_H]))
+AS_CASE(["x$enable_bti"],
+  ["xyes"], [bti=true], ["xno"], [bti=false],
+  ["x"], [AS_CASE([$host],
+    [[aarch64-*-openbsd7.[4-9]|aarch64-*-openbsd[89].*]],
+      [oc_ldflags="$oc_ldflags -Wl,-z,nobtcfi"
+       natdynlinkopts="$natdynlinkopts -Wl,-z,nobtcfi"
+       AC_MSG_NOTICE([disabling btcfi on OpenBSD/aarch64 as it is not yet implemented])],
+    [[x86_64-*-openbsd7.[4-9]|x86_64-*-openbsd[89].*]],
+      [AC_MSG_NOTICE([enabling btcfi on OpenBSD/x86_64 as it is mandatory])
+       bti=true])])
 
 # Configure native dynlink
 
