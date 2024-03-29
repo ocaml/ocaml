@@ -77,13 +77,6 @@ let offset_addressing addr delta =
   | Iscaled(scale, n) -> Iscaled(scale, n + delta)
   | Iindexed2scaled(scale, n) -> Iindexed2scaled(scale, n + delta)
 
-let num_args_addressing = function
-    Ibased _ -> 0
-  | Iindexed _ -> 1
-  | Iindexed2 _ -> 2
-  | Iscaled _ -> 1
-  | Iindexed2scaled _ -> 2
-
 (* Printing operations and addressing modes *)
 
 let print_addressing printreg addr ppf arg =

@@ -58,9 +58,6 @@ let offset_addressing addr delta =
   match addr with
   | Iindexed n -> Iindexed(n + delta)
 
-let num_args_addressing = function
-  | Iindexed _ -> 1
-
 (* Printing operations and addressing modes *)
 
 let print_addressing printreg addr ppf arg =

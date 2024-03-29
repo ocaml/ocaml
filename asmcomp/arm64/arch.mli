@@ -86,8 +86,6 @@ val identity_addressing : addressing_mode
 
 val offset_addressing : addressing_mode -> int -> addressing_mode
 
-val num_args_addressing : addressing_mode -> int
-
 (* Printing operations and addressing modes *)
 
 val print_addressing :
