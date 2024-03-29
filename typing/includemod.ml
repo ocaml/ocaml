@@ -150,62 +150,64 @@ let mark_positive = function
   | Mark_both | Mark_positive -> true
   | Mark_negative | Mark_neither -> false
 
-(* All functions "blah env x1 x2" check that x1 is included in x2,
-   i.e. that x1 is the type of an implementation that fulfills the
-   specification x2. If not, Error is raised with a backtrace of the error. *)
+module Core_inclusion = struct
+  (* All functions "blah env x1 x2" check that x1 is included in x2,
+     i.e. that x1 is the type of an implementation that fulfills the
+     specification x2. If not, Error is raised with a backtrace of the error. *)
 
-(* Inclusion between value descriptions *)
+  (* Inclusion between value descriptions *)
 
-let value_descriptions ~loc env ~mark subst id vd1 vd2 =
-  Cmt_format.record_value_dependency vd1 vd2;
-  if mark_positive mark then
-    Env.mark_value_used vd1.val_uid;
-  let vd2 = Subst.value_description subst vd2 in
-  try
-    Ok (Includecore.value_descriptions ~loc env (Ident.name id) vd1 vd2)
-  with Includecore.Dont_match err ->
-    Error Error.(Core (Value_descriptions (diff vd1 vd2 err)))
+  let value_descriptions ~loc env ~mark subst id vd1 vd2 =
+    Cmt_format.record_value_dependency vd1 vd2;
+    if mark_positive mark then
+      Env.mark_value_used vd1.val_uid;
+    let vd2 = Subst.value_description subst vd2 in
+    try
+      Ok (Includecore.value_descriptions ~loc env (Ident.name id) vd1 vd2)
+    with Includecore.Dont_match err ->
+      Error Error.(Core (Value_descriptions (diff vd1 vd2 err)))
 
-(* Inclusion between type declarations *)
+  (* Inclusion between type declarations *)
 
-let type_declarations ~loc env ~mark subst id decl1 decl2 =
-  let mark = mark_positive mark in
-  if mark then
-    Env.mark_type_used decl1.type_uid;
-  let decl2 = Subst.type_declaration subst decl2 in
-  match
-    Includecore.type_declarations ~loc env ~mark
-      (Ident.name id) decl1 (Path.Pident id) decl2
-  with
-  | None -> Ok Tcoerce_none
-  | Some err ->
-      Error Error.(Core(Type_declarations (diff decl1 decl2 err)))
+  let type_declarations ~loc env ~mark subst id decl1 decl2 =
+    let mark = mark_positive mark in
+    if mark then
+      Env.mark_type_used decl1.type_uid;
+    let decl2 = Subst.type_declaration subst decl2 in
+    match
+      Includecore.type_declarations ~loc env ~mark
+        (Ident.name id) decl1 (Path.Pident id) decl2
+    with
+    | None -> Ok Tcoerce_none
+    | Some err ->
+        Error Error.(Core(Type_declarations (diff decl1 decl2 err)))
 
-(* Inclusion between extension constructors *)
+  (* Inclusion between extension constructors *)
 
-let extension_constructors ~loc env ~mark  subst id ext1 ext2 =
-  let mark = mark_positive mark in
-  let ext2 = Subst.extension_constructor subst ext2 in
-  match Includecore.extension_constructors ~loc env ~mark id ext1 ext2 with
-  | None -> Ok Tcoerce_none
-  | Some err ->
-      Error Error.(Core(Extension_constructors(diff ext1 ext2 err)))
+  let extension_constructors ~loc env ~mark  subst id ext1 ext2 =
+    let mark = mark_positive mark in
+    let ext2 = Subst.extension_constructor subst ext2 in
+    match Includecore.extension_constructors ~loc env ~mark id ext1 ext2 with
+    | None -> Ok Tcoerce_none
+    | Some err ->
+        Error Error.(Core(Extension_constructors(diff ext1 ext2 err)))
 
-(* Inclusion between class declarations *)
+  (* Inclusion between class declarations *)
 
-let class_type_declarations ~loc env subst decl1 decl2 =
-  let decl2 = Subst.cltype_declaration subst decl2 in
-  match Includeclass.class_type_declarations ~loc env decl1 decl2 with
-    []     -> Ok Tcoerce_none
-  | reason ->
-      Error Error.(Core(Class_type_declarations(diff decl1 decl2 reason)))
+  let class_type_declarations ~loc env ~mark:_ subst _id decl1 decl2 =
+    let decl2 = Subst.cltype_declaration subst decl2 in
+    match Includeclass.class_type_declarations ~loc env decl1 decl2 with
+      []     -> Ok Tcoerce_none
+    | reason ->
+        Error Error.(Core(Class_type_declarations(diff decl1 decl2 reason)))
 
-let class_declarations env subst decl1 decl2 =
-  let decl2 = Subst.class_declaration subst decl2 in
-  match Includeclass.class_declarations env decl1 decl2 with
-    []     -> Ok Tcoerce_none
-  | reason ->
-     Error Error.(Core(Class_declarations(diff decl1 decl2 reason)))
+  let class_declarations ~loc:_ env ~mark:_ subst _id decl1 decl2 =
+    let decl2 = Subst.class_declaration subst decl2 in
+    match Includeclass.class_declarations env decl1 decl2 with
+      []     -> Ok Tcoerce_none
+    | reason ->
+        Error Error.(Core(Class_declarations(diff decl1 decl2 reason)))
+end
 
 (* Expand a module type identifier when possible *)
 
@@ -406,17 +408,16 @@ module Sign_diff = struct
     }
 end
 
-type 'a core_incl0 = 'a -> 'a -> (module_coercion, Error.sigitem_symptom) result
+(** Core type system subtyping relation *)
 type 'a core_incl =
-  loc:Location.t -> Env.t -> mark:mark -> Subst.t -> Ident.t -> 'a core_incl0
+  loc:Location.t -> Env.t -> mark:mark -> Subst.t -> Ident.t ->
+  'a -> 'a -> (module_coercion, Error.sigitem_symptom) result
 type core_inclusion = {
   value_descriptions: Types.value_description core_incl;
   type_declarations: Types.type_declaration core_incl;
   extension_constructors: Types.extension_constructor core_incl;
-  class_declarations: Env.t -> Subst.t -> Types.class_declaration core_incl0;
-  class_type_declarations:
-     loc:Location.t -> Env.t -> Subst.t ->
-     Types.class_type_declaration core_incl0;
+  class_declarations: Types.class_declaration core_incl;
+  class_type_declarations: Types.class_type_declaration core_incl;
 }
 
 (**
@@ -819,7 +820,9 @@ and signature_components ~core ~in_eq ~loc old_env ~mark env subst
             let item = mark_error_as_unrecoverable item in
             id1, item, shape_map, false
         | Sig_class(id1, decl1, _, _), Sig_class(_id2, decl2, _, _) ->
-            let item = core.class_declarations env subst decl1 decl2 in
+            let item =
+              core.class_declarations ~loc env ~mark subst id1 decl1 decl2
+            in
             let shape_map =
               Shape.Map.add_class_proj shape_map id1 orig_shape
             in
@@ -827,7 +830,7 @@ and signature_components ~core ~in_eq ~loc old_env ~mark env subst
             id1, item, shape_map, true
         | Sig_class_type(id1, info1, _, _), Sig_class_type(_id2, info2, _, _) ->
             let item =
-              core.class_type_declarations ~loc  env subst info1 info2
+              core.class_type_declarations ~loc env ~mark subst id1 info1 info2
             in
             let item = mark_error_as_unrecoverable item in
             let shape_map =
@@ -936,7 +939,7 @@ let can_alias env path =
   in
   no_apply path && not (Env.is_functor_arg path env)
 
-let core_inclusion = {
+let core_inclusion = Core_inclusion.{
   type_declarations;
   value_descriptions;
   extension_constructors;
@@ -956,15 +959,13 @@ let core_consistency =
     | exception Includecore.Dont_match err ->
         Error Error.(Core (Value_descriptions (diff vd1 vd2 err)))
   in
-  let class_declarations  _ _ _ _ = Ok Tcoerce_none in
-  let class_type_declarations ~loc:_  _ _ _ _ = Ok Tcoerce_none in
-  let extension_constructors ~loc:_ _ ~mark:_ _ _ _ _ = Ok Tcoerce_none in
+  let accept ~loc:_ _env ~mark:_ _subst _id _d1 _d2 = Ok Tcoerce_none in
   {
     type_declarations;
     value_descriptions;
-    class_declarations;
-    class_type_declarations;
-    extension_constructors;
+    class_declarations=accept;
+    class_type_declarations=accept;
+    extension_constructors=accept;
   }
 
 type explanation = Env.t * Error.all
@@ -1272,7 +1273,9 @@ let signatures env ~mark sig1 sig2 =
   | Error reason -> raise (Error(env,Error.(In_Signature reason)))
 
 let type_declarations ~loc env ~mark id decl1 decl2 =
-  match type_declarations ~loc env ~mark Subst.identity id decl1 decl2 with
+  match Core_inclusion.type_declarations ~loc env ~mark
+          Subst.identity id decl1 decl2
+  with
   | Ok _ -> ()
   | Error (Error.Core reason) ->
       raise (Error(env,Error.(In_Type_declaration(id,reason))))
