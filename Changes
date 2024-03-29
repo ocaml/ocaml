@@ -154,6 +154,7 @@ _______________
   The syntax '-(1 [@foo])' was incorrectly parsed as '-1'.
   (Jules Aguillon, reviewed by Gabriel Scherer, report by Gabriel Scherer)
 
+
 OCaml 5.2.0
 ------------
 
@@ -1016,6 +1017,10 @@ OCaml 5.2.0
 - #12971, #12974: fix an uncaught Ctype.Escape exception on some
   invalid programs forming recursive types.
   (Gabriel Scherer, review by Florian Angeletti, report by Neven Villani)
+
+- #13058: Add TSan instrumentation to caml_call_gc(), since it may raise
+  exceptions.
+  (Fabrice Buoro, Olivier Nicole, Gabriel Scherer and Miod Vallat)
 
 OCaml 5.1.1 (8 December 2023)
 ----------------------------

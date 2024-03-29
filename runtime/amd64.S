@@ -632,9 +632,11 @@ CFI_STARTPROC
 LBL(caml_call_gc):
         SAVE_ALL_REGS
         movq    %r15, Caml_state(gc_regs)
+        TSAN_ENTER_FUNCTION(0)
         SWITCH_OCAML_TO_C
         C_call (GCALL(caml_garbage_collection))
         SWITCH_C_TO_OCAML
+        TSAN_EXIT_FUNCTION
         movq    Caml_state(gc_regs), %r15
         RESTORE_ALL_REGS
         LEAVE_FUNCTION
