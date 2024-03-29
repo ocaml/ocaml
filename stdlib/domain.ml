@@ -252,7 +252,8 @@ let spawn f =
   do_before_first_spawn ();
   let pk = DLS.get_initial_keys () in
 
-  (* [term_sync] is used to synchronize with the joining domains *)
+  (* [term_sync] is used to synchronize with the joining domains.
+     Accessed from C code: runtime/domain.c. *)
   let term_sync =
     Raw.{ state = Running ;
           mut = Mutex.create () ;

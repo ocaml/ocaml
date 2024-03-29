@@ -984,8 +984,8 @@ struct domain_ml_values {
 
 /* stdlib/domain.ml */
 #define Term_state(sync) (&Field(sync, 0))
-#define Term_mutex(sync) (&Field(sync, 1))
-#define Term_condition(sync) (&Field(sync, 2))
+#define Term_mutex(sync) (Mutex_val(Field(sync, 1)))
+#define Term_condition(sync) (Condition_val(Field(sync, 2)))
 
 static void init_domain_ml_values(struct domain_ml_values* ml_values,
                                   value callback, value term_sync)
@@ -1013,7 +1013,6 @@ struct domain_startup_params {
   enum domain_status status; /* in+out:
                                 parent and child synchronize on this value. */
   struct domain_ml_values* ml_values; /* in */
-  dom_internal* newdom; /* out */
   uintnat unique_id; /* out */
 };
 
@@ -1147,28 +1146,49 @@ CAMLexport _Atomic caml_timing_hook caml_domain_terminated_hook =
 
 static void domain_terminate(void);
 
-static value make_finished(caml_result result)
+static value make_finished(value res_or_exn)
 {
   CAMLparam0();
   CAMLlocal1(res);
-  res = caml_alloc_1(
-    (caml_result_is_exception(result) ?
-     1 /* Error */ :
-     0 /* Ok */),
-    result.data);
+  if (Is_exception_result(res_or_exn)) {
+    res = Extract_exception(res_or_exn);
+    /* [Error res] */
+    res = caml_alloc_1(1, res);
+  } else {
+    /* [Ok res_or_exn] */
+    res = caml_alloc_1(0, res_or_exn);
+  }
   /* [Finished res] */
   res = caml_alloc_1(0, res);
   CAMLreturn(res);
 }
 
+static void handshake_success(struct domain_startup_params *p)
+{
+  caml_plat_lock_blocking(&p->parent->interruptor.lock);
+  p->status = Dom_started;
+  p->unique_id = domain_self->interruptor.unique_id;
+  caml_plat_broadcast(&p->parent->interruptor.cond);
+  caml_plat_unlock(&p->parent->interruptor.lock);
+}
+
+static void handshake_failure(struct domain_startup_params *p)
+{
+  caml_plat_lock_blocking(&p->parent->interruptor.lock);
+  p->status = Dom_failed;
+  caml_plat_broadcast(&p->parent->interruptor.cond);
+  caml_plat_unlock(&p->parent->interruptor.lock);
+  caml_gc_log("Failed to create domain");
+}
+
+/* Synchronize with joining domains. */
 static void sync_result(value term_sync, value res)
 {
   CAMLparam2(term_sync, res);
-  /* Synchronize with joining domains. We call [caml_ml_mutex_lock]
-     because the systhreads are still running on this domain. We
-     assume this does not fail the exception it would raise at this
-     point would be bad for us. */
-  caml_ml_mutex_lock(*Term_mutex(term_sync));
+  /* We only call functions that do not raise exceptions, as this
+     would be bad for us at this point. */
+  /* To avoid deadlocks, we must not block. */
+  caml_plat_lock_non_blocking(Term_mutex(term_sync));
 
   /* Store result */
   volatile value *state = Term_state(term_sync);
@@ -1176,85 +1196,97 @@ static void sync_result(value term_sync, value res)
   caml_modify(state, res);
 
   /* Signal all the waiting domains to be woken up */
-  caml_ml_condition_broadcast(*Term_condition(term_sync));
+  caml_plat_broadcast(Term_condition(term_sync));
 
-  /* The mutex is unlocked in the runtime after the cleanup
-     functions are finished. */
+  /* The mutex is unlocked after the domain is destroyed; we must
+     release the local roots before this. */
   CAMLreturn0;
 }
 
 static void* domain_thread_func(void* v)
 {
-  struct domain_startup_params* p = v;
-  struct domain_ml_values *ml_values = p->ml_values;
+#ifndef _WIN32
+  void *signal_stack;
+#endif
+  struct domain_ml_values *ml_values;
+  value res;
+
+  /* Create domain and do handshake with parent */
+
+  {
+    struct domain_startup_params *p = v;
+    ml_values = p->ml_values;
+    /* This thread now owns ml_values */
 
 #ifndef _WIN32
-  void * signal_stack = caml_init_signal_stack();
-  if (signal_stack == NULL) {
-    caml_fatal_error("Failed to create domain: signal stack");
-  }
+    signal_stack = caml_init_signal_stack();
+    if (signal_stack == NULL) {
+      handshake_failure(p);
+      goto out1;
+    }
 #endif
 
-  domain_create(caml_params->init_minor_heap_wsz, p->parent->state);
+    domain_create(caml_params->init_minor_heap_wsz, p->parent->state);
+    if (domain_self == NULL) {
+      handshake_failure(p);
+      goto out2;
+    }
 
-  /* this domain is now part of the STW participant set */
-  p->newdom = domain_self;
+    /* This domain is now part of the STW participant set */
 
-  /* handshake with the parent domain */
-  caml_plat_lock_blocking(&p->parent->interruptor.lock);
-  if (domain_self) {
-    p->status = Dom_started;
-    p->unique_id = domain_self->interruptor.unique_id;
-  } else {
-    p->status = Dom_failed;
+    handshake_success(p);
+
+    /* p can no longer be accessed. */
   }
-  caml_plat_broadcast(&p->parent->interruptor.cond);
-  caml_plat_unlock(&p->parent->interruptor.lock);
-  /* Cannot access p below here. */
 
-  if (domain_self) {
-    install_backup_thread_exn(domain_self);
+  res = install_backup_thread_exn(domain_self);
+  if (Is_exception_result(res)) goto terminate_domain;
 
-    caml_gc_log("Domain starting (unique_id = %"ARCH_INTNAT_PRINTF_FORMAT"u)",
-                domain_self->interruptor.unique_id);
-    CAML_EV_LIFECYCLE(EV_DOMAIN_SPAWN, getpid());
-    /* FIXME: ignoring errors during domain initialization is unsafe
-       and/or can deadlock. */
-    caml_domain_initialize_hook_exn();
+  caml_gc_log("Domain starting (unique_id = %"ARCH_INTNAT_PRINTF_FORMAT"u)",
+              domain_self->interruptor.unique_id);
+  CAML_EV_LIFECYCLE(EV_DOMAIN_SPAWN, getpid());
 
-    /* release callback early;
-       see the [note about callbacks and GC] in callback.c */
-    value unrooted_callback = ml_values->callback;
-    caml_modify_generational_global_root(&ml_values->callback, Val_unit);
-    value res =
-      make_finished(caml_callback_res(unrooted_callback, Val_unit));
-    sync_result(ml_values->term_sync, res);
+  res = caml_domain_initialize_hook_exn();
+  if (Is_exception_result(res)) goto terminate_domain;
 
-    sync_mutex mut = Mutex_val(*Term_mutex(ml_values->term_sync));
-    domain_terminate();
+  /* release callback early;
+     see the [note about callbacks and GC] in callback.c */
+  value unrooted_callback = ml_values->callback;
+  caml_modify_generational_global_root(&ml_values->callback, Val_unit);
+  res = caml_callback_exn(unrooted_callback, Val_unit);
+  /* fall through */
 
-    /* This domain currently holds [mut], and has signaled all the
-       waiting domains to be woken up. We unlock [mut] to release the
-       joining domains. The unlock is done after [domain_terminate] to
-       ensure that this domain has released all of its runtime state.
-       We call [caml_mutex_unlock] directly instead of
-       [caml_ml_mutex_unlock] because the domain no longer exists at
-       this point. */
-    caml_mutex_unlock(mut);
+ terminate_domain:
+  /* Allocate the result value. */
+  res = make_finished(res);
+  sync_result(ml_values->term_sync, res);
+  /* This domain currently holds [mut]; and it is kept alive by a
+     global root inside ml_values. */
+  caml_plat_mutex *mut = Term_mutex(ml_values->term_sync);
+  /* Join all systhreads on this domain and release runtime state. */
+  domain_terminate();
+  /* This domain has signaled all the waiting domains to be woken up.
+     We unlock [mut] to release the joining domains. The unlock is
+     done after [domain_terminate] to ensure that this domain has
+     released all of its runtime state. We call [caml_plat_unlock]
+     because the domain no longer exists at this point. */
+  caml_plat_unlock(mut);
+  caml_plat_assert_all_locks_unlocked();
 
-    /* [ml_values] must be freed after unlocking [mut]. This ensures
-       that [term_sync] is only removed from the root set after [mut]
-       is unlocked. Otherwise, there is a risk of [mut] being
-       destroyed by [caml_mutex_finalize] finaliser while it remains
-       locked, leading to undefined behaviour. */
-    free_domain_ml_values(ml_values);
-  } else {
-    caml_gc_log("Failed to create domain");
-  }
+  /* fall through */
+
+ out2:
 #ifndef _WIN32
   caml_free_signal_stack(signal_stack);
 #endif
-  return 0;
+ out1:
+  /* [ml_values] must be freed after unlocking [mut]. This ensures
+     that [term_sync] is only removed from the root set after [mut] is
+     unlocked. Otherwise, there is a risk of [mut] being destroyed by
+     [caml_mutex_finalize] finaliser while it remains locked, leading
+     to undefined behaviour. */
+  free_domain_ml_values(ml_values);
+  return NULL;
 }
 
 CAMLprim value caml_domain_spawn(value callback, value term_sync)
@@ -1284,13 +1316,16 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   init_domain_ml_values(p.ml_values, callback, term_sync);
 
   err = pthread_create(&th, 0, domain_thread_func, (void*)&p);
-
   if (err) {
-    caml_check_error(err, "failed to create domain thread : pthread_create");
+    free_domain_ml_values(p.ml_values);
+    caml_check_error(err, "failed to create domain thread: pthread_create");
   }
 
-  /* While waiting for the child thread to start up, we need to service any
-     stop-the-world requests as they come in. */
+  /* p.ml_values is now owned by the new domain */
+
+  /* Handshake with the new domain. While waiting for the child thread
+     to start up, we need to service any stop-the-world requests as
+     they come in. */
   struct interruptor *interruptor = &domain_self->interruptor;
   caml_plat_lock_blocking(&interruptor->lock);
   while (p.status == Dom_starting) {
@@ -1305,14 +1340,12 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   caml_plat_unlock(&interruptor->lock);
 
   if (p.status == Dom_started) {
-    /* successfully created a domain.
-       p.ml_values is now owned by that domain */
+    /* successfully created a domain */
     pthread_detach(th);
   } else {
     CAMLassert (p.status == Dom_failed);
     /* failed */
     pthread_join(th, 0);
-    free_domain_ml_values(p.ml_values);
     caml_failwith("failed to allocate domain");
   }
 
@@ -2094,7 +2127,6 @@ static void domain_terminate (void)
   caml_plat_signal(&domain_self->domain_cond);
   caml_plat_unlock(&domain_self->domain_lock);
 
-  caml_plat_assert_all_locks_unlocked();
   /* This is the last thing we do because we need to be able to rely
      on caml_domain_alone (which uses caml_num_domains_running) in at least
      the shared_heap lockfree fast paths */
