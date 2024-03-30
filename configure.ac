@@ -1251,7 +1251,6 @@ AC_ARG_ENABLE([bti],
 
 bti=false
 
-AC_CHECK_HEADER([cet.h], AC_DEFINE([HAS_CET_H]))
 AS_CASE(["x$enable_bti"],
   ["xyes"], [bti=true], ["xno"], [bti=false],
   ["x"], [AS_CASE([$host],
@@ -1262,6 +1261,7 @@ AS_CASE(["x$enable_bti"],
     [[x86_64-*-openbsd7.[4-9]|x86_64-*-openbsd[89].*]],
       [AC_MSG_NOTICE([enabling btcfi on OpenBSD/x86_64 as it is mandatory])
        bti=true])])
+AS_IF([test x"$bti" = 'xtrue'], [AC_DEFINE([EMIT_BTI])],)
 
 # Configure native dynlink
 

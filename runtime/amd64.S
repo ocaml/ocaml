@@ -20,7 +20,7 @@
 
 #include "caml/m.h"
 
-#ifdef HAS_CET_H
+#ifdef EMIT_BTI
 #include <cet.h>
 #else
 #define _CET_ENDBR

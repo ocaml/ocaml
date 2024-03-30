@@ -15471,13 +15471,6 @@ fi
 
 bti=false
 
-ac_fn_c_check_header_compile "$LINENO" "cet.h" "ac_cv_header_cet_h" "$ac_includes_default"
-if test "x$ac_cv_header_cet_h" = xyes
-then :
-  printf "%s\n" "#define HAS_CET_H 1" >>confdefs.h
-
-fi
-
 case "x$enable_bti" in #(
   "xyes") :
     bti=true ;; #(
@@ -15500,6 +15493,11 @@ esac ;; #(
   *) :
      ;;
 esac
+if test x"$bti" = 'xtrue'
+then :
+  printf "%s\n" "#define EMIT_BTI 1" >>confdefs.h
+
+fi
 
 # Configure native dynlink
 
@@ -22772,4 +22770,5 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 printf "%s\n" "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
+
 
