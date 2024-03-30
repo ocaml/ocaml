@@ -256,19 +256,18 @@ CAMLprim value caml_gc_major(value v)
 static caml_result gc_full_major_result(void)
 {
   int i;
-  caml_result result = Result_unit;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_FULL_MAJOR);
   caml_gc_log ("Full Major GC requested");
   /* In general, it can require up to 3 GC cycles for a
      currently-unreachable object to be collected. */
   for (i = 0; i < 3; i++) {
     caml_finish_major_cycle(0);
-    result = caml_process_pending_actions_result();
-    if (result.is_exception) break;
+    caml_result res = caml_process_pending_actions_result();
+    if (res.is_exception) return res;
   }
   ++ Caml_state->stat_forced_major_collections;
   CAML_EV_END(EV_EXPLICIT_GC_FULL_MAJOR);
-  return result;
+  return Result_unit;
 }
 
 CAMLprim value caml_gc_full_major(value v)
