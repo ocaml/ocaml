@@ -2009,7 +2009,7 @@ void caml_memprof_sample_young(uintnat wosize, int from_caml,
   CAMLassert(thread);
   entries_t entries = &thread->entries;
   uintnat whsize = Whsize_wosize(wosize);
-  caml_result res = Result_unit;
+  CAMLlocalresult(res);
   CAMLlocal1(config);
   config = entries->config;
 
