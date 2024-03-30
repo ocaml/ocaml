@@ -103,7 +103,7 @@ typedef opcode_t * code_t;
    from fail.h.
 */
 typedef struct {
-  _Bool is_exception;
+  int is_exception;
   value data;
 } caml_result;
 
