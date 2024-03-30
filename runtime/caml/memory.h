@@ -302,80 +302,46 @@ struct caml__roots_block {
   CAMLxparamN (x, (size))
 
 #define CAMLxparam1(x) \
-  struct caml__roots_block caml__roots_##x; \
-  CAMLunused_start int caml__dummy_##x = ( \
-    (caml__roots_##x.next = *caml_local_roots_ptr), \
-    (*caml_local_roots_ptr = &caml__roots_##x), \
-    (caml__roots_##x.nitems = 1), \
-    (caml__roots_##x.ntables = 1), \
-    (caml__roots_##x.tables [0] = &x), \
-    0) \
-   CAMLunused_end
+  *caml_local_roots_ptr = &(struct caml__roots_block){ \
+    .next = *caml_local_roots_ptr, \
+    .nitems = 1, \
+    .ntables = 1, \
+    .tables = { &(x), } }
 
 #define CAMLxparam2(x, y) \
-  struct caml__roots_block caml__roots_##x; \
-  CAMLunused_start int caml__dummy_##x = ( \
-    (caml__roots_##x.next = *caml_local_roots_ptr), \
-    (*caml_local_roots_ptr = &caml__roots_##x), \
-    (caml__roots_##x.nitems = 1), \
-    (caml__roots_##x.ntables = 2), \
-    (caml__roots_##x.tables [0] = &x), \
-    (caml__roots_##x.tables [1] = &y), \
-    0) \
-   CAMLunused_end
+  *caml_local_roots_ptr = &(struct caml__roots_block){ \
+    .next = *caml_local_roots_ptr, \
+    .nitems = 1, \
+    .ntables = 2, \
+    .tables = { &(x), &(y) } }
 
 #define CAMLxparam3(x, y, z) \
-  struct caml__roots_block caml__roots_##x; \
-  CAMLunused_start int caml__dummy_##x = ( \
-    (caml__roots_##x.next = *caml_local_roots_ptr), \
-    (*caml_local_roots_ptr = &caml__roots_##x), \
-    (caml__roots_##x.nitems = 1), \
-    (caml__roots_##x.ntables = 3), \
-    (caml__roots_##x.tables [0] = &x), \
-    (caml__roots_##x.tables [1] = &y), \
-    (caml__roots_##x.tables [2] = &z), \
-    0) \
-  CAMLunused_end
+  *caml_local_roots_ptr = &(struct caml__roots_block){ \
+    .next = *caml_local_roots_ptr, \
+    .nitems = 1, \
+    .ntables = 3, \
+    .tables = { &(x), &(y), &(z) } }
 
 #define CAMLxparam4(x, y, z, t) \
-  struct caml__roots_block caml__roots_##x; \
-  CAMLunused_start int caml__dummy_##x = ( \
-    (caml__roots_##x.next = *caml_local_roots_ptr), \
-    (*caml_local_roots_ptr = &caml__roots_##x), \
-    (caml__roots_##x.nitems = 1), \
-    (caml__roots_##x.ntables = 4), \
-    (caml__roots_##x.tables [0] = &x), \
-    (caml__roots_##x.tables [1] = &y), \
-    (caml__roots_##x.tables [2] = &z), \
-    (caml__roots_##x.tables [3] = &t), \
-    0) \
-  CAMLunused_end
+  *caml_local_roots_ptr = &(struct caml__roots_block){ \
+    .next = *caml_local_roots_ptr, \
+    .nitems = 1, \
+    .ntables = 4, \
+    .tables = { &(x), &(y), &(z), &(t), } }
 
 #define CAMLxparam5(x, y, z, t, u) \
-  struct caml__roots_block caml__roots_##x; \
-  CAMLunused_start int caml__dummy_##x = ( \
-    (caml__roots_##x.next = *caml_local_roots_ptr), \
-    (*caml_local_roots_ptr = &caml__roots_##x), \
-    (caml__roots_##x.nitems = 1), \
-    (caml__roots_##x.ntables = 5), \
-    (caml__roots_##x.tables [0] = &x), \
-    (caml__roots_##x.tables [1] = &y), \
-    (caml__roots_##x.tables [2] = &z), \
-    (caml__roots_##x.tables [3] = &t), \
-    (caml__roots_##x.tables [4] = &u), \
-    0) \
-  CAMLunused_end
+  *caml_local_roots_ptr = &(struct caml__roots_block){ \
+    .next = *caml_local_roots_ptr, \
+    .nitems = 1, \
+    .ntables = 5, \
+    .tables = { &(x), &(y), &(z), &(t), &(u), } }
 
 #define CAMLxparamN(x, size) \
-  struct caml__roots_block caml__roots_##x; \
-  CAMLunused_start int caml__dummy_##x = ( \
-    (caml__roots_##x.next = *caml_local_roots_ptr), \
-    (*caml_local_roots_ptr = &caml__roots_##x), \
-    (caml__roots_##x.nitems = (size)), \
-    (caml__roots_##x.ntables = 1), \
-    (caml__roots_##x.tables[0] = &(x[0])), \
-    0) \
-  CAMLunused_end
+  *caml_local_roots_ptr = &(struct caml__roots_block){ \
+    .next = *caml_local_roots_ptr, \
+    .nitems = (size), \
+    .ntables = 1, \
+    .tables = { &(x[0]), } }
 
 #define CAMLlocal1(x) \
   value x = Val_unit; \
