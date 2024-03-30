@@ -508,21 +508,6 @@ CAMLextern value caml_set_oo_id(value obj);
 #define Is_exception_result(v) (((v) & 3) == 2)
 #define Extract_exception(v) ((v) & ~3)
 
-Caml_inline value Encoded_result(caml_result res) {
-  if (res.is_exception)
-    return Make_exception_result(res.data);
-  else
-    return res.data;
-}
-
-Caml_inline caml_result Result_encoded(value encoded)
-{
-  if (Is_exception_result(encoded))
-    return Result_exception(Extract_exception(encoded));
-  else
-    return Result_value(encoded);
-}
-
 #ifdef __cplusplus
 }
 #endif
