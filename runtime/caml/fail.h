@@ -114,8 +114,6 @@ CAMLnoret CAMLextern void caml_array_bound_error (void);
 
 CAMLnoret CAMLextern void caml_raise_sys_blocked_io (void);
 
-
-#ifdef CAML_INTERNALS
 /* Returns the value of a [caml_result] or raises the exception.
    This function replaced [caml_raise_if_exception] in 5.3. */
 Caml_inline value caml_get_value_or_raise (caml_result result)
@@ -125,7 +123,6 @@ Caml_inline value caml_get_value_or_raise (caml_result result)
   else
     return result.data;
 }
-#endif
 
 #ifdef __cplusplus
 }
