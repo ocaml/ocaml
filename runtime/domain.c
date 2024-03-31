@@ -1325,22 +1325,16 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
 
   /* p.ml_values is now owned by the new domain */
 
-  /* Handshake with the new domain. While waiting for the child thread
-     to start up, we need to service any stop-the-world requests as
-     they come in. */
-// TODO blocking section
+  /* Handshake with the new domain. */
   struct interruptor *interruptor = &domain_self->interruptor;
+  /* We cannot stomach an exception at this point */
+  caml_enter_blocking_section_no_pending();
   caml_plat_lock_blocking(&interruptor->lock);
   while (p.status == Dom_starting) {
-    if (caml_incoming_interrupts_queued()) {
-      caml_plat_unlock(&interruptor->lock);
-      handle_incoming(interruptor);
-      caml_plat_lock_blocking(&interruptor->lock);
-    } else {
-      caml_plat_wait(&domain_self->interruptor.cond, &interruptor->lock);
-    }
+    caml_plat_wait(&interruptor->cond, &interruptor->lock);
   }
-  caml_plat_unlock(&domain_self->interruptor.lock);
+  caml_plat_unlock(&interruptor->lock);
+  caml_leave_blocking_section();
 
   if (p.status == Dom_started) {
     /* successfully created a domain */
