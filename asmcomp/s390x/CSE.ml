@@ -1,8 +1,9 @@
 # 2 "asmcomp/s390x/CSE.ml"
 (**************************************************************************)
-(*                                                                        *)
-(*                                 OCaml                                  *)
-(*                                                                        *)
+(*        ^o3                                                             *)
+(* ~/\_/\_|)                       OCaml                                  *)
+(* |/=_=\|                                                                *)
+(* "     "                                                                *)
 (*            Xavier Leroy, projet Gallium, INRIA Rocquencourt            *)
 (*                          Bill O'Farrell, IBM                           *)
 (*                                                                        *)

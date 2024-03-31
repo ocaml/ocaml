@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #**************************************************************************
-#*                                                                        *
-#*                                 OCaml                                  *
-#*                                                                        *
+#*        ^o3                                                             *
+#* ~/\_/\_|)                       OCaml                                  *
+#* |/=_=\|                                                                *
+#* "     "                                                                *
 #*                 David Allsopp, OCaml Labs, Cambridge.                  *
 #*                                                                        *
 #*   Copyright 2021 David Allsopp Ltd.                                    *

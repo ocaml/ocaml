@@ -1,7 +1,8 @@
 #**************************************************************************
-#*                                                                        *
-#*                                 OCaml                                  *
-#*                                                                        *
+#*        ^o3                                                             *
+#* ~/\_/\_|)                       OCaml                                  *
+#* |/=_=\|                                                                *
+#* "     "                                                                *
 #*            Gabriel Scherer, projet Parsifal, INRIA Saclay              *
 #*                                                                        *
 #*   Copyright 2018 Institut National de Recherche en Informatique et     *

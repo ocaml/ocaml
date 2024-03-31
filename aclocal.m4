@@ -1,7 +1,8 @@
 #**************************************************************************
-#*                                                                        *
-#*                                 OCaml                                  *
-#*                                                                        *
+#*        ^o3                                                             *
+#* ~/\_/\_|)                       OCaml                                  *
+#* |/=_=\|                                                                *
+#* "     "                                                                *
 #*            Sebastien Hinderer, projet Gallium, INRIA Paris             *
 #*                                                                        *
 #*   Copyright 2018 Institut National de Recherche en Informatique et     *

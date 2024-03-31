@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #**************************************************************************
-#*                                                                        *
-#*                                 OCaml                                  *
-#*                                                                        *
+#*        ^o3                                                             *
+#* ~/\_/\_|)                       OCaml                                  *
+#* |/=_=\|                                                                *
+#* "     "                                                                *
 #*                 Paul-Elliot Anglès d'Auriac, Tarides                   *
 #*                                                                        *
 #*   Copyright 2023 Tarides                                               *

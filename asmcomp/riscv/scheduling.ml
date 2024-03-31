@@ -1,8 +1,9 @@
 # 2 "asmcomp/riscv/scheduling.ml"
 (**************************************************************************)
-(*                                                                        *)
-(*                                 OCaml                                  *)
-(*                                                                        *)
+(*        ^o3                                                             *)
+(* ~/\_/\_|)                       OCaml                                  *)
+(* |/=_=\|                                                                *)
+(* "     "                                                                *)
 (*                Nicolas Ojeda Bar <n.oje.bar@gmail.com>                 *)
 (*                                                                        *)
 (*   Copyright 2016 Institut National de Recherche en Informatique et     *)

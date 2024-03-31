@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*                        Nicolas Ojeda Bar, LexiFi                       */
 /*                                                                        */
 /*   Copyright 2017 Institut National de Recherche en Informatique et     */

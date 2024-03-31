@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           */
 /*                                                                        */
 /*   Copyright 2011 Institut National de Recherche en Informatique et     */

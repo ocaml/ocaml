@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*          Xavier Leroy, projet Cambium, College de France and Inria     */
 /*                                                                        */
 /*   Copyright 2021 Institut National de Recherche en Informatique et     */

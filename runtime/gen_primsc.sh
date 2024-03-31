@@ -1,9 +1,10 @@
 #!/bin/sh
 
 #**************************************************************************
-#*                                                                        *
-#*                                 OCaml                                  *
-#*                                                                        *
+#*        ^o3                                                             *
+#* ~/\_/\_|)                       OCaml                                  *
+#* |/=_=\|                                                                *
+#* "     "                                                                *
 #*            Xavier Leroy, Collège de France and Inria                   *
 #*                                                                        *
 #*   Copyright 2023 Institut National de Recherche en Informatique et     *

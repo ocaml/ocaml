@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*      Florian Angeletti, projet Cambium, Inria                          */
 /*                                                                        */
 /*   Copyright 2022 Institut National de Recherche en Informatique et     */

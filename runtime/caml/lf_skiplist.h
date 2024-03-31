@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*               Sadiq Jaffer, OCaml Labs Consultancy Ltd                 */
 /*               Xavier Leroy, projet Cambium, INRIA Paris                */
 /*                                                                        */

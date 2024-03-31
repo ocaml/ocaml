@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #**************************************************************************
-#*                                                                        *
-#*                                 OCaml                                  *
-#*                                                                        *
+#*        ^o3                                                             *
+#* ~/\_/\_|)                       OCaml                                  *
+#* |/=_=\|                                                                *
+#* "     "                                                                *
 #*              Anil Madhavapeddy, OCaml Labs                             *
 #*                                                                        *
 #*   Copyright 2014 Institut National de Recherche en Informatique et     *

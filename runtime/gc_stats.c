@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*             Gabriel Scherer, projet Partout, INRIA Saclay              */
 /*                                                                        */
 /*   Copyright 2022 Institut National de Recherche en Informatique et     */

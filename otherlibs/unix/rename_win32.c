@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*   Contributed by Tracy Camp, PolyServe Inc., <campt@polyserve.com>     */
 /*                                                                        */
 /*   Copyright 2002 Institut National de Recherche en Informatique et     */

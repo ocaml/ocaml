@@ -1,8 +1,9 @@
 # 2 "asmcomp/arm64/CSE.ml"
 (**************************************************************************)
-(*                                                                        *)
-(*                                 OCaml                                  *)
-(*                                                                        *)
+(*        ^o3                                                             *)
+(* ~/\_/\_|)                       OCaml                                  *)
+(* |/=_=\|                                                                *)
+(* "     "                                                                *)
 (*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           *)
 (*                                                                        *)
 (*   Copyright 2014 Institut National de Recherche en Informatique et     *)

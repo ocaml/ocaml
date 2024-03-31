@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*           Xavier Leroy, Collège de France and Inria Paris              */
 /*                                                                        */
 /*   Copyright 2022 Institut National de Recherche en Informatique et     */

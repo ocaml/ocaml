@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*                David Allsopp, MetaStack Solutions Ltd.                 */
 /*                                                                        */
 /*   Copyright 2015 MetaStack Solutions Ltd.                              */

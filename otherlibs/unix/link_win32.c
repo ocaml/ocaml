@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*                  File contributed by Lionel Fourquaux                  */
 /*                                                                        */
 /*   Copyright 2001 Institut National de Recherche en Informatique et     */

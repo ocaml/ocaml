@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*      KC Sivaramakrishnan, Indian Institute of Technology, Madras       */
 /*                Stephen Dolan, University of Cambridge                  */
 /*                                                                        */

@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*   Contributed by Stephane Glondu <steph@glondu.net>                    */
 /*                                                                        */
 /*   Copyright 2009 Institut National de Recherche en Informatique et     */

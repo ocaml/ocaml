@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #**************************************************************************
-#*                                                                        *
-#*                                 OCaml                                  *
-#*                                                                        *
+#*        ^o3                                                             *
+#* ~/\_/\_|)                       OCaml                                  *
+#* |/=_=\|                                                                *
+#* "     "                                                                *
 #*                         Christophe Troestler                           *
 #*                                                                        *
 #*   Copyright 2015 Christophe Troestler                                  *

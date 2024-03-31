@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*           Jerome Vouillon, projet Cristal, INRIA Rocquencourt          */
 /*           OCaml port by John Malecki and Xavier Leroy                  */
 /*                                                                        */

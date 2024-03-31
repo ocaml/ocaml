@@ -1,8 +1,9 @@
 #2 "utils/config.fixed.ml"
 (**************************************************************************)
-(*                                                                        *)
-(*                                 OCaml                                  *)
-(*                                                                        *)
+(*        ^o3                                                             *)
+(* ~/\_/\_|)                       OCaml                                  *)
+(* |/=_=\|                                                                *)
+(* "     "                                                                *)
 (*                       David Allsopp, Tarides UK.                       *)
 (*                                                                        *)
 (*   Copyright 2022 David Allsopp Ltd.                                    *)

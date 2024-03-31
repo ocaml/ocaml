@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*   Contributed by Sylvain Le Gall for Lexifi                            */
 /*                                                                        */
 /*   Copyright 2008 Institut National de Recherche en Informatique et     */

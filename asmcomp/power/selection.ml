@@ -1,8 +1,9 @@
 # 2 "asmcomp/power/selection.ml"
 (**************************************************************************)
-(*                                                                        *)
-(*                                 OCaml                                  *)
-(*                                                                        *)
+(*        ^o3                                                             *)
+(* ~/\_/\_|)                       OCaml                                  *)
+(* |/=_=\|                                                                *)
+(* "     "                                                                *)
 (*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
 (*                                                                        *)
 (*   Copyright 1997 Institut National de Recherche en Informatique et     *)

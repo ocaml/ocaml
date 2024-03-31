@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*           Damien Doligez, projet Moscova, INRIA Rocquencourt           */
 /*                                                                        */
 /*   Copyright 2002 Institut National de Recherche en Informatique et     */

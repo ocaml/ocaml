@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*                          Sadiq Jaffer, Opsian                          */
 /*                 Stephen Dolan, University of Cambridge                 */
 /*                      Enguerrand Decorne, Tarides                       */

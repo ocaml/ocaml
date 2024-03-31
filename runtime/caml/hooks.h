@@ -1,7 +1,8 @@
 /**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
+/*        ^o3                                                             */
+/* ~/\_/\_|)                       OCaml                                  */
+/* |/=_=\|                                                                */
+/* "     "                                                                */
 /*                    Fabrice Le Fessant, INRIA de Paris                  */
 /*                                                                        */
 /*   Copyright 2016 Institut National de Recherche en Informatique et     */
