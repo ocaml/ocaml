@@ -1328,6 +1328,7 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   /* Handshake with the new domain. While waiting for the child thread
      to start up, we need to service any stop-the-world requests as
      they come in. */
+// TODO blocking section
   struct interruptor *interruptor = &domain_self->interruptor;
   caml_plat_lock_blocking(&interruptor->lock);
   while (p.status == Dom_starting) {
@@ -1336,10 +1337,10 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
       handle_incoming(interruptor);
       caml_plat_lock_blocking(&interruptor->lock);
     } else {
-      caml_plat_wait(&interruptor->cond, &interruptor->lock);
+      caml_plat_wait(&domain_self->interruptor.cond, &interruptor->lock);
     }
   }
-  caml_plat_unlock(&interruptor->lock);
+  caml_plat_unlock(&domain_self->interruptor.lock);
 
   if (p.status == Dom_started) {
     /* successfully created a domain */

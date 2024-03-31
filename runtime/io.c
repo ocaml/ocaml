@@ -122,7 +122,10 @@ static void check_pending(struct channel *channel)
        while any signal handlers (or finalisers, etc) are running.
        Don't do this for channels allocated and used from C,
        as their locks may or may not be taken depending on the
-       usage pattern in the C code. */
+       usage pattern in the C code.
+
+       FIXME?
+    */
     if (channel->flags & CHANNEL_FLAG_MANAGED_BY_GC)
       caml_channel_unlock(channel);
     caml_process_pending_actions();
@@ -560,7 +563,7 @@ void caml_finalize_channel(value vchan)
   }
   /* Don't run concurrently with caml_ml_out_channels_list that may resurrect
      a dead channel . */
-  caml_plat_lock_blocking(&caml_all_opened_channels_mutex);
+  caml_plat_lock_blocking(&caml_all_opened_channels_mutex); //FIXME threads?
   chan->refcount --;
   if (chan->refcount > 0 || notflushed) {
     /* We need to keep the channel around, either because it is being
@@ -613,7 +616,7 @@ CAMLprim value caml_ml_open_descriptor_in_with_flags(int fd, int flags)
   struct channel * chan = caml_open_descriptor_in(fd);
   chan->flags |= flags | CHANNEL_FLAG_MANAGED_BY_GC;
   chan->refcount = 1;
-  caml_plat_lock_blocking(&caml_all_opened_channels_mutex);
+  caml_plat_lock_blocking(&caml_all_opened_channels_mutex); //FIXME threads?
   link_channel (chan);
   caml_plat_unlock (&caml_all_opened_channels_mutex);
   return caml_alloc_channel(chan);
@@ -628,7 +631,7 @@ CAMLprim value caml_ml_open_descriptor_out_with_flags(int fd, int flags)
   struct channel * chan = caml_open_descriptor_out(fd);
   chan->flags |= flags | CHANNEL_FLAG_MANAGED_BY_GC;
   chan->refcount = 1;
-  caml_plat_lock_blocking(&caml_all_opened_channels_mutex);
+  caml_plat_lock_blocking(&caml_all_opened_channels_mutex); //FIXME threads?
   link_channel (chan);
   caml_plat_unlock (&caml_all_opened_channels_mutex);
   return caml_alloc_channel(chan);
@@ -665,7 +668,7 @@ CAMLprim value caml_ml_out_channels_list (value unit)
   struct channel_list *channel_list = NULL, *cl_tmp;
   mlsize_t i, num_channels = 0;
 
-  caml_plat_lock_blocking(&caml_all_opened_channels_mutex);
+  caml_plat_lock_blocking(&caml_all_opened_channels_mutex); //FIXME threads?
   for (channel = caml_all_opened_channels;
        channel != NULL;
        channel = channel->next) {
