@@ -86,16 +86,8 @@ static CAMLthread_local struct channel* last_channel_locked = NULL;
 
 CAMLexport void caml_channel_lock(struct channel *chan)
 {
-  if( caml_plat_try_lock(&chan->mutex) ) {
-    last_channel_locked = chan;
-    return;
-  }
-
-  /* If unsuccessful, block on mutex */
-  caml_enter_blocking_section();
-  caml_plat_lock(&chan->mutex);
+  caml_plat_lock_non_blocking(&chan->mutex);
   last_channel_locked = chan;
-  caml_leave_blocking_section();
 }
 
 CAMLexport void caml_channel_unlock(struct channel *chan)

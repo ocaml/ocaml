@@ -26,6 +26,7 @@
 #include "caml/fail.h"
 #include "caml/lf_skiplist.h"
 #include "caml/misc.h"
+#include "caml/signals.h"
 #ifdef HAS_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
@@ -83,6 +84,16 @@ void caml_plat_assert_all_locks_unlocked(void)
 #ifdef DEBUG
   if (lockdepth) caml_fatal_error("Locks still locked at termination");
 #endif
+}
+
+CAMLexport void caml_plat_lock_non_blocking_actual(caml_plat_mutex* m)
+{
+  /* Avoid exceptions */
+  caml_enter_blocking_section_no_pending();
+  int rc = pthread_mutex_lock(m);
+  caml_leave_blocking_section();
+  check_err("lock_non_blocking", rc);
+  DEBUG_LOCK(m);
 }
 
 void caml_plat_mutex_free(caml_plat_mutex* m)
