@@ -99,38 +99,34 @@ static void caml_plat_cond_init_aux(caml_plat_cond *cond)
     _POSIX_MONOTONIC_CLOCK != (-1)
   pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
 #endif
-  pthread_cond_init(&cond->cond, &attr);
+  pthread_cond_init(cond, &attr);
 }
 
 /* Condition variables */
-void caml_plat_cond_init(caml_plat_cond* cond, caml_plat_mutex* m)
+void caml_plat_cond_init(caml_plat_cond* cond)
 {
   caml_plat_cond_init_aux(cond);
-  cond->mutex = m;
 }
 
-void caml_plat_wait(caml_plat_cond* cond)
+void caml_plat_wait(caml_plat_cond* cond, caml_plat_mutex* mut)
 {
-  caml_plat_assert_locked(cond->mutex);
-  check_err("wait", pthread_cond_wait(&cond->cond, cond->mutex));
+  caml_plat_assert_locked(mut);
+  check_err("wait", pthread_cond_wait(cond, mut));
 }
 
 void caml_plat_broadcast(caml_plat_cond* cond)
 {
-  caml_plat_assert_locked(cond->mutex);
-  check_err("cond_broadcast", pthread_cond_broadcast(&cond->cond));
+  check_err("cond_broadcast", pthread_cond_broadcast(cond));
 }
 
 void caml_plat_signal(caml_plat_cond* cond)
 {
-  caml_plat_assert_locked(cond->mutex);
-  check_err("cond_signal", pthread_cond_signal(&cond->cond));
+  check_err("cond_signal", pthread_cond_signal(cond));
 }
 
 void caml_plat_cond_free(caml_plat_cond* cond)
 {
-  check_err("cond_free", pthread_cond_destroy(&cond->cond));
-  cond->mutex=0;
+  check_err("cond_free", pthread_cond_destroy(cond));
 }
 
 
