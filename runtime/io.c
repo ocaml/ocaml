@@ -122,10 +122,7 @@ static void check_pending(struct channel *channel)
        while any signal handlers (or finalisers, etc) are running.
        Don't do this for channels allocated and used from C,
        as their locks may or may not be taken depending on the
-       usage pattern in the C code.
-
-       FIXME?
-    */
+       usage pattern in the C code. */
     if (channel->flags & CHANNEL_FLAG_MANAGED_BY_GC)
       caml_channel_unlock(channel);
     caml_process_pending_actions();
