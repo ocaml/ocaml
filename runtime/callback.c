@@ -397,7 +397,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
   unsigned int h = hash_value_name(name);
   int found = 0;
 
-  caml_plat_lock_blocking(&named_value_lock); // FIXME
+  caml_plat_lock_non_blocking(&named_value_lock);
   for (nv = named_value_table[h]; nv != NULL; nv = nv->next) {
     if (strcmp(name, nv->name) == 0) {
       caml_modify_generational_global_root(&nv->val, val);
@@ -421,7 +421,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
 CAMLexport const value* caml_named_value(char const *name)
 {
   struct named_value * nv;
-  caml_plat_lock_blocking(&named_value_lock); // FIXME
+  caml_plat_lock_non_blocking(&named_value_lock);
   for (nv = named_value_table[hash_value_name(name)];
        nv != NULL;
        nv = nv->next) {
@@ -437,7 +437,7 @@ CAMLexport const value* caml_named_value(char const *name)
 CAMLexport void caml_iterate_named_values(caml_named_action f)
 {
   int i;
-  caml_plat_lock_blocking(&named_value_lock); // FIXME
+  caml_plat_lock_non_blocking(&named_value_lock);
   for(i = 0; i < Named_value_size; i++){
     struct named_value * nv;
     for (nv = named_value_table[i]; nv != NULL; nv = nv->next) {
