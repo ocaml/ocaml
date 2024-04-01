@@ -650,9 +650,9 @@ Error: Signature mismatch:
        does not include
          sig end
        The type "t" is required but not provided
-       File "set.mli", line 52, characters 4-10: Expected declaration
+       File "set.mli", line 53, characters 4-10: Expected declaration
        The value "compare" is required but not provided
-       File "set.mli", line 55, characters 4-31: Expected declaration
+       File "set.mli", line 56, characters 4-31: Expected declaration
 |}]
 
 (** Deeply nested errors *)
@@ -2117,8 +2117,8 @@ Error: The functor application "Set.Make(Set)(A)" is ill-typed.
           is not included in
             Set.OrderedType
           The type "t" is required but not provided
-          File "set.mli", line 52, characters 4-10: Expected declaration
+          File "set.mli", line 53, characters 4-10: Expected declaration
           The value "compare" is required but not provided
-          File "set.mli", line 55, characters 4-31: Expected declaration
+          File "set.mli", line 56, characters 4-31: Expected declaration
        2. The following extra argument is provided A : sig type a = A.a end
 |}]
