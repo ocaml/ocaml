@@ -58,6 +58,7 @@ Caml_inline void caml_insert_global_root(struct skiplist * list, value * r)
 
 Caml_inline void caml_delete_global_root(struct skiplist * list, value * r)
 {
+  /* This can be called without holding the domain lock */
   caml_plat_lock_blocking(&roots_mutex);
   caml_skiplist_remove(list, (uintnat) r);
   caml_plat_unlock(&roots_mutex);
