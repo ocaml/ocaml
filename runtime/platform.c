@@ -79,10 +79,12 @@ void caml_plat_assert_locked(caml_plat_mutex* m)
 #endif
 }
 
+CAMLexport CAMLthread_local int caml_lockdepth = 0;
+
 void caml_plat_assert_all_locks_unlocked(void)
 {
 #ifdef DEBUG
-  if (lockdepth) caml_fatal_error("Locks still locked at termination");
+  if (caml_lockdepth) caml_fatal_error("Locks still locked at termination");
 #endif
 }
 
