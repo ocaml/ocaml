@@ -439,6 +439,7 @@ LBL(caml_call_gc):
         stg     %r14, 0(%r15)
         CFI_OFFSET(14, -168)
         SAVE_ALL_REGS
+        TSAN_ENTER_FUNCTION
         SWITCH_OCAML_TO_C
         PREPARE_FOR_C_CALL
 #ifdef ASM_CFI_SUPPORTED
@@ -448,6 +449,7 @@ LBL(caml_call_gc):
         brasl %r14, GCALL(caml_garbage_collection)
         CLEANUP_AFTER_C_CALL
         SWITCH_C_TO_OCAML
+        TSAN_EXIT_FUNCTION
         RESTORE_ALL_REGS
         lg      %r14, 0(%r15)
         CFI_RESTORE(14)
