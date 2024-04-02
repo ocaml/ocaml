@@ -2730,7 +2730,7 @@ let complete_pats_constrs = function
   | _ -> assert false
 
 (*
-     Following two ``failaction'' function compute n, the trap handler
+    Following two ``failaction'' function compute n, the trap handler
     to jump to in case of failure of elementary tests
 *)
 
@@ -2752,57 +2752,43 @@ let mk_failaction_neg partial ctx def =
     )
   | Total -> (None, Jumps.empty)
 
-(* In line with the article and simpler than before *)
+(* In [mk_failaction_pos partial seen ctx defs],
+   - [partial] is Total if we know the current switch
+     is already exhaustive
+   - [seen] is the list of constructors accepted by the switch
+     (those that will be matched)
+   - [ctx] is the current context (what we know of the value
+     being matched)
+   - [defs] is the default environment (what inputs
+     are expected by the switches present at larger exit numbers).
+
+   The function returns a triple [(fail, fails, jumps)] containing
+   information for the failure cases, the constructors missing from
+   the current switch:
+   - [fail] is an optional 'default' action for the switch
+   - [fails] is a list of extra switch clauses to add for failure cases,
+     each jumping to a larger exit number
+   - [jumps] contains a jump summary for all these new cases
+     (context information for all exits they reach)
+
+   The general strategy is to compute an accurate list of [fails] and
+   try to avoid having a default action, as this generates better
+   code. But we choose to have a default action when the list [fails]
+   would be too large or too costly to compute.
+
+   Through its jump summary, [mk_failaction_pos] propagates "negative
+   information" about the constructors not taken. For example, if
+   a switch only accepts the [None] constructor, [mk_failaction_pos]
+   generates a failure clause along with context information that the
+   value reaching the failure clause must be [Some _].
+*)
 let mk_failaction_pos partial seen ctx defs =
-  let rec scan_def env to_test defs =
-    match (to_test, Default_environment.pop defs) with
-    | [], _
-    | _, None ->
-        List.fold_left
-          (fun (klist, jumps) (i, pats) ->
-            let action = Lstaticraise (i, []) in
-            let klist =
-              List.fold_right
-                (fun pat r -> (get_key_constr pat, action) :: r)
-                pats klist
-            and jumps =
-              Jumps.add i (Context.lub (list_as_pat pats) ctx) jumps
-            in
-            (klist, jumps))
-          ([], Jumps.empty) env
-    | _, Some ((idef, pss), rem) -> (
-        let now, later =
-          List.partition (fun (_p, p_ctx) -> Context.matches p_ctx pss) to_test
-        in
-        match now with
-        | [] -> scan_def env to_test rem
-        | _ -> scan_def ((idef, List.map fst now) :: env) later rem
-      )
-  in
+  (* The failure patterns are formed of the constructors not present
+     in [seen]. For example, if [seen] is [[None]], then [fail_pats]
+     will be [[Some _]]. *)
   let fail_pats = complete_pats_constrs seen in
-  if List.length fail_pats < !Clflags.match_context_rows then (
-    let fail, jmps =
-      scan_def []
-        (List.map (fun pat -> (pat, Context.lub pat ctx)) fail_pats)
-        defs
-    in
-    debugf
-      "@,@[<v 2>COMBINE (mk_failaction_pos %a)@,\
-           %a@,\
-           @[<v 2>FAIL PATTERNS:@,\
-             %a@]@,\
-           @[<v 2>POSITIVE JUMPS:@,\
-             %a@]\
-           @]"
-      pp_partial partial
-      Default_environment.pp defs
-      (Format.pp_print_list ~pp_sep:Format.pp_print_cut
-         Printpat.pretty_pat) fail_pats
-      Jumps.pp jmps
-    ;
-    (None, fail, jmps)
-  ) else (
-    (* Too many non-matched constructors -> reduced information *)
+  if List.length fail_pats >= !Clflags.match_context_rows then (
+    (* Too many non-matched constructors -> reduced information. *)
     let fail, jumps = mk_failaction_neg partial ctx defs in
     debugf
       "@,@[<v 2>COMBINE (mk_failaction_pos)@,\
@@ -2817,6 +2803,76 @@ let mk_failaction_pos partial seen ctx defs =
       )
     ;
     (fail, [], jumps)
+  ) else (
+    (* Compute a specialized context for each failure pattern. *)
+    let fail_pats_in_ctx =
+      List.map (fun pat -> (pat, Context.lub pat ctx)) fail_pats in
+    (* Determine which exit is appropriate for which failure patterns. *)
+    let rec exit_failpats defs fail_pats_in_ctx acc =
+      match Default_environment.pop defs with
+      | Some ((idef, pss), rem) ->
+          (* Collect the patterns whose context matches the
+             matrix [pss] of the exit [idef]. *)
+          let now, later =
+            List.partition_map (fun ((p, p_ctx) as fail_pat) ->
+              if Context.matches p_ctx pss
+              then Either.Left p
+              else Either.Right fail_pat
+            ) fail_pats_in_ctx
+          in
+          let acc =
+            match now with
+            | [] -> acc
+            | _ :: _ -> (idef, now) :: acc
+          in
+          begin match later with
+          | _ :: _ -> exit_failpats rem later acc
+          | [] ->
+              (* We have assigned exit point to all fail patterns, so
+                 we can stop iterating on the exits. *)
+              acc
+          end
+      | None ->
+          (* If there are no exits left in the environment, we
+             consider that the remaining failing patterns cannot
+             actually arise. [mk_failaction_neg] has the same
+             logic. *)
+          acc
+    in
+    let exit_failpats = exit_failpats defs fail_pats_in_ctx [] in
+    let fails =
+      List.concat_map (fun (i, i_fail_pats) ->
+        let action = Lstaticraise (i, []) in
+        List.map (fun pat -> (get_key_constr pat, action)) i_fail_pats
+      ) exit_failpats
+    in
+    let jumps =
+      List.fold_left (fun jumps (i, i_fail_pats) ->
+        (* We specialize the current context to the or-pattern of all
+           fail patterns going to this exit. This is equivalent to
+           unioning the specialized contexts of each failure pattern,
+           but more efficient -- the union would have a lot of
+           redundancy. *)
+        let i_fail_pat = list_as_pat i_fail_pats in
+        let i_fail_ctx = Context.lub i_fail_pat ctx in
+        Jumps.add i i_fail_ctx jumps
+      ) Jumps.empty exit_failpats
+    in
+    debugf
+      "@,@[<v 2>COMBINE (mk_failaction_pos %a)@,\
+           %a@,\
+           @[<v 2>FAIL PATTERNS:@,\
+             %a@]@,\
+           @[<v 2>POSITIVE JUMPS:@,\
+             %a@]\
+           @]"
+      pp_partial partial
+      Default_environment.pp defs
+      (Format.pp_print_list ~pp_sep:Format.pp_print_cut
+         Printpat.pretty_pat) fail_pats
+      Jumps.pp jumps
+    ;
+    (None, fails, jumps)
   )
 
 let combine_constant loc arg cst partial ctx def
