@@ -17,9 +17,6 @@
 
 /* Interface with the byte-code debugger */
 
-/* Remove when gethostbyname replaced with getaddrinfo */
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-
 #ifdef _WIN32
 #include <io.h>
 #endif /* _WIN32 */
@@ -71,6 +68,7 @@ CAMLexport void caml_debugger_cleanup_fork(void)
 #else
 #define ATOM ATOM_WS
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #undef ATOM
 /* Code duplication with otherlibs/unix/socketaddr.h is inevitable
  * because pulling winsock2.h creates many naming conflicts. */
@@ -177,9 +175,7 @@ void caml_debugger_init(void)
   char * address;
   char_os * a;
   char * port, * p;
-  struct hostent * host;
   value flags;
-  int n;
 
   flags = caml_alloc(2, Tag_cons);
   Store_field(flags, 0, Val_int(1)); /* Marshal.Closures */
@@ -231,20 +227,40 @@ void caml_debugger_init(void)
         + a_len;
   } else {
     /* Internet domain */
-    sock_domain = PF_INET;
-    for (p = (char *) &sock_addr.s_inet, n = sizeof(sock_addr.s_inet);
-         n > 0; n--) *p++ = 0;
-    sock_addr.s_inet.sin_family = AF_INET;
-    sock_addr.s_inet.sin_addr.s_addr = inet_addr(address);
-    if (sock_addr.s_inet.sin_addr.s_addr == -1) {
-      host = gethostbyname(address);
-      if (host == NULL)
-        caml_fatal_error("unknown debugging host %s", address);
-      memmove(&sock_addr.s_inet.sin_addr,
-              host->h_addr_list[0], host->h_length);
+    struct addrinfo hints;
+    struct addrinfo *host;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    int ret = getaddrinfo(address, port, &hints, &host);
+    if (ret != 0) {
+      char buffer[512];
+      const char *err;
+#ifdef _WIN32
+      DWORD error = WSAGetLastError();
+      if (FormatMessageA(
+            FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
+            error, 0, buffer, sizeof(buffer), NULL))
+        caml_fatal_error("cannot connect to debugger at %s port %s\nerror: %lu",
+                         address, port, error);
+      err = buffer;
+#else
+      err = ret != EAI_SYSTEM ? gai_strerror(ret)
+          : caml_strerror(errno, buffer, sizeof(buffer));
+#endif
+      caml_fatal_error("cannot connect to debugger at %s port %s\nerror: %s",
+                       address, port, err);
     }
-    sock_addr.s_inet.sin_port = htons(atoi(port));
-    sock_addr_len = sizeof(sock_addr.s_inet);
+    if (host == NULL)
+      caml_fatal_error("unknown debugging host %s port %s", address, port);
+
+    sock_domain = host->ai_family;
+    memcpy(&sock_addr, host->ai_addr, host->ai_addrlen);
+    sock_addr_len = host->ai_addrlen;
+
+    freeaddrinfo(host);
   }
   open_connection();
   caml_debugger_in_use = 1;
