@@ -627,16 +627,18 @@ static void update_major_slice_work(intnat howmuch,
 {
   double heap_words;
   intnat alloc_work, dependent_work, extra_work, new_work;
-  intnat my_alloc_count, my_dependent_count;
+  intnat my_alloc_count, my_alloc_direct_count, my_dependent_count;
   double my_extra_count;
   caml_domain_state *dom_st = Caml_state;
   uintnat heap_size, heap_sweep_words, total_cycle_work;
 
   my_alloc_count = dom_st->allocated_words;
+  my_alloc_direct_count = dom_st->allocated_words_direct;
   my_dependent_count = dom_st->dependent_allocated;
   my_extra_count = dom_st->extra_heap_resources;
   dom_st->stat_major_words += dom_st->allocated_words;
   dom_st->allocated_words = 0;
+  dom_st->allocated_words_direct = 0;
   dom_st->dependent_allocated = 0;
   dom_st->extra_heap_resources = 0.0;
   /*
@@ -708,6 +710,9 @@ static void update_major_slice_work(intnat howmuch,
   caml_gc_message (0x40, "allocated_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
                    my_alloc_count);
+  caml_gc_message (0x40, "allocated_words_direct = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "u\n",
+                   my_alloc_direct_count);
   caml_gc_message (0x40, "alloc work-to-do = %"
                          ARCH_INTNAT_PRINTF_FORMAT "d\n",
                    alloc_work);
@@ -2015,6 +2020,7 @@ void caml_finish_marking (void)
     caml_shrink_mark_stack();
     Caml_state->stat_major_words += Caml_state->allocated_words;
     Caml_state->allocated_words = 0;
+    Caml_state->allocated_words_direct = 0;
     CAML_EV_END(EV_MAJOR_FINISH_MARKING);
   }
 }
