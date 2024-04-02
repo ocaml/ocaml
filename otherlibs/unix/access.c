@@ -24,7 +24,9 @@
 #ifdef HAS_UNISTD
 # include <unistd.h>
 #else
-# ifndef _WIN32
+# ifdef _WIN32
+#  include <io.h>
+# else
 #  include <sys/file.h>
 # endif
 # ifndef R_OK

@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #ifdef _WIN32
 #include <direct.h> /* for _wchdir and _wgetcwd */
+#include <io.h> /* for _wopen and close */
 #else
 #include <sys/wait.h>
 #endif
