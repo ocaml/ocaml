@@ -675,7 +675,7 @@ AS_CASE([$ocaml_cc_vendor],
     [CPP="$CC -E -Qn" # suppress generation of Sun PRO ident string
     ocamltest_CPP="$CPP"],
   [msvc-*],
-    [CPP="$CC -nologo -EP"
+    [CPP="$CC -nologo -EP -TC"
     ocamltest_CPP="$CPP 2> nul"],
   [CPP="$CC -E -P"
   ocamltest_CPP="$CPP"])
