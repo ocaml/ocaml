@@ -12,8 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* XXX type 'a t = 'a eff = .. *)
-type 'a t = ..
+type 'a t = 'a eff = ..
 external perform : 'a t -> 'a = "%perform"
 
 type exn += Unhandled: 'a t -> exn
@@ -46,8 +45,7 @@ external runstack : ('a, 'b) stack -> ('c -> 'a) -> 'c -> 'b = "%runstack"
 
 module Deep = struct
 
-(*   XXX type nonrec ('a,'b) continuation = ('a,'b) continuation *)
-  type ('a,'b) continuation
+  type nonrec ('a,'b) continuation = ('a,'b) continuation
 
   external take_cont_noexc : ('a, 'b) continuation -> ('a, 'b) stack =
     "caml_continuation_use_noexc" [@@noalloc]
