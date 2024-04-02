@@ -3692,7 +3692,10 @@ esac
 
 case $host in #(
   *-pc-windows) :
-    CC=cl
+    if test -z "$CC"
+then :
+  CC=cl
+fi
     ccomptype=msvc
     S=asm
     SO=dll
