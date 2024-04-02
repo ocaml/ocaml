@@ -394,9 +394,16 @@ FUNCTION caml_call_gc
         std     0, LR_SAVE(SP)
    /* Save all registers, as well as ALLOC_PTR and TRAP_PTR */
         SAVE_ALL_REGS
+        TSAN_ENTER_FUNCTION
    /* Switch stacks and call caml_garbage_collection */
         SWITCH_OCAML_TO_C
         Far_call(caml_garbage_collection)
+#if defined(WITH_THREAD_SANITIZER)
+        TSAN_SETUP_C_CALL 0
+        li      3, 0
+        Far_call(__tsan_func_exit)
+        TSAN_CLEANUP_AFTER_C_CALL 0
+#endif
         SWITCH_C_TO_OCAML
    /* Restore registers and return to caller */
         RESTORE_ALL_REGS

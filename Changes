@@ -856,6 +856,10 @@ OCaml 5.2.0
   new lld when using threads.cma of duplicated libraries.
   (David Allsopp, review by Nicolás Ojeda Bär)
 
+- #13058: Add TSan instrumentation to caml_call_gc(), since it may raise
+  exceptions.
+  (Fabrice Buoro, Olivier Nicole, Gabriel Scherer and Miod Vallat)
+
 OCaml 5.1.1 (8 December 2023)
 ----------------------------
 
