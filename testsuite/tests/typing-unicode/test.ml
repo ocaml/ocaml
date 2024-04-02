@@ -5,11 +5,14 @@ all_modules = "genfiles.ml";
 program = "./genfiles.byte.exe";
 ocamlc.byte;
 run;
-all_modules = "été.ml ça.ml test.ml";
+all_modules = "été.ml ça.ml test.ml";
 program = "./main.byte.exe";
 ocamlc.byte;
 run;
 *)
 
 let _ =
-  assert (Été.x + Ça.x = 3)
+  (* Source is NFC *)
+  assert (Été.x + Ça.x = 3);
+  (* Source is NFD *)
+  assert (Été.x + Ça.x = 3)
