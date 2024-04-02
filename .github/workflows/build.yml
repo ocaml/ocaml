@@ -37,7 +37,7 @@ jobs:
       manual_changed: ${{ steps.manual.outputs.manual_changed }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: Check for manual changes
@@ -156,7 +156,7 @@ jobs:
             os: macos-14
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: OS Dependencies
