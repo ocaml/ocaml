@@ -261,41 +261,41 @@ let uchar_for_uchar_escape lexbuf =
         (Printf.sprintf "%X is not a Unicode scalar value" cp)
 
 let validate_encoding lexbuf raw_name =
-  match UString.normalize raw_name with
+  match UIdent.normalize raw_name with
   | Error _ -> error lexbuf (Invalid_encoding raw_name)
   | Ok name -> name
 
 let ident_for_extended lexbuf raw_name =
   let name = validate_encoding lexbuf raw_name in
-  match UString.validate_identifier name with
-  | UString.Valid -> name
-  | UString.Invalid_character u -> error lexbuf (Invalid_char_in_ident u)
-  | UString.Invalid_beginning _ -> assert false (* excluded by the regexps *)
+  match UIdent.validate_identifier name with
+  | UIdent.Valid -> name
+  | UIdent.Invalid_character u -> error lexbuf (Invalid_char_in_ident u)
+  | UIdent.Invalid_beginning _ -> assert false (* excluded by the regexps *)
 
 let validate_delim lexbuf raw_name =
   let name = validate_encoding lexbuf raw_name in
-  if UString.is_lowercase name then name
+  if UIdent.is_lowercase name then name
   else error lexbuf (Non_lowercase_delimiter name)
 
 let validate_ext lexbuf name =
     let name = validate_encoding lexbuf name in
-    match UString.validate_identifier ~with_dot:true name with
-    | UString.Valid -> name
-    | UString.Invalid_character u -> error lexbuf (Invalid_char_in_ident u)
-    | UString.Invalid_beginning _ -> assert false (* excluded by the regexps *)
+    match UIdent.validate_identifier ~with_dot:true name with
+    | UIdent.Valid -> name
+    | UIdent.Invalid_character u -> error lexbuf (Invalid_char_in_ident u)
+    | UIdent.Invalid_beginning _ -> assert false (* excluded by the regexps *)
 
 
 let lax_delim raw_name =
-  match UString.normalize raw_name with
+  match UIdent.normalize raw_name with
   | Error _ -> None
   | Ok name ->
-     if UString.is_lowercase name then Some name
+     if UIdent.is_lowercase name then Some name
      else None
 
 let is_keyword name = Hashtbl.mem keyword_table name
 
 let check_label_name lexbuf name =
-  if UString.is_capitalized name then error lexbuf (Capitalized_label name);
+  if UIdent.is_capitalized name then error lexbuf (Capitalized_label name);
   if is_keyword name then error lexbuf (Keyword_as_label name)
 
 (* Update the current location with file name and line number. *)
@@ -471,7 +471,7 @@ rule token = parse
       { LABEL name }
   | "~" raw_ident_escape (ident_ext as raw_name) ':'
       { let name = ident_for_extended lexbuf raw_name in
-        if UString.is_capitalized name
+        if UIdent.is_capitalized name
         then error lexbuf (Capitalized_label name);
         LABEL name }
   | "~" (identstart identchar * as name) ':'
@@ -487,7 +487,7 @@ rule token = parse
       { OPTLABEL name }
   | "?" raw_ident_escape (ident_ext as raw_name) ':'
       { let name = ident_for_extended lexbuf raw_name in
-        if UString.is_capitalized name
+        if UIdent.is_capitalized name
         then error lexbuf (Capitalized_label name);
         OPTLABEL name
       }
@@ -502,7 +502,7 @@ rule token = parse
       { LIDENT name }
   | raw_ident_escape  (ident_ext* as raw_name)
       { let name = ident_for_extended lexbuf raw_name in
-        if UString.is_capitalized name
+        if UIdent.is_capitalized name
         then error lexbuf (Capitalized_raw_identifier name);
         LIDENT name }
   | lowercase identchar * as name
@@ -512,7 +512,7 @@ rule token = parse
       { UIDENT name } (* No capitalized keywords *)
   | ident_ext as raw_name
       { let name = ident_for_extended lexbuf raw_name in
-        if UString.is_capitalized name
+        if UIdent.is_capitalized name
         then UIDENT name
         else LIDENT name }
   | int_literal as lit { INT (lit, None) }

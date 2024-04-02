@@ -36,11 +36,11 @@ let basename_chop_extensions basename  =
   | exception Not_found -> basename
 
 let strict_modulize s =
-  match Misc.UString.capitalize s with
+  match Misc.UIdent.capitalize s with
   | Ok x -> x
   | Error _ -> raise (Error (Invalid_encoding s))
 
-let modulize s = match Misc.UString.capitalize s with Ok x | Error x -> x
+let modulize s = match Misc.UIdent.capitalize s with Ok x | Error x -> x
 
 (* We re-export the [Misc] definition, and ignore encoding errors under the
    assumption that we should focus our effort on not *producing* badly encoded
@@ -58,7 +58,7 @@ let modname_from_source source_file =
   source_file |> stem |> modulize
 
 (* Check validity of module name *)
-let is_unit_name name = Misc.UString.is_valid_identifier name
+let is_unit_name name = Misc.UIdent.is_valid_identifier name
 
 let check_unit_name file =
   if not (is_unit_name (modname file)) then

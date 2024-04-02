@@ -20,12 +20,12 @@ open Debugger_parser
 
 
 let ident_for_extended raw_name =
-  match Misc.UString.normalize raw_name with
+  match Misc.UIdent.normalize raw_name with
   | Error _ -> raise Parsing.Parse_error
   | Ok name ->
-  match Misc.UString.validate_identifier name with
-  | Misc.UString.Valid -> name
-  | Misc.UString.Invalid_character _ | Misc.UString.Invalid_beginning _ ->
+  match Misc.UIdent.validate_identifier name with
+  | Misc.UIdent.Valid -> name
+  | Misc.UIdent.Invalid_character _ | Misc.UIdent.Invalid_beginning _ ->
     raise Parsing.Parse_error
 
 exception Int_overflow
@@ -79,7 +79,7 @@ and lexeme =    (* Read a lexeme *)
   | ident_ext as raw_name
       {
         let name = ident_for_extended raw_name in
-        if Misc.UString.is_capitalized name
+        if Misc.UIdent.is_capitalized name
         then UIDENT name
         else LIDENT name
       }

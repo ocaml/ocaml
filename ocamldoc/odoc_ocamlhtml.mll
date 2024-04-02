@@ -208,7 +208,7 @@ let comment_start_pos = ref []
 (** Normalizing utf-8 *)
 let normalize raw_name =
   (* we are printing documentation, it is too late to be strict *)
-  match Misc.UString.normalize raw_name with
+  match Misc.UIdent.normalize raw_name with
   | Error s -> s
   | Ok name -> name
 
@@ -268,7 +268,7 @@ rule token = parse
         print "?"; print name ; print ":"; token lexbuf }
   | (ident_ext as raw_id)
       {  let s = normalize raw_id in
-         if Misc.UString.is_capitalized s then
+         if Misc.UIdent.is_capitalized s then
             (print_class constructor_class (Lexing.lexeme lexbuf);
             token lexbuf)
          else try
