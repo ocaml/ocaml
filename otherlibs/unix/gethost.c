@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define _WINSOCK_DEPRECATED_NO_WARNINGS /* gethostbyaddr, gethostbyname */
+
 #include <string.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>

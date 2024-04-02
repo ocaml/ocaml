@@ -17,6 +17,9 @@
 
 /* Interface with the byte-code debugger */
 
+/* Remove when gethostbyname replaced with getaddrinfo */
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+
 #ifdef _WIN32
 #include <io.h>
 #endif /* _WIN32 */
