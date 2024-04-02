@@ -1995,6 +1995,41 @@ AS_IF([test x"$with_zstd" != "xno"],
         [[#include <zstd.h>]])],
       [zstd_status="zstd library not found"])]))
 
+# When building the mingw-w64 port in Cygwin, it is very easy to have the
+# library available, but not have the DLL in PATH. This then causes the build to
+# fail as soon as ocamlrun is first executed. This check avoids automatically
+# enabling zstd when the resulting executable doesn't actually work.
+AS_CASE([$host],
+  [*-w64-mingw32*|*-pc-windows],
+    [AS_IF([test x"$build" = x"$host"],[
+      check_zstd_runs=true],[
+      AS_CASE([$build],
+       [*-pc-msys|*-pc-cygwin*],
+         [check_zstd_runs=true],
+       [check_zstd_runs=false])
+    ])],
+  [check_zstd_runs=false])
+
+AS_IF([test x"$zstd_status" = "xok"],[
+  AC_MSG_CHECKING([whether programs linked zstd can execute])
+  AS_IF([! $check_zstd_runs],[
+    AC_MSG_RESULT([skipped])],[
+    OCAML_CC_SAVE_VARIABLES
+    LIBS="$LIBS $zstd_libs"
+    CFLAGS="$CFLAGS $zstd_flags"
+    OCAML_RUN_IFELSE(
+      [AC_LANG_SOURCE([[
+#include <zstd.h>
+int main(void) {
+  return (ZSTD_versionNumber() == 0);
+}
+      ]])],
+      [AC_MSG_RESULT([yes])],
+      [AC_MSG_RESULT([no])
+      zstd_status="programs linked with zstd do not appear to be executable."],
+      [AC_MSG_RESULT([skipped])])
+    OCAML_CC_RESTORE_VARIABLES])])
+
 AS_IF([test x"$zstd_status" = "xok"],
   [AC_MSG_NOTICE([compressed compilation artefacts supported])
    internal_cppflags="$internal_cppflags $zstd_flags"
