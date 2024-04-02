@@ -863,7 +863,7 @@ AS_CASE([$ocaml_cc_vendor],
     [common_cflags='-nologo -O2 -Gy- -MD'
     common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
     internal_cflags="$cc_warnings"
-    internal_cppflags='-DUNICODE -D_UNICODE'
+    internal_cppflags='-DUNICODE -D_UNICODE -D_CRT_NONSTDC_NO_WARNINGS'
     AX_CHECK_COMPILE_FLAG([-d2VolatileMetadata-],
       [internal_cflags="$internal_cflags -d2VolatileMetadata-"], [],
       [$warn_error_flag])
