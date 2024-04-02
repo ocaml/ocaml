@@ -45,8 +45,8 @@ let modulize s = match Misc.UIdent.capitalize s with Ok x | Error x -> x
 (* We re-export the [Misc] definition, and ignore encoding errors under the
    assumption that we should focus our effort on not *producing* badly encoded
    module names *)
-let normalize x = match Misc.normalized_unit_filename x with |
-   Ok x | Error x -> x
+let normalize x = match Misc.normalized_unit_filename x with
+  | Ok x | Error x -> x
 
 let stem source_file =
   source_file |> Filename.basename |> basename_chop_extensions

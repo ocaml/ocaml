@@ -217,7 +217,7 @@ val find_in_path: string list -> string -> string
 val find_in_path_rel: string list -> string -> string
        (** Search a relative file in a list of directories. *)
 
- (** Normalize file name [Foo.ml] to [foo.ml]
+ (** Normalize file name [Foo.ml] to [foo.ml], using NFC and case-folding.
      Return [Error] if the input is not a valid utf-8 byte sequence *)
 val normalized_unit_filename: string -> (string,string) Result.t
 
@@ -793,6 +793,7 @@ end
 (** Characters allowed in identifiers are, currently:
       - ASCII letters A-Z a-z
       - Latin-1 letters (U+00C0 - U+00FF except U+00D7 and U+00F7)
+      - Character sequences which normalize to the above character under NFC
       - digits 0-9, underscore, single quote
 *)
 
