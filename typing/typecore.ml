@@ -3601,7 +3601,9 @@ and type_expect_
         | c :: rest ->
             split_cases (c :: exnc) effc conts rest
       in
-      let exn_caselist, eff_caselist, eff_conts = split_cases [] [] [] caselist in
+      let exn_caselist, eff_caselist, eff_conts =
+        split_cases [] [] [] caselist
+      in
       let exn_cases, _ =
         type_cases Value env Predef.type_exn ty_expected_explained
           ~check_if_total:false loc exn_caselist
@@ -3610,7 +3612,8 @@ and type_expect_
         match eff_caselist with
         | [] -> []
         | eff_caselist ->
-            type_effect_cases Value env ty_expected_explained loc eff_caselist eff_conts
+            type_effect_cases Value env ty_expected_explained loc eff_caselist
+              eff_conts
       in
       re {
         exp_desc = Texp_try(body, exn_cases, eff_cases);

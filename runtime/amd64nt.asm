@@ -537,7 +537,7 @@ do_perform:
     ;  %rbx: continuation
     ;  %rdi: last_fiber
     ;  %rsi: old stack *;
-		    mov     qword ptr [rbx+8], rdi  ; Set last fiber field in continuation
+        mov     qword ptr [rbx+8], rdi  ; Set last fiber field in continuation
         mov     r11, qword ptr [rsi+16] ; %r11 := old stack -> handler
         mov     r10, qword ptr [r11+24] ; %r10 := parent stack
         cmp     r10, 0                  ; parent is NULL?

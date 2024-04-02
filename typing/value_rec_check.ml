@@ -606,7 +606,8 @@ let rec expression : Typedtree.expression -> term_judg =
         let eff_envs, eff_modes =
           List.split (List.map (fun c -> case c mode) eff_cases) in
         let eff_e = expression e (List.fold_left Mode.join Ignore eff_modes) in
-        Env.join_list ((Env.join_list (env_e :: pat_envs)) :: (eff_e :: eff_envs)))
+        Env.join_list
+          ((Env.join_list (env_e :: pat_envs)) :: (eff_e :: eff_envs)))
     | Texp_for (_, _, low, high, _, body) ->
       (*
         G1 |- low: m[Dereference]
