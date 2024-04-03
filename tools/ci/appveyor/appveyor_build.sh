@@ -217,7 +217,7 @@ case "$1" in
         # For an explanation of the sed command, see
         # https://github.com/appveyor/ci/issues/1824
         script --quiet --return --command \
-          "$MAKE -C ../$BUILD_PREFIX-$PORT world.opt" \
+          "$MAKE -C ../$BUILD_PREFIX-$PORT" \
           "../$BUILD_PREFIX-$PORT/build.log" |
             sed -e 's/\d027\[K//g' \
                 -e 's/\d027\[m/\d027[0m/g' \
