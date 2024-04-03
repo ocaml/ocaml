@@ -132,9 +132,9 @@ The following environment variables are also consulted:
   \item[e] ("runtime_events_log_wsize") Size of the per-domain runtime events ring
         buffers in log powers of two words. Defaults to 16, giving 64k word or
         512kb buffers on 64-bit systems.
-  \item[l] ("stack_limit") The limit (in words) of the stack size. This is only
-        relevant to the byte-code runtime, as the native code runtime uses the
-        operating system's stack.
+  \item[l] ("stack_limit") The limit (in words) of the stack size. This is
+        relevant to both the byte-code runtime and the native code runtime:
+        OCaml always uses its own stack and not the operating system's stack.
   \item[m] ("custom_minor_ratio") Bound on floating garbage for
         out-of-heap memory
         held by custom values in the minor heap. A minor GC is triggered
