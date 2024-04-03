@@ -83,7 +83,7 @@ function set_configuration {
     mkdir -p "$CACHE_DIRECTORY"
 
     local CACHE_KEY CACHE_FILE_PREFIX CACHE_FILE
-    CACHE_KEY=$({ cat configure; uname; } | shasum | cut -c 1-7)
+    CACHE_KEY=$({ cat configure; uname; } | sha1sum | cut -c 1-7)
     CACHE_FILE_PREFIX="$CACHE_DIRECTORY/config.cache-$1"
     CACHE_FILE="$CACHE_FILE_PREFIX-$CACHE_KEY"
 
