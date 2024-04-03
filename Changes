@@ -462,6 +462,10 @@ OCaml 5.2.0
   (Lucas Pluvinage, Sadiq Jaffer and Olivier Nicole, review by Gabriel Scherer,
    David Allsopp, Tim McGilchrist and Thomas Leonard)
 
+- #13066, update OCAMLRUNPARAM documentation for the stack size parameter l
+  (Florian Angeletti, review by Nicolás Ojeda Bär, Tim McGilchrist, and
+   Miod Vallat)
+
 ### Compiler user-interface and warnings:
 
 * #10613, #12405: Simplify the values used for the system variable (`system:` in
