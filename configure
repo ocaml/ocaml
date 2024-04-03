@@ -13983,6 +13983,20 @@ case $enable_warn_error,true in #(
      ;;
 esac
 
+case $host in #(
+  *-*-mingw32*|*-pc-windows) :
+    case $WINDOWS_UNICODE_MODE in #(
+  ansi) :
+    windows_unicode=0 ;; #(
+  compatible|"") :
+    windows_unicode=1 ;; #(
+  *) :
+    as_fn_error $? "unexpected windows unicode mode" "$LINENO" 5 ;;
+esac ;; #(
+  *) :
+    windows_unicode=0 ;;
+esac
+
 # We select high optimization levels, provided we can turn off:
 # - strict type-based aliasing analysis (too risky for the OCaml runtime)
 # - strict no-overflow conditions on signed integer arithmetic
@@ -14007,8 +14021,7 @@ case $ocaml_cc_vendor in #(
     # TODO: see whether the code can be fixed to avoid -Wno-unused
     common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
     internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
-    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE=$windows_unicode" ;; #(
   mingw-*) :
     as_fn_error $? "Unsupported C compiler for a MinGW-w64 build" "$LINENO" 5 ;; #(
   msvc-0*|msvc-1[0-8]*|msvc-19[012]*|msvc-193[0-7]) :
@@ -14059,8 +14072,7 @@ else $as_nop
   :
 fi
 
-    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE=$windows_unicode" ;; #(
   xlc-*) :
     common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
     internal_cflags="$cc_warnings" ;; #(
@@ -20828,20 +20840,6 @@ if test x"$mandir" = x'${datarootdir}/man'
 then :
   mandir='${prefix}/man'
 fi
-
-case $host in #(
-  *-*-mingw32*|*-pc-windows) :
-    case $WINDOWS_UNICODE_MODE in #(
-  ansi) :
-    windows_unicode=0 ;; #(
-  compatible|"") :
-    windows_unicode=1 ;; #(
-  *) :
-    as_fn_error $? "unexpected windows unicode mode" "$LINENO" 5 ;;
-esac ;; #(
-  *) :
-    windows_unicode=0 ;;
-esac
 
 # Define default prefix correctly for the different Windows ports
 if test x"$prefix" = "xNONE"

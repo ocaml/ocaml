@@ -828,6 +828,16 @@ AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
   [yes,*|,true],
     [cc_warnings="$cc_warnings $warn_error_flag"])
 
+AS_CASE([$host],
+  [*-*-mingw32*|*-pc-windows],
+    [AS_CASE([$WINDOWS_UNICODE_MODE],
+      [ansi],
+        [windows_unicode=0],
+      [compatible|""],
+        [windows_unicode=1],
+      [AC_MSG_ERROR([unexpected windows unicode mode])])],
+  [windows_unicode=0])
+
 # We select high optimization levels, provided we can turn off:
 # - strict type-based aliasing analysis (too risky for the OCaml runtime)
 # - strict no-overflow conditions on signed integer arithmetic
@@ -853,8 +863,7 @@ AS_CASE([$ocaml_cc_vendor],
     # TODO: see whether the code can be fixed to avoid -Wno-unused
     common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
     internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
-    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE=$windows_unicode"],
   [mingw-*],
     [AC_MSG_ERROR([Unsupported C compiler for a MinGW-w64 build])],
   [msvc-0*|msvc-1[[0-8]]*|msvc-19[[012]]*|msvc-193[[0-7]]],
@@ -869,8 +878,7 @@ AS_CASE([$ocaml_cc_vendor],
     AX_CHECK_COMPILE_FLAG([-d2VolatileMetadata-],
       [internal_cflags="$internal_cflags -d2VolatileMetadata-"], [],
       [$warn_error_flag])
-    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE=$windows_unicode"],
   [xlc-*],
     [common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
     internal_cflags="$cc_warnings"],
@@ -2630,16 +2638,6 @@ AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
 
 AS_IF([test x"$mandir" = x'${datarootdir}/man'],
   [mandir='${prefix}/man'])
-
-AS_CASE([$host],
-  [*-*-mingw32*|*-pc-windows],
-    [AS_CASE([$WINDOWS_UNICODE_MODE],
-      [ansi],
-        [windows_unicode=0],
-      [compatible|""],
-        [windows_unicode=1],
-      [AC_MSG_ERROR([unexpected windows unicode mode])])],
-  [windows_unicode=0])
 
 # Define default prefix correctly for the different Windows ports
 AS_IF([test x"$prefix" = "xNONE"],
