@@ -860,10 +860,10 @@ AS_CASE([$ocaml_cc_vendor],
     [AC_MSG_ERROR(m4_normalize([This version of MSVC is too old.
     Please use Visual Studio version 17.8 or above.]), 69)],
   [msvc-*],
-    [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
+    [common_cflags='-nologo -O2 -Gy- -MD'
     common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
     internal_cppflags='-DUNICODE -D_UNICODE'
-    internal_cflags='-experimental:c11atomics -std:c11'
+    internal_cflags="$cc_warnings -experimental:c11atomics -std:c11"
     CFLAGS="$CFLAGS -experimental:c11atomics -std:c11"
     AX_CHECK_COMPILE_FLAG([-d2VolatileMetadata-],
       [internal_cflags="$internal_cflags -d2VolatileMetadata-"], [],
