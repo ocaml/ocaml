@@ -134,6 +134,10 @@ _______________
 - #13074, #13082, #13084: refactoring in the pattern-matching compiler
   (Gabriel Scherer, review by Thomas Refis, Vincent Laviron and Nick Roberts)
 
+- #13001: do not read_back entire shapes to get aliases' uids when building the
+  usages index
+  (Ulysse Gérard, review by Gabriel Scherer)
+
 ### Build system:
 
 - #12909: Reorganise how MKEXE_VIA_CC is built to make it correct for MSVC by
