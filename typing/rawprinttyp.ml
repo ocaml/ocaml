@@ -133,7 +133,7 @@ and raw_field ppf rf =
           fprintf ppf "RFpresent None"
       | Some t ->
           fprintf ppf  "@[<1>RFpresent(Some@,%a)@]" raw_type t)
-    ~either:(fun c tl m e ->
+    ~either:(fun c tl m (_,e) ->
       fprintf ppf "@[<hov1>RFeither(%B,@,%a,@,%B,@,@[<1>ref%t@])@]" c
         raw_type_list tl m
         (fun ppf ->
