@@ -95,11 +95,7 @@ struct sockaddr_un {
 static value marshal_flags;
 
 static int sock_domain;         /* Socket domain for the debugger */
-static union {                  /* Socket address for the debugger */
-  struct sockaddr s_gen;
-  struct sockaddr_un s_unix;
-  struct sockaddr_in s_inet;
-} sock_addr;
+static struct sockaddr_storage sock_addr; /* Socket address for the debugger */
 static int sock_addr_len;       /* Length of sock_addr */
 
 static int dbg_socket = -1;     /* The socket connected to the debugger */
@@ -121,7 +117,7 @@ static void open_connection(void)
                           NULL, 0,
                           0 /* not WSA_FLAG_OVERLAPPED */);
   if (sock == INVALID_SOCKET
-      || connect(sock, &sock_addr.s_gen, sock_addr_len) != 0)
+      || connect(sock, (struct sockaddr *)&sock_addr, sock_addr_len) != 0)
     caml_fatal_error("cannot connect to debugger at %s\n"
                      "WSA error code: %d",
                      (dbg_addr ? dbg_addr : "(none)"),
@@ -131,7 +127,7 @@ static void open_connection(void)
 #else
   dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
   if (dbg_socket == -1 ||
-      connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1)
+      connect(dbg_socket, (struct sockaddr *)&sock_addr, sock_addr_len) == -1)
 #endif
     caml_fatal_error("cannot connect to debugger at %s\n"
                      "error: %s",
@@ -208,23 +204,20 @@ void caml_debugger_init(void)
     if (*p == ':') { *p = 0; port = p+1; break; }
   }
   if (port == NULL) {
-    size_t a_len;
     /* Unix domain */
+    struct sockaddr_un *s_unix = (struct sockaddr_un *)&sock_addr;
     sock_domain = PF_UNIX;
-    sock_addr.s_unix.sun_family = AF_UNIX;
-    a_len = strlen(address);
-    if (a_len >= sizeof(sock_addr.s_unix.sun_path)) {
+    s_unix->sun_family = AF_UNIX;
+    size_t a_len = strlen(address);
+    if (a_len >= sizeof(s_unix->sun_path)) {
       caml_fatal_error
       (
         "debug socket path length exceeds maximum permitted length"
       );
     }
-    strncpy(sock_addr.s_unix.sun_path, address,
-            sizeof(sock_addr.s_unix.sun_path) - 1);
-    sock_addr.s_unix.sun_path[sizeof(sock_addr.s_unix.sun_path) - 1] = '\0';
-    sock_addr_len =
-      ((char *)&(sock_addr.s_unix.sun_path) - (char *)&(sock_addr.s_unix))
-        + a_len;
+    strncpy(s_unix->sun_path, address, sizeof(s_unix->sun_path) - 1);
+    s_unix->sun_path[sizeof(s_unix->sun_path) - 1] = '\0';
+    sock_addr_len = offsetof(struct sockaddr_un, sun_path) + a_len;
   } else {
     /* Internet domain */
     struct addrinfo hints;
