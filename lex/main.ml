@@ -21,7 +21,7 @@ let ml_automata = ref false
 let source_name = ref None
 let output_name = ref None
 
-let usage = "usage: ocamllex [options] sourcefile"
+let usage = "Usage: ocamllex [options] sourcefile\nOptions are:"
 
 let print_version_string () =
   print_string "The OCaml lexer generator, version ";
