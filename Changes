@@ -193,6 +193,11 @@ _______________
   The syntax '-(1 [@foo])' was incorrectly parsed as '-1'.
   (Jules Aguillon, reviewed by Gabriel Scherer, report by Gabriel Scherer)
 
+* #13070: On Windows, when configured with bootstrapped flexdll, don't add
+  +flexdll to the search path when -nostdlib is specified (which then means
+  -L <path-to-flexdll> no longer gets passed to the system linker).
+  (David Allsopp, review by Florian Angeletti)
+
 - #13089: Fix bug in `runtime_events` library which could result in garbled
   output under Windows.
   (B. Szilvasy, review by Nicolás Ojeda Bär and Miod Vallat)
