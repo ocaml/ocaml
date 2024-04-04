@@ -482,7 +482,7 @@ let process_anon_file filename =
 
 open Format
 
-let usage = "Usage: ocamlprof <options> <files>\noptions are:"
+let usage = "Usage: ocamlprof <options> <files>\nOptions are:"
 
 let print_version () =
   printf "ocamlprof, version %s@." Sys.ocaml_version;

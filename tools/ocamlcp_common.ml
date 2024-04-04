@@ -40,7 +40,7 @@ module Make(T: OCAMLCP) = struct
     if Filename.check_suffix filename ".ml" then with_ml := true;
     if Filename.check_suffix filename ".mli" then with_mli := true
 
-  let usage = "Usage: " ^ name ^ " <options> <files>\noptions are:"
+  let usage = "Usage: " ^ name ^ " <options> <files>\nOptions are:"
 
   let incompatible o =
     Printf.eprintf "%s: profiling is incompatible with the %s option\n" name o;
