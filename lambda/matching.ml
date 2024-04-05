@@ -3465,12 +3465,14 @@ and compile_match_nonempty ~scopes repr partial ctx
   | { cases = []; args = [] } -> comp_exit ctx m
   | { args = (arg, str) :: argl } ->
       let v, newarg = arg_to_var arg m.cases in
-      let args = (newarg, Alias) :: argl in
-      let cases = List.map (half_simplify_nonempty ~arg:newarg) m.cases in
-      let m = { m with args; cases } in
-      let first_match, rem =
-        split_and_precompile_half_simplified ~arg:newarg m in
-      combine_handlers ~scopes repr partial ctx (v, str, arg) first_match rem
+      bind_match_arg str v arg (
+        let args = (newarg, Alias) :: argl in
+        let cases = List.map (half_simplify_nonempty ~arg:newarg) m.cases in
+        let m = { m with args; cases } in
+        let first_match, rem =
+          split_and_precompile_half_simplified ~arg:newarg m in
+        combine_handlers ~scopes repr partial ctx first_match rem
+      )
   | _ -> assert false
 
 and compile_match_simplified ~scopes repr partial ctx
@@ -3478,23 +3480,15 @@ and compile_match_simplified ~scopes repr partial ctx
   match m with
   | { cases = []; args = [] } -> comp_exit ctx m
   | { args = ((Lvar v as arg), str) :: argl } ->
-      let args = (arg, Alias) :: argl in
-      let m = { m with args } in
-      let first_match, rem = split_and_precompile_simplified m in
-      combine_handlers ~scopes repr partial ctx (v, str, arg) first_match rem
+      bind_match_arg str v arg (
+        let args = (arg, Alias) :: argl in
+        let m = { m with args } in
+        let first_match, rem = split_and_precompile_simplified m in
+        combine_handlers ~scopes repr partial ctx first_match rem
+      )
   | _ -> assert false
 
-and combine_handlers ~scopes repr partial ctx (v, str, arg) first_match rem =
-  let lam, jumps =
-    comp_match_handlers
-      (( if dbg then
-         do_compile_matching_pr ~scopes
-       else
-         do_compile_matching ~scopes
-       )
-         repr)
-      partial ctx first_match rem
-  in
+and bind_match_arg str v arg (lam, jumps) =
   let jumps =
     (* If the Lambda expression [arg] to access the first argument is
        a mutable field read, then its binding and evaluation may be
@@ -3541,6 +3535,16 @@ and combine_handlers ~scopes repr partial ctx (v, str, arg) first_match rem =
         Jumps.map Context.erase_first_col jumps in
   (bind_check str v arg lam,
    jumps)
+
+and combine_handlers ~scopes repr partial ctx first_match rem =
+  comp_match_handlers
+    (( if dbg then
+         do_compile_matching_pr ~scopes
+       else
+         do_compile_matching ~scopes
+     )
+       repr)
+    partial ctx first_match rem
 
 (* verbose version of do_compile_matching, for debug *)
 and do_compile_matching_pr ~scopes repr partial ctx x =
