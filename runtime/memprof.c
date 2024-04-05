@@ -1662,7 +1662,8 @@ static value capture_callstack_no_GC(memprof_domain_t domain)
                                                     + frames * sizeof(value));
     if (stash) {
       stash->frames = frames;
-      memcpy(stash->stack, domain->callstack_buffer, sizeof(value) * frames);
+      memcpy(stash->stack, domain->callstack_buffer,
+             sizeof(backtrace_slot) * frames);
       res = Val_ptr(stash);
     }
   }
@@ -2275,9 +2276,20 @@ CAMLprim value caml_memprof_stop(value unit)
 {
   memprof_domain_t domain = Caml_state->memprof;
   CAMLassert(domain);
-  CAMLassert(domain->current);
-  value config = thread_config(domain->current);
+  memprof_thread_t thread = domain->current;
+  CAMLassert(thread);
 
+  /* Final attempt to run allocation callbacks; don't use
+   * caml_memprof_run_callbacks_exn as we only really need allocation
+   * callbacks now. */
+  if (!thread->suspended) {
+    update_suspended(domain, true);
+    value res = entries_run_callbacks_exn(thread, &thread->entries);
+    update_suspended(domain, false);
+    (void) caml_raise_if_exception(res);
+  }
+
+  value config = thread_config(thread);
   if (config == CONFIG_NONE || Status(config) != CONFIG_STATUS_SAMPLING) {
     caml_failwith("Gc.Memprof.stop: no profile running.");
   }
