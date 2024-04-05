@@ -170,7 +170,7 @@ void caml_debugger_init(void)
 {
   char * address;
   char_os * a;
-  char * port, * p;
+  char * port;
   value flags;
 
   flags = caml_alloc(2, Tag_cons);
@@ -199,10 +199,7 @@ void caml_debugger_init(void)
   (void)atexit(winsock_cleanup);
 #endif
   /* Parse the address */
-  port = NULL;
-  for (p = address; *p != 0; p++) {
-    if (*p == ':') { *p = 0; port = p+1; break; }
-  }
+  port = strchr(address, ':');
   if (port == NULL) {
     /* Unix domain */
     struct sockaddr_un *s_unix = (struct sockaddr_un *)&sock_addr;
@@ -227,6 +224,7 @@ void caml_debugger_init(void)
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
 
+    *port++ = 0;
     int ret = getaddrinfo(address, port, &hints, &host);
     if (ret != 0) {
       char buffer[512];
