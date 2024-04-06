@@ -658,7 +658,6 @@ and ext_status =
     Text_first                     (* first constructor in an extension *)
   | Text_next                      (* not first constructor in an extension *)
   | Text_exception
-  | Text_effect
 
 val item_visibility : signature_item -> visibility
 
