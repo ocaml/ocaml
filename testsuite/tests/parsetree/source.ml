@@ -106,6 +106,7 @@ let () =
   (* Pattern expressions *)
   | lazy%foo[@foo] x -> ()
   | exception%foo[@foo] x -> ()
+  | effect x, k -> ()
 
 (* Class expressions *)
 class x =
