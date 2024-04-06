@@ -16,5 +16,7 @@
 type t
 external create: unit -> t = "caml_ml_condition_new"
 external wait: t -> Mutex.t -> unit = "caml_ml_condition_wait"
+external timed_wait: t -> Mutex.t -> float -> bool
+                   = "caml_ml_condition_timedwait"
 external signal: t -> unit = "caml_ml_condition_signal"
 external broadcast: t -> unit = "caml_ml_condition_broadcast"
