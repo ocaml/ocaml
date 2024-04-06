@@ -5801,23 +5801,13 @@ and map_half_typed_cases
             ~check_as:(fun s -> Warnings.Unused_var s)
         in
         let ext_env = add_module_variables ext_env mvs in
-        let cont, ext_env' =
-          match cont with
-          | Some (id, desc) ->
-              let ext_env =
-                Env.add_value ~check:(fun s -> Warnings.Unused_var_strict s)
-                  id desc ext_env
-              in
-                Some id, ext_env
-          | None -> None, ext_env
-        in
         let ty_expected =
           if contains_gadt && not !Clflags.principal then
             (* Take a generic copy of [ty_res] again to allow propagation of
                 type information from preceding branches *)
             correct_levels ty_res
           else ty_res in
-        type_body case_data pat ~ext_env:ext_env' ~cont ~ty_expected
+        type_body case_data pat ~ext_env:ext_env ~cont ~ty_expected
           ~ty_infer:ty_res' ~contains_gadt)
     half_typed_cases_cont_list
   end in
@@ -5908,6 +5898,16 @@ and type_cases
     ~type_body:begin
       fun { pc_guard; pc_rhs } pat ~ext_env ~cont ~ty_expected ~ty_infer
           ~contains_gadt:_ ->
+        let cont, ext_env' =
+          match cont with
+          | Some (id, desc) ->
+              let ext_env =
+                Env.add_value ~check:(fun s -> Warnings.Unused_var_strict s)
+                  id desc ext_env
+              in
+                Some id, ext_env
+          | None -> None, ext_env
+        in
         let guard =
           match pc_guard with
           | None -> None
@@ -5923,7 +5923,7 @@ and type_cases
                 (mk_expected ~explanation:When_guard Predef.type_bool))
         in
         let exp =
-          type_expect ext_env pc_rhs (mk_expected ?explanation ty_expected)
+          type_expect ext_env' pc_rhs (mk_expected ?explanation ty_expected)
         in
         {
           c_lhs = pat;
