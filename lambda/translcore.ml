@@ -1228,16 +1228,10 @@ and transl_handler ~scopes e body val_caselist exn_caselist eff_caselist =
       ~params:[(param, Pgenval); (cont, Pgenval); (cont_tail, Pgenval)]
       ~return:Pgenval ~attr:default_function_attribute ~loc:Loc_unknown ~body
   in
-  let is_pure = function
-    | Lconst _ -> true
-    | Lvar _ -> true
-    | Lfunction _ -> true
-    | _ -> false
-  in
   let (body_fun, arg) =
     match transl_exp ~scopes body with
     | Lapply { ap_func = fn; ap_args = [arg]; _ }
-        when is_pure fn && is_pure arg -> (fn, arg)
+        when is_evaluated fn && is_evaluated arg -> (fn, arg)
     | body ->
        let param = Ident.create_local "param" in
        (lfunction ~kind:Curried ~params:[param, Pgenval] ~return:Pgenval

@@ -428,6 +428,10 @@ val transl_prim: string -> string -> lambda
     ]}
 *)
 
+val is_evaluated : lambda -> bool
+(** [is_evaluated lam] returns [true] if [lam] is either a constant, a variable
+    or a function abstract. *)
+
 val free_variables: lambda -> Ident.Set.t
 
 val transl_module_path: scoped_location -> Env.t -> Path.t -> lambda
