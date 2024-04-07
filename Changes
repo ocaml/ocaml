@@ -79,6 +79,10 @@ _______________
 - #13045: Emphasize caution about behaviour of custom block finalizers.
   (Nick Barnes)
 
+- #13078: update Format tutorial on structural boxes to mention alignment
+  questions.
+  (Edwin Török, review by Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 * #12084: Check link order when creating archive and when using ocamlopt
