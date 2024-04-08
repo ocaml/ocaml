@@ -1425,7 +1425,7 @@ let as_matrix cases =
 
 *)
 
-let rec split_or ~arg (cls : Half_simple.clause list) args def =
+let rec split_or (cls : Half_simple.clause list) args def =
   let rec do_split (rev_before : Simple.clause list) rev_ors rev_no = function
     | [] ->
         cons_next (List.rev rev_before) (List.rev rev_ors) (List.rev rev_no)
@@ -1456,7 +1456,7 @@ let rec split_or ~arg (cls : Half_simple.clause list) args def =
     in
     match yesor with
     | [] -> split_no_or yes args def nexts
-    | _ -> precompile_or ~arg yes yesor args def nexts
+    | _ -> precompile_or yes yesor args def nexts
   in
   do_split [] [] [] cls
 
@@ -1532,7 +1532,7 @@ and precompile_var args cls def k =
 
      If the rest doesn't generate any split, abort and do_not_precompile. *)
   match args.rest with
-  | ((Lvar v, str) as arg) :: rargs -> (
+  | (Lvar v, str) :: rargs -> (
       (* We will use the name of the head column of the submatrix
          we compile, and this is the *second* column of our argument. *)
       match cls with
@@ -1550,11 +1550,11 @@ and precompile_var args cls def k =
                 (* we learned by pattern-matching on [args]
                    that [p::ps] has at least two arguments,
                    so [ps] must be non-empty *)
-                half_simplify_clause ~arg:(fst arg) (ps, act))
+                half_simplify_clause ~arg:(Lvar v) (ps, act))
               cls
           and var_def = Default_environment.pop_column def in
           let { me = first; matrix }, nexts =
-            split_or ~arg:(Lvar v) var_cls var_args var_def
+            split_or var_cls var_args var_def
           in
           (* Compute top information *)
           match nexts with
@@ -1605,7 +1605,7 @@ and do_not_precompile args cls def k =
     },
     k )
 
-and precompile_or ~arg (cls : Simple.clause list) ors args def k =
+and precompile_or (cls : Simple.clause list) ors args def k =
   (* Example: if [cls] is a single-row matrix
 
        s11        p12 .. p1n -> act1
@@ -1679,6 +1679,7 @@ and precompile_or ~arg (cls : Simple.clause list) ors args def k =
               Lstaticraise (or_num, List.map (fun v -> Lvar v) vars)
             in
             let new_cases =
+              let arg = arg_of_pure_head (fst args.head) in
               Simple.explode_or_pat ~arg p
                 ~mk_action:mk_new_action
                 ~patbound_action_vars:(List.map fst patbound_action_vars)
@@ -1756,8 +1757,8 @@ let split_and_precompile_simplified pm =
   dbg_split_and_precompile pm next nexts;
   (next, nexts)
 
-let split_and_precompile_half_simplified ~arg pm =
-  let { me = next }, nexts = split_or ~arg pm.cases pm.args pm.default in
+let split_and_precompile_half_simplified pm =
+  let { me = next }, nexts = split_or pm.cases pm.args pm.default in
   dbg_split_and_precompile pm next nexts;
   (next, nexts)
 
@@ -3435,10 +3436,8 @@ let rec name_pattern default = function
 
 let arg_to_var arg cls =
   match arg with
-  | Lvar v -> (v, arg)
-  | _ ->
-      let v = name_pattern "*match*" cls in
-      (v, Lvar v)
+  | Lvar v -> v
+  | _ -> name_pattern "*match*" cls
 
 (*
   The main compilation function.
@@ -3476,13 +3475,13 @@ and compile_match_nonempty ~scopes repr partial ctx
   match m with
   | { cases = []; args = [] } -> comp_exit ctx m
   | { args = (arg, str) :: rest } ->
-      let v, newarg = arg_to_var arg m.cases in
+      let v = arg_to_var arg m.cases in
       bind_match_arg str v arg (
-        let args = { head = (Var v, Alias); rest} in
-        let cases = List.map (half_simplify_nonempty ~arg:newarg) m.cases in
+        let args = { head = (Var v, Alias); rest } in
+        let cases = List.map (half_simplify_nonempty ~arg:(Lvar v)) m.cases in
         let m = { m with args; cases } in
         let first_match, rem =
-          split_and_precompile_half_simplified ~arg:newarg m in
+          split_and_precompile_half_simplified m in
         combine_handlers ~scopes repr partial ctx first_match rem
       )
   | _ -> assert false
@@ -4097,7 +4096,7 @@ let do_for_multiple_match ~scopes loc idl pat_act_list partial =
       { pm1 with
         cases = List.map (half_simplify_nonempty ~arg) pm1.cases }
     in
-    let next, nexts = split_and_precompile_half_simplified ~arg pm1_half in
+    let next, nexts = split_and_precompile_half_simplified pm1_half in
     let size = List.length idl in
     let args = List.map (fun id -> (Lvar id, Alias)) idl in
     let flat_next = flatten_precompiled size args next
