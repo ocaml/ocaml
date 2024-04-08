@@ -467,54 +467,40 @@ rule token = parse
   | ".~"
       { error lexbuf
           (Reserved_sequence (".~", Some "is reserved for use in MetaOCaml")) }
-  | "~" raw_ident_escape (lowercase identchar * as name) ':'
-      { LABEL name }
-  | "~" raw_ident_escape (ident_ext as raw_name) ':'
-      { let name = ident_for_extended lexbuf raw_name in
-        if UIdent.is_capitalized name
-        then error lexbuf (Capitalized_label name);
-        LABEL name }
   | "~" (identstart identchar * as name) ':'
       { check_label_name lexbuf name;
         LABEL name }
-  | "~" (ident_ext as raw_name) ':'
+  | "~" (raw_ident_escape? as escape) (ident_ext as raw_name) ':'
       { let name = ident_for_extended lexbuf raw_name in
-        check_label_name lexbuf name;
+        if escape="" then check_label_name lexbuf name;
+        if UIdent.is_capitalized name
+        then error lexbuf (Capitalized_label name);
         LABEL name }
   | "?"
       { QUESTION }
-  | "?" raw_ident_escape (lowercase identchar * as name) ':'
-      { OPTLABEL name }
-  | "?" raw_ident_escape (ident_ext as raw_name) ':'
+  | "?" (lowercase identchar * as name) ':'
+      { check_label_name lexbuf name;
+        OPTLABEL name }
+  | "?" (raw_ident_escape? as escape) (ident_ext as raw_name) ':'
       { let name = ident_for_extended lexbuf raw_name in
+        if escape="" then check_label_name lexbuf name;
         if UIdent.is_capitalized name
         then error lexbuf (Capitalized_label name);
         OPTLABEL name
       }
-  | "?" (lowercase identchar * as name) ':'
-      { check_label_name lexbuf name;
-        OPTLABEL name }
-  | "?" (ident_ext as raw_name) ':'
-      { let name = ident_for_extended lexbuf raw_name in
-        check_label_name lexbuf name;
-        OPTLABEL name }
-  | raw_ident_escape (lowercase identchar * as name)
-      { LIDENT name }
-  | raw_ident_escape  (ident_ext* as raw_name)
-      { let name = ident_for_extended lexbuf raw_name in
-        if UIdent.is_capitalized name
-        then error lexbuf (Capitalized_raw_identifier name);
-        LIDENT name }
   | lowercase identchar * as name
       { try Hashtbl.find keyword_table name
         with Not_found -> LIDENT name }
   | uppercase identchar * as name
       { UIDENT name } (* No capitalized keywords *)
-  | ident_ext as raw_name
+  | (raw_ident_escape? as escape) (ident_ext as raw_name)
       { let name = ident_for_extended lexbuf raw_name in
-        if UIdent.is_capitalized name
-        then UIDENT name
-        else LIDENT name }
+        if UIdent.is_capitalized name then begin
+            if escape="" then UIDENT name
+            else error lexbuf (Capitalized_raw_identifier name)
+        end else
+          LIDENT name
+      } (* No non-ascii keywords *)
   | int_literal as lit { INT (lit, None) }
   | (int_literal as lit) (literal_modifier as modif)
       { INT (lit, Some modif) }

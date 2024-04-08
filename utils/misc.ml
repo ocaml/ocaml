@@ -340,13 +340,8 @@ module UIdent = struct
     ('s', 0x30c, 0x161); (* š *)   ('z', 0x30c, 0x17e); (* ž *)
   ]
 
-  let normalize_generic transform s =
-    let buf = Buffer.create (String.length s) in
-    let valid = ref true in
-    let check d u =
-        valid := !valid && Uchar.utf_decode_is_valid d && u <> Uchar.rep
-    in
-    let rec norm prev i =
+  let normalize_generic ~keep_ascii transform s =
+    let rec norm check buf prev i =
       if i >= String.length s then begin
         Buffer.add_utf_8_uchar buf (transform prev)
       end else begin
@@ -356,25 +351,33 @@ module UIdent = struct
         let i' = i + Uchar.utf_decode_length d in
         match Hashtbl.find_opt known_pairs (prev, u) with
         | Some u' ->
-            norm u' i'
+            norm check buf u' i'
         | None ->
             Buffer.add_utf_8_uchar buf (transform prev);
-            norm u i'
+            norm check buf u i'
       end in
-    if s = "" then Ok s else begin
+    let ascii_limit = 128 in
+    if s = ""
+    || keep_ascii && String.for_all (fun x -> Char.code x < ascii_limit) s
+    then Ok s
+    else
+      let buf = Buffer.create (String.length s) in
+      let valid = ref true in
+      let check d u =
+        valid := !valid && Uchar.utf_decode_is_valid d && u <> Uchar.rep
+      in
       let d = String.get_utf_8_uchar s 0 in
       let u = Uchar.utf_decode_uchar d in
       check d u;
-      norm u (Uchar.utf_decode_length d);
+      norm check buf u (Uchar.utf_decode_length d);
       let contents = Buffer.contents buf in
       if !valid then
-       Ok contents
+        Ok contents
       else
-       Error contents
-    end
+        Error contents
 
   let normalize s =
-    normalize_generic (fun u -> u) s
+    normalize_generic ~keep_ascii:true (fun u -> u) s
 
   (* Capitalization *)
 
@@ -405,13 +408,13 @@ module UIdent = struct
 
   let capitalize s =
     let first = ref true in
-    normalize_generic
+    normalize_generic ~keep_ascii:false
       (fun u -> if !first then (first := false; uchar_uppercase u) else u)
       s
 
   let uncapitalize s =
     let first = ref true in
-    normalize_generic
+    normalize_generic ~keep_ascii:false
       (fun u -> if !first then (first := false; uchar_lowercase u) else u)
       s
 
