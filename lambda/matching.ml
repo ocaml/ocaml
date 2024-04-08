@@ -4082,11 +4082,12 @@ let compile_flattened ~scopes repr partial ctx pmh =
       let lam, total = compile_match_nonempty ~scopes repr partial ctx b in
       compile_orhandlers (compile_match ~scopes repr partial) lam total ctx hs
 
-let do_for_multiple_match ~scopes loc paraml pat_act_list partial =
+let do_for_multiple_match ~scopes loc idl pat_act_list partial =
   let repr = None in
   let arg =
     let sloc = Scoped_location.of_location ~scopes loc in
-    Lprim (Pmakeblock (0, Immutable, None), paraml, sloc) in
+    let args = List.map (fun id -> Lvar id) idl in
+    Lprim (Pmakeblock (0, Immutable, None), args, sloc) in
   let handler =
     let partial = check_partial pat_act_list partial in
     let rows = map_on_rows (fun p -> (p, [])) pat_act_list in
@@ -4097,20 +4098,14 @@ let do_for_multiple_match ~scopes loc paraml pat_act_list partial =
       { pm1 with cases = List.map (half_simplify_nonempty ~arg) pm1.cases }
     in
     let next, nexts = split_and_precompile_half_simplified ~arg pm1_half in
-    let size = List.length paraml
-    and idl = List.map (function
-      | Lvar id -> id
-      | _ -> Ident.create_local "*match*") paraml in
+    let size = List.length idl in
     let args = List.map (fun id -> (Lvar id, Alias)) idl in
     let flat_next = flatten_precompiled size args next
     and flat_nexts =
       List.map (fun (e, pm) -> (e, flatten_precompiled size args pm)) nexts
     in
-    let lam, total =
-      comp_match_handlers (compile_flattened ~scopes repr) partial
-        (Context.start size) flat_next flat_nexts
-    in
-    List.fold_right2 (bind Strict) idl paraml lam, total
+    comp_match_handlers (compile_flattened ~scopes repr) partial
+      (Context.start size) flat_next flat_nexts
   )
 
 (* PR#4828: Believe it or not, the 'paraml' argument below
@@ -4128,9 +4123,9 @@ let bind_opt (v, eo) k =
 
 let for_multiple_match ~scopes loc paraml pat_act_list partial =
   let v_paraml = List.map param_to_var paraml in
-  let paraml = List.map (fun (v, _) -> Lvar v) v_paraml in
+  let vl = List.map fst v_paraml in
   List.fold_right bind_opt v_paraml
-    (do_for_multiple_match ~scopes loc paraml pat_act_list partial)
+    (do_for_multiple_match ~scopes loc vl pat_act_list partial)
 
 let for_optional_arg_default ~scopes loc pat ~default_arg ~param body =
   let supplied_or_default =
