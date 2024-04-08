@@ -47,8 +47,10 @@ esac
 
 tmp_primitives="$primitives.tmp$$"
 
+# The tr -d '\r' is _after_ the call to sort just in case sort happens to be the
+# Windows version.
 sed -n -e 's/^CAMLprim value \([a-z][a-z0-9_]*\).*$/\1/p' "$@" | \
-sort | uniq > "$tmp_primitives"
+sort | tr -d '\r' | uniq > "$tmp_primitives"
 
 # To speed up builds, we avoid changing "primitives" when files
 # containing primitives change but the primitives table does not
