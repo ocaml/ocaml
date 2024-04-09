@@ -125,7 +125,11 @@ static void open_connection(void)
   dbg_socket = _open_osfhandle(sock, 0);
   if (dbg_socket == -1)
 #else
+#if defined(SOCK_CLOEXEC)
+  dbg_socket = socket(sock_domain, SOCK_STREAM | SOCK_CLOEXEC, 0);
+#else
   dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
+#endif
   if (dbg_socket == -1 ||
       connect(dbg_socket, (struct sockaddr *)&sock_addr, sock_addr_len) == -1)
 #endif

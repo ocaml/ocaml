@@ -45,7 +45,7 @@ let control_connection pid fd =
 
 (* Accept a connection from another process. *)
 let accept_connection continue fd =
-  let (sock, _) = accept fd.io_fd in
+  let (sock, _) = accept ~cloexec:true fd.io_fd in
   let io_chan = io_channel_of_descr sock in
   let pid = input_binary_int io_chan.io_in in
   if pid = -1 then begin
@@ -67,7 +67,7 @@ let open_connection address continue =
         (match addr_info with
          | { ai_addr = ADDR_UNIX file; _} -> Some file
          | _ -> None);
-      let sock = socket addr_info.ai_family addr_info.ai_socktype
+      let sock = socket ~cloexec:true addr_info.ai_family addr_info.ai_socktype
                    addr_info.ai_protocol in
         (try
            bind sock addr_info.ai_addr;
