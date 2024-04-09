@@ -78,7 +78,7 @@ let open_connection address continue =
            connection_opened := true
          with x -> cleanup x @@ fun () -> close sock)
   with
-    Failure _ -> raise Toplevel
+    Failure e -> prerr_endline e; raise Toplevel
   | (Unix_error _) as err -> report_error err; raise Toplevel
 
 (* Close the socket. *)

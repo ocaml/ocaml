@@ -31,14 +31,14 @@ let convert_address address =
      let host = String.sub address 0 n
      and port = String.(sub address (n + 1) (length address - n - 1)) in
      (try ignore (int_of_string port) with Failure _ ->
-        prerr_endline "The port number should be an integer";
-        failwith "Can't convert address");
+        Printf.ksprintf failwith
+          "Can't convert address %S: the port number should be an integer"
+          address);
      let hints = [AI_FAMILY PF_INET; AI_SOCKTYPE SOCK_STREAM] in
      match getaddrinfo host port hints with
      | addr_info :: _ -> addr_info
-     | [] ->
-        prerr_endline ("Unknown host: " ^ host);
-        failwith "Can't convert address"
+     | [] -> Printf.ksprintf failwith
+               "Can't convert address: unknown host %S port %S" host port
 
 (*** Report a unix error. ***)
 let report_error = function
