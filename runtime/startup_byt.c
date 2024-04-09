@@ -27,6 +27,7 @@
 #include <unistd.h>
 #endif
 #ifdef _WIN32
+#include <io.h>
 #include <process.h>
 #endif
 #include "caml/alloc.h"

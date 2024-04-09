@@ -13,6 +13,7 @@
 /*                                                                        */
 /**************************************************************************/
 
+#include <io.h>
 #include <caml/mlvalues.h>
 #include "caml/unixsupport.h"
 #include <caml/io.h>

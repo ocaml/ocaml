@@ -27,6 +27,7 @@
 #ifdef _WIN32
 #undef EAFNOSUPPORT
 #define EAFNOSUPPORT WSAEAFNOSUPPORT
+#include <io.h>
 #endif
 
 CAMLexport value caml_unix_alloc_inet_addr(struct in_addr * a)
