@@ -22,24 +22,23 @@ open Unix
 
 (*** Convert a socket name into a socket address. ***)
 let convert_address address =
-  try
-    let n = String.index address ':' in
-      let host = String.sub address 0 n
-      and port = String.sub address (n + 1) (String.length address - n - 1)
-      in
-        (PF_INET,
-         ADDR_INET
-           ((try inet_addr_of_string host with Failure _ ->
-               try (gethostbyname host).h_addr_list.(0) with Not_found ->
-                 prerr_endline ("Unknown host: " ^ host);
-                 failwith "Can't convert address"),
-            (try int_of_string port with Failure _ ->
-               prerr_endline "The port number should be an integer";
-               failwith "Can't convert address")))
-  with Not_found ->
-    match Sys.os_type with
-      "Win32" -> failwith "Unix sockets not supported"
-    | _ -> (PF_UNIX, ADDR_UNIX address)
+  match String.index address ':' with
+  | exception Not_found ->
+     if Sys.win32 then failwith "Unix sockets not supported";
+     { ai_family = PF_UNIX; ai_socktype = SOCK_STREAM; ai_protocol = 0;
+       ai_addr = ADDR_UNIX address; ai_canonname = ""; }
+  | n ->
+     let host = String.sub address 0 n
+     and port = String.(sub address (n + 1) (length address - n - 1)) in
+     (try ignore (int_of_string port) with Failure _ ->
+        prerr_endline "The port number should be an integer";
+        failwith "Can't convert address");
+     let hints = [AI_FAMILY PF_INET; AI_SOCKTYPE SOCK_STREAM] in
+     match getaddrinfo host port hints with
+     | addr_info :: _ -> addr_info
+     | [] ->
+        prerr_endline ("Unknown host: " ^ host);
+        failwith "Can't convert address"
 
 (*** Report a unix error. ***)
 let report_error = function

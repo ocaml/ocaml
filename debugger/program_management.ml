@@ -62,16 +62,15 @@ let accept_connection continue fd =
 (* Initialize the socket. *)
 let open_connection address continue =
   try
-    let (sock_domain, sock_address) = convert_address address in
+    let addr_info = convert_address address in
       file_name :=
-        (match sock_address with
-           ADDR_UNIX file ->
-             Some file
-         | _ ->
-             None);
-      let sock = socket sock_domain SOCK_STREAM 0 in
+        (match addr_info with
+         | { ai_addr = ADDR_UNIX file; _} -> Some file
+         | _ -> None);
+      let sock = socket addr_info.ai_family addr_info.ai_socktype
+                   addr_info.ai_protocol in
         (try
-           bind sock sock_address;
+           bind sock addr_info.ai_addr;
            setsockopt sock SO_REUSEADDR true;
            listen sock 3;
            connection := io_channel_of_descr sock;
