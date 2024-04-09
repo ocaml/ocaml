@@ -29,13 +29,7 @@ let go (type a) (Refl : (unit, a) refl) = apply (fun ?x:_ () : a -> ())
 
 [%%expect{|
 val apply : (?x:unit -> unit -> 'a) -> 'a = <fun>
-Line 2, characters 42-71:
-2 | let go (type a) (Refl : (unit, a) refl) = apply (fun ?x:_ () : a -> ())
-                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "a" = "unit"
-       but an expression was expected of type "'a"
-       This instance of "unit" is ambiguous:
-       it would escape the scope of its equation
+val go : (unit, 'a) refl -> 'a = <fun>
 |}]
 
 let apply (_ : unit -> x:unit -> 'a) : 'a = assert false
@@ -56,11 +50,5 @@ Line 2, characters 59-60:
                                                                ^
 Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
 
-Line 2, characters 42-71:
-2 | let go (type a) (Refl : (unit, a) refl) = apply (fun () ?x:_ : a -> ())
-                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "a" = "unit"
-       but an expression was expected of type "'a"
-       This instance of "unit" is ambiguous:
-       it would escape the scope of its equation
+val go : (unit, 'a) refl -> 'a = <fun>
 |}]
