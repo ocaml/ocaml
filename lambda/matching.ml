@@ -690,8 +690,6 @@ let flatten_matrix size pss =
 module Default_environment : sig
   type t
 
-  val is_empty : t -> bool
-
   val pop : t -> ((int * matrix) * t) option
 
   val empty : final_exit:int -> t
@@ -709,6 +707,8 @@ module Default_environment : sig
   val flatten : int -> t -> t
 
   val pp : Format.formatter -> t -> unit
+
+  val pp_section : Format.formatter -> t -> unit
 end = struct
   type t = {
     env: (int * matrix) list;
@@ -719,10 +719,6 @@ end = struct
       current scrutiny vector. *)
 
   let empty ~final_exit = { env = []; final_exit; }
-
-  let is_empty def = match def.env with
-    | [] -> true
-    | _ -> false
 
   let raise_final_exit { final_exit; _ } =
     Lstaticraise (final_exit, [])
@@ -857,11 +853,11 @@ end = struct
 
   let pp ppf def =
     Format.fprintf ppf
-      "@[<v 2>Default environment:@,\
-       %a@]"
+      "@[<v 2>Default environment:%a@]"
       (fun ppf li ->
-         if li = [] then Format.fprintf ppf "empty"
-         else
+         if li = [] then Format.fprintf ppf " empty"
+         else begin
+           Format.fprintf ppf "@,";
            Format.pp_print_list ~pp_sep:Format.pp_print_cut
              (fun ppf (i, pss) ->
                 Format.fprintf ppf
@@ -870,7 +866,12 @@ end = struct
                   i
                   pretty_matrix pss
              ) ppf li
+         end
       ) def.env
+
+  let pp_section ppf def =
+    if def.env = [] then ()
+    else Format.fprintf ppf "@,%a" pp def
 
   let flatten size def =
     { def with
@@ -895,8 +896,6 @@ end
 *)
 module Jumps : sig
   type t
-
-  val is_empty : t -> bool
 
   val partial : t -> partial
 
@@ -924,6 +923,8 @@ module Jumps : sig
   val extract : int -> t -> Context.t * t
 
   val pp : Format.formatter -> t -> unit
+
+  val pp_section : Format.formatter -> t -> unit
 end = struct
   type t = {
     env : (int * Context.t) list;
@@ -933,17 +934,24 @@ end = struct
   let partial { partial = p; _ } = p
 
   let pp ppf ({ env; partial } : t) =
-    if env = [] then Format.fprintf ppf "empty"
-    else begin
-      Format.pp_print_list ~pp_sep:Format.pp_print_cut (fun ppf (i, ctx) ->
-        Format.fprintf ppf
-          "jump for %d@,\
-           %a"
-          i
-          Context.pp ctx
-      ) ppf env
-    end;
-    Format.fprintf ppf "@,%a" pp_partial partial
+    Format.fprintf ppf "@[<v 2>JUMPS:%t@]"
+      (fun ppf ->
+         if env = [] then
+           Format.fprintf ppf " empty (%a)"
+             pp_partial partial
+         else begin
+           Format.fprintf ppf " (%a)@," pp_partial partial;
+           Format.pp_print_list ~pp_sep:Format.pp_print_cut (fun ppf (i, ctx) ->
+             Format.fprintf ppf
+               "jump for %d@,\
+                %a"
+               i
+               Context.pp ctx
+           ) ppf env
+         end)
+
+  let pp_section ppf jumps =
+    Format.fprintf ppf "@,%a" pp jumps
 
   let extract i jumps =
     let rec extract i = function
@@ -969,10 +977,6 @@ end = struct
     { jumps with env = remove i jumps.env }
 
   let empty partial = { env = []; partial; }
-
-  let is_empty = function
-    | { env = []; _ } -> true
-    | _ -> false
 
   let add i ctx jumps =
     let rec add = function
@@ -1116,9 +1120,8 @@ let pretty_cases ppf cases =
 
 let pretty_pm_ ~print_default ppf pm =
   pretty_cases ppf pm.cases;
-  if print_default && not (Default_environment.is_empty pm.default) then
-    Format.fprintf ppf "@,%a"
-      Default_environment.pp pm.default
+  if print_default then
+    Default_environment.pp_section ppf pm.default
 
 let rec pretty_precompiled_ ~print_default ppf = function
   | Pm pm ->
@@ -2956,8 +2959,7 @@ let mk_failaction_pos partial seen ctx defs =
              %a@]@,\
            @[<v 2>FAIL PATTERNS:@,\
              %a@]@,\
-           @[<v 2>POSITIVE JUMPS (%a):@,\
-             %a@]\
+           @[<v 2>POSITIVE JUMPS (%a):%a@]\
            @]"
       pp_partial partial
       Default_environment.pp defs
@@ -3635,12 +3637,7 @@ and do_compile_matching_pr ~scopes repr partial ctx x =
         raise exn
   in
   debugf "@]";
-  if Jumps.is_empty jumps then
-    debugf "@,NO JUMPS (%a)"
-      pp_partial (Jumps.partial jumps)
-  else
-    debugf "@,@[<v 2>JUMPS:@,%a@]"
-      Jumps.pp jumps;
+  debugf "%a" Jumps.pp_section jumps;
   debugf "@]";
   r
 
