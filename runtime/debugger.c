@@ -22,6 +22,7 @@
 #endif /* _WIN32 */
 
 #include <string.h>
+#include <stdbool.h>
 
 #include "caml/alloc.h"
 #include "caml/codefrag.h"
@@ -168,7 +169,33 @@ static void winsock_cleanup(void)
 {
   WSACleanup();
 }
+
+/* from Filename.is_implicit */
+static bool filename_is_implicit(const char *path)
+{
+  size_t len = strlen(path);
+  return (len < 1 || path[0] != '/')
+    && (len < 1 || path[0] != '\\')
+    && (len < 2 || path[1] != ':')
+    && strncmp(path, "./", 2) != 0
+    && strncmp(path, ".\\", 2) != 0
+    && strncmp(path, "../", 3) != 0
+    && strncmp(path, "..\\", 3) != 0;
+}
+#else
+/* from Filename.is_implicit */
+static bool filename_is_implicit(const char *path)
+{
+  size_t len = strlen(path);
+  return (len < 1 || path[0] != '/')
+    && strncmp(path, "./", 2) != 0
+    && strncmp(path, "../", 3) != 0;
+}
 #endif
+static bool is_likely_ipv6(const char *address, const char *port)
+{
+  return (port - address >= 4) && address[0] == '[' && port[-1] == ']';
+}
 
 void caml_debugger_init(void)
 {
@@ -187,7 +214,6 @@ void caml_debugger_init(void)
   address = a ? caml_stat_strdup_of_os(a) : NULL;
   if (address == NULL) return;
   if (dbg_addr != NULL) caml_stat_free(dbg_addr);
-  dbg_addr = address;
 
   /* #8676: erase the CAML_DEBUG_SOCKET variable so that processes
      created by the program being debugged do not try to connect with
@@ -207,8 +233,10 @@ void caml_debugger_init(void)
     caml_fatal_error("cannot connect to debugger: empty address");
 
   /* Parse the address */
-  port = strchr(address, ':');
-  if (port == NULL) {
+  port = strrchr(address, ':');
+  if (port == NULL
+      /* "./foo" is explicitly a path and not a network address */
+      || !filename_is_implicit(address)) {
     /* Unix domain */
     struct sockaddr_un *s_unix = (struct sockaddr_un *)&sock_addr;
     sock_domain = PF_UNIX;
@@ -223,13 +251,14 @@ void caml_debugger_init(void)
     strncpy(s_unix->sun_path, address, sizeof(s_unix->sun_path) - 1);
     s_unix->sun_path[sizeof(s_unix->sun_path) - 1] = '\0';
     sock_addr_len = offsetof(struct sockaddr_un, sun_path) + a_len;
+    dbg_addr = address;
   } else {
     /* Internet domain */
     struct addrinfo hints;
     struct addrinfo *host;
 
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
+    hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 #ifdef AI_NUMERICSERV
     hints.ai_flags = AI_NUMERICSERV;
@@ -239,6 +268,10 @@ void caml_debugger_init(void)
         caml_fatal_error("the port number should be an integer");
 #endif
 
+    if (is_likely_ipv6(address, port)) {
+      *address++ = 0;
+      port[-1] = 0;
+    }
     *port++ = 0;
 
     if (*address == 0 || *port == 0)
@@ -269,6 +302,7 @@ void caml_debugger_init(void)
     sock_domain = host->ai_family;
     memcpy(&sock_addr, host->ai_addr, host->ai_addrlen);
     sock_addr_len = host->ai_addrlen;
+    dbg_addr = address;
 
     freeaddrinfo(host);
   }

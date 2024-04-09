@@ -24,13 +24,18 @@ open Unix
 let convert_address address =
   if address = "" then
     failwith "Can't convert address: empty address";
-  match String.index address ':' with
-  | exception Not_found ->
-     if Sys.win32 then failwith "Unix sockets not supported";
-     { ai_family = PF_UNIX; ai_socktype = SOCK_STREAM; ai_protocol = 0;
-       ai_addr = ADDR_UNIX address; ai_canonname = ""; }
+  let unix_addr_info =
+    { ai_family = PF_UNIX; ai_socktype = SOCK_STREAM; ai_protocol = 0;
+      ai_addr = ADDR_UNIX address; ai_canonname = ""; } in
+  match String.rindex address ':' with
+  | exception Not_found -> unix_addr_info
+  (* "./foo" is explicitly a path and not a network address *)
+  | _ when not (Filename.is_implicit address) -> unix_addr_info
   | n ->
-     let host = String.sub address 0 n
+     let is_likely_ipv6 =
+       n >= 4 && address.[0] = '[' && address.[n - 1] = ']' in
+     let host = if is_likely_ipv6 then String.sub address 1 (n - 2)
+                else String.sub address 0 n
      and port = String.(sub address (n + 1) (length address - n - 1)) in
      if host = "" || port = "" then
        Printf.ksprintf failwith "Can't convert address %S: \
@@ -38,8 +43,7 @@ let convert_address address =
      port |> String.iter (fun c -> if c < '0' || '9' < c then
        Printf.ksprintf failwith "Can't convert address %S: \
                                  the port number should be an integer" address);
-     let hints = [AI_FAMILY PF_INET; AI_SOCKTYPE SOCK_STREAM] in
-     match getaddrinfo host port hints with
+     match getaddrinfo host port [AI_SOCKTYPE SOCK_STREAM] with
      | addr_info :: _ -> addr_info
      | [] -> Printf.ksprintf failwith
                "Can't convert address: unknown host %S port %S" host port
