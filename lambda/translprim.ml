@@ -374,6 +374,7 @@ let primitives_table =
     "%perform", Primitive (Pperform, 1);
     "%resume", Primitive (Presume, 4);
     "%dls_get", Primitive (Pdls_get, 1);
+    "%poll", Primitive (Ppoll, 1);
   ]
 
 
@@ -813,7 +814,7 @@ let lambda_primitive_needs_event_after = function
   | Pbigstring_load_16 _ | Pbigstring_load_32 _ | Pbigstring_load_64 _
   | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _
   | Prunstack | Pperform | Preperform | Presume
-  | Pbbswap _ -> true
+  | Pbbswap _ | Ppoll -> true
 
   | Pbytes_to_string | Pbytes_of_string | Pignore | Psetglobal _
   | Pgetglobal _ | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _

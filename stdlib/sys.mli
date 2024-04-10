@@ -208,6 +208,10 @@ external runtime_parameters : unit -> string = "caml_runtime_parameters"
     as the contents of the [OCAMLRUNPARAM] environment variable.
     @since 4.03 *)
 
+external poll_actions : unit -> unit = "%poll"
+(** Run any pending runtime actions, such as minor collections, major
+    GC slices, signal handlers, finalizers, or memprof callbacks. *)
+
 
 (** {1 Signal handling} *)
 

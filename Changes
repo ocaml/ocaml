@@ -44,6 +44,10 @@ _______________
   (Kate Deplaix and Oscar Butler-Aldridge review by Nicolás Ojeda Bär,
    Craig Ferguson and Gabriel Scherer)
 
+- #13047: Add Sys.poll_actions to (only) run pending runtime actions.
+  (Nick Barnes, review by Gabriel Scherer, Guillaume Munch-Maccagnoni, and
+  Vincent Laviron)
+
 ### Other libraries:
 
 ### Tools:
