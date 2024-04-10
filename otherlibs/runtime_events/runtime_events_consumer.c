@@ -100,28 +100,31 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
 
   struct caml_runtime_events_cursor *cursor =
       caml_stat_alloc_noexc(sizeof(struct caml_runtime_events_cursor));
+  int should_free_events_loc;
   char_os *runtime_events_loc;
 
   if (cursor == NULL) {
     return E_ALLOC_FAIL;
   }
 
-  runtime_events_loc = caml_stat_alloc_noexc(RING_FILE_NAME_MAX_LEN);
-
-  if (runtime_events_loc == NULL) {
-    caml_stat_free(cursor);
-    return E_ALLOC_FAIL;
-  }
-
   /* If pid < 0 then we create a cursor for the current process */
   if (pid < 0) {
     runtime_events_loc = caml_runtime_events_current_location();
+    should_free_events_loc = 0;
 
     if( runtime_events_loc == NULL ) {
-      caml_stat_free(cursor);
-      return E_NO_CURRENT_RING;
+      ret = E_NO_CURRENT_RING;
+      goto free_cursor;
     }
   } else {
+    runtime_events_loc = caml_stat_alloc_noexc(RING_FILE_NAME_MAX_LEN);
+    should_free_events_loc = 1;
+
+    if (runtime_events_loc == NULL) {
+      ret = E_ALLOC_FAIL;
+      goto free_cursor;
+    }
+
   /* In this case we are reading the ring for a different process */
     if (runtime_events_path) {
       ret = snprintf_os(runtime_events_loc, RING_FILE_NAME_MAX_LEN,
@@ -133,9 +136,8 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
     }
 
     if (ret < 0) {
-      caml_stat_free(cursor);
-      caml_stat_free(runtime_events_loc);
-      return E_PATH_FAILURE;
+      ret = E_PATH_FAILURE;
+      goto free_events_loc;
     }
   }
 
@@ -151,9 +153,8 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
   );
 
   if (cursor->ring_file_handle == INVALID_HANDLE_VALUE) {
-    caml_stat_free(cursor);
-    caml_stat_free(runtime_events_loc);
-    return E_OPEN_FAILURE;
+    ret = E_OPEN_FAILURE;
+    goto free_events_loc;
   }
 
   cursor->ring_handle = CreateFileMapping(
@@ -166,9 +167,8 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
   );
 
   if (cursor->ring_handle == INVALID_HANDLE_VALUE) {
-    caml_stat_free(cursor);
-    caml_stat_free(runtime_events_loc);
-    return E_MAP_FAILURE;
+    ret = E_MAP_FAILURE;
+    goto free_events_loc;
   }
 
   cursor->metadata = MapViewOfFile(
@@ -180,9 +180,8 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
   );
 
   if( cursor->metadata == NULL ) {
-    caml_stat_free(cursor);
-    caml_stat_free(runtime_events_loc);
-    return E_MAP_FAILURE;
+    ret = E_MAP_FAILURE;
+    goto free_events_loc;
   }
 
   cursor->ring_file_size_bytes = GetFileSize(cursor->ring_file_handle, NULL);
@@ -190,17 +189,15 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
   ring_fd = open(runtime_events_loc, O_RDONLY, 0);
 
   if( ring_fd == -1 ) {
-    caml_stat_free(cursor);
-    caml_stat_free(runtime_events_loc);
-    return E_OPEN_FAILURE;
+    ret = E_OPEN_FAILURE;
+    goto free_events_loc;
   }
 
   ret = fstat(ring_fd, &tmp_stat);
 
   if (ret < 0) {
-    caml_stat_free(cursor);
-    caml_stat_free(runtime_events_loc);
-    return E_OPEN_FAILURE;
+    ret = E_OPEN_FAILURE;
+    goto free_events_loc;
   }
 
   cursor->ring_file_size_bytes = tmp_stat.st_size;
@@ -212,9 +209,8 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
                           MAP_SHARED, ring_fd, 0);
 
   if( cursor->metadata == MAP_FAILED ) {
-    caml_stat_free(cursor);
-    caml_stat_free(runtime_events_loc);
-    return E_MAP_FAILURE;
+    ret = E_MAP_FAILURE;
+    goto free_events_loc;
   }
 #endif
 
@@ -240,8 +236,19 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
   cursor->user_custom = NULL;
 
   *cursor_res = cursor;
+  ret = E_SUCCESS;
 
-  return E_SUCCESS;
+ free_events_loc:
+  if (should_free_events_loc) {
+    caml_stat_free(runtime_events_loc);
+  }
+
+ free_cursor:
+  if (ret != E_SUCCESS) {
+    caml_stat_free(cursor);
+  }
+
+  return ret;
 }
 
 void caml_runtime_events_set_runtime_begin(
@@ -1107,11 +1114,11 @@ CAMLprim value caml_ml_runtime_events_create_cursor(value path_pid_option) {
 
   res = caml_runtime_events_create_cursor(path, pid, &cursor);
 
-  if (res != E_SUCCESS) {
-    if( path != NULL ) {
-      caml_stat_free(path);
-    }
+  if( path != NULL ) {
+    caml_stat_free(path);
+  }
 
+  if (res != E_SUCCESS) {
     switch(res) {
       case E_PATH_FAILURE:
         caml_failwith(
@@ -1143,10 +1150,6 @@ CAMLprim value caml_ml_runtime_events_create_cursor(value path_pid_option) {
   caml_runtime_events_set_user_custom(cursor, ml_user_custom);
 
   Cursor_val(wrapper) = cursor;
-
-  if( path != NULL ) {
-    caml_stat_free(path);
-  }
 
   // 3 words block:
   //  - cursor
@@ -1218,4 +1221,4 @@ CAMLprim value caml_ml_runtime_events_read_poll(value wrapper,
   }
 
   CAMLreturn(Val_int(events_consumed));
-};
+}
