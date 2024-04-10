@@ -61,6 +61,10 @@ ___________
 
 ### Runtime system:
 
+- #13419: Fix memory bugs in runtime events system.
+  (B. Szilvasy and Nick Barnes, review by Miod Vallat, Nick Barnes,
+   Tim McGilchrist, and Gabriel Scherer)
+
 - #13364: Emit major slice counters in the runtime events.
   (KC Sivaramakrishnan and Sadiq Jaffer, review by Gabriel Scherer)
 
