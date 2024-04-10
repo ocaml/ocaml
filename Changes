@@ -172,9 +172,9 @@ _______________
   The syntax '-(1 [@foo])' was incorrectly parsed as '-1'.
   (Jules Aguillon, reviewed by Gabriel Scherer, report by Gabriel Scherer)
 
-- #13089: Fix `snprintf_os` call in runtime events consumer using a
-   byte string rather than an OS string.
-   (B. Szilvasy, review by Nicolás Ojeda Bär and Miod Vallat)
+- #13089: Fix bug in `runtime_events` library which could result in garbled
+  output under Windows.
+  (B. Szilvasy, review by Nicolás Ojeda Bär and Miod Vallat)
 
 OCaml 5.2.0
 ------------
