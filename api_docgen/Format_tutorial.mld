@@ -289,6 +289,10 @@ When writing a pretty-printing routine, follow these simple rules:
 + Never hesitate to open a box.
 + Output many break hints, otherwise the pretty-printer is in a bad situation
 where it tries to do its best, which is always "worse than your bad".
++ Break hints with negative indentation should only be used when you are sure
+that you don't exceed the indentation of the opening box (e.g. both part of
+the same function and an exact match). Exceeding the indentation of the opening
+box is not compositional.
 + Do not try to force spacing using explicit spaces in the character strings.
 For each space you want in the output emit a break hint ([print_space ()]),
 unless you explicitly don't want the line to be broken here. For instance,
