@@ -5975,31 +5975,17 @@ and type_effect_cases
   let _ = newvar () in
   (* remember original level *)
   with_local_level begin fun () ->
-  (* Create a fake abstract type declaration for effect type. *)
-  let decl = {
-    type_params = [];
-    type_arity = 0;
-    type_kind = Type_abstract Definition;
-    type_private = Public;
-    type_manifest = None;
-    type_variance = [];
-    type_separability = [];
-    type_is_newtype = true;
-    type_expansion_scope = Btype.lowest_level;
-    type_loc = loc;
-    type_attributes = [];
-    type_immediate = Unknown;
-    type_unboxed_default = false;
-    type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
-  }
+  (* Create a locally type abstract type for effect type. *)
+  let new_env, ty_arg, ty_cont =
+    let decl = Ctype.new_local_type ~loc Definition in
+    let scope = create_scope () in
+    let name = Ctype.get_new_abstract_name env "%eff" in
+    let id, new_env = Env.enter_type ~scope name decl env in
+    let ty_eff = newgenty (Tconstr (Path.Pident id,[],ref Mnil)) in
+    new_env,
+    Predef.type_eff ty_eff,
+    Predef.type_continuation ty_eff ty_res
   in
-  let name = Ctype.get_new_abstract_name env "effect" in
-  let scope = create_scope () in
-  let id = Ident.create_scoped ~scope name in
-  let new_env = Env.add_type ~check:false id decl env in
-  let ty_eff = newgenty (Tconstr (Path.Pident id,[],ref Mnil)) in
-  let ty_arg = Predef.type_eff ty_eff in
-  let ty_cont = Predef.type_continuation ty_eff ty_res in
   let conts = List.map (type_continuation_pat env ty_cont) conts in
   let cases, _ = type_cases category new_env ty_arg
     ty_res_explained ~conts ~check_if_total:false loc caselist
