@@ -136,7 +136,7 @@ _______________
 
 - #13001: do not read_back entire shapes to get aliases' uids when building the
   usages index
-  (Ulysse Gérard, review by Gabriel Scherer)
+  (Ulysse Gérard, review by Gabriel Scherer and Nathanaëlle Courant)
 
 ### Build system:
 
