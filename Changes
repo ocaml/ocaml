@@ -34,6 +34,9 @@ _______________
   current status.
   (Gabriel Scherer, review by Nick Roberts)
 
+- #13079: Save and restore frame pointer across Iextcall on ARM64
+  (Tim McGilchrist, review by KC Sivaramakrishnan and Miod Vallat)
+
 ### Standard library:
 
 - #12133: Expose support for printing substrings in Format
