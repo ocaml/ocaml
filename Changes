@@ -9,6 +9,10 @@ _______________
   (David Allsopp, Antonin Décimo, Samuel Hym, and Miod Vallat, review by Nicolás
    Ojeda Bär)
 
+- #13093: Allow building the MSVC port with clang-cl.
+  (Antonin Décimo, review by Nicolás Ojeda Bär, Samuel Hym,
+   David Allsopp and Sébastien Hinderer)
+
 ### Language features:
 
 ### Runtime system:
