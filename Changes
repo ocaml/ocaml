@@ -860,6 +860,9 @@ OCaml 5.2.0
   exceptions.
   (Fabrice Buoro, Olivier Nicole, Gabriel Scherer and Miod Vallat)
 
+- #13079: Save and restore frame pointer across Iextcall on ARM64
+  (Tim McGilchrist, review by KC Sivaramakrishnan and Miod Vallat)
+
 OCaml 5.1.1 (8 December 2023)
 ----------------------------
 

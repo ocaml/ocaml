@@ -751,9 +751,9 @@ let emit_instr env i =
           `	bl	{emit_symbol "caml_c_call"}\n`;
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
         end else begin
-          (* store ocaml stack in the frame pointer register
-             NB: no need to store previous x29 because OCaml frames don't
-             maintain frame pointer *)
+          (* Push frame pointer (x29) onto stack and restore later. *)
+          `	str	x29, [sp, -16]!\n`;
+          (* Store OCaml stack in the frame pointer register. *)
           `	mov	x29, sp\n`;
           cfi_remember_state ();
           cfi_def_cfa_register ~reg:29;
@@ -762,6 +762,7 @@ let emit_instr env i =
           `	mov	sp, {emit_reg reg_tmp1}\n`;
           `	bl	{emit_symbol func}\n`;
           `	mov	sp, x29\n`;
+          `	ldr	x29, [sp], 16\n`;
           cfi_restore_state ()
         end
     | Lop(Istackoffset n) ->
