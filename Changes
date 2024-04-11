@@ -846,6 +846,10 @@ OCaml 5.2.0
   Clang's integrated assembler.
   (Miod Vallat, review by Gabriel Scherer)
 
+- #13001: do not read_back entire shapes to get aliases' uids when building the
+  usages index
+  (Ulysse Gérard, review by Gabriel Scherer and Nathanaëlle Courant)
+
 ### Build system:
 
 - #12198, #12321, #12586, #12616, #12706, #13048: continue the merge of the
