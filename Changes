@@ -134,10 +134,6 @@ _______________
 - #13074, #13082, #13084: refactoring in the pattern-matching compiler
   (Gabriel Scherer, review by Thomas Refis, Vincent Laviron and Nick Roberts)
 
-- #13001: do not read_back entire shapes to get aliases' uids when building the
-  usages index
-  (Ulysse Gérard, review by Gabriel Scherer and Nathanaëlle Courant)
-
 ### Build system:
 
 - #12909: Reorganise how MKEXE_VIA_CC is built to make it correct for MSVC by
@@ -849,6 +845,10 @@ OCaml 5.2.0
 - #12914: Slightly change the s390x assembly dialect in order to build with
   Clang's integrated assembler.
   (Miod Vallat, review by Gabriel Scherer)
+
+- #13001: do not read_back entire shapes to get aliases' uids when building the
+  usages index
+  (Ulysse Gérard, review by Gabriel Scherer and Nathanaëlle Courant)
 
 ### Build system:
 
