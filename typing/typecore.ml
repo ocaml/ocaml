@@ -6427,14 +6427,20 @@ let type_clash_of_trace trace =
     - [This <denom> ...]
     - [The <denom> "foo" ...] *)
 let pp_exp_denom ppf pexp =
-  let p = fprintf ppf "%s" in
+  let d = pp_print_string ppf in
+  let d_expression = fprintf ppf "%a expression" Style.inline_code in
   match pexp.pexp_desc with
-  | Pexp_constant _ -> p "constant"
-  | Pexp_ident _ -> p "value"
-  | Pexp_construct _ | Pexp_variant _ -> p "constructor"
-  | Pexp_field _ -> p "field access"
-  | Pexp_send _ -> p "method call"
-  | _ -> p "expression"
+  | Pexp_constant _ -> d "constant"
+  | Pexp_ident _ -> d "value"
+  | Pexp_construct _ | Pexp_variant _ -> d "constructor"
+  | Pexp_field _ -> d "field access"
+  | Pexp_send _ -> d "method call"
+  | Pexp_while _ -> d_expression "while"
+  | Pexp_for _ -> d_expression "for"
+  | Pexp_ifthenelse _ -> d_expression "if-then-else"
+  | Pexp_match _ -> d_expression "match"
+  | Pexp_try _ -> d_expression "try-with"
+  | _ -> d "expression"
 
 (** Implements the "This expression" message, printing the expression if it
     should be according to {!Parsetree.Doc.nominal_exp}. *)

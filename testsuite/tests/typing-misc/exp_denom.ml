@@ -80,3 +80,23 @@ Line 1, characters 18-23:
 Error: This constant has type "string" but an expression was expected of type
          "int"
 |}]
+
+let _ : int = while false do () done
+
+[%%expect {|
+Line 1, characters 14-36:
+1 | let _ : int = while false do () done
+                  ^^^^^^^^^^^^^^^^^^^^^^
+Error: This "while" expression has type "unit"
+       but an expression was expected of type "int"
+|}]
+
+let _ : int = for _ = 1 to 2 do () done
+
+[%%expect {|
+Line 1, characters 14-39:
+1 | let _ : int = for _ = 1 to 2 do () done
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This "for" expression has type "unit"
+       but an expression was expected of type "int"
+|}]

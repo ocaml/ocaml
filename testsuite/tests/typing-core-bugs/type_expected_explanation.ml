@@ -96,8 +96,8 @@ while true do (if true then 3 else 4) done;;
 Line 1, characters 14-37:
 1 | while true do (if true then 3 else 4) done;;
                   ^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "int" but an expression was expected of type
-         "unit"
+Error: This "if-then-else" expression has type "int"
+       but an expression was expected of type "unit"
        because it is in the body of a while-loop
 |}];;
 
@@ -131,8 +131,8 @@ for i = 0 to 0 do (if true then 3 else 4) done;;
 Line 1, characters 18-41:
 1 | for i = 0 to 0 do (if true then 3 else 4) done;;
                       ^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "int" but an expression was expected of type
-         "unit"
+Error: This "if-then-else" expression has type "int"
+       but an expression was expected of type "unit"
        because it is in the body of a for-loop
 |}];;
 
