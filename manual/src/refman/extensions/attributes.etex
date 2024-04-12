@@ -188,7 +188,7 @@ and[@bar] y = 3 in x + y           === (let x = 2 [@@foo] and y = 3 [@@bar] in x
 
 \subsection{ss:builtin-attributes}{Built-in attributes}
 
-Some attributes are understood by the type-checker:
+Some attributes are understood by the compiler:
 \begin{itemize}
 \item
  ``ocaml.warning'' or ``warning'', with a string literal payload.
@@ -300,6 +300,10 @@ Some attributes are understood by the type-checker:
    bytecode compiler in debug mode (-g), and for functions marked with
    an "ocaml.inline always" or "ocaml.unrolled" attribute which
    supersede "ocaml.local".
+ \item
+  "ocaml.poll" or "poll" with an "error" payload on a function definition emits
+  an error whenever the compiler inserts a runtime polling point in the body of
+  the annotated function.
 \end{itemize}
 
 \begin{caml_example*}{verbatim}

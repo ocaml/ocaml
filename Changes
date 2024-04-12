@@ -466,6 +466,9 @@ OCaml 5.2.0
   (Florian Angeletti, review by Nicolás Ojeda Bär, Tim McGilchrist, and
    Miod Vallat)
 
+- #13092: document the existence of the `[@@poll error]` built-in attribute
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 * #10613, #12405: Simplify the values used for the system variable (`system:` in
