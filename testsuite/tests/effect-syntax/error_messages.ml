@@ -11,6 +11,10 @@ let () = match () with
   | () -> ()
   | effect A k, k -> ()
 [%%expect {|
+Line 3, characters 13-14:
+3 |   | effect A k, k -> ()
+                 ^
+Error: Variable "k" is bound several times in this matching
 |}]
 
 let () = match () with

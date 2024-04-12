@@ -49,12 +49,17 @@ type type_expected = private {
 }
 
 (* Variables in patterns *)
+type pattern_variable_kind =
+  | Std_var
+  | As_var
+  | Continuation_var
+
 type pattern_variable =
   {
     pv_id: Ident.t;
     pv_type: type_expr;
     pv_loc: Location.t;
-    pv_as_var: bool;
+    pv_kind: pattern_variable_kind;
     pv_attributes: Typedtree.attributes;
     pv_uid : Uid.t;
   }
