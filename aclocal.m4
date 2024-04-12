@@ -94,19 +94,6 @@ AC_DEFUN([OCAML_SIGNAL_HANDLERS_SEMANTICS], [
   )
 ])
 
-AC_DEFUN([OCAML_CC_HAS_FNO_TREE_VRP], [
-  AC_MSG_CHECKING([whether the C compiler supports -fno-tree-vrp])
-  saved_CFLAGS="$CFLAGS"
-  CFLAGS="-Werror -fno-tree-vrp $CFLAGS"
-  AC_COMPILE_IFELSE(
-    [AC_LANG_SOURCE([int main() { return 0; }])],
-    [cc_has_fno_tree_vrp=true
-    AC_MSG_RESULT([yes])],
-    [cc_has_fno_tree_vrp=false
-    AC_MSG_RESULT([no])])
-  CFLAGS="$saved_CFLAGS"
-])
-
 AC_DEFUN([OCAML_CC_SUPPORTS_ALIGNED], [
   AC_MSG_CHECKING([whether the C compiler supports __attribute__((aligned(n)))])
   AC_COMPILE_IFELSE(
@@ -128,32 +115,6 @@ AC_DEFUN([OCAML_CC_SUPPORTS_TREE_VECTORIZE], [
     [AC_DEFINE([SUPPORTS_TREE_VECTORIZE])
     AC_MSG_RESULT([yes])],
     [AC_MSG_RESULT([no])])
-  CFLAGS="$saved_CFLAGS"
-])
-
-AC_DEFUN([OCAML_CC_HAS_DEBUG_PREFIX_MAP], [
-  AC_MSG_CHECKING([whether the C compiler supports -fdebug-prefix-map])
-  saved_CFLAGS="$CFLAGS"
-  CFLAGS="-fdebug-prefix-map=old=new $CFLAGS"
-  AC_COMPILE_IFELSE(
-    [AC_LANG_SOURCE([int main() { return 0; }])],
-    [cc_has_debug_prefix_map=true
-    AC_MSG_RESULT([yes])],
-    [cc_has_debug_prefix_map=false
-    AC_MSG_RESULT([no])])
-  CFLAGS="$saved_CFLAGS"
-])
-
-AC_DEFUN([OCAML_CL_HAS_VOLATILE_METADATA], [
-  AC_MSG_CHECKING([whether the C compiler supports -d2VolatileMetadata-])
-  saved_CFLAGS="$CFLAGS"
-  CFLAGS="-d2VolatileMetadata- $CFLAGS"
-  AC_COMPILE_IFELSE(
-    [AC_LANG_SOURCE([int main() { return 0; }])],
-    [cl_has_volatile_metadata=true
-    AC_MSG_RESULT([yes])],
-    [cl_has_volatile_metadata=false
-    AC_MSG_RESULT([no])])
   CFLAGS="$saved_CFLAGS"
 ])
 
