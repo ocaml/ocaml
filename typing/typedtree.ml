@@ -32,7 +32,7 @@ type computation = Computation_pattern
 
 type _ pattern_category =
 | Value : value pattern_category
-| Computation : computation pattern_category
+| Computation : {exn:bool} -> computation pattern_category
 
 type pattern = value general_pattern
 and 'k general_pattern = 'k pattern_desc pattern_data
@@ -76,6 +76,8 @@ and 'k pattern_desc =
   (* computation patterns *)
   | Tpat_value : tpat_value_argument -> computation pattern_desc
   | Tpat_exception : value general_pattern -> computation pattern_desc
+  | Tpat_effect : value general_pattern * (Ident.t * string loc) option ->
+      computation pattern_desc
   (* generic constructions *)
   | Tpat_or :
       'k general_pattern * 'k general_pattern * row_desc option ->
@@ -104,8 +106,8 @@ and expression_desc =
   | Texp_let of rec_flag * value_binding list * expression
   | Texp_function of function_param list * function_body
   | Texp_apply of expression * (arg_label * expression option) list
-  | Texp_match of expression * computation case list * value case list * partial
-  | Texp_try of expression * value case list * value case list
+  | Texp_match of expression * computation case list * partial
+  | Texp_try of expression * computation case list
   | Texp_tuple of expression list
   | Texp_construct of
       Longident.t loc * constructor_description * expression list
@@ -157,7 +159,6 @@ and meth =
 and 'k case =
     {
      c_lhs: 'k general_pattern;
-     c_cont: Ident.t option;
      c_guard: expression option;
      c_rhs: expression;
     }
@@ -701,13 +702,14 @@ let rec classify_pattern_desc : type k . k pattern_desc -> k pattern_category =
   | Tpat_var _ -> Value
   | Tpat_constant _ -> Value
 
-  | Tpat_value _ -> Computation
-  | Tpat_exception _ -> Computation
+  | Tpat_value _ -> Computation {exn=false}
+  | Tpat_exception _ -> Computation {exn=true}
+  | Tpat_effect _ -> Computation {exn=false}
 
   | Tpat_or(p1, p2, _) ->
      begin match classify_pattern p1, classify_pattern p2 with
      | Value, Value -> Value
-     | Computation, Computation -> Computation
+     | Computation r, Computation u -> Computation {exn=r.exn || u.exn}
      end
 
 and classify_pattern
@@ -733,6 +735,7 @@ let shallow_iter_pattern_desc
   | Tpat_constant _ -> ()
   | Tpat_value p -> f.f p
   | Tpat_exception p -> f.f p
+  | Tpat_effect (p,_)-> f.f p
   | Tpat_or(p1, p2, _) -> f.f p1; f.f p2
 
 type pattern_transformation =
@@ -759,6 +762,7 @@ let shallow_map_pattern_desc
   | Tpat_variant (_,None,_) -> d
   | Tpat_value p -> Tpat_value (f.f p)
   | Tpat_exception p -> Tpat_exception (f.f p)
+  | Tpat_effect (e,k) -> Tpat_effect (f.f e, k)
   | Tpat_or (p1,p2,path) ->
       Tpat_or (f.f p1, f.f p2, path)
 
@@ -775,7 +779,7 @@ let iter_pattern (f : pattern -> unit) =
     { f = fun (type k) (p : k general_pattern) ->
           match classify_pattern p with
           | Value -> f p
-          | Computation -> () }
+          | Computation _ -> () }
 
 type pattern_predicate = { f : 'k . 'k general_pattern -> bool }
 let exists_general_pattern (f : pattern_predicate) p =
@@ -793,7 +797,7 @@ let exists_pattern (f : pattern -> bool) =
     { f = fun (type k) (p : k general_pattern) ->
           match classify_pattern p with
           | Value -> f p
-          | Computation -> false }
+          | Computation _ -> false }
 
 
 (* List the identifiers bound by a pattern or a let *)
@@ -863,10 +867,16 @@ let rec alpha_pat
 
 let mkloc = Location.mkloc
 let mknoloc = Location.mknoloc
+type continuation_pattern = (Ident.t * string loc) option
+type split_pattern =
+  { value: pattern option;
+    exn: pattern option;
+    eff:(pattern * continuation_pattern) option;
+  }
 
 let split_pattern pat =
-  let combine_opts merge p1 p2 =
-    match p1, p2 with
+  let combine_opts merge opt1 opt2 =
+    match opt1, opt2 with
     | None, None -> None
     | Some p, None
     | None, Some p ->
@@ -878,21 +888,34 @@ let split_pattern pat =
     (* The third parameter of [Tpat_or] is [Some _] only for "#typ"
        patterns, which we do *not* expand. Hence we can put [None] here. *)
     { pat with pat_desc = Tpat_or (p1, p2, None) } in
+  let into_effect pat (p1,k1) (p2,k2) =
+    begin
+      match k1, k2 with
+      | None, None -> ()
+      | Some (_,x), Some (_,y) when x.txt = y.txt -> ()
+      | _ -> assert false
+    end;
+    { pat with pat_desc = Tpat_or (p1, p2, None) }, k1 in
   let rec split_pattern cpat =
     match cpat.pat_desc with
     | Tpat_value p ->
-        Some p, None
+        Some p, None, None
     | Tpat_exception p ->
-        None, Some p
+        None, Some p, None
+    | Tpat_effect (e,k) ->
+        None, None, Some (e,k)
     | Tpat_or (cp1, cp2, _) ->
-        let vals1, exns1 = split_pattern cp1 in
-        let vals2, exns2 = split_pattern cp2 in
+        let vals1, exns1, effs1 = split_pattern cp1 in
+        let vals2, exns2, effs2 = split_pattern cp2 in
+
         combine_opts (into cpat) vals1 vals2,
         (* We could change the pattern type for exception patterns to
            [Predef.exn], but it doesn't really matter. *)
-        combine_opts (into cpat) exns1 exns2
+        combine_opts (into cpat) exns1 exns2,
+        combine_opts (into_effect cpat) effs1 effs2
   in
-  split_pattern pat
+  let value, exn, eff = split_pattern pat in
+  { value; exn; eff  }
 
 (* Expressions are considered nominal if they can be used as the subject of a
    sentence or action. In practice, we consider that an expression is nominal

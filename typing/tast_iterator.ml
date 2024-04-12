@@ -259,6 +259,9 @@ let pat
   | Tpat_lazy p -> sub.pat sub p
   | Tpat_value p -> sub.pat sub (p :> pattern)
   | Tpat_exception p -> sub.pat sub p
+  | Tpat_effect (p,k) ->
+      sub.pat sub p;
+      Option.iter (fun (_,s) -> iter_loc sub s) k
   | Tpat_or (p1, p2, _) ->
       sub.pat sub p1;
       sub.pat sub p2
@@ -309,14 +312,12 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
   | Texp_apply (exp, list) ->
       sub.expr sub exp;
       List.iter (fun (_, o) -> Option.iter (sub.expr sub) o) list
-  | Texp_match (exp, cases, effs, _) ->
+  | Texp_match (exp, cases, _) ->
       sub.expr sub exp;
-      List.iter (sub.case sub) cases;
-      List.iter (sub.case sub) effs
-  | Texp_try (exp, cases, effs) ->
+      List.iter (sub.case sub) cases
+  | Texp_try (exp, cases) ->
       sub.expr sub exp;
-      List.iter (sub.case sub) cases;
-      List.iter (sub.case sub) effs
+      List.iter (sub.case sub) cases
   | Texp_tuple list -> List.iter (sub.expr sub) list
   | Texp_construct (lid, _, args) ->
       iter_loc sub lid;

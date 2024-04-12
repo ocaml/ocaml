@@ -102,6 +102,10 @@ let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
       fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.print x
   | Tpat_value v ->
       fprintf ppf "%a" pretty_val (v :> pattern)
+  | Tpat_effect (v,None) ->
+      fprintf ppf "@[<2>effect@ %a,@ _]" pretty_arg v
+  | Tpat_effect (v, Some (id,_)) ->
+      fprintf ppf "@[<2>effect@ %a,@ %s]" pretty_arg v (Ident.name id)
   | Tpat_exception v ->
       fprintf ppf "@[<2>exception@ %a@]" pretty_arg v
   | Tpat_or _ ->
