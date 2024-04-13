@@ -233,7 +233,7 @@ is enough room on the line, whereas with structural boxes each break hint will
 lead to a new line. For instance, when printing
 "\[(---\[(----\[(---b)\]b)\]b)\]", where "b" is a break hint without extra
 indentation ([print_cut ()]). If "\[" means opening of a packing "hov" box
-({!Format.open_hovbox}), "\[(---\[(----\[(---b)\]b)\]b)\]" is printed as
+({!Format.open_hovbox} 1), "\[(---\[(----\[(---b)\]b)\]b)\]" is printed as
 follows:
 
 {[
@@ -242,7 +242,7 @@ follows:
   (---)))
 ]}
 
-If we replace the packing boxes by structural boxes ({!Format.open_box}), each
+If we replace the packing boxes by structural boxes ({!Format.open_box} 1), each
 break hint that precedes a closing parenthesis can show the boxes structure, if
 it leads to a new line; hence "\[(---\[(----\[(---b)\]b)\]b)\]" is printed like
 this:
