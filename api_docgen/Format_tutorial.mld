@@ -256,6 +256,12 @@ this:
  )
 ]}
 
+Each break hint increases indentation by one, both for opening and closing
+parenthesis, because the parenthesis are just characters and don't have special
+meaning for the formatter.
+Notice that the closing parenthesis is not vertically aligned with the opening
+parenthesis.
+
 {1 Practical advice}
 
 When writing a pretty-printing routine, follow these simple rules:
