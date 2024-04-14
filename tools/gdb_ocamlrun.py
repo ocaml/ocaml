@@ -14,155 +14,205 @@
 
 import gdb
 
-TAGS = {
-    246: 'Lazy_tag',
-    247: 'Closure_tag',
-    248: 'Object_tag',
-    249: 'Infix_tag',
-    250: 'Forward_tag',
-    251: 'Abstract_tag',
-    252: 'String_tag',
-    253: 'Double_tag',
-    254: 'Double_array_tag',
-    255: 'Custom_tag'
-}
+# When running inside GDB, the current directory isn't automatically
+# found, so we hack the path to find ocaml.py.
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
 
-No_scan_tag = 251
+import ocaml
 
+# These three classes (GDBType, GDBValue, GDBTarget) provide a
+# generic interface to the debugger, to allow debugger-agnostic code
+# in ocaml.py to access debugger and process state.  For a description
+# of the required slots and methods, see ocaml.py.
 
-debug_tags = {
-    0x00: 'Debug_free_minor',
-    0x01: 'Debug_free_major',
-    0x03: 'Debug_free_shrink',
-    0x04: 'Debug_free_truncat',
-    0x10: 'Debug_uninit_minor',
-    0x11: 'Debug_uninit_major',
-    0x15: 'Debug_uninit_align',
-    0x85: 'Debug_filler_align'
-}
+class GDBType:
+    def __init__(self, t):
+        self._t = t
 
-class DoublePrinter:
-    def __init__(self, tag, length, p):
-        assert tag in ['Double_tag', 'Double_array_tag']
-        self.tag = tag
-        self.length = length
-        self.p = p
+    def pointer(self):
+        return GDBType(self._t.pointer())
+
+    def array(self, size):
+        # Amazing mis-feature in the GDB interface: the argument
+        # of the `array` method is the inclusive upper index bound,
+        # while the lower bound is zero. So we need to pass size-1,
+        return GDBType(self._t.array(size-1))
+
+    def size(self):
+        return self._t.sizeof
+
+class GDBValue:
+    def __init__(self, v, target):
+        self._v = v
+        self._target = target
+
+    def valid(self):
+        # unclear what else this could mean for GDB
+        return not (self._v.is_optimized_out)
+
+    def unsigned(self):
+        bits = int(self._v)
+        if bits < 0:
+            bits += (1 << (self._target.word_size * 8))
+        return bits
+
+    def signed(self):
+        return int(self._v)
+
+    def cast(self, t):
+        return GDBValue(self._v.cast(t._t), self._target)
+
+    def value(self):
+        return self.cast(self._target._value_type)
+
+    def pointer(self):
+        return self.cast(self._target._value_ptr_type)
+
+    def dereference(self):
+        return GDBValue(self._v.dereference(), self._target)
+
+    def struct(self):
+        return {f.name: GDBValue(self._v[f], self._target)
+                for f in self._v.type.fields()}
+
+    def field(self, index):
+        res = ((self._v.cast(self._target._value_ptr_type._t) + index)
+               .dereference())
+        return GDBValue(res, self._target)
+
+    def field_pointer(self, index):
+        return GDBValue(self._v.cast(self._target._value_ptr_type._t) + index,
+                        self._target)
+
+    def byte_field(self, index):
+        return GDBValue((self._v.cast(self._target._char_ptr_type._t) + index)
+                        .dereference(), self._target)
+
+    def double_field(self, index):
+        return float((self._v.cast(self._target._double_ptr_type._t) + index)
+                     .dereference())
+
+    def string(self, length):
+        return (bytes(gdb.selected_inferior().read_memory(self._v, length))
+                .decode('UTF-8'))
+
+    def c_string(self):
+        return self.cast(self._target._char_ptr_type)._v.string()
+
+    def field_array(self, offset, size):
+        ptr = self._v.cast(self._target._value_ptr_type._t) + offset
+        field0 = ptr.dereference()
+        return field0.cast(field0.type.array(size-1))
+
+    def double_array(self, size):
+        return self._v.cast(self._target._double_type.array(size-1)._t)
+
+class GDBTarget:
+    def __init__(self):
+        self._value_type = GDBType(gdb.lookup_type('value'))
+        self._value_ptr_type = self._value_type.pointer()
+        self._uintnat_type = GDBType(gdb.lookup_type('uintnat'))
+        self._uintnat_ptr_type = self._uintnat_type.pointer()
+        self._double_type = GDBType(gdb.lookup_type('double'))
+        self._double_ptr_type = self._double_type.pointer()
+        self._char_type = GDBType(gdb.lookup_type('char'))
+        self._char_ptr_type = self._char_type.pointer()
+
+        self.word_size = self._value_type.size()
+        self.double_size = self._double_type.size()
+
+    def global_variable(self, name):
+        return GDBValue(gdb.lookup_global_symbol(name).value(), self)
+
+    def type(self, typename):
+        return GDBType(gdb.lookup_type(typename))
+
+    def symbol(self, address):
+        # Annoyingly GDB doesn't provide a progspace.symbol_of_pc()
+        # and gdb doesn't recognise OCaml functions as "functions"
+        # for the purposes of progspace.block_of_pc(). So we
+        # use a GDB command to get at the symbol.
+        text = gdb.execute(f'info symbol 0x{address:x}', to_string=True)
+        if not text.startswith('No symbol matches'):
+            len = text.find(' in section ')
+            if len > 0:
+                return text[:len]
+
+# Object obeying Python's iterator protocol, for iterating through the
+# children of a value. This gives us slightly nicer display of block
+# values.
+
+class BlockChildren:
+    def __init__(self, value):
+        self.value = value
+        self.index = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.index >= self.value.num_children:
+            raise StopIteration
+        element = self.value.child(self.index)
+        if isinstance(element, GDBValue):
+            element = element._v
+        res = (str(self.index), element)
+        self.index += 1
+        return res
+
+# For pretty-printing values, GDB needs an object with a to_string
+# method.  Rather than pushing that into ocaml.Value, we wrap that
+# class in a GDB-specific one here.
+
+class ValuePrinter:
+    def __init__(self, value):
+        target = GDBTarget()
+        self._v = ocaml.Value(GDBValue(value, target), target)
+
+    def to_string(self):
+        return str(self._v)
+
+    # For pretty-printing block values with children, we
+    # need a number of additional methods (which basically
+    # delegate to the BlockChildren class above).
+
+    def display_hint(self):
+        if self._v.children:
+            return 'array'
+        else:
+            return None
 
     def children(self):
-        pass
+        return BlockChildren(self._v)
 
-    def to_string(self):
-        return '%s[%d]' % (self.tag, self.length)
+    def num_children(self):
+        return self._v.num_children
 
-class ConstPrinter:
-    def __init__(self, rep):
-        self.rep = rep
-    def to_string(self):
-        return self.rep
+    def child(self, n):
+        return self._v.child(n)
 
-class BlockPrinter:
-    def __init__(self, val):
-        if val & 1 == 1:
-            self.tag = 1000
-            self.tagname = 'I'
-            self.val = val
-        else:
-            self.p = val.cast(val.type.pointer())
-            header = (self.p - 1).dereference()
-            self.length = int(header >> 10)
-            self.gc = int(header & (3 << 8))
-            self.tag = int(header & 255)
-            self.tagname = TAGS.get(self.tag, 'Block')
-
-    def children(self):
-#        if self.tag < No_scan_tag:
-#            fields = self.p.cast(gdb.lookup_type('value').pointer())
-#            for i in range(self.length):
-#                yield '[%d]' % i, (fields + i).dereference()
-#        elif self.tagname == 'Double_array_tag':
-#            words_per_double = \
-#              gdb.lookup_type('double').sizeof / gdb.lookup_type('value').sizeof
-#            fields = self.p.cast(gdb.lookup_type('double').pointer())
-#            for i in range(int(self.length / words_per_double)):
-#                yield '[%d]' % i, (fields + i).dereference()
-#
-        return []
-
-    def to_string(self):
-        if self.tag == 1000:
-            # it's an immediate value
-            if gdb.lookup_type('value').sizeof == 8:
-                debug_mask = 0xff00ffffff00ffff
-                debug_val  = 0xD700D7D7D700D6D7
-            else:
-                debug_mask = 0xff00ffff
-                debug_val  = 0xD700D6D7
-            n = self.val
-            if (n & debug_mask) == debug_val:
-                tag = int((n >> 16) & 0xff)
-                return debug_tags.get(tag,
-                                      "Debug_tag(0x%x)" % int(tag))
-            else:
-                return "I(%d)" % int(n >> 1)
-
-        # otherwise, it's a block
-
-        if self.tagname == 'Double_tag':
-            d = self.p.cast(gdb.lookup_type('double').pointer()).dereference()
-            s = '%f, wosize=1' % d
-        elif self.tagname == 'String_tag':
-            char = gdb.lookup_type('unsigned char')
-            val_size = gdb.lookup_type('value').sizeof
-            lastbyte = ((self.p + self.length - 1).cast(char.pointer()) + val_size - 1).dereference()
-            length_bytes = self.length * val_size - (lastbyte + 1)
-            string = (self.p.cast(char.array(length_bytes).pointer()).dereference())
-            s = str(string).strip()
-        elif self.tagname == 'Infix_tag':
-            s = 'offset=%d' % (-self.length)
-        elif self.tagname == 'Custom_tag':
-            ops = self.p.dereference().cast(gdb.lookup_type('struct custom_operations').pointer())
-            s = '%s, wosize=%d' % (str(ops), self.length)
-        elif self.tagname == 'Block':
-            s = '%d, wosize=%d' % (self.tag,self.length)
-        else:
-            s = 'wosize=%d' % self.length
-
-        markbits = gdb.lookup_symbol("caml_global_heap_state")[0].value()
-        gc = {
-            int(markbits['MARKED']): 'MARKED',
-            int(markbits['UNMARKED']): 'UNMARKED',
-            int(markbits['GARBAGE']): 'GARBAGE',
-            (3 << 8): 'NOT_MARKABLE'
-        }
-        return '%s(%s, %s)' % (self.tagname, s, gc[self.gc])
-
-
-    def display_hint (self):
-        return 'array'
-
-
-
-class Fields(gdb.Function):
-    def __init__ (self):
-        super (Fields, self).__init__ ("F")
-
-    def invoke (self, val):
-        assert str(val.type) == 'value'
-        p = val.cast(val.type.pointer())
-        header = (p - 1).dereference()
-        length = int(header >> 10)
-
-        return p.cast(val.type.array(length - 1).pointer()).dereference()
-
-
-Fields()
-
+# The actual GDB pretty-printer.
 
 def value_printer(val):
     if str(val.type) != 'value':
         return None
-
-
-    return BlockPrinter(val)
+    return ValuePrinter(val)
 
 gdb.pretty_printers = [value_printer]
+
+# A convenience function $Array which casts a value to an array of values.
+
+class Array(gdb.Function):
+    """Turns a Caml value into an array."""
+    def __init__ (self):
+        super (Array, self).__init__ ("Array")
+
+    def invoke (self, val):
+        assert str(val.type) == 'value'
+        target = GDBTarget()
+        v = ocaml.Value(GDBValue(val, target), target)
+        return v.child_array()
+
+Array()

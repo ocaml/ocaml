@@ -1,0 +1,451 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                           Nick Barnes, Tarides                         *
+#*                                                                        *
+#*   Copyright 2024 Tarides.                                              *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# This file contains any debugger-agnostic code for debugger plugins.
+#
+# Each debugger front end has three ciasses - targets, types, and
+# values, which must provide these slots and methods:
+#
+# targets:
+#
+#     word_size: size of a word in 8-bit bytes.
+#
+#     double_size: the number of 8-bit bytes in a double-precision
+#        float (i.e. 8).
+#
+#     global_variable(name): the value of a named global variable.
+#
+#     type(name): a named type.
+#
+#     symbol(address): the symbol name associated with the given address.
+#
+# types:
+#
+#     pointer(): the type of a pointer to this type.
+#
+#     array(size): the type of an array of given size of this type.
+#
+# values:
+#
+#     valid(): False if this value is somehow "invalid" (for example,
+#       optimised away.
+#
+#     unsigned(): the value as an unsigned integer.
+#
+#     signed(): the value as a signed integer.
+#
+#     cast(t): the value cast to type `t`.
+#
+#     value(): the value cast to the "value" Caml runtime type.
+#
+#     pointer(): the value cast to "value*"
+#
+#     dereference(): the result of dereferencing the value, which must
+#       be a pointer.
+#
+#     struct(): a dictionary {slot_name: value} representing the value,
+#       which must be a struct.
+#
+#     field(index): the `index`th field of a value array whose address is
+#       in the value, which can have any scalar type. `index` is a Python
+#       number which can have any value, including negative.
+#
+#     field_pointer(index): a pointer to the `index`th field (see above).
+#
+#     byte_field(index): a byte value, from a byte array.
+#
+#     double_field(index): a double-precision floating-point value
+#       from an array, as a Python float.
+#
+#     string(length): treating the value as an address, `length` bytes from
+#       memory, decoded as UTF-8, as a Python string.
+#
+#     c_string(): treating the value as an address, returns the NUL-terminated
+#       C string at the location as a Python string.
+#
+#     field_array(offset, size): an array of elements [offset,
+#       offset+size), as a debugger-native array.
+#
+#     double_array(size): an array of double-precision floating point
+#       members, as a debugger-native array.
+# 
+# String representations of various Caml values. Each kind of value
+# has a full representation, of the form "[Caml: ...]", and a summary
+# which may appear in the full representation of a block which points
+# to it.
+#
+# value           summary                full representation
+#
+# 3               i3                     [Caml: 3]
+# Some(3)         1@Tag0                 [Caml: 1@Tag0 (i6) [m]]
+# (3, Some(3))    2@Tag0                 [Caml: 2@Tag0 (i3, 1@Tag0) [m]]
+# 3.4             3.4                    [Caml: 3.4 [m]]
+# "Foo"           'Foo'                  [Caml: 'Foo'[3] [m]]
+# [| 1.0; 2.0 |]  2@Double_array         [Caml: 2@Double_array (1.0, 2.0) [m]]
+# custom block    custom(_bigarr02)[57]  [Caml: custom(_bigarr02)[57] [m]]
+#
+# ("_bigarr02" is the custom operations block "identifier" for big
+# arrays). The representation of closures is too verbose to fit into
+# this table. Simple single-function closures look like this:
+#
+#   [Caml: closure(camlTest.f_270) arity 1 start_env 2) (i6) [m]]
+#
+# with this summary: closure(camlTest.f_270)[1]
+#
+# Whereas shared function closures are like this:
+#
+#   [Caml: closure(camlTest.f_362, camlTest.g_363(caml_tuplify2))
+#    arity 1 start_env 6) (i12) [m]]
+#
+# with summary: closure(camlTest.f_362, +1)[1]
+#
+# Pointers to infix-header blocks look like this:
+#
+# [Caml: infix(3) in 0x1019ff700 (closure(camlTest.f_362, +1)[1])[m]]
+#
+# with summary: infix(3) in closure(camlTest.f_362, +1)[1]
+# Various limits on how much detail to show when creating string
+# representations of Caml values.
+
+MAX_BLOCK_SLOTS = 8
+MAX_STRING_LEN = 80
+STRING_SUFFIX = 8
+STRING_PREFIX = MAX_STRING_LEN - STRING_SUFFIX - 5
+MAX_STRING_SUMMARY = 20
+STRING_SUMMARY_PREFIX = 8
+STRING_SUMMARY_SUFFIX = MAX_STRING_SUMMARY - STRING_SUMMARY_PREFIX - 5
+
+TAGS = {
+    244: 'Forcing',
+    245: 'Cont',
+    246: 'Lazy',
+    247: 'Closure',
+    248: 'Object',
+    249: 'Infix',
+    250: 'Forward',
+    251: 'Abstract',
+    252: 'String',
+    253: 'Double',
+    254: 'Double_array',
+    255: 'Custom'
+}
+
+# specific tag values which we display in particular ways.
+
+TAG_CLOSURE = 247
+TAG_INFIX = 249
+TAG_STRING = 252
+TAG_DOUBLE = 253
+TAG_DOUBLE_ARRAY = 254
+TAG_CUSTOM = 255
+
+# constants for header word decoding.
+
+HEADER_TAG_BITS = 8
+HEADER_TAG_MASK = (1 << HEADER_TAG_BITS) - 1
+
+HEADER_COLOR_BITS = 2
+HEADER_COLOR_SHIFT = HEADER_TAG_BITS
+HEADER_COLOR_MASK = ((1 << HEADER_COLOR_BITS) - 1) << HEADER_COLOR_SHIFT
+NOT_MARKABLE = 3 << HEADER_COLOR_SHIFT
+
+HEADER_WOSIZE_SHIFT = HEADER_TAG_BITS + HEADER_COLOR_BITS
+
+# tags of this or above indicate blocks with no scannable fields
+NO_SCAN_TAG = 251
+
+# The debug runtime fills free and uninitialized memory with words:
+#
+#             D7xx D6D8 on 32-bit platforms
+#   D7xx D7D7 D7xx D6D8 in 64-bit platforms
+#
+# where xx is one of the following 8-bit values, depending on the
+# context of the memory word.
+
+DEBUG_TAGS = {
+    0x00: 'free minor',
+    0x01: 'free major',
+    0x03: 'free shrink',
+    0x04: 'free truncate', # obsolete
+    0x05: 'free unused',
+    0x10: 'uninit minor',
+    0x11: 'uninit major',
+    0x15: 'uninit align',
+    0x85: 'filler align',
+    0x99: 'pool magic',
+}
+
+DEBUG_LOW_BYTES = [0xd8, 0xd6]
+DEBUG_OTHER = 0xd7
+DEBUG_TAG_BYTES = [2, 6]
+
+def debug_decode(word, word_size):
+    """If `word` is a debug padding word, return a string representation of
+it. Otherwise, return None. `target` is used for word size."""
+
+    if (word >> (word_size * 8)) not in {0,-1}:
+        return
+    bytes = [(word >> (i * 8)) & 0xff for i in range(word_size)]
+    if bytes[:len(DEBUG_LOW_BYTES)] != DEBUG_LOW_BYTES:
+        return
+    pads = set(bytes[i]
+               for i in range(len(DEBUG_LOW_BYTES), word_size)
+               if i not in DEBUG_TAG_BYTES)
+    if pads != {DEBUG_OTHER}: # not all pad bytes DEBUG_OTHER
+        return
+    tags = set(bytes[i] for i in DEBUG_TAG_BYTES if i < word_size)
+    if len(tags) != 1: # differing tags on 64-bits
+        return
+    tag = list(tags)[0] # unique tag byte
+    if tag not in DEBUG_TAGS:
+        return f'Debug(0x{tag:x}?!)'
+    return f'Debug({DEBUG_TAGS[tag]})'
+
+# we show colors as [x], for some character x:
+
+COLOR_SUMMARY = {
+    'MARKED': 'm',
+    'UNMARKED': 'u',
+    'GARBAGE': 'g',
+    'NOT MARKABLE': '-',
+}
+
+def colors(target):
+    """Return a dictionary value -> name of the current GC colors
+    (MARKED, UNMARKED, GARBAGE, NOT MARKABLE).
+    """
+
+    heapState = target.global_variable('caml_global_heap_state').struct()
+    cols = {v.unsigned(): (f, COLOR_SUMMARY[f])
+            for f, v in heapState.items()}
+    cols[NOT_MARKABLE] = ('NOT MARKABLE', '-')
+    return cols
+
+class Value:
+    def __init__(self, value, target):
+        self._value = value
+        self._target = target
+        self.children = False
+        self.num_children = 0
+        self.valid = value.valid()
+        if not self.valid:
+            return
+
+        self.word = value.signed()
+        self.immediate = (self.word & 1) == 1
+        if self.immediate:
+            return
+
+        self.debug = debug_decode(self.word, target.word_size)
+        if self.debug is not None:
+            return
+
+        pointer = value.pointer()
+        self._header = pointer.field(-1).unsigned()
+        self._wosize = self._header >> HEADER_WOSIZE_SHIFT
+        self._tag = self._header & HEADER_TAG_MASK
+        self._color_bits = self._header & HEADER_COLOR_MASK
+        self.children = True
+        self.num_children = self._wosize # overridden for some tags
+        if self._tag == TAG_DOUBLE:
+            self.children = False
+            self.num_children = 0
+        elif self._tag == TAG_DOUBLE_ARRAY:
+            self.num_children = ((self.num_children * target.word_size)
+                                 // target.double_size)
+        elif self._tag == TAG_STRING:
+            self.children = False
+            self.num_children = 0
+            byteSize = target.word_size * self._wosize
+            lastByte = value.byte_field(byteSize-1).unsigned()
+            self._length = byteSize-1-lastByte
+            if self._length > 0:
+                self._string = value.string(self._length)
+            else:
+                self._string = ''
+        elif self._tag == TAG_CLOSURE:
+            # collect code pointers and metadata for all functions
+            # in this closure.
+            self._functions = []
+            # list of (offset, code, arity [, additional code]) tuples.
+            arity_shift = target.word_size * 8 - 8
+            closinfo = value.field(1).signed()
+            self._start_env = (closinfo & ((1 << arity_shift) - 1)) >> 1
+            self.num_children = self._wosize - self._start_env
+            block = 0
+            while block < self._start_env:
+                code = value.field(block).unsigned()
+                closinfo = value.field(block+1).unsigned()
+                arity = closinfo >> arity_shift
+                if (arity == 0) or (arity == 1):
+                    self._functions.append((block, code, arity))
+                    block += 3 # including infix header
+                else: # higher arity, so code is curry/tuplify
+                    true_code = value.field(block+2).unsigned()
+                    self._functions.append((block, true_code, arity, code))
+                    block += 4 # including infix header
+        elif self._tag == TAG_INFIX:
+            self._container = Value(value.field_pointer(-self._wosize), target)
+            self.num_children = 0
+            self.children = False
+        elif self._tag == TAG_CUSTOM:
+            ptr_type = target.type('struct custom_operations').pointer()
+            self._ops = value.field(0).cast(ptr_type).dereference().struct()
+            self._id = self._ops['identifier'].c_string()
+            self.children = False
+            self.num_children = 0
+
+    def summary(self):
+        """Return a short value summary string, suitable for display in a
+        larger aggregate.
+        """
+        if not self.valid:
+            return '[invalid]'
+        if self.immediate:
+            return f'i{self.word // 2}'
+        if self.debug is not None:
+            return self.debug
+        if self._tag == TAG_DOUBLE:
+            return str(self._value.double_field(0))
+        elif self._tag == TAG_STRING:
+            if self._length > MAX_STRING_SUMMARY:
+                return (repr(self._string[:STRING_SUMMARY_PREFIX])
+                        + '...'
+                        + repr(self._string[-STRING_SUMMARY_SUFFIX:])
+                        + f'[{self._length}]')
+            return repr(self._string)
+        elif self._tag == TAG_CLOSURE:
+            sym = self._target.symbol(self._functions[0][1])
+            if sym is None:
+                sym = f'{self._functions[0][1]:x}'
+            if len(self._functions) > 1:
+                others = f', +{len(self._functions)-1}'
+            else:
+                others = ''
+            return f'closure({sym}{others})[{self.num_children}]'
+        elif self._tag == TAG_INFIX:
+            return f'infix({self._wosize}) in ' + self._container.summary()
+        elif self._tag == TAG_CUSTOM:
+            return f"custom({self._id})[{self._wosize}]"
+
+        if self._tag in TAGS:
+            tag_name = TAGS[self._tag]
+        else:
+            tag_name = f'Tag{self._tag}'
+        return f'{self.num_children}@{tag_name}'
+
+    def field_summary(self, index):
+        return Value(self._value.field(index), self._target).summary()
+
+    def __str__(self):
+        if not self.valid:
+            return '[invalid]'
+        if self.immediate:
+            return f'[Caml: {self.word // 2}]'
+        if self.debug is not None:
+            return f'[Caml {debug}]'
+
+        if self._tag in TAGS:
+            self._tag_name = TAGS[self._tag]
+        else:
+            self._tag_name = f'Tag{self._tag}'
+        color = colors(self._target).get(self._color_bits,
+                                         f'BAD COLOR {self._color_bits}')[1]
+        contents = None
+
+        if self._tag == TAG_DOUBLE:
+            val = str(self._value.double_field(0))
+            return f'[Caml: {val} [{color}]]'
+        elif self._tag == TAG_STRING:
+            if self._length > MAX_STRING_LEN:
+                return ('[Caml: ' + repr(self._string[:STRING_PREFIX])
+                        + '...' + repr(self._string[-STRING_SUFFIX:])
+                        + f'[{self._length}] [{color}]]')
+            else:
+                return ('[Caml: ' + repr(self._string)
+                        + f'[{self._length}] [{color}]]')
+        elif self._tag == TAG_INFIX:
+            return (f'[Caml: infix({self._wosize}) '
+                    + f'in 0x{self._container._value.unsigned():x} '
+                    + '(' + self._container.summary() + ')' +
+                    f'[{color}]]')
+        elif self._tag == TAG_DOUBLE_ARRAY:
+            if self.num_children < MAX_BLOCK_SLOTS:
+                contents = [str(self._value.double_field(i))
+                            for i in range(self.num_children)]
+            else:
+                contents = ([str(self._value.double_field(i))
+                             for i in range(MAX_BLOCK_SLOTS-2)]
+                            + ['...',
+                               str(self._value.double_field(
+                                       self.num_children - 1))])
+        elif self._tag == TAG_CLOSURE:
+            fns = []
+            for t in self._functions:
+                offset, code, arity = t[0],t[1],t[2]
+                sym = self._target.symbol(code)
+                if sym is None:
+                    sym = f'{code:x}'
+                if len(t) == 3:
+                    fns.append(sym)
+                else:
+                    fns.append(f'{sym}({self._target.symbol(t[3])})')
+            return ('[Caml: closure('
+                    + ', '.join(fns) + ')'
+                    + f' arity {self._functions[0][2]}'
+                    + f' start_env {self._start_env}) ('
+                    + ', '.join(self.field_summary(i + self._start_env)
+                                for i in range(self.num_children))
+                    + f') [{color}]]')
+        elif self._tag == TAG_CUSTOM:
+            return (f"[Caml: custom({self._id})"
+                    f"[{self._wosize}] [{color}]]")
+        else: # generic block
+            if self.num_children < MAX_BLOCK_SLOTS:
+                contents = [self.field_summary(i)
+                            for i in range(self.num_children)]
+            else:
+                contents = ([self.field_summary(i)
+                             for i in range(MAX_BLOCK_SLOTS-2)]
+                            + ['...',
+                               self.field_summary(self.num_children - 1)])
+
+        return (f'[Caml: {self._wosize}@{self._tag_name} (' +
+                ', '.join(contents) + f') [{color}]]')
+
+    # Useful in GDB and maybe one day in LLDB too.
+
+    def child(self, index):
+        if (not self.children) or index < 0 or index >= self.num_children:
+            return
+        if self._tag == TAG_DOUBLE_ARRAY:
+            return self._value.double_field(index)
+        elif self._tag == TAG_CLOSURE:
+            return self._value.field(index + self._start_env).value()
+        else:
+            return self._value.field(index).value()
+
+    # Useful in GDB and maybe one day in LLDB too.
+
+    def child_array(self):
+        """If the value is a block which can be regarded as an array,
+        return the array as a debugger-native value."""
+        if (not self.children):
+            return
+        if self._tag == TAG_DOUBLE_ARRAY:
+            return self._value.double_array(self.num_children)
+        elif self._tag == TAG_CLOSURE:
+            return self._value.field_array(self._start_env, self.num_children)
+        else:
+            return self._value.field_array(0, self.num_children)
