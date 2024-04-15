@@ -23,9 +23,9 @@
  check-ocamlopt.byte-output;
 *)
 
-(* This test is a regression test. The bug is in the last step: the compiler crashes
+(* This test is a regression test. The bug was in the last step: the compiler crashed
    with an exception and backtrace instead of printing a useful error message. The
-   issue is that the compiler was erroneously running in a mode where its error reporting
+   issue was that the compiler was erroneously running in a mode where its error reporting
    is allowed to load cmi files from disk. This mode is undesirable because it means
    that the compiler can encounter new exceptions (e.g. that the new cmi file it loads
    is not consistent with other cmi files) while doing error reporting for the old

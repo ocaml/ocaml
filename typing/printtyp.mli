@@ -49,6 +49,13 @@ val wrap_printing_env: error:bool -> Env.t -> (unit -> 'a) -> 'a
     (* This affects all the printing functions below *)
     (* Also, if [~error:true], then disable the loading of cmis *)
 
+(** [wrap_printing_env_error env f] does something else in addition to
+    [wrap_printing_env ~error:true env f]: it also wraps all functions
+    in the returned [Location.error] value to disable the loading of cmis.
+*)
+val wrap_printing_env_error :
+  Env.t -> (unit -> Location.error) -> Location.error
+
 module Naming_context: sig
   val enable: bool -> unit
   (** When contextual names are enabled, the mapping between identifiers

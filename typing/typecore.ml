@@ -6948,7 +6948,7 @@ let report_error ~loc env = function
         (Style.as_inline_code Printtyp.type_expr) ty
 
 let report_error ~loc env err =
-  Printtyp.wrap_printing_env ~error:true env
+  Printtyp.wrap_printing_env_error env
     (fun () -> report_error ~loc env err)
 
 let () =
