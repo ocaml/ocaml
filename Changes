@@ -466,6 +466,10 @@ OCaml 5.2.0
   (Florian Angeletti, review by Nicolás Ojeda Bär, Tim McGilchrist, and
    Miod Vallat)
 
+- #13078: update Format tutorial on structural boxes to mention alignment
+  questions.
+  (Edwin Török, review by Florian Angeletti)
+
 - #13092: document the existence of the `[@@poll error]` built-in attribute
   (Florian Angeletti, review by Gabriel Scherer)
 

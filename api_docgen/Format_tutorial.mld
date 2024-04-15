@@ -233,7 +233,7 @@ is enough room on the line, whereas with structural boxes each break hint will
 lead to a new line. For instance, when printing
 "\[(---\[(----\[(---b)\]b)\]b)\]", where "b" is a break hint without extra
 indentation ([print_cut ()]). If "\[" means opening of a packing "hov" box
-({!Format.open_hovbox}), "\[(---\[(----\[(---b)\]b)\]b)\]" is printed as
+({!Format.open_hovbox} 1), "\[(---\[(----\[(---b)\]b)\]b)\]" is printed as
 follows:
 
 {[
@@ -242,10 +242,34 @@ follows:
   (---)))
 ]}
 
-If we replace the packing boxes by structural boxes ({!Format.open_box}), each
+If we replace the packing boxes by structural boxes ({!Format.open_box} 1), each
 break hint that precedes a closing parenthesis can show the boxes structure, if
 it leads to a new line; hence "\[(---\[(----\[(---b)\]b)\]b)\]" is printed like
 this:
+
+{[
+(---
+ (----
+  (---
+   )
+  )
+ )
+]}
+
+Each break hint increases indentation by one, both for opening and closing
+parenthesis, because the parenthesis are just characters and don't have special
+meaning for the formatter.
+Notice that the closing parenthesis is not vertically aligned with the opening
+parenthesis.
+
+We can line up the opening and closing parenthesis vertically in two ways:
+
+- by using a break hint "b" with negative indentation that matches the opening
+ indentation of the box `@;<0 -1>`, canceling it.
+- by using an additional box, and making all boxes and break hints use
+ no indentation: "\[(\[---\[(\[----\[(\[---\]b)\]\]b)\]\]b)\]"
+
+In both cases the output would be this:
 
 {[
 (---
@@ -265,6 +289,10 @@ When writing a pretty-printing routine, follow these simple rules:
 + Never hesitate to open a box.
 + Output many break hints, otherwise the pretty-printer is in a bad situation
 where it tries to do its best, which is always "worse than your bad".
++ Break hints with negative indentation should only be used when you are sure
+that you don't exceed the indentation of the opening box (e.g. both part of
+the same function and an exact match). Exceeding the indentation of the opening
+box is not compositional.
 + Do not try to force spacing using explicit spaces in the character strings.
 For each space you want in the output emit a break hint ([print_space ()]),
 unless you explicitly don't want the line to be broken here. For instance,
