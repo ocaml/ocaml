@@ -102,7 +102,7 @@ _______________
   (Samuel Vivien, review by Gabriel Scherer)
 
 - #13099: Fix erroneous loading of cmis for some module type errors.
-  (Nick Roberts, review by ???)
+  (Nick Roberts, review by Florian Angeletti)
 
 ### Internal/compiler-libs changes:
 
