@@ -2294,13 +2294,7 @@ AS_IF([test x"$with_zstd" != "xno"],
 # enabling zstd when the resulting executable doesn't actually work.
 AS_CASE([$host],
   [*-w64-mingw32*|*-pc-windows],
-    [AS_IF([test x"$build" = x"$host"],[
-      check_zstd_runs=true],[
-      AS_CASE([$build],
-       [*-pc-msys|*-pc-cygwin*],
-         [check_zstd_runs=true],
-       [check_zstd_runs=false])
-    ])],
+    [check_zstd_runs=$host_runnable],
   [check_zstd_runs=false])
 
 AS_IF([test x"$zstd_status" = "xok"],[

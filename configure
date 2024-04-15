@@ -18882,20 +18882,7 @@ fi
 # enabling zstd when the resulting executable doesn't actually work.
 case $host in #(
   *-w64-mingw32*|*-pc-windows) :
-    if test x"$build" = x"$host"
-then :
-
-      check_zstd_runs=true
-else $as_nop
-
-      case $build in #(
-  *-pc-msys|*-pc-cygwin*) :
-    check_zstd_runs=true ;; #(
-  *) :
-    check_zstd_runs=false ;;
-esac
-
-fi ;; #(
+    check_zstd_runs=$host_runnable ;; #(
   *) :
     check_zstd_runs=false ;;
 esac
