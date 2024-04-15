@@ -2298,26 +2298,32 @@ AS_CASE([$host],
   [check_zstd_runs=false])
 
 AS_IF([test x"$zstd_status" = "xok"],[
-  AC_MSG_CHECKING([whether programs linked zstd can execute])
-  AS_IF([! $check_zstd_runs],[
-    AC_MSG_RESULT([skipped])],[
-    OCAML_CC_SAVE_VARIABLES
-    LIBS="$LIBS $zstd_libs"
-    CFLAGS="$CFLAGS $zstd_flags"
-    OCAML_RUN_IFELSE(
-      [AC_LANG_SOURCE([[
+  AC_MSG_CHECKING([whether programs can be linked with zstd])
+  OCAML_CC_SAVE_VARIABLES
+  LIBS="$LIBS $zstd_libs"
+  CFLAGS="$CFLAGS $zstd_flags"
+  AC_LINK_IFELSE(
+    [AC_LANG_SOURCE([[
 #include <zstd.h>
 int main(void) {
   return (ZSTD_versionNumber() == 0);
 }
-      ]])],
-      [AC_MSG_RESULT([yes])],
-      [AC_MSG_RESULT([no])
-      zstd_libs=""
-      zstd_flags=""
-      zstd_status="programs linked with zstd do not appear to be executable."],
-      [AC_MSG_RESULT([skipped])])
-    OCAML_CC_RESTORE_VARIABLES])])
+    ]])],
+    [AC_MSG_RESULT([yes])
+    AC_MSG_CHECKING([whether programs linked with zstd can execute])
+    AS_IF([$check_zstd_runs],
+      [AS_IF([ac_fn_c_try_run LINENO],
+        [AC_MSG_RESULT([yes])],
+        [AC_MSG_RESULT([no])
+        zstd_libs=''
+        zstd_flags=''
+        zstd_status="programs linked with zstd do not appear to be executable."])],
+      [AC_MSG_RESULT([skipped])])],
+    [AC_MSG_RESULT([no])
+    zstd_libs=''
+    zstd_flags=''
+    zstd_status="zstd found, but programs cannot be linked with it."])
+  OCAML_CC_RESTORE_VARIABLES])
 
 AS_IF([test x"$zstd_status" = "xok"],
   [AC_MSG_NOTICE([compressed compilation artefacts supported])
