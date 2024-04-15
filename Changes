@@ -878,6 +878,9 @@ OCaml 5.2.0
 - #13079: Save and restore frame pointer across Iextcall on ARM64
   (Tim McGilchrist, review by KC Sivaramakrishnan and Miod Vallat)
 
+- #13094: Fix undefined behavior of left-shifting a negative number.
+  (Antonin Décimo, review by Miod Vallat and Nicolás Ojeda Bär)
+
 OCaml 5.1.1 (8 December 2023)
 ----------------------------
 
