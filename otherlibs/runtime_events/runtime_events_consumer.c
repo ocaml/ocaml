@@ -172,9 +172,9 @@ cursor_map_ring_file(struct caml_runtime_events_cursor *cursor,
   return E_SUCCESS;
 
  failed2:
-  CloseHandle(cursor->ring_file_handle);
- failed1:
   CloseHandle(cursor->ring_handle);
+ failed1:
+  CloseHandle(cursor->ring_file_handle);
   return ret;
 #else
   int ring_fd = open(runtime_events_loc, O_RDONLY, 0);
