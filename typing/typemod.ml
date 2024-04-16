@@ -3504,7 +3504,7 @@ let report_error ~loc _env = function
         Misc.print_see_manual manual_ref
 
 let report_error env ~loc err =
-  Printtyp.wrap_printing_env ~error:true env
+  Printtyp.wrap_printing_env_error env
     (fun () -> report_error env ~loc err)
 
 let () =
