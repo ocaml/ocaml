@@ -211,7 +211,7 @@ typedef struct caml_plat_barrier {
   atomic_uintnat arrived; /* includes sense bit */
 } caml_plat_barrier;
 #define CAML_PLAT_BARRIER_INITIALIZER \
-  { CAML_PLAT_FUTEX_INITIALIZER(0), ATOMIC_UINTNAT_INIT(0) }
+  { CAML_PLAT_FUTEX_INITIALIZER(0), 0 }
 
 typedef uintnat barrier_status;
 /* Arrive at the barrier, returns the number of parties that have

@@ -1662,9 +1662,8 @@ static void stw_try_complete_gc_phase(
   CAML_EV_END(EV_MAJOR_GC_PHASE_CHANGE);
 }
 
-intnat caml_opportunistic_major_work_available (void)
+intnat caml_opportunistic_major_work_available (caml_domain_state* domain_state)
 {
-  caml_domain_state* domain_state = Caml_state;
   return !domain_state->sweeping_done || !domain_state->marking_done;
 }
 
@@ -1710,7 +1709,7 @@ static void major_collection_slice(intnat howmuch,
   /* shortcut out if there is no opportunistic work to be done
    * NB: needed particularly to avoid caml_ev spam when polling */
   if (mode == Slice_opportunistic &&
-      !caml_opportunistic_major_work_available()) {
+      !caml_opportunistic_major_work_available(domain_state)) {
     commit_major_slice_work (0);
     return;
   }
