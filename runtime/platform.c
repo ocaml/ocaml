@@ -204,10 +204,11 @@ void caml_plat_futex_free(caml_plat_futex* ftx) {
 
 #  if defined(_WIN32)
 #    include <synchapi.h>
-#    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)                \
-  WaitOnAddress(ftx, &undesired, sizeof(undesired), INFINITE)
+#    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)  \
+  WaitOnAddress((volatile void *)ftx, &undesired, \
+                sizeof(undesired), INFINITE)
 #    define CAML_PLAT_FUTEX_WAKE(ftx)           \
-  WakeByAddressAll(ftx)
+  WakeByAddressAll((void *)ftx)
 
 #  elif defined(__linux__)
 #    include <linux/futex.h>
