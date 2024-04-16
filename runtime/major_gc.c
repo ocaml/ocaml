@@ -1352,15 +1352,106 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
   return budget;
 }
 
+static void cycle_major_heap_from_stw_single(
+  caml_domain_state* domain,
+  uintnat num_domains_in_stw)
+{
+  /* Cycle major heap */
+  /* FIXME: delete caml_cycle_heap_from_stw_single
+     and have per-domain copies of the data? */
+  caml_cycle_heap_from_stw_single();
+  caml_gc_log("GC cycle %lu completed (heap cycled)",
+              (long unsigned int)caml_major_cycles_completed);
+
+  caml_major_cycles_completed++;
+  caml_gc_message(0x40, "Starting major GC cycle\n");
+
+  if (atomic_load_relaxed(&caml_verb_gc) & 0x400) {
+    struct gc_stats s;
+    intnat heap_words, not_garbage_words, swept_words;
+
+    caml_compute_gc_stats(&s);
+    heap_words = s.heap_stats.pool_words + s.heap_stats.large_words;
+    not_garbage_words = s.heap_stats.pool_live_words
+      + s.heap_stats.large_words;
+    swept_words = domain->swept_words;
+    caml_gc_log ("heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d "
+                 "not_garbage_words %"ARCH_INTNAT_PRINTF_FORMAT"d "
+                 "swept_words %"ARCH_INTNAT_PRINTF_FORMAT"d",
+                 heap_words, not_garbage_words, swept_words);
+
+    if (caml_stat_space_overhead.heap_words_last_cycle != 0) {
+      /* At the end of a major cycle, no object has colour MARKED.
+
+         [not_garbage_words] counts all objects which are UNMARKED.
+         Importantly, this includes both live objects and objects which are
+         unreachable in the current cycle (i.e, garbage). But we don't get
+         to know which objects are garbage until the end of the next cycle.
+
+         live_words@N = not_garbage_words@N - swept_words@N+1
+
+         space_overhead@N =
+         100.0 * (heap_words@N - live_words@N) / live_words@N
+      */
+      double live_words_last_cycle =
+        caml_stat_space_overhead.not_garbage_words_last_cycle - swept_words;
+      double space_overhead =
+        100.0 * (double)(caml_stat_space_overhead.heap_words_last_cycle
+                         - live_words_last_cycle) / live_words_last_cycle;
+
+      if (caml_stat_space_overhead.l == NULL ||
+          caml_stat_space_overhead.index == BUFFER_SIZE) {
+        struct buf_list_t *l =
+          (struct buf_list_t*)
+          caml_stat_alloc_noexc(sizeof(struct buf_list_t));
+        l->next = caml_stat_space_overhead.l;
+        caml_stat_space_overhead.l = l;
+        caml_stat_space_overhead.index = 0;
+      }
+      caml_stat_space_overhead.l->buffer[caml_stat_space_overhead.index++] =
+        space_overhead;
+      caml_gc_log("Previous cycle's space_overhead: %lf", space_overhead);
+    }
+    caml_stat_space_overhead.heap_words_last_cycle = heap_words;
+
+    caml_stat_space_overhead.not_garbage_words_last_cycle
+      = not_garbage_words;
+  }
+
+  domain->swept_words = 0;
+
+  num_domains_in_stw = (uintnat)caml_global_barrier_num_domains();
+  atomic_store_release(&num_domains_to_sweep, num_domains_in_stw);
+  atomic_store_release(&num_domains_to_mark, num_domains_in_stw);
+
+  caml_gc_phase = Phase_sweep_and_mark_main;
+  atomic_store(&ephe_cycle_info.num_domains_todo, num_domains_in_stw);
+  atomic_store(&ephe_cycle_info.ephe_cycle, 1);
+  atomic_store(&ephe_cycle_info.num_domains_done, 0);
+
+  atomic_store_release(&num_domains_to_ephe_sweep, 0);
+  /* Will be set to the correct number when switching to
+     [Phase_sweep_ephe] */
+
+  atomic_store_release(&num_domains_to_final_update_first,
+                       num_domains_in_stw);
+  atomic_store_release(&num_domains_to_final_update_last,
+                       num_domains_in_stw);
+
+  atomic_store(&domain_global_roots_started, WORK_UNSTARTED);
+
+  caml_code_fragment_cleanup_from_stw_single();
+}
+
 struct cycle_callback_params {
   int force_compaction;
 };
 
-static void stw_cycle_all_domains(caml_domain_state* domain, void* args,
-                                       int participating_count,
-                                       caml_domain_state** participating)
+static void stw_cycle_all_domains(
+  caml_domain_state* domain, void* args,
+  int participating_count,
+  caml_domain_state** participating)
 {
-  uintnat num_domains_in_stw;
   /* We copy params because the stw leader may leave early. No barrier needed
      because there's one in the minor gc and after. */
   struct cycle_callback_params params = *((struct cycle_callback_params*)args);
@@ -1388,99 +1479,8 @@ static void stw_cycle_all_domains(caml_domain_state* domain, void* args,
                         (domain, (void*)0, participating_count, participating);
 
   CAML_EV_BEGIN(EV_MAJOR_GC_STW);
-
-  {
-    /* Cycle major heap */
-    /* FIXME: delete caml_cycle_heap_from_stw_single
-       and have per-domain copies of the data? */
-    barrier_status b = caml_global_barrier_begin();
-    if (caml_global_barrier_is_final(b)) {
-      caml_cycle_heap_from_stw_single();
-      caml_gc_log("GC cycle %lu completed (heap cycled)",
-                  (long unsigned int)caml_major_cycles_completed);
-
-      caml_major_cycles_completed++;
-      caml_gc_message(0x40, "Starting major GC cycle\n");
-
-      if (atomic_load_relaxed(&caml_verb_gc) & 0x400) {
-        struct gc_stats s;
-        intnat heap_words, not_garbage_words, swept_words;
-
-        caml_compute_gc_stats(&s);
-        heap_words = s.heap_stats.pool_words + s.heap_stats.large_words;
-        not_garbage_words = s.heap_stats.pool_live_words
-                            + s.heap_stats.large_words;
-        swept_words = domain->swept_words;
-        caml_gc_log ("heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d "
-                      "not_garbage_words %"ARCH_INTNAT_PRINTF_FORMAT"d "
-                      "swept_words %"ARCH_INTNAT_PRINTF_FORMAT"d",
-                      heap_words, not_garbage_words, swept_words);
-
-        if (caml_stat_space_overhead.heap_words_last_cycle != 0) {
-          /* At the end of a major cycle, no object has colour MARKED.
-
-             [not_garbage_words] counts all objects which are UNMARKED.
-             Importantly, this includes both live objects and objects which are
-             unreachable in the current cycle (i.e, garbage). But we don't get
-             to know which objects are garbage until the end of the next cycle.
-
-             live_words@N = not_garbage_words@N - swept_words@N+1
-
-             space_overhead@N =
-                      100.0 * (heap_words@N - live_words@N) / live_words@N
-            */
-          double live_words_last_cycle =
-            caml_stat_space_overhead.not_garbage_words_last_cycle - swept_words;
-          double space_overhead =
-            100.0 * (double)(caml_stat_space_overhead.heap_words_last_cycle
-                            - live_words_last_cycle) / live_words_last_cycle;
-
-          if (caml_stat_space_overhead.l == NULL ||
-              caml_stat_space_overhead.index == BUFFER_SIZE) {
-            struct buf_list_t *l =
-              (struct buf_list_t*)
-                  caml_stat_alloc_noexc(sizeof(struct buf_list_t));
-            l->next = caml_stat_space_overhead.l;
-            caml_stat_space_overhead.l = l;
-            caml_stat_space_overhead.index = 0;
-          }
-          caml_stat_space_overhead.l->buffer[caml_stat_space_overhead.index++] =
-            space_overhead;
-          caml_gc_log("Previous cycle's space_overhead: %lf", space_overhead);
-        }
-        caml_stat_space_overhead.heap_words_last_cycle = heap_words;
-
-        caml_stat_space_overhead.not_garbage_words_last_cycle
-        = not_garbage_words;
-      }
-
-      domain->swept_words = 0;
-
-      num_domains_in_stw = (uintnat)caml_global_barrier_num_domains();
-      atomic_store_release(&num_domains_to_sweep, num_domains_in_stw);
-      atomic_store_release(&num_domains_to_mark, num_domains_in_stw);
-
-      caml_gc_phase = Phase_sweep_and_mark_main;
-      atomic_store(&ephe_cycle_info.num_domains_todo, num_domains_in_stw);
-      atomic_store(&ephe_cycle_info.ephe_cycle, 1);
-      atomic_store(&ephe_cycle_info.num_domains_done, 0);
-
-      atomic_store_release(&num_domains_to_ephe_sweep, 0);
-      /* Will be set to the correct number when switching to
-         [Phase_sweep_ephe] */
-
-      atomic_store_release(&num_domains_to_final_update_first,
-                           num_domains_in_stw);
-      atomic_store_release(&num_domains_to_final_update_last,
-                           num_domains_in_stw);
-
-      atomic_store(&domain_global_roots_started, WORK_UNSTARTED);
-
-      caml_code_fragment_cleanup_from_stw_single();
-    }
-    // should interrupts be processed here or not?
-    // depends on whether marking above may need interrupts
-    caml_global_barrier_end(b);
+  Caml_global_barrier_if_final(participating_count) {
+    cycle_major_heap_from_stw_single(domain, (uintnat) participating_count);
   }
 
   /* If the heap is to be verified, do it before the domains continue
@@ -1491,7 +1491,7 @@ static void stw_cycle_all_domains(caml_domain_state* domain, void* args,
     /* This global barrier avoids races between the verify_heap code
        and the rest of the STW critical section, for example the parts
        that mark global roots. */
-    caml_global_barrier();
+    Caml_maybe_global_barrier(participating_count);
   }
 
   caml_cycle_heap(domain->shared_heap);
@@ -1577,10 +1577,10 @@ static void stw_cycle_all_domains(caml_domain_state* domain, void* args,
   /* To ensure a mutator doesn't resume while global roots are being marked.
      Mutators can alter the set of global roots, to preserve its correctness,
      they should not run while global roots are being marked.*/
-  caml_global_barrier();
+  Caml_maybe_global_barrier(participating_count);
 
   /* Someone should flush the allocation stats we gathered during the cycle */
-  if( participating[0] == Caml_state ) {
+  if( participating[0] == domain ) {
     CAML_EV_ALLOC_FLUSH();
   }
 
@@ -1644,11 +1644,9 @@ static void stw_try_complete_gc_phase(
   int participant_count,
   caml_domain_state** participating)
 {
-  barrier_status b;
   CAML_EV_BEGIN(EV_MAJOR_GC_PHASE_CHANGE);
 
-  b = caml_global_barrier_begin ();
-  if (caml_global_barrier_is_final(b)) {
+  Caml_global_barrier_if_final(participant_count) {
     if (is_complete_phase_sweep_and_mark_main()) {
       caml_gc_phase = Phase_mark_final;
     } else if (is_complete_phase_mark_final()) {
@@ -1658,7 +1656,7 @@ static void stw_try_complete_gc_phase(
         participating[i]->ephe_info->must_sweep_ephe = 1;
     }
   }
-  caml_global_barrier_end(b);
+
   CAML_EV_END(EV_MAJOR_GC_PHASE_CHANGE);
 }
 

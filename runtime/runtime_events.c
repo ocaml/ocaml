@@ -181,20 +181,10 @@ static void runtime_events_teardown_from_stw_single(int remove_file) {
     atomic_store_release(&runtime_events_enabled, 0);
 }
 
-/* Stop-the-world which calls the teardown code */
 static void stw_teardown_runtime_events(
   caml_domain_state *domain_state,
   void *remove_file_data, int num_participating,
-  caml_domain_state **participating_domains)
-{
-  caml_global_barrier();
-  if (participating_domains[0] == domain_state) {
-    int remove_file = *(int*)remove_file_data;
-    runtime_events_teardown_from_stw_single(remove_file);
-  }
-  caml_global_barrier();
-}
-
+  caml_domain_state **participating_domains);
 
 void caml_runtime_events_post_fork(void) {
   /* We are here in the child process after a call to fork (which can only
@@ -402,18 +392,39 @@ static void runtime_events_create_from_stw_single(void) {
   }
 }
 
+/* create/teardown STWs
+
+   The STW API does have an enter barrier before the handler code is
+   run, however, the enter barrier itself calls the runtime events API
+   after arrival. Thus, the barrier in the STWs below is needed both
+   to ensure that all domains have actually reached the handler before
+   we start/stop (and are not calling the runtime events API from the
+   STW code), and of course to ensure that the setup/teardown is
+   observed by all domains returning from the STW. */
+
+/* Stop the world section which calls [runtime_events_create_raw], used when we
+   can't be sure there is only a single domain running. */
 static void stw_create_runtime_events(
   caml_domain_state *domain_state, void *unused,
   int num_participating,
   caml_domain_state **participating_domains)
 {
-  caml_global_barrier();
-
-  /* Only do this on one domain */
-  if (participating_domains[0] == domain_state) {
+  /* Everyone must be stopped for starting and stopping runtime_events */
+  Caml_global_barrier_if_final(num_participating) {
     runtime_events_create_from_stw_single();
   }
-  caml_global_barrier();
+}
+
+/* Stop-the-world which calls the teardown code */
+static void stw_teardown_runtime_events(
+  caml_domain_state *domain_state,
+  void *remove_file_data, int num_participating,
+  caml_domain_state **participating_domains)
+{
+  Caml_global_barrier_if_final(num_participating) {
+    int remove_file = *(int*)remove_file_data;
+    runtime_events_teardown_from_stw_single(remove_file);
+  }
 }
 
 CAMLexport void caml_runtime_events_start(void) {

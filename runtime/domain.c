@@ -861,46 +861,49 @@ static void unreserve_minor_heaps_from_stw_single(void) {
   caml_mem_unmap((void *) caml_minor_heaps_start, size);
 }
 
-static void stw_resize_minor_heap_reservation(caml_domain_state* domain,
-                                       void* minor_wsz_data,
-                                       int participating_count,
-                                       caml_domain_state** participating) {
-  barrier_status b;
-  uintnat new_minor_wsz = (uintnat) minor_wsz_data;
+static
+void domain_resize_heap_reservation_from_stw_single(uintnat new_minor_wsz)
+{
+  CAML_EV_BEGIN(EV_DOMAIN_RESIZE_HEAP_RESERVATION);
+  caml_gc_log("stw_resize_minor_heap_reservation: "
+              "unreserve_minor_heaps");
 
+  unreserve_minor_heaps_from_stw_single();
+  /* new_minor_wsz is page-aligned because caml_norm_minor_heap_size has
+     been called to normalize it earlier.
+  */
+  caml_minor_heap_max_wsz = new_minor_wsz;
+  caml_gc_log("stw_resize_minor_heap_reservation: reserve_minor_heaps");
+  reserve_minor_heaps_from_stw_single();
+  /* The call to [reserve_minor_heaps_from_stw_single] makes a new
+     reservation, and it also updates the reservation boundaries of each
+     domain by mutating its [minor_heap_area_start{,_end}] variables.
+
+     These variables are synchronized by the fact that we are inside
+     a STW section: no other domains are running in parallel, and
+     the participating domains will synchronize with this write by
+     exiting the barrier, before they read those variables in
+     [allocate_minor_heap] below. */
+  CAML_EV_END(EV_DOMAIN_RESIZE_HEAP_RESERVATION);
+}
+
+static void
+stw_resize_minor_heap_reservation(caml_domain_state* domain,
+                                  void* minor_wsz_data,
+                                  int participating_count,
+                                  caml_domain_state** participating) {
   caml_gc_log("stw_resize_minor_heap_reservation: "
               "caml_empty_minor_heap_no_major_slice_from_stw");
-  caml_empty_minor_heap_no_major_slice_from_stw(domain, NULL,
-                                            participating_count, participating);
+  caml_empty_minor_heap_no_major_slice_from_stw(
+    domain, NULL, participating_count, participating);
 
   caml_gc_log("stw_resize_minor_heap_reservation: free_minor_heap");
   free_minor_heap();
 
-  b = caml_global_barrier_begin ();
-  if (caml_global_barrier_is_final(b)) {
-    CAML_EV_BEGIN(EV_DOMAIN_RESIZE_HEAP_RESERVATION);
-    caml_gc_log("stw_resize_minor_heap_reservation: "
-                "unreserve_minor_heaps");
-
-    unreserve_minor_heaps_from_stw_single();
-    /* new_minor_wsz is page-aligned because caml_norm_minor_heap_size has
-       been called to normalize it earlier.
-    */
-    caml_minor_heap_max_wsz = new_minor_wsz;
-    caml_gc_log("stw_resize_minor_heap_reservation: reserve_minor_heaps");
-    reserve_minor_heaps_from_stw_single();
-    /* The call to [reserve_minor_heaps_from_stw_single] makes a new
-       reservation, and it also updates the reservation boundaries of each
-       domain by mutating its [minor_heap_area_start{,_end}] variables.
-
-       These variables are synchronized by the fact that we are inside
-       a STW section: no other domains are running in parallel, and
-       the participating domains will synchronize with this write by
-       exiting the barrier, before they read those variables in
-       [allocate_minor_heap] below. */
-    CAML_EV_END(EV_DOMAIN_RESIZE_HEAP_RESERVATION);
+  Caml_global_barrier_if_final(participating_count) {
+    uintnat new_minor_wsz = (uintnat) minor_wsz_data;
+    domain_resize_heap_reservation_from_stw_single(new_minor_wsz);
   }
-  caml_global_barrier_end(b);
 
   caml_gc_log("stw_resize_minor_heap_reservation: "
               "allocate_minor_heap");
