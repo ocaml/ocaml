@@ -226,6 +226,10 @@ Working version
   to the Int, Int32, Int64 and Nativeint modules.
   (Xavier Leroy, review by Ali Caglayan, Nicolás Ojeda Bär, Gabriel Scherer)
 
+- #13101: Add `Stdlib.todo ?msg ?__LOC__ ()` to signal that a piece of code is
+  not yet implemented.
+  (Pavlo Khrystenko, review by *)
+
 - #14433: Add bit-counting functions `leading_zeros`, `leading_sign_bits`,
   `trailing_zeros`, `bit_count`, `unsigned_bitsize`, `signed_bitsize`
   to Int, Int32, Int64, and Nativeint
