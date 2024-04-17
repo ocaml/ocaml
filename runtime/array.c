@@ -371,6 +371,8 @@ static void wo_memmove (volatile value* const dst,
 CAMLprim value caml_floatarray_blit(value a1, value ofs1, value a2, value ofs2,
                                     value n)
 {
+  CAMLassert (Tag_val(a1) == Double_array_tag);
+  CAMLassert (Tag_val(a2) == Double_array_tag);
   /* See memory model [MM] notes in memory.c */
   atomic_thread_fence(memory_order_acquire);
   memmove((double *)a2 + Long_val(ofs2),
