@@ -280,6 +280,17 @@ CAMLnoret CAMLextern void caml_failed_assert (char *, char_os *, int);
 #define CAMLassert(x) ((void) 0)
 #endif
 
+#if __has_builtin(__builtin_trap)
+  #define CAMLunreachable() (__builtin_trap())
+#elif defined(_MSC_VER)
+  #include <intrin.h>
+  CAMLnoret Caml_inline void caml_fastfail(unsigned int);
+  void caml_fastfail(unsigned int i) { __fastfail(i); }
+  #define CAMLunreachable() (caml_fastfail(7 /* FAST_FAIL_FATAL_APP_EXIT */))
+#else
+  #define CAMLunreachable() (CAMLassert(0))
+#endif
+
 #if __has_builtin(__builtin_expect) || defined(__GNUC__)
 #define CAMLlikely(e)   __builtin_expect(!!(e), 1)
 #define CAMLunlikely(e) __builtin_expect(!!(e), 0)
