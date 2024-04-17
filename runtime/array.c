@@ -389,6 +389,7 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
   if (Tag_val(a2) == Double_array_tag)
     return caml_floatarray_blit(a1, ofs1, a2, ofs2, n);
 #endif
+  CAMLassert (Tag_val(a1) != Double_array_tag);
   CAMLassert (Tag_val(a2) != Double_array_tag);
   if (Is_young(a2)) {
     /* Arrays of values, destination is in young generation.
