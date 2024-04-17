@@ -239,7 +239,10 @@ end = struct
       else begin
         let n = Array.length a in
         let arr = Array.make n (of_dummy dummy) in
-        Array.blit a 0 arr 0 n;
+        for i = 0 to n - 1 do
+          Array.unsafe_set arr i
+            (of_val (Array.unsafe_get a i));
+        done;
         arr
       end
 
@@ -256,7 +259,13 @@ end = struct
       arr
 
     let blit_array src src_pos dst dst_pos ~len =
-      Array.blit src src_pos dst dst_pos len
+      if Obj.(tag (repr src) <> double_array_tag) then
+        Array.blit src src_pos dst dst_pos len
+      else begin
+        for i = 0 to len - 1 do
+          dst.(dst_pos + i) <- of_val src.(src_pos + i)
+        done;
+      end
 
     let prefix arr n =
       (* Note: the safety of the [Array.sub] call below, with respect to
