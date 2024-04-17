@@ -50,7 +50,7 @@ external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
    @raise Invalid_argument
    if [n] is outside the range 0 to [length a - 1]. *)
 
-external make : int -> 'a -> 'a array = "caml_make_vect"
+external make : int -> 'a -> 'a array = "caml_array_make"
 (** [make n x] returns a fresh array of length [n],
    initialized with [x].
    All the elements of this new array are initially
@@ -63,7 +63,7 @@ external make : int -> 'a -> 'a array = "caml_make_vect"
    If the value of [x] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2].*)
 
-external create_float: int -> float array = "caml_make_float_vect"
+external create_float: int -> float array = "caml_array_create_float"
 (** [create_float n] returns a fresh float array of length [n],
     with uninitialized data.
     @since 4.03 *)

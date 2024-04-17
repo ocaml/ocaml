@@ -22,6 +22,9 @@ _______________
 - #12789: Restore caml_unregister_frametable from OCaml 4
   (Frédéric Recoules, review by Gabriel Scherer)
 
+- #13003: new, more consistent names for array-creation C functions
+  (Gabriel Scherer, review by Olivier Nicole)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously
