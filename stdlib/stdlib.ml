@@ -581,6 +581,13 @@ let exit retcode =
 
 let _ = register_named_value "Pervasives.do_at_exit" do_at_exit
 
+let todo ?(msg="not implemented yet") ?__LOC__ () =
+  let msg =  match __LOC__ with
+  | Some loc -> loc ^ ", TODO: " ^ msg
+  | None -> "TODO: " ^ msg
+  in
+  failwith msg
+
 (*MODULE_ALIASES*)
 module Arg            = Arg
 module Array          = Array
