@@ -41,10 +41,10 @@ val invalid_arg : string -> 'a
 val failwith : string -> 'a
 (** Raise exception [Failure] with the given string. *)
 
-val todo : ?msg:string -> ?__LOC__:string -> unit -> _
+val todo : ?msg:string -> unit -> _
 [@@alert todo "TODO: not implemented yet"]
 (** Raise an exception [Failure]
-    with provided optional location [?__LOC__] and optional message [?msg].
+    with provided optional message [?msg].
     @since 5.3
 *)
 
