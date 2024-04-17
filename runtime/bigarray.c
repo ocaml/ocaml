@@ -299,8 +299,7 @@ CAMLexport void caml_ba_finalize(value v)
   case CAML_BA_MAPPED_FILE:
     /* Bigarrays for mapped files use a different finalization method */
     fallthrough;
-  default:
-    CAMLassert(0);
+  default: CAMLunreachable();
   }
 }
 
@@ -382,9 +381,7 @@ CAMLexport int caml_ba_compare(value v1, value v2)
   case CAML_BA_CAML_INT:
   case CAML_BA_NATIVE_INT:
     DO_INTEGER_COMPARISON(intnat);
-  default:
-    CAMLassert(0);
-    return 0;                   /* should not happen */
+  default: CAMLunreachable();
   }
 #undef DO_INTEGER_COMPARISON
 #undef DO_FLOAT_COMPARISON
@@ -750,9 +747,7 @@ value caml_ba_get_N(value vb, volatile value * vind, int nind)
       return copy_two_doubles(p[0], p[1]); }
   case CAML_BA_CHAR:
     return Val_int(((unsigned char *) b->data)[offset]);
-  default:
-    CAMLassert(0);
-    return Val_int(0);
+  default: CAMLunreachable();
   }
 }
 
@@ -896,8 +891,7 @@ static value caml_ba_set_aux(value vb, volatile value * vind,
       p[0] = Double_flat_field(newval, 0);
       p[1] = Double_flat_field(newval, 1);
       break; }
-  default:
-    CAMLassert(0);
+  default: CAMLunreachable();
   }
   return Val_unit;
 }
@@ -1340,8 +1334,7 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
     FILL_COMPLEX_LOOP(double *);
     break;
   }
-  default:
-    CAMLassert(0);
+  default: CAMLunreachable();
   }
   CAMLreturn (Val_unit);
 }
