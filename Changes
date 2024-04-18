@@ -267,7 +267,9 @@ _______________
   Falls back to using TransientTypeSet when marks are exhausted.
   (Jacques Garrigue and Takafumi Saikawa, review by Basile Clément)
 
-- #12946: Make generalization automatic when leaving scope
+- #12946: Make generalization automatic when leaving scope.
+  As a result, the `Ctype.generalize*` and `Ctype.correct_levels` functions
+  were removed. The latter is now called `Ctype.duplicate_type`.
   (Jacques Garrigue and Takafumi Saikawa, review by ???)
 
 - #12968: Attach location to constants in the parsetree

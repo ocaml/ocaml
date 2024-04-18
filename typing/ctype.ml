@@ -24,16 +24,6 @@ open Errortrace
 open Local_store
 
 (*
-   Type manipulation after type inference
-   ======================================
-   If one wants to manipulate a type after type inference (for
-   instance, during code generation or in the debugger), one must
-   first make sure that the type levels are correct, using the
-   function [correct_levels]. Then, this type can be correctly
-   manipulated by [apply], [expand_head] and [moregeneral].
-*)
-
-(*
    General notes
    =============
    - As much sharing as possible should be kept : it makes types
@@ -999,10 +989,6 @@ let rec generalize_class_type gen =
       gen ty;
       generalize_class_type gen cty
 
-(* Correct the levels of type [ty]. *)
-let correct_levels ty =
-  duplicate_type ty
-
 (* Only generalize the type ty0 in ty *)
 let limited_generalize ty0 ~inside:ty =
   let graph = TypeHash.create 17 in
@@ -1791,8 +1777,8 @@ let full_expand ~may_forget_scope env ty =
         (* #10277: forget scopes when printing trace *)
         with_level ~level:(get_level ty) begin fun () ->
           (* The same as [expand_head], except in the failing case we return the
-           *original* type, not [correct_levels ty].*)
-          try try_expand_head try_expand_safe env (correct_levels ty) with
+           *original* type, not [duplicate_type ty].*)
+          try try_expand_head try_expand_safe env (duplicate_type ty) with
           | Cannot_expand -> ty
         end
     else expand_head env ty

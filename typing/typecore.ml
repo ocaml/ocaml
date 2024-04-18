@@ -884,7 +884,7 @@ let solve_constructor_annotation
         end;
         let env =
           Env.add_type ~check:false id
-            {decl with type_manifest = Some (correct_levels tv')} !!penv
+            {decl with type_manifest = Some (duplicate_type tv')} !!penv
         in
         Pattern_env.set_env penv env)
       rem;
@@ -3115,14 +3115,14 @@ let check_absent_variant env =
       || not (is_fixed row) && not (static_row row)  (* same as Ctype.poly *)
       then () else
       let ty_arg =
-        match arg with None -> [] | Some p -> [correct_levels p.pat_type] in
+        match arg with None -> [] | Some p -> [duplicate_type p.pat_type] in
       let fields = [s, rf_either ty_arg ~no_arg:(arg=None) ~matched:true] in
       let row' =
         create_row ~fields
           ~more:(newvar ()) ~closed:false ~fixed:None ~name:None in
       (* Should fail *)
       unify_pat env {pat with pat_type = newty (Tvariant row')}
-                     (correct_levels pat.pat_type)
+                     (duplicate_type pat.pat_type)
     | _ -> () }
 
 (* Getting proper location of already typed expressions.
@@ -5656,7 +5656,7 @@ and map_half_typed_cases
   let create_inner_level = may_contain_gadts || may_contain_modules in
   let ty_arg =
     if (may_contain_gadts || erase_either) && not !Clflags.principal
-    then correct_levels ty_arg else ty_arg
+    then duplicate_type ty_arg else ty_arg
   in
   let rec is_var spat =
     match spat.ppat_desc with
@@ -5736,7 +5736,7 @@ and map_half_typed_cases
       in
       let ty_res, do_copy_types =
         if does_contain_gadt && not !Clflags.principal then
-          correct_levels ty_res, Env.make_copy_of_types env
+          duplicate_type ty_res, Env.make_copy_of_types env
         else ty_res, (fun env -> env)
       in
       (* Unify all cases (delayed to keep it order-free) *)
@@ -5795,7 +5795,7 @@ and map_half_typed_cases
           if contains_gadt && not !Clflags.principal then
             (* Take a generic copy of [ty_res] again to allow propagation of
                 type information from preceding branches *)
-            correct_levels ty_res
+            duplicate_type ty_res
           else ty_res in
         type_body case_data pat ~when_env ~ext_env ~cont ~ty_expected
           ~ty_infer:ty_res' ~contains_gadt)

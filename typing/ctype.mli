@@ -147,14 +147,14 @@ val enforce_current_level: Env.t -> type_expr -> unit
         (* Lower whole type to !current_level *)
 val generalize_class_signature_spine: Env.t -> class_signature -> unit
        (* Special function to generalize methods during inference *)
-val correct_levels: type_expr -> type_expr
-        (* Returns a copy with decreasing levels *)
 val limited_generalize: type_expr -> inside:type_expr -> unit
         (* Only generalize some part of the type
            Make the remaining of the type non-generalizable *)
 val limited_generalize_class_type: type_expr -> inside:class_type -> unit
         (* Same, but for class types *)
 
+val duplicate_type: type_expr -> type_expr
+        (* Returns a copy with non-variable nodes at generic level *)
 val fully_generic: type_expr -> bool
 
 val check_scope_escape : Env.t -> int -> type_expr -> unit

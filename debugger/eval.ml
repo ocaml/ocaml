@@ -104,8 +104,7 @@ let rec expression event env = function
             | _ ->
                 value_path event env p
           in
-          let typ = Ctype.correct_levels valdesc.val_type in
-          v, typ
+          v, valdesc.val_type
       | exception Not_found ->
           raise(Error(Unbound_long_identifier lid))
     end
