@@ -1083,7 +1083,7 @@ let end_assembly() =
     D.size frametable (ConstSub (ConstThis, ConstLabel frametable))
   end;
 
-  if system = S_linux then
+  if system = S_linux || system = S_freebsd then
     (* Mark stack as non-executable, PR#4564 *)
     D.section [".note.GNU-stack"] (Some "") [ "%progbits" ];
 

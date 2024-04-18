@@ -200,6 +200,9 @@ _______________
 - #13094: Fix undefined behavior of left-shifting a negative number.
   (Antonin Décimo, review by Miod Vallat and Nicolás Ojeda Bär)
 
+- #13103: FreeBSD/amd64: properly annotate .o files with non-executable stack
+  notes (Konstantin Belousov, review by Nicolás Ojeda Bär)
+
 OCaml 5.2.0
 ------------
 
