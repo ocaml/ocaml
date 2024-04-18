@@ -25,6 +25,10 @@ _______________
 - #13003: new, more consistent names for array-creation C functions
   (Gabriel Scherer, review by Olivier Nicole)
 
+- #13086: Avoid spurious major GC slices.
+  (Damien Doligez, report by Stephen Dolan, review by Gabriel Scherer
+   and Stephen Dolan)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously
