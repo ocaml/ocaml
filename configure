@@ -869,9 +869,11 @@ cclibs
 oc_dll_ldflags
 oc_ldflags
 oc_cppflags
+common_cppflags
 tsan_native_runtime_c_sources
 tsan
 oc_cflags
+common_cflags
 toolchain
 ccomptype
 mkexe_via_cc_extra_cmd
@@ -3369,6 +3371,8 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
+
 
 
 
