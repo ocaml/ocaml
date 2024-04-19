@@ -958,6 +958,7 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
                             || test x"$with_flexdll" = 'xflexdll'])],
         [AS_IF([test -f 'flexdll/flexdll.h'],
           [flexdll_source_dir=flexdll
+          dnl Use $(ROOTDIR) to ensure that the build only uses relative paths
           iflexdir='$(ROOTDIR)/flexdll'
           with_flexdll="$iflexdir"],
           [AS_IF([test x"$with_flexdll" != 'x'],
@@ -968,6 +969,7 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
           [mkdir -p flexdll-sources
           cp -r "$with_flexdll"/* flexdll-sources/
           flexdll_source_dir='flexdll-sources'
+          dnl Use $(ROOTDIR) to ensure that the build only uses relative paths
           iflexdir='$(ROOTDIR)/flexdll-sources'
           flexmsg=" (from $with_flexdll)"],
           [AC_MSG_RESULT([requested but not available])
@@ -1092,7 +1094,8 @@ AS_IF([test x"$with_winpthreads_msvc" = "xno"],
                           || test x"$with_winpthreads_msvc" = x'winpthreads'])],
       [AS_IF([test -f 'winpthreads/src/winpthread_internal.h'],
         [winpthreads_source_dir=winpthreads
-        iwinpthreadsdir="$ocamlsrcdir\winpthreads\include"],
+        dnl Use $(ROOTDIR) to ensure that the build only uses relative paths
+        iwinpthreadsdir='$(ROOTDIR)/winpthreads/include'],
         [AC_MSG_RESULT([required but not available (uninitialized submodule?)])
         AC_MSG_ERROR([exiting])])],
       [rm -rf winpthreads-sources
@@ -1102,15 +1105,16 @@ AS_IF([test x"$with_winpthreads_msvc" = "xno"],
         cp "$with_winpthreads_msvc"/src/*.h winpthreads-sources/src
         cp "$with_winpthreads_msvc"/include/*.h winpthreads-sources/include
         winpthreads_source_dir='winpthreads-sources'
-        iwinpthreadsdir="$ocamlsrcdir\\winpthreads-sources\\include"
+        dnl Use $(ROOTDIR) to ensure that the build only uses relative paths
+        iwinpthreadsdir='$(ROOTDIR)/winpthreads-sources/includes'
         winpthreadsmsg=" (from $with_winpthreads_msvc)"],
         [AC_MSG_RESULT([requested but not available])
         AC_MSG_ERROR([exiting])])])
     AS_IF([test x"$winpthreads_source_dir" = 'x'],
       [AC_MSG_RESULT([no])],
       [AC_MSG_RESULT([$winpthreads_source_dir$winpthreadmsg])
-      OCAML_TEST_WINPTHREADS_PTHREAD_H([$iwinpthreadsdir])
-      internal_cppflags="$internal_cppflags -I$iwinpthreadsdir"])],
+      OCAML_TEST_WINPTHREADS_PTHREAD_H([$winpthreads_source_dir/include])
+      internal_cppflags="$internal_cppflags -I $iwinpthreadsdir"])],
     [AS_IF([test x"$with_winpthreads_msvc" != 'x'],
       [AC_MSG_RESULT([requested but not supported])
       AC_MSG_ERROR([exiting])],

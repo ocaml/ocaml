@@ -14170,7 +14170,7 @@ then :
   if test -f 'flexdll/flexdll.h'
 then :
   flexdll_source_dir=flexdll
-          iflexdir='$(ROOTDIR)/flexdll'
+                    iflexdir='$(ROOTDIR)/flexdll'
           with_flexdll="$iflexdir"
 else $as_nop
   if test x"$with_flexdll" != 'x'
@@ -14187,7 +14187,7 @@ then :
   mkdir -p flexdll-sources
           cp -r "$with_flexdll"/* flexdll-sources/
           flexdll_source_dir='flexdll-sources'
-          iflexdir='$(ROOTDIR)/flexdll-sources'
+                    iflexdir='$(ROOTDIR)/flexdll-sources'
           flexmsg=" (from $with_flexdll)"
 else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: requested but not available" >&5
@@ -14578,7 +14578,7 @@ then :
   if test -f 'winpthreads/src/winpthread_internal.h'
 then :
   winpthreads_source_dir=winpthreads
-        iwinpthreadsdir="$ocamlsrcdir\winpthreads\include"
+                iwinpthreadsdir='$(ROOTDIR)/winpthreads/include'
 else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: required but not available (uninitialized submodule?)" >&5
 printf "%s\n" "required but not available (uninitialized submodule?)" >&6; }
@@ -14593,7 +14593,7 @@ then :
         cp "$with_winpthreads_msvc"/src/*.h winpthreads-sources/src
         cp "$with_winpthreads_msvc"/include/*.h winpthreads-sources/include
         winpthreads_source_dir='winpthreads-sources'
-        iwinpthreadsdir="$ocamlsrcdir\\winpthreads-sources\\include"
+                iwinpthreadsdir='$(ROOTDIR)/winpthreads-sources/includes'
         winpthreadsmsg=" (from $with_winpthreads_msvc)"
 else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: requested but not available" >&5
@@ -14622,9 +14622,9 @@ printf "%s\n" "$winpthreads_source_dir$winpthreadmsg" >&6; }
   touch confdefs.h
 
 
-  if test -n "$iwinpthreadsdir"
+  if test -n "$winpthreads_source_dir/include"
 then :
-  CPPFLAGS="-I $iwinpthreadsdir $CPPFLAGS"
+  CPPFLAGS="-I $winpthreads_source_dir/include $CPPFLAGS"
 fi
   ac_fn_c_check_header_compile "$LINENO" "pthread.h" "ac_cv_header_pthread_h" "$ac_includes_default"
 if test "x$ac_cv_header_pthread_h" = xyes
@@ -14646,7 +14646,7 @@ fi
   LIBS="$saved_LIBS"
 
 
-      internal_cppflags="$internal_cppflags -I$iwinpthreadsdir"
+      internal_cppflags="$internal_cppflags -I $iwinpthreadsdir"
 fi ;; #(
   *) :
     if test x"$with_winpthreads_msvc" != 'x'
