@@ -177,6 +177,7 @@ AC_SUBST([bootstrapping_flexdll])
 AC_SUBST([flexdll_dir])
 AC_SUBST([flexlink_flags])
 AC_SUBST([winpthreads_source_dir])
+AC_SUBST([winpthreads_source_include_dir])
 AC_SUBST([shebangscripts])
 AC_SUBST([AR])
 AC_SUBST([mklib])
@@ -978,9 +979,7 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
         [AC_MSG_RESULT([no])],
         [AC_MSG_RESULT([$iflexdir$flexmsg])
         bootstrapping_flexdll=true
-        flexdll_dir=\"+flexdll\"
-        # The submodule should be searched *before* any other -I paths
-        internal_cppflags="-I $iflexdir $internal_cppflags"])],
+        flexdll_dir=\"+flexdll\"])],
       [AS_IF([test x"$with_flexdll" != 'x'],
         [AC_MSG_RESULT([requested but not supported])
         AC_MSG_ERROR([exiting])])])])
@@ -1113,8 +1112,8 @@ AS_IF([test x"$with_winpthreads_msvc" = "xno"],
     AS_IF([test x"$winpthreads_source_dir" = 'x'],
       [AC_MSG_RESULT([no])],
       [AC_MSG_RESULT([$winpthreads_source_dir$winpthreadmsg])
-      OCAML_TEST_WINPTHREADS_PTHREAD_H([$winpthreads_source_dir/include])
-      internal_cppflags="$internal_cppflags -I $iwinpthreadsdir"])],
+      winpthreads_source_include_dir="$winpthreads_source_dir/include"
+      OCAML_TEST_WINPTHREADS_PTHREAD_H([$winpthreads_source_include_dir])])],
     [AS_IF([test x"$with_winpthreads_msvc" != 'x'],
       [AC_MSG_RESULT([requested but not supported])
       AC_MSG_ERROR([exiting])],

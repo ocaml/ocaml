@@ -856,6 +856,7 @@ supports_shared_libraries
 mklib
 AR
 shebangscripts
+winpthreads_source_include_dir
 winpthreads_source_dir
 flexlink_flags
 flexdll_dir
@@ -3371,6 +3372,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -14204,8 +14206,6 @@ else $as_nop
 printf "%s\n" "$iflexdir$flexmsg" >&6; }
         bootstrapping_flexdll=true
         flexdll_dir=\"+flexdll\"
-        # The submodule should be searched *before* any other -I paths
-        internal_cppflags="-I $iflexdir $internal_cppflags"
 fi ;; #(
   *) :
     if test x"$with_flexdll" != 'x'
@@ -14608,6 +14608,7 @@ printf "%s\n" "no" >&6; }
 else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $winpthreads_source_dir$winpthreadmsg" >&5
 printf "%s\n" "$winpthreads_source_dir$winpthreadmsg" >&6; }
+      winpthreads_source_include_dir="$winpthreads_source_dir/include"
 
 
   saved_CC="$CC"
@@ -14622,9 +14623,9 @@ printf "%s\n" "$winpthreads_source_dir$winpthreadmsg" >&6; }
   touch confdefs.h
 
 
-  if test -n "$winpthreads_source_dir/include"
+  if test -n "$winpthreads_source_include_dir"
 then :
-  CPPFLAGS="-I $winpthreads_source_dir/include $CPPFLAGS"
+  CPPFLAGS="-I $winpthreads_source_include_dir $CPPFLAGS"
 fi
   ac_fn_c_check_header_compile "$LINENO" "pthread.h" "ac_cv_header_pthread_h" "$ac_includes_default"
 if test "x$ac_cv_header_pthread_h" = xyes
@@ -14646,7 +14647,6 @@ fi
   LIBS="$saved_LIBS"
 
 
-      internal_cppflags="$internal_cppflags -I $iwinpthreadsdir"
 fi ;; #(
   *) :
     if test x"$with_winpthreads_msvc" != 'x'
