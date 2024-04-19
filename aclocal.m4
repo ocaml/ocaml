@@ -108,10 +108,9 @@ AC_DEFUN([OCAML_CC_SUPPORTS_TREE_VECTORIZE], [
   saved_CFLAGS="$CFLAGS"
   CFLAGS="-Werror $CFLAGS"
   AC_COMPILE_IFELSE(
-    [AC_LANG_SOURCE([
-       __attribute__((optimize("tree-vectorize"))) void f(void){}
-       int main() { f(); return 0; }
-    ])],
+    [AC_LANG_PROGRAM(
+      [[__attribute__((optimize("tree-vectorize"))) void f(void) {}]],
+      [[f();]])],
     [AC_DEFINE([SUPPORTS_TREE_VECTORIZE])
     AC_MSG_RESULT([yes])],
     [AC_MSG_RESULT([no])])
@@ -228,20 +227,17 @@ camlPervasives__loop_1128:
 AC_DEFUN([OCAML_MMAP_SUPPORTS_MAP_STACK], [
   AC_MSG_CHECKING([whether mmap supports MAP_STACK])
   AC_RUN_IFELSE(
-    [AC_LANG_SOURCE([[
+    [AC_LANG_PROGRAM([[
 #include <sys/mman.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-int main (int argc, char *argv[]){
+      ]],[[
   void *block;
   block = mmap (NULL, 4096, PROT_READ | PROT_WRITE,
                 MAP_ANONYMOUS | MAP_PRIVATE | MAP_STACK,
                 -1, 0);
   if (block == MAP_FAILED)
      return 1;
-  return 0;
-}
     ]])],
     [has_mmap_map_stack=true
     AC_MSG_RESULT([yes])],
@@ -252,7 +248,7 @@ int main (int argc, char *argv[]){
 AC_DEFUN([OCAML_MMAP_SUPPORTS_HUGE_PAGES], [
   AC_MSG_CHECKING([whether mmap supports huge pages])
   AC_RUN_IFELSE(
-    [AC_LANG_SOURCE([[
+    [AC_LANG_PROGRAM([[
 #include <sys/mman.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -265,8 +261,7 @@ AC_DEFUN([OCAML_MMAP_SUPPORTS_HUGE_PAGES], [
    pages can be activated and deactivated easily while the system
    is running.
 */
-
-int main (int argc, char *argv[]){
+      ]],[[
   void *block;
   char *p;
   int i, res;
@@ -287,8 +282,6 @@ int main (int argc, char *argv[]){
   for (i = 0; i < huge_page_size; i += 4096){
     p[i] = (char) i;
   }
-  return 0;
-}
     ]])],
     [AC_DEFINE([HAS_HUGE_PAGES])
     AC_DEFINE_UNQUOTED([HUGE_PAGE_SIZE], [(4 * 1024 * 1024)])
@@ -330,7 +323,7 @@ AC_DEFUN([OCAML_TEST_FLEXLINK], [
     CPPFLAGS="$3 $CPPFLAGS"
     CFLAGS=""
     AC_LINK_IFELSE(
-      [AC_LANG_SOURCE([int main() { return 0; }])],
+      [AC_LANG_PROGRAM],
       [AC_MSG_RESULT([yes])],
       [AC_MSG_RESULT([no])
       AC_MSG_ERROR([$1 does not work])])],
@@ -360,8 +353,7 @@ AC_DEFUN([OCAML_TEST_FLEXLINK_WHERE], [
   flexlink_where="$($1 -where | tr -d '\r')"
   CPPFLAGS="$CPPFLAGS -I \"$flexlink_where\""
   cat > conftest.c <<"EOF"
-#include <flexdll.h>
-int main (void) {return 0;}
+  AC_LANG_PROGRAM([[#include <flexdll.h>]])
 EOF
   cat > conftest.Makefile <<EOF
 all:
@@ -390,7 +382,7 @@ AC_DEFUN([OCAML_HOST_IS_EXECUTABLE], [
   old_cross_compiling="$cross_compiling"
   cross_compiling='no'
   AC_RUN_IFELSE(
-    [AC_LANG_SOURCE([[int main (void) {return 0;}]])],
+    [AC_LANG_PROGRAM],
     [AC_MSG_RESULT([yes])
     host_runnable=true],
     [AC_MSG_RESULT([no])
@@ -413,12 +405,9 @@ AC_DEFUN([OCAML_RUN_IFELSE], [
 AC_DEFUN([OCAML_C99_CHECK_ROUND], [
   AC_MSG_CHECKING([whether round works])
   OCAML_RUN_IFELSE(
-    [AC_LANG_SOURCE([[
-#include <math.h>
-int main (void) {
+    [AC_LANG_PROGRAM([[#include <math.h>]],[[
   static volatile double d = 0.49999999999999994449;
-  return (fpclassify(round(d)) != FP_ZERO);
-}
+  if (fpclassify(round(d)) != FP_ZERO) return 1;
     ]])],
     [AC_MSG_RESULT([yes])
     AC_DEFINE([HAS_WORKING_ROUND])],
@@ -443,9 +432,7 @@ int main (void) {
 AC_DEFUN([OCAML_C99_CHECK_FMA], [
   AC_MSG_CHECKING([whether fma works])
   OCAML_RUN_IFELSE(
-    [AC_LANG_SOURCE([[
-#include <math.h>
-int main (void) {
+    [AC_LANG_PROGRAM([[#include <math.h>]],[[
   /* Tests 264-266 from testsuite/tests/fma/fma.ml. These tests trigger the
      broken implementations of Cygwin64, mingw-w64 (x86_64) and VS2013-2017.
      The static volatile variables aim to thwart GCC's constant folding. */
@@ -463,14 +450,14 @@ int main (void) {
   y = 0x4p-540;
   z = 0x4p-1076;
   t266 = fma(x, y, z);
-  return (!(t264 == 0x1.0989687cp-1044 ||
-            t264 == 0x0.000004277ca1fp-1022 || /* Acceptable emulated values */
-            t264 == 0x0.00000428p-1022)
-       || !(t265 == 0x1.0988p-1060 ||
-            t265 == 0x0.0000000004278p-1022 ||  /* Acceptable emulated values */
-            t265 == 0x0.000000000428p-1022)
-       || !(t266 == 0x8p-1076));
-}
+  if (!(t264 == 0x1.0989687cp-1044 ||
+        t264 == 0x0.000004277ca1fp-1022 || /* Acceptable emulated values */
+        t264 == 0x0.00000428p-1022)
+   || !(t265 == 0x1.0988p-1060 ||
+        t265 == 0x0.0000000004278p-1022 ||  /* Acceptable emulated values */
+        t265 == 0x0.000000000428p-1022)
+   || !(t266 == 0x8p-1076))
+    return 1;
     ]])],
     [AC_MSG_RESULT([yes])
     AC_DEFINE([HAS_WORKING_FMA])],
@@ -525,19 +512,18 @@ AC_DEFUN([OCAML_CC_SUPPORTS_ATOMIC], [
   AC_MSG_CHECKING([whether the C compiler supports _Atomic types])
   saved_LIBS="$LIBS"
   LIBS="$LIBS $1"
-  AC_LINK_IFELSE([AC_LANG_SOURCE([[
-    #include <stdint.h>
-    #include <stdatomic.h>
-    int main(void)
-    {
-      _Atomic int64_t n;
-      int m;
-      int * _Atomic p = &m;
-      atomic_store_explicit(&n, 123, memory_order_release);
-      * atomic_exchange(&p, 0) = 45;
-      return atomic_load_explicit(&n, memory_order_acquire);
-    }
-    ]])],
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#include <stdint.h>
+#include <stdatomic.h>
+    ]],[[
+  _Atomic int64_t n;
+  int m;
+  int * _Atomic p = &m;
+  atomic_store_explicit(&n, 123, memory_order_release);
+  * atomic_exchange(&p, 0) = 45;
+  if (atomic_load_explicit(&n, memory_order_acquire))
+    return 1;
+  ]])],
   [cc_supports_atomic=true
    AC_MSG_RESULT([yes])],
   [cc_supports_atomic=false
