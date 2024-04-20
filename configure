@@ -18882,20 +18882,7 @@ fi
 # enabling zstd when the resulting executable doesn't actually work.
 case $host in #(
   *-w64-mingw32*|*-pc-windows) :
-    if test x"$build" = x"$host"
-then :
-
-      check_zstd_runs=true
-else $as_nop
-
-      case $build in #(
-  *-pc-msys|*-pc-cygwin*) :
-    check_zstd_runs=true ;; #(
-  *) :
-    check_zstd_runs=false ;;
-esac
-
-fi ;; #(
+    check_zstd_runs=$host_runnable ;; #(
   *) :
     check_zstd_runs=false ;;
 esac
@@ -18903,15 +18890,8 @@ esac
 if test x"$zstd_status" = "xok"
 then :
 
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether programs linked zstd can execute" >&5
-printf %s "checking whether programs linked zstd can execute... " >&6; }
-  if ! $check_zstd_runs
-then :
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: skipped" >&5
-printf "%s\n" "skipped" >&6; }
-else $as_nop
-
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether programs can be linked with zstd" >&5
+printf %s "checking whether programs can be linked with zstd... " >&6; }
 
   saved_CC="$CC"
   saved_CFLAGS="$CFLAGS"
@@ -18924,19 +18904,8 @@ else $as_nop
   mv confdefs.h confdefs.h.bak
   touch confdefs.h
 
-    LIBS="$LIBS $zstd_libs"
-    CFLAGS="$CFLAGS $zstd_flags"
-
-  old_cross_compiling="$cross_compiling"
-  if test "x$host_runnable" = 'xtrue'
-then :
-  cross_compiling='no'
-fi
-  if test "$cross_compiling" = yes
-then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: skipped" >&5
-printf "%s\n" "skipped" >&6; }
-else $as_nop
+  LIBS="$LIBS $zstd_libs"
+  CFLAGS="$CFLAGS $zstd_flags"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -18946,21 +18915,38 @@ int main(void) {
 }
 
 _ACEOF
-if ac_fn_c_try_run "$LINENO"
+if ac_fn_c_try_link "$LINENO"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether programs linked with zstd can execute" >&5
+printf %s "checking whether programs linked with zstd can execute... " >&6; }
+    if $check_zstd_runs
+then :
+  if ac_fn_c_try_run LINENO
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-      zstd_status="programs linked with zstd do not appear to be executable."
+        zstd_libs=''
+        zstd_flags=''
+        zstd_status="programs linked with zstd do not appear to be executable."
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: skipped" >&5
+printf "%s\n" "skipped" >&6; }
 fi
-
-  cross_compiling="$old_cross_compiling"
-
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+    zstd_libs=''
+    zstd_flags=''
+    zstd_status="zstd found, but programs cannot be linked with it."
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
 
   # Restore the content of confdefs.h
   mv confdefs.h.bak confdefs.h
@@ -18971,7 +18957,6 @@ fi
   CC="$saved_CC"
   LIBS="$saved_LIBS"
 
-fi
 fi
 
 if test x"$zstd_status" = "xok"
