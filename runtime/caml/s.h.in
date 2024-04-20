@@ -307,3 +307,6 @@
 #undef HAS_BSD_GETAFFINITY_NP
 
 #undef HAS_ZSTD
+
+#undef HAS_MEMCMPEQ
+#undef LIBC_IS_MUSL

@@ -1552,6 +1552,17 @@ AS_CASE([$arch],
       # Alpine and other musl-based Linux distributions
       [common_cflags="-no-pie $common_cflags"])])
 
+# Detect musl to prevent calling unoptimized
+# string functions
+AS_CASE([$host],
+  [*-linux-musl],
+    [AC_DEFINE([LIBC_IS_MUSL])]
+)
+
+# Detect highly optimized __memcmpeq function
+# (exists at least in glibc)
+AC_CHECK_FUNC([__memcmpeq], [AC_DEFINE([HAS_MEMCMPEQ])])
+
 # Assembler
 
 AS_IF([test -n "$target_alias"],
