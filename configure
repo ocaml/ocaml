@@ -18932,7 +18932,8 @@ else $as_nop
 printf "%s\n" "no" >&6; }
         zstd_libs=''
         zstd_flags=''
-        zstd_status="programs linked with zstd do not appear to be executable."
+        zstd_status=\
+"programs linked with zstd do not appear to be executable."
 fi
 else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: skipped" >&5

@@ -2317,7 +2317,8 @@ int main(void) {
         [AC_MSG_RESULT([no])
         zstd_libs=''
         zstd_flags=''
-        zstd_status="programs linked with zstd do not appear to be executable."])],
+        zstd_status=\
+"programs linked with zstd do not appear to be executable."])],
       [AC_MSG_RESULT([skipped])])],
     [AC_MSG_RESULT([no])
     zstd_libs=''
