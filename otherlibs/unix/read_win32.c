@@ -130,7 +130,8 @@ intnat caml_unix_nonblock_read(value fd, value buf, intnat ofs, intnat len)
 }
 
 CAMLprim value caml_byte_unix_nonblock_read(value fd, value buf, value vofs,
-                                   value vlen) {
+					    value vlen) {
   CAMLparam0();
-  CAMLreturn(Val_int(caml_unix_nonblock_read(fd,buf,Int_val(vofs),Int_val(vlen))));
+  CAMLreturn(Val_int(caml_unix_nonblock_read(fd,buf,Int_val(vofs),
+					     Int_val(vlen))));
 }

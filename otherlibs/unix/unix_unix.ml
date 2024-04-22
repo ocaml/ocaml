@@ -277,7 +277,8 @@ external unsafe_single_write : file_descr -> bytes -> int -> int -> int
 external unsafe_nonblock_single_write :
   file_descr -> bytes -> (int [@untagged]) -> (int [@untagged])
   -> (int [@untagged])
-  = "caml_byte_unix_nonblock_single_write" "caml_unix_nonblock_single_write" [@@noalloc]
+  = "caml_byte_unix_nonblock_single_write" "caml_unix_nonblock_single_write"
+      [@@noalloc]
 
 let read fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
