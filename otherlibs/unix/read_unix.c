@@ -54,13 +54,13 @@ CAMLprim value caml_unix_read_bigarray(value fd, value vbuf,
   CAMLreturn(Val_long(ret));
 }
 
-intnat caml_unix_fast_read(value fd, value buf, intnat ofs, intnat len)
+intnat caml_unix_nonblock_read(value fd, value buf, intnat ofs, intnat len)
 {
   return read(Int_val(fd), &Byte(buf, ofs), len);
 }
 
-CAMLprim value caml_byte_unix_fast_read(value fd, value buf, value vofs,
+CAMLprim value caml_byte_unix_nonblock_read(value fd, value buf, value vofs,
                                    value vlen) {
   CAMLparam0();
-  CAMLreturn(Val_int(caml_unix_fast_read(fd,buf,Int_val(vofs),Int_val(vlen))));
+  CAMLreturn(Val_int(caml_unix_nonblock_read(fd,buf,Int_val(vofs),Int_val(vlen))));
 }
