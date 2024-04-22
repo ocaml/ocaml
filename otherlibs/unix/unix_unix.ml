@@ -315,7 +315,7 @@ let single_write_bigarray fd buf ofs len =
   else unsafe_write_bigarray fd buf ofs len ~single:true
 let nonblock_single_write fd buf ofs len =
   if ofs < 0 || len < 0 || ofs+len > Bytes.length buf then
-    invalid_arg "single_write";
+    invalid_arg "Unix.nonblock_single_write";
   let ret = unsafe_nonblock_single_write fd buf ofs len in
   if ret == -1 then raise_unix_error "Unix.nonblock_single_write" "";
   ret
