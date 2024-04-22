@@ -20,7 +20,7 @@
 
 #include "misc.h"
 
-CAMLextern uintnat caml_max_stack_wsize;
+CAMLextern atomic_uintnat caml_max_stack_wsize;
 CAMLextern uintnat caml_fiber_wsz;
 CAMLextern uintnat caml_major_cycles_completed;
 

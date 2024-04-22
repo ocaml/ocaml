@@ -982,13 +982,16 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
 
     # When building on Cygwin/MSYS2, flexlink may be a shell script which
     # then cannot be executed by ocamlc/ocamlopt. Having located flexlink,
-    # ensure it can be executed from a native Windows process.
-    AS_CASE([$build],
-      [*-pc-msys|*-pc-cygwin*],
-        [flexlink_where="$(cmd /c "$flexlink" -where 2>/dev/null)"
-        AS_IF([test -z "$flexlink_where"],
-          [AC_MSG_ERROR(m4_normalize([$flexlink is not executable from a native
-            Win32 process]))])])
+    # ensure it can be executed from a native Windows process. The check
+    # is only necessary when cross-compiling.
+    AS_IF([test x"$build" != x"$host"],[
+      AS_CASE([$build],
+        [*-pc-msys|*-pc-cygwin*],
+          [flexlink_where="$(cmd /c "$flexlink" -where 2>/dev/null)"
+          AS_IF([test -z "$flexlink_where"],
+            [AC_MSG_ERROR(m4_normalize([$flexlink is not executable from a
+            native Win32 process]))])])
+    ])
   ])
 
   OCAML_TEST_FLEXDLL_H([$flexdll_source_dir])
@@ -2284,6 +2287,44 @@ AS_IF([test x"$with_zstd" != "xno"],
         [zstd_status="zstd library too old: version 1.4 or later is needed"],
         [[#include <zstd.h>]])],
       [zstd_status="zstd library not found"])]))
+
+# When building the mingw-w64 port in Cygwin, it is very easy to have the
+# library available, but not have the DLL in PATH. This then causes the build to
+# fail as soon as ocamlrun is first executed. This check avoids automatically
+# enabling zstd when the resulting executable doesn't actually work.
+AS_CASE([$host],
+  [*-w64-mingw32*|*-pc-windows],
+    [check_zstd_runs=$host_runnable],
+  [check_zstd_runs=false])
+
+AS_IF([test x"$zstd_status" = "xok"],[
+  AC_MSG_CHECKING([whether programs can be linked with zstd])
+  OCAML_CC_SAVE_VARIABLES
+  LIBS="$LIBS $zstd_libs"
+  CFLAGS="$CFLAGS $zstd_flags"
+  AC_LINK_IFELSE(
+    [AC_LANG_SOURCE([[
+#include <zstd.h>
+int main(void) {
+  return (ZSTD_versionNumber() == 0);
+}
+    ]])],
+    [AC_MSG_RESULT([yes])
+    AC_MSG_CHECKING([whether programs linked with zstd can execute])
+    AS_IF([$check_zstd_runs],
+      [AS_IF([ac_fn_c_try_run LINENO],
+        [AC_MSG_RESULT([yes])],
+        [AC_MSG_RESULT([no])
+        zstd_libs=''
+        zstd_flags=''
+        zstd_status=\
+"programs linked with zstd do not appear to be executable."])],
+      [AC_MSG_RESULT([skipped])])],
+    [AC_MSG_RESULT([no])
+    zstd_libs=''
+    zstd_flags=''
+    zstd_status="zstd found, but programs cannot be linked with it."])
+  OCAML_CC_RESTORE_VARIABLES])
 
 AS_IF([test x"$zstd_status" = "xok"],
   [AC_MSG_NOTICE([compressed compilation artefacts supported])

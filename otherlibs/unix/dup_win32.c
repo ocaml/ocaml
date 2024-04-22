@@ -20,6 +20,7 @@
 
 #define _WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
+#include <io.h>
 
 static HANDLE duplicate_handle(BOOL inherit, HANDLE oldh)
 {

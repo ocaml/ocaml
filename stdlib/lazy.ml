@@ -39,7 +39,7 @@
    If OCaml was configured with the -flat-float-array option (which is
    currently the default), the following is also true:
    We cannot use representation (3) for a [float Lazy.t] because
-   [caml_make_array] assumes that only a [float] value can have tag
+   [caml_array_make] assumes that only a [float] value can have tag
    [Double_tag].
 
    We have to use the built-in type constructor [lazy_t] to

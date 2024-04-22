@@ -83,7 +83,7 @@ function set_configuration {
     mkdir -p "$CACHE_DIRECTORY"
 
     local CACHE_KEY CACHE_FILE_PREFIX CACHE_FILE
-    CACHE_KEY=$({ cat configure; uname; } | shasum | cut -c 1-7)
+    CACHE_KEY=$({ cat configure; uname; } | sha1sum | cut -c 1-7)
     CACHE_FILE_PREFIX="$CACHE_DIRECTORY/config.cache-$1"
     CACHE_FILE="$CACHE_FILE_PREFIX-$CACHE_KEY"
 
@@ -217,7 +217,7 @@ case "$1" in
         # For an explanation of the sed command, see
         # https://github.com/appveyor/ci/issues/1824
         script --quiet --return --command \
-          "$MAKE -C ../$BUILD_PREFIX-$PORT world.opt" \
+          "$MAKE -C ../$BUILD_PREFIX-$PORT" \
           "../$BUILD_PREFIX-$PORT/build.log" |
             sed -e 's/\d027\[K//g' \
                 -e 's/\d027\[m/\d027[0m/g' \

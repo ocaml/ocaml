@@ -77,7 +77,7 @@ static void print_pos(char *st_line, char *st_cptr)
 }
 
 
-static Noreturn void gen_error(int st_lineno, char *st_line, char *st_cptr, char *msg)
+CAMLnoret static void gen_error(int st_lineno, char *st_line, char *st_cptr, char *msg)
 {
     fprintf(stderr, "File \"%s\", line %d: %s\n",
             virtual_input_file_name, st_lineno, msg);

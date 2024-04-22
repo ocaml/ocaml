@@ -132,7 +132,7 @@ static uint16 caml_float_to_float16(float d)
       uint32_t mant_odd = (f.i >> 13) & 1; // resulting mantissa is odd
 
       // update exponent, rounding bias part 1
-      f.i += ((15 - 127) << 23) + 0xfff;
+      f.i += ((uint32_t)(15 - 127) << 23) + 0xfff;
       // rounding bias part 2
       f.i += mant_odd;
       // take the bits!

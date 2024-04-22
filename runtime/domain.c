@@ -348,8 +348,9 @@ int caml_send_interrupt(struct interruptor* target)
   /* signal that there is an interrupt pending */
   atomic_store_release(&target->interrupt_pending, 1);
 
-  /* Signal the condition variable, in case the target is
-     itself waiting for an interrupt to be processed elsewhere */
+  /* Signal the condition variable, in case the target is itself
+     waiting for an interrupt to be processed elsewhere, or to wake up
+     the backup thread. */
   caml_plat_lock(&target->lock);
   caml_plat_broadcast(&target->cond); // OPT before/after unlock? elide?
   caml_plat_unlock(&target->lock);
@@ -701,6 +702,7 @@ static void domain_create(uintnat initial_minor_heap_wsize,
   domain_state->gc_regs = NULL;
 
   domain_state->allocated_words = 0;
+  domain_state->allocated_words_direct = 0;
   domain_state->swept_words = 0;
 
   domain_state->local_roots = NULL;
@@ -1018,8 +1020,8 @@ static void* backup_thread_func(void* v)
             caml_plat_unlock(&di->domain_lock);
           }
         }
-        /* Wait safely if there is nothing to do.
-         * Will be woken from caml_leave_blocking_section
+        /* Wait safely if there is nothing to do. Will be woken from
+         * caml_send_interrupt and domain_terminate.
          */
         caml_plat_lock(&s->lock);
         msg = atomic_load_acquire (&di->backup_thread_msg);

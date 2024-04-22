@@ -133,7 +133,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Pbswap16
   | Pbbswap _ -> No_effects, No_coeffects
   | Pint_as_pointer -> No_effects, No_coeffects
-  | Popaque -> Arbitrary_effects, Has_coeffects
+  | Popaque | Ppoll -> Arbitrary_effects, Has_coeffects
   | Psequand
   | Psequor ->
       (* Removed by [Closure_conversion] in the flambda pipeline. *)

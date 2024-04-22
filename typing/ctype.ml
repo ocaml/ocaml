@@ -1926,6 +1926,17 @@ let local_non_recursive_abbrev uenv p ty =
                    (*  Polymorphic Unification  *)
                    (*****************************)
 
+(* Polymorphic unification is hard in the presence of recursive types.  A
+   correctness argument for the approach below can be made by reference to
+   "Numbering matters: first-order canonical forms for second-order recursive
+   types" (ICFP'04) by Gauthier & Pottier. That work describes putting numbers
+   on nodes; we do not do that here, but instead make a decision about whether
+   to abort or continue based on the comparison of the numbers if we calculated
+   them. A different approach would actually store the relevant numbers in the
+   [Tpoly] nodes. (The algorithm here actually pre-dates that paper, which was
+   developed independently. But reading and understanding the paper will help
+   guide intuition for reading this algorithm nonetheless.) *)
+
 (* Since we cannot duplicate universal variables, unification must
    be done at meta-level, using bindings in univar_pairs *)
 let rec unify_univar t1 t2 = function

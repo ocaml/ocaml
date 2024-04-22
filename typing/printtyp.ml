@@ -716,6 +716,18 @@ let wrap_printing_env ~error env f =
   if error then Env.without_cmis (wrap_printing_env env) f
   else wrap_printing_env env f
 
+let wrap_printing_env_error env f =
+  let wrap (loc : _ Location.loc) =
+    { loc with txt =
+        (fun fmt -> wrap_printing_env ~error:true env (fun () -> loc.txt fmt))
+    }
+  in
+  let err : Location.error = wrap_printing_env ~error:true env f in
+  { Location.kind = err.kind;
+    main = wrap err.main;
+    sub = List.map wrap err.sub;
+  }
+
 let rec lid_of_path = function
     Path.Pident id ->
       Longident.Lident (Ident.name id)

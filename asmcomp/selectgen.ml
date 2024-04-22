@@ -87,6 +87,7 @@ let oper_result_type = function
   | Craise _ -> typ_void
   | Ccheckbound -> typ_void
   | Copaque -> typ_val
+  | Cpoll -> typ_void
 
 (* Infer the size in bytes of the result of an expression whose evaluation
    may be deferred (cf. [emit_parts]). *)
@@ -325,7 +326,8 @@ method is_simple_expr = function
   | Cop(op, args, _) ->
       begin match op with
         (* The following may have side effects *)
-      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ | Copaque -> false
+      | Capply _ | Cextcall _ | Calloc | Cstore _ | Craise _ | Copaque
+      | Cpoll -> false
         (* The remaining operations are simple if their args are *)
       | Cload _ | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor
       | Cxor | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf
@@ -365,7 +367,7 @@ method effects_of exp =
   | Cop (op, args, _) ->
     let from_op =
       match op with
-      | Capply _ | Cextcall _ | Copaque -> EC.arbitrary
+      | Capply _ | Cextcall _ | Copaque | Cpoll -> EC.arbitrary
       | Calloc -> EC.none
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
@@ -433,6 +435,7 @@ method select_operation op args _dbg =
         (* Inversion addr/datum in Istore *)
       end
   | (Cdls_get, _) -> Idls_get, args
+  | (Cpoll, _) -> (Ipoll { return_label = None }), args
   | (Calloc, _) -> (Ialloc {bytes = 0; dbginfo = []}), args
   | (Caddi, _) -> self#select_arith_comm Iadd args
   | (Csubi, _) -> self#select_arith Isub args

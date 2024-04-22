@@ -627,16 +627,18 @@ static void update_major_slice_work(intnat howmuch,
 {
   double heap_words;
   intnat alloc_work, dependent_work, extra_work, new_work;
-  intnat my_alloc_count, my_dependent_count;
+  intnat my_alloc_count, my_alloc_direct_count, my_dependent_count;
   double my_extra_count;
   caml_domain_state *dom_st = Caml_state;
   uintnat heap_size, heap_sweep_words, total_cycle_work;
 
   my_alloc_count = dom_st->allocated_words;
+  my_alloc_direct_count = dom_st->allocated_words_direct;
   my_dependent_count = dom_st->dependent_allocated;
   my_extra_count = dom_st->extra_heap_resources;
   dom_st->stat_major_words += dom_st->allocated_words;
   dom_st->allocated_words = 0;
+  dom_st->allocated_words_direct = 0;
   dom_st->dependent_allocated = 0;
   dom_st->extra_heap_resources = 0.0;
   /*
@@ -707,19 +709,22 @@ static void update_major_slice_work(intnat howmuch,
                    (uintnat)heap_words);
   caml_gc_message (0x40, "allocated_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
-                   dom_st->allocated_words);
+                   my_alloc_count);
+  caml_gc_message (0x40, "allocated_words_direct = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "u\n",
+                   my_alloc_direct_count);
   caml_gc_message (0x40, "alloc work-to-do = %"
                          ARCH_INTNAT_PRINTF_FORMAT "d\n",
                    alloc_work);
   caml_gc_message (0x40, "dependent_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
-                   dom_st->dependent_allocated);
+                   my_dependent_count);
   caml_gc_message (0x40, "dependent work-to-do = %"
                          ARCH_INTNAT_PRINTF_FORMAT "d\n",
                    dependent_work);
   caml_gc_message (0x40, "extra_heap_resources = %"
                          ARCH_INTNAT_PRINTF_FORMAT "uu\n",
-                   (uintnat) (dom_st->extra_heap_resources * 1000000));
+                   (uintnat) (my_extra_count * 1000000));
   caml_gc_message (0x40, "extra work-to-do = %"
                          ARCH_INTNAT_PRINTF_FORMAT "d\n",
                    extra_work);
@@ -750,7 +755,7 @@ static void update_major_slice_work(intnat howmuch,
               " %"ARCH_INTNAT_PRINTF_FORMAT "d slice budget"
               ,
               caml_gc_phase_char(may_access_gc_phase),
-              (uintnat)heap_words, dom_st->allocated_words,
+              (uintnat)heap_words, my_alloc_count,
               alloc_work, dependent_work, extra_work,
               atomic_load (&work_counter),
               atomic_load (&work_counter) > atomic_load (&alloc_counter)
@@ -2015,6 +2020,7 @@ void caml_finish_marking (void)
     caml_shrink_mark_stack();
     Caml_state->stat_major_words += Caml_state->allocated_words;
     Caml_state->allocated_words = 0;
+    Caml_state->allocated_words_direct = 0;
     CAML_EV_END(EV_MAJOR_FINISH_MARKING);
   }
 }

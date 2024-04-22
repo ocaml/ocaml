@@ -389,7 +389,7 @@ value caml_process_pending_actions_with_root_exn(value root)
   return root;
 }
 
-value caml_process_pending_actions_with_root(value root)
+CAMLprim value caml_process_pending_actions_with_root(value root)
 {
   return caml_raise_if_exception(
     caml_process_pending_actions_with_root_exn(root));

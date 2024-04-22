@@ -1,0 +1,165 @@
+[
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_constant
+      constant 
+        PConst_int (-1,None)
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_constant
+      constant 
+        PConst_int (1,None)
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_constant
+      constant 
+        PConst_float (-1.0,None)
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_constant
+      constant 
+        PConst_float (1.0,None)
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_constant
+      constant 
+        PConst_float (-1.0,None)
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_constant
+      constant 
+        PConst_float (1.0,None)
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_apply
+      expression 
+        Pexp_ident "~+" 
+      [
+        <arg>
+        Nolabel
+          expression 
+            Pexp_constant
+            constant 
+              PConst_int (2,None)
+      ]
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_apply
+      expression 
+        Pexp_ident "~-" 
+      [
+        <arg>
+        Nolabel
+          expression 
+            attribute "foo"
+              []
+            Pexp_constant
+            constant 
+              PConst_int (1,None)
+      ]
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_apply
+      expression 
+        Pexp_ident "~+" 
+      [
+        <arg>
+        Nolabel
+          expression 
+            attribute "foo"
+              []
+            Pexp_constant
+            constant 
+              PConst_int (1,None)
+      ]
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_apply
+      expression 
+        Pexp_ident "~-" 
+      [
+        <arg>
+        Nolabel
+          expression 
+            attribute "foo"
+              []
+            Pexp_constant
+            constant 
+              PConst_float (1.0,None)
+      ]
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_apply
+      expression 
+        Pexp_ident "~+" 
+      [
+        <arg>
+        Nolabel
+          expression 
+            attribute "foo"
+              []
+            Pexp_constant
+            constant 
+              PConst_float (1.0,None)
+      ]
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_apply
+      expression 
+        Pexp_ident "~-." 
+      [
+        <arg>
+        Nolabel
+          expression 
+            attribute "foo"
+              []
+            Pexp_constant
+            constant 
+              PConst_float (1.0,None)
+      ]
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_apply
+      expression 
+        Pexp_ident "~+." 
+      [
+        <arg>
+        Nolabel
+          expression 
+            attribute "foo"
+              []
+            Pexp_constant
+            constant 
+              PConst_float (1.0,None)
+      ]
+  structure_item 
+    Pstr_eval
+    expression 
+      Pexp_apply
+      expression 
+        Pexp_ident "~+" 
+      [
+        <arg>
+        Nolabel
+          expression 
+            attribute "foo"
+              []
+            Pexp_constant
+            constant 
+              PConst_int (2,None)
+      ]
+]
+

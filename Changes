@@ -19,11 +19,30 @@ _______________
   (Nick Barnes, review by Stephen Dolan, Jacques-Henri Jourdan
    and Guillaume Munch-Maccagnoni).
 
+- #12789: Restore caml_unregister_frametable from OCaml 4
+  (Frédéric Recoules, review by Gabriel Scherer)
+
+- #13003: new, more consistent names for array-creation C functions
+  (Gabriel Scherer, review by Olivier Nicole)
+
+- #13086: Avoid spurious major GC slices.
+  (Damien Doligez, report by Stephen Dolan, review by Gabriel Scherer
+   and Stephen Dolan)
+
 ### Code generation and optimizations:
 
-- #####: Enable compile-time option -function-sections on all previously
+- #13014: Enable compile-time option -function-sections on all previously
   unsupported native backends (POWER, riscv64 and s390x)
   (Miod Vallat, review by Nicolás Ojeda Bär)
+
+- #7241, #12555: fix a soundness bug in the pattern-matching compiler
+  when side-effects mutate the scrutinee during matching.
+  Note that #7241 is not fully fixed yet, see the issue for the
+  current status.
+  (Gabriel Scherer, review by Nick Roberts)
+
+- #13079: Save and restore frame pointer across Iextcall on ARM64
+  (Tim McGilchrist, review by KC Sivaramakrishnan and Miod Vallat)
 
 ### Standard library:
 
@@ -34,6 +53,10 @@ _______________
 - #12869: Add List.take, List.drop, List.take_while and List.drop_while
   (Kate Deplaix and Oscar Butler-Aldridge review by Nicolás Ojeda Bär,
    Craig Ferguson and Gabriel Scherer)
+
+- #13047: Add Sys.poll_actions to (only) run pending runtime actions.
+  (Nick Barnes, review by Gabriel Scherer, Guillaume Munch-Maccagnoni, and
+  Vincent Laviron)
 
 ### Other libraries:
 
@@ -53,6 +76,9 @@ _______________
 - #12891: Improved styling for initial prompt
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #13053: Improved display of builtin types such as `_ list` when aliased.
+  (Samuel Vivien, review by Florian Angeletti)
+
 ### Manual and documentation:
 
 - #12868: Manual: simplify style colours of the post-processed manual and API
@@ -63,6 +89,17 @@ _______________
    `release-info/introduction.md`.
   (Florian Angeletti, review by Fabrice Buoro, Kate Deplaix, Damien Doligez, and
    Gabriel Scherer)
+
+- #12976: Manual: use webman/<version>/*.html and
+  webman/<version>/api/ for OCaml.org HTML manual generation
+  (Shakthi Kannan, review by Hannes Mehnert, and Florian Angeletti)
+
+- #13045: Emphasize caution about behaviour of custom block finalizers.
+  (Nick Barnes)
+
+- #13078: update Format tutorial on structural boxes to mention alignment
+  questions.
+  (Edwin Török, review by Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 
@@ -76,12 +113,21 @@ _______________
 - #12985, #12988: Better error messages for partially applied functors.
   (Florian Angeletti, report by Arthur Wendling, review by Gabriel Scherer)
 
+- #13051: Add a "Syntax error" to error messages for invalid package signatures.
+  (Samuel Vivien, review by Gabriel Scherer)
+
+- #13099: Fix erroneous loading of cmis for some module type errors.
+  (Nick Roberts, review by Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - #11129, #11148: enforce that ppxs do not produce `parsetree`s with
   an empty list of universally quantified type variables
   (`. int -> int` instead of `'a . int -> int'`)
   (Florian Angeletti, report by Simmo Saan, review by Gabriel Scherer)
+
+- #12534: document and refactor Matching.mk_failaction_pos
+  (Gabriel Scherer, review by Vincent Laviron and Nick Roberts)
 
 - #12896: Simplify the compilation of custom bytecode runtimes by explicitly
   compiling the primitives file before calling the linker. Tidy-up both the
@@ -100,15 +146,21 @@ _______________
 - #12968: Attach location to constants in the parsetree
   (Jules Aguillon, review by Gabriel Scherer)
 
+- #12959, #13055: Avoid an internal error on recursive module type inconsistency
+  (Florian Angeletti, review by Jacques Garrigue and Gabriel Scherer)
+
+- #13074, #13082, #13084: refactoring in the pattern-matching compiler
+  (Gabriel Scherer, review by Thomas Refis, Vincent Laviron and Nick Roberts)
+
 ### Build system:
 
 - #12909: Reorganise how MKEXE_VIA_CC is built to make it correct for MSVC by
   grouping all the linker flags at the end of the C compiler commandline
   (David Allsopp and Samuel Hym, review by Nicolás Ojeda Bär)
 
-- #12992: Check that flexlink can be executed only when building in a native
-  windows environment.
-  (Romain Beauxis, review by David Allsopp)
+- #12992, #13009: Check that flexlink can be executed only when building in a
+  native windows environment.
+  (Romain Beauxis, review by David Allsopp and Sébastien Hinderer)
 
 - #12996: Only link with -lgcc_eh when available.
   (Romain Beauxis, review by David Allsopp and Miod Vallat)
@@ -140,6 +192,17 @@ _______________
   (this was done for threads.cmxa in OCaml 3.11). Eliminates warnings from
   new lld when using threads.cma of duplicated libraries.
   (David Allsopp, review by Nicolás Ojeda Bär)
+
+- #13012: parsing: Fix dropped attributes after a '-' or '+'
+  The syntax '-(1 [@foo])' was incorrectly parsed as '-1'.
+  (Jules Aguillon, reviewed by Gabriel Scherer, report by Gabriel Scherer)
+
+- #13089: Fix bug in `runtime_events` library which could result in garbled
+  output under Windows.
+  (B. Szilvasy, review by Nicolás Ojeda Bär and Miod Vallat)
+
+- #13094: Fix undefined behavior of left-shifting a negative number.
+  (Antonin Décimo, review by Miod Vallat and Nicolás Ojeda Bär)
 
 OCaml 5.2.0
 ------------
@@ -620,6 +683,13 @@ OCaml 5.2.0
   (Lucas Pluvinage, Sadiq Jaffer and Olivier Nicole, review by Gabriel Scherer,
    David Allsopp, Tim McGilchrist and Thomas Leonard)
 
+- #13066, update OCAMLRUNPARAM documentation for the stack size parameter l
+  (Florian Angeletti, review by Nicolás Ojeda Bär, Tim McGilchrist, and
+   Miod Vallat)
+
+- #13092: document the existence of the `[@@poll error]` built-in attribute
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 * #10613, #12405: Simplify the values used for the system variable (`system:` in
@@ -799,6 +869,10 @@ OCaml 5.2.0
 - #12914: Slightly change the s390x assembly dialect in order to build with
   Clang's integrated assembler.
   (Miod Vallat, review by Gabriel Scherer)
+
+- #13001: do not read_back entire shapes to get aliases' uids when building the
+  usages index
+  (Ulysse Gérard, review by Gabriel Scherer and Nathanaëlle Courant)
 
 ### Build system:
 
@@ -1003,6 +1077,10 @@ OCaml 5.2.0
 - #12971, #12974: fix an uncaught Ctype.Escape exception on some
   invalid programs forming recursive types.
   (Gabriel Scherer, review by Florian Angeletti, report by Neven Villani)
+
+- #13058: Add TSan instrumentation to caml_call_gc(), since it may raise
+  exceptions.
+  (Fabrice Buoro, Olivier Nicole, Gabriel Scherer and Miod Vallat)
 
 OCaml 5.1.1 (8 December 2023)
 ----------------------------

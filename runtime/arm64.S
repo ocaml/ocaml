@@ -487,10 +487,12 @@ L(caml_call_gc):
         add     x29, sp, #0
     /* Store all registers (including ALLOC_PTR & TRAP_PTR) */
         SAVE_ALL_REGS
+        TSAN_ENTER_FUNCTION
         SWITCH_OCAML_TO_C
     /* Call the garbage collector */
         bl      G(caml_garbage_collection)
         SWITCH_C_TO_OCAML
+        TSAN_EXIT_FUNCTION
         RESTORE_ALL_REGS
     /* Free stack space and return to caller */
         ldp     x29, x30, [sp], 16
@@ -637,6 +639,8 @@ END_FUNCTION(caml_c_call_stack_args)
 
 FUNCTION(caml_start_program)
         CFI_STARTPROC
+        CFI_SIGNAL_FRAME
+
 #if defined(WITH_THREAD_SANITIZER)
         str     x0, [sp, -16]!
         CFI_ADJUST(16)
@@ -651,6 +655,7 @@ FUNCTION(caml_start_program)
 #endif
     /* domain state is passed as arg from C */
         mov     TMP, C_ARG_1
+    /* Initial entry point is caml_program */
         ADDRGLOBAL(TMP2, caml_program)
 
 /* Code shared with caml_callback* */
@@ -660,10 +665,10 @@ FUNCTION(caml_start_program)
 
 L(jump_to_caml):
     /* Set up stack frame and save callee-save registers */
-        CFI_OFFSET(29, -160)
-        CFI_OFFSET(30, -152)
         stp     x29, x30, [sp, -160]!
         CFI_ADJUST(160)
+        CFI_OFFSET(29, 0)
+        CFI_OFFSET(30, 8)
         add     x29, sp, #0
         stp     x19, x20, [sp, 16]
         stp     x21, x22, [sp, 32]

@@ -330,7 +330,6 @@ static void read_console_poll(HANDLE hStop, void *_data)
 
   DEBUG_PRINT("Waiting for data on console");
 
-  record;
   waitRes = 0;
   n = 0;
   lpSelectData = (LPSELECTDATA)_data;

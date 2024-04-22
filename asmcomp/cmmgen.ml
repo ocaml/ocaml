@@ -529,7 +529,7 @@ let rec transl env e =
          | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _
          | Pasrbint _ | Pbintcomp (_, _) | Pstring_load _ | Pbytes_load _
          | Pbytes_set _ | Pbigstring_load _ | Pbigstring_set _
-         | Pbbswap _), _)
+         | Pbbswap _ | Ppoll ), _)
         ->
           fatal_error "Cmmgen.transl:prim"
       end
@@ -710,7 +710,7 @@ and transl_catch env nfail ids body handler dbg =
 and transl_make_array dbg env kind args =
   match kind with
   | Pgenarray ->
-      Cop(Cextcall("caml_make_array", typ_val, [], true),
+      Cop(Cextcall("caml_array_of_uniform_array", typ_val, [], true),
           [make_alloc dbg 0 (List.map (transl env) args)], dbg)
   | Paddrarray | Pintarray ->
       make_alloc dbg 0 (List.map (transl env) args)
@@ -836,6 +836,9 @@ and transl_prim_1 env p arg dbg =
       Cop(mk_load_atomic Word_int, [transl env arg], dbg)
   | Patomic_load {immediate_or_pointer = Pointer} ->
       Cop(mk_load_atomic Word_val, [transl env arg], dbg)
+  | Ppoll ->
+    (Csequence (remove_unit (transl env arg),
+                return_unit dbg (Cop(Cpoll, [], dbg))))
   | (Pfield_computed | Psequand | Psequor
     | Prunstack | Presume | Preperform
     | Patomic_exchange | Patomic_cas | Patomic_fetch_add
@@ -1038,7 +1041,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Pmakearray (_, _) | Pduparray (_, _) | Parraylength _ | Parraysetu _
   | Parraysets _ | Pbintofint _ | Pintofbint _ | Pcvtbint (_, _)
   | Pnegbint _ | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
-  | Pbigarraydim _ | Pbytes_set _ | Pbigstring_set _ | Pbbswap _
+  | Pbigarraydim _ | Pbytes_set _ | Pbigstring_set _ | Pbbswap _ | Ppoll
     ->
       fatal_errorf "Cmmgen.transl_prim_2: %a"
         Printclambda_primitives.primitive p
@@ -1116,7 +1119,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _ | Pandbint _ | Porbint _
   | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
   | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _
-  | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _
+  | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _ | Ppoll
     ->
       fatal_errorf "Cmmgen.transl_prim_3: %a"
         Printclambda_primitives.primitive p
@@ -1149,7 +1152,7 @@ and transl_prim_4 env p arg1 arg2 arg3 arg4 dbg =
   | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _ | Pandbint _ | Porbint _
   | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
   | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _
-  | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _
+  | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _ | Ppoll
     ->
       fatal_errorf "Cmmgen.transl_prim_3: %a"
         Printclambda_primitives.primitive p
