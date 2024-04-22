@@ -313,7 +313,7 @@ let read_bigarray fd buf ofs len =
   else unsafe_read_bigarray fd buf ofs len
 let nonblock_read fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bytes.length buf - len then
-    invalid_arg "read";
+    invalid_arg "Unix.nonblock_read";
   let ret = unsafe_nonblock_read fd buf ofs len in
   if ret == -1 then raise_unix_error "Unix.nonblock_read" "";
   ret
