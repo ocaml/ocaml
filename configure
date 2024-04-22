@@ -869,9 +869,11 @@ cclibs
 oc_dll_ldflags
 oc_ldflags
 oc_cppflags
+common_cppflags
 tsan_native_runtime_c_sources
 tsan
 oc_cflags
+common_cflags
 toolchain
 ccomptype
 mkexe_via_cc_extra_cmd
@@ -3443,6 +3445,8 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 
 
 
+
+
  # TODO: rename this variable
 
 
@@ -3692,7 +3696,10 @@ esac
 
 case $host in #(
   *-pc-windows) :
-    CC=cl
+    if test -z "$CC"
+then :
+  CC=cl
+fi
     ccomptype=msvc
     S=asm
     SO=dll
@@ -13749,7 +13756,7 @@ case $ocaml_cc_vendor in #(
     CPP="$CC -E -Qn" # suppress generation of Sun PRO ident string
     ocamltest_CPP="$CPP" ;; #(
   msvc-*) :
-    CPP="$CC -nologo -EP"
+    CPP="$CC -nologo -EP -TC"
     ocamltest_CPP="$CPP 2> nul" ;; #(
   *) :
     CPP="$CC -E -P"
@@ -13976,6 +13983,20 @@ case $enable_warn_error,true in #(
      ;;
 esac
 
+case $host in #(
+  *-*-mingw32*|*-pc-windows) :
+    case $WINDOWS_UNICODE_MODE in #(
+  ansi) :
+    windows_unicode=0 ;; #(
+  compatible|"") :
+    windows_unicode=1 ;; #(
+  *) :
+    as_fn_error $? "unexpected windows unicode mode" "$LINENO" 5 ;;
+esac ;; #(
+  *) :
+    windows_unicode=0 ;;
+esac
+
 # We select high optimization levels, provided we can turn off:
 # - strict type-based aliasing analysis (too risky for the OCaml runtime)
 # - strict no-overflow conditions on signed integer arithmetic
@@ -14000,19 +14021,17 @@ case $ocaml_cc_vendor in #(
     # TODO: see whether the code can be fixed to avoid -Wno-unused
     common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
     internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
-    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE=$windows_unicode" ;; #(
   mingw-*) :
     as_fn_error $? "Unsupported C compiler for a MinGW-w64 build" "$LINENO" 5 ;; #(
   msvc-0*|msvc-1[0-8]*|msvc-19[012]*|msvc-193[0-7]) :
     # No C11 atomics support
     as_fn_error 69 "This version of MSVC is too old. Please use Visual Studio version 17.8 or above." "$LINENO" 5 ;; #(
   msvc-*) :
-    common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
+    common_cflags='-nologo -O2 -Gy- -MD'
     common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
-    internal_cppflags='-DUNICODE -D_UNICODE'
-    internal_cflags='-experimental:c11atomics -std:c11'
-    CFLAGS="$CFLAGS -experimental:c11atomics -std:c11"
+    internal_cflags="$cc_warnings"
+    internal_cppflags='-DUNICODE -D_UNICODE -D_CRT_NONSTDC_NO_WARNINGS'
     as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_-d2VolatileMetadata-" | $as_tr_sh`
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -d2VolatileMetadata-" >&5
 printf %s "checking whether the C compiler accepts -d2VolatileMetadata-... " >&6; }
@@ -14053,8 +14072,7 @@ else $as_nop
   :
 fi
 
-    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE=$windows_unicode" ;; #(
   xlc-*) :
     common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
     internal_cflags="$cc_warnings" ;; #(
@@ -15474,10 +15492,31 @@ fi
 # Support for C11 atomic types
 
 
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports _Atomic types" >&5
-printf %s "checking whether the C compiler supports _Atomic types... " >&6; }
+
+  saved_CC="$CC"
+  saved_CFLAGS="$CFLAGS"
+  saved_CPPFLAGS="$CPPFLAGS"
   saved_LIBS="$LIBS"
-  LIBS="$LIBS $cclibs"
+  saved_ac_ext="$ac_ext"
+  saved_ac_compile="$ac_compile"
+  # Move the content of confdefs.h to another file so it does not
+  # get included
+  mv confdefs.h confdefs.h.bak
+  touch confdefs.h
+
+
+  opts=""
+  if test -n ""
+then :
+  CFLAGS="$CFLAGS "; opts=""
+fi
+  if test -n "$cclibs"
+then :
+  LIBS="$LIBS $cclibs"; opts="${opts:+$opts }$cclibs"
+fi
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if $CC supports _Atomic types with ${opts:-no additional options}" >&5
+printf %s "checking if $CC supports _Atomic types with ${opts:-no additional options}... " >&6; }
+
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -15512,8 +15551,177 @@ printf "%s\n" "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
+
+
+  # Restore the content of confdefs.h
+  mv confdefs.h.bak confdefs.h
+  ac_compile="$saved_ac_compile"
+  ac_ext="$saved_ac_ext"
+  CPPFLAGS="$saved_CPPFLAGS"
+  CFLAGS="$saved_CFLAGS"
+  CC="$saved_CC"
   LIBS="$saved_LIBS"
 
+
+case $cc_supports_atomic,$ocaml_cc_vendor in #(
+  false,msvc-*) :
+
+
+  saved_CC="$CC"
+  saved_CFLAGS="$CFLAGS"
+  saved_CPPFLAGS="$CPPFLAGS"
+  saved_LIBS="$LIBS"
+  saved_ac_ext="$ac_ext"
+  saved_ac_compile="$ac_compile"
+  # Move the content of confdefs.h to another file so it does not
+  # get included
+  mv confdefs.h confdefs.h.bak
+  touch confdefs.h
+
+
+  opts=""
+  if test -n "-std:c11"
+then :
+  CFLAGS="$CFLAGS -std:c11"; opts="-std:c11"
+fi
+  if test -n ""
+then :
+  LIBS="$LIBS "; opts="${opts:+$opts }"
+fi
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if $CC supports _Atomic types with ${opts:-no additional options}" >&5
+printf %s "checking if $CC supports _Atomic types with ${opts:-no additional options}... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stdint.h>
+#include <stdatomic.h>
+
+int
+main (void)
+{
+
+  _Atomic int64_t n;
+  int m;
+  int * _Atomic p = &m;
+  atomic_store_explicit(&n, 123, memory_order_release);
+  * atomic_exchange(&p, 0) = 45;
+  if (atomic_load_explicit(&n, memory_order_acquire))
+    return 1;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  cc_supports_atomic=true
+   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+else $as_nop
+  cc_supports_atomic=false
+   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+  # Restore the content of confdefs.h
+  mv confdefs.h.bak confdefs.h
+  ac_compile="$saved_ac_compile"
+  ac_ext="$saved_ac_ext"
+  CPPFLAGS="$saved_CPPFLAGS"
+  CFLAGS="$saved_CFLAGS"
+  CC="$saved_CC"
+  LIBS="$saved_LIBS"
+
+
+     if $cc_supports_atomic
+then :
+  common_cflags="$common_cflags -std:c11"
+else $as_nop
+
+
+  saved_CC="$CC"
+  saved_CFLAGS="$CFLAGS"
+  saved_CPPFLAGS="$CPPFLAGS"
+  saved_LIBS="$LIBS"
+  saved_ac_ext="$ac_ext"
+  saved_ac_compile="$ac_compile"
+  # Move the content of confdefs.h to another file so it does not
+  # get included
+  mv confdefs.h confdefs.h.bak
+  touch confdefs.h
+
+
+  opts=""
+  if test -n "-std:c11 -experimental:c11atomics"
+then :
+  CFLAGS="$CFLAGS -std:c11 -experimental:c11atomics"; opts="-std:c11 -experimental:c11atomics"
+fi
+  if test -n ""
+then :
+  LIBS="$LIBS "; opts="${opts:+$opts }"
+fi
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if $CC supports _Atomic types with ${opts:-no additional options}" >&5
+printf %s "checking if $CC supports _Atomic types with ${opts:-no additional options}... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stdint.h>
+#include <stdatomic.h>
+
+int
+main (void)
+{
+
+  _Atomic int64_t n;
+  int m;
+  int * _Atomic p = &m;
+  atomic_store_explicit(&n, 123, memory_order_release);
+  * atomic_exchange(&p, 0) = 45;
+  if (atomic_load_explicit(&n, memory_order_acquire))
+    return 1;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  cc_supports_atomic=true
+   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+else $as_nop
+  cc_supports_atomic=false
+   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+  # Restore the content of confdefs.h
+  mv confdefs.h.bak confdefs.h
+  ac_compile="$saved_ac_compile"
+  ac_ext="$saved_ac_ext"
+  CPPFLAGS="$saved_CPPFLAGS"
+  CFLAGS="$saved_CFLAGS"
+  CC="$saved_CC"
+  LIBS="$saved_LIBS"
+
+
+        if $cc_supports_atomic
+then :
+  common_cflags="$common_cflags -std:c11 -experimental:c11atomics"
+fi
+
+fi ;; #(
+  *) :
+     ;;
+esac
 if ! $cc_supports_atomic
 then :
   { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
@@ -20632,20 +20840,6 @@ if test x"$mandir" = x'${datarootdir}/man'
 then :
   mandir='${prefix}/man'
 fi
-
-case $host in #(
-  *-*-mingw32*|*-pc-windows) :
-    case $WINDOWS_UNICODE_MODE in #(
-  ansi) :
-    windows_unicode=0 ;; #(
-  compatible|"") :
-    windows_unicode=1 ;; #(
-  *) :
-    as_fn_error $? "unexpected windows unicode mode" "$LINENO" 5 ;;
-esac ;; #(
-  *) :
-    windows_unicode=0 ;;
-esac
 
 # Define default prefix correctly for the different Windows ports
 if test x"$prefix" = "xNONE"

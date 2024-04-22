@@ -20,11 +20,15 @@ jobs:
 
     timeout-minutes: 60
 
-    name: ${{ matrix.x86_64 && 'MSVC 64 bits' || 'MSVC 32 bits' }}
+    name: ${{ matrix.cc == 'cl' && 'MSVC' || 'clang-cl' }} ${{ matrix.x86_64 && '64 bits' || '32 bits' }}
 
     strategy:
       matrix:
         x86_64: [true, false]
+        cc: [cl, clang-cl]
+        exclude:
+          - cc: clang-cl
+            x86_64: false
 
     steps:
       - name: Save pristine PATH
@@ -71,9 +75,10 @@ jobs:
         shell: bash -e {0}
         env:
           HOST: ${{ matrix.x86_64 && 'x86_64-pc-windows' || 'i686-pc-windows' }}
+          CC: ${{ matrix.cc }}
         run: >-
           eval $(tools/msvs-promote-path) ;
-          ./configure --host=$HOST ;
+          ./configure --host=$HOST CC=$CC;
           make ;
           runtime/ocamlrun ocamlc -config ;
 
