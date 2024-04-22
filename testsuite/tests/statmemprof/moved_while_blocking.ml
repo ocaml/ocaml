@@ -105,9 +105,7 @@ let () =
   let th = Thread.create thread_fn () in
   let _:Gc.Memprof.t = Gc.Memprof.(start ~sampling_rate:1.
     { null_tracker with
-      alloc_minor = (fun info -> if info.size = 1 then
-                                     (say "    minor alloc\n"; Some ())
-                                 else None);
+      alloc_minor = (fun info -> say "    minor alloc\n"; Some ());
       alloc_major = (fun _ -> say "    major alloc\n"; Some "major block\n");
       promote = (fun () ->
         say "    promoting...\n";
