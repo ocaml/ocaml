@@ -1231,6 +1231,8 @@ AS_IF([! $arch64],
       [AC_DEFINE([ARCH_ALIGN_INT64], [1])])])
     ])])
 
+AC_CHECK_TYPES([max_align_t], [], [], [[#include <stddef.h>]])
+
 # Atomics library
 
 AS_IF([! $arch64],

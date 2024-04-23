@@ -15549,6 +15549,17 @@ fi
 esac
 fi
 
+ac_fn_c_check_type "$LINENO" "max_align_t" "ac_cv_type_max_align_t" "#include <stddef.h>
+"
+if test "x$ac_cv_type_max_align_t" = xyes
+then :
+
+printf "%s\n" "#define HAVE_MAX_ALIGN_T 1" >>confdefs.h
+
+
+fi
+
+
 # Atomics library
 
 if ! $arch64
