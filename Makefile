@@ -1102,22 +1102,13 @@ partialclean::
 ## Lists of source files
 
 ifneq "$(WINPTHREADS_SOURCE_DIR)" ""
-winpthreads_SOURCES = $(addprefix $(WINPTHREADS_SOURCE_DIR)/src/, \
-  cond.c \
-  misc.c \
-  mutex.c \
-  rwlock.c \
-  sched.c \
-  spinlock.c \
-  thread.c)
+winpthreads_SOURCES = cond.c misc.c mutex.c rwlock.c sched.c spinlock.c thread.c
 
-winpthreads_OBJECTS = $(winpthreads_SOURCES:.c=.$(O))
+winpthreads_OBJECTS = \
+  $(addprefix runtime/winpthreads/, $(winpthreads_SOURCES:.c=.$(O)))
 else
 winpthreads_OBJECTS =
 endif
-
-clean::
-	rm -f winpthreads-sources/src/*.obj winpthreads/src/*.obj
 
 runtime_COMMON_C_SOURCES = \
   addrmap \
@@ -1450,6 +1441,15 @@ endif # ifeq "$(COMPUTE_DEPS)" "true"
 	  $$(OUTPUTOBJ)$$@ $$<
 endef
 
+runtime/winpthreads/%.$(O): $(WINPTHREADS_SOURCE_DIR)/src/%.c \
+                            $(wildcard $(WINPTHREADS_SOURCE_DIR)/include/*.h) \
+                              | runtime/winpthreads
+	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ $<
+
+runtime/winpthreads:
+	$(MKDIR) $@
+
 $(DEPDIR)/runtime:
 	$(MKDIR) $@
 
@@ -1536,7 +1536,7 @@ clean::
 	rm -f runtime/primitives runtime/primitives*.new runtime/prims.c \
 	  $(runtime_BUILT_HEADERS)
 	rm -f runtime/domain_state.inc
-	rm -rf $(DEPDIR)
+	rm -rf $(DEPDIR) runtime/winpthreads
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
 
 .PHONY: runtimeopt
