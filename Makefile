@@ -1103,12 +1103,12 @@ winpthreads_SOURCES = $(addprefix $(WINPTHREADS_SOURCE_DIR)/src/, \
   thread.c)
 
 winpthreads_OBJECTS = $(winpthreads_SOURCES:.c=.$(O))
-
-clean::
-	rm -f $(winpthreads_OBJECTS)
 else
 winpthreads_OBJECTS =
 endif
+
+clean::
+	rm -f winpthreads-sources/src/*.obj winpthreads/src/*.obj
 
 runtime_COMMON_C_SOURCES = \
   addrmap \
