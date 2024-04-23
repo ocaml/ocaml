@@ -868,9 +868,6 @@ flexlink.opt$(EXE): \
 	cd $(OPT_BINDIR); $(LN) $(call ROOT_FROM, $(OPT_BINDIR))/$@ flexlink$(EXE)
 	cp $(addprefix $(BYTE_BINDIR)/, $(FLEXDLL_OBJECTS)) $(OPT_BINDIR)
 
-partialclean::
-	rm -f flexlink.opt$(EXE) $(OPT_BINDIR)/flexlink$(EXE)
-
 else
 
 flexdll flexlink flexlink.opt:
@@ -890,6 +887,10 @@ flexdll flexlink flexlink.opt:
 	@false
 
 endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
+
+partialclean::
+	rm -f flexlink.opt flexlink.opt.exe \
+        $(OPT_BINDIR)/flexlink $(OPT_BINDIR)/flexlink.exe
 
 INSTALL_COMPLIBDIR = $(DESTDIR)$(COMPLIBDIR)
 INSTALL_FLEXDLLDIR = $(INSTALL_LIBDIR)/flexdll
