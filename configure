@@ -14172,8 +14172,6 @@ then :
   if test -f 'flexdll/flexdll.h'
 then :
   flexdll_source_dir=flexdll
-                    iflexdir='$(ROOTDIR)/flexdll'
-          with_flexdll="$iflexdir"
 else $as_nop
   if test x"$with_flexdll" != 'x'
 then :
@@ -14189,7 +14187,6 @@ then :
   mkdir -p flexdll-sources
           cp -r "$with_flexdll"/* flexdll-sources/
           flexdll_source_dir='flexdll-sources'
-                    iflexdir='$(ROOTDIR)/flexdll-sources'
           flexmsg=" (from $with_flexdll)"
 else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: requested but not available" >&5
@@ -14202,8 +14199,8 @@ then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
 else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $iflexdir$flexmsg" >&5
-printf "%s\n" "$iflexdir$flexmsg" >&6; }
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $flexdll_source_dir$flexmsg" >&5
+printf "%s\n" "$flexdll_source_dir$flexmsg" >&6; }
         bootstrapping_flexdll=true
         flexdll_dir=\"+flexdll\"
 fi ;; #(
@@ -14578,7 +14575,6 @@ then :
   if test -f 'winpthreads/src/winpthread_internal.h'
 then :
   winpthreads_source_dir=winpthreads
-                iwinpthreadsdir='$(ROOTDIR)/winpthreads/include'
 else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: required but not available (uninitialized submodule?)" >&5
 printf "%s\n" "required but not available (uninitialized submodule?)" >&6; }
@@ -14593,7 +14589,6 @@ then :
         cp "$with_winpthreads_msvc"/src/*.h winpthreads-sources/src
         cp "$with_winpthreads_msvc"/include/*.h winpthreads-sources/include
         winpthreads_source_dir='winpthreads-sources'
-                iwinpthreadsdir='$(ROOTDIR)/winpthreads-sources/includes'
         winpthreadsmsg=" (from $with_winpthreads_msvc)"
 else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: requested but not available" >&5
@@ -14606,8 +14601,8 @@ then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
 else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $winpthreads_source_dir$winpthreadmsg" >&5
-printf "%s\n" "$winpthreads_source_dir$winpthreadmsg" >&6; }
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $winpthreads_source_dir$winpthreadsmsg" >&5
+printf "%s\n" "$winpthreads_source_dir$winpthreadsmsg" >&6; }
       winpthreads_source_include_dir="$winpthreads_source_dir/include"
 
 
