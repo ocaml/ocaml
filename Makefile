@@ -2464,7 +2464,8 @@ distclean: clean
 	      boot/flexdll_*.o boot/flexdll_*.obj \
 	      boot/*.cm* boot/libcamlrun.a boot/libcamlrun.lib boot/ocamlc.opt
 	rm -f Makefile.config Makefile.build_config
-	rm -rf autom4te.cache flexdll-sources $(BYTE_BUILD_TREE) $(OPT_BUILD_TREE)
+	rm -rf autom4te.cache winpthreads-sources flexdll-sources \
+         $(BYTE_BUILD_TREE) $(OPT_BUILD_TREE)
 	rm -f config.log config.status libtool
 
 # Installation
