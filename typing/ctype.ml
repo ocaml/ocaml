@@ -324,11 +324,6 @@ let in_pattern_mode = function
   | Expression _ -> false
   | Pattern _ -> true
 
-let in_pattern_mode_opt uenv_opt =
-  match uenv_opt with
-  | None -> false
-  | Some uenv -> in_pattern_mode uenv
-
 let get_equations_scope = function
   | Expression _ -> invalid_arg "Ctype.get_equations_scope"
   | Pattern r -> r.penv.equations_scope
@@ -2289,10 +2284,17 @@ let compatible_paths p1 p2 =
   Path.same p1 path_bytes && Path.same p2 path_string ||
   Path.same p1 path_string && Path.same p2 path_bytes
 
-let compatible_labels ?(classic = !Clflags.classic) ?uenv l1 l2 =
+(* Two labels are considered compatible under certain conditions.
+  - they are the same
+  - in classic mode, only optional labels are relavant
+  - in pattern mode, we act as if we were in classic mode. If not, interactions
+    with GADTs from files compiled in classic mode would be unsound.
+*)
+let compatible_labels ?(classic = !Clflags.classic)
+    ?(in_pattern_mode = false) l1 l2 =
   l1 = l2
-  || (classic || in_pattern_mode_opt uenv)
-  && not (is_optional l1 || is_optional l2)
+  || (classic || in_pattern_mode)
+      && not (is_optional l1 || is_optional l2)
 
 (* Check for datatypes carefully; see PR#6348 *)
 let rec expands_to_datatype env ty =
@@ -2820,7 +2822,7 @@ and unify3 uenv t1 t1' t2 t2' =
     try
       begin match (d1, d2) with
         (Tarrow (l1, t1, u1, c1), Tarrow (l2, t2, u2, c2))
-        when compatible_labels ~uenv l1 l2 ->
+        when compatible_labels ~in_pattern_mode:(in_pattern_mode uenv) l1 l2 ->
           unify uenv t1 t2; unify uenv u1 u2;
           begin match is_commu_ok c1, is_commu_ok c2 with
           | false, true -> set_commu_ok c1
@@ -4866,8 +4868,8 @@ let rec subtype_rec env trace t1 t2 cstrs =
     match (get_desc t1, get_desc t2) with
       (Tvar _, _) | (_, Tvar _) ->
         (trace, t1, t2, !univar_pairs)::cstrs
-    | (Tarrow(l1, t1, u1, _), Tarrow(l2, t2, u2, _)) when l1 = l2
-      || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
+    | (Tarrow(l1, t1, u1, _), Tarrow(l2, t2, u2, _))
+      when compatible_labels l1 l2 ->
         let cstrs =
           subtype_rec
             env
