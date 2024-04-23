@@ -1631,7 +1631,8 @@ $(ocamlyacc_PROGRAM)$(EXE): $(ocamlyacc_OBJECTS)
 	$(V_MKEXE)$(MKEXE) -o $@ $^
 
 clean::
-	rm -f $(ocamlyacc_MODULES:=.o) $(ocamlyacc_MODULES:=.obj)
+	rm -f $(ocamlyacc_MODULES:=.o) $(ocamlyacc_MODULES:=.obj) \
+        yacc/wstr.o yacc/wstr.obj
 
 $(ocamlyacc_OTHER_MODULES:=.$(O)): yacc/defs.h
 
