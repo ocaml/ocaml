@@ -2290,10 +2290,9 @@ let compatible_paths p1 p2 =
   - in pattern mode, we act as if we were in classic mode. If not, interactions
     with GADTs from files compiled in classic mode would be unsound.
 *)
-let compatible_labels ?(classic = !Clflags.classic)
-    ?(in_pattern_mode = false) l1 l2 =
+let compatible_labels ?(in_pattern_mode = false) l1 l2 =
   l1 = l2
-  || (classic || in_pattern_mode)
+  || (!Clflags.classic || in_pattern_mode)
       && not (is_optional l1 || is_optional l2)
 
 (* Check for datatypes carefully; see PR#6348 *)
@@ -2340,7 +2339,7 @@ let rec mcomp type_pairs env t1 t2 =
         | (_, Tvar _)  ->
             ()
         | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _))
-          when compatible_labels ~classic:true l1 l2 ->
+          when compatible_labels ~in_pattern_mode:true l1 l2 ->
             mcomp type_pairs env t1 t2;
             mcomp type_pairs env u1 u2;
         | (Ttuple tl1, Ttuple tl2) ->
