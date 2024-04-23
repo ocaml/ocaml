@@ -16046,25 +16046,6 @@ fi
      ;;
 esac
 
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports __attribute__((aligned(n)))" >&5
-printf %s "checking whether the C compiler supports __attribute__((aligned(n)))... " >&6; }
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-typedef struct {__attribute__((aligned(8))) int t;} t;
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-  printf "%s\n" "#define SUPPORTS_ALIGNED_ATTRIBUTE 1" >>confdefs.h
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-
 ## Check whether __attribute__((optimize("tree-vectorize")))) is supported
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports __attribute__((optimize(\"tree-vectorize\")))" >&5
