@@ -92,6 +92,7 @@ META
 /emacs/*.elc
 
 /flexdll-sources
+/winpthreads-sources
 
 /lambda/runtimedef.ml
 
