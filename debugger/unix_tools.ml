@@ -22,6 +22,8 @@ open Unix
 
 (*** Convert a socket name into a socket address. ***)
 let convert_address address =
+  if address = "" then
+    failwith "Can't convert address: empty address";
   match String.index address ':' with
   | exception Not_found ->
      if Sys.win32 then failwith "Unix sockets not supported";
@@ -30,10 +32,12 @@ let convert_address address =
   | n ->
      let host = String.sub address 0 n
      and port = String.(sub address (n + 1) (length address - n - 1)) in
-     (try ignore (int_of_string port) with Failure _ ->
-        Printf.ksprintf failwith
-          "Can't convert address %S: the port number should be an integer"
-          address);
+     if host = "" || port = "" then
+       Printf.ksprintf failwith "Can't convert address %S: \
+                                 empty host or empty port" address;
+     port |> String.iter (fun c -> if c < '0' || '9' < c then
+       Printf.ksprintf failwith "Can't convert address %S: \
+                                 the port number should be an integer" address);
      let hints = [AI_FAMILY PF_INET; AI_SOCKTYPE SOCK_STREAM] in
      match getaddrinfo host port hints with
      | addr_info :: _ -> addr_info

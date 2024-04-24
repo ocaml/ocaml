@@ -202,6 +202,10 @@ void caml_debugger_init(void)
   winsock_startup();
   (void)atexit(winsock_cleanup);
 #endif
+
+  if (*address == 0)
+    caml_fatal_error("cannot connect to debugger: empty address");
+
   /* Parse the address */
   port = strchr(address, ':');
   if (port == NULL) {
@@ -227,8 +231,19 @@ void caml_debugger_init(void)
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
+#ifdef AI_NUMERICSERV
+    hints.ai_flags = AI_NUMERICSERV;
+#else
+    for (int i = 1; port[i]; i++)
+      if (port[i] < '0' || '9' < port[i])
+        caml_fatal_error("the port number should be an integer");
+#endif
 
     *port++ = 0;
+
+    if (*address == 0 || *port == 0)
+      caml_fatal_error("empty host or empty port");
+
     int ret = getaddrinfo(address, port, &hints, &host);
     if (ret != 0) {
       char buffer[512];
