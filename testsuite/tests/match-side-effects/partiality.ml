@@ -200,3 +200,43 @@ type _ t = Int : int -> int t | Bool : bool -> bool t
   (apply (field_mut 1 (global Toploop!)) "test" test/331))
 val test : 'a -> int = <fun>
 |}]
+
+
+
+(* In this example, the constructor on which unsound assumptions could
+   be made is not located directly below a mutable constructor, but
+   one level deeper inside an immutable pair constructor (below the
+   mutable constructor). This checks that there is a form of
+   "transitive" propagation of mutability.
+
+   Correctness condition: either there is a single mutable field read,
+   or the accesses below the second mutable read have a Match_failure
+   case.
+*)
+let deep r =
+  match Some r with
+  | Some { contents = ((), None) } -> 0
+  | _ when (r := ((), None); false) -> 1
+  | Some { contents = ((), Some n) } -> n
+  | None -> 3
+;;
+(* FAIL: two different reads (field_mut 0), but no Match_failure case. *)
+[%%expect {|
+(let
+  (deep/341 =
+     (function r/343 : int
+       (let (*match*/345 = (makeblock 0 r/343))
+         (catch
+           (if *match*/345
+             (let (*match*/347 =o (field_mut 0 (field_imm 0 *match*/345)))
+               (if (field_imm 1 *match*/347) (exit 21) 0))
+             (exit 21))
+          with (21)
+           (if (seq (setfield_ptr 0 r/343 [0: 0 0]) 0) 1
+             (if *match*/345
+               (let (*match*/351 =o (field_mut 0 (field_imm 0 *match*/345)))
+                 (field_imm 0 (field_imm 1 *match*/351)))
+               3))))))
+  (apply (field_mut 1 (global Toploop!)) "deep" deep/341))
+val deep : (unit * int option) ref -> int = <fun>
+|}]
