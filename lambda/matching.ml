@@ -1052,21 +1052,21 @@ type args = (lambda * let_kind) list
       (inline_lazy_force). *)
 
 type split_args = {
-  head : (pure_head * let_kind);
+  first : (pure_arg * let_kind);
   rest : args;
 }
 (** [split_args] is a more restricted form of argument list, used
-    when argument in head position is about to be matched upon. *)
+    when argument in first position is about to be matched upon. *)
 
-and pure_head =
+and pure_arg =
   | Var of Ident.t
   | Tuple of lambda
-(** The head argument in [split_args] form has already been bound to
+(** The first argument in [split_args] form has already been bound to
     a variable or it is a tuple of variables in the weird
     [do_for_multiple_match] case; in particular, it is a pure
     expression. *)
 
-let arg_of_pure_head = function
+let arg_of_pure = function
   | Var v -> Lvar v
   | Tuple tup -> tup
 
@@ -1605,7 +1605,7 @@ and precompile_var args cls def k =
           do_not_precompile args cls def k
       | _ -> (
           (* Precompile *)
-          let var_args = { head = (Var v, str); rest = rargs } in
+          let var_args = { first = (Var v, str); rest = rargs } in
           let var_cls =
             List.map
               (fun ((p, ps), act) ->
@@ -1743,7 +1743,7 @@ and precompile_or (cls : Simple.clause list) ors args def k =
               Lstaticraise (or_num, List.map (fun v -> Lvar v) vars)
             in
             let new_cases =
-              let arg = arg_of_pure_head (fst args.head) in
+              let arg = arg_of_pure (fst args.first) in
               Simple.explode_or_pat ~arg p
                 ~mk_action:mk_new_action
                 ~patbound_action_vars:(List.map fst patbound_action_vars)
@@ -1836,15 +1836,15 @@ type cell = {
 (** a submatrix after specializing by discriminant pattern;
     [ctx] is the context shared by all rows. *)
 
-let make_matching get_expr_args head def ctx { head = (arg, _); rest } =
+let make_matching get_expr_args head def ctx { first = (arg, _); rest } =
   let def = Default_environment.specialize head def
-  and args = get_expr_args head (arg_of_pure_head arg) rest
+  and args = get_expr_args head (arg_of_pure arg) rest
   and ctx = Context.specialize head ctx in
   { pm = { cases = []; args; default = def }; ctx; discr = head }
 
-let make_line_matching get_expr_args head def { head = (arg, _); rest } =
+let make_line_matching get_expr_args head def { first = (arg, _); rest } =
   { cases = [];
-    args = get_expr_args head (arg_of_pure_head arg) rest;
+    args = get_expr_args head (arg_of_pure arg) rest;
     default = Default_environment.specialize head def
   }
 
@@ -3548,7 +3548,7 @@ and compile_match_nonempty ~scopes repr partial ctx
   | { args = (arg, str) :: rest } ->
       let v = arg_to_var arg m.cases in
       bind_match_arg str v arg (
-        let args = { head = (Var v, Alias); rest } in
+        let args = { first = (Var v, Alias); rest } in
         let cases = List.map (half_simplify_nonempty ~arg:(Lvar v)) m.cases in
         let m = { m with args; cases } in
         let first_match, rem =
@@ -3644,7 +3644,7 @@ and do_compile_matching_pr ~scopes repr partial ctx x =
 and do_compile_matching ~scopes repr partial ctx pmh =
   match pmh with
   | Pm pm -> (
-      let arg = arg_of_pure_head (fst pm.args.head) in
+      let arg = arg_of_pure (fst pm.args.first) in
       let ph = what_is_cases pm.cases in
       let pomega = Patterns.Head.to_omega_pattern ph in
       let ploc = head_loc ~scopes ph in
@@ -4138,7 +4138,7 @@ let do_for_multiple_match ~scopes loc idl pat_act_list partial =
     let sloc = Scoped_location.of_location ~scopes loc in
     let args = List.map (fun id -> Lvar id) idl in
     Lprim (Pmakeblock (0, Immutable, None), args, sloc) in
-  let input_args = { head = (Tuple arg, Strict); rest = [] } in
+  let input_args = { first = (Tuple arg, Strict); rest = [] } in
   let handler =
     let partial = check_partial pat_act_list partial in
     let rows = map_on_rows (fun p -> (p, [])) pat_act_list in
