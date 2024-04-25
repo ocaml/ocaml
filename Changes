@@ -42,8 +42,9 @@ _______________
   unsupported native backends (POWER, riscv64 and s390x)
   (Miod Vallat, review by Nicolás Ojeda Bär)
 
-- #7241, #12555: fix a soundness bug in the pattern-matching compiler
-  when side-effects mutate the scrutinee during matching.
+- #7241, #12555, #13076, #13138: fix a soundness bug in the
+  pattern-matching compiler when side-effects mutate the scrutinee
+  during matching.
   Note that #7241 is not fully fixed yet, see the issue for the
   current status.
   (Gabriel Scherer, review by Nick Roberts)
