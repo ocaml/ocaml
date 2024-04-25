@@ -71,6 +71,10 @@ _______________
   (Olivier Nicole, suggested by Sébastien Hinderer and David Allsopp, review by
    Gabriel Scherer)
 
+* #13114: Support ocamldebug remote debugging over IPv6 on all
+  platforms, and over Unix domain sockets on Windows.
+  (Antonin Décimo, review by Gabriel Scherer and Miod Vallat)
+
 ### Toplevel:
 
 - #12891: Improved styling for initial prompt

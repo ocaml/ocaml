@@ -17,14 +17,12 @@
 
 /* Interface with the byte-code debugger */
 
-/* Remove when gethostbyname replaced with getaddrinfo */
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-
 #ifdef _WIN32
 #include <io.h>
 #endif /* _WIN32 */
 
 #include <string.h>
+#include <stdbool.h>
 
 #include "caml/alloc.h"
 #include "caml/codefrag.h"
@@ -71,6 +69,7 @@ CAMLexport void caml_debugger_cleanup_fork(void)
 #else
 #define ATOM ATOM_WS
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #undef ATOM
 /* Code duplication with otherlibs/unix/socketaddr.h is inevitable
  * because pulling winsock2.h creates many naming conflicts. */
@@ -97,11 +96,7 @@ struct sockaddr_un {
 static value marshal_flags;
 
 static int sock_domain;         /* Socket domain for the debugger */
-static union {                  /* Socket address for the debugger */
-  struct sockaddr s_gen;
-  struct sockaddr_un s_unix;
-  struct sockaddr_in s_inet;
-} sock_addr;
+static struct sockaddr_storage sock_addr; /* Socket address for the debugger */
 static int sock_addr_len;       /* Length of sock_addr */
 
 static int dbg_socket = -1;     /* The socket connected to the debugger */
@@ -123,7 +118,7 @@ static void open_connection(void)
                           NULL, 0,
                           0 /* not WSA_FLAG_OVERLAPPED */);
   if (sock == INVALID_SOCKET
-      || connect(sock, &sock_addr.s_gen, sock_addr_len) != 0)
+      || connect(sock, (struct sockaddr *)&sock_addr, sock_addr_len) != 0)
     caml_fatal_error("cannot connect to debugger at %s\n"
                      "WSA error code: %d",
                      (dbg_addr ? dbg_addr : "(none)"),
@@ -131,9 +126,13 @@ static void open_connection(void)
   dbg_socket = _open_osfhandle(sock, 0);
   if (dbg_socket == -1)
 #else
+#if defined(SOCK_CLOEXEC)
+  dbg_socket = socket(sock_domain, SOCK_STREAM | SOCK_CLOEXEC, 0);
+#else
   dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
+#endif
   if (dbg_socket == -1 ||
-      connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1)
+      connect(dbg_socket, (struct sockaddr *)&sock_addr, sock_addr_len) == -1)
 #endif
     caml_fatal_error("cannot connect to debugger at %s\n"
                      "error: %s",
@@ -170,16 +169,40 @@ static void winsock_cleanup(void)
 {
   WSACleanup();
 }
+
+/* from Filename.is_implicit */
+static bool filename_is_implicit(const char *path)
+{
+  size_t len = strlen(path);
+  return (len < 1 || path[0] != '/')
+    && (len < 1 || path[0] != '\\')
+    && (len < 2 || path[1] != ':')
+    && strncmp(path, "./", 2) != 0
+    && strncmp(path, ".\\", 2) != 0
+    && strncmp(path, "../", 3) != 0
+    && strncmp(path, "..\\", 3) != 0;
+}
+#else
+/* from Filename.is_implicit */
+static bool filename_is_implicit(const char *path)
+{
+  size_t len = strlen(path);
+  return (len < 1 || path[0] != '/')
+    && strncmp(path, "./", 2) != 0
+    && strncmp(path, "../", 3) != 0;
+}
 #endif
+static bool is_likely_ipv6(const char *address, const char *port)
+{
+  return (port - address >= 4) && address[0] == '[' && port[-1] == ']';
+}
 
 void caml_debugger_init(void)
 {
   char * address;
   char_os * a;
-  char * port, * p;
-  struct hostent * host;
+  char * port;
   value flags;
-  int n;
 
   flags = caml_alloc(2, Tag_cons);
   Store_field(flags, 0, Val_int(1)); /* Marshal.Closures */
@@ -191,7 +214,6 @@ void caml_debugger_init(void)
   address = a ? caml_stat_strdup_of_os(a) : NULL;
   if (address == NULL) return;
   if (dbg_addr != NULL) caml_stat_free(dbg_addr);
-  dbg_addr = address;
 
   /* #8676: erase the CAML_DEBUG_SOCKET variable so that processes
      created by the program being debugged do not try to connect with
@@ -206,45 +228,83 @@ void caml_debugger_init(void)
   winsock_startup();
   (void)atexit(winsock_cleanup);
 #endif
+
+  if (*address == 0)
+    caml_fatal_error("cannot connect to debugger: empty address");
+
   /* Parse the address */
-  port = NULL;
-  for (p = address; *p != 0; p++) {
-    if (*p == ':') { *p = 0; port = p+1; break; }
-  }
-  if (port == NULL) {
-    size_t a_len;
+  port = strrchr(address, ':');
+  if (port == NULL
+      /* "./foo" is explicitly a path and not a network address */
+      || !filename_is_implicit(address)) {
     /* Unix domain */
+    struct sockaddr_un *s_unix = (struct sockaddr_un *)&sock_addr;
     sock_domain = PF_UNIX;
-    sock_addr.s_unix.sun_family = AF_UNIX;
-    a_len = strlen(address);
-    if (a_len >= sizeof(sock_addr.s_unix.sun_path)) {
+    s_unix->sun_family = AF_UNIX;
+    size_t a_len = strlen(address);
+    if (a_len >= sizeof(s_unix->sun_path)) {
       caml_fatal_error
       (
         "debug socket path length exceeds maximum permitted length"
       );
     }
-    strncpy(sock_addr.s_unix.sun_path, address,
-            sizeof(sock_addr.s_unix.sun_path) - 1);
-    sock_addr.s_unix.sun_path[sizeof(sock_addr.s_unix.sun_path) - 1] = '\0';
-    sock_addr_len =
-      ((char *)&(sock_addr.s_unix.sun_path) - (char *)&(sock_addr.s_unix))
-        + a_len;
+    strncpy(s_unix->sun_path, address, sizeof(s_unix->sun_path) - 1);
+    s_unix->sun_path[sizeof(s_unix->sun_path) - 1] = '\0';
+    sock_addr_len = offsetof(struct sockaddr_un, sun_path) + a_len;
+    dbg_addr = address;
   } else {
     /* Internet domain */
-    sock_domain = PF_INET;
-    for (p = (char *) &sock_addr.s_inet, n = sizeof(sock_addr.s_inet);
-         n > 0; n--) *p++ = 0;
-    sock_addr.s_inet.sin_family = AF_INET;
-    sock_addr.s_inet.sin_addr.s_addr = inet_addr(address);
-    if (sock_addr.s_inet.sin_addr.s_addr == -1) {
-      host = gethostbyname(address);
-      if (host == NULL)
-        caml_fatal_error("unknown debugging host %s", address);
-      memmove(&sock_addr.s_inet.sin_addr,
-              host->h_addr_list[0], host->h_length);
+    struct addrinfo hints;
+    struct addrinfo *host;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+#ifdef AI_NUMERICSERV
+    hints.ai_flags = AI_NUMERICSERV;
+#else
+    for (int i = 1; port[i]; i++)
+      if (port[i] < '0' || '9' < port[i])
+        caml_fatal_error("the port number should be an integer");
+#endif
+
+    if (is_likely_ipv6(address, port)) {
+      *address++ = 0;
+      port[-1] = 0;
     }
-    sock_addr.s_inet.sin_port = htons(atoi(port));
-    sock_addr_len = sizeof(sock_addr.s_inet);
+    *port++ = 0;
+
+    if (*address == 0 || *port == 0)
+      caml_fatal_error("empty host or empty port");
+
+    int ret = getaddrinfo(address, port, &hints, &host);
+    if (ret != 0) {
+      char buffer[512];
+      const char *err;
+#ifdef _WIN32
+      DWORD error = WSAGetLastError();
+      if (FormatMessageA(
+            FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
+            error, 0, buffer, sizeof(buffer), NULL))
+        caml_fatal_error("cannot connect to debugger at %s port %s\nerror: %lu",
+                         address, port, error);
+      err = buffer;
+#else
+      err = ret != EAI_SYSTEM ? gai_strerror(ret)
+          : caml_strerror(errno, buffer, sizeof(buffer));
+#endif
+      caml_fatal_error("cannot connect to debugger at %s port %s\nerror: %s",
+                       address, port, err);
+    }
+    if (host == NULL)
+      caml_fatal_error("unknown debugging host %s port %s", address, port);
+
+    sock_domain = host->ai_family;
+    memcpy(&sock_addr, host->ai_addr, host->ai_addrlen);
+    sock_addr_len = host->ai_addrlen;
+    dbg_addr = address;
+
+    freeaddrinfo(host);
   }
   open_connection();
   caml_debugger_in_use = 1;
