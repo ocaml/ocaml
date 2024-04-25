@@ -72,7 +72,7 @@ jobs:
           key: cygwin-packages
 
       - name: Build OCaml
-        shell: bash -e {0}
+        shell: bash
         env:
           HOST: ${{ matrix.x86_64 && 'x86_64-pc-windows' || 'i686-pc-windows' }}
           CC: ${{ matrix.cc }}
@@ -83,7 +83,7 @@ jobs:
           runtime/ocamlrun ocamlc -config ;
 
       - name: Assemble backend with MinGW GASM and compare
-        shell: bash -e {0}
+        shell: bash
         run: >-
           x86_64-w64-mingw32-gcc -c -I./runtime  -I ./flexdll -D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=1 -DCAMLDLLIMPORT= -DIN_CAML_RUNTIME -DNATIVE_CODE -DTARGET_amd64 -DMODEL_default -DSYS_mingw64 -o runtime/amd64.o runtime/amd64.S ;
           dumpbin /disasm:nobytes runtime/amd64nt.obj > runtime/amd64nt.dump ;
@@ -98,7 +98,7 @@ jobs:
         if: matrix.x86_64
 
       - name: Run the test suite
-        shell: bash -e {0}
+        shell: bash
         run: >-
           eval $(tools/msvs-promote-path) ;
           make tests ;
