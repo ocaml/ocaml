@@ -1044,7 +1044,12 @@ type ('args, 'row) pattern_matching = {
   default : Default_environment.t
 }
 
-type args = (lambda * let_kind) list
+type 'a arg = {
+  arg : 'a;
+  str : let_kind;
+}
+
+type args = lambda arg list
 (** args are not just Ident.t in at least the following cases:
     - when matching the arguments of a constructor,
       direct field projections are used (make_field_args)
@@ -1052,7 +1057,7 @@ type args = (lambda * let_kind) list
       (inline_lazy_force). *)
 
 type split_args = {
-  first : (pure_arg * let_kind);
+  first : pure_arg arg;
   rest : args;
 }
 (** [split_args] is a more restricted form of argument list, used
@@ -1596,7 +1601,7 @@ and precompile_var args cls def k =
 
      If the rest doesn't generate any split, abort and do_not_precompile. *)
   match args.rest with
-  | (Lvar v, str) :: rargs -> (
+  | { arg = Lvar v; str } :: rargs -> (
       (* We will use the name of the head column of the submatrix
          we compile, and this is the *second* column of our argument. *)
       match cls with
@@ -1605,7 +1610,7 @@ and precompile_var args cls def k =
           do_not_precompile args cls def k
       | _ -> (
           (* Precompile *)
-          let var_args = { first = (Var v, str); rest = rargs } in
+          let var_args = { first = { arg = Var v; str }; rest = rargs } in
           let var_cls =
             List.map
               (fun ((p, ps), act) ->
@@ -1743,7 +1748,7 @@ and precompile_or (cls : Simple.clause list) ors args def k =
               Lstaticraise (or_num, List.map (fun v -> Lvar v) vars)
             in
             let new_cases =
-              let arg = arg_of_pure (fst args.first) in
+              let arg = arg_of_pure args.first.arg in
               Simple.explode_or_pat ~arg p
                 ~mk_action:mk_new_action
                 ~patbound_action_vars:(List.map fst patbound_action_vars)
@@ -1836,13 +1841,13 @@ type cell = {
 (** a submatrix after specializing by discriminant pattern;
     [ctx] is the context shared by all rows. *)
 
-let make_matching get_expr_args head def ctx { first = (arg, _); rest } =
+let make_matching get_expr_args head def ctx { first = { arg; _ }; rest } =
   let def = Default_environment.specialize head def
   and args = get_expr_args head (arg_of_pure arg) rest
   and ctx = Context.specialize head ctx in
   { pm = { cases = []; args; default = def }; ctx; discr = head }
 
-let make_line_matching get_expr_args head def { first = (arg, _); rest } =
+let make_line_matching get_expr_args head def { first = { arg; _ }; rest } =
   { cases = [];
     args = get_expr_args head (arg_of_pure arg) rest;
     default = Default_environment.specialize head def
@@ -1951,19 +1956,21 @@ let get_expr_args_constr ~scopes head arg rem =
       if pos > last_pos then
         argl
       else
-        (Lprim (Pfield (pos, Pointer, Immutable), [ arg ], loc),
-               binding_kind) :: make_args (pos + 1)
+        {
+          arg = Lprim (Pfield (pos, Pointer, Immutable), [ arg ], loc);
+          str = binding_kind;
+        } :: make_args (pos + 1)
     in
     make_args first_pos
   in
   if cstr.cstr_inlined <> None then
-    (arg, Alias) :: rem
+    { arg; str = Alias } :: rem
   else
     match cstr.cstr_tag with
     | Cstr_constant _
     | Cstr_block _ ->
         make_field_accesses Alias 0 (cstr.cstr_arity - 1) rem
-    | Cstr_unboxed -> (arg, Alias) :: rem
+    | Cstr_unboxed -> { arg; str = Alias } :: rem
     | Cstr_extension _ -> make_field_accesses Alias 1 cstr.cstr_arity rem
 
 let divide_constructor ~scopes ctx pm =
@@ -1980,7 +1987,10 @@ let get_expr_args_variant_constant = drop_expr_arg
 
 let get_expr_args_variant_nonconst ~scopes head arg rem =
   let loc = head_loc ~scopes head in
-  (Lprim (Pfield (1, Pointer, Immutable), [ arg ], loc), Alias) :: rem
+  {
+    arg = Lprim (Pfield (1, Pointer, Immutable), [ arg ], loc);
+    str = Alias;
+  } :: rem
 
 let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
   let rec divide = function
@@ -2174,7 +2184,10 @@ let inline_lazy_force arg loc =
 
 let get_expr_args_lazy ~scopes head arg rem =
   let loc = head_loc ~scopes head in
-  (inline_lazy_force arg loc, Strict) :: rem
+  {
+    arg = inline_lazy_force arg loc;
+    str = Strict;
+  } :: rem
 
 let divide_lazy ~scopes head ctx pm =
   divide_line (Context.specialize head)
@@ -2197,8 +2210,10 @@ let get_expr_args_tuple ~scopes head arg rem =
     if pos >= arity then
       rem
     else
-      (Lprim (Pfield (pos, Pointer, Immutable), [ arg ], loc),
-             Alias) :: make_args (pos + 1)
+      {
+        arg = Lprim (Pfield (pos, Pointer, Immutable), [ arg ], loc);
+        str = Alias;
+      } :: make_args (pos + 1)
   in
   make_args 0
 
@@ -2254,7 +2269,7 @@ let get_expr_args_record ~scopes head arg rem =
         | Immutable -> Alias
         | Mutable -> StrictOpt
       in
-      (access, str) :: make_args (pos + 1)
+      { str; arg = access } :: make_args (pos + 1)
   in
   make_args 0
 
@@ -2293,10 +2308,15 @@ let get_expr_args_array ~scopes kind head arg rem =
     if pos >= len then
       rem
     else
-      ( Lprim
-          (Parrayrefu kind, [ arg; Lconst (Const_base (Const_int pos)) ], loc),
-        StrictOpt )
-      :: make_args (pos + 1)
+      let arg =
+        Lprim
+          (Parrayrefu kind,
+           [ arg; Lconst (Const_base (Const_int pos)) ], loc)
+      in
+      {
+        arg;
+        str = StrictOpt;
+      } :: make_args (pos + 1)
   in
   make_args 0
 
@@ -3545,10 +3565,10 @@ and compile_match_nonempty ~scopes repr partial ctx
     (m : (args, Typedtree.pattern Non_empty_row.t clause) pattern_matching) =
   match m with
   | { cases = []; args = [] } -> comp_exit ctx m.default
-  | { args = (arg, str) :: rest } ->
+  | { args = { arg; str } :: rest } ->
       let v = arg_to_var arg m.cases in
       bind_match_arg str v arg (
-        let args = { first = (Var v, Alias); rest } in
+        let args = { first = { arg = Var v; str = Alias }; rest } in
         let cases = List.map (half_simplify_nonempty ~arg:(Lvar v)) m.cases in
         let m = { m with args; cases } in
         let first_match, rem =
@@ -3644,7 +3664,7 @@ and do_compile_matching_pr ~scopes repr partial ctx x =
 and do_compile_matching ~scopes repr partial ctx pmh =
   match pmh with
   | Pm pm -> (
-      let arg = arg_of_pure (fst pm.args.first) in
+      let arg = arg_of_pure pm.args.first.arg in
       let ph = what_is_cases pm.cases in
       let pomega = Patterns.Head.to_omega_pattern ph in
       let ploc = head_loc ~scopes ph in
@@ -3854,7 +3874,7 @@ let toplevel_handler ~scopes loc ~failer partial args cases compile_fun =
 
 let compile_matching ~scopes loc ~failer repr arg pat_act_list partial =
   let partial = check_partial pat_act_list partial in
-  let args = [ (arg, Strict) ] in
+  let args = [ { arg; str = Strict } ] in
   let rows = map_on_rows (fun pat -> (pat, [])) pat_act_list in
   let handler =
     toplevel_handler ~scopes loc ~failer partial args rows
@@ -4053,7 +4073,7 @@ let for_let ~scopes loc param pat body =
 (* Easy case since variables are available *)
 let for_tupled_function ~scopes loc paraml pats_act_list partial =
   let partial = check_partial_list pats_act_list partial in
-  let args = List.map (fun id -> (Lvar id, Strict)) paraml in
+  let args = List.map (fun id -> { arg = Lvar id; str = Strict }) paraml in
   let handler =
     toplevel_handler ~scopes loc ~failer:Raise_match_failure
       partial args pats_act_list in
@@ -4138,7 +4158,7 @@ let do_for_multiple_match ~scopes loc idl pat_act_list partial =
     let sloc = Scoped_location.of_location ~scopes loc in
     let args = List.map (fun id -> Lvar id) idl in
     Lprim (Pmakeblock (0, Immutable, None), args, sloc) in
-  let input_args = { first = (Tuple arg, Strict); rest = [] } in
+  let input_args = { first = { arg = Tuple arg; str = Strict }; rest = [] } in
   let handler =
     let partial = check_partial pat_act_list partial in
     let rows = map_on_rows (fun p -> (p, [])) pat_act_list in
@@ -4151,7 +4171,7 @@ let do_for_multiple_match ~scopes loc idl pat_act_list partial =
     in
     let next, nexts = split_and_precompile_half_simplified pm1_half in
     let size = List.length idl in
-    let args = List.map (fun id -> (Lvar id, Alias)) idl in
+    let args = List.map (fun id -> { arg = Lvar id; str = Alias }) idl in
     let flat_next = flatten_precompiled size args next
     and flat_nexts =
       List.map (fun (e, pm) -> (e, flatten_precompiled size args pm)) nexts
