@@ -51,13 +51,24 @@ sed \
   -e 's/).*$/);/'
 
 # Generate the table of primitives
-echo
-echo 'const c_primitive caml_builtin_cprim[] = {'
-sed -e 's/.*/  (c_primitive) &,/' "$primitives"
-echo '  0 };'
+cat <<'EOF'
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+#endif
+const caml_function_ptr_t caml_builtin_cprim[] = {
+EOF
+sed -e 's/.*/  (caml_function_ptr_t) &,/' "$primitives"
+cat <<'EOF'
+  0 };
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
+EOF
 
 # Generate the table of primitive names
-echo
 echo 'const char * const caml_names_of_builtin_cprim[] = {'
 sed -e 's/.*/  "&",/' "$primitives"
 echo '  0 };'

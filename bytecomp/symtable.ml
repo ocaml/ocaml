@@ -179,18 +179,27 @@ let output_primitive_table outchan =
     fprintf outchan "extern value %s(void);\n" prim.(i)
   done;
   fprintf outchan {|
-typedef value (*c_primitive)(void);
+struct caml_incomplete;
+typedef void (*caml_function_ptr_t)(struct caml_incomplete);
 
 #if defined __cplusplus
 extern
 #endif
-const c_primitive caml_builtin_cprim[] = {
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+#endif
+const caml_function_ptr_t caml_builtin_cprim[] = {
 |};
   for i = 0 to Array.length prim - 1 do
-    fprintf outchan "  %s,\n" prim.(i)
+    fprintf outchan "  (caml_function_ptr_t) %s,\n" prim.(i)
   done;
   fprintf outchan
 {|  0 };
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 #if defined __cplusplus
 extern

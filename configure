@@ -15113,8 +15113,7 @@ case $ocaml_cc_vendor in #(
   msvc-*) :
     case $ocaml_cc_vendor in #(
   msvc-*-clang-*) :
-    cc_warnings="-W4 -Wno-unused-parameter -Wno-sign-compare -Wundef \
--Wno-cast-function-type-mismatch"
+    cc_warnings='-W4 -Wno-unused-parameter -Wno-sign-compare -Wundef'
          warn_error_flag='-WX' ;; #(
   *) :
     cc_warnings='-W2'
@@ -15211,6 +15210,48 @@ else $as_nop
 fi
 
 done
+
+# Use -Wcast-function-type if supported
+as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_-Wcast-function-type" | $as_tr_sh`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -Wcast-function-type" >&5
+printf %s "checking whether the C compiler accepts -Wcast-function-type... " >&6; }
+if eval test \${$as_CACHEVAR+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS $warn_error_flag -Wcast-function-type"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  eval "$as_CACHEVAR=yes"
+else $as_nop
+  eval "$as_CACHEVAR=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+  CFLAGS=$ax_check_save_flags
+fi
+eval ac_res=\$$as_CACHEVAR
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+if eval test \"x\$"$as_CACHEVAR"\" = x"yes"
+then :
+  cc_warnings="$cc_warnings -Wcast-function-type"
+else $as_nop
+  :
+fi
+
 
 case $enable_warn_error,true in #(
   yes,*|,true) :

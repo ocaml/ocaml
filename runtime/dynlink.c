@@ -63,7 +63,7 @@ struct ext_table caml_shared_libs_path;
 
 /* Look up the given primitive name in the built-in primitive table,
    then in the opened shared libraries (shared_libs) */
-static c_primitive lookup_primitive(const char * name)
+static caml_function_ptr_t lookup_primitive(const char * name)
 {
   void * res;
 
@@ -73,7 +73,7 @@ static c_primitive lookup_primitive(const char * name)
   }
   for (int i = 0; i < shared_libs.size; i++) {
     res = caml_dlsym(shared_libs.contents[i], name);
-    if (res != NULL) return (c_primitive) res;
+    if (res != NULL) return (caml_function_ptr_t) res;
   }
   return NULL;
 }
@@ -195,10 +195,10 @@ void caml_build_primitive_table(char_os * lib_path,
   caml_ext_table_init(&caml_prim_name_table, 0x180);
   if (req_prims != NULL)
     for (char *q = req_prims; *q != 0; q += strlen(q) + 1) {
-      c_primitive prim = lookup_primitive(q);
+      caml_function_ptr_t prim = lookup_primitive(q);
       if (prim == NULL)
             caml_fatal_error("unknown C primitive `%s'", q);
-      caml_ext_table_add(&caml_prim_table, (void *) prim);
+      caml_ext_table_add(&caml_prim_table, prim);
       caml_ext_table_add(&caml_prim_name_table, caml_stat_strdup(q));
     }
 }
