@@ -625,7 +625,7 @@ and sugar_expr ctxt f e =
 and function_param ctxt f param =
   match param.pparam_desc with
   | Pparam_val (a, b, c) -> label_exp ctxt f (a, b, c)
-  | Pparam_newtype ty -> pp f "(type %s)@;" ty.txt
+  | Pparam_newtype ty -> pp f "(type %a)@;" ident_of_name ty.txt
 
 and function_body ctxt f function_body =
   match function_body with
