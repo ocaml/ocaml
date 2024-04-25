@@ -156,6 +156,11 @@ _______________
 - #13074, #13082, #13084: refactoring in the pattern-matching compiler
   (Gabriel Scherer, review by Thomas Refis, Vincent Laviron and Nick Roberts)
 
+- #13067: rework volatile memory access rules under TSan to consider properly
+  aligned smaller-than-register read operations as atomic, which gets rid of
+  false positives on s390x
+  (Miod Vallat, review by Fabien Buoro)
+
 ### Build system:
 
 - #12909: Reorganise how MKEXE_VIA_CC is built to make it correct for MSVC by
