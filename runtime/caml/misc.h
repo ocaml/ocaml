@@ -353,6 +353,17 @@ Caml_inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
 #endif
 
+#ifdef CAML_INTERNALS
+
+/* Rounding */
+
+Caml_inline uintnat caml_round_up(uintnat value, uintnat align) {
+  CAMLassert(Is_power_of_2(align));
+  return (value + align - 1) & ~(align - 1);
+}
+
+#endif
+
 /* From floats.c */
 extern double caml_log1p(double);
 
