@@ -411,7 +411,7 @@ and core_type1 ctxt f x =
     | Ptyp_open(li, ct) ->
        pp f "@[<hov2>%a.(%a)@]" longident_loc li (core_type ctxt) ct
     | Ptyp_extension e -> extension ctxt f e
-    | _ -> paren true (core_type ctxt) f x
+    | (Ptyp_arrow _ | Ptyp_alias _ | Ptyp_poly _) -> paren true (core_type ctxt) f x
 
 (********************pattern********************)
 (* be cautious when use [pattern], [pattern1] is preferred *)
