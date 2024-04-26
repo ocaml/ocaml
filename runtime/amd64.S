@@ -20,6 +20,12 @@
 
 #include "caml/m.h"
 
+#ifdef EMIT_BTI
+#include <cet.h>
+#else
+#define _CET_ENDBR
+#endif
+
 #if defined(SYS_macosx)
 
 #define LBL(x) L##x
@@ -33,7 +39,8 @@
 #define FUNCTION(name) \
         .globl name; \
         .align FUNCTION_ALIGN; \
-        name:
+        name: \
+        _CET_ENDBR
 
 #elif defined(SYS_mingw64) || defined(SYS_cygwin)
 
@@ -49,10 +56,10 @@
         TEXT_SECTION(name); \
         .globl name; \
         .align FUNCTION_ALIGN; \
-        name:
+        name: \
+        _CET_ENDBR
 
 #else
-
 #define LBL(x) .L##x
 #define G(r) r
 #define GREL(r) r@GOTPCREL
@@ -70,7 +77,8 @@
         .globl name; \
         .type name,@function; \
         .align FUNCTION_ALIGN; \
-        name:
+        name: \
+        _CET_ENDBR
 
 #endif
 
@@ -452,6 +460,7 @@ G(caml_hot.code_end):
         TEXT_SECTION(caml_system__code_begin)
         .globl  G(caml_system__code_begin)
 G(caml_system__code_begin):
+        _CET_ENDBR
         ret  /* just one instruction, so that debuggers don't display
         caml_system__code_begin instead of caml_call_gc */
 
@@ -630,6 +639,7 @@ CFI_STARTPROC
         CFI_SIGNAL_FRAME
         ENTER_FUNCTION
 LBL(caml_call_gc):
+        _CET_ENDBR
         SAVE_ALL_REGS
         movq    %r15, Caml_state(gc_regs)
         TSAN_ENTER_FUNCTION(0)
@@ -729,6 +739,7 @@ LBL(caml_c_call):
         C arguments         : %rdi, %rsi, %rdx, %rcx, %r8, and %r9
         C function          : %rax */
     /* Switch from OCaml to C */
+        _CET_ENDBR
         SWITCH_OCAML_TO_C
     /* Make the alloc ptr available to the C code */
         movq    %r15, Caml_state(young_ptr)
@@ -833,6 +844,7 @@ CFI_STARTPROC
 #endif
     /* Common code for caml_start_program and caml_callback* */
 LBL(caml_start_program):
+        _CET_ENDBR
     /* Load young_ptr into %r15 */
         movq    Caml_state(young_ptr), %r15
     /* Build struct c_stack_link on the C stack */
@@ -874,6 +886,7 @@ LBL(caml_start_program):
 #endif
         call    *%r12
 LBL(108):
+        _CET_ENDBR
     /* pop exn handler */
         movq    0(%rsp), %r11
         movq    %r11, Caml_state(exn_handler)
@@ -908,6 +921,7 @@ LBL(108):
         ret
 LBL(109):
     /* Exception handler*/
+        _CET_ENDBR
     /* Mark the bucket as an exception result and return it */
         orq     $2, %rax
         /* exn handler already popped here */
@@ -926,13 +940,16 @@ FUNCTION(G(caml_raise_exn))
 CFI_STARTPROC
         ENTER_FUNCTION
 LBL(caml_raise_exn):
+        _CET_ENDBR
         testq   $1, Caml_state(backtrace_active)
         jne   LBL(116)
         RESTORE_EXN_HANDLER_OCAML
         ret
 LBL(116):
+        _CET_ENDBR
         movq    $0, Caml_state(backtrace_pos)
 LBL(117):
+        _CET_ENDBR
         movq    %rsp, %r13        /* Save OCaml stack pointer */
         movq    %rax, %r12        /* Save exception bucket */
         movq    Caml_state(c_stack), %rsp
@@ -1110,7 +1127,8 @@ CFI_STARTPROC
         movq    %rdi, 0(%rbx) /* Initialise continuation */
 LBL(do_perform):
     /*  %rdi: last_fiber
-        %rsi: old stack */
+	%rsi: old stack */
+        _CET_ENDBR
 #if defined(WITH_THREAD_SANITIZER)
     /* Signal to TSan all stack frames exited by the perform. */
         ENTER_FUNCTION
@@ -1152,6 +1170,7 @@ LBL(do_perform):
 LBL(112):
     /* Switch back to original performer before raising Effect.Unhandled
        (no-op unless this is a reperform) */
+        _CET_ENDBR
         movq    0(%rbx), %r10  /* load performer stack from continuation */
         subq    $1, %r10       /* r10 := Ptr_val(r10) */
         movq    Caml_state(current_stack), %rsi
@@ -1298,6 +1317,7 @@ CFI_STARTPROC
         movq    %rdi, %rax /* first argument */
         callq   *(%rbx) /* closure in %rbx (second argument) */
 LBL(frame_runstack):
+        _CET_ENDBR
         leaq    32(%rsp), %r11 /* SP with exn handler popped */
         movq    Handler_value(%r11), %rbx
 1:      movq    Caml_state(current_stack), C_ARG_1 /* arg to caml_free_stack */
@@ -1324,6 +1344,7 @@ LBL(frame_runstack):
         LEAVE_FUNCTION
         jmp     *(%rbx)
 LBL(fiber_exn_handler):
+        _CET_ENDBR
         leaq    16(%rsp), %r11
         movq    Handler_exception(%r11), %rbx
         jmp     1b

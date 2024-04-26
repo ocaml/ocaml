@@ -252,6 +252,7 @@ AC_SUBST([ocaml_libdir])
 AC_SUBST([QS])
 AC_SUBST([ar_supports_response_files])
 AC_SUBST([target_bindir])
+AC_SUBST([bti])
 
 ## Generated files
 
@@ -1314,13 +1315,24 @@ AS_CASE([$host],
     [oc_ldflags="$oc_ldflags -Wl,--no-execute-only"
      natdynlinkopts="$natdynlinkopts -Wl,--no-execute-only"])
 
-# Disable control flow integrity
+## Check for indirect branch tracking control flow features
+AC_ARG_ENABLE([bti],
+  [AS_HELP_STRING([--enable-bti],
+    [compile with branch target indirection])])
 
-AS_CASE([$host],
-  [[*-*-openbsd7.[4-9]|*-*-openbsd[89].*]],
-    [oc_ldflags="$oc_ldflags -Wl,-z,nobtcfi"
-     natdynlinkopts="$natdynlinkopts -Wl,-z,nobtcfi"])
+bti=false
 
+AS_CASE(["x$enable_bti"],
+  ["xyes"], [bti=true], ["xno"], [bti=false],
+  ["x"], [AS_CASE([$host],
+    [[aarch64-*-openbsd7.[4-9]|aarch64-*-openbsd[89].*]],
+      [oc_ldflags="$oc_ldflags -Wl,-z,nobtcfi"
+       natdynlinkopts="$natdynlinkopts -Wl,-z,nobtcfi"
+       AC_MSG_NOTICE([disabling btcfi on OpenBSD/aarch64 as it is not yet implemented])],
+    [[x86_64-*-openbsd7.[4-9]|x86_64-*-openbsd[89].*]],
+      [AC_MSG_NOTICE([enabling btcfi on OpenBSD/x86_64 as it is mandatory])
+       bti=true])])
+AS_IF([test x"$bti" = 'xtrue'], [AC_DEFINE([EMIT_BTI])],)
 
 # Configure native dynlink
 

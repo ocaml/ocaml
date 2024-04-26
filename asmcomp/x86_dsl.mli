@@ -123,6 +123,7 @@ module I : sig
   val cvttsd2si: arg -> arg -> unit
   val dec: arg -> unit
   val divsd: arg -> arg -> unit
+  val endbr64: unit -> unit
   val fabs: unit -> unit
   val fadd: arg -> unit
   val faddp: arg -> arg -> unit

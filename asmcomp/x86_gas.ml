@@ -135,6 +135,7 @@ let print_instr b = function
   | CVTTSD2SI (arg1, arg2) -> i2_s b "cvttsd2si" arg1 arg2
   | DEC arg -> i1_s b "dec" arg
   | DIVSD (arg1, arg2) -> i2 b "divsd" arg1 arg2
+  | ENDBR64 -> i0 b "endbr64"
   | FABS -> i0 b "fabs"
   | FADD arg -> i1_s b "fadd" arg
   | FADDP (arg1, arg2)  -> i2 b "faddp" arg1 arg2
