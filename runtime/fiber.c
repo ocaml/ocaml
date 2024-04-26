@@ -102,10 +102,27 @@ struct stack_info** caml_alloc_stack_cache (void)
 
 Caml_inline struct stack_info* alloc_for_stack (mlsize_t wosize)
 {
-  size_t len = sizeof(struct stack_info) +
-               sizeof(value) * wosize +
-               8 /* for alignment to 16-bytes, needed for arm64 */ +
-               sizeof(struct stack_handler);
+  size_t stack_len = sizeof(struct stack_info) + sizeof(value) * wosize;
+  size_t len;
+
+  /* Some platforms require 16-byte alignment of the stack pointer, which
+     will be _at the end_ of this allocation, so we need to ask for a bit more
+     memory to make sure that
+       caml_round_up(allocated stack base + stack_len, 16) + sizeof handler
+     will fit the allocated space.
+
+     When using mmap, we can rely upon the stack base being page-aligned
+     and thus aligned to a 16 byte boundary, and can round up here;
+     otherwise we need to always ask for 15 more bytes in order to cope with
+     all misalignment possibilities, even though it is likely that the
+     result of caml_stat_alloc_noexc() will be at least aligned to an
+     8-byte boundary. */
+#ifdef USE_MMAP_MAP_STACK
+  len = caml_round_up(stack_len, 16) + sizeof(struct stack_handler);
+#else
+  len = stack_len + (16 - 1) + sizeof(struct stack_handler);
+#endif
+
 #ifdef USE_MMAP_MAP_STACK
   struct stack_info* si;
   si = mmap(NULL, len, PROT_WRITE | PROT_READ,
@@ -168,10 +185,11 @@ alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket, value hval,
 
     stack->cache_bucket = cache_bucket;
 
-    /* Ensure 16-byte alignment because some architectures require it */
-    hand = (struct stack_handler*)
-     (((uintnat)stack + sizeof(struct stack_info) + sizeof(value) * wosize + 15)
-      & ~((uintnat)15));
+    /* Ensure 16-byte alignment because some architectures (e.g. arm64)
+       require it. alloc_for_stack() has allocated extra room to prevent
+       this computation from overflowing. */
+    hand = (struct stack_handler*)caml_round_up(
+      (uintnat)stack + sizeof(struct stack_info) + sizeof(value) * wosize, 16);
     stack->handler = hand;
   }
 

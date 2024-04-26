@@ -33,6 +33,9 @@ _______________
   (Damien Doligez, report by Stephen Dolan, review by Gabriel Scherer
    and Stephen Dolan)
 
+- #11779, #13117: Improve logic for fiber stack alignment.
+  (Miod Vallat, report by Damien Doligez, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously
