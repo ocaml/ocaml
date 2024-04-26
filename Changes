@@ -220,6 +220,12 @@ _______________
 - #13094: Fix undefined behavior of left-shifting a negative number.
   (Antonin Décimo, review by Miod Vallat and Nicolás Ojeda Bär)
 
+- #13088: A few type-checker behaviors look at a type to see if there are
+  any labeled arguments in it. This sometimes required expansion, which
+  could, in obscure scenarios, result in superfluous type errors.
+  (Richard Eisenberg, review by Gabriel Scherer and Jacques Garrigue)
+
+
 OCaml 5.2.0
 ------------
 
