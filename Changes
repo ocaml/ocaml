@@ -56,6 +56,9 @@ OCaml 5.2.0
   (Gabriel Scherer and Damien Doligez, review by Daniel Bünzli, David
    Allsopp, Andreas Rossberg, Xavier Leroy, report by Andreas Rossberg)
 
+- 13127: minor fixes to pprintast for raw identifiers and local module open
+  syntax for types.
+
 ### Type system:
 
 - #12313, #11799: Do not re-build as-pattern type when a ground type annotation
