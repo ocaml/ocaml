@@ -112,7 +112,7 @@ let protect_longident ppf print_longident longprefix txt =
       fprintf ppf "%a.%a" print_longident longprefix ident_of_name txt
     else if needs_spaces txt then
       fprintf ppf "%a.(@;%s@;)" print_longident longprefix txt
-    else 
+    else
       fprintf ppf "%a.(%s)" print_longident longprefix txt
 
 type space_formatter = (unit, Format.formatter, unit) format
