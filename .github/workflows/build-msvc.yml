@@ -71,19 +71,47 @@ jobs:
             C:\cygwin-packages
           key: cygwin-packages
 
+      - name: Compute a key to cache configure results
+        shell: bash
+        env:
+          HOST: ${{ matrix.x86_64 && 'x86_64-pc-windows' || 'i686-pc-windows' }}
+          CC: ${{ matrix.cc }}
+        run: >-
+          echo "AUTOCONF_CACHE_KEY=$HOST-$CC-$({ cat configure; uname; } | sha1sum | cut -c 1-7)" >> $GITHUB_ENV
+
+      - name: Restore Autoconf cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            config.cache
+          key: ${{ env.AUTOCONF_CACHE_KEY }}
+
       - name: Build OCaml
-        shell: bash -e {0}
+        shell: bash
         env:
           HOST: ${{ matrix.x86_64 && 'x86_64-pc-windows' || 'i686-pc-windows' }}
           CC: ${{ matrix.cc }}
         run: >-
           eval $(tools/msvs-promote-path) ;
-          ./configure --host=$HOST CC=$CC;
+          if ! ./configure --cache-file=config.cache --host=$HOST CC=$CC ; then
+          rm -rf config.cache ;
+          ./configure --cache-file=config.cache --host=$HOST CC=$CC ;
+          fi ;
           make ;
           runtime/ocamlrun ocamlc -config ;
+          # Don't add indentation or comments, it breaks Bash on
+          # Windows when the yaml text block scalar is processed as a
+          # single line.
+
+      - name: Save Autoconf cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            config.cache
+          key: ${{ env.AUTOCONF_CACHE_KEY }}
 
       - name: Assemble backend with MinGW GASM and compare
-        shell: bash -e {0}
+        shell: bash
         run: >-
           x86_64-w64-mingw32-gcc -c -I./runtime  -I ./flexdll -D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=1 -DCAMLDLLIMPORT= -DIN_CAML_RUNTIME -DNATIVE_CODE -DTARGET_amd64 -DMODEL_default -DSYS_mingw64 -o runtime/amd64.o runtime/amd64.S ;
           dumpbin /disasm:nobytes runtime/amd64nt.obj > runtime/amd64nt.dump ;
@@ -98,7 +126,7 @@ jobs:
         if: matrix.x86_64
 
       - name: Run the test suite
-        shell: bash -e {0}
+        shell: bash
         run: >-
           eval $(tools/msvs-promote-path) ;
           make tests ;
