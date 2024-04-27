@@ -61,6 +61,9 @@ class GDBValue:
     def signed(self):
         return int(self._v)
 
+    def type(self):
+        return GDBType(self._v.type)
+
     def cast(self, t):
         return GDBValue(self._v.cast(t._t), self._target)
 
@@ -76,6 +79,13 @@ class GDBValue:
     def struct(self):
         return {f.name: GDBValue(self._v[f], self._target)
                 for f in self._v.type.fields()}
+
+    def array_size(self):
+        range = self._v.type.range()
+        return range[1]-range[0]+1
+
+    def sub(self, index):
+        return GDBValue(self._v[index], self._target)
 
     def field(self, index):
         res = ((self._v.cast(self._target._value_ptr_type._t) + index)
@@ -124,7 +134,8 @@ class GDBTarget:
         self.double_size = self._double_type.size()
 
     def global_variable(self, name):
-        return GDBValue(gdb.lookup_global_symbol(name).value(), self)
+        sym = gdb.lookup_symbol(name, domain=gdb.SYMBOL_VAR_DOMAIN)
+        return GDBValue(sym[0].value(), self)
 
     def type(self, typename):
         return GDBType(gdb.lookup_type(typename))
@@ -139,6 +150,29 @@ class GDBTarget:
             len = text.find(' in section ')
             if len > 0:
                 return text[:len]
+
+    def mapping(self, addr):
+        # Annoyingly the progspace.solib_name() and
+        # objfile_for_address() functions either aren't reliably
+        # present on older versions of GDB, or return unhelpful
+        # answers. So we use parse the output of `info proc mapping`.
+        # This may be fragile to changes in GDB.
+        text = gdb.execute('info proc mappings', to_string=True)
+        all_mappings = [m.split() for m in text.split('\n') if '0x' in m]
+        mappings = [m for m in all_mappings
+                    if int(m[0],0) <= addr < int(m[1],0)]
+        if not mappings:
+            return
+        file_mappings = [m[5] for m in mappings
+                         if len(m) > 5
+                         and not m[5].startswith('[')]
+        # will be surprising if there's more than one of these
+        if file_mappings:
+            return ', '.join(file_mappings)
+
+    def value(self, v):
+        return GDBValue(gdb.Value(v).cast(self._value_type._t),
+                        self)
 
 # Object obeying Python's iterator protocol, for iterating through the
 # children of a value. This gives us slightly nicer display of block
@@ -201,6 +235,31 @@ def value_printer(val):
     return ValuePrinter(val)
 
 gdb.pretty_printers = [value_printer]
+
+# Interface to OCaml block finder
+
+class OCamlCommand(gdb.Command):
+    "Prefix of all GDB commands for debugging OCaml."
+    def __init__(self):
+        super(OCamlCommand, self).__init__("ocaml",
+                                           gdb.COMMAND_USER, prefix=True)
+
+OCamlCommand()
+
+class OCamlFind(gdb.Command):
+    "ocaml find <expr>: report the location of <expr> on the OCaml heap."
+    def __init__(self):
+        super(OCamlFind, self).__init__("ocaml find", gdb.COMMAND_USER)
+
+    def invoke(self, arg, from_tty):
+        self.dont_repeat()
+        target = GDBTarget()
+        val = ocaml.Value(GDBValue(gdb.parse_and_eval(arg),
+                                   target),
+                          target)
+        ocaml.Finder(target).find(arg, val)
+
+OCamlFind()
 
 # A convenience function $Array which casts a value to an array of values.
 

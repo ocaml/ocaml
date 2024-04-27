@@ -24,13 +24,22 @@
 #     double_size: the number of 8-bit bytes in a double-precision
 #        float (i.e. 8).
 #
+#     value(address): a debugger "value" representing the given address
+#         with type `value`.
+#
 #     global_variable(name): the value of a named global variable.
 #
 #     type(name): a named type.
 #
 #     symbol(address): the symbol name associated with the given address.
 #
+#     mapping(address): a string describing any file mapping
+#         associated with the address, or None. Blocks on the Caml
+#         heap do not have an associated file mapping.
+#
 # types:
+#
+#     size(): the number of bytes required for this type.
 #
 #     pointer(): the type of a pointer to this type.
 #
@@ -40,6 +49,8 @@
 #
 #     valid(): False if this value is somehow "invalid" (for example,
 #       optimised away.
+#
+#     type(): The type of this value.
 #
 #     unsigned(): the value as an unsigned integer.
 #
@@ -54,8 +65,16 @@
 #     dereference(): the result of dereferencing the value, which must
 #       be a pointer.
 #
+#     array_size(): only used when the value is an array, returns the
+#       number of entries in the array.
+#
+#     sub(index): only used when the value is an array, returns an
+#       entry, as a debugger value. TODO: switch to __getitem__ to make
+#       this more transparent.
+#
 #     struct(): a dictionary {slot_name: value} representing the value,
-#       which must be a struct.
+#       which must be a struct. TODO: could use __getattribute__ to make
+#       this more transparent.
 #
 #     field(index): the `index`th field of a value array whose address is
 #       in the value, which can have any scalar type. `index` is a Python
@@ -79,7 +98,7 @@
 #
 #     double_array(size): an array of double-precision floating point
 #       members, as a debugger-native array.
-# 
+#
 # String representations of various Caml values. Each kind of value
 # has a full representation, of the form "[Caml: ...]", and a summary
 # which may appear in the full representation of a block which points
@@ -243,6 +262,10 @@ class Value:
             return
 
         self.word = value.signed()
+        if self.word == 0:
+            self.valid = False
+            return
+
         self.immediate = (self.word & 1) == 1
         if self.immediate:
             return
@@ -251,8 +274,8 @@ class Value:
         if self.debug is not None:
             return
 
-        pointer = value.pointer()
-        self._header = pointer.field(-1).unsigned()
+        self.pointer = value.pointer()
+        self._header = self.pointer.field(-1).unsigned()
         self._wosize = self._header >> HEADER_WOSIZE_SHIFT
         self._tag = self._header & HEADER_TAG_MASK
         self._color_bits = self._header & HEADER_COLOR_MASK
@@ -449,3 +472,170 @@ class Value:
             return self._value.field_array(self._start_env, self.num_children)
         else:
             return self._value.field_array(0, self.num_children)
+
+POOL_WSIZE = 4096
+
+class Finder:
+    def __init__(self, target):
+        self._sizeclasses = None
+        self._wsize_sizeclass = None
+        self._target = target
+        self.debug = False
+
+    def sizeclasses(self):
+        if self._sizeclasses is None:
+            pool_freelist = (self._target.global_variable('pool_freelist').
+                             struct())
+            self._sizeclasses = (
+                pool_freelist['global_avail_pools'].type().size() //
+                pool_freelist['global_avail_pools'].sub(0).type().size())
+        return self._sizeclasses
+
+    def wsize_sizeclass(self, sz):
+        if self._wsize_sizeclass is None:
+            self._wsize_sizeclass = (self._target.
+                                     global_variable('wsize_sizeclass'))
+        return self._wsize_sizeclass.sub(sz).unsigned()
+
+    def _log(self, *args):
+        if self.debug:
+            print(*args)
+
+    def _found(self, where):
+        if self.debug:
+            print(f"FOUND 0x{self.address:x} {where}")
+        self.found.append(where)
+        self.keep_going = self.debug
+
+    def search_pool_list(self, description, pool_list):
+        "Search a single pool list for `self.address`."
+        count = 0
+        while self.keep_going and pool_list.unsigned():
+            count += 1
+            base = pool_list.unsigned()
+            limit = base + POOL_WSIZE * self._target.word_size
+            if base < self.address < limit:
+                self._found(f"{description}: pool 0x{base:x}-0x{limit:x}")
+            pool_list = pool_list.dereference().struct()['next']
+        self._log(f"    searched {count} pools of {description}")
+
+    def search_pools(self, description, pools):
+        "Search an array `pool *pools[NUM_SIZECLASSES]` for `self.address`."
+        self._log(f"  searching {description} pools")
+        for i in range(self.sizeclasses()):
+            pool_list = pools.sub(i)
+            if pool_list.unsigned() == 0:
+                continue
+            self.search_pool_list(f"{description} "
+                                  f"wsize={self.wsize_sizeclass(i)}",
+                                  pool_list)
+            if not self.keep_going:
+                break
+
+    def search_large(self, description, large_list):
+        "Search a `large_alloc *` linked list for `self.address`."
+        if large_list.unsigned() == 0:
+            return
+        count = 0
+        while self.keep_going and large_list.unsigned():
+            count += 1
+            base = large_list.unsigned()
+            block = base + large_list.dereference().type().size()
+            val = self._target.value(block + self._target.word_size)
+            val_ptr = val.cast(val.type().pointer())
+            oval = Value(val_ptr, self._target)
+            limit = block + (oval._wosize + 1) * self._target.word_size
+            if base < self.address < limit:
+                self._found(f"{description} large 0x{block:x}-0x{limit:x}")
+            large_list = large_list.dereference().struct()['next']
+        self._log(f"  searched {count} large blocks of {description}")
+
+    def search_heap(self, description, heap_state_p):
+        "Searches a single `struct caml_heap_state *` for self.address."
+        heap_state = heap_state_p.dereference().struct()
+        if self.keep_going:
+            self.search_pools(f"{description} avail",
+                              heap_state['avail_pools'])
+        if self.keep_going:
+            self.search_pools(f"{description} full",
+                              heap_state['full_pools'])
+        if self.keep_going:
+            self.search_pools(f"{description} unswept avail",
+                              heap_state['unswept_avail_pools'])
+        if self.keep_going:
+            self.search_pools(f"{description} unswept full",
+                              heap_state['unswept_full_pools'])
+        if self.keep_going:
+            self.search_large(f"{description}",
+                              heap_state['swept_large'])
+        if self.keep_going:
+            self.search_large(f"{description} unswept",
+                              heap_state['unswept_large'])
+
+    def search_domain(self, index, dom_state_p):
+        "Search a single domain's heap for `self.address`."
+        dom_state = dom_state_p.dereference().struct()
+        young_start = dom_state['young_start'].unsigned()
+        young_end = dom_state['young_end'].unsigned()
+        description = f"domain {index}"
+        self._log(f"searching {description}")
+        if self.keep_going and (young_start <= self.address <= young_end):
+                self._found(f"{description} minor heap "
+                            f"0x{young_start:x}-0x{young_end:x}")
+        if self.keep_going:
+            self.search_heap(description, dom_state['shared_heap'])
+
+    def find(self, expr, val):
+        if not val.valid:
+            print(f"{expr} not a valid expression")
+            return
+        if val.immediate:
+            print(f"{expr} is immediate: {str(val)}")
+            return
+        if val.debug is not None:
+            print(f"{expr} is a debug padding value: {val.debug}")
+            return
+
+        self.address = val.pointer.unsigned()
+        mapping = self._target.mapping(self.address)
+        if mapping:
+            print(f"{expr} {str(val)} is from {mapping}, "
+                  "not the heap.")
+            return
+
+        self.found = []
+        self.keep_going = True
+
+        # Search per-domain heaps.
+        all_domains = self._target.global_variable('all_domains')
+        Max_domains = all_domains.array_size()
+        self._log(f"{Max_domains} domains.")
+        for i in range(Max_domains):
+            dom = all_domains.sub(i).struct()
+            dom_state_p = dom['state']
+            if dom_state_p.unsigned() == 0: # null pointer: no domain
+                continue
+            self.search_domain(i, dom_state_p)
+            if not self.keep_going:
+                break
+
+        # Global (orphaned) heap
+        pool_freelist = self._target.global_variable('pool_freelist').struct()
+        if self.keep_going:
+            self.search_pools('global avail',
+                              pool_freelist['global_avail_pools'])
+        if self.keep_going:
+            self.search_pools('global full',
+                              pool_freelist['global_full_pools'])
+        if self.keep_going:
+            self.search_large("global",
+                              pool_freelist['global_large'])
+
+        if self.found:
+            print(f"{expr} {str(val)}: 0x{self.address:x} found:")
+            for where in self.found:
+                print(f"  {where}")
+        else:
+            print(f"{expr} {str(val)} not found on heap")
+
+        self.debug = True

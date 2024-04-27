@@ -18,9 +18,36 @@ import ocaml
 def __lldb_init_module(d, _internal_dict):
     global debugger
     debugger = d
-    d.HandleCommand(f"type summary add -F {__name__}.show_value value")
+    d.HandleCommand('type summary add --python-function '
+                    f'{__name__}.show_value value')
+    d.HandleCommand('command container add '
+                    '-h "OCaml runtime debugging utilities" '
+                    'ocaml')
+    d.HandleCommand('command script add --class '
+                    f'{__name__}.OCamlFind '
+                    'ocaml find'
+                    )
+    # Synthetic Child providers don't seem so useful
     # d.HandleCommand("type synthetic add value --python-class "
     #                f"{__name__}.ChildProvider")
+
+class OCamlFind:
+    def __init__(self, debugger, internal_dict):
+        super()
+
+    def __call__(self, debugger, expr, exe_ctx, result):
+        target = get_target()
+        finder = ocaml.Finder(target)
+        val = ocaml.Value(LLDBValue(exe_ctx.GetFrame().EvaluateExpression(expr),
+                                    target),
+                          target)
+        finder.find(expr, val)
+
+    def get_short_help(self):
+        return "Describe the location of the given OCaml value in the heap."
+    def get_long_help(self):
+        return "Wibble Wibble Wibble ##TODO"
+
 
 # These three classes (LLDBType, LLDBValue, LLDBTarget) provide a
 # generic interface to the debugger, to allow debugger-agnostic code
@@ -55,6 +82,9 @@ class LLDBValue:
     def signed(self):
         return self._v.signed
 
+    def type(self):
+        return LLDBType(self._v.type)
+
     def cast(self, t):
         return LLDBValue(self._v.Cast(t._t), self._target)
 
@@ -76,10 +106,19 @@ class LLDBValue:
                 for i in range(t.GetNumberOfFields())
                 if (member := t.GetFieldAtIndex(i))}
 
+    def array_size(self):
+        return self._v.GetNumChildren()
+
+    def sub(self, index):
+        return LLDBValue(self._v.GetChildAtIndex(index,
+                                                 lldb.eNoDynamicValues,
+                                                 False),
+                         self._target)
+
     def field(self, index):
         address = self.unsigned() + index * self._target.word_size
-        return self._target._create_value(f'[{index}]',
-                                          address, self._target._value_type)
+        return self._target._create_value(f'[{index}]', address,
+                                          self._target._value_type)
 
     def field_pointer(self, index):
         return LLDBValue(self.field(index)._v.AddressOf(), self._target)
@@ -108,8 +147,8 @@ class LLDBValue:
 
     def field_array(self, offset, size):
         address = self.unsigned() + offset * self._target.word_size
-        return self._target._create_value('[]', address,
-                                          self._target._value_type.array(size))
+        val = self._target._create_value('[]', address,
+                                         self._target._value_type.array(size))
 
     def double_array(self, size):
         return self._v.Cast(self._target._double_type.array(size)._t)
@@ -138,6 +177,18 @@ class LLDBTarget:
         addr = lldb.SBAddress(address, self._target)
         if addr.IsValid() and addr.symbol and addr.symbol.name:
             return addr.symbol.name
+
+    def mapping(self, addr):
+        address = self._address(addr)
+        section = address.GetSection()
+        module = address.GetModule()
+        if section.name:
+            return f"{str(module.file)}:{section.name}"
+
+
+    def value(self, v):
+        return LLDBValue(self._target.EvaluateExpression(f"((value){v})"),
+                         self)
 
     ## These methods are only used by methods inside LLDBValue and/or LLDBType
 
