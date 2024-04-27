@@ -108,11 +108,12 @@ let ident_of_name ppf txt =
 let ident_of_name_loc ppf s = ident_of_name ppf s.txt
 
 let protect_longident ppf print_longident longprefix txt =
-  let format : (_, _, _) format =
-    if not (needs_parens txt) then "%a.%s"
-    else if needs_spaces txt then  "%a.(@;%s@;)"
-    else "%a.(%s)" in
-  fprintf ppf format print_longident longprefix txt
+    if not (needs_parens txt) then
+      fprintf ppf "%a.%a" print_longident longprefix ident_of_name txt
+    else if needs_spaces txt then
+      fprintf ppf "%a.(@;%s@;)" print_longident longprefix txt
+    else
+      fprintf ppf "%a.(%s)" print_longident longprefix txt
 
 type space_formatter = (unit, Format.formatter, unit) format
 
@@ -405,8 +406,11 @@ and core_type1 ctxt f x =
          |_ ->
              pp f "@[<hov2>(module@ %a@ with@ %a)@]" longident_loc lid
                (list aux  ~sep:"@ and@ ")  cstrs)
+    | Ptyp_open(li, ct) ->
+       pp f "@[<hov2>%a.(%a)@]" longident_loc li (core_type ctxt) ct
     | Ptyp_extension e -> extension ctxt f e
-    | _ -> paren true (core_type ctxt) f x
+    | (Ptyp_arrow _ | Ptyp_alias _ | Ptyp_poly _) ->
+       paren true (core_type ctxt) f x
 
 (********************pattern********************)
 (* be cautious when use [pattern], [pattern1] is preferred *)
@@ -625,7 +629,7 @@ and sugar_expr ctxt f e =
 and function_param ctxt f param =
   match param.pparam_desc with
   | Pparam_val (a, b, c) -> label_exp ctxt f (a, b, c)
-  | Pparam_newtype ty -> pp f "(type %s)@;" ty.txt
+  | Pparam_newtype ty -> pp f "(type %a)@;" ident_of_name ty.txt
 
 and function_body ctxt f function_body =
   match function_body with
