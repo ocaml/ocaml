@@ -1359,7 +1359,7 @@ runtime/libcamlruni.$(A): $(libcamlruni_OBJECTS)
 runtime/libcamlrun_pic.$(A): $(libcamlrunpic_OBJECTS)
 	$(V_MKLIB)$(call MKLIB,$@, $^)
 
-runtime/libcamlrun_shared.$(SO): $(libcamlrunpic_OBJECTS)
+runtime/libcamlrun_shared.$(SO): runtime/prims.$(O) $(libcamlrunpic_OBJECTS)
 	$(V_MKDLL)$(MKDLL) -o $@ $^ $(BYTECCLIBS)
 
 runtime/libasmrun.$(A): $(libasmrun_OBJECTS)
