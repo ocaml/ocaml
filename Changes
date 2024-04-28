@@ -67,6 +67,9 @@ _______________
 
 ### Other libraries:
 
+- #13133: Add Unix.TCP_QUICKACK
+  (Robin Björklin, review by ?)
+
 ### Tools:
 
 - #12904: Run the testsuite with ThreadSanitizer on a PR when label

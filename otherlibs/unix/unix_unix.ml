@@ -669,6 +669,7 @@ type socket_bool_option =
   | TCP_NODELAY
   | IPV6_ONLY
   | SO_REUSEPORT
+  | TCP_QUICKACK
 
 type socket_int_option =
     SO_SNDBUF
