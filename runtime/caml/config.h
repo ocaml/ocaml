@@ -177,8 +177,7 @@ typedef uint64_t uintnat;
 /* We use threaded code interpretation if the compiler provides labels
    as first-class values (GCC 2.x). */
 
-#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG) \
-    && !defined (SHRINKED_GNUC)
+#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG)
 #define THREADED_CODE
 #endif
 
