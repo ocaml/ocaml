@@ -193,7 +193,6 @@ tools/ci/inria/step-by-step-build/script text eol=lf
 tools/check-typo text eol=lf
 tools/check-symbol-names text eol=lf
 tools/msvs-promote-path text eol=lf
-tools/gdb-macros text eol=lf linguist-language=GDB
 tools/magic text eol=lf
 tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
