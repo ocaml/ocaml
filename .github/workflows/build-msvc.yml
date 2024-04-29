@@ -97,7 +97,7 @@ jobs:
           rm -rf config.cache ;
           ./configure --cache-file=config.cache --host=$HOST CC=$CC ;
           fi ;
-          make ;
+          make -j ;
           runtime/ocamlrun ocamlc -config ;
           # Don't add indentation or comments, it breaks Bash on
           # Windows when the yaml text block scalar is processed as a
@@ -129,4 +129,4 @@ jobs:
         shell: bash
         run: >-
           eval $(tools/msvs-promote-path) ;
-          make tests ;
+          make -j tests ;
