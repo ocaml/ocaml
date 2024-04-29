@@ -22,24 +22,31 @@ open Unix
 
 (*** Convert a socket name into a socket address. ***)
 let convert_address address =
-  try
-    let n = String.index address ':' in
-      let host = String.sub address 0 n
-      and port = String.sub address (n + 1) (String.length address - n - 1)
-      in
-        (PF_INET,
-         ADDR_INET
-           ((try inet_addr_of_string host with Failure _ ->
-               try (gethostbyname host).h_addr_list.(0) with Not_found ->
-                 prerr_endline ("Unknown host: " ^ host);
-                 failwith "Can't convert address"),
-            (try int_of_string port with Failure _ ->
-               prerr_endline "The port number should be an integer";
-               failwith "Can't convert address")))
-  with Not_found ->
-    match Sys.os_type with
-      "Win32" -> failwith "Unix sockets not supported"
-    | _ -> (PF_UNIX, ADDR_UNIX address)
+  if address = "" then
+    failwith "Can't convert address: empty address";
+  let unix_addr_info =
+    { ai_family = PF_UNIX; ai_socktype = SOCK_STREAM; ai_protocol = 0;
+      ai_addr = ADDR_UNIX address; ai_canonname = ""; } in
+  match String.rindex address ':' with
+  | exception Not_found -> unix_addr_info
+  (* "./foo" is explicitly a path and not a network address *)
+  | _ when not (Filename.is_implicit address) -> unix_addr_info
+  | n ->
+     let is_likely_ipv6 =
+       n >= 4 && address.[0] = '[' && address.[n - 1] = ']' in
+     let host = if is_likely_ipv6 then String.sub address 1 (n - 2)
+                else String.sub address 0 n
+     and port = String.(sub address (n + 1) (length address - n - 1)) in
+     if host = "" || port = "" then
+       Printf.ksprintf failwith "Can't convert address %S: \
+                                 empty host or empty port" address;
+     port |> String.iter (fun c -> if c < '0' || '9' < c then
+       Printf.ksprintf failwith "Can't convert address %S: \
+                                 the port number should be an integer" address);
+     match getaddrinfo host port [AI_SOCKTYPE SOCK_STREAM] with
+     | addr_info :: _ -> addr_info
+     | [] -> Printf.ksprintf failwith
+               "Can't convert address: unknown host %S port %S" host port
 
 (*** Report a unix error. ***)
 let report_error = function

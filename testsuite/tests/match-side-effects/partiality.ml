@@ -90,9 +90,9 @@ let f r =
          (catch
            (if *match*/301
              (let (*match*/303 =o (field_mut 0 (field_imm 0 *match*/301)))
-               (if *match*/303 (exit 7) 0))
-             (exit 7))
-          with (7)
+               (if *match*/303 (exit 11) 0))
+             (exit 11))
+          with (11)
            (if (seq (setfield_ptr 0 r/299 0) 0) 1
              (if *match*/301
                (let (*match*/305 =o (field_mut 0 (field_imm 0 *match*/301)))

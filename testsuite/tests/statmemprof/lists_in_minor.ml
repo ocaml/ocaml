@@ -11,7 +11,7 @@ let rec allocate_list accu = function
 
 let[@inline never] allocate_lists len cnt =
   for j = 0 to cnt-1 do
-    ignore (allocate_list [] len)
+    ignore (Sys.opaque_identity (allocate_list [] len))
   done
 
 let check_distrib len cnt rate =

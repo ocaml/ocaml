@@ -869,9 +869,11 @@ cclibs
 oc_dll_ldflags
 oc_ldflags
 oc_cppflags
+common_cppflags
 tsan_native_runtime_c_sources
 tsan
 oc_cflags
+common_cflags
 toolchain
 ccomptype
 mkexe_via_cc_extra_cmd
@@ -3443,6 +3445,8 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 
 
 
+
+
  # TODO: rename this variable
 
 
@@ -3692,7 +3696,10 @@ esac
 
 case $host in #(
   *-pc-windows) :
-    CC=cl
+    if test -z "$CC"
+then :
+  CC=cl
+fi
     ccomptype=msvc
     S=asm
     SO=dll
@@ -13704,7 +13711,14 @@ then :
 else $as_nop
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-int main (void) {return 0;}
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
 _ACEOF
 if ac_fn_c_try_run "$LINENO"
 then :
@@ -13742,7 +13756,7 @@ case $ocaml_cc_vendor in #(
     CPP="$CC -E -Qn" # suppress generation of Sun PRO ident string
     ocamltest_CPP="$CPP" ;; #(
   msvc-*) :
-    CPP="$CC -nologo -EP"
+    CPP="$CC -nologo -EP -TC"
     ocamltest_CPP="$CPP 2> nul" ;; #(
   *) :
     CPP="$CC -E -P"
@@ -13922,8 +13936,8 @@ esac
 
 # Use -Wold-style-declaration if supported
 as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_-Wold-style-declaration" | $as_tr_sh`
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -Wold-style-declaration" >&5
-printf %s "checking whether C compiler accepts -Wold-style-declaration... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -Wold-style-declaration" >&5
+printf %s "checking whether the C compiler accepts -Wold-style-declaration... " >&6; }
 if eval test \${$as_CACHEVAR+y}
 then :
   printf %s "(cached) " >&6
@@ -13969,6 +13983,20 @@ case $enable_warn_error,true in #(
      ;;
 esac
 
+case $host in #(
+  *-*-mingw32*|*-pc-windows) :
+    case $WINDOWS_UNICODE_MODE in #(
+  ansi) :
+    windows_unicode=0 ;; #(
+  compatible|"") :
+    windows_unicode=1 ;; #(
+  *) :
+    as_fn_error $? "unexpected windows unicode mode" "$LINENO" 5 ;;
+esac ;; #(
+  *) :
+    windows_unicode=0 ;;
+esac
+
 # We select high optimization levels, provided we can turn off:
 # - strict type-based aliasing analysis (too risky for the OCaml runtime)
 # - strict no-overflow conditions on signed integer arithmetic
@@ -13993,47 +14021,58 @@ case $ocaml_cc_vendor in #(
     # TODO: see whether the code can be fixed to avoid -Wno-unused
     common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
     internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
-    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE=$windows_unicode" ;; #(
   mingw-*) :
     as_fn_error $? "Unsupported C compiler for a MinGW-w64 build" "$LINENO" 5 ;; #(
   msvc-0*|msvc-1[0-8]*|msvc-19[012]*|msvc-193[0-7]) :
     # No C11 atomics support
     as_fn_error 69 "This version of MSVC is too old. Please use Visual Studio version 17.8 or above." "$LINENO" 5 ;; #(
   msvc-*) :
-    common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
+    common_cflags='-nologo -O2 -Gy- -MD'
     common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
-    internal_cppflags='-DUNICODE -D_UNICODE'
-    internal_cflags='-experimental:c11atomics -std:c11'
-    CFLAGS="$CFLAGS -experimental:c11atomics -std:c11"
+    internal_cflags="$cc_warnings"
+    internal_cppflags='-DUNICODE -D_UNICODE -D_CRT_NONSTDC_NO_WARNINGS'
+    as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_-d2VolatileMetadata-" | $as_tr_sh`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -d2VolatileMetadata-" >&5
+printf %s "checking whether the C compiler accepts -d2VolatileMetadata-... " >&6; }
+if eval test \${$as_CACHEVAR+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
 
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports -d2VolatileMetadata-" >&5
-printf %s "checking whether the C compiler supports -d2VolatileMetadata-... " >&6; }
-  saved_CFLAGS="$CFLAGS"
-  CFLAGS="-d2VolatileMetadata- $CFLAGS"
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS $warn_error_flag -d2VolatileMetadata-"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-int main() { return 0; }
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"
 then :
-  cl_has_volatile_metadata=true
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
+  eval "$as_CACHEVAR=yes"
 else $as_nop
-  cl_has_volatile_metadata=false
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
+  eval "$as_CACHEVAR=no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-  CFLAGS="$saved_CFLAGS"
-
-    if test "x$cl_has_volatile_metadata" = "xtrue"
+  CFLAGS=$ax_check_save_flags
+fi
+eval ac_res=\$$as_CACHEVAR
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+if eval test \"x\$"$as_CACHEVAR"\" = x"yes"
 then :
   internal_cflags="$internal_cflags -d2VolatileMetadata-"
+else $as_nop
+  :
 fi
-    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
+
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE=$windows_unicode" ;; #(
   xlc-*) :
     common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
     internal_cflags="$cc_warnings" ;; #(
@@ -14264,7 +14303,14 @@ esac
     CFLAGS=""
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-int main() { return 0; }
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
 _ACEOF
 if ac_fn_c_try_link "$LINENO"
 then :
@@ -14386,8 +14432,14 @@ printf %s "checking if \"$flexlink -where\" includes flexdll.h... " >&6; }
   flexlink_where="$($flexlink -where | tr -d '\r')"
   CPPFLAGS="$CPPFLAGS -I \"$flexlink_where\""
   cat > conftest.c <<"EOF"
-#include <flexdll.h>
-int main (void) {return 0;}
+  #include <flexdll.h>
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
 EOF
   cat > conftest.Makefile <<EOF
 all:
@@ -15440,25 +15492,52 @@ fi
 # Support for C11 atomic types
 
 
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports _Atomic types" >&5
-printf %s "checking whether the C compiler supports _Atomic types... " >&6; }
+
+  saved_CC="$CC"
+  saved_CFLAGS="$CFLAGS"
+  saved_CPPFLAGS="$CPPFLAGS"
   saved_LIBS="$LIBS"
-  LIBS="$LIBS $cclibs"
+  saved_ac_ext="$ac_ext"
+  saved_ac_compile="$ac_compile"
+  # Move the content of confdefs.h to another file so it does not
+  # get included
+  mv confdefs.h confdefs.h.bak
+  touch confdefs.h
+
+
+  opts=""
+  if test -n ""
+then :
+  CFLAGS="$CFLAGS "; opts=""
+fi
+  if test -n "$cclibs"
+then :
+  LIBS="$LIBS $cclibs"; opts="${opts:+$opts }$cclibs"
+fi
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if $CC supports _Atomic types with ${opts:-no additional options}" >&5
+printf %s "checking if $CC supports _Atomic types with ${opts:-no additional options}... " >&6; }
+
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-    #include <stdint.h>
-    #include <stdatomic.h>
-    int main(void)
-    {
-      _Atomic int64_t n;
-      int m;
-      int * _Atomic p = &m;
-      atomic_store_explicit(&n, 123, memory_order_release);
-      * atomic_exchange(&p, 0) = 45;
-      return atomic_load_explicit(&n, memory_order_acquire);
-    }
+#include <stdint.h>
+#include <stdatomic.h>
 
+int
+main (void)
+{
+
+  _Atomic int64_t n;
+  int m;
+  int * _Atomic p = &m;
+  atomic_store_explicit(&n, 123, memory_order_release);
+  * atomic_exchange(&p, 0) = 45;
+  if (atomic_load_explicit(&n, memory_order_acquire))
+    return 1;
+
+  ;
+  return 0;
+}
 _ACEOF
 if ac_fn_c_try_link "$LINENO"
 then :
@@ -15472,8 +15551,177 @@ printf "%s\n" "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
+
+
+  # Restore the content of confdefs.h
+  mv confdefs.h.bak confdefs.h
+  ac_compile="$saved_ac_compile"
+  ac_ext="$saved_ac_ext"
+  CPPFLAGS="$saved_CPPFLAGS"
+  CFLAGS="$saved_CFLAGS"
+  CC="$saved_CC"
   LIBS="$saved_LIBS"
 
+
+case $cc_supports_atomic,$ocaml_cc_vendor in #(
+  false,msvc-*) :
+
+
+  saved_CC="$CC"
+  saved_CFLAGS="$CFLAGS"
+  saved_CPPFLAGS="$CPPFLAGS"
+  saved_LIBS="$LIBS"
+  saved_ac_ext="$ac_ext"
+  saved_ac_compile="$ac_compile"
+  # Move the content of confdefs.h to another file so it does not
+  # get included
+  mv confdefs.h confdefs.h.bak
+  touch confdefs.h
+
+
+  opts=""
+  if test -n "-std:c11"
+then :
+  CFLAGS="$CFLAGS -std:c11"; opts="-std:c11"
+fi
+  if test -n ""
+then :
+  LIBS="$LIBS "; opts="${opts:+$opts }"
+fi
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if $CC supports _Atomic types with ${opts:-no additional options}" >&5
+printf %s "checking if $CC supports _Atomic types with ${opts:-no additional options}... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stdint.h>
+#include <stdatomic.h>
+
+int
+main (void)
+{
+
+  _Atomic int64_t n;
+  int m;
+  int * _Atomic p = &m;
+  atomic_store_explicit(&n, 123, memory_order_release);
+  * atomic_exchange(&p, 0) = 45;
+  if (atomic_load_explicit(&n, memory_order_acquire))
+    return 1;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  cc_supports_atomic=true
+   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+else $as_nop
+  cc_supports_atomic=false
+   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+  # Restore the content of confdefs.h
+  mv confdefs.h.bak confdefs.h
+  ac_compile="$saved_ac_compile"
+  ac_ext="$saved_ac_ext"
+  CPPFLAGS="$saved_CPPFLAGS"
+  CFLAGS="$saved_CFLAGS"
+  CC="$saved_CC"
+  LIBS="$saved_LIBS"
+
+
+     if $cc_supports_atomic
+then :
+  common_cflags="$common_cflags -std:c11"
+else $as_nop
+
+
+  saved_CC="$CC"
+  saved_CFLAGS="$CFLAGS"
+  saved_CPPFLAGS="$CPPFLAGS"
+  saved_LIBS="$LIBS"
+  saved_ac_ext="$ac_ext"
+  saved_ac_compile="$ac_compile"
+  # Move the content of confdefs.h to another file so it does not
+  # get included
+  mv confdefs.h confdefs.h.bak
+  touch confdefs.h
+
+
+  opts=""
+  if test -n "-std:c11 -experimental:c11atomics"
+then :
+  CFLAGS="$CFLAGS -std:c11 -experimental:c11atomics"; opts="-std:c11 -experimental:c11atomics"
+fi
+  if test -n ""
+then :
+  LIBS="$LIBS "; opts="${opts:+$opts }"
+fi
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if $CC supports _Atomic types with ${opts:-no additional options}" >&5
+printf %s "checking if $CC supports _Atomic types with ${opts:-no additional options}... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stdint.h>
+#include <stdatomic.h>
+
+int
+main (void)
+{
+
+  _Atomic int64_t n;
+  int m;
+  int * _Atomic p = &m;
+  atomic_store_explicit(&n, 123, memory_order_release);
+  * atomic_exchange(&p, 0) = 45;
+  if (atomic_load_explicit(&n, memory_order_acquire))
+    return 1;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  cc_supports_atomic=true
+   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+else $as_nop
+  cc_supports_atomic=false
+   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+  # Restore the content of confdefs.h
+  mv confdefs.h.bak confdefs.h
+  ac_compile="$saved_ac_compile"
+  ac_ext="$saved_ac_ext"
+  CPPFLAGS="$saved_CPPFLAGS"
+  CFLAGS="$saved_CFLAGS"
+  CC="$saved_CC"
+  LIBS="$saved_LIBS"
+
+
+        if $cc_supports_atomic
+then :
+  common_cflags="$common_cflags -std:c11 -experimental:c11atomics"
+fi
+
+fi ;; #(
+  *) :
+     ;;
+esac
 if ! $cc_supports_atomic
 then :
   { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
@@ -15682,32 +15930,46 @@ esac
 # Try to work around the Skylake/Kaby Lake processor bug.
 case "$ocaml_cc_vendor,$host" in #(
   *gcc*,x86_64-*|*gcc*,i686-*) :
+    as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_-fno-tree-vrp" | $as_tr_sh`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -fno-tree-vrp" >&5
+printf %s "checking whether the C compiler accepts -fno-tree-vrp... " >&6; }
+if eval test \${$as_CACHEVAR+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
 
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports -fno-tree-vrp" >&5
-printf %s "checking whether the C compiler supports -fno-tree-vrp... " >&6; }
-  saved_CFLAGS="$CFLAGS"
-  CFLAGS="-Werror -fno-tree-vrp $CFLAGS"
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS $warn_error_flag -fno-tree-vrp"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-int main() { return 0; }
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"
 then :
-  cc_has_fno_tree_vrp=true
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
+  eval "$as_CACHEVAR=yes"
 else $as_nop
-  cc_has_fno_tree_vrp=false
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
+  eval "$as_CACHEVAR=no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-  CFLAGS="$saved_CFLAGS"
-
-    if $cc_has_fno_tree_vrp
+  CFLAGS=$ax_check_save_flags
+fi
+eval ac_res=\$$as_CACHEVAR
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+if eval test \"x\$"$as_CACHEVAR"\" = x"yes"
 then :
   internal_cflags="$internal_cflags -fno-tree-vrp"
-fi ;; #(
+else $as_nop
+  :
+fi
+ ;; #(
   *) :
      ;;
 esac
@@ -15739,10 +16001,14 @@ printf %s "checking whether the C compiler supports __attribute__((optimize(\"tr
   CFLAGS="-Werror $CFLAGS"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
-       __attribute__((optimize("tree-vectorize"))) void f(void){}
-       int main() { f(); return 0; }
-
+__attribute__((optimize("tree-vectorize"))) void f(void) {}
+int
+main (void)
+{
+f();
+  ;
+  return 0;
+}
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"
 then :
@@ -16307,13 +16573,17 @@ esac
 else $as_nop
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
 #include <math.h>
-int main (void) {
-  static volatile double d = 0.49999999999999994449;
-  return (fpclassify(round(d)) != FP_ZERO);
-}
+int
+main (void)
+{
 
+  static volatile double d = 0.49999999999999994449;
+  if (fpclassify(round(d)) != FP_ZERO) return 1;
+
+  ;
+  return 0;
+}
 _ACEOF
 if ac_fn_c_try_run "$LINENO"
 then :
@@ -16375,9 +16645,11 @@ esac
 else $as_nop
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
 #include <math.h>
-int main (void) {
+int
+main (void)
+{
+
   /* Tests 264-266 from testsuite/tests/fma/fma.ml. These tests trigger the
      broken implementations of Cygwin64, mingw-w64 (x86_64) and VS2013-2017.
      The static volatile variables aim to thwart GCC's constant folding. */
@@ -16395,15 +16667,18 @@ int main (void) {
   y = 0x4p-540;
   z = 0x4p-1076;
   t266 = fma(x, y, z);
-  return (!(t264 == 0x1.0989687cp-1044 ||
-            t264 == 0x0.000004277ca1fp-1022 || /* Acceptable emulated values */
-            t264 == 0x0.00000428p-1022)
-       || !(t265 == 0x1.0988p-1060 ||
-            t265 == 0x0.0000000004278p-1022 ||  /* Acceptable emulated values */
-            t265 == 0x0.000000000428p-1022)
-       || !(t266 == 0x8p-1076));
-}
+  if (!(t264 == 0x1.0989687cp-1044 ||
+        t264 == 0x0.000004277ca1fp-1022 || /* Acceptable emulated values */
+        t264 == 0x0.00000428p-1022)
+   || !(t265 == 0x1.0988p-1060 ||
+        t265 == 0x0.0000000004278p-1022 ||  /* Acceptable emulated values */
+        t265 == 0x0.000000000428p-1022)
+   || !(t266 == 0x8p-1076))
+    return 1;
 
+  ;
+  return 0;
+}
 _ACEOF
 if ac_fn_c_try_run "$LINENO"
 then :
@@ -16924,8 +17199,8 @@ esac
      ;;
 esac
   as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_-fsanitize=thread $tsan_distinguish_volatile_cflags" | $as_tr_sh`
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -fsanitize=thread $tsan_distinguish_volatile_cflags" >&5
-printf %s "checking whether C compiler accepts -fsanitize=thread $tsan_distinguish_volatile_cflags... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -fsanitize=thread $tsan_distinguish_volatile_cflags" >&5
+printf %s "checking whether the C compiler accepts -fsanitize=thread $tsan_distinguish_volatile_cflags... " >&6; }
 if eval test \${$as_CACHEVAR+y}
 then :
   printf %s "(cached) " >&6
@@ -18090,27 +18365,45 @@ case $ocaml_cc_vendor,$host in #(
   sunc*,sparc-sun-*) :
     cc_has_debug_prefix_map=false ;; #(
   *) :
+    as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_-fdebug-prefix-map=old=new" | $as_tr_sh`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -fdebug-prefix-map=old=new" >&5
+printf %s "checking whether the C compiler accepts -fdebug-prefix-map=old=new... " >&6; }
+if eval test \${$as_CACHEVAR+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
 
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports -fdebug-prefix-map" >&5
-printf %s "checking whether the C compiler supports -fdebug-prefix-map... " >&6; }
-  saved_CFLAGS="$CFLAGS"
-  CFLAGS="-fdebug-prefix-map=old=new $CFLAGS"
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS $warn_error_flag -fdebug-prefix-map=old=new"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-int main() { return 0; }
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"
 then :
-  cc_has_debug_prefix_map=true
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
+  eval "$as_CACHEVAR=yes"
 else $as_nop
-  cc_has_debug_prefix_map=false
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
+  eval "$as_CACHEVAR=no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-  CFLAGS="$saved_CFLAGS"
+  CFLAGS=$ax_check_save_flags
+fi
+eval ac_res=\$$as_CACHEVAR
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+if eval test \"x\$"$as_CACHEVAR"\" = x"yes"
+then :
+  cc_has_debug_prefix_map=true
+else $as_nop
+  cc_has_debug_prefix_map=false
+fi
  ;;
 esac
 
@@ -20141,7 +20434,10 @@ else $as_nop
    is running.
 */
 
-int main (int argc, char *argv[]){
+int
+main (void)
+{
+
   void *block;
   char *p;
   int i, res;
@@ -20162,9 +20458,10 @@ int main (int argc, char *argv[]){
   for (i = 0; i < huge_page_size; i += 4096){
     p[i] = (char) i;
   }
+
+  ;
   return 0;
 }
-
 _ACEOF
 if ac_fn_c_try_run "$LINENO"
 then :
@@ -20380,16 +20677,20 @@ else $as_nop
 #include <stdio.h>
 #include <stdlib.h>
 
-int main (int argc, char *argv[]){
+int
+main (void)
+{
+
   void *block;
   block = mmap (NULL, 4096, PROT_READ | PROT_WRITE,
                 MAP_ANONYMOUS | MAP_PRIVATE | MAP_STACK,
                 -1, 0);
   if (block == MAP_FAILED)
      return 1;
+
+  ;
   return 0;
 }
-
 _ACEOF
 if ac_fn_c_try_run "$LINENO"
 then :
@@ -20539,20 +20840,6 @@ if test x"$mandir" = x'${datarootdir}/man'
 then :
   mandir='${prefix}/man'
 fi
-
-case $host in #(
-  *-*-mingw32*|*-pc-windows) :
-    case $WINDOWS_UNICODE_MODE in #(
-  ansi) :
-    windows_unicode=0 ;; #(
-  compatible|"") :
-    windows_unicode=1 ;; #(
-  *) :
-    as_fn_error $? "unexpected windows unicode mode" "$LINENO" 5 ;;
-esac ;; #(
-  *) :
-    windows_unicode=0 ;;
-esac
 
 # Define default prefix correctly for the different Windows ports
 if test x"$prefix" = "xNONE"

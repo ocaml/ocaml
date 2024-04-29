@@ -159,9 +159,11 @@ AC_SUBST([mkexe_via_cc_ldflags])
 AC_SUBST([mkexe_via_cc_extra_cmd])
 AC_SUBST([ccomptype])
 AC_SUBST([toolchain])
+AC_SUBST([common_cflags])
 AC_SUBST([oc_cflags])
 AC_SUBST([tsan])
 AC_SUBST([tsan_native_runtime_c_sources])
+AC_SUBST([common_cppflags])
 AC_SUBST([oc_cppflags])
 AC_SUBST([oc_ldflags])
 AC_SUBST([oc_dll_ldflags])
@@ -311,7 +313,7 @@ If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
 
 AS_CASE([$host],
   [*-pc-windows],
-    [CC=cl
+    [AS_IF([test -z "$CC"], [CC=cl])
     ccomptype=msvc
     S=asm
     SO=dll
@@ -675,7 +677,7 @@ AS_CASE([$ocaml_cc_vendor],
     [CPP="$CC -E -Qn" # suppress generation of Sun PRO ident string
     ocamltest_CPP="$CPP"],
   [msvc-*],
-    [CPP="$CC -nologo -EP"
+    [CPP="$CC -nologo -EP -TC"
     ocamltest_CPP="$CPP 2> nul"],
   [CPP="$CC -E -P"
   ocamltest_CPP="$CPP"])
@@ -826,6 +828,16 @@ AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
   [yes,*|,true],
     [cc_warnings="$cc_warnings $warn_error_flag"])
 
+AS_CASE([$host],
+  [*-*-mingw32*|*-pc-windows],
+    [AS_CASE([$WINDOWS_UNICODE_MODE],
+      [ansi],
+        [windows_unicode=0],
+      [compatible|""],
+        [windows_unicode=1],
+      [AC_MSG_ERROR([unexpected windows unicode mode])])],
+  [windows_unicode=0])
+
 # We select high optimization levels, provided we can turn off:
 # - strict type-based aliasing analysis (too risky for the OCaml runtime)
 # - strict no-overflow conditions on signed integer arithmetic
@@ -851,8 +863,7 @@ AS_CASE([$ocaml_cc_vendor],
     # TODO: see whether the code can be fixed to avoid -Wno-unused
     common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
     internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
-    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE=$windows_unicode"],
   [mingw-*],
     [AC_MSG_ERROR([Unsupported C compiler for a MinGW-w64 build])],
   [msvc-0*|msvc-1[[0-8]]*|msvc-19[[012]]*|msvc-193[[0-7]]],
@@ -860,16 +871,14 @@ AS_CASE([$ocaml_cc_vendor],
     [AC_MSG_ERROR(m4_normalize([This version of MSVC is too old.
     Please use Visual Studio version 17.8 or above.]), 69)],
   [msvc-*],
-    [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
+    [common_cflags='-nologo -O2 -Gy- -MD'
     common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
-    internal_cppflags='-DUNICODE -D_UNICODE'
-    internal_cflags='-experimental:c11atomics -std:c11'
-    CFLAGS="$CFLAGS -experimental:c11atomics -std:c11"
-    OCAML_CL_HAS_VOLATILE_METADATA
-    AS_IF([test "x$cl_has_volatile_metadata" = "xtrue"],
-          [internal_cflags="$internal_cflags -d2VolatileMetadata-"])
-    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+    internal_cflags="$cc_warnings"
+    internal_cppflags='-DUNICODE -D_UNICODE -D_CRT_NONSTDC_NO_WARNINGS'
+    AX_CHECK_COMPILE_FLAG([-d2VolatileMetadata-],
+      [internal_cflags="$internal_cflags -d2VolatileMetadata-"], [],
+      [$warn_error_flag])
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE=$windows_unicode"],
   [xlc-*],
     [common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
     internal_cflags="$cc_warnings"],
@@ -1212,7 +1221,16 @@ AS_IF([! $arch64],
 
 # Support for C11 atomic types
 
-OCAML_CC_SUPPORTS_ATOMIC([$cclibs])
+OCAML_CC_SUPPORTS_ATOMIC([], [$cclibs])
+AS_CASE([$cc_supports_atomic,$ocaml_cc_vendor],
+  [false,msvc-*],
+    [OCAML_CC_SUPPORTS_ATOMIC([-std:c11])
+     AS_IF([$cc_supports_atomic],
+       [common_cflags="$common_cflags -std:c11"],
+       [OCAML_CC_SUPPORTS_ATOMIC([-std:c11 -experimental:c11atomics])
+        AS_IF([$cc_supports_atomic],
+          [common_cflags="$common_cflags -std:c11 -experimental:c11atomics"])
+])])
 AS_IF([! $cc_supports_atomic],
   [AC_MSG_FAILURE([C11 atomic support is required, use another C compiler])])
 
@@ -1353,9 +1371,9 @@ AS_CASE([$enable_native_toplevel,$natdynlink],
 # Try to work around the Skylake/Kaby Lake processor bug.
 AS_CASE(["$ocaml_cc_vendor,$host"],
   [*gcc*,x86_64-*|*gcc*,i686-*],
-    [OCAML_CC_HAS_FNO_TREE_VRP
-    AS_IF([$cc_has_fno_tree_vrp],
-      [internal_cflags="$internal_cflags -fno-tree-vrp"])])
+    [AX_CHECK_COMPILE_FLAG([-fno-tree-vrp],
+      [internal_cflags="$internal_cflags -fno-tree-vrp"], [],
+      [$warn_error_flag])])
 
 OCAML_CC_SUPPORTS_ALIGNED
 
@@ -2163,7 +2181,9 @@ AS_CASE([$ocaml_cc_vendor,$host],
   [*,*-pc-windows], [cc_has_debug_prefix_map=false],
   [xlc*,powerpc-ibm-aix*], [cc_has_debug_prefix_map=false],
   [sunc*,sparc-sun-*], [cc_has_debug_prefix_map=false],
-  [OCAML_CC_HAS_DEBUG_PREFIX_MAP])
+  [AX_CHECK_COMPILE_FLAG([-fdebug-prefix-map=old=new],
+    [cc_has_debug_prefix_map=true], [cc_has_debug_prefix_map=false],
+    [$warn_error_flag])])
 
 ## Does stat support nanosecond precision
 
@@ -2618,16 +2638,6 @@ AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
 
 AS_IF([test x"$mandir" = x'${datarootdir}/man'],
   [mandir='${prefix}/man'])
-
-AS_CASE([$host],
-  [*-*-mingw32*|*-pc-windows],
-    [AS_CASE([$WINDOWS_UNICODE_MODE],
-      [ansi],
-        [windows_unicode=0],
-      [compatible|""],
-        [windows_unicode=1],
-      [AC_MSG_ERROR([unexpected windows unicode mode])])],
-  [windows_unicode=0])
 
 # Define default prefix correctly for the different Windows ports
 AS_IF([test x"$prefix" = "xNONE"],

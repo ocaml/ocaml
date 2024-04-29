@@ -104,7 +104,7 @@ val register_printer: (exn -> string option) -> unit
 
 val use_printers: exn -> string option
 (** [Printexc.use_printers e] returns [None] if there are no registered
-    printers and [Some s] with else as the resulting string otherwise.
+    printers and [Some s] with [s] the resulting string otherwise.
     @since 4.09
 *)
 

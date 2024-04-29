@@ -28,7 +28,7 @@ module AllocSet = Set.Make(Int3Tuples)
 (* A combined 7-block 33-word allocation *)
 
 let[@inline never] f33 n =
-  ((n, n, (n, n, n, (n,n,n,n,n))), (n, n, (n, n, n, (n,n,n,n,n))))
+  ((n, n, (n, n, n, (n,n,n,n,n))), (n, n, (n, n, n, (n,n,n,n,0))))
 
 (* Raise exceptions from allocation callbacks.
 

@@ -15,7 +15,7 @@ module MP = Gc.Memprof
 
 (* A single 5-word allocation - header plus 4 content words *)
 
-let f5 n = (n,n,n,n)
+let[@inline never] f5 n = (n,n,n,n)
 
 (* A combined 12-word allocation: 5 words, 4 words, and 3 words *)
 
@@ -78,7 +78,9 @@ let test sampling_rate =
   done
 
 let () =
-  List.iter test [0.42; 0.01; 0.83]
+  test 0.42;
+  test 0.01;
+  test 0.83
 
 
 let no_callback_after_stop trigger =

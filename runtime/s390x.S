@@ -64,32 +64,6 @@ caml_hot.code_end:
 
 #define ENDFUNCTION(name)
 
-#ifdef ASM_CFI_SUPPORTED
-#define CFI_STARTPROC .cfi_startproc
-#define CFI_ENDPROC .cfi_endproc
-#define CFI_ADJUST(n) .cfi_adjust_cfa_offset n
-#define CFI_OFFSET(r, n) .cfi_offset r, n
-#define CFI_DEF_CFA_OFFSET(n) .cfi_def_cfa_offset n
-#define CFI_DEF_CFA_REGISTER(r) .cfi_def_cfa_register r
-#define CFI_SAME_VALUE(r) .cfi_same_value r
-#define CFI_SIGNAL_FRAME .cfi_signal_frame
-#define CFI_REMEMBER_STATE .cfi_remember_state
-#define CFI_RESTORE_STATE .cfi_restore_state
-#define CFI_RESTORE(r) .cfi_restore r
-#else
-#define CFI_STARTPROC
-#define CFI_ENDPROC
-#define CFI_ADJUST(n)
-#define CFI_OFFSET(r, n)
-#define CFI_DEF_CFA_OFFSET(n)
-#define CFI_DEF_CFA_REGISTER(r)
-#define CFI_SAME_VALUE(r)
-#define CFI_SIGNAL_FRAME
-#define CFI_REMEMBER_STATE
-#define CFI_RESTORE_STATE
-#define CFI_RESTORE(r)
-#endif
-
 /* Stack space to be reserved by the caller of a C function */
 #define RESERVED_STACK          160
 
@@ -133,12 +107,7 @@ caml_hot.code_end:
 /* DWARF */
 /******************************************************************************/
 
-/* These constants are taken from:
-
-     DWARF Debugging Information Format, Version 3
-     http://dwarfstd.org/doc/Dwarf3.pdf
-
-   with the s390-specific register numbers coming from
+/* These s390x-specific register numbers are taken from
    Table 1.17 ("DWARF Register Number Mapping") of:
 
      ELF Application Binary Interface
@@ -147,13 +116,11 @@ caml_hot.code_end:
      https://github.com/IBM/s390x-abi/releases/download/v1.6/lzsabi_s390x.pdf
 */
 
-#define DW_CFA_def_cfa_expression 0x0f
 #define DW_REG_r9                 9
 #define DW_REG_r12                12
 #define DW_REG_r15                15
-#define DW_OP_breg                0x70
-#define DW_OP_deref               0x06
-#define DW_OP_plus_uconst         0x23
+
+#include "../runtime/caml/asm.h"
 
 /******************************************************************************/
 /* Access to the current domain state block. */

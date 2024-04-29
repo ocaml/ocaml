@@ -29,13 +29,13 @@ match (3, 2, 1) with
 (let (*match*/277 = 3 *match*/278 = 2 *match*/279 = 1)
   (catch
     (catch
-      (catch (if (!= *match*/278 3) (exit 3) (exit 1)) with (3)
-        (if (!= *match*/277 1) (exit 2) (exit 1)))
-     with (2) 0)
-   with (1) 1))
+      (catch (if (!= *match*/278 3) (exit 4) (exit 2)) with (4)
+        (if (!= *match*/277 1) (exit 3) (exit 2)))
+     with (3) 0)
+   with (2) 1))
 (let (*match*/277 = 3 *match*/278 = 2 *match*/279 = 1)
-  (catch (if (!= *match*/278 3) (if (!= *match*/277 1) 0 (exit 1)) (exit 1))
-   with (1) 1))
+  (catch (if (!= *match*/278 3) (if (!= *match*/277 1) 0 (exit 2)) (exit 2))
+   with (2) 1))
 - : bool = false
 |}];;
 
@@ -51,22 +51,22 @@ match (3, 2, 1) with
   (catch
     (catch
       (catch
-        (if (!= *match*/283 3) (exit 6)
+        (if (!= *match*/283 3) (exit 8)
           (let (x/286 =a (makeblock 0 *match*/282 *match*/283 *match*/284))
-            (exit 4 x/286)))
-       with (6)
-        (if (!= *match*/282 1) (exit 5)
+            (exit 6 x/286)))
+       with (8)
+        (if (!= *match*/282 1) (exit 7)
           (let (x/285 =a (makeblock 0 *match*/282 *match*/283 *match*/284))
-            (exit 4 x/285))))
-     with (5) 0)
-   with (4 x/280) (seq (ignore x/280) 1)))
+            (exit 6 x/285))))
+     with (7) 0)
+   with (6 x/280) (seq (ignore x/280) 1)))
 (let (*match*/282 = 3 *match*/283 = 2 *match*/284 = 1)
   (catch
     (if (!= *match*/283 3)
       (if (!= *match*/282 1) 0
-        (exit 4 (makeblock 0 *match*/282 *match*/283 *match*/284)))
-      (exit 4 (makeblock 0 *match*/282 *match*/283 *match*/284)))
-   with (4 x/280) (seq (ignore x/280) 1)))
+        (exit 6 (makeblock 0 *match*/282 *match*/283 *match*/284)))
+      (exit 6 (makeblock 0 *match*/282 *match*/283 *match*/284)))
+   with (6 x/280) (seq (ignore x/280) 1)))
 - : bool = false
 |}];;
 
@@ -164,15 +164,15 @@ let _ = fun a b -> match a, b with
   (catch
     (if a/323
       (let (x/331 =a[int] a/323 p/332 =a (makeblock 0 a/323 b/324))
-        (exit 10 x/331 p/332))
+        (exit 31 x/331 p/332))
       (let (x/329 =a b/324 p/330 =a (makeblock 0 a/323 b/324))
-        (exit 10 x/329 p/330)))
-   with (10 x/325[int] p/326) (makeblock 0 (int,*) x/325 p/326)))
+        (exit 31 x/329 p/330)))
+   with (31 x/325[int] p/326) (makeblock 0 (int,*) x/325 p/326)))
 (function a/323[int] b/324[int]
   (catch
-    (if a/323 (exit 10 a/323 (makeblock 0 a/323 b/324))
-      (exit 10 b/324 (makeblock 0 a/323 b/324)))
-   with (10 x/325[int] p/326) (makeblock 0 (int,*) x/325 p/326)))
+    (if a/323 (exit 31 a/323 (makeblock 0 a/323 b/324))
+      (exit 31 b/324 (makeblock 0 a/323 b/324)))
+   with (31 x/325[int] p/326) (makeblock 0 (int,*) x/325 p/326)))
 - : bool -> bool -> bool * (bool * bool) = <fun>
 |}]
 
@@ -225,12 +225,12 @@ let _ =fun a b -> match a, b with
 [%%expect {|
 (function a/352[int] b/353
   (catch
-    (if a/352 (if b/353 (let (p/354 =a (field_imm 0 b/353)) p/354) (exit 12))
-      (exit 12))
-   with (12) (let (p/355 =a (makeblock 0 a/352 b/353)) p/355)))
+    (if a/352 (if b/353 (let (p/354 =a (field_imm 0 b/353)) p/354) (exit 42))
+      (exit 42))
+   with (42) (let (p/355 =a (makeblock 0 a/352 b/353)) p/355)))
 (function a/352[int] b/353
-  (catch (if a/352 (if b/353 (field_imm 0 b/353) (exit 12)) (exit 12))
-   with (12) (makeblock 0 a/352 b/353)))
+  (catch (if a/352 (if b/353 (field_imm 0 b/353) (exit 42)) (exit 42))
+   with (42) (makeblock 0 a/352 b/353)))
 - : bool -> bool tuplist -> bool * bool tuplist = <fun>
 |}]
 
@@ -243,16 +243,16 @@ let _ = fun a b -> match a, b with
   (catch
     (catch
       (if a/356
-        (if b/357 (let (p/361 =a (field_imm 0 b/357)) (exit 13 p/361))
-          (exit 14))
-        (exit 14))
-     with (14) (let (p/360 =a (makeblock 0 a/356 b/357)) (exit 13 p/360)))
-   with (13 p/358) p/358))
+        (if b/357 (let (p/361 =a (field_imm 0 b/357)) (exit 46 p/361))
+          (exit 47))
+        (exit 47))
+     with (47) (let (p/360 =a (makeblock 0 a/356 b/357)) (exit 46 p/360)))
+   with (46 p/358) p/358))
 (function a/356[int] b/357
   (catch
     (catch
-      (if a/356 (if b/357 (exit 13 (field_imm 0 b/357)) (exit 14)) (exit 14))
-     with (14) (exit 13 (makeblock 0 a/356 b/357)))
-   with (13 p/358) p/358))
+      (if a/356 (if b/357 (exit 46 (field_imm 0 b/357)) (exit 47)) (exit 47))
+     with (47) (exit 46 (makeblock 0 a/356 b/357)))
+   with (46 p/358) p/358))
 - : bool -> bool tuplist -> bool * bool tuplist = <fun>
 |}]

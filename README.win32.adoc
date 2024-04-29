@@ -336,10 +336,10 @@ OCaml adds to this legacy mode a new "Unicode" mode, where filenames
 are UTF-8 encoded strings.  In addition to filenames,
 this applies to environment variables and command-line arguments.
 
-The mode must be decided before building the system, by tweaking
-the `WINDOWS_UNICODE` variable in `Makefile.config`.  A value of 1
-enables the the new "Unicode" mode, while a value of 0 maintains
-the legacy mode.
+The mode must be decided before building the system, by tweaking the
+`WINDOWS_UNICODE_MODE` environment variable when calling `configure`.
+The default, or a value of `compatible`, enables the new "Unicode"
+mode, while a value of `ansi` maintains the legacy mode.
 
 Technically, both modes use the Windows "wide" API, where filenames
 and other strings are made of 16-bit entities, usually interpreted as
