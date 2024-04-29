@@ -32,7 +32,7 @@ jobs:
         run: |
           sudo apt-get update -y && sudo apt-get install -y autoconf2.69
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 50
           persist-credentials: false
