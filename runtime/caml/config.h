@@ -138,8 +138,10 @@ typedef uint64_t uintnat;
 #error "No integer type available to represent pointers"
 #endif
 
-#define INTNAT_MIN INTPTR_MIN
-#define UINTNAT_MAX UINTPTR_MAX
+#define CAML_INTNAT_MIN INTPTR_MIN
+#define CAML_INTNAT_MAX INTPTR_MAX
+#define CAML_UINTNAT_MIN UINTPTR_MIN
+#define CAML_UINTNAT_MAX UINTPTR_MAX
 
 #endif /* CAML_CONFIG_H_NO_TYPEDEFS */
 

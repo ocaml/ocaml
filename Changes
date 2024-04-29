@@ -82,6 +82,7 @@ _______________
    Gabriel Scherer)
 
 - #13083: Use macros from limits.h to avoid signed-integer wrap-around.
+  Introduce CAML_{U,}INTNAT_{MIN,MAX} macros to expose {u,}intnat limits.
   (Antonin Décimo, review by Nick Barnes, Xavier Leroy, Gabriel Scherer,
    and Miod Vallat)
 

@@ -326,12 +326,12 @@ CAMLexport caml_domain_state* caml_get_domain_state(void)
 Caml_inline void interrupt_domain(struct interruptor* s)
 {
   atomic_uintnat * interrupt_word = atomic_load_relaxed(&s->interrupt_word);
-  atomic_store_release(interrupt_word, UINTNAT_MAX);
+  atomic_store_release(interrupt_word, CAML_UINTNAT_MAX);
 }
 
 Caml_inline void interrupt_domain_local(caml_domain_state* dom_st)
 {
-  atomic_store_relaxed(&dom_st->young_limit, UINTNAT_MAX);
+  atomic_store_relaxed(&dom_st->young_limit, CAML_UINTNAT_MAX);
 }
 
 int caml_incoming_interrupts_queued(void)

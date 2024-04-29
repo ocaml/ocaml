@@ -69,7 +69,7 @@ extern int caml_lf_skiplist_find(struct lf_skiplist *sk, uintnat key,
 extern int caml_lf_skiplist_find_below(struct lf_skiplist *sk, uintnat k,
                                        /*out*/ uintnat *key,
                                        /*out*/ uintnat *data);
-/* Insertion in a skip list. [key] must be between 1 and UINTNAT_MAX-1.
+/* Insertion in a skip list. [key] must be between 1 and CAML_UINTNAT_MAX-1.
    If [key] was already there, change the associated data and return 1.
    If [key] was not there, insert new [key, data] binding and return 0. */
 extern int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key,

@@ -25,7 +25,7 @@
 #include "caml/signals.h"
 #include "caml/runtime_events.h"
 
-static const mlsize_t mlsize_t_max = -1;
+static const mlsize_t mlsize_t_max = CAML_UINTNAT_MAX;
 
 /* returns number of elements (either fields or floats) */
 /* [ 'a array -> int ] */

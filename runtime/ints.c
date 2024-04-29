@@ -81,7 +81,7 @@ static intnat parse_intnat(value s, int nbits, const char *errmsg)
   int sign, base, signedness, d;
 
   p = parse_sign_and_base(String_val(s), &base, &signedness, &sign);
-  threshold = UINTNAT_MAX / base;
+  threshold = CAML_UINTNAT_MAX / base;
   d = parse_digit(*p);
   if (d < 0 || d >= base) caml_failwith(errmsg);
   for (p++, res = d; /*nothing*/; p++) {
@@ -736,7 +736,7 @@ CAMLprim value caml_nativeint_div(value v1, value v2)
   if (divisor == 0) caml_raise_zero_divide();
   /* PR#4740: on some processors, modulus crashes if division overflows.
      Implement the same behavior as for type "int". */
-  if (dividend == INTNAT_MIN && divisor == -1) return v1;
+  if (dividend == CAML_INTNAT_MIN && divisor == -1) return v1;
   return caml_copy_nativeint(dividend / divisor);
 }
 
@@ -747,7 +747,7 @@ CAMLprim value caml_nativeint_mod(value v1, value v2)
   if (divisor == 0) caml_raise_zero_divide();
   /* PR#4740: on some processors, modulus crashes if division overflows.
      Implement the same behavior as for type "int". */
-  if (dividend == INTNAT_MIN && divisor == -1){
+  if (dividend == CAML_INTNAT_MIN && divisor == -1){
     return caml_copy_nativeint(0);
   }
   return caml_copy_nativeint(dividend % divisor);
