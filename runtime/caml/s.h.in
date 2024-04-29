@@ -104,8 +104,6 @@
 
 #undef HAS_IPV6
 
-#undef HAS_STDINT_H
-
 #undef HAS_PTHREAD_NP_H
 
 #undef HAS_UNISTD

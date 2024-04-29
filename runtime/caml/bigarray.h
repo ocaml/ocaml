@@ -21,15 +21,8 @@
 
 typedef signed char caml_ba_int8;
 typedef unsigned char caml_ba_uint8;
-#if defined(HAS_STDINT_H)
 typedef int16_t caml_ba_int16;
 typedef uint16_t caml_ba_uint16;
-#elif SIZEOF_SHORT == 2
-typedef short caml_ba_int16;
-typedef unsigned short caml_ba_uint16;
-#else
-#error "No 16-bit integer type available"
-#endif
 
 #define CAML_BA_MAX_NUM_DIMS 16
 
