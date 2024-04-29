@@ -48,7 +48,7 @@ jobs:
           submodules: true
 
       - name: Restore Cygwin cache
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         env:
           PATH: ${{ env.PRISTINE_PATH }}
         with:
@@ -63,7 +63,7 @@ jobs:
           install-dir: 'D:\cygwin'
 
       - name: Save Cygwin cache
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         env:
           PATH: ${{ env.PRISTINE_PATH }}
         with:
