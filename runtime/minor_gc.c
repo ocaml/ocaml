@@ -273,7 +273,8 @@ static void oldify_one (void* st_v, value v, volatile value *p)
 
   if (tag == Cont_tag) {
     value stack_value = Field(v, 0);
-    CAMLassert(Wosize_hd(hd) == 2 && infix_offset == 0);
+    CAMLassert(Wosize_hd(hd) == 2);
+    CAMLassert(infix_offset == 0);
     result = alloc_shared(st->domain, 2, Cont_tag, Reserved_hd(hd));
     if( try_update_object_header(v, p, result, 0) ) {
       struct stack_info* stk = Ptr_val(stack_value);

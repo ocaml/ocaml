@@ -65,7 +65,8 @@ caml_unix_mapped_alloc(int flags, int num_dims, void * data, intnat * dim)
   struct caml_ba_array * b;
   intnat dimcopy[CAML_BA_MAX_NUM_DIMS];
 
-  CAMLassert(num_dims >= 0 && num_dims <= CAML_BA_MAX_NUM_DIMS);
+  CAMLassert(0 <= num_dims);
+  CAMLassert(num_dims <= CAML_BA_MAX_NUM_DIMS);
   CAMLassert((flags & CAML_BA_KIND_MASK) < CAML_BA_FIRST_UNIMPLEMENTED_KIND);
   for (int i = 0; i < num_dims; i++) dimcopy[i] = dim[i];
   asize = SIZEOF_BA_ARRAY + num_dims * sizeof(intnat);

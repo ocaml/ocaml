@@ -230,7 +230,8 @@ static void intern_init(struct caml_intern_state* s, const void * src,
   /* This is asserted at the beginning of demarshaling primitives.
      If it fails, it probably means that an exception was raised
      without calling intern_cleanup() during the previous demarshaling. */
-  CAMLassert (s->intern_input == NULL && s->intern_obj_table == NULL);
+  CAMLassert(s->intern_input == NULL);
+  CAMLassert(s->intern_obj_table == NULL);
   s->intern_src = src;
   s->intern_input = input;
 }
