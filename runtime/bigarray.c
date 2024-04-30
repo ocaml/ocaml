@@ -18,6 +18,7 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <string.h>
+#include <assert.h>
 #include "caml/alloc.h"
 #include "caml/bigarray.h"
 #include "caml/custom.h"
@@ -557,7 +558,7 @@ CAMLexport void caml_ba_serialize(value v,
   }
   /* Compute required size in OCaml heap.  Assumes struct caml_ba_array
      is exactly 4 + num_dims words */
-  CAMLassert(SIZEOF_BA_ARRAY == 4 * sizeof(value));
+  static_assert(SIZEOF_BA_ARRAY == 4 * sizeof(value), "");
   *wsize_32 = (4 + b->num_dims) * 4;
   *wsize_64 = (4 + b->num_dims) * 8;
 }

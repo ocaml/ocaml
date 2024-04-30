@@ -20,6 +20,8 @@
 /* The interface of this file is "caml/intext.h" */
 
 #include <string.h>
+#include <assert.h>
+
 #include "caml/alloc.h"
 #include "caml/codefrag.h"
 #include "caml/config.h"
@@ -766,6 +768,9 @@ static void extern_rec(struct caml_extern_state* s, value v)
   uintnat h = 0;
   uintnat pos = 0;
 
+  /* for Double_tag and Double_array_tag */
+  static_assert(sizeof(double) == 8, "");
+
   extern_init_position_table(s);
   sp = s->extern_stack;
 
@@ -821,7 +826,6 @@ static void extern_rec(struct caml_extern_state* s, value v)
       break;
     }
     case Double_tag: {
-      CAMLassert(sizeof(double) == 8);
       extern_double(s, v);
       s->size_32 += 1 + 2;
       s->size_64 += 1 + 1;
@@ -830,7 +834,6 @@ static void extern_rec(struct caml_extern_state* s, value v)
     }
     case Double_array_tag: {
       mlsize_t nfloats;
-      CAMLassert(sizeof(double) == 8);
       nfloats = Wosize_val(v) / Double_wosize;
       extern_double_array(s, v, nfloats);
       s->size_32 += 1 + nfloats * 2;
