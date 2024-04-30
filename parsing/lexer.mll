@@ -298,6 +298,12 @@ let check_label_name lexbuf name =
   if UIdent.is_capitalized name then error lexbuf (Capitalized_label name);
   if is_keyword name then error lexbuf (Keyword_as_label name)
 
+let check_unicode_label_name ~raw_escape lexbuf name =
+  if UIdent.is_capitalized name then
+    error lexbuf (Capitalized_label name);
+  if not raw_escape && is_keyword name then
+    error lexbuf (Keyword_as_label name)
+
 (* Update the current location with file name and line number. *)
 
 let update_loc lexbuf file line absolute chars =
@@ -472,9 +478,7 @@ rule token = parse
         LABEL name }
   | "~" (raw_ident_escape? as escape) (ident_ext as raw_name) ':'
       { let name = ident_for_extended lexbuf raw_name in
-        if escape="" then check_label_name lexbuf name;
-        if UIdent.is_capitalized name
-        then error lexbuf (Capitalized_label name);
+        check_unicode_label_name ~raw_escape:(escape<>"") lexbuf name;
         LABEL name }
   | "?"
       { QUESTION }
@@ -483,9 +487,7 @@ rule token = parse
         OPTLABEL name }
   | "?" (raw_ident_escape? as escape) (ident_ext as raw_name) ':'
       { let name = ident_for_extended lexbuf raw_name in
-        if escape="" then check_label_name lexbuf name;
-        if UIdent.is_capitalized name
-        then error lexbuf (Capitalized_label name);
+        check_unicode_label_name ~raw_escape:(escape<>"") lexbuf name;
         OPTLABEL name
       }
   | lowercase identchar * as name
@@ -497,7 +499,10 @@ rule token = parse
       { let name = ident_for_extended lexbuf raw_name in
         if UIdent.is_capitalized name then begin
             if escape="" then UIDENT name
-            else error lexbuf (Capitalized_raw_identifier name)
+            else
+              (* we don't have capitalized keywords, and thus no needs for
+                 capitalized raw identifiers. *)
+              error lexbuf (Capitalized_raw_identifier name)
         end else
           LIDENT name
       } (* No non-ascii keywords *)
@@ -513,10 +518,7 @@ rule token = parse
   | "\""
       { let s, loc = wrap_string_lexer string lexbuf in
         STRING (s, loc, None) }
-  | "{" (lowercase* as delim) "|"
-      { let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
-        STRING (s, loc, Some delim) }
- | "{" (ident_ext as raw_name) '|'
+  | "{" (ident_ext? as raw_name) '|'
       { let delim = validate_delim lexbuf raw_name in
         let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
         STRING (s, loc, Some delim)
@@ -847,16 +849,9 @@ and quoted_string delim = parse
   | eof
       { is_in_string := false;
         error_loc !string_start_loc Unterminated_string }
-  | "|" (lowercase* as edelim) "}"
+  | "|" (ident_ext? as raw_edelim) "}"
       {
-        if delim = edelim then lexbuf.lex_start_p
-        else (store_lexeme lexbuf; quoted_string delim lexbuf)
-      }
-  | "|" (ident_ext as raw_edelim) "}"
-      {
-        match lax_delim raw_edelim with
-        | None -> store_lexeme lexbuf; quoted_string delim lexbuf
-        | Some edelim ->
+        let edelim = validate_encoding lexbuf raw_edelim in
         if delim = edelim then lexbuf.lex_start_p
         else (store_lexeme lexbuf; quoted_string delim lexbuf)
       }
