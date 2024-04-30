@@ -100,7 +100,7 @@ static pthread_condattr_t *caml_plat_get_cond_attr (void)
 #if defined(_POSIX_TIMERS) && \
     defined(_POSIX_MONOTONIC_CLOCK) && \
     _POSIX_MONOTONIC_CLOCK != (-1)
-    pthread_condattr_setclock(attr, CLOCK_MONOTONIC);
+    pthread_condattr_setclock(&caml_plat_cond_attr, CLOCK_MONOTONIC);
 #endif
     caml_plat_cond_attr_inited = 1;
   }
