@@ -34,18 +34,18 @@ val modulize: string -> modname
 (** [normalize s] uncapitalizes the first letter of [s]. *)
 val normalize: string -> string
 
-(** [modname_from_source filename] is [modulize stem] where [stem] is the
+(** [lax_modname_from_source filename] is [modulize stem] where [stem] is the
     basename of the filename [filename] stripped from all its extensions.
     For instance, [modname_from_source "/pa.th/x.ml.pp"] is ["X"]. *)
-val modname_from_source: filename -> modname
+val lax_modname_from_source: filename -> modname
 
-(** Same as {!modname_from_source} but raises an {!error.Invalid_encoding} error
-    on filename with invalid utf8 encoding. *)
+(** Same as {!lax_modname_from_source} but raises an {!error.Invalid_encoding}
+    error on filename with invalid utf8 encoding. *)
 val strict_modname_from_source: filename -> modname
 
 (** {2:module_name_validation Module name validation function}*)
 
-(** [is_unit_name ~strict name] is true only if [name] can be used as a
+(** [is_unit_name name] is true only if [name] can be used as a
     valid module name. *)
 val is_unit_name : modname -> bool
 

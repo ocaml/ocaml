@@ -54,7 +54,7 @@ let stem source_file =
 let strict_modname_from_source source_file =
   source_file |> stem |> strict_modulize
 
-let modname_from_source source_file =
+let lax_modname_from_source source_file =
   source_file |> stem |> modulize
 
 (* Check validity of module name *)
@@ -84,7 +84,7 @@ module Artifact = struct
   let prefix x = Filename.remove_extension (filename x)
 
   let from_filename filename =
-    let modname = modname_from_source filename in
+    let modname = lax_modname_from_source filename in
     { modname; filename; source_file = None }
 
 end
