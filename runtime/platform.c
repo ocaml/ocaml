@@ -90,16 +90,40 @@ void caml_plat_mutex_free(caml_plat_mutex* m)
   check_err("mutex_free", pthread_mutex_destroy(m));
 }
 
-static void caml_plat_cond_init_aux(caml_plat_cond *cond)
+static pthread_condattr_t caml_plat_cond_attr;
+static int caml_plat_cond_attr_inited;
+
+static pthread_condattr_t *caml_plat_get_cond_attr (void)
 {
-  pthread_condattr_t attr;
-  pthread_condattr_init(&attr);
+  if (!caml_plat_cond_attr_inited){
+    pthread_condattr_init(&caml_plat_cond_attr);
 #if defined(_POSIX_TIMERS) && \
     defined(_POSIX_MONOTONIC_CLOCK) && \
     _POSIX_MONOTONIC_CLOCK != (-1)
-  pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+    pthread_condattr_setclock(attr, CLOCK_MONOTONIC);
 #endif
-  pthread_cond_init(&cond->cond, &attr);
+    caml_plat_cond_attr_inited = 1;
+  }
+  return &caml_plat_cond_attr;
+}
+
+clockid_t caml_plat_get_cond_clockid (void)
+{
+#if defined(_POSIX_TIMERS) && \
+    defined(_POSIX_MONOTONIC_CLOCK) && \
+    _POSIX_MONOTONIC_CLOCK != (-1)
+  clockid_t clk;
+  int err = pthread_condattr_getclock (caml_plat_get_cond_attr (), &clk);
+  check_err("getclock", err);
+  return clk;
+#else
+  return CLOCK_REALTIME;
+#endif
+}
+
+static void caml_plat_cond_init_aux(caml_plat_cond *cond)
+{
+  pthread_cond_init(&cond->cond, caml_plat_get_cond_attr ());
 }
 
 /* Condition variables */

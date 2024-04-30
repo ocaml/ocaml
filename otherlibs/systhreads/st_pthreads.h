@@ -15,7 +15,7 @@
 
 /* POSIX thread implementation of the "st" interface */
 
-#include <sys/time.h>
+#include <time.h>
 
 #include <errno.h>
 #include <string.h>
@@ -315,7 +315,6 @@ static int st_event_wait(st_event e)
 static void * caml_thread_tick(void * arg)
 {
   int *domain_id = (int *) arg;
-  struct timeval curtime;
   struct timespec deadline;
 
   caml_init_domain_self(*domain_id);
@@ -324,15 +323,17 @@ static void * caml_thread_tick(void * arg)
   caml_plat_lock (&Tick_thread_control.mu);
   while(1){
     if (Tick_thread_control.state == Tick_stop) break;
-    gettimeofday (&curtime, NULL);
-    deadline.tv_nsec = 1000 * (curtime.tv_usec + 1000 * Thread_timeout);
+    clock_gettime (caml_plat_get_cond_clockid (), &deadline);
+    deadline.tv_nsec += 1000000 * Thread_timeout;
     if (deadline.tv_nsec > 1000000000){
       deadline.tv_nsec -= 1000000000;
-      deadline.tv_sec = curtime.tv_sec + 1;
-    }else{
-      deadline.tv_sec = curtime.tv_sec;
+      deadline.tv_sec += 1;
     }
-    (void) caml_plat_timedwait (&Tick_thread_control.cond, &deadline);
+    while (!caml_plat_timedwait (&Tick_thread_control.cond, &deadline)
+           && Tick_thread_control.state != Tick_stop){
+      /* Loop here until timeout occurs or the state is changed to Tick_stop.
+         Everything else is spurious wake-ups. */
+    }
     atomic_store_release(&domain->requested_external_interrupt, 1);
     caml_interrupt_self();
   }
