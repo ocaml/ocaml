@@ -173,6 +173,9 @@ and core_type_desc =
   | Ptyp_package of package_type  (** [(module S)]. *)
   | Ptyp_open of Longident.t loc * core_type (** [M.(T)] *)
   | Ptyp_extension of extension  (** [[%id]]. *)
+  | Ptyp_functor of arg_label * string loc * package_type * core_type
+        (** [(module M : S) -> ...] : dependant arrow *)
+
 
 and package_type = Longident.t loc * (Longident.t loc * core_type) list
 (** As {!package_type} typed values:

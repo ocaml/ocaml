@@ -2122,7 +2122,9 @@ let package_subtype env p1 fl1 p2 fl2 =
         let msg = doc_printf "%a" Includemod_errorprinter.err_msgs e in
         Result.Error (Errortrace.Package_inclusion msg)
 
-let () = Ctype.package_subtype := package_subtype
+let () =
+    Ctype.package_subtype := package_subtype;
+    Ctype.modtype_of_package := modtype_of_package
 
 let wrap_constraint_package env mark arg mty explicit =
   let mty1 = Subst.modtype Keep Subst.identity arg.mod_type in

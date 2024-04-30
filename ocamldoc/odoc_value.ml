@@ -65,6 +65,7 @@ let parameter_list_from_arrows typ =
     match Types.get_desc t with
       Types.Tarrow (l, t1, t2, _) ->
         (l, t1) :: (iter t2)
+    | Types.Tfunctor _ -> [] (* TODO *)
     | Types.Tlink texp
     | Types.Tpoly (texp, _) -> iter texp
     | Types.Tvar _

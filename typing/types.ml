@@ -45,6 +45,8 @@ and type_desc =
   | Tunivar of string option
   | Tpoly of type_expr * type_expr list
   | Tpackage of Path.t * (Longident.t * type_expr) list
+  | Tfunctor of arg_label * Ident.t
+                * (Path.t * (Longident.t * type_expr) list) * type_expr
 
 and row_desc =
     { row_fields: (label * row_field) list;

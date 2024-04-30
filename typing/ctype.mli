@@ -177,8 +177,10 @@ val new_local_type:
         type_origin -> type_declaration
 
 module Pattern_env : sig
+  type envop
   type t = private
     { mutable env : Env.t;
+      mutable op_list : envop list;
       equations_scope : int;
       (* scope for local type declarations *)
       allow_recursive_equations : bool;
@@ -186,6 +188,7 @@ module Pattern_env : sig
     }
   val make: Env.t -> equations_scope:int -> allow_recursive_equations:bool -> t
   val copy: ?equations_scope:int -> t -> t
+  val enter_type: scope:int -> label -> type_declaration -> t -> Ident.t
   val set_env: t -> Env.t -> unit
 end
 
@@ -212,6 +215,9 @@ val instance_poly:
         ?keep_names:bool -> fixed:bool ->
         type_expr list -> type_expr -> type_expr list * type_expr
         (* Take an instance of a type scheme containing free univars *)
+val instance_funct:
+        id_in:Ident.t -> p_out:Path.t -> fixed:bool ->
+        type_expr -> type_expr option
 val polyfy: Env.t -> type_expr -> type_expr list -> type_expr * bool
 
 val instance_label:
@@ -282,6 +288,11 @@ val unify_var: Env.t -> type_expr -> type_expr -> unit
 val filter_arrow: Env.t -> type_expr -> arg_label -> type_expr * type_expr
         (* A special case of unification with [l:'a -> 'b].  Raises
            [Filter_arrow_failed] instead of [Unify]. *)
+val filter_functor:
+        Env.t -> type_expr -> arg_label ->
+        (Ident.t * (Path.t * (Longident.t * type_expr) list) * type_expr) option
+        (* A special case of unification with [{M:P} -> 'a]  Raises
+           [Filter_arrow_failed] instead of [Unify]. *)
 val filter_method: Env.t -> string -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}).  Raises
            [Filter_method_failed] instead of [Unify]. *)
@@ -350,6 +361,7 @@ val equal: Env.t -> bool -> type_expr list -> type_expr list -> unit
         (* [equal env [x1...xn] tau [y1...yn] sigma]
            checks whether the parameterized types
            [/\x1.../\xn.tau] and [/\y1.../\yn.sigma] are equivalent. *)
+val eq_package_path : Env.t -> Path.t -> Path.t -> bool
 val is_equal : Env.t -> bool -> type_expr list -> type_expr list -> bool
 val equal_private :
         Env.t -> type_expr list -> type_expr ->
@@ -477,6 +489,10 @@ val package_subtype :
     (Env.t -> Path.t -> (Longident.t * type_expr) list ->
       Path.t -> (Longident.t * type_expr) list ->
      (unit,Errortrace.first_class_module) Result.t) ref
+
+val modtype_of_package :
+     (Env.t -> Location.t -> Path.t -> (Longident.t * type_expr) list ->
+     module_type) ref
 
 (* Raises [Incompatible] *)
 val mcomp : Env.t -> type_expr -> type_expr -> unit

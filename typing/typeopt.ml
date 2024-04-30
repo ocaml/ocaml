@@ -112,8 +112,8 @@ let classify env ty : classification =
              Maybe we should emit a warning. *)
           Any
       end
-  | Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil | Tvariant _ ->
-      Addr
+  | Tarrow _ | Ttuple _ | Tpackage _ | Tobject _
+  | Tnil | Tvariant _ | Tfunctor _ -> Addr
   | Tlink _ | Tsubst _ | Tpoly _ | Tfield _ ->
       assert false
 

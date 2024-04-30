@@ -272,6 +272,9 @@ let rec typexp copy_scope s ty =
       | Tpackage(p, fl) ->
           Tpackage(modtype_path s p,
                     List.map (fun (n, ty) -> (n, typexp copy_scope s ty)) fl)
+      | Tfunctor(lbl, id, (p, fl), ty) ->
+          let fl = List.map (fun (n, ty) -> (n, typexp copy_scope s ty)) fl in
+          Tfunctor(lbl, id, (modtype_path s p, fl), typexp copy_scope s ty)
       | Tobject (t1, name) ->
           let t1' = typexp copy_scope s t1 in
           let name' =

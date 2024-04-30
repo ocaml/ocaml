@@ -233,6 +233,11 @@ let explain_escape pre = function
         "%a@,@[The module type@;<1 2>%a@ would escape its scope@]"
         pp_doc pre pp_path p
     )
+  | Errortrace.Module p -> Some(
+      doc_printf
+        "%a@,@[The module@;<1 2>%a@ would escape its scope@]"
+        pp_doc pre pp_path p
+    )
   | Errortrace.Equation Errortrace.{ty = _; expanded = t} ->
       Variable_names.reserve t;
       Some(

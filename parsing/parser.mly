@@ -3535,6 +3535,15 @@ function_type:
       MINUSGREATER
       codomain = function_type
         { Ptyp_arrow(label, domain, codomain) }
+    | label = arg_label
+      LPAREN
+        MODULE _attrs = ext_attributes id = mkrhs(UIDENT) COLON
+        mty = module_type
+      RPAREN
+      MINUSGREATER
+      codomain = function_type
+        { let (lid, cstrs, _attrs) = package_type_of_module_type mty in
+          Ptyp_functor(label, id, (lid, cstrs), codomain) }
     )
     { $1 }
 ;

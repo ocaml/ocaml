@@ -38,6 +38,22 @@ let rec same p1 p2 =
       in same_extra && same p1 p2
   | (_, _) -> false
 
+let rec equiv p1 p2 =
+  p1 == p2
+  || match (p1, p2) with
+        (Pident id1, Pident id2) -> Ident.equiv id1 id2
+      | (Pdot(p1, s1), Pdot(p2, s2)) ->
+        s1 = s2 && equiv p1 p2
+      | (Papply(fun1, arg1), Papply(fun2, arg2)) ->
+        equiv fun1 fun2 && equiv arg1 arg2
+      | (Pextra_ty (p1, t1), Pextra_ty(p2, t2)) ->
+        let same_extra = match t1, t2 with
+          | (Pcstr_ty s1, Pcstr_ty s2) -> s1 = s2
+          | (Pext_ty, Pext_ty) -> true
+          | ((Pcstr_ty _ | Pext_ty), _) -> false
+        in same_extra && equiv p1 p2
+      | (_, _) -> false
+
 let rec compare p1 p2 =
   if p1 == p2 then 0
   else match (p1, p2) with
@@ -87,6 +103,38 @@ let rec scope = function
     Pident id -> Ident.scope id
   | Pdot(p, _) | Pextra_ty (p, _) -> scope p
   | Papply(p1, p2) -> Int.max (scope p1) (scope p2)
+
+let rec contains id = function
+    Pident id' -> Ident.same id' id
+  | Pdot(p, _) | Pextra_ty(p, _) -> contains id p
+  | Papply(p1, p2) -> contains id p1 || contains id p2
+
+let subst id_in p_out p =
+  let exception Unchanged in
+  let rec aux = function
+  | Pident id when Ident.same id_in id -> p_out
+  | Pident _ -> raise Unchanged
+  | Pdot(p, s) -> Pdot(aux p, s)
+  | Pextra_ty(p, e) -> Pextra_ty(aux p, e)
+  | Papply(p1, p2) ->
+    let p1, b1 = try aux p1, false with Unchanged -> p1, true in
+    let p2, b2 = try aux p2, false with Unchanged -> p2, true in
+    if b1 && b2
+    then raise Unchanged
+    else Papply(p1, p2)
+  in
+  try aux p with Unchanged -> p
+
+let unbounded_unscoped idl p =
+  let rec aux = function
+      Pident id when Ident.is_unscoped id ->
+      if List.exists (Ident.same id) idl
+      then ()
+      else raise (Ident.No_scope id)
+    | Pident _ -> ()
+    | Pdot (p, _) | Pextra_ty (p, _) -> aux p
+    | Papply (p1, p2) -> aux p1; aux p2
+  in aux p
 
 let kfalse _ = false
 

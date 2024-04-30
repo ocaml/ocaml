@@ -1019,6 +1019,32 @@ let prepare_for_printing tyl =
 
 let add_type_to_preparation = prepare_type
 
+let wrap_env fenv ftree arg =
+  (* We save the current value of the short-path cache *)
+  (* From keys *)
+  let env = !printing_env in
+  let old_pers = !printing_pers in
+  (* to data *)
+  let old_map = !printing_map in
+  let old_depth = !printing_depth in
+  let old_cont = !printing_cont in
+  set_printing_env (fenv env);
+  let tree = ftree arg in
+  if !Clflags.real_paths
+     || same_printing_env env then ()
+   (* our cached key is still live in the cache, and we want to keep all
+      progress made on the computation of the [printing_map] *)
+  else begin
+    (* we restore the snapshotted cache before calling set_printing_env *)
+    printing_old := env;
+    printing_pers := old_pers;
+    printing_depth := old_depth;
+    printing_cont := old_cont;
+    printing_map := old_map
+  end;
+  set_printing_env env;
+  tree
+
 (* Disabled in classic mode when printing an unification error *)
 let print_labels = ref true
 let with_labels b f = Misc.protect_refs [R (print_labels,b)] f
@@ -1057,6 +1083,18 @@ let rec tree_of_typexp mode ty =
             | _ -> Otyp_stuff "<hidden>"
           else tree_of_typexp mode ty1 in
         Otyp_arrow (lab, t1, tree_of_typexp mode ty2)
+    | Tfunctor (l, id, (p, fl), ty) ->
+        let lab =
+          if !print_labels || is_optional l then l else Nolabel
+        in
+        let fenv env =
+          let mty = !Ctype.modtype_of_package env Location.none p fl in
+          Env.add_module ~arg:true id Mp_present mty env
+        in
+        let ty = wrap_env fenv (tree_of_typexp mode) ty in
+        let fl = tree_of_pack_fields mode fl in
+        Otyp_functor (lab, Oide_ident { printed_name = Ident.name id },
+                      (tree_of_path (Some Module_type) p, fl), ty)
     | Ttuple tyl ->
         Otyp_tuple (tree_of_typlist mode tyl)
     | Tconstr(p, tyl, _abbrev) ->
@@ -1132,12 +1170,7 @@ let rec tree_of_typexp mode ty =
     | Tunivar _ ->
         Otyp_var (false, Variable_names.(name_of_type new_name) tty)
     | Tpackage (p, fl) ->
-        let fl =
-          List.map
-            (fun (li, ty) -> (
-              String.concat "." (Longident.flatten li),
-              tree_of_typexp mode ty
-            )) fl in
+        let fl = tree_of_pack_fields mode fl in
         Otyp_module (tree_of_path (Some Module_type) p, fl)
   in
   Aliases.remove_delay px;
@@ -1150,6 +1183,13 @@ let rec tree_of_typexp mode ty =
     let alias = Variable_names.(name_of_type (new_var_name ~non_gen ty)) px in
     Otyp_alias {non_gen;  aliased = pr_typ (); alias } end
   else pr_typ ()
+
+and tree_of_pack_fields mode fl =
+  List.map
+    (fun (li, ty) -> (
+      String.concat "." (Longident.flatten li),
+      tree_of_typexp mode ty
+    )) fl
 
 and tree_of_row_field mode (l, f) =
   match row_field_repr f with
@@ -1714,32 +1754,6 @@ let tree_of_cltype_declaration id cl rs =
      tree_of_rec rs)
 
 (* Print a module type *)
-
-let wrap_env fenv ftree arg =
-  (* We save the current value of the short-path cache *)
-  (* From keys *)
-  let env = !printing_env in
-  let old_pers = !printing_pers in
-  (* to data *)
-  let old_map = !printing_map in
-  let old_depth = !printing_depth in
-  let old_cont = !printing_cont in
-  set_printing_env (fenv env);
-  let tree = ftree arg in
-  if !Clflags.real_paths
-     || same_printing_env env then ()
-   (* our cached key is still live in the cache, and we want to keep all
-      progress made on the computation of the [printing_map] *)
-  else begin
-    (* we restore the snapshotted cache before calling set_printing_env *)
-    printing_old := env;
-    printing_pers := old_pers;
-    printing_depth := old_depth;
-    printing_cont := old_cont;
-    printing_map := old_map
-  end;
-  set_printing_env env;
-  tree
 
 let dummy =
   {
