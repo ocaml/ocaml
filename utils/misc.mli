@@ -797,7 +797,7 @@ end
       - digits 0-9, underscore, single quote
 *)
 
-module UIdent : sig
+module Utf8_lexeme: sig
   type t = string
 
   val normalize: string -> (t,t) Result.t

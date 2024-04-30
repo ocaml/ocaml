@@ -1888,7 +1888,7 @@ and check_value_name name loc =
      identifier, to protect against bad identifiers forged by -pp or
      -ppx preprocessors. *)
   if String.length name > 0 && not
-       (UIdent.starts_like_a_valid_identifier name) then
+       (Utf8_lexeme.starts_like_a_valid_identifier name) then
     for i = 1 to String.length name - 1 do
       if name.[i] = '#' then
         error (Illegal_value_name(loc, name))

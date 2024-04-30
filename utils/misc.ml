@@ -262,7 +262,7 @@ end
 
 (** {1 Minimal support for Unicode characters in identifiers} *)
 
-module UIdent = struct
+module Utf8_lexeme = struct
 
   type t = string
 
@@ -520,7 +520,7 @@ let find_in_path_rel path name =
       if Sys.file_exists fullname then fullname else try_dir rem
   in try_dir path
 
-let normalized_unit_filename = UIdent.uncapitalize
+let normalized_unit_filename = Utf8_lexeme.uncapitalize
 
 let find_in_path_normalized path name =
   match normalized_unit_filename name with

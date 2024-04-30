@@ -39,7 +39,7 @@ let out_ident = ref print_ident
 
 let parenthesized_ident name =
   (List.mem name ["or"; "mod"; "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr"])
-  || not (Misc.UIdent.is_valid_identifier name)
+  || not (Misc.Utf8_lexeme.is_valid_identifier name)
 
 let value_ident ppf name =
   if parenthesized_ident name then
