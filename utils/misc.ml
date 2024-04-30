@@ -422,7 +422,8 @@ module UIdent = struct
     s <> "" &&
     uchar_is_uppercase (Uchar.utf_decode_uchar (String.get_utf_8_uchar s 0))
 
-  (* Characters allowed in identifiers.  Currently:
+  (* Characters allowed in identifiers after normalization is applied.
+     Currently:
        - ASCII letters, underscore
        - Latin-9 letters, represented in NFC
        - ASCII digits, single quote (but not as first character)
