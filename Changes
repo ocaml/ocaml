@@ -315,6 +315,10 @@ ___________
   LLDB support for them.
   (Nick Barnes).
 
+- #13199: Support running native debuggers in ocamltest.
+  (Tim McGilchrist and Sebastien Hinderer, review by Sebastien Hinderer,
+   Gabriel Scherer and Antonin Décimo)
+
 ### Toplevel:
 
 - #12891: Improved styling for initial prompt

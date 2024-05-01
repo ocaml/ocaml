@@ -33,3 +33,8 @@ val ocamlrun_ocamlobjinfo : string
 
 val ocamlrun_ocamlmklib : string
 val ocamlrun_codegen : string
+
+(* Helper functions to build native debugger-related commands *)
+val lldb_run : string
+
+val gdb_run : string

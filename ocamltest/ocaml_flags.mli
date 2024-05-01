@@ -29,3 +29,9 @@ val toplevel_default_flags : string
 val ocamldebug_default_flags : string
 
 val ocamlobjinfo_default_flags : string
+
+(* Flags used in LLDB commands *)
+val lldb_default_flags : string
+
+(* Flags used in GDB commands *)
+val gdb_default_flags : string
