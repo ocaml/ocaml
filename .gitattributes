@@ -198,6 +198,8 @@ tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
 runtime/caml/sizeclasses.h typo.missing-header
 
+/tools/gdb_ocamlrun.py typo.long-line
+
 # Tests which include references spanning multiple lines fail with \r\n
 # endings, so use \n endings only, even on Windows.
 testsuite/tests/basic-modules/anonymous.ml text eol=lf

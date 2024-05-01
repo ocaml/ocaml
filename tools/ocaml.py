@@ -98,44 +98,6 @@
 #
 #     double_array(size): an array of double-precision floating point
 #       members, as a debugger-native array.
-#
-# String representations of various Caml values. Each kind of value
-# has a full representation, of the form "[Caml: ...]", and a summary
-# which may appear in the full representation of a block which points
-# to it.
-#
-# value           summary                full representation
-#
-# 3               i3                     [Caml: 3]
-# Some(3)         1@Tag0                 [Caml: 1@Tag0 (i6) [m]]
-# (3, Some(3))    2@Tag0                 [Caml: 2@Tag0 (i3, 1@Tag0) [m]]
-# 3.4             3.4                    [Caml: 3.4 [m]]
-# "Foo"           'Foo'                  [Caml: 'Foo'[3] [m]]
-# [| 1.0; 2.0 |]  2@Double_array         [Caml: 2@Double_array (1.0, 2.0) [m]]
-# custom block    custom(_bigarr02)[57]  [Caml: custom(_bigarr02)[57] [m]]
-#
-# ("_bigarr02" is the custom operations block "identifier" for big
-# arrays). The representation of closures is too verbose to fit into
-# this table. Simple single-function closures look like this:
-#
-#   [Caml: closure(camlTest.f_270) arity 1 start_env 2) (i6) [m]]
-#
-# with this summary: closure(camlTest.f_270)[1]
-#
-# Whereas shared function closures are like this:
-#
-#   [Caml: closure(camlTest.f_362, camlTest.g_363(caml_tuplify2))
-#    arity 1 start_env 6) (i12) [m]]
-#
-# with summary: closure(camlTest.f_362, +1)[1]
-#
-# Pointers to infix-header blocks look like this:
-#
-# [Caml: infix(3) in 0x1019ff700 (closure(camlTest.f_362, +1)[1])[m]]
-#
-# with summary: infix(3) in closure(camlTest.f_362, +1)[1]
-# Various limits on how much detail to show when creating string
-# representations of Caml values.
 
 MAX_BLOCK_SLOTS = 8
 MAX_STRING_LEN = 80
@@ -301,7 +263,9 @@ class Value:
             # collect code pointers and metadata for all functions
             # in this closure.
             self._functions = []
-            # list of (offset, code, arity [, additional code]) tuples.
+            # list of (code, arity [, additional code]) tuples.
+            self._infix_map = {}
+            # map from infix offset to tuple
             arity_shift = target.word_size * 8 - 8
             closinfo = value.field(1).signed()
             self._start_env = (closinfo & ((1 << arity_shift) - 1)) >> 1
@@ -312,12 +276,15 @@ class Value:
                 closinfo = value.field(block+1).unsigned()
                 arity = closinfo >> arity_shift
                 if (arity == 0) or (arity == 1):
-                    self._functions.append((block, code, arity))
-                    block += 3 # including infix header
+                    fn = (code, arity)
+                    bump = 0
                 else: # higher arity, so code is curry/tuplify
                     true_code = value.field(block+2).unsigned()
-                    self._functions.append((block, true_code, arity, code))
-                    block += 4 # including infix header
+                    fn = (true_code, arity, code)
+                    bump = 1
+                self._functions.append(fn)
+                self._infix_map[block] = fn
+                block += 3 +bump # code, closinfo, [extra code], [infix header]
         elif self._tag == TAG_INFIX:
             self._container = Value(value.field_pointer(-self._wosize), target)
             self.num_children = 0
@@ -329,16 +296,73 @@ class Value:
             self.children = False
             self.num_children = 0
 
-    def summary(self):
+    def tag_part(self):
+        if self._tag in TAGS:
+            return f'{TAGS[self._tag]}'
+        elif self._tag == 0:
+            return ''
+        else:
+            return f'Tag{self._tag}'
+
+
+    def infix_sym(self):
+        cont = self._container
+        sym = f'+{self._wosize}'
+        # try to find symbol in infix map of container
+        if cont._tag == TAG_CLOSURE: # always true!
+            if self._wosize in cont._infix_map:
+                code = cont._infix_map[self._wosize][0]
+                sym = self._target.symbol(code)
+                if sym is None:
+                    sym = f'0x{code:x}'
+        return sym
+
+    def code_sym(self, t):
+        code = t[0]
+        sym = self._target.symbol(code)
+        if sym is None:
+            sym = f'0x{code:x}'
+        if len(t) == 2:
+            return sym
+        else:
+            return f'{sym}({self._target.symbol(t[2])})'
+
+    def closure_syms(self):
+        return [self.code_sym(t) for t in self._functions]
+
+    def array_contents(self, short=False):
+        if self._tag == TAG_DOUBLE_ARRAY:
+            if self.num_children <= MAX_BLOCK_SLOTS:
+                return [str(self._value.double_field(i))
+                        for i in range(self.num_children)]
+            return ([str(self._value.double_field(i))
+                     for i in range(MAX_BLOCK_SLOTS-2)]
+                    + ['...',
+                       str(self._value.double_field(
+                           self.num_children - 1))])
+
+        if self.num_children == 1: # disambiguate singleton
+            return ['('+self.field_summary(0, short)+')']
+        elif self.num_children < MAX_BLOCK_SLOTS:
+            return [self.field_summary(i, short)
+                    for i in range(self.num_children)]
+        else:
+            return ([self.field_summary(i, short)
+                     for i in range(MAX_BLOCK_SLOTS-2)]
+                    + ['...',
+                       self.field_summary(self.num_children - 1, short)])
+
+    def summary(self, short=False):
         """Return a short value summary string, suitable for display in a
-        larger aggregate.
+        larger aggregate. If `short` then summarise the summary.
         """
         if not self.valid:
             return '[invalid]'
         if self.immediate:
-            return f'i{self.word // 2}'
+            return f'{self.word // 2}'
         if self.debug is not None:
             return self.debug
+
         if self._tag == TAG_DOUBLE:
             return str(self._value.double_field(0))
         elif self._tag == TAG_STRING:
@@ -348,104 +372,83 @@ class Value:
                         + repr(self._string[-STRING_SUMMARY_SUFFIX:])
                         + f'[{self._length}]')
             return repr(self._string)
-        elif self._tag == TAG_CLOSURE:
-            sym = self._target.symbol(self._functions[0][1])
-            if sym is None:
-                sym = f'{self._functions[0][1]:x}'
-            if len(self._functions) > 1:
-                others = f', +{len(self._functions)-1}'
-            else:
-                others = ''
-            return f'closure({sym}{others})[{self.num_children}]'
         elif self._tag == TAG_INFIX:
-            return f'infix({self._wosize}) in ' + self._container.summary()
+            sym = self.infix_sym()
+            return f'infix({sym}) in ' + self._container.summary(short=True)
+        elif self._tag == TAG_CLOSURE:
+            syms = self.closure_syms()
+            if len(syms) > 1:
+                sym = f'{syms[0]}, +{len(syms)-1}'
+            else:
+                sym = syms[0]
+            return f'closure({sym})[{self.num_children}]'
         elif self._tag == TAG_CUSTOM:
-            return f"custom({self._id})[{self._wosize}]"
+            return f"custom {self._id}[{self._wosize}]"
 
-        if self._tag in TAGS:
-            tag_name = TAGS[self._tag]
-        else:
-            tag_name = f'Tag{self._tag}'
-        return f'{self.num_children}@{tag_name}'
+        tag_part = self.tag_part()
 
-    def field_summary(self, index):
-        return Value(self._value.field(index), self._target).summary()
+        if short:
+            return f'{tag_part}[:{self.num_children}:]'
+
+        contents = self.array_contents(short=True)
+
+        return (f'{tag_part}(' + ', '.join(contents) + ')')
+
+
+    def field_summary(self, index, short=False):
+        return (Value(self._value.field(index), self._target).
+                summary(short))
 
     def __str__(self):
         if not self.valid:
             return '[invalid]'
         if self.immediate:
-            return f'[Caml: {self.word // 2}]'
+            return f'Caml({self.word // 2})'
         if self.debug is not None:
-            return f'[Caml {debug}]'
+            return f'Caml({self.debug})'
 
-        if self._tag in TAGS:
-            self._tag_name = TAGS[self._tag]
-        else:
-            self._tag_name = f'Tag{self._tag}'
-        color = colors(self._target).get(self._color_bits,
+        color_char = colors(self._target).get(self._color_bits,
                                          f'BAD COLOR {self._color_bits}')[1]
-        contents = None
+        color = f' [{color_char}]'
 
         if self._tag == TAG_DOUBLE:
             val = str(self._value.double_field(0))
-            return f'[Caml: {val} [{color}]]'
+            return f'Caml({val}){color}'
         elif self._tag == TAG_STRING:
             if self._length > MAX_STRING_LEN:
-                return ('[Caml: ' + repr(self._string[:STRING_PREFIX])
-                        + '...' + repr(self._string[-STRING_SUFFIX:])
-                        + f'[{self._length}] [{color}]]')
+                s = (repr(self._string[:STRING_PREFIX])
+                     + '...' + repr(self._string[-STRING_SUFFIX:]))
             else:
-                return ('[Caml: ' + repr(self._string)
-                        + f'[{self._length}] [{color}]]')
+                s = repr(self._string)
+            return (f'Caml({s})[{self._length}]{color}')
         elif self._tag == TAG_INFIX:
-            return (f'[Caml: infix({self._wosize}) '
-                    + f'in 0x{self._container._value.unsigned():x} '
-                    + '(' + self._container.summary() + ')' +
-                    f'[{color}]]')
-        elif self._tag == TAG_DOUBLE_ARRAY:
-            if self.num_children < MAX_BLOCK_SLOTS:
-                contents = [str(self._value.double_field(i))
-                            for i in range(self.num_children)]
-            else:
-                contents = ([str(self._value.double_field(i))
-                             for i in range(MAX_BLOCK_SLOTS-2)]
-                            + ['...',
-                               str(self._value.double_field(
-                                       self.num_children - 1))])
+            sym = self.infix_sym()
+            return (f'Caml(infix({sym}) in'
+                    + f' 0x{self._container._value.unsigned():x} '
+                    + self._container.summary()
+                    + f'){color}')
         elif self._tag == TAG_CLOSURE:
-            fns = []
-            for t in self._functions:
-                offset, code, arity = t[0],t[1],t[2]
-                sym = self._target.symbol(code)
-                if sym is None:
-                    sym = f'{code:x}'
-                if len(t) == 3:
-                    fns.append(sym)
-                else:
-                    fns.append(f'{sym}({self._target.symbol(t[3])})')
-            return ('[Caml: closure('
-                    + ', '.join(fns) + ')'
-                    + f' arity {self._functions[0][2]}'
-                    + f' start_env {self._start_env}) ('
+            syms = ', '.join(self.closure_syms())
+            return (f'Caml(closure ({syms})'
+                    + f' arity {self._functions[0][1]} ('
                     + ', '.join(self.field_summary(i + self._start_env)
                                 for i in range(self.num_children))
-                    + f') [{color}]]')
+                    + f')){color}')
         elif self._tag == TAG_CUSTOM:
-            return (f"[Caml: custom({self._id})"
-                    f"[{self._wosize}] [{color}]]")
-        else: # generic block
-            if self.num_children < MAX_BLOCK_SLOTS:
-                contents = [self.field_summary(i)
-                            for i in range(self.num_children)]
-            else:
-                contents = ([self.field_summary(i)
-                             for i in range(MAX_BLOCK_SLOTS-2)]
-                            + ['...',
-                               self.field_summary(self.num_children - 1)])
+            return (f"Caml(custom {self._id})"
+                    f"[{self._wosize}]{color}")
 
-        return (f'[Caml: {self._wosize}@{self._tag_name} (' +
-                ', '.join(contents) + f') [{color}]]')
+        tag_part = self.tag_part()
+        if self._tag != 0:
+            tag_part += ' '
+        suffix = ('' if self.num_children <= MAX_BLOCK_SLOTS
+                  else f'[{self.num_children}]')
+
+        contents = self.array_contents()
+
+        return (f'Caml({tag_part}'
+                + ', '.join(contents)
+                + f'){suffix}{color}')
 
     # Useful in GDB and maybe one day in LLDB too.
 

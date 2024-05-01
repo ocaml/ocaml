@@ -275,3 +275,8 @@ class Array(gdb.Function):
         return v.child_array()
 
 Array()
+
+print("OCaml support module loaded. Values of type 'value' will now\n"
+      "print as OCaml values, there is a $Array() convenience function,\n"
+      "and an 'ocaml' command is available for heap exploration\n"
+      "(see 'help ocaml' for more information).")

@@ -27,6 +27,10 @@ def __lldb_init_module(d, _internal_dict):
                     f'{__name__}.OCamlFind '
                     'ocaml find'
                     )
+    print("OCaml support module loaded. Values of type 'value' will now\n"
+          "print as OCaml values, and an 'ocaml' command is available for\n"
+          "heap exploration (see 'help ocaml' for more information).")
+
     # Synthetic Child providers don't seem so useful
     # d.HandleCommand("type synthetic add value --python-class "
     #                f"{__name__}.ChildProvider")
@@ -46,7 +50,7 @@ class OCamlFind:
     def get_short_help(self):
         return "Describe the location of the given OCaml value in the heap."
     def get_long_help(self):
-        return "Wibble Wibble Wibble ##TODO"
+        return "Describe the location of the given OCaml value in the heap."
 
 
 # These three classes (LLDBType, LLDBValue, LLDBTarget) provide a
