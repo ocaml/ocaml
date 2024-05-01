@@ -2174,7 +2174,7 @@ let inline_lazy_force arg loc =
         ap_loc = loc;
         ap_func = Lazy.force code_force_lazy;
         ap_args = [ Lconst (Const_base (Const_int 0)); arg ];
-        ap_inlined = Default_inline;
+        ap_inlined = Never_inline;
         ap_specialised = Default_specialise
       }
   else if !Clflags.native_code then
