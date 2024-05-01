@@ -203,11 +203,8 @@ let ocamlsrcdir = make ("ocamlsrcdir",
 let ocamldebug_flags = make ("ocamldebug_flags",
   "Flags for ocamldebug")
 
-let ocamldebug_script = make ("ocamldebug_script",
-  "Where ocamldebug should read its commands")
-
 let debugger_script = make ("debugger_script",
-  "Where lldb should read its commands")
+  "Where the debugger should read its commands")
 
 let os_type = make ("os_type",
   "The OS we are running on")
@@ -304,7 +301,6 @@ let _ = List.iter register_variable
     ocamldoc_reference;
     ocamldoc_exit_status;
     ocamldebug_flags;
-    ocamldebug_script;
     debugger_script;
     ocaml_script_as_argument;
     os_type;

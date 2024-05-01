@@ -534,48 +534,17 @@ let env_with_lib_unix env =
   in
   Environments.add Ocaml_variables.caml_ld_library_path newlibs env
 
-let debug log env =
+type debugger_type = LLDB | GDB | Bytecode
+
+let debugger_type_to_string = function
+  | LLDB -> "lldb"
+  | GDB -> "gdb"
+  | Bytecode -> "ocamldebug"
+
+let debug debugger_type log env =
   let program = Environments.safe_lookup Builtin_variables.program env in
-  let what = Printf.sprintf "Debugging program %s" program in
-  Printf.fprintf log "%s\n%!" what;
-  let commandline =
-  [
-    Ocaml_commands.ocamlrun_ocamldebug;
-    Ocaml_flags.ocamldebug_default_flags;
-    program
-  ] in
-  let systemenv =
-    Environments.append_to_system_env
-      default_ocaml_env
-      (env_with_lib_unix env)
-  in
-  let expected_exit_status = 0 in
-  let exit_status =
-    Actions_helpers.run_cmd
-      ~environment:systemenv
-      ~stdin_variable: Ocaml_variables.ocamldebug_script
-      ~stdout_variable:Builtin_variables.output
-      ~stderr_variable:Builtin_variables.output
-      ~append:true
-      log (env_with_lib_unix env) commandline in
-  if exit_status=expected_exit_status
-  then (Result.pass, env)
-  else begin
-    let reason =
-      (Actions_helpers.mkreason
-        what (String.concat " " commandline) exit_status) in
-    (Result.fail_with_reason reason, env)
-  end
-
-let ocamldebug =
-  Actions.make ~name:"ocamldebug" ~description:"Run ocamldebug on the program"
-    debug
-
-type native_debugger_type = LLDB | GDB
-
-let debug_native debugger_type log env =
-  let program = Environments.safe_lookup Builtin_variables.program env in
-  let what = Printf.sprintf "Debugging program %s" program in
+  let what = Printf.sprintf "Debugging program %s with %s" program
+               (debugger_type_to_string debugger_type) in
   Printf.fprintf log "%s\n%!" what;
   let commandline = match debugger_type with
     | LLDB -> [
@@ -585,6 +554,10 @@ let debug_native debugger_type log env =
     | GDB -> [
         Ocaml_commands.gdb_run;
         Ocaml_flags.gdb_default_flags;
+        program ]
+    | Bytecode -> [
+        Ocaml_commands.ocamlrun_ocamldebug;
+        Ocaml_flags.ocamldebug_default_flags;
         program ]
   in
   let systemenv =
@@ -618,6 +591,10 @@ let lldb =
 let gdb =
   Actions.make ~name:"gdb" ~description:"Run GDB on the program"
     (debug_native GDB)
+
+let ocamldebug =
+  Actions.make ~name:"ocamldebug" ~description:"Run ocamldebug on the program"
+    (debug Bytecode)
 
 let objinfo log env =
   let tools_directory = Ocaml_directories.tools in
