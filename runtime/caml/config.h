@@ -54,9 +54,8 @@
 #define HAS_LOCALE
 #endif
 
-#ifdef HAS_STDINT_H
 #include <stdint.h>
-#endif
+#define HAS_STDINT_H
 
 /* Disable the mingw-w64 *printf shims */
 #if defined(CAML_INTERNALS) && defined(__MINGW32__)
@@ -118,21 +117,6 @@
   #else
     #error "No 64-bit integer type available"
   #endif
-#endif
-
-#ifndef HAS_STDINT_H
-/* Not a C99 compiler, typically MSVC.  Define the C99 types we use. */
-typedef ARCH_INT32_TYPE int32_t;
-typedef ARCH_UINT32_TYPE uint32_t;
-typedef ARCH_INT64_TYPE int64_t;
-typedef ARCH_UINT64_TYPE uint64_t;
-#if SIZEOF_SHORT == 2
-typedef short int16_t;
-typedef unsigned short uint16_t;
-#else
-#error "No 16-bit integer type available"
-#endif
-typedef unsigned char uint8_t;
 #endif
 
 #if SIZEOF_PTR == SIZEOF_LONG
