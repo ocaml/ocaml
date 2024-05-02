@@ -16,8 +16,7 @@
 # A set of macros for low-level debugging of OCaml programs and of the
 # OCaml runtime itself (both native and byte-code).
 
-# Advice to future developers: rewrite this in Python which will be
-# faster, more reliable, and more maintainable. See also gdb_ocamlrun.py
+printf "These GDB macros are deprecated. Use tools/gdb.py instead.\n"
 
 # This file should be loaded in gdb with [ source gdb-macros ].
 # It defines a few related commands:

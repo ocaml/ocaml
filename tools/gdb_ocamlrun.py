@@ -166,3 +166,5 @@ def value_printer(val):
     return BlockPrinter(val)
 
 gdb.pretty_printers = [value_printer]
+
+print("These GDB extensions are deprecated. Use tools/gdb.py instead.")

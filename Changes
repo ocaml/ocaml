@@ -82,6 +82,10 @@ _______________
   platforms, and over Unix domain sockets on Windows.
   (Antonin Décimo, review by Gabriel Scherer and Miod Vallat)
 
+- #13136: Rewrite GDB extensions and macros in debugger-agnostic Python, and add
+  LLDB support for them.
+  (Nick Barnes).
+
 ### Toplevel:
 
 - #12891: Improved styling for initial prompt

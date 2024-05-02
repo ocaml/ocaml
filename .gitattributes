@@ -75,9 +75,6 @@ META.in                  typo.missing-header
 .depend                  typo.prune
 /.depend.menhir          typo.prune
 
-# These can be fixed at some point
-/tools/*.py              typo.long-line
-
 # Makefiles may contain tabs
 Makefile*                typo.makefile-whitespace=may
 
@@ -196,11 +193,12 @@ tools/ci/inria/step-by-step-build/script text eol=lf
 tools/check-typo text eol=lf
 tools/check-symbol-names text eol=lf
 tools/msvs-promote-path text eol=lf
-tools/gdb-macros text eol=lf linguist-language=GDB
 tools/magic text eol=lf
 tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
 runtime/caml/sizeclasses.h typo.missing-header
+
+/tools/gdb_ocamlrun.py typo.long-line
 
 # Tests which include references spanning multiple lines fail with \r\n
 # endings, so use \n endings only, even on Windows.
