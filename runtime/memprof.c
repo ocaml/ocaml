@@ -962,7 +962,7 @@ static void orphans_abandon(memprof_domain_t domain)
     ot = ot->next;
   }
 
-  caml_plat_lock(&orphans_lock);
+  caml_plat_lock_blocking(&orphans_lock);
   ot->next = orphans;
   orphans = domain->orphans;
   caml_plat_unlock(&orphans_lock);
@@ -979,7 +979,7 @@ static void orphans_adopt(memprof_domain_t domain)
     p = &(*p)->next;
   }
 
-  caml_plat_lock(&orphans_lock);
+  caml_plat_lock_blocking(&orphans_lock);
   *p = orphans;
   orphans = NULL;
   caml_plat_unlock(&orphans_lock);

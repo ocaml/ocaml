@@ -330,7 +330,7 @@ static void remove_frame_descriptors(
   void *frametable;
   caml_frametable_list ** previous;
 
-  caml_plat_lock(&table->mutex);
+  caml_plat_lock_blocking(&table->mutex);
 
   previous = &table->frametables;
 
