@@ -4756,12 +4756,12 @@ and type_function
         unify_exp_types loc env exp_type (instance ty_expected));
       exp_type, params, body, newtype :: newtypes, contains_gadt
   | { pparam_desc = Pparam_val (arg_label, None, pat); pparam_loc } :: rest
-    when is_unpack pat && could_be_functor env ty_expected 
+    when is_unpack pat && could_be_functor env ty_expected
                        && not (is_optional arg_label) ->
       let (name, p, pack) =
         match pat.ppat_desc with
-          Ppat_constraint ({ppat_desc = Ppat_unpack ({txt = Some name; loc}); _},
-                           ({ptyp_desc = Ptyp_package (p, _)} as pack))
+          Ppat_constraint ({ppat_desc = Ppat_unpack ({txt = Some name; loc}); _}
+                          ,({ptyp_desc = Ptyp_package (p, _)} as pack))
               -> ({txt = name; loc}, p, pack)
         | _ -> assert false
       in
@@ -4806,7 +4806,8 @@ and type_function
                               Mp_present arg_md env in
           let expected_res = match id_expected_typ_opt with
             | Some (id, ety) ->
-              let topt = instance_funct ~id_in:id ~p_out:(Pident s_ident)
+              let topt = instance_funct ~id_in:(Ident.of_unscoped id)
+                                        ~p_out:(Pident s_ident)
                                         ~fixed:false ety in
               begin match topt with Some t -> t | None -> ety end
             | None -> newvar ()
@@ -4818,8 +4819,8 @@ and type_function
       in
       let ident = Ident.create_unscoped name.txt in
       let exp_type =
-        match instance_funct ~id_in:s_ident ~p_out:(Pident ident)
-                             ~fixed:false res_ty
+        match instance_funct ~p_out:(Pident (Ident.of_unscoped ident))
+                             ~id_in:s_ident ~fixed:false res_ty
         with
         | Some res_ty ->
             Btype.newgenty (Tfunctor (arg_label, ident, (path, fl), res_ty))
@@ -4845,7 +4846,7 @@ and type_function
       let param =
         { fp_kind;
           fp_arg_label = arg_label;
-          fp_param = ident;
+          fp_param = s_ident; (* or Ident.of_unscoped ident *)
           fp_partial = Total;
           fp_newtypes = newtypes;
           fp_loc = pparam_loc;
@@ -5724,19 +5725,16 @@ and type_application env funct sargs =
               let path = extract_path me in
               let ty_res =
                   Option.value ~default:t
-                      (instance_funct ~id_in:id ~p_out:path ~fixed:false t) in
+                      (instance_funct ~id_in:(Ident.of_unscoped id)
+                                      ~p_out:path ~fixed:false t) in
               let ty_res0 =
                   Option.value ~default:t0
-                      (instance_funct ~id_in:id0 ~p_out:path ~fixed:false t0) in
+                      (instance_funct ~id_in:(Ident.of_unscoped id0)
+                                      ~p_out:path ~fixed:false t0) in
               let arg = Some ((fun () -> texp), Some sarg.pexp_loc) in
               type_args ((l, arg)::args) ty_res ty_res0 remaining_sargs
             with Error(_, _, Cannot_infer_functor_path) as err ->
-              unify_to_arrows (fun trace ->
-                if true
-                then
-                  raise (Error(sarg.pexp_loc, env,
-                    Expr_type_clash(trace, None, None)))
-                else raise err);
+              unify_to_arrows (fun _trace -> raise err);
               type_args args ty_fun ty_fun0 sargs
           end
         | Some _ | None ->

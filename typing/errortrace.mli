@@ -44,7 +44,7 @@ type 'a escape_kind =
      we keep a [type_expr] to track renaming in {!Printtyp} *)
   | Self
   | Module_type of Path.t
-  | Module of Path.t
+  | Module of Ident.unscoped
   | Equation of 'a
   | Constraint
 

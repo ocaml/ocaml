@@ -689,8 +689,8 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
     let ident = Ident.create_unscoped name.txt in
     let ctyp_type =
         Option.value ~default:cty.ctyp_type
-          (instance_funct ~id_in:scoped_ident ~p_out:(Pident ident) ~fixed:false
-                         cty.ctyp_type)
+          (instance_funct ~p_out:(Pident (Ident.of_unscoped ident))
+                          ~id_in:scoped_ident ~fixed:false cty.ctyp_type)
     in
     let l' = List.map (fun (s, cty) -> (s.txt, cty.ctyp_type)) ptys in
     let ty = Btype.newgenty (Tfunctor (lbl, ident, (path, l'), ctyp_type)) in

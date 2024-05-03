@@ -109,11 +109,14 @@ let rec contains id = function
   | Pdot(p, _) | Pextra_ty(p, _) -> contains id p
   | Papply(p1, p2) -> contains id p1 || contains id p2
 
-let subst id_in p_out p =
+let subst id_map p =
   let exception Unchanged in
   let rec aux = function
-  | Pident id when Ident.same id_in id -> p_out
-  | Pident _ -> raise Unchanged
+  | Pident id ->
+    begin try
+      snd (List.find (fun (i, _) -> Ident.same i id) id_map)
+    with Not_found -> raise Unchanged
+    end
   | Pdot(p, s) -> Pdot(aux p, s)
   | Pextra_ty(p, e) -> Pextra_ty(aux p, e)
   | Papply(p1, p2) ->
@@ -126,15 +129,19 @@ let subst id_in p_out p =
   try aux p with Unchanged -> p
 
 let unbounded_unscoped idl p =
+  let exception Escape of Ident.unscoped in
   let rec aux = function
-      Pident id when Ident.is_unscoped id ->
-      if List.exists (Ident.same id) idl
-      then ()
-      else raise (Ident.No_scope id)
-    | Pident _ -> ()
+      Pident id ->
+        begin match Ident.get_unscoped id with
+        | None -> ()
+        | Some us ->
+            if List.exists (Ident.same_unscoped us) idl
+            then ()
+            else raise (Escape us)
+        end
     | Pdot (p, _) | Pextra_ty (p, _) -> aux p
     | Papply (p1, p2) -> aux p1; aux p2
-  in aux p
+  in try aux p; None with Escape id -> Some id
 
 let kfalse _ = false
 

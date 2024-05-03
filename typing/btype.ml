@@ -304,7 +304,7 @@ let fold_row f init row =
 let iter_row f row =
   fold_row (fun () v -> f v) () row
 
-let fold_type_expr f init ty =
+let fold_type_expr ?(allow_tsubst=false) f init ty =
   match get_desc ty with
     Tvar _              -> init
   | Tarrow (_, ty1, ty2, _) ->
@@ -323,8 +323,11 @@ let fold_type_expr f init ty =
       let result = f init ty1 in
       f result ty2
   | Tnil                -> init
-  | Tlink _
-  | Tsubst _            -> assert false
+  | Tlink _ -> assert false
+  | Tsubst (ty, oty)    ->
+      assert allow_tsubst;
+      let result = f init ty in
+      Option.fold ~none:result ~some:(f result) oty
   | Tunivar _           -> init
   | Tpoly (ty, tyl)     ->
     let result = f init ty in
@@ -335,8 +338,8 @@ let fold_type_expr f init ty =
       let res = List.fold_left (fun result (_n, ty) -> f result ty) init fl in
       f res ty
 
-let iter_type_expr f ty =
-  fold_type_expr (fun () v -> f v) () ty
+let iter_type_expr ?(allow_tsubst=false) f ty =
+  fold_type_expr ~allow_tsubst (fun () v -> f v) () ty
 
 let rec iter_abbrev f = function
     Mnil                   -> ()

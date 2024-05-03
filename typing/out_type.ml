@@ -1089,11 +1089,11 @@ let rec tree_of_typexp mode ty =
         in
         let fenv env =
           let mty = !Ctype.modtype_of_package env Location.none p fl in
-          Env.add_module ~arg:true id Mp_present mty env
+          Env.add_module ~arg:true (Ident.of_unscoped id) Mp_present mty env
         in
         let ty = wrap_env fenv (tree_of_typexp mode) ty in
         let fl = tree_of_pack_fields mode fl in
-        Otyp_functor (lab, Oide_ident { printed_name = Ident.name id },
+        Otyp_functor (lab, Oide_ident { printed_name = Ident.name_unscoped id },
                       (tree_of_path (Some Module_type) p, fl), ty)
     | Ttuple tyl ->
         Otyp_tuple (tree_of_typlist mode tyl)

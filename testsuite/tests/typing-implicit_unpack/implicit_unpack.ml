@@ -19,7 +19,14 @@ let sort (type s) (module Set : Set.S with type elt = s) l =
   Set.elements (List.fold_right Set.add l Set.empty)
 ;;
 [%%expect{|
-val sort : (module Set.S with type elt = 's) -> 's list -> 's list = <fun>
+val sort :
+  (module Set : Set.S with type elt = 's) -> Set.elt list -> Set.elt list =
+  <fun>
+|}];;
+let sort : _ -> _ = sort
+;;
+[%%expect{|
+val sort : (module Set.S with type elt = 'a) -> 'a list -> 'a list = <fun>
 |}];;
 
 (* No real improvement here? *)
@@ -45,19 +52,15 @@ module type S = sig type t val x : t end
 
 let f (module M : S with type t = int) = M.x;;
 [%%expect{|
-val f : (module S with type t = int) -> int = <fun>
+val f : (module M : S with type t = int) -> M.t = <fun>
 |}];;
 
-let f (module M : S with type t = 'a) = M.x;; (* Error *)
+let f (module M : S with type t = 'a) = M.x;;
 [%%expect{|
-Line 1, characters 14-15:
-1 | let f (module M : S with type t = 'a) = M.x;; (* Error *)
-                  ^
-Error: The type of this packed module contains variables:
-       "(module S with type t = 'a)"
+val f : (module M : S with type t = 'a) -> M.t = <fun>
 |}];;
 
-let f (type a) (module M : S with type t = a) = M.x;;
+let f : _ -> _ = fun (type a) (module M : S with type t = a) -> M.x;;
 f (module struct type t = int let x = 1 end);;
 [%%expect{|
 val f : (module S with type t = 'a) -> 'a = <fun>

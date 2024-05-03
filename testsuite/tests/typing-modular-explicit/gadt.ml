@@ -80,8 +80,8 @@ let f (type a) (x : a) (el : ((module N : T) -> a) t2) =
 Line 3, characters 4-5:
 3 |   | B, f -> f
         ^
-Error: This pattern matches values of type "((module M : T) -> M.t -> M.t) t2"
+Error: This pattern matches values of type "((module N : T) -> N.t -> N.t) t2"
        but a pattern was expected which matches values of type
          "((module N : T) -> a) t2"
-       The module "M" would escape its scope
+       The module "N" would escape its scope
 |}]

@@ -290,7 +290,8 @@ val filter_arrow: Env.t -> type_expr -> arg_label -> type_expr * type_expr
            [Filter_arrow_failed] instead of [Unify]. *)
 val filter_functor:
         Env.t -> type_expr -> arg_label ->
-        (Ident.t * (Path.t * (Longident.t * type_expr) list) * type_expr) option
+        (Ident.unscoped * (Path.t * (Longident.t * type_expr) list)
+                        * type_expr) option
         (* A special case of unification with [{M:P} -> 'a]  Raises
            [Filter_arrow_failed] instead of [Unify]. *)
 val filter_method: Env.t -> string -> type_expr -> type_expr

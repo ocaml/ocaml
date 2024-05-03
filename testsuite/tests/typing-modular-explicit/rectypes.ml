@@ -54,7 +54,7 @@ Line 2, characters 3-4:
 2 |   (x : ((module O : T) -> O.t * 'b) as 'b)
        ^
 Error: This expression has type
-         "(module M : T) -> (M.t * ((module N : T) -> 'a) as 'a)"
+         "(module O : T) -> (O.t * ((module N : T) -> 'a) as 'a)"
        but an expression was expected of type
          "(module O : T) -> O.t * 'b as 'b"
        The module "O" would escape its scope

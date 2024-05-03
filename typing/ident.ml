@@ -17,7 +17,10 @@ open Local_store
 
 let lowest_scope  = 0
 let highest_scope = 100_000_000
-  (* assumed to fit in 27 bits, see Types.scope_field *)
+
+type unscoped_desc = { name: string; stamp: int }
+
+type unscoped = { mutable desc: unscoped_desc }
 
 type t =
   | Local of { name: string; stamp: int }
@@ -26,9 +29,7 @@ type t =
   | Predef of { name: string; stamp: int }
       (* the stamp is here only for fast comparison, but the name of
          predefined identifiers is always unique. *)
-  | Unscoped of { name : string; stamp: int }
-
-exception No_scope of t
+  | Unscoped of unscoped
 
 (* A stamp of 0 denotes a persistent identifier *)
 
@@ -45,7 +46,14 @@ let create_local s =
 
 let create_unscoped s =
   incr currentstamp;
-  Unscoped { name = s; stamp = !currentstamp }
+  { desc = { name = s; stamp = !currentstamp } }
+
+let of_unscoped u : t =
+  Unscoped u
+
+let get_unscoped = function
+    Unscoped u -> Some u
+  | _ -> None
 
 let create_predef s =
   incr predefstamp;
@@ -54,27 +62,29 @@ let create_predef s =
 let create_persistent s =
   Global s
 
+let name_unscoped us = us.desc.name
+
 let name = function
   | Local { name; _ }
   | Scoped { name; _ }
-  | Unscoped { name; _ }
+  | Unscoped { desc = { name; _ } }
   | Global name
   | Predef { name; _ } -> name
+
+let refresh us = create_unscoped us.desc.name
 
 let rename = function
   | Local { name; stamp = _ }
   | Scoped { name; stamp = _; scope = _ } ->
       incr currentstamp;
       Local { name; stamp = !currentstamp }
-  | Unscoped { name; stamp = _ } ->
-      incr currentstamp;
-      Unscoped { name; stamp = !currentstamp }
+  | Unscoped us -> Unscoped (refresh us)
   | id ->
       Misc.fatal_errorf "Ident.rename %s" (name id)
 
 let unique_name = function
   | Local { name; stamp }
-  | Unscoped { name; stamp }
+  | Unscoped { desc = { name; stamp } }
   | Scoped { name; stamp } -> name ^ "_" ^ Int.to_string stamp
   | Global name ->
       (* we're adding a fake stamp, because someone could have named his unit
@@ -88,7 +98,7 @@ let unique_name = function
 
 let unique_toplevel_name = function
   | Local { name; stamp }
-  | Unscoped { name; stamp }
+  | Unscoped { desc = { name; stamp } }
   | Scoped { name; stamp } -> name ^ "/" ^ Int.to_string stamp
   | Global name
   | Predef { name; _ } -> name
@@ -101,6 +111,8 @@ let equal i1 i2 =
   match i1, i2 with
   | Local { name = name1; _ }, Local { name = name2; _ }
   | Scoped { name = name1; _ }, Scoped { name = name2; _ }
+  | Unscoped { desc = { name = name1; _} },
+      Unscoped { desc = { name = name2; _} }
   | Global name1, Global name2 ->
       name1 = name2
   | Predef { stamp = s1; _ }, Predef { stamp = s2 } ->
@@ -109,11 +121,13 @@ let equal i1 i2 =
   | _ ->
       false
 
+let same_unscoped us1 us2 = us1.desc.stamp = us2.desc.stamp
+
 let same i1 i2 =
   match i1, i2 with
   | Local { stamp = s1; _ }, Local { stamp = s2; _ }
   | Scoped { stamp = s1; _ }, Scoped { stamp = s2; _ }
-  | Unscoped { stamp = s1; _ }, Unscoped { stamp = s2; _ }
+  | Unscoped { desc = { stamp = s1; _ } }, Unscoped { desc = { stamp = s2; _ } }
   | Predef { stamp = s1; _ }, Predef { stamp = s2 } ->
       s1 = s2
   | Global name1, Global name2 ->
@@ -123,9 +137,20 @@ let same i1 i2 =
 
 let stamp = function
   | Local { stamp; _ }
-  | Scoped { stamp; _ }
-  | Unscoped { stamp; _ } -> stamp
+  | Unscoped { desc = { stamp; _ } }
+  | Scoped { stamp; _ } -> stamp
   | _ -> 0
+
+type change = unscoped * unscoped_desc
+
+let change_log = ref (fun _ -> assert false)
+
+let undo_change (us, us_d) =
+  us.desc <- us_d
+
+let link_unscoped us1 us2 =
+  !change_log (us1, us1.desc);
+  us1.desc <- us2.desc
 
 let id_pairs = ref []
 
@@ -137,15 +162,22 @@ let with_id_pairs pairs f =
   Misc.try_finally f
     ~always:(fun () -> id_pairs := old)
 
+let stamp_us us = us.desc.stamp
+
+let equiv_unscoped us1 us2 =
+  let s1 = us1.desc.stamp in
+  let s2 = us2.desc.stamp in
+  s1 = s2
+  || List.exists (fun (i1, i2) -> (stamp_us i1 = s1 && stamp_us i2 = s2)
+                          || stamp_us i2 = s1 && stamp_us i1 = s2) !id_pairs
+
 let equiv i1 i2 =
   match i1, i2 with
   | Local { stamp = s1; _ }, Local { stamp = s2; _ }
   | Scoped { stamp = s1; _ }, Scoped { stamp = s2; _ }
   | Predef { stamp = s1; _ }, Predef { stamp = s2 } ->
       s1 = s2
-  | Unscoped { stamp = s1; _ }, Unscoped { stamp = s2; _ } ->
-    List.exists (fun (i1, i2) -> (stamp i1 = s1 && stamp i2 = s2)
-                                    || stamp i2 = s1 && stamp i1 = s2) !id_pairs
+  | Unscoped us1, Unscoped us2 -> equiv_unscoped us1 us2
   | Global name1, Global name2 ->
       name1 = name2
   | _ ->
@@ -182,6 +214,11 @@ let is_unscoped = function
   | Unscoped _ -> true
   | _ -> false
 
+let print_unscoped ppf us =
+  let open Format_doc in
+  fprintf ppf "%s%s" us.desc.name
+    (if !Clflags.unique_ids then asprintf "/%i" us.desc.stamp else "")
+
 let print ~with_scope ppf =
   let open Format_doc in
   function
@@ -192,8 +229,8 @@ let print ~with_scope ppf =
   | Local { name; stamp = n } ->
       fprintf ppf "%s%s" name
         (if !Clflags.unique_ids then asprintf "/%i" n else "")
-  | Unscoped { name; stamp = n } ->
-      fprintf ppf "%s/%i" name n
+  | Unscoped us ->
+      print_unscoped ppf us
   | Scoped { name; stamp = n; scope } ->
       fprintf ppf "%s%s%s" name
         (if !Clflags.unique_ids then asprintf "/%i" n else "")
@@ -426,9 +463,9 @@ let compare x y =
   | Predef _, _ -> 1
   | _, Predef _ -> (-1)
   | Unscoped x, Unscoped y ->
-    let c = x.stamp - y.stamp in
+    let c = x.desc.stamp - y.desc.stamp in
     if c <> 0 then c
-    else compare x.name y.name
+    else compare x.desc.name y.desc.name
 
 let output oc id = output_string oc (unique_name id)
 let hash i = (Char.code (name i).[0]) lxor (stamp i)

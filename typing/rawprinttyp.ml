@@ -76,7 +76,7 @@ and raw_type_desc ppf = function
         (if is_commu_ok c then "Cok" else "Cunknown")
   | Tfunctor(l,id,(p,fl),t2) ->
     fprintf ppf "@[<hov1>Tfunctor(\"%s\",@,%s,@,(%a,@,%a),@,%a)@]"
-      (string_of_label l) (Ident.name id)
+      (string_of_label l) (Ident.name_unscoped id)
       path p raw_lid_type_list fl raw_type t2
   | Ttuple tl ->
       fprintf ppf "@[<1>Ttuple@,%a@]" raw_type_list tl
