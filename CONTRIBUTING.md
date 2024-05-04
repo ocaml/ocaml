@@ -412,7 +412,7 @@ We distinguish two kind of contributions:
   (as requested by the Free Software Foundation for example),
   contributors retain the copyright on their contribution, and can use
   it as they see fit. The OCaml CLA is lightly adapted from [the
-  CLA](https://www.apache.org/licenses/icla.txt) of the Apache
+  CLA](https://apache.org/licenses/icla.pdf) of the Apache
   Foundation, and is available in two versions: [for individual
   contributors](http://caml.inria.fr/pub/docs/CLA-individual.doc) and
   [for corporations](http://caml.inria.fr/pub/docs/CLA-corporate.doc).
