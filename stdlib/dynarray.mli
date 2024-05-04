@@ -23,7 +23,7 @@
 
     This is typically used to accumulate elements whose number is not
     known in advance or changes during computation, while also
-    providing fast access to elements at arbitrary positions.
+    providing fast access to elements at arbitrary indices.
 
 {[
     let dynarray_of_list li =
@@ -485,9 +485,9 @@ val reset : 'a t -> unit
 (** {2:noleaks No leaks: preservation of memory liveness}
 
     The user-provided values reachable from a dynamic array [a] are
-    exactly the elements in the positions [0] to [length a - 1]. In
+    exactly the elements in the indices [0] to [length a - 1]. In
     particular, no user-provided values are "leaked" by being present
-    in the backing array in position [length a] or later.
+    in the backing array at index [length a] or later.
 *)
 
 
@@ -574,7 +574,7 @@ end = struct
       let last = Dynarray.length h - 1 in
       swap h 0 last;
       (* At this point [pop_last] returns the 'best' value,
-         and leaves a heap with one misplaced element at position 0. *)
+         and leaves a heap with one misplaced element at index [0]. *)
       let best = Dynarray.pop_last h in
       (* Restore the heap ordering -- does nothing if the heap is empty. *)
       heap_down h ~len:last 0;
