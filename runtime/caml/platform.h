@@ -14,13 +14,14 @@
 /*                                                                        */
 /**************************************************************************/
 
-#ifndef CAML_PLAT_THREADS_H
-#define CAML_PLAT_THREADS_H
+#ifndef CAML_PLATFORM_H
+#define CAML_PLATFORM_H
 /* Platform-specific concurrency and memory primitives */
 
 #ifdef CAML_INTERNALS
 
 #include <pthread.h>
+#include <time.h>
 #include <errno.h>
 #include <string.h>
 #include "config.h"
@@ -114,8 +115,9 @@ typedef struct { pthread_cond_t cond; caml_plat_mutex* mutex; } caml_plat_cond;
 #define CAML_PLAT_COND_INITIALIZER(m) { PTHREAD_COND_INITIALIZER, m }
 void caml_plat_cond_init(caml_plat_cond*, caml_plat_mutex*);
 void caml_plat_wait(caml_plat_cond*);
-/* like caml_plat_wait, but if nanoseconds surpasses the second parameter
-   without a signal, then this function returns 1. */
+clockid_t caml_plat_get_cond_clockid (void);
+int caml_plat_timedwait(caml_plat_cond*, const struct timespec *);
+  /* Returns ETIMEDOUT on timeout, 0 otherwise. */
 void caml_plat_broadcast(caml_plat_cond*);
 void caml_plat_signal(caml_plat_cond*);
 void caml_plat_cond_free(caml_plat_cond*);

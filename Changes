@@ -29,6 +29,11 @@ _______________
 - #13003: new, more consistent names for array-creation C functions
   (Gabriel Scherer, review by Olivier Nicole)
 
+- #12948, #13026: Fix Domain.join to stop the tick thread immediately
+  rather that waiting for the next tick.
+  (Damien Doligez, report by Thomas Leonard, review by Guillaume
+   Munch-Maccagnoni)
+
 - #13086: Avoid spurious major GC slices.
   (Damien Doligez, report by Stephen Dolan, review by Gabriel Scherer
    and Stephen Dolan)

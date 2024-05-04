@@ -572,9 +572,12 @@ CAMLprim value caml_thread_initialize(value unit)
 CAMLprim value caml_thread_cleanup(value unit)
 {
   if (Tick_thread_running){
-    atomic_store_release(&Tick_thread_stop, 1);
+    caml_plat_lock (&Tick_thread_control.mu);
+    Tick_thread_control.state = Tick_stop;
+    caml_plat_signal (&Tick_thread_control.cond);
+    caml_plat_unlock (&Tick_thread_control.mu);
     st_thread_join(Tick_thread_id);
-    atomic_store_release(&Tick_thread_stop, 0);
+    Tick_thread_control.state = Tick_run;
     Tick_thread_running = 0;
   }
 
