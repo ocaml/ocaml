@@ -549,13 +549,21 @@ let ordinal_suffix n =
 (* Color support handling *)
 module Color = struct
   external isatty : out_channel -> bool = "caml_sys_isatty"
+  external is_ansi_capable : out_channel -> bool = "caml_is_ansi_capable"
+  external set_ansi_capable : out_channel -> bool -> bool = "caml_set_ansi_capable"
+
+  let enable_win32_vt oc =
+    if is_ansi_capable oc then true
+    else if set_ansi_capable oc true then
+      (at_exit (fun () -> ignore (set_ansi_capable oc false)); true)
+    else
+      false
 
   (* reasonable heuristic on whether colors should be enabled *)
-  let should_enable_color () =
+  let should_enable_color oc =
     let term = try Sys.getenv "TERM" with Not_found -> "" in
-    term <> "dumb"
-    && term <> ""
-    && isatty stderr
+    (term <> "dumb" && term <> "" && isatty oc) ||
+    (Sys.win32 && enable_win32_vt oc)
 
   type setting = Auto | Always | Never
 
@@ -688,7 +696,7 @@ module Style = struct
       [Format.std_formatter; Format.err_formatter; Format.str_formatter]
     in
     let enable_color = function
-      | Color.Auto -> Color.should_enable_color ()
+      | Color.Auto -> Color.should_enable_color stderr
       | Color.Always -> true
       | Color.Never -> false
     in

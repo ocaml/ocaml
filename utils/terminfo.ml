@@ -15,7 +15,6 @@
 
 open Printf
 
-external isatty : out_channel -> bool = "caml_sys_isatty"
 external terminfo_rows: out_channel -> int = "caml_terminfo_rows"
 
 type status =
@@ -24,9 +23,7 @@ type status =
   | Good_term
 
 let setup oc =
-  let term = try Sys.getenv "TERM" with Not_found -> "" in
-  (* Same heuristics as in Misc.Color.should_enable_color *)
-  if term <> "" && term <> "dumb" && isatty oc
+  if Misc.Color.should_enable_color oc
   then Good_term
   else Bad_term
 

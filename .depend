@@ -189,8 +189,10 @@ utils/targetint.cmx : \
     utils/targetint.cmi
 utils/targetint.cmi :
 utils/terminfo.cmo : \
+    utils/misc.cmi \
     utils/terminfo.cmi
 utils/terminfo.cmx : \
+    utils/misc.cmx \
     utils/terminfo.cmi
 utils/terminfo.cmi :
 utils/warnings.cmo : \

@@ -1085,6 +1085,35 @@ CAMLexport int caml_win32_isatty(int fd)
   return 0;
 }
 
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x4
+#endif
+
+value caml_win32_is_ansi_capable(value chan)
+{
+  HANDLE h = (HANDLE)_get_osfhandle(Channel(chan)->fd);
+  DWORD mode;
+
+  if ((h == INVALID_HANDLE_VALUE) || (!GetConsoleMode(h, &mode)))
+    return Val_bool(0);
+
+  return Val_bool(mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+}
+
+value caml_win32_set_ansi_capable(value chan, value set)
+{
+  HANDLE h = (HANDLE)_get_osfhandle(Channel(chan)->fd);
+  DWORD mode;
+
+  if ((h != INVALID_HANDLE_VALUE) && GetConsoleMode(h, &mode)) {
+    mode |= Bool_val(set) ? ENABLE_VIRTUAL_TERMINAL_PROCESSING : ~ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    if (SetConsoleMode(h, mode))
+      return Val_bool(1);
+  }
+
+  return Val_bool(0);
+}
+
 int caml_num_rows_fd(int fd)
 {
   return -1;

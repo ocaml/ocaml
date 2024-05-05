@@ -142,6 +142,10 @@ CAMLextern clock_t caml_win32_clock(void);
 
 CAMLextern value caml_win32_xdg_defaults(void);
 
+CAMLextern value caml_win32_is_ansi_capable(value);
+
+CAMLextern value caml_win32_set_ansi_capable(value, value);
+
 #endif /* _WIN32 */
 
 /* Returns the current value of a counter that increments once per nanosecond.

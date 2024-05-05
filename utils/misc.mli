@@ -461,6 +461,8 @@ val did_you_mean : Format.formatter -> (unit -> string list) -> unit
 (** {1 Color support detection }*)
 module Color: sig
 
+  val should_enable_color : out_channel -> bool
+
   type setting = Auto | Always | Never
 
   val default_setting : setting

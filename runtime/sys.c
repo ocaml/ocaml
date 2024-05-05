@@ -771,3 +771,26 @@ CAMLprim value caml_xdg_defaults(value unit)
   return Val_emptylist;
 #endif
 }
+
+/* On Windows, the following two functions are used to enable VT sequences in
+   the native Windows Console. When running under Unix or Cygwin, the needed
+   logic is more easily implemented in OCaml, and these functions are not
+   used. */
+
+CAMLprim value caml_is_ansi_capable(value chan)
+{
+#ifdef _WIN32
+  return caml_win32_is_ansi_capable(chan);
+#else
+  return Val_bool(0);
+#endif
+}
+
+CAMLprim value caml_set_ansi_capable(value chan, value set)
+{
+#ifdef _WIN32
+  return caml_win32_set_ansi_capable(chan, set);
+#else
+  return Val_bool(0);
+#endif
+}
