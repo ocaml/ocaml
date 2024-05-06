@@ -553,10 +553,10 @@ void caml_plat_mem_unmap(void* mem, uintnat size)
 
 CAMLprim value caml_win32_is_ansi_capable(value)
 {
-  caml_invalid_arg("caml_win32_is_ansi_capable")
+  caml_invalid_argument("caml_win32_is_ansi_capable");
 }
 
 CAMLprim value caml_win32_set_ansi_capable(value, value)
 {
-  caml_invalid_arg("caml_win32_set_ansi_capable");
+  caml_invalid_argument("caml_win32_set_ansi_capable");
 }
