@@ -84,8 +84,7 @@ let global = ref static_ref
 let thread_fn () =
   await t2_begin;
   say "T2: alloc\n";
-  let r = ref 0 in
-  global := r;
+  global := ref 0;
   say "T2: minor GC\n";
   Gc.minor ();
   global := static_ref;
