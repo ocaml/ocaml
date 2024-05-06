@@ -1095,7 +1095,7 @@ value caml_win32_is_ansi_capable(value chan)
   DWORD mode;
 
   if ((h == INVALID_HANDLE_VALUE) || (!GetConsoleMode(h, &mode)))
-    return Val_bool(0);
+    return Val_false;
 
   return Val_bool(mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 }
@@ -1111,10 +1111,10 @@ value caml_win32_set_ansi_capable(value chan, value set)
     else
         mode &= ~ENABLE_VIRTUAL_TERMINAL_PROCESSING;
     if (SetConsoleMode(h, mode))
-      return Val_bool(1);
+      return Val_true;
   }
 
-  return Val_bool(0);
+  return Val_false;
 }
 
 int caml_num_rows_fd(int fd)

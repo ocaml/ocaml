@@ -782,7 +782,7 @@ CAMLprim value caml_is_ansi_capable(value chan)
 #ifdef _WIN32
   return caml_win32_is_ansi_capable(chan);
 #else
-  return Val_bool(0);
+  return Val_false;
 #endif
 }
 
@@ -791,6 +791,6 @@ CAMLprim value caml_set_ansi_capable(value chan, value set)
 #ifdef _WIN32
   return caml_win32_set_ansi_capable(chan, set);
 #else
-  return Val_bool(0);
+  return Val_false;
 #endif
 }
