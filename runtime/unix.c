@@ -551,12 +551,12 @@ void caml_plat_mem_unmap(void* mem, uintnat size)
 /* The following two functions are only implemented on Windows, but they need a
    definition also on Unix to please the linker. */
 
-CAMLprim value caml_win32_is_ansi_capable(value)
+CAMLprim value caml_win32_is_ansi_capable(value chan)
 {
   caml_invalid_argument("caml_win32_is_ansi_capable");
 }
 
-CAMLprim value caml_win32_set_ansi_capable(value, value)
+CAMLprim value caml_win32_set_ansi_capable(value chan, value set)
 {
   caml_invalid_argument("caml_win32_set_ansi_capable");
 }
