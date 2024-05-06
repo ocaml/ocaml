@@ -1916,10 +1916,16 @@ To build the whole program, just invoke the C compiler as follows:
 
 \section{s:c-custom}{Advanced topic: custom blocks}
 
-Blocks with tag "Custom_tag" contain both arbitrary user data and a
-pointer to a C struct, with type "struct custom_operations", that
-associates user-provided finalization, comparison, hashing,
-serialization and deserialization functions to this block.
+Blocks with tag "Custom_tag" start with a pointer to a C "struct" with
+type "struct custom_operations" that associates user-provided
+finalization, comparison, hashing, serialization and deserialization
+functions for this block.
+
+After this pointer to custom operations, there can be arbitrary data of
+zero, one or more words whose semantics is defined by the user (for
+example this can be just a pointer to a C "struct" or a C "struct"
+itself). Use "Data_custom_val" on the block value to get a pointer on
+the start of this arbitrary data.
 
 \subsection{ss:c-custom-ops}{The "struct custom_operations"}
 
