@@ -551,6 +551,7 @@ module Color = struct
   external isatty : out_channel -> bool = "caml_sys_isatty"
   external is_ansi_capable : out_channel -> bool = "caml_is_ansi_capable"
   external set_ansi_capable : out_channel -> bool -> bool = "caml_set_ansi_capable"
+  (* Returns [true] on success, [false] otherwise. *)
 
   let enable_win32_vt oc =
     if is_ansi_capable oc then true

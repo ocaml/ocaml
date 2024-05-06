@@ -1100,6 +1100,7 @@ value caml_win32_is_ansi_capable(value chan)
   return Val_bool(mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 }
 
+/* Returns Val_true on success, Val_false otherwise. */
 value caml_win32_set_ansi_capable(value chan, value set)
 {
   HANDLE h = (HANDLE)_get_osfhandle(Channel(chan)->fd);
