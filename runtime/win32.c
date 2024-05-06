@@ -1089,7 +1089,7 @@ CAMLexport int caml_win32_isatty(int fd)
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x4
 #endif
 
-value caml_win32_is_ansi_capable(value chan)
+CAMLprim value caml_win32_is_ansi_capable(value chan)
 {
   HANDLE h = (HANDLE)_get_osfhandle(Channel(chan)->fd);
   DWORD mode;
@@ -1101,7 +1101,7 @@ value caml_win32_is_ansi_capable(value chan)
 }
 
 /* Returns Val_true on success, Val_false otherwise. */
-value caml_win32_set_ansi_capable(value chan, value set)
+CAMLprim value caml_win32_set_ansi_capable(value chan, value set)
 {
   HANDLE h = (HANDLE)_get_osfhandle(Channel(chan)->fd);
   DWORD mode;

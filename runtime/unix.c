@@ -547,3 +547,16 @@ void caml_plat_mem_unmap(void* mem, uintnat size)
   if (munmap(mem, size) != 0)
     CAMLassert(0);
 }
+
+/* The following two functions are only implemented on Windows, but they need a
+   definition also on Unix to please the linker. */
+
+CAMLprim value caml_win32_is_ansi_capable(value)
+{
+  caml_invalid_arg("caml_win32_is_ansi_capable")
+}
+
+CAMLprim value caml_win32_set_ansi_capable(value, value)
+{
+  caml_invalid_arg("caml_win32_set_ansi_capable");
+}
