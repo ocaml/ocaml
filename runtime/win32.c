@@ -1106,7 +1106,10 @@ value caml_win32_set_ansi_capable(value chan, value set)
   DWORD mode;
 
   if ((h != INVALID_HANDLE_VALUE) && GetConsoleMode(h, &mode)) {
-    mode |= Bool_val(set) ? ENABLE_VIRTUAL_TERMINAL_PROCESSING : ~ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    if (Bool_val(set))
+        mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    else
+        mode &= ~ENABLE_VIRTUAL_TERMINAL_PROCESSING;
     if (SetConsoleMode(h, mode))
       return Val_bool(1);
   }
