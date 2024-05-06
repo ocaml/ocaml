@@ -131,7 +131,7 @@ unsigned char *caml_digest_of_code_fragment(struct code_fragment *cf) {
      all cases. It would be possible to take a lock only in the
      DIGEST_LATER case, which occurs at most once per fragment, by
      using double-checked locking -- see #11791. */
-  caml_plat_lock(&cf->mutex);
+  caml_plat_lock_blocking(&cf->mutex);
   {
     if (cf->digest_status == DIGEST_IGNORE) {
       digest = NULL;

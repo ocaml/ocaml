@@ -280,7 +280,8 @@ void caml_bad_caml_state(void)
    un-instruments function, this simply silences reports when the call stack
    contains a frame matching one of the lines starting with "race:". */
 const char * __tsan_default_suppressions(void) {
-  return "deadlock:caml_plat_lock\n" /* Avoids deadlock inversion messages */
+  return "deadlock:caml_plat_lock_blocking\n" /* Avoids deadlock inversion
+                                                 messages */
          "deadlock:pthread_mutex_lock\n"; /* idem */
 }
 #endif /* WITH_THREAD_SANITIZER */

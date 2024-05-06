@@ -26,6 +26,7 @@
 #include "caml/fail.h"
 #include "caml/lf_skiplist.h"
 #include "caml/misc.h"
+#include "caml/signals.h"
 #ifdef HAS_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
@@ -78,11 +79,23 @@ void caml_plat_assert_locked(caml_plat_mutex* m)
 #endif
 }
 
+CAMLexport CAMLthread_local int caml_lockdepth = 0;
+
 void caml_plat_assert_all_locks_unlocked(void)
 {
 #ifdef DEBUG
-  if (lockdepth) caml_fatal_error("Locks still locked at termination");
+  if (caml_lockdepth) caml_fatal_error("Locks still locked at termination");
 #endif
+}
+
+CAMLexport void caml_plat_lock_non_blocking_actual(caml_plat_mutex* m)
+{
+  /* Avoid exceptions */
+  caml_enter_blocking_section_no_pending();
+  int rc = pthread_mutex_lock(m);
+  caml_leave_blocking_section();
+  check_err("lock_non_blocking", rc);
+  DEBUG_LOCK(m);
 }
 
 void caml_plat_mutex_free(caml_plat_mutex* m)
@@ -99,38 +112,34 @@ static void caml_plat_cond_init_aux(caml_plat_cond *cond)
     _POSIX_MONOTONIC_CLOCK != (-1)
   pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
 #endif
-  pthread_cond_init(&cond->cond, &attr);
+  pthread_cond_init(cond, &attr);
 }
 
 /* Condition variables */
-void caml_plat_cond_init(caml_plat_cond* cond, caml_plat_mutex* m)
+void caml_plat_cond_init(caml_plat_cond* cond)
 {
   caml_plat_cond_init_aux(cond);
-  cond->mutex = m;
 }
 
-void caml_plat_wait(caml_plat_cond* cond)
+void caml_plat_wait(caml_plat_cond* cond, caml_plat_mutex* mut)
 {
-  caml_plat_assert_locked(cond->mutex);
-  check_err("wait", pthread_cond_wait(&cond->cond, cond->mutex));
+  caml_plat_assert_locked(mut);
+  check_err("wait", pthread_cond_wait(cond, mut));
 }
 
 void caml_plat_broadcast(caml_plat_cond* cond)
 {
-  caml_plat_assert_locked(cond->mutex);
-  check_err("cond_broadcast", pthread_cond_broadcast(&cond->cond));
+  check_err("cond_broadcast", pthread_cond_broadcast(cond));
 }
 
 void caml_plat_signal(caml_plat_cond* cond)
 {
-  caml_plat_assert_locked(cond->mutex);
-  check_err("cond_signal", pthread_cond_signal(&cond->cond));
+  check_err("cond_signal", pthread_cond_signal(cond));
 }
 
 void caml_plat_cond_free(caml_plat_cond* cond)
 {
-  check_err("cond_free", pthread_cond_destroy(&cond->cond));
-  cond->mutex=0;
+  check_err("cond_free", pthread_cond_destroy(cond));
 }
 
 

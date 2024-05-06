@@ -533,7 +533,7 @@ static struct pool_block* get_pool_block(caml_stat_block b)
 /* Linking a pool block into the ring */
 static void link_pool_block(struct pool_block *pb)
 {
-  caml_plat_lock(&pool_mutex);
+  caml_plat_lock_blocking(&pool_mutex);
   pb->next = pool->next;
   pb->prev = pool;
   pool->next->prev = pb;
@@ -544,7 +544,7 @@ static void link_pool_block(struct pool_block *pb)
 /* Unlinking a pool block from the ring */
 static void unlink_pool_block(struct pool_block *pb)
 {
-    caml_plat_lock(&pool_mutex);
+    caml_plat_lock_blocking(&pool_mutex);
     pb->prev->next = pb->next;
     pb->next->prev = pb->prev;
     caml_plat_unlock(&pool_mutex);
@@ -566,7 +566,7 @@ CAMLexport void caml_stat_create_pool(void)
 
 CAMLexport void caml_stat_destroy_pool(void)
 {
-  caml_plat_lock(&pool_mutex);
+  caml_plat_lock_blocking(&pool_mutex);
   if (pool != NULL) {
     pool->prev->next = NULL;
     while (pool != NULL) {

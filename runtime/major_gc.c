@@ -293,7 +293,7 @@ Caml_inline void prefetch_block(value v)
 
 static void ephe_next_cycle (void)
 {
-  caml_plat_lock(&ephe_lock);
+  caml_plat_lock_blocking(&ephe_lock);
 
   atomic_fetch_add(&ephe_cycle_info.ephe_cycle, +1);
   CAMLassert(atomic_load_acquire(&ephe_cycle_info.num_domains_done) <=
@@ -305,7 +305,7 @@ static void ephe_next_cycle (void)
 
 static void ephe_todo_list_emptied (void)
 {
-  caml_plat_lock(&ephe_lock);
+  caml_plat_lock_blocking(&ephe_lock);
 
   /* Force next ephemeron marking cycle in order to avoid reasoning about
    * whether the domain has already incremented
@@ -331,7 +331,7 @@ static void record_ephe_marking_done (uintnat ephe_cycle)
   if (ephe_cycle < atomic_load_acquire(&ephe_cycle_info.ephe_cycle))
     return;
 
-  caml_plat_lock(&ephe_lock);
+  caml_plat_lock_blocking(&ephe_lock);
   if (ephe_cycle == atomic_load(&ephe_cycle_info.ephe_cycle)) {
     Caml_state->ephe_info->cycle = ephe_cycle;
     atomic_fetch_add(&ephe_cycle_info.num_domains_done, +1);
@@ -414,7 +414,7 @@ void caml_orphan_ephemerons (caml_domain_state* domain_state)
     value live_tail = ephe_list_tail(ephe_info->live);
     CAMLassert(Ephe_link(live_tail) == 0);
 
-    caml_plat_lock(&orphaned_lock);
+    caml_plat_lock_blocking(&orphaned_lock);
     Ephe_link(live_tail) = orph_structs.ephe_list_live;
     orph_structs.ephe_list_live = ephe_info->live;
     ephe_info->live = 0;
@@ -448,7 +448,7 @@ void caml_orphan_finalisers (caml_domain_state* domain_state)
     CAMLassert (!f->updated_last);
 
     /* Add the finalisers to [orph_structs] */
-    caml_plat_lock(&orphaned_lock);
+    caml_plat_lock_blocking(&orphaned_lock);
     f->next = orph_structs.final_info;
     orph_structs.final_info = f;
     caml_plat_unlock(&orphaned_lock);
@@ -487,7 +487,7 @@ static void adopt_orphaned_work (void)
   if (no_orphaned_work() || caml_domain_is_terminating())
     return;
 
-  caml_plat_lock(&orphaned_lock);
+  caml_plat_lock_blocking(&orphaned_lock);
 
   orph_ephe_list_live = orph_structs.ephe_list_live;
   orph_structs.ephe_list_live = 0;
