@@ -549,8 +549,10 @@ let ordinal_suffix n =
 (* Color support handling *)
 module Color = struct
   external isatty : out_channel -> bool = "caml_sys_isatty"
-  external win32_is_ansi_capable : out_channel -> bool = "caml_win32_is_ansi_capable"
-  external win32_set_ansi_capable : out_channel -> bool -> bool = "caml_win32_set_ansi_capable"
+  external win32_is_ansi_capable :
+    out_channel -> bool = "caml_win32_is_ansi_capable"
+  external win32_set_ansi_capable :
+    out_channel -> bool -> bool = "caml_win32_set_ansi_capable"
   (* Returns [true] on success, [false] otherwise. *)
 
   let enable_win32_ansi oc =

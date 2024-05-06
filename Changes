@@ -86,6 +86,10 @@ _______________
   LLDB support for them.
   (Nick Barnes).
 
+- #13147: The compiler tools are now able to use colors when running under the
+  native Windows console.
+  (Nicolás Ojeda Bär, review by Daniel Bünzli, Gabriel Scherer and Miod Vallat)
+
 ### Toplevel:
 
 - #12891: Improved styling for initial prompt
