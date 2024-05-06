@@ -1128,8 +1128,10 @@ end) = struct
     if Warnings.is_active (Ambiguous_name ([],[],false,"")) then begin
       Printtyp.Conflicts.reset ();
       let paths = ambiguous_types env lbl rest in
-      let expansion =
-        Format.asprintf "%t" Printtyp.Conflicts.print_explanations in
+      let expansion = match Printtyp.Conflicts.err_msg () with
+        | None -> ""
+        | Some msg -> Format.asprintf "%t" msg
+      in
       if paths <> [] then
         warn lid.loc
           (Warnings.Ambiguous_name ([Longident.last lid.txt],

@@ -200,6 +200,7 @@ type report = {
   kind : report_kind;
   main : msg;
   sub : msg list;
+  footnote: unit -> (Format.formatter -> unit) option
 }
 
 type report_printer = {
@@ -321,12 +322,16 @@ val deprecated_script_alert: string -> unit
 type error = report
 (** An [error] is a [report] which [report_kind] must be [Report_error]. *)
 
-val error: ?loc:t -> ?sub:msg list -> string -> error
+type delayed_msg = unit -> (formatter->unit) option
 
-val errorf: ?loc:t -> ?sub:msg list ->
+val error: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg-> string -> error
+
+val errorf:
+  ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
   ('a, Format.formatter, unit, error) format4 -> 'a
 
-val error_of_printer: ?loc:t -> ?sub:msg list ->
+val error_of_printer:
+  ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
   (formatter -> 'a -> unit) -> 'a -> error
 
 val error_of_printer_file: (formatter -> 'a -> unit) -> 'a -> error
@@ -352,7 +357,7 @@ exception Already_displayed_error
 (** Raising [Already_displayed_error] signals an error which has already been
    printed. The exception will be caught, but nothing will be printed *)
 
-val raise_errorf: ?loc:t -> ?sub:msg list ->
+val raise_errorf: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
   ('a, Format.formatter, unit, 'b) format4 -> 'a
 
 val report_exception: formatter -> exn -> unit

@@ -185,7 +185,7 @@ module Conflicts = struct
       | [] -> ()
       | [namespace, a] ->
           Format.fprintf ppf
-        "@ \
+        "@,\
          @[<2>@{<hint>Hint@}: The %a %a has been defined multiple times@ \
          in@ this@ toplevel@ session.@ \
          Some toplevel values still refer to@ old@ versions@ of@ this@ %a.\
@@ -194,7 +194,7 @@ module Conflicts = struct
         Style.inline_code a Namespace.pp namespace
       | (namespace, _) :: _ :: _ ->
       Format.fprintf ppf
-        "@ \
+        "@,\
          @[<2>@{<hint>Hint@}: The %a %a have been defined multiple times@ \
          in@ this@ toplevel@ session.@ \
          Some toplevel values still refer to@ old@ versions@ of@ those@ %a.\
@@ -205,20 +205,22 @@ module Conflicts = struct
         pp_namespace_plural namespace in
     Array.iter (pp_submsg ppf) submsgs
 
-  let print_explanations ppf =
+  let err_msg () =
     let ltop, l =
       (* isolate toplevel locations, since they are too imprecise *)
       let from_toplevel a =
         a.location.Location.loc_start.Lexing.pos_fname = "//toplevel//" in
       List.partition from_toplevel (list_explanations ())
     in
-    begin match l with
-    | [] -> ()
-    | l -> Format.fprintf ppf "@,%a" print_located_explanations l
-    end;
-    (* if there are name collisions in a toplevel session,
-       display at least one generic hint by namespace *)
-    print_toplevel_hint ppf ltop
+    match l, ltop with
+    | [], [] -> None
+    | _  ->
+        Some
+          (Format.dprintf "%a%a"
+             print_located_explanations l
+             print_toplevel_hint ltop
+          )
+  let err_print ppf = Option.iter (Format.fprintf ppf "@,%t") (err_msg ())
 
   let exists () = M.cardinal !explanations >0
 end
@@ -717,15 +719,14 @@ let wrap_printing_env ~error env f =
   else wrap_printing_env env f
 
 let wrap_printing_env_error env f =
-  let wrap (loc : _ Location.loc) =
-    { loc with txt =
-        (fun fmt -> wrap_printing_env ~error:true env (fun () -> loc.txt fmt))
-    }
-  in
+  let wrap_txt f fmt =  wrap_printing_env ~error:true env (fun () -> f fmt) in
+  let wrap (loc : _ Location.loc) = { loc with txt = wrap_txt loc.txt } in
   let err : Location.error = wrap_printing_env ~error:true env f in
   { Location.kind = err.kind;
     main = wrap err.main;
     sub = List.map wrap err.sub;
+    footnote = (fun () -> wrap_printing_env ~error:true env (fun () ->
+        Option.map wrap_txt (err.footnote ())));
   }
 
 let rec lid_of_path = function
@@ -2133,14 +2134,15 @@ let printed_signature sourcefile ppf sg =
   (* we are tracking any collision event for warning 63 *)
   Conflicts.reset ();
   let t = tree_of_signature sg in
-  if Warnings.(is_active @@ Erroneous_printed_signature "")
-  && Conflicts.exists ()
-  then begin
-    let conflicts = Format.asprintf "%t" Conflicts.print_explanations in
-    Location.prerr_warning (Location.in_file sourcefile)
-      (Warnings.Erroneous_printed_signature conflicts);
-    Warnings.check_fatal ()
-  end;
+  if Warnings.(is_active @@ Erroneous_printed_signature "") then
+    begin match Conflicts.err_msg () with
+    | None -> ()
+    | Some msg ->
+        let conflicts = Format.asprintf "%t" msg in
+        Location.prerr_warning (Location.in_file sourcefile)
+          (Warnings.Erroneous_printed_signature conflicts);
+        Warnings.check_fatal ()
+    end;
   fprintf ppf "%a" print_signature t
 
 (* Trace-specific printing *)
@@ -2604,7 +2606,7 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
       if env <> Env.empty
       then warn_on_missing_defs env ppf head;
       Internal_names.print_explanations env ppf;
-      Conflicts.print_explanations ppf;
+      Conflicts.err_print ppf;
       print_labels := true
     with exn ->
       print_labels := true;
@@ -2711,7 +2713,7 @@ module Subtype = struct
           (trace filter_trace unification_get_diff false
              (mis = None) "is not compatible with type") tr_unif
           (explain mis)
-          Conflicts.print_explanations
+          Conflicts.err_print
     )
 end
 

@@ -3295,7 +3295,8 @@ let report_error ~loc _env = function
         (Style.as_inline_code modtype) mty
   | Not_included errs ->
       let main = Includemod_errorprinter.err_msgs errs in
-      Location.errorf ~loc "@[<v>Signature mismatch:@ %t@]" main
+      let footnote = Printtyp.Conflicts.err_msg in
+      Location.errorf ~loc ~footnote "@[<v>Signature mismatch:@ %t@]" main
   | Cannot_eliminate_dependency mty ->
       Location.errorf ~loc
         "@[This functor has type@ %a@ \
@@ -3315,7 +3316,8 @@ let report_error ~loc _env = function
         (Style.as_inline_code longident) lid
   | With_mismatch(lid, explanation) ->
       let main = Includemod_errorprinter.err_msgs explanation in
-      Location.errorf ~loc
+      let footnote = Printtyp.Conflicts.err_msg in
+      Location.errorf ~loc ~footnote
         "@[<v>\
            @[In this %a constraint, the new definition of %a@ \
              does not match its original definition@ \
@@ -3325,7 +3327,8 @@ let report_error ~loc _env = function
         (Style.as_inline_code longident) lid main
   | With_makes_applicative_functor_ill_typed(lid, path, explanation) ->
       let main = Includemod_errorprinter.err_msgs explanation in
-      Location.errorf ~loc
+      let footnote = Printtyp.Conflicts.err_msg in
+      Location.errorf ~loc ~footnote
         "@[<v>\
            @[This %a constraint on %a makes the applicative functor @ \
              type %a ill-typed in the constrained signature:@]@ \

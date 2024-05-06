@@ -564,15 +564,12 @@ Error: This application of the functor "F" is ill-typed.
        do not match these parameters:
          functor (X : x) (B : b/2) (Y : y) -> ...
        1. Module $S1 matches the expected module type x
-       2. Modules do not match:
-            P.B : b
-          is not included in
-            b/2
-          Line 5, characters 2-15:
-            Definition of module type "b"
-          Line 2, characters 0-13:
-            Definition of module type "b/2"
+       2. Modules do not match: P.B : b is not included in b/2
        3. Modules do not match: $S3 : sig type w end is not included in y
+Line 5, characters 2-15:
+  Definition of module type "b"
+Line 2, characters 0-13:
+  Definition of module type "b/2"
 |}]
 
 module F(X:a) = struct type t end
@@ -589,10 +586,10 @@ Line 6, characters 13-19:
 6 |     type t = F(X).t
                  ^^^^^^
 Error: Modules do not match: a is not included in a/2
-     Line 3, characters 2-15:
-       Definition of module type "a"
-     Line 1, characters 0-13:
-       Definition of module type "a/2"
+Line 3, characters 2-15:
+  Definition of module type "a"
+Line 1, characters 0-13:
+  Definition of module type "a/2"
 |}]
 
 
@@ -625,14 +622,11 @@ Error: Signature mismatch:
        is not included in
          functor (X : a/2) (Y : a/2) -> ...
        1. Module types aa and a/2 match
-       2. Module types do not match:
-            a
-          does not include
-            a/2
-          Line 4, characters 2-15:
-            Definition of module type "a"
-          Line 1, characters 0-13:
-            Definition of module type "a/2"
+       2. Module types do not match: a does not include a/2
+Line 4, characters 2-15:
+  Definition of module type "a"
+Line 1, characters 0-13:
+  Definition of module type "a/2"
 |}]
 
 module X: functor ( X: sig end) -> sig end = functor(X: Set.OrderedType) -> struct end
@@ -1626,10 +1620,6 @@ Error: This application of the functor "F" is ill-typed.
           is not included in
             type t = Y of X.t
           The first is abstract, but the second is a variant.
-          File "_none_", line 1:
-            Definition of module "Y"
-          Line 6, characters 0-39:
-            Definition of module "Y/2"
        3. Modules do not match:
             Y : sig type t = Y.t = Y of int end
           is not included in
@@ -1641,6 +1631,10 @@ Error: This application of the functor "F" is ill-typed.
           Constructors have different names, "Y" and "Z".
        4. The following extra argument is provided
               Z : sig type t = Z.t = Z of int end
+File "_none_", line 1:
+  Definition of module "Y"
+Line 6, characters 0-39:
+  Definition of module "Y/2"
 |}]
 
 (** Final state in the presence of extensions
