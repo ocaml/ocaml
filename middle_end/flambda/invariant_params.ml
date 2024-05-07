@@ -86,12 +86,11 @@ let transitive_closure state =
       else
         loop cs frontier result
   in
-    Variable.Pair.Map.filter_map
+    Variable.Pair.Map.mapi
       (fun _ set ->
-         Some (match set with
-	       | Top -> Top
-	       | Implication set ->
-	         loop [] (Variable.Pair.Set.elements set) set))
+         match set with
+	 | Top -> Top
+	 | Implication set -> loop [] (Variable.Pair.Set.elements set) set)
       state
 
 (* CR-soon pchambart: to move to Flambda_utils and document
