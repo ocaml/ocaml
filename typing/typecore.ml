@@ -5987,7 +5987,8 @@ and type_effect_cases
           let decl = Ctype.new_local_type ~loc Definition in
           let scope = create_scope () in
           let name = Ctype.get_new_abstract_name env "%eff" in
-          let id, new_env = Env.enter_type ~scope name decl env in
+          let id = Ident.create_scoped ~scope name in
+          let new_env = Env.add_type ~check:false id decl env in
           let ty_eff = newgenty (Tconstr (Path.Pident id,[],ref Mnil)) in
           new_env,
           Predef.type_eff ty_eff,
