@@ -43,7 +43,7 @@ type _ t = Int : int -> int t | True : bool t | False : bool t
                         *match*/285))))
                12)
              0)
-           (raise (makeblock 0 (global Match_failure/18!) [0: "" 6 37]))))))
+           (raise (makeblock 0 (global Match_failure/20!) [0: "" 6 37]))))))
   (apply (field_mut 1 (global Toploop!)) "lazy_total" lazy_total/281))
 val lazy_total : unit lazy_t ref * bool t -> int = <fun>
 |}];;
@@ -77,7 +77,7 @@ let lazy_needs_partial : _ * bool t ref -> int = function
                0)
              (exit 3)))
         with (3)
-         (raise (makeblock 0 (global Match_failure/18!) [0: "" 1 49])))))
+         (raise (makeblock 0 (global Match_failure/20!) [0: "" 1 49])))))
   (apply (field_mut 1 (global Toploop!)) "lazy_needs_partial"
     lazy_needs_partial/295))
 val lazy_needs_partial : unit lazy_t * bool t ref -> int = <fun>
