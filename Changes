@@ -16,8 +16,8 @@ _______________
 ### Language features:
 
 - Add syntax support for deep effect handlers
-  (Leo White, Tom Kelly, Anil Madhavapeddy, KC Sivaramakrishnan, and Xavier
-   Leroy, review by ...)
+  (Leo White, Tom Kelly, Anil Madhavapeddy, KC Sivaramakrishnan, Xavier Leroy
+   and Florian Angeletti, review by the same, Hugo Heuzard, and Ulysse Gérard)
 
 ### Runtime system:
 
