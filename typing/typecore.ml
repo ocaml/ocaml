@@ -5975,32 +5975,30 @@ and type_function_cases_expect
   end
 
 and type_effect_cases
-    : type k . k pattern_category ->
-           _ -> _ -> _ -> Parsetree.case list -> _
-             ->
-           k case list
+    : type k . k pattern_category -> _ -> _ -> _ -> Parsetree.case list -> _
+               -> k case list
   = fun category env ty_res_explained loc caselist conts ->
-  let { ty = ty_res; explanation = _ } = ty_res_explained in
-  let _ = newvar () in
-  (* remember original level *)
-  with_local_level begin fun () ->
-  (* Create a locally type abstract type for effect type. *)
-  let new_env, ty_arg, ty_cont =
-    let decl = Ctype.new_local_type ~loc Definition in
-    let scope = create_scope () in
-    let name = Ctype.get_new_abstract_name env "%eff" in
-    let id, new_env = Env.enter_type ~scope name decl env in
-    let ty_eff = newgenty (Tconstr (Path.Pident id,[],ref Mnil)) in
-    new_env,
-    Predef.type_eff ty_eff,
-    Predef.type_continuation ty_eff ty_res
-  in
-  let conts = List.map (type_continuation_pat env ty_cont) conts in
-  let cases, _ = type_cases category new_env ty_arg
-    ty_res_explained ~conts ~check_if_total:false loc caselist
-  in
-  cases
-  end
+      let { ty = ty_res; explanation = _ } = ty_res_explained in
+      let _ = newvar () in
+      (* remember original level *)
+      with_local_level begin fun () ->
+        (* Create a locally type abstract type for effect type. *)
+        let new_env, ty_arg, ty_cont =
+          let decl = Ctype.new_local_type ~loc Definition in
+          let scope = create_scope () in
+          let name = Ctype.get_new_abstract_name env "%eff" in
+          let id, new_env = Env.enter_type ~scope name decl env in
+          let ty_eff = newgenty (Tconstr (Path.Pident id,[],ref Mnil)) in
+          new_env,
+          Predef.type_eff ty_eff,
+          Predef.type_continuation ty_eff ty_res
+        in
+        let conts = List.map (type_continuation_pat env ty_cont) conts in
+        let cases, _ = type_cases category new_env ty_arg
+          ty_res_explained ~conts ~check_if_total:false loc caselist
+        in
+          cases
+        end
 
 (* Typing of let bindings *)
 

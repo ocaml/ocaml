@@ -318,6 +318,7 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
       targs, Some tret_type, args, Some ret_type
       end
 
+
 let shape_map_labels =
   List.fold_left (fun map { ld_id; ld_uid; _} ->
     Shape.Map.add_label map ld_id ld_uid)
@@ -336,6 +337,7 @@ let shape_map_cstrs =
     Shape.Map.add_constr map cd_id
       @@ Shape.str ~uid:cd_uid cstr_shape_map)
     (Shape.Map.empty)
+
 
 let transl_declaration env sdecl (id, uid) =
   (* Bind type parameters *)
@@ -1509,6 +1511,7 @@ let transl_type_exception env t =
   {tyexn_constructor = contructor;
    tyexn_loc = t.ptyexn_loc;
    tyexn_attributes = t.ptyexn_attributes}, newenv, shape
+
 
 type native_repr_attribute =
   | Native_repr_attr_absent
