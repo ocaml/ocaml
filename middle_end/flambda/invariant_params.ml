@@ -73,8 +73,8 @@ let transitive_closure state =
     | ([], []) -> Implication result
     | ([], frontier::fs) ->
       (* Obtain fresh candidate for the frontier argument. *)
-      (match (try Variable.Pair.Map.find frontier state with
-              | Not_found -> Implication Variable.Pair.Set.empty) with
+      (match Variable.Pair.Map.find frontier state with
+       | exception Not_found -> loop [] fs result
        | Top -> Top
        | Implication candidate ->
          loop (Variable.Pair.Set.elements candidate) fs result)
@@ -86,8 +86,8 @@ let transitive_closure state =
       else
         loop cs frontier result
   in
-    Variable.Pair.Map.mapi
-      (fun _ set ->
+    Variable.Pair.Map.map
+      (fun set ->
          match set with
 	 | Top -> Top
 	 | Implication set -> loop [] (Variable.Pair.Set.elements set) set)
