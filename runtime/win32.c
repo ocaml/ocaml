@@ -1086,7 +1086,7 @@ CAMLexport int caml_win32_isatty(int fd)
 }
 
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
-#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x4
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 #endif
 
 CAMLprim value caml_win32_is_ansi_capable(value chan)
