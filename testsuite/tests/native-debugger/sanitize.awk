@@ -25,6 +25,12 @@
     gsub("(arm64)", "$ARCH")
     gsub("(riscv64)", "$ARCH")
 
+    # Replace offsets in disassembly output
+    gsub(/\<\+[0-9]+\>/, "<+XX>")
+
+    # Replace comments with blank comments
+    gsub(/; [a-zA-Z0-9._+ ]+/, ";")
+
     # Replace printed match results
     gsub("1 match found in /(.*):$", "1 match found in \"XXXX\":")
     print $0
