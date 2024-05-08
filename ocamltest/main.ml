@@ -235,6 +235,7 @@ let test_file test_filename =
        let make = try Sys.getenv "MAKE" with Not_found -> "make" in
        let initial_environment = Environments.from_bindings
            [
+             Builtin_variables.dev_null, "/dev/null";
              Builtin_variables.make, make;
              Builtin_variables.test_file, test_basename;
              Builtin_variables.reference, reference_filename;

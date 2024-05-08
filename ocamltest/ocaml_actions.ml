@@ -550,6 +550,7 @@ let debug debugger_type log env =
     | LLDB -> [
         Ocaml_commands.lldb_run;
         Ocaml_flags.lldb_default_flags;
+        "-s " ^ (Environments.safe_lookup Ocaml_variables.debugger_script env);
         program ]
     | GDB -> [
         Ocaml_commands.gdb_run;
@@ -565,15 +566,18 @@ let debug debugger_type log env =
       default_ocaml_env
       (env_with_lib_unix env)
   in
+  let stdin_variable = match debugger_type with
+    | LLDB | GDB ->  Builtin_variables.dev_null
+    | Bytecode -> Ocaml_variables.debugger_script
+  in
   let expected_exit_status = 0 in
   let exit_status =
     Actions_helpers.run_cmd
       ~environment:systemenv
-      ~stdin_variable:Ocaml_variables.debugger_script
+      ~stdin_variable:stdin_variable
       ~stdout_variable:Builtin_variables.output
       ~stderr_variable:Builtin_variables.output
       ~append:true
-      ~timeout:1
       log (env_with_lib_unix env) commandline in
   if exit_status=expected_exit_status
   then (Result.pass, env)
