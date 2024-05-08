@@ -102,3 +102,13 @@ let _ =
   safe_remove_dir "foo";
   safe_remove f2;
   safe_remove_dir f2;
+  print_string "Rename parent directory to empty child directory: ";
+  Sys.mkdir "foo" 0o755;
+  let bar = Filename.concat "foo" "bar" in
+  Sys.mkdir bar 0o755;
+  testfailure "foo" bar;
+  assert (Sys.file_exists "foo");
+  assert (Sys.file_exists bar);
+  print_newline();
+  safe_remove_dir bar;
+  safe_remove_dir "foo";
