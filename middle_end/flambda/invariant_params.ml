@@ -89,8 +89,8 @@ let transitive_closure state =
     Variable.Pair.Map.map
       (fun set ->
          match set with
-	 | Top -> Top
-	 | Implication set -> loop [] (Variable.Pair.Set.elements set) set)
+         | Top -> Top
+         | Implication set -> loop [] (Variable.Pair.Set.elements set) set)
       state
 
 (* CR-soon pchambart: to move to Flambda_utils and document
