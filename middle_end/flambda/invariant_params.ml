@@ -43,6 +43,12 @@ type t =
   | Top
   | Implication of Variable.Pair.Set.t
 
+let t_union s1 s2 =
+  match s1, s2 with
+  | Top, _ | _, Top -> Top
+  | Implication s1, Implication s2 ->
+    Implication (Variable.Pair.Set.union s1 s2)
+
 let _print ppf = function
   | Top -> Format.fprintf ppf "Top"
   | Implication args ->
@@ -64,34 +70,82 @@ let implies relation from to_ =
       (Implication (Variable.Pair.Set.singleton from))
       relation
 
-let transitive_closure state =
-  (* Depth-first search for all implications for one argument.
-     Arguments are moved from candidate to frontier, assuming
-     they are newly added to the result. *)
-  let rec loop candidate frontier result =
-    match (candidate, frontier) with
-    | ([], []) -> Implication result
-    | ([], frontier::fs) ->
-      (* Obtain fresh candidate for the frontier argument. *)
-      (match Variable.Pair.Map.find frontier state with
-       | exception Not_found -> loop [] fs result
-       | Top -> Top
-       | Implication candidate ->
-         loop (Variable.Pair.Set.elements candidate) fs result)
-    | (candidate::cs, frontier) ->
-      let result' = Variable.Pair.Set.add candidate result in
-      if result' != result then
-        (* Result change means candidate becomes part of frontier. *)
-        loop cs (candidate :: frontier) result'
-      else
-        loop cs frontier result
+let transitive_closure rel =
+  (* [state] contains the transitive closure of some elements of [rel]
+     that we have already visited. *)
+  let state = ref Variable.Pair.Map.empty in
+  (* [loop frontier result] computes the union of [result] with the
+     reflexive-transitive closure of the nodes of [frontier]. In
+     particular, if [ws] are the children of [v], then [loop [ws]
+     empty] is the transitive closure of [v].
+
+     This function works correctly on cyclic relations, but it
+     performs better if the children of a node are already in [state].
+
+     Invariant: each node in [result] either has all its children
+     in [result] or is included in the [frontier]. *)
+  let rec loop frontier result =
+    match frontier with
+    | [] -> Implication result
+    | []::frontier -> loop frontier result
+    | (v::vs)::frontier ->
+      let frontier = vs::frontier in
+      let old_result = result in
+      let result = Variable.Pair.Set.add v result in
+      if result == old_result then
+        (* Already in the result. *)
+        loop frontier result
+      else begin
+        (* First look a whether we have already computed the closure of [v]. *)
+        match Variable.Pair.Map.find v !state with
+        | Top -> Top
+        | Implication clos ->
+          (* [clos] is closed, there are no new nodes reachable from it:
+             no need to grow the frontier. *)
+          loop frontier (Variable.Pair.Set.union result clos)
+        | exception Not_found ->
+        (* Otherwise we grow the frontier with the children of [v]. *)
+        match Variable.Pair.Map.find v rel with
+        | exception Not_found -> loop frontier result
+        | Top -> Top
+        | Implication ws ->
+          loop (Variable.Pair.Set.elements ws :: frontier) result
+      end
   in
-    Variable.Pair.Map.map
-      (fun set ->
-         match set with
-         | Top -> Top
-         | Implication set -> loop [] (Variable.Pair.Set.elements set) set)
-      state
+  (* [visit v] computes the transitive closure of [v]
+     in reverse topological order, using [loop] on cyclic subgraphs. *)
+  let visited = ref Variable.Pair.Set.empty in
+  let rec visit v =
+    match Variable.Pair.Map.find v !state with
+    | t -> t
+    | exception Not_found ->
+      (* We have not computed the closure of this element yet *)
+      let clos =
+        match Variable.Pair.Map.find v rel with
+        | Top -> Top
+        | exception Not_found -> Implication Variable.Pair.Set.empty
+        | Implication ws ->
+          let cyclic =
+            (* reflexive relations have (v -> v), we check this common
+               case which does not need the larger !visited set *)
+            Variable.Pair.Set.mem v ws
+            || Variable.Pair.Set.mem v !visited
+          in
+          if cyclic then
+            loop [Variable.Pair.Set.elements ws] Variable.Pair.Set.empty
+          else begin
+            (* if there is no cycle, visit the children first *)
+            visited := Variable.Pair.Set.add v !visited;
+            Variable.Pair.Set.fold (fun w acc ->
+              acc
+              |> t_union (visit w)
+            ) ws (Implication ws)
+          end
+      in
+      state := Variable.Pair.Map.add v clos !state;
+      clos
+  in
+  Variable.Pair.Map.mapi (fun v _ -> visit v) rel
 
 (* CR-soon pchambart: to move to Flambda_utils and document
    mshinwell: I think this calculation is basically the same as
