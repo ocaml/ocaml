@@ -19,6 +19,9 @@ OCaml 4.14 maintenance version
 
 ### Build system:
 
+- #13146 Restore native armv7 support for NetBSD 10.0.
+  (John F. Carr and Tim McGilchrist, review by ????)
+
 ### Bug fixes:
 
 OCaml 4.14.2 (14 March 2024)
