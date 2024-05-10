@@ -100,12 +100,11 @@ let compile_file ?output ?(opt="") ?stable_name name =
          (match !Clflags.c_compiler with
           | Some cc -> cc
           | None ->
-              (* #7678: ocamlopt only calls the C compiler to process .c files
-                 from the command line, and the behaviour between
-                 ocamlc/ocamlopt should be identical. *)
-              (String.concat " " [Config.c_compiler;
-                                  Config.ocamlc_cflags;
-                                  Config.ocamlc_cppflags]))
+              let (cflags, cppflags) =
+                  if !Clflags.native_code
+                  then (Config.native_cflags, Config.native_cppflags)
+                  else (Config.bytecode_cflags, Config.bytecode_cppflags) in
+              (String.concat " " [Config.c_compiler; cflags; cppflags]))
          debug_prefix_map
          (match output with
           | None -> ""

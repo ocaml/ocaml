@@ -857,8 +857,8 @@ winpthreads_source_dir
 flexdll_dir
 bootstrapping_flexdll
 flexdll_source_dir
-ocamlc_cppflags
-ocamlc_cflags
+bytecode_cppflags
+bytecode_cflags
 zstd_libs
 native_ldflags
 cclibs
@@ -3262,8 +3262,8 @@ common_cflags=""
 common_cppflags=""
 internal_cflags=""
 internal_cppflags=""
-ocamlc_cflags=""
-ocamlc_cppflags=""
+bytecode_cflags=""
+bytecode_cppflags=""
 oc_ldflags=""
 oc_dll_ldflags=""
 oc_exe_ldflags=""
@@ -16166,8 +16166,8 @@ case $arch in #(
 esac
 
 native_cflags=''
-native_cppflags="-DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
-
+native_cppflags="-DNATIVE_CODE\
+ -DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
 case $ccomptype in #(
   msvc) :
     runtime_asm_objects=${arch}nt.${OBJEXT} ;; #(
@@ -17176,7 +17176,6 @@ fi
   tsan_cflags="$tsan_cflags $tsan_distinguish_volatile_cflags"
   common_cppflags="$common_cppflags $tsan_cppflags"
   native_cflags="$native_cflags $tsan_cflags"
-  ocamlc_cflags="$ocamlc_cflags $tsan_cflags"
   tsan_native_runtime_c_sources="tsan"
 else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: not using thread sanitizer" >&5
@@ -20793,8 +20792,8 @@ fi
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
-ocamlc_cflags="$ocamlc_cflags $common_cflags $sharedlib_cflags $CFLAGS"
-ocamlc_cppflags="$common_cppflags $CPPFLAGS"
+bytecode_cflags="$bytecode_cflags $common_cflags $sharedlib_cflags $CFLAGS"
+bytecode_cppflags="$common_cppflags $CPPFLAGS"
 
 case $host in #(
   *-*-mingw32*) :

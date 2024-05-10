@@ -47,8 +47,8 @@ common_cflags=""
 common_cppflags=""
 internal_cflags=""
 internal_cppflags=""
-ocamlc_cflags=""
-ocamlc_cppflags=""
+bytecode_cflags=""
+bytecode_cppflags=""
 oc_ldflags=""
 oc_dll_ldflags=""
 oc_exe_ldflags=""
@@ -167,8 +167,8 @@ AC_SUBST([oc_dll_ldflags])
 AC_SUBST([cclibs])
 AC_SUBST([native_ldflags])
 AC_SUBST([zstd_libs])
-AC_SUBST([ocamlc_cflags])
-AC_SUBST([ocamlc_cppflags])
+AC_SUBST([bytecode_cflags])
+AC_SUBST([bytecode_cppflags])
 AC_SUBST([flexdll_source_dir])
 AC_SUBST([bootstrapping_flexdll])
 AC_SUBST([flexdll_dir])
@@ -1486,8 +1486,8 @@ AS_CASE([$arch],
   [arch_specific_SOURCES=''])
 
 native_cflags=''
-native_cppflags="-DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
-
+native_cppflags="-DNATIVE_CODE\
+ -DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
 AS_CASE([$ccomptype],
   [msvc],
     [runtime_asm_objects=${arch}nt.${OBJEXT}],
@@ -1843,7 +1843,6 @@ AS_IF([$tsan],
   tsan_cflags="$tsan_cflags $tsan_distinguish_volatile_cflags"
   common_cppflags="$common_cppflags $tsan_cppflags"
   native_cflags="$native_cflags $tsan_cflags"
-  ocamlc_cflags="$ocamlc_cflags $tsan_cflags"
   tsan_native_runtime_c_sources="tsan"],
   [AC_MSG_NOTICE([not using thread sanitizer])
   tsan_native_runtime_c_sources=""]
@@ -2569,8 +2568,8 @@ AS_IF([test "$ccomptype" != "msvc"],
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
-ocamlc_cflags="$ocamlc_cflags $common_cflags $sharedlib_cflags $CFLAGS"
-ocamlc_cppflags="$common_cppflags $CPPFLAGS"
+bytecode_cflags="$bytecode_cflags $common_cflags $sharedlib_cflags $CFLAGS"
+bytecode_cppflags="$common_cppflags $CPPFLAGS"
 
 AS_CASE([$host],
   [*-*-mingw32*],
