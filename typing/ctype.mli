@@ -261,6 +261,8 @@ type typedecl_extraction_result =
 val extract_concrete_typedecl:
         Env.t -> type_expr -> typedecl_extraction_result
 
+val get_new_abstract_name : Env.t -> string -> string
+
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val unify_gadt:

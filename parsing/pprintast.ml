@@ -514,6 +514,8 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
         pp f "@[<2>(lazy@;%a)@]" (simple_pattern ctxt) p
     | Ppat_exception p ->
         pp f "@[<2>exception@;%a@]" (pattern1 ctxt) p
+    | Ppat_effect(p1, p2) ->
+        pp f "@[<2>effect@;%a, @;%a@]" (pattern1 ctxt) p1 (pattern1 ctxt) p2
     | Ppat_extension e -> extension ctxt f e
     | Ppat_open (lid, p) ->
         let with_paren =

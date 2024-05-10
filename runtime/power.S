@@ -938,6 +938,7 @@ FUNCTION caml_perform
         SWITCH_C_TO_OCAML
         TSAN_RESTORE_CALLER_REGS
 #endif
+        std     6, 8(4) /* Set the last fiber field in the continuation */
         ld      7, Stack_handler(5)  /* r7 := old stack -> handler */
         ld      8, Handler_parent(7) /* r8 := parent stack */
         cmpdi   8, 0

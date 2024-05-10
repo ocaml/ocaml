@@ -248,6 +248,10 @@ and pattern i ppf x =
   | Ppat_exception p ->
       line i ppf "Ppat_exception\n";
       pattern i ppf p
+  | Ppat_effect(p1, p2) ->
+      line i ppf "Ppat_effect\n";
+      pattern i ppf p1;
+      pattern i ppf p2
   | Ppat_open (m,p) ->
       line i ppf "Ppat_open \"%a\"\n" fmt_longident_loc m;
       pattern i ppf p

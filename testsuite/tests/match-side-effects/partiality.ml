@@ -31,7 +31,7 @@ type t = { a : bool; mutable b : int option; }
                (let (*match*/287 =o (field_mut 1 x/282))
                  (if *match*/287 (field_imm 0 *match*/287)
                    (raise
-                     (makeblock 0 (global Match_failure/18!) [0: "" 4 2])))))
+                     (makeblock 0 (global Match_failure/20!) [0: "" 4 2])))))
              1))
          0)))
   (apply (field_mut 1 (global Toploop!)) "f" f/280))

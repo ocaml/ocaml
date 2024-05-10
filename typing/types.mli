@@ -435,6 +435,7 @@ module Variance : sig
   val null : t               (* no occurrence *)
   val full : t               (* strictly invariant (all flags) *)
   val covariant : t          (* strictly covariant (May_pos, Pos and Inj) *)
+  val contravariant : t      (* strictly contravariant *)
   val unknown : t            (* allow everything, guarantee nothing *)
   val union  : t -> t -> t
   val inter  : t -> t -> t

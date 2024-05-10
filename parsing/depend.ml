@@ -191,6 +191,7 @@ let rec add_pattern bv pat =
       Option.iter
         (fun name -> pattern_bv := String.Map.add name bound !pattern_bv) id.txt
   | Ppat_open ( m, p) -> let bv = open_module bv m.txt in add_pattern bv p
+  | Ppat_effect(p1, p2) -> add_pattern bv p1; add_pattern bv p2
   | Ppat_exception p -> add_pattern bv p
   | Ppat_extension e -> handle_extension e
 

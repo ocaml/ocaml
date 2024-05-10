@@ -493,6 +493,7 @@ module P = struct
     | Ppat_type s -> iter_loc sub s
     | Ppat_lazy p -> sub.pat sub p
     | Ppat_unpack s -> iter_loc sub s
+    | Ppat_effect (p1,p2) -> sub.pat sub p1; sub.pat sub p2
     | Ppat_exception p -> sub.pat sub p
     | Ppat_extension x -> sub.extension sub x
     | Ppat_open (lid, p) ->

@@ -194,8 +194,8 @@ let add_extracted introduced program =
       match extracted with
       | Initialisation (symbol, tag, def) ->
         Flambda.Initialize_symbol (symbol, tag, def, program)
-      | Effect effect ->
-        Flambda.Effect (effect, program))
+      | Effect eff ->
+        Flambda.Effect (eff, program))
     introduced program
 
 let rec split_program (program : Flambda.program_body) : Flambda.program_body =

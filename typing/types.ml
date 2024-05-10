@@ -182,6 +182,7 @@ module Variance = struct
   let unknown = 7
   let full = single Inv
   let covariant = single Pos
+  let contravariant = single Neg
   let swap f1 f2 v v' =
     set_if (mem f2 v) f1 (set_if (mem f1 v) f2 v')
   let conjugate v =
