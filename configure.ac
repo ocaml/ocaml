@@ -55,8 +55,8 @@ oc_exe_ldflags=""
 
 tsan=false
 # Passed to the linker by ocamlopt when tsan is enabled
-oc_tsan_cflags="-fsanitize=thread"
-oc_tsan_cppflags="-DWITH_THREAD_SANITIZER"
+tsan_cflags="-fsanitize=thread"
+tsan_cppflags="-DWITH_THREAD_SANITIZER"
 tsan_distinguish_volatile_cflags=""
 
 # The C# compiler and its flags
@@ -1829,7 +1829,7 @@ AS_IF([$tsan],
   AS_CASE([$ocaml_cc_vendor],
     [gcc-[[0123456789]]-*|gcc-10-*|clang-*],
       [],
-    [oc_tsan_cflags="$oc_tsan_cflags -Wno-tsan"])
+    [tsan_cflags="$tsan_cflags -Wno-tsan"])
   AS_CASE([$ocaml_cc_vendor],
     [gcc*],
       [tsan_distinguish_volatile_cflags="--param=tsan-distinguish-volatile=1"],
@@ -1840,10 +1840,10 @@ AS_IF([$tsan],
     [AC_MSG_ERROR(m4_normalize([The C compiler does not support the
       `$tsan_distinguish_volatile_cflags' flag. Try upgrading to GCC >= 11, or
       to Clang >= 11.]))], [$warn_error_flag])
-  oc_tsan_cflags="$oc_tsan_cflags $tsan_distinguish_volatile_cflags"
-  common_cppflags="$common_cppflags $oc_tsan_cppflags"
-  native_cflags="$native_cflags $oc_tsan_cflags"
-  ocamlc_cflags="$ocamlc_cflags $oc_tsan_cflags"
+  tsan_cflags="$tsan_cflags $tsan_distinguish_volatile_cflags"
+  common_cppflags="$common_cppflags $tsan_cppflags"
+  native_cflags="$native_cflags $tsan_cflags"
+  ocamlc_cflags="$ocamlc_cflags $tsan_cflags"
   tsan_native_runtime_c_sources="tsan"],
   [AC_MSG_NOTICE([not using thread sanitizer])
   tsan_native_runtime_c_sources=""]
