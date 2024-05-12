@@ -198,8 +198,8 @@ struct dom_internal {
 typedef struct dom_internal dom_internal;
 
 static struct {
-  /* enter barrier, released by the leader once all domains have handled their
-     interrupt */
+  /* enter barrier for STW sections, participating domains arrive into
+     the barrier before executing the STW callback */
   caml_plat_barrier domains_still_running;
   /* the number of domains that have yet to return from the callback */
   atomic_uintnat num_domains_still_processing;
