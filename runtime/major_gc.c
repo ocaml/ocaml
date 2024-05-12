@@ -1490,7 +1490,7 @@ static void stw_cycle_all_domains(
     /* This global barrier avoids races between the verify_heap code
        and the rest of the STW critical section, for example the parts
        that mark global roots. */
-    Caml_maybe_global_barrier(participating_count);
+    caml_global_barrier(participating_count);
   }
 
   caml_cycle_heap(domain->shared_heap);
@@ -1576,7 +1576,7 @@ static void stw_cycle_all_domains(
   /* To ensure a mutator doesn't resume while global roots are being marked.
      Mutators can alter the set of global roots, to preserve its correctness,
      they should not run while global roots are being marked.*/
-  Caml_maybe_global_barrier(participating_count);
+  caml_global_barrier(participating_count);
 
   /* Someone should flush the allocation stats we gathered during the cycle */
   if( participating[0] == domain ) {

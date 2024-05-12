@@ -146,7 +146,7 @@ void caml_plat_cond_free(caml_plat_cond* cond)
 
 #ifdef CAML_PLAT_FUTEX_FALLBACK
 
-/* Conditon-variable-based futex implementation, for when a native OS
+/* Condition-variable-based futex implementation, for when a native OS
    version isn't available. This also illustrates the semantics of the
    [wait()] and [wake_all()] operations. */
 
@@ -254,7 +254,8 @@ void caml_plat_futex_free(caml_plat_futex* ftx) {
         /* ignored */ NULL, NULL)
 
 #  elif 0 /* defined(__NetBSD__)
-   this platform is untested, the fallback is used instead */
+   TODO The following code for NetBSD is untested,
+   we currently use the fallback instead. */
 #    include <sys/futex.h>
 #    include <sys/syscall.h>
 #    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)    \
@@ -270,7 +271,8 @@ void caml_plat_futex_free(caml_plat_futex* ftx) {
          /* ignored */ NULL, NULL, 0, 0)
 
 #  elif 0 /* defined(__DragonFly__)
-   this platform is untested, the fallback is used instead */
+   TODO The following code for DragonFly is untested,
+   we currently use the fallback instead. */ */
 #    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)        \
   umtx_sleep((volatile const int*)ftx, undesired, 0)
 #    define CAML_PLAT_FUTEX_WAKE(ftx)               \

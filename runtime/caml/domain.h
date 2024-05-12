@@ -191,26 +191,33 @@ int caml_try_run_on_all_domains(
    participating domains at hand, which should be used instead. */
 int caml_global_barrier_num_participating(void);
 
-/* Arrive at the barrier and wait for all parties */
-void caml_global_barrier(void);
+/* Unconditionally arrive at the barrier and wait for all parties,
+   [caml_global_barrier] below should be used instead. */
+void caml_enter_global_barrier(int num_participating);
 /* Arrive at the barrier and wait iff there is more than one party */
-#define Caml_maybe_global_barrier(num_participating)                    \
-  do { if ((num_participating) != 1) caml_global_barrier(); } while(0)
+Caml_inline void caml_global_barrier(int num_participating) {
+  if (num_participating != 1) caml_enter_global_barrier(num_participating);
+}
 
 typedef uintnat barrier_status;
-/* Arrive at the barrier and wait, returning zero after, unless we are the final
-   party, in which case the status (which is nonzero) to be passed to
-   [release_as_final()] is returned instead */
-barrier_status caml_global_barrier_wait_unless_final(int num_participating);
+/* Arrive at the barrier; if we are the final party, immediately returns a
+   nonzero value to be passed to [caml_global_barrier_release_as_final]
+   later, otherwise blocks and returns zero. */
+barrier_status caml_global_barrier_and_check_final(int num_participating);
 /* Release the barrier with the given status */
-void caml_global_barrier_release_as_final(barrier_status);
-/* Arrive at the global barrier and run the body if we are the final party
+void caml_global_barrier_release_as_final(barrier_status status);
+/* Arrive at the global barrier and run the body if we are the final party.
+   Other threads will not be released from the barrier until the final party
+   finishes executing the body.
 
    Example usage:
 
    Caml_global_barrier_if_final(num_participating) {
      do_something_in_final_domain();
    }
+
+   Note: this expands to an [if] and [for] header, do not exit the body using
+   jumps or returns, and do not put an [else] immediately after.
  */
 #define Caml_global_barrier_if_final(num_participating)                 \
   /* fast path when alone */                                            \
@@ -218,8 +225,9 @@ void caml_global_barrier_release_as_final(barrier_status);
   barrier_status CAML_GENSYM(b) = 0;                                    \
   if (CAML_GENSYM(alone) ||                                             \
       (CAML_GENSYM(b)                                                   \
-       = caml_global_barrier_wait_unless_final(num_participating)))     \
+       = caml_global_barrier_and_check_final(num_participating)))       \
     for (int CAML_GENSYM(continue) = 1; CAML_GENSYM(continue);          \
+         /* release the barrier after the body has executed once */     \
          ((CAML_GENSYM(alone) ? (void)0 :                               \
            caml_global_barrier_release_as_final(CAML_GENSYM(b))),       \
           CAML_GENSYM(continue) = 0))

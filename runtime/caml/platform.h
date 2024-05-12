@@ -152,7 +152,8 @@ void caml_plat_futex_free(caml_plat_futex*);
 #  if defined(_WIN32)                                   \
   || (defined(__linux__) && defined(HAS_LINUX_FUTEX_H)) \
   || defined(__FreeBSD__) || defined(__OpenBSD__)
-/*  These exist, but are untested
+/* TODO We have implementations for these platforms, but they are
+   currently untested, so use the fallback instead.
   || defined(__NetBSD__) || defined(__DragonFly__) */
 #  else
 /* Use the fallback on platforms that we do not have an OS-specific
@@ -262,13 +263,18 @@ Caml_inline void caml_plat_latch_set(caml_plat_binary_latch* latch) {
        (non-final threads)        (final thread)
                 |                       |
 
-   Note that leaving the barrier (after [Check] or [Block]) synchronises only
-   with the [Release] of the barrier, which in turn only synchronises with the
-   other threads at the time they [Arrive]-d. That is, anything performed
-   between [Arrive] and [Check]/[Block] is unsynchronised by the barrier, and
-   could potentially race with code in other threads that occurs after the
-   barrier.
+   Leaving the barrier after [Block] or a nonzero [Check] result synchronises
+   with the [Release] of the barrier from the final thread, which in turn
+   synchronises with the non-final threads at the time they [Arrive]d.
 
+   That is, on non-final threads, anything performed before [Check]/[Block] may
+   race with code in other threads that happens before they [Arrive], and
+   anything performed after [Arrive] is entirely unsynchronised by the barrier,
+   so may race with code in other threads that happens after they [Arrive]. In
+   particular, code between [Arrive] and [Check]/[Block] may race with code
+   before or after the barrier in all other threads. The final thread is the
+   exception, and may execute code after [Arrive] but before [Release] that will
+   still be synchronised by the barrier.
 */
 typedef struct caml_plat_barrier {
   caml_plat_futex futex;

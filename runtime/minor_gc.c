@@ -461,8 +461,10 @@ void caml_empty_minor_heap_domain_clear(caml_domain_state* domain)
   domain->extra_heap_resources_minor = 0.0;
 }
 
-/* try to do a major slice, returns nonzero if there was any work available,
-   used as useful spin work while waiting for synchronisation */
+/* Try to do a major slice, returns nonzero if there was any work available,
+   used as useful spin work while waiting for synchronisation. The return type
+   is [int] and not [bool] since it is passed as a parameter to
+   [caml_try_run_on_all_domains_with_spin_work]. */
 int caml_do_opportunistic_major_slice
   (caml_domain_state* domain_unused, void* unused);
 static void minor_gc_leave_barrier
@@ -576,7 +578,7 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   }
 
   #ifdef DEBUG
-    caml_global_barrier();
+    caml_global_barrier(participating_count);
     /* At this point all domains should have gone through all remembered set
        entries. We need to verify that all our remembered set entries are now in
        the major heap or promoted */
@@ -606,7 +608,7 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
               remembered_roots, st.live_bytes);
 
 #ifdef DEBUG
-  caml_global_barrier();
+  caml_global_barrier(participating_count);
   caml_gc_log("ref_base: %p, ref_ptr: %p",
     self_minor_tables->major_ref.base, self_minor_tables->major_ref.ptr);
   for (r = self_minor_tables->major_ref.base;

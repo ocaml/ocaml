@@ -167,7 +167,7 @@ struct interruptor {
   /* unlike the domain ID, this ID number is not reused */
   uintnat unique_id;
 
-  /* indiciates whether there is an interrupt pending */
+  /* indicates whether there is an interrupt pending */
   atomic_uintnat interrupt_pending;
 };
 
@@ -1361,20 +1361,21 @@ static void global_barrier_wait(barrier_status sense, int num_participating)
   caml_plat_barrier_wait_sense(&stw_request.barrier, sense);
 }
 
-void caml_global_barrier(void)
+void caml_enter_global_barrier(int num_participating)
 {
+  CAMLassert(num_participating == stw_request.num_domains);
   barrier_status b = global_barrier_begin();
   barrier_status sense = b & BARRIER_SENSE_BIT;
-  int num_domains = stw_request.num_domains;
-  if (global_barrier_is_nth(b, num_domains)) {
+  if (global_barrier_is_nth(b, num_participating)) {
     global_barrier_flip(sense);
   } else {
-    global_barrier_wait(sense, num_domains);
+    global_barrier_wait(sense, num_participating);
   }
 }
 
-barrier_status caml_global_barrier_wait_unless_final(int num_participating)
+barrier_status caml_global_barrier_and_check_final(int num_participating)
 {
+  CAMLassert(num_participating == stw_request.num_domains);
   barrier_status b = global_barrier_begin();
   if (global_barrier_is_nth(b, num_participating)) {
     CAMLassert(b); /* always nonzero */
