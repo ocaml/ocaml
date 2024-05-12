@@ -221,6 +221,8 @@ static struct {
 static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
 static caml_plat_cond all_domains_cond = CAML_PLAT_COND_INITIALIZER;
 static atomic_uintnat /* dom_internal* */ stw_leader = 0;
+static uintnat stw_requests_suspended = 0; /* protected by all_domains_lock */
+static caml_plat_cond requests_suspended_cond = CAML_PLAT_COND_INITIALIZER;
 static dom_internal all_domains[Max_domains];
 
 CAMLexport atomic_uintnat caml_num_domains_running;
@@ -577,11 +579,29 @@ static void domain_create(uintnat initial_minor_heap_wsize,
      set atomically */
   caml_plat_lock_blocking(&all_domains_lock);
 
+  /* How many STW sections we are willing to wait for, any more are
+     prevented from happening */
+#define Max_stws_before_suspend 2
+  int stws_waited = 1;
   /* Wait until any in-progress STW sections end. */
   while (atomic_load_acquire(&stw_leader)) {
-    /* [caml_plat_wait] releases [all_domains_lock] until the current
-       STW section ends, and then takes the lock again. */
-    caml_plat_wait(&all_domains_cond, &all_domains_lock);
+    if (stws_waited++ < Max_stws_before_suspend) {
+      /* [caml_plat_wait] releases [all_domains_lock] until the current
+         STW section ends, and then takes the lock again. */
+      caml_plat_wait(&all_domains_cond, &all_domains_lock);
+    } else {
+      /* Prevent new STW requests to avoid our own starvation */
+      stw_requests_suspended++;
+      /* Wait for the current STW to end */
+      do caml_plat_wait(&all_domains_cond, &all_domains_lock);
+      while (atomic_load_acquire(&stw_leader));
+      if (--stw_requests_suspended == 0) {
+        /* Notify threads that were trying to run an STW section.
+           We still hold the lock, so they won't wake up yet. */
+        caml_plat_broadcast(&requests_suspended_cond);
+      }
+      break;
+    }
   }
 
   d = next_free_domain();
@@ -1497,9 +1517,11 @@ int caml_domain_is_in_stw(void) {
      this function in a loop.)
 
    - Domain initialization code from [domain_create] will not run in
-     parallel with a STW section, as [domain_create] starts by
-     looping until (1) it has the [all_domains_lock] and (2) there is
-     no current STW section (using the [stw_leader] variable).
+     parallel with a STW section, as [domain_create] starts by looping
+     until (1) it has the [all_domains_lock] and (2) there is no
+     current STW section (using the [stw_leader] variable). To avoid
+     starvation, [domain_create] will prevent new STW sections if it
+     can't make progress.
 
    - Domain cleanup code runs after the terminating domain may run in
      parallel to a STW section, but only after that domain has safely
@@ -1570,10 +1592,19 @@ int caml_try_run_on_all_domains_with_spin_work(
   }
 
   /* see if there is a stw_leader already */
+ check_for_stw_leader:
   if (atomic_load_acquire(&stw_leader)) {
     caml_plat_unlock(&all_domains_lock);
     caml_handle_incoming_interrupts();
     return 0;
+  }
+
+  /* STW requests may be suspended by [domain_create], in which case,
+     instead of taking the stw_leader, we should release the lock and
+     wait for requests to be unsuspended before trying again */
+  if (CAMLunlikely(stw_requests_suspended)) {
+    caml_plat_wait(&requests_suspended_cond, &all_domains_lock);
+    goto check_for_stw_leader;
   }
 
   /* we have the lock and can claim the stw_leader */
