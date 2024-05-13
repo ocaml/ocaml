@@ -1,7 +1,7 @@
 opam-version: "2.0"
-version: "5.2.0"
+version: "5.2.1+trunk"
 license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
-synopsis: "Official release of OCaml 5.2.0"
+synopsis: "OCaml 5.2 development version"
 maintainer: "caml-list@inria.fr"
 authors: [
   "Xavier Leroy"
@@ -14,7 +14,7 @@ authors: [
 homepage: "https://github.com/ocaml/ocaml/"
 bug-reports: "https://github.com/ocaml/ocaml/issues"
 depends: [
-  "ocaml" {= "5.2.0" & post}
+  "ocaml" {= "5.2.1" & post}
   "base-unix" {post}
   "base-bigarray" {post}
   "base-threads" {post}
