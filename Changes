@@ -19,6 +19,12 @@ _______________
   (Leo White, Tom Kelly, Anil Madhavapeddy, KC Sivaramakrishnan, Xavier Leroy
    and Florian Angeletti, review by the same, Hugo Heuzard, and Ulysse Gérard)
 
+### Type system
+
+- #11891, #12507: Allow to name new locally abstract types in constructor type
+  annotations.
+  (Jacques Garrigue, report and review by Gabriel Scherer and Florian Angeletti)
+
 ### Runtime system:
 
 - #11911, #12923: Multicore statistical memory profiling.
@@ -40,6 +46,11 @@ _______________
 - #11779, #13117: Improve logic for fiber stack alignment.
   (Miod Vallat, report by Damien Doligez, review by Gabriel Scherer)
 
+- #12839: Remove ATOMIC_UINTNAT_INIT from camlatomic.h (as part of a larger
+  cleanup of camlatomic.h)
+  (David Allsopp, review by Antonin Décimo, Sébastien Hinderer, Samuel Hym,
+   Guillaume Munch-Maccagnoni and Miod Vallat)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously
@@ -51,9 +62,6 @@ _______________
   Note that #7241 is not fully fixed yet, see the issue for the
   current status.
   (Gabriel Scherer, review by Nick Roberts)
-
-- #13079: Save and restore frame pointer across Iextcall on ARM64
-  (Tim McGilchrist, review by KC Sivaramakrishnan and Miod Vallat)
 
 ### Standard library:
 
@@ -76,6 +84,10 @@ _______________
 ### Other libraries:
 
 ### Tools:
+
+- #11716: ocamllex: mismatched parentheses and curly brackets are now caught
+  by ocamllex, instead of causing invalid OCaml code to be generated.
+  (Demi Marie Obenour)
 
 - #12904: Run the testsuite with ThreadSanitizer on a PR when label
   `run-thread-sanitizer` is added
@@ -115,10 +127,6 @@ _______________
 
 - #13045: Emphasize caution about behaviour of custom block finalizers.
   (Nick Barnes)
-
-- #13078: update Format tutorial on structural boxes to mention alignment
-  questions.
-  (Edwin Török, review by Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 
@@ -195,6 +203,9 @@ _______________
 
 ### Bug fixes:
 
+- #12854: Add a test in the regression suite that flags the bug #12825.
+  (Luc Maranget)
+
 - #12888: fix printing of uncaught exceptions in `.cmo` files passed on the
   command-line of the toplevel.
   (Nicolás Ojeda Bär, review by Florian Angeletti, report by Daniel Bünzli)
@@ -203,11 +214,6 @@ _______________
   and polymorphic records by saving and restoring univar_pairs.
   (Stephen Dolan, review by Gabriel Scherer, report by Jeremy Yallop)
 
-- #12924, #12930: Rework package constraint checking to improve interaction with
-  immediacy
-  (Chris Casinghino and Florian Angeletti, review by Florian Angeletti and
-   Richard Eisenberg)
-
 - #12994: Remove un-used and unsafe caml_drop_continuation
   (Tim McGilchrist, reviewed by Gabriel Scherer and Miod Vallat)
 
@@ -215,11 +221,6 @@ _______________
   programs to query the runtime parameters supplied to an OCaml program.
   Implementation missing since OCaml 5.0.
   (Tim McGilchrist, reviewed by David Allsopp and Miod Vallat)
-
-- #13019: Remove linking instructions for the Unix library from threads.cma
-  (this was done for threads.cmxa in OCaml 3.11). Eliminates warnings from
-  new lld when using threads.cma of duplicated libraries.
-  (David Allsopp, review by Nicolás Ojeda Bär)
 
 - #13012: parsing: Fix dropped attributes after a '-' or '+'
   The syntax '-(1 [@foo])' was incorrectly parsed as '-1'.
@@ -233,9 +234,6 @@ _______________
 - #13089: Fix bug in `runtime_events` library which could result in garbled
   output under Windows.
   (B. Szilvasy, review by Nicolás Ojeda Bär and Miod Vallat)
-
-- #13094: Fix undefined behavior of left-shifting a negative number.
-  (Antonin Décimo, review by Miod Vallat and Nicolás Ojeda Bär)
 
 - #13088: A few type-checker behaviors look at a type to see if there are
   any labeled arguments in it. This sometimes required expansion, which
@@ -317,10 +315,6 @@ OCaml 5.2.0
 - #12313, #11799: Do not re-build as-pattern type when a ground type annotation
   is given. This allows to work around problems with GADTs in as-patterns.
   (Jacques Garrigue, report by Leo White, review by Gabriel Scherer)
-
-- #11891, #12507: Allow to name new locally abstract types in constructor type
-  annotations.
-  (Jacques Garrigue, report and review by Gabriel Scherer and Florian Angeletti)
 
 ### Runtime system:
 
@@ -504,11 +498,6 @@ OCaml 5.2.0
    Hari Hara Naveen S, reviewed by Fabrice Buoro, Gabriel Scherer and
    Miod Vallat)
 
-- #12839: Remove ATOMIC_UINTNAT_INIT from camlatomic.h (as part of a larger
-  cleanup of camlatomic.h)
-  (David Allsopp, review by Antonin Décimo, Sébastien Hinderer, Samuel Hym,
-   Guillaume Munch-Maccagnoni and Miod Vallat)
-
 - #12876: Port ThreadSanitizer support to Linux on POWER
   (Miod Vallat, review by Tim McGilchrist)
 
@@ -547,9 +536,6 @@ OCaml 5.2.0
 - #12825: disable common subexpression elimination for atomic loads... again.
   (Gabriel Scherer, review by KC Sivaramakrishnan, Xavier Leroy
    and Vincent Laviron, report by Vesa Karvonen)
-
-- #12854: Add a test in the regression suite that flags the bug #12825.
-  (Luc Maranget)
 
 ### Standard library:
 
@@ -736,6 +722,10 @@ OCaml 5.2.0
 - #13066, update OCAMLRUNPARAM documentation for the stack size parameter l
   (Florian Angeletti, review by Nicolás Ojeda Bär, Tim McGilchrist, and
    Miod Vallat)
+
+- #13078: update Format tutorial on structural boxes to mention alignment
+  questions.
+  (Edwin Török, review by Florian Angeletti)
 
 - #13092: document the existence of the `[@@poll error]` built-in attribute
   (Florian Angeletti, review by Gabriel Scherer)
@@ -1121,6 +1111,11 @@ OCaml 5.2.0
 - #12919: Fix register corruption in caml_callback2_asm on s390x.
   (Miod Vallat, review by Gabriel Scherer)
 
+- #12924, #12930: Rework package constraint checking to improve interaction with
+  immediacy
+  (Chris Casinghino and Florian Angeletti, review by Florian Angeletti and
+   Richard Eisenberg)
+
 - #12969: Fix a data race in caml_darken_cont
   (Fabrice Buoro and Olivier Nicole, review by Gabriel Scherer and Miod Vallat)
 
@@ -1128,9 +1123,20 @@ OCaml 5.2.0
   invalid programs forming recursive types.
   (Gabriel Scherer, review by Florian Angeletti, report by Neven Villani)
 
+- #13019: Remove linking instructions for the Unix library from threads.cma
+  (this was done for threads.cmxa in OCaml 3.11). Eliminates warnings from
+  new lld when using threads.cma of duplicated libraries.
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
 - #13058: Add TSan instrumentation to caml_call_gc(), since it may raise
   exceptions.
   (Fabrice Buoro, Olivier Nicole, Gabriel Scherer and Miod Vallat)
+
+- #13079: Save and restore frame pointer across Iextcall on ARM64
+  (Tim McGilchrist, review by KC Sivaramakrishnan and Miod Vallat)
+
+- #13094: Fix undefined behavior of left-shifting a negative number.
+  (Antonin Décimo, review by Miod Vallat and Nicolás Ojeda Bär)
 
 OCaml 5.1.1 (8 December 2023)
 ----------------------------
@@ -1596,10 +1602,6 @@ Some of those changes will benefit all OCaml packages.
 - #11889, #11978: ocamldoc: handle injectivity annotations and wildcards in type
   parameters.
   (Florian Angeletti, report by Wiktor Kuchta, review by Jules Aguillon)
-
-- #11716: ocamllex: mismatched parentheses and curly brackets are now caught
-  by ocamllex, instead of causing invalid OCaml code to be generated.
-  (Demi Marie Obenour)
 
 - #11787: Fix GDB scripts to work with OCaml 5's heap layout. (Nick
   Barnes)
