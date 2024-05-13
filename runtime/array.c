@@ -371,6 +371,12 @@ static void wo_memmove (volatile value* const dst,
 CAMLprim value caml_floatarray_blit(value a1, value ofs1, value a2, value ofs2,
                                     value n)
 {
+  if (Long_val(n) == 0) return Val_unit;
+  /* Note: size-0 floatarrays do not have Double_array_tag,
+     but only size-0 blits are possible on them, so they
+     do not reach this point. */
+  CAMLassert (Tag_val(a1) == Double_array_tag);
+  CAMLassert (Tag_val(a2) == Double_array_tag);
   /* See memory model [MM] notes in memory.c */
   atomic_thread_fence(memory_order_acquire);
   memmove((double *)a2 + Long_val(ofs2),
@@ -389,6 +395,10 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
   if (Tag_val(a2) == Double_array_tag)
     return caml_floatarray_blit(a1, ofs1, a2, ofs2, n);
 #endif
+  if (Long_val(n) == 0)
+    /* See comment on size-0 floatarrays in [caml_floatarray_blit]. */
+    return Val_unit;
+  CAMLassert (Tag_val(a1) != Double_array_tag);
   CAMLassert (Tag_val(a2) != Double_array_tag);
   if (Is_young(a2)) {
     /* Arrays of values, destination is in young generation.
