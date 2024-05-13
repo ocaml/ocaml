@@ -189,6 +189,9 @@ _______________
   false positives on s390x
   (Miod Vallat, review by Fabien Buoro)
 
+- #13162: Use quoted strings to clarify code being generated.
+  (Antonin Décimo, review by Miod Vallat and Gabriel Scherer)
+
 ### Build system:
 
 - #12909: Reorganise how MKEXE_VIA_CC is built to make it correct for MSVC by
