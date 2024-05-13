@@ -140,9 +140,6 @@ OCaml 5.2.0
   (Guillaume Munch-Maccagnoni, bug reports and suggestion by Mark
    Shinwell, review by Nick Barnes and Stephen Dolan)
 
-- #12876: Port ThreadSanitizer support to Linux on POWER
-  (Miod Vallat, review by Tim McGilchrist)
-
 - #12408: `Domain.spawn` no longer leaks its functional argument for
   the whole duration of the children domain lifetime.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
@@ -156,8 +153,10 @@ OCaml 5.2.0
    review by Damien Doligez, Sébastien Hinderer, Jacques-Henri Jourdan, Luc
    Maranget, Guillaume Munch-Maccagnoni, Gabriel Scherer)
 
-- #11911, #12381: Restore statmemprof functionality in part
-   (API changes in Gc.Memprof). (Nick Barnes)
+- #11911, #12381: Restore statmemprof functionality in part, with
+  some API changes in Gc.Memprof.
+  (Nick Barnes, review by Jacques-Henri Jourdan
+   and Guillaume Munch-Maccagnoni).
 
 - #12430: Simplify dynamic bytecode loading in Meta.reify_bytecode
   (Stephen Dolan, review by Sébastien Hinderer, Vincent Laviron and Xavier
@@ -216,9 +215,10 @@ OCaml 5.2.0
    Ojeda Bar)
 
 - #11911, #12382, #12383: Restore statmemprof functionality in part
-  (backtrace buffers, per-thread and per-domain data structures).
-  (Nick Barnes, review by Gabriel Scherer, Fabrice Buoro, Sadiq
-   Jaffer, and Guillaume Munch-Maccagnoni).
+  (backtrace buffers, per-thread and per-domain data structures,
+  GC/allocation interface). (Nick Barnes, review by Gabriel Scherer,
+  Fabrice Buoro, Sadiq Jaffer, Guillaume Munch-Maccagnoni, and
+  Jacques-Henri Jourdan).
 
 - #12735: Store both ends of the stack chain in continuations
   (Leo White, review by Miod Vallat and KC Sivaramakrishnan)
@@ -247,6 +247,9 @@ OCaml 5.2.0
   (Guillaume Munch-Maccagnoni, reported by Miod Vallat, suggested by
    Hari Hara Naveen S, reviewed by Fabrice Buoro, Gabriel Scherer and
    Miod Vallat)
+
+- #12876: Port ThreadSanitizer support to Linux on POWER
+  (Miod Vallat, review by Tim McGilchrist)
 
 - #12886: Reinitialize IO mutexes after fork
   (Max Slater, review by Guillaume Munch-Maccagnoni and Xavier Leroy)
@@ -990,7 +993,7 @@ OCaml 5.1.0 (14 September 2023)
   `Seq.find_mapi`, `Seq.find_index`, `Array.find_mapi`, `Array.find_index`,
   `Float.Array.find_opt`, `Float.Array.find_index`, `Float.Array.find_map`,
   `Float.Array.find_mapi`.
-  (Sima Kinsart, review by Daniel Bünzli and Nicolás Ojeda Bär)
+  (Tima Kinsart, review by Daniel Bünzli and Nicolás Ojeda Bär)
 
 - #11410: Add Set.to_list, Map.to_list, Map.of_list,
   `Map.add_to_list: key -> 'a -> 'a list t -> 'a list t`.
@@ -1771,7 +1774,7 @@ Some of those changes will benefit all OCaml packages.
 
 - #11846: Mark rbx as destroyed at C call for Win64 (mingw-w64 and Cygwin64).
   Reserve the shadow store for the ABI in the c_stack_link struct instead of
-  explictly when calling C functions. This simultaneously reduces the number of
+  explicitly when calling C functions. This simultaneously reduces the number of
   stack pointer manipulations and also fixes a bug when calling noalloc
   functions where the shadow store was not being reserved.
   (David Allsopp, report by Vesa Karvonen, review by Xavier Leroy and
@@ -2791,7 +2794,7 @@ OCaml 4.14.0 (28 March 2022)
 - #8516: Change representation of class signatures
   (Leo White, review by Thomas Refis)
 
-- #9444: -dtypedtree, print more explictly extra nodes in pattern ast.
+- #9444: -dtypedtree, print more explicitly extra nodes in pattern ast.
   (Frédéric Bour, review by Gabriel Scherer)
 
 - #10337: Normalize type_expr nodes on access
