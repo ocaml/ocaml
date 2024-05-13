@@ -1,7 +1,7 @@
 opam-version: "2.0"
-version: "5.2.0+trunk"
+version: "5.2.0"
 license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
-synopsis: "OCaml 5.2 development version"
+synopsis: "Official release of OCaml 5.2.0"
 maintainer: "caml-list@inria.fr"
 authors: [
   "Xavier Leroy"
