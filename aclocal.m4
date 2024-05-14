@@ -87,7 +87,7 @@ AC_DEFUN([OCAML_SIGNAL_HANDLERS_SEMANTICS], [
   AC_CHECK_FUNC([sigaction], [has_sigaction=true], [has_sigaction=false])
   AC_CHECK_FUNC([sigprocmask], [has_sigprocmask=true], [has_sigprocmask=false])
   AS_IF([$has_sigaction && $has_sigprocmask],
-    [AC_DEFINE([POSIX_SIGNALS])
+    [AC_DEFINE([POSIX_SIGNALS], [1])
       AC_MSG_NOTICE([POSIX signal handling found.])],
     [AC_MSG_NOTICE([assuming signals have the System V semantics.])
     ]
@@ -98,7 +98,7 @@ AC_DEFUN([OCAML_CC_SUPPORTS_ALIGNED], [
   AC_MSG_CHECKING([whether the C compiler supports __attribute__((aligned(n)))])
   AC_COMPILE_IFELSE(
     [AC_LANG_SOURCE([typedef struct {__attribute__((aligned(8))) int t;} t;])],
-    [AC_DEFINE([SUPPORTS_ALIGNED_ATTRIBUTE])
+    [AC_DEFINE([SUPPORTS_ALIGNED_ATTRIBUTE], [1])
     AC_MSG_RESULT([yes])],
     [AC_MSG_RESULT([no])])])
 
@@ -111,7 +111,7 @@ AC_DEFUN([OCAML_CC_SUPPORTS_TREE_VECTORIZE], [
     [AC_LANG_PROGRAM(
       [[__attribute__((optimize("tree-vectorize"))) void f(void) {}]],
       [[f();]])],
-    [AC_DEFINE([SUPPORTS_TREE_VECTORIZE])
+    [AC_DEFINE([SUPPORTS_TREE_VECTORIZE], [1])
     AC_MSG_RESULT([yes])],
     [AC_MSG_RESULT([no])])
   CFLAGS="$saved_CFLAGS"
@@ -215,7 +215,7 @@ camlPervasives__loop_1128:
 
     AS_IF([$aspp_ok && $as_ok],
       [asm_cfi_supported=true
-      AC_DEFINE([ASM_CFI_SUPPORTED])
+      AC_DEFINE([ASM_CFI_SUPPORTED], [1])
       AC_MSG_RESULT([yes])],
       [AS_IF([test x"$enable_cfi" = "xyes"],
         [AC_MSG_RESULT([requested but not available
@@ -283,7 +283,7 @@ AC_DEFUN([OCAML_MMAP_SUPPORTS_HUGE_PAGES], [
     p[i] = (char) i;
   }
     ]])],
-    [AC_DEFINE([HAS_HUGE_PAGES])
+    [AC_DEFINE([HAS_HUGE_PAGES], [1])
     AC_DEFINE_UNQUOTED([HUGE_PAGE_SIZE], [(4 * 1024 * 1024)])
     AC_MSG_RESULT([yes])],
     [AC_MSG_RESULT([no])],
@@ -296,7 +296,7 @@ AC_DEFUN([OCAML_CHECK_LIBUNWIND], [
   CPPFLAGS="$CPPFLAGS $libunwind_cppflags"
   LDFLAGS="$LDFLAGS $libunwind_ldflags"
   AC_CHECK_HEADER([libunwind.h],
-    [AC_DEFINE([HAS_LIBUNWIND])
+    [AC_DEFINE([HAS_LIBUNWIND], [1])
     libunwind_available=true],
     [libunwind_available=false])
   LDFLAGS="$SAVED_LDFLAGS"
@@ -410,7 +410,7 @@ AC_DEFUN([OCAML_C99_CHECK_ROUND], [
   if (fpclassify(round(d)) != FP_ZERO) return 1;
     ]])],
     [AC_MSG_RESULT([yes])
-    AC_DEFINE([HAS_WORKING_ROUND])],
+    AC_DEFINE([HAS_WORKING_ROUND], [1])],
     [AC_MSG_RESULT([no])
     AS_CASE([$enable_imprecise_c99_float_ops,$target],
       [no,*], [hard_error=true],
@@ -426,7 +426,7 @@ AC_DEFUN([OCAML_C99_CHECK_ROUND], [
     [AS_CASE([$target],
       [x86_64-w64-mingw32*],[AC_MSG_RESULT([cross-compiling; assume not])],
       [AC_MSG_RESULT([cross-compiling; assume yes])
-      AC_DEFINE([HAS_WORKING_ROUND])])])
+      AC_DEFINE([HAS_WORKING_ROUND], [1])])])
 ])
 
 AC_DEFUN([OCAML_C99_CHECK_FMA], [
@@ -460,7 +460,7 @@ AC_DEFUN([OCAML_C99_CHECK_FMA], [
     return 1;
     ]])],
     [AC_MSG_RESULT([yes])
-    AC_DEFINE([HAS_WORKING_FMA])],
+    AC_DEFINE([HAS_WORKING_FMA], [1])],
     [AC_MSG_RESULT([no])
     AS_CASE([$enable_imprecise_c99_float_ops,$target],
       [no,*], [hard_error=true],
@@ -481,7 +481,7 @@ AC_DEFUN([OCAML_C99_CHECK_FMA], [
       [x86_64-w64-mingw32*|x86_64-*-cygwin*],
         [AC_MSG_RESULT([cross-compiling; assume not])],
       [AC_MSG_RESULT([cross-compiling; assume yes])
-      AC_DEFINE([HAS_WORKING_FMA])])])
+      AC_DEFINE([HAS_WORKING_FMA], [1])])])
 ])
 
 # Computes a suitable id to insert in quoted strings to ensure that all OCaml
