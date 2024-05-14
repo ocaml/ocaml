@@ -45,6 +45,7 @@
 #endif
 
 #include "s.h"
+#include "compatibility.h"
 
 #ifndef CAML_CONFIG_H_NO_TYPEDEFS
 
@@ -55,7 +56,6 @@
 #endif
 
 #include <stdint.h>
-#define HAS_STDINT_H
 
 /* Disable the mingw-w64 *printf shims */
 #if defined(CAML_INTERNALS) && defined(__MINGW32__)
