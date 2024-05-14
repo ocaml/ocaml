@@ -1980,16 +1980,10 @@ AS_CASE([$host],
 )
 
 AS_IF([$ipv6],
-  [AC_CHECK_FUNC([getaddrinfo], [], [ipv6=false])])
-
+  [AC_CHECK_FUNCS([getaddrinfo getnameinfo inet_pton inet_ntop], [],
+    [ipv6=false])])
 AS_IF([$ipv6],
-  [AC_CHECK_FUNC([getnameinfo], [], [ipv6=false])])
-
-AS_IF([$ipv6],
-  [AC_CHECK_FUNC([inet_pton], [], [ipv6=false])])
-
-AS_IF([$ipv6],
-  [AC_CHECK_FUNC([inet_ntop], [AC_DEFINE([HAS_IPV6])])])
+  [AC_DEFINE([HAS_IPV6])])
 
 AC_CHECK_FUNC([rewinddir], [AC_DEFINE([HAS_REWINDDIR])])
 

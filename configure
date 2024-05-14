@@ -17767,48 +17767,26 @@ esac
 
 if $ipv6
 then :
-  ac_fn_c_check_func "$LINENO" "getaddrinfo" "ac_cv_func_getaddrinfo"
-if test "x$ac_cv_func_getaddrinfo" = xyes
+
+  for ac_func in getaddrinfo getnameinfo inet_pton inet_ntop
+do :
+  as_ac_var=`printf "%s\n" "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+if eval test \"x\$"$as_ac_var"\" = x"yes"
 then :
+  cat >>confdefs.h <<_ACEOF
+#define `printf "%s\n" "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
 
 else $as_nop
   ipv6=false
 fi
 
+done
 fi
-
 if $ipv6
-then :
-  ac_fn_c_check_func "$LINENO" "getnameinfo" "ac_cv_func_getnameinfo"
-if test "x$ac_cv_func_getnameinfo" = xyes
-then :
-
-else $as_nop
-  ipv6=false
-fi
-
-fi
-
-if $ipv6
-then :
-  ac_fn_c_check_func "$LINENO" "inet_pton" "ac_cv_func_inet_pton"
-if test "x$ac_cv_func_inet_pton" = xyes
-then :
-
-else $as_nop
-  ipv6=false
-fi
-
-fi
-
-if $ipv6
-then :
-  ac_fn_c_check_func "$LINENO" "inet_ntop" "ac_cv_func_inet_ntop"
-if test "x$ac_cv_func_inet_ntop" = xyes
 then :
   printf "%s\n" "#define HAS_IPV6 1" >>confdefs.h
-
-fi
 
 fi
 
