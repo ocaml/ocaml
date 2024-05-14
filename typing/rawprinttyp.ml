@@ -51,7 +51,7 @@ let print_name ppf = function
     None -> fprintf ppf "None"
   | Some name -> fprintf ppf "\"%s\"" name
 
-let path = Path.print
+let path = Format_doc.compat Path.print
 
 let visited = ref []
 let rec raw_type ppf ty =
@@ -77,7 +77,7 @@ and raw_type_desc ppf = function
   | Ttuple tl ->
       fprintf ppf "@[<1>Ttuple@,%a@]" raw_type_list tl
   | Tconstr (p, tl, abbrev) ->
-      fprintf ppf "@[<hov1>Tconstr(@,%a,@,%a,@,%a)@]" Path.print p
+      fprintf ppf "@[<hov1>Tconstr(@,%a,@,%a,@,%a)@]" path p
         raw_type_list tl
         (raw_list path) (list_of_memo !abbrev)
   | Tobject (t, nm) ->

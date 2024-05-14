@@ -164,7 +164,7 @@ let execute_phrase print_outcome ppf phr =
         begin match out_phr with
         | Ophr_signature [] -> ()
         | _ ->
-            Location.separate_new_message ppf;
+            Location.Compat.separate_new_message ppf ();
             !print_out_phrase ppf out_phr;
         end;
         if Printexc.backtrace_status ()
@@ -172,7 +172,7 @@ let execute_phrase print_outcome ppf phr =
           match !backtrace with
             | None -> ()
             | Some b ->
-                Location.separate_new_message ppf;
+                Location.Compat.separate_new_message ppf ();
                 pp_print_string ppf b;
                 pp_print_flush ppf ();
                 backtrace := None;

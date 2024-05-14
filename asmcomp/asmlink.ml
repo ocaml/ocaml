@@ -359,8 +359,8 @@ let link ~ppf_dump objfiles output_name =
 
 (* Error report *)
 
-open Format
 module Style = Misc.Style
+open Format_doc
 
 let report_error ppf = function
   | File_not_found name ->

@@ -88,7 +88,7 @@ val input_phrase_buffer: Buffer.t option ref
 (** {1 Toplevel-specific functions} *)
 
 val echo_eof: unit -> unit
-val separate_new_message: formatter -> unit
+val separate_new_message: unit Format_doc.printer
 val reset: unit -> unit
 
 
@@ -169,11 +169,16 @@ val show_filename: string -> string
     (** In -absname mode, return the absolute path for this filename.
         Otherwise, returns the filename unchanged. *)
 
-val print_filename: formatter -> string -> unit
+module Compat: sig
+  val print_filename: formatter -> string -> unit
+  val print_loc: formatter -> t -> unit
+  val print_locs: formatter -> t list -> unit
+  val separate_new_message: formatter -> unit -> unit
+end
 
-val print_loc: formatter -> t -> unit
-val print_locs: formatter -> t list -> unit
-
+val print_filename: string Format_doc.printer
+val print_loc: t Format_doc.printer
+val print_locs: t list Format_doc.printer
 
 (** {1 Toplevel-specific location highlighting} *)
 
@@ -185,9 +190,9 @@ val highlight_terminfo:
 
 (** {2 The type of reports and report printers} *)
 
-type msg = (Format.formatter -> unit) loc
+type msg = Format_doc.t loc
 
-val msg: ?loc:t -> ('a, Format.formatter, unit, msg) format4 -> 'a
+val msg: ?loc:t -> ('a, Format_doc.formatter, unit, msg) format4 -> 'a
 
 type report_kind =
   | Report_error
@@ -200,7 +205,7 @@ type report = {
   kind : report_kind;
   main : msg;
   sub : msg list;
-  footnote: unit -> (Format.formatter -> unit) option
+  footnote: Format_doc.t option
 }
 
 type report_printer = {
@@ -213,7 +218,7 @@ type report_printer = {
   pp_main_loc : report_printer -> report ->
     Format.formatter -> t -> unit;
   pp_main_txt : report_printer -> report ->
-    Format.formatter -> (Format.formatter -> unit) -> unit;
+    Format.formatter -> Format_doc.t -> unit;
   pp_submsgs : report_printer -> report ->
     Format.formatter -> msg list -> unit;
   pp_submsg : report_printer -> report ->
@@ -221,7 +226,7 @@ type report_printer = {
   pp_submsg_loc : report_printer -> report ->
     Format.formatter -> t -> unit;
   pp_submsg_txt : report_printer -> report ->
-    Format.formatter -> (Format.formatter -> unit) -> unit;
+    Format.formatter -> Format_doc.t -> unit;
 }
 (** A printer for [report]s, defined using open-recursion.
     The goal is to make it easy to define new printers by re-using code from
@@ -322,19 +327,17 @@ val deprecated_script_alert: string -> unit
 type error = report
 (** An [error] is a [report] which [report_kind] must be [Report_error]. *)
 
-type delayed_msg = unit -> (formatter->unit) option
+type delayed_msg = unit -> Format_doc.t option
 
-val error: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg-> string -> error
+val error: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg -> string -> error
 
-val errorf:
-  ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
-  ('a, Format.formatter, unit, error) format4 -> 'a
+val errorf: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
+  ('a, Format_doc.formatter, unit, error) format4 -> 'a
 
-val error_of_printer:
-  ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
-  (formatter -> 'a -> unit) -> 'a -> error
+val error_of_printer: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
+  (Format_doc.formatter -> 'a -> unit) -> 'a -> error
 
-val error_of_printer_file: (formatter -> 'a -> unit) -> 'a -> error
+val error_of_printer_file: (Format_doc.formatter -> 'a -> unit) -> 'a -> error
 
 
 (** {1 Automatically reporting errors for raised exceptions} *)
@@ -358,7 +361,7 @@ exception Already_displayed_error
    printed. The exception will be caught, but nothing will be printed *)
 
 val raise_errorf: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
-  ('a, Format.formatter, unit, 'b) format4 -> 'a
+  ('a, Format_doc.formatter, unit, 'b) format4 -> 'a
 
 val report_exception: formatter -> exn -> unit
 (** Reraise the exception if it is unknown. *)

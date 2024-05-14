@@ -310,6 +310,7 @@ let compile_implementation_linear target =
 
 (* Error report *)
 module Style = Misc.Style
+let fprintf, dprintf = Format_doc.fprintf, Format_doc.dprintf
 
 let report_error ppf = function
   | Assembler_error file ->
@@ -317,8 +318,8 @@ let report_error ppf = function
         Location.print_filename file
   | Mismatched_for_pack saved ->
     let msg = function
-       | None -> Format.dprintf "without %a" Style.inline_code "-for-pack"
-       | Some s -> Format.dprintf "with %a" Style.inline_code ("-for-pack " ^ s)
+       | None -> dprintf "without %a" Style.inline_code "-for-pack"
+       | Some s -> dprintf "with %a" Style.inline_code ("-for-pack " ^ s)
      in
      fprintf ppf
        "This input file cannot be compiled %t: it was generated %t."

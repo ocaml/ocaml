@@ -122,7 +122,7 @@ let print_cmt_infos cmt =
     List.iter (fun (loc, item) ->
       let pp_loc fmt { Location.txt; loc } =
         Format.fprintf fmt "%a (%a)"
-          Pprintast.longident txt Location.print_loc loc
+          Pprintast.longident txt Location.Compat.print_loc loc
       in
       Format.printf "@[<hov 2>%a:@ %a@]@;"
         Shape_reduce.print_result item pp_loc loc)
@@ -156,7 +156,7 @@ let print_cmt_infos cmt =
       in
       let pp_loc fmt { Location.txt; loc } =
         Format.fprintf fmt "%s (%a)"
-           txt Location.print_loc loc
+           txt Location.Compat.print_loc loc
       in
       Format.printf "@[<hov 2>%a:@ %a@]@;"
         Shape.Uid.print uid
@@ -179,8 +179,8 @@ let print_global_table table =
   printf "Globals defined:\n";
   Symtable.iter_global_map
     (fun global _ ->
-       print_line
-         (Format.asprintf "%a" Symtable.Global.description global)
+       let desc = Format_doc.compat Symtable.Global.description in
+       print_line (Format.asprintf "%a" desc global)
     )
     table
 

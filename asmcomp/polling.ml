@@ -18,7 +18,7 @@
 (**************************************************************************)
 
 open Mach
-open Format
+open Format_doc
 
 module Int = Numbers.Int
 module String = Misc.Stdlib.String

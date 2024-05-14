@@ -28,4 +28,4 @@ type error =
 
 exception Error of error
 
-val report_error: Format.formatter -> error -> unit
+val report_error: error Format_doc.printer

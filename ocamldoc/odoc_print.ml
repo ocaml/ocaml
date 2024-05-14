@@ -15,6 +15,7 @@
 
 open Format
 let () = Printtyp.Naming_context.enable false
+module Printtyp = Printtyp.Compat
 
 let new_fmt () =
   let buf = Buffer.create 512 in

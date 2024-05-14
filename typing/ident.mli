@@ -24,7 +24,8 @@ include Identifiable.S with type t := t
    - [compare] compares identifiers by binding location
 *)
 
-val print_with_scope : Format.formatter -> t -> unit
+val doc_print: t Format_doc.printer
+val print_with_scope : t Format_doc.printer
         (** Same as {!print} except that it will also add a "[n]" suffix
             if the scope of the argument is [n]. *)
 

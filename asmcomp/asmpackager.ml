@@ -281,7 +281,7 @@ let package_files ~ppf_dump initial_env files targetcmx ~backend =
 
 (* Error report *)
 
-open Format
+open Format_doc
 module Style = Misc.Style
 
 let report_error ppf = function

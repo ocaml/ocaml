@@ -15,8 +15,6 @@
 
 open Asttypes
 open Types
-open Format
-
 type 'a class_info = {
   cls_id : Ident.t;
   cls_id_loc : string loc;
@@ -111,7 +109,7 @@ type error =
   | Bad_class_type_parameters of Ident.t * type_expr list * type_expr list
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
-  | Unbound_type_var of (formatter -> unit) * Ctype.closed_class_failure
+  | Unbound_type_var of Format_doc.t * Ctype.closed_class_failure
   | Non_generalizable_class of
       { id : Ident.t
       ; clty : Types.class_declaration
@@ -129,7 +127,7 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-val report_error : Env.t -> formatter -> error -> unit
+val report_error : Env.t -> error Format_doc.printer
 
 (* Forward decl filled in by Typemod.type_open_descr *)
 val type_open_descr :

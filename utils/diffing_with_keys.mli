@@ -46,7 +46,7 @@ type ('l,'r,'diff) change =
   | Insert of {pos:int; insert:'r}
   | Delete of {pos:int; delete:'l}
 
-val prefix: Format.formatter -> ('l,'r,'diff) change -> unit
+val prefix: ('l,'r,'diff) change Format_doc.printer
 
 module Define(D:Diffing.Defs with type eq := unit): sig
 

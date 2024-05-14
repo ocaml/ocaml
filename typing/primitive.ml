@@ -232,16 +232,16 @@ module Style = Misc.Style
 let report_error ppf err =
   match err with
   | Old_style_float_with_native_repr_attribute ->
-    Format.fprintf ppf "Cannot use %a in conjunction with %a/%a."
+    Format_doc.fprintf ppf "Cannot use %a in conjunction with %a/%a."
       Style.inline_code "float"
       Style.inline_code "[@unboxed]"
       Style.inline_code  "[@untagged]"
   | Old_style_noalloc_with_noalloc_attribute ->
-    Format.fprintf ppf "Cannot use %a in conjunction with %a."
+    Format_doc.fprintf ppf "Cannot use %a in conjunction with %a."
       Style.inline_code "noalloc"
       Style.inline_code "[@@noalloc]"
   | No_native_primitive_with_repr_attribute ->
-    Format.fprintf ppf
+    Format_doc.fprintf ppf
       "@[The native code version of the primitive is mandatory@ \
        when attributes %a or %a are present.@]"
       Style.inline_code "[@untagged]"

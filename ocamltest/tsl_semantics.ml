@@ -20,7 +20,7 @@ open Tsl_ast
 let string_of_location loc =
   let buf = Buffer.create 64 in
   let fmt = Format.formatter_of_buffer buf in
-  Location.print_loc fmt loc;
+  Location.Compat.print_loc fmt loc;
   Format.pp_print_flush fmt ();
   Buffer.contents buf
 

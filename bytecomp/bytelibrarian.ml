@@ -121,7 +121,7 @@ let create_archive file_list lib_name =
        output_binary_int outchan pos_toc;
     )
 
-open Format
+open Format_doc
 module Style = Misc.Style
 
 let report_error ppf = function

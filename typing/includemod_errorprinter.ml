@@ -14,6 +14,7 @@
 (**************************************************************************)
 
 module Style = Misc.Style
+module Fmt = Format_doc
 
 module Context = struct
   type pos =
@@ -34,28 +35,28 @@ module Context = struct
 
   let rec context ppf = function
       Module id :: rem ->
-        Format.fprintf ppf "@[<2>module %a%a@]" Printtyp.ident id args rem
+        Fmt.fprintf ppf "@[<2>module %a%a@]" Printtyp.ident id args rem
     | Modtype id :: rem ->
-        Format.fprintf ppf "@[<2>module type %a =@ %a@]"
+        Fmt.fprintf ppf "@[<2>module type %a =@ %a@]"
           Printtyp.ident id context_mty rem
     | Body x :: rem ->
-        Format.fprintf ppf "functor (%s) ->@ %a" (argname x) context_mty rem
+        Fmt.fprintf ppf "functor (%s) ->@ %a" (argname x) context_mty rem
     | Arg x :: rem ->
-        Format.fprintf ppf "functor (%s : %a) -> ..."
+        Fmt.fprintf ppf "functor (%s : %a) -> ..."
           (argname x) context_mty rem
     | [] ->
-        Format.fprintf ppf "<here>"
+        Fmt.fprintf ppf "<here>"
   and context_mty ppf = function
       (Module _ | Modtype _) :: _ as rem ->
-        Format.fprintf ppf "@[<2>sig@ %a@;<1 -2>end@]" context rem
+        Fmt.fprintf ppf "@[<2>sig@ %a@;<1 -2>end@]" context rem
     | cxt -> context ppf cxt
   and args ppf = function
       Body x :: rem ->
-        Format.fprintf ppf "(%s)%a" (argname x) args rem
+        Fmt.fprintf ppf "(%s)%a" (argname x) args rem
     | Arg x :: rem ->
-        Format.fprintf ppf "(%s :@ %a) : ..." (argname  x) context_mty rem
+        Fmt.fprintf ppf "(%s :@ %a) : ..." (argname  x) context_mty rem
     | cxt ->
-        Format.fprintf ppf " :@ %a" context_mty cxt
+        Fmt.fprintf ppf " :@ %a" context_mty cxt
   and argname = function
     | Types.Unit -> ""
     | Types.Named (None, _) -> "_"
@@ -64,19 +65,19 @@ module Context = struct
   let alt_pp ppf cxt =
     if cxt = [] then () else
     if List.for_all (function Module _ -> true | _ -> false) cxt then
-      Format.fprintf ppf ",@ in module %a"
+      Fmt.fprintf ppf ",@ in module %a"
         (Style.as_inline_code Printtyp.path) (path_of_context cxt)
     else
-      Format.fprintf ppf ",@ @[<hv 2>at position@ %a@]"
+      Fmt.fprintf ppf ",@ @[<hv 2>at position@ %a@]"
         (Style.as_inline_code context) cxt
 
   let pp ppf cxt =
     if cxt = [] then () else
     if List.for_all (function Module _ -> true | _ -> false) cxt then
-      Format.fprintf ppf "In module %a:@ "
+      Fmt.fprintf ppf "In module %a:@ "
         (Style.as_inline_code Printtyp.path) (path_of_context cxt)
     else
-      Format.fprintf ppf "@[<hv 2>At position@ %a@]@ "
+      Fmt.fprintf ppf "@[<hv 2>At position@ %a@]@ "
         (Style.as_inline_code context) cxt
 end
 
@@ -174,7 +175,7 @@ module Runtime_coercion = struct
   let item mt k = Includemod.item_ident_name (runtime_item k mt)
 
   let pp_item ppf (id,_,kind) =
-    Format.fprintf ppf "%s %a"
+    Fmt.fprintf ppf "%s %a"
       (Includemod.kind_of_field_desc kind)
       Style.inline_code (Ident.name id)
 
@@ -187,13 +188,13 @@ module Runtime_coercion = struct
     | Some (path, Transposition (k,l)) ->
     try
       let ctx, mt = find env path mty in
-      Format.fprintf ppf
+      Fmt.fprintf ppf
         "@[<hv 2>Illegal permutation of runtime components in a module type.@ \
          @[For example%a,@]@ @[the %a@ and the %a are not in the same order@ \
          in the expected and actual module types.@]@]"
         ctx_printer ctx pp_item (item mt k) pp_item (item mt l)
     with Not_found -> (* this should not happen *)
-      Format.fprintf ppf
+      Fmt.fprintf ppf
         "Illegal permutation of runtime components in a module type."
 
   let in_package_subtype ctx_printer env mty c ppf =
@@ -202,33 +203,33 @@ module Runtime_coercion = struct
         (* The coercion looks like the identity but was not simplified to
            [Tcoerce_none], this only happens when the two first-class module
            types differ by runtime size *)
-        Format.fprintf ppf
+        Fmt.fprintf ppf
           "The two first-class module types differ by their runtime size."
     | Some (path, c) ->
   try
     let ctx, mt = find env path mty in
     match c with
     | Primitive_coercion prim_name ->
-        Format.fprintf ppf
+        Fmt.fprintf ppf
           "@[The two first-class module types differ by a coercion of@ \
            the primitive %a@ to a value%a.@]"
           Style.inline_code prim_name
           ctx_printer ctx
     | Alias_coercion path ->
-        Format.fprintf ppf
+        Fmt.fprintf ppf
           "@[The two first-class module types differ by a coercion of@ \
            a module alias %a@ to a module%a.@]"
           (Style.as_inline_code Printtyp.path) path
           ctx_printer ctx
     | Transposition (k,l) ->
-        Format.fprintf ppf
+        Fmt.fprintf ppf
           "@[@[The two first-class module types do not share@ \
            the same positions for runtime components.@]@ \
            @[For example,%a@ the %a@ occurs at the expected position of@ \
            the %a.@]@]"
           ctx_printer ctx pp_item (item mt k) pp_item (item mt l)
   with Not_found ->
-    Format.fprintf ppf
+    Fmt.fprintf ppf
       "@[The two packages types do not share@ \
        the@ same@ positions@ for@ runtime@ components.@]"
 
@@ -251,7 +252,7 @@ let is_big obj =
 let show_loc msg ppf loc =
   let pos = loc.Location.loc_start in
   if List.mem pos.Lexing.pos_fname [""; "_none_"; "//toplevel//"] then ()
-  else Format.fprintf ppf "@\n@[<2>%a:@ %s@]" Location.print_loc loc msg
+  else Fmt.fprintf ppf "@\n@[<2>%a:@ %s@]" Location.print_loc loc msg
 
 let show_locs ppf (loc1, loc2) =
   show_loc "Expected declaration" ppf loc2;
@@ -260,9 +261,9 @@ let show_locs ppf (loc1, loc2) =
 
 let dmodtype mty =
   let tmty = Printtyp.tree_of_modtype mty in
-  Format.dprintf "%a" !Oprint.out_module_type tmty
+  Fmt.dprintf "%a" !Oprint.out_module_type tmty
 
-let space ppf () = Format.fprintf ppf "@ "
+let space ppf () = Fmt.fprintf ppf "@ "
 
 (**
    In order to display a list of functor arguments in a compact format,
@@ -311,8 +312,8 @@ module With_shorthand = struct
 
   let make side pos =
     match side with
-    | Got -> Format.sprintf "$S%d" pos
-    | Expected -> Format.sprintf "$T%d" pos
+    | Got -> Fmt.asprintf "$S%d" pos
+    | Expected -> Fmt.asprintf "$T%d" pos
     | Unneeded -> "..."
 
   (** Add shorthands to a patch *)
@@ -357,43 +358,43 @@ module With_shorthand = struct
   (** Printing of arguments with shorthands *)
   let pp ppx = function
     | Original x -> ppx x
-    | Synthetic s -> Format.dprintf "%s" s.name
+    | Synthetic s -> Fmt.dprintf "%s" s.name
 
   let pp_orig ppx = function
     | Original x | Synthetic { item=x; _ } -> ppx x
 
   let definition x = match functor_param x with
-    | Unit -> Format.dprintf "()"
+    | Unit -> Fmt.dprintf "()"
     | Named(_,short_mty) ->
         match short_mty with
         | Original mty -> dmodtype mty
         | Synthetic {name; item = mty} ->
-            Format.dprintf
+            Fmt.dprintf
               "%s@ =@ %t" name (dmodtype mty)
 
   let param x = match functor_param x with
-    | Unit -> Format.dprintf "()"
+    | Unit -> Fmt.dprintf "()"
     | Named (_, short_mty) ->
         pp dmodtype short_mty
 
   let qualified_param x = match functor_param x with
-    | Unit -> Format.dprintf "()"
+    | Unit -> Fmt.dprintf "()"
     | Named (None, Original (Mty_signature []) ) ->
-        Format.dprintf "(sig end)"
+        Fmt.dprintf "(sig end)"
     | Named (None, short_mty) ->
         pp dmodtype short_mty
     | Named (Some p, short_mty) ->
-        Format.dprintf "(%s : %t)"
+        Fmt.dprintf "(%s : %t)"
           (Ident.name p) (pp dmodtype short_mty)
 
   let definition_of_argument ua =
     let arg, mty = ua.item in
     match (arg: Err.functor_arg_descr) with
-    | Unit -> Format.dprintf "()"
-    | Empty_struct -> Format.dprintf "(struct end)"
+    | Unit -> Fmt.dprintf "()"
+    | Empty_struct -> Fmt.dprintf "(struct end)"
     | Named p ->
         let mty = modtype { ua with item = mty } in
-        Format.dprintf
+        Fmt.dprintf
           "%a@ :@ %t"
           Printtyp.path p
           (pp_orig dmodtype mty)
@@ -402,14 +403,14 @@ module With_shorthand = struct
         begin match short_mty with
         | Original mty -> dmodtype mty
         | Synthetic {name; item=mty} ->
-            Format.dprintf "%s@ :@ %t" name (dmodtype mty)
+            Fmt.dprintf "%s@ :@ %t" name (dmodtype mty)
         end
 
   let arg ua =
     let arg, mty = ua.item in
     match (arg: Err.functor_arg_descr) with
-    | Unit -> Format.dprintf "()"
-    | Empty_struct -> Format.dprintf "(struct end)"
+    | Unit -> Fmt.dprintf "()"
+    | Empty_struct -> Fmt.dprintf "(struct end)"
     | Named p -> fun ppf -> Printtyp.path ppf p
     | Anonymous ->
         let short_mty = modtype { ua with item=mty } in
@@ -429,10 +430,10 @@ module Functor_suberror = struct
   let pretty_params sep proj printer patch =
     let elt (x,param) =
       let sty = Diffing.(style @@ classify x) in
-      Format.dprintf "%a%t%a"
-        Format.pp_open_stag (Style.Style sty)
+      Fmt.dprintf "%a%t%a"
+        Fmt.pp_open_stag (Style.Style sty)
         (printer param)
-        Format.pp_close_stag ()
+        Fmt.pp_close_stag ()
     in
     let params = List.filter_map proj @@ List.map snd patch in
     Printtyp.functor_parameters ~sep elt params
@@ -471,17 +472,17 @@ module Functor_suberror = struct
       pretty_params space extract With_shorthand.qualified_param d
 
     let insert mty =
-      Format.dprintf
+      Fmt.dprintf
         "An argument appears to be missing with module type@;<1 2>@[%t@]"
         (With_shorthand.definition mty)
 
     let delete mty =
-      Format.dprintf
+      Fmt.dprintf
         "An extra argument is provided of module type@;<1 2>@[%t@]"
         (With_shorthand.definition mty)
 
       let ok x y =
-        Format.dprintf
+        Fmt.dprintf
           "Module types %t and %t match"
           (With_shorthand.param x)
           (With_shorthand.param y)
@@ -489,17 +490,17 @@ module Functor_suberror = struct
       let diff g e more =
         let g = With_shorthand.definition g in
         let e = With_shorthand.definition e in
-        Format.dprintf
+        Fmt.dprintf
           "Module types do not match:@ @[%t@]@;<1 -2>does not include@ \
            @[%t@]%t"
           g e (more ())
 
       let incompatible = function
         | Types.Unit ->
-            Format.dprintf
+            Fmt.dprintf
               "The functor was expected to be applicative at this position"
         | Types.Named _ ->
-            Format.dprintf
+            Fmt.dprintf
               "The functor was expected to be generative at this position"
 
       let patch env got expected =
@@ -525,7 +526,7 @@ module Functor_suberror = struct
       pretty_params space extract With_shorthand.arg d
 
     let delete mty =
-      Format.dprintf
+      Fmt.dprintf
         "The following extra argument is provided@;<1 2>@[%t@]"
         (With_shorthand.definition_of_argument mty)
 
@@ -534,10 +535,10 @@ module Functor_suberror = struct
     let ok x y =
       let pp_orig_name = match With_shorthand.functor_param y with
         | With_shorthand.Named (_, Original mty) ->
-            Format.dprintf " %t" (dmodtype mty)
+            Fmt.dprintf " %t" (dmodtype mty)
         | _ -> ignore
       in
-      Format.dprintf
+      Fmt.dprintf
         "Module %t matches the expected module type%t"
         (With_shorthand.arg x)
         pp_orig_name
@@ -545,7 +546,7 @@ module Functor_suberror = struct
     let diff g e more =
       let g = With_shorthand.definition_of_argument g in
       let e = With_shorthand.definition e in
-      Format.dprintf
+      Fmt.dprintf
         "Modules do not match:@ @[%t@]@;<1 -2>\
          is not included in@ @[%t@]%t"
         g e (more ())
@@ -556,10 +557,10 @@ module Functor_suberror = struct
     let single_diff g e more =
       let _arg, mty = g.With_shorthand.item in
       let e = match e.With_shorthand.item with
-        | Types.Unit -> Format.dprintf "()"
+        | Types.Unit -> Fmt.dprintf "()"
         | Types.Named(_, mty) -> dmodtype mty
       in
-      Format.dprintf
+      Fmt.dprintf
         "Modules do not match:@ @[%t@]@;<1 -2>\
          is not included in@ @[%t@]%t"
         (dmodtype mty) e (more ())
@@ -567,10 +568,10 @@ module Functor_suberror = struct
 
     let incompatible = function
       | Unit ->
-          Format.dprintf
+          Fmt.dprintf
             "The functor was expected to be applicative at this position"
       | Named _ | Anonymous ->
-          Format.dprintf
+          Fmt.dprintf
             "The functor was expected to be generative at this position"
       | Empty_struct ->
           (* an empty structure can be used in both applicative and generative
@@ -580,18 +581,18 @@ module Functor_suberror = struct
 
   let subcase sub ~expansion_token env (pos, diff) =
     Location.msg "%a%a%a%a@[<hv 2>%t@]%a"
-      Format.pp_print_tab ()
-      Format.pp_open_tbox ()
+      Fmt.pp_print_tab ()
+      Fmt.pp_open_tbox ()
       Diffing.prefix (pos, Diffing.classify diff)
-      Format.pp_set_tab ()
+      Fmt.pp_set_tab ()
       (Printtyp.wrap_printing_env env ~error:true
          (fun () -> sub ~expansion_token env diff)
       )
-     Format.pp_close_tbox ()
+     Fmt.pp_close_tbox ()
 
   let onlycase sub ~expansion_token env (_, diff) =
     Location.msg "%a@[<hv 2>%t@]"
-      Format.pp_print_tab ()
+      Fmt.pp_print_tab ()
       (Printtyp.wrap_printing_env env ~error:true
          (fun () -> sub ~expansion_token env diff)
       )
@@ -638,25 +639,24 @@ let coalesce msgs =
   | [] -> ignore
   | before ->
       let ctx ppf =
-        Format.pp_print_list ~pp_sep:space
-          (fun ppf x -> x.Location.txt ppf)
+        Fmt.pp_print_list ~pp_sep:space
+          (fun ppf x -> Fmt.pp_doc ppf x.Location.txt)
           ppf before in
       ctx
 
 let subcase_list l ppf = match l with
   | [] -> ()
   | _ :: _ ->
-      Format.fprintf ppf "@;<1 -2>@[%a@]"
-        (Format.pp_print_list ~pp_sep:space
-           (fun ppf f -> f.Location.txt ppf)
-        )
+      let pp_msg ppf lmsg = Fmt.pp_doc ppf lmsg.Location.txt in
+      Fmt.fprintf ppf "@;<1 -2>@[%a@]"
+        (Fmt.pp_print_list ~pp_sep:space pp_msg)
         (List.rev l)
 
 (* Printers for leaves *)
 let core env id x =
   match x with
   | Err.Value_descriptions diff ->
-      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
+      Fmt.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
         "Values do not match"
         !Oprint.out_sig_item
         (Printtyp.tree_of_value_description id diff.got)
@@ -667,7 +667,7 @@ let core env id x =
            "the first" "the second" env) diff.symptom
         show_locs (diff.got.val_loc, diff.expected.val_loc)
   | Err.Type_declarations diff ->
-      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
+      Fmt.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
         "Type declarations do not match"
         !Oprint.out_sig_item
         (Printtyp.tree_of_type_declaration id diff.got Trec_first)
@@ -678,7 +678,7 @@ let core env id x =
            "the first" "the second" "declaration" env) diff.symptom
         show_locs (diff.got.type_loc, diff.expected.type_loc)
   | Err.Extension_constructors diff ->
-      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]@ %a%a@]"
+      Fmt.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]@ %a%a@]"
         "Extension declarations do not match"
         !Oprint.out_sig_item
         (Printtyp.tree_of_extension_constructor id diff.got Text_first)
@@ -689,7 +689,7 @@ let core env id x =
            "the first" "the second" "declaration" env) diff.symptom
         show_locs (diff.got.ext_loc, diff.expected.ext_loc)
   | Err.Class_type_declarations diff ->
-      Format.dprintf
+      Fmt.dprintf
         "@[<hv 2>Class type declarations do not match:@ \
          %a@;<1 -2>does not match@ %a@]@ %a"
         !Oprint.out_sig_item
@@ -700,7 +700,7 @@ let core env id x =
   | Err.Class_declarations {got;expected;symptom} ->
       let t1 = Printtyp.tree_of_class_declaration id got Trec_first in
       let t2 = Printtyp.tree_of_class_declaration id expected Trec_first in
-      Format.dprintf
+      Fmt.dprintf
         "@[<hv 2>Class declarations do not match:@ \
          %a@;<1 -2>does not match@ %a@]@ %a"
         !Oprint.out_sig_item t1
@@ -709,34 +709,34 @@ let core env id x =
 
 let missing_field ppf item =
   let id, loc, kind =  Includemod.item_ident_name item in
-  Format.fprintf ppf "The %s %a is required but not provided%a"
+  Fmt.fprintf ppf "The %s %a is required but not provided%a"
     (Includemod.kind_of_field_desc kind)
     (Style.as_inline_code Printtyp.ident) id
     (show_loc "Expected declaration") loc
 
 let module_types {Err.got=mty1; expected=mty2} =
-  Format.dprintf
+  Fmt.dprintf
     "@[<hv 2>Modules do not match:@ \
      %a@;<1 -2>is not included in@ %a@]"
     !Oprint.out_module_type (Printtyp.tree_of_modtype mty1)
     !Oprint.out_module_type (Printtyp.tree_of_modtype mty2)
 
 let eq_module_types {Err.got=mty1; expected=mty2} =
-  Format.dprintf
+  Fmt.dprintf
     "@[<hv 2>Module types do not match:@ \
      %a@;<1 -2>is not equal to@ %a@]"
     !Oprint.out_module_type (Printtyp.tree_of_modtype mty1)
     !Oprint.out_module_type (Printtyp.tree_of_modtype mty2)
 
 let module_type_declarations id {Err.got=d1 ; expected=d2} =
-  Format.dprintf
+  Fmt.dprintf
     "@[<hv 2>Module type declarations do not match:@ \
      %a@;<1 -2>does not match@ %a@]"
     !Oprint.out_sig_item (Printtyp.tree_of_modtype_declaration id d1)
     !Oprint.out_sig_item (Printtyp.tree_of_modtype_declaration id d2)
 
 let interface_mismatch ppf (diff: _ Err.diff) =
-  Format.fprintf ppf
+  Fmt.fprintf ppf
     "The implementation %a@ does not match the interface %a:@ "
     Style.inline_code diff.got Style.inline_code diff.expected
 
@@ -745,7 +745,7 @@ let core_module_type_symptom (x:Err.core_module_type_symptom)  =
   | Not_an_alias | Not_an_identifier | Abstract_module_type
   | Incompatible_aliases -> None
   | Unbound_module_path path ->
-      Some(Format.dprintf "Unbound module %a"
+      Some(Fmt.dprintf "Unbound module %a"
              (Style.as_inline_code Printtyp.path) path
           )
 
@@ -787,7 +787,7 @@ and module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx = function
       module_type ~eqmode ~expansion_token ~env ~before ~ctx diff
   | Invalid_module_alias path ->
       let printer =
-        Format.dprintf "Module %a cannot be aliased"
+        Fmt.dprintf "Module %a cannot be aliased"
           (Style.as_inline_code Printtyp.path) path
       in
       dwith_context ctx printer :: before
@@ -797,7 +797,7 @@ and functor_params ~expansion_token ~env ~before ~ctx {got;expected;_} =
   let actual = Functor_suberror.Inclusion.got d in
   let expected = Functor_suberror.expected d in
   let main =
-    Format.dprintf
+    Fmt.dprintf
       "@[<hv 2>Modules do not match:@ \
        @[functor@ %t@ -> ...@]@;<1 -2>is not included in@ \
        @[functor@ %t@ -> ...@]@]"
@@ -823,8 +823,8 @@ and signature ~expansion_token ~env:_ ~before ~ctx sgs =
           if expansion_token then
             let init_missings, last_missing = Misc.split_last missings in
             List.map (Location.msg "%a" missing_field) init_missings
-            @ [ with_context ctx missing_field last_missing ]
-            @ before
+            @ with_context ctx missing_field last_missing
+            :: before
           else
             before
       | [], a :: _ -> sigitem ~expansion_token ~env:sgs.env ~before ~ctx a
@@ -936,16 +936,15 @@ let all env = function
 
 (* General error reporting *)
 
-let err_msgs (env, err) =
+let err_msgs ppf (env, err) =
   Printtyp.wrap_printing_env ~error:true env
-    (fun () -> coalesce @@ all env err)
+    (fun () -> (coalesce @@ all env err)  ppf)
 
 let report_error err =
-  let main = err_msgs err in
   Location.errorf
     ~loc:Location.(in_file !input_name)
     ~footnote:Printtyp.Conflicts.err_msg
-   "%t" main
+   "%a" err_msgs err
 
 let report_apply_error ~loc env (app_name, mty_f, args) =
   let footnote = Printtyp.Conflicts.err_msg in
@@ -986,12 +985,12 @@ let report_apply_error ~loc env (app_name, mty_f, args) =
         let intro ppf =
           match app_name with
           | Includemod.Anonymous_functor ->
-              Format.fprintf ppf "This functor application is ill-typed."
+              Fmt.fprintf ppf "This functor application is ill-typed."
           | Includemod.Full_application_path lid ->
-              Format.fprintf ppf "The functor application %a is ill-typed."
+              Fmt.fprintf ppf "The functor application %a is ill-typed."
                 (Style.as_inline_code Printtyp.longident) lid
           |  Includemod.Named_leftmost_functor lid ->
-              Format.fprintf ppf
+              Fmt.fprintf ppf
                 "This application of the functor %a is ill-typed."
                  (Style.as_inline_code Printtyp.longident) lid
         in
@@ -1008,8 +1007,9 @@ let report_apply_error ~loc env (app_name, mty_f, args) =
           intro
           actual expected
 
-let coercion_in_package_subtype env mty c ppf =
-    Runtime_coercion.in_package_subtype Context.alt_pp env mty c ppf
+let coercion_in_package_subtype env mty c =
+  Format_doc.doc_printf "%t" @@
+  Runtime_coercion.in_package_subtype Context.alt_pp env mty c
 
 let register () =
   Location.register_error_of_exn
