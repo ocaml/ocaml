@@ -781,7 +781,6 @@ build_os
 build_vendor
 build_cpu
 build
-target_bindir
 ar_supports_response_files
 QS
 ocaml_libdir
@@ -789,8 +788,6 @@ ocaml_bindir
 compute_deps
 build_libraries_manpages
 PACKLD
-mkexe_ldflags_exp
-mkdll_ldflags_exp
 flexdll_chain
 afl
 oc_native_compflags
@@ -844,7 +841,6 @@ lib_str
 lib_runtime_events
 lib_dynlink
 otherlibraries
-has_monotonic_clock
 instrumented_runtime_libs
 instrumented_runtime
 debug_runtime
@@ -858,7 +854,6 @@ AR
 shebangscripts
 winpthreads_source_include_dir
 winpthreads_source_dir
-flexlink_flags
 flexdll_dir
 bootstrapping_flexdll
 flexdll_source_dir
@@ -879,7 +874,6 @@ toolchain
 ccomptype
 mkexe_via_cc_extra_cmd
 mkexe_via_cc_ldflags
-mkexe_extra_flags
 mkexedebugflag
 mkexe_exp
 mkexe
@@ -921,7 +915,6 @@ CMA_MAGIC_NUMBER
 CMO_MAGIC_NUMBER
 CMI_MAGIC_NUMBER
 EXEC_MAGIC_NUMBER
-MAGIC_NUMBER_LENGTH
 OCAML_VERSION_SHORT
 OCAML_VERSION_EXTRA
 OCAML_VERSION_PATCHLEVEL
@@ -3339,8 +3332,6 @@ printf "%s\n" "#define MAGIC_NUMBER_PREFIX \"Caml1999\"" >>confdefs.h
 
 printf "%s\n" "#define MAGIC_NUMBER_VERSION \"035\"" >>confdefs.h
 
-MAGIC_NUMBER_LENGTH=12
-
 printf "%s\n" "#define EXEC_MAGIC_LENGTH 12" >>confdefs.h
 
 printf "%s\n" "#define EXEC_FORMAT \"X\"" >>confdefs.h
@@ -3446,13 +3437,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 
 
 
-
-
-
  # TODO: rename this variable
-
-
-
 
 
 
