@@ -2283,7 +2283,7 @@ zstd_libs=""
 
 AS_IF([test x"$with_zstd" != "xno"],
   # Try pkg-config first, as it gives the most reliable results
-  AS_IF([${PKG_CONFIG} libzstd 2>/dev/null],
+  [AS_IF([${PKG_CONFIG} libzstd 2>/dev/null],
     # Now check the version
     [AS_IF([${PKG_CONFIG} --atleast-version 1.4 libzstd],
       [zstd_libs=`${PKG_CONFIG} --libs libzstd`
@@ -2299,7 +2299,7 @@ AS_IF([test x"$with_zstd" != "xno"],
          zstd_status="ok"],
         [zstd_status="zstd library too old: version 1.4 or later is needed"],
         [[#include <zstd.h>]])],
-      [zstd_status="zstd library not found"])]))
+      [zstd_status="zstd library not found"])])])
 
 # When building the mingw-w64 port in Cygwin, it is very easy to have the
 # library available, but not have the DLL in PATH. This then causes the build to
