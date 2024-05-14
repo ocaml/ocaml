@@ -20840,16 +20840,12 @@ case $host in #(
   *-*-mingw32*) :
     printf "%s\n" "#define HAS_BROKEN_PRINTF 1" >>confdefs.h
 
-    printf "%s\n" "#define HAS_STRERROR 1" >>confdefs.h
-
     printf "%s\n" "#define HAS_IPV6 1" >>confdefs.h
 
     printf "%s\n" "#define HAS_NICE 1" >>confdefs.h
  ;; #(
   *-pc-windows) :
     printf "%s\n" "#define HAS_BROKEN_PRINTF 1" >>confdefs.h
-
-    printf "%s\n" "#define HAS_STRERROR 1" >>confdefs.h
 
     printf "%s\n" "#define HAS_IPV6 1" >>confdefs.h
 
