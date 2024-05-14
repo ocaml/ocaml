@@ -649,6 +649,7 @@ type report = {
   kind : report_kind;
   main : msg;
   sub : msg list;
+  footnote: unit -> (Format.formatter -> unit) option;
 }
 
 type report_printer = {
@@ -728,6 +729,9 @@ let batch_mode_printer : report_printer =
     Format.fprintf ppf "@[<v>%a:@ %a@]" print_loc loc highlight loc
   in
   let pp_txt ppf txt = Format.fprintf ppf "@[%t@]" txt in
+  let pp_footnote ppf f =
+    Option.iter (Format.fprintf ppf "@,%a" pp_txt) (f ())
+  in
   let pp self ppf report =
     setup_tags ();
     separate_new_message ppf;
@@ -736,13 +740,14 @@ let batch_mode_printer : report_printer =
        to be aligned with the main message box
     *)
     print_updating_num_loc_lines ppf (fun ppf () ->
-      Format.fprintf ppf "@[<v>%a%a%a: %a%a%a%a@]@."
+      Format.fprintf ppf "@[<v>%a%a%a: %a%a%a%a%a@]@."
       Format.pp_open_tbox ()
       (self.pp_main_loc self report) report.main.loc
       (self.pp_report_kind self report) report.kind
       Format.pp_set_tab ()
       (self.pp_main_txt self report) report.main.txt
       (self.pp_submsgs self report) report.sub
+      pp_footnote report.footnote
       Format.pp_close_tbox ()
     ) ()
   in
@@ -824,21 +829,22 @@ let print_report ppf report =
 (* Reporting errors *)
 
 type error = report
+type delayed_msg = unit -> (Format.formatter -> unit) option
 
 let report_error ppf err =
   print_report ppf err
 
-let mkerror loc sub txt =
-  { kind = Report_error; main = { loc; txt }; sub }
+let mkerror loc sub footnote txt =
+  { kind = Report_error; main = { loc; txt }; sub; footnote }
 
-let errorf ?(loc = none) ?(sub = []) =
-  Format.kdprintf (mkerror loc sub)
+let errorf ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) =
+  Format.kdprintf (mkerror loc sub footnote)
 
-let error ?(loc = none) ?(sub = []) msg_str =
-  mkerror loc sub (fun ppf -> Format.pp_print_string ppf msg_str)
+let error ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) msg_str =
+  mkerror loc sub footnote (fun ppf -> Format.pp_print_string ppf msg_str)
 
-let error_of_printer ?(loc = none) ?(sub = []) pp x =
-  mkerror loc sub (fun ppf -> pp ppf x)
+let error_of_printer ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) pp x =
+  mkerror loc sub footnote (fun ppf -> pp ppf x)
 
 let error_of_printer_file print x =
   error_of_printer ~loc:(in_file !input_name) print x
@@ -857,7 +863,7 @@ let default_warning_alert_reporter report mk (loc: t) w : report option =
       let sub = List.map (fun (loc, sub_message) ->
         { loc; txt = msg_of_str sub_message }
       ) sub_locs in
-      Some { kind; main; sub }
+      Some { kind; main; sub; footnote=Fun.const None }
 
 
 let default_warning_reporter =
@@ -992,5 +998,5 @@ let () =
       | _ -> None
     )
 
-let raise_errorf ?(loc = none) ?(sub = []) =
-  Format.kdprintf (fun txt -> raise (Error (mkerror loc sub txt)))
+let raise_errorf ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) =
+  Format.kdprintf (fun txt -> raise (Error (mkerror loc sub footnote txt)))

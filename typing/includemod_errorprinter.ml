@@ -656,7 +656,7 @@ let subcase_list l ppf = match l with
 let core env id x =
   match x with
   | Err.Value_descriptions diff ->
-      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a%t@]"
+      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
         "Values do not match"
         !Oprint.out_sig_item
         (Printtyp.tree_of_value_description id diff.got)
@@ -666,9 +666,8 @@ let core env id x =
         (Includecore.report_value_mismatch
            "the first" "the second" env) diff.symptom
         show_locs (diff.got.val_loc, diff.expected.val_loc)
-        Printtyp.Conflicts.print_explanations
   | Err.Type_declarations diff ->
-      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a%t@]"
+      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
         "Type declarations do not match"
         !Oprint.out_sig_item
         (Printtyp.tree_of_type_declaration id diff.got Trec_first)
@@ -678,9 +677,8 @@ let core env id x =
         (Includecore.report_type_mismatch
            "the first" "the second" "declaration" env) diff.symptom
         show_locs (diff.got.type_loc, diff.expected.type_loc)
-        Printtyp.Conflicts.print_explanations
   | Err.Extension_constructors diff ->
-      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]@ %a%a%t@]"
+      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]@ %a%a@]"
         "Extension declarations do not match"
         !Oprint.out_sig_item
         (Printtyp.tree_of_extension_constructor id diff.got Text_first)
@@ -690,27 +688,24 @@ let core env id x =
         (Includecore.report_extension_constructor_mismatch
            "the first" "the second" "declaration" env) diff.symptom
         show_locs (diff.got.ext_loc, diff.expected.ext_loc)
-        Printtyp.Conflicts.print_explanations
   | Err.Class_type_declarations diff ->
       Format.dprintf
         "@[<hv 2>Class type declarations do not match:@ \
-         %a@;<1 -2>does not match@ %a@]@ %a%t"
+         %a@;<1 -2>does not match@ %a@]@ %a"
         !Oprint.out_sig_item
         (Printtyp.tree_of_cltype_declaration id diff.got Trec_first)
         !Oprint.out_sig_item
         (Printtyp.tree_of_cltype_declaration id diff.expected Trec_first)
         (Includeclass.report_error Type_scheme) diff.symptom
-        Printtyp.Conflicts.print_explanations
   | Err.Class_declarations {got;expected;symptom} ->
       let t1 = Printtyp.tree_of_class_declaration id got Trec_first in
       let t2 = Printtyp.tree_of_class_declaration id expected Trec_first in
       Format.dprintf
         "@[<hv 2>Class declarations do not match:@ \
-         %a@;<1 -2>does not match@ %a@]@ %a%t"
+         %a@;<1 -2>does not match@ %a@]@ %a"
         !Oprint.out_sig_item t1
         !Oprint.out_sig_item t2
         (Includeclass.report_error Type_scheme) symptom
-        Printtyp.Conflicts.print_explanations
 
 let missing_field ppf item =
   let id, loc, kind =  Includemod.item_ident_name item in
@@ -748,10 +743,7 @@ let interface_mismatch ppf (diff: _ Err.diff) =
 let core_module_type_symptom (x:Err.core_module_type_symptom)  =
   match x with
   | Not_an_alias | Not_an_identifier | Abstract_module_type
-  | Incompatible_aliases ->
-      if Printtyp.Conflicts.exists () then
-        Some Printtyp.Conflicts.print_explanations
-      else None
+  | Incompatible_aliases -> None
   | Unbound_module_path path ->
       Some(Format.dprintf "Unbound module %a"
              (Style.as_inline_code Printtyp.path) path
@@ -945,28 +937,32 @@ let all env = function
 (* General error reporting *)
 
 let err_msgs (env, err) =
-  Printtyp.Conflicts.reset();
   Printtyp.wrap_printing_env ~error:true env
     (fun () -> coalesce @@ all env err)
 
 let report_error err =
   let main = err_msgs err in
-  Location.errorf ~loc:Location.(in_file !input_name) "%t" main
+  Location.errorf
+    ~loc:Location.(in_file !input_name)
+    ~footnote:Printtyp.Conflicts.err_msg
+   "%t" main
 
 let report_apply_error ~loc env (app_name, mty_f, args) =
+  let footnote = Printtyp.Conflicts.err_msg in
   let d = Functor_suberror.App.patch env ~f:mty_f ~args in
   match d with
   (* We specialize the one change and one argument case to remove the
      presentation of the functor arguments *)
   | [ _,  Change (_, _, Err.Incompatible_params (i,_)) ] ->
-      Location.errorf ~loc "%t" (Functor_suberror.App.incompatible i)
+      Location.errorf ~loc ~footnote "%t" (Functor_suberror.App.incompatible i)
   | [ _, Change (g, e,  Err.Mismatch mty_diff) ] ->
       let more () =
         subcase_list @@
         module_type_symptom ~eqmode:false ~expansion_token:true ~env ~before:[]
           ~ctx:[] mty_diff.symptom
       in
-      Location.errorf ~loc "%t" (Functor_suberror.App.single_diff g e more)
+      Location.errorf ~loc ~footnote "%t"
+        (Functor_suberror.App.single_diff g e more)
   | _ ->
       let not_functor =
         List.for_all (function _, Diffing.Delete _ -> true | _ -> false) d
@@ -1005,7 +1001,7 @@ let report_apply_error ~loc env (app_name, mty_f, args) =
           List.rev @@
           Functor_suberror.params functor_app_diff env ~expansion_token:true d
         in
-        Location.errorf ~loc ~sub
+        Location.errorf ~loc ~sub ~footnote
           "@[<hv>%t@ \
            These arguments:@;<1 2>@[%t@]@ \
            do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"

@@ -86,8 +86,10 @@ module Conflicts: sig
   val print_located_explanations:
     Format.formatter -> explanation list -> unit
 
-  val print_explanations: Format.formatter -> unit
-  (** Print all conflict explanations collected up to this point *)
+  val err_msg: unit -> (Format.formatter -> unit) option
+  (** [err_msg ()] return an error message if there are pending conflict
+      explanations at this point. It is often important to check for conflicts
+      after all printing is done, thus the delayed nature of [err_msg]*)
 
   val reset: unit -> unit
 end
