@@ -538,8 +538,9 @@ let rec copy_type_desc ?(keep_names=false) f = function
       let tyl = List.map f tyl in
       Tpoly (f ty, tyl)
   | Tpackage (p, fl)  -> Tpackage (p, List.map (fun (n, ty) -> (n, f ty)) fl)
-  | Tfunctor (lbl, id, (p, fl), ty) ->
-      Tfunctor (lbl, id, (p, List.map (fun (n, ty) -> (n, f ty)) fl), f ty)
+  | Tfunctor _ ->
+      (* doing this would break unicity of uscoped binding in Tfunctor *)
+      assert false
 
 (* TODO: rename to [module Copy_scope] *)
 module For_copy : sig

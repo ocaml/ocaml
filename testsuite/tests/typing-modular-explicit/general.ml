@@ -323,14 +323,14 @@ Error: This expression has type "(module A : Add2) -> A.t -> A.t"
        The type "a" is required but not provided
 |}]
 
-let coerce5 (f : (module A : Add2) -> A.t -> A.t) = (f :> (module A : Add) -> A.t -> A.t)
+let coerce5 (f : (module A : Add) -> A.t -> A.t) = (f :> (module A : Add2) -> A.t -> A.t)
 
 let try_coerce6 (f : (module A : Add2) -> A.t -> A.t) : (module A : Add3) -> A.t -> A.t = f
 let try_coerce7 (f : (module A : Add2) -> A.t -> A.t) : (module A : Add4) -> A.t -> A.t = f
 
 [%%expect{|
 val coerce5 :
-  ((module A : Add2) -> A.t -> A.t) -> (module A : Add) -> A.t -> A.t = <fun>
+  ((module A : Add) -> A.t -> A.t) -> (module A : Add2) -> A.t -> A.t = <fun>
 val try_coerce6 :
   ((module A : Add2) -> A.t -> A.t) -> (module A : Add3) -> A.t -> A.t =
   <fun>
@@ -525,13 +525,26 @@ module type CoerceFromInt = sig
   val coerce : int -> b
 end
 
+[%%expect{|
+module type CoerceToInt = sig type a type b = int val coerce : a -> int end
+module type CoerceFromInt = sig type a = int type b val coerce : int -> b end
+|}]
+
+let incr_general''
+  = (incr_general :>
+  (module C1 : CoerceToInt) -> (module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a)
+
+[%%expect{|
+val incr_general'' :
+  (module C1 : CoerceToInt) ->
+  (module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a = <fun>
+|}]
+
 let incr_general' :
   (module C1 : CoerceToInt) -> (module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a =
   incr_general
 
 [%%expect{|
-module type CoerceToInt = sig type a type b = int val coerce : a -> int end
-module type CoerceFromInt = sig type a = int type b val coerce : int -> b end
 val incr_general' :
   (module C1 : CoerceToInt) ->
   (module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a = <fun>
