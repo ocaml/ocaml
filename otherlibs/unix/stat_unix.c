@@ -74,11 +74,22 @@ static value stat_aux(int use_64, struct stat *buf)
   CAMLparam0();
   CAMLlocal5(atime, mtime, ctime, offset, v);
 
-  #include "nanosecond_stat.h"
+#if defined(HAVE_STRUCT_STAT_ST_ATIM_TV_NSEC)
+#  define NSEC(buf, field) buf->st_##field##tim.tv_nsec
+#elif defined(HAVE_STRUCT_STAT_ST_ATIMESPEC_TV_NSEC)
+#  define NSEC(buf, field) buf->st_##field##timespec.tv_nsec
+#elif defined(HAVE_STRUCT_STAT_ST_ATIMENSEC)
+#  define NSEC(buf, field) buf->st_##field##timensec
+#else
+#  define NSEC(buf, field) 0
+#endif
+
   atime = caml_copy_double(stat_timestamp(buf->st_atime, NSEC(buf, a)));
   mtime = caml_copy_double(stat_timestamp(buf->st_mtime, NSEC(buf, m)));
   ctime = caml_copy_double(stat_timestamp(buf->st_ctime, NSEC(buf, c)));
-  #undef NSEC
+
+#undef NSEC
+
   offset = use_64 ? Val_file_offset(buf->st_size) : Val_int (buf->st_size);
   v = caml_alloc_small(12, 0);
   Field (v, 0) = Val_int (buf->st_dev);

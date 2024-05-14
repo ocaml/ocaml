@@ -247,7 +247,15 @@
 
 #undef HAS_PWRITE
 
-#undef HAS_NANOSECOND_STAT
+#undef HAVE_STRUCT_STAT_ST_ATIM_TV_NSEC
+#undef HAVE_STRUCT_STAT_ST_ATIMESPEC_TV_NSEC
+#undef HAVE_STRUCT_STAT_ST_ATIMENSEC
+
+/* Define either HAVE_STRUCT_STAT_ST_ATIM_TV_NSEC,
+   HAVE_STRUCT_STAT_ST_ATIMESPEC_TV_NSEC, or HAVE_STRUCT_STAT_ST_ATIMENSEC if
+   (respectively) the field struct stat.st_atim.tv_nsec,
+   struct stat.st_atimespec.tv_nsec, or struct stat.st_atimensec is available.
+*/
 
 #undef HAS_GETHOSTBYNAME_R
 

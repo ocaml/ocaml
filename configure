@@ -18355,51 +18355,38 @@ esac
 ## Does stat support nanosecond precision
 
 stat_has_ns_precision=false
-
 ac_fn_c_check_member "$LINENO" "struct stat" "st_atim.tv_nsec" "ac_cv_member_struct_stat_st_atim_tv_nsec" "
     $ac_includes_default
     #include <sys/stat.h>
-
 "
 if test "x$ac_cv_member_struct_stat_st_atim_tv_nsec" = xyes
 then :
-  stat_has_ns_precision=true
-  printf "%s\n" "#define HAS_NANOSECOND_STAT 1" >>confdefs.h
 
+printf "%s\n" "#define HAVE_STRUCT_STAT_ST_ATIM_TV_NSEC 1" >>confdefs.h
+
+stat_has_ns_precision=true
 fi
-
-
-
-if ! $stat_has_ns_precision
-then :
-  ac_fn_c_check_member "$LINENO" "struct stat" "st_atimespec.tv_nsec" "ac_cv_member_struct_stat_st_atimespec_tv_nsec" "
-      $ac_includes_default
-      #include <sys/stat.h>
-
+ac_fn_c_check_member "$LINENO" "struct stat" "st_atimespec.tv_nsec" "ac_cv_member_struct_stat_st_atimespec_tv_nsec" "
+    $ac_includes_default
+    #include <sys/stat.h>
 "
 if test "x$ac_cv_member_struct_stat_st_atimespec_tv_nsec" = xyes
 then :
-  stat_has_ns_precision=true
-    printf "%s\n" "#define HAS_NANOSECOND_STAT 2" >>confdefs.h
 
+printf "%s\n" "#define HAVE_STRUCT_STAT_ST_ATIMESPEC_TV_NSEC 1" >>confdefs.h
+
+stat_has_ns_precision=true
 fi
-
-fi
-
-if ! $stat_has_ns_precision
-then :
-  ac_fn_c_check_member "$LINENO" "struct stat" "st_atimensec" "ac_cv_member_struct_stat_st_atimensec" "
-      $ac_includes_default
-      #include <sys/stat.h>
-
+ac_fn_c_check_member "$LINENO" "struct stat" "st_atimensec" "ac_cv_member_struct_stat_st_atimensec" "
+    $ac_includes_default
+    #include <sys/stat.h>
 "
 if test "x$ac_cv_member_struct_stat_st_atimensec" = xyes
 then :
-  stat_has_ns_precision=true
-    printf "%s\n" "#define HAS_NANOSECOND_STAT 3" >>confdefs.h
 
-fi
+printf "%s\n" "#define HAVE_STRUCT_STAT_ST_ATIMENSEC 1" >>confdefs.h
 
+stat_has_ns_precision=true
 fi
 
 if $stat_has_ns_precision
