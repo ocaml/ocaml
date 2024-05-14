@@ -1685,7 +1685,6 @@ AC_CHECK_FUNC([issetugid], [AC_DEFINE([HAS_ISSETUGID])])
 ## are always available.
 ## On Unix platforms, we check for the appropriate POSIX feature-test macros.
 ## On MacOS clock_gettime's CLOCK_MONOTONIC flag is not actually monotonic.
-## mach_timebase_info and mach_absolute_time are used instead.
 
 AS_CASE([$host],
   [*-*-windows],
