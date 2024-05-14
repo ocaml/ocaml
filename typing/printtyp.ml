@@ -435,7 +435,7 @@ let tree_of_path ?disambiguation namespace p =
     (rewrite_double_underscore_paths !printing_env p)
 
 let path ppf p =
-  !Oprint.out_ident ppf (tree_of_path None p)
+  !Oprint.out_ident ppf (tree_of_path ~disambiguation:false None p)
 
 let string_of_path p =
   Format.asprintf "%a" path p

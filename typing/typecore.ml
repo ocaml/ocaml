@@ -1184,7 +1184,7 @@ end) = struct
     if Warnings.is_active (Name_out_of_scope ("",[],false)) then begin
       let path_s =
         Printtyp.wrap_printing_env ~error:true env
-          (fun () -> Printtyp.string_of_path tpath) in
+          (fun () -> Format.asprintf "%a" Printtyp.type_path tpath) in
       warn lid.loc
         (Warnings.Name_out_of_scope (path_s, [Longident.last lid.txt], false))
     end
