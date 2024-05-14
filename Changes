@@ -134,6 +134,9 @@ _______________
 - #13099: Fix erroneous loading of cmis for some module type errors.
   (Nick Roberts, review by Florian Angeletti)
 
+- #13151, name conflicts explanation as a footnote
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #11129, #11148: enforce that ppxs do not produce `parsetree`s with
