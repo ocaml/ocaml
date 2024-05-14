@@ -51,6 +51,9 @@ _______________
   (David Allsopp, review by Antonin Décimo, Sébastien Hinderer, Samuel Hym,
    Guillaume Munch-Maccagnoni and Miod Vallat)
 
+- #13163: Enable frame pointers on macOS x86_64
+  (Tim McGilchrist, review by Sébastien Hinderer and Fabrice Buoro)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously
