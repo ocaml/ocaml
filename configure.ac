@@ -1696,17 +1696,13 @@ AS_CASE([$host],
         AC_DEFINE([HAS_CLOCK_GETTIME_NSEC_NP])
       ],
       [has_monotonic_clock=false])],
-  [AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+  [AC_PREPROC_IFELSE([AC_LANG_PROGRAM([[
     #include <unistd.h>
     #include <time.h>
-    int main(void)
-    {
-      #if !(defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)   \
-         && _POSIX_MONOTONIC_CLOCK != (-1))
-        #error "no monotonic clock source"
-      #endif
-        return 0;
-     }
+    #if !(defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)   \
+       && _POSIX_MONOTONIC_CLOCK != (-1))
+      #error "no monotonic clock source"
+    #endif
     ]])],
     [
       has_monotonic_clock=true
