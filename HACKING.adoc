@@ -137,8 +137,9 @@ subdirectory.
 
 Some files are only used by bytecode programs, some only used by
 native-compiled programs, but most of the runtime code is
-common. (See link:runtime/Makefile[] for the list of common,
-bytecode-only and native-only source files.)
+common. (See `runtime_COMMON_C_SOURCES`, `runtime_BYTECODE_ONLY_C_SOURCES`,
+and `runtime_NATIVE_ONLY_C_SOURCES` in link:Makefile[] for the list of common,
+bytecode-only, and native-only source files.)
 
 See link:runtime/HACKING.adoc[].
 
