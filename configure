@@ -17900,9 +17900,6 @@ if test "x$ac_cv_type_fd_set" = xyes
 then :
   printf "%s\n" "#define HAS_SELECT 1" >>confdefs.h
 
-    select=true
-else $as_nop
-  select=false
 fi
 
 fi

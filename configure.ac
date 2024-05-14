@@ -2012,8 +2012,7 @@ AC_CHECK_FUNC([truncate],
 ## select
 AC_CHECK_FUNC([select],
   [AC_CHECK_TYPE([fd_set],
-    [AC_DEFINE([HAS_SELECT])
-    select=true], [select=false], [
+    [AC_DEFINE([HAS_SELECT])], [], [
 #include <sys/types.h>
 #include <sys/select.h>
   ])])
