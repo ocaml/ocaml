@@ -256,9 +256,9 @@
    gethostbyname_r(): either 5 or 6 depending on prototype.
    (5 is the Solaris version, 6 is the Linux version). */
 
-#undef HAS_GETHOSTBYADDR_R 8
+#undef HAS_GETHOSTBYADDR_R
 
-/* Define HAS_GETHOSTBYADDR_R if gethostbyname_r() is available.
+/* Define HAS_GETHOSTBYADDR_R if gethostbyaddr_r() is available.
    The value of this symbol is the number of arguments of
    gethostbyaddr_r(): either 7 or 8 depending on prototype.
    (7 is the Solaris version, 8 is the Linux version). */
