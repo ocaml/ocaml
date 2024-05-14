@@ -135,7 +135,7 @@ let unbounded_unscoped idl p =
         begin match Ident.get_unscoped id with
         | None -> ()
         | Some us ->
-            if List.exists (Ident.same_unscoped us) idl
+            if Ident.UnscopedSet.exists (Ident.same_unscoped us) idl
             then ()
             else raise (Escape us)
         end

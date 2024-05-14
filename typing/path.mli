@@ -67,7 +67,7 @@ val scope: t -> int
 val contains: Ident.t -> t -> bool
 
 val subst: (Ident.t * t) list -> t -> t
-val unbounded_unscoped: Ident.unscoped list -> t -> Ident.unscoped option
+val unbounded_unscoped: Ident.UnscopedSet.t -> t -> Ident.unscoped option
 
 val flatten : t -> [ `Contains_apply | `Ok of Ident.t * string list ]
 

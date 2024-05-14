@@ -75,9 +75,9 @@ Error: The signature for this packaged module couldn't be inferred.
 let invalid_arg2 = f 3 4 (module Int)
 
 [%%expect{|
-Line 1, characters 23-24:
+Line 1, characters 19-22:
 1 | let invalid_arg2 = f 3 4 (module Int)
-                           ^
+                       ^^^
 Error: This expression has type "(module M : Typ) -> M.t -> 'a * M.t"
        but an expression was expected of type "(module Typ) -> 'b"
        The module "M" would escape its scope
@@ -108,22 +108,23 @@ let apply_opt (f : ?opt:int -> (module M : Typ) -> M.t) = f (module Int)
 val apply_opt : (?opt:int -> (module M : Typ) -> M.t) -> Int.t = <fun>
 |}]
 
-(* let f_labelled_marg ~{M : Typ} ~{N : Typ} (x : M.t) (y : N.t) = (y, x)
+let build_pair (module M : Typ) ~x ~y : M.t * M.t = (x, y)
 
-let apply_labelled_m = f_labelled_marg ~N:{ Int } ~M:{ Float} 0.3 1
+(* This raises a principality warning but maybe it shouldn't *)
+let principality_warning = build_pair (module Int) ~y:3 ~x:1
 
 [%%expect{|
-val f_labelled_marg : ~M:{M : Typ) -> ~N:{N : Typ) -> M.t -> N.t -> N.t * M.t =
-  <fun>
-val apply_labelled_m : Int.t * Float.t = (1, 0.3)
+val build_pair : (module M : Typ) -> x:M.t -> y:M.t -> M.t * M.t = <fun>
+val principality_warning : Int.t * Int.t = (1, 3)
+|}, Principal{|
+val build_pair : (module M : Typ) -> x:M.t -> y:M.t -> M.t * M.t = <fun>
+Line 4, characters 59-60:
+4 | let principality_warning = build_pair (module Int) ~y:3 ~x:1
+                                                               ^
+Warning 18 [not-principal]: commuting this argument is not principal.
+
+val principality_warning : Int.t * Int.t = (1, 3)
 |}]
-
-let f_labelled_marg : ~N:{M : Typ) -> M.t -> M.t =
-  fun ~N:{ M : Typ} (x : M.t) -> x
-
-[%%expect{|
-val f_labelled_marg : ~N:{M : Typ) -> M.t -> M.t = <fun>
-|}] *)
 
 (* Typing rules make sense only if module argument are
    a path (module names, projections and applications) *)
@@ -486,7 +487,7 @@ module IntofFloat = struct
   let coerce = int_of_string_opt
 end
 
-[%%expect {|
+[%%expect{|
 module type Coerce = sig type a type b val coerce : a -> b end
 val coerce : (module C : Coerce) -> C.a -> C.b = <fun>
 module IntofBool :
@@ -505,7 +506,7 @@ let incr_general
   x =
   coerce (module Cto) (1 + coerce (module Cfrom) x)
 
-[%%expect {|
+[%%expect{|
 val incr_general :
   (module Cfrom : Coerce with type b = int) ->
   (module Cto : Coerce with type a = int and type b = Cfrom.a) ->

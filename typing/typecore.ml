@@ -5673,12 +5673,10 @@ and type_application env funct sargs =
             | None -> None
         in
         let unify_to_arrows handler =
-          let t1 = newvar () and t2 = newvar () in
-          let t3 = newvar () and t4 = newvar () in
           begin
             try
-              unify env ty_fun' (newty (Tarrow(l,t1,t2,commu_ok)));
-              unify env ty_fun0 (newty (Tarrow(l,t3,t4,commu_ok)))
+              unify_to_arrow env ty_fun';
+              unify_to_arrow env ty_fun0
             with Unify trace -> handler trace
           end
         in
@@ -5702,8 +5700,9 @@ and type_application env funct sargs =
               unify_exp env texp (newty (Tpackage (p0, fl0)));
               texp
             | _ ->
-                type_argument env sarg (newty (Tpackage (p, fl)))
-                                       (newty (Tpackage (p0, fl0)))
+                type_argument env sarg
+                      (newty2 ~level:(get_level ty_fun') (Tpackage (p, fl)))
+                      (newty2 ~level:(get_level ty_fun0) (Tpackage (p0, fl0)))
           in
           let me = match texp.exp_desc with
               Texp_pack me -> me
@@ -5740,9 +5739,23 @@ and type_application env funct sargs =
         | Some _ | None ->
           unify_to_arrows begin fun trace ->
             match me_opt with
-            | Some (_, _, sarg) ->
-                raise (Error(sarg.pexp_loc, env,
-                             Expr_type_clash(trace, None, None)))
+            | Some _ ->
+                let previous_arg_loc =
+                  (* [typed_args] is the arguments typed until now, in reverse
+                    order of appearance. Not all arguments have a location
+                    attached (eg. an optional argument that is not passed). *)
+                  args
+                  |> List.find_map
+                      (function (_, Some (_, loc)) -> loc | _ -> None)
+                  |> Option.value ~default:funct.exp_loc
+                in
+                let loc = Location.{
+                  loc_start = funct.exp_loc.loc_start;
+                  loc_end = previous_arg_loc.loc_end;
+                  loc_ghost = previous_arg_loc.loc_ghost
+                                && funct.exp_loc.loc_ghost
+                } in
+                raise (Error(loc, env, Expr_type_clash(trace, None, None)))
             | None ->
                 let ty_res =
                   result_type

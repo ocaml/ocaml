@@ -27,7 +27,6 @@ include Identifiable.S with type t := t
 *)
 
 val doc_print: t Format_doc.printer
-val print_unscoped : unscoped Format_doc.printer
 val print_with_scope : t Format_doc.printer
         (** Same as {!print} except that it will also add a "[n]" suffix
             if the scope of the argument is [n]. *)
@@ -60,7 +59,6 @@ val same: t -> t -> bool
             [create_*], or if they are both persistent and have the same
             name. *)
 
-val equiv_unscoped: unscoped -> unscoped -> bool
 val equiv: t -> t -> bool
         (** Same as [same] up to the fact that identifiers
             created by [create_unscoped] are equivalent only
@@ -139,3 +137,5 @@ val remove: t -> 'a tbl -> 'a tbl
 (* Idents for sharing keys *)
 
 val make_key_generator : unit -> (t -> t)
+
+module UnscopedSet : Stdlib.Set.S with type elt = unscoped

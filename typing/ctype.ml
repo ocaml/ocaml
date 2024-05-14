@@ -1638,7 +1638,9 @@ let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) ~id_map sch =
         | Tpackage (p, fl) ->
             Tpackage (Path.subst id_map p,
                       List.map (fun (n, ty) -> (n, copy_shared ty)) fl)
-        | Tobject _ -> assert false (* TODO subst *)
+        | Tobject (ty, {contents = Some (p, tl)}) ->
+            let p = Path.subst id_map p in
+            Tobject (copy_shared ty, ref (Some (p, List.map copy_shared tl)))
         | Tfunctor (lbl, id, (p, fl), ty) ->
             let id' = Ident.refresh id in
             let ty =
@@ -1660,7 +1662,7 @@ let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) ~id_map sch =
     end
   in
   let closed = compute_id_from_map id_map sch in
-  if TypeSet.is_empty (free sch) && closed sch
+  if TypeSet.is_empty (free sch) && closed sch && get_level sch <> generic_level
   then None
   else
     let ty = copy_rec ~may_share:true ~closed ~id_map sch in
@@ -2264,16 +2266,20 @@ let occur_univar_or_unscoped ?(inj_only=false) ?(check_unscoped=true) env ty =
   with_type_mark begin fun mark ->
   let rec occur_rec env bound_uv bound_id ty =
     if not_marked_node mark ty then
-      if TypeSet.is_empty bound_uv then
+      if TypeSet.is_empty bound_uv && Ident.UnscopedSet.is_empty bound_id then
         (ignore (try_mark_node mark ty); occur_desc env bound_uv bound_id ty)
       else try
-        let bound_uv' = TypeMap.find ty !visited in
-        if not (TypeSet.subset bound_uv' bound_uv) then begin
-          visited := TypeMap.add ty (TypeSet.inter bound_uv bound_uv') !visited;
+        let (bound_uv', bound_id') = TypeMap.find ty !visited in
+        if not (TypeSet.subset bound_uv' bound_uv
+                && Ident.UnscopedSet.subset bound_id' bound_id) then begin
+          visited := TypeMap.add ty
+                                 (TypeSet.inter bound_uv bound_uv',
+                                  Ident.UnscopedSet.inter bound_id bound_id')
+                                 !visited;
           occur_desc env bound_uv bound_id ty
         end
       with Not_found ->
-        visited := TypeMap.add ty bound_uv !visited;
+        visited := TypeMap.add ty (bound_uv, bound_id) !visited;
         occur_desc env bound_uv bound_id ty
   and occur_desc env bound_uv bound_id ty =
       match get_desc ty with
@@ -2343,15 +2349,12 @@ let occur_univar_or_unscoped ?(inj_only=false) ?(check_unscoped=true) env ty =
               let mty = !modtype_of_package env Location.none p fl in
               let env = Env.add_module (Ident.of_unscoped id)
                                        Mp_present mty env in
-              occur_rec env bound_uv (id :: bound_id) ty
+              occur_rec env bound_uv (Ident.UnscopedSet.add id bound_id) ty
           end
       | _ -> iter_type_expr (occur_rec env bound_uv bound_id) ty
   in
-  occur_rec env TypeSet.empty [] ty
+  occur_rec env TypeSet.empty Ident.UnscopedSet.empty ty
   end
-
-let occur_univar_or_unscoped ?inj_only ?check_unscoped env ty =
-  occur_univar_or_unscoped ?inj_only ?check_unscoped env ty
 
 let has_free_univars env ty =
   try occur_univar_or_unscoped ~inj_only:false env ty; false
@@ -3304,8 +3307,7 @@ and unify3 uenv in_functor t1 t1' t2 t2' =
             identifier_escape_for Unify
                 (Env.add_module (Ident.of_unscoped id1) Mp_present mty1 env)
                 [id1] u1;
-            with_mty uenv id1 mty1
-                (fun uenv -> unify uenv in_functor u1 u2);
+            unify uenv in_functor u1 u2;
             if not (is_commu_ok c2) then set_commu_ok c2
       | (Tarrow (l1, t1, u1, c1), Tfunctor (l2, id2, (p2, fl2), u2)) ->
             eq_labels Unify ~in_pattern_mode:(in_pattern_mode uenv) l1 l2;
@@ -3315,8 +3317,7 @@ and unify3 uenv in_functor t1 t1' t2 t2' =
             identifier_escape_for Unify
                 (Env.add_module (Ident.of_unscoped id2) Mp_present mty2 env)
                 [id2] u2;
-            with_mty uenv id2 mty2
-                (fun uenv -> unify uenv in_functor u1 u2);
+            unify uenv in_functor u1 u2;
             if not (is_commu_ok c1) then set_commu_ok c1
       | (Ttuple tl1, Ttuple tl2) ->
           unify_list uenv in_functor tl1 tl2
@@ -3803,6 +3804,29 @@ let unify env ty1 ty2 =
 
 (* Lower the level of a type to the current level *)
 let enforce_current_level env ty = unify_var env (newvar ()) ty
+
+let unify_to_arrow env ty =
+  match get_desc ty with
+  | Tfunctor (l, id, (p, fl), t) ->
+    let snap = Btype.snapshot () in
+    let pck_ty = newty (Tpackage (p, fl)) in
+    begin try
+      let mty = !modtype_of_package env Location.none p fl in
+      identifier_escape_for Unify
+          (Env.add_module (Ident.of_unscoped id) Mp_present mty env)
+          [id] t;
+      let ty' =
+          newty2 ~level:(get_level ty)
+            (Tarrow (l, pck_ty, t, commu_ok)) in
+      link_type ty ty'
+    with Unify_trace trace ->
+      undo_compress snap;
+      let expected = newty (Tarrow (l, pck_ty, newvar (), commu_ok)) in
+      let trace = Diff {got = ty; expected} :: trace in
+      raise (Unify (expand_to_unification_error env trace))
+    end
+  | Tarrow _ -> ()
+  | _ -> assert false
 
 
 (**** Special cases of unification ****)
