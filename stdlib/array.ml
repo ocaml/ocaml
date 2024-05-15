@@ -442,8 +442,9 @@ let fast_sort = stable_sort
 let shuffle ~rand a = (* Fisher-Yates *)
   for i = length a - 1 downto 1 do
     let j = rand (i + 1) in
+    if not (0 <= j && j <= i) then invalid_arg "Array.shuffle";
     let v = unsafe_get a i in
-    unsafe_set a i (get a j);
+    unsafe_set a i (unsafe_get a j);
     unsafe_set a j v
   done
 
