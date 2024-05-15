@@ -65,7 +65,10 @@ COMPUTE_DEPS=@compute_deps@
 
 # Build-system flags to use to compile C files
 OC_CFLAGS=@oc_cflags@
-OC_CPPFLAGS=-I$(ROOTDIR)/runtime @oc_cppflags@
+# The submodules should be searched *before* any other external -I paths
+OC_INCLUDES = $(addprefix -I $(ROOTDIR)/, \
+  runtime @flexdll_source_dir@ @winpthreads_source_include_dir@)
+OC_CPPFLAGS = $(OC_INCLUDES) @oc_cppflags@
 
 # The following variable defines flags to be passed to the C preprocessor
 # when compiling C files to be linked with native code. This includes

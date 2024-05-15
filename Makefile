@@ -650,6 +650,15 @@ $(BYTE_BINDIR)/flexlink$(EXE): \
 partialclean::
 	rm -f $(BYTE_BINDIR)/flexlink $(BYTE_BINDIR)/flexlink.exe
 
+ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+clean::
+	$(MAKE) -C flexdll clean
+endif
+ifneq "$(wildcard flexdll-sources/Makefile)" ""
+clean::
+	$(MAKE) -C flexdll-sources clean
+endif
+
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 # The recipe for runtime/ocamlruns$(EXE) also produces runtime/primitives
 boot/ocamlrun$(EXE): runtime/ocamlruns$(EXE)
@@ -868,9 +877,6 @@ flexlink.opt$(EXE): \
 	cd $(OPT_BINDIR); $(LN) $(call ROOT_FROM, $(OPT_BINDIR))/$@ flexlink$(EXE)
 	cp $(addprefix $(BYTE_BINDIR)/, $(FLEXDLL_OBJECTS)) $(OPT_BINDIR)
 
-partialclean::
-	rm -f flexlink.opt$(EXE) $(OPT_BINDIR)/flexlink$(EXE)
-
 else
 
 flexdll flexlink flexlink.opt:
@@ -890,6 +896,10 @@ flexdll flexlink flexlink.opt:
 	@false
 
 endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
+
+partialclean::
+	rm -f flexlink.opt flexlink.opt.exe \
+        $(OPT_BINDIR)/flexlink $(OPT_BINDIR)/flexlink.exe
 
 INSTALL_COMPLIBDIR = $(DESTDIR)$(COMPLIBDIR)
 INSTALL_FLEXDLLDIR = $(INSTALL_LIBDIR)/flexdll
@@ -1092,19 +1102,10 @@ partialclean::
 ## Lists of source files
 
 ifneq "$(WINPTHREADS_SOURCE_DIR)" ""
-winpthreads_SOURCES = $(addprefix $(WINPTHREADS_SOURCE_DIR)/src/, \
-  cond.c \
-  misc.c \
-  mutex.c \
-  rwlock.c \
-  sched.c \
-  spinlock.c \
-  thread.c)
+winpthreads_SOURCES = cond.c misc.c mutex.c rwlock.c sched.c spinlock.c thread.c
 
-winpthreads_OBJECTS = $(winpthreads_SOURCES:.c=.$(O))
-
-clean::
-	rm -f $(winpthreads_OBJECTS)
+winpthreads_OBJECTS = \
+  $(addprefix runtime/winpthreads/, $(winpthreads_SOURCES:.c=.$(O)))
 else
 winpthreads_OBJECTS =
 endif
@@ -1440,6 +1441,15 @@ endif # ifeq "$(COMPUTE_DEPS)" "true"
 	  $$(OUTPUTOBJ)$$@ $$<
 endef
 
+runtime/winpthreads/%.$(O): $(WINPTHREADS_SOURCE_DIR)/src/%.c \
+                            $(wildcard $(WINPTHREADS_SOURCE_DIR)/include/*.h) \
+                              | runtime/winpthreads
+	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ $<
+
+runtime/winpthreads:
+	$(MKDIR) $@
+
 $(DEPDIR)/runtime:
 	$(MKDIR) $@
 
@@ -1526,7 +1536,7 @@ clean::
 	rm -f runtime/primitives runtime/primitives*.new runtime/prims.c \
 	  $(runtime_BUILT_HEADERS)
 	rm -f runtime/domain_state.inc
-	rm -rf $(DEPDIR)
+	rm -rf $(DEPDIR) runtime/winpthreads
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
 
 .PHONY: runtimeopt
@@ -1631,7 +1641,8 @@ $(ocamlyacc_PROGRAM)$(EXE): $(ocamlyacc_OBJECTS)
 	$(V_MKEXE)$(MKEXE) -o $@ $^
 
 clean::
-	rm -f $(ocamlyacc_MODULES:=.o) $(ocamlyacc_MODULES:=.obj)
+	rm -f $(ocamlyacc_MODULES:=.o) $(ocamlyacc_MODULES:=.obj) \
+        yacc/wstr.o yacc/wstr.obj
 
 $(ocamlyacc_OTHER_MODULES:=.$(O)): yacc/defs.h
 
@@ -2447,7 +2458,9 @@ depend: beforedepend
 
 .PHONY: distclean
 distclean: clean
-	if [ -f flexdll/Makefile ]; then $(MAKE) -C flexdll distclean MSVC_DETECT=0; fi
+ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+	$(MAKE) -C flexdll distclean MSVC_DETECT=0
+endif
 	$(MAKE) -C manual distclean
 	rm -f ocamldoc/META
 	rm -f $(addprefix ocamltest/,ocamltest_config.ml ocamltest_unix.ml)
@@ -2462,7 +2475,8 @@ distclean: clean
 	      boot/flexdll_*.o boot/flexdll_*.obj \
 	      boot/*.cm* boot/libcamlrun.a boot/libcamlrun.lib boot/ocamlc.opt
 	rm -f Makefile.config Makefile.build_config
-	rm -rf autom4te.cache flexdll-sources $(BYTE_BUILD_TREE) $(OPT_BUILD_TREE)
+	rm -rf autom4te.cache winpthreads-sources flexdll-sources \
+         $(BYTE_BUILD_TREE) $(OPT_BUILD_TREE)
 	rm -f config.log config.status libtool
 
 # Installation
