@@ -97,6 +97,18 @@ Caml_inline intnat caml_domain_alone(void)
   return atomic_load_acquire(&caml_num_domains_running) == 1;
 }
 
+/* The index of the current domain. It is an integer unique among
+   currently-running domains, in the interval [0; N-1] where N is the
+   peak number of domains running simultaneously so far. The index of
+   a terminated domain may be reused for a new domain.
+
+   This function requires the domain lock to be held.
+*/
+Caml_inline int caml_domain_index(void)
+{
+  return Caml_state->id;
+}
+
 #ifdef DEBUG
 int caml_domain_is_in_stw(void);
 #endif
