@@ -2140,15 +2140,16 @@ let prepare_any_trace printing_status tr =
 let prepare_trace f tr =
   prepare_any_trace printing_status (Errortrace.map f tr)
 
-(** Keep elements that are [Diff _ ] and take the decision
-    for the last element, require a prepared trace *)
-let rec filter_trace keep_last = function
-  | [] -> []
+(** Keep elements that are [Diff _ ] and split the the last element if it is
+    optionally elidable, require a prepared trace *)
+let rec filter_trace = function
+  | [] -> [], None
   | [Errortrace.Diff d as elt]
-    when printing_status elt = Optional_refinement ->
-    if keep_last then [d] else []
-  | Errortrace.Diff d :: rem -> d :: filter_trace keep_last rem
-  | _ :: rem -> filter_trace keep_last rem
+    when printing_status elt = Optional_refinement -> [], Some d
+  | Errortrace.Diff d :: rem ->
+      let filtered, last = filter_trace rem in
+      d :: filtered, last
+  | _ :: rem -> filter_trace rem
 
 let type_path_list ppf l =
   Fmt.pp_print_list ~pp_sep:(fun ppf () -> Fmt.pp_print_break ppf 2 0)
@@ -2200,20 +2201,17 @@ let unifiable env ty1 ty2 =
   Btype.backtrack snap;
   res
 
-
-let explanation_diff env t3 t4  =
+let explanation_diff env t3 t4 =
   match get_desc t3, get_desc t4 with
   | Tarrow (_, ty1, ty2, _), _
     when is_unit env ty1 && unifiable env ty2 t4 ->
-      Some (fun ppf ->
-        fprintf ppf
+      Some (doc_printf
           "@,@[@{<hint>Hint@}: Did you forget to provide %a as argument?@]"
           Style.inline_code "()"
         )
   | _, Tarrow (_, ty1, ty2, _)
     when is_unit env ty1 && unifiable env t3 ty2 ->
-      Some (fun ppf ->
-          fprintf ppf
+      Some (doc_printf
           "@,@[@{<hint>Hint@}: Did you forget to wrap the expression using \
            %a?@]"
           Style.inline_code "fun () ->"
@@ -2221,42 +2219,41 @@ let explanation_diff env t3 t4  =
   | _ ->
       None
 
-let explain_fixed_row_case ppf = function
-  | Errortrace.Cannot_be_closed ->
-      fprintf ppf "it cannot be closed"
+let explain_fixed_row_case = function
+  | Errortrace.Cannot_be_closed -> doc_printf "it cannot be closed"
   | Errortrace.Cannot_add_tags tags ->
-      fprintf ppf "it may not allow the tag(s) %a"
+      doc_printf "it may not allow the tag(s) %a"
         print_tags tags
 
 let explain_fixed_row pos expl = match expl with
   | Fixed_private ->
-    dprintf "The %a variant type is private" Errortrace.print_pos pos
+    doc_printf "The %a variant type is private" Errortrace.print_pos pos
   | Univar x ->
     reserve_names x;
-    dprintf "The %a variant type is bound to the universal type variable %a"
+    doc_printf "The %a variant type is bound to the universal type variable %a"
       Errortrace.print_pos pos
       (Style.as_inline_code type_expr_with_reserved_names) x
   | Reified p ->
-    dprintf "The %a variant type is bound to %a"
+    doc_printf "The %a variant type is bound to %a"
       Errortrace.print_pos pos
       (Style.as_inline_code
          (fun ppf p ->
            Internal_names.add p;
            print_path p ppf))
       p
-  | Rigid -> ignore
+  | Rigid -> Format_doc.empty
 
 let explain_variant (type variety) : variety Errortrace.variant -> _ = function
   (* Common *)
   | Errortrace.Incompatible_types_for s ->
-      Some(dprintf "@,Types for tag %a are incompatible"
+      Some(doc_printf "@,Types for tag %a are incompatible"
              print_tag s
           )
   (* Unification *)
   | Errortrace.No_intersection ->
-      Some(dprintf "@,These two variant types have no intersection")
+      Some(doc_printf "@,These two variant types have no intersection")
   | Errortrace.No_tags(pos,fields) -> Some(
-      dprintf
+      doc_printf
         "@,@[The %a variant type does not allow tag(s)@ @[<hov>%a@]@]"
         Errortrace.print_pos pos
         print_tags (List.map fst fields)
@@ -2265,15 +2262,15 @@ let explain_variant (type variety) : variety Errortrace.variant -> _ = function
                           k,
                           (Univar _ | Reified _ | Fixed_private as e)) ->
       Some (
-        dprintf "@,@[%t,@ %a@]" (explain_fixed_row pos e)
-          explain_fixed_row_case k
+        doc_printf "@,@[%a,@ %a@]" pp_doc (explain_fixed_row pos e)
+          pp_doc (explain_fixed_row_case k)
       )
   | Errortrace.Fixed_row (_,_, Rigid) ->
       (* this case never happens *)
       None
   (* Equality & Moregen *)
   | Errortrace.Presence_not_guaranteed_for (pos, s) -> Some(
-      dprintf
+      doc_printf
         "@,@[The tag %a is guaranteed to be present in the %a variant type,\
          @ but not in the %a@]"
         print_tag s
@@ -2281,7 +2278,7 @@ let explain_variant (type variety) : variety Errortrace.variant -> _ = function
         Errortrace.print_pos pos
     )
   | Errortrace.Openness pos ->
-      Some(dprintf "@,The %a variant type is open and the %a is not"
+      Some(doc_printf "@,The %a variant type is open and the %a is not"
              Errortrace.print_pos pos
              Errortrace.print_pos (Errortrace.swap_position pos))
 
@@ -2289,50 +2286,52 @@ let explain_escape pre = function
   | Errortrace.Univ u ->
       reserve_names u;
       Some(
-        dprintf "%t@,The universal variable %a would escape its scope"
-          pre
+        doc_printf "%a@,The universal variable %a would escape its scope"
+          pp_doc pre
           (Style.as_inline_code type_expr_with_reserved_names) u
       )
   | Errortrace.Constructor p -> Some(
-      dprintf
-        "%t@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
-        pre (Style.as_inline_code path) p
+      doc_printf
+        "%a@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
+        pp_doc pre (Style.as_inline_code path) p
     )
   | Errortrace.Module_type p -> Some(
-      dprintf
-        "%t@,@[The module type@;<1 2>%a@ would escape its scope@]"
-        pre (Style.as_inline_code path) p
+      doc_printf
+        "%a@,@[The module type@;<1 2>%a@ would escape its scope@]"
+        pp_doc pre (Style.as_inline_code path) p
     )
   | Errortrace.Equation Errortrace.{ty = _; expanded = t} ->
       reserve_names t;
       Some(
-        dprintf "%t @,@[<hov>This instance of %a is ambiguous:@ %s@]"
-          pre
+        doc_printf "%a@ @[<hov>This instance of %a is ambiguous:@ %s@]"
+          pp_doc pre
           (Style.as_inline_code type_expr_with_reserved_names) t
           "it would escape the scope of its equation"
       )
   | Errortrace.Self ->
-      Some (dprintf "%t@,Self type cannot escape its class" pre)
+      Some (doc_printf "%a@,Self type cannot escape its class" pp_doc pre)
   | Errortrace.Constraint ->
       None
 
 let explain_object (type variety) : variety Errortrace.obj -> _ = function
   | Errortrace.Missing_field (pos,f) -> Some(
-      dprintf "@,@[The %a object type has no method %a@]"
+      doc_printf "@,@[The %a object type has no method %a@]"
         Errortrace.print_pos pos Style.inline_code f
     )
   | Errortrace.Abstract_row pos -> Some(
-      dprintf
+      doc_printf
         "@,@[The %a object type has an abstract row, it cannot be closed@]"
         Errortrace.print_pos pos
     )
   | Errortrace.Self_cannot_be_closed ->
-      Some (dprintf "@,Self type cannot be unified with a closed object type")
+      Some (doc_printf
+              "@,Self type cannot be unified with a closed object type"
+           )
 
 let explain_incompatible_fields name (diff: Types.type_expr Errortrace.diff) =
   reserve_names diff.got;
   reserve_names diff.expected;
-  dprintf "@,@[The method %a has type@ %a,@ \
+  doc_printf "@,@[The method %a has type@ %a,@ \
   but the expected method type was@ %a@]"
     Style.inline_code name
     (Style.as_inline_code type_expr_with_reserved_names) diff.got
@@ -2340,13 +2339,13 @@ let explain_incompatible_fields name (diff: Types.type_expr Errortrace.diff) =
 
 let explain_first_class_module = function
   | Errortrace.Package_cannot_scrape p -> Some(
-      dprintf "@,@[The module alias %a could not be expanded@]"
+      doc_printf "@,@[The module alias %a could not be expanded@]"
         Style.(as_inline_code path) p
     )
   | Errortrace.Package_inclusion pr ->
-      Some(dprintf "@,@[%a@]" Fmt.pp_doc pr)
+      Some(doc_printf "@,@[%a@]" Fmt.pp_doc pr)
   | Errortrace.Package_coercion pr ->
-      Some(dprintf "@,@[%a@]" Fmt.pp_doc pr)
+      Some(doc_printf "@,@[%a@]" Fmt.pp_doc pr)
 
 let explanation (type variety) intro prev env
   : (Errortrace.expanded_type, variety) Errortrace.elt -> _ = function
@@ -2357,11 +2356,11 @@ let explanation (type variety) intro prev env
       match context, kind, prev with
       | Some ctx, _, _ ->
         reserve_names ctx;
-        dprintf "@[%a@;<1 2>%a@]" pp_doc intro
+        doc_printf "@[%a@;<1 2>%a@]" pp_doc intro
           (Style.as_inline_code type_expr_with_reserved_names) ctx
       | None, Univ _, Some(Errortrace.Incompatible_fields {name; diff}) ->
         explain_incompatible_fields name diff
-      | _ -> ignore
+      | _ -> Format_doc.empty
     in
     explain_escape pre kind
   | Errortrace.Incompatible_fields { name; diff} ->
@@ -2377,18 +2376,17 @@ let explanation (type variety) intro prev env
     reserve_names y;
     begin match get_desc x with
     | Tvar _ | Tunivar _  ->
-        Some(fun ppf ->
-          reset_loop_marks ();
-          mark_loops x;
-          mark_loops y;
-          dprintf "@,@[<hov>The type variable %a occurs inside@ %a@]"
+        mark_loops x;
+        mark_loops y;
+        Some(
+          doc_printf "@,@[<hov>The type variable %a occurs inside@ %a@]"
             (Style.as_inline_code prepared_type_expr) x
             (Style.as_inline_code prepared_type_expr) y
-            ppf)
+        )
     | _ ->
         (* We had a delayed unification of the type variable with
            a non-variable after the occur check. *)
-        Some ignore
+        Some Format_doc.empty
         (* There is no need to search further for an explanation, but
            we don't want to print a message of the form:
              {[ The type int occurs inside int list -> 'a |}
@@ -2397,11 +2395,6 @@ let explanation (type variety) intro prev env
 
 let mismatch intro env trace =
   Errortrace.explain trace (fun ~prev h -> explanation intro prev env h)
-
-let explain mis ppf  =
-  match mis with
-  | None -> ()
-  | Some explain -> explain ppf
 
 let warn_on_missing_def env ppf t =
   match get_desc t with
@@ -2429,10 +2422,10 @@ let prepare_expansion_head empty_tr = function
   | _ -> None
 
 let head_error_printer mode txt_got txt_but = function
-  | None -> ignore
+  | None -> Format_doc.empty
   | Some d ->
       let d = Errortrace.map_diff (trees_of_type_expansion mode) d in
-      dprintf "%a@;<1 2>%a@ %a@;<1 2>%a"
+      doc_printf "%a@;<1 2>%a@ %a@;<1 2>%a"
         pp_doc txt_got type_expansion d.Errortrace.got
         pp_doc txt_but type_expansion d.Errortrace.expected
 
@@ -2454,25 +2447,32 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
          Errortrace.{ty_exp with expanded = hide_variant_name ty_exp.expanded})
       tr
   in
-  let mis = mismatch txt1 env tr in
   match tr with
   | [] -> assert false
-  | elt :: tr ->
+  | (elt :: tr) as full_trace ->
     try
       print_labels := not !Clflags.classic;
-      let tr = filter_trace (mis = None) tr in
-      let head = prepare_expansion_head (tr=[]) elt in
+      let tr, last = filter_trace tr in
+      let head = prepare_expansion_head (tr=[] && last=None) elt in
       let tr = List.map (Errortrace.map_diff prepare_expansion) tr in
+      let last = Option.map (Errortrace.map_diff prepare_expansion) last in
       let head_error = head_error_printer mode txt1 txt2 head in
       let tr = trees_of_trace mode tr in
-      fprintf ppf
+      let last =
+        Option.map (Errortrace.map_diff (trees_of_type_expansion mode)) last in
+      let mis = mismatch txt1 env full_trace in
+      let tr = match mis, last with
+        | None, Some elt -> tr @ [elt]
+        | Some _, _ | _, None -> tr
+       in
+       fprintf ppf
         "@[<v>\
-          @[%t%a@]%a%t\
+          @[%a%a@]%a%a\
          @]"
-        head_error
+        pp_doc head_error
         pp_doc ty_expect_explanation
         (trace false (incompatibility_phrase trace_format)) tr
-        (explain mis);
+        (pp_print_option pp_doc) mis;
       if env <> Env.empty
       then warn_on_missing_defs env ppf head;
       Internal_names.print_explanations env ppf;
@@ -2529,10 +2529,14 @@ module Subtype = struct
     try match tr with
       | elt :: tr' ->
         let diffed_elt = get_diff elt in
+        let tr, last = filter_trace tr' in
+        let tr = match keep_last, last with
+          | true, Some last -> tr @ [last]
+          | _ -> tr
+        in
         let tr =
           trees_of_trace Type
-          @@ List.map (Errortrace.map_diff prepare_expansion)
-          @@ filter_trace keep_last tr' in
+          @@ List.map (Errortrace.map_diff prepare_expansion) tr in
         let tr =
           match fst, diffed_elt with
           | true, Some elt -> elt :: tr
@@ -2545,13 +2549,14 @@ module Subtype = struct
       print_labels := true;
       raise exn
 
-  let rec filter_subtype_trace keep_last = function
-    | [] -> []
+  let rec filter_subtype_trace = function
+    | [] -> [], None
     | [Errortrace.Subtype.Diff d as elt]
       when printing_status elt = Optional_refinement ->
-        if keep_last then [d] else []
+        [], Some d
     | Errortrace.Subtype.Diff d :: rem ->
-        d :: filter_subtype_trace keep_last rem
+        let ftr, last = filter_subtype_trace rem in
+        d :: ftr, last
 
   let unification_get_diff = function
     | Errortrace.Diff diff ->
@@ -2579,10 +2584,10 @@ module Subtype = struct
         tr_sub;
       if tr_unif = [] then fprintf ppf "@]" else
         let mis = mismatch (doc_printf "Within this type") env tr_unif in
-        fprintf ppf "%a%t%t@]"
+        fprintf ppf "%a%a%t@]"
           (trace filter_trace unification_get_diff false
              (mis = None) "is not compatible with type") tr_unif
-          (explain mis)
+          (pp_print_option pp_doc) mis
           Conflicts.err_print
     )
 end
