@@ -1299,6 +1299,12 @@ CAMLprim value caml_ml_domain_id(value unit)
   return Val_long(domain_self->interruptor.unique_id);
 }
 
+CAMLprim value caml_ml_domain_index(value unit)
+{
+  CAMLnoalloc;
+  return Val_long(domain_self->id);
+}
+
 /* sense-reversing barrier */
 #define BARRIER_SENSE_BIT 0x100000
 
