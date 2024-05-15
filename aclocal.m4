@@ -163,7 +163,7 @@ camlPervasives__loop_1128:
     ])],
     [as_has_debug_prefix_map=true
     AC_MSG_RESULT([yes])],
-    [ashas_debug_prefix_map=false
+    [as_has_debug_prefix_map=false
     AC_MSG_RESULT([no])])
 
   OCAML_CC_RESTORE_VARIABLES
