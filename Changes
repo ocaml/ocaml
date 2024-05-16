@@ -85,6 +85,11 @@ _______________
   (Nick Barnes, review by Gabriel Scherer, Guillaume Munch-Maccagnoni, and
   Vincent Laviron)
 
+- #13144: Dynarray.{equal, compare}
+  (Gabriel Scherer,
+   review by Jeremy Yallop, Daniel Bünzli and Olivier Nicole,
+   request by Olivier Nicole)
+
 ### Other libraries:
 
 ### Tools:

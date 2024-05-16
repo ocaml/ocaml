@@ -308,6 +308,32 @@ val filter_map : ('a -> 'b option) -> 'a t -> 'b t
     ignoring strings that cannot be converted to integers.
 *)
 
+(** {1:comparison Comparison functions}
+
+    Comparison functions iterate over their arguments; it is
+    a programming error to change their length during the iteration,
+    see the {{!section:iteration} Iteration} section above.
+ *)
+
+val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+(** [equal eq a b] holds when [a] and [b] have the same length,
+    and for all indices [i] we have [eq (get a i) (get b i)].
+
+    @since 5.3
+*)
+
+val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
+(** Provided the function [cmp] defines a preorder on elements,
+    [compare cmp a b] compares first [a] and [b] by their length,
+    and then, if equal, by their elements according to
+    the lexicographic preorder.
+
+    For more details on comparison functions, see {!Array.sort}.
+
+    @since 5.3
+*)
+
+
 (** {1:conversions Conversions to other data structures}
 
     Note: the [of_*] functions raise [Invalid_argument] if the

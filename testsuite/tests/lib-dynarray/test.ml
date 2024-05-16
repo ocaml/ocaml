@@ -266,6 +266,38 @@ let () =
   ))
 
 
+(** {1:comparison Comparison functions} *)
+
+let () =
+  let a = A.of_list [1; 2; 3] in
+  A.ensure_capacity a 1000;
+  let b = A.of_list [1; 2; 3] in
+  assert (A.equal (=) a a);
+  assert (A.compare Int.compare a a = 0);
+  assert (A.equal (=) a b);
+  assert (A.compare Int.compare a b = 0);
+  ()
+
+let () =
+  let same eq l1 l2 = A.equal eq (A.of_list l1) (A.of_list l2) in
+  assert (not (same (=) [1; 2; 3] [1; 3; 2]));
+  assert (not (same (=) [1; 2; 3] [1; 2]));
+  assert (not (same (=) [1] [1; 2]));
+  assert (not (same (=) [] [1; 2]));
+  assert (same (fun _ _ -> true) [1; 2] [3; 4]);
+  assert (not (same (fun _ _ -> true) [1; 2] [3]));
+  ()
+
+let () =
+  let compare cmp l1 l2 = A.compare cmp (A.of_list l1) (A.of_list l2) in
+  assert (compare Int.compare [] [] = 0);
+  assert (compare Int.compare [1; 2] [1; 2] = 0);
+  assert (compare Int.compare [min_int] [max_int] < 0);
+  assert (compare Int.compare [10] [0; 1] < 0);
+  assert (compare Int.compare [10] [0] > 0);
+  assert (compare (Fun.flip Int.compare) [10] [0] < 0);
+  ()
+
 (** {1:conversions Conversions to other data structures} *)
 
 (** {of,to}_{list,array,seq{,_rev}{,_rentrant}} *)

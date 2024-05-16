@@ -891,6 +891,50 @@ let filter_map f a =
   ) a;
   b
 
+let equal eq a1 a2 =
+  let Pack {arr = arr1; length = length; dummy = dum1} = a1 in
+  let Pack {arr = arr2; length = len2; dummy = dum2} = a2 in
+  if length <> len2 then false
+  else begin
+    check_valid_length length arr1;
+    check_valid_length length arr2;
+    let rec loop i =
+      if i = length then true
+      else
+        eq
+          (unsafe_get arr1 ~dummy:dum1 ~i ~length)
+          (unsafe_get arr2 ~dummy:dum2 ~i ~length)
+        && loop (i + 1)
+    in
+    let r = loop 0 in
+    check_same_length "equal" a1 ~length;
+    check_same_length "equal" a2 ~length;
+    r
+  end
+
+let compare cmp a1 a2 =
+  let Pack {arr = arr1; length = length; dummy = dum1} = a1 in
+  let Pack {arr = arr2; length = len2; dummy = dum2} = a2 in
+  if length <> len2 then length - len2
+  else begin
+    check_valid_length length arr1;
+    check_valid_length length arr2;
+    let rec loop i =
+      if i = length then 0
+      else
+        let c =
+          cmp
+            (unsafe_get arr1 ~dummy:dum1 ~i ~length)
+            (unsafe_get arr2 ~dummy:dum2 ~i ~length)
+        in
+        if c <> 0 then c
+        else loop (i + 1)
+    in
+    let r = loop 0 in
+    check_same_length "compare" a1 ~length;
+    check_same_length "compare" a2 ~length;
+    r
+  end
 
 (** {1:conversions Conversions to other data structures} *)
 
