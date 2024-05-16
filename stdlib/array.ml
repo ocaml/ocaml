@@ -439,10 +439,18 @@ let stable_sort cmp a =
 
 let fast_sort = stable_sort
 
+let shuffle_contract_violation i j =
+  let msg =
+    "Array.shuffle: rand(" ^ string_of_int (i + 1) ^ ")" ^
+    " returned " ^ string_of_int j ^
+    ", outside of the expected range [0; " ^ string_of_int i ^ "]"
+  in
+  invalid_arg msg
+
 let shuffle ~rand a = (* Fisher-Yates *)
   for i = length a - 1 downto 1 do
     let j = rand (i + 1) in
-    if not (0 <= j && j <= i) then invalid_arg "Array.shuffle";
+    if not (0 <= j && j <= i) then shuffle_contract_violation i j;
     let v = unsafe_get a i in
     unsafe_set a i (unsafe_get a j);
     unsafe_set a j v
