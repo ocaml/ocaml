@@ -15,8 +15,8 @@
 (* Priority queues over ordered elements.
 
    We choose to have polymorphic elements here, so that we can later
-   instantiate [MakePoly] on polymorphic pairs (see functors [MakeMin]
-   and [MakeMax] below).
+   instantiate [MakePoly] on polymorphic pairs (see functors
+   [MakeMinPriority] and [MakeMaxPriority] below).
 *)
 
 module MakePoly(E: sig
@@ -181,87 +181,102 @@ module type OrderedType =
 
 module type Min =
   sig
-    type prio
     type 'a t
+    type 'a elt
     val create: unit ->'a t
     val length: 'a t -> int
     val is_empty: 'a t -> bool
-    val add: 'a t -> prio -> 'a -> unit
-    val add_seq: 'a t -> (prio * 'a) Seq.t -> unit
+    val add: 'a t -> 'a elt -> unit
+    val add_seq: 'a t -> 'a elt Seq.t -> unit
     exception Empty
-    val min_elt: 'a t -> prio * 'a
-    val min_elt_opt: 'a t -> (prio * 'a) option
-    val pop_min: 'a t -> prio * 'a
-    val pop_min_opt: 'a t -> (prio * 'a) option
+    val min_elt: 'a t -> 'a elt
+    val min_elt_opt: 'a t -> 'a elt option
+    val pop_min: 'a t -> 'a elt
+    val pop_min_opt: 'a t -> 'a elt option
     val remove_min: 'a t -> unit
     val clear: 'a t -> unit
     val copy: 'a t -> 'a t
-    val of_array: (prio * 'a) array -> 'a t
-    val of_list: (prio * 'a) list -> 'a t
-    val of_seq: (prio * 'a) Seq.t -> 'a t
-    val iter: (prio -> 'a -> unit) -> 'a t -> unit
-    val fold: ('acc -> prio -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
-    val to_seq: 'a t -> (prio * 'a) Seq.t
+    val of_array: 'a elt array -> 'a t
+    val of_list: 'a elt list -> 'a t
+    val of_seq: 'a elt Seq.t -> 'a t
+    val iter: ('a elt -> unit) -> 'a t -> unit
+    val fold: ('acc -> 'a elt -> 'acc) -> 'acc -> 'a t -> 'acc
+    val to_seq: 'a t -> 'a elt Seq.t
   end
 
-module MakeMin(Prio: OrderedType) : Min with type prio = Prio.t =
+module MakeMinPriority(Priority: OrderedType)
+  : Min with type 'a elt = Priority.t * 'a =
   struct
     include MakePoly(struct
-      type 'a t = Prio.t * 'a
-      let compare (x,_) (y,_) = Prio.compare x y
+      type 'a t = Priority.t * 'a
+      let compare (x,_) (y,_) = Priority.compare x y
     end)
-    type prio = Prio.t
-    (* currying a few functions to get the expected API *)
-    let add h p x = add h (p, x)
-    let iter f h = iter (fun (p, x) -> f p x) h
-    let fold f acc h = fold (fun acc (p, x) -> f acc p x) acc h
   end
 
 module type Max =
   sig
-    type prio
     type 'a t
+    type 'a elt
     val create: unit -> 'a t
     val length: 'a t -> int
     val is_empty: 'a t -> bool
-    val add: 'a t -> prio -> 'a -> unit
-    val add_seq: 'a t -> (prio * 'a) Seq.t -> unit
+    val add: 'a t -> 'a elt -> unit
+    val add_seq: 'a t -> 'a elt Seq.t -> unit
     exception Empty
-    val max_elt: 'a t -> prio * 'a
-    val max_elt_opt: 'a t -> (prio * 'a) option
-    val pop_max: 'a t -> prio * 'a
-    val pop_max_opt: 'a t -> (prio * 'a) option
+    val max_elt: 'a t -> 'a elt
+    val max_elt_opt: 'a t -> 'a elt option
+    val pop_max: 'a t -> 'a elt
+    val pop_max_opt: 'a t -> 'a elt option
     val remove_max: 'a t -> unit
     val clear: 'a t -> unit
     val copy: 'a t -> 'a t
-    val of_array: (prio * 'a) array -> 'a t
-    val of_list: (prio * 'a) list -> 'a t
-    val of_seq: (prio * 'a) Seq.t -> 'a t
-    val iter: (prio -> 'a -> unit) -> 'a t -> unit
-    val fold: ('acc -> prio -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
-    val to_seq: 'a t -> (prio * 'a) Seq.t
+    val of_array: 'a elt array -> 'a t
+    val of_list: 'a elt list -> 'a t
+    val of_seq: 'a elt Seq.t -> 'a t
+    val iter: ('a elt -> unit) -> 'a t -> unit
+    val fold: ('acc -> 'a elt -> 'acc) -> 'acc -> 'a t -> 'acc
+    val to_seq: 'a t -> 'a elt Seq.t
 end
 
-module MakeMax(Prio: OrderedType) : Max with type prio = Prio.t =
+module MakeMaxPriority(Priority: OrderedType)
+  : Max with type 'a elt = Priority.t * 'a =
   struct
     include MakePoly(struct
-      type 'a t = Prio.t * 'a
-      let compare (x,_) (y,_) = Prio.compare y x
+      type 'a t = Priority.t * 'a
+      let compare (x,_) (y,_) = Priority.compare y x
     end)
-    type prio = Prio.t
     (* renaming a few functions... *)
     let max_elt = min_elt
     let max_elt_opt = min_elt_opt
     let pop_max = pop_min
     let pop_max_opt = pop_min_opt
     let remove_max = remove_min
-    (* ... and currying a few functions to get the expected API *)
-    let add h p x = add h (p, x)
-    let iter f h = iter (fun (p, x) -> f p x) h
-    let fold f acc h = fold (fun acc (p, x) -> f acc p x) acc h
   end
 
-(* Finally, we provide two instances when the priority is an integer *)
+(* Monomorphic functors *)
 
-module MinQueue = MakeMin(Int)
-module MaxQueue = MakeMax(Int)
+module MakeMin(E: OrderedType) :
+  sig
+    type t
+    include Min with type 'a elt := E.t and type 'a t := t
+  end =
+  struct
+    include MakePoly(struct type 'a t = E.t let compare = E.compare end)
+    type t = E.t Dynarray.t
+  end
+
+module MakeMax(E: OrderedType) :
+  sig
+    type t
+    include Max with type 'a elt := E.t and type 'a t := t
+  end =
+  struct
+    include MakePoly(struct type 'a t = E.t
+                            let compare = Fun.flip E.compare end)
+    type t = E.t Dynarray.t
+    let max_elt = min_elt
+    let max_elt_opt = min_elt_opt
+    let pop_max = pop_min
+    let pop_max_opt = pop_min_opt
+    let remove_max = remove_min
+  end

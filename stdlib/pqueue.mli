@@ -52,18 +52,19 @@ module type OrderedType =
           is a suitable ordering function for priority types such as
           [int] or [string]. *)
   end
-(** Input signature of the functors {!MakeMin} and {!MakeMax}. *)
+(** Input signature of the functors {!MakeMinPriority} and
+    {!MakeMaxPriority}. *)
 
 module type Min =
   sig
 
     (** {1:pqueue Min-priority queues} *)
 
-    type prio
-    (** The type of priorities. *)
-
     type 'a t
     (** The type of priority queues. *)
+
+    type 'a elt
+    (** The type of priority queue elements. *)
 
     val create: unit -> 'a t
     (** Return a new priority queue, initially empty. *)
@@ -74,32 +75,31 @@ module type Min =
     val is_empty: 'a t -> bool
     (** [is_empty q] is [true] iff [q] is empty, that is, iff [length q = 0]. *)
 
-    val add: 'a t -> prio -> 'a -> unit
-    (** [add q p x] adds the element [x] with priority [p]
-        in the priority queue [q]. *)
+    val add: 'a t -> 'a elt -> unit
+    (** [add q x] adds the element [x] in the priority queue [q]. *)
 
-    val add_seq: 'a t -> (prio * 'a) Seq.t -> unit
+    val add_seq: 'a t -> 'a elt Seq.t -> unit
     (** [add q s] adds the elements of [s] in the priority queue [q]. *)
 
     exception Empty
     (** Raised when {!min_elt}, {!pop_min} or {!remove_min} is applied
         to an empty queue. *)
 
-    val min_elt: 'a t -> prio * 'a
+    val min_elt: 'a t -> 'a elt
     (** [min_elt q] returns an element in queue [q] with minimal priority,
         without removing it from the queue,
         or raises {!Empty} if the queue is empty. *)
 
-    val min_elt_opt: 'a t -> (prio * 'a) option
+    val min_elt_opt: 'a t -> 'a elt option
     (** [min_elt_opt q] returns an element in queue [q] with minimal priority,
         without removing it from the queue, or returns [None] if the queue
         is empty. *)
 
-    val pop_min: 'a t -> prio * 'a
+    val pop_min: 'a t -> 'a elt
     (** [pop_min q] removes and returns an element in queue [q] with
         minimal priority, or raises {!Empty} if the queue is empty. *)
 
-    val pop_min_opt: 'a t -> (prio * 'a) option
+    val pop_min_opt: 'a t -> 'a elt option
     (** [pop_min_opt q] removes and returns an element in queue [q] with
         minimal priority, or returns [None] if the queue is empty. *)
 
@@ -116,15 +116,15 @@ module type Min =
 
     (** {1:conversions Conversions from other data structures} *)
 
-    val of_array: (prio * 'a) array -> 'a t
+    val of_array: 'a elt array -> 'a t
     (** [of_array a] returns a new priority queue containing the
         elements of array [a]. Runs in linear time. *)
 
-    val of_list: (prio * 'a) list -> 'a t
+    val of_list: 'a elt list -> 'a t
     (** [of_list l] returns a new priority queue containing the
         elements of list [l]. Runs in linear time. *)
 
-    val of_seq: (prio * 'a) Seq.t -> 'a t
+    val of_seq: 'a elt Seq.t -> 'a t
     (** [of_seq s] returns a new priority queue containing the
         elements of sequence [s]. Runs in linear time. *)
 
@@ -138,79 +138,42 @@ module type Min =
         Such an error may be detected and signaled by the backing dynamic
         array implementation, but this is not guaranteed. *)
 
-    val iter: (prio -> 'a -> unit) -> 'a t -> unit
+    val iter: ('a elt -> unit) -> 'a t -> unit
     (** [iter f q] calls [f] on each element of [q] in some
         unspecified order. *)
 
-    val fold: ('acc -> prio -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
+    val fold: ('acc -> 'a elt -> 'acc) -> 'acc -> 'a t -> 'acc
     (** [fold f accu q] is [(f (... (f (f accu x1) x2) ...) xn)]
         where [x1,x2,...,xn] are the elements of [q] in some
         unspecified order. *)
 
-    val to_seq: 'a t -> (prio * 'a) Seq.t
+    val to_seq: 'a t -> 'a elt Seq.t
     (** [to_seq q] is the sequence of elements of [q] in some
         unspecified order. *)
 
   end
-(** Output signature of the functor {!MakeMin}. *)
+(** Output signature of the functor {!MakeMinPriority}. *)
 
-module MakeMin (Prio : OrderedType) : Min with type prio = Prio.t
+module MakeMinPriority (Priority : OrderedType) :
+  Min with type 'a elt := Priority.t * 'a
 (** Functor building an implementation of the min-priority queue
     structure given a totally ordered type for priorities. *)
 
-module MinQueue : Min with type prio = int
-(** Min-priority queues with integer priorities. *)
-
 module type Max =
   sig
-    type prio
     type 'a t
-    val create: unit -> 'a t
-    val length: 'a t -> int
-    val is_empty: 'a t -> bool
-    val add: 'a t -> prio -> 'a -> unit
-    val add_seq: 'a t -> (prio * 'a) Seq.t -> unit
-    exception Empty
-    val max_elt: 'a t -> prio * 'a
-    val max_elt_opt: 'a t -> (prio * 'a) option
-    val pop_max: 'a t -> prio * 'a
-    val pop_max_opt: 'a t -> (prio * 'a) option
-    val remove_max: 'a t -> unit
-    val clear: 'a t -> unit
-    val copy: 'a t -> 'a t
-    val of_array: (prio * 'a) array -> 'a t
-    val of_list: (prio * 'a) list -> 'a t
-    val of_seq: (prio * 'a) Seq.t -> 'a t
-    val iter: (prio -> 'a -> unit) -> 'a t -> unit
-    val fold: ('acc -> prio -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
-    val to_seq: 'a t -> (prio * 'a) Seq.t
-end
-(** Output signature of the functor {!MakeMax}. *)
-
-module MakeMax (Prio : OrderedType) : Max with type prio = Prio.t
-(** Functor building an implementation of the max-priority queue
-    structure given a totally ordered type for priorities. *)
-
-module MaxQueue : Max with type prio = int
-(** Max-priority queues with integer priorities. *)
-
-module MakePoly (E : sig
-    type 'a t
-    val compare: 'a t -> 'a t -> int
-  end) : sig
-    type 'a elt = 'a E.t
-    type 'a t
+    type 'a elt
     val create: unit -> 'a t
     val length: 'a t -> int
     val is_empty: 'a t -> bool
     val add: 'a t -> 'a elt -> unit
     val add_seq: 'a t -> 'a elt Seq.t -> unit
     exception Empty
-    val min_elt: 'a t -> 'a elt
-    val min_elt_opt: 'a t -> 'a elt option
-    val pop_min: 'a t -> 'a elt
-    val pop_min_opt: 'a t -> 'a elt option
-    val remove_min: 'a t -> unit
+    val max_elt: 'a t -> 'a elt
+    val max_elt_opt: 'a t -> 'a elt option
+    val pop_max: 'a t -> 'a elt
+    val pop_max_opt: 'a t -> 'a elt option
+    val remove_max: 'a t -> unit
     val clear: 'a t -> unit
     val copy: 'a t -> 'a t
     val of_array: 'a elt array -> 'a t
@@ -219,31 +182,36 @@ module MakePoly (E : sig
     val iter: ('a elt -> unit) -> 'a t -> unit
     val fold: ('acc -> 'a elt -> 'acc) -> 'acc -> 'a t -> 'acc
     val to_seq: 'a t -> 'a elt Seq.t
+end
+(** Output signature of the functor {!MakeMaxPriority}. *)
+
+module MakeMaxPriority (Priority : OrderedType) :
+  Max with type 'a elt := Priority.t * 'a
+(** Functor building an implementation of the max-priority queue
+    structure given a totally ordered type for priorities. *)
+
+(** {1 Monomorphic interfaces}
+
+  The following functors provide implementations of min and
+  max-priority queues given a totally ordered type of elements. This
+  is convenient when the type of elements is already equipped with a
+  comparison function.  Examples include integers, strings, etc.,
+  where these functors can be readily applied to module [Int],
+  [String], etc., from the standard library.
+*)
+
+module MakeMin (E : OrderedType) :
+  sig
+    type t
+    include Min with type 'a elt := E.t and type 'a t := t
   end
 (** Functor building an implementation of min-priority queues
-    given a totally ordered type of elements. This is convenient when
-    the type of elements is already equipped with a comparison function.
-    For instance, we get priority queues with integer elements as follows:
+    given a totally ordered type for the elements. *)
 
-{[
-  module IntPQ = Pqueue.MakePoly(struct
-    type _ t = int
-    let compare = Int.compare
-  end)
-]}
-
-    Note that we cannot apply functor [MakePoly] to module [Int] directly,
-    as the type of elements is polymorphic.
-
-    There is no similar functor to get max-priority queues, but it is
-    straightforward to inverse the comparison (yet at the cost of
-    operations with names involving [min] instead of [max]), as follows:
-
-{[
-  module IntMaxPQ = Pqueue.MakePoly(struct
-    type _ t = int
-    let compare = Fun.flip Int.compare
-  end)
-]}
-
-*)
+module MakeMax (E : OrderedType) :
+  sig
+    type t
+    include Max with type 'a elt := E.t and type 'a t := t
+  end
+(** Functor building an implementation of max-priority queues
+    given a totally ordered type for the elements. *)
