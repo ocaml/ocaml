@@ -26,7 +26,7 @@ type t3 = [`A of ((module M : T) -> (module N : T with type t = M.t) -> N.t)]
 
 type t4 = < m : (module M : T) -> M.t >
 
-type 'a t5 = (module M : T with type t = 'a) -> 'a
+type 'a t5 = (module M : T with type t = 'a) -> 'a -> 'a
 
 type 'a t6 = 'a -> (module M : T with type t = 'a) -> 'a
 
@@ -48,7 +48,7 @@ type t1 = (module T : T) -> (module A : Add with type t = T.t) -> A.t -> A.t
 type _ t2 = A : ((module M : T) -> M.t) t2
 type t3 = [ `A of (module M : T) -> (module N : T with type t = M.t) -> N.t ]
 type t4 = < m : (module M : T) -> M.t >
-type 'a t5 = (module M : T with type t = 'a) -> 'a
+type 'a t5 = (module M : T with type t = 'a) -> 'a -> 'a
 type 'a t6 = 'a -> (module M : T with type t = 'a) -> 'a
 type t7 = < m : 'a. (module M : T with type t = 'a) -> 'a >
 type t8 =
@@ -123,27 +123,29 @@ Line 1, characters 52-55:
 Error: Unbound module "M"
 |}]
 
-let id_fail1 (x : t1) : _ t5 = x
+let id_fail1 (x : t0) : _ t5 = x
 
 [%%expect{|
 Line 1, characters 31-32:
-1 | let id_fail1 (x : t1) : _ t5 = x
+1 | let id_fail1 (x : t0) : _ t5 = x
                                    ^
-Error: This expression has type
-         "t1" =
-           "(module T : T) -> (module A : Add with type t = T.t) -> A.t -> A.t"
+Error: This expression has type "t0" = "(module M : T) -> M.t -> M.t"
        but an expression was expected of type
-         "'a t5" = "(module M : T with type t = 'a) -> 'a"
+         "'a t5" = "(module M : T with type t = 'a) -> 'a -> 'a"
+       Type "(module T)" is not compatible with type
+         "(module T with type t = 'a)"
 |}]
 
-let id_fail2 (x : _ t5) : t1 = x
+let id_fail2 (x : _ t5) : t0 = x
 
 [%%expect{|
 Line 1, characters 31-32:
-1 | let id_fail2 (x : _ t5) : t1 = x
+1 | let id_fail2 (x : _ t5) : t0 = x
                                    ^
-Error: This expression has type "'a t5" = "(module M : T with type t = 'a) -> 'a"
+Error: This expression has type
+         "'a t5" = "(module M : T with type t = 'a) -> 'a -> 'a"
        but an expression was expected of type
-         "t1" =
-           "(module T : T) -> (module A : Add with type t = T.t) -> A.t -> A.t"
+         "t0" = "(module M : T) -> M.t -> M.t"
+       Type "(module T with type t = 'a)" is not compatible with type
+         "(module T)"
 |}]

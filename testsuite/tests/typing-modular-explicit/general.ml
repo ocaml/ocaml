@@ -270,20 +270,20 @@ Error: Type "(module A : AddSub) -> A.t -> A.t" is not a subtype of
          "(module T : SubAdd) -> T.t -> T.t"
        The two first-class module types do not share
        the same positions for runtime components.
-       For example, the value "add" occurs at the expected position of
-       the value "sub".
+       For example, the value "sub" occurs at the expected position of
+       the value "add".
 |}]
 
 
 (* Here the coercion does not require any computation and thus could be allowed *)
-let try_coerce3 (f : (module A : Add) -> A.t -> A.t) = (f :> (module T : Typ) -> T.t -> T.t)
+let try_coerce3 (f : (module T : Typ) -> T.t -> T.t) = (f :> (module A : Add) -> A.t -> A.t)
 
 [%%expect{|
 Line 1, characters 55-92:
-1 | let try_coerce3 (f : (module A : Add) -> A.t -> A.t) = (f :> (module T : Typ) -> T.t -> T.t)
+1 | let try_coerce3 (f : (module T : Typ) -> T.t -> T.t) = (f :> (module A : Add) -> A.t -> A.t)
                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type "(module A : Add) -> A.t -> A.t" is not a subtype of
-         "(module T : Typ) -> T.t -> T.t"
+Error: Type "(module T : Typ) -> T.t -> T.t" is not a subtype of
+         "(module A : Add) -> A.t -> A.t"
        The two first-class module types differ by their runtime size.
 |}]
 

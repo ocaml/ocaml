@@ -693,7 +693,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
                           ~id_in:scoped_ident ~fixed:false cty.ctyp_type)
     in
     let l' = List.map (fun (s, cty) -> (s.txt, cty.ctyp_type)) ptys in
-    let ty = Btype.newgenty (Tfunctor (lbl, ident, (path, l'), ctyp_type)) in
+    let ty = newty (Tfunctor (lbl, ident, (path, l'), ctyp_type)) in
     ctyp (Ttyp_functor (lbl, {txt = scoped_ident; loc = name.loc}, {
                 pack_path = path;
                 pack_type = mty;
