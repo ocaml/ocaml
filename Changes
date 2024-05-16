@@ -85,6 +85,10 @@ _______________
   (Nick Barnes, review by Gabriel Scherer, Guillaume Munch-Maccagnoni, and
   Vincent Laviron)
 
+- #13101: Add `Stdlib.todo ?msg ?__LOC__ ()` to signal that a piece of code is
+  not yet implemented.
+  (Pavlo Khrystenko, review by *)
+
 ### Other libraries:
 
 ### Tools:

@@ -41,6 +41,13 @@ val invalid_arg : string -> 'a
 val failwith : string -> 'a
 (** Raise exception [Failure] with the given string. *)
 
+val todo : ?msg:string -> unit -> _
+[@@alert todo "TODO: not implemented yet"]
+(** Raise an exception [Failure]
+    with provided optional message [?msg].
+    @since 5.3
+*)
+
 exception Exit
 (** The [Exit] exception is not raised by any library function.  It is
     provided for use in your programs. *)
