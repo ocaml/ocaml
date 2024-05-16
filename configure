@@ -20379,14 +20379,20 @@ fi
 
 if test x"$enable_frame_pointers" = "xyes"
 then :
-  case "$host,$ocaml_cc_vendor" in #(
-  x86_64-*-linux*,gcc-*|x86_64-*-linux*,clang-*) :
+  case $host in #(
+  x86_64-*-linux*|x86_64-*-darwin*) :
+    case $ocaml_cc_vendor in #(
+  clang-*|gcc-*) :
     common_cflags="$common_cflags -g  -fno-omit-frame-pointer"
-      frame_pointers=true
-      printf "%s\n" "#define WITH_FRAME_POINTERS 1" >>confdefs.h
+         frame_pointers=true
+         printf "%s\n" "#define WITH_FRAME_POINTERS 1" >>confdefs.h
 
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: using frame pointers" >&5
+         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: using frame pointers" >&5
 printf "%s\n" "$as_me: using frame pointers" >&6;} ;; #(
+  *) :
+    as_fn_error $? "frame pointers not supported on this platform" "$LINENO" 5
+       ;;
+esac ;; #(
   *) :
     as_fn_error $? "frame pointers not supported on this platform" "$LINENO" 5
    ;;
