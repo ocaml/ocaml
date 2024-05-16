@@ -12,10 +12,166 @@
 (*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
-
-(** This module provides function for printing type expressions as digraph using
+(**
+ This module provides function for printing type expressions as digraph using
     graphviz format. This is mostly aimed at providing a better representation
-    of type expressions during debugging session. *)
+    of type expressions during debugging session.
+*)
+(**
+A type node is printed as
+{[
+    .------------.
+    | <desc>  id |---->
+    |            |--->
+    .------------.
+]}
+where the description part might be:
+- a path: [list/8!]
+- a type variable: ['name], [α], [β], [γ]
+- [*] for tuples
+- [→] for arrows type
+- an universal type variable: [[β]∀], ['name ∀], ...
+- [[mod X with ...]] for a first class module
+
+- [∀] for a universal type binder
+
+The more complex encoding for polymorphic variants and object types uses nodes
+as head of the subgraph representing those types
+
+- [[obj...]] for the head of an object subgraph
+- [[Nil]] for the end of an object subgraph
+- [[Row...]] for the head of a polymorphic variant subgraph
+
+- [[Subst]] for a temporary substitution node
+
+Then each nodes is relied by arrows to any of its children types.
+
+- Type variables, universal type variables, [Nil], and [Subst] nodes don't have
+  children.
+
+- For tuples, the children types are the elements of the tuple. For instance,
+  [int * float] is represented as
+{[
+  .------.   0     .-------.
+  | *  1 |-------->| int! 2|
+  .------.         .-------.
+     |
+     | 1
+     v
+   .----------.
+   | float! 3 |
+   .----------.
+]}
+
+- For arrows, the children types are the type of the argument and the result
+  type. For instance, for [int -> float]:
+{[
+  .------.   0     .-------.
+  | →  4 |-------->| int! 2|
+  .------.         .-------.
+     |
+     | 1
+     v
+   .----------.
+   | float! 3 |
+   .----------.
+]}
+
+- For type constructor, like list the main children nodes are the argument
+  types. For instance, [(int,float) result] is represented as:
+
+{[
+  .-------------.   0     .-------.
+  | Result.t  5 |-------->| int! 2|
+  .-------------.         .-------.
+     |
+     | 1
+     v
+   .----------.
+   | float! 3 |
+   .----------.
+]}
+
+Moreover, type abbreviations might be linked to the expanded nodes.
+If I define: [type 'a pair = 'a * 'a], a type expression [int pair] might
+correspond to the nodes:
+
+{[
+  .--------.   0    .--------.
+  | pair 6 |------> | int! 2 |
+  .--------.        .--------.
+     ┆                  ^
+     ┆ expand           |
+     ┆                  |
+  .------.   0 + 1      |
+  | *  7 |------>-------.
+  .------.
+]}
+
+- Universal type binders have two kind of children: bound variables,
+  and the main body. For instance, ['a. 'a -> 'a] is represented as
+{[
+
+  .------.   bind    .-------.
+  |  ∀ 8 |----------> | 𝛼 10 |
+  .------.            .------.
+     |                  ^
+     |                  |
+     v                  |
+  .------.   0 + 1      |
+  | →  9 |------>-------.
+  .------.
+
+]}
+
+- [[Subst]] node are children are the type graph guarded by the
+  substitution node, and an eventual link to the parent row variable.
+
+- The children of first-class modules are the type expressions that may appear
+  in the right hand side of constraints.
+  For instance, [module M with type t = 'a and type u = 'b] is represented as
+{[
+  .----------------------.   0     .-----.
+  | [mod M with t, u] 11 |-------->| 𝛼 12|
+  .----------------------.         .-----
+     |
+     | 1
+     v
+   .------.
+   | 𝛽 13 |
+   .------.
+]}
+
+
+- The children of [obj] (resp. [row]) are the methods (resp. constructor) of the
+  object type (resp. polymorphic variant). Each method is then linked to its
+  type. To make them easier to read they are grouped inside graphviz cluster.
+  For instance, [<a:int; m:'self; ..> as 'self] will be represented as:
+
+{[
+
+  .----------------.
+  | .----------.    |
+  | | [obj] 14 |<------<-----<-----.
+  | .----------.    |              |
+  |       ┆         |              |
+  | .-------------. |    .------.  |    .-------.
+  | | a public 15 |----->| ∀ 18 |----->| int! 2 |
+  | .-------------. |    .------.  |    .-------.
+  |        ┆        |              |
+  | .-------------. |   .------.   |
+  | | m public 16 |-----| ∀ 19 |>--|
+  | .------------.  |   .------.
+  |     ┆           |
+  |     ┆ row var   |
+  |     ┆           |
+  |   .-------.     |
+  |   | '_ 17 |     |
+  |   .-------.     |
+  .-----------------.
+
+]}
+*)
 
 type digraph
 (** Digraph with nodes, edges, hyperedges and subgraphes *)
