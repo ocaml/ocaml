@@ -106,6 +106,7 @@ let () =
   (* Pattern expressions *)
   | lazy%foo[@foo] x -> ()
   | exception%foo[@foo] x -> ()
+  | effect x, k -> ()
 
 (* Class expressions *)
 class x =
@@ -7473,3 +7474,10 @@ module M = struct
     inherit \#val \#let as \#mutable
   end
 end
+
+let x = new M.\#begin
+
+let f = fun x (type \#begin) (type \#end) -> 1
+
+(* check pretty-printing of local module open in core_type *)
+type t = String.( t )

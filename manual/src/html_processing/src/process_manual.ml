@@ -429,7 +429,7 @@ let get_xfiles = function
           let rf = li $ "a" |> R.attribute "href" in
           dbg "TOC reference = %s" rf;
           if not (String.contains rf '#') &&
-             not (starts_with ".." rf) &&
+             not (starts_with "api" rf) &&
              not (starts_with "http" rf)
           then begin
             li $ "a" |> set_attribute "href" (rf ^ "#start-section");

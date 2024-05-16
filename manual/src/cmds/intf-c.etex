@@ -1268,16 +1268,18 @@ has taken place since "r" was allocated.
 
 \subsection{ss:c-process-pending-actions}{Pending actions and asynchronous exceptions}
 
-Since 4.10, allocation functions are guaranteed not to call any OCaml
-callbacks from C, including finalisers and signal handlers, and delay
-their execution instead.
+Since 4.10, allocation functions are guaranteed not to run any OCaml
+code, including finalisers, signal handlers and other threads running
+on the same domain. Instead, their execution is delayed to a later
+safe point.
 
 The function \verb"caml_process_pending_actions" from
 "<caml/signals.h>" executes any pending signal handlers and
-finalisers, Memprof callbacks, and requested minor and major garbage
-collections. In particular, it can raise asynchronous exceptions. It
-is recommended to call it regularly at safe points inside long-running
-non-blocking C code.
+finalisers, Memprof callbacks, preemptive systhread switching, and
+requested minor and major garbage collections. In particular, it can
+raise asynchronous exceptions and cause mutations on the OCaml heap
+from the same domain. It is recommended to call it regularly at safe
+points inside long-running non-blocking C code.
 
 The variant \verb"caml_process_pending_actions_exn" is provided, that
 returns the exception instead of raising it directly into OCaml code.
@@ -1914,10 +1916,16 @@ To build the whole program, just invoke the C compiler as follows:
 
 \section{s:c-custom}{Advanced topic: custom blocks}
 
-Blocks with tag "Custom_tag" contain both arbitrary user data and a
-pointer to a C struct, with type "struct custom_operations", that
-associates user-provided finalization, comparison, hashing,
-serialization and deserialization functions to this block.
+Blocks with tag "Custom_tag" start with a pointer to a C "struct" with
+type "struct custom_operations" that associates user-provided
+finalization, comparison, hashing, serialization and deserialization
+functions for this block.
+
+After this pointer to custom operations, there can be arbitrary data of
+zero, one or more words whose semantics is defined by the user (for
+example this can be just a pointer to a C "struct" or a C "struct"
+itself). Use "Data_custom_val" on the block value to get a pointer on
+the start of this arbitrary data.
 
 \subsection{ss:c-custom-ops}{The "struct custom_operations"}
 
@@ -1934,6 +1942,11 @@ when the block becomes unreachable and is about to be reclaimed.
 The block is passed as first argument to the function.
 The "finalize" field can also be "custom_finalize_default" to indicate that no
 finalization function is associated with the block.
+Note the caution below: there are many restrictions on the behaviour
+of these custom block finalizers; they must not allocate on the Caml
+heap, or call OCaml code or allow it to be called (for example, they
+should not call "caml_release_runtime_system()"). For more powerful
+and flexible finalization, use "Gc.finalise" (see \stdmoduleref{Gc}).
 
 \item "int (*compare)(value v1, value v2)" \\
 The "compare" field contains a pointer to a C function that is
@@ -2023,7 +2036,7 @@ specified in the "fixed_length" structure, and do not consume space in
 the serialized output.
 \end{itemize}
 
-Note: the "finalize", "compare", "hash", "serialize", and "deserialize"
+\emph{Caution}: the "finalize", "compare", "hash", "serialize", and "deserialize"
 functions attached to custom blocks descriptors are only allowed limited
 interactions with the OCaml runtime. Within these functions, do not call any of
 the OCaml allocation functions, and do not perform any callback into OCaml

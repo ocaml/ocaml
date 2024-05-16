@@ -1,10 +1,9 @@
 (* TEST
  flags = "-g";
  reason = "port stat-mem-prof : https://github.com/ocaml/ocaml/pull/8634";
- skip;
 *)
 
-open Gc.Memprof
+module MP = Gc.Memprof
 
 let rec allocate_list accu = function
   | 0 -> accu
@@ -12,24 +11,26 @@ let rec allocate_list accu = function
 
 let[@inline never] allocate_lists len cnt =
   for j = 0 to cnt-1 do
-    ignore (allocate_list [] len)
+    ignore (Sys.opaque_identity (allocate_list [] len))
   done
 
 let check_distrib len cnt rate =
   Printf.printf "check_distrib %d %d %f\n%!" len cnt rate;
+  let tracked = ref 0 in
   let smp = ref 0 in
-  start ~callstack_size:10 ~sampling_rate:rate
-    { null_tracker with
+  let _:MP.t = MP.start ~callstack_size:10 ~sampling_rate:rate
+    { MP.null_tracker with
       alloc_major = (fun _ -> assert false);
       alloc_minor = (fun info ->
         assert (info.size = 2);
         assert (info.n_samples > 0);
         assert (info.source = Normal);
+        incr tracked;
         smp := !smp + info.n_samples;
         None);
-    };
+    } in
   allocate_lists len cnt;
-  stop ();
+  MP.stop ();
 
   (* The probability distribution of the number of samples follows a
      binomial distribution of parameters tot_alloc and rate. Given
@@ -38,13 +39,13 @@ let check_distrib len cnt rate =
      distribution. We compute a 1e-8 confidence interval for !smp
      using quantiles of the normal distribution, and check that we are
      in this confidence interval. *)
-  let tot_alloc = cnt*len*3 in
-  assert (float tot_alloc *. rate > 100. &&
-          float tot_alloc *. (1. -. rate) > 100.);
-  let mean = float tot_alloc *. rate in
-  let stddev = sqrt (float tot_alloc *. rate *. (1. -. rate)) in
-  (* This assertion has probability to fail close to 1e-8. *)
-  assert (abs_float (mean -. float !smp) <= stddev *. 5.7)
+  let tot_alloc = float (cnt*len*3) in
+  assert (tot_alloc *. rate > 100. &&
+          tot_alloc *. (1. -. rate) > 100.);
+  let mean = tot_alloc *. rate in
+  let stddev = sqrt (tot_alloc *. rate *. (1. -. rate)) in
+   (* This should fail approximately one time in 100,000,000 *)
+   assert (abs_float (mean -. float !smp) <= stddev *. 5.7)
 
 let () =
   check_distrib 10 1000000 0.01;

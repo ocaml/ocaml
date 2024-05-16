@@ -55,17 +55,23 @@
 Caml_inline value alloc_and_clear_stack_parent(caml_domain_state* domain_state)
 {
   struct stack_info* parent_stack = Stack_parent(domain_state->current_stack);
-  value cont = caml_alloc_2(Cont_tag, Val_ptr(parent_stack), Val_long(0));
-  Stack_parent(domain_state->current_stack) = NULL;
-  return cont;
+  if (parent_stack == NULL) {
+    return Val_unit;
+  } else {
+    value cont = caml_alloc_2(Cont_tag, Val_ptr(parent_stack), Val_long(0));
+    Stack_parent(domain_state->current_stack) = NULL;
+    return cont;
+  }
 }
 
 Caml_inline void restore_stack_parent(caml_domain_state* domain_state,
                                       value cont)
 {
-  struct stack_info* parent_stack = Ptr_val(Op_val(cont)[0]);
   CAMLassert(Stack_parent(domain_state->current_stack) == NULL);
-  Stack_parent(domain_state->current_stack) = parent_stack;
+  if (Is_block(cont)) {
+    struct stack_info* parent_stack = Ptr_val(Op_val(cont)[0]);
+    Stack_parent(domain_state->current_stack) = parent_stack;
+  }
 }
 
 
@@ -351,7 +357,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
   unsigned int h = hash_value_name(name);
   int found = 0;
 
-  caml_plat_lock(&named_value_lock);
+  caml_plat_lock_blocking(&named_value_lock);
   for (nv = named_value_table[h]; nv != NULL; nv = nv->next) {
     if (strcmp(name, nv->name) == 0) {
       caml_modify_generational_global_root(&nv->val, val);
@@ -375,7 +381,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
 CAMLexport const value* caml_named_value(char const *name)
 {
   struct named_value * nv;
-  caml_plat_lock(&named_value_lock);
+  caml_plat_lock_blocking(&named_value_lock);
   for (nv = named_value_table[hash_value_name(name)];
        nv != NULL;
        nv = nv->next) {
@@ -391,7 +397,7 @@ CAMLexport const value* caml_named_value(char const *name)
 CAMLexport void caml_iterate_named_values(caml_named_action f)
 {
   int i;
-  caml_plat_lock(&named_value_lock);
+  caml_plat_lock_blocking(&named_value_lock);
   for(i = 0; i < Named_value_size; i++){
     struct named_value * nv;
     for (nv = named_value_table[i]; nv != NULL; nv = nv->next) {

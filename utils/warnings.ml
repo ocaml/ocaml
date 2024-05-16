@@ -1096,7 +1096,7 @@ let message = function
   | Erroneous_printed_signature s ->
       "The printed interface differs from the inferred interface.\n\
        The inferred interface contained items which could not be printed\n\
-       properly due to name collisions between identifiers."
+       properly due to name collisions between identifiers.\n"
      ^ s
      ^ "\nBeware that this warning is purely informational and will not catch\n\
         all instances of erroneous printed interface."

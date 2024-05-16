@@ -30,7 +30,7 @@ let announce_test_error test_filename error =
   Printf.printf " ... testing '%s' => unexpected error (%s)\n%!"
     (Filename.basename test_filename) error
 
-let print_exn loc e =
+let print_exn loc e bt =
   let open Printf in
   let locstring =
     if loc = Location.none then "" else begin
@@ -42,19 +42,19 @@ let print_exn loc e =
   let msg =
     match e with
     | Variables.Variable_already_registered v ->
-      sprintf "Variable \"%s\" is already in the environment." v
+      sprintf "Variable \"%s\" is already in the environment.\n" v
     | Variables.No_such_variable v ->
-      sprintf "Variable \"%s\" is not in the environment." v
+      sprintf "Variable \"%s\" is not in the environment.\n" v
     | Environments.Modifiers_name_not_found name ->
-      sprintf "Environment modifier \"%s\" does not exist." name
+      sprintf "Environment modifier \"%s\" does not exist.\n" name
     | Tsl_semantics.No_such_test_or_action name ->
-      sprintf "This is not the name of a test or an action: \"%s\"." name
+      sprintf "This is not the name of a test or an action: \"%s\".\n" name
     | Ocaml_actions.Cannot_compile_file_type t ->
-      sprintf "Cannot compile files of type %s." t
+      sprintf "Cannot compile files of type %s.\n" t
     | _ ->
-      sprintf "Unexpected exception: %s" (Printexc.to_string e)
+      sprintf "Unexpected exception: %s\n%s" (Printexc.to_string e) bt
   in
-  eprintf "\n%s%s\n%!" locstring msg
+  eprintf "\n%s%s%!" locstring msg
 
 exception Syntax_error of Lexing.position
 
@@ -84,8 +84,8 @@ let tsl_parse_file_safe test_filename =
 let print_usage () =
   Printf.printf "%s\n%!" Options.usage
 
-let report_error loc e =
-  print_exn loc e;
+let report_error loc e bt =
+  print_exn loc e bt;
   "=> error in test script"
 
 type result_summary = No_failure | Some_failure | All_skipped
@@ -116,8 +116,9 @@ let rec run_test_tree log add_msg behavior env summ ast =
     | env ->
       run_test_tree log add_msg behavior env summ (Ast (stmts, subs))
     | exception e ->
+      let bt = Printexc.get_backtrace () in
       let line = s.loc.Location.loc_start.Lexing.pos_lnum in
-      Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e);
+      Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
       Some_failure
     end
   | Ast (Test (_, name, mods) :: stmts, subs) ->
@@ -138,7 +139,9 @@ let rec run_test_tree log add_msg behavior env summ ast =
           let msg = Result.string_of_result result in
           let sub_behavior = if Result.is_pass result then Run else Skip_all in
           (msg, sub_behavior, newenv, result)
-        with e -> (report_error name.loc e, Skip_all, env, Result.fail)
+        with e ->
+          let bt = Printexc.get_backtrace () in
+          (report_error name.loc e bt, Skip_all, env, Result.fail)
         end
     in
     Printf.ksprintf add_msg "%s (%s) %s" locstr name.node msg;
@@ -255,8 +258,10 @@ let test_file test_filename =
              begin match interpret_environment_statement env s with
              | env -> loop env t
              | exception e ->
+               let bt = Printexc.get_backtrace () in
                let line = s.loc.Location.loc_start.Lexing.pos_lnum in
-               Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e);
+               Printf.ksprintf add_msg "line %d %s" line
+                 (report_error s.loc e bt);
                (env, Skip_all, Some_failure)
              end
          in

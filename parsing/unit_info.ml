@@ -103,8 +103,11 @@ let cmti f = mk_artifact ".cmti" f
 let annot f = mk_artifact ".annot" f
 
 let companion_obj f = companion_artifact Config.ext_obj f
-let companion_cmi f = companion_artifact ".cmi" f
 let companion_cmt f = companion_artifact ".cmt" f
+
+let companion_cmi f =
+  let prefix = Misc.chop_extensions f.Artifact.filename in
+  { f with Artifact.filename = prefix ^ ".cmi"}
 
 let mli_from_artifact f = Artifact.prefix f ^ !Config.interface_suffix
 let mli_from_source u =

@@ -98,6 +98,11 @@ type 'variety obj =
   (* Unification *)
   | Self_cannot_be_closed : unification obj
 
+type first_class_module =
+    | Package_cannot_scrape of Path.t
+    | Package_inclusion of (Format.formatter -> unit)
+    | Package_coercion of (Format.formatter -> unit)
+
 type ('a, 'variety) elt =
   (* Common *)
   | Diff : 'a diff -> ('a, _) elt
@@ -106,6 +111,7 @@ type ('a, 'variety) elt =
   | Escape : 'a escape -> ('a, _) elt
   | Incompatible_fields : { name:string; diff: type_expr diff } -> ('a, _) elt
       (* Could move [Incompatible_fields] into [obj] *)
+  | First_class_module: first_class_module -> ('a,_) elt
   (* Unification & Moregen; included in Equality for simplicity *)
   | Rec_occur : type_expr * type_expr -> ('a, _) elt
 
@@ -120,7 +126,8 @@ let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
       Escape { kind = Equation (f x); context }
   | Escape {kind = (Univ _ | Self | Constructor _ | Module_type _ | Constraint);
             _}
-  | Variant _ | Obj _ | Incompatible_fields _ | Rec_occur (_, _) as x -> x
+  | Variant _ | Obj _ | Incompatible_fields _ | Rec_occur (_, _)
+  | First_class_module _  as x -> x
 
 let map f t = List.map (map_elt f) t
 

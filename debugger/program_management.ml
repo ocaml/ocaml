@@ -45,7 +45,7 @@ let control_connection pid fd =
 
 (* Accept a connection from another process. *)
 let accept_connection continue fd =
-  let (sock, _) = accept fd.io_fd in
+  let (sock, _) = accept ~cloexec:true fd.io_fd in
   let io_chan = io_channel_of_descr sock in
   let pid = input_binary_int io_chan.io_in in
   if pid = -1 then begin
@@ -62,16 +62,15 @@ let accept_connection continue fd =
 (* Initialize the socket. *)
 let open_connection address continue =
   try
-    let (sock_domain, sock_address) = convert_address address in
+    let addr_info = convert_address address in
       file_name :=
-        (match sock_address with
-           ADDR_UNIX file ->
-             Some file
-         | _ ->
-             None);
-      let sock = socket sock_domain SOCK_STREAM 0 in
+        (match addr_info with
+         | { ai_addr = ADDR_UNIX file; _} -> Some file
+         | _ -> None);
+      let sock = socket ~cloexec:true addr_info.ai_family addr_info.ai_socktype
+                   addr_info.ai_protocol in
         (try
-           bind sock sock_address;
+           bind sock addr_info.ai_addr;
            setsockopt sock SO_REUSEADDR true;
            listen sock 3;
            connection := io_channel_of_descr sock;
@@ -79,7 +78,7 @@ let open_connection address continue =
            connection_opened := true
          with x -> cleanup x @@ fun () -> close sock)
   with
-    Failure _ -> raise Toplevel
+    Failure e -> prerr_endline e; raise Toplevel
   | (Unix_error _) as err -> report_error err; raise Toplevel
 
 (* Close the socket. *)

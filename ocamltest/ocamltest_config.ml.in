@@ -25,11 +25,11 @@ let asm = {@QS@|@AS@|@QS@}
 
 let cpp = {@QS@|@ocamltest_CPP@|@QS@}
 
-let cppflags = {@QS@|@oc_cppflags@|@QS@}
+let cppflags = {@QS@|@common_cppflags@|@QS@}
 
 let cc = {@QS@|@CC@|@QS@}
 
-let cflags = {@QS@|@oc_cflags@|@QS@}
+let cflags = {@QS@|@common_cflags@|@QS@}
 
 let ccomptype = {@QS@|@ccomptype@|@QS@}
 

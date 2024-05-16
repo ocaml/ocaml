@@ -396,7 +396,9 @@ static void intern_alloc_storage(struct caml_intern_state* s, mlsize_t whsize,
   wosize = Wosize_whsize(whsize);
 
   if (wosize <= Max_young_wosize && wosize != 0) {
-    v = caml_alloc_small (wosize, String_tag);
+    /* don't track bulk allocation in minor heap with statmemprof;
+     * individual block allocations are tracked instead */
+    Alloc_small(v, wosize, String_tag, Alloc_small_enter_GC_no_track);
     s->intern_dest = (header_t *) Hp_val(v);
   } else {
     CAMLassert (s->intern_dest == NULL);
@@ -426,16 +428,22 @@ static value intern_alloc_obj(struct caml_intern_state* s, caml_domain_state* d,
                 (value*)s->intern_dest < d->young_end);
     p = s->intern_dest;
     *s->intern_dest = Make_header (wosize, tag, 0);
+    caml_memprof_sample_block(Val_hp(p), wosize, 1 + wosize,
+                              CAML_MEMPROF_SRC_MARSHAL);
     s->intern_dest += 1 + wosize;
   } else {
     p = caml_shared_try_alloc(d->shared_heap, wosize, tag,
                               0 /* no reserved bits */);
-    d->allocated_words += Whsize_wosize(wosize);
     if (p == NULL) {
       intern_cleanup (s);
       caml_raise_out_of_memory();
     }
+    d->allocated_words += Whsize_wosize(wosize);
+    d->allocated_words_direct += Whsize_wosize(wosize);
     Hd_hp(p) = Make_header (wosize, tag, caml_global_heap_state.MARKED);
+    caml_memprof_sample_block(Val_hp(p), wosize,
+                              Whsize_wosize(wosize),
+                              CAML_MEMPROF_SRC_MARSHAL);
   }
   return Val_hp(p);
 }

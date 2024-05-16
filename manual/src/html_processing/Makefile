@@ -1,3 +1,6 @@
+ROOTDIR = ../../..
+include $(ROOTDIR)/Makefile.config_if_required
+
 DUNE_CMD := $(if $(wildcard dune/dune.exe),dune/dune.exe,dune)
 DUNE ?= $(DUNE_CMD)
 
@@ -8,9 +11,11 @@ else
     DBG=quiet
 endif
 
+VERSION := $(OCAML_VERSION_MAJOR).$(OCAML_VERSION_MINOR)
+
 WEBDIR = ../webman
-WEBDIRMAN = $(WEBDIR)/manual
-WEBDIRAPI = $(WEBDIR)/api
+WEBDIRMAN = $(WEBDIR)/$(VERSION)
+WEBDIRAPI = $(WEBDIRMAN)/api
 WEBDIRCOMP = $(WEBDIRAPI)/compilerlibref
 
 # The "all" target generates the Web Manual in the directories
@@ -68,7 +73,7 @@ $(WEBDIRAPI)/favicon.ico: | $(WEBDIRAPI) $(WEBDIRMAN) $(WEBDIRCOMP)
 	$(CURL) "https://raw.githubusercontent.com/ocaml/ocaml-logo/master/Colour/Favicon/32x32.ico" > $(WEBDIRAPI)/$(ICON)
 
 IMG_FILES0 := colour-logo.svg
-IMG_FILES := $(addprefix $(WEBDIRAPI)/, $(IMG_FILES0)) $(addprefix $(WEBDIRCOMP)/, $(IMG_FILES0)) $(addprefix $(WEBDIRMAN)/, $(IMG_FILES0)) 
+IMG_FILES := $(addprefix $(WEBDIRAPI)/, $(IMG_FILES0)) $(addprefix $(WEBDIRCOMP)/, $(IMG_FILES0)) $(addprefix $(WEBDIRMAN)/, $(IMG_FILES0))
 
 img: $(WEBDIRAPI)/favicon.ico $(WEBDIRCOMP)/favicon.ico $(IMG_FILES)
 

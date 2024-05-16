@@ -151,6 +151,8 @@ type primitive =
   | Popaque
   (* Fetching domain-local state *)
   | Pdls_get
+  (* Poll for runtime actions *)
+  | Ppoll
 
 and integer_comparison =
     Ceq | Cne | Clt | Cgt | Cle | Cge
@@ -574,6 +576,10 @@ let shallow_iter ~tail ~non_tail:f = function
 
 let iter_head_constructor f l =
   shallow_iter ~tail:f ~non_tail:f l
+
+let is_evaluated = function
+  | Lconst _ | Lvar _ | Lfunction _ -> true
+  | _ -> false
 
 let rec free_variables = function
   | Lvar id

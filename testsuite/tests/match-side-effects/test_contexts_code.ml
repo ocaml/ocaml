@@ -7,9 +7,10 @@
 #use "contexts_1.ml";;
 (* Notice that (field_mut 1 input) occurs twice, it
    is evaluated once in the 'false' branch and once in the 'true'
-   branch. The compiler assumes that its static knowledge about the
+   branch. The compiler does not assume that its static knowledge about the
    first read (it cannot be a [Right] as we already matched against it
-   and failed) also applies to the second read, which is unsound.
+   and failed) also applies to the second read, and it inserts a Match_failure
+   case if [Right] is read again.
 *)
 [%%expect {|
 
@@ -39,7 +40,12 @@ let example_1 () =
               case tag 0:
                (if (seq (setfield_ptr 1 input/312 [1: 3]) 0) [1: 3]
                  (let (*match*/339 =o (field_mut 1 input/312))
-                   (makeblock 0 (int) (field_imm 0 *match*/339))))
+                   (switch* *match*/339
+                    case tag 0: (makeblock 0 (int) (field_imm 0 *match*/339))
+                    case tag 1:
+                     (raise
+                       (makeblock 0 (global Match_failure/20!)
+                         [0: "contexts_1.ml" 17 2])))))
               case tag 1: [1: 2]))
            [1: 1]))))
   (apply (field_mut 1 (global Toploop!)) "example_1" example_1/310))

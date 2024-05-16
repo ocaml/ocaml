@@ -124,10 +124,8 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
   } else {
   /* In this case we are reading the ring for a different process */
     if (runtime_events_path) {
-      char* path_u8 = caml_stat_strdup_of_os(runtime_events_path);
       ret = snprintf_os(runtime_events_loc, RING_FILE_NAME_MAX_LEN,
-                      T("%s/%d.events"), path_u8, pid);
-      caml_stat_free(path_u8);
+                        T("%s/%d.events"), runtime_events_path, pid);
     } else {
       ret =
           snprintf_os(runtime_events_loc, RING_FILE_NAME_MAX_LEN,

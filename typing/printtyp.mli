@@ -49,6 +49,14 @@ val wrap_printing_env: error:bool -> Env.t -> (unit -> 'a) -> 'a
     (* This affects all the printing functions below *)
     (* Also, if [~error:true], then disable the loading of cmis *)
 
+(** [wrap_printing_env_error env f] ensures that all printing functions in a
+    [Location.error] report are evaluated within the [wrap_printing_env
+    ~error:true env] context. (The original call to [f] is also evaluated
+    within that context.)
+ *)
+val wrap_printing_env_error :
+  Env.t -> (unit -> Location.error) -> Location.error
+
 module Naming_context: sig
   val enable: bool -> unit
   (** When contextual names are enabled, the mapping between identifiers
@@ -78,8 +86,10 @@ module Conflicts: sig
   val print_located_explanations:
     Format.formatter -> explanation list -> unit
 
-  val print_explanations: Format.formatter -> unit
-  (** Print all conflict explanations collected up to this point *)
+  val err_msg: unit -> (Format.formatter -> unit) option
+  (** [err_msg ()] return an error message if there are pending conflict
+      explanations at this point. It is often important to check for conflicts
+      after all printing is done, thus the delayed nature of [err_msg]*)
 
   val reset: unit -> unit
 end

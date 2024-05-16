@@ -121,13 +121,13 @@ let rec extract_letop_patterns n pat =
 (** Mapping functions. *)
 
 let constant = function
-  | Const_char c -> Pconst_char c
-  | Const_string (s,loc,d) -> Pconst_string (s,loc,d)
-  | Const_int i -> Pconst_integer (Int.to_string i, None)
-  | Const_int32 i -> Pconst_integer (Int32.to_string i, Some 'l')
-  | Const_int64 i -> Pconst_integer (Int64.to_string i, Some 'L')
-  | Const_nativeint i -> Pconst_integer (Nativeint.to_string i, Some 'n')
-  | Const_float f -> Pconst_float (f,None)
+  | Const_char c -> Const.char c
+  | Const_string (s,loc,d) -> Const.string ?quotation_delimiter:d ~loc s
+  | Const_int i -> Const.integer (Int.to_string i)
+  | Const_int32 i -> Const.integer ~suffix:'l' (Int32.to_string i)
+  | Const_int64 i -> Const.integer ~suffix:'L' (Int64.to_string i)
+  | Const_nativeint i -> Const.integer ~suffix:'n' (Nativeint.to_string i)
+  | Const_float f -> Const.float f
 
 let attribute sub a = {
     attr_name = map_loc sub a.attr_name;
@@ -450,10 +450,32 @@ let expression sub exp =
                 None -> list
               | Some exp -> (label, sub.expr sub exp) :: list
           ) list [])
-    | Texp_match (exp, cases, _) ->
-      Pexp_match (sub.expr sub exp, List.map (sub.case sub) cases)
-    | Texp_try (exp, cases) ->
-        Pexp_try (sub.expr sub exp, List.map (sub.case sub) cases)
+    | Texp_match (exp, cases, eff_cases, _) ->
+      let merged_cases = List.map (sub.case sub) cases
+        @ List.map
+          (fun c ->
+            let uc = sub.case sub c in
+            let pat = { uc.pc_lhs
+                        (* XXX KC: The 2nd argument of Ppat_effect is wrong *)
+                        with ppat_desc = Ppat_effect (uc.pc_lhs, uc.pc_lhs) }
+            in
+            { uc with pc_lhs = pat })
+          eff_cases
+      in
+      Pexp_match (sub.expr sub exp, merged_cases)
+    | Texp_try (exp, exn_cases, eff_cases) ->
+        let merged_cases = List.map (sub.case sub) exn_cases
+        @ List.map
+          (fun c ->
+            let uc = sub.case sub c in
+            let pat = { uc.pc_lhs
+                        (* XXX KC: The 2nd argument of Ppat_effect is wrong *)
+                        with ppat_desc = Ppat_effect (uc.pc_lhs, uc.pc_lhs) }
+            in
+            { uc with pc_lhs = pat })
+          eff_cases
+        in
+        Pexp_try (sub.expr sub exp, merged_cases)
     | Texp_tuple list ->
         Pexp_tuple (List.map (sub.expr sub) list)
     | Texp_construct (lid, _, args) ->

@@ -29,11 +29,17 @@ jobs:
       manual_changed: ${{ steps.manual.outputs.manual_changed }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: Install libunwind
         run: sudo apt install -y libunwind-dev
+      # This temporary workaround reduces the number of random bits for the base
+      # address of vma regions for mmap allocation, to avoid the
+      # "FATAL: ThreadSanitizer: unexpected memory mapping" TSan error.
+      # See:  https://github.com/google/sanitizers/issues/1716
+      - name: Tune vm.mmap_rnd_bits value for TSan
+        run: sudo sysctl vm.mmap_rnd_bits=28
       - name: Configure tree
         run: |
           MAKE_ARG=-j CONFIG_ARG='--enable-cmm-invariants --enable-dependency-generation --enable-native-toplevel --enable-tsan --enable-ocamltest CFLAGS=-DTSAN_INSTRUMENT_ALL' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
@@ -43,7 +49,7 @@ jobs:
       - name: Prepare Artifact
         run: tar --zstd -cf /tmp/sources.tar.zstd .
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: compiler
           path: /tmp/sources.tar.zstd
@@ -69,7 +75,7 @@ jobs:
             dependencies: libunwind-dev
     steps:
       - name: Download Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: compiler
       - name: Unpack Artifact
@@ -84,7 +90,7 @@ jobs:
         if: matrix.id == 'normal'
         # Run testsuite with 30-minute timeout per test
         run: |
-          TIMEOUT=1800 TSAN_OPTIONS=history_size=6 MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test_sequential
+          TIMEOUT=1800 TSAN_OPTIONS=history_size=6 OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test_sequential
       - name: Run the testsuite (debug runtime)
         if: matrix.id == 'debug'
         env:

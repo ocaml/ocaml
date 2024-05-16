@@ -74,6 +74,12 @@ DOMAIN_STATE(uintnat, sweeping_done)
 /* Is sweeping done for the current major cycle. */
 
 DOMAIN_STATE(uintnat, allocated_words)
+/* Number of words promoted or allocated directly to the major heap since
+   latest slice. */
+
+DOMAIN_STATE(uintnat, allocated_words_direct)
+/* Number of words allocated directly to the major heap since the latest
+   slice. (subset of allocated_words) */
 
 DOMAIN_STATE(uintnat, swept_words)
 

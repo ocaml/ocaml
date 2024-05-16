@@ -17,11 +17,23 @@
    arch_i386;
    reference = "${test_source_directory}/func_sections.reference";
    native;
+ }{
+   arch_power;
+   reference = "${test_source_directory}/func_sections.arm.reference";
+   native;
+ }{
+   arch_riscv64;
+   reference = "${test_source_directory}/func_sections.reference";
+   native;
+ }{
+   arch_s390x;
+   reference = "${test_source_directory}/func_sections.reference";
+   native;
  }
 *)
 
-(* We have a separate reference output for ARM because
-   it doesn't emit .text after jump tables. *)
+(* We have a separate reference output for ARM and POWER because
+   they don't emit .text after jump tables. *)
 
 (* Test for anonymous functions which result in a mangled symbol *)
 let f4 list =

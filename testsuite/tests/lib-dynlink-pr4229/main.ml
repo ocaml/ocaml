@@ -53,24 +53,24 @@
    ocamlopt.byte;
    module = "static.ml";
    ocamlopt.byte;
-   {
-     program = "client.cmxs";
-     flags = "-shared";
-     module = "";
-     all_modules = "client.ml";
-     ocamlopt.byte;
-   }{
-     module = "main.ml";
-     ocamlopt.byte;
-     program = "${test_build_directory}/main_native";
-     libraries = "dynlink";
-     module = "";
-     all_modules = "abstract.cmx static.cmx main.cmx";
-     ocamlopt.byte;
-     exit_status = "2";
-     run;
-     check-program-output;
-   }
+   program = "client.cmxs";
+   flags = "-shared";
+   module = "";
+   all_modules = "client.ml";
+   ocamlopt.byte;
+   module = "main.ml";
+   unset program;
+   unset flags;
+   unset all_modules;
+   ocamlopt.byte;
+   program = "${test_build_directory}/main_native";
+   libraries = "dynlink";
+   module = "";
+   all_modules = "abstract.cmx static.cmx main.cmx";
+   ocamlopt.byte;
+   exit_status = "2";
+   run;
+   check-program-output;
  }
 *)
 

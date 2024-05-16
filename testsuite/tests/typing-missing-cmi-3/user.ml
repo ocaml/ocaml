@@ -75,6 +75,7 @@ Line 2, characters 12-45:
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type "Middle.pack1" = "(module Original.T with type t = int)"
        is not a subtype of "(module T1)"
+       The module alias "Original.T" could not be expanded
 |}]
 
 module type T2 = sig module M : sig type t = int end end
@@ -86,6 +87,7 @@ Line 2, characters 12-45:
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type "Middle.pack2" = "(module Middle.T with type M.t = int)"
        is not a subtype of "(module T2)"
+       The module alias "Original.T" could not be expanded
 |}]
 
 (* Check the detection of type kind in type-directed disambiguation . *)

@@ -874,6 +874,7 @@ typing/includemod_errorprinter.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/printtyp.cmi \
+    typing/primitive.cmi \
     typing/path.cmi \
     typing/oprint.cmi \
     utils/misc.cmi \
@@ -890,6 +891,7 @@ typing/includemod_errorprinter.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
     typing/printtyp.cmx \
+    typing/primitive.cmx \
     typing/path.cmx \
     typing/oprint.cmx \
     utils/misc.cmx \
@@ -903,7 +905,10 @@ typing/includemod_errorprinter.cmx : \
     utils/clflags.cmx \
     typing/includemod_errorprinter.cmi
 typing/includemod_errorprinter.cmi : \
-    typing/includemod.cmi
+    typing/types.cmi \
+    typing/typedtree.cmi \
+    typing/includemod.cmi \
+    typing/env.cmi
 typing/mtype.cmo : \
     typing/types.cmi \
     typing/subst.cmi \
@@ -1751,6 +1756,7 @@ typing/typemod.cmo : \
     typing/typetexp.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/typedecl_immediacy.cmi \
     typing/typedecl.cmi \
     typing/typecore.cmi \
     typing/typeclass.cmi \
@@ -1770,6 +1776,7 @@ typing/typemod.cmo : \
     typing/includemod_errorprinter.cmi \
     typing/includemod.cmi \
     typing/ident.cmi \
+    typing/errortrace.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
     file_formats/cmt_format.cmi \
@@ -1787,6 +1794,7 @@ typing/typemod.cmx : \
     typing/typetexp.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
+    typing/typedecl_immediacy.cmx \
     typing/typedecl.cmx \
     typing/typecore.cmx \
     typing/typeclass.cmx \
@@ -1806,6 +1814,7 @@ typing/typemod.cmx : \
     typing/includemod_errorprinter.cmx \
     typing/includemod.cmx \
     typing/ident.cmx \
+    typing/errortrace.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
     file_formats/cmt_format.cmx \
@@ -2635,7 +2644,6 @@ asmcomp/cmm_helpers.cmo : \
     utils/targetint.cmi \
     lambda/switch.cmi \
     asmcomp/strmatch.cmi \
-    asmcomp/proc.cmi \
     typing/primitive.cmi \
     utils/numbers.cmi \
     utils/misc.cmi \
@@ -2658,7 +2666,6 @@ asmcomp/cmm_helpers.cmx : \
     utils/targetint.cmx \
     lambda/switch.cmx \
     asmcomp/strmatch.cmx \
-    asmcomp/proc.cmx \
     typing/primitive.cmx \
     utils/numbers.cmx \
     utils/misc.cmx \

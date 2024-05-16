@@ -209,8 +209,7 @@ static struct {
 } stw_request = { 0, 0, NULL, NULL, NULL, NULL, 0, 0, { 0 } };
 
 static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
-static caml_plat_cond all_domains_cond =
-    CAML_PLAT_COND_INITIALIZER(&all_domains_lock);
+static caml_plat_cond all_domains_cond = CAML_PLAT_COND_INITIALIZER;
 static atomic_uintnat /* dom_internal* */ stw_leader = 0;
 static dom_internal all_domains[Max_domains];
 
@@ -348,9 +347,10 @@ int caml_send_interrupt(struct interruptor* target)
   /* signal that there is an interrupt pending */
   atomic_store_release(&target->interrupt_pending, 1);
 
-  /* Signal the condition variable, in case the target is
-     itself waiting for an interrupt to be processed elsewhere */
-  caml_plat_lock(&target->lock);
+  /* Signal the condition variable, in case the target is itself
+     waiting for an interrupt to be processed elsewhere, or to wake up
+     the backup thread. */
+  caml_plat_lock_blocking(&target->lock);
   caml_plat_broadcast(&target->cond); // OPT before/after unlock? elide?
   caml_plat_unlock(&target->lock);
 
@@ -469,6 +469,7 @@ static void free_minor_heap(void) {
   domain_state->young_end     = NULL;
   domain_state->young_ptr     = NULL;
   domain_state->young_trigger = NULL;
+  domain_state->memprof_young_trigger = NULL;
   atomic_store_release(&domain_state->young_limit,
                    (uintnat) domain_state->young_start);
 }
@@ -511,7 +512,7 @@ static int allocate_minor_heap(asize_t wsize) {
    * major slice is scheduled. */
   domain_state->young_trigger = domain_state->young_start
          + (domain_state->young_end - domain_state->young_start) / 2;
-  caml_memprof_renew_minor_sample(domain_state);
+  caml_memprof_set_trigger(domain_state);
   caml_reset_young_limit(domain_state);
 
   check_minor_heap();
@@ -561,13 +562,13 @@ static void domain_create(uintnat initial_minor_heap_wsize,
 
   /* take the all_domains_lock so that we can alter the STW participant
      set atomically */
-  caml_plat_lock(&all_domains_lock);
+  caml_plat_lock_blocking(&all_domains_lock);
 
   /* Wait until any in-progress STW sections end. */
   while (atomic_load_acquire(&stw_leader)) {
     /* [caml_plat_wait] releases [all_domains_lock] until the current
        STW section ends, and then takes the lock again. */
-    caml_plat_wait(&all_domains_cond);
+    caml_plat_wait(&all_domains_cond, &all_domains_lock);
   }
 
   d = next_free_domain();
@@ -604,7 +605,7 @@ static void domain_create(uintnat initial_minor_heap_wsize,
    * shared with a domain which is terminating (see
    * domain_terminate). */
 
-  caml_plat_lock(&d->domain_lock);
+  caml_plat_lock_blocking(&d->domain_lock);
 
   /* Set domain_self if we have successfully allocated the
    * caml_domain_state. Otherwise domain_self will be NULL and it's up
@@ -620,14 +621,16 @@ static void domain_create(uintnat initial_minor_heap_wsize,
   atomic_store_explicit(&s->interrupt_word, &domain_state->young_limit,
                         memory_order_release);
 
+  domain_state->id = d->id;
+
   /* Tell memprof system about the new domain before either (a) new
    * domain can allocate anything or (b) parent domain can go away. */
+  CAMLassert(domain_state->memprof == NULL);
   caml_memprof_new_domain(parent, domain_state);
   if (!domain_state->memprof) {
     goto init_memprof_failure;
   }
 
-  domain_state->id = d->id;
   CAMLassert(!s->interrupt_pending);
 
   domain_state->extra_heap_resources = 0.0;
@@ -698,6 +701,7 @@ static void domain_create(uintnat initial_minor_heap_wsize,
   domain_state->gc_regs = NULL;
 
   domain_state->allocated_words = 0;
+  domain_state->allocated_words_direct = 0;
   domain_state->swept_words = 0;
 
   domain_state->local_roots = NULL;
@@ -728,7 +732,6 @@ static void domain_create(uintnat initial_minor_heap_wsize,
   domain_state->trap_barrier_block = -1;
 #endif
 
-  caml_reset_young_limit(domain_state);
   add_next_to_stw_domains();
   goto domain_init_complete;
 
@@ -771,7 +774,7 @@ CAMLexport void caml_reset_domain_lock(void)
        prior to calling fork and then init afterwards in both parent
        and child. */
   caml_plat_mutex_init(&self->domain_lock);
-  caml_plat_cond_init(&self->domain_cond, &self->domain_lock);
+  caml_plat_cond_init(&self->domain_cond);
 
   return;
 }
@@ -923,15 +926,14 @@ void caml_init_domains(uintnat minor_heap_wsz) {
 
     dom->interruptor.interrupt_word = NULL;
     caml_plat_mutex_init(&dom->interruptor.lock);
-    caml_plat_cond_init(&dom->interruptor.cond,
-                        &dom->interruptor.lock);
+    caml_plat_cond_init(&dom->interruptor.cond);
     dom->interruptor.running = 0;
     dom->interruptor.terminating = 0;
     dom->interruptor.unique_id = 0;
     dom->interruptor.interrupt_pending = 0;
 
     caml_plat_mutex_init(&dom->domain_lock);
-    caml_plat_cond_init(&dom->domain_cond, &dom->domain_lock);
+    caml_plat_cond_init(&dom->domain_cond);
     dom->backup_thread_running = 0;
     dom->backup_thread_msg = BT_INIT;
   }
@@ -1016,14 +1018,14 @@ static void* backup_thread_func(void* v)
             caml_plat_unlock(&di->domain_lock);
           }
         }
-        /* Wait safely if there is nothing to do.
-         * Will be woken from caml_leave_blocking_section
+        /* Wait safely if there is nothing to do. Will be woken from
+         * caml_send_interrupt and domain_terminate.
          */
-        caml_plat_lock(&s->lock);
+        caml_plat_lock_blocking(&s->lock);
         msg = atomic_load_acquire (&di->backup_thread_msg);
         if (msg == BT_IN_BLOCKING_SECTION &&
             !caml_incoming_interrupts_queued())
-          caml_plat_wait(&s->cond);
+          caml_plat_wait(&s->cond, &s->lock);
         caml_plat_unlock(&s->lock);
         break;
       case BT_ENTERING_OCAML:
@@ -1031,10 +1033,10 @@ static void* backup_thread_func(void* v)
          * Will be woken from caml_bt_exit_ocaml
          * or domain_terminate
          */
-        caml_plat_lock(&di->domain_lock);
+        caml_plat_lock_blocking(&di->domain_lock);
         msg = atomic_load_acquire (&di->backup_thread_msg);
         if (msg == BT_ENTERING_OCAML)
-          caml_plat_wait(&di->domain_cond);
+          caml_plat_wait(&di->domain_cond, &di->domain_lock);
         caml_plat_unlock(&di->domain_lock);
         break;
       default:
@@ -1067,7 +1069,7 @@ static void install_backup_thread (dom_internal* di)
       /* Give a chance for backup thread on this domain to terminate */
       caml_plat_unlock (&di->domain_lock);
       cpu_relax ();
-      caml_plat_lock (&di->domain_lock);
+      caml_plat_lock_blocking(&di->domain_lock);
       msg = atomic_load_acquire(&di->backup_thread_msg);
     }
 
@@ -1177,7 +1179,7 @@ static void* domain_thread_func(void* v)
   p->newdom = domain_self;
 
   /* handshake with the parent domain */
-  caml_plat_lock(&p->parent->interruptor.lock);
+  caml_plat_lock_blocking(&p->parent->interruptor.lock);
   if (domain_self) {
     p->status = Dom_started;
     p->unique_id = domain_self->interruptor.unique_id;
@@ -1260,17 +1262,18 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
 
   /* While waiting for the child thread to start up, we need to service any
      stop-the-world requests as they come in. */
-  caml_plat_lock(&domain_self->interruptor.lock);
+  struct interruptor *interruptor = &domain_self->interruptor;
+  caml_plat_lock_blocking(&interruptor->lock);
   while (p.status == Dom_starting) {
     if (caml_incoming_interrupts_queued()) {
-      caml_plat_unlock(&domain_self->interruptor.lock);
-      handle_incoming(&domain_self->interruptor);
-      caml_plat_lock(&domain_self->interruptor.lock);
+      caml_plat_unlock(&interruptor->lock);
+      handle_incoming(interruptor);
+      caml_plat_lock_blocking(&interruptor->lock);
     } else {
-      caml_plat_wait(&domain_self->interruptor.cond);
+      caml_plat_wait(&interruptor->cond, &interruptor->lock);
     }
   }
-  caml_plat_unlock(&domain_self->interruptor.lock);
+  caml_plat_unlock(&interruptor->lock);
 
   if (p.status == Dom_started) {
     /* successfully created a domain.
@@ -1346,7 +1349,7 @@ static void decrement_stw_domains_still_processing(void)
 
   if( am_last ) {
     /* release the STW lock to allow new STW sections */
-    caml_plat_lock(&all_domains_lock);
+    caml_plat_lock_blocking(&all_domains_lock);
     atomic_store_release(&stw_leader, 0);
     caml_plat_broadcast(&all_domains_cond);
     caml_gc_log("clearing stw leader");
@@ -1644,20 +1647,22 @@ void caml_reset_young_limit(caml_domain_state * dom_st)
      achieves the proper synchronisation. */
   atomic_exchange(&dom_st->young_limit, (uintnat)trigger);
 
+  /* For non-delayable asynchronous actions, we immediately interrupt
+     the domain again. */
   dom_internal * d = &all_domains[dom_st->id];
   if (atomic_load_relaxed(&d->interruptor.interrupt_pending)
       || dom_st->requested_minor_gc
       || dom_st->requested_major_slice
-      || dom_st->major_slice_epoch < atomic_load (&caml_major_slice_epoch)
-      || atomic_load_relaxed(&dom_st->requested_external_interrupt)) {
+      || dom_st->major_slice_epoch < atomic_load (&caml_major_slice_epoch)) {
     interrupt_domain_local(dom_st);
   }
-  /* We might be here due to a recently-recorded signal, so we
-     need to remember that we must run signal handlers. In
-     addition, in the case of long-running C code (that may
-     regularly poll with caml_process_pending_actions), we want to
-     force a query of all callbacks at every minor collection or
-     major slice (similarly to the OCaml behaviour). */
+  /* We might be here due to a recently-recorded signal or forced
+     systhread switching, so we need to remember that we must run
+     signal handlers or systhread's yield. In addition, in the case of
+     long-running C code (that may regularly poll with
+     caml_process_pending_actions), we want to force a query of all
+     callbacks at every minor collection or major slice (similarly to
+     the OCaml behaviour). */
   caml_set_action_pending(dom_st);
 }
 
@@ -1749,9 +1754,6 @@ void caml_poll_gc_work(void)
        caml_poll_gc_work is called. */
   }
 
-  if (atomic_load_acquire(&d->requested_external_interrupt)) {
-    caml_domain_external_interrupt_hook();
-  }
   caml_reset_young_limit(d);
 }
 
@@ -1767,6 +1769,14 @@ void caml_handle_gc_interrupt(void)
   }
 
   caml_poll_gc_work();
+}
+
+/* Preemptive systhread switching */
+void caml_process_external_interrupt(void)
+{
+  if (atomic_load_acquire(&Caml_state->requested_external_interrupt)) {
+    caml_domain_external_interrupt_hook();
+  }
 }
 
 CAMLexport int caml_bt_is_in_blocking_section(void)
@@ -1789,7 +1799,7 @@ CAMLexport intnat caml_domain_is_multicore (void)
 CAMLexport void caml_acquire_domain_lock(void)
 {
   dom_internal* self = domain_self;
-  caml_plat_lock(&self->domain_lock);
+  caml_plat_lock_blocking(&self->domain_lock);
   caml_state = self->state;
 }
 
@@ -1879,7 +1889,7 @@ static void domain_terminate (void)
 
     /* take the all_domains_lock to try and exit the STW participant set
        without racing with a STW section being triggered */
-    caml_plat_lock(&all_domains_lock);
+    caml_plat_lock_blocking(&all_domains_lock);
 
     /* The interaction of termination and major GC is quite subtle.
 
@@ -1905,7 +1915,7 @@ static void domain_terminate (void)
       /* signal the interruptor condition variable
        * because the backup thread may be waiting on it
        */
-      caml_plat_lock(&s->lock);
+      caml_plat_lock_blocking(&s->lock);
       caml_plat_broadcast(&s->cond);
       caml_plat_unlock(&s->lock);
 
@@ -1994,6 +2004,18 @@ CAMLprim value caml_domain_dls_get(value unused)
 {
   CAMLnoalloc;
   return Caml_state->dls_root;
+}
+
+CAMLprim value caml_domain_dls_compare_and_set(value old, value new)
+{
+  CAMLnoalloc;
+  value current = Caml_state->dls_root;
+  if (current == old) {
+    caml_modify_generational_global_root(&Caml_state->dls_root, new);
+    return Val_true;
+  } else {
+    return Val_false;
+  }
 }
 
 CAMLprim value caml_recommended_domain_count(value unused)

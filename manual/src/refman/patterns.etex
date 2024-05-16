@@ -295,10 +295,6 @@ let classify_char = function
 
 (Introduced in Objective Caml 3.11)
 
-\begin{syntax}
-pattern: ...
-\end{syntax}
-
 The pattern @"lazy" pattern@ matches a value \var{v} of type "Lazy.t",
 provided @pattern@ matches the result of forcing \var{v} with
 "Lazy.force". A successful match of a pattern containing @"lazy"@

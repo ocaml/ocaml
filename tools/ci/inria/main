@@ -25,6 +25,7 @@
 # Other environment variables that are honored:
 #   OCAML_CONFIGURE_OPTIONS   additional options for configure
 #   OCAML_JOBS                number of jobs to run in parallel (make -j)
+#   OCAML_4_ONLY              build only OCaml 4.x, not OCaml 5
 
 # Command-line arguments:
 # -conf configure-option  add configure-option to configure cmd line
@@ -56,6 +57,22 @@ kill_task()
 quote1 () {
   printf "'%s'" "`printf %s "$1" | sed -e "s/'/'\\\\\\\\''/g"`";
 }
+
+#########################################################################
+# Log our parameters and environment variables
+echo "tools/ci/inria/main:"
+echo "arguments: $*"
+echo "OCAML_CONFIGURE_OPTIONS=$OCAML_CONFIGURE_OPTIONS"
+echo "OCAML_JOBS=$OCAML_JOBS"
+echo "OCAML_4_ONLY=$OCAML_4_ONLY"
+
+#########################################################################
+# Stop now if the platform doesn't support OCaml 5
+case "$OCAML_4_ONLY" in
+  true) echo "This machine/OS does not support OCaml 5. Stopping now."
+        exit 0
+        ;;
+esac
 
 #########################################################################
 # Display environment information
@@ -144,7 +161,8 @@ cleanup=false
 check_make_alldepend=false
 jobs=''
 bootstrap=false
-init_submodule=false
+init_submodule_flexdll=false
+init_submodule_winpthreads=false
 
 memory_model_tests="tests/memory-model/forbidden.ml \
 tests/memory-model/publish.ml"
@@ -175,7 +193,7 @@ case "${OCAML_ARCH}" in
     instdir='C:/ocamlmgw'
     cleanup=true
     check_make_alldepend=true
-    init_submodule=true
+    init_submodule_flexdll=true
   ;;
   mingw64)
     build='--build=x86_64-pc-cygwin'
@@ -183,19 +201,23 @@ case "${OCAML_ARCH}" in
     instdir='C:/ocamlmgw64'
     cleanup=true
     check_make_alldepend=true
-    init_submodule=true
+    init_submodule_flexdll=true
   ;;
   msvc)
     build='--build=i686-pc-cygwin'
     host='--host=i686-pc-windows'
     instdir='C:/ocamlms'
     cleanup=true
+    init_submodule_flexdll=true
+    init_submodule_winpthreads=true
   ;;
   msvc64)
     build='--build=x86_64-pc-cygwin'
     host='--host=x86_64-pc-windows'
     instdir='C:/ocamlms64'
     cleanup=true
+    init_submodule_flexdll=true
+    init_submodule_winpthreads=true
   ;;
   *) arch_error;;
 esac
@@ -221,10 +243,20 @@ fi
 pwd
 cd "$jenkinsdir"
 
-if $init_submodule; then
+if $init_submodule_flexdll; then
   git submodule update --init flexdll
 elif [ -f flexdll/Makefile ]; then
-  git submodule deinit --force flexdll
+  if grep -Fq flexdll .gitmodules; then
+    git submodule deinit --force flexdll
+  fi
+fi
+
+if $init_submodule_winpthreads; then
+  git submodule update --init winpthreads
+elif [ -f winpthreads/Makefile.in ]; then
+  if grep -Fq winpthreads .gitmodules; then
+    git submodule deinit --force winpthreads
+  fi
 fi
 
 #########################################################################

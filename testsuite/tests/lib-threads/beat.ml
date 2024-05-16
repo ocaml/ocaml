@@ -3,7 +3,7 @@
    include systhreads;
    hassysthreads;
  }{
-   reason = "off-by-one error on MacOS+Clang (#408)";
+   reason = "off-by-one error on MacOS+Clang (https://github.com/ocaml-multicore/ocaml-multicore/issues/408)";
    skip;
    {
      bytecode;

@@ -15,6 +15,7 @@
 /**************************************************************************/
 #define CAML_INTERNALS
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -27,6 +28,7 @@
 #include "caml/globroots.h"
 #include "caml/major_gc.h"
 #include "caml/memory.h"
+#include "caml/memprof.h"
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
 #include "caml/roots.h"
@@ -148,7 +150,7 @@ static int move_all_pools(pool** src, _Atomic(pool*)* dst,
 void caml_teardown_shared_heap(struct caml_heap_state* heap) {
   int i;
   int released = 0, released_large = 0;
-  caml_plat_lock(&pool_freelist.lock);
+  caml_plat_lock_blocking(&pool_freelist.lock);
   for (i = 0; i < NUM_SIZECLASSES; i++) {
     released +=
       move_all_pools(&heap->avail_pools[i],
@@ -183,7 +185,7 @@ void caml_teardown_shared_heap(struct caml_heap_state* heap) {
 static pool* pool_acquire(struct caml_heap_state* local) {
   pool* r;
 
-  caml_plat_lock(&pool_freelist.lock);
+  caml_plat_lock_blocking(&pool_freelist.lock);
   if (!pool_freelist.free) {
     void* mem = caml_mem_map(Bsize_wsize(POOL_WSIZE), 0);
 
@@ -214,7 +216,7 @@ static void pool_release(struct caml_heap_state* local,
   CAMLassert(pool->sz == sz);
   local->stats.pool_words -= POOL_WSIZE;
   local->stats.pool_frag_words -= POOL_HEADER_WSIZE + wastage_sizeclass[sz];
-  caml_plat_lock(&pool_freelist.lock);
+  caml_plat_lock_blocking(&pool_freelist.lock);
   pool->next = pool_freelist.free;
   pool_freelist.free = pool;
   caml_plat_unlock(&pool_freelist.lock);
@@ -305,7 +307,7 @@ static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
     return NULL;
 
   /* Haven't managed to find a pool locally, try the global ones */
-  caml_plat_lock(&pool_freelist.lock);
+  caml_plat_lock_blocking(&pool_freelist.lock);
   if( atomic_load_relaxed(&pool_freelist.global_avail_pools[sz]) ) {
     r = atomic_load_relaxed(&pool_freelist.global_avail_pools[sz]);
 
@@ -673,7 +675,7 @@ void caml_collect_heap_stats_sample(
 /* Add the orphan pool stats to a stats accumulator. */
 void caml_accum_orphan_heap_stats(struct heap_stats* acc)
 {
-  caml_plat_lock(&pool_freelist.lock);
+  caml_plat_lock_blocking(&pool_freelist.lock);
   caml_accum_heap_stats(acc, &pool_freelist.stats);
   caml_plat_unlock(&pool_freelist.lock);
 }
@@ -1222,6 +1224,10 @@ void caml_compact_heap(caml_domain_state* domain_state,
   /* First we do roots (locals and finalisers) */
   caml_do_roots(&compact_update_value, 0, NULL, Caml_state, 1);
 
+  /* Memprof roots and "weak" pointers to tracked blocks */
+  caml_memprof_scan_roots(&compact_update_value, 0, NULL,
+                          Caml_state, true, participants[0] == Caml_state);
+
   /* Next, one domain does the global roots */
   if (participants[0] == Caml_state) {
     caml_scan_global_roots(&compact_update_value, NULL);
@@ -1279,7 +1285,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
     pool* cur_pool;
     pool* next_pool;
 
-    caml_plat_lock(&pool_freelist.lock);
+    caml_plat_lock_blocking(&pool_freelist.lock);
     cur_pool = pool_freelist.free;
 
     while( cur_pool ) {
@@ -1425,7 +1431,7 @@ void caml_cycle_heap(struct caml_heap_state* local) {
   local->unswept_large = local->swept_large;
   local->swept_large = NULL;
 
-  caml_plat_lock(&pool_freelist.lock);
+  caml_plat_lock_blocking(&pool_freelist.lock);
   for (i = 0; i < NUM_SIZECLASSES; i++) {
     received_p += move_all_pools(
         (pool**)&pool_freelist.global_avail_pools[i],

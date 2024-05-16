@@ -58,6 +58,9 @@ end
 (**** Levels ****)
 
 val generic_level: int
+        (* level of polymorphic variables; = Ident.highest_scope *)
+val lowest_level: int
+        (* lowest level for type nodes; = Ident.lowest_scope *)
 
 val newgenty: type_desc -> type_expr
         (* Create a generic type *)
@@ -66,13 +69,6 @@ val newgenvar: ?name:string -> unit -> type_expr
 val newgenstub: scope:int -> type_expr
         (* Return a fresh generic node, to be instantiated
            by [Transient_expr.set_stub_desc] *)
-
-(* Use Tsubst instead
-val newmarkedvar: int -> type_expr
-        (* Return a fresh marked variable *)
-val newmarkedgenvar: unit -> type_expr
-        (* Return a fresh marked generic variable *)
-*)
 
 (**** Types ****)
 
@@ -136,29 +132,47 @@ val iter_type_expr_cstr_args: (type_expr -> unit) ->
 val map_type_expr_cstr_args: (type_expr -> type_expr) ->
   (constructor_arguments -> constructor_arguments)
 
+(**** Utilities for type marking ****)
 
-type type_iterators =
-  { it_signature: type_iterators -> signature -> unit;
-    it_signature_item: type_iterators -> signature_item -> unit;
-    it_value_description: type_iterators -> value_description -> unit;
-    it_type_declaration: type_iterators -> type_declaration -> unit;
-    it_extension_constructor: type_iterators -> extension_constructor -> unit;
-    it_module_declaration: type_iterators -> module_declaration -> unit;
-    it_modtype_declaration: type_iterators -> modtype_declaration -> unit;
-    it_class_declaration: type_iterators -> class_declaration -> unit;
-    it_class_type_declaration: type_iterators -> class_type_declaration -> unit;
-    it_functor_param: type_iterators -> functor_parameter -> unit;
-    it_module_type: type_iterators -> module_type -> unit;
-    it_class_type: type_iterators -> class_type -> unit;
-    it_type_kind: type_iterators -> type_decl_kind -> unit;
-    it_do_type_expr: type_iterators -> type_expr -> unit;
-    it_type_expr: type_iterators -> type_expr -> unit;
+val mark_type: type_mark -> type_expr -> unit
+        (* Mark a type recursively *)
+val mark_type_params: type_mark -> type_expr -> unit
+        (* Mark the sons of a type node recursively *)
+
+(**** (Object-oriented) iterator ****)
+
+type 'a type_iterators =
+  { it_signature: 'a type_iterators -> signature -> unit;
+    it_signature_item: 'a type_iterators -> signature_item -> unit;
+    it_value_description: 'a type_iterators -> value_description -> unit;
+    it_type_declaration: 'a type_iterators -> type_declaration -> unit;
+    it_extension_constructor:
+        'a type_iterators -> extension_constructor -> unit;
+    it_module_declaration: 'a type_iterators -> module_declaration -> unit;
+    it_modtype_declaration: 'a type_iterators -> modtype_declaration -> unit;
+    it_class_declaration: 'a type_iterators -> class_declaration -> unit;
+    it_class_type_declaration:
+        'a type_iterators -> class_type_declaration -> unit;
+    it_functor_param: 'a type_iterators -> functor_parameter -> unit;
+    it_module_type: 'a type_iterators -> module_type -> unit;
+    it_class_type: 'a type_iterators -> class_type -> unit;
+    it_type_kind: 'a type_iterators -> type_decl_kind -> unit;
+    it_do_type_expr: 'a type_iterators -> 'a;
+    it_type_expr: 'a type_iterators -> type_expr -> unit;
     it_path: Path.t -> unit; }
-val type_iterators: type_iterators
-        (* Iteration on arbitrary type information.
+
+type type_iterators_full = (type_expr -> unit) type_iterators
+type type_iterators_without_type_expr = (unit -> unit) type_iterators
+
+val type_iterators: type_mark -> type_iterators_full
+        (* Iteration on arbitrary type information, including [type_expr].
            [it_type_expr] calls [mark_node] to avoid loops. *)
-val unmark_iterators: type_iterators
-        (* Unmark any structure containing types. See [unmark_type] below. *)
+
+val type_iterators_without_type_expr: type_iterators_without_type_expr
+        (* Iteration on arbitrary type information.
+           Cannot recurse on [type_expr]. *)
+
+(**** Utilities for copying ****)
 
 val copy_type_desc:
     ?keep_names:bool -> (type_expr -> type_expr) -> type_desc -> type_desc
@@ -183,41 +197,6 @@ module For_copy : sig
         (* [with_scope f] calls [f] and restores saved type descriptions
            before returning its result. *)
 end
-
-val lowest_level: int
-        (* Marked type: ty.level < lowest_level *)
-
-val not_marked_node: type_expr -> bool
-        (* Return true if a type node is not yet marked *)
-
-val logged_mark_node: type_expr -> unit
-        (* Mark a type node, logging the marking so it can be backtracked *)
-val try_logged_mark_node: type_expr -> bool
-        (* Mark a type node if it is not yet marked, logging the marking so it
-           can be backtracked.
-           Return false if it was already marked *)
-
-val flip_mark_node: type_expr -> unit
-        (* Mark a type node.
-           The marking is not logged and will have to be manually undone using
-           one of the various [unmark]'ing functions below. *)
-val try_mark_node: type_expr -> bool
-        (* Mark a type node if it is not yet marked.
-           The marking is not logged and will have to be manually undone using
-           one of the various [unmark]'ing functions below.
-
-           Return false if it was already marked *)
-val mark_type: type_expr -> unit
-        (* Mark a type recursively *)
-val mark_type_params: type_expr -> unit
-        (* Mark the sons of a type node recursively *)
-
-val unmark_type: type_expr -> unit
-val unmark_type_decl: type_declaration -> unit
-val unmark_extension_constructor: extension_constructor -> unit
-val unmark_class_type: class_type -> unit
-val unmark_class_signature: class_signature -> unit
-        (* Remove marks from a type *)
 
 (**** Memorization of abbreviation expansion ****)
 

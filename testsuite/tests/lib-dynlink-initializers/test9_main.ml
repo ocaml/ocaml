@@ -5,51 +5,52 @@
  shared-libraries;
  {
    setup-ocamlc.byte-build-env;
-   {
-     module = "test9_second_plugin.mli";
-     ocamlc.byte;
-   }{
-     module = "test9_main.ml";
-     ocamlc.byte;
-   }{
-     module = "test9_plugin.ml";
-     ocamlc.byte;
-   }{
-     module = "test9_second_plugin.ml";
-     ocamlc.byte;
-   }{
-     program = "${test_build_directory}/test9.byte";
-     libraries = "dynlink";
-     all_modules = "test9_main.cmo";
-     ocamlc.byte;
-     run;
-   }
+
+   module = "test9_second_plugin.mli";
+   ocamlc.byte;
+
+   module = "test9_main.ml";
+   ocamlc.byte;
+
+   module = "test9_plugin.ml";
+   ocamlc.byte;
+
+   module = "test9_second_plugin.ml";
+   ocamlc.byte;
+
+   unset module;
+   program = "${test_build_directory}/test9.byte";
+   libraries = "dynlink";
+   all_modules = "test9_main.cmo";
+   ocamlc.byte;
+   run;
  }{
    native-dynlink;
    setup-ocamlopt.byte-build-env;
-   {
-     module = "test9_second_plugin.mli";
-     ocamlopt.byte;
-   }{
-     module = "test9_main.ml";
-     ocamlopt.byte;
-   }{
-     program = "test9_plugin.cmxs";
-     flags = "-shared";
-     all_modules = "test9_plugin.ml";
-     ocamlopt.byte;
-   }{
-     program = "test9_second_plugin.cmxs";
-     flags = "-shared";
-     all_modules = "test9_second_plugin.ml";
-     ocamlopt.byte;
-   }{
-     program = "${test_build_directory}/test9.exe";
-     libraries = "dynlink";
-     all_modules = "test9_main.cmx";
-     ocamlopt.byte;
-     run;
-   }
+
+   module = "test9_second_plugin.mli";
+   ocamlopt.byte;
+
+   module = "test9_main.ml";
+   ocamlopt.byte;
+
+   unset module;
+   program = "test9_plugin.cmxs";
+   flags = "-shared";
+   all_modules = "test9_plugin.ml";
+   ocamlopt.byte;
+
+   program = "test9_second_plugin.cmxs";
+   flags = "-shared";
+   all_modules = "test9_second_plugin.ml";
+   ocamlopt.byte;
+
+   program = "${test_build_directory}/test9.exe";
+   unset flags;
+   libraries = "dynlink";
+   all_modules = "test9_main.cmx";
+   ocamlopt.byte;
+   run;
  }
 *)
 

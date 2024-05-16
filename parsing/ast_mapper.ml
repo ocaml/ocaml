@@ -95,14 +95,18 @@ let map_loc sub {loc; txt} = {loc = sub.location sub loc; txt}
 module C = struct
   (* Constants *)
 
-  let map sub c = match c with
-    | Pconst_integer _
-    | Pconst_char _
-    | Pconst_float _
-      -> c
-    | Pconst_string (s, loc, quotation_delimiter) ->
-        let loc = sub.location sub loc in
-        Const.string ~loc ?quotation_delimiter s
+  let map sub { pconst_desc; pconst_loc } =
+    let loc = sub.location sub pconst_loc in
+    let desc =
+      match pconst_desc with
+      | Pconst_integer _
+      | Pconst_char _
+      | Pconst_float _ ->
+          pconst_desc
+      | Pconst_string (s, loc, quotation_delimiter) ->
+          Pconst_string (s, sub.location sub loc, quotation_delimiter)
+    in
+    Const.mk ~loc desc
 end
 
 module T = struct
@@ -549,6 +553,8 @@ module P = struct
     | Ppat_unpack s -> unpack ~loc ~attrs (map_loc sub s)
     | Ppat_open (lid,p) -> open_ ~loc ~attrs (map_loc sub lid) (sub.pat sub p)
     | Ppat_exception p -> exception_ ~loc ~attrs (sub.pat sub p)
+    | Ppat_effect(p1, p2) ->
+        effect_ ~loc ~attrs (sub.pat sub p1) (sub.pat sub p2)
     | Ppat_extension x -> extension ~loc ~attrs (sub.extension sub x)
 end
 
@@ -832,17 +838,17 @@ let extension_of_error {kind; main; sub} =
   let extension_of_sub sub =
     { loc = sub.loc; txt = "ocaml.error" },
     PStr ([Str.eval (Exp.constant
-                       (Pconst_string (str_of_pp sub.txt, sub.loc, None)))])
+                       (Const.string ~loc:sub.loc (str_of_pp sub.txt)))])
   in
   { loc = main.loc; txt = "ocaml.error" },
   PStr (Str.eval (Exp.constant
-                    (Pconst_string (str_of_pp main.txt, main.loc, None))) ::
+                    (Const.string ~loc:main.loc (str_of_pp main.txt))) ::
         List.map (fun msg -> Str.extension (extension_of_sub msg)) sub)
 
 let attribute_of_warning loc s =
   Attr.mk
     {loc; txt = "ocaml.ppwarning" }
-    (PStr ([Str.eval ~loc (Exp.constant (Pconst_string (s, loc, None)))]))
+    (PStr ([Str.eval ~loc (Exp.constant (Const.string ~loc s))]))
 
 let cookies = ref String.Map.empty
 
@@ -935,7 +941,8 @@ module PpxContext = struct
   let restore fields =
     let field name payload =
       let rec get_string = function
-        | { pexp_desc = Pexp_constant (Pconst_string (str, _, None)) } -> str
+        | {pexp_desc = Pexp_constant
+               {pconst_desc = Pconst_string (str, _, None); _}} -> str
         | _ -> raise_errorf "Internal error: invalid [@@@ocaml.ppx.context \
                              { %s }] string syntax" name
       and get_bool pexp =

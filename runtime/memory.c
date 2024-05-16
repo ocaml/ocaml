@@ -25,6 +25,7 @@
 #include "caml/misc.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
+#include "caml/memprof.h"
 #include "caml/major_gc.h"
 #include "caml/signals.h"
 #include "caml/shared_heap.h"
@@ -433,7 +434,8 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
   }
 
   dom_st->allocated_words += Whsize_wosize(wosize);
-  if (dom_st->allocated_words > dom_st->minor_heap_wsz / 5) {
+  dom_st->allocated_words_direct += Whsize_wosize(wosize);
+  if (dom_st->allocated_words_direct > dom_st->minor_heap_wsz / 5) {
     CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ALLOC_SHR, 1);
     caml_request_major_slice(1);
   }
@@ -445,6 +447,10 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
       Op_hp(v)[i] = Debug_uninit_major;
   }
 #endif
+  caml_memprof_sample_block(Val_hp(v), wosize,
+                            Whsize_wosize(wosize),
+                            CAML_MEMPROF_SRC_NORMAL);
+
   return Val_hp(v);
 }
 
@@ -527,7 +533,7 @@ static struct pool_block* get_pool_block(caml_stat_block b)
 /* Linking a pool block into the ring */
 static void link_pool_block(struct pool_block *pb)
 {
-  caml_plat_lock(&pool_mutex);
+  caml_plat_lock_blocking(&pool_mutex);
   pb->next = pool->next;
   pb->prev = pool;
   pool->next->prev = pb;
@@ -538,7 +544,7 @@ static void link_pool_block(struct pool_block *pb)
 /* Unlinking a pool block from the ring */
 static void unlink_pool_block(struct pool_block *pb)
 {
-    caml_plat_lock(&pool_mutex);
+    caml_plat_lock_blocking(&pool_mutex);
     pb->prev->next = pb->next;
     pb->next->prev = pb->prev;
     caml_plat_unlock(&pool_mutex);
@@ -560,7 +566,7 @@ CAMLexport void caml_stat_create_pool(void)
 
 CAMLexport void caml_stat_destroy_pool(void)
 {
-  caml_plat_lock(&pool_mutex);
+  caml_plat_lock_blocking(&pool_mutex);
   if (pool != NULL) {
     pool->prev->next = NULL;
     while (pool != NULL) {

@@ -15,13 +15,16 @@
 
 #define CAML_INTERNALS
 
-#if defined(_WIN32) && !defined(NATIVE_CODE)
+#if defined(_WIN32) && !defined(NATIVE_CODE) && !defined(_MSC_VER)
 /* Ensure that pthread.h marks symbols __declspec(dllimport) so that they can be
    picked up from the runtime (which will have linked winpthreads statically).
    mingw-w64 11.0.0 introduced WINPTHREADS_USE_DLLIMPORT to do this explicitly;
    prior versions co-opted this on the internal DLL_EXPORT, but this is ignored
    in 11.0 and later unless IN_WINPTHREAD is also defined, so we can safely
-   define both to support both versions. */
+   define both to support both versions.
+   When compiling with MSVC, we currently link directly the winpthreads objects
+   into our runtime, so we do not want to mark its symbols with
+   __declspec(dllimport). */
 #define WINPTHREADS_USE_DLLIMPORT
 #define DLL_EXPORT
 #endif
@@ -509,7 +512,7 @@ static void caml_thread_domain_initialize_hook(void)
   caml_memprof_enter_thread(new_thread->memprof);
 }
 
-CAMLprim value caml_thread_yield(value unit);
+static void thread_yield(void);
 
 void caml_thread_interrupt_hook(void)
 {
@@ -521,7 +524,7 @@ void caml_thread_interrupt_hook(void)
     &Caml_state->requested_external_interrupt;
 
   if (atomic_compare_exchange_strong(req_external_interrupt, &is_on, 0)) {
-    caml_thread_yield(Val_unit);
+    thread_yield();
   }
 
   return;
@@ -780,26 +783,33 @@ CAMLprim value caml_thread_uncaught_exception(value exn)
 
 /* Allow re-scheduling */
 
-CAMLprim value caml_thread_yield(value unit)
+static void thread_yield(void)
 {
   st_masterlock *m = Thread_lock(Caml_state->id);
   if (st_masterlock_waiters(m) == 0)
-    return Val_unit;
+    return;
 
   /* Do all the parts of a blocking section enter&leave except lock
      manipulation, which we will do more efficiently in
-     st_thread_yield, and asynchronous actions (since
-     [caml_thread_yield] must not raise). (Since our blocking section
-     does not contain anything interesting, do not bother saving
-     errno.)
+     st_thread_yield, and executing signal handlers (which is already
+     done at this point as part of the asynchronous actions mechanism
+     when forcing a systhread yield). (Since our blocking section does
+     not contain anything interesting, do not bother saving errno.)
   */
 
   save_runtime_state();
   st_thread_yield(m);
   restore_runtime_state(This_thread);
+
+  /* Switching threads might have unmasked some signal. */
   if (caml_check_pending_signals())
     caml_set_action_pending(Caml_state);
+}
 
+CAMLprim value caml_thread_yield(value unit)
+{
+  caml_process_pending_actions();
+  thread_yield();
   return Val_unit;
 }
 

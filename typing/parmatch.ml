@@ -504,26 +504,15 @@ let rec read_args xs r = match xs,r with
 | _,_ ->
     fatal_error "Parmatch.read_args"
 
-let do_set_args ~erase_mutable q r = match q with
+let set_args q r = match q with
 | {pat_desc = Tpat_tuple omegas} ->
     let args,rest = read_args omegas r in
     make_pat (Tpat_tuple args) q.pat_type q.pat_env::rest
 | {pat_desc = Tpat_record (omegas,closed)} ->
     let args,rest = read_args omegas r in
-    make_pat
-      (Tpat_record
-         (List.map2 (fun (lid, lbl,_) arg ->
-           if
-             erase_mutable &&
-             (match lbl.lbl_mut with
-             | Mutable -> true | Immutable -> false)
-           then
-             lid, lbl, omega
-           else
-             lid, lbl, arg)
-            omegas args, closed))
-      q.pat_type q.pat_env::
-    rest
+    let args =
+      List.map2 (fun (lid, lbl, _) arg -> (lid, lbl, arg)) omegas args in
+    make_pat (Tpat_record (args, closed)) q.pat_type q.pat_env :: rest
 | {pat_desc = Tpat_construct (lid, c, omegas, _)} ->
     let args,rest = read_args omegas r in
     make_pat
@@ -548,7 +537,6 @@ let do_set_args ~erase_mutable q r = match q with
     end
 | {pat_desc = Tpat_array omegas} ->
     let args,rest = read_args omegas r in
-    let args = if erase_mutable then omegas else args in
     make_pat
       (Tpat_array args) q.pat_type q.pat_env::
     rest
@@ -556,9 +544,6 @@ let do_set_args ~erase_mutable q r = match q with
     q::r (* case any is used in matching.ml *)
 | {pat_desc = (Tpat_var _ | Tpat_alias _ | Tpat_or _); _} ->
     fatal_error "Parmatch.set_args"
-
-let set_args q r = do_set_args ~erase_mutable:false q r
-and set_args_erase_mutable q r = do_set_args ~erase_mutable:true q r
 
 (* Given a matrix of non-empty rows
    p1 :: r1...
@@ -1899,22 +1884,20 @@ let do_check_partial ~pred loc casel pss = match pss with
     | Seq.Cons (v, _rest) ->
       if Warnings.is_active (Warnings.Partial_match "") then begin
         let errmsg =
-          try
-            let buf = Buffer.create 16 in
-            let fmt = Format.formatter_of_buffer buf in
-            Format.fprintf fmt "%a@?" Printpat.pretty_pat v;
-            if do_match (initial_only_guarded casel) [v] then
-              Buffer.add_string buf
-                "\n(However, some guarded clause may match this value.)";
-            if contains_extension v then
-              Buffer.add_string buf
-                "\nMatching over values of extensible variant types \
-                   (the *extension* above)\n\
-              must include a wild card pattern in order to be exhaustive."
-            ;
-            Buffer.contents buf
-          with _ ->
-            ""
+          let buf = Buffer.create 16 in
+          let fmt = Format.formatter_of_buffer buf in
+          Format.fprintf fmt "@[<v>%a" Printpat.pretty_pat v;
+          if do_match (initial_only_guarded casel) [v] then
+            Format.fprintf fmt
+              "@,(However, some guarded clause may match this value.)";
+          if contains_extension v then
+            Format.fprintf fmt
+              "@,@[Matching over values of extensible variant types \
+               (the *extension* above)@,\
+               must include a wild card pattern@ in order to be exhaustive.@]"
+          ;
+          Format.fprintf fmt "@]@?";
+          Buffer.contents buf
         in
         Location.prerr_warning loc (Warnings.Partial_match errmsg)
       end;

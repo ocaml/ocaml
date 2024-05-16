@@ -37,7 +37,7 @@ jobs:
       manual_changed: ${{ steps.manual.outputs.manual_changed }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: Check for manual changes
@@ -64,7 +64,7 @@ jobs:
       - name: Prepare Artifact
         run: tar --zstd -cf /tmp/sources.tar.zstd .
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: compiler
           path: /tmp/sources.tar.zstd
@@ -92,7 +92,7 @@ jobs:
             name: extra (debug-s4096)
     steps:
       - name: Download Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: compiler
       - name: Unpack Artifact
@@ -150,11 +150,13 @@ jobs:
           - name: linux-O0
             os: ubuntu-latest
             config_arg: CFLAGS='-O0'
-          - name: macos
-            os: macos-latest
+          - name: macos-x86_64
+            os: macos-13
+          - name: macos-arm64
+            os: macos-14
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: OS Dependencies

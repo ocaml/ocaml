@@ -23,24 +23,25 @@ open Btype
 (* Simplified version of Ctype.free_vars *)
 let free_vars ?(param=false) ty =
   let ret = ref TypeSet.empty in
-  let rec loop ty =
-    if try_mark_node ty then
-      match get_desc ty with
-      | Tvar _ ->
-          ret := TypeSet.add ty !ret
-      | Tvariant row ->
-          iter_row loop row;
-          if not (static_row row) then begin
-            match get_desc (row_more row) with
-            | Tvar _ when param -> ret := TypeSet.add ty !ret
-            | _ -> loop (row_more row)
-          end
-      (* XXX: What about Tobject ? *)
-      | _ ->
-          iter_type_expr loop ty
-  in
-  loop ty;
-  unmark_type ty;
+  with_type_mark begin fun mark ->
+    let rec loop ty =
+      if try_mark_node mark ty then
+        match get_desc ty with
+        | Tvar _ ->
+            ret := TypeSet.add ty !ret
+        | Tvariant row ->
+            iter_row loop row;
+            if not (static_row row) then begin
+              match get_desc (row_more row) with
+              | Tvar _ when param -> ret := TypeSet.add ty !ret
+              | _ -> loop (row_more row)
+            end
+                (* XXX: What about Tobject ? *)
+        | _ ->
+            iter_type_expr loop ty
+    in
+    loop ty
+  end;
   !ret
 
 let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))

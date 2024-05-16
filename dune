@@ -45,7 +45,7 @@
    config build_path_prefix_map misc identifiable numbers arg_helper clflags
    profile terminfo ccomp warnings consistbl strongly_connected_components
    targetint load_path int_replace_polymorphic_compare binutils local_store
-   lazy_backtrack diffing diffing_with_keys unit_info
+   lazy_backtrack diffing diffing_with_keys unit_info compression linkdeps
 
    ;; PARSING
    location longident docstrings syntaxerr ast_helper camlinternalMenhirLib
@@ -55,8 +55,8 @@
    asttypes parsetree
 
    ;; TYPING
-   ident path primitive shape types btype oprint subst predef datarepr
-   cmi_format persistent_env env type_immediacy errortrace
+   ident path primitive shape shape_reduce types btype oprint subst predef
+   datarepr cmi_format persistent_env env type_immediacy errortrace
    typedtree printtyped ctype printtyp includeclass mtype envaux includecore
    tast_iterator tast_mapper signature_group cmt_format untypeast
    includemod includemod_errorprinter
@@ -70,6 +70,7 @@
    ;; lambda/
    debuginfo lambda matching printlambda runtimedef tmc simplif switch
    translattribute translclass translcore translmod translobj translprim
+   value_rec_compiler
 
    ;; bytecomp/
    meta opcodes bytesections dll symtable

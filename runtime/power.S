@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#include "caml/m.h"
+
         .abiversion 2
 
 #if _CALL_ELF != 2
@@ -65,8 +67,26 @@
 
 /* Function definitions */
 
-.macro FUNCTION name
+.macro TEXT_SECTION name
+#if defined(FUNCTION_SECTIONS)
+        .section ".text.caml.\name","ax",@progbits
+#else
         .section ".text"
+#endif
+.endm
+
+#if defined(FUNCTION_SECTIONS)
+        TEXT_SECTION caml_hot.code_begin
+        .globl caml_hot.code_begin
+caml_hot.code_begin:
+
+        TEXT_SECTION caml_hot.code_end
+        .globl caml_hot.code_end
+caml_hot.code_end:
+#endif
+
+.macro FUNCTION name
+        TEXT_SECTION \name
         .globl \name
         .type \name, @function
 \name:
@@ -77,6 +97,20 @@
 
 .macro ENDFUNCTION name
        .size \name, . - \name
+.endm
+
+/* Function prologue and epilogue */
+
+.macro ENTER_FUNCTION
+   /* Save return address in caller's frame. */
+        mflr    0
+        std     0, LR_SAVE(SP)
+.endm
+
+.macro LEAVE_FUNCTION
+   /* Restore return address. */
+        ld      0, LR_SAVE(SP)
+        mtlr    0
 .endm
 
 /* Accessing global variables.  */
@@ -240,9 +274,7 @@
 #if defined(WITH_THREAD_SANITIZER) /* { */
 
 .macro TSAN_SETUP_C_CALL size
-   /* Save return address in caller's frame. */
-        mflr    0
-        std     0, LR_SAVE(SP)
+        ENTER_FUNCTION
    /* Setup new frame for a function call and possibly some register saves. */
         addi    SP, SP, -(RESERVED_STACK + \size)
         std     2, TOC_SAVE(SP)
@@ -251,9 +283,7 @@
 .macro TSAN_CLEANUP_AFTER_C_CALL size
    /* Undo call frame. */
         addi    SP, SP, (RESERVED_STACK + \size)
-   /* Restore return address. */
-        ld      0, LR_SAVE(SP)
-        mtlr    0
+        LEAVE_FUNCTION
 .endm
 
 .macro TSAN_ENTER_FUNCTION
@@ -353,7 +383,7 @@
 
 #endif /* } WITH_THREAD_SANITIZER */
 
-        .section ".text"
+        TEXT_SECTION caml_system__code_begin
         .globl  caml_system__code_begin
 caml_system__code_begin:
 
@@ -361,9 +391,7 @@ caml_system__code_begin:
 /* Desired size is passed in register TMP2. */
 
 FUNCTION caml_call_realloc_stack
-   /* Save return address in caller's frame. */
-        mflr    0
-        std     0, LR_SAVE(SP)
+        ENTER_FUNCTION
    /* Save all registers, as well as ALLOC_PTR and TRAP_PTR */
         SAVE_ALL_REGS  /* TMP2 is preserved */
    /* Recover desired size, to be passed in r3 */
@@ -375,8 +403,7 @@ FUNCTION caml_call_realloc_stack
         cmpdi   3, 0
    /* Restore all registers, and also return address */
         RESTORE_ALL_REGS
-        ld      0, LR_SAVE(SP)
-        mtlr    0
+        LEAVE_FUNCTION
    /* Check status */
         beq     1f
    /* Reallocation successful: return to caller */
@@ -389,19 +416,23 @@ ENDFUNCTION caml_call_realloc_stack
 /* Invoke the garbage collector. */
 
 FUNCTION caml_call_gc
-   /* Save return address in caller's frame */
-        mflr    0
-        std     0, LR_SAVE(SP)
+        ENTER_FUNCTION
    /* Save all registers, as well as ALLOC_PTR and TRAP_PTR */
         SAVE_ALL_REGS
+        TSAN_ENTER_FUNCTION
    /* Switch stacks and call caml_garbage_collection */
         SWITCH_OCAML_TO_C
         Far_call(caml_garbage_collection)
+#if defined(WITH_THREAD_SANITIZER)
+        TSAN_SETUP_C_CALL 0
+        li      3, 0
+        Far_call(__tsan_func_exit)
+        TSAN_CLEANUP_AFTER_C_CALL 0
+#endif
         SWITCH_C_TO_OCAML
    /* Restore registers and return to caller */
         RESTORE_ALL_REGS
-        ld      0, LR_SAVE(SP)
-        mtlr    0
+        LEAVE_FUNCTION
         ld      2, TOC_SAVE(SP)
         blr
 ENDFUNCTION caml_call_gc
@@ -577,8 +608,7 @@ FUNCTION caml_raise_exception
         ld      TMP, Caml_state(current_stack)
         ld      SP, Stack_sp(TMP)
     /* Reload return address from caller's frame (for the backtrace) */
-        ld      0, LR_SAVE(SP)
-        mtlr    0
+        LEAVE_FUNCTION
 #if defined(WITH_THREAD_SANITIZER)
     /* Call __tsan_func_exit for every OCaml stack frame exited due to the
        exception */
@@ -866,8 +896,7 @@ ENDFUNCTION caml_callback3_asm
    Preserves old_stack and new_stack registers */
 .macro SWITCH_OCAML_STACKS old_stack, new_stack
     /* Save return address for old_stack */
-        mflr    0
-        std     0, LR_SAVE(SP)
+        ENTER_FUNCTION
     /* Save OCaml SP and exn_handler in the stack info */
         std     SP, Stack_sp(\old_stack)
         std     TRAP_PTR, Stack_exception(\old_stack)
@@ -877,8 +906,7 @@ ENDFUNCTION caml_callback3_asm
     /* restore exn_handler for new stack */
         ld      TRAP_PTR, Stack_exception(\new_stack)
     /* Restore return address for new_stack */
-        ld      0, LR_SAVE(SP)
-        mtlr    0
+        LEAVE_FUNCTION
 .endm
 
 /*
@@ -911,6 +939,7 @@ FUNCTION caml_perform
         SWITCH_C_TO_OCAML
         TSAN_RESTORE_CALLER_REGS
 #endif
+        std     6, 8(4) /* Set the last fiber field in the continuation */
         ld      7, Stack_handler(5)  /* r7 := old stack -> handler */
         ld      8, Handler_parent(7) /* r8 := parent stack */
         cmpdi   8, 0
@@ -1062,8 +1091,7 @@ FUNCTION caml_runstack
      r4: fun
      r5: arg */
     /* save return address and TOC on old stack */
-        mflr    0
-        std     0, LR_SAVE(SP)
+        ENTER_FUNCTION
         std     2, TOC_SAVE_PARENT(SP)
         addi    3, 3, -1   /* r3 := Ptr_val(r3) */
         ld      12, 0(4)   /* r12 := code pointer */
@@ -1130,8 +1158,7 @@ FUNCTION caml_runstack
         ld      12, 0(4) /* code pointer */
         mtctr   12       /* code pointer */
     /* Invoke handle_value (or handle_exn) */
-        ld      0, LR_SAVE(SP)
-        mtlr    0
+        LEAVE_FUNCTION
         bctr
 .Lfiber_exn_handler:
         addi    8, SP, (RESERVED_STACK + 16) /* r8 := stack_handler */
@@ -1143,9 +1170,9 @@ FUNCTION caml_ml_array_bound_error
         TSAN_ENTER_FUNCTION /* needed since we skip caml_c_call entry */
         Addrglobal(C_CALL_FUN, caml_array_bound_error_asm)
         b       .Lcaml_c_call
-ENDFUNCTION caml_resume
+ENDFUNCTION caml_ml_array_bound_error
 
-        .section ".text"
+        TEXT_SECTION caml_system__code_end
         .globl  caml_system__code_end
 caml_system__code_end:
 

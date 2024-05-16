@@ -20,14 +20,18 @@
                     pattern (shortcut_ext_attr.ml[10,179+16]..[10,179+17])
                       Ppat_var "x" (shortcut_ext_attr.ml[10,179+16]..[10,179+17])
                     expression (shortcut_ext_attr.ml[10,179+20]..[10,179+21])
-                      Pexp_constant PConst_int (3,None)
+                      Pexp_constant
+                      constant (shortcut_ext_attr.ml[10,179+20]..[10,179+21])
+                        PConst_int (3,None)
                   <def>
                       attribute "foo"
                         []
                     pattern (shortcut_ext_attr.ml[11,201+12]..[11,201+13])
                       Ppat_var "y" (shortcut_ext_attr.ml[11,201+12]..[11,201+13])
                     expression (shortcut_ext_attr.ml[11,201+16]..[11,201+17])
-                      Pexp_constant PConst_int (4,None)
+                      Pexp_constant
+                      constant (shortcut_ext_attr.ml[11,201+16]..[11,201+17])
+                        PConst_int (4,None)
                 ]
                 expression (shortcut_ext_attr.ml[12,222+2]..[30,721+31])
                   Pexp_sequence
@@ -266,7 +270,9 @@
                                                         expression (shortcut_ext_attr.ml[24,593+2]..[24,593+23])
                                                           attribute "foo"
                                                             []
-                                                          Pexp_constant PConst_int (3,None)
+                                                          Pexp_constant
+                                                          constant (shortcut_ext_attr.ml[24,593+18]..[24,593+19])
+                                                            PConst_int (3,None)
                                                     ]
                                                   expression (shortcut_ext_attr.ml[25,619+2]..[30,721+31])
                                                     Pexp_sequence
@@ -348,7 +354,9 @@
                   pattern (shortcut_ext_attr.ml[36,806+12]..[36,806+13])
                     Ppat_var "x" (shortcut_ext_attr.ml[36,806+12]..[36,806+13])
                   expression (shortcut_ext_attr.ml[36,806+16]..[36,806+17])
-                    Pexp_constant PConst_int (3,None)
+                    Pexp_constant
+                    constant (shortcut_ext_attr.ml[36,806+16]..[36,806+17])
+                      PConst_int (3,None)
               ]
               class_expr (shortcut_ext_attr.ml[37,827+2]..[46,1049+5])
                 attribute "foo"
@@ -373,7 +381,9 @@
                         "x" (shortcut_ext_attr.ml[39,862+14]..[39,862+15])
                         Concrete Fresh
                         expression (shortcut_ext_attr.ml[39,862+18]..[39,862+19])
-                          Pexp_constant PConst_int (3,None)
+                          Pexp_constant
+                          constant (shortcut_ext_attr.ml[39,862+18]..[39,862+19])
+                            PConst_int (3,None)
                     class_field (shortcut_ext_attr.ml[40,882+4]..[40,882+27])
                         attribute "foo"
                           []
@@ -390,7 +400,9 @@
                         "x" (shortcut_ext_attr.ml[41,910+23]..[41,910+24])
                         Concrete Override
                         expression (shortcut_ext_attr.ml[41,910+27]..[41,910+28])
-                          Pexp_constant PConst_int (3,None)
+                          Pexp_constant
+                          constant (shortcut_ext_attr.ml[41,910+27]..[41,910+28])
+                            PConst_int (3,None)
                     class_field (shortcut_ext_attr.ml[42,939+4]..[42,939+22])
                         attribute "foo"
                           []
@@ -400,7 +412,9 @@
                         expression (shortcut_ext_attr.ml[42,939+21]..[42,939+22]) ghost
                           Pexp_poly
                           expression (shortcut_ext_attr.ml[42,939+21]..[42,939+22])
-                            Pexp_constant PConst_int (3,None)
+                            Pexp_constant
+                            constant (shortcut_ext_attr.ml[42,939+21]..[42,939+22])
+                              PConst_int (3,None)
                           None
                     class_field (shortcut_ext_attr.ml[43,962+4]..[43,962+30])
                         attribute "foo"
@@ -420,7 +434,9 @@
                         expression (shortcut_ext_attr.ml[44,993+30]..[44,993+31]) ghost
                           Pexp_poly
                           expression (shortcut_ext_attr.ml[44,993+30]..[44,993+31])
-                            Pexp_constant PConst_int (3,None)
+                            Pexp_constant
+                            constant (shortcut_ext_attr.ml[44,993+30]..[44,993+31])
+                              PConst_int (3,None)
                           None
                     class_field (shortcut_ext_attr.ml[45,1025+4]..[45,1025+23])
                         attribute "foo"
@@ -570,7 +586,9 @@
             pattern (shortcut_ext_attr.ml[76,1578+14]..[76,1578+15])
               Ppat_var "x" (shortcut_ext_attr.ml[76,1578+14]..[76,1578+15])
             expression (shortcut_ext_attr.ml[76,1578+18]..[76,1578+19])
-              Pexp_constant PConst_int (4,None)
+              Pexp_constant
+              constant (shortcut_ext_attr.ml[76,1578+18]..[76,1578+19])
+                PConst_int (4,None)
           <def>
               attribute "foo"
                 []

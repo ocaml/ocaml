@@ -351,15 +351,16 @@ and expression i ppf x =
       line i ppf "Texp_apply\n";
       expression i ppf e;
       list i label_x_expression ppf l;
-  | Texp_match (e, l, partial) ->
-      line i ppf "Texp_match%a\n"
-        fmt_partiality partial;
+  | Texp_match (e, l1, l2, partial) ->
+      line i ppf "Texp_match%a\n" fmt_partiality partial;
       expression i ppf e;
-      list i case ppf l;
-  | Texp_try (e, l) ->
+      list i case ppf l1;
+      list i case ppf l2;
+  | Texp_try (e, l1, l2) ->
       line i ppf "Texp_try\n";
       expression i ppf e;
-      list i case ppf l;
+      list i case ppf l1;
+      list i case ppf l2;
   | Texp_tuple (l) ->
       line i ppf "Texp_tuple\n";
       list i expression ppf l;

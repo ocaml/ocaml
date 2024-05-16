@@ -41,7 +41,9 @@ let arg_list = Arg.align [
   ]
 
 let arg_usage =
-  "ocamlcmt [OPTIONS] FILE.cmt : read FILE.cmt and print related information"
+  "Read FILE.cmt and print related information\n\
+   Usage: ocamlcmt [options] FILE.cmt\n\
+   Options are:"
 
 let dummy_crc = String.make 32 '-'
 

@@ -63,6 +63,10 @@ value ml_perform_stack_walk(value unused) {
     return Val_unit;
 }
 
-value ml_do_no_alloc(value unused) {
-    return ml_perform_stack_walk(unused);
+value ml_do_no_alloc(value unit) {
+    (void) ml_perform_stack_walk(unit);
+    /* In order to prevent the C compiler from performing tail-call
+       optimization, we return the argument rather than the constant
+       Val_unit. */
+    return unit;
 }

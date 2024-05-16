@@ -80,7 +80,6 @@ static void scanmult (char_os *opt, uintnat *var)
   case 'k':   *var = (uintnat) val * 1024; break;
   case 'M':   *var = (uintnat) val * (1024 * 1024); break;
   case 'G':   *var = (uintnat) val * (1024 * 1024 * 1024); break;
-  case 'v':   atomic_store_relaxed((atomic_uintnat *)var, val); break;
   default:    *var = (uintnat) val; break;
   }
 }
@@ -88,6 +87,7 @@ static void scanmult (char_os *opt, uintnat *var)
 void caml_parse_ocamlrunparam(void)
 {
   init_startup_params();
+  uintnat val;
 
   char_os *opt = caml_secure_getenv (T("OCAMLRUNPARAM"));
   if (opt == NULL) opt = caml_secure_getenv (T("CAMLRUNPARAM"));
@@ -107,7 +107,10 @@ void caml_parse_ocamlrunparam(void)
       case 'R': break; /*  see stdlib/hashtbl.mli */
       case 's': scanmult (opt, &params.init_minor_heap_wsz); break;
       case 't': scanmult (opt, &params.trace_level); break;
-      case 'v': scanmult (opt, (uintnat *)&caml_verb_gc); break;
+      case 'v':
+        scanmult (opt, &val);
+        atomic_store_relaxed(&caml_verb_gc, val);
+        break;
       case 'V': scanmult (opt, &params.verify_heap); break;
       case 'W': scanmult (opt, &caml_runtime_warnings); break;
       case ',': continue;

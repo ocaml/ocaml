@@ -31,6 +31,7 @@
 #include "caml/globroots.h"
 #include "caml/gc_stats.h"
 #include "caml/memory.h"
+#include "caml/memprof.h"
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
 #include "caml/roots.h"
@@ -71,6 +72,7 @@ struct mark_stack {
   addrmap_iterator compressed_stack_iter;
 };
 
+/* Default speed setting for the major GC. */
 uintnat caml_percent_free = Percent_free_def;
 
 /* This variable is only written with the world stopped, so it need not be
@@ -291,7 +293,7 @@ Caml_inline void prefetch_block(value v)
 
 static void ephe_next_cycle (void)
 {
-  caml_plat_lock(&ephe_lock);
+  caml_plat_lock_blocking(&ephe_lock);
 
   atomic_fetch_add(&ephe_cycle_info.ephe_cycle, +1);
   CAMLassert(atomic_load_acquire(&ephe_cycle_info.num_domains_done) <=
@@ -303,7 +305,7 @@ static void ephe_next_cycle (void)
 
 static void ephe_todo_list_emptied (void)
 {
-  caml_plat_lock(&ephe_lock);
+  caml_plat_lock_blocking(&ephe_lock);
 
   /* Force next ephemeron marking cycle in order to avoid reasoning about
    * whether the domain has already incremented
@@ -329,7 +331,7 @@ static void record_ephe_marking_done (uintnat ephe_cycle)
   if (ephe_cycle < atomic_load_acquire(&ephe_cycle_info.ephe_cycle))
     return;
 
-  caml_plat_lock(&ephe_lock);
+  caml_plat_lock_blocking(&ephe_lock);
   if (ephe_cycle == atomic_load(&ephe_cycle_info.ephe_cycle)) {
     Caml_state->ephe_info->cycle = ephe_cycle;
     atomic_fetch_add(&ephe_cycle_info.num_domains_done, +1);
@@ -412,7 +414,7 @@ void caml_orphan_ephemerons (caml_domain_state* domain_state)
     value live_tail = ephe_list_tail(ephe_info->live);
     CAMLassert(Ephe_link(live_tail) == 0);
 
-    caml_plat_lock(&orphaned_lock);
+    caml_plat_lock_blocking(&orphaned_lock);
     Ephe_link(live_tail) = orph_structs.ephe_list_live;
     orph_structs.ephe_list_live = ephe_info->live;
     ephe_info->live = 0;
@@ -446,7 +448,7 @@ void caml_orphan_finalisers (caml_domain_state* domain_state)
     CAMLassert (!f->updated_last);
 
     /* Add the finalisers to [orph_structs] */
-    caml_plat_lock(&orphaned_lock);
+    caml_plat_lock_blocking(&orphaned_lock);
     f->next = orph_structs.final_info;
     orph_structs.final_info = f;
     caml_plat_unlock(&orphaned_lock);
@@ -485,7 +487,7 @@ static void adopt_orphaned_work (void)
   if (no_orphaned_work() || caml_domain_is_terminating())
     return;
 
-  caml_plat_lock(&orphaned_lock);
+  caml_plat_lock_blocking(&orphaned_lock);
 
   orph_ephe_list_live = orph_structs.ephe_list_live;
   orph_structs.ephe_list_live = 0;
@@ -625,16 +627,18 @@ static void update_major_slice_work(intnat howmuch,
 {
   double heap_words;
   intnat alloc_work, dependent_work, extra_work, new_work;
-  intnat my_alloc_count, my_dependent_count;
+  intnat my_alloc_count, my_alloc_direct_count, my_dependent_count;
   double my_extra_count;
   caml_domain_state *dom_st = Caml_state;
   uintnat heap_size, heap_sweep_words, total_cycle_work;
 
   my_alloc_count = dom_st->allocated_words;
+  my_alloc_direct_count = dom_st->allocated_words_direct;
   my_dependent_count = dom_st->dependent_allocated;
   my_extra_count = dom_st->extra_heap_resources;
   dom_st->stat_major_words += dom_st->allocated_words;
   dom_st->allocated_words = 0;
+  dom_st->allocated_words_direct = 0;
   dom_st->dependent_allocated = 0;
   dom_st->extra_heap_resources = 0.0;
   /*
@@ -705,19 +709,22 @@ static void update_major_slice_work(intnat howmuch,
                    (uintnat)heap_words);
   caml_gc_message (0x40, "allocated_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
-                   dom_st->allocated_words);
+                   my_alloc_count);
+  caml_gc_message (0x40, "allocated_words_direct = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "u\n",
+                   my_alloc_direct_count);
   caml_gc_message (0x40, "alloc work-to-do = %"
                          ARCH_INTNAT_PRINTF_FORMAT "d\n",
                    alloc_work);
   caml_gc_message (0x40, "dependent_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
-                   dom_st->dependent_allocated);
+                   my_dependent_count);
   caml_gc_message (0x40, "dependent work-to-do = %"
                          ARCH_INTNAT_PRINTF_FORMAT "d\n",
                    dependent_work);
   caml_gc_message (0x40, "extra_heap_resources = %"
                          ARCH_INTNAT_PRINTF_FORMAT "uu\n",
-                   (uintnat) (dom_st->extra_heap_resources * 1000000));
+                   (uintnat) (my_extra_count * 1000000));
   caml_gc_message (0x40, "extra work-to-do = %"
                          ARCH_INTNAT_PRINTF_FORMAT "d\n",
                    extra_work);
@@ -748,7 +755,7 @@ static void update_major_slice_work(intnat howmuch,
               " %"ARCH_INTNAT_PRINTF_FORMAT "d slice budget"
               ,
               caml_gc_phase_char(may_access_gc_phase),
-              (uintnat)heap_words, dom_st->allocated_words,
+              (uintnat)heap_words, my_alloc_count,
               alloc_work, dependent_work, extra_work,
               atomic_load (&work_counter),
               atomic_load (&work_counter) > atomic_load (&alloc_counter)
@@ -1184,8 +1191,12 @@ void caml_darken_cont(value cont)
     SPIN_WAIT {
       header_t hd = atomic_load_relaxed(Hp_atomic_val(cont));
       CAMLassert(!Has_status_hd(hd, caml_global_heap_state.GARBAGE));
-      if (Has_status_hd(hd, caml_global_heap_state.MARKED))
-        break;
+      if (Has_status_hd(hd, caml_global_heap_state.MARKED)) {
+        /* Perform an acquire load to synchronize with the marking domain */
+        hd = atomic_load_acquire(Hp_atomic_val(cont));
+        if (Has_status_hd(hd, caml_global_heap_state.MARKED))
+          break;
+      }
       if (Has_status_hd(hd, caml_global_heap_state.UNMARKED) &&
           atomic_compare_exchange_strong(
               Hp_atomic_val(cont), &hd,
@@ -1354,6 +1365,16 @@ static void stw_cycle_all_domains(caml_domain_state* domain, void* args,
      because there's one in the minor gc and after. */
   struct cycle_callback_params params = *((struct cycle_callback_params*)args);
 
+  /* TODO: Not clear this memprof work is really part of the "cycle"
+   * operation. It's more like ephemeron-cleaning really. An earlier
+   * version had a separate callback for this, but resulted in
+   * failures because using caml_try_run_on_all_domains() on it would
+   * mysteriously put all domains back into mark/sweep.
+   */
+  CAML_EV_BEGIN(EV_MAJOR_MEMPROF_CLEAN);
+  caml_memprof_after_major_gc(domain, domain == participating[0]);
+  CAML_EV_END(EV_MAJOR_MEMPROF_CLEAN);
+
   CAML_EV_BEGIN(EV_MAJOR_GC_CYCLE_DOMAINS);
 
   CAMLassert(domain == Caml_state);
@@ -1518,6 +1539,11 @@ static void stw_cycle_all_domains(caml_domain_state* domain, void* args,
     }
   }
   CAML_EV_END(EV_MAJOR_MARK_ROOTS);
+
+  CAML_EV_BEGIN(EV_MAJOR_MEMPROF_ROOTS);
+  caml_memprof_scan_roots(caml_darken, darken_scanning_flags, domain,
+                          domain, false, participating[0] == Caml_state);
+  CAML_EV_END(EV_MAJOR_MEMPROF_ROOTS);
 
   if (domain->mark_stack->count == 0 &&
       !caml_addrmap_iter_ok(&domain->mark_stack->compressed_stack,
@@ -1994,6 +2020,7 @@ void caml_finish_marking (void)
     caml_shrink_mark_stack();
     Caml_state->stat_major_words += Caml_state->allocated_words;
     Caml_state->allocated_words = 0;
+    Caml_state->allocated_words_direct = 0;
     CAML_EV_END(EV_MAJOR_FINISH_MARKING);
   }
 }

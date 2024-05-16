@@ -15,9 +15,6 @@
 
 (* Processor descriptions *)
 
-(* Instruction selection *)
-val word_addressed: bool
-
 (* Registers available for register allocation *)
 val num_register_classes: int
 val register_class: Reg.t -> int

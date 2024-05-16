@@ -327,7 +327,9 @@ let float_literal env fl =
 let emit_literals env =
   if env.float_literals <> [] then begin
     if macosx then
-      `	.section	__TEXT,__literal8,8byte_literals\n`;
+      `	.section	__TEXT,__literal8,8byte_literals\n`
+    else
+      `	.section	.rodata\n`;
     `	.align	3\n`;
     List.iter
       (fun { fl; lbl } ->
@@ -638,14 +640,8 @@ let assembly_code_for_poll env i ~far ~return_label =
       gc_return_lbl = lbl_after_poll;
       gc_frame_lbl = lbl_frame; } :: env.call_gc_sites
 
-(* Output .text section directive, or named .text.caml.<name> if enabled. *)
-
 let emit_named_text_section func_name =
-  if !Clflags.function_sections then begin
-    `	.section .text.caml.{emit_symbol func_name},{emit_string_literal "ax"},%progbits\n`
-  end
-  else
-    `	.text\n`
+  Emitaux.emit_named_text_section func_name '%'
 
 (* Emit code to load an emitted literal *)
 
@@ -751,9 +747,9 @@ let emit_instr env i =
           `	bl	{emit_symbol "caml_c_call"}\n`;
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
         end else begin
-          (* store ocaml stack in the frame pointer register
-             NB: no need to store previous x29 because OCaml frames don't
-             maintain frame pointer *)
+          (* Push frame pointer (x29) onto stack and restore later. *)
+          `	str	x29, [sp, -16]!\n`;
+          (* Store OCaml stack in the frame pointer register. *)
           `	mov	x29, sp\n`;
           cfi_remember_state ();
           cfi_def_cfa_register ~reg:29;
@@ -762,6 +758,7 @@ let emit_instr env i =
           `	mov	sp, {emit_reg reg_tmp1}\n`;
           `	bl	{emit_symbol func}\n`;
           `	mov	sp, x29\n`;
+          `	ldr	x29, [sp], 16\n`;
           cfi_restore_state ()
         end
     | Lop(Istackoffset n) ->

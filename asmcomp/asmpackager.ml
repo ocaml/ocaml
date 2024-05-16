@@ -263,8 +263,9 @@ let package_files ~ppf_dump initial_env files targetcmx ~backend =
         try Load_path.find f
         with Not_found -> raise(Error(File_not_found f)))
       files in
-  let cmi = Unit_info.(companion_cmi @@ Artifact.from_filename targetcmx) in
-  let obj = Unit_info.companion_obj cmi in
+  let cmx = Unit_info.Artifact.from_filename targetcmx in
+  let cmi = Unit_info.companion_cmi cmx in
+  let obj = Unit_info.companion_obj cmx in
   (* Set the name of the current "input" *)
   Location.input_name := targetcmx;
   (* Set the name of the current compunit *)

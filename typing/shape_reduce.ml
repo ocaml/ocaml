@@ -19,19 +19,18 @@ open Shape
 
 type result =
   | Resolved of Uid.t
-  | Resolved_alias of Uid.t list
+  | Resolved_alias of Uid.t * result
   | Unresolved of t
   | Approximated of Uid.t option
   | Internal_error_missing_uid
 
-let print_result fmt result =
+let rec print_result fmt result =
   match result with
   | Resolved uid ->
       Format.fprintf fmt "@[Resolved: %a@]@;" Uid.print uid
-  | Resolved_alias uids ->
-      Format.fprintf fmt "@[Resolved_alias: %a@]@;"
-        Format.(pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt "@ -> ")
-        Uid.print) uids
+  | Resolved_alias (uid, r) ->
+      Format.fprintf fmt "@[Alias: %a -> %a@]@;"
+        Uid.print uid print_result r
   | Unresolved shape ->
       Format.fprintf fmt "@[Unresolved: %a@]@;" print shape
   | Approximated (Some uid) ->
@@ -152,17 +151,19 @@ end) = struct
      obtained by the same term traversal, adding binders in the same
      order, giving the same balanced trees: the environments have the
      same hash.
-*)
+  *)
+
+  and force env (Thunk (local_env, t)) =
+    reduce_ { env with local_env } t
 
   and reduce__
     ({fuel; global_env; local_env; _} as env) (t : t) =
     let reduce env t = reduce_ env t in
     let delay_reduce env t = Thunk (env.local_env, t) in
-    let force (Thunk (local_env, t)) = reduce { env with local_env } t in
     let return desc = { uid = t.uid; desc; approximated = t.approximated } in
     let rec force_aliases nf = match nf.desc with
       | NAlias delayed_nf ->
-          let nf = force delayed_nf in
+          let nf = force env delayed_nf in
           force_aliases nf
       | _ -> nf
     in
@@ -197,7 +198,7 @@ end) = struct
           | NStruct (items) ->
               begin match Item.Map.find item items with
               | exception Not_found -> nored ()
-              | nf -> force nf |> reset_uid_if_new_binding
+              | nf -> force env nf |> reset_uid_if_new_binding
               end
           | _ ->
               nored ()
@@ -218,7 +219,7 @@ end) = struct
              their binding-time [Uid.t]. *)
           | None -> return (NVar id)
           | Some def ->
-              begin match force def with
+              begin match force env def with
               | { uid = Some _; _  } as nf -> nf
                   (* This var already has a binding uid *)
               | { uid = None; _ } as nf -> { nf with uid = t.uid }
@@ -253,8 +254,7 @@ end) = struct
 
   and read_back_desc env desc =
     let read_back nf = read_back env nf in
-    let read_back_force (Thunk (local_env, t)) =
-      read_back (reduce_ { env with local_env } t) in
+    let read_back_force dnf = read_back (force env dnf) in
     match desc with
     | NVar v ->
         Var v
@@ -300,13 +300,20 @@ end) = struct
     | NError _ -> false
     | NLeaf -> false
 
-  let get_aliases_uids (t : t) =
-    let rec aux acc (t : t) = match t with
-      | { uid = Some uid; desc = Alias t; _ } -> aux (uid::acc) t
-      | { uid = Some uid; _ } -> Resolved_alias (List.rev (uid::acc))
-      | _ -> Internal_error_missing_uid
-    in
-    aux [] t
+  let rec reduce_aliases_for_uid env (nf : nf) =
+    match nf with
+    | { uid = Some uid; desc = NAlias dnf; approximated = false; _ } ->
+        let result = reduce_aliases_for_uid env (force env dnf) in
+        Resolved_alias (uid, result)
+    | { uid = Some uid; approximated = false; _ } -> Resolved uid
+    | { uid; approximated = true } -> Approximated uid
+    | { uid = None; approximated = false; _ } ->
+      (* A missing Uid after a complete reduction means the Uid was first
+         missing in the shape which is a code error. Having the
+         [Missing_uid] reported will allow Merlin (or another tool working
+         with the index) to ask users to report the issue if it does happen.
+      *)
+      Internal_error_missing_uid
 
   let reduce_for_uid global_env t =
     let fuel = ref Params.fuel in
@@ -321,20 +328,8 @@ end) = struct
     let nf = reduce_ env t in
     if is_stuck_on_comp_unit nf then
       Unresolved (read_back env nf)
-    else match nf with
-      | { desc = NAlias _; approximated = false; _ } ->
-          get_aliases_uids (read_back env nf)
-      | { uid = Some uid; approximated = false; _ } ->
-          Resolved uid
-      | { uid; approximated = true; _ } ->
-          Approximated uid
-      | { uid = None; approximated = false; _ } ->
-          (* A missing Uid after a complete reduction means the Uid was first
-             missing in the shape which is a code error. Having the
-             [Missing_uid] reported will allow Merlin (or another tool working
-             with the index) to ask users to report the issue if it does happen.
-          *)
-          Internal_error_missing_uid
+    else
+      reduce_aliases_for_uid env nf
 end
 
 module Local_reduce =

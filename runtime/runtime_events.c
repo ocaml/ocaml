@@ -382,7 +382,7 @@ static void runtime_events_create_from_stw_single(void) {
 
     // at the same instant: snapshot user_events list and set
     // runtime_events_enabled to 1
-    caml_plat_lock(&user_events_lock);
+    caml_plat_lock_blocking(&user_events_lock);
     value current_user_event = user_events;
     atomic_store_release(&runtime_events_enabled, 1);
     caml_plat_unlock(&user_events_lock);
@@ -685,7 +685,7 @@ CAMLprim value caml_runtime_events_user_register(value event_name,
   Field(event, 3) = event_tag;
 
 
-  caml_plat_lock(&user_events_lock);
+  caml_plat_lock_blocking(&user_events_lock);
   // critical section: when we update the user_events list we need to make sure
   // it is not updated while we construct the pointer to the next element
 
@@ -801,7 +801,7 @@ CAMLexport value caml_runtime_events_user_resolve(
   CAMLlocal3(event, cur_event_name, ml_event_name);
 
   // TODO: it might be possible to atomic load instead
-  caml_plat_lock(&user_events_lock);
+  caml_plat_lock_blocking(&user_events_lock);
   value current_user_event = user_events;
   caml_plat_unlock(&user_events_lock);
 

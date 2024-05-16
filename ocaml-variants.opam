@@ -39,8 +39,10 @@ build: [
     "--disable-flat-float-array" {ocaml-option-no-flat-float-array:installed}
     "--enable-flambda" {ocaml-option-flambda:installed}
     "--enable-frame-pointers" {ocaml-option-fp:installed}
+    "--without-zstd" {ocaml-option-no-compression:installed}
     "--enable-tsan" {ocaml-option-tsan:installed}
     "CC=cc" {!ocaml-option-32bit:installed & !ocaml-option-musl:installed & (os="openbsd"|os="macos")}
+    "CC=clang" {ocaml-option-tsan:installed & (os="macos")}
     "CC=musl-gcc" {ocaml-option-musl:installed & os-distribution!="alpine"}
     "CFLAGS=-Os" {ocaml-option-musl:installed}
     "LDFLAGS=-Wl,--no-as-needed,-ldl" {ocaml-option-leak-sanitizer:installed | (ocaml-option-address-sanitizer:installed & os!="macos")}
@@ -65,6 +67,7 @@ depopts: [
   "ocaml-option-no-flat-float-array"
   "ocaml-option-flambda"
   "ocaml-option-fp"
+  "ocaml-option-no-compression"
   "ocaml-option-musl"
   "ocaml-option-leak-sanitizer"
   "ocaml-option-address-sanitizer"

@@ -43,7 +43,6 @@ module TypeMap = struct
   let singleton ty = wrap_repr singleton ty
   let fold f = TransientTypeMap.fold (wrap_type_expr f)
 end
-module TransientTypeHash = Hashtbl.Make(TransientTypeOps)
 module TypeHash = struct
   include TransientTypeHash
   let mem hash = wrap_repr (mem hash)
@@ -102,25 +101,13 @@ let print_raw =
 (**** Type level management ****)
 
 let generic_level = Ident.highest_scope
-
-(* Used to mark a type during a traversal. *)
 let lowest_level = Ident.lowest_scope
-let pivot_level = 2 * lowest_level - 1
-    (* pivot_level - lowest_level < lowest_level *)
 
 (**** Some type creators ****)
 
 let newgenty desc      = newty2 ~level:generic_level desc
 let newgenvar ?name () = newgenty (Tvar name)
 let newgenstub ~scope  = newty3 ~level:generic_level ~scope (Tvar None)
-
-(*
-let newmarkedvar level =
-  incr new_id; { desc = Tvar; level = pivot_level - level; id = !new_id }
-let newmarkedgenvar () =
-  incr new_id;
-  { desc = Tvar; level = pivot_level - generic_level; id = !new_id }
-*)
 
 (**** Check some types ****)
 
@@ -238,7 +225,6 @@ let set_static_row_name decl path =
           set_type_desc ty (Tvariant row)
       | _ -> ()
 
-
                   (**********************************)
                   (*  Utilities for type traversal  *)
                   (**********************************)
@@ -303,24 +289,6 @@ let rec iter_abbrev f = function
   | Mcons(_, _, ty, ty', rem) -> f ty; f ty'; iter_abbrev f rem
   | Mlink rem              -> iter_abbrev f !rem
 
-type type_iterators =
-  { it_signature: type_iterators -> signature -> unit;
-    it_signature_item: type_iterators -> signature_item -> unit;
-    it_value_description: type_iterators -> value_description -> unit;
-    it_type_declaration: type_iterators -> type_declaration -> unit;
-    it_extension_constructor: type_iterators -> extension_constructor -> unit;
-    it_module_declaration: type_iterators -> module_declaration -> unit;
-    it_modtype_declaration: type_iterators -> modtype_declaration -> unit;
-    it_class_declaration: type_iterators -> class_declaration -> unit;
-    it_class_type_declaration: type_iterators -> class_type_declaration -> unit;
-    it_functor_param: type_iterators -> functor_parameter -> unit;
-    it_module_type: type_iterators -> module_type -> unit;
-    it_class_type: type_iterators -> class_type -> unit;
-    it_type_kind: type_iterators -> type_decl_kind -> unit;
-    it_do_type_expr: type_iterators -> type_expr -> unit;
-    it_type_expr: type_iterators -> type_expr -> unit;
-    it_path: Path.t -> unit; }
-
 let iter_type_expr_cstr_args f = function
   | Cstr_tuple tl -> List.iter f tl
   | Cstr_record lbls -> List.iter (fun d -> f d.ld_type) lbls
@@ -344,8 +312,44 @@ let iter_type_expr_kind f = function
   | Type_open ->
       ()
 
+                  (**********************************)
+                  (*     Utilities for marking      *)
+                  (**********************************)
 
-let type_iterators =
+let rec mark_type mark ty =
+  if try_mark_node mark ty then iter_type_expr (mark_type mark) ty
+
+let mark_type_params mark ty =
+  iter_type_expr (mark_type mark) ty
+
+                  (**********************************)
+                  (*  (Object-oriented) iterator    *)
+                  (**********************************)
+
+type 'a type_iterators =
+  { it_signature: 'a type_iterators -> signature -> unit;
+    it_signature_item: 'a type_iterators -> signature_item -> unit;
+    it_value_description: 'a type_iterators -> value_description -> unit;
+    it_type_declaration: 'a type_iterators -> type_declaration -> unit;
+    it_extension_constructor:
+        'a type_iterators -> extension_constructor -> unit;
+    it_module_declaration: 'a type_iterators -> module_declaration -> unit;
+    it_modtype_declaration: 'a type_iterators -> modtype_declaration -> unit;
+    it_class_declaration: 'a type_iterators -> class_declaration -> unit;
+    it_class_type_declaration:
+        'a type_iterators -> class_type_declaration -> unit;
+    it_functor_param: 'a type_iterators -> functor_parameter -> unit;
+    it_module_type: 'a type_iterators -> module_type -> unit;
+    it_class_type: 'a type_iterators -> class_type -> unit;
+    it_type_kind: 'a type_iterators -> type_decl_kind -> unit;
+    it_do_type_expr: 'a type_iterators -> 'a;
+    it_type_expr: 'a type_iterators -> type_expr -> unit;
+    it_path: Path.t -> unit; }
+
+type type_iterators_full = (type_expr -> unit) type_iterators
+type type_iterators_without_type_expr = (unit -> unit) type_iterators
+
+let type_iterators_without_type_expr =
   let it_signature it =
     List.iter (it.it_signature_item it)
   and it_signature_item it = function
@@ -405,6 +409,17 @@ let type_iterators =
         it.it_class_type it cty
   and it_type_kind it kind =
     iter_type_expr_kind (it.it_type_expr it) kind
+  and it_path _p = ()
+  in
+  { it_path; it_type_expr = (fun _ _ -> ()); it_do_type_expr = (fun _ _ -> ());
+    it_type_kind; it_class_type; it_functor_param; it_module_type;
+    it_signature; it_class_type_declaration; it_class_declaration;
+    it_modtype_declaration; it_module_declaration; it_extension_constructor;
+    it_type_declaration; it_value_description; it_signature_item; }
+
+let type_iterators mark =
+  let it_type_expr it ty =
+    if try_mark_node mark ty then it.it_do_type_expr it ty
   and it_do_type_expr it ty =
     iter_type_expr (it.it_type_expr it) ty;
     match get_desc ty with
@@ -415,13 +430,12 @@ let type_iterators =
     | Tvariant row ->
         Option.iter (fun (p,_) -> it.it_path p) (row_name row)
     | _ -> ()
-  and it_path _p = ()
   in
-  { it_path; it_type_expr = it_do_type_expr; it_do_type_expr;
-    it_type_kind; it_class_type; it_functor_param; it_module_type;
-    it_signature; it_class_type_declaration; it_class_declaration;
-    it_modtype_declaration; it_module_declaration; it_extension_constructor;
-    it_type_declaration; it_value_description; it_signature_item; }
+  {type_iterators_without_type_expr with it_type_expr; it_do_type_expr}
+
+                  (**********************************)
+                  (*  Utilities for copying         *)
+                  (**********************************)
 
 let copy_row f fixed row keep more =
   let Row {fields = orig_fields; fixed = orig_fixed; closed; name = orig_name} =
@@ -467,8 +481,7 @@ let rec copy_type_desc ?(keep_names=false) f = function
       Tpoly (f ty, tyl)
   | Tpackage (p, fl)  -> Tpackage (p, List.map (fun (n, ty) -> (n, f ty)) fl)
 
-(* Utilities for copying *)
-
+(* TODO: rename to [module Copy_scope] *)
 module For_copy : sig
   type copy_scope
 
@@ -711,66 +724,10 @@ let instance_variable_type label sign =
   | (_, _, ty) -> ty
   | exception Not_found -> assert false
 
-                  (**********************************)
-                  (*  Utilities for level-marking   *)
-                  (**********************************)
 
-let not_marked_node ty = get_level ty >= lowest_level
-    (* type nodes with negative levels are "marked" *)
-
-let flip_mark_node ty =
-  let ty = Transient_expr.repr ty in
-  Transient_expr.set_level ty (pivot_level - ty.level)
-let logged_mark_node ty =
-  set_level ty (pivot_level - get_level ty)
-
-let try_mark_node ty = not_marked_node ty && (flip_mark_node ty; true)
-let try_logged_mark_node ty = not_marked_node ty && (logged_mark_node ty; true)
-
-let rec mark_type ty =
-  if not_marked_node ty then begin
-    flip_mark_node ty;
-    iter_type_expr mark_type ty
-  end
-
-let mark_type_params ty =
-  iter_type_expr mark_type ty
-
-let type_iterators =
-  let it_type_expr it ty =
-    if try_mark_node ty then it.it_do_type_expr it ty
-  in
-  {type_iterators with it_type_expr}
-
-
-(* Remove marks from a type. *)
-let rec unmark_type ty =
-  if get_level ty < lowest_level then begin
-    (* flip back the marked level *)
-    flip_mark_node ty;
-    iter_type_expr unmark_type ty
-  end
-
-let unmark_iterators =
-  let it_type_expr _it ty = unmark_type ty in
-  {type_iterators with it_type_expr}
-
-let unmark_type_decl decl =
-  unmark_iterators.it_type_declaration unmark_iterators decl
-
-let unmark_extension_constructor ext =
-  List.iter unmark_type ext.ext_type_params;
-  iter_type_expr_cstr_args unmark_type ext.ext_args;
-  Option.iter unmark_type ext.ext_ret_type
-
-let unmark_class_signature sign =
-  unmark_type sign.csig_self;
-  unmark_type sign.csig_self_row;
-  Vars.iter (fun _l (_m, _v, t) -> unmark_type t) sign.csig_vars;
-  Meths.iter (fun _l (_m, _v, t) -> unmark_type t) sign.csig_meths
-
-let unmark_class_type cty =
-  unmark_iterators.it_class_type unmark_iterators cty
+                  (**********)
+                  (*  Misc  *)
+                  (**********)
 
 (**** Type information getter ****)
 

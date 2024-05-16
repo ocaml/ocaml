@@ -159,6 +159,7 @@ let operation d = function
   | Ccheckbound -> "checkbound" ^ location d
   | Copaque -> "opaque"
   | Cdls_get -> "dls_get"
+  | Cpoll -> "poll"
 
 let rec expr ppf = function
   | Cconst_int (n, _dbg) -> fprintf ppf "%i" n

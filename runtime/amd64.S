@@ -51,7 +51,7 @@
         .align FUNCTION_ALIGN; \
         name:
 
-#else
+#else /* Unix-like operating systems using ELF binaries */
 
 #define LBL(x) .L##x
 #define G(r) r
@@ -81,29 +81,7 @@
 #define ENDFUNCTION(name)
 #endif
 
-#ifdef ASM_CFI_SUPPORTED
-#define CFI_STARTPROC .cfi_startproc
-#define CFI_ENDPROC .cfi_endproc
-#define CFI_ADJUST(n) .cfi_adjust_cfa_offset n
-#define CFI_OFFSET(r, n) .cfi_offset r, n
-#define CFI_DEF_CFA_OFFSET(n) .cfi_def_cfa_offset n
-#define CFI_DEF_CFA_REGISTER(r) .cfi_def_cfa_register r
-#define CFI_SAME_VALUE(r) .cfi_same_value r
-#define CFI_SIGNAL_FRAME .cfi_signal_frame
-#define CFI_REMEMBER_STATE .cfi_remember_state
-#define CFI_RESTORE_STATE .cfi_restore_state
-#else
-#define CFI_STARTPROC
-#define CFI_ENDPROC
-#define CFI_ADJUST(n)
-#define CFI_OFFSET(r, n)
-#define CFI_DEF_CFA_OFFSET(n)
-#define CFI_DEF_CFA_REGISTER(r)
-#define CFI_SAME_VALUE(r)
-#define CFI_SIGNAL_FRAME
-#define CFI_REMEMBER_STATE
-#define CFI_RESTORE_STATE
-#endif
+#include "../runtime/caml/asm.h"
 
 #ifdef WITH_FRAME_POINTERS
 #define FRAME_POINTER_SIZE   8
@@ -165,12 +143,7 @@
 /* DWARF */
 /******************************************************************************/
 
-/* These constants are taken from:
-
-     DWARF Debugging Information Format, Version 3
-     http://dwarfstd.org/doc/Dwarf3.pdf
-
-   with the amd64-specific register numbers coming from
+/* These amd64-specific register numbers are taken from
    Fig. 3.36 ("DWARF Register Number Mapping") of:
 
      System V Application Binary Interface
@@ -178,13 +151,9 @@
      Version 1.0
      https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-1.0.pdf */
 
-#define DW_CFA_def_cfa_expression 0x0f
 #define DW_REG_rbx                3
 #define DW_REG_rsp                7
 #define DW_REG_r13                13
-#define DW_OP_breg                0x70
-#define DW_OP_deref               0x06
-#define DW_OP_plus_uconst         0x23
 
 /******************************************************************************/
 /* Access to the current domain state block. */
@@ -632,9 +601,11 @@ CFI_STARTPROC
 LBL(caml_call_gc):
         SAVE_ALL_REGS
         movq    %r15, Caml_state(gc_regs)
+        TSAN_ENTER_FUNCTION(0)
         SWITCH_OCAML_TO_C
         C_call (GCALL(caml_garbage_collection))
         SWITCH_C_TO_OCAML
+        TSAN_EXIT_FUNCTION
         movq    Caml_state(gc_regs), %r15
         RESTORE_ALL_REGS
         LEAVE_FUNCTION
@@ -1121,6 +1092,7 @@ LBL(do_perform):
         TSAN_RESTORE_CALLER_REGS
         LEAVE_FUNCTION
 #endif
+        movq    %rdi, 8(%rbx) /* Set the last fiber field in the continuation */
         movq    Stack_handler(%rsi), %r11  /* %r11 := old stack -> handler */
         movq    Handler_parent(%r11), %r10 /* %r10 := parent stack */
         cmpq    $0, %r10                   /* parent is NULL? */
@@ -1384,7 +1356,7 @@ G(caml_negf_mask):
 G(caml_absf_mask):
         .quad   0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF
 
-#if defined(SYS_linux)
+#if defined(SYS_linux) || defined(SYS_freebsd)
     /* Mark stack as non-executable, PR#4564 */
         .section .note.GNU-stack,"",%progbits
 #endif

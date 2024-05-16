@@ -277,12 +277,13 @@ void caml_request_minor_gc (void)
    There are two kinds of asynchronous actions:
 
    - Those that we execute immediately in all circumstances (STW
-     interrupts, requested minor or major GC, forced systhread yield);
-     they must never call OCaml code.
+     interrupts, requested minor or major GC); they must never call
+     OCaml code.
 
    - Those that run OCaml code and may raise OCaml exceptions
-     (asynchronous callbacks, finalisers, memprof callbacks); those
-     can be delayed, and do not run during allocations from C.
+     (asynchronous callbacks, finalisers, memprof callbacks, forced
+     systhread yield); those can be delayed, and do not run during
+     allocations from C.
 
    Queued asynchronous actions are notified to the domain by setting
    [young_limit] to a high value, thereby making the next allocation
@@ -341,7 +342,8 @@ value caml_do_pending_actions_exn(void)
   caml_handle_gc_interrupt();
   /* [young_limit] has now been reset. */
 
-  /* 2. Delayable actions that may raise OCaml exceptions.
+  /* 2. Delayable actions that may run OCaml code and raise OCaml
+     exceptions.
 
      We can now clear the action_pending flag since we are going to
      execute all actions. */
@@ -351,15 +353,19 @@ value caml_do_pending_actions_exn(void)
   value exn = caml_process_pending_signals_exn();
   if (Is_exception_result(exn)) goto exception;
 
-#if 0
   /* Call memprof callbacks */
-  exn = caml_memprof_handle_postponed_exn();
+  exn = caml_memprof_run_callbacks_exn();
   if (Is_exception_result(exn)) goto exception;
-#endif
 
   /* Call finalisers */
   exn = caml_final_do_calls_exn();
   if (Is_exception_result(exn)) goto exception;
+
+  /* Process external interrupts (e.g. preemptive systhread switching).
+     By doing this last, we do not need to set the action pending flag
+     in case a context switch happens: all actions have been processed
+     at this point. */
+  caml_process_external_interrupt();
 
   return Val_unit;
 
@@ -383,7 +389,7 @@ value caml_process_pending_actions_with_root_exn(value root)
   return root;
 }
 
-value caml_process_pending_actions_with_root(value root)
+CAMLprim value caml_process_pending_actions_with_root(value root)
 {
   return caml_raise_if_exception(
     caml_process_pending_actions_with_root_exn(root));
@@ -695,7 +701,7 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     if (caml_signal_handlers == 0) {
       tmp_signal_handlers = caml_alloc(NSIG, 0);
     }
-    caml_plat_lock(&signal_install_mutex);
+    caml_plat_lock_blocking(&signal_install_mutex);
     if (caml_signal_handlers == 0) {
       /* caml_alloc cannot raise asynchronous exceptions from signals
          so this is safe */

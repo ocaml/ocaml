@@ -23,7 +23,7 @@
 
     This is typically used to accumulate elements whose number is not
     known in advance or changes during computation, while also
-    providing fast access to elements at arbitrary positions.
+    providing fast access to elements at arbitrary indices.
 
 {[
     let dynarray_of_list li =
@@ -38,10 +38,6 @@
 
     The {!Stack} module provides a last-in first-out data structure
     that can be easily implemented on top of dynamic arrays.
-
-    {b Warning.} In their current implementation, the memory layout
-    of dynamic arrays differs from the one of {!Array}s. See the
-    {{!section:memory_layout} Memory Layout} section for more information.
 
     @since 5.2
 *)
@@ -312,6 +308,32 @@ val filter_map : ('a -> 'b option) -> 'a t -> 'b t
     ignoring strings that cannot be converted to integers.
 *)
 
+(** {1:comparison Comparison functions}
+
+    Comparison functions iterate over their arguments; it is
+    a programming error to change their length during the iteration,
+    see the {{!section:iteration} Iteration} section above.
+ *)
+
+val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+(** [equal eq a b] holds when [a] and [b] have the same length,
+    and for all indices [i] we have [eq (get a i) (get b i)].
+
+    @since 5.3
+*)
+
+val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
+(** Provided the function [cmp] defines a preorder on elements,
+    [compare cmp a b] compares first [a] and [b] by their length,
+    and then, if equal, by their elements according to
+    the lexicographic preorder.
+
+    For more details on comparison functions, see {!Array.sort}.
+
+    @since 5.3
+*)
+
+
 (** {1:conversions Conversions to other data structures}
 
     Note: the [of_*] functions raise [Invalid_argument] if the
@@ -489,38 +511,10 @@ val reset : 'a t -> unit
 (** {2:noleaks No leaks: preservation of memory liveness}
 
     The user-provided values reachable from a dynamic array [a] are
-    exactly the elements in the positions [0] to [length a - 1]. In
+    exactly the elements in the indices [0] to [length a - 1]. In
     particular, no user-provided values are "leaked" by being present
-    in the backing array in position [length a] or later.
+    in the backing array at index [length a] or later.
 *)
-
-(** {2:memory_layout Memory layout of dynarrays}
-
-    In the current implementation, the backing array of an
-    ['a Dynarray.t] is not an ['a array], but something with the same
-    representation as an ['a option array] or ['a ref array].
-    Each element is in a "box", allocated when the element is first
-    added to the array -- see the implementation for more details.
-
-    Using an ['a array] would be delicate, as there is no obvious
-    type-correct way to represent the empty space at the end of the
-    backing array -- using user-provided values would either
-    complicate the API or violate the {{!section:noleaks}no leaks}
-    guarantee. The constraint of remaining memory-safe under
-    unsynchronized concurrent usage makes it even more
-    difficult. Various unsafe ways to do this have been discussed,
-    with no consensus on a standard implementation so far.
-
-    On a realistic automated-theorem-proving program that relies
-    heavily on dynamic arrays, we measured the overhead of this extra
-    "boxing" as at most 25%. We believe that the overhead for most
-    uses of dynarray is much smaller, negligible in many cases, but
-    you may still prefer to use your own specialized implementation
-    for performance. (If you know that you do not need the
-    {{:noleaks}no leaks} guarantee, you can also speed up deleting
-    elements.)
-*)
-
 
 
 (** {1:examples Code examples}
@@ -606,7 +600,7 @@ end = struct
       let last = Dynarray.length h - 1 in
       swap h 0 last;
       (* At this point [pop_last] returns the 'best' value,
-         and leaves a heap with one misplaced element at position 0. *)
+         and leaves a heap with one misplaced element at index [0]. *)
       let best = Dynarray.pop_last h in
       (* Restore the heap ordering -- does nothing if the heap is empty. *)
       heap_down h ~len:last 0;

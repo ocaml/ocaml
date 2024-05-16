@@ -650,6 +650,15 @@ $(BYTE_BINDIR)/flexlink$(EXE): \
 partialclean::
 	rm -f $(BYTE_BINDIR)/flexlink $(BYTE_BINDIR)/flexlink.exe
 
+ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+clean::
+	$(MAKE) -C flexdll clean
+endif
+ifneq "$(wildcard flexdll-sources/Makefile)" ""
+clean::
+	$(MAKE) -C flexdll-sources clean
+endif
+
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 # The recipe for runtime/ocamlruns$(EXE) also produces runtime/primitives
 boot/ocamlrun$(EXE): runtime/ocamlruns$(EXE)
@@ -868,9 +877,6 @@ flexlink.opt$(EXE): \
 	cd $(OPT_BINDIR); $(LN) $(call ROOT_FROM, $(OPT_BINDIR))/$@ flexlink$(EXE)
 	cp $(addprefix $(BYTE_BINDIR)/, $(FLEXDLL_OBJECTS)) $(OPT_BINDIR)
 
-partialclean::
-	rm -f flexlink.opt$(EXE) $(OPT_BINDIR)/flexlink$(EXE)
-
 else
 
 flexdll flexlink flexlink.opt:
@@ -891,9 +897,13 @@ flexdll flexlink flexlink.opt:
 
 endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 
+partialclean::
+	rm -f flexlink.opt flexlink.opt.exe \
+        $(OPT_BINDIR)/flexlink $(OPT_BINDIR)/flexlink.exe
+
 INSTALL_COMPLIBDIR = $(DESTDIR)$(COMPLIBDIR)
 INSTALL_FLEXDLLDIR = $(INSTALL_LIBDIR)/flexdll
-FLEXDLL_MANIFEST = default_$(ARCH).manifest
+FLEXDLL_MANIFEST = default$(filter-out _i386,_$(ARCH)).manifest
 
 DOC_FILES=\
   Changes \
@@ -1091,6 +1101,15 @@ partialclean::
 
 ## Lists of source files
 
+ifneq "$(WINPTHREADS_SOURCE_DIR)" ""
+winpthreads_SOURCES = cond.c misc.c mutex.c rwlock.c sched.c spinlock.c thread.c
+
+winpthreads_OBJECTS = \
+  $(addprefix runtime/winpthreads/, $(winpthreads_SOURCES:.c=.$(O)))
+else
+winpthreads_OBJECTS =
+endif
+
 runtime_COMMON_C_SOURCES = \
   addrmap \
   afl \
@@ -1209,32 +1228,39 @@ endif
 
 ## List of object files for each target
 
-libcamlrun_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.b.$(O))
+
+libcamlrun_OBJECTS = \
+  $(runtime_BYTECODE_C_SOURCES:.c=.b.$(O)) $(winpthreads_OBJECTS)
 
 libcamlrun_non_shared_OBJECTS = \
   $(subst $(UNIX_OR_WIN32).b.$(O),$(UNIX_OR_WIN32)_non_shared.b.$(O), \
           $(libcamlrun_OBJECTS))
 
 libcamlrund_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.bd.$(O)) \
-  runtime/instrtrace.bd.$(O)
+  $(winpthreads_OBJECTS) runtime/instrtrace.bd.$(O)
 
-libcamlruni_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.bi.$(O))
+libcamlruni_OBJECTS = \
+  $(runtime_BYTECODE_C_SOURCES:.c=.bi.$(O)) $(winpthreads_OBJECTS)
 
-libcamlrunpic_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.bpic.$(O))
+libcamlrunpic_OBJECTS = \
+  $(runtime_BYTECODE_C_SOURCES:.c=.bpic.$(O)) $(winpthreads_OBJECTS)
 
 libasmrun_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.n.$(O)) $(runtime_ASM_OBJECTS)
+  $(runtime_NATIVE_C_SOURCES:.c=.n.$(O)) $(runtime_ASM_OBJECTS) \
+  $(winpthreads_OBJECTS)
 
 libasmrund_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.nd.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.d.$(O))
+  $(runtime_NATIVE_C_SOURCES:.c=.nd.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.d.$(O)) \
+  $(winpthreads_OBJECTS)
 
 libasmruni_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.ni.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.i.$(O))
+  $(runtime_NATIVE_C_SOURCES:.c=.ni.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.i.$(O)) \
+  $(winpthreads_OBJECTS)
 
 libasmrunpic_OBJECTS = $(runtime_NATIVE_C_SOURCES:.c=.npic.$(O)) \
-  $(runtime_ASM_OBJECTS:.$(O)=_libasmrunpic.$(O))
+  $(runtime_ASM_OBJECTS:.$(O)=_libasmrunpic.$(O)) $(winpthreads_OBJECTS)
 
-libcomprmarsh_OBJECTS = runtime/zstd.n.$(O)
+libcomprmarsh_OBJECTS = runtime/zstd.npic.$(O)
 
 ## General (non target-specific) assembler and compiler flags
 
@@ -1415,6 +1441,15 @@ endif # ifeq "$(COMPUTE_DEPS)" "true"
 	  $$(OUTPUTOBJ)$$@ $$<
 endef
 
+runtime/winpthreads/%.$(O): $(WINPTHREADS_SOURCE_DIR)/src/%.c \
+                            $(wildcard $(WINPTHREADS_SOURCE_DIR)/include/*.h) \
+                              | runtime/winpthreads
+	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ $<
+
+runtime/winpthreads:
+	$(MKDIR) $@
+
 $(DEPDIR)/runtime:
 	$(MKDIR) $@
 
@@ -1501,7 +1536,7 @@ clean::
 	rm -f runtime/primitives runtime/primitives*.new runtime/prims.c \
 	  $(runtime_BUILT_HEADERS)
 	rm -f runtime/domain_state.inc
-	rm -rf $(DEPDIR)
+	rm -rf $(DEPDIR) runtime/winpthreads
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
 
 .PHONY: runtimeopt
@@ -1606,7 +1641,8 @@ $(ocamlyacc_PROGRAM)$(EXE): $(ocamlyacc_OBJECTS)
 	$(V_MKEXE)$(MKEXE) -o $@ $^
 
 clean::
-	rm -f $(ocamlyacc_MODULES:=.o) $(ocamlyacc_MODULES:=.obj)
+	rm -f $(ocamlyacc_MODULES:=.o) $(ocamlyacc_MODULES:=.obj) \
+        yacc/wstr.o yacc/wstr.obj
 
 $(ocamlyacc_OTHER_MODULES:=.$(O)): yacc/defs.h
 
@@ -1735,6 +1771,8 @@ OCAMLDOC_LIBCMTS=$(OCAMLDOC_LIBMLIS:.mli=.cmt) $(OCAMLDOC_LIBMLIS:.mli=.cmti)
 
 ocamldoc/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
+ocamldoc/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
+
 .PHONY: ocamldoc
 ocamldoc: ocamldoc/ocamldoc$(EXE) ocamldoc/odoc_test.cmo
 
@@ -1743,7 +1781,7 @@ ocamldoc/ocamldoc$(EXE): ocamlc ocamlyacc ocamllex
 .PHONY: ocamldoc.opt
 ocamldoc.opt: ocamldoc/ocamldoc.opt$(EXE)
 
-ocamldoc/ocamldoc.opt$(EXE): ocamlc.opt ocamlyacc ocamllex
+ocamldoc/ocamldoc.opt$(EXE): ocamlopt ocamlyacc ocamllex
 
 # OCamltest
 
@@ -1823,6 +1861,8 @@ $(ocamltest_DEP_FILES): $(DEPDIR)/ocamltest/%.$(D): ocamltest/%.c
 
 ocamltest/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
+ocamltest/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
+
 ocamltest: ocamltest/ocamltest$(EXE) \
   testsuite/lib/lib.cmo testsuite/lib/testing.cma testsuite/tools/expect$(EXE)
 
@@ -1861,14 +1901,14 @@ $(asmgen_OBJECT): $(asmgen_SOURCE)
 	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) -o $@ $< || $(ASPP_ERROR)
 endif
 
-ocamltest/ocamltest$(EXE): OC_BYTECODE_LINKFLAGS += -custom
+ocamltest/ocamltest$(EXE): OC_BYTECODE_LINKFLAGS += -custom -g
 
 ocamltest/ocamltest$(EXE): ocamlc ocamlyacc ocamllex
 
 ocamltest.opt: ocamltest/ocamltest.opt$(EXE) \
   testsuite/lib/testing.cmxa $(asmgen_OBJECT) testsuite/tools/codegen$(EXE)
 
-ocamltest/ocamltest.opt$(EXE): ocamlc.opt ocamlyacc ocamllex
+ocamltest/ocamltest.opt$(EXE): ocamlopt ocamlyacc ocamllex
 
 # ocamltest does _not_ want to have access to the Unix interface by default,
 # to ensure functions and types are only used via Ocamltest_stdlib.Unix
@@ -2418,7 +2458,9 @@ depend: beforedepend
 
 .PHONY: distclean
 distclean: clean
-	if [ -f flexdll/Makefile ]; then $(MAKE) -C flexdll distclean MSVC_DETECT=0; fi
+ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+	$(MAKE) -C flexdll distclean MSVC_DETECT=0
+endif
 	$(MAKE) -C manual distclean
 	rm -f ocamldoc/META
 	rm -f $(addprefix ocamltest/,ocamltest_config.ml ocamltest_unix.ml)
@@ -2433,7 +2475,8 @@ distclean: clean
 	      boot/flexdll_*.o boot/flexdll_*.obj \
 	      boot/*.cm* boot/libcamlrun.a boot/libcamlrun.lib boot/ocamlc.opt
 	rm -f Makefile.config Makefile.build_config
-	rm -rf autom4te.cache flexdll-sources $(BYTE_BUILD_TREE) $(OPT_BUILD_TREE)
+	rm -rf autom4te.cache winpthreads-sources flexdll-sources \
+         $(BYTE_BUILD_TREE) $(OPT_BUILD_TREE)
 	rm -f config.log config.status libtool
 
 # Installation

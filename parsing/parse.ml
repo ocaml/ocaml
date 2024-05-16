@@ -161,7 +161,7 @@ let prepare_error err =
               "only module type identifier and %a constraints are supported"
               Style.inline_code "with type"
       in
-      Location.errorf ~loc "invalid package type: %a" invalid ipt
+      Location.errorf ~loc "Syntax error: invalid package type: %a" invalid ipt
   | Removed_string_set loc ->
       Location.errorf ~loc
         "Syntax error: strings are immutable, there is no assignment \

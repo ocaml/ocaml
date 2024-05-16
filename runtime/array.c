@@ -198,7 +198,7 @@ CAMLprim value caml_floatarray_create(value len)
 }
 
 /* [len] is a [value] representing number of words or floats */
-CAMLprim value caml_make_vect(value len, value init)
+CAMLprim value caml_array_make(value len, value init)
 {
   CAMLparam2 (len, init);
   CAMLlocal1 (res);
@@ -247,7 +247,7 @@ CAMLprim value caml_make_vect(value len, value init)
 
 /* [len] is a [value] representing number of floats */
 /* [ int -> float array ] */
-CAMLprim value caml_make_float_vect(value len)
+CAMLprim value caml_array_create_float(value len)
 {
 #ifdef FLAT_FLOAT_ARRAY
   return caml_floatarray_create (len);
@@ -264,7 +264,7 @@ CAMLprim value caml_make_float_vect(value len)
 #endif
   };
   value some_float = Val_hp(some_float_contents);
-  return caml_make_vect (len, some_float);
+  return caml_array_make (len, some_float);
 #endif
 }
 
@@ -274,7 +274,7 @@ CAMLprim value caml_make_float_vect(value len)
    boxed floats and returns the corresponding flat-allocated [float array].
    In all other cases, it just returns its argument unchanged.
 */
-CAMLprim value caml_make_array(value init)
+CAMLprim value caml_array_of_uniform_array(value init)
 {
 #ifdef FLAT_FLOAT_ARRAY
   CAMLparam1 (init);
@@ -309,6 +309,26 @@ CAMLprim value caml_make_array(value init)
   return init;
 #endif
 }
+
+
+/* #13003: previous names for array-creation primitives,
+   kept for backward-compatibility only. */
+
+CAMLprim value caml_make_vect(value len, value init)
+{
+  return caml_array_make(len, init);
+}
+
+CAMLprim value caml_make_float_vect(value len)
+{
+  return caml_array_create_float(len);
+}
+
+CAMLprim value caml_make_array(value array)
+{
+  return caml_array_of_uniform_array(array);
+}
+
 
 /* Blitting */
 
@@ -351,6 +371,12 @@ static void wo_memmove (volatile value* const dst,
 CAMLprim value caml_floatarray_blit(value a1, value ofs1, value a2, value ofs2,
                                     value n)
 {
+  if (Long_val(n) == 0) return Val_unit;
+  /* Note: size-0 floatarrays do not have Double_array_tag,
+     but only size-0 blits are possible on them, so they
+     do not reach this point. */
+  CAMLassert (Tag_val(a1) == Double_array_tag);
+  CAMLassert (Tag_val(a2) == Double_array_tag);
   /* See memory model [MM] notes in memory.c */
   atomic_thread_fence(memory_order_acquire);
   memmove((double *)a2 + Long_val(ofs2),
@@ -369,6 +395,10 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
   if (Tag_val(a2) == Double_array_tag)
     return caml_floatarray_blit(a1, ofs1, a2, ofs2, n);
 #endif
+  if (Long_val(n) == 0)
+    /* See comment on size-0 floatarrays in [caml_floatarray_blit]. */
+    return Val_unit;
+  CAMLassert (Tag_val(a1) != Double_array_tag);
   CAMLassert (Tag_val(a2) != Double_array_tag);
   if (Is_young(a2)) {
     /* Arrays of values, destination is in young generation.

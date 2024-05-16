@@ -261,6 +261,8 @@ type typedecl_extraction_result =
 val extract_concrete_typedecl:
         Env.t -> type_expr -> typedecl_extraction_result
 
+val get_new_abstract_name : Env.t -> string -> string
+
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val unify_gadt:
@@ -466,7 +468,8 @@ val immediacy : Env.t -> type_expr -> Type_immediacy.t
 (* Stubs *)
 val package_subtype :
     (Env.t -> Path.t -> (Longident.t * type_expr) list ->
-      Path.t -> (Longident.t * type_expr) list -> bool) ref
+      Path.t -> (Longident.t * type_expr) list ->
+     (unit,Errortrace.first_class_module) Result.t) ref
 
 (* Raises [Incompatible] *)
 val mcomp : Env.t -> type_expr -> type_expr -> unit

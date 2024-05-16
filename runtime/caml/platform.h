@@ -26,6 +26,9 @@
 #include "config.h"
 #include "mlvalues.h"
 #include "sys.h"
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
 
 #if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
 #define MAP_ANONYMOUS MAP_ANON
@@ -49,6 +52,14 @@ Caml_inline void cpu_relax(void) {
 #else
   /* Just a compiler barrier */
   __asm__ volatile ("" ::: "memory");
+#endif
+#elif defined(_MSC_VER)
+/* It would be better to use YieldProcessor to have a portable implementation
+   but this would require windows.h which we can't include here (it would
+   conflict with caml/instruct.h on ATOM, for instance)
+*/
+#if defined(_M_IX86) || defined(_M_X64)
+  _mm_pause();
 #endif
 #endif
 }
@@ -89,22 +100,49 @@ Caml_inline uintnat atomic_fetch_add_verify_ge0(atomic_uintnat* p, uintnat v) {
   return result;
 }
 
+/* Warning: blocking functions.
+
+   Blocking functions are for use in the runtime outside of the
+   mutator, or when the domain lock is not held.
+
+   In order to use them inside the mutator and while holding the
+   domain lock, one must make sure that the wait is very short, and
+   that no deadlock can arise from the interaction with the domain
+   locks and the stop-the-world sections.
+
+   In particular one must not call [caml_plat_lock_blocking] on a
+   mutex while the domain lock is held:
+    - if any critical section of the mutex crosses an allocation, a
+      blocking section releasing the domain lock, or any other
+      potential STW section, nor
+    - if the same lock is acquired at any point using [Mutex.lock] or
+      [caml_plat_lock_non_blocking] on the same domain (circular
+      deadlock with the domain lock).
+
+   Hence, as a general rule, prefer [caml_plat_lock_non_blocking] to
+   lock a mutex when inside the mutator and holding the domain lock.
+   The domain lock must be held in order to call
+   [caml_plat_lock_non_blocking].
+
+   These functions never raise exceptions; errors are fatal. Thus, for
+   usages where bugs are susceptible to be introduced by users, the
+   functions from caml/sync.h should be used instead.
+*/
 
 typedef pthread_mutex_t caml_plat_mutex;
 #define CAML_PLAT_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 CAMLextern void caml_plat_mutex_init(caml_plat_mutex*);
-Caml_inline void caml_plat_lock(caml_plat_mutex*);
+Caml_inline void caml_plat_lock_blocking(caml_plat_mutex*);
+Caml_inline void caml_plat_lock_non_blocking(caml_plat_mutex*);
 Caml_inline int caml_plat_try_lock(caml_plat_mutex*);
 void caml_plat_assert_locked(caml_plat_mutex*);
 void caml_plat_assert_all_locks_unlocked(void);
 Caml_inline void caml_plat_unlock(caml_plat_mutex*);
 void caml_plat_mutex_free(caml_plat_mutex*);
-typedef struct { pthread_cond_t cond; caml_plat_mutex* mutex; } caml_plat_cond;
-#define CAML_PLAT_COND_INITIALIZER(m) { PTHREAD_COND_INITIALIZER, m }
-void caml_plat_cond_init(caml_plat_cond*, caml_plat_mutex*);
-void caml_plat_wait(caml_plat_cond*);
-/* like caml_plat_wait, but if nanoseconds surpasses the second parameter
-   without a signal, then this function returns 1. */
+typedef pthread_cond_t caml_plat_cond;
+#define CAML_PLAT_COND_INITIALIZER PTHREAD_COND_INITIALIZER
+void caml_plat_cond_init(caml_plat_cond*);
+void caml_plat_wait(caml_plat_cond*, caml_plat_mutex*); /* blocking */
 void caml_plat_broadcast(caml_plat_cond*);
 void caml_plat_signal(caml_plat_cond*);
 void caml_plat_cond_free(caml_plat_cond*);
@@ -130,15 +168,15 @@ Caml_inline void check_err(const char* action, int err)
 }
 
 #ifdef DEBUG
-static CAMLthread_local int lockdepth;
-#define DEBUG_LOCK(m) (lockdepth++)
-#define DEBUG_UNLOCK(m) (lockdepth--)
+CAMLextern CAMLthread_local int caml_lockdepth;
+#define DEBUG_LOCK(m) (caml_lockdepth++)
+#define DEBUG_UNLOCK(m) (caml_lockdepth--)
 #else
 #define DEBUG_LOCK(m)
 #define DEBUG_UNLOCK(m)
 #endif
 
-Caml_inline void caml_plat_lock(caml_plat_mutex* m)
+Caml_inline void caml_plat_lock_blocking(caml_plat_mutex* m)
 {
   check_err("lock", pthread_mutex_lock(m));
   DEBUG_LOCK(m);
@@ -153,6 +191,15 @@ Caml_inline int caml_plat_try_lock(caml_plat_mutex* m)
     check_err("try_lock", r);
     DEBUG_LOCK(m);
     return 1;
+  }
+}
+
+CAMLextern void caml_plat_lock_non_blocking_actual(caml_plat_mutex* m);
+
+Caml_inline void caml_plat_lock_non_blocking(caml_plat_mutex* m)
+{
+  if (!caml_plat_try_lock(m)) {
+    caml_plat_lock_non_blocking_actual(m);
   }
 }
 

@@ -64,10 +64,10 @@ module Context = struct
   let alt_pp ppf cxt =
     if cxt = [] then () else
     if List.for_all (function Module _ -> true | _ -> false) cxt then
-      Format.fprintf ppf "in module %a,"
+      Format.fprintf ppf ",@ in module %a"
         (Style.as_inline_code Printtyp.path) (path_of_context cxt)
     else
-      Format.fprintf ppf "@[<hv 2>at position@ %a,@]"
+      Format.fprintf ppf ",@ @[<hv 2>at position@ %a@]"
         (Style.as_inline_code context) cxt
 
   let pp ppf cxt =
@@ -80,9 +80,8 @@ module Context = struct
         (Style.as_inline_code context) cxt
 end
 
-module Illegal_permutation = struct
-  (** Extraction of information in case of illegal permutation
-      in a module type *)
+module Runtime_coercion = struct
+  (** Extraction of a small change from a non-identity runtime coercion *)
 
   (** When examining coercions, we only have runtime component indices,
       we use thus a limited version of {!pos}. *)
@@ -95,43 +94,50 @@ module Illegal_permutation = struct
     | None -> g y
     | Some _ as v -> v
 
-  (** We extract a lone transposition from a full tree of permutations. *)
-  let rec transposition_under path (coerc:Typedtree.module_coercion) =
+  type change =
+    | Transposition of int * int
+    | Primitive_coercion of string
+    | Alias_coercion of Path.t
+
+  (** We extract a small change from a full coercion. *)
+  let rec first_change_under path (coerc:Typedtree.module_coercion) =
     match coerc with
     | Tcoerce_structure(c,_) ->
         either
-          (not_fixpoint path 0) c
+          (first_item_transposition path 0) c
           (first_non_id path 0) c
     | Tcoerce_functor(arg,res) ->
         either
-          (transposition_under (InArg::path)) arg
-          (transposition_under (InBody::path)) res
+          (first_change_under (InArg::path)) arg
+          (first_change_under (InBody::path)) res
     | Tcoerce_none -> None
-    | Tcoerce_alias _ | Tcoerce_primitive _ ->
-        (* these coercions are not inversible, and raise an error earlier when
-           checking for module type equivalence *)
-        assert false
+    | Tcoerce_alias _ | Tcoerce_primitive _ -> None
+
   (* we search the first point which is not invariant at the current level *)
-  and not_fixpoint path pos = function
+  and first_item_transposition path pos = function
     | [] -> None
     | (n, _) :: q ->
-        if n = pos then
-          not_fixpoint path (pos+1) q
+        if n < 0 || n = pos then
+          (* when n < 0, this is not a transposition but a kind coercion,
+            which will be covered in the first_non_id case *)
+          first_item_transposition path (pos+1) q
         else
-          Some(List.rev path, pos, n)
+          Some(List.rev path, Transposition (pos, n))
   (* we search the first item with a non-identity inner coercion *)
   and first_non_id path pos = function
     | [] -> None
     | (_, Typedtree.Tcoerce_none) :: q -> first_non_id path (pos + 1) q
+    | (_, Typedtree.Tcoerce_alias (_,p,_)) :: _ ->
+        Some (List.rev path, Alias_coercion p)
+    | (_, Typedtree.Tcoerce_primitive p) :: _ ->
+        let name = Primitive.byte_name p.pc_desc in
+        Some (List.rev path, Primitive_coercion name)
     | (_,c) :: q ->
         either
-          (transposition_under (Item pos :: path)) c
+          (first_change_under (Item pos :: path)) c
           (first_non_id path (pos + 1)) q
 
-  let transposition c =
-    match transposition_under [] c with
-    | None -> raise Not_found
-    | Some x -> x
+  let first_change c = first_change_under [] c
 
   let rec runtime_item k = function
     | [] -> raise Not_found
@@ -172,18 +178,59 @@ module Illegal_permutation = struct
       (Includemod.kind_of_field_desc kind)
       Style.inline_code (Ident.name id)
 
-  let pp ctx_printer env ppf (mty,c) =
+  let illegal_permutation ctx_printer env ppf (mty,c) =
+    match first_change c with
+    | None | Some (_, (Primitive_coercion _ | Alias_coercion _)) ->
+        (* those kind coercions are not inversible, and raise an error earlier
+           when checking for module type equivalence *)
+        assert false
+    | Some (path, Transposition (k,l)) ->
     try
-      let p, k, l = transposition c in
-      let ctx, mt = find env p mty in
+      let ctx, mt = find env path mty in
       Format.fprintf ppf
         "@[<hv 2>Illegal permutation of runtime components in a module type.@ \
-         @[For example,@ %a@]@ @[the %a@ and the %a are not in the same order@ \
+         @[For example%a,@]@ @[the %a@ and the %a are not in the same order@ \
          in the expected and actual module types.@]@]"
         ctx_printer ctx pp_item (item mt k) pp_item (item mt l)
     with Not_found -> (* this should not happen *)
       Format.fprintf ppf
         "Illegal permutation of runtime components in a module type."
+
+  let in_package_subtype ctx_printer env mty c ppf =
+    match first_change c with
+    | None ->
+        (* The coercion looks like the identity but was not simplified to
+           [Tcoerce_none], this only happens when the two first-class module
+           types differ by runtime size *)
+        Format.fprintf ppf
+          "The two first-class module types differ by their runtime size."
+    | Some (path, c) ->
+  try
+    let ctx, mt = find env path mty in
+    match c with
+    | Primitive_coercion prim_name ->
+        Format.fprintf ppf
+          "@[The two first-class module types differ by a coercion of@ \
+           the primitive %a@ to a value%a.@]"
+          Style.inline_code prim_name
+          ctx_printer ctx
+    | Alias_coercion path ->
+        Format.fprintf ppf
+          "@[The two first-class module types differ by a coercion of@ \
+           a module alias %a@ to a module%a.@]"
+          (Style.as_inline_code Printtyp.path) path
+          ctx_printer ctx
+    | Transposition (k,l) ->
+        Format.fprintf ppf
+          "@[@[The two first-class module types do not share@ \
+           the same positions for runtime components.@]@ \
+           @[For example,%a@ the %a@ occurs at the expected position of@ \
+           the %a.@]@]"
+          ctx_printer ctx pp_item (item mt k) pp_item (item mt l)
+  with Not_found ->
+    Format.fprintf ppf
+      "@[The two packages types do not share@ \
+       the@ same@ positions@ for@ runtime@ components.@]"
 
 end
 
@@ -609,7 +656,7 @@ let subcase_list l ppf = match l with
 let core env id x =
   match x with
   | Err.Value_descriptions diff ->
-      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a%t@]"
+      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
         "Values do not match"
         !Oprint.out_sig_item
         (Printtyp.tree_of_value_description id diff.got)
@@ -619,9 +666,8 @@ let core env id x =
         (Includecore.report_value_mismatch
            "the first" "the second" env) diff.symptom
         show_locs (diff.got.val_loc, diff.expected.val_loc)
-        Printtyp.Conflicts.print_explanations
   | Err.Type_declarations diff ->
-      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a%t@]"
+      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
         "Type declarations do not match"
         !Oprint.out_sig_item
         (Printtyp.tree_of_type_declaration id diff.got Trec_first)
@@ -631,9 +677,8 @@ let core env id x =
         (Includecore.report_type_mismatch
            "the first" "the second" "declaration" env) diff.symptom
         show_locs (diff.got.type_loc, diff.expected.type_loc)
-        Printtyp.Conflicts.print_explanations
   | Err.Extension_constructors diff ->
-      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]@ %a%a%t@]"
+      Format.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]@ %a%a@]"
         "Extension declarations do not match"
         !Oprint.out_sig_item
         (Printtyp.tree_of_extension_constructor id diff.got Text_first)
@@ -643,27 +688,24 @@ let core env id x =
         (Includecore.report_extension_constructor_mismatch
            "the first" "the second" "declaration" env) diff.symptom
         show_locs (diff.got.ext_loc, diff.expected.ext_loc)
-        Printtyp.Conflicts.print_explanations
   | Err.Class_type_declarations diff ->
       Format.dprintf
         "@[<hv 2>Class type declarations do not match:@ \
-         %a@;<1 -2>does not match@ %a@]@ %a%t"
+         %a@;<1 -2>does not match@ %a@]@ %a"
         !Oprint.out_sig_item
         (Printtyp.tree_of_cltype_declaration id diff.got Trec_first)
         !Oprint.out_sig_item
         (Printtyp.tree_of_cltype_declaration id diff.expected Trec_first)
         (Includeclass.report_error Type_scheme) diff.symptom
-        Printtyp.Conflicts.print_explanations
   | Err.Class_declarations {got;expected;symptom} ->
       let t1 = Printtyp.tree_of_class_declaration id got Trec_first in
       let t2 = Printtyp.tree_of_class_declaration id expected Trec_first in
       Format.dprintf
         "@[<hv 2>Class declarations do not match:@ \
-         %a@;<1 -2>does not match@ %a@]@ %a%t"
+         %a@;<1 -2>does not match@ %a@]@ %a"
         !Oprint.out_sig_item t1
         !Oprint.out_sig_item t2
         (Includeclass.report_error Type_scheme) symptom
-        Printtyp.Conflicts.print_explanations
 
 let missing_field ppf item =
   let id, loc, kind =  Includemod.item_ident_name item in
@@ -701,10 +743,7 @@ let interface_mismatch ppf (diff: _ Err.diff) =
 let core_module_type_symptom (x:Err.core_module_type_symptom)  =
   match x with
   | Not_an_alias | Not_an_identifier | Abstract_module_type
-  | Incompatible_aliases ->
-      if Printtyp.Conflicts.exists () then
-        Some Printtyp.Conflicts.print_explanations
-      else None
+  | Incompatible_aliases -> None
   | Unbound_module_path path ->
       Some(Format.dprintf "Unbound module %a"
              (Style.as_inline_code Printtyp.path) path
@@ -825,7 +864,7 @@ and module_type_decl ~expansion_token ~env ~before ~ctx id diff =
       | None -> assert false
       | Some mty ->
           with_context (Modtype id::ctx)
-            (Illegal_permutation.pp Context.alt_pp env) (mty,c)
+            (Runtime_coercion.illegal_permutation Context.alt_pp env) (mty,c)
           :: before
       end
 
@@ -874,7 +913,7 @@ let module_type_subst ~env id diff =
       let mty = diff.got in
       let main =
         with_context [Modtype id]
-          (Illegal_permutation.pp Context.alt_pp env) (mty,c) in
+          (Runtime_coercion.illegal_permutation Context.alt_pp env) (mty,c) in
       [main]
 
 let all env = function
@@ -898,28 +937,32 @@ let all env = function
 (* General error reporting *)
 
 let err_msgs (env, err) =
-  Printtyp.Conflicts.reset();
   Printtyp.wrap_printing_env ~error:true env
     (fun () -> coalesce @@ all env err)
 
 let report_error err =
   let main = err_msgs err in
-  Location.errorf ~loc:Location.(in_file !input_name) "%t" main
+  Location.errorf
+    ~loc:Location.(in_file !input_name)
+    ~footnote:Printtyp.Conflicts.err_msg
+   "%t" main
 
 let report_apply_error ~loc env (app_name, mty_f, args) =
+  let footnote = Printtyp.Conflicts.err_msg in
   let d = Functor_suberror.App.patch env ~f:mty_f ~args in
   match d with
   (* We specialize the one change and one argument case to remove the
      presentation of the functor arguments *)
   | [ _,  Change (_, _, Err.Incompatible_params (i,_)) ] ->
-      Location.errorf ~loc "%t" (Functor_suberror.App.incompatible i)
+      Location.errorf ~loc ~footnote "%t" (Functor_suberror.App.incompatible i)
   | [ _, Change (g, e,  Err.Mismatch mty_diff) ] ->
       let more () =
         subcase_list @@
         module_type_symptom ~eqmode:false ~expansion_token:true ~env ~before:[]
           ~ctx:[] mty_diff.symptom
       in
-      Location.errorf ~loc "%t" (Functor_suberror.App.single_diff g e more)
+      Location.errorf ~loc ~footnote "%t"
+        (Functor_suberror.App.single_diff g e more)
   | _ ->
       let not_functor =
         List.for_all (function _, Diffing.Delete _ -> true | _ -> false) d
@@ -958,12 +1001,15 @@ let report_apply_error ~loc env (app_name, mty_f, args) =
           List.rev @@
           Functor_suberror.params functor_app_diff env ~expansion_token:true d
         in
-        Location.errorf ~loc ~sub
+        Location.errorf ~loc ~sub ~footnote
           "@[<hv>%t@ \
            These arguments:@;<1 2>@[%t@]@ \
            do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"
           intro
           actual expected
+
+let coercion_in_package_subtype env mty c ppf =
+    Runtime_coercion.in_package_subtype Context.alt_pp env mty c ppf
 
 let register () =
   Location.register_error_of_exn

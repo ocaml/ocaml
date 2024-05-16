@@ -21,7 +21,7 @@
 @echo off
 
 chcp 65001 > nul
-set BUILD_PREFIX=🐫реализация
+set BUILD_PREFIX=реализация
 set OCAMLROOT=%PROGRAMFILES%\Бактріан🐫
 
 if "%1" neq "install" goto %1

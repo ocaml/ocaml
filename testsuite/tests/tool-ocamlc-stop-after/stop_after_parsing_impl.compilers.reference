@@ -20,11 +20,15 @@
                   <arg>
                   Nolabel
                     expression (stop_after_parsing_impl.ml[12,306+9]..[12,306+10])
-                      Pexp_constant PConst_int (1,None)
+                      Pexp_constant
+                      constant (stop_after_parsing_impl.ml[12,306+9]..[12,306+10])
+                        PConst_int (1,None)
                   <arg>
                   Nolabel
                     expression (stop_after_parsing_impl.ml[12,306+13]..[12,306+19])
-                      Pexp_constant PConst_string("true",(stop_after_parsing_impl.ml[12,306+14]..[12,306+18]),None)
+                      Pexp_constant
+                      constant (stop_after_parsing_impl.ml[12,306+13]..[12,306+19])
+                        PConst_string("true",(stop_after_parsing_impl.ml[12,306+14]..[12,306+18]),None)
                 ]
             <arg>
             Nolabel

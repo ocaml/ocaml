@@ -338,6 +338,7 @@ end
 
 let transl_modtype_longident = ref (fun _ -> assert false)
 let transl_modtype = ref (fun _ -> assert false)
+let check_package_with_type_constraints = ref (fun _ -> assert false)
 
 let sort_constraints_no_duplicates loc env l =
   List.sort
@@ -345,23 +346,6 @@ let sort_constraints_no_duplicates loc env l =
        if s1.txt = s2.txt then
          raise (Error (loc, env, Multiple_constraints_on_type s1.txt));
        compare s1.txt s2.txt)
-    l
-
-let create_package_mty loc p l =
-  List.fold_left
-    (fun mty (s, _) ->
-      let d = {ptype_name = mkloc (Longident.last s.txt) s.loc;
-               ptype_params = [];
-               ptype_cstrs = [];
-               ptype_kind = Ptype_abstract;
-               ptype_private = Asttypes.Public;
-               ptype_manifest = None;
-               ptype_attributes = [];
-               ptype_loc = loc} in
-      Ast_helper.Mty.mk ~loc
-        (Pmty_with (mty, [ Pwith_type ({ txt = s.txt; loc }, d) ]))
-    )
-    (Ast_helper.Mty.mk ~loc (Pmty_ident p))
     l
 
 (* Translation of type expressions *)
@@ -679,19 +663,23 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
   | Ptyp_package (p, l) ->
       let loc = styp.ptyp_loc in
       let l = sort_constraints_no_duplicates loc env l in
-      let mty = create_package_mty loc p l in
+      let mty = Ast_helper.Mty.mk ~loc (Pmty_ident p) in
+      let mty = TyVarEnv.with_local_scope (fun () -> !transl_modtype env mty) in
+      let ptys =
+        List.map (fun (s, pty) -> s, transl_type env ~policy ~row_context pty) l
+      in
       let mty =
-        TyVarEnv.with_local_scope (fun () -> !transl_modtype env mty) in
-      let ptys = List.map (fun (s, pty) ->
-                             s, transl_type env ~policy ~row_context pty
-                          ) l in
+        if ptys <> [] then
+          !check_package_with_type_constraints loc env mty.mty_type ptys
+        else mty.mty_type
+      in
       let path = !transl_modtype_longident loc env p.txt in
       let ty = newty (Tpackage (path,
                        List.map (fun (s, cty) -> (s.txt, cty.ctyp_type)) ptys))
       in
       ctyp (Ttyp_package {
             pack_path = path;
-            pack_type = mty.mty_type;
+            pack_type = mty;
             pack_fields = ptys;
             pack_txt = p;
            }) ty
@@ -772,8 +760,8 @@ and transl_fields env ~policy ~row_context o fields =
 
 
 (* Make the rows "fixed" in this type, to make universal check easier *)
-let rec make_fixed_univars ty =
-  if Btype.try_mark_node ty then
+let rec make_fixed_univars mark ty =
+  if try_mark_node mark ty then
     begin match get_desc ty with
     | Tvariant row ->
         let Row {fields; more; name; closed} = row_repr row in
@@ -790,17 +778,16 @@ let rec make_fixed_univars ty =
             (Tvariant
                (create_row ~fields ~more ~name ~closed
                   ~fixed:(Some (Univar more))));
-        Btype.iter_row make_fixed_univars row
+        Btype.iter_row (make_fixed_univars mark) row
     | _ ->
-        Btype.iter_type_expr make_fixed_univars ty
+        Btype.iter_type_expr (make_fixed_univars mark) ty
     end
+
+let make_fixed_univars ty =
+  with_type_mark (fun mark -> make_fixed_univars mark ty)
 
 let transl_type env policy styp =
   transl_type env ~policy ~row_context:[] styp
-
-let make_fixed_univars ty =
-  make_fixed_univars ty;
-  Btype.unmark_type ty
 
 let transl_simple_type env ?univars ~closed styp =
   TyVarEnv.reset_locals ?univars ();
