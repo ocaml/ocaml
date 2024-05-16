@@ -39,7 +39,7 @@ struct skiplist {
 struct skipcell {
   uintnat key;
   uintnat data;
-  struct skipcell * forward[];  /* flexible array member */
+  struct skipcell * forward[]; /* flexible array member */
 };
 
 /* Initialize a skip list, statically */

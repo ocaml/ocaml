@@ -367,7 +367,7 @@ CAMLexport value caml_callbackN (value closure, int narg, value args[])
 struct named_value {
   value val;
   struct named_value * next;
-  char name[1];
+  char name[]; /* flexible array member */
 };
 
 #define Named_value_size 13
@@ -391,7 +391,6 @@ static unsigned int hash_value_name(char const *name)
 CAMLprim value caml_register_named_value(value vname, value val)
 {
   const char * name = String_val(vname);
-  size_t namelen = strlen(name);
   unsigned int h = hash_value_name(name);
   int found = 0;
 
@@ -406,9 +405,10 @@ CAMLprim value caml_register_named_value(value vname, value val)
     }
   }
   if (!found) {
-    struct named_value * nv = (struct named_value *)
+    size_t namelen = strlen(name) + 1;
+    struct named_value * nv =
       caml_stat_alloc(sizeof(struct named_value) + namelen);
-    memcpy(nv->name, name, namelen + 1);
+    memcpy(nv->name, name, namelen);
     nv->val = val;
     nv->next = named_value_table[h];
     named_value_table[h] = nv;

@@ -82,7 +82,7 @@ struct caml_ba_array {
   intnat num_dims;            /* Number of dimensions */
   intnat flags;  /* Kind of element array + memory layout + allocation status */
   struct caml_ba_proxy * proxy; /* The proxy for sub-arrays, or NULL */
-  intnat dim[]  /*[num_dims]*/; /* Size in each dimension */
+  intnat dim[/* num_dims */]; /* Size in each dimension */
 };
 
 /* Size of struct caml_ba_array, in bytes, without [dim] array */

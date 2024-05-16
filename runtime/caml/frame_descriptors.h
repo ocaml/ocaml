@@ -63,7 +63,7 @@ typedef struct {
   uintnat retaddr;
   uint16_t frame_data; /* frame size and various flags */
   uint16_t num_live;
-  uint16_t live_ofs[1 /* num_live */];
+  uint16_t live_ofs[/* num_live */]; /* flexible array member */
   /*
     If frame_has_allocs(), alloc lengths follow:
         uint8_t num_allocs;
