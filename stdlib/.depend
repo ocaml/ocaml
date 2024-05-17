@@ -18,9 +18,11 @@ stdlib__Arg.cmx : arg.ml \
     stdlib__Arg.cmi
 stdlib__Arg.cmi : arg.mli
 stdlib__Array.cmo : array.ml \
+    stdlib__String.cmi \
     stdlib__Seq.cmi \
     stdlib__Array.cmi
 stdlib__Array.cmx : array.ml \
+    stdlib__String.cmx \
     stdlib__Seq.cmx \
     stdlib__Array.cmi
 stdlib__Array.cmi : array.mli \
