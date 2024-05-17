@@ -76,7 +76,6 @@ STDLIB_MODULE_BASENAMES = \
   arg \
   printexc \
   fun \
-  pqueue \
   gc \
   in_channel \
   out_channel \
@@ -92,6 +91,7 @@ STDLIB_MODULE_BASENAMES = \
   oo \
   camlinternalMod \
   dynarray \
+  pqueue \
   ephemeron \
   filename \
   complex \

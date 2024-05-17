@@ -15,14 +15,15 @@
 (* Priority queues over ordered elements.
 
    We choose to have polymorphic elements here, so that we can later
-   instantiate [MakePoly] on polymorphic pairs (see functors
-   [MakeMinPriority] and [MakeMaxPriority] below).
+   derive both polymorphic and monomorphic priority queues from it.
 *)
 
-module MakePoly(E: sig
-    type 'a t
-    val compare: 'a t -> 'a t -> int
-end) =
+module type OrderedPolyType = sig
+  type 'a t
+  val compare : 'a t -> 'b t -> int
+end
+
+module MakeMinPoly(E: OrderedPolyType) =
   struct
 
     type 'a elt = 'a E.t
@@ -169,17 +170,7 @@ end) =
 
   end
 
-(* We provide a simpler API, where the functor only requires the priority
-   type. This is readily obtained by using the functor above on pairs
-   (priority, element). *)
-
-module type OrderedType =
-  sig
-    type t
-    val compare: t -> t -> int
-  end
-
-module type Min =
+module type MinPoly =
   sig
     type 'a t
     type 'a elt
@@ -204,16 +195,7 @@ module type Min =
     val to_seq: 'a t -> 'a elt Seq.t
   end
 
-module MakeMinPriority(Priority: OrderedType)
-  : Min with type 'a elt = Priority.t * 'a =
-  struct
-    include MakePoly(struct
-      type 'a t = Priority.t * 'a
-      let compare (x,_) (y,_) = Priority.compare x y
-    end)
-  end
-
-module type Max =
+module type MaxPoly =
   sig
     type 'a t
     type 'a elt
@@ -238,12 +220,12 @@ module type Max =
     val to_seq: 'a t -> 'a elt Seq.t
 end
 
-module MakeMaxPriority(Priority: OrderedType)
-  : Max with type 'a elt = Priority.t * 'a =
+module MakeMaxPoly(E: OrderedPolyType)
+  : MaxPoly with type 'a elt = 'a E.t =
   struct
-    include MakePoly(struct
-      type 'a t = Priority.t * 'a
-      let compare (x,_) (y,_) = Priority.compare y x
+    include MakeMinPoly(struct
+      type 'a t = 'a E.t
+      let compare x y = E.compare y x
     end)
     (* renaming a few functions... *)
     let max_elt = min_elt
@@ -253,26 +235,75 @@ module MakeMaxPriority(Priority: OrderedType)
     let remove_max = remove_min
   end
 
-(* Monomorphic functors *)
+(* Monomorphic priority queues *)
 
-module MakeMin(E: OrderedType) :
+module type OrderedType =
   sig
     type t
-    include Min with type 'a elt := E.t and type 'a t := t
-  end =
+    val compare: t -> t -> int
+  end
+
+module type Min =
+  sig
+    type t
+    type elt
+    val create: unit ->t
+    val length: t -> int
+    val is_empty: t -> bool
+    val add: t -> elt -> unit
+    val add_seq: t -> elt Seq.t -> unit
+    exception Empty
+    val min_elt: t -> elt
+    val min_elt_opt: t -> elt option
+    val pop_min: t -> elt
+    val pop_min_opt: t -> elt option
+    val remove_min: t -> unit
+    val clear: t -> unit
+    val copy: t -> t
+    val of_array: elt array -> t
+    val of_list: elt list -> t
+    val of_seq: elt Seq.t -> t
+    val iter: (elt -> unit) -> t -> unit
+    val fold: ('acc -> elt -> 'acc) -> 'acc -> t -> 'acc
+    val to_seq: t -> elt Seq.t
+  end
+
+module MakeMin(E: OrderedType) =
   struct
-    include MakePoly(struct type 'a t = E.t let compare = E.compare end)
+    include MakeMinPoly(struct type 'a t = E.t
+                               let compare = E.compare end)
     type t = E.t Dynarray.t
   end
 
-module MakeMax(E: OrderedType) :
+module type Max =
   sig
     type t
-    include Max with type 'a elt := E.t and type 'a t := t
-  end =
+    type elt
+    val create: unit ->t
+    val length: t -> int
+    val is_empty: t -> bool
+    val add: t -> elt -> unit
+    val add_seq: t -> elt Seq.t -> unit
+    exception Empty
+    val max_elt: t -> elt
+    val max_elt_opt: t -> elt option
+    val pop_max: t -> elt
+    val pop_max_opt: t -> elt option
+    val remove_max: t -> unit
+    val clear: t -> unit
+    val copy: t -> t
+    val of_array: elt array -> t
+    val of_list: elt list -> t
+    val of_seq: elt Seq.t -> t
+    val iter: (elt -> unit) -> t -> unit
+    val fold: ('acc -> elt -> 'acc) -> 'acc -> t -> 'acc
+    val to_seq: t -> elt Seq.t
+  end
+
+module MakeMax(E: OrderedType) =
   struct
-    include MakePoly(struct type 'a t = E.t
-                            let compare = Fun.flip E.compare end)
+    include MakeMinPoly(struct type 'a t = E.t
+                               let compare x y = E.compare y x end)
     type t = E.t Dynarray.t
     let max_elt = min_elt
     let max_elt_opt = min_elt_opt

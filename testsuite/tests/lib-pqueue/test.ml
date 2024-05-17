@@ -1,6 +1,11 @@
 (* TEST *)
 
-module Q = Pqueue.MakeMinPriority(Int)
+(* testing with pairs (integer priority, string) *)
+module E = struct
+  type t = int * string
+  let compare (p1,_) (p2,_) = Int.compare p1 p2
+end
+module Q = Pqueue.MakeMin(E)
 
 let does_raise f q =
   try
@@ -44,16 +49,16 @@ let () =
 let () =
   let q = Q.create () in
   for n = 0 to 10 do
-    for x = n-1 downto 0 do Q.add q (x, ()) done;
-    for x = 0 to n-1 do assert (Q.pop_min q = (x, ())) done;
+    for x = n-1 downto 0 do Q.add q (x, "") done;
+    for x = 0 to n-1 do assert (Q.pop_min q = (x, "")) done;
     check_is_empty q
   done
 
 let () =
   let q = Q.create () in
   for n = 0 to 10 do
-    for x = n-1 downto 0 do Q.add q (x, ()) done;
-    for x = 0 to n-1 do assert (Q.pop_min q = (x, ())) done;
+    for x = n-1 downto 0 do Q.add q (x, "") done;
+    for x = 0 to n-1 do assert (Q.pop_min q = (x, "")) done;
     check_is_empty q
   done
 
@@ -86,13 +91,14 @@ let () =
   done;
   ()
 
-(* check that MaxQueue is indeed a max-pqueue *)
+(* check that Max is indeed a max-pqueue *)
 let () =
-  let open Pqueue.MakeMaxPriority(Int) in
+  let open Pqueue.MakeMax(E) in
   let q = create () in
   add q (2, "b"); add q (1, "a"); add q (4, "d"); add q (3, "c");
   for i = 4 downto 1 do let x = pop_max q in assert (fst x = i) done
 
+(* testing with string elements *)
 let () =
   let open Pqueue.MakeMin(String) in
   let a = [| "b"; "bar"; "a"; "aa"; "foo"; "ocaml" |] in
