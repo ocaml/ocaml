@@ -8,3 +8,4 @@ Rename directory to a non-empty directory: fails as expected
 Rename directory to existing empty directory: passed
 Rename existing empty directory to itself: source directory still exists!
 Rename directory to existing file: fails as expected
+Rename parent directory to empty child directory: fails as expected

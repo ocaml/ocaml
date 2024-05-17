@@ -28,6 +28,7 @@
 #include <winsock2.h>
 #include <winioctl.h>
 #include <shlobj.h>
+#include <shlwapi.h>
 #include <direct.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -809,7 +810,8 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
   if ((old_attribs != INVALID_FILE_ATTRIBUTES) &&
       (old_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0 &&
       (new_attribs != INVALID_FILE_ATTRIBUTES) &&
-      (new_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+      (new_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0 &&
+      !PathIsPrefix(oldpath, newpath)) {
     /* Try to delete: RemoveDirectoryW fails on non-empty dirs as intended.
        Then try again. */
     RemoveDirectoryW(newpath);
