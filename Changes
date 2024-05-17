@@ -66,6 +66,12 @@ _______________
 
 ### Standard library:
 
+- #13168: In Array.shuffle, clarify the code that validates the
+  result of the user-supplied function `rand`, and improve the
+  error message that is produced when this result is invalid.
+  (François Pottier, review by Florian Angeletti, Daniel Bünzli
+   and Gabriel Scherer)
+
 - #12133: Expose support for printing substrings in Format
   (Florian Angeletti, review by Daniel Bünzli, Gabriel Scherer
    and Nicolás Ojeda Bär)
