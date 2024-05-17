@@ -441,9 +441,9 @@ let fast_sort = stable_sort
 
 let shuffle_contract_violation i j =
   let msg =
-    "Array.shuffle: rand(" ^ string_of_int (i + 1) ^ ")" ^
+    "Array.shuffle: 'rand " ^ string_of_int (i + 1) ^ "'" ^
     " returned " ^ string_of_int j ^
-    ", outside of the expected range [0; " ^ string_of_int i ^ "]"
+    ", out of expected range [0; " ^ string_of_int i ^ "]"
   in
   invalid_arg msg
 
