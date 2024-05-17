@@ -104,7 +104,7 @@ module type Min =
         minimal priority, or returns [None] if the queue is empty. *)
 
     val remove_min: 'a t -> unit
-    (** [pop_min_opt q] removes an element in queue [q] with
+    (** [remove_min q] removes an element in queue [q] with
         minimal priority, or raises {!Empty} if the queue is empty. *)
 
     val clear: 'a t -> unit
