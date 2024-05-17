@@ -90,6 +90,13 @@ _______________
    review by Jeremy Yallop, Daniel Bünzli and Olivier Nicole,
    request by Olivier Nicole)
 
+- #13171: expose `Domain.self_index : unit -> int` (a somewhat-dense
+  indexing of currently-running domains) for advanced use-cases of
+  domain-indexed concurrent data structures.
+  (Gabriel Scherer,
+   review by KC Sivaramakrishnan, Miod Vallat and Nicolás Ojeda Bär,
+   report by Vesa Karvonen)
+
 ### Other libraries:
 
 ### Tools:

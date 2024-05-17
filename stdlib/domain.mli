@@ -91,6 +91,18 @@ val recommended_domain_count : unit -> int
 
     The value returned is at least [1]. *)
 
+val self_index : unit -> int
+(** The index of the current domain. It is an integer unique among
+    currently-running domains, in the interval [0; N-1] where N is the
+    peak number of domains running simultaneously so far.
+
+    The index of a terminated domain may be reused for a new
+    domain. Use [(Domain.self () :> int)] instead for an identifier
+    unique among all domains ever created by the program.
+
+    @since 5.3
+*)
+
 module DLS : sig
 (** Domain-local Storage *)
 

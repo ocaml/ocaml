@@ -204,6 +204,9 @@ let self () = Raw.self ()
 
 let is_main_domain () = (self () :> int) = 0
 
+external self_index : unit -> int
+  = "caml_ml_domain_index" [@@noalloc]
+
 (******** Callbacks **********)
 
 (* first spawn, domain startup and at exit functionality *)
