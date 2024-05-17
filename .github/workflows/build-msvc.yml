@@ -38,8 +38,6 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          # This is cl version 19.38, Visual Studio version 17.8
-          toolset: 14.38
           arch: ${{ matrix.x86_64 && 'x64' || 'x86' }}
 
       - name: Fetch OCaml
