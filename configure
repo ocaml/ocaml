@@ -781,7 +781,6 @@ build_os
 build_vendor
 build_cpu
 build
-target_bindir
 ar_supports_response_files
 QS
 ocaml_libdir
@@ -789,8 +788,6 @@ ocaml_bindir
 compute_deps
 build_libraries_manpages
 PACKLD
-mkexe_ldflags_exp
-mkdll_ldflags_exp
 flexdll_chain
 afl
 oc_native_compflags
@@ -844,7 +841,6 @@ lib_str
 lib_runtime_events
 lib_dynlink
 otherlibraries
-has_monotonic_clock
 instrumented_runtime_libs
 instrumented_runtime
 debug_runtime
@@ -858,7 +854,6 @@ AR
 shebangscripts
 winpthreads_source_include_dir
 winpthreads_source_dir
-flexlink_flags
 flexdll_dir
 bootstrapping_flexdll
 flexdll_source_dir
@@ -879,7 +874,6 @@ toolchain
 ccomptype
 mkexe_via_cc_extra_cmd
 mkexe_via_cc_ldflags
-mkexe_extra_flags
 mkexedebugflag
 mkexe_exp
 mkexe
@@ -921,7 +915,6 @@ CMA_MAGIC_NUMBER
 CMO_MAGIC_NUMBER
 CMI_MAGIC_NUMBER
 EXEC_MAGIC_NUMBER
-MAGIC_NUMBER_LENGTH
 OCAML_VERSION_SHORT
 OCAML_VERSION_EXTRA
 OCAML_VERSION_PATCHLEVEL
@@ -2353,58 +2346,6 @@ rm -f conftest.val
 
 } # ac_fn_c_compute_int
 
-# ac_fn_check_decl LINENO SYMBOL VAR INCLUDES EXTRA-OPTIONS FLAG-VAR
-# ------------------------------------------------------------------
-# Tests whether SYMBOL is declared in INCLUDES, setting cache variable VAR
-# accordingly. Pass EXTRA-OPTIONS to the compiler, using FLAG-VAR.
-ac_fn_check_decl ()
-{
-  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
-  as_decl_name=`echo $2|sed 's/ *(.*//'`
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether $as_decl_name is declared" >&5
-printf %s "checking whether $as_decl_name is declared... " >&6; }
-if eval test \${$3+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  as_decl_use=`echo $2|sed -e 's/(/((/' -e 's/)/) 0&/' -e 's/,/) 0& (/g'`
-  eval ac_save_FLAGS=\$$6
-  as_fn_append $6 " $5"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-$4
-int
-main (void)
-{
-#ifndef $as_decl_name
-#ifdef __cplusplus
-  (void) $as_decl_use;
-#else
-  (void) $as_decl_name;
-#endif
-#endif
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-  eval "$3=yes"
-else $as_nop
-  eval "$3=no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-  eval $6=\$ac_save_FLAGS
-
-fi
-eval ac_res=\$$3
-	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-printf "%s\n" "$ac_res" >&6; }
-  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
-
-} # ac_fn_check_decl
-
 # ac_fn_c_check_member LINENO AGGR MEMBER VAR INCLUDES
 # ----------------------------------------------------
 # Tries to find if the field MEMBER exists in type AGGR, after including
@@ -2464,6 +2405,58 @@ printf "%s\n" "$ac_res" >&6; }
   eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
 
 } # ac_fn_c_check_member
+
+# ac_fn_check_decl LINENO SYMBOL VAR INCLUDES EXTRA-OPTIONS FLAG-VAR
+# ------------------------------------------------------------------
+# Tests whether SYMBOL is declared in INCLUDES, setting cache variable VAR
+# accordingly. Pass EXTRA-OPTIONS to the compiler, using FLAG-VAR.
+ac_fn_check_decl ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  as_decl_name=`echo $2|sed 's/ *(.*//'`
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether $as_decl_name is declared" >&5
+printf %s "checking whether $as_decl_name is declared... " >&6; }
+if eval test \${$3+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  as_decl_use=`echo $2|sed -e 's/(/((/' -e 's/)/) 0&/' -e 's/,/) 0& (/g'`
+  eval ac_save_FLAGS=\$$6
+  as_fn_append $6 " $5"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+int
+main (void)
+{
+#ifndef $as_decl_name
+#ifdef __cplusplus
+  (void) $as_decl_use;
+#else
+  (void) $as_decl_name;
+#endif
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  eval "$3=yes"
+else $as_nop
+  eval "$3=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+  eval $6=\$ac_save_FLAGS
+
+fi
+eval ac_res=\$$3
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+
+} # ac_fn_check_decl
 ac_configure_args_raw=
 for ac_arg
 do
@@ -3339,8 +3332,6 @@ printf "%s\n" "#define MAGIC_NUMBER_PREFIX \"Caml1999\"" >>confdefs.h
 
 printf "%s\n" "#define MAGIC_NUMBER_VERSION \"035\"" >>confdefs.h
 
-MAGIC_NUMBER_LENGTH=12
-
 printf "%s\n" "#define EXEC_MAGIC_LENGTH 12" >>confdefs.h
 
 printf "%s\n" "#define EXEC_FORMAT \"X\"" >>confdefs.h
@@ -3446,13 +3437,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 
 
 
-
-
-
  # TODO: rename this variable
-
-
-
 
 
 
@@ -16739,96 +16724,11 @@ fi
 fi
 
 ## getentropy
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CC options needed to detect all undeclared functions" >&5
-printf %s "checking for $CC options needed to detect all undeclared functions... " >&6; }
-if test ${ac_cv_c_undeclared_builtin_options+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_save_CFLAGS=$CFLAGS
-   ac_cv_c_undeclared_builtin_options='cannot detect'
-   for ac_arg in '' -fno-builtin; do
-     CFLAGS="$ac_save_CFLAGS $ac_arg"
-     # This test program should *not* compile successfully.
-     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main (void)
-{
-(void) strchr;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-
-else $as_nop
-  # This test program should compile successfully.
-        # No library function is consistently available on
-        # freestanding implementations, so test against a dummy
-        # declaration.  Include always-available headers on the
-        # off chance that they somehow elicit warnings.
-        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <float.h>
-#include <limits.h>
-#include <stdarg.h>
-#include <stddef.h>
-extern void ac_decl (int, char *);
-
-int
-main (void)
-{
-(void) ac_decl (0, (char *) 0);
-  (void) ac_decl;
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-  if test x"$ac_arg" = x
-then :
-  ac_cv_c_undeclared_builtin_options='none needed'
-else $as_nop
-  ac_cv_c_undeclared_builtin_options=$ac_arg
-fi
-          break
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-    done
-    CFLAGS=$ac_save_CFLAGS
-
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_c_undeclared_builtin_options" >&5
-printf "%s\n" "$ac_cv_c_undeclared_builtin_options" >&6; }
-  case $ac_cv_c_undeclared_builtin_options in #(
-  'cannot detect') :
-    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "cannot make $CC report undeclared builtins
-See \`config.log' for more details" "$LINENO" 5; } ;; #(
-  'none needed') :
-    ac_c_undeclared_builtin_options='' ;; #(
-  *) :
-    ac_c_undeclared_builtin_options=$ac_cv_c_undeclared_builtin_options ;;
-esac
-
-ac_fn_c_check_header_compile "$LINENO" "unistd.h" "ac_cv_header_unistd_h" "$ac_includes_default"
-if test "x$ac_cv_header_unistd_h" = xyes
-then :
-  ac_fn_check_decl "$LINENO" "getentropy" "ac_cv_have_decl_getentropy" "#include <unistd.h>
-" "$ac_c_undeclared_builtin_options" "CFLAGS"
-if test "x$ac_cv_have_decl_getentropy" = xyes
+ac_fn_c_check_func "$LINENO" "getentropy" "ac_cv_func_getentropy"
+if test "x$ac_cv_func_getentropy" = xyes
 then :
   printf "%s\n" "#define HAS_GETENTROPY 1" >>confdefs.h
 
-fi
 fi
 
 
@@ -16888,7 +16788,6 @@ fi
 ## are always available.
 ## On Unix platforms, we check for the appropriate POSIX feature-test macros.
 ## On MacOS clock_gettime's CLOCK_MONOTONIC flag is not actually monotonic.
-## mach_timebase_info and mach_absolute_time are used instead.
 
 case $host in #(
   *-*-windows) :
@@ -16918,17 +16817,20 @@ done ;; #(
 
     #include <unistd.h>
     #include <time.h>
-    int main(void)
-    {
-      #if !(defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)   \
-         && _POSIX_MONOTONIC_CLOCK != (-1))
-        #error "no monotonic clock source"
-      #endif
-        return 0;
-     }
+    #if !(defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)   \
+       && _POSIX_MONOTONIC_CLOCK != (-1))
+      #error "no monotonic clock source"
+    #endif
 
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"
+if ac_fn_c_try_cpp "$LINENO"
 then :
 
       has_monotonic_clock=true
@@ -16938,7 +16840,7 @@ then :
 else $as_nop
   has_monotonic_clock=false
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+rm -f conftest.err conftest.i conftest.$ac_ext
 
  ;;
 esac
@@ -17767,48 +17669,26 @@ esac
 
 if $ipv6
 then :
-  ac_fn_c_check_func "$LINENO" "getaddrinfo" "ac_cv_func_getaddrinfo"
-if test "x$ac_cv_func_getaddrinfo" = xyes
+
+  for ac_func in getaddrinfo getnameinfo inet_pton inet_ntop
+do :
+  as_ac_var=`printf "%s\n" "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+if eval test \"x\$"$as_ac_var"\" = x"yes"
 then :
+  cat >>confdefs.h <<_ACEOF
+#define `printf "%s\n" "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
 
 else $as_nop
   ipv6=false
 fi
 
+done
 fi
-
 if $ipv6
-then :
-  ac_fn_c_check_func "$LINENO" "getnameinfo" "ac_cv_func_getnameinfo"
-if test "x$ac_cv_func_getnameinfo" = xyes
-then :
-
-else $as_nop
-  ipv6=false
-fi
-
-fi
-
-if $ipv6
-then :
-  ac_fn_c_check_func "$LINENO" "inet_pton" "ac_cv_func_inet_pton"
-if test "x$ac_cv_func_inet_pton" = xyes
-then :
-
-else $as_nop
-  ipv6=false
-fi
-
-fi
-
-if $ipv6
-then :
-  ac_fn_c_check_func "$LINENO" "inet_ntop" "ac_cv_func_inet_ntop"
-if test "x$ac_cv_func_inet_ntop" = xyes
 then :
   printf "%s\n" "#define HAS_IPV6 1" >>confdefs.h
-
-fi
 
 fi
 
@@ -17844,13 +17724,13 @@ then :
 fi
 
 
-ac_fn_check_decl "$LINENO" "system" "ac_cv_have_decl_system" "#include <stdlib.h>
-" "$ac_c_undeclared_builtin_options" "CFLAGS"
-if test "x$ac_cv_have_decl_system" = xyes
+ac_fn_c_check_func "$LINENO" "system" "ac_cv_func_system"
+if test "x$ac_cv_func_system" = xyes
 then :
   printf "%s\n" "#define HAS_SYSTEM 1" >>confdefs.h
 
 fi
+
 
 ## utime
 ## Note: this was defined in config/s-nt.h but the autoconf macros do not
@@ -17927,9 +17807,6 @@ if test "x$ac_cv_type_fd_set" = xyes
 then :
   printf "%s\n" "#define HAS_SELECT 1" >>confdefs.h
 
-    select=true
-else $as_nop
-  select=false
 fi
 
 fi
@@ -18398,51 +18275,38 @@ esac
 ## Does stat support nanosecond precision
 
 stat_has_ns_precision=false
-
 ac_fn_c_check_member "$LINENO" "struct stat" "st_atim.tv_nsec" "ac_cv_member_struct_stat_st_atim_tv_nsec" "
     $ac_includes_default
     #include <sys/stat.h>
-
 "
 if test "x$ac_cv_member_struct_stat_st_atim_tv_nsec" = xyes
 then :
-  stat_has_ns_precision=true
-  printf "%s\n" "#define HAS_NANOSECOND_STAT 1" >>confdefs.h
 
+printf "%s\n" "#define HAVE_STRUCT_STAT_ST_ATIM_TV_NSEC 1" >>confdefs.h
+
+stat_has_ns_precision=true
 fi
-
-
-
-if ! $stat_has_ns_precision
-then :
-  ac_fn_c_check_member "$LINENO" "struct stat" "st_atimespec.tv_nsec" "ac_cv_member_struct_stat_st_atimespec_tv_nsec" "
-      $ac_includes_default
-      #include <sys/stat.h>
-
+ac_fn_c_check_member "$LINENO" "struct stat" "st_atimespec.tv_nsec" "ac_cv_member_struct_stat_st_atimespec_tv_nsec" "
+    $ac_includes_default
+    #include <sys/stat.h>
 "
 if test "x$ac_cv_member_struct_stat_st_atimespec_tv_nsec" = xyes
 then :
-  stat_has_ns_precision=true
-    printf "%s\n" "#define HAS_NANOSECOND_STAT 2" >>confdefs.h
 
+printf "%s\n" "#define HAVE_STRUCT_STAT_ST_ATIMESPEC_TV_NSEC 1" >>confdefs.h
+
+stat_has_ns_precision=true
 fi
-
-fi
-
-if ! $stat_has_ns_precision
-then :
-  ac_fn_c_check_member "$LINENO" "struct stat" "st_atimensec" "ac_cv_member_struct_stat_st_atimensec" "
-      $ac_includes_default
-      #include <sys/stat.h>
-
+ac_fn_c_check_member "$LINENO" "struct stat" "st_atimensec" "ac_cv_member_struct_stat_st_atimensec" "
+    $ac_includes_default
+    #include <sys/stat.h>
 "
 if test "x$ac_cv_member_struct_stat_st_atimensec" = xyes
 then :
-  stat_has_ns_precision=true
-    printf "%s\n" "#define HAS_NANOSECOND_STAT 3" >>confdefs.h
 
-fi
+printf "%s\n" "#define HAVE_STRUCT_STAT_ST_ATIMENSEC 1" >>confdefs.h
 
+stat_has_ns_precision=true
 fi
 
 if $stat_has_ns_precision
@@ -19085,6 +18949,86 @@ fi
 
 zstd_status=""
 zstd_libs=""
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CC options needed to detect all undeclared functions" >&5
+printf %s "checking for $CC options needed to detect all undeclared functions... " >&6; }
+if test ${ac_cv_c_undeclared_builtin_options+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_save_CFLAGS=$CFLAGS
+   ac_cv_c_undeclared_builtin_options='cannot detect'
+   for ac_arg in '' -fno-builtin; do
+     CFLAGS="$ac_save_CFLAGS $ac_arg"
+     # This test program should *not* compile successfully.
+     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+(void) strchr;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+
+else $as_nop
+  # This test program should compile successfully.
+        # No library function is consistently available on
+        # freestanding implementations, so test against a dummy
+        # declaration.  Include always-available headers on the
+        # off chance that they somehow elicit warnings.
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <float.h>
+#include <limits.h>
+#include <stdarg.h>
+#include <stddef.h>
+extern void ac_decl (int, char *);
+
+int
+main (void)
+{
+(void) ac_decl (0, (char *) 0);
+  (void) ac_decl;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  if test x"$ac_arg" = x
+then :
+  ac_cv_c_undeclared_builtin_options='none needed'
+else $as_nop
+  ac_cv_c_undeclared_builtin_options=$ac_arg
+fi
+          break
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+    done
+    CFLAGS=$ac_save_CFLAGS
+
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_c_undeclared_builtin_options" >&5
+printf "%s\n" "$ac_cv_c_undeclared_builtin_options" >&6; }
+  case $ac_cv_c_undeclared_builtin_options in #(
+  'cannot detect') :
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "cannot make $CC report undeclared builtins
+See \`config.log' for more details" "$LINENO" 5; } ;; #(
+  'none needed') :
+    ac_c_undeclared_builtin_options='' ;; #(
+  *) :
+    ac_c_undeclared_builtin_options=$ac_cv_c_undeclared_builtin_options ;;
+esac
 
 if test x"$with_zstd" != "xno"
 then :
@@ -20248,7 +20192,7 @@ then :
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 else $as_nop
-  ashas_debug_prefix_map=false
+  as_has_debug_prefix_map=false
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
 fi
@@ -20871,16 +20815,12 @@ case $host in #(
   *-*-mingw32*) :
     printf "%s\n" "#define HAS_BROKEN_PRINTF 1" >>confdefs.h
 
-    printf "%s\n" "#define HAS_STRERROR 1" >>confdefs.h
-
     printf "%s\n" "#define HAS_IPV6 1" >>confdefs.h
 
     printf "%s\n" "#define HAS_NICE 1" >>confdefs.h
  ;; #(
   *-pc-windows) :
     printf "%s\n" "#define HAS_BROKEN_PRINTF 1" >>confdefs.h
-
-    printf "%s\n" "#define HAS_STRERROR 1" >>confdefs.h
 
     printf "%s\n" "#define HAS_IPV6 1" >>confdefs.h
 

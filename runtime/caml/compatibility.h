@@ -2,10 +2,9 @@
 /*                                                                        */
 /*                                 OCaml                                  */
 /*                                                                        */
-/*                  Jeremie Dimino, Jane Street Group, LLC                */
+/*                         Antonin Decimo, Tarides                        */
 /*                                                                        */
-/*   Copyright 2015 Institut National de Recherche en Informatique et     */
-/*     en Automatique.                                                    */
+/*   Copyright 2024 Tarides                                               */
 /*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */
 /*   the GNU Lesser General Public License version 2.1, with the          */
@@ -13,15 +12,20 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* This file is used by the configure test program nanosecond_stat.c
-   and stat.c in this directory */
+/* Definitions for compatibility with old identifiers. */
 
-#if HAS_NANOSECOND_STAT == 1
-#  define NSEC(buf, field) buf->st_##field##tim.tv_nsec
-#elif HAS_NANOSECOND_STAT == 2
-#  define NSEC(buf, field) buf->st_##field##timespec.tv_nsec
-#elif HAS_NANOSECOND_STAT == 3
-#  define NSEC(buf, field) buf->st_##field##timensec
-#else
-#  define NSEC(buf, field) 0
+#ifndef CAML_COMPATIBILITY_H
+#define CAML_COMPATIBILITY_H
+
+#define HAS_STDINT_H 1 /* Deprecated since OCaml 5.3 */
+
+/* HAS_NANOSECOND_STAT is deprecated since OCaml 5.3 */
+#if defined(HAVE_STRUCT_STAT_ST_ATIM_TV_NSEC)
+#  define HAS_NANOSECOND_STAT 1
+#elif defined(HAVE_STRUCT_STAT_ST_ATIMESPEC_TV_NSEC)
+#  define HAS_NANOSECOND_STAT 2
+#elif defined(HAVE_STRUCT_STAT_ST_ATIMENSEC)
+#  define HAS_NANOSECOND_STAT 3
 #endif
+
+#endif  /* CAML_COMPATIBILITY_H */

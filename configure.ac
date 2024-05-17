@@ -107,7 +107,6 @@ AC_SUBST([OCAML_VERSION_EXTRA], [OCAML__VERSION_EXTRA])
 AC_SUBST([OCAML_VERSION_SHORT], [OCAML__VERSION_SHORT])
 AC_DEFINE([MAGIC_NUMBER_PREFIX], ["][MAGIC_NUMBER__PREFIX]["])
 AC_DEFINE([MAGIC_NUMBER_VERSION], ["][MAGIC_NUMBER__VERSION]["])
-AC_SUBST([MAGIC_NUMBER_LENGTH], [MAGIC_NUMBER__LENGTH])
 AC_DEFINE([EXEC_MAGIC_LENGTH], [MAGIC_NUMBER__LENGTH])
 AC_DEFINE([EXEC_FORMAT], ["][EXEC__FORMAT]["])
 AC_SUBST([EXEC_MAGIC_NUMBER], [EXEC__MAGIC_NUMBER])
@@ -154,7 +153,6 @@ AC_SUBST([fpic])
 AC_SUBST([mkexe])
 AC_SUBST([mkexe_exp])
 AC_SUBST([mkexedebugflag])
-AC_SUBST([mkexe_extra_flags])
 AC_SUBST([mkexe_via_cc_ldflags])
 AC_SUBST([mkexe_via_cc_extra_cmd])
 AC_SUBST([ccomptype])
@@ -175,7 +173,6 @@ AC_SUBST([ocamlc_cppflags])
 AC_SUBST([flexdll_source_dir])
 AC_SUBST([bootstrapping_flexdll])
 AC_SUBST([flexdll_dir])
-AC_SUBST([flexlink_flags])
 AC_SUBST([winpthreads_source_dir])
 AC_SUBST([winpthreads_source_include_dir])
 AC_SUBST([shebangscripts])
@@ -189,7 +186,6 @@ AC_SUBST([cmxs])
 AC_SUBST([debug_runtime])
 AC_SUBST([instrumented_runtime])
 AC_SUBST([instrumented_runtime_libs])
-AC_SUBST([has_monotonic_clock])
 AC_SUBST([otherlibraries])
 AC_SUBST([lib_dynlink])
 AC_SUBST([lib_runtime_events])
@@ -243,8 +239,6 @@ AC_SUBST([function_sections])
 AC_SUBST([oc_native_compflags])
 AC_SUBST([afl])
 AC_SUBST([flexdll_chain])
-AC_SUBST([mkdll_ldflags_exp])
-AC_SUBST([mkexe_ldflags_exp])
 AC_SUBST([PACKLD])
 AC_SUBST([build_libraries_manpages])
 AC_SUBST([compute_deps])
@@ -252,7 +246,6 @@ AC_SUBST([ocaml_bindir])
 AC_SUBST([ocaml_libdir])
 AC_SUBST([QS])
 AC_SUBST([ar_supports_response_files])
-AC_SUBST([target_bindir])
 
 ## Generated files
 
@@ -1127,17 +1120,17 @@ AC_SEARCH_LIBS([cos], [m],
 # Don't check for unistd.h on Windows
 AS_CASE([$host],
   [*-*-mingw32*|*-pc-windows], [],
-  [AC_CHECK_HEADERS([unistd.h],[AC_DEFINE([HAS_UNISTD])])])
+  [AC_CHECK_HEADERS([unistd.h],[AC_DEFINE([HAS_UNISTD], [1])])])
 
 AC_CHECK_HEADER([math.h])
-AC_CHECK_HEADER([pthread_np.h],[AC_DEFINE([HAS_PTHREAD_NP_H])])
-AC_CHECK_HEADER([dirent.h], [AC_DEFINE([HAS_DIRENT])], [],
+AC_CHECK_HEADER([pthread_np.h],[AC_DEFINE([HAS_PTHREAD_NP_H], [1])])
+AC_CHECK_HEADER([dirent.h], [AC_DEFINE([HAS_DIRENT], [1])], [],
   [#include <sys/types.h>])
 
-AC_CHECK_HEADER([sys/select.h], [AC_DEFINE([HAS_SYS_SELECT_H])], [],
+AC_CHECK_HEADER([sys/select.h], [AC_DEFINE([HAS_SYS_SELECT_H], [1])], [],
   [#include <sys/types.h>])
 
-AC_CHECK_HEADER([sys/mman.h], [AC_DEFINE([HAS_SYS_MMAN_H])])
+AC_CHECK_HEADER([sys/mman.h], [AC_DEFINE([HAS_SYS_MMAN_H], [1])])
 
 # Checks for types
 
@@ -1232,7 +1225,7 @@ AS_IF([! $cc_supports_atomic],
 
 AS_CASE([$host],
   [*-apple-darwin*|*-mingw32*|*-pc-windows], [],
-  [AC_DEFINE([HAS_FULL_THREAD_VARIABLES])]
+  [AC_DEFINE([HAS_FULL_THREAD_VARIABLES], [1])]
 )
 
 # Shared library support
@@ -1607,7 +1600,7 @@ AS_CASE([$as_target,$ocaml_cc_vendor],
 
 AS_IF([test "$with_pic"],
   [fpic=true
-  AC_DEFINE([CAML_WITH_FPIC])
+  AC_DEFINE([CAML_WITH_FPIC], [1])
   internal_cflags="$internal_cflags $sharedlib_cflags"
   default_aspp="$default_aspp $sharedlib_cflags"],
   [fpic=false])
@@ -1635,7 +1628,7 @@ AC_CHECK_FUNCS(m4_normalize([expm1 log1p hypot fma exp2 log2 cbrt acosh asinh
   atanh erf erfc trunc round copysign]), [], [has_c99_float_ops=false])
 
 AS_IF([$has_c99_float_ops],
-  [AC_DEFINE([HAS_C99_FLOAT_OPS])
+  [AC_DEFINE([HAS_C99_FLOAT_OPS], [1])
   # Check whether round works (known bug in mingw-w64)
   OCAML_C99_CHECK_ROUND
   # Check whether fma works (regressed in mingw-w64 8.0.0; present, but broken,
@@ -1657,17 +1650,13 @@ AS_IF([$has_c99_float_ops],
          (ancient Visual Studio)]))])])])
 
 ## getentropy
-AC_CHECK_HEADER([unistd.h],
-  [AC_CHECK_DECL([getentropy],
-                 [AC_DEFINE([HAS_GETENTROPY])], [],
-                 [[#include <unistd.h>]])],
-  [])
+AC_CHECK_FUNC([getentropy], [AC_DEFINE([HAS_GETENTROPY], [1])])
 
 ## getrusage
-AC_CHECK_FUNC([getrusage], [AC_DEFINE([HAS_GETRUSAGE])])
+AC_CHECK_FUNC([getrusage], [AC_DEFINE([HAS_GETRUSAGE], [1])])
 
 ## times
-AC_CHECK_FUNC([times], [AC_DEFINE([HAS_TIMES])])
+AC_CHECK_FUNC([times], [AC_DEFINE([HAS_TIMES], [1])])
 
 ## secure_getenv and __secure_getenv
 
@@ -1675,21 +1664,20 @@ saved_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="-D_GNU_SOURCE $CPPFLAGS"
 
 AC_CHECK_FUNC([secure_getenv],
-  [AC_DEFINE([HAS_SECURE_GETENV])],
-  [AC_CHECK_FUNC([__secure_getenv], [AC_DEFINE([HAS___SECURE_GETENV])])])
+  [AC_DEFINE([HAS_SECURE_GETENV], [1])],
+  [AC_CHECK_FUNC([__secure_getenv], [AC_DEFINE([HAS___SECURE_GETENV], [1])])])
 
 CPPFLAGS="$saved_CPPFLAGS"
 
 ## issetugid
 
-AC_CHECK_FUNC([issetugid], [AC_DEFINE([HAS_ISSETUGID])])
+AC_CHECK_FUNC([issetugid], [AC_DEFINE([HAS_ISSETUGID], [1])])
 
 ## Checking for monotonic clock source
 ## On Windows MSVC, QueryPerformanceCounter and QueryPerformanceFrequency
 ## are always available.
 ## On Unix platforms, we check for the appropriate POSIX feature-test macros.
 ## On MacOS clock_gettime's CLOCK_MONOTONIC flag is not actually monotonic.
-## mach_timebase_info and mach_absolute_time are used instead.
 
 AS_CASE([$host],
   [*-*-windows],
@@ -1698,24 +1686,20 @@ AS_CASE([$host],
     AC_CHECK_FUNCS([clock_gettime_nsec_np],
       [
         has_monotonic_clock=true
-        AC_DEFINE([HAS_CLOCK_GETTIME_NSEC_NP])
+        AC_DEFINE([HAS_CLOCK_GETTIME_NSEC_NP], [1])
       ],
       [has_monotonic_clock=false])],
-  [AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+  [AC_PREPROC_IFELSE([AC_LANG_PROGRAM([[
     #include <unistd.h>
     #include <time.h>
-    int main(void)
-    {
-      #if !(defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)   \
-         && _POSIX_MONOTONIC_CLOCK != (-1))
-        #error "no monotonic clock source"
-      #endif
-        return 0;
-     }
+    #if !(defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)   \
+       && _POSIX_MONOTONIC_CLOCK != (-1))
+      #error "no monotonic clock source"
+    #endif
     ]])],
     [
       has_monotonic_clock=true
-      AC_DEFINE([HAS_POSIX_MONOTONIC_CLOCK])
+      AC_DEFINE([HAS_POSIX_MONOTONIC_CLOCK], [1])
     ],
     [has_monotonic_clock=false])
   ]
@@ -1921,11 +1905,11 @@ AS_CASE([$host],
   [*-*-mingw32*],
     [cclibs="$cclibs -lws2_32"
     AC_SEARCH_LIBS([socket], [ws2_32])
-    AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR])])],
+    AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR], [1])])],
   [*-pc-windows],
     [cclibs="$cclibs ws2_32.lib"
     AC_SEARCH_LIBS([socket], [ws2_32])
-    AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR])])],
+    AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR], [1])])],
   [*-*-haiku],
     [cclibs="$cclibs -lnetwork"
     AC_SEARCH_LIBS([socket], [network])],
@@ -1941,24 +1925,24 @@ AS_CASE([$host],
   ]
 )
 
-AS_IF([$sockets], [AC_DEFINE([HAS_SOCKETS])])
+AS_IF([$sockets], [AC_DEFINE([HAS_SOCKETS], [1])])
 
 ## socklen_t
 
 AS_CASE([$host],
   [*-*-mingw32*|*-pc-windows],
-    [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T])], [],
+    [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T], [1])], [],
       [#include <ws2tcpip.h>])],
-  [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T])], [],
+  [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T], [1])], [],
     [#include <sys/socket.h>])])
 
-AC_CHECK_FUNC([inet_aton], [AC_DEFINE([HAS_INET_ATON])])
+AC_CHECK_FUNC([inet_aton], [AC_DEFINE([HAS_INET_ATON], [1])])
 
 ## Unix domain sockets support on Windows
 
 AS_CASE([$host],
   [*-*-mingw32*|*-pc-windows],
-    [AC_CHECK_HEADERS([afunix.h], [AC_DEFINE([HAS_AFUNIX_H])], [],
+    [AC_CHECK_HEADERS([afunix.h], [AC_DEFINE([HAS_AFUNIX_H], [1])], [],
       [#include <winsock2.h>])])
 
 ## IPv6 support
@@ -1980,68 +1964,61 @@ AS_CASE([$host],
 )
 
 AS_IF([$ipv6],
-  [AC_CHECK_FUNC([getaddrinfo], [], [ipv6=false])])
-
+  [AC_CHECK_FUNCS([getaddrinfo getnameinfo inet_pton inet_ntop], [],
+    [ipv6=false])])
 AS_IF([$ipv6],
-  [AC_CHECK_FUNC([getnameinfo], [], [ipv6=false])])
+  [AC_DEFINE([HAS_IPV6], [1])])
 
-AS_IF([$ipv6],
-  [AC_CHECK_FUNC([inet_pton], [], [ipv6=false])])
+AC_CHECK_FUNC([rewinddir], [AC_DEFINE([HAS_REWINDDIR], [1])])
 
-AS_IF([$ipv6],
-  [AC_CHECK_FUNC([inet_ntop], [AC_DEFINE([HAS_IPV6])])])
+AC_CHECK_FUNC([lockf], [AC_DEFINE([HAS_LOCKF], [1])])
 
-AC_CHECK_FUNC([rewinddir], [AC_DEFINE([HAS_REWINDDIR])])
+AC_CHECK_FUNC([mkfifo], [AC_DEFINE([HAS_MKFIFO], [1])])
 
-AC_CHECK_FUNC([lockf], [AC_DEFINE([HAS_LOCKF])])
+AC_CHECK_FUNC([getcwd], [AC_DEFINE([HAS_GETCWD], [1])])
 
-AC_CHECK_FUNC([mkfifo], [AC_DEFINE([HAS_MKFIFO])])
-
-AC_CHECK_FUNC([getcwd], [AC_DEFINE([HAS_GETCWD])])
-
-AC_CHECK_DECL([system], [AC_DEFINE([HAS_SYSTEM])], [], [[#include <stdlib.h>]])
+AC_CHECK_FUNC([system], [AC_DEFINE([HAS_SYSTEM], [1])])
 
 ## utime
 ## Note: this was defined in config/s-nt.h but the autoconf macros do not
 # seem to detect it properly on Windows so we hardcode the definition
 # of HAS_UTIME on Windows but this will probably need to be clarified
 AS_CASE([$host],
-  [*-*-mingw32*|*-pc-windows], [AC_DEFINE([HAS_UTIME])],
+  [*-*-mingw32*|*-pc-windows], [AC_DEFINE([HAS_UTIME], [1])],
   [AC_CHECK_HEADER([sys/types.h],
     [AC_CHECK_HEADER([utime.h],
-      [AC_CHECK_FUNC([utime], [AC_DEFINE([HAS_UTIME])])])])])
+      [AC_CHECK_FUNC([utime], [AC_DEFINE([HAS_UTIME], [1])])])])])
 
-AC_CHECK_FUNC([utimes], [AC_DEFINE([HAS_UTIMES])])
+AC_CHECK_FUNC([utimes], [AC_DEFINE([HAS_UTIMES], [1])])
 
 AC_CHECK_FUNC([fchmod],
-  [AC_CHECK_FUNC([fchown], [AC_DEFINE([HAS_FCHMOD])])])
+  [AC_CHECK_FUNC([fchown], [AC_DEFINE([HAS_FCHMOD], [1])])])
 
 AC_CHECK_FUNC([truncate],
-  [AC_CHECK_FUNC([ftruncate], [AC_DEFINE([HAS_TRUNCATE])])])
+  [AC_CHECK_FUNC([ftruncate], [AC_DEFINE([HAS_TRUNCATE], [1])])])
 
 ## select
 AC_CHECK_FUNC([select],
   [AC_CHECK_TYPE([fd_set],
-    [AC_DEFINE([HAS_SELECT])
-    select=true], [select=false], [
+    [AC_DEFINE([HAS_SELECT], [1])], [], [
 #include <sys/types.h>
 #include <sys/select.h>
   ])])
 
-AC_CHECK_FUNC([nanosleep], [AC_DEFINE([HAS_NANOSLEEP])])
+AC_CHECK_FUNC([nanosleep], [AC_DEFINE([HAS_NANOSLEEP], [1])])
 
 AC_CHECK_FUNC([symlink],
   [AC_CHECK_FUNC([readlink],
-    [AC_CHECK_FUNC([lstat], [AC_DEFINE([HAS_SYMLINK])])])])
+    [AC_CHECK_FUNC([lstat], [AC_DEFINE([HAS_SYMLINK], [1])])])])
 
-AC_CHECK_FUNC([realpath], [AC_DEFINE([HAS_REALPATH])])
+AC_CHECK_FUNC([realpath], [AC_DEFINE([HAS_REALPATH], [1])])
 
 # wait
 AC_CHECK_FUNC(
   [waitpid],
   [
     wait=true
-    AC_DEFINE([HAS_WAITPID])
+    AC_DEFINE([HAS_WAITPID], [1])
   ],
   [wait=false])
 
@@ -2049,17 +2026,17 @@ AC_CHECK_FUNC(
   [wait4],
   [
     has_wait=true
-    AC_DEFINE([HAS_WAIT4])
+    AC_DEFINE([HAS_WAIT4], [1])
   ])
 
 ## getgroups
-AC_CHECK_FUNC([getgroups], [AC_DEFINE([HAS_GETGROUPS])])
+AC_CHECK_FUNC([getgroups], [AC_DEFINE([HAS_GETGROUPS], [1])])
 
 ## setgroups
-AC_CHECK_FUNC([setgroups], [AC_DEFINE([HAS_SETGROUPS])])
+AC_CHECK_FUNC([setgroups], [AC_DEFINE([HAS_SETGROUPS], [1])])
 
 ## initgroups
-AC_CHECK_FUNC([initgroups], [AC_DEFINE([HAS_INITGROUPS])])
+AC_CHECK_FUNC([initgroups], [AC_DEFINE([HAS_INITGROUPS], [1])])
 
 ## termios
 
@@ -2068,14 +2045,14 @@ AC_CHECK_HEADER([termios.h],
     [AC_CHECK_FUNC([tcsetattr],
       [AC_CHECK_FUNC([tcsendbreak],
         [AC_CHECK_FUNC([tcflush],
-          [AC_CHECK_FUNC([tcflow], [AC_DEFINE([HAS_TERMIOS])])])])])])])
+          [AC_CHECK_FUNC([tcflow], [AC_DEFINE([HAS_TERMIOS], [1])])])])])])])
 
 ## setitimer
 
 AC_CHECK_FUNC([setitimer],
   [
     setitimer=true
-    AC_DEFINE([HAS_SETITIMER])
+    AC_DEFINE([HAS_SETITIMER], [1])
   ],
   [setitimer=false])
 
@@ -2083,63 +2060,63 @@ AC_CHECK_FUNC([setitimer],
 # Note: detection fails on Windows so hardcoding the result
 # (should be debugged later)
 AS_CASE([$host],
-  [*-*-mingw32*|*-pc-windows], [AC_DEFINE([HAS_GETHOSTNAME])],
-  [AC_CHECK_FUNC([gethostname], [AC_DEFINE([HAS_GETHOSTNAME])])])
+  [*-*-mingw32*|*-pc-windows], [AC_DEFINE([HAS_GETHOSTNAME], [1])],
+  [AC_CHECK_FUNC([gethostname], [AC_DEFINE([HAS_GETHOSTNAME], [1])])])
 
 ## uname
 
 AC_CHECK_HEADER([sys/utsname.h],
-  [AC_CHECK_FUNC([uname], [AC_DEFINE([HAS_UNAME])])])
+  [AC_CHECK_FUNC([uname], [AC_DEFINE([HAS_UNAME], [1])])])
 
 ## gettimeofday
 
 AC_CHECK_FUNC([gettimeofday],
   [
     gettimeofday=true
-    AC_DEFINE([HAS_GETTIMEOFDAY])
+    AC_DEFINE([HAS_GETTIMEOFDAY], [1])
   ],
   [gettimeofday=false])
 
 ## mktime
 
-AC_CHECK_FUNC([mktime], [AC_DEFINE([HAS_MKTIME])])
+AC_CHECK_FUNC([mktime], [AC_DEFINE([HAS_MKTIME], [1])])
 
 ## setsid
 
 AS_CASE([$host],
   [*-cygwin|*-*-mingw32*|*-pc-windows], [],
-  [AC_CHECK_FUNC([setsid], [AC_DEFINE([HAS_SETSID])])])
+  [AC_CHECK_FUNC([setsid], [AC_DEFINE([HAS_SETSID], [1])])])
 
 ## putenv
 
-AC_CHECK_FUNC([putenv], [AC_DEFINE([HAS_PUTENV])])
+AC_CHECK_FUNC([putenv], [AC_DEFINE([HAS_PUTENV], [1])])
 
 ## setenv and unsetenv
 
 AC_CHECK_FUNC([setenv],
-  [AC_CHECK_FUNC([unsetenv], [AC_DEFINE([HAS_SETENV_UNSETENV])])])
+  [AC_CHECK_FUNC([unsetenv], [AC_DEFINE([HAS_SETENV_UNSETENV], [1])])])
 
 ## newlocale() and <locale.h>
 # Note: the detection fails on msvc so we hardcode the result
 # (should be debugged later)
 AS_CASE([$host],
-  [*-pc-windows], [AC_DEFINE([HAS_LOCALE_H])],
+  [*-pc-windows], [AC_DEFINE([HAS_LOCALE_H], [1])],
   [AC_CHECK_HEADER([locale.h],
     [AC_CHECK_FUNC([newlocale],
       [AC_CHECK_FUNC([freelocale],
-        [AC_CHECK_FUNC([uselocale], [AC_DEFINE([HAS_LOCALE_H])])])])])])
+        [AC_CHECK_FUNC([uselocale], [AC_DEFINE([HAS_LOCALE_H], [1])])])])])])
 
 AC_CHECK_HEADER([xlocale.h],
   [AC_CHECK_FUNC([newlocale],
     [AC_CHECK_FUNC([freelocale],
-      [AC_CHECK_FUNC([uselocale], [AC_DEFINE([HAS_XLOCALE_H])])])])])
+      [AC_CHECK_FUNC([uselocale], [AC_DEFINE([HAS_XLOCALE_H], [1])])])])])
 
 ## strtod_l
 # Note: not detected on MSVC so hardcoding the result
 # (should be debugged later)
 AS_CASE([$host],
-  [*-pc-windows], [AC_DEFINE([HAS_STRTOD_L])],
-  [AC_CHECK_FUNC([strtod_l], [AC_DEFINE([HAS_STRTOD_L])])])
+  [*-pc-windows], [AC_DEFINE([HAS_STRTOD_L], [1])],
+  [AC_CHECK_FUNC([strtod_l], [AC_DEFINE([HAS_STRTOD_L], [1])])])
 
 ## shared library support
 AS_IF([$supports_shared_libraries],
@@ -2155,18 +2132,18 @@ AS_IF([$supports_shared_libraries],
 
 AS_IF([$supports_shared_libraries],
   [AC_MSG_NOTICE([Dynamic loading of shared libraries is supported.])
-  AC_DEFINE([SUPPORT_DYNAMIC_LINKING])],
+  AC_DEFINE([SUPPORT_DYNAMIC_LINKING], [1])],
   [AC_MSG_NOTICE([Dynamic loading of shared libraries is not supported.])])
 
 ## mmap
 
 AC_CHECK_HEADER([sys/mman.h],
   [AC_CHECK_FUNC([mmap],
-    [AC_CHECK_FUNC([munmap], [AC_DEFINE([HAS_MMAP])])])])
+    [AC_CHECK_FUNC([munmap], [AC_DEFINE([HAS_MMAP], [1])])])])
 
 ## pwrite
 
-AC_CHECK_FUNC([pwrite], [AC_DEFINE([HAS_PWRITE])])
+AC_CHECK_FUNC([pwrite], [AC_DEFINE([HAS_PWRITE], [1])])
 
 ## -fdebug-prefix-map support by the C compiler
 AS_CASE([$ocaml_cc_vendor,$host],
@@ -2181,37 +2158,11 @@ AS_CASE([$ocaml_cc_vendor,$host],
 ## Does stat support nanosecond precision
 
 stat_has_ns_precision=false
-
-AC_CHECK_MEMBER([struct stat.st_atim.tv_nsec],
-  [stat_has_ns_precision=true
-  AC_DEFINE([HAS_NANOSECOND_STAT], [1])],
-  [],
-  [
+AC_CHECK_MEMBERS([struct stat.st_atim.tv_nsec, struct stat.st_atimespec.tv_nsec,
+  struct stat.st_atimensec],
+  [stat_has_ns_precision=true], [], [
     AC_INCLUDES_DEFAULT
-    #include <sys/stat.h>
-  ])
-
-
-AS_IF([! $stat_has_ns_precision],
-  [AC_CHECK_MEMBER([struct stat.st_atimespec.tv_nsec],
-    [stat_has_ns_precision=true
-    AC_DEFINE([HAS_NANOSECOND_STAT], [2])],
-    [],
-    [
-      AC_INCLUDES_DEFAULT
-      #include <sys/stat.h>
-    ])])
-
-AS_IF([! $stat_has_ns_precision],
-  [AC_CHECK_MEMBER([struct stat.st_atimensec],
-    [stat_has_ns_precision=true
-    AC_DEFINE([HAS_NANOSECOND_STAT], [3])],
-    [],
-    [
-      AC_INCLUDES_DEFAULT
-      #include <sys/stat.h>
-    ])])
-
+    #include <sys/stat.h>])
 AS_IF([$stat_has_ns_precision],
   [AC_MSG_NOTICE([stat supports nanosecond precision])],
   [AC_MSG_NOTICE([stat does not support nanosecond precision])])
@@ -2235,44 +2186,44 @@ AS_CASE([$ac_cv_func_which_gethostbyaddr_r],
 
 ## mkstemp
 
-AC_CHECK_FUNC([mkstemp], [AC_DEFINE([HAS_MKSTEMP])])
+AC_CHECK_FUNC([mkstemp], [AC_DEFINE([HAS_MKSTEMP], [1])])
 
 ## nice
 
-AC_CHECK_FUNC([nice], [AC_DEFINE([HAS_NICE])])
+AC_CHECK_FUNC([nice], [AC_DEFINE([HAS_NICE], [1])])
 
 ## dup3
 
-AC_CHECK_FUNC([dup3], [AC_DEFINE([HAS_DUP3])])
+AC_CHECK_FUNC([dup3], [AC_DEFINE([HAS_DUP3], [1])])
 
 ## pipe2
 
-AC_CHECK_FUNC([pipe2], [AC_DEFINE([HAS_PIPE2])])
+AC_CHECK_FUNC([pipe2], [AC_DEFINE([HAS_PIPE2], [1])])
 
 ## accept4
 
-AC_CHECK_FUNC([accept4], [AC_DEFINE([HAS_ACCEPT4])])
+AC_CHECK_FUNC([accept4], [AC_DEFINE([HAS_ACCEPT4], [1])])
 
 ## getauxval
 
-AC_CHECK_FUNC([getauxval], [AC_DEFINE([HAS_GETAUXVAL])])
+AC_CHECK_FUNC([getauxval], [AC_DEFINE([HAS_GETAUXVAL], [1])])
 
 ## shmat
 AC_CHECK_HEADER([sys/shm.h],
   [
-    AC_DEFINE([HAS_SYS_SHM_H])
-    AC_CHECK_FUNC([shmat], [AC_DEFINE([HAS_SHMAT])])
+    AC_DEFINE([HAS_SYS_SHM_H], [1])
+    AC_CHECK_FUNC([shmat], [AC_DEFINE([HAS_SHMAT], [1])])
   ])
 
 ## execvpe
 
-AC_CHECK_FUNC([execvpe], [AC_DEFINE([HAS_EXECVPE])])
+AC_CHECK_FUNC([execvpe], [AC_DEFINE([HAS_EXECVPE], [1])])
 
 ## posix_spawn
 
 AC_CHECK_HEADER([spawn.h],
   [AC_CHECK_FUNC([posix_spawn],
-    [AC_CHECK_FUNC([posix_spawnp], [AC_DEFINE([HAS_POSIX_SPAWN])])])])
+    [AC_CHECK_FUNC([posix_spawnp], [AC_DEFINE([HAS_POSIX_SPAWN], [1])])])])
 
 AC_PATH_TOOL([PKG_CONFIG], [pkg-config], [false])
 
@@ -2283,7 +2234,7 @@ zstd_libs=""
 
 AS_IF([test x"$with_zstd" != "xno"],
   # Try pkg-config first, as it gives the most reliable results
-  AS_IF([${PKG_CONFIG} libzstd 2>/dev/null],
+  [AS_IF([${PKG_CONFIG} libzstd 2>/dev/null],
     # Now check the version
     [AS_IF([${PKG_CONFIG} --atleast-version 1.4 libzstd],
       [zstd_libs=`${PKG_CONFIG} --libs libzstd`
@@ -2299,7 +2250,7 @@ AS_IF([test x"$with_zstd" != "xno"],
          zstd_status="ok"],
         [zstd_status="zstd library too old: version 1.4 or later is needed"],
         [[#include <zstd.h>]])],
-      [zstd_status="zstd library not found"])]))
+      [zstd_status="zstd library not found"])])])
 
 # When building the mingw-w64 port in Cygwin, it is very easy to have the
 # library available, but not have the DLL in PATH. This then causes the build to
@@ -2342,7 +2293,7 @@ int main(void) {
 AS_IF([test x"$zstd_status" = "xok"],
   [AC_MSG_NOTICE([compressed compilation artefacts supported])
    internal_cppflags="$internal_cppflags $zstd_flags"
-   AC_DEFINE([HAS_ZSTD])],
+   AC_DEFINE([HAS_ZSTD], [1])],
   [AS_CASE(["$with_zstd"],
      [no],
        [],
@@ -2389,7 +2340,7 @@ AS_CASE([$host],
     # tests can rely on the assumption that pthread is enabled.
     CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
     LIBS="$LIBS $PTHREAD_LIBS"
-    AC_CHECK_FUNC([sigwait], [AC_DEFINE([HAS_SIGWAIT])])],
+    AC_CHECK_FUNC([sigwait], [AC_DEFINE([HAS_SIGWAIT], [1])])],
     [AC_MSG_ERROR(m4_normalize([POSIX threads are required but not supported on
       this platform]))])])
 
@@ -2408,7 +2359,7 @@ AC_LINK_IFELSE(
       CPU_COUNT(&cs);
       pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);]])],
   [AC_MSG_RESULT([GNU])
-  AC_DEFINE([HAS_GNU_GETAFFINITY_NP])],
+  AC_DEFINE([HAS_GNU_GETAFFINITY_NP], [1])],
   [AC_LINK_IFELSE(
     [AC_LANG_PROGRAM(
       [[#include <pthread.h>
@@ -2420,7 +2371,7 @@ AC_LINK_IFELSE(
         CPU_COUNT(&cs);
         pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);]])],
     [AC_MSG_RESULT([BSD])
-    AC_DEFINE([HAS_BSD_GETAFFINITY_NP])],
+    AC_DEFINE([HAS_BSD_GETAFFINITY_NP], [1])],
     [AC_MSG_RESULT([pthread_getaffinity_np not found])])])
 
 ## Activate the systhread library
@@ -2456,7 +2407,7 @@ AS_IF([test x"$enable_frame_pointers" = "xyes"],
         [clang-*|gcc-*],
          [common_cflags="$common_cflags -g  -fno-omit-frame-pointer"
          frame_pointers=true
-         AC_DEFINE([WITH_FRAME_POINTERS])
+         AC_DEFINE([WITH_FRAME_POINTERS], [1])
          AC_MSG_NOTICE([using frame pointers])],
          [AC_MSG_ERROR([frame pointers not supported on this platform])]
       )],
@@ -2547,7 +2498,7 @@ AS_IF([test x"$enable_cmm_invariants" = "xyes"],
 
 AS_IF([test x"$enable_flat_float_array" = "xno"],
   [flat_float_array=false],
-  [AC_DEFINE([FLAT_FLOAT_ARRAY])
+  [AC_DEFINE([FLAT_FLOAT_ARRAY], [1])
   flat_float_array=true])
 
 OCAML_MMAP_SUPPORTS_MAP_STACK
@@ -2557,13 +2508,13 @@ AS_IF([test x"$enable_mmap_map_stack" = "xyes"],
        [*-freebsd*],
          [AC_MSG_ERROR([mmap MAP_STACK not supported on FreeBSD])],
        [with_mmap_map_stack=true;
-        AC_DEFINE([USE_MMAP_MAP_STACK])])],
+        AC_DEFINE([USE_MMAP_MAP_STACK], [1])])],
     [AC_MSG_ERROR([mmap MAP_STACK requested but not found on $target])])
   ],
   [AS_CASE([$target],
     [*-openbsd*],
      [with_mmap_map_stack=true;
-      AC_DEFINE([USE_MMAP_MAP_STACK])
+      AC_DEFINE([USE_MMAP_MAP_STACK], [1])
       AC_MSG_NOTICE([using MAP_STACK on OpenBSD due to stack checking])],
     [with_mmap_map_stack=false])
   ])
@@ -2591,7 +2542,7 @@ AS_IF([test x"$enable_function_sections" = "xno"],
             [function_sections=true;
             oc_native_compflags='-function-sections'
             internal_cflags="$internal_cflags -ffunction-sections";
-            AC_DEFINE([FUNCTION_SECTIONS])],
+            AC_DEFINE([FUNCTION_SECTIONS], [1])],
           [function_sections=false;
           AC_MSG_NOTICE([Function sections are not supported by
           $ocaml_cc_vendor.])])])],
@@ -2654,19 +2605,17 @@ AS_IF([test x"$prefix" = "xNONE"],
 # (all this should be understood and fixed)
 AS_CASE([$host],
   [*-*-mingw32*],
-    [AC_DEFINE([HAS_BROKEN_PRINTF])
-    AC_DEFINE([HAS_STRERROR])
-    AC_DEFINE([HAS_IPV6])
-    AC_DEFINE([HAS_NICE])],
+    [AC_DEFINE([HAS_BROKEN_PRINTF], [1])
+    AC_DEFINE([HAS_IPV6], [1])
+    AC_DEFINE([HAS_NICE], [1])],
   [*-pc-windows],
-    [AC_DEFINE([HAS_BROKEN_PRINTF])
-    AC_DEFINE([HAS_STRERROR])
-    AC_DEFINE([HAS_IPV6])
-    AC_DEFINE([HAS_NICE])],
+    [AC_DEFINE([HAS_BROKEN_PRINTF], [1])
+    AC_DEFINE([HAS_IPV6], [1])
+    AC_DEFINE([HAS_NICE], [1])],
   [*-*-solaris*],
     # This is required as otherwise floats are printed
     # as "Infinity" and "Inf" instead of the expected "inf"
-    [AC_DEFINE([HAS_BROKEN_PRINTF])])
+    [AC_DEFINE([HAS_BROKEN_PRINTF], [1])])
 
 # Do not permanently cache the result of flexdll.h
 unset ac_cv_header_flexdll_h
