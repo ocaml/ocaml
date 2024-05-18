@@ -67,6 +67,10 @@ _______________
   current status.
   (Gabriel Scherer, review by Nick Roberts)
 
+- #13179: Fix evaluation of toplevel lets in classes containing
+  local opens
+  (Vincent Laviron)
+
 ### Standard library:
 
 - #13168: In Array.shuffle, clarify the code that validates the
