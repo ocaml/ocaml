@@ -215,6 +215,9 @@ let rec build_object_init_0
     Tcl_let (_rec_flag, _defs, vals, cl) ->
       build_object_init_0
         ~scopes cl_table (vals@params) cl copy_env subst_env top ids
+  | Tcl_open (_descr, cl) ->
+      build_object_init_0
+        ~scopes cl_table params cl copy_env subst_env top ids
   | _ ->
       let self = Ident.create_local "self" in
       let env = Ident.create_local "env" in
@@ -413,6 +416,11 @@ let rec build_class_lets ~scopes cl =
       (env, fun lam_and_kind ->
           let lam, rkind = wrap lam_and_kind in
           Translcore.transl_let ~scopes rec_flag defs lam, rkind)
+  | Tcl_open (open_descr, cl) ->
+      (* Failsafe to ensure we get a compilation error if arbitrary
+         module expressions become allowed *)
+      let _ : Path.t * Longident.t loc = open_descr.open_expr in
+      build_class_lets ~scopes cl
   | _ ->
       (cl.cl_env, fun lam_and_kind -> lam_and_kind)
 
