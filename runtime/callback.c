@@ -309,25 +309,25 @@ Caml_inline caml_result Result_encoded(value encoded)
     return Result_value(encoded);
 }
 
-CAMLexport caml_result caml_callbackN_result(
+CAMLexport caml_result caml_callbackN_res(
   value closure, int narg, value args[])
 {
   return Result_encoded(caml_callbackN_exn(closure, narg, args));
 }
 
-CAMLexport caml_result caml_callback_result(
+CAMLexport caml_result caml_callback_res(
   value closure, value arg)
 {
   return Result_encoded(caml_callback_exn(closure, arg));
 }
 
-CAMLexport caml_result caml_callback2_result(
+CAMLexport caml_result caml_callback2_res(
   value closure, value arg1, value arg2)
 {
   return Result_encoded(caml_callback2_exn(closure, arg1, arg2));
 }
 
-CAMLexport caml_result caml_callback3_result(
+CAMLexport caml_result caml_callback3_res(
   value closure, value arg1, value arg2, value arg3)
 {
   return Result_encoded(caml_callback3_exn(closure, arg1, arg2, arg3));

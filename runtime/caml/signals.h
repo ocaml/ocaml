@@ -39,10 +39,10 @@ CAMLextern void caml_process_pending_actions (void);
 
 /* Same as [caml_process_pending_actions], but returns the reified
    result instead of raising exceptions directly (if any). */
-CAMLextern caml_result caml_process_pending_actions_result (void);
+CAMLextern caml_result caml_process_pending_actions_res (void);
 
 /* Returns [Val_unit] or an encoded exception.
-   Superseded by the safer [_result] variant above,
+   Superseded by the safer [_res] variant above,
    kept around for compatibility. */
 CAMLextern value caml_process_pending_actions_exn (void);
 
@@ -70,7 +70,7 @@ value caml_process_pending_actions_with_root (value extra_root); // raises
      }
 */
 
-caml_result caml_process_pending_actions_with_root_result (value extra_root);
+caml_result caml_process_pending_actions_with_root_res (value extra_root);
 #endif
 
 CAMLextern int caml_check_pending_actions (void);
@@ -96,11 +96,11 @@ void caml_request_major_slice (int global);
 void caml_request_minor_gc (void);
 CAMLextern int caml_convert_signal_number (int);
 CAMLextern int caml_rev_convert_signal_number (int);
-caml_result caml_execute_signal_result(int signal_number);
+caml_result caml_execute_signal_res(int signal_number);
 CAMLextern void caml_record_signal(int signal_number);
-CAMLextern caml_result caml_process_pending_signals_result(void);
+CAMLextern caml_result caml_process_pending_signals_res(void);
 CAMLextern void caml_set_action_pending(caml_domain_state *);
-caml_result caml_do_pending_actions_result(void);
+caml_result caml_do_pending_actions_res(void);
 
 void caml_init_signal_handling(void);
 void caml_init_signals(void);

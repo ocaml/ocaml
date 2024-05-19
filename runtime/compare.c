@@ -105,11 +105,11 @@ static void run_pending_actions(struct compare_stack* stk,
     (sp - stk->stack)
     * sizeof(struct compare_item) / sizeof(value);
   Begin_roots_block(roots_start, roots_length);
-  result = caml_do_pending_actions_result();
+  result = caml_do_pending_actions_res();
   End_roots();
   if (caml_result_is_exception(result)) {
     compare_free_stack(stk);
-    (void) caml_get_value_or_raise(result);
+    (void) caml_get_value_or_raise(result);;
   }
 }
 

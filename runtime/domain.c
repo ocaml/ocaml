@@ -1202,7 +1202,7 @@ static void* domain_thread_func(void* v)
     value unrooted_callback = ml_values->callback;
     caml_modify_generational_global_root(&ml_values->callback, Val_unit);
     value res =
-      make_finished(caml_callback_result(unrooted_callback, Val_unit));
+      make_finished(caml_callback_res(unrooted_callback, Val_unit));
     sync_result(ml_values->term_sync, res);
 
     sync_mutex mut = Mutex_val(*Term_mutex(ml_values->term_sync));

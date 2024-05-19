@@ -158,7 +158,7 @@ static void call_registered_value(char* name)
 {
   const value *f = caml_named_value(name);
   if (f != NULL)
-    caml_callback_result(*f, Val_unit);
+    caml_callback_res(*f, Val_unit);
 }
 
 CAMLexport void caml_shutdown(void)

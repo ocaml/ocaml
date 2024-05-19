@@ -104,7 +104,7 @@ extern void caml_memprof_set_trigger(caml_domain_state *state);
 /* Run any pending callbacks for the current domain (or adopted from a
  * terminated domain). */
 
-extern caml_result caml_memprof_run_callbacks_result(void);
+extern caml_result caml_memprof_run_callbacks_res(void);
 
 
 /*** Multi-domain support. ***/

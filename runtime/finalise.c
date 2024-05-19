@@ -142,7 +142,7 @@ int caml_final_update_last (caml_domain_state* d)
 /* Call the finalisation functions for the finalising set.
    Note that this function must be reentrant.
 */
-caml_result caml_final_do_calls_result(void)
+caml_result caml_final_do_calls_res(void)
 {
   struct final f;
   caml_result res;
@@ -164,7 +164,7 @@ caml_result caml_final_do_calls_result(void)
       --fi->todo_head->size;
       f = fi->todo_head->item[fi->todo_head->size];
       fi->running_finalisation_function = 1;
-      res = caml_callback_result (f.fun, f.val + f.offset);
+      res = caml_callback_res (f.fun, f.val + f.offset);
       fi->running_finalisation_function = 0;
       if (caml_result_is_exception(res)) return res;
     }
