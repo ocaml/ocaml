@@ -116,7 +116,7 @@ CAMLnoret CAMLextern void caml_raise_sys_blocked_io (void);
 
 /* Returns the value of a [caml_result] or raises the exception.
    This function replaced [caml_raise_if_exception] in 5.3. */
-Caml_inline value caml_get_value_or_raise (caml_result result)
+Caml_inline value caml_get_value_or_raise (struct caml_result_private result)
 {
   if (result.is_exception)
     caml_raise(result.data);

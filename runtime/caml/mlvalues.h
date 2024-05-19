@@ -87,28 +87,35 @@ typedef opcode_t * code_t;
 /* A 'result' type for OCaml computations. */
 
 /* The [caml_result] type represents the result of computing an OCaml
-   term -- either a value or an exception:
-   - if [is_exception] is false,
-     the computation resulted in a value stored in [data]
-   - if [is_exception] is true,
-     the computation resulted in an exception stored in [data]
+   term -- either a value or an exception.
 
    This plays a similar role to the [('a, exn) result] type in OCaml,
    with a different representation. Returning this type, instead of
    raising exceptions directly, lets the caller implement proper
    cleanup and propagate the exception themselves.
-
-   To extract the value or raise the exception, use
-     value caml_get_value_or_raise(caml_result)
-   from fail.h.
 */
-typedef struct {
+typedef struct caml_result_private caml_result;
+
+/* This structure should be considered internal, its definition may
+   change in the future. Its public interface is formed of
+   - Result_value, Result_exception
+   - caml_result_is_exception
+   - caml_get_value_or_raise (in fail.h)
+*/
+struct caml_result_private {
   int is_exception;
   value data;
-} caml_result;
+};
 
-#define Result_value(v) (caml_result){ .is_exception = 0, .data = v }
-#define Result_exception(exn) (caml_result){ .is_exception = 1, .data = exn }
+#define Result_value(v) \
+  (struct caml_result_private){ .is_exception = 0, .data = v }
+#define Result_exception(exn) \
+  (struct caml_result_private){ .is_exception = 1, .data = exn }
+
+Caml_inline int caml_result_is_exception(struct caml_result_private result)
+{
+  return result.is_exception;
+}
 
 #define Result_unit Result_value(Val_unit)
 
