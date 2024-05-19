@@ -1759,11 +1759,11 @@ static caml_result run_callback_result(
   if (validated_config(es) == CONFIG_NONE) {
     /* The profile was discarded during the callback.
      * no entries to update etc. */
-    if (!res.is_exception)
+    if (!caml_result_is_exception(res))
       return Result_unit;
   }
 
-  if (res.is_exception || res.data == Val_unit) {
+  if (caml_result_is_exception(res) || res.data == Val_unit) {
     /* Callback raised an exception or returned None or (), discard
        this entry. */
     entry_delete(es, i);
@@ -1836,7 +1836,7 @@ static caml_result entries_run_callbacks_result(
       /* allocation callback hasn't been run */
       if (Status(config) == CONFIG_STATUS_SAMPLING) {
         res = run_alloc_callback_result(thread, es, i);
-        if (res.is_exception) break;
+        if (caml_result_is_exception(res)) break;
       } else {
         /* sampling stopped, e.g. by a previous callback; drop this entry */
         entry_delete(es, i);
@@ -1846,7 +1846,7 @@ static caml_result entries_run_callbacks_result(
       res = run_callback_result(thread, es, i,
                                 Promote(config), e->user_data,
                                 CB_PROMOTE);
-      if (res.is_exception) break;
+      if (caml_result_is_exception(res)) break;
     } else if (e->deallocated && !(e->callbacks & CB_MASK(CB_DEALLOC))) {
       /* deallocated entry; call dealloc callback */
       value cb = (e->promoted || !e->alloc_young) ?
@@ -1854,7 +1854,7 @@ static caml_result entries_run_callbacks_result(
       res = run_callback_result(thread, es, i,
                                 cb, e->user_data,
                                 CB_DEALLOC);
-      if (res.is_exception) break;
+      if (caml_result_is_exception(res)) break;
     } else {
       /* There is nothing to do with this entry. */
       ++ es->active;
@@ -1885,11 +1885,11 @@ caml_result caml_memprof_run_callbacks_result(void)
 
   /* run per-domain callbacks first */
   res = entries_run_callbacks_result(thread, &domain->entries);
-  if (res.is_exception) goto end;
+  if (caml_result_is_exception(res)) goto end;
 
   /* run per-thread callbacks for current thread */
   res = entries_run_callbacks_result(thread, &thread->entries);
-  if (res.is_exception) goto end;
+  if (caml_result_is_exception(res)) goto end;
   /* Move any surviving entries from allocating thread to owning
    * domain, so their subsequent callbacks may be run by any thread in
    * the domain. entries_run_callbacks_result didn't return an exception,
@@ -1905,7 +1905,7 @@ caml_result caml_memprof_run_callbacks_result(void)
     if ((validated_config(es) != CONFIG_NONE) && (es->active < es->size)) {
       /* An orphan table with something to run. */
       res = entries_run_callbacks_result(thread, es);
-      if (res.is_exception) goto end;
+      if (caml_result_is_exception(res)) goto end;
       /* Orphan tables may be deallocated during callbacks (if a
        * callback discards the profile and then orphans_update_pending
        * runs due to a GC) but a callback from an orphan table can
@@ -2107,7 +2107,7 @@ void caml_memprof_sample_young(uintnat wosize, int from_caml,
   /* A callback may have raised an exception. In this case, we are
    * going to cancel this whole combined allocation and should delete
    * the newly-created entries (if they are still in our table). */
-  bool cancelled = res.is_exception;
+  bool cancelled = caml_result_is_exception(res);
 
   if (!cancelled) {
     /* No exceptions were raised, so the allocations will
@@ -2159,10 +2159,7 @@ void caml_memprof_sample_young(uintnat wosize, int from_caml,
   /* Unsuspend profiling. Resets trigger. */
   update_suspended(domain, false);
 
-  if (res.is_exception) {
-    value exn = res.data;
-    caml_raise(exn);
-  }
+  (void) caml_get_value_or_raise(res);
 
   CAMLreturn0;
 }

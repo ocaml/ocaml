@@ -94,7 +94,7 @@ CAMLexport caml_result caml_process_pending_signals_result(void)
         if ((curr & mask) == 0) goto next_bit;
       }
       caml_result result = caml_execute_signal_result(signo);
-      if (result.is_exception) return result;
+      if (caml_result_is_exception(result)) return result;
       /* curr probably changed during the evaluation of the signal handler;
          refresh it from memory */
       curr = atomic_load_relaxed(&caml_pending_signals[i]);
@@ -350,15 +350,15 @@ caml_result caml_do_pending_actions_result(void)
 
   /* Call signal handlers first */
   caml_result result = caml_process_pending_signals_result();
-  if (result.is_exception) goto exception;
+  if (caml_result_is_exception(result)) goto exception;
 
   /* Call memprof callbacks */
   result = caml_memprof_run_callbacks_result();
-  if (result.is_exception) goto exception;
+  if (caml_result_is_exception(result)) goto exception;
 
   /* Call finalisers */
   result = caml_final_do_calls_result();
-  if (result.is_exception) goto exception;
+  if (caml_result_is_exception(result)) goto exception;
 
   /* Process external interrupts (e.g. preemptive systhread switching).
      By doing this last, we do not need to set the action pending flag
@@ -382,7 +382,7 @@ caml_result caml_process_pending_actions_with_root_result(value root)
   if (caml_check_pending_actions()) {
     CAMLparam1(root);
     caml_result result = caml_do_pending_actions_result();
-    if (result.is_exception) CAMLreturnT(caml_result, result);
+    if (caml_result_is_exception(result)) CAMLreturnT(caml_result, result);
     CAMLdrop;
   }
   return Result_value(root);

@@ -263,7 +263,7 @@ static caml_result gc_full_major_result(void)
   for (i = 0; i < 3; i++) {
     caml_finish_major_cycle(0);
     caml_result res = caml_process_pending_actions_result();
-    if (res.is_exception) return res;
+    if (caml_result_is_exception(res)) return res;
   }
   ++ Caml_state->stat_forced_major_collections;
   CAML_EV_END(EV_EXPLICIT_GC_FULL_MAJOR);
@@ -299,7 +299,7 @@ CAMLprim value caml_gc_compaction(value v)
   for (i = 0; i < 3; i++) {
     caml_finish_major_cycle(i == 2);
     result = caml_process_pending_actions_result();
-    if (result.is_exception) break;
+    if (caml_result_is_exception(result)) break;
   }
   ++ Caml_state->stat_forced_major_collections;
   CAML_EV_END(EV_EXPLICIT_GC_COMPACT);
@@ -311,7 +311,7 @@ CAMLprim value caml_gc_stat(value v)
   caml_result result;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_STAT);
   result = gc_full_major_result();
-  if (result.is_exception) goto out;
+  if (caml_result_is_exception(result)) goto out;
   result = Result_value(caml_gc_quick_stat(Val_unit));
  out:
   CAML_EV_END(EV_EXPLICIT_GC_STAT);

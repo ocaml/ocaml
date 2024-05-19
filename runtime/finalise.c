@@ -166,7 +166,7 @@ caml_result caml_final_do_calls_result(void)
       fi->running_finalisation_function = 1;
       res = caml_callback_result (f.fun, f.val + f.offset);
       fi->running_finalisation_function = 0;
-      if (res.is_exception) return res;
+      if (caml_result_is_exception(res)) return res;
     }
     caml_gc_message (0x80, "Done calling finalisation functions.\n");
     call_timing_hook(&caml_finalise_end_hook);

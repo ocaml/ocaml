@@ -1127,7 +1127,7 @@ static value make_finished(caml_result result)
   CAMLparam0();
   CAMLlocal1(res);
   res = caml_alloc_1(
-    (result.is_exception ?
+    (caml_result_is_exception(result) ?
      1 /* Error */ :
      0 /* Ok */),
     result.data);
