@@ -268,7 +268,10 @@ let rec attrs_of_sig = function
   | _ ->
       []
 
-let alerts_of_sig sg = alerts_of_attrs (attrs_of_sig sg)
+let alerts_of_sig ~mark sg =
+  let a = attrs_of_sig sg in
+  if mark then mark_alerts_used a;
+  alerts_of_attrs a
 
 let rec attrs_of_str = function
   | {pstr_desc = Pstr_attribute a} :: tl ->
@@ -276,7 +279,10 @@ let rec attrs_of_str = function
   | _ ->
       []
 
-let alerts_of_str str = alerts_of_attrs (attrs_of_str str)
+let alerts_of_str ~mark str =
+  let a = attrs_of_str str in
+  if mark then mark_alerts_used a;
+  alerts_of_attrs a
 
 let warn_payload loc txt msg =
   Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg))

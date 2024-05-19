@@ -1404,7 +1404,7 @@ and transl_with ~loc env remove_aliases (rev_tcstrs,sg) constr =
 
 
 
-and transl_signature ?(toplevel = false) env sg =
+and transl_signature env sg =
   let names = Signature_names.create () in
   let rec transl_sig env sg =
     match sg with
@@ -1706,7 +1706,7 @@ and transl_signature ?(toplevel = false) env sg =
             typedtree, sg, final_env
         | Psig_attribute x ->
             Builtin_attributes.warning_attribute x;
-            if toplevel || not (Warnings.is_active (Misplaced_attribute ""))
+            if not (Warnings.is_active (Misplaced_attribute ""))
             then Builtin_attributes.mark_alert_used x;
             let (trem,rem, final_env) = transl_sig env srem in
             mksig (Tsig_attribute x) env loc :: trem, rem, final_env
@@ -2868,8 +2868,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
         raise (Error_forward (Builtin_attributes.error_of_extension ext))
     | Pstr_attribute x ->
         Builtin_attributes.warning_attribute x;
-        if toplevel || not (Warnings.is_active (Misplaced_attribute "")) then
-          Builtin_attributes.mark_alert_used x;
+        if not (Warnings.is_active (Misplaced_attribute ""))
+        then Builtin_attributes.mark_alert_used x;
         Tstr_attribute x, [], shape_map, env
   in
   let rec type_struct env shape_map sstr =
@@ -3157,8 +3157,8 @@ let type_implementation target initial_env ast =
              declarations like "let x = true;; let x = 1;;", because in this
              case, the inferred signature contains only the last declaration. *)
           let shape = Shape_reduce.local_reduce Env.empty shape in
+          let alerts = Builtin_attributes.alerts_of_str ~mark:true ast in
           if not !Clflags.dont_write_files then begin
-            let alerts = Builtin_attributes.alerts_of_str ast in
             let cmi =
               Env.save_signature ~alerts simple_sg (Unit_info.cmi target)
             in
@@ -3186,10 +3186,7 @@ let save_signature target tsg initial_env cmi =
     (Cmt_format.Interface tsg) initial_env (Some cmi) None
 
 let type_interface env ast =
-  transl_signature ~toplevel:true env ast
-
-let transl_signature env ast =
-  transl_signature ~toplevel:false env ast
+  transl_signature env ast
 
 (* "Packaging" of several compilation units into one unit
    having them as sub-modules.  *)

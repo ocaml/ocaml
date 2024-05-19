@@ -6254,6 +6254,7 @@ driver/compile_common.cmi : \
     parsing/unit_info.cmi \
     typing/typedtree.cmi \
     parsing/parsetree.cmi \
+    utils/misc.cmi \
     typing/env.cmi
 driver/compmisc.cmo : \
     utils/warnings.cmi \

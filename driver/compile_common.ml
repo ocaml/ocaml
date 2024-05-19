@@ -52,6 +52,7 @@ let typecheck_intf info ast =
     |> Typemod.type_interface info.env
     |> print_if info.ppf_dump Clflags.dump_typedtree Printtyped.interface
   in
+  let alerts = Builtin_attributes.alerts_of_sig ~mark:true ast in
   let sg = tsg.Typedtree.sig_type in
   if !Clflags.print_types then
     Printtyp.wrap_printing_env ~error:false info.env (fun () ->
@@ -62,11 +63,10 @@ let typecheck_intf info ast =
   Typecore.force_delayed_checks ();
   Builtin_attributes.warn_unused ();
   Warnings.check_fatal ();
-  tsg
+  alerts, tsg
 
-let emit_signature info ast tsg =
+let emit_signature info alerts tsg =
   let sg =
-    let alerts = Builtin_attributes.alerts_of_sig ast in
     Env.save_signature ~alerts tsg.Typedtree.sig_type
       (Unit_info.cmi info.target)
   in
@@ -76,9 +76,9 @@ let interface info =
   Profile.record_call (Unit_info.source_file info.target) @@ fun () ->
   let ast = parse_intf info in
   if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
-    let tsg = typecheck_intf info ast in
+    let alerts, tsg = typecheck_intf info ast in
     if not !Clflags.print_types then begin
-      emit_signature info ast tsg
+      emit_signature info alerts tsg
     end
   end
 
