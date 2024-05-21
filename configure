@@ -13914,8 +13914,7 @@ case $ocaml_cc_vendor in #(
     outputobj='-Fo'
     case $ocaml_cc_vendor in #(
   msvc-*-clang-*) :
-    warn_error_flag='-WX'
-      msvc-* ;; #(
+    warn_error_flag='-WX' ;; #(
   *) :
     warn_error_flag='-WX -options:strict' ;;
 esac

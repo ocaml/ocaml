@@ -807,8 +807,8 @@ AS_CASE([$ocaml_cc_vendor],
   [msvc-*],
     [outputobj='-Fo'
     AS_CASE([$ocaml_cc_vendor],
-      [msvc-*-clang-*], [warn_error_flag='-WX']
-      [msvc-*], [warn_error_flag='-WX -options:strict'])
+      [msvc-*-clang-*], [warn_error_flag='-WX'],
+      [warn_error_flag='-WX -options:strict'])
     cc_warnings=''],
   [outputobj='-o '
   warn_error_flag='-Werror'
