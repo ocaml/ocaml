@@ -220,6 +220,10 @@ _______________
   platforms (Linux, *BSD).
   (Miod Vallat, review by Nicolás Ojeda Bär)
 
+- #13169: Introduce a document data type for compiler messages rather than
+  relying on `Format.formatter -> unit` closures.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 - #13193: Remove the unused env_init field from class blocks
   (Vincent Laviron, review by Jacques Garrigue)
 
