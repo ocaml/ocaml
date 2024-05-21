@@ -13912,7 +13912,13 @@ case $ocaml_cc_vendor in #(
     outputobj='-o '; cc_warnings="" ;; #(
   msvc-*) :
     outputobj='-Fo'
+    case $ocaml_cc_vendor in #(
+  msvc-*-clang-*) :
     warn_error_flag='-WX'
+      msvc-* ;; #(
+  *) :
+    warn_error_flag='-WX -options:strict' ;;
+esac
     cc_warnings='' ;; #(
   *) :
     outputobj='-o '
@@ -14019,16 +14025,16 @@ case $ocaml_cc_vendor in #(
     common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
     internal_cflags="$cc_warnings"
     internal_cppflags='-DUNICODE -D_UNICODE -D_CRT_NONSTDC_NO_WARNINGS'
-    as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_-d2VolatileMetadata-" | $as_tr_sh`
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -d2VolatileMetadata-" >&5
-printf %s "checking whether the C compiler accepts -d2VolatileMetadata-... " >&6; }
+    as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_-volatileMetadata-" | $as_tr_sh`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -volatileMetadata-" >&5
+printf %s "checking whether the C compiler accepts -volatileMetadata-... " >&6; }
 if eval test \${$as_CACHEVAR+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
 
   ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS $warn_error_flag -d2VolatileMetadata-"
+  CFLAGS="$CFLAGS $warn_error_flag -volatileMetadata-"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -14054,7 +14060,7 @@ eval ac_res=\$$as_CACHEVAR
 printf "%s\n" "$ac_res" >&6; }
 if eval test \"x\$"$as_CACHEVAR"\" = x"yes"
 then :
-  internal_cflags="$internal_cflags -d2VolatileMetadata-"
+  internal_cflags="$internal_cflags -volatileMetadata-"
 else $as_nop
   :
 fi

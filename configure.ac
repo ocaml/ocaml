@@ -806,7 +806,9 @@ AS_CASE([$ocaml_cc_vendor],
     [outputobj='-o '; cc_warnings=""],
   [msvc-*],
     [outputobj='-Fo'
-    warn_error_flag='-WX'
+    AS_CASE([$ocaml_cc_vendor],
+      [msvc-*-clang-*], [warn_error_flag='-WX']
+      [msvc-*], [warn_error_flag='-WX -options:strict'])
     cc_warnings=''],
   [outputobj='-o '
   warn_error_flag='-Werror'
@@ -869,8 +871,8 @@ AS_CASE([$ocaml_cc_vendor],
     common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
     internal_cflags="$cc_warnings"
     internal_cppflags='-DUNICODE -D_UNICODE -D_CRT_NONSTDC_NO_WARNINGS'
-    AX_CHECK_COMPILE_FLAG([-d2VolatileMetadata-],
-      [internal_cflags="$internal_cflags -d2VolatileMetadata-"], [],
+    AX_CHECK_COMPILE_FLAG([-volatileMetadata-],
+      [internal_cflags="$internal_cflags -volatileMetadata-"], [],
       [$warn_error_flag])
     internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE=$windows_unicode"],
   [xlc-*],
