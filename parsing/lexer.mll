@@ -286,7 +286,6 @@ let validate_ext lexbuf name =
     | Utf8_lexeme.Invalid_beginning _ ->
     assert false (* excluded by the regexps *)
 
-
 let lax_delim raw_name =
   match Utf8_lexeme.normalize raw_name with
   | Error _ -> None
@@ -296,11 +295,7 @@ let lax_delim raw_name =
 
 let is_keyword name = Hashtbl.mem keyword_table name
 
-let check_label_name lexbuf name =
-  if Utf8_lexeme.is_capitalized name then error lexbuf (Capitalized_label name);
-  if is_keyword name then error lexbuf (Keyword_as_label name)
-
-let check_unicode_label_name ~raw_escape lexbuf name =
+let check_label_name ?(raw_escape=false) lexbuf name =
   if Utf8_lexeme.is_capitalized name then
     error lexbuf (Capitalized_label name);
   if not raw_escape && is_keyword name then
@@ -480,7 +475,7 @@ rule token = parse
         LABEL name }
   | "~" (raw_ident_escape? as escape) (ident_ext as raw_name) ':'
       { let name = ident_for_extended lexbuf raw_name in
-        check_unicode_label_name ~raw_escape:(escape<>"") lexbuf name;
+        check_label_name ~raw_escape:(escape<>"") lexbuf name;
         LABEL name }
   | "?"
       { QUESTION }
@@ -489,7 +484,7 @@ rule token = parse
         OPTLABEL name }
   | "?" (raw_ident_escape? as escape) (ident_ext as raw_name) ':'
       { let name = ident_for_extended lexbuf raw_name in
-        check_unicode_label_name ~raw_escape:(escape<>"") lexbuf name;
+        check_label_name ~raw_escape:(escape<>"") lexbuf name;
         OPTLABEL name
       }
   | lowercase identchar * as name
