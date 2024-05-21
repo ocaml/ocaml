@@ -160,7 +160,7 @@ jobs:
         with:
           persist-credentials: false
       - name: OS Dependencies
-        if: runner.os == 'MacOS'
+        if: runner.os == 'macOS'
         run: brew install parallel
       - name: configure tree
         run: |
