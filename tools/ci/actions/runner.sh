@@ -44,7 +44,9 @@ EOF
     --disable-dependency-generation \
     $CONFIG_ARG"
 
-  ./configure $configure_flags
+  local failed
+  ./configure $configure_flags || failed=$?
+  if ((failed)) ; then cat config.log ; exit $failed ; fi
 }
 
 Build () {
@@ -136,7 +138,9 @@ This test checks the global structure of the reference manual
 --------------------------------------------------------------------------
 EOF
   # we need some of the configuration data provided by configure
-  ./configure
+  local failed
+  ./configure || failed=$?
+  if ((failed)) ; then cat config.log ; exit $failed ; fi
   $MAKE check-stdlib check-case-collision -C manual/tests
 
 }
@@ -164,9 +168,12 @@ ReportBuildStatus () {
 BasicCompiler () {
   trap ReportBuildStatus ERR
 
+  local failed
   ./configure --disable-dependency-generation \
               --disable-debug-runtime \
-              --disable-instrumented-runtime
+              --disable-instrumented-runtime \
+      || failed=$?
+  if ((failed)) ; then cat config.log ; exit $failed ; fi
 
   # Need a runtime
   make -j coldstart

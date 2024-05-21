@@ -97,7 +97,10 @@ jobs:
           eval $(tools/msvs-promote-path) ;
           if ! ./configure --cache-file=config.cache --host=$HOST CC=$CC ; then
           rm -rf config.cache ;
-          ./configure --cache-file=config.cache --host=$HOST CC=$CC ;
+          failed=0 ;
+          ./configure --cache-file=config.cache --host=$HOST CC=$CC \
+          || failed=$?;
+          if ((failed)) ; then cat config.log ; exit $failed ; fi ;
           fi ;
           make -j ;
           runtime/ocamlrun ocamlc -config ;
