@@ -285,8 +285,8 @@ _______________
   (Jan Midtgaard, review by Antonin Décimo, Sébastien Hinderer, and
    David Allsopp)
 
-OCaml 5.2.0
-------------
+OCaml 5.2.0 (13 May 2024)
+-------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
