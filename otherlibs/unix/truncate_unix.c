@@ -22,7 +22,7 @@
 #include <caml/signals.h>
 #include <caml/io.h>
 #include "caml/unixsupport.h"
-#ifdef HAS_UNISTD
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 

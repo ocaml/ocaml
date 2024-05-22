@@ -22,7 +22,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <time.h>
-#ifdef HAS_UNISTD
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 
