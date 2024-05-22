@@ -705,7 +705,7 @@ OCaml 5.2.0 (13 May 2024)
   (Antonin Décimo, review by Florian Angeletti, Gabriel Scherer, and Léo Andrès)
 
 - #12615: ocamldoc: get rid of the odoc_literate and odoc_todo generators.
-  (Sébaistien Hinderer, review by Gabriel Scherer and Florian Angeletti)
+  (Sébastien Hinderer, review by Gabriel Scherer and Florian Angeletti)
 
 - #12624: Use $XDG_CONFIG_DIRS in addition to $XDG_CONFIG_HOME when searching
   for init.ml and use this to extend init.ml support to the toplevel when
@@ -3956,7 +3956,7 @@ OCaml 4.13.0 (24 September 2021)
 
 - #10584, #10856: Standard Library documentation build no longer fails if
   optional libraries have been disabled.
-  (David Allsopp, report by Yuri Victorovich review by Florian Angeletti)
+  (David Allsopp, report by Yuri Victorovich, review by Florian Angeletti)
 
 - #10593: Fix untyping of patterns without named existential quantifiers. This
   bug was only present in the beta version of OCaml 4.13.0.
@@ -5198,7 +5198,7 @@ OCaml 4.11.0 (19 August 2020)
 
 - #9011: Allow linking .cmxa files with no units on MSVC by not requiring the
   .lib file to be present.
-  (David Allsopp, report by Dimitry Bely, review by Xavier Leroy)
+  (David Allsopp, report by Dmitry Bely, review by Xavier Leroy)
 
 - #9064: Relax the level handling when unifying row fields
   (Leo White, review by Jacques Garrigue)
@@ -7672,7 +7672,7 @@ OCaml 4.07.0 (10 July 2018)
   (Jacques Garrigue, report by kantian)
 
 - #7751, #1657: The toplevel prints some concrete types as abstract.
-  (Jacques Garrigue, report by Matej Kosik)
+  (Jacques Garrigue, report by Matej  Košík)
 
 - #7765, #1718: When unmarshaling bigarrays, protect against integer
   overflows in size computations.
@@ -11539,7 +11539,7 @@ Bug fixes:
 - #5350: missing return code checks in the runtime system
   (Xavier Leroy)
 - #5468: ocamlbuild should preserve order of parametric tags
-  (Wojciech Meyer, report by Dario Texeira)
+  (Wojciech Meyer, report by Dario Teixeira)
 - #5551: Avoid repeated lookups for missing cmi files
   (Alain Frisch)
 - #5552: unrecognized gcc option -no-cpp-precomp
