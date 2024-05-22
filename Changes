@@ -7672,7 +7672,7 @@ OCaml 4.07.0 (10 July 2018)
   (Jacques Garrigue, report by kantian)
 
 - #7751, #1657: The toplevel prints some concrete types as abstract.
-  (Jacques Garrigue, report by Matej  Košík)
+  (Jacques Garrigue, report by Matej Košík)
 
 - #7765, #1718: When unmarshaling bigarrays, protect against integer
   overflows in size computations.
