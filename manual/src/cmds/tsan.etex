@@ -206,6 +206,11 @@ necessary to obtain the second stack trace, but it also increases memory
 consumption. This setting does not change the number of memory accesses
 remembered per memory location.
 
+Another useful runtime option is \texttt{exitcode=0}, which still reports data
+races but does not change the exit code. This can be useful if TSan complains
+about data races in programs that you don't care about and the non-zero exit
+code disturbs your workflow.
+
 \section{s:tsan-c-code}{Guidelines for linking}
 
 As a general rule, OCaml programs instrumented with TSan should only be linked
