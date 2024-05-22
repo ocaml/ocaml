@@ -11,10 +11,10 @@ on:
 # Restrict the GITHUB_TOKEN
 permissions: {}
 
-# List of test directories for the debug-s4096 and linux-O0 jobs.
-# These directories are selected because of their tendencies to reach corner
-# cases in the runtime system.
 env:
+  # List of test directories for the debug-s4096 and linux-O0 jobs. These
+  # directories are selected because of their tendencies to reach corner cases
+  # in the runtime system.
   PARALLEL_TESTS: parallel callback gc-roots weak-ephe-final
 
 # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
