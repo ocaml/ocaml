@@ -41,9 +41,6 @@ val strings_of_paths: namespace -> Path.t list -> string list
     (** Print a list of paths, using the same naming context to
         avoid name collisions *)
 
-val raw_type_expr: formatter -> type_expr -> unit
-val string_of_label: Asttypes.arg_label -> string
-
 val wrap_printing_env: error:bool -> Env.t -> (unit -> 'a) -> 'a
     (* Call the function using the environment for type path shortening *)
     (* This affects all the printing functions below *)

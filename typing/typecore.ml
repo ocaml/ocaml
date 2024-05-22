@@ -5282,7 +5282,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
       in
       Location.prerr_warning texp.exp_loc
         (Warnings.Eliminated_optional_arguments
-           (List.map (fun (l, _) -> Printtyp.string_of_label l) args));
+           (List.map (fun (l, _) -> Asttypes.string_of_label l) args));
       if warn then Location.prerr_warning texp.exp_loc
           (Warnings.Non_principal_labels "eliminated optional argument");
       (* let-expand to have side effects *)
@@ -5379,7 +5379,7 @@ and type_application env funct sargs =
       (Location.prerr_warning
          funct.exp_loc
          (Warnings.Labels_omitted
-            (List.map Printtyp.string_of_label
+            (List.map Asttypes.string_of_label
                       (List.filter ((<>) Nolabel) labels)));
        true)
     end
@@ -5469,7 +5469,7 @@ and type_application env funct sargs =
                 end;
                 if not optional && is_optional l' then
                   Location.prerr_warning sarg.pexp_loc
-                    (Warnings.Nonoptional_label (Printtyp.string_of_label l));
+                    (Warnings.Nonoptional_label (Asttypes.string_of_label l));
                 remaining_sargs, Some (use_arg sarg l', Some sarg.pexp_loc)
             | None ->
                 sargs,

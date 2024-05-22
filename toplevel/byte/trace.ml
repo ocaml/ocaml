@@ -61,7 +61,8 @@ let invoke_traced_function codeptr env arg =
   Meta.invoke_traced_function codeptr env arg
 
 let print_label ppf l =
-  if l <> Asttypes.Nolabel then fprintf ppf "%s:" (Printtyp.string_of_label l)
+  if l <> Asttypes.Nolabel then fprintf ppf "%s:"
+  (Asttypes.string_of_label l)
 
 (* If a function returns a functional value, wrap it into a trace code *)
 

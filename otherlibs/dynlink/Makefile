@@ -64,7 +64,6 @@ NATOBJS=native/dynlink_compilerlibs.cmx dynlink_types.cmx \
 
 # .mli files from compilerlibs that don't have a corresponding .ml file.
 COMPILERLIBS_INTFS=\
-  parsing/asttypes.mli \
   parsing/parsetree.mli \
   typing/outcometree.mli \
   typing/value_rec_types.mli \
@@ -90,6 +89,7 @@ COMPILERLIBS_SOURCES=\
   utils/int_replace_polymorphic_compare.ml \
   utils/lazy_backtrack.ml \
   utils/compression.ml \
+  parsing/asttypes.ml \
   parsing/location.ml \
   parsing/unit_info.ml \
   parsing/longident.ml \
