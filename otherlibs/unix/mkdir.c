@@ -26,15 +26,16 @@
 #include <caml/signals.h>
 #include "caml/unixsupport.h"
 
-CAMLprim value caml_unix_mkdir(value path, value perm)
+CAMLprim value caml_unix_mkdir(value path, value vperm)
 {
-  CAMLparam2(path, perm);
+  CAMLparam2(path, vperm);
   char_os * p;
   int ret;
+  int perm = Int_val(vperm);
   caml_unix_check_path(path, "mkdir");
   p = caml_stat_strdup_to_os(String_val(path));
   caml_enter_blocking_section();
-  ret = mkdir_os(p, Int_val(perm));
+  ret = mkdir_os(p, perm);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1) caml_uerror("mkdir", path);
