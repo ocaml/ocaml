@@ -1164,7 +1164,6 @@ AS_CASE([$host],
   [*-*-mingw32*|*-pc-windows], [],
   [AC_CHECK_HEADERS([unistd.h],[AC_DEFINE([HAS_UNISTD], [1])])])
 
-AC_CHECK_HEADER([math.h])
 AC_CHECK_HEADER([pthread_np.h],[AC_DEFINE([HAS_PTHREAD_NP_H], [1])])
 AC_CHECK_HEADER([dirent.h], [AC_DEFINE([HAS_DIRENT], [1])], [],
   [#include <sys/types.h>])
