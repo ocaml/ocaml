@@ -284,7 +284,7 @@ let rec build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl =
            Llet (Strict, Pgenval, obj_init,
                  mkappl(Lprim(Pfield (1, Pointer, Mutable),
                               [path_lam], Loc_unknown), Lvar cla ::
-                        if top then [Lprim(Pfield (3, Pointer, Mutable),
+                        if top then [Lprim(Pfield (2, Pointer, Mutable),
                                      [path_lam], Loc_unknown)]
                         else []),
                  bind_super cla super cl_init))
@@ -529,8 +529,7 @@ let transl_class_rebind ~scopes cl vf =
                    lfunction [envs, Pgenval]
                      (mkappl(Lvar new_init,
                              [mkappl(Lvar env_init, [Lvar envs])]))));
-           lfield cla 2;
-           lfield cla 3],
+           lfield cla 2],
           Loc_unknown)))
   with Exit ->
     lambda_unit
@@ -822,7 +821,7 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
       mkappl (oo_prim "init_class", [Lvar table]),
       Lprim(Pmakeblock(0, Immutable, None),
             [mkappl (Lvar env_init, [lambda_unit]);
-             Lvar class_init; Lvar env_init; lambda_unit],
+             Lvar class_init; lambda_unit],
             Loc_unknown)))),
       Static
   and lbody_virt lenvs =
@@ -833,7 +832,7 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
                           ~loc:Loc_unknown
                           ~return:Pgenval
                           ~params:[cla, Pgenval] ~body:cl_init;
-           lambda_unit; lenvs],
+           lenvs],
          Loc_unknown),
     Static
   in
@@ -861,7 +860,7 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
   and linh_envs =
     List.map
       (fun (_, path_lam, _) ->
-        Lprim(Pfield (3, Pointer, Mutable), [path_lam], Loc_unknown))
+        Lprim(Pfield (2, Pointer, Mutable), [path_lam], Loc_unknown))
       (List.rev inh_init)
   in
   let make_envs (lam, rkind) =
@@ -951,9 +950,8 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
         (if concrete then
           [mkappl (lfield cached 0, [lenvs]);
            lfield cached 1;
-           lfield cached 0;
            lenvs]
-        else [lambda_unit; lfield cached 0; lambda_unit; lenvs]),
+        else [lambda_unit; lfield cached 0; lenvs]),
         Loc_unknown
        ),
     Static)))
