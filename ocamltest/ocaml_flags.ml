@@ -61,4 +61,4 @@ let ocamlobjinfo_default_flags = "-null-crc"
 
 let lldb_default_flags = "--no-use-colors"
 
-let gdb_default_flags = ""
+let gdb_default_flags = "--quiet --batch"

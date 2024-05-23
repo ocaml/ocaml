@@ -555,6 +555,7 @@ let debug debugger_type log env =
     | GDB -> [
         Ocaml_commands.gdb_run;
         Ocaml_flags.gdb_default_flags;
+        "-x " ^ (Environments.safe_lookup Ocaml_variables.debugger_script env);
         program ]
     | Bytecode -> [
         Ocaml_commands.ocamlrun_ocamldebug;
