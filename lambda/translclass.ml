@@ -635,16 +635,12 @@ open M
     * class without local dependencies -> direct translation
     * with local dependencies -> generate a stubs tree,
       with a node for every local classes inherited
-   A class is a 4-tuple:
-    (obj_init, class_init, env_init, env)
-    obj_init: creation function (unit -> obj)
-    class_init: inheritance function (table -> env_init)
+   A class is a 3-tuple:
+    (obj_init, class_init, env)
+    obj_init: creation function (unit -> params -> obj)
+    class_init: inheritance function (table -> env -> obj_init)
       (one by source code)
-    env_init: parameterisation by the local environment
-      (env -> params -> obj_init)
-      (one for each combination of inherited class_init )
     env: local environment
-   If ids=0 (immediate object), then only env_init is conserved.
 *)
 
 (*
