@@ -208,7 +208,7 @@ type (_, _) eq = Refl : ('a, 'a) eq
 Line 8, characters 4-16:
 8 |     module N = M
         ^^^^^^^^^^^^
-Error: Cannot alias the module "M", it is a functor argument
+Error: Functor arguments, such as "M", cannot be aliased
 |}]
 
 (* Checking that the uses of M.t are rewritten regardless of how they

@@ -3449,7 +3449,7 @@ let report_error ~loc _env = function
         (Style.as_inline_code path) p
   | Cannot_alias p ->
       Location.errorf ~loc
-        "Cannot alias the module %a, it is a functor argument"
+        "Functor arguments, such as %a, cannot be aliased"
         (Style.as_inline_code path) p
   | Cannot_scrape_package_type p ->
       Location.errorf ~loc
