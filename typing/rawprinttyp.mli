@@ -13,4 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** This module provides function(s) for printing the internal representation of
+    type expressions. It is targetted at internal use when debbuging the
+    compiler itself. *)
+
 val type_expr: Format.formatter -> Types.type_expr -> unit
