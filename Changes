@@ -285,6 +285,9 @@ _______________
   (Jan Midtgaard, review by Antonin Décimo, Sébastien Hinderer, and
    David Allsopp)
 
+- #13185: Type-level module alias for functor parameter accepted
+  (Jacques Garrigue, report by Richard Eisenberg)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 

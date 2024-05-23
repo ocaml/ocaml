@@ -205,15 +205,10 @@ end = struct
 end;;
 [%%expect {|
 type (_, _) eq = Refl : ('a, 'a) eq
-Line 11, characters 18-58:
-11 |   module type T = S with type N.t = M.t with module N := N;;
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this "with" constraint, the new definition of "N"
-       does not match its original definition in the constrained signature:
-       Modules do not match:
-         sig type t = M.t val compare : t -> t -> int end
-       is not included in
-         (module M)
+Line 8, characters 4-16:
+8 |     module N = M
+        ^^^^^^^^^^^^
+Error: Cannot alias the module "M", it is a functor argument
 |}]
 
 (* Checking that the uses of M.t are rewritten regardless of how they

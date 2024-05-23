@@ -78,6 +78,7 @@ type error =
   | Invalid_type_subst_rhs
   | Unpackable_local_modtype_subst of Path.t
   | With_cannot_remove_packed_modtype of Path.t * module_type
+  | Cannot_alias of Path.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -1499,7 +1500,10 @@ and transl_signature ?(toplevel = false) env sg =
             in
             let pres =
               match tmty.mty_type with
-              | Mty_alias _ -> Mp_absent
+              | Mty_alias p ->
+                  if Env.is_functor_arg p env then
+                    raise (Error (pmd.pmd_loc, env, Cannot_alias p));
+                  Mp_absent
               | _ -> Mp_present
             in
             let md = {
@@ -3442,6 +3446,10 @@ let report_error ~loc _env = function
   | Cannot_scrape_alias p ->
       Location.errorf ~loc
         "This is an alias for module %a, which is missing"
+        (Style.as_inline_code path) p
+  | Cannot_alias p ->
+      Location.errorf ~loc
+        "Cannot alias the module %a, it is a functor argument"
         (Style.as_inline_code path) p
   | Cannot_scrape_package_type p ->
       Location.errorf ~loc
