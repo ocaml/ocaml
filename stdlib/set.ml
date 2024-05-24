@@ -609,15 +609,21 @@ module Make(Ord: OrderedType) =
 
     let to_rev_seq c = rev_seq_of_enum_ (snoc_enum c End)
 
+    (* [enum_from_aux low s c] constructs an enumeration whose elements are:
+       1- the elements [x] of the tree [s] such that [low <= x] holds,
+       followed with 2- the elements of the enumeration [c]. *)
+    let rec enum_from_aux low s c = match s with
+      | Empty -> c
+      | Node {l; r; v; _} ->
+          begin match Ord.compare v low with
+            | 0 -> More (v, r, c)
+            | n when n<0 -> enum_from_aux low r c
+            | _ -> enum_from_aux low l (More (v, r, c))
+          end
+
+    let[@inline] enum_from low s =
+      enum_from_aux low s End
+
     let to_seq_from low s =
-      let rec aux low s c = match s with
-        | Empty -> c
-        | Node {l; r; v; _} ->
-            begin match Ord.compare v low with
-              | 0 -> More (v, r, c)
-              | n when n<0 -> aux low r c
-              | _ -> aux low l (More (v, r, c))
-            end
-      in
-      seq_of_enum_ (aux low s End)
+      seq_of_enum_ (enum_from low s)
   end
