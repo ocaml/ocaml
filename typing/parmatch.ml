@@ -1884,7 +1884,7 @@ let do_check_partial ~pred loc casel pss = match pss with
     | Seq.Cons (v, _rest) ->
       if Warnings.is_active (Warnings.Partial_match "") then begin
         let errmsg =
-          let doc = ref Format_doc.empty in
+          let doc = ref Format_doc.Doc.empty in
           let fmt = Format_doc.formatter doc in
           Format_doc.fprintf fmt "@[<v>%a" Printpat.top_pretty v;
           if do_match (initial_only_guarded casel) [v] then

@@ -26,70 +26,72 @@
     `Format` printers to `Format_doc` printers.
 *)
 
-(** Format box types *)
-type box_type =
-  | H
-  | V
-  | HV
-  | HoV
-  | B
+(** Definitions and immutable API for composing documents *)
+module Doc: sig
 
-type stag = Format.stag
+  (** {2 Type definitions and core functions }*)
 
-(** Base formatting instruction recognized by {!Format} *)
-type element =
-  | Text of string
-  | With_size of int
-  | Open_box of { kind: box_type ; indent:int }
-  | Close_box
-  | Open_tag of Format.stag
-  | Close_tag
-  | Open_tbox
-  | Tab_break of { width : int; offset : int }
-  | Set_tab
-  | Close_tbox
-  | Simple_break of { spaces : int; indent : int }
-  | Break of { fits : string * int * string as 'a; breaks : 'a }
-  | Flush of { newline:bool }
-  | Newline
-  | If_newline
+  (** Format box types *)
+  type box_type =
+    | H
+    | V
+    | HV
+    | HoV
+    | B
 
-  | Deprecated of (Format.formatter -> unit)
+  type stag = Format.stag
+
+  (** Base formatting instruction recognized by {!Format} *)
+  type element =
+    | Text of string
+    | With_size of int
+    | Open_box of { kind: box_type ; indent:int }
+    | Close_box
+    | Open_tag of Format.stag
+    | Close_tag
+    | Open_tbox
+    | Tab_break of { width : int; offset : int }
+    | Set_tab
+    | Close_tbox
+    | Simple_break of { spaces : int; indent : int }
+    | Break of { fits : string * int * string as 'a; breaks : 'a }
+    | Flush of { newline:bool }
+    | Newline
+    | If_newline
+
+    | Deprecated of (Format.formatter -> unit)
     (** Escape hatch: a {!Format} printer used to provide backward-compatibility
         for user-defined printer (from the [#install_printer] toplevel directive
         for instance). *)
 
- (** Immutable document type*)
-type t
-type doc = t
+  (** Immutable document type*)
+  type t
 
-(** Empty document *)
-val empty: t
+  type ('a,'b) fmt = ('a, t, t,'b) format4
 
-(** [format ppf doc] sends the format instruction of [doc] to the Format's
-    formatter [doc]. *)
-val format: Format.formatter -> doc -> unit
-
-(** Fold over a document as a sequence of instructions *)
-val fold: ('acc -> element -> 'acc) -> 'acc -> doc -> 'acc
-
-(** Immutable API for composing {!doc} *)
-module Core: sig
-  type ('a,'b) fmt = ('a, doc, doc,'b) format4
-
-  type printer0 = doc -> doc
+  type printer0 = t -> t
   type 'a printer = 'a -> printer0
 
 
+  (** Empty document *)
+  val empty: t
+
+  (** [format ppf doc] sends the format instruction of [doc] to the Format's
+      formatter [doc]. *)
+  val format: Format.formatter -> t -> unit
+
+  (** Fold over a document as a sequence of instructions *)
+  val fold: ('acc -> element -> 'acc) -> 'acc -> t -> 'acc
+
   (** {!msg} and {!kmsg} produce a document from a format string and its
       argument *)
-  val msg: ('a,doc) fmt -> 'a
-  val kmsg: (doc -> 'b) -> ('a,'b) fmt -> 'a
+  val msg: ('a,t) fmt -> 'a
+  val kmsg: (t -> 'b) -> ('a,'b) fmt -> 'a
 
   (** {!printf} and {!kprintf} produce a printer from a format string and its
       argument*)
   val printf: ('a, printer0) fmt -> 'a
-  val kprintf: (doc -> 'b) -> ('a, doc -> 'b) fmt -> 'a
+  val kprintf: (t -> 'b) -> ('a, t -> 'b) fmt -> 'a
 
   (** The functions below mirror {!Format} printers, without the [pp_print_]
       prefix naming convention *)
@@ -148,6 +150,8 @@ printers. The reverse direction is implemented using an escape hatch in the
 formatting instruction and should only be used to preserve backward
 compatibility. *)
 
+type doc = Doc.t
+type t = doc
 type formatter
 type 'a printer = formatter -> 'a -> unit
 
@@ -182,9 +186,9 @@ val kdprintf:
 val doc_printf: ('a, formatter, unit, doc) format4 -> 'a
 val kdoc_printf: (doc -> 'r) -> ('a, formatter, unit, 'r) format4 -> 'a
 
-(** {2 Compatibility with {!Core} }*)
+(** {2 Compatibility with {!Doc} }*)
 
-val core: 'a printer -> 'a Core.printer
+val doc_printer: 'a printer -> 'a Doc.printer
 val pp_doc: doc printer
 
 (** {2 Source compatibility with Format}*)

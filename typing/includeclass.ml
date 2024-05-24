@@ -50,7 +50,7 @@ let rec hide_params = function
 *)
 
 let include_err mode ppf =
-  let msg fmt = Format_doc.Core.msg fmt in
+  let msg fmt = Format_doc.Doc.msg fmt in
   function
   | CM_Virtual_class ->
       fprintf ppf "A class cannot be changed from virtual to concrete"

@@ -740,7 +740,7 @@ let batch_mode_printer : report_printer =
     Format.fprintf ppf "@[<v>%a:@ %a@]" Compat.print_loc loc
       (Fmt.compat highlight) loc
   in
-  let pp_txt ppf txt = Format.fprintf ppf "@[%a@]" Fmt.format txt in
+  let pp_txt ppf txt = Format.fprintf ppf "@[%a@]" Fmt.Doc.format txt in
   let pp_footnote ppf f =
     Option.iter (Format.fprintf ppf "@,%a" pp_txt) f
   in
@@ -853,7 +853,7 @@ let errorf ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) =
   Fmt.kdoc_printf (mkerror loc sub footnote)
 
 let error ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) msg_str =
-  mkerror loc sub footnote Fmt.(Core.string msg_str empty)
+  mkerror loc sub footnote Fmt.Doc.(string msg_str empty)
 
 let error_of_printer ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) pp x =
   mkerror loc sub footnote (Fmt.doc_printf "%a" pp x)
@@ -869,7 +869,7 @@ let default_warning_alert_reporter report mk (loc: t) w : report option =
   match report w with
   | `Inactive -> None
   | `Active { Warnings.id; message; is_error; sub_locs } ->
-      let msg_of_str str = Format_doc.(empty |> Core.string str) in
+      let msg_of_str str = Format_doc.Doc.(empty |> string str) in
       let kind = mk is_error id in
       let main = { loc; txt = msg_of_str message } in
       let sub = List.map (fun (loc, sub_message) ->

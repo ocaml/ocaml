@@ -2037,7 +2037,7 @@ let report_error ppf = function
            "the original" "this" "definition" env)
         err
   | Constraint_failed (env, err) ->
-      let msg = Format_doc.Core.msg in
+      let msg = Format_doc.Doc.msg in
       fprintf ppf "@[<v>Constraints are not satisfied in this type.@ ";
       Printtyp.report_unification_error ppf env err
         (msg "Type")
@@ -2063,14 +2063,14 @@ let report_error ppf = function
              Reaching_path.pp_colon reaching_path
            else fprintf pp ".@ ")
   | Inconsistent_constraint (env, err) ->
-      let msg = Format_doc.Core.msg in
+      let msg = Format_doc.Doc.msg in
       fprintf ppf "@[<v>The type constraints are not consistent.@ ";
       Printtyp.report_unification_error ppf env err
         (msg "Type")
         (msg "is not compatible with type");
       fprintf ppf "@]"
   | Type_clash (env, err) ->
-      let msg = Format_doc.Core.msg in
+      let msg = Format_doc.Doc.msg in
       Printtyp.report_unification_error ppf env err
         (msg "This type constructor expands to type")
         (msg "but is used here with type")

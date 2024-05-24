@@ -2241,7 +2241,7 @@ let explain_fixed_row pos expl = match expl with
            Internal_names.add p;
            print_path p ppf))
       p
-  | Rigid -> Format_doc.empty
+  | Rigid -> Format_doc.Doc.empty
 
 let explain_variant (type variety) : variety Errortrace.variant -> _ = function
   (* Common *)
@@ -2360,7 +2360,7 @@ let explanation (type variety) intro prev env
           (Style.as_inline_code type_expr_with_reserved_names) ctx
       | None, Univ _, Some(Errortrace.Incompatible_fields {name; diff}) ->
         explain_incompatible_fields name diff
-      | _ -> Format_doc.empty
+      | _ -> Format_doc.Doc.empty
     in
     explain_escape pre kind
   | Errortrace.Incompatible_fields { name; diff} ->
@@ -2386,7 +2386,7 @@ let explanation (type variety) intro prev env
     | _ ->
         (* We had a delayed unification of the type variable with
            a non-variable after the occur check. *)
-        Some Format_doc.empty
+        Some Format_doc.Doc.empty
         (* There is no need to search further for an explanation, but
            we don't want to print a message of the form:
              {[ The type int occurs inside int list -> 'a |}
@@ -2422,7 +2422,7 @@ let prepare_expansion_head empty_tr = function
   | _ -> None
 
 let head_error_printer mode txt_got txt_but = function
-  | None -> Format_doc.empty
+  | None -> Format_doc.Doc.empty
   | Some d ->
       let d = Errortrace.map_diff (trees_of_type_expansion mode) d in
       doc_printf "%a@;<1 2>%a@ %a@;<1 2>%a"
@@ -2484,7 +2484,7 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
 
 let report_error trace_format ppf mode env tr
       ?(subst = [])
-      ?(type_expected_explanation = Fmt.empty)
+      ?(type_expected_explanation = Fmt.Doc.empty)
       txt1 txt2 =
   wrap_printing_env ~error:true env (fun () ->
     error trace_format mode subst env tr txt1 ppf txt2

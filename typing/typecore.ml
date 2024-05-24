@@ -203,7 +203,7 @@ type error =
 
 
 let not_principal fmt =
-  Format_doc.Core.kmsg (fun x -> Warnings.Not_principal x) fmt
+  Format_doc.Doc.kmsg (fun x -> Warnings.Not_principal x) fmt
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -6566,7 +6566,7 @@ let report_type_expected_explanation expl =
 
 let report_type_expected_explanation_opt expl =
   match expl with
-  | None -> Format_doc.empty
+  | None -> Format_doc.Doc.empty
   | Some expl -> report_type_expected_explanation expl
 
 let report_unification_error ~loc ?sub env err

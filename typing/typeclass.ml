@@ -1999,7 +1999,7 @@ let report_error env ppf =
   | Repeated_parameter ->
       fprintf ppf "A type parameter occurs several times"
   | Unconsistent_constraint err ->
-      let msg = Format_doc.Core.msg in
+      let msg = Format_doc.Doc.msg in
       fprintf ppf "@[<v>The class constraints are not consistent.@ ";
       Printtyp.report_unification_error ppf env err
         (msg "Type")
@@ -2082,7 +2082,7 @@ let report_error env ppf =
            but is here applied to %i type argument(s)@]"
         (Style.as_inline_code Printtyp.longident) lid expected provided
   | Parameter_mismatch err ->
-      let msg = Format_doc.Core.msg in
+      let msg = Format_doc.Doc.msg in
       Printtyp.report_unification_error ppf env err
         (msg  "The type parameter")
         (msg "does not meet its constraint: it should be")
@@ -2147,7 +2147,7 @@ let report_error env ppf =
            Some occurrences are contravariant@]"
         (Style.as_inline_code Printtyp.type_scheme) ty
   | Non_collapsable_conjunction (id, clty, err) ->
-      let msg = Format_doc.Core.msg in
+      let msg = Format_doc.Doc.msg in
       fprintf ppf
         "@[The type of this class,@ %a,@ \
            contains non-collapsible conjunctive types in constraints.@ %t@]"
@@ -2157,7 +2157,7 @@ let report_error env ppf =
             (msg "is not compatible with type")
         )
   | Self_clash err ->
-      let msg = Format_doc.Core.msg in
+      let msg = Format_doc.Doc.msg in
       Printtyp.report_unification_error ppf env err
         (msg "This object is expected to have type")
         (msg "but actually has type")

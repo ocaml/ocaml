@@ -901,29 +901,30 @@ let split_pattern pat =
    - Do not contain spaces when printed.
 *)
 let nominal_exp_doc lid t =
-  let longident l = Format_doc.core lid l.Location.txt in
+  let open Format_doc.Doc in
+  let longident l = Format_doc.doc_printer lid l.Location.txt in
   let rec nominal_exp_doc doc exp =
     match exp.exp_desc with
     | _ when exp.exp_attributes <> [] -> None
     | Texp_ident (_,l,_) ->
         Some (longident l doc)
     | Texp_instvar (_,_,s) ->
-        Some (Format_doc.Core.string s.Location.txt doc)
+        Some (string s.Location.txt doc)
     | Texp_constant _ -> assert false
     | Texp_variant (lbl, None) ->
-        Some (Format_doc.Core.printf "`%s" lbl doc)
+        Some (printf "`%s" lbl doc)
     | Texp_construct (l, _, []) -> Some (longident l doc)
     | Texp_field (parent, lbl, _) ->
         Option.map
-          (Format_doc.Core.printf ".%t" (longident lbl))
+          (printf ".%t" (longident lbl))
           (nominal_exp_doc doc parent)
     | Texp_send (parent, meth) ->
         let name = match meth with
           | Tmeth_name name -> name
           | Tmeth_val id | Tmeth_ancestor (id,_) -> Ident.name id in
         Option.map
-          (Format_doc.Core.printf "#%s" name)
+          (printf "#%s" name)
           (nominal_exp_doc doc parent)
     | _ -> None
   in
-  nominal_exp_doc Format_doc.empty t
+  nominal_exp_doc empty t

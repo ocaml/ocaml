@@ -13,85 +13,84 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module Doc = struct
 
-type box_type =
-  | H
-  | V
-  | HV
-  | HoV
-  | B
+  type box_type =
+    | H
+    | V
+    | HV
+    | HoV
+    | B
 
-type stag = Format.stag
+  type stag = Format.stag
 
-type element =
-  | Text of string
-  | With_size of int
-  | Open_box of { kind: box_type ; indent:int }
-  | Close_box
-  | Open_tag of Format.stag
-  | Close_tag
-  | Open_tbox
-  | Tab_break of { width : int; offset : int }
-  | Set_tab
-  | Close_tbox
-  | Simple_break of { spaces : int; indent: int }
-  | Break of { fits : string * int * string as 'a; breaks : 'a }
-  | Flush of { newline:bool }
-  | Newline
-  | If_newline
+  type element =
+    | Text of string
+    | With_size of int
+    | Open_box of { kind: box_type ; indent:int }
+    | Close_box
+    | Open_tag of Format.stag
+    | Close_tag
+    | Open_tbox
+    | Tab_break of { width : int; offset : int }
+    | Set_tab
+    | Close_tbox
+    | Simple_break of { spaces : int; indent: int }
+    | Break of { fits : string * int * string as 'a; breaks : 'a }
+    | Flush of { newline:bool }
+    | Newline
+    | If_newline
 
-  | Deprecated of (Format.formatter -> unit)
+    | Deprecated of (Format.formatter -> unit)
 
-type doc = { rev:element list } [@@unboxed]
+  type t = { rev:element list } [@@unboxed]
 
-type t = doc
+  let empty = { rev = [] }
 
-let empty : doc = { rev = [] }
+  let to_list doc = List.rev doc.rev
+  let add doc x = { rev = x :: doc.rev }
+  let fold f acc doc = List.fold_left f acc (to_list doc)
+  let append left right = { rev = right.rev @ left.rev }
 
-let to_list doc = List.rev doc.rev
-let add doc x = { rev = x :: doc.rev }
-let fold f acc doc = List.fold_left f acc (to_list doc)
-let append left right = { rev = right.rev @ left.rev }
+  let format_open_box_gen ppf kind indent =
+    match kind with
+    | H-> Format.pp_open_hbox ppf ()
+    | V -> Format.pp_open_vbox ppf indent
+    | HV -> Format.pp_open_hvbox ppf indent
+    | HoV -> Format.pp_open_hovbox ppf indent
+    | B -> Format.pp_open_box ppf indent
 
-let format_open_box_gen ppf kind indent =
-  match kind with
-  | H-> Format.pp_open_hbox ppf ()
-  | V -> Format.pp_open_vbox ppf indent
-  | HV -> Format.pp_open_hvbox ppf indent
-  | HoV -> Format.pp_open_hovbox ppf indent
-  | B -> Format.pp_open_box ppf indent
+  let interpret_elt ppf = function
+    | Text x -> Format.pp_print_string ppf x
+    | Open_box { kind; indent } -> format_open_box_gen ppf kind indent
+    | Close_box -> Format.pp_close_box ppf ()
+    | Open_tag tag -> Format.pp_open_stag ppf tag
+    | Close_tag -> Format.pp_close_stag ppf ()
+    | Open_tbox -> Format.pp_open_tbox ppf ()
+    | Tab_break {width;offset} -> Format.pp_print_tbreak ppf width offset
+    | Set_tab -> Format.pp_set_tab ppf ()
+    | Close_tbox -> Format.pp_close_tbox ppf ()
+    | Simple_break {spaces;indent} -> Format.pp_print_break ppf spaces indent
+    | Break {fits;breaks} -> Format.pp_print_custom_break ppf ~fits ~breaks
+    | Flush {newline=true} -> Format.pp_print_newline ppf ()
+    | Flush {newline=false} -> Format.pp_print_flush ppf ()
+    | Newline -> Format.pp_force_newline ppf ()
+    | If_newline -> Format.pp_print_if_newline ppf ()
+    | With_size _ ->  ()
+    | Deprecated pr -> pr ppf
 
-let interpret_elt ppf = function
-  | Text x -> Format.pp_print_string ppf x
-  | Open_box { kind; indent } -> format_open_box_gen ppf kind indent
-  | Close_box -> Format.pp_close_box ppf ()
-  | Open_tag tag -> Format.pp_open_stag ppf tag
-  | Close_tag -> Format.pp_close_stag ppf ()
-  | Open_tbox -> Format.pp_open_tbox ppf ()
-  | Tab_break {width;offset} -> Format.pp_print_tbreak ppf width offset
-  | Set_tab -> Format.pp_set_tab ppf ()
-  | Close_tbox -> Format.pp_close_tbox ppf ()
-  | Simple_break {spaces;indent} -> Format.pp_print_break ppf spaces indent
-  | Break {fits;breaks} -> Format.pp_print_custom_break ppf ~fits ~breaks
-  | Flush {newline=true} -> Format.pp_print_newline ppf ()
-  | Flush {newline=false} -> Format.pp_print_flush ppf ()
-  | Newline -> Format.pp_force_newline ppf ()
-  | If_newline -> Format.pp_print_if_newline ppf ()
-  | With_size _ ->  ()
-  | Deprecated pr -> pr ppf
+  let rec interpret ppf = function
+    | [] -> ()
+    | With_size size :: Text text :: l ->
+        Format.pp_print_as ppf size text;
+        interpret ppf l
+    | x :: l ->
+        interpret_elt ppf x;
+        interpret ppf l
 
-let rec interpret ppf = function
-  | [] -> ()
-  | With_size size :: Text text :: l ->
-      Format.pp_print_as ppf size text;
-      interpret ppf l
-  | x :: l ->
-      interpret_elt ppf x;
-      interpret ppf l
+  let format ppf doc = interpret ppf (to_list doc)
 
-let format ppf doc = interpret ppf (to_list doc)
 
-module Core = struct
 
   let open_box kind indent doc = add doc (Open_box {kind;indent})
   let close_box doc = add doc Close_box
@@ -178,8 +177,8 @@ module Core = struct
   let text s doc =
     subtext (String.length s) 0 0 s doc
 
-  type ('a,'b) fmt = ('a, doc, doc, 'b) format4
-  type printer0 = doc -> doc
+  type ('a,'b) fmt = ('a, t, t, 'b) format4
+  type printer0 = t -> t
   type 'a printer = 'a -> printer0
 
   let output_formatting_lit fmting_lit doc =
@@ -256,6 +255,8 @@ end
 
 (** Compatibility interface *)
 
+type doc = Doc.t
+type t = doc
 type formatter = doc ref
 type 'a printer = formatter -> 'a -> unit
 
@@ -263,65 +264,65 @@ let formatter d = d
 
 (** {1 Primitive functions }*)
 
-let pp_print_string ppf s = ppf := Core.string s !ppf
+let pp_print_string ppf s = ppf := Doc.string s !ppf
 
 let pp_print_as ppf size s =
-  ppf := !ppf |> Core.with_size size |> Core.string s
+  ppf := !ppf |> Doc.with_size size |> Doc.string s
 
 let pp_print_substring ~pos ~len ppf s =
- ppf := Core.string (String.sub s pos len) !ppf
+ ppf := Doc.string (String.sub s pos len) !ppf
 
 let pp_print_substring_as ~pos ~len ppf size s =
   ppf :=
   !ppf
-  |> Core.with_size size
-  |> Core.string (String.sub s pos len)
+  |> Doc.with_size size
+  |> Doc.string (String.sub s pos len)
 
-let pp_print_bytes ppf s = ppf := Core.string (Bytes.to_string s) !ppf
-let pp_print_text ppf s = ppf := Core.text s !ppf
-let pp_print_char ppf c = ppf := Core.char c !ppf
-let pp_print_int ppf c = ppf := Core.int c !ppf
-let pp_print_float ppf f = ppf := Core.float f !ppf
-let pp_print_bool ppf b = ppf := Core.bool b !ppf
+let pp_print_bytes ppf s = ppf := Doc.string (Bytes.to_string s) !ppf
+let pp_print_text ppf s = ppf := Doc.text s !ppf
+let pp_print_char ppf c = ppf := Doc.char c !ppf
+let pp_print_int ppf c = ppf := Doc.int c !ppf
+let pp_print_float ppf f = ppf := Doc.float f !ppf
+let pp_print_bool ppf b = ppf := Doc.bool b !ppf
 let pp_print_nothing _ _ = ()
 
-let pp_close_box ppf () = ppf := Core.close_box !ppf
-let pp_close_stag ppf () = ppf := Core.close_tag !ppf
+let pp_close_box ppf () = ppf := Doc.close_box !ppf
+let pp_close_stag ppf () = ppf := Doc.close_tag !ppf
 
-let pp_print_break ppf spaces indent = ppf := Core.break ~spaces ~indent !ppf
+let pp_print_break ppf spaces indent = ppf := Doc.break ~spaces ~indent !ppf
 
 let pp_print_custom_break ppf ~fits ~breaks =
-  ppf := Core.custom_break ~fits ~breaks !ppf
+  ppf := Doc.custom_break ~fits ~breaks !ppf
 
 let pp_print_space ppf () = pp_print_break ppf 1 0
 let pp_print_cut ppf () = pp_print_break ppf 0 0
 
-let pp_print_flush ppf () = ppf := Core.flush !ppf
-let pp_force_newline ppf () = ppf := Core.force_newline !ppf
-let pp_print_newline ppf () = ppf := Core.force_stop !ppf
-let pp_print_if_newline ppf () =ppf := Core.if_newline !ppf
+let pp_print_flush ppf () = ppf := Doc.flush !ppf
+let pp_force_newline ppf () = ppf := Doc.force_newline !ppf
+let pp_print_newline ppf () = ppf := Doc.force_stop !ppf
+let pp_print_if_newline ppf () =ppf := Doc.if_newline !ppf
 
-let pp_open_stag ppf stag = ppf := !ppf |> Core.open_tag stag
+let pp_open_stag ppf stag = ppf := !ppf |> Doc.open_tag stag
 
 let pp_open_box_gen ppf indent bxty =
-  let box_type = Core.box_type bxty in
-   ppf := !ppf |> Core.open_box box_type indent
+  let box_type = Doc.box_type bxty in
+   ppf := !ppf |> Doc.open_box box_type indent
 
 let pp_open_box ppf indent = pp_open_box_gen ppf indent Pp_box
 
 
-let pp_open_tbox ppf () = ppf := !ppf |> Core.open_tbox
+let pp_open_tbox ppf () = ppf := !ppf |> Doc.open_tbox
 
-let pp_close_tbox ppf () = ppf := !ppf |> Core.close_tbox
+let pp_close_tbox ppf () = ppf := !ppf |> Doc.close_tbox
 
-let pp_set_tab ppf () = ppf := !ppf |> Core.set_tab
+let pp_set_tab ppf () = ppf := !ppf |> Doc.set_tab
 
-let pp_print_tab ppf () = ppf := !ppf |> Core.tab
+let pp_print_tab ppf () = ppf := !ppf |> Doc.tab
 
 let pp_print_tbreak ppf width offset =
-  ppf := !ppf |> Core.tab_break ~width ~offset
+  ppf := !ppf |> Doc.tab_break ~width ~offset
 
-let pp_doc ppf doc = ppf := append !ppf doc
+let pp_doc ppf doc = ppf := Doc.append !ppf doc
 
 module Driver = struct
   (* Interpret a formatting entity on a formatter. *)
@@ -344,10 +345,10 @@ module Driver = struct
   let compute_tag output tag_acc =
     let buf = Buffer.create 16 in
     let buf_fmt = Format.formatter_of_buffer buf in
-    let ppf = ref empty in
+    let ppf = ref Doc.empty in
     output ppf tag_acc;
     pp_print_flush ppf ();
-    format buf_fmt !ppf;
+    Doc.format buf_fmt !ppf;
     let len = Buffer.length buf in
     if len < 2 then Buffer.contents buf
     else Buffer.sub buf 1 (len - 2)
@@ -404,51 +405,51 @@ let kdprintf k (CamlinternalFormatBasics.Format (fmt, _)) =
 let dprintf fmt = kdprintf (fun i -> i) fmt
 
 let doc_printf fmt =
-  let ppf = ref empty in
-  kfprintf (fun _ -> let doc = !ppf in ppf := empty; doc) ppf fmt
+  let ppf = ref Doc.empty in
+  kfprintf (fun _ -> let doc = !ppf in ppf := Doc.empty; doc) ppf fmt
 
 let kdoc_printf k fmt =
-  let ppf = ref empty in
+  let ppf = ref Doc.empty in
   kfprintf (fun ppf ->
       let doc = !ppf in
-      ppf := empty;
+      ppf := Doc.empty;
       k doc
     )
     ppf fmt
 
-let core f x doc =
+let doc_printer f x doc =
   let r = ref doc in
   f r x;
   !r
 
 let format_printer f ppf x =
-  let doc = core f x empty in
-  format ppf doc
+  let doc = doc_printer f x Doc.empty in
+  Doc.format ppf doc
 let compat = format_printer
 
 let kasprintf k fmt =
-  kdoc_printf (fun doc -> k (Format.asprintf "%a" format doc)) fmt
+  kdoc_printf (fun doc -> k (Format.asprintf "%a" Doc.format doc)) fmt
 let asprintf fmt = kasprintf Fun.id fmt
 
 let pp_print_iter ?(pp_sep=pp_print_cut) iter elt ppf c =
-      let sep = core pp_sep () in
-      ppf:= Core.iter ~sep ~iter (core elt) c !ppf
+      let sep = doc_printer pp_sep () in
+      ppf:= Doc.iter ~sep ~iter (doc_printer elt) c !ppf
 
 let pp_print_list ?(pp_sep=pp_print_cut) elt ppf l =
-  ppf := Core.list ~sep:(core pp_sep ()) (core elt) l !ppf
+  ppf := Doc.list ~sep:(doc_printer pp_sep ()) (doc_printer elt) l !ppf
 
 let pp_print_array ?pp_sep elt ppf a =
   pp_print_iter ?pp_sep Array.iter elt ppf a
 let pp_print_seq ?pp_sep elt ppf s = pp_print_iter ?pp_sep Seq.iter elt ppf s
 
 let pp_print_option  ?(none=fun _ () -> ()) elt ppf o =
-  ppf := Core.option ~none:(core none ()) (core elt) o !ppf
+  ppf := Doc.option ~none:(doc_printer none ()) (doc_printer elt) o !ppf
 
 let pp_print_result  ~ok ~error ppf r =
-   ppf := Core.result ~ok:(core ok) ~error:(core error) r !ppf
+   ppf := Doc.result ~ok:(doc_printer ok) ~error:(doc_printer error) r !ppf
 
 let pp_print_either  ~left ~right ppf e =
-  ppf := Core.either ~left:(core left) ~right:(core right) e !ppf
+  ppf := Doc.either ~left:(doc_printer left) ~right:(doc_printer right) e !ppf
 
 let comma ppf () = fprintf ppf ",@ "
 
@@ -473,4 +474,4 @@ let pp_two_columns ?(sep = "|") ?max_lines ppf (lines: (string * string) list) =
     ) lines;
   fprintf ppf "@]"
 
-let deprecated_printer pr ppf = ppf := add !ppf (Deprecated pr)
+let deprecated_printer pr ppf = ppf := Doc.add !ppf (Doc.Deprecated pr)
