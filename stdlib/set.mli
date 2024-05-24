@@ -315,6 +315,90 @@ module type S =
     val of_seq : elt Seq.t -> t
     (** Build a set from the given bindings
         @since 4.07 *)
+
+    (** Enumerations of the elements of a set.
+
+        An enumeration is an immutable data structure: its implementation
+        involves no side effects. It represents the sequence of the elements
+        of a set, in increasing order. In addition to enumerating the elements
+        of the sequence (one by one), it supports skipping ahead in the
+        sequence to the point where a certain threshold is reached or
+        exceeded.
+        @since 5.3 *)
+    module Enum : sig
+
+      type set = t
+      (** The type [set] is a synonym for the type of sets.
+          @since 5.3 *)
+
+      type enum
+      (** The type of enumerations. An enumeration represents an increasing
+          sequence of elements of type [elt]. The sequence is increasing
+          according to [Ord.compare]: thus, if [x] appears earlier than [y] in
+          the sequence, then [Ord.compare x y < 0] holds.
+          @since 5.3 *)
+
+      type t = enum
+      (** A synonym for the type [enum].
+          @since 5.3 *)
+
+      val empty : enum
+      (** [empty] is the empty enumeration. It contains zero elements.
+          @since 5.3 *)
+
+      val is_empty : enum -> bool
+      (** [is_empty e] tests whether the enumeration [e] is empty.
+          @since 5.3 *)
+
+      val enum : set -> enum
+      (** [enum s] returns an enumeration of the set [s]. This enumeration
+          contains all of the elements of the set [s], in increasing order.
+          @since 5.3 *)
+
+      val enum_from : elt -> set -> enum
+      (** [enum_from x s] returns an enumeration of the subset of [s]
+          formed of just the elements that are no less than [x].
+          It is equivalent to [from x (enum s)].
+          @since 5.3 *)
+
+      val head : enum -> elt
+      (** [head e] returns the first element of the enumeration [e].
+          The enumeration [e] must be nonempty.
+          @since 5.3 *)
+
+      val tail : enum -> enum
+      (** [tail e] returns the enumeration [e], deprived of its first element.
+          The enumeration [e] must be nonempty.
+          @since 5.3 *)
+
+      val head_opt : enum -> elt option
+      (** If the enumeration [e] is nonempty, then [head_opt e] returns its
+          first element. Otherwise, it returns [None].
+          @since 5.3 *)
+
+      val tail_opt : enum -> enum option
+      (** If the enumeration [e] is nonempty, then [tail_opt e] returns the
+          enumeration [e], deprived of its first element. Otherwise, it
+          returns [None].
+          @since 5.3 *)
+
+      val from : elt -> enum -> enum
+      (** [from x e] returns the enumeration obtained from the enumeration [e]
+          by skipping the elements that lie below the threshold [x]. In other
+          words, only the elements of [e] that lie at or above the threshold
+          [x] are retained.
+          @since 5.3 *)
+
+      val to_seq : enum -> elt Seq.t
+      (** [to_seq] converts an enumeration into a (persistent) sequence.
+          @since 5.3 *)
+
+      val elements : enum -> set
+      (** [elements] converts an enumeration into a set.
+          @since 5.3 *)
+
+    end (* Enum *)
+
   end
 (** Output signature of the functor {!Make}. *)
 
