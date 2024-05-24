@@ -641,6 +641,19 @@ open M
     class_init: inheritance function (table -> env -> obj_init)
       (one by source code)
     env: local environment
+
+   The local environment is used for cached classes. When a
+   class definition occurs under a call to Translobj.oo_wrap
+   (typically inside a functor), the class creation code is
+   split between a static part (depending only on toplevel names)
+   and a dynamic part, the environment. The static part is cached
+   in a toplevel structure, so that only the first class creation
+   computes it and the subsequent classes can reuse it. Because of
+   that, the (static) [class_init] function takes the environment
+   as parameter, and when called is given the [env] field of the
+   class. For the [obj_init] part, an [env_init] function (of type
+   [env -> obj_init]) is stored in the cache, and called on the
+   environment to generate the [obj_init] at class creation time.
 *)
 
 (*
