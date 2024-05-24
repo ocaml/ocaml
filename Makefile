@@ -89,7 +89,7 @@ utils_SOURCES = $(addprefix utils/, \
 parsing_SOURCES = $(addprefix parsing/, \
   location.mli location.ml \
   unit_info.mli unit_info.ml \
-  asttypes.mli \
+  asttypes.mli asttypes.ml \
   longident.mli longident.ml \
   parsetree.mli \
   docstrings.mli docstrings.ml \
@@ -118,6 +118,7 @@ typing_SOURCES = \
   typing/outcometree.mli \
   typing/shape.mli typing/shape.ml \
   typing/types.mli typing/types.ml \
+  typing/rawprinttyp.mli typing/rawprinttyp.ml \
   typing/btype.mli typing/btype.ml \
   typing/oprint.mli typing/oprint.ml \
   typing/subst.mli typing/subst.ml \

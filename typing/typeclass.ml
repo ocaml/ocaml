@@ -1222,7 +1222,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
           Location.prerr_warning
             cl.cl_loc
             (Warnings.Labels_omitted
-               (List.map Printtyp.string_of_label
+               (List.map Asttypes.string_of_label
                          (List.filter ((<>) Nolabel) labels)));
           true
         end
@@ -1270,7 +1270,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
                     if not optional && Btype.is_optional l' then
                       Location.prerr_warning sarg.pexp_loc
                         (Warnings.Nonoptional_label
-                           (Printtyp.string_of_label l));
+                           (Asttypes.string_of_label l));
                     remaining_sargs, use_arg sarg l'
                 | None ->
                     sargs,

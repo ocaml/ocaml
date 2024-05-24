@@ -93,11 +93,6 @@ module TypePairs = struct
         f (type_expr t1, type_expr t2))
 end
 
-(**** Forward declarations ****)
-
-let print_raw =
-  ref (fun _ -> assert false : Format.formatter -> type_expr -> unit)
-
 (**** Type level management ****)
 
 let generic_level = Ident.highest_scope

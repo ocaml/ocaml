@@ -136,7 +136,7 @@ let string_of_class_params c =
           (
            match label with
              Asttypes.Nolabel -> ""
-           | s -> Printtyp.string_of_label s ^":"
+           | s -> Asttypes.string_of_label s ^":"
           )
           (if parent then "(" else "")
           (Odoc_print.string_of_type_expr

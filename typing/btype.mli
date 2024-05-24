@@ -291,9 +291,6 @@ val method_type : label -> class_signature -> type_expr
    @raises [Assert_failure] if the class has no such method. *)
 val instance_variable_type : label -> class_signature -> type_expr
 
-(**** Forward declarations ****)
-val print_raw: (Format.formatter -> type_expr -> unit) ref
-
 (**** Type information getter ****)
 
 val cstr_type_path : constructor_description -> Path.t

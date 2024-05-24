@@ -66,4 +66,7 @@ type injectivity =
   | Injective
   | NoInjectivity
 
-val string_of_label: arg_label -> string
+let string_of_label = function
+    Nolabel -> ""
+  | Labelled s -> s
+  | Optional s -> "?"^s
