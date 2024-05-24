@@ -313,7 +313,7 @@ let init_class table =
   table.initializers <- List.rev table.initializers;
   resize table (3 + Obj.magic table.methods.(1) * 16 / Sys.word_size)
 
-let inherits cla vals virt_meths concr_meths (_, super, _, env) top =
+let inherits cla vals virt_meths concr_meths (_, super, env) top =
   narrow cla vals virt_meths concr_meths;
   let init =
     if top then super cla env else Obj.repr (super cla) in
@@ -329,7 +329,7 @@ let make_class pub_meths class_init =
   let table = create_table pub_meths in
   let env_init = class_init table in
   init_class table;
-  (env_init (Obj.repr 0), class_init, env_init, Obj.repr 0)
+  (env_init (Obj.repr 0), class_init, Obj.repr 0)
 
 type init_table = { mutable env_init: t; mutable class_init: table -> t }
 [@@warning "-unused-field"]
@@ -343,7 +343,7 @@ let make_class_store pub_meths class_init init_table =
 
 let dummy_class loc =
   let undef = fun _ -> raise (Undefined_recursive_module loc) in
-  (Obj.magic undef, undef, undef, Obj.repr 0)
+  (Obj.magic undef, undef, Obj.repr 0)
 
 (**** Objects ****)
 
