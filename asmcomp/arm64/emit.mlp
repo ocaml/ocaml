@@ -1035,8 +1035,7 @@ let emit_instr env i =
     | Lpushtrap { lbl_handler; } ->
         `	adr	{emit_reg reg_tmp1}, {emit_label lbl_handler}\n`;
         env.stack_offset <- env.stack_offset + 16;
-        `	str	{emit_reg reg_trap_ptr}, [sp, -16]!\n`;
-        `	str	{emit_reg reg_tmp1}, [sp, #8]\n`;
+        `	stp	{emit_reg reg_trap_ptr}, {emit_reg reg_tmp1}, [sp, -16]!\n`;
         cfi_adjust_cfa_offset 16;
         `	mov	{emit_reg reg_trap_ptr}, sp\n`
     | Lpoptrap ->
@@ -1053,8 +1052,7 @@ let emit_instr env i =
           `{record_frame env Reg.Set.empty (Dbg_raise i.dbg)}\n`
         | Lambda.Raise_notrace ->
           `	mov	sp, {emit_reg reg_trap_ptr}\n`;
-          `	ldr	{emit_reg reg_tmp1}, [sp, #8]\n`;
-          `	ldr	{emit_reg reg_trap_ptr}, [sp], 16\n`;
+          `	ldp	{emit_reg reg_trap_ptr}, {emit_reg reg_tmp1}, [sp], 16\n`;
           `	br	{emit_reg reg_tmp1}\n`
         end
 
