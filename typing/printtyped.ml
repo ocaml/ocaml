@@ -738,6 +738,9 @@ and module_type i ppf x =
   | Tmty_functor (Unit, mt2) ->
       line i ppf "Tmty_functor ()\n";
       module_type i ppf mt2;
+  | Tmty_functor (Newtype (ty, _), mt2) ->
+    line i ppf "Tmty_functor (type %a)\n" Ident.print ty;
+    module_type i ppf mt2;
   | Tmty_functor (Named (s, _, mt1), mt2) ->
       line i ppf "Tmty_functor \"%a\"\n" fmt_modname s;
       module_type i ppf mt1;
@@ -851,6 +854,9 @@ and module_expr i ppf x =
   | Tmod_functor (Unit, me) ->
       line i ppf "Tmod_functor ()\n";
       module_expr i ppf me;
+  | Tmod_functor (Newtype (ty, _), me) ->
+    line i ppf "Tmod_functor (type %a)\n" Ident.print ty;
+    module_expr i ppf me;
   | Tmod_functor (Named (s, _, mt), me) ->
       line i ppf "Tmod_functor \"%a\"\n" fmt_modname s;
       module_type i ppf mt;
@@ -862,6 +868,10 @@ and module_expr i ppf x =
   | Tmod_apply_unit me1 ->
       line i ppf "Tmod_apply_unit\n";
       module_expr i ppf me1;
+  | Tmod_apply_type (me1, ty2) ->
+      line i ppf "Tmod_apply_type\n";
+      module_expr i ppf me1;
+      core_type i ppf ty2;
   | Tmod_constraint (me, _, Tmodtype_explicit mt, _) ->
       line i ppf "Tmod_constraint\n";
       module_expr i ppf me;

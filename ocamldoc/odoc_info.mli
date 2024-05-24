@@ -525,6 +525,8 @@ module Module :
                      (** A module defined by application of a functor. *)
       | Module_apply_unit of module_kind
                      (** A generative application of a functor. *)
+      | Module_apply_type of module_kind * Types.type_expr
+                     (** An application of functor demanding a type *)
       | Module_with of module_type_kind * string
                      (** A module whose type is a with ... constraint.
                         Should appear in interface files only. *)

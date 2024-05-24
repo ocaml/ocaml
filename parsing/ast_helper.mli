@@ -281,6 +281,8 @@ module Mod:
       functor_parameter -> module_expr -> module_expr
     val apply: ?loc:loc -> ?attrs:attrs -> module_expr -> module_expr ->
       module_expr
+    val apply_type: ?loc:loc -> ?attrs:attrs -> module_expr -> core_type ->
+      module_expr
     val apply_unit: ?loc:loc -> ?attrs:attrs -> module_expr -> module_expr
     val constraint_: ?loc:loc -> ?attrs:attrs -> module_expr -> module_type ->
       module_expr

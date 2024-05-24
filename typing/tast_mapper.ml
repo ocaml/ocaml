@@ -576,6 +576,7 @@ let class_description sub x =
 
 let functor_parameter sub = function
   | Unit -> Unit
+  | Newtype (id, s) -> Newtype (id, map_loc sub s)
   | Named (id, s, mtype) -> Named (id, map_loc sub s, sub.module_type sub mtype)
 
 let module_type sub x =
@@ -652,6 +653,11 @@ let module_expr sub x =
         )
     | Tmod_apply_unit mexp1 ->
         Tmod_apply_unit (sub.module_expr sub mexp1)
+    | Tmod_apply_type (mexp1, ty2) ->
+        Tmod_apply_type (
+          sub.module_expr sub mexp1,
+          sub.typ sub ty2
+        )
     | Tmod_constraint (mexpr, mt, Tmodtype_implicit, c) ->
         Tmod_constraint (sub.module_expr sub mexpr, mt, Tmodtype_implicit,
                          sub.module_coercion sub c)

@@ -63,6 +63,7 @@ let simpl_module_type ?code t =
          | Some s -> raise (Use_code s)
         )
     | Mty_functor (Unit, mt) -> Mty_functor (Unit, iter mt)
+    | Mty_functor (Newtype name, mt) -> Mty_functor (Newtype name, iter mt)
     | Mty_functor (Named (name, mt1), mt2) ->
       Mty_functor (Named (name, iter mt1), iter mt2)
   in

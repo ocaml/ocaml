@@ -665,6 +665,7 @@ let class_type_declaration sub = class_infos sub.class_type sub
 let functor_parameter sub : functor_parameter -> Parsetree.functor_parameter =
   function
   | Unit -> Unit
+  | Newtype (_, name) -> Newtype name
   | Named (_, name, mtype) -> Named (name, sub.module_type sub mtype)
 
 let module_type (sub : mapper) mty =
@@ -719,6 +720,9 @@ let module_expr (sub : mapper) mexpr =
                           sub.module_expr sub mexp2)
           | Tmod_apply_unit mexp1 ->
               Pmod_apply_unit (sub.module_expr sub mexp1)
+          | Tmod_apply_type (mexp1, ty) ->
+              Pmod_apply_type (sub.module_expr sub mexp1,
+                               sub.typ sub ty)
           | Tmod_constraint (mexpr, _, Tmodtype_explicit mtype, _) ->
               Pmod_constraint (sub.module_expr sub mexpr,
                 sub.module_type sub mtype)

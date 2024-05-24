@@ -208,6 +208,11 @@ let rec nondep_mty_with_presence env va ids pres mty =
       pres, mty
   | Mty_functor(Unit, res) ->
       pres, Mty_functor(Unit, nondep_mty env va ids res)
+  | Mty_functor (Newtype id, res) ->
+      let decl = Ctype.new_local_type ~loc:Location.none Definition in
+      let res_env = Env.add_type ~check:true id decl env in
+      let mty = Mty_functor (Newtype id, nondep_mty res_env va ids res) in
+      pres, mty
   | Mty_functor(Named (param, arg), res) ->
       let var_inv =
         match va with Co -> Contra | Contra -> Co | Strict -> Strict in

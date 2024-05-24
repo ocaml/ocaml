@@ -567,14 +567,17 @@ and print_out_functor_parameters ppf l =
   let print_nonanon_arg ppf = function
     | None ->
         fprintf ppf "()"
-    | Some (param, mty) ->
+    | Some (param, None) ->
+        fprintf ppf "(type %s)"
+          (Option.value param ~default:"_")
+    | Some (param, Some mty) ->
         fprintf ppf "(%s : %a)"
           (Option.value param ~default:"_")
           print_out_module_type mty
   in
   let rec print_args ppf = function
     | [] -> ()
-    | Some (None, mty_arg) :: l ->
+    | Some (None, Some mty_arg) :: l ->
         fprintf ppf "%a ->@ %a"
           print_simple_out_module_type mty_arg
           print_args l

@@ -1025,7 +1025,8 @@ let modtype_of_functor_appl fcomp p1 p2 =
             match fcomp.fcomp_arg with
             | Unit
             | Named (None, _) -> Subst.identity
-            | Named (Some param, _) -> Subst.add_module param p2 Subst.identity
+            | Named (Some param, _) | Newtype param ->
+                Subst.add_module param p2 Subst.identity
           in
           Subst.modtype (Rescope scope) subst mty
         in
@@ -1881,6 +1882,7 @@ let rec components_of_module_maker
           fcomp_arg =
             (match arg with
             | Unit -> Unit
+            | Newtype param -> Newtype param
             | Named (param, ty_arg) ->
               Named (param, force_modtype (modtype scoping sub ty_arg)));
           fcomp_res = force_modtype (modtype scoping sub ty_res);
@@ -2162,7 +2164,8 @@ let components_of_functor_appl ~loc ~f_path ~f_comp ~arg env =
       match f_comp.fcomp_arg with
       | Unit
       | Named (None, _) -> Subst.identity
-      | Named (Some param, _) -> Subst.add_module param arg Subst.identity
+      | Named (Some param, _) | Newtype param ->
+          Subst.add_module param arg Subst.identity
     in
     (* we have to apply eagerly instead of passing sub to [components_of_module]
        because of the call to [check_well_formed_module]. *)
@@ -2907,6 +2910,7 @@ and get_functor_components ~errors ~loc lid env comps =
       match fcomps.fcomp_arg with
       | Unit -> (* PR#7611 *)
           may_lookup_error errors loc env (Generative_used_as_applicative lid)
+      | Newtype _ -> assert false (* TODO *)
       | Named (_, arg) -> fcomps, arg
     end
   | Ok (Structure_comps _) ->

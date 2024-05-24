@@ -354,6 +354,10 @@ and remove_module_elements_between_stop_in_module_kind k =
   | Odoc_module.Module_apply_unit k1 ->
       Odoc_module.Module_apply_unit
         (remove_module_elements_between_stop_in_module_kind k1)
+  | Odoc_module.Module_apply_type (k1, t2) ->
+      Odoc_module.Module_apply_type
+        (remove_module_elements_between_stop_in_module_kind k1,
+         t2)
   | Odoc_module.Module_with (mtkind, s) ->
       Odoc_module.Module_with (remove_module_elements_between_stop_in_module_type_kind mtkind, s)
   | Odoc_module.Module_constraint (k2, mtkind) ->

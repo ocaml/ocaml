@@ -1627,6 +1627,7 @@ module Analyser =
       | Parsetree.Pmty_functor (param2, module_type2) ->
           (
            let loc = match param2 with Parsetree.Unit -> Location.none
+                     | Parsetree.Newtype ty -> ty.loc
                      | Parsetree.Named (_, pmty) -> pmty.Parsetree.pmty_loc in
            let loc_start = Loc.start loc in
            let loc_end = Loc.end_ loc in
@@ -1638,6 +1639,9 @@ module Analyser =
                    Parsetree.Named (_, pmty), Types.Named (Some ident, mty) ->
                      Name.from_ident ident,
                      analyse_module_type_kind env current_module_name pmty mty
+                 | Parsetree.Newtype _, Types.Newtype ident ->
+                     Name.from_ident ident,
+                     Module_type_struct []
                  | _ -> "*", Module_type_struct []
                in
                let param =
@@ -1646,6 +1650,7 @@ module Analyser =
                    mp_type =
                      (match param with
                       | Types.Unit -> None
+                      | Types.Newtype _ -> None
                       | Types.Named (_, mty) ->
                         Some (Odoc_env.subst_module_type env mty));
                    mp_type_code = mp_type_code ;
@@ -1726,6 +1731,7 @@ module Analyser =
            match sig_module_type with
              Types.Mty_functor (param, body_module_type) ->
                let loc = match param2 with Parsetree.Unit -> Location.none
+                     | Parsetree.Newtype ty -> ty.loc
                      | Parsetree.Named (_, pmty) -> pmty.Parsetree.pmty_loc in
                let loc_start = Loc.start loc in
                let loc_end = Loc.end_ loc in
@@ -1735,6 +1741,9 @@ module Analyser =
                    Parsetree.Named (_, pmty), Types.Named (Some ident, mty) ->
                      Name.from_ident ident,
                      analyse_module_type_kind env current_module_name pmty mty
+                 | Parsetree.Newtype _, Types.Newtype ident ->
+                     Name.from_ident ident,
+                     Module_type_struct []
                  | _ -> "*", Module_type_struct []
                in
                let param =
@@ -1743,6 +1752,7 @@ module Analyser =
                    mp_type =
                      (match param with
                       | Types.Unit -> None
+                      | Types.Newtype _ -> None
                       | Types.Named(_, mty) -> Some (Odoc_env.subst_module_type env mty));
                    mp_type_code = mp_type_code ;
                    mp_kind = mp_kind ;

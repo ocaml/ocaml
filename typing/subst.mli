@@ -165,6 +165,7 @@ module Lazy : sig
 
   and functor_parameter =
     | Unit
+    | Newtype of Ident.t
     | Named of Ident.t option * modtype
 
 

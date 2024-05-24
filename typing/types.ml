@@ -362,6 +362,7 @@ type module_type =
 
 and functor_parameter =
   | Unit
+  | Newtype of Ident.t
   | Named of Ident.t option * module_type
 
 and module_presence =

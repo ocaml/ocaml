@@ -281,6 +281,9 @@ let iterator_with_env super env =
       let env_before = !env in
       begin match param with
       | Unit -> ()
+      | Newtype id ->
+        let decl = Ctype.new_local_type ~loc:Location.none Definition in
+        env := lazy (Env.add_type ~check:true id decl (Lazy.force env_before))
       | Named (param, mty_arg) ->
         self.Btype.it_module_type self mty_arg;
         match param with
@@ -788,6 +791,11 @@ let rec approx_modtype env smty =
       let (param, newenv) =
         match param with
         | Unit -> Types.Unit, env
+        | Newtype newtype ->
+            let decl = Ctype.new_local_type ~loc:newtype.loc Definition in
+            let scope = Ctype.create_scope () in
+            let (id, newenv) = Env.enter_type ~scope newtype.txt decl env in
+            Types.Newtype id, newenv
         | Named (param, sarg) ->
           let arg = approx_modtype env sarg in
           match param.txt with
@@ -1290,6 +1298,11 @@ and transl_modtype_aux env smty =
       let t_arg, ty_arg, newenv =
         match sarg_opt with
         | Unit -> Unit, Types.Unit, env
+        | Newtype newtype ->
+          let decl = Ctype.new_local_type ~loc:newtype.loc Definition in
+          let scope = Ctype.create_scope () in
+          let (id, newenv) = Env.enter_type ~scope newtype.txt decl env in
+          Newtype (id, newtype), Types.Newtype id, newenv
         | Named (param, sarg) ->
           let arg = transl_modtype_functor_arg env sarg in
           let (id, newenv) =
@@ -1807,11 +1820,16 @@ let rec path_of_module mexp =
   | Tmod_constraint (mexp, _, _, _) ->
       path_of_module mexp
   | (Tmod_structure _ | Tmod_functor _ | Tmod_apply_unit _ | Tmod_unpack _ |
-    Tmod_apply _) ->
+    Tmod_apply _ | Tmod_apply_type _) ->
     raise Not_a_path
 
 let path_of_module mexp =
  try Some (path_of_module mexp) with Not_a_path -> None
+
+let path_of_type ty =
+ match ty.ctyp_desc with
+ | Ttyp_constr (p, _, []) -> Some p
+ | _ -> None
 
 (* Check that all core type schemes in a structure
    do not contain non-generalized type variable *)
@@ -1827,6 +1845,9 @@ let rec nongen_modtype env = function
         match arg_opt with
         | Unit
         | Named (None, _) -> env
+        | Newtype id ->
+            let decl = Ctype.new_local_type ~loc:Location.none Definition in
+            Env.add_type ~check:true id decl env
         | Named (Some id, param) ->
             Env.add_module ~arg:true id Mp_present param env
       in
@@ -2119,17 +2140,29 @@ type argument_summary = {
   shape: Shape.t
 }
 
+type type_argument_summary = {
+  ty: Typedtree.core_type;
+  path: Path.t option;
+}
+
+type applied_arg =
+      Unit
+    | Arg of argument_summary
+    | Type of type_argument_summary
+
 type application_summary = {
   loc: Location.t;
   attributes: attributes;
   f_loc: Location.t; (* loc for F *)
-  arg: argument_summary option (* None for () *)
+  arg: applied_arg
 }
 
 let simplify_app_summary app_view = match app_view.arg with
-  | None ->
+  | Unit ->
     Includemod.Error.Unit, Mty_signature []
-  | Some arg ->
+  | Type _ ->
+    Includemod.Error.Newtype, Mty_signature []
+  | Arg arg ->
     let mty = arg.arg.mod_type in
     match arg.is_syntactic_unit , arg.path with
     | true , _      -> Includemod.Error.Empty_struct, mty
@@ -2206,7 +2239,14 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
       let t_arg, ty_arg, newenv, funct_shape_param, funct_body =
         match arg_opt with
         | Unit ->
-          Unit, Types.Unit, env, Shape.for_unnamed_functor_param, false
+          Typedtree.Unit, Types.Unit, env,
+          Shape.for_unnamed_functor_param, false
+        | Newtype newtype ->
+          let decl = Ctype.new_local_type ~loc:newtype.loc Definition in
+          let scope = Ctype.create_scope () in
+          let (id, newenv) = Env.enter_type ~scope newtype.txt decl env in
+          Newtype (id, newtype), Types.Newtype id, newenv,
+          Shape.for_unnamed_functor_param, true
         | Named (param, smty) ->
           let mty = transl_modtype_functor_arg env smty in
           let scope = Ctype.create_scope () in
@@ -2241,7 +2281,7 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
         mod_attributes = smod.pmod_attributes;
         mod_loc = smod.pmod_loc },
       Shape.abs funct_shape_param body_shape
-  | Pmod_apply _ | Pmod_apply_unit _ ->
+  | Pmod_apply _ | Pmod_apply_unit _ | Pmod_apply_type _ ->
       type_application smod.pmod_loc ~strengthen ~funct_body env smod
   | Pmod_constraint(sarg, smty) ->
       let arg, arg_shape =
@@ -2300,11 +2340,23 @@ and type_application loc ~strengthen ~funct_body env smod =
           loc = smod.pmod_loc;
           attributes = smod.pmod_attributes;
           f_loc = f.pmod_loc;
-          arg = Some {
+          arg = Arg {
             is_syntactic_unit = sarg.pmod_desc = Pmod_structure [];
             arg;
             path = path_of_module arg;
             shape;
+          }
+        } in
+        extract_application ~funct_body env (summary::sargs) f
+    | Pmod_apply_type (f, ty) ->
+        let ty = Typetexp.transl_simple_type env ~closed:false ty in
+        let summary = {
+          loc = smod.pmod_loc;
+          attributes = smod.pmod_attributes;
+          f_loc = f.pmod_loc;
+          arg = Type {
+            ty;
+            path = path_of_type ty;
           }
         } in
         extract_application ~funct_body env (summary::sargs) f
@@ -2313,7 +2365,7 @@ and type_application loc ~strengthen ~funct_body env smod =
           loc = smod.pmod_loc;
           attributes = smod.pmod_attributes;
           f_loc = f.pmod_loc;
-          arg = None
+          arg = Unit
         } in
         extract_application ~funct_body env (summary::sargs) f
     | _ -> smod, sargs
@@ -2321,8 +2373,8 @@ and type_application loc ~strengthen ~funct_body env smod =
   let sfunct, args = extract_application ~funct_body env [] smod in
   let funct, funct_shape =
     let has_path { arg } = match arg with
-      | None | Some { path = None } -> false
-      | Some { path = Some _ } -> true
+      | Unit | Arg { path = None } | Type _ -> false
+      | Arg { path = Some _ } -> true
     in
     let strengthen = strengthen && List.for_all has_path args in
     type_module ~strengthen ~funct_body None env sfunct
@@ -2333,12 +2385,20 @@ and type_application loc ~strengthen ~funct_body env smod =
 
 and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
     funct_body env (funct, funct_shape) app_view =
+  let apply_error () =
+    let args = List.map simplify_app_summary args in
+    let mty_f = md_f.mod_type in
+    let app_name = match sfunct.pmod_desc with
+      | Pmod_ident l -> Includemod.Named_leftmost_functor l.txt
+      | _ -> Includemod.Anonymous_functor
+    in
+    raise(Includemod.Apply_error {loc=apply_loc;env;app_name;mty_f;args})
+  in
   match Env.scrape_alias env funct.mod_type with
   | Mty_functor (Unit, mty_res) ->
       begin match app_view.arg with
-        | None -> ()
-        | Some arg ->
-          if arg.is_syntactic_unit then
+        | Unit -> ()
+        | Arg arg when arg.is_syntactic_unit ->
             (* this call to warning_scope allows e.g.
                [ F (struct end [@warning "-73"]) ]
                not to warn; useful when generating code that must
@@ -2346,7 +2406,7 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
             Builtin_attributes.warning_scope arg.arg.mod_attributes @@ fun () ->
             Location.prerr_warning arg.arg.mod_loc
               Warnings.Generative_application_expects_unit
-          else
+        | Arg _ | Type _ ->
             raise (Error (app_view.f_loc, env, Apply_generative));
       end;
       if funct_body && Mtype.contains_type env funct.mod_type then
@@ -2357,20 +2417,61 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
         mod_attributes = app_view.attributes;
         mod_loc = funct.mod_loc },
       Shape.app funct_shape ~arg:Shape.dummy_mod
+  | Mty_functor (Newtype id, mty_res) as mty_functor ->
+      begin match app_view.arg with
+        | Unit | Arg _ -> apply_error ()
+        | Type { ty; path } ->
+          let mty_res =
+            match path with
+            | Some p ->
+              let subst = Subst.add_type id p Subst.identity in
+              let scope = Ctype.create_scope () in
+              Subst.modtype (Rescope scope) subst mty_res
+            | None ->
+              let decl =
+                Ctype.new_local_type
+                  ~loc:ty.ctyp_loc
+                  ~manifest_and_scope:(ty.ctyp_type, Btype.lowest_level)
+                  Definition
+              in
+              let env = Env.add_type ~check:true id decl env in
+              check_well_formed_module env app_view.loc
+                "the signature of this functor application" mty_res;
+              let nondep_mty =
+                  try Mtype.nondep_supertype env [id] mty_res
+                  with Ctype.Nondep_cannot_erase _ ->
+                    let error = Cannot_eliminate_dependency mty_functor in
+                    raise (Error(app_view.loc, env, error))
+              in
+              begin match
+                Includemod.modtypes ~loc:app_view.loc ~mark:false env
+                  mty_res nondep_mty
+              with
+              | Tcoerce_none -> ()
+              | _ ->
+                  fatal_error
+                    "unexpected coercion from original module type to \
+                    nondep_supertype one"
+              | exception Includemod.Error _ ->
+                  fatal_error
+                    "nondep_supertype not included in original module type"
+              end;
+              nondep_mty
+          in
+          {
+            mod_desc = Tmod_apply_type (funct, ty);
+            mod_type = mty_res;
+            mod_env = env;
+            mod_attributes = app_view.attributes;
+            mod_loc = app_view.loc
+          },
+          Shape.app funct_shape ~arg:Shape.dummy_mod
+      end
   | Mty_functor (Named (param, mty_param), mty_res) as mty_functor ->
-      let apply_error () =
-        let args = List.map simplify_app_summary args in
-        let mty_f = md_f.mod_type in
-        let app_name = match sfunct.pmod_desc with
-          | Pmod_ident l -> Includemod.Named_leftmost_functor l.txt
-          | _ -> Includemod.Anonymous_functor
-        in
-        raise(Includemod.Apply_error {loc=apply_loc;env;app_name;mty_f;args})
-      in
       begin match app_view with
-      | { arg = None; _ } -> apply_error ()
+      | { arg = (Unit | Type _); _ } -> apply_error ()
       | { loc = app_loc; attributes = app_attributes;
-          arg = Some { shape = arg_shape; path = arg_path; arg } } ->
+          arg = Arg { shape = arg_shape; path = arg_path; arg } } ->
       let coercion =
         try Includemod.modtypes ~loc:arg.mod_loc ~mark:true env
               arg.mod_type mty_param

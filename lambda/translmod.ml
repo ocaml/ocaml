@@ -460,6 +460,7 @@ let merge_functors ~scopes mexp coercion root_path =
       let path, param =
         match param with
         | Unit -> None, Ident.create_local "*"
+        | Newtype _ -> None, Ident.create_local "*"
         | Named (None, _, _) ->
           let id = Ident.create_local "_" in
           functor_path path id, id
@@ -524,6 +525,8 @@ and transl_module ~scopes cc rootpath mexp =
       transl_apply ~scopes ~loc ~cc mexp.mod_env funct translated_arg
   | Tmod_apply_unit funct ->
       transl_apply ~scopes ~loc ~cc mexp.mod_env funct lambda_unit
+  | Tmod_apply_type (funct, _) ->
+    transl_apply ~scopes ~loc ~cc mexp.mod_env funct lambda_unit
   | Tmod_constraint(arg, _, _, ccarg) ->
       transl_module ~scopes (compose_coercions cc ccarg) rootpath arg
   | Tmod_unpack(arg, _) ->
