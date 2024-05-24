@@ -285,8 +285,9 @@ _______________
   (Jan Midtgaard, review by Antonin Décimo, Sébastien Hinderer, and
    David Allsopp)
 
-- #13185: Type-level module alias for functor parameter accepted
-  (Jacques Garrigue, report by Richard Eisenberg)
+- #13185, #13192: Reject type-level module aliases on functor parameter
+  inside signatures.
+  (Jacques Garrigue, report by Richard Eisenberg, review by Florian Angeletti)
 
 OCaml 5.2.0 (13 May 2024)
 -------------------------
