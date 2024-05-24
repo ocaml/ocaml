@@ -648,12 +648,13 @@ open M
    split between a static part (depending only on toplevel names)
    and a dynamic part, the environment. The static part is cached
    in a toplevel structure, so that only the first class creation
-   computes it and the subsequent classes can reuse it. Because of
-   that, the (static) [class_init] function takes the environment
-   as parameter, and when called is given the [env] field of the
-   class. For the [obj_init] part, an [env_init] function (of type
-   [env -> obj_init]) is stored in the cache, and called on the
-   environment to generate the [obj_init] at class creation time.
+   computes it and the subsequent classes can reuse it.
+   Because of that, the (static) [class_init] function takes both
+   the class table to be filled and the environment as parameters,
+   and when called is given the [env] field of the class.
+   For the [obj_init] part, an [env_init] function (of type [env -> obj_init])
+   is stored in the cache, and called on the environment to generate
+   the [obj_init] at class creation time.
 *)
 
 (*
