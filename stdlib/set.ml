@@ -68,6 +68,22 @@ module type S =
     val to_rev_seq : t -> elt Seq.t
     val add_seq : elt Seq.t -> t -> t
     val of_seq : elt Seq.t -> t
+    module Enum : sig
+      type set = t
+      type enum
+      type t = enum
+      val empty : enum
+      val is_empty : enum -> bool
+      val enum : set -> enum
+      val enum_from : elt -> set -> enum
+      val head : enum -> elt
+      val tail : enum -> enum
+      val head_opt : enum -> elt option
+      val tail_opt : enum -> enum option
+      val from : elt -> enum -> enum
+      val to_seq : enum -> elt Seq.t
+      val elements : enum -> set
+    end
   end
 
 module Make(Ord: OrderedType) =
@@ -626,4 +642,152 @@ module Make(Ord: OrderedType) =
 
     let to_seq_from low s =
       seq_of_enum_ (enum_from low s)
+
+    module Enum = struct
+
+      (* The type [enumeration] is the same as above: *)
+
+      (* type enumeration = End | More of elt * t * enumeration *)
+
+      (* An enumeration satisfies the following invariant: it is a path (that
+         is, a zipper) inside a balanced binary search tree [t]. It is a path
+         whose edges point up, that is, a path from some internal node up to
+         the root of the tree [t]. Along this path, every edge points towards
+         the right, that is, from a left child to its parent. The enumeration
+         [More (v, r, e)] can be understood as an edge from a left child to a
+         parent that carries the value [v], the subtree [r], and whose own
+         parent is [e]. The path edges that point towards the left (that is,
+         from a right child to its parent) are not materialized; they do not
+         appear in an enumeration.
+
+         This invariant implies that the length of an enumeration, viewed as a
+         list of pairs (x_i, t_i) of an element and a subtree, is logarithmic:
+         it is O(log n) where [n] is the size of the tree [t].
+
+         Furthermore, this invariant implies that the subtrees t_1, t_2, ...,
+         t_k exist at depths d_1 > d_2 > ... > d_k in the tree [t]. Because
+         the tree [t] is balanced, this implies that the sizes of the subtrees
+         t_1, t_2, ..., t_k obey a (rough) geometric progression: that is, the
+         size of the subtree t_{i+1} is (roughly) at least twice the size of
+         the subtree t_i.
+
+         The code that follows does not care exactly how trees are balanced,
+         as long as they are balanced in some way. (For example, they could be
+         height-balanced or weight-balanced.) Except for the function
+         [elements], this code does not construct any tree; instead, it
+         offers facilities for iterating over an existing tree.
+
+         The code that follows does not directly construct any enumerations.
+         It constructs enumerations indirectly by invoking the functions
+         [cons_enum], [enum_from_aux], and [enum_from], which are defined
+         higher up in this file.
+
+         The time complexity of [from low e] should be O(log d) where [d] is
+         the distance traveled, that is, the number of elements that are
+         dropped from the enumeration. *)
+
+      type tree = t
+
+      type set = tree
+
+      type enum = enumeration
+
+      type t = enum
+
+      let empty : enum =
+        End
+
+      let is_empty (e : enum) : bool =
+        match e with End -> true | More _ -> false
+
+      let[@inline] enum (t : tree) : enum =
+        cons_enum t End
+          (* [cons_enum] was defined earlier in this file *)
+
+      let enum_from (low : elt) (t : tree) : enum =
+        enum_from low t
+          (* [enum_from] was defined earlier in this file *)
+
+      let head (e : enum) : elt =
+        match e with
+        | End            -> invalid_arg "Set.Enum.head"
+        | More (v, _, _) -> v
+
+      (* [tail End] is undefined. If the user wants [tail' End = End],
+         they can define their own [tail'] function. *)
+
+      let tail (e : enum) : enum =
+        match e with
+        | End            -> invalid_arg "Set.Enum.tail"
+        | More (_, r, e) -> cons_enum r e
+
+      let head_opt (e : enum) : elt option =
+        match e with
+        | End            -> None
+        | More (v, _, _) -> Some v
+
+      let tail_opt (e : enum) : enum option =
+        match e with
+        | End            -> None
+        | More (_, r, e) -> Some (cons_enum r e)
+
+      (* [from_more low r e] extracts from an enumeration [More (v, r, e)],
+         where the value [v] is known to lie below the threshold [low],
+         the elements that lie at or above the threshold [low]. *)
+
+      let rec from_more (low : elt) (r : tree) (e : enum) : enum =
+        (* Peek past [r] at the first element [v'] of [e], if there is one. *)
+        match e with
+        | More (v', r', e') ->
+            let c = Ord.compare low v' in
+            if c > 0 then
+              (* [v'] is below the threshold.
+                 The subtree [r] and the value [v'] must be discarded.
+                 Continue with [r'] and [e']. *)
+              from_more low r' e'
+            else if c = 0 then
+              (* [v'] is at the threshold.
+                 The subtree [r] must be discarded. [e] must be kept. *)
+              e
+            else (* c < 0 *)
+              (* [v'] is above the threshold. *)
+              (* No part of [e] must be discarded. *)
+              (* Keep part of [r], followed with [e]. *)
+              enum_from_aux low r e
+        | End ->
+            (* [e] is empty. Keep part of [r]. *)
+            enum_from low r
+              (* this is equivalent to [enum_from_aux low r e] *)
+
+      (* [from low e] extracts from the enumeration [e]
+         the elements that lie at or above the threshold [low] . *)
+
+      (* One could define [from low e] as [from_more low Empty e].
+         However, the following code is slightly more efficient. *)
+
+      let from (low : elt) (e : enum) : enum =
+        match e with
+        | More (v, r, e') ->
+            if Ord.compare low v <= 0 then
+              (* [v] is at or above the threshold. Keep all elements. *)
+              e
+            else
+              (* [v] is below the threshold. [v] must be discarded. *)
+              from_more low r e'
+        | End ->
+            End
+
+      let to_seq : enum -> elt Seq.t =
+        seq_of_enum_
+          (* [seq_of_enum_] was defined earlier in this file *)
+
+      let rec elements (e : enum) : tree =
+        match e with
+        | End ->
+            Empty
+        | More (v, r, e) ->
+            add_min_element v (concat r (elements e))
+
+    end
+
   end
