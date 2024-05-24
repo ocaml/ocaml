@@ -278,6 +278,23 @@ module MkT :
       val to_rev_seq : t -> elt Seq.t
       val add_seq : elt Seq.t -> t -> t
       val of_seq : elt Seq.t -> t
+      module Enum :
+        sig
+          type set = t
+          type enum = Set.Make(X).Enum.enum
+          type t = enum
+          val empty : enum
+          val is_empty : enum -> bool
+          val enum : set -> enum
+          val enum_from : elt -> set -> enum
+          val head : enum -> elt
+          val tail : enum -> enum
+          val head_opt : enum -> elt option
+          val tail_opt : enum -> enum option
+          val from : elt -> enum -> enum
+          val to_seq : enum -> elt Seq.t
+          val elements : enum -> set
+        end
     end
 module type S =
   sig

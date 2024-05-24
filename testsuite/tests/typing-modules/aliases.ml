@@ -322,6 +322,23 @@ module StringSet :
     val to_rev_seq : t -> elt Seq.t
     val add_seq : elt Seq.t -> t -> t
     val of_seq : elt Seq.t -> t
+    module Enum :
+      sig
+        type set = t
+        type enum = Set.Make(String).Enum.enum
+        type t = enum
+        val empty : enum
+        val is_empty : enum -> bool
+        val enum : set -> enum
+        val enum_from : elt -> set -> enum
+        val head : enum -> elt
+        val tail : enum -> enum
+        val head_opt : enum -> elt option
+        val tail_opt : enum -> enum option
+        val from : elt -> enum -> enum
+        val to_seq : enum -> elt Seq.t
+        val elements : enum -> set
+      end
   end
 module SSet :
   sig
@@ -370,6 +387,23 @@ module SSet :
     val to_rev_seq : t -> elt Seq.t
     val add_seq : elt Seq.t -> t -> t
     val of_seq : elt Seq.t -> t
+    module Enum :
+      sig
+        type set = t
+        type enum = Set.Make(S).Enum.enum
+        type t = enum
+        val empty : enum
+        val is_empty : enum -> bool
+        val enum : set -> enum
+        val enum_from : elt -> set -> enum
+        val head : enum -> elt
+        val tail : enum -> enum
+        val head_opt : enum -> elt option
+        val tail_opt : enum -> enum option
+        val from : elt -> enum -> enum
+        val to_seq : enum -> elt Seq.t
+        val elements : enum -> set
+      end
   end
 val f : StringSet.t -> SSet.t = <fun>
 |}];;
@@ -450,6 +484,23 @@ module A :
         val to_rev_seq : t -> elt Seq.t
         val add_seq : elt Seq.t -> t -> t
         val of_seq : elt Seq.t -> t
+        module Enum :
+          sig
+            type set = t
+            type enum = Set.Make(B).Enum.enum
+            type t = enum
+            val empty : enum
+            val is_empty : enum -> bool
+            val enum : set -> enum
+            val enum_from : elt -> set -> enum
+            val head : enum -> elt
+            val tail : enum -> enum
+            val head_opt : enum -> elt option
+            val tail_opt : enum -> enum option
+            val from : elt -> enum -> enum
+            val to_seq : enum -> elt Seq.t
+            val elements : enum -> set
+          end
       end
     val empty : S.t
   end
@@ -582,6 +633,23 @@ module SInt :
     val to_rev_seq : t -> elt Seq.t
     val add_seq : elt Seq.t -> t -> t
     val of_seq : elt Seq.t -> t
+    module Enum :
+      sig
+        type set = t
+        type enum = Set.Make(Int).Enum.enum
+        type t = enum
+        val empty : enum
+        val is_empty : enum -> bool
+        val enum : set -> enum
+        val enum_from : elt -> set -> enum
+        val head : enum -> elt
+        val tail : enum -> enum
+        val head_opt : enum -> elt option
+        val tail_opt : enum -> enum option
+        val from : elt -> enum -> enum
+        val to_seq : enum -> elt Seq.t
+        val elements : enum -> set
+      end
   end
 type (_, _) eq = Eq : ('a, 'a) eq
 type wrap = W of (SInt.t, SInt.t) eq
