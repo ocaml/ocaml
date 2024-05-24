@@ -761,8 +761,7 @@ L(trap_handler):
     /* Cut stack at current trap handler */
         mov     sp, TRAP_PTR
     /* Pop previous handler and jump to it */
-        ldr     TMP, [sp, 8]
-        ldr     TRAP_PTR, [sp], 16
+        ldp     TRAP_PTR, TMP, [sp], 16
         br      TMP
 .endm
 
