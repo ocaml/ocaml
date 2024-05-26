@@ -38,6 +38,7 @@ let attr_order a1 a2 =
 
 let warn_unused () =
   let keys = List.of_seq (Attribute_table.to_seq_keys unused_attrs) in
+  Attribute_table.clear unused_attrs;
   let keys = List.sort attr_order keys in
   List.iter (fun sloc ->
     Location.prerr_warning sloc.loc (Warnings.Misplaced_attribute sloc.txt))
