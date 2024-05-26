@@ -296,6 +296,10 @@ _______________
   inside signatures.
   (Jacques Garrigue, report by Richard Eisenberg, review by Florian Angeletti)
 
+- #13170: Fix a bug that would result in some floating alerts `[@@@alert ...]`
+  incorrectly triggering Warning 53.
+  (Nicolás Ojeda Bär, review by Chris Casinghino)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
