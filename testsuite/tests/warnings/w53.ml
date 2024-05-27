@@ -24,6 +24,9 @@ module TestAlertStruct = struct
   let y = 10 [@@alert foo "foo"] (* rejected *)
 
   [@@@alert foo "foo"] (* rejected *)
+
+  [@@@warning "-53"]
+  [@@@alert foo "foo"] (* accepted *)
 end
 
 
