@@ -103,10 +103,6 @@ _______________
    review by KC Sivaramakrishnan, Miod Vallat and Nicolás Ojeda Bär,
    report by Vesa Karvonen)
 
-- #????: Dynarray.blit, which allows to extend the destination
-  dynarray (0 <= dst_pos <= dst_length).
-  (Gabriel Scherer, report by Hazem Elmasry)
-
 ### Other libraries:
 
 ### Tools:
