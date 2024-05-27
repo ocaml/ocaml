@@ -236,8 +236,9 @@ _______________
 - #12996: Only link with -lgcc_eh when available.
   (Romain Beauxis, review by David Allsopp and Miod Vallat)
 
-* #13200: Do not use CFLAGS for linking
-  (Sébastien Hinderer, review by ?)
+* #13200: Do not use CFLAGS for linking.
+  (Sébastien Hinderer, review by Gabriel Scherer, Antonin Décimo,
+  Miod Vallat and Samuel Hym)
 
 ### Bug fixes:
 
