@@ -1525,11 +1525,13 @@ AS_IF([test -z "$PARTIALLD"],
   # output filename. Don't assume that all C compilers understand GNU -ofoo
   # form, so ensure that the definition includes a space at the end (which is
   # achieved using the $(EMPTY) expansion trick in Makefile.config.in).
-  AS_CASE(["$ocaml_cc_vendor"],
-    [msvc-*],
+  AS_CASE(["$ocaml_cc_vendor,$host"],
+    [msvc-*,*],
       # For the Microsoft C compiler there must be no space at the end of the
       # string.
       [PACKLD="link -lib -nologo $machine -out:"],
+    [*gcc*,*-*-mingw32*],
+      [PACKLD="$CC -r$PACKLD_FLAGS -o "],
     [PACKLD="$DIRECT_LD -r$PACKLD_FLAGS -o "])],
   [PACKLD="$PARTIALLD -o "])
 
