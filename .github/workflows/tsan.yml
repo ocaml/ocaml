@@ -42,7 +42,7 @@ jobs:
         run: sudo sysctl vm.mmap_rnd_bits=28
       - name: Configure tree
         run: |
-          MAKE_ARG=-j CONFIG_ARG='--enable-cmm-invariants --enable-dependency-generation --enable-native-toplevel --enable-tsan --enable-ocamltest CFLAGS=-DTSAN_INSTRUMENT_ALL' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
+          MAKE_ARG=-j CONFIG_ARG='--enable-cmm-invariants --enable-dependency-generation --enable-native-toplevel --enable-tsan --enable-ocamltest CPPFLAGS=-DTSAN_INSTRUMENT_ALL' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
       - name: Build
         run: |
           MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
