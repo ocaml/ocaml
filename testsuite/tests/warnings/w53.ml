@@ -24,6 +24,9 @@ module TestAlertStruct = struct
   let y = 10 [@@alert foo "foo"] (* rejected *)
 
   [@@@alert foo "foo"] (* rejected *)
+
+  [@@@warning "-53"]
+  [@@@alert foo "foo"] (* accepted *)
 end
 
 
@@ -504,4 +507,17 @@ module TestTailModConsStruct = struct
     (* rejected *)
     "x"
   external z : int64 -> int64 = "x" [@@tail_mod_cons] (* rejected *)
+end
+
+module TestAlertClass = struct
+  class c1 =
+    object
+      [@@@alert foo "foo"] (* rejected *)
+    end
+
+  class c2 =
+    object
+      [@@@warning "-53"]
+      [@@@alert foo "foo"] (* accepted *)
+    end
 end

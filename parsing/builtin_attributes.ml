@@ -38,6 +38,7 @@ let attr_order a1 a2 =
 
 let warn_unused () =
   let keys = List.of_seq (Attribute_table.to_seq_keys unused_attrs) in
+  Attribute_table.clear unused_attrs;
   let keys = List.sort attr_order keys in
   List.iter (fun sloc ->
     Location.prerr_warning sloc.loc (Warnings.Misplaced_attribute sloc.txt))
@@ -268,7 +269,10 @@ let rec attrs_of_sig = function
   | _ ->
       []
 
-let alerts_of_sig sg = alerts_of_attrs (attrs_of_sig sg)
+let alerts_of_sig ~mark sg =
+  let a = attrs_of_sig sg in
+  if mark then mark_alerts_used a;
+  alerts_of_attrs a
 
 let rec attrs_of_str = function
   | {pstr_desc = Pstr_attribute a} :: tl ->
@@ -276,7 +280,10 @@ let rec attrs_of_str = function
   | _ ->
       []
 
-let alerts_of_str str = alerts_of_attrs (attrs_of_str str)
+let alerts_of_str ~mark str =
+  let a = attrs_of_str str in
+  if mark then mark_alerts_used a;
+  alerts_of_attrs a
 
 let warn_payload loc txt msg =
   Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg))
@@ -306,15 +313,19 @@ let warning_attribute ?(ppwarning = true) =
           with Arg.Bad msg -> warn_payload loc name.txt msg
         end
     | k ->
-        (* Don't [mark_used] in the [Some] cases - that happens in [Env] or
-           [type_mod] if they are in a valid place.  Do [mark_used] in the
-           [None] case, which is just malformed and covered by the "Invalid
-           payload" warning. *)
         match kind_and_message k with
         | Some ("all", _) ->
             warn_payload loc name.txt "The alert name 'all' is reserved"
-        | Some _ -> ()
+        | Some _ ->
+            (* Do [mark_used] in the [Some] case only if Warning 53 is
+               disabled. Later, they will be marked used (provided they are in a
+               valid place) in [compile_common], when they are extracted to be
+               persisted inside the [.cmi] file. *)
+            if not (Warnings.is_active (Misplaced_attribute ""))
+            then mark_used name
         | None -> begin
+            (* Do [mark_used] in the [None] case, which is just malformed and
+               covered by the "Invalid payload" warning. *)
             mark_used name;
             warn_payload loc name.txt "Invalid payload"
           end
