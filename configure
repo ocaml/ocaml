@@ -3251,7 +3251,6 @@ CONFIGURE_ARGS="$*"
 # rely on $CFLAGS because these cannot be processed by flexlink (and are not
 # passed)
 mkexe_cmd='$(CC)'
-mkexe_cflags='$(OC_CFLAGS) $(CFLAGS)'
 mkexe_extra_flags=''
 mkexe_via_cc_extra_cmd=''
 mkexe_ldflags_prefix=''
@@ -14500,7 +14499,6 @@ case $ocaml_cc_vendor,$host in #(
 then :
   mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
       mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-      mkexe_cflags=''
       mkexe_ldflags_prefix='-link '
 else $as_nop
   mkexe_extra_flags=''
@@ -14519,7 +14517,6 @@ esac
     toolchain="mingw"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     oc_exe_ldflags='-municode'
     mkexe_extra_flags="$mkexe_ldflags_prefix$oc_exe_ldflags"
@@ -14529,7 +14526,6 @@ esac
     ostype="Win32"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     mkexe_via_cc_ldflags_prefix='/link '
     oc_exe_ldflags='/ENTRY:wmainCRTStartup'
@@ -21016,11 +21012,6 @@ fi
   # Construct $mkexe
   mkexe="$mkexe_cmd"
   mkexe_exp="$mkexe_cmd_exp"
-  if test -n "$mkexe_cflags"
-then :
-  mkexe="$mkexe $mkexe_cflags"
-    mkexe_exp="$mkexe_exp $common_cflags $CFLAGS"
-fi
   if test -n "$mkexe_extra_flags"
 then :
   mkexe="$mkexe $mkexe_extra_flags"

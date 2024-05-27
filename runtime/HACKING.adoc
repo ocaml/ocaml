@@ -151,8 +151,8 @@ TODO: it would be nice to migrate some information here.
 === ThreadSanitizer ===
 
 You can instrument the runtime to detect data races in it, by adding
-`-fsanitize=thread` to the `CFLAGS`. It will make the compiler build rather
-slow.
+`-fsanitize=thread` to both `CFLAGS` and `LDFLAGS`. It will however make the
+compiler build rather slow.
 
 Note that this is different from passing `--enable-tsan` to the configure
 script. `--enable-tsan` not only instruments the runtime, but also the code

@@ -84,6 +84,7 @@ sanitizers="-fsanitize=address -fsanitize-trap=$ubsan"
 ./configure \
   CC=clang-14 \
   CFLAGS="-O1 -fno-omit-frame-pointer $sanitizers" \
+  LDFLAGS="$sanitizers" \
   --disable-stdlib-manpages --enable-dependency-generation
 
 # Build the system.  We want to check for memory leaks, hence
@@ -121,7 +122,7 @@ git clean -q -f -d -x
 ./configure \
   CC=clang-14 \
   --enable-tsan \
-  CFLAGS="-DTSAN_INSTRUMENT_ALL" \
+  CPPFLAGS="-DTSAN_INSTRUMENT_ALL" \
   --disable-stdlib-manpages --enable-dependency-generation
 
 # Build the system
@@ -150,6 +151,7 @@ TSAN_OPTIONS="" $run_testsuite
 # ./configure \
 #   CC=clang-9 \
 #   CFLAGS="-O0 -g -fno-omit-frame-pointer -fsanitize=memory" \
+#   LDFLAGS="-fsanitize=memory" \
 #   --disable-native-compiler
 # # A tool that makes error backtraces nicer
 # # Need to pick the one that matches clang-6.0

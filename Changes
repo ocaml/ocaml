@@ -236,6 +236,9 @@ _______________
 - #12996: Only link with -lgcc_eh when available.
   (Romain Beauxis, review by David Allsopp and Miod Vallat)
 
+* #13200: Do not use CFLAGS for linking
+  (Sébastien Hinderer, review by ?)
+
 ### Bug fixes:
 
 - #12854: Add a test in the regression suite that flags the bug #12825.
