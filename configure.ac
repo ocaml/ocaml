@@ -36,7 +36,6 @@ CONFIGURE_ARGS="$*"
 # rely on $CFLAGS because these cannot be processed by flexlink (and are not
 # passed)
 mkexe_cmd='$(CC)'
-mkexe_cflags='$(OC_CFLAGS) $(CFLAGS)'
 mkexe_extra_flags=''
 mkexe_via_cc_extra_cmd=''
 mkexe_ldflags_prefix=''
@@ -1030,7 +1029,6 @@ AS_CASE([$ocaml_cc_vendor,$host],
     AS_IF([$supports_shared_libraries],
       [mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
       mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-      mkexe_cflags=''
       mkexe_ldflags_prefix='-link '],
       [mkexe_extra_flags=''
       oc_ldflags='-Wl,--stack,16777216']
@@ -1043,7 +1041,6 @@ AS_CASE([$ocaml_cc_vendor,$host],
     toolchain="mingw"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     oc_exe_ldflags='-municode'
     mkexe_extra_flags="$mkexe_ldflags_prefix$oc_exe_ldflags"
@@ -1053,7 +1050,6 @@ AS_CASE([$ocaml_cc_vendor,$host],
     ostype="Win32"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     mkexe_via_cc_ldflags_prefix='/link '
     oc_exe_ldflags='/ENTRY:wmainCRTStartup'
@@ -2651,9 +2647,6 @@ AC_CONFIG_COMMANDS_PRE([
   # Construct $mkexe
   mkexe="$mkexe_cmd"
   mkexe_exp="$mkexe_cmd_exp"
-  AS_IF([test -n "$mkexe_cflags"],
-    [mkexe="$mkexe $mkexe_cflags"
-    mkexe_exp="$mkexe_exp $common_cflags $CFLAGS"])
   AS_IF([test -n "$mkexe_extra_flags"],
     [mkexe="$mkexe $mkexe_extra_flags"
     mkexe_exp="$mkexe_exp $mkexe_extra_flags"])
