@@ -298,7 +298,7 @@ _______________
 
 - #13170: Fix a bug that would result in some floating alerts `[@@@alert ...]`
   incorrectly triggering Warning 53.
-  (Nicolás Ojeda Bär, review by Chris Casinghino)
+  (Nicolás Ojeda Bär, review by Chris Casinghino and Florian Angeletti)
 
 OCaml 5.2.0 (13 May 2024)
 -------------------------
