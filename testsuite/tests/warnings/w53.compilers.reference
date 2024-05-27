@@ -902,3 +902,8 @@ File "w53.ml", line 506, characters 39-52:
 506 |   external z : int64 -> int64 = "x" [@@tail_mod_cons] (* rejected *)
                                              ^^^^^^^^^^^^^
 Warning 53 [misplaced-attribute]: the "tail_mod_cons" attribute cannot appear in this context
+
+File "w53.ml", line 512, characters 10-15:
+512 |       [@@@alert foo "foo"] (* rejected *)
+                ^^^^^
+Warning 53 [misplaced-attribute]: the "alert" attribute cannot appear in this context

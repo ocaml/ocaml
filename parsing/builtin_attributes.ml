@@ -313,15 +313,19 @@ let warning_attribute ?(ppwarning = true) =
           with Arg.Bad msg -> warn_payload loc name.txt msg
         end
     | k ->
-        (* Don't [mark_used] in the [Some] cases - that happens in [Env] or
-           [type_mod] if they are in a valid place.  Do [mark_used] in the
-           [None] case, which is just malformed and covered by the "Invalid
-           payload" warning. *)
         match kind_and_message k with
         | Some ("all", _) ->
             warn_payload loc name.txt "The alert name 'all' is reserved"
-        | Some _ -> ()
+        | Some _ ->
+            (* Do [mark_used] in the [Some] case only if Warning 53 is
+               disabled. Later, they will be marked used (provided they are in a
+               valid place) in [compile_common], when they are extracted to be
+               persisted inside the [.cmi] file. *)
+            if not (Warnings.is_active (Misplaced_attribute ""))
+            then mark_used name
         | None -> begin
+            (* Do [mark_used] in the [None] case, which is just malformed and
+               covered by the "Invalid payload" warning. *)
             mark_used name;
             warn_payload loc name.txt "Invalid payload"
           end
