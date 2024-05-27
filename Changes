@@ -147,6 +147,10 @@ _______________
 
 ### Other libraries:
 
+- #11996: release the dependency of dynlink on compilerlibs.
+  (Sébastien Hinderer and Stephen Dolan, review by Damien Doligez and
+  Hugo Heuzard)
+
 ### Tools:
 
 - #11716: ocamllex: mismatched parentheses and curly brackets are now caught
