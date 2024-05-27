@@ -2,6 +2,17 @@
  ocamlopt_flags += " -O3 ";
 *)
 
+(* In this test we force a lazy from two concurrent domains without
+   synchronization. This leads to unspecified behavior but still
+   should not crash. Currently, the implementation raises Undefined,
+   and that's what we test here.
+
+   Note: due to a bug in the current implementation of
+   cleanup-at-exit, we must be careful to join d1 before we exit the
+   main domain at the end of the program.
+*)
+
+
 let f count =
   let _n = (Domain.self ():> int) in
   let r = ref 0 in
