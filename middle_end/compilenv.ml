@@ -458,26 +458,26 @@ module Style = Misc.Style
 let report_error ppf = function
   | Not_a_unit_info filename ->
       fprintf ppf "%a@ is not a compilation unit description."
-        (Style.as_inline_code Location.print_filename) filename
+        Location.Doc.quoted_filename filename
   | Corrupted_unit_info filename ->
       fprintf ppf "Corrupted compilation unit description@ %a"
-        (Style.as_inline_code Location.print_filename) filename
+       Location.Doc.quoted_filename filename
   | Illegal_renaming(name, modname, filename) ->
       fprintf ppf "%a@ contains the description for unit\
                    @ %a when %a was expected"
-        (Style.as_inline_code Location.print_filename) filename
+        Location.Doc.quoted_filename filename
         Style.inline_code name
         Style.inline_code modname
   | Mismatching_for_pack(filename, pack_1, current_unit, None) ->
       fprintf ppf "%a@ was built with %a, but the \
                    @ current unit %a is not"
-        (Style.as_inline_code Location.print_filename) filename
+        Location.Doc.quoted_filename filename
         Style.inline_code ("-for-pack " ^ pack_1)
         Style.inline_code current_unit
   | Mismatching_for_pack(filename, pack_1, current_unit, Some pack_2) ->
       fprintf ppf "%a@ was built with %a, but the \
                    @ current unit %a is built with %a"
-        (Style.as_inline_code Location.print_filename) filename
+        Location.Doc.quoted_filename filename
         Style.inline_code ("-for-pack " ^ pack_1)
         Style.inline_code current_unit
         Style.inline_code ("-for-pack " ^ pack_2)

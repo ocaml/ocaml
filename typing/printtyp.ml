@@ -161,7 +161,7 @@ module Conflicts = struct
 
   let pp_explanation ppf r=
     Fmt.fprintf ppf "@[<v 2>%a:@,Definition of %s %a@]"
-      Location.print_loc r.location (Sig_component_kind.to_string r.kind)
+      Location.Doc.loc r.location (Sig_component_kind.to_string r.kind)
       Style.inline_code r.name
 
   let print_located_explanations ppf l =

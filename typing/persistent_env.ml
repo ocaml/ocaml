@@ -254,7 +254,7 @@ let check_pers_struct ~allow_hidden penv f ~loc name =
             Format_doc.doc_printf
               " %a@ contains the compiled interface for @ \
                %a when %a was expected"
-              (Style.as_inline_code Location.print_filename) filename
+              Location.Doc.quoted_filename filename
               Style.inline_code ps_name
               Style.inline_code name
         | Inconsistent_import _ -> assert false
@@ -357,14 +357,14 @@ let report_error ppf =
   | Illegal_renaming(modname, ps_name, filename) -> fprintf ppf
       "Wrong file naming: %a@ contains the compiled interface for@ \
        %a when %a was expected"
-      (Style.as_inline_code Location.print_filename) filename
+      Location.Doc.quoted_filename filename
       Style.inline_code ps_name
       Style.inline_code modname
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
       "@[<hov>The files %a@ and %a@ \
               make inconsistent assumptions@ over interface %a@]"
-      (Style.as_inline_code Location.print_filename) source1
-      (Style.as_inline_code Location.print_filename) source2
+      Location.Doc.quoted_filename source1
+      Location.Doc.quoted_filename source2
       Style.inline_code name
   | Need_recursive_types(import) ->
       fprintf ppf

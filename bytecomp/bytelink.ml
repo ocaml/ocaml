@@ -874,39 +874,39 @@ module Style = Misc.Style
 let report_error ppf = function
   | File_not_found name ->
       fprintf ppf "Cannot find file %a"
-        (Style.as_inline_code Location.print_filename) name
+        Location.Doc.quoted_filename name
   | Not_an_object_file name ->
       fprintf ppf "The file %a is not a bytecode object file"
-        (Style.as_inline_code Location.print_filename) name
+        Location.Doc.quoted_filename name
   | Wrong_object_name name ->
       fprintf ppf "The output file %a has the wrong name. The extension implies\
                   \ an object file but the link step was requested"
         Style.inline_code name
   | Symbol_error(name, err) ->
       fprintf ppf "Error while linking %a:@ %a"
-        (Style.as_inline_code Location.print_filename) name
+        Location.Doc.quoted_filename name
         Symtable.report_error err
   | Inconsistent_import(intf, file1, file2) ->
       fprintf ppf
         "@[<hov>Files %a@ and %a@ \
                  make inconsistent assumptions over interface %a@]"
-        (Style.as_inline_code Location.print_filename) file1
-        (Style.as_inline_code Location.print_filename) file2
+        Location.Doc.quoted_filename file1
+        Location.Doc.quoted_filename file2
         Style.inline_code intf
   | Custom_runtime ->
       fprintf ppf "Error while building custom runtime system"
   | File_exists file ->
       fprintf ppf "Cannot overwrite existing file %a"
-        (Style.as_inline_code Location.print_filename) file
+        Location.Doc.quoted_filename file
   | Cannot_open_dll file ->
       fprintf ppf "Error on dynamically loaded library: %a"
-        Location.print_filename file
+        Location.Doc.filename file
   | Camlheader (msg, header) ->
       fprintf ppf "System error while copying file %a: %a"
         Style.inline_code header
         Style.inline_code msg
   | Link_error e ->
-      Linkdeps.report_error ~print_filename:Location.print_filename ppf e
+      Linkdeps.report_error ~print_filename:Location.Doc.filename ppf e
 
 let () =
   Location.register_error_of_exn

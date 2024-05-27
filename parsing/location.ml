@@ -118,13 +118,6 @@ let echo_eof () =
   print_newline ();
   incr num_loc_lines
 
-(* This is used by the toplevel and the report printers below. *)
-let separate_new_message ppf () =
-  if not (is_first_message ()) then begin
-    Format_doc.pp_print_newline ppf ();
-    incr num_loc_lines
-  end
-
 (* Code printing errors and warnings must be wrapped using this function, in
    order to update [num_loc_lines].
 
@@ -150,8 +143,6 @@ let print_updating_num_loc_lines ppf f arg =
 
 let setup_tags () =
   Misc.Style.setup !Clflags.color
-
-module Fmt = Format_doc
 
 (******************************************************************************)
 (* Printing locations, e.g. 'File "foo.ml", line 3, characters 10-12' *)
@@ -208,8 +199,18 @@ let absolute_path s = (* This function could go into Filename *)
 let show_filename file =
   if !Clflags.absname then absolute_path file else file
 
-let print_filename ppf file =
-  Fmt.pp_print_string ppf (show_filename file)
+module Fmt = Format_doc
+module Doc = struct
+
+  (* This is used by the toplevel and the report printers below. *)
+  let separate_new_message ppf () =
+    if not (is_first_message ()) then begin
+      Fmt.pp_print_newline ppf ();
+      incr num_loc_lines
+    end
+
+  let filename ppf file =
+    Fmt.pp_print_string ppf (show_filename file)
 
 (* Best-effort printing of the text describing a location, of the form
    'File "foo.ml", line 3, characters 10-12'.
@@ -217,72 +218,73 @@ let print_filename ppf file =
    Some of the information (filename, line number or characters numbers) in the
    location might be invalid; in which case we do not print it.
  *)
-let print_loc ppf loc =
-  setup_tags ();
-  let file_valid = function
-    | "_none_" ->
-        (* This is a dummy placeholder, but we print it anyway to please editors
-           that parse locations in error messages (e.g. Emacs). *)
-        true
-    | "" | "//toplevel//" -> false
-    | _ -> true
-  in
-  let line_valid line = line > 0 in
-  let chars_valid ~startchar ~endchar = startchar <> -1 && endchar <> -1 in
+  let loc ppf loc =
+    setup_tags ();
+    let file_valid = function
+      | "_none_" ->
+          (* This is a dummy placeholder, but we print it anyway to please
+             editors that parse locations in error messages (e.g. Emacs). *)
+          true
+      | "" | "//toplevel//" -> false
+      | _ -> true
+    in
+    let line_valid line = line > 0 in
+    let chars_valid ~startchar ~endchar = startchar <> -1 && endchar <> -1 in
 
-  let file =
-    (* According to the comment in location.mli, if [pos_fname] is "", we must
-       use [!input_name]. *)
-    if loc.loc_start.pos_fname = "" then !input_name
-    else loc.loc_start.pos_fname
-  in
-  let startline = loc.loc_start.pos_lnum in
-  let endline = loc.loc_end.pos_lnum in
-  let startchar = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
-  let endchar = loc.loc_end.pos_cnum - loc.loc_end.pos_bol in
+    let file =
+      (* According to the comment in location.mli, if [pos_fname] is "", we must
+         use [!input_name]. *)
+      if loc.loc_start.pos_fname = "" then !input_name
+      else loc.loc_start.pos_fname
+    in
+    let startline = loc.loc_start.pos_lnum in
+    let endline = loc.loc_end.pos_lnum in
+    let startchar = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
+    let endchar = loc.loc_end.pos_cnum - loc.loc_end.pos_bol in
 
-  let first = ref true in
-  let capitalize s =
-    if !first then (first := false; String.capitalize_ascii s)
-    else s in
-  let comma () =
-    if !first then () else Fmt.fprintf ppf ", " in
+    let first = ref true in
+    let capitalize s =
+      if !first then (first := false; String.capitalize_ascii s)
+      else s in
+    let comma () =
+      if !first then () else Fmt.fprintf ppf ", " in
 
-  Fmt.fprintf ppf "@{<loc>";
+    Fmt.fprintf ppf "@{<loc>";
 
-  if file_valid file then
-    Fmt.fprintf ppf "%s \"%a\"" (capitalize "file") print_filename file;
+    if file_valid file then
+      Fmt.fprintf ppf "%s \"%a\"" (capitalize "file") filename file;
 
-  (* Print "line 1" in the case of a dummy line number. This is to please the
-     existing setup of editors that parse locations in error messages (e.g.
-     Emacs). *)
-  comma ();
-  let startline = if line_valid startline then startline else 1 in
-  let endline = if line_valid endline then endline else startline in
-  begin if startline = endline then
-    Fmt.fprintf ppf "%s %i" (capitalize "line") startline
-  else
-    Fmt.fprintf ppf "%s %i-%i" (capitalize "lines") startline endline
-  end;
-
-  if chars_valid ~startchar ~endchar then (
+    (* Print "line 1" in the case of a dummy line number. This is to please the
+       existing setup of editors that parse locations in error messages (e.g.
+       Emacs). *)
     comma ();
-    Fmt.fprintf ppf "%s %i-%i" (capitalize "characters") startchar endchar
-  );
+    let startline = if line_valid startline then startline else 1 in
+    let endline = if line_valid endline then endline else startline in
+    begin if startline = endline then
+        Fmt.fprintf ppf "%s %i" (capitalize "line") startline
+      else
+        Fmt.fprintf ppf "%s %i-%i" (capitalize "lines") startline endline
+    end;
 
-  Fmt.fprintf ppf "@}"
+    if chars_valid ~startchar ~endchar then (
+      comma ();
+      Fmt.fprintf ppf "%s %i-%i" (capitalize "characters") startchar endchar
+    );
 
-(* Print a comma-separated list of locations *)
-let print_locs ppf locs =
-  Fmt.pp_print_list ~pp_sep:(fun ppf () -> Fmt.fprintf ppf ",@ ")
-    print_loc ppf locs
+    Fmt.fprintf ppf "@}"
 
-module Compat = struct
-  let print_filename = Fmt.compat print_filename
-  let print_loc = Fmt.compat print_loc
-  let print_locs = Fmt.compat print_locs
-  let separate_new_message = Fmt.compat separate_new_message
+  (* Print a comma-separated list of locations *)
+  let locs ppf locs =
+    Fmt.pp_print_list ~pp_sep:(fun ppf () -> Fmt.fprintf ppf ",@ ")
+      loc ppf locs
+  let quoted_filename ppf f = Misc.Style.as_inline_code filename ppf f
+
 end
+
+let print_filename = Fmt.compat Doc.filename
+let print_loc = Fmt.compat Doc.loc
+let print_locs = Fmt.compat Doc.locs
+let separate_new_message ppf = Fmt.compat Doc.separate_new_message ppf ()
 
 (******************************************************************************)
 (* An interval set structure; additionally, it stores user-provided information
@@ -737,7 +739,7 @@ let batch_mode_printer : report_printer =
       | Misc.Error_style.Short ->
           ()
     in
-    Format.fprintf ppf "@[<v>%a:@ %a@]" Compat.print_loc loc
+    Format.fprintf ppf "@[<v>%a:@ %a@]" print_loc loc
       (Fmt.compat highlight) loc
   in
   let pp_txt ppf txt = Format.fprintf ppf "@[%a@]" Fmt.Doc.format txt in
@@ -746,7 +748,7 @@ let batch_mode_printer : report_printer =
   in
   let pp self ppf report =
     setup_tags ();
-    Fmt.compat separate_new_message ppf ();
+    separate_new_message ppf;
     (* Make sure we keep [num_loc_lines] updated.
        The tabulation box is here to give submessage the option
        to be aligned with the main message box
@@ -813,7 +815,7 @@ let terminfo_toplevel_printer (lb: lexbuf): report_printer =
   let pp_main_loc _ _ _ _ = () in
   let pp_submsg_loc _ _ ppf loc =
     if not loc.loc_ghost then
-      Format.fprintf ppf "%a:@ " Compat.print_loc loc in
+      Format.fprintf ppf "%a:@ " print_loc loc in
   { batch_mode_printer with pp; pp_main_loc; pp_submsg_loc }
 
 let best_toplevel_printer () =

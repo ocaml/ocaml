@@ -315,7 +315,7 @@ let fprintf, dprintf = Format_doc.fprintf, Format_doc.dprintf
 let report_error ppf = function
   | Assembler_error file ->
       fprintf ppf "Assembler error, input left in file %a"
-        Location.print_filename file
+        Location.Doc.quoted_filename file
   | Mismatched_for_pack saved ->
     let msg = function
        | None -> dprintf "without %a" Style.inline_code "-for-pack"

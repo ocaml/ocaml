@@ -88,7 +88,6 @@ val input_phrase_buffer: Buffer.t option ref
 (** {1 Toplevel-specific functions} *)
 
 val echo_eof: unit -> unit
-val separate_new_message: unit Format_doc.printer
 val reset: unit -> unit
 
 
@@ -169,16 +168,18 @@ val show_filename: string -> string
     (** In -absname mode, return the absolute path for this filename.
         Otherwise, returns the filename unchanged. *)
 
-module Compat: sig
-  val print_filename: formatter -> string -> unit
-  val print_loc: formatter -> t -> unit
-  val print_locs: formatter -> t list -> unit
-  val separate_new_message: formatter -> unit -> unit
-end
+val print_filename: formatter -> string -> unit
+val print_loc: formatter -> t -> unit
+val print_locs: formatter -> t list -> unit
+val separate_new_message: formatter -> unit
 
-val print_filename: string Format_doc.printer
-val print_loc: t Format_doc.printer
-val print_locs: t list Format_doc.printer
+module Doc: sig
+  val separate_new_message: unit Format_doc.printer
+  val filename: string Format_doc.printer
+  val quoted_filename: string Format_doc.printer
+  val loc: t Format_doc.printer
+  val locs: t list Format_doc.printer
+end
 
 (** {1 Toplevel-specific location highlighting} *)
 
