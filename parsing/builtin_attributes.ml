@@ -36,13 +36,22 @@ let attr_order a1 a2 =
   | 0 -> Int.compare a1.loc.loc_start.pos_cnum a2.loc.loc_start.pos_cnum
   | n -> n
 
+let compiler_stops_before_attributes_consumed () =
+  let stops_before_lambda =
+    match !Clflags.stop_after with
+    | None -> false
+    | Some pass -> Clflags.Compiler_pass.(compare pass Lambda) < 0
+  in
+  stops_before_lambda || !Clflags.print_types
+
 let warn_unused () =
   let keys = List.of_seq (Attribute_table.to_seq_keys unused_attrs) in
   Attribute_table.clear unused_attrs;
-  let keys = List.sort attr_order keys in
-  List.iter (fun sloc ->
-    Location.prerr_warning sloc.loc (Warnings.Misplaced_attribute sloc.txt))
-    keys
+  if not (compiler_stops_before_attributes_consumed ()) then
+    let keys = List.sort attr_order keys in
+    List.iter (fun sloc ->
+      Location.prerr_warning sloc.loc (Warnings.Misplaced_attribute sloc.txt))
+      keys
 
 (* These are the attributes that are tracked in the builtin_attrs table for
    misplaced attribute warnings. *)
