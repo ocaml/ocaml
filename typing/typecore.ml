@@ -3519,28 +3519,27 @@ and type_expect_
         }
   | Pexp_apply(sfunct, sargs) ->
       assert (sargs <> []);
+      let outer_level = get_current_level () in
       let rec lower_args seen ty_fun =
         let ty = expand_head env ty_fun in
         if TypeSet.mem ty seen then () else
           match get_desc ty with
             Tarrow (_l, ty_arg, ty_fun, _com) ->
-              (try enforce_current_level env ty_arg
+              (try Ctype.unify_var env (newvar2 outer_level) ty_arg
                with Unify _ -> assert false);
               lower_args (TypeSet.add ty seen) ty_fun
           | _ -> ()
       in
+      (* one more level for warning on non-returning functions *)
+      with_local_level_generalize begin fun () ->
       let type_sfunct sfunct =
-        (* one more level for warning on non-returning functions *)
-        with_local_level_iter
-          begin fun () ->
-            let funct =
-              with_local_level_generalize_structure_if_principal
-                (fun () -> type_exp env sfunct)
-            in
-            let ty = instance funct.exp_type in
-            (funct, [ty])
-          end
-          ~post:(wrap_trace_gadt_instances env (lower_args TypeSet.empty))
+        let funct =
+          with_local_level_generalize_structure_if_principal
+            (fun () -> type_exp env sfunct)
+        in
+        let ty = instance funct.exp_type in
+        wrap_trace_gadt_instances env (lower_args TypeSet.empty) ty;
+        funct
       in
       let funct, sargs =
         let funct = type_sfunct sfunct in
@@ -3566,6 +3565,7 @@ and type_expect_
         exp_type = ty_res;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
+      end
   | Pexp_match(sarg, caselist) ->
       let arg =
         with_local_level_generalize (fun () -> type_exp env sarg)
@@ -5473,21 +5473,17 @@ and type_application env funct sargs =
     (try ignore (filter_arrow env (instance funct.exp_type) Nolabel); true
      with Filter_arrow_failed _ -> false)
   in
-  (* Extra scope to check for non-returning functions *)
-  with_local_level_generalize begin fun () ->
-    match sargs with
-    | (* Special case for ignore: avoid discarding warning *)
-      [Nolabel, sarg] when is_ignore funct ->
-        let ty_arg, ty_res =
-          filter_arrow env (instance funct.exp_type) Nolabel in
-        let exp = type_expect env sarg (mk_expected ty_arg) in
-        check_partial_application ~statement:false exp;
-        ([Nolabel, Some exp], ty_res)
-    | _ ->
-        let ty = funct.exp_type in
-        type_args [] ty (instance ty) sargs
-  end
-  ~before_generalize:(fun (_, ty) -> enforce_current_level env ty)
+  match sargs with
+  | (* Special case for ignore: avoid discarding warning *)
+    [Nolabel, sarg] when is_ignore funct ->
+      let ty_arg, ty_res =
+        filter_arrow env (instance funct.exp_type) Nolabel in
+      let exp = type_expect env sarg (mk_expected ty_arg) in
+      check_partial_application ~statement:false exp;
+      ([Nolabel, Some exp], ty_res)
+  | _ ->
+      let ty = funct.exp_type in
+      type_args [] ty (instance ty) sargs
 
 and type_construct env loc lid sarg ty_expected_explained attrs =
   let { ty = ty_expected; explanation } = ty_expected_explained in
