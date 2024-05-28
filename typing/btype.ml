@@ -99,49 +99,68 @@ let generic_level = Ident.highest_scope
 let lowest_level = Ident.lowest_scope
 
 (**** leveled type pool ****)
+(* This defines a mapping from levels to pools of type nodes.
+   If [level >= !last_level] then we use [!last_pool], otherwise
+   we look it up in [!leveled_type_pool].
+   When can either add a level with a new pool, or using the last pool.
+   In both cases we add this level to [added_levels], so that it
+   can be added to [leveled_type_pool] when [last_pool] is updated.
+   Remark: the only function adding to a pool is [add_to_pool], and
+   the only function returning the contents of a pool is [with_new_pool],
+   so that the initial pool can be added to, but new read from. *)
 
 module IntMap = Map.Make(Int)
-let last_pool = s_ref (ref [])
-let last_level = s_ref 0
-let leveled_type_pool = s_ref IntMap.(add !last_level !last_pool empty)
+let last_pool = s_table ref []
+let last_level = s_ref lowest_level
+let leveled_type_pool = s_ref IntMap.empty
+let added_levels = s_ref []
 
+let pool_of_level level =
+  if level >= !last_level then !last_pool else
+  try IntMap.find level !leveled_type_pool
+  with Not_found ->
+    (* Format.eprintf "@[<2>Level %d not in pool: %a@]@." level
+       (fun ppf -> List.iter (Format.fprintf ppf "@ %d"))
+       (List.map fst (IntMap.bindings !leveled_type_pool)); *)
+    invalid_arg "Btype.pool_of_level"
+
+(* Create a new pool at given level, and use it locally.
+   We need first to add the deferred levels to leveled_type_pool *)
 let with_new_pool ~level f =
-  let old_type_pool = !leveled_type_pool in
+  let old_type_pool = !leveled_type_pool and old_added_levels = !added_levels in
   let old_level = !last_level and old_pool = !last_pool in
+  leveled_type_pool :=
+    List.fold_left (fun otp level -> IntMap.add level old_pool otp)
+      old_type_pool old_added_levels;
   let pool = ref [] in
-  leveled_type_pool := IntMap.add level pool old_type_pool;
   last_level := level;
   last_pool := pool;
+  added_levels := [level];
   let r =
     Misc.try_finally f ~always:
       (fun () ->
         leveled_type_pool := old_type_pool;
+        added_levels := old_added_levels;
         last_level := old_level;
         last_pool := old_pool)
   in
   let p = !pool in
   (r, p)
 
+(* Since we reuse [last_pool], just add a deferred level *)
 let register_last_pool ~level =
-  leveled_type_pool := IntMap.add level !last_pool !leveled_type_pool
+  added_levels := level :: !added_levels
 
+(* Register a level locally *)
 let with_last_pool ~level f =
   if level >= generic_level then f () else
-  let old_type_pool = !leveled_type_pool in
+  let old_added_levels = !added_levels in
   register_last_pool ~level;
-  Misc.try_finally f ~always:(fun () -> leveled_type_pool := old_type_pool)
+  Misc.try_finally f ~always:(fun () -> added_levels := old_added_levels)
 
 let add_to_pool ~level ty =
-  if level >= generic_level || level <= 0 then () else
-  let pool =
-    if level >= !last_level then !last_pool else
-    try IntMap.find level !leveled_type_pool
-    with Not_found ->
-      (* Format.eprintf "@[<2>Level %d not in pool: %a@]@." level
-        (fun ppf -> List.iter (Format.fprintf ppf "@ %d"))
-        (List.map fst (IntMap.bindings !leveled_type_pool)); *)
-      invalid_arg "Btype.add_to_pool"
-  in
+  if level >= generic_level || level <= lowest_level then () else
+  let pool = pool_of_level level in
   pool := ty :: !pool
 
 (**** Some type creators ****)
