@@ -300,6 +300,10 @@ _______________
   incorrectly triggering Warning 53.
   (Nicolás Ojeda Bär, review by Chris Casinghino and Florian Angeletti)
 
+- #13202: Fix an issue where `-output-complete-obj` would fail due to an
+  inability to locate installed libraries.
+  (Nicolás Ojeda Bär, review by Antonin Décimo)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
