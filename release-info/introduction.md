@@ -3,32 +3,32 @@
 OCaml releases follow a linux-like scheme for their version string. The
 OCaml version string consists in three numbers, optionally followed by
 either a prerelease or development tag
-(`%i.%i.%i[~alpha%i|~beta%i|~rc%i|+%s]`). For example, 4.14.1,
+(`%i.%i.%i[~alpha%i|~beta%i|~rc%i|+%s]`). For example, `4.14.1`,
 5.1.0~alpha2 and 5.3.0+dev0-2023-12-22 are valid OCaml versions.
 
-- The first version number (4 in 4.14.1) is the major version of OCaml.
+- The first version number (`4` in `4.14.1`) is the major version of OCaml.
   This version number is updated when major new features are added to the OCaml
   language. For instance, OCaml 5 added shared memory parallelism and effect
   handlers and OCaml 4 introduced GADTs (Generalised Abstract Data Types).
 
-- The second version number (14 in 4.14.1) is the minor version of OCaml.
+- The second version number (`14` in` 4.14.1`) is the minor version of OCaml.
   This number is increased for every new release of OCaml. In particular, a new
   minor version of OCaml can contain breaking changes. However, we strive to
   maintain backward compatibility as much as possible.
 
-- The last number (1 in 4.14.1) is the bugfix number.
+- The last number (`1` in `4.14.1`) is the bugfix number.
   Updating to the latest bugfix release is always safe, those bugfix versions
   are meant to be completely backward compatible and only contain important or
   very safe bug fixes.
 
-- The prerelease tag `~alpha%i`, `~beta%i`, `~rc%i` (~alpha2 in
-  5.1.0~alpha2) describes a prerelease version of the compiler that is
-  currently being tested. See [below](## Prerelease versions) for
+- The prerelease tag `~alpha%i`, `~beta%i`, `~rc%i` (`~alpha2` in
+  `5.1.0~alpha2`) describes a prerelease version of the compiler that is
+  currently being tested. See [below](#prerelease-versions) for
   a more thorough explanation.
 
 - The development tag `+tag` indicates a development or experimental version of
-  the compiler. +dev0-2023-12-22 in 5.3.0+dev0-2023-12-22 is an example of the
-  tags of the form +dev%i-%date used by the compiler for its development
+  the compiler. `+dev0-2023-12-22` in `5.3.0+dev0-2023-12-22` is an example of the
+  tags of the form `+dev%i-%date` used by the compiler for its development
   versions.
 
 
@@ -68,7 +68,7 @@ regressions coming from last-minute changes. Only bugfixes and documentation
 improvements go to the release branch -- by cherry-picking them from 'trunk'.
 
 We do not have the resources to maintain more than one dev branch, one prelease
-branch, and [one exceptional LTS branch](# Exceptional LTS versions).
+branch, and [one exceptional LTS branch](#Exceptional-LTS-versions).
 
 ### Example
 
