@@ -54,6 +54,10 @@ _______________
 - #13163: Enable frame pointers on macOS x86_64
   (Tim McGilchrist, review by Sébastien Hinderer and Fabrice Buoro)
 
+- #12951: Constify constructors and flags tables in C code (take 2).
+  Now these tables will go in the readonly segment, where they belong.
+  (Antonin Décimo, review by David Allsopp)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously

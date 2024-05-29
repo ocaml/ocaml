@@ -22,7 +22,7 @@
 
 #include <sys/socket.h>
 
-extern int caml_unix_socket_domain_table[], caml_unix_socket_type_table[];
+extern const int caml_unix_socket_domain_table[], caml_unix_socket_type_table[];
 
 CAMLprim value caml_unix_socketpair(value cloexec, value domain,
                                value type, value proto)
