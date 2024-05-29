@@ -4,20 +4,20 @@ OCaml 5.2.0 (13 May 2024)
 OCaml 5.2.0 is still a somewhat experimental release compared to the OCaml 4.14
 branch. Some of the highlights in OCaml 5.2.0 are:
 
-    Re-introduced GC compaction
-    Restored native backend for POWER 64 bits
-    Thread sanitizer support
-    New Dynarray module
-    New -H flag for hidden include directories
-    Project-wide occurence metadata support for developer tools
-    Raw identifiers
-    Local open in type expressions
+- Re-introduced GC compaction
+- Restored native backend for POWER 64 bits
+- Thread sanitizer support
+- New Dynarray module
+- New -H flag for hidden include directories
+- Project-wide occurence metadata support for developer tools
+- Raw identifiers
+- Local open in type expressions
 
 And a lot of incremental changes:
 
-    Around 20 new functions in the standard library
-    Many fixes and improvements in the runtime
-    Many bug fixes
+- Around 20 new functions in the standard library
+- Many fixes and improvements in the runtime
+- Many bug fixes
 
 OCaml 5.1.0 (14 September 2023)
 -------------------------------
