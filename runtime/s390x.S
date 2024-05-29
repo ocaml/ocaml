@@ -496,7 +496,7 @@ LBL(caml_c_call):
 #endif
         basr    %r14, ADDITIONAL_ARG
         CLEANUP_AFTER_C_CALL
-    /* Reload alloc ptr  */
+    /* Reload new allocation pointer & exn handler */
         lg      ALLOC_PTR, Caml_state(young_ptr)
         lg      TRAP_PTR, Caml_state(exn_handler)
     /* Load ocaml stack and restore global variables */
@@ -561,8 +561,9 @@ LBL(106):
         CLEANUP_AFTER_C_CALL
     /* Restore stack */
         lgr     %r15, %r12
-    /* Reload alloc ptr */
+    /* Reload new allocation pointer & exn handler */
         lg      ALLOC_PTR, Caml_state(young_ptr)
+        lg      TRAP_PTR, Caml_state(exn_handler)
     /* Switch from C to OCaml */
         SWITCH_C_TO_OCAML
     /* Return */
