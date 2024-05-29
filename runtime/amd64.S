@@ -180,16 +180,6 @@
         leaq    G(label)(%rip), dst
 #endif
 
-/* Push the current exception handler. Clobbers %r11 */
-#define PUSH_EXN_HANDLER \
-        movq    Caml_state(exn_handler), %r11; \
-        pushq   %r11; CFI_ADJUST(8);
-
-/* Pop the current exception handler. Undoes PUSH_EXN_HANDLER. Clobbers %r11 */
-#define POP_EXN_HANDLER \
-        leaq    Caml_state(exn_handler), %r11; \
-        popq    (%r11); CFI_ADJUST(-8)
-
 /******************************************************************************/
 /* Stack switching operations */
 /******************************************************************************/
@@ -229,11 +219,13 @@
         CFI_RESTORE_STATE
 
 /* Load Caml_state->exn_handler into %rsp and restores prior exn_handler.
-   Clobbers %r10 and %r11. */
+   Clobbers %r11. */
 #define RESTORE_EXN_HANDLER_OCAML              \
         movq    Caml_state(exn_handler), %rsp; \
         CFI_DEF_CFA_OFFSET(16);                \
-        POP_EXN_HANDLER
+        leaq    Caml_state(exn_handler), %r11; \
+        popq    (%r11); CFI_ADJUST(-8)
+
 
 /* When ThreadSanitizer instrumentation is enabled, the code must call
    the C functions __tsan_func_entry and __tsan_func_exit to signal
