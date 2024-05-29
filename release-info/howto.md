@@ -24,8 +24,8 @@ OCamlLabs folks (for OPAM testing).
 rm -f /tmp/env-$USER.sh
 cat >/tmp/env-$USER.sh <<EOF
 # Update the data below
-export MAJOR=4
-export MINOR=12
+export MAJOR=5
+export MINOR=2
 export BUGFIX=0
 export PLUSEXT=
 
@@ -35,7 +35,7 @@ export HUMAN=
 # do we need to use tar or gtar?
 export TAR=tar
 
-export WORKTREE=~/o/\$MAJOR.\$MINOR
+export WORKTREE=~/ocaml/\$MAJOR.\$MINOR
   # must be the git worktree for the branch you are releasing
 
 export BRANCH=\$MAJOR.\$MINOR
@@ -121,7 +121,7 @@ make tests
 ## 5: build, tag and push the new release
 
 ```
-# at this point, the VERSION file contains N+devD
+# at this point, the build-aux/ocaml_version.m4 file contains N+devD
 # increment it into N+dev(D+1); for example,
 #   4.07.0+dev8-2018-06-19 => 4.07.0+dev9-2018-06-26
 # for production releases: check and change the Changes header
@@ -129,10 +129,9 @@ make tests
 make -B configure
 git commit -a -m "last commit before tagging $VERSION"
 
-# update VERSION with the new release; for example,
+# update build-aux/ocaml_version.m4 with the new release; for example,
 #   4.07.0+dev9-2018-06-26 => 4.07.0+rc2
 # Update ocaml-variants.opam with new version.
-# Update \year in manual/src/macros.hva
 make -B configure
 # For a production release
 make coreboot -j5
@@ -140,13 +139,13 @@ make coreboot -j5 # must say "Fixpoint reached, bootstrap succeeded."
 git commit -m "release $VERSION" -a
 git tag -m "release $VERSION" $TAGVERSION
 
-# for production releases, change the VERSION file into (N+1)+dev0; for example,
+# for production releases, change the build-aux/ocaml_version.m4 file into (N+1)+dev0; for example,
 #   4.08.0 => 4.08.1+dev0
 # for testing candidates, use N+dev(D+2) instead; for example,
 #   4.07.0+rc2 => 4.07.0+dev10-2018-06-26
 # Revert ocaml-variants.opam to its "trunk" version.
 make -B configure
-git commit -m "increment version number after tagging $VERSION" VERSION configure ocaml-variants.opam
+git commit -m "increment version number after tagging $VERSION" build-aux/ocaml_version.m4 VERSION configure ocaml-variants.opam
 git push
 git push --tags
 ```
@@ -155,7 +154,7 @@ git push --tags
 
 This needs to be more tested, tread with care.
 ```
-# at this point, the VERSION file contains N+devD
+# at this point, the build-aux/ocaml_version.m4 file contains N+devD
 # increment it into N+dev(D+1); for example,
 #   4.07.0+dev0-2018-06-19 => 4.07.0+dev1-2018-06-26
 # Rename the "Working version" header in Changes
@@ -164,7 +163,7 @@ make -B configure
 git commit -a -m "last commit before branching $BRANCH"
 git branch $BRANCH
 
-# update VERSION with the new future branch,
+# update build-aux/ocaml_version.m4 with the new future branch,
 #   4.07.0+dev1-2018-06-26 => 4.08.0+dev0-2018-06-30
 # Update ocaml-variants.opam with new version.
 make -B configure
@@ -273,6 +272,7 @@ cd $WORKTREE
 TMPDIR=/tmp/ocaml-release
 git checkout $TAGVERSION
 git checkout-index -a -f --prefix=$TMPDIR/ocaml-$VERSION/
+git switch $BRANCH
 cd $TMPDIR
 $TAR -c --owner 0 --group 0 -f ocaml-$VERSION.tar ocaml-$VERSION
 gzip -9 <ocaml-$VERSION.tar >ocaml-$VERSION.tar.gz
@@ -345,8 +345,6 @@ it was a release candidate.
 ```
 cd $WORKTREE
 make
-make install
-export PATH="$INSTDIR/bin:$PATH"
 cd manual
 make clean
 make
