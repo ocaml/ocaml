@@ -300,7 +300,7 @@ CAMLexport void caml_ba_finalize(value v)
     break;
   case CAML_BA_MAPPED_FILE:
     /* Bigarrays for mapped files use a different finalization method */
-    /* fallthrough */
+    fallthrough;
   default:
     CAMLassert(0);
   }
@@ -361,11 +361,11 @@ CAMLexport int caml_ba_compare(value v1, value v2)
   case CAML_BA_FLOAT16:
     DO_GENERIC_UNORDERED_COMPARISON(uint16, float, caml_float16_to_float);
   case CAML_BA_COMPLEX32:
-    num_elts *= 2; /*fallthrough*/
+    num_elts *= 2; fallthrough;
   case CAML_BA_FLOAT32:
     DO_FLOAT_COMPARISON(float);
   case CAML_BA_COMPLEX64:
-    num_elts *= 2; /*fallthrough*/
+    num_elts *= 2; fallthrough;
   case CAML_BA_FLOAT64:
     DO_FLOAT_COMPARISON(double);
   case CAML_BA_CHAR:
@@ -418,8 +418,8 @@ CAMLexport intnat caml_ba_hash(value v)
     }
     w = 0;
     switch (num_elts & 3) {
-    case 3: w  = p[2] << 16;    /* fallthrough */
-    case 2: w |= p[1] << 8;     /* fallthrough */
+    case 3: w  = p[2] << 16; fallthrough;
+    case 2: w |= p[1] << 8;  fallthrough;
     case 1: w |= p[0];
             h = caml_hash_mix_uint32(h, w);
     }
@@ -467,7 +467,8 @@ CAMLexport intnat caml_ba_hash(value v)
     break;
   }
   case CAML_BA_COMPLEX32:
-    num_elts *= 2;              /* fallthrough */
+    num_elts *= 2;
+    fallthrough;
   case CAML_BA_FLOAT32:
   {
     float * p = b->data;
@@ -476,7 +477,8 @@ CAMLexport intnat caml_ba_hash(value v)
     break;
   }
   case CAML_BA_COMPLEX64:
-    num_elts *= 2;              /* fallthrough */
+    num_elts *= 2;
+    fallthrough;
   case CAML_BA_FLOAT64:
   {
     double * p = b->data;
@@ -727,8 +729,6 @@ value caml_ba_get_N(value vb, volatile value * vind, int nind)
   offset = caml_ba_offset(b, index);
   /* Perform read */
   switch ((b->flags) & CAML_BA_KIND_MASK) {
-  default:
-    CAMLassert(0);
   case CAML_BA_FLOAT16:
     return caml_copy_double(
       (double) caml_float16_to_float(((uint16 *) b->data)[offset]));
@@ -760,6 +760,9 @@ value caml_ba_get_N(value vb, volatile value * vind, int nind)
       return copy_two_doubles(p[0], p[1]); }
   case CAML_BA_CHAR:
     return Val_int(((unsigned char *) b->data)[offset]);
+  default:
+    CAMLassert(0);
+    return Val_int(0);
   }
 }
 
@@ -872,8 +875,6 @@ static value caml_ba_set_aux(value vb, volatile value * vind,
   offset = caml_ba_offset(b, index);
   /* Perform write */
   switch (b->flags & CAML_BA_KIND_MASK) {
-  default:
-    CAMLassert(0);
   case CAML_BA_FLOAT16:
     ((uint16 *) b->data)[offset] =
       caml_float_to_float16(Double_val(newval)); break;
@@ -906,6 +907,8 @@ static value caml_ba_set_aux(value vb, volatile value * vind,
       p[0] = Double_flat_field(newval, 0);
       p[1] = Double_flat_field(newval, 1);
       break; }
+  default:
+    CAMLassert(0);
   }
   return Val_unit;
 }
@@ -1288,8 +1291,6 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
   intnat num_elts = caml_ba_num_elts(b);
 
   switch (b->flags & CAML_BA_KIND_MASK) {
-  default:
-    CAMLassert(0);
   case CAML_BA_FLOAT16: {
     uint16 init = caml_float_to_float16(Double_val(vinit));
     uint16 * p;
@@ -1361,6 +1362,8 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
     FILL_COMPLEX_LOOP;
     break;
   }
+  default:
+    CAMLassert(0);
   }
   CAMLreturn (Val_unit);
 }

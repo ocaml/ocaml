@@ -524,7 +524,7 @@ nextc(void)
                 s = cptr;
                 break;
             }
-            /* fall through */
+            fallthrough;
 
         default:
             cptr = s;
@@ -646,7 +646,7 @@ loop:
             FREE(t_line);
             return;
         }
-        /* fall through */
+        fallthrough;
 
     case '{':
         putc(c, f);

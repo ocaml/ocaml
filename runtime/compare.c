@@ -160,7 +160,7 @@ static intnat do_compare_val(struct compare_stack* stk,
             if (res != 0) return res;
             goto next_item;
           }
-          default: /*fallthrough*/;
+          default: break;
           }
 
         return LESS;                /* v1 long < v2 block */
@@ -181,7 +181,7 @@ static intnat do_compare_val(struct compare_stack* stk,
             if (res != 0) return res;
             goto next_item;
           }
-          default: /*fallthrough*/;
+          default: break;
           }
         return GREATER;            /* v1 block > v2 long */
       }

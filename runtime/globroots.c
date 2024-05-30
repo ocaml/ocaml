@@ -118,6 +118,7 @@ CAMLexport void caml_remove_generational_global_root(value *r)
       caml_delete_global_root(&caml_global_roots_old, r);
       /* Fallthrough: the root can be in the young list while actually
          being in the major heap. */
+      fallthrough;
     case YOUNG:
       caml_delete_global_root(&caml_global_roots_young, r);
       break;
