@@ -1,3 +1,12 @@
+OCaml 5.2 maintenance version
+-----------------------------
+
+- #13207: Be sure to reload the register caching the exception handler in
+  caml_c_call and caml_c_call_stack_args, as its value may have been changed
+  if the OCaml stack is expanded during a callback.
+  (Miod Vallat, report by Vesa Karvonen, review by Gabriel Scherer and
+   Xavier Leroy)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
