@@ -42,10 +42,11 @@ let style = function
   | Modification -> Misc.Style.[ FG Magenta; Bold]
 
 let prefix ppf (pos, p) =
+  let open Format_doc in
   let sty = style p in
-  Format.pp_open_stag ppf (Misc.Style.Style sty);
-  Format.fprintf ppf "%i. " pos;
-  Format.pp_close_stag ppf ()
+  pp_open_stag ppf (Misc.Style.Style sty);
+  fprintf ppf "%i. " pos;
+  pp_close_stag ppf ()
 
 
 let (let*) = Option.bind

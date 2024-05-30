@@ -45,9 +45,7 @@ type error =
 
 exception Error of Location.t * error
 
-open Format
-
-val report_error: formatter -> error -> unit
+val report_error: error Format_doc.printer
 
 (* Forward declaration -- to be filled in by Translmod.transl_module *)
 val transl_module :

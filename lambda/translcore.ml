@@ -1313,7 +1313,7 @@ let transl_let rec_flag pat_expr_list body =
 
 (* Error report *)
 
-open Format
+open Format_doc
 
 let report_error ppf = function
   | Free_super_var ->

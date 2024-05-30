@@ -26,6 +26,4 @@ type error = Tags of string * string
 
 exception Error of Location.t * error
 
-open Format
-
-val report_error: formatter -> error -> unit
+val report_error: error Format_doc.printer

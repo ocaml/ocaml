@@ -51,7 +51,7 @@ let preprocess sourcefile =
     Pparse.preprocess sourcefile
   with Pparse.Error err ->
     Format.eprintf "Preprocessing error@.%a@."
-      Pparse.report_error err;
+      (Format_doc.compat Pparse.report_error) err;
     exit 2
 
 (** Analysis of an implementation file. Returns (Some typedtree) if

@@ -59,20 +59,16 @@ val find_eval_phrase :
 val max_printer_depth: int ref
 val max_printer_steps: int ref
 
+type 'a printer := 'a Oprint.printer
+
 val print_out_value :
   (formatter -> Outcometree.out_value -> unit) ref
-val print_out_type :
-  (formatter -> Outcometree.out_type -> unit) ref
-val print_out_class_type :
-  (formatter -> Outcometree.out_class_type -> unit) ref
-val print_out_module_type :
-  (formatter -> Outcometree.out_module_type -> unit) ref
-val print_out_type_extension :
-  (formatter -> Outcometree.out_type_extension -> unit) ref
-val print_out_sig_item :
-  (formatter -> Outcometree.out_sig_item -> unit) ref
-val print_out_signature :
-  (formatter -> Outcometree.out_sig_item list -> unit) ref
+val print_out_type : Outcometree.out_type printer
+val print_out_class_type :  Outcometree.out_class_type printer
+val print_out_module_type : Outcometree.out_module_type printer
+val print_out_type_extension : Outcometree.out_type_extension printer
+val print_out_sig_item :  Outcometree.out_sig_item printer
+val print_out_signature :  Outcometree.out_sig_item list printer
 val print_out_phrase :
   (formatter -> Outcometree.out_phrase -> unit) ref
 

@@ -38,7 +38,7 @@ let marshal_to_channel_with_possibly_32bit_compat ~filename ~kind outchan obj =
 
 
 let report_error ppf (file, kind) =
-  Format.fprintf ppf "Generated %s %S cannot be used on a 32-bit platform"
+  Format_doc.fprintf ppf "Generated %s %S cannot be used on a 32-bit platform"
                      kind file
 let () =
   Location.register_error_of_exn

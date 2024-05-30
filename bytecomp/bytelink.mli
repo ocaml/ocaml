@@ -44,6 +44,4 @@ type error =
 
 exception Error of error
 
-open Format
-
-val report_error: formatter -> error -> unit
+val report_error: error Format_doc.printer

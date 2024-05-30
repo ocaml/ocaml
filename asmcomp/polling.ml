@@ -18,7 +18,7 @@
 (**************************************************************************)
 
 open Mach
-open Format
+open Format_doc
 
 module Int = Numbers.Int
 module String = Misc.Stdlib.String
@@ -316,7 +316,7 @@ let report_error ppf = function
           | Poll -> ()
           | Alloc | Function_call | External_call ->
             fprintf ppf "\t%s at " (instr_type p);
-            Location.print_loc ppf (Debuginfo.to_location dbg);
+            Location.Doc.loc ppf (Debuginfo.to_location dbg);
             fprintf ppf "\n"
           end
         ) instrs;

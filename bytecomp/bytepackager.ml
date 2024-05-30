@@ -344,25 +344,25 @@ let package_files ~ppf_dump initial_env files targetfile =
 
 (* Error report *)
 
-open Format
+open Format_doc
 module Style = Misc.Style
 
 let report_error ppf = function
     Forward_reference(file, compunit) ->
       fprintf ppf "Forward reference to %a in file %a"
         Style.inline_code (Compunit.name compunit)
-        (Style.as_inline_code Location.print_filename) file
+        Location.Doc.quoted_filename file
   | Multiple_definition(file, compunit) ->
       fprintf ppf "File %a redefines %a"
-        (Style.as_inline_code Location.print_filename) file
+        Location.Doc.quoted_filename file
         Style.inline_code (Compunit.name compunit)
   | Not_an_object_file file ->
       fprintf ppf "%a is not a bytecode object file"
-        (Style.as_inline_code Location.print_filename) file
+        Location.Doc.quoted_filename file
   | Illegal_renaming(name, file, id) ->
       fprintf ppf "Wrong file naming: %a@ contains the code for\
                    @ %a when %a was expected"
-        (Style.as_inline_code Location.print_filename) file
+        Location.Doc.quoted_filename file
         Style.inline_code (Compunit.name name)
         Style.inline_code (Compunit.name id)
   | File_not_found file ->

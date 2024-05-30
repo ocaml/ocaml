@@ -17,11 +17,12 @@
 
 val pretty_const
   : Asttypes.constant -> string
-val pretty_val : Format.formatter -> 'k Typedtree.general_pattern -> unit
 
-val pretty_pat
-    : Format.formatter -> 'k Typedtree.general_pattern -> unit
-val pretty_line
-    : Format.formatter -> 'k Typedtree.general_pattern list -> unit
-val pretty_matrix
-    : Format.formatter -> 'k Typedtree.general_pattern list list -> unit
+val top_pretty: 'k Typedtree.general_pattern Format_doc.printer
+
+module Compat: sig
+  val pretty_pat: Format.formatter -> 'k Typedtree.general_pattern -> unit
+  val pretty_line: Format.formatter -> 'k Typedtree.general_pattern list -> unit
+  val pretty_matrix:
+    Format.formatter -> 'k Typedtree.general_pattern list list -> unit
+end

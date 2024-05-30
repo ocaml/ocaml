@@ -79,7 +79,7 @@ type change_kind =
   | Insertion
   | Modification
   | Preservation
-val prefix: Format.formatter -> (int * change_kind) -> unit
+val prefix: (int * change_kind) Format_doc.printer
 val style: change_kind -> Misc.Style.style list
 
 

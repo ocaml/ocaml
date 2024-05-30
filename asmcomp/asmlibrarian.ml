@@ -84,7 +84,7 @@ let create_archive file_list lib_name =
     )
 
 module Style = Misc.Style
-open Format
+open Format_doc
 
 let report_error ppf = function
   | File_not_found name ->
@@ -92,7 +92,7 @@ let report_error ppf = function
   | Archiver_error name ->
       fprintf ppf "Error while creating the library %a" Style.inline_code name
   | Link_error e ->
-      Linkdeps.report_error ~print_filename:Location.print_filename ppf e
+      Linkdeps.report_error ~print_filename:Location.Doc.filename ppf e
 
 let () =
   Location.register_error_of_exn

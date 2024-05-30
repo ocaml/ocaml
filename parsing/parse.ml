@@ -138,7 +138,7 @@ let prepare_error err =
       Location.errorf ~loc
         "In this scoped type, variable %a \
          is reserved for the local type %a."
-        (Style.as_inline_code Pprintast.tyvar) var
+        (Style.as_inline_code Pprintast.Doc.tyvar) var
         Style.inline_code var
   | Other loc ->
       Location.errorf ~loc "Syntax error"
@@ -148,16 +148,16 @@ let prepare_error err =
   | Invalid_package_type (loc, ipt) ->
       let invalid ppf ipt = match ipt with
         | Syntaxerr.Parameterized_types ->
-            Format.fprintf ppf "parametrized types are not supported"
+            Format_doc.fprintf ppf "parametrized types are not supported"
         | Constrained_types ->
-            Format.fprintf ppf "constrained types are not supported"
+            Format_doc.fprintf ppf "constrained types are not supported"
         | Private_types ->
-            Format.fprintf ppf  "private types are not supported"
+            Format_doc.fprintf ppf  "private types are not supported"
         | Not_with_type ->
-            Format.fprintf ppf "only %a constraints are supported"
+            Format_doc.fprintf ppf "only %a constraints are supported"
               Style.inline_code "with type t ="
         | Neither_identifier_nor_with_type ->
-            Format.fprintf ppf
+            Format_doc.fprintf ppf
               "only module type identifier and %a constraints are supported"
               Style.inline_code "with type"
       in

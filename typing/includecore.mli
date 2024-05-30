@@ -141,14 +141,14 @@ val class_types:
 val report_value_mismatch :
   string -> string ->
   Env.t ->
-  Format.formatter -> value_mismatch -> unit
+  value_mismatch Format_doc.printer
 
 val report_type_mismatch :
   string -> string -> string ->
   Env.t ->
-  Format.formatter -> type_mismatch -> unit
+  type_mismatch Format_doc.printer
 
 val report_extension_constructor_mismatch :
   string -> string -> string ->
   Env.t ->
-  Format.formatter -> extension_constructor_mismatch -> unit
+  extension_constructor_mismatch Format_doc.printer

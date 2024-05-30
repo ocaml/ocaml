@@ -161,8 +161,9 @@ let print_getglobal_name ic =
     if n >= Array.length !globals || n < 0
     then print_string "<global table overflow>"
     else match !globals.(n) with
-         | Glob glob -> print_string
-                       (Format.asprintf "%a" Symtable.Global.description glob)
+         | Glob glob ->
+             let desc = Format_doc.compat Symtable.Global.description in
+             print_string (Format.asprintf "%a" desc glob)
          | Constant obj -> print_obj obj
   end
 
@@ -190,8 +191,8 @@ let print_setglobal_name ic =
     then print_string "<global table overflow>"
     else match !globals.(n) with
          | Glob glob ->
-             print_string
-               (Format.asprintf "%a" Symtable.Global.description glob)
+             let desc = Format_doc.compat Symtable.Global.description in
+             print_string (Format.asprintf "%a" desc glob)
          | Constant _ -> print_string "<unexpected constant>"
   end
 

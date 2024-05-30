@@ -15,7 +15,7 @@ tools: cross-reference-checker
 
 cross-reference-checker: cross_reference_checker.ml
 	$(OCAMLC) $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
-	  -I $(ROOTDIR)/parsing -I $(ROOTDIR)/driver \
+	  -I $(ROOTDIR)/utils -I $(ROOTDIR)/parsing -I $(ROOTDIR)/driver \
 	  $< -o $@
 
 # check cross-references between the manual and error messages

@@ -59,3 +59,9 @@ val tyvar: Format.formatter -> string -> unit
   (** Print a type variable name as a valid identifier, taking care of the
       special treatment required for the single quote character in second
       position, or for keywords by escaping them with \#. No-op on "_". *)
+
+(** {!Format_doc} functions for error messages *)
+module Doc:sig
+  val longident: Longident.t Format_doc.printer
+  val tyvar: string Format_doc.printer
+end

@@ -16,7 +16,7 @@
 (**************************************************************************)
 
 open Types
-open Format
+open Format_doc
 
 type position = First | Second
 
@@ -100,8 +100,8 @@ type 'variety obj =
 
 type first_class_module =
     | Package_cannot_scrape of Path.t
-    | Package_inclusion of (Format.formatter -> unit)
-    | Package_coercion of (Format.formatter -> unit)
+    | Package_inclusion of Format_doc.doc
+    | Package_coercion of Format_doc.doc
 
 type ('a, 'variety) elt =
   (* Common *)

@@ -302,7 +302,7 @@ let comments () = List.rev !comment_list
 
 (* Error report *)
 
-open Format
+open Format_doc
 
 let prepare_error loc = function
   | Illegal_character c ->

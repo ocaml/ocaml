@@ -447,12 +447,10 @@ type error =
 
 exception Error of error
 
-open Format
 
-val report_error: formatter -> error -> unit
+val report_error: error Format_doc.printer
 
-val report_lookup_error: Location.t -> t -> formatter -> lookup_error -> unit
-
+val report_lookup_error: Location.t -> t -> lookup_error Format_doc.printer
 val in_signature: bool -> t -> t
 
 val is_in_signature: t -> bool
@@ -482,9 +480,9 @@ val strengthen:
 (* Forward declaration to break mutual recursion with Ctype. *)
 val same_constr: (t -> type_expr -> type_expr -> bool) ref
 (* Forward declaration to break mutual recursion with Printtyp. *)
-val print_longident: (Format.formatter -> Longident.t -> unit) ref
+val print_longident: Longident.t Format_doc.printer ref
 (* Forward declaration to break mutual recursion with Printtyp. *)
-val print_path: (Format.formatter -> Path.t -> unit) ref
+val print_path: Path.t Format_doc.printer ref
 
 
 (** Folds *)
