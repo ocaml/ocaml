@@ -503,8 +503,9 @@ L(caml_c_call):
         sd      TRAP_PTR, Caml_state(exn_handler)
     /* Call the function */
         jalr    ADDITIONAL_ARG
-    /* Reload alloc ptr */
+    /* Reload new allocation pointer & exn handler */
         ld      ALLOC_PTR, Caml_state(young_ptr)
+        ld      TRAP_PTR, Caml_state(exn_handler)
     /* Load ocaml stack */
         SWITCH_C_TO_OCAML
 #if defined(WITH_THREAD_SANITIZER)
@@ -558,8 +559,9 @@ FUNCTION(caml_c_call_stack_args)
         jalr    ADDITIONAL_ARG
     /* Restore stack */
         mv      sp, s2
-    /* Reload alloc ptr */
+    /* Reload new allocation pointer & exn handler */
         ld      ALLOC_PTR, Caml_state(young_ptr)
+        ld      TRAP_PTR, Caml_state(exn_handler)
     /* Switch from C to OCaml */
         SWITCH_C_TO_OCAML
     /* Return */

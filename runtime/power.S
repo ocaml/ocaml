@@ -469,8 +469,9 @@ FUNCTION caml_c_call
         mr      2, C_CALL_TOC   /* restore current TOC */
     /* Restore return address (in register C_CALL_RET_ADDR, preserved by C) */
         mtlr    C_CALL_RET_ADDR
-    /* Reload allocation pointer*/
+    /* Reload new allocation pointer and exception pointer */
         ld      ALLOC_PTR, Caml_state(young_ptr)
+        ld      TRAP_PTR, Caml_state(exn_handler)
 #if defined(WITH_THREAD_SANITIZER)
         TSAN_SETUP_C_CALL 16
     /* Save return value registers. Since the called function could be anything,
@@ -521,8 +522,9 @@ FUNCTION caml_c_call_stack_args
         add     SP, SP, STACK_ARG_BYTES
     /* Restore return address (in register C_CALL_RET_ADDR, preserved by C) */
         mtlr    C_CALL_RET_ADDR
-    /* Reload allocation pointer*/
+    /* Reload new allocation pointer and exception pointer */
         ld      ALLOC_PTR, Caml_state(young_ptr)
+        ld      TRAP_PTR, Caml_state(exn_handler)
     /* Switch from C to OCaml */
         SWITCH_C_TO_OCAML
     /* Return to caller */
