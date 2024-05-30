@@ -23,15 +23,16 @@
 
 #ifdef HAS_MKFIFO
 
-CAMLprim value caml_unix_mkfifo(value path, value mode)
+CAMLprim value caml_unix_mkfifo(value path, value vmode)
 {
-  CAMLparam2(path, mode);
+  CAMLparam2(path, vmode);
   char * p;
   int ret;
+  int mode = Int_val(vmode);
   caml_unix_check_path(path, "mkfifo");
   p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
-  ret = mkfifo(p, Int_val(mode));
+  ret = mkfifo(p, mode);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
@@ -46,15 +47,16 @@ CAMLprim value caml_unix_mkfifo(value path, value mode)
 
 #ifdef S_IFIFO
 
-CAMLprim value caml_unix_mkfifo(value path, value mode)
+CAMLprim value caml_unix_mkfifo(value path, value vmode)
 {
-  CAMLparam2(path, mode);
+  CAMLparam2(path, vmode);
   char * p;
   int ret;
+  int mode = Int_val(vmode);
   caml_unix_check_path(path, "mkfifo");
   p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
-  ret = mknod(p, (Int_val(mode) & 07777) | S_IFIFO, 0);
+  ret = mknod(p, (mode & 07777) | S_IFIFO, 0);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)

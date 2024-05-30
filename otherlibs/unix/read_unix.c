@@ -37,18 +37,19 @@ CAMLprim value caml_unix_read(value fd, value buf, value ofs, value len)
   CAMLreturn(Val_int(ret));
 }
 
-CAMLprim value caml_unix_read_bigarray(value fd, value vbuf,
+CAMLprim value caml_unix_read_bigarray(value vfd, value vbuf,
                                        value vofs, value vlen)
 {
-  CAMLparam4(fd, vbuf, vofs, vlen);
+  CAMLparam4(vfd, vbuf, vofs, vlen);
   intnat ofs, len, ret;
   void *buf;
 
   buf = Caml_ba_data_val(vbuf);
   ofs = Long_val(vofs);
   len = Long_val(vlen);
+  int fd = Int_val(vfd);
   caml_enter_blocking_section();
-  ret = read(Int_val(fd), (char *) buf + ofs, len);
+  ret = read(fd, (char *) buf + ofs, len);
   caml_leave_blocking_section();
   if (ret == -1) caml_uerror("read_bigarray", Nothing);
   CAMLreturn(Val_long(ret));
