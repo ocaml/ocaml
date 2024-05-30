@@ -205,18 +205,19 @@ let make_startup_file ~ppf_dump units_list ~crc_interfaces =
   Emit.begin_assembly ();
   let name_list =
     List.flatten (List.map (fun (info,_,_) -> info.ui_defines) units_list) in
-  let entry = Cmm_helpers.entry_point name_list in
-  let entry =
-    if Config.tsan then
-      match entry with
-      | Cfunction ({ fun_body; _ } as cf) ->
-          Cmm.Cfunction
-            { cf with fun_body = Thread_sanitizer.wrap_entry_exit fun_body }
-      | _ -> assert false
-    else
-      entry
+  let entries = match Cmm_helpers.entry_point name_list with
+    | [d;entry] ->
+      if Config.tsan then
+        match entry with
+        | Cfunction ({ fun_body; _ } as cf) ->
+           [d;Cmm.Cfunction
+             { cf with fun_body = Thread_sanitizer.wrap_entry_exit fun_body }]
+        | a -> [d;a]
+      else
+        [d;entry]
+    | _ -> assert false;
   in
-  compile_phrase entry;
+  List.iter compile_phrase entries;
   let units = List.map (fun (info,_,_) -> info) units_list in
   List.iter compile_phrase
     (Cmm_helpers.emit_preallocated_blocks [] (* add gc_roots (for dynlink) *)

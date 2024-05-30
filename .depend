@@ -2796,6 +2796,7 @@ asmcomp/cmm_helpers.cmo : \
     utils/numbers.cmi \
     utils/misc.cmi \
     lambda/lambda.cmi \
+    typing/ident.cmi \
     lambda/debuginfo.cmi \
     utils/config.cmi \
     middle_end/compilenv.cmi \
@@ -2818,6 +2819,7 @@ asmcomp/cmm_helpers.cmx : \
     utils/numbers.cmx \
     utils/misc.cmx \
     lambda/lambda.cmx \
+    typing/ident.cmx \
     lambda/debuginfo.cmx \
     utils/config.cmx \
     middle_end/compilenv.cmx \

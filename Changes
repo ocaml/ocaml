@@ -113,6 +113,10 @@ _______________
   (Vincent Laviron, review by Hugo Heuzard, Nathanaëlle Courant
    and Gabriel Scherer)
 
+- #13217: Call entry functions in caml_program using a loop.
+  (Tim McGilchrist, original work by Pierre Oechsel,
+  reviewed by ????)
+
 ### Standard library:
 
 - #13168: In Array.shuffle, clarify the code that validates the

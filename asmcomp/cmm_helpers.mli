@@ -595,7 +595,7 @@ val placeholder_dbg : unit -> Debuginfo.t
 val placeholder_fun_dbg : human_name:string -> Debuginfo.t
 
 (** Entry point *)
-val entry_point : string list -> phrase
+val entry_point : string list -> phrase list
 
 (** Generate the caml_globals table *)
 val global_table: string list -> phrase
