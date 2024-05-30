@@ -11,6 +11,9 @@ external mycallback3 : ('a -> 'b -> 'c -> 'd) -> 'a -> 'b -> 'c -> 'd
 external mycallback4 :
     ('a -> 'b -> 'c -> 'd -> 'e) -> 'a -> 'b -> 'c -> 'd -> 'e = "mycallback4"
 
+let rec growstack n =
+  if n <= 0 then 0 else 1 + growstack (n - 1)
+
 let rec tak (x, y, z as _tuple) =
   if x > y then tak(tak (x-1, y, z), tak (y-1, z, x), tak (z-1, x, y))
            else z
@@ -46,3 +49,5 @@ let _ =
   print_int(trapexit ()); print_newline();
   print_string(tripwire mypushroot); print_newline();
   print_string(tripwire mycamlparam); print_newline();
+  begin try ignore (mycallback1 growstack 1_000); raise Exit
+  with Exit -> () end
