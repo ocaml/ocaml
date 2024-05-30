@@ -69,15 +69,16 @@ static int truncate(WCHAR * path, __int64 len)
   return ret;
 }
 
-CAMLprim value caml_unix_truncate(value path, value len)
+CAMLprim value caml_unix_truncate(value path, value vlen)
 {
-  CAMLparam2(path, len);
+  CAMLparam2(path, vlen);
   WCHAR * p;
   int ret;
+  file_offset len = Long_val(vlen);
   caml_unix_check_path(path, "truncate");
   p = caml_stat_strdup_to_utf16(String_val(path));
   caml_enter_blocking_section();
-  ret = truncate(p, Long_val(len));
+  ret = truncate(p, len);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)

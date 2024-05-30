@@ -364,15 +364,16 @@ CAMLprim value caml_sys_chdir(value dirname)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_sys_mkdir(value path, value perm)
+CAMLprim value caml_sys_mkdir(value path, value vperm)
 {
-  CAMLparam2(path, perm);
+  CAMLparam2(path, vperm);
   char_os * p;
   int ret;
+  int perm = Int_val(vperm);
   caml_sys_check_path(path);
   p = caml_stat_strdup_to_os(String_val(path));
   caml_enter_blocking_section();
-  ret = mkdir_os(p, Int_val(perm));
+  ret = mkdir_os(p, perm);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1) caml_sys_error(path);
