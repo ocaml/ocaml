@@ -748,6 +748,7 @@ build_os
 build_vendor
 build_cpu
 build
+ar_supports_response_files
 naked_pointers_checker
 naked_pointers
 compute_deps
@@ -12641,6 +12642,15 @@ case $ocaml_cv_cc_vendor in #(
      ;;
 esac
 
+# Whether ar supports @FILE arguments
+
+case lt_cv_ar_at_file in #(
+  no) :
+    ar_supports_response_files=false ;; #(
+  *) :
+    ar_supports_response_files=true ;;
+esac
+
 # Libraries to build depending on the host
 
 case $host in #(
@@ -20060,4 +20070,3 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
-
