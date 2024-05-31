@@ -75,7 +75,8 @@ val register_attr : current_phase -> string Location.loc -> unit
 val mark_payload_attrs_used : Parsetree.payload -> unit
 
 (** Issue misplaced attribute warnings for all attributes created with
-    [mk_internal] but not yet marked used. *)
+    [mk_internal] but not yet marked used. Does nothing if compilation
+    is stopped before lambda due to command-line flags. *)
 val warn_unused : unit -> unit
 
 (** {3 Warning 53 helpers for environment attributes}
