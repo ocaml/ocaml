@@ -39,7 +39,7 @@
  (flags (:standard -principal -nostdlib \ -short-paths))
  (libraries stdlib)
  (modules_without_implementation
-   annot asttypes cmo_format outcometree parsetree value_rec_types)
+   annot cmo_format outcometree parsetree value_rec_types)
  (modules
    ;; UTILS
    config build_path_prefix_map misc identifiable numbers arg_helper
