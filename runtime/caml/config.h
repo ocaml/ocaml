@@ -258,7 +258,7 @@ typedef uint64_t uintnat;
    #define Cache_line_bsize 256
 #elif defined(TARGET_arm64) || defined(TARGET_power)
    #define Cache_line_bsize 128
-#elif defined(TARGET_amd64) || defined(TARGET_riscv)
+#elif defined(TARGET_amd64) || defined(TARGET_riscv) || defined(TARGET_loongarch64)
    #define Cache_line_bsize 64
 #elif (!defined(NATIVE_CODE))
    #define Cache_line_bsize 64
