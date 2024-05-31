@@ -31,17 +31,6 @@
 #define C_ARG_3 $a2
 #define C_ARG_4 $a3
 
-/* Support for CFI directives */
-//FIXME
-#define CFI_STARTPROC
-#define CFI_ENDPROC
-#define CFI_ADJUST(n)
-#define CFI_REGISTER(r1,r2)
-#define CFI_OFFSET(r,n)
-#define CFI_DEF_CFA_REGISTER(r)
-#define CFI_REMEMBER_STATE
-#define CFI_RESTORE_STATE
-
         .set    domain_curr_field, 0
         .set    domain_curr_cnt, 0
 #define DOMAIN_STATE(c_type, name) \
@@ -81,6 +70,9 @@ name:; \
 name:
 #define END_OBJECT(name) \
         .size   name, .-name
+
+#undef ASM_CFI_SUPPORTED
+#include "../runtime/caml/asm.h"
 
 /* Stack switching operations */
 
@@ -371,7 +363,7 @@ FUNCTION(caml_c_call_stack_args)
     /* Store $sp to restore after call */
         move      $s2, $sp
     /* Copy arguments from OCaml to C stack
-       NB: STACK_ARG_{BEGIN,END} are 16-byte aligned */
+       NB: STACK_ARG_END - STACK_ARG_BEGIN is a multiple of 16 */
 1:      addi.d    STACK_ARG_END, STACK_ARG_END, -16
         bltu    STACK_ARG_END, STACK_ARG_BEGIN, 2f
         ld.d      TMP, STACK_ARG_END, 0

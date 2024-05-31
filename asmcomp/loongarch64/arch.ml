@@ -3,9 +3,10 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*                yala <zhaojunchao@loongson.cn>                          *)
+(*                Nicolas Ojeda Bar <n.oje.bar@gmail.com>                 *)
 (*                                                                        *)
-(*               Copyright © 2008-2023 LOONGSON                           *)
+(*   Copyright 2016 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -13,7 +14,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Specific operations for the LoongArch processor *)
+(* Specific operations for the Loongarch processor *)
 
 open Format
 
@@ -57,9 +58,6 @@ let identity_addressing = Iindexed 0
 let offset_addressing addr delta =
   match addr with
   | Iindexed n -> Iindexed(n + delta)
-
-let num_args_addressing = function
-  | Iindexed _ -> 1
 
 (* Printing operations and addressing modes *)
 

@@ -3,9 +3,10 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*                yala <zhaojunchao@loongson.cn>                          *)
+(*                Nicolas Ojeda Bar <n.oje.bar@gmail.com>                 *)
 (*                                                                        *)
-(*               Copyright © 2008-2023 LOONGSON                           *)
+(*   Copyright 2016 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -13,7 +14,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Specific operations for the LoongArch processor *)
+(* Specific operations for the Loongarch processor *)
 
 (* Machine-specific command-line options *)
 
@@ -54,8 +55,6 @@ val division_crashes_on_overflow : bool
 val identity_addressing : addressing_mode
 
 val offset_addressing : addressing_mode -> int -> addressing_mode
-
-val num_args_addressing : addressing_mode -> int
 
 (* Printing operations and addressing modes *)
 

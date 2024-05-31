@@ -41,10 +41,11 @@ open Mach
   Floating-point register map
   ---------------------------
 
-    f0-f7    100-107     arguments
-    f0-f1    100-101     arguments/results
-    f8-f23   108-123     temporary
-    f24-f31  124-131     subroutine register variables
+    ft0-ft7    100-107     temporary
+    fs0-fs1    108-109     general purpose (preserved by C)
+    fa0-fa7    110-117     arguments/results
+    fs2-fs7    118-123     general purpose (preserved by C)
+    ft8-f15    124-131     temporary
 
   Additional notes
   ----------------
@@ -59,11 +60,11 @@ open Mach
 
 let int_reg_name =
     [|"$a0"; "$a1"; "$a2"; "$a3"; "$a4"; "$a5"; "$a6"; "$a7";  (* 0- 7 *)
-      "$s2"; "$s3"; "$s4"; "$s5"; "$s6";                       (* 8-12*)
-      "$t2"; "$t3"; "$t4"; "$t5"; "$t6"; "$t7"; "$t8";          (*13-19*)
-      "$s0";                                                   (*20*)
-      "$t0"; "$t1";                                            (*21-22*)
-      "$s1"; "$s7"; "$s8";                                      (*23-25*)
+      "$s2"; "$s3"; "$s4"; "$s5"; "$s6";                       (* 8-12 *)
+      "$t2"; "$t3"; "$t4"; "$t5"; "$t6"; "$t7"; "$t8";         (* 13-19 *)
+      "$s0";                                                   (* 20 *)
+      "$t0"; "$t1";                                            (* 21-22 *)
+      "$s1"; "$s7"; "$s8";                                     (* 23-25 *)
     |]
 
 let float_reg_name =
@@ -261,11 +262,11 @@ let destroyed_at_reloadretaddr = [| |]
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-  | Iextcall _ -> 5  (*9-3 s0~s8 - s7 - s8 - s1 - s0*)
+  | Iextcall _ -> 5  (*9-4=5 s0~s8 - s7 - s8 - s1 - s0*)
   | _ -> 21
 
 let max_register_pressure = function
-  | Iextcall _ -> [| 5; 8 |] (* 6 integer callee-saves, 8 FP callee-saves *)
+  | Iextcall _ -> [| 5; 8 |] (* 5 integer callee-saves, 8 FP callee-saves *)
   | _ -> [| 21; 30 |]
 
   (* FIXME *)
