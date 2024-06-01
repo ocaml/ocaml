@@ -692,7 +692,7 @@ ocamlsrcdir=${ocamlsrcdir%X}
 
 # Whether ar supports @FILE arguments
 
-AS_CASE([lt_cv_ar_at_file],
+AS_CASE([$lt_cv_ar_at_file],
   [no], [ar_supports_response_files=false],
   [ar_supports_response_files=true])
 
