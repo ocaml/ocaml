@@ -119,10 +119,11 @@ let raise_scope_escape_exn ty = raise (scope_escape_exn ty)
 exception Tags of label * label
 
 let () =
+  let open Format_doc in
   Location.register_error_of_exn
     (function
       | Tags (l, l') ->
-          let pp_tag ppf s = Format.fprintf ppf "`%s" s in
+          let pp_tag ppf s = fprintf ppf "`%s" s in
           let inline_tag = Misc.Style.as_inline_code pp_tag in
           Some
             Location.

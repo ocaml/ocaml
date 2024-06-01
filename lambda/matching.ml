@@ -93,7 +93,7 @@ open Types
 open Typedtree
 open Lambda
 open Parmatch
-open Printpat
+open Printpat.Compat
 
 module Scoped_location = Debuginfo.Scoped_location
 
@@ -3022,7 +3022,7 @@ let mk_failaction_pos partial seen ctx defs =
       Default_environment.pp defs
       Context.pp ctx
       (Format.pp_print_list ~pp_sep:Format.pp_print_cut
-         Printpat.pretty_pat) input_fail_pats
+         Printpat.Compat.pretty_pat) input_fail_pats
       pp_partial (Jumps.partial jumps)
       Jumps.pp jumps
     ;

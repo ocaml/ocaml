@@ -243,25 +243,27 @@ let check_pers_struct ~allow_hidden penv f ~loc name =
       let warn = Warnings.No_cmi_file(name, None) in
         Location.prerr_warning loc warn
   | Cmi_format.Error err ->
-      let msg = Format.asprintf "%a" Cmi_format.report_error err in
+      let msg = Format.asprintf "%a"
+          (Format_doc.compat Cmi_format.report_error) err in
       let warn = Warnings.No_cmi_file(name, Some msg) in
         Location.prerr_warning loc warn
   | Error err ->
       let msg =
         match err with
         | Illegal_renaming(name, ps_name, filename) ->
-            Format.asprintf
+            Format_doc.doc_printf
               " %a@ contains the compiled interface for @ \
                %a when %a was expected"
-              (Style.as_inline_code Location.print_filename) filename
+              Location.Doc.quoted_filename filename
               Style.inline_code ps_name
               Style.inline_code name
         | Inconsistent_import _ -> assert false
         | Need_recursive_types name ->
-            Format.asprintf
+            Format_doc.doc_printf
               "%a uses recursive types"
               Style.inline_code name
       in
+      let msg = Format_doc.(asprintf "%a" pp_doc) msg in
       let warn = Warnings.No_cmi_file(name, Some msg) in
         Location.prerr_warning loc warn
 
@@ -350,19 +352,19 @@ let save_cmi penv psig pm =
     ~exceptionally:(fun () -> remove_file filename)
 
 let report_error ppf =
-  let open Format in
+  let open Format_doc in
   function
   | Illegal_renaming(modname, ps_name, filename) -> fprintf ppf
       "Wrong file naming: %a@ contains the compiled interface for@ \
        %a when %a was expected"
-      (Style.as_inline_code Location.print_filename) filename
+      Location.Doc.quoted_filename filename
       Style.inline_code ps_name
       Style.inline_code modname
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
       "@[<hov>The files %a@ and %a@ \
               make inconsistent assumptions@ over interface %a@]"
-      (Style.as_inline_code Location.print_filename) source1
-      (Style.as_inline_code Location.print_filename) source2
+      Location.Doc.quoted_filename source1
+      Location.Doc.quoted_filename source2
       Style.inline_code name
   | Need_recursive_types(import) ->
       fprintf ppf

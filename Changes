@@ -54,6 +54,17 @@ _______________
 - #13163: Enable frame pointers on macOS x86_64
   (Tim McGilchrist, review by Sébastien Hinderer and Fabrice Buoro)
 
+- #12951: Constify constructors and flags tables in C code (take 2).
+  Now these tables will go in the readonly segment, where they belong.
+  (Antonin Décimo, review by David Allsopp)
+
+- #10696: Introduce __has_attribute and __has_c_attributes in
+  <caml/misc.h> to test the support of specific atributes in C
+  code. Introduce fallthrough as a wrapper around the fallthrough
+  attribute.
+  (Antonin Décimo, review by Nicolás Ojeda Bär, Xavier Leroy, and
+   Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously
@@ -220,6 +231,10 @@ _______________
   platforms (Linux, *BSD).
   (Miod Vallat, review by Nicolás Ojeda Bär)
 
+- #13169: Introduce a document data type for compiler messages rather than
+  relying on `Format.formatter -> unit` closures.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 - #13193: Remove the unused env_init field from class blocks
   (Vincent Laviron, review by Jacques Garrigue)
 
@@ -299,6 +314,12 @@ _______________
 - #13170: Fix a bug that would result in some floating alerts `[@@@alert ...]`
   incorrectly triggering Warning 53.
   (Nicolás Ojeda Bär, review by Chris Casinghino and Florian Angeletti)
+
+- #13207: Be sure to reload the register caching the exception handler in
+  caml_c_call and caml_c_call_stack_args, as its value may have been changed
+  if the OCaml stack is expanded during a callback.
+  (Miod Vallat, report by Vesa Karvonen, review by Gabriel Scherer and
+   Xavier Leroy)
 
 - #13202: Fix an issue where `-output-complete-obj` would fail when using the
   GCC compiler due to an inability to locate installed libraries.

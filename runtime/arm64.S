@@ -541,8 +541,9 @@ FUNCTION(caml_c_call)
         str     TRAP_PTR, Caml_state(exn_handler)
     /* Call the function */
         blr     ADDITIONAL_ARG
-    /* Reload alloc ptr  */
+    /* Reload new allocation pointer & exn handler */
         ldr     ALLOC_PTR, Caml_state(young_ptr)
+        ldr     TRAP_PTR, Caml_state(exn_handler)
     /* Load ocaml stack */
         SWITCH_C_TO_OCAML
 #if defined(WITH_THREAD_SANITIZER)
@@ -593,8 +594,9 @@ FUNCTION(caml_c_call_stack_args)
         blr     ADDITIONAL_ARG
     /* Restore stack */
         mov     sp, x19
-    /* Reload alloc ptr */
+    /* Reload new allocation pointer & exn handler */
         ldr     ALLOC_PTR, Caml_state(young_ptr)
+        ldr     TRAP_PTR, Caml_state(exn_handler)
     /* Switch from C to OCaml */
         SWITCH_C_TO_OCAML
     /* Return */

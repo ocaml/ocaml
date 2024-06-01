@@ -445,7 +445,8 @@ val spellcheck : string list -> string -> string list
     list of suggestions taken from [env], that are close enough to
     [name] that it may be a typo for one of them. *)
 
-val did_you_mean : Format.formatter -> (unit -> string list) -> unit
+val did_you_mean :
+    Format_doc.formatter -> (unit -> string list) -> unit
 (** [did_you_mean ppf get_choices] hints that the user may have meant
     one of the option returned by calling [get_choices]. It does nothing
     if the returned list is empty.
@@ -505,8 +506,8 @@ module Style : sig
     inline_code: tag_style;
   }
 
-  val as_inline_code: (Format.formatter -> 'a -> unit as 'printer) -> 'printer
-  val inline_code: Format.formatter -> string -> unit
+  val as_inline_code: 'a Format_doc.printer -> 'a Format_doc.printer
+  val inline_code: string Format_doc.printer
 
   val default_styles: styles
   val get_styles: unit -> styles
@@ -536,33 +537,7 @@ val print_if :
   Format.formatter -> bool ref -> (Format.formatter -> 'a -> unit) -> 'a -> 'a
 (** [print_if ppf flag fmt x] prints [x] with [fmt] on [ppf] if [b] is true. *)
 
-val pp_two_columns :
-  ?sep:string -> ?max_lines:int ->
-  Format.formatter -> (string * string) list -> unit
-(** [pp_two_columns ?sep ?max_lines ppf l] prints the lines in [l] as two
-   columns separated by [sep] ("|" by default). [max_lines] can be used to
-   indicate a maximum number of lines to print -- an ellipsis gets inserted at
-   the middle if the input has too many lines.
-
-   Example:
-
-    {v pp_two_columns ~max_lines:3 Format.std_formatter [
-      "abc", "hello";
-      "def", "zzz";
-      "a"  , "bllbl";
-      "bb" , "dddddd";
-    ] v}
-
-    prints
-
-    {v
-    abc | hello
-    ...
-    bb  | dddddd
-    v}
-*)
-
-val print_see_manual : Format.formatter -> int list -> unit
+val print_see_manual : int list Format_doc.printer
 (** See manual section *)
 
 (** {1 Displaying configuration variables} *)

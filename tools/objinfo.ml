@@ -179,8 +179,8 @@ let print_global_table table =
   printf "Globals defined:\n";
   Symtable.iter_global_map
     (fun global _ ->
-       print_line
-         (Format.asprintf "%a" Symtable.Global.description global)
+       let desc = Format_doc.compat Symtable.Global.description in
+       print_line (Format.asprintf "%a" desc global)
     )
     table
 

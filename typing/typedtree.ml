@@ -899,13 +899,32 @@ let split_pattern pat =
    if they satisfy one of:
    - Similar to an identifier: words separated by '.' or '#'.
    - Do not contain spaces when printed.
-  *)
-let rec exp_is_nominal exp =
-  match exp.exp_desc with
-  | _ when exp.exp_attributes <> [] -> false
-  | Texp_ident _ | Texp_instvar _ | Texp_constant _
-  | Texp_variant (_, None)
-  | Texp_construct (_, _, []) ->
-      true
-  | Texp_field (parent, _, _) | Texp_send (parent, _) -> exp_is_nominal parent
-  | _ -> false
+*)
+let nominal_exp_doc lid t =
+  let open Format_doc.Doc in
+  let longident l = Format_doc.doc_printer lid l.Location.txt in
+  let rec nominal_exp_doc doc exp =
+    match exp.exp_desc with
+    | _ when exp.exp_attributes <> [] -> None
+    | Texp_ident (_,l,_) ->
+        Some (longident l doc)
+    | Texp_instvar (_,_,s) ->
+        Some (string s.Location.txt doc)
+    | Texp_constant _ -> assert false
+    | Texp_variant (lbl, None) ->
+        Some (printf "`%s" lbl doc)
+    | Texp_construct (l, _, []) -> Some (longident l doc)
+    | Texp_field (parent, lbl, _) ->
+        Option.map
+          (printf ".%t" (longident lbl))
+          (nominal_exp_doc doc parent)
+    | Texp_send (parent, meth) ->
+        let name = match meth with
+          | Tmeth_name name -> name
+          | Tmeth_val id | Tmeth_ancestor (id,_) -> Ident.name id in
+        Option.map
+          (printf "#%s" name)
+          (nominal_exp_doc doc parent)
+    | _ -> None
+  in
+  nominal_exp_doc empty t

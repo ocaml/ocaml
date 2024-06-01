@@ -94,26 +94,53 @@ let needs_parens txt =
 let needs_spaces txt =
   first_is '*' txt || last_is '*' txt
 
+let tyvar_of_name s =
+  if String.length s >= 2 && s.[1] = '\'' then
+    (* without the space, this would be parsed as
+       a character literal *)
+    "' " ^ s
+  else if Lexer.is_keyword s then
+    "'\\#" ^ s
+  else if String.equal s "_" then
+    s
+  else
+    "'" ^ s
+
+module Doc = struct
 (* Turn an arbitrary variable name into a valid OCaml identifier by adding \#
   in case it is a keyword, or parenthesis when it is an infix or prefix
   operator. *)
-let ident_of_name ppf txt =
-  let format : (_, _, _) format =
-    if Lexer.is_keyword txt then "\\#%s"
-    else if not (needs_parens txt) then "%s"
-    else if needs_spaces txt then "(@;%s@;)"
-    else "(%s)"
-  in fprintf ppf format txt
+  let ident_of_name ppf txt =
+    let format : (_, _, _) format =
+      if Lexer.is_keyword txt then "\\#%s"
+      else if not (needs_parens txt) then "%s"
+      else if needs_spaces txt then "(@;%s@;)"
+      else "(%s)"
+    in Format_doc.fprintf ppf format txt
 
-let ident_of_name_loc ppf s = ident_of_name ppf s.txt
-
-let protect_longident ppf print_longident longprefix txt =
+  let protect_longident ppf print_longident longprefix txt =
     if not (needs_parens txt) then
-      fprintf ppf "%a.%a" print_longident longprefix ident_of_name txt
+      Format_doc.fprintf ppf "%a.%a"
+        print_longident longprefix
+        ident_of_name txt
     else if needs_spaces txt then
-      fprintf ppf "%a.(@;%s@;)" print_longident longprefix txt
+      Format_doc.fprintf ppf "%a.(@;%s@;)" print_longident longprefix txt
     else
-      fprintf ppf "%a.(%s)" print_longident longprefix txt
+      Format_doc.fprintf ppf "%a.(%s)" print_longident longprefix txt
+
+  let rec longident f = function
+    | Lident s -> ident_of_name f s
+    | Ldot(y,s) -> protect_longident f longident y s
+    | Lapply (y,s) ->
+        Format_doc.fprintf f "%a(%a)" longident y longident s
+
+  let tyvar ppf s =
+    Format_doc.fprintf ppf "%s" (tyvar_of_name s)
+end
+
+let longident ppf l = Format_doc.compat Doc.longident ppf l
+let ident_of_name ppf i = Format_doc.compat Doc.ident_of_name ppf i
+let ident_of_name_loc ppf s = ident_of_name ppf s.txt
 
 type space_formatter = (unit, Format.formatter, unit) format
 
@@ -225,12 +252,6 @@ let paren: 'a . ?first:space_formatter -> ?last:space_formatter ->
     if b then (pp f "("; pp f first; fu f x; pp f last; pp f ")")
     else fu f x
 
-let rec longident f = function
-  | Lident s -> ident_of_name f s
-  | Ldot(y,s) -> protect_longident f longident y s
-  | Lapply (y,s) ->
-      pp f "%a(%a)" longident y longident s
-
 let longident_loc f x = pp f "%a" longident x.txt
 
 let constant_desc f = function
@@ -279,20 +300,9 @@ let iter_loc f ctxt {txt; loc = _} = f ctxt txt
 
 let constant_string f s = pp f "%S" s
 
-let tyvar_of_name s =
-  if String.length s >= 2 && s.[1] = '\'' then
-    (* without the space, this would be parsed as
-       a character literal *)
-    "' " ^ s
-  else if Lexer.is_keyword s then
-    "'\\#" ^ s
-  else if String.equal s "_" then
-    s
-  else
-    "'" ^ s
 
-let tyvar ppf s =
-  Format.fprintf ppf "%s" (tyvar_of_name s)
+
+let tyvar ppf v = Format_doc.compat Doc.tyvar ppf v
 
 let tyvar_loc f str = tyvar f str.txt
 let string_quot f x = pp f "`%a" ident_of_name x

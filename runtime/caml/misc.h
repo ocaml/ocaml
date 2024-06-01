@@ -29,6 +29,16 @@
 
 #include "camlatomic.h"
 
+/* Detection of available C attributes */
+
+#ifndef __has_c_attribute
+#define __has_c_attribute(x) 0
+#endif
+
+#ifndef __has_attribute
+#define __has_attribute(x) 0
+#endif
+
 /* Deprecation warnings */
 
 #if defined(__GNUC__) || defined(__clang__)
@@ -193,6 +203,17 @@ CAMLdeprecated_typedef(addr, char *);
   #define CAMLunused_end
   #define CAMLunused
 #endif
+
+#ifdef CAML_INTERNALS
+#if (defined(__cplusplus) && __cplusplus >= 201703L) || \
+    __has_c_attribute(fallthrough)
+  #define fallthrough [[fallthrough]]
+#elif __has_attribute(fallthrough)
+  #define fallthrough __attribute__ ((fallthrough))
+#else
+  #define fallthrough ((void) 0)
+#endif
+#endif /* CAML_INTERNALS */
 
 /* GC timing hooks. These can be assigned by the user. These hooks
    must not allocate, change any heap value, nor call OCaml code. They

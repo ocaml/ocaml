@@ -99,7 +99,7 @@ let check t =
 
 (* Error report *)
 
-open Format
+open Format_doc
 
 let print_reference print_fname ppf {compunit; filename} =
   fprintf ppf "%a (%a)" Style.inline_code compunit print_fname filename

@@ -39,7 +39,7 @@ let has_no_payload_attribute alt_names attrs =
   | None   -> false
   | Some _ -> true
 
-open Format
+open Format_doc
 
 let report_error ppf = function
   | Multiple_attributes name ->

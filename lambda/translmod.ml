@@ -1657,14 +1657,14 @@ let transl_store_package component_names target_name coercion =
 
 (* Error report *)
 
-open Format
+open Format_doc
 module Style = Misc.Style
 
 let print_cycle ppf cycle =
-  let print_ident ppf (x,_) = Format.pp_print_string ppf (Ident.name x) in
+  let print_ident ppf (x,_) = pp_print_string ppf (Ident.name x) in
   let pp_sep ppf () = fprintf ppf "@ -> " in
-  Format.fprintf ppf "%a%a%s"
-    (Format.pp_print_list ~pp_sep print_ident) cycle
+  fprintf ppf "%a%a%s"
+    (pp_print_list ~pp_sep print_ident) cycle
     pp_sep ()
     (Ident.name @@ fst @@ List.hd cycle)
 (* we repeat the first element to make the cycle more apparent *)
@@ -1674,7 +1674,7 @@ let explanation_submsg (id, unsafe_info) =
   | Unnamed -> assert false (* can't be part of a cycle. *)
   | Unsafe {reason;loc;subid} ->
       let print fmt =
-        let printer = Format.dprintf fmt
+        let printer = doc_printf fmt
             Style.inline_code (Ident.name id)
             Style.inline_code (Ident.name subid) in
         Location.mkloc printer loc in

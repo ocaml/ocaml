@@ -15,8 +15,6 @@
 
 (* Build libraries of .cmx files *)
 
-open Format
-
 val create_archive: string list -> string -> unit
 
 type error =
@@ -26,4 +24,4 @@ type error =
 
 exception Error of error
 
-val report_error: formatter -> error -> unit
+val report_error: error Format_doc.printer

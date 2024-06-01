@@ -15,18 +15,18 @@
 
 (* Printing functions *)
 
-open Format
+open Format_doc
 open Types
 open Outcometree
 
-val longident: formatter -> Longident.t -> unit
-val ident: formatter -> Ident.t -> unit
+val longident: Longident.t printer
+val ident: Ident.t printer
 val namespaced_ident: Shape.Sig_component_kind.t -> Ident.t -> string
 val tree_of_path: Path.t -> out_ident
-val path: formatter -> Path.t -> unit
+val path: Path.t printer
 val string_of_path: Path.t -> string
 
-val type_path: formatter -> Path.t -> unit
+val type_path: Path.t printer
 (** Print a type path taking account of [-short-paths].
     Calls should be within [wrap_printing_env]. *)
 
@@ -45,14 +45,6 @@ val wrap_printing_env: error:bool -> Env.t -> (unit -> 'a) -> 'a
     (* Call the function using the environment for type path shortening *)
     (* This affects all the printing functions below *)
     (* Also, if [~error:true], then disable the loading of cmis *)
-
-(** [wrap_printing_env_error env f] ensures that all printing functions in a
-    [Location.error] report are evaluated within the [wrap_printing_env
-    ~error:true env] context. (The original call to [f] is also evaluated
-    within that context.)
- *)
-val wrap_printing_env_error :
-  Env.t -> (unit -> Location.error) -> Location.error
 
 module Naming_context: sig
   val enable: bool -> unit
@@ -80,10 +72,9 @@ module Conflicts: sig
     collected up to this point, and reset the list of collected
     explanations *)
 
-  val print_located_explanations:
-    Format.formatter -> explanation list -> unit
+  val print_located_explanations: explanation list printer
 
-  val err_msg: unit -> (Format.formatter -> unit) option
+  val err_msg: unit -> doc option
   (** [err_msg ()] return an error message if there are pending conflict
       explanations at this point. It is often important to check for conflicts
       after all printing is done, thus the delayed nature of [err_msg]*)
@@ -99,7 +90,7 @@ val reset: unit -> unit
     other type formatters such as [prepared_type_expr].)  If you want multiple
     types to use common names for type variables, see [prepare_for_printing] and
     [prepared_type_expr].  *)
-val type_expr: formatter -> type_expr -> unit
+val type_expr: type_expr printer
 
 (** [prepare_for_printing] resets the global printing environment, a la [reset],
     and prepares the types for printing by reserving names and marking loops.
@@ -112,7 +103,7 @@ val prepare_for_printing: type_expr list -> unit
 *)
 val add_type_to_preparation: type_expr -> unit
 
-val prepared_type_expr: formatter -> type_expr -> unit
+val prepared_type_expr: type_expr printer
 (** The function [prepared_type_expr] is a less-safe but more-flexible version
     of [type_expr] that should only be called on [type_expr]s that have been
     passed to [prepare_for_printing].  Unlike [type_expr], this function does no
@@ -123,11 +114,11 @@ val prepared_type_expr: formatter -> type_expr -> unit
     [prepared_type_expr], they will use the same names for the same type
     variables. *)
 
-val constructor_arguments: formatter -> constructor_arguments -> unit
+val constructor_arguments: constructor_arguments printer
 val tree_of_type_scheme: type_expr -> out_type
-val type_scheme: formatter -> type_expr -> unit
-val prepared_type_scheme: formatter -> type_expr -> unit
-val shared_type_scheme: formatter -> type_expr -> unit
+val type_scheme: type_expr printer
+val prepared_type_scheme: type_expr printer
+val shared_type_scheme: type_expr printer
 (** [shared_type_scheme] is very similar to [type_scheme], but does not reset
     the printing context first.  This is intended to be used in cases where the
     printing should have a particularly wide context, such as documentation
@@ -135,39 +126,39 @@ val shared_type_scheme: formatter -> type_expr -> unit
     for which [type_scheme] is better suited. *)
 
 val tree_of_value_description: Ident.t -> value_description -> out_sig_item
-val value_description: Ident.t -> formatter -> value_description -> unit
-val label : formatter -> label_declaration -> unit
+val value_description: Ident.t -> value_description printer
+val label : label_declaration printer
 val add_constructor_to_preparation : constructor_declaration -> unit
-val prepared_constructor : formatter -> constructor_declaration -> unit
-val constructor : formatter -> constructor_declaration -> unit
+val prepared_constructor : constructor_declaration printer
+val constructor : constructor_declaration printer
 val tree_of_type_declaration:
     Ident.t -> type_declaration -> rec_status -> out_sig_item
 val add_type_declaration_to_preparation :
   Ident.t -> type_declaration -> unit
-val prepared_type_declaration: Ident.t -> formatter -> type_declaration -> unit
-val type_declaration: Ident.t -> formatter -> type_declaration -> unit
+val prepared_type_declaration: Ident.t -> type_declaration printer
+val type_declaration: Ident.t -> type_declaration printer
 val tree_of_extension_constructor:
     Ident.t -> extension_constructor -> ext_status -> out_sig_item
 val add_extension_constructor_to_preparation :
     extension_constructor -> unit
 val prepared_extension_constructor:
-    Ident.t -> formatter -> extension_constructor -> unit
+    Ident.t -> extension_constructor printer
 val extension_constructor:
-    Ident.t -> formatter -> extension_constructor -> unit
+    Ident.t -> extension_constructor printer
 (* Prints extension constructor with the type signature:
      type ('a, 'b) bar += A of float
 *)
 
 val extension_only_constructor:
-    Ident.t -> formatter -> extension_constructor -> unit
+    Ident.t -> extension_constructor printer
 (* Prints only extension constructor without type signature:
      A of float
 *)
 
 val tree_of_module:
     Ident.t -> ?ellipsis:bool -> module_type -> rec_status -> out_sig_item
-val modtype: formatter -> module_type -> unit
-val signature: formatter -> signature -> unit
+val modtype: module_type printer
+val signature: signature printer
 val tree_of_modtype: module_type -> out_module_type
 val tree_of_modtype_declaration:
     Ident.t -> modtype_declaration -> out_sig_item
@@ -183,55 +174,67 @@ val tree_of_modtype_declaration:
     expect: (_: sig end) (Y:X.T) (_:sig end) (Z:X.T)
 *)
 val functor_parameters:
-  sep:(Format.formatter -> unit -> unit) ->
-  ('b -> Format.formatter -> unit) ->
-  (Ident.t option * 'b) list -> Format.formatter -> unit
+  sep:unit printer -> ('b -> Format_doc.formatter -> unit) ->
+  (Ident.t option * 'b) list -> Format_doc.formatter -> unit
 
 type type_or_scheme = Type | Type_scheme
 
 val tree_of_signature: Types.signature -> out_sig_item list
 val tree_of_typexp: type_or_scheme -> type_expr -> out_type
-val modtype_declaration: Ident.t -> formatter -> modtype_declaration -> unit
-val class_type: formatter -> class_type -> unit
+val modtype_declaration: Ident.t -> modtype_declaration printer
+val class_type: class_type printer
 val tree_of_class_declaration:
     Ident.t -> class_declaration -> rec_status -> out_sig_item
-val class_declaration: Ident.t -> formatter -> class_declaration -> unit
+val class_declaration: Ident.t -> class_declaration printer
 val tree_of_cltype_declaration:
     Ident.t -> class_type_declaration -> rec_status -> out_sig_item
-val cltype_declaration: Ident.t -> formatter -> class_type_declaration -> unit
+val cltype_declaration: Ident.t -> class_type_declaration printer
 val type_expansion :
-  type_or_scheme -> Format.formatter -> Errortrace.expanded_type -> unit
+  type_or_scheme -> Errortrace.expanded_type printer
 val prepare_expansion: Errortrace.expanded_type -> Errortrace.expanded_type
+
+module Compat: sig
+  (** {!Format} compatible printers *)
+  type 'a printer := Format.formatter -> 'a -> unit
+  val longident : Longident.t printer
+  val path: Path.t printer
+  val type_expr: type_expr printer
+  val shared_type_scheme: type_expr printer
+  val signature: signature printer
+  val modtype: module_type printer
+  val class_type: class_type printer
+  val string_of_label: Asttypes.arg_label -> string
+end
+
 val report_ambiguous_type_error:
     formatter -> Env.t -> (Path.t * Path.t) -> (Path.t * Path.t) list ->
-    (formatter -> unit) -> (formatter -> unit) -> (formatter -> unit) -> unit
+    Format_doc.t -> Format_doc.t -> Format_doc.t -> unit
 
 val report_unification_error :
   formatter ->
   Env.t -> Errortrace.unification_error ->
-  ?type_expected_explanation:(formatter -> unit) ->
-  (formatter -> unit) -> (formatter -> unit) ->
+  ?type_expected_explanation:Format_doc.t -> Format_doc.t -> Format_doc.t ->
   unit
 
 val report_equality_error :
   formatter ->
   type_or_scheme ->
   Env.t -> Errortrace.equality_error ->
-  (formatter -> unit) -> (formatter -> unit) ->
+   Format_doc.t -> Format_doc.t ->
   unit
 
 val report_moregen_error :
   formatter ->
   type_or_scheme ->
   Env.t -> Errortrace.moregen_error ->
-  (formatter -> unit) -> (formatter -> unit) ->
+  Format_doc.t -> Format_doc.t ->
   unit
 
 val report_comparison_error :
   formatter ->
   type_or_scheme ->
   Env.t -> Errortrace.comparison_error ->
-  (formatter -> unit) -> (formatter -> unit) ->
+  Format_doc.t -> Format_doc.t  ->
   unit
 
 module Subtype : sig
@@ -253,4 +256,4 @@ val rewrite_double_underscore_paths: Env.t -> Path.t -> Path.t
 
 (** [printed_signature sourcefile ppf sg] print the signature [sg] of
     [sourcefile] with potential warnings for name collisions *)
-val printed_signature: string -> formatter -> signature -> unit
+val printed_signature: string -> Format.formatter -> signature -> unit

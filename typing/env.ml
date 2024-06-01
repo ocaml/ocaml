@@ -3512,15 +3512,16 @@ let env_of_only_summary env_from_summary env =
 
 (* Error report *)
 
-open Format
+open Format_doc
 
 (* Forward declarations *)
 
-let print_longident =
-  ref ((fun _ _ -> assert false) : formatter -> Longident.t -> unit)
+let print_longident : Longident.t printer ref = ref (fun _ _ -> assert false)
 
-let print_path =
-  ref ((fun _ _ -> assert false) : formatter -> Path.t -> unit)
+let pp_longident ppf l = !print_longident ppf l
+
+let print_path: Path.t printer ref = ref (fun _ _ -> assert false)
+let pp_path ppf l = !print_path ppf l
 
 let spellcheck ppf extract env lid =
   let choices ~path name = Misc.spellcheck (extract path env) name in
@@ -3560,10 +3561,11 @@ let extract_instance_variables env =
 
 module Style = Misc.Style
 
+let quoted_longident = Style.as_inline_code pp_longident
+
 let report_lookup_error _loc env ppf = function
   | Unbound_value(lid, hint) -> begin
-      fprintf ppf "Unbound value %a"
-        (Style.as_inline_code !print_longident) lid;
+      fprintf ppf "Unbound value %a" quoted_longident lid;
       spellcheck ppf extract_values env lid;
       match hint with
       | No_hint -> ()
@@ -3579,52 +3581,52 @@ let report_lookup_error _loc env ppf = function
     end
   | Unbound_type lid ->
       fprintf ppf "Unbound type constructor %a"
-        (Style.as_inline_code !print_longident) lid;
+         quoted_longident lid;
       spellcheck ppf extract_types env lid;
   | Unbound_module lid -> begin
       fprintf ppf "Unbound module %a"
-        (Style.as_inline_code !print_longident) lid;
+        quoted_longident lid;
        match find_modtype_by_name lid env with
       | exception Not_found -> spellcheck ppf extract_modules env lid;
       | _ ->
          fprintf ppf
            "@.@[@{<hint>Hint@}: There is a module type named %a, %s@]"
-           (Style.as_inline_code !print_longident) lid
+           quoted_longident lid
            "but module types are not modules"
     end
   | Unbound_constructor lid ->
       fprintf ppf "Unbound constructor %a"
-        (Style.as_inline_code !print_longident) lid;
+        quoted_longident lid;
       spellcheck ppf extract_constructors env lid;
   | Unbound_label lid ->
       fprintf ppf "Unbound record field %a"
-        (Style.as_inline_code !print_longident) lid;
+        quoted_longident lid;
       spellcheck ppf extract_labels env lid;
   | Unbound_class lid -> begin
       fprintf ppf "Unbound class %a"
-        (Style.as_inline_code !print_longident) lid;
+        quoted_longident lid;
       match find_cltype_by_name lid env with
       | exception Not_found -> spellcheck ppf extract_classes env lid;
       | _ ->
          fprintf ppf
            "@.@[@{<hint>Hint@}: There is a class type named %a, %s@]"
-           (Style.as_inline_code !print_longident) lid
+           quoted_longident lid
            "but classes are not class types"
     end
   | Unbound_modtype lid -> begin
       fprintf ppf "Unbound module type %a"
-        (Style.as_inline_code !print_longident) lid;
+        quoted_longident lid;
       match find_module_by_name lid env with
       | exception Not_found -> spellcheck ppf extract_modtypes env lid;
       | _ ->
          fprintf ppf
            "@.@[@{<hint>Hint@}: There is a module named %a, %s@]"
-           (Style.as_inline_code !print_longident) lid
+           quoted_longident lid
            "but modules are not module types"
     end
   | Unbound_cltype lid ->
       fprintf ppf "Unbound class type %a"
-        (Style.as_inline_code !print_longident) lid;
+       quoted_longident lid;
       spellcheck ppf extract_cltypes env lid;
   | Unbound_instance_variable s ->
       fprintf ppf "Unbound instance variable %a" Style.inline_code s;
@@ -3637,36 +3639,36 @@ let report_lookup_error _loc env ppf = function
       fprintf ppf
         "The instance variable %a@ \
          cannot be accessed from the definition of another instance variable"
-        (Style.as_inline_code !print_longident) lid
+        quoted_longident lid
   | Masked_self_variable lid ->
       fprintf ppf
         "The self variable %a@ \
          cannot be accessed from the definition of an instance variable"
-        (Style.as_inline_code !print_longident) lid
+        quoted_longident lid
   | Masked_ancestor_variable lid ->
       fprintf ppf
         "The ancestor variable %a@ \
          cannot be accessed from the definition of an instance variable"
-       (Style.as_inline_code !print_longident) lid
+       quoted_longident lid
   | Illegal_reference_to_recursive_module ->
      fprintf ppf "Illegal recursive module reference"
   | Structure_used_as_functor lid ->
       fprintf ppf "@[The module %a is a structure, it cannot be applied@]"
-        (Style.as_inline_code !print_longident) lid
+        quoted_longident lid
   | Abstract_used_as_functor lid ->
       fprintf ppf "@[The module %a is abstract, it cannot be applied@]"
-        (Style.as_inline_code !print_longident) lid
+        quoted_longident lid
   | Functor_used_as_structure lid ->
       fprintf ppf "@[The module %a is a functor, \
-                   it cannot have any components@]" !print_longident lid
+                   it cannot have any components@]" pp_longident lid
   | Abstract_used_as_structure lid ->
       fprintf ppf "@[The module %a is abstract, \
                    it cannot have any components@]"
-        (Style.as_inline_code !print_longident) lid
+        quoted_longident lid
   | Generative_used_as_applicative lid ->
       fprintf ppf "@[The functor %a is generative,@ it@ cannot@ be@ \
                    applied@ in@ type@ expressions@]"
-        (Style.as_inline_code !print_longident) lid
+        quoted_longident lid
   | Cannot_scrape_alias(lid, p) ->
       let cause =
         if Current_unit_name.is_path p then "is the current compilation unit"
@@ -3674,8 +3676,8 @@ let report_lookup_error _loc env ppf = function
       in
       fprintf ppf
         "The module %a is an alias for module %a, which %s"
-        (Style.as_inline_code !print_longident) lid
-        (Style.as_inline_code !print_path) p cause
+        quoted_longident lid
+        (Style.as_inline_code pp_path) p cause
 
 let report_error ppf = function
   | Missing_module(_, path1, path2) ->
