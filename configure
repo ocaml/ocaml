@@ -13766,7 +13766,7 @@ ocamlsrcdir=${ocamlsrcdir%X}
 
 # Whether ar supports @FILE arguments
 
-case lt_cv_ar_at_file in #(
+case $lt_cv_ar_at_file in #(
   no) :
     ar_supports_response_files=false ;; #(
   *) :
