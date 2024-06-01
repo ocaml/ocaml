@@ -23,7 +23,7 @@ OCaml 4.14 maintenance version
 
 - #12070, #12075, #13209: auto-detect whether `ar` support @FILE arguments at
   configure-time to avoid using this feature with toolchains that do not support
-  it (eg FreeBSD/Darwin); backport from 5.1.
+  it (eg FreeBSD/Darwin); backport from 5.3.
   (backport by Boris Dobroslavov, original fix by Nicolás Ojeda Bär, review by
   Xavier Leroy, David Allsopp, Javier Chávarri, Anil Madhavapeddy)
 
