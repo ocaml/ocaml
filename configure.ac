@@ -1530,7 +1530,7 @@ AS_IF([test -z "$PARTIALLD"],
       # For the Microsoft C compiler there must be no space at the end of the
       # string.
       [PACKLD="link -lib -nologo $machine -out:"],
-    [clang-*|gcc-*|mingw-*-*-gcc-*],
+    [*gcc*],
       [PACKLD="$CC -r$PACKLD_FLAGS -o "],
     [PACKLD="$DIRECT_LD -r$PACKLD_FLAGS -o "])],
   [PACKLD="$PARTIALLD -o "])
