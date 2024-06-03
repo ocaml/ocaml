@@ -91,6 +91,8 @@ CPP=@CPP@
 ### How to invoke ar
 ARCMD=@AR@
 
+AR_SUPPORTS_RESPONSE_FILES=@ar_supports_response_files@
+
 ### Extension of object files
 O=@OBJEXT@
 EXT_OBJ=.@OBJEXT@

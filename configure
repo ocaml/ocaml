@@ -748,6 +748,7 @@ build_os
 build_vendor
 build_cpu
 build
+ar_supports_response_files
 naked_pointers_checker
 naked_pointers
 compute_deps
@@ -2921,6 +2922,7 @@ OCAML_VERSION_SHORT=4.14
 
 
  # TODO: rename this variable
+
 
 
 
@@ -12639,6 +12641,15 @@ case $ocaml_cv_cc_vendor in #(
     CPP="$CC -nologo -EP" ;; #(
   *) :
      ;;
+esac
+
+# Whether ar supports @FILE arguments
+
+case $lt_cv_ar_at_file in #(
+  no) :
+    ar_supports_response_files=false ;; #(
+  *) :
+    ar_supports_response_files=true ;;
 esac
 
 # Libraries to build depending on the host
