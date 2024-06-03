@@ -84,10 +84,10 @@ let rec map_loc_lid sub lid =
   | Ldot (lid, id) ->
       let lid = { lid with txt = map_loc_lid sub lid.txt } in
       Ldot (map_loc sub lid, map_loc sub id)
-  | Lapply (lid, lid') ->
+  | Lapply (k, lid, lid') ->
     let lid = { lid with txt = map_loc_lid sub lid.txt } in
     let lid' = { lid' with txt = map_loc_lid sub lid'.txt } in
-     Lapply(map_loc sub lid, map_loc sub lid')
+     Lapply(k, map_loc sub lid, map_loc sub lid')
 
 let map_loc_lid sub {loc; txt} =
   let txt = map_loc_lid sub txt in

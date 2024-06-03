@@ -74,7 +74,7 @@ let rec iter_loc_lid sub lid =
   | Lident _ -> ()
   | Ldot (lid, id) ->
       iter_loc sub lid; iter_loc_lid sub lid.txt; iter_loc sub id
-  | Lapply (lid, lid') ->
+  | Lapply (_, lid, lid') ->
       iter_loc sub lid; iter_loc_lid sub lid.txt;
       iter_loc sub lid'; iter_loc_lid sub lid'.txt
 

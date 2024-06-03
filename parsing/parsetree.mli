@@ -1045,7 +1045,7 @@ and module_expr_desc =
   | Pmod_functor of functor_parameter * module_expr
       (** [functor(X : MT1) -> ME] *)
   | Pmod_apply of module_expr * module_expr (** [ME1(ME2)] *)
-  | Pmod_apply_type of module_expr * core_type (** [ME1(t)] *)
+  | Pmod_apply_type of module_expr * core_type (** [ME1(type t)] *)
   | Pmod_apply_unit of module_expr (** [ME1()] *)
   | Pmod_constraint of module_expr * module_type  (** [(ME : MT)] *)
   | Pmod_unpack of expression  (** [(val E)] *)

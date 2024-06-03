@@ -49,13 +49,22 @@ let rec strengthen_lazy ~aliasable env mty p =
       let env =
         Env.add_module_lazy ~update_summary:false param Mp_present arg env
       in
+      let path = Papply(Longident.Kmod, p, Pident param) in
       MtyL_functor(Named (Some param, arg),
-        strengthen_lazy ~aliasable:false env res (Papply(p, Pident param)))
+        strengthen_lazy ~aliasable:false env res path)
   | MtyL_functor(Named (None, arg), res)
     when !Clflags.applicative_functors ->
       let param = Ident.create_scoped ~scope:(Path.scope p) "Arg" in
+      let path = Papply(Longident.Kmod, p, Pident param) in
       MtyL_functor(Named (Some param, arg),
-        strengthen_lazy ~aliasable:false env res (Papply(p, Pident param)))
+        strengthen_lazy ~aliasable:false env res path)
+  | MtyL_functor(Newtype param, res)
+    when !Clflags.applicative_functors ->
+      let decl = Ctype.new_local_type ~loc:Location.none Definition in
+      let env = Env.add_type ~check:true param decl env in
+      let path = Papply(Longident.Ktype, p, Pident param) in
+      MtyL_functor(Newtype param,
+        strengthen_lazy ~aliasable:false env res path)
   | mty ->
       mty
 
@@ -419,13 +428,13 @@ let contains_type env mty =
 
 let rec get_prefixes = function
   | Pident _ -> Path.Set.empty
-  | Pdot (p, _) | Papply (p, _) | Pextra_ty (p, _)
+  | Pdot (p, _) | Papply (_, p, _) | Pextra_ty (p, _)
     -> Path.Set.add p (get_prefixes p)
 
 let rec get_arg_paths = function
   | Pident _ -> Path.Set.empty
   | Pdot (p, _) | Pextra_ty (p, _) -> get_arg_paths p
-  | Papply (p1, p2) ->
+  | Papply (_, p1, p2) ->
       Path.Set.add p2
         (Path.Set.union (get_prefixes p2)
            (Path.Set.union (get_arg_paths p1) (get_arg_paths p2)))

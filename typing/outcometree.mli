@@ -27,7 +27,7 @@
 type out_name = { mutable printed_name: string }
 
 type out_ident =
-  | Oide_apply of out_ident * out_ident
+  | Oide_apply of Longident.arg_kind * out_ident * out_ident
   | Oide_dot of out_ident * string
   | Oide_ident of out_name
 

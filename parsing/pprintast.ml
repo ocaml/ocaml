@@ -169,9 +169,10 @@ module Doc = struct
     | Lident s -> ident_of_name ~kind f s
     | Ldot(y,s) ->
         protect_longident ~kind f (any_longident ~kind:Other) y.txt s.txt
-    | Lapply (y,s) ->
-        Format_doc.fprintf f "%a(%a)"
+    | Lapply (k, y,s) ->
+        Format_doc.fprintf f "%a(%s%a)"
           (any_longident ~kind:Other) y.txt
+          (Longident.string_of_kind k)
           (any_longident ~kind:Other) s.txt
 
   let value_longident ppf l = any_longident ~kind:Other ppf l

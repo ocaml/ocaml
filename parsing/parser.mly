@@ -409,7 +409,13 @@ let indexop_unclosed_error loc_s s loc_e =
 
 let lapply ~loc p1 loc_p1 p2 loc_p2 =
   if !Clflags.applicative_functors
-  then Lapply(mkrhs p1 loc_p1, mkrhs p2 loc_p2)
+  then Lapply(Kmod, mkrhs p1 loc_p1, mkrhs p2 loc_p2)
+  else raise (Syntaxerr.Error(
+                  Syntaxerr.Applicative_path (make_loc loc)))
+
+let lapplyt ~loc p1 loc_p1 p2 loc_p2 =
+  if !Clflags.applicative_functors
+  then Lapply(Ktype, mkrhs p1 loc_p1, mkrhs p2 loc_p2)
   else raise (Syntaxerr.Error(
                   Syntaxerr.Applicative_path (make_loc loc)))
 
@@ -4082,6 +4088,8 @@ mod_ext_longident:
     mk_longident(mod_ext_longident, UIDENT) { $1 }
   | mod_ext_longident LPAREN mod_ext_longident RPAREN
       { lapply ~loc:$sloc $1 $loc($1) $3 $loc($3) }
+  | mod_ext_longident LPAREN TYPE type_longident RPAREN
+      { lapplyt ~loc:$sloc $1 $loc($1) $4 $loc($4) }
   | mod_ext_longident LPAREN error
       { expecting $loc($3) "module path" }
 ;

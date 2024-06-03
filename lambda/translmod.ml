@@ -54,7 +54,7 @@ let global_path glob = Some(Pident glob)
 let functor_path path param =
   match path with
     None -> None
-  | Some p -> Some(Papply(p, Pident param))
+  | Some p -> Some(Papply(Longident.Kmod, p, Pident param))
 let field_path path field =
   match path with
     None -> None
@@ -526,7 +526,7 @@ and transl_module ~scopes cc rootpath mexp =
   | Tmod_apply_unit funct ->
       transl_apply ~scopes ~loc ~cc mexp.mod_env funct lambda_unit
   | Tmod_apply_type (funct, _) ->
-    transl_apply ~scopes ~loc ~cc mexp.mod_env funct lambda_unit
+      transl_apply ~scopes ~loc ~cc mexp.mod_env funct lambda_unit
   | Tmod_constraint(arg, _, _, ccarg) ->
       transl_module ~scopes (compose_coercions cc ccarg) rootpath arg
   | Tmod_unpack(arg, _) ->

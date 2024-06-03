@@ -98,8 +98,8 @@ let rec module_path s path =
     | Pident _ -> path
     | Pdot(p, n) ->
        Pdot(module_path s p, n)
-    | Papply(p1, p2) ->
-       Papply(module_path s p1, module_path s p2)
+    | Papply(k, p1, p2) ->
+       Papply(k, module_path s p1, module_path s p2)
     | Pextra_ty _ ->
        fatal_error "Subst.module_path"
 

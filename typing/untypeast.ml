@@ -92,8 +92,8 @@ let rec lident_of_path =
   let noloc_lident_of_path p = mknoloc (lident_of_path p) in
   function
   | Path.Pident id -> Longident.Lident (Ident.name id)
-  | Path.Papply (p1, p2) ->
-      Longident.Lapply (noloc_lident_of_path p1, noloc_lident_of_path p2)
+  | Path.Papply (k, p1, p2) ->
+      Longident.Lapply (k, noloc_lident_of_path p1, noloc_lident_of_path p2)
   | Path.Pdot (p, s) | Path.Pextra_ty (p, Pcstr_ty s) ->
       Longident.Ldot (noloc_lident_of_path p, mknoloc s)
   | Path.Pextra_ty (p, _) -> lident_of_path p

@@ -474,13 +474,17 @@ val set_value_used_callback:
 val set_type_used_callback:
     type_declaration -> ((unit -> unit) -> unit) -> unit
 
+type mod_arg =
+  | Mod of module_type
+  | Type of type_declaration
+
 (* Forward declaration to break mutual recursion with Includemod. *)
 val check_functor_application:
   (errors:bool -> loc:Location.t ->
    lid_whole_app:Longident.t ->
-   f0_path:Path.t -> args:(Path.t * Types.module_type) list ->
-   arg_path:Path.t -> arg_mty:Types.module_type ->
-   param_mty:Types.module_type ->
+   f0_path:Path.t -> args:(Path.t * mod_arg) list ->
+   arg_path:Path.t -> arg_mty:mod_arg ->
+   param_mty:Types.module_type option ->
    t -> unit) ref
 (* Forward declaration to break mutual recursion with Typemod. *)
 val check_well_formed_module:

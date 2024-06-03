@@ -250,8 +250,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             tree_of_name name
         | Ldot ({txt=lid; _}, {txt=name; _}) ->
             Oide_dot (tree_of_lident lid, name)
-        | Lapply ({txt=lid1; _}, {txt=lid2; _}) ->
-            Oide_apply (tree_of_lident lid1, tree_of_lident lid2)
+        | Lapply (k, {txt=lid1; _}, {txt=lid2; _}) ->
+            Oide_apply (k, tree_of_lident lid1, tree_of_lident lid2)
       in
 
       let exception Functor_application in

@@ -1085,21 +1085,34 @@ let check_modtype_inclusion ~loc env mty1 path1 mty2 =
 let check_functor_application_in_path
     ~errors ~loc ~lid_whole_app ~f0_path ~args
     ~arg_path ~arg_mty ~param_mty env =
-  match check_modtype_inclusion_raw ~loc env arg_mty arg_path param_mty with
-  | Ok _ -> ()
-  | Error _errs ->
-      if errors then
-        let prepare_arg (arg_path, arg_mty) =
-          let aliasable = can_alias env arg_path in
-          let smd = Mtype.strengthen ~aliasable env arg_mty arg_path in
-          (Error.Named arg_path, smd)
-        in
-        let mty_f = (Env.find_module f0_path env).md_type in
-        let args = List.map prepare_arg args in
-        let app_name = Full_application_path lid_whole_app in
-        raise (Apply_error {loc; env; app_name; mty_f; args})
-      else
-        raise Not_found
+  match param_mty, arg_mty with
+  | Some param_mty, Env.Mod arg_mty ->
+    begin
+      match check_modtype_inclusion_raw ~loc env arg_mty arg_path param_mty with
+      | Ok _ -> ()
+      | Error _errs ->
+          if errors then
+            let prepare_arg (arg_path, arg_mty) =
+              let aliasable = can_alias env arg_path in
+              match arg_mty with
+              | Env.Mod arg_mty ->
+                  let smd = Mtype.strengthen ~aliasable env arg_mty arg_path in
+                  (Error.Named arg_path, smd)
+              | Env.Type _ -> (Error.Newtype, Mty_signature [])
+            in
+            let mty_f = (Env.find_module f0_path env).md_type in
+            let args = List.map prepare_arg args in
+            let app_name = Full_application_path lid_whole_app in
+            raise (Apply_error {loc; env; app_name; mty_f; args})
+          else
+            raise Not_found
+    end
+  | None, Env.Type td ->
+    if td.type_arity = 0
+    then ()
+    else assert false (* TODO *) (* failure *)
+  | _ -> assert false (* TODO *) (* ERROR *)
+
 
 let () =
   Env.check_functor_application := check_functor_application_in_path

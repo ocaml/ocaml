@@ -1063,7 +1063,7 @@ and path : Path.t -> term_judg =
         single x
     | Path.Pdot (t, _) ->
         path t << Dereference
-    | Path.Papply (f, p) ->
+    | Path.Papply (_, f, p) ->
         join [
           path f << Dereference;
           path p << Dereference;

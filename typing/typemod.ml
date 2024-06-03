@@ -243,7 +243,7 @@ let rec iter_path_apply p ~f =
   match p with
   | Pident _ -> ()
   | Pdot (p, _) -> iter_path_apply p ~f
-  | Papply (p1, p2) ->
+  | Papply (_, p1, p2) ->
      iter_path_apply p1 ~f;
      iter_path_apply p2 ~f;
      f p1 p2 (* after recursing, so we know both paths are well typed *)
@@ -1816,11 +1816,12 @@ let rec path_of_module mexp =
   match mexp.mod_desc with
   | Tmod_ident (p,_) -> p
   | Tmod_apply(funct, arg, _coercion) when !Clflags.applicative_functors ->
-      Papply(path_of_module funct, path_of_module arg)
+      Papply(Longident.Kmod, path_of_module funct, path_of_module arg)
   | Tmod_constraint (mexp, _, _, _) ->
       path_of_module mexp
+  | Tmod_apply_type _ -> assert false (* TODO *)
   | (Tmod_structure _ | Tmod_functor _ | Tmod_apply_unit _ | Tmod_unpack _ |
-    Tmod_apply _ | Tmod_apply_type _) ->
+    Tmod_apply _) ->
     raise Not_a_path
 
 let path_of_module mexp =

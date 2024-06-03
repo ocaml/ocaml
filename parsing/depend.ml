@@ -66,7 +66,7 @@ let rec add_path bv ?(p=[]) = function
         prerr_endline "";*)
       add_names free
   | Ldot(l, s) -> add_path bv ~p:(s.txt::p) l.txt
-  | Lapply(l1, l2) -> add_path bv l1.txt; add_path bv l2.txt
+  | Lapply(_, l1, l2) -> add_path bv l1.txt; add_path bv l2.txt
 
 let open_module bv lid =
   match lookup_map lid bv with

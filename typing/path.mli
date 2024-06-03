@@ -20,7 +20,7 @@ type t =
   (** Examples: x, List, int *)
   | Pdot of t * string
   (** Examples: List.map, Float.Array *)
-  | Papply of t * t
+  | Papply of Longident.arg_kind * t * t
   (** Examples: Set.Make(Int), Map.Make(Set.Make(Int)) *)
   | Pextra_ty of t * extra_ty
   (** [Pextra_ty (p, extra)] are additional paths of types

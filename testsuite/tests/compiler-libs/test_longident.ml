@@ -27,7 +27,7 @@ let flatten_dot = L.flatten (L.Ldot (lident "M", mknoloc "foo"))
 [%%expect {|
 val flatten_dot : string list = ["M"; "foo"]
 |}]
-let flatten_apply = L.flatten (L.Lapply (lident "F", lident "X"))
+let flatten_apply = L.flatten (L.Lapply (L.Kmod, lident "F", lident "X"))
 [%%expect {|
 >> Fatal error: Longident.flat
 Exception: Misc.Fatal_error.
@@ -61,13 +61,13 @@ let last_dot = L.last (L.Ldot (lident "M", mknoloc "foo"))
 [%%expect {|
 val last_dot : string = "foo"
 |}]
-let last_apply = L.last (L.Lapply (lident "F", lident "X"))
+let last_apply = L.last (L.Lapply (L.Kmod, lident "F", lident "X"))
 [%%expect {|
 >> Fatal error: Longident.last
 Exception: Misc.Fatal_error.
 |}]
 let last_dot_apply = L.last
-    (L.Ldot (mknoloc (L.Lapply (lident "F", lident "X")), mknoloc "foo"))
+    (L.Ldot (mknoloc (L.Lapply (L.Kmod, lident "F", lident "X")), mknoloc "foo"))
 [%%expect {|
 val last_dot_apply : string = "foo"
 |}];;
@@ -149,12 +149,12 @@ val parse_complex : parse_result =
      ({Location.txt =
         L.Ldot
          ({Location.txt =
-            L.Lapply
-             ({Location.txt =
-                L.Ldot
-                 ({Location.txt = L.Lident "M"; loc = Line 1, characters 0-1},
-                 {Location.txt = "F"; loc = Line 1, characters 2-3});
-               loc = Line 1, characters 0-3},
+            L.Lapply (L.Kmod,
+             {Location.txt =
+               L.Ldot
+                ({Location.txt = L.Lident "M"; loc = Line 1, characters 0-1},
+                {Location.txt = "F"; loc = Line 1, characters 2-3});
+              loc = Line 1, characters 0-3},
              {Location.txt =
                L.Ldot
                 ({Location.txt = L.Lident "M"; loc = Line 1, characters 4-5},
@@ -262,31 +262,31 @@ val mod_ext : parse_result =
    spec =
     L.Ldot
      ({Location.txt =
-        L.Lapply
-         ({Location.txt =
-            L.Ldot
-             ({Location.txt =
-                L.Lapply
-                 ({Location.txt =
-                    L.Ldot
-                     ({Location.txt = L.Lident "A";
-                       loc = Line 1, characters 0-1},
-                     {Location.txt = "F"; loc = Line 1, characters 2-3});
-                   loc = Line 1, characters 0-3},
-                 {Location.txt =
-                   L.Lapply
-                    ({Location.txt =
-                       L.Ldot
-                        ({Location.txt = L.Lident "B";
-                          loc = Line 1, characters 4-5},
-                        {Location.txt = "C"; loc = Line 1, characters 6-7});
-                      loc = Line 1, characters 4-7},
-                    {Location.txt = L.Lident "X";
-                     loc = Line 1, characters 8-9});
-                  loc = Line 1, characters 4-10});
-               loc = Line 1, characters 0-11},
-             {Location.txt = "G"; loc = Line 1, characters 12-13});
-           loc = Line 1, characters 0-13},
+        L.Lapply (L.Kmod,
+         {Location.txt =
+           L.Ldot
+            ({Location.txt =
+               L.Lapply (L.Kmod,
+                {Location.txt =
+                  L.Ldot
+                   ({Location.txt = L.Lident "A";
+                     loc = Line 1, characters 0-1},
+                   {Location.txt = "F"; loc = Line 1, characters 2-3});
+                 loc = Line 1, characters 0-3},
+                {Location.txt =
+                  L.Lapply (L.Kmod,
+                   {Location.txt =
+                     L.Ldot
+                      ({Location.txt = L.Lident "B";
+                        loc = Line 1, characters 4-5},
+                      {Location.txt = "C"; loc = Line 1, characters 6-7});
+                    loc = Line 1, characters 4-7},
+                   {Location.txt = L.Lident "X";
+                    loc = Line 1, characters 8-9});
+                 loc = Line 1, characters 4-10});
+              loc = Line 1, characters 0-11},
+            {Location.txt = "G"; loc = Line 1, characters 12-13});
+          loc = Line 1, characters 0-13},
          {Location.txt = L.Lident "Y"; loc = Line 1, characters 14-15});
        loc = Line 1, characters 0-16},
      {Location.txt = "D"; loc = Line 1, characters 17-18});
@@ -318,7 +318,7 @@ val str_path : string = "M.N.foo"
 
 let str_complex = string_of_longident
    (let (&.) p word = L.Ldot(mknoloc p, mknoloc word) in
-    L.Lapply(mknoloc (L.Lident "M" &. "F"), mknoloc (L.Lident "M" &. "N")) &. "N" &. "foo")
+    L.Lapply(L.Kmod, mknoloc (L.Lident "M" &. "F"), mknoloc (L.Lident "M" &. "N")) &. "N" &. "foo")
 [%%expect{|
 val str_complex : string = "M.F(M.N).N.foo"
 |}]
