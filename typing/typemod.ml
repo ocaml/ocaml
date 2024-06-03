@@ -1812,6 +1812,11 @@ and transl_recmodule_modtypes env sdecls =
 
 exception Not_a_path
 
+let path_of_type typ =
+  match typ.ctyp_desc with
+  | Ttyp_constr (p, _, []) -> p
+  | _ -> raise Not_a_path
+
 let rec path_of_module mexp =
   match mexp.mod_desc with
   | Tmod_ident (p,_) -> p
@@ -1819,18 +1824,17 @@ let rec path_of_module mexp =
       Papply(Longident.Kmod, path_of_module funct, path_of_module arg)
   | Tmod_constraint (mexp, _, _, _) ->
       path_of_module mexp
-  | Tmod_apply_type _ -> assert false (* TODO *)
+  | Tmod_apply_type(funct, arg) when !Clflags.applicative_functors ->
+      Papply(Longident.Ktype, path_of_module funct, path_of_type arg)
   | (Tmod_structure _ | Tmod_functor _ | Tmod_apply_unit _ | Tmod_unpack _ |
-    Tmod_apply _) ->
+    Tmod_apply _ | Tmod_apply_type _) ->
     raise Not_a_path
 
 let path_of_module mexp =
  try Some (path_of_module mexp) with Not_a_path -> None
 
 let path_of_type ty =
- match ty.ctyp_desc with
- | Ttyp_constr (p, _, []) -> Some p
- | _ -> None
+  try Some (path_of_type ty) with Not_a_path -> None
 
 (* Check that all core type schemes in a structure
    do not contain non-generalized type variable *)
@@ -2161,8 +2165,8 @@ type application_summary = {
 let simplify_app_summary app_view = match app_view.arg with
   | Unit ->
     Includemod.Error.Unit, Mty_signature []
-  | Type _ ->
-    Includemod.Error.Newtype, Mty_signature []
+  | Type arg ->
+    Includemod.Error.Newtype arg.path, Mty_signature []
   | Arg arg ->
     let mty = arg.arg.mod_type in
     match arg.is_syntactic_unit , arg.path with
