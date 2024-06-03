@@ -161,14 +161,14 @@ distclean:: clean
 	$(V_OCAMLOPT)$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 %.b.$(O): %.c $(REQUIRED_HEADERS)
-	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
-	  $(OUTPUTOBJ)$@ $<
+	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ -c $<
 
 %.n.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
 
 %.n.$(O): %.c $(REQUIRED_HEADERS)
-	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) \
-	  $(OC_CPPFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) \
+	  $(OC_CPPFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ -c $<
 
 ifeq "$(COMPUTE_DEPS)" "true"
 ifneq "$(COBJS_BYTECODE)" ""

@@ -1326,7 +1326,7 @@ $(SAK): runtime/sak.$(O)
 	$(V_MKEXE)$(call SAK_LINK,$@,$^)
 
 runtime/sak.$(O): runtime/sak.c runtime/caml/misc.h runtime/caml/config.h
-	$(V_CC)$(SAK_CC) -c $(SAK_CFLAGS) $(OUTPUTOBJ)$@ $<
+	$(V_CC)$(SAK_CC) $(SAK_CFLAGS) $(OUTPUTOBJ)$@ -c $<
 
 C_LITERAL = $(shell $(SAK) encode-C-literal '$(1)')
 
@@ -1441,15 +1441,15 @@ $(1).$(O): $(2).c \
   $(runtime_CONFIGURED_HEADERS) $(runtime_BUILT_HEADERS) \
   $(RUNTIME_HEADERS)
 endif # ifeq "$(COMPUTE_DEPS)" "true"
-	$$(V_CC)$$(CC) -c $$(OC_CFLAGS) $$(CFLAGS) $$(OC_CPPFLAGS) $$(CPPFLAGS) \
-	  $$(OUTPUTOBJ)$$@ $$<
+	$$(V_CC)$$(CC) $$(OC_CFLAGS) $$(CFLAGS) $$(OC_CPPFLAGS) $$(CPPFLAGS) \
+	  $$(OUTPUTOBJ)$$@ -c $$<
 endef
 
 runtime/winpthreads/%.$(O): $(WINPTHREADS_SOURCE_DIR)/src/%.c \
                             $(wildcard $(WINPTHREADS_SOURCE_DIR)/include/*.h) \
                               | runtime/winpthreads
-	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
-	  $(OUTPUTOBJ)$@ $<
+	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ -c $<
 
 runtime/winpthreads:
 	$(MKDIR) $@
