@@ -732,7 +732,7 @@ CAMLexport caml_stat_string caml_stat_strdup(const char *s)
 
 CAMLexport wchar_t * caml_stat_wcsdup(const wchar_t *s)
 {
-  int slen = wcslen(s);
+  size_t slen = wcslen(s);
   wchar_t* result = caml_stat_alloc((slen + 1)*sizeof(wchar_t));
   if (result == NULL)
     caml_raise_out_of_memory();
