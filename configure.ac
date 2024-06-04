@@ -2706,7 +2706,7 @@ ${mkdll_ldflags}"
   # cl requires linker flags after the objects.
   AS_IF([test "$ccomptype" = 'msvc'],
     [mkexe_via_cc_ldflags=\
-"\$(OUTPUTEXE)\$(1) \$(2) $mkexe_via_cc_ldflags"],
+"/nologo \$(OUTPUTEXE)\$(1) \$(2) $mkexe_via_cc_ldflags"],
     [mkexe_via_cc_ldflags=\
 "$mkexe_via_cc_ldflags \$(OUTPUTEXE)\$(1) \$(2)"])
 ])
