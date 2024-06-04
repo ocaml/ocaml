@@ -106,7 +106,7 @@ static void write_console(HANDLE hOut, WCHAR *wstr)
   }
 }
 
-static __inline void __declspec(noreturn) run_runtime(wchar_t * runtime,
+CAMLnoret static __inline void run_runtime(wchar_t * runtime,
          wchar_t * const cmdline)
 {
   wchar_t path[MAX_PATH];
