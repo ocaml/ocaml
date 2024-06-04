@@ -100,7 +100,7 @@ Caml_inline bool frame_has_debug(frame_descr *d) {
 /* Used to compute offsets in frame tables.
    ty must have power-of-2 size */
 #define Align_to(p, ty) \
-  (void*)(((uintnat)(p) + sizeof(ty) - 1) & -sizeof(ty))
+  (void*)(((uintnat)(p) + sizeof(ty) - 1) & ~(sizeof(ty) - 1))
 
 #define Hash_retaddr(addr, mask)                          \
   (((uintnat)(addr) >> 3) & (mask))
