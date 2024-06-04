@@ -1066,7 +1066,7 @@ CAMLprim value caml_unix_select(value readfds, value writefds, value exceptfds,
 
       if (tm >= 0.0)
         {
-          milliseconds = 1000 * tm;
+          milliseconds = (DWORD)(1000 * tm);
           DEBUG_PRINT("Will wait %d ms", milliseconds);
         }
       else
