@@ -3269,10 +3269,11 @@ oc_dll_ldflags=""
 oc_exe_ldflags=""
 
 tsan=false
-# Passed to the linker by ocamlopt when tsan is enabled
-tsan_cflags="-fsanitize=thread"
+# TSan flags for each compilation stage
 tsan_cppflags="-DWITH_THREAD_SANITIZER"
+tsan_cflags="-fsanitize=thread"
 tsan_distinguish_volatile_cflags=""
+tsan_ldflags="-fsanitize=thread"
 
 # The C# compiler and its flags
 CSC=""
@@ -17174,8 +17175,9 @@ else $as_nop
 fi
 
   tsan_cflags="$tsan_cflags $tsan_distinguish_volatile_cflags"
-  common_cppflags="$common_cppflags $tsan_cppflags"
+  native_cppflags="$native_cppflags $tsan_cppflags"
   native_cflags="$native_cflags $tsan_cflags"
+  native_ldflags="$native_ldflags $tsan_ldflags"
   tsan_native_runtime_c_sources="tsan"
 else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: not using thread sanitizer" >&5
@@ -17235,7 +17237,7 @@ then :
 fi
 
   native_cppflags="$native_cppflags $libunwind_cppflags"
-  native_ldflags="$native_ldflags -fsanitize=thread $libunwind_ldflags"
+  native_ldflags="$native_ldflags $libunwind_ldflags"
 
 
   SAVED_CPPFLAGS="$CPPFLAGS"
@@ -20808,11 +20810,6 @@ case $host in #(
 esac
 
 
-
-if $tsan
-then :
-  cclibs="$cclibs -fsanitize=thread"
-fi
 
 if test x"$libdir" = x'${exec_prefix}/lib'
 then :

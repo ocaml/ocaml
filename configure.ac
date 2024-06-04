@@ -54,10 +54,11 @@ oc_dll_ldflags=""
 oc_exe_ldflags=""
 
 tsan=false
-# Passed to the linker by ocamlopt when tsan is enabled
-tsan_cflags="-fsanitize=thread"
+# TSan flags for each compilation stage
 tsan_cppflags="-DWITH_THREAD_SANITIZER"
+tsan_cflags="-fsanitize=thread"
 tsan_distinguish_volatile_cflags=""
+tsan_ldflags="-fsanitize=thread"
 
 # The C# compiler and its flags
 CSC=""
@@ -1841,8 +1842,9 @@ AS_IF([$tsan],
       `$tsan_distinguish_volatile_cflags' flag. Try upgrading to GCC >= 11, or
       to Clang >= 11.]))], [$warn_error_flag])
   tsan_cflags="$tsan_cflags $tsan_distinguish_volatile_cflags"
-  common_cppflags="$common_cppflags $tsan_cppflags"
+  native_cppflags="$native_cppflags $tsan_cppflags"
   native_cflags="$native_cflags $tsan_cflags"
+  native_ldflags="$native_ldflags $tsan_ldflags"
   tsan_native_runtime_c_sources="tsan"],
   [AC_MSG_NOTICE([not using thread sanitizer])
   tsan_native_runtime_c_sources=""]
@@ -1880,7 +1882,7 @@ AS_IF([$tsan],
     [libunwind_ldflags="$LIBUNWIND_LDFLAGS $libunwind_ldflags"])
 
   native_cppflags="$native_cppflags $libunwind_cppflags"
-  native_ldflags="$native_ldflags -fsanitize=thread $libunwind_ldflags"
+  native_ldflags="$native_ldflags $libunwind_ldflags"
 
   OCAML_CHECK_LIBUNWIND
 
@@ -2581,9 +2583,6 @@ AS_CASE([$host],
 "$cclibs ole32.lib uuid.lib advapi32.lib shell32.lib version.lib shlwapi.lib"])
 
 AC_CONFIG_COMMANDS_PRE([cclibs="$cclibs $mathlib $DLLIBS $PTHREAD_LIBS"])
-
-AS_IF([$tsan],
-  [cclibs="$cclibs -fsanitize=thread"])
 
 AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
   [libdir="$libdir"/ocaml])
