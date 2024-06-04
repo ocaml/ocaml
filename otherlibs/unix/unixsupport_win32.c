@@ -98,7 +98,7 @@ void caml_win32_maperr(DWORD win32err)
   } else {
     /* Not found: save original error code, negated so that we can
        recognize it in caml_unix_error_message */
-    errno = -win32err;
+    errno = -(int)win32err;
   }
 }
 
