@@ -315,7 +315,7 @@ static void ephe_todo_list_emptied (void)
 
   /* Since the todo list is empty, this domain does not need to participate in
    * further ephemeron cycles. */
-  atomic_fetch_add(&ephe_cycle_info.num_domains_todo, -1);
+  atomic_fetch_sub(&ephe_cycle_info.num_domains_todo, 1);
   CAMLassert(atomic_load_acquire(&ephe_cycle_info.num_domains_done) <=
              atomic_load_acquire(&ephe_cycle_info.num_domains_todo));
 
