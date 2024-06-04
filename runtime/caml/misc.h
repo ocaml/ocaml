@@ -29,7 +29,7 @@
 
 #include "camlatomic.h"
 
-/* Detection of available C attributes */
+/* Detection of available C attributes and compiler extensions */
 
 #ifndef __has_c_attribute
 #define __has_c_attribute(x) 0
@@ -37,6 +37,10 @@
 
 #ifndef __has_attribute
 #define __has_attribute(x) 0
+#endif
+
+#ifndef __has_builtin
+#define __has_builtin(x) 0
 #endif
 
 /* Deprecation warnings */
@@ -328,14 +332,6 @@ CAMLnoret CAMLextern void caml_fatal_error (char *, ...)
 #endif
 ;
 
-/* Detection of available C built-in functions, the Clang way. */
-
-#ifdef __has_builtin
-#define Caml_has_builtin(x) __has_builtin(x)
-#else
-#define Caml_has_builtin(x) 0
-#endif
-
 /* Integer arithmetic with overflow detection.
    The functions return 0 if no overflow, 1 if overflow.
    The result of the operation is always stored at [*res].
@@ -345,7 +341,7 @@ CAMLnoret CAMLextern void caml_fatal_error (char *, ...)
 
 Caml_inline int caml_uadd_overflow(uintnat a, uintnat b, uintnat * res)
 {
-#if __GNUC__ >= 5 || Caml_has_builtin(__builtin_add_overflow)
+#if __has_builtin(__builtin_add_overflow) || defined(__GNUC__) && __GNUC__ >= 5
   return __builtin_add_overflow(a, b, res);
 #else
   uintnat c = a + b;
@@ -356,7 +352,7 @@ Caml_inline int caml_uadd_overflow(uintnat a, uintnat b, uintnat * res)
 
 Caml_inline int caml_usub_overflow(uintnat a, uintnat b, uintnat * res)
 {
-#if __GNUC__ >= 5 || Caml_has_builtin(__builtin_sub_overflow)
+#if __has_builtin(__builtin_sub_overflow) || defined(__GNUC__) && __GNUC__ >= 5
   return __builtin_sub_overflow(a, b, res);
 #else
   uintnat c = a - b;
@@ -365,7 +361,7 @@ Caml_inline int caml_usub_overflow(uintnat a, uintnat b, uintnat * res)
 #endif
 }
 
-#if __GNUC__ >= 5 || Caml_has_builtin(__builtin_mul_overflow)
+#if __has_builtin(__builtin_mul_overflow) || defined(__GNUC__) && __GNUC__ >= 5
 Caml_inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 {
   return __builtin_mul_overflow(a, b, res);
