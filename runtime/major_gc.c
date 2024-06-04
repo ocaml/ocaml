@@ -649,7 +649,7 @@ static void update_major_slice_work(intnat howmuch,
     double dependent_ratio =
       total_cycle_work
       * (100 + caml_percent_free)
-      / dom_st-> dependent_size / caml_percent_free;
+        / (double)dom_st->dependent_size / (double)caml_percent_free;
     dependent_work = (intnat) (my_dependent_count * dependent_ratio);
   }else{
     dependent_work = 0;
