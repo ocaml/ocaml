@@ -915,7 +915,8 @@ Sometimes, it is necessary to clean-up state and release resources
 before actually raising the exception back into OCaml. To this end,
 alternative functions that return the exception instead of raising it
 directly ("caml_exception_failure", "caml_exception_invalid_argument",
-etc.) are provided.
+etc.) are provided. The type "caml_result" represents either an OCaml
+value or an exception; see section~\ref{ss:c-result}.
 
 \section{s:c-gc-harmony}{Living in harmony with the garbage collector}
 
@@ -1287,25 +1288,25 @@ raise asynchronous exceptions and cause mutations on the OCaml heap
 from the same domain. It is recommended to call it regularly at safe
 points inside long-running non-blocking C code.
 
-The variant \verb"caml_process_pending_actions_exn" is provided, that
-returns the exception instead of raising it directly into OCaml code.
-Its result must be tested using {\tt Is_exception_result}, and
-followed by {\tt Extract_exception} if appropriate. It is typically
-used for clean up before re-raising:
+The function \verb"caml_process_pending_actions_res"
+returns the exception instead of raising it directly into OCaml
+code. This is represented by a different C type, "caml_result" rather
+than "value". The result can be tested using
+"caml_result_is_exception", followed by some cleanup logic, and
+finally "caml_get_value_or_raise" which returns the value (here just
+a unit value, ignored) or raises the exception.
 
 \begin{verbatim}
-    CAMLlocal1(exn);
+    CAMLlocalresult(res);
     ...
-    exn = caml_process_pending_actions_exn();
-    if(Is_exception_result(exn)) {
-      exn = Extract_exception(exn);
+    res = caml_process_pending_actions_res();
+    if(caml_result_is_exception(res)) {
       ...cleanup...
-      caml_raise(exn);
+      (void)caml_get_value_or_raise(res);
     }
 \end{verbatim}
 
-Correct use of exceptional return, in particular in the presence of
-garbage collection, is further detailed in Section~\ref{ss:c-callbacks}.
+For more details on "caml_result", see section~\ref{ss:c-result}.
 
 \section{s:c-intf-example}{A complete example}
 
@@ -1499,39 +1500,126 @@ calls back an OCaml function \var{h} that raises a stray exception, then the
 execution of \var{g} is interrupted and the exception is propagated back
 into \var{f}.
 
-If the C code wishes to catch exceptions escaping the OCaml function,
-it can use the functions "caml_callback_exn", "caml_callback2_exn",
-"caml_callback3_exn", "caml_callbackN_exn".  These functions take the same
-arguments as their non-"_exn" counterparts, but catch escaping
-exceptions and return them to the C code.  The return value \var{v} of the
-"caml_callback*_exn" functions must be tested with the macro
-"Is_exception_result("\var{v}")".  If the macro returns ``false'', no
-exception occurred, and \var{v} is the value returned by the OCaml
-function.  If "Is_exception_result("\var{v}")" returns ``true'',
-an exception escaped, and its value (the exception descriptor) can be
-recovered using "Extract_exception("\var{v}")".
+\subsection{ss:c-result}{"caml_result": resource cleanup on OCaml exceptions}
 
-\paragraph{Warning:} If the OCaml function returned with an exception,
-"Extract_exception" should be applied to the exception result prior
-to calling a function that may trigger garbage collection.
-Otherwise, if \var{v} is reachable during garbage collection, the runtime
-can crash since \var{v} does not contain a valid value.
+If the OCaml function called with "caml_callback"
+(or "caml_process_pending_actions" as mentioned in
+Section~\ref{ss:c-process-pending-actions}) raises an exception, the
+C caller will be interrupted immediately to return to the closest
+OCaml exception handler. This is often the wrong behavior if the
+C caller needs to run some resource cleanup logic to terminate safely.
 
-Example:
+The OCaml FFI provides an alternative API to call OCaml code from
+C that returns a value of type "caml_result" instead of
+"value". A C value of type "caml_result" is either an OCaml value
+returned correctly by the OCaml function, or an OCaml exception raised
+by the OCaml function. The C caller can run any cleanup logic before
+re-raising the exception (if any) or continuing the computation.
+
+"caml_result" values can be manipulated using the following functions
+and macros:
+\begin{itemize}
+\item "value caml_get_value_or_raise(caml_result \var{res})"
+  (in "fail.h") returns the value contained in \var{res} or reraises
+  the exception it contains. In particular,
+  "(void)caml_get_value_or_raise(res)" can be used to ignore an OCaml
+  result of type "unit", yet propagate exceptions to the caller.
+
+\item "Result_value(value \var{v})" (in "mlvalues.h") is the result
+  that represents returning the value \var{v}.
+
+\item "Result_exception(value \var{exn})" (in "mlvalues.h") is the
+  result that represents raising the exception \var{exn}.
+
+\item "int caml_result_is_exception(caml_result \var{res})"
+  (in "mlvalues.h") is true if \var{res} represents an exception.
+
+\item The macro "CAMLlocalresult(foo)" (in "memory.h") is the
+  "caml_result" counterpart of "CAMLlocal1": it declares a local
+  variable of type "caml_result", whose content is tracked by the
+  OCaml GC. Just like "CAMLlocal1", it can only be used between
+  a "CAMLparam" macro and "CAMLreturn" or "CAMLreturnT" macros. There
+  is no equivalent of "CAMLlocal2", "CAMLlocal3", etc., but the macro
+  can be used several times.
+\end{itemize}
+
+For convenience, "Result_unit" is defined as "Result_value(Val_unit)".
+
+By convention, result-returning C functions have their name suffixed
+with "_res", for example "caml_callback2_res" and
+"caml_process_pending_actions_res".
+
+Some examples:
 \begin{verbatim}
-    CAMLprim value call_caml_f_ex(value closure, value arg)
-    {
-      CAMLparam2(closure, arg);
-      CAMLlocal2(res, tmp);
-      res = caml_callback_exn(closure, arg);
-      if(Is_exception_result(res)) {
-        res = Extract_exception(res);
-        tmp = caml_alloc(3, 0); /* Safe to allocate: res contains valid value. */
-        ...
-      }
-      CAMLreturn (res);
-    }
+#include <caml/mlvalues.h> // for the caml_result type, caml_result_is_exception
+#include <caml/memory.h>   // CAMLlocalresult
+#include <caml/callback.h> // caml_callback_res
+#include <caml/fail.h>     // caml_get_value_or_raise
+#include <caml/alloc.h>    // caml_alloc_2
+
+/* This function calls an OCaml callback,
+   and returns the value or reraises the exception. */
+value logging_callback(value f, value arg) {
+  CAMLparam2(f, arg);
+  CAMLlocalresult(res);
+  printf("Start callback.\n");
+  res = caml_callback_res(f, arg);
+  printf("End callback.\n");
+  CAMLreturn (caml_get_value_or_raise(res));
+}
+
+/* This function assumes that the callback returns
+   a 'unit' value and ignores it -- or reraises
+   its exception. It must be called by C, as it
+   does not return a value, but the caller cannot
+   handle exceptions as they are raised directly. */
+void logging_unit_callback(value f, value arg) {
+  CAMLparam2(f, arg);
+  CAMLlocalresult(res);
+  printf("Start unit callback.\n");
+  res = caml_callback_res(f, arg);
+  printf("End callback.\n");
+  (void)caml_get_value_or_raise(res);
+  CAMLreturn0;
+}
+
+/* This function calls a callback on two arguments in turn,
+   and returns the pair of values;
+   it does not reraise exceptions, but returns a caml_result instead, letting
+   its own C caller perform its own cleanup. */
+caml_result two_callbacks_res(value f, value arg1, value arg2) {
+  CAMLparam3(f, arg1, arg2);
+  CAMLlocalresult(res);
+  CAMLlocal3(v1, v2, pair);
+
+  res = caml_callback_res(f, arg1);
+  // early exit on exception
+  if (caml_result_is_exception(res))
+    CAMLreturnT(caml_result, res);
+  v1 = caml_get_value_or_raise(res);
+
+  res = caml_callback_res(f, arg2);
+  if (caml_result_is_exception(res))
+    CAMLreturnT(caml_result, res);
+  v2 = caml_get_value_or_raise(res);
+
+  // build the pair of values, and
+  // wrap it in a caml_result
+  pair = caml_alloc_2(0, v1, v2);
+  res = Result_value(pair);
+  CAMLreturnT(caml_result, res);
+}
 \end{verbatim}
+
+\paragraph{Compatibility:} The "caml_result" type is available since
+OCaml 5.3. Older versions of OCaml use an unsafe concept of "encoded
+exceptions" (suffix "_exn", operations "Is_exception_result" and
+"Extract_exception") which are of type "value" but are not valid
+OCaml values and can crash the GC if they are not extracted
+immediately by the caller. We strongly recommend using "caml_result"
+instead, to have a clear separation between valid values and reified
+exceptions at distinct C types, but the older approach remains
+available for backwards-compatibility.
 
 \subsection{ss:c-closures}{Obtaining or registering OCaml closures for use in C functions}
 
