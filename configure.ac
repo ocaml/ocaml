@@ -835,9 +835,11 @@ AS_CASE([$ocaml_cc_vendor],
   [msvc-*],
     [outputobj='-Fo'
     AS_CASE([$ocaml_cc_vendor],
-      [msvc-*-clang-*], [warn_error_flag='-WX'],
-      [warn_error_flag='-WX -options:strict'])
-    cc_warnings=''],
+      [msvc-*-clang-*],
+        [cc_warnings='-W4 -Wno-unused-parameter -Wno-sign-compare -Wundef'
+         warn_error_flag='-WX'],
+      [cc_warnings='-W2'
+       warn_error_flag='-WX -options:strict'])],
   [outputobj='-o '
   warn_error_flag='-Werror'
   cc_warnings="-Wall -Wint-conversion -Wstrict-prototypes \

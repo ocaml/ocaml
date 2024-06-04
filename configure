@@ -13959,11 +13959,12 @@ case $ocaml_cc_vendor in #(
     outputobj='-Fo'
     case $ocaml_cc_vendor in #(
   msvc-*-clang-*) :
-    warn_error_flag='-WX' ;; #(
+    cc_warnings='-W4 -Wno-unused-parameter -Wno-sign-compare -Wundef'
+         warn_error_flag='-WX' ;; #(
   *) :
-    warn_error_flag='-WX -options:strict' ;;
-esac
-    cc_warnings='' ;; #(
+    cc_warnings='-W2'
+       warn_error_flag='-WX -options:strict' ;;
+esac ;; #(
   *) :
     outputobj='-o '
   warn_error_flag='-Werror'

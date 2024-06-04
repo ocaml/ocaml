@@ -117,6 +117,10 @@ _______________
   compiler attributes with clang-cl.
   (Antonin Décimo, review by Miod Vallat)
 
+- #13243: Enable C compiler warnings internally when building with
+  clang-cl or MSVC. Provide fixes too.
+  (Antonin Décimo, review by Miod Vallat and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously
