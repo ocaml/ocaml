@@ -240,11 +240,11 @@ void caml_runtime_events_destroy(void) {
 static void runtime_events_create_from_stw_single(void) {
   /* Don't initialise runtime_events twice */
   if (!atomic_load_acquire(&runtime_events_enabled)) {
-    int ret, ring_headers_length, ring_data_length;
+    int ring_headers_length, ring_data_length;
 #ifdef _WIN32
     DWORD pid = GetCurrentProcessId();
 #else
-    int ring_fd;
+    int ring_fd, ret;
     long int pid = getpid();
 #endif
 
