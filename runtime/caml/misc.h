@@ -608,6 +608,11 @@ CAMLextern int caml_snwprintf(wchar_t * buf,
 #  endif
 #endif
 
+/* Generate a named symbol that is unique within the current macro expansion */
+#define CAML_GENSYM_3(name, l) caml__##name##_##l
+#define CAML_GENSYM_2(name, l) CAML_GENSYM_3(name, l)
+#define CAML_GENSYM(name) CAML_GENSYM_2(name, __LINE__)
+
 #endif /* CAML_INTERNALS */
 
 /* The [backtrace_slot] type represents values stored in

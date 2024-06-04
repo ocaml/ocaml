@@ -64,33 +64,6 @@ Caml_inline void cpu_relax(void) {
 #endif
 }
 
-/* Spin-wait loops */
-
-#define Max_spins 1000
-
-CAMLextern unsigned caml_plat_spin_wait(unsigned spins,
-                                        const char* file, int line,
-                                        const char* function);
-
-#define GENSYM_3(name, l) name##l
-#define GENSYM_2(name, l) GENSYM_3(name, l)
-#define GENSYM(name) GENSYM_2(name, __LINE__)
-
-#define SPIN_WAIT                                                       \
-  unsigned GENSYM(caml__spins) = 0;                                     \
-  for (; 1; cpu_relax(),                                                \
-         GENSYM(caml__spins) =                                          \
-           CAMLlikely(GENSYM(caml__spins) < Max_spins) ?                \
-         GENSYM(caml__spins) + 1 :                                      \
-         caml_plat_spin_wait(GENSYM(caml__spins),                       \
-                             __FILE__, __LINE__, __func__))
-
-Caml_inline uintnat atomic_load_wait_nonzero(atomic_uintnat* p) {
-  SPIN_WAIT {
-    uintnat v = atomic_load_acquire(p);
-    if (v) return v;
-  }
-}
 
 /* Atomic read-modify-write instructions, with full fences */
 
@@ -146,6 +119,309 @@ void caml_plat_wait(caml_plat_cond*, caml_plat_mutex*); /* blocking */
 void caml_plat_broadcast(caml_plat_cond*);
 void caml_plat_signal(caml_plat_cond*);
 void caml_plat_cond_free(caml_plat_cond*);
+
+/* Futexes
+
+   A futex is an integer that can be waited on and woken, used to build other
+   synchronisation primitives. Either uses OS facilities directly, or a
+   condition variable fallback.
+*/
+typedef struct caml_plat_futex /* {
+  // this field is available regardless of implementation
+  caml_plat_futex_word value;
+  <possibly other fields>; ...
+} */ caml_plat_futex;
+
+typedef uint32_t caml_plat_futex_value;
+typedef _Atomic caml_plat_futex_value caml_plat_futex_word;
+
+/* Block while [futex] has the value [undesired], until woken by [wake_all()] */
+void caml_plat_futex_wait(caml_plat_futex* futex,
+                          caml_plat_futex_value undesired);
+/* Wake all threads [wait()]-ing on [futex] */
+void caml_plat_futex_wake_all(caml_plat_futex* futex);
+/* Initialise the futex for the first time, use [CAML_PLAT_FUTEX_INITIALIZER] to
+   do this statically */
+void caml_plat_futex_init(caml_plat_futex* ftx, caml_plat_futex_value value);
+/* Deinitialise the futex; no-op if native futexes are used */
+void caml_plat_futex_free(caml_plat_futex*);
+
+/* [CAML_PLAT_FUTEX_FALLBACK] can be defined to use the condition variable
+   fallback, even if a futex implementation is available. */
+#ifndef CAML_PLAT_FUTEX_FALLBACK
+#  if defined(_WIN32)                                   \
+  || (defined(__linux__) && defined(HAS_LINUX_FUTEX_H)) \
+  || defined(__FreeBSD__) || defined(__OpenBSD__)
+/* TODO We have implementations for these platforms, but they are
+   currently untested, so use the fallback instead.
+  || defined(__NetBSD__) || defined(__DragonFly__) */
+#  else
+/* Use the fallback on platforms that we do not have an OS-specific
+   implementation for, such as macOS. */
+#    define CAML_PLAT_FUTEX_FALLBACK
+#  endif
+#endif
+
+#ifdef CAML_PLAT_FUTEX_FALLBACK
+struct caml_plat_futex {
+  caml_plat_futex_word value;
+  caml_plat_mutex mutex;
+  caml_plat_cond cond;
+};
+#  define CAML_PLAT_FUTEX_INITIALIZER(value) \
+  { (value), CAML_PLAT_MUTEX_INITIALIZER, CAML_PLAT_COND_INITIALIZER }
+#else
+struct caml_plat_futex {
+  caml_plat_futex_word value;
+};
+#  define CAML_PLAT_FUTEX_INITIALIZER(value) { (value) }
+#endif /* CAML_PLAT_FUTEX_FALLBACK */
+
+/* Latches
+
+   A binary latch is a boolean value with a [wait()] operation. It has two
+   states, "released" and "unreleased" (or "set"). [latch_set()] can be used to
+   set the latch to unreleased, [latch_release()] can be used to release it, and
+   [latch_wait()] can be used from the unreleased state to block until
+   [latch_release()] is called.
+
+                    [latch_set()]
+         +------------------------------------+
+         v                                    |
+     UNRELEASED                            RELEASED
+         |                                    ^
+         +-< unblock [latch_wait()] callers >-+
+                   [latch_release()]
+
+   This type of object is also called a manual-reset event in Windows APIs, or
+   it can be considered a special case of Java's [CountDownLatch] or C++'s
+   [std::latch] with the counter capped at one.
+ */
+typedef caml_plat_futex caml_plat_binary_latch;
+
+/* Released state */
+#define Latch_released 0 /* must be zero, see barrier initialisation */
+/* Unreleased state, no [latch_wait()] callers */
+#define Latch_unreleased 1
+/* Unreleased state, at least one [latch_wait()] caller */
+#define Latch_contested 2
+
+/* Initialise the latch to a released state */
+#define CAML_PLAT_LATCH_INITIALIZER CAML_PLAT_FUTEX_INITIALIZER(Latch_released)
+Caml_inline void caml_plat_latch_init(caml_plat_binary_latch* latch) {
+  caml_plat_futex_init(latch, Latch_released);
+}
+/* Release the latch, waking any waiters */
+void caml_plat_latch_release(caml_plat_binary_latch*);
+/* Block until released. This is no-op (but more expensive than checking with
+   [is_released()]) if the latch has already been released. */
+void caml_plat_latch_wait(caml_plat_binary_latch*);
+/* Check if a latch is released */
+Caml_inline int caml_plat_latch_is_released(caml_plat_binary_latch* latch) {
+  return atomic_load_acquire(&latch->value) == Latch_released;
+}
+/* Check if a latch is unreleased */
+Caml_inline int caml_plat_latch_is_set(caml_plat_binary_latch* latch) {
+  return !caml_plat_latch_is_released(latch);
+}
+/* Set the latch to unreleased */
+Caml_inline void caml_plat_latch_set(caml_plat_binary_latch* latch) {
+  atomic_store_release(&latch->value, Latch_unreleased);
+}
+
+/* Barriers
+
+   A barrier is an object used to synchronise a variable number of
+   threads/parties. Each party arrives at the barrier, and only once all parties
+   have arrived can any threads leave the barrier. There are two variants: the
+   "single-sense" barrier must be manually reset before it can be reused,
+   whereas the "sense-reversing" barrier can be reused immediately after it has
+   been released.
+
+   | Operation | [caml_plat_barrier_*] function      |
+   |           |---------------+---------------------|
+   |           | Single-sense  | Sense-reversing     |
+   |-----------|---------------+---------------------|
+   | Reset     | [reset]       | automatic at [flip] |
+   | Arrive    | [arrive]      | [arrive]            |
+   | Check     | [is_released] | [sense_has_flipped] |
+   | Block     | [wait]        | [wait_sense]        |
+   | Release   | [release]     | [flip]              |
+
+   The lifecycle is as follows:
+
+        Reset (1 thread)          (other threads)
+                |                       |
+                +----------+------------+
+                           |
+                        Arrive (all threads)
+                           |
+                           | check arrival number
+                +----------+------------+
+                |                       |
+         Check or Block              Release
+       (non-final threads)        (final thread)
+                |                       |
+
+   Leaving the barrier after [Block] or a nonzero [Check] result synchronises
+   with the [Release] of the barrier from the final thread, which in turn
+   synchronises with the non-final threads at the time they [Arrive]d.
+
+   That is, on non-final threads, anything performed before [Check]/[Block] may
+   race with code in other threads that happens before they [Arrive], and
+   anything performed after [Arrive] is entirely unsynchronised by the barrier,
+   so may race with code in other threads that happens after they [Arrive]. In
+   particular, code between [Arrive] and [Check]/[Block] may race with code
+   before or after the barrier in all other threads. The final thread is the
+   exception, and may execute code after [Arrive] but before [Release] that will
+   still be synchronised by the barrier.
+*/
+typedef struct caml_plat_barrier {
+  caml_plat_futex futex;
+  atomic_uintnat arrived; /* includes sense bit */
+} caml_plat_barrier;
+
+/* This initialises both a single-sense and sense-reversing barrier, for
+   single-sense this is the released state ([Latch_released], which must be 0)
+   and for sense-reversing it is just a valid initialised state. */
+#define CAML_PLAT_BARRIER_INITIALIZER \
+  { CAML_PLAT_FUTEX_INITIALIZER(Latch_released), 0 }
+
+typedef uintnat barrier_status;
+#define BARRIER_SENSE_BIT 0x100000
+/* Arrive at the barrier, returns the number of parties that have arrived at the
+   barrier (including this one); the caller should check whether it is the last
+   expected party to arrive, and release or flip the barrier if so.
+
+   In a sense-reversing barrier, this also encodes the current sense of the
+   barrier in [BARRIER_SENSE_BIT], which should be masked off if checking for
+   the last arrival. */
+Caml_inline barrier_status caml_plat_barrier_arrive(caml_plat_barrier* barrier)
+{
+  return 1 + atomic_fetch_add(&barrier->arrived, 1);
+}
+
+/* -- Single-sense --
+   [futex] is used as a binary latch. */
+
+/* Reset the barrier to 0 arrivals, block new waiters */
+Caml_inline void caml_plat_barrier_reset(caml_plat_barrier* barrier) {
+  caml_plat_latch_set(&barrier->futex);
+  atomic_store_release(&barrier->arrived, 0);
+}
+/* Check if the barrier has been released */
+Caml_inline int caml_plat_barrier_is_released(caml_plat_barrier* barrier) {
+  return caml_plat_latch_is_released(&barrier->futex);
+}
+/* Release the barrier unconditionally, letting all parties through */
+Caml_inline void caml_plat_barrier_release(caml_plat_barrier* barrier) {
+  caml_plat_latch_release(&barrier->futex);
+}
+/* Block until released */
+Caml_inline void caml_plat_barrier_wait(caml_plat_barrier* barrier) {
+  caml_plat_latch_wait(&barrier->futex);
+}
+
+/* -- Sense-reversing -- */
+/* Flip the sense of the barrier, releasing current waiters and
+   blocking new ones.
+
+   [current_sense] should be [(b & BARRIER_SENSE_BIT)] with [b] as
+   returned by [barrier_arrive()]. */
+void caml_plat_barrier_flip(caml_plat_barrier*, barrier_status current_sense);
+Caml_inline int
+caml_plat_barrier_sense_has_flipped(caml_plat_barrier* barrier,
+                                    barrier_status current_sense)
+{
+  return (atomic_load_acquire(&barrier->futex.value) & BARRIER_SENSE_BIT)
+    != current_sense;
+}
+/* Block until flipped */
+void caml_plat_barrier_wait_sense(caml_plat_barrier*,
+                                  barrier_status current_sense);
+
+/* Spin-wait loops
+
+   We provide the macros [SPIN_WAIT], [SPIN_WAIT_NTIMES(N)] and
+   [SPIN_WAIT_BOUNDED] that expand to [for]-loop headers for spin-wait
+   loops. The latter two are expected to be used alongside OS-based
+   synchronisation (e.g. latches, barriers).
+
+   Example usage:
+
+   SPIN_WAIT {
+     if (condition_has_come_true()) {
+       break; // or return;
+     }
+
+     perform_useful_spin_work();
+   }
+
+   [SPIN_WAIT] spins for unbounded time, and should only be used when hashing
+   out contention over a short critical section that only one thread needs to
+   run, where more complex synchronisation would be too expensive and
+   unnecessary.
+
+   [SPIN_WAIT_NTIMES(N)] should be used with one of the [Max_spins_*] constants
+   defined below (though the N expression doesn't need to be a constant), it
+   loops the body up to N times and then ends, even if the condition hasn't come
+   true. Exactly how much spinning is optimal can be tricky and may warrant
+   profiling, with the caveat that it is also probably machine-dependent.
+   Typically, [Max_spins_long] iterations are only useful when there are exactly
+   2 domains, otherwise [Max_spins_short] is best to yield to OS synchronisation
+   as fast as possible.
+
+   [SPIN_WAIT_BOUNDED] expands to [SPIN_WAIT_NTIMES(Max_spins_medium)] and
+   should be used when there is useful work to do in the body of the loop.
+ */
+
+/* The exact values here are estimates based on data from a specific machine,
+   and shouldn't be focused on too much. */
+#define Max_spins_long 1000
+#define Max_spins_medium 300
+#define Max_spins_short 30
+
+#define SPIN_WAIT_NTIMES(N)                             \
+  unsigned CAML_GENSYM(spins) = 0;                      \
+  unsigned CAML_GENSYM(max_spins) = (N);                \
+  for (; CAML_GENSYM(spins) < CAML_GENSYM(max_spins);   \
+       cpu_relax(), ++CAML_GENSYM(spins))
+#define SPIN_WAIT_BOUNDED SPIN_WAIT_NTIMES(Max_spins_medium)
+#define SPIN_WAIT SPIN_WAIT_BACK_OFF(Max_spins_long)
+
+/* [SPIN_WAIT_*] implementation details */
+
+struct caml_plat_srcloc {
+  const char* file;
+  int line;
+  const char* function;
+};
+
+/* Start/continue backing off, returns the next [sleep_ns] */
+CAMLextern unsigned caml_plat_spin_back_off(unsigned sleep_ns,
+                                            const struct caml_plat_srcloc* loc);
+
+Caml_inline unsigned caml_plat_spin_step(unsigned spins,
+                                         unsigned max_spins,
+                                         const struct caml_plat_srcloc *loc) {
+  cpu_relax();
+  if (CAMLlikely(spins < max_spins)) {
+    return spins + 1;
+  } else {
+    /* [spins] becomes [sleep_ns] at this point, which remains greater than
+       [max_spins] */
+    return caml_plat_spin_back_off(spins, loc);
+  }
+}
+
+#define SPIN_WAIT_BACK_OFF(max_spins)                                   \
+  unsigned CAML_GENSYM(spins) = 0;                                      \
+  unsigned CAML_GENSYM(max_spins) = (max_spins);                        \
+  static const struct caml_plat_srcloc CAML_GENSYM(loc) = {             \
+    __FILE__, __LINE__, __func__                                        \
+  };                                                                    \
+  for (; 1; CAML_GENSYM(spins) = caml_plat_spin_step(                   \
+         CAML_GENSYM(spins), CAML_GENSYM(max_spins), &CAML_GENSYM(loc)))
 
 /* Memory management primitives (mmap) */
 

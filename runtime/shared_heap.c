@@ -475,7 +475,7 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
 
 static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
                          sizeclass sz, int release_to_global_pool) {
-  intnat work = 0;
+  intnat work;
   pool* a = *plist;
   if (!a) return 0;
   *plist = a->next;
@@ -487,7 +487,11 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
     int all_used = 1;
     struct heap_stats* s = &local->stats;
 
-    while (p + wh <= end) {
+    /* conceptually, this is incremented by [wh] for every iteration
+       below, however we can hoist these increments knowing that [p ==
+       end] on exit from the loop (as asserted) */
+    work = end - p;
+    do {
       header_t hd = (header_t)atomic_load_relaxed((atomic_uintnat*)p);
       if (hd == 0) {
         /* already on freelist */
@@ -523,8 +527,8 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
         release_to_global_pool = 0;
       }
       p += wh;
-      work += wh;
-    }
+    } while (p + wh <= end);
+    CAMLassert(p == end);
 
     if (release_to_global_pool) {
       pool_release(local, a, sz);
@@ -982,7 +986,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
   filled pools, determine pools to be evacuated and then evacuate from them.
   For the first phase we need not consider full pools, they
   cannot be evacuated to or from. */
-  caml_global_barrier();
+  caml_global_barrier(participating_count);
   CAML_EV_BEGIN(EV_COMPACT_EVACUATE);
 
   struct caml_heap_state* heap = Caml_state->shared_heap;
@@ -1209,7 +1213,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
   }
 
   CAML_EV_END(EV_COMPACT_EVACUATE);
-  caml_global_barrier();
+  caml_global_barrier(participating_count);
   CAML_EV_BEGIN(EV_COMPACT_FORWARD);
 
   /* Second phase: at this point all live blocks in evacuated pools
@@ -1253,7 +1257,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
   compact_update_ephe_list(&ephe_info->live);
 
   CAML_EV_END(EV_COMPACT_FORWARD);
-  caml_global_barrier();
+  caml_global_barrier(participating_count);
   CAML_EV_BEGIN(EV_COMPACT_RELEASE);
 
   /* Third phase: free all evacuated pools and release the mappings back to
@@ -1278,7 +1282,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
   }
 
   CAML_EV_END(EV_COMPACT_RELEASE);
-  caml_global_barrier();
+  caml_global_barrier(participating_count);
 
   /* Fourth phase: one domain also needs to release the free list */
   if( participants[0] == Caml_state ) {

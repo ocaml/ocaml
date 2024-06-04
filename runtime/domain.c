@@ -167,8 +167,16 @@ struct interruptor {
   /* unlike the domain ID, this ID number is not reused */
   uintnat unique_id;
 
+  /* indicates whether there is an interrupt pending */
   atomic_uintnat interrupt_pending;
 };
+
+Caml_inline int interruptor_has_pending(struct interruptor *s)
+{ return atomic_load_acquire(&s->interrupt_pending) != 0; }
+Caml_inline void interruptor_set_handled(struct interruptor *s)
+{ atomic_store_release(&s->interrupt_pending, 0); }
+Caml_inline void interruptor_set_pending(struct interruptor *s)
+{ atomic_store_release(&s->interrupt_pending, 1); }
 
 struct dom_internal {
   /* readonly fields, initialised and never modified */
@@ -189,28 +197,42 @@ struct dom_internal {
 };
 typedef struct dom_internal dom_internal;
 
-
 static struct {
-  atomic_uintnat domains_still_running;
+  /* enter barrier for STW sections, participating domains arrive into
+     the barrier before executing the STW callback */
+  caml_plat_barrier domains_still_running;
+  /* the number of domains that have yet to return from the callback */
   atomic_uintnat num_domains_still_processing;
   void (*callback)(caml_domain_state*,
                    void*,
                    int participating_count,
                    caml_domain_state** others_participating);
   void* data;
-  void (*enter_spin_callback)(caml_domain_state*, void*);
+  int (*enter_spin_callback)(caml_domain_state*, void*);
   void* enter_spin_data;
 
-  /* barrier state */
+  /* global_barrier state */
   int num_domains;
-  atomic_uintnat barrier;
+  caml_plat_barrier barrier;
 
   caml_domain_state* participating[Max_domains];
-} stw_request = { 0, 0, NULL, NULL, NULL, NULL, 0, 0, { 0 } };
+} stw_request = {
+  CAML_PLAT_BARRIER_INITIALIZER,
+  0,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  0,
+  CAML_PLAT_BARRIER_INITIALIZER,
+  { 0 },
+};
 
 static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
 static caml_plat_cond all_domains_cond = CAML_PLAT_COND_INITIALIZER;
 static atomic_uintnat /* dom_internal* */ stw_leader = 0;
+static uintnat stw_requests_suspended = 0; /* protected by all_domains_lock */
+static caml_plat_cond requests_suspended_cond = CAML_PLAT_COND_INITIALIZER;
 static dom_internal all_domains[Max_domains];
 
 CAMLexport atomic_uintnat caml_num_domains_running;
@@ -314,17 +336,17 @@ Caml_inline void interrupt_domain_local(caml_domain_state* dom_st)
 
 int caml_incoming_interrupts_queued(void)
 {
-  return atomic_load_acquire(&domain_self->interruptor.interrupt_pending);
+  return interruptor_has_pending(&domain_self->interruptor);
 }
 
 /* must NOT be called with s->lock held */
 static void stw_handler(caml_domain_state* domain);
-static uintnat handle_incoming(struct interruptor* s)
+static int handle_incoming(struct interruptor* s)
 {
-  uintnat handled = atomic_load_acquire(&s->interrupt_pending);
+  int handled = interruptor_has_pending(s);
   CAMLassert (s->running);
   if (handled) {
-    atomic_store_release(&s->interrupt_pending, 0);
+    interruptor_set_handled(s);
 
     stw_handler(domain_self->state);
   }
@@ -345,7 +367,7 @@ void caml_handle_incoming_interrupts(void)
 int caml_send_interrupt(struct interruptor* target)
 {
   /* signal that there is an interrupt pending */
-  atomic_store_release(&target->interrupt_pending, 1);
+  interruptor_set_pending(target);
 
   /* Signal the condition variable, in case the target is itself
      waiting for an interrupt to be processed elsewhere, or to wake up
@@ -357,26 +379,6 @@ int caml_send_interrupt(struct interruptor* target)
   interrupt_domain(target);
 
   return 1;
-}
-
-static void caml_wait_interrupt_serviced(struct interruptor* target)
-{
-  int i;
-
-  /* Often, interrupt handlers are fast, so spin for a bit before waiting */
-  for (i=0; i<1000; i++) {
-    if (!atomic_load_acquire(&target->interrupt_pending)) {
-      return;
-    }
-    cpu_relax();
-  }
-
-  {
-    SPIN_WAIT {
-      if (!atomic_load_acquire(&target->interrupt_pending))
-        return;
-    }
-  }
 }
 
 asize_t caml_norm_minor_heap_size (intnat wsize)
@@ -564,11 +566,30 @@ static void domain_create(uintnat initial_minor_heap_wsize,
      set atomically */
   caml_plat_lock_blocking(&all_domains_lock);
 
+  /* How many STW sections we are willing to wait for, any more are
+     prevented from happening */
+#define Max_stws_before_suspend 2
+  int stws_waited = 1;
   /* Wait until any in-progress STW sections end. */
   while (atomic_load_acquire(&stw_leader)) {
-    /* [caml_plat_wait] releases [all_domains_lock] until the current
-       STW section ends, and then takes the lock again. */
-    caml_plat_wait(&all_domains_cond, &all_domains_lock);
+    if (stws_waited++ < Max_stws_before_suspend) {
+      /* [caml_plat_wait] releases [all_domains_lock] until the current
+         STW section ends, and then takes the lock again. */
+      caml_plat_wait(&all_domains_cond, &all_domains_lock);
+    } else {
+      /* Prevent new STW requests to avoid our own starvation */
+      stw_requests_suspended++;
+      /* Wait for the current STW to end */
+      do {
+        caml_plat_wait(&all_domains_cond, &all_domains_lock);
+      } while (atomic_load_acquire(&stw_leader));
+      if (--stw_requests_suspended == 0) {
+        /* Notify threads that were trying to run an STW section.
+           We still hold the lock, so they won't wake up yet. */
+        caml_plat_broadcast(&requests_suspended_cond);
+      }
+      break;
+    }
   }
 
   d = next_free_domain();
@@ -578,7 +599,7 @@ static void domain_create(uintnat initial_minor_heap_wsize,
 
   s = &d->interruptor;
   CAMLassert(!s->running);
-  CAMLassert(!s->interrupt_pending);
+  CAMLassert(!interruptor_has_pending(s));
 
   /* If the chosen domain slot has not been previously used, allocate a fresh
      domain state. Otherwise, reuse it.
@@ -631,7 +652,7 @@ static void domain_create(uintnat initial_minor_heap_wsize,
     goto init_memprof_failure;
   }
 
-  CAMLassert(!s->interrupt_pending);
+  CAMLassert(!interruptor_has_pending(s));
 
   domain_state->extra_heap_resources = 0.0;
   domain_state->extra_heap_resources_minor = 0.0;
@@ -848,46 +869,49 @@ static void unreserve_minor_heaps_from_stw_single(void) {
   caml_mem_unmap((void *) caml_minor_heaps_start, size);
 }
 
-static void stw_resize_minor_heap_reservation(caml_domain_state* domain,
-                                       void* minor_wsz_data,
-                                       int participating_count,
-                                       caml_domain_state** participating) {
-  barrier_status b;
-  uintnat new_minor_wsz = (uintnat) minor_wsz_data;
+static
+void domain_resize_heap_reservation_from_stw_single(uintnat new_minor_wsz)
+{
+  CAML_EV_BEGIN(EV_DOMAIN_RESIZE_HEAP_RESERVATION);
+  caml_gc_log("stw_resize_minor_heap_reservation: "
+              "unreserve_minor_heaps");
 
+  unreserve_minor_heaps_from_stw_single();
+  /* new_minor_wsz is page-aligned because caml_norm_minor_heap_size has
+     been called to normalize it earlier.
+  */
+  caml_minor_heap_max_wsz = new_minor_wsz;
+  caml_gc_log("stw_resize_minor_heap_reservation: reserve_minor_heaps");
+  reserve_minor_heaps_from_stw_single();
+  /* The call to [reserve_minor_heaps_from_stw_single] makes a new
+     reservation, and it also updates the reservation boundaries of each
+     domain by mutating its [minor_heap_area_start{,_end}] variables.
+
+     These variables are synchronized by the fact that we are inside
+     a STW section: no other domains are running in parallel, and
+     the participating domains will synchronize with this write by
+     exiting the barrier, before they read those variables in
+     [allocate_minor_heap] below. */
+  CAML_EV_END(EV_DOMAIN_RESIZE_HEAP_RESERVATION);
+}
+
+static void
+stw_resize_minor_heap_reservation(caml_domain_state* domain,
+                                  void* minor_wsz_data,
+                                  int participating_count,
+                                  caml_domain_state** participating) {
   caml_gc_log("stw_resize_minor_heap_reservation: "
               "caml_empty_minor_heap_no_major_slice_from_stw");
-  caml_empty_minor_heap_no_major_slice_from_stw(domain, NULL,
-                                            participating_count, participating);
+  caml_empty_minor_heap_no_major_slice_from_stw(
+    domain, NULL, participating_count, participating);
 
   caml_gc_log("stw_resize_minor_heap_reservation: free_minor_heap");
   free_minor_heap();
 
-  b = caml_global_barrier_begin ();
-  if (caml_global_barrier_is_final(b)) {
-    CAML_EV_BEGIN(EV_DOMAIN_RESIZE_HEAP_RESERVATION);
-    caml_gc_log("stw_resize_minor_heap_reservation: "
-                "unreserve_minor_heaps");
-
-    unreserve_minor_heaps_from_stw_single();
-    /* new_minor_wsz is page-aligned because caml_norm_minor_heap_size has
-       been called to normalize it earlier.
-    */
-    caml_minor_heap_max_wsz = new_minor_wsz;
-    caml_gc_log("stw_resize_minor_heap_reservation: reserve_minor_heaps");
-    reserve_minor_heaps_from_stw_single();
-    /* The call to [reserve_minor_heaps_from_stw_single] makes a new
-       reservation, and it also updates the reservation boundaries of each
-       domain by mutating its [minor_heap_area_start{,_end}] variables.
-
-       These variables are synchronized by the fact that we are inside
-       a STW section: no other domains are running in parallel, and
-       the participating domains will synchronize with this write by
-       exiting the barrier, before they read those variables in
-       [allocate_minor_heap] below. */
-    CAML_EV_END(EV_DOMAIN_RESIZE_HEAP_RESERVATION);
+  Caml_global_barrier_if_final(participating_count) {
+    uintnat new_minor_wsz = (uintnat) minor_wsz_data;
+    domain_resize_heap_reservation_from_stw_single(new_minor_wsz);
   }
-  caml_global_barrier_end(b);
 
   caml_gc_log("stw_resize_minor_heap_reservation: "
               "allocate_minor_heap");
@@ -1305,42 +1329,69 @@ CAMLprim value caml_ml_domain_index(value unit)
   return Val_long(domain_self->id);
 }
 
-/* sense-reversing barrier */
-#define BARRIER_SENSE_BIT 0x100000
+/* Global barrier implementation */
 
-barrier_status caml_global_barrier_begin(void)
-{
-  uintnat b = 1 + atomic_fetch_add(&stw_request.barrier, 1);
-  return b;
+Caml_inline int global_barrier_is_nth(barrier_status b, int n) {
+  return (b & ~BARRIER_SENSE_BIT) == n;
 }
 
-int caml_global_barrier_is_final(barrier_status b)
+static barrier_status global_barrier_begin(void)
 {
-  return ((b & ~BARRIER_SENSE_BIT) == stw_request.num_domains);
+  return caml_plat_barrier_arrive(&stw_request.barrier);
 }
 
-void caml_global_barrier_end(barrier_status b)
+/* last domain into the barrier, flip sense */
+static void global_barrier_flip(barrier_status sense)
 {
-  uintnat sense = b & BARRIER_SENSE_BIT;
-  if (caml_global_barrier_is_final(b)) {
-    /* last domain into the barrier, flip sense */
-    atomic_store_release(&stw_request.barrier, sense ^ BARRIER_SENSE_BIT);
-  } else {
-    /* wait until another domain flips the sense */
-    SPIN_WAIT {
-      uintnat barrier = atomic_load_acquire(&stw_request.barrier);
-      if ((barrier & BARRIER_SENSE_BIT) != sense) break;
+  caml_plat_barrier_flip(&stw_request.barrier, sense);
+}
+
+/* wait until another domain flips the sense */
+static void global_barrier_wait(barrier_status sense, int num_participating)
+{
+  /* it's not worth spinning for too long if there's more than one other domain
+   */
+  unsigned spins = num_participating == 2 ? Max_spins_long : Max_spins_medium;
+  SPIN_WAIT_NTIMES(spins) {
+    if (caml_plat_barrier_sense_has_flipped(&stw_request.barrier, sense)) {
+      return;
     }
+  }
+  /* just block */
+  caml_plat_barrier_wait_sense(&stw_request.barrier, sense);
+}
+
+void caml_enter_global_barrier(int num_participating)
+{
+  CAMLassert(num_participating == stw_request.num_domains);
+  barrier_status b = global_barrier_begin();
+  barrier_status sense = b & BARRIER_SENSE_BIT;
+  if (global_barrier_is_nth(b, num_participating)) {
+    global_barrier_flip(sense);
+  } else {
+    global_barrier_wait(sense, num_participating);
   }
 }
 
-void caml_global_barrier(void)
+barrier_status caml_global_barrier_and_check_final(int num_participating)
 {
-  barrier_status b = caml_global_barrier_begin();
-  caml_global_barrier_end(b);
+  CAMLassert(num_participating == stw_request.num_domains);
+  barrier_status b = global_barrier_begin();
+  if (global_barrier_is_nth(b, num_participating)) {
+    CAMLassert(b); /* always nonzero */
+    return b;
+  } else {
+    global_barrier_wait(b & BARRIER_SENSE_BIT, num_participating);
+    return 0;
+  }
 }
 
-int caml_global_barrier_num_domains(void)
+void caml_global_barrier_release_as_final(barrier_status b)
+{
+  global_barrier_flip(b & BARRIER_SENSE_BIT);
+}
+
+int caml_global_barrier_num_participating(void)
 {
   return stw_request.num_domains;
 }
@@ -1363,20 +1414,58 @@ static void decrement_stw_domains_still_processing(void)
   }
 }
 
+/* Wait for other running domains to stop, called by interrupted
+   domains before entering the STW section */
+static void stw_wait_for_running(caml_domain_state* domain)
+{
+  /* The STW leader issues interrupts to all domains, then they all
+     arrive into this barrier, with the last one releasing it; this
+     tends to (and should) be fast, but we likely need to wait a bit
+     in any case */
+
+  if (stw_request.enter_spin_callback) {
+    /* Spin while there is useful work to do */
+    SPIN_WAIT_BOUNDED {
+      if (caml_plat_barrier_is_released(&stw_request.domains_still_running)) {
+        return;
+      }
+
+      if (!stw_request.enter_spin_callback
+            (domain, stw_request.enter_spin_data)) {
+        break;
+      }
+    }
+  }
+
+  /* Spin a bit for the other domains */
+  SPIN_WAIT_NTIMES(Max_spins_long) {
+    if (caml_plat_barrier_is_released(&stw_request.domains_still_running)) {
+      return;
+    }
+  }
+
+  /* If we're still waiting, block */
+  caml_plat_barrier_wait(&stw_request.domains_still_running);
+}
+
+static void stw_api_barrier(caml_domain_state* domain)
+{
+  CAML_EV_BEGIN(EV_STW_API_BARRIER);
+  if (caml_plat_barrier_arrive(&stw_request.domains_still_running)
+      == stw_request.num_domains) {
+    caml_plat_barrier_release(&stw_request.domains_still_running);
+  } else {
+    stw_wait_for_running(domain);
+  }
+  CAML_EV_END(EV_STW_API_BARRIER);
+}
+
 static void stw_handler(caml_domain_state* domain)
 {
   CAML_EV_BEGIN(EV_STW_HANDLER);
-  CAML_EV_BEGIN(EV_STW_API_BARRIER);
-  {
-    SPIN_WAIT {
-      if (atomic_load_acquire(&stw_request.domains_still_running) == 0)
-        break;
-
-      if (stw_request.enter_spin_callback)
-        stw_request.enter_spin_callback(domain, stw_request.enter_spin_data);
-    }
+  if (!caml_plat_barrier_is_released(&stw_request.domains_still_running)) {
+    stw_api_barrier(domain);
   }
-  CAML_EV_END(EV_STW_API_BARRIER);
 
   #ifdef DEBUG
   Caml_state->inside_stw_handler = 1;
@@ -1423,9 +1512,11 @@ int caml_domain_is_in_stw(void) {
      this function in a loop.)
 
    - Domain initialization code from [domain_create] will not run in
-     parallel with a STW section, as [domain_create] starts by
-     looping until (1) it has the [all_domains_lock] and (2) there is
-     no current STW section (using the [stw_leader] variable).
+     parallel with a STW section, as [domain_create] starts by looping
+     until (1) it has the [all_domains_lock] and (2) there is no
+     current STW section (using the [stw_leader] variable). To avoid
+     starvation, [domain_create] will prevent new STW sections if it
+     can't make progress.
 
    - Domain cleanup code runs after the terminating domain may run in
      parallel to a STW section, but only after that domain has safely
@@ -1473,7 +1564,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
   void* data,
   void (*leader_setup)(caml_domain_state*),
-  void (*enter_spin_callback)(caml_domain_state*, void*),
+  int (*enter_spin_callback)(caml_domain_state*, void*),
   void* enter_spin_data)
 {
   int i;
@@ -1495,11 +1586,24 @@ int caml_try_run_on_all_domains_with_spin_work(
     return 0;
   }
 
-  /* see if there is a stw_leader already */
-  if (atomic_load_acquire(&stw_leader)) {
-    caml_plat_unlock(&all_domains_lock);
-    caml_handle_incoming_interrupts();
-    return 0;
+  while (1) {
+    /* see if there is a stw_leader already */
+    if (atomic_load_acquire(&stw_leader)) {
+      caml_plat_unlock(&all_domains_lock);
+      caml_handle_incoming_interrupts();
+      return 0;
+    }
+
+    /* STW requests may be suspended by [domain_create], in which case, instead
+       of claiming the stw_leader, we should release the lock and wait for
+       requests to be unsuspended before trying again */
+    if (CAMLunlikely(stw_requests_suspended)) {
+      caml_plat_wait(&requests_suspended_cond, &all_domains_lock);
+      /* we hold the lock, but we must check for [stw_leader] again */
+      continue;
+    }
+
+    break;
   }
 
   /* we have the lock and can claim the stw_leader */
@@ -1508,17 +1612,23 @@ int caml_try_run_on_all_domains_with_spin_work(
   CAML_EV_BEGIN(EV_STW_LEADER);
   caml_gc_log("causing STW");
 
-  /* setup all fields for this stw_request, must have those needed
-     for domains waiting at the enter spin barrier */
+  /* set up all fields for this stw_request; they must be available
+     for domains when they get interrupted */
   stw_request.enter_spin_callback = enter_spin_callback;
   stw_request.enter_spin_data = enter_spin_data;
   stw_request.callback = handler;
   stw_request.data = data;
-  atomic_store_release(&stw_request.barrier, 0);
-  atomic_store_release(&stw_request.domains_still_running, sync);
   stw_request.num_domains = stw_domains.participating_domains;
+  /* stw_request.barrier doesn't need resetting */
   atomic_store_release(&stw_request.num_domains_still_processing,
-                   stw_domains.participating_domains);
+                       stw_domains.participating_domains);
+
+  int is_alone = stw_request.num_domains == 1;
+  int should_sync = sync && !is_alone;
+
+  if (should_sync) {
+    caml_plat_barrier_reset(&stw_request.domains_still_running);
+  }
 
   if( leader_setup ) {
     leader_setup(domain_state);
@@ -1540,7 +1650,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   for(i = 0; i < stw_domains.participating_domains; i++) {
     dom_internal * d = stw_domains.domains[i];
     stw_request.participating[i] = d->state;
-    CAMLassert(!d->interruptor.interrupt_pending);
+    CAMLassert(!interruptor_has_pending(&d->interruptor));
     if (d->state != domain_state) caml_send_interrupt(&d->interruptor);
   }
 
@@ -1561,13 +1671,10 @@ int caml_try_run_on_all_domains_with_spin_work(
   */
   caml_plat_unlock(&all_domains_lock);
 
-  for(i = 0; i < stw_request.num_domains; i++) {
-    int id = stw_request.participating[i]->id;
-    caml_wait_interrupt_serviced(&all_domains[id].interruptor);
+  /* arrive at enter barrier */
+  if (should_sync) {
+    stw_api_barrier(domain_state);
   }
-
-  /* release from the enter barrier */
-  atomic_store_release(&stw_request.domains_still_running, 0);
 
   #ifdef DEBUG
   domain_state->inside_stw_handler = 1;
@@ -1656,7 +1763,7 @@ void caml_reset_young_limit(caml_domain_state * dom_st)
   /* For non-delayable asynchronous actions, we immediately interrupt
      the domain again. */
   dom_internal * d = &all_domains[dom_st->id];
-  if (atomic_load_relaxed(&d->interruptor.interrupt_pending)
+  if (interruptor_has_pending(&d->interruptor)
       || dom_st->requested_minor_gc
       || dom_st->requested_major_slice
       || dom_st->major_slice_epoch < atomic_load (&caml_major_slice_epoch)) {

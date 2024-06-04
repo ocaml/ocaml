@@ -14917,6 +14917,19 @@ then :
 fi
 
 
+case $host in #(
+  *-*-linux*) :
+    ac_fn_c_check_header_compile "$LINENO" "linux/futex.h" "ac_cv_header_linux_futex_h" "$ac_includes_default"
+if test "x$ac_cv_header_linux_futex_h" = xyes
+then :
+  printf "%s\n" "#define HAS_LINUX_FUTEX_H 1" >>confdefs.h
+
+fi
+ ;; #(
+  *) :
+     ;;
+esac
+
 # Checks for types
 
 ## off_t
@@ -20799,12 +20812,12 @@ bytecode_cppflags="$common_cppflags $CPPFLAGS"
 
 case $host in #(
   *-*-mingw32*) :
-    cclibs="$cclibs -lole32 -luuid -lversion -lshlwapi" ;; #(
+    cclibs="$cclibs -lole32 -luuid -lversion -lshlwapi -lsynchronization" ;; #(
   *-pc-windows) :
     # For whatever reason, flexlink includes -ladvapi32 and -lshell32 for
     # mingw-w64, but doesn't include advapi32.lib and shell32.lib for MSVC
-    cclibs=\
-"$cclibs ole32.lib uuid.lib advapi32.lib shell32.lib version.lib shlwapi.lib" ;; #(
+    cclibs="$cclibs ole32.lib uuid.lib advapi32.lib shell32.lib version.lib \
+shlwapi.lib synchronization.lib" ;; #(
   *) :
      ;;
 esac
