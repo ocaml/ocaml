@@ -3720,7 +3720,7 @@ let unify_to_arrow env ty =
   match get_desc ty with
   | Tfunctor (l, id, (p, fl), t) ->
     let snap = Btype.snapshot () in
-    let pck_ty = newty (Tpackage (p, fl)) in
+    let pck_ty = newty2 ~level:(get_level ty) (Tpackage (p, fl)) in
     begin try
       let mty = !modtype_of_package env Location.none p fl in
       identifier_escape_for Unify

@@ -11,11 +11,15 @@ let id (module T : Typ) (x : T.t) = x
 let id2 : (module T : Typ) -> T.t -> T.t =
   fun (module A : Typ) (x : A.t) -> x
 
+let id_infer_sig : (module T : Typ) -> T.t -> T.t =
+  fun (module A) (x : A.t) -> x
+
 [%%expect{|
 module type Typ = sig type t end
 module type Add = sig type t val add : t -> t -> t end
 val id : (module T : Typ) -> T.t -> T.t = <fun>
 val id2 : (module T : Typ) -> T.t -> T.t = <fun>
+val id_infer_sig : (module T : Typ) -> T.t -> T.t = <fun>
 |}]
 
 
@@ -163,35 +167,35 @@ let s_list : string list = s_list
 val s_list : string list = ["3"; "1"; "4"]
 |}]
 
-module MapCombin (M1 : Map) (M2 : Map) = struct
+module MapCombine (M1 : Map) (M2 : Map) = struct
   type 'a t = 'a M1.t M2.t
   let map f = map (module M2) (map (module M1) f)
 end
 
-let s_list_array = map (module MapCombin(List)(Array))
+let s_list_array = map (module MapCombine(List)(Array))
                        string_of_int [|[3; 2]; [2]; []|]
 
 [%%expect{|
-module MapCombin :
+module MapCombine :
   functor (M1 : Map) (M2 : Map) ->
     sig
       type 'a t = 'a M1.t M2.t
       val map : ('a -> 'b) -> 'a M1.t M2.t -> 'b M1.t M2.t
     end
-val s_list_array : string MapCombin(List)(Array).t =
+val s_list_array : string MapCombine(List)(Array).t =
   [|["3"; "2"]; ["2"]; []|]
 |}]
 
 
 let s_list_arrayb =
     map
-      (module MapCombin(struct type 'a t = 'a list let map = List.map end)(Array))
+      (module MapCombine(struct type 'a t = 'a list let map = List.map end)(Array))
       [|[3; 2]; [2]; []|]
 
 [%%expect{|
-Line 3, characters 6-82:
-3 |       (module MapCombin(struct type 'a t = 'a list let map = List.map end)(Array))
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 3, characters 6-83:
+3 |       (module MapCombine(struct type 'a t = 'a list let map = List.map end)(Array))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Cannot infer path of module for functor.
 |}]
 
@@ -247,44 +251,46 @@ val id5 : (module T : Typ') -> T.t -> T.t = <fun>
 
 
 (* Fails because this would require computation at runtime *)
-let try_coerce (f : (module A : Add) -> A.t -> A.t) : (module T : Typ) -> T.t -> T.t = f
+let try_coerce (f : (module T : Typ) -> T.t -> T.t) =
+  (f : (module A : Add) -> A.t -> A.t)
 
 [%%expect{|
-Line 1, characters 87-88:
-1 | let try_coerce (f : (module A : Add) -> A.t -> A.t) : (module T : Typ) -> T.t -> T.t = f
-                                                                                           ^
-Error: This expression has type "(module A : Add) -> A.t -> A.t"
-       but an expression was expected of type "(module T : Typ) -> T.t -> T.t"
+Line 2, characters 3-4:
+2 |   (f : (module A : Add) -> A.t -> A.t)
+       ^
+Error: This expression has type "(module T : Typ) -> T.t -> T.t"
+       but an expression was expected of type "(module A : Add) -> A.t -> A.t"
+       Modules do not match: Typ is not included in Add
+       The value "add" is required but not provided
+|}]
+
+let try_coerce' (f : (module T : Typ) -> T.t -> T.t) =
+  (f :> (module A : Add) -> A.t -> A.t)
+
+[%%expect{|
+Line 2, characters 2-39:
+2 |   (f :> (module A : Add) -> A.t -> A.t)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Type "(module T : Typ) -> T.t -> T.t" is not a subtype of
+         "(module A : Add) -> A.t -> A.t"
        The two first-class module types differ by their runtime size.
 |}]
 
 
 (* Here the coercion requires computation and should? be forbidden *)
-let try_coerce2 (f : (module A : AddSub) -> A.t -> A.t) = (f :> ((module T : SubAdd) -> T.t -> T.t))
+let try_coerce2 (f : (module A : AddSub) -> A.t -> A.t) =
+    (f :> ((module T : SubAdd) -> T.t -> T.t))
 
 [%%expect{|
-Line 1, characters 58-100:
-1 | let try_coerce2 (f : (module A : AddSub) -> A.t -> A.t) = (f :> ((module T : SubAdd) -> T.t -> T.t))
-                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 2, characters 4-46:
+2 |     (f :> ((module T : SubAdd) -> T.t -> T.t))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type "(module A : AddSub) -> A.t -> A.t" is not a subtype of
          "(module T : SubAdd) -> T.t -> T.t"
        The two first-class module types do not share
        the same positions for runtime components.
        For example, the value "sub" occurs at the expected position of
        the value "add".
-|}]
-
-
-(* Here the coercion does not require any computation and thus could be allowed *)
-let try_coerce3 (f : (module T : Typ) -> T.t -> T.t) = (f :> (module A : Add) -> A.t -> A.t)
-
-[%%expect{|
-Line 1, characters 55-92:
-1 | let try_coerce3 (f : (module T : Typ) -> T.t -> T.t) = (f :> (module A : Add) -> A.t -> A.t)
-                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type "(module T : Typ) -> T.t -> T.t" is not a subtype of
-         "(module A : Add) -> A.t -> A.t"
-       The two first-class module types differ by their runtime size.
 |}]
 
 module type Add2 = sig
@@ -311,22 +317,29 @@ module type Add3 = sig type t type a val add : t -> t -> t end
 module type Add4 = sig type t val add : t -> t -> t type a end
 |}]
 
-let try_coerce4 (f : (module A : Add2) -> A.t -> A.t) : (module A : Add) -> A.t -> A.t = f
+let try_coerce4 (f : (module A : Add) -> A.t -> A.t) =
+    (f : (module A : Add2) -> A.t -> A.t)
 
 [%%expect{|
-Line 1, characters 89-90:
-1 | let try_coerce4 (f : (module A : Add2) -> A.t -> A.t) : (module A : Add) -> A.t -> A.t = f
-                                                                                             ^
-Error: This expression has type "(module A : Add2) -> A.t -> A.t"
-       but an expression was expected of type "(module A : Add) -> A.t -> A.t"
+Line 2, characters 5-6:
+2 |     (f : (module A : Add2) -> A.t -> A.t)
+         ^
+Error: This expression has type "(module A : Add) -> A.t -> A.t"
+       but an expression was expected of type "(module A : Add2) -> A.t -> A.t"
        Modules do not match: Add is not included in Add2
        The type "a" is required but not provided
 |}]
 
-let coerce5 (f : (module A : Add) -> A.t -> A.t) = (f :> (module A : Add2) -> A.t -> A.t)
+let coerce5 (f : (module A : Add) -> A.t -> A.t) =
+    (f :> (module A : Add2) -> A.t -> A.t)
 
-let try_coerce6 (f : (module A : Add2) -> A.t -> A.t) : (module A : Add3) -> A.t -> A.t = f
-let try_coerce7 (f : (module A : Add2) -> A.t -> A.t) : (module A : Add4) -> A.t -> A.t = f
+
+(* changing type order in signature *)
+let try_coerce6 (f : (module A : Add2) -> A.t -> A.t) =
+    (f : (module A : Add3) -> A.t -> A.t)
+
+let try_coerce7 (f : (module A : Add2) -> A.t -> A.t) =
+  (f : (module A : Add4) -> A.t -> A.t)
 
 [%%expect{|
 val coerce5 :
@@ -361,6 +374,15 @@ let merge_no_mod (type a) (x : a) (y : a) = x
 val apply_with_annot :
   ((module T : Typ) -> T.t -> T.t) -> (module T : Typ) -> T.t -> T.t = <fun>
 val merge_no_mod : 'a -> 'a -> 'a = <fun>
+|}, Principal{|
+Line 3, characters 2-3:
+3 |   f (module T) x
+      ^
+Warning 18 [not-principal]: applying a dependent function is not principal.
+
+val apply_with_annot :
+  ((module T : Typ) -> T.t -> T.t) -> (module T : Typ) -> T.t -> T.t = <fun>
+val merge_no_mod : 'a -> 'a -> 'a = <fun>
 |}]
 
 
@@ -385,30 +407,34 @@ let apply_small_annot2 (f : (module T : Typ) -> T.t -> T.t) g (module T : Typ) x
 val apply_small_annot2 :
   ((module T : Typ) -> T.t -> T.t) ->
   ((module T : Typ) -> T.t -> T.t) -> (module T : Typ) -> T.t -> T.t = <fun>
+|}, Principal{|
+Line 3, characters 2-3:
+3 |   g (module T) x
+      ^
+Warning 18 [not-principal]: applying a dependent function is not principal.
+
+val apply_small_annot2 :
+  ((module T : Typ) -> T.t -> T.t) ->
+  ((module T : Typ) -> T.t -> T.t) -> (module T : Typ) -> T.t -> T.t = <fun>
 |}]
 
 
 (* This is a syntax error *)
 (* let id_bool_fail (module B : module type of Bool) (x : B.t) = x *)
 
-module type TBool = module type of Bool
+module MyBool = struct
+  type t = bool = false | true
+  let not = Bool.not
+end
+
+module type TBool = module type of MyBool
+
 let id_bool (module B : TBool) (x : B.t) = x
 
 [%%expect{|
+module MyBool : sig type t = bool = false | true val not : bool -> bool end
 module type TBool =
-  sig
-    type t = bool = false | true
-    val not : bool -> bool
-    external ( && ) : bool -> bool -> bool = "%sequand"
-    external ( || ) : bool -> bool -> bool = "%sequor"
-    val equal : bool -> bool -> bool
-    val compare : bool -> bool -> int
-    val to_int : bool -> int
-    val to_float : bool -> float
-    val to_string : bool -> string
-    val seeded_hash : int -> bool -> int
-    val hash : bool -> int
-  end
+  sig type t = bool = false | true val not : bool -> bool end
 val id_bool : (module B : TBool) -> B.t -> B.t = <fun>
 |}]
 
@@ -642,6 +668,15 @@ Error: The signature for this packaged module couldn't be inferred.
 let typing_order2 f = (id' f, f (module Int) 3)
 
 [%%expect{|
+val typing_order2 :
+  ((module T : Typ) -> T.t -> T.t) ->
+  ((module T : Typ) -> T.t -> T.t) * Int.t = <fun>
+|}, Principal{|
+Line 1, characters 30-31:
+1 | let typing_order2 f = (id' f, f (module Int) 3)
+                                  ^
+Warning 18 [not-principal]: applying a dependent function is not principal.
+
 val typing_order2 :
   ((module T : Typ) -> T.t -> T.t) ->
   ((module T : Typ) -> T.t -> T.t) * Int.t = <fun>

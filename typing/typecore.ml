@@ -2828,6 +2828,7 @@ let is_unpack pat =
   match pat.ppat_desc with
     Ppat_constraint ({ppat_desc = Ppat_unpack ({txt = Some _; _}); _},
                      {ptyp_desc = Ptyp_package _; _}) -> true
+  | Ppat_unpack _ -> true
   | _ -> false
 
 let could_be_functor env ty =
@@ -4758,38 +4759,48 @@ and type_function
   | { pparam_desc = Pparam_val (arg_label, None, pat); pparam_loc } :: rest
     when is_unpack pat && could_be_functor env ty_expected
                        && not (is_optional arg_label) ->
-      let (name, p, pack) =
+      let (name, pack) =
         match pat.ppat_desc with
           Ppat_constraint ({ppat_desc = Ppat_unpack ({txt = Some name; loc}); _}
-                          ,({ptyp_desc = Ptyp_package (p, _)} as pack))
-              -> ({txt = name; loc}, p, pack)
+                          ,({ptyp_desc = Ptyp_package _ } as pack))
+              -> ({txt = name; loc}, Some pack)
+        | Ppat_unpack ({txt = Some name; loc}) -> ({txt = name; loc}, None)
         | _ -> assert false
       in
-      let pack = Typetexp.transl_simple_type env ~closed:false pack in
-      let pck_ty = match pack.ctyp_desc with
-        | Ttyp_package pack -> pack
-        | _ -> assert false
+      let type_pack pack =
+        let pack = Typetexp.transl_simple_type env ~closed:false pack in
+        let pck_ty = match pack.ctyp_desc with
+          | Ttyp_package pack -> pack
+          | _ -> assert false
+        in
+        let path = pck_ty.pack_path in
+        let fl = match get_desc pack.ctyp_type with
+            Tpackage (_, fl) -> fl
+          | _ -> assert false
+        in
+        (path, fl)
       in
-      let path = pck_ty.pack_path in
-      let fl = match get_desc pack.ctyp_type with
-          Tpackage (_, fl) -> fl
-        | _ -> assert false
-      in
-      let mty = !Ctype.modtype_of_package env p.loc path fl in
-      let id_expected_typ_opt =
+      let (id_expected_typ_opt, (path, fl)) =
         match split_function_mty env ty_expected
-                ~arg_label ~first ~in_function with
-        | None -> None
-        | Some (id, (path', fl'), ety) ->
-          begin try
-            unify env
-              (newty (Tfunctor (arg_label, id, (path, fl), newvar())))
-              (newty (Tfunctor (arg_label, id, (path', fl'), newvar())))
-          with Unify trace ->
-              raise (Error(loc, env, Expr_type_clash(trace, None, None)))
-          end;
-          Some (id, ety)
+                ~arg_label ~first ~in_function, pack with
+        | None, None ->
+          raise (Error (pparam_loc, env, Cannot_infer_signature))
+        | None, Some pack ->
+            None, type_pack pack
+        | Some (id, (path', fl'), ety), Some pack ->
+            let path, fl = type_pack pack in
+            begin try
+              unify env
+                (newty (Tfunctor (arg_label, id, (path, fl), newvar())))
+                (newty (Tfunctor (arg_label, id, (path', fl'), newvar())))
+            with Unify trace ->
+                raise (Error(loc, env, Expr_type_clash(trace, None, None)))
+            end;
+            (Some (id, ety), (path, fl))
+        | Some (id, (path', fl'), ety), None ->
+            (Some (id, ety), (path', fl'))
       in
+      let mty = !Ctype.modtype_of_package env pparam_loc path fl in
       let pv_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) in
       let arg_md = {
         md_type = mty;
@@ -4825,7 +4836,8 @@ and type_function
         | Some res_ty ->
             Btype.newgenty (Tfunctor (arg_label, ident, (path, fl), res_ty))
         | None ->
-            newgenty (Tarrow (arg_label, pack.ctyp_type, res_ty, commu_ok))
+            let pck_ty = newgenty (Tpackage (path, fl)) in
+            newgenty (Tarrow (arg_label, pck_ty, res_ty, commu_ok))
       in
       let _ =
         try
@@ -5637,7 +5649,8 @@ and type_application env funct sargs =
     | Tfunctor (l, id, (p, fl), t), Tfunctor (_, id0, (p0, fl0), t0) ->
         let name = label_name l
         and optional = is_optional l in
-        let () = assert (not optional) in
+        may_warn funct.exp_loc
+            (not_principal "applying a dependent function");
         let is_packing sarg =
           match sarg.pexp_desc with
           | Pexp_pack _me -> true
