@@ -1100,7 +1100,7 @@ Caml_inline float log_approx(uint32_t y)
 {
   union { float f; int32_t i; } u;
   u.f = y + 0.5f;
-  float exp = u.i >> 23;
+  float exp = (float)(u.i >> 23);
   u.i = (u.i & 0x7FFFFF) | 0x3F800000;
   float x = u.f;
   return (-111.70172433407f +
