@@ -47,21 +47,17 @@ val c_has_debug_prefix_map : bool
 val as_has_debug_prefix_map : bool
 (** Whether the assembler supports --debug-prefix-map *)
 
-val ocamlc_cflags : string
+val bytecode_cflags : string
 (** The flags ocamlc should pass to the C compiler *)
 
-val ocamlc_cppflags : string
+val bytecode_cppflags : string
 (** The flags ocamlc should pass to the C preprocessor *)
 
-val ocamlopt_cflags : string
-  [@@ocaml.deprecated "Use ocamlc_cflags instead."]
-(** @deprecated {!ocamlc_cflags} should be used instead.
-    The flags ocamlopt should pass to the C compiler *)
+val native_cflags : string
+(** The flags ocamlopt should pass to the C compiler *)
 
-val ocamlopt_cppflags : string
-  [@@ocaml.deprecated "Use ocamlc_cppflags instead."]
-(** @deprecated {!ocamlc_cppflags} should be used instead.
-    The flags ocamlopt should pass to the C preprocessor *)
+val native_cppflags : string
+(** The flags ocamlopt should pass to the C preprocessor *)
 
 val bytecomp_c_libraries: string
 (** The C libraries to link with custom runtimes *)

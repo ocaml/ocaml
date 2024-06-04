@@ -47,17 +47,18 @@ common_cflags=""
 common_cppflags=""
 internal_cflags=""
 internal_cppflags=""
-ocamlc_cflags=""
-ocamlc_cppflags=""
+bytecode_cflags=""
+bytecode_cppflags=""
 oc_ldflags=""
 oc_dll_ldflags=""
 oc_exe_ldflags=""
 
 tsan=false
-# Passed to the linker by ocamlopt when tsan is enabled
-oc_tsan_cflags="-fsanitize=thread"
-oc_tsan_cppflags="-DWITH_THREAD_SANITIZER"
+# TSan flags for each compilation stage
+tsan_cppflags="-DWITH_THREAD_SANITIZER"
+tsan_cflags="-fsanitize=thread"
 tsan_distinguish_volatile_cflags=""
+tsan_ldflags="-fsanitize=thread"
 
 # The C# compiler and its flags
 CSC=""
@@ -167,8 +168,8 @@ AC_SUBST([oc_dll_ldflags])
 AC_SUBST([cclibs])
 AC_SUBST([native_ldflags])
 AC_SUBST([zstd_libs])
-AC_SUBST([ocamlc_cflags])
-AC_SUBST([ocamlc_cppflags])
+AC_SUBST([bytecode_cflags])
+AC_SUBST([bytecode_cppflags])
 AC_SUBST([flexdll_source_dir])
 AC_SUBST([bootstrapping_flexdll])
 AC_SUBST([flexdll_dir])
@@ -1486,8 +1487,8 @@ AS_CASE([$arch],
   [arch_specific_SOURCES=''])
 
 native_cflags=''
-native_cppflags="-DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
-
+native_cppflags="-DNATIVE_CODE\
+ -DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
 AS_CASE([$ccomptype],
   [msvc],
     [runtime_asm_objects=${arch}nt.${OBJEXT}],
@@ -1829,7 +1830,7 @@ AS_IF([$tsan],
   AS_CASE([$ocaml_cc_vendor],
     [gcc-[[0123456789]]-*|gcc-10-*|clang-*],
       [],
-    [oc_tsan_cflags="$oc_tsan_cflags -Wno-tsan"])
+    [tsan_cflags="$tsan_cflags -Wno-tsan"])
   AS_CASE([$ocaml_cc_vendor],
     [gcc*],
       [tsan_distinguish_volatile_cflags="--param=tsan-distinguish-volatile=1"],
@@ -1840,10 +1841,10 @@ AS_IF([$tsan],
     [AC_MSG_ERROR(m4_normalize([The C compiler does not support the
       `$tsan_distinguish_volatile_cflags' flag. Try upgrading to GCC >= 11, or
       to Clang >= 11.]))], [$warn_error_flag])
-  oc_tsan_cflags="$oc_tsan_cflags $tsan_distinguish_volatile_cflags"
-  common_cppflags="$common_cppflags $oc_tsan_cppflags"
-  native_cflags="$native_cflags $oc_tsan_cflags"
-  ocamlc_cflags="$ocamlc_cflags $oc_tsan_cflags"
+  tsan_cflags="$tsan_cflags $tsan_distinguish_volatile_cflags"
+  native_cppflags="$native_cppflags $tsan_cppflags"
+  native_cflags="$native_cflags $tsan_cflags"
+  native_ldflags="$native_ldflags $tsan_ldflags"
   tsan_native_runtime_c_sources="tsan"],
   [AC_MSG_NOTICE([not using thread sanitizer])
   tsan_native_runtime_c_sources=""]
@@ -1881,7 +1882,7 @@ AS_IF([$tsan],
     [libunwind_ldflags="$LIBUNWIND_LDFLAGS $libunwind_ldflags"])
 
   native_cppflags="$native_cppflags $libunwind_cppflags"
-  native_ldflags="$native_ldflags -fsanitize=thread $libunwind_ldflags"
+  native_ldflags="$native_ldflags $libunwind_ldflags"
 
   OCAML_CHECK_LIBUNWIND
 
@@ -2569,8 +2570,8 @@ AS_IF([test "$ccomptype" != "msvc"],
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
-ocamlc_cflags="$ocamlc_cflags $common_cflags $sharedlib_cflags $CFLAGS"
-ocamlc_cppflags="$common_cppflags $CPPFLAGS"
+bytecode_cflags="$bytecode_cflags $common_cflags $sharedlib_cflags $CFLAGS"
+bytecode_cppflags="$common_cppflags $CPPFLAGS"
 
 AS_CASE([$host],
   [*-*-mingw32*],
@@ -2582,9 +2583,6 @@ AS_CASE([$host],
 "$cclibs ole32.lib uuid.lib advapi32.lib shell32.lib version.lib shlwapi.lib"])
 
 AC_CONFIG_COMMANDS_PRE([cclibs="$cclibs $mathlib $DLLIBS $PTHREAD_LIBS"])
-
-AS_IF([$tsan],
-  [cclibs="$cclibs -fsanitize=thread"])
 
 AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
   [libdir="$libdir"/ocaml])

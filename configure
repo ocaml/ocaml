@@ -857,8 +857,8 @@ winpthreads_source_dir
 flexdll_dir
 bootstrapping_flexdll
 flexdll_source_dir
-ocamlc_cppflags
-ocamlc_cflags
+bytecode_cppflags
+bytecode_cflags
 zstd_libs
 native_ldflags
 cclibs
@@ -3262,17 +3262,18 @@ common_cflags=""
 common_cppflags=""
 internal_cflags=""
 internal_cppflags=""
-ocamlc_cflags=""
-ocamlc_cppflags=""
+bytecode_cflags=""
+bytecode_cppflags=""
 oc_ldflags=""
 oc_dll_ldflags=""
 oc_exe_ldflags=""
 
 tsan=false
-# Passed to the linker by ocamlopt when tsan is enabled
-oc_tsan_cflags="-fsanitize=thread"
-oc_tsan_cppflags="-DWITH_THREAD_SANITIZER"
+# TSan flags for each compilation stage
+tsan_cppflags="-DWITH_THREAD_SANITIZER"
+tsan_cflags="-fsanitize=thread"
 tsan_distinguish_volatile_cflags=""
+tsan_ldflags="-fsanitize=thread"
 
 # The C# compiler and its flags
 CSC=""
@@ -16166,8 +16167,8 @@ case $arch in #(
 esac
 
 native_cflags=''
-native_cppflags="-DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
-
+native_cppflags="-DNATIVE_CODE\
+ -DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
 case $ccomptype in #(
   msvc) :
     runtime_asm_objects=${arch}nt.${OBJEXT} ;; #(
@@ -17123,7 +17124,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
   gcc-[0123456789]-*|gcc-10-*|clang-*) :
      ;; #(
   *) :
-    oc_tsan_cflags="$oc_tsan_cflags -Wno-tsan" ;;
+    tsan_cflags="$tsan_cflags -Wno-tsan" ;;
 esac
   case $ocaml_cc_vendor in #(
   gcc*) :
@@ -17173,10 +17174,10 @@ else $as_nop
   as_fn_error $? "The C compiler does not support the \`$tsan_distinguish_volatile_cflags' flag. Try upgrading to GCC >= 11, or to Clang >= 11." "$LINENO" 5
 fi
 
-  oc_tsan_cflags="$oc_tsan_cflags $tsan_distinguish_volatile_cflags"
-  common_cppflags="$common_cppflags $oc_tsan_cppflags"
-  native_cflags="$native_cflags $oc_tsan_cflags"
-  ocamlc_cflags="$ocamlc_cflags $oc_tsan_cflags"
+  tsan_cflags="$tsan_cflags $tsan_distinguish_volatile_cflags"
+  native_cppflags="$native_cppflags $tsan_cppflags"
+  native_cflags="$native_cflags $tsan_cflags"
+  native_ldflags="$native_ldflags $tsan_ldflags"
   tsan_native_runtime_c_sources="tsan"
 else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: not using thread sanitizer" >&5
@@ -17236,7 +17237,7 @@ then :
 fi
 
   native_cppflags="$native_cppflags $libunwind_cppflags"
-  native_ldflags="$native_ldflags -fsanitize=thread $libunwind_ldflags"
+  native_ldflags="$native_ldflags $libunwind_ldflags"
 
 
   SAVED_CPPFLAGS="$CPPFLAGS"
@@ -20793,8 +20794,8 @@ fi
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
-ocamlc_cflags="$ocamlc_cflags $common_cflags $sharedlib_cflags $CFLAGS"
-ocamlc_cppflags="$common_cppflags $CPPFLAGS"
+bytecode_cflags="$bytecode_cflags $common_cflags $sharedlib_cflags $CFLAGS"
+bytecode_cppflags="$common_cppflags $CPPFLAGS"
 
 case $host in #(
   *-*-mingw32*) :
@@ -20809,11 +20810,6 @@ case $host in #(
 esac
 
 
-
-if $tsan
-then :
-  cclibs="$cclibs -fsanitize=thread"
-fi
 
 if test x"$libdir" = x'${exec_prefix}/lib'
 then :

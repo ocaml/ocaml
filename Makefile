@@ -1162,7 +1162,6 @@ runtime_COMMON_C_SOURCES = \
   str \
   sync \
   sys \
-  $(TSAN_NATIVE_RUNTIME_C_SOURCES) \
   $(UNIX_OR_WIN32) \
   weak
 
@@ -1178,6 +1177,7 @@ runtime_BYTECODE_C_SOURCES = \
   $(runtime_BYTECODE_ONLY_C_SOURCES:%=runtime/%.c)
 
 runtime_NATIVE_ONLY_C_SOURCES = \
+  $(TSAN_NATIVE_RUNTIME_C_SOURCES) \
   backtrace_nat \
   clambda_checks \
   dynlink_nat \
