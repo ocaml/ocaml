@@ -26,7 +26,7 @@ OCaml 5.1.0 is still a relatively experimental release compared to the OCaml
 4.14 branch. Some of the highlights in OCaml 5.1.0 are:
 
 -  Many runtime performance regression and memory-leaks fixes
-    (dynlinking, weak array, weak hash sets, GC with idle domains,
+    (dynlinking, weak arrays, weak hash sets, GC with idle domains,
      and GC prefetching).
 - Restored support for native code generation on RISC-V and s390x architectures.
 - Restored Cygwin port.
