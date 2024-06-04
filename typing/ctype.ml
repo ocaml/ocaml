@@ -2290,7 +2290,7 @@ let compatible_paths p1 p2 =
   - in pattern mode, we act as if we were in classic mode. If not, interactions
     with GADTs from files compiled in classic mode would be unsound.
 *)
-let compatible_labels ?(in_pattern_mode = false) l1 l2 =
+let compatible_labels ~in_pattern_mode l1 l2 =
   l1 = l2
   || (!Clflags.classic || in_pattern_mode)
       && not (is_optional l1 || is_optional l2)
@@ -3785,7 +3785,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
               update_scope_for Moregen (get_scope t1') t2;
               link_type t1' t2
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _))
-                when compatible_labels l1 l2 ->
+                when compatible_labels ~in_pattern_mode:false l1 l2 ->
               moregen inst_nongen type_pairs env t1 t2;
               moregen inst_nongen type_pairs env u1 u2
           | (Ttuple tl1, Ttuple tl2) ->
@@ -4137,7 +4137,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
             (Tvar _, Tvar _) when rename ->
               eqtype_subst type_pairs subst t1' t2'
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _))
-                when compatible_labels l1 l2 ->
+                when compatible_labels ~in_pattern_mode:false l1 l2 ->
               eqtype rename type_pairs subst env t1 t2;
               eqtype rename type_pairs subst env u1 u2;
           | (Ttuple tl1, Ttuple tl2) ->
@@ -4868,7 +4868,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
       (Tvar _, _) | (_, Tvar _) ->
         (trace, t1, t2, !univar_pairs)::cstrs
     | (Tarrow(l1, t1, u1, _), Tarrow(l2, t2, u2, _))
-      when compatible_labels l1 l2 ->
+      when compatible_labels ~in_pattern_mode:false l1 l2 ->
         let cstrs =
           subtype_rec
             env
