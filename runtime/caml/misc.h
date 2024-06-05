@@ -608,10 +608,10 @@ CAMLextern int caml_snwprintf(wchar_t * buf,
 #  endif
 #endif
 
-/* Generate a named symbol that is unique within the current macro expansion */
-#define CAML_GENSYM_3(name, l) caml__##name##_##l
-#define CAML_GENSYM_2(name, l) CAML_GENSYM_3(name, l)
-#define CAML_GENSYM(name) CAML_GENSYM_2(name, __LINE__)
+/* Generate a named symbol that is unique */
+#define CAML_GENSYM__(name, id) caml__##name##_##id
+#define CAML_GENSYM_(name, id) CAML_GENSYM__(name, id)
+#define CAML_GENSYM(name) CAML_GENSYM_(name, __COUNTER__)
 
 #endif /* CAML_INTERNALS */
 

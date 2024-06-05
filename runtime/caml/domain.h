@@ -219,18 +219,21 @@ void caml_global_barrier_release_as_final(barrier_status status);
    Note: this expands to an [if] and [for] header, do not exit the body using
    jumps or returns, and do not put an [else] immediately after.
  */
-#define Caml_global_barrier_if_final(num_participating)                 \
+#define Caml_global_barrier_if_final_(alone, b, go, num_participating)  \
   /* fast path when alone */                                            \
-  int CAML_GENSYM(alone) = (num_participating) == 1;                    \
-  barrier_status CAML_GENSYM(b) = 0;                                    \
-  if (CAML_GENSYM(alone) ||                                             \
-      (CAML_GENSYM(b)                                                   \
-       = caml_global_barrier_and_check_final(num_participating)))       \
-    for (int CAML_GENSYM(continue) = 1; CAML_GENSYM(continue);          \
+  int alone = (num_participating) == 1;                                 \
+  barrier_status b = 0;                                                 \
+  if (alone ||                                                          \
+      (b = caml_global_barrier_and_check_final(num_participating)))     \
+    for (int go = 1; go;                                                \
          /* release the barrier after the body has executed once */     \
-         ((CAML_GENSYM(alone) ? (void)0 :                               \
-           caml_global_barrier_release_as_final(CAML_GENSYM(b))),       \
-          CAML_GENSYM(continue) = 0))
+         (alone ? (void)0 :                                             \
+          caml_global_barrier_release_as_final(b)),                     \
+         go = 0)
+
+#define Caml_global_barrier_if_final(num_participating)                \
+  Caml_global_barrier_if_final_(CAML_GENSYM(alone), CAML_GENSYM(b),    \
+                                CAML_GENSYM(go), num_participating)
 
 #endif /* CAML_INTERNALS */
 

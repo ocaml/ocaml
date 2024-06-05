@@ -381,11 +381,14 @@ void caml_plat_barrier_wait_sense(caml_plat_barrier*,
 #define Max_spins_medium 300
 #define Max_spins_short 30
 
-#define SPIN_WAIT_NTIMES(N)                             \
-  unsigned CAML_GENSYM(spins) = 0;                      \
-  unsigned CAML_GENSYM(max_spins) = (N);                \
-  for (; CAML_GENSYM(spins) < CAML_GENSYM(max_spins);   \
-       cpu_relax(), ++CAML_GENSYM(spins))
+#define SPIN_WAIT_NTIMES_(spins, max_spins, N)  \
+  for (unsigned int spins = 0, max_spins = (N); \
+       spins < max_spins;                       \
+       cpu_relax(), ++spins)
+
+#define SPIN_WAIT_NTIMES(N)                                             \
+  SPIN_WAIT_NTIMES_(CAML_GENSYM(spins), CAML_GENSYM(max_spins), (N))
+
 #define SPIN_WAIT_BOUNDED SPIN_WAIT_NTIMES(Max_spins_medium)
 #define SPIN_WAIT SPIN_WAIT_BACK_OFF(Max_spins_long)
 
@@ -414,14 +417,16 @@ Caml_inline unsigned caml_plat_spin_step(unsigned spins,
   }
 }
 
-#define SPIN_WAIT_BACK_OFF(max_spins)                                   \
-  unsigned CAML_GENSYM(spins) = 0;                                      \
-  unsigned CAML_GENSYM(max_spins) = (max_spins);                        \
-  static const struct caml_plat_srcloc CAML_GENSYM(loc) = {             \
-    __FILE__, __LINE__, __func__                                        \
-  };                                                                    \
-  for (; 1; CAML_GENSYM(spins) = caml_plat_spin_step(                   \
-         CAML_GENSYM(spins), CAML_GENSYM(max_spins), &CAML_GENSYM(loc)))
+#define SPIN_WAIT_BACK_OFF_(spins, max_spins, N, loc)           \
+  static const struct caml_plat_srcloc loc =                    \
+    { __FILE__, __LINE__, __func__ };                           \
+  for (unsigned int spins = 0, max_spins = (N);                 \
+       1;                                                       \
+       spins = caml_plat_spin_step(spins, max_spins, &loc))
+
+#define SPIN_WAIT_BACK_OFF(N)                                           \
+  SPIN_WAIT_BACK_OFF_(CAML_GENSYM(spins), CAML_GENSYM(max_spins), (N),  \
+                      CAML_GENSYM(loc))
 
 /* Memory management primitives (mmap) */
 
