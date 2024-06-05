@@ -230,52 +230,51 @@ CAMLprim value caml_gc_minor(value v)
   CAML_EV_BEGIN(EV_EXPLICIT_GC_MINOR);
   CAMLassert (v == Val_unit);
   caml_minor_collection ();
-  value exn = caml_process_pending_actions_exn();
+  caml_result result = caml_process_pending_actions_res();
   CAML_EV_END(EV_EXPLICIT_GC_MINOR);
-  return caml_raise_if_exception(exn);
+  return caml_get_value_or_raise(result);
 }
 
-static value gc_major_exn(int force_compaction)
+static caml_result gc_major_res(int force_compaction)
 {
   CAML_EV_BEGIN(EV_EXPLICIT_GC_MAJOR);
   caml_gc_log ("Major GC cycle requested");
   caml_empty_minor_heaps_once();
   caml_finish_major_cycle(force_compaction);
-  value exn = caml_process_pending_actions_exn();
+  caml_result result = caml_process_pending_actions_res();
   CAML_EV_END(EV_EXPLICIT_GC_MAJOR);
-  return exn;
+  return result;
 }
 
 CAMLprim value caml_gc_major(value v)
 {
   Caml_check_caml_state();
   CAMLassert (v == Val_unit);
-  return caml_raise_if_exception(gc_major_exn(0));
+  return caml_get_value_or_raise(gc_major_res(0));
 }
 
-static value gc_full_major_exn(void)
+static caml_result gc_full_major_res(void)
 {
   int i;
-  value exn = Val_unit;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_FULL_MAJOR);
   caml_gc_log ("Full Major GC requested");
   /* In general, it can require up to 3 GC cycles for a
      currently-unreachable object to be collected. */
   for (i = 0; i < 3; i++) {
     caml_finish_major_cycle(0);
-    exn = caml_process_pending_actions_exn();
-    if (Is_exception_result(exn)) break;
+    caml_result res = caml_process_pending_actions_res();
+    if (caml_result_is_exception(res)) return res;
   }
   ++ Caml_state->stat_forced_major_collections;
   CAML_EV_END(EV_EXPLICIT_GC_FULL_MAJOR);
-  return exn;
+  return Result_unit;
 }
 
 CAMLprim value caml_gc_full_major(value v)
 {
   Caml_check_caml_state();
   CAMLassert (v == Val_unit);
-  return caml_raise_if_exception(gc_full_major_exn());
+  return caml_get_value_or_raise(gc_full_major_res());
 }
 
 CAMLprim value caml_gc_major_slice (value v)
@@ -283,9 +282,9 @@ CAMLprim value caml_gc_major_slice (value v)
   CAML_EV_BEGIN(EV_EXPLICIT_GC_MAJOR_SLICE);
   CAMLassert (Is_long (v));
   caml_major_collection_slice(Long_val(v));
-  value exn = caml_process_pending_actions_exn();
+  caml_result result = caml_process_pending_actions_res();
   CAML_EV_END(EV_EXPLICIT_GC_MAJOR_SLICE);
-  return caml_raise_if_exception(exn);
+  return caml_get_value_or_raise(result);
 }
 
 CAMLprim value caml_gc_compaction(value v)
@@ -293,30 +292,30 @@ CAMLprim value caml_gc_compaction(value v)
   Caml_check_caml_state();
   CAML_EV_BEGIN(EV_EXPLICIT_GC_COMPACT);
   CAMLassert (v == Val_unit);
-  value exn = Val_unit;
+  caml_result result = Result_unit;
   int i;
-  /* We do a full major before this compaction. See [caml_full_major_exn] for
+  /* We do a full major before this compaction. See [caml_full_major_res] for
      why this needs three iterations. */
   for (i = 0; i < 3; i++) {
     caml_finish_major_cycle(i == 2);
-    exn = caml_process_pending_actions_exn();
-    if (Is_exception_result(exn)) break;
+    result = caml_process_pending_actions_res();
+    if (caml_result_is_exception(result)) break;
   }
   ++ Caml_state->stat_forced_major_collections;
   CAML_EV_END(EV_EXPLICIT_GC_COMPACT);
-  return caml_raise_if_exception(exn);
+  return caml_get_value_or_raise(result);
 }
 
 CAMLprim value caml_gc_stat(value v)
 {
-  value res;
+  caml_result result;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_STAT);
-  res = gc_full_major_exn();
-  if (Is_exception_result(res)) goto out;
-  res = caml_gc_quick_stat(Val_unit);
+  result = gc_full_major_res();
+  if (caml_result_is_exception(result)) goto out;
+  result = Result_value(caml_gc_quick_stat(Val_unit));
  out:
   CAML_EV_END(EV_EXPLICIT_GC_STAT);
-  return caml_raise_if_exception(res);
+  return caml_get_value_or_raise(result);
 }
 
 CAMLprim value caml_get_minor_free (value v)

@@ -1146,18 +1146,15 @@ CAMLexport _Atomic caml_timing_hook caml_domain_terminated_hook =
 
 static void domain_terminate(void);
 
-static value make_finished(value res_or_exn)
+static value make_finished(caml_result result)
 {
   CAMLparam0();
   CAMLlocal1(res);
-  if (Is_exception_result(res_or_exn)) {
-    res = Extract_exception(res_or_exn);
-    /* [Error res] */
-    res = caml_alloc_1(1, res);
-  } else {
-    /* [Ok res_of_exn] */
-    res = caml_alloc_1(0, res_or_exn);
-  }
+  res = caml_alloc_1(
+    (caml_result_is_exception(result) ?
+     1 /* Error */ :
+     0 /* Ok */),
+    result.data);
   /* [Finished res] */
   res = caml_alloc_1(0, res);
   CAMLreturn(res);
@@ -1228,8 +1225,8 @@ static void* domain_thread_func(void* v)
        see the [note about callbacks and GC] in callback.c */
     value unrooted_callback = ml_values->callback;
     caml_modify_generational_global_root(&ml_values->callback, Val_unit);
-    value res_or_exn = caml_callback_exn(unrooted_callback, Val_unit);
-    value res = make_finished(res_or_exn);
+    value res =
+      make_finished(caml_callback_res(unrooted_callback, Val_unit));
     sync_result(ml_values->term_sync, res);
 
     sync_mutex mut = Mutex_val(*Term_mutex(ml_values->term_sync));

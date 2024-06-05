@@ -71,7 +71,7 @@ void caml_final_merge_finalisable (struct finalisable *source,
                                    struct finalisable *target);
 int caml_final_update_first (caml_domain_state* d);
 int caml_final_update_last (caml_domain_state* d);
-value caml_final_do_calls_exn (void);
+caml_result caml_final_do_calls_res (void);
 void caml_final_do_roots (
   scanning_action f, scanning_action_flags fflags, void* fdata,
   caml_domain_state* domain, int do_val);

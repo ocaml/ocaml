@@ -74,7 +74,6 @@ Caml_inline void restore_stack_parent(caml_domain_state* domain_state,
   }
 }
 
-
 #ifndef NATIVE_CODE
 
 /* Bytecode callbacks */
@@ -300,27 +299,68 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[]) {
 
 #endif
 
+/* Result-returning variants of the above */
+
+Caml_inline caml_result Result_encoded(value encoded)
+{
+  if (Is_exception_result(encoded))
+    return Result_exception(Extract_exception(encoded));
+  else
+    return Result_value(encoded);
+}
+
+CAMLexport caml_result caml_callbackN_res(
+  value closure, int narg, value args[])
+{
+  return Result_encoded(caml_callbackN_exn(closure, narg, args));
+}
+
+CAMLexport caml_result caml_callback_res(
+  value closure, value arg)
+{
+  return Result_encoded(caml_callback_exn(closure, arg));
+}
+
+CAMLexport caml_result caml_callback2_res(
+  value closure, value arg1, value arg2)
+{
+  return Result_encoded(caml_callback2_exn(closure, arg1, arg2));
+}
+
+CAMLexport caml_result caml_callback3_res(
+  value closure, value arg1, value arg2, value arg3)
+{
+  return Result_encoded(caml_callback3_exn(closure, arg1, arg2, arg3));
+}
+
+
 /* Exception-propagating variants of the above */
+
+static value encoded_value_or_raise(value res)
+{
+  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
+  return res;
+}
 
 CAMLexport value caml_callback (value closure, value arg)
 {
-  return caml_raise_if_exception(caml_callback_exn(closure, arg));
+  return encoded_value_or_raise(caml_callback_exn(closure, arg));
 }
 
 CAMLexport value caml_callback2 (value closure, value arg1, value arg2)
 {
-  return caml_raise_if_exception(caml_callback2_exn(closure, arg1, arg2));
+  return encoded_value_or_raise(caml_callback2_exn(closure, arg1, arg2));
 }
 
 CAMLexport value caml_callback3 (value closure, value arg1, value arg2,
                                  value arg3)
 {
-  return caml_raise_if_exception(caml_callback3_exn(closure, arg1, arg2, arg3));
+  return encoded_value_or_raise(caml_callback3_exn(closure, arg1, arg2, arg3));
 }
 
 CAMLexport value caml_callbackN (value closure, int narg, value args[])
 {
-  return caml_raise_if_exception(caml_callbackN_exn(closure, narg, args));
+  return encoded_value_or_raise(caml_callbackN_exn(closure, narg, args));
 }
 
 /* Naming of OCaml values */

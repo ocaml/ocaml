@@ -35,9 +35,22 @@ CAMLextern value caml_callback3 (value closure, value arg1, value arg2,
                                  value arg3);
 CAMLextern value caml_callbackN (value closure, int narg, value args[]);
 
-/* If the callback raises an exception, the functions
-   caml_callback{,2,3,N}_exn do not propagate it, they return the exception
-   as an 'encoded exceptional result value' (see mlvalues.h) */
+/* The functions caml_callback{,2,3,N}_res return
+   a caml_result structure containing either the value or an exception,
+   they do not propagate exceptions directly to their caller. */
+CAMLextern caml_result caml_callback_res (value closure, value arg);
+CAMLextern caml_result caml_callback2_res (
+  value closure, value arg1, value arg2);
+CAMLextern caml_result caml_callback3_res (
+  value closure, value arg1, value arg2, value arg3);
+CAMLextern caml_result caml_callbackN_res (
+  value closure, int narg, value args[]);
+
+/* These functions are similar to the caml_callback*_res variants
+   above, but they return an 'encoded exceptional value' (see mlvalues.h)
+   which represents either a value or an exception. This interface is unsafe
+   and it is easy to make mistakes due to the lack of type information,
+   we strongly recommend the *_res variants instead. */
 CAMLextern value caml_callback_exn (value closure, value arg);
 CAMLextern value caml_callback2_exn (value closure, value arg1, value arg2);
 CAMLextern value caml_callback3_exn (value closure,

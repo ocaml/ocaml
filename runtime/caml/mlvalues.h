@@ -84,12 +84,41 @@ typedef opcode_t * code_t;
 #define Unsigned_long_val(x) ((uintnat)(x) >> 1)
 #define Unsigned_int_val(x)  ((int) Unsigned_long_val(x))
 
-/* Encoded exceptional return values, when functions are suffixed with
-   _exn. Encoded exceptions are invalid values and must not be seen
-   by the garbage collector. */
-#define Make_exception_result(v) ((v) | 2)
-#define Is_exception_result(v) (((v) & 3) == 2)
-#define Extract_exception(v) ((v) & ~3)
+/* A 'result' type for OCaml computations. */
+
+/* The [caml_result] type represents the result of computing an OCaml
+   term -- either a value or an exception.
+
+   This plays a similar role to the [('a, exn) result] type in OCaml,
+   with a different representation. Returning this type, instead of
+   raising exceptions directly, lets the caller implement proper
+   cleanup and propagate the exception themselves.
+*/
+typedef struct caml_result_private caml_result;
+
+/* This structure should be considered internal, its definition may
+   change in the future. Its public interface is formed of
+   - Result_value, Result_exception
+   - caml_result_is_exception
+   - caml_get_value_or_raise (in fail.h)
+*/
+struct caml_result_private {
+  int is_exception;
+  value data;
+};
+
+#define Result_value(v) \
+  (struct caml_result_private){ .is_exception = 0, .data = v }
+#define Result_exception(exn) \
+  (struct caml_result_private){ .is_exception = 1, .data = exn }
+
+Caml_inline int caml_result_is_exception(struct caml_result_private result)
+{
+  return result.is_exception;
+}
+
+#define Result_unit Result_value(Val_unit)
+
 
 /* Structure of the header:
 
@@ -470,6 +499,21 @@ CAMLextern value caml_set_oo_id(value obj);
 
 #define Caml_out_of_heap_header(wosize, tag)                           \
         Caml_out_of_heap_header_with_reserved(wosize, tag, 0)
+
+
+/* Obsolete -- suppport for unsafe encoded exceptions.
+
+   Before caml_result was available, we used an unsafe encoding of it
+   into the 'value' type, where encoded exceptions have their second
+   bit set. These encoded exceptions are invalid values and must not
+   be seen by the garbage collector. This is unsafe, and the
+   C type-checker does not help. We strongly recommend using the
+   caml_result type above instead. It is GC-safe and more
+   type-safe. */
+
+#define Make_exception_result(v) ((v) | 2)
+#define Is_exception_result(v) (((v) & 3) == 2)
+#define Extract_exception(v) ((v) & ~3)
 
 #ifdef __cplusplus
 }

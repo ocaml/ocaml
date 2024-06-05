@@ -142,13 +142,13 @@ int caml_final_update_last (caml_domain_state* d)
 /* Call the finalisation functions for the finalising set.
    Note that this function must be reentrant.
 */
-value caml_final_do_calls_exn(void)
+caml_result caml_final_do_calls_res(void)
 {
   struct final f;
-  value res;
+  caml_result res;
   struct caml_final_info *fi = Caml_state->final_info;
 
-  if (fi->running_finalisation_function) return Val_unit;
+  if (fi->running_finalisation_function) return Result_unit;
   if (fi->todo_head != NULL) {
     call_timing_hook(&caml_finalise_begin_hook);
     caml_gc_message (0x80, "Calling finalisation functions.\n");
@@ -164,14 +164,14 @@ value caml_final_do_calls_exn(void)
       --fi->todo_head->size;
       f = fi->todo_head->item[fi->todo_head->size];
       fi->running_finalisation_function = 1;
-      res = caml_callback_exn (f.fun, f.val + f.offset);
+      res = caml_callback_res (f.fun, f.val + f.offset);
       fi->running_finalisation_function = 0;
-      if (Is_exception_result(res)) return res;
+      if (caml_result_is_exception(res)) return res;
     }
     caml_gc_message (0x80, "Done calling finalisation functions.\n");
     call_timing_hook(&caml_finalise_end_hook);
   }
-  return Val_unit;
+  return Result_unit;
 }
 
 /* Call a scanning_action [f] on [x]. */

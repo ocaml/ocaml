@@ -64,10 +64,11 @@ void caml_raise(value v)
 
   caml_channel_cleanup_on_raise();
 
-  // avoid calling caml_raise recursively
-  v = caml_process_pending_actions_with_root_exn(v);
-  if (Is_exception_result(v))
-    v = Extract_exception(v);
+  caml_result result = caml_process_pending_actions_with_root_res(v);
+  /* If the result is a value, we want to assign it to [v].
+     If the result is an exception, we want to raise it instead of [v].
+     The line below does both these things at once. */
+  v = result.data;
 
   exception_pointer = (char*)Caml_state->c_stack;
 
@@ -186,12 +187,6 @@ void caml_raise_not_found(void)
 void caml_raise_sys_blocked_io(void)
 {
   caml_raise_constant((value) caml_exn_Sys_blocked_io);
-}
-
-CAMLexport value caml_raise_if_exception(value res)
-{
-  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
-  return res;
 }
 
 /* We use a pre-allocated exception because we can't

@@ -59,11 +59,10 @@ CAMLexport int caml_check_pending_signals(void)
 
 /* Execute all pending signals */
 
-CAMLexport value caml_process_pending_signals_exn(void)
+CAMLexport caml_result caml_process_pending_signals_res(void)
 {
   int i, j, signo;
   uintnat curr, mask ;
-  value exn;
 #ifdef POSIX_SIGNALS
   sigset_t set;
 #endif
@@ -71,7 +70,7 @@ CAMLexport value caml_process_pending_signals_exn(void)
   /* Check that there is indeed a pending signal before issuing the
       syscall in [pthread_sigmask]. */
   if (!caml_check_pending_signals())
-    return Val_unit;
+    return Result_unit;
 
 #ifdef POSIX_SIGNALS
   pthread_sigmask(/* dummy */ SIG_BLOCK, NULL, &set);
@@ -94,8 +93,8 @@ CAMLexport value caml_process_pending_signals_exn(void)
         if (curr == 0) goto next_word;
         if ((curr & mask) == 0) goto next_bit;
       }
-      exn = caml_execute_signal_exn(signo);
-      if (Is_exception_result(exn)) return exn;
+      caml_result result = caml_execute_signal_res(signo);
+      if (caml_result_is_exception(result)) return result;
       /* curr probably changed during the evaluation of the signal handler;
          refresh it from memory */
       curr = atomic_load_relaxed(&caml_pending_signals[i]);
@@ -104,7 +103,7 @@ CAMLexport value caml_process_pending_signals_exn(void)
     }
   next_word: /* skip */;
   }
-  return Val_unit;
+  return Result_unit;
 }
 
 /* Record the delivery of a signal, and arrange for it to be processed
@@ -172,7 +171,7 @@ CAMLexport void caml_enter_blocking_section(void)
          are further async callbacks pending beyond OCaml signal
          handlers. */
       caml_handle_gc_interrupt();
-      caml_raise_if_exception(caml_process_pending_signals_exn());
+      caml_get_value_or_raise(caml_process_pending_signals_res());
     }
     caml_enter_blocking_section_hook ();
     /* Check again if a signal arrived in the meanwhile. If none,
@@ -229,7 +228,7 @@ void caml_init_signal_handling(void) {
 
 /* Execute a signal handler immediately */
 
-value caml_execute_signal_exn(int signal_number)
+caml_result caml_execute_signal_res(int signal_number)
 {
 #ifdef POSIX_SIGNALS
   sigset_t nsigs, sigs;
@@ -241,7 +240,7 @@ value caml_execute_signal_exn(int signal_number)
 #endif
   value handler = Field(caml_signal_handlers, signal_number);
   value signum = Val_int(caml_rev_convert_signal_number(signal_number));
-  value res = caml_callback_exn(handler, signum);
+  caml_result res = caml_callback_res(handler, signum);
 #ifdef POSIX_SIGNALS
   /* Restore the original signal mask */
   pthread_sigmask(SIG_SETMASK, &sigs, NULL);
@@ -334,7 +333,7 @@ CAMLexport int caml_check_pending_actions(void)
   return check_pending_actions(Caml_state);
 }
 
-value caml_do_pending_actions_exn(void)
+caml_result caml_do_pending_actions_res(void)
 {
   /* 1. Non-delayable actions that do not run OCaml code. */
 
@@ -350,16 +349,16 @@ value caml_do_pending_actions_exn(void)
   Caml_state->action_pending = 0;
 
   /* Call signal handlers first */
-  value exn = caml_process_pending_signals_exn();
-  if (Is_exception_result(exn)) goto exception;
+  caml_result result = caml_process_pending_signals_res();
+  if (caml_result_is_exception(result)) goto exception;
 
   /* Call memprof callbacks */
-  exn = caml_memprof_run_callbacks_exn();
-  if (Is_exception_result(exn)) goto exception;
+  result = caml_memprof_run_callbacks_res();
+  if (caml_result_is_exception(result)) goto exception;
 
   /* Call finalisers */
-  exn = caml_final_do_calls_exn();
-  if (Is_exception_result(exn)) goto exception;
+  result = caml_final_do_calls_res();
+  if (caml_result_is_exception(result)) goto exception;
 
   /* Process external interrupts (e.g. preemptive systhread switching).
      By doing this last, we do not need to set the action pending flag
@@ -367,7 +366,7 @@ value caml_do_pending_actions_exn(void)
      at this point. */
   caml_process_external_interrupt();
 
-  return Val_unit;
+  return Result_unit;
 
 exception:
   /* If an exception is raised during an asynchronous callback, then
@@ -375,34 +374,39 @@ exception:
      needed. Therefore, we set [Caml_state->action_pending] again in
      order to force reexamination of callbacks. */
   caml_set_action_pending(Caml_state);
-  return exn;
+  return result;
 }
 
-value caml_process_pending_actions_with_root_exn(value root)
+caml_result caml_process_pending_actions_with_root_res(value root)
 {
   if (caml_check_pending_actions()) {
     CAMLparam1(root);
-    value exn = caml_do_pending_actions_exn();
-    if (Is_exception_result(exn)) CAMLreturn(exn);
+    caml_result result = caml_do_pending_actions_res();
+    if (caml_result_is_exception(result)) CAMLreturnT(caml_result, result);
     CAMLdrop;
   }
-  return root;
+  return Result_value(root);
 }
 
 CAMLprim value caml_process_pending_actions_with_root(value root)
 {
-  return caml_raise_if_exception(
-    caml_process_pending_actions_with_root_exn(root));
+  return caml_get_value_or_raise(
+    caml_process_pending_actions_with_root_res(root));
 }
 
-CAMLexport value caml_process_pending_actions_exn(void)
+CAMLexport caml_result caml_process_pending_actions_res(void)
 {
-  return caml_process_pending_actions_with_root_exn(Val_unit);
+  if (caml_check_pending_actions()) {
+    return caml_do_pending_actions_res();
+  } else {
+    return Result_unit;
+  }
 }
 
 CAMLexport void caml_process_pending_actions(void)
 {
-  caml_process_pending_actions_with_root(Val_unit);
+  caml_get_value_or_raise(
+    caml_process_pending_actions_res());
 }
 
 /* OS-independent numbering of signals */
@@ -711,6 +715,6 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
     caml_plat_unlock(&signal_install_mutex);
   }
-  caml_raise_if_exception(caml_process_pending_signals_exn());
+  caml_get_value_or_raise(caml_process_pending_signals_res());
   CAMLreturn (res);
 }
