@@ -17,6 +17,7 @@
 
 /* Operations on objects */
 
+#include <stdbool.h>
 #include <string.h>
 #include "caml/camlatomic.h"
 #include "caml/alloc.h"

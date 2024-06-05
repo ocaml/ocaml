@@ -21,6 +21,7 @@
 #include <caml/memory.h>
 #include <caml/platform.h>
 #include "caml/unixsupport.h"
+#include <stdbool.h>
 #include <fcntl.h>
 #include <io.h>
 #include <errno.h>

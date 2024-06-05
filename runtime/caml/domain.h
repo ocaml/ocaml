@@ -221,15 +221,15 @@ void caml_global_barrier_release_as_final(barrier_status status);
  */
 #define Caml_global_barrier_if_final_(alone, b, go, num_participating)  \
   /* fast path when alone */                                            \
-  int alone = (num_participating) == 1;                                 \
+  bool alone = (num_participating) == 1;                                \
   barrier_status b = 0;                                                 \
   if (alone ||                                                          \
       (b = caml_global_barrier_and_check_final(num_participating)))     \
-    for (int go = 1; go;                                                \
+    for (bool go = true; go;                                            \
          /* release the barrier after the body has executed once */     \
          (alone ? (void)0 :                                             \
           caml_global_barrier_release_as_final(b)),                     \
-         go = 0)
+         go = false)
 
 #define Caml_global_barrier_if_final(num_participating)                \
   Caml_global_barrier_if_final_(CAML_GENSYM(alone), CAML_GENSYM(b),    \
