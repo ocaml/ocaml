@@ -3534,22 +3534,26 @@ function_type:
       domain = extra_rhs(tuple_type)
       MINUSGREATER
       codomain = function_type
-        { Ptyp_arrow(label, domain, codomain) }
-    | label = arg_label
-      LPAREN
-        MODULE _attrs = ext_attributes id = mkrhs(UIDENT) COLON
-        mty = module_type
-      RPAREN
-      MINUSGREATER
-      codomain = function_type
-        { let (lid, cstrs, _attrs) = package_type_of_module_type mty in
-          Ptyp_functor(label, id, (lid, cstrs), codomain) }
-    )
+        { Ptyp_arrow(label, domain, codomain) })
     { $1 }
+  | label = arg_label_no_opt
+    LPAREN
+      MODULE attrs1 = ext_attributes id = mkrhs(UIDENT) COLON
+      mty = module_type
+    RPAREN
+    MINUSGREATER
+    codomain = function_type
+      { let (lid, cstrs, attrs2) = package_type_of_module_type mty in
+        wrap_typ_attrs ~loc:$sloc
+          (mktyp ~loc:$sloc ~attrs:attrs2
+            (Ptyp_functor(label, id, (lid, cstrs), codomain))) attrs1 }
 ;
 %inline arg_label:
   | label = optlabel
       { Optional label }
+  | arg_label_no_opt { $1 }
+
+%inline arg_label_no_opt:
   | label = LIDENT COLON
       { Labelled label }
   | /* empty */

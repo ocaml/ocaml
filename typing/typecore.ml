@@ -4805,6 +4805,10 @@ and type_function
             end;
             (Some (id, ety), (path, fl))
         | Some (id, (path', fl'), ety), None ->
+            if !Clflags.principal
+                && get_level ty_expected < Btype.generic_level
+            then Location.prerr_warning loc
+                  (not_principal "this module unpacking");
             (Some (id, ety), (path', fl'))
       in
       !check_closed_package ~loc:name.loc ~env

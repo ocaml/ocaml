@@ -682,6 +682,8 @@ val typing_order2 :
   ((module T : Typ) -> T.t -> T.t) * Int.t = <fun>
 |}]
 
+(** The following test check that test at module unpacking still happen with
+    modular explicits *)
 
 (* we test that recursive types cannot occur *)
 module type T = sig type t val v : t end;;
@@ -689,9 +691,27 @@ let foo (module X : T with type t = 'a) = X.v X.v;;
 
 [%%expect{|
 module type T = sig type t val v : t end
-Line 2, characters 16-17:
-2 | let foo (module X : T with type t = 'a) = X.v X.v;;
+Line 6, characters 16-17:
+6 | let foo (module X : T with type t = 'a) = X.v X.v;;
                     ^
 Error: The type of this packed module contains variables:
        "(module T with type t = 'a)"
+|}]
+
+(* Test principality warning of type *)
+let principality_warning2 f =
+  let _ : ((module T : Typ) -> T.t -> T.t) -> unit = f in
+  f (fun (module T) x -> x)
+
+[%%expect{|
+val principality_warning2 :
+  (((module T : Typ) -> T.t -> T.t) -> unit) -> unit = <fun>
+|}, Principal{|
+Line 3, characters 9-27:
+3 |   f (fun (module T) x -> x)
+             ^^^^^^^^^^^^^^^^^^
+Warning 18 [not-principal]: this module unpacking is not principal.
+
+val principality_warning2 :
+  (((module T : Typ) -> T.t -> T.t) -> unit) -> unit = <fun>
 |}]
