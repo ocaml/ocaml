@@ -102,7 +102,8 @@ jobs:
           || failed=$?;
           if ((failed)) ; then cat config.log ; exit $failed ; fi ;
           fi ;
-          make -j ;
+          make -j || failed=$? ;
+          if ((failed)) ; then make -j1 V=1 ; exit $failed ; fi ;
           runtime/ocamlrun ocamlc -config ;
         # Don't add indentation or comments, it breaks Bash on
         # Windows when the yaml text block scalar is processed as a

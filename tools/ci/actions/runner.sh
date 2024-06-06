@@ -50,13 +50,21 @@ EOF
 }
 
 Build () {
+  local failed
   export TERM=ansi
   if [ "$(uname)" = 'Darwin' ]; then
-    script -q build.log $MAKE_WARN
+    script -q build.log $MAKE_WARN || failed=$?
+    if ((failed)); then
+      script -q build.log $MAKE_WARN make -j1 V=1
+      exit $failed
+    fi
   else
-    script --return --command "$MAKE_WARN" build.log
+    script --return --command "$MAKE_WARN" build.log || failed=$?
+    if ((failed)); then
+      script --return --command "$MAKE_WARN -j1 V=1" build.log
+      exit $failed
+    fi
   fi
-  failed=0
   if grep -Fq ' warning: undefined variable ' build.log; then
     echo Undefined Makefile variables detected:
     grep -F ' warning: undefined variable ' build.log
@@ -68,7 +76,7 @@ Build () {
     failed=1
   fi
   if ((failed)); then
-    exit 1
+    exit $failed
   fi
 }
 
@@ -166,6 +174,7 @@ ReportBuildStatus () {
 }
 
 BasicCompiler () {
+  local failed
   trap ReportBuildStatus ERR
 
   local failed
@@ -176,9 +185,17 @@ BasicCompiler () {
   if ((failed)) ; then cat config.log ; exit $failed ; fi
 
   # Need a runtime
-  make -j coldstart
+  make -j coldstart || failed=$?
+  if ((failed)) ; then
+    make -j1 V=1 coldstart
+    exit $failed
+  fi
   # And generated files (ocamllex compiles ocamlyacc)
-  make -j ocamllex
+  make -j ocamllex || failed=$?
+  if ((failed)) ; then
+    make -j1 V=1 ocamllex
+    exit $failed
+  fi
 
   ReportBuildStatus 0
 }
