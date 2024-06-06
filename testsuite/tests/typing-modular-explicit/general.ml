@@ -681,3 +681,17 @@ val typing_order2 :
   ((module T : Typ) -> T.t -> T.t) ->
   ((module T : Typ) -> T.t -> T.t) * Int.t = <fun>
 |}]
+
+
+(* we test that recursive types cannot occur *)
+module type T = sig type t val v : t end;;
+let foo (module X : T with type t = 'a) = X.v X.v;;
+
+[%%expect{|
+module type T = sig type t val v : t end
+Line 2, characters 16-17:
+2 | let foo (module X : T with type t = 'a) = X.v X.v;;
+                    ^
+Error: The type of this packed module contains variables:
+       "(module T with type t = 'a)"
+|}]

@@ -236,6 +236,13 @@ let type_open_decl :
 let type_package =
   ref (fun _ -> assert false)
 
+(* Forward declaration, to be filled in by Typemod.check_closed_package *)
+
+let check_closed_package :
+  (loc:Location.t -> env:Env.t -> typ:type_expr ->
+   (Longident.t * type_expr) list -> unit) ref =
+  ref (fun ~loc:_ ~env:_ ~typ:_ _ -> assert false)
+
 (* Forward declaration, to be filled in by Typeclass.class_structure *)
 let type_object =
   ref (fun _env _s -> assert false :
@@ -4800,6 +4807,8 @@ and type_function
         | Some (id, (path', fl'), ety), None ->
             (Some (id, ety), (path', fl'))
       in
+      !check_closed_package ~loc:name.loc ~env
+                           ~typ:(newty (Tpackage (path, fl))) fl;
       let mty = !Ctype.modtype_of_package env pparam_loc path fl in
       let pv_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) in
       let arg_md = {

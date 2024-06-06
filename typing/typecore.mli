@@ -256,6 +256,10 @@ val type_open:
   (?used_slot:bool ref -> override_flag -> Env.t -> Location.t ->
    Longident.t loc -> Path.t * Env.t)
     ref
+(* Forward declaration, to be filled in by Typemod.check_closed_package *)
+val check_closed_package:
+  (loc:Location.t -> env:Env.t -> typ:type_expr ->
+   (Longident.t * type_expr) list -> unit) ref
 (* Forward declaration, to be filled in by Typemod.type_open_decl *)
 val type_open_decl:
   (?used_slot:bool ref -> Env.t -> Parsetree.open_declaration ->
