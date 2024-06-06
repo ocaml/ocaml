@@ -55,10 +55,10 @@ let f (module M : S with type t = int) = M.x;;
 val f : (module M : S with type t = int) -> M.t = <fun>
 |}];;
 
-let f (module M : S with type t = 'a) = M.x;;
+let f (module M : S with type t = 'a) = M.x;; (* Error *)
 [%%expect{|
 Line 1, characters 14-15:
-1 | let f (module M : S with type t = 'a) = M.x;;
+1 | let f (module M : S with type t = 'a) = M.x;; (* Error *)
                   ^
 Error: The type of this packed module contains variables:
        "(module S with type t = 'a)"

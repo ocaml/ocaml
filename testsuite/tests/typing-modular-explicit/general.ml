@@ -79,13 +79,40 @@ Error: The signature for this packaged module couldn't be inferred.
 let invalid_arg2 = f 3 4 (module Int)
 
 [%%expect{|
-Line 1, characters 19-22:
+Line 1, characters 23-24:
 1 | let invalid_arg2 = f 3 4 (module Int)
-                       ^^^
+                           ^
+Error: This expression has type "int" but an expression was expected of type
+         "(module Typ)"
+|}]
+
+let invalid_arg3 =
+  let m = (module Int : Typ) in
+  f 3 m 4
+
+[%%expect{|
+Line 3, characters 2-5:
+3 |   f 3 m 4
+      ^^^
 Error: This expression has type "(module M : Typ) -> M.t -> 'a * M.t"
        but an expression was expected of type "(module Typ) -> 'b"
        The module "M" would escape its scope
 |}]
+
+
+let invalid_arg4 =
+  let m = (module Int : Typ with type t = int) in
+  f 3 m 4
+
+[%%expect{|
+Line 3, characters 6-7:
+3 |   f 3 m 4
+          ^
+Error: This expression has type "(module Typ with type t = int)"
+       but an expression was expected of type "(module Typ)"
+|}]
+
+
 
 let labelled (module M : Typ) ~(y:M.t) = y
 

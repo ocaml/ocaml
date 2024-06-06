@@ -5485,6 +5485,15 @@ and type_application env funct sargs =
     let ls, tvar = list_labels env ty_fun in
     tvar || List.mem l ls
   in
+  let previous_arg_loc typed_args =
+    (* [typed_args] is the arguments typed until now, in reverse
+        order of appearance. Not all arguments have a location
+        attached (eg. an optional argument that is not passed). *)
+    typed_args
+    |> List.find_map
+        (function (_, Some (_, loc)) -> loc | _ -> None)
+    |> Option.value ~default:funct.exp_loc
+  in
   let eliminated_optional_arguments = ref [] in
   let omitted_parameters = ref [] in
   let type_unknown_arg (ty_fun, typed_args) (lbl, sarg) =
@@ -5517,20 +5526,11 @@ and type_application env funct sargs =
               else
                 raise (Error(funct.exp_loc, env, Incoherent_label_order))
           | _ ->
-              let previous_arg_loc =
-                (* [typed_args] is the arguments typed until now, in reverse
-                   order of appearance. Not all arguments have a location
-                   attached (eg. an optional argument that is not passed). *)
-                typed_args
-                |> List.find_map
-                    (function (_, Some (_, loc)) -> loc | _ -> None)
-                |> Option.value ~default:funct.exp_loc
-              in
               raise(Error(funct.exp_loc, env, Apply_non_function {
                   funct;
                   func_ty = expand_head env funct.exp_type;
                   res_ty = expand_head env ty_res;
-                  previous_arg_loc;
+                  previous_arg_loc = previous_arg_loc typed_args;
                   extra_arg_loc = sarg.pexp_loc; }))
     in
     let arg () =
@@ -5765,16 +5765,15 @@ and type_application env funct sargs =
         | Some _ | None ->
           unify_to_arrows begin fun trace ->
             match me_opt with
-            | Some _ ->
-                let previous_arg_loc =
-                  (* [typed_args] is the arguments typed until now, in reverse
-                    order of appearance. Not all arguments have a location
-                    attached (eg. an optional argument that is not passed). *)
-                  args
-                  |> List.find_map
-                      (function (_, Some (_, loc)) -> loc | _ -> None)
-                  |> Option.value ~default:funct.exp_loc
+            | Some (_, _, sarg) ->
+                (* check that the type of the argument is indeed a package *)
+                let _ =
+                  type_argument env sarg
+                    (newty2 ~level:(get_level ty_fun') (Tpackage (p, fl)))
+                    (newty2 ~level:(get_level ty_fun0) (Tpackage (p0, fl0)))
                 in
+                (*if it is a package then we say that could not extract a path*)
+                let previous_arg_loc = previous_arg_loc args in
                 let loc = Location.{
                   loc_start = funct.exp_loc.loc_start;
                   loc_end = previous_arg_loc.loc_end;

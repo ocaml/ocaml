@@ -5461,7 +5461,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
                          Path.Pident (Ident.of_unscoped id1))] in
           let closed = compute_id_from_map id_map u2 in
           let u2 = For_copy.with_scope (fun copy_scope ->
-                                          copy ~id_map ~closed copy_scope u2) in    
+                                          copy ~id_map ~closed copy_scope u2) in
           let mty1 = !modtype_of_package env Location.none p1 fl1 in
           let new_env = Env.add_module (Ident.of_unscoped id1)
                                         Mp_present mty1 env in
@@ -6220,7 +6220,8 @@ let rec nondep_class_type env ids =
   | Cty_signature sign ->
       Cty_signature (nondep_class_signature env ids sign)
   | Cty_arrow (l, ty, cty) ->
-      Cty_arrow (l, nondep_type_rec env [] ids ty, nondep_class_type env ids cty)
+      Cty_arrow (l, nondep_type_rec env [] ids ty,
+                 nondep_class_type env ids cty)
 
 let nondep_class_declaration env ids decl =
   assert (not (Path.exists_free ids decl.cty_path));
