@@ -668,6 +668,8 @@ CAMLexport void caml_startup_code(
 {
   value res;
 
+  HERE IS AN ERROR
+
   res = caml_startup_code_exn(code, code_size, data, data_size,
                               section_table, section_table_size,
                               pooling, argv);
