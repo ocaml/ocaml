@@ -48,6 +48,7 @@ EOF
 }
 
 Build () {
+  export TERM=ansi
   if [ "$(uname)" = 'Darwin' ]; then
     script -q build.log $MAKE_WARN
   else
