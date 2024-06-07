@@ -24,6 +24,9 @@
 #ifndef SO_REUSEPORT
 #define SO_REUSEPORT (-1)
 #endif
+#ifndef TCP_QUICKACK
+#define TCP_QUICKACK (-1)
+#endif
 #ifndef IPPROTO_IPV6
 #define IPPROTO_IPV6 (-1)
 #endif
@@ -55,6 +58,7 @@ static const struct socket_option sockopt_bool[] = {
   { SOL_SOCKET, SO_OOBINLINE },
   { SOL_SOCKET, SO_ACCEPTCONN },
   { IPPROTO_TCP, TCP_NODELAY },
+  { IPPROTO_TCP, TCP_QUICKACK },
   { IPPROTO_IPV6, IPV6_V6ONLY},
   { SOL_SOCKET, SO_REUSEPORT }
 };

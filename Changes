@@ -126,6 +126,9 @@ _______________
 
 ### Other libraries:
 
+- #13133: Add Unix.TCP_QUICKACK
+  (Robin Björklin, review by ?)
+
 ### Tools:
 
 - #11716: ocamllex: mismatched parentheses and curly brackets are now caught

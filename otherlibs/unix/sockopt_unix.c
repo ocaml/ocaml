@@ -83,6 +83,9 @@
 #ifndef TCP_NODELAY
 #define TCP_NODELAY (-1)
 #endif
+#ifndef TCP_QUICKACK
+#define TCP_QUICKACK (-1)
+#endif
 #ifndef SO_ERROR
 #define SO_ERROR (-1)
 #endif
@@ -117,6 +120,7 @@ static const struct socket_option sockopt_bool[] = {
   { SOL_SOCKET, SO_OOBINLINE },
   { SOL_SOCKET, SO_ACCEPTCONN },
   { IPPROTO_TCP, TCP_NODELAY },
+  { IPPROTO_TCP, TCP_QUICKACK },
   { IPPROTO_IPV6, IPV6_V6ONLY},
   { SOL_SOCKET, SO_REUSEPORT }
 };
