@@ -343,6 +343,10 @@ _______________
   arguments.
   (Nicolás Ojeda Bär, report by Boris D.)
 
+- #13221: Compute more accurate instruction sizes for branch relocation on
+  POWER.
+  (Miod Vallat, review by Gabriel Scherer)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 

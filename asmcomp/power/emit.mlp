@@ -177,6 +177,28 @@ let emit_tocload emit_dest dest entry =
 
 (* Output a load or store operation *)
 
+let load_mnemonic = function
+  | Byte_unsigned -> "lbz"
+  | Byte_signed -> "lbz"
+  | Sixteen_unsigned -> "lhz"
+  | Sixteen_signed -> "lha"
+  | Thirtytwo_unsigned -> "lwz"
+  | Thirtytwo_signed -> "lwa"
+  | Word_int | Word_val -> "ld"
+  | Single -> "lfs"
+  | Double -> "lfd"
+
+let store_mnemonic = function
+  | Byte_unsigned | Byte_signed -> "stb"
+  | Sixteen_unsigned | Sixteen_signed -> "sth"
+  | Thirtytwo_unsigned | Thirtytwo_signed -> "stw"
+  | Word_int | Word_val -> "std"
+  | Single -> "stfs"
+  | Double -> "stfd"
+
+let store_needs_lwsync chunk assignment =
+  assignment && (chunk = Word_int || chunk = Word_val)
+
 let valid_offset instr ofs =
   ofs land 3 = 0 || (instr <> "ld" && instr <> "std" && instr <> "lwa")
 
@@ -383,11 +405,17 @@ module BR = Branch_relaxation.Make (struct
 
   let tocload_size = 2
 
-  let load_store_size = function
+  let load_store_size instr = function
     | Ibased(_s, d) ->
-        let (_lo, hi) = low_high_s d in
-        tocload_size + (if hi = 0 then 1 else 2)
-    | Iindexed ofs -> if is_immediate ofs then 1 else 3
+      let (lo, hi) = low_high_s d in
+      tocload_size +
+      (if hi <> 0 then 1 else 0) +
+      (if valid_offset instr lo then 1 else 2)
+    | Iindexed ofs ->
+      if is_immediate ofs && valid_offset instr ofs then 1 else begin
+        let (lo, _hi) = low_high_u ofs in
+        if lo <> 0 then 3 else 2
+      end
     | Iindexed2 -> 1
 
   let instr_size f = function
@@ -415,16 +443,16 @@ module BR = Branch_relaxation.Make (struct
         else if alloc then tocload_size + 2
         else 5
     | Lop(Istackoffset _) -> 1
-    | Lop(Iload {memory_chunk; addressing_mode; _ }) ->
-      if memory_chunk = Byte_signed
-      then load_store_size addressing_mode + 1
-      else load_store_size addressing_mode
+    | Lop(Iload {memory_chunk; addressing_mode; is_atomic }) ->
+      let loadinstr = load_mnemonic memory_chunk in
+      (if is_atomic then 4 else 0) +
+      (if memory_chunk = Byte_signed then 1 else 0) +
+      load_store_size loadinstr addressing_mode
     | Lop(Istore(chunk, addr, assignment)) ->
-        (match chunk with
-         | Single -> 1
-         | Word_int | Word_val when assignment -> 1
-         | _ -> 0)
-        + load_store_size addr
+      let storeinstr = store_mnemonic chunk in
+        (if chunk = Single then 1 else 0) +
+        (if store_needs_lwsync chunk assignment then 1 else 0) +
+        load_store_size storeinstr addr
     | Lop(Ialloc _) -> 5
     | Lop(Ispecific(Ialloc_far _)) -> 6
     | Lop(Ipoll { return_label = Some(_) }) -> 5
@@ -442,12 +470,12 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Ispecific(Icheckbound_imm_far _)) -> 3
     | Lop(Iintop_imm _) -> 1
     | Lop(Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf) -> 1
-    | Lop(Ifloatofint) -> 9
-    | Lop(Iintoffloat) -> 4
+    | Lop(Ifloatofint) -> 3
+    | Lop(Iintoffloat) -> 3
     | Lop(Iopaque) -> 0
     | Lop(Ispecific _) -> 1
-    | Lop (Idls_get) -> 1
-    | Lop (Ireturn_addr) -> 1
+    | Lop(Idls_get) -> 1
+    | Lop(Ireturn_addr) -> 1
     | Lreloadretaddr -> 2
     | Lreturn -> 2
     | Llabel _ -> 0
@@ -457,7 +485,7 @@ module BR = Branch_relaxation.Make (struct
       1 + (if lbl0 = None then 0 else 1)
         + (if lbl1 = None then 0 else 1)
         + (if lbl2 = None then 0 else 1)
-    | Lswitch _ -> 5 + tocload_size
+    | Lswitch _ -> 7 + tocload_size
     | Lentertrap -> 1
     | Ladjust_trap_depth _ -> 0
     | Lpushtrap _ -> 4 + tocload_size
@@ -705,17 +733,7 @@ let emit_instr env i =
         `	addi	1, 1, {emit_int (-n)}\n`;
         adjust_stack_offset env n
     | Lop(Iload { memory_chunk; addressing_mode; is_atomic }) ->
-        let loadinstr =
-          match memory_chunk with
-          | Byte_unsigned -> "lbz"
-          | Byte_signed -> "lbz"
-          | Sixteen_unsigned -> "lhz"
-          | Sixteen_signed -> "lha"
-          | Thirtytwo_unsigned -> "lwz"
-          | Thirtytwo_signed -> "lwa"
-          | Word_int | Word_val -> "ld"
-          | Single -> "lfs"
-          | Double -> "lfd" in
+        let loadinstr = load_mnemonic memory_chunk in
         if is_atomic then
           `	sync\n`;
         emit_load_store loadinstr addressing_mode i.arg 0 i.res.(0);
@@ -731,19 +749,12 @@ let emit_instr env i =
         `	frsp	{emit_reg tmp}, {emit_reg i.arg.(0)}\n`;
         emit_load_store "stfs" addr i.arg 1 tmp
     | Lop(Istore(chunk, addr, assignment)) ->
-        let storeinstr =
-          match chunk with
-          | Byte_unsigned | Byte_signed -> "stb"
-          | Sixteen_unsigned | Sixteen_signed -> "sth"
-          | Thirtytwo_unsigned | Thirtytwo_signed -> "stw"
-          | Word_int | Word_val -> "std"
-          | Single -> assert false
-          | Double -> "stfd" in
+        let storeinstr = store_mnemonic chunk in
         (* Non-initializing stores need a memory barrier to follow the
            Multicore OCaml memory model.  Stores of size other than
            Word_int and Word_val do not follow the memory model and therefore
            do not need a barrier *)
-        if assignment && (chunk = Word_int || chunk = Word_val) then
+        if store_needs_lwsync chunk assignment then
           `	lwsync\n`;
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
     | Lop(Ialloc { bytes; dbginfo }) ->
