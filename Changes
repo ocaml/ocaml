@@ -792,6 +792,9 @@ OCaml 5.2.0 (13 May 2024)
 
 ### Manual and documentation:
 
+- #12865: ocamldoc: replace newlines with spaces in source code style blocks.
+  (William Hu, report by Antonin Décimo, review by ?)
+
 - #12338: clarification of the documentation of process related function in
   the unix module regarding the first element of args and shell's pid.
   (Christophe Raffalli, review by Florian Angeletti)
