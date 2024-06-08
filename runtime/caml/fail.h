@@ -79,13 +79,19 @@ int caml_is_special_exception(value exn);
 extern "C" {
 #endif
 
-/* The following functions raise immediately into OCaml. */
+/* The following functions raise immediately into OCaml.
+
+   The argument [exn_constr] can be obtained using [caml_named_value]
+   from caml/callback.h after registering and naming an exception from
+   OCaml using [Callback.register_exception].
+*/
 CAMLnoret CAMLextern void caml_raise (value exception);
-CAMLnoret CAMLextern void caml_raise_constant (value tag);
-CAMLnoret CAMLextern void caml_raise_with_arg (value tag, value arg);
-CAMLnoret CAMLextern void caml_raise_with_args (value tag,
+CAMLnoret CAMLextern void caml_raise_constant (value exn_constr);
+CAMLnoret CAMLextern void caml_raise_with_arg (value exn_constr, value arg);
+CAMLnoret CAMLextern void caml_raise_with_args (value exn_constr,
                                                 int nargs, value arg[]);
-CAMLnoret CAMLextern void caml_raise_with_string (value tag, char const * msg);
+CAMLnoret CAMLextern void caml_raise_with_string (value exn_constr,
+                                                  char const * msg);
 CAMLnoret CAMLextern void caml_failwith (char const *msg);
 CAMLnoret CAMLextern void caml_failwith_value (value msg);
 CAMLnoret CAMLextern void caml_invalid_argument (char const *msg);
@@ -101,11 +107,15 @@ CAMLnoret CAMLextern void caml_raise_sys_blocked_io (void);
 
 /* Non-raising variants of the above functions. The exception is
    returned as a normal value, which can be raised with [caml_raise],
-   typically after cleaning-up resources. */
-CAMLextern value caml_exception_constant (value tag);
-CAMLextern value caml_exception_with_arg (value tag, value arg);
-CAMLextern value caml_exception_with_args (value tag, int nargs, value arg[]);
-CAMLextern value caml_exception_with_string (value tag, char const * msg);
+   or returned as a value of type [caml_result] using
+   [Result_exception], typically to allow resource clean-up before
+   raising the exception. */
+CAMLextern value caml_exception_constant (value exn_constr);
+CAMLextern value caml_exception_with_arg (value exn_constr, value arg);
+CAMLextern value caml_exception_with_args (value exn_constr,
+                                           int nargs, value arg[]);
+CAMLextern value caml_exception_with_string (value exn_constr,
+                                             char const * msg);
 CAMLextern value caml_exception_failure (char const *msg);
 CAMLextern value caml_exception_failure_value (value msg);
 CAMLextern value caml_exception_invalid_argument (char const *msg);

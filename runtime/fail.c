@@ -22,72 +22,73 @@
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 
-#define Assert_is_tag(tag)                                  \
-  (CAMLassert(Is_block(tag) && Tag_val(tag) == Object_tag))
+#define Assert_is_exn_constructor(v)                    \
+  (CAMLassert(Is_block(v) && Tag_val(v) == Object_tag))
 
-CAMLexport value caml_exception_constant(value tag)
+CAMLexport value caml_exception_constant(value exn_constr)
 {
-  Assert_is_tag(tag);
-  return tag;
+  Assert_is_exn_constructor(exn_constr);
+  return exn_constr;
 }
 
-CAMLexport value caml_exception_with_arg(value tag, value arg)
+CAMLexport value caml_exception_with_arg(value exn_constr, value arg)
 {
-  CAMLparam2 (tag, arg);
+  CAMLparam2 (exn_constr, arg);
   CAMLlocal1 (bucket);
-  Assert_is_tag(tag);
+  Assert_is_exn_constructor(exn_constr);
 
   bucket = caml_alloc_small (2, 0);
-  Field(bucket, 0) = tag;
+  Field(bucket, 0) = exn_constr;
   Field(bucket, 1) = arg;
   CAMLreturn(bucket);
 }
 
-CAMLexport value caml_exception_with_args(value tag, int nargs, value args[])
+CAMLexport value caml_exception_with_args(value exn_constr,
+                                          int nargs, value args[])
 {
-  CAMLparam1 (tag);
+  CAMLparam1 (exn_constr);
   CAMLxparamN (args, nargs);
-  Assert_is_tag(tag);
+  Assert_is_exn_constructor(exn_constr);
 
   value bucket;
   int i;
 
   CAMLassert(1 + nargs <= Max_young_wosize);
   bucket = caml_alloc_small (1 + nargs, 0);
-  Field(bucket, 0) = tag;
+  Field(bucket, 0) = exn_constr;
   for (i = 0; i < nargs; i++) Field(bucket, 1 + i) = args[i];
   CAMLreturn(bucket);
 }
 
-CAMLexport value caml_exception_with_string(value tag, char const *msg)
+CAMLexport value caml_exception_with_string(value exn_constr, char const *msg)
 {
-  CAMLparam1(tag);
+  CAMLparam1(exn_constr);
   value v_msg = caml_copy_string(msg);
-  CAMLreturn(caml_exception_with_arg(tag, v_msg));
+  CAMLreturn(caml_exception_with_arg(exn_constr, v_msg));
 }
 
 
 /* Used by the stack overflow handler -> deactivate ASAN (see
    segv_handler in signals_nat.c). */
 CAMLno_asan
-CAMLexport void caml_raise_constant(value tag)
+CAMLexport void caml_raise_constant(value exn_constr)
 {
-  caml_raise(caml_exception_constant(tag));
+  caml_raise(caml_exception_constant(exn_constr));
 }
 
-CAMLexport void caml_raise_with_arg(value tag, value arg)
+CAMLexport void caml_raise_with_arg(value exn_constr, value arg)
 {
-  caml_raise(caml_exception_with_arg(tag, arg));
+  caml_raise(caml_exception_with_arg(exn_constr, arg));
 }
 
-CAMLexport void caml_raise_with_args(value tag, int nargs, value arg[])
+CAMLexport void caml_raise_with_args(value exn_constr, int nargs, value arg[])
 {
-  caml_raise(caml_exception_with_args(tag, nargs, arg));
+  caml_raise(caml_exception_with_args(exn_constr, nargs, arg));
 }
 
-CAMLexport void caml_raise_with_string(value tag, char const * msg)
+CAMLexport void caml_raise_with_string(value exn_constr, char const * msg)
 {
-  caml_raise(caml_exception_with_string(tag, msg));
+  caml_raise(caml_exception_with_string(exn_constr, msg));
 }
 
 CAMLexport void caml_failwith(char const *msg)
