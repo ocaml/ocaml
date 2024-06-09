@@ -150,9 +150,3 @@ CAMLexport void caml_raise_sys_blocked_io(void)
 {
   caml_raise(caml_exception_sys_blocked_io());
 }
-
-CAMLexport value caml_raise_if_exception(value val)
-{
-  if (Is_exception_result(val)) caml_raise(Extract_exception(val));
-  return val;
-}
