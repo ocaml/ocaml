@@ -81,6 +81,17 @@ _______________
   (Antonin Décimo, review by Nicolás Ojeda Bär, Xavier Leroy, and
    Gabriel Scherer)
 
+- #12269, #12410, #13063: Fix unsafety, deadlocks, and/or leaks should
+  rare errors happen during domain creation and thread
+  creation/registration.
+  (Guillaume Munch-Maccagnoni, review by Gabriel Scherer, B. Szilvasy,
+   Miod Vallat)
+
+- #13227: Audit and fix usage of caml_plat_lock_blocking; there is a
+   possibility that this fixes some deadlocks in some situations
+   involving multiple domains.
+  (Guillaume Munch-Maccagnoni, review by)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously

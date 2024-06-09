@@ -51,8 +51,6 @@
 #include "caml/sys.h"
 #include "caml/memprof.h"
 
-#include "../../runtime/sync_posix.h"
-
 /* "caml/threads.h" is *not* included since it contains the _external_
    declarations for the caml_c_thread_register and caml_c_thread_unregister
    functions. */
@@ -153,7 +151,7 @@ static void thread_lock_release(int dom_id)
 static atomic_uintnat thread_next_id = 0;
 
 /* Forward declarations */
-static value caml_threadstatus_new (void);
+static value caml_threadstatus_new_exn (void);
 static void caml_threadstatus_terminate (value);
 static st_retcode caml_threadstatus_wait (value);
 
@@ -353,13 +351,14 @@ void caml_thread_free_info(caml_thread_t th)
 
 /* Allocate a thread descriptor block. */
 
-static value caml_thread_new_descriptor(value clos)
+static value caml_thread_new_descriptor_exn(value clos)
 {
   CAMLparam1(clos);
   CAMLlocal1(mu);
   value descr;
   /* Create and initialize the termination semaphore */
-  mu = caml_threadstatus_new();
+  mu = caml_threadstatus_new_exn();
+  if (Is_exception_result(mu)) CAMLreturn(mu);
   /* Create a descriptor for the new thread */
   descr = caml_alloc_3(0, Val_long(atomic_fetch_add(&thread_next_id, +1)),
                        clos, mu);
@@ -385,7 +384,7 @@ static caml_thread_t thread_alloc_and_add(void)
 
 /* Remove a thread info block from the list of threads
    and free its resources. */
-static void caml_thread_remove_and_free(caml_thread_t th)
+static void thread_remove_and_free(caml_thread_t th)
 {
   if (th->next == th)
     reset_active(); /* last OCaml thread exiting */
@@ -482,25 +481,31 @@ static void caml_thread_domain_stop_hook(void) {
   };
 }
 
-/* FIXME: this should return an encoded exception for use in
-   domain_thread_func, but the latter is not ready to handle it
-   yet. */
-static void caml_thread_domain_initialize_hook(void)
+static value caml_thread_domain_initialize_hook_exn(void)
 {
-
+  value res = Val_unit;
   caml_thread_t new_thread;
 
   /* OS-specific initialization */
   st_initialize();
 
   int ret = st_masterlock_init(Thread_lock(Caml_state->id));
-  sync_check_error(ret, "caml_thread_domain_initialize_hook");
+  if (ret != 0)
+    return caml_check_error_exn(ret, "caml_thread_domain_initialize_hook");
 
   new_thread =
-    (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));
+    (caml_thread_t) caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
+  if (new_thread == NULL) {
+    res = Make_exception_result(caml_exception_out_of_memory());
+    goto err1;
+  }
 
   new_thread->domain_id = Caml_state->id;
-  new_thread->descr = caml_thread_new_descriptor(Val_unit);
+
+  res = caml_thread_new_descriptor_exn(Val_unit);
+  if (Is_exception_result(res)) goto err2;
+  new_thread->descr = res;
+
   new_thread->next = new_thread;
   new_thread->prev = new_thread;
   new_thread->backtrace_last_exn = Val_unit;
@@ -510,6 +515,13 @@ static void caml_thread_domain_initialize_hook(void)
 
   Active_thread = new_thread;
   caml_memprof_enter_thread(new_thread->memprof);
+  return Val_unit;
+
+ err2:
+  caml_stat_free(new_thread);
+ err1:
+  st_masterlock_destroy(Thread_lock(Caml_state->id));
+  return res;
 }
 
 static void thread_yield(void);
@@ -549,14 +561,15 @@ CAMLprim value caml_thread_initialize(value unit)
   st_tls_newkey(&caml_thread_key);
 
   /* First initialise the systhread chain on this domain */
-  caml_thread_domain_initialize_hook();
+  value res = caml_thread_domain_initialize_hook_exn();
+  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
 
   prev_scan_roots_hook = atomic_exchange(&caml_scan_roots_hook,
                                          caml_thread_scan_roots);
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
   caml_domain_external_interrupt_hook = caml_thread_interrupt_hook;
-  caml_domain_initialize_hook = caml_thread_domain_initialize_hook;
+  caml_domain_initialize_hook_exn = caml_thread_domain_initialize_hook_exn;
   caml_domain_stop_hook = caml_thread_domain_stop_hook;
   caml_atfork_hook = caml_thread_reinitialize;
 
@@ -581,30 +594,24 @@ CAMLprim value caml_thread_cleanup(value unit)
   return Val_unit;
 }
 
+static void thread_destroy_current(caml_thread_t th);
+
 static void thread_detach_from_runtime(void)
 {
   caml_thread_t th = This_thread;
   CAMLassert(th == Active_thread);
-  /* PR#5188, PR#7220: some of the global runtime state may have
-     changed as the thread was running, so we save it in the
-     This_thread data to make sure that the cleanup logic
-     below uses accurate information. */
-  save_runtime_state();
   /* The main domain thread does not go through
      [thread_detach_from_runtime]. There is always one more thread in
      the chain at this point in time. */
   CAMLassert(th->next != th);
   /* Signal that the thread has terminated */
   caml_threadstatus_terminate(Terminated(th->descr));
-  /* Remove signal stack */
-  CAMLassert(th->signal_stack != NULL);
-  caml_free_signal_stack(th->signal_stack);
+  /* Undo thread_init_current */
+  thread_destroy_current(th);
   /* The following also sets Active_thread to a sane value in case the
      backup thread does a GC before the domain lock is acquired
      again. */
-  caml_thread_remove_and_free(th);
-  /* Forget the now-freed thread info */
-  st_tls_set(caml_thread_key, NULL);
+  thread_remove_and_free(th);
   /* Release domain lock */
   thread_lock_release(Caml_state->id);
 }
@@ -614,7 +621,21 @@ static void thread_init_current(caml_thread_t th)
 {
   st_tls_set(caml_thread_key, th);
   restore_runtime_state(th);
+  /* FIXME: deal with errors */
   th->signal_stack = caml_init_signal_stack();
+}
+
+/* Undo thread_init_current */
+static void thread_destroy_current(caml_thread_t th)
+{
+  CAMLassert(th->signal_stack != NULL);
+  caml_free_signal_stack(th->signal_stack);
+  /* PR#5188, PR#7220: some of the global runtime state may have
+     changed as the thread was running, so we save it in the
+     This_thread data to make sure that the cleanup logic
+     uses accurate information. */
+  save_runtime_state();
+  st_tls_set(caml_thread_key, NULL);
 }
 
 /* Create a thread */
@@ -668,6 +689,7 @@ static st_retcode create_tick_thread(void)
 CAMLprim value caml_thread_new(value clos)
 {
   CAMLparam1(clos);
+  CAMLlocal1(res);
 
 #ifndef NATIVE_CODE
   if (caml_debugger_in_use)
@@ -678,22 +700,25 @@ CAMLprim value caml_thread_new(value clos)
      Because of PR#4666, we start the tick thread late, only when we create
      the first additional thread in the current process */
   st_retcode err = create_tick_thread();
-  sync_check_error(err, "Thread.create");
+  caml_check_error(err, "Thread.create");
 
   /* Create a thread info block */
   caml_thread_t th = thread_alloc_and_add();
   if (th == NULL) caml_raise_out_of_memory();
-  th->descr = caml_thread_new_descriptor(clos);
+
+  res = caml_thread_new_descriptor_exn(clos);
+  if (Is_exception_result(res)) goto err;
+  th->descr = res;
 
   err = st_thread_create(NULL, caml_thread_start, (void *) th);
-
-  if (err != 0) {
-    /* Creation failed, remove thread info block from list of threads */
-    caml_thread_remove_and_free(th);
-    sync_check_error(err, "Thread.create");
-  }
+  if (err != 0) { res = caml_check_error_exn(err, "Thread.create"); goto err; }
 
   CAMLreturn(th->descr);
+
+ err:
+  res = Extract_exception(res);
+  thread_remove_and_free(th);
+  caml_raise(res);
 }
 
 /* Register a thread already created from C */
@@ -721,20 +746,26 @@ CAMLexport int caml_c_thread_register(void)
 
   /* Set a thread info block */
   caml_thread_t th = thread_alloc_and_add();
-  /* If it fails, we release the lock and return an error. */
   if (th == NULL) goto out_err;
+
   thread_init_current(th);
+
   /* We can now allocate the thread descriptor on the major heap */
-  th->descr = caml_thread_new_descriptor(Val_unit);  /* no closure */
+  value res = caml_thread_new_descriptor_exn(Val_unit);  /* no closure */
+  if (Is_exception_result(res)) goto out_err2;
+  th->descr = res;
 
   /* Release the domain lock the regular way. Note: we cannot receive
      an exception here. */
   caml_enter_blocking_section_no_pending();
   return 1;
 
-out_err:
-  /* Note: we cannot raise an exception here. */
+ out_err2:
+  thread_destroy_current(th);
+  thread_remove_and_free(th);
+ out_err:
   thread_lock_release(Dom_c_threads);
+  /* Note: we cannot raise an exception here. */
   return 0;
 }
 
@@ -818,7 +849,7 @@ CAMLprim value caml_thread_yield(value unit)
 CAMLprim value caml_thread_join(value th)
 {
   st_retcode rc = caml_threadstatus_wait(Terminated(th));
-  sync_check_error(rc, "Thread.join");
+  caml_check_error(rc, "Thread.join");
   return Val_unit;
 }
 
@@ -849,11 +880,14 @@ static struct custom_operations caml_threadstatus_ops = {
   custom_fixed_length_default
 };
 
-static value caml_threadstatus_new (void)
+static value caml_threadstatus_new_exn(void)
 {
   st_event ts = NULL;           /* suppress warning */
   value wrapper;
-  sync_check_error(st_event_create(&ts), "Thread.create");
+  value ret = st_event_create(&ts);
+  if (ret != 0) return caml_check_error_exn(ret, "Thread.create");
+
+  /* this is a small allocation: no noexc version possible */
   wrapper = caml_alloc_custom(&caml_threadstatus_ops,
                               sizeof(st_event *),
                               0, 1);
