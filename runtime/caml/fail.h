@@ -79,40 +79,55 @@ int caml_is_special_exception(value exn);
 extern "C" {
 #endif
 
-CAMLnoret CAMLextern void caml_raise (value bucket);
+/* The following functions raise immediately into OCaml.
 
-CAMLnoret CAMLextern void caml_raise_constant (value tag);
-
-CAMLnoret CAMLextern void caml_raise_with_arg (value tag, value arg);
-
-CAMLnoret CAMLextern
-void caml_raise_with_args (value tag, int nargs, value arg[]);
-
-CAMLnoret CAMLextern void caml_raise_with_string (value tag, char const * msg);
-
+   The argument [exn_constr] can be obtained using [caml_named_value]
+   from caml/callback.h after registering and naming an exception from
+   OCaml using [Callback.register_exception].
+*/
+CAMLnoret CAMLextern void caml_raise (value exception);
+CAMLnoret CAMLextern void caml_raise_constant (value exn_constr);
+CAMLnoret CAMLextern void caml_raise_with_arg (value exn_constr, value arg);
+CAMLnoret CAMLextern void caml_raise_with_args (value exn_constr,
+                                                int nargs, value arg[]);
+CAMLnoret CAMLextern void caml_raise_with_string (value exn_constr,
+                                                  char const * msg);
 CAMLnoret CAMLextern void caml_failwith (char const *msg);
-
 CAMLnoret CAMLextern void caml_failwith_value (value msg);
-
 CAMLnoret CAMLextern void caml_invalid_argument (char const *msg);
-
 CAMLnoret CAMLextern void caml_invalid_argument_value (value msg);
-
 CAMLnoret CAMLextern void caml_raise_out_of_memory (void);
-
 CAMLnoret CAMLextern void caml_raise_stack_overflow (void);
-
 CAMLnoret CAMLextern void caml_raise_sys_error (value);
-
 CAMLnoret CAMLextern void caml_raise_end_of_file (void);
-
 CAMLnoret CAMLextern void caml_raise_zero_divide (void);
-
 CAMLnoret CAMLextern void caml_raise_not_found (void);
-
 CAMLnoret CAMLextern void caml_array_bound_error (void);
-
 CAMLnoret CAMLextern void caml_raise_sys_blocked_io (void);
+
+/* Non-raising variants of the above functions. The exception is
+   returned as a normal value, which can be raised with [caml_raise],
+   or returned as a value of type [caml_result] using
+   [Result_exception], typically to allow resource clean-up before
+   raising the exception. */
+CAMLextern value caml_exception_constant (value exn_constr);
+CAMLextern value caml_exception_with_arg (value exn_constr, value arg);
+CAMLextern value caml_exception_with_args (value exn_constr,
+                                           int nargs, value arg[]);
+CAMLextern value caml_exception_with_string (value exn_constr,
+                                             char const * msg);
+CAMLextern value caml_exception_failure (char const *msg);
+CAMLextern value caml_exception_failure_value (value msg);
+CAMLextern value caml_exception_invalid_argument (char const *msg);
+CAMLextern value caml_exception_invalid_argument_value (value msg);
+CAMLextern value caml_exception_out_of_memory (void);
+CAMLextern value caml_exception_stack_overflow (void);
+CAMLextern value caml_exception_sys_error (value msg);
+CAMLextern value caml_exception_end_of_file (void);
+CAMLextern value caml_exception_zero_divide (void);
+CAMLextern value caml_exception_not_found (void);
+CAMLextern value caml_exception_array_bound_error (void);
+CAMLextern value caml_exception_sys_blocked_io (void);
 
 /* Returns the value of a [caml_result] or raises the exception.
    This function replaced [caml_raise_if_exception] in 5.3. */

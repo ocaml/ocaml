@@ -49,6 +49,12 @@ _______________
    Guillaume Munch-Maccagnoni and Xavier Leroy,
    suggested by Guillaume Munch-Maccagnoni)
 
+- #12407: Resource-handling improvements: add exception-returning
+  variants for all exception-raising functions in `caml/fail.h`, for
+  the purpose of cleaning-up state and resources before raising.
+  (Guillaume Munch-Maccagnoni, review by Damien Doligez, Xavier Leroy and
+   Gabriel Scherer)
+
 - #13086: Avoid spurious major GC slices.
   (Damien Doligez, report by Stephen Dolan, review by Gabriel Scherer
    and Stephen Dolan)

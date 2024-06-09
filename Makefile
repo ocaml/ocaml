@@ -1128,6 +1128,7 @@ runtime_COMMON_C_SOURCES = \
   domain \
   dynlink \
   extern \
+  fail \
   fiber \
   finalise \
   floats \
