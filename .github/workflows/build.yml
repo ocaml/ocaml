@@ -16,6 +16,8 @@ env:
   # directories are selected because of their tendencies to reach corner cases
   # in the runtime system.
   PARALLEL_TESTS: parallel callback gc-roots weak-ephe-final
+  # Fully print commands executed by Make
+  # MAKEFLAGS: V=1
 
 # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
 # Concurrent workflows are grouped by the PR or branch that triggered them

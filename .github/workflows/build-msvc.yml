@@ -12,6 +12,10 @@ on:
       - 'trunk'
   pull_request:
 
+# env:
+  # Fully print commands executed by Make
+  # MAKEFLAGS: V=1
+
 jobs:
   build:
     permissions: {}
