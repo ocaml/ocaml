@@ -15,6 +15,10 @@
 
 (* Generate an .annot file from a .cmt file. *)
 
+val iterator : scope:Location.t -> bool -> Tast_iterator.iterator
+
+val binary_part : Tast_iterator.iterator -> Cmt_format.binary_part -> unit
+
 val gen_annot :
   string option ->
   sourcefile:string option ->
