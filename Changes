@@ -18,6 +18,10 @@ Working version
   pointers in C code (take 3).
   (Antonin Décimo, review by Stephen Dolan and Miod Vallat)
 
+- #13457: Annotate alloc/free open/close pairs of functions with compiler
+  attributes for static analysis.
+  (Antonin Décimo, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 ### Standard library:
