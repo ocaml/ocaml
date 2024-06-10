@@ -5664,12 +5664,20 @@ and type_application env funct sargs =
         and optional = is_optional l in
         may_warn funct.exp_loc
             (not_principal "applying a dependent function");
+        let rec is_path me =
+          match me.pmod_desc with
+          | Pmod_ident _ -> true
+          | Pmod_constraint (me, _) -> is_path me
+          | Pmod_apply (me1, me2) -> is_path me1 && is_path me2
+          | Pmod_functor _ | Pmod_structure _ | Pmod_apply_unit _
+          | Pmod_unpack _ | Pmod_extension _ -> false
+        in
         let is_packing sarg =
           match sarg.pexp_desc with
-          | Pexp_pack _me -> true
-          | Pexp_constraint ({ pexp_desc = Pexp_pack _me; _},
-                { ptyp_desc = Ptyp_package _pck_ty; _}) ->
-            true
+          | Pexp_pack me
+          | Pexp_constraint ({ pexp_desc = Pexp_pack me; _},
+                { ptyp_desc = Ptyp_package _; _}) ->
+            is_path me
           | _ -> false
         in
         let me_opt =

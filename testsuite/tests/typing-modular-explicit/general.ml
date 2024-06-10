@@ -742,3 +742,47 @@ Warning 18 [not-principal]: this module unpacking is not principal.
 val principality_warning2 :
   (((module T : Typ) -> T.t -> T.t) -> unit) -> unit = <fun>
 |}]
+
+(* This test check that as `t` is private we cannot inline its definition *)
+module type S = sig
+  type t = private int
+  val f : t
+end
+
+let check_escape : _ -> _ = fun (module M : S) -> M.f
+
+[%%expect{|
+module type S = sig type t = private int val f : t end
+Line 6, characters 50-53:
+6 | let check_escape : _ -> _ = fun (module M : S) -> M.f
+                                                      ^^^
+Error: This expression has type "M.t" but an expression was expected of type "'a"
+       The type constructor "M.t" would escape its scope
+|}]
+
+(* The following test should give a warning only once.
+  Here we test that the structure is typed only once.
+  To acheive this we wrote a got that raises a warning. If the warning is raised
+  twice then that means typing happened twice.
+*)
+
+module type TInt = sig type t = int end
+
+let f (module T : TInt) (x : T.t) = x
+
+let raise_principality_warning =
+  f (module struct
+      type t = int
+      let dummy_value = let x = 3 in 0
+    end)
+
+[%%expect{|
+module type TInt = sig type t = int end
+val f : (module T : TInt) -> T.t -> T.t = <fun>
+Line 8, characters 28-29:
+8 |       let dummy_value = let x = 3 in 0
+                                ^
+Warning 26 [unused-var]: unused variable x.
+
+val raise_principality_warning : int -> int = <fun>
+|}]
