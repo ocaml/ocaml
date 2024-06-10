@@ -198,6 +198,10 @@ _______________
 - #13151, name conflicts explanation as a footnote
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #13228: Re-export Cmt2annot.{iterator,binary_part} which had become hidden
+  since #11288 and broke ocamlbrowser.
+  (David Allsopp, report by Jacques Garrigue, review by ??)
+
 ### Internal/compiler-libs changes:
 
 - #11129, #11148: enforce that ppxs do not produce `parsetree`s with
