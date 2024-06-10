@@ -201,7 +201,7 @@ type error =
   | Missing_type_constraint
   | Wrong_expected_kind of wrong_kind_sort * wrong_kind_context * type_expr
   | Expr_not_a_record_type of type_expr
-  | Cannot_infer_functor_path
+  | Cannot_infer_functor_path of Errortrace.unification_error
   | Cannot_commute_label of type_expr
 
 
@@ -5750,8 +5750,7 @@ and type_application env funct sargs =
             | Tmod_constraint (p, _, _, _) ->
                 extract_path p
             | _ ->
-                raise (Error(sarg.pexp_loc, env,
-                              Cannot_infer_functor_path))
+                raise Not_found
           in
           begin
             try
@@ -5766,8 +5765,10 @@ and type_application env funct sargs =
                                       ~p_out:path ~fixed:false t0) in
               let arg = Some ((fun () -> texp), Some sarg.pexp_loc) in
               type_args ((l, arg)::args) ty_res ty_res0 remaining_sargs
-            with Error(_, _, Cannot_infer_functor_path) as err ->
-              unify_to_arrows (fun _trace -> raise err);
+            with Not_found ->
+              unify_to_arrows (fun trace ->
+                    raise (Error(sarg.pexp_loc, env,
+                          Cannot_infer_functor_path trace)));
               type_args args ty_fun ty_fun0 sargs
           end
         | Some _ | None ->
@@ -5788,7 +5789,7 @@ and type_application env funct sargs =
                   loc_ghost = previous_arg_loc.loc_ghost
                                 && funct.exp_loc.loc_ghost
                 } in
-                raise (Error(loc, env, Expr_type_clash(trace, None, None)))
+                raise (Error(loc, env, Cannot_infer_functor_path trace))
             | None ->
                 let ty_res =
                   result_type
@@ -7388,9 +7389,14 @@ let report_error ~loc env = function
         "This expression has type %a@ \
          which is not a record type."
         (Style.as_inline_code Printtyp.type_expr) ty
-  | Cannot_infer_functor_path ->
-      Location.errorf ~loc
-        "Cannot infer path of module for functor."
+  | Cannot_infer_functor_path err ->
+      let sub =
+          [Location.msg "@[Attempted to remove dependency because @ \
+                          could not extract path from module argument.@]"] in
+      report_unification_error ~loc ~sub env err
+        ~type_expected_explanation:Format_doc.Doc.empty
+        (msg "This expression has type")
+        (msg "but an expression was expected of type");
   | Cannot_commute_label func_ty ->
       Location.errorf ~loc
             "@[<v>@[<2>This expression has type@ %a@]@ \

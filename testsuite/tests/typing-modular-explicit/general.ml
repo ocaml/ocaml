@@ -97,6 +97,8 @@ Line 3, characters 2-5:
 Error: This expression has type "(module M : Typ) -> M.t -> 'a * M.t"
        but an expression was expected of type "(module Typ) -> 'b"
        The module "M" would escape its scope
+  Attempted to remove dependency because
+  could not extract path from module argument.
 |}]
 
 
@@ -162,10 +164,14 @@ val principality_warning : Int.t * Int.t = (1, 3)
 let x_from_struct = id (module struct type t = int end) 3
 
 [%%expect{|
-Line 1, characters 23-55:
+Line 1, characters 20-22:
 1 | let x_from_struct = id (module struct type t = int end) 3
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Cannot infer path of module for functor.
+                        ^^
+Error: This expression has type "(module T : Typ) -> T.t -> T.t"
+       but an expression was expected of type "(module Typ) -> 'a"
+       The module "T" would escape its scope
+  Attempted to remove dependency because
+  could not extract path from module argument.
 |}]
 
 
@@ -220,10 +226,15 @@ let s_list_arrayb =
       [|[3; 2]; [2]; []|]
 
 [%%expect{|
-Line 3, characters 6-83:
-3 |       (module MapCombine(struct type 'a t = 'a list let map = List.map end)(Array))
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Cannot infer path of module for functor.
+Line 2, characters 4-7:
+2 |     map
+        ^^^
+Error: This expression has type
+         "(module M : Map) -> ('a -> 'b) -> 'a M.t -> 'b M.t"
+       but an expression was expected of type "(module Map) -> 'c"
+       The module "M" would escape its scope
+  Attempted to remove dependency because
+  could not extract path from module argument.
 |}]
 
 
