@@ -178,7 +178,7 @@ CAMLexport void caml_enter_blocking_section(void)
        done; otherwise, try again. Since we do not hold the domain
        lock, we cannot read [young_ptr] and we cannot call
        [Caml_check_gc_interrupt]. */
-    if (atomic_load_relaxed(&domain->young_limit) != UINTNAT_MAX) break;
+    if (atomic_load_relaxed(&domain->young_limit) != CAML_UINTNAT_MAX) break;
     caml_leave_blocking_section_hook ();
   }
 }

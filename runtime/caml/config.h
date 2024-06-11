@@ -49,6 +49,7 @@
 #ifndef CAML_CONFIG_H_NO_TYPEDEFS
 
 #include <stddef.h>
+#include <limits.h>
 
 #if defined(HAS_LOCALE_H) || defined(HAS_XLOCALE_H)
 #define HAS_LOCALE
@@ -137,7 +138,10 @@ typedef uint64_t uintnat;
 #error "No integer type available to represent pointers"
 #endif
 
-#define UINTNAT_MAX ((uintnat)-1)
+#define CAML_INTNAT_MIN INTPTR_MIN
+#define CAML_INTNAT_MAX INTPTR_MAX
+#define CAML_UINTNAT_MIN UINTPTR_MIN
+#define CAML_UINTNAT_MAX UINTPTR_MAX
 
 #endif /* CAML_CONFIG_H_NO_TYPEDEFS */
 

@@ -558,10 +558,10 @@ CAMLexport void caml_ba_serialize(value v,
   case CAML_BA_COMPLEX64:
     caml_serialize_block_8(b->data, num_elts * 2); break;
   case CAML_BA_CAML_INT:
-    caml_ba_serialize_longarray(b->data, num_elts, -0x40000000, 0x3FFFFFFF);
+    caml_ba_serialize_longarray(b->data, num_elts, INT32_MIN/2, INT32_MAX/2);
     break;
   case CAML_BA_NATIVE_INT:
-    caml_ba_serialize_longarray(b->data, num_elts, -0x80000000, 0x7FFFFFFF);
+    caml_ba_serialize_longarray(b->data, num_elts, INT32_MIN, INT32_MAX);
     break;
   }
   /* Compute required size in OCaml heap.  Assumes struct caml_ba_array

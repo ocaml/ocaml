@@ -82,6 +82,11 @@ _______________
   (Antonin Décimo, review by Nicolás Ojeda Bär, Xavier Leroy, and
    Gabriel Scherer)
 
+- #13083: Use macros from limits.h to avoid signed-integer wrap-around.
+  Introduce CAML_{U,}INTNAT_{MIN,MAX} macros to expose {u,}intnat limits.
+  (Antonin Décimo, review by Nick Barnes, Xavier Leroy, Gabriel Scherer,
+   and Miod Vallat)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously
