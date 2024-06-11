@@ -90,31 +90,26 @@ typedef size_t asize_t;
 CAMLdeprecated_typedef(addr, char *);
 #endif /* CAML_INTERNALS */
 
-/* Noreturn, CAMLnoreturn_start and CAMLnoreturn_end are preserved
-   for compatibility reasons.  Instead, we recommend using the CAMLnoret
-   macro, to be added as a modifier at the beginning of the
-   function definition or declaration.  It must occur first, before
-   "static", "extern", "CAMLexport", "CAMLextern".
+/* The CAMLnoret macro must be added as a modifier at the beginning of
+   the function definition or declaration.  It must occur first,
+   before "static", "extern", "CAMLexport", "CAMLextern".
+
+   Noreturn, CAMLnoreturn_start and CAMLnoreturn_end are preserved for
+   compatibility reasons.
 
    Note: CAMLnoreturn is a different macro defined in memory.h,
    to be used in function bodies rather than as a function attribute.
 */
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202300L    \
-    || defined(__cplusplus) && __cplusplus >= 201103L
+#if __has_c_attribute(noreturn) || defined(__cplusplus)
   #define CAMLnoret [[noreturn]]
-#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-  #define CAMLnoret _Noreturn
-#elif defined(__GNUC__)
-  #define CAMLnoret  __attribute__ ((noreturn))
 #else
-  #define CAMLnoret
+  #define CAMLnoret _Noreturn
 #endif
 
 #define CAMLnoreturn_start CAMLnoret
 #define CAMLnoreturn_end
-
 #ifdef __GNUC__
-  #define Noreturn __attribute__ ((noreturn))
+  #define Noreturn CAMLnoret
 #else
   #define Noreturn
 #endif
