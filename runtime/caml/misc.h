@@ -48,7 +48,7 @@
 #if defined(__GNUC__) || defined(__clang__)
   /* Supported since at least GCC 3.1 */
   #define CAMLdeprecated_typedef(name, type) \
-    typedef type name __attribute ((deprecated))
+    typedef type name __attribute__ ((deprecated))
 #elif defined(_MSC_VER)
   #define CAMLdeprecated_typedef(name, type) \
     typedef __declspec(deprecated) type name
