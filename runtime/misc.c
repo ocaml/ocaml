@@ -15,16 +15,6 @@
 
 #define CAML_INTERNALS
 
-#if defined(_MSC_VER) && _MSC_VER >= 1400 && _MSC_VER < 1700
-/* Microsoft introduced a regression in Visual Studio 2005 (technically it's
-   not present in the Windows Server 2003 SDK which has a pre-release version)
-   and the abort function ceased to be declared __declspec(noreturn). This was
-   fixed in Visual Studio 2012. Trick stdlib.h into not defining abort (this
-   means exit and _exit are not defined either, but they aren't required). */
-#define _CRT_TERMINATE_DEFINED
-__declspec(noreturn) void __cdecl abort(void);
-#endif
-
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>

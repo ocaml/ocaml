@@ -16734,8 +16734,8 @@ fi
   cross_compiling="$old_cross_compiling"
 
 
-  # Check whether fma works (regressed in mingw-w64 8.0.0; present, but broken,
-  # in VS2013-2017 and present but unimplemented in Cygwin64)
+  # Check whether fma works (regressed in mingw-w64 8.0.0; and present but
+  # unimplemented in Cygwin64)
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether fma works" >&5
 printf %s "checking whether fma works... " >&6; }
@@ -16766,7 +16766,7 @@ main (void)
 {
 
   /* Tests 264-266 from testsuite/tests/fma/fma.ml. These tests trigger the
-     broken implementations of Cygwin64, mingw-w64 (x86_64) and VS2013-2017.
+     broken implementations of Cygwin64 and mingw-w64 (x86_64).
      The static volatile variables aim to thwart GCC's constant folding. */
   static volatile double x, y, z;
   volatile double t264, t265, t266;
@@ -16812,17 +16812,7 @@ printf "%s\n" "no" >&6; }
   *,x86_64-w64-mingw32*|*,x86_64-*-cygwin*) :
     hard_error=false ;; #(
   *) :
-    case $ocaml_cc_vendor in #(
-  msvc-*) :
-    if test "${ocaml_cc_vendor#msvc-}" -lt 1920
-then :
-  hard_error=false
-else $as_nop
-  hard_error=true
-fi ;; #(
-  *) :
     hard_error=true ;;
-esac ;;
 esac
     if test x"$hard_error" = "xtrue"
 then :
@@ -16842,26 +16832,7 @@ fi
 else $as_nop
   if test x"$enable_imprecise_c99_float_ops" != "xyes"
 then :
-  case $enable_imprecise_c99_float_ops,$ocaml_cc_vendor in #(
-  no,*) :
-    hard_error=true ;; #(
-  ,msvc-*) :
-    if test "${ocaml_cc_vendor#msvc-}" -lt 1800
-then :
-  hard_error=false
-else $as_nop
-  hard_error=true
-fi ;; #(
-  *) :
-    hard_error=true ;;
-esac
-     if test x"$hard_error" = 'xtrue'
-then :
   as_fn_error $? "C99 float ops unavailable, enable replacements with --enable-imprecise-c99-float-ops" "$LINENO" 5
-else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: C99 float ops unavailable, replacements enabled (ancient Visual Studio)" >&5
-printf "%s\n" "$as_me: WARNING: C99 float ops unavailable, replacements enabled (ancient Visual Studio)" >&2;}
-fi
 fi
 fi
 
