@@ -188,13 +188,18 @@ CAMLdeprecated_typedef(addr, char *);
      CAMLunused_start foo CAMLunused_end;
    which supports both GCC/Clang and MSVC.
 */
-#if defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
-  #define CAMLunused_start __attribute__ ((unused))
+#if __has_c_attribute(maybe_unused)                     \
+    || defined(__cplusplus) && __cplusplus >= 201703L
+  #define CAMLunused [[maybe_unused]]
+  #define CAMLunused_start CAMLunused
   #define CAMLunused_end
+#elif __has_attribute(unused) || defined(__GNUC__)
   #define CAMLunused __attribute__ ((unused))
+  #define CAMLunused_start CAMLunused
+  #define CAMLunused_end
 #elif defined(_MSC_VER)
-  #define CAMLunused_start  __pragma( warning (push) )           \
-    __pragma( warning (disable:4189 ) )
+  #define CAMLunused_start __pragma( warning (push) )   \
+          __pragma( warning (disable:4189 ) )
   #define CAMLunused_end __pragma( warning (pop))
   #define CAMLunused
 #else
