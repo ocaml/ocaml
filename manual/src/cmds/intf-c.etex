@@ -893,10 +893,10 @@ with argument \var{s}.
 \end{itemize}
 
 Raising arbitrary exceptions from C is more delicate: the
-exception identifier is dynamically allocated by the OCaml program, and
+exception constructor is dynamically allocated by the OCaml program, and
 therefore must be communicated to the C function using the
 registration facility described below in section~\ref{ss:c-register-exn}.
-Once the exception identifier is recovered in C, the following
+Once the exception constructor is recovered in C, the following
 functions actually raise the exception:
 \begin{itemize}
 \item "caml_raise_constant("\var{id}")" raises the exception \var{id} with
@@ -1600,16 +1600,16 @@ calls "caml_named_value" only once:
 \subsection{ss:c-register-exn}{Registering OCaml exceptions for use in C functions}
 
 The registration mechanism described above can also be used to
-communicate exception identifiers from OCaml to C. The OCaml code
-registers the exception by evaluating
+communicate exception constructors from OCaml to C. The OCaml code
+registers the exception constructor by evaluating
 "Callback.register_exception" \var{n} \var{exn}, where \var{n} is an
-arbitrary name and \var{exn} is an exception value of the
-exception to register. For example:
+arbitrary name and \var{exn} is an exception value with the
+exception constructor to register. For example:
 \begin{verbatim}
     exception Error of string
     let _ = Callback.register_exception "test exception" (Error "any string")
 \end{verbatim}
-The C code can then recover the exception identifier using
+The C code can then recover the exception constructor using
 "caml_named_value" and pass it as first argument to the functions
 "raise_constant", "raise_with_arg", and "raise_with_string" (described
 in section~\ref{ss:c-exceptions}) to actually raise the exception. For
