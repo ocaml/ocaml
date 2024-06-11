@@ -280,7 +280,7 @@ CAMLnoret CAMLextern void caml_failed_assert (char *, char_os *, int);
 #define CAMLassert(x) ((void) 0)
 #endif
 
-#ifdef __GNUC__
+#if __has_builtin(__builtin_expect) || defined(__GNUC__)
 #define CAMLlikely(e)   __builtin_expect(!!(e), 1)
 #define CAMLunlikely(e) __builtin_expect(!!(e), 0)
 #else
@@ -294,7 +294,8 @@ CAMLnoret CAMLextern void caml_failed_assert (char *, char_os *, int);
 
    CAMLnoalloc at the start of a block means that the GC must not be
    invoked during the block. */
-#if defined(__GNUC__) && defined(DEBUG)
+#if (__has_attribute(cleanup) && __has_attribute(unused) || defined(__GNUC__)) \
+    && defined(DEBUG)
 int caml_noalloc_begin(void);
 void caml_noalloc_end(int*);
 void caml_alloc_point_here(void);
@@ -327,7 +328,7 @@ extern _Atomic fatal_error_hook caml_fatal_error_hook;
 #endif
 
 CAMLnoret CAMLextern void caml_fatal_error (char *, ...)
-#ifdef __GNUC__
+#if __has_attribute(format) || defined(__GNUC__)
   __attribute__ ((format (printf, 1, 2)))
 #endif
 ;
@@ -515,13 +516,13 @@ CAMLextern int caml_read_directory(char_os * dirname,
 extern atomic_uintnat caml_verb_gc;
 
 void caml_gc_log (char *, ...)
-#ifdef __GNUC__
+#if __has_attribute(format) || defined(__GNUC__)
   __attribute__ ((format (printf, 1, 2)))
 #endif
 ;
 
 void caml_gc_message (int, char *, ...)
-#ifdef __GNUC__
+#if __has_attribute(format) || defined(__GNUC__)
   __attribute__ ((format (printf, 2, 3)))
 #endif
 ;
