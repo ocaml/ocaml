@@ -168,6 +168,7 @@ AC_SUBST([stdlib_manpages])
 AC_SUBST([compute_deps])
 AC_SUBST([naked_pointers])
 AC_SUBST([naked_pointers_checker])
+AC_SUBST([ar_supports_response_files])
 
 ## Generated files
 
@@ -517,6 +518,12 @@ AS_CASE([$ocaml_cv_cc_vendor],
     [CPP="$CC -E -Qn"], # suppress generation of Sun PRO ident string
   [msvc-*],
     [CPP="$CC -nologo -EP"])
+
+# Whether ar supports @FILE arguments
+
+AS_CASE([$lt_cv_ar_at_file],
+  [no], [ar_supports_response_files=false],
+  [ar_supports_response_files=true])
 
 # Libraries to build depending on the host
 
