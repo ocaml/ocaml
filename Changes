@@ -27,6 +27,10 @@ OCaml 4.14 maintenance version
   (backport by Boris Dobroslavov, original fix by Nicolás Ojeda Bär, review by
   Xavier Leroy, David Allsopp, Javier Chávarri, Anil Madhavapeddy)
 
+- #12207, #12222: Make closure computation linear in the number of recursive
+  functions instead of quadratic
+  (Vincent Laviron, report by François Pottier, review by Nathanaëlle Courant
+  and Gabriel Scherer)
 
 OCaml 4.14.2 (14 March 2024)
 ----------------------------
