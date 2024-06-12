@@ -102,7 +102,8 @@ _______________
 
 - #13179: Fix evaluation of toplevel lets in classes containing
   local opens
-  (Vincent Laviron)
+  (Vincent Laviron, review by Hugo Heuzard, Nathanaëlle Courant
+   and Gabriel Scherer)
 
 ### Standard library:
 
