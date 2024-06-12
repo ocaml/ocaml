@@ -519,6 +519,44 @@ third-party code, by installing a local <<opam-switch,opam switch>>: opam
 packages tend to be compatible with released versions of the compiler, whereas
 most packages are incompatible with the in-progress development version.
 
+
+=== License
+
+The OCaml distribution in this repository, which includes the OCaml
+compiler and runtime, the OCaml standard library, and some extra
+tools, is licensed under the LGPL version 2.1, with a linking
+exception. See link:LICENSE[] for the full license text. Using the
+https://spdx.org/licenses/[SPDX] standard for license identifiers,
+this is the license "LGPL-2.1 WITH
+https://spdx.org/licenses/OCaml-LGPL-linking-exception.html[OCaml-LGPL-linking-exception]".
+Let us include here a few explanations about the intent of this
+licensing choice -- note that only the license text has legal value.
+
+The broad intent of the LGPL is that if you modify the OCaml
+distribution, and distribute your modified version to your users, then
+you have to provide the source code of your version -- the LGPL, like
+the GPL and unlike the BSD and MIT licenses, is "hereditary"; modified
+versions of LGPL programs must remain free software under the same
+license. (For more general discussion of the LGPL license, see the
+https://www.gnu.org/licenses/gpl-faq.en.html[FAQ] maintained by the
+GNU project.)
+
+On the other hand, if your code is not derived from the OCaml
+distribution, it only uses it, then you can use the licensing terms of
+your choice. We use an explicit "linking exception" precisely to make
+it clear that it is fine to link statically or dynamically with parts
+of the OCaml distribution, typically the OCaml runtime and the
+standard library. Linking exceptions are a common practice for
+language compilers and runtime libraries, for example the GCC project
+uses such an exception. See the
+https://en.wikipedia.org/wiki/GPL_linking_exception[Wikipedia article]
+on linking exceptions for more details.
+
+Finally: If you have your own fork of the OCaml distribution, it must
+be distributed to your own users under the same license
+(LGPL + exception), and your users will also benefit from the linking
+exception.
+
 === Continuous integration
 
 [#check-typo]
