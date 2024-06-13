@@ -149,3 +149,16 @@ Error: This expression has type
        Type "(module T with type t = 'a)" is not compatible with type
          "(module T)"
 |}]
+
+
+(* This test check that no scope escape happens when trying to replace 'a by
+    A.t *)
+type 'a wrapper = 'a
+
+type should_succeed2 =
+  (module A:T) -> A.t wrapper
+
+[%%expect{|
+type 'a wrapper = 'a
+type should_succeed2 = (module A : T) -> A.t wrapper
+|}]

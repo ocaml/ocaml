@@ -553,7 +553,11 @@ let rec check_constraints_rec env loc visited ty =
   | Tfunctor (_, id, (p, fl), ty) ->
       List.iter (fun (_, t) -> check_constraints_rec env loc visited t) fl;
       let mty = !Ctype.modtype_of_package env loc p fl in
-      let env = Env.add_module (Ident.of_unscoped id) Mp_present mty env in
+      let id' = Ident.create_local (Ident.name_unscoped id) in
+      let env = Env.add_module id' Mp_present mty env in
+      let ty = Option.value ~default:ty
+          (Ctype.instance_funct ~id_in:(Ident.of_unscoped id)
+              ~p_out:(Pident id') ~fixed:false ty) in
       check_constraints_rec env loc visited ty
   | Tpoly (ty, tl) ->
       let _, ty = Ctype.instance_poly ~fixed:false tl ty in
