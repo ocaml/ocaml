@@ -11,6 +11,10 @@ on:
 # Restrict the GITHUB_TOKEN
 permissions: {}
 
+#env:
+  # Fully print commands executed by Make
+  # MAKEFLAGS: V=1
+
 # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
 # Concurrent workflows are grouped by the PR or branch that triggered them
 # (github.ref) and the name of the workflow (github.workflow). The
@@ -143,7 +147,7 @@ jobs:
         with:
           persist-credentials: false
       - name: OS Dependencies
-        if: runner.os == 'MacOS'
+        if: runner.os == 'macOS'
         run: brew install parallel
       - name: configure tree
         run: |
