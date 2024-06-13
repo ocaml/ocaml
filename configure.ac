@@ -2371,7 +2371,7 @@ AS_CASE([$host],
   [*-pc-windows],
     [PTHREAD_LIBS=''],
   [AX_PTHREAD(
-    [common_cflags="$common_cflags $PTHREAD_CFLAGS"
+    [
     # The two following lines add flags and libraries for pthread to the
     # global CFLAGS and LIBS variables. This means that all the subsequent
     # tests can rely on the assumption that pthread is enabled.
