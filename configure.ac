@@ -140,8 +140,14 @@ AC_SUBST([arch_specific_SOURCES])
 AC_SUBST([arch64])
 AC_SUBST([model])
 AC_SUBST([system])
+AC_SUBST([bytecode_cflags])
+AC_SUBST([bytecode_cppflags])
 AC_SUBST([native_cflags])
 AC_SUBST([native_cppflags])
+AC_SUBST([oc_bytecode_cflags])
+AC_SUBST([oc_bytecode_cppflags])
+AC_SUBST([oc_native_cflags])
+AC_SUBST([oc_native_cppflags])
 AC_SUBST([systhread_support])
 AC_SUBST([ocamlsrcdir])
 AC_SUBST([unix_or_win32])
@@ -335,6 +341,15 @@ AS_IF([test -n "$csc"],
 AC_ARG_VAR([AS], [which assembler to use])
 AC_ARG_VAR([ASPP], [which assembler (with preprocessor) to use])
 AC_ARG_VAR([PARTIALLD], [how to build partial (relocatable) object files])
+
+AC_ARG_VAR([COMPILER_BYTECODE_CFLAGS],
+  [CFLAGS for compiling C files to be linked with bytecode])
+AC_ARG_VAR([COMPILER_BYTECODE_CPPFLAGS],
+  [CPPFLAGS for compiling C files to be linked with bytecode])
+AC_ARG_VAR([COMPILER_NATIVE_CFLAGS],
+  [CFLAGS for compiling C files to be linked with native code])
+AC_ARG_VAR([COMPILER_NATIVE_CPPFLAGS],
+  [CPPFLAGS for compiling C files to be linked with native code])
 
 # Command-line arguments to configure
 
@@ -1501,7 +1516,8 @@ AS_CASE([$arch],
   [arch_specific_SOURCES=''])
 
 native_cflags=''
-native_cppflags="-DNATIVE_CODE\
+oc_native_cflags=''
+oc_native_cppflags="-DNATIVE_CODE\
  -DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
 AS_CASE([$ccomptype],
   [msvc],
@@ -1856,7 +1872,8 @@ AS_IF([$tsan],
       `$tsan_distinguish_volatile_cflags' flag. Try upgrading to GCC >= 11, or
       to Clang >= 11.]))], [$warn_error_flag])
   tsan_cflags="$tsan_cflags $tsan_distinguish_volatile_cflags"
-  native_cppflags="$native_cppflags $tsan_cppflags"
+  oc_native_cppflags="$oc_native_cppflags $tsan_cppflags"
+  oc_native_cflags="$oc_native_cflags $tsan_cflags"
   native_cflags="$native_cflags $tsan_cflags"
   native_ldflags="$native_ldflags $tsan_ldflags"
   tsan_native_runtime_c_sources="tsan"],
@@ -1895,7 +1912,7 @@ AS_IF([$tsan],
   AS_IF([test x"$LIBUNWIND_LDFLAGS" != x],
     [libunwind_ldflags="$LIBUNWIND_LDFLAGS $libunwind_ldflags"])
 
-  native_cppflags="$native_cppflags $libunwind_cppflags"
+  oc_native_cppflags="$oc_native_cppflags $libunwind_cppflags"
   native_ldflags="$native_ldflags $libunwind_ldflags"
 
   OCAML_CHECK_LIBUNWIND
@@ -2584,8 +2601,20 @@ AS_IF([test "$ccomptype" != "msvc"],
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
-bytecode_cflags="$bytecode_cflags $common_cflags $sharedlib_cflags $CFLAGS"
-bytecode_cppflags="$common_cppflags $CPPFLAGS"
+
+oc_bytecode_cflags="$oc_cflags"
+oc_bytecode_cppflags="$oc_cppflags"
+
+oc_native_cflags="$oc_cflags $oc_native_cflags"
+native_cflags="$common_cflags $native_cflags"
+oc_native_cppflags="$oc_cppflags $oc_native_cppflags"
+
+bytecode_cflags="$common_cflags $sharedlib_cflags\
+ $PTHREAD_CFLAGS $COMPILER_BYTECODE_CFLAGS"
+native_cflags="$native_cflags $PTHREAD_CFLAGS $COMPILER_NATIVE_CFLAGS"
+
+bytecode_cppflags="$common_cppflags $COMPILER_BYTECODE_CPPFLAGS"
+native_cppflags="$common_cppflags $COMPILER_NATIVE_CPPFLAGS"
 
 AS_CASE([$host],
   [*-*-mingw32*],

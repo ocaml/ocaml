@@ -182,14 +182,6 @@ MKLIB=@mklib@
 # C libraries when it needs to be different from the one used to
 # link with bytecode.
 
-# These flags should be passed *in addition* to those in OC_CPPFLAGS, they
-# should not replace them.
-
-OC_NATIVE_CPPFLAGS=@native_cppflags@
-
-# Same as above, for CFLAGS
-OC_NATIVE_CFLAGS=@native_cflags@
-
 NATIVECCLIBS=@cclibs@
 SYSTHREAD_SUPPORT=@systhread_support@
 PACKLD=@PACKLD@$(EMPTY)

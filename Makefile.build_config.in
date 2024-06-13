@@ -63,12 +63,23 @@ INSTALL_OCAMLNAT = @install_ocamlnat@
 DEP_CC=@DEP_CC@ -MM
 COMPUTE_DEPS=@compute_deps@
 
-# Build-system flags to use to compile C files
-OC_CFLAGS=@oc_cflags@
+# Default flags to use to compile C files
+OC_CFLAGS = @oc_cflags@
+
+# Flags to use when compiling C files to be linked with bytecode
+OC_BYTECODE_CFLAGS = @oc_bytecode_cflags@
+
+# Flags to use when compiling C files to be linked with native code
+OC_NATIVE_CFLAGS = @oc_native_cflags@
+
 # The submodules should be searched *before* any other external -I paths
 OC_INCLUDES = $(addprefix -I $(ROOTDIR)/, \
   runtime @flexdll_source_dir@ @winpthreads_source_include_dir@)
 OC_CPPFLAGS = $(OC_INCLUDES) @oc_cppflags@
+
+OC_BYTECODE_CPPFLAGS = $(OC_INCLUDES) @oc_bytecode_cppflags@
+
+OC_NATIVE_CPPFLAGS = $(OC_INCLUDES) @oc_native_cppflags@
 
 # Additional link-time options
 # To support dynamic loading of shared libraries (they need to look at

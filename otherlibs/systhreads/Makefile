@@ -141,7 +141,8 @@ ifeq "$(COMPUTE_DEPS)" "true"
 include $(addprefix $(DEPDIR)/, $(DEP_FILES))
 endif
 
-%.n.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
+%.b.$(D): OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS)
+%.n.$(D): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS)
 
 define GEN_RULE
 $(DEPDIR)/%.$(1).$(D): %.c | $(DEPDIR)
