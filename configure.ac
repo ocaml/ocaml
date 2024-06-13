@@ -908,7 +908,8 @@ AS_CASE([$ocaml_cc_vendor],
     internal_cflags="$cc_warnings"],
   [sunc-*], # Optimization should be >= O4 to inline functions
             # and prevent unresolved externals
-    [common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
+    [common_cflags="-O4 -xc99=all"
+    common_cppflags="-D_XPG6"
     internal_cflags="$cc_warnings"],
   [common_cflags="-O"])
 
