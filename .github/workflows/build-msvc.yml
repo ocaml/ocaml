@@ -12,6 +12,10 @@ on:
       - 'trunk'
   pull_request:
 
+# env:
+  # Fully print commands executed by Make
+  # MAKEFLAGS: V=1
+
 jobs:
   build:
     permissions: {}
@@ -93,13 +97,17 @@ jobs:
           eval $(tools/msvs-promote-path) ;
           if ! ./configure --cache-file=config.cache --host=$HOST CC=$CC ; then
           rm -rf config.cache ;
-          ./configure --cache-file=config.cache --host=$HOST CC=$CC ;
+          failed=0 ;
+          ./configure --cache-file=config.cache --host=$HOST CC=$CC \
+          || failed=$?;
+          if ((failed)) ; then cat config.log ; exit $failed ; fi ;
           fi ;
-          make -j ;
+          make -j || failed=$? ;
+          if ((failed)) ; then make -j1 V=1 ; exit $failed ; fi ;
           runtime/ocamlrun ocamlc -config ;
-          # Don't add indentation or comments, it breaks Bash on
-          # Windows when the yaml text block scalar is processed as a
-          # single line.
+        # Don't add indentation or comments, it breaks Bash on
+        # Windows when the yaml text block scalar is processed as a
+        # single line.
 
       - name: Save Autoconf cache
         uses: actions/cache/save@v4
@@ -118,9 +126,9 @@ jobs:
           awk -f tools/ci/actions/canonicalize-dumpbin.awk runtime/amd64.dump runtime/amd64.dump > runtime/amd64.canonical ;
           git diff --no-index -- runtime/amd64*.canonical ;
           wc -l runtime/amd64*.dump runtime/amd64*.canonical ;
-          # ^ The final wc is there to make sure that the canonical files are
-          # reasonable cleaned-up versions of the raw dumpbins and not simply
-          # empty
+        # ^ The final wc is there to make sure that the canonical files are
+        # reasonable cleaned-up versions of the raw dumpbins and not simply
+        # empty
         if: matrix.x86_64
 
       - name: Run the test suite
