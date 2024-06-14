@@ -107,7 +107,7 @@ let lowest_level = Ident.lowest_scope
    can be added to [leveled_type_pool] when [last_pool] is updated.
    Remark: the only function adding to a pool is [add_to_pool], and
    the only function returning the contents of a pool is [with_new_pool],
-   so that the initial pool can be added to, but new read from. *)
+   so that the initial pool can be added to, but never read from. *)
 
 module IntMap = Map.Make(Int)
 let last_pool = s_table ref []

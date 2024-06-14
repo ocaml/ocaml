@@ -71,7 +71,7 @@ val with_last_pool: level:int -> (unit -> 'a) -> 'a
            the previous level *)
 val add_to_pool: level:int -> transient_expr -> unit
         (* Add a type node to the pool associated to the level.
-           Does nothing if [level < generic_level] or [level = lowest_level]. *)
+           Does nothing if [level = generic_level] or [level = lowest_level]. *)
 
 val newty3: level:int -> scope:int -> type_desc -> type_expr
         (* Create a type with a fresh id *)
