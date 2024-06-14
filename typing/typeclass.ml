@@ -1025,7 +1025,7 @@ and class_structure cl_num virt self_scope final val_env met_env loc
         raise(Error(loc, val_env, Closing_self_type sign));
   end;
   (* Typing of method bodies *)
-  Ctype.generalize_class_signature_spine val_env sign;
+  Ctype.generalize_class_signature_spine sign;
   let self_var_kind =
     match virt with
     | Virtual -> Self_virtual(ref meths)

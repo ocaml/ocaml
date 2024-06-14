@@ -729,7 +729,16 @@ let duplicate_class_type ty =
                          (*****************************)
 
 
-(* Generalize the spine of a function, if the level >= !current_level *)
+(*
+   Build a copy of a type in which nodes reachable through a path composed
+   only of Tarrow, Tpoly, Ttuple, Tpackage and Tconstr, and whose level
+   was no lower than [!current_level], are at [generic_level].
+   This is different from [with_local_level_gen], which generalizes in place,
+   and only nodes with a level higher than [!current_level].
+   This is used for typing classes, to indicate which types have been
+   inferred in the first pass, and can be considered as "known" during the
+   second pass.
+ *)
 
 let rec copy_spine copy_scope ty =
   match get_desc ty with
@@ -3723,7 +3732,7 @@ let close_class_signature env sign =
   let self = expand_head env sign.csig_self in
   close env (object_fields self)
 
-let generalize_class_signature_spine _env sign =
+let generalize_class_signature_spine sign =
   (* Generalize the spine of methods *)
   sign.csig_meths <-
     Meths.map (fun (priv, virt, ty) -> priv, virt, copy_spine ty)

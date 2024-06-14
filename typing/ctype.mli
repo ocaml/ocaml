@@ -145,7 +145,7 @@ val lower_variables_only: Env.t -> int -> type_expr -> unit
         (* Lower all variables to the given level *)
 val enforce_current_level: Env.t -> type_expr -> unit
         (* Lower whole type to !current_level *)
-val generalize_class_signature_spine: Env.t -> class_signature -> unit
+val generalize_class_signature_spine: class_signature -> unit
        (* Special function to generalize methods during inference *)
 val limited_generalize: type_expr -> inside:type_expr -> unit
         (* Only generalize some part of the type
