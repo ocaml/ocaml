@@ -203,12 +203,18 @@ let with_local_level_gen ~begin_def ~structure ?before_generalize f =
   let result, pool = wrap_end_def_new_pool f in
   Option.iter (fun g -> g result) before_generalize;
   simple_abbrevs := Mnil;
-  (* Nodes in [pool] were either created in the current scope, or added
-     to the pool by [update_level] after calling [set_level] inside the
-     current scope. Since backtracking can only go back to  a state before
-     this scope, there is no need to register them for backtracking when
-     we change their level with [Transient_expr.set_level] *)
+  (* Nodes in [pool] were either created by the above call to [f],
+     or they where created before, generalized, and then added to
+     the pool by [update_level].
+     In the latter case, their level was already kept for backtracking
+     by a call to [set_level] inside [update_level].
+     Since backtracking can only go back to a snapshot taken before [f] was
+     called, this means that either they did not exists in that snapshot,
+     or that they original level is already stored, so that there is no need
+     to register levels for backtracking when we change them with
+     [Transient_expr.set_level] here *)
   List.iter begin fun ty ->
+    if ty.level = generic_level then () else
     match ty.desc with
     | Tvar _ when structure && ty.level >= level ->
         let old_level = !current_level in
@@ -216,7 +222,6 @@ let with_local_level_gen ~begin_def ~structure ?before_generalize f =
         add_to_pool ~level:old_level ty
     | Tlink _ -> ()
     | _ ->
-        if ty.level >= generic_level then () else
         if ty.level >= level then begin
           Transient_expr.set_level ty generic_level;
           match ty.desc with
