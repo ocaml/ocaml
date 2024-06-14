@@ -94,11 +94,12 @@ AC_DEFUN([OCAML_SIGNAL_HANDLERS_SEMANTICS], [
   )
 ])
 
+dnl $1: extra CFLAGS
 AC_DEFUN([OCAML_CC_SUPPORTS_TREE_VECTORIZE], [
   AC_MSG_CHECKING(
  [whether the C compiler supports __attribute__((optimize("tree-vectorize")))])
   saved_CFLAGS="$CFLAGS"
-  CFLAGS="-Werror $CFLAGS"
+  CFLAGS="$1 $CFLAGS"
   AC_COMPILE_IFELSE(
     [AC_LANG_PROGRAM(
       [[__attribute__((optimize("tree-vectorize"))) void f(void) {}]],
