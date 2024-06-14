@@ -4002,17 +4002,19 @@ let moregen inst_nongen type_pairs env patt subj =
    is unimportant.  So, no need to propagate abbreviations.
 *)
 let moregeneral env inst_nongen pat_sch subj_sch =
-  (* Start at level [subject_level - 1] so that we only generalize nodes
-     at level [subject_level] *)
+  (* Moregen splits the generic level into two finer levels:
+     [generic_level] and [subject_level = generic_level - 1].
+     In order to properly detect and print weak variables when
+     printing errors, we need to merge those levels back together.
+     We do that by starting at level [subject_level - 1], using
+     [with_local_level_generalize] to first set the current level
+     to [subject_level], and then generalize nodes at [subject_level]
+     on exit.
+     Strictly speaking, we could avoid generalizing when there is no error,
+     as nodes at level [subject_level] are never unified with nodes of
+     the original types, but that would be rather ad hoc.
+ *)
   with_level ~level:(subject_level - 1) begin fun () ->
-    (* Moregen splits the generic level into two finer levels:
-       [generic_level] and [subject_level].  In order to properly
-       detect and print weak variables when printing errors, we need to
-       merge them back together, by regeneralizing the levels of the types
-       after they were instantiated at [subject_level] above.  Because
-       [moregen] does some unification that we need to preserve for more
-       legible error messages, we rely on automatic generalization
-       rather than backtracking. *)
     match with_local_level_generalize begin fun () ->
       assert (!current_level = subject_level);
       (*
@@ -4491,15 +4493,19 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
   let errors = match_class_sig_shape ~strict:false sign1 sign2 in
   match errors with
   | [] ->
+      (* Moregen splits the generic level into two finer levels:
+         [generic_level] and [subject_level = generic_level - 1].
+         In order to properly detect and print weak variables when
+         printing errors, we need to merge those levels back together.
+         We do that by starting at level [subject_level - 1], using
+         [with_local_level_generalize] to first set the current level
+         to [subject_level], and then generalize nodes at [subject_level]
+         on exit.
+         Strictly speaking, we could avoid generalizing when there is no error,
+         as nodes at level [subject_level] are never unified with nodes of
+         the original types, but that would be rather ad hoc.
+       *)
       with_level ~level:(subject_level - 1) begin fun () ->
-        (* Moregen splits the generic level into two finer levels:
-           [generic_level] and [subject_level].  In order to properly
-           detect and print weak variables when printing errors, we need to
-           merge them back together, by regeneralizing the levels of the types
-           after they were instantiated at [subject_level] above.  Because
-           [moregen] does some unification that we need to preserve for more
-           legible error messages, we rely on automatic generalization
-           rather than backtracking. *)
         with_local_level_generalize begin fun () ->
           assert (!current_level = subject_level);
           (*
