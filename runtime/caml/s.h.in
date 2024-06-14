@@ -313,3 +313,9 @@
 #undef HAS_BSD_GETAFFINITY_NP
 
 #undef HAS_ZSTD
+
+/* 3. Language extensions. */
+
+#undef HAVE_LABELS_AS_VALUES
+
+/* Define if the C compiler supports the labels as values extension. */

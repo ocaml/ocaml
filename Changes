@@ -87,6 +87,10 @@ _______________
   (Antonin Décimo, review by Nick Barnes, Xavier Leroy, Gabriel Scherer,
    and Miod Vallat)
 
+- #13239: Check whether the compiler supports the labels as values
+  extension to enable threaded code interpretation.
+  (Antonin Décimo, review by Miod Vallat)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously

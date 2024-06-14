@@ -161,10 +161,9 @@ typedef uint64_t uintnat;
 #endif
 
 
-/* We use threaded code interpretation if the compiler provides labels
-   as first-class values (GCC 2.x). */
-
-#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG)
+/* We use threaded code interpretation if the C compiler supports the labels as
+   values extension. */
+#if defined(HAVE_LABELS_AS_VALUES) && !defined(DEBUG)
 #define THREADED_CODE
 #endif
 
