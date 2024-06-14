@@ -1,3 +1,63 @@
+OCaml 5.2.0 (13 May 2024)
+------------------------
+
+OCaml 5.2.0 is still a somewhat experimental release compared to the OCaml 4.14
+branch. Some of the highlights in OCaml 5.2.0 are:
+
+- Re-introduced GC compaction
+- Restored native backend for POWER 64 bits
+- Thread sanitizer support
+- New Dynarray module
+- New -H flag for hidden include directories
+- Project-wide occurence metadata support for developer tools
+- Raw identifiers
+- Local open in type expressions
+
+And a lot of incremental changes:
+
+- Around 20 new functions in the standard library
+- Many fixes and improvements in the runtime
+- Many bug fixes
+
+OCaml 5.1.0 (14 September 2023)
+-------------------------------
+
+OCaml 5.1.0 is still a relatively experimental release compared to the OCaml
+4.14 branch. Some of the highlights in OCaml 5.1.0 are:
+
+-  Many runtime performance regression and memory-leaks fixes
+    (dynlinking, weak arrays, weak hash sets, GC with idle domains,
+     and GC prefetching).
+- Restored support for native code generation on RISC-V and s390x architectures.
+- Restored Cygwin port.
+- Reduced installation size (50% reduction)
+- Compressed compilation artefacts (.cmi, .cmt, .cmti, .cmo, .cma files)
+- 19 error message improvements
+- 14 standard library functions made tail-recursive
+  with Tail-Recursion-Modulo-Cons (TRMC), such as List.append and List.map.
+- 57 new standard library functions
+- More examples in the standard library documentation
+- 42 bug fixes
+
+
+OCaml 5.0.0 (15 December 2022)
+------------------------------
+
+OCaml 5.0.0 introduces a completely new runtime environment with support for
+shared memory parallelism and effect handlers.
+
+As a language, OCaml 5 is fully compatible with OCaml 4 down to the performance
+characteristics of your programs. In other words, any code that works with OCaml
+4 should work the same with OCaml 5.
+
+The currently known exceptions to this rule are:
+
+- the removal of many long-deprecated functions and modules
+- changes to the internal runtime API
+- the performance of ephemerons is currently (and temporarily) strongly
+  degraded.
+
+
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
 
