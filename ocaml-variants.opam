@@ -1,7 +1,7 @@
 opam-version: "2.0"
 version: "5.0.1+trunk"
 license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
-synopsis: "OCaml development version"
+synopsis: "OCaml 5.0 development version"
 maintainer: "caml-list@inria.fr"
 authors: [
   "Xavier Leroy"
@@ -14,55 +14,104 @@ authors: [
 homepage: "https://github.com/ocaml/ocaml/"
 bug-reports: "https://github.com/ocaml/ocaml/issues"
 depends: [
+  # This is OCaml 5.0.1
   "ocaml" {= "5.0.1" & post}
+
+  # General base- packages
   "base-unix" {post}
   "base-bigarray" {post}
   "base-threads" {post}
   "base-domains" {post}
+  "base-nnp" {post}
+
+  # Architecture (non-Windows)
+  # opam-repository at present requires that ocaml-base-compiler is installed
+  # using an architecture which matches the machine's, since arch is used in
+  # available fields. Cross-compilation at this stage is an unstable accident.
+  "host-arch-arm32" {arch = "arm32" & post}
+  "host-arch-arm64" {arch = "arm64" & post}
+  "host-arch-ppc64" {arch = "ppc64" & post}
+  "host-arch-riscv64" {arch = "riscv64" & post}
+  "host-arch-s390x" {arch = "s390x" & post}
+  # The Windows ports explicitly select the architecture (see below) this
+  # facility is not yet available for other platforms.
+  "host-arch-x86_32" {os != "win32" & arch = "x86_32" & post}
+  ("host-arch-x86_64" {os != "win32" & arch = "x86_64" & post} |
+   ("host-arch-x86_32" {os != "win32" & arch = "x86_64" & post} & "ocaml-option-32bit" {os != "win32" & arch = "x86_64"}))
+  "host-arch-unknown" {os != "win32" & arch != "arm32" & arch != "arm64" & arch != "ppc64" & arch != "riscv64" & arch != "s390x" & arch != "x86_32" & arch != "x86_64" & post}
+
+  # Port selection (Windows)
+  # amd64 mingw-w64 only
+  (("arch-x86_64" {os = "win32" & arch = "x86_64"} &
+     "system-mingw" & "mingw-w64-shims" {os-distribution = "cygwin" & post}) |
+  # i686 mingw-w64 only
+   ("arch-x86_32" {os = "win32"} & "ocaml-option-bytecode-only" {os = "win32"} &
+     "system-mingw" & "mingw-w64-shims" {os-distribution = "cygwin" & post}) |
+  # Non-Windows systems
+   "host-system-other" {os != "win32" & post})
+
+  # Only amd64 and arm64 support the native compiler
+  "ocaml-option-bytecode-only" {arch != "arm64" & arch != "x86_64"}
+
+  # Support Packages
+  "flexdll" {>= "0.42" & os = "win32"}
 ]
 conflict-class: "ocaml-core-compiler"
 flags: compiler
+build-env: [
+  [MSYS2_ARG_CONV_EXCL = "*"]
+  [LSAN_OPTIONS = "detect_leaks=0,exitcode=0"]
+  [ASAN_OPTIONS = "detect_leaks=0,exitcode=0"]
+]
 build: [
   [
     "./configure"
+    "--host=x86_64-w64-mingw32" {os-distribution = "cygwin" & system-mingw:installed & arch-x86_64:installed}
+    "--host=i686-w64-mingw32"   {os-distribution = "cygwin" & system-mingw:installed & arch-x86_32:installed}
     "--prefix=%{prefix}%"
     "--docdir=%{doc}%/ocaml"
+    "--with-flexdll=%{flexdll:share}%" {os = "win32" & flexdll:installed}
+    "-C"
     "--with-afl" {ocaml-option-afl:installed}
     "--disable-native-compiler" {ocaml-option-bytecode-only:installed}
     "--disable-flat-float-array" {ocaml-option-no-flat-float-array:installed}
     "--enable-flambda" {ocaml-option-flambda:installed}
-    "--enable-frame-pointers" {ocaml-option-fp:installed}
     "CC=cc" {!ocaml-option-32bit:installed & !ocaml-option-musl:installed & (os="openbsd"|os="macos")}
     "CC=musl-gcc" {ocaml-option-musl:installed & os-distribution!="alpine"}
     "CFLAGS=-Os" {ocaml-option-musl:installed}
-    #"CC=gcc -m32" {ocaml-option-32bit:installed & os="linux"}
-    #"CC=gcc -Wl,-read_only_relocs,suppress -arch i386 -m32" {ocaml-option-32bit:installed & os="macos"}
+    "LDFLAGS=-Wl,--no-as-needed,-ldl" {ocaml-option-leak-sanitizer:installed | (ocaml-option-address-sanitizer:installed & os!="macos")}
+    "CC=gcc -ldl -fsanitize=leak -fno-omit-frame-pointer -O1 -g" {ocaml-option-leak-sanitizer:installed}
+    "CC=gcc -ldl -fsanitize=address -fno-omit-frame-pointer -O1 -g" {ocaml-option-address-sanitizer:installed & os!="macos"}
+    "CC=clang -fsanitize=address -fno-omit-frame-pointer -O1 -g" {ocaml-option-address-sanitizer:installed & os="macos"}
+    "CC=gcc -m32" {ocaml-option-32bit:installed & os="linux"}
+    "CC=gcc -Wl,-read_only_relocs,suppress -arch i386 -m32" {ocaml-option-32bit:installed & os="macos"}
     "ASPP=cc -c" {!ocaml-option-32bit:installed & !ocaml-option-musl:installed & (os="openbsd"|os="macos")}
     "ASPP=musl-gcc -c" {ocaml-option-musl:installed & os-distribution!="alpine"}
-    #"ASPP=gcc -m32 -c" {ocaml-option-32bit:installed & os="linux"}
-    #"ASPP=gcc -arch i386 -m32 -c" {ocaml-option-32bit:installed & os="macos"}
-    #"AS=as --32" {ocaml-option-32bit:installed & os="linux"}
-    #"AS=as -arch i386" {ocaml-option-32bit:installed & os="macos"}
-    #"--host=i386-linux" {ocaml-option-32bit:installed & os="linux"}
-    #"--host=i386-apple-darwin13.2.0" {ocaml-option-32bit:installed & os="macos"}
-    #"PARTIALLD=ld -r -melf_i386" {ocaml-option-32bit:installed & os="linux"}
-    # 32bit options above commented out just to reduce diff with ocaml-variants.4.12.0+options
+    "ASPP=gcc -m32 -c" {ocaml-option-32bit:installed & os="linux"}
+    "ASPP=gcc -arch i386 -m32 -c" {ocaml-option-32bit:installed & os="macos"}
+    "AS=as --32" {ocaml-option-32bit:installed & os="linux"}
+    "AS=as -arch i386" {ocaml-option-32bit:installed & os="macos"}
+    "--host=i386-linux" {ocaml-option-32bit:installed & os="linux"}
+    "--host=i386-apple-darwin13.2.0" {ocaml-option-32bit:installed & os="macos"}
+    "PARTIALLD=ld -r -melf_i386" {ocaml-option-32bit:installed & os="linux"}
     "LIBS=-static" {ocaml-option-static:installed}
+    "--disable-warn-error"
   ]
   [make "-j%{jobs}%"]
 ]
 install: [make "install"]
 conflicts: [
-  "ocaml-option-32bit"      # Not yet implemented
-  "ocaml-option-nnpchecker" # Fundamentally not possible
-  "ocaml-option-default-unsafe-string" # Not supported since 5.0
+  "ocaml-option-fp"
+  "system-msvc"
 ]
 depopts: [
+  "ocaml-option-32bit"
   "ocaml-option-afl"
   "ocaml-option-bytecode-only"
   "ocaml-option-no-flat-float-array"
   "ocaml-option-flambda"
-  "ocaml-option-fp"
   "ocaml-option-musl"
+  "ocaml-option-leak-sanitizer"
+  "ocaml-option-address-sanitizer"
   "ocaml-option-static"
 ]
