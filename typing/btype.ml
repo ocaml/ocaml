@@ -127,25 +127,20 @@ let pool_of_level level =
 (* Create a new pool at given level, and use it locally.
    We need first to add the deferred levels to leveled_type_pool *)
 let with_new_pool ~level f =
-  let old_type_pool = !leveled_type_pool and old_added_levels = !added_levels in
-  let old_level = !last_level and old_pool = !last_pool in
-  leveled_type_pool :=
+  let old_pool = !last_pool in
+  let new_pool_map =
     List.fold_left (fun otp level -> IntMap.add level old_pool otp)
-      old_type_pool old_added_levels;
-  let pool = ref [] in
-  last_level := level;
-  last_pool := pool;
-  added_levels := [level];
+      !leveled_type_pool !added_levels
+  and pool = ref [] in
   let r =
-    Misc.try_finally f ~always:
-      (fun () ->
-        leveled_type_pool := old_type_pool;
-        added_levels := old_added_levels;
-        last_level := old_level;
-        last_pool := old_pool)
+    Misc.protect_refs
+      [ R(leveled_type_pool, new_pool_map);
+        R(last_level, level);
+        R(last_pool, pool);
+        R(added_levels, [level]) ]
+      f
   in
-  let p = !pool in
-  (r, p)
+  (r, !pool)
 
 (* Since we reuse [last_pool], just add a deferred level *)
 let register_last_pool ~level =
@@ -154,9 +149,7 @@ let register_last_pool ~level =
 (* Register a level locally *)
 let with_last_pool ~level f =
   if level >= generic_level then f () else
-  let old_added_levels = !added_levels in
-  register_last_pool ~level;
-  Misc.try_finally f ~always:(fun () -> added_levels := old_added_levels)
+  Misc.protect_refs [R(added_levels, level :: !added_levels)] f
 
 let add_to_pool ~level ty =
   if level >= generic_level || level <= lowest_level then () else

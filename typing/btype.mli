@@ -66,12 +66,17 @@ val with_new_pool: level:int -> (unit -> 'a) -> 'a * transient_expr list
         (* [with_new_pool ~level f] executes [f] and returns the nodes
            that were created at level [level] and above *)
 val register_last_pool: level:int -> unit
+        (* Register [level] so that its nodes are added to the same pool as
+           the previous level. Active until we leave an enclosing
+           [with_new_pool] or [with_last_pool]. *)
 val with_last_pool: level:int -> (unit -> 'a) -> 'a
-        (* register [level] so that its nodes are added to the same pool as
-           the previous level *)
+        (* [with_new_pool ~level f] executes [f] adding nodes at level [level]
+           to the pool of the previous level, so that they are returned by
+           the enclosing `with_new_pool` *)
 val add_to_pool: level:int -> transient_expr -> unit
-        (* Add a type node to the pool associated to the level.
-           Does nothing if [level = generic_level] or [level = lowest_level]. *)
+        (* Add a type node to the pool associated to the level (which should
+           be the level of the type node).
+           Do nothing if [level = generic_level] or [level = lowest_level]. *)
 
 val newty3: level:int -> scope:int -> type_desc -> type_expr
         (* Create a type with a fresh id *)
