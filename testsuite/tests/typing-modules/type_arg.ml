@@ -262,3 +262,10 @@ Line 1, characters 24-30:
 Error: This expression creates fresh types.
        It is not allowed inside applicative functors.
 |}]
+
+(* Here we check that we don't have a scope escape of 'a inside the path. *)
+let id (type a) (x : List(type a).t) = x
+
+[%%expect{|
+val id : 'a list -> 'a list = <fun>
+|}]
