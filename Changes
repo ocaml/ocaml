@@ -141,6 +141,20 @@ _______________
    review by KC Sivaramakrishnan, Miod Vallat and Nicolás Ojeda Bär,
    report by Vesa Karvonen)
 
+* #13240: Add Uchar.seeded_hash, Change Uchar.hash implementation.
+  Previously, Uchar.hash was aliased to Uchar.to_int. If you need that behavior,
+  change your module instantiation from eg `module HT = Hashtbl.Make(Uchar)` to
+  ```
+    module HT = Hashtbl.Make(struct
+      ...
+      let hash = Uchar.to_int
+    end)
+  ```
+  If the current implementation is desired, and you have a hashtable module `HT`
+  (produced with the `Make` functor) in persistent storage, use `HT.rebuild` to
+  ensure it doesn't break when reading from or writing to buckets.
+  (Hazem ElMasry, review by Gabriel Scherer and Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 ### Tools:
