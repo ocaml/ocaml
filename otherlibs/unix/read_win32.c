@@ -103,3 +103,35 @@ CAMLprim value caml_unix_read_bigarray(value fd, value vbuf,
   }
   CAMLreturn(Val_int(numread));
 }
+
+intnat caml_unix_nonblock_read(value fd, value buf, intnat ofs, intnat len)
+{
+  intnat ret = -1;
+
+  if (Descr_kind_val(fd) == KIND_SOCKET) {
+    SOCKET s = Socket_val(fd);
+    ret = recv(s, &Byte(buf, ofs), len, 0);
+    if (ret == SOCKET_ERROR) ret = -1;
+  } else {
+    HANDLE h = Handle_val(fd);
+    DWORD readwords;
+    if (ReadFile(h, &Byte(buf, ofs), len, &readwords, NULL))
+      ret = readwords;
+    else {
+      DWORD err = GetLastError();
+      if (err == ERROR_BROKEN_PIPE) {
+        // The write handle for an anonymous pipe has been closed. We match the
+        // Unix behavior, and treat this as a zero-read instead of a Unix_error.
+        ret = 0;
+      }
+    }
+  }
+  return ret;
+}
+
+CAMLprim value caml_byte_unix_nonblock_read(value fd, value buf, value vofs,
+					    value vlen) {
+  CAMLparam0();
+  CAMLreturn(Val_int(caml_unix_nonblock_read(fd,buf,Int_val(vofs),
+					     Int_val(vlen))));
+}

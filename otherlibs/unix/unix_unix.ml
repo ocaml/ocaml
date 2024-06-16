@@ -192,6 +192,8 @@ let handle_unix_error f arg =
     prerr_endline (error_message err);
     exit 2
 
+external raise_unix_error : string -> string -> 'a = "caml_unix_uerror"
+
 external environment : unit -> string array = "caml_unix_environment"
 external unsafe_environment : unit -> string array
                             = "caml_unix_environment_unsafe"
@@ -261,6 +263,10 @@ external unsafe_read : file_descr -> bytes -> int -> int -> int
 external unsafe_read_bigarray :
   file_descr -> _ Bigarray.Array1.t -> int -> int -> int
   = "caml_unix_read_bigarray"
+external unsafe_nonblock_read :
+  file_descr -> bytes -> (int [@untagged]) -> (int [@untagged])
+  -> (int [@untagged])
+  = "caml_byte_unix_nonblock_read" "caml_unix_nonblock_read" [@@noalloc]
 external unsafe_write : file_descr -> bytes -> int -> int -> int
                       = "caml_unix_write"
 external unsafe_write_bigarray :
@@ -268,6 +274,11 @@ external unsafe_write_bigarray :
   = "caml_unix_write_bigarray"
 external unsafe_single_write : file_descr -> bytes -> int -> int -> int
    = "caml_unix_single_write"
+external unsafe_nonblock_single_write :
+  file_descr -> bytes -> (int [@untagged]) -> (int [@untagged])
+  -> (int [@untagged])
+  = "caml_byte_unix_nonblock_single_write" "caml_unix_nonblock_single_write"
+      [@@noalloc]
 
 let read fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
@@ -277,6 +288,12 @@ let read_bigarray fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bigarray.Array1.dim buf - len
   then invalid_arg "Unix.read_bigarray"
   else unsafe_read_bigarray fd buf ofs len
+let nonblock_read fd buf ofs len =
+  if ofs < 0 || len < 0 || ofs+len > Bytes.length buf then
+    invalid_arg "Unix.nonblock_read";
+  let ret = unsafe_nonblock_read fd buf ofs len in
+  if ret == -1 then raise_unix_error "Unix.nonblock_read" "";
+  ret
 let write fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
   then invalid_arg "Unix.write"
@@ -296,6 +313,12 @@ let single_write_bigarray fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bigarray.Array1.dim buf - len
   then invalid_arg "Unix.single_write_bigarray"
   else unsafe_write_bigarray fd buf ofs len ~single:true
+let nonblock_single_write fd buf ofs len =
+  if ofs < 0 || len < 0 || ofs+len > Bytes.length buf then
+    invalid_arg "Unix.nonblock_single_write";
+  let ret = unsafe_nonblock_single_write fd buf ofs len in
+  if ret == -1 then raise_unix_error "Unix.nonblock_single_write" "";
+  ret
 
 let write_substring fd buf ofs len =
   write fd (Bytes.unsafe_of_string buf) ofs len

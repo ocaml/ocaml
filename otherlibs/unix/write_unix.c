@@ -113,3 +113,17 @@ CAMLprim value caml_unix_single_write(value fd, value buf, value vofs,
   }
   CAMLreturn(Val_int(ret));
 }
+
+intnat caml_unix_nonblock_single_write(value fd, value buf, intnat ofs,
+				       intnat len)
+{
+  return write(Int_val(fd), &Byte(buf, ofs), len);
+}
+
+CAMLprim value caml_byte_unix_nonblock_single_write(value fd, value buf,
+						    value vofs,
+                                   value vlen) {
+  CAMLparam0();
+  CAMLreturn(Val_int(caml_unix_nonblock_single_write(fd,buf,Int_val(vofs),
+                                                 Int_val(vlen))));
+}

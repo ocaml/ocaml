@@ -143,6 +143,10 @@ _______________
 
 ### Other libraries:
 
+- #13024: add [Unix.nonblock_single_write] and [Unix.nonblock_single_read] that
+  do not release the global lock nor copy bytes.
+  (Christophe Raffalli, review by Olivier Nicole)
+
 ### Tools:
 
 - #11716: ocamllex: mismatched parentheses and curly brackets are now caught
