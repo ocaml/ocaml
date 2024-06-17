@@ -726,7 +726,6 @@ static void intern_rec(struct caml_intern_state* s,
      may crash. */
   *dest = v;
   break;
-  default: CAMLunreachable();
   }
   }
   /* We are done. Cleanup the stack and leave the function */
