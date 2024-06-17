@@ -197,6 +197,8 @@ let wrap_end_def_new_pool f =
 let wrap_end_def f =
   wrap_end_def_gen (fun _ -> with_last_pool ~level:!current_level f)
 
+(* [with_local_level_gen] handles both the scoping structure of levels
+   and automatic generalization through pools (cf. btype.ml) *)
 let with_local_level_gen ~begin_def ~structure ?before_generalize f =
   begin_def ();
   let level = !current_level in
@@ -217,22 +219,35 @@ let with_local_level_gen ~begin_def ~structure ?before_generalize f =
     if ty.level = generic_level then () else
     match ty.desc with
     | Tvar _ when structure && ty.level >= level ->
+        (* In structure mode, we do do not generalize type variables,
+           so we need to lower their level.
+           The goal of this mode is to allow unsharing inner nodes
+           without introducing polymorphism *)
         let old_level = !current_level in
         Transient_expr.set_level ty old_level;
         add_to_pool ~level:old_level ty
     | Tlink _ -> ()
-    | _ ->
-        if ty.level >= level then begin
+        (* If a node is no longer used of representative, no need
+           to track it anymore *)
+    | _ ->        
+        if ty.level < level then
+          (* If a node was introduced locally, but its level was lowered
+             through unification, keeping that node as representative,
+             then we need to move it to an outer pool. *)
+          add_to_pool ~level:ty.level ty
+        else begin
+          (* Generalize all remaining nodes *)
           Transient_expr.set_level ty generic_level;
-          match ty.desc with
-            Tconstr (_, _, abbrev) when structure ->
+          if structure then match ty.desc with
+            Tconstr (_, _, abbrev) ->
+              (* In structure mode, we drop abbreviations, as the goal of
+                 this mode is to reduce sharing *)
               abbrev := Mnil
           | _ -> ()
         end
-        else
-          add_to_pool ~level:ty.level ty
   end pool;
   result
+
 let with_local_level_generalize_structure f =
   with_local_level_gen ~begin_def ~structure:true f
 let with_local_level_generalize ?before_generalize f =
