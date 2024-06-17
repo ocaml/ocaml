@@ -1309,7 +1309,8 @@ runtime/caml/opnames.h : runtime/caml/instruct.h
 	    -e 's/{$$/[] = {/' \
 	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' > $@
 
-# runtime/caml/jumptbl.h is required only if you have GCC 2.0 or later
+# runtime/caml/jumptbl.h is required only if the C compiler supports
+# the labels as values extension.
 runtime/caml/jumptbl.h : runtime/caml/instruct.h
 	$(V_GEN)tr -d '\r' < $< | \
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp' \

@@ -1375,6 +1375,9 @@ OCAML_CC_SUPPORTS_ALIGNED
 ## Check whether __attribute__((optimize("tree-vectorize")))) is supported
 OCAML_CC_SUPPORTS_TREE_VECTORIZE
 
+# Check whether the C compiler supports the labels as values extension.
+OCAML_CC_SUPPORTS_LABELS_AS_VALUES
+
 # Configure the native-code compiler
 
 arch=none

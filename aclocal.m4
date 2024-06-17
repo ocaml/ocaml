@@ -536,3 +536,22 @@ AC_DEFUN([OCAML_CC_SUPPORTS_ATOMIC], [
 
   OCAML_CC_RESTORE_VARIABLES
 ])
+
+AC_DEFUN([OCAML_CC_SUPPORTS_LABELS_AS_VALUES], [
+  AC_CACHE_CHECK([whether $CC supports the labels as values extension],
+    [ocaml_cv_prog_cc_labels_as_values],
+    [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [[
+  void *ptr;
+  ptr = &&foo;
+  goto *ptr;
+  return 1;
+  foo:
+     ]])],
+       [ocaml_cv_prog_cc_labels_as_values=yes],
+       [ocaml_cv_prog_cc_labels_as_values=no])
+  ])
+  if test "x$ocaml_cv_prog_cc_labels_as_values" = xyes; then
+    AC_DEFINE([HAVE_LABELS_AS_VALUES], [1],
+      [Define if the C compiler supports the labels as values extension.])
+  fi
+])

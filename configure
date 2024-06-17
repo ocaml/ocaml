@@ -16056,6 +16056,49 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
   CFLAGS="$saved_CFLAGS"
 
 
+# Check whether the C compiler supports the labels as values extension.
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether $CC supports the labels as values extension" >&5
+printf %s "checking whether $CC supports the labels as values extension... " >&6; }
+if test ${ocaml_cv_prog_cc_labels_as_values+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  void *ptr;
+  ptr = &&foo;
+  goto *ptr;
+  return 1;
+  foo:
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  ocaml_cv_prog_cc_labels_as_values=yes
+else $as_nop
+  ocaml_cv_prog_cc_labels_as_values=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ocaml_cv_prog_cc_labels_as_values" >&5
+printf "%s\n" "$ocaml_cv_prog_cc_labels_as_values" >&6; }
+  if test "x$ocaml_cv_prog_cc_labels_as_values" = xyes; then
+
+printf "%s\n" "#define HAVE_LABELS_AS_VALUES 1" >>confdefs.h
+
+  fi
+
+
 # Configure the native-code compiler
 
 arch=none
