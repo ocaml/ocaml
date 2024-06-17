@@ -91,6 +91,10 @@ _______________
   extension to enable threaded code interpretation.
   (Antonin Décimo, review by Miod Vallat)
 
+- #13238: Enable software prefetching on x86 and x86_64 when building
+  with MSVC or clang-cl.
+  (Antonin Décimo, review by Miod Vallat)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously

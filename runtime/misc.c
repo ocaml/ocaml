@@ -210,7 +210,8 @@ void caml_ext_table_free(struct ext_table * tbl, int free_entries)
 
 /* Integer arithmetic with overflow detection */
 
-#if ! (__GNUC__ >= 5 || Caml_has_builtin(__builtin_mul_overflow))
+#if ! (__has_builtin(__builtin_mul_overflow) || \
+       defined(__GNUC__) && __GNUC__ >= 5)
 CAMLexport int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 {
 #define HALF_SIZE (sizeof(uintnat) * 4)
