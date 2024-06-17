@@ -50,6 +50,7 @@ val alpha_equiv :
   ((module A : Add) -> A.t -> A.t) -> (module T : Add) -> T.t -> T.t = <fun>
 |}]
 
+(* Here we test that M is not captured inside the type of f *)
 let apply_weird (module M : Typ) (f : (module M : Typ) -> _) (x : M.t) : M.t =
   f (module M) x
 
@@ -59,7 +60,7 @@ val apply_weird :
   <fun>
 |}]
 
-(* Invalid arguments *)
+(** From here on we will try applying invalid arguments to functions *)
 
 let f x (module M : Typ) (y : M.t) = (x, y)
 
@@ -67,6 +68,7 @@ let f x (module M : Typ) (y : M.t) = (x, y)
 val f : 'a -> (module M : Typ) -> M.t -> 'a * M.t = <fun>
 |}]
 
+(* f does not constraint the type of the first argument of the function *)
 let invalid_arg1 = f (module Int)
 
 [%%expect{|
@@ -76,6 +78,8 @@ Line 1, characters 21-33:
 Error: The signature for this packaged module couldn't be inferred.
 |}]
 
+(* We gave too many arguments before the module argument, resulting in a type
+error *)
 let invalid_arg2 = f 3 4 (module Int)
 
 [%%expect{|
@@ -86,6 +90,7 @@ Error: This expression has type "int" but an expression was expected of type
          "(module Typ)"
 |}]
 
+(* Here we cannot extract the type of m *)
 let invalid_arg3 =
   let m = (module Int : Typ) in
   f 3 m 4
@@ -101,7 +106,8 @@ Error: This expression has type "(module M : Typ) -> M.t -> 'a * M.t"
   could not extract path from module argument.
 |}]
 
-
+(* Here we cannot extract the type of m. This could be accepted because m does
+not hide any abstract types. *)
 let invalid_arg4 =
   let m = (module Int : Typ with type t = int) in
   f 3 m 4
@@ -114,7 +120,7 @@ Error: This expression has type "(module Typ with type t = int)"
        but an expression was expected of type "(module Typ)"
 |}]
 
-
+(** From here we will test things with labels *)
 
 let labelled (module M : Typ) ~(y:M.t) = y
 
@@ -125,6 +131,8 @@ val labelled : (module M : Typ) -> y:M.t -> M.t = <fun>
 val apply_labelled : Int.t = 3
 |}]
 
+(* We cannot omit the module argument like other labelled arguments because of
+possible type dependancy *)
 let apply_labelled_fail = labelled ~y:3
 
 [%%expect{|
@@ -135,6 +143,18 @@ Error: This expression has type "(module M : Typ) -> y:M.t -> M.t"
        Received an expression argument. However, module arguments cannot be omitted.
 |}]
 
+(* Here we can remove the dependancy, thus it should be accepted. *)
+let labelled' (module M : Typ with type t = int) ~(y:M.t) = y
+
+let apply_labelled_success = labelled' ~y:3
+
+[%%expect{|
+val labelled' : (module M : Typ with type t = int) -> y:M.t -> M.t = <fun>
+val apply_labelled_success : (module Typ with type t = int) -> int = <fun>
+|}]
+
+(* Check that the optionnal argument is removed correclty when applying a
+module argument. *)
 let apply_opt (f : ?opt:int -> (module M : Typ) -> M.t) = f (module Int)
 
 [%%expect{|
@@ -143,7 +163,8 @@ val apply_opt : (?opt:int -> (module M : Typ) -> M.t) -> Int.t = <fun>
 
 let build_pair (module M : Typ) ~x ~y : M.t * M.t = (x, y)
 
-(* This raises a principality warning but maybe it shouldn't *)
+(* This raises a principality warning but maybe it shouldn't because the
+dependant application does not impact the labels *)
 let principality_warning = build_pair (module Int) ~y:3 ~x:1
 
 [%%expect{|
@@ -151,21 +172,24 @@ val build_pair : (module M : Typ) -> x:M.t -> y:M.t -> M.t * M.t = <fun>
 val principality_warning : Int.t * Int.t = (1, 3)
 |}, Principal{|
 val build_pair : (module M : Typ) -> x:M.t -> y:M.t -> M.t * M.t = <fun>
-Line 4, characters 59-60:
-4 | let principality_warning = build_pair (module Int) ~y:3 ~x:1
+Line 5, characters 59-60:
+5 | let principality_warning = build_pair (module Int) ~y:3 ~x:1
                                                                ^
 Warning 18 [not-principal]: commuting this argument is not principal.
 
 val principality_warning : Int.t * Int.t = (1, 3)
 |}]
 
+(** From here we test possible expressions for the module argument. *)
+
 (* Typing rules make sense only if module argument are
-   a path (module names, projections and applications) *)
+   a path (module names, projections and applications). This constraint could be
+  relaxed  *)
 let x_from_struct = id (module struct type t = int end) 3
 
 [%%expect{|
-Line 1, characters 20-22:
-1 | let x_from_struct = id (module struct type t = int end) 3
+Line 6, characters 20-22:
+6 | let x_from_struct = id (module struct type t = int end) 3
                         ^^
 Error: This expression has type "(module T : Typ) -> T.t -> T.t"
        but an expression was expected of type "(module Typ) -> 'a"
@@ -194,11 +218,7 @@ let s_list = map (module List) string_of_int [3; 1; 4]
 val s_list : string List.t = ["3"; "1"; "4"]
 |}]
 
-let s_list : string list = s_list
-
-[%%expect{|
-val s_list : string list = ["3"; "1"; "4"]
-|}]
+(* Testing functor application *)
 
 module MapCombine (M1 : Map) (M2 : Map) = struct
   type 'a t = 'a M1.t M2.t
@@ -219,6 +239,8 @@ val s_list_array : string MapCombine(List)(Array).t =
   [|["3"; "2"]; ["2"]; []|]
 |}]
 
+(* Checks that a structure inside a functor is rejected. However it could be
+  accepted because no abstract types are created. *)
 
 let s_list_arrayb =
     map
@@ -267,23 +289,19 @@ module type Typ' = sig
   type t
 end
 
+(* Same signature but with a different name *)
 let id3 : (module T : Typ') -> T.t -> T.t = id
+
+(* Reflexivity of ground coercion *)
+let id4 = (id :> (module T : Typ) -> T.t -> T.t)
+
+(* Ground coercion for same signature but a different name *)
+let id5 = (id :> (module T : Typ') -> T.t -> T.t)
 
 [%%expect{|
 module type Typ' = sig type t end
 val id3 : (module T : Typ') -> T.t -> T.t = <fun>
-|}]
-
-
-let id4 = (id :> (module T : Typ) -> T.t -> T.t)
-
-[%%expect{|
 val id4 : (module T : Typ) -> T.t -> T.t = <fun>
-|}]
-
-let id5 = (id :> (module T : Typ') -> T.t -> T.t)
-
-[%%expect{|
 val id5 : (module T : Typ') -> T.t -> T.t = <fun>
 |}]
 
@@ -302,6 +320,7 @@ Error: This expression has type "(module T : Typ) -> T.t -> T.t"
        The value "add" is required but not provided
 |}]
 
+(* This also fails with ground coercion *)
 let try_coerce' (f : (module T : Typ) -> T.t -> T.t) =
   (f :> (module A : Add) -> A.t -> A.t)
 
@@ -314,8 +333,7 @@ Error: Type "(module T : Typ) -> T.t -> T.t" is not a subtype of
        The two first-class module types differ by their runtime size.
 |}]
 
-
-(* Here the coercion requires computation and should? be forbidden *)
+(* Fails because this would require computation at runtime *)
 let try_coerce2 (f : (module A : AddSub) -> A.t -> A.t) =
     (f :> ((module T : SubAdd) -> T.t -> T.t))
 
@@ -355,6 +373,7 @@ module type Add3 = sig type t type a val add : t -> t -> t end
 module type Add4 = sig type t val add : t -> t -> t type a end
 |}]
 
+(* Unification does not allow changing the signature *)
 let try_coerce4 (f : (module A : Add) -> A.t -> A.t) =
     (f : (module A : Add2) -> A.t -> A.t)
 
@@ -368,9 +387,9 @@ Error: This expression has type "(module A : Add) -> A.t -> A.t"
        The type "a" is required but not provided
 |}]
 
+(* But we can add type fields with ground coercion *)
 let coerce5 (f : (module A : Add) -> A.t -> A.t) =
     (f :> (module A : Add2) -> A.t -> A.t)
-
 
 (* changing type order in signature *)
 let try_coerce6 (f : (module A : Add2) -> A.t -> A.t) =
@@ -390,6 +409,21 @@ val try_coerce7 :
   <fun>
 |}]
 
+(* We cannot decrease the signature *)
+let try_coerce8 (f : (module A : Add2) -> A.t -> A.t) =
+  (f :> (module A : Add) -> A.t -> A.t)
+
+[%%expect{|
+Line 2, characters 2-39:
+2 |   (f :> (module A : Add) -> A.t -> A.t)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Type "(module A : Add2) -> A.t -> A.t" is not a subtype of
+         "(module A : Add) -> A.t -> A.t"
+       Modules do not match: Add is not included in Add2
+       The type "a" is required but not provided
+|}]
+
+
 (** Tests about unannoted applications *)
 
 let apply f (module T : Typ) (x : T.t) : T.t = f (module T) x
@@ -405,13 +439,9 @@ let apply_with_annot f (module T : Typ) (x : T.t) : T.t =
   let _g : (module T : Typ) -> T.t -> T.t = f in
   f (module T) x
 
-(* (type a) -> a -> a -> a *)
-let merge_no_mod (type a) (x : a) (y : a) = x
-
 [%%expect{|
 val apply_with_annot :
   ((module T : Typ) -> T.t -> T.t) -> (module T : Typ) -> T.t -> T.t = <fun>
-val merge_no_mod : 'a -> 'a -> 'a = <fun>
 |}, Principal{|
 Line 3, characters 2-3:
 3 |   f (module T) x
@@ -420,9 +450,14 @@ Warning 18 [not-principal]: applying a dependent function is not principal.
 
 val apply_with_annot :
   ((module T : Typ) -> T.t -> T.t) -> (module T : Typ) -> T.t -> T.t = <fun>
-val merge_no_mod : 'a -> 'a -> 'a = <fun>
 |}]
 
+(* Used to propagate type annotations  *)
+let merge_no_mod (type a) (x : a) (y : a) = x
+
+[%%expect{|
+val merge_no_mod : 'a -> 'a -> 'a = <fun>
+|}]
 
 let apply_small_annot1 (f : (module T : Typ) -> T.t -> T.t) g (module T : Typ) x =
   let r = g (module T) x in
@@ -435,7 +470,6 @@ Line 2, characters 12-22:
                 ^^^^^^^^^^
 Error: The signature for this packaged module couldn't be inferred.
 |}]
-
 
 let apply_small_annot2 (f : (module T : Typ) -> T.t -> T.t) g (module T : Typ) x =
   let _ = merge_no_mod f g in
@@ -469,11 +503,14 @@ module type TBool = module type of MyBool
 
 let id_bool (module B : TBool) (x : B.t) = x
 
+let _ = id_bool (module MyBool) MyBool.false
+
 [%%expect{|
 module MyBool : sig type t = bool = false | true val not : bool -> bool end
 module type TBool =
   sig type t = bool = false | true val not : bool -> bool end
 val id_bool : (module B : TBool) -> B.t -> B.t = <fun>
+- : MyBool.t = MyBool.false
 |}]
 
 
@@ -517,7 +554,7 @@ Error: This expression has type "(module T : Typ) -> 'a"
 |}]
 
 
-(* Testing the `S with type t = _` cases *)
+(** Testing the `S with type t = _` cases *)
 
 module type Coerce = sig
   type a
@@ -527,41 +564,9 @@ end
 
 let coerce (module C : Coerce) x = C.coerce x
 
-module IntofBool = struct
-  type a = bool
-  type b = int
-  let coerce b = if b then 1 else 0
-end
-
-module BoolofInt = struct
-  type a = int
-  type b = bool
-  let coerce i = i <> 0
-end
-
-module IntofString = struct
-  type a = string
-  type b = int
-  let coerce = int_of_string
-end
-
-module IntofFloat = struct
-  type a = float
-  type b = int
-  let coerce = int_of_string_opt
-end
-
 [%%expect{|
 module type Coerce = sig type a type b val coerce : a -> b end
 val coerce : (module C : Coerce) -> C.a -> C.b = <fun>
-module IntofBool :
-  sig type a = bool type b = int val coerce : bool -> int end
-module BoolofInt :
-  sig type a = int type b = bool val coerce : int -> bool end
-module IntofString :
-  sig type a = string type b = int val coerce : string -> int end
-module IntofFloat :
-  sig type a = float type b = int val coerce : string -> int option end
 |}]
 
 let incr_general
@@ -604,9 +609,9 @@ val incr_general'' :
   (module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a = <fun>
 |}]
 
-let incr_general' :
-  (module C1 : CoerceToInt) -> (module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a =
-  incr_general
+let incr_general'
+  = (incr_general :
+  (module C1 : CoerceToInt) -> (module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a)
 
 [%%expect{|
 val incr_general' :
@@ -614,10 +619,10 @@ val incr_general' :
   (module CoerceFromInt with type b = C1.a) -> C1.a -> C1.a = <fun>
 |}]
 
-(* Recursive and mutually recursive definitions *)
+(** Recursive and mutually recursive definitions *)
 
 let rec f : (module T : Typ) -> int -> T.t -> T.t -> T.t =
-  fun (module T : Typ) n (x : T.t) (y : T.t) ->
+  fun (module T) n (x : T.t) (y : T.t) ->
     if n = 0
     then x
     else f (module T) (n - 1) y x
@@ -626,6 +631,7 @@ let rec f : (module T : Typ) -> int -> T.t -> T.t -> T.t =
 val f : (module T : Typ) -> int -> T.t -> T.t -> T.t = <fun>
 |}]
 
+(* Type cannot be infered because type approximation for letrecs is partial. *)
 let rec f (module T : Typ) n (x : T.t) (y : T.t) =
   if n = 0
   then x
@@ -638,6 +644,7 @@ Line 4, characters 9-19:
 Error: The signature for this packaged module couldn't be inferred.
 |}]
 
+(* Type cannot be infered because type approximation for letrecs is partial. *)
 let rec f (module T : Typ) n (x : T.t) (y : T.t) =
   if n = 0
   then x
@@ -654,17 +661,7 @@ Line 4, characters 9-19:
 Error: The signature for this packaged module couldn't be inferred.
 |}]
 
-let rec m = map (module List) (fun x -> x) [3]
-
-let rec m = map (module List) (fun x -> x) [3]
-and g = 3 :: m
-
-[%%expect{|
-val m : int List.t = [3]
-val m : int List.t = [3]
-val g : int list = [3; 3]
-|}]
-
+(* This test is similar to the previous one without the error in f definition *)
 let rec f (module T : Typ) x =
   g x
 and g x = f (module Int) x
@@ -682,13 +679,23 @@ val f : (module Typ) -> 'a -> 'b = <fun>
 val g : 'a -> 'b = <fun>
 |}]
 
+(* Test that the value letrecs does not trivially fails on dependant
+  applications *)
+let rec m = map (module List) (fun x -> x) [3]
+
+let rec m = map (module List) (fun x -> x) [3]
+and g = 3 :: m
+
 let rec m = (fun (module T : Typ) (x : T.t) -> x) (module Int) 3
 
 [%%expect{|
+val m : int List.t = [3]
+val m : int List.t = [3]
+val g : int list = [3; 3]
 val m : Int.t = 3
 |}]
 
-(** Typing is impacted by typing order *)
+(** Typing is impacted by typing order, the following tests show this. *)
 
 let id' (f : (module T : Typ) -> T.t -> T.t) = f
 
@@ -720,10 +727,10 @@ val typing_order2 :
   ((module T : Typ) -> T.t -> T.t) * Int.t = <fun>
 |}]
 
-(** The following test check that test at module unpacking still happen with
+(** The following test check that tests at module unpacking still happen with
     modular explicits *)
 
-(* we test that recursive types cannot occur *)
+(* we test free type variables cannot occur *)
 module type T = sig type t val v : t end;;
 let foo (module X : T with type t = 'a) = X.v X.v;;
 
@@ -773,7 +780,7 @@ Error: This expression has type "M.t" but an expression was expected of type "'a
 
 (* The following test should give a warning only once.
   Here we test that the structure is typed only once.
-  To acheive this we wrote a got that raises a warning. If the warning is raised
+  To achieve this we wrote a got that raises a warning. If the warning is raised
   twice then that means typing happened twice.
 *)
 
