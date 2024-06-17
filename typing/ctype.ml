@@ -216,18 +216,18 @@ let with_local_level_gen ~begin_def ~structure ?before_generalize f =
      to register levels for backtracking when we change them with
      [Transient_expr.set_level] here *)
   List.iter begin fun ty ->
+    (* Already generic nodes are not tracked *)
     if ty.level = generic_level then () else
     match ty.desc with
-    | Tvar _ when structure && ty.level >= level ->
+    | Tvar _ when structure ->
         (* In structure mode, we do do not generalize type variables,
-           so we need to lower their level.
+           so we need to lower their level, and move them to an outer pool.
            The goal of this mode is to allow unsharing inner nodes
            without introducing polymorphism *)
-        let old_level = !current_level in
-        Transient_expr.set_level ty old_level;
-        add_to_pool ~level:old_level ty
+        if ty.level >= level then Transient_expr.set_level ty !current_level;
+        add_to_pool ~level:ty.level ty
     | Tlink _ -> ()
-        (* If a node is no longer used of representative, no need
+        (* If a node is no longer used as representative, no need
            to track it anymore *)
     | _ ->        
         if ty.level < level then
