@@ -55,6 +55,7 @@ node:
 tree_list:
 | { [] }
 | tree tree_list { $1 :: $2 }
+| statement statement_list tree_list { [ Ast ($1 :: $2, $3) ] }
 
 tree:
 | LEFT_BRACE node RIGHT_BRACE { $2 }
