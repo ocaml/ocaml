@@ -17,7 +17,7 @@ external format_int : string -> int -> string = "caml_format_int"
 
 let err_no_pred = "U+0000 has no predecessor"
 let err_no_succ = "U+10FFFF has no successor"
-let err_not_sv i = format_int "%X" i ^ " is not an Unicode scalar value"
+let err_not_sv i = format_int "%X" i ^ " is not a Unicode scalar value"
 let err_not_latin1 u = "U+" ^ format_int "%04X" u ^ " is not a latin1 character"
 
 type t = int
@@ -55,7 +55,11 @@ let unsafe_to_char = Char.unsafe_chr
 
 let equal : int -> int -> bool = ( = )
 let compare : int -> int -> int = Stdlib.compare
-let hash = to_int
+
+external seeded_hash_param :
+  int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
+let seeded_hash seed x = seeded_hash_param 10 100 seed x
+let hash x = seeded_hash_param 10 100 0 x
 
 (* UTF codecs tools *)
 

@@ -95,8 +95,19 @@ val equal : t -> t -> bool
 val compare : t -> t -> int
 (** [compare u u'] is [Stdlib.compare u u']. *)
 
+val seeded_hash : int -> t -> int
+(** [seeded_hash seed u] A seeded hash function with the same output value as
+    {!Hashtbl.seeded_hash}. This function allows this module to be passed as an
+    argument to the functor {!Hashtbl.MakeSeeded}.
+
+    @since 5.3 *)
+
 val hash : t -> int
-(** [hash u] associates a non-negative integer to [u]. *)
+(** An unseeded hash function with the same output value as {!Hashtbl.hash}.
+    This function allows this module to be passed as an argument to the functor
+    {!Hashtbl.Make}.
+
+    @since 5.3 *)
 
 (** {1:utf UTF codecs tools}
 
