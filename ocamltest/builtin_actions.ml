@@ -148,6 +148,16 @@ let macos = make
     "on a MacOS system"
     "not on a MacOS system")
 
+let not_macos_amd64_tsan = make
+  ~name:"not_macos_amd64_tsan"
+  ~description:"Pass if not running on a MacOS amd64 system with TSan enabled"
+  (Actions_helpers.pass_or_skip
+     (not ((Ocamltest_config.system = macos_system)
+           && (String.equal Ocamltest_config.arch "amd64")
+           && (Ocamltest_config.tsan)))
+     "not on a MacOS amd64 system with TSan enabled"
+     "on a MacOS amd64 system with TSan enabled")
+
 let arch32 = make
   ~name:"arch32"
   ~description:"Pass if running on a 32-bit architecture"
@@ -357,6 +367,7 @@ let _ =
     bsd;
     not_bsd;
     macos;
+    not_macos_amd64_tsan;
     arch32;
     arch64;
     has_symlink;
