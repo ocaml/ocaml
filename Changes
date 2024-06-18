@@ -261,7 +261,7 @@ _______________
 
 ### Bug fixes:
 
-- #XXXXX: Added support in parsing `Bool.true`
+- #13246: Added support in parsing `Bool.true`
   (Samuel Vivien)
 
 - #12854: Add a test in the regression suite that flags the bug #12825.
