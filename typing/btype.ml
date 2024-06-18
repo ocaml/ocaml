@@ -102,7 +102,10 @@ let lowest_level = Ident.lowest_scope
 (* This defines a mapping from levels to pools of type nodes.
    If [level >= !last_level] then we use [!last_pool], otherwise
    we look it up in [!leveled_type_pool].
-   When can either add a level with a new pool, or using the last pool.
+   When can either add a level with a new pool (in which case all
+   nodes should be either generalized or added to a pool at a lower level
+   when leaving the scope), or using the last pool (for other uses of
+   levels, such as scoping of of identifiers).
    In both cases we add this level to [added_levels], so that it
    can be added to [leveled_type_pool] when [last_pool] is updated.
    Remark: the only function adding to a pool is [add_to_pool], and

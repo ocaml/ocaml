@@ -229,7 +229,7 @@ let with_local_level_gen ~begin_def ~structure ?before_generalize f =
     | Tlink _ -> ()
         (* If a node is no longer used as representative, no need
            to track it anymore *)
-    | _ ->        
+    | _ ->
         if ty.level < level then
           (* If a node was introduced locally, but its level was lowered
              through unification, keeping that node as representative,
