@@ -915,6 +915,7 @@ CMA_MAGIC_NUMBER
 CMO_MAGIC_NUMBER
 CMI_MAGIC_NUMBER
 EXEC_MAGIC_NUMBER
+MAGIC_LENGTH
 OCAML_VERSION_SHORT
 OCAML_VERSION_EXTRA
 OCAML_VERSION_PATCHLEVEL
@@ -3334,6 +3335,8 @@ printf "%s\n" "#define MAGIC_NUMBER_VERSION \"035\"" >>confdefs.h
 
 printf "%s\n" "#define EXEC_MAGIC_LENGTH 12" >>confdefs.h
 
+MAGIC_LENGTH=12
+
 printf "%s\n" "#define EXEC_FORMAT \"X\"" >>confdefs.h
 
 EXEC_MAGIC_NUMBER=Caml1999X035
@@ -3496,6 +3499,8 @@ ac_config_files="$ac_config_files manual/src/version.tex"
 ac_config_files="$ac_config_files manual/src/html_processing/src/common.ml"
 
 ac_config_files="$ac_config_files ocamltest/ocamltest_config.ml"
+
+ac_config_files="$ac_config_files otherlibs/dynlink/dynlink_config.ml"
 
 ac_config_files="$ac_config_files utils/config.common.ml"
 
@@ -13799,6 +13804,9 @@ esac
 
 otherlibraries="dynlink runtime_events"
 lib_dynlink=true
+dldir=otherlibs/dynlink
+ac_config_links="$ac_config_links $dldir/dynlink_cmo_format.mli:file_formats/cmo_format.mli $dldir/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli"
+
 lib_runtime_events=true
 if test x"$enable_unix_lib" != "xno"
 then :
@@ -22075,6 +22083,7 @@ do
     "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
     "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
     "ocamltest/ocamltest_config.ml") CONFIG_FILES="$CONFIG_FILES ocamltest/ocamltest_config.ml" ;;
+    "otherlibs/dynlink/dynlink_config.ml") CONFIG_FILES="$CONFIG_FILES otherlibs/dynlink/dynlink_config.ml" ;;
     "utils/config.common.ml") CONFIG_FILES="$CONFIG_FILES utils/config.common.ml" ;;
     "utils/config.generated.ml") CONFIG_FILES="$CONFIG_FILES utils/config.generated.ml" ;;
     "runtime/caml/exec.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/exec.h" ;;
@@ -22088,6 +22097,8 @@ do
     "native-symlinks") CONFIG_COMMANDS="$CONFIG_COMMANDS native-symlinks" ;;
     "ocamldoc/META") CONFIG_FILES="$CONFIG_FILES ocamldoc/META" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
+    "$dldir/dynlink_cmo_format.mli") CONFIG_LINKS="$CONFIG_LINKS $dldir/dynlink_cmo_format.mli:file_formats/cmo_format.mli" ;;
+    "$dldir/dynlink_cmxs_format.mli") CONFIG_LINKS="$CONFIG_LINKS $dldir/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli" ;;
     "otherlibs/unix/META") CONFIG_FILES="$CONFIG_FILES otherlibs/unix/META" ;;
     "otherlibs/unix/unix.ml") CONFIG_LINKS="$CONFIG_LINKS otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml" ;;
     "otherlibs/str/META") CONFIG_FILES="$CONFIG_FILES otherlibs/str/META" ;;

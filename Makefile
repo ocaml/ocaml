@@ -565,7 +565,7 @@ $(foreach PROGRAM, $(OCAML_BYTECODE_PROGRAMS),\
 # OCaml programs that are compiled only in native code
 
 OCAML_NATIVE_PROGRAMS = \
-  ocamlnat tools/lintapidiff.opt $(OPTIONAL_NATIVE_TOOLS)
+  ocamlnat tools/lintapidiff.opt tools/sync_dynlink.opt $(OPTIONAL_NATIVE_TOOLS)
 
 $(foreach PROGRAM, $(OCAML_NATIVE_PROGRAMS),\
   $(eval $(call OCAML_NATIVE_PROGRAM,$(PROGRAM))))
@@ -2144,6 +2144,18 @@ lintapidiff: tools/lintapidiff.opt$(EXE)
 	    grep -Ev internal\|obj\|stdLabels\|moreLabels |\
 	    tools/lintapidiff.opt $(VERSIONS)
 
+# Regenerate otherlibs/dynlink/byte/dynlink_symtable from its bytecomp sources
+
+sync_dynlink_SOURCES = tools/sync_dynlink.mli tools/sync_dynlink.ml
+sync_dynlink_LIBRARIES =
+
+.PHONY: sync_dynlink
+sync_dynlink: tools/sync_dynlink.opt$(EXE)
+	    ./tools/sync_dynlink.opt$(EXE) \
+        otherlibs/dynlink/byte/dynlink_symtable.ml \
+      > synced_dynlink.tmp
+	    diff -u synced_dynlink.tmp otherlibs/dynlink/byte/dynlink_symtable.ml
+	    rm synced_dynlink.tmp
 # Tools
 
 TOOLS_BYTECODE_TARGETS = \

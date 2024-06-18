@@ -108,6 +108,7 @@ AC_SUBST([OCAML_VERSION_SHORT], [OCAML__VERSION_SHORT])
 AC_DEFINE([MAGIC_NUMBER_PREFIX], ["][MAGIC_NUMBER__PREFIX]["])
 AC_DEFINE([MAGIC_NUMBER_VERSION], ["][MAGIC_NUMBER__VERSION]["])
 AC_DEFINE([EXEC_MAGIC_LENGTH], [MAGIC_NUMBER__LENGTH])
+AC_SUBST([MAGIC_LENGTH], [MAGIC_NUMBER__LENGTH])
 AC_DEFINE([EXEC_FORMAT], ["][EXEC__FORMAT]["])
 AC_SUBST([EXEC_MAGIC_NUMBER], [EXEC__MAGIC_NUMBER])
 AC_SUBST([CMI_MAGIC_NUMBER], [CMI__MAGIC_NUMBER])
@@ -255,6 +256,7 @@ AC_CONFIG_FILES([stdlib/sys.ml])
 AC_CONFIG_FILES([manual/src/version.tex])
 AC_CONFIG_FILES([manual/src/html_processing/src/common.ml])
 AC_CONFIG_FILES([ocamltest/ocamltest_config.ml])
+AC_CONFIG_FILES([otherlibs/dynlink/dynlink_config.ml])
 AC_CONFIG_FILES([utils/config.common.ml])
 AC_CONFIG_FILES([utils/config.generated.ml])
 AC_CONFIG_HEADERS([runtime/caml/exec.h])
@@ -718,6 +720,11 @@ AS_CASE([$host],
 
 otherlibraries="dynlink runtime_events"
 lib_dynlink=true
+dldir=otherlibs/dynlink
+AC_CONFIG_LINKS([
+  $dldir/dynlink_cmo_format.mli:file_formats/cmo_format.mli
+  $dldir/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli
+])
 lib_runtime_events=true
 AS_IF([test x"$enable_unix_lib" != "xno"],
   [enable_unix_lib=yes

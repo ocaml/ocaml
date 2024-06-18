@@ -15,13 +15,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open! Dynlink_compilerlibs
-
 module String = struct
-  include Misc.Stdlib.String
-
+  include String
+  module Set = Set.Make (String)
   module Map = struct
-    include Map
+    include Map.Make (String)
 
     let keys t =
       fold (fun key _data keys -> Set.add key keys) t Set.empty
