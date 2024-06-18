@@ -3819,12 +3819,12 @@ index_mod:
 
 %inline constr_extra_ident:
   | LPAREN COLONCOLON RPAREN                    { "::" }
+  | FALSE                                       { "false" }
+  | TRUE                                        { "true" }
 ;
 constr_extra_nonprefix_ident:
   | LBRACKET RBRACKET                           { "[]" }
   | LPAREN RPAREN                               { "()" }
-  | FALSE                                       { "false" }
-  | TRUE                                        { "true" }
 ;
 constr_ident:
     UIDENT                                      { $1 }
