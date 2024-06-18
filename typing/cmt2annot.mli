@@ -20,3 +20,7 @@ val gen_annot :
   sourcefile:string option ->
   use_summaries:bool -> Cmt_format.binary_annots ->
   unit
+
+val iterator : scope:Location.t -> bool -> Tast_iterator.iterator
+
+val binary_part : Tast_iterator.iterator -> Cmt_format.binary_part -> unit

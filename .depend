@@ -611,6 +611,8 @@ typing/cmt2annot.cmx : \
     typing/annot.cmi \
     typing/cmt2annot.cmi
 typing/cmt2annot.cmi : \
+    typing/tast_iterator.cmi \
+    parsing/location.cmi \
     file_formats/cmt_format.cmi
 typing/ctype.cmo : \
     typing/types.cmi \
