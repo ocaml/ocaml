@@ -312,7 +312,7 @@ _______________
   (Sébastien Hinderer, review by Gabriel Scherer, Antonin Décimo,
   Miod Vallat and Samuel Hym)
 
-* #13201: Fix and speedup builds with TSan.
+- #13201, #13244: Fix and speedup builds with TSan.
   (Sébastien Hinderer, review by Miod Vallat, Gabriel Scherer and
   Olivier Nicole)
 
