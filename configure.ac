@@ -720,6 +720,11 @@ AS_CASE([$host],
 
 otherlibraries="dynlink runtime_events"
 lib_dynlink=true
+dldir=otherlibs/dynlink
+AC_CONFIG_LINKS([
+  $dldir/dynlink_cmo_format.mli:file_formats/cmo_format.mli
+  $dldir/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli
+])
 lib_runtime_events=true
 AS_IF([test x"$enable_unix_lib" != "xno"],
   [enable_unix_lib=yes

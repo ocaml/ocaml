@@ -50,12 +50,14 @@ module Global = struct
 
   let quote s = "`" ^ s ^ "'"
 
-  let description ppf = function
+  let description ppf g =
+    let open Format_doc in
+    match g with
     | Glob_compunit (Compunit cu) ->
-        Format_doc.fprintf ppf "compilation unit %a"
+        fprintf ppf "compilation unit %a"
           Style.inline_code (quote cu)
     | Glob_predef (Predef_exn exn) ->
-        Format_doc.fprintf ppf "predefined exception %a"
+        fprintf ppf "predefined exception %a"
           Style.inline_code (quote exn)
 
   let of_ident id =
