@@ -308,6 +308,7 @@ META
 /tools/ocamltex
 /tools/eventlog_metadata
 /tools/lintapidiff.opt
+/tools/sync_dynlink.opt
 
 /toplevel/byte/topeval.mli
 /toplevel/byte/trace.mli

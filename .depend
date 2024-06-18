@@ -7602,6 +7602,11 @@ tools/stripdebug.cmx : \
     bytecomp/bytesections.cmx \
     tools/stripdebug.cmi
 tools/stripdebug.cmi :
+tools/sync_dynlink.cmo : \
+    tools/sync_dynlink.cmi
+tools/sync_dynlink.cmx : \
+    tools/sync_dynlink.cmi
+tools/sync_dynlink.cmi :
 debugger/breakpoints.cmo : \
     debugger/symbols.cmi \
     debugger/pos.cmi \
