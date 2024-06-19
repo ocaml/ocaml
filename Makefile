@@ -2478,10 +2478,28 @@ partialclean::
 	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $* $(INCLUDES) \
 	  $(OCAMLDEPFLAGS) $*/*.mli $*/*.ml > $@
 
-asmcomp.depend: beforedepend
+asmcomp.depend:: beforedepend $(cvt_emit)
 	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I asmcomp $(INCLUDES) \
 	  $(OCAMLDEPFLAGS) $(filter-out $(ARCH_SPECIFIC) asmcomp/emit.ml, \
 	                                $(wildcard asmcomp/*.mli asmcomp/*.ml)) > $@
+
+define ADD_ARCH_SPECIFIC_DEPS
+asmcomp.depend::
+	@rm -f asmcomp/emit.ml $$(ARCH_SPECIFIC)
+	@echo 'ifeq "$$$$(ARCH)" "$(1)"' > asmcomp/$(1).depend
+	@$$(MAKE) ARCH=$(1) asmcomp/emit.ml $$(ARCH_SPECIFIC)
+	@$$(OCAMLDEP) $$(OC_OCAMLDEPFLAGS) -I asmcomp $$(INCLUDES) \
+	  $$(OCAMLDEPFLAGS) asmcomp/emit.ml $$(ARCH_SPECIFIC) >> asmcomp/$(1).depend
+	@echo 'endif # ifeq "$$$$(ARCH)" "$(1)"' >> asmcomp/$(1).depend
+
+endef
+
+$(foreach arch, $(filter-out $(ARCH), $(ARCHES)) $(ARCH),\
+  $(eval $(call ADD_ARCH_SPECIFIC_DEPS,$(arch))))
+
+asmcomp.depend::
+	@cat $(addprefix asmcomp/, $(addsuffix .depend, $(ARCHES))) >> $@
+	@rm -f $(addprefix asmcomp/, $(addsuffix .depend, $(ARCHES)))
 
 DEP_DIRS = \
   utils parsing typing bytecomp asmcomp middle_end lambda file_formats \
