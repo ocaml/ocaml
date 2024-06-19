@@ -211,7 +211,7 @@ Caml_inline void check_trap_barrier_for_effect
 #define ACCU_REG asm("%r16")
 #endif
 #ifdef __mc68000__
-#define PC_REG asm("a5")
+#define PC_REG asm("a3")
 #define SP_REG asm("a4")
 #define ACCU_REG asm("d7")
 #endif
