@@ -20,7 +20,7 @@
 pipeline {
   agent { label 'ocaml-ubuntu-latest' }
   options {
-    timeout(time: 45, unit: 'MINUTES')
+    timeout(time: 180, unit: 'MINUTES')
   }
   stages {
     stage('Testing various other compiler configurations') {
