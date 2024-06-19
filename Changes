@@ -119,6 +119,9 @@ _______________
 
 ### Standard library:
 
+- #12884: Add `Queue.drop`
+  (Léo Andrès, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
 - #13168: In Array.shuffle, clarify the code that validates the
   result of the user-supplied function `rand`, and improve the
   error message that is produced when this result is invalid.
