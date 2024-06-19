@@ -2478,6 +2478,11 @@ partialclean::
 	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $* $(INCLUDES) \
 	  $(OCAMLDEPFLAGS) $*/*.mli $*/*.ml > $@
 
+asmcomp.depend: beforedepend
+	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I asmcomp $(INCLUDES) \
+	  $(OCAMLDEPFLAGS) $(filter-out $(ARCH_SPECIFIC) asmcomp/emit.ml, \
+	                                $(wildcard asmcomp/*.mli asmcomp/*.ml)) > $@
+
 DEP_DIRS = \
   utils parsing typing bytecomp asmcomp middle_end lambda file_formats \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types driver \
