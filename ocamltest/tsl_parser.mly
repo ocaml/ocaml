@@ -50,16 +50,16 @@ let mkenvstmt envstmt =
 %%
 
 node:
-| statement_list tree_list { Ast ($1, $2) }
+| statement_list parallel_tail { Ast ($1, $2) }
 
-tree_list:
+parallel_tail:
 | { [] }
-| tree tree_list_continued { $1 :: $2 }
+| tree parallel_tail_continued { $1 :: $2 }
 
-tree_list_continued:
+parallel_tail_continued:
 | { [] }
-| tree tree_list_continued { $1 :: $2 }
-| statement statement_list tree_list { [ Ast ($1 :: $2, $3) ] }
+| tree parallel_tail_continued { $1 :: $2 }
+| statement statement_list parallel_tail { [ Ast ($1 :: $2, $3) ] }
 
 tree:
 | LEFT_BRACE node RIGHT_BRACE { $2 }
