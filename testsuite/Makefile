@@ -153,6 +153,10 @@ default:
 	@echo "  clean                      delete generated files"
 	@echo "  report                     print the report for the last execution"
 	@echo
+	@echo "By default, artefacts from tests which pass are not kept, but this can"
+	@echo "be changed by adding KEEP=1 to the make command line or by setting the"
+	@echo "KEEP_TEST_DIR_ON_SUCCESS environment variable to a non-empty value."
+	@echo
 	@echo "Set the environment variable USE_RUNTIME to \"d\" or \"i\" to run"
 	@echo "the tests with the debug or the instrumented runtime."
 
