@@ -42,7 +42,7 @@
 extern char caml_system__code_begin, caml_system__code_end;
 /* The two symbols above are defined in runtime/$ARCH.S.
    They use the old `__` separator convention because the new convention
-   gives `caml_system.code_begin`, which is not a valid C identifier. */
+   gives `caml_system$code_begin`, which is not a valid C identifier. */
 
 /* Initialize the static data and code area limits. */
 
