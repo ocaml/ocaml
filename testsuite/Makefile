@@ -153,10 +153,6 @@ default:
 	@echo "  clean                      delete generated files"
 	@echo "  report                     print the report for the last execution"
 	@echo
-	@echo "all*, parallel* and list can automatically re-run failed test"
-	@echo "directories if MAX_TESTSUITE_DIR_RETRIES permits"
-	@echo "(default value = $(MAX_TESTSUITE_DIR_RETRIES))"
-	@echo
 	@echo "Set the environment variable USE_RUNTIME to \"d\" or \"i\" to run"
 	@echo "the tests with the debug or the instrumented runtime."
 
