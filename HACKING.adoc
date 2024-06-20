@@ -31,10 +31,66 @@ make -j 4
 ----
 If you are on a release build and need development options, you can add
 `--enable-ocamltest` (to allow running the testsuite) and `--enable-warn-error`
-(so you don't get caught by CI later!).
+(so you don't get caught by CI later!) (if desired, these options have to
+be added to the invocation of `./configure`).
 
 3. Try the newly built compiler binaries `ocamlc`, `ocamlopt` or their
-`.opt` version. To try the toplevel, use:
+`.opt` version. At the moment, running not yet installed programs
+(including the compilers themselves) is a bit tricky. Assume the folloinw
+OCaml example program:
++
+----
+echo 'let _ = print_endline "Hello, world!"' > hello.ml
+----
+To get a bytecode version of this program, run:
+----
+./runtime/ocamlrun ./ocamlc -nostdlib -I stdlib -o hello.byte hello.ml
+----
+The `./` before `ocamlc` matters because, without it, `ocamlrun` would look
+for an `ocamlc` program in your `PATH` and may thus not run the one
+you have just compiled, if you have an already installed version of OCaml.
+Similarly, the `-nostdlib -I stdlib` arguments (which are passed to
+`ocamlc`, not `ocamlrun` are important so that the standard library
+which gets used is the one from the source tree, rather than an
+already installed one, as would happen without these arguments.
+
+To produce a native version of your program, run:
+----
+./runtime/ocamlrun ./ocamlopt -nostdlib -I stdlib -o hello.opt hello.ml
+----
+The two only differences between this command and the previous one are that
+we replaced `ocamlc` by `ocamlopt`, which is a mandatory change, and
+`hello.byte` by `hello.opt`, which is not mandatory because it just controls
+the name of the produced executable, but is clearer.
+
+It is also important to understand that, since both `ocamlc` and `ocamlopt`
+are themselves ordinary OCaml programs, they, too, can be compiled either to
+bytecode or to native code. So far, what we have run is the bytecode
+version of the compilers. If, instead of doing that, you wanted to run their
+native versions, here are the commands you should use.
+To run the native version of the bytecode compiler:
+----
+./ocamlc.opt -nostdlib -I stdlib -o hello.byte hello.ml
+----
+And, to run the native version of the native compiler:
+----
+./ocamlopt.opt -nostdlib -I stdlib -o hello.opt hello.ml
+----
+As can be observed, these two last invocations are simpler than the first
+ones because there is no need to specify a runtime. However, the precautions
+regarding the standard library remain in order.
+
+To run the programs you have just compiled, do as follows.
+To run the byte version:
+----
+./runtime/ocamlrun ./hello.byte
+----
+To run the native version:
+----
+./hello.opt
+----
+
+To try the toplevel, use:
 +
 ----
 make runtop
