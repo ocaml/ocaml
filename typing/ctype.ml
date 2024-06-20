@@ -187,15 +187,12 @@ let end_def () =
   current_level := cl; nongen_level := nl
 let create_scope () =
   let level = !current_level + 1 in
-  register_last_pool ~level;
   init_def level;
   level
 
-let wrap_end_def_gen f = Misc.try_finally f ~always:end_def
+let wrap_end_def f = Misc.try_finally f ~always:end_def
 let wrap_end_def_new_pool f =
-  wrap_end_def_gen (fun _ -> with_new_pool ~level:!current_level f)
-let wrap_end_def f =
-  wrap_end_def_gen (fun _ -> with_last_pool ~level:!current_level f)
+  wrap_end_def (fun _ -> with_new_pool ~level:!current_level f)
 
 (* [with_local_level_gen] handles both the scoping structure of levels
    and automatic generalization through pools (cf. btype.ml) *)
@@ -1267,11 +1264,7 @@ let instance ?partial sch =
     copy ?partial copy_scope sch)
 
 let generic_instance sch =
-  let old = !current_level in
-  current_level := generic_level;
-  let ty = instance sch in
-  current_level := old;
-  ty
+  with_level ~level:generic_level (fun () -> instance sch)
 
 let instance_list schl =
   For_copy.with_scope (fun copy_scope ->
@@ -1394,11 +1387,7 @@ let instance_declaration decl =
   )
 
 let generic_instance_declaration decl =
-  let old = !current_level in
-  current_level := generic_level;
-  let decl = instance_declaration decl in
-  current_level := old;
-  decl
+  with_level ~level:generic_level (fun () -> instance_declaration decl)
 
 let instance_class params cty =
   let rec copy_class_type copy_scope = function
@@ -1539,33 +1528,31 @@ let unify_var' = (* Forward declaration *)
 
 let subst env level priv abbrev oty params args body =
   if List.length params <> List.length args then raise Cannot_subst;
-  let old_level = !current_level in
-  current_level := level;
-  let body0 = newvar () in          (* Stub *)
-  let undo_abbrev =
-    match oty with
-    | None -> fun () -> () (* No abbreviation added *)
-    | Some ty ->
-        match get_desc ty with
-          Tconstr (path, tl, _) ->
-            let abbrev = proper_abbrevs tl abbrev in
-            memorize_abbrev abbrev priv path ty body0;
-            fun () -> forget_abbrev abbrev path
-        | _ -> assert false
-  in
-  abbreviations := abbrev;
-  let (params', body') = instance_parameterized_type params body in
-  abbreviations := ref Mnil;
-  let uenv = Expression {env; in_subst = true} in
-  try
-    !unify_var' uenv body0 body';
-    List.iter2 (!unify_var' uenv) params' args;
-    current_level := old_level;
-    body'
-  with Unify _ ->
-    current_level := old_level;
-    undo_abbrev ();
-    raise Cannot_subst
+  with_level ~level begin fun () ->
+    let body0 = newvar () in          (* Stub *)
+    let undo_abbrev =
+      match oty with
+      | None -> fun () -> () (* No abbreviation added *)
+      | Some ty ->
+          match get_desc ty with
+            Tconstr (path, tl, _) ->
+              let abbrev = proper_abbrevs tl abbrev in
+              memorize_abbrev abbrev priv path ty body0;
+              fun () -> forget_abbrev abbrev path
+          | _ -> assert false
+    in
+    abbreviations := abbrev;
+    let (params', body') = instance_parameterized_type params body in
+    abbreviations := ref Mnil;
+    let uenv = Expression {env; in_subst = true} in
+    try
+      !unify_var' uenv body0 body';
+      List.iter2 (!unify_var' uenv) params' args;
+      body'
+    with Unify _ ->
+      undo_abbrev ();
+      raise Cannot_subst
+  end
 
 (*
    Default to generic level. Usually, only the shape of the type matters, not
@@ -2609,11 +2596,7 @@ let rec concat_longident lid1 =
 let nondep_instance env level id ty =
   let ty = !nondep_type' env [id] ty in
   if level = generic_level then duplicate_type ty else
-  let old = !current_level in
-  current_level := level;
-  let ty = instance ty in
-  current_level := old;
-  ty
+  with_level ~level (fun () -> instance ty)
 
 (* Find the type paths nl1 in the module type mty2, and add them to the
    list (nl2, tl2). raise Not_found if impossible *)

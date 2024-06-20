@@ -99,65 +99,41 @@ let generic_level = Ident.highest_scope
 let lowest_level = Ident.lowest_scope
 
 (**** leveled type pool ****)
-(* This defines a mapping from levels to pools of type nodes.
-   If [level >= !last_level] then we use [!last_pool], otherwise
-   we look it up in [!leveled_type_pool].
-   When can either add a level with a new pool (in which case all
-   nodes should be either generalized or added to a pool at a lower level
-   when leaving the scope), or using the last pool (for other uses of
-   levels, such as scoping of of identifiers).
-   In both cases we add this level to [added_levels], so that it
-   can be added to [leveled_type_pool] when [last_pool] is updated.
+(* This defines a stack of pools of type nodes indexed by the level
+   we will try to generalize them in [Ctype.with_local_level_gen].
+   [pool_of_level] returns the pool in which types at level [level]
+   should be kept, which is the topmost pool whose level is lower or
+   equal to [level].
+   [Ctype.with_local_level_gen] shall call [with_new_pool] to create
+   a new pool at a given level. On return it shall process all nodes
+   that were added to the pool.
    Remark: the only function adding to a pool is [add_to_pool], and
    the only function returning the contents of a pool is [with_new_pool],
    so that the initial pool can be added to, but never read from. *)
 
-module IntMap = Map.Make(Int)
-let last_pool = s_table ref []
-let last_level = s_ref lowest_level
-let leveled_type_pool = s_ref IntMap.empty
-let added_levels = s_ref []
+type pool = {level: int; mutable pool: transient_expr list; next: pool}
+(* To avoid an indirection we choose to add a dummy level at the end of
+   the list. It will never be accessed, as [pool_of_level] is always called
+   with [level >= 0]. *)
+let rec dummy = {level = max_int; pool = []; next = dummy}
+let pool_stack = s_table (fun () -> {level = 0; pool = []; next = dummy}) ()
 
-let pool_of_level level =
-  if level >= !last_level then !last_pool else
-  try IntMap.find level !leveled_type_pool
-  with Not_found ->
-    (* Format.eprintf "@[<2>Level %d not in pool: %a@]@." level
-       (fun ppf -> List.iter (Format.fprintf ppf "@ %d"))
-       (List.map fst (IntMap.bindings !leveled_type_pool)); *)
-    invalid_arg "Btype.pool_of_level"
+let rec pool_of_level level pool =
+  if level >= pool.level then pool else pool_of_level level pool.next
 
 (* Create a new pool at given level, and use it locally.
    We need first to add the deferred levels to leveled_type_pool *)
 let with_new_pool ~level f =
-  let old_pool = !last_pool in
-  let new_pool_map =
-    List.fold_left (fun otp level -> IntMap.add level old_pool otp)
-      !leveled_type_pool !added_levels
-  and pool = ref [] in
+  let pool = {level; pool = []; next = !pool_stack} in
   let r =
-    Misc.protect_refs
-      [ R(leveled_type_pool, new_pool_map);
-        R(last_level, level);
-        R(last_pool, pool);
-        R(added_levels, [level]) ]
-      f
+    Misc.protect_refs [ R(pool_stack, pool) ] f
   in
-  (r, !pool)
-
-(* Since we reuse [last_pool], just add a deferred level *)
-let register_last_pool ~level =
-  added_levels := level :: !added_levels
-
-(* Register a level locally *)
-let with_last_pool ~level f =
-  if level >= generic_level then f () else
-  Misc.protect_refs [R(added_levels, level :: !added_levels)] f
+  (r, pool.pool)
 
 let add_to_pool ~level ty =
   if level >= generic_level || level <= lowest_level then () else
-  let pool = pool_of_level level in
-  pool := ty :: !pool
+  let pool = pool_of_level level !pool_stack in
+  pool.pool <- ty :: pool.pool
 
 (**** Some type creators ****)
 
