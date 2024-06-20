@@ -2572,6 +2572,10 @@ OCaml 5.0.0 (15 December 2022)
 
 ### Manual and documentation:
 
+- #5514, ???: Document that `with module M = ...` might add components to the
+  signature of `M`.
+  (Florian Angeletti, review by ???)
+
 - #11058: runtime/HACKING.adoc tips on debugging the runtime
   (Gabriel Scherer, review by Enguerrand Decorne and Nicolás Ojeda Bär)
 
