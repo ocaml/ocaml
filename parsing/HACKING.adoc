@@ -25,6 +25,62 @@ target of the root Makefile to rebuild the compiler parser. See
 link:../Makefile.menhir[] for the details of the various
 Menhir-related targets and their use.
 
+If you wish to submit a modification of `parser.mly`, here is how we
+recommend to proceed:
+
+ * Determine which version of Menhir has been used to generate the current
+   parser
+ * Make sure your installed version of Menhir is at least as recent
+ * If your installed version of Menhir is more recent, first regenerate the
+   parser from the grammar with your version of Menhir, without otherwise
+   modifying the grammar.
+ * Do your modifications in `parser.mly` and update the generated parser
+
+Here is a more in-depth explanation of each of these steps:
+
+ 1. To determine which version of Menhir has been used to generate the
+    parser currently stored in `boot/menhir`, use a command like
+
+        grep -e "require_[0-9]\+" boot/menhir/menhirLib.ml
+
+This should produce a line similar to this one:
+
+        let require_20210419 = ()
+
+Thus, here, the version of Menhir used to generate the current parser is
+`20210419`.
+
+ 2. Install a version of Menhir which is at least as recent as the one you
+    found above. For instance, if you use `opam`, this can be done with
+
+        opam install menhir
+
+Make sure that the version of Menhir that will actually be used is the right
+one:
+
+        menhir --version
+
+ 3. If your version of Menhir is newer than the one you found in
+    step 1, update the generated parser without otherwise modifying
+    the grammar:
+
+        make promote-menhir
+
+Check what has changed with `git status` and commit these changes. You
+could use a commit message like
+
+        Regenerate OCaml's parser from the grammar with Menhir version xxx
+
+where xxx is your installled version of Menhir.
+
+(You can also make your commit message more precise by mentionning
+which version of Menhir was used before, to make the transition clearer.)
+
+ 4. Modify the grammar according to your needs and commit your changes,
+    preferably in a commit distinct from the one in step 3.
+
+(This step should not modify the `menhirLib.ml* files.)
+
 ==== Testing the grammar
 
 The root Makefile contains a `build-all-asts` target that will build,
