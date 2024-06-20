@@ -404,6 +404,11 @@ _______________
   POWER.
   (Miod Vallat, review by Gabriel Scherer)
 
+- #13252: Rework register assignment in the interpreter code on m68k on Linux,
+  due to the %a5 register being used by Glibc.
+  (Miod Vallat, report by Stéphane Glondu, review by Gabriel Scherer and
+   Xavier Leroy)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
