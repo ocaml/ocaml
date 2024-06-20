@@ -54,7 +54,11 @@ node:
 
 tree_list:
 | { [] }
-| tree tree_list { $1 :: $2 }
+| tree tree_list_continued { $1 :: $2 }
+
+tree_list_continued:
+| { [] }
+| tree tree_list_continued { $1 :: $2 }
 | statement statement_list tree_list { [ Ast ($1 :: $2, $3) ] }
 
 tree:
