@@ -409,6 +409,11 @@ _______________
   (Miod Vallat, report by Stéphane Glondu, review by Gabriel Scherer and
    Xavier Leroy)
 
+- #13247: Disable lib_unix/kill test for MacOS AMD64 with TSan, linking
+  to llvm bug report causing infinite signal loops.
+  (Tim McGilchrist, review by Olivier Nicole, Miod Vallat, Sébastien Hinderer
+  and Gabriel Scherer)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
