@@ -87,7 +87,16 @@ endif
 # KEEP_TEST_DIR_ON_SUCCESS should be set by the user (to a non-empty value)
 # if they want to pass the -keep-test-dir-on-success option to ocamltest,
 # to preserve test data of successful tests.
+
+# KEEP is provided as a rather easier to remmber alias of
+# KEEP_TEST_DIR_ON_SUCCESS, but to prevent the risk of naming conflict it's only
+# recognised when used as make -C testsuite KEEP=1 ...
+ifeq "$(origin KEEP)" "command line"
+KEEP_TEST_DIR_ON_SUCCESS ?= $(KEEP)
+else
 KEEP_TEST_DIR_ON_SUCCESS ?=
+endif
+
 ifeq "$(KEEP_TEST_DIR_ON_SUCCESS)" ""
   OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG =
 else
