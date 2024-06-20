@@ -5007,6 +5007,7 @@ and type_format loc str env =
         | Int64_ty rest     -> mk_constr "Int64_ty"     [ mk_fmtty rest ]
         | Float_ty rest     -> mk_constr "Float_ty"     [ mk_fmtty rest ]
         | Bool_ty rest      -> mk_constr "Bool_ty"      [ mk_fmtty rest ]
+        | Bytes_ty rest     -> mk_constr "Bytes_ty"     [ mk_fmtty rest ]
         | Alpha_ty rest     -> mk_constr "Alpha_ty"     [ mk_fmtty rest ]
         | Theta_ty rest     -> mk_constr "Theta_ty"     [ mk_fmtty rest ]
         | Any_ty rest       -> mk_constr "Any_ty"       [ mk_fmtty rest ]
@@ -5042,6 +5043,8 @@ and type_format loc str env =
           mk_constr "Ignored_float" [ mk_int_opt pad_opt; mk_int_opt prec_opt ]
         | Ignored_bool pad_opt ->
           mk_constr "Ignored_bool" [ mk_int_opt pad_opt ]
+        | Ignored_binary pad_opt ->
+          mk_constr "Ignored_binary" [ mk_int_opt pad_opt ]
         | Ignored_format_arg (pad_opt, fmtty) ->
           mk_constr "Ignored_format_arg" [ mk_int_opt pad_opt; mk_fmtty fmtty ]
         | Ignored_format_subst (pad_opt, fmtty) ->
@@ -5096,6 +5099,8 @@ and type_format loc str env =
             mk_fconv fconv; mk_padding pad; mk_precision prec; mk_fmt rest ]
         | Bool (pad, rest) ->
           mk_constr "Bool" [ mk_padding pad; mk_fmt rest ]
+        | Bytes (pad, rest) ->
+          mk_constr "Bytes" [ mk_padding pad; mk_fmt rest ]
         | Flush rest ->
           mk_constr "Flush" [ mk_fmt rest ]
         | String_literal (s, rest) ->

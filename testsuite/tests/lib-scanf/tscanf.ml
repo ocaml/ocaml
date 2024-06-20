@@ -1478,7 +1478,11 @@ let test57 () =
   (* Complex test of scanning a meta format specified in the scanner input
      format string and extraction of its specification from a string. *)
   sscanf "12 \"%i\"89 " "%i %{%d%}%s %!"
-    (fun i f s -> i = 12 && f = "%i" && s = "89")
+    (fun i f s -> i = 12 && f = "%i" && s = "89") &&
+
+  (* Test if format %y is indeed read as %y. *)
+  let s, fmt = " %y ", format_of_string "%y" in
+  test_format_scan s fmt " %y "
 ;;
 
 test (test57 ())
@@ -1563,5 +1567,22 @@ let test62 () =
   sscanf_opt "" "%d" id = None &&
   sscanf_opt "Hello 123" "%s %d" (fun s n -> s, n) = Some ("Hello", 123) &&
   sscanf_opt "Hello 123" "%s %r" (fun ib -> Scanf.bscanf_opt ib "%d" Fun.id) (fun s n -> s, n) = Some ("Hello", Some 123) &&
-  sscanf_opt "Hello world" "%s %r" (fun ib -> Scanf.bscanf_opt ib "%d" Fun.id) (fun s n -> s, n) = None
+  sscanf_opt "Hello world" "%s %r" (fun ib -> Scanf.bscanf_opt ib "%d" Fun.id) (fun s n -> s, n) = Some ("Hello", None)
+
+;;
+
+test (test62 ())
+;;
+
+(* testing %y binary scanning *)
+let test63 () =
+  let test x s = (Bytes.to_string x) = s in
+  sscanf "\001\002\t\003 \004\005" "%y %y %y"
+    (fun a b c ->
+      test a "\001\002" &&
+      test b "\003" &&
+      test c "\004\005")
+;;
+
+test (test63 ())
 ;;
