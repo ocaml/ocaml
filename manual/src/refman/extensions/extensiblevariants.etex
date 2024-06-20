@@ -67,6 +67,19 @@ type Expr.attr += Str = Expr.Str
 let now_works = Str "foo";;
 \end{caml_example}
 
+Extensible variant types can be make visible from another module,
+for instance to make the type appear in the most natural module
+for the end user of a library.
+\begin{caml_example*}{verbatim}
+module Expr2 = struct
+  type t = Expr.attr = ..
+  type t +=
+    | Str   = Expr.Str
+    | Int   = Expr.Int
+    | Float = Expr.Float
+end
+\end{caml_example*}
+
 Extensible variant constructors can be declared "private". As with
 regular variants, this prevents them from being constructed directly by
 constructor application while still allowing them to be de-structured in

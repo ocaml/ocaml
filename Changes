@@ -859,8 +859,12 @@ OCaml 5.2.0 (13 May 2024)
 
 ### Manual and documentation:
 
+- #12359: Add an example of reexporting an extensible variant types in
+  another module.
+  (Christophe Raffalli, review by Florian Angeletti)
+
 - #12338: clarification of the documentation of process related function in
-  the unix module regarding the first element of args and shell's pid.
+  the unix module regarding the first element of args and shell's pi
   (Christophe Raffalli, review by Florian Angeletti)
 
 - #12473: Document in runtime/memory.c our current understanding of
