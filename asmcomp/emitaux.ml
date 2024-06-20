@@ -461,6 +461,13 @@ let report_error ppf = function
   | Stack_frame_too_large n ->
       Format_doc.fprintf ppf "stack frame too large (%d bytes)" n
 
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | _ -> None
+    )
+
 let mk_env f : Emitenv.per_function_env =
   {
     f;

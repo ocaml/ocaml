@@ -411,6 +411,7 @@ name:
 caml_system__code_begin:
 
 FUNCTION(caml_call_realloc_stack)
+        CFI_SIGNAL_FRAME
     /* Save return address */
         ENTER_FUNCTION
     /* Save all registers (including ALLOC_PTR & TRAP_PTR) */
@@ -434,6 +435,7 @@ END_FUNCTION(caml_call_realloc_stack)
 
 FUNCTION(caml_call_gc)
 L(caml_call_gc):
+        CFI_SIGNAL_FRAME
     /* Save return address */
         ENTER_FUNCTION
     /* Store all registers (including ALLOC_PTR & TRAP_PTR) */
@@ -492,6 +494,7 @@ END_FUNCTION(caml_allocN)
 
 FUNCTION(caml_c_call)
 L(caml_c_call):
+        CFI_SIGNAL_FRAME
         ENTER_FUNCTION
         TSAN_SAVE_CALLER_REGS
         TSAN_ENTER_FUNCTION
@@ -531,6 +534,7 @@ L(caml_c_call):
 END_FUNCTION(caml_c_call)
 
 FUNCTION(caml_c_call_stack_args)
+        CFI_SIGNAL_FRAME
     /* Arguments:
         C arguments  : a0 to a7, fa0 to fa7
         C function   : ADDITIONAL_ARG
@@ -572,6 +576,7 @@ END_FUNCTION(caml_c_call_stack_args)
 /* Start the OCaml program */
 
 FUNCTION(caml_start_program)
+        CFI_SIGNAL_FRAME
 #if defined(WITH_THREAD_SANITIZER)
         addi    sp, sp, -16
         CFI_ADJUST(16)
@@ -1114,6 +1119,7 @@ FUNCTION(caml_runstack)
         addi    sp, sp, 32
         CFI_ADJUST(-32)
 #endif
+        CFI_SIGNAL_FRAME
     /*  a0: fiber
         a1: fun
         a2: arg */

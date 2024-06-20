@@ -3009,6 +3009,7 @@ asmcomp/emit.cmi : \
     asmcomp/linear.cmi \
     asmcomp/cmm.cmi
 asmcomp/emitaux.cmo : \
+    parsing/location.cmi \
     utils/format_doc.cmi \
     asmcomp/emitenv.cmi \
     lambda/debuginfo.cmi \
@@ -3019,6 +3020,7 @@ asmcomp/emitaux.cmo : \
     asmcomp/arch.cmi \
     asmcomp/emitaux.cmi
 asmcomp/emitaux.cmx : \
+    parsing/location.cmx \
     utils/format_doc.cmx \
     asmcomp/emitenv.cmi \
     lambda/debuginfo.cmx \
