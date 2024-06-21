@@ -16,7 +16,7 @@
 /* Pipeline for the dune-build job on Inria's CI */
 
 pipeline {
-  agent { label 'ocaml-ubuntu-latest' }
+  agent { label 'ocaml-linux-64' }
   options {
     timeout(time: 1, unit: 'HOURS')
   }

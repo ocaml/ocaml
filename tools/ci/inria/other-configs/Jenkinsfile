@@ -18,7 +18,7 @@
 /* Test various other compiler configurations */
 
 pipeline {
-  agent { label 'ocaml-ubuntu-latest' }
+  agent { label 'ocaml-linux-64' }
   options {
     timeout(time: 45, unit: 'MINUTES')
   }

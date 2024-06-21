@@ -18,7 +18,7 @@
 /* Make sure the OCaml compiler can still be bootstrapped */
 
 pipeline {
-  agent { label 'ocaml-ubuntu-latest' }
+  agent { label 'ocaml-linux-64' }
   options {
     timeout(time: 1, unit: 'HOURS')
   }

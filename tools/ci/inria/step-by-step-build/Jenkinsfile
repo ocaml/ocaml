@@ -18,7 +18,7 @@
 /* Build OCaml the legacy way (without using the world.opt target) */
 
 pipeline {
-  agent { label 'ocaml-ubuntu-latest' }
+  agent { label 'ocaml-linux-64' }
   options {
     timeout(time: 1, unit: 'HOURS')
   }
