@@ -35,6 +35,15 @@ exception Incompatible
 
 (* All the following wrapper functions revert to the original level,
    even in case of exception. *)
+val with_local_level_generalize:
+    ?before_generalize:('a -> unit) -> (unit -> 'a) -> 'a
+val with_local_level_generalize_if:
+        bool -> ?before_generalize:('a -> unit) -> (unit -> 'a) -> 'a
+val with_local_level_generalize_structure: (unit -> 'a) -> 'a
+val with_local_level_generalize_structure_if: bool -> (unit -> 'a) -> 'a
+val with_local_level_generalize_structure_if_principal: (unit -> 'a) -> 'a
+val with_local_level_generalize_for_class: (unit -> 'a) -> 'a
+
 val with_local_level: ?post:('a -> unit) -> (unit -> 'a) -> 'a
         (* [with_local_level (fun () -> cmd) ~post] evaluates [cmd] at a
            raised level.
@@ -129,8 +138,6 @@ val merge_row_fields:
 val filter_row_fields:
         bool -> (label * row_field) list -> (label * row_field) list
 
-val generalize: type_expr -> unit
-        (* Generalize in-place the given type *)
 val lower_contravariant: Env.t -> type_expr -> unit
         (* Lower level of type variables inside contravariant branches;
            to be used before generalize for expansive expressions *)
@@ -138,23 +145,16 @@ val lower_variables_only: Env.t -> int -> type_expr -> unit
         (* Lower all variables to the given level *)
 val enforce_current_level: Env.t -> type_expr -> unit
         (* Lower whole type to !current_level *)
-val generalize_structure: type_expr -> unit
-        (* Generalize the structure of a type, lowering variables
-           to !current_level *)
-val generalize_class_type : class_type -> unit
-        (* Generalize the components of a class type *)
-val generalize_class_type_structure : class_type -> unit
-       (* Generalize the structure of the components of a class type *)
-val generalize_class_signature_spine : Env.t -> class_signature -> unit
+val generalize_class_signature_spine: class_signature -> unit
        (* Special function to generalize methods during inference *)
-val correct_levels: type_expr -> type_expr
-        (* Returns a copy with decreasing levels *)
-val limited_generalize: type_expr -> type_expr -> unit
+val limited_generalize: type_expr -> inside:type_expr -> unit
         (* Only generalize some part of the type
            Make the remaining of the type non-generalizable *)
-val limited_generalize_class_type: type_expr -> class_type -> unit
+val limited_generalize_class_type: type_expr -> inside:class_type -> unit
         (* Same, but for class types *)
 
+val duplicate_type: type_expr -> type_expr
+        (* Returns a copy with non-variable nodes at generic level *)
 val fully_generic: type_expr -> bool
 
 val check_scope_escape : Env.t -> int -> type_expr -> unit

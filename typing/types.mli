@@ -270,11 +270,8 @@ val create_expr: type_desc -> level: int -> scope: int -> id: int -> type_expr
 
 (** Functions and definitions moved from Btype *)
 
-val newty3: level:int -> scope:int -> type_desc -> type_expr
+val proto_newty3: level:int -> scope:int -> type_desc -> transient_expr
         (** Create a type with a fresh id *)
-
-val newty2: level:int -> type_desc -> type_expr
-        (** Create a type with a fresh id and no scope *)
 
 module TransientTypeOps : sig
   (** Comparisons for functors *)

@@ -789,12 +789,9 @@ let new_id = Local_store.s_ref (-1)
 
 let create_expr = Transient_expr.create
 
-let newty3 ~level ~scope desc  =
+let proto_newty3 ~level ~scope desc  =
   incr new_id;
   create_expr desc ~level ~scope ~id:!new_id
-
-let newty2 ~level desc =
-  newty3 ~level ~scope:Ident.lowest_scope desc
 
                   (**********************************)
                   (*  Utilities for backtracking    *)

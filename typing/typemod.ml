@@ -2092,11 +2092,11 @@ and package_constraints env loc mty constrs =
   end
 
 let modtype_of_package env loc p fl =
-  (* We call Ctype.correct_levels to ensure that the types being added to the
+  (* We call Ctype.duplicate_type to ensure that the types being added to the
      module type are at generic_level. *)
   let mty =
     package_constraints env loc (Mty_ident p)
-      (List.map (fun (n, t) -> Longident.flatten n, Ctype.correct_levels t) fl)
+      (List.map (fun (n, t) -> Longident.flatten n, Ctype.duplicate_type t) fl)
   in
   Subst.modtype Keep Subst.identity mty
 
@@ -2296,9 +2296,8 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       final_shape
   | Pmod_unpack sexp ->
       let exp =
-        Ctype.with_local_level_if_principal
+        Ctype.with_local_level_generalize_structure_if_principal
           (fun () -> Typecore.type_exp env sexp)
-          ~post:Typecore.generalize_structure_exp
       in
       let mty =
         match get_desc (Ctype.expand_head env exp.exp_type) with
