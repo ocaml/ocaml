@@ -131,8 +131,7 @@ let pool_stack = s_table (fun () -> {level = 0; pool = []; next = dummy}) ()
 let rec pool_of_level level pool =
   if level >= pool.level then pool else pool_of_level level pool.next
 
-(* Create a new pool at given level, and use it locally.
-   We need first to add the deferred levels to leveled_type_pool *)
+(* Create a new pool at given level, and use it locally. *)
 let with_new_pool ~level f =
   let pool = {level; pool = []; next = !pool_stack} in
   let r =
