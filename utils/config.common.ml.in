@@ -78,9 +78,13 @@ let configuration_variables () =
   p "ccomp_type" ccomp_type;
   p "c_compiler" c_compiler;
   p "bytecode_cflags" bytecode_cflags;
+  p "ocamlc_cflags" bytecode_cflags;
   p "bytecode_cppflags" bytecode_cppflags;
+  p "ocamlc_cppflags" bytecode_cppflags;
   p "native_cflags" native_cflags;
+  p "ocamlopt_cflags" native_cflags;
   p "native_cppflags" native_cppflags;
+  p "ocamlopt_cppflags" native_cppflags;
   p "bytecomp_c_compiler" bytecomp_c_compiler;
   p "native_c_compiler" native_c_compiler;
   p "bytecomp_c_libraries" bytecomp_c_libraries;
