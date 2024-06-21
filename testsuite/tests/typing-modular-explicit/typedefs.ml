@@ -38,9 +38,10 @@ type t8 =
 
 type t9 = C of 'a constraint 'a = (module T : T) -> T.t -> T.t
 
+(* Here we test having the same type but with a slightly different definition *)
 type t10 = t8 =
-    A of ((module T : T) -> (module A : Add with type t = T.t) -> A.t -> A.t)
-  | B of ((module T : T) -> (module A : Add with type t = T.t) -> A.t -> A.t)
+    A of ((module T : T) -> (module Add with type t = T.t) -> T.t -> T.t)
+  | B of ((module T : T) -> (module Add with type t = T.t) -> T.t -> T.t)
 
 [%%expect{|
 type t0 = (module M : T) -> M.t -> M.t
@@ -57,21 +58,40 @@ type t8 =
 type t9 = C of ((module T : T) -> T.t -> T.t)
 type t10 =
   t8 =
-    A of ((module T : T) -> (module A : Add with type t = T.t) -> A.t -> A.t)
-  | B of ((module T : T) -> (module A : Add with type t = T.t) -> A.t -> A.t)
+    A of ((module T : T) -> (module Add with type t = T.t) -> T.t -> T.t)
+  | B of ((module T : T) -> (module Add with type t = T.t) -> T.t -> T.t)
 |}]
 
-(* Test about invalid types *)
+(** Test constraint check, one success and the next one is a fail  *)
+let t9_success (x : (module T : T) -> T.t -> T.t) = C x
+
+[%%expect{|
+val t9_success : ((module T : T) -> T.t -> T.t) -> t9 = <fun>
+|}]
+
+let t9_fail (x : (module T : T) -> T.t -> int) = C x
+
+[%%expect{|
+Line 1, characters 51-52:
+1 | let t9_fail (x : (module T : T) -> T.t -> int) = C x
+                                                       ^
+Error: This expression has type "(module T : T) -> T.t -> int"
+       but an expression was expected of type "(module T : T) -> T.t -> T.t"
+       Type "int" is not compatible with type "T.t"
+|}]
+
+(** Test about invalid types definitions *)
 
 type t_fail1 = (module M : T) -> M.a
 
 [%%expect{|
-Line 1, characters 33-36:
-1 | type t_fail1 = (module M : T) -> M.a
+Line 3, characters 33-36:
+3 | type t_fail1 = (module M : T) -> M.a
                                      ^^^
 Error: Unbound type constructor "M.a"
 |}]
 
+(* N is not defined before *)
 type t_fail2 = (module M : T) -> N.t
 
 [%%expect{|
@@ -81,6 +101,7 @@ Line 1, characters 33-36:
 Error: Unbound module "N"
 |}]
 
+(* M is not defined before *)
 type t_fail3 = < m : (module M : T) -> M.t; n : M.t >
 
 [%%expect{|
@@ -90,7 +111,6 @@ Line 1, characters 48-51:
 Error: Unbound module "M"
 |}]
 
-(* should this fail ? *)
 type +'a t_fail4 = 'a -> (module M : T with type t = 'a) -> unit
 
 [%%expect{|
@@ -123,11 +143,77 @@ Line 1, characters 52-55:
 Error: Unbound module "M"
 |}]
 
+(* tests about variance *)
+
+module type V = sig
+  type +'a p
+  type -'a n
+  type !'a i
+end
+
+(* this test is here to compare that both behave the same way *)
+module type F = functor (X : V) -> sig
+  type +'a t_pos = unit -> 'a X.p
+  type -'a t_neg = unit -> 'a X.n
+  type !'a t_inj = unit -> 'a X.i
+  type -'a t_npos = unit -> 'a X.p -> unit
+  type +'a t_pneg = unit -> 'a X.n -> unit
+end
+
+type +'a t_pos = (module X : V) -> 'a X.p
+type -'a t_neg = (module X : V) -> 'a X.n
+type !'a t_inj = (module X : V) -> 'a X.i
+type -'a t_npos = (module X : V) -> 'a X.p -> unit
+type +'a t_pneg = (module X : V) -> 'a X.n -> unit
+
+[%%expect{|
+module type V = sig type +'a p type -'a n type !'a i end
+module type F =
+  functor (X : V) ->
+    sig
+      type 'a t_pos = unit -> 'a X.p
+      type 'a t_neg = unit -> 'a X.n
+      type 'a t_inj = unit -> 'a X.i
+      type 'a t_npos = unit -> 'a X.p -> unit
+      type 'a t_pneg = unit -> 'a X.n -> unit
+    end
+type 'a t_pos = (module X : V) -> 'a X.p
+type 'a t_neg = (module X : V) -> 'a X.n
+type 'a t_inj = (module X : V) -> 'a X.i
+type 'a t_npos = (module X : V) -> 'a X.p -> unit
+type 'a t_pneg = (module X : V) -> 'a X.n -> unit
+|}]
+
+type +'a t_pos = (module X : V) -> 'a X.p -> unit
+
+[%%expect{|
+Line 1, characters 0-49:
+1 | type +'a t_pos = (module X : V) -> 'a X.p -> unit
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, expected parameter variances are not satisfied.
+       The 1st type parameter was expected to be covariant,
+       but it is contravariant.
+|}]
+
+type -'a t_neg = (module X : V) -> 'a X.n -> unit
+
+[%%expect{|
+Line 1, characters 0-49:
+1 | type -'a t_neg = (module X : V) -> 'a X.n -> unit
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this definition, expected parameter variances are not satisfied.
+       The 1st type parameter was expected to be contravariant,
+       but it is covariant.
+|}]
+
+
+(** Here we test compatibility between different type definitions *)
+
 let id_fail1 (x : t0) : _ t5 = x
 
 [%%expect{|
-Line 1, characters 31-32:
-1 | let id_fail1 (x : t0) : _ t5 = x
+Line 3, characters 31-32:
+3 | let id_fail1 (x : t0) : _ t5 = x
                                    ^
 Error: This expression has type "t0" = "(module M : T) -> M.t -> M.t"
        but an expression was expected of type
