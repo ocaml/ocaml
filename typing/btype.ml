@@ -118,6 +118,16 @@ type pool = {level: int; mutable pool: transient_expr list; next: pool}
 let rec dummy = {level = max_int; pool = []; next = dummy}
 let pool_stack = s_table (fun () -> {level = 0; pool = []; next = dummy}) ()
 
+(* Lookup in the stack is linear, but the depth is the number of nested
+   generalization points (e.g. lhs of let-definitions), which in ML is known
+   to be generally low. In most cases we are allocating in the topmost pool.
+   In [Ctype.with_local_gen], we move non-generalizable type nodes from the
+   topmost pool to one deeper in the stack, so that for each type node the
+   accumulated depth of lookups over its life is bounded by the depth of
+   the stack when it was allocated.
+   In case this linear search turns out to be costly, we could switch to
+   binary search, exploiting the fact that the levels of pools in the stack
+   are expected to grow. *)
 let rec pool_of_level level pool =
   if level >= pool.level then pool else pool_of_level level pool.next
 
