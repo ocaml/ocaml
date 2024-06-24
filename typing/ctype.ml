@@ -2835,15 +2835,17 @@ and unify3 uenv t1 t1' t2 t2' =
     end;
     try
       begin match (d1, d2) with
-        (Tarrow (l1, t1, u1, c1), Tarrow (l2, t2, u2, c2))
-        when compatible_labels ~in_pattern_mode:(in_pattern_mode uenv) l1 l2 ->
-          unify uenv t1 t2; unify uenv u1 u2;
-          begin match is_commu_ok c1, is_commu_ok c2 with
-          | false, true -> set_commu_ok c1
-          | true, false -> set_commu_ok c2
-          | false, false -> link_commu ~inside:c1 c2
-          | true, true -> ()
-          end
+        (Tarrow (l1, t1, u1, c1), Tarrow (l2, t2, u2, c2)) ->
+          if
+            compatible_labels ~in_pattern_mode:(in_pattern_mode uenv) l1 l2
+          then begin unify uenv t1 t2; unify uenv u1 u2;
+            match is_commu_ok c1, is_commu_ok c2 with
+            | false, true -> set_commu_ok c1
+            | true, false -> set_commu_ok c2
+            | false, false -> link_commu ~inside:c1 c2
+            | true, true -> ()
+          end else
+            raise_for Unify (Function_label_mismatch {got=l1; expected=l2})
       | (Ttuple tl1, Ttuple tl2) ->
           unify_list uenv tl1 tl2
       | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
@@ -3793,10 +3795,13 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
               moregen_occur env (get_level t1') t2;
               update_scope_for Moregen (get_scope t1') t2;
               link_type t1' t2
-          | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _))
-                when compatible_labels ~in_pattern_mode:false l1 l2 ->
-              moregen inst_nongen type_pairs env t1 t2;
-              moregen inst_nongen type_pairs env u1 u2
+          | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) ->
+              if compatible_labels ~in_pattern_mode:false l1 l2 then begin
+                moregen inst_nongen type_pairs env t1 t2;
+                moregen inst_nongen type_pairs env u1 u2
+              end else
+                raise_for Moregen
+                  (Function_label_mismatch {got=l1; expected=l2})
           | (Ttuple tl1, Ttuple tl2) ->
               moregen_list inst_nongen type_pairs env tl1 tl2
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
@@ -4145,10 +4150,13 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           match (get_desc t1', get_desc t2') with
             (Tvar _, Tvar _) when rename ->
               eqtype_subst type_pairs subst t1' t2'
-          | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _))
-                when compatible_labels ~in_pattern_mode:false l1 l2 ->
-              eqtype rename type_pairs subst env t1 t2;
-              eqtype rename type_pairs subst env u1 u2;
+          | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) ->
+              if compatible_labels ~in_pattern_mode:false l1 l2 then begin
+                eqtype rename type_pairs subst env t1 t2;
+                eqtype rename type_pairs subst env u1 u2;
+              end else
+                raise_for Equality
+                  (Function_label_mismatch {got=l1; expected=l2})
           | (Ttuple tl1, Ttuple tl2) ->
               eqtype_list rename type_pairs subst env tl1 tl2
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))

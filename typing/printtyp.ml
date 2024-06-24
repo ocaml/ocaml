@@ -2337,6 +2337,55 @@ let explain_incompatible_fields name (diff: Types.type_expr Errortrace.diff) =
     (Style.as_inline_code type_expr_with_reserved_names) diff.got
     (Style.as_inline_code type_expr_with_reserved_names) diff.expected
 
+
+let explain_label_mismatch ~got ~expected =
+  let quoted_label ppf l = Style.inline_code ppf (Asttypes.string_of_label l) in
+  match got, expected with
+  | Asttypes.Nolabel, Asttypes.Labelled _  ->
+      doc_printf "@,@[A labeled argument %a was expected@]"
+        quoted_label expected
+  | Asttypes.Nolabel, Asttypes.Optional _  ->
+      doc_printf "@,@[An optional argument %a was expected@]"
+        quoted_label expected
+  | Asttypes.Labelled _, Asttypes.Nolabel  ->
+      doc_printf
+        "@,@[The argument %a is labeled,@ \
+         but an unlabeled argument was expected@]"
+        quoted_label got
+  | Asttypes.Optional _, Asttypes.Nolabel  ->
+      doc_printf
+        "@,@[The argument %a is optional,@ \
+         but an unlabeled argument was expected@]"
+       quoted_label got
+  | Asttypes.Optional _, Asttypes.Optional _
+  | Asttypes.Labelled _, Asttypes.Labelled _ ->
+      doc_printf "@,@[Labels %a and %a do not match@]"
+        quoted_label got
+        quoted_label expected
+  | Asttypes.Labelled g, Asttypes.Optional e  ->
+      if g = e then
+        doc_printf "@,@[The labeled argument %a was expected to be optional@]"
+          quoted_label got
+      else
+        doc_printf
+          "@,@[The labeled argument %a was expected to be@ \
+           an optional argument named %a.@]"
+          quoted_label got
+          quoted_label expected
+  | Asttypes.Optional g, Asttypes.Labelled e  ->
+      if g = e then
+        doc_printf
+          "@,@[The optional argument %a was not expected to be optional@]"
+          quoted_label got
+      else
+        doc_printf
+          "@,@[The optional argument %a was expected to be@ \
+           a labeled argument named %a@]"
+          quoted_label got
+          quoted_label expected
+  | Asttypes.Nolabel, Asttypes.Nolabel -> assert false
+
+
 let explain_first_class_module = function
   | Errortrace.Package_cannot_scrape p -> Some(
       doc_printf "@,@[The module alias %a could not be expanded@]"
@@ -2365,6 +2414,8 @@ let explanation (type variety) intro prev env
     explain_escape pre kind
   | Errortrace.Incompatible_fields { name; diff} ->
     Some(explain_incompatible_fields name diff)
+  | Errortrace.Function_label_mismatch diff ->
+    Some(explain_label_mismatch ~got:diff.got ~expected:diff.expected)
   | Errortrace.Variant v ->
     explain_variant v
   | Errortrace.Obj o ->

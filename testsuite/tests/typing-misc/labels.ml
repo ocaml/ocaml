@@ -151,3 +151,46 @@ val f : (x:int -> y:int -> int) -> int = <fun>
 module E : sig type t = (x:int -> y:int -> int) -> int end
 val g : 'a -> E.t = <fun>
 |}]
+
+let labeled ~x = ()
+let unlabeled x = ()
+let wrong_label ~y = ()
+let expect_unlabeled g = if true then g ()
+let expect_labeled g x = if true then g ~x;;
+[%%expect {|
+val labeled : x:'a -> unit = <fun>
+val unlabeled : 'a -> unit = <fun>
+val wrong_label : y:'a -> unit = <fun>
+val expect_unlabeled : (unit -> unit) -> unit = <fun>
+val expect_labeled : (x:'a -> unit) -> 'a -> unit = <fun>
+|}]
+
+let () = expect_unlabeled labeled
+[%%expect {|
+Line 1, characters 26-33:
+1 | let () = expect_unlabeled labeled
+                              ^^^^^^^
+Error: This expression has type "x:'a -> unit"
+       but an expression was expected of type "unit -> unit"
+       The argument "x" is labeled, but an unlabeled argument was expected
+|}]
+
+let () = expect_labeled unlabeled
+[%%expect {|
+Line 1, characters 24-33:
+1 | let () = expect_labeled unlabeled
+                            ^^^^^^^^^
+Error: This expression has type "'a -> unit"
+       but an expression was expected of type "x:'b -> unit"
+       A labeled argument "x" was expected
+|}]
+
+let () = expect_labeled wrong_label
+[%%expect {|
+Line 1, characters 24-35:
+1 | let () = expect_labeled wrong_label
+                            ^^^^^^^^^^^
+Error: This expression has type "y:'a -> unit"
+       but an expression was expected of type "x:'b -> unit"
+       Labels "y" and "x" do not match
+|}]

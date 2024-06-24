@@ -233,6 +233,9 @@ _______________
 - #12985, #12988: Better error messages for partially applied functors.
   (Florian Angeletti, report by Arthur Wendling, review by Gabriel Scherer)
 
+- #13034, ????: Better error messages for mismatched function labels
+  (Florian Angeletti, report by Daniel Bünzli, review by ???)
+
 - #13051: Add a "Syntax error" to error messages for invalid package signatures.
   (Samuel Vivien, review by Gabriel Scherer)
 
