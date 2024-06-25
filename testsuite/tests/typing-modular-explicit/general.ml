@@ -188,14 +188,7 @@ val principality_warning : Int.t * Int.t = (1, 3)
 let x_from_struct = id (module struct type t = int end) 3
 
 [%%expect{|
-Line 6, characters 20-22:
-6 | let x_from_struct = id (module struct type t = int end) 3
-                        ^^
-Error: This expression has type "(module T : Typ) -> T.t -> T.t"
-       but an expression was expected of type "(module Typ) -> 'a"
-       The module "T" would escape its scope
-  Attempted to remove dependency because
-  could not extract path from module argument.
+val x_from_struct : int = 3
 |}]
 
 
@@ -245,19 +238,30 @@ val s_list_array : string MapCombine(List)(Array).t =
 let s_list_arrayb =
     map
       (module MapCombine(struct type 'a t = 'a list let map = List.map end)(Array))
-      [|[3; 2]; [2]; []|]
+      string_of_int [|[3; 2]; [2]; []|]
 
 [%%expect{|
-Line 2, characters 4-7:
-2 |     map
-        ^^^
-Error: This expression has type
-         "(module M : Map) -> ('a -> 'b) -> 'a M.t -> 'b M.t"
-       but an expression was expected of type "(module Map) -> 'c"
+val s_list_arrayb : string list Array.t = [|["3"; "2"]; ["2"]; []|]
+|}]
+
+module F () : Map = struct
+  type 'a t = 'a list
+  let map = List.map
+end
+
+let fail = map (module F()) string_of_int [3]
+
+[%%expect{|
+module F : functor () -> Map
+Line 6, characters 15-27:
+6 | let fail = map (module F()) string_of_int [3]
+                   ^^^^^^^^^^^^
+Error:
        The module "M" would escape its scope
   Attempted to remove dependency because
   could not extract path from module argument.
 |}]
+
 
 
 
@@ -503,7 +507,7 @@ module type TBool = module type of MyBool
 
 let id_bool (module B : TBool) (x : B.t) = x
 
-let _ = id_bool (module MyBool) MyBool.false
+let _ = id_bool (module MyBool) MyBool.(false)
 
 [%%expect{|
 module MyBool : sig type t = bool = false | true val not : bool -> bool end

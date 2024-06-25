@@ -428,6 +428,7 @@ val close_class_signature : Env.t -> class_signature -> bool
 
 exception Nondep_cannot_erase of Ident.t
 
+val identifier_escape : Env.t -> Ident.unscoped list -> type_expr -> unit
 val nondep_type: Env.t -> Ident.t list -> type_expr -> type_expr
         (* Return a type equivalent to the given type but without
            references to any of the given identifiers.
