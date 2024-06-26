@@ -95,9 +95,10 @@ _______________
   with MSVC or clang-cl.
   (Antonin Décimo, review by Miod Vallat)
 
-- #13241: Add CFI_SIGNAL_FRAME to ARM64 and RiscV runtimes, for the
+- #13241, #13261: Add CFI_SIGNAL_FRAME to ARM64 and RiscV runtimes, for the
   purpose of displaying backtraces correctly in GDB.
-  (Tim McGilchrist, review by Miod Vallat and Gabriel Scherer)
+  (Tim McGilchrist, review by Miod Vallat, Gabriel Scherer and
+   KC Sivaramakrishnan)
 
 ### Code generation and optimizations:
 
