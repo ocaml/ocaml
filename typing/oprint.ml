@@ -162,6 +162,8 @@ let print_constr ppf name =
     (* despite being keywords, these are constructor names
        and should not be escaped *)
     fprintf ppf "%s" c
+  | Oide_dot (id, (("true" | "false") as c)) ->
+    print_ident ppf id; pp_print_char ppf '.'; fprintf ppf "%s" c
   | _ -> print_ident ppf name
 
 let print_out_value ppf tree =
