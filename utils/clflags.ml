@@ -165,8 +165,8 @@ let shared = ref false (* -shared *)
 let dlcode = ref true (* not -nodynlink *)
 
 let pic_code = ref (match Config.architecture with (* -fPIC *)
-                     | "amd64" -> true
-                     | _       -> false)
+                     | "amd64" | "s390x" -> true
+                     | _                 -> false)
 
 let runtime_variant = ref ""
 

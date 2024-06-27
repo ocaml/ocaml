@@ -22,12 +22,10 @@ open Format
 
 (* Machine-specific command-line options *)
 
-let pic_code = ref true
-
 let command_line_options =
-  [ "-fPIC", Arg.Set pic_code,
+  [ "-fPIC", Arg.Set Clflags.pic_code,
       " Generate position-independent machine code (default)";
-    "-fno-PIC", Arg.Clear pic_code,
+    "-fno-PIC", Arg.Clear Clflags.pic_code,
       " Generate position-dependent machine code" ]
 
 (* Specific operations *)
