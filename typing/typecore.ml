@@ -4692,10 +4692,10 @@ and split_function_ty env ty_expected ~arg_label ~first ~in_function =
 
 and split_function_mty env ty_expected ~arg_label ~first ~in_function =
   let { ty = ty_fun; explanation }, loc = in_function in
-  with_local_level_iter ~post:generalize_structure begin fun () ->
+  with_local_level_generalize_structure begin fun () ->
     match filter_functor env (instance ty_expected) arg_label with
-    | None -> (None, [])
-    | Some (_, _, ty) as o -> (o, [ty])
+    | None -> None
+    | Some _ as o -> o
     | exception Filter_arrow_failed err ->
         let err = match err with
         | Unification_error unif_err ->

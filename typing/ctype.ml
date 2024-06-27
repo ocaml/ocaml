@@ -2191,10 +2191,6 @@ let has_unbounded bound_id p =
 (* That's way too expensive. Must do some kind of caching *)
 (* If [inj_only=true], only check injective positions *)
 
-(* TODO : implement for unscoped a similar invariant than the one used for
-   unification variables.
-   Current invariant is : set of types `t`checked in context bound_uv
-*)
 let occur_univar_or_unscoped ?(inj_only=false) ?(check_unscoped=true) env ty =
   let visited = ref TypeMap.empty in
   with_type_mark begin fun mark ->
@@ -3784,16 +3780,16 @@ type filter_arrow_failure =
 
 exception Filter_arrow_failed of filter_arrow_failure
 
+let function_type l level =
+  let t1 = newvar2 level and t2 = newvar2 level in
+  let t' = newty2 ~level (Tarrow (l, t1, t2, commu_ok)) in
+  t', t1, t2
+
 let filter_arrow env t l =
-  let function_type level =
-    let t1 = newvar2 level and t2 = newvar2 level in
-    let t' = newty2 ~level (Tarrow (l, t1, t2, commu_ok)) in
-    t', t1, t2
-  in
   let t =
     try expand_head_trace env t
     with Unify_trace trace ->
-      let t', _, _ = function_type (get_level t) in
+      let t', _, _ = function_type l (get_level t) in
       raise (Filter_arrow_failed
                (Unification_error
                   (expand_to_unification_error
@@ -3802,7 +3798,7 @@ let filter_arrow env t l =
   in
   match get_desc t with
   | Tvar _ ->
-      let t', t1, t2 = function_type (get_level t) in
+      let t', t1, t2 = function_type l (get_level t) in
       link_type t t';
       (t1, t2)
   | Tarrow(l', t1, t2, _) ->
@@ -3817,8 +3813,13 @@ let filter_arrow env t l =
 let filter_functor env t l =
   let t =
     try expand_head_trace env t
-    with Unify_trace _trace ->
-      assert false (* TODO *)
+    with Unify_trace trace ->
+      let t', _, _ = function_type l (get_level t) in
+      raise (Filter_arrow_failed
+               (Unification_error
+                  (expand_to_unification_error
+                     env
+                     (Diff { got = t'; expected = t } :: trace))))
   in
   match get_desc t with
   | Tfunctor (l', id, (p, fl), ct) ->
