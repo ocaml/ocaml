@@ -185,7 +185,8 @@ external to_int32 : nativeint -> int32 = "%nativeint_to_int32"
    i.e. the top 32 bits are lost.  On 32-bit platforms,
    the conversion is exact. *)
 
-external of_string : string -> nativeint = "caml_nativeint_of_string"
+external of_string: string -> (nativeint[@unboxed])
+  = "caml_nativeint_of_string" "caml_nativeint_of_string_unboxed"
 (** Convert the given string to a native integer.
    The string is read in decimal (by default, or if the string
    begins with [0u]) or in hexadecimal, octal or binary if the
