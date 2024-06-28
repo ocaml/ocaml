@@ -17,6 +17,7 @@ open Local_store
 
 let lowest_scope  = 0
 let highest_scope = 100_000_000
+  (* assumed to fit in 27 bits, see Types.scope_field *)
 
 type unscoped_desc = { name: string; stamp: int }
 
@@ -124,7 +125,7 @@ let equal i1 i2 =
   | Local { name = name1; _ }, Local { name = name2; _ }
   | Scoped { name = name1; _ }, Scoped { name = name2; _ }
   | Global name1, Global name2 ->
-    name1 = name2
+      name1 = name2
   | Unscoped us1, Unscoped us2 ->
       (get_desc us1).name = (get_desc us2).name
   | Predef { stamp = s1; _ }, Predef { stamp = s2 } ->
@@ -140,7 +141,7 @@ let same i1 i2 =
   | Local { stamp = s1; _ }, Local { stamp = s2; _ }
   | Scoped { stamp = s1; _ }, Scoped { stamp = s2; _ }
   | Predef { stamp = s1; _ }, Predef { stamp = s2 } ->
-    s1 = s2
+      s1 = s2
   | Unscoped us1, Unscoped us2 -> same_unscoped us1 us2
   | Global name1, Global name2 ->
       name1 = name2

@@ -134,7 +134,7 @@ type type_desc =
 
   | Tfunctor of arg_label * Ident.unscoped
                 * (Path.t * (Longident.t * type_expr) list) * type_expr
-  (** Type of a dependant arrow *)
+  (** Type of a dependent arrow *)
 
 
 and fixed_explanation =
