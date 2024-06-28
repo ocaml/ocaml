@@ -814,47 +814,6 @@ let duplicate_class_type ty =
    second pass.
  *)
 
-let rec copy_spine copy_scope ty =
-  match get_desc ty with
-  | Tsubst (ty, _) -> ty
-  | Tvar _
-  | Tfield _
-  | Tnil
-  | Tvariant _
-  | Tobject _
-  | Tlink _
-  | Tunivar _ -> ty
-  | (Tarrow _ | Tpoly _ | Ttuple _ | Tpackage _ | Tconstr _
-    | Tfunctor _) as desc ->
-      let level = get_level ty in
-      if level < !current_level || level = generic_level then ty else
-      let t = newgenstub ~scope:(get_scope ty) in
-      For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
-      let copy_rec = copy_spine copy_scope in
-      let desc' = match desc with
-      | Tarrow (lbl, ty1, ty2, _) ->
-          Tarrow (lbl, copy_rec ty1, copy_rec ty2, commu_ok)
-      | Tpoly (ty', tvl) ->
-          Tpoly (copy_rec ty', tvl)
-      | Ttuple tyl ->
-          Ttuple (List.map copy_rec tyl)
-      | Tpackage (path, fl) ->
-          let fl = List.map (fun (n, ty) -> n, copy_rec ty) fl in
-          Tpackage (path, fl)
-      | Tconstr (path, tyl, _) ->
-          Tconstr (path, List.map copy_rec tyl, ref Mnil)
-      | Tfunctor (lbl, id, (path, fl), ty2) ->
-          (* TODO : to refresh id *)
-          let fl = List.map (fun (n, ty) -> n, copy_rec ty) fl in
-          Tfunctor (lbl, id, (path, fl), copy_rec ty2)
-      | _ -> assert false
-      in
-      Transient_expr.set_stub_desc t desc';
-      t
-
-let copy_spine ty =
-  For_copy.with_scope (fun copy_scope -> copy_spine copy_scope ty)
-
 let forward_try_expand_safe = (* Forward declaration *)
   ref (fun _env _ty -> assert false)
 
@@ -4178,6 +4137,63 @@ let close_class_signature env sign =
   in
   let self = expand_head env sign.csig_self in
   close env (object_fields self)
+
+let rec copy_spine ~closed ~id_map copy_scope ty =
+  match get_desc ty with
+  | Tsubst (ty, _) -> ty
+  | Tvar _
+  | Tnil
+  | Tlink _
+  | Tunivar _ -> ty
+  | Tfield _
+  | Tvariant _
+  | Tobject _ when not (closed ty) -> ty
+  | (Tarrow _ | Tpoly _ | Ttuple _ | Tpackage _ | Tconstr _
+    | Tfunctor _ | Tfield _ | Tvariant _ |Tobject _) as desc ->
+      let level = get_level ty in
+      if not (closed ty) && (level < !current_level || level = generic_level)
+      then ty else
+      let t = newgenstub ~scope:(get_scope ty) in
+      For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
+      let copy_rec = copy_spine ~closed ~id_map copy_scope in
+      let desc' = match desc with
+      | Tarrow (lbl, ty1, ty2, _) ->
+          Tarrow (lbl, copy_rec ty1, copy_rec ty2, commu_ok)
+      | Tpoly (ty', tvl) ->
+          Tpoly (copy_rec ty', tvl)
+      | Ttuple tyl ->
+          Ttuple (List.map copy_rec tyl)
+      | Tpackage (path, fl) ->
+          let fl = List.map (fun (n, ty) -> n, copy_rec ty) fl in
+          Tpackage (Path.subst id_map path, fl)
+      | Tconstr (path, tyl, _) ->
+          Tconstr (Path.subst id_map path, List.map copy_rec tyl, ref Mnil)
+      | Tfunctor (lbl, us, (path, fl), ty2) ->
+          let fl = List.map (fun (n, ty) -> n, copy_rec ty) fl in
+          let path = Path.subst id_map path in
+          let id = Ident.of_unscoped us in
+          let id_map = List.filter (fun (i, _) -> Ident.same i id) id_map in
+          let us' = Ident.refresh us in
+          let id_map = (id, Path.Pident (Ident.of_unscoped us)) :: id_map in
+          let closed = compute_id_from_map id_map ty2 in
+          Tfunctor (lbl, us', (path, fl), copy ~closed ~id_map copy_scope ty2)
+      | Tvariant row when Option.is_some (row_name row) ->
+          let (p, fl) = Option.get (row_name row) in
+          let fl = List.map copy_rec fl in
+          Tvariant (set_row_name row (Some (Path.subst id_map p, fl)))
+      | Tobject (ty, {contents = Some (p, tl)}) ->
+          let p = Path.subst id_map p in
+          Tobject (copy_rec ty, ref (Some (p, List.map copy_rec tl)))
+      | Tobject _ | Tvariant _ | Tfield _ ->
+          copy_type_desc (copy_spine ~closed ~id_map copy_scope) desc
+      | _ -> assert false
+      in
+      Transient_expr.set_stub_desc t desc';
+      t
+
+let copy_spine ty =
+  For_copy.with_scope (fun copy_scope ->
+        copy_spine ~closed:always_true ~id_map:[] copy_scope ty)
 
 let generalize_class_signature_spine sign =
   (* Generalize the spine of methods *)
