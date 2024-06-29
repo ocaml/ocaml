@@ -245,7 +245,7 @@ _______________
 
 - #13228: Re-export Cmt2annot.{iterator,binary_part} which had become hidden
   since #11288 and broke ocamlbrowser.
-  (David Allsopp, report by Jacques Garrigue, review by ??)
+  (David Allsopp, report by Jacques Garrigue, review by Sébastien Hinderer)
 
 - #13251: Register printer for errors in Emitaux
   (Vincent Laviron, review by Miod Vallat and Florian Angeletti)
