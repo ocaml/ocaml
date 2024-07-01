@@ -2314,6 +2314,10 @@ let compatible_labels ~in_pattern_mode l1 l2 =
   || (!Clflags.classic || in_pattern_mode)
       && not (is_optional l1 || is_optional l2)
 
+let eq_labels error_mode ~in_pattern_mode l1 l2 =
+  if not (compatible_labels ~in_pattern_mode l1 l2) then
+    raise_for error_mode (Function_label_mismatch {got=l1; expected=l2})
+
 (* Check for datatypes carefully; see PR#6348 *)
 let rec expands_to_datatype env ty =
   match get_desc ty with
@@ -2836,9 +2840,7 @@ and unify3 uenv t1 t1' t2 t2' =
     try
       begin match (d1, d2) with
         (Tarrow (l1, t1, u1, c1), Tarrow (l2, t2, u2, c2)) ->
-          if not (compatible_labels ~in_pattern_mode:(in_pattern_mode uenv)
-                    l1 l2)
-          then raise_for Unify (Function_label_mismatch {got=l1; expected=l2});
+          eq_labels Unify ~in_pattern_mode:(in_pattern_mode uenv) l1 l2;
           unify uenv t1 t2; unify uenv u1 u2;
           begin match is_commu_ok c1, is_commu_ok c2 with
           | false, true -> set_commu_ok c1
@@ -3796,9 +3798,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
               update_scope_for Moregen (get_scope t1') t2;
               link_type t1' t2
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) ->
-              if not (compatible_labels ~in_pattern_mode:false l1 l2) then
-                raise_for Moregen
-                  (Function_label_mismatch {got=l1; expected=l2});
+              eq_labels Moregen ~in_pattern_mode:false l1 l2;
               moregen inst_nongen type_pairs env t1 t2;
               moregen inst_nongen type_pairs env u1 u2
           | (Ttuple tl1, Ttuple tl2) ->
@@ -4150,9 +4150,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
             (Tvar _, Tvar _) when rename ->
               eqtype_subst type_pairs subst t1' t2'
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) ->
-              if not (compatible_labels ~in_pattern_mode:false l1 l2) then
-                raise_for Equality
-                  (Function_label_mismatch {got=l1; expected=l2});
+              eq_labels Equality ~in_pattern_mode:false l1 l2;
               eqtype rename type_pairs subst env t1 t2;
               eqtype rename type_pairs subst env u1 u2
           | (Ttuple tl1, Ttuple tl2) ->
