@@ -12,6 +12,10 @@ OCaml 5.2 maintenance version
   (Miod Vallat, report by Stéphane Glondu, review by Gabriel Scherer and
    Xavier Leroy)
 
+- #13268: Fix a call to test in configure.ac that was causing errors when
+  LDFLAGS contains several words.
+  (Stéphane Glondu, review by Miod Vallat)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
