@@ -425,6 +425,10 @@ _______________
   platform.
   (Stéphane Glondu, review by Miod Vallat and Vincent Laviron)
 
+- #13273: Fix a call to test in configure.ac that was causing errors when
+  LDFLAGS contains several words.
+  (Stéphane Glondu, review by Miod Vallat)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
