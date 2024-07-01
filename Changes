@@ -16,6 +16,11 @@ OCaml 5.2 maintenance version
   LDFLAGS contains several words.
   (Stéphane Glondu, review by Miod Vallat)
 
+- #13234, #13267: Open runtime events file in read-write mode on armel
+  (armv5) systems due to atomic operations limitations on that
+  platform.
+  (Stéphane Glondu, review by Miod Vallat and Vincent Laviron)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
