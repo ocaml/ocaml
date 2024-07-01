@@ -20684,7 +20684,7 @@ else $as_nop
 
     mkdll_ldflags='$(OC_DLL_LDFLAGS) $(LDFLAGS)'
     mkdll_ldflags_exp="${oc_dll_ldflags}"
-    if test -n ${LDFLAGS}
+    if test -n "${LDFLAGS}"
 then :
   mkdll_ldflags_exp="$mkdll_ldflags_exp $LDFLAGS"
 fi

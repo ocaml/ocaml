@@ -2676,7 +2676,7 @@ ${mkdll_ldflags}"
   ],[
     mkdll_ldflags='$(OC_DLL_LDFLAGS) $(LDFLAGS)'
     mkdll_ldflags_exp="${oc_dll_ldflags}"
-    AS_IF([test -n ${LDFLAGS}],
+    AS_IF([test -n "${LDFLAGS}"],
       [mkdll_ldflags_exp="$mkdll_ldflags_exp $LDFLAGS"])
     mkexe_ldflags="\$(OC_LDFLAGS) \$(LDFLAGS)"
     mkexe_ldflags_exp="${oc_ldflags} ${LDFLAGS}"
