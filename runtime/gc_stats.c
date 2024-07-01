@@ -16,9 +16,11 @@
 #define CAML_INTERNALS
 
 #include "caml/gc_stats.h"
+#include "caml/memory.h"
 #include "caml/minor_gc.h"
 #include "caml/platform.h"
 #include "caml/shared_heap.h"
+#include "caml/startup_aux.h"
 
 Caml_inline intnat intnat_max(intnat a, intnat b) {
   return (a > b ? a : b);
@@ -76,7 +78,6 @@ void caml_reset_domain_alloc_stats(caml_domain_state *local)
   local->stat_forced_major_collections = 0;
 }
 
-
 /* We handle orphaning allocation stats here,
    whereas orphaning of heap stats is done in shared_heap.c */
 static caml_plat_mutex orphan_lock = CAML_PLAT_MUTEX_INITIALIZER;
@@ -101,13 +102,20 @@ void caml_orphan_alloc_stats(caml_domain_state *domain) {
   caml_plat_unlock(&orphan_lock);
 }
 
-
 /* The "sampled stats" of a domain are a recent copy of its
    domain-local stats, accessed without synchronization and only
    updated ("sampled") during stop-the-world events -- each minor
    collection, major cycle (which potentially includes compaction),
    all of these events could happen during domain termination. */
-static struct gc_stats sampled_gc_stats[Max_domains];
+static struct gc_stats* sampled_gc_stats;
+
+void caml_init_gc_stats (uintnat max_domains)
+{
+  sampled_gc_stats =
+    caml_stat_calloc_noexc(max_domains, sizeof(struct gc_stats));
+  if (sampled_gc_stats == NULL)
+    caml_fatal_error("Failed to allocate sampled_gc_stats");
+}
 
 /* Update the sampled stats for the given domain during a STW section. */
 void caml_collect_gc_stats_sample_stw(caml_domain_state* domain)
@@ -154,7 +162,7 @@ void caml_compute_gc_stats(struct gc_stats* buf)
   pool_max = buf->heap_stats.pool_max_words;
   large_max = buf->heap_stats.large_max_words;
 
-  for (i=0; i<Max_domains; i++) {
+  for (i=0; i<caml_params->max_domains; i++) {
     /* For allocation stats, we use the live stats of the current domain
        and the sampled stats of other domains.
 

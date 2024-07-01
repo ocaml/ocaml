@@ -68,6 +68,7 @@ typedef cpuset_t cpu_set_t;
 #include "caml/shared_heap.h"
 #include "caml/signals.h"
 #include "caml/startup.h"
+#include "caml/startup_aux.h"
 #include "caml/sync.h"
 #include "caml/weak.h"
 
@@ -215,7 +216,7 @@ static struct {
   int num_domains;
   caml_plat_barrier barrier;
 
-  caml_domain_state* participating[Max_domains];
+  caml_domain_state** participating;
 } stw_request = {
   CAML_PLAT_BARRIER_INITIALIZER,
   0,
@@ -225,7 +226,7 @@ static struct {
   NULL,
   0,
   CAML_PLAT_BARRIER_INITIALIZER,
-  { 0 },
+  NULL
 };
 
 static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
@@ -233,20 +234,18 @@ static caml_plat_cond all_domains_cond = CAML_PLAT_COND_INITIALIZER;
 static atomic_uintnat /* dom_internal* */ stw_leader = 0;
 static uintnat stw_requests_suspended = 0; /* protected by all_domains_lock */
 static caml_plat_cond requests_suspended_cond = CAML_PLAT_COND_INITIALIZER;
-static dom_internal all_domains[Max_domains];
+static dom_internal* all_domains;
 
 CAMLexport atomic_uintnat caml_num_domains_running;
-
-
 
 /* size of the virtual memory reservation for the minor heap, per domain */
 uintnat caml_minor_heap_max_wsz;
 /*
   The amount of memory reserved for all minor heaps of all domains is
-  Max_domains * caml_minor_heap_max_wsz. Individual domains can allocate
-  smaller minor heaps, but when a domain calls Gc.set to allocate a bigger minor
-  heap than this reservation, we perform a new virtual memory reservation based
-  on the increased minor heap size.
+  caml_params->max_domains * caml_minor_heap_max_wsz. Individual domains can
+  allocate smaller minor heaps, but when a domain calls Gc.set to allocate a
+  bigger minor heap than this reservation, we perform a new virtual memory
+  reservation based on the increased minor heap size.
 
   New domains are created with a minor heap of size
   caml_params->init_minor_heap_wsz.
@@ -261,28 +260,29 @@ CAMLexport uintnat caml_minor_heaps_end;
 static CAMLthread_local dom_internal* domain_self;
 
 /*
- * This structure is protected by all_domains_lock
- * [0, participating_domains) are all the domains taking part in STW sections
- * [participating_domains, Max_domains) are all those domains free to be used
+ * This structure is protected by all_domains_lock.
+ * [0, participating_domains) are all the domains taking part in STW sections.
+ * [participating_domains, caml_params->max_domains) are all those domains free
+ * to be used.
  */
 static struct {
   int participating_domains;
-  dom_internal* domains[Max_domains];
+  dom_internal** domains;
 } stw_domains = {
   0,
-  { 0 }
+  NULL
 };
 
 static void add_next_to_stw_domains(void)
 {
-  CAMLassert(stw_domains.participating_domains < Max_domains);
+  CAMLassert(stw_domains.participating_domains < caml_params->max_domains);
   stw_domains.participating_domains++;
 #ifdef DEBUG
   /* Enforce here the invariant for early-exit in
      [caml_interrupt_all_signal_safe], because the latter must be
      async-signal-safe and one cannot CAMLassert inside it. */
   bool prev_has_interrupt_word = true;
-  for (int i = 0; i < Max_domains; i++) {
+  for (int i = 0; i < caml_params->max_domains; i++) {
     bool has_interrupt_word = all_domains[i].interruptor.interrupt_word != NULL;
     if (i < stw_domains.participating_domains) CAMLassert(has_interrupt_word);
     if (!prev_has_interrupt_word) CAMLassert(!has_interrupt_word);
@@ -294,7 +294,7 @@ static void add_next_to_stw_domains(void)
 static void remove_from_stw_domains(dom_internal* dom) {
   int i;
   for(i=0; stw_domains.domains[i]!=dom; ++i) {
-    CAMLassert(i<Max_domains);
+    CAMLassert(i<caml_params->max_domains);
   }
   CAMLassert(i < stw_domains.participating_domains);
 
@@ -306,10 +306,10 @@ static void remove_from_stw_domains(dom_internal* dom) {
 }
 
 static dom_internal* next_free_domain(void) {
-  if (stw_domains.participating_domains == Max_domains)
+  if (stw_domains.participating_domains == caml_params->max_domains)
     return NULL;
 
-  CAMLassert(stw_domains.participating_domains < Max_domains);
+  CAMLassert(stw_domains.participating_domains < caml_params->max_domains);
   return stw_domains.domains[stw_domains.participating_domains];
 }
 
@@ -393,7 +393,7 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
 /* The current minor heap layout is as follows:
 
 - A contiguous memory block of size
-   [caml_minor_heap_max_wsz * Max_domains]
+   [caml_minor_heap_max_wsz * caml_params->max_domains]
   is reserved by [caml_init_domains]. The boundaries
   of this reserved area are stored in the globals
     [caml_minor_heaps_start]
@@ -811,7 +811,7 @@ static void reserve_minor_heaps_from_stw_single(void) {
           == Bsize_wsize(caml_minor_heap_max_wsz));
 
   minor_heap_max_bsz = (uintnat)Bsize_wsize(caml_minor_heap_max_wsz);
-  minor_heap_reservation_bsize = minor_heap_max_bsz * Max_domains;
+  minor_heap_reservation_bsize = minor_heap_max_bsz * caml_params->max_domains;
 
   /* reserve memory space for minor heaps */
   heaps_base = caml_mem_map(minor_heap_reservation_bsize, 1 /* reserve_only */);
@@ -824,7 +824,7 @@ static void reserve_minor_heaps_from_stw_single(void) {
   caml_gc_log("new minor heap reserved from %p to %p",
               (value*)caml_minor_heaps_start, (value*)caml_minor_heaps_end);
 
-  for (int i = 0; i < Max_domains; i++) {
+  for (int i = 0; i < caml_params->max_domains; i++) {
     struct dom_internal* dom = &all_domains[i];
 
     uintnat domain_minor_heap_area = caml_minor_heaps_start +
@@ -843,7 +843,7 @@ static void unreserve_minor_heaps_from_stw_single(void) {
 
   caml_gc_log("unreserve_minor_heaps");
 
-  for (int i = 0; i < Max_domains; i++) {
+  for (int i = 0; i < caml_params->max_domains; i++) {
     struct dom_internal* dom = &all_domains[i];
 
     CAMLassert(
@@ -865,7 +865,8 @@ static void unreserve_minor_heaps_from_stw_single(void) {
   }
 
   size = caml_minor_heaps_end - caml_minor_heaps_start;
-  CAMLassert (Bsize_wsize(caml_minor_heap_max_wsz) * Max_domains == size);
+  CAMLassert (Bsize_wsize(caml_minor_heap_max_wsz) * caml_params->max_domains
+              == size);
   caml_mem_unmap((void *) caml_minor_heaps_start, size);
 }
 
@@ -935,13 +936,29 @@ void caml_update_minor_heap_max(uintnat requested_wsz) {
   check_minor_heap();
 }
 
-void caml_init_domains(uintnat minor_heap_wsz) {
+void caml_init_domains(uintnat max_domains, uintnat minor_heap_wsz)
+{
   int i;
+
+  /* Use [caml_stat_calloc_noexc] to zero initialize [all_domains]. */
+  all_domains = caml_stat_calloc_noexc(max_domains, sizeof(dom_internal));
+  if (all_domains == NULL)
+    caml_fatal_error("Failed to allocate all_domains");
+
+  stw_request.participating =
+      caml_stat_calloc_noexc(max_domains, sizeof(dom_internal*));
+  if (stw_request.participating == NULL)
+    caml_fatal_error("Failed to allocate stw_request.participating");
+
+  stw_domains.domains =
+      caml_stat_calloc_noexc(max_domains, sizeof(dom_internal*));
+  if (stw_domains.domains == NULL)
+    caml_fatal_error("Failed to allocate stw_domains.domains");
 
   reserve_minor_heaps_from_stw_single();
   /* stw_single: mutators and domains have not started yet. */
 
-  for (i = 0; i < Max_domains; i++) {
+  for (i = 0; i < max_domains; i++) {
     struct dom_internal* dom = &all_domains[i];
 
     stw_domains.domains[i] = dom;
@@ -970,7 +987,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
 }
 
 void caml_init_domain_self(int domain_id) {
-  CAMLassert (domain_id >= 0 && domain_id < Max_domains);
+  CAMLassert (domain_id >= 0 && domain_id < caml_params->max_domains);
   domain_self = &all_domains[domain_id];
   caml_state = domain_self->state;
 }
@@ -1634,7 +1651,7 @@ int caml_try_run_on_all_domains_with_spin_work(
 #ifdef DEBUG
   {
     int domains_participating = 0;
-    for(i=0; i<Max_domains; i++) {
+    for(i=0; i<caml_params->max_domains; i++) {
       if(all_domains[i].interruptor.running)
         domains_participating++;
     }
@@ -1721,10 +1738,14 @@ void caml_interrupt_self(void)
   interrupt_domain_local(Caml_state);
 }
 
-/* async-signal-safe */
+/*  This function is async-signal-safe as [all_domains] and
+    [caml_params->max_domains] are set before signal handlers are installed and
+    do not change afterwards. */
 void caml_interrupt_all_signal_safe(void)
 {
-  for (dom_internal *d = all_domains; d < &all_domains[Max_domains]; d++) {
+  for (dom_internal *d = all_domains;
+       d < &all_domains[caml_params->max_domains];
+       d++) {
     /* [all_domains] is an array of values. So we can access
        [interrupt_word] directly without synchronisation other than
        with other people who access the same [interrupt_word].*/
@@ -2155,8 +2176,8 @@ CAMLprim value caml_recommended_domain_count(value unused)
   /* At least one, even if system says zero */
   if (n <= 0)
     n = 1;
-  else if (n > Max_domains)
-    n = Max_domains;
+  else if (n > caml_params->max_domains)
+    n = caml_params->max_domains;
 
   return (Val_long(n));
 }

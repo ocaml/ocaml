@@ -83,6 +83,8 @@ void caml_collect_gc_stats_sample_stw(caml_domain_state *domain);
    current domain but the sampled stats of other domains. */
 void caml_compute_gc_stats(struct gc_stats* buf);
 
+void caml_init_gc_stats (uintnat max_domains);
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_GC_STATS_H */

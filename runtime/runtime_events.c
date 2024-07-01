@@ -65,22 +65,22 @@ potentially only read the ring when some anomalous event occurs. No coordination
 is needed with consumers who read the events - they detect races with the
 producer and discard events when that happens.
 
-The producer code is contained here . By default a <pid>.events file is
-created in the current directory (overridable by setting
-OCAML_RUNTIME_EVENTS_DIR). This file contains a ring buffer for each possible
-domain (Max_domains). It is laid out in a structure that enables sparsity.
-On-disk (or in-memory) footprint is proportional to the max number of concurrent
-domains the process has ever run.
+The producer code is contained here . By default a <pid>.events file is created
+in the current directory (overridable by setting OCAML_RUNTIME_EVENTS_DIR).
+This file contains a ring buffer for each possible domain
+(caml_params->max_domains). It is laid out in a structure that enables sparsity.
+On-disk (or in-memory) footprint is proportional to the max number of
+concurrent domains the process has ever run.
 
 On disk structure:
 
 ----------------------------------------------------------------
 | File header (version, offsets, etc..)                        |
 ----------------------------------------------------------------
-| Ring 0..Max_domains metadata                                 |
+| Ring 0..caml_params->max_domains metadata                     |
 | (head and tail indexes, one per cache line)                  |
 ----------------------------------------------------------------
-| Ring 0..Max_domains data                                     |
+| Ring 0..caml_params->max_domains data                         |
 | (actual ring data, default 2^16 words = 512k bytes)          |
 ----------------------------------------------------------------
 | Custom event IDs                                             |
@@ -261,7 +261,7 @@ static void runtime_events_create_from_stw_single(void) {
     current_ring_total_size =
         RUNTIME_EVENTS_MAX_CUSTOM_EVENTS *
           sizeof(struct runtime_events_custom_event) +
-        Max_domains * (ring_size_words * sizeof(uint64_t) +
+        caml_params->max_domains * (ring_size_words * sizeof(uint64_t) +
                         sizeof(struct runtime_events_buffer_header)) +
         sizeof(struct runtime_events_metadata_header);
 
@@ -335,12 +335,12 @@ static void runtime_events_create_from_stw_single(void) {
     close(ring_fd);
 #endif
     ring_headers_length =
-        Max_domains * sizeof(struct runtime_events_buffer_header);
+        caml_params->max_domains * sizeof(struct runtime_events_buffer_header);
     ring_data_length =
-        Max_domains * ring_size_words * sizeof(uint64_t);
+        caml_params->max_domains * ring_size_words * sizeof(uint64_t);
 
     current_metadata->version = RUNTIME_EVENTS_VERSION;
-    current_metadata->max_domains = Max_domains;
+    current_metadata->max_domains = caml_params->max_domains;
     current_metadata->ring_header_size_bytes =
         sizeof(struct runtime_events_buffer_header);
     current_metadata->ring_size_bytes =
@@ -357,9 +357,11 @@ static void runtime_events_create_from_stw_single(void) {
       current_metadata->data_offset + ring_data_length;
 
 
-    for (int domain_num = 0; domain_num < Max_domains; domain_num++) {
+    for (int domain_num = 0; domain_num < caml_params->max_domains;
+         domain_num++) {
       /* we initialise each ring's metadata. We use the offset to the headers
-        and then find the slot for each of domain in Max_domains */
+         and then find the slot for each of domain in caml_params->max_domains
+         */
       struct runtime_events_buffer_header *ring_buffer =
           (struct runtime_events_buffer_header
                 *)((char *)current_metadata +

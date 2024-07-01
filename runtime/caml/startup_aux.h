@@ -45,13 +45,13 @@ struct caml_params {
   uintnat init_custom_major_ratio;
   uintnat init_custom_minor_ratio;
   uintnat init_custom_minor_max_bsz;
-
   uintnat init_max_stack_wsz;
 
   uintnat backtrace_enabled;
   uintnat runtime_warnings;
   uintnat cleanup_on_exit;
   uintnat event_trace;
+  uintnat max_domains;
 };
 
 extern const struct caml_params* const caml_params;

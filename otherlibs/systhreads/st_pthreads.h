@@ -28,23 +28,16 @@
 
 typedef int st_retcode;
 
-/* Variables used to stop "tick" threads */
-static atomic_uintnat tick_thread_stop[Max_domains];
-#define Tick_thread_stop tick_thread_stop[Caml_state->id]
-
 /* OS-specific initialization */
-
 static int st_initialize(void)
 {
-  atomic_store_release(&Tick_thread_stop, 0);
   return 0;
 }
-
-/* Thread creation.  Created in detached mode if [res] is NULL. */
 
 typedef pthread_t st_thread_id;
 
 
+/* Thread creation. Created in detached mode if [res] is NULL. */
 static int st_thread_create(st_thread_id * res,
                             void * (*fn)(void *), void * arg)
 {
@@ -292,16 +285,24 @@ static int st_event_wait(st_event e)
   return rc;
 }
 
-/* The tick thread: interrupt the domain periodically to force preemption  */
+struct caml_thread_tick_args {
+  int domain_id;
+  atomic_uintnat* stop;
+};
 
+/* The tick thread: interrupt the domain periodically to force preemption  */
 static void * caml_thread_tick(void * arg)
 {
-  int *domain_id = (int *) arg;
+  struct caml_thread_tick_args* tick_thread_args =
+    (struct caml_thread_tick_args*) arg;
+  int domain_id = tick_thread_args->domain_id;
+  atomic_uintnat* stop = tick_thread_args->stop;
+  caml_stat_free(tick_thread_args);
 
-  caml_init_domain_self(*domain_id);
+  caml_init_domain_self(domain_id);
   caml_domain_state *domain = Caml_state;
 
-  while(! atomic_load_acquire(&Tick_thread_stop)) {
+  while(! atomic_load_acquire(stop)) {
     st_msleep(Thread_timeout);
 
     atomic_store_release(&domain->requested_external_interrupt, 1);
