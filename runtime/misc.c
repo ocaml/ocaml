@@ -182,8 +182,7 @@ int caml_ext_table_add(struct ext_table * tbl, caml_stat_block data)
 
 void caml_ext_table_remove(struct ext_table * tbl, caml_stat_block data)
 {
-  int i;
-  for (i = 0; i < tbl->size; i++) {
+  for (int i = 0; i < tbl->size; i++) {
     if (tbl->contents[i] == data) {
       caml_stat_free(tbl->contents[i]);
       memmove(&tbl->contents[i], &tbl->contents[i + 1],
@@ -195,9 +194,8 @@ void caml_ext_table_remove(struct ext_table * tbl, caml_stat_block data)
 
 void caml_ext_table_clear(struct ext_table * tbl, int free_entries)
 {
-  int i;
   if (free_entries) {
-    for (i = 0; i < tbl->size; i++) caml_stat_free(tbl->contents[i]);
+    for (int i = 0; i < tbl->size; i++) caml_stat_free(tbl->contents[i]);
   }
   tbl->size = 0;
 }

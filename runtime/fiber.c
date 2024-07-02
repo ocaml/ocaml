@@ -86,15 +86,13 @@ void caml_change_max_stack_size (uintnat new_max_wsize)
 
 struct stack_info** caml_alloc_stack_cache (void)
 {
-  int i;
-
   struct stack_info** stack_cache =
     (struct stack_info**)caml_stat_alloc_noexc(sizeof(struct stack_info*) *
                                                NUM_STACK_SIZE_CLASSES);
   if (stack_cache == NULL)
     return NULL;
 
-  for(i = 0; i < NUM_STACK_SIZE_CLASSES; i++)
+  for (int i = 0; i < NUM_STACK_SIZE_CLASSES; i++)
     stack_cache[i] = NULL;
 
   return stack_cache;
@@ -385,14 +383,14 @@ void caml_scan_stack(
   scanning_action f, scanning_action_flags fflags, void* fdata,
   struct stack_info* stack, value* v_gc_regs)
 {
-  value *low, *high, *sp;
+  value *low, *high;
 
   while (stack != NULL) {
     CAMLassert(stack->magic == 42);
 
     high = Stack_high(stack);
     low = stack->sp;
-    for (sp = low; sp < high; sp++) {
+    for (value *sp = low; sp < high; sp++) {
       value v = *sp;
       if (is_scannable(fflags, v)) {
         f(fdata, v, sp);
@@ -456,14 +454,16 @@ static void rewrite_frame_pointers(struct stack_info *old_stack,
   struct frame_walker {
     struct frame_walker *base_addr;
     uintnat return_addr;
-  } *frame, *next;
+  };
   ptrdiff_t delta;
-  void *top, **p;
 
   delta = (char*)Stack_high(new_stack) - (char*)Stack_high(old_stack);
 
   /* Walk the frame-pointers linked list */
-  for (frame = __builtin_frame_address(0); frame; frame = next) {
+  for (struct frame_walker *frame = __builtin_frame_address(0), *next;
+       frame;
+       frame = next) {
+    void *top, **p;
 
     top = (char*)&frame->return_addr
       + 1 * sizeof(value) /* return address */
@@ -554,8 +554,9 @@ int caml_try_realloc_stack(asize_t required_space)
    * multiple c_stack_links to point to the same stack since callbacks are run
    * on existing stacks. */
   {
-    struct c_stack_link* link;
-    for (link = Caml_state->c_stack; link; link = link->prev) {
+    for (struct c_stack_link *link = Caml_state->c_stack;
+         link != NULL;
+         link = link->prev) {
       if (link->stack == old_stack) {
         link->stack = new_stack;
         link->sp = (void*)((char*)Stack_high(new_stack) -

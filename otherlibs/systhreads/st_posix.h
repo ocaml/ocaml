@@ -46,11 +46,10 @@ static value st_encode_sigset(sigset_t * set)
 {
   CAMLparam0();
   CAMLlocal1(res);
-  int i;
 
   res = Val_emptylist;
 
-  for (i = 1; i < NSIG; i++)
+  for (int i = 1; i < NSIG; i++)
     if (sigismember(set, i) > 0) {
       res = caml_alloc_2(Tag_cons,
                          Val_int(caml_rev_convert_signal_number(i)), res);

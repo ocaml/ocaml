@@ -403,13 +403,12 @@ CAMLexport unsigned char caml_getch(struct channel *channel)
 
 CAMLexport uint32_t caml_getword(struct channel *channel)
 {
-  int i;
   uint32_t res;
 
   if (! caml_channel_binary_mode(channel))
     caml_failwith("input_binary_int: not a binary channel");
   res = 0;
-  for(i = 0; i < 4; i++) {
+  for (int i = 0; i < 4; i++) {
     res = (res << 8) + Getch(channel);
   }
   return res;
@@ -661,12 +660,11 @@ CAMLprim value caml_ml_out_channels_list (value unit)
 {
   CAMLparam0 ();
   CAMLlocal3 (res, tail, chan);
-  struct channel * channel;
   struct channel_list *channel_list = NULL, *cl_tmp;
-  mlsize_t i, num_channels = 0;
+  mlsize_t num_channels = 0;
 
   caml_plat_lock_blocking(&caml_all_opened_channels_mutex);
-  for (channel = caml_all_opened_channels;
+  for (struct channel *channel = caml_all_opened_channels;
        channel != NULL;
        channel = channel->next) {
     CAMLassert(channel->flags & CHANNEL_FLAG_MANAGED_BY_GC);
@@ -687,7 +685,7 @@ CAMLprim value caml_ml_out_channels_list (value unit)
 
   res = Val_emptylist;
   cl_tmp = NULL;
-  for (i = 0; i < num_channels; i++) {
+  for (mlsize_t i = 0; i < num_channels; i++) {
     chan = caml_alloc_channel (channel_list->channel);
     tail = res;
     res = caml_alloc_2(Tag_cons, chan, tail);

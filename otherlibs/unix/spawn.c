@@ -38,7 +38,7 @@ CAMLprim value caml_unix_spawn(value executable, /* string */
   char ** envp;
   const char * path;
   pid_t pid;
-  int src, dst, r, i;
+  int src, r;
   posix_spawn_file_actions_t act;
 
   caml_unix_check_path(executable, "create_process");
@@ -51,14 +51,14 @@ CAMLprim value caml_unix_spawn(value executable, /* string */
   }
   /* Prepare the redirections for stdin, stdout, stderr */
   posix_spawn_file_actions_init(&act);
-  for (dst = 0; dst <= 2; dst++) {
+  for (int dst = 0; dst <= 2; dst++) {
     /* File descriptor [redirect.(dst)] becomes file descriptor [dst] */
     src = Int_val(Field(redirect, dst));
     if (src != dst) {
       r = posix_spawn_file_actions_adddup2(&act, src, dst);
       if (r != 0) goto error;
       /* Close [src] if this is its last use */
-      for (i = dst + 1; i <= 2; i++) {
+      for (int i = dst + 1; i <= 2; i++) {
         if (src == Int_val(Field(redirect, i))) goto dontclose;
       }
       r = posix_spawn_file_actions_addclose(&act, src);
@@ -100,7 +100,7 @@ CAMLprim value caml_unix_spawn(value executable, /* string */
   char ** envp;
   const char * path;
   pid_t pid;
-  int src, dst, i;
+  int src;
 
   caml_unix_check_path(executable, "create_process");
   path = String_val(executable);
@@ -120,13 +120,13 @@ CAMLprim value caml_unix_spawn(value executable, /* string */
   }
   /* This is the child process */
   /* Perform the redirections for stdin, stdout, stderr */
-  for (dst = 0; dst <= 2; dst++) {
+  for (int dst = 0; dst <= 2; dst++) {
     /* File descriptor [redirect.(dst)] becomes file descriptor [dst] */
     src = Int_val(Field(redirect, dst));
     if (src != dst) {
       if (dup2(src, dst) == -1) _exit(ERROR_EXIT_STATUS);
       /* Close [src] if this is its last use */
-      for (i = dst + 1; i <= 2; i++) {
+      for (int i = dst + 1; i <= 2; i++) {
         if (src == Int_val(Field(redirect, i))) goto dontclose;
       }
       if (close(src) == -1) _exit(ERROR_EXIT_STATUS);

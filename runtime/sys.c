@@ -643,7 +643,7 @@ int caml_unix_random_seed(intnat data[16])
 CAMLprim value caml_sys_random_seed (value unit)
 {
   intnat data[16];
-  int n, i;
+  int n;
   value res;
 #ifdef _WIN32
   n = caml_win32_random_seed(data);
@@ -652,7 +652,7 @@ CAMLprim value caml_sys_random_seed (value unit)
 #endif
   /* Convert to an OCaml array of ints */
   res = caml_alloc_small(n, 0);
-  for (i = 0; i < n; i++) Field(res, i) = Val_long(data[i]);
+  for (int i = 0; i < n; i++) Field(res, i) = Val_long(data[i]);
   return res;
 }
 

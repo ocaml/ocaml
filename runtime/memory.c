@@ -411,10 +411,9 @@ CAMLprim value caml_atomic_fetch_add (value ref, value incr)
 
 CAMLexport void caml_set_fields (value obj, value v)
 {
-  int i;
   CAMLassert (Is_block(obj));
 
-  for (i = 0; i < Wosize_val(obj); i++) {
+  for (int i = 0; i < Wosize_val(obj); i++) {
     caml_modify(&Field(obj, i), v);
   }
 }
@@ -442,8 +441,7 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
 
 #ifdef DEBUG
   if (tag < No_scan_tag) {
-    mlsize_t i;
-    for (i = 0; i < wosize; i++)
+    for (mlsize_t i = 0; i < wosize; i++)
       Op_hp(v)[i] = Debug_uninit_major;
   }
 #endif
@@ -611,14 +609,13 @@ CAMLexport void* caml_stat_alloc_aligned_noexc(asize_t sz, int modulo,
   aligned_mem = (((uintnat) raw_mem / Page_size + 1) * Page_size);
 #ifdef DEBUG
   {
-    uintnat *p;
     uintnat *p0 = (void *) *b;
     uintnat *p1 = (void *) (aligned_mem - modulo);
     uintnat *p2 = (void *) (aligned_mem - modulo + sz);
     uintnat *p3 = (void *) ((char *) *b + sz + Page_size);
-    for (p = p0; p < p1; p++) *p = Debug_filler_align;
-    for (p = p1; p < p2; p++) *p = Debug_uninit_align;
-    for (p = p2; p < p3; p++) *p = Debug_filler_align;
+    for (uintnat *p = p0; p < p1; p++) *p = Debug_filler_align;
+    for (uintnat *p = p1; p < p2; p++) *p = Debug_uninit_align;
+    for (uintnat *p = p2; p < p3; p++) *p = Debug_filler_align;
   }
 #endif
   return (char *) (aligned_mem - modulo);
@@ -745,10 +742,9 @@ CAMLexport caml_stat_string caml_stat_strconcat(int n, ...)
   va_list args;
   char *result, *p;
   size_t len = 0;
-  int i;
 
   va_start(args, n);
-  for (i = 0; i < n; i++) {
+  for (int i = 0; i < n; i++) {
     const char *s = va_arg(args, const char*);
     len += strlen(s);
   }
@@ -758,7 +754,7 @@ CAMLexport caml_stat_string caml_stat_strconcat(int n, ...)
 
   va_start(args, n);
   p = result;
-  for (i = 0; i < n; i++) {
+  for (int i = 0; i < n; i++) {
     const char *s = va_arg(args, const char*);
     size_t l = strlen(s);
     memcpy(p, s, l);
@@ -777,10 +773,9 @@ CAMLexport wchar_t* caml_stat_wcsconcat(int n, ...)
   va_list args;
   wchar_t *result, *p;
   size_t len = 0;
-  int i;
 
   va_start(args, n);
-  for (i = 0; i < n; i++) {
+  for (int i = 0; i < n; i++) {
     const wchar_t *s = va_arg(args, const wchar_t*);
     len += wcslen(s);
   }
@@ -790,7 +785,7 @@ CAMLexport wchar_t* caml_stat_wcsconcat(int n, ...)
 
   va_start(args, n);
   p = result;
-  for (i = 0; i < n; i++) {
+  for (int i = 0; i < n; i++) {
     const wchar_t *s = va_arg(args, const wchar_t*);
     size_t l = wcslen(s);
     memcpy(p, s, l*sizeof(wchar_t));

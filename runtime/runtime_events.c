@@ -638,15 +638,13 @@ void caml_ev_alloc(uint64_t sz) {
 }
 
 void caml_ev_alloc_flush(void) {
-  int i;
-
   if ( !ring_is_active() )
     return;
 
   write_to_ring(EV_RUNTIME, (ev_message_type){.runtime=EV_ALLOC}, 0,
                   RUNTIME_EVENTS_NUM_ALLOC_BUCKETS, alloc_buckets, 0);
 
-  for (i = 1; i < RUNTIME_EVENTS_NUM_ALLOC_BUCKETS; i++) {
+  for (int i = 1; i < RUNTIME_EVENTS_NUM_ALLOC_BUCKETS; i++) {
     alloc_buckets[i] = 0;
   }
 }

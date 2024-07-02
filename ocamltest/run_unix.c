@@ -135,8 +135,7 @@ static int paths_same_file(
 
 static void update_environment(array local_env)
 {
-  array envp;
-  for (envp = local_env; *envp != NULL; envp++) {
+  for (array envp = local_env; *envp != NULL; envp++) {
     char *pos_eq = strchr(*envp, '=');
     if (pos_eq != NULL) {
       char *name, *value;

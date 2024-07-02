@@ -174,45 +174,37 @@ static link *cons(void *data, link *tl) {
   return lnk;
 }
 
-#define iter_list(list,lnk) \
-  for (lnk = list; lnk != NULL; lnk = lnk->next)
-
-
 /* protected by roots_mutex */
 static link * caml_dyn_globals = NULL;
 
 void caml_register_dyn_globals(void **globals, int nglobals) {
-  int i;
   caml_plat_lock_blocking(&roots_mutex);
-  for (i = 0; i < nglobals; i++)
+  for (int i = 0; i < nglobals; i++)
     caml_dyn_globals = cons(globals[i],caml_dyn_globals);
   caml_plat_unlock(&roots_mutex);
 }
 
 static void scan_native_globals(scanning_action f, void* fdata)
 {
-  int i, j;
   link* dyn_globals;
-  value* glob;
-  link* lnk;
 
   caml_plat_lock_blocking(&roots_mutex);
   dyn_globals = caml_dyn_globals;
   caml_plat_unlock(&roots_mutex);
 
   /* The global roots */
-  for (i = 0; caml_globals[i] != 0; i++) {
-    for(glob = caml_globals[i]; *glob != 0; glob++) {
-      for (j = 0; j < Wosize_val(*glob); j++){
+  for (int i = 0; caml_globals[i] != 0; i++) {
+    for (value *glob = caml_globals[i]; *glob != 0; glob++) {
+      for (int j = 0; j < Wosize_val(*glob); j++) {
         f(fdata, Field(*glob, j), &Field(*glob, j));
       }
     }
   }
 
   /* Dynamic (natdynlink) global roots */
-  iter_list(dyn_globals, lnk) {
-    for(glob = (value *) lnk->data; *glob != 0; glob++) {
-      for (j = 0; j < Wosize_val(*glob); j++){
+  for (link *lnk = dyn_globals; lnk != NULL; lnk = lnk->next) {
+    for (value *glob = (value *) lnk->data; *glob != 0; glob++) {
+      for (int j = 0; j < Wosize_val(*glob); j++) {
         f(fdata, Field(*glob, j), &Field(*glob, j));
       }
     }

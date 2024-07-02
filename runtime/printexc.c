@@ -53,7 +53,7 @@ static void add_string(struct stringbuf *buf, const char *s)
 CAMLexport char * caml_format_exception(value exn)
 {
   Caml_check_caml_state();
-  mlsize_t start, i, len;
+  mlsize_t start, len;
   value bucket, v;
   struct stringbuf buf;
   char intbuf[64];
@@ -75,7 +75,7 @@ CAMLexport char * caml_format_exception(value exn)
       start = 1;
     }
     add_char(&buf, '(');
-    for (i = start; i < Wosize_val(bucket); i++) {
+    for (mlsize_t i = start; i < Wosize_val(bucket); i++) {
       if (i > start) add_string(&buf, ", ");
       v = Field(bucket, i);
       if (Is_long(v)) {

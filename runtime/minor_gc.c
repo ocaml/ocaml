@@ -242,7 +242,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
   struct oldify_state* st = st_v;
   value result;
   header_t hd;
-  mlsize_t sz, i;
+  mlsize_t sz;
   mlsize_t infix_offset;
   tag_t tag;
 
@@ -317,8 +317,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
                                     caml_global_heap_state.MARKED);
       #ifdef DEBUG
       {
-        int c;
-        for( c = 0; c < sz ; c++ ) {
+        for (int c = 0; c < sz; c++) {
           Field(result, c) = Val_long(1);
         }
       }
@@ -329,7 +328,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
     result = alloc_shared(st->domain, sz, tag, Reserved_hd(hd));
-    for (i = 0; i < sz; i++) {
+    for (mlsize_t i = 0; i < sz; i++) {
       Field(result, i) = Field(v, i);
     }
     CAMLassert (infix_offset == 0);
@@ -338,7 +337,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
       *Hp_val(result) = Make_header(sz, No_scan_tag,
                                     caml_global_heap_state.MARKED);
       #ifdef DEBUG
-      for( i = 0; i < sz ; i++ ) {
+      for(mlsize_t i = 0; i < sz; i++) {
         Field(result, i) = Val_long(1);
       }
       #endif
@@ -388,7 +387,6 @@ CAMLno_tsan_for_perf
 static void oldify_mopup (struct oldify_state* st, int do_ephemerons)
 {
   value v, new_v, f;
-  mlsize_t i;
   caml_domain_state* domain_state = st->domain;
   struct caml_ephe_ref_table ephe_ref_table =
                                     domain_state->minor_tables->ephe_ref;
@@ -409,7 +407,7 @@ again:
     if (Is_block (f) && Is_young(f)) {
       oldify_one (st, f, Op_val (new_v));
     }
-    for (i = 1; i < Wosize_val (new_v); i++){
+    for (mlsize_t i = 1; i < Wosize_val (new_v); i++){
       f = Field(v, i);
       CAMLassert (!Is_debug_tag(f));
       if (Is_block (f) && Is_young(f)) {
@@ -701,9 +699,9 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
    code, but they cannot have any pointers into our minor heap. */
 static void custom_finalize_minor (caml_domain_state * domain)
 {
-  struct caml_custom_elt *elt;
-  for (elt = domain->minor_tables->custom.base;
-       elt < domain->minor_tables->custom.ptr; elt++) {
+  for (struct caml_custom_elt *elt = domain->minor_tables->custom.base;
+       elt < domain->minor_tables->custom.ptr;
+       elt++) {
     value *v = &elt->block;
     if (Is_block(*v) && Is_young(*v)) {
       if (get_header_val(*v) == 0) { /* value copied to major heap */
@@ -808,7 +806,7 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
 
 #ifdef DEBUG
   {
-    for (uintnat* p = initial_young_ptr; p < (uintnat*)domain->young_end; ++p)
+    for (uintnat *p = initial_young_ptr; p < (uintnat*)domain->young_end; ++p)
       *p = Debug_free_minor;
   }
 #endif

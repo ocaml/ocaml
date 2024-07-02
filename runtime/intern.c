@@ -303,7 +303,6 @@ static void readfloat(struct caml_intern_state* s,
 static void readfloats(struct caml_intern_state* s,
                        double * dest, mlsize_t len, unsigned int code)
 {
-  mlsize_t i;
   if (sizeof(double) != 8) {
     intern_cleanup(s);
     caml_invalid_argument("input_value: non-standard floats");
@@ -314,22 +313,22 @@ static void readfloats(struct caml_intern_state* s,
   /* Host is big-endian; fix up if data read is little-endian */
   if (code != CODE_DOUBLE_ARRAY8_BIG &&
       code != CODE_DOUBLE_ARRAY32_BIG) {
-    for (i = 0; i < len; i++) Reverse_64(dest + i, dest + i);
+    for (mlsize_t i = 0; i < len; i++) Reverse_64(dest + i, dest + i);
   }
 #elif ARCH_FLOAT_ENDIANNESS == 0x01234567
   /* Host is little-endian; fix up if data read is big-endian */
   if (code != CODE_DOUBLE_ARRAY8_LITTLE &&
       code != CODE_DOUBLE_ARRAY32_LITTLE) {
-    for (i = 0; i < len; i++) Reverse_64(dest + i, dest + i);
+    for (mlsize_t i = 0; i < len; i++) Reverse_64(dest + i, dest + i);
   }
 #else
   /* Host is neither big nor little; permute as appropriate */
   if (code == CODE_DOUBLE_ARRAY8_LITTLE ||
       code == CODE_DOUBLE_ARRAY32_LITTLE) {
-    for (i = 0; i < len; i++)
+    for (mlsize_t i = 0; i < len; i++)
       Permute_64(dest + i, ARCH_FLOAT_ENDIANNESS, dest + i, 0x01234567);
   } else {
-    for (i = 0; i < len; i++)
+    for (mlsize_t i = 0; i < len; i++)
       Permute_64(dest + i, ARCH_FLOAT_ENDIANNESS, dest + i, 0x76543210);
   }
 #endif

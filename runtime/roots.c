@@ -52,14 +52,10 @@ CAMLexport void caml_do_local_roots (
   struct stack_info *current_stack,
   value * v_gc_regs)
 {
-  struct caml__roots_block *lr;
-  int i, j;
-  value* sp;
-
-  for (lr = local_roots; lr != NULL; lr = lr->next) {
-    for (i = 0; i < lr->ntables; i++){
-      for (j = 0; j < lr->nitems; j++){
-        sp = &(lr->tables[i][j]);
+  for (struct caml__roots_block *lr = local_roots; lr != NULL; lr = lr->next) {
+    for (int i = 0; i < lr->ntables; i++) {
+      for (int j = 0; j < lr->nitems; j++) {
+        value* sp = &(lr->tables[i][j]);
         if (*sp != 0) {
           f (fdata, *sp, sp);
         }

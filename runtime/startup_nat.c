@@ -52,11 +52,10 @@ static void init_segments(void)
 {
   extern struct segment caml_code_segments[];
   char * caml_code_area_start, * caml_code_area_end;
-  int i;
 
   caml_code_area_start = caml_code_segments[0].begin;
   caml_code_area_end = caml_code_segments[0].end;
-  for (i = 1; caml_code_segments[i].begin != 0; i++) {
+  for (int i = 1; caml_code_segments[i].begin != 0; i++) {
     if (caml_code_segments[i].begin < caml_code_area_start)
       caml_code_area_start = caml_code_segments[i].begin;
     if (caml_code_segments[i].end > caml_code_area_end)

@@ -309,7 +309,6 @@ static intnat rnd(void)
 
 int main(int argc, char **argv)
 {
-  int i;
   double weird[4];
 
   if (argc >= 5) {
@@ -339,7 +338,7 @@ int main(int argc, char **argv)
     }
   }
   printf("Testing %d random values\n", NUM_RANDOM_ITERATIONS);
-  for (i = 0; i < NUM_RANDOM_ITERATIONS; i++) {
+  for (int i = 0; i < NUM_RANDOM_ITERATIONS; i++) {
     X = rnd();
     Y = rnd();
     F = X / 1e3;

@@ -256,12 +256,11 @@ CAMLprim value caml_gc_major(value v)
 
 static caml_result gc_full_major_res(void)
 {
-  int i;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_FULL_MAJOR);
   caml_gc_log ("Full Major GC requested");
   /* In general, it can require up to 3 GC cycles for a
      currently-unreachable object to be collected. */
-  for (i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; i++) {
     caml_finish_major_cycle(0);
     caml_result res = caml_process_pending_actions_res();
     if (caml_result_is_exception(res)) return res;
@@ -294,10 +293,9 @@ CAMLprim value caml_gc_compaction(value v)
   CAML_EV_BEGIN(EV_EXPLICIT_GC_COMPACT);
   CAMLassert (v == Val_unit);
   caml_result result = Result_unit;
-  int i;
   /* We do a full major before this compaction. See [caml_full_major_res] for
      why this needs three iterations. */
-  for (i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; i++) {
     caml_finish_major_cycle(i == 2);
     result = caml_process_pending_actions_res();
     if (caml_result_is_exception(result)) break;

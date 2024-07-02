@@ -97,7 +97,7 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
                                   value vshared, value vdim, value vstart)
 {
   int fd, flags, major_dim, shared;
-  intnat num_dims, i;
+  intnat num_dims;
   intnat dim[CAML_BA_MAX_NUM_DIMS];
   file_offset startpos, file_size, data_size;
   struct stat st;
@@ -113,7 +113,7 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   num_dims = Wosize_val(vdim);
   if (num_dims < 1 || num_dims > CAML_BA_MAX_NUM_DIMS)
     caml_invalid_argument("Unix.map_file: bad number of dimensions");
-  for (i = 0; i < num_dims; i++) {
+  for (intnat i = 0; i < num_dims; i++) {
     dim[i] = Long_val(Field(vdim, i));
     if (dim[i] == -1 && i == major_dim) continue;
     if (dim[i] < 0)
@@ -131,7 +131,7 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   /* Determine array size in bytes (or size of array without the major
      dimension if that dimension wasn't specified) */
   array_size = caml_ba_element_size[flags & CAML_BA_KIND_MASK];
-  for (i = 0; i < num_dims; i++)
+  for (intnat i = 0; i < num_dims; i++)
     if (dim[i] != -1) array_size *= dim[i];
   /* Check if the major dimension is unknown */
   if (dim[major_dim] == -1) {

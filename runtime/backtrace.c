@@ -103,9 +103,7 @@ static void print_location(struct caml_loc_info * li, int index)
 /* Print a backtrace */
 CAMLexport void caml_print_exception_backtrace(void)
 {
-  int i;
   struct caml_loc_info li;
-  debuginfo dbg;
 
   if (!caml_debug_info_available()) {
     fprintf(stderr, "(Cannot print stack backtrace: "
@@ -113,7 +111,8 @@ CAMLexport void caml_print_exception_backtrace(void)
     return;
   }
 
-  for (i = 0; i < Caml_state->backtrace_pos; i++) {
+  for (int i = 0; i < Caml_state->backtrace_pos; i++) {
+    debuginfo dbg;
     for (dbg = caml_debuginfo_extract(Caml_state->backtrace_buffer[i]);
          dbg != NULL;
          dbg = caml_debuginfo_next(dbg))
@@ -175,7 +174,6 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   else {
     backtrace_slot saved_caml_backtrace_buffer[BACKTRACE_BUFFER_SIZE];
     int saved_caml_backtrace_pos;
-    intnat i;
 
     saved_caml_backtrace_pos = Caml_state->backtrace_pos;
 
@@ -187,7 +185,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
            saved_caml_backtrace_pos * sizeof(backtrace_slot));
 
     res = caml_alloc(saved_caml_backtrace_pos, 0);
-    for (i = 0; i < saved_caml_backtrace_pos; i++) {
+    for (intnat i = 0; i < saved_caml_backtrace_pos; i++) {
       caml_initialize(&Field(res, i),
                       Val_backtrace_slot(saved_caml_backtrace_buffer[i]));
     }
@@ -201,7 +199,6 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
 /* noalloc (caml value): so no CAMLparam* CAMLreturn* */
 CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
 {
-  intnat i;
   mlsize_t bt_size;
 
   caml_domain_state* domain_state = Caml_state;
@@ -227,7 +224,7 @@ CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
   }
 
   domain_state->backtrace_pos = bt_size;
-  for(i=0; i < domain_state->backtrace_pos; i++){
+  for (intnat i = 0; i < domain_state->backtrace_pos; i++){
     domain_state->backtrace_buffer[i] = Backtrace_slot_val(Field(backtrace, i));
   }
 
@@ -359,7 +356,6 @@ CAMLprim value caml_get_exception_backtrace(value unit)
 {
   CAMLparam0();
   CAMLlocal3(arr, res, backtrace);
-  intnat i;
 
   if (!caml_debug_info_available()) {
     res = Val_none;
@@ -367,7 +363,7 @@ CAMLprim value caml_get_exception_backtrace(value unit)
     backtrace = caml_get_exception_raw_backtrace(Val_unit);
 
     arr = caml_alloc(Wosize_val(backtrace), 0);
-    for (i = 0; i < Wosize_val(backtrace); i++) {
+    for (intnat i = 0; i < Wosize_val(backtrace); i++) {
       backtrace_slot slot = Backtrace_slot_val(Field(backtrace, i));
       debuginfo dbg = caml_debuginfo_extract(slot);
       Store_field(arr, i, caml_convert_debuginfo(dbg));

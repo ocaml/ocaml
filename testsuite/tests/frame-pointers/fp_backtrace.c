@@ -108,10 +108,11 @@ static void print_symbol(const char* symbol, const regmatch_t* match)
 void fp_backtrace(value argv0)
 {
   const char* execname = String_val(argv0);
-  struct frame_info* next = NULL;
   const char* symbol = NULL;
 
-  for (struct frame_info* fi = __builtin_frame_address(0); fi; fi = next) {
+  for (struct frame_info *fi = __builtin_frame_address(0), *next = NULL;
+       fi;
+       fi = next) {
     next = fi->prev;
 
     /* Detect the simplest kind of infinite loop */

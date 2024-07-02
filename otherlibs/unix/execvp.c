@@ -73,7 +73,7 @@ static int caml_unix_execve_script(const char * path,
                               char * const argv[],
                               char * const envp[])
 {
-  size_t argc, i;
+  size_t argc;
   char ** new_argv;
 
   /* Try executing directly.  Will not return if it succeeds. */
@@ -87,7 +87,7 @@ static int caml_unix_execve_script(const char * path,
   if (new_argv == NULL) return ENOMEM;
   new_argv[0] = "/bin/sh";
   new_argv[1] = (char *) path;
-  for (i = 1; i < argc; i++) new_argv[i + 1] = argv[i];
+  for (size_t i = 1; i < argc; i++) new_argv[i + 1] = argv[i];
   new_argv[argc + 1] = NULL;
   /* Execute the shell with the new argument vector.
      Will not return if it succeeds. */
