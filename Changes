@@ -311,6 +311,12 @@ _______________
 - #13193: Remove the unused env_init field from class blocks
   (Vincent Laviron, review by Jacques Garrigue)
 
+- #13257: integrate MetaOCaml in the Menhir grammar to ease MetaOCaml
+  maintenance. This is a purely internal change: there is no support
+  in the lexer, so no change to the surface OCaml grammar.
+  (Oleg Kiselyov, Gabriel Scherer and Florian Angeletti,
+   review by Jeremy Yallop)
+
 ### Build system:
 
 - #12909: Reorganise how MKEXE_VIA_CC is built to make it correct for MSVC by
