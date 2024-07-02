@@ -72,7 +72,7 @@ module GPR_109 = struct
     done;
     !r
 
-  let () = check_noalloc "gpr 1O9" f
+  let () = check_noalloc "gpr 109" f
 end
 
 
