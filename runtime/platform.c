@@ -272,7 +272,7 @@ void caml_plat_futex_free(caml_plat_futex* ftx) {
 
 #  elif 0 /* defined(__DragonFly__)
    TODO The following code for DragonFly is untested,
-   we currently use the fallback instead. */ */
+   we currently use the fallback instead. */
 #    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)        \
   umtx_sleep((volatile const int*)ftx, undesired, 0)
 #    define CAML_PLAT_FUTEX_WAKE(ftx)               \
