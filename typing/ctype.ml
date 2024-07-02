@@ -313,7 +313,7 @@ let new_scoped_ty scope desc = newty3 ~level:!current_level ~scope desc
 let newvar ?name ()         = newty2 ~level:!current_level (Tvar name)
 let newvar2 ?name level     = newty2 ~level:level (Tvar name)
 let new_global_var ?name () = newty2 ~level:!global_level (Tvar name)
-let newstub ~scope          = newty3 ~level:!current_level ~scope (Tvar None)
+let newstub ~level ~scope   = newty3 ~level ~scope (Tvar None)
 
 let newobj fields      = newty (Tobject (fields, ref None))
 
@@ -1225,10 +1225,10 @@ let always_true _ = true
 
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
-let rec copy ?partial ?keep_names ?(id_map=[]) ?(closed=always_true)
-    copy_scope ty =
+let rec copy ?(keep_level = false) ?partial ?keep_names ?(id_map=[])
+    ?(closed=always_true) copy_scope ty =
   let copy' id_map closed =
-      copy ?partial ?keep_names ~id_map ~closed copy_scope in
+      copy ~keep_level ?partial ?keep_names ~id_map ~closed copy_scope in
   let copy = copy' id_map closed in
   match get_desc ty with
     Tsubst (ty, _) -> ty
@@ -1248,7 +1248,10 @@ let rec copy ?partial ?keep_names ?(id_map=[]) ?(closed=always_true)
           else generic_level
     in
     if forget <> generic_level then newty2 ~level:forget (Tvar None) else
-    let t = newstub ~scope:(get_scope ty) in
+    let level = if keep_level && get_level ty = generic_level
+        then generic_level
+        else !current_level in
+    let t = newstub ~level ~scope:(get_scope ty) in
     For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
     let desc' =
       match desc with
@@ -1549,26 +1552,33 @@ let instance_class params cty =
    binding structure.
  *)
 let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) ~id_map sch =
+  let keep_level = id_map <> [] in
   let free = compute_univars sch in
   let delayed_copies = ref [] in
   let add_delayed_copy closed id_map t ty =
     delayed_copies :=
       (fun () -> Transient_expr.set_stub_desc t
-                          (Tlink (copy ~id_map ~closed copy_scope ty))) ::
+                    (Tlink (copy ~keep_level ~id_map ~closed copy_scope ty))) ::
       !delayed_copies
   in
   let rec copy_rec ~may_share ~closed ~id_map (ty : type_expr) =
     let copy_shared = copy_rec ~may_share:true ~closed ~id_map in
     let univars = free ty in
+    let keep_level = keep_level && get_level ty = generic_level in
     if is_Tvar ty || may_share && TypeSet.is_empty univars && closed ty then
       if get_level ty <> generic_level then ty else
-      let t = newstub ~scope:(get_scope ty) in
+      let level = if not (is_Tvar ty) && keep_level
+          then get_level ty
+          else !current_level
+      in
+      let t = newstub ~level ~scope:(get_scope ty) in
       add_delayed_copy closed id_map t ty;
       t
     else try
       TypeHash.find visited ty
     with Not_found -> begin
-      let t = newstub ~scope:(get_scope ty) in
+      let level = if keep_level then get_level ty else !current_level in
+      let t = newstub ~level ~scope:(get_scope ty) in
       TypeHash.add visited ty t;
       let desc' =
         match get_desc ty with
@@ -4147,11 +4157,11 @@ let rec copy_spine ~closed ~id_map copy_scope ty =
   | Tunivar _ -> ty
   | Tfield _
   | Tvariant _
-  | Tobject _ when not (closed ty) -> ty
+  | Tobject _ when closed ty -> ty
   | (Tarrow _ | Tpoly _ | Ttuple _ | Tpackage _ | Tconstr _
     | Tfunctor _ | Tfield _ | Tvariant _ |Tobject _) as desc ->
       let level = get_level ty in
-      if not (closed ty) && (level < !current_level || level = generic_level)
+      if closed ty && (level < !current_level || level = generic_level)
       then ty else
       let t = newgenstub ~scope:(get_scope ty) in
       For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
@@ -4177,15 +4187,18 @@ let rec copy_spine ~closed ~id_map copy_scope ty =
           let id_map = (id, Path.Pident (Ident.of_unscoped us)) :: id_map in
           let closed = compute_id_from_map id_map ty2 in
           Tfunctor (lbl, us', (path, fl), copy ~closed ~id_map copy_scope ty2)
-      | Tvariant row when Option.is_some (row_name row) ->
-          let (p, fl) = Option.get (row_name row) in
-          let fl = List.map copy_rec fl in
-          Tvariant (set_row_name row (Some (Path.subst id_map p, fl)))
+      | Tvariant row ->
+          begin match row_name row with
+          | Some (p, fl) ->
+              let fl = List.map copy_rec fl in
+              Tvariant (set_row_name row (Some (Path.subst id_map p, fl)))
+          | None -> Tvariant row
+          end
       | Tobject (ty, {contents = Some (p, tl)}) ->
           let p = Path.subst id_map p in
           Tobject (copy_rec ty, ref (Some (p, List.map copy_rec tl)))
-      | Tobject _ | Tvariant _ | Tfield _ ->
-          copy_type_desc (copy_spine ~closed ~id_map copy_scope) desc
+      | Tobject _ | Tfield _ ->
+          copy_type_desc copy_rec desc
       | _ -> assert false
       in
       Transient_expr.set_stub_desc t desc';

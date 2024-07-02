@@ -163,20 +163,11 @@ val apply_opt : (?opt:int -> (module M : Typ) -> M.t) -> Int.t = <fun>
 
 let build_pair (module M : Typ) ~x ~y : M.t * M.t = (x, y)
 
-(* This raises a principality warning but maybe it shouldn't because the
-dependant application does not impact the labels *)
+(* This shouldn't raise a principality warning *)
 let principality_warning = build_pair (module Int) ~y:3 ~x:1
 
 [%%expect{|
 val build_pair : (module M : Typ) -> x:M.t -> y:M.t -> M.t * M.t = <fun>
-val principality_warning : Int.t * Int.t = (1, 3)
-|}, Principal{|
-val build_pair : (module M : Typ) -> x:M.t -> y:M.t -> M.t * M.t = <fun>
-Line 5, characters 59-60:
-5 | let principality_warning = build_pair (module Int) ~y:3 ~x:1
-                                                               ^
-Warning 18 [not-principal]: commuting this argument is not principal.
-
 val principality_warning : Int.t * Int.t = (1, 3)
 |}]
 

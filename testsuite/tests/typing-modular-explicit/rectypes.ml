@@ -41,11 +41,6 @@ let f (module M : T) (x : (module M : T) -> 'a as 'a) =
 [%%expect{|
 val f : (module T) -> ((module M : T) -> 'a as 'a) -> 'a = <fun>
 |}, Principal{|
-Line 2, characters 2-3:
-2 |   x (module M) (module M) (module M) (module M) (module M)
-      ^
-Warning 18 [not-principal]: applying a dependent function is not principal.
-
 val f :
   (module T) -> ((module M : T) -> 'a as 'a) -> ((module M : T) -> 'b as 'b) =
   <fun>
