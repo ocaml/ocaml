@@ -499,21 +499,17 @@ struct pool_block {
                                        * alignment purposes */
 };
 
-#define SIZEOF_POOL_BLOCK sizeof(struct pool_block)
-
 static struct pool_block *pool = NULL;
 static caml_plat_mutex pool_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 
 /* Returns a pointer to the block header, given a pointer to "data" */
 static struct pool_block* get_pool_block(caml_stat_block b)
 {
-  if (b == NULL)
+  if (b == NULL) {
     return NULL;
-
-  else {
-    struct pool_block *pb =
-      (struct pool_block*)(((char*)b) - SIZEOF_POOL_BLOCK);
-    return pb;
+  } else {
+    return (struct pool_block *)
+      (((char *) b) - offsetof(struct pool_block, data));
   }
 }
 
@@ -540,7 +536,7 @@ static void unlink_pool_block(struct pool_block *pb)
 CAMLexport void caml_stat_create_pool(void)
 {
   if (pool == NULL) {
-    pool = malloc(SIZEOF_POOL_BLOCK);
+    pool = malloc(sizeof(struct pool_block));
     if (pool == NULL)
       caml_fatal_error("Fatal error: out of memory.\n");
     pool->next = pool;
@@ -570,7 +566,7 @@ CAMLexport caml_stat_block caml_stat_alloc_noexc(asize_t sz)
   if (pool == NULL)
     return malloc(sz);
   else {
-    struct pool_block *pb = malloc(sz + SIZEOF_POOL_BLOCK);
+    struct pool_block *pb = malloc(sizeof(struct pool_block) + sz);
     if (pb == NULL) return NULL;
     link_pool_block(pb);
     return &(pb->data);
@@ -653,7 +649,7 @@ CAMLexport caml_stat_block caml_stat_resize_noexc(caml_stat_block b, asize_t sz)
        while other domains access the pool concurrently. */
     unlink_pool_block(pb);
     /* Reallocating */
-    pb_new = realloc(pb, sz + SIZEOF_POOL_BLOCK);
+    pb_new = realloc(pb, sizeof(struct pool_block) + sz);
     if (pb_new == NULL) {
       /* The old block is still there, relinking it */
       link_pool_block(pb);
