@@ -33,11 +33,10 @@ module Make1 (T' : Termsig.Term.S) = struct
 end;;
 [%%expect{|
 module Make1 :
-  functor
-    (T' : sig
-            module Term0 : Termsig.Term0.S
-            module T : sig module Id : sig end end
-          end)
+  (T' : sig
+          module Term0 : Termsig.Term0.S
+          module T : sig module Id : sig end end
+        end)
     -> sig module T : sig module Id : sig end val u : int end end
 |}]
 
@@ -50,11 +49,10 @@ module Make2 (T' : Termsig.Term.S) = struct
 end;;
 [%%expect{|
 module Make2 :
-  functor
-    (T' : sig
-            module Term0 : Termsig.Term0.S
-            module T : sig module Id : sig end end
-          end)
+  (T' : sig
+          module Term0 : Termsig.Term0.S
+          module T : sig module Id : sig end end
+        end)
     ->
     sig
       module T : sig module Id : sig end module Id2 = Id val u : int end
@@ -71,11 +69,10 @@ module Make3 (T' : Termsig.Term.S) = struct
 end;;
 [%%expect{|
 module Make3 :
-  functor
-    (T' : sig
-            module Term0 : Termsig.Term0.S
-            module T : sig module Id : sig end end
-          end)
+  (T' : sig
+          module Term0 : Termsig.Term0.S
+          module T : sig module Id : sig end end
+        end)
     ->
     sig
       module T : sig module Id : sig end module Id2 = Id val u : int end
@@ -96,11 +93,10 @@ end;;
 module type S =
   sig module Term0 : sig module Id : sig end end module T = Term0 end
 module Make1 :
-  functor
-    (T' : sig
-            module Term0 : sig module Id : sig end end
-            module T : sig module Id : sig end end
-          end)
+  (T' : sig
+          module Term0 : sig module Id : sig end end
+          module T : sig module Id : sig end end
+        end)
     -> sig module Id : sig end module Id2 = Id end
 |}]
 
@@ -134,11 +130,10 @@ module Make3 (T' : S) = struct
 end;;
 [%%expect{|
 module Make3 :
-  functor
-    (T' : sig
-            module Term0 : sig module Id : sig end end
-            module T : sig module Id : sig end end
-          end)
+  (T' : sig
+          module Term0 : sig module Id : sig end end
+          module T : sig module Id : sig end end
+        end)
     ->
     sig
       module T : sig module Id : sig end module Id2 = Id val u : int end
@@ -180,7 +175,7 @@ end;;
 
 module M = Make1(IS);;
 [%%expect{|
-module MkT : functor (X : sig end) -> sig type t end
+module MkT : (X : sig end) -> sig type t end
 module type S =
   sig
     module Term0 : sig module Id : sig end end
@@ -188,12 +183,11 @@ module type S =
     type t = MkT(T).t
   end
 module Make1 :
-  functor
-    (T' : sig
-            module Term0 : sig module Id : sig end end
-            module T : sig module Id : sig end end
-            type t = MkT(T).t
-          end)
+  (T' : sig
+          module Term0 : sig module Id : sig end end
+          module T : sig module Id : sig end end
+          type t = MkT(T).t
+        end)
     -> sig module Id : sig end module Id2 = Id type t = T'.t end
 module IS :
   sig
@@ -231,7 +225,7 @@ let (E eq : M1.u) = (E Eq : M1.t);;
 [%%expect{|
 type (_, _) eq = Eq : ('a, 'a) eq
 module MkT :
-  functor (X : Set.OrderedType) ->
+  (X : Set.OrderedType) ->
     sig
       type elt = X.t
       type t = Set.Make(X).t
@@ -287,13 +281,12 @@ module type S =
     type u = t = E of (MkT(Term0).t, MkT(T).t) eq
   end
 module F :
-  functor
-    (X : sig
-           module Term0 : sig type t = int val compare : t -> t -> int end
-           module T : sig type t = int val compare : t -> t -> int end
-           type t = E of (MkT(T).t, MkT(T).t) eq
-           type u = t = E of (MkT(Term0).t, MkT(T).t) eq
-         end)
+  (X : sig
+         module Term0 : sig type t = int val compare : t -> t -> int end
+         module T : sig type t = int val compare : t -> t -> int end
+         type t = E of (MkT(T).t, MkT(T).t) eq
+         type u = t = E of (MkT(Term0).t, MkT(T).t) eq
+       end)
     ->
     sig
       module Term0 : sig type t = int val compare : t -> t -> int end

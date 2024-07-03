@@ -291,12 +291,12 @@ module type INCREMENTAL_ENGINE = sig
     'a checkpoint
 
   (* [resume] allows the user to resume the parser after it has suspended
-     itself with a checkpoint of the form [AboutToReduce (env, prod)] or
-     [HandlingError env]. [resume] expects the old checkpoint and produces a
+     itself with a checkpoint of the form [Shifting _], [AboutToReduce _], or
+     [HandlingError _]. [resume] expects the old checkpoint and produces a
      new checkpoint. It does not raise any exception. *)
 
   (* The optional argument [strategy] influences the manner in which [resume]
-     deals with checkpoints of the form [ErrorHandling _]. Its default value
+     deals with checkpoints of the form [HandlingError _]. Its default value
      is [`Legacy]. It can be briefly described as follows:
 
      - If the [error] token is used only to report errors (that is, if the
@@ -945,6 +945,16 @@ module type TABLE = sig
     ('env -> 'answer) ->
     'env -> 'answer
 
+  (**[maybe_shift_t s t] determines whether there exists a transition out of
+     the state [s], labeled with the terminal symbol [t], to some state
+     [s']. If so, it returns [Some s']. Otherwise, it returns [None]. *)
+  val maybe_shift_t : state -> terminal -> state option
+
+  (**[may_reduce_prod s t prod] determines whether in the state [s], with
+     lookahead symbol [t], the automaton reduces production [prod]. This test
+     accounts for the possible existence of a default reduction. *)
+  val may_reduce_prod : state -> terminal -> production -> bool
+
   (* This is the automaton's goto table. This table maps a pair of a state
      and a nonterminal symbol to a new state. By extension, it also maps a
      pair of a state and a production to a new state. *)
@@ -959,6 +969,11 @@ module type TABLE = sig
   val       goto_nt  : state -> nonterminal -> state
   val       goto_prod: state -> production  -> state
   val maybe_goto_nt:   state -> nonterminal -> state option
+
+  (* [lhs prod] returns the left-hand side of production [prod],
+     a nonterminal symbol. *)
+
+  val lhs: production -> nonterminal
 
   (* [is_start prod] tells whether the production [prod] is a start production. *)
 
@@ -1604,10 +1619,10 @@ module Make (T : TABLE) = struct
      checkpoint of the form [InputNeeded env]. It checks that [checkpoint] is
      indeed of this form, and invokes [discard]. *)
 
-  (* [resume checkpoint] is invoked by the user in response to a checkpoint of
-     the form [AboutToReduce (env, prod)] or [HandlingError env]. It checks
-     that [checkpoint] is indeed of this form, and invokes [reduce] or
-     [error], as appropriate. *)
+  (* [resume checkpoint] is invoked by the user in response to a checkpoint
+     of the form [Shifting _], [AboutToReduce _], or [HandlingError env]. It
+     checks that [checkpoint] is indeed of this form, and invokes [reduce]
+     or [error], as appropriate. *)
 
   (* In reality, [offer] and [resume] accept an argument of type
      [semantic_value checkpoint] and produce a checkpoint of the same type.
@@ -3608,9 +3623,12 @@ module MakeEngineTable (T : TableFormat.TABLES) = struct
   let default_reduction state defred nodefred env =
     let code = PackedIntArray.get T.default_reduction state in
     if code = 0 then
+      (* no default reduction *)
       nodefred env
     else
-      defred env (code - 1)
+      (* default reduction *)
+      let prod = code - 1 in
+      defred env prod
 
   let is_start prod =
     prod < T.start
@@ -3644,13 +3662,59 @@ module MakeEngineTable (T : TableFormat.TABLES) = struct
         assert (c = 0);
         fail env
 
+  let maybe_shift_t state terminal =
+    match PackedIntArray.unflatten1 T.error state terminal with
+    | 1 ->
+        let action = unmarshal2 T.action state terminal in
+        let opcode = action land 0b11 in
+        if opcode >= 0b10 then
+          (* 0b10 : shift/discard *)
+          (* 0b11 : shift/nodiscard *)
+          let state' = action lsr 2 in
+          Some state'
+        else
+          (* 0b01 : reduce *)
+          (* 0b00 : cannot happen *)
+          None
+    | c ->
+        assert (c = 0);
+        None
+
+  let may_reduce_prod state terminal prod =
+    let code = PackedIntArray.get T.default_reduction state in
+    if code = 0 then
+      (* no default reduction *)
+      match PackedIntArray.unflatten1 T.error state terminal with
+      | 1 ->
+          let action = unmarshal2 T.action state terminal in
+          let opcode = action land 0b11 in
+          if opcode >= 0b10 then
+            (* 0b10 : shift/discard *)
+            (* 0b11 : shift/nodiscard *)
+            false
+          else
+            (* 0b01 : reduce *)
+            (* 0b00 : cannot happen *)
+            let prod' = action lsr 2 in
+            prod = prod'
+      | c ->
+          assert (c = 0);
+          false
+    else
+      (* default reduction *)
+      let prod' = code - 1 in
+      prod = prod'
+
   let goto_nt state nt =
     let code = unmarshal2 T.goto state nt in
     (* code = 1 + state *)
     code - 1
 
+  let[@inline] lhs prod =
+    PackedIntArray.get T.lhs prod
+
   let goto_prod state prod =
-    goto_nt state (PackedIntArray.get T.lhs prod)
+    goto_nt state (lhs prod)
 
   let maybe_goto_nt state nt =
     let code = unmarshal2 T.goto state nt in
@@ -3770,5 +3834,5 @@ module MakeEngineTable (T : TableFormat.TABLES) = struct
 end
 end
 module StaticVersion = struct
-let require_20230608 = ()
+let require_20231231 = ()
 end

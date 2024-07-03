@@ -40,9 +40,9 @@ module Context = struct
         Fmt.fprintf ppf "@[<2>module type %a =@ %a@]"
           Printtyp.ident id context_mty rem
     | Body x :: rem ->
-        Fmt.fprintf ppf "functor (%s) ->@ %a" (argname x) context_mty rem
+        Fmt.fprintf ppf "(%s) ->@ %a" (argname x) context_mty rem
     | Arg x :: rem ->
-        Fmt.fprintf ppf "functor (%s : %a) -> ..."
+        Fmt.fprintf ppf "(%s : %a) -> ..."
           (argname x) context_mty rem
     | [] ->
         Fmt.fprintf ppf "<here>"
@@ -799,8 +799,8 @@ and functor_params ~expansion_token ~env ~before ~ctx {got;expected;_} =
   let main =
     Fmt.dprintf
       "@[<hv 2>Modules do not match:@ \
-       @[functor@ %t@ -> ...@]@;<1 -2>is not included in@ \
-       @[functor@ %t@ -> ...@]@]"
+       @[%t@ -> ...@]@;<1 -2>is not included in@ \
+       @[%t@ -> ...@]@]"
       actual expected
   in
   let msgs = dwith_context ctx main :: before in
@@ -1003,7 +1003,7 @@ let report_apply_error ~loc env (app_name, mty_f, args) =
         Location.errorf ~loc ~sub ~footnote
           "@[<hv>%t@ \
            These arguments:@;<1 2>@[%t@]@ \
-           do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"
+           do not match these parameters:@;<1 2>@[%t@ -> ...@]@]"
           intro
           actual expected
 

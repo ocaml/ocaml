@@ -7,7 +7,7 @@ module F (X : sig type t = private < foo:int; ..> val x : t end) = struct
 end;;
 [%%expect{|
 module F :
-  functor (X : sig type t = private < foo : int; .. > val x : t end) ->
+  (X : sig type t = private < foo : int; .. > val x : t end) ->
     sig val x : X.t end
 |}]
 

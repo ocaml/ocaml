@@ -80,14 +80,14 @@ Lines 4-7, characters 4-7:
 7 |     end
 Error: Signature mismatch:
        Modules do not match:
-         sig module type s module A : functor (X : s) -> sig end end
+         sig module type s module A : (X : s) -> sig end end
        is not included in
-         sig module A : functor (X : s) -> sig end end
+         sig module A : (X : s) -> sig end end
        In module "A":
        Modules do not match:
-         functor (X : s) -> ...
+         (X : s) -> ...
        is not included in
-         functor (X : s/2) -> ...
+         (X : s/2) -> ...
        Module types do not match: s does not include s/2
 Line 5, characters 6-19:
   Definition of module type "s"

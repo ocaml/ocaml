@@ -286,14 +286,13 @@ end
 module X :
   sig
     module type s = sig type t end
-    module Y : functor (Z : s) -> sig module type Ys = sig end end
+    module Y : (Z : s) -> sig module type Ys = sig end end
   end
 module type fcm_path =
   sig
     module Z : sig type t end
     module F :
-      functor (Z : sig type t end) ->
-        sig module type t_F = sig type ff end end
+      (Z : sig type t end) -> sig module type t_F = sig type ff end end
     val x_s : (module X.s)
     val x_sY : (module X.Y(Z).Ys)
     val x_sFF : (module F(Z).t_F)

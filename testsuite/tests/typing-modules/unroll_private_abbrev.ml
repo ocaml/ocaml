@@ -48,7 +48,7 @@ end = struct
 end;;
 [%%expect{|
 module F :
-  functor (X : sig end) ->
+  (X : sig end) ->
     sig
       type s = private [ `Bar of 'a | `Foo ] as 'a
       val from : M.t -> s

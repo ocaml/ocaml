@@ -19,7 +19,7 @@ module Falias (X : S) = X
 {
  "Falias"[module] -> Abs<.4>(X, X<.3>);
  }
-module Falias : functor (X : S) -> sig type t = X.t val x : t end
+module Falias : (X : S) -> sig type t = X.t val x : t end
 |}]
 
 module Finclude (X : S) = struct
@@ -34,7 +34,7 @@ end
            "x"[value] -> X<.5> . "x"[value];
            });
  }
-module Finclude : functor (X : S) -> sig type t = X.t val x : t end
+module Finclude : (X : S) -> sig type t = X.t val x : t end
 |}]
 
 module Fredef (X : S) = struct
@@ -48,7 +48,7 @@ end
                                   "x"[value] -> <.9>;
                                   });
  }
-module Fredef : functor (X : S) -> sig type t = X.t val x : X.t end
+module Fredef : (X : S) -> sig type t = X.t val x : X.t end
 |}]
 
 module Fignore (_ : S) = struct
@@ -191,7 +191,7 @@ end
         "x"[value] -> <.29>;
         });
  }
-module Fgen : functor () -> sig type t = Fresher val x : t end
+module Fgen : () -> sig type t = Fresher val x : t end
 |}]
 
 include Fgen ()
@@ -236,7 +236,7 @@ module type B2S = functor (X : Big) -> Small with type t = X.t
 {
  "B2S"[module type] -> <.38>;
  }
-module type B2S = functor (X : Big) -> sig type t = X.t end
+module type B2S = (X : Big) -> sig type t = X.t end
 |}]
 
 module Big_to_small1 : B2S = functor (X : Big) -> X

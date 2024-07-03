@@ -14,7 +14,7 @@ module M : sig end
 {
  "F"[module] -> Abs<.2>(X, {<.0>});
  }
-module F : functor (X : sig end) -> sig end
+module F : (X : sig end) -> sig end
 {
  "App"[module] -> {<.3>};
  }
@@ -35,7 +35,7 @@ module M : sig end
                             "t"[type] -> <.6>;
                             });
  }
-module F : functor (X : sig end) -> sig type t end
+module F : (X : sig end) -> sig type t end
 {
  "App"[module] -> {<.8>
                    "t"[type] -> <.6>;
@@ -55,7 +55,7 @@ module M : sig end
 {
  "F"[module] -> Abs<.11>(X, X<.10>);
  }
-module F : functor (X : sig end) -> sig end
+module F : (X : sig end) -> sig end
 {
  "App"[module] -> {<.12>};
  }
@@ -70,7 +70,7 @@ end
 {
  "Id"[module] -> Abs<.14>(X, X<.13>);
  }
-module Id : functor (X : sig end) -> sig end
+module Id : (X : sig end) -> sig end
 {
  "Struct"[module] ->
    {<.16>
@@ -106,7 +106,7 @@ module O = N.M
                              "M"[module] -> X<.19>;
                              });
  }
-module F : functor (X : sig end) -> sig module M : sig end end
+module F : (X : sig end) -> sig module M : sig end end
 {
  "N"[module] -> {<.22>
                  "M"[module] -> {<.19>};
