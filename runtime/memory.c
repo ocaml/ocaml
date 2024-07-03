@@ -493,9 +493,6 @@ typedef double max_align_t;
 #endif
 
 struct pool_block {
-#ifdef DEBUG
-  intnat magic;
-#endif
   struct pool_block *next;
   struct pool_block *prev;
   CAMLalign(max_align_t) char data[]; /* not allocated, used for
@@ -516,9 +513,6 @@ static struct pool_block* get_pool_block(caml_stat_block b)
   else {
     struct pool_block *pb =
       (struct pool_block*)(((char*)b) - SIZEOF_POOL_BLOCK);
-#ifdef DEBUG
-    CAMLassert(pb->magic == Debug_pool_magic);
-#endif
     return pb;
   }
 }
@@ -549,9 +543,6 @@ CAMLexport void caml_stat_create_pool(void)
     pool = malloc(SIZEOF_POOL_BLOCK);
     if (pool == NULL)
       caml_fatal_error("Fatal error: out of memory.\n");
-#ifdef DEBUG
-    pool->magic = Debug_pool_magic;
-#endif
     pool->next = pool;
     pool->prev = pool;
   }
@@ -581,10 +572,6 @@ CAMLexport caml_stat_block caml_stat_alloc_noexc(asize_t sz)
   else {
     struct pool_block *pb = malloc(sz + SIZEOF_POOL_BLOCK);
     if (pb == NULL) return NULL;
-#ifdef DEBUG
-    memset(&(pb->data), Debug_uninit_stat, sz);
-    pb->magic = Debug_pool_magic;
-#endif
     link_pool_block(pb);
     return &(pb->data);
   }
