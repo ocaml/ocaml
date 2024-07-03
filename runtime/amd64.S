@@ -39,7 +39,7 @@
 
 #define LBL(x) .L##x
 #define G(r) r
-#undef  GREL
+#define GREL(r) r
 #define GCALL(r) r
 #define TEXT_SECTION(name)
 #define FUNCTION_ALIGN 4
@@ -172,7 +172,7 @@
 #define Caml_state(var) (8*domain_field_caml_##var)(%r14)
 
 /* Load address of global [label] in register [dst]. */
-#if defined(__PIC__) && !defined(SYS_mingw64) && !defined(SYS_cygwin)
+#if defined(__PIC__)
 #define LEA_VAR(label,dst) \
         movq    GREL(label)(%rip), dst
 #else
