@@ -22,7 +22,7 @@
    reference = "${test_source_directory}/func_sections.arm.reference";
    native;
  }{
-   arch_riscv64;
+   arch_riscv;
    reference = "${test_source_directory}/func_sections.reference";
    native;
  }{

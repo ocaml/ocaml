@@ -216,12 +216,12 @@ let arch_power = make
     "Target is POWER architecture"
     "Target is not POWER architecture")
 
-let arch_riscv64 = make
-  ~name:"arch_riscv64"
-  ~description:"Pass if target is a RiscV64 architecture"
-  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "riscv64")
-     "Target is RiscV64 architecture"
-     "Target is not RiscV64 architecture")
+let arch_riscv = make
+  ~name:"arch_riscv"
+  ~description:"Pass if target is a RISC-V architecture"
+  (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "riscv")
+     "Target is RISC-V architecture"
+     "Target is not RISC-V architecture")
 
 let arch_s390x = make
   ~name:"arch_s390x"
@@ -391,7 +391,7 @@ let _ =
     arch_amd64;
     arch_i386;
     arch_power;
-    arch_riscv64;
+    arch_riscv;
     arch_s390x;
     function_sections;
     frame_pointers;
