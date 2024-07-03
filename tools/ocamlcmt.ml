@@ -19,6 +19,14 @@ let print_info_arg = ref false
 let target_filename = ref None
 let save_cmt_info = ref false
 
+let print_version () =
+  Format.printf "ocamlcmt, version %s@." Sys.ocaml_version;
+  exit 0
+
+let print_version_num () =
+  Format.printf "%s@." Sys.ocaml_version;
+  exit 0
+
 let arg_list = Arg.align [
   "-o", Arg.String (fun s -> target_filename := Some s),
     "<file> Dump to file <file> (or stdout if -)";
@@ -29,6 +37,10 @@ let arg_list = Arg.align [
   "-src", Arg.Set gen_ml,
     " Convert .cmt or .cmti back to source code (without comments)";
   "-info", Arg.Set print_info_arg, " : print information on the file";
+  "-version", Arg.Unit print_version,
+              "     Print version and exit";
+  "-vnum", Arg.Unit print_version_num,
+           "        Print version number and exit";
   "-args", Arg.Expand Arg.read_arg,
     "<file> Read additional newline separated command line arguments \n\
     \      from <file>";
