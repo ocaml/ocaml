@@ -28,13 +28,15 @@ extern "C" {
 #include "mlvalues.h"
 #include "domain_state.h"
 
-/* The runtime currently has a hard limit on the number of domains.
-   This hard limit may go away in the future. */
 #ifdef ARCH_SIXTYFOUR
-#define Max_domains 128
+#define Max_domains_def 128
 #else
-#define Max_domains 16
+#define Max_domains_def 16
 #endif
+
+/* Upper limit for the number of domains. Chosen to be arbitrarily large. Used
+ * for sanity checking [max_domains] value in OCAMLRUNPARAM. */
+#define Max_domains_max 4096
 
 /* is the minor heap full or an external interrupt has been triggered */
 Caml_inline int caml_check_gc_interrupt(caml_domain_state * dom_st)
@@ -85,7 +87,7 @@ CAMLextern void (*caml_domain_initialize_hook)(void);
 CAMLextern void (*caml_domain_stop_hook)(void);
 CAMLextern void (*caml_domain_external_interrupt_hook)(void);
 
-CAMLextern void caml_init_domains(uintnat minor_heap_wsz);
+CAMLextern void caml_init_domains(uintnat max_domains, uintnat minor_heap_wsz);
 CAMLextern void caml_init_domain_self(int);
 
 CAMLextern uintnat caml_minor_heap_max_wsz;

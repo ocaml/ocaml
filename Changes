@@ -30,6 +30,11 @@ _______________
 
 ### Runtime system:
 
+- #13272: Allow maximum number of domains to be specified as a OCAMLRUNPARAM
+  parameter.
+  (KC Sivaramakrishnan, review by Guillaume Munch-Maccagnoni, Miod Vallat,
+   Gabriel Scherer, David Allsopp, request by Zachary Yedidia).
+
 - #11911, #12923: Multicore statistical memory profiling.
   This restores a notable OCaml 4 feature that was missing
   in OCaml 5.
