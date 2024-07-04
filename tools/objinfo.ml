@@ -433,6 +433,14 @@ let dump_obj filename =
   then dump_cmxs ic
   else exit_magic_error ~expected_kind:None (Parse_error head_error)
 
+let print_version () =
+  Format.printf "ocamlobjinfo, version %s@." Sys.ocaml_version;
+  exit 0
+
+let print_version_num () =
+  Format.printf "%s@." Sys.ocaml_version;
+  exit 0
+
 let arg_list = [
   "-quiet", Arg.Set quiet,
     " Only print explicitly required information";
@@ -447,6 +455,8 @@ let arg_list = [
   "-decls", Arg.Set decls,
     " Print a list of all declarations in the module";
   "-null-crc", Arg.Set no_crc, " Print a null CRC for imported interfaces";
+  "-version", Arg.Unit print_version, " Print version and exit";
+  "-vnum", Arg.Unit print_version_num, " Print version number and exit";
   "-args", Arg.Expand Arg.read_arg,
      "<file> Read additional newline separated command line arguments \n\
      \      from <file>";
