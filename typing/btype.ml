@@ -324,10 +324,8 @@ let fold_type_expr ?(allow_tsubst=false) f init ty =
       f result ty2
   | Tnil                -> init
   | Tlink _ -> assert false
-  | Tsubst (ty, oty)    ->
-      assert allow_tsubst;
-      let result = f init ty in
-      Option.fold ~none:result ~some:(f result) oty
+  | Tsubst _    ->
+      assert allow_tsubst; init
   | Tunivar _           -> init
   | Tpoly (ty, tyl)     ->
     let result = f init ty in

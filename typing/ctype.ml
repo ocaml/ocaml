@@ -1234,7 +1234,6 @@ let rec copy ?(keep_level = false) ?partial ?keep_names ?(id_map=[])
     Tsubst (ty, _) -> ty
   | desc ->
     let level = get_level ty in
-    (* TODO add better check that we can finish *)
     if level <> generic_level && partial = None && closed ty then ty else
     (* We only forget types that are non generic and do not contain
        free univars *)
@@ -2153,14 +2152,11 @@ let unify_univar_for tr_exn t1 t2 univar_pairs =
   try unify_univar t1 t2 univar_pairs
   with Cannot_unify_universal_variables -> raise_unexplained_for tr_exn
 
-let has_unbounded bound_id p =
-  Path.unbounded_unscoped bound_id p
-
 (* Test the occurrence of free univars in a type *)
 (* That's way too expensive. Must do some kind of caching *)
 (* If [inj_only=true], only check injective positions *)
 
-let occur_univar_or_unscoped ?(inj_only=false) ?(check_unscoped=true) env ty =
+let occur_univar_or_unscoped ?(inj_only=false) env ty =
   let visited = ref TypeMap.empty in
   with_type_mark begin fun mark ->
   let rec occur_rec env bound_uv bound_id ty =
@@ -2189,9 +2185,8 @@ let occur_univar_or_unscoped ?(inj_only=false) ?(check_unscoped=true) env ty =
           let bound_uv = List.fold_right TypeSet.add tyl bound_uv in
           occur_rec env bound_uv bound_id ty
       | Tconstr (p, tl, _) -> begin
-          let id_escape =
-              if check_unscoped then has_unbounded bound_id p else None
-          in match id_escape with
+          let id_escape = Path.unbounded_unscoped bound_id p in
+          match id_escape with
           | Some i ->
               begin try
                 let ty' = try_expand_safe env ty in
@@ -2221,11 +2216,11 @@ let occur_univar_or_unscoped ?(inj_only=false) ?(check_unscoped=true) env ty =
             end
           end
       | Tobject (_, ({contents = Some (p, _)} as nm))
-        when check_unscoped && has_unbounded bound_id p <> None ->
+        when Path.unbounded_unscoped bound_id p <> None ->
           set_name nm None;
           occur_desc env bound_uv bound_id ty
-      | Tpackage (p, fl) when check_unscoped ->
-          begin match has_unbounded bound_id p with
+      | Tpackage (p, fl) ->
+          begin match Path.unbounded_unscoped bound_id p with
             Some i ->
               let p' = normalize_package_path env p in
               if Path.same p p' then raise_escape_exn (Module i);
@@ -2235,9 +2230,8 @@ let occur_univar_or_unscoped ?(inj_only=false) ?(check_unscoped=true) env ty =
               List.iter (fun (_, t) -> occur_rec env bound_uv bound_id t) fl
           end
       | Tfunctor (l, id, (p, fl), ty) -> begin
-          let id_escape =
-              if check_unscoped then has_unbounded bound_id p else None
-          in match id_escape with
+          let id_escape = Path.unbounded_unscoped bound_id p in
+          match id_escape with
             Some i ->
               let p' = normalize_package_path env p in
               if Path.same p p' then raise_escape_exn (Module i);
@@ -2262,9 +2256,9 @@ let has_injective_univars env ty =
   try occur_univar_or_unscoped ~inj_only:true env ty; false
   with Escape _ -> true
 
-let occur_univar_for tr_exn env ~check_unscoped ty =
+let occur_univar_for tr_exn env ty =
   try
-    occur_univar_or_unscoped env ~check_unscoped ty
+    occur_univar_or_unscoped env ty
   with Escape e -> raise_for tr_exn (Escape e)
 
 (* Grouping univars by families according to their binders *)
@@ -2913,8 +2907,6 @@ let add_gadt_equation uenv source destination =
 
 let eq_package_path env p1 p2 =
   Path.equiv p1 p2 ||
-  let p1 = normalize_package_path env p1 in
-  let p2 = normalize_package_path env p2 in
   Path.equiv (normalize_package_path env p1) (normalize_package_path env p2)
 
 let nondep_type' = ref (fun _ _ _ -> assert false)
@@ -2999,7 +2991,7 @@ let unify1_var uenv t1 t2 =
   assert (is_Tvar t1);
   occur_for Unify uenv t1 t2;
   let env = get_env uenv in
-  match occur_univar_for Unify env ~check_unscoped:true t2 with
+  match occur_univar_for Unify env t2 with
   | () ->
       begin
         try
@@ -3016,14 +3008,14 @@ let unify1_var uenv t1 t2 =
 (* Called from unify3 *)
 let unify3_var uenv t1' t2 t2' =
   occur_for Unify uenv t1' t2;
-  match occur_univar_for Unify (get_env uenv) ~check_unscoped:true t2 with
+  match occur_univar_for Unify (get_env uenv) t2 with
   | () -> link_type t1' t2
   | exception Unify_trace _ when in_pattern_mode uenv ->
       reify uenv t1';
       reify uenv t2';
       if can_generate_equations uenv then begin
         occur_univar_or_unscoped
-          ~inj_only:true ~check_unscoped:true (get_env uenv) t2';
+          ~inj_only:true (get_env uenv) t2';
         record_equation uenv t1' t2';
       end
 
@@ -3103,7 +3095,7 @@ and unify2_rec uenv t10 t1 t20 t2 =
       then begin
         update_level_for Unify (get_env uenv) (get_level t1) t2;
         update_scope_for Unify (get_scope t1) t2;
-        if Path.same p1 p2 then link_type t1 t2
+        link_type t1 t2
       end else
         let env = get_env uenv in
         if find_expansion_scope env p1 > find_expansion_scope env p2
@@ -3188,10 +3180,8 @@ and unify3 uenv t1 t1' t2 t2' =
             unify uenv fcm1 fcm2;
             let env = get_env uenv in
             let mty1 = !modtype_of_package env Location.none p1 fl1 in
-            (* let mty2 = !modtype_of_package env Location.none p2 fl2 in *)
             enter_functor_for Unify env id1 (newty d1) id2 t2'
               (fun () -> with_mty uenv id1 mty1
-                          (* (fun uenv -> with_mty uenv id2 mty2 *)
                             (fun uenv -> Ident.link_unscoped id1 id2;
                                          unify uenv ty1 ty2))
       | (Tfunctor (l1, id1, (p1, fl1), u1), Tarrow (l2, t2, u2, c2)) ->
@@ -3565,8 +3555,7 @@ and unify_row_field uenv fixed1 fixed2 rm1 rm2 l f1 f2 =
                 List.iter (unify uenv t1) tl
               )
         end in
-      if redo then unify_row_field uenv fixed1 fixed2 rm1 rm2 l f1 f2
-      else
+      if redo then unify_row_field uenv fixed1 fixed2 rm1 rm2 l f1 f2 else
       let remq tl =
         List.filter (fun ty -> not (List.exists (eq_type ty) tl)) in
       let tl1' = remq tl2 tl1 and tl2' = remq tl1 tl2 in
@@ -3580,7 +3569,7 @@ and unify_row_field uenv fixed1 fixed2 rm1 rm2 l f1 f2 =
           (* Attempt to merge all the types containing univars *)
           List.iter (unify uenv tu1) (tlu1@tlu2)
       | (tu::_, []) | ([], tu::_) ->
-          occur_univar_for Unify env ~check_unscoped:true tu
+          occur_univar_for Unify env tu
       end;
       (* Is this handling of levels really principal? *)
       let update_levels rm =
@@ -3720,7 +3709,7 @@ let unify_to_arrow env ty =
       raise (Unify (expand_to_unification_error env trace))
     end
   | Tarrow _ -> ()
-  | _ -> assert false
+  | _ -> fatal_error "Ctype.unify_to_arrow"
 
 
 (**** Special cases of unification ****)
@@ -4239,7 +4228,7 @@ let moregen_occur env level ty =
       raise_unexplained_for Moregen
   end;
   (* also check for free univars *)
-  occur_univar_for Moregen env ~check_unscoped:true ty;
+  occur_univar_for Moregen env ty;
   update_level_for Moregen env level ty
 
 let may_instantiate inst_nongen t1 =
@@ -5469,11 +5458,6 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (Tfunctor (l1, id1, (p1, fl1), u1), Tfunctor (l2, id2, (p2, fl2), u2))
       when compatible_labels ~in_pattern_mode:false l1 l2 ->
         begin try
-          (* FIXME : here we don't unify id1 with id2 because this would break
-            the invariant of unicity of unscoped binding.
-            However this leads to unifying u1 with u2 when their environnement
-            are different.
-          *)
           let fcm1 = newty (Tpackage (p1, fl1)) in
           let fcm2 = newty (Tpackage (p2, fl2)) in
           let cstrs =
@@ -6013,8 +5997,6 @@ let identifier_escape env idl t =
       identifier_escape_for Unify env idl t
   with Unify_trace trace ->
       undo_compress snap;
-      (* let expected = newty (Tarrow (l, pck_ty, newvar (), commu_ok)) in
-      let trace = Diff {got = ty; expected} :: trace in *)
       raise (Unify (expand_to_unification_error env trace))
 
 (*
