@@ -27,13 +27,12 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
+#include "caml/config.h"
 #ifdef HAS_GETTIMEOFDAY
 #include <sys/time.h>
 #endif
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <errno.h>
-#include "caml/config.h"
 #if defined(SUPPORT_DYNAMIC_LINKING) && !defined(BUILDING_LIBCAMLRUNS)
 #define WITH_DYNAMIC_LINKING
 #ifdef __CYGWIN__
@@ -47,7 +46,7 @@
 #endif
 #ifdef HAS_POSIX_MONOTONIC_CLOCK
 #include <time.h>
-#elif HAS_CLOCK_GETTIME_NSEC_NP
+#elif defined(HAS_CLOCK_GETTIME_NSEC_NP)
 #include <time.h>
 #endif
 #ifdef HAS_DIRENT
