@@ -109,7 +109,8 @@ _______________
    KC Sivaramakrishnan)
 
 - #13139: Simplify CAMLalign to always use C23/C++11 alignas or C11
-  _Alignas.
+  _Alignas. Ensures that stat data is always aligned to the best
+  boundary.
   (Antonin Décimo, review by Miod Vallat and Xavier Leroy)
 
 ### Code generation and optimizations:

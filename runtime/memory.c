@@ -20,6 +20,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdalign.h>
+#if defined(_WIN32)
+#include <malloc.h>
+#endif
 #include "caml/config.h"
 #include "caml/custom.h"
 #include "caml/misc.h"
@@ -492,11 +496,18 @@ CAMLexport value caml_alloc_shr_noexc(mlsize_t wosize, tag_t tag) {
 typedef double max_align_t;
 #endif
 
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
+#if defined(_M_AMD64) || defined(__x86_64__)
+#define pool_block_align MAX(alignof(max_align_t), 16 /* for SSE */)
+#else
+#define pool_block_align alignof(max_align_t)
+#endif
+
 struct pool_block {
   struct pool_block *next;
   struct pool_block *prev;
-  CAMLalign(max_align_t) char data[]; /* not allocated, used for
-                                       * alignment purposes */
+  alignas(pool_block_align) char data[]; /* flexible array member */
 };
 
 static struct pool_block *pool = NULL;
@@ -551,7 +562,11 @@ CAMLexport void caml_stat_destroy_pool(void)
     pool->prev->next = NULL;
     while (pool != NULL) {
       struct pool_block *next = pool->next;
+#ifdef _WIN32
+      _aligned_free(pool);
+#else
       free(pool);
+#endif
       pool = next;
     }
     pool = NULL;
@@ -566,7 +581,12 @@ CAMLexport caml_stat_block caml_stat_alloc_noexc(asize_t sz)
   if (pool == NULL)
     return malloc(sz);
   else {
-    struct pool_block *pb = malloc(sizeof(struct pool_block) + sz);
+    struct pool_block *pb;
+#ifdef _WIN32
+    pb = _aligned_malloc(sizeof(struct pool_block) + sz, pool_block_align);
+#else
+    pb = malloc(sizeof(struct pool_block) + sz);
+#endif
     if (pb == NULL) return NULL;
     link_pool_block(pb);
     return &(pb->data);
@@ -630,7 +650,11 @@ CAMLexport void caml_stat_free(caml_stat_block b)
     struct pool_block *pb = get_pool_block(b);
     if (pb == NULL) return;
     unlink_pool_block(pb);
+#ifdef _WIN32
+    _aligned_free(pb);
+#else
     free(pb);
+#endif
   }
 }
 
@@ -649,7 +673,12 @@ CAMLexport caml_stat_block caml_stat_resize_noexc(caml_stat_block b, asize_t sz)
        while other domains access the pool concurrently. */
     unlink_pool_block(pb);
     /* Reallocating */
+#ifdef _WIN32
+    pb_new = _aligned_realloc(pb, sizeof(struct pool_block) + sz,
+                              pool_block_align);
+#else
     pb_new = realloc(pb, sizeof(struct pool_block) + sz);
+#endif
     if (pb_new == NULL) {
       /* The old block is still there, relinking it */
       link_pool_block(pb);
