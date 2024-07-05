@@ -109,6 +109,7 @@ type ('a, 'variety) elt =
   | Variant : 'variety variant -> ('a, 'variety) elt
   | Obj : 'variety obj -> ('a, 'variety) elt
   | Escape : 'a escape -> ('a, _) elt
+  | Function_label_mismatch of Asttypes.arg_label diff
   | Incompatible_fields : { name:string; diff: type_expr diff } -> ('a, _) elt
       (* Could move [Incompatible_fields] into [obj] *)
   | First_class_module: first_class_module -> ('a,_) elt
@@ -126,8 +127,8 @@ let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
       Escape { kind = Equation (f x); context }
   | Escape {kind = (Univ _ | Self | Constructor _ | Module_type _ | Constraint);
             _}
-  | Variant _ | Obj _ | Incompatible_fields _ | Rec_occur (_, _)
-  | First_class_module _  as x -> x
+  | Variant _ | Obj _ | Function_label_mismatch _ | Incompatible_fields _
+  | Rec_occur (_, _) | First_class_module _  as x -> x
 
 let map f t = List.map (map_elt f) t
 

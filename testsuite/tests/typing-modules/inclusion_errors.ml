@@ -1852,3 +1852,186 @@ Error: Signature mismatch:
        The value "x" is required but not provided
        The value "y" is required but not provided
 |}];;
+
+
+module Eq_label: sig
+  type t = int -> int
+end = struct
+  type t = x:int -> int
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = x:int -> int
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = x:int -> int end
+       is not included in
+         sig type t = int -> int end
+       Type declarations do not match:
+         type t = x:int -> int
+       is not included in
+         type t = int -> int
+       The type "x:int -> int" is not equal to the type "int -> int"
+       The first argument is labeled "x",
+       but an unlabeled argument was expected
+|}]
+
+module Eq_label2: sig
+  type t = y:int -> int
+end = struct
+  type t = x:int -> int
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = x:int -> int
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = x:int -> int end
+       is not included in
+         sig type t = y:int -> int end
+       Type declarations do not match:
+         type t = x:int -> int
+       is not included in
+         type t = y:int -> int
+       The type "x:int -> int" is not equal to the type "y:int -> int"
+       Labels "x" and "y" do not match
+|}]
+
+module Label1 : sig
+  val f: int -> unit
+end = struct
+  let f ~x = ()
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   let f ~x = ()
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig val f : x:'a -> unit end
+       is not included in
+         sig val f : int -> unit end
+       Values do not match:
+         val f : x:'a -> unit
+       is not included in
+         val f : int -> unit
+       The type "x:'a -> unit" is not compatible with the type "int -> unit"
+       The first argument is labeled "x",
+       but an unlabeled argument was expected
+|}]
+
+module Label2 : sig
+  val f: int -> unit
+end = struct
+  let f ?x = ()
+end
+[%%expect {|
+Line 4, characters 9-10:
+4 |   let f ?x = ()
+             ^
+Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
+
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   let f ?x = ()
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig val f : ?x:'a -> unit end
+       is not included in
+         sig val f : int -> unit end
+       Values do not match:
+         val f : ?x:'a -> unit
+       is not included in
+         val f : int -> unit
+       The type "?x:'a -> unit" is not compatible with the type "int -> unit"
+       The first argument is labeled "?x",
+       but an unlabeled argument was expected
+|}]
+
+
+module Label3 : sig
+  val f: x:int -> unit
+end = struct
+  let f ?x = ()
+end
+[%%expect {|
+Line 4, characters 9-10:
+4 |   let f ?x = ()
+             ^
+Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
+
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   let f ?x = ()
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig val f : ?x:'a -> unit end
+       is not included in
+         sig val f : x:int -> unit end
+       Values do not match:
+         val f : ?x:'a -> unit
+       is not included in
+         val f : x:int -> unit
+       The type "?x:'a -> unit" is not compatible with the type "x:int -> unit"
+       The label "?x" was expected to not be optional
+|}]
+
+
+module Label4 : sig
+  val f: ?x:int -> unit
+end = struct
+  let f ?y = ()
+end
+[%%expect {|
+Line 4, characters 9-10:
+4 |   let f ?y = ()
+             ^
+Warning 16 [unerasable-optional-argument]: this optional argument cannot be erased.
+
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   let f ?y = ()
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig val f : ?y:'a -> unit end
+       is not included in
+         sig val f : ?x:int -> unit end
+       Values do not match:
+         val f : ?y:'a -> unit
+       is not included in
+         val f : ?x:int -> unit
+       The type "?y:'a -> unit" is not compatible with the type "?x:int -> unit"
+       Labels "?y" and "?x" do not match
+|}]
+
+
+module Label5 : sig
+  val f: ?x:int -> unit
+end = struct
+  let f x = ()
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   let f x = ()
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig val f : 'a -> unit end
+       is not included in
+         sig val f : ?x:int -> unit end
+       Values do not match:
+         val f : 'a -> unit
+       is not included in
+         val f : ?x:int -> unit
+       The type "'a -> unit" is not compatible with the type "?x:int -> unit"
+       A label "?x" was expected
+|}]
