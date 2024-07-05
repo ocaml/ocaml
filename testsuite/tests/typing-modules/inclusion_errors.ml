@@ -1875,7 +1875,8 @@ Error: Signature mismatch:
        is not included in
          type t = int -> int
        The type "x:int -> int" is not equal to the type "int -> int"
-       The argument "x" is labeled, but an unlabeled argument was expected
+       The first argument is labeled "x",
+       but an unlabeled argument was expected
 |}]
 
 module Eq_label2: sig
@@ -1921,7 +1922,8 @@ Error: Signature mismatch:
        is not included in
          val f : int -> unit
        The type "x:'a -> unit" is not compatible with the type "int -> unit"
-       The argument "x" is labeled, but an unlabeled argument was expected
+       The first argument is labeled "x",
+       but an unlabeled argument was expected
 |}]
 
 module Label2 : sig
@@ -1949,7 +1951,8 @@ Error: Signature mismatch:
        is not included in
          val f : int -> unit
        The type "?x:'a -> unit" is not compatible with the type "int -> unit"
-       The argument "?x" is optional, but an unlabeled argument was expected
+       The first argument is labeled "?x",
+       but an unlabeled argument was expected
 |}]
 
 
@@ -1978,7 +1981,7 @@ Error: Signature mismatch:
        is not included in
          val f : x:int -> unit
        The type "?x:'a -> unit" is not compatible with the type "x:int -> unit"
-       The optional argument "?x" was not expected to be optional
+       The label "?x" was expected to not be optional
 |}]
 
 
@@ -2031,5 +2034,5 @@ Error: Signature mismatch:
        is not included in
          val f : ?x:int -> unit
        The type "'a -> unit" is not compatible with the type "?x:int -> unit"
-       An optional argument "?x" was expected
+       A label "?x" was expected
 |}]

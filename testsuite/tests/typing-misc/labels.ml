@@ -172,7 +172,8 @@ Line 1, characters 26-33:
                               ^^^^^^^
 Error: This expression has type "x:'a -> unit"
        but an expression was expected of type "unit -> unit"
-       The argument "x" is labeled, but an unlabeled argument was expected
+       The first argument is labeled "x",
+       but an unlabeled argument was expected
 |}]
 
 let () = expect_labeled unlabeled
@@ -182,7 +183,7 @@ Line 1, characters 24-33:
                             ^^^^^^^^^
 Error: This expression has type "'a -> unit"
        but an expression was expected of type "x:'b -> unit"
-       A labeled argument "x" was expected
+       A label "x" was expected
 |}]
 
 let () = expect_labeled wrong_label

@@ -2341,49 +2341,29 @@ let explain_incompatible_fields name (diff: Types.type_expr Errortrace.diff) =
 let explain_label_mismatch ~got ~expected =
   let quoted_label ppf l = Style.inline_code ppf (Asttypes.string_of_label l) in
   match got, expected with
-  | Asttypes.Nolabel, Asttypes.Labelled _  ->
-      doc_printf "@,@[A labeled argument %a was expected@]"
+  | Asttypes.Nolabel, Asttypes.(Labelled _ | Optional _ )  ->
+      doc_printf "@,@[A label@ %a@ was expected@]"
         quoted_label expected
-  | Asttypes.Nolabel, Asttypes.Optional _  ->
-      doc_printf "@,@[An optional argument %a was expected@]"
-        quoted_label expected
-  | Asttypes.Labelled _, Asttypes.Nolabel  ->
+  | Asttypes.(Labelled _|Optional _), Asttypes.Nolabel  ->
       doc_printf
-        "@,@[The argument %a is labeled,@ \
+        "@,@[The first argument is labeled@ %a,@ \
          but an unlabeled argument was expected@]"
         quoted_label got
-  | Asttypes.Optional _, Asttypes.Nolabel  ->
+ | Asttypes.Labelled g, Asttypes.Optional e when g = e ->
       doc_printf
-        "@,@[The argument %a is optional,@ \
-         but an unlabeled argument was expected@]"
-       quoted_label got
-  | Asttypes.Optional _, Asttypes.Optional _
-  | Asttypes.Labelled _, Asttypes.Labelled _ ->
-      doc_printf "@,@[Labels %a and %a do not match@]"
+        "@,@[The label@ %a@ was expected to be optional@]"
+        quoted_label got
+  | Asttypes.Optional g, Asttypes.Labelled e when g = e ->
+      doc_printf
+        "@,@[The label@ %a@ was expected to not be optional@]"
+        quoted_label got
+  | Asttypes.(Labelled _ | Optional _), Asttypes.(Labelled _ | Optional _) ->
+      doc_printf "@,@[Labels %a@ and@ %a do not match@]"
         quoted_label got
         quoted_label expected
-  | Asttypes.Labelled g, Asttypes.Optional e  ->
-      if g = e then
-        doc_printf "@,@[The labeled argument %a was expected to be optional@]"
-          quoted_label got
-      else
-        doc_printf
-          "@,@[The labeled argument %a was expected to be@ \
-           an optional argument named %a.@]"
-          quoted_label got
-          quoted_label expected
-  | Asttypes.Optional g, Asttypes.Labelled e  ->
-      if g = e then
-        doc_printf
-          "@,@[The optional argument %a was not expected to be optional@]"
-          quoted_label got
-      else
-        doc_printf
-          "@,@[The optional argument %a was expected to be@ \
-           a labeled argument named %a@]"
-          quoted_label got
-          quoted_label expected
-  | Asttypes.Nolabel, Asttypes.Nolabel -> assert false
+  | Asttypes.Nolabel, Asttypes.Nolabel ->
+      (* Two empty labels cannot be mismatched*)
+      assert false
 
 
 let explain_first_class_module = function
