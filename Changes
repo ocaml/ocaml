@@ -687,6 +687,10 @@ ___________
   path under Win32.
   (Nicolás Ojeda Bär, review by David Allsopp and Damien Doligez)
 
+- #13520: Fix compilation of native-code version of systhreads. Bytecode fields
+  were being included in the thread descriptors.
+  (David Allsopp, review by ???)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
