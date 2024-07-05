@@ -192,6 +192,7 @@ OC_NATIVE_CFLAGS=@native_cflags@
 
 NATIVECCLIBS=@cclibs@
 SYSTHREAD_SUPPORT=@systhread_support@
+STRIP=@STRIP@
 PACKLD=@PACKLD@$(EMPTY)
 CCOMPTYPE=@ccomptype@
 TOOLCHAIN=@toolchain@

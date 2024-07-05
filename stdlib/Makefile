@@ -98,7 +98,7 @@ tmpheader.exe: $(HEADERPROGRAM).$(O)
 	$(V_MKEXE)$(call MKEXE_VIA_CC,$@,$^)
 # FIXME This is wrong - mingw could invoke strip; MSVC equivalent?
 ifneq "$(UNIX_OR_WIN32)" "win32"
-	strip $@
+	$(STRIP) $@
 endif
 
 stdlib.cma: $(OBJS)
