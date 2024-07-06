@@ -46,9 +46,6 @@ LIBNAME=threads
 # That's why this dependency is handled in the Makefile directly
 # and removed from the output of the C compiler during make depend
 
-BYTECODE_C_OBJS=st_stubs.b.$(O)
-NATIVECODE_C_OBJS=st_stubs.n.$(O)
-
 THREADS_SOURCES = thread.ml event.ml
 
 THREADS_BCOBJS = $(THREADS_SOURCES:.ml=.cmo)
@@ -62,15 +59,20 @@ all: lib$(LIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
 
 allopt: lib$(LIBNAME)nat.$(A) $(LIBNAME).cmxa $(CMIFILES)
 
+ifeq "$(NATDYNLINK)" "true"
+allopt: $(LIBNAME).cmxs
+endif
+
 lib$(LIBNAME).$(A): OC_CFLAGS = $(OC_BYTECODE_CFLAGS)
 
-lib$(LIBNAME).$(A): $(BYTECODE_C_OBJS)
-	$(V_OCAMLMKLIB)$(MKLIB) -o $(LIBNAME) $(BYTECODE_C_OBJS)
+lib$(LIBNAME).$(A): st_stubs.b.$(O) st_stubs_shared.b.$(O)
+	@$(MKLIB) -o $(LIBNAME) st_stubs_shared.b.$(O)
+	$(V_OCAMLMKLIB)$(MKLIB) -custom -o $(LIBNAME) $<
 
 lib$(LIBNAME)nat.$(A): OC_CFLAGS = $(OC_NATIVE_CFLAGS)
 
-lib$(LIBNAME)nat.$(A): $(NATIVECODE_C_OBJS)
-	$(V_OCAMLMKLIB)$(MKLIB) -o $(LIBNAME)nat $^
+lib$(LIBNAME)nat.$(A): st_stubs.n.$(O)
+	$(V_OCAMLMKLIB)$(MKLIB) -custom -o $(LIBNAME)nat $^
 
 $(LIBNAME).cma: $(THREADS_BCOBJS)
 	$(V_OCAMLMKLIB)$(MKLIB) -o $(LIBNAME) -ocamlc '$(CAMLC)' -linkall $^
@@ -79,14 +81,20 @@ $(LIBNAME).cma: $(THREADS_BCOBJS)
 $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 	$(V_LINKOPT)$(CAMLOPT) -linkall -a -cclib -lthreadsnat -o $@ $^
 
-# The following lines produce two object files st_stubs.b.$(O) and
-# st_stubs.n.$(O) from the same source file st_stubs.c (it is compiled
-# twice, each time with different options).
+st_stubs_shared.n.$(O): OC_CFLAGS = $(OC_NATIVE_CFLAGS)
+
+$(LIBNAME).cmxs: $(THREADS_NCOBJS) st_stubs_shared.n.$(O)
+	$(V_LINKOPT)$(CAMLOPT) -linkall -shared -o $@ $^
+
+# The following lines produce object files based on st_stubs.c. Four objects are
+# produced - a static and shared version in both bytecode and native versions.
+
+st_stubs_shared.%.$(O): OC_CPPFLAGS += -DSYSTHREADS_SHARED
 
 ifeq "$(COMPUTE_DEPS)" "true"
-st_stubs.%.$(O): st_stubs.c
+st_stubs%.$(O): st_stubs.c
 else
-st_stubs.%.$(O): st_stubs.c $(RUNTIME_HEADERS) $(wildcard *.h)
+st_stubs%.$(O): st_stubs.c $(RUNTIME_HEADERS) $(wildcard *.h)
 endif
 	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
 	  $(OUTPUTOBJ)$@ -c $<
@@ -120,6 +128,9 @@ installopt:
 	$(call INSTALL_ITEMS, libthreadsnat.$(A), lib)
 	$(call INSTALL_ITEMS, $(THREADS_NCOBJS) threads.cmxa threads.$(A), \
 	  lib, $(LIBNAME))
+ifeq "$(NATDYNLINK)" "true"
+	$(call INSTALL_ITEMS, $(LIBNAME).cmxs, libexec, $(LIBNAME))
+endif
 
 %.cmi: %.mli
 	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) $<

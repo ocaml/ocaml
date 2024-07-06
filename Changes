@@ -293,6 +293,9 @@ Working version
   Windows.
   (David Allsopp, review by ???)
 
+- #14???: Build and install threads.cmxs.
+  (David Allsopp, review by ???)
+
 ### Tools:
 
 - #14055: Invert BUILD_PATH_PREFIX_MAP in directories loaded at startup
