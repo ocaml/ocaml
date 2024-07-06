@@ -227,7 +227,7 @@ their code. This can be achieved by restricting "Set" by a suitable
 functor signature:
 \begin{caml_example}{toplevel}
 module type SETFUNCTOR =
-  functor (Elt: ORDERED_TYPE) ->
+  (Elt: ORDERED_TYPE) ->
     sig
       type element = Elt.t      (* concrete *)
       type set                  (* abstract *)
@@ -252,7 +252,7 @@ module type SET =
     val add : element -> set -> set
     val member : element -> set -> bool
   end;;
-module WrongSet = (Set : functor(Elt: ORDERED_TYPE) -> SET);;
+module WrongSet = (Set : (Elt: ORDERED_TYPE) -> SET);;
 module WrongStringSet = WrongSet(OrderedString);;
 WrongStringSet.add "gee" WrongStringSet.empty [@@expect error];;
 \end{caml_example}
@@ -269,7 +269,7 @@ not exist. To overcome this difficulty, OCaml provides a
 with extra type equalities:
 \begin{caml_example}{toplevel}
 module AbstractSet2 =
-  (Set : functor(Elt: ORDERED_TYPE) -> (SET with type element = Elt.t));;
+  (Set : (Elt: ORDERED_TYPE) -> (SET with type element = Elt.t));;
 \end{caml_example}
 
 As in the case of simple structures, an alternate syntax is provided

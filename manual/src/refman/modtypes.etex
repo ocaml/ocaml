@@ -22,7 +22,7 @@ specify the general shape and type properties of modules.
 module-type:
           modtype-path
         | 'sig' { specification [';;'] } 'end'
-        | 'functor' '(' module-name ':' module-type ')' '->' module-type
+        | ['functor'] '(' module-name ':' module-type ')' '->' module-type
         | module-type '->' module-type
         | module-type 'with' mod-constraint { 'and' mod-constraint }
         | '(' module-type ')'
@@ -200,8 +200,8 @@ For specifying a module component that is a functor, one may write
 instead of
 \begin{center}
 @'module' module-name ':'
- 'functor' '(' name_1 ':' module-type_1 ')' '->' \ldots
-                                            '->' module-type@
+  '(' name_1 ':' module-type_1 ')' '->' \ldots
+  '(' name_n ':' module-type_n ')' '->' module-type@
 \end{center}
 
 \subsubsection*{sss:mty-mty}{Module type specifications}
@@ -249,7 +249,7 @@ refer to a module type that is a signature, not a functor type.
 \ikwd{functor\@\texttt{functor}}
 
 The module type expression
-@'functor' '(' module-name ':' module-type_1 ')' '->' module-type_2@
+@['functor'] '(' module-name ':' module-type_1 ')' '->' module-type_2@
 is the type of functors (functions from modules to modules) that take
 as argument a module of type @module-type_1@ and return as result a
 module of type @module-type_2@. The module type @module-type_2@ can
@@ -264,13 +264,13 @@ particular, a functor may take another functor as argument
 
 When the result module type is itself a functor,
 \begin{center}
-@'functor' '(' name_1 ':' module-type_1 ')' '->' \ldots '->'
- 'functor' '(' name_n ':' module-type_n ')' '->' module-type@
+@'(' name_1 ':' module-type_1 ')' '->' \ldots '->'
+ '(' name_n ':' module-type_n ')' '->' module-type@
 \end{center}
 one may use the abbreviated form
 \begin{center}
-@'functor' '(' name_1 ':' module-type_1 ')' \ldots
-           '(' name_n ':' module-type_n ')' '->' module-type@
+@'(' name_1 ':' module-type_1 ')' \ldots
+ '(' name_n ':' module-type_n ')' '->' module-type@
 \end{center}
 
 \subsection{ss:mty-with}{The "with" operator}
