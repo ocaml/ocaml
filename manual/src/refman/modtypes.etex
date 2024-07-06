@@ -200,7 +200,7 @@ For specifying a module component that is a functor, one may write
 instead of
 \begin{center}
 @'module' module-name ':'
-  '(' name_1 ':' module-type_1 ')' '->' \ldots
+  '(' name_1 ':' module-type_1 ')' \ldots
   '(' name_n ':' module-type_n ')' '->' module-type@
 \end{center}
 
