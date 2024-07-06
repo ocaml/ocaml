@@ -624,3 +624,50 @@ Warning 34 [unused-type-declaration]: unused type unused.
 
 val f : 'used -> 'used = <fun>
 |}]
+
+let f (type unused1 unused2) x = x
+[%%expect {|
+Line 1, characters 12-19:
+1 | let f (type unused1 unused2) x = x
+                ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused1.
+
+Line 1, characters 20-27:
+1 | let f (type unused1 unused2) x = x
+                        ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused2.
+
+val f : 'a -> 'a = <fun>
+|}]
+
+let f = fun (type unused1 unused2) x -> x
+
+[%%expect{|
+Line 1, characters 18-25:
+1 | let f = fun (type unused1 unused2) x -> x
+                      ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused1.
+
+Line 1, characters 26-33:
+1 | let f = fun (type unused1 unused2) x -> x
+                              ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused2.
+
+val f : 'a -> 'a = <fun>
+|}]
+
+let f : type unused1 unused2. 'a -> 'a = fun x -> x
+
+[%%expect{|
+Line 1, characters 13-20:
+1 | let f : type unused1 unused2. 'a -> 'a = fun x -> x
+                 ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused1.
+
+Line 1, characters 21-28:
+1 | let f : type unused1 unused2. 'a -> 'a = fun x -> x
+                         ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused2.
+
+val f : 'a -> 'a = <fun>
+|}]

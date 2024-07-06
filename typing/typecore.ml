@@ -4538,8 +4538,7 @@ and type_constraint_expect
 *)
 and type_newtype
   : type a. _ -> _ -> (Env.t -> a * type_expr) -> a * type_expr =
-  fun env name type_body ->
-  let { txt = name; loc = name_loc } : _ Location.loc = name in
+  fun env { txt = name; loc = name_loc } type_body ->
   let ty =
     if Typetexp.valid_tyvar_name name then
       newvar ~name ()
