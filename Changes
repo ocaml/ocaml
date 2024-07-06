@@ -249,6 +249,9 @@ _______________
 - #13251: Register printer for errors in Emitaux
   (Vincent Laviron, review by Miod Vallat and Florian Angeletti)
 
+- #13255: Re-enable warning 34 for unused locally abstract types
+  (Nick Roberts, review by Chris Casinghino and Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - #11129, #11148: enforce that ppxs do not produce `parsetree`s with
