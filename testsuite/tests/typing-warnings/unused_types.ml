@@ -530,3 +530,144 @@ Warning 69 [unused-field]: unused record field b.
 
 module Unused_field_disable_one_warning : sig end
 |}]
+
+(* Locally abstract types *)
+
+let u (type unused) = ()
+[%%expect {|
+Line 1, characters 12-18:
+1 | let u (type unused) = ()
+                ^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused.
+
+val u : unit = ()
+|}]
+
+let u = fun (type unused) -> ()
+[%%expect {|
+Line 1, characters 18-24:
+1 | let u = fun (type unused) -> ()
+                      ^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused.
+
+val u : unit = ()
+|}]
+
+let u : type unused. unit = ()
+[%%expect {|
+Line 1, characters 13-19:
+1 | let u : type unused. unit = ()
+                 ^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused.
+
+val u : unit = ()
+|}]
+
+let f (type unused) x = x
+[%%expect {|
+Line 1, characters 12-18:
+1 | let f (type unused) x = x
+                ^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused.
+
+val f : 'a -> 'a = <fun>
+|}]
+
+let f = fun (type unused) x -> x
+[%%expect {|
+Line 1, characters 18-24:
+1 | let f = fun (type unused) x -> x
+                      ^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused.
+
+val f : 'a -> 'a = <fun>
+|}]
+
+let f = fun (type unused) x -> x
+[%%expect {|
+Line 1, characters 18-24:
+1 | let f = fun (type unused) x -> x
+                      ^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused.
+
+val f : 'a -> 'a = <fun>
+|}]
+
+let f (type used unused) (x : used) = x
+[%%expect {|
+Line 1, characters 17-23:
+1 | let f (type used unused) (x : used) = x
+                     ^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused.
+
+val f : 'used -> 'used = <fun>
+|}]
+
+let f = fun (type used unused) (x : used) -> x
+
+[%%expect{|
+Line 1, characters 23-29:
+1 | let f = fun (type used unused) (x : used) -> x
+                           ^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused.
+
+val f : 'used -> 'used = <fun>
+|}]
+
+let f : type used unused. used -> used = fun x -> x
+
+[%%expect{|
+Line 1, characters 18-24:
+1 | let f : type used unused. used -> used = fun x -> x
+                      ^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused.
+
+val f : 'used -> 'used = <fun>
+|}]
+
+let f (type unused1 unused2) x = x
+[%%expect {|
+Line 1, characters 12-19:
+1 | let f (type unused1 unused2) x = x
+                ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused1.
+
+Line 1, characters 20-27:
+1 | let f (type unused1 unused2) x = x
+                        ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused2.
+
+val f : 'a -> 'a = <fun>
+|}]
+
+let f = fun (type unused1 unused2) x -> x
+
+[%%expect{|
+Line 1, characters 18-25:
+1 | let f = fun (type unused1 unused2) x -> x
+                      ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused1.
+
+Line 1, characters 26-33:
+1 | let f = fun (type unused1 unused2) x -> x
+                              ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused2.
+
+val f : 'a -> 'a = <fun>
+|}]
+
+let f : type unused1 unused2. 'a -> 'a = fun x -> x
+
+[%%expect{|
+Line 1, characters 13-20:
+1 | let f : type unused1 unused2. 'a -> 'a = fun x -> x
+                 ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused1.
+
+Line 1, characters 21-28:
+1 | let f : type unused1 unused2. 'a -> 'a = fun x -> x
+                         ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type unused2.
+
+val f : 'a -> 'a = <fun>
+|}]

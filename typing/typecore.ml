@@ -4234,8 +4234,8 @@ and type_expect_
       in
       re { exp with exp_extra =
              (Texp_poly cty, loc, sexp.pexp_attributes) :: exp.exp_extra }
-  | Pexp_newtype({txt=name}, sbody) ->
-      let body, ety = type_newtype loc env name (fun env ->
+  | Pexp_newtype(name, sbody) ->
+      let body, ety = type_newtype env name (fun env ->
         let expr = type_exp env sbody in
         expr, expr.exp_type)
       in
@@ -4243,7 +4243,8 @@ and type_expect_
          any new extra node in the typed AST. *)
       rue { body with exp_loc = loc; exp_type = ety;
             exp_extra =
-            (Texp_newtype name, loc, sexp.pexp_attributes) :: body.exp_extra }
+            (Texp_newtype name.txt, loc, sexp.pexp_attributes) :: body.exp_extra
+          }
   | Pexp_pack m ->
       let (p, fl) =
         match get_desc (Ctype.expand_head env (instance ty_expected)) with
@@ -4521,8 +4522,8 @@ and type_constraint_expect
     nodes for the newtype properly linked.
 *)
 and type_newtype
-  : type a. _ -> _ -> _ -> (Env.t -> a * type_expr) -> a * type_expr =
-  fun loc env name type_body ->
+  : type a. _ -> _ -> (Env.t -> a * type_expr) -> a * type_expr =
+  fun env { txt = name; loc = name_loc } type_body ->
   let ty =
     if Typetexp.valid_tyvar_name name then
       newvar ~name ()
@@ -4532,7 +4533,7 @@ and type_newtype
   (* Use [with_local_level_generalize] just for scoping *)
   with_local_level_generalize begin fun () ->
     (* Create a fake abstract type declaration for [name]. *)
-    let decl = new_local_type ~loc Definition in
+    let decl = new_local_type ~loc:name_loc Definition in
     let scope = create_scope () in
     let (id, new_env) = Env.enter_type ~scope name decl env in
 
@@ -4671,7 +4672,7 @@ and type_function
   | { pparam_desc = Pparam_newtype newtype; pparam_loc = _ } :: rest ->
       (* Check everything else in the scope of (type a). *)
       let (params, body, newtypes, contains_gadt), exp_type =
-        type_newtype loc env newtype.txt (fun env ->
+        type_newtype env newtype (fun env ->
           let exp_type, params, body, newtypes, contains_gadt =
             (* mimic the typing of Pexp_newtype by minting a new type var,
               like [type_exp].
