@@ -369,27 +369,27 @@ AC_DEFUN([OCAML_TEST_WINPTHREADS_PTHREAD_H], [
   OCAML_CC_RESTORE_VARIABLES
 ])
 
-AC_DEFUN([OCAML_HOST_IS_EXECUTABLE], [
-  AC_MSG_CHECKING([whether host executables can be run in the build])
+AC_DEFUN([OCAML_TARGET_IS_EXECUTABLE], [
+  AC_MSG_CHECKING([whether target executables can be run in the build])
   old_cross_compiling="$cross_compiling"
   cross_compiling='no'
   AC_RUN_IFELSE(
     [AC_LANG_PROGRAM],
     [AC_MSG_RESULT([yes])
-    host_runnable=true],
+    target_runnable=true],
     [AC_MSG_RESULT([no])
-    host_runnable=false],
+    target_runnable=false],
     # autoconf displays a warning if this parameter is missing, but
     # cross-compilation mode was disabled above.
     [assert=false])
   cross_compiling="$old_cross_compiling"
 ])
 
-# This is AC_RUN_IFELSE but taking $host_runnable into account (i.e. if the
+# This is AC_RUN_IFELSE but taking $target_runnable into account (i.e. if the
 # program can be run, then it is run)
 AC_DEFUN([OCAML_RUN_IFELSE], [
   old_cross_compiling="$cross_compiling"
-  AS_IF([test "x$host_runnable" = 'xtrue'], [cross_compiling='no'])
+  AS_IF([test "x$target_runnable" = 'xtrue'], [cross_compiling='no'])
   AC_RUN_IFELSE([$1],[$2],[$3],[$4])
   cross_compiling="$old_cross_compiling"
 ])
