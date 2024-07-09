@@ -169,7 +169,7 @@ type +'a t_pneg = (module X : V) -> 'a X.n -> unit
 [%%expect{|
 module type V = sig type +'a p type -'a n type !'a i end
 module type F =
-  functor (X : V) ->
+  (X : V) ->
     sig
       type 'a t_pos = unit -> 'a X.p
       type 'a t_neg = unit -> 'a X.n

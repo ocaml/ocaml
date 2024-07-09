@@ -3173,7 +3173,8 @@ and unify3 uenv t1 t1' t2 t2' =
           | false, false -> link_commu ~inside:c1 c2
           | true, true -> ()
           end
-      | (Tfunctor (l1, id1, (p1, fl1), ty1), Tfunctor (l2, id2, (p2, fl2), ty2)) ->
+      | (Tfunctor (l1, id1, (p1, fl1), ty1),
+         Tfunctor (l2, id2, (p2, fl2), ty2)) ->
             eq_labels Unify ~in_pattern_mode:(in_pattern_mode uenv) l1 l2;
             let fcm1 = newty (Tpackage (p1, fl1)) in
             let fcm2 = newty (Tpackage (p2, fl2)) in
