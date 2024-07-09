@@ -15624,8 +15624,8 @@ fi
 then :
   LIBS="$LIBS $cclibs"; opts="${opts:+$opts }$cclibs"
 fi
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if $CC supports _Atomic types with ${opts:-no additional options}" >&5
-printf %s "checking if $CC supports _Atomic types with ${opts:-no additional options}... " >&6; }
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if the C compiler supports _Atomic types with ${opts:-no additional options}" >&5
+printf %s "checking if the C compiler supports _Atomic types with ${opts:-no additional options}... " >&6; }
 
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -15698,8 +15698,8 @@ fi
 then :
   LIBS="$LIBS "; opts="${opts:+$opts }"
 fi
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if $CC supports _Atomic types with ${opts:-no additional options}" >&5
-printf %s "checking if $CC supports _Atomic types with ${opts:-no additional options}... " >&6; }
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if the C compiler supports _Atomic types with ${opts:-no additional options}" >&5
+printf %s "checking if the C compiler supports _Atomic types with ${opts:-no additional options}... " >&6; }
 
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -15774,8 +15774,8 @@ fi
 then :
   LIBS="$LIBS "; opts="${opts:+$opts }"
 fi
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if $CC supports _Atomic types with ${opts:-no additional options}" >&5
-printf %s "checking if $CC supports _Atomic types with ${opts:-no additional options}... " >&6; }
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if the C compiler supports _Atomic types with ${opts:-no additional options}" >&5
+printf %s "checking if the C compiler supports _Atomic types with ${opts:-no additional options}... " >&6; }
 
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -16117,8 +16117,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
 # Check whether the C compiler supports the labels as values extension.
 
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether $CC supports the labels as values extension" >&5
-printf %s "checking whether $CC supports the labels as values extension... " >&6; }
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports the labels as values extension" >&5
+printf %s "checking whether the C compiler supports the labels as values extension... " >&6; }
 if test ${ocaml_cv_prog_cc_labels_as_values+y}
 then :
   printf %s "(cached) " >&6

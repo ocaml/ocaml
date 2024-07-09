@@ -503,7 +503,7 @@ AC_DEFUN([OCAML_CC_SUPPORTS_ATOMIC], [
   opts=""
   AS_IF([test -n "$1"],[CFLAGS="$CFLAGS $1"; opts="$1"])
   AS_IF([test -n "$2"],[LIBS="$LIBS $2"; opts="${opts:+$opts }$2"])
-  AC_MSG_CHECKING(m4_normalize([if $CC supports _Atomic types with
+  AC_MSG_CHECKING(m4_normalize([if the C compiler supports _Atomic types with
     ${opts:-no additional options}]))
 
   AC_LINK_IFELSE([AC_LANG_PROGRAM([[
@@ -527,7 +527,8 @@ AC_DEFUN([OCAML_CC_SUPPORTS_ATOMIC], [
 ])
 
 AC_DEFUN([OCAML_CC_SUPPORTS_LABELS_AS_VALUES], [
-  AC_CACHE_CHECK([whether $CC supports the labels as values extension],
+  AC_CACHE_CHECK(m4_normalize([whether the C compiler supports the labels as
+      values extension]),
     [ocaml_cv_prog_cc_labels_as_values],
     [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [[
   void *ptr;
