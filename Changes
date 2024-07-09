@@ -21,6 +21,13 @@ OCaml 5.2 maintenance version
   platform.
   (Stéphane Glondu, review by Miod Vallat and Vincent Laviron)
 
+- #13188: fix races in the FFI code coming from the use of Int_val(...)
+  on rooted values inside blocking questions / without the runtime lock.
+  (Calling Int_val(...) on non-rooted immediates is fine, but any
+   access to rooted values must be done outside blocking sections /
+   with the runtime lock.)
+  (Etienne Millon, review by Gabriel Scherer, Jan Midtgaard, Olivier Nicole)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
