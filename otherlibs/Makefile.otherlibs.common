@@ -34,7 +34,7 @@ COMPFLAGS=-absname -w +a-4-9-41-42-44-45-48 -warn-error +A -bin-annot -g \
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
 endif
-MKLIB=$(OCAMLRUN) $(ROOTDIR)/tools/ocamlmklib
+MKLIB=$(OCAMLRUN) $(ROOTDIR)/tools/ocamlmklib$(EXE)
 
 # Variables that must be defined by individual libraries:
 # LIBNAME
