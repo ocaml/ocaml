@@ -1,0 +1,8 @@
+
+Uid of decls:
+[intf]Intf_uids.0: t (File "intf_uids.mli", line 1, characters 5-6)
+[intf]Intf_uids.1: u (File "intf_uids.mli", line 3, characters 5-6)
+
+Uid of decls:
+Intf_uids.0: u (File "intf_uids.ml", line 1, characters 5-6)
+Intf_uids.1: t (File "intf_uids.ml", line 3, characters 5-6)

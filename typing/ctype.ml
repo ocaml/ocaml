@@ -1305,7 +1305,7 @@ let new_local_type ?(loc = Location.none) ?manifest_and_scope origin =
     type_attributes = [];
     type_immediate = Unknown;
     type_unboxed_default = false;
-    type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+    type_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
   }
 
 let existential_name name_counter ty =

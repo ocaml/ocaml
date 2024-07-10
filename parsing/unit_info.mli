@@ -21,6 +21,7 @@
 
 (** {1:modname_from_strings Module name convention and computation} *)
 
+type intf_or_impl = Intf | Impl
 type modname = string
 type filename = string
 type file_prefix = string
@@ -74,19 +75,24 @@ val prefix: t -> file_prefix
     or compilation artifact.*)
 val modname: t -> modname
 
+(** [kind u] is the kind (interface or implementation) of the unit. *)
+val kind: t -> intf_or_impl
+
 (** [check_unit_name u] prints a warning if the derived module name [modname u]
     should not be used as a module name as specified
     by {!is_unit_name}[ ~strict:true]. *)
 val check_unit_name : t -> unit
 
-(** [make ~check ~source_file prefix] associates both the
+(** [make ~check ~source_file kind prefix] associates both the
     [source_file] and the module name {!modname_from_source}[ target_prefix] to
     the prefix filesystem path [prefix].
 
    If [check_modname=true], this function emits a warning if the derived module
    name is not valid according to {!check_unit_name}.
 *)
-val make: ?check_modname:bool -> source_file:filename -> file_prefix -> t
+val make:
+    ?check_modname:bool -> source_file:filename ->
+    intf_or_impl -> file_prefix -> t
 
 (** {1:artifact_function Build artifacts }*)
 module Artifact: sig
