@@ -230,6 +230,10 @@ _______________
 - #13045: Emphasize caution about behaviour of custom block finalizers.
   (Nick Barnes)
 
+- #13287: stdlib/sys.mli: Update documentation on Sys.opaque_identity
+  following #9412.
+  (Matt Walker, review by Guillaume Munch-Maccagnoni and Vincent Laviron)
+
 ### Compiler user-interface and warnings:
 
 * #12084: Check link order when creating archive and when using ocamlopt
