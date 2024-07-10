@@ -2664,7 +2664,7 @@ endif
 ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
 	$(MAKE) -C man install
 endif
-	for i in $(OTHERLIBRARIES); do \
+	for i in $(OTHERLIBS); do \
 	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
 	done
 ifeq "$(build_ocamldoc)" "true"
@@ -2785,7 +2785,7 @@ endif
 	  ocamldoc/odoc_info.cmxa \
 	  "$(INSTALL_LIBDIR)/ocamldoc"
 endif
-	for i in $(OTHERLIBRARIES); do \
+	for i in $(OTHERLIBS); do \
 	  $(MAKE) -C otherlibs/$$i installopt || exit $$?; \
 	done
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"

@@ -844,6 +844,7 @@ lib_systhreads
 lib_str
 lib_runtime_events
 lib_dynlink
+otherlibs
 otherlibraries
 instrumented_runtime_libs
 instrumented_runtime
@@ -3386,6 +3387,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -13834,6 +13836,7 @@ case $host in #(
 esac
 
 otherlibraries="dynlink runtime_events"
+otherlibs="dynlink runtime_events"
 lib_dynlink=true
 dldir=otherlibs/dynlink
 ac_config_links="$ac_config_links $dldir/dynlink_cmo_format.mli:file_formats/cmo_format.mli $dldir/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli"
@@ -13845,6 +13848,7 @@ then :
   ac_config_files="$ac_config_files otherlibs/unix/META"
 
   otherlibraries="$otherlibraries unix"
+  otherlibs="$otherlibs unix"
   lib_unix=true
   ac_config_links="$ac_config_links otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml"
 
@@ -13858,6 +13862,7 @@ fi
 if test x"$enable_str_lib" != "xno"
 then :
   otherlibraries="$otherlibraries str"
+  otherlibs="$otherlibs str"
   lib_str=true
   ac_config_files="$ac_config_files otherlibs/str/META"
 
@@ -20284,6 +20289,7 @@ printf "%s\n" "$as_me: the threads library is disabled" >&6;} ;; #(
   ac_config_files="$ac_config_files otherlibs/systhreads/META"
 
   otherlibraries="$otherlibraries systhreads"
+  otherlibs="$otherlibs systhreads"
   lib_systhreads=true
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: the threads library is supported" >&5
 printf "%s\n" "$as_me: the threads library is supported" >&6;} ;;
