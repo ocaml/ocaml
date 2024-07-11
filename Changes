@@ -450,6 +450,10 @@ _______________
   LDFLAGS contains several words.
   (Stéphane Glondu, review by Miod Vallat)
 
+- #13290: Fix uninitialized reads in runtime_events_consumer.c, and in
+  toplevel printing of bigarrays.
+  (Edwin Török, Gabriel Scherer)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
