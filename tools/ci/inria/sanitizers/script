@@ -80,10 +80,11 @@ unreachable"
 sanitizers="-fsanitize=address -fsanitize-trap=$ubsan"
 
 # Don't optimize too much to get better backtraces of errors
+opt_stacktrace="-Og -fno-optimize-sibling-calls"
 
 ./configure \
-  CC=clang-14 \
-  CFLAGS="-O1 -fno-omit-frame-pointer $sanitizers" \
+  CC=clang \
+  CFLAGS="$opt_stacktrace -fno-omit-frame-pointer $sanitizers" \
   LDFLAGS="$sanitizers" \
   --disable-stdlib-manpages --enable-dependency-generation
 
@@ -150,7 +151,7 @@ TSAN_OPTIONS="" $run_testsuite
 
 # ./configure \
 #   CC=clang-9 \
-#   CFLAGS="-O0 -g -fno-omit-frame-pointer -fsanitize=memory" \
+#   CFLAGS="$opt_stacktrace -g -fno-omit-frame-pointer -fsanitize=memory" \
 #   LDFLAGS="-fsanitize=memory" \
 #   --disable-native-compiler
 # # A tool that makes error backtraces nicer
