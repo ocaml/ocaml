@@ -161,5 +161,5 @@ TSAN_OPTIONS="" $run_testsuite
 # # export MSAN_SYMBOLIZER_PATH=/usr/lib/llvm-18.0/bin/llvm-symbolizer
 
 # # Build the system (bytecode only) and test
-# make $jobs
-# $run_testsuite
+make $jobs
+$run_testsuite
