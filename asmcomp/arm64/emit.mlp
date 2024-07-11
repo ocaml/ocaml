@@ -747,18 +747,15 @@ let emit_instr env i =
           `	bl	{emit_symbol "caml_c_call"}\n`;
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
         end else begin
-          (* Push frame pointer (x29) onto stack and restore later. *)
-          `	str	x29, [sp, -16]!\n`;
-          (* Store OCaml stack in the frame pointer register. *)
-          `	mov	x29, sp\n`;
+          (* Store OCaml stack in x19 register and restore later. *)
+          `	mov	x19, sp\n`;
           cfi_remember_state ();
           cfi_def_cfa_register ~reg:29;
           let offset = Domainstate.(idx_of_field Domain_c_stack) * 8 in
           `	ldr	{emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`;
           `	mov	sp, {emit_reg reg_tmp1}\n`;
           `	bl	{emit_symbol func}\n`;
-          `	mov	sp, x29\n`;
-          `	ldr	x29, [sp], 16\n`;
+          `	mov	sp, x19\n`;
           cfi_restore_state ()
         end
     | Lop(Istackoffset n) ->
