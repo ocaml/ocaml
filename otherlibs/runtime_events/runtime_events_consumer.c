@@ -493,8 +493,9 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
           break;
         case EV_LIFECYCLE:
           if (cursor->lifecycle) {
+            int64_t data = msg_length > 2 ? buf[2] : 0;
             if( !cursor->lifecycle(domain_num, callback_data, buf[1],
-                                    RUNTIME_EVENTS_ITEM_ID(header), buf[2]) ) {
+                                    RUNTIME_EVENTS_ITEM_ID(header), data) ) {
                                       early_exit = 1;
                                       continue;
                                     }
