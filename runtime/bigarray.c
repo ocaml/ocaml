@@ -1275,13 +1275,13 @@ CAMLprim value caml_ba_blit(value vsrc, value vdst)
   if (leave_runtime) caml_leave_blocking_section();                          \
 }while(0)
 
-#define FILL_SCALAR_LOOP                                        \
+#define FILL_SCALAR_LOOP(T)                                     \
   FILL_GEN_LOOP(num_elts,                                       \
-    for (p = data; num_elts > 0; p++, num_elts--) *p = init)
+    for (T p = data; num_elts > 0; p++, num_elts--) *p = init)
 
-#define FILL_COMPLEX_LOOP                                                    \
+#define FILL_COMPLEX_LOOP(T)                                                 \
   FILL_GEN_LOOP(num_elts + num_elts,                                         \
-    for (p = data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; })
+    for (T p = data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; })
 
 CAMLprim value caml_ba_fill(value vb, value vinit)
 {
@@ -1293,73 +1293,62 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
   switch (b->flags & CAML_BA_KIND_MASK) {
   case CAML_BA_FLOAT16: {
     uint16 init = caml_float_to_float16(Double_val(vinit));
-    uint16 * p;
-    FILL_SCALAR_LOOP;
+    FILL_SCALAR_LOOP(uint16 *);
     break;
   }
   case CAML_BA_FLOAT32: {
     float init = Double_val(vinit);
-    float * p;
-    FILL_SCALAR_LOOP;
+    FILL_SCALAR_LOOP(float *);
     break;
   }
   case CAML_BA_FLOAT64: {
     double init = Double_val(vinit);
-    double * p;
-    FILL_SCALAR_LOOP;
+    FILL_SCALAR_LOOP(double *);
     break;
   }
   case CAML_BA_CHAR:
   case CAML_BA_SINT8:
   case CAML_BA_UINT8: {
     int init = Int_val(vinit);
-    unsigned char * p;
-    FILL_SCALAR_LOOP;
+    FILL_SCALAR_LOOP(unsigned char *);
     break;
   }
   case CAML_BA_SINT16:
   case CAML_BA_UINT16: {
     int init = Int_val(vinit);
-    int16 * p;
-    FILL_SCALAR_LOOP;
+    FILL_SCALAR_LOOP(int16 *);
     break;
   }
   case CAML_BA_INT32: {
     int32_t init = Int32_val(vinit);
-    int32_t * p;
-    FILL_SCALAR_LOOP;
+    FILL_SCALAR_LOOP(int32_t *);
     break;
   }
   case CAML_BA_INT64: {
     int64_t init = Int64_val(vinit);
-    int64_t * p;
-    FILL_SCALAR_LOOP;
+    FILL_SCALAR_LOOP(int64_t *);
     break;
   }
   case CAML_BA_NATIVE_INT: {
     intnat init = Nativeint_val(vinit);
-    intnat * p;
-    FILL_SCALAR_LOOP;
+    FILL_SCALAR_LOOP(intnat *);
     break;
   }
   case CAML_BA_CAML_INT: {
     intnat init = Long_val(vinit);
-    intnat * p;
-    FILL_SCALAR_LOOP;
+    FILL_SCALAR_LOOP(intnat *);
     break;
   }
   case CAML_BA_COMPLEX32: {
     float init0 = Double_flat_field(vinit, 0);
     float init1 = Double_flat_field(vinit, 1);
-    float * p;
-    FILL_COMPLEX_LOOP;
+    FILL_COMPLEX_LOOP(float *);
     break;
   }
   case CAML_BA_COMPLEX64: {
     double init0 = Double_flat_field(vinit, 0);
     double init1 = Double_flat_field(vinit, 1);
-    double * p;
-    FILL_COMPLEX_LOOP;
+    FILL_COMPLEX_LOOP(double *);
     break;
   }
   default:
