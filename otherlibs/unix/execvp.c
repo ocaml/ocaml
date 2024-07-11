@@ -15,12 +15,12 @@
 
 #define _GNU_SOURCE  /* helps to find execvpe() */
 #include <string.h>
+#include <errno.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #define CAML_INTERNALS
 #include <caml/osdeps.h>
 #include "caml/unixsupport.h"
-#include "errno.h"
 
 CAMLprim value caml_unix_execvp(value path, value args)
 {

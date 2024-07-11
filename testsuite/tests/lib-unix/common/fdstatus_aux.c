@@ -62,8 +62,8 @@ void process_fd(const char * s)
 
 #endif
 
-#include "caml/mlvalues.h"
-#include "caml/memory.h"
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
 
 CAMLprim value caml_process_fd(value CAMLnum, value CAMLfd)
 {

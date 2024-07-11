@@ -15,12 +15,12 @@
 
 #define CAML_INTERNALS
 
-#include "caml/mlvalues.h"
-#include "caml/memory.h"
-#include "caml/alloc.h"
-#include "caml/gc.h"
-#include "caml/shared_heap.h"
-#include "caml/callback.h"
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/alloc.h>
+#include <caml/gc.h>
+#include <caml/shared_heap.h>
+#include <caml/callback.h>
 
 struct block { value header; value v; };
 

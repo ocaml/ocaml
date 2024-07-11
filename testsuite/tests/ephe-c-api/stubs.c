@@ -1,7 +1,7 @@
-#include<stdio.h>
-#include "caml/alloc.h"
-#include "caml/memory.h"
-#include "caml/weak.h"
+#include <stdio.h>
+#include <caml/alloc.h>
+#include <caml/memory.h>
+#include <caml/weak.h>
 
 /* C version of ephetest.ml */
 

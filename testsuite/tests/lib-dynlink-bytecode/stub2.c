@@ -13,9 +13,9 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include "caml/mlvalues.h"
-#include "caml/memory.h"
-#include "caml/alloc.h"
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/alloc.h>
 #include <stdio.h>
 
 CAMLextern value stub1(void);

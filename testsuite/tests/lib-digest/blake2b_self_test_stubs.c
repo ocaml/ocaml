@@ -3,10 +3,10 @@
 
 #define CAML_NAME_SPACE
 
-#include "caml/mlvalues.h"
-#include "caml/memory.h"
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
 #define CAML_INTERNALS
-#include "caml/blake2.h"
+#include <caml/blake2.h>
 #undef CAML_INTERNALS
 
 #include <stdio.h>
