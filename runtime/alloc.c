@@ -78,13 +78,13 @@ CAMLexport value caml_alloc_shr_check_gc (mlsize_t wosize, tag_t tag)
 /* Copy the values to be preserved to a different array.
    The original vals array never escapes, generating better code in
    the fast path. */
-#define Enter_gc_preserve_vals(dom_st, wosize) do {         \
-    CAMLparam0();                                           \
-    CAMLlocalN(vals_copy, (wosize));                        \
-    for (i = 0; i < (wosize); i++) vals_copy[i] = vals[i];  \
-    Alloc_small_enter_GC(dom_st, wosize);                   \
-    for (i = 0; i < (wosize); i++) vals[i] = vals_copy[i];  \
-    CAMLdrop;                                               \
+#define Enter_gc_preserve_vals(dom_st, wosize) do {                     \
+    CAMLparam0();                                                       \
+    CAMLlocalN(vals_copy, (wosize));                                    \
+    for (mlsize_t j = 0; j < (wosize); j++) vals_copy[j] = vals[j];     \
+    Alloc_small_enter_GC(dom_st, wosize);                               \
+    for (mlsize_t j = 0; j < (wosize); j++) vals[j] = vals_copy[j];     \
+    CAMLdrop;                                                           \
   } while (0)
 
 /* This has to be done with a macro, rather than an inline function, since
@@ -95,12 +95,11 @@ CAMLexport value caml_alloc_shr_check_gc (mlsize_t wosize, tag_t tag)
   Caml_check_caml_state();                              \
   value v;                                              \
   value vals[wosize] = {__VA_ARGS__};                   \
-  mlsize_t i;                                           \
   CAMLassert ((tag) < 256);                             \
                                                         \
   Alloc_small(v, wosize, tag, Enter_gc_preserve_vals);  \
-  for (i = 0; i < (wosize); i++) {                      \
-    Field(v, i) = vals[i];                              \
+  for (mlsize_t j = 0; j < (wosize); j++) {             \
+    Field(v, j) = vals[j];                              \
   }                                                     \
   return v;                                             \
 }
