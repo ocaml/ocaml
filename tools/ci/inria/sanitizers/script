@@ -151,7 +151,8 @@ TSAN_OPTIONS="" $run_testsuite
 
 # ./configure \
 #   CC=clang-9 \
-#   CFLAGS="$opt_stacktrace -g -fno-omit-frame-pointer -fsanitize=memory" \
+#   CFLAGS="$opt_stacktrace -g -fno-omit-frame-pointer \
+#           -fsanitize=memory -fsanitize-memory-track-origins" \
 #   LDFLAGS="-fsanitize=memory" \
 #   --disable-native-compiler --without-zstd
 # # A tool that makes error backtraces nicer
