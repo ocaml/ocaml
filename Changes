@@ -513,6 +513,9 @@ _______________
   LDFLAGS contains several words.
   (Stéphane Glondu, review by Miod Vallat)
 
+- #13290: Fix uninitialized and out of bounds reads in runtime_events_consumer.c
+  (Edwin Török, review by Miod Vallat and Antonin Décimo)
+
 - #13306: An algorithm in the type-checker that checks two types for equality
   could sometimes, in theory, return the wrong answer. This patch fixes the
   oversight. No known program triggers the bug.
