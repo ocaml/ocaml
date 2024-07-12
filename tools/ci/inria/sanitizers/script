@@ -88,6 +88,44 @@ CFLAGS="-O1 -fno-omit-frame-pointer $sanitizers"
 LDFLAGS="$sanitizers -O1"
 CC=$clang
 
+# Test that UBSAN works
+cat >ubsan.c <<EOF
+#include <stdbool.h>
+#include <string.h>
+
+int main(int argc, char **argv) {
+  int x = 100;
+  bool b;
+  memcpy(&b, &x, sizeof(b));
+
+  return b;
+}
+EOF
+
+$CC $CFLAGS -c ubsan.c
+$CC $LDFLAGS ubsan.o -o ubsan
+
+./ubsan && exit 2
+test $? -eq 132
+rm -f ubsan ubsan.o ubsan.c
+
+# Test that ASAN works
+cat >asan.c <<EOF
+#include <stdlib.h>
+
+int main(int argc, char **argv) {
+  char* x = malloc(4);
+  free(x);
+  free(x);
+  return x[argc];
+}
+EOF
+
+$CC $CFLAGS -c asan.c
+$CC $LDFLAGS asan.o -o asan
+./asan && exit 2
+test $? -eq 1
+rm -f asan asan.o asan.c
 
 ./configure \
   CC="$CC" \
