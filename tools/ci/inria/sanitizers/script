@@ -81,8 +81,8 @@ shift-exponent,\
 unreachable"
 
 # Select address sanitizer and UB sanitizer, with trap-on-error behavior
-sanitizers="-fsanitize=address -fsanitize=$ubsan -fsanitize-trap=$ubsan"
-
+sanitizers="-fsanitize=address -fsanitize=$ubsan -fno-sanitize-recover=all"
+export UBSAN_OPTIONS="print_stacktrace=1"
 # Don't optimize too much to get better backtraces of errors
 CFLAGS="-O1 -fno-omit-frame-pointer $sanitizers"
 LDFLAGS="$sanitizers -O1"
@@ -106,7 +106,7 @@ $CC $CFLAGS -c ubsan.c
 $CC $LDFLAGS ubsan.o -o ubsan
 
 ./ubsan && exit 2
-test $? -eq 132
+test $? -eq 1
 rm -f ubsan ubsan.o ubsan.c
 
 # Test that ASAN works
