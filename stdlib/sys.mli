@@ -411,7 +411,9 @@ external opaque_identity : 'a -> 'a = "%opaque"
 (** For the purposes of optimization, [opaque_identity] behaves like an
     unknown (and thus possibly side-effecting) function.
 
-    At runtime, [opaque_identity] disappears altogether.
+    At runtime, [opaque_identity] disappears altogether.  However, it does
+    prevent the argument from being garbage collected until the location
+    where the call would have occurred.
 
     A typical use of this function is to prevent pure computations from being
     optimized away in benchmarking loops.  For example:
