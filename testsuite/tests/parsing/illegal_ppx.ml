@@ -15,7 +15,8 @@ let empty_let loc = H.Str.value ~loc Asttypes.Nonrecursive []
 let empty_type loc = H.Str.type_ ~loc Asttypes.Nonrecursive []
 let empty_poly_binder loc = H.Typ.(poly ~loc [] (any ~loc ()))
 let functor_id loc = Location.mkloc
-    (Longident.( Lapply (Lident "F", Lident "X"))) loc
+    (Longident.( Lapply (Lident (Location.mknoloc "F"),
+                         Lident (Location.mknoloc "X")))) loc
 let complex_record loc =
   H.Pat.record ~loc [functor_id loc, H.Pat.any ~loc () ] Asttypes.Closed
 
