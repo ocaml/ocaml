@@ -88,7 +88,7 @@ sanitizers="-fsanitize=address -fsanitize=$ubsan -fsanitize-trap=$ubsan"
 ./configure \
   CC=$clang \
   CFLAGS="-O1 -fno-omit-frame-pointer $sanitizers" \
-  LDFLAGS="$sanitizers" \
+  LDFLAGS="$sanitizers -O1" \
   --disable-stdlib-manpages --enable-dependency-generation
 
 # Build the system.  We want to check for memory leaks, hence
