@@ -84,7 +84,7 @@ unreachable"
 sanitizers="-fsanitize=address -fsanitize=$ubsan -fno-sanitize-recover=all"
 export UBSAN_OPTIONS="print_stacktrace=1"
 # Don't optimize too much to get better backtraces of errors
-CFLAGS="-O1 -fno-omit-frame-pointer $sanitizers"
+CFLAGS="-O1 -g -fno-omit-frame-pointer $sanitizers"
 LDFLAGS="$sanitizers -O1"
 CC=$clang
 
