@@ -1,12 +1,13 @@
-(Introduced in 5.0)
+(Introduced in 5.0. The syntax support for deep handlers was introduced in
+5.3.)
 
-\textit{Note: Effect handlers in OCaml 5.0 should be considered experimental.
-Effect handlers are exposed in the standard library's \stdmoduleref{Effect}
-module as a thin wrapper around their implementation in the runtime. They are
-not supported as a language feature with new syntax. You can rely on them to
-build non-local control-flow abstractions such as user-level threading that do
-not expose the effect handler primitives to the user. Expect breaking changes
-in the future.}
+
+\begin{syntax}
+pattern:
+      ...
+    | 'effect' pattern, value-name
+;
+\end{syntax}
 
 Effect handlers are a mechanism for modular programming with user-defined
 effects. Effect handlers allow the programmers to describe
@@ -43,39 +44,25 @@ We can handle the "Xchg" effect by implementing a handler that always returns
 the successor of the offered value:
 
 \begin{caml_example}{verbatim}
-try_with comp1 ()
-{ effc = fun (type a) (eff: a t) ->
-    match eff with
-    | Xchg n -> Some (fun (k: (a, _) continuation) ->
-        continue k (n+1))
-    | _ -> None }
+try comp1 () with
+| effect (Xchg n), k -> continue k (n+1)
 \end{caml_example}
 
-"try_with" runs the computation "comp1 ()" under an effect handler that handles
-the "Xchg" effect. As mentioned earlier, effect handlers are a generalization
-of exception handlers. Similar to exception handlers, when the computation
-performs the "Xchg" effect, the control jumps to the corresponding handler.
-However, unlike exception handlers, the handler is also provided with the
-delimited continuation "k", which represents the suspended computation between
-the point of "perform" and this handler.
+We run the computation "comp1 ()" under an effect handler that handles the
+"Xchg" effect with a continuation bound to "k". Here "effect" is a keyword
+which signifies that the "Xchg n" pattern matches effects and not exceptions.
+As mentioned earlier, effect handlers are a generalization of exception
+handlers.  Similar to exception handlers, when the computation performs the
+"Xchg" effect, the control jumps to the corresponding handler, and unhandled
+effects are forwarded to the outer handler. However, unlike exception handlers,
+the handler is also provided with the delimited continuation "k", which
+represents the suspended computation between the point of "perform" and this
+handler.
 
 The handler uses the "continue" primitive to resume the suspended computation
 with the successor of the offered value. In this example, the computation
 "comp1" performs "Xchg 0" and "Xchg 1" and receives the values "1" and "2"
 from the handler respectively. Hence, the whole expression evaluates to "3".
-
-It is useful to note that we must use a locally abstract type "(type a)" in
-the effect handler. The type "Effect.t" is a GADT, and the effect declarations
-may have different type parameters for different effects. The type parameter
-"a" in the type "a Effect.t" represents the type of the value returned when
-performing the effect. From the fact that "eff" has type "a Effect.t" and from
-the fact that "Xchg n" has type "int Effect.t", the type-checker deduces that
-"a" must be "int", which is why we are allowed to pass the integer value "n+1"
-as an argument to "continue k".
-
-Another point to note is that the catch-all case ``"| _ -> None"'' is necessary
-when handling effects. This case may be intuitively read as ``forward the
-unhandled effects to the outer handler''.
 
 In this example, we use the \emph{deep} version of the effect handlers here as
 opposed to the \emph{shallow} version. A deep handler monitors a computation
@@ -86,21 +73,6 @@ terminates or the computation performs one effect, and it handles this single
 effect only. In situations where they are applicable, deep handlers are usually
 preferred. An example that utilises shallow handlers is discussed later
 in~\ref{s:effects-shallow}.
-
-\subsubsection{s:effects-limitations}{Limitations}
-
-OCaml's effects are \emph{synchronous}: It is not possible to perform
-an effect asynchronously from a signal handler, a finaliser, a memprof
-callback, or a GC alarm, and catch it from the main part of the code.
-Instead, this would result in an "Effect.Unhandled"
-exception (\ref{s:effects-unhandled}).
-
-Similarly, effects are incompatible with the use of callbacks from C
-to OCaml (section~\ref{s:c-callback}). It is not possible for an
-effect to cross a call to "caml_callback", this would instead result
-in an "Effect.Unhandled" exception. In particular, care must be taken
-when mixing libraries that use callbacks from C to OCaml and libraries
-that use effects.
 
 \subsection{s:effects-concurrency}{Concurrency}
 
@@ -122,47 +94,29 @@ type 'a status =
 
 A task either is complete, with a result of type "'a", or is suspended with the
 message "msg" to send and the continuation "cont". The type "(int,'a status)
-continuation" says that the suspended computation expects an "int" value to
-resume and returns a "'a status" value when resumed.
+continuation" says that the suspended delimited computation expects an "int"
+value to resume and returns a value of type "'a status" when resumed.
 
 Next, we define a "step" function that executes one step of computation until
 it completes or suspends:
 
 \begin{caml_example*}{verbatim}
 let step (f : unit -> 'a) () : 'a status =
-  match_with f ()
-  { retc = (fun v -> Complete v);
-    exnc = raise;
-    effc = fun (type a) (eff: a t) ->
-      match eff with
-      | Xchg msg -> Some (fun (cont: (a, _) continuation) ->
-          Suspended {msg; cont})
-      | _ -> None }
+  match f () with
+  | v -> Complete v
+  | effect (Xchg msg), cont -> Suspended {msg; cont}
 \end{caml_example*}
 
 The argument to the "step" function, "f", is a computation that can perform an
 "Xchg" effect and returns a result of type "'a". The "step" function itself
-returns a "'a status" value.
-
-In the "step" function, we use the "match_with" primitive. Like "try_with",
-"match_with" primitive installs an effect handler. However, unlike "try_with",
-where only the effect case "effc" is provided, "match_with" expects the
-handlers for the value ("retc") and exceptional ("exnc") return cases. In fact,
-"try_with" can be defined using "match_with" as follows: "let try_with f v
-{effc} = match_with f v {retc = Fun.id; exnc = raise; effc}".
-
-In the "step" function,
-
-\begin{itemize}
-  \item Case "retc": If the computation returns with a value "v", we return
-    "Complete v".
-  \item Case "exnc": If the computation raises an exception, then the handler
-    raises the same exception.
-  \item Case "effc": If the computation performs the effect "Xchg msg" with the
-    continuation "cont", then we return "Suspended{msg;cont}". Thus, in this
-    case, the continuation "cont" is not immediately invoked by the handler;
-    instead, it is stored in a data structure for later use.
-\end{itemize}
+returns a value of type "'a status". Similar to exception patterns in a "match
+... with" expression (\ref{sss:exception-match}), OCaml also supports "effect"
+patterns. Here, we pattern match the result of running the computation "f". If
+the computation returns with a value "v", we return "Complete v". Instead, if
+the computation performs the effect "Xchg msg" with the continuation "cont",
+then we return "Suspended {msg;cont}". In this case, the continuation "cont" is
+not immediately invoked by the handler; instead, it is stored in a data
+structure for later use.
 
 Since the "step" function handles the "Xchg" effect, "step f" is a computation
 that does not perform the "Xchg" effect. It may however perform other effects.
@@ -241,7 +195,9 @@ A top-level "run" function defines the scheduler:
 \begin{caml_example*}{verbatim}
 (* A concurrent round-robin scheduler *)
 let run (main : unit -> unit) : unit =
-  let exchanger = ref None in (* waiting exchanger *)
+  let exchanger : (int * (int, unit) continuation) option ref =
+    ref None (* waiting exchanger *)
+  in
   let run_q = Queue.create () in (* scheduler queue *)
   let enqueue k v =
     let task () = continue k v in
@@ -255,25 +211,18 @@ let run (main : unit -> unit) : unit =
     end
   in
   let rec spawn (f : unit -> unit) : unit =
-    match_with f () {
-      retc = dequeue;
-      exnc = (fun e ->
+    match f () with
+    | () -> dequeue ()
+    | exception e ->
         print_endline (Printexc.to_string e);
-        dequeue ());
-      effc = fun (type a) (eff : a t) ->
-        match eff with
-        | Yield -> Some (fun (k : (a, unit) continuation) ->
-            enqueue k (); dequeue ())
-        | Fork f -> Some (fun (k : (a, unit) continuation) ->
-            enqueue k (); spawn f)
-        | Xchg n -> Some (fun (k : (int, unit) continuation) ->
-            begin match !exchanger with
-            | Some (n', k') ->
-                exchanger := None; enqueue k' n; continue k n'
-            | None -> exchanger := Some (n, k); dequeue ()
-            end)
-        | _ -> None
-    }
+        dequeue ()
+    | effect Yield, k -> enqueue k (); dequeue ()
+    | effect (Fork f), k -> enqueue k (); spawn f
+    | effect (Xchg n), k ->
+        begin match !exchanger with
+        | Some (n', k') -> exchanger := None; enqueue k' n; continue k n'
+        | None -> exchanger := Some (n, k); dequeue ()
+        end
   in
   spawn main
 \end{caml_example*}
@@ -286,10 +235,10 @@ exchange a value. At any time, there is either zero or one suspended task that
 is offering an exchange.
 
 The heavy lifting is done by the "spawn" function. The "spawn" function runs
-the given computation "f" in an effect handler. If "f" returns with a value
-(case "retc"), we dequeue and run the next task from the scheduler queue. If
-the computation "f" raises an exception (case "exnc"), we print the exception
-and run the next task from the scheduler.
+the given computation "f" in an effect handler. If "f" returns with unit value,
+we dequeue and run the next task from the scheduler queue. If the computation
+"f" raises any exception, we print the exception to the standard output and run
+the next task from the scheduler.
 
 The computation "f" may also perform effects. If "f" performs the "Yield"
 effect, the current task is suspended (inserted into the queue of ready tasks),
@@ -304,9 +253,6 @@ exchange. If so, we enqueue the waiting task with the current value being
 offered and immediately resume the current task with the value being offered.
 If not, we make the current task the waiting exchanger, and run the next task
 from the scheduler queue.
-
-Note that this scheduler code is not perfect -- it can leak resources. We shall
-explain and fix this in the next section~\ref{s:effects-discontinue}.
 
 Now we can write a concurrent program that utilises the newly defined
 operations:
@@ -429,14 +375,9 @@ let invert (type a) ~(iter : (a -> unit) -> unit) : a Seq.t =
     type _ Effect.t += Yield : a -> unit t
   end in
   let yield v = perform (M.Yield v) in
-  fun () -> match_with iter yield
-  { retc = (fun _ -> Seq.Nil);
-    exnc = raise;
-    effc = fun (type b) (eff : b Effect.t) ->
-      match eff with
-      | M.Yield v -> Some (fun (k: (b,_) continuation) ->
-          Seq.Cons (v, continue k))
-      | _ -> None }
+  fun () -> match iter yield with
+  | () -> Seq.Nil
+  | effect M.Yield v, k -> Seq.Cons (v, continue k)
 \end{caml_eval}
 
 The "invert" function takes an "iter" function (a producer that pushes elements
@@ -489,16 +430,10 @@ let invert (type a) ~(iter : (a -> unit) -> unit) : a Seq.t =
     type _ Effect.t += Yield : a -> unit t
   end in
   let yield v = perform (M.Yield v) in
-  fun () -> match_with iter yield
-  { retc = (fun _ -> Seq.Nil);
-    exnc = raise;
-    effc = fun (type b) (eff : b Effect.t) ->
-      match eff with
-      | M.Yield v -> Some (fun (k: (b,_) continuation) ->
-          Seq.Cons (v, continue k))
-      | _ -> None }
+  fun () -> match iter yield with
+  | () -> Seq.Nil
+  | effect M.Yield v, k -> Seq.Cons (v, continue k)
 \end{caml_example*}
-
 
 The "invert" function declares an effect "Yield" that takes the element to be
 yielded as a parameter. The "yield" function performs the "Yield" effect. The
@@ -539,20 +474,12 @@ type _ Effect.t += E : int t
 let foo () = perform F
 
 let bar () =
-  try_with foo ()
-  { effc = fun (type a) (eff: a t) ->
-      match eff with
-      | E -> Some (fun (k: (a,_) continuation) ->
-          failwith "impossible")
-      | _ -> None }
+  try foo () with
+  | effect E, k -> failwith "impossible"
 
 let baz () =
-  try_with bar ()
-  { effc = fun (type a) (eff: a t) ->
-      match eff with
-      | F -> Some (fun (k: (a,_) continuation) ->
-          continue k "Hello, world!")
-      | _ -> None }
+  try bar () with
+  | effect F, k -> continue k "Hello, world!"
 \end{caml_example*}
 
 In this example, the computation "foo" performs "F", the inner handler handles
@@ -634,12 +561,8 @@ Attempting to use a continuation more than once raises a
 "Continuation_already_resumed" exception. For example:
 
 \begin{caml_example}{verbatim}
-try_with perform (Xchg 0)
-{ effc = fun (type a) (eff : a t) ->
-    match eff with
-    | Xchg n -> Some (fun (k: (a, _) continuation) ->
-        continue k 21 + continue k 21)
-    | _ -> None }
+try perform (Xchg 0) with
+| effect Xchg n, k -> continue k 21 + continue k 21
 \end{caml_example}
 
 The primary motivation for adding effect handlers to OCaml is to enable
@@ -677,6 +600,21 @@ allowing the computation to free up resources. However, the runtime cost of
 finalisers is much more than the cost of capturing a continuation. Hence, it is
 recommended that the user take care of resuming the continuation exactly once
 rather than relying on the finaliser.
+
+\subsubsection{s:effects-limitations}{Limitations}
+
+OCaml's effects are \emph{synchronous}: It is not possible to perform
+an effect asynchronously from a signal handler, a finaliser, a memprof
+callback, or a GC alarm, and catch it from the main part of the code.
+Instead, this would result in an "Effect.Unhandled"
+exception (\ref{s:effects-unhandled}).
+
+Similarly, effects are incompatible with the use of callbacks from C
+to OCaml (section~\ref{s:c-callback}). It is not possible for an
+effect to cross a call to "caml_callback", this would instead result
+in an "Effect.Unhandled" exception. In particular, care must be taken
+when mixing libraries that use callbacks from C to OCaml and libraries
+that use effects.
 
 \subsection{s:effects-shallow}{Shallow handlers}
 
@@ -745,8 +683,13 @@ The "run" function executes the computation "comp" ensuring that it can only
 perform an alternating sequence of "Send" and "Recv" effects. The shallow
 handler uses a different set of primitives compared to the deep handler. The
 primitive "fiber" (on the last line) takes an "'a -> 'b" function and returns a
-"('a,'b) Effect.Shallow.continuation". The expression "continue_with k v h"
-resumes the continuation "k" with value "v" under the handler "h".
+"('a,'b) Effect.Shallow.continuation".
+
+Unlike deep handlers, OCaml does not provide syntax support for shallow
+handlers. The expression "continue_with k v h" resumes the continuation "k"
+with value "v" under the handler "h". The handler here is a record with three
+fields for the value case ("retc"), the exceptional case ("exnc") and the
+effect case ("effc").
 
 The mutually recursive functions "loop_send" and "loop_recv" resume the given
 continuation "k" with value "v" under different handlers. The "loop_send"
@@ -758,6 +701,16 @@ computation performs the "Send" effect, then "loop_recv" aborts the
 computation. Given that the continuation captured in the shallow handler do not
 include the handler, there is only ever one handler installed in the dynamic
 scope of the computation "comp".
+
+Note that unlike deep handlers with syntax support, explicit type annotations
+are necessary for the shallow handler. We must use a locally abstract type
+"(type b)" in the effect handler ("effc") and explicitly type annotate the
+effect argument "eff" and the continuation "k" in each of the effect cases.
+Another point to note is that the catch-all effect case “| _ -> None” is
+necessary. This case may be intuitively read as “forward the unhandled effects
+to the outer handler”. The standard library module \stdmoduleref{Effect} also
+provides a non-syntactic version of deep handlers, where similar annotations
+are necessary.
 
 The computation is initially executed by the "loop_send" function (see last
 line in the code above) which ensures that the first effect that the

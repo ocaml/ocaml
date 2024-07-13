@@ -29,8 +29,9 @@ pattern:
 \end{syntax}
 See also the following language extensions:
 \hyperref[s:first-class-modules]{first-class modules},
-\hyperref[s:attributes]{attributes} and
-\hyperref[s:extension-nodes]{extension nodes}.
+\hyperref[s:attributes]{attributes},
+\hyperref[s:extension-nodes]{extension nodes} and
+\hyperref[s:effect-handlers]{effect handlers}.
 
 The table below shows the relative precedences and associativity of
 operators and non-closed pattern constructions. The constructions with
