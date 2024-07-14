@@ -62,7 +62,7 @@
       let n = Unix.write fd buf 0 (Bytes.length buf) in
       assert (n = Bytes.length buf)
     in
-    
+
     let write_metadata_header offset value =
       let offset = Int64.of_int offset in
       let n = Unix.LargeFile.lseek fd offset Unix.SEEK_SET in
@@ -103,7 +103,7 @@
       (* now overwrite various fields, corrupting the ring,
          and check that we don't crash (raising exceptions is fine).
        *)
-      for offset = 1 to 1 do
+      for offset = 8 downto 0 do
         [0L; size * 3/4 |> Int64.of_int; size * 2 |> Int64.of_int;
          Int64.max_int; Int64.min_int; Int64.(shift_right_logical max_int 1)
         ] |> List.iter @@ fun value ->
@@ -114,16 +114,18 @@
            due to bounds error on an earlier offset
          *)
         Bytes.blit_string original 0 buf 0 (Bytes.length buf);
-        parse_corrupted path_pid
       done;
+      (* restore metadata header, so we have a valid ring again *)
+      write_metadata_header 0 1L (* version *);
+
       for is_runtime = 0 to 1 do
         for event_type = 0 to 15 (* event type is 4 bits *) do
           for event_id = 0 to 64 (* event_id is 13 bits, but not all used yet *) do
-            for length = 0 to 1 (* short lengths trigger uninit read bugs *) do
+            for length = 0 to 3 (* short lengths trigger uninit read bugs *) do
                 (* modify just 1 event in the otherwise valid ring *)
                 write_event_header is_runtime event_type event_id length;
                 (* parse ring *)
-                parse_corrupted path_pid
+                parse_corrupted path_pid;
             done
           done
         done;
