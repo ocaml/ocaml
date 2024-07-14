@@ -920,13 +920,12 @@ let find_opt p a =
     if i = length then None
     else
       let x = unsafe_get arr ~dummy ~i ~length in
-      if p x then begin
-        check_same_length "find_opt" a ~length;
-        Some x
-      end
+      if p x then Some x
       else loop (succ i)
   in
-  loop 0
+  let res = loop 0 in
+  check_same_length "find_opt" a ~length;
+  res
 
 let find_index p a =
   let Pack {arr; length; dummy} = a in
@@ -935,13 +934,12 @@ let find_index p a =
     if i = length then None
     else
       let x = unsafe_get arr ~dummy ~i ~length in
-      if p x then begin
-        check_same_length "find_index" a ~length;
-        Some i
-      end
+      if p x then Some i
       else loop (succ i)
   in
-  loop 0
+  let res = loop 0 in
+  check_same_length "find_index" a ~length;
+  res
 
 let find_map p a =
   let Pack {arr; length; dummy} = a in
@@ -951,11 +949,11 @@ let find_map p a =
     else
       match p (unsafe_get arr ~dummy ~i ~length) with
       | None -> loop (succ i)
-      | Some _ as r ->
-        check_same_length "find_map" a ~length;
-        r
+      | Some _ as r -> r
   in
-  loop 0
+  let res = loop 0 in
+  check_same_length "find_map" a ~length;
+  res
 
 let find_mapi p a =
   let Pack {arr; length; dummy} = a in
@@ -965,12 +963,11 @@ let find_mapi p a =
     else
       match p i (unsafe_get arr ~dummy ~i ~length) with
       | None -> loop (succ i)
-      | Some _ as r ->
-        check_same_length "find_mapi" a ~length;
-        r
+      | Some _ as r -> r
   in
-  loop 0
-
+  let res = loop 0 in
+  check_same_length "find_mapi" a ~length;
+  res
 
 let equal eq a1 a2 =
   let Pack {arr = arr1; length = length; dummy = dum1} = a1 in
