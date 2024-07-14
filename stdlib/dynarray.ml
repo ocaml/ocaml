@@ -900,7 +900,9 @@ let mem x a =
       true
     else loop (succ i)
   in
-  loop 0
+  let res = loop 0 in
+  check_same_length "mem" a ~length;
+  res
 
 let memq x a =
   let Pack {arr; length; dummy} = a in
@@ -911,7 +913,9 @@ let memq x a =
       true
     else loop (succ i)
   in
-  loop 0
+  let res = loop 0 in
+  check_same_length "memq" a ~length;
+  res
 
 let find_opt p a =
   let Pack {arr; length; dummy} = a in
