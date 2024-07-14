@@ -208,6 +208,45 @@ let () =
   let a = A.mapi (fun i e -> Printf.sprintf "%i %i" i e) a in
   assert (A.to_list a = ["0 1"; "1 2"; "2 3"]);;
 
+(** mem *)
+let () =
+  let a = A.of_list [1;2;3;4;5] in
+  assert (A.mem 1 a = true);
+  assert (A.mem 7 a = false)
+
+(** memq *)
+let () =
+  let five = 5 in
+  let a = A.of_list [five; 6; 7] in
+  assert (A.memq five a = true)
+
+(** find_opt *)
+let () =
+  let a = A.of_list [1;4;9] in
+  assert (A.find_opt (fun x -> x / 2 = 2) a = Some 4);
+  assert (A.find_opt (fun x -> x = 5) a = None)
+
+(** find_index *)
+let () = 
+  let a = A.of_list [1;2;3] in
+  assert (A.find_index (fun x -> x = 1) a = Some 0);
+  assert (A.find_index (fun x -> x = 5) a = None)
+
+(** find_map *)
+let () =
+  let a = A.of_list [1;2;3;4;5] in
+  let b = A.of_list [1;2;3] in
+  let go x = if x > 3 then Some x else None in
+  assert (A.find_map go a = Some 4);
+  assert (A.find_map go b = None)
+
+(** find_mapi *)
+let () =
+  let a = A.of_list [1;1;3] in
+  let b = A.of_list [3;2;1] in
+  let go i x = if i = x then Some (i, x) else None in
+  assert (A.find_mapi go a = Some (1,1));
+  assert (A.find_mapi go b = None)
 
 (** Iterator invalidation *)
 

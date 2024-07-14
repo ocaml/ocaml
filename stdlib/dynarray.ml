@@ -891,6 +891,87 @@ let filter_map f a =
   ) a;
   b
 
+let mem x a =
+  let Pack {arr; length; dummy} = a in
+  check_valid_length length arr;
+  let rec loop i =
+    if i = length then false
+    else if Stdlib.compare (unsafe_get arr ~dummy ~i ~length) x = 0 then
+      true
+    else loop (succ i)
+  in
+  loop 0
+
+let memq x a =
+  let Pack {arr; length; dummy} = a in
+  check_valid_length length arr;
+  let rec loop i =
+    if i = length then false
+    else if (unsafe_get arr ~dummy ~i ~length) == x then
+      true
+    else loop (succ i)
+  in
+  loop 0
+
+let find_opt p a =
+  let Pack {arr; length; dummy} = a in
+  check_valid_length length arr;
+  let rec loop i =
+    if i = length then None
+    else
+      let x = unsafe_get arr ~dummy ~i ~length in
+      if p x then begin
+        check_same_length "find_opt" a ~length;
+        Some x
+      end
+      else loop (succ i)
+  in
+  loop 0
+
+let find_index p a =
+  let Pack {arr; length; dummy} = a in
+  check_valid_length length arr;
+  let rec loop i =
+    if i = length then None
+    else
+      let x = unsafe_get arr ~dummy ~i ~length in
+      if p x then begin
+        check_same_length "find_index" a ~length;
+        Some i
+      end
+      else loop (succ i)
+  in
+  loop 0
+
+let find_map p a =
+  let Pack {arr; length; dummy} = a in
+  check_valid_length length arr;
+  let rec loop i =
+    if i = length then None
+    else
+      match p (unsafe_get arr ~dummy ~i ~length) with
+      | None -> loop (succ i)
+      | Some _ as r ->
+        check_same_length "find_map" a ~length;
+        r
+  in
+  loop 0
+
+let find_mapi p a =
+  let Pack {arr; length; dummy} = a in
+  check_valid_length length arr;
+  let rec loop i =
+    if i = length then None
+    else
+      match p i (unsafe_get arr ~dummy ~i ~length) with
+      | None -> loop (succ i)
+      | Some _ as r ->
+        check_same_length "find_mapi" a ~length;
+        r
+  in
+  loop 0
+
+
 let equal eq a1 a2 =
   let Pack {arr = arr1; length = length; dummy = dum1} = a1 in
   let Pack {arr = arr2; length = len2; dummy = dum2} = a2 in
