@@ -148,11 +148,27 @@ TSAN_OPTIONS="" $run_testsuite
 # # Select memory sanitizer
 # # Don't optimize at all to get better backtraces of errors
 
+# CFLAGS="-Og -g -fno-omit-frame-pointer -fsanitize=memory -fsanitize-memory-track-origins"
+# LDFLAGS="-fsanitize=memory"
+
+# # Test that MSAN works
+# cat >msan.c <<EOF
+# #include <stdlib.h>
+# int main(int argc, char **argv) {
+#   char* x = malloc(4);
+#   return x[0];
+# }
+# EOF
+#
+# $CC $CFLAGS -c msan.c
+# $CC $LDFLAGS msan.o -o msan
+# ./msan && exit 2
+# test $? -eq 1
+
 # ./configure \
 #   CC=clang-9 \
-#   CFLAGS="-Og -g -fno-omit-frame-pointer \
-#           -fsanitize=memory -fsanitize-memory-track-origins" \
-#   LDFLAGS="-fsanitize=memory" \
+#   CFLAGS="${CFLAGS}"
+#   LDFLAGS="${LDFLAGS}" \
 #   --disable-native-compiler --without-zstd
 # # A tool that makes error backtraces nicer
 # # Need to pick the one that matches clang-6.0
