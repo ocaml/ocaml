@@ -229,6 +229,13 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
 
   cursor->metadata = *(struct runtime_events_metadata_header*)cursor->map;
 
+  if (cursor->metadata.max_domains > Max_domains_max) {
+    /* avoid overflow in multiplication below */
+    caml_stat_free(cursor);
+    caml_stat_free(runtime_events_loc);
+    return E_CORRUPT_STREAM;
+  }
+
   cursor->current_positions =
       caml_stat_alloc(cursor->metadata.max_domains * sizeof(uint64_t));
 
