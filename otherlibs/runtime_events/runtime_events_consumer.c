@@ -462,6 +462,13 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
         continue;
       }
 
+      if (!msg_length
+          || (msg_length < 2
+              && RUNTIME_EVENTS_ITEM_TYPE(header) != EV_INTERNAL)) {
+        atomic_store(&cursor->cursor_in_poll, 0);
+        return E_CORRUPT_STREAM;
+      }
+
       if (RUNTIME_EVENTS_ITEM_IS_RUNTIME(header)) {
         switch (RUNTIME_EVENTS_ITEM_TYPE(header)) {
         case EV_BEGIN:

@@ -114,5 +114,18 @@
            due to bounds error on an earlier offset
          *)
         Bytes.blit_string original 0 buf 0 (Bytes.length buf);
-      done
+        parse_corrupted path_pid
+      done;
+      for is_runtime = 0 to 1 do
+        for event_type = 0 to 15 (* event type is 4 bits *) do
+          for event_id = 0 to 64 (* event_id is 13 bits, but not all used yet *) do
+            for length = 0 to 1 (* short lengths trigger uninit read bugs *) do
+                (* modify just 1 event in the otherwise valid ring *)
+                write_event_header is_runtime event_type event_id length;
+                (* parse ring *)
+                parse_corrupted path_pid
+            done
+          done
+        done;
+      done;
     end
