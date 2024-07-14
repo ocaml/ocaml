@@ -339,7 +339,7 @@ val find_map : ('a -> 'b option) -> 'a t -> 'b option
 (** [find_map f a] applies [f] to the elements of [a] in order, and returns the
     first result of the form [Some v], or [None] if none exist.
 
-    @since 4.13 *)
+*)
 
 val find_mapi : (int -> 'a -> 'b option) -> 'a t -> 'b option
 (** Same as [find_map], but the predicate is applied to the index of
