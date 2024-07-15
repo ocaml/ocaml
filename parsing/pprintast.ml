@@ -939,7 +939,7 @@ and simple_expr ctxt f x =
         let longident_x_expression f ( li, e) =
           match e with
           |  {pexp_desc=Pexp_ident {txt;_};
-              pexp_attributes=[]; _} when li.txt = txt ->
+              pexp_attributes=[]; _} when Longident.same li.txt txt ->
               pp f "@[<hov2>%a@]" longident_loc li
           | _ ->
               pp f "@[<hov2>%a@;=@;%a@]" longident_loc li (simple_expr ctxt) e

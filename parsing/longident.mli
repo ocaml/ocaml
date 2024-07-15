@@ -30,6 +30,10 @@ type t =
   | Ldot of t * string loc
   | Lapply of t * t
 
+(** [same t t'] compares the longidents [t] and [t'] without taking locations
+    into account. *)
+val same: t -> t -> bool
+
 val flatten: t -> string list
 val unflatten: string list -> t option
 (** For a non-empty list [l], [unflatten l] is [Some lid] where [lid] is

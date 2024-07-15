@@ -342,7 +342,7 @@ let check_package_with_type_constraints = ref (fun _ -> assert false)
 let sort_constraints_no_duplicates loc env l =
   List.sort
     (fun (s1, _t1) (s2, _t2) ->
-       if s1.txt = s2.txt then
+       if Longident.same s1.txt s2.txt then
          raise (Error (loc, env, Multiple_constraints_on_type s1.txt));
        compare s1.txt s2.txt)
     l

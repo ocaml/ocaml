@@ -594,7 +594,7 @@ let is_unambiguous path env =
       List.for_all (fun p -> Path.same (normalize p) p') rem ||
       (* also allow repeatedly defining and opening (for toplevel) *)
       let id = lid_of_path p in
-      List.for_all (fun p -> lid_of_path p = id) rem &&
+      List.for_all (fun p -> Longident.same (lid_of_path p) (*arg*) id) rem &&
       Path.same p (fst (Env.find_type_by_name id env))
 
 let rec get_best_path r =
