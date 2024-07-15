@@ -626,11 +626,11 @@ struct memprof_orphan_table_s {
 /* List of orphaned entry tables not yet adopted by any domain. */
 static memprof_orphan_table_t orphans = NULL;
 
-/* lock controlling access to `orphans` variable */
+/* lock controlling access to `orphans` and writes to `orphans_present` */
 static caml_plat_mutex orphans_lock = CAML_PLAT_MUTEX_INITIALIZER;
 
 /* Flag indicating non-NULL orphans. Only modified when holding orphans_lock. */
-static atomic_uintnat orphans_flag;
+static atomic_uintnat orphans_present;
 
 /**** Initializing and clearing entries tables ****/
 
@@ -968,7 +968,7 @@ static void orphans_abandon(memprof_domain_t domain)
   caml_plat_lock_blocking(&orphans_lock);
   ot->next = orphans;
   orphans = domain->orphans;
-  atomic_store_release(&orphans_flag, 1);
+  atomic_store_release(&orphans_present, 1);
   caml_plat_unlock(&orphans_lock);
   domain->orphans = NULL;
 }
@@ -977,7 +977,7 @@ static void orphans_abandon(memprof_domain_t domain)
 
 static void orphans_adopt(memprof_domain_t domain)
 {
-  if (!atomic_load_acquire(&orphans_flag))
+  if (!atomic_load_acquire(&orphans_present))
     return; /* No orphans to adopt */
 
   /* Find the end of the domain's orphans list */
@@ -990,7 +990,7 @@ static void orphans_adopt(memprof_domain_t domain)
   if (orphans) {
     *p = orphans;
     orphans = NULL;
-    atomic_store_release(&orphans_flag, 0);
+    atomic_store_release(&orphans_present, 0);
   }
   caml_plat_unlock(&orphans_lock);
 }
