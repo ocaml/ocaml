@@ -45,12 +45,6 @@ CAMLextern void caml_modify (volatile value *, value);
 CAMLextern void caml_initialize (volatile value *, value);
 CAMLextern int caml_atomic_cas_field (value, intnat, value, value);
 CAMLextern value caml_check_urgent_gc (value);
-#ifdef CAML_INTERNALS
-CAMLextern char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
-CAMLextern void caml_free_for_heap (char *mem);
-CAMLextern int caml_add_to_heap (char *mem);
-#endif /* CAML_INTERNALS */
-
 
 /* [caml_stat_*] functions below provide an interface to the static memory
    manager built into the runtime, which can be used for managing static
