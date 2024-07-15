@@ -1230,7 +1230,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
 
   /* Memprof roots and "weak" pointers to tracked blocks */
   caml_memprof_scan_roots(&compact_update_value, 0, NULL,
-                          Caml_state, true, participants[0] == Caml_state);
+                          Caml_state, true);
 
   /* Next, one domain does the global roots */
   if (participants[0] == Caml_state) {

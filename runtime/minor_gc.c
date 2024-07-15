@@ -597,7 +597,7 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
 
   CAML_EV_BEGIN(EV_MINOR_MEMPROF_ROOTS);
   caml_memprof_scan_roots(&oldify_one, oldify_scanning_flags, &st,
-                          domain, false, participating[0] == domain);
+                          domain, false);
   CAML_EV_END(EV_MINOR_MEMPROF_ROOTS);
 
   CAML_EV_BEGIN(EV_MINOR_REMEMBERED_SET_PROMOTE);
@@ -634,7 +634,7 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS);
 
   CAML_EV_BEGIN(EV_MINOR_MEMPROF_CLEAN);
-  caml_memprof_after_minor_gc(domain, participating[0] == domain);
+  caml_memprof_after_minor_gc(domain);
   CAML_EV_END(EV_MINOR_MEMPROF_CLEAN);
 
   domain->young_ptr = domain->young_end;
