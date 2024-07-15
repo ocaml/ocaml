@@ -19,13 +19,13 @@
 
 typedef struct frame_info
 {
-  struct frame_info*  prev;     /* rbp */
-  void*               retaddr;  /* rip */
+  struct frame_info*  prev;     /* base pointer / frame pointer */
+  void*               retaddr;  /* instruction pointer / program counter */
 } frame_info;
 
 /*
  * A backtrace symbol looks like this on Linux:
- * ./path/to/binary(camlModule_fn_123+0xAABBCC) [0xAABBCCDDEE]
+ * ./path/to/binary(camlModule.fn_123+0xAABBCC) [0xAABBCCDDEE]
  *
  * or this on macOS:
  * 0   c_call.opt                          0x000000010e621079 camlC_call.entry + 57

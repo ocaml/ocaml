@@ -303,6 +303,32 @@ G(name):
         ldr     TRAP_PTR, Caml_state(exn_handler)
 .endm
 
+/* Updates the oldest saved frame pointer in the target fiber.
+
+   A fiber stack may need to grow, causing the reallocation of the entire fiber,
+   including stack_info and stack_handler structures.
+   caml_try_realloc_stack will not be able to update the linked list of
+   frame-pointers if it has been split (i.e., in a continuation).
+   caml_resume and caml_reperform use this macro to update the oldest saved x29
+   (highest one in the stack) in case the fiber was reallocated to reattach the
+   frame-pointer linked list.
+
+   REG: Stack_handler(target_fiber)
+
+   The frame pointer will be pushed into the stack immediately after these
+   instructions. The offset of the oldest saved x29 in a fiber from the stack
+   handler is 48 = 4 words (caml_runstack) + 2 words (x30 and x29).
+   */
+#ifdef WITH_FRAME_POINTERS
+.macro UPDATE_BASE_POINTER reg
+        sub     TMP2, sp, 16
+        str     TMP2, [\reg, -48]
+.endm
+#else
+.macro UPDATE_BASE_POINTER reg
+.endm
+#endif
+
 #if defined(WITH_THREAD_SANITIZER) /* { */
 
 /* Push the current value of the link register to the stack. */
@@ -643,7 +669,7 @@ L(jump_to_caml):
         CFI_OFFSET(30, -152)
         stp     x29, x30, [sp, -160]!
         CFI_ADJUST(160)
-        add     x29, sp, #0
+        mov     x29, sp
         stp     x19, x20, [sp, 16]
         stp     x21, x22, [sp, 32]
         stp     x23, x24, [sp, 48]
@@ -962,7 +988,6 @@ END_FUNCTION(caml_callback3_asm)
         LEAVE_FUNCTION
 .endm
 
-
 /*
  * A continuation is a one word object that points to a fiber. A fiber [f] will
  * point to its parent at Handler_parent(Stack_handler(f)). In the following,
@@ -1048,13 +1073,16 @@ END_FUNCTION(caml_perform)
 
 FUNCTION(caml_reperform)
         CFI_STARTPROC
-    /*  x0: effect to perform
+    /*  x0: effect to reperform
         x1: continuation
         x2: last_fiber */
         ldr     TMP, Stack_handler_from_cont(x2)
         ldr     x2, Caml_state(current_stack) /* x2 := old stack */
         str     x2, Handler_parent(TMP) /* Append to last_fiber */
         add     x3, x2, 1 /* x3 (last_fiber) := Val_ptr(old stack) */
+    /* Need to update the oldest saved frame pointer here as the execution of
+       the handler may have caused the current fiber stack to reallocate. */
+        UPDATE_BASE_POINTER TMP
         b       L(do_perform)
         CFI_ENDPROC
 END_FUNCTION(caml_reperform)
@@ -1102,6 +1130,10 @@ FUNCTION(caml_resume)
         ldr     x8, Stack_handler(x3)
         ldr     x9, Caml_state(current_stack)
         str     x9, Handler_parent(x8)
+    /* Need to update the oldest saved frame pointer here as the current fiber
+       stack may have been reallocated or we may be resuming a computation
+       that was not originally run here. */
+        UPDATE_BASE_POINTER x8
         SWITCH_OCAML_STACKS x9, x0
         mov     x0, x2
         br      x4

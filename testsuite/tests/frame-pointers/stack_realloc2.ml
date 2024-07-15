@@ -22,7 +22,7 @@ let[@inline never] consume_stack () =
    * and Stack_threshold_words = 32 *)
   (* in words *)
   let size = 128 in
-  let allocated = 2 * 2 (* 2 spilled registers *) + 1 (* saved rbp *) in
+  let allocated = 2 * 2 (* 2 spilled registers *) + 1 (* saved frame pointer *) in
   let count = size / allocated in
   let[@inline never] rec gobbler i =
     (* Force spilling of x0 and x1 *)
