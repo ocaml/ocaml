@@ -158,7 +158,6 @@ module Core_inclusion = struct
   (* Inclusion between value descriptions *)
 
   let value_descriptions ~loc env ~mark subst id vd1 vd2 =
-    Cmt_format.record_value_dependency vd1 vd2;
     if mark_positive mark then
       Env.mark_value_used vd1.val_uid;
     let vd2 = Subst.value_description subst vd2 in

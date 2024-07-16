@@ -54,8 +54,6 @@ type relation_kind = Directed | Undirected
 type cmt_infos = {
   cmt_modname : modname;
   cmt_annots : binary_annots;
-  cmt_value_dependencies :
-    (Types.value_description * Types.value_description) list;
   cmt_declaration_dependencies : (relation_kind * Uid.t * Uid.t) list;
   cmt_comments : (string * Location.t) list;
   cmt_args : string array;
@@ -110,9 +108,6 @@ val clear: unit -> unit
 val add_saved_type : binary_part -> unit
 val get_saved_types : unit -> binary_part list
 val set_saved_types : binary_part list -> unit
-
-val record_value_dependency:
-  Types.value_description -> Types.value_description -> unit
 
 val record_declaration_dependency: relation_kind * Uid.t * Uid.t -> unit
 
