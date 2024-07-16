@@ -184,6 +184,7 @@ MKLIB=@mklib@
 
 NATIVECCLIBS=@cclibs@
 SYSTHREAD_SUPPORT=@systhread_support@
+STRIP=@STRIP@
 PACKLD=@PACKLD@$(EMPTY)
 CCOMPTYPE=@ccomptype@
 TOOLCHAIN=@toolchain@
