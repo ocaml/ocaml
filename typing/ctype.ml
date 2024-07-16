@@ -2596,29 +2596,10 @@ let package_subtype = ref (fun _ _ _ _ _ -> assert false)
 
 exception Nondep_cannot_erase of Ident.t
 
-let rec concat_longident lid1 =
-  let open Longident in
-  function
-    Lident s -> Ldot (lid1, s)
-  | Ldot (lid2, s) -> Ldot (concat_longident lid1 lid2, s)
-  | Lapply (lid2, lid) -> Lapply (concat_longident lid1 lid2, lid)
-
 let nondep_instance env level id ty =
   let ty = !nondep_type' env [id] ty in
   if level = generic_level then duplicate_type ty else
   with_level ~level (fun () -> instance ty)
-
-let rec lid_gte lid1 lid2 =
-  let open Longident in
-  match lid1, lid2 with
-  | Lident {txt;_}, Lident {txt=txt';_} -> txt >= txt'
-  | Lident _, _ -> false
-  | Ldot (lid1, _), Ldot (lid2, _) -> lid_gte lid1 lid2
-  | Ldot _, Lident _ -> true
-  | Ldot _, Lapply _ -> false
-  | Lapply (lid1, lid2), Lapply (lid1', lid2') ->
-      lid_gte lid1 lid2 && lid_gte lid1' lid2'
-  | Lapply _, _ -> true
 
 (* Find the type paths nl1 in the module type mty2, and add them to the
    list (nl2, tl2). raise Not_found if impossible *)
@@ -2638,12 +2619,11 @@ let complete_type_list ?(allow_absent=false) env fl1 lv2 mty2 fl2 =
   let rec complete fl1 fl2 =
     match fl1, fl2 with
       [], _ -> fl2
-    | (n, _) :: nl, (n2, _ as nt2) :: ntl' when lid_gte n n2 ->
-        nt2 :: complete (if Longident.same n n2 then nl else fl1) ntl'
+    | (n, _) :: nl, (n2, _ as nt2) :: ntl' when n >= n2 ->
+        nt2 :: complete (if n = n2 then nl else fl1) ntl'
     | (n, _) :: nl, _ ->
-        let lid =
-          concat_longident (Longident.Lident (Location.mknoloc "Pkg")) n
-        in
+        let lid = "Pkg" :: n in
+        let lid = Option.get (Longident.unflatten lid) in
         match Env.find_type_by_name lid env' with
         | (_, {type_arity = 0; type_kind = Type_abstract _;
                type_private = Public; type_manifest = Some t2}) ->

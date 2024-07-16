@@ -5285,8 +5285,8 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
          pat_loc = Location.none; pat_env = env},
         {exp_type = ty; exp_loc = Location.none; exp_env = exp_env;
          exp_extra = []; exp_attributes = [];
-         exp_desc =
-         Texp_ident(Path.Pident id, mknoloc (Longident.Lident (mknoloc name)), desc)}
+         exp_desc = Texp_ident(Path.Pident id,
+                               mknoloc (Longident.Lident (mknoloc name)), desc)}
       in
       let eta_pat, eta_var = var_pair "eta" ty_arg in
       let func texp =

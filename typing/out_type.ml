@@ -1136,7 +1136,7 @@ let rec tree_of_typexp mode ty =
         let fl =
           List.map
             (fun (li, ty) -> (
-              String.concat "." (Longident.flatten li),
+              String.concat "." li,
               tree_of_typexp mode ty
             )) fl in
         Otyp_module (tree_of_path (Some Module_type) p, fl)

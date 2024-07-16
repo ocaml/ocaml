@@ -673,7 +673,8 @@ module Digraph = struct
         let types = List.map snd fl in
         mk "[mod %a with %a]"
           pp_path p
-          Pp.(list ~sep:semi longident) (List.map fst fl)
+          Pp.(list ~sep:semi longident)
+            (List.map (fun (l, _) -> Longident.unflatten l |> Option.get) fl)
         |> numbered types
   and variant params id0 (elts,main,fields) (name,rf)  =
     let id = Index.subnode ~name id0 in
