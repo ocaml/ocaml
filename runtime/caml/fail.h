@@ -139,6 +139,18 @@ Caml_inline value caml_get_value_or_raise (struct caml_result_private result)
     return result.data;
 }
 
+#ifdef CAML_INTERNALS
+// internals only, provided for backward-compatibility
+Caml_inline value caml_result_get_encoded_exception(
+  struct caml_result_private result)
+{
+  if (result.is_exception)
+    return Make_exception_result(result.data);
+  else
+    return result.data;
+}
+#endif // CAML_INTERNALS
+
 #ifdef __cplusplus
 }
 #endif
