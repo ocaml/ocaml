@@ -174,7 +174,7 @@ module T = struct
                              (List.map (map_loc sub) sl) (sub.typ sub t)
     | Ptyp_package (lid, l) ->
         package ~loc ~attrs (map_loc_lid sub lid)
-          (List.map (map_tuple (map_loc sub) (sub.typ sub)) l)
+          (List.map (map_tuple (map_loc_lid sub) (sub.typ sub)) l)
     | Ptyp_open (mod_ident, t) ->
         open_ ~loc ~attrs (map_loc_lid sub mod_ident) (sub.typ sub t)
     | Ptyp_extension x -> extension ~loc ~attrs (sub.extension sub x)
