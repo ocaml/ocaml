@@ -4131,8 +4131,11 @@ let eqtype_subst type_pairs subst t1 t2 =
   end
 
 let rec eqtype rename type_pairs subst env t1 t2 =
-  if eq_type t1 t2 then () else
-
+  (* It's tempting to check for physical equality via [eq_type] here, but that
+     would be incorrect: imagine comparing ['a * 'a] with ['b * 'a]. The
+     first ['a] and ['b] would be identified in [eqtype_subst], and then
+     the second ['a] and ['a] would be [eq_type]. So we do not call [eq_type]
+     here. *)
   try
     match (get_desc t1, get_desc t2) with
       (Tvar _, Tvar _) when rename ->
