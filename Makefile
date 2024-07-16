@@ -2083,7 +2083,7 @@ ocamldebug_SOURCES = \
     ocamldebug.ml \
     ocamldebug_entry.mli ocamldebug_entry.ml)
 
-debugger/%: OC_BYTECODE_LINKFLAGS = -linkall
+ocamldebug_BYTECODE_LINKFLAGS = -linkall
 
 debugger/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
