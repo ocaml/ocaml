@@ -289,11 +289,10 @@ opam install .
 -----
 
 -----
-# Example with installation from the current directory, installing only the
-# bytecode versions of the tools
+# Example with installation from the current directory
 opam switch create . --empty
 ./configure --prefix=$(opam var prefix) # put extra configuration args here
-make world && make opt
+make -j
 opam install . --assume-built
 -----
 
