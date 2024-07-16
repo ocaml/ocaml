@@ -214,6 +214,11 @@ _______________
 
 ### Manual and documentation:
 
+- #13295: Use syntax for deep effect handlers in the effect handlers manual
+  page.
+  (KC Sivaramakrishnan, review by Anil Madhavapeddy, Florian Angeletti and Miod
+   Vallat)
+
 - #12868: Manual: simplify style colours of the post-processed manual and API
   HTML pages, and fix the search button icon
   (Yawar Amin, review by Simon Grondin, Gabriel Scherer, and Florian Angeletti)
