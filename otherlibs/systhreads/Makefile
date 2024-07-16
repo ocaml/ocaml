@@ -82,8 +82,8 @@ st_stubs.%.$(O): st_stubs.c
 else
 st_stubs.%.$(O): st_stubs.c $(RUNTIME_HEADERS) $(wildcard *.h)
 endif
-	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
-	  $(OUTPUTOBJ)$@ $<
+	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ -c $<
 
 .PHONY: partialclean
 partialclean:
@@ -141,7 +141,8 @@ ifeq "$(COMPUTE_DEPS)" "true"
 include $(addprefix $(DEPDIR)/, $(DEP_FILES))
 endif
 
-%.n.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
+%.b.$(D): OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS)
+%.n.$(D): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS)
 
 define GEN_RULE
 $(DEPDIR)/%.$(1).$(D): %.c | $(DEPDIR)

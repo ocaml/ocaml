@@ -362,6 +362,13 @@ _______________
   (Sébastien Hinderer, review by Miod Vallat, Gabriel Scherer and
   Olivier Nicole)
 
+* #12578, #12589: Use configured CFLAGS and CPPFLAGS *only* during the
+  build of the compiler itself. Do not use them when compiling third-party
+  C sources through the compiler. Flags for compiling third-party C
+  sources can still be specified at configure time in the
+  COMPILER_{BYTECODE,NATIVE}_{CFLAGS,CPPFLAGS} configuration variables.
+  (Sébastien Hinderer, report by William Hu, review by David Allsopp)
+
 ### Bug fixes:
 
 - #12854: Add a test in the regression suite that flags the bug #12825.

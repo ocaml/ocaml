@@ -767,6 +767,10 @@ WINDOWS_UNICODE_MODE
 LIBUNWIND_LDFLAGS
 LIBUNWIND_CPPFLAGS
 DLLIBS
+COMPILER_NATIVE_CPPFLAGS
+COMPILER_NATIVE_CFLAGS
+COMPILER_BYTECODE_CPPFLAGS
+COMPILER_BYTECODE_CFLAGS
 PARTIALLD
 csc
 target_os
@@ -857,8 +861,6 @@ winpthreads_source_dir
 flexdll_dir
 bootstrapping_flexdll
 flexdll_source_dir
-bytecode_cppflags
-bytecode_cflags
 zstd_libs
 native_ldflags
 cclibs
@@ -886,8 +888,14 @@ ln
 unix_or_win32
 ocamlsrcdir
 systhread_support
+oc_native_cppflags
+oc_native_cflags
+oc_bytecode_cppflags
+oc_bytecode_cflags
 native_cppflags
 native_cflags
+bytecode_cppflags
+bytecode_cflags
 system
 model
 arch64
@@ -1025,6 +1033,10 @@ target_alias
 AS
 ASPP
 PARTIALLD
+COMPILER_BYTECODE_CFLAGS
+COMPILER_BYTECODE_CPPFLAGS
+COMPILER_NATIVE_CFLAGS
+COMPILER_NATIVE_CPPFLAGS
 DLLIBS
 LIBUNWIND_CPPFLAGS
 LIBUNWIND_LDFLAGS
@@ -1735,6 +1747,14 @@ Some influential environment variables:
   AS          which assembler to use
   ASPP        which assembler (with preprocessor) to use
   PARTIALLD   how to build partial (relocatable) object files
+  COMPILER_BYTECODE_CFLAGS
+              CFLAGS for compiling C files to be linked with bytecode
+  COMPILER_BYTECODE_CPPFLAGS
+              CPPFLAGS for compiling C files to be linked with bytecode
+  COMPILER_NATIVE_CFLAGS
+              CFLAGS for compiling C files to be linked with native code
+  COMPILER_NATIVE_CPPFLAGS
+              CPPFLAGS for compiling C files to be linked with native code
   DLLIBS      which libraries to use (in addition to -ldl) to load dynamic
               libs
   LIBUNWIND_CPPFLAGS
@@ -3440,6 +3460,12 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 
 
 
+
+
+
+
+
+
  # TODO: rename this variable
 
 
@@ -3766,6 +3792,11 @@ esac
 fi
 
 # Environment variables that are taken into account
+
+
+
+
+
 
 
 
@@ -14123,7 +14154,8 @@ fi
   sunc-*) :
     # Optimization should be >= O4 to inline functions
             # and prevent unresolved externals
-    common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
+    common_cflags="-O4 -xc99=all"
+    common_cppflags="-D_XPG6"
     internal_cflags="$cc_warnings" ;; #(
   *) :
     common_cflags="-O" ;;
@@ -16231,7 +16263,8 @@ case $arch in #(
 esac
 
 native_cflags=''
-native_cppflags="-DNATIVE_CODE\
+oc_native_cflags=''
+oc_native_cppflags="-DNATIVE_CODE\
  -DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
 case $ccomptype in #(
   msvc) :
@@ -17239,7 +17272,8 @@ else $as_nop
 fi
 
   tsan_cflags="$tsan_cflags $tsan_distinguish_volatile_cflags"
-  native_cppflags="$native_cppflags $tsan_cppflags"
+  oc_native_cppflags="$oc_native_cppflags $tsan_cppflags"
+  oc_native_cflags="$oc_native_cflags $tsan_cflags"
   native_cflags="$native_cflags $tsan_cflags"
   native_ldflags="$native_ldflags $tsan_ldflags"
   tsan_native_runtime_c_sources="tsan"
@@ -17300,7 +17334,7 @@ then :
   libunwind_ldflags="$LIBUNWIND_LDFLAGS $libunwind_ldflags"
 fi
 
-  native_cppflags="$native_cppflags $libunwind_cppflags"
+  oc_native_cppflags="$oc_native_cppflags $libunwind_cppflags"
   native_ldflags="$native_ldflags $libunwind_ldflags"
 
 
@@ -20146,7 +20180,7 @@ test -n "$PTHREAD_CXX" || PTHREAD_CXX="$CXX"
 
 # Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
 if test "x$ax_pthread_ok" = "xyes"; then
-        common_cflags="$common_cflags $PTHREAD_CFLAGS"
+
     # The two following lines add flags and libraries for pthread to the
     # global CFLAGS and LIBS variables. This means that all the subsequent
     # tests can rely on the assumption that pthread is enabled.
@@ -20858,8 +20892,20 @@ fi
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
-bytecode_cflags="$bytecode_cflags $common_cflags $sharedlib_cflags $CFLAGS"
-bytecode_cppflags="$common_cppflags $CPPFLAGS"
+
+oc_bytecode_cflags="$oc_cflags"
+oc_bytecode_cppflags="$oc_cppflags"
+
+oc_native_cflags="$oc_cflags $oc_native_cflags"
+native_cflags="$common_cflags $native_cflags"
+oc_native_cppflags="$oc_cppflags $oc_native_cppflags"
+
+bytecode_cflags="$common_cflags $sharedlib_cflags\
+ $PTHREAD_CFLAGS $COMPILER_BYTECODE_CFLAGS"
+native_cflags="$native_cflags $PTHREAD_CFLAGS $COMPILER_NATIVE_CFLAGS"
+
+bytecode_cppflags="$common_cppflags $COMPILER_BYTECODE_CPPFLAGS"
+native_cppflags="$common_cppflags $COMPILER_NATIVE_CPPFLAGS"
 
 case $host in #(
   *-*-mingw32*) :

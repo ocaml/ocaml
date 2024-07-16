@@ -1268,8 +1268,9 @@ libcomprmarsh_OBJECTS = runtime/zstd.npic.$(O)
 ## General (non target-specific) assembler and compiler flags
 
 runtime_CPPFLAGS = -DCAMLDLLIMPORT= -DIN_CAML_RUNTIME
-ocamlrund_CPPFLAGS = -DDEBUG
-ocamlruni_CPPFLAGS = -DCAML_INSTR
+ocamlrun_CPPFLAGS = $(runtime_CPPFLAGS)
+ocamlrund_CPPFLAGS = $(runtime_CPPFLAGS) -DDEBUG
+ocamlruni_CPPFLAGS = $(runtime_CPPFLAGS) -DCAML_INSTR
 
 ## Runtime targets
 
@@ -1326,7 +1327,7 @@ $(SAK): runtime/sak.$(O)
 	$(V_MKEXE)$(call SAK_LINK,$@,$^)
 
 runtime/sak.$(O): runtime/sak.c runtime/caml/misc.h runtime/caml/config.h
-	$(V_CC)$(SAK_CC) -c $(SAK_CFLAGS) $(OUTPUTOBJ)$@ $<
+	$(V_CC)$(SAK_CC) $(SAK_CFLAGS) $(OUTPUTOBJ)$@ -c $<
 
 C_LITERAL = $(shell $(SAK) encode-C-literal '$(1)')
 
@@ -1387,34 +1388,43 @@ runtime/libcomprmarsh.$(A): $(libcomprmarsh_OBJECTS)
 
 ## Runtime target-specific preprocessor and compiler flags
 
-runtime/%.$(O): OC_CPPFLAGS += $(runtime_CPPFLAGS)
-$(DEPDIR)/runtime/%.$(D): OC_CPPFLAGS += $(runtime_CPPFLAGS)
+runtime/%.b.$(O): OC_CFLAGS = $(OC_BYTECODE_CFLAGS)
+runtime/%.b.$(O): OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS) $(ocamlrun_CPPFLAGS)
+$(DEPDIR)/runtime/%.b.$(D): \
+  OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS) $(ocamlrun_CPPFLAGS)
 
-runtime/%.bd.$(O): OC_CPPFLAGS += $(ocamlrund_CPPFLAGS)
-$(DEPDIR)/runtime/%.bd.$(D): OC_CPPFLAGS += $(ocamlrund_CPPFLAGS)
+runtime/%.bd.$(O): OC_CFLAGS = $(OC_BYTECODE_CFLAGS)
+runtime/%.bd.$(O): OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
+$(DEPDIR)/runtime/%.bd.$(D): \
+  OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
 
-runtime/%.bi.$(O): OC_CPPFLAGS += $(ocamlruni_CPPFLAGS)
-$(DEPDIR)/runtime/%.bi.$(D): OC_CPPFLAGS += $(ocamlruni_CPPFLAGS)
+runtime/%.bi.$(O): OC_CFLAGS = $(OC_BYTECODE_CFLAGS)
+runtime/%.bi.$(O): OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
+$(DEPDIR)/runtime/%.bi.$(D): \
+  OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
 
-runtime/%.bpic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
+runtime/%.bpic.$(O): OC_CFLAGS = $(OC_BYTECODE_CFLAGS) $(SHAREDLIB_CFLAGS)
+runtime/%.bpic.$(O): OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS)
+$(DEPDIR)/runtime/%.bpic.$(D): OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS)
 
-runtime/%.n.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
-runtime/%.n.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
-$(DEPDIR)/runtime/%.n.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
+runtime/%.n.$(O): OC_CFLAGS = $(OC_NATIVE_CFLAGS)
+runtime/%.n.$(O): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlrun_CPPFLAGS)
+$(DEPDIR)/runtime/%.n.$(D): \
+  OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlrun_CPPFLAGS)
 
-runtime/%.nd.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
-runtime/%.nd.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
+runtime/%.nd.$(O): OC_CFLAGS = $(OC_NATIVE_CFLAGS)
+runtime/%.nd.$(O): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
 $(DEPDIR)/runtime/%.nd.$(D): \
-  OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
+  OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
 
-runtime/%.ni.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
-runtime/%.ni.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
+runtime/%.ni.$(O): OC_CFLAGS = $(OC_NATIVE_CFLAGS)
+runtime/%.ni.$(O): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
 $(DEPDIR)/runtime/%.ni.$(D): \
-  OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
+  OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
 
-runtime/%.npic.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS) $(SHAREDLIB_CFLAGS)
-runtime/%.npic.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
-$(DEPDIR)/runtime/%.npic.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
+runtime/%.npic.$(O): OC_CFLAGS = $(OC_NATIVE_CFLAGS) $(SHAREDLIB_CFLAGS)
+runtime/%.npic.$(O): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS)
+$(DEPDIR)/runtime/%.npic.$(D): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS)
 
 ## Compilation of runtime C files
 
@@ -1441,15 +1451,15 @@ $(1).$(O): $(2).c \
   $(runtime_CONFIGURED_HEADERS) $(runtime_BUILT_HEADERS) \
   $(RUNTIME_HEADERS)
 endif # ifeq "$(COMPUTE_DEPS)" "true"
-	$$(V_CC)$$(CC) -c $$(OC_CFLAGS) $$(CFLAGS) $$(OC_CPPFLAGS) $$(CPPFLAGS) \
-	  $$(OUTPUTOBJ)$$@ $$<
+	$$(V_CC)$$(CC) $$(OC_CFLAGS) $$(CFLAGS) $$(OC_CPPFLAGS) $$(CPPFLAGS) \
+	  $$(OUTPUTOBJ)$$@ -c $$<
 endef
 
 runtime/winpthreads/%.$(O): $(WINPTHREADS_SOURCE_DIR)/src/%.c \
                             $(wildcard $(WINPTHREADS_SOURCE_DIR)/include/*.h) \
                               | runtime/winpthreads
-	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
-	  $(OUTPUTOBJ)$@ $<
+	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ -c $<
 
 runtime/winpthreads:
 	$(MKDIR) $@

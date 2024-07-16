@@ -29,10 +29,8 @@ let c_has_debug_prefix_map = @cc_has_debug_prefix_map@
 let as_has_debug_prefix_map = @as_has_debug_prefix_map@
 let bytecode_cflags = {@QS@|@bytecode_cflags@|@QS@}
 let bytecode_cppflags = {@QS@|@bytecode_cppflags@|@QS@}
-let native_cflags =
-  {@QS@|@bytecode_cflags@|@QS@} ^ " " ^ {@QS@|@native_cflags@|@QS@}
-let native_cppflags =
-  {@QS@|@bytecode_cppflags@|@QS@} ^ " " ^ {@QS@|@native_cppflags@|@QS@}
+let native_cflags = {@QS@|@native_cflags@|@QS@}
+let native_cppflags = {@QS@|@native_cppflags@|@QS@}
 
 let bytecomp_c_libraries = {@QS@|@zstd_libs@ @cclibs@|@QS@}
 (* bytecomp_c_compiler and native_c_compiler have been supported for a
