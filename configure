@@ -4271,6 +4271,17 @@ then :
   cross_compiler=false
 else $as_nop
   cross_compiler=true
+    # We require a non-cross-compiler of the same version
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking the version of the installed OCaml compiler" >&5
+printf %s "checking the version of the installed OCaml compiler... " >&6; }
+    already_installed_version=`ocamlc -vnum`
+    if test x"5.4.0+dev0-2024-08-25" = x"$already_installed_version"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: compatible (5.4.0+dev0-2024-08-25)" >&5
+printf "%s\n" "compatible (5.4.0+dev0-2024-08-25)" >&6; }
+else $as_nop
+  as_fn_error $? "incompatible (5.4.0+dev0-2024-08-25 vs $already_installed_version)" "$LINENO" 5
+fi
 fi
 
 # Initialization of libtool
