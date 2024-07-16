@@ -31,6 +31,7 @@ let no_crc = ref false
 let shape = ref false
 let index = ref false
 let decls = ref false
+let uid_deps = ref false
 
 module Magic_number = Misc.Magic_number
 
@@ -128,6 +129,22 @@ let print_cmt_infos cmt =
         Shape_reduce.print_result item pp_loc loc)
       cmt.cmt_ident_occurrences;
     Format.print_flush ()
+  end;
+  if !uid_deps then begin
+    printf "\nUid dependencies:\n";
+    let arr = Array.of_list cmt.cmt_declaration_dependencies in
+    let () =
+      Array.sort (fun (u1, u2) (u1', u2') ->
+                    match Shape.Uid.compare u1 u1' with
+                    | 0 -> Shape.Uid.compare u2 u2'
+                    | n -> n) arr
+    in
+    Format.printf "@[<v>";
+    Array.iter (fun (u1, u2) ->
+      Format.printf "@[<h>%a <- %a@]@;"
+        Shape.Uid.print u1
+        Shape.Uid.print u2) arr;
+    Format.printf "@]";
   end;
   if !decls then begin
     printf "\nUid of decls:\n";
@@ -456,6 +473,8 @@ let arg_list = [
     " Print a list of all usages of values, types, etc. in the module";
   "-decls", Arg.Set decls,
     " Print a list of all declarations in the module";
+  "-uid-deps", Arg.Set uid_deps,
+    " Print the declarations' uids dependencies of the module";
   "-null-crc", Arg.Set no_crc, " Print a null CRC for imported interfaces";
   "-version", Arg.Unit print_version, " Print version and exit";
   "-vnum", Arg.Unit print_version_num, " Print version number and exit";
