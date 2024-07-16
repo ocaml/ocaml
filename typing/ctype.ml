@@ -4131,11 +4131,19 @@ let eqtype_subst type_pairs subst t1 t2 =
   end
 
 let rec eqtype rename type_pairs subst env t1 t2 =
-  (* It's tempting to check for physical equality via [eq_type] here, but that
+  let check_phys_eq t1 t2 =
+    not rename && eq_type t1 t2
+  in
+  (* Checking for physical equality when [rename] is true
      would be incorrect: imagine comparing ['a * 'a] with ['b * 'a]. The
      first ['a] and ['b] would be identified in [eqtype_subst], and then
      the second ['a] and ['a] would be [eq_type]. So we do not call [eq_type]
-     here. *)
+     here.
+
+     On the other hand, when [rename] is false we need to check for phyiscal
+     equality, as that's the only way variables can be identified.
+  *)
+  if check_phys_eq t1 t2 then () else
   try
     match (get_desc t1, get_desc t2) with
       (Tvar _, Tvar _) when rename ->
@@ -4146,7 +4154,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
         let t1' = expand_head_rigid env t1 in
         let t2' = expand_head_rigid env t2 in
         (* Expansion may have changed the representative of the types... *)
-        if eq_type t1' t2' then () else
+        if check_phys_eq t1' t2' then () else
         if not (TypePairs.mem type_pairs (t1', t2')) then begin
           TypePairs.add type_pairs (t1', t2');
           match (get_desc t1', get_desc t2') with
@@ -4206,7 +4214,9 @@ and eqtype_fields rename type_pairs subst env ty1 ty2 =
   let (fields2, rest2) = flatten_fields ty2 in
   (* First check if same row => already equal *)
   let same_row =
-    eq_type rest1 rest2 || TypePairs.mem type_pairs (rest1,rest2)
+    (* [not rename]: see comment at top of [eqtype] *)
+    (not rename && eq_type rest1 rest2) ||
+    TypePairs.mem type_pairs (rest1,rest2)
   in
   if same_row then () else
   (* Try expansion, needed when called from Includecore.type_manifest *)
