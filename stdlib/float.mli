@@ -1094,7 +1094,7 @@ module ArrayLabels : sig
 
       When [sort] returns, [a] contains the same elements as before,
       reordered in such a way that for all i and j valid indices of [a] :
-  -      [cmp a.(i) a.(j)] >= 0 if and only if i >= j
+  -      [cmp a.(i) a.(j)] >= 0 if i >= j
   *)
 
   val stable_sort : cmp:(float -> float -> int) -> t -> unit
