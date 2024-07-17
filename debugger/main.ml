@@ -233,8 +233,8 @@ let main () =
   | Toplevel ->
       exit 2
   | Persistent_env.Error e ->
-      report (Format_doc.compat Persistent_env.report_error) e;
+      report Persistent_env.report_error e;
       exit 2
   | Cmi_format.Error e ->
-      report (Format_doc.compat Cmi_format.report_error) e;
+      report Cmi_format.report_error e;
       exit 2

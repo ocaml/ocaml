@@ -96,7 +96,7 @@ let output_cmi filename oc cmi =
 
 open Format_doc
 
-let report_error ppf = function
+let report_error_doc ppf = function
   | Not_an_interface filename ->
       fprintf ppf "%a@ is not a compiled interface"
         Location.Doc.quoted_filename filename
@@ -112,6 +112,8 @@ let report_error ppf = function
 let () =
   Location.register_error_of_exn
     (function
-      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | Error err -> Some (Location.error_of_printer_file report_error_doc err)
       | _ -> None
     )
+
+let report_error = Format_doc.compat report_error_doc

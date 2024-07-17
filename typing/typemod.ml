@@ -3447,7 +3447,9 @@ let report_error ~loc _env = function
         "The type of this packed module refers to %a, which is missing"
         (Style.as_inline_code path) p
   | Badly_formed_signature (context, err) ->
-      Location.errorf ~loc "@[In %s:@ %a@]" context Typedecl.report_error err
+      Location.errorf ~loc "@[In %s:@ %a@]"
+        context
+        Typedecl.report_error_doc err
   | Cannot_hide_id Illegal_shadowing
       { shadowed_item_kind; shadowed_item_id; shadowed_item_loc;
         shadower_id; user_id; user_kind; user_loc } ->

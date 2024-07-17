@@ -107,7 +107,7 @@ let print_reference print_fname ppf {compunit; filename} =
 let pp_list_comma f =
   pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ",@ ") f
 
-let report_error ~print_filename ppf = function
+let report_error_doc ~print_filename ppf = function
   | Missing_implementations l ->
       let print_modules ppf =
         List.iter
@@ -137,3 +137,6 @@ let report_error ~print_filename ppf = function
       in
       fprintf ppf "@[<hov 2> Duplicated implementations:%a@]"
         (pp_list_comma print) l
+
+let report_error ~print_filename =
+  Format_doc.compat (report_error_doc ~print_filename)

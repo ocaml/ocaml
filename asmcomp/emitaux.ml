@@ -457,16 +457,18 @@ let reset () =
 let binary_backend_available = ref false
 let create_asm_file = ref true
 
-let report_error ppf = function
+let report_error_doc ppf = function
   | Stack_frame_too_large n ->
       Format_doc.fprintf ppf "stack frame too large (%d bytes)" n
 
 let () =
   Location.register_error_of_exn
     (function
-      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | Error err -> Some (Location.error_of_printer_file report_error_doc err)
       | _ -> None
     )
+
+let report_error = Format_doc.compat report_error_doc
 
 let mk_env f : Emitenv.per_function_env =
   {

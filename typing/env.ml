@@ -3563,7 +3563,7 @@ module Style = Misc.Style
 
 let quoted_longident = Style.as_inline_code pp_longident
 
-let report_lookup_error _loc env ppf = function
+let report_lookup_error_doc _loc env ppf = function
   | Unbound_value(lid, hint) -> begin
       fprintf ppf "Unbound value %a" quoted_longident lid;
       spellcheck ppf extract_values env lid;
@@ -3679,7 +3679,7 @@ let report_lookup_error _loc env ppf = function
         quoted_longident lid
         (Style.as_inline_code pp_path) p cause
 
-let report_error ppf = function
+let report_error_doc ppf = function
   | Missing_module(_, path1, path2) ->
       fprintf ppf "@[@[<hov>";
       if Path.same path1 path2 then
@@ -3696,7 +3696,7 @@ let report_error ppf = function
   | Illegal_value_name(_loc, name) ->
       fprintf ppf "%a is not a valid value identifier."
        Style.inline_code name
-  | Lookup_error(loc, t, err) -> report_lookup_error loc t ppf err
+  | Lookup_error(loc, t, err) -> report_lookup_error_doc loc t ppf err
 
 let () =
   Location.register_error_of_exn
@@ -3713,7 +3713,10 @@ let () =
             then Location.error_of_printer_file
             else Location.error_of_printer ~loc ?sub:None ?footnote:None
           in
-          Some (error_of_printer report_error err)
+          Some (error_of_printer report_error_doc err)
       | _ ->
           None
     )
+
+let report_lookup_error = Format_doc.compat2 report_lookup_error_doc
+let report_error = Format_doc.compat report_error_doc

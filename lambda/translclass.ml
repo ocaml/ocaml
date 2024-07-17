@@ -997,7 +997,7 @@ let () =
 open Format_doc
 module Style = Misc.Style
 
-let report_error ppf = function
+let report_error_doc ppf = function
   | Tags (lab1, lab2) ->
       fprintf ppf "Method labels %a and %a are incompatible.@ %s"
         Style.inline_code lab1
@@ -1008,7 +1008,9 @@ let () =
   Location.register_error_of_exn
     (function
       | Error (loc, err) ->
-        Some (Location.error_of_printer ~loc report_error err)
+        Some (Location.error_of_printer ~loc report_error_doc err)
       | _ ->
         None
     )
+
+let report_error = Format_doc.compat report_error_doc

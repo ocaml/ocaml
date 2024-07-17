@@ -29,4 +29,6 @@ val class_declarations:
   class_match_failure list
 
 val report_error :
+  Printtyp.type_or_scheme -> class_match_failure list Format_doc.format_printer
+val report_error_doc :
   Printtyp.type_or_scheme -> class_match_failure list Format_doc.printer

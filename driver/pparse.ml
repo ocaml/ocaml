@@ -218,7 +218,7 @@ let file_aux ~tool_name ~sourcefile inputfile (type a) parse_fun invariant_fun
 let file ~tool_name inputfile parse_fun ast_kind =
   file_aux ~tool_name ~sourcefile:inputfile inputfile parse_fun ignore ast_kind
 
-let report_error ppf = function
+let report_error_doc ppf = function
   | CannotRun cmd ->
       fprintf ppf "Error while running external preprocessor@.\
                    Command line: %s@." cmd
@@ -229,9 +229,11 @@ let report_error ppf = function
 let () =
   Location.register_error_of_exn
     (function
-      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | Error err -> Some (Location.error_of_printer_file report_error_doc err)
       | _ -> None
     )
+
+let report_error = Format_doc.compat report_error_doc
 
 let parse_file ~tool_name invariant_fun parse kind sourcefile =
   Location.input_name := sourcefile;

@@ -41,7 +41,7 @@ let has_no_payload_attribute alt_names attrs =
 
 open Format_doc
 
-let report_error ppf = function
+let report_error_doc ppf = function
   | Multiple_attributes name ->
     fprintf ppf "Too many %a attributes" Style.inline_code name
   | No_payload_expected name ->
@@ -51,7 +51,9 @@ let () =
   Location.register_error_of_exn
     (function
       | Error (loc, err) ->
-        Some (Location.error_of_printer ~loc report_error err)
+        Some (Location.error_of_printer ~loc report_error_doc err)
       | _ ->
         None
     )
+
+let report_error = Format_doc.compat report_error_doc
