@@ -9,13 +9,11 @@ let test_swap () =
   let () = assert (Pair.swap ('e', []) = ([], 'e')) in
   ()
 
-let test_fold_uncurry (f: ('a -> 'b -> 'c) -> ('a, 'b) Pair.t -> 'c) =
-  let () = assert (f (+) (2, 3) = 5) in
+let test_fold () =
+  let () = assert (Pair.fold (+) (2, 3) = 5) in
   let is_same i s = (s = string_of_int i) in
-  let () = assert (f is_same (2, "2")) in
+  let () = assert (Pair.fold is_same (2, "2")) in
   ()
-let test_fold () = test_fold_uncurry Pair.fold
-let test_uncurry () = test_fold_uncurry Pair.uncurry
 
 let test_map () =
   let () = assert (Pair.map succ (fun a -> a ^ a) (3, "a") = (4, "aa")) in
@@ -66,15 +64,15 @@ let test_iter_snd () =
   ()
 
 let test_equal () =
-  assert (Pair.equal (fun _ _ -> true) String.equal (3, "e") (4, "e"))
+  assert (Pair.equal (fun _ _ -> true) String.equal (3, "e") (4, "e")) ;
   assert (Pair.equal Int.equal String.equal (3, "e") (4, "e") = false)
 
 let test_compare () =
   (* reflexive *)
-  assert (Pair.compare Int.compare String.compare (3, "a") (3, "a") = 0)
+  assert (Pair.compare Int.compare String.compare (3, "a") (3, "a") = 0) ;
   (* symmetric (and total) *)
   assert (Pair.compare Int.compare Char.compare (3, '3') (4, '4')
-        * Pair.compare Int.compare Char.compare (4, '4') (3, '3') < 0)
+         * Pair.compare Int.compare Char.compare (4, '4') (3, '3') < 0) ;
   (* transitive *)
   let cmp1 = Pair.compare Int.compare Char.compare (3, '3') (4, '4') in
   let cmp2 = Pair.compare Int.compare Char.compare (4, '4') (5, '5') in
@@ -86,7 +84,6 @@ let tests () =
   test_make ();
   test_swap ();
   test_fold ();
-  test_uncurry ();
   test_map ();
   test_iter ();
   test_map2 ();
