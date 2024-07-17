@@ -106,8 +106,7 @@ The first one was selected. Please disambiguate if this is wrong.
 Line 3, characters 35-36:
 3 |   let f r = match r with {x; y} -> y + y
                                        ^
-Error: The expression "y" has type "bool" but an expression was expected of type
-         "int"
+Error: The value "y" has type "bool" but an expression was expected of type "int"
 |}]
 
 module F2 = struct

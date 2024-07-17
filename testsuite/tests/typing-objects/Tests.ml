@@ -416,7 +416,7 @@ class c () = object val x = - true val y = -. () end;;
 Line 1, characters 30-34:
 1 | class c () = object val x = - true val y = -. () end;;
                                   ^^^^
-Error: The expression "\#true" has type "bool"
+Error: The constructor "\#true" has type "bool"
        but an expression was expected of type "int"
 |}];;
 
@@ -789,8 +789,7 @@ fun (x : 'a t) -> (x : 'a); ();;
 Line 1, characters 19-20:
 1 | fun (x : 'a t) -> (x : 'a); ();;
                        ^
-Error: The expression "x" has type "'a t" but an expression was expected of type
-         "'a"
+Error: The value "x" has type "'a t" but an expression was expected of type "'a"
        The type variable "'a" occurs inside "'a t"
 |}];;
 fun ((x : 'a) | (x : 'a t)) -> ();;
@@ -1143,8 +1142,8 @@ val is_empty : <  > -> unit = <fun>
 Line 2, characters 54-58:
 2 | class c = object (self) method private foo = is_empty self end;;
                                                           ^^^^
-Error: The expression "self" has type "< .. >"
-       but an expression was expected of type "<  >"
+Error: The value "self" has type "< .. >" but an expression was expected of type
+         "<  >"
        Self type cannot be unified with a closed object type
 |}];;
 
@@ -1237,8 +1236,8 @@ let o = object(self) initializer has_foo self end;;
 Line 1, characters 41-45:
 1 | let o = object(self) initializer has_foo self end;;
                                              ^^^^
-Error: The expression "self" has type "<  >"
-       but an expression was expected of type "< foo : int; .. >"
+Error: The value "self" has type "<  >" but an expression was expected of type
+         "< foo : int; .. >"
        The first object type has no method "foo"
 |}];;
 

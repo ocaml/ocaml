@@ -14,7 +14,7 @@ val y : (u * v * (module S)) M.t = M.X (A, B, <module>)
 Line 2, characters 4-5:
 2 | x = y;;
         ^
-Error: The expression "y" has type "(u * v * (module S)) M.t"
+Error: The value "y" has type "(u * v * (module S)) M.t"
        but an expression was expected of type
          "(u/2 * v/2 * (module S/2)) M/2.t"
        Hint: The types "v" and "u" have been defined multiple times in this
@@ -35,22 +35,21 @@ val c : a = A
 Line 2, characters 4-5:
 2 | a = b;;
         ^
-Error: The expression "b" has type "a/2" but an expression was expected of type
-         "a/3"
+Error: The value "b" has type "a/2" but an expression was expected of type "a/3"
        Hint: The type "a" has been defined multiple times in this toplevel
          session. Some toplevel values still refer to old versions of this
          type. Did you try to redefine them?
 Line 1, characters 4-5:
 1 | a = c;;
         ^
-Error: The expression "c" has type "a" but an expression was expected of type "a/3"
+Error: The value "c" has type "a" but an expression was expected of type "a/3"
        Hint: The type "a" has been defined multiple times in this toplevel
          session. Some toplevel values still refer to old versions of this
          type. Did you try to redefine them?
 Line 1, characters 4-5:
 1 | b = c;;
         ^
-Error: The expression "c" has type "a" but an expression was expected of type "a/2"
+Error: The value "c" has type "a" but an expression was expected of type "a/2"
        Hint: The type "a" has been defined multiple times in this toplevel
          session. Some toplevel values still refer to old versions of this
          type. Did you try to redefine them?

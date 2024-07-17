@@ -360,7 +360,7 @@ let x = let open struct type t = T end in T
 Line 1, characters 42-43:
 1 | let x = let open struct type t = T end in T
                                               ^
-Error: This expression has type "t" but an expression was expected of type "'a"
+Error: The constructor "T" has type "t" but an expression was expected of type "'a"
        The type constructor "t" would escape its scope
 |}]
 

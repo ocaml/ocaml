@@ -9,8 +9,8 @@ $\?$ [@@@warning "+A"];;
 $\?$ 1 + <<2.>> ;;
 \end{camlinput}
 \begin{camlerror}
-Error: The expression 2. has type float
-       but an expression was expected of type int
+Error: The constant 2. has type float but an expression was expected of type
+         int
 \end{camlerror}
 \end{caml}
 \begin{caml}

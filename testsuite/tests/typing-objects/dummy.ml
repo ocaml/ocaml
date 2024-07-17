@@ -45,7 +45,7 @@ end;;
 Line 16, characters 22-26:
 16 |       inherit child1' self
                            ^^^^
-Error: The expression "self" has type "< child : 'a; previous : 'b option; .. >"
+Error: The value "self" has type "< child : 'a; previous : 'b option; .. >"
        but an expression was expected of type "'c"
        Self type cannot escape its class
 |}]
@@ -193,7 +193,7 @@ class closes_via_inheritance param =
 Line 3, characters 36-41:
 3 |     inherit parameter_contains_self param
                                         ^^^^^
-Error: The expression "param" has type
+Error: The value "param" has type
          "< redrawWidget : parameter_contains_self -> unit; .. >"
        but an expression was expected of type
          "< redrawWidget : < invalidate : unit; .. > -> unit; .. >"
@@ -209,7 +209,7 @@ class closes_via_application param =
 Line 3, characters 26-31:
 3 |   parameter_contains_self param;;
                               ^^^^^
-Error: The expression "param" has type
+Error: The value "param" has type
          "< redrawWidget : parameter_contains_self -> unit; .. >"
        but an expression was expected of type
          "< redrawWidget : < invalidate : unit; .. > -> unit; .. >"
@@ -229,8 +229,7 @@ let escapes_via_inheritance param =
 Line 4, characters 38-43:
 4 |       inherit parameter_contains_self param
                                           ^^^^^
-Error: The expression "param" has type "'a"
-       but an expression was expected of type
+Error: The value "param" has type "'a" but an expression was expected of type
          "< redrawWidget : < invalidate : unit; .. > -> unit; .. >"
        Self type cannot escape its class
 |}]
@@ -244,8 +243,7 @@ let escapes_via_application param =
 Line 3, characters 38-43:
 3 |     class c = parameter_contains_self param
                                           ^^^^^
-Error: The expression "param" has type "'a"
-       but an expression was expected of type
+Error: The value "param" has type "'a" but an expression was expected of type
          "< redrawWidget : < invalidate : unit; .. > -> unit; .. >"
        Self type cannot escape its class
 |}]
@@ -258,7 +256,7 @@ let can_close_object_via_inheritance param =
 Line 3, characters 36-41:
 3 |     inherit parameter_contains_self param
                                         ^^^^^
-Error: The expression "param" has type
+Error: The value "param" has type
          "< redrawWidget : parameter_contains_self -> unit; .. >"
        but an expression was expected of type
          "< redrawWidget : < invalidate : unit; .. > -> unit; .. >"

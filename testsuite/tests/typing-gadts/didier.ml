@@ -54,8 +54,8 @@ val f : 't -> 't ty -> bool = <fun>
 Line 4, characters 12-13:
 4 |   | Bool -> x
                 ^
-Error: The expression "x" has type "t" = "bool"
-       but an expression was expected of type "bool"
+Error: The value "x" has type "t" = "bool" but an expression was expected of type
+         "bool"
        This instance of "bool" is ambiguous:
        it would escape the scope of its equation
 |}];;

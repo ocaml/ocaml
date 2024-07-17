@@ -15,7 +15,7 @@ type foo1 = Foo : ('a * 'b * 'c * 'd * 'e * 'f) -> foo1
 Line 6, characters 13-14:
 6 |   | Foo a -> a + 1
                  ^
-Error: This expression has type "$a * $b * $c * $d * $e * $f"
+Error: The value "a" has type "$a * $b * $c * $d * $e * $f"
        but an expression was expected of type "int"
        Hint: "$a", "$b", "$c", "$d", "$e" and "$f" are existential types
          bound by the constructor "Foo".
@@ -48,7 +48,7 @@ type foo2 =
 Line 13, characters 46-47:
 13 |       let x = (a1, a2, a3, a4, a5, a6, a7) in x + 1
                                                    ^
-Error: This expression has type "$a * $a1 * $a2 * $a3 * $a4 * $a5 * $a6"
+Error: The value "x" has type "$a * $a1 * $a2 * $a3 * $a4 * $a5 * $a6"
        but an expression was expected of type "int"
        Hint: "$a" is an existential type bound by the constructor "Foo1".
        Hint: "$a1" is an existential type bound by the constructor "Foo2".
@@ -86,7 +86,7 @@ type foo3 =
 Line 13, characters 46-47:
 13 |       let x = (a1, a2, a3, a4, a5, a6, a7) in x + 1
                                                    ^
-Error: This expression has type
+Error: The value "x" has type
          "($a * $b * $c * $d * $e * $f) *
          ($a1 * $b1 * $c1 * $d1 * $e1 * $f1) *
          ($a2 * $b2 * $c2 * $d2 * $e2 * $f2) *

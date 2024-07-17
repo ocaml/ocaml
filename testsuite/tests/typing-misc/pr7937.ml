@@ -10,7 +10,7 @@ type 'a r = 'a constraint 'a = [< `X of int & 'a ]
 Line 3, characters 35-39:
 3 | let f: 'a. 'a r -> 'a r = fun x -> true;;
                                        ^^^^
-Error: The expression "\#true" has type "bool"
+Error: The constructor "\#true" has type "bool"
        but an expression was expected of type "([< `X of int & 'a ] as 'a) r"
 |}]
 

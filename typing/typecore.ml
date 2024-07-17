@@ -6422,13 +6422,28 @@ let type_clash_of_trace trace =
     | _ -> None
   ))
 
+(** More precise denomination for type errors. Used by messages:
+
+    - [This <denom> ...]
+    - [The <denom> "foo" ...] *)
+let pp_exp_denom ppf pexp =
+  let p = fprintf ppf "%s" in
+  match pexp.pexp_desc with
+  | Pexp_constant _ -> p "constant"
+  | Pexp_ident _ -> p "value"
+  | Pexp_construct _ | Pexp_variant _ -> p "constructor"
+  | Pexp_field _ -> p "field access"
+  | Pexp_send _ -> p "method call"
+  | _ -> p "expression"
+
 (** Implements the "This expression" message, printing the expression if it
     should be according to {!Parsetree.Doc.nominal_exp}. *)
 let report_this_pexp_has_type denom ppf exp =
   let denom ppf =
-    match denom with
-    | Some d -> fprintf ppf "%s" d
-    | None -> fprintf ppf "expression"
+    match denom, exp with
+    | Some d, _ -> fprintf ppf "%s" d
+    | None, Some exp -> pp_exp_denom ppf exp
+    | None, None -> fprintf ppf "expression"
   in
   let nexp = Option.bind exp Pprintast.Doc.nominal_exp in
   match nexp with
@@ -6612,7 +6627,7 @@ let report_error ~loc env = function
       report_unification_error ~loc ~sub env err
         ~type_expected_explanation:
           (report_type_expected_explanation_opt explanation)
-        (msg "%a" (report_this_pexp_has_type (Some "expression")) exp)
+        (msg "%a" (report_this_pexp_has_type None) exp)
         (msg "but an expression was expected of type");
   | Function_arity_type_clash {
       syntactic_arity; type_constraint; trace = { trace };

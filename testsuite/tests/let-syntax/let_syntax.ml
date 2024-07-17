@@ -187,7 +187,7 @@ let ill_typed_1 =
 Line 3, characters 13-14:
 3 |     let+ x = 1 in
                  ^
-Error: The expression "1" has type "int" but an expression was expected of type
+Error: The constant "1" has type "int" but an expression was expected of type
          "bool"
 |}];;
 
@@ -215,7 +215,7 @@ let ill_typed_2 =
 Line 3, characters 13-14:
 3 |     let+ x = 1
                  ^
-Error: The expression "1" has type "int" but an expression was expected of type
+Error: The constant "1" has type "int" but an expression was expected of type
          "float"
   Hint: Did you mean "1."?
 |}];;
