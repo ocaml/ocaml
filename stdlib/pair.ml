@@ -30,8 +30,8 @@ let iter_fst f (a, _) = f a
 let iter_snd g (_, b) = g b
 
 let equal eqa eqb (a, b) (a', b')  =
-	eqa a a' && eqb b b'
+  eqa a a' && eqb b b'
 let compare cmpa cmpb (a, b) (a', b')  =
-	 let c = cmpa a a' in
-	 if c <> 0 then c
-	 else cmpb b b'
+   let c = cmpa a a' in
+   if c <> 0 then c
+   else cmpb b b'

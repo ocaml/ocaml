@@ -65,11 +65,13 @@ val iter_snd: ('b -> unit) -> ('a, 'b) t -> unit
 
 (** {1 Predicates and comparisons} *)
 
-val equal: ('a -> 'a -> bool) -> ('b -> 'b -> bool) -> ('a, 'b) t -> ('a, 'b) t -> bool
+val equal:
+  ('a -> 'a -> bool) -> ('b -> 'b -> bool) -> ('a, 'b) t -> ('a, 'b) t -> bool
 (** [equal eqa eqb (a1, b1) (a2, b2)] is [true] if and only if [eqa a1 a2] and
     [eqb b1 b2] are both [true]. *)
 
-val compare: ('a -> 'a -> int) -> ('b -> 'b -> int) -> ('a, 'b) t -> ('a, 'b) t -> int
+val compare:
+  ('a -> 'a -> int) -> ('b -> 'b -> int) -> ('a, 'b) t -> ('a, 'b) t -> int
 (** [compare cmpa cmpb] is a total order on pairs using [cmpa] to compare the
     first component, and [cmpb] to compare the second component. It is
     implemented by a lexicographic order. *)
