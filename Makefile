@@ -2474,18 +2474,72 @@ partialclean::
 	    $$d/*.o $$d/*.obj $$d/*.so $$d/*.dll; \
 	done
 
+%.depend: beforedepend
+	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $* $(INCLUDES) \
+	  $(OCAMLDEPFLAGS) $*/*.mli $*/*.ml > $@
+
+asmcomp.depend:: beforedepend $(cvt_emit)
+	$(V_OCAMLDEP)$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I asmcomp $(INCLUDES) \
+	  $(OCAMLDEPFLAGS) $(filter-out $(ARCH_SPECIFIC) asmcomp/emit.ml, \
+	                                $(wildcard asmcomp/*.mli asmcomp/*.ml)) > $@
+
+partialclean::
+	rm -f $(addsuffix .depend, $(ARCH_SPECIFIC) asmcomp/emit.ml)
+
+# asmcomp.depend contains the dependencies for all the backends, with ifeq used
+# to select the correct one depending on the ARCH variable. In order to
+# generate this file, we must temporarily replace the $(ARCH_SPECIFIC) files
+# with the ones for each architecture. At the end of this process, the files for
+# the active architecture (i.e. $(ARCH)) must be restored, but if we simply
+# re-link the files we will trigger a complete rebuild of the native compiler
+# and .opt binaries. The recipe for asmcomp.depend therefore begins by renaming
+# the existing files, then it generates asmcomp.depend and then we rename the
+# files back. This means their timestamps are unaltered, and the next invocation
+# of make therefore correctly doesn't rebuild anything.
+
+define MV_FILE
+asmcomp.depend::
+	@mv $(1) $(2)
+
+endef
+
+$(foreach file, asmcomp/emit.ml $(ARCH_SPECIFIC),\
+  $(eval $(call MV_FILE,$(file),$(file).depend)))
+
+define ADD_ARCH_SPECIFIC_DEPS
+asmcomp.depend::
+	@echo 'ifeq "$$$$(ARCH)" "$(1)"' > asmcomp/$(1).depend
+	@$$(MAKE) ARCH=$(1) asmcomp/emit.ml $$(ARCH_SPECIFIC)
+	@$$(OCAMLDEP) $$(OC_OCAMLDEPFLAGS) -I asmcomp $$(INCLUDES) \
+	  $$(OCAMLDEPFLAGS) asmcomp/emit.ml $$(ARCH_SPECIFIC) >> asmcomp/$(1).depend
+	@echo 'endif # ifeq "$$$$(ARCH)" "$(1)"' >> asmcomp/$(1).depend
+	@rm -f asmcomp/emit.ml $$(ARCH_SPECIFIC)
+
+endef
+
+$(foreach arch, $(ARCHES),\
+  $(eval $(call ADD_ARCH_SPECIFIC_DEPS,$(arch))))
+
+asmcomp.depend::
+	@cat $(addprefix asmcomp/, $(addsuffix .depend, $(ARCHES))) >> $@
+	@rm -f $(addprefix asmcomp/, $(addsuffix .depend, $(ARCHES)))
+
+$(foreach file, asmcomp/emit.ml $(ARCH_SPECIFIC),\
+  $(eval $(call MV_FILE,$(file).depend,$(file))))
+
+DEP_DIRS = \
+  utils parsing typing bytecomp asmcomp middle_end lambda file_formats \
+  middle_end/closure middle_end/flambda middle_end/flambda/base_types driver \
+  toplevel toplevel/byte toplevel/native lex tools debugger ocamldoc ocamltest \
+  testsuite/lib testsuite/tools
+
+DEP_FILES = $(addsuffix .depend, $(DEP_DIRS))
+
+.INTERMEDIATE: $(DEP_FILES)
+
 .PHONY: depend
-depend: beforedepend
-	$(V_GEN)for d in utils parsing typing bytecomp asmcomp middle_end \
-         lambda file_formats middle_end/closure middle_end/flambda \
-         middle_end/flambda/base_types \
-         driver toplevel toplevel/byte toplevel/native lex tools debugger \
-	 ocamldoc ocamltest testsuite/lib testsuite/tools; \
-	 do \
-	   $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $$d $(INCLUDES) \
-	   $(OCAMLDEPFLAGS) $$d/*.mli $$d/*.ml \
-	   || exit; \
-         done > .depend
+depend: $(DEP_FILES) | beforedepend
+	$(V_GEN)cat $^ > .$@
 
 .PHONY: distclean
 distclean: clean
