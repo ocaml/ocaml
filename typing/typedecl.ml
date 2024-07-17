@@ -1882,6 +1882,7 @@ let check_recmod_typedecl env loc recmod_ids path decl =
 
 open Format_doc
 module Style = Misc.Style
+module Printtyp = Printtyp.Doc
 
 let explain_unbound_gen ppf tv tl typ kwd pr =
   try

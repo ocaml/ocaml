@@ -27,6 +27,7 @@ open Btype
 open Ctype
 
 module Style = Misc.Style
+module Printtyp = Printtyp.Doc
 
 type type_forcing_context =
   | If_conditional

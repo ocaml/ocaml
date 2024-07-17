@@ -22,6 +22,7 @@ open Path
 open Types
 open Outcometree
 module Out_name = Printtyp.Out_name
+module Printtyp = Printtyp.Doc
 
 module type OBJ =
   sig

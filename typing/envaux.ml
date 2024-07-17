@@ -107,7 +107,7 @@ module Style = Misc.Style
 let report_error_doc ppf = function
   | Module_not_found p ->
       fprintf ppf "@[Cannot find module %a@].@."
-        (Style.as_inline_code Printtyp.path) p
+        (Style.as_inline_code Printtyp.Doc.path) p
 
 let () =
   Location.register_error_of_exn

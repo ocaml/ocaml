@@ -19,6 +19,7 @@ open Path
 open Types
 open Typecore
 open Typetexp
+module Printtyp = Printtyp.Doc
 
 
 type 'a class_info = {
@@ -1973,7 +1974,7 @@ let non_virtual_string_of_kind : kind -> string = function
   | Class -> "non-virtual class"
   | Class_type -> "non-virtual class type"
 
-module Style=Misc.Style
+module Style = Misc.Style
 
 let out_type ppf t = Style.as_inline_code !Oprint.out_type ppf t
 

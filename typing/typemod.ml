@@ -21,6 +21,7 @@ open Parsetree
 open Types
 open Format_doc
 
+module Printtyp = Printtyp.Doc
 module Style = Misc.Style
 
 let () = Includemod_errorprinter.register ()
@@ -3097,9 +3098,11 @@ let type_implementation target initial_env ast =
       if !Clflags.print_types then begin
         Typecore.force_delayed_checks ();
         let shape = Shape_reduce.local_reduce Env.empty shape in
+        let open Format in
         Printtyp.wrap_printing_env ~error:false initial_env
-          Format.(fun () -> fprintf std_formatter "%a@."
-              (Printtyp.printed_signature @@ Unit_info.source_file target)
+          (fun () -> fprintf std_formatter "%a@."
+              (Format_doc.compat
+                 (Printtyp.printed_signature @@ Unit_info.source_file target))
               simple_sg
           );
         gen_annot target (Cmt_format.Implementation str);

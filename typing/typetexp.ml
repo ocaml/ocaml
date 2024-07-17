@@ -849,7 +849,7 @@ let transl_type_scheme env styp =
 (* Error report *)
 
 open Format_doc
-open Printtyp
+open Printtyp.Doc
 module Style = Misc.Style
 let pp_tag ppf t = fprintf ppf "`%s" t
 let pp_type ppf ty = Style.as_inline_code !Oprint.out_type ppf ty
@@ -877,12 +877,12 @@ let report_error_doc env ppf = function
     fprintf ppf "This type is recursive"
   | Type_mismatch trace ->
       let msg = Format_doc.Doc.msg in
-      Printtyp.report_unification_error ppf Env.empty trace
+      report_unification_error ppf Env.empty trace
         (msg "This type")
         (msg "should be an instance of type")
   | Alias_type_mismatch trace ->
       let msg = Format_doc.Doc.msg in
-      Printtyp.report_unification_error ppf Env.empty trace
+      report_unification_error ppf Env.empty trace
         (msg "This alias is bound to type")
         (msg "but is used as an instance of type")
   | Present_has_conjunction l ->
@@ -902,7 +902,7 @@ let report_error_doc env ppf = function
         (Style.as_inline_code pp_tag) l
   | Constructor_mismatch (ty, ty') ->
       wrap_printing_env ~error:true env (fun ()  ->
-        Printtyp.prepare_for_printing [ty; ty'];
+        prepare_for_printing [ty; ty'];
         fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
           "This variant type contains a constructor"
           pp_type (tree_of_typexp Type ty)
@@ -911,7 +911,7 @@ let report_error_doc env ppf = function
   | Not_a_variant ty ->
       fprintf ppf
         "@[The type %a@ does not expand to a polymorphic variant type@]"
-        (Style.as_inline_code Printtyp.type_expr) ty;
+        (Style.as_inline_code type_expr) ty;
       begin match get_desc ty with
         | Tvar (Some s) ->
            (* PR#7012: help the user that wrote 'Foo instead of `Foo *)
@@ -937,7 +937,7 @@ let report_error_doc env ppf = function
         fprintf ppf "it is already bound to another variable"
       else
         fprintf ppf "it is bound to@ %a"
-          (Style.as_inline_code Printtyp.type_expr) v;
+          (Style.as_inline_code type_expr) v;
       fprintf ppf ".@]";
   | Multiple_constraints_on_type s ->
       fprintf ppf "Multiple constraints for type %a"
@@ -946,8 +946,8 @@ let report_error_doc env ppf = function
       wrap_printing_env ~error:true env (fun ()  ->
         fprintf ppf "@[<hov>Method %a has type %a,@ which should be %a@]"
           Style.inline_code l
-          (Style.as_inline_code Printtyp.type_expr) ty
-          (Style.as_inline_code Printtyp.type_expr) ty')
+          (Style.as_inline_code type_expr) ty
+          (Style.as_inline_code type_expr) ty')
   | Opened_object nm ->
       fprintf ppf
         "Illegal open object type%a"
@@ -956,7 +956,7 @@ let report_error_doc env ppf = function
            | None -> fprintf ppf "") nm
   | Not_an_object ty ->
       fprintf ppf "@[The type %a@ is not an object type@]"
-        (Style.as_inline_code Printtyp.type_expr) ty
+        (Style.as_inline_code type_expr) ty
 
 let () =
   Location.register_error_of_exn

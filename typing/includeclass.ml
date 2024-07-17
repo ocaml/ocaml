@@ -42,6 +42,7 @@ let class_declarations env cty1 cty2 =
 
 open Format_doc
 open Ctype
+module Printtyp = Printtyp.Doc
 
 (*
 let rec hide_params = function
