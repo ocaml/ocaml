@@ -37,7 +37,11 @@ type tsl_item =
 type tsl_block = tsl_item list
 
 (* New syntax *)
-type t = Ast of tsl_item list * t list
+type t = Ast of tsl_item list * (sign * t) list
+and sign =
+  | Pos (* run this test when the parent succeeds *)
+  | Neg (* run this test when the parent skips *)
+
 val split_env :
   tsl_item list -> environment_statement located list * tsl_item list
 

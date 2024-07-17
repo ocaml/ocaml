@@ -151,7 +151,8 @@ let tests_in_stmt set stmt =
 
 let rec tests_in_tree_aux set (Tsl_ast.Ast (stmts, subs)) =
   let set1 = List.fold_left tests_in_stmt set stmts in
-  List.fold_left tests_in_tree_aux set1 subs
+  List.fold_left tests_in_children set1 subs
+and tests_in_children set (_sign, tree) = tests_in_tree_aux set tree
 
 let tests_in_tree t = tests_in_tree_aux Tests.TestSet.empty t
 
@@ -170,9 +171,10 @@ let rec ast_of_tree (Node (env, test, mods, subs)) =
 
 and ast_of_tree_aux env tst subs =
   let env = List.map (fun x -> Environment_statement x) env in
+  let ast stmts subs = Ast (stmts, List.map (fun t -> (Pos, t)) subs) in
   match List.map ast_of_tree subs with
   | [ Ast (stmts, subs) ] -> Ast (env @ tst @ stmts, subs)
-  | asts -> Ast (env @ tst, asts)
+  | asts -> ast (env @ tst) asts
 
 let tsl_ast_of_test_trees (env, trees) = ast_of_tree_aux env [] trees
 
@@ -185,8 +187,12 @@ let print_tsl_ast ~compact oc ast =
     print_statements indent stmts;
     print_forest indent subs;
 
-  and print_sub indent ast =
-    pr "{\n";
+  and print_sign out = function
+    | Pos -> ()
+    | Neg -> fprintf out "!"
+
+  and print_sub indent (sign, ast) =
+    pr "%a{\n" print_sign sign;
     print_ast (indent ^ "  ") ast;
     pr "%s}" indent;
 

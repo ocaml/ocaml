@@ -35,7 +35,10 @@ type tsl_item =
 
 type tsl_block = tsl_item list
 
-type t = Ast of tsl_item list * t list
+type t = Ast of tsl_item list * (sign * t) list
+and sign =
+  | Pos (* run this test when the parent succeeds *)
+  | Neg (* run this test when the parent skips *)
 
 let rec split_env l =
   match l with

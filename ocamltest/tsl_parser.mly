@@ -35,7 +35,7 @@ let mkenvstmt envstmt =
 %token TSL_END_C_STYLE
 %token <[`Above | `Below]> TSL_BEGIN_OCAML_STYLE
 %token TSL_END_OCAML_STYLE
-%token COMMA LEFT_BRACE RIGHT_BRACE SEMI
+%token BANG COMMA LEFT_BRACE RIGHT_BRACE SEMI
 %token <int> TEST_DEPTH
 %token EQUAL PLUSEQUAL
 /* %token COLON */
@@ -57,7 +57,8 @@ tree_list:
 | tree tree_list { $1 :: $2 }
 
 tree:
-| LEFT_BRACE node RIGHT_BRACE { $2 }
+| LEFT_BRACE node RIGHT_BRACE { (Pos, $2) }
+| BANG LEFT_BRACE node RIGHT_BRACE { (Neg, $3) }
 
 statement_list:
 | { [] }
