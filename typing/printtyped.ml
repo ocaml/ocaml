@@ -267,6 +267,12 @@ and pattern : type k . _ -> _ -> k general_pattern -> unit = fun i ppf x ->
   | Tpat_exception p ->
       line i ppf "Tpat_exception\n";
       pattern i ppf p;
+  | Tpat_effect (p,None) ->
+      line i ppf "Tpat_effect\n";
+      pattern i ppf p;
+  | Tpat_effect (p,Some(k,_)) ->
+      line i ppf "Tpat_effect \"%a\"\n" fmt_ident k;
+      pattern i ppf p;
   | Tpat_value p ->
       line i ppf "Tpat_value\n";
       pattern i ppf (p :> pattern);
@@ -351,16 +357,15 @@ and expression i ppf x =
       line i ppf "Texp_apply\n";
       expression i ppf e;
       list i label_x_expression ppf l;
-  | Texp_match (e, l1, l2, partial) ->
-      line i ppf "Texp_match%a\n" fmt_partiality partial;
+  | Texp_match (e, l, partial) ->
+      line i ppf "Texp_match%a\n"
+        fmt_partiality partial;
       expression i ppf e;
-      list i case ppf l1;
-      list i case ppf l2;
-  | Texp_try (e, l1, l2) ->
+      list i case ppf l;
+  | Texp_try (e, l) ->
       line i ppf "Texp_try\n";
       expression i ppf e;
-      list i case ppf l1;
-      list i case ppf l2;
+      list i case ppf l;
   | Texp_tuple (l) ->
       line i ppf "Texp_tuple\n";
       list i expression ppf l;

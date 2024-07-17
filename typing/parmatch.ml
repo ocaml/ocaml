@@ -1812,14 +1812,15 @@ let pressure_variants_in_computation_pattern tdefs patl =
     | None -> pss
     | Some p -> p :: pss
   in
-  let val_pss, exn_pss =
-    List.fold_right (fun pat (vpss, epss)->
-      let (vp, ep) = split_pattern pat in
-      add_row vpss vp, add_row epss ep
-    ) patl ([], [])
+  let val_pss, exn_pss, eff_pss =
+    List.fold_right (fun pat (vpss, epss,effss)->
+      let sp = split_pattern pat in
+      add_row vpss sp.value, add_row epss sp.exn, add_row effss sp.eff
+    ) patl ([], [], [])
   in
   pressure_variants tdefs val_pss;
-  pressure_variants tdefs exn_pss
+  pressure_variants tdefs exn_pss;
+  pressure_variants tdefs (List.map fst eff_pss)
 
 (*****************************)
 (* Utilities for diagnostics *)

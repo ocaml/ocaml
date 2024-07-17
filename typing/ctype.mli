@@ -176,6 +176,10 @@ val new_local_type:
         ?manifest_and_scope:(type_expr * int) ->
         type_origin -> type_declaration
 
+val new_effect_type:
+  loc:Location.t -> Env.t -> body:type_expr -> Env.t * (type_expr * type_expr)
+(* Create an effect type *)
+
 module Pattern_env : sig
   type t = private
     { mutable env : Env.t;
@@ -260,8 +264,6 @@ type typedecl_extraction_result =
 
 val extract_concrete_typedecl:
         Env.t -> type_expr -> typedecl_extraction_result
-
-val get_new_abstract_name : Env.t -> string -> string
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)

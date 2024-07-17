@@ -1308,6 +1308,16 @@ let new_local_type ?(loc = Location.none) ?manifest_and_scope origin =
     type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
   }
 
+let new_effect_type ~loc env ~body =
+    let decl = new_local_type ~loc Definition in
+    let scope = create_scope () in
+    let name = get_new_abstract_name env "%eff" in
+    let id = Ident.create_scoped ~scope name in
+    let new_env = Env.add_type ~check:false id decl env in
+    let ty_eff = newgenty (Tconstr (Path.Pident id,[],ref Mnil)) in
+    new_env,
+    (Predef.type_eff ty_eff, Predef.type_continuation ty_eff body)
+
 let existential_name name_counter ty =
   let name =
     match get_desc ty with

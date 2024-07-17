@@ -17,5 +17,5 @@ val r : string ref = {contents = ""}
 Line 7, characters 4-25:
 7 |   | true | exception Exit when r := "hello"; true -> !r
         ^^^^^^^^^^^^^^^^^^^^^
-Error: Mixing value and exception patterns under when-guards is not supported.
+Error: Mixing value and computation patterns under when-guards is not supported.
 |}]

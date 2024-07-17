@@ -268,7 +268,7 @@ let iter_on_occurrences
         fields
       | Tpat_any | Tpat_var _ | Tpat_alias _ | Tpat_constant _ | Tpat_tuple _
       | Tpat_variant _ | Tpat_array _ | Tpat_lazy _ | Tpat_value _
-      | Tpat_exception _ | Tpat_or _ -> ());
+      | Tpat_exception _ | Tpat_effect _ | Tpat_or _ -> ());
       List.iter  (fun (pat_extra, _, _) ->
         match pat_extra with
         | Tpat_open (path, lid, _) ->
