@@ -45,6 +45,7 @@ STDLIB_MODULE_BASENAMES = \
   lazy \
   seq \
   option \
+  pair \
   result \
   bool \
   char \
