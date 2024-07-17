@@ -3756,6 +3756,12 @@ OCaml 4.13.0 (24 September 2021)
 - #10430: Add Format.print_bytes and Format.pp_print_bytes.
   (Gabriel Radanne, review by Gabriel Scherer and David Allsopp)
 
+* #10276 Provide more meaningful int_of_string error messages.
+  Instead of generic error `Exception: Failure "int_of_string"`, a more
+  detailed message is provided, e.g.
+  `Exception: Failure "int_of_string: wrong char 'a' for base 10"`.
+  (Krzysztof Leśniak, review by ???)
+
 ### Other libraries:
 
 * #10084: Unix.open_process_args* functions now look up the program in the PATH.
