@@ -161,6 +161,7 @@ val formatter: doc ref -> formatter
 (** Translate a {!Format_doc} printer to a {!Format} one. *)
 type 'a format_printer = Format.formatter -> 'a -> unit
 val compat: 'a printer -> 'a format_printer
+val compat0: (formatter -> unit) -> (Format.formatter -> unit)
 val compat1: ('p1 -> 'a printer) -> ('p1 -> 'a format_printer)
 val compat2: ('p1 -> 'p2 -> 'a printer) -> ('p1 -> 'p2 -> 'a format_printer)
 

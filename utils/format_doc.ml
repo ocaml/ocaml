@@ -431,6 +431,11 @@ let compat = format_printer
 let compat1 f p1 = compat (f p1)
 let compat2 f p1 p2 = compat (f p1 p2)
 
+let compat0 f ppf =
+  let r = ref Doc.empty in
+  f r;
+  Doc.format ppf !r
+
 let kasprintf k fmt =
   kdoc_printf (fun doc -> k (Format.asprintf "%a" Doc.format doc)) fmt
 let asprintf fmt = kasprintf Fun.id fmt
