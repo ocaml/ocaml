@@ -538,53 +538,6 @@ static void adopt_orphaned_work (void)
   }
 }
 
-/******************************************************************************/
-
-#define BUFFER_SIZE 64
-
-struct buf_list_t {
-  double buffer[BUFFER_SIZE];
-  struct buf_list_t *next;
-};
-
-static struct {
-  intnat heap_words_last_cycle;
-  intnat not_garbage_words_last_cycle;
-  int index;
-  struct buf_list_t *l;
- } caml_stat_space_overhead = {0, 0, 0, NULL};
-
-double caml_mean_space_overhead (void)
-{
-  int index = caml_stat_space_overhead.index;
-  struct buf_list_t *t, *l = caml_stat_space_overhead.l;
-  /* Use Welford's online algorithm for calculating running variance to remove
-   * outliers from mean calculation. */
-  double mean = 0.0, m2 = 0.0, stddev = 0.0, v;
-  double delta, delta2;
-  intnat count = 0;
-
-  while (l) {
-    while (index > 0) {
-      v = l->buffer[--index];
-      if (count > 5 && (v < mean - 3 * stddev || v > mean + 3 * stddev)) {
-        continue;
-      }
-      count++;
-      delta = v - mean;
-      mean = mean + delta / count;
-      delta2 = v - mean;
-      m2 = m2 + delta * delta2;
-      stddev = sqrt (m2 / count);
-    }
-    t = l;
-    l = l->next;
-    caml_stat_free(t);
-    index = BUFFER_SIZE;
-  }
-  return mean;
-}
-
 static inline intnat max2 (intnat a, intnat b)
 {
   if (a > b){
@@ -1380,7 +1333,12 @@ static void cycle_major_heap_from_stw_single(
                  "swept_words %"ARCH_INTNAT_PRINTF_FORMAT"d",
                  heap_words, not_garbage_words, swept_words);
 
-    if (caml_stat_space_overhead.heap_words_last_cycle != 0) {
+    static struct {
+      intnat heap_words;
+      intnat not_garbage_words;
+    } last_cycle = {0, 0};
+
+    if (last_cycle.heap_words != 0) {
       /* At the end of a major cycle, no object has colour MARKED.
 
          [not_garbage_words] counts all objects which are UNMARKED.
@@ -1393,29 +1351,14 @@ static void cycle_major_heap_from_stw_single(
          space_overhead@N =
          100.0 * (heap_words@N - live_words@N) / live_words@N
       */
-      double live_words_last_cycle =
-        caml_stat_space_overhead.not_garbage_words_last_cycle - swept_words;
-      double space_overhead =
-        100.0 * (double)(caml_stat_space_overhead.heap_words_last_cycle
-                         - live_words_last_cycle) / live_words_last_cycle;
+      double live_words = last_cycle.not_garbage_words - swept_words;
+      double space_overhead = 100.0 * (double)(last_cycle.heap_words
+                                               - live_words) / live_words;
 
-      if (caml_stat_space_overhead.l == NULL ||
-          caml_stat_space_overhead.index == BUFFER_SIZE) {
-        struct buf_list_t *l =
-          (struct buf_list_t*)
-          caml_stat_alloc_noexc(sizeof(struct buf_list_t));
-        l->next = caml_stat_space_overhead.l;
-        caml_stat_space_overhead.l = l;
-        caml_stat_space_overhead.index = 0;
-      }
-      caml_stat_space_overhead.l->buffer[caml_stat_space_overhead.index++] =
-        space_overhead;
       caml_gc_log("Previous cycle's space_overhead: %lf", space_overhead);
     }
-    caml_stat_space_overhead.heap_words_last_cycle = heap_words;
-
-    caml_stat_space_overhead.not_garbage_words_last_cycle
-      = not_garbage_words;
+    last_cycle.heap_words = heap_words;
+    last_cycle.not_garbage_words = not_garbage_words;
   }
 
   domain->swept_words = 0;

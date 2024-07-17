@@ -181,8 +181,6 @@ CAMLexport void caml_do_exit(int retcode)
                     heap_words);
       caml_gc_message(0x400, "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                       top_heap_words);
-      caml_gc_message(0x400, "mean_space_overhead: %lf\n",
-                      caml_mean_space_overhead());
     }
   }
 
