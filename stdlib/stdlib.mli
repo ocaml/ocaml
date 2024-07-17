@@ -1437,6 +1437,7 @@ module Obj            = Obj
 module Oo             = Oo
 module Option         = Option
 module Out_channel    = Out_channel
+module Pair           = Pair
 module Parsing        = Parsing
 module Printexc       = Printexc
 module Printf         = Printf
