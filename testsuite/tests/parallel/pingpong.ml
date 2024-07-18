@@ -1,5 +1,5 @@
 (* TEST
- no-tsan; (* TSan detects the intentional data race *)
+ not tsan; (* TSan detects the intentional data race *)
  {
    bytecode;
  }

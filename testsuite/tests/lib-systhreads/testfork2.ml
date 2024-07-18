@@ -1,7 +1,7 @@
 (* TEST
  include systhreads;
  hassysthreads;
- not-bsd;
+ not bsd;
  libunix;
  {
    bytecode;

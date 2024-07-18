@@ -1,6 +1,6 @@
 (* TEST
  modules = "intextaux_par.c";
- no-tsan; (* Takes too much time and memory with tsan *)
+ not tsan; (* Takes too much time and memory with tsan *)
  {
    bytecode;
  }
