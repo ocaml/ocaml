@@ -13839,7 +13839,7 @@ otherlibraries="dynlink runtime_events"
 otherlibs="dynlink runtime_events"
 lib_dynlink=true
 dldir=otherlibs/dynlink
-ac_config_links="$ac_config_links $dldir/dynlink_cmo_format.mli:file_formats/cmo_format.mli $dldir/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli"
+ac_config_links="$ac_config_links $dldir/dynlink_cmo_format.mli:file_formats/cmo_format.mli $dldir/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli $dldir/dynlink_platform_intf.mli:$dldir/dynlink_platform_intf.ml"
 
 lib_runtime_events=true
 if test x"$enable_unix_lib" != "xno"
@@ -22151,6 +22151,7 @@ do
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "$dldir/dynlink_cmo_format.mli") CONFIG_LINKS="$CONFIG_LINKS $dldir/dynlink_cmo_format.mli:file_formats/cmo_format.mli" ;;
     "$dldir/dynlink_cmxs_format.mli") CONFIG_LINKS="$CONFIG_LINKS $dldir/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli" ;;
+    "$dldir/dynlink_platform_intf.mli") CONFIG_LINKS="$CONFIG_LINKS $dldir/dynlink_platform_intf.mli:$dldir/dynlink_platform_intf.ml" ;;
     "otherlibs/unix/META") CONFIG_FILES="$CONFIG_FILES otherlibs/unix/META" ;;
     "otherlibs/unix/unix.ml") CONFIG_LINKS="$CONFIG_LINKS otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml" ;;
     "otherlibs/str/META") CONFIG_FILES="$CONFIG_FILES otherlibs/str/META" ;;

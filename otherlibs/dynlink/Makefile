@@ -65,13 +65,6 @@ dynlink.cmxa: $(NATOBJS)
 # rather than as a dependency elsewhere.
 	cp native/dynlink.cmx dynlink.cmx
 
-# Since there is no .mli for [Dynlink_platform_intf], we need to be
-# careful that compilation of the .cmx file does not write the .cmi file again,
-# which would cause rebuilding of ocamlopt.  The easiest way to do this seems
-# to be to copy the .ml file, which is a valid .mli, to the .mli.
-dynlink_platform_intf.mli: dynlink_platform_intf.ml
-	cp $< $@
-
 INSTALL_LIBDIR_DYNLINK = $(INSTALL_LIBDIR)/dynlink
 
 install:
@@ -103,23 +96,20 @@ partialclean:
 	      native/*.cm[ixt] native/*.cmti native/*.o native/*.obj
 
 clean: partialclean
-	rm -f *.a *.lib *.o *.obj *.so *.dll dynlink_platform_intf.mli \
+	rm -f *.a *.lib *.o *.obj *.so *.dll \
 	      byte/dynlink.mli native/dynlink.mli
 
 .PHONY: distclean
 distclean: clean
 	rm -f META dynlink_config.ml dynlink_cmo_format.mli \
-	dynlink_cmxs_format.mli
-
-.PHONY: beforedepend
-beforedepend: dynlink_platform_intf.mli
+	dynlink_platform_intf.mli dynlink_cmxs_format.mli
 
 .PHONY: depend
 DEPEND_DUMMY_FILES=\
   byte/dynlink.mli \
   native/dynlink.mli
 
-depend: beforedepend
+depend:
 	$(V_GEN)touch $(DEPEND_DUMMY_FILES) && \
 	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
 	  -I byte -bytecode *.mli *.ml byte/*.mli byte/*.ml > .depend && \
