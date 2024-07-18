@@ -59,4 +59,6 @@ val check : t -> error option
 
 
 val report_error :
+  print_filename:string Format_doc.printer -> error Format_doc.format_printer
+val report_error_doc :
   print_filename:string Format_doc.printer -> error Format_doc.printer

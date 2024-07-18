@@ -696,7 +696,7 @@ let core env id x =
         (Printtyp.tree_of_cltype_declaration id diff.got Trec_first)
         !Oprint.out_sig_item
         (Printtyp.tree_of_cltype_declaration id diff.expected Trec_first)
-        (Includeclass.report_error Type_scheme) diff.symptom
+        (Includeclass.report_error_doc Type_scheme) diff.symptom
   | Err.Class_declarations {got;expected;symptom} ->
       let t1 = Printtyp.tree_of_class_declaration id got Trec_first in
       let t2 = Printtyp.tree_of_class_declaration id expected Trec_first in
@@ -705,7 +705,7 @@ let core env id x =
          %a@;<1 -2>does not match@ %a@]@ %a"
         !Oprint.out_sig_item t1
         !Oprint.out_sig_item t2
-        (Includeclass.report_error Type_scheme) symptom
+        (Includeclass.report_error_doc Type_scheme) symptom
 
 let missing_field ppf item =
   let id, loc, kind =  Includemod.item_ident_name item in
@@ -940,13 +940,13 @@ let err_msgs ppf (env, err) =
   Printtyp.wrap_printing_env ~error:true env
     (fun () -> (coalesce @@ all env err)  ppf)
 
-let report_error err =
+let report_error_doc err =
   Location.errorf
     ~loc:Location.(in_file !input_name)
     ~footnote:Printtyp.Conflicts.err_msg
    "%a" err_msgs err
 
-let report_apply_error ~loc env (app_name, mty_f, args) =
+let report_apply_error_doc ~loc env (app_name, mty_f, args) =
   let footnote = Printtyp.Conflicts.err_msg in
   let d = Functor_suberror.App.patch env ~f:mty_f ~args in
   match d with
@@ -1014,10 +1014,10 @@ let coercion_in_package_subtype env mty c =
 let register () =
   Location.register_error_of_exn
     (function
-      | Includemod.Error err -> Some (report_error err)
+      | Includemod.Error err -> Some (report_error_doc err)
       | Includemod.Apply_error {loc; env; app_name; mty_f; args} ->
           Some (Printtyp.wrap_printing_env env ~error:true (fun () ->
-              report_apply_error ~loc env (app_name, mty_f, args))
+              report_apply_error_doc ~loc env (app_name, mty_f, args))
             )
       | _ -> None
     )

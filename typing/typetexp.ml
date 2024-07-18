@@ -854,7 +854,7 @@ module Style = Misc.Style
 let pp_tag ppf t = fprintf ppf "`%s" t
 let pp_type ppf ty = Style.as_inline_code !Oprint.out_type ppf ty
 
-let report_error env ppf = function
+let report_error_doc env ppf = function
   | Unbound_type_variable (name, in_scope_names) ->
     fprintf ppf "The type variable %a is unbound in this type declaration.@ %a"
       Style.inline_code name
@@ -962,9 +962,11 @@ let () =
   Location.register_error_of_exn
     (function
       | Error (loc, env, err) ->
-        Some (Location.error_of_printer ~loc (report_error env) err)
+        Some (Location.error_of_printer ~loc (report_error_doc env) err)
       | Error_forward err ->
         Some err
       | _ ->
         None
     )
+
+let report_error env = Format_doc.compat (report_error_doc env)

@@ -51,7 +51,8 @@ val apply_rewriters_sig:
   ?restore:bool -> tool_name:string -> Parsetree.signature ->
   Parsetree.signature
 
-val report_error : error Format_doc.printer
+val report_error : error Format_doc.format_printer
+val report_error_doc: error Format_doc.printer
 
 
 val parse_implementation:

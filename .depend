@@ -8113,7 +8113,6 @@ debugger/command_line.cmo : \
     debugger/input_handling.cmi \
     debugger/history.cmi \
     debugger/frames.cmi \
-    utils/format_doc.cmi \
     debugger/events.cmi \
     debugger/eval.cmi \
     typing/envaux.cmi \
@@ -8153,7 +8152,6 @@ debugger/command_line.cmx : \
     debugger/input_handling.cmx \
     debugger/history.cmx \
     debugger/frames.cmx \
-    utils/format_doc.cmx \
     debugger/events.cmx \
     debugger/eval.cmx \
     typing/envaux.cmx \
@@ -8383,7 +8381,6 @@ debugger/main.cmo : \
     utils/load_path.cmi \
     debugger/input_handling.cmi \
     debugger/frames.cmi \
-    utils/format_doc.cmi \
     debugger/exec.cmi \
     debugger/debugger_config.cmi \
     utils/config.cmi \
@@ -8407,7 +8404,6 @@ debugger/main.cmx : \
     utils/load_path.cmx \
     debugger/input_handling.cmx \
     debugger/frames.cmx \
-    utils/format_doc.cmx \
     debugger/exec.cmx \
     debugger/debugger_config.cmx \
     utils/config.cmx \
@@ -8749,7 +8745,6 @@ ocamldoc/odoc_analyse.cmo : \
     ocamldoc/odoc_ast.cmi \
     parsing/location.cmi \
     parsing/lexer.cmi \
-    utils/format_doc.cmi \
     typing/env.cmi \
     driver/compmisc.cmi \
     utils/clflags.cmi \
@@ -8778,7 +8773,6 @@ ocamldoc/odoc_analyse.cmx : \
     ocamldoc/odoc_ast.cmx \
     parsing/location.cmx \
     parsing/lexer.cmx \
-    utils/format_doc.cmx \
     typing/env.cmx \
     driver/compmisc.cmx \
     utils/clflags.cmx \

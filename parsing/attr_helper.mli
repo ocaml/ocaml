@@ -35,4 +35,5 @@ val has_no_payload_attribute : string -> attributes -> bool
 
 exception Error of Location.t * error
 
-val report_error: error Format_doc.printer
+val report_error: error Format_doc.format_printer
+val report_error_doc: error Format_doc.printer

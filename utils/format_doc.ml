@@ -422,10 +422,14 @@ let doc_printer f x doc =
   f r x;
   !r
 
+type 'a format_printer = Format.formatter -> 'a -> unit
+
 let format_printer f ppf x =
   let doc = doc_printer f x Doc.empty in
   Doc.format ppf doc
 let compat = format_printer
+let compat1 f p1 = compat (f p1)
+let compat2 f p1 p2 = compat (f p1 p2)
 
 let kasprintf k fmt =
   kdoc_printf (fun doc -> k (Format.asprintf "%a" Doc.format doc)) fmt

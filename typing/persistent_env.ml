@@ -244,7 +244,7 @@ let check_pers_struct ~allow_hidden penv f ~loc name =
         Location.prerr_warning loc warn
   | Cmi_format.Error err ->
       let msg = Format.asprintf "%a"
-          (Format_doc.compat Cmi_format.report_error) err in
+          Cmi_format.report_error err in
       let warn = Warnings.No_cmi_file(name, Some msg) in
         Location.prerr_warning loc warn
   | Error err ->
@@ -351,7 +351,7 @@ let save_cmi penv psig pm =
     )
     ~exceptionally:(fun () -> remove_file filename)
 
-let report_error ppf =
+let report_error_doc ppf =
   let open Format_doc in
   function
   | Illegal_renaming(modname, ps_name, filename) -> fprintf ppf
@@ -377,6 +377,8 @@ let () =
   Location.register_error_of_exn
     (function
       | Error err ->
-          Some (Location.error_of_printer_file report_error err)
+          Some (Location.error_of_printer_file report_error_doc err)
       | _ -> None
     )
+
+let report_error = Format_doc.compat report_error_doc

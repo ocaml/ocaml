@@ -1977,7 +1977,7 @@ module Style=Misc.Style
 
 let out_type ppf t = Style.as_inline_code !Oprint.out_type ppf t
 
-let report_error env ppf =
+let report_error_doc env ppf =
   let pp_args ppf args =
     let args = List.map (Printtyp.tree_of_typexp Type) args in
     Style.as_inline_code !Oprint.out_type_args ppf args
@@ -2092,7 +2092,7 @@ let report_error env ppf =
        pp_args params
        pp_args cstrs
   | Class_match_failure error ->
-      Includeclass.report_error Type ppf error
+      Includeclass.report_error_doc Type ppf error
   | Unbound_val lab ->
       fprintf ppf "Unbound instance variable %a" Style.inline_code lab
   | Unbound_type_var (msg, reason) ->
@@ -2174,17 +2174,19 @@ let report_error env ppf =
        completely defined.@]"
       (Style.as_inline_code Printtyp.type_scheme) sign.csig_self
 
-let report_error env ppf err =
+let report_error_doc env ppf err =
   Printtyp.wrap_printing_env ~error:true
-    env (fun () -> report_error env ppf err)
+    env (fun () -> report_error_doc env ppf err)
 
 let () =
   Location.register_error_of_exn
     (function
       | Error (loc, env, err) ->
-        Some (Location.error_of_printer ~loc (report_error env) err)
+        Some (Location.error_of_printer ~loc (report_error_doc env) err)
       | Error_forward err ->
         Some err
       | _ ->
         None
     )
+
+let report_error = Format_doc.compat1 report_error_doc
