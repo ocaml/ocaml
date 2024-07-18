@@ -87,6 +87,16 @@ Live blocks of a Domain's major heap pools.
 (**
 Live blocks of a Domain's major heap large allocations.
 @since 5.1 *)
+| EV_C_MAJOR_HEAP_WORDS
+| EV_C_MAJOR_ALLOCATED_WORDS
+| EV_C_MAJOR_ALLOCATED_WORK
+| EV_C_MAJOR_DEPENDENT_WORK
+| EV_C_MAJOR_EXTRA_WORK
+| EV_C_MAJOR_WORK_COUNTER
+| EV_C_MAJOR_ALLOC_COUNTER
+| EV_C_MAJOR_SLICE_TARGET
+| EV_C_MAJOR_SLICE_BUDGET
+
 
 (** The type for span events emitted by the runtime. *)
 type runtime_phase =

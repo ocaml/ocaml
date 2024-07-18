@@ -716,6 +716,16 @@ static void update_major_slice_work(intnat howmuch,
               atomic_load (&alloc_counter),
               dom_st->slice_target, dom_st->slice_budget
               );
+
+  CAML_EV_COUNTER(EV_C_MAJOR_HEAP_WORDS, (uintnat)heap_words);
+  CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_WORDS, my_alloc_count);
+  CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_WORK, alloc_work);
+  CAML_EV_COUNTER(EV_C_MAJOR_DEPENDENT_WORK, dependent_work);
+  CAML_EV_COUNTER(EV_C_MAJOR_EXTRA_WORK, extra_work);
+  CAML_EV_COUNTER(EV_C_MAJOR_WORK_COUNTER, atomic_load (&work_counter));
+  CAML_EV_COUNTER(EV_C_MAJOR_ALLOC_COUNTER, atomic_load (&alloc_counter));
+  CAML_EV_COUNTER(EV_C_MAJOR_SLICE_TARGET, dom_st->slice_target);
+  CAML_EV_COUNTER(EV_C_MAJOR_SLICE_BUDGET, dom_st->slice_budget);
 }
 
 #define Chunk_size 0x4000
