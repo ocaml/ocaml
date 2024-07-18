@@ -1,0 +1,65 @@
+Specified modules: conditions.test
+Source modules: conditions.test
+Running test pass with 1 actions
+
+Running action 1/1 (pass)
+Action 1/1 (pass) => passed (the pass action always succeeds)
+Running test pass with 1 actions
+
+Running action 1/1 (pass)
+Action 1/1 (pass) => passed (the pass action always succeeds)
+Running test skip with 1 actions
+
+Running action 1/1 (skip)
+Action 1/1 (skip) => skipped (the skip action always skips)
+Running test skip with 1 actions
+
+Running action 1/1 (skip)
+Action 1/1 (skip) => skipped (the skip action always skips)
+Running test pass with 1 actions
+
+Running action 1/1 (pass)
+Action 1/1 (pass) => passed (the pass action always succeeds)
+Running test skip with 1 actions
+
+Running action 1/1 (skip)
+Action 1/1 (skip) => skipped (the skip action always skips)
+Running test pass with 1 actions
+
+Running action 1/1 (pass)
+Action 1/1 (pass) => passed (the pass action always succeeds)
+Running test skip with 1 actions
+
+Running action 1/1 (skip)
+Action 1/1 (skip) => skipped (the skip action always skips)
+Running test pass with 1 actions
+
+Running action 1/1 (pass)
+Action 1/1 (pass) => passed (the pass action always succeeds)
+Running test skip with 1 actions
+
+Running action 1/1 (skip)
+Action 1/1 (skip) => skipped (the skip action always skips)
+Running test fail with 1 actions
+
+Running action 1/1 (fail)
+Action 1/1 (fail) => failed (the fail action always fails)
+ ... testing 'conditions.test' => failed
+ ... testing 'conditions.test' with line 4 (pass) => passed
+ ... testing 'conditions.test' with line 5 (pass) => passed
+ ... testing 'conditions.test' with line 6 (skip) => skipped (the skip action always skips)
+ ... testing 'conditions.test' with line 7 (fail) => n/a
+ ... testing 'conditions.test' with line 8 (fail) => n/a
+ ... testing 'conditions.test' with line 12 (skip) => skipped (the skip action always skips)
+ ... testing 'conditions.test' with line 13 (fail) => n/a
+ ... testing 'conditions.test' with line 14 (pass) => passed
+ ... testing 'conditions.test' with line 15 (fail) => n/a
+ ... testing 'conditions.test' with line 16 (skip) => skipped (the skip action always skips)
+ ... testing 'conditions.test' with line 20 (pass) => passed
+ ... testing 'conditions.test' with line 21 (skip) => skipped (the skip action always skips)
+ ... testing 'conditions.test' with line 22 (fail) => n/a
+ ... testing 'conditions.test' with line 23 (pass) => passed
+ ... testing 'conditions.test' with line 27 (skip) => skipped (the skip action always skips)
+ ... testing 'conditions.test' with line 28 (pass) => n/a
+ ... testing 'conditions.test' with line 29 (fail) => failed (the fail action always fails)
+ ... testing 'conditions.test' with line 30 (pass) => n/a
