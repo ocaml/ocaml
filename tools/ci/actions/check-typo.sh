@@ -50,8 +50,8 @@ CheckTypoTree () {
   COMMIT="$1"
   COMMITS_TO_SEARCH="$2"
   export OCAML_CT_HEAD="$COMMIT"
-  export OCAML_CT_LS_FILES="git diff-tree --no-commit-id --name-only -r \
-$COMMITS_TO_SEARCH --"
+  export OCAML_CT_LS_FILES="git -c core.quotePath=false diff-tree \
+    --no-commit-id --name-only -r $COMMITS_TO_SEARCH --"
   export OCAML_CT_CAT='git cat-file --textconv'
   export OCAML_CT_PREFIX="$COMMIT:"
   GIT_INDEX_FILE=tmp-index git read-tree --reset -i "$COMMIT"
