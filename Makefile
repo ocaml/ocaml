@@ -1786,8 +1786,6 @@ OCAMLDOC_LIBCMTS=$(OCAMLDOC_LIBMLIS:.mli=.cmt) $(OCAMLDOC_LIBMLIS:.mli=.cmti)
 ocamldoc/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 ocamldoc/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 
-ocamldoc/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
-
 .PHONY: ocamldoc
 ocamldoc: ocamldoc/ocamldoc$(EXE) ocamldoc/odoc_test.cmo
 
