@@ -71,12 +71,12 @@ let ()  =
 
  ocamlrunparam += ",b=1";
  run;
+ flambda;
  {
-   no-flambda;
-   check-program-output;
- }{
    reference = "${test_source_directory}/backtrace_dynlink.flambda.reference";
-   flambda;
+   check-program-output;
+ }
+!{
    check-program-output;
  }
 *)
