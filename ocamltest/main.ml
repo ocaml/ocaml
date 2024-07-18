@@ -110,27 +110,24 @@ let string_of_summary = function
   | All_skipped -> "skipped"
 
 let run_test_tree log add_msg behavior env summ ast =
-  let rec run_statements behavior env summ stmts subs =
-    match stmts with
-    | [] -> run_children behavior env summ subs
-    | Environment_statement s :: stmts ->
+  let run_statement (behavior, env, summ) = function
+    | Environment_statement s ->
       begin match interpret_environment_statement env s with
-      | env ->
-        run_statements behavior env summ stmts subs
+      | env -> Ok (behavior, env, summ)
       | exception e ->
         let bt = Printexc.get_backtrace () in
         let line = s.loc.Location.loc_start.Lexing.pos_lnum in
         Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
-        Some_failure
+        Error Some_failure
       end
-    | Test (_, name, mods) :: stmts ->
+    | Test (_, name, mods) ->
       let locstr =
         if name.loc = Location.none then
           "default"
         else
           Printf.sprintf "line %d" name.loc.Location.loc_start.Lexing.pos_lnum
       in
-      let (msg, children_behavior, newenv, result) =
+      let (msg, behavior, env, result) =
         match behavior with
         | Skip_all -> ("=> n/a", Skip_all, env, Result.skip)
         | Run ->
@@ -148,13 +145,15 @@ let run_test_tree log add_msg behavior env summ ast =
           end
       in
       Printf.ksprintf add_msg "%s (%s) %s" locstr name.node msg;
-      let newsumm = join_result summ result in
-      run_statements children_behavior newenv newsumm stmts subs
-  and run_children behavior env summ subs =
-    List.fold_left join_summaries summ
-      (List.map (run_tree behavior env All_skipped) subs)
-  and run_tree behavior env summ (Ast (stmts, subs)) =
-    run_statements behavior env summ stmts subs
+      let summ = join_result summ result in
+      Ok (behavior, env, summ)
+  in
+  let rec run_tree behavior env summ (Ast (stmts, subs)) =
+    match List.fold_left_result run_statement (behavior, env, summ) stmts with
+    | Error e -> e
+    | Ok (behavior, env, summ) ->
+        List.fold_left join_summaries summ
+          (List.map (run_tree behavior env All_skipped) subs)
   in run_tree behavior env summ ast
 
 let get_test_source_directory test_dirname =
