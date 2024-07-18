@@ -969,7 +969,7 @@ let report_load_path_error ppf =
   | Load_path.Ambiguous_artifacts r ->
       fprintf ppf
         "@[<v 2>@,@[Multiple artifact files@ (@[%a@])@ in directory %a@ \
-         share the same name after unicode normalization.@ \
+         share the same name after unicode case-folding and normalization.@ \
          Please only keep one file named %a by directory.@]"
         (pp_print_list ~pp_sep:comma Style.inline_code) r.similar
         Style.inline_code r.dir
