@@ -21,7 +21,7 @@ include $(ROOTDIR)/Makefile.common
 # at the moment, the clean targets depend on this variable but
 # when they are invoked ../Makefile.config is not included, so that
 # OTHERLIBS would be empty and the clean target would thus not work.
-OTHERLIBS ?= dynlink str systhreads unix runtime_events
+OTHERLIBS ?= str systhreads unix runtime_events
 
 # $1: target name to dispatch to all otherlibs/*/Makefile
 define dispatch_

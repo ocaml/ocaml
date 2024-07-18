@@ -13836,7 +13836,8 @@ case $host in #(
 esac
 
 otherlibraries="dynlink runtime_events"
-otherlibs="dynlink runtime_events"
+otherlibs="runtime_events"
+optional_libraries="$optional_libraries otherlibs/dynlink/dynlink"
 lib_dynlink=true
 dldir=otherlibs/dynlink
 ac_config_links="$ac_config_links $dldir/dynlink_cmo_format.mli:file_formats/cmo_format.mli $dldir/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli $dldir/dynlink_platform_intf.mli:$dldir/dynlink_platform_intf.ml"

@@ -735,7 +735,8 @@ AS_CASE([$host],
   [exeext=''])
 
 otherlibraries="dynlink runtime_events"
-otherlibs="dynlink runtime_events"
+otherlibs="runtime_events"
+optional_libraries="$optional_libraries otherlibs/dynlink/dynlink"
 lib_dynlink=true
 dldir=otherlibs/dynlink
 AC_CONFIG_LINKS([

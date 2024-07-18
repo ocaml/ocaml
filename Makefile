@@ -1023,10 +1023,69 @@ natruntop:
 	$(MAKE) ocamlnat
 	@$(RUN_OCAMLNAT)
 
-# Native dynlink
+# The dynlink library
 
-otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/native/dynlink.ml
-	$(MAKE) -C otherlibs/dynlink allopt
+dynlink_SOURCES = $(addprefix otherlibs/dynlink/,\
+  dynlink_config.mli dynlink_config.ml \
+  dynlink_types.mli dynlink_types.ml \
+  dynlink_platform_intf.mli dynlink_platform_intf.ml \
+  dynlink_common.mli dynlink_common.ml \
+  byte/dynlink_symtable.mli byte/dynlink_symtable.ml \
+  byte/dynlink.mli byte/dynlink.ml \
+  native/dynlink.mli native/dynlink.ml)
+
+dynlink_LIBRARIES =
+
+otherlibs/dynlink/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
+otherlibs/dynlink/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
+
+
+otherlibs/dynlink/%/dynlink.cmi: \
+  otherlibs/dynlink/dynlink.cmi otherlibs/dynlink/dynlink.mli
+	cp $^ otherlibs/dynlink/$*/
+
+.PHONY: dynlink-all
+dynlink-all: otherlibs/dynlink/dynlink.cma
+
+.PHONY: dynlink-allopt
+dynlink-allopt: otherlibs/dynlink/dynlink.cmxa
+
+otherlibs/dynlink/dynlink.cma: VPATH += otherlibs/dynlink/byte
+otherlibs/dynlink/dynlink.cmxa: VPATH += otherlibs/dynlink/native
+
+ifeq "$(FLAMBDA)" "true"
+otherlibs/dynlink/%: OC_NATIVE_COMPFLAGS += -O3
+endif
+
+# dynlink.cmx needs to be available in the search path (since
+# it is not compiled with -opaque), and we prefer to make the file
+# available in a directory that is already searched rather than have
+# to add otherlibs/dynlink/native to the search path as well
+
+otherlibs/dynlink/dynlink.cmx : otherlibs/dynlink/native/dynlink.cmx
+	cd otherlibs/dynlink; $(LN) native/dynlink.cmx .
+
+DYNLINK_DEPEND_DUMMY_FILES = \
+  otherlibs/dynlink/dynlink.ml \
+  otherlibs/dynlink/byte/dynlink.mli \
+  otherlibs/dynlink/native/dynlink.mli
+
+beforedepend::
+	@touch $(DYNLINK_DEPEND_DUMMY_FILES)
+
+otherlibs/dynlink.depend: beforedepend
+	@$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I otherlibs/dynlink $(INCLUDES) \
+	  $(OCAMLDEPFLAGS) \
+	  -I otherlibs/dynlink/byte \
+	  -bytecode otherlibs/dynlink/*.mli otherlibs/dynlink/dynlink_*.ml \
+	  otherlibs/dynlink/byte/*.mli otherlibs/dynlink/byte/*.ml \
+	  > $@
+	@$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I otherlibs/dynlink $(INCLUDES) \
+	  $(OCAMLDEPFLAGS) \
+	  -I otherlibs/dynlink/native \
+	  -native otherlibs/dynlink/dynlink_*.ml \
+	  otherlibs/dynlink/native/dynlink.ml \
+	  >> $@
 
 # Cleanup the lexer
 
@@ -1569,7 +1628,13 @@ clean::
 
 # Dependencies
 
-subdirs = stdlib $(addprefix otherlibs/, $(ALL_OTHERLIBS))
+# The following definition duplicates the otherlibs/ prefix but this
+# will go away with the merge of the sub makefiles
+subdirs = stdlib \
+  otherlibs/str \
+  otherlibs/systhreads \
+  otherlibs/unix \
+  otherlibs/runtime_events
 
 .PHONY: alldepend
 alldepend: depend
@@ -2006,13 +2071,23 @@ otherlibrariesopt:
 	$(MAKE) -C otherlibs allopt
 
 otherlibs/unix/unix.cmxa: otherlibrariesopt
-otherlibs/dynlink/dynlink.cmxa: otherlibrariesopt
 otherlibs/str/str.cmxa: otherlibrariesopt
 
 partialclean::
+	rm -f otherlibs/dynlink/*.cm[ioaxt] otherlibs/dynlink/*.cmti \
+	  otherlibs/dynlink/*.cmxa otherlibs/dynlink/byte/*.cm[iot] \
+	  otherlibs/dynlink/byte/*.cmti otherlibs/dynlink/native/*.cm[ixt] \
+	  otherlibs/dynlink/native/*.cmti otherlibs/dynlink/native/*.o \
+	  otherlibs/dynlink/native/*.obj
 	$(MAKE) -C otherlibs partialclean
 
 clean::
+	rm -f otherlibs/dynlink/*.a otherlibs/dynlink/*.lib \
+	  otherlibs/dynlink/*.o otherlibs/dynlink/*.obj \
+	  otherlibs/dynlink/*.so otherlibs/dynlink/*.dll \
+	  otherlibs/dynlink/byte/dynlink.mli \
+	  otherlibs/dynlink/native/dynlink.mli \
+
 	$(MAKE) -C otherlibs clean
 
 # The replay debugger
@@ -2026,7 +2101,6 @@ ocamldebug_LIBRARIES = compilerlibs/ocamlcommon \
 # possible to get rid of these dependencies
 
 otherlibs/unix/unix.cma: otherlibraries
-otherlibs/dynlink/dynlink.cma: otherlibraries
 otherlibs/str/str.cma: otherlibraries
 
 debugger/%: VPATH += otherlibs/unix otherlibs/dynlink
@@ -2529,7 +2603,7 @@ DEP_DIRS = \
   utils parsing typing bytecomp asmcomp middle_end lambda file_formats \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types driver \
   toplevel toplevel/byte toplevel/native lex tools debugger ocamldoc ocamltest \
-  testsuite/lib testsuite/tools
+  testsuite/lib testsuite/tools otherlibs/dynlink
 
 DEP_FILES = $(addsuffix .depend, $(DEP_DIRS))
 
@@ -2538,6 +2612,7 @@ DEP_FILES = $(addsuffix .depend, $(DEP_DIRS))
 .PHONY: depend
 depend: $(DEP_FILES) | beforedepend
 	$(V_GEN)cat $^ > .$@
+	@rm -f $(DYNLINK_DEPEND_DUMMY_FILES)
 
 .PHONY: distclean
 distclean: clean
@@ -2547,6 +2622,10 @@ endif
 	$(MAKE) -C manual distclean
 	rm -f ocamldoc/META
 	rm -f $(addprefix ocamltest/,ocamltest_config.ml ocamltest_unix.ml)
+	rm -f otherlibs/dynlink/META otherlibs/dynlink/dynlink_config.ml \
+	  otherlibs/dynlink/dynlink_cmo_format.mli \
+	  otherlibs/dynlink/dynlink_cmxs_format.mli \
+	  otherlibs/dynlink/dynlink_platform_intf.mli
 	$(MAKE) -C otherlibs distclean
 	rm -f $(runtime_CONFIGURED_HEADERS)
 	$(MAKE) -C stdlib distclean
@@ -2561,6 +2640,8 @@ endif
 	rm -rf autom4te.cache winpthreads-sources flexdll-sources \
          $(BYTE_BUILD_TREE) $(OPT_BUILD_TREE)
 	rm -f config.log config.status libtool
+
+INSTALL_LIBDIR_DYNLINK = $(INSTALL_LIBDIR)/dynlink
 
 # Installation
 .PHONY: install
@@ -2661,6 +2742,21 @@ endif
 	  "$(INSTALL_LIBDIR_PROFILING)"
 ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
 	$(MAKE) -C man install
+endif
+# For dynlink, if installing over a previous OCaml version, ensure
+# dynlink is removed from the previous installation.
+	rm -f "$(INSTALL_LIBDIR)"/dynlink.cm* "$(INSTALL_LIBDIR)/dynlink.mli" \
+        "$(INSTALL_LIBDIR)/dynlink.$(A)" \
+        $(addprefix "$(INSTALL_LIBDIR)/", $(notdir $(dynlink_CMX_FILES)))
+	$(MKDIR) "$(INSTALL_LIBDIR_DYNLINK)"
+	$(INSTALL_DATA) \
+	  otherlibs/dynlink/dynlink.cmi otherlibs/dynlink/dynlink.cma \
+	  otherlibs/dynlink/META \
+	  "$(INSTALL_LIBDIR_DYNLINK)"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  otherlibs/dynlink/dynlink.cmti otherlibs/dynlink/dynlink.mli \
+	  "$(INSTALL_LIBDIR_DYNLINK)"
 endif
 	for i in $(OTHERLIBS); do \
 	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
@@ -2782,6 +2878,12 @@ endif
 	  ocamldoc/ocamldoc.hva ocamldoc/*.cmx ocamldoc/odoc_info.$(A) \
 	  ocamldoc/odoc_info.cmxa \
 	  "$(INSTALL_LIBDIR)/ocamldoc"
+endif
+ifeq "$(strip $(NATDYNLINK))" "true"
+	$(INSTALL_DATA) \
+	  $(dynlink_CMX_FILES) otherlibs/dynlink/dynlink.cmxa \
+	  otherlibs/dynlink/dynlink.$(A) \
+	  "$(INSTALL_LIBDIR_DYNLINK)"
 endif
 	for i in $(OTHERLIBS); do \
 	  $(MAKE) -C otherlibs/$$i installopt || exit $$?; \
