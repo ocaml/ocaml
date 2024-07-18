@@ -323,10 +323,6 @@ val deprecated_script_alert: string -> unit
 (** [deprecated_script_alert command] prints an alert that [command foo] has
     been deprecated in favour of [command ./foo] *)
 
-val warn_artifacts: Warnings.ambiguous_artifacts -> unit
-(** [artifacts_warnings artifacts] prints a warning for ambiguous artifacts
-    within the same library that maps to the same normalized name.*)
-
 (** {1 Reporting errors} *)
 
 type error = report

@@ -76,7 +76,7 @@ let dir_directory s =
   let d = expand_directory Config.standard_library s in
   Dll.add_path [d];
   let dir = Load_path.Dir.create ~hidden:false d in
-  Load_path.prepend_dir ~warn:Location.warn_artifacts dir;
+  Load_path.prepend_dir dir;
   toplevel_env :=
     Stdlib.String.Set.fold
       (fun name env ->

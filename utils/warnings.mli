@@ -39,12 +39,6 @@ type constructor_usage_warning =
   | Not_constructed
   | Only_exported_private
 
-type ambiguous_artifacts = {
-  dir:string;
-  normalized: string;
-  similar: string list
-}
-
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
@@ -122,7 +116,6 @@ type t =
   | Unused_tmc_attribute                    (* 71 *)
   | Tmc_breaks_tailcall                     (* 72 *)
   | Generative_application_expects_unit     (* 73 *)
-  | Ambiguous_library_artifacts of ambiguous_artifacts (* 74 *)
 
 type alert = {kind:string; message:string; def:loc; use:loc}
 

@@ -280,7 +280,7 @@ let set_paths ?(auto_include=Compmisc.auto_include) ?(dir="") () =
       hidden
     ]
   in
-  Load_path.init ~warn:Location.warn_artifacts ~auto_include ~visible ~hidden;
+  Load_path.init ~auto_include ~visible ~hidden;
   Dll.add_path (visible @ hidden)
 
 let update_search_path_from_env () =

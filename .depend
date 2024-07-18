@@ -141,19 +141,16 @@ utils/linkdeps.cmx : \
 utils/linkdeps.cmi : \
     utils/format_doc.cmi
 utils/load_path.cmo : \
-    utils/warnings.cmi \
     utils/misc.cmi \
     utils/local_store.cmi \
     utils/config.cmi \
     utils/load_path.cmi
 utils/load_path.cmx : \
-    utils/warnings.cmx \
     utils/misc.cmx \
     utils/local_store.cmx \
     utils/config.cmx \
     utils/load_path.cmi
-utils/load_path.cmi : \
-    utils/warnings.cmi
+utils/load_path.cmi :
 utils/local_store.cmo : \
     utils/local_store.cmi
 utils/local_store.cmx : \
@@ -423,6 +420,7 @@ parsing/location.cmo : \
     utils/warnings.cmi \
     utils/terminfo.cmi \
     utils/misc.cmi \
+    utils/load_path.cmi \
     utils/format_doc.cmi \
     utils/clflags.cmi \
     utils/build_path_prefix_map.cmi \
@@ -431,6 +429,7 @@ parsing/location.cmx : \
     utils/warnings.cmx \
     utils/terminfo.cmx \
     utils/misc.cmx \
+    utils/load_path.cmx \
     utils/format_doc.cmx \
     utils/clflags.cmx \
     utils/build_path_prefix_map.cmx \
