@@ -326,23 +326,27 @@ let name_pattern default p =
   | _ -> Ident.create_local default
 
 (*
-   [build_object_init] returns an expression that creates and initialises new objects.
-   If the class takes parameters, it is a function that, given values for the
-   parameters, performs the initialisations and (if needed) object creation.
+   [build_object_init] returns an expression that creates and initialises new
+   objects. If the class takes parameters, it is a function that, given values
+   for the parameters, performs the initialisations and (if needed) object
+   creation.
    The [obj] expression will be bound to either the integer 0, in which case
    [obj_init] must allocate the object and return it, or to an already allocated
    object, in which case [obj_init] will initialize the relevant parts of it
    through side-effects. In the case of an immediate object it is always 0.
    Parameters:
-   - [scopes] corresponds to the location scopes (as in the rest of the translation code)
-   - [cl_table] is the variable to which the table for the current class is bound
-   - [obj] is the parameter of the [obj_init] function we want to create. As explained
-     above at runtime it might point to either an already allocated object, when inheriting,
-     or a dummy zero value, when calling [new].
-   - [params] stores the anonymous instance variables associated with all variables
-     that occur inside the class definition but outside the [object ... end] structure:
-     class parameters and class let bindings. The definition is always the identifier
-     corresponding to the original variable.
+   - [scopes] corresponds to the location scopes (as in the rest of the
+     translation code)
+   - [cl_table] is the variable to which the table for the current class is
+     bound
+   - [obj] is the parameter of the [obj_init] function we want to create.
+     As explained above at runtime it might point to either an already allocated
+     object, when inheriting, or a dummy zero value, when calling [new].
+   - [params] stores the anonymous instance variables associated with all
+     variables that occur inside the class definition but outside the
+     [object ... end] structure: class parameters and class let bindings.
+     The definition is always the identifier corresponding to the original
+     variable.
    - [inh_init] accumulates data about the class identifiers encountered, and is
      returned at the end to be reused in [build_class_init].
    - [cl] is the class we're compiling *)
@@ -442,12 +446,13 @@ let rec build_object_init ~scopes cl_table obj params inh_init obj_init cl =
       in
       (inh_init, Translcore.transl_let ~scopes rec_flag defs obj_init)
   | Tcl_open (_, cl)
-    (* Class local opens are restricted to paths only, so no code is generated *)
+    (* Class local opens are restricted to paths only,
+       so no code is generated *)
   | Tcl_constraint (cl, _, _, _, _) ->
       build_object_init ~scopes cl_table obj params inh_init obj_init cl
 
-(* The manual specifies that toplevel lets *must* be evaluated outside of the class.
-   This piece of code makes sure we skip them. *)
+(* The manual specifies that toplevel lets *must* be evaluated outside of the
+   class. This piece of code makes sure we skip them. *)
 let rec build_object_init_0
           ~scopes cl_table params cl copy_env subst_env top ids =
   match cl.cl_desc with
@@ -992,7 +997,8 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
   let tables = Ident.create_local (Ident.name cl_id ^ "_tables") in
   let (top_env, req) = oo_add_class tables in
   let top = not req in
-  (* The manual specifies that toplevel lets *must* be evaluated outside of the class *)
+  (* The manual specifies that toplevel lets *must* be evaluated outside of the
+     class *)
   let cl_env, llets = build_class_lets ~scopes cl in
   let new_ids = if top then [] else Env.diff top_env cl_env in
   let env2 = Ident.create_local "env" in
