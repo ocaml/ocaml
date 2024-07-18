@@ -32,8 +32,7 @@ val h : (module S2 with type t = 'a) -> (module S with type t = 'a) = <fun>
 Line 5, characters 3-4:
 5 |   (x : (module S'));; (* fail *)
        ^
-Error: This expression has type
-         "(module S2 with type t = int and type u = bool)"
+Error: The value "x" has type "(module S2 with type t = int and type u = bool)"
        but an expression was expected of type "(module S')"
        Modules do not match:
          S'

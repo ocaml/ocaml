@@ -3,7 +3,7 @@ module F0 : sig type t = private int end
 Line 2, characters 20-21:
 2 | let f (x : F0.t) = (x : Foobar.t);; (* fails *)
                         ^
-Error: This expression has type "F0.t" but an expression was expected of type
+Error: The value "x" has type "F0.t" but an expression was expected of type
          "Foobar.t"
 module F = Foobar
 val f : F.t -> Foobar.t = <fun>
@@ -13,8 +13,7 @@ module M2 : sig type t = private < m : int; .. > end
 Line 1, characters 19-20:
 1 | fun (x : M1.t) -> (x : M2.t);; (* fails *)
                        ^
-Error: This expression has type "M1.t" but an expression was expected of type
-         "M2.t"
+Error: The value "x" has type "M1.t" but an expression was expected of type "M2.t"
 module M3 : sig type t = private M1.t end
 - : M3.t -> M1.t = <fun>
 - : M3.t -> M.t = <fun>

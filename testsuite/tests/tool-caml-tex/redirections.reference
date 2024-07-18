@@ -9,7 +9,7 @@ $\?$ [@@@warning "+A"];;
 $\?$ 1 + <<2.>> ;;
 \end{camlinput}
 \begin{camlerror}
-Error: This expression has type float but an expression was expected of type
+Error: The constant 2. has type float but an expression was expected of type
          int
 \end{camlerror}
 \end{caml}

@@ -1558,6 +1558,7 @@ typing/typecore.cmo : \
     typing/printpat.cmi \
     typing/primitive.cmi \
     typing/predef.cmi \
+    parsing/pprintast.cmi \
     typing/persistent_env.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
@@ -1592,6 +1593,7 @@ typing/typecore.cmx : \
     typing/printpat.cmx \
     typing/primitive.cmx \
     typing/predef.cmx \
+    parsing/pprintast.cmx \
     typing/persistent_env.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
@@ -1838,7 +1840,6 @@ typing/typedtree.cmo : \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
-    utils/format_doc.cmi \
     typing/env.cmi \
     parsing/asttypes.cmi \
     typing/typedtree.cmi
@@ -1852,7 +1853,6 @@ typing/typedtree.cmx : \
     parsing/longident.cmx \
     parsing/location.cmx \
     typing/ident.cmx \
-    utils/format_doc.cmx \
     typing/env.cmx \
     parsing/asttypes.cmx \
     typing/typedtree.cmi
@@ -1866,7 +1866,6 @@ typing/typedtree.cmi : \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
-    utils/format_doc.cmi \
     typing/env.cmi \
     parsing/asttypes.cmi
 typing/typemod.cmo : \

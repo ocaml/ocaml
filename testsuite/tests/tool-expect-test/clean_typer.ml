@@ -64,7 +64,7 @@ let f2 = ffoo bar;;
 Line 1, characters 14-17:
 1 | let f2 = ffoo bar;;
                   ^^^
-Error: This expression has type "Variants.bar M.t"
+Error: The value "bar" has type "Variants.bar M.t"
        but an expression was expected of type "Variants.foo M.t"
        Type "Variants.bar" = "[ `Bar ]" is not compatible with type "Variants.foo"
        The first variant type does not allow tag(s) "`Foo"
@@ -75,7 +75,7 @@ let f3 = fbar foo;;
 Line 1, characters 14-17:
 1 | let f3 = fbar foo;;
                   ^^^
-Error: This expression has type "Variants.foo M.t"
+Error: The value "foo" has type "Variants.foo M.t"
        but an expression was expected of type "Variants.bar M.t"
        Type "Variants.foo" is not compatible with type "Variants.bar" = "[ `Bar ]"
        The second variant type does not allow tag(s) "`Foo"

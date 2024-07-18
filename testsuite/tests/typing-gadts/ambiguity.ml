@@ -18,8 +18,7 @@ let ret_e1 (type a b) (b : bool) (wit : (a, b) eq) (x : a) (y : b) =
 Line 3, characters 29-30:
 3 |   | Refl -> if b then x else y
                                  ^
-Error: This expression has type "b" = "a" but an expression was expected of type
-         "a"
+Error: The value "y" has type "b" = "a" but an expression was expected of type "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -33,8 +32,7 @@ let ret_e2 (type a b) (b : bool) (wit : (a, b) eq) (x : a) (y : b) =
 Line 3, characters 29-30:
 3 |   | Refl -> if b then x else y
                                  ^
-Error: This expression has type "b" = "a" but an expression was expected of type
-         "a"
+Error: The value "y" has type "b" = "a" but an expression was expected of type "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -48,7 +46,7 @@ let ret_ei1 (type a) (b : bool) (wit : (a, int) eq) (x : a) =
 Line 3, characters 29-30:
 3 |   | Refl -> if b then x else 0
                                  ^
-Error: This expression has type "int" but an expression was expected of type
+Error: The constant "0" has type "int" but an expression was expected of type
          "a" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
@@ -63,7 +61,7 @@ let ret_ei2 (type a) (b : bool) (wit : (a, int) eq) (x : a) =
 Line 3, characters 29-30:
 3 |   | Refl -> if b then x else 0
                                  ^
-Error: This expression has type "int" but an expression was expected of type
+Error: The constant "0" has type "int" but an expression was expected of type
          "a" = "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
@@ -79,8 +77,7 @@ let ret_f (type a b) (wit : (a, b) eq) (x : a) (y : b) =
 Line 3, characters 16-17:
 3 |   | Refl -> [x; y]
                     ^
-Error: This expression has type "b" = "a" but an expression was expected of type
-         "a"
+Error: The value "y" has type "b" = "a" but an expression was expected of type "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -94,8 +91,7 @@ let ret_g1 (type a b) (wit : (a, b) eq) (x : a) (y : b) =
 Line 3, characters 16-17:
 3 |   | Refl -> [x; y]
                     ^
-Error: This expression has type "b" = "a" but an expression was expected of type
-         "a"
+Error: The value "y" has type "b" = "a" but an expression was expected of type "a"
        This instance of "a" is ambiguous:
        it would escape the scope of its equation
 |}]

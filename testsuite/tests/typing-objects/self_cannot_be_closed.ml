@@ -11,7 +11,7 @@ class c = object (self) method private foo = is_empty self end;;
 Line 1, characters 54-58:
 1 | class c = object (self) method private foo = is_empty self end;;
                                                           ^^^^
-Error: This expression has type "< .. >" but an expression was expected of type
+Error: The value "self" has type "< .. >" but an expression was expected of type
          "<  >"
        Self type cannot be unified with a closed object type
 |}]

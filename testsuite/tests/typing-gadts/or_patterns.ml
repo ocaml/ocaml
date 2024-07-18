@@ -632,7 +632,7 @@ let return_a (type a) (x : a t3) : a =
 Line 3, characters 13-14:
 3 |   | A | B -> 3 (* fails because the equation [a = int] doesn't escape any of
                  ^
-Error: This expression has type "int" but an expression was expected of type "a"
+Error: The constant "3" has type "int" but an expression was expected of type "a"
 |}]
 
 (* Making sure we don't break a frequent pattern of GADTs indexed by polymorphic
