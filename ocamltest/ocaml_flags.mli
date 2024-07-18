@@ -27,3 +27,5 @@ val runtime_flags :
 val toplevel_default_flags : string
 
 val ocamlobjinfo_default_flags : string
+
+val ocamltest_default_flags : string
