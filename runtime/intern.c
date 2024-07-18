@@ -439,6 +439,15 @@ static value intern_alloc_obj(struct caml_intern_state* s, caml_domain_state* d,
     }
     d->allocated_words += Whsize_wosize(wosize);
     d->allocated_words_direct += Whsize_wosize(wosize);
+    /* #13300: We assume that marshalled data whose total payload size
+       is above Max_young_wosize (2Mio on 64 machines) is long-lived.
+       This avoids situations where the GC works too hard due to
+       a 'ramp up' phase which is unmarhsalling-heavy and does not
+       free much memory (for example: when we type-check a .ml file,
+       we typically start by loading many .cmi files of dependencies,
+       and the GC should not try to compensate with more
+       marking work). */
+    d->allocated_words_longlived += Whsize_wosize(wosize);
     Hd_hp(p) = Make_header (wosize, tag, caml_global_heap_state.MARKED);
     caml_memprof_sample_block(Val_hp(p), wosize,
                               Whsize_wosize(wosize),

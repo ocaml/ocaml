@@ -581,12 +581,14 @@ static void update_major_slice_work(intnat howmuch,
   caml_domain_state *dom_st = Caml_state;
 
   intnat my_alloc_count = dom_st->allocated_words;
-  intnat my_alloc_direct_count = dom_st->allocated_words_direct;
+  intnat my_alloc_count_direct = dom_st->allocated_words_direct;
+  intnat my_alloc_count_longlived = dom_st->allocated_words_longlived;
   intnat my_dependent_count = dom_st->dependent_allocated;
   double my_extra_count = dom_st->extra_heap_resources;
   dom_st->stat_major_words += dom_st->allocated_words;
   dom_st->allocated_words = 0;
   dom_st->allocated_words_direct = 0;
+  dom_st->allocated_words_longlived = 0;
   dom_st->dependent_allocated = 0;
   dom_st->extra_heap_resources = 0.0;
   /*
@@ -597,13 +599,19 @@ static void update_major_slice_work(intnat howmuch,
      Assuming steady state and enforcing a constant allocation rate, then
      FM is divided in 2/3 for garbage and 1/3 for free list.
               G = 2 * FM / 3
-     G is also the amount of memory that will be used during this cycle
-     (still assuming steady state).
+
+     We distinguish 'long lived' allocations, that are likely to remain
+     alive until the end of time or the next forced full-major GC.
+     Assuming steady state, G is also the amount of non-longlived words
+     that will be allocated during this cycle.
+
+       allocated_words_steady = dom->allocated_words
+                                - dom_st->allocated_words_longlived
 
      Proportion of G consumed since the previous slice:
-              PH = dom_st->allocated_words / G
-                = dom_st->allocated_words * 3 * (100 + caml_percent_free)
-                  / (2 * heap_words * caml_percent_free)
+              PH = allocated_words_steady / G
+                 = allocated_words_steady * 3 * (100 + caml_percent_free)
+                   / (2 * heap_words * caml_percent_free)
      Proportion of extra-heap resources consumed since the previous slice:
               PE = dom_st->extra_heap_resources
      Proportion of total work to do in this slice:
@@ -636,7 +644,8 @@ static void update_major_slice_work(intnat howmuch,
       total_cycle_work
       * 3.0 * (100 + caml_percent_free)
       / heap_words / caml_percent_free / 2.0;
-    alloc_work = (intnat) (my_alloc_count * alloc_ratio);
+    intnat my_alloc_count_steady = my_alloc_count - my_alloc_count_longlived;
+    alloc_work = (intnat) (my_alloc_count_steady * alloc_ratio);
   } else {
     alloc_work = 0;
   }
@@ -662,7 +671,10 @@ static void update_major_slice_work(intnat howmuch,
                    my_alloc_count);
   caml_gc_message (0x40, "allocated_words_direct = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
-                   my_alloc_direct_count);
+                   my_alloc_count_direct);
+  caml_gc_message (0x40, "allocated_words_longlived = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "u\n",
+                   my_alloc_count_longlived);
   caml_gc_message (0x40, "alloc work-to-do = %"
                          ARCH_INTNAT_PRINTF_FORMAT "d\n",
                    alloc_work);
@@ -1956,6 +1968,7 @@ void caml_finish_marking (void)
     Caml_state->stat_major_words += Caml_state->allocated_words;
     Caml_state->allocated_words = 0;
     Caml_state->allocated_words_direct = 0;
+    Caml_state->allocated_words_longlived = 0;
     CAML_EV_END(EV_MAJOR_FINISH_MARKING);
   }
 }

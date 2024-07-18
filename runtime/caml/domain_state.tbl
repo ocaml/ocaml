@@ -81,6 +81,12 @@ DOMAIN_STATE(uintnat, allocated_words_direct)
 /* Number of words allocated directly to the major heap since the latest
    slice. (subset of allocated_words) */
 
+DOMAIN_STATE(uintnat, allocated_words_longlived)
+/* Number of words allocated to the major heap since the latest slice,
+   which we believe will be long-lived, stay alive almost until the
+   end of the program (or: the next forced full collection).
+   (subset of allocated_words) */
+
 DOMAIN_STATE(uintnat, swept_words)
 
 DOMAIN_STATE(uintnat, major_slice_epoch)

@@ -419,7 +419,7 @@ CAMLexport void caml_set_fields (value obj, value v)
 }
 
 Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
-                            int noexc)
+                            int noexc, int longlived)
 {
   Caml_check_caml_state();
   caml_domain_state *dom_st = Caml_state;
@@ -434,6 +434,9 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
 
   dom_st->allocated_words += Whsize_wosize(wosize);
   dom_st->allocated_words_direct += Whsize_wosize(wosize);
+  if (longlived)
+      dom_st->allocated_words_longlived += Whsize_wosize(wosize);
+
   if (dom_st->allocated_words_direct > dom_st->minor_heap_wsz / 5) {
     CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ALLOC_SHR, 1);
     caml_request_major_slice(1);
@@ -454,19 +457,19 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
 
 CAMLexport value caml_alloc_shr(mlsize_t wosize, tag_t tag)
 {
-  return alloc_shr(wosize, tag, 0, 0);
+  return alloc_shr(wosize, tag, 0, 0, 0);
 }
 
 CAMLexport value caml_alloc_shr_reserved(mlsize_t wosize,
                                          tag_t tag,
                                          reserved_t reserved)
 {
-  return alloc_shr(wosize, tag, reserved, 0);
+  return alloc_shr(wosize, tag, reserved, 0, 0);
 }
 
 
 CAMLexport value caml_alloc_shr_noexc(mlsize_t wosize, tag_t tag) {
-  return alloc_shr(wosize, tag, 0, 1);
+  return alloc_shr(wosize, tag, 0, 1, 0);
 }
 
 /* Global memory pool.
