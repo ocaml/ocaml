@@ -214,10 +214,9 @@ _______________
 
 ### Manual and documentation:
 
-- #13295: Use syntax for deep effect handlers in the effect handlers manual
-  page.
-  (KC Sivaramakrishnan, review by Anil Madhavapeddy, Florian Angeletti and Miod
-   Vallat)
+- #12298: Manual: emphasize that Bigarray.int refers to an OCaml integer,
+  which does not match the C int type.
+  (Edwin Török, review by Florian Angeletti)
 
 - #12868: Manual: simplify style colours of the post-processed manual and API
   HTML pages, and fix the search button icon
@@ -238,6 +237,11 @@ _______________
 - #13287: stdlib/sys.mli: Update documentation on Sys.opaque_identity
   following #9412.
   (Matt Walker, review by Guillaume Munch-Maccagnoni and Vincent Laviron)
+
+- #13295: Use syntax for deep effect handlers in the effect handlers manual
+  page.
+  (KC Sivaramakrishnan, review by Anil Madhavapeddy, Florian Angeletti and Miod
+   Vallat)
 
 ### Compiler user-interface and warnings:
 
