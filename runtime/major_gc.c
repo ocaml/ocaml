@@ -578,17 +578,12 @@ static inline intnat diffmod (uintnat x1, uintnat x2)
 static void update_major_slice_work(intnat howmuch,
                                     int may_access_gc_phase)
 {
-  double heap_words;
-  intnat alloc_work, dependent_work, extra_work, new_work;
-  intnat my_alloc_count, my_alloc_direct_count, my_dependent_count;
-  double my_extra_count;
   caml_domain_state *dom_st = Caml_state;
-  uintnat heap_size, heap_sweep_words, total_cycle_work;
 
-  my_alloc_count = dom_st->allocated_words;
-  my_alloc_direct_count = dom_st->allocated_words_direct;
-  my_dependent_count = dom_st->dependent_allocated;
-  my_extra_count = dom_st->extra_heap_resources;
+  intnat my_alloc_count = dom_st->allocated_words;
+  intnat my_alloc_direct_count = dom_st->allocated_words_direct;
+  intnat my_dependent_count = dom_st->dependent_allocated;
+  double my_extra_count = dom_st->extra_heap_resources;
   dom_st->stat_major_words += dom_st->allocated_words;
   dom_st->allocated_words = 0;
   dom_st->allocated_words_direct = 0;
@@ -628,13 +623,14 @@ static void update_major_slice_work(intnat howmuch,
      for this slice is:
                  S = P * TW
   */
-  heap_size = caml_heap_size(dom_st->shared_heap);
-  heap_words = (double)Wsize_bsize(heap_size);
-  heap_sweep_words = heap_words;
+  uintnat heap_size = caml_heap_size(dom_st->shared_heap);
+  double heap_words = (double)Wsize_bsize(heap_size);
+  uintnat heap_sweep_words = heap_words;
 
-  total_cycle_work =
+  uintnat total_cycle_work =
     heap_sweep_words + (heap_words * 100 / (100 + caml_percent_free));
 
+  intnat alloc_work;
   if (heap_words > 0) {
     double alloc_ratio =
       total_cycle_work
@@ -645,6 +641,7 @@ static void update_major_slice_work(intnat howmuch,
     alloc_work = 0;
   }
 
+  intnat dependent_work;
   if (dom_st->dependent_size > 0) {
     double dependent_ratio =
       total_cycle_work
@@ -655,7 +652,7 @@ static void update_major_slice_work(intnat howmuch,
     dependent_work = 0;
   }
 
-  extra_work = (intnat) (my_extra_count * (double) total_cycle_work);
+  intnat extra_work = (intnat) (my_extra_count * (double) total_cycle_work);
 
   caml_gc_message (0x40, "heap_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
@@ -682,7 +679,7 @@ static void update_major_slice_work(intnat howmuch,
                          ARCH_INTNAT_PRINTF_FORMAT "d\n",
                    extra_work);
 
-  new_work = max3 (alloc_work, dependent_work, extra_work);
+  intnat new_work = max3 (alloc_work, dependent_work, extra_work);
   atomic_fetch_add (&work_counter, dom_st->major_work_done_between_slices);
   dom_st->major_work_done_between_slices = 0;
   atomic_fetch_add (&alloc_counter, new_work);
