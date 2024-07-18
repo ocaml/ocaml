@@ -87,17 +87,38 @@ let remove_blanks s =
 (** Remove first blank characters of each line of a string, until the first '*' *)
 let remove_stars s =
   Str.global_replace (Str.regexp ("^"^blank^"*\\*")) "" s
+
+let validate_encoding raw_name =
+  match Misc.Utf8_lexeme.normalize raw_name with
+  | Error s -> failwith (Format.asprintf "Invalid encoding %s" s)
+  | Ok name -> name
+
+let validate_ident raw_name =
+  let name = validate_encoding raw_name in
+  match Misc.Utf8_lexeme.validate_identifier name with
+  | Misc.Utf8_lexeme.Valid -> name
+  | Misc.Utf8_lexeme.Invalid_character u ->
+    failwith (Format.asprintf "Invalid character U+%X" (Uchar.to_int u))
+  | Misc.Utf8_lexeme.Invalid_beginning u  ->
+    failwith (Format.asprintf "Invalid first character U+%X" (Uchar.to_int u))
+
+ let validate_exception_uident raw_name =
+    let name = validate_ident raw_name in
+    if Misc.Utf8_lexeme.is_capitalized name then name else
+      failwith (Format.asprintf "Invalid exception name: %s" name)
 }
 
 let blank = [ ' ' '\013' '\009' '\012']
 let nl_blank = blank | '\010'
 let notblank = [^ ' ' '\010' '\013' '\009' '\012']
-let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
-let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar =
-  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 
-let modident = uppercase identchar* ('.' uppercase identchar* )*
+let lowercase = ['a'-'z' '_']
+let uppercase = ['A'-'Z']
+let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
+let utf8 = ['\192'-'\255'] ['\128'-'\191']*
+let identchar_ext = identchar | utf8
+let identstart_ext = lowercase | uppercase | utf8
+let ident_ext = identstart_ext identchar_ext*
 
 rule main = parse
     [' ' '\013' '\009' '\012'] +
@@ -301,10 +322,20 @@ and elements = parse
       }
 
   | "@param" nl_blank+ (identchar+ as id) nl_blank+ { T_PARAM id }
+  | "@param" nl_blank+ (identchar_ext+ as raw_id) nl_blank+ {
+     let id = validate_ident raw_id in
+     T_PARAM id
+     }
   | "@param" { failwith "usage: @param id description"}
-  | "@before" nl_blank+ (notblank+ as v) nl_blank+ { T_BEFORE v }
+  | "@before" nl_blank+ (notblank+ as v) nl_blank+ {
+     let v = validate_encoding v in
+     T_BEFORE v }
   | "@before" { failwith "usage: @before version description"}
-  | "@raise" nl_blank+ (modident as id) nl_blank+ { T_RAISES id }
+  | "@raise" nl_blank+ (ident_ext ('.' ident_ext)* as exn_path) nl_blank+
+    {  let raw_path = String.split_on_char '.' exn_path in
+       let path = List.map validate_exception_uident raw_path in
+       let id = String.concat "." path in
+       T_RAISES id }
   | "@raise" { failwith "usage: @raise Exception description"}
   | "@"lowercase+
       {

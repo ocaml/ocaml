@@ -207,7 +207,7 @@ let process_file sourcefile =
   | Odoc_global.Text_file file ->
       Location.input_name := file;
       try
-        let mod_name = Unit_info.modname_from_source file in
+        let mod_name = Unit_info.lax_modname_from_source file in
         let txt =
           try Odoc_text.Texter.text_of_string (Odoc_misc.input_file_as_string file)
           with Odoc_text.Text_syntax (l, c, s) ->

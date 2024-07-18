@@ -34,7 +34,7 @@ let print_warning = Location.print_warning
 let input_name = Location.input_name
 
 let parse_mod_use_file name lb =
-  let modname = Unit_info.modname_from_source name in
+  let modname = Unit_info.lax_modname_from_source name in
   let items =
     List.concat
       (List.map

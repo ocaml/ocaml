@@ -17,7 +17,7 @@
 * text=auto
 
 # It is not possible to wrap lines lines in .gitattributes files
-.gitattributes typo.long-line=may
+.gitattributes typo.long-line=may typo.utf8
 
 # Binary files
 /boot/ocamlc binary
@@ -100,6 +100,8 @@ otherlibs/unix/readlink_win32.c    typo.long-line
 otherlibs/unix/stat_win32.c        typo.long-line
 otherlibs/unix/symlink_win32.c     typo.long-line
 
+# Some Unicode characters here and there
+utils/misc.ml            typo.utf8
 runtime/sak.c            typo.non-ascii
 
 stdlib/hashbang     typo.white-at-eol typo.missing-lf
@@ -108,8 +110,14 @@ testsuite/tests/**                                      typo.missing-header typo
 testsuite/tests/lib-bigarray-2/bigarrf.f                typo.tab linguist-language=Fortran
 testsuite/tests/lib-unix/win-stat/fakeclock.c           typo.missing-header=false
 testsuite/tests/misc-unsafe/almabench.ml                typo.long-line
+testsuite/tests/parsing/latin9.ml                       typo.utf8 typo.very-long-line
+testsuite/tests/tool-ocamldoc/Latin9.ml                 typo.utf8
+testsuite/tests/parsetree/source.ml                     typo.utf8
+testsuite/tests/typing-unicode/*.ml                     typo.utf8
 testsuite/tests/tool-toplevel/strings.ml                typo.utf8
 testsuite/tests/win-unicode/*.ml                        typo.utf8
+testsuite/tests/unicode/見.ml                           typo.utf8
+testsuite/tests/lexing/reject_bad_encoding.ml           typo.prune
 testsuite/tests/asmgen/immediates.cmm                   typo.very-long-line
 testsuite/tests/generated-parse-errors/errors.*         typo.very-long-line
 testsuite/tools/*.S                                     typo.missing-header

@@ -20,7 +20,7 @@
 
 check_typo_since() {
   CHECK_TYPO=$(dirname $0)/check-typo
-  git diff --name-only $1 \
+  git -c core.quotePath=false diff --name-only $1 \
   | (while IFS= read -r path
   do
     if test -e "$path"; then :; else continue; fi
