@@ -418,7 +418,7 @@ let p' = new colored_point 5 "red";;
 p'#get_x, p'#color;;
 \end{caml_example}
 A point and a colored point have incompatible types, since a point has
-no method "color". However, the function "get_x" below is a generic
+no method "color". However, the function "get_succ_x" below is a generic
 function applying method "get_x" to any object "p" that has this
 method (and possibly some others, which are represented by an ellipsis
 in the type). Thus, it applies to both points and colored points.
