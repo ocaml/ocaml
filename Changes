@@ -30,6 +30,9 @@ _______________
 
 ### Runtime system:
 
+- #13364: Emit major slice counters in the runtime events.
+  (KC Sivaramakrishnan and Sadiq Jaffer, review by Gabriel Scherer)
+
 - #13382: Add more documentation for Runtime_events types
   (Sadiq Jaffer, review by Tim McGilchrist, Miod Vallat and KC Sivaramakrishnan)
 

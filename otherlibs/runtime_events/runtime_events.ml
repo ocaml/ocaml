@@ -33,6 +33,15 @@ type runtime_counter =
 | EV_C_MAJOR_HEAP_POOL_FRAG_WORDS
 | EV_C_MAJOR_HEAP_POOL_LIVE_BLOCKS
 | EV_C_MAJOR_HEAP_LARGE_BLOCKS
+| EV_C_MAJOR_HEAP_WORDS
+| EV_C_MAJOR_ALLOCATED_WORDS
+| EV_C_MAJOR_ALLOCATED_WORK
+| EV_C_MAJOR_DEPENDENT_WORK
+| EV_C_MAJOR_EXTRA_WORK
+| EV_C_MAJOR_WORK_COUNTER
+| EV_C_MAJOR_ALLOC_COUNTER
+| EV_C_MAJOR_SLICE_TARGET
+| EV_C_MAJOR_SLICE_BUDGET
 
 type runtime_phase =
 | EV_EXPLICIT_GC_SET
@@ -121,6 +130,25 @@ let runtime_counter_name counter =
       "major_heap_pool_live_blocks"
   | EV_C_MAJOR_HEAP_LARGE_BLOCKS ->
       "major_heap_large_blocks"
+  | EV_C_MAJOR_HEAP_WORDS ->
+      "major_heap_words"
+  | EV_C_MAJOR_ALLOCATED_WORDS ->
+      "major_allocated_words"
+  | EV_C_MAJOR_ALLOCATED_WORK ->
+      "major_allocated_work"
+  | EV_C_MAJOR_DEPENDENT_WORK ->
+      "major_dependent_work"
+  | EV_C_MAJOR_EXTRA_WORK ->
+      "major_extra_work"
+  | EV_C_MAJOR_WORK_COUNTER ->
+      "major_work_counter"
+  | EV_C_MAJOR_ALLOC_COUNTER ->
+      "major_alloc_counter"
+  | EV_C_MAJOR_SLICE_TARGET ->
+      "major_slice_target"
+  | EV_C_MAJOR_SLICE_BUDGET ->
+      "major_slice_budget"
+
 
 let runtime_phase_name phase =
   match phase with
