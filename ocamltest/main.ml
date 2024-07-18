@@ -110,19 +110,20 @@ let string_of_summary = function
   | All_skipped -> "skipped"
 
 let run_test_tree log add_msg behavior env summ ast =
-  let rec run_test_tree behavior env summ ast =
-    match ast with
-    | Ast (Environment_statement s :: stmts, subs) ->
+  let rec run_statements behavior env summ stmts subs =
+    match stmts with
+    | [] -> run_children behavior env summ subs
+    | Environment_statement s :: stmts ->
       begin match interpret_environment_statement env s with
       | env ->
-        run_test_tree behavior env summ (Ast (stmts, subs))
+        run_statements behavior env summ stmts subs
       | exception e ->
         let bt = Printexc.get_backtrace () in
         let line = s.loc.Location.loc_start.Lexing.pos_lnum in
         Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
         Some_failure
       end
-    | Ast (Test (_, name, mods) :: stmts, subs) ->
+    | Test (_, name, mods) :: stmts ->
       let locstr =
         if name.loc = Location.none then
           "default"
@@ -148,12 +149,13 @@ let run_test_tree log add_msg behavior env summ ast =
       in
       Printf.ksprintf add_msg "%s (%s) %s" locstr name.node msg;
       let newsumm = join_result summ result in
-      let newast = Ast (stmts, subs) in
-      run_test_tree children_behavior newenv newsumm newast
-    | Ast ([], subs) ->
-      List.fold_left join_summaries summ
-        (List.map (run_test_tree behavior env All_skipped) subs)
-  in run_test_tree env summ ast
+      run_statements children_behavior newenv newsumm stmts subs
+  and run_children behavior env summ subs =
+    List.fold_left join_summaries summ
+      (List.map (run_tree behavior env All_skipped) subs)
+  and run_tree behavior env summ (Ast (stmts, subs)) =
+    run_statements behavior env summ stmts subs
+  in run_tree behavior env summ ast
 
 let get_test_source_directory test_dirname =
   if (Filename.is_relative test_dirname) then
