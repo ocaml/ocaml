@@ -46,14 +46,12 @@ typedef SELECTHANDLESET *LPSELECTHANDLESET;
 
 static void handle_set_init (LPSELECTHANDLESET hds, LPHANDLE lpHdl, DWORD max)
 {
-  DWORD i;
-
   hds->lpHdl = lpHdl;
   hds->nMax  = max;
   hds->nLast = 0;
 
   /* Set to invalid value every entry of the handle */
-  for (i = 0; i < hds->nMax; i++)
+  for (DWORD i = 0; i < hds->nMax; i++)
   {
     hds->lpHdl[i] = INVALID_HANDLE_VALUE;
   };
@@ -75,10 +73,9 @@ static void handle_set_add (LPSELECTHANDLESET hds, HANDLE hdl)
 static BOOL handle_set_mem (LPSELECTHANDLESET hds, HANDLE hdl)
 {
   BOOL  res;
-  DWORD i;
 
   res = FALSE;
-  for (i = 0; !res && i < hds->nLast; i++)
+  for (DWORD i = 0; !res && i < hds->nLast; i++)
   {
     res = (hds->lpHdl[i] == hdl);
   }
@@ -88,9 +85,7 @@ static BOOL handle_set_mem (LPSELECTHANDLESET hds, HANDLE hdl)
 
 static void handle_set_reset (LPSELECTHANDLESET hds)
 {
-  DWORD i;
-
-  for (i = 0; i < hds->nMax; i++)
+  for (DWORD i = 0; i < hds->nMax; i++)
   {
     hds->lpHdl[i] = INVALID_HANDLE_VALUE;
   }
@@ -403,7 +398,6 @@ static void read_pipe_poll (HANDLE hStop, void *_data)
   DWORD         n;
   LPSELECTQUERY iterQuery;
   LPSELECTDATA  lpSelectData;
-  DWORD         i;
   DWORD         wait;
 
   /* Poll pipe */
@@ -415,7 +409,7 @@ static void read_pipe_poll (HANDLE hStop, void *_data)
   DEBUG_PRINT("Checking data pipe");
   while (lpSelectData->EState == SELECT_STATE_NONE)
   {
-    for (i = 0; i < lpSelectData->nQueriesCount; i++)
+    for (DWORD i = 0; i < lpSelectData->nQueriesCount; i++)
     {
       iterQuery = &(lpSelectData->aQueries[i]);
       res = PeekNamedPipe(
@@ -503,7 +497,6 @@ static void socket_poll (HANDLE hStop, void *_data)
   HANDLE           aEvents[MAXIMUM_SELECT_OBJECTS];
   DWORD            nEvents;
   long             maskEvents;
-  DWORD            i;
   u_long           iMode;
   SELECTMODE       mode;
   WSANETWORKEVENTS events;
@@ -556,7 +549,7 @@ static void socket_poll (HANDLE hStop, void *_data)
 
   if (lpSelectData->nError == 0)
   {
-    for (i = 0; i < lpSelectData->nQueriesCount; i++)
+    for (DWORD i = 0; i < lpSelectData->nQueriesCount; i++)
     {
       iterQuery = &(lpSelectData->aQueries[i]);
       if (WaitForSingleObject(aEvents[i], 0) == WAIT_OBJECT_0)
@@ -902,7 +895,6 @@ static value find_handle(LPSELECTRESULT iterResult, value readfds,
 {
   CAMLparam3(readfds, writefds, exceptfds);
   CAMLlocal2(result, list);
-  int i;
 
   switch( iterResult->EMode )
   {
@@ -919,7 +911,7 @@ static value find_handle(LPSELECTRESULT iterResult, value readfds,
       CAMLassert(0);
   };
 
-  for(i=0; list != Val_unit && i < iterResult->lpOrigIdx; ++i )
+  for(int i=0; list != Val_unit && i < iterResult->lpOrigIdx; ++i )
   {
     list = Field(list, 1);
   }
@@ -940,10 +932,10 @@ static value find_handle(LPSELECTRESULT iterResult, value readfds,
  */
 static int fdlist_to_fdset(value fdlist, fd_set *fdset)
 {
-  value l, c;
+  value c;
   int n = 0;
   FD_ZERO(fdset);
-  for (l = fdlist; l != Val_emptylist; l = Field(l, 1)) {
+  for (value l = fdlist; l != Val_emptylist; l = Field(l, 1)) {
     if (++n > FD_SETSIZE) {
       DEBUG_PRINT("More than FD_SETSIZE sockets");
       return 0;

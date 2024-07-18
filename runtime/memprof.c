@@ -1045,9 +1045,8 @@ Caml_inline uint64_t splitmix64_next(uint64_t* x)
 
 static void xoshiro_init(memprof_domain_t domain, uint64_t seed)
 {
-  int i;
   uint64_t splitmix64_state = seed;
-  for (i = 0; i < RAND_BLOCK_SIZE; i++) {
+  for (int i = 0; i < RAND_BLOCK_SIZE; i++) {
     uint64_t t = splitmix64_next(&splitmix64_state);
     domain->xoshiro_state[0][i] = t & 0xFFFFFFFF;
     domain->xoshiro_state[1][i] = t >> 32;
@@ -1122,7 +1121,6 @@ __attribute__((optimize("tree-vectorize")))
 
 static void rand_batch(memprof_domain_t domain)
 {
-  int i;
   float one_log1m_lambda = One_log1m_lambda(domain->entries.config);
 
   /* Instead of using temporary buffers, we could use one big loop,
@@ -1132,18 +1130,18 @@ static void rand_batch(memprof_domain_t domain)
   float B[RAND_BLOCK_SIZE];
 
   /* Generate uniform variables in A using the xoshiro128+ PRNG. */
-  for (i = 0; i < RAND_BLOCK_SIZE; i++)
+  for (int i = 0; i < RAND_BLOCK_SIZE; i++)
     A[i] = xoshiro_next(domain, i);
 
   /* Generate exponential random variables by computing logarithms. */
-  for (i = 0; i < RAND_BLOCK_SIZE; i++)
+  for (int i = 0; i < RAND_BLOCK_SIZE; i++)
     B[i] = 1 + log_approx(A[i]) * one_log1m_lambda;
 
   /* We do the final flooring for generating geometric
      variables. Compilers are unlikely to use SIMD instructions for
      this loop, because it involves a conditional and variables of
      different sizes (32 and 64 bits). */
-  for (i = 0; i < RAND_BLOCK_SIZE; i++) {
+  for (int i = 0; i < RAND_BLOCK_SIZE; i++) {
     double f = B[i];
     CAMLassert (f >= 1);
     /* [Max_long+1] is a power of two => no rounding in the test. */

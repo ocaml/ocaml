@@ -63,7 +63,7 @@ void caml_garbage_collection(void)
   { /* Compute the total allocation size at this point,
        including allocations combined by Comballoc */
     unsigned char* alloc_len = (unsigned char*)(&d->live_ofs[d->num_live]);
-    int i, nallocs = *alloc_len++;
+    int nallocs = *alloc_len++;
     intnat allocsz = 0;
 
     if (nallocs == 0) {
@@ -73,7 +73,7 @@ void caml_garbage_collection(void)
     }
     else
     {
-      for (i = 0; i < nallocs; i++) {
+      for (int i = 0; i < nallocs; i++) {
         allocsz += Whsize_wosize(Wosize_encoded_alloc_len(alloc_len[i]));
       }
       /* We have computed whsize (including header)

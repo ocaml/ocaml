@@ -86,8 +86,7 @@ struct debug_info {
 
 static struct debug_info *find_debug_info(code_t pc)
 {
-  int i;
-  for (i = 0; i < caml_debug_info.size; i++) {
+  for (int i = 0; i < caml_debug_info.size; i++) {
     struct debug_info *di = caml_debug_info.contents[i];
     if (pc >= di->start && pc < di->end)
       return di;
@@ -139,12 +138,12 @@ static struct ev_info *process_debug_events(code_t code_start,
 {
   CAMLparam1(events_heap);
   CAMLlocal4(l, ev, ev_start, ev_end);
-  mlsize_t i, j;
+  mlsize_t j;
   struct ev_info *events;
 
   /* Compute the size of the required event buffer. */
   *num_events = 0;
-  for (i = 0; i < caml_array_length(events_heap); i++)
+  for (mlsize_t i = 0; i < caml_array_length(events_heap); i++)
     for (l = Field(events_heap, i); l != Val_int(0); l = Field(l, 1))
       (*num_events)++;
 
@@ -156,7 +155,7 @@ static struct ev_info *process_debug_events(code_t code_start,
     caml_fatal_error ("caml_add_debug_info: out of memory");
 
   j = 0;
-  for (i = 0; i < caml_array_length(events_heap); i++) {
+  for (mlsize_t i = 0; i < caml_array_length(events_heap); i++) {
     for (l = Field(events_heap, i); l != Val_int(0); l = Field(l, 1)) {
       ev = Field(l, 0);
 
@@ -238,8 +237,7 @@ value caml_remove_debug_info(code_t start)
   CAMLparam0();
   CAMLlocal2(dis, prev);
 
-  int i;
-  for (i = 0; i < caml_debug_info.size; i++) {
+  for (int i = 0; i < caml_debug_info.size; i++) {
     struct debug_info *di = caml_debug_info.contents[i];
     if (di->start == start) {
       /* note that caml_ext_table_remove calls caml_stat_free on the
@@ -375,9 +373,8 @@ static value alloc_callstack(backtrace_slot *trace, size_t slots)
 {
   CAMLparam0();
   CAMLlocal1(callstack);
-  int i;
   callstack = caml_alloc(slots, 0);
-  for (i = 0; i < slots; i++)
+  for (int i = 0; i < slots; i++)
     Store_field(callstack, i, Val_backtrace_slot(trace[i]));
   caml_stat_free(trace);
   CAMLreturn(callstack);
@@ -447,7 +444,7 @@ static void read_main_debug_info(struct debug_info *di)
   CAMLparam0();
   CAMLlocal3(events, evl, l);
   char_os *exec_name;
-  int fd, num_events, orig, i;
+  int fd, num_events, orig;
   struct channel *chan;
   struct exec_trailer trail;
 
@@ -482,7 +479,7 @@ static void read_main_debug_info(struct debug_info *di)
     num_events = caml_getword(chan);
     events = caml_alloc(num_events, 0);
 
-    for (i = 0; i < num_events; i++) {
+    for (int i = 0; i < num_events; i++) {
       orig = caml_getword(chan);
       evl = caml_input_val(chan);
       caml_input_val(chan); /* Skip the list of absolute directory names */

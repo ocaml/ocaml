@@ -114,12 +114,11 @@ static void adopt_pool_stats_with_lock(struct caml_heap_state *,
                                        pool *, sizeclass);
 
 struct caml_heap_state* caml_init_shared_heap (void) {
-  int i;
   struct caml_heap_state* heap;
 
   heap = caml_stat_alloc_noexc(sizeof(struct caml_heap_state));
   if(heap != NULL) {
-    for (i = 0; i<NUM_SIZECLASSES; i++) {
+    for (int i = 0; i<NUM_SIZECLASSES; i++) {
       heap->avail_pools[i] = heap->full_pools[i] =
         heap->unswept_avail_pools[i] = heap->unswept_full_pools[i] = 0;
     }
@@ -148,10 +147,9 @@ static int move_all_pools(pool** src, _Atomic(pool*)* dst,
 }
 
 void caml_teardown_shared_heap(struct caml_heap_state* heap) {
-  int i;
   int released = 0, released_large = 0;
   caml_plat_lock_blocking(&pool_freelist.lock);
-  for (i = 0; i < NUM_SIZECLASSES; i++) {
+  for (int i = 0; i < NUM_SIZECLASSES; i++) {
     released +=
       move_all_pools(&heap->avail_pools[i],
                      &pool_freelist.global_avail_pools[i], NULL);
@@ -462,8 +460,7 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
   CAML_TSAN_ANNOTATE_HAPPENS_BEFORE(p);
 #ifdef DEBUG
   {
-    int i;
-    for (i = 0; i < wosize; i++) {
+    for (int i = 0; i < wosize; i++) {
       Field(Val_hp(p), i) = Debug_free_major;
     }
   }
@@ -507,12 +504,8 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
         p[1] = (value)a->next_obj;
         CAMLassert(Is_block((value)p));
 #ifdef DEBUG
-        {
-          int i;
-          mlsize_t wo = Wosize_whsize(wh);
-          for (i = 1; i < wo; i++) {
-            Field(Val_hp(p), i) = Debug_free_major;
-          }
+        for (mlsize_t i = 1, wo = Wosize_whsize(wh); i < wo; i++) {
+          Field(Val_hp(p), i) = Debug_free_major;
         }
 #endif
         a->next_obj = (value*)p;
@@ -1244,7 +1237,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
   }
 
   /* Large allocations */
-  for (large_alloc* la = heap->unswept_large; la != NULL; la = la->next) {
+  for (large_alloc *la = heap->unswept_large; la != NULL; la = la->next) {
     header_t* p = (header_t*)((char*)la + LARGE_ALLOC_HEADER_SZ);
     if (Has_status_val(Val_hp(p), caml_global_heap_state.UNMARKED)) {
       compact_update_block(p);
@@ -1324,8 +1317,7 @@ struct mem_stats {
 };
 
 static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
-  value* v;
-  for (v = a->next_obj; v; v = (value*)v[1]) {
+  for (value *v = a->next_obj; v; v = (value *)v[1]) {
     CAMLassert(*v == 0);
   }
 
@@ -1367,18 +1359,16 @@ static void verify_large(large_alloc* a, struct mem_stats* s) {
 }
 
 static void verify_swept (struct caml_heap_state* local) {
-  int i;
   struct mem_stats pool_stats = {0,}, large_stats = {0,};
 
   /* sweeping should be done by this point */
   CAMLassert(local->next_to_sweep == NUM_SIZECLASSES);
-  for (i = 0; i < NUM_SIZECLASSES; i++) {
-    pool* p;
+  for (int i = 0; i < NUM_SIZECLASSES; i++) {
     CAMLassert(local->unswept_avail_pools[i] == NULL &&
                local->unswept_full_pools[i] == NULL);
-    for (p = local->avail_pools[i]; p; p = p->next)
+    for (pool *p = local->avail_pools[i]; p; p = p->next)
       verify_pool(p, i, &pool_stats);
-    for (p = local->full_pools[i]; p; p = p->next) {
+    for (pool *p = local->full_pools[i]; p; p = p->next) {
       CAMLassert(p->next_obj == NULL);
       verify_pool(p, i, &pool_stats);
     }
@@ -1420,10 +1410,10 @@ void caml_cycle_heap_from_stw_single (void) {
 }
 
 void caml_cycle_heap(struct caml_heap_state* local) {
-  int i, received_p = 0, received_l = 0;
+  int received_p = 0, received_l = 0;
 
   caml_gc_log("Cycling heap [%02d]", local->owner->id);
-  for (i = 0; i < NUM_SIZECLASSES; i++) {
+  for (int i = 0; i < NUM_SIZECLASSES; i++) {
     CAMLassert(local->unswept_avail_pools[i] == NULL);
     local->unswept_avail_pools[i] = local->avail_pools[i];
     local->avail_pools[i] = NULL;
@@ -1436,7 +1426,7 @@ void caml_cycle_heap(struct caml_heap_state* local) {
   local->swept_large = NULL;
 
   caml_plat_lock_blocking(&pool_freelist.lock);
-  for (i = 0; i < NUM_SIZECLASSES; i++) {
+  for (int i = 0; i < NUM_SIZECLASSES; i++) {
     received_p += move_all_pools(
         (pool**)&pool_freelist.global_avail_pools[i],
         (_Atomic(pool*)*)&local->unswept_avail_pools[i],

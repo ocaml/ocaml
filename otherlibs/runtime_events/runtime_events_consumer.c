@@ -698,12 +698,10 @@ static int ml_alloc(int domain_id, void *callback_data, uint64_t timestamp,
 
   tmp_callback = Field(callbacks_root, 3); /* ev_alloc */
   if (Is_some(tmp_callback)) {
-    int i;
-
     ts_val = caml_copy_int64(timestamp);
     misc_val = caml_alloc(RUNTIME_EVENTS_NUM_ALLOC_BUCKETS, 0);
 
-    for (i = 0; i < RUNTIME_EVENTS_NUM_ALLOC_BUCKETS; i++) {
+    for (int i = 0; i < RUNTIME_EVENTS_NUM_ALLOC_BUCKETS; i++) {
       Store_field(misc_val, i, Val_long(sz[i]));
     }
 

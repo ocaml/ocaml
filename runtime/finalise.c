@@ -52,12 +52,11 @@ static void alloc_todo (caml_domain_state* d, int size)
 static void generic_final_update
   (caml_domain_state* d, struct finalisable *final, int darken_value)
 {
-  uintnat i, j, k;
   uintnat todo_count = 0;
   struct caml_final_info *f = d->final_info;
 
   CAMLassert (final->old <= final->young);
-  for (i = 0; i < final->old; i++) {
+  for (uintnat i = 0; i < final->old; i++) {
     CAMLassert (Is_block (final->table[i].val));
     if (is_unmarked (final->table[i].val)) {
       ++ todo_count;
@@ -74,6 +73,7 @@ static void generic_final_update
       - k : index in to_do_tl, next available slot.
   */
   if (todo_count > 0) {
+    uintnat i, j, k;
     caml_set_action_pending(d);
     alloc_todo (d, todo_count);
     j = k = 0;
@@ -182,26 +182,26 @@ void caml_final_do_roots
   (scanning_action act, scanning_action_flags fflags, void* fdata,
    caml_domain_state* d, int do_val)
 {
-  uintnat i;
-  struct final_todo *todo;
   struct caml_final_info *f = d->final_info;
 
   CAMLassert (f->first.old <= f->first.young);
-  for (i = 0; i < f->first.young; i++) {
+  for (uintnat i = 0; i < f->first.young; i++) {
     Call_action (act, fdata, f->first.table[i].fun);
     if (do_val)
       Call_action (act, fdata, f->first.table[i].val);
   }
 
   CAMLassert (f->last.old <= f->last.young);
-  for (i = 0; i < f->last.young; i++) {
+  for (uintnat i = 0; i < f->last.young; i++) {
     Call_action (act, fdata, f->last.table[i].fun);
     if (do_val)
       Call_action (act, fdata, f->last.table[i].val);
   }
 
-  for (todo = f->todo_head; todo != NULL; todo = todo->next) {
-    for (i = 0; i < todo->size; i++) {
+  for (struct final_todo *todo = f->todo_head;
+       todo != NULL;
+       todo = todo->next) {
+    for (uintnat i = 0; i < todo->size; i++) {
       Call_action (act, fdata, todo->item[i].fun);
       Call_action (act, fdata, todo->item[i].val);
     }
@@ -213,17 +213,16 @@ void caml_final_do_young_roots
   (scanning_action act, scanning_action_flags fflags, void* fdata,
    caml_domain_state* d, int do_last_val)
 {
-  uintnat i;
   struct caml_final_info *f = d->final_info;
 
   CAMLassert (f->first.old <= f->first.young);
-  for (i = f->first.old; i < f->first.young; i++) {
+  for (uintnat i = f->first.old; i < f->first.young; i++) {
     Call_action (act, fdata, f->first.table[i].fun);
     Call_action (act, fdata, f->first.table[i].val);
   }
 
   CAMLassert (f->last.old <= f->last.old);
-  for (i = f->last.old; i < f->last.young; i++) {
+  for (uintnat i = f->last.old; i < f->last.young; i++) {
     Call_action (act, fdata, f->last.table[i].fun);
     if (do_last_val)
       Call_action (act, fdata, f->last.table[i].val);
@@ -233,12 +232,11 @@ void caml_final_do_young_roots
 static void generic_final_minor_update
   (caml_domain_state* d, struct finalisable * final)
 {
-  uintnat i, j, k;
   uintnat todo_count = 0;
   struct caml_final_info *fi = d->final_info;
 
   CAMLassert (final->old <= final->young);
-  for (i = final->old; i < final->young; i++){
+  for (uintnat i = final->old; i < final->young; i++){
     CAMLassert (Is_block (final->table[i].val));
     if (Is_young(final->table[i].val) &&
         caml_get_header_val(final->table[i].val) != 0){
@@ -255,6 +253,7 @@ static void generic_final_minor_update
       - k : index in to_do_tl, next available slot.
   */
   if (todo_count > 0) {
+    uintnat i, j, k;
     caml_set_action_pending(d);
     alloc_todo (d, todo_count);
     k = 0;
@@ -282,7 +281,7 @@ static void generic_final_minor_update
   }
 
   /** update the minor value to the copied major value */
-  for (i = final->old; i < final->young; i++) {
+  for (uintnat i = final->old; i < final->young; i++) {
     CAMLassert (Is_block (final->table[i].val));
     if (Is_young(final->table[i].val)) {
       CAMLassert (caml_get_header_val(final->table[i].val) == 0);

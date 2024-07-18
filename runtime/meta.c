@@ -131,7 +131,7 @@ CAMLprim value caml_static_release_bytecode(value bc)
 
 CAMLprim value caml_realloc_global(value size)
 {
-  mlsize_t requested_size, actual_size, i;
+  mlsize_t requested_size, actual_size;
   value new_global_data, old_global_data;
   old_global_data = caml_global_data;
 
@@ -143,9 +143,9 @@ CAMLprim value caml_realloc_global(value size)
                      ARCH_INTNAT_PRINTF_FORMAT "u entries\n",
                      requested_size);
     new_global_data = caml_alloc_shr(requested_size, 0);
-    for (i = 0; i < actual_size; i++)
+    for (mlsize_t i = 0; i < actual_size; i++)
       caml_initialize(&Field(new_global_data, i), Field(old_global_data, i));
-    for (i = actual_size; i < requested_size; i++){
+    for (mlsize_t i = actual_size; i < requested_size; i++){
       Field (new_global_data, i) = Val_long (0);
     }
     caml_modify_generational_global_root(&caml_global_data, new_global_data);
@@ -186,12 +186,11 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
        saved env */
 
   value * osp, * nsp;
-  int i;
 
   osp = Caml_state->current_stack->sp;
   Caml_state->current_stack->sp -= 4;
   nsp = Caml_state->current_stack->sp;
-  for (i = 0; i < 7; i++) nsp[i] = osp[i];
+  for (int i = 0; i < 7; i++) nsp[i] = osp[i];
   nsp[7] = (value) Nativeint_val(codeptr);
   nsp[8] = env;
   nsp[9] = Val_int(0);

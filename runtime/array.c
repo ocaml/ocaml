@@ -202,7 +202,7 @@ CAMLprim value caml_array_make(value len, value init)
 {
   CAMLparam2 (len, init);
   CAMLlocal1 (res);
-  mlsize_t size, i;
+  mlsize_t size;
 
   size = Long_val(len);
   if (size == 0) {
@@ -216,14 +216,14 @@ CAMLprim value caml_array_make(value len, value init)
     wsize = size * Double_wosize;
     if (wsize > Max_wosize) caml_invalid_argument("Array.make");
     res = caml_alloc(wsize, Double_array_tag);
-    for (i = 0; i < size; i++) {
+    for (mlsize_t i = 0; i < size; i++) {
       Store_double_flat_field(res, i, d);
     }
 #endif
   } else {
     if (size <= Max_young_wosize) {
       res = caml_alloc_small(size, 0);
-      for (i = 0; i < size; i++) Field(res, i) = init;
+      for (mlsize_t i = 0; i < size; i++) Field(res, i) = init;
     }
     else if (size > Max_wosize) caml_invalid_argument("Array.make");
     else {
@@ -237,7 +237,7 @@ CAMLprim value caml_array_make(value len, value init)
       res = caml_alloc_shr(size, 0);
       /* We now know that [init] is not in the minor heap, so there is
          no need to call [caml_initialize]. */
-      for (i = 0; i < size; i++) Field(res, i) = init;
+      for (mlsize_t i = 0; i < size; i++) Field(res, i) = init;
     }
   }
   /* Give the GC a chance to run, and run memprof callbacks */
@@ -278,7 +278,7 @@ CAMLprim value caml_array_of_uniform_array(value init)
 {
 #ifdef FLAT_FLOAT_ARRAY
   CAMLparam1 (init);
-  mlsize_t wsize, size, i;
+  mlsize_t wsize, size;
   CAMLlocal2 (v, res);
 
   size = Wosize_val(init);
@@ -296,7 +296,7 @@ CAMLprim value caml_array_of_uniform_array(value init)
       } else {
         res = caml_alloc_shr(wsize, Double_array_tag);
       }
-      for (i = 0; i < size; i++) {
+      for (mlsize_t i = 0; i < size; i++) {
         double d = Double_val(Field(init, i));
         Store_double_flat_field(res, i, d);
       }
@@ -346,8 +346,6 @@ static void wo_memmove (volatile value* const dst,
                         volatile const value* const src,
                         mlsize_t nvals)
 {
-  mlsize_t i;
-
   if (caml_domain_alone ()) {
     memmove ((value*)dst, (value*)src, nvals * sizeof (value));
   } else {
@@ -355,12 +353,12 @@ static void wo_memmove (volatile value* const dst,
     atomic_thread_fence(memory_order_acquire);
     if (dst < src) {
       /* copy ascending */
-      for (i = 0; i < nvals; i++)
+      for (mlsize_t i = 0; i < nvals; i++)
         atomic_store_release(&((atomic_value*)dst)[i], src[i]);
 
     } else {
       /* copy descending */
-      for (i = nvals; i > 0; i--)
+      for (mlsize_t i = nvals; i > 0; i--)
         atomic_store_release(&((atomic_value*)dst)[i-1], src[i-1]);
     }
   }

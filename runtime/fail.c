@@ -51,12 +51,11 @@ CAMLexport value caml_exception_with_args(value exn_constr,
   Assert_is_exn_constructor(exn_constr);
 
   value bucket;
-  int i;
 
   CAMLassert(1 + nargs <= Max_young_wosize);
   bucket = caml_alloc_small (1 + nargs, 0);
   Field(bucket, 0) = exn_constr;
-  for (i = 0; i < nargs; i++) Field(bucket, 1 + i) = args[i];
+  for (int i = 0; i < nargs; i++) Field(bucket, 1 + i) = args[i];
   CAMLreturn(bucket);
 }
 

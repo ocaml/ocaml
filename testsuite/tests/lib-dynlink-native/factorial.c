@@ -24,9 +24,8 @@ value factorial(value n){
 
   static char buf[256];
   int x = 1;
-  int i;
   int m = Int_val(n);
-  for (i = 1; i <= m; i++) x *= i;
+  for (int i = 1; i <= m; i++) x *= i;
   sprintf(buf,"%i",x);
   s = caml_copy_string(buf);
   CAMLreturn (s);

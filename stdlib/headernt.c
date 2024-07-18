@@ -49,7 +49,7 @@ static __inline char * read_runtime_path(HANDLE h)
   char buffer[TRAILER_SIZE];
   static char runtime_path[MAX_PATH];
   DWORD nread;
-  int num_sections, path_size, i;
+  int num_sections, path_size;
   long ofs;
 
   if (SetFilePointer(h, -TRAILER_SIZE, NULL, FILE_END) == -1) return NULL;
@@ -59,7 +59,7 @@ static __inline char * read_runtime_path(HANDLE h)
   ofs = TRAILER_SIZE + num_sections * 8;
   if (SetFilePointer(h, - ofs, NULL, FILE_END) == -1) return NULL;
   path_size = 0;
-  for (i = 0; i < num_sections; i++) {
+  for (int i = 0; i < num_sections; i++) {
     if (! ReadFile(h, buffer, 8, &nread, NULL) || nread != 8) return NULL;
     if (buffer[0] == 'R' && buffer[1] == 'N' &&
         buffer[2] == 'T' && buffer[3] == 'M') {

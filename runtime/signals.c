@@ -49,8 +49,7 @@ static caml_plat_mutex signal_install_mutex = CAML_PLAT_MUTEX_INITIALIZER;
 
 CAMLexport int caml_check_pending_signals(void)
 {
-  int i;
-  for (i = 0; i < NSIG_WORDS; i++) {
+  for (int i = 0; i < NSIG_WORDS; i++) {
     if (atomic_load_relaxed(&caml_pending_signals[i]))
       return 1;
   }
@@ -61,7 +60,7 @@ CAMLexport int caml_check_pending_signals(void)
 
 CAMLexport caml_result caml_process_pending_signals_res(void)
 {
-  int i, j, signo;
+  int signo;
   uintnat curr, mask ;
 #ifdef POSIX_SIGNALS
   sigset_t set;
@@ -76,11 +75,11 @@ CAMLexport caml_result caml_process_pending_signals_res(void)
   pthread_sigmask(/* dummy */ SIG_BLOCK, NULL, &set);
 #endif
 
-  for (i = 0; i < NSIG_WORDS; i++) {
+  for (int i = 0; i < NSIG_WORDS; i++) {
     curr = atomic_load_relaxed(&caml_pending_signals[i]);
     if (curr == 0) goto next_word;
     /* Scan curr for bits set */
-    for (j = 0; j < BITS_PER_WORD; j++) {
+    for (int j = 0; j < BITS_PER_WORD; j++) {
       mask = (uintnat)1 << j;
       if ((curr & mask) == 0) goto next_bit;
       signo = i * BITS_PER_WORD + j + 1;
@@ -218,10 +217,8 @@ CAMLexport void caml_leave_blocking_section(void)
 static value caml_signal_handlers;
 
 void caml_init_signal_handling(void) {
-  mlsize_t i;
-
   caml_signal_handlers = caml_alloc_shr(NSIG, 0);
-  for (i = 0; i < NSIG; i++)
+  for (mlsize_t i = 0; i < NSIG; i++)
     Field(caml_signal_handlers, i) = Val_unit;
   caml_register_generational_global_root(&caml_signal_handlers);
 }
@@ -513,8 +510,7 @@ CAMLexport int caml_convert_signal_number(int signo)
 
 CAMLexport int caml_rev_convert_signal_number(int signo)
 {
-  int i;
-  for (i = 0; i < sizeof(posix_signals) / sizeof(int); i++)
+  for (int i = 0; i < sizeof(posix_signals) / sizeof(int); i++)
     if (signo == posix_signals[i]) return -i - 1;
   return signo;
 }

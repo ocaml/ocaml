@@ -129,11 +129,10 @@ static value re_alloc_groups(value re, unsigned char * starttxt,
 {
   value res;
   int n = Numgroups(re);
-  int i;
   struct re_group * group;
 
   res = caml_alloc(n * 2, 0);
-  for (i = 0; i < n; i++) {
+  for (int i = 0; i < n; i++) {
     group = &(groups[i]);
     if (group->start == NULL || group->end == NULL) {
       Field(res, i * 2) = Val_int(-1);
@@ -281,9 +280,8 @@ static value re_match(value re,
     case REFGROUP: {
       int group_no = Arg(instr);
       struct re_group * group = &(groups[group_no]);
-      unsigned char * s;
       if (group->start == NULL || group->end == NULL) goto backtrack;
-      for (s = group->start; s < group->end; s++) {
+      for (unsigned char *s = group->start; s < group->end; s++) {
         if (txt == endtxt) goto prefix_match;
         if (*s != *txt) goto backtrack;
         txt++;

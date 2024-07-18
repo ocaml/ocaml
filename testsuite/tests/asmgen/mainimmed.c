@@ -72,7 +72,6 @@ static intnat rnd(void)
 
 int main(int argc, char **argv)
 {
-  int i;
-  for (i = 0; i < NUM_RANDOM_ITERATIONS; i++) do_test(rnd());
+  for (int i = 0; i < NUM_RANDOM_ITERATIONS; i++) do_test(rnd());
   return 0;
 }
