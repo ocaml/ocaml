@@ -109,7 +109,7 @@ let test_trees_of_tsl_block tsl_block =
     | line::remaining_lines as l ->
       begin match line with
         | Environment_statement s -> unexpected_environment_statement s
-        | Test (test_depth, located_name, env_modifiers) ->
+        | Test (test_depth, _sign, located_name, env_modifiers) ->
           begin
             let name = located_name.node in
             if test_depth > depth then too_deep name depth test_depth
@@ -143,7 +143,7 @@ let test_trees_of_tsl_block tsl_block =
 let tests_in_stmt set stmt =
   match stmt with
   | Environment_statement _ -> set
-  | Test (_, name, _) ->
+  | Test (_, _, name, _) ->
     begin match lookup_test name with
     | t -> Tests.TestSet.add t set
     | exception No_such_test_or_action _ -> set
@@ -166,7 +166,8 @@ let actions_in_tests tests =
   Tests.TestSet.fold f tests Actions.ActionSet.empty
 
 let rec ast_of_tree (Node (env, test, mods, subs)) =
-  let tst = [Test (0, Tsl_ast.make_identifier test.Tests.test_name, mods)] in
+  let test_id = Tsl_ast.make_identifier test.Tests.test_name in
+  let tst = [Test (0, Pos, test_id, mods)] in
   ast_of_tree_aux env tst subs
 
 and ast_of_tree_aux env tst subs =
@@ -198,7 +199,11 @@ let print_tsl_ast ~compact oc ast =
 
   and print_statements indent stmts =
     match stmts with
-    | Test (_, name, mods) :: tl ->
+    | Test (_, sign, name, mods) :: tl ->
+      begin match sign with
+      | Pos -> ()
+      | Neg -> pr "not ";
+      end;
       pr "%s%s" indent name.node;
       begin match mods with
       | m :: tl ->

@@ -35,7 +35,8 @@ let mkenvstmt envstmt =
 %token TSL_END_C_STYLE
 %token <[`Above | `Below]> TSL_BEGIN_OCAML_STYLE
 %token TSL_END_OCAML_STYLE
-%token BANG COMMA LEFT_BRACE RIGHT_BRACE SEMI
+%token THEN ELSE NOT
+%token COMMA LEFT_BRACE RIGHT_BRACE SEMI
 %token <int> TEST_DEPTH
 %token EQUAL PLUSEQUAL
 /* %token COLON */
@@ -58,7 +59,8 @@ tree_list:
 
 tree:
 | LEFT_BRACE node RIGHT_BRACE { (Pos, $2) }
-| BANG LEFT_BRACE node RIGHT_BRACE { (Neg, $3) }
+| THEN LEFT_BRACE node RIGHT_BRACE { (Pos, $3) }
+| ELSE LEFT_BRACE node RIGHT_BRACE { (Neg, $3) }
 
 statement_list:
 | { [] }
@@ -66,7 +68,8 @@ statement_list:
 
 statement:
 | env_item SEMI { $1 }
-| identifier with_environment_modifiers SEMI { Test (0, $1, $2) }
+| identifier with_environment_modifiers SEMI { Test (0, Pos, $1, $2) }
+| NOT identifier with_environment_modifiers SEMI { Test (0, Neg, $2, $3) }
 
 tsl_script:
 | TSL_BEGIN_C_STYLE node TSL_END_C_STYLE { $2 }
@@ -85,7 +88,7 @@ tsl_item:
 | env_item { $1 }
 
 test_item:
-  TEST_DEPTH identifier with_environment_modifiers { (Test ($1, $2, $3)) }
+  TEST_DEPTH identifier with_environment_modifiers { (Test ($1, Pos, $2, $3)) }
 
 with_environment_modifiers:
 | { [] }

@@ -120,7 +120,7 @@ let run_test_tree log add_msg behavior env summ ast =
         Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
         Error Some_failure
       end
-    | Test (_, name, mods) ->
+    | Test (_, sign, name, mods) ->
       let locstr =
         if name.loc = Location.none then
           "default"
@@ -135,6 +135,13 @@ let run_test_tree log add_msg behavior env summ ast =
             let testenv = List.fold_left apply_modifiers env mods in
             let test = lookup_test name in
             let (result, newenv) = Tests.run log testenv test in
+            let result =
+              match sign, result.status with
+              | _, Fail -> result
+              | Pos, _ -> result
+              | Neg, Skip -> { result with status = Pass }
+              | Neg, Pass -> { result with status = Skip }
+            in
             let msg = Result.string_of_result result in
             let sub_behavior =
               if Result.is_pass result then Run else Skip_all in
@@ -201,7 +208,7 @@ let test_file test_filename =
       let default_tests = Tests.default_tests() in
       let make_child test =
         let id = make_identifier test.Tests.test_name in
-        (Pos, Ast ([Test (0, id, [])], []))
+        (Pos, Ast ([Test (0, Pos, id, [])], []))
       in
       Ast ([], List.map make_child default_tests)
     | _ -> tsl_ast

@@ -26,19 +26,21 @@ type environment_statement =
   | Include of string located (* include named environment *)
   | Unset of string located (* clear environment variable *)
 
+type sign = Pos | Neg
+
 type tsl_item =
   | Environment_statement of environment_statement located
   | Test of
     int (* test depth *) *
+    sign (* when Neg, negate the test *) *
     string located (* test name *) *
     string located list (* environment modifiers *)
 
 type tsl_block = tsl_item list
 
-type t = Ast of tsl_item list * (sign * t) list
-and sign =
-  | Pos (* run this test when the parent succeeds *)
-  | Neg (* run this test when the parent skips *)
+type statements = tsl_item list
+type t = Ast of statements * (sign * t) list
+(* when a children has sign Neg, it only runs if the statements skip. *)
 
 let rec split_env l =
   match l with

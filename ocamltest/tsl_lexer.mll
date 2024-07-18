@@ -58,7 +58,6 @@ and token = parse
       TSL_BEGIN_OCAML_STYLE `Below
     }
   | "*)" { TSL_END_OCAML_STYLE }
-  | "!" { BANG }
   | "," { COMMA }
   | '*'+ { TEST_DEPTH (String.length (Lexing.lexeme lexbuf)) }
   | "*" (num+ as n) { TEST_DEPTH (int_of_string n)}
@@ -67,6 +66,9 @@ and token = parse
   | identchar *
     { let s = Lexing.lexeme lexbuf in
       match s with
+        | "not" -> NOT
+        | "then" -> THEN
+        | "else" -> ELSE
         | "include" -> INCLUDE
         | "set" -> SET
         | "unset" -> UNSET

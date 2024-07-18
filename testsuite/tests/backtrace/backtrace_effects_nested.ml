@@ -51,10 +51,10 @@ let () = f ()
  }
  {
    flambda;
-   !{
+   else {
      native;
    }
-   {
+   then {
      reference = "${test_source_directory}/backtrace_effects_nested.flambda.reference";
      native;
    }

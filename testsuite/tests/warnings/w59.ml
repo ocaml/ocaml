@@ -74,7 +74,7 @@ let set_opaque =
    check-ocamlc.byte-output;
  }{
    flambda;
-   {
+   then {
      compiler_reference = "${test_source_directory}/w59.flambda.reference";
      flags = "-w +A-70 -dflambda-invariants";
      flambda;
@@ -82,7 +82,7 @@ let set_opaque =
      ocamlopt.byte;
      check-ocamlopt.byte-output;
    }
-  !{
+   else {
      setup-ocamlopt.byte-build-env;
      ocamlopt.byte;
      check-ocamlopt.byte-output;

@@ -61,13 +61,13 @@ let d' x = (c [@inlined hint]) x
  }
  {
    flambda;
-   {
+   then {
      compiler_reference = "${test_source_directory}/w55.flambda.reference";
      setup-ocamlopt.byte-build-env;
      ocamlopt.byte;
      check-ocamlopt.byte-output;
    }
-   {
+   else {
      setup-ocamlopt.byte-build-env;
      ocamlopt.byte;
      check-ocamlopt.byte-output;
