@@ -406,6 +406,13 @@ CAMLexport void caml_process_pending_actions(void)
     caml_process_pending_actions_res());
 }
 
+/* deprecated, but kept around for backward-compatibility */
+CAMLexport value caml_process_pending_actions_exn(void)
+{
+  caml_result res = caml_process_pending_actions_res();
+  return caml_result_get_encoded_exception(res);
+}
+
 /* OS-independent numbering of signals */
 
 #ifndef SIGABRT
