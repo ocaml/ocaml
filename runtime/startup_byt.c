@@ -657,6 +657,20 @@ CAMLexport value caml_startup_code_exn(
   return res;
 }
 
+CAMLexport caml_result caml_startup_code_res(
+           code_t code, asize_t code_size,
+           char *data, asize_t data_size,
+           char *section_table, asize_t section_table_size,
+           int pooling,
+           char_os **argv)
+{
+    value res =
+        caml_startup_code_exn(code, code_size, data, data_size,
+                              section_table, section_table_size,
+                              pooling, argv);
+    return Result_encoded(res);
+}
+
 CAMLexport void caml_startup_code(
            code_t code, asize_t code_size,
            char *data, asize_t data_size,

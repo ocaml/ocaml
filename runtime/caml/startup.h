@@ -29,6 +29,13 @@ CAMLextern void caml_startup_code(
            int pooling,
            char_os **argv);
 
+CAMLextern caml_result caml_startup_code_res(
+  code_t code, asize_t code_size,
+  char *data, asize_t data_size,
+  char *section_table, asize_t section_table_size,
+  int pooling,
+  char_os **argv);
+
 CAMLextern value caml_startup_code_exn(
   code_t code, asize_t code_size,
   char *data, asize_t data_size,
