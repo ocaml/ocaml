@@ -7557,7 +7557,7 @@ toplevel/native/topeval.cmx : \
     typing/includemod.cmx \
     typing/ident.cmx \
     typing/env.cmx \
-    otherlibs/dynlink/dynlink.cmi \
+    otherlibs/dynlink/dynlink.cmx \
     utils/config.cmx \
     driver/compmisc.cmx \
     middle_end/compilenv.cmx \
@@ -7591,7 +7591,7 @@ toplevel/native/tophooks.cmx : \
     lambda/lambda.cmx \
     middle_end/flambda/import_approx.cmx \
     middle_end/flambda/flambda_middle_end.cmx \
-    otherlibs/dynlink/dynlink.cmi \
+    otherlibs/dynlink/dynlink.cmx \
     utils/config.cmx \
     middle_end/compilenv.cmx \
     middle_end/closure/closure_middle_end.cmx \
@@ -8360,7 +8360,7 @@ debugger/loadprinter.cmx : \
     typing/ident.cmx \
     utils/format_doc.cmx \
     typing/env.cmx \
-    otherlibs/dynlink/dynlink.cmi \
+    otherlibs/dynlink/dynlink.cmx \
     typing/ctype.cmx \
     file_formats/cmo_format.cmi \
     debugger/loadprinter.cmi
@@ -8718,7 +8718,7 @@ ocamldoc/odoc.cmx : \
     ocamldoc/odoc_config.cmx \
     ocamldoc/odoc_args.cmx \
     ocamldoc/odoc_analyse.cmx \
-    otherlibs/dynlink/dynlink.cmi \
+    otherlibs/dynlink/dynlink.cmx \
     ocamldoc/odoc.cmi
 ocamldoc/odoc.cmi :
 ocamldoc/odoc_analyse.cmo : \
@@ -10355,3 +10355,54 @@ testsuite/tools/parsecmmaux.cmi : \
     parsing/location.cmi \
     lambda/debuginfo.cmi \
     middle_end/backend_var.cmi
+otherlibs/dynlink/byte/dynlink.cmo : \
+    otherlibs/dynlink/dynlink_types.cmi \
+    otherlibs/dynlink/byte/dynlink_symtable.cmi \
+    otherlibs/dynlink/dynlink_config.cmi \
+    otherlibs/dynlink/dynlink_common.cmi \
+    otherlibs/dynlink/dynlink_cmo_format.cmi \
+    otherlibs/dynlink/byte/dynlink.cmi
+otherlibs/dynlink/byte/dynlink.cmi :
+otherlibs/dynlink/byte/dynlink_symtable.cmo : \
+    otherlibs/dynlink/dynlink_config.cmi \
+    otherlibs/dynlink/dynlink_cmo_format.cmi \
+    otherlibs/dynlink/byte/dynlink_symtable.cmi
+otherlibs/dynlink/byte/dynlink_symtable.cmi : \
+    otherlibs/dynlink/dynlink_cmo_format.cmi
+otherlibs/dynlink/dynlink.cmi :
+otherlibs/dynlink/dynlink_cmo_format.cmi :
+otherlibs/dynlink/dynlink_cmxs_format.cmi :
+otherlibs/dynlink/dynlink_common.cmo : \
+    otherlibs/dynlink/dynlink_types.cmi \
+    otherlibs/dynlink/dynlink_platform_intf.cmi \
+    otherlibs/dynlink/dynlink_common.cmi
+otherlibs/dynlink/dynlink_common.cmi : \
+    otherlibs/dynlink/dynlink_platform_intf.cmi
+otherlibs/dynlink/dynlink_config.cmo : \
+    otherlibs/dynlink/dynlink_config.cmi
+otherlibs/dynlink/dynlink_config.cmi :
+otherlibs/dynlink/dynlink_platform_intf.cmo : \
+    otherlibs/dynlink/dynlink_types.cmi \
+    otherlibs/dynlink/dynlink_platform_intf.cmi
+otherlibs/dynlink/dynlink_platform_intf.cmi : \
+    otherlibs/dynlink/dynlink_types.cmi
+otherlibs/dynlink/dynlink_types.cmo : \
+    otherlibs/dynlink/dynlink_types.cmi
+otherlibs/dynlink/dynlink_types.cmi :
+otherlibs/dynlink/dynlink_common.cmx : \
+    otherlibs/dynlink/dynlink_types.cmx \
+    otherlibs/dynlink/dynlink_platform_intf.cmx \
+    otherlibs/dynlink/dynlink_common.cmi
+otherlibs/dynlink/dynlink_config.cmx : \
+    otherlibs/dynlink/dynlink_config.cmi
+otherlibs/dynlink/dynlink_platform_intf.cmx : \
+    otherlibs/dynlink/dynlink_types.cmx \
+    otherlibs/dynlink/dynlink_platform_intf.cmi
+otherlibs/dynlink/dynlink_types.cmx : \
+    otherlibs/dynlink/dynlink_types.cmi
+otherlibs/dynlink/native/dynlink.cmx : \
+    otherlibs/dynlink/dynlink_types.cmx \
+    otherlibs/dynlink/dynlink_config.cmx \
+    otherlibs/dynlink/dynlink_common.cmx \
+    otherlibs/dynlink/dynlink_cmxs_format.cmi \
+    otherlibs/dynlink/native/dynlink.cmi

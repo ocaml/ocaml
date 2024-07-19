@@ -194,6 +194,7 @@ AC_SUBST([debug_runtime])
 AC_SUBST([instrumented_runtime])
 AC_SUBST([instrumented_runtime_libs])
 AC_SUBST([otherlibraries])
+AC_SUBST([otherlibs])
 AC_SUBST([lib_dynlink])
 AC_SUBST([lib_runtime_events])
 AC_SUBST([lib_str])
@@ -734,17 +735,21 @@ AS_CASE([$host],
   [exeext=''])
 
 otherlibraries="dynlink runtime_events"
+otherlibs="runtime_events"
+optional_libraries="$optional_libraries otherlibs/dynlink/dynlink"
 lib_dynlink=true
 dldir=otherlibs/dynlink
 AC_CONFIG_LINKS([
   $dldir/dynlink_cmo_format.mli:file_formats/cmo_format.mli
   $dldir/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli
+  $dldir/dynlink_platform_intf.mli:$dldir/dynlink_platform_intf.ml
 ])
 lib_runtime_events=true
 AS_IF([test x"$enable_unix_lib" != "xno"],
   [enable_unix_lib=yes
   AC_CONFIG_FILES([otherlibs/unix/META])
   otherlibraries="$otherlibraries unix"
+  otherlibs="$otherlibs unix"
   lib_unix=true
   AC_CONFIG_LINKS([
     otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml
@@ -756,6 +761,7 @@ AS_IF([test x"$enable_unix_lib" != "xno"],
 
 AS_IF([test x"$enable_str_lib" != "xno"],
   [otherlibraries="$otherlibraries str"
+  otherlibs="$otherlibs str"
   lib_str=true
   AC_CONFIG_FILES([otherlibs/str/META])])
 
@@ -2423,6 +2429,7 @@ AS_CASE([$enable_systhreads,$enable_unix_lib],
   [systhread_support=true
   AC_CONFIG_FILES([otherlibs/systhreads/META])
   otherlibraries="$otherlibraries systhreads"
+  otherlibs="$otherlibs systhreads"
   lib_systhreads=true
   AC_MSG_NOTICE([the threads library is supported])])
 
