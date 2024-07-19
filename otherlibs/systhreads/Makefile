@@ -18,7 +18,8 @@ ROOTDIR=../..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-OC_CFLAGS += $(SHAREDLIB_CFLAGS)
+OC_BYTECODE_CFLAGS += $(SHAREDLIB_CFLAGS)
+OC_NATIVE_CFLAGS += $(SHAREDLIB_CFLAGS)
 
 LIBS = $(STDLIBFLAGS) -I $(ROOTDIR)/otherlibs/unix
 
@@ -54,10 +55,12 @@ all: lib$(LIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
 
 allopt: lib$(LIBNAME)nat.$(A) $(LIBNAME).cmxa $(CMIFILES)
 
+lib$(LIBNAME).$(A): OC_CFLAGS = $(OC_BYTECODE_CFLAGS)
+
 lib$(LIBNAME).$(A): $(BYTECODE_C_OBJS)
 	$(V_OCAMLMKLIB)$(MKLIB) -o $(LIBNAME) $(BYTECODE_C_OBJS)
 
-lib$(LIBNAME)nat.$(A): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
+lib$(LIBNAME)nat.$(A): OC_CFLAGS = $(OC_NATIVE_CFLAGS)
 
 lib$(LIBNAME)nat.$(A): $(NATIVECODE_C_OBJS)
 	$(V_OCAMLMKLIB)$(MKLIB) -o $(LIBNAME)nat $^
