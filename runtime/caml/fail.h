@@ -149,6 +149,14 @@ Caml_inline value caml_result_get_encoded_exception(
   else
     return result.data;
 }
+
+Caml_inline caml_result Result_encoded(value encoded)
+{
+  if (Is_exception_result(encoded))
+    return Result_exception(Extract_exception(encoded));
+  else
+    return Result_value(encoded);
+}
 #endif // CAML_INTERNALS
 
 #ifdef __cplusplus
