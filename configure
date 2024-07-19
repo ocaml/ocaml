@@ -909,6 +909,7 @@ native_cppflags
 native_cflags
 bytecode_cppflags
 bytecode_cflags
+target_os_type
 system
 model
 arch64
@@ -3410,6 +3411,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -17695,6 +17697,7 @@ fi
 
 printf "%s\n" "#define OCAML_OS_TYPE \"$ostype\"" >>confdefs.h
 
+target_os_type="$ostype"
 
 if $cross_compiler
 then :
