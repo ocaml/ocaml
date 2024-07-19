@@ -94,14 +94,6 @@ AC_DEFUN([OCAML_SIGNAL_HANDLERS_SEMANTICS], [
   )
 ])
 
-AC_DEFUN([OCAML_CC_SUPPORTS_ALIGNED], [
-  AC_MSG_CHECKING([whether the C compiler supports __attribute__((aligned(n)))])
-  AC_COMPILE_IFELSE(
-    [AC_LANG_SOURCE([typedef struct {__attribute__((aligned(8))) int t;} t;])],
-    [AC_DEFINE([SUPPORTS_ALIGNED_ATTRIBUTE], [1])
-    AC_MSG_RESULT([yes])],
-    [AC_MSG_RESULT([no])])])
-
 AC_DEFUN([OCAML_CC_SUPPORTS_TREE_VECTORIZE], [
   AC_MSG_CHECKING(
  [whether the C compiler supports __attribute__((optimize("tree-vectorize")))])

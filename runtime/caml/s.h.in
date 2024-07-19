@@ -314,6 +314,8 @@
 
 #undef HAS_ZSTD
 
+#undef HAVE_MAX_ALIGN_T
+
 /* 3. Language extensions. */
 
 #undef HAVE_LABELS_AS_VALUES

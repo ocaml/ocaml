@@ -1237,6 +1237,8 @@ AS_IF([! $arch64],
       [AC_DEFINE([ARCH_ALIGN_INT64], [1])])])
     ])])
 
+AC_CHECK_TYPES([max_align_t], [], [], [[#include <stddef.h>]])
+
 # Atomics library
 
 AS_IF([! $arch64],
@@ -1398,8 +1400,6 @@ AS_CASE(["$ocaml_cc_vendor,$host"],
     [AX_CHECK_COMPILE_FLAG([-fno-tree-vrp],
       [internal_cflags="$internal_cflags -fno-tree-vrp"], [],
       [$warn_error_flag])])
-
-OCAML_CC_SUPPORTS_ALIGNED
 
 ## Check whether __attribute__((optimize("tree-vectorize")))) is supported
 OCAML_CC_SUPPORTS_TREE_VECTORIZE

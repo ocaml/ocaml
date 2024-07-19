@@ -155,17 +155,11 @@ CAMLdeprecated_typedef(addr, char *);
 /* by ocamlopt makes direct references into the domain state structure,*/
 /* which is stored in a register on many platforms. For this to work, */
 /* we need to be able to compute the exact offset of each member. */
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-#define CAMLalign(n) _Alignas(n)
-#elif defined(__cplusplus) \
-   && (__cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1900)
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L || \
+    defined(__cplusplus)
 #define CAMLalign(n) alignas(n)
-#elif defined(SUPPORTS_ALIGNED_ATTRIBUTE)
-#define CAMLalign(n) __attribute__((aligned(n)))
-#elif defined(_MSC_VER)
-#define CAMLalign(n) __declspec(align(n))
 #else
-#error "How do I align values on this platform?"
+#define CAMLalign(n) _Alignas(n)
 #endif
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L || \
