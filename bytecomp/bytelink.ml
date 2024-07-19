@@ -685,6 +685,15 @@ value caml_startup_exn(char_os ** argv)
                                argv);
 }
 
+caml_result caml_startup_res(char_os ** argv)
+{
+  return caml_startup_code_res(caml_code, sizeof(caml_code),
+                               caml_data, sizeof(caml_data),
+                               caml_sections, sizeof(caml_sections),
+                               /* pooling */ 0,
+                               argv);
+}
+
 void caml_startup_pooled(char_os ** argv)
 {
   caml_startup_code(caml_code, sizeof(caml_code),
@@ -697,6 +706,15 @@ void caml_startup_pooled(char_os ** argv)
 value caml_startup_pooled_exn(char_os ** argv)
 {
   return caml_startup_code_exn(caml_code, sizeof(caml_code),
+                               caml_data, sizeof(caml_data),
+                               caml_sections, sizeof(caml_sections),
+                               /* pooling */ 1,
+                               argv);
+}
+
+caml_result caml_startup_pooled_res(char_os ** argv)
+{
+  return caml_startup_code_res(caml_code, sizeof(caml_code),
                                caml_data, sizeof(caml_data),
                                caml_sections, sizeof(caml_sections),
                                /* pooling */ 1,
