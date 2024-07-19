@@ -1350,7 +1350,7 @@ static void cycle_major_heap_from_stw_single(
          space_overhead@N =
          100.0 * (heap_words@N - live_words@N) / live_words@N
       */
-      double live_words = last_cycle.not_garbage_words - swept_words;
+      intnat live_words = last_cycle.not_garbage_words - swept_words;
       double space_overhead = 100.0 * (double)(last_cycle.heap_words
                                                - live_words) / live_words;
 
