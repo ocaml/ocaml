@@ -132,11 +132,11 @@ CAMLextern caml_stat_block caml_stat_resize(caml_stat_block, asize_t);
 CAMLextern caml_stat_block caml_stat_resize_noexc(caml_stat_block, asize_t);
 
 
-/* A [caml_stat_block] containing a NULL-terminated string */
+/* A [caml_stat_block] containing a null-terminated string */
 typedef char* caml_stat_string;
 
 /* [caml_stat_strdup(s)] returns a pointer to a heap-allocated string which is a
-   copy of the NULL-terminated string [s]. It throws an OCaml exception in case
+   copy of the null-terminated string [s]. It throws an OCaml exception in case
    the request fails, and so requires the runtime lock to be held.
 */
 CAMLextern caml_stat_string caml_stat_strdup(const char *s);
@@ -149,8 +149,8 @@ CAMLextern wchar_t* caml_stat_wcsdup(const wchar_t *s);
 */
 CAMLextern caml_stat_string caml_stat_strdup_noexc(const char *s);
 
-/* [caml_stat_strconcat(nargs, strings)] concatenates NULL-terminated [strings]
-   (an array of [char*] of size [nargs]) into a new string, dropping all NULLs,
+/* [caml_stat_strconcat(nargs, strings)] concatenates null-terminated [strings]
+   (an array of [char*] of size [nargs]) into a new string, dropping all NULs,
    except for the very last one. It throws an OCaml exception in case the
    request fails, and so requires the runtime lock to be held.
 */
