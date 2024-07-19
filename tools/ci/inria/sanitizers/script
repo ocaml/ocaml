@@ -47,19 +47,23 @@ else
   run_testsuite="$make -C testsuite all"
 fi
 
+# Figure out which version of llvm/clang to use
+llvm_version=$(clang -dumpversion | cut -d . -f 1)
+clang=clang-${llvm_version}
+llvm_bin_dir=/usr/lib/llvm-${llvm_version}/bin
+
 # A tool that makes error backtraces nicer
-# Need to pick the one that matches clang-14 and is named "llvm-symbolizer"
-# (/usr/bin/llvm-symbolizer-14 doesn't work, that would be too easy)
-export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-14/bin/llvm-symbolizer
+# Need to pick the one that matches clang's version and is named
+# "llvm-symbolizer" (/usr/bin/llvm-symbolizer-xx doesn't work,
+# that would be too easy)
+export ASAN_SYMBOLIZER_PATH=${llvm_bin_dir}/llvm-symbolizer
 export TSAN_SYMBOLIZER_PATH="$ASAN_SYMBOLIZER_PATH"
 
 #########################################################################
 
-echo "======== clang 14, address sanitizer, UB sanitizer =========="
+echo "======== clang ${llvm_version}, address sanitizer, UB sanitizer ========"
 
 git clean -q -f -d -x
-
-# # Use clang 14
 
 # These are the undefined behaviors we want to check
 # Others occur on purpose e.g. signed arithmetic overflow
@@ -82,7 +86,7 @@ sanitizers="-fsanitize=address -fsanitize-trap=$ubsan"
 # Don't optimize too much to get better backtraces of errors
 
 ./configure \
-  CC=clang-14 \
+  CC=$clang \
   CFLAGS="-O1 -fno-omit-frame-pointer $sanitizers" \
   LDFLAGS="$sanitizers" \
   --disable-stdlib-manpages --enable-dependency-generation
@@ -115,12 +119,12 @@ ASAN_OPTIONS="detect_leaks=0,use_sigaltstack=0" $run_testsuite
 # Initially intended to detect data races in OCaml programs and C stubs, it has
 # proved effective at also detecting races in the runtime (see #11040).
 
-echo "======== clang 14, thread sanitizer =========="
+echo "======== clang ${llvm_version}, thread sanitizer ========"
 
 git clean -q -f -d -x
 
 ./configure \
-  CC=clang-14 \
+  CC=$clang \
   --enable-tsan \
   CPPFLAGS="-DTSAN_INSTRUMENT_ALL" \
   --disable-stdlib-manpages --enable-dependency-generation
@@ -138,7 +142,7 @@ TSAN_OPTIONS="" $run_testsuite
 # Some alarms are reported that look like false positive
 # and are impossible to debug.
 
-# echo "======== clang 6.0, memory sanitizer =========="
+# echo "======== clang ${llvm_version}, memory sanitizer ========"
 
 # git clean -q -f -d -x
 
@@ -149,7 +153,7 @@ TSAN_OPTIONS="" $run_testsuite
 # # Don't optimize at all to get better backtraces of errors
 
 # ./configure \
-#   CC=clang-9 \
+#   CC=$clang \
 #   CFLAGS="-O0 -g -fno-omit-frame-pointer -fsanitize=memory" \
 #   LDFLAGS="-fsanitize=memory" \
 #   --disable-native-compiler
