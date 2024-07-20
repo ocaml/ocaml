@@ -22,6 +22,10 @@ _______________
   (Leo White, Tom Kelly, Anil Madhavapeddy, KC Sivaramakrishnan, Xavier Leroy
    and Florian Angeletti, review by the same, Hugo Heuzard, and Ulysse Gérard)
 
+- Named binding operators: `let/map`, `let/bind` are supported in addition
+  to pre-existing `let+`, `let*`.
+  (Gabriel Scherer and Eduardo Rafael, review by ??)
+
 ### Type system
 
 - #11891, #12507: Allow to name new locally abstract types in constructor type
