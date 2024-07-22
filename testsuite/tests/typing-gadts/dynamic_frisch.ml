@@ -464,8 +464,7 @@ let triple t1 t2 t3 =
         (fun (a,(b,c)) -> (a,b,c)), Pair (t1, Pair (t2, t3)));;
 [%%expect{|
 val triple :
-  ('a, 'e) ty -> ('a0, 'e) ty -> ('b, 'e) ty -> ('a * 'a0 * 'b, 'e) ty =
-  <fun>
+  ('a, 'e) ty -> ('b, 'e) ty -> ('c, 'e) ty -> ('a * 'b * 'c, 'e) ty = <fun>
 |}];;
 
 let v = variantize Enil (triple String Int Int) ("A", 2, 3) ;;

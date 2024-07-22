@@ -210,7 +210,7 @@ module All_annotations_correctly_used :
   sig
     type 'a t = N of 'a | Graft of int | Tau of 'a t | C of 'a t * 'a t
     val graft : 'a -> 'b
-    val map : ('a -> 'a0) -> 'a t -> 'a0 t
+    val map : ('a -> 'b) -> 'a t -> 'b t
   end
 |}]
 
@@ -277,6 +277,6 @@ module All_annotations_flipped :
   sig
     type 'a t = N of 'a | Graft of int | Tau of 'a t | C of 'a t * 'a t
     val graft : 'a -> 'b
-    val map_wrong : ('a -> 'a0) -> 'a t -> 'a0 t
+    val map_wrong : ('a -> 'b) -> 'a t -> 'b t
   end
 |}]

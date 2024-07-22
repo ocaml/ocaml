@@ -520,8 +520,7 @@ end
 Line 3, characters 12-17:
 3 |   method id x = x
                 ^^^^^
-Error: This method has type "'b -> 'b" which is less general than
-         "'b0. 'b0 -> 'b"
+Error: This method has type "'b -> 'b" which is less general than "'c. 'c -> 'b"
 |}];;
 
 class id2 (x : 'a) = object
@@ -533,8 +532,7 @@ end
 Line 3, characters 12-17:
 3 |   method id x = x
                 ^^^^^
-Error: This method has type "'b -> 'b" which is less general than
-         "'b0. 'b0 -> 'b"
+Error: This method has type "'b -> 'b" which is less general than "'c. 'c -> 'b"
 |}];;
 
 class id3 x = object
@@ -547,8 +545,7 @@ end
 Line 4, characters 12-17:
 4 |   method id _ = x
                 ^^^^^
-Error: This method has type "'a -> 'a" which is less general than
-         "'a0. 'a0 -> 'a0"
+Error: This method has type "'a -> 'a" which is less general than "'b. 'b -> 'b"
 |}];;
 
 class id4 () = object
@@ -566,8 +563,7 @@ Lines 4-7, characters 12-17:
 5 |     match r with
 6 |       None -> r <- Some x; x
 7 |     | Some y -> y
-Error: This method has type "'a -> 'a" which is less general than
-         "'a0. 'a0 -> 'a0"
+Error: This method has type "'a -> 'a" which is less general than "'b. 'b -> 'b"
 |}];;
 
 class c = object
@@ -659,7 +655,7 @@ val f :
 = <fun>
 - : < m : 'a. < p : 'a; .. > as 'b > -> 'b = <fun>
 |}, Principal{|
-- : (< m : 'a. 'a * 'b > as 'b) -> 'a * (< m : 'a0. 'a0 * 'c > as 'c) = <fun>
+- : (< m : 'a. 'a * 'b > as 'b) -> 'a * (< m : 'd. 'd * 'c > as 'c) = <fun>
 - : (< m : 'a. 'b * 'a list > as 'b) ->
     (< m : 'a. 'c * 'a list > as 'c) * 'a list
 = <fun>
@@ -837,7 +833,7 @@ Line 2, characters 17-25:
 2 | let bad = {bad = ref None};;
                      ^^^^^^^^
 Error: This field value has type "'a option ref" which is less general than
-         "'a0. 'a0 option ref"
+         "'b. 'b option ref"
 |}];;
 
 (* Type variable scope *)
@@ -938,7 +934,7 @@ Line 1, characters 50-59:
 1 | type ('a,'b) t constraint 'a = 'b and ('a,'b) u = ('a,'b) t;;
                                                       ^^^^^^^^^
 Error: Constraints are not satisfied in this type.
-       Type "('a, 'b) t" should be an instance of "('b0, 'b0) t"
+       Type "('a, 'b) t" should be an instance of "('c, 'c) t"
 |}];;
 
 (* Full polymorphism if we do not expand *)
@@ -1071,9 +1067,9 @@ class type ['b] ca = object ('s) inherit ['s, 'b] a end;;
 class type ['a] cb = object ('s) inherit ['a, 's] b end;;
 [%%expect {|
 class type ['a] ca =
-  object ('a0)
-    constraint 'a = < a : 'a0; as_b : ('a0, 'a) b; .. >
-    method as_a : ('a0, 'a) a
+  object ('b)
+    constraint 'a = < a : 'b; as_b : ('b, 'a) b; .. >
+    method as_a : ('b, 'a) a
     method b : 'a
   end
 class type ['a] cb =
@@ -1854,7 +1850,7 @@ Line 1, characters 30-40:
 1 | let rec foo : 'a . 'a -> 'd = fun x -> x
                                   ^^^^^^^^^^
 Error: This definition has type "'d -> 'd" which is less general than
-         "'a. 'a -> 'd0"
+         "'a. 'a -> 'e"
 |}]
 
 (* #7741 *)
@@ -1929,7 +1925,7 @@ Line 2, characters 6-44:
 2 |   let ref : type a . a option ref = ref None in
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This definition has type "'a option ref" which is less general than
-         "'a0. 'a0 option ref"
+         "'b. 'b option ref"
 |}]
 
 type pr = { foo : 'a. 'a option ref }
@@ -1940,7 +1936,7 @@ Line 2, characters 16-24:
 2 | let x = { foo = ref None }
                     ^^^^^^^^
 Error: This field value has type "'a option ref" which is less general than
-         "'a0. 'a0 option ref"
+         "'b. 'b option ref"
 |}]
 
 

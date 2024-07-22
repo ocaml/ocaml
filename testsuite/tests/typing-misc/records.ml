@@ -145,7 +145,7 @@ let with_fst r fst = { r with fst };;
 with_fst { fst=""; snd="" } 2;;
 [%%expect{|
 type ('a, 'b) t = { fst : 'a; snd : 'b; }
-val with_fst : ('a, 'b) t -> 'a0 -> ('a0, 'b) t = <fun>
+val with_fst : ('a, 'b) t -> 'c -> ('c, 'b) t = <fun>
 - : (int, string) t = {fst = 2; snd = ""}
 |}];;
 

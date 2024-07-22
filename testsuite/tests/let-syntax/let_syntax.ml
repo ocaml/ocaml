@@ -73,12 +73,12 @@ end;;
 module List :
   sig
     val map : 'a list -> ('a -> 'b) -> 'b list
-    val concat_map : 'a list -> ('a -> 'a0 list) -> 'a0 list
-    val product : 'a list -> 'a0 list -> ('a * 'a0) list
+    val concat_map : 'a list -> ('a -> 'b list) -> 'b list
+    val product : 'a list -> 'b list -> ('a * 'b) list
     val ( let+ ) : 'a list -> ('a -> 'b) -> 'b list
-    val ( and+ ) : 'a list -> 'a0 list -> ('a * 'a0) list
-    val ( let* ) : 'a list -> ('a -> 'a0 list) -> 'a0 list
-    val ( and* ) : 'a list -> 'a0 list -> ('a * 'a0) list
+    val ( and+ ) : 'a list -> 'b list -> ('a * 'b) list
+    val ( let* ) : 'a list -> ('a -> 'b list) -> 'b list
+    val ( and* ) : 'a list -> 'b list -> ('a * 'b) list
   end
 |}];;
 

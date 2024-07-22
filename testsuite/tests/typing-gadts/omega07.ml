@@ -910,11 +910,11 @@ val _3 : ((zero, int, (suc, int -> int, '_e) rcons) rcons, int) lam =
   App (Shift (Var Suc),
    App (Shift (Var Suc), App (Shift (Var Suc), Var Zero)))
 val add :
-  (('a, 'q, ('a0, 'q0, (add, int -> int -> int, 'e) rcons) rcons) rcons,
+  (('a, 'q, ('b, 'r, (add, int -> int -> int, 'e) rcons) rcons) rcons,
    int -> int -> int)
   lam = Shift (Shift (Var Add))
 val double :
-  (('a, 'q, ('a0, 'q0, (add, int -> int -> int, 'e) rcons) rcons) rcons,
+  (('a, 'q, ('b, 'r, (add, int -> int -> int, 'e) rcons) rcons) rcons,
    int -> int)
   lam =
   Abs (<poly>,

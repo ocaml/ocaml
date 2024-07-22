@@ -38,7 +38,7 @@ Warning 51 [wrong-tailcall-expectation]: expected tailcall
 module Non_recursive_let_bad :
   sig
     type 'a t = N of 'a | C of 'a t * 'a t
-    val map : ('a -> 'a0) -> 'a t -> 'a0 t
+    val map : ('a -> 'b) -> 'a t -> 'b t
   end
 |}]
 
@@ -59,6 +59,6 @@ end
 module Non_recursive_let_good :
   sig
     type 'a t = N of 'a | C of 'a t * 'a t
-    val map : ('a -> 'a0) -> 'a t -> 'a0 t
+    val map : ('a -> 'b) -> 'a t -> 'b t
   end
 |}]

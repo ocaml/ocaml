@@ -52,5 +52,5 @@ type 'a t2 = 'a constraint 'a = 'b option
 Line 4, characters 36-38:
 4 | let f (x : 'a t1) = (assert false : 'a t2)
                                         ^^
-Error: This type "'b option" should be an instance of type "'b0 list"
+Error: This type "'b option" should be an instance of type "'c list"
 |}]

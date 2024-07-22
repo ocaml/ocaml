@@ -893,9 +893,30 @@ end = struct
             in
             if available name then name
             else
-              let suffixed i = name ^ Int.to_string i in
-              let i = Misc.find_first_mono (fun i -> available (suffixed i)) in
-              suffixed i
+              let with_suffix () =
+                let suffixed i = name ^ Int.to_string i in
+                let i = Misc.find_first_mono (fun i -> available (suffixed i)) in
+                suffixed i
+              in
+              if String.length name = 1
+              then
+                let code = Char.code name.[0] in
+                let max_num_letters_to_try = 4 in
+                let num_letters = 26 in
+                let num_letters_left =
+                  num_letters - (code - Char.code 'a') - 1
+                in
+                let actual_num_letters_to_try =
+                  Int.min max_num_letters_to_try num_letters_left
+                in
+                let possible_names =
+                  List.init actual_num_letters_to_try
+                    (fun n -> String.make 1 (Char.chr (code + n + 1)))
+                in
+                match List.find_opt available possible_names with
+                | Some avail_name -> avail_name
+                | None -> with_suffix ()
+              else with_suffix ()
         | _ ->
             (* No name available, create a new one *)
             name_generator ()

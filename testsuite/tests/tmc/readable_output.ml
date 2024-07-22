@@ -67,7 +67,7 @@ let[@tail_mod_cons] rec rec_map f = function
               (apply rec_map_dps block 1 f (field_imm 1 *match*) tailcall)))
           (setfield_ptr(heap-init)_computed dst offset 0))))
   (apply (field_mut 1 (global Toploop!)) "rec_map" rec_map))
-val rec_map : ('a -> 'a0) -> 'a rec_list -> 'a0 rec_list = <fun>
+val rec_map : ('a -> 'b) -> 'a rec_list -> 'b rec_list = <fun>
 |}]
 
 (* check the case where several constructors are nested;

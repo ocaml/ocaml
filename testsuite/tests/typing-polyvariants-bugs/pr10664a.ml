@@ -35,7 +35,7 @@ val f :
   (< m : 'a. < n : 'c. ([< `A of 'a ] as 'c) -> 'b > > as 'b) ->
   < n : 'd.
           ([< `A of 'a ] as 'd) ->
-          (< m : 'a0. < n : 'f. ([< `A of 'a0 ] as 'f) -> 'e > > as 'e) > =
+          (< m : 'c. < n : 'f. ([< `A of 'c ] as 'f) -> 'e > > as 'e) > =
   <fun>
 |}]
 
@@ -50,7 +50,7 @@ val o : < m : 'a. < n : 'c. ([< `A of 'a ] as 'c) -> 'b > > as 'b = <obj>
 val x :
   < n : 'b.
           ([< `A of '_a ] as 'b) ->
-          (< m : 'a0. < n : 'd. ([< `A of 'a0 ] as 'd) -> 'c > > as 'c) > =
+          (< m : 'd. < n : 'e. ([< `A of 'd ] as 'e) -> 'c > > as 'c) > =
   <obj>
 |}]
 
@@ -74,7 +74,7 @@ val g2 :
   < n : 'd.
           ([< `A of
                 'a *
-                (< m : 'a0. < n : 'f. ([< `A of 'a0 * 'e ] as 'f) -> unit > >
+                (< m : 'c. < n : 'f. ([< `A of 'c * 'e ] as 'f) -> unit > >
                  as 'e) ]
            as 'd) ->
           unit > =
@@ -97,7 +97,7 @@ val g :
 val g :
   (< m : 'a 'c. < n : ([< `A of 'a ] as 'c) -> 'b > > as 'b) ->
   < n : [< `A of 'a ] ->
-        (< m : 'a0 'e. < n : ([< `A of 'a0 ] as 'e) -> 'd > > as 'd) > =
+        (< m : 'c 'e. < n : ([< `A of 'c ] as 'e) -> 'd > > as 'd) > =
   <fun>
 |}]
 
@@ -111,7 +111,7 @@ let y = g o;;
 val o : < m : 'a 'c. < n : ([< `A of 'a ] as 'c) -> 'b > > as 'b = <obj>
 val y :
   < n : ([< `A of '_a ] as '_weak1) ->
-        (< m : 'a0 'c. < n : ([< `A of 'a0 ] as 'c) -> 'b > > as 'b) > =
+        (< m : 'c 'd. < n : ([< `A of 'c ] as 'd) -> 'b > > as 'b) > =
   <obj>
 |}]
 
@@ -128,7 +128,7 @@ val h :
   < n : 'e 'b.
           [< `A of
                'a * 'b *
-               (< m : 'a0. < n : 'g 'b0. [< `A of 'a0 * 'b0 * 'f ] as 'g > >
+               (< m : 'd. < n : 'g 'b0. [< `A of 'd * 'b0 * 'f ] as 'g > >
                 as 'f) ]
           as 'e > =
   <fun>
@@ -145,7 +145,7 @@ val j :
 val j :
   (< m : 'c 'a. < n : ([< `A of 'a ] as 'c) -> 'b > > as 'b) ->
   < n : [< `A of 'a ] ->
-        (< m : 'e 'a0. < n : ([< `A of 'a0 ] as 'e) -> 'd > > as 'd) > =
+        (< m : 'e 'c. < n : ([< `A of 'c ] as 'e) -> 'd > > as 'd) > =
   <fun>
 |}]
 

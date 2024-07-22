@@ -66,9 +66,9 @@ let comp_subst f g (x : 'a fin) = pre_subst f (g x)
 type 'a term = Var of 'a fin | Leaf | Fork of 'a term * 'a term
 val var : 'a fin -> 'a term = <fun>
 val lift : ('m fin -> 'n fin) -> 'm fin -> 'n term = <fun>
-val pre_subst : ('a fin -> 'a0 term) -> 'a term -> 'a0 term = <fun>
+val pre_subst : ('a fin -> 'b term) -> 'a term -> 'b term = <fun>
 val comp_subst :
-  ('a fin -> 'a0 term) -> ('a1 fin -> 'a term) -> 'a1 fin -> 'a0 term = <fun>
+  ('a fin -> 'b term) -> ('c fin -> 'a term) -> 'c fin -> 'b term = <fun>
 |}];;
 
 (* 4 The Occur-Check, through thick and thin *)
