@@ -97,7 +97,7 @@ CAMLprim value caml_unix_open(value path, value flags, value perm)
     if (dwMoved == INVALID_SET_FILE_POINTER) {
       caml_win32_maperr(GetLastError());
       CloseHandle(h);
-      uerror("open", path);
+      caml_uerror("open", path);
     }
   }
 
