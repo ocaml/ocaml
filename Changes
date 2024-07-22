@@ -191,7 +191,7 @@ _______________
   Hugo Heuzard)
 
 - #13326: Implement Unix.O_APPEND on windows.
-  (Romain Beauxis)
+  (Romain Beauxis, review by Miod Vallat, Gabriel Scherer and Antonin Décimo)
 
 ### Tools:
 
