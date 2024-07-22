@@ -113,6 +113,10 @@ _______________
   boundary.
   (Antonin Décimo, review by Miod Vallat and Xavier Leroy)
 
+- #13280: Check for support of compiler attributes. Allows using
+  compiler attributes with clang-cl.
+  (Antonin Décimo, review by Miod Vallat)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously

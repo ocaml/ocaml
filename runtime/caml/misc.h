@@ -48,7 +48,7 @@
 #if defined(__GNUC__) || defined(__clang__)
   /* Supported since at least GCC 3.1 */
   #define CAMLdeprecated_typedef(name, type) \
-    typedef type name __attribute ((deprecated))
+    typedef type name __attribute__ ((deprecated))
 #elif defined(_MSC_VER)
   #define CAMLdeprecated_typedef(name, type) \
     typedef __declspec(deprecated) type name
@@ -90,31 +90,26 @@ typedef size_t asize_t;
 CAMLdeprecated_typedef(addr, char *);
 #endif /* CAML_INTERNALS */
 
-/* Noreturn, CAMLnoreturn_start and CAMLnoreturn_end are preserved
-   for compatibility reasons.  Instead, we recommend using the CAMLnoret
-   macro, to be added as a modifier at the beginning of the
-   function definition or declaration.  It must occur first, before
-   "static", "extern", "CAMLexport", "CAMLextern".
+/* The CAMLnoret macro must be added as a modifier at the beginning of
+   the function definition or declaration.  It must occur first,
+   before "static", "extern", "CAMLexport", "CAMLextern".
+
+   Noreturn, CAMLnoreturn_start and CAMLnoreturn_end are preserved for
+   compatibility reasons.
 
    Note: CAMLnoreturn is a different macro defined in memory.h,
    to be used in function bodies rather than as a function attribute.
 */
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202300L    \
-    || defined(__cplusplus) && __cplusplus >= 201103L
+#if __has_c_attribute(noreturn) || defined(__cplusplus)
   #define CAMLnoret [[noreturn]]
-#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-  #define CAMLnoret _Noreturn
-#elif defined(__GNUC__)
-  #define CAMLnoret  __attribute__ ((noreturn))
 #else
-  #define CAMLnoret
+  #define CAMLnoret _Noreturn
 #endif
 
 #define CAMLnoreturn_start CAMLnoret
 #define CAMLnoreturn_end
-
 #ifdef __GNUC__
-  #define Noreturn __attribute__ ((noreturn))
+  #define Noreturn CAMLnoret
 #else
   #define Noreturn
 #endif
@@ -280,7 +275,7 @@ CAMLnoret CAMLextern void caml_failed_assert (char *, char_os *, int);
 #define CAMLassert(x) ((void) 0)
 #endif
 
-#ifdef __GNUC__
+#if __has_builtin(__builtin_expect) || defined(__GNUC__)
 #define CAMLlikely(e)   __builtin_expect(!!(e), 1)
 #define CAMLunlikely(e) __builtin_expect(!!(e), 0)
 #else
@@ -294,7 +289,8 @@ CAMLnoret CAMLextern void caml_failed_assert (char *, char_os *, int);
 
    CAMLnoalloc at the start of a block means that the GC must not be
    invoked during the block. */
-#if defined(__GNUC__) && defined(DEBUG)
+#if (__has_attribute(cleanup) && __has_attribute(unused) || defined(__GNUC__)) \
+    && defined(DEBUG)
 int caml_noalloc_begin(void);
 void caml_noalloc_end(int*);
 void caml_alloc_point_here(void);
@@ -327,7 +323,7 @@ extern _Atomic fatal_error_hook caml_fatal_error_hook;
 #endif
 
 CAMLnoret CAMLextern void caml_fatal_error (char *, ...)
-#ifdef __GNUC__
+#if __has_attribute(format) || defined(__GNUC__)
   __attribute__ ((format (printf, 1, 2)))
 #endif
 ;
@@ -515,13 +511,13 @@ CAMLextern int caml_read_directory(char_os * dirname,
 extern atomic_uintnat caml_verb_gc;
 
 void caml_gc_log (char *, ...)
-#ifdef __GNUC__
+#if __has_attribute(format) || defined(__GNUC__)
   __attribute__ ((format (printf, 1, 2)))
 #endif
 ;
 
 void caml_gc_message (int, char *, ...)
-#ifdef __GNUC__
+#if __has_attribute(format) || defined(__GNUC__)
   __attribute__ ((format (printf, 2, 3)))
 #endif
 ;
