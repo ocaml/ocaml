@@ -898,7 +898,9 @@ end = struct
                 let i = Misc.find_first_mono (fun i -> available (suffixed i)) in
                 suffixed i
               in
-              if String.length name = 1
+              if String.length name = 1 &&
+                 Char.compare name.[0] 'a' >= 0 &&
+                 Char.compare name.[0] 'z' <= 0
               then
                 let code = Char.code name.[0] in
                 let max_num_letters_to_try = 4 in
