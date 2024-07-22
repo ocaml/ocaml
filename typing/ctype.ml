@@ -4347,7 +4347,7 @@ let eqtype rename type_pairs subst env t1 t2 =
 let equal env rename tyl1 tyl2 =
   if List.length tyl1 <> List.length tyl2 then
     raise_unexplained_for Equality;
-  if not rename && List.for_all2 eq_type tyl1 tyl2 then () else
+  if List.for_all2 eq_type tyl1 tyl2 then () else
   let subst = ref [] in
   try eqtype_list_same_length rename (TypePairs.create 11) subst env tyl1 tyl2
   with Equality_trace trace ->
