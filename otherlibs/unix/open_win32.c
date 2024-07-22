@@ -22,6 +22,8 @@
 #include "caml/unixsupport.h"
 #include <fcntl.h>
 
+#defined OCAML_O_APPEND 4
+
 static const int open_access_flags[15] = {
   GENERIC_READ, GENERIC_WRITE, GENERIC_READ|GENERIC_WRITE,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -71,7 +73,7 @@ CAMLprim value caml_unix_open(value path, value flags, value perm)
   else
     fileattrib = FILE_ATTRIBUTE_NORMAL;
 
-  if (flags & O_APPEND)
+  if (flags & OCAML_O_APPEND)
     fileaccess |= FILE_APPEND_DATA;
 
   cloexec = caml_convert_flag_list(flags, open_cloexec_flags);
@@ -92,7 +94,7 @@ CAMLprim value caml_unix_open(value path, value flags, value perm)
     caml_uerror("open", path);
   }
 
-  if (flags & O_APPEND) {
+  if (flags & OCAML_O_APPEND) {
     dwMoved = SetFilePointer(h, 0, NULL, FILE_END);
     if (dwMoved == INVALID_SET_FILE_POINTER) {
       caml_win32_maperr(GetLastError());
