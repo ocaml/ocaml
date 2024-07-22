@@ -69,9 +69,9 @@ Error: Signature mismatch:
          val f : 'c list * 'd option -> int
        is not included in
          val f : 'a list * 'b list -> int
-       The type "'a list * 'b option -> int" is not compatible with the type
-         "'a list * 'c list -> int"
-       Type "'b option" is not compatible with type "'c list"
+       The type "'a list * 'd option -> int" is not compatible with the type
+         "'a list * 'b list -> int"
+       Type "'d option" is not compatible with type "'b list"
 |}]
 
 module T : sig

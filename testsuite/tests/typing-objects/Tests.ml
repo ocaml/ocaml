@@ -163,9 +163,9 @@ end;;
 class ['a, 'b] d :
   unit ->
   object
-    constraint 'a = int -> 'd
-    constraint 'b = 'a * (< x : 'b > as 'c) * 'd * 'e
-    method f : (int -> 'd) -> (int -> 'd) * 'c * 'd * 'e -> unit
+    constraint 'a = int -> 'c
+    constraint 'b = 'a * (< x : 'b > as 'e) * 'c * 'd
+    method f : (int -> 'c) -> (int -> 'c) * 'e * 'c * 'd -> unit
   end
 |}];;
 

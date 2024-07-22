@@ -135,7 +135,7 @@ let a = [|1; 2|];;
 let _ = Array.find_map (fun _ -> None) a;;
 [%%expect{|
 val a : int array = [|1; 2|]
-- : 'a option = None
+- : 'b option = None
 |}]
 
 let a = [|1; 2|];;

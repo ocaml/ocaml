@@ -196,15 +196,15 @@ Line 3, characters 0-54:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This recursive type is not regular.
        The type constructor "a" is defined as
-         type "('a, 'b, 'c, 'd, 'e) a"
+         type "('e, 'c, 'b, 'd, 'a) a"
        but it is used as
-         "('e, 'c, 'b, 'd, 'a) a"
+         "('a, 'b, 'c, 'd, 'e) a"
        after the following expansion(s):
-         "[ `A of ('d, 'a, 'e, 'c, 'b) b ]" contains "('d, 'a, 'e, 'c, 'b) b",
-         "('d, 'a, 'e, 'c, 'b) b" = "[ `B of ('e, 'c, 'b, 'd, 'a) c ]",
-         "[ `B of ('e, 'c, 'b, 'd, 'a) c ]" contains "('e, 'c, 'b, 'd, 'a) c",
-         "('e, 'c, 'b, 'd, 'a) c" = "[ `C of ('e, 'c, 'b, 'd, 'a) a ]",
-         "[ `C of ('e, 'c, 'b, 'd, 'a) a ]" contains "('e, 'c, 'b, 'd, 'a) a"
+         "[ `A of ('d, 'e, 'a, 'b, 'c) b ]" contains "('d, 'e, 'a, 'b, 'c) b",
+         "('d, 'e, 'a, 'b, 'c) b" = "[ `B of ('a, 'b, 'c, 'd, 'e) c ]",
+         "[ `B of ('a, 'b, 'c, 'd, 'e) c ]" contains "('a, 'b, 'c, 'd, 'e) c",
+         "('a, 'b, 'c, 'd, 'e) c" = "[ `C of ('a, 'b, 'c, 'd, 'e) a ]",
+         "[ `C of ('a, 'b, 'c, 'd, 'e) a ]" contains "('a, 'b, 'c, 'd, 'e) a"
        All uses need to match the definition for the recursive type to be regular.
 |}]
 

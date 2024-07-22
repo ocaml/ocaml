@@ -781,7 +781,7 @@ let solve_Ppat_poly_constraint tps env loc sty expected_ty =
   | Tpoly (body, tyl) ->
       let _, ty' =
         with_level ~level:generic_level
-          (fun () -> instance_poly ~keep_names:true ~fixed:false tyl body)
+          (fun () -> instance_poly ~fixed:false tyl body)
       in
       (cty, ty, ty')
   | _ -> assert false
@@ -5997,7 +5997,7 @@ and type_let ?check ?check_strict
                   match get_desc pat.pat_type with
                   | Tpoly (ty, tl) ->
                       {pat with pat_type =
-                       snd (instance_poly ~keep_names:true ~fixed:false tl ty)}
+                       snd (instance_poly ~fixed:false tl ty)}
                   | _ -> pat
                 in
                 let bound_expr = vb_exp_constraint binding in
@@ -6050,7 +6050,7 @@ and type_let ?check ?check_strict
             | Tpoly (ty, tl) ->
                 let vars, ty' =
                   with_local_level_generalize_structure_if_principal
-                    (fun () -> instance_poly ~keep_names:true ~fixed:true tl ty)
+                    (fun () -> instance_poly ~fixed:true tl ty)
                 in
                 let exp =
                   Builtin_attributes.warning_scope pvb_attributes (fun () ->

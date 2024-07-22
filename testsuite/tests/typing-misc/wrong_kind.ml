@@ -64,7 +64,7 @@ module Bool :
 module List :
   sig
     type 'a t = [] | (::) of 'a * 'a t
-    val get : 'a -> 'b -> 'c t
+    val get : 'b -> 'c -> 'a t
     val put : (unit -> int t) -> unit
   end
 module Unit :
@@ -123,7 +123,7 @@ Line 3, characters 4-6:
 3 |   | [] -> ();;
         ^^
 Error: This pattern should not be a list literal, the expected type is
-       "'a -> 'b List.t"
+       "'b -> 'a List.t"
 |}]
 
 let () =
@@ -134,7 +134,7 @@ Line 3, characters 4-10:
 3 |   | _ :: _ -> ();;
         ^^^^^^
 Error: This pattern should not be a list literal, the expected type is
-       "'a -> 'b List.t"
+       "'b -> 'a List.t"
 |}]
 
 let () =

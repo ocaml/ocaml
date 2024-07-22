@@ -36,7 +36,7 @@ let f =
   in
   f', f';;
 [%%expect{|
-val f : ('a list -> 'a list) * ('b list -> 'b list) = (<fun>, <fun>)
+val f : ('a list -> 'a list) * ('a0 list -> 'a0 list) = (<fun>, <fun>)
 |}]
 
 type t = [ `A | `B ];;

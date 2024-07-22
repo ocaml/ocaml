@@ -148,8 +148,8 @@ let rec example : type a . a ty -> a = function
 Line 3, characters 54-72:
 3 | | Pair (type b c) (x, y : b ty * c ty) -> (example x, example (*error*)x)
                                                           ^^^^^^^^^^^^^^^^^^
-Error: This expression has type "b" = "$0" but an expression was expected of type
-         "$1"
+Error: This expression has type "b" = "$'b"
+       but an expression was expected of type "$'c"
 |}]
 
 type _ th =
@@ -189,7 +189,7 @@ Line 2, characters 29-41:
                                  ^^^^^^^^^^^^
 Error: The local name "c" can only be given to an existential variable
        introduced by this GADT constructor.
-       The type annotation tries to bind it to the type "'a"
+       The type annotation tries to bind it to the type "_"
        that is not a locally abstract type.
 |}]
 let ko3 () =
@@ -240,6 +240,6 @@ Line 3, characters 34-45:
                                       ^^^^^^^^^^^
 Error: The local name "b" can only be given to an existential variable
        introduced by this GADT constructor.
-       The type annotation tries to bind it to the name "$0"
+       The type annotation tries to bind it to the name "$'b"
        that was defined before.
 |}]

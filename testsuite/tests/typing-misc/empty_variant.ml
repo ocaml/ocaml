@@ -53,7 +53,7 @@ let f () =
 [%%expect{|
 type nothing = |
 type ('a, 'b, 'c) t = A of 'a | B of 'b | C of 'c
-module Runner : sig val ac : f:((unit, 'a, unit) t -> unit) -> unit end
+module Runner : sig val ac : f:((unit, 'b, unit) t -> unit) -> unit end
 Lines 16-17, characters 8-18:
 16 | ........match abc with
 17 |         | A _ -> 1

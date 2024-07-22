@@ -66,9 +66,9 @@ let comp_subst f g (x : 'a fin) = pre_subst f (g x)
 type 'a term = Var of 'a fin | Leaf | Fork of 'a term * 'a term
 val var : 'a fin -> 'a term = <fun>
 val lift : ('m fin -> 'n fin) -> 'm fin -> 'n term = <fun>
-val pre_subst : ('a fin -> 'b term) -> 'a term -> 'b term = <fun>
+val pre_subst : ('a fin -> 'a0 term) -> 'a term -> 'a0 term = <fun>
 val comp_subst :
-  ('b fin -> 'c term) -> ('a fin -> 'b term) -> 'a fin -> 'c term = <fun>
+  ('a fin -> 'a0 term) -> ('a1 fin -> 'a term) -> 'a1 fin -> 'a0 term = <fun>
 |}];;
 
 (* 4 The Occur-Check, through thick and thin *)
@@ -158,7 +158,7 @@ type _ ealist = EAlist : ('a,'b) alist -> 'a ealist
 let asnoc a t' x = EAlist (Asnoc (a, t', x))
 [%%expect{|
 type _ ealist = EAlist : ('a, 'b) alist -> 'a ealist
-val asnoc : ('a, 'b) alist -> 'a term -> 'a succ fin -> 'a succ ealist =
+val asnoc : ('m, 'b) alist -> 'm term -> 'm succ fin -> 'm succ ealist =
   <fun>
 |}];;
 
@@ -185,7 +185,7 @@ let subst' d = pre_subst (sub' d)
 ;;
 [%%expect{|
 val weaken_fin : 'n fin -> 'n succ fin = <fun>
-val weaken_term : 'a term -> 'a succ term = <fun>
+val weaken_term : 'n term -> 'n succ term = <fun>
 val weaken_alist : ('m, 'n) alist -> ('m succ, 'n succ) alist = <fun>
 val sub' : 'm ealist -> 'm fin -> 'm term = <fun>
 val subst' : 'a ealist -> 'a term -> 'a term = <fun>
@@ -221,10 +221,10 @@ let mgu s t = amgu s t (EAlist Anil)
 (* val mgu : 'a term -> 'a term -> 'a ealist option *)
 ;;
 [%%expect{|
-val flex_flex : 'a succ fin -> 'a succ fin -> 'a succ ealist = <fun>
-val flex_rigid : 'a succ fin -> 'a succ term -> 'a succ ealist option = <fun>
+val flex_flex : 'b succ fin -> 'b succ fin -> 'b succ ealist = <fun>
+val flex_rigid : 'b succ fin -> 'b succ term -> 'b succ ealist option = <fun>
 val amgu : 'm term -> 'm term -> 'm ealist -> 'm ealist option = <fun>
-val mgu : 'a term -> 'a term -> 'a ealist option = <fun>
+val mgu : 'b term -> 'b term -> 'b ealist option = <fun>
 |}];;
 
 let s = Fork (Var FZ, Fork (Var (FS (FS FZ)), Leaf))
@@ -236,10 +236,10 @@ let t' = subst' d t
 [%%expect{|
 val s : 'a succ succ succ term = Fork (Var FZ, Fork (Var (FS (FS FZ)), Leaf))
 val t : 'a succ succ term = Fork (Var (FS FZ), Var (FS FZ))
-val d : '_weak1 succ succ succ ealist =
+val d : '_a succ succ succ ealist =
   EAlist (Asnoc (Asnoc (Anil, Fork (Var FZ, Leaf), FZ), Var FZ, FZ))
-val s' : '_weak1 succ succ succ term =
+val s' : '_a succ succ succ term =
   Fork (Fork (Var FZ, Leaf), Fork (Var FZ, Leaf))
-val t' : '_weak1 succ succ succ term =
+val t' : '_a succ succ succ term =
   Fork (Fork (Var FZ, Leaf), Fork (Var FZ, Leaf))
 |}];;

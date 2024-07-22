@@ -582,7 +582,7 @@ type (_, _) ctxt =
       (red, 'n) ctxt -> (black, 'n) ctxt
   | CBlk : int * dir * ('c1, 'n) sub_tree *
       (black, 'n succ) ctxt -> ('c, 'n) ctxt
-val blacken : (red, 'a) sub_tree -> (black, 'a succ) sub_tree = <fun>
+val blacken : (red, 'n) sub_tree -> (black, 'n succ) sub_tree = <fun>
 |}];;
 
 type _ crep =
@@ -622,10 +622,10 @@ let recolor d1 pE sib d2 gE uncle t =
 val recolor :
   dir ->
   int ->
-  ('a, 'b) sub_tree ->
+  ('cR, 'n) sub_tree ->
   dir ->
   int ->
-  (black, 'b succ) sub_tree -> ('c, 'b) sub_tree -> (red, 'b succ) sub_tree =
+  (black, 'n succ) sub_tree -> ('cL, 'n) sub_tree -> (red, 'n succ) sub_tree =
   <fun>
 |}];;
 let rotate d1 pE sib d2 gE uncle (Rnode (x, e, y)) =
@@ -639,10 +639,10 @@ let rotate d1 pE sib d2 gE uncle (Rnode (x, e, y)) =
 val rotate :
   dir ->
   int ->
-  (black, 'a) sub_tree ->
+  (black, 'n) sub_tree ->
   dir ->
   int ->
-  (black, 'a) sub_tree -> (red, 'a) sub_tree -> (black, 'a succ) sub_tree =
+  (black, 'n) sub_tree -> (red, 'n) sub_tree -> (black, 'n succ) sub_tree =
   <fun>
 |}];;
 let rec repair : type c n. (red,n) sub_tree -> (c,n) ctxt -> rb_tree =
@@ -851,9 +851,9 @@ type (_, _) lam =
   | App : ('e, 's -> 't) lam * ('e, 's) lam -> ('e, 't) lam
 type x = X
 type y = Y
-val ex1 : ((x, 'a -> 'b, (y, 'a, 'c) rcons) rcons, 'b) lam =
+val ex1 : ((x, 's -> 't, (y, 's, 'e) rcons) rcons, 't) lam =
   App (Var X, Shift (Var Y))
-val ex2 : ('a, ('b -> 'c) -> 'b -> 'c) lam =
+val ex2 : ('e, ('s -> 't) -> 's -> 't) lam =
   Abs (<poly>, Abs (<poly>, App (Shift (Var <poly>), Var <poly>)))
 |}];;
 
@@ -898,30 +898,29 @@ type suc = Suc
 val env0 :
   (zero, int, (suc, int -> int, (add, int -> int -> int, rnil) rcons) rcons)
   rcons env = Econs (Zero, 0, Econs (Suc, <fun>, Econs (Add, <fun>, Enil)))
-val _0 : ((zero, int, 'a) rcons, int) lam = Var Zero
+val _0 : ((zero, int, 'e) rcons, int) lam = Var Zero
 val suc :
-  (('a, 'b, (suc, int -> int, 'c) rcons) rcons, int) lam ->
-  (('a, 'b, (suc, int -> int, 'c) rcons) rcons, int) lam = <fun>
-val _1 : ((zero, int, (suc, int -> int, '_weak1) rcons) rcons, int) lam =
+  (('a, 'q, (suc, int -> int, 'e) rcons) rcons, int) lam ->
+  (('a, 'q, (suc, int -> int, 'e) rcons) rcons, int) lam = <fun>
+val _1 : ((zero, int, (suc, int -> int, '_e) rcons) rcons, int) lam =
   App (Shift (Var Suc), Var Zero)
-val _2 : ((zero, int, (suc, int -> int, '_weak1) rcons) rcons, int) lam =
+val _2 : ((zero, int, (suc, int -> int, '_e) rcons) rcons, int) lam =
   App (Shift (Var Suc), App (Shift (Var Suc), Var Zero))
-val _3 : ((zero, int, (suc, int -> int, '_weak1) rcons) rcons, int) lam =
+val _3 : ((zero, int, (suc, int -> int, '_e) rcons) rcons, int) lam =
   App (Shift (Var Suc),
    App (Shift (Var Suc), App (Shift (Var Suc), Var Zero)))
 val add :
-  (('a, 'b, ('c, 'd, (add, int -> int -> int, 'e) rcons) rcons) rcons,
+  (('a, 'q, ('a0, 'q0, (add, int -> int -> int, 'e) rcons) rcons) rcons,
    int -> int -> int)
   lam = Shift (Shift (Var Add))
 val double :
-  (('a, 'b, ('c, 'd, (add, int -> int -> int, 'e) rcons) rcons) rcons,
+  (('a, 'q, ('a0, 'q0, (add, int -> int -> int, 'e) rcons) rcons) rcons,
    int -> int)
   lam =
   Abs (<poly>,
    App (App (Shift (Shift (Shift (Var Add))), Var <poly>), Var <poly>))
 val ex3 :
-  ((zero, int,
-    (suc, int -> int, (add, int -> int -> int, '_weak2) rcons) rcons)
+  ((zero, int, (suc, int -> int, (add, int -> int -> int, '_e) rcons) rcons)
    rcons, int)
   lam =
   App
@@ -1073,7 +1072,7 @@ let eval_checked env = function
   | Cok _ -> failwith "Can only evaluate expressions of type I"
 ;;
 [%%expect{|
-val eval_checked : 'a env -> 'a checked -> int = <fun>
+val eval_checked : 'e env -> 'e checked -> int = <fun>
 |}];;
 
 let v2 = eval_checked env0 c2 ;;
@@ -1122,7 +1121,7 @@ type (_, _, _) lam =
       ('m, ('a, 's, 'e) rcons, 't) lam -> (pval, 'e, ('s, 't) tarr) lam
   | App : ('m1, 'e, ('s, 't) tarr) lam *
       ('m2, 'e, 's) lam -> (pexp, 'e, 't) lam
-val ex1 : (pexp, 'a, tint) lam =
+val ex1 : (pexp, 'e, tint) lam =
   App (Lam (<poly>, Var <poly>), Const (IntR, <poly>))
 |}];;
 

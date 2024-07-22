@@ -41,7 +41,7 @@ module Positive_disambiguation = struct
 end
 [%%expect{|
 module Positive_disambiguation :
-  sig val map : ('a -> 'b) -> 'a tree -> 'b tree end
+  sig val map : ('a -> 'a0) -> 'a tree -> 'a0 tree end
 |}]
 
 module Negative_disambiguation = struct
@@ -52,7 +52,7 @@ module Negative_disambiguation = struct
 end
 [%%expect{|
 module Negative_disambiguation :
-  sig val map : ('a -> 'b) -> 'a tree -> 'b tree end
+  sig val map : ('a -> 'a0) -> 'a tree -> 'a0 tree end
 |}]
 
 module Positive_and_negative_disambiguation = struct
@@ -77,8 +77,8 @@ end
 module Positive_and_negative_disambiguation :
   sig
     type 'a t = N | C of 'a t * ('a t * 'a t)
-    val map1 : 'a -> 'b t -> 'c t
-    val map2 : 'a -> 'b t -> 'c t
+    val map1 : 'b -> 'a t -> 'a0 t
+    val map2 : 'b -> 'a t -> 'a0 t
   end
 |}]
 
@@ -101,7 +101,7 @@ module Long_before_and_after :
     type 'a tree =
         Leaf of 'a
       | Node of 'a tree * 'a tree * 'a tree * 'a tree * 'a tree
-    val map : ('a -> 'b) -> 'a tree -> 'b tree
+    val map : ('a -> 'a0) -> 'a tree -> 'a0 tree
   end
 |}]
 
@@ -124,7 +124,7 @@ module Deep_nesting_nonambiguous :
     type 'a tree =
         Leaf of 'a
       | Node of 'a tree * ('a tree * ('a tree * ('a tree * 'a tree)))
-    val map : ('a -> 'b) -> 'a tree -> 'b tree
+    val map : ('a -> 'a0) -> 'a tree -> 'a0 tree
   end
 |}]
 

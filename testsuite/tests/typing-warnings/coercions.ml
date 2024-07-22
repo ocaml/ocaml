@@ -7,14 +7,14 @@
 
 fun b -> if b then format_of_string "x" else "y"
 [%%expect {|
-- : bool -> ('a, 'b, 'c, 'd, 'd, 'a) format6 = <fun>
+- : bool -> ('f, 'b, 'c, 'e, 'e, 'f) format6 = <fun>
 |}, Principal{|
 Line 1, characters 45-48:
 1 | fun b -> if b then format_of_string "x" else "y"
                                                  ^^^
 Warning 18 [not-principal]: this coercion to format6 is not principal.
 
-- : bool -> ('a, 'b, 'c, 'd, 'd, 'a) format6 = <fun>
+- : bool -> ('f, 'b, 'c, 'e, 'e, 'f) format6 = <fun>
 |}]
 ;;
 
@@ -24,15 +24,15 @@ Line 1, characters 28-48:
 1 | fun b -> if b then "x" else format_of_string "y"
                                 ^^^^^^^^^^^^^^^^^^^^
 Error: This expression has type
-         "('a, 'b, 'c, 'd, 'd, 'a) format6" =
-           "('a, 'b, 'c, 'd, 'd, 'a) CamlinternalFormatBasics.format6"
+         "('f, 'b, 'c, 'e, 'e, 'f) format6" =
+           "('f, 'b, 'c, 'e, 'e, 'f) CamlinternalFormatBasics.format6"
        but an expression was expected of type "string"
 |}]
 ;;
 
 fun b : (_,_,_) format -> if b then "x" else "y"
 [%%expect {|
-- : bool -> ('a, 'b, 'a) format = <fun>
+- : bool -> ('c, 'b, 'c) format = <fun>
 |}]
 ;;
 

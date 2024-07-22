@@ -10,7 +10,7 @@ type 'a t = T : ('a -> 'b) * ('b -> 'a) -> 'a t
 
 let t = T ((fun x -> x), (fun x -> x));;
 [%%expect{|
-val t : 'a t = T (<fun>, <fun>)
+val t : 'b t = T (<fun>, <fun>)
 |}]
 
 let t1 = let T (g, h) = t in h (g 1);;
@@ -20,7 +20,7 @@ val t1 : int = 1
 
 let f x = let T (g, h) = t in h (g x);;
 [%%expect{|
-val f : 'a -> 'a = <fun>
+val f : 'b -> 'b = <fun>
 |}]
 
 (* reformulation by @gasche *)
@@ -48,6 +48,6 @@ let unsound_cast : 'a 'b. 'a -> 'b = fun x ->
 Lines 1-2, characters 37-36:
 1 | .....................................fun x ->
 2 |   match t with Iso (g, h) -> h (g x)
-Error: This definition has type "'c. 'c -> 'c" which is less general than
+Error: This definition has type "'b. 'b -> 'b" which is less general than
          "'a 'b. 'a -> 'b"
 |}]

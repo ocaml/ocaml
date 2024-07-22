@@ -512,8 +512,8 @@ let copy_row f fixed row keep more =
 
 let copy_commu c = if is_commu_ok c then commu_ok else commu_var ()
 
-let rec copy_type_desc ?(keep_names=false) f = function
-    Tvar _ as ty        -> if keep_names then ty else Tvar None
+let rec copy_type_desc f = function
+    Tvar _ as ty        -> ty
   | Tarrow (p, ty1, ty2, c)-> Tarrow (p, f ty1, f ty2, copy_commu c)
   | Ttuple l            -> Ttuple (List.map f l)
   | Tconstr (p, l, _)   -> Tconstr (p, List.map f l, ref Mnil)

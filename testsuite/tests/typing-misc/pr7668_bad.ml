@@ -18,7 +18,7 @@ else `Right ()) xs
 ;;
 [%%expect{|
 val partition_map :
-  ('a -> [< `Left of 'b | `Right of 'c ]) -> 'a list -> 'b list * 'c list =
+  ('b -> [< `Left of 'a | `Right of 'a0 ]) -> 'b list -> 'a list * 'a0 list =
   <fun>
 Lines 12-13, characters 35-18:
 12 | ...................................partition_map (fun x -> if x then `Left ()

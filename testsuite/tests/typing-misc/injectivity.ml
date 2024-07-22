@@ -196,8 +196,8 @@ Line 3, characters 2-29:
 3 |   type _ x = G : 'a -> 'a u x
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the GADT constructor
-         "G : 'a X.t -> 'a X.t u x"
-       the type variable "'a" cannot be deduced from the type parameters.
+         "G : 'b X.t -> 'b X.t u x"
+       the type variable "'b" cannot be deduced from the type parameters.
 |}]
 
 (* Try to be clever *)
@@ -213,7 +213,7 @@ end
 [%%expect{|
 module F :
   (X : sig type 'a t end) ->
-    sig type 'a u = 'b X.t constraint 'a = < b : 'b X.t > end
+    sig type 'b u = 'a X.t constraint 'b = < b : 'a X.t > end
 |}]
 (* But not too clever *)
 module F(X : sig type 'a t end) = struct
@@ -233,7 +233,7 @@ end
 [%%expect{|
 module F :
   (X : sig type 'a t end) ->
-    sig type 'a u = 'b X.t constraint 'a = < b : 'b X.t > end
+    sig type 'b u = 'a X.t constraint 'b = < b : 'a X.t > end
 |}, Principal{|
 Line 2, characters 2-51:
 2 |   type !'a u = 'b constraint 'a = <b : _ X.t as 'b>
@@ -362,11 +362,11 @@ class type ['a] ct = object constraint 'a = < b : 'b > method m : 'b end
 
 type _ u = M : 'a -> 'a t u (* OK *)
 [%%expect{|
-type _ u = M : < b : 'a > -> < b : 'a > t u
+type _ u = M : < b : 'b > -> < b : 'b > t u
 |}]
 type _ v = M : 'a -> 'a ct v (* OK *)
 [%%expect{|
-type _ v = M : < b : 'a > -> < b : 'a > ct v
+type _ v = M : < b : 'b > -> < b : 'b > ct v
 |}]
 
 type 'a t = 'b constraint 'a = <b : 'b; c : 'c>
@@ -377,8 +377,8 @@ Line 2, characters 0-27:
 2 | type _ u = M : 'a -> 'a t u (* KO *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the GADT constructor
-         "M : < b : 'a; c : 'b > -> < b : 'a; c : 'b > t u"
-       the type variable "'b" cannot be deduced from the type parameters.
+         "M : < b : 'b; c : 'c > -> < b : 'b; c : 'c > t u"
+       the type variable "'c" cannot be deduced from the type parameters.
 |}]
 
 

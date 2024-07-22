@@ -966,7 +966,7 @@ let check_regularity ~abs_env env loc path decl to_check =
           List.iter (check_subtype cpath args prev_exp trace ty) args'
       | Tpoly (ty, tl) ->
           let (_, ty) =
-            Ctype.instance_poly ~keep_names:true ~fixed:false tl ty in
+            Ctype.instance_poly ~fixed:false tl ty in
           check_regular cpath args prev_exp trace ty
       | _ ->
           Btype.iter_type_expr
@@ -980,8 +980,8 @@ let check_regularity ~abs_env env loc path decl to_check =
   Option.iter
     (fun body ->
       let (args, body) =
-        Ctype.instance_parameterized_type
-          ~keep_names:true decl.type_params body in
+        Ctype.instance_parameterized_type decl.type_params body
+      in
       List.iter (check_regular path args [] []) args;
       check_regular path args [] [] body)
     decl.type_manifest

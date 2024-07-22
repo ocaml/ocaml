@@ -446,7 +446,7 @@ let rec map_list f (x:'a lst) =
   if x#null then new nil()
   else new cons (f x#hd) (map_list f x#tl);;
 [%%expect{|
-val map_list : ('a -> 'b) -> 'a lst -> 'b lst = <fun>
+val map_list : ('a -> 'a0) -> 'a lst -> 'a0 lst = <fun>
 |}];;
 
 let p1 = (map_list (fun x -> new printable_color_point x "red") l1);;

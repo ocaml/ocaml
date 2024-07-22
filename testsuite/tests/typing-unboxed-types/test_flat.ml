@@ -79,7 +79,7 @@ Line 1, characters 0-45:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
-       depending on the instantiation of an unnamed existential variable.
+       depending on the instantiation of the existential variable "'b".
        You should annotate it with "[@@ocaml.boxed]".
 |}];;
 
@@ -198,7 +198,7 @@ Line 1, characters 0-45:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
-       depending on the instantiation of an unnamed existential variable.
+       depending on the instantiation of the existential variable "'b".
        You should annotate it with "[@@ocaml.boxed]".
 |}];;
 
