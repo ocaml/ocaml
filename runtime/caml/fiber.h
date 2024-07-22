@@ -167,14 +167,20 @@ struct c_stack_link {
  * implemented in the assembly files for an architecture (such as
  * runtime/amd64.S).
  *
- * A continuation object represents a suspended OCaml stack. It is a block
- * containing as its first field the stack pointer tagged as an integer to
- * avoid being followed by the GC.
+ * A continuation object represents a suspended OCaml stack. It is a block with
+ * tag Cont_tag, containing as its first field the stack pointer tagged as an
+ * integer to avoid being followed by the GC.
+ *
  * In the code the tagged pointer can be referred to as a 'fiber':
  *     fiber := Val_ptr(stack)
  *
- * The second field of a continuation object stores a pointer to the fiber at
- * other end of the fiber chain that the continuation currently belongs to.
+ * This stack pointer always points inside a fiber that is at the end of a
+ * chain of fibers, linked by their `parent` pointers. In other words, it is an
+ * invariant that the stack pointer always points inside the childmost fiber of
+ * the fiber chain.
+ *
+ * The second field of a continuation object stores a pointer to the other end
+ * of the fiber chain, i.e., to the parent-most fiber.
  *
  * caml_runstack new_stack function argument
  *  caml_runstack launches a function (with an argument) in a new OCaml
