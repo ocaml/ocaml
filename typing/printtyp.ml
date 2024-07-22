@@ -883,9 +883,6 @@ end = struct
       let name =
         match t.desc with
           Tvar (Some name) | Tunivar (Some name) ->
-            (* Some part of the type we've already printed has assigned another
-             * unification variable to that name. We want to keep the name, so
-             * try adding a number until we find a name that's not taken. *)
             let available name =
               List.for_all
                 (fun (_, name') -> name <> name')
@@ -893,9 +890,20 @@ end = struct
             in
             if available name then name
             else
+              (* Some part of the type we've already printed has assigned
+                 another unification variable to that name. Yet we want to
+                 keep the name we have, even though it's taken. Our approach:
+                 - If the name is a single letter, try the next 4 single
+                   letters. This will get us from 'a to 'e or from 'k to 'o.
+                   Why 4? No good reason; it just seems the right number.
+                 - Otherwise, add an increasing numeric suffix until we find an
+                   available name.
+              *)
               let with_suffix () =
                 let suffixed i = name ^ Int.to_string i in
-                let i = Misc.find_first_mono (fun i -> available (suffixed i)) in
+                let i =
+                  Misc.find_first_mono (fun i -> available (suffixed i))
+                in
                 suffixed i
               in
               if String.length name = 1 &&
