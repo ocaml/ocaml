@@ -28,6 +28,10 @@ OCaml 5.2 maintenance version
    with the runtime lock.)
   (Etienne Millon, review by Gabriel Scherer, Jan Midtgaard, Olivier Nicole)
 
+- #13318: Fix regression in GC alarms, and fix them for flambda.
+  (Guillaume Munch-Maccagnoni, report by Benjamin Monate, review by
+   Vincent Laviron and Gabriel Scherer)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
