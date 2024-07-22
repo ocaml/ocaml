@@ -72,7 +72,7 @@ CAMLprim value caml_unix_open(value path, value flags, value perm)
     fileattrib = FILE_ATTRIBUTE_NORMAL;
 
   if (flags & O_APPEND)
-    fileaccess = fileaccess | FILE_APPEND_DATA;
+    fileaccess |= FILE_APPEND_DATA;
 
   cloexec = caml_convert_flag_list(flags, open_cloexec_flags);
   attr.nLength = sizeof(attr);
