@@ -175,7 +175,9 @@ struct c_stack_link {
  * the fiber chain.
  *
  * The second field of a continuation object stores a pointer to the other end
- * of the fiber chain, i.e., to the parent-most fiber.
+ * of the fiber chain, i.e., to the parent-most fiber. It is also tagged as an
+ * integer.
+ *
  *
  *  Native code
  *  -----------
