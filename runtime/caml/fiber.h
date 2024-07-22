@@ -159,13 +159,8 @@ struct c_stack_link {
  *  Retrofitting Effect Handlers onto OCaml, KC Sivaramakrishnan, et al.
  *  PLDI 2021
  *
- *  Native code
- *  -----------
- *
- * In native compilation the stack switching primitives Prunstack,
- * Pperform, Preperform and Presume make use of corresponding functions
- * implemented in the assembly files for an architecture (such as
- * runtime/amd64.S).
+ *  Representation of continuation values
+ *  -------------------------------------
  *
  * A continuation object represents a suspended OCaml stack. It is a block with
  * tag Cont_tag, containing as its first field the stack pointer tagged as an
@@ -181,6 +176,14 @@ struct c_stack_link {
  *
  * The second field of a continuation object stores a pointer to the other end
  * of the fiber chain, i.e., to the parent-most fiber.
+ *
+ *  Native code
+ *  -----------
+ *
+ * In native compilation the stack switching primitives Prunstack,
+ * Pperform, Preperform and Presume make use of corresponding functions
+ * implemented in the assembly files for an architecture (such as
+ * runtime/amd64.S).
  *
  * caml_runstack new_stack function argument
  *  caml_runstack launches a function (with an argument) in a new OCaml
