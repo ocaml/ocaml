@@ -46,6 +46,7 @@ CAMLprim value caml_unix_open(value path, value flags, value perm)
   int fileaccess, createflags, fileattrib, filecreate, sharemode, cloexec;
   SECURITY_ATTRIBUTES attr;
   HANDLE h;
+  DWORD dwMoved;
   wchar_t * wpath;
 
   caml_unix_check_path(path, "open");
@@ -70,6 +71,9 @@ CAMLprim value caml_unix_open(value path, value flags, value perm)
   else
     fileattrib = FILE_ATTRIBUTE_NORMAL;
 
+  if (flags & O_APPEND)
+    fileaccess = fileaccess | FILE_APPEND_DATA;
+
   cloexec = caml_convert_flag_list(flags, open_cloexec_flags);
   attr.nLength = sizeof(attr);
   attr.lpSecurityDescriptor = NULL;
@@ -87,5 +91,15 @@ CAMLprim value caml_unix_open(value path, value flags, value perm)
     caml_win32_maperr(GetLastError());
     caml_uerror("open", path);
   }
+
+  if (flags & O_APPEND) {
+    dwMoved = SetFilePointer(h, 0, NULL, FILE_END);
+    if (dwMoved == INVALID_SET_FILE_POINTER) {
+      win32_maperr(GetLastError());
+      CloseHandle(h);
+      uerror("open", path);
+    }
+  }
+
   return caml_win32_alloc_handle(h);
 }
