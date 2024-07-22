@@ -8,7 +8,7 @@
    }
 *)
 
-let str = "Hello, OCaml!\r\n"
+let str = "Hello, OCaml!"
 
 let append () =
   let fd =
