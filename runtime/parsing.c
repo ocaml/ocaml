@@ -299,7 +299,6 @@ CAMLprim value caml_parse_engine(value vtables, value venv,
 
   default:                      /* Should not happen */
     CAMLunreachable();
-    return RAISE_PARSE_ERROR;   /* Keeps gcc -Wall happy */
   }
 }
 
