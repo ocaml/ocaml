@@ -258,6 +258,10 @@ _______________
 - #13045: Emphasize caution about behaviour of custom block finalizers.
   (Nick Barnes)
 
+- #13216: document the new `caml_result` type in the FFI chapter of the manual.
+  (Gabriel Scherer, review by Miod Vallat, Daniel Bünzli, Nick Barnes,
+   Guillaume Munch-Maccagnoni and Antonin Décimo)
+
 - #13287: stdlib/sys.mli: Update documentation on Sys.opaque_identity
   following #9412.
   (Matt Walker, review by Guillaume Munch-Maccagnoni and Vincent Laviron)
