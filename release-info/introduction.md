@@ -44,7 +44,8 @@ For instance, at the date of writing, the next planned releases of OCaml are:
 
 The timing is approximate, as we often delay a release to ensure quality when
 unforeseen issues come up. In consequence, releases are often late, typically by
-up to two months.
+up to two months. There is a prospective release calendar available at
+[calendar.md](calendar.md)
 
 We may release bugfix releases at any time.
 
