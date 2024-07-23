@@ -802,7 +802,7 @@ end = struct
   (* We map from types to names, but not directly; we also store a substitution,
      which maps from types to types.  The lookup process is
      "type -> apply substitution -> find name".  The substitution is presumed to
-     be acyclic. *)
+     be one-shot. *)
   let names = ref ([] : (transient_expr * string) list)
   let name_subst = ref ([] : (transient_expr * transient_expr) list)
   let name_counter = ref 0
@@ -839,9 +839,9 @@ end = struct
           printer_iter_type_expr add_named_vars ty
     end
 
-  let rec substitute ty =
+  let substitute ty =
     match List.assq ty !name_subst with
-    | ty' -> substitute ty'
+    | ty' -> ty'
     | exception Not_found -> ty
 
   let add_subst subst =

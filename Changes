@@ -513,6 +513,11 @@ _______________
   LDFLAGS contains several words.
   (Stéphane Glondu, review by Miod Vallat)
 
+- #13306: An algorithm in the type-checker that checks two types for equality
+  could sometimes, in theory, return the wrong answer. This patch fixes the
+  oversight. No known program triggers the bug.
+  (Richard Eisenberg, review by Florian Angeletti)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 

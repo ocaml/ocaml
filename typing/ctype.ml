@@ -4131,8 +4131,18 @@ let eqtype_subst type_pairs subst t1 t2 =
   end
 
 let rec eqtype rename type_pairs subst env t1 t2 =
-  if eq_type t1 t2 then () else
+  let check_phys_eq t1 t2 =
+    not rename && eq_type t1 t2
+  in
+  (* Checking for physical equality of type representatives when [rename] is
+     true would be incorrect: imagine comparing ['a * 'a] with ['b * 'a]. The
+     first ['a] and ['b] would be identified in [eqtype_subst], and then the
+     second ['a] and ['a] would be [eq_type]. So we do not call [eq_type] here.
 
+     On the other hand, when [rename] is false we need to check for physical
+     equality, as that's the only way variables can be identified.
+  *)
+  if check_phys_eq t1 t2 then () else
   try
     match (get_desc t1, get_desc t2) with
       (Tvar _, Tvar _) when rename ->
@@ -4143,7 +4153,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
         let t1' = expand_head_rigid env t1 in
         let t2' = expand_head_rigid env t2 in
         (* Expansion may have changed the representative of the types... *)
-        if eq_type t1' t2' then () else
+        if check_phys_eq t1' t2' then () else
         if not (TypePairs.mem type_pairs (t1', t2')) then begin
           TypePairs.add type_pairs (t1', t2');
           match (get_desc t1', get_desc t2') with
@@ -4157,7 +4167,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               eqtype_list rename type_pairs subst env tl1 tl2
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
                 when Path.same p1 p2 ->
-              eqtype_list rename type_pairs subst env tl1 tl2
+              eqtype_list_same_length rename type_pairs subst env tl1 tl2
           | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
               begin match
                 unify_package env (eqtype_list rename type_pairs subst env)
@@ -4193,17 +4203,22 @@ let rec eqtype rename type_pairs subst env t1 t2 =
   with Equality_trace trace ->
     raise_trace_for Equality (Diff {got = t1; expected = t2} :: trace)
 
+and eqtype_list_same_length rename type_pairs subst env tl1 tl2 =
+  List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
+
 and eqtype_list rename type_pairs subst env tl1 tl2 =
   if List.length tl1 <> List.length tl2 then
     raise_unexplained_for Equality;
-  List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
+  eqtype_list_same_length rename type_pairs subst env tl1 tl2
 
 and eqtype_fields rename type_pairs subst env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1 in
   let (fields2, rest2) = flatten_fields ty2 in
   (* First check if same row => already equal *)
   let same_row =
-    eq_type rest1 rest2 || TypePairs.mem type_pairs (rest1,rest2)
+    (* [not rename]: see comment at top of [eqtype] *)
+    (not rename && eq_type rest1 rest2) ||
+    TypePairs.mem type_pairs (rest1,rest2)
   in
   if same_row then () else
   (* Try expansion, needed when called from Includecore.type_manifest *)
@@ -4318,20 +4333,23 @@ and eqtype_row rename type_pairs subst env row1 row2 =
     pairs
 
 (* Must empty univar_pairs first *)
-let eqtype_list rename type_pairs subst env tl1 tl2 =
+let eqtype_list_same_length rename type_pairs subst env tl1 tl2 =
   with_univar_pairs [] (fun () ->
     let snap = Btype.snapshot () in
     Misc.try_finally
       ~always:(fun () -> backtrack snap)
-      (fun () -> eqtype_list rename type_pairs subst env tl1 tl2))
+      (fun () -> eqtype_list_same_length rename type_pairs subst env tl1 tl2))
 
 let eqtype rename type_pairs subst env t1 t2 =
-  eqtype_list rename type_pairs subst env [t1] [t2]
+  eqtype_list_same_length rename type_pairs subst env [t1] [t2]
 
 (* Two modes: with or without renaming of variables *)
 let equal env rename tyl1 tyl2 =
+  if List.length tyl1 <> List.length tyl2 then
+    raise_unexplained_for Equality;
+  if List.for_all2 eq_type tyl1 tyl2 then () else
   let subst = ref [] in
-  try eqtype_list rename (TypePairs.create 11) subst env tyl1 tyl2
+  try eqtype_list_same_length rename (TypePairs.create 11) subst env tyl1 tyl2
   with Equality_trace trace ->
     raise (Equality (expand_to_equality_error env trace !subst))
 
