@@ -4139,7 +4139,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
      first ['a] and ['b] would be identified in [eqtype_subst], and then the
      second ['a] and ['a] would be [eq_type]. So we do not call [eq_type] here.
 
-     On the other hand, when [rename] is false we need to check for phyiscal
+     On the other hand, when [rename] is false we need to check for physical
      equality, as that's the only way variables can be identified.
   *)
   if check_phys_eq t1 t2 then () else
