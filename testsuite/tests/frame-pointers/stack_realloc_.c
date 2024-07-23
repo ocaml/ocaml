@@ -1,7 +1,7 @@
 #define CAML_NAME_SPACE
-#include "caml/mlvalues.h"
-#include "caml/fail.h"
-#include "caml/callback.h"
+#include <caml/mlvalues.h>
+#include <caml/fail.h>
+#include <caml/callback.h>
 
 value c_fun(void)
 {

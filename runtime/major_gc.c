@@ -315,7 +315,7 @@ static void ephe_todo_list_emptied (void)
 
   /* Since the todo list is empty, this domain does not need to participate in
    * further ephemeron cycles. */
-  atomic_fetch_add(&ephe_cycle_info.num_domains_todo, -1);
+  atomic_fetch_sub(&ephe_cycle_info.num_domains_todo, 1);
   CAMLassert(atomic_load_acquire(&ephe_cycle_info.num_domains_done) <=
              atomic_load_acquire(&ephe_cycle_info.num_domains_todo));
 
@@ -578,12 +578,11 @@ static inline intnat diffmod (uintnat x1, uintnat x2)
 static void update_major_slice_work(intnat howmuch,
                                     int may_access_gc_phase)
 {
-  double heap_words;
   intnat alloc_work, dependent_work, extra_work, new_work;
   intnat my_alloc_count, my_alloc_direct_count, my_dependent_count;
   double my_extra_count;
   caml_domain_state *dom_st = Caml_state;
-  uintnat heap_size, heap_sweep_words, total_cycle_work;
+  uintnat heap_words, heap_size, heap_sweep_words, total_cycle_work;
 
   my_alloc_count = dom_st->allocated_words;
   my_alloc_direct_count = dom_st->allocated_words_direct;
@@ -629,11 +628,12 @@ static void update_major_slice_work(intnat howmuch,
                  S = P * TW
   */
   heap_size = caml_heap_size(dom_st->shared_heap);
-  heap_words = (double)Wsize_bsize(heap_size);
+  heap_words = Wsize_bsize(heap_size);
   heap_sweep_words = heap_words;
 
   total_cycle_work =
-    heap_sweep_words + (heap_words * 100 / (100 + caml_percent_free));
+    heap_sweep_words
+    + (uintnat) ((double) heap_words * 100.0 / (100.0 + caml_percent_free));
 
   if (heap_words > 0) {
     double alloc_ratio =
@@ -649,7 +649,7 @@ static void update_major_slice_work(intnat howmuch,
     double dependent_ratio =
       total_cycle_work
       * (100 + caml_percent_free)
-      / dom_st-> dependent_size / caml_percent_free;
+        / (double)dom_st->dependent_size / (double)caml_percent_free;
     dependent_work = (intnat) (my_dependent_count * dependent_ratio);
   }else{
     dependent_work = 0;
@@ -1350,7 +1350,7 @@ static void cycle_major_heap_from_stw_single(
          space_overhead@N =
          100.0 * (heap_words@N - live_words@N) / live_words@N
       */
-      double live_words = last_cycle.not_garbage_words - swept_words;
+      intnat live_words = last_cycle.not_garbage_words - swept_words;
       double space_overhead = 100.0 * (double)(last_cycle.heap_words
                                                - live_words) / live_words;
 

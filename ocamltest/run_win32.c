@@ -42,7 +42,7 @@ static void report_error(
 {
   WCHAR windows_error_message[1024];
   DWORD error = GetLastError();
-  char *caml_error_message, buf[256];
+  char *caml_error_message;
   if (FormatMessage(
     FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
     NULL, error, 0, windows_error_message,
@@ -272,7 +272,6 @@ int run_command(const command_settings *settings)
   WCHAR *commandline = NULL;
 
   LPVOID environment = NULL;
-  LPCWSTR current_directory = NULL;
   STARTUPINFO startup_info;
   PROCESS_INFORMATION process_info;
   BOOL wait_result;

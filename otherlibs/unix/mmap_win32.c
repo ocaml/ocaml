@@ -44,8 +44,7 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   intnat dim[CAML_BA_MAX_NUM_DIMS];
   __int64 startpos, data_size;
   LARGE_INTEGER file_size;
-  uintnat array_size, page, delta;
-  char c;
+  uintnat array_size, delta;
   void * addr;
   LARGE_INTEGER li;
   SYSTEM_INFO sysinfo;

@@ -359,7 +359,7 @@ static void expand_argument(wchar_t * arg)
 
 static void expand_pattern(wchar_t * pat)
 {
-  wchar_t * prefix, * p, * name;
+  wchar_t * prefix, * name;
   intptr_t handle;
   struct _wfinddata_t ffblk;
   size_t i;
@@ -1092,7 +1092,6 @@ CAMLexport clock_t caml_win32_clock(void)
 {
   FILETIME _creation, _exit;
   CAML_ULONGLONG_FILETIME stime, utime;
-  ULARGE_INTEGER tmp;
   ULONGLONG clocks_per_sec;
 
   if (!(GetProcessTimes(GetCurrentProcess(), &_creation, &_exit,

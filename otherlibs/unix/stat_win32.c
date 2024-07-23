@@ -166,7 +166,6 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
 {
   BY_HANDLE_FILE_INFORMATION info;
   wchar_t* ptr;
-  char c;
   HANDLE h;
   unsigned short mode;
   int is_symlink = 0;
@@ -391,7 +390,6 @@ CAMLprim value caml_unix_lstat_64(value path)
 
 static value do_fstat(value handle, int use_64)
 {
-  int ret;
   struct _stat64 buf;
   __int64 st_ino;
   HANDLE h;

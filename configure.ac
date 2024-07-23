@@ -835,9 +835,11 @@ AS_CASE([$ocaml_cc_vendor],
   [msvc-*],
     [outputobj='-Fo'
     AS_CASE([$ocaml_cc_vendor],
-      [msvc-*-clang-*], [warn_error_flag='-WX'],
-      [warn_error_flag='-WX -options:strict'])
-    cc_warnings=''],
+      [msvc-*-clang-*],
+        [cc_warnings='-W4 -Wno-unused-parameter -Wno-sign-compare -Wundef'
+         warn_error_flag='-WX'],
+      [cc_warnings='-W2'
+       warn_error_flag='-WX -options:strict'])],
   [outputobj='-o '
   warn_error_flag='-Werror'
   cc_warnings="-Wall -Wint-conversion -Wstrict-prototypes \
@@ -1673,23 +1675,12 @@ AS_IF([$has_c99_float_ops],
   [AC_DEFINE([HAS_C99_FLOAT_OPS], [1])
   # Check whether round works (known bug in mingw-w64)
   OCAML_C99_CHECK_ROUND
-  # Check whether fma works (regressed in mingw-w64 8.0.0; present, but broken,
-  # in VS2013-2017 and present but unimplemented in Cygwin64)
+  # Check whether fma works (regressed in mingw-w64 8.0.0; and present but
+  # unimplemented in Cygwin64)
   OCAML_C99_CHECK_FMA],
   [AS_IF([test x"$enable_imprecise_c99_float_ops" != "xyes" ],
-    [AS_CASE([$enable_imprecise_c99_float_ops,$ocaml_cc_vendor],
-      [no,*], [hard_error=true],
-      [,msvc-*], [AS_IF([test "${ocaml_cc_vendor#msvc-}" -lt 1800 ],
-        [hard_error=false],
-        [hard_error=true])],
-      [hard_error=true])
-     AS_IF([test x"$hard_error" = 'xtrue'],
-       [AC_MSG_ERROR(m4_normalize([
-         C99 float ops unavailable, enable replacements
-         with --enable-imprecise-c99-float-ops]))],
-       [AC_MSG_WARN(m4_normalize([
-         C99 float ops unavailable, replacements enabled
-         (ancient Visual Studio)]))])])])
+    [AC_MSG_ERROR(m4_normalize([C99 float ops unavailable, enable replacements
+    with --enable-imprecise-c99-float-ops]))])])
 
 ## getentropy
 AC_CHECK_FUNC([getentropy], [AC_DEFINE([HAS_GETENTROPY], [1])])

@@ -154,8 +154,7 @@ CAMLprim value caml_unix_create_process(value * argv, int argn)
 
 static int has_console(void)
 {
-  HANDLE h, log;
-  int i;
+  HANDLE h;
 
   h = CreateFile(L"CONOUT$", GENERIC_WRITE, FILE_SHARE_WRITE, NULL,
                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);

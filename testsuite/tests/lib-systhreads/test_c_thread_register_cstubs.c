@@ -6,11 +6,11 @@
 #include <pthread.h>
 #define THREAD_FUNCTION void *
 #endif
-#include "caml/mlvalues.h"
-#include "caml/gc.h"
-#include "caml/memory.h"
-#include "caml/callback.h"
-#include "caml/threads.h"
+#include <caml/mlvalues.h>
+#include <caml/gc.h>
+#include <caml/memory.h>
+#include <caml/callback.h>
+#include <caml/threads.h>
 
 THREAD_FUNCTION thread_func(void *fn) {
   caml_c_thread_register();

@@ -1,7 +1,7 @@
 #define CAML_INTERNALS
 
-#include "caml/lf_skiplist.h"
-#include "caml/memory.h"
+#include <caml/lf_skiplist.h>
+#include <caml/memory.h>
 #include <assert.h>
 #define FMT ARCH_INTNAT_PRINTF_FORMAT
 

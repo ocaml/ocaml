@@ -509,7 +509,7 @@ static const int posix_signals[] = {
 
 CAMLexport int caml_convert_signal_number(int signo)
 {
-  if (signo < 0 && signo >= -(sizeof(posix_signals) / sizeof(int)))
+  if (signo < 0 && signo >= -(int)(sizeof(posix_signals) / sizeof(int)))
     return posix_signals[-signo-1];
   else
     return signo;
@@ -517,7 +517,7 @@ CAMLexport int caml_convert_signal_number(int signo)
 
 CAMLexport int caml_rev_convert_signal_number(int signo)
 {
-  for (int i = 0; i < sizeof(posix_signals) / sizeof(int); i++)
+  for (int i = 0; i < (int)(sizeof(posix_signals) / sizeof(int)); i++)
     if (signo == posix_signals[i]) return -i - 1;
   return signo;
 }
