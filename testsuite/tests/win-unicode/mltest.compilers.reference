@@ -17,7 +17,7 @@ val test_open_in : unit -> string list = <fun>
 val test_getenv : unit -> ((string * string) * (string * string)) list =
   <fun>
 val test_mkdir : unit -> (bool * bool) list = <fun>
-val test_chdir : (string -> unit) -> (unit -> 'a) -> 'a list = <fun>
+val test_chdir : (string -> unit) -> (unit -> 'b) -> 'b list = <fun>
 val test_rmdir : unit -> bool list = <fun>
 val test_stat :
   unit ->
