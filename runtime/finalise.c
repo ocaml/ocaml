@@ -221,7 +221,7 @@ void caml_final_do_young_roots
     Call_action (act, fdata, f->first.table[i].val);
   }
 
-  CAMLassert (f->last.old <= f->last.old);
+  CAMLassert (f->last.old <= f->last.young);
   for (uintnat i = f->last.old; i < f->last.young; i++) {
     Call_action (act, fdata, f->last.table[i].fun);
     if (do_last_val)

@@ -1163,7 +1163,8 @@ static uintnat rand_geom(memprof_domain_t domain)
   if (domain->rand_pos == RAND_BLOCK_SIZE)
     rand_batch(domain);
   res = domain->rand_geom_buff[domain->rand_pos++];
-  CAMLassert(1 <= res && res <= Max_long);
+  CAMLassert(1 <= res);
+  CAMLassert(res <= Max_long);
   return res;
 }
 
@@ -1769,7 +1770,9 @@ static caml_result run_callback_res(
   } else {
     value v = res.data;
     /* Callback returned [Some _]. Store the value in [user_data]. */
-    CAMLassert(Is_block(v) && Tag_val(v) == 0 && Wosize_val(v) == 1);
+    CAMLassert(Is_block(v));
+    CAMLassert(Tag_val(v) == 0);
+    CAMLassert(Wosize_val(v) == 1);
     e->user_data = Some_val(v);
     if (Is_block(e->user_data) && Is_young(e->user_data) &&
         i < es->young)
@@ -1972,8 +1975,8 @@ void caml_memprof_set_trigger(caml_domain_state *state)
     }
   }
 
-  CAMLassert((trigger >= state->young_start) &&
-             (trigger <= state->young_ptr));
+  CAMLassert(trigger >= state->young_start);
+  CAMLassert(trigger <= state->young_ptr);
   state->memprof_young_trigger = trigger;
 }
 
@@ -2030,9 +2033,9 @@ void caml_memprof_sample_young(uintnat wosize, int from_caml,
   }
 
   /* The memprof trigger lies in (young_ptr, young_ptr + whsize] */
-  CAMLassert(Caml_state->young_ptr < Caml_state->memprof_young_trigger &&
-             Caml_state->memprof_young_trigger <=
-               Caml_state->young_ptr + whsize);
+  CAMLassert(Caml_state->young_ptr < Caml_state->memprof_young_trigger);
+  CAMLassert(Caml_state->memprof_young_trigger <=
+             Caml_state->young_ptr + whsize);
 
   /* Trigger offset from the base of the combined allocation. We
    * reduce this for each sample in this comballoc. Signed so it can

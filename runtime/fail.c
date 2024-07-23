@@ -22,8 +22,8 @@
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 
-#define Assert_is_exn_constructor(v)                    \
-  (CAMLassert(Is_block(v) && Tag_val(v) == Object_tag))
+#define Assert_is_exn_constructor(v)                                    \
+  (CAMLassert(Is_block(v)), CAMLassert(Tag_val(v) == Object_tag))
 
 CAMLexport value caml_exception_constant(value exn_constr)
 {
