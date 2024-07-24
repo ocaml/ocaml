@@ -280,7 +280,7 @@ CAMLnoret CAMLextern void caml_failed_assert (char *, char_os *, int);
 #define CAMLassert(x) ((void) 0)
 #endif
 
-#if __has_builtin(__builtin_trap)
+#if __has_builtin(__builtin_trap) || defined(__GNUC__)
   #define CAMLunreachable() (__builtin_trap())
 #elif defined(_MSC_VER)
   #include <intrin.h>
