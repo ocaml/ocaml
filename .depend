@@ -680,6 +680,7 @@ typing/datarepr.cmx : \
     parsing/asttypes.cmx \
     typing/datarepr.cmi
 typing/datarepr.cmi : \
+    parsing/unit_info.cmi \
     typing/types.cmi \
     typing/path.cmi \
     typing/ident.cmi
@@ -1423,18 +1424,21 @@ typing/rawprinttyp.cmx : \
 typing/rawprinttyp.cmi : \
     typing/types.cmi
 typing/shape.cmo : \
+    parsing/unit_info.cmi \
     typing/path.cmi \
     utils/misc.cmi \
     utils/identifiable.cmi \
     typing/ident.cmi \
     typing/shape.cmi
 typing/shape.cmx : \
+    parsing/unit_info.cmx \
     typing/path.cmx \
     utils/misc.cmx \
     utils/identifiable.cmx \
     typing/ident.cmx \
     typing/shape.cmi
 typing/shape.cmi : \
+    parsing/unit_info.cmi \
     typing/path.cmi \
     utils/identifiable.cmi \
     typing/ident.cmi
