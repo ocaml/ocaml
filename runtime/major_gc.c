@@ -1408,7 +1408,7 @@ static void stw_cycle_all_domains(
    * mysteriously put all domains back into mark/sweep.
    */
   CAML_EV_BEGIN(EV_MAJOR_MEMPROF_CLEAN);
-  caml_memprof_after_major_gc(domain, domain == participating[0]);
+  caml_memprof_after_major_gc(domain);
   CAML_EV_END(EV_MAJOR_MEMPROF_CLEAN);
 
   CAML_EV_BEGIN(EV_MAJOR_GC_CYCLE_DOMAINS);
@@ -1487,7 +1487,7 @@ static void stw_cycle_all_domains(
 
   CAML_EV_BEGIN(EV_MAJOR_MEMPROF_ROOTS);
   caml_memprof_scan_roots(caml_darken, darken_scanning_flags, domain,
-                          domain, false, participating[0] == Caml_state);
+                          domain, false);
   CAML_EV_END(EV_MAJOR_MEMPROF_ROOTS);
 
   if (domain->mark_stack->count == 0 &&

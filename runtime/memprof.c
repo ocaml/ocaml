@@ -626,8 +626,11 @@ struct memprof_orphan_table_s {
 /* List of orphaned entry tables not yet adopted by any domain. */
 static memprof_orphan_table_t orphans = NULL;
 
-/* lock controlling access to `orphans` variable */
+/* lock controlling access to `orphans` and writes to `orphans_present` */
 static caml_plat_mutex orphans_lock = CAML_PLAT_MUTEX_INITIALIZER;
+
+/* Flag indicating non-NULL orphans. Only modified when holding orphans_lock. */
+static atomic_uintnat orphans_present;
 
 /**** Initializing and clearing entries tables ****/
 
@@ -965,6 +968,7 @@ static void orphans_abandon(memprof_domain_t domain)
   caml_plat_lock_blocking(&orphans_lock);
   ot->next = orphans;
   orphans = domain->orphans;
+  atomic_store_release(&orphans_present, 1);
   caml_plat_unlock(&orphans_lock);
   domain->orphans = NULL;
 }
@@ -973,6 +977,9 @@ static void orphans_abandon(memprof_domain_t domain)
 
 static void orphans_adopt(memprof_domain_t domain)
 {
+  if (!atomic_load_acquire(&orphans_present))
+    return; /* No orphans to adopt */
+
   /* Find the end of the domain's orphans list */
   memprof_orphan_table_t *p = &domain->orphans;
   while(*p) {
@@ -980,8 +987,11 @@ static void orphans_adopt(memprof_domain_t domain)
   }
 
   caml_plat_lock_blocking(&orphans_lock);
-  *p = orphans;
-  orphans = NULL;
+  if (orphans) {
+    *p = orphans;
+    orphans = NULL;
+    atomic_store_release(&orphans_present, 0);
+  }
   caml_plat_unlock(&orphans_lock);
 }
 
@@ -1463,15 +1473,13 @@ void caml_memprof_scan_roots(scanning_action f,
                              scanning_action_flags fflags,
                              void* fdata,
                              caml_domain_state *state,
-                             bool weak,
-                             bool global)
+                             bool weak)
 {
   memprof_domain_t domain = state->memprof;
   CAMLassert(domain);
-  if (global) {
-    /* Adopt all global orphans into this domain. */
-    orphans_adopt(domain);
-  }
+
+  /* Adopt all global orphans into this domain. */
+  orphans_adopt(domain);
 
   bool young = (fflags & SCANNING_ONLY_YOUNG_VALUES);
   struct scan_closure closure = {f, fflags, fdata, weak};
@@ -1515,17 +1523,15 @@ static void entries_update_after_minor_gc(entries_t entries,
 }
 
 /* Update all memprof structures for a given domain, at the end of a
- * minor GC. If `global` is set, also ensure shared structures are
- * updated (we do this by adopting orphans into this domain). */
+ * minor GC. */
 
-void caml_memprof_after_minor_gc(caml_domain_state *state, bool global)
+void caml_memprof_after_minor_gc(caml_domain_state *state)
 {
   memprof_domain_t domain = state->memprof;
   CAMLassert(domain);
-  if (global) {
-    /* Adopt all global orphans into this domain. */
-    orphans_adopt(domain);
-  }
+
+  /* Adopt all global orphans into this domain. */
+  orphans_adopt(domain);
 
   domain_apply_actions(domain, true, entry_update_after_minor_gc,
                        NULL, entries_update_after_minor_gc);
@@ -1558,17 +1564,16 @@ static bool entry_update_after_major_gc(entry_t e, void *data)
  * is no "entries_update_after_major_gc" function. */
 
 /* Update all memprof structures for a given domain, at the end of a
- * major GC. If `global` is set, also update shared structures (we do
- * this by adopting orphans into this domain). */
+ * major GC. */
 
-void caml_memprof_after_major_gc(caml_domain_state *state, bool global)
+void caml_memprof_after_major_gc(caml_domain_state *state)
 {
   memprof_domain_t domain = state->memprof;
   CAMLassert(domain);
-  if (global) {
-    /* Adopt all global orphans into this domain. */
-    orphans_adopt(domain);
-  }
+
+  /* Adopt all global orphans into this domain. */
+  orphans_adopt(domain);
+
   domain_apply_actions(domain, false, entry_update_after_major_gc,
                        NULL, NULL);
   orphans_update_pending(domain);
