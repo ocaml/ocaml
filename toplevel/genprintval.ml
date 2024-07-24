@@ -249,7 +249,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       let nested_values = ObjTbl.create 8 in
       let nest_gen err f depth obj ty =
         let repr = obj in
-        if not (O.is_block repr) then
+        if not (O.is_block repr) || (O.tag repr >= Obj.no_scan_tag) then
           f depth obj ty
         else
           if ObjTbl.mem nested_values repr then
