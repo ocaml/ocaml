@@ -270,21 +270,6 @@ val fold_right : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
     where [x0], [x1], ..., [xn] are the elements of [a].
 *)
 
-val exists : ('a -> bool) -> 'a t -> bool
-(** [exists f a] is [true] if some element of [a] satisfies [f].
-
-    For example, if the elements of [a] are [x0], [x1], [x2], then
-    [exists f a] is [f x0 || f x1 || f x2].
-*)
-
-val for_all : ('a -> bool) -> 'a t -> bool
-(** [for_all f a] is [true] if all elements of [a] satisfy [f].
-    This includes the case where [a] is empty.
-
-    For example, if the elements of [a] are [x0], [x1], then
-    [exists f a] is [f x0 && f x1 && f x2].
-*)
-
 val filter : ('a -> bool) -> 'a t -> 'a t
 (** [filter f a] is a new array of all the elements of [a] that satisfy [f].
     In other words, it is an array [b] such that, for each element [x]
@@ -306,6 +291,23 @@ val filter_map : ('a -> 'b option) -> 'a t -> 'b t
     For example, [filter_map int_of_string_opt inputs] returns
     a new array of integers read from the strings in [inputs],
     ignoring strings that cannot be converted to integers.
+*)
+
+{1:dynarray_scanning Dynarray scanning }
+
+val exists : ('a -> bool) -> 'a t -> bool
+(** [exists f a] is [true] if some element of [a] satisfies [f].
+
+    For example, if the elements of [a] are [x0], [x1], [x2], then
+    [exists f a] is [f x0 || f x1 || f x2].
+*)
+
+val for_all : ('a -> bool) -> 'a t -> bool
+(** [for_all f a] is [true] if all elements of [a] satisfy [f].
+    This includes the case where [a] is empty.
+
+    For example, if the elements of [a] are [x0], [x1], then
+    [exists f a] is [f x0 && f x1 && f x2].
 *)
 
 val mem : 'a -> 'a t -> bool
