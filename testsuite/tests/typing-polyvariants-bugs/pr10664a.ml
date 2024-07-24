@@ -49,8 +49,8 @@ let x = f o;;
 val o : < m : 'a. < n : 'c. ([< `A of 'a ] as 'c) -> 'b > > as 'b = <obj>
 val x :
   < n : 'b.
-          ([< `A of '_a ] as 'b) ->
-          (< m : 'd. < n : 'e. ([< `A of 'd ] as 'e) -> 'c > > as 'c) > =
+          ([< `A of '_weak1 ] as 'b) ->
+          (< m : 'a. < n : 'd. ([< `A of 'a ] as 'd) -> 'c > > as 'c) > =
   <obj>
 |}]
 
@@ -110,8 +110,8 @@ let y = g o;;
 [%%expect{|
 val o : < m : 'a 'c. < n : ([< `A of 'a ] as 'c) -> 'b > > as 'b = <obj>
 val y :
-  < n : ([< `A of '_a ] as '_weak1) ->
-        (< m : 'c 'd. < n : ([< `A of 'c ] as 'd) -> 'b > > as 'b) > =
+  < n : ([< `A of '_weak3 ] as '_weak2) ->
+        (< m : 'a 'c. < n : ([< `A of 'a ] as 'c) -> 'b > > as 'b) > =
   <obj>
 |}]
 

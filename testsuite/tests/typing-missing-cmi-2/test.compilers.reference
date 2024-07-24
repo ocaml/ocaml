@@ -1,1 +1,1 @@
-val x : '_a Foo.t
+val x : '_weak1 Foo.t
