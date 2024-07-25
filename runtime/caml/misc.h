@@ -110,7 +110,7 @@ CAMLdeprecated_typedef(addr, char *);
 #define CAMLnoreturn_start CAMLnoret
 #define CAMLnoreturn_end
 #ifdef __GNUC__
-  #define Noreturn CAMLnoret
+  #define Noreturn __attribute__ ((noreturn))
 #else
   #define Noreturn
 #endif
