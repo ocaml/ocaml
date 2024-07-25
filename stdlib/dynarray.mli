@@ -293,7 +293,7 @@ val filter_map : ('a -> 'b option) -> 'a t -> 'b t
     ignoring strings that cannot be converted to integers.
 *)
 
-{1:dynarray_scanning Dynarray scanning }
+(** {1:dynarray_scanning Dynarray scanning } *)
 
 val exists : ('a -> bool) -> 'a t -> bool
 (** [exists f a] is [true] if some element of [a] satisfies [f].
