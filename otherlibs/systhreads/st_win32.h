@@ -24,65 +24,79 @@ Caml_inline void st_msleep(int msec)
   Sleep(msec);
 }
 
-/* POSIX thread implementation of the "st" interface */
-
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
 #include <signal.h>
 #include <time.h>
-#ifdef HAS_UNISTD
-#include <unistd.h>
-#endif
+#include <caml/osdeps.h>
 
 
-typedef pthread_t st_thread_id;
-
+typedef HANDLE st_thread_id;
 
 /* Thread creation. Created in detached mode if [res] is NULL. */
 static int st_thread_create(st_thread_id * res,
-                            void * (*fn)(void *), void * arg)
+                            unsigned ( WINAPI *start_address )( void * ),
+                            void * arg)
 {
-  pthread_t thr;
-  pthread_attr_t attr;
-  int rc;
+  st_thread_id thr;
+  thr = (st_thread_id) _beginthreadex(
+    NULL, /* security: handle can't be inherited */
+    0,    /* stack size */
+    start_address,
+    arg,
+    0,    /* run immediately */
+    NULL  /* thread identifier */
+    );
+  if (thr == 0)
+    return errno;
 
-  pthread_attr_init(&attr);
-  if (res == NULL) pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  rc = pthread_create(&thr, &attr, fn, arg);
-  if (res != NULL) *res = thr;
-  return rc;
+  if (res == NULL) {
+    /* detach */
+    if (!CloseHandle(thr)) {
+      int err = caml_posixerr_of_win32err(GetLastError());
+      return err == 0 ? EINVAL : err;
+    }
+  } else {
+    *res = thr;
+  }
+  return 0;
 }
-
-#define ST_THREAD_FUNCTION void *
 
 /* Thread termination */
 
 static void st_thread_join(st_thread_id thr)
 {
-  pthread_join(thr, NULL);
+  WaitForSingleObject(thr, INFINITE);
   /* best effort: ignore errors */
 }
 
 /* Thread-specific state */
 
-typedef pthread_key_t st_tlskey;
+typedef DWORD st_tlskey;
 
 static int st_tls_newkey(st_tlskey * res)
 {
-  return pthread_key_create(res, NULL);
+  DWORD index = TlsAlloc();
+  if (index == TLS_OUT_OF_INDEXES) {
+    int err = caml_posixerr_of_win32err(GetLastError());
+    return err == 0 ? EINVAL : err;
+  }
+  *res = index;
+  return 0;
 }
 
 Caml_inline void * st_tls_get(st_tlskey k)
 {
-  return pthread_getspecific(k);
+  /* No errors are returned from pthread_getspecific(). Ignore
+   * TlsGetValue() errors.  */
+  return TlsGetValue(k);
 }
 
 Caml_inline void st_tls_set(st_tlskey k, void * v)
 {
-  pthread_setspecific(k, v);
+  (void)TlsSetValue(k, v);
 }
 
 /* The master lock.  This is a mutex that is held most of the time,
@@ -93,31 +107,23 @@ Caml_inline void st_tls_set(st_tlskey k, void * v)
 typedef struct {
   bool init;                      /* have the mutex and the cond been
                                      initialized already? */
-  pthread_mutex_t lock;           /* to protect contents */
+  SRWLOCK lock;                   /* to protect contents */
   bool busy;                      /* false = free, true = taken */
   atomic_uintnat waiters;         /* number of threads waiting on master lock */
-  pthread_cond_t is_free;         /* signaled when free */
+  CONDITION_VARIABLE is_free;     /* signaled when free */
 } st_masterlock;
 
 /* Returns non-zero on failure */
 static int st_masterlock_init(st_masterlock * m)
 {
-  int rc;
   if (!m->init) {
-    rc = pthread_mutex_init(&m->lock, NULL);
-    if (rc != 0) goto out_err;
-    rc = pthread_cond_init(&m->is_free, NULL);
-    if (rc != 0) goto out_err2;
+    InitializeSRWLock(&m->lock);
+    InitializeConditionVariable(&m->is_free);
     m->init = true;
   }
   m->busy = true;
   atomic_store_release(&m->waiters, 0);
   return 0;
-
- out_err2:
-  pthread_mutex_destroy(&m->lock);
- out_err:
-  return rc;
 }
 
 static uintnat st_masterlock_waiters(st_masterlock * m)
@@ -127,26 +133,27 @@ static uintnat st_masterlock_waiters(st_masterlock * m)
 
 static void st_masterlock_acquire(st_masterlock *m)
 {
-  pthread_mutex_lock(&m->lock);
+  AcquireSRWLockExclusive(&m->lock);
   while (m->busy) {
     atomic_fetch_add(&m->waiters, +1);
-    pthread_cond_wait(&m->is_free, &m->lock);
+    SleepConditionVariableSRW(&m->is_free, &m->lock,
+                              INFINITE, 0 /* exclusive */);
     atomic_fetch_add(&m->waiters, -1);
   }
   m->busy = true;
   st_bt_lock_acquire();
-  pthread_mutex_unlock(&m->lock);
+  ReleaseSRWLockExclusive(&m->lock);
 
   return;
 }
 
 static void st_masterlock_release(st_masterlock * m)
 {
-  pthread_mutex_lock(&m->lock);
+  AcquireSRWLockExclusive(&m->lock);
   m->busy = false;
   st_bt_lock_release(st_masterlock_waiters(m) == 0);
-  pthread_cond_signal(&m->is_free);
-  pthread_mutex_unlock(&m->lock);
+  WakeConditionVariable(&m->is_free);
+  ReleaseSRWLockExclusive(&m->lock);
 
   return;
 }
@@ -162,7 +169,7 @@ static void st_masterlock_release(st_masterlock * m)
 */
 Caml_inline void st_thread_yield(st_masterlock * m)
 {
-  pthread_mutex_lock(&m->lock);
+  AcquireSRWLockExclusive(&m->lock);
   /* We must hold the lock to call this. */
 
   /* We already checked this without the lock, but we might have raced--if
@@ -171,13 +178,13 @@ Caml_inline void st_thread_yield(st_masterlock * m)
   uintnat waiters = st_masterlock_waiters(m);
 
   if (waiters == 0) {
-    pthread_mutex_unlock(&m->lock);
+    ReleaseSRWLockExclusive(&m->lock);
     return;
   }
 
   m->busy = false;
   atomic_fetch_add(&m->waiters, +1);
-  pthread_cond_signal(&m->is_free);
+  WakeConditionVariable(&m->is_free);
   /* releasing the domain lock but not triggering bt messaging
      messaging the bt should not be required because yield assumes
      that a thread will resume execution (be it the yielding thread
@@ -189,7 +196,8 @@ Caml_inline void st_thread_yield(st_masterlock * m)
        wait, which is good: we'll reliably continue waiting until the next
        yield() or enter_blocking_section() call (or we see a spurious condvar
        wakeup, which are rare at best.) */
-       pthread_cond_wait(&m->is_free, &m->lock);
+       SleepConditionVariableSRW(&m->is_free, &m->lock,
+                                 INFINITE, 0 /* exclusive */);
   } while (m->busy);
 
   m->busy = true;
@@ -197,7 +205,7 @@ Caml_inline void st_thread_yield(st_masterlock * m)
 
   caml_acquire_domain_lock();
 
-  pthread_mutex_unlock(&m->lock);
+  ReleaseSRWLockExclusive(&m->lock);
 
   return;
 }
@@ -205,22 +213,18 @@ Caml_inline void st_thread_yield(st_masterlock * m)
 /* Triggered events */
 
 typedef struct st_event_struct {
-  pthread_mutex_t lock;         /* to protect contents */
+  SRWLOCK lock;                 /* to protect contents */
   bool status;                  /* false = not triggered, true = triggered */
-  pthread_cond_t triggered;     /* signaled when triggered */
+  CONDITION_VARIABLE triggered; /* signaled when triggered */
 } * st_event;
 
 
 static int st_event_create(st_event * res)
 {
-  int rc;
   st_event e = caml_stat_alloc_noexc(sizeof(struct st_event_struct));
   if (e == NULL) return ENOMEM;
-  rc = pthread_mutex_init(&e->lock, NULL);
-  if (rc != 0) { caml_stat_free(e); return rc; }
-  rc = pthread_cond_init(&e->triggered, NULL);
-  if (rc != 0)
-  { pthread_mutex_destroy(&e->lock); caml_stat_free(e); return rc; }
+  InitializeSRWLock(&e->lock);
+  InitializeConditionVariable(&e->triggered);
   e->status = false;
   *res = e;
   return 0;
@@ -228,34 +232,30 @@ static int st_event_create(st_event * res)
 
 static int st_event_destroy(st_event e)
 {
-  int rc1, rc2;
-  rc1 = pthread_mutex_destroy(&e->lock);
-  rc2 = pthread_cond_destroy(&e->triggered);
   caml_stat_free(e);
-  return rc1 != 0 ? rc1 : rc2;
+  return 0;
 }
 
 static int st_event_trigger(st_event e)
 {
-  int rc;
-  rc = pthread_mutex_lock(&e->lock);
-  if (rc != 0) return rc;
+  AcquireSRWLockExclusive(&e->lock);
   e->status = true;
-  rc = pthread_mutex_unlock(&e->lock);
-  if (rc != 0) return rc;
-  rc = pthread_cond_broadcast(&e->triggered);
-  return rc;
+  ReleaseSRWLockExclusive(&e->lock);
+  WakeAllConditionVariable(&e->triggered);
+  return 0;
 }
 
 static int st_event_wait(st_event e)
 {
-  int rc;
-  rc = pthread_mutex_lock(&e->lock);
-  if (rc != 0) return rc;
+  AcquireSRWLockExclusive(&e->lock);
   while(!e->status) {
-    rc = pthread_cond_wait(&e->triggered, &e->lock);
-    if (rc != 0) return rc;
+    BOOL rc = SleepConditionVariableSRW(&e->triggered, &e->lock,
+                                        INFINITE, 0 /* exclusive */);
+    if (!rc) {
+      int err = caml_posixerr_of_win32err(GetLastError());
+      return err == 0 ? EINVAL : err;
+    }
   }
-  rc = pthread_mutex_unlock(&e->lock);
-  return rc;
+  ReleaseSRWLockExclusive(&e->lock);
+  return 0;
 }

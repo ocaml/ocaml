@@ -45,8 +45,6 @@ static int st_thread_create(st_thread_id * res,
   return rc;
 }
 
-#define ST_THREAD_FUNCTION void *
-
 /* Thread termination */
 
 static void st_thread_join(st_thread_id thr)

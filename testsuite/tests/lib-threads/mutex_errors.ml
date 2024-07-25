@@ -2,6 +2,7 @@
  include systhreads;
  hassysthreads;
  no-tsan; (* tsan detects the mutex errors and fails *)
+ not-windows; (* Windows' SRWLock differ from pthreads ERRORCHECK mutexes. *)
  {
    bytecode;
  }{

@@ -27,7 +27,11 @@
 #include "caml/runtime_events.h"
 
 /* System-dependent part */
+#ifdef _WIN32
+#include "sync_win32.h"
+#else
 #include "sync_posix.h"
+#endif
 
 /* Reporting errors */
 
