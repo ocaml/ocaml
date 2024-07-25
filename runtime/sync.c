@@ -96,7 +96,7 @@ CAMLprim value caml_ml_mutex_new(value unit)
   value wrapper;
 
   caml_check_error(sync_mutex_create(&mut), "Mutex.create");
-  wrapper = caml_alloc_custom(&caml_mutex_ops, sizeof(pthread_mutex_t *),
+  wrapper = caml_alloc_custom(&caml_mutex_ops, sizeof(sync_mutex *),
                               0, 1);
   Mutex_val(wrapper) = mut;
   return wrapper;

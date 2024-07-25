@@ -112,8 +112,8 @@ static_assert(
    When the main C-stack for a domain enters a blocking call,
    a 'backup thread' becomes responsible for servicing the STW
    sections on behalf of the domain. Care is needed to hand off duties
-   for servicing STW sections between the main pthread and the backup
-   pthread when caml_enter_blocking_section and
+   for servicing STW sections between the main thread and the backup
+   thread when caml_enter_blocking_section and
    caml_leave_blocking_section are called.
 
    When the state for the backup thread is BT_IN_BLOCKING_SECTION
@@ -125,26 +125,26 @@ static_assert(
            BT_INIT  <---------------------------------------+
               |                                             |
    (install_backup_thread)                                  |
-       [main pthread]                                       |
+       [main thread]                                        |
               |                                             |
               v                                             |
        BT_ENTERING_OCAML  <-----------------+               |
               |                             |               |
 (caml_enter_blocking_section)               |               |
-       [main pthread]                       |               |
+        [main thread]                       |               |
               |                             |               |
               |                             |               |
               |               (caml_leave_blocking_section) |
-              |                      [main pthread]         |
+              |                       [main thread]         |
               v                             |               |
     BT_IN_BLOCKING_SECTION  ----------------+               |
               |                                             |
      (domain_terminate)                                     |
-       [main pthread]                                       |
+        [main thread]                                       |
               |                                             |
               v                                             |
         BT_TERMINATE                               (backup_thread_func)
-              |                                      [backup pthread]
+              |                                      [backup thread]
               |                                             |
               +---------------------------------------------+
 
