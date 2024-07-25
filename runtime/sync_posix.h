@@ -116,25 +116,4 @@ Caml_inline int sync_condvar_wait(sync_condvar c, sync_mutex m)
   return pthread_cond_wait(c, m);
 }
 
-/* Reporting errors */
-
-static void sync_check_error(int retcode, char * msg)
-{
-  char * err;
-  char buf[1024];
-  int errlen, msglen;
-  value str;
-
-  if (retcode == 0) return;
-  if (retcode == ENOMEM) caml_raise_out_of_memory();
-  err = caml_strerror(retcode, buf, sizeof(buf));
-  msglen = strlen(msg);
-  errlen = strlen(err);
-  str = caml_alloc_string(msglen + 2 + errlen);
-  memcpy (&Byte(str, 0), msg, msglen);
-  memcpy (&Byte(str, msglen), ": ", 2);
-  memcpy (&Byte(str, msglen + 2), err, errlen);
-  caml_raise_sys_error(str);
-}
-
 #endif /* CAML_SYNC_POSIX_H */
