@@ -100,7 +100,8 @@ CAMLdeprecated_typedef(addr, char *);
    Note: CAMLnoreturn is a different macro defined in memory.h,
    to be used in function bodies rather than as a function attribute.
 */
-#if __has_c_attribute(noreturn) || defined(__cplusplus)
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L || \
+    defined(__cplusplus)
   #define CAMLnoret [[noreturn]]
 #else
   #define CAMLnoret _Noreturn
@@ -188,8 +189,8 @@ CAMLdeprecated_typedef(addr, char *);
      CAMLunused_start foo CAMLunused_end;
    which supports both GCC/Clang and MSVC.
 */
-#if __has_c_attribute(maybe_unused)                     \
-    || defined(__cplusplus) && __cplusplus >= 201703L
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L || \
+    defined(__cplusplus) && __cplusplus >= 201703L
   #define CAMLunused [[maybe_unused]]
   #define CAMLunused_start CAMLunused
   #define CAMLunused_end
@@ -209,8 +210,8 @@ CAMLdeprecated_typedef(addr, char *);
 #endif
 
 #ifdef CAML_INTERNALS
-#if (defined(__cplusplus) && __cplusplus >= 201703L) || \
-    __has_c_attribute(fallthrough)
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L || \
+    defined(__cplusplus) && __cplusplus >= 201703L
   #define fallthrough [[fallthrough]]
 #elif __has_attribute(fallthrough)
   #define fallthrough __attribute__ ((fallthrough))
