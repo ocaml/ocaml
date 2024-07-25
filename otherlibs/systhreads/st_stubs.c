@@ -438,7 +438,7 @@ static void caml_thread_reinitialize(void)
      the effective owner of the lock. So there is no need to run
      st_masterlock_acquire (busy = 1) */
   st_masterlock *m = Thread_lock(Caml_state->id);
-  m->init = 0; /* force reinitialization */
+  m->init = false; /* force reinitialization */
   /* Note: initializing an already-initialized mutex and cond variable
      is UB (especially mutexes that are locked). This is best
      effort. */
