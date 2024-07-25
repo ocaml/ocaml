@@ -26,7 +26,6 @@
 #include <unistd.h>
 #endif
 
-typedef int st_retcode;
 
 typedef pthread_t st_thread_id;
 
@@ -115,35 +114,6 @@ static uintnat st_masterlock_waiters(st_masterlock * m)
   return atomic_load_acquire(&m->waiters);
 }
 
-static void st_bt_lock_acquire(st_masterlock *m) {
-
-  /* We do not want to signal the backup thread if it is not "working"
-     as it may very well not be, because we could have just resumed
-     execution from another thread right away. */
-  if (caml_bt_is_in_blocking_section()) {
-    caml_bt_enter_ocaml();
-  }
-
-  caml_acquire_domain_lock();
-
-  return;
-}
-
-static void st_bt_lock_release(st_masterlock *m) {
-
-  /* Here we do want to signal the backup thread iff there's
-     no thread waiting to be scheduled, and the backup thread is currently
-     idle. */
-  if (st_masterlock_waiters(m) == 0 &&
-      caml_bt_is_in_blocking_section() == 0) {
-    caml_bt_exit_ocaml();
-  }
-
-  caml_release_domain_lock();
-
-  return;
-}
-
 static void st_masterlock_acquire(st_masterlock *m)
 {
   pthread_mutex_lock(&m->lock);
@@ -153,7 +123,7 @@ static void st_masterlock_acquire(st_masterlock *m)
     atomic_fetch_add(&m->waiters, -1);
   }
   m->busy = true;
-  st_bt_lock_acquire(m);
+  st_bt_lock_acquire();
   pthread_mutex_unlock(&m->lock);
 
   return;
@@ -163,7 +133,7 @@ static void st_masterlock_release(st_masterlock * m)
 {
   pthread_mutex_lock(&m->lock);
   m->busy = false;
-  st_bt_lock_release(m);
+  st_bt_lock_release(st_masterlock_waiters(m) == 0);
   pthread_cond_signal(&m->is_free);
   pthread_mutex_unlock(&m->lock);
 
@@ -277,30 +247,4 @@ static int st_event_wait(st_event e)
   }
   rc = pthread_mutex_unlock(&e->lock);
   return rc;
-}
-
-struct caml_thread_tick_args {
-  int domain_id;
-  atomic_uintnat* stop;
-};
-
-/* The tick thread: interrupt the domain periodically to force preemption  */
-static void * caml_thread_tick(void * arg)
-{
-  struct caml_thread_tick_args* tick_thread_args =
-    (struct caml_thread_tick_args*) arg;
-  int domain_id = tick_thread_args->domain_id;
-  atomic_uintnat* stop = tick_thread_args->stop;
-  caml_stat_free(tick_thread_args);
-
-  caml_init_domain_self(domain_id);
-  caml_domain_state *domain = Caml_state;
-
-  while(! atomic_load_acquire(stop)) {
-    st_msleep(Thread_timeout);
-
-    atomic_store_release(&domain->requested_external_interrupt, 1);
-    caml_interrupt_self();
-  }
-  return NULL;
 }
