@@ -227,7 +227,7 @@ let () =
   assert (A.find_opt (fun x -> x = 5) a = None)
 
 (** find_index *)
-let () = 
+let () =
   let a = A.of_list [1;2;3] in
   assert (A.find_index (fun x -> x = 1) a = Some 0);
   assert (A.find_index (fun x -> x = 5) a = None)
