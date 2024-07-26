@@ -551,7 +551,7 @@ let is_rec_module id md =
   end
 
 let secretly_the_same_path env path1 path2 =
-  let norm path = Printtyp.rewrite_double_underscore_paths env path in
+  let norm path = Out_type.rewrite_double_underscore_paths env path in
   Path.same (norm path1) (norm path2)
 
 let () =

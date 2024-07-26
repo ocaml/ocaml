@@ -16,7 +16,7 @@
 (** The functions to get a string from different kinds of elements (types, modules, ...). *)
 
 module Name = Odoc_name
-let () = Printtyp.Naming_context.enable false
+let () = Out_type.Naming_context.enable false
 module Printtyp = Printtyp.Compat
 
 let string_of_variance t v =

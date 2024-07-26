@@ -109,7 +109,7 @@ let load_lambda ppf lam =
 (* Print the outcome of an evaluation *)
 
 let pr_item =
-  Printtyp.print_items
+  Out_type.print_items
     (fun env -> function
       | Sig_value(id, {val_kind = Val_reg; val_type}, _) ->
           Some (outval_of_value env (getvalue (Translmod.toplevel_name id))
@@ -149,7 +149,7 @@ let execute_phrase print_outcome ppf phr =
                       match find_eval_phrase str with
                       | Some (exp, _, _) ->
                         let outv = outval_of_value newenv v exp.exp_type in
-                        let ty = Printtyp.tree_of_type_scheme exp.exp_type in
+                        let ty = Out_type.tree_of_type_scheme exp.exp_type in
                         Ophr_eval (outv, ty)
                       | None -> Ophr_signature (pr_item oldenv sg'))
               else Ophr_signature []

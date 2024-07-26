@@ -1979,7 +1979,7 @@ let out_type ppf t = Style.as_inline_code !Oprint.out_type ppf t
 
 let report_error_doc env ppf =
   let pp_args ppf args =
-    let args = List.map (Printtyp.tree_of_typexp Type) args in
+    let args = List.map (Out_type.tree_of_typexp Type) args in
     Style.as_inline_code !Oprint.out_type_args ppf args
   in
   function
@@ -2031,12 +2031,12 @@ let report_error_doc env ppf =
       (Style.as_inline_code Printtyp.longident) cl
   | Abbrev_type_clash (abbrev, actual, expected) ->
       (* XXX Afficher une trace ? | Print a trace? *)
-      Printtyp.prepare_for_printing [abbrev; actual; expected];
+      Out_type.prepare_for_printing [abbrev; actual; expected];
       fprintf ppf "@[The abbreviation@ %a@ expands to type@ %a@ \
        but is used with type@ %a@]"
-        out_type (Printtyp.tree_of_typexp Type abbrev)
-        out_type (Printtyp.tree_of_typexp Type actual)
-        out_type (Printtyp.tree_of_typexp Type expected)
+        out_type (Out_type.tree_of_typexp Type abbrev)
+        out_type (Out_type.tree_of_typexp Type actual)
+        out_type (Out_type.tree_of_typexp Type expected)
   | Constructor_type_mismatch (c, err) ->
       let msg = Format_doc.doc_printf in
       Errortrace_report.unification ppf env err
@@ -2074,7 +2074,7 @@ let report_error_doc env ppf =
         (msg  "The type parameter")
         (msg "does not meet its constraint: it should be")
   | Bad_parameters (id, params, cstrs) ->
-      Printtyp.prepare_for_printing (params @ cstrs);
+      Out_type.prepare_for_printing (params @ cstrs);
       fprintf ppf
         "@[The abbreviation %a@ is used with parameter(s)@ %a@ \
            which are incompatible with constraint(s)@ %a@]"
@@ -2083,7 +2083,7 @@ let report_error_doc env ppf =
         pp_args cstrs
   | Bad_class_type_parameters (id, params, cstrs) ->
       let pp_hash ppf id = fprintf ppf "#%a" Printtyp.ident id in
-      Printtyp.prepare_for_printing (params @ cstrs);
+      Out_type.prepare_for_printing (params @ cstrs);
       fprintf ppf
         "@[The class type %a@ is used with parameter(s)@ %a,@ \
            whereas the class type definition@ constrains@ \
@@ -2103,13 +2103,13 @@ let report_error_doc env ppf =
           | Type_variable -> ty0
           | Row_variable -> Btype.newgenty(Tobject(ty0, ref None))
         in
-        Printtyp.add_type_to_preparation meth_ty;
-        Printtyp.add_type_to_preparation ty1;
+        Out_type.add_type_to_preparation meth_ty;
+        Out_type.add_type_to_preparation ty1;
         fprintf ppf
           "The method %a@ has type@;<1 2>%a@ where@ %a@ is unbound"
           Style.inline_code meth
-          out_type (Printtyp.tree_of_typexp Type meth_ty)
-          out_type (Printtyp.tree_of_typexp Type ty0)
+          out_type (Out_type.tree_of_typexp Type meth_ty)
+          out_type (Out_type.tree_of_typexp Type ty0)
       in
       fprintf ppf
         "@[<v>@[Some type variables are unbound in this type:@;<1 2>%a@]@ \
@@ -2117,13 +2117,13 @@ let report_error_doc env ppf =
        pp_doc msg print_reason reason
   | Non_generalizable_class {id;  clty; nongen_vars } ->
       let[@manual.ref "ss:valuerestriction"] manual_ref = [ 6; 1; 2] in
-      Printtyp.prepare_for_printing nongen_vars;
+      Out_type.prepare_for_printing nongen_vars;
       fprintf ppf
         "@[The type of this class,@ %a,@ \
          contains the non-generalizable type variable(s): %a.@ %a@]"
         (Style.as_inline_code @@ Printtyp.class_declaration id) clty
         (pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ")
-           (Style.as_inline_code Printtyp.prepared_type_scheme)
+           (Style.as_inline_code Out_type.prepared_type_scheme)
         ) nongen_vars
         Misc.print_see_manual manual_ref
 

@@ -902,12 +902,12 @@ let report_error_doc env ppf = function
         (Style.as_inline_code pp_tag) l
   | Constructor_mismatch (ty, ty') ->
       wrap_printing_env ~error:true env (fun ()  ->
-        Printtyp.prepare_for_printing [ty; ty'];
+        Out_type.prepare_for_printing [ty; ty'];
         fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
           "This variant type contains a constructor"
-          pp_type (tree_of_typexp Type ty)
+          pp_type (Out_type.tree_of_typexp Type ty)
           "which should be"
-          pp_type (tree_of_typexp Type ty'))
+          pp_type (Out_type.tree_of_typexp Type ty'))
   | Not_a_variant ty ->
       fprintf ppf
         "@[The type %a@ does not expand to a polymorphic variant type@]"

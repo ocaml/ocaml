@@ -1146,7 +1146,7 @@ end) = struct
       [_] -> []
     | _ -> let open Printtyp in
         wrap_printing_env ~error:true env (fun () ->
-            reset(); strings_of_paths (Some Type) tpaths)
+            Out_type.reset(); strings_of_paths Type tpaths)
 
   let disambiguate_by_type env tpath lbls =
     match lbls with
@@ -1161,9 +1161,9 @@ end) = struct
   (* warn if there are several distinct candidates in scope *)
   let warn_if_ambiguous warn lid env lbl rest =
     if Warnings.is_active (Ambiguous_name ([],[],false,"")) then begin
-      Printtyp.Conflicts.reset ();
+      Out_type.Conflicts.reset ();
       let paths = ambiguous_types env lbl rest in
-      let expansion = match Printtyp.Conflicts.err_msg () with
+      let expansion = match Out_type.Conflicts.err_msg () with
         | None -> ""
         | Some msg -> Format_doc.(asprintf "%a" pp_doc) msg
       in
@@ -6808,7 +6808,7 @@ let report_error ~loc env = function
   | Coercion_failure (ty_exp, err, b) ->
       Location.error_of_printer ~loc (fun ppf () ->
           let intro =
-            let ty_exp = Printtyp.prepare_expansion ty_exp in
+            let ty_exp = Out_type.prepare_expansion ty_exp in
             doc_printf "This expression cannot be coerced to type@;<1 2>%a;@ \
                         it has type"
               (Style.as_inline_code @@ Printtyp.type_expansion Type) ty_exp

@@ -27,21 +27,21 @@ val unification :
 
 val equality :
   formatter ->
-  Printtyp.type_or_scheme ->
+  Out_type.type_or_scheme ->
   Env.t -> Errortrace.equality_error ->
    Format_doc.t -> Format_doc.t ->
   unit
 
 val moregen :
   formatter ->
-  Printtyp.type_or_scheme ->
+  Out_type.type_or_scheme ->
   Env.t -> Errortrace.moregen_error ->
   Format_doc.t -> Format_doc.t ->
   unit
 
 val comparison :
   formatter ->
-  Printtyp.type_or_scheme ->
+  Out_type.type_or_scheme ->
   Env.t -> Errortrace.comparison_error ->
   Format_doc.t -> Format_doc.t  ->
   unit

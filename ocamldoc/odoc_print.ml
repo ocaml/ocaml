@@ -14,7 +14,7 @@
 (**************************************************************************)
 
 open Format
-let () = Printtyp.Naming_context.enable false
+let () = Out_type.Naming_context.enable false
 module Printtyp = Printtyp.Compat
 
 let new_fmt () =

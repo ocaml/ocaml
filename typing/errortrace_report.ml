@@ -32,12 +32,12 @@ let incompatibility_phrase (type variety) : variety trace_format -> string =
   | Moregen     -> "is not compatible with type"
 
 (* Print a unification error *)
-open Printtyp
+open Out_type
 open Format_doc
 module Fmt = Format_doc
 module Style = Misc.Style
 
-type 'a diff = 'a Printtyp.diff = Same of 'a | Diff of 'a * 'a
+type 'a diff = 'a Out_type.diff = Same of 'a | Diff of 'a * 'a
 
 
 
@@ -178,6 +178,9 @@ let explain_fixed_row_case = function
       doc_printf "it may not allow the tag(s) %a"
         print_tags tags
 
+let pp_path ppf p =
+  Style.as_inline_code Printtyp.path ppf p
+
 let explain_fixed_row pos expl = match expl with
   | Types.Fixed_private ->
     doc_printf "The %a variant type is private" Errortrace.print_pos pos
@@ -246,12 +249,12 @@ let explain_escape pre = function
   | Errortrace.Constructor p -> Some(
       doc_printf
         "%a@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
-        pp_doc pre (Style.as_inline_code path) p
+        pp_doc pre pp_path p
     )
   | Errortrace.Module_type p -> Some(
       doc_printf
         "%a@,@[The module type@;<1 2>%a@ would escape its scope@]"
-        pp_doc pre (Style.as_inline_code path) p
+        pp_doc pre pp_path p
     )
   | Errortrace.Equation Errortrace.{ty = _; expanded = t} ->
       reserve_names t;
@@ -322,7 +325,7 @@ let explain_label_mismatch ~got ~expected =
 let explain_first_class_module = function
   | Errortrace.Package_cannot_scrape p -> Some(
       doc_printf "@,@[The module alias %a could not be expanded@]"
-        Style.(as_inline_code path) p
+        pp_path p
     )
   | Errortrace.Package_inclusion pr ->
       Some(doc_printf "@,@[%a@]" Fmt.pp_doc pr)
@@ -387,7 +390,7 @@ let warn_on_missing_def env ppf t =
     | exception Not_found ->
         fprintf ppf
           "@,@[<hov>Type %a is abstract because@ no corresponding\
-           @ cmi file@ was found@ in path.@]" (Style.as_inline_code path) p
+           @ cmi file@ was found@ in path.@]" pp_path p
     | { type_manifest = Some _; _ } -> ()
     | { type_manifest = None; _ } as decl ->
         match Btype.type_origin decl with
@@ -395,7 +398,7 @@ let warn_on_missing_def env ppf t =
             fprintf ppf
               "@,@[<hov>Type %a was considered abstract@ when checking\
                @ constraints@ in this@ recursive type definition.@]"
-              (Style.as_inline_code path) p
+              pp_path p
         | Definition | Existential _ -> ()
       end
   | _ -> ()
@@ -434,7 +437,7 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
   match tr with
   | [] -> assert false
   | (elt :: tr) as full_trace ->
-      Printtyp.with_labels (not !Clflags.classic) (fun () ->
+      with_labels (not !Clflags.classic) (fun () ->
       let tr, last = filter_trace tr in
       let head = prepare_expansion_head (tr=[] && last=None) elt in
       let tr = List.map (Errortrace.map_diff prepare_expansion) tr in
@@ -505,7 +508,7 @@ module Subtype = struct
     prepare_any_trace printing_status (Errortrace.Subtype.map f tr)
 
   let trace filter_trace get_diff fst keep_last txt ppf tr =
-    Printtyp.with_labels (not !Clflags.classic) (fun () ->
+    with_labels (not !Clflags.classic) (fun () ->
       match tr with
       | elt :: tr' ->
         let diffed_elt = get_diff elt in

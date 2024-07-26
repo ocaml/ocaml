@@ -103,7 +103,7 @@ let sort_filter_phrases () =
 let rec printtyp_reset_maybe loc =
   match !phrases with
   | cur :: t when cur.loc_start.pos_cnum <= loc.loc_start.pos_cnum ->
-     Printtyp.reset ();
+     Out_type.reset ();
      phrases := t;
      printtyp_reset_maybe loc;
   | _ -> ()
