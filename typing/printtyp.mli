@@ -19,9 +19,12 @@ open Format_doc
 open Types
 open Outcometree
 
+val with_labels: bool -> (unit -> 'a) -> 'a
+
 val longident: Longident.t printer
 val ident: Ident.t printer
 val namespaced_ident: Shape.Sig_component_kind.t -> Ident.t -> string
+val namespaced_tree_of_path: Shape.Sig_component_kind.t -> Path.t -> out_ident
 val tree_of_path: Path.t -> out_ident
 val path: Path.t printer
 val string_of_path: Path.t -> string
@@ -29,6 +32,8 @@ val string_of_path: Path.t -> string
 val type_path: Path.t printer
 (** Print a type path taking account of [-short-paths].
     Calls should be within [wrap_printing_env]. *)
+
+val same_path: type_expr -> type_expr -> bool
 
 module Out_name: sig
   val create: string -> out_name
@@ -74,12 +79,23 @@ module Conflicts: sig
 
   val print_located_explanations: explanation list printer
 
+  val err_print: formatter -> unit
   val err_msg: unit -> doc option
   (** [err_msg ()] return an error message if there are pending conflict
       explanations at this point. It is often important to check for conflicts
       after all printing is done, thus the delayed nature of [err_msg]*)
 
   val reset: unit -> unit
+end
+
+module Names: sig
+  val add_subst: (type_expr * type_expr) list -> unit
+end
+
+module Internal_names: sig
+  val add: Path.t -> unit
+  val reset: unit -> unit
+  val print_explanations: Env.t -> formatter -> unit
 end
 
 val reset: unit -> unit
@@ -91,6 +107,11 @@ val reset: unit -> unit
     types to use common names for type variables, see [prepare_for_printing] and
     [prepared_type_expr].  *)
 val type_expr: type_expr printer
+
+
+val reserve_names: type_expr -> unit
+val mark_loops: type_expr -> unit
+val type_expr_with_reserved_names: type_expr printer
 
 (** [prepare_for_printing] resets the global printing environment, a la [reset],
     and prepares the types for printing by reserving names and marking loops.
@@ -189,9 +210,17 @@ val class_declaration: Ident.t -> class_declaration printer
 val tree_of_cltype_declaration:
     Ident.t -> class_type_declaration -> rec_status -> out_sig_item
 val cltype_declaration: Ident.t -> class_type_declaration printer
-val type_expansion :
-  type_or_scheme -> Errortrace.expanded_type printer
+
+type 'a diff = Same of 'a | Diff of 'a * 'a
+
+val trees_of_type_expansion:
+  type_or_scheme -> Errortrace.expanded_type -> out_type diff
 val prepare_expansion: Errortrace.expanded_type -> Errortrace.expanded_type
+val pp_type_expansion: out_type diff printer
+val type_expansion: type_or_scheme -> Errortrace.expanded_type printer
+
+
+val hide_variant_name: Types.type_expr -> Types.type_expr
 
 module Compat: sig
   (** {!Format} compatible printers *)
@@ -206,45 +235,6 @@ module Compat: sig
   val string_of_label: Asttypes.arg_label -> string
 end
 
-val report_ambiguous_type_error:
-    formatter -> Env.t -> (Path.t * Path.t) -> (Path.t * Path.t) list ->
-    Format_doc.t -> Format_doc.t -> Format_doc.t -> unit
-
-val report_unification_error :
-  formatter ->
-  Env.t -> Errortrace.unification_error ->
-  ?type_expected_explanation:Format_doc.t -> Format_doc.t -> Format_doc.t ->
-  unit
-
-val report_equality_error :
-  formatter ->
-  type_or_scheme ->
-  Env.t -> Errortrace.equality_error ->
-   Format_doc.t -> Format_doc.t ->
-  unit
-
-val report_moregen_error :
-  formatter ->
-  type_or_scheme ->
-  Env.t -> Errortrace.moregen_error ->
-  Format_doc.t -> Format_doc.t ->
-  unit
-
-val report_comparison_error :
-  formatter ->
-  type_or_scheme ->
-  Env.t -> Errortrace.comparison_error ->
-  Format_doc.t -> Format_doc.t  ->
-  unit
-
-module Subtype : sig
-  val report_error :
-    formatter ->
-    Env.t ->
-    Errortrace.Subtype.error ->
-    string ->
-    unit
-end
 
 (* for toploop *)
 val print_items: (Env.t -> signature_item -> 'a option) ->

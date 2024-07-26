@@ -2013,7 +2013,7 @@ let report_error_doc ppf = function
   | Constraint_failed (env, err) ->
       let msg = Format_doc.Doc.msg in
       fprintf ppf "@[<v>Constraints are not satisfied in this type.@ ";
-      Printtyp.report_unification_error ppf env err
+      Errortrace_report.unification ppf env err
         (msg "Type")
         (msg "should be an instance of");
       fprintf ppf "@]"
@@ -2039,13 +2039,13 @@ let report_error_doc ppf = function
   | Inconsistent_constraint (env, err) ->
       let msg = Format_doc.Doc.msg in
       fprintf ppf "@[<v>The type constraints are not consistent.@ ";
-      Printtyp.report_unification_error ppf env err
+      Errortrace_report.unification ppf env err
         (msg "Type")
         (msg "is not compatible with type");
       fprintf ppf "@]"
   | Type_clash (env, err) ->
       let msg = Format_doc.Doc.msg in
-      Printtyp.report_unification_error ppf env err
+      Errortrace_report.unification ppf env err
         (msg "This type constructor expands to type")
         (msg "but is used here with type")
   | Null_arity_external ->
@@ -2097,7 +2097,7 @@ let report_error_doc ppf = function
         err
   | Rebind_wrong_type (lid, env, err) ->
       let msg = Format_doc.doc_printf in
-      Printtyp.report_unification_error ppf env err
+      Errortrace_report.unification ppf env err
         (msg "The constructor %a@ has type"
              (Style.as_inline_code Printtyp.longident) lid)
         (msg "but was expected to be of type")

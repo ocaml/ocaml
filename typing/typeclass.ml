@@ -1988,13 +1988,13 @@ let report_error_doc env ppf =
   | Unconsistent_constraint err ->
       let msg = Format_doc.Doc.msg in
       fprintf ppf "@[<v>The class constraints are not consistent.@ ";
-      Printtyp.report_unification_error ppf env err
+      Errortrace_report.unification ppf env err
         (msg "Type")
         (msg "is not compatible with type");
       fprintf ppf "@]"
   | Field_type_mismatch (k, m, err) ->
       let msg  = Format_doc.doc_printf in
-      Printtyp.report_unification_error ppf env err
+      Errortrace_report.unification ppf env err
         (msg "The %s %a@ has type" k Style.inline_code m)
         (msg "but is expected to have type")
   | Unexpected_field (ty, lab) ->
@@ -2039,7 +2039,7 @@ let report_error_doc env ppf =
         out_type (Printtyp.tree_of_typexp Type expected)
   | Constructor_type_mismatch (c, err) ->
       let msg = Format_doc.doc_printf in
-      Printtyp.report_unification_error ppf env err
+      Errortrace_report.unification ppf env err
         (msg "The expression %a has type"
              Style.inline_code ("new " ^ c)
         )
@@ -2070,7 +2070,7 @@ let report_error_doc env ppf =
         (Style.as_inline_code Printtyp.longident) lid expected provided
   | Parameter_mismatch err ->
       let msg = Format_doc.Doc.msg in
-      Printtyp.report_unification_error ppf env err
+      Errortrace_report.unification ppf env err
         (msg  "The type parameter")
         (msg "does not meet its constraint: it should be")
   | Bad_parameters (id, params, cstrs) ->
@@ -2139,13 +2139,13 @@ let report_error_doc env ppf =
         "@[The type of this class,@ %a,@ \
            contains non-collapsible conjunctive types in constraints.@ %t@]"
         (Style.as_inline_code @@ Printtyp.class_declaration id) clty
-        (fun ppf -> Printtyp.report_unification_error ppf env err
+        (fun ppf -> Errortrace_report.unification ppf env err
             (msg "Type")
             (msg "is not compatible with type")
         )
   | Self_clash err ->
       let msg = Format_doc.Doc.msg in
-      Printtyp.report_unification_error ppf env err
+      Errortrace_report.unification ppf env err
         (msg "This object is expected to have type")
         (msg "but actually has type")
   | Mutability_mismatch (_lab, mut) ->

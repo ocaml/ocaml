@@ -877,12 +877,12 @@ let report_error_doc env ppf = function
     fprintf ppf "This type is recursive"
   | Type_mismatch trace ->
       let msg = Format_doc.Doc.msg in
-      Printtyp.report_unification_error ppf Env.empty trace
+      Errortrace_report.unification ppf Env.empty trace
         (msg "This type")
         (msg "should be an instance of type")
   | Alias_type_mismatch trace ->
       let msg = Format_doc.Doc.msg in
-      Printtyp.report_unification_error ppf Env.empty trace
+      Errortrace_report.unification ppf Env.empty trace
         (msg "This alias is bound to type")
         (msg "but is used as an instance of type")
   | Present_has_conjunction l ->

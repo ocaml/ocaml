@@ -241,13 +241,13 @@ let report_value_mismatch first second env ppf err =
       pr "The implementation is not a primitive."
   | Type trace ->
       let msg = Fmt.Doc.msg in
-      Printtyp.report_moregen_error ppf Type_scheme env trace
+      Errortrace_report.moregen ppf Type_scheme env trace
         (msg "The type")
         (msg "is not compatible with the type")
 
 let report_type_inequality env ppf err =
   let msg = Fmt.Doc.msg in
-  Printtyp.report_equality_error ppf Type_scheme env err
+  Errortrace_report.equality ppf Type_scheme env err
     (msg "The type")
     (msg "is not equal to the type")
 

@@ -6555,7 +6555,7 @@ let report_type_expected_explanation_opt expl =
 let report_unification_error ~loc ?sub env err
     ?type_expected_explanation txt1 txt2 =
   Location.error_of_printer ~loc ?sub (fun ppf () ->
-    Printtyp.report_unification_error ppf env err
+    Errortrace_report.unification ppf env err
       ?type_expected_explanation txt1 txt2
   ) ()
 
@@ -6747,7 +6747,7 @@ let report_error ~loc env = function
       let type_name = Datatype_kind.type_name kind in
       let name = Datatype_kind.label_name kind in
       Location.error_of_printer ~loc (fun ppf () ->
-        Printtyp.report_ambiguous_type_error ppf env tp tpl
+        Errortrace_report.ambiguous_type ppf env tp tpl
           (msg "The %s %a@ belongs to the %s type"
                name (Style.as_inline_code longident) lid
               type_name)
@@ -6796,7 +6796,7 @@ let report_error ~loc env = function
         Style.inline_code v
   | Not_subtype err ->
       Location.error_of_printer ~loc (fun ppf () ->
-        Printtyp.Subtype.report_error ppf env err "is not a subtype of"
+        Errortrace_report.subtype ppf env err "is not a subtype of"
       ) ()
   | Outside_class ->
       Location.errorf ~loc
@@ -6813,7 +6813,7 @@ let report_error ~loc env = function
                         it has type"
               (Style.as_inline_code @@ Printtyp.type_expansion Type) ty_exp
           in
-        Printtyp.report_unification_error ppf env err
+        Errortrace_report.unification ppf env err
           intro
           (Fmt.doc_printf "but is here used with type");
         if b then
