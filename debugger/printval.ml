@@ -17,7 +17,6 @@
 (* To print values *)
 
 open Format
-module Printtyp=Printtyp.Compat
 open Parser_aux
 open Types
 

@@ -179,7 +179,7 @@ let explain_fixed_row_case = function
         print_tags tags
 
 let pp_path ppf p =
-  Style.as_inline_code Printtyp.path ppf p
+  Style.as_inline_code Printtyp.Doc.path ppf p
 
 let explain_fixed_row pos expl = match expl with
   | Types.Fixed_private ->

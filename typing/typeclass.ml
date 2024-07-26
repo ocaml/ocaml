@@ -1728,8 +1728,11 @@ let final_decl env define_class
   | Some reason ->
       let printer =
         if define_class
-        then Format_doc.doc_printf "%a" (Printtyp.class_declaration id) clty
-        else Format_doc.doc_printf "%a" (Printtyp.cltype_declaration id) cltydef
+        then
+          Format_doc.doc_printf "%a" (Printtyp.Doc.class_declaration id) clty
+        else
+          Format_doc.doc_printf "%a"
+            (Printtyp.Doc.cltype_declaration id) cltydef
       in
       raise(Error(cl.pci_loc, env, Unbound_type_var(printer, reason)))
   end;
@@ -1974,8 +1977,10 @@ let non_virtual_string_of_kind : kind -> string = function
   | Class_type -> "non-virtual class type"
 
 module Style=Misc.Style
+module Printtyp = Printtyp.Doc
 
 let out_type ppf t = Style.as_inline_code !Oprint.out_type ppf t
+let quoted_type ppf t = Style.as_inline_code Printtyp.type_expr ppf t
 
 let report_error_doc env ppf =
   let pp_args ppf args =
@@ -2001,7 +2006,7 @@ let report_error_doc env ppf =
       fprintf ppf
         "@[@[<2>This object is expected to have type :@ %a@]\
          @ This type does not have a method %a."
-        (Style.as_inline_code Printtyp.type_expr) ty
+        quoted_type ty
         Style.inline_code lab
   | Structure_expected clty ->
       fprintf ppf
@@ -2022,7 +2027,7 @@ let report_error_doc env ppf =
       (* XXX Revoir message d'erreur | Improve error message *)
       fprintf ppf "@[%s@ %a@]"
         "This pattern cannot match self: it only matches values of type"
-        (Style.as_inline_code Printtyp.type_expr) ty
+        quoted_type ty
   | Unbound_class_2 cl ->
       fprintf ppf "@[The class@ %a@ is not yet completely defined@]"
       (Style.as_inline_code Printtyp.longident) cl

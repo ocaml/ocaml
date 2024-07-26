@@ -952,8 +952,8 @@ let solve_Ppat_construct ~refine tps penv loc constr no_existentials
                 "typing this pattern requires considering@ %a@ and@ %a@ as \
                 equal.@,\
                 But the knowledge of these types"
-                    Printtyp.type_expr t1
-                    Printtyp.type_expr t2
+                    Printtyp.Doc.type_expr t1
+                    Printtyp.Doc.type_expr t2
             in
             Location.prerr_warning loc (Warnings.Not_principal msg);
             raise Warn_only_once)
@@ -1184,7 +1184,8 @@ end) = struct
     if Warnings.is_active (Name_out_of_scope ("",[],false)) then begin
       let path_s =
         Printtyp.wrap_printing_env ~error:true env
-          (fun () -> Format_doc.asprintf "%a" Printtyp.type_path tpath) in
+          (fun () -> Format_doc.asprintf "%a" Printtyp.Doc.type_path tpath)
+      in
       warn lid.loc
         (Warnings.Name_out_of_scope (path_s, [Longident.last lid.txt], false))
     end
@@ -6412,6 +6413,7 @@ let spellcheck_idents ppf unbound valid_idents =
 
 open Format_doc
 module Fmt = Format_doc
+module Printtyp = Printtyp.Doc
 
 let longident = Printtyp.longident
 

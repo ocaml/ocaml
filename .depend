@@ -959,7 +959,6 @@ typing/includemod.cmo : \
     typing/includecore.cmi \
     typing/includeclass.cmi \
     typing/ident.cmi \
-    utils/format_doc.cmi \
     typing/env.cmi \
     utils/diffing.cmi \
     typing/ctype.cmi \
@@ -984,7 +983,6 @@ typing/includemod.cmx : \
     typing/includecore.cmx \
     typing/includeclass.cmx \
     typing/ident.cmx \
-    utils/format_doc.cmx \
     typing/env.cmx \
     utils/diffing.cmx \
     typing/ctype.cmx \
@@ -1473,7 +1471,6 @@ typing/stypes.cmo : \
     typing/out_type.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
-    utils/format_doc.cmi \
     utils/clflags.cmi \
     typing/annot.cmi \
     typing/stypes.cmi
@@ -1483,7 +1480,6 @@ typing/stypes.cmx : \
     typing/out_type.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
-    utils/format_doc.cmx \
     utils/clflags.cmx \
     typing/annot.cmi \
     typing/stypes.cmi
@@ -4461,7 +4457,6 @@ lambda/printlambda.cmo : \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
-    utils/format_doc.cmi \
     lambda/debuginfo.cmi \
     utils/clflags.cmi \
     parsing/asttypes.cmi \
@@ -4473,7 +4468,6 @@ lambda/printlambda.cmx : \
     parsing/location.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
-    utils/format_doc.cmx \
     lambda/debuginfo.cmx \
     utils/clflags.cmx \
     parsing/asttypes.cmx \

@@ -1882,6 +1882,7 @@ let check_recmod_typedecl env loc recmod_ids path decl =
 
 open Format_doc
 module Style = Misc.Style
+module Printtyp = Printtyp.Doc
 
 let explain_unbound_gen ppf tv tl typ kwd pr =
   try
@@ -1971,7 +1972,9 @@ module Reaching_path = struct
     Fmt.fprintf ppf ":@;<1 2>@[<v>%a@]" pp path
 end
 
-let quoted_type ppf ty = Style.as_inline_code !Oprint.out_type ppf ty
+let quoted_out_type ppf ty = Style.as_inline_code !Oprint.out_type ppf ty
+let quoted_type ppf ty = Style.as_inline_code Printtyp.type_expr ppf ty
+
 let report_error_doc ppf = function
   | Repeated_parameter ->
       fprintf ppf "A type parameter occurs several times"
@@ -2002,11 +2005,11 @@ let report_error_doc ppf = function
   | Definition_mismatch (ty, _env, None) ->
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]@]"
         "This variant or record definition" "does not match that of type"
-        (Style.as_inline_code Printtyp.type_expr) ty
+        quoted_type ty
   | Definition_mismatch (ty, env, Some err) ->
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]%a@]"
         "This variant or record definition" "does not match that of type"
-        (Style.as_inline_code Printtyp.type_expr) ty
+        quoted_type ty
         (Includecore.report_type_mismatch
            "the original" "this" "definition" env)
         err
@@ -2028,8 +2031,8 @@ let report_error_doc ppf = function
          All uses need to match the definition for the recursive type \
          to be regular.@]"
         Style.inline_code (Path.name definition)
-        quoted_type (Out_type.tree_of_typexp Type defined_as)
-        quoted_type (Out_type.tree_of_typexp Type used_as)
+        quoted_out_type (Out_type.tree_of_typexp Type defined_as)
+        quoted_out_type (Out_type.tree_of_typexp Type used_as)
         (fun pp ->
            let is_expansion = function Expands_to _ -> true | _ -> false in
            if List.exists is_expansion reaching_path then

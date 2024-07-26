@@ -3282,7 +3282,7 @@ let package_units initial_env objfiles target_cmi =
 
 
 (* Error report *)
-open Printtyp
+open Printtyp.Doc
 
 let report_error ~loc _env = function
     Cannot_apply mty ->
@@ -3350,7 +3350,7 @@ let report_error ~loc _env = function
       in
       let pp_constraint ppf () =
         fprintf ppf "%s := %a"
-          (Path.name p) Printtyp.modtype mty
+          (Path.name p) modtype mty
       in
       Location.errorf ~loc
         "This %a constraint@ %a@ makes a packed module ill-formed.@ %a"
@@ -3362,7 +3362,7 @@ let report_error ~loc _env = function
         "In the constrained signature, type %a is defined to be %a.@ \
          Package %a constraints may only be used on abstract types."
         (Style.as_inline_code longident) lid
-        (Style.as_inline_code Printtyp.type_expr) ty
+        (Style.as_inline_code type_expr) ty
         Style.inline_code "with"
   | Repeated_name(kind, name) ->
       Location.errorf ~loc
