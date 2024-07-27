@@ -314,11 +314,15 @@ val mem : 'a -> 'a t -> bool
 (** [mem a set] is true if and only if [a] is structurally equal
     to an element of [set] (i.e. there is an [x] in [set] such that
     [compare a x = 0]).
+
+    @since 5.3
 *)
 
 val memq : 'a -> 'a t -> bool
 (** Same as {!mem}, but uses physical equality
-   instead of structural equality to compare array elements.
+    instead of structural equality to compare array elements.
+
+    @since 5.3
  *)
 
 val find_opt : ('a -> bool) -> 'a t -> 'a option
@@ -326,6 +330,7 @@ val find_opt : ('a -> bool) -> 'a t -> 'a option
     the predicate [f], or [None] if there is no value that satisfies [f] in the
     array [a].
 
+    @since 5.3
 *)
 
 val find_index : ('a -> bool) -> 'a t -> int option
@@ -335,19 +340,22 @@ val find_index : ('a -> bool) -> 'a t -> int option
 
     It returns [None] if there is no such element.
 
+    @since 5.3
 *)
 
 val find_map : ('a -> 'b option) -> 'a t -> 'b option
 (** [find_map f a] applies [f] to the elements of [a] in order, and returns the
     first result of the form [Some v], or [None] if none exist.
-
+    
+    @since 5.3
 *)
 
 val find_mapi : (int -> 'a -> 'b option) -> 'a t -> 'b option
 (** Same as [find_map], but the predicate is applied to the index of
    the element as first argument (counting from 0), and the element
    itself as second argument.
-
+   
+   @since 5.3
  *)
 
 (** {1:comparison Comparison functions}
