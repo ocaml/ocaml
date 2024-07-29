@@ -3290,7 +3290,7 @@ let report_error ~loc _env = function
         "@[This module is not a functor; it has type@ %a@]"
         (Style.as_inline_code modtype) mty
   | Not_included errs ->
-      Location.errorf ~loc ~footnote:Out_type.Conflicts.err_msg
+      Location.errorf ~loc ~footnote:Out_type.Ident_conflicts.err_msg
         "@[<v>Signature mismatch:@ %a@]"
         Includemod_errorprinter.err_msgs errs
   | Cannot_eliminate_dependency mty ->
@@ -3311,7 +3311,7 @@ let report_error ~loc _env = function
         Style.inline_code "with"
         (Style.as_inline_code longident) lid
   | With_mismatch(lid, explanation) ->
-      Location.errorf ~loc ~footnote:Out_type.Conflicts.err_msg
+      Location.errorf ~loc ~footnote:Out_type.Ident_conflicts.err_msg
         "@[<v>\
            @[In this %a constraint, the new definition of %a@ \
              does not match its original definition@ \
@@ -3321,7 +3321,7 @@ let report_error ~loc _env = function
         (Style.as_inline_code longident) lid
         Includemod_errorprinter.err_msgs explanation
   | With_makes_applicative_functor_ill_typed(lid, path, explanation) ->
-      Location.errorf ~loc ~footnote:Out_type.Conflicts.err_msg
+      Location.errorf ~loc ~footnote:Out_type.Ident_conflicts.err_msg
         "@[<v>\
            @[This %a constraint on %a makes the applicative functor @ \
              type %a ill-typed in the constrained signature:@]@ \

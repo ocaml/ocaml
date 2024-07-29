@@ -1161,9 +1161,9 @@ end) = struct
   (* warn if there are several distinct candidates in scope *)
   let warn_if_ambiguous warn lid env lbl rest =
     if Warnings.is_active (Ambiguous_name ([],[],false,"")) then begin
-      Out_type.Conflicts.reset ();
+      Out_type.Ident_conflicts.reset ();
       let paths = ambiguous_types env lbl rest in
-      let expansion = match Out_type.Conflicts.err_msg () with
+      let expansion = match Out_type.Ident_conflicts.err_msg () with
         | None -> ""
         | Some msg -> Format_doc.(asprintf "%a" pp_doc) msg
       in

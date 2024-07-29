@@ -39,25 +39,8 @@ module Style = Misc.Style
 
 type 'a diff = 'a Out_type.diff = Same of 'a | Diff of 'a * 'a
 
-
-
 let trees_of_trace mode =
   List.map (Errortrace.map_diff (trees_of_type_expansion mode))
-
-let trees_of_type_path_expansion (tp,tp') =
-  let path_tree = namespaced_tree_of_path Type in
-  if Path.same tp tp' then Same(path_tree tp) else
-    Diff(path_tree tp, path_tree tp)
-
-let quoted_ident ppf t =
-  Style.as_inline_code !Oprint.out_ident ppf t
-
-let type_path_expansion ppf = function
-  | Same p -> quoted_ident ppf p
-  | Diff(p,p') ->
-      fprintf ppf "@[<2>%a@ =@ %a@]"
-       quoted_ident p
-       quoted_ident p'
 
 let rec trace fst txt ppf = function
   | {Errortrace.got; expected} :: rem ->
@@ -120,16 +103,10 @@ let rec filter_trace = function
       d :: filtered, last
   | _ :: rem -> filter_trace rem
 
-let type_path_list ppf l =
-  Fmt.pp_print_list ~pp_sep:(fun ppf () -> Fmt.pp_print_break ppf 2 0)
-    type_path_expansion ppf l
-
-
-
 let may_prepare_expansion compact (Errortrace.{ty; expanded} as ty_exp) =
   match Types.get_desc expanded with
     Tvariant _ | Tobject _ when compact ->
-      reserve_names ty; Errortrace.{ty; expanded = ty}
+      Variable_names.reserve ty; Errortrace.{ty; expanded = ty}
   | _ -> prepare_expansion ty_exp
 
 let print_path p =
@@ -185,7 +162,7 @@ let explain_fixed_row pos expl = match expl with
   | Types.Fixed_private ->
     doc_printf "The %a variant type is private" Errortrace.print_pos pos
   | Types.Univar x ->
-    reserve_names x;
+    Variable_names.reserve x;
     doc_printf "The %a variant type is bound to the universal type variable %a"
       Errortrace.print_pos pos
       (Style.as_inline_code type_expr_with_reserved_names) x
@@ -240,7 +217,7 @@ let explain_variant (type variety) : variety Errortrace.variant -> _ = function
 
 let explain_escape pre = function
   | Errortrace.Univ u ->
-      reserve_names u;
+      Variable_names.reserve u;
       Some(
         doc_printf "%a@,The universal variable %a would escape its scope"
           pp_doc pre
@@ -257,7 +234,7 @@ let explain_escape pre = function
         pp_doc pre pp_path p
     )
   | Errortrace.Equation Errortrace.{ty = _; expanded = t} ->
-      reserve_names t;
+      Variable_names.reserve t;
       Some(
         doc_printf "%a@ @[<hov>This instance of %a is ambiguous:@ %s@]"
           pp_doc pre
@@ -285,8 +262,8 @@ let explain_object (type variety) : variety Errortrace.obj -> _ = function
            )
 
 let explain_incompatible_fields name (diff: Types.type_expr Errortrace.diff) =
-  reserve_names diff.got;
-  reserve_names diff.expected;
+  Variable_names.reserve diff.got;
+  Variable_names.reserve diff.expected;
   doc_printf "@,@[The method %a has type@ %a,@ \
   but the expected method type was@ %a@]"
     Style.inline_code name
@@ -340,7 +317,7 @@ let explanation (type variety) intro prev env
     let pre =
       match context, kind, prev with
       | Some ctx, _, _ ->
-        reserve_names ctx;
+        Variable_names.reserve ctx;
         doc_printf "@[%a@;<1 2>%a@]" pp_doc intro
           (Style.as_inline_code type_expr_with_reserved_names) ctx
       | None, Univ _, Some(Errortrace.Incompatible_fields {name; diff}) ->
@@ -359,12 +336,10 @@ let explanation (type variety) intro prev env
   | Errortrace.First_class_module fm ->
     explain_first_class_module fm
   | Errortrace.Rec_occur(x,y) ->
-    reserve_names x;
-    reserve_names y;
+    add_type_to_preparation x;
+    add_type_to_preparation y;
     begin match Types.get_desc x with
     | Tvar _ | Tunivar _  ->
-        mark_loops x;
-        mark_loops y;
         Some(
           doc_printf "@,@[<hov>The type variable %a occurs inside@ %a@]"
             (Style.as_inline_code prepared_type_expr) x
@@ -427,7 +402,7 @@ let warn_on_missing_defs env ppf = function
 let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
   reset ();
   (* We want to substitute in the opposite order from [Eqtype] *)
-  Names.add_subst (List.map (fun (ty1,ty2) -> ty2,ty1) subst);
+  Variable_names.add_subst (List.map (fun (ty1,ty2) -> ty2,ty1) subst);
   let tr =
     prepare_trace
       (fun ty_exp ->
@@ -462,7 +437,7 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
       if env <> Env.empty
       then warn_on_missing_defs env ppf head;
        Internal_names.print_explanations env ppf;
-       Conflicts.err_print ppf
+       Ident_conflicts.err_print ppf
     )
 
 let report_error trace_format ppf mode env tr
@@ -568,11 +543,30 @@ module Subtype = struct
           (trace filter_trace unification_get_diff false
              (mis = None) "is not compatible with type") tr_unif
           (pp_print_option pp_doc) mis
-          Conflicts.err_print
+          Ident_conflicts.err_print
     )
 end
 
 let subtype = Subtype.error
+
+let quoted_ident ppf t =
+  Style.as_inline_code !Oprint.out_ident ppf t
+
+let type_path_expansion ppf = function
+  | Same p -> quoted_ident ppf p
+  | Diff(p,p') ->
+      fprintf ppf "@[<2>%a@ =@ %a@]"
+       quoted_ident p
+       quoted_ident p'
+
+let trees_of_type_path_expansion (tp,tp') =
+  let path_tree = namespaced_tree_of_path Type in
+  if Path.same tp tp' then Same(path_tree tp) else
+    Diff(path_tree tp, path_tree tp)
+
+let type_path_list ppf l =
+  Fmt.pp_print_list ~pp_sep:(fun ppf () -> Fmt.pp_print_break ppf 2 0)
+    type_path_expansion ppf l
 
 let ambiguous_type ppf env tp0 tpl txt1 txt2 txt3 =
   wrap_printing_env ~error:true env (fun () ->

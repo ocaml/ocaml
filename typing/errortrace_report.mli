@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Functions for reporting core level type errors. *)
+
 open Format_doc
 
 val ambiguous_type:

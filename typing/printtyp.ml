@@ -45,7 +45,7 @@ module Doc = struct
     prepared_type_expr ppf ty
 
   let shared_type_scheme ppf ty =
-    prepare_type ty;
+    add_type_to_preparation ty;
     typexp Type_scheme ppf ty
 
   let type_scheme ppf ty =
@@ -78,7 +78,7 @@ module Doc = struct
     !Oprint.out_sig_item ppf (tree_of_modtype_declaration id decl)
 
   let constructor ppf c =
-    reset_except_context ();
+    reset_except_conflicts ();
     add_constructor_to_preparation c;
     prepared_constructor ppf c
 
@@ -87,8 +87,7 @@ module Doc = struct
     !Oprint.out_type ppf (Otyp_tuple tys)
 
   let label ppf l =
-    reset_except_context ();
-    prepare_type l.Types.ld_type;
+    prepare_for_printing [l.Types.ld_type];
     !Oprint.out_label ppf (tree_of_label l)
 
   let extension_constructor id ppf ext =
@@ -99,9 +98,9 @@ module Doc = struct
 
 
   let extension_only_constructor id ppf (ext:Types.extension_constructor) =
-    reset_except_context ();
+    reset_except_conflicts ();
     prepare_type_constructor_arguments ext.ext_args;
-    Option.iter prepare_type ext.ext_ret_type;
+    Option.iter add_type_to_preparation ext.ext_ret_type;
     let name = Ident.name id in
     let args, ret =
       extension_constructor_args_and_ret_type_subtree
@@ -161,10 +160,10 @@ let cltype_declaration = Fmt.compat1 cltype_declaration
 (* Print a signature body (used by -i when compiling a .ml) *)
 let printed_signature sourcefile ppf sg =
   (* we are tracking any collision event for warning 63 *)
-  Conflicts.reset ();
+  Ident_conflicts.reset ();
   let t = tree_of_signature sg in
   if Warnings.(is_active @@ Erroneous_printed_signature "") then
-    begin match Conflicts.err_msg () with
+    begin match Ident_conflicts.err_msg () with
     | None -> ()
     | Some msg ->
         let conflicts = Fmt.asprintf "%a" Fmt.pp_doc msg in

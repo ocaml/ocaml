@@ -455,7 +455,7 @@ module Functor_suberror = struct
     and hide_id id q =
       match id with
       | None -> pp_params q
-      | Some id -> Out_type.Naming_context.with_fuzzy id (fun () -> pp_params q)
+      | Some id -> Out_type.Ident_names.with_fuzzy id (fun () -> pp_params q)
     in
     let params = List.filter_map proj @@ List.map snd patch in
     pp_params params
@@ -965,11 +965,11 @@ let err_msgs ppf (env, err) =
 let report_error_doc err =
   Location.errorf
     ~loc:Location.(in_file !input_name)
-    ~footnote:Out_type.Conflicts.err_msg
+    ~footnote:Out_type.Ident_conflicts.err_msg
    "%a" err_msgs err
 
 let report_apply_error_doc ~loc env (app_name, mty_f, args) =
-  let footnote = Out_type.Conflicts.err_msg in
+  let footnote = Out_type.Ident_conflicts.err_msg in
   let d = Functor_suberror.App.patch env ~f:mty_f ~args in
   match d with
   (* We specialize the one change and one argument case to remove the

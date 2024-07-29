@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Printing functions *)
+(** Printing functions *)
 
 
 open Types
@@ -51,7 +51,7 @@ module type Printers := sig
         expressions. (It will also reset the printing state, which matters for
         other type formatters such as [prepared_type_expr].) If you want
         multiple types to use common names for type variables, see
-        [prepare_for_printing] and [prepared_type_expr]. *)
+        {!Out_type.prepare_for_printing} and {!Out_type.prepared_type_expr}. *)
     val type_expr: type_expr printer
 
     val type_scheme: type_expr printer
@@ -63,14 +63,9 @@ module type Printers := sig
         documentation generators; most use cases, such as error messages, have
         narrower contexts for which [type_scheme] is better suited. *)
 
-    val type_declaration: Ident.t -> type_declaration printer
-
-
     val type_expansion:
       Out_type.type_or_scheme -> Errortrace.expanded_type printer
 
-
-    val value_description: Ident.t -> value_description printer
     val label : label_declaration printer
 
     val constructor : constructor_declaration printer
@@ -78,25 +73,27 @@ module type Printers := sig
 
     val extension_constructor:
       Ident.t -> extension_constructor printer
-    (* Prints extension constructor with the type signature:
+    (** Prints extension constructor with the type signature:
          type ('a, 'b) bar += A of float
     *)
 
     val extension_only_constructor:
       Ident.t -> extension_constructor printer
-    (* Prints only extension constructor without type signature:
+    (** Prints only extension constructor without type signature:
          A of float
     *)
 
 
+    val value_description: Ident.t -> value_description printer
+    val type_declaration: Ident.t -> type_declaration printer
+    val modtype_declaration: Ident.t -> modtype_declaration printer
+    val class_declaration: Ident.t -> class_declaration printer
+    val cltype_declaration: Ident.t -> class_type_declaration printer
+
+
     val modtype: module_type printer
     val signature: signature printer
-
-    val modtype_declaration: Ident.t -> modtype_declaration printer
-
-    val class_declaration: Ident.t -> class_declaration printer
     val class_type: class_type printer
-    val cltype_declaration: Ident.t -> class_type_declaration printer
 
   end
 

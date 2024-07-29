@@ -16,7 +16,7 @@
 (** The functions to get a string from different kinds of elements (types, modules, ...). *)
 
 module Name = Odoc_name
-let () = Out_type.Naming_context.enable false
+let () = Out_type.Ident_names.enable false
 
 let string_of_variance t v =
   if ( t.Odoc_type.ty_kind = Odoc_type.Type_abstract ||
