@@ -790,6 +790,27 @@ typing/errortrace.cmi : \
     typing/path.cmi \
     utils/format_doc.cmi \
     parsing/asttypes.cmi
+typing/gprinttyp.cmo : \
+    utils/warnings.cmi \
+    typing/types.cmi \
+    typing/path.cmi \
+    parsing/longident.cmi \
+    utils/format_doc.cmi \
+    utils/clflags.cmi \
+    parsing/asttypes.cmi \
+    typing/gprinttyp.cmi
+typing/gprinttyp.cmx : \
+    utils/warnings.cmx \
+    typing/types.cmx \
+    typing/path.cmx \
+    parsing/longident.cmx \
+    utils/format_doc.cmx \
+    utils/clflags.cmx \
+    parsing/asttypes.cmx \
+    typing/gprinttyp.cmi
+typing/gprinttyp.cmi : \
+    utils/warnings.cmi \
+    typing/types.cmi
 typing/ident.cmo : \
     utils/misc.cmi \
     utils/local_store.cmi \

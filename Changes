@@ -352,6 +352,9 @@ _______________
 - #12959, #13055: Avoid an internal error on recursive module type inconsistency
   (Florian Angeletti, review by Jacques Garrigue and Gabriel Scherer)
 
+- #13049: graphical debugging printer for types
+  (Florian Angeletti, review by Gabriel Scherer)
+
 - #13074, #13082, #13084: refactoring in the pattern-matching compiler
   (Gabriel Scherer, review by Thomas Refis, Vincent Laviron and Nick Roberts)
 
