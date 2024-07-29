@@ -3023,15 +3023,15 @@ let mk_failaction_pos partial seen ctx defs =
             in
             fails', jumps'
       | None ->
-          match partial.current with
+          match partial.global with
           | Total ->
-              (* In [Total] mode, if there are no exits left in the
-                 environment, we judge that the remaining failing patterns
-                 cannot arise. [mk_failaction_neg] has the same
-                 logic. *)
+              (* If the pattern-matching is globally [Total], all
+                 missing values are either ill-typed or they are
+                 handled by a matrix of the default environment. The
+                 remaining failing patterns cannot arise. *)
               [], Jumps.empty Total
           | Partial ->
-              (* in [Partial] mode, remaining failing patterns
+              (* in [Partial] mode, the remaining failing patterns
                  go to the final exit. *)
               let final_pats = List.map fst fail_pats_in_ctx in
               mk_fails final_pats (Default_environment.raise_final_exit defs),
