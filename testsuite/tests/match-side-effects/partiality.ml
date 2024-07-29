@@ -240,3 +240,48 @@ let deep r =
   (apply (field_mut 1 (global Toploop!)) "deep" deep/341))
 val deep : (unit * int option) ref -> int = <fun>
 |}]
+
+
+(* In this example:
+   - the pattern-matching is total, with subtle GADT usage
+     (only the type-checker can tell that it is Total)
+   - there are no mutable fields
+
+   Performance expectation: there should not be a Match_failure clause.
+
+   This example is a reduction of a regression caused by #13076 on the
+   'CamlinternalFormat.trans' function in the standard library.
+*)
+type _ t = Bool : bool t | Int : int t | Char : char t;;
+let test : type a . a t * a t -> unit = function
+  | Int, Int -> ()
+  | Bool, Bool -> ()
+  | _, Char -> ()
+;;
+(* FAIL: currently a Match_failure clause is generated. *)
+[%%expect {|
+0
+type _ t = Bool : bool t | Int : int t | Char : char t
+(let
+  (test/358 =
+     (function param/360 : int
+       (catch
+         (catch
+           (switch* (field_imm 0 param/360)
+            case int 0:
+             (switch* (field_imm 1 param/360)
+              case int 0: 0
+              case int 1: (exit 23)
+              case int 2: (exit 24))
+            case int 1:
+             (switch* (field_imm 1 param/360)
+              case int 0: (exit 23)
+              case int 1: 0
+              case int 2: (exit 24))
+            case int 2: (exit 24))
+          with (24) 0)
+        with (23)
+         (raise (makeblock 0 (global Match_failure/20!) [0: "" 2 40])))))
+  (apply (field_mut 1 (global Toploop!)) "test" test/358))
+val test : 'a t * 'a t -> unit = <fun>
+|}];;
