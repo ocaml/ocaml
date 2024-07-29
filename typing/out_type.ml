@@ -267,7 +267,7 @@ let bound_in_recursion = ref M.empty
    error processing, we are thus disabling disambiguation on the argument name
 *)
 let fuzzy = ref S.empty
-let with_arg id f =
+let with_fuzzy id f =
   protect_refs [ R(fuzzy, S.add (Ident.name id) !fuzzy) ] f
 let fuzzy_id namespace id = namespace = Module && S.mem (Ident.name id) !fuzzy
 
@@ -1867,24 +1867,6 @@ and tree_of_modtype_declaration id decl =
 
 and tree_of_module id ?ellipsis mty rs =
   Osig_module (Ident.name id, tree_of_modtype ?ellipsis mty, tree_of_rec rs)
-
-let rec functor_parameters ~sep custom_printer = function
-  | [] -> ignore
-  | [id,param] ->
-      Fmt.dprintf "%t%t"
-        (custom_printer param)
-        (functor_param ~sep ~custom_printer id [])
-  | (id,param) :: q ->
-      Fmt.dprintf "%t%a%t"
-        (custom_printer param)
-        sep ()
-        (functor_param ~sep ~custom_printer id q)
-and functor_param ~sep ~custom_printer id q =
-  match id with
-  | None -> functor_parameters ~sep custom_printer q
-  | Some id ->
-      Naming_context.with_arg id
-        (fun () -> functor_parameters ~sep custom_printer q)
 
 (* For the toplevel: merge with tree_of_signature? *)
 let print_items showval env x =

@@ -427,17 +427,38 @@ module Functor_suberror = struct
     | Types.Named (Some _ as x,_) -> x
     | Types.(Unit | Named(None,_)) -> None
 
-  (** Print the list of params with style *)
+
+(** Print a list of functor parameters with style while adjusting the printing
+    environment for each functor argument.
+
+    Currently, we are disabling disambiguation for functor argument name to
+    avoid the need to track the moving association between identifiers and
+    syntactic names in situation like:
+
+    got: (X: sig module type T end) (Y:X.T) (X:sig module type T end) (Z:X.T)
+    expect: (_: sig end) (Y:X.T) (_:sig end) (Z:X.T)
+*)
   let pretty_params sep proj printer patch =
-    let elt (x,param) =
+    let pp_param (x,param) =
       let sty = Diffing.(style @@ classify x) in
       Fmt.dprintf "%a%t%a"
         Fmt.pp_open_stag (Style.Style sty)
         (printer param)
         Fmt.pp_close_stag ()
     in
+    let rec pp_params = function
+      | [] -> ignore
+      | [_,param] -> pp_param param
+      | (id,param) :: q ->
+          Fmt.dprintf "%t%a%t"
+            (pp_param param) sep () (hide_id id q)
+    and hide_id id q =
+      match id with
+      | None -> pp_params q
+      | Some id -> Out_type.Naming_context.with_fuzzy id (fun () -> pp_params q)
+    in
     let params = List.filter_map proj @@ List.map snd patch in
-    Out_type.functor_parameters ~sep elt params
+    pp_params params
 
   let expected d =
     let extract: _ Diffing.change -> _ = function

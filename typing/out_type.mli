@@ -45,6 +45,8 @@ module Naming_context: sig
   val enable: bool -> unit
   (** When contextual names are enabled, the mapping between identifiers
       and names is ensured to be one-to-one. *)
+
+  val with_fuzzy: Ident.t -> (unit -> 'a) -> 'a
 end
 
 (** The [Conflicts] module keeps track of conflicts arising when attributing
@@ -154,23 +156,8 @@ val tree_of_modtype: module_type -> out_module_type
 val tree_of_modtype_declaration:
     Ident.t -> modtype_declaration -> out_sig_item
 
-(** Print a list of functor parameters while adjusting the printing environment
-    for each functor argument.
-
-    Currently, we are disabling disambiguation for functor argument name to
-    avoid the need to track the moving association between identifiers and
-    syntactic names in situation like:
-
-    got: (X: sig module type T end) (Y:X.T) (X:sig module type T end) (Z:X.T)
-    expect: (_: sig end) (Y:X.T) (_:sig end) (Z:X.T)
-*)
-val functor_parameters:
-  sep:unit printer -> ('b -> Format_doc.formatter -> unit) ->
-  (Ident.t option * 'b) list -> Format_doc.formatter -> unit
-
-type type_or_scheme = Type | Type_scheme
-
 val tree_of_signature: Types.signature -> out_sig_item list
+type type_or_scheme = Type | Type_scheme
 val tree_of_typexp: type_or_scheme -> type_expr -> out_type
 val tree_of_class_declaration:
     Ident.t -> class_declaration -> rec_status -> out_sig_item
