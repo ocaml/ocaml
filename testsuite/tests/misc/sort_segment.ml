@@ -36,8 +36,9 @@ let test a ofs len =
     printf "Array.stable_sort_segment: FAILURE (array length %d, offset %d, segment length %d)\n%!"
       (Array.length a) ofs len
 
-(* The main loop. *)
-let number_of_tests = 5000
+(* One set of tests, with random segments of a random array. *)
+
+let number_of_tests = 1000
 let max_length = 128
 let () =
   for _ = 1 to number_of_tests do
@@ -46,5 +47,23 @@ let () =
     let ofs = Random.int (n+1) in
     let len = Random.int (n+1-ofs) in
     test a ofs len
-  done;
+  done
+
+(* A second set of tests, enumerating all segments of a short array. *)
+
+let number_of_tests = 10
+let length = 10
+let () =
+  for _ = 1 to number_of_tests do
+    let a = generate length in
+    for i = 0 to length do
+      for j = i to length do
+        test (Array.copy a) i (j - i)
+      done
+    done
+  done
+
+(* Done. *)
+
+let () =
   printf "OK\n%!"
