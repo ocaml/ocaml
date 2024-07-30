@@ -2,6 +2,9 @@
 
 open Printf
 
+let () =
+  Random.init 42
+
 (* [generate n] generates an array of length [n],
    containing random integer data. *)
 let generate n =
