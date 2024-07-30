@@ -386,6 +386,10 @@ _______________
 - #13289: Use C99 for loop to reduce the scope of the for loop iterator.
   (Antonin Décimo, review by Miod Vallat and Gabriel Scherer)
 
+- #13336: compiler-libs, split the `Printtyp` in three to only keep
+  "user-friendly" functions in the `Printtyp` module.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Build system:
 
 - #12909: Reorganise how MKEXE_VIA_CC is built to make it correct for MSVC by
