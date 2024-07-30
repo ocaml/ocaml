@@ -44,6 +44,9 @@ void caml_failed_assert (char * expr, char_os * file_os, int line)
           (Caml_state_opt != NULL) ? Caml_state_opt->id : -1, file, line, expr);
   fflush(stderr);
   caml_stat_free(file);
+#ifdef __GNUC__
+  __builtin_trap();
+#endif
   abort();
 }
 #endif

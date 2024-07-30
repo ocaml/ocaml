@@ -274,9 +274,12 @@ typedef char char_os;
 #define __OSFILE__ __FILE__
 #endif
 
+/* Although caml_failed_assert never returns, it is not marked as such.
+   This prevents the C compiler optimising away all of the useful context
+   from the callsite, making debuggers able to see it. */
 #define CAMLassert(x) \
   (CAMLlikely(x) ? (void) 0 : caml_failed_assert ( #x , __OSFILE__, __LINE__))
-CAMLnoret CAMLextern void caml_failed_assert (char *, char_os *, int);
+CAMLextern void caml_failed_assert (char *, char_os *, int);
 #else
 #define CAMLassert(x) ((void) 0)
 #endif
