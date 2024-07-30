@@ -300,7 +300,7 @@ CAMLextern void caml_failed_assert (char *, char_os *, int)
   void caml_fastfail(unsigned int i) { __fastfail(i); }
   #define CAMLunreachable() (caml_fastfail(7 /* FAST_FAIL_FATAL_APP_EXIT */))
 #else
-  #define CAMLunreachable() (CAMLassert(0))
+  #define CAMLunreachable() (abort())
 #endif
 
 #if __has_builtin(__builtin_expect) || defined(__GNUC__)
