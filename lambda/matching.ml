@@ -3705,50 +3705,50 @@ and do_compile_matching ~scopes repr partial ctx pmh =
       let ph = what_is_cases pm.cases in
       let pomega = Patterns.Head.to_omega_pattern ph in
       let ploc = head_loc ~scopes ph in
+      let compile_no_test divide combine =
+        compile_no_test ~scopes divide combine repr partial ctx pm
+      in
+      let compile_test divide combine =
+        compile_test
+          (compile_match ~scopes repr partial)
+          partial divide combine ctx pm
+      in
       let open Patterns.Head in
       match ph.pat_desc with
       | Any ->
-          compile_no_test ~scopes
+          compile_no_test
             divide_var
-            Context.rshift repr partial ctx pm
+            Context.rshift
       | Tuple _ ->
-          compile_no_test ~scopes
+          compile_no_test
             (divide_tuple ~scopes ph)
-            Context.combine repr partial ctx pm
+            Context.combine
       | Record [] -> assert false
       | Record (lbl :: _) ->
-          compile_no_test ~scopes
+          compile_no_test
             (divide_record ~scopes lbl.lbl_all ph)
-            Context.combine repr partial ctx pm
+            Context.combine
       | Constant cst ->
           compile_test
-            (compile_match ~scopes repr partial)
-            partial divide_constant
+            divide_constant
             (combine_constant ploc arg cst partial)
-            ctx pm
       | Construct cstr ->
           compile_test
-            (compile_match ~scopes repr partial)
-            partial (divide_constructor ~scopes)
+            (divide_constructor ~scopes)
             (combine_constructor ploc arg ph.pat_env cstr partial)
-            ctx pm
       | Array _ ->
           let kind = Typeopt.array_pattern_kind pomega in
           compile_test
-            (compile_match ~scopes repr partial)
-            partial (divide_array ~scopes kind)
+            (divide_array ~scopes kind)
             (combine_array ploc arg kind partial)
-            ctx pm
       | Lazy ->
-          compile_no_test ~scopes
+          compile_no_test
             (divide_lazy ~scopes ph)
-            Context.combine repr partial ctx pm
+            Context.combine
       | Variant { cstr_row = row } ->
           compile_test
-            (compile_match ~scopes repr partial)
-            partial (divide_variant ~scopes !row)
+            (divide_variant ~scopes !row)
             (combine_variant ploc !row arg partial)
-            ctx pm
     )
   | PmVar { inside = pmh } ->
       let lam, total =
