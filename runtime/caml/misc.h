@@ -279,7 +279,15 @@ typedef char char_os;
    from the callsite, making debuggers able to see it. */
 #define CAMLassert(x) \
   (CAMLlikely(x) ? (void) 0 : caml_failed_assert ( #x , __OSFILE__, __LINE__))
-CAMLextern void caml_failed_assert (char *, char_os *, int);
+CAMLextern void caml_failed_assert (char *, char_os *, int)
+#if defined(__has_feature)
+  /* However, we do inform clang-analyzer that this function never returns,
+     since that improves analysis without breaking debugging */
+  #if __has_feature(attribute_analyzer_noreturn)
+    __attribute__((analyzer_noreturn))
+  #endif
+#endif
+;
 #else
 #define CAMLassert(x) ((void) 0)
 #endif
