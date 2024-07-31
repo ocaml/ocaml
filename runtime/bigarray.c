@@ -923,7 +923,7 @@ CAMLprim value caml_ba_set_3(value vb, value vind1, value vind2, value vind3,
   return caml_ba_set_aux(vb, vind, 3, newval);
 }
 
-value caml_ba_set_N(value vb, value * vind, int nargs)
+CAMLexport value caml_ba_set_N(value vb, value * vind, int nargs)
 {
   return caml_ba_set_aux(vb, vind, nargs - 1, vind[nargs - 1]);
 }

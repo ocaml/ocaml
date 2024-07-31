@@ -260,7 +260,7 @@ int caml_alloc_backtrace_buffer (void)
   return 0;
 }
 
-void caml_free_backtrace_buffer(backtrace_slot *backtrace_buffer) {
+CAMLexport void caml_free_backtrace_buffer(backtrace_slot *backtrace_buffer) {
   if (backtrace_buffer != NULL)
     caml_stat_free(backtrace_buffer);
 }
@@ -298,7 +298,7 @@ void caml_stash_backtrace(value exn, value * sp, int reraise)
    updates *sp to point to the following one, and *trap_spoff to the next
    trap frame, which we will skip when we reach it  */
 
-code_t caml_next_frame_pointer(value* stack_high, value ** sp,
+static code_t caml_next_frame_pointer(value* stack_high, value ** sp,
                           intnat * trap_spoff)
 {
   while (*sp < stack_high) {
@@ -515,12 +515,12 @@ CAMLexport void caml_load_main_debug_info(void)
   }
 }
 
-int caml_debug_info_available(void)
+CAMLexport int caml_debug_info_available(void)
 {
   return (caml_debug_info.size != 0);
 }
 
-int caml_debug_info_status(void)
+CAMLexport int caml_debug_info_status(void)
 {
   if (!caml_debug_info_available()) {
     return 0;
@@ -576,7 +576,7 @@ struct ev_info * caml_exact_event_for_location(code_t pc)
 
 /* Extract location information for the given PC */
 
-void caml_debuginfo_location(debuginfo dbg,
+CAMLexport void caml_debuginfo_location(debuginfo dbg,
                              /*out*/ struct caml_loc_info * li)
 {
   code_t pc = dbg;
@@ -599,12 +599,12 @@ void caml_debuginfo_location(debuginfo dbg,
   li->loc_end_offset = event->ev_end_offset;
 }
 
-debuginfo caml_debuginfo_extract(backtrace_slot slot)
+CAMLexport debuginfo caml_debuginfo_extract(backtrace_slot slot)
 {
   return (debuginfo)slot;
 }
 
-debuginfo caml_debuginfo_next(debuginfo dbg)
+CAMLexport debuginfo caml_debuginfo_next(debuginfo dbg)
 {
   /* No inlining in bytecode */
   return NULL;
