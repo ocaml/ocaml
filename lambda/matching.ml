@@ -2905,10 +2905,19 @@ let complete_pats_constrs = function
     to jump to in case of failure of elementary tests
 *)
 
-let comp_exit ctx def =
+
+let comp_final_exit def =
+  (Default_environment.raise_final_exit def, Jumps.empty Partial)
+
+let comp_exit partial ctx def =
   match Default_environment.pop def with
-  | Some ((i, _), _) -> Lstaticraise (i, []), Jumps.singleton i ctx
-  | None -> Default_environment.raise_final_exit def, Jumps.empty Partial
+  | Some ((i, _), _) -> Some (Lstaticraise (i, []), Jumps.singleton i ctx)
+  | None ->
+      (* If we know that we are in Total match, we do not need to
+         generate a final exit in this case. *)
+      match partial.global with
+      | Total -> None
+      | Partial -> Some (comp_final_exit def)
 
 let mk_failaction_neg partial ctx def =
   debugf
@@ -2916,10 +2925,11 @@ let mk_failaction_neg partial ctx def =
     pp_partiality partial
   ;
   match partial.current with
-  | Partial ->
-      let lam, jumps = comp_exit ctx def in
-      (Some lam, jumps)
   | Total -> (None, Jumps.empty Total)
+  | Partial ->
+      match comp_exit partial ctx def with
+      | None -> (None, Jumps.empty Total)
+      | Some (lam, jumps) -> (Some lam, jumps)
 
 (* In [mk_failaction_pos partial seen ctx defs],
    - [partial] indicates whether the current switch
@@ -3630,7 +3640,11 @@ let rec compile_match ~scopes repr partial ctx
 and compile_match_nonempty ~scopes repr partial ctx
     (m : (args, Typedtree.pattern Non_empty_row.t clause) pattern_matching) =
   match m with
-  | { cases = []; args = [] } -> comp_exit ctx m.default
+  | { cases = []; args = [] } ->
+      begin match comp_exit partial ctx m.default with
+      | None -> fatal_error "Matching: impossible empty matrix in a Total match"
+      | Some exit -> exit
+      end
   | { args = { arg; binding_kind; _ } as first :: rest } ->
       let v = arg_to_var arg m.cases in
       bind_match_arg binding_kind v arg (
