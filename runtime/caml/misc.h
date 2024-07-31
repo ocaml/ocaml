@@ -124,19 +124,30 @@ CAMLdeprecated_typedef(addr, char *);
   #define Caml_noinline
 #endif
 
-/* Export control (to mark primitives and to handle Windows DLL) */
-
-#ifndef CAMLDLLIMPORT
-  #if defined(SUPPORT_DYNAMIC_LINKING) && defined(ARCH_SIXTYFOUR) \
-      && (defined(__CYGWIN__) || defined(__MINGW32__))
-    #define CAMLDLLIMPORT __declspec(dllimport)
+/* Export control (to mark primitives and to handle Windows DLLs and
+ * ELF visibility) */
+#if (defined(__CYGWIN__) || defined(__MINGW32__))
+  #if defined(SUPPORT_DYNAMIC_LINKING) && defined(ARCH_SIXTYFOUR)
+    #ifdef CAML_IN_RUNTIME
+      #define CAMLDLLIMPORT
+    #else
+      #define CAMLDLLIMPORT __declspec(dllimport)
+    #endif
+    #define CAMLexport __declspec(dllexport)
   #else
+    #define CAMLexport
     #define CAMLDLLIMPORT
   #endif
+#elif defined(__GNUC__) && __GNUC__ >= 4 && \
+    (defined (__ELF__) || defined(__APPLE__))
+  #define CAMLexport __attribute__((visibility("default")))
+  #define CAMLDLLIMPORT __attribute__((visibility("default")))
+#else
+  #define CAMLexport
+  #define CAMLDLLIMPORT
 #endif
 
-#define CAMLexport
-#define CAMLprim
+#define CAMLprim CAMLexport
 #define CAMLextern CAMLDLLIMPORT extern
 
 /* Weak function definitions that can be overridden by external libs */

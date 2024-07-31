@@ -1329,7 +1329,7 @@ libcomprmarsh_OBJECTS = runtime/zstd.npic.$(O)
 
 ## General (non target-specific) assembler and compiler flags
 
-runtime_CPPFLAGS = -DCAMLDLLIMPORT= -DIN_CAML_RUNTIME
+runtime_CPPFLAGS = -DCAML_IN_RUNTIME
 ocamlrun_CPPFLAGS = $(runtime_CPPFLAGS)
 ocamlrund_CPPFLAGS = $(runtime_CPPFLAGS) -DDEBUG
 ocamlruni_CPPFLAGS = $(runtime_CPPFLAGS) -DCAML_INSTR

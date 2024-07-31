@@ -54,7 +54,7 @@ static_assert(sizeof(struct stack_info) == Stack_ctx_words * sizeof(value), "");
 
 static _Atomic int64_t fiber_id = 0;
 
-uintnat caml_get_init_stack_wsize (void)
+CAMLexport uintnat caml_get_init_stack_wsize (void)
 {
   uintnat default_stack_wsize = Wsize_bsize(Stack_init_bsize);
   uintnat stack_wsize;
@@ -67,7 +67,7 @@ uintnat caml_get_init_stack_wsize (void)
   return stack_wsize;
 }
 
-void caml_change_max_stack_size (uintnat new_max_wsize)
+CAMLexport void caml_change_max_stack_size (uintnat new_max_wsize)
 {
   struct stack_info *current_stack = Caml_state->current_stack;
   asize_t wsize = Stack_high(current_stack) - (value*)current_stack->sp
@@ -209,7 +209,7 @@ alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket, value hval,
 }
 
 /* allocate a stack with at least "wosize" usable words of stack */
-struct stack_info*
+CAMLexport struct stack_info*
 caml_alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff,
                        int64_t id)
 {
@@ -220,7 +220,7 @@ caml_alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff,
 
 #ifdef NATIVE_CODE
 
-value caml_alloc_stack (value hval, value hexn, value heff) {
+CAMLprim value caml_alloc_stack (value hval, value hexn, value heff) {
   const int64_t id = atomic_fetch_add(&fiber_id, 1);
   struct stack_info* stack =
     alloc_size_class_stack_noexc(caml_fiber_wsz, 0 /* first bucket */,
@@ -235,7 +235,7 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
 }
 
 
-void caml_get_stack_sp_pc (struct stack_info* stack,
+CAMLprim void caml_get_stack_sp_pc (struct stack_info* stack,
                            char** sp /* out */, uintnat* pc /* out */)
 {
   char* p = (char*)stack->sp;
@@ -293,7 +293,7 @@ next_chunk:
   }
 }
 
-void caml_scan_stack(
+CAMLexport void caml_scan_stack(
   scanning_action f, scanning_action_flags fflags, void* fdata,
   struct stack_info* stack, value* gc_regs)
 {
@@ -308,7 +308,7 @@ void caml_scan_stack(
   }
 }
 
-void caml_maybe_expand_stack (void)
+CAMLexport void caml_maybe_expand_stack (void)
 {
   struct stack_info* stk = Caml_state->current_stack;
   uintnat stack_available =
@@ -332,7 +332,7 @@ void caml_maybe_expand_stack (void)
 
 #else /* End NATIVE_CODE, begin BYTE_CODE */
 
-value caml_global_data;
+CAMLexport value caml_global_data;
 
 CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
 {
@@ -418,7 +418,7 @@ void caml_scan_stack(
 
 #ifdef NATIVE_CODE
 /* Update absolute exception pointers for new stack*/
-void caml_rewrite_exception_stack(struct stack_info *old_stack,
+CAMLexport void caml_rewrite_exception_stack(struct stack_info *old_stack,
                                   value** exn_ptr, struct stack_info *new_stack)
 {
   fiber_debug_log("Old [%p, %p]", Stack_base(old_stack), Stack_high(old_stack));
@@ -504,7 +504,7 @@ static void rewrite_frame_pointers(struct stack_info *old_stack,
 #endif
 #endif
 
-int caml_try_realloc_stack(asize_t required_space)
+CAMLexport int caml_try_realloc_stack(asize_t required_space)
 {
   struct stack_info *old_stack, *new_stack;
   asize_t wsize;
@@ -570,7 +570,7 @@ int caml_try_realloc_stack(asize_t required_space)
   return 1;
 }
 
-struct stack_info* caml_alloc_main_stack (uintnat init_wsize)
+CAMLexport struct stack_info* caml_alloc_main_stack (uintnat init_wsize)
 {
   const int64_t id = atomic_fetch_add(&fiber_id, 1);
   struct stack_info* stk =
@@ -578,7 +578,7 @@ struct stack_info* caml_alloc_main_stack (uintnat init_wsize)
   return stk;
 }
 
-void caml_free_stack (struct stack_info* stack)
+CAMLexport void caml_free_stack (struct stack_info* stack)
 {
   CAMLnoalloc;
   struct stack_info** cache = Caml_state->stack_cache;
@@ -605,7 +605,7 @@ void caml_free_stack (struct stack_info* stack)
   }
 }
 
-void caml_free_gc_regs_buckets(value *gc_regs_buckets)
+CAMLexport void caml_free_gc_regs_buckets(value *gc_regs_buckets)
 {
   while (gc_regs_buckets != NULL) {
     value *next = (value*)gc_regs_buckets[0];
@@ -672,7 +672,7 @@ CAMLprim value caml_continuation_use_and_update_handler_noexc
   return stack;
 }
 
-void caml_continuation_replace(value cont, struct stack_info* stk)
+CAMLexport void caml_continuation_replace(value cont, struct stack_info* stk)
 {
   value n = Val_ptr(NULL);
   int b = atomic_compare_exchange_strong(Op_atomic_val(cont), &n, Val_ptr(stk));
@@ -707,7 +707,7 @@ CAMLexport void caml_raise_continuation_already_resumed(void)
   caml_raise(*exn);
 }
 
-value caml_make_unhandled_effect_exn (value effect)
+CAMLprim value caml_make_unhandled_effect_exn (value effect)
 {
   CAMLparam1(effect);
   value res;
