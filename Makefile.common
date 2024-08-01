@@ -166,7 +166,9 @@ RUNTIME_HEADERS :=
 REQUIRED_HEADERS :=
 else
 RUNTIME_HEADERS := $(wildcard $(ROOTDIR)/runtime/caml/*.tbl) \
-                   $(wildcard $(ROOTDIR)/runtime/caml/*.h)
+                   $(wildcard $(ROOTDIR)/runtime/caml/*.h) \
+                   $(wildcard $(ROOTDIR)/runtime/*.h)
+
 REQUIRED_HEADERS := $(RUNTIME_HEADERS) $(wildcard *.h)
 endif
 

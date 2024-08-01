@@ -52,7 +52,7 @@
 #include "caml/sys.h"
 #include "caml/memprof.h"
 
-#include "../../runtime/sync_posix.h"
+#include "sync_posix.h"
 
 /* "caml/threads.h" is *not* included since it contains the _external_
    declarations for the caml_c_thread_register and caml_c_thread_unregister
@@ -62,11 +62,17 @@
 #define Thread_timeout 50
 
 /* OS-specific code */
+
 #ifdef _WIN32
-#include "st_win32.h"
+#include "threads_win32.h"
 #else
-#include "st_posix.h"
+#include "threads_posix.h"
 #endif
+
+/* corresponding primitive declarations */
+CAMLprim value caml_wait_signal(value sigs);
+CAMLprim value caml_thread_sigmask(value cmd, value sigs);
+
 
 /* The ML value describing a thread (heap-allocated) */
 

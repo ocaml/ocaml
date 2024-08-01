@@ -13,7 +13,7 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* POSIX thread implementation of the "st" interface */
+/* POSIX thread implementation of the "st" (systhreads) interface */
 
 #ifdef HAS_SYS_SELECT_H
 #include <sys/select.h>
@@ -25,7 +25,7 @@ Caml_inline void st_msleep(int msec)
   select(0, NULL, NULL, NULL, &timeout);
 }
 
-#include "st_pthreads.h"
+#include "threads_pthreads.h"
 
 /* Signal handling */
 
