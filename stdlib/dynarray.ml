@@ -286,28 +286,24 @@ end = struct
            || dst_pos < 0
            || dst_pos + len < 0 (* overflow check *)
            || dst_pos + len > Array.length dst
-        then
+        then begin
           (* We assume that the caller has already checked this and
              will raise a proper error. The check here is only for
              memory safety, it should not be reached and it is okay if
              the error is uninformative. *)
           assert false;
-        (* In case of self-blitting with overlap we must be careful about
-           the copying order -- we might overwrite an element we need later on.
-           Same logic as runtime/array.c *)
-        if src == dst && src_pos <= dst_pos then
-          (* copy in descending order *)
-          if src_pos = dst_pos then ()
-          else for i = len - 1 downto 0 do
-            Array.unsafe_set dst (dst_pos + i)
-              (Array.unsafe_get src (src_pos + i));
-          done
-        else
-          (* copy in ascending order *)
-          for i = 0 to len - 1 do
-            Array.unsafe_set dst (dst_pos + i)
-              (Array.unsafe_get src (src_pos + i));
-          done
+        end;
+        (* We failed the check [src_dummy == dst_dummy] above, so we
+           know that in fact [src != dst] -- two dynarrays with
+           distinct dummies cannot share the same backing arrays. *)
+        assert (src != dst);
+        (* In particular, the source and destination arrays cannot
+           overlap, so we can always copy in ascending order without
+           risking overwriting an element needed later. *)
+        for i = 0 to len - 1 do
+          Array.unsafe_set dst (dst_pos + i)
+            (Array.unsafe_get src (src_pos + i));
+        done
       end
 
     let prefix arr n =
