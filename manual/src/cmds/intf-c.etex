@@ -741,7 +741,7 @@ numbered from 0 to $\hbox{"string_length"}(v)-1$.
 This pointer is a valid C string: there is a null byte after the last
 byte in the string. However, OCaml strings can contain embedded null bytes,
 which will confuse the usual C functions over strings. The function
-"caml_string_is_c_safe("\var{v}")" returns whether the OCaml string \var{v}
+"caml_string_is_c_safe("\var{v}")" checks if the OCaml string \var{v}
 contains any embedded null bytes.
 \item "Bytes_val("\var{v}")" returns a pointer to the first byte of the
 byte sequence \var{v}, with type "unsigned char *".
