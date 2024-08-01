@@ -390,6 +390,11 @@ _______________
   "user-friendly" functions in the `Printtyp` module.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #13348: move the C runtime code for threads from
+  otherlibs/systhreads to runtime/, to facilitate exposing (later)
+  some of its capabilities in the stdlib.
+  (Gabriel Scherer, review by ?)
+
 ### Build system:
 
 - #12909: Reorganise how MKEXE_VIA_CC is built to make it correct for MSVC by
