@@ -551,6 +551,9 @@ static uintnat fresh_domain_unique_id(void) {
     return next;
 }
 
+static inline void domain_root_register(value *root, value t);
+static inline void domain_root_remove(value *root);
+
 /* must be run on the domain's thread */
 static void domain_create(uintnat initial_minor_heap_wsize,
                           caml_domain_state *parent)
@@ -687,8 +690,7 @@ static void domain_create(uintnat initial_minor_heap_wsize,
     goto reallocate_minor_heap_failure;
   }
 
-  domain_state->dls_state = Atom(0) /* Empty array */;
-  caml_register_generational_global_root(&domain_state->dls_state);
+  domain_root_register(&domain_state->dls_state, Atom(0) /* Empty array */);
 
   domain_state->stack_cache = caml_alloc_stack_cache();
   if(domain_state->stack_cache == NULL) {
@@ -728,9 +730,8 @@ static void domain_create(uintnat initial_minor_heap_wsize,
   domain_state->local_roots = NULL;
 
   domain_state->backtrace_buffer = NULL;
-  domain_state->backtrace_last_exn = Val_unit;
+  domain_root_register(&domain_state->backtrace_last_exn, Val_unit);
   domain_state->backtrace_active = 0;
-  caml_register_generational_global_root(&domain_state->backtrace_last_exn);
 
   domain_state->compare_unordered = 0;
   domain_state->oo_next_id_local = 0;
@@ -758,7 +759,7 @@ static void domain_create(uintnat initial_minor_heap_wsize,
 
 alloc_main_stack_failure:
 create_stack_cache_failure:
-  caml_remove_generational_global_root(&domain_state->dls_state);
+  domain_root_remove(&domain_state->dls_state);
 reallocate_minor_heap_failure:
   caml_teardown_major_gc();
 init_major_gc_failure:
@@ -2073,8 +2074,8 @@ static void domain_terminate (void)
 
   /* We can not touch domain_self->interruptor after here
      because it may be reused */
-  caml_remove_generational_global_root(&domain_state->dls_state);
-  caml_remove_generational_global_root(&domain_state->backtrace_last_exn);
+  domain_root_remove(&domain_state->dls_state);
+  domain_root_remove(&domain_state->backtrace_last_exn);
   caml_stat_free(domain_state->final_info);
   caml_stat_free(domain_state->ephe_info);
   caml_free_intern_state();
@@ -2123,30 +2124,60 @@ CAMLprim value caml_ml_domain_cpu_relax(value t)
   return Val_unit;
 }
 
-CAMLprim value caml_domain_dls_set(value t)
-{
+/* OCaml values stored in the domain state. */
+
+static inline void domain_root_register(value *root, value t) {
   CAMLnoalloc;
-  caml_modify_generational_global_root(&Caml_state->dls_state, t);
-  return Val_unit;
+  *root = t;
+  caml_register_generational_global_root(root);
 }
 
-CAMLprim value caml_domain_dls_get(value unused)
-{
+static inline void domain_root_set(value *root, value t) {
   CAMLnoalloc;
-  return Caml_state->dls_state;
+  caml_modify_generational_global_root(root, t);
 }
 
-CAMLprim value caml_domain_dls_compare_and_set(value old, value new)
+static inline value domain_root_get(value *root) {
+  CAMLnoalloc;
+  return *root;
+}
+
+static inline void domain_root_remove(value *root) {
+  CAMLnoalloc;
+  caml_remove_generational_global_root(root);
+}
+
+static inline value domain_root_compare_and_set(value *root, value old, value new)
 {
   CAMLnoalloc;
-  value current = Caml_state->dls_state;
+  value current = *root;
   if (current == old) {
-    caml_modify_generational_global_root(&Caml_state->dls_state, new);
+    caml_modify_generational_global_root(root, new);
     return Val_true;
   } else {
     return Val_false;
   }
 }
+
+/* Domain-local state */
+
+CAMLprim value caml_domain_dls_set(value t)
+{
+  domain_root_set(&Caml_state->dls_state, t);
+  return Val_unit;
+}
+
+CAMLprim value caml_domain_dls_get(value unused)
+{
+  return domain_root_get(&Caml_state->dls_state);
+}
+
+CAMLprim value caml_domain_dls_compare_and_set(value old, value new)
+{
+  return domain_root_compare_and_set(&Caml_state->dls_state, old, new);
+}
+
+
 
 CAMLprim value caml_recommended_domain_count(value unused)
 {
