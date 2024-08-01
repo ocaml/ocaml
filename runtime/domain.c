@@ -186,7 +186,7 @@ struct dom_internal {
   struct interruptor interruptor;
 
   /* backup thread */
-  int backup_thread_running;
+  atomic_uintnat backup_thread_running;
   pthread_t backup_thread;
   atomic_uintnat backup_thread_msg;
   caml_plat_mutex domain_lock;
@@ -338,6 +338,8 @@ int caml_incoming_interrupts_queued(void)
 {
   return interruptor_has_pending(&domain_self->interruptor);
 }
+
+static void terminate_backup_thread(dom_internal *di);
 
 /* must NOT be called with s->lock held */
 static void stw_handler(caml_domain_state* domain);
@@ -1087,6 +1089,7 @@ static void* backup_thread_func(void* v)
   }
 
   /* doing terminate */
+  atomic_store_release(&di->backup_thread_running, 0);
   atomic_store_release(&di->backup_thread_msg, BT_INIT);
 
   return 0;
@@ -1099,12 +1102,11 @@ static void install_backup_thread (dom_internal* di)
   sigset_t mask, old_mask;
 #endif
 
-  if (di->backup_thread_running == 0) {
+  if (atomic_load_acquire(&di->backup_thread_running) != 0) {
+    /* If the backup thread is running, but has been instructed to terminate,
+       we need to wait for it to stop until we can spawn another. */
     uintnat msg;
     msg = atomic_load_acquire(&di->backup_thread_msg);
-    CAMLassert (msg == BT_INIT || /* Using fresh domain */
-                msg == BT_TERMINATE); /* Reusing domain */
-
     while (msg != BT_INIT) {
       /* Give a chance for backup thread on this domain to terminate */
       caml_plat_unlock (&di->domain_lock);
@@ -1112,23 +1114,37 @@ static void install_backup_thread (dom_internal* di)
       caml_plat_lock_blocking(&di->domain_lock);
       msg = atomic_load_acquire(&di->backup_thread_msg);
     }
+  }
+
+  CAMLassert(atomic_load_acquire(&di->backup_thread_msg) == BT_INIT);
 
 #ifndef _WIN32
-    /* No signals on the backup thread */
-    sigfillset(&mask);
-    pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
+  /* No signals on the backup thread */
+  sigfillset(&mask);
+  pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
 #endif
 
-    atomic_store_release(&di->backup_thread_msg, BT_ENTERING_OCAML);
-    err = pthread_create(&di->backup_thread, 0, backup_thread_func, (void*)di);
-    caml_check_error(err, "failed to create domain backup thread");
+  atomic_store_release(&di->backup_thread_msg, BT_ENTERING_OCAML);
+  err = pthread_create(&di->backup_thread, 0, backup_thread_func, (void*)di);
+  caml_check_error(err, "failed to create domain backup thread");
 
 #ifndef _WIN32
-    pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
+  pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
 #endif
 
-    di->backup_thread_running = 1;
-    pthread_detach(di->backup_thread);
+  atomic_store_release(&di->backup_thread_running, 1);
+  pthread_detach(di->backup_thread);
+}
+
+static void terminate_backup_thread(dom_internal *di)
+{
+  CAMLassert(!caml_bt_is_self());
+
+  if (atomic_load_acquire(&di->backup_thread_running) != 0) {
+    atomic_store_release(&di->backup_thread_msg, BT_TERMINATE);
+    /* Wakeup backup thread if it is sleeping */
+    caml_plat_broadcast(&di->interruptor.cond);
+    caml_plat_signal(&di->domain_cond);
   }
 }
 
@@ -1321,7 +1337,8 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   }
   /* When domain 0 first spawns a domain, the backup thread is not active, we
      ensure it is started here. */
-  install_backup_thread(domain_self);
+  if (atomic_load_acquire(&domain_self->backup_thread_running) == 0)
+    install_backup_thread(domain_self);
 
   CAMLreturn (Val_long(p.unique_id));
 }
@@ -1919,7 +1936,9 @@ CAMLexport int caml_bt_is_self(void)
 CAMLexport intnat caml_domain_is_multicore (void)
 {
   dom_internal *self = domain_self;
-  return (!caml_domain_alone() || self->backup_thread_running);
+  uintnat backup_thread_running =
+    atomic_load_acquire(&self->backup_thread_running);
+  return (!caml_domain_alone() || backup_thread_running);
 }
 
 CAMLexport void caml_acquire_domain_lock(void)
@@ -1932,10 +1951,12 @@ CAMLexport void caml_acquire_domain_lock(void)
 CAMLexport void caml_bt_enter_ocaml(void)
 {
   dom_internal* self = domain_self;
+  uintnat backup_thread_running =
+    atomic_load_acquire(&self->backup_thread_running);
 
-  CAMLassert(caml_domain_alone() || self->backup_thread_running);
+  CAMLassert(caml_domain_alone() || backup_thread_running);
 
-  if (self->backup_thread_running) {
+  if (backup_thread_running) {
     atomic_store_release(&self->backup_thread_msg, BT_ENTERING_OCAML);
   }
 }
@@ -1950,10 +1971,12 @@ CAMLexport void caml_release_domain_lock(void)
 CAMLexport void caml_bt_exit_ocaml(void)
 {
   dom_internal* self = domain_self;
+  uintnat backup_thread_running =
+    atomic_load_acquire(&self->backup_thread_running);
 
-  CAMLassert(caml_domain_alone() || self->backup_thread_running);
+  CAMLassert(caml_domain_alone() || backup_thread_running);
 
-  if (self->backup_thread_running) {
+  if (backup_thread_running) {
     atomic_store_release(&self->backup_thread_msg, BT_IN_BLOCKING_SECTION);
     /* Wakeup backup thread if it is sleeping */
     caml_plat_signal(&self->domain_cond);
@@ -2045,9 +2068,6 @@ static void domain_terminate (void)
       caml_plat_broadcast(&s->cond);
       caml_plat_unlock(&s->lock);
 
-      CAMLassert (domain_self->backup_thread_running);
-      domain_self->backup_thread_running = 0;
-
       /* We must signal domain termination before releasing [all_domains_lock]:
          after that, this domain will no longer take part in STWs and emitting
          an event could race with runtime events teardown. */
@@ -2101,8 +2121,7 @@ static void domain_terminate (void)
   /* signal the domain termination to the backup thread
      NB: for a program with no additional domains, the backup thread
      will not have been started */
-  atomic_store_release(&domain_self->backup_thread_msg, BT_TERMINATE);
-  caml_plat_signal(&domain_self->domain_cond);
+  terminate_backup_thread(domain_self);
   caml_plat_unlock(&domain_self->domain_lock);
 
   caml_plat_assert_all_locks_unlocked();
