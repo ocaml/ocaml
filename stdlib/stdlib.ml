@@ -570,8 +570,10 @@ let rec at_exit f =
   if not success then at_exit f
 
 let do_domain_local_at_exit = ref (fun () -> ())
+let do_thread_local_at_exit = ref (fun () -> ())
 
 let do_at_exit () =
+  (!do_thread_local_at_exit) ();
   (!do_domain_local_at_exit) ();
   (atomic_get exit_function) ()
 

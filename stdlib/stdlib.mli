@@ -1380,6 +1380,7 @@ val unsafe_really_input : in_channel -> bytes -> int -> int -> unit
 
 val do_at_exit : unit -> unit
 
+val do_thread_local_at_exit : (unit -> unit) ref
 val do_domain_local_at_exit : (unit -> unit) ref
 
 (**/**)

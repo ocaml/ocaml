@@ -71,6 +71,13 @@ val exit : unit -> unit
         The previous implementation had a different behavior when called
         outside of a thread created by {!Thread.create}. *)
 
+val at_exit : (unit -> unit) -> unit
+(** [at_exit f] registers [f] to be called when the current thread
+    returns, either normally or through the [Exit] exception
+    above. The registered functions are called in 'last in, first out'
+    order: the function most recently added with [at_exit] is called
+    first. *)
+
 (** {1 Suspending threads} *)
 
 val delay: float -> unit

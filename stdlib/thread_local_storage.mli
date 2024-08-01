@@ -81,3 +81,27 @@ val set : 'a t -> 'a -> unit
     the key [k] with value [v]. It overwrites any previous values associated
     to [k], which cannot be restored later. *)
 
+val at_exit : (unit -> unit) -> unit
+(** Registers, on the calling thread only, a function to run when the
+    thread terminates -- either correctly or with a [Thread.Exit] or
+    uncaught exception.
+
+    This function is typically in the initialization code for
+    thread-local resource, to register a release callback for this
+    resource:
+
+    {[
+    let temp_file_key = Thread_local_storage.make (fun () ->
+      let (file, channel) = Filename.open_temp_file "log" ".out" in
+      Thread_local_storage.at_exit (fun () -> close_out_noerr channel);
+      (file, channel)
+    )
+    ]}
+
+    Note that, with this definition, there is no runtime cost for
+    threads that do not access [temp_file_key], and that the callback
+    is *not* registered if you call [Thead_local_storage.set] before
+    the first [get], which lets you override the default generator
+    with thread-specific choices which may require a different release
+    logic.
+*)

@@ -37,6 +37,9 @@ module type Key = sig
     type key_value = KV : 'a t * 'a -> key_value
     val get_initial_keys : unit -> key_value list
     val set_initial_keys : key_value list -> unit
+
+    val at_exit : (unit -> unit) -> unit
+    val do_at_exit : unit -> unit
 end
 
 module Make (State : State_operations)
@@ -153,6 +156,24 @@ module Make (State : State_operations)
 
   let set_initial_keys (l: key_value list) =
     List.iter (fun (KV (k, v)) -> set k v) l
+
+  (* at_exit *)
+
+  let nothing () = ()
+  let at_exit_key : (unit -> unit) t =
+    make (fun () -> nothing)
+
+  let at_exit f =
+    let old_exit : unit -> unit = get at_exit_key in
+    let new_exit () =
+      f (); old_exit ()
+    in
+    set at_exit_key new_exit
+
+  let do_at_exit () =
+    let f : unit -> unit = get at_exit_key in
+    set at_exit_key nothing;
+    f ()
 end
 
 module DLS_operations = struct
@@ -212,3 +233,6 @@ module TLS = struct
       else slow_get key
     end
 end
+
+let _ = Stdlib.do_domain_local_at_exit := DLS.do_at_exit
+let _ = Stdlib.do_thread_local_at_exit := TLS.do_at_exit

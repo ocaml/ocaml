@@ -94,20 +94,13 @@ let do_before_first_spawn () =
     first_spawn_function := (fun () -> ())
   end
 
-let at_exit_key : (unit -> unit) DLS.t = DLS.new_key (fun () -> (fun () -> ()))
-
-let at_exit f =
-  let old_exit : unit -> unit = DLS.get at_exit_key in
-  let new_exit () =
-    f (); old_exit ()
-  in
-  DLS.set at_exit_key new_exit
-
+let at_exit = DLS.at_exit
 let do_at_exit () =
-  let f : unit -> unit = DLS.get at_exit_key in
-  f ()
-
-let _ = Stdlib.do_domain_local_at_exit := do_at_exit
+  (* Each domain is also a systhread, so we must call
+     TLS.do_at_exit. We call it first, as we consider that the thread
+     terminates before the domain. *)
+  CamlinternalStorage.TLS.do_at_exit ();
+  DLS.do_at_exit ()
 
 (******* Creation and Termination ********)
 

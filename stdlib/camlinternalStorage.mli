@@ -10,6 +10,9 @@ module type Key = sig
     type key_value = KV : 'a t * 'a -> key_value
     val get_initial_keys : unit -> key_value list
     val set_initial_keys : key_value list -> unit
+
+    val at_exit : (unit -> unit) -> unit
+    val do_at_exit : unit -> unit
 end
 
 module DLS : Key
