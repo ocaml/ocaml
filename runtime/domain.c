@@ -687,7 +687,7 @@ static void domain_create(uintnat initial_minor_heap_wsize,
     goto reallocate_minor_heap_failure;
   }
 
-  domain_state->dls_state = Val_unit;
+  domain_state->dls_state = Atom(0) /* Empty array */;
   caml_register_generational_global_root(&domain_state->dls_state);
 
   domain_state->stack_cache = caml_alloc_stack_cache();

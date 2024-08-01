@@ -79,17 +79,8 @@ module DLS = struct
 
   external get_dls_state : unit -> dls_state = "%dls_get"
 
-  external set_dls_state : dls_state -> unit =
-    "caml_domain_dls_set" [@@noalloc]
-
   external compare_and_set_dls_state : dls_state -> dls_state -> bool =
     "caml_domain_dls_compare_and_set" [@@noalloc]
-
-  let create_dls () =
-    let st = Array.make 8 Obj_opt.none in
-    set_dls_state st
-
-  let _ = create_dls ()
 
   type 'a key = int * (unit -> 'a)
 
@@ -124,7 +115,7 @@ module DLS = struct
       let rec compute_new_size s =
         if idx < s then s else compute_new_size (2 * s)
       in
-      let new_sz = compute_new_size sz in
+      let new_sz = compute_new_size (max sz 8) in
       let new_st = Array.make new_sz Obj_opt.none in
       Array.blit st 0 new_st 0 sz;
       (* We want a implementation that is safe with respect to
@@ -261,7 +252,6 @@ let spawn f =
 
   let body () =
     match
-      DLS.create_dls ();
       DLS.set_initial_keys pk;
       let res = f () in
       res
