@@ -134,15 +134,20 @@ let print_cmt_infos cmt =
     printf "\nUid dependencies:\n";
     let arr = Array.of_list cmt.cmt_declaration_dependencies in
     let () =
-      Array.sort (fun (u1, u2) (u1', u2') ->
+      Array.sort (fun (_tr, u1, u2) (_tr', u1', u2') ->
                     match Shape.Uid.compare u1 u1' with
                     | 0 -> Shape.Uid.compare u2 u2'
                     | n -> n) arr
     in
     Format.printf "@[<v>";
-    Array.iter (fun (u1, u2) ->
-      Format.printf "@[<h>%a <- %a@]@;"
+    Array.iter (fun (rk, u1, u2) ->
+      let rk = match rk with
+        | Directed -> "<-"
+        | Undirected -> "<->"
+      in
+      Format.printf "@[<h>%a %s %a@]@;"
         Shape.Uid.print u1
+        rk
         Shape.Uid.print u2) arr;
     Format.printf "@]";
   end;

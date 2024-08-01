@@ -45,12 +45,13 @@ and binary_part =
   | Partial_signature_item of signature_item
   | Partial_module_type of module_type
 
+type relation_kind = Directed | Undirected
 type cmt_infos = {
   cmt_modname : string;
   cmt_annots : binary_annots;
   cmt_value_dependencies :
     (Types.value_description * Types.value_description) list;
-  cmt_declaration_dependencies : (Uid.t * Uid.t) list;
+  cmt_declaration_dependencies : (relation_kind * Uid.t * Uid.t) list;
   cmt_comments : (string * Location.t) list;
   cmt_args : string array;
   cmt_sourcefile : string option;
@@ -427,7 +428,7 @@ let read_cmi filename =
 
 let saved_types = ref []
 let value_deps = ref []
-let uids_deps : (Uid.t * Uid.t) list ref = ref []
+let uids_deps : (relation_kind * Uid.t * Uid.t) list ref = ref []
 
 let clear () =
   saved_types := [];
@@ -442,9 +443,9 @@ let record_value_dependency vd1 vd2 =
   if vd1.Types.val_loc <> vd2.Types.val_loc then
     value_deps := (vd1, vd2) :: !value_deps
 
-let record_declaration_dependency (uid1, uid2) =
+let record_declaration_dependency (rk, uid1, uid2) =
   if not (Uid.equal uid1 uid2) then
-    uids_deps := (uid1, uid2) :: !uids_deps
+    uids_deps := (rk, uid1, uid2) :: !uids_deps
 
 let save_cmt target binary_annots initial_env cmi shape =
   if !Clflags.binary_annotations && not !Clflags.print_types then begin
