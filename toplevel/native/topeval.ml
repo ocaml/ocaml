@@ -106,7 +106,7 @@ let load_lambda ppf ~module_ident ~required_globals phrase_name lam size =
 (* Print the outcome of an evaluation *)
 
 let pr_item =
-  Printtyp.print_items
+  Out_type.print_items
     (fun env -> function
       | Sig_value(id, {val_kind = Val_reg; val_type}, _) ->
           Some (outval_of_value env (toplevel_value id) val_type)
@@ -232,7 +232,10 @@ let execute_phrase print_outcome ppf phr =
                             outval_of_value newenv (toplevel_value id)
                               vd.val_type
                           in
-                          let ty = Printtyp.tree_of_type_scheme vd.val_type in
+                          let ty =
+                            Out_type.prepare_for_printing [vd.val_type];
+                            Out_type.tree_of_typexp Type_scheme vd.val_type
+                          in
                           Ophr_eval (outv, ty)
                       | _ -> assert false
                     else

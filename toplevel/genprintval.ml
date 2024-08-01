@@ -21,7 +21,7 @@ open Longident
 open Path
 open Types
 open Outcometree
-module Out_name = Printtyp.Out_name
+module Out_name = Out_type.Out_name
 
 module type OBJ =
   sig
@@ -155,7 +155,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     let exn_printer ppf path exn =
       Format_doc.fprintf ppf "<printer %a raised an exception: %s>"
-        Printtyp.path path
+        Printtyp.Doc.path path
         (Printexc.to_string exn)
 
     let out_exn path exn =
@@ -215,9 +215,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             | _ -> false
             | exception Not_found -> false
           then Oide_ident name
-          else Oide_dot (Printtyp.tree_of_path p, Out_name.print name)
+          else Oide_dot (Out_type.tree_of_path p, Out_name.print name)
       | Papply _ ->
-          Printtyp.tree_of_path ty_path
+          Out_type.tree_of_path ty_path
       | Pextra_ty _ ->
           (* These can only appear directly inside of the associated
              constructor so we can just drop the prefix *)
@@ -625,7 +625,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             let printer ppf =
               Format_doc.fprintf ppf
                 "<internal error: incorrect arity for '%a'>"
-                Printtyp.path path in
+                Printtyp.Doc.path path in
             Oval_printer printer)
 
 

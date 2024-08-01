@@ -134,7 +134,9 @@ typing_SOURCES = \
   typing/signature_group.mli typing/signature_group.ml \
   typing/printtyped.mli typing/printtyped.ml \
   typing/ctype.mli typing/ctype.ml \
+  typing/out_type.mli typing/out_type.ml \
   typing/printtyp.mli typing/printtyp.ml \
+  typing/errortrace_report.mli typing/errortrace_report.ml \
   typing/includeclass.mli typing/includeclass.ml \
   typing/mtype.mli typing/mtype.ml \
   typing/envaux.mli typing/envaux.ml \
