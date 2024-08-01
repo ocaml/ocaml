@@ -53,7 +53,8 @@
 struct caml_runtime_events_cursor {
   int cursor_open;                  /* has this cursor been opened? */
   atomic_uintnat cursor_in_poll;    /* cursor is inside a read_poll() */
-  struct runtime_events_metadata_header *metadata; /* ptr to ring metadata */
+  void *map;
+  struct runtime_events_metadata_header metadata; /* copy of ring metadata */
   uint64_t *current_positions;      /* positions in the rings for each domain */
   size_t ring_file_size_bytes; /* size of the runtime_events file in bytes */
   int next_read_domain;        /* the next domain to read from */
@@ -171,7 +172,7 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
     return E_MAP_FAILURE;
   }
 
-  cursor->metadata = MapViewOfFile(
+  cursor->map = MapViewOfFile(
     cursor->ring_handle,
     FILE_MAP_ALL_ACCESS,
     0,
@@ -179,7 +180,7 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
     0
   );
 
-  if( cursor->metadata == NULL ) {
+  if( cursor->map == NULL ) {
     caml_stat_free(cursor);
     caml_stat_free(runtime_events_loc);
     return E_MAP_FAILURE;
@@ -216,21 +217,29 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
 
   /* This cast is necessary for compatibility with Illumos' non-POSIX
     mmap/munmap */
-  cursor->metadata = (struct runtime_events_metadata_header *)
-                      mmap(NULL, cursor->ring_file_size_bytes, mmap_prot,
+  cursor->map = (void*) mmap(NULL, cursor->ring_file_size_bytes, mmap_prot,
                           MAP_SHARED, ring_fd, 0);
 
-  if( cursor->metadata == MAP_FAILED ) {
+  if( cursor->map == MAP_FAILED ) {
     caml_stat_free(cursor);
     caml_stat_free(runtime_events_loc);
     return E_MAP_FAILURE;
   }
 #endif
 
-  cursor->current_positions =
-      caml_stat_alloc(cursor->metadata->max_domains * sizeof(uint64_t));
+  cursor->metadata = *(struct runtime_events_metadata_header*)cursor->map;
 
-  for (int j = 0; j < cursor->metadata->max_domains; j++) {
+  if (cursor->metadata.max_domains > Max_domains_max) {
+    /* avoid overflow in multiplication below */
+    caml_stat_free(cursor);
+    caml_stat_free(runtime_events_loc);
+    return E_CORRUPT_STREAM;
+  }
+
+  cursor->current_positions =
+      caml_stat_alloc(cursor->metadata.max_domains * sizeof(uint64_t));
+
+  for (int j = 0; j < cursor->metadata.max_domains; j++) {
     cursor->current_positions[j] = 0;
   }
   cursor->cursor_open = 1;
@@ -345,17 +354,29 @@ void caml_runtime_events_free_cursor(struct caml_runtime_events_cursor *cursor){
   if (cursor->cursor_open) {
     cursor->cursor_open = 0;
 #ifdef _WIN32
-    UnmapViewOfFile(cursor->metadata);
+    UnmapViewOfFile(cursor->map);
     CloseHandle(cursor->ring_file_handle);
     CloseHandle(cursor->ring_handle);
 #else
     /* This cast is necessary for compatibility with Illumos' non-POSIX
       mmap/munmap */
-    munmap((void*)cursor->metadata, cursor->ring_file_size_bytes);
+    munmap((void*)cursor->map, cursor->ring_file_size_bytes);
 #endif
     caml_stat_free(cursor->current_positions);
     caml_stat_free(cursor);
   }
+}
+
+static char* get_map_offset(struct caml_runtime_events_cursor *cursor,
+                            uint64_t offset, int domain_num, uint64_t len)
+{
+  uint64_t limit = cursor->ring_file_size_bytes;
+  if (offset >= limit)
+    return NULL;
+  offset += domain_num * len;
+  if (offset >= limit || len > limit - offset)
+    return NULL;
+  return (char*)cursor->map + offset;
 }
 
 runtime_events_error
@@ -379,28 +400,51 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
     return E_CURSOR_POLL_BUSY;
   }
 
+  if (cursor->metadata.headers_offset > cursor->ring_file_size_bytes
+      || !cursor->metadata.ring_size_elements
+      || cursor->metadata.ring_size_elements * sizeof(uint64_t)
+         != cursor->metadata.ring_size_bytes
+      || cursor->metadata.ring_size_elements
+         > cursor->metadata.ring_size_bytes) {
+        atomic_store(&cursor->cursor_in_poll, 0);
+        return E_CORRUPT_STREAM;
+  }
+
   /* this loop looks a bit odd because we're iterating from the last domain
      that we read from on the last read_poll call and then looping around.
      This is necessary because in the case where the consumer can't keep up
      with message production (i.e max_events is hit each time) it ensures that
      messages are read from all domains, rather than just the first. */
-  for (int i = 0; i < cursor->metadata->max_domains && !early_exit; i++) {
-    int domain_num = (start_domain + i) % cursor->metadata->max_domains;
+  for (int i = 0; i < cursor->metadata.max_domains && !early_exit; i++) {
+    int domain_num = (start_domain + i) % cursor->metadata.max_domains;
+    uint64_t offset =
+          cursor->metadata.headers_offset +
+          domain_num * cursor->metadata.ring_header_size_bytes;
+    if (offset >= cursor->ring_file_size_bytes
+        || offset + cursor->metadata.ring_header_size_bytes
+           > cursor->ring_file_size_bytes) {
+        atomic_store(&cursor->cursor_in_poll, 0);
+        return E_CORRUPT_STREAM;
+    }
 
     struct runtime_events_buffer_header *runtime_events_buffer_header =
         (struct runtime_events_buffer_header *)(
-          (char*)cursor->metadata +
-          cursor->metadata->headers_offset +
-          domain_num * cursor->metadata->ring_header_size_bytes
+          get_map_offset(cursor, cursor->metadata.headers_offset,
+                         domain_num,
+                         cursor->metadata.ring_header_size_bytes)
         );
 
-    uint64_t *ring_ptr = (uint64_t *)((char*)cursor->metadata +
-                                      cursor->metadata->data_offset +
-                                domain_num * cursor->metadata->ring_size_bytes);
+    uint64_t *ring_ptr =
+      (uint64_t*)get_map_offset(cursor, cursor->metadata.data_offset,
+                                domain_num, cursor->metadata.ring_size_bytes);
+    if (!runtime_events_buffer_header || !ring_ptr) {
+        atomic_store(&cursor->cursor_in_poll, 0);
+        return E_CORRUPT_STREAM;
+    }
 
     do {
       uint64_t buf[RUNTIME_EVENTS_MAX_MSG_LENGTH];
-      uint64_t ring_mask, header, msg_length;
+      uint64_t ring_mask, header, msg_length, ring_masked_pos;
       ring_head = atomic_load_acquire(&runtime_events_buffer_header->ring_head);
       ring_tail = atomic_load_acquire(&runtime_events_buffer_header->ring_tail);
 
@@ -420,17 +464,20 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
         break;
       }
 
-      ring_mask = cursor->metadata->ring_size_elements - 1;
-      header = ring_ptr[cursor->current_positions[domain_num] & ring_mask];
+      ring_mask = cursor->metadata.ring_size_elements - 1;
+      ring_masked_pos = cursor->current_positions[domain_num] & ring_mask;
+      header = ring_ptr[ring_masked_pos];
       msg_length = RUNTIME_EVENTS_ITEM_LENGTH(header);
 
-      if (msg_length > RUNTIME_EVENTS_MAX_MSG_LENGTH) {
+      if (msg_length > RUNTIME_EVENTS_MAX_MSG_LENGTH
+          || ring_masked_pos + msg_length
+             > cursor->metadata.ring_size_elements) {
         atomic_store(&cursor->cursor_in_poll, 0);
         return E_CORRUPT_STREAM;
       }
 
       memcpy(buf,
-             ring_ptr + (cursor->current_positions[domain_num] & ring_mask),
+             ring_ptr + ring_masked_pos,
              msg_length * sizeof(uint64_t));
 
       atomic_thread_fence(memory_order_seq_cst);
@@ -451,6 +498,13 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
         }
 
         continue;
+      }
+
+      if (!msg_length
+          || (msg_length < 2
+              && RUNTIME_EVENTS_ITEM_TYPE(header) != EV_INTERNAL)) {
+        atomic_store(&cursor->cursor_in_poll, 0);
+        return E_CORRUPT_STREAM;
       }
 
       if (RUNTIME_EVENTS_ITEM_IS_RUNTIME(header)) {
@@ -475,6 +529,10 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
           break;
         case EV_COUNTER:
           if (cursor->runtime_counter) {
+            if (msg_length < 3) {
+              atomic_store(&cursor->cursor_in_poll, 0);
+              return E_CORRUPT_STREAM;
+            }
             if( !cursor->runtime_counter(domain_num, callback_data, buf[1],
                                         RUNTIME_EVENTS_ITEM_ID(header), buf[2]
                                         ) ) {
@@ -485,6 +543,10 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
           break;
         case EV_ALLOC:
           if (cursor->alloc) {
+            if (msg_length < 3) {
+              atomic_store(&cursor->cursor_in_poll, 0);
+              return E_CORRUPT_STREAM;
+            }
             if( !cursor->alloc(domain_num, callback_data, buf[1], &buf[2])) {
               early_exit = 1;
               continue;
@@ -493,8 +555,11 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
           break;
         case EV_LIFECYCLE:
           if (cursor->lifecycle) {
+            /* EV_RING_STOP genuinely has msg_length = 2,
+               buf[2] is unused in that case */
+            int64_t data = msg_length > 2 ? buf[2] : 0;
             if( !cursor->lifecycle(domain_num, callback_data, buf[1],
-                                    RUNTIME_EVENTS_ITEM_ID(header), buf[2]) ) {
+                                    RUNTIME_EVENTS_ITEM_ID(header), data) ) {
                                       early_exit = 1;
                                       continue;
                                     }
@@ -504,9 +569,17 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
         // User events
         uintnat event_id = RUNTIME_EVENTS_ITEM_ID(header);
 
+        if (cursor->metadata.custom_events_offset > cursor->ring_file_size_bytes
+            || cursor->metadata.custom_events_offset
+               + (event_id+1) * sizeof(struct runtime_events_custom_event)
+               > cursor->ring_file_size_bytes) {
+          atomic_store(&cursor->cursor_in_poll, 0);
+          return E_CORRUPT_STREAM;
+        }
+
         struct runtime_events_custom_event *custom_event =
           &((struct runtime_events_custom_event *)
-            ((char *)cursor->metadata + cursor->metadata->custom_events_offset))
+            ((char *)cursor->map + cursor->metadata.custom_events_offset))
             [event_id];
         char* event_name = custom_event->name;
         ev_user_message_type event_type = RUNTIME_EVENTS_ITEM_TYPE(header);
@@ -540,6 +613,10 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
             break;
           case EV_USER_MSG_TYPE_INT:
             if (cursor->user_int) {
+              if (msg_length < 3) {
+                atomic_store(&cursor->cursor_in_poll, 0);
+                return E_CORRUPT_STREAM;
+              }
               if( !cursor->user_int(domain_num, callback_data, buf[1],
                                       event_id, event_name, buf[2]) ) {
                                         early_exit = 1;
@@ -549,6 +626,7 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
             break;
           default: // custom
             if (cursor->user_custom) {
+              /* msg_length could be genuinely 2 here */
               if( !cursor->user_custom(domain_num, callback_data, buf[1],
                                       event_id, event_name,
                                       msg_length - 2, &buf[2]) ) {
@@ -573,7 +651,7 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
     /* next domain to read from (saved in the cursor so we can resume from it
        if need be in the next poll of the cursor). */
     cursor->next_read_domain =
-      (domain_num + 1 == cursor->metadata->max_domains) ? 0 : domain_num + 1;
+      (domain_num + 1 == cursor->metadata.max_domains) ? 0 : domain_num + 1;
   }
 
   if (events_consumed != NULL) {
