@@ -580,7 +580,7 @@ let _ = main ()
 \end{verbatim}
 
 \begin{verbatim}
-$ ocamlopt -I +threads unix.cmxa threads.cmxa -o dom_thr.exe dom_thr.ml
+$ ocamlopt -I +threads -I +unix unix.cmxa threads.cmxa -o dom_thr.exe dom_thr.ml
 $ ./dom_thr.exe
 Thread 1 running on domain 1 saw initial write
 Thread 0 running on domain 0 saw the write by thread 1
