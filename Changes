@@ -200,6 +200,10 @@ _______________
   (Guillaume Munch-Maccagnoni, report by Benjamin Monate, review by
    Vincent Laviron and Gabriel Scherer)
 
+- #13296: Add mem, memq, find_opt, find_index, find_map and find_mapi
+  to Dynarray.
+  (Jake H, review by Gabriel Scherer and Florian Angeletti)
+
 ### Other libraries:
 
 - #11996: release the dependency of dynlink on compilerlibs.
@@ -3822,9 +3826,6 @@ OCaml 4.13.0 (24 September 2021)
 
 - #10430: Add Format.print_bytes and Format.pp_print_bytes.
   (Gabriel Radanne, review by Gabriel Scherer and David Allsopp)
-
-- #13296: Add mem, memq, find_opt, find_index, find_map and find_mapi to Dynarray.
-  (Jake H, review by Gabriel Scherer and Florian Angeletti)
 
 ### Other libraries:
 
