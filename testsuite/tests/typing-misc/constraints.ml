@@ -115,8 +115,8 @@ let _ = PR6505a.y#bang;; (* fails *)
 module PR6505a :
   sig
     type 'o is_an_object = 'o constraint 'o = < .. >
-    type ('a, 'b) abs = 'b constraint 'a = 'b is_an_object
-      constraint 'b = < .. >
+    type ('a, 'o) abs = 'o constraint 'a = 'o is_an_object
+      constraint 'o = < .. >
     val y : (<  > is_an_object, <  > is_an_object) abs
   end
 Line 6, characters 8-17:
@@ -129,8 +129,8 @@ Error: This expression has type
 module PR6505a :
   sig
     type 'o is_an_object = 'o constraint 'o = < .. >
-    type ('a, 'b) abs = 'b constraint 'a = 'b is_an_object
-      constraint 'b = < .. >
+    type ('a, 'o) abs = 'o constraint 'a = 'o is_an_object
+      constraint 'o = < .. >
     val y : (<  >, <  >) abs
   end
 Line 6, characters 8-17:
@@ -206,8 +206,8 @@ Line 1, characters 0-40:
 1 | type 'a t = 'a * 'b constraint 'a = 'b t;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type abbreviation "t" is cyclic:
-         "'a t t" = "'a t * 'a",
-         "'a t * 'a" contains "'a t"
+         "'b t t" = "'b t * 'b",
+         "'b t * 'b" contains "'b t"
 |}]
 
 type 'a t = <a : 'a; b : 'b> constraint 'a = 'b t;;

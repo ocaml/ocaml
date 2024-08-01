@@ -18,7 +18,7 @@ Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Nil
 
-val get1 : ('b * 'a, 'a) t -> 'b = <fun>
+val get1 : ('a * 'b, 'b) t -> 'a = <fun>
 |}];;
 
 let get1' = function
@@ -28,8 +28,8 @@ let get1' = function
 Line 3, characters 4-7:
 3 |   | Nil -> assert false ;; (* ok *)
         ^^^
-Error: This pattern matches values of type "('b * 'a, 'b * 'a) t"
+Error: This pattern matches values of type "('a * 'b, 'a * 'b) t"
        but a pattern was expected which matches values of type
-         "('b * 'a, 'a) t"
-       The type variable "'a" occurs inside "'b * 'a"
+         "('a * 'b, 'b) t"
+       The type variable "'b" occurs inside "'a * 'b"
 |}];;

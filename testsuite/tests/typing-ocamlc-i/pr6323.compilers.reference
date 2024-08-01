@@ -9,6 +9,6 @@ File "pr6323.ml", line 8, characters 0-26:
 Beware that this warning is purely informational and will not catch
 all instances of erroneous printed interface.
 type 'a t = B of 'a t list
-val foo : 'a -> 'b t list -> 'c t list
+val foo : 'b -> 'a t list -> 'c t list
 module DT :
   sig type 'a t = { bar : 'a; } val p : 'a t/2 list -> 'b t/2 list end

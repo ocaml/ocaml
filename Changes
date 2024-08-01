@@ -313,6 +313,9 @@ _______________
     The constant "42" has type ...
   (Jules Aguillon, review by Gabriel Scherer and Florian Angeletti)
 
+- #13328: Preserve type variable names in error messages more
+  (Richard Eisenberg, review by Gabriel Scherer and Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - #11129, #11148: enforce that ppxs do not produce `parsetree`s with

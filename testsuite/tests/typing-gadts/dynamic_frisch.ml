@@ -434,12 +434,12 @@ val devariantize : 'e ty_env -> ('t, 'e) ty -> variant -> 't = <fun>
 (* First attempt: represent 1-constructor variants using Conv *)
 let wrap_A t = Conv ("`A", (fun (`A x) -> x), (fun x -> `A x), t);;
 [%%expect{|
-val wrap_A : ('a, 'b) ty -> ([ `A of 'a ], 'b) ty = <fun>
+val wrap_A : ('b, 'e) ty -> ([ `A of 'b ], 'e) ty = <fun>
 |}];;
 
 let ty a = Rec (wrap_A (Option (Pair (a, Var)))) ;;
 [%%expect{|
-val ty : ('a, ([ `A of ('a * 'b) option ] as 'b) -> 'c) ty -> ('b, 'c) ty =
+val ty : ('a, ([ `A of ('a * 'b) option ] as 'b) -> 'e) ty -> ('b, 'e) ty =
   <fun>
 |}];;
 let v = variantize Enil (ty Int);;
@@ -464,7 +464,7 @@ let triple t1 t2 t3 =
         (fun (a,(b,c)) -> (a,b,c)), Pair (t1, Pair (t2, t3)));;
 [%%expect{|
 val triple :
-  ('a, 'b) ty -> ('c, 'b) ty -> ('d, 'b) ty -> ('a * 'c * 'd, 'b) ty = <fun>
+  ('a, 'e) ty -> ('b, 'e) ty -> ('c, 'e) ty -> ('a * 'b * 'c, 'e) ty = <fun>
 |}];;
 
 let v = variantize Enil (triple String Int Int) ("A", 2, 3) ;;
@@ -493,7 +493,7 @@ let ty_abc =
           "C", TCnoarg (Ttl (Ttl Thd)) ] }
 ;;
 [%%expect{|
-val ty_abc : ([ `A of int | `B of string | `C ], 'a) ty =
+val ty_abc : ([ `A of int | `B of string | `C ], 'e) ty =
   Sum
    {sum_proj = <fun>;
     sum_cases =
@@ -605,8 +605,8 @@ Line 7, characters 41-58:
 7 |     | "Cons", Some (Tdyn (Pair (_, Var), (p : a * a vlist))) -> `Cons p)))
                                              ^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type "a * a vlist"
-       but a pattern was expected which matches values of type "$a" = "$0 * $1"
-       Type "a" is not compatible with type "$0"
+       but a pattern was expected which matches values of type "$a" = "$'a * $'b"
+       Type "a" is not compatible with type "$'a"
        Hint: "$a" is an existential type bound by the constructor "Tdyn".
 |}];;
 

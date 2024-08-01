@@ -330,7 +330,7 @@ type 'a packed = T : ('a, _) t -> 'a packed [@@unboxed]
 [%%expect{|
 type 'a s
 type ('a, 'p) t = private 'a s
-type 'a packed = T : ('a, 'b) t -> 'a packed [@@unboxed]
+type 'a packed = T : ('a, 'p) t -> 'a packed [@@unboxed]
 |}];;
 
 (* MPR#7682 *)

@@ -431,10 +431,11 @@ module Indexed_monad :
       | Open : string -> (closed, opened, unit) t
       | Read : (opened, opened, string) t
       | Close : (opened, closed, unit) t
-    val return : 'a -> ('b, 'b, 'a) t
-    val map : ('a, 'b, 'c) t -> ('c -> 'd) -> ('a, 'b, 'd) t
-    val both : ('a, 'b, 'c) t -> ('b, 'd, 'e) t -> ('a, 'd, 'c * 'e) t
-    val bind : ('a, 'b, 'c) t -> ('c -> ('b, 'd, 'e) t) -> ('a, 'd, 'e) t
+    val return : 'a -> ('s, 's, 'a) t
+    val map : ('s1, 's2, 'a) t -> ('a -> 'b) -> ('s1, 's2, 'b) t
+    val both : ('s1, 's2, 'a) t -> ('s2, 's3, 'b) t -> ('s1, 's3, 'a * 'b) t
+    val bind :
+      ('s1, 's2, 'a) t -> ('a -> ('s2, 's3, 'b) t) -> ('s1, 's3, 'b) t
     val open_ : string -> (closed, opened, unit) t
     val read : (opened, opened, string) t
     val close : (opened, closed, unit) t
@@ -442,10 +443,13 @@ module Indexed_monad :
         Opened : in_channel -> opened state
       | Closed : closed state
     val run : (closed, closed, 'a) t -> 'a
-    val ( let+ ) : ('a, 'b, 'c) t -> ('c -> 'd) -> ('a, 'b, 'd) t
-    val ( and+ ) : ('a, 'b, 'c) t -> ('b, 'd, 'e) t -> ('a, 'd, 'c * 'e) t
-    val ( let* ) : ('a, 'b, 'c) t -> ('c -> ('b, 'd, 'e) t) -> ('a, 'd, 'e) t
-    val ( and* ) : ('a, 'b, 'c) t -> ('b, 'd, 'e) t -> ('a, 'd, 'c * 'e) t
+    val ( let+ ) : ('s1, 's2, 'a) t -> ('a -> 'b) -> ('s1, 's2, 'b) t
+    val ( and+ ) :
+      ('s1, 's2, 'a) t -> ('s2, 's3, 'b) t -> ('s1, 's3, 'a * 'b) t
+    val ( let* ) :
+      ('s1, 's2, 'a) t -> ('a -> ('s2, 's3, 'b) t) -> ('s1, 's3, 'b) t
+    val ( and* ) :
+      ('s1, 's2, 'a) t -> ('s2, 's3, 'b) t -> ('s1, 's3, 'a * 'b) t
   end
 |}];;
 
@@ -498,7 +502,7 @@ Line 4, characters 14-25:
 Error: This expression has type
          "(Indexed_monad.closed, Indexed_monad.opened, unit) Indexed_monad.t"
        but an expression was expected of type
-         "(Indexed_monad.opened, 'a, 'b) Indexed_monad.t"
+         "(Indexed_monad.opened, 's3, 'b) Indexed_monad.t"
        Type "Indexed_monad.closed" is not compatible with type
          "Indexed_monad.opened"
 |}];;
@@ -518,7 +522,7 @@ Lines 6-7, characters 4-29:
 Error: This expression has type
          "(Indexed_monad.opened, Indexed_monad.opened, string) Indexed_monad.t"
        but an expression was expected of type
-         "(Indexed_monad.closed, 'a, 'b) Indexed_monad.t"
+         "(Indexed_monad.closed, 's3, 'b) Indexed_monad.t"
        Type "Indexed_monad.opened" is not compatible with type
          "Indexed_monad.closed"
 |}];;

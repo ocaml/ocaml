@@ -174,7 +174,7 @@ module Convert :
     val prj :
       't Typeable.ty -> int -> ('env, 'env') layout -> ('env, 't) DeBruijn.ix
     val cvt : ('env, 'env) layout -> 't HOAS.term -> ('env, 't) DeBruijn.term
-    val convert : 'a HOAS.term -> (unit, 'a) DeBruijn.term
+    val convert : 't HOAS.term -> (unit, 't) DeBruijn.term
   end
 |}];;
 
@@ -204,17 +204,17 @@ end;;
 [%%expect{|
 module Main :
   sig
-    val i : 'a Typeable.ty -> ('a -> 'a) HOAS.term
-    val zero : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
-    val one : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
-    val two : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
-    val three : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
+    val i : 't Typeable.ty -> ('t -> 't) HOAS.term
+    val zero : 't Typeable.ty -> (('t -> 't) -> 't -> 't) HOAS.term
+    val one : 't Typeable.ty -> (('t -> 't) -> 't -> 't) HOAS.term
+    val two : 's Typeable.ty -> (('s -> 's) -> 's -> 's) HOAS.term
+    val three : 's Typeable.ty -> (('s -> 's) -> 's -> 's) HOAS.term
     val plus :
-      'a Typeable.ty ->
-      ((('a -> 'a) -> 'a -> 'a) ->
-       (('a -> 'a) -> 'a -> 'a) -> ('a -> 'a) -> 'a -> 'a)
+      's Typeable.ty ->
+      ((('s -> 's) -> 's -> 's) ->
+       (('s -> 's) -> 's -> 's) -> ('s -> 's) -> 's -> 's)
       HOAS.term
-    val plus_2_3 : 'a Typeable.ty -> (('a -> 'a) -> 'a -> 'a) HOAS.term
+    val plus_2_3 : 's Typeable.ty -> (('s -> 's) -> 's -> 's) HOAS.term
     val i' : (unit, int -> int) DeBruijn.term
     val plus_2_3' : (unit, (int -> int) -> int -> int) DeBruijn.term
     val eval_plus_2_3' : int

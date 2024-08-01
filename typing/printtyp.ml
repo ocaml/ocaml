@@ -788,7 +788,11 @@ module Names : sig
   val new_name : unit -> string
   val new_var_name : non_gen:bool -> type_expr -> unit -> string
 
-  val name_of_type : (unit -> string) -> transient_expr -> string
+  val name_of_type :
+    non_gen:bool -> (unit -> string) -> transient_expr -> string
+    (* if [non_gen] is [true], always uses the name generator, which
+       will presumably make a "weak" name *)
+
   val check_name_of_type : non_gen:bool -> transient_expr -> unit
 
   val remove_names : transient_expr list -> unit
@@ -874,7 +878,7 @@ end = struct
     if non_gen then new_weak_name ty ()
     else new_name ()
 
-  let name_of_type name_generator t =
+  let name_of_type ~non_gen name_generator t =
     (* We've already been through repr at this stage, so t is our representative
        of the union-find class. *)
     let t = substitute t in
@@ -882,10 +886,7 @@ end = struct
       try TransientTypeMap.find t !weak_var_map with Not_found ->
       let name =
         match t.desc with
-          Tvar (Some name) | Tunivar (Some name) ->
-            (* Some part of the type we've already printed has assigned another
-             * unification variable to that name. We want to keep the name, so
-             * try adding a number until we find a name that's not taken. *)
+          Tvar (Some name) | Tunivar (Some name) when not non_gen ->
             let available name =
               List.for_all
                 (fun (_, name') -> name <> name')
@@ -893,9 +894,43 @@ end = struct
             in
             if available name then name
             else
-              let suffixed i = name ^ Int.to_string i in
-              let i = Misc.find_first_mono (fun i -> available (suffixed i)) in
-              suffixed i
+              (* Some part of the type we've already printed has assigned
+                 another unification variable to that name. Yet we want to
+                 keep the name we have, even though it's taken. Our approach:
+                 - If the name is a single letter, try the next 4 single
+                   letters. This will get us from 'a to 'e or from 'k to 'o.
+                   Why 4? No good reason; it just seems the right number.
+                 - Otherwise, add an increasing numeric suffix until we find an
+                   available name.
+              *)
+              let with_suffix () =
+                let suffixed i = name ^ Int.to_string i in
+                let i =
+                  Misc.find_first_mono (fun i -> available (suffixed i))
+                in
+                suffixed i
+              in
+              if String.length name = 1 &&
+                 Char.compare name.[0] 'a' >= 0 &&
+                 Char.compare name.[0] 'z' <= 0
+              then
+                let code = Char.code name.[0] in
+                let max_num_letters_to_try = 4 in
+                let num_letters = 26 in
+                let num_letters_left =
+                  num_letters - (code - Char.code 'a') - 1
+                in
+                let actual_num_letters_to_try =
+                  Int.min max_num_letters_to_try num_letters_left
+                in
+                let possible_names =
+                  List.init actual_num_letters_to_try
+                    (fun n -> String.make 1 (Char.chr (code + n + 1)))
+                in
+                match List.find_opt available possible_names with
+                | Some avail_name -> avail_name
+                | None -> with_suffix ()
+              else with_suffix ()
         | _ ->
             (* No name available, create a new one *)
             name_generator ()
@@ -906,7 +941,7 @@ end = struct
 
   let check_name_of_type ~non_gen px =
     let name_gen = new_var_name ~non_gen (Transient_expr.type_expr px) in
-    ignore(name_of_type name_gen px)
+    ignore(name_of_type ~non_gen name_gen px)
 
   let remove_names tyl =
     let tyl = List.map substitute tyl in
@@ -1035,7 +1070,7 @@ let rec tree_of_typexp mode ty =
   let px = proxy ty in
   if List.memq px !printed_aliases && not (List.memq px !delayed) then
    let non_gen = is_non_gen mode (Transient_expr.type_expr px) in
-   let name = Names.name_of_type (Names.new_var_name ~non_gen ty) px in
+   let name = Names.name_of_type ~non_gen (Names.new_var_name ~non_gen ty) px in
    Otyp_var (non_gen, name) else
 
   let pr_typ () =
@@ -1044,7 +1079,7 @@ let rec tree_of_typexp mode ty =
     | Tvar _ ->
         let non_gen = is_non_gen mode ty in
         let name_gen = Names.new_var_name ~non_gen ty in
-        Otyp_var (non_gen, Names.name_of_type name_gen tty)
+        Otyp_var (non_gen, Names.name_of_type ~non_gen name_gen tty)
     | Tarrow(l, ty1, ty2, _) ->
         let lab =
           if !print_labels || is_optional l then l else Nolabel
@@ -1124,14 +1159,16 @@ let rec tree_of_typexp mode ty =
           (* Make the names delayed, so that the real type is
              printed once when used as proxy *)
           List.iter add_delayed tyl;
-          let tl = List.map (Names.name_of_type Names.new_name) tyl in
+          let tl =
+            List.map (Names.name_of_type ~non_gen:false Names.new_name) tyl
+          in
           let tr = Otyp_poly (tl, tree_of_typexp mode ty) in
           (* Forget names when we leave scope *)
           Names.remove_names tyl;
           delayed := old_delayed; tr
         end
     | Tunivar _ ->
-        Otyp_var (false, Names.name_of_type Names.new_name tty)
+        Otyp_var (false, Names.name_of_type ~non_gen:false Names.new_name tty)
     | Tpackage (p, fl) ->
         let fl =
           List.map
@@ -1148,7 +1185,9 @@ let rec tree_of_typexp mode ty =
     add_printed_alias_proxy ~non_gen px;
     (* add_printed_alias chose a name, thus the name generator
        doesn't matter.*)
-    let alias = Names.name_of_type (Names.new_var_name ~non_gen ty) px in
+    let alias =
+      Names.name_of_type ~non_gen (Names.new_var_name ~non_gen ty) px
+    in
     Otyp_alias {non_gen;  aliased = pr_typ (); alias } end
   else pr_typ ()
 
@@ -1665,7 +1704,8 @@ let rec tree_of_class_type mode params =
       let self_ty =
         if is_aliased_proxy px then
           Some
-            (Otyp_var (false, Names.name_of_type Names.new_name px))
+            (Otyp_var (false,
+                       Names.name_of_type ~non_gen:false Names.new_name px))
         else None
       in
       let csil = [] in

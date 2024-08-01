@@ -68,7 +68,7 @@ val var : 'a fin -> 'a term = <fun>
 val lift : ('m fin -> 'n fin) -> 'm fin -> 'n term = <fun>
 val pre_subst : ('a fin -> 'b term) -> 'a term -> 'b term = <fun>
 val comp_subst :
-  ('b fin -> 'c term) -> ('a fin -> 'b term) -> 'a fin -> 'c term = <fun>
+  ('a fin -> 'b term) -> ('c fin -> 'a term) -> 'c fin -> 'b term = <fun>
 |}];;
 
 (* 4 The Occur-Check, through thick and thin *)
@@ -158,7 +158,7 @@ type _ ealist = EAlist : ('a,'b) alist -> 'a ealist
 let asnoc a t' x = EAlist (Asnoc (a, t', x))
 [%%expect{|
 type _ ealist = EAlist : ('a, 'b) alist -> 'a ealist
-val asnoc : ('a, 'b) alist -> 'a term -> 'a succ fin -> 'a succ ealist =
+val asnoc : ('m, 'b) alist -> 'm term -> 'm succ fin -> 'm succ ealist =
   <fun>
 |}];;
 
@@ -185,7 +185,7 @@ let subst' d = pre_subst (sub' d)
 ;;
 [%%expect{|
 val weaken_fin : 'n fin -> 'n succ fin = <fun>
-val weaken_term : 'a term -> 'a succ term = <fun>
+val weaken_term : 'n term -> 'n succ term = <fun>
 val weaken_alist : ('m, 'n) alist -> ('m succ, 'n succ) alist = <fun>
 val sub' : 'm ealist -> 'm fin -> 'm term = <fun>
 val subst' : 'a ealist -> 'a term -> 'a term = <fun>
@@ -221,10 +221,10 @@ let mgu s t = amgu s t (EAlist Anil)
 (* val mgu : 'a term -> 'a term -> 'a ealist option *)
 ;;
 [%%expect{|
-val flex_flex : 'a succ fin -> 'a succ fin -> 'a succ ealist = <fun>
-val flex_rigid : 'a succ fin -> 'a succ term -> 'a succ ealist option = <fun>
+val flex_flex : 'b succ fin -> 'b succ fin -> 'b succ ealist = <fun>
+val flex_rigid : 'b succ fin -> 'b succ term -> 'b succ ealist option = <fun>
 val amgu : 'm term -> 'm term -> 'm ealist -> 'm ealist option = <fun>
-val mgu : 'a term -> 'a term -> 'a ealist option = <fun>
+val mgu : 'b term -> 'b term -> 'b ealist option = <fun>
 |}];;
 
 let s = Fork (Var FZ, Fork (Var (FS (FS FZ)), Leaf))

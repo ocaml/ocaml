@@ -1143,8 +1143,8 @@ let abbreviations = ref (ref Mnil)
 
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
-let rec copy ?partial ?keep_names copy_scope ty =
-  let copy = copy ?partial ?keep_names copy_scope in
+let rec copy ?partial copy_scope ty =
+  let copy = copy ?partial copy_scope in
   match get_desc ty with
     Tsubst (ty, _) -> ty
   | desc ->
@@ -1247,7 +1247,7 @@ let rec copy ?partial ?keep_names copy_scope ty =
           end
       | Tobject (ty1, _) when partial <> None ->
           Tobject (copy ty1, ref None)
-      | _ -> copy_type_desc ?keep_names copy desc
+      | _ -> copy_type_desc copy desc
     in
     Transient_expr.set_stub_desc t desc';
     t
@@ -1351,9 +1351,9 @@ let instance_constructor existential_treatment cstr =
     (ty_args, ty_res, ty_ex)
   )
 
-let instance_parameterized_type ?keep_names sch_args sch =
+let instance_parameterized_type sch_args sch =
   For_copy.with_scope (fun copy_scope ->
-    let ty_args = List.map (fun t -> copy ?keep_names copy_scope t) sch_args in
+    let ty_args = List.map (fun t -> copy copy_scope t) sch_args in
     let ty = copy copy_scope sch in
     (ty_args, ty)
   )
@@ -1488,11 +1488,11 @@ let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) sch =
   List.iter (fun force -> force ()) !delayed_copies;
   ty
 
-let instance_poly' copy_scope ~keep_names ~fixed univars sch =
+let instance_poly' copy_scope ~fixed univars sch =
   (* In order to compute univars below, [sch] should not contain [Tsubst] *)
   let copy_var ty =
     match get_desc ty with
-      Tunivar name -> if keep_names then newty (Tvar name) else newvar ()
+      Tunivar name -> newty (Tvar name)
     | _ -> assert false
   in
   let vars = List.map copy_var univars in
@@ -1501,9 +1501,9 @@ let instance_poly' copy_scope ~keep_names ~fixed univars sch =
   let ty = copy_sep ~copy_scope ~fixed ~visited sch in
   vars, ty
 
-let instance_poly ?(keep_names=false) ~fixed univars sch =
+let instance_poly ~fixed univars sch =
   For_copy.with_scope (fun copy_scope ->
-    instance_poly' copy_scope ~keep_names ~fixed univars sch
+    instance_poly' copy_scope ~fixed univars sch
   )
 
 let instance_label ~fixed lbl =
@@ -1511,7 +1511,7 @@ let instance_label ~fixed lbl =
     let vars, ty_arg =
       match get_desc lbl.lbl_arg with
         Tpoly (ty, tl) ->
-          instance_poly' copy_scope ~keep_names:false ~fixed tl ty
+          instance_poly' copy_scope ~fixed tl ty
       | _ ->
           [], copy copy_scope lbl.lbl_arg
     in

@@ -163,9 +163,9 @@ end;;
 class ['a, 'b] d :
   unit ->
   object
-    constraint 'a = int -> 'd
-    constraint 'b = 'a * (< x : 'b > as 'c) * 'd * 'e
-    method f : (int -> 'd) -> (int -> 'd) * 'c * 'd * 'e -> unit
+    constraint 'a = int -> 'c
+    constraint 'b = 'a * (< x : 'b > as 'e) * 'c * 'd
+    method f : (int -> 'c) -> (int -> 'c) * 'e * 'c * 'd -> unit
   end
 |}];;
 
@@ -1033,12 +1033,12 @@ Line 2, characters 19-73:
 2 | class c : ['a] d = object (self) method a = 1 method b = assert false end;;
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The class type object method a : int method b : 'a end
-       is not matched by the class type ['_a] d
+       is not matched by the class type ['_weak5] d
        The class type object method a : int method b : 'a end
        is not matched by the class type
-         object method a : 'a method b : 'a end
-       The method a has type "int" but is expected to have type "'a"
-       Type "int" is not compatible with type "'a"
+         object method a : 'weak5 method b : 'weak5 end
+       The method a has type "int" but is expected to have type "'weak5"
+       Type "int" is not compatible with type "'weak5"
 |}];;
 
 class type ['a] ct = object ('a) end

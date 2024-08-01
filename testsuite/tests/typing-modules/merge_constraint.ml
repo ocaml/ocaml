@@ -95,7 +95,7 @@ module UnboxedEnv :
         module type ReboundSig =
           sig
             type 'a ind = 'a ind/2
-            type t = t/2 = T : 'a ind -> t [@@unboxed]
+            type t = t/2 = T : 'e ind -> t [@@unboxed]
           end
       end
   end

@@ -189,8 +189,7 @@ val type_iterators_without_type_expr: type_iterators_without_type_expr
 
 (**** Utilities for copying ****)
 
-val copy_type_desc:
-    ?keep_names:bool -> (type_expr -> type_expr) -> type_desc -> type_desc
+val copy_type_desc: (type_expr -> type_expr) -> type_desc -> type_desc
         (* Copy on types *)
 val copy_row:
     (type_expr -> type_expr) ->

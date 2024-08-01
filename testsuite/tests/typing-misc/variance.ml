@@ -18,7 +18,7 @@ type 'a t = (('a -> unit) -> unit);;
 let tl = !(ref ([] : 'a t list));;
 [%%expect{|
 type 'a t = ('a -> unit) -> unit
-val tl : '_a t list = []
+val tl : '_weak1 t list = []
 |}]
 
 type 'a u = U of (('a -> unit) -> unit);;

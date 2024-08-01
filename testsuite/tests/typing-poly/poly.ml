@@ -520,7 +520,7 @@ end
 Line 3, characters 12-17:
 3 |   method id x = x
                 ^^^^^
-Error: This method has type "'a -> 'a" which is less general than "'b. 'b -> 'a"
+Error: This method has type "'b -> 'b" which is less general than "'c. 'c -> 'b"
 |}];;
 
 class id2 (x : 'a) = object
@@ -532,7 +532,7 @@ end
 Line 3, characters 12-17:
 3 |   method id x = x
                 ^^^^^
-Error: This method has type "'a -> 'a" which is less general than "'b. 'b -> 'a"
+Error: This method has type "'b -> 'b" which is less general than "'c. 'c -> 'b"
 |}];;
 
 class id3 x = object
@@ -545,7 +545,7 @@ end
 Line 4, characters 12-17:
 4 |   method id _ = x
                 ^^^^^
-Error: This method has type "'b -> 'b" which is less general than "'a. 'a -> 'a"
+Error: This method has type "'a -> 'a" which is less general than "'b. 'b -> 'b"
 |}];;
 
 class id4 () = object
@@ -563,7 +563,7 @@ Lines 4-7, characters 12-17:
 5 |     match r with
 6 |       None -> r <- Some x; x
 7 |     | Some y -> y
-Error: This method has type "'b -> 'b" which is less general than "'a. 'a -> 'a"
+Error: This method has type "'a -> 'a" which is less general than "'b. 'b -> 'b"
 |}];;
 
 class c = object
@@ -642,8 +642,8 @@ fun (x : <m:'a. 'a * <p:'b. 'b * 'c * 'd> as 'c> as 'd) -> x#m;;
 (* printer is wrong on the next (no official syntax) *)
 fun (x : <m:'a. <p:'a;..> >) -> x#m;;
 [%%expect {|
-- : (< m : 'a. 'a * 'b > as 'b) -> 'c * 'b = <fun>
-- : (< m : 'a. 'b * 'a list > as 'b) -> 'b * 'c list = <fun>
+- : (< m : 'a. 'a * 'b > as 'b) -> 'a * 'b = <fun>
+- : (< m : 'a. 'b * 'a list > as 'b) -> 'b * 'a list = <fun>
 val f :
   (< m : 'b. 'a * (< n : 'b; .. > as 'b) > as 'a) ->
   'a * (< n : 'c; .. > as 'c) = <fun>
@@ -651,13 +651,13 @@ val f :
     (< m : 'c; n : 'a; .. > as 'c)
 = <fun>
 - : (< m : 'a. 'a * < p : 'b. 'b * 'd * 'c > as 'd > as 'c) ->
-    ('f * < p : 'b. 'b * 'e * 'c > as 'e)
+    ('a * < p : 'b. 'b * 'e * 'c > as 'e)
 = <fun>
 - : < m : 'a. < p : 'a; .. > as 'b > -> 'b = <fun>
 |}, Principal{|
-- : (< m : 'a. 'a * 'b > as 'b) -> 'c * (< m : 'a. 'a * 'd > as 'd) = <fun>
+- : (< m : 'a. 'a * 'b > as 'b) -> 'a * (< m : 'd. 'd * 'c > as 'c) = <fun>
 - : (< m : 'a. 'b * 'a list > as 'b) ->
-    (< m : 'a. 'c * 'a list > as 'c) * 'd list
+    (< m : 'a. 'c * 'a list > as 'c) * 'a list
 = <fun>
 val f :
   (< m : 'b. 'a * (< n : 'b; .. > as 'b) > as 'a) ->
@@ -667,10 +667,10 @@ val f :
     (< m : 'c; n : < p : 'e. < m : 'e; n : 'd; .. > as 'e > as 'd; .. > as 'c)
 = <fun>
 - : (< m : 'a. 'a * < p : 'b. 'b * 'd * 'c > as 'd > as 'c) ->
-    ('f *
+    ('a *
      < p : 'b.
              'b * 'e *
-             (< m : 'a. 'a * < p : 'b0. 'b0 * 'h * 'g > as 'h > as 'g) >
+             (< m : 'a0. 'a0 * < p : 'b0. 'b0 * 'g * 'f > as 'g > as 'f) >
      as 'e)
 = <fun>
 - : < m : 'a. < p : 'a; .. > as 'b > -> 'b = <fun>
@@ -832,8 +832,8 @@ type bad = { bad : 'a. 'a option ref; }
 Line 2, characters 17-25:
 2 | let bad = {bad = ref None};;
                      ^^^^^^^^
-Error: This field value has type "'b option ref" which is less general than
-         "'a. 'a option ref"
+Error: This field value has type "'a option ref" which is less general than
+         "'b. 'b option ref"
 |}];;
 
 (* Type variable scope *)
@@ -1276,11 +1276,11 @@ let f x = if true then [| (x : < m : 'a. 'a -> 'a >) |] else [|x|];;
 fun x -> (f x).(0)#m;; (* Warning 18 *)
 [%%expect {|
 val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > = <fun>
-- : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
+- : < m : 'a. 'a -> 'a > -> 'a -> 'a = <fun>
 val f : < m : 'a. 'a -> 'a > * 'b -> < m : 'a. 'a -> 'a > = <fun>
-- : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
+- : < m : 'a. 'a -> 'a > -> 'a -> 'a = <fun>
 val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > array = <fun>
-- : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
+- : < m : 'a. 'a -> 'a > -> 'a -> 'a = <fun>
 |}, Principal{|
 val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > = <fun>
 Line 2, characters 9-16:
@@ -1288,21 +1288,21 @@ Line 2, characters 9-16:
              ^^^^^^^
 Warning 18 [not-principal]: this use of a polymorphic method is not principal.
 
-- : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
+- : < m : 'a. 'a -> 'a > -> 'a -> 'a = <fun>
 val f : < m : 'a. 'a -> 'a > * 'b -> < m : 'a. 'a -> 'a > = <fun>
 Line 4, characters 9-20:
 4 | fun x -> (f (x,x))#m;; (* Warning 18 *)
              ^^^^^^^^^^^
 Warning 18 [not-principal]: this use of a polymorphic method is not principal.
 
-- : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
+- : < m : 'a. 'a -> 'a > -> 'a -> 'a = <fun>
 val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > array = <fun>
 Line 6, characters 9-20:
 6 | fun x -> (f x).(0)#m;; (* Warning 18 *)
              ^^^^^^^^^^^
 Warning 18 [not-principal]: this use of a polymorphic method is not principal.
 
-- : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
+- : < m : 'a. 'a -> 'a > -> 'a -> 'a = <fun>
 |}];;
 
 (* Not really principal? *)
@@ -1619,10 +1619,10 @@ let rec f1 o c x =
 type 'a t = V1 of 'a
 type ('c, 't) pvariant = [ `V of 'c * 't t ]
 class ['c] clss : object method mthod : 'c -> 't t -> ('c, 't) pvariant end
-val f2 : 'a -> 'b -> 'c t -> 'c t = <fun>
+val f2 : 'b -> 'c -> 'a t -> 'a t = <fun>
 val f1 :
-  < mthod : 't. 'a -> 't t -> [< `V of 'a * 't t ]; .. > ->
-  'a -> 'b t -> 'b t = <fun>
+  < mthod : 't. 'c -> 't t -> [< `V of 'c * 't t ]; .. > ->
+  'c -> 'a t -> 'a t = <fun>
 |}]
 
 (* PR#7285 *)
@@ -1830,7 +1830,7 @@ val x : [ `Foo of 'a s ] = `Foo []
 |}]
 let x : [ `Foo of 'a t | `Foo of _ s ] = id (`Foo []);;
 [%%expect{|
-val x : [ `Foo of 'a list t ] = `Foo []
+val x : [ `Foo of 'b list t ] = `Foo []
 |}]
 
 (* generalize spine of inherited methods too *)
@@ -1849,8 +1849,8 @@ let rec foo : 'a . 'a -> 'd = fun x -> x
 Line 1, characters 30-40:
 1 | let rec foo : 'a . 'a -> 'd = fun x -> x
                                   ^^^^^^^^^^
-Error: This definition has type "'b -> 'b" which is less general than
-         "'a. 'a -> 'c"
+Error: This definition has type "'d -> 'd" which is less general than
+         "'a. 'a -> 'e"
 |}]
 
 (* #7741 *)
@@ -1925,7 +1925,7 @@ Line 2, characters 6-44:
 2 |   let ref : type a . a option ref = ref None in
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This definition has type "'a option ref" which is less general than
-         "'a0. 'a0 option ref"
+         "'b. 'b option ref"
 |}]
 
 type pr = { foo : 'a. 'a option ref }
@@ -1935,8 +1935,8 @@ type pr = { foo : 'a. 'a option ref; }
 Line 2, characters 16-24:
 2 | let x = { foo = ref None }
                     ^^^^^^^^
-Error: This field value has type "'b option ref" which is less general than
-         "'a. 'a option ref"
+Error: This field value has type "'a option ref" which is less general than
+         "'b. 'b option ref"
 |}]
 
 
@@ -2012,8 +2012,8 @@ let explicitly_quantified_row: 'a 'r. (<x:'a; ..> as 'r) -> 'a = fun o -> o#y ()
 Line 1, characters 65-85:
 1 | let explicitly_quantified_row: 'a 'r. (<x:'a; ..> as 'r) -> 'a = fun o -> o#y (); o#x
                                                                      ^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type "'b. < x : 'b; y : unit -> 'c; .. > -> 'b"
-       which is less general than "'a 'd. (< x : 'a; .. > as 'd) -> 'a"
+Error: This definition has type "'a. < x : 'a; y : unit -> 'b; .. > -> 'a"
+       which is less general than "'a 'c. (< x : 'a; .. > as 'c) -> 'a"
 |}]
 
 
