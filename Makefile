@@ -1111,28 +1111,28 @@ beforedepend:: lambda/runtimedef.ml
 # Choose the right machine-dependent files
 
 asmcomp/arch.mli: asmcomp/$(ARCH)/arch.mli
-	cd asmcomp; $(LN) $(ARCH)/arch.mli .
+	@cd asmcomp; $(LN) $(ARCH)/arch.mli .
 
 asmcomp/arch.ml: asmcomp/$(ARCH)/arch.ml
-	cd asmcomp; $(LN) $(ARCH)/arch.ml .
+	@cd asmcomp; $(LN) $(ARCH)/arch.ml .
 
 asmcomp/proc.ml: asmcomp/$(ARCH)/proc.ml
-	cd asmcomp; $(LN) $(ARCH)/proc.ml .
+	@cd asmcomp; $(LN) $(ARCH)/proc.ml .
 
 asmcomp/selection.ml: asmcomp/$(ARCH)/selection.ml
-	cd asmcomp; $(LN) $(ARCH)/selection.ml .
+	@cd asmcomp; $(LN) $(ARCH)/selection.ml .
 
 asmcomp/CSE.ml: asmcomp/$(ARCH)/CSE.ml
-	cd asmcomp; $(LN) $(ARCH)/CSE.ml .
+	@cd asmcomp; $(LN) $(ARCH)/CSE.ml .
 
 asmcomp/reload.ml: asmcomp/$(ARCH)/reload.ml
-	cd asmcomp; $(LN) $(ARCH)/reload.ml .
+	@cd asmcomp; $(LN) $(ARCH)/reload.ml .
 
 asmcomp/scheduling.ml: asmcomp/$(ARCH)/scheduling.ml
-	cd asmcomp; $(LN) $(ARCH)/scheduling.ml .
+	@cd asmcomp; $(LN) $(ARCH)/scheduling.ml .
 
 asmcomp/stackframe.ml: asmcomp/$(ARCH)/stackframe.ml
-	cd asmcomp; $(LN) $(ARCH)/stackframe.ml .
+	@cd asmcomp; $(LN) $(ARCH)/stackframe.ml .
 
 # Preprocess the code emitters
 cvt_emit = tools/cvt_emit$(EXE)
