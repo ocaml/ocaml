@@ -121,7 +121,7 @@ DOMAIN_STATE(int, id)
 
 DOMAIN_STATE(int, unique_id)
 
-DOMAIN_STATE(value, dls_root)
+DOMAIN_STATE(value, dls_state)
 /* Domain-local state */
 
 DOMAIN_STATE(double, extra_heap_resources)
