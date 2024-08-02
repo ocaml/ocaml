@@ -447,7 +447,7 @@ type core_relation = {
 type positivity = Negative | Positive | Strictly_positive
 type directionality = { in_eq : bool; positivity : positivity }
 let strictly_positive = { in_eq = false; positivity = Strictly_positive }
-let negate eq_type =
+let reverse_direction eq_type =
   let positivity =
     match eq_type.positivity with
     | Negative -> Positive
@@ -533,7 +533,7 @@ and try_modtypes ~core ~direction ~loc env ~mark subst mty1 mty2 orig_shape =
       end
   | Mty_functor (param1, res1), Mty_functor (param2, res2) ->
       let cc_arg, env, subst =
-        let direction = negate direction in
+        let direction = reverse_direction direction in
         functor_param ~core ~direction ~loc env ~mark:(negate_mark mark)
           subst param1 param2
       in
