@@ -135,7 +135,8 @@ caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
 
 caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
 {
-  char * dir, * fullname;
+  const char * dir;
+  char * fullname;
   struct stat st;
 
   for (const char *p = name; *p != 0; p++) {

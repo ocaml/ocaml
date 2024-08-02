@@ -83,9 +83,9 @@ static c_primitive lookup_primitive(char * name)
 
 #define LD_CONF_NAME T("ld.conf")
 
-CAMLexport char_os * caml_get_stdlib_location(void)
+CAMLexport const char_os * caml_get_stdlib_location(void)
 {
-  char_os * stdlib;
+  const char_os * stdlib;
   stdlib = caml_secure_getenv(T("OCAMLLIB"));
   if (stdlib == NULL) stdlib = caml_secure_getenv(T("CAMLLIB"));
   if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
@@ -94,7 +94,8 @@ CAMLexport char_os * caml_get_stdlib_location(void)
 
 CAMLexport char_os * caml_parse_ld_conf(void)
 {
-  char_os * stdlib, * ldconfname, * wconfig, * p, * q;
+  const char_os * stdlib;
+  char_os * ldconfname, * wconfig, * p, * q;
   char * config;
 #ifdef _WIN32
   struct _stati64 st;

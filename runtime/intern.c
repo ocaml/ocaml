@@ -1207,7 +1207,7 @@ CAMLexport void caml_deserialize_block_float_8(void * data, intnat len)
 #endif
 }
 
-CAMLexport void caml_deserialize_error(char * msg)
+CAMLexport void caml_deserialize_error(const char * msg)
 {
   struct caml_intern_state* s = get_intern_state ();
   intern_cleanup(s);

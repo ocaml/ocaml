@@ -478,7 +478,7 @@ CAMLprim value caml_sys_executable_name(value unit)
   return caml_copy_string_of_os(caml_params->exe_name);
 }
 
-void caml_sys_init(char_os * exe_name, char_os **argv)
+void caml_sys_init(const char_os * exe_name, char_os **argv)
 {
 #ifdef _WIN32
   /* Initialises the caml_win32_* globals on Windows with the version of

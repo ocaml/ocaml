@@ -103,7 +103,7 @@ enum input_codes {
 
 /* Auxiliary for printing token just read */
 
-static char * token_name(char * names, int number)
+static const char * token_name(const char * names, int number)
 {
   for (/*nothing*/; number > 0; number--) {
     if (names[0] == 0) return "<unknown token>";

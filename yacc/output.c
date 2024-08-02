@@ -61,7 +61,7 @@ int pack_vector (int vector);
 
 void output(void)
 {
-  extern char *header[], *define_tables[];
+  extern char const * const header[], * const define_tables[];
 
   free_itemsets();
   free_shifts();

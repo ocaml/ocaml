@@ -170,9 +170,11 @@ _Bool (*caml_extern_compress_output)(struct caml_output_block **) = NULL;
 CAMLnoret static void extern_out_of_memory(struct caml_extern_state* s);
 
 CAMLnoret static
-void extern_invalid_argument(struct caml_extern_state* s, char *msg);
+void extern_invalid_argument(struct caml_extern_state* s,
+                             const char *msg);
 
-CAMLnoret static void extern_failwith(struct caml_extern_state* s, char *msg);
+CAMLnoret static void extern_failwith(struct caml_extern_state* s,
+                                      const char *msg);
 
 CAMLnoret static void extern_stack_overflow(struct caml_extern_state* s);
 
@@ -441,13 +443,14 @@ static void extern_out_of_memory(struct caml_extern_state* s)
   caml_raise_out_of_memory();
 }
 
-static void extern_invalid_argument(struct caml_extern_state *s, char *msg)
+static void extern_invalid_argument(struct caml_extern_state *s,
+                                    const char *msg)
 {
   free_extern_output(s);
   caml_invalid_argument(msg);
 }
 
-static void extern_failwith(struct caml_extern_state* s, char *msg)
+static void extern_failwith(struct caml_extern_state* s, const char *msg)
 {
   free_extern_output(s);
   caml_failwith(msg);

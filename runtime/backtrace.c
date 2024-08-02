@@ -63,8 +63,8 @@ CAMLprim value caml_backtrace_status(value vunit)
    implementation. */
 static void print_location(struct caml_loc_info * li, int index)
 {
-  char * info;
-  char * inlined;
+  const char * info;
+  const char * inlined;
 
   /* Ignore compiler-inserted raise */
   if (!li->loc_valid && li->loc_is_raise) return;

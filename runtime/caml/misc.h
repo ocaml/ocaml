@@ -279,7 +279,7 @@ typedef char char_os;
    from the callsite, making debuggers able to see it. */
 #define CAMLassert(x) \
   (CAMLlikely(x) ? (void) 0 : caml_failed_assert ( #x , __OSFILE__, __LINE__))
-CAMLextern void caml_failed_assert (char *, char_os *, int)
+CAMLextern void caml_failed_assert (const char *, const char_os *, int)
 #if defined(__has_feature)
   /* However, we do inform clang-analyzer that this function never returns,
      since that improves analysis without breaking debugging */
@@ -308,7 +308,7 @@ CAMLextern void caml_failed_assert (char *, char_os *, int)
 #endif
 
 #ifdef DEBUG
-CAMLnoret CAMLextern void caml_debug_abort(char_os *, int);
+CAMLnoret CAMLextern void caml_debug_abort(const char_os *, int);
 #define CAMLunreachable() (caml_debug_abort(__OSFILE__, __LINE__))
 #else
 #define CAMLunreachable() (caml_abort())
@@ -357,11 +357,11 @@ void caml_alloc_point_here(void);
 
    This function must be reentrant. */
 #ifndef __cplusplus
-typedef void (*fatal_error_hook) (char *msg, va_list args);
+typedef void (*fatal_error_hook) (const char *msg, va_list args);
 extern _Atomic fatal_error_hook caml_fatal_error_hook;
 #endif
 
-CAMLnoret CAMLextern void caml_fatal_error (char *, ...)
+CAMLnoret CAMLextern void caml_fatal_error (const char *, ...)
 #if __has_attribute(format) || defined(__GNUC__)
   __attribute__ ((format (printf, 1, 2)))
 #endif
@@ -553,13 +553,13 @@ CAMLextern int caml_read_directory(char_os * dirname,
 
 extern atomic_uintnat caml_verb_gc;
 
-void caml_gc_log (char *, ...)
+void caml_gc_log (const char *, ...)
 #if __has_attribute(format) || defined(__GNUC__)
   __attribute__ ((format (printf, 1, 2)))
 #endif
 ;
 
-void caml_gc_message (int, char *, ...)
+void caml_gc_message (int, const char *, ...)
 #if __has_attribute(format) || defined(__GNUC__)
   __attribute__ ((format (printf, 2, 3)))
 #endif

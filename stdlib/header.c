@@ -160,7 +160,7 @@ static char * read_runtime_path(int fd)
   return runtime_path;
 }
 
-static void errwrite(char * msg)
+static void errwrite(const char * msg)
 {
   fputs(msg, stderr);
 }

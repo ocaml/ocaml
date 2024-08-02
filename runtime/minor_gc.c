@@ -956,7 +956,7 @@ CAMLexport value caml_check_urgent_gc (value extra_root)
 static void realloc_generic_table
 (struct generic_table *tbl, asize_t element_size,
  ev_runtime_counter ev_counter_name,
- char *msg_threshold, char *msg_growing, char *msg_error)
+ const char *msg_threshold, const char *msg_growing, const char *msg_error)
 {
   CAMLassert (tbl->ptr == tbl->limit);
   CAMLassert (tbl->limit <= tbl->end);
