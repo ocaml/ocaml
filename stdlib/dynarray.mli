@@ -181,8 +181,8 @@ val append_iter :
     [1], [2], and then [3] at the end of [a].
     [append_iter a Queue.iter q] adds elements from the queue [q]. *)
 
-val blit : 'a t -> int -> 'a t -> int -> int -> unit
-(** [blit src src_pos dst dst_pos len] copies [len] elements from
+val blit : src:'a t -> src_pos:int -> dst:'a t -> dst_pos:int -> len:int -> unit
+(** [blit ~src ~src_pos ~dst ~dst_pos ~len] copies [len] elements from
     a source dynarray [src], starting at index [src_pos], to
     a destination dynarray [dst], starting at index [dst_pos]. It
     works correctly even if [src] and [dst] are the same array, and

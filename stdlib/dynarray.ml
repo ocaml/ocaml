@@ -712,7 +712,7 @@ let blit_assume_room
     dst_arr dst.dummy dst_pos
     ~len:blit_length
 
-let blit src src_pos dst dst_pos len =
+let blit ~src ~src_pos ~dst ~dst_pos ~len =
   let src_length = length src in
   let dst_length = length dst in
   if len < 0 then
