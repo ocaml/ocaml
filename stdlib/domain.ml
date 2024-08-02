@@ -84,26 +84,7 @@ module DLS = struct
 
   type 'a key = int * (unit -> 'a)
 
-  let key_counter = Atomic.make 0
-
-  type key_initializer =
-    KI: 'a key * ('a -> 'a) -> key_initializer
-
-  let parent_keys = Atomic.make ([] : key_initializer list)
-
-  let rec add_parent_key ki =
-    let l = Atomic.get parent_keys in
-    if not (Atomic.compare_and_set parent_keys l (ki :: l))
-    then add_parent_key ki
-
-  let new_key ?split_from_parent init_orphan =
-    let idx = Atomic.fetch_and_add key_counter 1 in
-    let k = (idx, init_orphan) in
-    begin match split_from_parent with
-    | None -> ()
-    | Some split -> add_parent_key (KI(k, split))
-    end;
-    k
+  (* Manipulating existing keys. *)
 
   (* If necessary, grow the current domain's local state array such that [idx]
    * is a valid index in the array. *)
@@ -135,7 +116,6 @@ module DLS = struct
      * [x], which may be a [float] and conclude that the [st] is a float array.
      * We do not want OCaml's float array optimisation kicking in here. *)
     st.(idx) <- Obj_opt.some (Sys.opaque_identity x)
-
 
   let[@inline never] array_compare_and_set a i oldval newval =
     (* Note: we cannot use [@poll error] due to the
@@ -175,6 +155,34 @@ module DLS = struct
         else assert false
       end
     end
+
+  (* Creating new keys. *)
+
+  let key_counter = Atomic.make 0
+
+  let make init =
+    let idx = Atomic.fetch_and_add key_counter 1 in
+    (idx, init)
+
+  (* Keys initialized by the parent. *)
+
+  type key_initializer =
+    KI: 'a key * ('a -> 'a) -> key_initializer
+
+  let parent_keys = Atomic.make ([] : key_initializer list)
+
+  let rec add_parent_key ki =
+    let l = Atomic.get parent_keys in
+    if not (Atomic.compare_and_set parent_keys l (ki :: l))
+    then add_parent_key ki
+
+  let new_key ?split_from_parent init_orphan =
+    let k = make init_orphan in
+    begin match split_from_parent with
+    | None -> ()
+    | Some split -> add_parent_key (KI(k, split))
+    end;
+    k
 
   type key_value = KV : 'a key * 'a -> key_value
 
