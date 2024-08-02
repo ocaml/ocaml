@@ -62,15 +62,28 @@ let wrong_to_seq (xt : 'a t) : 'a Seq.t =
    with the Ctype.Escape exception, as it did from 4.13 to 5.1. *)
 [%%expect{|
 type 'a t = T of 'a
-val wrong_to_seq : ('a Seq.t as 'a) Seq.t t -> 'a Seq.t Seq.t = <fun>
+Line 4, characters 2-22:
+4 |   Seq.cons Seq.empty x
+      ^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
+       but an expression was expected of type
+         "'a Seq.t Seq.t Seq.t" = "unit -> 'a Seq.t Seq.t Seq.node"
+       Type "'a Seq.t" = "unit -> 'a Seq.node" is not compatible with type
+         "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
+       Type "'a" is not compatible with type "'a Seq.t" = "unit -> 'a Seq.node"
+       The type variable "'a" occurs inside "'a Seq.t"
 |}];;
 
 let strange x = Seq.[cons x empty; cons empty x];;
 [%%expect{|
-Line 1, characters 12-48:
+Line 1, characters 35-47:
 1 | let strange x = Seq.[cons x empty; cons empty x];;
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "('a Seq.t as 'a) Seq.t -> 'a Seq.t Seq.t list"
+                                       ^^^^^^^^^^^^
+Error: This expression has type "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
        but an expression was expected of type
-         "('a Seq.t as 'a) Seq.t -> 'a Seq.t Seq.t list"
+         "'a Seq.t Seq.t Seq.t" = "unit -> 'a Seq.t Seq.t Seq.node"
+       Type "'a Seq.t" = "unit -> 'a Seq.node" is not compatible with type
+         "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
+       Type "'a" is not compatible with type "'a Seq.t" = "unit -> 'a Seq.node"
+       The type variable "'a" occurs inside "'a Seq.t"
 |}];;

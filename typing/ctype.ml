@@ -1842,23 +1842,32 @@ let is_contractive env p =
 
 exception Occur
 
+(** [occur_rec ...allow_recursive ... ty0 ty] checks if the node of [ty0] is
+    reachable from the node [ty] follwing a path which is not guarded by allowed
+    recursive constructs. More precisely, recursion under polymorphic variant
+    and object types is always allowed and if [allow_recursive=true] recursion
+    under contractive constructor is also allowed. *)
 let rec occur_rec env allow_recursive visited ty0 ty =
   if eq_type ty ty0 then raise Occur;
   match get_desc ty with
     Tconstr(p, _tl, _abbrev) ->
       if allow_recursive && is_contractive env p then () else
-      begin try
-        if TypeSet.mem ty visited then raise Occur;
+      if TypeSet.mem ty visited then raise Occur
+      else
         let visited = TypeSet.add ty visited in
-        iter_type_expr (occur_rec env allow_recursive visited ty0) ty
-      with Occur -> try
-        let ty' = try_expand_head try_expand_safe env ty in
-        (* This call used to be inlined, but there seems no reason for it.
-           Message was referring to change in rev. 1.58 of the CVS repo. *)
-        occur_rec env allow_recursive visited ty0 ty'
-      with Cannot_expand ->
-        raise Occur
-      end
+        begin try
+          iter_type_expr (occur_rec env allow_recursive visited ty0) ty
+        with Occur -> try
+        (* If [ty0] occurs illegaly in the children nodes of [ty], we retry
+           after expanding [ty]. Indeed, after expansion, the reachable graph
+           might be smaller. However, we don't try this expansion if the node
+           [ty] itself was already visited since in this case the expansion
+           will not change the reachable graph. *)
+          let ty' = try_expand_head try_expand_safe env ty in
+          occur_rec env allow_recursive visited ty0 ty'
+        with Cannot_expand ->
+          raise Occur
+        end
   | Tobject _ | Tvariant _ ->
       ()
   | _ ->
