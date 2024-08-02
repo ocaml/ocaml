@@ -18,6 +18,13 @@ end = struct
   let unsafe_get obj = Obj.obj obj
 end
 
+type state = Obj_opt.t array
+
+module type State_operations = sig
+  val get : unit -> state
+  val compare_and_set : state -> state -> bool
+end
+
 module type Storage_interface = sig
     type 'a key
 
@@ -32,15 +39,7 @@ module type Storage_interface = sig
     val set_initial_keys : key_value list -> unit
 end
 
-module DLS : Storage_interface = struct
-
-  type dls_state = Obj_opt.t array
-
-  external get_dls_state : unit -> dls_state = "%dls_get"
-
-  external compare_and_set_dls_state : dls_state -> dls_state -> bool =
-    "caml_domain_dls_compare_and_set" [@@noalloc]
-
+module[@inline always] Make (State : State_operations) : Storage_interface = struct
   type 'a key = int * (unit -> 'a)
 
   (* Manipulating existing keys. *)
@@ -48,7 +47,7 @@ module DLS : Storage_interface = struct
   (* If necessary, grow the current domain's local state array such that [idx]
    * is a valid index in the array. *)
   let rec maybe_grow idx =
-    let st = get_dls_state () in
+    let st = State.get () in
     let sz = Array.length st in
     if idx < sz then st
     else begin
@@ -64,7 +63,7 @@ module DLS : Storage_interface = struct
          Note that the number of retries will be very small in
          contended scenarios, as the array only grows, with
          exponential resizing. *)
-      if compare_and_set_dls_state st new_st
+      if State.compare_and_set st new_st
       then new_st
       else maybe_grow idx
     end
@@ -102,7 +101,7 @@ module DLS : Storage_interface = struct
          If [st.(idx)] changed, we drop the current value to avoid
          letting other threads observe a 'revert' that forgets
          previous modifications. *)
-      let st = get_dls_state () in
+      let st = State.get () in
       if array_compare_and_set st idx obj new_obj
       then v
       else begin
@@ -152,5 +151,22 @@ module DLS : Storage_interface = struct
 
   let set_initial_keys (l: key_value list) =
     List.iter (fun (KV (k, v)) -> set k v) l
-
 end
+
+module DLS_operations = struct
+  external get : unit -> state = "%dls_get"
+
+  external compare_and_set : state -> state -> bool =
+    "caml_domain_dls_compare_and_set" [@@noalloc]
+end
+
+module TLS_operations = struct
+  external get : unit -> state =
+    "caml_domain_tls_get" [@@noalloc]
+
+  external compare_and_set : state -> state -> bool =
+    "caml_domain_tls_compare_and_set" [@@noalloc]
+end
+
+module DLS = Make(DLS_operations)
+module TLS = Make(TLS_operations)

@@ -13,3 +13,4 @@ module type Storage_interface = sig
 end
 
 module DLS : Storage_interface
+module TLS : Storage_interface
