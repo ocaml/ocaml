@@ -25,22 +25,22 @@ module type State_operations = sig
   val compare_and_set : state -> state -> bool
 end
 
-module type Storage_interface = sig
-    type 'a key
+module type Key = sig
+    type 'a t
 
-    val new_key : ?split_from_parent:('a -> 'a) -> (unit -> 'a) -> 'a key
+    val make : ?split_from_parent:('a -> 'a) -> (unit -> 'a) -> 'a t
 
-    val get : 'a key -> 'a
+    val get : 'a t -> 'a
 
-    val set : 'a key -> 'a -> unit
+    val set : 'a t -> 'a -> unit
 
-    type key_value = KV : 'a key * 'a -> key_value
+    type key_value = KV : 'a t * 'a -> key_value
     val get_initial_keys : unit -> key_value list
     val set_initial_keys : key_value list -> unit
 end
 
-module[@inline always] Make (State : State_operations) : Storage_interface = struct
-  type 'a key = int * (unit -> 'a)
+module[@inline always] Make (State : State_operations) : Key = struct
+  type 'a t = int * (unit -> 'a)
 
   (* Manipulating existing keys. *)
 
@@ -84,7 +84,7 @@ module[@inline always] Make (State : State_operations) : Storage_interface = str
       true
     ) else false
 
-  let get (type a) ((idx, init) : a key) : a =
+  let get (type a) ((idx, init) : a t) : a =
     let st = maybe_grow idx in
     let obj = st.(idx) in
     if Obj_opt.is_some obj
@@ -125,7 +125,7 @@ module[@inline always] Make (State : State_operations) : Storage_interface = str
   (* Keys initialized by the parent. *)
 
   type key_initializer =
-    KI: 'a key * ('a -> 'a) -> key_initializer
+    KI: 'a t * ('a -> 'a) -> key_initializer
 
   let parent_keys = Atomic.make ([] : key_initializer list)
 
@@ -134,7 +134,7 @@ module[@inline always] Make (State : State_operations) : Storage_interface = str
     if not (Atomic.compare_and_set parent_keys l (ki :: l))
     then add_parent_key ki
 
-  let new_key ?split_from_parent init_orphan =
+  let make ?split_from_parent init_orphan =
     let k = make init_orphan in
     begin match split_from_parent with
     | None -> ()
@@ -142,7 +142,7 @@ module[@inline always] Make (State : State_operations) : Storage_interface = str
     end;
     k
 
-  type key_value = KV : 'a key * 'a -> key_value
+  type key_value = KV : 'a t * 'a -> key_value
 
   let get_initial_keys () : key_value list =
     List.map

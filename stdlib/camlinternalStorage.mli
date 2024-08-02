@@ -1,16 +1,16 @@
-module type Storage_interface = sig
-    type 'a key
+module type Key = sig
+    type 'a t
 
-    val new_key : ?split_from_parent:('a -> 'a) -> (unit -> 'a) -> 'a key
+    val make : ?split_from_parent:('a -> 'a) -> (unit -> 'a) -> 'a t
 
-    val get : 'a key -> 'a
+    val get : 'a t -> 'a
 
-    val set : 'a key -> 'a -> unit
+    val set : 'a t -> 'a -> unit
 
-    type key_value = KV : 'a key * 'a -> key_value
+    type key_value = KV : 'a t * 'a -> key_value
     val get_initial_keys : unit -> key_value list
     val set_initial_keys : key_value list -> unit
 end
 
-module DLS : Storage_interface
-module TLS : Storage_interface
+module DLS : Key
+module TLS : Key

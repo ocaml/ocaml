@@ -106,12 +106,13 @@ val self_index : unit -> int
 module DLS : sig
 (** Domain-local Storage *)
 
-    type 'a key
+    type 'a t
+    type 'a key = 'a t
     (** Type of a DLS key *)
 
-    val new_key : ?split_from_parent:('a -> 'a) -> (unit -> 'a) -> 'a key
-    (** [new_key f] returns a new key bound to initialiser [f] for accessing
-,        domain-local variables.
+    val make : ?split_from_parent:('a -> 'a) -> (unit -> 'a) -> 'a key
+    (** [make ?split_from_parent f] returns a new key into the
+        domain-local storage, bound to initialiser [f].
 
         If [split_from_parent] is not provided, the value for a new
         domain will be computed on-demand by the new domain: the first
@@ -162,4 +163,6 @@ module DLS : sig
         the key [k] with value [v]. It overwrites any previous values associated
         to [k], which cannot be restored later. *)
 
+    (** Older name for [make], kept for backward-compatibility. *)
+    val new_key : ?split_from_parent:('a -> 'a) -> (unit -> 'a) -> 'a key
 end

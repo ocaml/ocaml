@@ -53,7 +53,11 @@ type 'a t = {
   term_sync : 'a Raw.term_sync;
 }
 
-module DLS = CamlinternalStorage.DLS
+module DLS = struct
+  include CamlinternalStorage.DLS
+  type 'a key = 'a t
+  let new_key = make
+end
 
 (******** Identity **********)
 
@@ -90,7 +94,7 @@ let do_before_first_spawn () =
     first_spawn_function := (fun () -> ())
   end
 
-let at_exit_key = DLS.new_key (fun () -> (fun () -> ()))
+let at_exit_key : (unit -> unit) DLS.t = DLS.new_key (fun () -> (fun () -> ()))
 
 let at_exit f =
   let old_exit : unit -> unit = DLS.get at_exit_key in
