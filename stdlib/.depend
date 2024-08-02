@@ -799,6 +799,13 @@ stdlib__Sys.cmo : sys.ml \
 stdlib__Sys.cmx : sys.ml \
     stdlib__Sys.cmi
 stdlib__Sys.cmi : sys.mli
+stdlib__Thread_local_storage.cmo : thread_local_storage.ml \
+    camlinternalStorage.cmi \
+    stdlib__Thread_local_storage.cmi
+stdlib__Thread_local_storage.cmx : thread_local_storage.ml \
+    camlinternalStorage.cmx \
+    stdlib__Thread_local_storage.cmi
+stdlib__Thread_local_storage.cmi : thread_local_storage.mli
 stdlib__Type.cmo : type.ml \
     stdlib__Obj.cmi \
     stdlib__Type.cmi

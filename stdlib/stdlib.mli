@@ -1452,6 +1452,11 @@ module StdLabels      = StdLabels
 module String         = String
 module StringLabels   = StringLabels
 module Sys            = Sys
+module Thread_local_storage = Thread_local_storage
+[@@alert "-unstable"]
+[@@alert unstable
+    "The Thread_local_storage interface may change in incompatible ways in the future."
+]
 module Type           = Type
 module Uchar          = Uchar
 module Unit           = Unit
