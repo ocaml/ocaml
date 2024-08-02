@@ -39,9 +39,9 @@ Unresolved: CU Stdlib . "Option"[module] . "map"[value]  :
   Option.map (File "index_bindingops.ml", line 17, characters 17-27)
 
 Uid of decls:
-Index_bindingops.8:
-  minus_three (File "index_bindingops.ml", line 23, characters 4-15)
 Index_bindingops.0:
   let+ (File "index_bindingops.ml", line 17, characters 4-10)
 Index_bindingops.3:
   and+ (File "index_bindingops.ml", line 19, characters 4-10)
+Index_bindingops.8:
+  minus_three (File "index_bindingops.ml", line 23, characters 4-15)

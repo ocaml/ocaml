@@ -794,48 +794,63 @@ let rec print_address ppf = function
 
 (* The name of the compilation unit currently compiled.
    "" if outside a compilation unit. *)
-module Current_unit_name : sig
-  val get : unit -> modname
-  val set : modname -> unit
-  val is : modname -> bool
-  val is_ident : Ident.t -> bool
-  val is_path : Path.t -> bool
+module Current_unit : sig
+  val get : unit -> Unit_info.t option
+  val set : Unit_info.t -> unit
+  val unset : unit -> unit
+
+  module Name : sig
+    val get : unit -> modname
+    val is : modname -> bool
+    val is_ident : Ident.t -> bool
+    val is_path : Path.t -> bool
+  end
 end = struct
-  let current_unit =
-    ref ""
+  let current_unit : Unit_info.t option ref =
+    ref None
   let get () =
     !current_unit
-  let set name =
-    current_unit := name
-  let is name =
-    !current_unit = name
-  let is_ident id =
-    Ident.persistent id && is (Ident.name id)
-  let is_path = function
-  | Pident id -> is_ident id
-  | Pdot _ | Papply _ | Pextra_ty _ -> false
+  let set cu =
+    current_unit := Some cu
+  let unset () =
+    current_unit := None
+
+  module Name = struct
+    let get () =
+      match !current_unit with
+      | None -> ""
+      | Some cu -> Unit_info.modname cu
+    let is name =
+      get () = name
+    let is_ident id =
+      Ident.persistent id && is (Ident.name id)
+    let is_path = function
+    | Pident id -> is_ident id
+    | Pdot _ | Papply _ | Pextra_ty _ -> false
+  end
 end
 
-let set_unit_name = Current_unit_name.set
-let get_unit_name = Current_unit_name.get
+let set_current_unit = Current_unit.set
+let get_current_unit = Current_unit.get
+let get_current_unit_name = Current_unit.Name.get
 
 let find_same_module id tbl =
   match IdTbl.find_same id tbl with
   | x -> x
   | exception Not_found
-    when Ident.persistent id && not (Current_unit_name.is_ident id) ->
+    when Ident.persistent id && not (Current_unit.Name.is_ident id) ->
       Mod_persistent
 
 let find_name_module ~mark name tbl =
   match IdTbl.find_name wrap_module ~mark name tbl with
   | x -> x
-  | exception Not_found when not (Current_unit_name.is name) ->
+  | exception Not_found when not (Current_unit.Name.is name) ->
       let path = Pident(Ident.create_persistent name) in
       path, Mod_persistent
 
 let add_persistent_structure id env =
   if not (Ident.persistent id) then invalid_arg "Env.add_persistent_structure";
-  if Current_unit_name.is_ident id then env
+  if Current_unit.Name.is_ident id then env
   else begin
     let material =
       (* This addition only observably changes the environment if it shadows a
@@ -962,7 +977,7 @@ let reset_declaration_caches () =
   ()
 
 let reset_cache () =
-  Current_unit_name.set "";
+  Current_unit.unset ();
   Persistent_env.clear !persistent_env;
   reset_declaration_caches ();
   ()
@@ -1287,7 +1302,7 @@ let find_shape env (ns : Shape.Sig_component_kind.t) id =
              properly populated. *)
           assert false
       | exception Not_found
-        when Ident.persistent id && not (Current_unit_name.is_ident id) ->
+        when Ident.persistent id && not (Current_unit.Name.is_ident id) ->
           Shape.for_persistent_unit (Ident.name id)
       end
   | Module_type ->
@@ -1729,7 +1744,7 @@ let rec components_of_module_maker
               | Type_variant (_,repr) ->
                   let cstrs = List.map snd
                     (Datarepr.constructors_of_type path final_decl
-                        ~current_unit:(get_unit_name ()))
+                        ~current_unit:(get_current_unit ()))
                   in
                   List.iter
                     (fun descr ->
@@ -1767,7 +1782,7 @@ let rec components_of_module_maker
         | SigL_typext(id, ext, _, _) ->
             let ext' = Subst.extension_constructor sub ext in
             let descr =
-              Datarepr.extension_descr ~current_unit:(get_unit_name ()) path
+              Datarepr.extension_descr ~current_unit:(get_current_unit ()) path
                 ext'
             in
             let addr = next_address () in
@@ -1987,7 +2002,7 @@ and store_type ~check id info shape env =
     match info.type_kind with
     | Type_variant (_,repr) ->
         let constructors = Datarepr.constructors_of_type path info
-                            ~current_unit:(get_unit_name ())
+                            ~current_unit:(get_current_unit ())
         in
         Type_variant (List.map snd constructors, repr),
         List.fold_left
@@ -2034,7 +2049,8 @@ and store_type_infos ~tda_shape id info env =
 and store_extension ~check ~rebind id addr ext shape env =
   let loc = ext.ext_loc in
   let cstr =
-    Datarepr.extension_descr ~current_unit:(get_unit_name ()) (Pident id) ext
+    Datarepr.extension_descr
+      ~current_unit:(get_current_unit ()) (Pident id) ext
   in
   let cda =
     { cda_description = cstr;
@@ -3274,7 +3290,7 @@ let bound_module name env =
   match IdTbl.find_name wrap_module ~mark:false name env.modules with
   | _ -> true
   | exception Not_found ->
-      if Current_unit_name.is name then false
+      if Current_unit.Name.is name then false
       else begin
         match find_pers_mod ~allow_hidden:false name with
         | _ -> true
@@ -3662,7 +3678,7 @@ let report_lookup_error_doc _loc env ppf = function
         quoted_longident lid
   | Cannot_scrape_alias(lid, p) ->
       let cause =
-        if Current_unit_name.is_path p then "is the current compilation unit"
+        if Current_unit.Name.is_path p then "is the current compilation unit"
         else "is missing"
       in
       fprintf ppf

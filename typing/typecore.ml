@@ -393,7 +393,7 @@ let type_continuation_pat env expected_ty sp =
       let desc =
         { val_type = expected_ty; val_kind = Val_reg;
           Types.val_loc = loc; val_attributes = [];
-          val_uid = Uid.mk ~current_unit:(Env.get_unit_name ()); }
+          val_uid = Uid.mk ~current_unit:(Env.get_current_unit ()); }
       in
         Some (id, desc)
   | Ppat_extension ext ->
@@ -628,7 +628,7 @@ let enter_variable ?(is_module=false) ?(is_as_variable=false) tps loc name ty
           { mv_id = id;
             mv_name = name;
             mv_loc = loc;
-            mv_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+            mv_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
           } :: module_variables
         in
         tps.tps_module_variables <-
@@ -637,7 +637,7 @@ let enter_variable ?(is_module=false) ?(is_as_variable=false) tps loc name ty
     end else
       Ident.create_local name.txt
   in
-  let pv_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) in
+  let pv_uid = Uid.mk ~current_unit:(Env.get_current_unit ()) in
   tps.tps_pattern_variables <-
     {pv_id = id;
      pv_type = ty;
@@ -2161,7 +2161,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
            if pv_kind = As_var then Warnings.Unused_var s
            else Warnings.Unused_var_strict s in
          let id' = Ident.rename pv_id in
-         let val_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) in
+         let val_uid = Uid.mk ~current_unit:(Env.get_current_unit ()) in
          let val_env =
           Env.add_value pv_id
             { val_type = pv_type
@@ -3942,7 +3942,7 @@ and type_expect_
                val_attributes = [];
                val_kind = Val_reg;
                val_loc = loc;
-               val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+               val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
               } env
               ~check:(fun s -> Warnings.Unused_for_index s)
         | _ ->
@@ -4097,7 +4097,7 @@ and type_expect_
                 | _ -> Mp_present
               in
               let scope = create_scope () in
-              let md_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) in
+              let md_uid = Uid.mk ~current_unit:(Env.get_current_unit ()) in
               let md_shape = Shape.set_uid_if_none md_shape md_uid in
               let md =
                 { md_type = modl.mod_type; md_attributes = [];
@@ -5227,7 +5227,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
           { val_type = ty; val_kind = Val_reg;
             val_attributes = [];
             val_loc = Location.none;
-            val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+            val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
           }
         in
         let exp_env = Env.add_value id desc env in

@@ -16,7 +16,7 @@
 module Uid = struct
   type t =
     | Compilation_unit of string
-    | Item of { comp_unit: string; id: int }
+    | Item of { comp_unit: string; id: int; from: Unit_info.intf_or_impl }
     | Internal
     | Predef of string
 
@@ -27,11 +27,16 @@ module Uid = struct
     let compare (x : t) y = compare x y
     let hash (x : t) = Hashtbl.hash x
 
+    let pp_intf_or_impl fmt = function
+      | Unit_info.Intf -> Format.pp_print_string fmt "[intf]"
+      | Unit_info.Impl -> ()
+
     let print fmt = function
       | Internal -> Format.pp_print_string fmt "<internal>"
       | Predef name -> Format.fprintf fmt "<predef:%s>" name
       | Compilation_unit s -> Format.pp_print_string fmt s
-      | Item { comp_unit; id } -> Format.fprintf fmt "%s.%d" comp_unit id
+      | Item { comp_unit; id; from } ->
+          Format.fprintf fmt "%a%s.%d" pp_intf_or_impl from comp_unit id
 
     let output oc t =
       let fmt = Format.formatter_of_out_channel oc in
@@ -43,8 +48,14 @@ module Uid = struct
   let reinit () = id := (-1)
 
   let mk  ~current_unit =
+      let comp_unit, from =
+        let open Unit_info in
+        match current_unit with
+        | None -> "", Impl
+        | Some ui -> modname ui, kind ui
+      in
       incr id;
-      Item { comp_unit = current_unit; id = !id }
+      Item { comp_unit; id = !id; from }
 
   let of_compilation_unit_id id =
     if not (Ident.persistent id) then

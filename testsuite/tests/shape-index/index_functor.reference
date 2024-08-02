@@ -11,7 +11,7 @@ Resolved: Index_functor.0 :
   X (File "index_functor.ml", line 18, characters 43-44)
 
 Uid of decls:
+Index_functor.1: M (File "index_functor.ml", line 18, characters 39-40)
+Index_functor.2: F (File "index_functor.ml", line 18, characters 7-8)
 Index_functor.3: N (File "index_functor.ml", line 19, characters 7-8)
 Index_functor.4: O (File "index_functor.ml", line 20, characters 7-8)
-Index_functor.2: F (File "index_functor.ml", line 18, characters 7-8)
-Index_functor.1: M (File "index_functor.ml", line 18, characters 39-40)

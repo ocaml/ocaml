@@ -16,9 +16,9 @@ Resolved: Index_vb.2 : b (File "index_vb.ml", line 20, characters 9-10)
 Resolved: Index_vb.1 : a (File "index_vb.ml", line 20, characters 6-7)
 
 Uid of decls:
-Index_vb.3: a (File "index_vb.ml", line 20, characters 6-7)
-Index_vb.1: a (File "index_vb.ml", line 18, characters 11-12)
 Index_vb.0: t (File "index_vb.ml", line 18, characters 5-6)
+Index_vb.1: a (File "index_vb.ml", line 18, characters 11-12)
 Index_vb.2: b (File "index_vb.ml", line 18, characters 20-21)
-Index_vb.5: a (File "index_vb.ml", line 20, characters 6-7)
+Index_vb.3: a (File "index_vb.ml", line 20, characters 6-7)
 Index_vb.4: a (File "index_vb.ml", line 20, characters 6-7)
+Index_vb.5: a (File "index_vb.ml", line 20, characters 6-7)

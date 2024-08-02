@@ -387,6 +387,10 @@ _______________
   (Oleg Kiselyov, Gabriel Scherer and Florian Angeletti,
    review by Jeremy Yallop)
 
+- #13286: Distinguish unique identifiers `Shape.Uid.t` according to their
+  provenance: either an implementation or an interface.
+  (Ulysse Gérard, review by Florian Angeletti and Leo White)
+
 - #13289: Use C99 for loop to reduce the scope of the for loop iterator.
   (Antonin Décimo, review by Miod Vallat and Gabriel Scherer)
 

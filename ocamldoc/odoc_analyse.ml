@@ -28,7 +28,7 @@ let init_path () = Compmisc.init_path ()
 
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =
-  let current = Env.get_unit_name () in
+  let current = Env.get_current_unit_name () in
   let initial = !Odoc_global.initially_opened_module in
   let initially_opened_module =
     if initial = current then
@@ -66,14 +66,14 @@ let no_docstring f x =
   Lexer.handle_docstrings := true;
   result
 
-let unit_from_source source_file =
-    Unit_info.make ~check_modname:false ~source_file
+let unit_from_source source_file source_kind =
+    Unit_info.make ~check_modname:false ~source_file source_kind
       (Filename.remove_extension source_file)
 
 let process_implementation_file sourcefile =
   init_path ();
-  let source = unit_from_source sourcefile in
-  Env.set_unit_name (Unit_info.modname source);
+  let source = unit_from_source sourcefile Unit_info.Impl in
+  Env.set_current_unit source;
   let inputfile = preprocess sourcefile in
   let env = initial_env () in
   try
@@ -102,9 +102,8 @@ let process_implementation_file sourcefile =
    no error occurred, else None and an error message is printed.*)
 let process_interface_file sourcefile =
   init_path ();
-  let unit = unit_from_source sourcefile in
-  let modulename = Unit_info.modname unit in
-  Env.set_unit_name modulename;
+  let unit = unit_from_source sourcefile Unit_info.Intf in
+  Env.set_current_unit unit;
   let inputfile = preprocess sourcefile in
   let ast =
     Pparse.file ~tool_name inputfile
