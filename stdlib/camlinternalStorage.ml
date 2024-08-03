@@ -157,22 +157,35 @@ module Make (State : State_operations)
   let set_initial_keys (l: key_value list) =
     List.iter (fun (KV (k, v)) -> set k v) l
 
-  (* at_exit *)
+  (* at_exit
 
+     We implement a thread-safe version of [at_exit], as several
+     threads on the same domain could call [Domain.at_exit ...]
+     concurrently.
+  *)
   let nothing () = ()
-  let at_exit_key : (unit -> unit) t =
-    make (fun () -> nothing)
+  let at_exit_key : (unit -> unit) ref t =
+    make (fun () -> ref nothing)
 
   let at_exit f =
-    let old_exit : unit -> unit = get at_exit_key in
-    let new_exit () =
-      f (); old_exit ()
+    let[@inline never][@poll error] compare_and_set r prev next =
+      if !r == prev then (r := next; true) else false
+    in  
+    let rec cons f at_exit_ref =
+      let old_exit = !at_exit_ref in
+      let new_exit () =
+        f (); old_exit ()
+      in
+      if compare_and_set at_exit_ref old_exit new_exit
+      then ()
+      else cons f at_exit_ref
     in
-    set at_exit_key new_exit
+    cons f (get at_exit_key)
 
   let do_at_exit () =
-    let f : unit -> unit = get at_exit_key in
-    set at_exit_key nothing;
+    let at_exit_ref = get at_exit_key in
+    let f = !at_exit_ref in
+    at_exit_ref := nothing;
     f ()
 end
 
