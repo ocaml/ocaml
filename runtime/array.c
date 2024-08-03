@@ -197,52 +197,69 @@ CAMLprim value caml_floatarray_create(value len)
   return caml_process_pending_actions_with_root(result);
 }
 
-/* [len] is a [value] representing number of words or floats */
-CAMLprim value caml_array_make(value len, value init)
+CAMLprim value caml_floatarray_make_unboxed(intnat size, double init)
+{
+  if (size == 0) {
+    return Atom(0);
+  }
+  value res;
+  mlsize_t wsize = size * Double_wosize;
+  if (wsize > Max_wosize) caml_invalid_argument("Array.make");
+  res = caml_alloc(wsize, Double_array_tag);
+  for (mlsize_t i = 0; i < size; i++) {
+    Store_double_flat_field(res, i, init);
+  }
+  /* Give the GC a chance to run, and run memprof callbacks */
+  return caml_process_pending_actions_with_root(res);
+}
+
+/* [int -> float -> floatarray] */
+CAMLprim value caml_floatarray_make(value len, value init)
+{
+  return caml_floatarray_make_unboxed(Long_val(len), Double_val(init));
+}
+
+/* [int -> 'a -> uniform_array] */
+CAMLprim value caml_uniform_array_make(value len, value init)
 {
   CAMLparam2 (len, init);
   CAMLlocal1 (res);
-  mlsize_t size;
-
-  size = Long_val(len);
+  mlsize_t size = Long_val(len);
   if (size == 0) {
-    res = Atom(0);
-#ifdef FLAT_FLOAT_ARRAY
-  } else if (Is_block(init)
-             && Tag_val(init) == Double_tag) {
-    mlsize_t wsize;
-    double d;
-    d = Double_val(init);
-    wsize = size * Double_wosize;
-    if (wsize > Max_wosize) caml_invalid_argument("Array.make");
-    res = caml_alloc(wsize, Double_array_tag);
-    for (mlsize_t i = 0; i < size; i++) {
-      Store_double_flat_field(res, i, d);
+    CAMLreturn(Atom(0));
+  } else if (size <= Max_young_wosize) {
+    res = caml_alloc_small(size, 0);
+    for (mlsize_t i = 0; i < size; i++) Field(res, i) = init;
+  }
+  else if (size > Max_wosize) caml_invalid_argument("Array.make");
+  else {
+    if (Is_block(init) && Is_young(init)) {
+      /* We don't want to create so many major-to-minor references,
+         so [init] is moved to the major heap by doing a minor GC. */
+      CAML_EV_COUNTER (EV_C_FORCE_MINOR_MAKE_VECT, 1);
+      caml_minor_collection ();
     }
-#endif
-  } else {
-    if (size <= Max_young_wosize) {
-      res = caml_alloc_small(size, 0);
-      for (mlsize_t i = 0; i < size; i++) Field(res, i) = init;
-    }
-    else if (size > Max_wosize) caml_invalid_argument("Array.make");
-    else {
-      if (Is_block(init) && Is_young(init)) {
-        /* We don't want to create so many major-to-minor references,
-           so [init] is moved to the major heap by doing a minor GC. */
-        CAML_EV_COUNTER (EV_C_FORCE_MINOR_MAKE_VECT, 1);
-        caml_minor_collection ();
-      }
-      CAMLassert(!(Is_block(init) && Is_young(init)));
-      res = caml_alloc_shr(size, 0);
-      /* We now know that [init] is not in the minor heap, so there is
-         no need to call [caml_initialize]. */
-      for (mlsize_t i = 0; i < size; i++) Field(res, i) = init;
-    }
+    CAMLassert(!(Is_block(init) && Is_young(init)));
+    res = caml_alloc_shr(size, 0);
+    /* We now know that [init] is not in the minor heap, so there is
+       no need to call [caml_initialize]. */
+    for (mlsize_t i = 0; i < size; i++) Field(res, i) = init;
   }
   /* Give the GC a chance to run, and run memprof callbacks */
   caml_process_pending_actions ();
   CAMLreturn (res);
+}
+
+/* [len] is a [value] representing number of words or floats */
+CAMLprim value caml_array_make(value len, value init)
+{
+#ifdef FLAT_FLOAT_ARRAY
+  if (Is_block(init)
+      && Tag_val(init) == Double_tag) {
+    return caml_floatarray_make(len, init);
+  }
+#endif
+  return caml_uniform_array_make(len, init);
 }
 
 /* [len] is a [value] representing number of floats */

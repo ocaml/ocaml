@@ -180,6 +180,9 @@ module Array = struct
   external unsafe_get : t -> int -> float = "%floatarray_unsafe_get"
   external unsafe_set : t -> int -> float -> unit = "%floatarray_unsafe_set"
 
+  external make : (int[@untagged]) -> (float[@unboxed]) -> t =
+    "caml_floatarray_make" "caml_floatarray_make_unboxed"
+
   let unsafe_fill a ofs len v =
     for i = ofs to ofs + len - 1 do unsafe_set a i v done
 
@@ -189,11 +192,6 @@ module Array = struct
   let check a ofs len msg =
     if ofs < 0 || len < 0 || ofs + len < 0 || ofs + len > length a then
       invalid_arg msg
-
-  let make n v =
-    let result = create n in
-    unsafe_fill result 0 n v;
-    result
 
   let init l f =
     if l < 0 then invalid_arg "Float.Array.init"
