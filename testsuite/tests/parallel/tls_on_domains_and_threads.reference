@@ -1,0 +1,5 @@
+[Domain 1, Thread 1] initialized value 0.
+[Domain 0, Thread 0] initialized value 1.
+[Domain 2, Thread 3] initialized value 2.
+[Domain 2, Thread 4] initialized value 3.
+[Domain 2, Thread 2] initialized value 4.
