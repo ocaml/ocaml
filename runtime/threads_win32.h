@@ -13,7 +13,7 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* Win32 implementation of the "st" interface */
+/* Win32 implementation of the "st" (systhreads) interface */
 
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0400
@@ -24,7 +24,7 @@ Caml_inline void st_msleep(int msec)
   Sleep(msec);
 }
 
-#include "st_pthreads.h"
+#include "threads_pthreads.h"
 
 /* Signal handling -- none under Win32 */
 

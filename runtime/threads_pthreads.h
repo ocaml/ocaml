@@ -13,7 +13,7 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* POSIX thread implementation of the "st" interface */
+/* POSIX thread implementation of the "st" (systhreads) interface */
 
 #include <errno.h>
 #include <string.h>

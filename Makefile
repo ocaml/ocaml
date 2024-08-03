@@ -1225,6 +1225,7 @@ runtime_COMMON_C_SOURCES = \
   str \
   sync \
   sys \
+  threads \
   $(UNIX_OR_WIN32) \
   weak
 

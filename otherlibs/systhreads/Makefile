@@ -34,13 +34,8 @@ endif
 
 LIBNAME=threads
 
-# Note: the header on which object files produced from st_stubs.c
-# should actually depend is known for sure only at compile-time.
-# That's why this dependency is handled in the Makefile directly
-# and removed from the output of the C compiler during make depend
-
-BYTECODE_C_OBJS=st_stubs.b.$(O)
-NATIVECODE_C_OBJS=st_stubs.n.$(O)
+BYTECODE_C_OBJS=st_dummy.b.$(O)
+NATIVECODE_C_OBJS=st_dummy.n.$(O)
 
 THREADS_SOURCES = thread.ml event.ml
 
@@ -72,15 +67,11 @@ $(LIBNAME).cma: $(THREADS_BCOBJS)
 $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 	$(V_LINKOPT)$(CAMLOPT) -linkall -a -cclib -lthreadsnat -o $@ $^
 
-# The following lines produce two object files st_stubs.b.$(O) and
-# st_stubs.n.$(O) from the same source file st_stubs.c (it is compiled
+# The following lines produce two object files st_dummy.b.$(O) and
+# st_dummy.n.$(O) from the same source file st_dummy.c (it is compiled
 # twice, each time with different options).
 
-ifeq "$(COMPUTE_DEPS)" "true"
-st_stubs.%.$(O): st_stubs.c
-else
-st_stubs.%.$(O): st_stubs.c $(RUNTIME_HEADERS) $(wildcard *.h)
-endif
+st_dummy.%.$(O): st_dummy.c
 	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
 	  $(OUTPUTOBJ)$@ -c $<
 
@@ -114,7 +105,6 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	  "$(INSTALL_THREADSLIBDIR)"
 	$(INSTALL_DATA) $(MLIFILES) "$(INSTALL_THREADSLIBDIR)"
 endif
-	$(INSTALL_DATA) caml/threads.h "$(INSTALL_INCDIR)"
 
 installopt:
 	$(INSTALL_DATA) libthreadsnat.$(A) "$(INSTALL_LIBDIR)"
@@ -131,9 +121,9 @@ installopt:
 %.cmx: %.ml
 	$(V_OCAMLOPT)$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
-DEP_FILES := st_stubs.b.$(D)
+DEP_FILES := st_dummy.b.$(D)
 ifeq "$(NATIVE_COMPILER)" "true"
-DEP_FILES += st_stubs.n.$(D)
+DEP_FILES += st_dummy.n.$(D)
 endif
 
 ifeq "$(COMPUTE_DEPS)" "true"
