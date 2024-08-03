@@ -5659,3 +5659,6 @@ let immediacy env typ =
       else
         Type_immediacy.Always
   | _ -> Type_immediacy.Unknown
+
+let is_principal ty =
+  not !Clflags.principal || get_level ty = generic_level

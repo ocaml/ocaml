@@ -976,7 +976,11 @@ let solve_Ppat_record_field ~refine loc penv label label_lid record_ty =
 
 let solve_Ppat_array ~refine loc env expected_ty =
   let expected_ty = generic_instance expected_ty in
-  if Typeopt.is_base_type !!env expected_ty Predef.path_floatarray then
+  if is_principal expected_ty &&
+     match get_desc (expand_head !!env expected_ty) with
+     | Tconstr (path, [], _) -> Path.same path Predef.path_floatarray
+     | _ -> false
+  then
     Predef.type_float, Predef.type_floatarray
   else
     let ty_elt = newgenvar() in
@@ -3871,7 +3875,11 @@ and type_expect_
   | Pexp_array(sargl) ->
       let ty_elt, exp_type =
         let ty_expected = generic_instance ty_expected in
-        if Typeopt.is_base_type env ty_expected Predef.path_floatarray then
+        if is_principal ty_expected &&
+           match get_desc (expand_head env ty_expected) with
+           | Tconstr (path, [], _) -> Path.same path Predef.path_floatarray
+           | _ -> false
+        then
           Predef.type_float, Predef.type_floatarray
         else
           let ty = newgenvar () in
