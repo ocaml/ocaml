@@ -39,7 +39,9 @@ module type Key = sig
     val set_initial_keys : key_value list -> unit
 end
 
-module[@inline always] Make (State : State_operations) : Key = struct
+module Make (State : State_operations)
+  : Key with type 'a t = int * (unit -> 'a)
+= struct
   type 'a t = int * (unit -> 'a)
 
   (* Manipulating existing keys. *)
@@ -168,5 +170,45 @@ module TLS_operations = struct
     "caml_domain_tls_compare_and_set" [@@noalloc]
 end
 
-module DLS = Make(DLS_operations)
-module TLS = Make(TLS_operations)
+(* If we just define
+     module DLS = Make(DLS_operations)
+   then non-flambda compilers struggle to optimize the functor application,
+   and they compile DLS.get into an indirect call to a closure.
+
+   The trick we use below is to duplicate the happy/fast path of DLS.get,
+   so that the compiler can easily see that it is a closed function
+   and optimize direct applications.
+*)
+module DLS0 = Make(DLS_operations)
+module DLS = struct
+  include DLS0
+  let slow_get = DLS0.get
+
+  let get (type a) (key : a t) : a =
+    let (idx, _) = key in
+    let st = DLS_operations.get () in
+    if Array.length st <= idx then slow_get key
+    else begin
+      let obj = st.(idx) in
+      if Obj_opt.is_some obj
+      then (Obj_opt.unsafe_get obj : a)
+      else slow_get key
+    end
+end
+
+module TLS0 = Make(TLS_operations)
+module TLS = struct
+  include TLS0
+  let slow_get = TLS0.get
+
+  let get (type a) (key : a t) : a =
+    let (idx, _) = key in
+    let st = TLS_operations.get () in
+    if Array.length st <= idx then slow_get key
+    else begin
+      let obj = st.(idx) in
+      if Obj_opt.is_some obj
+      then (Obj_opt.unsafe_get obj : a)
+      else slow_get key
+    end
+end
