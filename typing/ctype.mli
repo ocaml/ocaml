@@ -473,7 +473,3 @@ val package_subtype :
 
 (* Raises [Incompatible] *)
 val mcomp : Env.t -> type_expr -> type_expr -> unit
-
-(* False if running in principal mode and the type is not principal.
-   True otherwise. *)
-val is_principal : type_expr -> bool
