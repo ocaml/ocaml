@@ -204,6 +204,13 @@ _______________
   to Dynarray.
   (Jake H, review by Gabriel Scherer and Florian Angeletti)
 
+- #12719, #12724, #13355: a Thread_local_storage module that complements
+  Domain.DLS for Thread users.
+  (Simon Cruanes, KC Sivaramakrishnan and Gabriel Scherer,
+   suggestion by Vesa Karvonnen,
+   review by KC Sivaramakrishnan, Daniel Bünzli, Gabriel Scherer and
+   Guillaume Munch-Maccagnoni)
+
 ### Other libraries:
 
 - #11996: release the dependency of dynlink on compilerlibs.
