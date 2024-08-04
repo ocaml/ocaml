@@ -582,12 +582,45 @@ static value caml_array_gather(intnat num_arrays,
   return caml_uniform_array_gather(num_arrays, arrays, offsets, lengths);
 }
 
+CAMLprim value caml_floatarray_sub(value a, value ofs, value len)
+{
+  value arrays[1] = { a };
+  intnat offsets[1] = { Long_val(ofs) };
+  intnat lengths[1] = { Long_val(len) };
+  return caml_floatarray_gather(1, arrays, offsets, lengths);
+}
+
+CAMLprim value caml_uniform_array_sub(value a, value ofs, value len)
+{
+  value arrays[1] = { a };
+  intnat offsets[1] = { Long_val(ofs) };
+  intnat lengths[1] = { Long_val(len) };
+  return caml_uniform_array_gather(1, arrays, offsets, lengths);
+}
+
 CAMLprim value caml_array_sub(value a, value ofs, value len)
 {
   value arrays[1] = { a };
   intnat offsets[1] = { Long_val(ofs) };
   intnat lengths[1] = { Long_val(len) };
   return caml_array_gather(1, arrays, offsets, lengths);
+}
+
+CAMLprim value caml_floatarray_append(value a1, value a2)
+{
+  value arrays[2] = { a1, a2 };
+  intnat offsets[2] = { 0, 0 };
+  /* sizes are specified in number of floats */
+  intnat lengths[2] = { caml_array_length(a1), caml_array_length(a2) };
+  return caml_floatarray_gather(2, arrays, offsets, lengths);
+}
+
+CAMLprim value caml_uniform_array_append(value a1, value a2)
+{
+  value arrays[2] = { a1, a2 };
+  intnat offsets[2] = { 0, 0 };
+  intnat lengths[2] = { caml_array_length(a1), caml_array_length(a2) };
+  return caml_uniform_array_gather(2, arrays, offsets, lengths);
 }
 
 CAMLprim value caml_array_append(value a1, value a2)
