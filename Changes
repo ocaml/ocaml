@@ -398,6 +398,11 @@ _______________
   "user-friendly" functions in the `Printtyp` module.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #13361: split runtime/array.c functions to consistently expose
+  uniform_array and floatarray versions, use floatarray versions
+  in Float.Array.
+  (Gabriel Scherer, review by Nicolás Ojeda Bär)
+
 ### Build system:
 
 - #12909: Reorganise how MKEXE_VIA_CC is built to make it correct for MSVC by
