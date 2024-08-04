@@ -603,10 +603,23 @@ CAMLprim value caml_array_concat(value al)
   return res;
 }
 
-CAMLprim value caml_array_fill(value array,
-                               value v_ofs,
-                               value v_len,
-                               value val)
+CAMLprim value caml_floatarray_fill_unboxed(
+  value array, intnat ofs, intnat len, double d)
+{
+  for (; len > 0; len--, ofs++)
+    Store_double_flat_field(array, ofs, d);
+  return Val_unit;
+}
+
+CAMLprim value caml_floatarray_fill(
+  value array, value v_ofs, value v_len, value val)
+{
+  return caml_floatarray_fill_unboxed(
+    array, Long_val(v_ofs), Long_val(v_len), Double_val(val));
+}
+
+CAMLprim value caml_uniform_array_fill(
+  value array, value v_ofs, value v_len, value val)
 {
   intnat ofs = Long_val(v_ofs);
   intnat len = Long_val(v_len);
@@ -615,15 +628,6 @@ CAMLprim value caml_array_fill(value array,
   /* This duplicates the logic of caml_modify.  Please refer to the
      implementation of that function for a description of GC
      invariants we need to enforce.*/
-
-#ifdef FLAT_FLOAT_ARRAY
-  if (Tag_val(array) == Double_array_tag) {
-    double d = Double_val (val);
-    for (; len > 0; len--, ofs++)
-      Store_double_flat_field(array, ofs, d);
-    return Val_unit;
-  }
-#endif
   fp = &Field(array, ofs);
   if (Is_young(array)) {
     for (; len > 0; len--, fp++) *fp = val;
@@ -643,4 +647,17 @@ CAMLprim value caml_array_fill(value array,
     if (is_val_young_block) caml_check_urgent_gc (Val_unit);
   }
   return Val_unit;
+}
+
+CAMLprim value caml_array_fill(value array,
+                               value v_ofs,
+                               value v_len,
+                               value val)
+{
+#ifdef FLAT_FLOAT_ARRAY
+  if (Tag_val(array) == Double_array_tag) {
+    return caml_floatarray_fill(array, v_ofs, v_len, val);
+  }
+#endif
+  return caml_uniform_array_fill(array, v_ofs, v_len, val);
 }

@@ -183,8 +183,9 @@ module Array = struct
   external make : (int[@untagged]) -> (float[@unboxed]) -> t =
     "caml_floatarray_make" "caml_floatarray_make_unboxed"
 
-  let unsafe_fill a ofs len v =
-    for i = ofs to ofs + len - 1 do unsafe_set a i v done
+  external unsafe_fill
+    : t -> (int[@untagged]) -> (int[@untagged]) -> (float[@unboxed]) -> unit
+    = "caml_floatarray_fill" "caml_floatarray_fill_unboxed"
 
   external unsafe_blit: t -> int -> t -> int -> int -> unit =
     "caml_floatarray_blit" [@@noalloc]
