@@ -467,14 +467,11 @@ static value caml_array_gather(intnat num_arrays,
   value res;                    /* no need to register it as a root */
 #ifdef FLAT_FLOAT_ARRAY
   int isfloat = 0;
-  mlsize_t wsize;
 #endif
-  mlsize_t i, size, count, pos;
-  volatile value * src;
 
   /* Determine total size and whether result array is an array of floats */
-  size = 0;
-  for (i = 0; i < num_arrays; i++) {
+  mlsize_t size = 0;
+  for (mlsize_t i = 0; i < num_arrays; i++) {
     if (mlsize_t_max - lengths[i] < size) caml_invalid_argument("Array.concat");
     size += lengths[i];
 #ifdef FLAT_FLOAT_ARRAY
@@ -489,9 +486,10 @@ static value caml_array_gather(intnat num_arrays,
   else if (isfloat) {
     /* This is an array of floats.  We can use memcpy directly. */
     if (size > Max_wosize/Double_wosize) caml_invalid_argument("Array.concat");
-    wsize = size * Double_wosize;
+    mlsize_t wsize = size * Double_wosize;
     res = caml_alloc(wsize, Double_array_tag);
-    for (i = 0, pos = 0; i < num_arrays; i++) {
+    mlsize_t pos = 0;
+    for (mlsize_t i = 0; i < num_arrays; i++) {
       /* [res] is freshly allocated, and no other domain has a reference to it.
          Hence, a plain [memcpy] is sufficient. */
       memcpy((double *)res + pos,
@@ -506,7 +504,8 @@ static value caml_array_gather(intnat num_arrays,
     /* Array of values, small enough to fit in young generation.
        We can use memcpy directly. */
     res = caml_alloc_small(size, 0);
-    for (i = 0, pos = 0; i < num_arrays; i++) {
+    mlsize_t pos = 0;
+    for (mlsize_t i = 0; i < num_arrays; i++) {
       /* [res] is freshly allocated, and no other domain has a reference to it.
          Hence, a plain [memcpy] is sufficient. */
       memcpy((value*)&Field(res, pos),
@@ -523,8 +522,10 @@ static value caml_array_gather(intnat num_arrays,
     /* Array of values, must be allocated in old generation and filled
        using caml_initialize. */
     res = caml_alloc_shr(size, 0);
-    for (i = 0, pos = 0; i < num_arrays; i++) {
-      for (src = &Field(arrays[i], offsets[i]), count = lengths[i];
+    mlsize_t pos = 0;
+    for (mlsize_t i = 0; i < num_arrays; i++) {
+      volatile value *src = &Field(arrays[i], offsets[i]);
+      for (mlsize_t count = lengths[i];
            count > 0;
            count--, src++, pos++) {
         caml_initialize(&Field(res, pos), *src);
