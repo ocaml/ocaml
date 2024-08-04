@@ -456,50 +456,66 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
   return caml_uniform_array_blit(a1, ofs1, a2, ofs2, n);
 }
 
-/* A generic function for extraction and concatenation of sub-arrays */
+/* generic [gather] functions for extraction and concatenation of sub-arrays */
 
-static value caml_array_gather(intnat num_arrays,
-                               value arrays[/*num_arrays*/],
-                               intnat offsets[/*num_arrays*/],
-                               intnat lengths[/*num_arrays*/])
+/* The lengths are specified in number of floats,
+   as returned by [caml_array_length]. */
+static value caml_floatarray_gather(intnat num_arrays,
+                                    value arrays[/*num_arrays*/],
+                                    intnat offsets[/*num_arrays*/],
+                                    intnat lengths[/*num_arrays*/])
 {
   CAMLparamN(arrays, num_arrays);
   value res;                    /* no need to register it as a root */
-#ifdef FLAT_FLOAT_ARRAY
-  int isfloat = 0;
-#endif
 
-  /* Determine total size and whether result array is an array of floats */
+  /* Determine total size, in number of floats. */
   mlsize_t size = 0;
   for (mlsize_t i = 0; i < num_arrays; i++) {
     if (mlsize_t_max - lengths[i] < size) caml_invalid_argument("Array.concat");
     size += lengths[i];
-#ifdef FLAT_FLOAT_ARRAY
-    if (Tag_val(arrays[i]) == Double_array_tag) isfloat = 1;
-#endif
+    CAMLassert(Tag_val(arrays[i]) == Double_array_tag
+               || Wosize_val(arrays[i]) == 0);
   }
   if (size == 0) {
     /* If total size = 0, just return empty array */
     res = Atom(0);
   }
-#ifdef FLAT_FLOAT_ARRAY
-  else if (isfloat) {
-    /* This is an array of floats.  We can use memcpy directly. */
-    if (size > Max_wosize/Double_wosize) caml_invalid_argument("Array.concat");
-    mlsize_t wsize = size * Double_wosize;
-    res = caml_alloc(wsize, Double_array_tag);
-    mlsize_t pos = 0;
-    for (mlsize_t i = 0; i < num_arrays; i++) {
-      /* [res] is freshly allocated, and no other domain has a reference to it.
-         Hence, a plain [memcpy] is sufficient. */
-      memcpy((double *)res + pos,
-             (double *)arrays[i] + offsets[i],
-             lengths[i] * sizeof(double));
-      pos += lengths[i];
-    }
-    CAMLassert(pos == size);
+  /* This is an array of floats.  We can use memcpy directly. */
+  if (size > Max_wosize/Double_wosize) caml_invalid_argument("Array.concat");
+  mlsize_t wsize = size * Double_wosize; /* total size, in words */
+  res = caml_alloc(wsize, Double_array_tag);
+  mlsize_t pos = 0;
+  for (mlsize_t i = 0; i < num_arrays; i++) {
+    /* [res] is freshly allocated, and no other domain has a reference to it.
+       Hence, a plain [memcpy] is sufficient. */
+    memcpy((double *)res + pos,
+           (double *)arrays[i] + offsets[i],
+           lengths[i] * sizeof(double));
+    pos += lengths[i];
   }
-#endif
+  CAMLassert(pos == size);
+  CAMLreturn(res);
+}
+
+static value caml_uniform_array_gather(intnat num_arrays,
+                                       value arrays[/*num_arrays*/],
+                                       intnat offsets[/*num_arrays*/],
+                                       intnat lengths[/*num_arrays*/])
+{
+  CAMLparamN(arrays, num_arrays);
+  value res;                    /* no need to register it as a root */
+
+  /* Determine total size */
+  mlsize_t size = 0;
+  for (mlsize_t i = 0; i < num_arrays; i++) {
+    if (mlsize_t_max - lengths[i] < size) caml_invalid_argument("Array.concat");
+    size += lengths[i];
+    CAMLassert(Tag_val(arrays[i]) != Double_array_tag);
+  }
+  if (size == 0) {
+    /* If total size = 0, just return an empty array */
+    res = Atom(0);
+  }
   else if (size <= Max_young_wosize) {
     /* Array of values, small enough to fit in young generation.
        We can use memcpy directly. */
@@ -539,6 +555,31 @@ static value caml_array_gather(intnat num_arrays,
     res = caml_process_pending_actions_with_root (res);
   }
   CAMLreturn (res);
+}
+
+
+static value caml_array_gather(intnat num_arrays,
+                               value arrays[/*num_arrays*/],
+                               intnat offsets[/*num_arrays*/],
+                               intnat lengths[/*num_arrays*/])
+{
+#ifdef FLAT_FLOAT_ARRAY
+  for (mlsize_t i = 0; i < num_arrays; i++) {
+    /* An array is either an empty array,
+       or a float array, or a non-float array.
+       We know which implementation to use on the first non-empty array. */
+    if (Wosize_val(arrays[i]) == 0)
+      continue;
+    else if (Tag_val(arrays[i]) == Double_array_tag)
+      return caml_floatarray_gather(num_arrays, arrays, offsets, lengths);
+    else
+      break;
+  }
+  /* If we reach this point, all arrays were empty.
+     Calling the uniform_ version below is correct
+     -- it will return an empty array. */
+#endif
+  return caml_uniform_array_gather(num_arrays, arrays, offsets, lengths);
 }
 
 CAMLprim value caml_array_sub(value a, value ofs, value len)
