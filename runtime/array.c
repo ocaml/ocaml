@@ -400,16 +400,12 @@ CAMLprim value caml_floatarray_blit(value a1, value ofs1, value a2, value ofs2,
   return Val_unit;
 }
 
-CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
-                               value n)
+CAMLprim value caml_uniform_array_blit(
+  value a1, value ofs1, value a2, value ofs2, value n)
 {
   volatile value * src, * dst;
   intnat count;
 
-#ifdef FLAT_FLOAT_ARRAY
-  if (Tag_val(a2) == Double_array_tag)
-    return caml_floatarray_blit(a1, ofs1, a2, ofs2, n);
-#endif
   if (Long_val(n) == 0)
     /* See comment on size-0 floatarrays in [caml_floatarray_blit]. */
     return Val_unit;
@@ -448,6 +444,16 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
      Give the minor GC a chance to run if it needs to. */
   caml_check_urgent_gc(Val_unit);
   return Val_unit;
+}
+
+CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
+                               value n)
+{
+#ifdef FLAT_FLOAT_ARRAY
+  if (Tag_val(a2) == Double_array_tag)
+    return caml_floatarray_blit(a1, ofs1, a2, ofs2, n);
+#endif
+  return caml_uniform_array_blit(a1, ofs1, a2, ofs2, n);
 }
 
 /* A generic function for extraction and concatenation of sub-arrays */
