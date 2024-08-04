@@ -2,8 +2,9 @@
 
 * hassysthreads
 include systhreads
-** bytecode
-** native
+** not-macos (* macOS nanosleep implementation makes this test too unstable *)
+*** bytecode
+*** native
 
 *)
 

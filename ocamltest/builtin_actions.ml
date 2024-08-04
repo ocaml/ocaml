@@ -133,6 +133,12 @@ let macos = make
     "on a MacOS system"
     "not on a MacOS system")
 
+let not_macos = make
+  "not-macos"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.system <> macos_system)
+    "not on a macOS system"
+    "on a macOS system")
+
 let arch32 = make
   "arch32"
   (Actions_helpers.pass_or_skip (Sys.word_size = 32)
@@ -294,6 +300,7 @@ let _ =
     bsd;
     not_bsd;
     macos;
+    not_macos;
     arch32;
     arch64;
     has_symlink;
