@@ -1380,6 +1380,7 @@ val unsafe_really_input : in_channel -> bytes -> int -> int -> unit
 
 val do_at_exit : unit -> unit
 
+val do_thread_local_at_exit : (unit -> unit) ref
 val do_domain_local_at_exit : (unit -> unit) ref
 
 (**/**)
@@ -1452,6 +1453,11 @@ module StdLabels      = StdLabels
 module String         = String
 module StringLabels   = StringLabels
 module Sys            = Sys
+module Thread_local_storage = Thread_local_storage
+[@@alert "-unstable"]
+[@@alert unstable
+    "The Thread_local_storage interface may change in incompatible ways in the future."
+]
 module Type           = Type
 module Uchar          = Uchar
 module Unit           = Unit

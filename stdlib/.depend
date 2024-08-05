@@ -178,6 +178,21 @@ camlinternalOO.cmx : \
     camlinternalOO.cmi
 camlinternalOO.cmi : \
     stdlib__Obj.cmi
+camlinternalStorage.cmo : \
+    stdlib__Sys.cmi \
+    stdlib__Obj.cmi \
+    stdlib__List.cmi \
+    stdlib__Atomic.cmi \
+    stdlib__Array.cmi \
+    camlinternalStorage.cmi
+camlinternalStorage.cmx : \
+    stdlib__Sys.cmx \
+    stdlib__Obj.cmx \
+    stdlib__List.cmx \
+    stdlib__Atomic.cmx \
+    stdlib__Array.cmx \
+    camlinternalStorage.cmi
+camlinternalStorage.cmi :
 stdlib__Char.cmo : char.ml \
     stdlib__Char.cmi
 stdlib__Char.cmx : char.ml \
@@ -214,24 +229,18 @@ stdlib__Digest.cmx : digest.ml \
     stdlib__Digest.cmi
 stdlib__Digest.cmi : digest.mli
 stdlib__Domain.cmo : domain.ml \
-    stdlib__Sys.cmi \
     stdlib.cmi \
-    stdlib__Obj.cmi \
     stdlib__Mutex.cmi \
-    stdlib__List.cmi \
     stdlib__Condition.cmi \
+    camlinternalStorage.cmi \
     stdlib__Atomic.cmi \
-    stdlib__Array.cmi \
     stdlib__Domain.cmi
 stdlib__Domain.cmx : domain.ml \
-    stdlib__Sys.cmx \
     stdlib.cmx \
-    stdlib__Obj.cmx \
     stdlib__Mutex.cmx \
-    stdlib__List.cmx \
     stdlib__Condition.cmx \
+    camlinternalStorage.cmx \
     stdlib__Atomic.cmx \
-    stdlib__Array.cmx \
     stdlib__Domain.cmi
 stdlib__Domain.cmi : domain.mli
 stdlib__Dynarray.cmo : dynarray.ml \
@@ -790,6 +799,13 @@ stdlib__Sys.cmo : sys.ml \
 stdlib__Sys.cmx : sys.ml \
     stdlib__Sys.cmi
 stdlib__Sys.cmi : sys.mli
+stdlib__Thread_local_storage.cmo : thread_local_storage.ml \
+    camlinternalStorage.cmi \
+    stdlib__Thread_local_storage.cmi
+stdlib__Thread_local_storage.cmx : thread_local_storage.ml \
+    camlinternalStorage.cmx \
+    stdlib__Thread_local_storage.cmi
+stdlib__Thread_local_storage.cmi : thread_local_storage.mli
 stdlib__Type.cmo : type.ml \
     stdlib__Obj.cmi \
     stdlib__Type.cmi

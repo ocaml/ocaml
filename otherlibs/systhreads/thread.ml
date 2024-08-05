@@ -41,18 +41,28 @@ let set_uncaught_exception_handler fn = uncaught_exception_handler := fn
 
 exception Exit
 
+let at_exit = CamlinternalStorage.TLS.at_exit
+let do_at_exit = CamlinternalStorage.TLS.do_at_exit
+
 let create fn arg =
   thread_new
     (fun () ->
-      try
+      match
         fn arg;
-        ignore (Sys.opaque_identity (check_memprof_cb ()))
+        ignore (Sys.opaque_identity (check_memprof_cb ()));
       with
-      | Exit ->
-        ignore (Sys.opaque_identity (check_memprof_cb ()))
-      | exn ->
+      | () ->
+        do_at_exit ()
+      | exception Exit ->
+        ignore (Sys.opaque_identity (check_memprof_cb ()));
+        do_at_exit ()
+      | exception exn ->
         let raw_backtrace = Printexc.get_raw_backtrace () in
         flush stdout; flush stderr;
+        begin
+          (* we ignore [do_at_exit] errors: see Domain.spawn. *)
+          try do_at_exit () with _ -> ()
+        end;
         try
           !uncaught_exception_handler exn
         with
