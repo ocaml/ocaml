@@ -1,0 +1,4 @@
+(1) child domain; main thread
+(2) child domain; child thread
+(3) main domain; child thread
+(4) main domain; main thread
