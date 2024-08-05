@@ -192,6 +192,7 @@ module Array = struct
 
   external unsafe_sub : t -> int -> int -> t = "caml_floatarray_sub"
   external append_prim : t -> t -> t = "caml_floatarray_append"
+  external concat : t list -> t = "caml_array_concat"
 
   let check a ofs len msg =
     if ofs < 0 || len < 0 || ofs + len < 0 || ofs + len > length a then
@@ -233,28 +234,6 @@ module Array = struct
       done;
     end;
     res
-
-  (* next 3 functions: modified copy of code from string.ml *)
-  let ensure_ge (x:int) y =
-    if x >= y then x else invalid_arg "Float.Array.concat"
-
-  let rec sum_lengths acc = function
-    | [] -> acc
-    | hd :: tl -> sum_lengths (ensure_ge (length hd + acc) acc) tl
-
-  let concat l =
-    let len = sum_lengths 0 l in
-    let result = create len in
-    let rec loop l i =
-      match l with
-      | [] -> assert (i = len)
-      | hd :: tl ->
-        let hlen = length hd in
-        unsafe_blit hd 0 result i hlen;
-        loop tl (i + hlen)
-    in
-    loop l 0;
-    result
 
   let sub a ofs len =
     check a ofs len "Float.Array.sub";

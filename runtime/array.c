@@ -631,7 +631,13 @@ CAMLprim value caml_array_append(value a1, value a2)
   return caml_array_gather(2, arrays, offsets, lengths);
 }
 
-CAMLprim value caml_array_concat(value al)
+/* Function pointer type for the [caml_*_gather] functions. */
+typedef value (*gather_impl)(intnat num_arrays,
+                             value arrays[/*num_arrays*/],
+                             intnat offsets[/*num_arrays*/],
+                             intnat lengths[/*num_arrays*/]);
+
+static value generic_array_concat(gather_impl gather, value al)
 {
 #define STATIC_SIZE 16
   value static_arrays[STATIC_SIZE], * arrays;
@@ -661,14 +667,14 @@ CAMLprim value caml_array_concat(value al)
       caml_raise_out_of_memory();
     }
   }
-  /* Build the parameters to caml_array_gather */
+  /* Build the parameters for the [gather] function. */
   for (i = 0, l = al; l != Val_emptylist; l = Field(l, 1), i++) {
     arrays[i] = Field(l, 0);
     offsets[i] = 0;
     lengths[i] = caml_array_length(Field(l, 0));
   }
-  /* Do the concatenation */
-  res = caml_array_gather(n, arrays, offsets, lengths);
+  /* Call the [gather] function. */
+  res = (*gather)(n, arrays, offsets, lengths);
   /* Free the extra storage if needed */
   if (n > STATIC_SIZE) {
     caml_stat_free(arrays);
@@ -677,6 +683,22 @@ CAMLprim value caml_array_concat(value al)
   }
   return res;
 }
+
+CAMLprim value caml_floatarray_concat(value al)
+{
+  return generic_array_concat(&caml_floatarray_gather, al);
+}
+
+CAMLprim value caml_uniform_array_concat(value al)
+{
+  return generic_array_concat(&caml_uniform_array_gather, al);
+}
+
+CAMLprim value caml_array_concat(value al)
+{
+  return generic_array_concat(&caml_array_gather, al);
+}
+
 
 CAMLprim value caml_floatarray_fill_unboxed(
   value array, intnat ofs, intnat len, double d)
