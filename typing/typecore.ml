@@ -386,6 +386,17 @@ let extract_label_names env ty =
 let is_principal ty =
   not !Clflags.principal || get_level ty = generic_level
 
+(* Returns [Some ty_elt] if the expected type can be used for type-directed
+   disambiguation of an array literal. *)
+let disambiguate_array_literal env expected_ty =
+  if is_principal expected_ty then
+    if is_floatarray_type env expected_ty then
+      Some (instance Predef.type_float)
+    else
+      None
+  else
+    None
+
 (* Typing of patterns *)
 
 (* Simplified patterns for effect continuations *)
@@ -981,13 +992,13 @@ let solve_Ppat_record_field ~refine loc penv label label_lid record_ty =
 
 let solve_Ppat_array ~refine loc env expected_ty =
   let expected_ty = generic_instance expected_ty in
-  if is_principal expected_ty && is_floatarray_type !!env expected_ty then
-    instance Predef.type_float
-  else
-    let ty_elt = newgenvar() in
-    unify_pat_types_refine ~refine
-      loc env (Predef.type_array ty_elt) expected_ty;
-    ty_elt
+  match disambiguate_array_literal !!env expected_ty with
+  | Some ty_elt -> ty_elt
+  | None ->
+      let ty_elt = newgenvar() in
+      unify_pat_types_refine ~refine
+        loc env (Predef.type_array ty_elt) expected_ty;
+      ty_elt
 
 let solve_Ppat_lazy ~refine loc env expected_ty =
   let nv = newgenvar () in
@@ -3876,14 +3887,14 @@ and type_expect_
   | Pexp_array(sargl) ->
       let ty_elt =
         let ty_expected = generic_instance ty_expected in
-        if is_principal ty_expected && is_floatarray_type env ty_expected then
-          instance Predef.type_float
-        else
-          let ty = newgenvar () in
-          let to_unify = Predef.type_array ty in
-          with_explanation (fun () ->
-              unify_exp_types loc env to_unify ty_expected);
-          ty
+        match disambiguate_array_literal env ty_expected with
+        | Some ty_elt -> ty_elt
+        | None ->
+            let ty = newgenvar () in
+            let to_unify = Predef.type_array ty in
+            with_explanation (fun () ->
+                unify_exp_types loc env to_unify ty_expected);
+            ty
       in
       let argl =
         List.map (fun sarg -> type_expect env sarg (mk_expected ty_elt)) sargl in
