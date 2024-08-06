@@ -534,73 +534,6 @@ let env_with_lib_unix env =
   in
   Environments.add Ocaml_variables.caml_ld_library_path newlibs env
 
-type debugger_type = LLDB | GDB | Bytecode
-
-let debugger_type_to_string = function
-  | LLDB -> "lldb"
-  | GDB -> "gdb"
-  | Bytecode -> "ocamldebug"
-
-let debug debugger_type log env =
-  let program = Environments.safe_lookup Builtin_variables.program env in
-  let what = Printf.sprintf "Debugging program %s with %s" program
-               (debugger_type_to_string debugger_type) in
-  Printf.fprintf log "%s\n%!" what;
-  let commandline = match debugger_type with
-    | LLDB -> [
-        Ocaml_commands.lldb_run;
-        Ocaml_flags.lldb_default_flags;
-        "-s " ^ (Environments.safe_lookup Ocaml_variables.debugger_script env);
-        program ]
-    | GDB -> [
-        Ocaml_commands.gdb_run;
-        Ocaml_flags.gdb_default_flags;
-        "-x " ^ (Environments.safe_lookup Ocaml_variables.debugger_script env);
-        program ]
-    | Bytecode -> [
-        Ocaml_commands.ocamlrun_ocamldebug;
-        Ocaml_flags.ocamldebug_default_flags;
-        program ]
-  in
-  let systemenv =
-    Environments.append_to_system_env
-      default_ocaml_env
-      (env_with_lib_unix env)
-  in
-  let stdin_variable = match debugger_type with
-    | LLDB | GDB ->  Builtin_variables.dev_null
-    | Bytecode -> Ocaml_variables.debugger_script
-  in
-  let expected_exit_status = 0 in
-  let exit_status =
-    Actions_helpers.run_cmd
-      ~environment:systemenv
-      ~stdin_variable:stdin_variable
-      ~stdout_variable:Builtin_variables.output
-      ~stderr_variable:Builtin_variables.output
-      ~append:true
-      log (env_with_lib_unix env) commandline in
-  if exit_status=expected_exit_status
-  then (Result.pass, env)
-  else begin
-    let reason =
-      (Actions_helpers.mkreason
-         what (String.concat " " commandline) exit_status) in
-    (Result.fail_with_reason reason, env)
-  end
-
-let lldb =
-  Actions.make ~name:"lldb" ~description:"Run LLDB on the program"
-    (debug_native LLDB)
-
-let gdb =
-  Actions.make ~name:"gdb" ~description:"Run GDB on the program"
-    (debug_native GDB)
-
-let ocamldebug =
-  Actions.make ~name:"ocamldebug" ~description:"Run ocamldebug on the program"
-    (debug Bytecode)
-
 let objinfo log env =
   let tools_directory = Ocaml_directories.tools in
   let program = Environments.safe_lookup Builtin_variables.program env in
@@ -1474,9 +1407,6 @@ let _ =
     setup_ocamldoc_build_env;
     run_ocamldoc;
     check_ocamldoc_output;
-    ocamldebug;
-    lldb;
-    gdb;
     ocamlmklib;
     codegen;
     cc;

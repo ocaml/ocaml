@@ -119,7 +119,6 @@ val ocamlsrcdir : Variables.t
 
 val ocamldebug_flags : Variables.t
 
-val debugger_script : Variables.t
 
 val os_type : Variables.t
 

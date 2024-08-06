@@ -43,7 +43,3 @@ let ocamlrun_ocamlmklib =
 
 let ocamlrun_codegen =
   ocamlrun Ocaml_files.codegen
-
-let lldb_run = "lldb"
-
-let gdb_run = "gdb"

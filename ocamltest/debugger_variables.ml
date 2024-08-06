@@ -2,10 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Sebastien Hinderer, projet Gallium, INRIA Paris            *)
+(*                           Tim McGilchrist, Tarides                     *)
 (*                                                                        *)
-(*   Copyright 2018 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
+(*   Copyright 2024 Tarides.                                              *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -13,23 +12,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Helper functions to build OCaml-related commands *)
+let debugger_script = Variables.make ("debugger_script",
+  "Where the debugger should read its commands")
 
-val ocamlrun_ocamlc : string
-
-val ocamlrun_ocamlopt : string
-
-val ocamlrun_ocaml : string
-
-val ocamlrun_expect : string
-
-val ocamlrun_ocamllex : string
-
-val ocamlrun_ocamldoc : string
-
-val ocamlrun_ocamldebug : string
-
-val ocamlrun_ocamlobjinfo : string
-
-val ocamlrun_ocamlmklib : string
-val ocamlrun_codegen : string
+let _ = List.iter Variables.register_variable
+  [
+    debugger_script;
+  ]
