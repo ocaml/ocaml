@@ -981,12 +981,12 @@ let solve_Ppat_array ~refine loc env expected_ty =
      | Tconstr (path, [], _) -> Path.same path Predef.path_floatarray
      | _ -> false
   then
-    Predef.type_float, Predef.type_floatarray
+    Predef.type_float
   else
     let ty_elt = newgenvar() in
     unify_pat_types_refine ~refine
       loc env (Predef.type_array ty_elt) expected_ty;
-    ty_elt, instance expected_ty
+    ty_elt
 
 let solve_Ppat_lazy ~refine loc env expected_ty =
   let nv = newgenvar () in
@@ -1935,12 +1935,12 @@ and type_pat_aux
       in
       rvp @@ solve_expected (make_record_pat lbl_a_list)
   | Ppat_array spl ->
-      let ty_elt, pat_type = solve_Ppat_array ~refine:false loc penv expected_ty in
+      let ty_elt = solve_Ppat_array ~refine:false loc penv expected_ty in
       let pl = List.map (fun p -> type_pat tps Value p ty_elt) spl in
       rvp {
         pat_desc = Tpat_array pl;
         pat_loc = loc; pat_extra=[];
-        pat_type;
+        pat_type = instance expected_ty;
         pat_attributes = sp.ppat_attributes;
         pat_env = !!penv }
   | Ppat_or(sp1, sp2) ->
@@ -2447,7 +2447,7 @@ let rec check_counter_example_pat
       map_fold_cont type_label_pat fields
         (fun fields -> mkp k (Tpat_record (fields, closed)))
   | Tpat_array tpl ->
-      let ty_elt, _ = solve_Ppat_array ~refine loc penv expected_ty in
+      let ty_elt = solve_Ppat_array ~refine loc penv expected_ty in
       map_fold_cont (fun p -> check_rec p ty_elt) tpl
         (fun pl -> mkp k (Tpat_array pl))
   | Tpat_or(tp1, tp2, _) ->
@@ -3873,27 +3873,27 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_array(sargl) ->
-      let ty_elt, exp_type =
+      let ty_elt =
         let ty_expected = generic_instance ty_expected in
         if is_principal ty_expected &&
            match get_desc (expand_head env ty_expected) with
            | Tconstr (path, [], _) -> Path.same path Predef.path_floatarray
            | _ -> false
         then
-          Predef.type_float, Predef.type_floatarray
+          Predef.type_float
         else
           let ty = newgenvar () in
           let to_unify = Predef.type_array ty in
           with_explanation (fun () ->
               unify_exp_types loc env to_unify ty_expected);
-          ty, instance ty_expected
+          ty
       in
       let argl =
         List.map (fun sarg -> type_expect env sarg (mk_expected ty_elt)) sargl in
       re {
         exp_desc = Texp_array argl;
         exp_loc = loc; exp_extra = [];
-        exp_type;
+        exp_type = instance ty_expected;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_ifthenelse(scond, sifso, sifnot) ->
