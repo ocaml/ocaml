@@ -341,6 +341,11 @@ let extract_option_type env ty =
     Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty
   | _ -> assert false
 
+let is_floatarray_type env ty =
+  match get_desc (expand_head env ty) with
+    Tconstr(path, [], _) -> Path.same path Predef.path_floatarray
+  | _ -> false
+
 let protect_expansion env ty =
   if Env.has_local_constraints env then generic_instance ty else ty
 
@@ -976,11 +981,7 @@ let solve_Ppat_record_field ~refine loc penv label label_lid record_ty =
 
 let solve_Ppat_array ~refine loc env expected_ty =
   let expected_ty = generic_instance expected_ty in
-  if is_principal expected_ty &&
-     match get_desc (expand_head !!env expected_ty) with
-     | Tconstr (path, [], _) -> Path.same path Predef.path_floatarray
-     | _ -> false
-  then
+  if is_principal expected_ty && is_floatarray_type !!env expected_ty then
     Predef.type_float
   else
     let ty_elt = newgenvar() in
@@ -3875,11 +3876,7 @@ and type_expect_
   | Pexp_array(sargl) ->
       let ty_elt =
         let ty_expected = generic_instance ty_expected in
-        if is_principal ty_expected &&
-           match get_desc (expand_head env ty_expected) with
-           | Tconstr (path, [], _) -> Path.same path Predef.path_floatarray
-           | _ -> false
-        then
+        if is_principal ty_expected && is_floatarray_type env ty_expected then
           Predef.type_float
         else
           let ty = newgenvar () in
