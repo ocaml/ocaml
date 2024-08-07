@@ -126,7 +126,7 @@ module Doc = struct
   let close_tag doc = add doc Close_tag
 
   let iter ?(sep=Fun.id) ~iter:iterator elt l doc =
-    let first = ref false in
+    let first = ref true in
     let rdoc = ref doc in
     let print x =
       if !first then (first := false; rdoc := elt x !rdoc)
