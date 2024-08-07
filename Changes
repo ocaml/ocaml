@@ -145,6 +145,9 @@ _______________
 
 ### Standard library:
 
+- #13366: Add operations on raw pointers
+  (Demi Marie Obenour)
+
 - #12884: Add `Queue.drop`
   (Léo Andrès, review by Nicolás Ojeda Bär and Gabriel Scherer)
 

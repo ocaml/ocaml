@@ -39,6 +39,20 @@ external raw_field : t -> int -> raw_data = "caml_obj_raw_field"
 external set_raw_field : t -> int -> raw_data -> unit
                                           = "caml_obj_set_raw_field"
 
+module Pointer = struct
+  type t = nativeint
+  external of_nativeint: nativeint -> t = "%identity"
+  external to_nativeint: t -> nativeint = "%identity"
+  external load8 : t -> int -> int = "%caml_ptr_load8"
+  external load16 : t -> int -> int = "%caml_ptr_load16"
+  external load32 : t -> int -> int32 = "%caml_ptr_load32"
+  external load64 : t -> int -> int64 = "%caml_ptr_load64"
+  external store8 : t -> int -> int -> unit = "%caml_ptr_set8"
+  external store16 : t -> int -> int -> unit = "%caml_ptr_set16"
+  external store32 : t -> int -> int32 -> unit = "%caml_ptr_set32"
+  external store64 : t -> int -> int64 -> unit = "%caml_ptr_set64"
+end
+
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"

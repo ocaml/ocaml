@@ -103,6 +103,9 @@ module Genarray = struct
      = "caml_ba_get_generic"
   external set: ('a, 'b, 'c) t -> int array -> 'a -> unit
      = "caml_ba_set_generic"
+  external ptr: ('a, 'b, 'c) t -> (nativeint [@unboxed])
+     = "caml_ba_ptr_byte" "caml_ba_ptr"
+  let ptr a = Obj.magic (ptr a)
 
   let rec cloop arr idx f col max =
     if col = Array.length idx then set arr idx (f idx)

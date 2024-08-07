@@ -343,6 +343,11 @@ module Genarray :
 
       @since 4.12 *)
 
+  val ptr: ('a, 'b, 'c) t -> Obj.Pointer.t
+  (** [Genarray.ptr a] returns a raw pointer to the contents of the
+      Bigarray [a].  You can pass it to C by converting it to a [Nativeint]
+      or use the [Obj.Pointer] module to access it from OCaml. *)
+
   external num_dims: ('a, 'b, 'c) t -> int = "caml_ba_num_dims"
   (** Return the number of dimensions of the given Bigarray. *)
 

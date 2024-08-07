@@ -114,7 +114,7 @@ let prim_sys_argv =
   Primitive.simple ~name:"caml_sys_argv" ~arity:1 ~alloc:true
 
 let primitives_table =
-  create_hashtable 57 [
+  create_hashtable 229 [
     "%identity", Identity;
     "%bytes_to_string", Primitive (Pbytes_to_string, 1);
     "%bytes_of_string", Primitive (Pbytes_of_string, 1);
@@ -347,6 +347,14 @@ let primitives_table =
     "%caml_bigstring_set32u", Primitive ((Pbigstring_set_32(true)), 3);
     "%caml_bigstring_set64", Primitive ((Pbigstring_set_64(false)), 3);
     "%caml_bigstring_set64u", Primitive ((Pbigstring_set_64(true)), 3);
+    "%caml_ptr_load8", Primitive ((Pptr_load_8), 2);
+    "%caml_ptr_load16", Primitive ((Pptr_load_16), 2);
+    "%caml_ptr_load32", Primitive ((Pptr_load_32), 2);
+    "%caml_ptr_load64", Primitive ((Pptr_load_64), 2);
+    "%caml_ptr_set8", Primitive ((Pptr_set_8), 3);
+    "%caml_ptr_set16", Primitive ((Pptr_set_16), 3);
+    "%caml_ptr_set32", Primitive ((Pptr_set_32), 3);
+    "%caml_ptr_set64", Primitive ((Pptr_set_64), 3);
     "%bswap16", Primitive (Pbswap16, 1);
     "%bswap_int32", Primitive ((Pbbswap(Pint32)), 1);
     "%bswap_int64", Primitive ((Pbbswap(Pint64)), 1);
@@ -814,6 +822,7 @@ let lambda_primitive_needs_event_after = function
   | Pbigstring_load_16 _ | Pbigstring_load_32 _ | Pbigstring_load_64 _
   | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _
   | Prunstack | Pperform | Preperform | Presume
+  | Pptr_load_8 | Pptr_load_16 | Pptr_load_32 | Pptr_load_64
   | Pbbswap _ | Ppoll -> true
 
   | Pbytes_to_string | Pbytes_of_string | Pignore | Psetglobal _
@@ -828,6 +837,7 @@ let lambda_primitive_needs_event_after = function
   | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint | Pisout
   | Patomic_exchange | Patomic_cas | Patomic_fetch_add | Patomic_load _
   | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque | Pdls_get
+  | Pptr_set_8 | Pptr_set_16 | Pptr_set_32 | Pptr_set_64
       -> false
 
 (* Determine if a primitive should be surrounded by an "after" debug event *)

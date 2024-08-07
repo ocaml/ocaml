@@ -165,6 +165,8 @@ let preserve_tailcall_for_prim = function
   | Pbigstring_load_64 _ | Pbigstring_set_16 _ | Pbigstring_set_32 _
   | Pbigstring_set_64 _ | Pctconst _ | Pbswap16 | Pbbswap _ | Pint_as_pointer
   | Patomic_exchange | Patomic_cas | Patomic_fetch_add | Patomic_load _
+  | Pptr_load_8 | Pptr_load_16 | Pptr_load_32 | Pptr_load_64
+  | Pptr_set_8 | Pptr_set_16 | Pptr_set_32 | Pptr_set_64
   | Pdls_get ->
       false
 
@@ -408,6 +410,14 @@ let comp_primitive stack_info p sz args =
   | Pstringrefu -> Kgetstringchar
   | Pbytesrefu -> Kgetbyteschar
   | Pbytessetu -> Ksetbyteschar
+  | Pptr_load_8 -> Kccall("caml_ptr_load8", 2)
+  | Pptr_load_16 -> Kccall("caml_ptr_load16", 2)
+  | Pptr_load_32 -> Kccall("caml_ptr_load32", 2)
+  | Pptr_load_64 -> Kccall("caml_ptr_load64", 2)
+  | Pptr_set_8 -> Kccall("caml_ptr_set8", 3)
+  | Pptr_set_16 -> Kccall("caml_ptr_set16", 3)
+  | Pptr_set_32 -> Kccall("caml_ptr_set32", 3)
+  | Pptr_set_64 -> Kccall("caml_ptr_set64", 3)
   | Pstring_load_16(_) -> Kccall("caml_string_get16", 2)
   | Pstring_load_32(_) -> Kccall("caml_string_get32", 2)
   | Pstring_load_64(_) -> Kccall("caml_string_get64", 2)

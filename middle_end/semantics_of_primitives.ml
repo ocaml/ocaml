@@ -99,6 +99,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Parrayrefu _
   | Pstringrefu
   | Pbytesrefu
+  | Pptr_load _
   | Pstring_load (_, Unsafe)
   | Pbytes_load (_, Unsafe)
   | Pbigarrayref (true, _, _, _)
@@ -124,6 +125,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Parraysets _
   | Pbytessetu
   | Pbytessets
+  | Pptr_set _
   | Pbytes_set _
   | Pbigarrayset _
   | Pbigstring_set _ ->

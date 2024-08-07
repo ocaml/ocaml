@@ -490,11 +490,13 @@ val int_comp_caml : Lambda.integer_comparison -> binary_primitive
 val stringref_unsafe : binary_primitive
 val stringref_safe : binary_primitive
 
-(** Load by chunk from string/bytes, bigstring. Args: string, index *)
+(** Load by chunk from string/bytes, bigstring, pointer. Args: string, index *)
 val string_load :
   Clambda_primitives.memory_access_size -> Lambda.is_safe -> binary_primitive
 val bigstring_load :
   Clambda_primitives.memory_access_size -> Lambda.is_safe -> binary_primitive
+val ptr_load :
+  Clambda_primitives.memory_access_size -> binary_primitive
 
 (** Arrays *)
 
@@ -524,7 +526,8 @@ val bytesset_safe : ternary_primitive
 val arrayset_unsafe : Lambda.array_kind -> ternary_primitive
 val arrayset_safe : Lambda.array_kind -> ternary_primitive
 
-(** Set a chunk of data in the given bytes or bigstring structure.
+(** Set a chunk of data in the given bytes or bigstring structure
+    or at the given raw pointer.
     See also [string_load] and [bigstring_load].
     Note: [value] is expected to be an unboxed number of the given size.
     Args: pointer, index, value *)
@@ -532,6 +535,8 @@ val bytes_set :
   Clambda_primitives.memory_access_size -> Lambda.is_safe -> ternary_primitive
 val bigstring_set :
   Clambda_primitives.memory_access_size -> Lambda.is_safe -> ternary_primitive
+val ptr_set :
+  Clambda_primitives.memory_access_size -> ternary_primitive
 
 (** Switch *)
 

@@ -1234,7 +1234,8 @@ runtime_BYTECODE_ONLY_C_SOURCES = \
   fix_code \
   interp \
   startup_byt \
-  zstd
+  zstd \
+  pointer
 runtime_BYTECODE_C_SOURCES = \
   $(runtime_COMMON_C_SOURCES:%=runtime/%.c) \
   $(runtime_BYTECODE_ONLY_C_SOURCES:%=runtime/%.c)
