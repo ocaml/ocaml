@@ -549,6 +549,9 @@ _______________
   oversight. No known program triggers the bug.
   (Richard Eisenberg, review by Florian Angeletti)
 
+- #13385: Fix memory leaks in bytecode backtraces debug information.
+  (Antonin Décimo, review by Miod Vallat)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
