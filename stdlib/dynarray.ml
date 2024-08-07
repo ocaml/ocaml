@@ -169,10 +169,18 @@ module Dummy : sig
       ('a, 'stamp) with_dummy array -> int ->
       len:int ->
       unit
+
+    val blit :
+      ('a, 'stamp1) with_dummy array -> 'stamp1 dummy -> int ->
+      ('a, 'stamp2) with_dummy array -> 'stamp2 dummy -> int ->
+      len:int ->
+      unit
+
     val prefix :
       ('a, 'stamp) with_dummy array ->
       int ->
       ('a, 'stamp) with_dummy array
+
     val extend :
       ('a, 'stamp) with_dummy array ->
       length:int ->
@@ -265,6 +273,37 @@ end = struct
         for i = 0 to len - 1 do
           dst.(dst_pos + i) <- of_val src.(src_pos + i)
         done;
+      end
+
+    let blit src src_dummy src_pos dst dst_dummy dst_pos ~len =
+      if src_dummy == dst_dummy then
+        Array.blit src src_pos dst dst_pos len
+      else begin
+        if len < 0
+           || src_pos < 0
+           || src_pos + len < 0 (* overflow check *)
+           || src_pos + len > Array.length src
+           || dst_pos < 0
+           || dst_pos + len < 0 (* overflow check *)
+           || dst_pos + len > Array.length dst
+        then begin
+          (* We assume that the caller has already checked this and
+             will raise a proper error. The check here is only for
+             memory safety, it should not be reached and it is okay if
+             the error is uninformative. *)
+          assert false;
+        end;
+        (* We failed the check [src_dummy == dst_dummy] above, so we
+           know that in fact [src != dst] -- two dynarrays with
+           distinct dummies cannot share the same backing arrays. *)
+        assert (src != dst);
+        (* In particular, the source and destination arrays cannot
+           overlap, so we can always copy in ascending order without
+           risking overwriting an element needed later. *)
+        for i = 0 to len - 1 do
+          Array.unsafe_set dst (dst_pos + i)
+            (Array.unsafe_get src (src_pos + i));
+        done
       end
 
     let prefix arr n =
@@ -647,6 +686,55 @@ let append_iter a iter b =
 let append_seq a seq =
   Seq.iter (fun x -> add_last a x) seq
 
+(* blitting *)
+
+let blit_assume_room
+    (Pack src) src_pos src_length
+    (Pack dst) dst_pos dst_length
+    blit_length
+=
+  (* The caller of [blit_assume_room] typically calls
+     [ensure_capacity] right before. This could run asynchronous
+     code. We want to fail reliably on any asynchronous length change,
+     as it may invalidate the source and target ranges provided by the
+     user. So we double-check that the lengths have not changed.  *)
+  let src_arr = src.arr in
+  let dst_arr = dst.arr in
+  check_same_length "blit" (Pack src) ~length:src_length;
+  check_same_length "blit" (Pack dst) ~length:dst_length;
+  if dst_pos + blit_length > dst_length then begin
+    dst.length <- dst_pos + blit_length;
+  end;
+  (* note: [src] and [dst] may be equal when self-blitting, so
+     [src.length] may have been mutated here. *)
+  Dummy.Array.blit
+    src_arr src.dummy src_pos
+    dst_arr dst.dummy dst_pos
+    ~len:blit_length
+
+let blit ~src ~src_pos ~dst ~dst_pos ~len =
+  let src_length = length src in
+  let dst_length = length dst in
+  if len < 0 then
+    Printf.ksprintf invalid_arg
+      "Dynarray.blit: invalid blit length (%d)"
+      len;
+  if src_pos < 0 || src_pos + len > src_length then
+    Printf.ksprintf invalid_arg
+      "Dynarray.blit: invalid source region (%d..%d) \
+       in source dynarray of length %d"
+      src_pos (src_pos + len) src_length;
+  if dst_pos < 0 || dst_pos > dst_length then
+    Printf.ksprintf invalid_arg
+      "Dynarray.blit: invalid target region (%d..%d) \
+       in target dynarray of length %d"
+      dst_pos (dst_pos + len) dst_length;
+  ensure_capacity dst (dst_pos + len);
+  blit_assume_room
+    src src_pos src_length
+    dst dst_pos dst_length
+    len
+
 (* append_array: same [..._if_room] and loop logic as [add_last]. *)
 
 let append_array_if_room (Pack a) b =
@@ -695,27 +783,24 @@ let append_array a b =
       then grow_and_append a b
     in grow_and_append a b  end
 
-(* append: same [..._if_room] and loop logic as [add_last],
-   same reserve-before-fill logic as [append_array]. *)
+(* append: same [..._if_room] and loop logic as [add_last]. *)
 
 (* It is a programming error to mutate the length of [b] during a call
    to [append a b]. To detect this mistake we keep track of the length
    of [b] throughout the computation and check it that does not
    change.
 *)
-let append_if_room (Pack a) (Pack b) ~length_b =
+let append_if_room (Pack a) b ~length_b =
   let {arr = arr_a; length = length_a; _} = a in
   if length_a + length_b > Array.length arr_a then false
   else begin
-    let arr_b = b.arr in
-    check_valid_length length_b arr_b;
-    a.length <- length_a + length_b;
-    for i = 0 to length_b - 1 do
-      Array.unsafe_set arr_a (length_a + i)
-        (Dummy.of_val
-           (unsafe_get arr_b ~dummy:b.dummy ~i ~length:length_b))
-    done;
-    check_same_length "append" (Pack b) ~length:length_b;
+    (* blit [0..length_b-1]
+       into [length_a..length_a+length_b-1]. *)
+    blit_assume_room
+      b 0 length_b
+      (Pack a) length_a length_a
+      length_b;
+    check_same_length "append" b ~length:length_b;
     true
   end
 

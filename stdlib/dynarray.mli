@@ -181,6 +181,23 @@ val append_iter :
     [1], [2], and then [3] at the end of [a].
     [append_iter a Queue.iter q] adds elements from the queue [q]. *)
 
+val blit : src:'a t -> src_pos:int -> dst:'a t -> dst_pos:int -> len:int -> unit
+(** [blit ~src ~src_pos ~dst ~dst_pos ~len] copies [len] elements from
+    a source dynarray [src], starting at index [src_pos], to
+    a destination dynarray [dst], starting at index [dst_pos]. It
+    works correctly even if [src] and [dst] are the same array, and
+    the source and destination chunks overlap.
+
+    Unlike {!Array.blit}, {!Dynarray.blit} can extend the destination
+    array with new elements: it is valid to call [blit] even when
+    [dst_pos + len] is larger than [length dst]. The only requirement
+    is that [dst_pos] must be at most [length dst] (included), so that
+    there is no gap between the current elements and the blit
+    region.
+
+    @raise Invalid_argument if [src_pos] and [len] do not designate
+    a valid subarray of [src], or if [dst_pos] is strictly below [0]
+    or strictly above [length dst]. *)
 
 (** {1:removing Removing elements} *)
 

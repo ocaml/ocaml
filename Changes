@@ -182,6 +182,11 @@ _______________
    review by KC Sivaramakrishnan, Miod Vallat and Nicolás Ojeda Bär,
    report by Vesa Karvonen)
 
+- #13197: Dynarray.blit, which allows to extend the destination
+  dynarray (0 <= dst_pos <= dst_length).
+  (Gabriel Scherer, report by Hazem Elmasry,
+   review by Olivier Nicole, Hazem Elmasry and Nicolás Ojeda Bär)
+
 * #13240: Add Uchar.seeded_hash, Change Uchar.hash implementation.
   Previously, Uchar.hash was aliased to Uchar.to_int. If you need that behavior,
   change your module instantiation from eg `module HT = Hashtbl.Make(Uchar)` to
