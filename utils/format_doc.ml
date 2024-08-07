@@ -456,6 +456,7 @@ let pp_print_either  ~left ~right ppf e =
   ppf := Doc.either ~left:(doc_printer left) ~right:(doc_printer right) e !ppf
 
 let comma ppf () = fprintf ppf ",@ "
+let semicolon ppf () = fprintf ppf ";@ "
 
 let pp_two_columns ?(sep = "|") ?max_lines ppf (lines: (string * string) list) =
   let left_column_size =

@@ -11,13 +11,13 @@ val x : float array = [|1.; 2.|]
 let x : floatarray = [|1.; 2.|]
 ;;
 [%%expect {|
-val x : floatarray = <abstr>
+val x : floatarray = [|1.; 2.|]
 |}]
 
 let x = ([|1.; 2.|] : floatarray)
 ;;
 [%%expect {|
-val x : floatarray = <abstr>
+val x : floatarray = [|1.; 2.|]
 |}]
 
 let f (a : floatarray) = match a with [|x|] -> x | _ -> assert false
@@ -51,7 +51,7 @@ let x : t = [||]
 [%%expect {|
 type s = floatarray
 type t = s
-val x : t = <abstr>
+val x : t = [||]
 |}]
 
 let f a =
