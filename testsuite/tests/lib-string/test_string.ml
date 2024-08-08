@@ -38,8 +38,16 @@ let () =
   for i = 0 to String.length s do
     check_split ' ' (String.sub s 0 i)
   done
-;;
 
+let () =
+  assert (String.first_nul "" = 0);
+  assert (String.first_nul "a" = 1);
+  assert (String.first_nul "\000a" = 0);
+  assert (String.first_nul "a\000" = 1);
+  assert (String.is_c_safe "");
+  assert (String.is_c_safe "a");
+  assert (not (String.is_c_safe "\000a"));
+  assert (not (String.is_c_safe "a\000"));
 
 let () =
   printf "-- Hashtbl.hash raw_string: %x\n%!" (Hashtbl.hash raw_string);

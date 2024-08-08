@@ -37,6 +37,8 @@ external unsafe_blit : bytes -> int -> bytes -> int -> int -> unit
                      = "caml_blit_bytes" [@@noalloc]
 external unsafe_blit_string : string -> int -> bytes -> int -> int -> unit
                      = "caml_blit_string" [@@noalloc]
+external first_nul : bytes -> (int[@untagged])
+                   = "caml_string_first_nul" "strlen" [@@noalloc]
 
 let make n c =
   let s = create n in
@@ -104,6 +106,9 @@ let blit_string s1 ofs1 s2 ofs2 len =
              || ofs2 < 0 || ofs2 > length s2 - len
   then invalid_arg "String.blit / Bytes.blit_string"
   else unsafe_blit_string s1 ofs1 s2 ofs2 len
+
+(* duplicated in string.ml *)
+let is_c_safe a = first_nul a = length a [@@inline always]
 
 (* duplicated in string.ml *)
 let iter f a =

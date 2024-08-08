@@ -145,6 +145,10 @@ _______________
 
 ### Standard library:
 
+- #13367: Add standard library functions for finding NUL bytes
+  in strings.
+  (Demi Marie Obenour)
+
 - #12884: Add `Queue.drop`
   (Léo Andrès, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
