@@ -58,6 +58,28 @@ let unsigned_to_int =
     else
       None
 
+(* The next few functions are force-inlined so as to expose
+   unboxing opportunities. *)
+
+let unsigned_of_int32 (n: int32) =
+  logand (of_int32 n) 0xFFFFFFFFL
+  [@@inline always]
+
+let unsigned_of_int (n: int) =
+  match Sys.word_size with
+  | 64 -> logand (of_int n) 0x7FFFFFFFFFFFFFFFL
+  | 32 -> logand (of_int n) 0x7FFFFFFFL
+  | _ -> assert false
+  [@@inline always]
+
+let unsigned_32_to_64_mul a b =
+  mul (unsigned_of_int32 a) (unsigned_of_int32 b)
+  [@@inline always]
+
+let signed_32_to_64_mul a b =
+  mul (of_int32 a) (of_int32 b)
+  [@@inline always]
+
 external format : string -> int64 -> string = "caml_int64_format"
 let to_string n = format "%d" n
 

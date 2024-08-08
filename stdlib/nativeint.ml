@@ -57,6 +57,10 @@ let unsigned_to_int =
     else
       None
 
+let unsigned_of_int (n: int) =
+  logand (of_int n) max_int
+  [@@inline always] (* this had better generate good code *)
+
 external format : string -> nativeint -> string = "caml_nativeint_format"
 let to_string n = format "%d" n
 
