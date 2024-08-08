@@ -161,6 +161,14 @@ external of_int32 : int32 -> int64 = "%int64_of_int32"
 (** Convert the given 32-bit integer (type [int32])
    to a 64-bit integer (type [int64]). *)
 
+val unsigned_of_int32 : int32 -> int64
+(** Convert the given unsigned 32-bit integer (type [int32])
+   to a 64-bit integer (type [int64]). *)
+
+val unsigned_of_int : int -> int64
+(** Convert the given unsigned integer (type [int])
+   to a 64-bit integer (type [int64]). *)
+
 external to_int32 : int64 -> int32 = "%int64_to_int32"
 (** Convert the given 64-bit integer (type [int64]) to a
    32-bit integer (type [int32]). The 64-bit integer
@@ -219,6 +227,16 @@ external float_of_bits : int64 -> float
 
 type t = int64
 (** An alias for the type of 64-bit integers. *)
+
+val unsigned_32_to_64_mul : int32 -> int32 -> int64
+(** Computes [mul1 * mul2] using unsigned math.
+    The result is guaranteed to be the same as if it was performed
+    using arbitrary-precision arithmetic. *)
+
+val signed_32_to_64_mul : int32 -> int32 -> int64
+(** Computes [mul1 * mul2] using signed math.
+    The result is guaranteed to be the same as if it was performed
+    using arbitrary-precision arithmetic. *)
 
 val compare: t -> t -> int
 (** The comparison function for 64-bit integers, with the same specification as

@@ -145,6 +145,12 @@ _______________
 
 ### Standard library:
 
+- #13368: Add integer math helper functions:
+  Int64.unsigned_of_int, Int64.unsigned_of_int32,
+  Int64.unsigned_32_to_64_mul, Int64.signed_32_to_64_mul,
+  Nativeint.unsigned_of_int.
+  (Demi Marie Obenour)
+
 - #12884: Add `Queue.drop`
   (Léo Andrès, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
