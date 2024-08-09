@@ -1182,7 +1182,7 @@ and transl_unbox_sized size dbg env exp =
   match size with
   | Eight | Sixteen ->
      ignore_high_bit_int (untag_int (transl env exp) dbg)
-  | Thirty_two -> transl_unbox_int dbg env Pint32 exp
+  | Thirty_two -> low_32 dbg (transl_unbox_int dbg env Pint32 exp)
   | Sixty_four -> transl_unbox_int dbg env Pint64 exp
 
 and transl_let env str kind id exp transl_body =
