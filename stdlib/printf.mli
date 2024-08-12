@@ -188,6 +188,79 @@ val ikbprintf : (Buffer.t -> 'd) -> Buffer.t ->
    @since 4.11
 *)
 
+(** Formatted output functions with heterogeneous list as arguments.
+
+  The following functions behave the same as their non-'l' counter-parts, but
+  receive their arguments as a heterogeneous list.
+
+  The heterogeneous list serves as a syntactically-delimited collection of arguments,
+  eliminating the need for continuation variants. This approach also improves the
+  clarity of type error messages, especially when there is a mismatch between the
+  format string and the number of arguments provided.
+
+  For example:
+  {[
+    Printf.lprintf "%s %d %.02f %c\n" ["ocaml"; 42; 3.14; 'c' ]
+  ]}
+*)
+
+module Arg_list : sig
+  type ('a, 'r) t =
+    | [] : ('r, 'r) t
+    | (::) : 'a * ('b, 'r) t -> ('a -> 'b, 'r) t
+
+  val apply : 'a -> ('a, 'r) t -> 'r
+
+  val ( @ ) : ('a, 'r1) t -> ('r1, 'r2) t -> ('a, 'r2) t
+end
+(** Contains the type, apply and append functions of the heterogeneous list used
+    as arguments for the printf-like functions that accept it.
+
+    An example:
+  {[
+    let lst = let open Printf.Arg_list in "ocaml" :: [ 42; 3.14 ] @ [ 'c' ];;
+    Printf.lprintf "%s %d %.02f %c\n" lst
+  ]}
+   @since 5.4
+*)
+
+val lfprintf : out_channel ->
+              ('a, out_channel, unit) format ->
+              ('a, unit) Arg_list.t ->
+              unit 
+(** Same as [fprintf] above, but accepts a heterogeneous list as arguments.
+   @since 5.4
+*)
+
+val lbprintf : Buffer.t ->
+              ('a, Buffer.t, unit) format ->
+              ('a, unit) Arg_list.t ->
+              unit
+(** Same as [bprintf] above, but accepts a heterogeneous list as arguments.
+   @since 5.4
+*)
+
+val lprintf : ('a, out_channel, unit) format ->
+              ('a, unit) Arg_list.t ->
+              unit
+(** Same as [printf] above, but accepts a heterogeneous list as arguments.
+   @since 5.4
+*)
+
+val leprintf : ('a, out_channel, unit) format ->
+              ('a, unit) Arg_list.t ->
+              unit
+(** Same as [eprintf] above, but accepts a heterogeneous list as arguments.
+   @since 5.4
+*)
+
+val lsprintf : ('a, unit, string) format ->
+            ('a, string) Arg_list.t ->
+            string
+(** Same as [sprintf] above, but accepts a heterogeneous list as arguments.
+   @since 5.4
+*)
+
 (** Deprecated *)
 
 val kprintf : (string -> 'b) -> ('a, unit, string, 'b) format4 -> 'a
