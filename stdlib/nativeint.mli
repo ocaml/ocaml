@@ -204,7 +204,8 @@ val of_string_opt: string -> nativeint option
 (** Same as [of_string], but return [None] instead of raising.
     @since 4.05 *)
 
-val to_string : nativeint -> string
+external to_string: (nativeint [@unboxed]) -> string =
+    "caml_nativeint_to_string" "unboxed_caml_nativeint_to_string"
 (** Return the string representation of its argument, in decimal. *)
 
 type t = nativeint

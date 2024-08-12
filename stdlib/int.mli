@@ -150,7 +150,7 @@ val of_string : string -> int option
     digits of the number. *)
 *)
 
-val to_string : int -> string
+external to_string : int -> string = "caml_int_to_string"
 (** [to_string x] is the written representation of [x] in decimal. *)
 
 val seeded_hash : int -> int -> int

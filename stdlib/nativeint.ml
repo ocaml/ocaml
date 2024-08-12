@@ -57,8 +57,9 @@ let unsigned_to_int =
     else
       None
 
-external format : string -> nativeint -> string = "caml_nativeint_format"
-let to_string n = format "%d" n
+(*external format : string -> nativeint -> string = "caml_nativeint_format"*)
+external to_string: (nativeint [@unboxed]) -> string =
+    "caml_nativeint_to_string" "unboxed_caml_nativeint_to_string"
 
 external of_string: string -> nativeint = "caml_nativeint_of_string"
 
