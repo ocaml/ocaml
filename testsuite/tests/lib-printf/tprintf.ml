@@ -12,6 +12,8 @@ A test file for the Printf module.
 open Testing;;
 open Printf;;
 
+type tster = { x: string; y: int }
+
 let test_roundtrip fmt of_string s =
   test (sprintf fmt (of_string s) = s)
 ;;
@@ -663,6 +665,533 @@ try
   test (sprintf "@" = "@");
   test (sprintf "@@" = "@@");
   test (sprintf "@%%" = "@%");
+
+  lprintf "\n\nHeterogeneous List tests\n\n%!" [];
+
+  lprintf "d/i positive\n%!" [];
+  test (lsprintf "%d/%i" [42; 43] = "42/43");
+  test (lsprintf "%-4d/%-5i" [42; 43] = "42  /43   ");
+  test (lsprintf "%04d/%05i" [42; 43] = "0042/00043");
+  test (lsprintf "%+d/%+i" [42; 43] = "+42/+43");
+  test (lsprintf "% d/% i" [42; 43] = " 42/ 43");
+  test (lsprintf "%#d/%#i" [42; 43] = "42/43");
+  test (lsprintf "%4d/%5i" [42; 43] = "  42/   43");
+  test (lsprintf "%*d" [-4; 42] = "42  ");
+  test (lsprintf "%*d/%*i" [4; 42; 5; 43] = "  42/   43");
+  test (lsprintf "%-0+#4d/%-0 #5i" [42; 43] = "+42 / 43  ");
+
+  lprintf "\nd/i negative\n%!" [];
+  test (lsprintf "%d/%i" [-42; -43] = "-42/-43");
+  test (lsprintf "%-4d/%-5i" [-42; -43] = "-42 /-43  ");
+  test (lsprintf "%04d/%05i" [-42; -43] = "-042/-0043");
+  test (lsprintf "%+d/%+i" [-42; -43] = "-42/-43");
+  test (lsprintf "% d/% i" [-42; -43] = "-42/-43");
+  test (lsprintf "%#d/%#i" [-42; -43] = "-42/-43");
+  test (lsprintf "%4d/%5i" [-42; -43] = " -42/  -43");
+  test (lsprintf "%*d" [-4; -42] = "-42 ");
+  test (lsprintf "%*d/%*i" [4; -42; 5; -43] = " -42/  -43");
+  test (lsprintf "%-0+ #4d/%-0+ #5i" [-42; -43] = "-42 /-43  ");
+
+  lprintf "\nu positive\n%!" [];
+  test (lsprintf "%u" [42] = "42");
+  test (lsprintf "%-4u" [42] = "42  ");
+  test (lsprintf "%04u" [42] = "0042");
+  test (lsprintf "%+u" [42] = "42");
+  test (lsprintf "% u" [42] = "42");
+  test (lsprintf "%#u" [42] = "42");
+  test (lsprintf "%4u" [42] = "  42");
+  test (lsprintf "%*u" [4; 42] = "  42");
+  test (lsprintf "%*u" [-4; 42] = "42  ");
+
+  lprintf "\nu negative\n%!" [];
+  begin match Sys.int_size with
+  | 31 ->
+    test (lsprintf "%u" [-1] = "2147483647");
+  | 63 ->
+    test (lsprintf "%u" [-1] = "9223372036854775807");
+  | _ -> test false
+  end;
+
+  lprintf "\nx positive\n%!" [];
+  test (lsprintf "%x" [42] = "2a");
+  test (lsprintf "%-4x" [42] = "2a  ");
+  test (lsprintf "%04x" [42] = "002a");
+  test (lsprintf "%+x" [42] = "2a");
+  test (lsprintf "% x" [42] = "2a");
+  test (lsprintf "%#x" [42] = "0x2a");
+  test (lsprintf "%4x" [42] = "  2a");
+  test (lsprintf "%*x" [5; 42] = "   2a");
+  test (lsprintf "%*x" [-5; 42] = "2a   ");
+  test (lsprintf "%#*x" [5; 42] = " 0x2a");
+  test (lsprintf "%#*x" [-5; 42] = "0x2a ");
+  test (lsprintf "%#-*x" [5; 42] = "0x2a ");
+  test (lsprintf "%-0+ #*x" [5; 42] = "0x2a ");
+
+  lprintf "\nx negative\n%!" [];
+  begin match Sys.int_size with
+  | 31 ->
+    test (lsprintf "%x" [-42] = "7fffffd6");
+  | 63 ->
+    test (lsprintf "%x" [-42] = "7fffffffffffffd6");
+  | _ -> test false
+  end;
+
+  lprintf "\nX positive\n%!" [];
+  test (lsprintf "%X" [42] = "2A");
+  test (lsprintf "%-4X" [42] = "2A  ");
+  test (lsprintf "%04X" [42] = "002A");
+  test (lsprintf "%+X" [42] = "2A");
+  test (lsprintf "% X" [42] = "2A");
+  test (lsprintf "%#X" [42] = "0X2A");
+  test (lsprintf "%4X" [42] = "  2A");
+  test (lsprintf "%*X" [5; 42] = "   2A");
+  test (lsprintf "%-0+ #*X" [5; 42] = "0X2A ");
+
+  lprintf "\nx negative\n%!" [];
+  begin match Sys.int_size with
+  | 31 ->
+    test (lsprintf "%X" [-42] = "7FFFFFD6");
+  | 63 ->
+    test (lsprintf "%X" [-42] = "7FFFFFFFFFFFFFD6");
+  | _ -> test false
+  end;
+
+  lprintf "\no positive\n%!" [];
+  test (lsprintf "%o" [42] = "52");
+  test (lsprintf "%-4o" [42] = "52  ");
+  test (lsprintf "%04o" [42] = "0052");
+  test (lsprintf "%+o" [42] = "52");
+  test (lsprintf "% o" [42] = "52");
+  test (lsprintf "%#o" [42] = "052");
+  test (lsprintf "%4o" [42] = "  52");
+  test (lsprintf "%*o" [5; 42] = "   52");
+  test (lsprintf "%-0+ #*o" [5; 42] = "052  ");
+
+  lprintf "\no negative\n%!" [];
+  begin match Sys.int_size with
+  | 31 ->
+    test (lsprintf "%o" [-42] = "17777777726");
+  | 63 ->
+    test (lsprintf "%o" [-42] = "777777777777777777726");
+  | _ -> test false
+  end;
+
+  lprintf "\ns\n%!" [];
+  test (lsprintf "%s" ["foo"] = "foo");
+  test (lsprintf "%-5s" ["foo"] = "foo  ");
+  test (lsprintf "%05s" ["foo"] = "  foo");
+  test (lsprintf "%+s" ["foo"] = "foo");
+  test (lsprintf "% s" ["foo"] = "foo");
+  test (lsprintf "%#s" ["foo"] = "foo");
+  test (lsprintf "%5s" ["foo"] = "  foo");
+  test (lsprintf "%1s" ["foo"] = "foo");
+  test (lsprintf "%*s" [6; "foo"] = "   foo");
+  test (lsprintf "%*s" [-6; "foo"] = "foo   ");
+  test (lsprintf "%*s" [2; "foo"] = "foo");
+  test (lsprintf "%-0+ #5s" ["foo"] = "foo  ");
+  test (lsprintf "%s@" ["foo"] = "foo@");
+  test (lsprintf "%s@inria.fr" ["foo"] = "foo@inria.fr");
+  test (lsprintf "%s@%s" ["foo"; "inria.fr"] = "foo@inria.fr");
+
+  lprintf "\nS\n%!" [];
+  test (lsprintf "%S" ["fo\"o"] = "\"fo\\\"o\"");
+  test (lsprintf "%-7S" ["foo"] = "\"foo\"  ");
+  (* test (lsprintf "%07S" ["foo"] = "  \"foo\""); *)
+  (* %S is incompatible with '0' *)
+  test (lsprintf "%+S" ["foo"] = "\"foo\"");
+  test (lsprintf "% S" ["foo"] = "\"foo\"");
+  test (lsprintf "%#S" ["foo"] = "\"foo\"");
+  test (lsprintf "%7S" ["foo"] = "  \"foo\"");
+  test (lsprintf "%1S" ["foo"] = "\"foo\"");
+  test (lsprintf "%*S" [8; "foo"] = "   \"foo\"");
+  test (lsprintf "%*S" [-8; "foo"] = "\"foo\"   ");
+  test (lsprintf "%*S" [2; "foo"] = "\"foo\"");
+  (* test (lsprintf "%-0+ #5S" ["foo"] = "\"foo\"  ");  padding not done *)
+  (* %S is incompatible with '0','+' and ' ' *)
+  test (lsprintf "%S@" ["foo"] = "\"foo\"@");
+  test (lsprintf "%S@inria.fr" ["foo"] = "\"foo\"@inria.fr");
+  test (lsprintf "%S@%S" ["foo"; "inria.fr"] = "\"foo\"@\"inria.fr\"");
+
+  lprintf "\nc\n%!" [];
+  test (lsprintf "%c" ['c'] = "c");
+  (* test (lsprintf "%-4c" ['c'] = "c   ");    padding not done *)
+  (* test (lsprintf "%04c" ['c'] = "   c");    padding not done *)
+  test (lsprintf "%+c" ['c'] = "c");
+  test (lsprintf "% c" ['c'] = "c");
+  test (lsprintf "%#c" ['c'] = "c");
+  (* test (lsprintf "%4c" ['c'] = "   c");     padding not done *)
+  (* test (lsprintf "%*c" [2; 'c'] = " c");     padding not done *)
+  (* test (lsprintf "%-0+ #4c" ['c'] = "c   ");  padding not done *)
+
+  lprintf "\nC\n%!" [];
+  test (lsprintf "%C" ['c'] = "'c'");
+  test (lsprintf "%C" ['\''] = "'\\''");
+  (* test (lsprintf "%-4C" ['c'] = "c   ");    padding not done *)
+  (* test (lsprintf "%04C" ['c'] = "   c");    padding not done *)
+  test (lsprintf "%+C" ['c'] = "'c'");
+  test (lsprintf "% C" ['c'] = "'c'");
+  test (lsprintf "%#C" ['c'] = "'c'");
+  (* test (lsprintf "%4C" ['c'] = "   c");     padding not done *)
+  (* test (lsprintf "%*C" [2; 'c'] = " c");     padding not done *)
+  (* test (lsprintf "%-0+ #4C" ['c'] = "c   ");  padding not done *)
+
+  lprintf "\nf\n%!" [];
+  test (lsprintf "%f" [-42.42] = "-42.420000");
+  test (lsprintf "%-13f" [-42.42] = "-42.420000   ");
+  test (lsprintf "%013f" [-42.42] = "-00042.420000");
+  test (lsprintf "%+f" [42.42] = "+42.420000");
+  test (lsprintf "% f" [42.42] = " 42.420000");
+  test (lsprintf "%#f" [42.42] = "42.420000");
+  test (lsprintf "%13f" [42.42] = "    42.420000");
+  test (lsprintf "%*f" [12; 42.42] = "   42.420000");
+  test (lsprintf "%-0+ #12f" [42.42] = "+42.420000  ");
+  test (lsprintf "%.3f" [-42.42] = "-42.420");
+  test (lsprintf "%-13.3f" [-42.42] = "-42.420      ");
+  test (lsprintf "%013.3f" [-42.42] = "-00000042.420");
+  test (lsprintf "%+.3f" [42.42] = "+42.420");
+  test (lsprintf "% .3f" [42.42] = " 42.420");
+  test (lsprintf "%#.3f" [42.42] = "42.420");
+  test (lsprintf "%13.3f" [42.42] = "       42.420");
+  test (lsprintf "%*.*f" [12; 3; 42.42] = "      42.420");
+  test (lsprintf "%-0+ #12.3f" [42.42] = "+42.420     ");
+
+  lprintf "\nF\n%!" [];
+  test (lsprintf "%F" [42.42] = "42.42");
+  test (lsprintf "%F" [42.42e42] =* "4.242e+43");
+  test (lsprintf "%F" [42.00] = "42.");
+  test (lsprintf "%F" [0.042] = "0.042");
+  test (lsprintf "%4F" [3.] = "  3.");
+  test (lsprintf "%-4F" [3.] = "3.  ");
+  test (lsprintf "%04F" [3.] = "003.");
+(* plus-padding unsupported
+  test (sprintf "%+4F" 3. = " +3.");
+*)
+(* no precision
+  test (sprintf "%.3F" 42.42 = "42.420");
+  test (sprintf "%12.3F" 42.42e42 = "   4.242e+43");
+  test (sprintf "%.3F" 42.00 = "42.000");
+  test (sprintf "%.3F" 0.0042 = "0.004");
+*)
+
+  lprintf "\nh\n%!" [];
+  test (lsprintf "%+h" [+0.] = "+0x0p+0");
+  test (lsprintf "%+h" [-0.] = "-0x0p+0");
+  test (lsprintf "%+h" [+1.] = "+0x1p+0");
+  test (lsprintf "%+h" [-1.] = "-0x1p+0");
+  test (lsprintf "%+h" [+1024.] = "+0x1p+10");
+  test (lsprintf "%+h" [-1024.] = "-0x1p+10");
+  test (lsprintf "%h" [0x123.456] = "0x1.23456p+8");
+  test (lsprintf "%h" [0x123456789ABCDE.] = "0x1.23456789abcdep+52");
+  test (lsprintf "%h" [epsilon_float] = "0x1p-52");
+  test (lsprintf "%h" [nan] = "nan");
+  test (lsprintf "%h" [infinity] = "infinity");
+  test (lsprintf "%h" [neg_infinity] = "-infinity");
+  test (lsprintf "%h" [4. *. atan 1.] = "0x1.921fb54442d18p+1");
+
+  lprintf "\nH\n%!" [];
+  test (lsprintf "%+H" [+0.] = "+0X0P+0");
+  test (lsprintf "%+H" [-0.] = "-0X0P+0");
+  test (lsprintf "%+H" [+1.] = "+0X1P+0");
+  test (lsprintf "%+H" [-1.] = "-0X1P+0");
+  test (lsprintf "%+H" [+1024.] = "+0X1P+10");
+  test (lsprintf "%+H" [-1024.] = "-0X1P+10");
+  test (lsprintf "%H" [0X123.456] = "0X1.23456P+8");
+  test (lsprintf "%H" [0X123456789ABCDE.] = "0X1.23456789ABCDEP+52");
+  test (lsprintf "%H" [epsilon_float] = "0X1P-52");
+  test (lsprintf "%H" [nan] = "NAN");
+  test (lsprintf "%H" [infinity] = "INFINITY");
+  test (lsprintf "%H" [neg_infinity] = "-INFINITY");
+  test (lsprintf "%H" [4. *. atan 1.] = "0X1.921FB54442D18P+1");
+
+  lprintf "\ne\n%!" [];
+  test (lsprintf "%e" [-42.42] =* "-4.242000e+01");
+  test (lsprintf "%-15e" [-42.42] =* "-4.242000e+01  ");
+  test (lsprintf "%015e" [-42.42] =* "-004.242000e+01");
+  test (lsprintf "%+e" [42.42] =* "+4.242000e+01");
+  test (lsprintf "% e" [42.42] =* " 4.242000e+01");
+  test (lsprintf "%#e" [42.42] =* "4.242000e+01");
+  test (lsprintf "%15e" [42.42] =* "   4.242000e+01");
+  test (lsprintf "%*e" [14; 42.42] =* "  4.242000e+01");
+  test (lsprintf "%-0+ #14e" [42.42] =* "+4.242000e+01 ");
+  test (lsprintf "%.3e" [-42.42] =* "-4.242e+01");
+  test (lsprintf "%-15.3e" [-42.42] =* "-4.242e+01     ");
+  test (lsprintf "%015.3e" [-42.42] =* "-000004.242e+01");
+  test (lsprintf "%+.3e" [42.42] =* "+4.242e+01");
+  test (lsprintf "% .3e" [42.42] =* " 4.242e+01");
+  test (lsprintf "%#.3e" [42.42] =* "4.242e+01");
+  test (lsprintf "%15.3e" [42.42] =* "      4.242e+01");
+  test (lsprintf "%*.*e" [11; 3; 42.42] =* "  4.242e+01");
+  test (lsprintf "%-0+ #14.3e" [42.42] =* "+4.242e+01    ");
+
+  lprintf "\nE\n%!" [];
+  test (lsprintf "%E" [-42.42] =* "-4.242000E+01");
+  test (lsprintf "%-15E" [-42.42] =* "-4.242000E+01  ");
+  test (lsprintf "%015E" [-42.42] =* "-004.242000E+01");
+  test (lsprintf "%+E" [42.42] =* "+4.242000E+01");
+  test (lsprintf "% E" [42.42] =* " 4.242000E+01");
+  test (lsprintf "%#E" [42.42] =* "4.242000E+01");
+  test (lsprintf "%15E" [42.42] =* "   4.242000E+01");
+  test (lsprintf "%*E" [14; 42.42] =* "  4.242000E+01");
+  test (lsprintf "%-0+ #14E" [42.42] =* "+4.242000E+01 ");
+  test (lsprintf "%.3E" [-42.42] =* "-4.242E+01");
+  test (lsprintf "%-15.3E" [-42.42] =* "-4.242E+01     ");
+  test (lsprintf "%015.3E" [-42.42] =* "-000004.242E+01");
+  test (lsprintf "%+.3E" [42.42] =* "+4.242E+01");
+  test (lsprintf "% .3E" [42.42] =* " 4.242E+01");
+  test (lsprintf "%#.3E" [42.42] =* "4.242E+01");
+  test (lsprintf "%15.3E" [42.42] =* "      4.242E+01");
+  test (lsprintf "%*.*E" [11; 3; 42.42] =* "  4.242E+01");
+  test (lsprintf "%-0+ #14.3E" [42.42] =* "+4.242E+01    ");
+
+(* %g gives strange results that correspond to neither %f nor %e
+  lprintf "\ng\n%!";
+  test (sprintf "%g" (-42.42) = "-42.42000");
+  test (sprintf "%-15g" (-42.42) = "-42.42000      ");
+  test (sprintf "%015g" (-42.42) = "-00000042.42000");
+  test (sprintf "%+g" 42.42 = "+42.42000");
+  test (sprintf "% g" 42.42 = " 42.42000");
+  test (sprintf "%#g" 42.42 = "42.42000");
+  test (sprintf "%15g" 42.42 = "       42.42000");
+  test (sprintf "%*g" 14 42.42 = "      42.42000");
+  test (sprintf "%-0+ #14g" 42.42 = "+42.42000     ");
+  test (sprintf "%.3g" (-42.42) = "-42.420");
+*)
+
+(* Same for %G
+  lprintf "\nG\n%!";
+*)
+
+  lprintf "\nB\n%!" [];
+  test (lsprintf "%B" [true] = "true");
+  test (lsprintf "%B" [false] = "false");
+  (* test (lsprintf "%8B" [false] = "   false"); *)
+  (* padding not done *)
+
+  lprintf "\nld/li positive\n%!" [];
+  test (lsprintf "%ld/%li" [42l; 43l] = "42/43");
+  test (lsprintf "%-4ld/%-5li" [42l; 43l] = "42  /43   ");
+  test (lsprintf "%04ld/%05li" [42l; 43l] = "0042/00043");
+  test (lsprintf "%+ld/%+li" [42l; 43l] = "+42/+43");
+  test (lsprintf "% ld/% li" [42l; 43l] = " 42/ 43");
+  test (lsprintf "%#ld/%#li" [42l; 43l] = "42/43");
+  test (lsprintf "%4ld/%5li" [42l; 43l] = "  42/   43");
+  test (lsprintf "%*ld/%*li" [4; 42l; 5; 43l] = "  42/   43");
+  test (lsprintf "%-0+#4ld/%-0 #5li" [42l; 43l] = "+42 / 43  ");
+
+  lprintf "\nld/li negative\n%!" [];
+  test (lsprintf "%ld/%li" [-42l; -43l] = "-42/-43");
+  test (lsprintf "%-4ld/%-5li" [-42l; -43l] = "-42 /-43  ");
+  test (lsprintf "%04ld/%05li" [-42l; -43l] = "-042/-0043");
+  test (lsprintf "%+ld/%+li" [-42l; -43l] = "-42/-43");
+  test (lsprintf "% ld/% li" [-42l; -43l] = "-42/-43");
+  test (lsprintf "%#ld/%#li" [-42l; -43l] = "-42/-43");
+  test (lsprintf "%4ld/%5li" [-42l; -43l] = " -42/  -43");
+  test (lsprintf "%*ld/%*li" [4; -42l; 5; -43l] = " -42/  -43");
+  test (lsprintf "%-0+ #4ld/%-0+ #5li" [-42l; -43l] = "-42 /-43  ");
+
+  lprintf "\nlu positive\n%!" [];
+  test (lsprintf "%lu" [42l] = "42");
+  test (lsprintf "%-4lu" [42l] = "42  ");
+  test (lsprintf "%04lu" [42l] = "0042");
+  test (lsprintf "%+lu" [42l] = "42");
+  test (lsprintf "% lu" [42l] = "42");
+  test (lsprintf "%#lu" [42l] = "42");
+  test (lsprintf "%4lu" [42l] = "  42");
+  test (lsprintf "%*lu" [4; 42l] = "  42");
+  test (lsprintf "%-0+ #6ld" [42l] = "+42   ");
+
+  lprintf "\nlu negative\n%!" [];
+  test (lsprintf "%lu" [-1l] = "4294967295");
+
+  lprintf "\nlx positive\n%!" [];
+  test (lsprintf "%lx" [42l] = "2a");
+  test (lsprintf "%-4lx" [42l] = "2a  ");
+  test (lsprintf "%04lx" [42l] = "002a");
+  test (lsprintf "%+lx" [42l] = "2a");
+  test (lsprintf "% lx" [42l] = "2a");
+  test (lsprintf "%#lx" [42l] = "0x2a");
+  test (lsprintf "%4lx" [42l] = "  2a");
+  test (lsprintf "%*lx" [5; 42l] = "   2a");
+  test (lsprintf "%-0+ #*lx" [5; 42l] = "0x2a ");
+
+  lprintf "\nlx negative\n%!" [];
+  test (lsprintf "%lx" [-42l] = "ffffffd6");
+
+  lprintf "\nlX positive\n%!" [];
+  test (lsprintf "%lX" [42l] = "2A");
+  test (lsprintf "%-4lX" [42l] = "2A  ");
+  test (lsprintf "%04lX" [42l] = "002A");
+  test (lsprintf "%+lX" [42l] = "2A");
+  test (lsprintf "% lX" [42l] = "2A");
+  test (lsprintf "%#lX" [42l] = "0X2A");
+  test (lsprintf "%4lX" [42l] = "  2A");
+  test (lsprintf "%*lX" [5; 42l] = "   2A");
+  test (lsprintf "%-0+ #*lX" [5; 42l] = "0X2A ");
+
+  lprintf "\nlX negative\n%!" [];
+  test (lsprintf "%lX" [-42l] = "FFFFFFD6");
+
+  lprintf "\nlo positive\n%!" [];
+  test (lsprintf "%lo" [42l] = "52");
+  test (lsprintf "%-4lo" [42l] = "52  ");
+  test (lsprintf "%04lo" [42l] = "0052");
+  test (lsprintf "%+lo" [42l] = "52");
+  test (lsprintf "% lo" [42l] = "52");
+  test (lsprintf "%#lo" [42l] = "052");
+  test (lsprintf "%4lo" [42l] = "  52");
+  test (lsprintf "%*lo" [5; 42l] = "   52");
+  test (lsprintf "%-0+ #*lo" [5; 42l] = "052  ");
+
+  lprintf "\nlo negative\n%!" [];
+  test (lsprintf "%lo" [-42l] = "37777777726");
+
+  (* Nativeint not tested: looks like too much work, and anyway it should
+     work like Int32 or Int64. *)
+
+  lprintf "\nLd/Li positive\n%!" [];
+  test (lsprintf "%Ld/%Li" [42L; 43L] = "42/43");
+  test (lsprintf "%-4Ld/%-5Li" [42L; 43L] = "42  /43   ");
+  test (lsprintf "%04Ld/%05Li" [42L; 43L] = "0042/00043");
+  test (lsprintf "%+Ld/%+Li" [42L; 43L] = "+42/+43");
+  test (lsprintf "% Ld/% Li" [42L; 43L] = " 42/ 43");
+  test (lsprintf "%#Ld/%#Li" [42L; 43L] = "42/43");
+  test (lsprintf "%4Ld/%5Li" [42L; 43L] = "  42/   43");
+  test (lsprintf "%*Ld/%*Li" [4; 42L; 5; 43L] = "  42/   43");
+  test (lsprintf "%-0+#4Ld/%-0 #5Li" [42L; 43L] = "+42 / 43  ");
+
+  lprintf "\nLd/Li negative\n%!" [];
+  test (lsprintf "%Ld/%Li" [-42L; -43L] = "-42/-43");
+  test (lsprintf "%-4Ld/%-5Li" [-42L; -43L] = "-42 /-43  ");
+  test (lsprintf "%04Ld/%05Li" [-42L; -43L] = "-042/-0043");
+  test (lsprintf "%+Ld/%+Li" [-42L; -43L] = "-42/-43");
+  test (lsprintf "% Ld/% Li" [-42L; -43L] = "-42/-43");
+  test (lsprintf "%#Ld/%#Li" [-42L; -43L] = "-42/-43");
+  test (lsprintf "%4Ld/%5Li" [-42L; -43L] = " -42/  -43");
+  test (lsprintf "%*Ld/%*Li" [4; -42L; 5; -43L] = " -42/  -43");
+  test (lsprintf "%-0+ #4Ld/%-0+ #5Li" [-42L; -43L] = "-42 /-43  ");
+
+  lprintf "\nLu positive\n%!" [];
+  test (lsprintf "%Lu" [42L] = "42");
+  test (lsprintf "%-4Lu" [42L] = "42  ");
+  test (lsprintf "%04Lu" [42L] = "0042");
+  test (lsprintf "%+Lu" [42L] = "42");
+  test (lsprintf "% Lu" [42L] = "42");
+  test (lsprintf "%#Lu" [42L] = "42");
+  test (lsprintf "%4Lu" [42L] = "  42");
+  test (lsprintf "%*Lu" [4; 42L] = "  42");
+  test (lsprintf "%-0+ #6Ld" [42L] = "+42   ");
+
+  lprintf "\nLu negative\n%!" [];
+  test (lsprintf "%Lu" [-1L] = "18446744073709551615");
+
+  lprintf "\nLx positive\n%!" [];
+  test (lsprintf "%Lx" [42L] = "2a");
+  test (lsprintf "%-4Lx" [42L] = "2a  ");
+  test (lsprintf "%04Lx" [42L] = "002a");
+  test (lsprintf "%+Lx" [42L] = "2a");
+  test (lsprintf "% Lx" [42L] = "2a");
+  test (lsprintf "%#Lx" [42L] = "0x2a");
+  test (lsprintf "%4Lx" [42L] = "  2a");
+  test (lsprintf "%*Lx" [5; 42L] = "   2a");
+  test (lsprintf "%-0+ #*Lx" [5; 42L] = "0x2a ");
+
+  lprintf "\nLx negative\n%!" [];
+  test (lsprintf "%Lx" [-42L] = "ffffffffffffffd6");
+
+  lprintf "\nLX positive\n%!" [];
+  test (lsprintf "%LX" [42L] = "2A");
+  test (lsprintf "%-4LX" [42L] = "2A  ");
+  test (lsprintf "%04LX" [42L] = "002A");
+  test (lsprintf "%+LX" [42L] = "2A");
+  test (lsprintf "% LX" [42L] = "2A");
+  test (lsprintf "%#LX" [42L] = "0X2A");
+  test (lsprintf "%4LX" [42L] = "  2A");
+  test (lsprintf "%*LX" [5; 42L] = "   2A");
+  test (lsprintf "%-0+ #*LX" [5; 42L] = "0X2A ");
+
+  lprintf "\nLX negative\n%!" [];
+  test (lsprintf "%LX" [-42L] = "FFFFFFFFFFFFFFD6");
+
+  lprintf "\nLo positive\n%!" [];
+  test (lsprintf "%Lo" [42L] = "52");
+  test (lsprintf "%-4Lo" [42L] = "52  ");
+  test (lsprintf "%04Lo" [42L] = "0052");
+  test (lsprintf "%+Lo" [42L] = "52");
+  test (lsprintf "% Lo" [42L] = "52");
+  test (lsprintf "%#Lo" [42L] = "052");
+  test (lsprintf "%4Lo" [42L] = "  52");
+  test (lsprintf "%*Lo" [5; 42L] = "   52");
+  test (lsprintf "%-0+ #*Lo" [5; 42L] = "052  ");
+
+  lprintf "\nLo negative\n%!" [];
+  test (lsprintf "%Lo" [-42L] = "1777777777777777777726");
+
+  lprintf "\na\n%!" [];
+  let x = ref () in
+  let f () y = if y == x then "ok" else "wrong" in
+  test (lsprintf "%a" [f; x] = "ok");
+
+  lprintf "\nt\n%!" [];
+  let f () = "ok" in
+  test (lsprintf "%t" [f] = "ok");
+
+  (* %{ fmt %} prints the signature of [fmt], i.e. a canonical representation
+    of the conversions present in [fmt].
+  *)
+  lprintf "\n{...%%}\n%!" [];
+  let f = format_of_string "%f/%s" in
+  test (lsprintf "%{%f%s%}" [f] = "%f%s");
+
+  lprintf "\n(...%%)\n%!" [];
+  let f = format_of_string "%d/foo/%s" in
+  test (lsprintf "%(%d%s%)" [f; 42; "bar"] = "42/foo/bar");
+
+  printf "\n! %% @ , and constants\n%!";
+  test (lsprintf "%!" [] = "");
+  test (lsprintf "%%" [] = "%");
+  test (lsprintf "%@" [] = "@");
+  test (lsprintf "%," [] = "");
+  test (lsprintf "@" [] = "@");
+  test (lsprintf "@@" [] = "@@");
+  test (lsprintf "@%%" [] = "@%");
+
+  lprintf "\nMiscellaneous tests\n%!" [];
+  test (lsprintf "%d, %.2f, %s" [42; 3.14159; "ocaml"] = "42, 3.14, ocaml");
+
+  let pp_custom () p = lsprintf "x = %s, y = %d" [p.x; p.y] in
+  let p = { x = "ocaml"; y = 42 } in
+  test (lsprintf "%a" [pp_custom; p] = "x = ocaml, y = 42");
+
+  test (lsprintf "%s, %d, %.1f, %a" ["world"; 7; 2.718; pp_custom; p] = "world, 7, 2.7, x = ocaml, y = 42");
+
+  let pp_padded_list () l =
+    lsprintf "[%s]" [ List.map (fun x -> lsprintf "%04d" [ x ]) l |> String.concat "; " ] in
+  test (lsprintf "%a" [pp_padded_list; [1; 23; 456]] = "[0001; 0023; 0456]");
+
+  let nested_print () = lsprintf "%s, %d, %a" [ "final"; 42; pp_custom; p ] in
+  test (lsprintf "%s -> %t" [ "outer"; nested_print ] = "outer -> final, 42, x = ocaml, y = 42");
+
+  let delayed_print () = lsprintf "%s, %d, %a" [ "final"; 42; pp_custom; p ] in
+  test (lsprintf "%s, %d, %.3f, %a, %t"
+    ["last"; 100; 3.141; pp_custom; p; delayed_print] 
+    = "last, 100, 3.141, x = ocaml, y = 42, final, 42, x = ocaml, y = 42");
+
+  let l : _ Arg_list.t = [ "ocaml"; 42; 3.14; 'c'; pp_custom; p ] in
+  test (lsprintf "%s, %d, %.3f, %c, %a" l = "ocaml, 42, 3.140, c, x = ocaml, y = 42");
+
+  (* emulating kfprintf *)
+  let rf = ref false in
+  let lvl = ref 0 in
+  let er fmt args =
+    lsprintf fmt
+      ((fun () -> rf := true; lvl := !lvl + 1;
+        lsprintf "[test %d]: " [ !lvl ]) 
+      :: args)
+  in
+  test (er "%t%d %s" [ 42; "ocaml" ] = "[test 1]: 42 ocaml");
+  test (er "%t%.02f %i" [ 3.14; 42 ] = "[test 2]: 3.14 42");
+  test (er "%t%S %s" [ "ocaml"; "ocaml" ] = "[test 3]: \"ocaml\" ocaml");
+  test (!rf);
 
   printf "\nend of tests\n%!";
 with e ->

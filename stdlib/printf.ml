@@ -41,3 +41,54 @@ let ksprintf k (Format (fmt, _)) =
 let sprintf fmt = ksprintf (fun s -> s) fmt
 
 let kprintf = ksprintf
+
+(*
+  Defining heterogeneous list flavours of functions defined above
+*)
+
+module Arg_list = Arg_list
+
+let lfprintf : type a .
+  out_channel ->
+  (a, out_channel, unit) format ->
+  (a, unit) Arg_list.t ->
+  unit =
+  fun oc (Format (fmt, _)) args ->
+  make_lprintf (fun acc -> output_acc oc acc)
+    End_of_acc fmt args
+
+let lbprintf : type a .
+  Buffer.t ->
+  (a, Buffer.t, unit) format ->
+  (a, unit) Arg_list.t ->
+  unit =
+  fun b (Format (fmt, _)) args ->
+  make_lprintf (fun acc -> bufput_acc b acc)
+    End_of_acc fmt args
+
+let lprintf : type a .
+  (a, out_channel, unit) format ->
+  (a, unit) Arg_list.t ->
+  unit =
+  fun fmt args ->
+  lfprintf stdout fmt args
+
+let leprintf : type a .
+  (a, out_channel, unit) format ->
+  (a, unit) Arg_list.t ->
+  unit =
+  fun fmt args ->
+  lfprintf stderr fmt args
+
+let lsprintf : type a .
+  (a, unit, string) format ->
+  (a, string) Arg_list.t ->
+  string =
+  fun (Format (fmt, _)) args ->
+  let k acc = 
+    let buf = Buffer.create 64 in
+    strput_acc buf acc;
+    (Buffer.contents buf)
+  in
+  make_lprintf k End_of_acc fmt args
+

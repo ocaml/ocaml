@@ -1491,6 +1491,47 @@ let kasprintf k (Format (fmt, _)) =
 
 let asprintf fmt = kasprintf id fmt
 
+(*
+
+  Defining heterogeneous list flavours of functions defined above
+
+*)
+
+module Arg_list = Arg_list
+
+let lfprintf : type a .
+  formatter ->
+  (a, formatter, unit) format ->
+  (a, unit) Arg_list.t ->
+  unit =
+  fun ppf (Format (fmt, _)) args ->
+  make_lprintf (fun acc -> output_acc ppf acc)
+    End_of_acc fmt args
+
+let lprintf : type a .
+  (a, formatter, unit) format ->
+  (a, unit) Arg_list.t ->
+  unit =
+  fun fmt args ->
+  lfprintf (DLS.get std_formatter_key) fmt args
+
+let leprintf : type a .
+  (a, formatter, unit) format ->
+  (a, unit) Arg_list.t ->
+  unit =
+  fun fmt args ->
+  lfprintf (DLS.get err_formatter_key) fmt args
+
+let lasprintf : type a .
+  (a, formatter, unit, string) format4 ->
+  (a, string) Arg_list.t ->
+  string =
+  fun (Format (fmt, _)) args ->
+  let b = pp_make_buffer () in
+  let ppf = formatter_of_buffer b in
+  let k acc = output_acc ppf acc; flush_buffer_formatter b ppf in
+  make_lprintf k End_of_acc fmt args
+
 (* Flushing standard formatters at end of execution. *)
 
 let flush_standard_formatters () =
