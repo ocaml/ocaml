@@ -60,7 +60,8 @@ module Bytecode = struct
     let unsafe_module (t : t) = t.cu_primitives <> []
   end
 
-  type handle = Stdlib.in_channel * filename * Digest.t * Symtable.global_map option
+  type handle =
+    Stdlib.in_channel * filename * Digest.t * Symtable.global_map option
 
   let default_crcs = ref []
   let default_global_map = ref Symtable.empty_global_map
