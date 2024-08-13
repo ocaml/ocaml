@@ -272,6 +272,7 @@ module Sig = struct
   let mk ?(loc = !default_loc) d = {psig_desc = d; psig_loc = loc}
 
   let value ?loc a = mk ?loc (Psig_value a)
+  let primitive ?loc a = mk ?loc (Psig_primitive a)
   let type_ ?loc rec_flag a = mk ?loc (Psig_type (rec_flag, a))
   let type_subst ?loc a = mk ?loc (Psig_typesubst a)
   let type_extension ?loc a = mk ?loc (Psig_typext a)
@@ -410,13 +411,24 @@ end
 
 module Val = struct
   let mk ?(loc = !default_loc) ?(attrs = []) ?(docs = empty_docs)
-        ?(prim = []) name typ =
+         name typ =
     {
      pval_name = name;
      pval_type = typ;
      pval_attributes = add_docs_attrs docs attrs;
      pval_loc = loc;
-     pval_prim = prim;
+    }
+end
+
+module Prim = struct
+  let mk ?(loc = !default_loc) ?(attrs = []) ?(docs = empty_docs)
+         ~prim name typ =
+    {
+     pprim_name = name;
+     pprim_type = typ;
+     pprim_attributes = add_docs_attrs docs attrs;
+     pprim_loc = loc;
+     pprim_prim = prim;
     }
 end
 

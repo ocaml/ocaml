@@ -429,7 +429,13 @@ and value_description i ppf x =
        x.pval_name fmt_location x.pval_loc;
   attributes i ppf x.pval_attributes;
   core_type (i+1) ppf x.pval_type;
-  list (i+1) string ppf x.pval_prim
+
+and primitive_description i ppf x =
+  line i ppf "primitive_description %a %a\n" fmt_string_loc
+       x.pprim_name fmt_location x.pprim_loc;
+  attributes i ppf x.pprim_attributes;
+  core_type (i+1) ppf x.pprim_type;
+  list (i+1) string ppf x.pprim_prim
 
 and type_parameter i ppf (x, _variance) = core_type i ppf x
 
@@ -726,6 +732,9 @@ and signature_item i ppf x =
   | Psig_value vd ->
       line i ppf "Psig_value\n";
       value_description i ppf vd;
+  | Psig_primitive pd ->
+      line i ppf "Psig_primitive\n";
+      primitive_description i ppf pd;
   | Psig_type (rf, l) ->
       line i ppf "Psig_type %a\n" fmt_rec_flag rf;
       list i type_declaration ppf l;
@@ -855,9 +864,9 @@ and structure_item i ppf x =
   | Pstr_value (rf, l) ->
       line i ppf "Pstr_value %a\n" fmt_rec_flag rf;
       list i value_binding ppf l;
-  | Pstr_primitive vd ->
+  | Pstr_primitive pd ->
       line i ppf "Pstr_primitive\n";
-      value_description i ppf vd;
+      primitive_description i ppf pd;
   | Pstr_type (rf, l) ->
       line i ppf "Pstr_type %a\n" fmt_rec_flag rf;
       list i type_declaration ppf l;

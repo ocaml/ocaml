@@ -701,7 +701,7 @@
     [
       structure_item (shortcut_ext_attr.ml[85,1728+0]..[85,1728+30])
         Pstr_primitive
-        value_description "x" (shortcut_ext_attr.ml[85,1728+19]..[85,1728+20]) (shortcut_ext_attr.ml[85,1728+0]..[85,1728+30])
+        primitive_description "x" (shortcut_ext_attr.ml[85,1728+19]..[85,1728+20]) (shortcut_ext_attr.ml[85,1728+0]..[85,1728+30])
           attribute "foo"
             []
           core_type (shortcut_ext_attr.ml[85,1728+23]..[85,1728+24])
@@ -808,14 +808,13 @@
                   core_type (shortcut_ext_attr.ml[98,1965+20]..[98,1965+21])
                     Ptyp_constr "t" (shortcut_ext_attr.ml[98,1965+20]..[98,1965+21])
                     []
-                  []
             ]
           signature_item (shortcut_ext_attr.ml[99,1987+2]..[99,1987+31]) ghost
             Psig_extension "foo"
             [
               signature_item (shortcut_ext_attr.ml[99,1987+2]..[99,1987+31])
-                Psig_value
-                value_description "x" (shortcut_ext_attr.ml[99,1987+21]..[99,1987+22]) (shortcut_ext_attr.ml[99,1987+2]..[99,1987+31])
+                Psig_primitive
+                primitive_description "x" (shortcut_ext_attr.ml[99,1987+21]..[99,1987+22]) (shortcut_ext_attr.ml[99,1987+2]..[99,1987+31])
                   attribute "foo"
                     []
                   core_type (shortcut_ext_attr.ml[99,1987+25]..[99,1987+26])

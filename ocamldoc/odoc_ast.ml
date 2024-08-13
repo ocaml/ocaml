@@ -1077,8 +1077,8 @@ module Analyser =
           let (new_env, l_ele) = iter ~first: true loc.Location.loc_start.Lexing.pos_cnum env [] pat_exp_list in
           (0, new_env, l_ele)
 
-      | Parsetree.Pstr_primitive val_desc ->
-            let name_pre = val_desc.Parsetree.pval_name.txt in
+      | Parsetree.Pstr_primitive prim_desc ->
+            let name_pre = prim_desc.Parsetree.pprim_name.txt in
             (* of string * value_description *)
             let typ = Typedtree_search.search_primitive table name_pre in
             let name = Name.parens_if_infix name_pre in
@@ -1090,7 +1090,7 @@ module Analyser =
               else
                 None
             in
-            let comment_opt = Odoc_sig.analyze_alerts comment_opt val_desc.Parsetree.pval_attributes in
+            let comment_opt = Odoc_sig.analyze_alerts comment_opt prim_desc.Parsetree.pprim_attributes in
             let new_value = {
                 val_name = complete_name ;
                 val_info = comment_opt ;

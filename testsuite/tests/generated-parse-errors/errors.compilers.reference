@@ -2378,8 +2378,8 @@ File "implementation: UIDENT WITH", line 1, characters 7-11:
 Error: Syntax error
 File "implementation: VAL LBRACKETAT AND RBRACKET WHILE", line 1, characters 13-18:
 Error: Syntax error
-File "implementation: VAL LIDENT COLON UNDERSCORE WITH", line 1, characters 15-19:
-Error: Syntax error
+File "implementation: VAL LIDENT COLON UNDERSCORE WITH", line 1, characters 0-14:
+Error: broken invariant in parsetree: Value declarations are only allowed in signatures
 File "implementation: VAL LIDENT COLON WITH", line 1, characters 13-17:
 Error: Syntax error
 File "implementation: VAL LIDENT WITH", line 1, characters 11-15:

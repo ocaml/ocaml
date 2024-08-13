@@ -68,6 +68,8 @@ type mapper = {
   open_description: mapper -> open_description -> open_description;
   pat: mapper -> pattern -> pattern;
   payload: mapper -> payload -> payload;
+  primitive_description: mapper -> primitive_description
+                         -> primitive_description;
   signature: mapper -> signature -> signature;
   signature_item: mapper -> signature_item -> signature_item;
   structure: mapper -> structure -> structure;
@@ -323,6 +325,7 @@ module MT = struct
     let loc = sub.location sub loc in
     match desc with
     | Psig_value vd -> value ~loc (sub.value_description sub vd)
+    | Psig_primitive pd -> primitive ~loc (sub.primitive_description sub pd)
     | Psig_type (rf, l) ->
         type_ ~loc rf (List.map (sub.type_declaration sub) l)
     | Psig_typesubst l ->
@@ -380,7 +383,7 @@ module M = struct
         let attrs = sub.attributes sub attrs in
         eval ~loc ~attrs (sub.expr sub x)
     | Pstr_value (r, vbs) -> value ~loc r (List.map (sub.value_binding sub) vbs)
-    | Pstr_primitive vd -> primitive ~loc (sub.value_description sub vd)
+    | Pstr_primitive pd -> primitive ~loc (sub.primitive_description sub pd)
     | Pstr_type (rf, l) -> type_ ~loc rf (List.map (sub.type_declaration sub) l)
     | Pstr_typext te -> type_extension ~loc (sub.type_extension sub te)
     | Pstr_exception ed -> exception_ ~loc (sub.type_exception sub ed)
@@ -658,14 +661,22 @@ let default_mapper =
     type_exception = T.map_type_exception;
     extension_constructor = T.map_extension_constructor;
     value_description =
-      (fun this {pval_name; pval_type; pval_prim; pval_loc;
-                 pval_attributes} ->
+      (fun this {pval_name; pval_type; pval_loc; pval_attributes} ->
         Val.mk
           (map_loc this pval_name)
           (this.typ this pval_type)
           ~attrs:(this.attributes this pval_attributes)
           ~loc:(this.location this pval_loc)
-          ~prim:pval_prim
+      );
+    primitive_description =
+      (fun this {pprim_name; pprim_type; pprim_prim; pprim_loc;
+                 pprim_attributes} ->
+        Prim.mk
+          (map_loc this pprim_name)
+          (this.typ this pprim_type)
+          ~attrs:(this.attributes this pprim_attributes)
+          ~loc:(this.location this pprim_loc)
+          ~prim:pprim_prim
       );
 
     pat = P.map;

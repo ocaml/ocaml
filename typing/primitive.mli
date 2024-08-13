@@ -49,8 +49,8 @@ val make
   -> native_repr_res: native_repr
   -> description
 
-val parse_declaration
-  :  Parsetree.value_description
+val parse_description
+  :  Parsetree.primitive_description
   -> native_repr_args:native_repr list
   -> native_repr_res:native_repr
   -> description

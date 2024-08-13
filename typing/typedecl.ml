@@ -1596,43 +1596,12 @@ let check_unboxable env loc ty =
 let transl_value_decl env loc valdecl =
   let cty = Typetexp.transl_type_scheme env valdecl.pval_type in
   let ty = cty.ctyp_type in
+  assert (Env.is_in_signature env);
   let v =
-  match valdecl.pval_prim with
-    [] when Env.is_in_signature env ->
-      { val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
-        val_attributes = valdecl.pval_attributes;
-        val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
-      }
-  | [] ->
-      raise (Error(valdecl.pval_loc, Val_in_structure))
-  | _ ->
-      let global_repr =
-        match
-          get_native_repr_attribute valdecl.pval_attributes ~global_repr:None
-        with
-        | Native_repr_attr_present repr -> Some repr
-        | Native_repr_attr_absent -> None
-      in
-      let native_repr_args, native_repr_res =
-        parse_native_repr_attributes env valdecl.pval_type ty ~global_repr
-      in
-      let prim =
-        Primitive.parse_declaration valdecl
-          ~native_repr_args
-          ~native_repr_res
-      in
-      if prim.prim_arity = 0 &&
-         (prim.prim_name = "" || prim.prim_name.[0] <> '%') then
-        raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
-      if !Clflags.native_code
-      && prim.prim_arity > 5
-      && prim.prim_native_name = ""
-      then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
-      check_unboxable env loc ty;
-      { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
-        val_attributes = valdecl.pval_attributes;
-        val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
-      }
+    { val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
+      val_attributes = valdecl.pval_attributes;
+      val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
+    }
   in
   let (id, newenv) =
     Env.enter_value valdecl.pval_name.txt v env
@@ -1643,7 +1612,7 @@ let transl_value_decl env loc valdecl =
      val_id = id;
      val_name = valdecl.pval_name;
      val_desc = cty; val_val = v;
-     val_prim = valdecl.pval_prim;
+     val_prim = [];
      val_loc = valdecl.pval_loc;
      val_attributes = valdecl.pval_attributes;
     }
@@ -1653,6 +1622,59 @@ let transl_value_decl env loc valdecl =
 let transl_value_decl env loc valdecl =
   Builtin_attributes.warning_scope valdecl.pval_attributes
     (fun () -> transl_value_decl env loc valdecl)
+
+(* Translate a primitive description *)
+let transl_prim_desc env loc primdesc =
+  let cty = Typetexp.transl_type_scheme env primdesc.pprim_type in
+  let ty = cty.ctyp_type in
+  let v =
+    let global_repr =
+      match
+        get_native_repr_attribute primdesc.pprim_attributes ~global_repr:None
+      with
+      | Native_repr_attr_present repr -> Some repr
+      | Native_repr_attr_absent -> None
+    in
+    let native_repr_args, native_repr_res =
+      parse_native_repr_attributes env primdesc.pprim_type ty ~global_repr
+    in
+    let prim =
+      Primitive.parse_description primdesc
+        ~native_repr_args
+        ~native_repr_res
+    in
+    if prim.prim_arity = 0 &&
+       (prim.prim_name = "" || prim.prim_name.[0] <> '%') then
+      raise(Error(primdesc.pprim_type.ptyp_loc, Null_arity_external));
+    if !Clflags.native_code
+    && prim.prim_arity > 5
+    && prim.prim_native_name = ""
+    then raise(Error(primdesc.pprim_type.ptyp_loc, Missing_native_external));
+    check_unboxable env loc ty;
+    { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
+      val_attributes = primdesc.pprim_attributes;
+      val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
+    }
+  in
+  let (id, newenv) =
+    Env.enter_value primdesc.pprim_name.txt v env
+      ~check:(fun s -> Warnings.Unused_value_declaration s)
+  in
+  let desc =
+    {
+     val_id = id;
+     val_name = primdesc.pprim_name;
+     val_desc = cty; val_val = v;
+     val_prim = primdesc.pprim_prim;
+     val_loc = primdesc.pprim_loc;
+     val_attributes = primdesc.pprim_attributes;
+    }
+  in
+  desc, newenv
+
+let transl_prim_desc env loc primdesc =
+  Builtin_attributes.warning_scope primdesc.pprim_attributes
+    (fun () -> transl_prim_desc env loc primdesc)
 
 (* Translate a "with" constraint -- much simplified version of
    transl_type_decl. For a constraint [Sig with t = sdecl],

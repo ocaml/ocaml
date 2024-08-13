@@ -183,7 +183,7 @@ end = struct
   (** The comment for module Foo *)
   module Foo = struct
     (** The comment for x *)
-    val x : int
+    let x : int = 0
     (** Another comment for x *)
   end
 
@@ -306,8 +306,8 @@ module Manual :
       end[@@ocaml.doc " The comment for class type my_class_type "]
     module Foo =
       struct
-        external x : int[@@ocaml.doc " The comment for x "][@@ocaml.doc
-                                                             " Another comment for x "]
+        let x : int = 0[@@ocaml.doc " The comment for x "][@@ocaml.doc
+                                                            " Another comment for x "]
       end[@@ocaml.doc " The comment for module Foo "]
     module type my_module_type  = sig val x : int end[@@ocaml.doc
                                                        " The comment for module type my_module_type. "]

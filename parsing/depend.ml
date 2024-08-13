@@ -387,6 +387,8 @@ and add_sig_item (bv, m) item =
   match item.psig_desc with
     Psig_value vd ->
       add_type bv vd.pval_type; (bv, m)
+  | Psig_primitive pd ->
+      add_type bv pd.pprim_type; (bv, m)
   | Psig_type (_, dcls)
   | Psig_typesubst dcls->
       List.iter (add_type_declaration bv) dcls; (bv, m)
@@ -525,8 +527,8 @@ and add_struct_item (bv, m) item : _ String.Map.t * _ String.Map.t =
       add_expr bv e; (bv, m)
   | Pstr_value(rf, pel) ->
       let bv = add_bindings rf bv pel in (bv, m)
-  | Pstr_primitive vd ->
-      add_type bv vd.pval_type; (bv, m)
+  | Pstr_primitive pd ->
+      add_type bv pd.pprim_type; (bv, m)
   | Pstr_type (_, dcls) ->
       List.iter (add_type_declaration bv) dcls; (bv, m)
   | Pstr_typext te ->

@@ -1421,6 +1421,15 @@ and transl_signature env sg =
             mksig (Tsig_value tdesc) env loc :: trem,
             Sig_value(tdesc.val_id, tdesc.val_val, Exported) :: rem,
               final_env
+        | Psig_primitive sdesc ->
+            let (tdesc, newenv) =
+              Typedecl.transl_prim_desc env item.psig_loc sdesc
+            in
+            Signature_names.check_value names tdesc.val_loc tdesc.val_id;
+            let (trem,rem, final_env) = transl_sig newenv srem in
+            mksig (Tsig_value tdesc) env loc :: trem,
+            Sig_value(tdesc.val_id, tdesc.val_val, Exported) :: rem,
+              final_env
         | Psig_type (rec_flag, sdecls) ->
             let (decls, newenv, _) =
               Typedecl.transl_type_decl env rec_flag sdecls
@@ -2573,7 +2582,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
         shape_map,
         newenv
     | Pstr_primitive sdesc ->
-        let (desc, newenv) = Typedecl.transl_value_decl env loc sdesc in
+        let (desc, newenv) = Typedecl.transl_prim_desc env loc sdesc in
         Signature_names.check_value names desc.val_loc desc.val_id;
         Tstr_primitive desc,
         [Sig_value(desc.val_id, desc.val_val, Exported)],
