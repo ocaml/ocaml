@@ -704,6 +704,7 @@
         primitive_description "x" (shortcut_ext_attr.ml[85,1728+19]..[85,1728+20]) (shortcut_ext_attr.ml[85,1728+0]..[85,1728+30])
           attribute "foo"
             []
+        Pprim_decl
           core_type (shortcut_ext_attr.ml[85,1728+23]..[85,1728+24])
             Ptyp_any
           [
@@ -817,6 +818,7 @@
                 primitive_description "x" (shortcut_ext_attr.ml[99,1987+21]..[99,1987+22]) (shortcut_ext_attr.ml[99,1987+2]..[99,1987+31])
                   attribute "foo"
                     []
+                Pprim_decl
                   core_type (shortcut_ext_attr.ml[99,1987+25]..[99,1987+26])
                     Ptyp_constr "t" (shortcut_ext_attr.ml[99,1987+25]..[99,1987+26])
                     []

@@ -952,6 +952,22 @@ and approx_sig env ssg =
             ]
           ) decls [rem]
           |> List.flatten
+      | Psig_primitive sdesc ->
+          begin match sdesc.pprim_kind with
+          | Pprim_decl _ ->
+            let tdesc, env =
+              Typedecl.transl_prim_desc env sdesc.pprim_loc sdesc
+            in
+            Sig_value(tdesc.val_id, tdesc.val_val, Exported)
+            :: approx_sig env srem
+          | Pprim_alias (_, lid) ->
+            begin match Env.find_value_by_name lid.txt env with
+            | _, v ->
+              let id, env = Env.enter_value sdesc.pprim_name.txt v env in
+              Sig_value(id, v, Exported) :: approx_sig env srem
+            | exception Not_found -> approx_sig env srem
+            end
+          end
       | _ ->
           approx_sig env srem
 

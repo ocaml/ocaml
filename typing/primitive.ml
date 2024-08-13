@@ -16,7 +16,6 @@
 (* Description of primitive functions *)
 
 open Misc
-open Parsetree
 
 type boxed_integer = Pnativeint | Pint32 | Pint64
 
@@ -81,10 +80,10 @@ let make ~name ~alloc ~native_name ~native_repr_args ~native_repr_res =
    prim_native_repr_args = native_repr_args;
    prim_native_repr_res = native_repr_res}
 
-let parse_description primdesc ~native_repr_args ~native_repr_res =
+let parse_description ~native_repr_args ~native_repr_res ~prim ~attrs ~loc =
   let arity = List.length native_repr_args in
   let name, native_name, old_style_noalloc, old_style_float =
-    match primdesc.pprim_prim with
+    match prim with
     | name :: "noalloc" :: name2 :: "float" :: _ -> (name, name2, true, true)
     | name :: "noalloc" :: name2 :: _ -> (name, name2, true, false)
     | name :: name2 :: "float" :: _ -> (name, name2, false, true)
@@ -95,31 +94,27 @@ let parse_description primdesc ~native_repr_args ~native_repr_res =
         fatal_error "Primitive.parse_description"
   in
   let noalloc_attribute =
-    Attr_helper.has_no_payload_attribute "noalloc" primdesc.pprim_attributes
+    Attr_helper.has_no_payload_attribute "noalloc" attrs
   in
   if old_style_float &&
      not (List.for_all is_ocaml_repr native_repr_args &&
           is_ocaml_repr native_repr_res) then
-    raise (Error (primdesc.pprim_loc,
-                  Old_style_float_with_native_repr_attribute));
+    raise (Error (loc, Old_style_float_with_native_repr_attribute));
   if old_style_noalloc && noalloc_attribute then
-    raise (Error (primdesc.pprim_loc,
-                  Old_style_noalloc_with_noalloc_attribute));
+    raise (Error (loc, Old_style_noalloc_with_noalloc_attribute));
   (* The compiler used to assume "noalloc" with "float", we just make this
      explicit now (GPR#167): *)
   let old_style_noalloc = old_style_noalloc || old_style_float in
   if old_style_float then
-    Location.deprecated primdesc.pprim_loc
+    Location.deprecated loc
       "[@@unboxed] + [@@noalloc] should be used\n\
        instead of \"float\""
   else if old_style_noalloc then
-    Location.deprecated primdesc.pprim_loc
-      "[@@noalloc] should be used instead of \"noalloc\"";
+    Location.deprecated loc "[@@noalloc] should be used instead of \"noalloc\"";
   if native_name = "" &&
      not (List.for_all is_ocaml_repr native_repr_args &&
           is_ocaml_repr native_repr_res) then
-    raise (Error (primdesc.pprim_loc,
-                  No_native_primitive_with_repr_attribute));
+    raise (Error (loc, No_native_primitive_with_repr_attribute));
   let noalloc = old_style_noalloc || noalloc_attribute in
   let native_repr_args, native_repr_res =
     if old_style_float then

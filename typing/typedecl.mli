@@ -110,6 +110,7 @@ type error =
   | Boxed_and_unboxed
   | Nonrec_gadt
   | Invalid_private_row_declaration of type_expr
+  | Primitive_alias_does_not_refer_to_primitive of string
 
 exception Error of Location.t * error
 

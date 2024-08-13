@@ -602,10 +602,12 @@ let default_iterator =
         this.attributes this pval_attributes;
       );
     primitive_description =
-      (fun this {pprim_name; pprim_type; pprim_prim = _; pprim_loc;
-                 pprim_attributes} ->
+      (fun this {pprim_name; pprim_kind; pprim_loc; pprim_attributes} ->
         iter_loc this pprim_name;
-        this.typ this pprim_type;
+        (match pprim_kind with
+         | Pprim_decl (pprim_type, _) -> this.typ this pprim_type
+         | Pprim_alias (pprim_type, _) ->
+           Option.iter (this.typ this) pprim_type);
         this.location this pprim_loc;
         this.attributes this pprim_attributes;
       );

@@ -669,14 +669,22 @@ let default_mapper =
           ~loc:(this.location this pval_loc)
       );
     primitive_description =
-      (fun this {pprim_name; pprim_type; pprim_prim; pprim_loc;
-                 pprim_attributes} ->
-        Prim.mk
-          (map_loc this pprim_name)
-          (this.typ this pprim_type)
-          ~attrs:(this.attributes this pprim_attributes)
-          ~loc:(this.location this pprim_loc)
-          ~prim:pprim_prim
+      (fun this {pprim_name; pprim_kind; pprim_loc; pprim_attributes} ->
+         match pprim_kind with
+         | Pprim_decl (pprim_type, pprim_prim) ->
+           Prim.mk_decl
+             (map_loc this pprim_name)
+             (this.typ this pprim_type)
+             ~attrs:(this.attributes this pprim_attributes)
+             ~loc:(this.location this pprim_loc)
+             ~prim:pprim_prim
+         | Pprim_alias (pprim_type, pprim_ident) ->
+           Prim.mk_alias
+             (map_loc this pprim_name)
+             (Option.map (this.typ this) pprim_type)
+             pprim_ident
+             ~attrs:(this.attributes this pprim_attributes)
+             ~loc:(this.location this pprim_loc)
       );
 
     pat = P.map;

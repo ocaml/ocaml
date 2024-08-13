@@ -841,33 +841,33 @@ module Analyser =
       f [] env last_pos sig_item_list
 
     and analyse_signature_value_or_primitive env table current_module_name
-      sig_item_loc pos_end_ele pos_limit comment_opt ~name_pre ~attrs =
-        let type_expr =
-          try Signature_search.search_value table name_pre.txt
-          with Not_found ->
-            raise (Failure (Odoc_messages.value_not_found current_module_name name_pre.txt))
-        in
-        let name = Name.parens_if_infix name_pre.txt in
-        let subst_typ = Odoc_env.subst_type env type_expr in
-        let (maybe_more, comment_opt) =
-          get_info ~attrs comment_opt pos_end_ele pos_limit
-        in
-        let v =
-          {
-            val_name = Name.concat current_module_name name ;
-            val_info = comment_opt ;
-            val_type = subst_typ ;
-            val_recursive = false ;
-            val_parameters = Odoc_value.dummy_parameter_list subst_typ ;
-            val_code = None ;
-            val_loc = { loc_impl = None ; loc_inter = Some sig_item_loc } ;
-          }
-        in
-        (* update the parameter description *)
-        Odoc_value.update_value_parameters_text v;
+          sig_item_loc pos_end_ele pos_limit comment_opt ~name_pre ~attrs =
+            let type_expr =
+              try Signature_search.search_value table name_pre.txt
+              with Not_found ->
+                raise (Failure (Odoc_messages.value_not_found current_module_name name_pre.txt))
+            in
+            let name = Name.parens_if_infix name_pre.txt in
+            let subst_typ = Odoc_env.subst_type env type_expr in
+            let (maybe_more, comment_opt) =
+              get_info ~attrs comment_opt pos_end_ele pos_limit
+            in
+            let v =
+              {
+                val_name = Name.concat current_module_name name ;
+                val_info = comment_opt ;
+                val_type = subst_typ ;
+                val_recursive = false ;
+                val_parameters = Odoc_value.dummy_parameter_list subst_typ ;
+                val_code = None ;
+                val_loc = { loc_impl = None ; loc_inter = Some sig_item_loc } ;
+              }
+            in
+            (* update the parameter description *)
+            Odoc_value.update_value_parameters_text v;
 
-        let new_env = Odoc_env.add_value env v.val_name in
-        (maybe_more, new_env, [ Element_value v ])
+            let new_env = Odoc_env.add_value env v.val_name in
+            (maybe_more, new_env, [ Element_value v ])
 
     (** Analyse the given signature_item_desc to create the corresponding module element
        (with the given attached comment).*)

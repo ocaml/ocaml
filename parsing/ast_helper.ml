@@ -421,14 +421,22 @@ module Val = struct
 end
 
 module Prim = struct
-  let mk ?(loc = !default_loc) ?(attrs = []) ?(docs = empty_docs)
+  let mk_decl ?(loc = !default_loc) ?(attrs = []) ?(docs = empty_docs)
          ~prim name typ =
     {
      pprim_name = name;
-     pprim_type = typ;
+     pprim_kind = Pprim_decl (typ, prim);
      pprim_attributes = add_docs_attrs docs attrs;
      pprim_loc = loc;
-     pprim_prim = prim;
+    }
+
+  let mk_alias ?(loc = !default_loc) ?(attrs = []) ?(docs = empty_docs)
+         name typ id =
+    {
+     pprim_name = name;
+     pprim_kind = Pprim_alias (typ, id);
+     pprim_attributes = add_docs_attrs docs attrs;
+     pprim_loc = loc;
     }
 end
 

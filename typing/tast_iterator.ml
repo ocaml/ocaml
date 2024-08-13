@@ -155,7 +155,10 @@ let value_description sub x =
   sub.location sub x.val_loc;
   sub.attributes sub x.val_attributes;
   iter_loc sub x.val_name;
-  sub.typ sub x.val_desc
+  match x.val_ext with
+  | Tval_val typ | Tval_prim_decl (typ, _) | Tval_prim_alias (Some typ, _) ->
+    sub.typ sub typ
+  | Tval_prim_alias (None, _) -> ()
 
 let label_decl sub ({ld_loc; ld_name; ld_type; ld_attributes; _} as ld) =
   sub.item_declaration sub (Label ld);

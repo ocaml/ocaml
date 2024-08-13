@@ -208,8 +208,11 @@ module Val:
 (** Primitive descriptions *)
 module Prim:
   sig
-    val mk: ?loc:loc -> ?attrs:attrs -> ?docs:docs -> prim:string list ->
+    val mk_decl: ?loc:loc -> ?attrs:attrs -> ?docs:docs -> prim:string list ->
       str -> core_type -> primitive_description
+
+    val mk_alias: ?loc:loc -> ?attrs:attrs -> ?docs:docs -> str ->
+      core_type option -> lid -> primitive_description
   end
 
 (** Type declarations *)

@@ -517,14 +517,24 @@ and value_description =
 and primitive_description =
   {
     pprim_name: string loc;
-    pprim_type: core_type;
-    pprim_prim: string list;
+    pprim_kind: primitive_kind;
     pprim_attributes: attributes;
     pprim_loc: Location.t
   }
-(** Values of type {!primitive_description} represent
-    [external x: T = "s1" ... "sn"] with
-    {{!primitive_description.pprim_prim}[pprim_prim]} being [["s1";..."sn"]]. *)
+(** Values of type {!primitive_description} represent:
+  - [external x: T = "s1" ... "sn"] when
+    {{!primitive_description.pprim_kind}[pprim_kind]} is
+    [Pprim_decl (T, ["s1";..."sn"])].
+  - [external x: T = M.y] when {{!primitive_description.pprim_kind}[pprim_kind]}
+    is [Pprim_alias (Some T, M.y)]
+  - [external x = M.y] when {{!primitive_description.pprim_kind}[pprim_kind]}
+    is [Pprim_alias (None, M.y)]
+*)
+
+and primitive_kind =
+  | Pprim_decl of core_type * string list
+  | Pprim_alias of core_type option * Longident.t loc
+(** See the comment on {{!primitive_description}[primitive_description]}. *)
 
 (** {2 Type declarations} *)
 

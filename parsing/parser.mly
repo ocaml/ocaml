@@ -3096,20 +3096,46 @@ value_description:
 /* Primitive descriptions */
 
 primitive_description:
-  EXTERNAL
-  ext = ext
-  attrs1 = attributes
-  id = mkrhs(val_ident)
-  COLON
-  ty = possibly_poly(core_type)
-  EQUAL
-  prim = raw_string+
-  attrs2 = post_item_attributes
-    { let attrs = attrs1 @ attrs2 in
-      let loc = make_loc $sloc in
-      let docs = symbol_docs $sloc in
-      Prim.mk id ty ~prim ~attrs ~loc ~docs,
-      ext }
+  | EXTERNAL
+    ext = ext
+    attrs1 = attributes
+    id = mkrhs(val_ident)
+    COLON
+    ty = possibly_poly(core_type)
+    EQUAL
+    prim = raw_string+
+    attrs2 = post_item_attributes
+      { let attrs = attrs1 @ attrs2 in
+        let loc = make_loc $sloc in
+        let docs = symbol_docs $sloc in
+        Prim.mk_decl id ty ~prim ~attrs ~loc ~docs,
+        ext }
+  | EXTERNAL
+    ext = ext
+    attrs1 = attributes
+    id = mkrhs(val_ident)
+    EQUAL
+    lid = mkrhs(val_longident)
+    attrs2 = post_item_attributes
+      { let attrs = attrs1 @ attrs2 in
+        let loc = make_loc $sloc in
+        let docs = symbol_docs $sloc in
+        Prim.mk_alias id None lid ~attrs ~loc ~docs,
+        ext }
+  | EXTERNAL
+    ext = ext
+    attrs1 = attributes
+    id = mkrhs(val_ident)
+    COLON
+    ty = possibly_poly(core_type)
+    EQUAL
+    lid = mkrhs(val_longident)
+    attrs2 = post_item_attributes
+      { let attrs = attrs1 @ attrs2 in
+        let loc = make_loc $sloc in
+        let docs = symbol_docs $sloc in
+        Prim.mk_alias id (Some ty) lid ~attrs ~loc ~docs,
+        ext }
 ;
 
 (* Type declarations and type substitutions. *)
