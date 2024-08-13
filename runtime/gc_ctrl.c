@@ -103,8 +103,8 @@ CAMLprim value caml_gc_minor_words(value v)
 
 CAMLprim value caml_gc_counters(value v)
 {
-  CAMLparam0 ();   /* v is ignored */
-  CAMLlocal1 (res);
+  CAMLparam0 (); /* v is ignored */
+  CAMLlocal3 (minwords_, prowords_, majwords_);
 
   /* get a copy of these before allocating anything... */
   double minwords = caml_gc_minor_words_unboxed();
@@ -112,11 +112,14 @@ CAMLprim value caml_gc_counters(value v)
   double majwords = Caml_state->stat_major_words +
                     (double) Caml_state->allocated_words;
 
-  res = caml_alloc_3(0,
-    caml_copy_double (minwords),
-    caml_copy_double (prowords),
-    caml_copy_double (majwords));
-  CAMLreturn (res);
+  minwords_ = caml_copy_double(minwords);
+  prowords_ = caml_copy_double(prowords);
+  majwords_ = caml_copy_double(majwords);
+  v = caml_alloc_small(3, 0);
+  Field(v, 0) = minwords_;
+  Field(v, 1) = prowords_;
+  Field(v, 2) = majwords_;
+  CAMLreturn(v);
 }
 
 CAMLprim value caml_gc_get(value v)

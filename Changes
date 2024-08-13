@@ -36,6 +36,9 @@ _______________
 - #13382: Add more documentation for Runtime_events types
   (Sadiq Jaffer, review by Tim McGilchrist, Miod Vallat and KC Sivaramakrishnan)
 
+- #13370: Fix a low-probability crash when calling Gc.counters.
+  (Demi Marie Obenour, review by Gabriel Scherer)
+
 - #13272: Allow maximum number of domains to be specified as a OCAMLRUNPARAM
   parameter.
   (KC Sivaramakrishnan, review by Guillaume Munch-Maccagnoni, Miod Vallat,
@@ -250,6 +253,10 @@ _______________
   (Samuel Vivien, review by Florian Angeletti)
 
 ### Manual and documentation:
+
+- #13370: Document that that temporary variables holding GCd pointers must
+  not be live across a GC.
+  (Demi Marie Obenour)
 
 - #12298: Manual: emphasize that Bigarray.int refers to an OCaml integer,
   which does not match the C int type.
