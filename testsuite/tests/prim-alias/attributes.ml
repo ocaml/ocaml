@@ -11,11 +11,9 @@ external foo : (float [@unboxed]) -> (int [@untagged]) -> (float [@unboxed])
 |}]
 
 (* All relevant attributes are copied. *)
-external bar : float -> int -> float = Float.foo
+external bar : float -> int -> float = Float.ldexp
 
 [%%expect {|
-Line 1, characters 0-48:
-1 | external bar : float -> int -> float = Float.foo
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Unbound value "Float.foo"
+external bar : (float [@unboxed]) -> (int [@untagged]) -> (float [@unboxed])
+  = "caml_ldexp_float" "caml_ldexp_float_unboxed" [@@noalloc]
 |}]
