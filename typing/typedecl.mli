@@ -100,7 +100,6 @@ type error =
   | Variance of Typedecl_variance.error
   | Unavailable_type_constructor of Path.t
   | Unbound_type_var_ext of type_expr * extension_constructor
-  | Val_in_structure
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
