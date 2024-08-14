@@ -93,6 +93,9 @@ let transitive_closure state =
          | Implication set -> loop [] (Variable.Pair.Set.elements set) set)
       state
 
+let set_to_top state =
+  Variable.Pair.Map.map (fun _ -> Top) state
+
 (* CR-soon pchambart: to move to Flambda_utils and document
    mshinwell: I think this calculation is basically the same as
    [Flambda_utils.fun_vars_referenced_in_decls], so we should try
@@ -141,6 +144,14 @@ let function_variable_alias
         function_decl.body)
     function_decls.funs;
   !fun_var_bindings
+
+(* Invariant parameters for sets with more than 10 functions are likely
+   to be irrelevant, pushing the limit to 100 gives us some margin.
+   The non-linear complexity only becomes a problem with larger sets. *)
+let max_functions_for_transitive_closure = 100
+
+let too_many_functions (decls : Flambda.function_declarations) =
+  Variable.Map.cardinal decls.funs > max_functions_for_transitive_closure
 
 let analyse_functions ~backend ~param_to_param
       ~anything_to_param ~param_to_anywhere
@@ -253,7 +264,8 @@ let analyse_functions ~backend ~param_to_param
                   ~callee_arg:(Parameter.var param) !relation)
          params)
     decls.funs;
-  transitive_closure !relation
+  if too_many_functions decls then set_to_top !relation
+  else transitive_closure !relation
 
 
 (* A parameter [x] of the function [f] is considered as unchanging if
