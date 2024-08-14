@@ -463,7 +463,7 @@ let make n x =
 let init (type a) n (f : int -> a) : a t =
   if n < 0 then Error.negative_length_requested "init" n;
   let Dummy.Fresh dummy = global_dummy in
-  let arr = Dummy.Array.init ~dummy n f in
+  let arr = Dummy.Array.init n f ~dummy in
   Pack {
     length = n;
     arr;
@@ -878,7 +878,7 @@ let iteri k a =
   let Pack {arr; length; dummy} = a in
   check_valid_length length arr;
   for i = 0 to length - 1 do
-    k i (unsafe_get arr ~i ~dummy ~length);
+    k i (unsafe_get arr ~dummy ~i ~length);
   done;
   check_same_length "iteri" a ~length
 
