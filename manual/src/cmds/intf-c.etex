@@ -944,6 +944,10 @@ with these parameters as arguments.  If your function has more than 5
 parameters of type "value", use "CAMLparam5" with five of these
 parameters, and use one or more calls to the "CAMLxparam" macros for
 the remaining parameters ("CAMLxparam1" to "CAMLxparam5").
+If the function has an argument "x" which is an array of "value"s
+of length "n", use "CAMLparamN (x, n)" to declare it (or
+"CAMLxparamN (x, n)" if you already have a call to "CAMLparam"
+for some other arguments).
 
 The macros "CAMLreturn", "CAMLreturn0", and "CAMLreturnT" are used to
 replace the C keyword "return"; any function using a "CAMLparam" macro
