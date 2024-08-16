@@ -46,7 +46,7 @@ the above 4 modules \\
 "Uchar" & p.~\stdpageref{Uchar} & Unicode characters \\
 "Int" & p.~\stdpageref{Int} & integer values \\
 "Option" & p.~\stdpageref{Option} & option values \\
-"Pair" & p.~\stdpageref{Pair} & option values \\
+"Pair" & p.~\stdpageref{Pair} & pairs of values \\
 "Result" & p.~\stdpageref{Result} & result values \\
 "Effect" & p.~\stdpageref{Effect} & effect handlers \\
 "Either" & p.~\stdpageref{Either} & either values \\
