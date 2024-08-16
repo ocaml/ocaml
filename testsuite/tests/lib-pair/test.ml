@@ -4,6 +4,17 @@ let test_make () =
   let () = assert (Pair.make 1 "x" = (1, "x")) in
   let () = assert (Pair.make 'e' [] = ('e', [])) in
   ()
+
+let test_fst () =
+  let () = assert (Pair.fst (1, "x") = 1) in
+  let () = assert (Pair.fst ('e', []) = 'e') in
+  ()
+
+let test_snd () =
+  let () = assert (Pair.snd (1, "x") = "x") in
+  let () = assert (Pair.snd ('e', []) = []) in
+  ()
+
 let test_swap () =
   let () = assert (Pair.swap (1, "x") = ("x", 1)) in
   let () = assert (Pair.swap ('e', []) = ([], 'e')) in
@@ -27,18 +38,6 @@ let test_iter () =
   let () = assert (!iterator = 12) in
   ()
 
-let test_map2 () =
-  let () = assert (Pair.map2 (+) (^) (3, "a") (2, "x") = (5, "ax")) in
-  ()
-
-let test_iter2 () =
-  let iterator = ref 0 in
-  let add_diff x y = iterator := !iterator + (y - x) in
-  let mul_diff x y = iterator := !iterator * (y - x) in
-  let () = Pair.iter2 add_diff mul_diff (1, 1) (3, 4) in
-  let () = assert (!iterator = 6) in
-  ()
-
 let test_map_fst () =
   let () = assert (Pair.map_fst succ (1, "s") = (2, "s")) in
   let () = assert (Pair.map_fst (Fun.const []) (None, 'e') = ([], 'e')) in
@@ -47,20 +46,6 @@ let test_map_fst () =
 let test_map_snd () =
   let () = assert (Pair.map_snd succ ("s", 1) = ("s", 2)) in
   let () = assert (Pair.map_snd (Fun.const []) ('e', None) = ('e', [])) in
-  ()
-
-let test_iter_fst () =
-  let iterator = ref 0 in
-  let add x = iterator := !iterator + x in
-  let () = Pair.iter_fst add (3, 5) in
-  let () = assert (!iterator = 3) in
-  ()
-
-let test_iter_snd () =
-  let iterator = ref 0 in
-  let add x = iterator := !iterator + x in
-  let () = Pair.iter_snd add (3, 5) in
-  let () = assert (!iterator = 5) in
   ()
 
 let test_equal () =
@@ -82,16 +67,13 @@ let test_compare () =
 
 let tests () =
   test_make ();
+  test_fst ();
+  test_snd ();
   test_swap ();
   test_fold ();
   test_map ();
-  test_iter ();
-  test_map2 ();
-  test_iter2 ();
   test_map_fst ();
   test_map_snd ();
-  test_iter_fst ();
-  test_iter_snd ();
   test_equal ();
   test_compare ();
   ()

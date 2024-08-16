@@ -13,10 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Function on pairs of values. *)
+(** Operations on pairs.
+
+  @since 5.3 *)
 
 
-(** {1 Pairs} *)
+(** {1:pairs Pairs} *)
 
 type ('a, 'b) t = 'a * 'b
 (** The type for pairs. *)
@@ -24,16 +26,19 @@ type ('a, 'b) t = 'a * 'b
 val make: 'a -> 'b -> ('a, 'b) t
 (** [make a b] is the pair [(a, b)]. *)
 
+val fst: ('a, 'b) t -> 'a
+(** [fst (a, b)] is [a]. *)
+
+val snd: ('a, 'b) t -> 'b
+(** [snd (a, b)] is [b]. *)
+
 val swap: ('a, 'b) t -> ('b, 'a) t
 (** [swap (a, b)] is [(b, a)]. *)
 
-(** {1 Iterators} *)
+(** {1:iters Iterators} *)
 
 val fold: ('a -> 'b -> 'c) -> ('a, 'b) t -> 'c
 (** [fold f (a, b)] applies [f] to [a] and [b]. *)
-
-val uncurry: ('a -> 'b -> 'c) -> ('a, 'b) t -> 'c
-(** [uncurry] is the same as {!fold}. *)
 
 val map: ('a -> 'c) -> ('b -> 'd) -> ('a, 'b) t -> ('c, 'd) t
 (** [map f g (a, b)] applies [f] to [a] and [g] to [b]. *)
@@ -41,29 +46,13 @@ val map: ('a -> 'c) -> ('b -> 'd) -> ('a, 'b) t -> ('c, 'd) t
 val iter: ('a -> unit) -> ('b -> unit) -> ('a, 'b) t -> unit
 (** [iter f g (a, b)] first applies [f] to [a], and then [g] to [b]. *)
 
-val map2:
-  ('a -> 'c -> 'e) -> ('b -> 'd -> 'f) -> ('a, 'b) t -> ('c, 'd) t -> ('e, 'f) t
-(** [map2 f g (a1, b1) (a2, b2)] applies [f] to [a1] and [a2], and [g] to [b1]
-    and [b2]. *)
-
-val iter2:
-  ('a -> 'c -> unit) -> ('b -> 'd -> unit) -> ('a, 'b) t -> ('c, 'd) t -> unit
-(** [iter2 f g (a1, b1) (a2, b2)] first applies [f] to [a1] and [a2], and then
-    [g] to [b1] and [b2]. *)
-
 val map_fst: ('a -> 'c) -> ('a, 'b) t -> ('c, 'b) t
 (** [map_fst f p] applies [f] to [p]'s first component. *)
 
 val map_snd: ('b -> 'c) -> ('a, 'b) t -> ('a, 'c) t
 (** [map_snd f p] applies [f] to [p]'s second component. *)
 
-val iter_fst: ('a -> unit) -> ('a, 'b) t -> unit
-(** [iter_fst f p] applies [f] to [p]'s first component. *)
-
-val iter_snd: ('b -> unit) -> ('a, 'b) t -> unit
-(** [iter_snd f p] applies [f] to [p]'s second component. *)
-
-(** {1 Predicates and comparisons} *)
+(** {1:preds Predicates and comparisons} *)
 
 val equal:
   ('a -> 'a -> bool) -> ('b -> 'b -> bool) -> ('a, 'b) t -> ('a, 'b) t -> bool
