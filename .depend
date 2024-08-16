@@ -2120,7 +2120,6 @@ typing/types.cmo : \
     parsing/location.cmi \
     utils/local_store.cmi \
     typing/ident.cmi \
-    utils/format_doc.cmi \
     utils/config.cmi \
     parsing/asttypes.cmi \
     typing/types.cmi
@@ -2135,7 +2134,6 @@ typing/types.cmx : \
     parsing/location.cmx \
     utils/local_store.cmx \
     typing/ident.cmx \
-    utils/format_doc.cmx \
     utils/config.cmx \
     parsing/asttypes.cmx \
     typing/types.cmi
@@ -2148,7 +2146,6 @@ typing/types.cmi : \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
-    utils/format_doc.cmi \
     parsing/asttypes.cmi
 typing/typetexp.cmo : \
     typing/types.cmi \
