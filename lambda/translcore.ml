@@ -165,7 +165,7 @@ let rec iter_exn_names f pat =
 
 let transl_ident loc env ty path desc =
   match desc.val_kind with
-  | Val_prim p ->
+  | Val_prim (p, _) ->
       Translprim.transl_primitive loc p env ty (Some path)
   | Val_anc _ ->
       raise(Error(to_location loc, Free_super_var))
@@ -209,7 +209,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
         else enter_anonymous_function ~scopes
       in
       transl_function ~scopes e params body
-  | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
+  | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim (p, _)});
                 exp_type = prim_type } as funct, oargs)
     when List.length oargs >= p.prim_arity
     && List.for_all (fun (_, arg) -> arg <> None) oargs ->

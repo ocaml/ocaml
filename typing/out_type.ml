@@ -1542,7 +1542,7 @@ let tree_of_value_description id decl =
   in
   let vd =
     match decl.val_kind with
-    | Val_prim p -> Primitive.print p vd
+    | Val_prim (p, _) -> Primitive.print p vd
     | _ -> vd
   in
   Osig_value vd

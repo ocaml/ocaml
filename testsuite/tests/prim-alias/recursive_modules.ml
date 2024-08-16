@@ -53,3 +53,55 @@ end
 module rec D : sig external p : 'a -> 'b = "%identity" end
 and E : sig external p : 'a -> 'b = "%identity" end
 |}]
+
+external identity : 'a -> 'a = Obj.magic
+
+[%%expect {|
+external identity : 'a -> 'a = "%identity"
+|}]
+
+(* Can't use a recursive module to generalize a primitive's type. *)
+module rec F : sig
+  external magic : 'a -> 'b = identity
+end = F
+
+(* It would be better if this printed the aliased primitive's type. *)
+[%%expect {|
+Line 3, characters 6-7:
+3 | end = F
+          ^
+Error: Cannot safely evaluate the definition of the following cycle
+       of recursively-defined modules: F -> F.
+       There are no safe modules in this cycle (see manual section 12.2).
+Line 2, characters 2-38:
+2 |   external magic : 'a -> 'b = identity
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  Module "F" defines an unsafe primitive alias, "magic" .
+  The type of the aliased primitive is less general than that of its alias.
+|}]
+
+external int_to_int : int -> int = identity
+
+[%%expect {|
+external int_to_int : int -> int = "%identity"
+|}]
+
+(* As above, but with concrete types. *)
+module rec G : sig
+  external int_to_string : int -> string = int_to_int
+end = G
+
+(* "Less general" is somewhat misleading, but it is good to error here. *)
+[%%expect {|
+Line 3, characters 6-7:
+3 | end = G
+          ^
+Error: Cannot safely evaluate the definition of the following cycle
+       of recursively-defined modules: G -> G.
+       There are no safe modules in this cycle (see manual section 12.2).
+Line 2, characters 2-53:
+2 |   external int_to_string : int -> string = int_to_int
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  Module "G" defines an unsafe primitive alias, "int_to_string" .
+  The type of the aliased primitive is less general than that of its alias.
+|}]

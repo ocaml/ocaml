@@ -1656,7 +1656,7 @@ let transl_prim_desc env loc primdesc =
       && prim.prim_native_name = ""
       then raise(Error(pprim_type.ptyp_loc, Missing_native_external));
       check_unboxable env loc ty;
-      { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
+      { val_type = ty; val_kind = Val_prim (prim, Safe); Types.val_loc = loc;
         val_attributes = primdesc.pprim_attributes;
         val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
       }
@@ -1683,15 +1683,24 @@ let transl_prim_desc env loc primdesc =
                   Primitive_alias_does_not_refer_to_primitive kind))
     in
     (match v.val_kind with
-     | Val_prim _ ->
+     | Val_prim (desc, _) as val_kind ->
        let cty, v =
          match pprim_type with
          | None -> None, v
          | Some pprim_type ->
            let cty = Typetexp.transl_type_scheme env pprim_type in
-           if not (Env.is_in_signature env)
-           then Ctype.unify env cty.ctyp_type v.val_type;
-           Some cty, { v with val_type = cty.ctyp_type }
+           let val_kind =
+             match Env.is_in_signature env with
+             | false ->
+               Ctype.unify env v.val_type cty.ctyp_type;
+               val_kind
+             | true ->
+               if Ctype.is_moregeneral env true v.val_type cty.ctyp_type
+               then val_kind
+               else Val_prim (desc, Unsafe_in_recmod)
+           in
+           Some cty,
+           { v with val_type = cty.ctyp_type; val_kind; val_loc = loc }
        in
        let (id, newenv) =
          Env.enter_value primdesc.pprim_name.txt v env
