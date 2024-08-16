@@ -128,6 +128,10 @@ _______________
 
 ### Standard library:
 
+- #13310: Add Stdlib module
+  (Victoire Noizet, review by Nicolás Ojeda Bär, Daniel Bünzli, Xavier Van de
+	Woestyne and Florian Angeletti)
+
 - #12884: Add `Queue.drop`
   (Léo Andrès, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
