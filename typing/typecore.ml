@@ -388,12 +388,15 @@ let is_principal ty =
 
 (* Returns [Some ty_elt] if the expected type can be used for type-directed
    disambiguation of an array literal. *)
-let disambiguate_array_literal env expected_ty =
-  if is_principal expected_ty then
-    if is_floatarray_type env expected_ty then
-      Some (instance Predef.type_float)
-    else
-      None
+let disambiguate_array_literal ~loc env expected_ty =
+  let return ty =
+    if not (is_principal expected_ty) then
+      Location.prerr_warning loc
+        (not_principal "this type-based array disambiguation");
+    Some ty
+  in
+  if is_floatarray_type env expected_ty then
+    return (instance Predef.type_float)
   else
     None
 
@@ -992,7 +995,7 @@ let solve_Ppat_record_field ~refine loc penv label label_lid record_ty =
 
 let solve_Ppat_array ~refine loc env expected_ty =
   let expected_ty = generic_instance expected_ty in
-  match disambiguate_array_literal !!env expected_ty with
+  match disambiguate_array_literal ~loc !!env expected_ty with
   | Some ty_elt -> ty_elt
   | None ->
       let ty_elt = newgenvar() in
@@ -3887,7 +3890,7 @@ and type_expect_
   | Pexp_array(sargl) ->
       let ty_elt =
         let ty_expected = generic_instance ty_expected in
-        match disambiguate_array_literal env ty_expected with
+        match disambiguate_array_literal ~loc env ty_expected with
         | Some ty_elt -> ty_elt
         | None ->
             let ty = newgenvar () in

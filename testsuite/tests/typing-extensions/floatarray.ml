@@ -66,7 +66,7 @@ val f : Float.Array.t -> unit = <fun>
 Line 4, characters 4-8:
 4 |   | [||] -> ()
         ^^^^
-Error: This pattern matches values of type "'a array"
-       but a pattern was expected which matches values of type
-         "Float.Array.t" = "floatarray"
+Warning 18 [not-principal]: this type-based array disambiguation is not principal.
+
+val f : Float.Array.t -> unit = <fun>
 |}]
