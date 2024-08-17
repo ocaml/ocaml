@@ -170,7 +170,7 @@ let () = expect_unlabeled labeled
 Line 1, characters 26-33:
 1 | let () = expect_unlabeled labeled
                               ^^^^^^^
-Error: This expression has type "x:'a -> unit"
+Error: The value "labeled" has type "x:'a -> unit"
        but an expression was expected of type "unit -> unit"
        The first argument is labeled "x",
        but an unlabeled argument was expected
@@ -181,7 +181,7 @@ let () = expect_labeled unlabeled
 Line 1, characters 24-33:
 1 | let () = expect_labeled unlabeled
                             ^^^^^^^^^
-Error: This expression has type "'a -> unit"
+Error: The value "unlabeled" has type "'a -> unit"
        but an expression was expected of type "x:'b -> unit"
        A label "x" was expected
 |}]
@@ -191,7 +191,7 @@ let () = expect_labeled wrong_label
 Line 1, characters 24-35:
 1 | let () = expect_labeled wrong_label
                             ^^^^^^^^^^^
-Error: This expression has type "y:'a -> unit"
+Error: The value "wrong_label" has type "y:'a -> unit"
        but an expression was expected of type "x:'b -> unit"
        Labels "y" and "x" do not match
 |}]

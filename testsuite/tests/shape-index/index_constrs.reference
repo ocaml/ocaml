@@ -17,10 +17,10 @@ Resolved: Index_constrs.0 :
   E (File "index_constrs.ml", line 20, characters 16-17)
 
 Uid of decls:
-Index_constrs.6: f (File "index_constrs.ml", line 27, characters 4-5)
-Index_constrs.5: x_ (File "index_constrs.ml", line 25, characters 4-6)
 Index_constrs.0: E (File "index_constrs.ml", line 18, characters 10-11)
-Index_constrs.2: M (File "index_constrs.ml", line 19, characters 7-8)
 Index_constrs.1: F (File "index_constrs.ml", line 20, characters 12-13)
+Index_constrs.2: M (File "index_constrs.ml", line 19, characters 7-8)
 Index_constrs.3: t (File "index_constrs.ml", line 23, characters 5-6)
 Index_constrs.4: E (File "index_constrs.ml", line 23, characters 9-10)
+Index_constrs.5: x_ (File "index_constrs.ml", line 25, characters 4-6)
+Index_constrs.6: f (File "index_constrs.ml", line 27, characters 4-5)

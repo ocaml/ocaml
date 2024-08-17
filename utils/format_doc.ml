@@ -126,7 +126,7 @@ module Doc = struct
   let close_tag doc = add doc Close_tag
 
   let iter ?(sep=Fun.id) ~iter:iterator elt l doc =
-    let first = ref false in
+    let first = ref true in
     let rdoc = ref doc in
     let print x =
       if !first then (first := false; rdoc := elt x !rdoc)
@@ -422,10 +422,14 @@ let doc_printer f x doc =
   f r x;
   !r
 
+type 'a format_printer = Format.formatter -> 'a -> unit
+
 let format_printer f ppf x =
   let doc = doc_printer f x Doc.empty in
   Doc.format ppf doc
 let compat = format_printer
+let compat1 f p1 = compat (f p1)
+let compat2 f p1 p2 = compat (f p1 p2)
 
 let kasprintf k fmt =
   kdoc_printf (fun doc -> k (Format.asprintf "%a" Doc.format doc)) fmt

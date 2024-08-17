@@ -7481,3 +7481,6 @@ let f = fun x (type \#begin) (type \#end) -> 1
 
 (* check pretty-printing of local module open in core_type *)
 type t = String.( t )
+
+(* Utf8 identifier *)
+let là = function ça -> ça

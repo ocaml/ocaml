@@ -240,11 +240,11 @@ void caml_runtime_events_destroy(void) {
 static void runtime_events_create_from_stw_single(void) {
   /* Don't initialise runtime_events twice */
   if (!atomic_load_acquire(&runtime_events_enabled)) {
-    int ret, ring_headers_length, ring_data_length;
+    int ring_headers_length, ring_data_length;
 #ifdef _WIN32
     DWORD pid = GetCurrentProcessId();
 #else
-    int ring_fd;
+    int ring_fd, ret;
     long int pid = getpid();
 #endif
 
@@ -638,15 +638,13 @@ void caml_ev_alloc(uint64_t sz) {
 }
 
 void caml_ev_alloc_flush(void) {
-  int i;
-
   if ( !ring_is_active() )
     return;
 
   write_to_ring(EV_RUNTIME, (ev_message_type){.runtime=EV_ALLOC}, 0,
                   RUNTIME_EVENTS_NUM_ALLOC_BUCKETS, alloc_buckets, 0);
 
-  for (i = 1; i < RUNTIME_EVENTS_NUM_ALLOC_BUCKETS; i++) {
+  for (int i = 1; i < RUNTIME_EVENTS_NUM_ALLOC_BUCKETS; i++) {
     alloc_buckets[i] = 0;
   }
 }

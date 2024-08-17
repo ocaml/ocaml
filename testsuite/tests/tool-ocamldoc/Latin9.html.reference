@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="Up" href="index.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Latin9" rel="Chapter" href="Latin9.html"><title>Latin9</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;</div>
+<h1>Module <a href="type_Latin9.html">Latin9</a></h1>
+
+<pre><span id="MODULELatin9"><span class="keyword">module</span> Latin9</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Latin9.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><hr width="100%">
+
+<pre><span id="MODULEÉté"><span class="keyword">module</span> <a href="Latin9.Été-c.html">Été</a></span>: <code class="code"><span class="keyword">sig</span></code> <a href="Latin9.Été-c.html">..</a> <code class="code"><span class="keyword">end</span></code></pre>
+<pre><span id="EXCEPTIONLà"><span class="keyword">exception</span> Là</span></pre>
+
+<pre><span id="VALf"><span class="keyword">val</span> f</span> : <code class="type">int -&gt; 'a</code></pre><div class="info ">
+<div class="info-desc">
+<p>Exceptions and parameters must be in latin-9 subset of unicode.
+    In the @since version and in the description any character (e.g 字) is accepted:</p>
+</div>
+<ul class="info-attributes">
+<li><b>Since</b> λ1</li>
+<li><b>Raises</b><ul><li><code>Là</code> स्तनति</li>
+<li><code>Été.Éclair</code> þunor</li>
+</ul></li>
+</ul>
+</div>
+<div class="param_info"><code class="code">éponyme</code> : ?</div>
+</body></html>

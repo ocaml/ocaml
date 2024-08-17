@@ -38,6 +38,8 @@ _ocamltestd
 .merlin
 _build
 META
+# Ignore foo.depend, but not .depend
+?*.depend
 
 # local to root directory
 

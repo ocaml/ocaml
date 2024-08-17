@@ -1,11 +1,11 @@
 #define CAML_NAME_SPACE
 
-#include "caml/alloc.h"
-#include "caml/runtime_events.h"
-#include "caml/runtime_events_consumer.h"
-#include "caml/fail.h"
-#include "caml/memory.h"
-#include "caml/mlvalues.h"
+#include <caml/alloc.h>
+#include <caml/runtime_events.h>
+#include <caml/runtime_events_consumer.h>
+#include <caml/fail.h>
+#include <caml/memory.h>
+#include <caml/mlvalues.h>
 
 #include <assert.h>
 

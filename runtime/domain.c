@@ -938,8 +938,6 @@ void caml_update_minor_heap_max(uintnat requested_wsz) {
 
 void caml_init_domains(uintnat max_domains, uintnat minor_heap_wsz)
 {
-  int i;
-
   /* Use [caml_stat_calloc_noexc] to zero initialize [all_domains]. */
   all_domains = caml_stat_calloc_noexc(max_domains, sizeof(dom_internal));
   if (all_domains == NULL)
@@ -958,7 +956,7 @@ void caml_init_domains(uintnat max_domains, uintnat minor_heap_wsz)
   reserve_minor_heaps_from_stw_single();
   /* stw_single: mutators and domains have not started yet. */
 
-  for (i = 0; i < max_domains; i++) {
+  for (int i = 0; i < max_domains; i++) {
     struct dom_internal* dom = &all_domains[i];
 
     stw_domains.domains[i] = dom;
@@ -987,7 +985,8 @@ void caml_init_domains(uintnat max_domains, uintnat minor_heap_wsz)
 }
 
 void caml_init_domain_self(int domain_id) {
-  CAMLassert (domain_id >= 0 && domain_id < caml_params->max_domains);
+  CAMLassert(0 <= domain_id);
+  CAMLassert(domain_id < caml_params->max_domains);
   domain_self = &all_domains[domain_id];
   caml_state = domain_self->state;
 }

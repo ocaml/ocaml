@@ -1,9 +1,9 @@
 #define _CRT_NONSTDC_NO_WARNINGS  /* for strdup */
 #include <string.h>
-#include "caml/memory.h"
-#include "caml/alloc.h"
-#include "caml/mlvalues.h"
-#include "caml/fail.h"
+#include <caml/memory.h>
+#include <caml/alloc.h>
+#include <caml/mlvalues.h>
+#include <caml/fail.h>
 
 char *some_dynamic_string_that_should_be_freed()
 {

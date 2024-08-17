@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "caml/alloc.h"
-#include "caml/memory.h"
+#include <caml/alloc.h>
+#include <caml/memory.h>
 #define CAML_INTERNALS
-#include "caml/gc_ctrl.h"
+#include <caml/gc_ctrl.h>
 
 
 void print_status(const char *str, int n)

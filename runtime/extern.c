@@ -20,6 +20,8 @@
 /* The interface of this file is "caml/intext.h" */
 
 #include <string.h>
+#include <assert.h>
+
 #include "caml/alloc.h"
 #include "caml/codefrag.h"
 #include "caml/config.h"
@@ -271,7 +273,7 @@ static void extern_resize_position_table(struct caml_extern_state *s)
   int new_shift;
   uintnat * new_present;
   struct object_position * new_entries;
-  uintnat i, h;
+  uintnat h;
   struct position_table old = s->pos_table;
 
   /* Grow the table quickly (x 8) up to 10^6 entries,
@@ -303,7 +305,7 @@ static void extern_resize_position_table(struct caml_extern_state *s)
   s->pos_table.entries = new_entries;
 
   /* Insert every entry of the old table in the new table */
-  for (i = 0; i < old.size; i++) {
+  for (uintnat i = 0; i < old.size; i++) {
     if (! bitvect_test(old.present, i)) continue;
     h = Hash(old.entries[i].obj, s->pos_table.shift);
     while (bitvect_test(new_present, h)) {
@@ -381,10 +383,10 @@ static void close_extern_output(struct caml_extern_state* s)
 
 static void free_extern_output(struct caml_extern_state* s)
 {
-  struct caml_output_block * blk, * nextblk;
-
   if (s->extern_userprovided_output == NULL) {
-    for (blk = s->extern_output_first; blk != NULL; blk = nextblk) {
+    for (struct caml_output_block *blk = s->extern_output_first, *nextblk;
+         blk != NULL;
+         blk = nextblk) {
       nextblk = blk->next;
       caml_stat_free(blk);
     }
@@ -766,6 +768,9 @@ static void extern_rec(struct caml_extern_state* s, value v)
   uintnat h = 0;
   uintnat pos = 0;
 
+  /* for Double_tag and Double_array_tag */
+  static_assert(sizeof(double) == 8, "");
+
   extern_init_position_table(s);
   sp = s->extern_stack;
 
@@ -821,7 +826,6 @@ static void extern_rec(struct caml_extern_state* s, value v)
       break;
     }
     case Double_tag: {
-      CAMLassert(sizeof(double) == 8);
       extern_double(s, v);
       s->size_32 += 1 + 2;
       s->size_64 += 1 + 1;
@@ -830,7 +834,6 @@ static void extern_rec(struct caml_extern_state* s, value v)
     }
     case Double_array_tag: {
       mlsize_t nfloats;
-      CAMLassert(sizeof(double) == 8);
       nfloats = Wosize_val(v) / Double_wosize;
       extern_double_array(s, v, nfloats);
       s->size_32 += 1 + nfloats * 2;
@@ -1108,7 +1111,6 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
   int header_len;
   intnat data_len;
   char * res;
-  struct caml_output_block * blk, * nextblk;
   struct caml_extern_state* s = init_extern_state ();
 
   init_extern_output(s);
@@ -1119,7 +1121,9 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
   *len = header_len + data_len;
   memcpy(res, header, header_len);
   res += header_len;
-  for (blk = s->extern_output_first; blk != NULL; blk = nextblk) {
+  for (struct caml_output_block *blk = s->extern_output_first, *nextblk;
+       blk != NULL;
+       blk = nextblk) {
     intnat n = blk->end - blk->data;
     memcpy(res, blk->data, n);
     res += n;

@@ -1,6 +1,6 @@
-#include "caml/mlvalues.h"
-#include "caml/domain_state.h"
-#include "caml/signals.h"
+#include <caml/mlvalues.h>
+#include <caml/domain_state.h>
+#include <caml/signals.h>
 
 value with_lock(value unit)
 {

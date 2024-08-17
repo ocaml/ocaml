@@ -24,7 +24,6 @@ let tracing_function_ptr =
   get_code_pointer
     (Obj.repr (fun arg -> Trace.print_trace (current_environment()) arg))
 
-module Printtyp = Printtyp.Compat
 let dir_trace ppf lid =
   match Env.find_value_by_name lid !Topcommon.toplevel_env with
   | (path, desc) -> begin

@@ -217,9 +217,8 @@ static value alloc_callstack(backtrace_slot* trace, size_t slots)
 {
   CAMLparam0();
   CAMLlocal1(callstack);
-  int i;
   callstack = caml_alloc(slots, 0);
-  for (i = 0; i < slots; i++)
+  for (int i = 0; i < slots; i++)
     Store_field(callstack, i, Val_backtrace_slot(trace[i]));
   caml_stat_free(trace);
   CAMLreturn(callstack);

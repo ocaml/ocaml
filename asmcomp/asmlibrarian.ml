@@ -86,17 +86,19 @@ let create_archive file_list lib_name =
 module Style = Misc.Style
 open Format_doc
 
-let report_error ppf = function
+let report_error_doc ppf = function
   | File_not_found name ->
       fprintf ppf "Cannot find file %a" Style.inline_code name
   | Archiver_error name ->
       fprintf ppf "Error while creating the library %a" Style.inline_code name
   | Link_error e ->
-      Linkdeps.report_error ~print_filename:Location.Doc.filename ppf e
+      Linkdeps.report_error_doc ~print_filename:Location.Doc.filename ppf e
 
 let () =
   Location.register_error_of_exn
     (function
-      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | Error err -> Some (Location.error_of_printer_file report_error_doc err)
       | _ -> None
     )
+
+let report_error = Format_doc.compat report_error_doc

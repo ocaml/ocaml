@@ -204,13 +204,27 @@ let get_stored_string () =
 (** To store the position of the beginning of a string and comment *)
 let string_start_pos = ref 0
 let comment_start_pos = ref []
+
+(** Normalizing utf-8 *)
+let normalize raw_name =
+  (* we are printing documentation, it is too late to be strict *)
+  match Misc.Utf8_lexeme.normalize raw_name with
+  | Error s -> s
+  | Ok name -> name
+
 }
 
 let blank = [' ' '\010' '\013' '\009' '\012']
-let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
-let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar =
-  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+
+let lowercase = ['a'-'z' '_']
+let uppercase = ['A'-'Z']
+let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
+let utf8 = ['\192'-'\255'] ['\128'-'\191']*
+let identstart_ext = uppercase | lowercase | utf8
+let identchar_ext = identchar | utf8
+let ident_ext = identstart_ext identchar_ext*
+
+
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 let decimal_literal = ['0'-'9']+
@@ -237,30 +251,31 @@ rule token = parse
   | "_"
       { print "_" ; token lexbuf }
   | "~"  { print "~" ; token lexbuf }
-  | "~" lowercase identchar * ':'
+  | "~" (ident_ext as raw_id ) ':'
       { let s = Lexing.lexeme lexbuf in
-        let name = String.sub s 1 (String.length s - 2) in
+        let name = normalize raw_id in
         if Hashtbl.mem keyword_table name then
           raise (Error(Keyword_as_label name, Lexing.lexeme_start lexbuf,
                        Lexing.lexeme_end lexbuf));
         print s ; token lexbuf }
   | "?"  { print "?" ; token lexbuf }
-  | "?" lowercase identchar * ':'
-      { let s = Lexing.lexeme lexbuf in
-        let name = String.sub s 1 (String.length s - 2) in
+  | "?" (ident_ext as raw_id)  ':'
+      {
+        let name = normalize raw_id in
         if Hashtbl.mem keyword_table name then
           raise (Error(Keyword_as_label name, Lexing.lexeme_start lexbuf,
                        Lexing.lexeme_end lexbuf));
-        print s ; token lexbuf }
-  | lowercase identchar *
-      { let s = Lexing.lexeme lexbuf in
-          try
+        print "?"; print name ; print ":"; token lexbuf }
+  | (ident_ext as raw_id)
+      {  let s = normalize raw_id in
+         if Misc.Utf8_lexeme.is_capitalized s then
+            (print_class constructor_class (Lexing.lexeme lexbuf);
+            token lexbuf)
+         else try
             let cl = Hashtbl.find keyword_table s in
             (print_class cl s ; token lexbuf )
           with Not_found ->
             (print s ; token lexbuf )}
-  | uppercase identchar *
-      { print_class constructor_class (Lexing.lexeme lexbuf) ; token lexbuf }       (* No capitalized keywords *)
   | decimal_literal | hex_literal | oct_literal | bin_literal
       { print (Lexing.lexeme lexbuf) ; token lexbuf }
   | float_literal

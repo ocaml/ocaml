@@ -24,7 +24,7 @@
 
 static const int open_access_flags[15] = {
   GENERIC_READ, GENERIC_WRITE, GENERIC_READ|GENERIC_WRITE,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+  0, FILE_APPEND_DATA, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 static const int open_create_flags[15] = {
@@ -46,6 +46,7 @@ CAMLprim value caml_unix_open(value path, value flags, value perm)
   int fileaccess, createflags, fileattrib, filecreate, sharemode, cloexec;
   SECURITY_ATTRIBUTES attr;
   HANDLE h;
+  DWORD dwMoved;
   wchar_t * wpath;
 
   caml_unix_check_path(path, "open");
@@ -87,5 +88,15 @@ CAMLprim value caml_unix_open(value path, value flags, value perm)
     caml_win32_maperr(GetLastError());
     caml_uerror("open", path);
   }
+
+  if (fileaccess & FILE_APPEND_DATA) {
+    dwMoved = SetFilePointer(h, 0, NULL, FILE_END);
+    if (dwMoved == INVALID_SET_FILE_POINTER) {
+      caml_win32_maperr(GetLastError());
+      CloseHandle(h);
+      caml_uerror("open", path);
+    }
+  }
+
   return caml_win32_alloc_handle(h);
 }

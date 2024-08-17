@@ -114,11 +114,13 @@ let rec call_alarm arec =
 
 let delete_alarm a = Atomic.set a false
 
-let create_alarm f =
-  let arec = { active = Atomic.make true; f = f } in
-  Domain.at_exit (fun () -> delete_alarm arec.active);
+(* never inline, to prevent [arec] from being allocated statically *)
+let[@inline never] create_alarm f =
+  let alarm = Atomic.make true in
+  Domain.at_exit (fun () -> delete_alarm alarm);
+  let arec = { active = alarm; f = f } in
   finalise call_alarm arec;
-  arec.active
+  alarm
 
 
 module Memprof =

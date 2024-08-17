@@ -272,7 +272,7 @@ void caml_plat_futex_free(caml_plat_futex* ftx) {
 
 #  elif 0 /* defined(__DragonFly__)
    TODO The following code for DragonFly is untested,
-   we currently use the fallback instead. */ */
+   we currently use the fallback instead. */
 #    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)        \
   umtx_sleep((volatile const int*)ftx, undesired, 0)
 #    define CAML_PLAT_FUTEX_WAKE(ftx)               \
@@ -378,7 +378,7 @@ uintnat caml_mem_round_up_pages(uintnat size)
 #define Is_page_aligned(size) ((size & (caml_plat_pagesize - 1)) == 0)
 
 #ifdef DEBUG
-static struct lf_skiplist mmap_blocks = {NULL};
+static struct lf_skiplist mmap_blocks;
 #endif
 
 #ifndef _WIN32

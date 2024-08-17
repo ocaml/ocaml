@@ -251,7 +251,8 @@ Caml_inline void pb_fill_mode(prefetch_buffer_t *pb)
 
 Caml_inline void pb_push(prefetch_buffer_t* pb, value v)
 {
-  CAMLassert(Is_block(v) && !Is_young(v));
+  CAMLassert(Is_block(v));
+  CAMLassert(!Is_young(v));
   CAMLassert(v != Debug_free_major);
   CAMLassert(pb->enqueued < pb->dequeued + PREFETCH_BUFFER_SIZE);
 
@@ -315,7 +316,7 @@ static void ephe_todo_list_emptied (void)
 
   /* Since the todo list is empty, this domain does not need to participate in
    * further ephemeron cycles. */
-  atomic_fetch_add(&ephe_cycle_info.num_domains_todo, -1);
+  atomic_fetch_sub(&ephe_cycle_info.num_domains_todo, 1);
   CAMLassert(atomic_load_acquire(&ephe_cycle_info.num_domains_done) <=
              atomic_load_acquire(&ephe_cycle_info.num_domains_todo));
 
@@ -578,12 +579,11 @@ static inline intnat diffmod (uintnat x1, uintnat x2)
 static void update_major_slice_work(intnat howmuch,
                                     int may_access_gc_phase)
 {
-  double heap_words;
   intnat alloc_work, dependent_work, extra_work, new_work;
   intnat my_alloc_count, my_alloc_direct_count, my_dependent_count;
   double my_extra_count;
   caml_domain_state *dom_st = Caml_state;
-  uintnat heap_size, heap_sweep_words, total_cycle_work;
+  uintnat heap_words, heap_size, heap_sweep_words, total_cycle_work;
 
   my_alloc_count = dom_st->allocated_words;
   my_alloc_direct_count = dom_st->allocated_words_direct;
@@ -629,11 +629,12 @@ static void update_major_slice_work(intnat howmuch,
                  S = P * TW
   */
   heap_size = caml_heap_size(dom_st->shared_heap);
-  heap_words = (double)Wsize_bsize(heap_size);
+  heap_words = Wsize_bsize(heap_size);
   heap_sweep_words = heap_words;
 
   total_cycle_work =
-    heap_sweep_words + (heap_words * 100 / (100 + caml_percent_free));
+    heap_sweep_words
+    + (uintnat) ((double) heap_words * 100.0 / (100.0 + caml_percent_free));
 
   if (heap_words > 0) {
     double alloc_ratio =
@@ -649,7 +650,7 @@ static void update_major_slice_work(intnat howmuch,
     double dependent_ratio =
       total_cycle_work
       * (100 + caml_percent_free)
-      / dom_st-> dependent_size / caml_percent_free;
+        / (double)dom_st->dependent_size / (double)caml_percent_free;
     dependent_work = (intnat) (my_dependent_count * dependent_ratio);
   }else{
     dependent_work = 0;
@@ -780,8 +781,7 @@ static void realloc_mark_stack (struct mark_stack* stk)
      will not compress and because we are using a domain local heap bound we
      need to fit large blocks into the local mark stack. See PR#11284 */
   if (mark_stack_bsize >= local_heap_bsize / 32) {
-    uintnat i;
-    for (i = 0; i < stk->count; ++i) {
+    for (uintnat i = 0; i < stk->count; ++i) {
       mark_entry* me = &stk->stack[i];
       if (me->end - me->start > BITS_PER_WORD)
         mark_stack_large_bsize += sizeof(mark_entry);
@@ -842,7 +842,8 @@ static intnat mark_stack_push_block(struct mark_stack* stk, value block)
   }
 
   CAMLassert(Has_status_val(block, caml_global_heap_state.MARKED));
-  CAMLassert(Is_block(block) && !Is_young(block));
+  CAMLassert(Is_block(block));
+  CAMLassert(!Is_young(block));
   CAMLassert(Tag_val(block) != Infix_tag);
   CAMLassert(Tag_val(block) < No_scan_tag);
   CAMLassert(Tag_val(block) != Cont_tag);
@@ -1139,7 +1140,9 @@ static scanning_action_flags darken_scanning_flags = 0;
 
 void caml_darken_cont(value cont)
 {
-  CAMLassert(Is_block(cont) && !Is_young(cont) && Tag_val(cont) == Cont_tag);
+  CAMLassert(Is_block(cont));
+  CAMLassert(!Is_young(cont));
+  CAMLassert(Tag_val(cont) == Cont_tag);
   {
     SPIN_WAIT {
       header_t hd = atomic_load_relaxed(Hp_atomic_val(cont));
@@ -1351,7 +1354,7 @@ static void cycle_major_heap_from_stw_single(
          space_overhead@N =
          100.0 * (heap_words@N - live_words@N) / live_words@N
       */
-      double live_words = last_cycle.not_garbage_words - swept_words;
+      intnat live_words = last_cycle.not_garbage_words - swept_words;
       double space_overhead = 100.0 * (double)(last_cycle.heap_words
                                                - live_words) / live_words;
 
@@ -1405,7 +1408,7 @@ static void stw_cycle_all_domains(
    * mysteriously put all domains back into mark/sweep.
    */
   CAML_EV_BEGIN(EV_MAJOR_MEMPROF_CLEAN);
-  caml_memprof_after_major_gc(domain, domain == participating[0]);
+  caml_memprof_after_major_gc(domain);
   CAML_EV_END(EV_MAJOR_MEMPROF_CLEAN);
 
   CAML_EV_BEGIN(EV_MAJOR_GC_CYCLE_DOMAINS);
@@ -1484,7 +1487,7 @@ static void stw_cycle_all_domains(
 
   CAML_EV_BEGIN(EV_MAJOR_MEMPROF_ROOTS);
   caml_memprof_scan_roots(caml_darken, darken_scanning_flags, domain,
-                          domain, false, participating[0] == Caml_state);
+                          domain, false);
   CAML_EV_END(EV_MAJOR_MEMPROF_ROOTS);
 
   if (domain->mark_stack->count == 0 &&
@@ -2011,8 +2014,7 @@ static void mark_stack_prune(struct mark_stack* stk)
      unprocessed entries of the existing compressed stack into the new one. */
   uintnat old_compressed_entries = 0;
   struct addrmap new_compressed_stack = ADDRMAP_INIT;
-  addrmap_iterator it;
-  for (it = stk->compressed_stack_iter;
+  for (addrmap_iterator it = stk->compressed_stack_iter;
        caml_addrmap_iter_ok(&stk->compressed_stack, it);
        it = caml_addrmap_next(&stk->compressed_stack, it)) {
     value k = caml_addrmap_iter_key(&stk->compressed_stack, it);
@@ -2028,8 +2030,8 @@ static void mark_stack_prune(struct mark_stack* stk)
   stk->compressed_stack = new_compressed_stack;
 
   /* scan mark stack and compress entries */
-  uintnat i, new_stk_count = 0, compressed_entries = 0, total_words = 0;
-  for (i=0; i < stk->count; i++) {
+  uintnat new_stk_count = 0, compressed_entries = 0, total_words = 0;
+  for (uintnat i = 0; i < stk->count; i++) {
     mark_entry me = stk->stack[i];
     total_words += me.end - me.start;
     if (me.end - me.start > BITS_PER_WORD) {

@@ -394,9 +394,10 @@ val reset_cache: unit -> unit
 (* To be called before each toplevel phrase. *)
 val reset_cache_toplevel: unit -> unit
 
-(* Remember the name of the current compilation unit. *)
-val set_unit_name: string -> unit
-val get_unit_name: unit -> string
+(* Remember the current compilation unit. *)
+val set_current_unit: Unit_info.t -> unit
+val get_current_unit : unit -> Unit_info.t option
+val get_current_unit_name: unit -> string
 
 (* Read, save a signature to/from a file *)
 val read_signature: Unit_info.Artifact.t -> signature
@@ -448,9 +449,13 @@ type error =
 exception Error of error
 
 
-val report_error: error Format_doc.printer
+val report_error: error Format_doc.format_printer
+val report_error_doc: error Format_doc.printer
 
-val report_lookup_error: Location.t -> t -> lookup_error Format_doc.printer
+val report_lookup_error:
+  Location.t -> t -> lookup_error Format_doc.format_printer
+val report_lookup_error_doc:
+  Location.t -> t -> lookup_error Format_doc.printer
 val in_signature: bool -> t -> t
 
 val is_in_signature: t -> bool

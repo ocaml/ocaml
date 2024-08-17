@@ -239,9 +239,8 @@ static intnat do_compare_val(struct compare_stack* stk,
       case Double_array_tag: {
         mlsize_t sz1 = Wosize_val(v1) / Double_wosize;
         mlsize_t sz2 = Wosize_val(v2) / Double_wosize;
-        mlsize_t i;
         if (sz1 != sz2) return sz1 - sz2;
-        for (i = 0; i < sz1; i++) {
+        for (mlsize_t i = 0; i < sz1; i++) {
           double d1 = Double_flat_field(v1, i);
           double d2 = Double_flat_field(v2, i);
           if (d1 < d2) return LESS;

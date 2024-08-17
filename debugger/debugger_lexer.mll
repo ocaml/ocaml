@@ -18,9 +18,29 @@
 
 open Debugger_parser
 
+
+let ident_for_extended raw_name =
+  match Misc.Utf8_lexeme.normalize raw_name with
+  | Error _ -> raise Parsing.Parse_error
+  | Ok name ->
+  match Misc.Utf8_lexeme.validate_identifier name with
+  | Misc.Utf8_lexeme.Valid -> name
+  | Misc.Utf8_lexeme.Invalid_character _
+  | Misc.Utf8_lexeme.Invalid_beginning _ ->
+    raise Parsing.Parse_error
+
 exception Int_overflow
 
 }
+
+let lowercase = ['a'-'z' '_']
+let uppercase = ['A'-'Z']
+let identstart = lowercase | uppercase
+let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
+let utf8 = ['\192'-'\255'] ['\128'-'\191']*
+let identstart_ext = identstart | utf8
+let identchar_ext = identchar | utf8
+let ident_ext = identstart_ext  identchar_ext*
 
 rule line =     (* Read a whole line *)
   parse
@@ -53,14 +73,17 @@ and lexeme =    (* Read a lexeme *)
   parse
     [' ' '\t'] +
       { lexeme lexbuf }
-  | ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
-    (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
-      '\'' '0'-'9' ]) *
+  | lowercase identchar*
       { LIDENT(Lexing.lexeme lexbuf) }
-  | ['A'-'Z' '\192'-'\214' '\216'-'\222' ]
-    (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
-      '\'' '0'-'9' ]) *
+  | uppercase identchar*
       { UIDENT(Lexing.lexeme lexbuf) }
+  | ident_ext as raw_name
+      {
+        let name = ident_for_extended raw_name in
+        if Misc.Utf8_lexeme.is_capitalized name
+        then UIDENT name
+        else LIDENT name
+      }
   | '"' [^ '"']* "\""
       { let s = Lexing.lexeme lexbuf in
         LIDENT(String.sub s 1 (String.length s - 2)) }

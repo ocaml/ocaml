@@ -28,7 +28,7 @@ let init_path () = Compmisc.init_path ()
 
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =
-  let current = Env.get_unit_name () in
+  let current = Env.get_current_unit_name () in
   let initial = !Odoc_global.initially_opened_module in
   let initially_opened_module =
     if initial = current then
@@ -51,7 +51,7 @@ let preprocess sourcefile =
     Pparse.preprocess sourcefile
   with Pparse.Error err ->
     Format.eprintf "Preprocessing error@.%a@."
-      (Format_doc.compat Pparse.report_error) err;
+      Pparse.report_error err;
     exit 2
 
 (** Analysis of an implementation file. Returns (Some typedtree) if
@@ -66,14 +66,14 @@ let no_docstring f x =
   Lexer.handle_docstrings := true;
   result
 
-let unit_from_source source_file =
-    Unit_info.make ~check_modname:false ~source_file
+let unit_from_source source_file source_kind =
+    Unit_info.make ~check_modname:false ~source_file source_kind
       (Filename.remove_extension source_file)
 
 let process_implementation_file sourcefile =
   init_path ();
-  let source = unit_from_source sourcefile in
-  Env.set_unit_name (Unit_info.modname source);
+  let source = unit_from_source sourcefile Unit_info.Impl in
+  Env.set_current_unit source;
   let inputfile = preprocess sourcefile in
   let env = initial_env () in
   try
@@ -102,9 +102,8 @@ let process_implementation_file sourcefile =
    no error occurred, else None and an error message is printed.*)
 let process_interface_file sourcefile =
   init_path ();
-  let unit = unit_from_source sourcefile in
-  let modulename = Unit_info.modname unit in
-  Env.set_unit_name modulename;
+  let unit = unit_from_source sourcefile Unit_info.Intf in
+  Env.set_current_unit unit;
   let inputfile = preprocess sourcefile in
   let ast =
     Pparse.file ~tool_name inputfile
@@ -207,7 +206,7 @@ let process_file sourcefile =
   | Odoc_global.Text_file file ->
       Location.input_name := file;
       try
-        let mod_name = Unit_info.modname_from_source file in
+        let mod_name = Unit_info.lax_modname_from_source file in
         let txt =
           try Odoc_text.Texter.text_of_string (Odoc_misc.input_file_as_string file)
           with Odoc_text.Text_syntax (l, c, s) ->

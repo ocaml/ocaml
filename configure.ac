@@ -194,6 +194,7 @@ AC_SUBST([debug_runtime])
 AC_SUBST([instrumented_runtime])
 AC_SUBST([instrumented_runtime_libs])
 AC_SUBST([otherlibraries])
+AC_SUBST([otherlibs])
 AC_SUBST([lib_dynlink])
 AC_SUBST([lib_runtime_events])
 AC_SUBST([lib_str])
@@ -734,17 +735,21 @@ AS_CASE([$host],
   [exeext=''])
 
 otherlibraries="dynlink runtime_events"
+otherlibs="runtime_events"
+optional_libraries="$optional_libraries otherlibs/dynlink/dynlink"
 lib_dynlink=true
 dldir=otherlibs/dynlink
 AC_CONFIG_LINKS([
   $dldir/dynlink_cmo_format.mli:file_formats/cmo_format.mli
   $dldir/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli
+  $dldir/dynlink_platform_intf.mli:$dldir/dynlink_platform_intf.ml
 ])
 lib_runtime_events=true
 AS_IF([test x"$enable_unix_lib" != "xno"],
   [enable_unix_lib=yes
   AC_CONFIG_FILES([otherlibs/unix/META])
   otherlibraries="$otherlibraries unix"
+  otherlibs="$otherlibs unix"
   lib_unix=true
   AC_CONFIG_LINKS([
     otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml
@@ -756,6 +761,7 @@ AS_IF([test x"$enable_unix_lib" != "xno"],
 
 AS_IF([test x"$enable_str_lib" != "xno"],
   [otherlibraries="$otherlibraries str"
+  otherlibs="$otherlibs str"
   lib_str=true
   AC_CONFIG_FILES([otherlibs/str/META])])
 
@@ -829,9 +835,11 @@ AS_CASE([$ocaml_cc_vendor],
   [msvc-*],
     [outputobj='-Fo'
     AS_CASE([$ocaml_cc_vendor],
-      [msvc-*-clang-*], [warn_error_flag='-WX'],
-      [warn_error_flag='-WX -options:strict'])
-    cc_warnings=''],
+      [msvc-*-clang-*],
+        [cc_warnings='-W4 -Wno-unused-parameter -Wno-sign-compare -Wundef'
+         warn_error_flag='-WX'],
+      [cc_warnings='-W2'
+       warn_error_flag='-WX -options:strict'])],
   [outputobj='-o '
   warn_error_flag='-Werror'
   cc_warnings="-Wall -Wint-conversion -Wstrict-prototypes \
@@ -1231,6 +1239,8 @@ AS_IF([! $arch64],
       [AC_DEFINE([ARCH_ALIGN_INT64], [1])])])
     ])])
 
+AC_CHECK_TYPES([max_align_t], [], [], [[#include <stddef.h>]])
+
 # Atomics library
 
 AS_IF([! $arch64],
@@ -1392,8 +1402,6 @@ AS_CASE(["$ocaml_cc_vendor,$host"],
     [AX_CHECK_COMPILE_FLAG([-fno-tree-vrp],
       [internal_cflags="$internal_cflags -fno-tree-vrp"], [],
       [$warn_error_flag])])
-
-OCAML_CC_SUPPORTS_ALIGNED
 
 ## Check whether __attribute__((optimize("tree-vectorize")))) is supported
 OCAML_CC_SUPPORTS_TREE_VECTORIZE
@@ -1667,23 +1675,12 @@ AS_IF([$has_c99_float_ops],
   [AC_DEFINE([HAS_C99_FLOAT_OPS], [1])
   # Check whether round works (known bug in mingw-w64)
   OCAML_C99_CHECK_ROUND
-  # Check whether fma works (regressed in mingw-w64 8.0.0; present, but broken,
-  # in VS2013-2017 and present but unimplemented in Cygwin64)
+  # Check whether fma works (regressed in mingw-w64 8.0.0; and present but
+  # unimplemented in Cygwin64)
   OCAML_C99_CHECK_FMA],
   [AS_IF([test x"$enable_imprecise_c99_float_ops" != "xyes" ],
-    [AS_CASE([$enable_imprecise_c99_float_ops,$ocaml_cc_vendor],
-      [no,*], [hard_error=true],
-      [,msvc-*], [AS_IF([test "${ocaml_cc_vendor#msvc-}" -lt 1800 ],
-        [hard_error=false],
-        [hard_error=true])],
-      [hard_error=true])
-     AS_IF([test x"$hard_error" = 'xtrue'],
-       [AC_MSG_ERROR(m4_normalize([
-         C99 float ops unavailable, enable replacements
-         with --enable-imprecise-c99-float-ops]))],
-       [AC_MSG_WARN(m4_normalize([
-         C99 float ops unavailable, replacements enabled
-         (ancient Visual Studio)]))])])])
+    [AC_MSG_ERROR(m4_normalize([C99 float ops unavailable, enable replacements
+    with --enable-imprecise-c99-float-ops]))])])
 
 ## getentropy
 AC_CHECK_FUNC([getentropy], [AC_DEFINE([HAS_GETENTROPY], [1])])
@@ -2423,6 +2420,7 @@ AS_CASE([$enable_systhreads,$enable_unix_lib],
   [systhread_support=true
   AC_CONFIG_FILES([otherlibs/systhreads/META])
   otherlibraries="$otherlibraries systhreads"
+  otherlibs="$otherlibs systhreads"
   lib_systhreads=true
   AC_MSG_NOTICE([the threads library is supported])])
 

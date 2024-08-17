@@ -185,6 +185,7 @@ and find_label lbl env ty path tydesc pos = function
 
 open Format
 module Style = Misc.Style
+module Printtyp = Printtyp.Doc
 
 let as_inline_code pr = Format_doc.compat @@ Style.as_inline_code pr
 let inline_code = Format_doc.compat Style.inline_code

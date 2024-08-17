@@ -50,21 +50,20 @@ static char * searchpath(char * name)
 {
   static char fullname[MAXPATHLEN + 1];
   char * path;
-  char * p;
-  char * q;
   struct stat st;
 
-  for (p = name; *p != 0; p++) {
+  for (char *p = name; *p != 0; p++) {
     if (*p == '/') return name;
   }
   path = getenv("PATH");
   if (path == NULL) return name;
   while(1) {
+    char * p;
     for (p = fullname; *path != 0 && *path != ':'; p++, path++)
       if (p < fullname + MAXPATHLEN) *p = *path;
     if (p != fullname && p < fullname + MAXPATHLEN)
       *p++ = '/';
-    for (q = name; *q != 0; p++, q++)
+    for (char *q = name; *q != 0; p++, q++)
       if (p < fullname + MAXPATHLEN) *p = *q;
     *p = 0;
     if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) break;
@@ -90,14 +89,14 @@ static int file_ok(char * name)
 
 static char * searchpath(char * name)
 {
-  char * path, * fullname, * p;
+  char * path, * fullname;
 
   path = getenv("PATH");
   fullname = malloc(strlen(name) + (path == NULL ? 0 : strlen(path)) + 6);
   /* 6 = "/" plus ".exe" plus final "\0" */
   if (fullname == NULL) return name;
   /* Check for absolute path name */
-  for (p = name; *p != 0; p++) {
+  for (char *p = name; *p != 0; p++) {
     if (*p == '/' || *p == '\\') {
       if (file_ok(name)) return name;
       strcpy(fullname, name);
@@ -109,6 +108,7 @@ static char * searchpath(char * name)
   /* Search in path */
   if (path == NULL) return name;
   while(1) {
+    char * p;
     for (p = fullname; *path != 0 && *path != ':'; p++, path++) *p = *path;
     if (p != fullname) *p++ = '/';
     strcpy(p, name);
@@ -134,7 +134,7 @@ static char * read_runtime_path(int fd)
 {
   char buffer[TRAILER_SIZE];
   static char runtime_path[MAXPATHLEN];
-  int num_sections, i;
+  int num_sections;
   uint32_t path_size;
   long ofs;
 
@@ -144,7 +144,7 @@ static char * read_runtime_path(int fd)
   ofs = TRAILER_SIZE + num_sections * 8;
   lseek(fd, -ofs, SEEK_END);
   path_size = 0;
-  for (i = 0; i < num_sections; i++) {
+  for (int i = 0; i < num_sections; i++) {
     if (read(fd, buffer, 8) < 8) return NULL;
     if (buffer[0] == 'R' && buffer[1] == 'N' &&
         buffer[2] == 'T' && buffer[3] == 'M') {

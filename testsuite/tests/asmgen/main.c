@@ -106,23 +106,22 @@ int main(int argc, char **argv)
     extern void call_gen_code(void (*)(long, long, long *), long, long, long *);
     long n;
     long * a, * b;
-    long i;
 
     srand(argc >= 3 ? atoi(argv[2]) : time((time_t *) 0));
     n = atoi(argv[1]);
     a = (long *) malloc(n * sizeof(long));
-    for (i = 0 ; i < n; i++) a[i] = rand() & 0xFFF;
+    for (long i = 0 ; i < n; i++) a[i] = rand() & 0xFFF;
 #ifdef DEBUG
-    for (i = 0; i < n; i++) printf("%ld ", a[i]); printf("\n");
+    for (long i = 0; i < n; i++) printf("%ld ", a[i]); printf("\n");
 #endif
     b = (long *) malloc(n * sizeof(long));
-    for (i = 0; i < n; i++) b[i] = a[i];
+    for (long i = 0; i < n; i++) b[i] = a[i];
     call_gen_code(FUN, 0, n-1, a);
 #ifdef DEBUG
-    for (i = 0; i < n; i++) printf("%ld ", a[i]); printf("\n");
+    for (long i = 0; i < n; i++) printf("%ld ", a[i]); printf("\n");
 #endif
     qsort(b, n, sizeof(long), cmpint);
-    for (i = 0; i < n; i++) {
+    for (long i = 0; i < n; i++) {
       if (a[i] != b[i]) { printf("Bug!\n"); return 2; }
     }
     printf("OK\n");

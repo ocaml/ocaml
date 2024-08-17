@@ -141,7 +141,7 @@ let remove_printer lid =
 open Format
 module Style = Misc.Style
 let quoted_longident =
-  Format_doc.compat @@ Style.as_inline_code Printtyp.longident
+  Format_doc.compat @@ Style.as_inline_code Printtyp.Doc.longident
 
 let report_error ppf = function
   | Load_failure e ->

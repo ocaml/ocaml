@@ -40,11 +40,7 @@
 /* No longer used in the codebase, but kept because it was exported */
 #define INT64_LITERAL(s) s ## LL
 
-#if defined(_MSC_VER) && !defined(__cplusplus)
-#define Caml_inline static __inline
-#else
 #define Caml_inline static inline
-#endif
 
 #ifndef CAML_CONFIG_H_NO_TYPEDEFS
 
@@ -70,7 +66,7 @@
   #define __USE_MINGW_ANSI_STDIO 0
 #endif
 
-#if defined(__MINGW32__) || (defined(_MSC_VER) && _MSC_VER < 1800)
+#if defined(__MINGW32__)
 #define ARCH_SIZET_PRINTF_FORMAT "I"
 #else
 #define ARCH_SIZET_PRINTF_FORMAT "z"

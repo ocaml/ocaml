@@ -135,15 +135,13 @@ caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
 
 caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
 {
-  const char * p;
   char * dir, * fullname;
-  int i;
   struct stat st;
 
-  for (p = name; *p != 0; p++) {
+  for (const char *p = name; *p != 0; p++) {
     if (*p == '/') goto not_found;
   }
-  for (i = 0; i < path->size; i++) {
+  for (int i = 0; i < path->size; i++) {
     dir = path->contents[i];
     if (dir[0] == 0) dir = ".";  /* empty path component = current dir */
     fullname = caml_stat_strconcat(3, dir, "/", name);
@@ -175,14 +173,11 @@ static int cygwin_file_exists(const char * name)
 static caml_stat_string cygwin_search_exe_in_path(struct ext_table * path,
                                                   const char * name)
 {
-  const char * p;
   char * dir, * fullname;
-  int i;
-
-  for (p = name; *p != 0; p++) {
+  for (const char *p = name; *p != 0; p++) {
     if (*p == '/' || *p == '\\') goto not_found;
   }
-  for (i = 0; i < path->size; i++) {
+  for (int i = 0; i < path->size; i++) {
     dir = path->contents[i];
     if (dir[0] == 0) dir = ".";  /* empty path component = current dir */
     fullname = caml_stat_strconcat(3, dir, "/", name);

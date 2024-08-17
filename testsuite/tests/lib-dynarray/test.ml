@@ -154,6 +154,58 @@ let () =
   assert (0. +. 1. +. 8. +. 10. +. 12. = A.fold_left (+.) 0. a);;
 
 
+(** blit *)
+let () =
+  let () =
+    (* normal blit works ok *)
+    let a = A.of_list [1; 2; 3; 4; 5; 6] in
+    let b = A.of_list [7; 8; 9; 10; 11] in
+    A.blit ~src:b ~src_pos:1 ~dst:a ~dst_pos:2 ~len:3;
+    assert (A.to_list a = [1; 2; 8; 9; 10; 6])
+  in
+  let () =
+    (* source range overflows source array: error *)
+    let a = A.of_list [1; 2] in
+    let b = A.of_list [3; 4] in
+    assert (match
+              A.blit ~src:b ~src_pos:2 ~dst:a ~dst_pos:0 ~len:2
+            with exception _ -> true | _ -> false)
+  in
+  let () =
+    (* target range overflows target array: extend the array *)
+    let a = A.of_list [1; 2] in
+    let b = A.of_list [3; 4; 5] in
+    A.blit ~src:b ~src_pos:0 ~dst:a ~dst_pos:1 ~len:3;
+    assert (A.to_list a = [1; 3; 4; 5]);
+    (* call [fit_capacity] to test the resize logic later on. *)
+    A.fit_capacity a;
+    (* this works even at the end *)
+    A.blit ~src:b ~src_pos:0 ~dst:a ~dst_pos:4 ~len:2;
+    assert (A.to_list a = [1; 3; 4; 5; 3; 4]);
+    (* ... but it fails if the extension would leave a gap *)
+    assert (A.length a = 6);
+    assert (match
+              A.blit ~src:b ~src_pos:0 ~dst:a ~dst_pos:7 ~len:2
+            with exception _ -> true | _ -> false)
+  in
+  let () =
+    (* self-blitting scenarios *)
+    (* src_pos > dst_pos *)
+    let a = A.of_list [1; 2; 3] in
+    A.blit ~src:a ~src_pos:1 ~dst:a ~dst_pos:0 ~len:2;
+    assert (A.to_list a = [2; 3; 3]);
+    A.blit ~src:a ~src_pos:0 ~dst:a ~dst_pos:2 ~len:3;
+    assert (A.to_list a = [2; 3; 2; 3; 3]);
+    let b = A.of_list [1; 2; 3; 4] in
+    (* src_pos = dst_pos *)
+    A.blit ~src:b ~src_pos:1 ~dst:b ~dst_pos:1 ~len:2;
+    assert (A.to_list b = [1; 2; 3; 4]);
+    (* src_pos < dst_pos *)
+    A.blit ~src:b ~src_pos:0 ~dst:b ~dst_pos:2 ~len:2;
+    assert (A.to_list b = [1; 2; 1; 2]);
+  in
+  ()
+
 (** {1:removing Removing elements} *)
 
 
@@ -208,6 +260,45 @@ let () =
   let a = A.mapi (fun i e -> Printf.sprintf "%i %i" i e) a in
   assert (A.to_list a = ["0 1"; "1 2"; "2 3"]);;
 
+(** mem *)
+let () =
+  let a = A.of_list [1;2;3;4;5] in
+  assert (A.mem 1 a = true);
+  assert (A.mem 7 a = false)
+
+(** memq *)
+let () =
+  let five = 5 in
+  let a = A.of_list [five; 6; 7] in
+  assert (A.memq five a = true)
+
+(** find_opt *)
+let () =
+  let a = A.of_list [1;4;9] in
+  assert (A.find_opt (fun x -> x / 2 = 2) a = Some 4);
+  assert (A.find_opt (fun x -> x = 5) a = None)
+
+(** find_index *)
+let () =
+  let a = A.of_list [1;2;3] in
+  assert (A.find_index (fun x -> x = 1) a = Some 0);
+  assert (A.find_index (fun x -> x = 5) a = None)
+
+(** find_map *)
+let () =
+  let a = A.of_list [1;2;3;4;5] in
+  let b = A.of_list [1;2;3] in
+  let go x = if x > 3 then Some x else None in
+  assert (A.find_map go a = Some 4);
+  assert (A.find_map go b = None)
+
+(** find_mapi *)
+let () =
+  let a = A.of_list [1;1;3] in
+  let b = A.of_list [3;2;1] in
+  let go i x = if i = x then Some (i, x) else None in
+  assert (A.find_mapi go a = Some (1,1));
+  assert (A.find_mapi go b = None)
 
 (** Iterator invalidation *)
 

@@ -64,35 +64,23 @@ extern void caml_memprof_update_suspended(_Bool);
  * point to minor heaps (the `SCANNING_ONLY_YOUNG_VALUES` flag).
  *
  * If `weak` is false then only scan strong roots. If `weak`
- * is true then also scan weak roots.
- *
- * If `global` is false then only scan roots for `state`. If `global`
- * is true then also scan roots shared between all domains. */
+ * is true then also scan weak roots. */
 
 extern void caml_memprof_scan_roots(scanning_action f,
                                     scanning_action_flags fflags,
                                     void* fdata,
                                     caml_domain_state *state,
-                                    _Bool weak,
-                                    _Bool global);
+                                    _Bool weak);
 
 /* Update memprof data structures for the domain `state`, to reflect
- * survival and promotion, after a minor GC is completed.
- *
- * If `global` is false then only update structures for `state`. If
- * `global` is true then also update structures shared between all
- * domains. */
+ * survival and promotion, after a minor GC is completed. */
 
-extern void caml_memprof_after_minor_gc(caml_domain_state *state, _Bool global);
+extern void caml_memprof_after_minor_gc(caml_domain_state *state);
 
 /* Update memprof data structures for the domain `state`, to reflect
- * survival, after a minor GC is completed.
- *
- * If `global` is false then only update structures for `state`. If
- * `global` is true then also update structures shared between all
- * domains. */
+ * survival, after a minor GC is completed. */
 
-extern void caml_memprof_after_major_gc(caml_domain_state *state, _Bool global);
+extern void caml_memprof_after_major_gc(caml_domain_state *state);
 
 /* Freshly computes state->memprof_young_trigger. *Does not* set the
  * young limit. */

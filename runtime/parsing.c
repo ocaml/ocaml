@@ -75,12 +75,10 @@ struct parser_env {       /* Mirrors parser_env in ../stdlib/parsing.ml */
 
 /* Input codes */
 /* Mirrors parser_input in ../stdlib/parsing.ml */
-#define START 0
-#define TOKEN_READ 1
-#define STACKS_GROWN_1 2
-#define STACKS_GROWN_2 3
-#define SEMANTIC_ACTION_COMPUTED 4
-#define ERROR_DETECTED 5
+enum input_codes {
+  START, TOKEN_READ, STACKS_GROWN_1, STACKS_GROWN_2, SEMANTIC_ACTION_COMPUTED,
+  ERROR_DETECTED,
+};
 
 /* Output codes */
 /* Mirrors parser_output in ../stdlib/parsing.ml */
@@ -167,7 +165,7 @@ CAMLprim value caml_parse_engine(value vtables, value venv,
   int errflag;
   int n, n1, n2, m, state1;
 
-  switch(Int_val(cmd)) {
+  switch((enum input_codes)Int_val(cmd)) {
 
   case START:
     state = 0;
@@ -300,10 +298,8 @@ CAMLprim value caml_parse_engine(value vtables, value venv,
     goto loop;
 
   default:                      /* Should not happen */
-    CAMLassert(0);
-    return RAISE_PARSE_ERROR;   /* Keeps gcc -Wall happy */
+    CAMLunreachable();
   }
-
 }
 
 /* Control printing of debugging info */

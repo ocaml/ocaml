@@ -67,7 +67,7 @@ Caml_inline void cpu_relax(void) {
 
 /* Atomic read-modify-write instructions, with full fences */
 
-Caml_inline uintnat atomic_fetch_add_verify_ge0(atomic_uintnat* p, uintnat v) {
+Caml_inline uintnat atomic_fetch_add_verify_ge0(atomic_uintnat* p, intnat v) {
   uintnat result = atomic_fetch_add(p,v);
   CAMLassert ((intnat)result > 0);
   return result;

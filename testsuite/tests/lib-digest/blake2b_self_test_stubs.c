@@ -3,10 +3,10 @@
 
 #define CAML_NAME_SPACE
 
-#include "caml/mlvalues.h"
-#include "caml/memory.h"
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
 #define CAML_INTERNALS
-#include "caml/blake2.h"
+#include <caml/blake2.h>
 #undef CAML_INTERNALS
 
 #include <stdio.h>
@@ -16,13 +16,12 @@
 
 static void selftest_seq(uint8_t *out, size_t len, uint32_t seed)
 {
-  size_t i;
   uint32_t t, a , b;
 
   a = 0xDEAD4BAD * seed;              // prime
   b = 1;
 
-  for (i = 0; i < len; i++) {         // fill the buf
+  for (size_t i = 0; i < len; i++) {         // fill the buf
     t = a + b;
     a = b;
     b = t;
@@ -59,16 +58,16 @@ int blake2b_selftest()
   const size_t b2b_md_len[4] = { 20, 32, 48, 64 };
   const size_t b2b_in_len[6] = { 0, 3, 128, 129, 255, 1024 };
 
-  size_t i, j, outlen, inlen;
+  size_t outlen, inlen;
   uint8_t in[1024], md[64], key[64];
   struct BLAKE2_context ctx;
 
   // 256-bit hash for testing
   caml_BLAKE2Init(&ctx, 32, 0, NULL);
 
-  for (i = 0; i < 4; i++) {
+  for (size_t i = 0; i < 4; i++) {
     outlen = b2b_md_len[i];
-    for (j = 0; j < 6; j++) {
+    for (size_t j = 0; j < 6; j++) {
       inlen = b2b_in_len[j];
 
       selftest_seq(in, inlen, inlen);     // unkeyed hash
@@ -83,7 +82,7 @@ int blake2b_selftest()
 
   // compute and compare the hash of hashes
   caml_BLAKE2Final(&ctx, 32, md);
-  for (i = 0; i < 32; i++) {
+  for (size_t i = 0; i < 32; i++) {
     if (md[i] != blake2b_res[i])
       return -1;
   }

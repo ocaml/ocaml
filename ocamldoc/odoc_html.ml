@@ -29,7 +29,7 @@ let css_style = ref None
 let index_only = ref false
 let colorize_code = ref false
 let html_short_functors = ref false
-let charset = ref "iso-8859-1"
+let charset = ref "UTF-8"
 let show_navbar = ref true
 
 

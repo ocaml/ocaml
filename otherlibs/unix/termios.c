@@ -239,7 +239,7 @@ static void encode_terminal_status(volatile value *dst, struct termios *src)
 
 static void decode_terminal_status(struct termios *dst, volatile value *src)
 {
-  for (const long * pc = terminal_io_descr; *pc != End; src++) {
+  for (const long *pc = terminal_io_descr; *pc != End; src++) {
     switch(*pc++) {
     case Bool:
       { tcflag_t * dst_p = (tcflag_t *) ((char *)dst + *pc++);

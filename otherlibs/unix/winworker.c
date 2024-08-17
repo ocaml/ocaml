@@ -238,8 +238,6 @@ void caml_win32_worker_push(LPWORKER lpWorker)
 
 void caml_win32_worker_init (void)
 {
-  int i = 0;
-
   /* Init a shared variable. The only way to ensure that no other
      worker will be at the same point is to use a critical section.
      */

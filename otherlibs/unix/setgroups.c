@@ -31,12 +31,12 @@
 CAMLprim value caml_unix_setgroups(value groups)
 {
   gid_t * gidset;
-  mlsize_t size, i;
+  mlsize_t size;
   int n;
 
   size = Wosize_val(groups);
   gidset = (gid_t *) caml_stat_alloc(size * sizeof(gid_t));
-  for (i = 0; i < size; i++) gidset[i] = Int_val(Field(groups, i));
+  for (mlsize_t i = 0; i < size; i++) gidset[i] = Int_val(Field(groups, i));
 
   n = setgroups(size, gidset);
 

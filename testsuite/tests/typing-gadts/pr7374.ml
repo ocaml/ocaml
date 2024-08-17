@@ -24,7 +24,7 @@ end;; (* should fail *)
 Line 7, characters 16-20:
 7 |     fun Refl -> Refl
                     ^^^^
-Error: This expression has type "(a, a) eq"
+Error: The constructor "Refl" has type "(a, a) eq"
        but an expression was expected of type "(a, t) eq"
        Type "a" is not compatible with type "t" = "[ `Rec of 'a ] X.t as 'a"
 |}]
@@ -56,7 +56,7 @@ end;; (* should fail *)
 Line 4, characters 21-25:
 4 |     fun Refl Refl -> Refl;;
                          ^^^^
-Error: This expression has type "(a, a) eq"
+Error: The constructor "Refl" has type "(a, a) eq"
        but an expression was expected of type "(a, a X.t X.t) eq"
        Type "a" = "b X.t" is not compatible with type "a X.t X.t"
        Type "b" is not compatible with type "a X.t"

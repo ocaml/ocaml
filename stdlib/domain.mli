@@ -111,7 +111,7 @@ module DLS : sig
 
     val new_key : ?split_from_parent:('a -> 'a) -> (unit -> 'a) -> 'a key
     (** [new_key f] returns a new key bound to initialiser [f] for accessing
-,        domain-local variables.
+        domain-local variables.
 
         If [split_from_parent] is not provided, the value for a new
         domain will be computed on-demand by the new domain: the first

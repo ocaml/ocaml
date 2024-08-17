@@ -69,9 +69,8 @@ void caml_load_code(int fd, asize_t len)
 
 void caml_fixup_endianness(code_t code, asize_t len)
 {
-  code_t p;
   len /= sizeof(opcode_t);
-  for (p = code; p < code + len; p++) {
+  for (code_t p = code; p < code + len; p++) {
     Reverse_32(p, p);
   }
 }
@@ -97,9 +96,7 @@ int* caml_init_opcode_nargs(void)
 {
   if( opcode_nargs == NULL ){
     int* l = (int*)caml_stat_alloc(sizeof(int) * FIRST_UNIMPLEMENTED_OP);
-    int i;
-
-    for (i = 0; i < FIRST_UNIMPLEMENTED_OP; i++) {
+    for (int i = 0; i < FIRST_UNIMPLEMENTED_OP; i++) {
       l [i] = 0;
     }
     /* Instructions with one operand */

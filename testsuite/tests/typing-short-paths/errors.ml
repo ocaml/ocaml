@@ -51,7 +51,7 @@ type pair = Pair : 'a ty * 'a -> pair
 Line 9, characters 22-23:
 9 |   | Pair (Char, x) -> x + 1
                           ^
-Error: This expression has type "$a" but an expression was expected of type "int"
+Error: The value "x" has type "$a" but an expression was expected of type "int"
        Hint: "$a" is an existential type bound by the constructor "Pair".
 |}]
 
@@ -68,7 +68,7 @@ type pair = Pair : 'a ty * 'a -> pair
 Line 7, characters 35-36:
 7 |   | Pair (Char, x) -> if true then x else 'd'
                                        ^
-Error: This expression has type "$a" but an expression was expected of type "'a"
+Error: The value "x" has type "$a" but an expression was expected of type "'a"
        This instance of "$a" is ambiguous:
        it would escape the scope of its equation
        Hint: "$a" is an existential type bound by the constructor "Pair".

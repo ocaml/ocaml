@@ -104,12 +104,11 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   CAMLparam0(); /* no need to register closure and args as roots, see below */
   CAMLlocal1(cont);
   value res;
-  int i;
   caml_domain_state* domain_state = Caml_state;
 
   CAMLassert(narg + 4 <= 256);
   domain_state->current_stack->sp -= narg + 4;
-  for (i = 0; i < narg; i++)
+  for (int i = 0; i < narg; i++)
     domain_state->current_stack->sp[i] = args[i]; /* arguments */
 
   if (!callback_code_inited) init_callback_code();
@@ -391,14 +390,15 @@ static unsigned int hash_value_name(char const *name)
 
 CAMLprim value caml_register_named_value(value vname, value val)
 {
-  struct named_value * nv;
   const char * name = String_val(vname);
   size_t namelen = strlen(name);
   unsigned int h = hash_value_name(name);
   int found = 0;
 
   caml_plat_lock_blocking(&named_value_lock);
-  for (nv = named_value_table[h]; nv != NULL; nv = nv->next) {
+  for (struct named_value *nv = named_value_table[h];
+       nv != NULL;
+       nv = nv->next) {
     if (strcmp(name, nv->name) == 0) {
       caml_modify_generational_global_root(&nv->val, val);
       found = 1;
@@ -406,7 +406,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
     }
   }
   if (!found) {
-    nv = (struct named_value *)
+    struct named_value * nv = (struct named_value *)
       caml_stat_alloc(sizeof(struct named_value) + namelen);
     memcpy(nv->name, name, namelen + 1);
     nv->val = val;
@@ -420,9 +420,8 @@ CAMLprim value caml_register_named_value(value vname, value val)
 
 CAMLexport const value* caml_named_value(char const *name)
 {
-  struct named_value * nv;
   caml_plat_lock_blocking(&named_value_lock);
-  for (nv = named_value_table[hash_value_name(name)];
+  for (struct named_value *nv = named_value_table[hash_value_name(name)];
        nv != NULL;
        nv = nv->next) {
     if (strcmp(name, nv->name) == 0){
@@ -436,11 +435,11 @@ CAMLexport const value* caml_named_value(char const *name)
 
 CAMLexport void caml_iterate_named_values(caml_named_action f)
 {
-  int i;
   caml_plat_lock_blocking(&named_value_lock);
-  for(i = 0; i < Named_value_size; i++){
-    struct named_value * nv;
-    for (nv = named_value_table[i]; nv != NULL; nv = nv->next) {
+  for (int i = 0; i < Named_value_size; i++){
+    for (struct named_value *nv = named_value_table[i];
+         nv != NULL;
+         nv = nv->next) {
       f( Op_val(nv->val), nv->name );
     }
   }

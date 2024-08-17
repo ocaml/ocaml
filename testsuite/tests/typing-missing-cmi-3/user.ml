@@ -32,7 +32,7 @@ let () = Middle.(f x)
 Line 1, characters 19-20:
 1 | let () = Middle.(f x)
                        ^
-Error: This expression has type "(module Original.T)"
+Error: The value "x" has type "(module Original.T)"
        but an expression was expected of type
          "(module Original.T with type t = int)"
 |}]

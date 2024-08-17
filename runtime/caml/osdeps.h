@@ -159,7 +159,7 @@ extern void caml_init_os_params(void);
 
 #ifdef _WIN32
 
-/* [caml_stat_strdup_to_utf16(s)] returns a NULL-terminated copy of [s],
+/* [caml_stat_strdup_to_utf16(s)] returns a null-terminated copy of [s],
    re-encoded in UTF-16.  The encoding of [s] is assumed to be UTF-8 if
    [caml_windows_unicode_runtime_enabled] is non-zero **and** [s] is valid
    UTF-8, or the current Windows code page otherwise.
@@ -169,7 +169,7 @@ extern void caml_init_os_params(void);
 */
 CAMLextern wchar_t* caml_stat_strdup_to_utf16(const char *s);
 
-/* [caml_stat_strdup_of_utf16(s)] returns a NULL-terminated copy of [s],
+/* [caml_stat_strdup_of_utf16(s)] returns a null-terminated copy of [s],
    re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero or
    the current Windows code page otherwise.
 

@@ -131,7 +131,9 @@ let print_cmt_infos cmt =
   end;
   if !decls then begin
     printf "\nUid of decls:\n";
-    Shape.Uid.Tbl.iter (fun uid item ->
+    let decls = Array.of_list (Shape.Uid.Tbl.to_list cmt.cmt_uid_to_decl) in
+    Array.sort (fun (uid, _) (uid', _) -> Shape.Uid.compare uid uid') decls;
+    Array.iter (fun (uid, item) ->
       let loc = match (item : Typedtree.item_declaration) with
         | Value vd -> vd.val_name
         | Value_binding vb ->
@@ -161,8 +163,8 @@ let print_cmt_infos cmt =
       Format.printf "@[<hov 2>%a:@ %a@]@;"
         Shape.Uid.print uid
         pp_loc loc)
-      cmt.cmt_uid_to_decl;
-      Format.print_flush ()
+      decls;
+    Format.print_flush ()
   end
 
 let print_general_infos name crc defines cmi cmx =

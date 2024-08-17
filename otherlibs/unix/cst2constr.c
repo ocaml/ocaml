@@ -19,8 +19,7 @@
 
 value caml_unix_cst_to_constr(int n, const int *tbl, int size, int deflt)
 {
-  int i;
-  for (i = 0; i < size; i++)
+  for (int i = 0; i < size; i++)
     if (n == tbl[i]) return Val_int(i);
   return Val_int(deflt);
 }

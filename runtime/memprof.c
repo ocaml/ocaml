@@ -626,8 +626,11 @@ struct memprof_orphan_table_s {
 /* List of orphaned entry tables not yet adopted by any domain. */
 static memprof_orphan_table_t orphans = NULL;
 
-/* lock controlling access to `orphans` variable */
+/* lock controlling access to `orphans` and writes to `orphans_present` */
 static caml_plat_mutex orphans_lock = CAML_PLAT_MUTEX_INITIALIZER;
+
+/* Flag indicating non-NULL orphans. Only modified when holding orphans_lock. */
+static atomic_uintnat orphans_present;
 
 /**** Initializing and clearing entries tables ****/
 
@@ -965,6 +968,7 @@ static void orphans_abandon(memprof_domain_t domain)
   caml_plat_lock_blocking(&orphans_lock);
   ot->next = orphans;
   orphans = domain->orphans;
+  atomic_store_release(&orphans_present, 1);
   caml_plat_unlock(&orphans_lock);
   domain->orphans = NULL;
 }
@@ -973,6 +977,9 @@ static void orphans_abandon(memprof_domain_t domain)
 
 static void orphans_adopt(memprof_domain_t domain)
 {
+  if (!atomic_load_acquire(&orphans_present))
+    return; /* No orphans to adopt */
+
   /* Find the end of the domain's orphans list */
   memprof_orphan_table_t *p = &domain->orphans;
   while(*p) {
@@ -980,8 +987,11 @@ static void orphans_adopt(memprof_domain_t domain)
   }
 
   caml_plat_lock_blocking(&orphans_lock);
-  *p = orphans;
-  orphans = NULL;
+  if (orphans) {
+    *p = orphans;
+    orphans = NULL;
+    atomic_store_release(&orphans_present, 0);
+  }
   caml_plat_unlock(&orphans_lock);
 }
 
@@ -1045,9 +1055,8 @@ Caml_inline uint64_t splitmix64_next(uint64_t* x)
 
 static void xoshiro_init(memprof_domain_t domain, uint64_t seed)
 {
-  int i;
   uint64_t splitmix64_state = seed;
-  for (i = 0; i < RAND_BLOCK_SIZE; i++) {
+  for (int i = 0; i < RAND_BLOCK_SIZE; i++) {
     uint64_t t = splitmix64_next(&splitmix64_state);
     domain->xoshiro_state[0][i] = t & 0xFFFFFFFF;
     domain->xoshiro_state[1][i] = t >> 32;
@@ -1101,7 +1110,7 @@ Caml_inline float log_approx(uint32_t y)
 {
   union { float f; int32_t i; } u;
   u.f = y + 0.5f;
-  float exp = u.i >> 23;
+  float exp = (float)(u.i >> 23);
   u.i = (u.i & 0x7FFFFF) | 0x3F800000;
   float x = u.f;
   return (-111.70172433407f +
@@ -1122,7 +1131,6 @@ __attribute__((optimize("tree-vectorize")))
 
 static void rand_batch(memprof_domain_t domain)
 {
-  int i;
   float one_log1m_lambda = One_log1m_lambda(domain->entries.config);
 
   /* Instead of using temporary buffers, we could use one big loop,
@@ -1132,18 +1140,18 @@ static void rand_batch(memprof_domain_t domain)
   float B[RAND_BLOCK_SIZE];
 
   /* Generate uniform variables in A using the xoshiro128+ PRNG. */
-  for (i = 0; i < RAND_BLOCK_SIZE; i++)
+  for (int i = 0; i < RAND_BLOCK_SIZE; i++)
     A[i] = xoshiro_next(domain, i);
 
   /* Generate exponential random variables by computing logarithms. */
-  for (i = 0; i < RAND_BLOCK_SIZE; i++)
+  for (int i = 0; i < RAND_BLOCK_SIZE; i++)
     B[i] = 1 + log_approx(A[i]) * one_log1m_lambda;
 
   /* We do the final flooring for generating geometric
      variables. Compilers are unlikely to use SIMD instructions for
      this loop, because it involves a conditional and variables of
      different sizes (32 and 64 bits). */
-  for (i = 0; i < RAND_BLOCK_SIZE; i++) {
+  for (int i = 0; i < RAND_BLOCK_SIZE; i++) {
     double f = B[i];
     CAMLassert (f >= 1);
     /* [Max_long+1] is a power of two => no rounding in the test. */
@@ -1165,7 +1173,8 @@ static uintnat rand_geom(memprof_domain_t domain)
   if (domain->rand_pos == RAND_BLOCK_SIZE)
     rand_batch(domain);
   res = domain->rand_geom_buff[domain->rand_pos++];
-  CAMLassert(1 <= res && res <= Max_long);
+  CAMLassert(1 <= res);
+  CAMLassert(res <= Max_long);
   return res;
 }
 
@@ -1464,15 +1473,13 @@ void caml_memprof_scan_roots(scanning_action f,
                              scanning_action_flags fflags,
                              void* fdata,
                              caml_domain_state *state,
-                             bool weak,
-                             bool global)
+                             bool weak)
 {
   memprof_domain_t domain = state->memprof;
   CAMLassert(domain);
-  if (global) {
-    /* Adopt all global orphans into this domain. */
-    orphans_adopt(domain);
-  }
+
+  /* Adopt all global orphans into this domain. */
+  orphans_adopt(domain);
 
   bool young = (fflags & SCANNING_ONLY_YOUNG_VALUES);
   struct scan_closure closure = {f, fflags, fdata, weak};
@@ -1516,17 +1523,15 @@ static void entries_update_after_minor_gc(entries_t entries,
 }
 
 /* Update all memprof structures for a given domain, at the end of a
- * minor GC. If `global` is set, also ensure shared structures are
- * updated (we do this by adopting orphans into this domain). */
+ * minor GC. */
 
-void caml_memprof_after_minor_gc(caml_domain_state *state, bool global)
+void caml_memprof_after_minor_gc(caml_domain_state *state)
 {
   memprof_domain_t domain = state->memprof;
   CAMLassert(domain);
-  if (global) {
-    /* Adopt all global orphans into this domain. */
-    orphans_adopt(domain);
-  }
+
+  /* Adopt all global orphans into this domain. */
+  orphans_adopt(domain);
 
   domain_apply_actions(domain, true, entry_update_after_minor_gc,
                        NULL, entries_update_after_minor_gc);
@@ -1559,17 +1564,16 @@ static bool entry_update_after_major_gc(entry_t e, void *data)
  * is no "entries_update_after_major_gc" function. */
 
 /* Update all memprof structures for a given domain, at the end of a
- * major GC. If `global` is set, also update shared structures (we do
- * this by adopting orphans into this domain). */
+ * major GC. */
 
-void caml_memprof_after_major_gc(caml_domain_state *state, bool global)
+void caml_memprof_after_major_gc(caml_domain_state *state)
 {
   memprof_domain_t domain = state->memprof;
   CAMLassert(domain);
-  if (global) {
-    /* Adopt all global orphans into this domain. */
-    orphans_adopt(domain);
-  }
+
+  /* Adopt all global orphans into this domain. */
+  orphans_adopt(domain);
+
   domain_apply_actions(domain, false, entry_update_after_major_gc,
                        NULL, NULL);
   orphans_update_pending(domain);
@@ -1771,7 +1775,9 @@ static caml_result run_callback_res(
   } else {
     value v = res.data;
     /* Callback returned [Some _]. Store the value in [user_data]. */
-    CAMLassert(Is_block(v) && Tag_val(v) == 0 && Wosize_val(v) == 1);
+    CAMLassert(Is_block(v));
+    CAMLassert(Tag_val(v) == 0);
+    CAMLassert(Wosize_val(v) == 1);
     e->user_data = Some_val(v);
     if (Is_block(e->user_data) && Is_young(e->user_data) &&
         i < es->young)
@@ -1974,8 +1980,8 @@ void caml_memprof_set_trigger(caml_domain_state *state)
     }
   }
 
-  CAMLassert((trigger >= state->young_start) &&
-             (trigger <= state->young_ptr));
+  CAMLassert(trigger >= state->young_start);
+  CAMLassert(trigger <= state->young_ptr);
   state->memprof_young_trigger = trigger;
 }
 
@@ -2032,9 +2038,9 @@ void caml_memprof_sample_young(uintnat wosize, int from_caml,
   }
 
   /* The memprof trigger lies in (young_ptr, young_ptr + whsize] */
-  CAMLassert(Caml_state->young_ptr < Caml_state->memprof_young_trigger &&
-             Caml_state->memprof_young_trigger <=
-               Caml_state->young_ptr + whsize);
+  CAMLassert(Caml_state->young_ptr < Caml_state->memprof_young_trigger);
+  CAMLassert(Caml_state->memprof_young_trigger <=
+             Caml_state->young_ptr + whsize);
 
   /* Trigger offset from the base of the combined allocation. We
    * reduce this for each sample in this comballoc. Signed so it can

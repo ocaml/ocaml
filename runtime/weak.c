@@ -46,7 +46,7 @@ struct caml_ephe_info* caml_alloc_ephe_info (void)
 /* [len] is a value that represents a number of words (fields) */
 CAMLprim value caml_ephe_create (value len)
 {
-  mlsize_t size, i;
+  mlsize_t size;
   value res;
   caml_domain_state* domain_state = Caml_state;
 
@@ -59,7 +59,7 @@ CAMLprim value caml_ephe_create (value len)
 
   Ephe_link(res) = domain_state->ephe_info->live;
   domain_state->ephe_info->live = res;
-  for (i = CAML_EPHE_DATA_OFFSET; i < size; i++)
+  for (mlsize_t i = CAML_EPHE_DATA_OFFSET; i < size; i++)
     Field(res, i) = caml_ephe_none;
   /* run memprof callbacks */
   return caml_process_pending_actions_with_root(res);
@@ -123,14 +123,14 @@ static void do_check_key_clean(value e, mlsize_t offset)
 void caml_ephe_clean (value v) {
   value child;
   int release_data = 0;
-  mlsize_t size, i;
+  mlsize_t size;
   header_t hd;
 
   if (caml_gc_phase != Phase_sweep_ephe) return;
 
   hd = Hd_val(v);
   size = Wosize_hd (hd);
-  for (i = CAML_EPHE_FIRST_KEY; i < size; i++) {
+  for (mlsize_t i = CAML_EPHE_FIRST_KEY; i < size; i++) {
     child = Field(v, i);
   ephemeron_again:
     if (child != caml_ephe_none && Is_block(child)) {
@@ -425,7 +425,6 @@ static value ephe_blit_field (value es, mlsize_t offset_s,
 {
   CAMLparam2(es,ed);
   CAMLlocal1(ar);
-  long i;
 
   if (length == 0) CAMLreturn(Val_unit);
 
@@ -436,11 +435,11 @@ static value ephe_blit_field (value es, mlsize_t offset_s,
   caml_ephe_clean(ed);
 
   if (offset_d < offset_s) {
-    for (i = 0; i < length; i++) {
+    for (long i = 0; i < length; i++) {
       do_set(ed, offset_d + i, Field(es, (offset_s + i)));
     }
   } else {
-    for (i = length - 1; i >= 0; i--) {
+    for (long i = length - 1; i >= 0; i--) {
       do_set(ed, offset_d + i, Field(es, (offset_s + i)));
     }
   }

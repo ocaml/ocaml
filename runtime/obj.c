@@ -134,7 +134,7 @@ CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
 {
   CAMLparam2 (new_tag_v, arg);
   CAMLlocal1 (res);
-  mlsize_t sz, i;
+  mlsize_t sz;
   tag_t tg;
 
   sz = Wosize_val(arg);
@@ -145,13 +145,14 @@ CAMLprim value caml_obj_with_tag(value new_tag_v, value arg)
     memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
   } else if (sz <= Max_young_wosize) {
     res = caml_alloc_small(sz, tg);
-    for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
+    for (mlsize_t i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
   } else {
     res = caml_alloc_shr(sz, tg);
     /* It is safe to use [caml_initialize] even if [tag == Closure_tag]
        and some of the "values" being copied are actually code pointers.
        That's because the new "value" does not point to the minor heap. */
-    for (i = 0; i < sz; i++) caml_initialize(&Field(res, i), Field(arg, i));
+    for (mlsize_t i = 0; i < sz; i++)
+      caml_initialize(&Field(res, i), Field(arg, i));
     /* Give gc a chance to run, and run memprof callbacks */
     caml_process_pending_actions();
   }

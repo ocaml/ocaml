@@ -15,12 +15,12 @@
 
 #define CAML_INTERNALS
 
-#include "caml/mlvalues.h"
-#include "caml/memory.h"
-#include "caml/alloc.h"
-#include "caml/gc.h"
-#include "caml/shared_heap.h"
-#include "caml/callback.h"
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/alloc.h>
+#include <caml/gc.h>
+#include <caml/shared_heap.h>
+#include <caml/callback.h>
 
 struct block { value header; value v; };
 
@@ -89,7 +89,6 @@ value gb_young2old(value _dummy) {
 value gb_static2young(value static_value, value full_major) {
   CAMLparam2 (static_value, full_major);
   CAMLlocal1(v);
-  int i;
 
   root = Val_unit;
   caml_register_generational_global_root(&root);
@@ -106,7 +105,7 @@ value gb_static2young(value static_value, value full_major) {
   caml_callback(full_major, Val_unit);
 
   /* Fill the minor heap to make sure the old block is overwritten */
-  for(i = 0; i < 1000000; i++)
+  for (int i = 0; i < 1000000; i++)
     caml_alloc_small(1, 0);
 
   v = Field(root, 0);

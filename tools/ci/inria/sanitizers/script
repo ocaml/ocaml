@@ -47,19 +47,23 @@ else
   run_testsuite="$make -C testsuite all"
 fi
 
+# Figure out which version of llvm/clang to use
+llvm_version=$(clang -dumpversion | cut -d . -f 1)
+clang=clang-${llvm_version}
+llvm_bin_dir=/usr/lib/llvm-${llvm_version}/bin
+
 # A tool that makes error backtraces nicer
-# Need to pick the one that matches clang-14 and is named "llvm-symbolizer"
-# (/usr/bin/llvm-symbolizer-14 doesn't work, that would be too easy)
-export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-14/bin/llvm-symbolizer
+# Need to pick the one that matches clang's version and is named
+# "llvm-symbolizer" (/usr/bin/llvm-symbolizer-xx doesn't work,
+# that would be too easy)
+export ASAN_SYMBOLIZER_PATH=${llvm_bin_dir}/llvm-symbolizer
 export TSAN_SYMBOLIZER_PATH="$ASAN_SYMBOLIZER_PATH"
 
 #########################################################################
 
-echo "======== clang 14, address sanitizer, UB sanitizer =========="
+echo "======== clang ${llvm_version}, address sanitizer, UB sanitizer ========"
 
 git clean -q -f -d -x
-
-# # Use clang 14
 
 # These are the undefined behaviors we want to check
 # Others occur on purpose e.g. signed arithmetic overflow
@@ -77,14 +81,56 @@ shift-exponent,\
 unreachable"
 
 # Select address sanitizer and UB sanitizer, with trap-on-error behavior
-sanitizers="-fsanitize=address -fsanitize-trap=$ubsan"
-
+sanitizers="-fsanitize=address -fsanitize=$ubsan -fno-sanitize-recover=all"
+export UBSAN_OPTIONS="print_stacktrace=1"
 # Don't optimize too much to get better backtraces of errors
+CFLAGS="-Og -g -fno-omit-frame-pointer $sanitizers"
+LDFLAGS="$sanitizers -Og -g"
+CC=$clang
+
+# Test that UBSAN works
+cat >ubsan.c <<EOF
+#include <stdbool.h>
+#include <string.h>
+
+int main(int argc, char **argv) {
+  int x = 100;
+  bool b;
+  memcpy(&b, &x, sizeof(b));
+
+  return b;
+}
+EOF
+
+$CC $CFLAGS -c ubsan.c
+$CC $LDFLAGS ubsan.o -o ubsan
+
+./ubsan && exit 2
+test $? -eq 1
+rm -f ubsan ubsan.o ubsan.c
+
+# Test that ASAN works
+cat >asan.c <<EOF
+#include <stdlib.h>
+
+int main(int argc, char **argv) {
+  char* x = malloc(4);
+  free(x);
+  free(x);
+  return x[argc];
+}
+EOF
+
+$CC $CFLAGS -c asan.c
+$CC $LDFLAGS asan.o -o asan
+./asan && exit 2
+test $? -eq 1
+rm -f asan asan.o asan.c
 
 ./configure \
-  CC=clang-14 \
-  CFLAGS="-O1 -fno-omit-frame-pointer $sanitizers" \
-  LDFLAGS="$sanitizers" \
+  CC="$CC" \
+  CFLAGS="$CFLAGS" \
+  LDFLAGS="$LDFLAGS" \
   --disable-stdlib-manpages --enable-dependency-generation
 
 # Build the system.  We want to check for memory leaks, hence
@@ -115,12 +161,12 @@ ASAN_OPTIONS="detect_leaks=0,use_sigaltstack=0" $run_testsuite
 # Initially intended to detect data races in OCaml programs and C stubs, it has
 # proved effective at also detecting races in the runtime (see #11040).
 
-echo "======== clang 14, thread sanitizer =========="
+echo "======== clang ${llvm_version}, thread sanitizer ========"
 
 git clean -q -f -d -x
 
 ./configure \
-  CC=clang-14 \
+  CC="$CC" \
   --enable-tsan \
   CPPFLAGS="-DTSAN_INSTRUMENT_ALL" \
   --disable-stdlib-manpages --enable-dependency-generation
@@ -138,7 +184,7 @@ TSAN_OPTIONS="" $run_testsuite
 # Some alarms are reported that look like false positive
 # and are impossible to debug.
 
-# echo "======== clang 6.0, memory sanitizer =========="
+# echo "======== clang ${llvm_version}, memory sanitizer ========"
 
 # git clean -q -f -d -x
 
@@ -149,7 +195,7 @@ TSAN_OPTIONS="" $run_testsuite
 # # Don't optimize at all to get better backtraces of errors
 
 # ./configure \
-#   CC=clang-9 \
+#   CC="$CC" \
 #   CFLAGS="-O0 -g -fno-omit-frame-pointer -fsanitize=memory" \
 #   LDFLAGS="-fsanitize=memory" \
 #   --disable-native-compiler

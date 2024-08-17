@@ -21,9 +21,13 @@
 
 (** {1:modname_from_strings Module name convention and computation} *)
 
+type intf_or_impl = Intf | Impl
 type modname = string
 type filename = string
 type file_prefix = string
+
+type error = Invalid_encoding of filename
+exception Error of error
 
 (** [modulize s] capitalizes the first letter of [s]. *)
 val modulize: string -> modname
@@ -31,14 +35,18 @@ val modulize: string -> modname
 (** [normalize s] uncapitalizes the first letter of [s]. *)
 val normalize: string -> string
 
-(** [modname_from_source filename] is [modulize stem] where [stem] is the
+(** [lax_modname_from_source filename] is [modulize stem] where [stem] is the
     basename of the filename [filename] stripped from all its extensions.
     For instance, [modname_from_source "/pa.th/x.ml.pp"] is ["X"]. *)
-val modname_from_source: filename -> modname
+val lax_modname_from_source: filename -> modname
+
+(** Same as {!lax_modname_from_source} but raises an {!error.Invalid_encoding}
+    error on filename with invalid utf8 encoding. *)
+val strict_modname_from_source: filename -> modname
 
 (** {2:module_name_validation Module name validation function}*)
 
-(** [is_unit_name ~strict name] is true only if [name] can be used as a
+(** [is_unit_name name] is true only if [name] can be used as a
     valid module name. *)
 val is_unit_name : modname -> bool
 
@@ -67,19 +75,24 @@ val prefix: t -> file_prefix
     or compilation artifact.*)
 val modname: t -> modname
 
+(** [kind u] is the kind (interface or implementation) of the unit. *)
+val kind: t -> intf_or_impl
+
 (** [check_unit_name u] prints a warning if the derived module name [modname u]
     should not be used as a module name as specified
     by {!is_unit_name}[ ~strict:true]. *)
 val check_unit_name : t -> unit
 
-(** [make ~check ~source_file prefix] associates both the
+(** [make ~check ~source_file kind prefix] associates both the
     [source_file] and the module name {!modname_from_source}[ target_prefix] to
     the prefix filesystem path [prefix].
 
    If [check_modname=true], this function emits a warning if the derived module
    name is not valid according to {!check_unit_name}.
 *)
-val make: ?check_modname:bool -> source_file:filename -> file_prefix -> t
+val make:
+    ?check_modname:bool -> source_file:filename ->
+    intf_or_impl -> file_prefix -> t
 
 (** {1:artifact_function Build artifacts }*)
 module Artifact: sig

@@ -48,7 +48,7 @@
 #if defined(__GNUC__) || defined(__clang__)
   /* Supported since at least GCC 3.1 */
   #define CAMLdeprecated_typedef(name, type) \
-    typedef type name __attribute ((deprecated))
+    typedef type name __attribute__ ((deprecated))
 #elif defined(_MSC_VER)
   #define CAMLdeprecated_typedef(name, type) \
     typedef __declspec(deprecated) type name
@@ -90,29 +90,25 @@ typedef size_t asize_t;
 CAMLdeprecated_typedef(addr, char *);
 #endif /* CAML_INTERNALS */
 
-/* Noreturn, CAMLnoreturn_start and CAMLnoreturn_end are preserved
-   for compatibility reasons.  Instead, we recommend using the CAMLnoret
-   macro, to be added as a modifier at the beginning of the
-   function definition or declaration.  It must occur first, before
-   "static", "extern", "CAMLexport", "CAMLextern".
+/* The CAMLnoret macro must be added as a modifier at the beginning of
+   the function definition or declaration.  It must occur first,
+   before "static", "extern", "CAMLexport", "CAMLextern".
+
+   Noreturn, CAMLnoreturn_start and CAMLnoreturn_end are preserved for
+   compatibility reasons.
 
    Note: CAMLnoreturn is a different macro defined in memory.h,
    to be used in function bodies rather than as a function attribute.
 */
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202300L    \
-    || defined(__cplusplus) && __cplusplus >= 201103L
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L || \
+    defined(__cplusplus)
   #define CAMLnoret [[noreturn]]
-#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-  #define CAMLnoret _Noreturn
-#elif defined(__GNUC__)
-  #define CAMLnoret  __attribute__ ((noreturn))
 #else
-  #define CAMLnoret
+  #define CAMLnoret _Noreturn
 #endif
 
 #define CAMLnoreturn_start CAMLnoret
 #define CAMLnoreturn_end
-
 #ifdef __GNUC__
   #define Noreturn __attribute__ ((noreturn))
 #else
@@ -155,17 +151,11 @@ CAMLdeprecated_typedef(addr, char *);
 /* by ocamlopt makes direct references into the domain state structure,*/
 /* which is stored in a register on many platforms. For this to work, */
 /* we need to be able to compute the exact offset of each member. */
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-#define CAMLalign(n) _Alignas(n)
-#elif defined(__cplusplus) \
-   && (__cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1900)
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L || \
+    defined(__cplusplus)
 #define CAMLalign(n) alignas(n)
-#elif defined(SUPPORTS_ALIGNED_ATTRIBUTE)
-#define CAMLalign(n) __attribute__((aligned(n)))
-#elif defined(_MSC_VER)
-#define CAMLalign(n) __declspec(align(n))
 #else
-#error "How do I align values on this platform?"
+#define CAMLalign(n) _Alignas(n)
 #endif
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L || \
@@ -199,13 +189,18 @@ CAMLdeprecated_typedef(addr, char *);
      CAMLunused_start foo CAMLunused_end;
    which supports both GCC/Clang and MSVC.
 */
-#if defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
-  #define CAMLunused_start __attribute__ ((unused))
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L || \
+    defined(__cplusplus) && __cplusplus >= 201703L
+  #define CAMLunused [[maybe_unused]]
+  #define CAMLunused_start CAMLunused
   #define CAMLunused_end
+#elif __has_attribute(unused) || defined(__GNUC__)
   #define CAMLunused __attribute__ ((unused))
+  #define CAMLunused_start CAMLunused
+  #define CAMLunused_end
 #elif defined(_MSC_VER)
-  #define CAMLunused_start  __pragma( warning (push) )           \
-    __pragma( warning (disable:4189 ) )
+  #define CAMLunused_start __pragma( warning (push) )   \
+          __pragma( warning (disable:4189 ) )
   #define CAMLunused_end __pragma( warning (pop))
   #define CAMLunused
 #else
@@ -215,8 +210,8 @@ CAMLdeprecated_typedef(addr, char *);
 #endif
 
 #ifdef CAML_INTERNALS
-#if (defined(__cplusplus) && __cplusplus >= 201703L) || \
-    __has_c_attribute(fallthrough)
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L || \
+    defined(__cplusplus) && __cplusplus >= 201703L
   #define fallthrough [[fallthrough]]
 #elif __has_attribute(fallthrough)
   #define fallthrough __attribute__ ((fallthrough))
@@ -279,14 +274,36 @@ typedef char char_os;
 #define __OSFILE__ __FILE__
 #endif
 
+/* Although caml_failed_assert never returns, it is not marked as such.
+   This prevents the C compiler optimising away all of the useful context
+   from the callsite, making debuggers able to see it. */
 #define CAMLassert(x) \
   (CAMLlikely(x) ? (void) 0 : caml_failed_assert ( #x , __OSFILE__, __LINE__))
-CAMLnoret CAMLextern void caml_failed_assert (char *, char_os *, int);
+CAMLextern void caml_failed_assert (char *, char_os *, int)
+#if defined(__has_feature)
+  /* However, we do inform clang-analyzer that this function never returns,
+     since that improves analysis without breaking debugging */
+  #if __has_feature(attribute_analyzer_noreturn)
+    __attribute__((analyzer_noreturn))
+  #endif
+#endif
+;
 #else
 #define CAMLassert(x) ((void) 0)
 #endif
 
-#ifdef __GNUC__
+#if __has_builtin(__builtin_trap) || defined(__GNUC__)
+  #define CAMLunreachable() (__builtin_trap())
+#elif defined(_MSC_VER)
+  #include <intrin.h>
+  CAMLnoret Caml_inline void caml_fastfail(unsigned int);
+  void caml_fastfail(unsigned int i) { __fastfail(i); }
+  #define CAMLunreachable() (caml_fastfail(7 /* FAST_FAIL_FATAL_APP_EXIT */))
+#else
+  #define CAMLunreachable() (CAMLassert(0))
+#endif
+
+#if __has_builtin(__builtin_expect) || defined(__GNUC__)
 #define CAMLlikely(e)   __builtin_expect(!!(e), 1)
 #define CAMLunlikely(e) __builtin_expect(!!(e), 0)
 #else
@@ -300,7 +317,8 @@ CAMLnoret CAMLextern void caml_failed_assert (char *, char_os *, int);
 
    CAMLnoalloc at the start of a block means that the GC must not be
    invoked during the block. */
-#if defined(__GNUC__) && defined(DEBUG)
+#if (__has_attribute(cleanup) && __has_attribute(unused) || defined(__GNUC__)) \
+    && defined(DEBUG)
 int caml_noalloc_begin(void);
 void caml_noalloc_end(int*);
 void caml_alloc_point_here(void);
@@ -333,7 +351,7 @@ extern _Atomic fatal_error_hook caml_fatal_error_hook;
 #endif
 
 CAMLnoret CAMLextern void caml_fatal_error (char *, ...)
-#ifdef __GNUC__
+#if __has_attribute(format) || defined(__GNUC__)
   __attribute__ ((format (printf, 1, 2)))
 #endif
 ;
@@ -406,7 +424,7 @@ extern double caml_log1p(double);
 #define unlink_os _wunlink
 #define rename_os caml_win32_rename
 #define chdir_os _wchdir
-#define mkdir_os(path, perm) _wmkdir(path)
+#define mkdir_os(path, perm) ((void) (perm), _wmkdir(path))
 #define getcwd_os _wgetcwd
 #define system_os _wsystem
 #define rmdir_os _wrmdir
@@ -521,13 +539,13 @@ CAMLextern int caml_read_directory(char_os * dirname,
 extern atomic_uintnat caml_verb_gc;
 
 void caml_gc_log (char *, ...)
-#ifdef __GNUC__
+#if __has_attribute(format) || defined(__GNUC__)
   __attribute__ ((format (printf, 1, 2)))
 #endif
 ;
 
 void caml_gc_message (int, char *, ...)
-#ifdef __GNUC__
+#if __has_attribute(format) || defined(__GNUC__)
   __attribute__ ((format (printf, 2, 3)))
 #endif
 ;

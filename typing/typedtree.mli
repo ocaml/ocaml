@@ -919,9 +919,3 @@ val pat_bound_idents_full:
 (** Splits an or pattern into its value (left) and exception (right) parts. *)
 val split_pattern:
   computation general_pattern -> pattern option * pattern option
-
-(** Returns a format document if the expression reads nicely as the subject of a
-    sentence in a error message. *)
-val nominal_exp_doc :
-  Longident.t Format_doc.printer -> expression
-  -> Format_doc.t option

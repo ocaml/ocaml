@@ -17,7 +17,7 @@ and g (x : string) = f ()
 Line 1, characters 17-19:
 1 | let rec f () = g 42
                      ^^
-Error: This expression has type "int" but an expression was expected of type
+Error: The constant "42" has type "int" but an expression was expected of type
          "string"
 |}]
 

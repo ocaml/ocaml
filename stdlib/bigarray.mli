@@ -61,7 +61,7 @@
      and {!Stdlib.input_value}).
 *)
 
-(** {1 Element kinds} *)
+(** {1:elementkinds Element kinds} *)
 
 (** Bigarrays can contain elements of the following kinds:
 - IEEE half precision (16 bits) floating-point numbers
@@ -186,7 +186,12 @@ val int16_unsigned : (int, int16_unsigned_elt) kind
 (** See {!Bigarray.char}. *)
 
 val int : (int, int_elt) kind
-(** See {!Bigarray.char}. *)
+(** See {!Bigarray.char} and {!section:elementkinds}.
+
+   Beware that this is a bigarray containing OCaml integers
+   (signed, 31 bits on 32-bit architectures, 63 bits on 64-bit architectures),
+   which does not match the [C] int type.
+ *)
 
 val int32 : (int32, int32_elt) kind
 (** See {!Bigarray.char}. *)

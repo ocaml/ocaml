@@ -231,7 +231,7 @@ let a = A 9
 Line 1, characters 10-11:
 1 | let a = A 9
               ^
-Error: This expression has type "int" but an expression was expected of type
+Error: The constant "9" has type "int" but an expression was expected of type
          "[> `Var ]"
 |}]
 

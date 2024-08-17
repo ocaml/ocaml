@@ -108,6 +108,23 @@ _______________
   (Tim McGilchrist, review by Miod Vallat, Gabriel Scherer and
    KC Sivaramakrishnan)
 
+- #13139: Simplify CAMLalign to always use C23/C++11 alignas or C11
+  _Alignas. Ensures that stat data is always aligned to the best
+  boundary.
+  (Antonin Décimo, review by Miod Vallat and Xavier Leroy)
+
+- #13280: Check for support of compiler attributes. Allows using
+  compiler attributes with clang-cl.
+  (Antonin Décimo, review by Miod Vallat)
+
+- #13243: Enable C compiler warnings internally when building with
+  clang-cl or MSVC. Provide fixes too.
+  (Antonin Décimo, review by Miod Vallat and Xavier Leroy)
+
+- #13242: Define and use unreachable and trap annotation, and clean-up some
+  runtime assertions.
+  (Antonin Décimo, review by Miod Vallat, Gabriel Scherer, and David Allsopp)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously
@@ -169,6 +186,11 @@ _______________
    review by KC Sivaramakrishnan, Miod Vallat and Nicolás Ojeda Bär,
    report by Vesa Karvonen)
 
+- #13197: Dynarray.blit, which allows to extend the destination
+  dynarray (0 <= dst_pos <= dst_length).
+  (Gabriel Scherer, report by Hazem Elmasry,
+   review by Olivier Nicole, Hazem Elmasry and Nicolás Ojeda Bär)
+
 * #13240: Add Uchar.seeded_hash, Change Uchar.hash implementation.
   Previously, Uchar.hash was aliased to Uchar.to_int. If you need that behavior,
   change your module instantiation from eg `module HT = Hashtbl.Make(Uchar)` to
@@ -183,11 +205,22 @@ _______________
   ensure it doesn't break when reading from or writing to buckets.
   (Hazem ElMasry, review by Gabriel Scherer and Nicolás Ojeda Bär)
 
+- #13318: Fix regression in GC alarms, and fix them for flambda.
+  (Guillaume Munch-Maccagnoni, report by Benjamin Monate, review by
+   Vincent Laviron and Gabriel Scherer)
+
+- #13296: Add mem, memq, find_opt, find_index, find_map and find_mapi
+  to Dynarray.
+  (Jake H, review by Gabriel Scherer and Florian Angeletti)
+
 ### Other libraries:
 
 - #11996: release the dependency of dynlink on compilerlibs.
   (Sébastien Hinderer and Stephen Dolan, review by Damien Doligez and
   Hugo Heuzard)
+
+- #13326: Implement Unix.O_APPEND on windows.
+  (Romain Beauxis, review by Miod Vallat, Gabriel Scherer and Antonin Décimo)
 
 ### Tools:
 
@@ -218,10 +251,9 @@ _______________
 
 ### Manual and documentation:
 
-- #13295: Use syntax for deep effect handlers in the effect handlers manual
-  page.
-  (KC Sivaramakrishnan, review by Anil Madhavapeddy, Florian Angeletti and Miod
-   Vallat)
+- #12298: Manual: emphasize that Bigarray.int refers to an OCaml integer,
+  which does not match the C int type.
+  (Edwin Török, review by Florian Angeletti)
 
 - #12868: Manual: simplify style colours of the post-processed manual and API
   HTML pages, and fix the search button icon
@@ -239,9 +271,18 @@ _______________
 - #13045: Emphasize caution about behaviour of custom block finalizers.
   (Nick Barnes)
 
+- #13216: document the new `caml_result` type in the FFI chapter of the manual.
+  (Gabriel Scherer, review by Miod Vallat, Daniel Bünzli, Nick Barnes,
+   Guillaume Munch-Maccagnoni and Antonin Décimo)
+
 - #13287: stdlib/sys.mli: Update documentation on Sys.opaque_identity
   following #9412.
   (Matt Walker, review by Guillaume Munch-Maccagnoni and Vincent Laviron)
+
+- #13295: Use syntax for deep effect handlers in the effect handlers manual
+  page.
+  (KC Sivaramakrishnan, review by Anil Madhavapeddy, Florian Angeletti and Miod
+   Vallat)
 
 ### Compiler user-interface and warnings:
 
@@ -277,6 +318,13 @@ _______________
 
 - #13255: Re-enable warning 34 for unused locally abstract types
   (Nick Roberts, review by Chris Casinghino and Florian Angeletti)
+
+- #12182: Improve the type clash error message.
+  For example, this message:
+    This expression has type ...
+  is changed into:
+    The constant "42" has type ...
+  (Jules Aguillon, review by Gabriel Scherer and Florian Angeletti)
 
 ### Internal/compiler-libs changes:
 
@@ -317,6 +365,9 @@ _______________
 - #12959, #13055: Avoid an internal error on recursive module type inconsistency
   (Florian Angeletti, review by Jacques Garrigue and Gabriel Scherer)
 
+- #13049: graphical debugging printer for types
+  (Florian Angeletti, review by Gabriel Scherer)
+
 - #13074, #13082, #13084: refactoring in the pattern-matching compiler
   (Gabriel Scherer, review by Thomas Refis, Vincent Laviron and Nick Roberts)
 
@@ -332,8 +383,8 @@ _______________
   platforms (Linux, *BSD).
   (Miod Vallat, review by Nicolás Ojeda Bär)
 
-- #13169: Introduce a document data type for compiler messages rather than
-  relying on `Format.formatter -> unit` closures.
+- #13169, #13311: Introduce a document data type for compiler messages
+  rather than relying on `Format.formatter -> unit` closures.
   (Florian Angeletti, review by Gabriel Scherer)
 
 - #13193: Remove the unused env_init field from class blocks
@@ -344,6 +395,22 @@ _______________
   in the lexer, so no change to the surface OCaml grammar.
   (Oleg Kiselyov, Gabriel Scherer and Florian Angeletti,
    review by Jeremy Yallop)
+
+- #13286: Distinguish unique identifiers `Shape.Uid.t` according to their
+  provenance: either an implementation or an interface.
+  (Ulysse Gérard, review by Florian Angeletti and Leo White)
+
+- #13289: Use C99 for loop to reduce the scope of the for loop iterator.
+  (Antonin Décimo, review by Miod Vallat and Gabriel Scherer)
+
+- #13336: compiler-libs, split the `Printtyp` in three to only keep
+  "user-friendly" functions in the `Printtyp` module.
+  (Florian Angeletti, review by Gabriel Scherer)
+
+- #13361: split runtime/array.c functions to consistently expose
+  uniform_array and floatarray versions, use floatarray versions
+  in Float.Array.
+  (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
 ### Build system:
 
@@ -366,12 +433,17 @@ _______________
   (Sébastien Hinderer, review by Miod Vallat, Gabriel Scherer and
   Olivier Nicole)
 
-* #12578, #12589: Use configured CFLAGS and CPPFLAGS *only* during the
+* #12578, #12589, #13322: Use configured CFLAGS and CPPFLAGS *only* during the
   build of the compiler itself. Do not use them when compiling third-party
   C sources through the compiler. Flags for compiling third-party C
   sources can still be specified at configure time in the
   COMPILER_{BYTECODE,NATIVE}_{CFLAGS,CPPFLAGS} configuration variables.
   (Sébastien Hinderer, report by William Hu, review by David Allsopp)
+
+- #13285: continue the merge of the sub-makefiles into the root
+  Makefile started with #11243, #11248, #11268, #11420, #11675,
+  #12198, #12321, #12586, #12616, #12706 and #13048.
+  (Sébastien Hinderer, review by David Allsopp and Florian Angeletti)
 
 ### Bug fixes:
 
@@ -470,6 +542,14 @@ _______________
   LDFLAGS contains several words.
   (Stéphane Glondu, review by Miod Vallat)
 
+- #13290: Fix uninitialized and out of bounds reads in runtime_events_consumer.c
+  (Edwin Török, review by Miod Vallat and Antonin Décimo)
+
+- #13306: An algorithm in the type-checker that checks two types for equality
+  could sometimes, in theory, return the wrong answer. This patch fixes the
+  oversight. No known program triggers the bug.
+  (Richard Eisenberg, review by Florian Angeletti)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
@@ -531,6 +611,11 @@ OCaml 5.2.0 (13 May 2024)
 - #13130: minor fixes to pprintast for raw identifiers and local module open
   syntax for types.
   (Chet Murthy, review by Gabriel Scherer)
+
+- #11736, #12664: Support utf-8 encoded source files and latin-9 compatible
+  identifiers.
+  (Xavier Leroy and Florian Angeletti, review by Daniel Bünzli and
+   Jules Aguillon)
 
 ### Type system:
 

@@ -312,7 +312,7 @@ let compile_implementation_linear target =
 module Style = Misc.Style
 let fprintf, dprintf = Format_doc.fprintf, Format_doc.dprintf
 
-let report_error ppf = function
+let report_error_doc ppf = function
   | Assembler_error file ->
       fprintf ppf "Assembler error, input left in file %a"
         Location.Doc.quoted_filename file
@@ -327,11 +327,13 @@ let report_error ppf = function
   | Asm_generation(fn, err) ->
      fprintf ppf
        "Error producing assembly code for function %a: %a"
-       Style.inline_code fn Emitaux.report_error err
+       Style.inline_code fn Emitaux.report_error_doc err
 
 let () =
   Location.register_error_of_exn
     (function
-      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | Error err -> Some (Location.error_of_printer_file report_error_doc err)
       | _ -> None
     )
+
+let report_error = Format_doc.compat report_error_doc

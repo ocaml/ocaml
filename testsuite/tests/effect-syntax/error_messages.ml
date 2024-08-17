@@ -24,13 +24,13 @@ let () = match () with
 Line 3, characters 21-22:
 3 |   | effect A _, k -> k
                          ^
-Error: This expression has type "(%eff, unit) continuation"
+Error: The value "k" has type "(%eff, unit) continuation"
        but an expression was expected of type "unit"
 |}, Principal{|
 Line 3, characters 21-22:
 3 |   | effect A _, k -> k
                          ^
-Error: This expression has type "(int, unit) continuation"
+Error: The value "k" has type "(int, unit) continuation"
        but an expression was expected of type "unit"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation

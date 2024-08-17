@@ -31,25 +31,19 @@
 #endif
 #endif
 
-static
-#ifdef _MSC_VER
-__forceinline
-#else
-__inline
-#endif
-unsigned long read_size(const char * const ptr)
+Caml_inline unsigned long read_size(const char * const ptr)
 {
   const unsigned char * const p = (const unsigned char * const) ptr;
   return ((unsigned long) p[0] << 24) | ((unsigned long) p[1] << 16) |
          ((unsigned long) p[2] << 8) | p[3];
 }
 
-static __inline char * read_runtime_path(HANDLE h)
+Caml_inline char * read_runtime_path(HANDLE h)
 {
   char buffer[TRAILER_SIZE];
   static char runtime_path[MAX_PATH];
   DWORD nread;
-  int num_sections, path_size, i;
+  int num_sections, path_size;
   long ofs;
 
   if (SetFilePointer(h, -TRAILER_SIZE, NULL, FILE_END) == -1) return NULL;
@@ -59,7 +53,7 @@ static __inline char * read_runtime_path(HANDLE h)
   ofs = TRAILER_SIZE + num_sections * 8;
   if (SetFilePointer(h, - ofs, NULL, FILE_END) == -1) return NULL;
   path_size = 0;
-  for (i = 0; i < num_sections; i++) {
+  for (int i = 0; i < num_sections; i++) {
     if (! ReadFile(h, buffer, 8, &nread, NULL) || nread != 8) return NULL;
     if (buffer[0] == 'R' && buffer[1] == 'N' &&
         buffer[2] == 'T' && buffer[3] == 'M') {
@@ -106,7 +100,7 @@ static void write_console(HANDLE hOut, WCHAR *wstr)
   }
 }
 
-static __inline void __declspec(noreturn) run_runtime(wchar_t * runtime,
+CAMLnoret Caml_inline void run_runtime(wchar_t * runtime,
          wchar_t * const cmdline)
 {
   wchar_t path[MAX_PATH];
@@ -121,9 +115,6 @@ static __inline void __declspec(noreturn) run_runtime(wchar_t * runtime,
     write_console(errh, runtime);
     write_console(errh, L"\r\n");
     ExitProcess(2);
-#ifdef _MSC_VER
-    __assume(0); /* Not reached */
-#endif
   }
   /* Need to ignore ctrl-C and ctrl-break, otherwise we'll die and take
      the underlying OCaml program with us! */
@@ -144,18 +135,12 @@ static __inline void __declspec(noreturn) run_runtime(wchar_t * runtime,
     write_console(errh, runtime);
     write_console(errh, L"\r\n");
     ExitProcess(2);
-#ifdef _MSC_VER
-    __assume(0); /* Not reached */
-#endif
   }
   CloseHandle(procinfo.hThread);
   WaitForSingleObject(procinfo.hProcess , INFINITE);
   GetExitCodeProcess(procinfo.hProcess , &retcode);
   CloseHandle(procinfo.hProcess);
   ExitProcess(retcode);
-#ifdef _MSC_VER
-    __assume(0); /* Not reached */
-#endif
 }
 
 int wmain(void)
@@ -176,18 +161,9 @@ int wmain(void)
     write_console(errh, truename);
     write_console(errh, L" not found or is not a bytecode executable file\r\n");
     ExitProcess(2);
-#ifdef _MSC_VER
-    __assume(0); /* Not reached */
-#endif
   }
   CloseHandle(h);
   MultiByteToWideChar(CP, 0, runtime_path, -1, wruntime_path,
                       sizeof(wruntime_path)/sizeof(wchar_t));
   run_runtime(wruntime_path , cmdline);
-#ifdef _MSC_VER
-    __assume(0); /* Not reached */
-#endif
-#ifdef __MINGW32__
-    return 0;
-#endif
 }

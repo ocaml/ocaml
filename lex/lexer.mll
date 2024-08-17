@@ -125,6 +125,15 @@ let ident = identstart identbody*
 let extattrident = ident ('.' ident)*
 let blank = [' ' '\009' '\012']
 
+let uppercase = ['A'-'Z']
+let ocaml_identstart = lowercase | uppercase
+let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
+let utf8 = ['\192'-'\255'] ['\128'-'\191']*
+let identstart_ext = ocaml_identstart | utf8
+let identchar_ext = identchar | utf8
+let ocaml_ident = identstart_ext identchar_ext*
+
+
 rule main = parse
     [' ' '\013' '\009' '\012' ] +
     { main lexbuf }
@@ -297,7 +306,7 @@ and comment depth = parse
   | '\010'
     { incr_loc lexbuf 0;
       comment depth lexbuf }
-  | ident
+  | ocaml_ident
     { comment depth lexbuf }
   | _
     { comment depth lexbuf }
@@ -333,7 +342,7 @@ and action stk = parse
   | '\010'
     { incr_loc lexbuf 0;
       action stk lexbuf }
-  | ident
+  | ocaml_ident
     { action stk lexbuf }
   | _
     { action stk lexbuf }

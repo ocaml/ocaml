@@ -171,7 +171,8 @@ CAMLexport void
 caml_BLAKE2Final(struct BLAKE2_context * s,
                  size_t hashlen, unsigned char * hash)
 {
-  CAMLassert (0 < hashlen && hashlen <= 64);
+  CAMLassert(0 < hashlen);
+  CAMLassert(hashlen <= 64);
   /* The final block is composed of the remaining data padded with zeros. */
   memset(s->buffer + s->numbytes, 0, BLAKE2_BLOCKSIZE - s->numbytes);
   caml_BLAKE2Compress(s, s->buffer, s->numbytes, 1);

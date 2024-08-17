@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "caml/alloc.h"
+#include <caml/alloc.h>
 
 CAMLprim value caml_atomic_is_aligned(value val)
 {

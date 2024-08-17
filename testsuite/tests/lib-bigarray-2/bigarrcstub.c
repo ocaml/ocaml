@@ -24,18 +24,16 @@ double ctab[DIMX][DIMY];
 
 void filltab(void)
 {
-  int x, y;
-  for (x = 0; x < DIMX; x++)
-    for (y = 0; y < DIMY; y++)
+  for (int x = 0; x < DIMX; x++)
+    for (int y = 0; y < DIMY; y++)
       ctab[x][y] = x * 100 + y;
 }
 
 void printtab(double tab[DIMX][DIMY])
 {
-  int x, y;
-  for (x = 0; x < DIMX; x++) {
+  for (int x = 0; x < DIMX; x++) {
     printf("%3d", x);
-    for (y = 0; y < DIMY; y++)
+    for (int y = 0; y < DIMY; y++)
       printf("  %6.1f", tab[x][y]);
     printf("\n");
   }

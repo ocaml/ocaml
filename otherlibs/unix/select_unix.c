@@ -33,9 +33,8 @@
 
 static int fdlist_to_fdset(value fdlist, fd_set *fdset, int *maxfd)
 {
-  value l;
   FD_ZERO(fdset);
-  for (l = fdlist; l != Val_emptylist; l = Field(l, 1)) {
+  for (value l = fdlist; l != Val_emptylist; l = Field(l, 1)) {
     long fd = Long_val(Field(l, 0));
     /* PR#5563: harden against bad fds */
     if (fd < 0 || fd >= FD_SETSIZE) return -1;

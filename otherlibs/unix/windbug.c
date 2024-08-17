@@ -17,10 +17,10 @@
 
 int caml_win32_debug_test (void)
 {
-  static int debug_init = 0;
   static int debug = 0;
 
 #ifdef DEBUG
+  static int debug_init = 0;
   if (!debug_init)
   {
     debug = (getenv("OCAMLDEBUG") != NULL);

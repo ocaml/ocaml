@@ -42,7 +42,7 @@ static void report_error(
 {
   WCHAR windows_error_message[1024];
   DWORD error = GetLastError();
-  char *caml_error_message, buf[256];
+  char *caml_error_message;
   if (FormatMessage(
     FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
     NULL, error, 0, windows_error_message,
@@ -111,7 +111,7 @@ static WCHAR *find_program(const WCHAR *program_name)
 
 static WCHAR *commandline_of_arguments(WCHAR **arguments)
 {
-  WCHAR *commandline = NULL, **arguments_p, *commandline_p;
+  WCHAR *commandline = NULL, *commandline_p;
   int args = 0; /* Number of arguments */
   int commandline_length = 0;
 
@@ -119,7 +119,7 @@ static WCHAR *commandline_of_arguments(WCHAR **arguments)
   /* From here we know there is at least one argument */
 
   /* First compute number of arguments and commandline length */
-  for (arguments_p = arguments; *arguments_p != NULL; arguments_p++)
+  for (WCHAR **arguments_p = arguments; *arguments_p != NULL; arguments_p++)
   {
     args++;
     commandline_length += wcslen(*arguments_p);
@@ -130,7 +130,7 @@ static WCHAR *commandline_of_arguments(WCHAR **arguments)
   commandline = malloc(commandline_length*sizeof(WCHAR));
   if (commandline == NULL) return NULL;
   commandline_p = commandline;
-  for (arguments_p = arguments; *arguments_p!=NULL; arguments_p++)
+  for (WCHAR **arguments_p = arguments; *arguments_p != NULL; arguments_p++)
   {
     int l = wcslen(*arguments_p);
     memcpy(commandline_p, *arguments_p, l*sizeof(WCHAR));
@@ -145,7 +145,6 @@ static WCHAR *commandline_of_arguments(WCHAR **arguments)
 static LPVOID prepare_environment(WCHAR **localenv)
 {
   LPTCH p, r, env, process_env = NULL;
-  WCHAR **q;
   int l, process_env_length, localenv_length, env_length;
 
   if (localenv == NULL) return NULL;
@@ -164,7 +163,7 @@ static LPVOID prepare_environment(WCHAR **localenv)
 
   /* Compute length of local environment */
   localenv_length = 0;
-  for (q = localenv; *q != NULL; q++) {
+  for (WCHAR **q = localenv; *q != NULL; q++) {
     localenv_length += wcslen(*q) + 1;
   }
 
@@ -184,7 +183,7 @@ static LPVOID prepare_environment(WCHAR **localenv)
     l = wcslen(p) + 1; /* also count terminating '\0' */
     /* Temporarily change the = to \0 for wcscmp */
     *pos_eq = L'\0';
-    for (q = localenv; *q != NULL; q++) {
+    for (WCHAR **q = localenv; *q != NULL; q++) {
       wchar_t *pos_eq2 = wcschr(*q, L'=');
       /* Compare this name in localenv with the current one in processenv */
       if (pos_eq2) *pos_eq2 = L'\0';
@@ -200,7 +199,7 @@ static LPVOID prepare_environment(WCHAR **localenv)
     p += l;
   }
   FreeEnvironmentStrings(process_env);
-  for (q = localenv; *q != NULL; q++) {
+  for (WCHAR **q = localenv; *q != NULL; q++) {
     /* A string in localenv without '=' signals deletion, which has been done */
     wchar_t *pos_eq = wcschr(*q, L'=');
     if (pos_eq) {
@@ -273,7 +272,6 @@ int run_command(const command_settings *settings)
   WCHAR *commandline = NULL;
 
   LPVOID environment = NULL;
-  LPCWSTR current_directory = NULL;
   STARTUPINFO startup_info;
   PROCESS_INFORMATION process_info;
   BOOL wait_result;

@@ -22,7 +22,8 @@ let with_info =
   Compile_common.with_info ~native:false ~tool_name
 
 let interface ~source_file ~output_prefix =
-  with_info ~source_file ~output_prefix ~dump_ext:"cmi" @@ fun info ->
+  let unit_info = Unit_info.make ~source_file Intf output_prefix in
+  with_info ~dump_ext:"cmi" unit_info @@ fun info ->
   Compile_common.interface info
 
 (** Bytecode compilation backend for .ml files. *)
@@ -61,7 +62,8 @@ let implementation ~start_from ~source_file ~output_prefix =
     let bytecode = to_bytecode info typed in
     emit_bytecode info bytecode
   in
-  with_info ~source_file ~output_prefix ~dump_ext:"cmo" @@ fun info ->
+  let unit_info = Unit_info.make ~source_file Impl output_prefix in
+  with_info ~dump_ext:"cmo" unit_info @@ fun info ->
   match (start_from : Clflags.Compiler_pass.t) with
   | Parsing -> Compile_common.implementation info ~backend
   | _ -> Misc.fatal_errorf "Cannot start from %s"

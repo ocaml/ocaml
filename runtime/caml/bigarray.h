@@ -42,8 +42,8 @@ enum caml_ba_kind {
   CAML_BA_CHAR,                /* Characters */
   CAML_BA_FLOAT16,             /* Half-precision floats */
   CAML_BA_FIRST_UNIMPLEMENTED_KIND,
-  CAML_BA_KIND_MASK = 0xFF     /* Mask for kind in flags field */
 };
+#define CAML_BA_KIND_MASK 0xFF /* Mask for kind in flags field */
 
 #define Caml_ba_kind_val(v) Int_val(v)
 
@@ -52,9 +52,9 @@ enum caml_ba_kind {
 enum caml_ba_layout {
   CAML_BA_C_LAYOUT = 0,           /* Row major, indices start at 0 */
   CAML_BA_FORTRAN_LAYOUT = 0x100, /* Column major, indices start at 1 */
-  CAML_BA_LAYOUT_MASK = 0x100,    /* Mask for layout in flags field */
-  CAML_BA_LAYOUT_SHIFT = 8        /* Bit offset of layout flag */
 };
+#define CAML_BA_LAYOUT_SHIFT 8    /* Bit offset of layout flag */
+#define CAML_BA_LAYOUT_MASK 0x100 /* Mask for layout in flags field */
 
 #define Caml_ba_layout_val(v) (Int_val(v) << CAML_BA_LAYOUT_SHIFT)
 
@@ -64,8 +64,8 @@ enum caml_ba_managed {
   CAML_BA_EXTERNAL = 0,        /* Data is not allocated by OCaml */
   CAML_BA_MANAGED = 0x200,     /* Data is allocated by OCaml */
   CAML_BA_MAPPED_FILE = 0x400, /* Data is a memory mapped file */
-  CAML_BA_MANAGED_MASK = 0x600 /* Mask for "managed" bits in flags field */
 };
+#define CAML_BA_MANAGED_MASK 0x600 /* Mask for "managed" bits in flags field */
 
 enum caml_ba_subarray {
   CAML_BA_SUBARRAY = 0x800     /* Data is shared with another bigarray */

@@ -23,10 +23,10 @@ Resolved: Index_objects.0 :
   o (File "index_objects.ml", line 23, characters 9-10)
 
 Uid of decls:
-Index_objects.10: d (File "index_objects.ml", line 31, characters 6-7)
-Index_objects.15: M (File "index_objects.ml", line 35, characters 12-13)
-Index_objects.14: dt (File "index_objects.ml", line 40, characters 8-10)
-Index_objects.5: c (File "index_objects.ml", line 25, characters 6-7)
 Index_objects.0: o (File "index_objects.ml", line 18, characters 4-5)
-Index_objects.16: ins_var (File "index_objects.ml", line 43, characters 6-13)
+Index_objects.5: c (File "index_objects.ml", line 25, characters 6-7)
+Index_objects.10: d (File "index_objects.ml", line 31, characters 6-7)
 Index_objects.13: ct (File "index_objects.ml", line 36, characters 8-10)
+Index_objects.14: dt (File "index_objects.ml", line 40, characters 8-10)
+Index_objects.15: M (File "index_objects.ml", line 35, characters 12-13)
+Index_objects.16: ins_var (File "index_objects.ml", line 43, characters 6-13)

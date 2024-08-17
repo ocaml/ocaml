@@ -604,7 +604,7 @@ CAMLprim value caml_int64_of_string(value s)
       if (res >  (uint64_t)1 << 63) caml_failwith(INT64_ERRMSG);
     }
   }
-  if (sign < 0) res = - res;
+  if (sign < 0) res = -(int64_t)res;
   return caml_copy_int64(res);
 }
 

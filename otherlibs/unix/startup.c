@@ -25,7 +25,6 @@ value caml_win32_process_id;
 CAMLprim value caml_unix_startup(value unit)
 {
   WSADATA wsaData;
-  int i;
   HANDLE h;
 
   (void) WSAStartup(MAKEWORD(2, 0), &wsaData);

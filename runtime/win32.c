@@ -73,7 +73,7 @@ unsigned short caml_win32_minor = 0;
 unsigned short caml_win32_build = 0;
 unsigned short caml_win32_revision = 0;
 
-static CAMLnoret void caml_win32_sys_error(int errnum)
+CAMLnoret static void caml_win32_sys_error(int errnum)
 {
   wchar_t buffer[512];
   value msg;
@@ -154,14 +154,12 @@ wchar_t * caml_search_in_path(struct ext_table * path, const wchar_t * name)
 {
   wchar_t * dir, * fullname;
   char * u8;
-  const wchar_t * p;
-  int i;
   struct _stati64 st;
 
-  for (p = name; *p != 0; p++) {
+  for (const wchar_t *p = name; *p != 0; p++) {
     if (*p == '/' || *p == '\\') goto not_found;
   }
-  for (i = 0; i < path->size; i++) {
+  for (int i = 0; i < path->size; i++) {
     dir = path->contents[i];
     if (dir[0] == 0) continue;
          /* not sure what empty path components mean under Windows */
@@ -350,9 +348,7 @@ static void store_argument(wchar_t * arg)
 
 static void expand_argument(wchar_t * arg)
 {
-  wchar_t * p;
-
-  for (p = arg; *p != 0; p++) {
+  for (wchar_t *p = arg; *p != 0; p++) {
     if (*p == L'*' || *p == L'?') {
       expand_pattern(arg);
       return;
@@ -363,7 +359,7 @@ static void expand_argument(wchar_t * arg)
 
 static void expand_pattern(wchar_t * pat)
 {
-  wchar_t * prefix, * p, * name;
+  wchar_t * prefix, * name;
   intptr_t handle;
   struct _wfinddata_t ffblk;
   size_t i;
@@ -395,12 +391,11 @@ static void expand_pattern(wchar_t * pat)
 
 CAMLexport void caml_expand_command_line(int * argcp, wchar_t *** argvp)
 {
-  int i;
   argc = 0;
   argvsize = 16;
   argv = (wchar_t **) caml_stat_alloc_noexc(argvsize * sizeof(wchar_t *));
   if (argv == NULL) out_of_memory();
-  for (i = 0; i < *argcp; i++) expand_argument((*argvp)[i]);
+  for (int i = 0; i < *argcp; i++) expand_argument((*argvp)[i]);
   argv[argc] = NULL;
   *argcp = argc;
   *argvp = argv;
@@ -1097,7 +1092,6 @@ CAMLexport clock_t caml_win32_clock(void)
 {
   FILETIME _creation, _exit;
   CAML_ULONGLONG_FILETIME stime, utime;
-  ULARGE_INTEGER tmp;
   ULONGLONG clocks_per_sec;
 
   if (!(GetProcessTimes(GetCurrentProcess(), &_creation, &_exit,

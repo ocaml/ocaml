@@ -33,7 +33,6 @@
 CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
 {
   value result;
-  mlsize_t i;
 
   CAMLassert (tag < 256);
   CAMLassert (tag != Infix_tag);
@@ -44,13 +43,13 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
       Caml_check_caml_state();
       Alloc_small (result, wosize, tag, Alloc_small_enter_GC);
       if (tag < No_scan_tag){
-        for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
+        for (mlsize_t i = 0; i < wosize; i++) Field (result, i) = Val_unit;
       }
     }
   } else {
     result = caml_alloc_shr (wosize, tag);
     if (tag < No_scan_tag) {
-      for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
+      for (mlsize_t i = 0; i < wosize; i++) Field (result, i) = Val_unit;
     }
     result = caml_check_urgent_gc (result);
   }
@@ -78,13 +77,13 @@ CAMLexport value caml_alloc_shr_check_gc (mlsize_t wosize, tag_t tag)
 /* Copy the values to be preserved to a different array.
    The original vals array never escapes, generating better code in
    the fast path. */
-#define Enter_gc_preserve_vals(dom_st, wosize) do {         \
-    CAMLparam0();                                           \
-    CAMLlocalN(vals_copy, (wosize));                        \
-    for (i = 0; i < (wosize); i++) vals_copy[i] = vals[i];  \
-    Alloc_small_enter_GC(dom_st, wosize);                   \
-    for (i = 0; i < (wosize); i++) vals[i] = vals_copy[i];  \
-    CAMLdrop;                                               \
+#define Enter_gc_preserve_vals(dom_st, wosize) do {                     \
+    CAMLparam0();                                                       \
+    CAMLlocalN(vals_copy, (wosize));                                    \
+    for (mlsize_t j = 0; j < (wosize); j++) vals_copy[j] = vals[j];     \
+    Alloc_small_enter_GC(dom_st, wosize);                               \
+    for (mlsize_t j = 0; j < (wosize); j++) vals[j] = vals_copy[j];     \
+    CAMLdrop;                                                           \
   } while (0)
 
 /* This has to be done with a macro, rather than an inline function, since
@@ -95,12 +94,11 @@ CAMLexport value caml_alloc_shr_check_gc (mlsize_t wosize, tag_t tag)
   Caml_check_caml_state();                              \
   value v;                                              \
   value vals[wosize] = {__VA_ARGS__};                   \
-  mlsize_t i;                                           \
   CAMLassert ((tag) < 256);                             \
                                                         \
   Alloc_small(v, wosize, tag, Enter_gc_preserve_vals);  \
-  for (i = 0; i < (wosize); i++) {                      \
-    Field(v, i) = vals[i];                              \
+  for (mlsize_t j = 0; j < (wosize); j++) {             \
+    Field(v, j) = vals[j];                              \
   }                                                     \
   return v;                                             \
 }
@@ -225,13 +223,13 @@ CAMLexport value caml_alloc_array(value (*funct)(char const *),
                                   char const * const* arr)
 {
   CAMLparam0 ();
-  mlsize_t nbr, n;
+  mlsize_t nbr;
   CAMLlocal2 (v, result);
 
   nbr = 0;
   while (arr[nbr] != 0) nbr++;
   result = caml_alloc (nbr, 0);
-  for (n = 0; n < nbr; n++) {
+  for (mlsize_t n = 0; n < nbr; n++) {
     /* The two statements below must be separate because of evaluation
        order (don't take the address &Field(result, n) before
        calling funct, which may cause a GC and move result). */
@@ -322,7 +320,7 @@ CAMLprim value caml_alloc_dummy_infix(value vsize, value voffset)
 
 CAMLprim value caml_update_dummy(value dummy, value newval)
 {
-  mlsize_t size, i;
+  mlsize_t size;
   tag_t tag;
 
   tag = Tag_val (newval);
@@ -342,7 +340,7 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
     CAMLassert (Tag_val(dummy) != Infix_tag);
     Unsafe_store_tag_val(dummy, Double_array_tag);
     size = Wosize_val (newval) / Double_wosize;
-    for (i = 0; i < size; i++) {
+    for (mlsize_t i = 0; i < size; i++) {
       Store_double_flat_field (dummy, i, Double_flat_field (newval, i));
     }
   } else if (tag == Infix_tag) {
@@ -357,7 +355,7 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
        from [clos] to [dummy], because the value being overwritten is
        an integer, and the new "value" is a pointer outside the minor
        heap. */
-    for (i = 0; i < size; i++) {
+    for (mlsize_t i = 0; i < size; i++) {
       caml_modify (&Field(dummy, i), Field(clos, i));
     }
   } else {
@@ -368,7 +366,7 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
     CAMLassert (size == Wosize_val(dummy));
     /* See comment above why this is safe even if [tag == Closure_tag]
        and some of the "values" being copied are actually code pointers. */
-    for (i = 0; i < size; i++){
+    for (mlsize_t i = 0; i < size; i++){
       caml_modify (&Field(dummy, i), Field(newval, i));
     }
   }

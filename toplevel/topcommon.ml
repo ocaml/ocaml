@@ -34,7 +34,7 @@ let print_warning = Location.print_warning
 let input_name = Location.input_name
 
 let parse_mod_use_file name lb =
-  let modname = Unit_info.modname_from_source name in
+  let modname = Unit_info.lax_modname_from_source name in
   let items =
     List.concat
       (List.map
@@ -406,7 +406,7 @@ let try_run_directive ppf dir_name pdir_arg =
 let loading_hint_printer ppf cu =
   let open Format_doc in
   let global = Symtable.Global.Glob_compunit (Cmo_format.Compunit cu) in
-  Symtable.report_error ppf (Symtable.Undefined_global global);
+  Symtable.report_error_doc ppf (Symtable.Undefined_global global);
   let find_with_ext ext =
     try Some (Load_path.find_normalized (cu ^ ext)) with Not_found -> None
   in
