@@ -88,15 +88,59 @@ Live blocks of a Domain's major heap pools.
 Live blocks of a Domain's major heap large allocations.
 @since 5.1 *)
 | EV_C_MAJOR_HEAP_WORDS
+(**
+Major heap size in words of a Domain.
+@since 5.3 *)
 | EV_C_MAJOR_ALLOCATED_WORDS
+(**
+Allocations to the major heap of this Domain in words, since the last major
+slice.
+@since 5.3
+*)
 | EV_C_MAJOR_ALLOCATED_WORK
+(**
+The amount of major GC 'work' needing to be done as a result of allocations to
+the major heap of this Domain in words, since the last major slice.
+@since 5.3
+*)
 | EV_C_MAJOR_DEPENDENT_WORK
+(**
+The amount of major GC 'work' needing to be done as a result of dependent
+allocations to the major heap of this Domain in words, since the last major
+slice. Dependent memory is non-heap memory that depends on heap memory being
+collected in order to be freed.
+@since 5.3
+*)
 | EV_C_MAJOR_EXTRA_WORK
+(**
+The amount of major GC 'work' needing to be done as a result of extra
+non-memory resources that are dependent on heap memory being collected in order
+to be freed.
+@since 5.3
+*)
 | EV_C_MAJOR_WORK_COUNTER
+(**
+The global amount of major GC 'work' done by all domains since the program
+began.
+@since 5.3
+*)
 | EV_C_MAJOR_ALLOC_COUNTER
+(**
+The global words of major GC allocations done by all domains since the program
+began.
+@since 5.3
+*)
 | EV_C_MAJOR_SLICE_TARGET
+(**
+The target amount of global 'work' that should be done by all domains at the
+end of the major slice (see EV_C_MAJOR_SLICE_COUNTER).
+@since 5.3
+*)
 | EV_C_MAJOR_SLICE_BUDGET
-
+(**
+The budget in 'work' that a domain has to do during the major slice.
+@since 5.3
+*)
 
 (** The type for span events emitted by the runtime. *)
 type runtime_phase =
