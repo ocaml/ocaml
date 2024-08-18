@@ -30,6 +30,9 @@ _______________
 
 ### Runtime system:
 
+- #13382: Add more documentation for Runtime_events types
+  (Sadiq Jaffer, review by Tim McGilchrist, Miod Vallat and KC Sivaramakrishnan)
+
 - #13272: Allow maximum number of domains to be specified as a OCAMLRUNPARAM
   parameter.
   (KC Sivaramakrishnan, review by Guillaume Munch-Maccagnoni, Miod Vallat,
