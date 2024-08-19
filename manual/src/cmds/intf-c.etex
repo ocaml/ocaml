@@ -2116,8 +2116,8 @@ reading back the data written by the "serialize" operation, using the
 in section~\ref{ss:c-custom-serialization}. It must then rebuild the data part
 of the custom block and store it at the pointer given as the "dst" argument.
 Finally, it returns the size in bytes of the data part of the custom block.
-This size must be identical to the "wsize_32" result of the "serialize"
-operation if the architecture is 32 bits, or "wsize_64" if the architecture is
+This size must be identical to the "bsize_32" result of the "serialize"
+operation if the architecture is 32 bits, or "bsize_64" if the architecture is
 64 bits.
 
 The "deserialize" field can be set to "custom_deserialize_default"
