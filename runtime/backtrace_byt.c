@@ -235,7 +235,6 @@ value caml_add_debug_info(code_t code_start, value code_size, value events_heap)
 value caml_remove_debug_info(code_t start)
 {
   CAMLparam0();
-  CAMLlocal2(dis, prev);
 
   for (int i = 0; i < caml_debug_info.size; i++) {
     struct debug_info *di = caml_debug_info.contents[i];
