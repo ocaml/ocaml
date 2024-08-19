@@ -1160,9 +1160,9 @@ and class_expr ctxt f x =
           (list (label_x_expression_param ctxt)) l
     | Pcl_constr (li, l) ->
         pp f "%a%a"
-          (fun f l-> if l <>[] then
-              pp f "[%a]@ "
-                (list (core_type ctxt) ~sep:",") l) l
+          (fun f l-> if l <> [] then
+              pp f "[@[<hov>%a@]]@ "
+                (list (core_type ctxt) ~sep:",@ ") l) l
           longident_loc li
     | Pcl_constraint (ce, ct) ->
         pp f "(%a@ :@ %a)"
@@ -1595,7 +1595,7 @@ and type_def_list ctxt f (rf, exported, l) =
       else if exported then " ="
       else " :="
     in
-    pp f "@[<2>%s %a%a%a%s%a@]%a" kwd
+    pp f "@[<2>%s %a%a%a%s%a@]@,%a" kwd
       nonrec_flag rf
       (type_params ctxt) x.ptype_params
       ident_of_name x.ptype_name.txt
