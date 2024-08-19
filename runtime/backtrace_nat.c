@@ -69,7 +69,7 @@ frame_descr * caml_next_frame_descriptor
   }
 }
 
-int caml_alloc_backtrace_buffer(void){
+CAMLexport int caml_alloc_backtrace_buffer(void){
   CAMLassert(Caml_state->backtrace_pos == 0);
   Caml_state->backtrace_buffer =
     caml_stat_alloc_noexc(BACKTRACE_BUFFER_SIZE * sizeof(backtrace_slot));
@@ -77,7 +77,7 @@ int caml_alloc_backtrace_buffer(void){
   return 0;
 }
 
-void caml_free_backtrace_buffer(backtrace_slot *backtrace_buffer) {
+CAMLexport void caml_free_backtrace_buffer(backtrace_slot *backtrace_buffer) {
   if (backtrace_buffer != NULL)
     caml_stat_free(backtrace_buffer);
 }
@@ -101,7 +101,8 @@ static debuginfo debuginfo_extract(frame_descr *d, ptrdiff_t alloc_idx);
    TODO: Consider rewriting this to use get_callstack, so we only have
    one body of code capturing callstacks.
 */
-void caml_stash_backtrace(value exn, uintnat pc, char * sp, char* trapsp)
+CAMLexport void
+caml_stash_backtrace(value exn, uintnat pc, char * sp, char* trapsp)
 {
   caml_domain_state* domain_state = Caml_state;
   caml_frame_descrs* fds;
@@ -202,7 +203,7 @@ static size_t get_callstack(struct stack_info* stack, intnat max_slots,
  * allocation point and may therefore include an initial entry of the
  * allocation point itself.
  */
-
+CAMLexport
 size_t caml_get_callstack(size_t max_slots,
                           backtrace_slot **buffer_p,
                           size_t *alloc_size_p,
@@ -306,6 +307,7 @@ static debuginfo debuginfo_extract(frame_descr *d, ptrdiff_t alloc_idx)
   return (debuginfo)(infoptr + debuginfo_offset);
 }
 
+CAMLexport
 debuginfo caml_debuginfo_extract(backtrace_slot slot)
 {
   if (Slot_is_debuginfo(slot)) {
@@ -316,6 +318,7 @@ debuginfo caml_debuginfo_extract(backtrace_slot slot)
   }
 }
 
+CAMLexport
 debuginfo caml_debuginfo_next(debuginfo dbg)
 {
   uint32_t * infoptr;
@@ -350,7 +353,8 @@ struct name_and_loc_info {
 };
 
 /* Extract location information for the given frame descriptor */
-void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li)
+CAMLexport void
+caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li)
 {
   uint32_t info1, info2;
 
@@ -417,22 +421,24 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li)
   }
 }
 
-value caml_add_debug_info(backtrace_slot start, value size, value events)
+CAMLexport value
+caml_add_debug_info(backtrace_slot start, value size, value events)
 {
   return Val_unit;
 }
 
-value caml_remove_debug_info(backtrace_slot start)
+CAMLexport value
+caml_remove_debug_info(backtrace_slot start)
 {
   return Val_unit;
 }
 
-int caml_debug_info_available(void)
+CAMLexport int caml_debug_info_available(void)
 {
   return 1;
 }
 
-int caml_debug_info_status(void)
+CAMLexport int caml_debug_info_status(void)
 {
   return 1;
 }

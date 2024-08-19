@@ -984,7 +984,7 @@ void caml_init_domains(uintnat max_domains, uintnat minor_heap_wsz)
   caml_init_signal_handling();
 }
 
-void caml_init_domain_self(int domain_id) {
+CAMLexport void caml_init_domain_self(int domain_id) {
   CAMLassert(0 <= domain_id);
   CAMLassert(domain_id < caml_params->max_domains);
   domain_self = &all_domains[domain_id];
@@ -1732,7 +1732,7 @@ int caml_try_run_on_all_domains_async(
                                                  leader_setup, 0, 0);
 }
 
-void caml_interrupt_self(void)
+CAMLexport void caml_interrupt_self(void)
 {
   interrupt_domain_local(Caml_state);
 }
@@ -1740,7 +1740,7 @@ void caml_interrupt_self(void)
 /*  This function is async-signal-safe as [all_domains] and
     [caml_params->max_domains] are set before signal handlers are installed and
     do not change afterwards. */
-void caml_interrupt_all_signal_safe(void)
+CAMLexport void caml_interrupt_all_signal_safe(void)
 {
   for (dom_internal *d = all_domains;
        d < &all_domains[caml_params->max_domains];

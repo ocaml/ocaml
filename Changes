@@ -30,6 +30,10 @@ _______________
 
 ### Runtime system:
 
+* #13359: Only explicitly annotated symbols are exported from the OCaml runtime.
+  Additionally, C primitives can be built with -fvisibilty=hidden.  The use of
+  CAMLprim is now required in this case.
+
 - #13272: Allow maximum number of domains to be specified as a OCAMLRUNPARAM
   parameter.
   (KC Sivaramakrishnan, review by Guillaume Munch-Maccagnoni, Miod Vallat,

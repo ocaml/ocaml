@@ -42,7 +42,7 @@ enum {
 
 #define LAST_DOMAIN_STATE_MEMBER extra_params
 
-#if defined(HAS_FULL_THREAD_VARIABLES) || defined(IN_CAML_RUNTIME)
+#if defined(HAS_FULL_THREAD_VARIABLES) || defined(CAML_IN_RUNTIME)
   CAMLextern CAMLthread_local caml_domain_state* caml_state;
   #define Caml_state_opt caml_state
 #else

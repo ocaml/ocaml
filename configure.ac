@@ -880,7 +880,7 @@ AS_CASE([$host],
 AS_CASE([$ocaml_cc_vendor],
   [clang-*],
     [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-    internal_cflags="$cc_warnings -fno-common"],
+    internal_cflags="$cc_warnings -fno-common -fvisibility=hidden"],
   [*gcc-[[0123]]-*|*gcc-4-[[0-8]]],
     # No C11 support
     [AC_MSG_ERROR(m4_normalize([This version of GCC is too old.
@@ -888,6 +888,7 @@ AS_CASE([$ocaml_cc_vendor],
   [gcc-*],
     [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
     internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard \
+-fvisibility=hidden \
 -Wvla"],
   [mingw-*-*-gcc-*],
     [internal_cflags="-Wno-unused $cc_warnings \

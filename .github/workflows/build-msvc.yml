@@ -119,7 +119,7 @@ jobs:
       - name: Assemble backend with MinGW GASM and compare
         shell: bash
         run: >-
-          x86_64-w64-mingw32-gcc -c -I./runtime  -I ./flexdll -D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=1 -DCAMLDLLIMPORT= -DIN_CAML_RUNTIME -DNATIVE_CODE -DTARGET_amd64 -DMODEL_default -DSYS_mingw64 -o runtime/amd64.o runtime/amd64.S ;
+          x86_64-w64-mingw32-gcc -c -I./runtime  -I ./flexdll -D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=1 -DCAMLDLLIMPORT= -DCAML_IN_RUNTIME -DNATIVE_CODE -DTARGET_amd64 -DMODEL_default -DSYS_mingw64 -o runtime/amd64.o runtime/amd64.S ;
           dumpbin /disasm:nobytes runtime/amd64nt.obj > runtime/amd64nt.dump ;
           awk -f tools/ci/actions/canonicalize-dumpbin.awk runtime/amd64nt.dump runtime/amd64nt.dump > runtime/amd64nt.canonical ;
           dumpbin /disasm:nobytes runtime/amd64.o > runtime/amd64.dump ;

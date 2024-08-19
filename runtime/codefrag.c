@@ -39,11 +39,12 @@ static struct lf_skiplist code_fragments_by_num;
 
 static int _Atomic code_fragments_counter = 1;
 
-void caml_init_codefrag(void) {
+CAMLexport void caml_init_codefrag(void) {
   caml_lf_skiplist_init(&code_fragments_by_pc);
   caml_lf_skiplist_init(&code_fragments_by_num);
 }
 
+CAMLexport
 int caml_register_code_fragment(char *start, char *end,
                                 enum digest_status digest_kind,
                                 unsigned char *opt_digest) {
@@ -80,7 +81,7 @@ static void caml_free_code_fragment(struct code_fragment *cf) {
   caml_stat_free(cf);
 }
 
-void caml_remove_code_fragment(struct code_fragment *cf) {
+CAMLexport void caml_remove_code_fragment(struct code_fragment *cf) {
   struct code_fragment_garbage *cf_cell;
 
   caml_lf_skiplist_remove(&code_fragments_by_pc, (uintnat)cf->code_start);

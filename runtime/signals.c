@@ -216,7 +216,7 @@ CAMLexport void caml_leave_blocking_section(void)
 
 static value caml_signal_handlers;
 
-void caml_init_signal_handling(void) {
+CAMLexport void caml_init_signal_handling(void) {
   caml_signal_handlers = caml_alloc_shr(NSIG, 0);
   for (mlsize_t i = 0; i < NSIG; i++)
     Field(caml_signal_handlers, i) = Val_unit;
@@ -225,7 +225,7 @@ void caml_init_signal_handling(void) {
 
 /* Execute a signal handler immediately */
 
-caml_result caml_execute_signal_res(int signal_number)
+CAMLexport caml_result caml_execute_signal_res(int signal_number)
 {
 #ifdef POSIX_SIGNALS
   sigset_t nsigs, sigs;
@@ -247,7 +247,7 @@ caml_result caml_execute_signal_res(int signal_number)
 
 /* Arrange for a garbage collection to be performed as soon as possible */
 
-void caml_request_major_slice (int global)
+CAMLexport void caml_request_major_slice (int global)
 {
   if (global){
     Caml_state->requested_global_major_slice = 1;
@@ -257,7 +257,7 @@ void caml_request_major_slice (int global)
   caml_interrupt_self();
 }
 
-void caml_request_minor_gc (void)
+CAMLexport void caml_request_minor_gc (void)
 {
   Caml_state->requested_minor_gc = 1;
   caml_interrupt_self();
@@ -330,7 +330,7 @@ CAMLexport int caml_check_pending_actions(void)
   return check_pending_actions(Caml_state);
 }
 
-caml_result caml_do_pending_actions_res(void)
+CAMLexport caml_result caml_do_pending_actions_res(void)
 {
   /* 1. Non-delayable actions that do not run OCaml code. */
 
@@ -374,7 +374,7 @@ exception:
   return result;
 }
 
-caml_result caml_process_pending_actions_with_root_res(value root)
+CAMLexport caml_result caml_process_pending_actions_with_root_res(value root)
 {
   if (caml_check_pending_actions()) {
     CAMLparam1(root);
@@ -522,7 +522,7 @@ CAMLexport int caml_rev_convert_signal_number(int signo)
   return signo;
 }
 
-void * caml_init_signal_stack(void)
+CAMLexport void * caml_init_signal_stack(void)
 {
 #ifdef POSIX_SIGNALS
   stack_t stk;
@@ -558,7 +558,7 @@ void * caml_init_signal_stack(void)
 #endif /* POSIX_SIGNALS */
 }
 
-void caml_free_signal_stack(void * signal_stack)
+CAMLexport void caml_free_signal_stack(void * signal_stack)
 {
 #ifdef POSIX_SIGNALS
   stack_t stk, disable;
@@ -588,7 +588,7 @@ void caml_free_signal_stack(void * signal_stack)
 static void * caml_signal_stack_0 = NULL;
 #endif
 
-void caml_init_signals(void)
+CAMLexport void caml_init_signals(void)
 {
   /* Set up alternate signal stack for domain 0 */
 #ifdef POSIX_SIGNALS
@@ -614,7 +614,7 @@ void caml_init_signals(void)
 #endif
 }
 
-void caml_terminate_signals(void)
+CAMLexport void caml_terminate_signals(void)
 {
 #ifdef POSIX_SIGNALS
   caml_free_signal_stack(caml_signal_stack_0);

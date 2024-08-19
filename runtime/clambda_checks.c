@@ -21,7 +21,7 @@
 
 #include "caml/mlvalues.h"
 
-value caml_check_value_is_closure(value v, value v_descr)
+CAMLprim value caml_check_value_is_closure(value v, value v_descr)
 {
   const char* descr = String_val(v_descr);
   value orig_v = v;
@@ -52,7 +52,7 @@ value caml_check_value_is_closure(value v, value v_descr)
   return orig_v;
 }
 
-value caml_check_field_access(value v, value pos, value v_descr)
+CAMLprim value caml_check_field_access(value v, value pos, value v_descr)
 {
   const char* descr = String_val(v_descr);
   value orig_v = v;
