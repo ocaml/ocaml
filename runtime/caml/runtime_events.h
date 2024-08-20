@@ -59,6 +59,8 @@ typedef enum {
     EV_GC
 } ev_event_type;
 
+/* See runtime_events.mli for event documentation */
+
 typedef enum {
     EV_RING_START,
     EV_RING_STOP,
