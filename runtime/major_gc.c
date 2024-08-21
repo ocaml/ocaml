@@ -576,8 +576,10 @@ static inline intnat diffmod (uintnat x1, uintnat x2)
   return (intnat) (x1 - x2);
 }
 
-static void update_major_slice_work(intnat howmuch,
-                                    int may_access_gc_phase)
+static void
+update_major_slice_work(intnat howmuch,
+                        int may_access_gc_phase,
+                        int log_events /* log events to the ring? */)
 {
   intnat alloc_work, dependent_work, extra_work, new_work;
   intnat my_alloc_count, my_alloc_direct_count, my_dependent_count;
@@ -717,6 +719,19 @@ static void update_major_slice_work(intnat howmuch,
               atomic_load (&alloc_counter),
               dom_st->slice_target, dom_st->slice_budget
               );
+
+  if (log_events) {
+    /* Avoid spamming the ring when doing opportunistic slices */
+    CAML_EV_COUNTER(EV_C_MAJOR_HEAP_WORDS, (uintnat)heap_words);
+    CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_WORDS, my_alloc_count);
+    CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_WORK, alloc_work);
+    CAML_EV_COUNTER(EV_C_MAJOR_DEPENDENT_WORK, dependent_work);
+    CAML_EV_COUNTER(EV_C_MAJOR_EXTRA_WORK, extra_work);
+    CAML_EV_COUNTER(EV_C_MAJOR_WORK_COUNTER, atomic_load (&work_counter));
+    CAML_EV_COUNTER(EV_C_MAJOR_ALLOC_COUNTER, atomic_load (&alloc_counter));
+    CAML_EV_COUNTER(EV_C_MAJOR_SLICE_TARGET, dom_st->slice_target);
+    CAML_EV_COUNTER(EV_C_MAJOR_SLICE_BUDGET, dom_st->slice_budget);
+  }
 }
 
 #define Chunk_size 0x4000
@@ -1643,7 +1658,7 @@ static void major_collection_slice(intnat howmuch,
   int log_events = mode != Slice_opportunistic ||
                    (atomic_load_relaxed(&caml_verb_gc) & 0x40);
 
-  update_major_slice_work(howmuch, may_access_gc_phase);
+  update_major_slice_work(howmuch, may_access_gc_phase, log_events);
 
   /* When a full slice of major GC work is done,
      or the slice is interrupted (in mode Slice_interruptible),
@@ -2110,7 +2125,7 @@ void caml_teardown_major_gc(void) {
   int may_access_gc_phase = 0;
 
   /* account for latest allocations */
-  update_major_slice_work (0, may_access_gc_phase);
+  update_major_slice_work (0, may_access_gc_phase, 1);
   CAMLassert(!caml_addrmap_iter_ok(&d->mark_stack->compressed_stack,
                                    d->mark_stack->compressed_stack_iter));
   caml_addrmap_clear(&d->mark_stack->compressed_stack);
