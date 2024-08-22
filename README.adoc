@@ -15,11 +15,6 @@ MinGW-w64 port is supported in OCaml 5.0; the Cygwin port is restored in 5.1
 and the MSVC port is restored in 5.3. On Linux, native code support for RISC-V
 and s390x/IBM Z is available in OCaml 5.1 and in 5.2 for Power.
 
-❗ From OCaml 5.0 onwards, native compilation is available only on 64-bit
-systems.  Native compilation on 32-bit systems is no longer available, nor
-are there plans to bring it back. The bytecode compiler will continue to work on
-all architectures.
-
 |=====
 | Branch `trunk` | Branch `5.2` | Branch `5.1` | Branch `5.0` | Branch `4.14`
 
@@ -82,6 +77,9 @@ compiler currently runs on the following platforms:
 Other operating systems for the processors above have not been tested, but
 the compiler may work under other operating systems with little work.
 
+❗ From OCaml 5.0 onwards, native compilation is available only on 64-bit
+systems.  Native compilation on 32-bit systems is no longer available, nor
+are there plans to bring it back.
 
 == Copyright
 
