@@ -821,6 +821,7 @@ ocamltest_opt_target
 ocamltest_target
 ocamltest
 build_ocamltest
+build_ocamlobjinfo
 documentation_tool_cmd
 documentation_tool
 with_ocamldoc
@@ -992,6 +993,7 @@ enable_unix_lib
 enable_bigarray_lib
 enable_ocamldoc
 with_odoc
+enable_ocamlobjinfo
 enable_ocamltest
 enable_native_toplevel
 enable_frame_pointers
@@ -1686,6 +1688,7 @@ Optional Features:
   --disable-str-lib       do not build the str library
   --disable-unix-lib      do not build the unix library
   --disable-ocamldoc      do not build the ocamldoc documentation system
+  --disable-ocamlobjinfo  do not build ocamlobjinfo
   --disable-ocamltest     do not build ocamltest
   --enable-native-toplevel
                           build the native toplevel
@@ -3514,6 +3517,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 
 
 
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -3932,6 +3936,12 @@ then :
   withval=$with_odoc;
 fi
 
+
+# Check whether --enable-ocamlobjinfo was given.
+if test ${enable_ocamlobjinfo+y}
+then :
+  enableval=$enable_ocamlobjinfo;
+fi
 
 
 # Check whether --enable-ocamltest was given.
@@ -20582,7 +20592,12 @@ then :
 
 fi
 
-
+if test x"$enable_ocamlobjinfo" != 'xno'
+then :
+  build_ocamlobjinfo=true
+else $as_nop
+  build_ocamlobjinfo=false
+fi
 
 case $enable_ocamltest,true in #(
   yes,*|,true) :

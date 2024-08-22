@@ -42,6 +42,7 @@ OCAMLTEST_TARGET = @ocamltest_target@
 OCAMLDOC_OPT_TARGET = @ocamldoc_opt_target@
 OCAMLTEST_OPT_TARGET = @ocamltest_opt_target@
 
+build_ocamlobjinfo = @build_ocamlobjinfo@
 build_ocamltest = @build_ocamltest@
 
 build_ocamltex = @build_ocamltex@
