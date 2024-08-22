@@ -192,6 +192,13 @@ ___________
   when side-effects mutate the scrutinee during matching.
   (Gabriel Scherer, review by Nick Roberts)
 
+- #13341: a warning when the pattern-matching compiler pessimizes code
+  because side-effects may mutate the scrutinee during
+  matching. (This warning is disabled by default, as this rarely
+  happens and its performance impact is typically not noticeable.)
+  (Gabriel Scherer, review by Nick Roberts, Florian Angeletti
+   and David Allsopp)
+
 - #13179: Fix evaluation of toplevel lets in classes containing
   local opens
   (Vincent Laviron, review by Hugo Heuzard, Nathanaëlle Courant
