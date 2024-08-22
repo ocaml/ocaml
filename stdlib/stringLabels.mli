@@ -362,6 +362,27 @@ val of_seq : char Seq.t -> t
 
     @since 4.07 *)
 
+(** {1 Checking if a [string] contains NUL bytes} *)
+
+(** The functions in this section are useful whenever NUL has a special
+    meaning in a [string].  This could be because it is a terminator, a
+    separator, or is simply forbidden. *)
+
+external first_nul : string -> (int[@untagged])
+                   = "caml_string_first_nul" "strlen" [@@noalloc]
+(** [first_nul b] is the position of [b]'s first NUL byte,
+    or [length b] if none exists.
+
+    @since 5.3
+*)
+
+val is_c_safe : string -> bool
+(** [is_c_safe b] returns [true] if [b] has no NUL bytes,
+    or [false] otherwise.
+
+    @since 5.3
+*)
+
 (** {1:utf UTF decoding and validations}
 
     @since 4.14 *)

@@ -468,6 +468,12 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
 #endif
 }
 
+CAMLprim value caml_string_first_nul(value v)
+{
+    /* Due to the Max_wosize limit, the Val_int can never truncate. */
+    return Val_int(strlen(String_val(v)));
+}
+
 CAMLprim value caml_string_of_bytes(value bv)
 {
   return bv;

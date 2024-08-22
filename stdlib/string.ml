@@ -26,6 +26,8 @@ external get : string -> int -> char = "%string_safe_get"
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_blit : string -> int ->  bytes -> int -> int -> unit
                      = "caml_blit_string" [@@noalloc]
+external first_nul : string -> (int[@untagged])
+                   = "caml_string_first_nul" "strlen" [@@noalloc]
 
 module B = Bytes
 
@@ -237,6 +239,9 @@ type t = string
 
 let compare (x: t) (y: t) = Stdlib.compare x y
 external equal : string -> string -> bool = "caml_string_equal" [@@noalloc]
+
+(* duplicated in bytes.ml *)
+let is_c_safe a = first_nul a = length a
 
 (** {1 Iterators} *)
 
