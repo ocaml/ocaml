@@ -87,7 +87,12 @@ let example_2 () =
                (if (seq (setfield_ptr 0 (field_imm 1 input/348) [1: 3]) 0)
                  [1: 3]
                  (let (*match*/357 =o (field_mut 0 (field_imm 1 input/348)))
-                   (makeblock 0 (int) (field_imm 0 *match*/357))))
+                   (switch* *match*/357
+                    case tag 0: (makeblock 0 (int) (field_imm 0 *match*/357))
+                    case tag 1:
+                     (raise
+                       (makeblock 0 (global Match_failure/20!)
+                         [0: "contexts_2.ml" 11 2])))))
               case tag 1: [1: 2]))
            [1: 1]))))
   (apply (field_mut 1 (global Toploop!)) "example_2" example_2/346))
