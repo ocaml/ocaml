@@ -1036,6 +1036,35 @@ end = struct
     }
 end
 
+(* Partiality information. *)
+
+(** [Typedtree.partial] is just [Total | Partial].
+    The pattern-matching compiler tracks more fine-grained information as
+    it traverses patterns, grouped in the following [partiality] type. *)
+type partiality = {
+  current : partial;
+  (** The 'current' information tracks whether the current sub-matrix
+      is Partial or Total, that is, if it may fail to match some possible
+      values and have to generate a jump to some external exit. *)
+
+  global : partial;
+  (** The 'global' information indicates whether the pattern-matching
+      as a whole, at the toplevel, is Partial or Total. This
+      information is decided by the type-checker and passed down to
+      the pattern-matching compiler.
+
+      When a pattern-matching is globally Total, a jump out of a given
+      submatrix may only target a default submatrix correspond to
+      a further split. When it is globally Partial, some jumps may
+      fail to match any of the following submatrices, and go to the
+      'final exit'. *)
+}
+
+let pp_partiality ppf {current; global} =
+  Format.fprintf ppf "{ current = %a; global = %a }"
+    pp_partial current
+    pp_partial global
+
 (* Pattern matching before any compilation *)
 
 type ('args, 'row) pattern_matching = {
@@ -2876,25 +2905,35 @@ let complete_pats_constrs = function
     to jump to in case of failure of elementary tests
 *)
 
-let comp_exit ctx def =
+
+let comp_final_exit def =
+  (Default_environment.raise_final_exit def, Jumps.empty Partial)
+
+let comp_exit partial ctx def =
   match Default_environment.pop def with
-  | Some ((i, _), _) -> Lstaticraise (i, []), Jumps.singleton i ctx
-  | None -> Default_environment.raise_final_exit def, Jumps.empty Partial
+  | Some ((i, _), _) -> Some (Lstaticraise (i, []), Jumps.singleton i ctx)
+  | None ->
+      (* If we know that we are in Total match, we do not need to
+         generate a final exit in this case. *)
+      match partial.global with
+      | Total -> None
+      | Partial -> Some (comp_final_exit def)
 
 let mk_failaction_neg partial ctx def =
   debugf
     "@,@[<v 2>COMBINE (mk_failaction_neg %a)@]"
-    pp_partial partial
+    pp_partiality partial
   ;
-  match partial with
-  | Partial ->
-      let lam, jumps = comp_exit ctx def in
-      (Some lam, jumps)
+  match partial.current with
   | Total -> (None, Jumps.empty Total)
+  | Partial ->
+      match comp_exit partial ctx def with
+      | None -> (None, Jumps.empty Total)
+      | Some (lam, jumps) -> (Some lam, jumps)
 
 (* In [mk_failaction_pos partial seen ctx defs],
-   - [partial] is Total if we know the current switch
-     is already exhaustive
+   - [partial] indicates whether the current switch
+     is exhaustive
    - [seen] is the list of constructors accepted by the switch
      (those that will be matched)
    - [ctx] is the current context (what we know of the value
@@ -2994,15 +3033,15 @@ let mk_failaction_pos partial seen ctx defs =
             in
             fails', jumps'
       | None ->
-          match partial with
+          match partial.global with
           | Total ->
-              (* In [Total] mode, if there are no exits left in the
-                 environment, we judge that the remaining failing patterns
-                 cannot arise. [mk_failaction_neg] has the same
-                 logic. *)
+              (* If the pattern-matching is globally [Total], all
+                 missing values are either ill-typed or they are
+                 handled by a matrix of the default environment. The
+                 remaining failing patterns cannot arise. *)
               [], Jumps.empty Total
           | Partial ->
-              (* in [Partial] mode, remaining failing patterns
+              (* in [Partial] mode, the remaining failing patterns
                  go to the final exit. *)
               let final_pats = List.map fst fail_pats_in_ctx in
               mk_fails final_pats (Default_environment.raise_final_exit defs),
@@ -3018,7 +3057,7 @@ let mk_failaction_pos partial seen ctx defs =
              %a@]@,\
            @[<v 2>POSITIVE JUMPS (%a):%a@]\
            @]"
-      pp_partial partial
+      pp_partiality partial
       Default_environment.pp defs
       Context.pp ctx
       (Format.pp_print_list ~pp_sep:Format.pp_print_cut
@@ -3316,7 +3355,7 @@ let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
     if
       sig_complete
       ||
-      match partial with
+      match partial.current with
       | Total -> true
       | _ -> false
     then
@@ -3528,7 +3567,7 @@ let rec comp_match_handlers comp_fun partial ctx first_match next_matches =
             else begin
               let partial = match rem with
                 | [] -> partial
-                | _ -> Partial
+                | _ -> { partial with current = Partial }
               in
               match comp_fun partial ctx_i pm_i with
               | lambda_i, jumps_i ->
@@ -3543,7 +3582,7 @@ let rec comp_match_handlers comp_fun partial ctx first_match next_matches =
             end
           )
       in
-      match comp_fun Partial ctx first_match with
+      match comp_fun { partial with current = Partial } ctx first_match with
       | first_lam, jumps ->
         c_rec first_lam jumps next_matches
       | exception Unused ->
@@ -3601,7 +3640,11 @@ let rec compile_match ~scopes repr partial ctx
 and compile_match_nonempty ~scopes repr partial ctx
     (m : (args, Typedtree.pattern Non_empty_row.t clause) pattern_matching) =
   match m with
-  | { cases = []; args = [] } -> comp_exit ctx m.default
+  | { cases = []; args = [] } ->
+      begin match comp_exit partial ctx m.default with
+      | None -> fatal_error "Matching: impossible empty matrix in a Total match"
+      | Some exit -> exit
+      end
   | { args = { arg; binding_kind; _ } as first :: rest } ->
       let v = arg_to_var arg m.cases in
       bind_match_arg binding_kind v arg (
@@ -3682,7 +3725,7 @@ and do_compile_matching_pr ~scopes repr partial ctx x =
   debugf
     "@[<v>MATCH %a\
      @,%a"
-    pp_partial partial
+    pp_partiality partial
     pretty_precompiled x;
   debugf "@,@[<v 2>CTX:@,%a@]"
     Context.pp ctx;
@@ -3698,7 +3741,7 @@ and do_compile_matching_pr ~scopes repr partial ctx x =
   debugf "@]";
   r
 
-and do_compile_matching ~scopes repr partial ctx pmh =
+and do_compile_matching ~scopes repr (partial : partiality) ctx pmh =
   match pmh with
   | Pm pm -> (
       let arg = arg_of_pure pm.args.first.arg in
@@ -3901,8 +3944,9 @@ let toplevel_handler ~scopes loc ~failer partial args cases compile_fun =
   let final_exit = next_raise_count () in
   let default = Default_environment.empty ~final_exit in
   let pm = { args; cases; default } in
-  let safe_partial = if !Clflags.safer_matching then Partial else partial in
-  begin match compile_fun safe_partial pm with
+  let partial = if !Clflags.safer_matching then Partial else partial in
+  let partial = { current = partial; global = partial; } in
+  begin match compile_fun partial pm with
   | exception Unused -> assert false
   | (lam, jumps) ->
       match Jumps.partial jumps with
