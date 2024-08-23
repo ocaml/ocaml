@@ -729,7 +729,10 @@ static st_retcode create_tick_thread(void)
   pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
 #endif
 
-  if (err != 0) return err;
+  if (err != 0) {
+    caml_stat_free(tick_thread_args);
+    return err;
+  }
 
   Tick_thread_running = 1;
   return 0;
