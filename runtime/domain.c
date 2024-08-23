@@ -182,6 +182,7 @@ Caml_inline void interruptor_set_pending(struct interruptor *s)
 struct dom_internal {
   /* readonly fields, initialised and never modified */
   int id;
+  pthread_t tid;
   caml_domain_state* state;
   struct interruptor interruptor;
 
@@ -191,6 +192,7 @@ struct dom_internal {
   atomic_uintnat backup_thread_msg;
   caml_plat_mutex domain_lock;
   caml_plat_cond domain_cond;
+  bool domain_canceled;
 
   /* modified only during STW sections */
   uintnat minor_heap_area_start;
@@ -235,8 +237,9 @@ static atomic_uintnat /* dom_internal* */ stw_leader = 0;
 static uintnat stw_requests_suspended = 0; /* protected by all_domains_lock */
 static caml_plat_cond requests_suspended_cond = CAML_PLAT_COND_INITIALIZER;
 static dom_internal* all_domains;
+static atomic_intnat domains_exiting = 0;
 
-CAMLexport atomic_uintnat caml_num_domains_running;
+CAMLexport atomic_uintnat caml_num_domains_running = 0;
 
 /* size of the virtual memory reservation for the minor heap, per domain */
 uintnat caml_minor_heap_max_wsz;
@@ -940,6 +943,9 @@ void caml_update_minor_heap_max(uintnat requested_wsz) {
 
 void caml_init_domains(uintnat max_domains, uintnat minor_heap_wsz)
 {
+  atomic_store_relaxed(&domains_exiting, 0);
+  atomic_store_relaxed(&caml_num_domains_running, 0);
+
   /* Use [caml_stat_calloc_noexc] to zero initialize [all_domains]. */
   all_domains = caml_stat_calloc_noexc(max_domains, sizeof(dom_internal));
   if (all_domains == NULL)
@@ -977,6 +983,7 @@ void caml_init_domains(uintnat max_domains, uintnat minor_heap_wsz)
     caml_plat_cond_init(&dom->domain_cond);
     dom->backup_thread_running = 0;
     dom->backup_thread_msg = BT_INIT;
+    dom->domain_canceled = false;
   }
 
   domain_create(minor_heap_wsz, NULL);
@@ -1226,6 +1233,8 @@ static void* domain_thread_func(void* v)
 #endif
 
   domain_create(caml_params->init_minor_heap_wsz, p->parent->state);
+  if (domain_self)
+    domain_self->tid = pthread_self();
 
   /* this domain is now part of the STW participant set */
   p->newdom = domain_self;
@@ -1294,6 +1303,10 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   pthread_t th;
   int err;
 
+  if (atomic_load_relaxed(&domains_exiting) != 0) {
+    caml_failwith("domain creation not allowed during shutdown");
+  }
+
 #ifndef NATIVE_CODE
   if (caml_debugger_in_use)
     caml_fatal_error("ocamldebug does not support spawning multiple domains");
@@ -1337,6 +1350,7 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   }
   /* When domain 0 first spawns a domain, the backup thread is not active, we
      ensure it is started here. */
+  domain_self->tid = pthread_self();
   if (atomic_load_acquire(&domain_self->backup_thread_running) == 0)
     install_backup_thread(domain_self);
 
@@ -2129,6 +2143,80 @@ static void domain_terminate (void)
      on caml_domain_alone (which uses caml_num_domains_running) in at least
      the shared_heap lockfree fast paths */
   atomic_fetch_add(&caml_num_domains_running, -1);
+}
+
+/* Try and terminate the currently running domain.
+   This is only invoked when extra domains are left running while the
+   main one is terminating. In this case, we are not in a state where
+   we can safely release resources. The best we can do is cancel the
+   extra running threads. */
+static void stw_terminate_domain(caml_domain_state *domain, void *data,
+  int participating_count,
+  caml_domain_state **participating)
+{
+  if (!pthread_equal(domain_self->tid, *(pthread_t *)data)) {
+    if (caml_bt_is_self()) {
+      /* If this STW request is handled by the backup thread, the
+         domain thread is currently running C code. */
+      domain_self->domain_canceled = true;
+      (void)pthread_cancel(domain_self->tid);
+      /* We are intentionally not waiting for the thread to terminate here,
+         and not decrementing the number of running domains either, since
+         we don't know the state of the various locks and condition
+         variables in this state. */
+      atomic_store_release(&domain_self->backup_thread_running, 0);
+      atomic_store_release(&domain_self->backup_thread_msg, BT_INIT);
+    } else {
+      /* Domain threads forced to exit here will not have a chance to
+         run domain_terminate() on their own, so we need to ask the
+         backup thread to terminate here. */
+      terminate_backup_thread(domain_self);
+      caml_plat_unlock(&domain_self->domain_lock);
+      /* No particular memory resource cleanup is attempted here, for we
+         have no idea which state each domain is in. */
+    }
+    pthread_exit(0);
+  }
+}
+
+void caml_stop_all_domains(void)
+{
+  atomic_store_relaxed(&domains_exiting, 1);
+
+  pthread_t myself = pthread_self();
+  do {} while (!caml_try_run_on_all_domains(
+               &stw_terminate_domain, &myself, NULL));
+
+  terminate_backup_thread(domain_self);
+  caml_plat_unlock(&domain_self->domain_lock);
+
+  caml_plat_assert_all_locks_unlocked();
+}
+
+bool caml_free_domains(void)
+{
+  bool result = true;
+
+  for (int i = 0; i < caml_params->max_domains; i++) {
+    struct dom_internal* dom = &all_domains[i];
+
+    /* Give the backup thread time to terminate gracefully, if needed */
+    while (atomic_load_acquire(&dom->backup_thread_running) != 0) {
+      cpu_relax();
+    }
+
+    dom->interruptor.interrupt_word = NULL;
+    caml_plat_mutex_free(&dom->interruptor.lock);
+    caml_plat_cond_free(&dom->interruptor.cond);
+
+    if (dom->domain_canceled)
+      result = false;
+    else
+      caml_plat_mutex_free(&dom->domain_lock);
+    caml_plat_cond_free(&dom->domain_cond);
+  }
+
+  return result;
 }
 
 CAMLprim value caml_ml_domain_cpu_relax(value t)
