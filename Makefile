@@ -512,7 +512,10 @@ ocamllex_PROGRAMS = $(addprefix lex/,ocamllex ocamllex.opt)
 ocamlyacc_PROGRAM = yacc/ocamlyacc
 
 # Tools to be compiled to native and bytecode, then installed
-TOOLS_TO_INSTALL_NAT = ocamldep ocamlobjinfo
+TOOLS_TO_INSTALL_NAT = ocamldep
+ifeq "$(build_ocamlobjinfo)" "true"
+  TOOLS_TO_INSTALL_NAT += ocamlobjinfo
+endif
 
 # Tools to be compiled to bytecode only, then installed
 TOOLS_TO_INSTALL_BYT = \
@@ -526,7 +529,8 @@ endif
 # the configuration is not available during clean so we don't
 # know whether they have been configured / built or not
 clean::
-	rm -f $(addprefix tools/ocamlopt,p p.opt p.exe p.opt.exe)
+	rm -f $(addprefix tools/ocamlopt,p p.opt p.exe p.opt.exe) \
+	  tools/ocamlobjinfo $(addprefix tools/ocamlobjinfo,.opt .exe .opt.exe)
 
 TOOLS_NAT = $(TOOLS_TO_INSTALL_NAT)
 TOOLS_BYT = $(TOOLS_TO_INSTALL_BYT) dumpobj primreq stripdebug cmpbyt
