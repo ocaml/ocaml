@@ -117,6 +117,13 @@ void caml_init_gc_stats (uintnat max_domains)
     caml_fatal_error("Failed to allocate sampled_gc_stats");
 }
 
+void caml_free_gc_stats(void)
+{
+  if (sampled_gc_stats != NULL)
+    caml_stat_free(sampled_gc_stats);
+  sampled_gc_stats = NULL;
+}
+
 /* Update the sampled stats for the given domain during a STW section. */
 void caml_collect_gc_stats_sample_stw(caml_domain_state* domain)
 {

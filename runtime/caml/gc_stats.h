@@ -85,6 +85,8 @@ void caml_compute_gc_stats(struct gc_stats* buf);
 
 void caml_init_gc_stats (uintnat max_domains);
 
+void caml_free_gc_stats(void);
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_GC_STATS_H */

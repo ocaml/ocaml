@@ -2145,8 +2145,3 @@ void caml_teardown_major_gc(void) {
   caml_stat_free(d->mark_stack);
   d->mark_stack = NULL;
 }
-
-void caml_finalise_heap (void)
-{
-  return;
-}
