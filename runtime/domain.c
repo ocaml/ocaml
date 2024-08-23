@@ -2229,6 +2229,14 @@ bool caml_free_domains(void)
     caml_plat_cond_free(&dom->domain_cond);
   }
 
+#ifdef WITH_THREAD_SANITIZER
+  /* When running with TSan, there will be reports of races between
+     freeing the all_domains synchronization objects and domain threads
+     accessing them, even though we wait first for the domain threads to
+     have terminated in the above loop. */
+  result = false;
+#endif
+
   return result;
 }
 
