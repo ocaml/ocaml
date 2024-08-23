@@ -464,23 +464,21 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Itailcall_imm { func; _ }) ->
       if func = f.fun_name then 1 else epilogue_size f
     | Lop (Iextcall {alloc; stack_ofs} ) ->
-      if stack_ofs > 0 then 5
-      else if alloc then 3
-      else 7
+      if stack_ofs > 0 then 6
+      else if alloc then 4
+      else 8
     | Lop (Istackoffset _) -> 2
-    | Lop (Iload  { memory_chunk; addressing_mode; is_atomic }) ->
+    | Lop (Iload { memory_chunk; addressing_mode }) ->
       let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
-      and barrier = if is_atomic then 1 else 0
-      and single = match memory_chunk with Single -> 2 | _ -> 1 in
-      based + barrier + single
-    | Lop (Istore (memory_chunk, addressing_mode, assignment)) ->
+      and insns = match memory_chunk with
+        | Word_int | Word_val | Single -> 2
+        | _ -> 1
+      in
+      based + insns
+    | Lop (Istore (memory_chunk, addressing_mode, _assignment)) ->
       let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
-      and barrier =
-        match memory_chunk, assignment with
-        | (Word_int | Word_val), true -> 1
-        | _ -> 0
       and single = match memory_chunk with Single -> 2 | _ -> 1 in
-      based + barrier + single
+      based + single
     | Lop (Ialloc _) when f.fun_fast -> 5
     | Lop (Ispecific (Ialloc_far _)) when f.fun_fast -> 6
     | Lop (Ipoll _) -> 3
@@ -741,11 +739,13 @@ let emit_instr env i =
           `	add	{emit_reg reg_stack_arg_end}, sp, #{emit_int (Misc.align stack_ofs 16)}\n`;
           emit_load_symbol_addr reg_x8 func;
           `	bl	{emit_symbol "caml_c_call_stack_args"}\n`;
-          `{record_frame env i.live (Dbg_other i.dbg)}\n`
+          `{record_frame env i.live (Dbg_other i.dbg)}\n`;
+          `	dmb	ishld\n`
         end else if alloc then begin
           emit_load_symbol_addr reg_x8 func;
           `	bl	{emit_symbol "caml_c_call"}\n`;
-          `{record_frame env i.live (Dbg_other i.dbg)}\n`
+          `{record_frame env i.live (Dbg_other i.dbg)}\n`;
+          `	dmb	ishld\n`
         end else begin
           (* Push frame pointer (x29) onto stack and restore later. *)
           `	str	x29, [sp, -16]!\n`;
@@ -759,6 +759,7 @@ let emit_instr env i =
           `	bl	{emit_symbol func}\n`;
           `	mov	sp, x29\n`;
           `	ldr	x29, [sp], 16\n`;
+          `	dmb	ishld\n`;
           cfi_restore_state ()
         end
     | Lop(Istackoffset n) ->
@@ -796,12 +797,16 @@ let emit_instr env i =
               assert (addressing_mode = Iindexed 0);
               `	dmb	ishld\n`;
               `	ldar	{emit_reg dst}, [{emit_reg i.arg.(0)}]\n`
-            end else
-              `	ldr	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
+            end else begin
+              let lbl = new_label () in
+              `	ldr	{emit_reg dst}, {emit_addressing addressing_mode base}\n`;
+              `	cbz	{emit_reg dst}, {emit_label lbl}\n`;
+              `{emit_label lbl}:\n`
+            end
         | Double ->
             `	ldr	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
         end
-    | Lop(Istore(size, addr, assignment)) ->
+    | Lop(Istore(size, addr, _assignment)) ->
         (* NB: assignments other than Word_int and Word_val do not follow the
         Multicore OCaml memory model and so do not emit a barrier *)
         let src = i.arg.(0) in
@@ -823,8 +828,6 @@ let emit_instr env i =
             `	fcvt	s7, {emit_reg src}\n`;
             `	str	s7, {emit_addressing addr base}\n`;
         | Word_int | Word_val ->
-            (* memory model barrier for non-initializing store *)
-            if assignment then `	dmb	ishld\n`;
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         | Double ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
