@@ -1233,13 +1233,14 @@ void caml_plat_thread_exit(void)
 
 CAMLexport void caml_plat_mutex_init(caml_plat_mutex * m)
 {
-  InitializeSRWLock(m);
+  InitializeSRWLock(&m->lock);
+  m->owner_tid = 0;
 }
 
 void caml_plat_assert_locked(caml_plat_mutex *m)
 {
 #ifdef DEBUG
-  BOOLEAN r = TryAcquireSRWLockExclusive(m);
+  BOOLEAN r = TryAcquireSRWLockExclusive(&m->lock);
   if (r == 0) {
     /* ok, it was locked */
     return;
@@ -1253,7 +1254,13 @@ CAMLexport void caml_plat_lock_non_blocking_actual(caml_plat_mutex* m)
 {
   /* Avoid exceptions */
   caml_enter_blocking_section_no_pending();
-  AcquireSRWLockExclusive(m);
+  DWORD self_tid = GetCurrentThreadId();
+  if (m->owner_tid != self_tid) {
+    AcquireSRWLockExclusive(&m->lock);
+    m->owner_tid = self_tid;
+  } else {
+    check_err("lock_non_blocking", EDEADLK);
+  }
   caml_leave_blocking_section();
   DEBUG_LOCK(m);
 }
@@ -1273,8 +1280,22 @@ void caml_plat_cond_init(caml_plat_cond *cond)
 void caml_plat_wait(caml_plat_cond *cond, caml_plat_mutex* mut)
 {
   caml_plat_assert_locked(mut);
-  BOOL rc = SleepConditionVariableSRW(cond, mut, INFINITE, 0 /* exclusive */);
-  check_err("wait", rc == 0);
+  DWORD self_tid = GetCurrentThreadId();
+  int rc = 0;
+  if (mut->owner_tid == self_tid) {
+    mut->owner_tid = 0;
+    if (SleepConditionVariableSRW(cond, &mut->lock, INFINITE,
+                                  0 /* exclusive */)) {
+      mut->owner_tid = self_tid;
+    } else {
+      rc = caml_posixerr_of_win32err(GetLastError());
+      /* Not clear if the thread owns the mutex or not, but there's a
+       * fatal error anyway.  */
+    }
+  } else {
+    rc = EPERM;
+  }
+  check_err("wait", rc);
 }
 
 void caml_plat_broadcast(caml_plat_cond* cond)

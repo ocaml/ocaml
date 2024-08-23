@@ -30,9 +30,10 @@ typedef int sync_retcode;
 
 Caml_inline int sync_mutex_create(sync_mutex * res)
 {
-  sync_mutex m = caml_stat_alloc_noexc(sizeof(SRWLOCK));
+  sync_mutex m = caml_stat_alloc_noexc(sizeof(caml_plat_mutex));
   if (m == NULL) return ENOMEM;
-  InitializeSRWLock(m);
+  InitializeSRWLock(&m->lock);
+  m->owner_tid = 0;
   *res = m;
   return 0;
 }
@@ -45,8 +46,14 @@ Caml_inline int sync_mutex_destroy(sync_mutex m)
 
 Caml_inline int sync_mutex_lock(sync_mutex m)
 {
-  AcquireSRWLockExclusive(m);
-  return 0;
+  DWORD self_tid = GetCurrentThreadId();
+  if (m->owner_tid != self_tid) {
+    AcquireSRWLockExclusive(&m->lock);
+    m->owner_tid = self_tid;
+    return 0;
+  } else {
+    return EDEADLK;
+  }
 }
 
 #define MUTEX_PREVIOUSLY_UNLOCKED 0
@@ -54,14 +61,24 @@ Caml_inline int sync_mutex_lock(sync_mutex m)
 
 Caml_inline int sync_mutex_trylock(sync_mutex m)
 {
-  return TryAcquireSRWLockExclusive(m) ?
-    MUTEX_PREVIOUSLY_UNLOCKED : MUTEX_ALREADY_LOCKED;
+  if (TryAcquireSRWLockExclusive(&m->lock)) {
+    m->owner_tid = GetCurrentThreadId();
+    return MUTEX_PREVIOUSLY_UNLOCKED;
+  } else {
+    return MUTEX_ALREADY_LOCKED;
+  }
 }
 
 Caml_inline int sync_mutex_unlock(sync_mutex m)
 {
-  ReleaseSRWLockExclusive(m);
-  return 0;
+  DWORD self_tid = GetCurrentThreadId();
+  if (m->owner_tid == self_tid) {
+    m->owner_tid = 0;
+    ReleaseSRWLockExclusive(&m->lock);
+    return 0;
+  } else {
+    return EPERM;
+  }
 }
 
 /* Condition variables */
@@ -95,11 +112,22 @@ Caml_inline int sync_condvar_broadcast(sync_condvar c)
 
 Caml_inline int sync_condvar_wait(sync_condvar c, sync_mutex m)
 {
-  if (!SleepConditionVariableSRW(c, m, INFINITE, 0 /* exclusive */)) {
-    int rc = caml_posixerr_of_win32err(GetLastError());
-    return rc == 0 ? EINVAL : rc;
+  DWORD self_tid = GetCurrentThreadId();
+  int rc = 0;
+  if (m->owner_tid == self_tid) {
+    m->owner_tid = 0;
+    if (SleepConditionVariableSRW(c, &m->lock, INFINITE,
+                                  0 /* exclusive */)) {
+      m->owner_tid = self_tid;
+    } else {
+      rc = caml_posixerr_of_win32err(GetLastError());
+      /* Not clear if the thread owns the mutex or not, but there's a
+       * fatal error anyway.  */
+    }
+  } else {
+    rc = EPERM;
   }
-  return 0;
+  return rc;
 }
 
 #endif

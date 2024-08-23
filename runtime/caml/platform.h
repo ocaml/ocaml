@@ -112,8 +112,11 @@ Caml_inline uintnat atomic_fetch_add_verify_ge0(atomic_uintnat* p, intnat v) {
 
 #ifdef _WIN32
 
-typedef SRWLOCK caml_plat_mutex;
-#define CAML_PLAT_MUTEX_INITIALIZER SRWLOCK_INIT
+typedef struct {
+  SRWLOCK lock;
+  _Atomic DWORD owner_tid;      /* 0 if not owned */
+} caml_plat_mutex;
+#define CAML_PLAT_MUTEX_INITIALIZER { SRWLOCK_INIT, 0 }
 
 typedef CONDITION_VARIABLE caml_plat_cond;
 #define CAML_PLAT_COND_INITIALIZER CONDITION_VARIABLE_INIT
@@ -504,25 +507,37 @@ CAMLextern CAMLthread_local int caml_lockdepth;
 
 Caml_inline void caml_plat_lock_blocking(caml_plat_mutex* m)
 {
-  AcquireSRWLockExclusive(m);
-  DEBUG_LOCK(m);
+  DWORD self_tid = GetCurrentThreadId();
+  if (m->owner_tid != self_tid) {
+    AcquireSRWLockExclusive(&m->lock);
+    m->owner_tid = self_tid;
+    DEBUG_LOCK(m);
+  } else {
+    check_err("lock", EDEADLK);
+  }
 }
 
 Caml_inline int caml_plat_try_lock(caml_plat_mutex* m)
 {
-  BOOLEAN rc = TryAcquireSRWLockExclusive(m);
-  if (!rc) {
-    return 0;
-  } else {
+  if (TryAcquireSRWLockExclusive(&m->lock)) {
+    m->owner_tid = GetCurrentThreadId();
     DEBUG_LOCK(m);
     return 1;
+  } else {
+    return 0;
   }
 }
 
 Caml_inline void caml_plat_unlock(caml_plat_mutex* m)
 {
+  DWORD self_tid = GetCurrentThreadId();
   DEBUG_UNLOCK(m);
-  ReleaseSRWLockExclusive(m);
+  if (m->owner_tid == self_tid) {
+    m->owner_tid = 0;
+    ReleaseSRWLockExclusive(&m->lock);
+  } else {
+    check_err("unlock", EPERM);
+  }
 }
 
 #else

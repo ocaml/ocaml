@@ -38,15 +38,11 @@ val lock : t -> unit
    by another thread will suspend until the other thread unlocks
    the mutex.
 
-   @raise Sys_error if the mutex is already locked by the thread
-   calling {!Mutex.lock} on Unix platforms. On Windows, recursive
-   locking deadlocks.
+   @raise Sys_error if the mutex is already locked by the thread calling
+   {!Mutex.lock}.
 
    @before 4.12 {!Sys_error} was not raised for recursive locking
-   (platform-dependent behaviour).
-
-   @since 5.3 On Windows, {!Sys_error} is not raised for recursive
-   locking. *)
+   (platform-dependent behaviour) *)
 
 val try_lock : t -> bool
 (** Same as {!Mutex.lock}, but does not suspend the calling thread if
@@ -58,15 +54,10 @@ val unlock : t -> unit
 (** Unlock the given mutex. Other threads suspended trying to lock
    the mutex will restart.  The mutex must have been previously locked
    by the thread that calls {!Mutex.unlock}.
-
-   @raise Sys_error if the mutex is unlocked or was locked by another
-   thread. This doesn't apply on Windows since OCaml 5.3.
+   @raise Sys_error if the mutex is unlocked or was locked by another thread.
 
    @before 4.12 {!Sys_error} was not raised when unlocking an unlocked mutex
-   or when unlocking a mutex from a different thread.
-
-   @since 5.3 5.3 On Windows, {!Sys_error} is not raised if the mutex
-   is unlocked or was locked by another thread. *)
+   or when unlocking a mutex from a different thread. *)
 
 val protect : t -> (unit -> 'a) -> 'a
 (** [protect mutex f] runs [f()] in a critical section where [mutex]
