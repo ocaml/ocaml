@@ -22,6 +22,7 @@
 #include "caml/backtrace.h"
 #include "caml/memory.h"
 #include "caml/callback.h"
+#include "caml/domain.h"
 #include "caml/major_gc.h"
 #ifndef NATIVE_CODE
 #include "caml/dynlink.h"
@@ -186,12 +187,20 @@ CAMLexport void caml_shutdown(void)
 
   call_registered_value("Pervasives.do_at_exit");
   call_registered_value("Thread.at_shutdown");
-  caml_finalise_heap();
+  if (!caml_domain_alone()) {
+    caml_gc_log("Some domains have not been joined prior to shutdown");
+    caml_stop_all_domains();
+  } else {
+    /* These calls are not safe to use if there are domains left running */
+    caml_domain_terminate(true);
+    caml_finalise_heap();
+  }
   caml_free_locale();
 #ifndef NATIVE_CODE
   caml_free_shared_libs();
 #endif
-  caml_stat_destroy_pool();
+  if (caml_free_domains())
+    caml_stat_destroy_pool();
   caml_terminate_signals();
 #if defined(_WIN32) && defined(NATIVE_CODE)
   caml_win32_unregister_overflow_detection();

@@ -119,6 +119,7 @@ int caml_domain_is_in_stw(void);
 
 int caml_domain_terminating(caml_domain_state *);
 int caml_domain_is_terminating(void);
+void caml_domain_terminate(bool last);
 
 int caml_try_run_on_all_domains_with_spin_work(
   int sync,
