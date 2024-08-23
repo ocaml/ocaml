@@ -466,7 +466,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Iextcall {alloc; stack_ofs} ) ->
       if stack_ofs > 0 then 5
       else if alloc then 3
-      else 5
+      else 7
     | Lop (Istackoffset _) -> 2
     | Lop (Iload  { memory_chunk; addressing_mode; is_atomic }) ->
       let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
@@ -537,13 +537,13 @@ module BR = Branch_relaxation.Make (struct
     | Lswitch jumptbl -> 3 + Array.length jumptbl
     | Lentertrap -> 0
     | Ladjust_trap_depth _ -> 0
-    | Lpushtrap _ -> 4
+    | Lpushtrap _ -> 3
     | Lpoptrap -> 1
     | Lraise k ->
       begin match k with
       | Lambda.Raise_regular -> 1
       | Lambda.Raise_reraise -> 1
-      | Lambda.Raise_notrace -> 4
+      | Lambda.Raise_notrace -> 3
       end
 
   let relax_poll ~return_label =
