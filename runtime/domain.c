@@ -799,7 +799,7 @@ CAMLexport void caml_reset_domain_lock(void)
        portability on POSIX the lock should be released and destroyed
        prior to calling fork and then init afterwards in both parent
        and child. */
-  caml_plat_mutex_init(&self->domain_lock);
+  caml_plat_mutex_reinit(&self->domain_lock);
   caml_plat_cond_init(&self->domain_cond);
 
   return;
