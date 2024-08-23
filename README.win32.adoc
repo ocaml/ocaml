@@ -157,15 +157,15 @@ the top-level of the OCaml distribution by running:
 If you forget to do this, `make` will fail relatively
 quickly as it will be unable to link `ocamlrun`.
 
-Now run:
-
-        ./configure --build=x86_64-pc-cygwin --host=i686-pc-windows
-
-for 32-bit, or:
+For 64-bit, now run:
 
         ./configure --build=x86_64-pc-cygwin --host=x86_64-pc-windows
 
-for 64-bit. If you wish to compile with Clang, add `CC=clang-cl`.
+or, for 32-bit:
+
+        ./configure --build=x86_64-pc-cygwin --host=i686-pc-windows
+
+If you wish to compile with Clang, add `CC=clang-cl`.
 
 Finally, use `make` to build the system, e.g.
 
@@ -222,15 +222,13 @@ The command-line tools must be compiled from the Unix source distribution
 use WinZip, you will need to deselect "TAR file smart CR/LF conversion" in
 the WinZip Options Window.)
 
-Now run:
-
-        ./configure --build=x86_64-pc-cygwin --host=i686-w64-mingw32
-
-for 32-bit, or:
+For 64-bit, now run:
 
         ./configure --build=x86_64-pc-cygwin --host=x86_64-w64-mingw32
 
-for 64-bit.
+or, for 32-bit:
+
+        ./configure --build=x86_64-pc-cygwin --host=i686-w64-mingw32
 
 Finally, use `make` to build the system, e.g.
 
