@@ -117,10 +117,15 @@ let operation d = function
   | Capply _ty -> "app" ^ location d
   | Cextcall(lbl, _ty_res, _ty_args, _alloc) ->
       Printf.sprintf "extcall \"%s\"%s" lbl (location d)
-  | Cload {memory_chunk; mutability} -> (
-    match mutability with
-    | Asttypes.Immutable -> Printf.sprintf "load %s" (chunk memory_chunk)
-    | Asttypes.Mutable   -> Printf.sprintf "load_mut %s" (chunk memory_chunk))
+  | Cload {memory_chunk; mutability; is_atomic} ->
+      let op =
+        ["load"]
+        @ (match mutability with
+         | Asttypes.Immutable -> []
+         | Asttypes.Mutable -> ["mut"])
+        @ (if is_atomic then ["atomic"] else [])
+      in
+      Printf.sprintf "%s %s" (String.concat "_" op) (chunk memory_chunk)
   | Calloc -> "alloc" ^ location d
   | Cstore (c, init) ->
     let init =
