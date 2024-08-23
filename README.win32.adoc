@@ -108,7 +108,8 @@ OCaml can be compiled with either Visual Studio 2022 Community or Build Tools
 for Visual Studio 2022. The following components are needed (the precise version
 numbers may differ, but this should not matter):
 
- - MSVC v143 - VS 2022 C++ x64/x86 build tools (Latest)
+ - MSVC v143 - VS 2022 C++ x64/x86 build tools (Latest) _for compiling with cl_
+ - C++ Clang Compiler for Windows (16.0.5) _for compiling with clang-cl_
  - C++/CLI support for v143 build tools (Latest)
  - Windows 11 SDK (10.0.22621.0)
 
@@ -164,7 +165,7 @@ for 32-bit, or:
 
         ./configure --build=x86_64-pc-cygwin --host=x86_64-pc-windows
 
-for 64-bit.
+for 64-bit. If you wish to compile with Clang, add `CC=clang-cl`.
 
 Finally, use `make` to build the system, e.g.
 
