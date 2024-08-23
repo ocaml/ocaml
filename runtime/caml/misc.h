@@ -586,8 +586,10 @@ CAMLextern int caml_snwprintf(wchar_t * buf,
 
 /* Macro used to deactivate address sanitizer on some functions. */
 #define CAMLno_asan
-/* __has_feature is Clang-specific, but GCC defines __SANITIZE_ADDRESS__ and
- * __SANITIZE_THREAD__. */
+/* `__has_feature` is present in Clang and recent GCCs (14 and later). Older
+   GCCs define `__SANITIZE_ADDRESS__`. In addition, starting from version 14
+   GCC supports the Clang-originating syntax `no_sanitize("address")`.
+   This should select the right attribute in all circumstances. */
 #if defined(__has_feature)
 #  if __has_feature(address_sanitizer)
 #    undef CAMLno_asan
