@@ -1,0 +1,29 @@
+
+cmm:
+(data)
+(data
+ int 3063
+ "camlCmm.2":
+ addr "camlCmm.standard_atomic_get_271"
+ int 72057594037927941)
+(data
+ int 4087
+ "camlCmm.1":
+ addr "caml_curry3"
+ int 216172782113783815
+ addr "camlCmm.standard_atomic_cas_294")
+(data int 2816 global "camlCmm" "camlCmm": int 1 int 1)
+(data global "camlCmm.gc_roots" "camlCmm.gc_roots": addr "camlCmm" int 0)
+(function camlCmm.standard_atomic_get_271 (r: val) (load_mut_atomic val r))
+
+(function camlCmm.standard_atomic_cas_294 (r: val oldv: val newv: val)
+ (extcall "caml_atomic_cas" r oldv newv int,int,int->val))
+
+(function camlCmm.entry ()
+ (let standard_atomic_get "camlCmm.2"
+   (extcall "caml_initialize" "camlCmm" standard_atomic_get ->unit))
+ (let standard_atomic_cas "camlCmm.1"
+   (extcall "caml_initialize" (+a "camlCmm" 8) standard_atomic_cas ->unit))
+ 1)
+
+(data)
