@@ -1003,7 +1003,10 @@ Primitives (C functions that can be called from OCaml) should never return void.
 Local variables of type "value" must be declared with one of the
 "CAMLlocal" macros.  Arrays of "value"s are declared with
 "CAMLlocalN".  These macros must be used at the beginning of the
-function, not in a nested block.
+function, not in a nested block.  Temporaries are equivalent to
+local variables, but they cannot be registered with the garbage
+collector, so a temporary of type "value" must not be live when
+a garbage collection may occur.
 \end{gcrule}
 
 The macros "CAMLlocal1" to "CAMLlocal5" declare and initialize one to
