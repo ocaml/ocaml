@@ -372,8 +372,7 @@ let primitives_table =
     "%greaterequal", Comparison(Greater_equal, Compare_generic);
     "%greaterthan", Comparison(Greater_than, Compare_generic);
     "%compare", Comparison(Compare, Compare_generic);
-    "%atomic_load",
-    Primitive ((Patomic_load {immediate_or_pointer=Pointer}), 1);
+    "%atomic_load", Primitive (Patomic_load, 1);
     "%atomic_exchange", External prim_atomic_exchange;
     "%atomic_cas", External prim_atomic_cas;
     "%atomic_fetch_add", External prim_atomic_fetch_add;
@@ -497,13 +496,6 @@ let specialize_primitive env ty ~has_constant_constructor prim =
       let useful = List.exists (fun knd -> knd <> Pgenval) shape in
       if useful then Some (Primitive (Pmakeblock(tag, mut, Some shape), arity))
       else None
-    end
-  | Primitive (Patomic_load { immediate_or_pointer = Pointer },
-               arity), _ ->begin
-      let is_int = match is_function_type env ty with
-        | None -> Pointer
-        | Some (_p1, rhs) -> maybe_pointer_type env rhs in
-      Some (Primitive (Patomic_load {immediate_or_pointer = is_int}, arity))
     end
   | Comparison(comp, Compare_generic), p1 :: _ ->
     if (has_constant_constructor
@@ -834,7 +826,7 @@ let lambda_primitive_needs_event_after = function
   | Pfloatcomp _ | Pstringlength | Pstringrefu | Pbyteslength | Pbytesrefu
   | Pbytessetu | Pmakearray ((Pintarray | Paddrarray | Pfloatarray), _)
   | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint | Pisout
-  | Patomic_load _
+  | Patomic_load
   | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque | Pdls_get
       -> false
 
