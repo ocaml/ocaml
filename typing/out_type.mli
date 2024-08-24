@@ -126,7 +126,7 @@ val hide_variant_name: Types.type_expr -> Types.type_expr
 val prepare_type_constructor_arguments: constructor_arguments -> unit
 val tree_of_constructor_arguments: constructor_arguments -> out_type list
 
-val tree_of_label: label_declaration -> string * bool * out_type
+val tree_of_label: label_declaration -> out_label
 
 val add_constructor_to_preparation : constructor_declaration -> unit
 val prepared_constructor : constructor_declaration printer
