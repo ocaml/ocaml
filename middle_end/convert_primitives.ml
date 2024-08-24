@@ -146,9 +146,6 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Pint_as_pointer -> Pint_as_pointer
   | Patomic_load { immediate_or_pointer } ->
       Patomic_load { immediate_or_pointer }
-  | Patomic_exchange -> Patomic_exchange
-  | Patomic_cas -> Patomic_cas
-  | Patomic_fetch_add -> Patomic_fetch_add
   | Popaque -> Popaque
   | Pdls_get -> Pdls_get
   | Ppoll -> Ppoll
