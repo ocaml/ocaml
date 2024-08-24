@@ -29,7 +29,9 @@ type compile_time_constant =
 
 type immediate_or_pointer =
   | Immediate
+  (* The value must be immediate. *)
   | Pointer
+  (* The value may be a pointer or an immediate. *)
 
 type initialization_or_assignment =
   | Assignment
