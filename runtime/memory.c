@@ -314,33 +314,6 @@ CAMLexport CAMLweakdef void caml_initialize (volatile value *fp, value val)
     Ref_table_add(&Caml_state->minor_tables->major_ref, fp);
 }
 
-CAMLexport int caml_atomic_cas_field (
-  value obj, intnat field, value oldval, value newval)
-{
-  if (caml_domain_alone()) {
-    /* non-atomic CAS since only this thread can access the object */
-    volatile value* p = &Field(obj, field);
-    if (*p == oldval) {
-      *p = newval;
-      write_barrier(obj, field, oldval, newval);
-      return 1;
-    } else {
-      return 0;
-    }
-  } else {
-    /* need a real CAS */
-    atomic_value* p = &Op_atomic_val(obj)[field];
-    int cas_ret = atomic_compare_exchange_strong(p, &oldval, newval);
-    atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
-    if (cas_ret) {
-      write_barrier(obj, field, oldval, newval);
-      return 1;
-    } else {
-      return 0;
-    }
-  }
-}
-
 
 CAMLprim value caml_atomic_load (value ref)
 {
@@ -372,28 +345,35 @@ CAMLprim value caml_atomic_exchange (value ref, value v)
   return ret;
 }
 
-CAMLprim value caml_atomic_cas (value ref, value oldv, value newv)
+CAMLexport int caml_atomic_cas_field (
+  value obj, intnat field, value oldval, value newval)
 {
   if (caml_domain_alone()) {
-    value* p = Op_val(ref);
-    if (*p == oldv) {
-      *p = newv;
-      write_barrier(ref, 0, oldv, newv);
-      return Val_int(1);
+    /* non-atomic CAS since only this thread can access the object */
+    volatile value* p = &Field(obj, field);
+    if (*p == oldval) {
+      *p = newval;
+      write_barrier(obj, field, oldval, newval);
+      return 1;
     } else {
-      return Val_int(0);
+      return 0;
     }
   } else {
-    atomic_value* p = &Op_atomic_val(ref)[0];
-    int cas_ret = atomic_compare_exchange_strong(p, &oldv, newv);
+    /* need a real CAS */
+    atomic_value* p = &Op_atomic_val(obj)[field];
+    int cas_ret = atomic_compare_exchange_strong(p, &oldval, newval);
     atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
     if (cas_ret) {
-      write_barrier(ref, 0, oldv, newv);
-      return Val_int(1);
+      write_barrier(obj, field, oldval, newval);
+      return 1;
     } else {
-      return Val_int(0);
+      return 0;
     }
   }
+}
+CAMLprim value caml_atomic_cas (value ref, value oldval, value newval)
+{
+  return Val_bool(caml_atomic_cas_field(ref, 0, oldval, newval));
 }
 
 CAMLprim value caml_atomic_fetch_add (value ref, value incr)
