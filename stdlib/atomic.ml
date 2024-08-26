@@ -30,15 +30,27 @@ module Loc = struct
     ignore (fetch_and_add t (-1))
 end
 
-type !'a t
+type !'a t =
+  { mutable contents: 'a [@atomic];
+  }
 
-external make : 'a -> 'a t = "%makemutable"
+let make v =
+  { contents = v }
+
 external make_contended : 'a -> 'a t = "caml_atomic_make_contended"
-external get : 'a t -> 'a = "%atomic_load"
-external exchange : 'a t -> 'a -> 'a = "%atomic_exchange"
-external compare_and_set : 'a t -> 'a -> 'a -> bool = "%atomic_cas"
-external fetch_and_add : int t -> int -> int = "%atomic_fetch_add"
 
-let set r x = ignore (exchange r x)
-let incr r = ignore (fetch_and_add r 1)
-let decr r = ignore (fetch_and_add r (-1))
+let get t =
+  t.contents
+let set t v =
+  t.contents <- v
+
+let exchange t v =
+  Loc.exchange [%atomic.loc t.contents] v
+let compare_and_set t old new_ =
+  Loc.compare_and_set [%atomic.loc t.contents] old new_
+let fetch_and_add t incr =
+  Loc.fetch_and_add [%atomic.loc t.contents] incr
+let incr t =
+  Loc.incr [%atomic.loc t.contents]
+let decr t =
+  Loc.decr [%atomic.loc t.contents]
