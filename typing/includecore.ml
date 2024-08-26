@@ -155,6 +155,7 @@ type kind_mismatch = type_kind * type_kind
 type label_mismatch =
   | Type of Errortrace.equality_error
   | Mutability of position
+  | Atomicity of position
 
 type record_change =
   (Types.label_declaration, Types.label_declaration, label_mismatch)
@@ -270,6 +271,10 @@ let report_label_mismatch first second env ppf err =
       report_type_inequality env ppf err
   | Mutability ord ->
       Format_doc.fprintf ppf "%s is mutable and %s is not."
+        (String.capitalize_ascii (choose ord first second))
+        (choose_other ord first second)
+  | Atomicity ord ->
+      Format_doc.fprintf ppf "%s is atomic and %s is not."
         (String.capitalize_ascii (choose ord first second))
         (choose_other ord first second)
 
@@ -481,6 +486,14 @@ module Record_diffing = struct
     then
       let ord = if ld1.ld_mutable = Asttypes.Mutable then First else Second in
       Some (Mutability  ord)
+    else if ld1.ld_atomic <> ld2.ld_atomic
+    then
+      let ord =
+        match ld1.ld_atomic with
+        | Atomic -> First
+        | Nonatomic -> Second
+      in
+      Some (Atomicity  ord)
     else
     let tl1 = params1 @ [ld1.ld_type] in
     let tl2 = params2 @ [ld2.ld_type] in

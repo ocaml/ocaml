@@ -389,13 +389,14 @@ and print_typargs ppf =
       pp_print_char ppf ')';
       pp_close_box ppf ();
       pp_print_space ppf ()
-and print_out_label ppf {olab_name; olab_mut; olab_type} =
-  fprintf ppf "@[<2>%s%a :@ %a@];"
+and print_out_label ppf {olab_name; olab_mut; olab_atomic; olab_type} =
+  fprintf ppf "@[<2>%s%a :@ %a%s@];"
     (match olab_mut with
      | Mutable -> "mutable "
      | Immutable -> "")
     print_lident olab_name
     print_out_type olab_type
+    (match olab_atomic with Atomic -> " [@atomic]" | Nonatomic -> "")
 
 let out_label = ref print_out_label
 

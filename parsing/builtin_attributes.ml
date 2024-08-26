@@ -57,6 +57,7 @@ let warn_unused () =
    misplaced attribute warnings. *)
 let builtin_attrs =
   [ "alert"
+  ; "atomic"
   ; "boxed"
   ; "deprecated"
   ; "deprecated_mutable"
@@ -410,3 +411,5 @@ let immediate64 attrs = has_attribute "immediate64" attrs
 let has_unboxed attrs = has_attribute "unboxed" attrs
 
 let has_boxed attrs = has_attribute "boxed" attrs
+
+let has_atomic attrs = has_attribute "atomic" attrs
