@@ -393,6 +393,10 @@ and expression i ppf x =
       expression i ppf e1;
       longident i ppf li;
       expression i ppf e2;
+  | Texp_atomic_loc (e, li, _) ->
+      line i ppf "Texp_atomic_loc\n";
+      expression i ppf e;
+      longident i ppf li;
   | Texp_array (l) ->
       line i ppf "Texp_array\n";
       list i expression ppf l;

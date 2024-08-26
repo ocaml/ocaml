@@ -335,6 +335,9 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
       iter_loc sub lid;
       sub.expr sub exp1;
       sub.expr sub exp2
+  | Texp_atomic_loc (exp, lid, _) ->
+      iter_loc sub lid;
+      sub.expr sub exp
   | Texp_array list -> List.iter (sub.expr sub) list
   | Texp_ifthenelse (exp1, exp2, expo) ->
       sub.expr sub exp1;

@@ -226,6 +226,8 @@ type error =
   | Unrefuted_pattern of Typedtree.pattern
   | Invalid_extension_constructor_payload
   | Not_an_extension_constructor
+  | Invalid_atomic_loc_payload
+  | Label_not_atomic of Longident.t
   | Literal_overflow of string
   | Unknown_literal of string * char
   | Illegal_letrec_pat

@@ -326,6 +326,11 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_record {fields; representation; extended_expression} ->
       transl_record ~scopes e.exp_loc e.exp_env
         fields representation extended_expression
+  | Texp_atomic_loc (arg, _, lbl) ->
+      let shape = Some [Typeopt.value_kind arg.exp_env arg.exp_type; Pintval] in
+      let (arg, lbl) = transl_atomic_loc ~scopes arg lbl in
+      let loc = of_location ~scopes e.exp_loc in
+      Lprim (Pmakeblock (0, Immutable, shape), [arg; lbl], loc)
   | Texp_field (arg, _, ({ lbl_atomic = Atomic; _ } as lbl)) ->
       let arg, lbl = transl_atomic_loc ~scopes arg lbl in
       let loc = of_location ~scopes e.exp_loc in
