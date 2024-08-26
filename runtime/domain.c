@@ -1121,13 +1121,12 @@ static void install_backup_thread (dom_internal* di)
 
     atomic_store_release(&di->backup_thread_msg, BT_ENTERING_OCAML);
     err = pthread_create(&di->backup_thread, 0, backup_thread_func, (void*)di);
+    caml_check_error(err, "failed to create domain backup thread");
 
 #ifndef _WIN32
     pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
 #endif
 
-    if (err != 0)
-      caml_check_error(err, "failed to create domain backup thread");
     di->backup_thread_running = 1;
     pthread_detach(di->backup_thread);
   }
@@ -1292,10 +1291,7 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   init_domain_ml_values(p.ml_values, callback, term_sync);
 
   err = pthread_create(&th, 0, domain_thread_func, (void*)&p);
-
-  if (err) {
-    caml_check_error(err, "failed to create domain thread: pthread_create");
-  }
+  caml_check_error(err, "failed to create domain thread: pthread_create");
 
   /* While waiting for the child thread to start up, we need to service any
      stop-the-world requests as they come in. */
