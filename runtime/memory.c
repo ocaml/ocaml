@@ -352,7 +352,7 @@ CAMLprim value caml_atomic_exchange (value ref, value v)
   return caml_atomic_exchange_field(ref, Val_long(0), v);
 }
 
-CAMLexport value caml_atomic_cas_field (
+CAMLprim value caml_atomic_cas_field (
   value obj, value vfield, value oldval, value newval)
 {
   intnat field = Long_val(vfield);

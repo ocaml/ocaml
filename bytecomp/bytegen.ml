@@ -488,7 +488,7 @@ let comp_primitive stack_info p sz args =
   | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1)
   | Pbytes_to_string -> Kccall("caml_string_of_bytes", 1)
   | Pbytes_of_string -> Kccall("caml_bytes_of_string", 1)
-  | Patomic_load -> Kccall("caml_atomic_load", 1)
+  | Patomic_load -> Kccall("caml_atomic_load_field", 2)
   | Pdls_get -> Kccall("caml_domain_dls_get", 1)
   | Ppoll -> Kccall("caml_process_pending_actions_with_root", 1)
   (* The cases below are handled in [comp_expr] before the [comp_primitive] call
