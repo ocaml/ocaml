@@ -468,10 +468,12 @@ module BR = Branch_relaxation.Make (struct
       else if alloc then 4
       else 8
     | Lop (Istackoffset _) -> 2
-    | Lop (Iload { memory_chunk; addressing_mode }) ->
+    | Lop (Iload { memory_chunk; addressing_mode; is_atomic; mutability }) ->
       let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
       and insns = match memory_chunk with
-        | Word_int | Word_val | Single -> 2
+        | Single -> 2
+        | (Word_int | Word_val)
+            when is_atomic || mutability = Asttypes.Mutable -> 2
         | _ -> 1
       in
       based + insns
@@ -766,7 +768,7 @@ let emit_instr env i =
         assert (n mod 16 = 0);
         emit_stack_adjustment (-n);
         env.stack_offset <- env.stack_offset + n
-    | Lop(Iload { memory_chunk; addressing_mode; is_atomic }) ->
+    | Lop(Iload { memory_chunk; addressing_mode; is_atomic; mutability }) ->
         assert(memory_chunk = Word_int || memory_chunk = Word_val || is_atomic = false);
         let dst = i.res.(0) in
         let base =
@@ -794,14 +796,19 @@ let emit_instr env i =
             `	fcvt	{emit_reg dst}, s7\n`
         | Word_int | Word_val ->
             if is_atomic then begin
-              assert (addressing_mode = Iindexed 0);
+              assert (addressing_mode = Iindexed 0 &&
+                      mutability = Asttypes.Mutable);
               `	dmb	ishld\n`;
               `	ldar	{emit_reg dst}, [{emit_reg i.arg.(0)}]\n`
             end else begin
-              let lbl = new_label () in
-              `	ldr	{emit_reg dst}, {emit_addressing addressing_mode base}\n`;
-              `	cbz	{emit_reg dst}, {emit_label lbl}\n`;
-              `{emit_label lbl}:\n`
+              match mutability with
+              | Asttypes.Mutable ->
+                  let lbl = new_label () in
+                  `    ldr     {emit_reg dst}, {emit_addressing addressing_mode base}\n`;
+                  `    cbz     {emit_reg dst}, {emit_label lbl}\n`;
+                  `{emit_label lbl}:\n`
+              | Immutable ->
+                  `    ldr     {emit_reg dst}, {emit_addressing addressing_mode base}\n`
             end
         | Double ->
             `	ldr	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
