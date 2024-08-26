@@ -11,24 +11,43 @@ module Basic = struct
   let get (type a) (r : a atomic) : a = r.x
 
   let set (type a) (r : a atomic) (v : a) : unit = r.x <- v
+
+  let cas (type a) (r : a atomic) oldv newv =
+    Atomic.Loc.compare_and_set [%atomic.loc r.x] oldv newv
+
+  let[@inline never] get_loc (type a) (r : a atomic) : a Atomic.Loc.t =
+    [%atomic.loc r.x]
+
+  let slow_cas (type a) (r : a atomic) oldv newv =
+    Atomic.Loc.compare_and_set (get_loc r) oldv newv
 end
 [%%expect{|
-(apply (field_mut 1 (global Toploop!)) "Basic/290"
+(apply (field_mut 1 (global Toploop!)) "Basic/336"
   (let
     (get = (function r (atomic_load r 1))
-     set = (function r v : int (ignore (caml_atomic_exchange_field r 1 v))))
-    (makeblock 0 get set)))
+     set = (function r v : int (ignore (caml_atomic_exchange_field r 1 v)))
+     cas = (function r oldv newv : int (caml_atomic_cas_field r 1 oldv newv))
+     get_loc = (function r never_inline (makeblock 0 (*,int) r 1))
+     slow_cas =
+       (function r oldv newv : int
+         (let (atomic_arg = (apply get_loc r))
+           (caml_atomic_cas_field (field_imm 0 atomic_arg)
+             (field_int 1 atomic_arg) oldv newv))))
+    (makeblock 0 get set cas get_loc slow_cas)))
 module Basic :
   sig
     type 'a atomic = { mutable filler : unit; mutable x : 'a [@atomic]; }
     val get : 'a atomic -> 'a
     val set : 'a atomic -> 'a -> unit
+    val cas : 'a atomic -> 'a -> 'a -> bool
+    val get_loc : 'a atomic -> 'a Atomic.Loc.t
+    val slow_cas : 'a atomic -> 'a -> 'a -> bool
   end
 |}];;
 
 
 (* Atomic fields must be mutable. *)
-module Error = struct
+module Error1 = struct
   type t = { x : int [@atomic] }
 end
 [%%expect{|
@@ -36,6 +55,32 @@ Line 2, characters 13-30:
 2 |   type t = { x : int [@atomic] }
                  ^^^^^^^^^^^^^^^^^
 Error: The label "x" must be mutable to be declared atomic.
+|}];;
+
+
+(* [%atomic.loc _] payload must be a record field access *)
+module Error2 = struct
+  type t = { mutable x : int [@atomic] }
+  let f t = [%atomic.loc t]
+end
+[%%expect{|
+Line 3, characters 12-27:
+3 |   let f t = [%atomic.loc t]
+                ^^^^^^^^^^^^^^^
+Error: Invalid "[%atomic.loc]" payload, a record field access is expected.
+|}];;
+
+
+(* [%atomic.loc _] only works on atomic fields *)
+module Error3 = struct
+  type t = { x : int }
+  let f t = [%atomic.loc t.x]
+end
+[%%expect{|
+Line 3, characters 12-29:
+3 |   let f t = [%atomic.loc t.x]
+                ^^^^^^^^^^^^^^^^^
+Error: The record field "x" is not atomic
 |}];;
 
 
@@ -102,7 +147,7 @@ end : sig
   type t = { mutable x : int [@atomic] }
 end)
 [%%expect{|
-(apply (field_mut 1 (global Toploop!)) "Ok/306" (makeblock 0))
+(apply (field_mut 1 (global Toploop!)) "Ok/363" (makeblock 0))
 module Ok : sig type t = { mutable x : int [@atomic]; } end
 |}];;
 
@@ -116,7 +161,7 @@ module Inline_record = struct
   let test : t -> int = fun (A r) -> r.x
 end
 [%%expect{|
-(apply (field_mut 1 (global Toploop!)) "Inline_record/314"
+(apply (field_mut 1 (global Toploop!)) "Inline_record/371"
   (let (test = (function param : int (atomic_load param 0)))
     (makeblock 0 test)))
 module Inline_record :
@@ -136,7 +181,7 @@ module Extension_with_inline_record = struct
   let () = assert (test (A { x = 42 }) = 42)
 end
 [%%expect{|
-(apply (field_mut 1 (global Toploop!)) "Extension_with_inline_record/322"
+(apply (field_mut 1 (global Toploop!)) "Extension_with_inline_record/379"
   (let
     (A =
        (makeblock 248 "Extension_with_inline_record.A" (caml_fresh_oo_id 0))
@@ -165,7 +210,7 @@ module Float_records = struct
   let get v = v.y
 end
 [%%expect{|
-(apply (field_mut 1 (global Toploop!)) "Float_records/337"
+(apply (field_mut 1 (global Toploop!)) "Float_records/394"
   (let
     (mk_t = (function x[float] y[float] (makemutable 0 (float,float) x y))
      get = (function v : float (atomic_load v 1)))
@@ -177,5 +222,3 @@ module Float_records :
     val get : t -> float
   end
 |}];;
-
-

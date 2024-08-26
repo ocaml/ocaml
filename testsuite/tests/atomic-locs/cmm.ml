@@ -1,6 +1,7 @@
 (* TEST_BELOW *)
 
 (* standard atomics *)
+
 let standard_atomic_get (r : 'a Atomic.t) =
   Atomic.get r
 
@@ -17,6 +18,9 @@ let get (r : 'a atomic) : 'a =
 
 let set (r : 'a atomic) v =
   r.x <- v
+
+let cas (r : 'a atomic) oldv newv =
+  Atomic.Loc.compare_and_set [%atomic.loc r.x] oldv newv
 
 (* TEST
 
