@@ -57,11 +57,6 @@ ___________
 
 ### Runtime system:
 
-- #13400: Initialize th->signal_stack to avoid free of uninitialized data
-  if the user calls caml_c_thread_unregister on the main thread.
-  (Richard W.M. Jones, review by Guillaume Munch-Maccagnoni and
-  Gabriel Scherer)
-
 - #13364: Emit major slice counters in the runtime events.
   (KC Sivaramakrishnan and Sadiq Jaffer, review by Gabriel Scherer)
 
@@ -588,6 +583,11 @@ ___________
   could sometimes, in theory, return the wrong answer. This patch fixes the
   oversight. No known program triggers the bug.
   (Richard Eisenberg, review by Florian Angeletti)
+
+- #13400: Initialize th->signal_stack to avoid free of uninitialized data
+  if the user calls caml_c_thread_unregister on the main thread.
+  (Richard W.M. Jones, review by Guillaume Munch-Maccagnoni and
+  Gabriel Scherer)
 
 OCaml 5.2.0 (13 May 2024)
 -------------------------
