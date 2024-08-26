@@ -12,6 +12,24 @@
 (*                                                                        *)
 (**************************************************************************)
 
+external ignore : 'a -> unit = "%ignore"
+
+module Loc = struct
+  type 'a t = 'a atomic_loc
+
+  external get : 'a t -> 'a = "%atomic_load_loc"
+  external exchange : 'a t -> 'a -> 'a = "%atomic_exchange_loc"
+  external compare_and_set : 'a t -> 'a -> 'a -> bool = "%atomic_cas_loc"
+  external fetch_and_add : int t -> int -> int = "%atomic_fetch_add_loc"
+
+  let set t v =
+    ignore (exchange t v)
+  let incr t =
+    ignore (fetch_and_add t 1)
+  let decr t =
+    ignore (fetch_and_add t (-1))
+end
+
 type !'a t
 
 external make : 'a -> 'a t = "%makemutable"
@@ -20,7 +38,6 @@ external get : 'a t -> 'a = "%atomic_load"
 external exchange : 'a t -> 'a -> 'a = "%atomic_exchange"
 external compare_and_set : 'a t -> 'a -> 'a -> bool = "%atomic_cas"
 external fetch_and_add : int t -> int -> int = "%atomic_fetch_add"
-external ignore : 'a -> unit = "%ignore"
 
 let set r x = ignore (exchange r x)
 let incr r = ignore (fetch_and_add r 1)
