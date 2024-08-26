@@ -44,7 +44,7 @@ let example_1 () =
                     case tag 0: (makeblock 0 (int) (field_imm 0 *match*/340))
                     case tag 1:
                      (raise
-                       (makeblock 0 (global Match_failure/20!)
+                       (makeblock 0 (global Match_failure/21!)
                          [0: "contexts_1.ml" 17 2])))))
               case tag 1: [1: 2]))
            [1: 1]))))
@@ -91,7 +91,7 @@ let example_2 () =
                     case tag 0: (makeblock 0 (int) (field_imm 0 *match*/358))
                     case tag 1:
                      (raise
-                       (makeblock 0 (global Match_failure/20!)
+                       (makeblock 0 (global Match_failure/21!)
                          [0: "contexts_2.ml" 11 2])))))
               case tag 1: [1: 2]))
            [1: 1]))))

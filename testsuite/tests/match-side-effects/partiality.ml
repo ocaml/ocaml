@@ -49,7 +49,7 @@ Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled as
                (let (*match*/288 =o (field_mut 1 x/283))
                  (if *match*/288 (field_imm 0 *match*/288)
                    (raise
-                     (makeblock 0 (global Match_failure/20!) [0: "" 4 2])))))
+                     (makeblock 0 (global Match_failure/21!) [0: "" 4 2])))))
              1))
          0)))
   (apply (field_mut 1 (global Toploop!)) "f" f/281))
@@ -111,7 +111,7 @@ Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled as
            (if *match*/303 (field_imm 0 *match*/303)
              (let (*match*/304 =o (field_mut 1 x/299))
                (if *match*/304
-                 (raise (makeblock 0 (global Match_failure/20!) [0: "" 2 2]))
+                 (raise (makeblock 0 (global Match_failure/21!) [0: "" 2 2]))
                  1))))
          0)))
   (apply (field_mut 1 (global Toploop!)) "f" f/298))
@@ -160,7 +160,7 @@ Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled as
                (let (*match*/312 =o (field_mut 0 (field_imm 0 *match*/308)))
                  (if *match*/312 (field_imm 0 *match*/312)
                    (raise
-                     (makeblock 0 (global Match_failure/20!) [0: "" 2 2]))))
+                     (makeblock 0 (global Match_failure/21!) [0: "" 2 2]))))
                3))))))
   (apply (field_mut 1 (global Toploop!)) "f" f/305))
 
@@ -293,7 +293,7 @@ Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled as
                   *match*/354 =a (field_imm 1 *match*/352))
                  (if *match*/354 (field_imm 0 *match*/354)
                    (raise
-                     (makeblock 0 (global Match_failure/20!) [0: "" 2 2]))))
+                     (makeblock 0 (global Match_failure/21!) [0: "" 2 2]))))
                3))))))
   (apply (field_mut 1 (global Toploop!)) "deep" deep/342))
 
