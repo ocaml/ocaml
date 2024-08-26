@@ -345,18 +345,19 @@ CAMLprim value caml_atomic_exchange (value ref, value v)
   return ret;
 }
 
-CAMLexport int caml_atomic_cas_field (
-  value obj, intnat field, value oldval, value newval)
+CAMLexport value caml_atomic_cas_field (
+  value obj, value vfield, value oldval, value newval)
 {
+  intnat field = Long_val(vfield);
   if (caml_domain_alone()) {
     /* non-atomic CAS since only this thread can access the object */
     volatile value* p = &Field(obj, field);
     if (*p == oldval) {
       *p = newval;
       write_barrier(obj, field, oldval, newval);
-      return 1;
+      return Val_true;
     } else {
-      return 0;
+      return Val_false;
     }
   } else {
     /* need a real CAS */
@@ -365,15 +366,15 @@ CAMLexport int caml_atomic_cas_field (
     atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
     if (cas_ret) {
       write_barrier(obj, field, oldval, newval);
-      return 1;
+      return Val_true;
     } else {
-      return 0;
+      return Val_false;
     }
   }
 }
 CAMLprim value caml_atomic_cas (value ref, value oldval, value newval)
 {
-  return Val_bool(caml_atomic_cas_field(ref, 0, oldval, newval));
+  return caml_atomic_cas_field(ref, Val_long(0), oldval, newval);
 }
 
 CAMLprim value caml_atomic_fetch_add (value ref, value incr)
