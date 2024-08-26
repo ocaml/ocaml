@@ -17,7 +17,7 @@ cmm:
 (function camlCmm.standard_atomic_get_271 (r: val) (load_mut_atomic val r))
 
 (function camlCmm.standard_atomic_cas_294 (r: val oldv: val newv: val)
- (extcall "caml_atomic_cas" r oldv newv int,int,int->val))
+ (extcall "caml_atomic_cas_field" r 1 oldv newv int,int,int,int->val))
 
 (function camlCmm.entry ()
  (let standard_atomic_get "camlCmm.2"
