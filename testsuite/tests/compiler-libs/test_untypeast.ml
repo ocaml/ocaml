@@ -22,6 +22,15 @@ match None with | Some (Some _) -> () | _ -> ()
 - : unit = ()
 |}];;
 
+run {| let open struct type t = { mutable x : int [@atomic] } end in
+       let _ = fun (v : t) -> [%atomic.loc v.x] in () |};;
+[%%expect{|
+let open struct type t = {
+                  mutable x: int [@atomic ]} end in
+  let _ = fun (v : t) -> [%ocaml.atomic.loc v.x] in ()
+- : unit = ()
+|}];;
+
 (***********************************)
 (* Untypeast/pprintast maintain the arity of a function. *)
 
