@@ -54,6 +54,7 @@ type kind_mismatch = type_kind * type_kind
 type label_mismatch =
   | Type of Errortrace.equality_error
   | Mutability of position
+  | Atomicity of position
 
 type record_change =
   (Types.label_declaration as 'ld, 'ld, label_mismatch) Diffing_with_keys.change

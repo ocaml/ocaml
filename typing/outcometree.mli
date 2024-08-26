@@ -86,6 +86,7 @@ type out_type =
 and out_label = {
   olab_name: string;
   olab_mut: Asttypes.mutable_flag;
+  olab_atomic: Asttypes.atomic_flag;
   olab_type: out_type;
 }
 

@@ -326,7 +326,11 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_record {fields; representation; extended_expression} ->
       transl_record ~scopes e.exp_loc e.exp_env
         fields representation extended_expression
-  | Texp_field(arg, _, lbl) ->
+  | Texp_field (arg, _, ({ lbl_atomic = Atomic; _ } as lbl)) ->
+      let arg, lbl = transl_atomic_loc ~scopes arg lbl in
+      let loc = of_location ~scopes e.exp_loc in
+      Lprim (Patomic_load, [arg; lbl], loc)
+  | Texp_field (arg, _, lbl) ->
       let targ = transl_exp ~scopes arg in
       begin match lbl.lbl_repres with
           Record_regular | Record_inlined _ ->
@@ -340,6 +344,19 @@ and transl_exp0 ~in_new_scope ~scopes e =
           Lprim (Pfield (lbl.lbl_pos + 1, maybe_pointer e, lbl.lbl_mut), [targ],
                  of_location ~scopes e.exp_loc)
       end
+  | Texp_setfield (arg, _, ({ lbl_atomic = Atomic; _ } as lbl), newval) ->
+      let prim =
+        Primitive.simple
+          ~name:"caml_atomic_exchange_field" ~arity:3 ~alloc:false
+      in
+      let arg, lbl = transl_atomic_loc ~scopes arg lbl in
+      let newval = transl_exp ~scopes newval in
+      let loc = of_location ~scopes e.exp_loc in
+      Lprim (
+        Pignore,
+        [Lprim (Pccall prim, [arg; lbl; newval], loc)],
+        loc
+      )
   | Texp_setfield(arg, _, lbl, newval) ->
       let access =
         match lbl.lbl_repres with
@@ -1078,6 +1095,23 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
              Array.fold_left update_field (Lvar copy_id) fields)
     end
   end
+
+and transl_atomic_loc ~scopes arg lbl =
+  let arg = transl_exp ~scopes arg in
+  let offset =
+    match lbl.lbl_repres with
+    | Record_regular
+    | Record_inlined _ -> 0
+    | Record_float ->
+        fatal_error
+          "Translcore.transl_atomic_loc: atomic field in float record"
+    | Record_unboxed _ ->
+        fatal_error
+          "Translcore.transl_atomic_loc: atomic field in unboxed record"
+    | Record_extension _ -> 1
+  in
+  let lbl = Lconst (Const_base (Const_int (lbl.lbl_pos + offset))) in
+  (arg, lbl)
 
 and transl_match ~scopes e arg pat_expr_list partial =
   let rewrite_case (val_cases, exn_cases, static_handlers as acc)
