@@ -132,6 +132,8 @@ static int cmp_ev_info(const void *a, const void *b)
   return 0;
 }
 
+static const char defname_old_bytecode[] = "<old bytecode>";
+
 static struct ev_info *process_debug_events(code_t code_start,
                                             value events_heap,
                                             mlsize_t *num_events)
@@ -179,7 +181,7 @@ static struct ev_info *process_debug_events(code_t code_start,
         if (events[j].ev_defname == NULL)
           caml_fatal_error ("caml_add_debug_info: out of memory");
       } else {
-        events[j].ev_defname = "<old bytecode>";
+        events[j].ev_defname = (char *)defname_old_bytecode;
       }
 
       events[j].ev_start_lnum = Int_val(Field(ev_start, POS_LNUM));
@@ -235,11 +237,17 @@ value caml_add_debug_info(code_t code_start, value code_size, value events_heap)
 value caml_remove_debug_info(code_t start)
 {
   CAMLparam0();
-  CAMLlocal2(dis, prev);
 
   for (int i = 0; i < caml_debug_info.size; i++) {
     struct debug_info *di = caml_debug_info.contents[i];
     if (di->start == start) {
+      for (mlsize_t j = 0; j < di->num_events; j++) {
+        struct ev_info *event = &di->events[j];
+        caml_stat_free(event->ev_filename);
+        if (event->ev_defname != defname_old_bytecode)
+          caml_stat_free(event->ev_defname);
+      }
+      caml_stat_free(di->events);
       /* note that caml_ext_table_remove calls caml_stat_free on the
          removed resource, bracketing the caml_stat_alloc call in
          caml_add_debug_info. */
