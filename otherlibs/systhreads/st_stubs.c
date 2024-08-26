@@ -492,8 +492,6 @@ static void caml_thread_domain_initialize_hook(void)
   caml_thread_t new_thread;
 
   atomic_store_release(&Tick_thread_stop, 0);
-  /* OS-specific initialization */
-  st_initialize();
 
   int ret = st_masterlock_init(Thread_lock(Caml_state->id));
   caml_check_error(ret, "caml_thread_domain_initialize_hook");

@@ -28,12 +28,6 @@
 
 typedef int st_retcode;
 
-/* OS-specific initialization */
-static int st_initialize(void)
-{
-  return 0;
-}
-
 typedef pthread_t st_thread_id;
 
 
