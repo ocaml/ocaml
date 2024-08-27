@@ -421,7 +421,7 @@ let of_primitive : Lambda.primitive -> string = function
   | Pbbswap _ -> pbbswap
   | Pint_as_pointer -> pint_as_pointer
   | Popaque -> popaque
-  | Patomic_load _ -> patomic_load
+  | Patomic_load -> patomic_load
   | Prunstack -> prunstack
   | Pperform -> pperform
   | Presume -> presume
@@ -531,7 +531,7 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pbbswap _ -> pbbswap_arg
   | Pint_as_pointer -> pint_as_pointer_arg
   | Popaque -> popaque_arg
-  | Patomic_load _ -> patomic_load_arg
+  | Patomic_load -> patomic_load_arg
   | Prunstack -> prunstack_arg
   | Pperform -> pperform_arg
   | Presume -> presume_arg

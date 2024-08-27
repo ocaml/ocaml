@@ -144,8 +144,7 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Pbigarraydim dim -> Pbigarraydim dim
   | Pbswap16 -> Pbswap16
   | Pint_as_pointer -> Pint_as_pointer
-  | Patomic_load { immediate_or_pointer } ->
-      Patomic_load { immediate_or_pointer }
+  | Patomic_load -> Patomic_load
   | Popaque -> Popaque
   | Pdls_get -> Pdls_get
   | Ppoll -> Ppoll
