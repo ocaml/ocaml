@@ -457,9 +457,11 @@ stdlib__Int32.cmx : int32.ml \
     stdlib__Int32.cmi
 stdlib__Int32.cmi : int32.mli
 stdlib__Int64.cmo : int64.ml \
+    stdlib__Sys.cmi \
     stdlib.cmi \
     stdlib__Int64.cmi
 stdlib__Int64.cmx : int64.ml \
+    stdlib__Sys.cmx \
     stdlib.cmx \
     stdlib__Int64.cmi
 stdlib__Int64.cmi : int64.mli
