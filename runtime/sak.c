@@ -34,7 +34,9 @@
 #define printf_os wprintf
 #else
 #define strncmp_os strncmp
-#define toupper_os toupper
+/* NOTE: See CAVEATS section in https://man.netbsd.org/ctype.3 */
+/* and NOTE section in https://man7.org/linux/man-pages/man3/toupper.3.html */
+#define toupper_os(x) toupper((unsigned char)x)
 #define printf_os printf
 #endif
 
