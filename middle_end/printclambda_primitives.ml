@@ -217,9 +217,6 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
       (match immediate_or_pointer with
         | Immediate -> fprintf ppf "atomic_load_imm"
         | Pointer -> fprintf ppf "atomic_load_ptr")
-  | Patomic_exchange -> fprintf ppf "atomic_exchange"
-  | Patomic_cas -> fprintf ppf "atomic_cas"
-  | Patomic_fetch_add -> fprintf ppf "atomic_fetch_add"
   | Popaque -> fprintf ppf "opaque"
   | Pdls_get -> fprintf ppf "dls_get"
   | Ppoll -> fprintf ppf "poll"

@@ -113,6 +113,14 @@ let gen_array_kind =
 let prim_sys_argv =
   Primitive.simple ~name:"caml_sys_argv" ~arity:1 ~alloc:true
 
+let prim_atomic_exchange =
+  Primitive.simple ~name:"caml_atomic_exchange" ~arity:2 ~alloc:false
+let prim_atomic_cas =
+  Primitive.simple ~name:"caml_atomic_cas" ~arity:3 ~alloc:false
+let prim_atomic_fetch_add =
+  Primitive.simple ~name:"caml_atomic_fetch_add" ~arity:2 ~alloc:false
+
+
 let primitives_table =
   create_hashtable 57 [
     "%identity", Identity;
@@ -366,9 +374,9 @@ let primitives_table =
     "%compare", Comparison(Compare, Compare_generic);
     "%atomic_load",
     Primitive ((Patomic_load {immediate_or_pointer=Pointer}), 1);
-    "%atomic_exchange", Primitive (Patomic_exchange, 2);
-    "%atomic_cas", Primitive (Patomic_cas, 3);
-    "%atomic_fetch_add", Primitive (Patomic_fetch_add, 2);
+    "%atomic_exchange", External prim_atomic_exchange;
+    "%atomic_cas", External prim_atomic_cas;
+    "%atomic_fetch_add", External prim_atomic_fetch_add;
     "%runstack", Primitive (Prunstack, 3);
     "%reperform", Primitive (Preperform, 3);
     "%perform", Primitive (Pperform, 1);
@@ -826,7 +834,7 @@ let lambda_primitive_needs_event_after = function
   | Pfloatcomp _ | Pstringlength | Pstringrefu | Pbyteslength | Pbytesrefu
   | Pbytessetu | Pmakearray ((Pintarray | Paddrarray | Pfloatarray), _)
   | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint | Pisout
-  | Patomic_exchange | Patomic_cas | Patomic_fetch_add | Patomic_load _
+  | Patomic_load _
   | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque | Pdls_get
       -> false
 

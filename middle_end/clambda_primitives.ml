@@ -121,9 +121,6 @@ type primitive =
   | Pint_as_pointer
   (* Atomic operations *)
   | Patomic_load of {immediate_or_pointer : immediate_or_pointer}
-  | Patomic_exchange
-  | Patomic_cas
-  | Patomic_fetch_add
   (* Inhibition of optimisation *)
   | Popaque
   (* Fetch domain-local state *)
