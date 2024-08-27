@@ -29,6 +29,11 @@ Working version
   between domain exit and backup thread
   (Miod Vallat and Gabriel Scherer, report by Jan Midtgaard)
 
+- #13380, #13405: Provide a system(3) replacement on Android, allowing
+  to build OCaml on Android with Termux, and use Sys.command.
+  (Antonin Décimo, review by Miod Vallat and Gabriel Scherer,
+   report by @kid-with-phone)
+
 OCaml 5.3.0
 ___________
 
