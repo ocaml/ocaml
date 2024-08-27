@@ -98,6 +98,14 @@ let pbytes_load_64 = "Pbytes_load_64"
 let pbytes_set_16 = "Pbytes_set_16"
 let pbytes_set_32 = "Pbytes_set_32"
 let pbytes_set_64 = "Pbytes_set_64"
+let pptr_load_8 = "Pptr_load_8"
+let pptr_load_16 = "Pptr_load_16"
+let pptr_load_32 = "Pptr_load_32"
+let pptr_load_64 = "Pptr_load_64"
+let pptr_set_8 = "Pptr_set_8"
+let pptr_set_16 = "Pptr_set_16"
+let pptr_set_32 = "Pptr_set_32"
+let pptr_set_64 = "Pptr_set_64"
 let pbytes_to_string = "Pbytes_to_string"
 let pbyteslength = "Pbyteslength"
 let pbytesrefs = "Pbytesrefs"
@@ -292,6 +300,14 @@ let presume_arg = "Presume_arg"
 let preperform_arg = "Preperform_arg"
 let pdls_get_arg = "Pdls_get_arg"
 let ppoll_arg = "Ppoll_arg"
+let pptr_load_8_arg = "Pptr_load_8_arg"
+let pptr_load_16_arg = "Pptr_load_16_arg"
+let pptr_load_32_arg = "Pptr_load_32_arg"
+let pptr_load_64_arg = "Pptr_load_64_arg"
+let pptr_set_8_arg = "Pptr_set_8_arg"
+let pptr_set_16_arg = "Pptr_set_16_arg"
+let pptr_set_32_arg = "Pptr_set_32_arg"
+let pptr_set_64_arg = "Pptr_set_64_arg"
 
 let raise = "raise"
 let raise_arg = "raise_arg"
@@ -417,6 +433,14 @@ let of_primitive : Lambda.primitive -> string = function
   | Pbytes_set_16 _ -> pbytes_set_16
   | Pbytes_set_32 _ -> pbytes_set_32
   | Pbytes_set_64 _ -> pbytes_set_64
+  | Pptr_load_8 -> pptr_load_8
+  | Pptr_load_16 -> pptr_load_16
+  | Pptr_load_32 -> pptr_load_32
+  | Pptr_load_64 -> pptr_load_64
+  | Pptr_set_8 -> pptr_set_8
+  | Pptr_set_16 -> pptr_set_16
+  | Pptr_set_32 -> pptr_set_32
+  | Pptr_set_64 -> pptr_set_64
   | Pbigstring_load_16 _ -> pbigstring_load_16
   | Pbigstring_load_32 _ -> pbigstring_load_32
   | Pbigstring_load_64 _ -> pbigstring_load_64
@@ -550,3 +574,11 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Preperform -> preperform_arg
   | Pdls_get -> pdls_get_arg
   | Ppoll -> ppoll_arg
+  | Pptr_load_8 -> pptr_load_8_arg
+  | Pptr_load_16 -> pptr_load_16_arg
+  | Pptr_load_32 -> pptr_load_32_arg
+  | Pptr_load_64 -> pptr_load_64_arg
+  | Pptr_set_8 -> pptr_set_8_arg
+  | Pptr_set_16 -> pptr_set_16_arg
+  | Pptr_set_32 -> pptr_set_32_arg
+  | Pptr_set_64 -> pptr_set_64_arg

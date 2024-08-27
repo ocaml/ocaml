@@ -1315,6 +1315,7 @@ let check_bound safety access_size dbg length a2 k =
   | Safe ->
       let offset =
         match (access_size : Clambda_primitives.memory_access_size) with
+        | Eight -> Misc.fatal_error "Cmm_helpers.check_bound"
         | Sixteen -> 1
         | Thirty_two -> 3
         | Sixty_four -> 7
@@ -1329,19 +1330,23 @@ let opaque e dbg =
 
 let unaligned_set size ptr idx newval dbg =
   match (size : Clambda_primitives.memory_access_size) with
+  | Eight ->
+    Cop(Cstore (Byte_unsigned, Assignment),
+      [add_int ptr idx dbg; newval], dbg)
   | Sixteen -> unaligned_set_16 ptr idx newval dbg
   | Thirty_two -> unaligned_set_32 ptr idx newval dbg
   | Sixty_four -> unaligned_set_64 ptr idx newval dbg
 
 let unaligned_load size ptr idx dbg =
   match (size : Clambda_primitives.memory_access_size) with
+  | Eight -> Cop(mk_load_mut Byte_unsigned, [add_int ptr idx dbg], dbg)
   | Sixteen -> unaligned_load_16 ptr idx dbg
   | Thirty_two -> unaligned_load_32 ptr idx dbg
   | Sixty_four -> unaligned_load_64 ptr idx dbg
 
 let box_sized size dbg exp =
   match (size : Clambda_primitives.memory_access_size) with
-  | Sixteen -> tag_int exp dbg
+  | Eight | Sixteen -> tag_int exp dbg
   | Thirty_two -> box_int_gen dbg Pint32 exp
   | Sixty_four -> box_int_gen dbg Pint64 exp
 
@@ -2229,6 +2234,12 @@ let stringref_safe arg1 arg2 dbg =
           Cop(mk_load_mut Byte_unsigned,
             [add_int str idx dbg], dbg))))) dbg
 
+let ptr_load size arg1 arg2 dbg =
+  box_sized size dbg
+   (bind "index" (untag_int arg2 dbg) (fun idx ->
+    bind "ptr" arg1 (fun ptr ->
+      unaligned_load size ptr idx dbg)))
+
 let string_load size unsafe arg1 arg2 dbg =
   box_sized size dbg
     (bind "index" (untag_int arg2 dbg) (fun idx ->
@@ -2432,6 +2443,13 @@ let arrayset_safe kind arg1 arg2 arg3 dbg =
             idx],
           float_array_set arr idx newval dbg))))
   )
+
+let ptr_set size arg1 arg2 arg3 dbg =
+  return_unit dbg
+   (bind "newval" arg3 (fun newval ->
+    bind "index" (untag_int arg2 dbg) (fun idx ->
+    bind "ptr" arg1 (fun ptr ->
+     (unaligned_set size ptr idx newval dbg)))))
 
 let bytes_set size unsafe arg1 arg2 arg3 dbg =
   return_unit dbg

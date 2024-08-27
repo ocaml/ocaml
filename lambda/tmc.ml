@@ -860,6 +860,8 @@ let rec choice ctx t =
     | Pisint | Pisout
     | Pignore
     | Pcompare_ints | Pcompare_floats | Pcompare_bints _
+    | Pptr_load_8 | Pptr_load_16 | Pptr_load_32 | Pptr_load_64
+    | Pptr_set_8 | Pptr_set_16 | Pptr_set_32 | Pptr_set_64
 
     (* we don't handle effect or DLS primitives *)
     | Prunstack | Pperform | Presume | Preperform | Pdls_get

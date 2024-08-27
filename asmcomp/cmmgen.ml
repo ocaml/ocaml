@@ -529,7 +529,7 @@ let rec transl env e =
          | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _
          | Pasrbint _ | Pbintcomp (_, _) | Pstring_load _ | Pbytes_load _
          | Pbytes_set _ | Pbigstring_load _ | Pbigstring_set _
-         | Pbbswap _ | Ppoll ), _)
+         | Pbbswap _ | Ppoll | Pptr_load _ | Pptr_set _), _)
         ->
           fatal_error "Cmmgen.transl:prim"
       end
@@ -857,7 +857,7 @@ and transl_prim_1 env p arg dbg =
     | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
     | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
     | Pbigarraydim _ | Pstring_load _ | Pbytes_load _ | Pbytes_set _
-    | Pbigstring_load _ | Pbigstring_set _)
+    | Pbigstring_load _ | Pbigstring_set _ | Pptr_load _ | Pptr_set _)
     ->
       fatal_errorf "Cmmgen.transl_prim_1: %a"
         Printclambda_primitives.primitive p
@@ -964,6 +964,9 @@ and transl_prim_2 env p arg1 arg2 dbg =
       stringref_safe (transl env arg1) (transl env arg2) dbg
   | Pstring_load(size, unsafe) | Pbytes_load(size, unsafe) ->
       string_load size unsafe (transl env arg1) (transl env arg2) dbg
+  | Pptr_load size ->
+      ptr_load size (transl_unbox_int dbg env Pnativeint arg1)
+                    (transl env arg2) dbg
   | Pbigstring_load(size, unsafe) ->
       bigstring_load size unsafe (transl env arg1) (transl env arg2) dbg
 
@@ -1041,7 +1044,8 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Pmakearray (_, _) | Pduparray (_, _) | Parraylength _ | Parraysetu _
   | Parraysets _ | Pbintofint _ | Pintofbint _ | Pcvtbint (_, _)
   | Pnegbint _ | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
-  | Pbigarraydim _ | Pbytes_set _ | Pbigstring_set _ | Pbbswap _ | Ppoll
+  | Pbigarraydim _ | Pbytes_set _ | Pbigstring_set _ | Pptr_set _
+  | Pbbswap _ | Ppoll
     ->
       fatal_errorf "Cmmgen.transl_prim_2: %a"
         Printclambda_primitives.primitive p
@@ -1078,6 +1082,10 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
 
   | Pbytes_set(size, unsafe) ->
       bytes_set size unsafe (transl env arg1) (transl env arg2)
+        (transl_unbox_sized size dbg env arg3) dbg
+
+  | Pptr_set size ->
+      ptr_set size (transl_unbox_int dbg env Pnativeint arg1) (transl env arg2)
         (transl_unbox_sized size dbg env arg3) dbg
 
   | Pbigstring_set(size, unsafe) ->
@@ -1119,7 +1127,8 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _ | Pandbint _ | Porbint _
   | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
   | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _
-  | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _ | Ppoll
+  | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pptr_load _
+  | Pbbswap _ | Ppoll
     ->
       fatal_errorf "Cmmgen.transl_prim_3: %a"
         Printclambda_primitives.primitive p
@@ -1134,7 +1143,7 @@ and transl_prim_4 env p arg1 arg2 arg3 arg4 dbg =
            dbg)
   | Psetfield_computed _
   | Pbytessetu | Pbytessets | Parraysetu _
-  | Parraysets _ | Pbytes_set _ | Pbigstring_set _ | Patomic_cas
+  | Parraysets _ | Pbytes_set _ | Pbigstring_set _ | Pptr_set _ | Patomic_cas
   | Prunstack | Preperform | Pperform | Pdls_get
   | Patomic_exchange | Patomic_fetch_add | Patomic_load _
   | Pfield_computed | Psequand | Psequor | Pnot | Pnegint | Paddint
@@ -1152,7 +1161,8 @@ and transl_prim_4 env p arg1 arg2 arg3 arg4 dbg =
   | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _ | Pandbint _ | Porbint _
   | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
   | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _
-  | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _ | Ppoll
+  | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pptr_load _
+  | Pbbswap _ | Ppoll
     ->
       fatal_errorf "Cmmgen.transl_prim_3: %a"
         Printclambda_primitives.primitive p
@@ -1170,9 +1180,9 @@ and transl_unbox_int_low dbg env bi e =
 
 and transl_unbox_sized size dbg env exp =
   match size with
-  | Sixteen ->
+  | Eight | Sixteen ->
      ignore_high_bit_int (untag_int (transl env exp) dbg)
-  | Thirty_two -> transl_unbox_int dbg env Pint32 exp
+  | Thirty_two -> low_32 dbg (transl_unbox_int dbg env Pint32 exp)
   | Sixty_four -> transl_unbox_int dbg env Pint64 exp
 
 and transl_let env str kind id exp transl_body =

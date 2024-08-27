@@ -706,6 +706,18 @@ static value copy_two_doubles(double d0, double d1)
   return res;
 }
 
+/* Get the raw pointer for a big array */
+
+CAMLprim intnat caml_ba_ptr(value vb)
+{
+  return (intnat)Caml_ba_array_val(vb)->data;
+}
+
+CAMLprim value caml_ba_ptr_byte(value vb)
+{
+  return caml_copy_nativeint(caml_ba_ptr(vb));
+}
+
 /* Generic code to read from a big array */
 
 value caml_ba_get_N(value vb, volatile value * vind, int nind)

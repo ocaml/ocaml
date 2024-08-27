@@ -100,6 +100,48 @@ sig
   val id : t -> int
 end
 
+module Pointer : sig
+  (** Unsafe, untyped raw pointers.  These are only for use for
+      experienced library writers who are providing safe abstractions
+      around them.  They are not for the casual user.
+   *)
+
+  type t
+  (** A raw pointer that points outside of the garbage-collected heap. *)
+
+  external of_nativeint: nativeint -> t = "%identity"
+  (** Converts a [nativeint] to a [t].  There is absolutely no guarantee
+      that this will continue to be [%identity] in the future. *)
+
+  external to_nativeint: t -> nativeint = "%identity"
+  (** Converts a [t] to a [nativeint].  There is absolutely no guarantee
+      that this will continue to be [%identity] in the future. *)
+
+  external load8 : t -> int -> int = "%caml_ptr_load8"
+  (** Loads a single byte *)
+
+  external load16 : t -> int -> int = "%caml_ptr_load16"
+  (** Loads a 16-bit value *)
+
+  external load32 : t -> int -> int32 = "%caml_ptr_load32"
+  (** Loads a 32-bit value *)
+
+  external load64 : t -> int -> int64 = "%caml_ptr_load64"
+  (** Loads a 64-bit value *)
+
+  external store8 : t -> int -> int -> unit = "%caml_ptr_set8"
+  (** Stores a single byte *)
+
+  external store16 : t -> int -> int -> unit = "%caml_ptr_set16"
+  (** Stores a 16-bit value *)
+
+  external store32 : t -> int -> int32 -> unit = "%caml_ptr_set32"
+  (** Stores a 32-bit value *)
+
+  external store64 : t -> int -> int64 -> unit = "%caml_ptr_set64"
+  (** Stores a 64-bit value *)
+end
+
 module Ephemeron: sig
   (** Ephemeron with arbitrary arity and untyped *)
 

@@ -26,6 +26,7 @@ type boxed =
   | Unboxed
 
 type memory_access_size =
+  | Eight
   | Sixteen
   | Thirty_two
   | Sixty_four
@@ -111,6 +112,8 @@ type primitive =
   | Pbigarraydim of int
   (* load/set 16,32,64 bits from a string: (unsafe)*)
   | Pstring_load of (memory_access_size * is_safe)
+  | Pptr_load of memory_access_size
+  | Pptr_set of memory_access_size
   | Pbytes_load of (memory_access_size * is_safe)
   | Pbytes_set of (memory_access_size * is_safe)
   (* load/set 16,32,64 bits from a

@@ -41,6 +41,7 @@ let array_kind array_kind =
 let access_size size =
   let open Clambda_primitives in
   match size with
+  | Eight -> "8"
   | Sixteen -> "16"
   | Thirty_two -> "32"
   | Sixty_four -> "64"
@@ -223,3 +224,5 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Popaque -> fprintf ppf "opaque"
   | Pdls_get -> fprintf ppf "dls_get"
   | Ppoll -> fprintf ppf "poll"
+  | Pptr_load(size) -> fprintf ppf "ptr.load.%s" (access_size size)
+  | Pptr_set(size) -> fprintf ppf "ptr.set.%s" (access_size size)

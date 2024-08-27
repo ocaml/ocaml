@@ -360,6 +360,14 @@ let primitive ppf = function
   | Popaque -> fprintf ppf "opaque"
   | Pdls_get -> fprintf ppf "dls_get"
   | Ppoll -> fprintf ppf "poll"
+  | Pptr_load_8 -> fprintf ppf "Pptr_load_8"
+  | Pptr_load_16 -> fprintf ppf "Pptr_load_16"
+  | Pptr_load_32 -> fprintf ppf "Pptr_load_32"
+  | Pptr_load_64 -> fprintf ppf "Pptr_load_64"
+  | Pptr_set_8 -> fprintf ppf "Pptr_set_8"
+  | Pptr_set_16 -> fprintf ppf "Pptr_set_16"
+  | Pptr_set_32 -> fprintf ppf "Pptr_set_32"
+  | Pptr_set_64 -> fprintf ppf "Pptr_load_64"
 
 let name_of_primitive = function
   | Pbytes_of_string -> "Pbytes_of_string"
@@ -476,6 +484,14 @@ let name_of_primitive = function
   | Preperform -> "Preperform"
   | Pdls_get -> "Pdls_get"
   | Ppoll -> "Ppoll"
+  | Pptr_load_8 -> "Pptr_load_8"
+  | Pptr_load_16 -> "Pptr_load_16"
+  | Pptr_load_32 -> "Pptr_load_32"
+  | Pptr_load_64 -> "Pptr_load_64"
+  | Pptr_set_8 -> "Pptr_set_8"
+  | Pptr_set_16 -> "Pptr_set_16"
+  | Pptr_set_32 -> "Pptr_set_32"
+  | Pptr_set_64 -> "Pptr_load_64"
 
 let function_attribute ppf t =
   if t.is_a_functor then

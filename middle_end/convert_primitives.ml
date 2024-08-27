@@ -129,6 +129,14 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
       Pbytes_set (Thirty_two, convert_unsafety is_unsafe)
   | Pbytes_set_64 is_unsafe ->
       Pbytes_set (Sixty_four, convert_unsafety is_unsafe)
+  | Pptr_load_8 -> Pptr_load Eight
+  | Pptr_load_16 -> Pptr_load Sixteen
+  | Pptr_load_32 -> Pptr_load Thirty_two
+  | Pptr_load_64 -> Pptr_load Sixty_four
+  | Pptr_set_8 -> Pptr_set Eight
+  | Pptr_set_16 -> Pptr_set Sixteen
+  | Pptr_set_32 -> Pptr_set Thirty_two
+  | Pptr_set_64 -> Pptr_set Sixty_four
   | Pbigstring_load_16 is_unsafe ->
       Pbigstring_load (Sixteen, convert_unsafety is_unsafe)
   | Pbigstring_load_32 is_unsafe ->

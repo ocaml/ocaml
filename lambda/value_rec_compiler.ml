@@ -198,6 +198,10 @@ let compute_static_size lam =
     | Pbigstring_set_16 _
     | Pbigstring_set_32 _
     | Pbigstring_set_64 _
+    | Pptr_set_8
+    | Pptr_set_16
+    | Pptr_set_32
+    | Pptr_set_64
     | Ppoll ->
         (* Unit-returning primitives. Most of these are only generated from
            external declarations and not special-cased by [Value_rec_check],
@@ -301,6 +305,10 @@ let compute_static_size lam =
     | Pbigstring_load_16 _
     | Pbigstring_load_32 _
     | Pbigstring_load_64 _
+    | Pptr_load_8
+    | Pptr_load_16
+    | Pptr_load_32
+    | Pptr_load_64
     | Pbswap16
     | Pbbswap _
     | Pint_as_pointer
