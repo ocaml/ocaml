@@ -611,7 +611,13 @@ let objinfo log env =
 
 let ocamlobjinfo =
   Actions.make ~name:"ocamlobjinfo"
-    ~description:"Run ocamlobjinfo on the program" objinfo
+    ~description:"Run ocamlobjinfo on the program"
+    (fun log env ->
+       if Ocamltest_config.ocamlobjinfo then
+         objinfo log env
+       else
+         Result.skip_with_reason "ocamlobjinfo not available", env
+    )
 
 let mklib log env =
   let program = Environments.safe_lookup Builtin_variables.program env in
