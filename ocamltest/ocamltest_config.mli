@@ -91,6 +91,9 @@ val ocamldoc : bool
 val ocamldebug : bool
 (** Whether ocamldebug has been enabled at configure time *)
 
+val ocamlobjinfo : bool
+(** Whether ocamlobjinfo has been enabled at configure time *)
+
 val native_compiler : bool
 (** Whether the native compiler has been enabled at configure time *)
 

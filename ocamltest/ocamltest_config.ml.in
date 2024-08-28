@@ -65,6 +65,8 @@ let ocamldoc = @build_ocamldoc@
 
 let ocamldebug = @build_ocamldebug@
 
+let ocamlobjinfo = @build_ocamlobjinfo@
+
 let native_compiler = @native_compiler@
 
 let native_dynlink = @natdynlink@
