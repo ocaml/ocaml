@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                         The OCaml programmers                          *)
 (*                                                                        *)
-(*   Copyright 2018 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2024 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -15,7 +15,7 @@
 
 (** Operations on pairs.
 
-  @since 5.3 *)
+  @since 5.4 *)
 
 
 (** {1:pairs Pairs} *)
