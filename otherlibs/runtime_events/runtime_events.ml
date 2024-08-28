@@ -92,6 +92,7 @@ type runtime_phase =
 | EV_COMPACT_EVACUATE
 | EV_COMPACT_FORWARD
 | EV_COMPACT_RELEASE
+| EV_EMPTY_MINOR
 
 type lifecycle =
   EV_RING_START
@@ -200,6 +201,7 @@ let runtime_phase_name phase =
   | EV_COMPACT_EVACUATE -> "compaction_evacuate"
   | EV_COMPACT_FORWARD -> "compaction_forward"
   | EV_COMPACT_RELEASE -> "compaction_release"
+  | EV_EMPTY_MINOR -> "empty_minor"
 
 let lifecycle_name lifecycle =
   match lifecycle with
