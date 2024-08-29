@@ -506,7 +506,7 @@ let rec transl env e =
         ->
           fatal_error "Cmmgen.transl:prim, wrong arity"
       | ((Pfield_computed|Psequand
-         | Prunstack | Pperform | Presume | Preperform
+         | Prunstack | Pperform | Presume | Preperform | Preperform_old
          | Pdls_get
          | Patomic_load
          | Psequor | Pnot | Pnegint | Paddint | Psubint
@@ -837,7 +837,7 @@ and transl_prim_1 env p arg dbg =
     (Csequence (remove_unit (transl env arg),
                 return_unit dbg (Cop(Cpoll, [], dbg))))
   | (Pfield_computed | Psequand | Psequor
-    | Prunstack | Presume | Preperform
+    | Prunstack | Presume | Preperform | Preperform_old
     | Paddint | Psubint | Pmulint | Pandint
     | Porint | Pxorint | Plslint | Plsrint | Pasrint
     | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
@@ -1021,7 +1021,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
       tag_int (Cop(Ccmpi cmp,
                      [transl_unbox_int dbg env bi arg1;
                       transl_unbox_int dbg env bi arg2], dbg)) dbg
-  | Prunstack | Pperform | Presume | Preperform | Pdls_get
+  | Prunstack | Pperform | Presume | Preperform | Preperform_old | Pdls_get
   | Patomic_load
   | Pnot | Pnegint | Pintoffloat | Pfloatofint | Pnegfloat
   | Pabsfloat | Pstringlength | Pbyteslength | Pbytessetu | Pbytessets
@@ -1082,6 +1082,11 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
            transl env arg1; transl env arg2; transl env arg3],
            dbg)
 
+  | Preperform_old ->
+      Cop (Capply typ_val,
+           [Cconst_symbol ("caml_reperform", dbg);
+           transl env arg1; transl env arg2; transl env arg3],
+           dbg)
   | Preperform ->
       Cop (Capply typ_val,
            [Cconst_symbol ("caml_reperform", dbg);
@@ -1121,7 +1126,7 @@ and transl_prim_4 env p arg1 arg2 arg3 arg4 dbg =
   | Psetfield_computed _
   | Pbytessetu | Pbytessets | Parraysetu _
   | Parraysets _ | Pbytes_set _ | Pbigstring_set _
-  | Prunstack | Preperform | Pperform | Pdls_get
+  | Prunstack | Preperform | Preperform_old | Pperform | Pdls_get
   | Patomic_load
   | Pfield_computed | Psequand | Psequor | Pnot | Pnegint | Paddint
   | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint
