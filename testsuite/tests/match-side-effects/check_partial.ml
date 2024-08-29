@@ -20,30 +20,27 @@ type _ t =
 let lazy_total : _ * bool t -> int = function
   | ({ contents = _ }, True) -> 0
   | ({ contents = lazy () }, False) -> 12
-(* This pattern-matching is in fact total: a Match_failure case is
-   not necessary for soundness. *)
+(* This pattern-matching is total: a Match_failure case is not
+   necessary for soundness. *)
 [%%expect {|
 0
 type _ t = Int : int -> int t | True : bool t | False : bool t
 (let
   (lazy_total/282 =
      (function param/284 : int
-       (let
-         (*match*/286 =o (field_mut 0 (field_imm 0 param/284))
-          *match*/287 =a (field_imm 1 param/284))
-         (if (isint *match*/287)
-           (if *match*/287
-             (let
-               (*match*/294 =
-                  (let (tag/289 =a (caml_obj_tag *match*/286))
-                    (if (== tag/289 250) (field_mut 0 *match*/286)
-                      (if (|| (== tag/289 246) (== tag/289 244))
-                        (apply (field_imm 1 (global CamlinternalLazy!))
-                          (opaque *match*/286))
-                        *match*/286))))
-               12)
-             0)
-           (raise (makeblock 0 (global Match_failure/20!) [0: "" 6 37]))))))
+       (let (*match*/286 =o (field_mut 0 (field_imm 0 param/284)))
+         (switch* (field_imm 1 param/284)
+          case int 0: 0
+          case int 1:
+           (let
+             (*match*/294 =
+                (let (tag/289 =a (caml_obj_tag *match*/286))
+                  (if (== tag/289 250) (field_mut 0 *match*/286)
+                    (if (|| (== tag/289 246) (== tag/289 244))
+                      (apply (field_imm 1 (global CamlinternalLazy!))
+                        (opaque *match*/286))
+                      *match*/286))))
+             12)))))
   (apply (field_mut 1 (global Toploop!)) "lazy_total" lazy_total/282))
 val lazy_total : unit lazy_t ref * bool t -> int = <fun>
 |}];;
@@ -95,8 +92,8 @@ let guard_total : bool t ref -> int = function
      (function param/384 : int
        (if (opaque 0) 1
          (let (*match*/385 =o (field_mut 0 param/384))
-           (switch* *match*/385 case int 0: 0
-                                case int 1: 12)))))
+           (if (isint *match*/385) (if *match*/385 12 0)
+             (raise (makeblock 0 (global Match_failure/20!) [0: "" 1 38])))))))
   (apply (field_mut 1 (global Toploop!)) "guard_total" guard_total/307))
 val guard_total : bool t ref -> int = <fun>
 |}];;
@@ -106,16 +103,17 @@ let guard_needs_partial : bool t ref -> int = function
   | _ when Sys.opaque_identity false -> 1
   | { contents = False } -> 12
 (* This pattern-matching is partial: a Match_failure case is
-   necessary for soundness.
-
-   FAIL: the compiler is currently unsound here. *)
+   necessary for soundness. *)
 [%%expect {|
 (let
   (guard_needs_partial/386 =
      (function param/388 : int
        (let (*match*/389 =o (field_mut 0 param/388))
          (catch (if (isint *match*/389) (if *match*/389 (exit 9) 0) (exit 9))
-          with (9) (if (opaque 0) 1 12)))))
+          with (9)
+           (if (opaque 0) 1
+             (if (isint *match*/389) 12
+               (raise (makeblock 0 (global Match_failure/20!) [0: "" 1 46]))))))))
   (apply (field_mut 1 (global Toploop!)) "guard_needs_partial"
     guard_needs_partial/386))
 val guard_needs_partial : bool t ref -> int = <fun>

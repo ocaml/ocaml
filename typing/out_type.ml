@@ -1251,7 +1251,11 @@ let prepare_type_constructor_arguments = function
   | Cstr_record l -> List.iter (fun l -> prepare_type l.ld_type) l
 
 let tree_of_label l =
-  (Ident.name l.ld_id, l.ld_mutable = Mutable, tree_of_typexp Type l.ld_type)
+  {
+    olab_name = Ident.name l.ld_id;
+    olab_mut = l.ld_mutable;
+    olab_type = tree_of_typexp Type l.ld_type;
+  }
 
 let tree_of_constructor_arguments = function
   | Cstr_tuple l -> tree_of_typlist Type l

@@ -46,19 +46,66 @@
     very short running programs.
 *)
 
-(** The type for counter events emitted by the runtime. *)
+(** The type for counter events emitted by the runtime. Counter events are used
+  to measure a quantity at a point in time or record the occurence of an event.
+  In the latter case their value will be one. *)
 type runtime_counter =
 | EV_C_FORCE_MINOR_ALLOC_SMALL
+(**
+Triggering of a minor collection due to a full minor heap.
+@since 5.0
+*)
 | EV_C_FORCE_MINOR_MAKE_VECT
+(**
+Triggering of a minor collection due to Array.make.
+@since 5.0
+*)
 | EV_C_FORCE_MINOR_SET_MINOR_HEAP_SIZE
+(**
+Triggering of a minor collection due to Gc.minor_heap_size.
+@since 5.0
+*)
 | EV_C_FORCE_MINOR_MEMPROF
+(**
+Triggering of a minor collection during memprof young sampling.
+@since 5.3
+*)
 | EV_C_MINOR_PROMOTED
+(**
+Total words promoted from the minor heap to the major in the last minor
+collection.
+@since 5.0
+*)
 | EV_C_MINOR_ALLOCATED
+(**
+Total {b bytes} allocated in the minor heap in the last minor collection.
+@since 5.0
+*)
 | EV_C_REQUEST_MAJOR_ALLOC_SHR
+(**
+Major slice requested due to allocation in major heap.
+@since 5.0
+*)
 | EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED
+(**
+Major slice requested by [caml_adjust_gc_speed].
+@since 5.0
+*)
 | EV_C_REQUEST_MINOR_REALLOC_REF_TABLE
+(**
+Triggering of a minor collection due to ref table reallocation.
+@since 5.0
+*)
 | EV_C_REQUEST_MINOR_REALLOC_EPHE_REF_TABLE
+(**
+Triggering of a minor collection due to ephe_ref table reallocation.
+@since 5.0
+*)
 | EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE
+(**
+Triggering of a minor collection due to custom table reallocation.
+@since 5.0
+*)
 | EV_C_MAJOR_HEAP_POOL_WORDS
 (**
 Total words in a Domain's major heap pools. This is the sum of unallocated and
@@ -87,68 +134,369 @@ Live blocks of a Domain's major heap pools.
 (**
 Live blocks of a Domain's major heap large allocations.
 @since 5.1 *)
+| EV_C_MAJOR_HEAP_WORDS
+(**
+Major heap size in words of a Domain.
+@since 5.3 *)
+| EV_C_MAJOR_ALLOCATED_WORDS
+(**
+Allocations to the major heap of this Domain in words, since the last major
+slice.
+@since 5.3
+*)
+| EV_C_MAJOR_ALLOCATED_WORK
+(**
+The amount of major GC 'work' needing to be done as a result of allocations to
+the major heap of this Domain in words, since the last major slice.
+@since 5.3
+*)
+| EV_C_MAJOR_DEPENDENT_WORK
+(**
+The amount of major GC 'work' needing to be done as a result of dependent
+allocations to the major heap of this Domain in words, since the last major
+slice. Dependent memory is non-heap memory that depends on heap memory being
+collected in order to be freed.
+@since 5.3
+*)
+| EV_C_MAJOR_EXTRA_WORK
+(**
+The amount of major GC 'work' needing to be done as a result of extra
+non-memory resources that are dependent on heap memory being collected in order
+to be freed.
+@since 5.3
+*)
+| EV_C_MAJOR_WORK_COUNTER
+(**
+The global amount of major GC 'work' done by all domains since the program
+began.
+@since 5.3
+*)
+| EV_C_MAJOR_ALLOC_COUNTER
+(**
+The global words of major GC allocations done by all domains since the program
+began.
+@since 5.3
+*)
+| EV_C_MAJOR_SLICE_TARGET
+(**
+The target amount of global 'work' that should be done by all domains at the
+end of the major slice (see EV_C_MAJOR_SLICE_COUNTER).
+@since 5.3
+*)
+| EV_C_MAJOR_SLICE_BUDGET
+(**
+The budget in 'work' that a domain has to do during the major slice.
+@since 5.3
+*)
 
 (** The type for span events emitted by the runtime. *)
 type runtime_phase =
 | EV_EXPLICIT_GC_SET
+(**
+Event spanning a call to Gc.set.
+@since 5.0
+*)
 | EV_EXPLICIT_GC_STAT
+(**
+Event spanning a call to Gc.stat.
+@since 5.0
+*)
 | EV_EXPLICIT_GC_MINOR
+(**
+Event spanning a call to Gc.minor, which forces a minor collection.
+@since 5.0
+*)
 | EV_EXPLICIT_GC_MAJOR
+(**
+Event spanning a call to Gc.major, which forces a major collection.
+@since 5.0
+*)
 | EV_EXPLICIT_GC_FULL_MAJOR
+(**
+Event spanning a call to Gc.full_major, which forces a full major collection.
+@since 5.0
+*)
 | EV_EXPLICIT_GC_COMPACT
+(**
+Event spanning a call to Gc.compact, which triggers a compaction.
+@since 5.0
+*)
 | EV_MAJOR
+(**
+Event spanning any major GC work.
+@since 5.0
+*)
 | EV_MAJOR_SWEEP
+(**
+Event spanning the sweeping work of a major GC.
+@since 5.0
+*)
 | EV_MAJOR_MARK_ROOTS
+(**
+Event spanning the marking of roots in a major GC.
+@since 5.0
+*)
 | EV_MAJOR_MEMPROF_ROOTS
+(**
+Event spanning the marking of memprof roots in a major GC.
+@since 5.3
+*)
 | EV_MAJOR_MARK
+(**
+Event spanning the marking of the heap in a major GC.
+@since 5.0
+*)
 | EV_MINOR
+(**
+Event spanning any minor GC work.
+@since 5.0
+*)
 | EV_MINOR_LOCAL_ROOTS
+(**
+Event spanning the scanning and major allocation of local roots during a minor
+GC.
+@since 5.0
+*)
 | EV_MINOR_MEMPROF_ROOTS
+(**
+Event spanning the scanning and promotion of memprof roots in a minor GC.
+@since 5.3
+*)
 | EV_MINOR_MEMPROF_CLEAN
+(**
+Event spanning cleaning and updating of memprof structures at the end of a
+minor GC.
+@since 5.3
+*)
 | EV_MINOR_FINALIZED
+(**
+Event spanning the running of finalisers for dead custom blocks at the end of a
+minor GC.
+@since 5.0
+*)
 | EV_EXPLICIT_GC_MAJOR_SLICE
+(**
+Event spanning a call to Gc.major_slice.
+@since 5.0
+*)
 | EV_FINALISE_UPDATE_FIRST
+(**
+Event spanning time spent in the first phase of finalisation at the end of a
+major GC cycle.
+@since 5.0
+*)
 | EV_FINALISE_UPDATE_LAST
+(**
+Event spanning time spent in the last phase of finalisation at the end of a
+major GC cycle.
+@since 5.0
+*)
 | EV_INTERRUPT_REMOTE
+(**
+Event spanning work triggered by an interrupt from another domain. This is
+usually a stop-the-world request.
+@since 5.0
+*)
 | EV_MAJOR_EPHE_MARK
+(**
+Event spanning the marking of ephemeron tables in a major GC.
+@since 5.0
+*)
 | EV_MAJOR_EPHE_SWEEP
+(**
+Event spanning the sweeping of ephemeron tables in a major GC.
+@since 5.0
+*)
 | EV_MAJOR_FINISH_MARKING
+(**
+Event spanning work done at the end of marking in a major GC.
+@since 5.0
+*)
 | EV_MAJOR_GC_CYCLE_DOMAINS
+(**
+Event spanning work done at the end of a major GC cycle. This includes a
+minor collection.
+@since 5.0
+*)
 | EV_MAJOR_GC_PHASE_CHANGE
+(**
+Event spanning the change of phase in the major GC which involves a global
+barrier.
+@since 5.0
+*)
 | EV_MAJOR_GC_STW
+(**
+Event spanning the stop-the-world phase done at the end of a major GC cycle.
+@since 5.0
+*)
 | EV_MAJOR_MARK_OPPORTUNISTIC
+(**
+Event spanning the work done during opportunistic marking in a major GC.
+@since 5.0
+*)
 | EV_MAJOR_SLICE
+(**
+Event spanning the work done during a major slice in a major GC.
+@since 5.0
+*)
 | EV_MAJOR_FINISH_CYCLE
+(**
+Event spanning attempts to drive all domains to the end of a major GC cycle.
+@since 5.0
+*)
 | EV_MINOR_CLEAR
+(**
+Event spanning the cleaning of the minor heap and supporting structures at the
+end of a minor GC.
+@since 5.0
+*)
 | EV_MINOR_FINALIZERS_OLDIFY
+(**
+Event spanning the promotion of finalisers during a minor GC.
+@since 5.0
+*)
 | EV_MINOR_GLOBAL_ROOTS
+(**
+Event spanning the scanning and major allocation of global roots during a minor
+GC.
+@since 5.0
+*)
 | EV_MINOR_LEAVE_BARRIER
+(**
+Event spanning the time spent in the barrier at the end of a minor GC, waiting
+for all domains to finish their work.
+@since 5.0
+*)
 | EV_STW_API_BARRIER
+(**
+Event spanning the time spent waiting for all other domains to reach the
+stop-the-world entry barrier.
+@since 5.0
+*)
 | EV_STW_HANDLER
+(**
+Event spanning the time spent in the stop-the-world handler, including time
+spent in the stop-the-world callback itself.
+@since 5.0
+*)
 | EV_STW_LEADER
+(**
+Event spanning the time spent as the leader of a stop-the-world.
+@since 5.0
+*)
 | EV_MAJOR_FINISH_SWEEPING
+(**
+Event spanning the time spent finishing sweeping when forced to as part of
+domain termination.
+@since 5.0
+*)
 | EV_MAJOR_MEMPROF_CLEAN
+(**
+Event spanning the time spent cleaning memprof structures at the end of a major
+GC.
+@since 5.3
+*)
 | EV_MINOR_FINALIZERS_ADMIN
+(**
+Event spanning finalisers book-keeping at the end of a minor GC.
+@since 5.0
+*)
 | EV_MINOR_REMEMBERED_SET
+(**
+Event spanning the scanning and major allocation of remembered sets during a
+minor GC.
+@since 5.0
+*)
 | EV_MINOR_REMEMBERED_SET_PROMOTE
+(**
+Event spanning the promotion of blocks in the remembered set and global roots
+during a minor GC.
+@since 5.0
+*)
 | EV_MINOR_LOCAL_ROOTS_PROMOTE
+(**
+Event spanning the promotion of local roots during a minor GC.
+@since 5.0
+*)
 | EV_DOMAIN_CONDITION_WAIT
+(**
+Event spanning waiting in Condition.wait.
+@since 5.0
+*)
 | EV_DOMAIN_RESIZE_HEAP_RESERVATION
+(**
+Event spanning resizing the domain heap reservation, as a result of minor heap
+size changes.
+@since 5.0
+*)
 | EV_COMPACT
+(**
+Event spanning compaction of the heap during a call to Gc.compact.
+@since 5.2
+*)
 | EV_COMPACT_EVACUATE
+(**
+Event spanning evacuating major GC pools during a compaction.
+@since 5.2
+*)
 | EV_COMPACT_FORWARD
+(**
+Event spanning the walking of the heap to update changed pointers after an
+evacuation during a compaction.
+@since 5.2
+*)
 | EV_COMPACT_RELEASE
+(**
+Event spanning releasing the evacuated pools at the end of a compaction.
+@since 5.2
+*)
 
-(** Lifecycle events for the ring itself. *)
+(** Lifecycle events for Runtime_events and domains. *)
 type lifecycle =
   EV_RING_START
+(**
+Event indicating that the Runtime_events ring buffer has been started. Includes
+the PID of the process as an argument.
+@since 5.0
+*)
 | EV_RING_STOP
+(**
+Event indicating that the Runtime_events ring buffer has been stopped.
+@since 5.0
+*)
 | EV_RING_PAUSE
+(**
+Event indicating that the Runtime_events ring buffer has been paused.
+@since 5.0
+*)
 | EV_RING_RESUME
+(**
+Event indicating that the Runtime_events ring buffer has been resumed.
+@since 5.0
+*)
 | EV_FORK_PARENT
+(**
+Event indicating that a fork has occurred and the current domain is the parent.
+Includes the PID of the child as an argument.
+@since 5.0
+*)
 | EV_FORK_CHILD
+(**
+Event indicating that a fork has occurred and the current domain is the child.
+@since 5.0
+*)
 | EV_DOMAIN_SPAWN
+(**
+Event indicating that a new domain has been spawned. Includes the PID of the
+new domain as an argument.
+@since 5.0
+*)
 | EV_DOMAIN_TERMINATE
+(**
+Event indicating that a domain has terminated. Includes the PID of the domain
+as an argument.
+@since 5.0
+*)
 
 val lifecycle_name : lifecycle -> string
 (** Return a string representation of a given lifecycle event type. *)

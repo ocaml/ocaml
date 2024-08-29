@@ -944,6 +944,10 @@ with these parameters as arguments.  If your function has more than 5
 parameters of type "value", use "CAMLparam5" with five of these
 parameters, and use one or more calls to the "CAMLxparam" macros for
 the remaining parameters ("CAMLxparam1" to "CAMLxparam5").
+If the function has an argument "x" which is an array of "value"s
+of length "n", use "CAMLparamN (x, n)" to declare it (or
+"CAMLxparamN (x, n)" if you already have a call to "CAMLparam"
+for some other arguments).
 
 The macros "CAMLreturn", "CAMLreturn0", and "CAMLreturnT" are used to
 replace the C keyword "return"; any function using a "CAMLparam" macro
@@ -999,7 +1003,10 @@ Primitives (C functions that can be called from OCaml) should never return void.
 Local variables of type "value" must be declared with one of the
 "CAMLlocal" macros.  Arrays of "value"s are declared with
 "CAMLlocalN".  These macros must be used at the beginning of the
-function, not in a nested block.
+function, not in a nested block.  Temporaries are equivalent to
+local variables, but they cannot be registered with the garbage
+collector, so a temporary of type "value" must not be live when
+a garbage collection may occur.
 \end{gcrule}
 
 The macros "CAMLlocal1" to "CAMLlocal5" declare and initialize one to
@@ -2112,8 +2119,8 @@ reading back the data written by the "serialize" operation, using the
 in section~\ref{ss:c-custom-serialization}. It must then rebuild the data part
 of the custom block and store it at the pointer given as the "dst" argument.
 Finally, it returns the size in bytes of the data part of the custom block.
-This size must be identical to the "wsize_32" result of the "serialize"
-operation if the architecture is 32 bits, or "wsize_64" if the architecture is
+This size must be identical to the "bsize_32" result of the "serialize"
+operation if the architecture is 32 bits, or "bsize_64" if the architecture is
 64 bits.
 
 The "deserialize" field can be set to "custom_deserialize_default"
@@ -2642,34 +2649,46 @@ C primitive must be copied into C data structures before calling
 must be encoded as OCaml values after "caml_acquire_runtime_system()"
 returns.
 
-Example: the following C primitive invokes "gethostbyname" to find the
-IP address of a host name.  The "gethostbyname" function can block for
-a long time, so we choose to release the OCaml run-time system while it
-is running.
+Example: the following C primitive invokes "rmdir" to delete a
+directory.  The "rmdir" function can block for some time, so we choose
+to release the OCaml run-time system while it is running.
 \begin{verbatim}
-CAMLprim stub_gethostbyname(value vname)
+#include <caml/memory.h>
+#include <caml/threads.h>
+#include <caml/unixsupport.h>
+
+CAMLprim value stub_rmdir(value vpath)
 {
-  CAMLparam1 (vname);
-  CAMLlocal1 (vres);
-  struct hostent * h;
-  char * name;
+  CAMLparam1(vpath);
+
+  /* Raise Unix.Unix_error(Unix.ENOENT, ...) if the OCaml string
+     contains embedded null bytes */
+  caml_unix_check_path(vpath, "rmdir");
 
   /* Copy the string argument to a C string, allocated outside the
      OCaml heap. */
-  name = caml_stat_strdup(String_val(vname));
+  char_os *path = caml_stat_strdup_to_os(String_val(vpath));
   /* Release the OCaml run-time system */
   caml_release_runtime_system();
-  /* Resolve the name */
-  h = gethostbyname(name);
+
+  /* Delete the directory */
+#ifdef _WIN32
+  int ret = _wrmdir(path);
+#else
+  int ret = rmdir(path);
+#endif
+
   /* Free the copy of the string, which we might as well do before
      acquiring the runtime system to benefit from parallelism. */
-  caml_stat_free(name);
+  caml_stat_free(path);
   /* Re-acquire the OCaml run-time system */
   caml_acquire_runtime_system();
-  /* Encode the relevant fields of h as the OCaml value vres */
-  ... /* Omitted */
+
+  /* Raise Unix.Unix_error(...) if rmdir failed */
+  if (ret == -1) caml_uerror("rmdir", vpath);
+
   /* Return to OCaml */
-  CAMLreturn (vres);
+  CAMLreturn(Val_unit);
 }
 \end{verbatim}
 

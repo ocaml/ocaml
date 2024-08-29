@@ -1,5 +1,32 @@
 Working version
-_______________
+---------------
+
+(Changes that can break existing programs are marked with a "*")
+
+### Language features:
+
+### Runtime system:
+
+### Code generation and optimizations:
+
+### Standard library:
+
+### Other libraries:
+
+### Tools:
+
+### Manual and documentation:
+
+### Compiler user-interface and warnings:
+
+### Internal/compiler-libs changes:
+
+### Build system:
+
+### Bug fixes:
+
+OCaml 5.3.0
+___________
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -29,6 +56,15 @@ _______________
   (Jacques Garrigue, report and review by Gabriel Scherer and Florian Angeletti)
 
 ### Runtime system:
+
+- #13364: Emit major slice counters in the runtime events.
+  (KC Sivaramakrishnan and Sadiq Jaffer, review by Gabriel Scherer)
+
+- #13382: Add more documentation for Runtime_events types
+  (Sadiq Jaffer, review by Tim McGilchrist, Miod Vallat and KC Sivaramakrishnan)
+
+- #13370: Fix a low-probability crash when calling Gc.counters.
+  (Demi Marie Obenour, review by Gabriel Scherer)
 
 - #13272: Allow maximum number of domains to be specified as a OCAMLRUNPARAM
   parameter.
@@ -131,11 +167,9 @@ _______________
   unsupported native backends (POWER, riscv64 and s390x)
   (Miod Vallat, review by Nicolás Ojeda Bär)
 
-- #7241, #12555, #13076, #13138: fix a soundness bug in the
-  pattern-matching compiler when side-effects mutate the scrutinee
-  during matching.
-  Note that #7241 is not fully fixed yet, see the issue for the
-  current status.
+- #7241, #12555, #13076, #13138, #13338, #13152, #13153:
+  fix a soundness bug in the pattern-matching compiler
+  when side-effects mutate the scrutinee during matching.
   (Gabriel Scherer, review by Nick Roberts)
 
 - #13179: Fix evaluation of toplevel lets in classes containing
@@ -250,6 +284,10 @@ _______________
   (Samuel Vivien, review by Florian Angeletti)
 
 ### Manual and documentation:
+
+- #13370: Document that that temporary variables holding GCd pointers must
+  not be live across a GC.
+  (Demi Marie Obenour)
 
 - #12298: Manual: emphasize that Bigarray.int refers to an OCaml integer,
   which does not match the C int type.
@@ -549,6 +587,11 @@ _______________
   could sometimes, in theory, return the wrong answer. This patch fixes the
   oversight. No known program triggers the bug.
   (Richard Eisenberg, review by Florian Angeletti)
+
+- #13400: Initialize th->signal_stack to avoid free of uninitialized data
+  if the user calls caml_c_thread_unregister on the main thread.
+  (Richard W.M. Jones, review by Guillaume Munch-Maccagnoni and
+  Gabriel Scherer)
 
 OCaml 5.2.0 (13 May 2024)
 -------------------------
