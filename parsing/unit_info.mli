@@ -37,7 +37,7 @@ val normalize: string -> string
 
 (** [lax_modname_from_source filename] is [modulize stem] where [stem] is the
     basename of the filename [filename] stripped from all its extensions.
-    For instance, [modname_from_source "/pa.th/x.ml.pp"] is ["X"]. *)
+    For instance, [lax_modname_from_source "/pa.th/x.ml.pp"] is ["X"]. *)
 val lax_modname_from_source: filename -> modname
 
 (** Same as {!lax_modname_from_source} but raises an {!error.Invalid_encoding}
@@ -84,8 +84,8 @@ val kind: t -> intf_or_impl
 val check_unit_name : t -> unit
 
 (** [make ~check ~source_file kind prefix] associates both the
-    [source_file] and the module name {!modname_from_source}[ target_prefix] to
-    the prefix filesystem path [prefix].
+    [source_file] and the module name {!lax_modname_from_source}[ target_prefix]
+    to the prefix filesystem path [prefix].
 
    If [check_modname=true], this function emits a warning if the derived module
    name is not valid according to {!check_unit_name}.
@@ -116,7 +116,8 @@ module Artifact: sig
    val modname: t -> modname
 
    (** [from_filename filename] reconstructs the module name
-       [modname_from_source filename] associated to the artifact [filename]. *)
+       [lax_modname_from_source filename] associated to the artifact
+       [filename]. *)
    val from_filename: filename -> t
 
 end
