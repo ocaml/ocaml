@@ -72,7 +72,7 @@ module Deep = struct
       effc: 'c.'c t -> (('c,'b) continuation -> 'b) option }
 
   external reperform :
-    'a t -> ('a, 'b) continuation -> last_fiber -> 'b = "%reperform"
+    'a t -> ('a, 'b) continuation -> last_fiber -> 'b = "%reperform_old"
 
   let match_with comp arg handler =
     let effc eff k last_fiber =
@@ -140,7 +140,7 @@ module Shallow = struct
     ('a,'c) stack = "caml_continuation_use_and_update_handler_noexc" [@@noalloc]
 
   external reperform :
-    'a t -> ('a, 'b) continuation -> last_fiber -> 'c = "%reperform"
+    'a t -> ('a, 'b) continuation -> last_fiber -> 'c = "%reperform_old"
 
   let continue_gen k resume_fun v handler =
     let effc eff k last_fiber =
