@@ -177,7 +177,7 @@ module Directionality = struct
    slowdown described above.
 *)
   type t = {
-      in_eq: bool;
+      in_eq:bool;
       mark_as_used:mark;
       pos:pos;
     }
@@ -203,7 +203,7 @@ module Directionality = struct
   let enter_eq d =
     {
       in_eq = true;
-      pos=at_most_positive d.pos;
+      pos = at_most_positive d.pos;
       mark_as_used = d.mark_as_used
     }
 
