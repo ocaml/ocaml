@@ -111,6 +111,7 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Pperform -> fprintf ppf "perform"
   | Presume -> fprintf ppf "resume"
   | Preperform -> fprintf ppf "reperform"
+  | Preperform_old -> fprintf ppf "reperform_old"
   | Pccall p -> fprintf ppf "%s" p.Primitive.prim_name
   | Praise k -> fprintf ppf "%s" (Lambda.raise_kind k)
   | Psequand -> fprintf ppf "&&"

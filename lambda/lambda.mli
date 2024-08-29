@@ -68,6 +68,7 @@ type primitive =
   | Pperform
   | Presume
   | Preperform
+  | Preperform_old
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)

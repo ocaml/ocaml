@@ -142,7 +142,7 @@ let rec is_tailcall = function
 
 let preserve_tailcall_for_prim = function
   | Popaque | Psequor | Psequand
-  | Prunstack | Pperform | Presume | Preperform | Ppoll ->
+  | Prunstack | Pperform | Presume | Preperform | Preperform_old | Ppoll ->
       true
   | Pbytes_to_string | Pbytes_of_string | Pignore | Pgetglobal _ | Psetglobal _
   | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
@@ -494,7 +494,7 @@ let comp_primitive stack_info p sz args =
   (* The cases below are handled in [comp_expr] before the [comp_primitive] call
      (in the order in which they appear below),
      so they should never be reached in this function. *)
-  | Prunstack | Presume | Preperform
+  | Prunstack | Presume | Preperform | Preperform_old
   | Pignore | Popaque
   | Pnot | Psequand | Psequor
   | Praise _
@@ -723,6 +723,15 @@ let rec comp_expr stack_info env exp sz cont =
           comp_args stack_info env args (sz + 1) (Kresume :: cont)
       end
   | Lprim(Preperform, args, _) ->
+      let nargs = List.length args - 1 in
+      assert (nargs = 2);
+      check_stack stack_info (sz + 3);
+      if is_tailcall cont then
+        comp_args stack_info env args sz
+          (Kreperformterm(sz + nargs) :: discard_dead_code cont)
+      else
+        fatal_error "Reperform used in non-tail position"
+  | Lprim(Preperform_old, args, _) ->
       let nargs = List.length args - 1 in
       assert (nargs = 2);
       check_stack stack_info (sz + 3);

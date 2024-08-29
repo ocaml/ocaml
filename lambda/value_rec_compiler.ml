@@ -255,6 +255,7 @@ let compute_static_size lam =
     | Pperform
     | Presume
     | Preperform
+    | Preperform_old
     | Pccall _
     | Psequand | Psequor | Pnot
     | Pnegint | Paddint | Psubint | Pmulint

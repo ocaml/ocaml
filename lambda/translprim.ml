@@ -377,6 +377,7 @@ let primitives_table =
     "%atomic_cas", External prim_atomic_cas;
     "%atomic_fetch_add", External prim_atomic_fetch_add;
     "%runstack", Primitive (Prunstack, 3);
+    "%reperform_old", Primitive (Preperform_old, 3);
     "%reperform", Primitive (Preperform, 3);
     "%perform", Primitive (Pperform, 1);
     "%resume", Primitive (Presume, 4);
@@ -813,7 +814,7 @@ let lambda_primitive_needs_event_after = function
   | Pbytes_load_64 _ | Pbytes_set_16 _ | Pbytes_set_32 _ | Pbytes_set_64 _
   | Pbigstring_load_16 _ | Pbigstring_load_32 _ | Pbigstring_load_64 _
   | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _
-  | Prunstack | Pperform | Preperform | Presume
+  | Prunstack | Pperform | Preperform | Preperform_old | Presume
   | Pbbswap _ | Ppoll -> true
 
   | Pbytes_to_string | Pbytes_of_string | Pignore | Psetglobal _
