@@ -1146,9 +1146,9 @@ ENDFUNCTION(G(caml_perform))
 FUNCTION(G(caml_reperform))
 CFI_STARTPROC
     /*  %rax: effect to reperform
-        %rbx: continuation
-        %rdi: last_fiber */
+        %rbx: continuation */
         movq    Caml_state(current_stack), %rsi  /* %rsi := old stack */
+        movq    8(%rbx), %rdi
         movq    (Stack_handler-1)(%rdi), %r10
         movq    %rsi, Handler_parent(%r10)       /* Append to last_fiber */
         leaq    1(%rsi), %rdi  /* %rdi (last_fiber) := Val_ptr(old stack) */

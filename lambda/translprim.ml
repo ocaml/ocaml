@@ -378,7 +378,7 @@ let primitives_table =
     "%atomic_fetch_add", External prim_atomic_fetch_add;
     "%runstack", Primitive (Prunstack, 3);
     "%reperform_old", Primitive (Preperform_old, 3);
-    "%reperform", Primitive (Preperform, 3);
+    "%reperform", Primitive (Preperform, 2);
     "%perform", Primitive (Pperform, 1);
     "%resume", Primitive (Presume, 4);
     "%dls_get", Primitive (Pdls_get, 1);

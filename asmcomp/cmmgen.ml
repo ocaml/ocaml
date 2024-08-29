@@ -1021,7 +1021,13 @@ and transl_prim_2 env p arg1 arg2 dbg =
       tag_int (Cop(Ccmpi cmp,
                      [transl_unbox_int dbg env bi arg1;
                       transl_unbox_int dbg env bi arg2], dbg)) dbg
-  | Prunstack | Pperform | Presume | Preperform | Preperform_old | Pdls_get
+  (* Effects *)
+  | Preperform ->
+      Cop (Capply typ_val,
+           [Cconst_symbol ("caml_reperform", dbg);
+           transl env arg1; transl env arg2],
+           dbg)
+  | Prunstack | Pperform | Presume | Preperform_old | Pdls_get
   | Patomic_load
   | Pnot | Pnegint | Pintoffloat | Pfloatofint | Pnegfloat
   | Pabsfloat | Pstringlength | Pbyteslength | Pbytessetu | Pbytessets
@@ -1085,15 +1091,10 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   | Preperform_old ->
       Cop (Capply typ_val,
            [Cconst_symbol ("caml_reperform", dbg);
-           transl env arg1; transl env arg2; transl env arg3],
-           dbg)
-  | Preperform ->
-      Cop (Capply typ_val,
-           [Cconst_symbol ("caml_reperform", dbg);
-           transl env arg1; transl env arg2; transl env arg3],
+           transl env arg1; transl env arg2],
            dbg)
 
-  | Pperform | Pdls_get | Presume
+  | Pperform | Pdls_get | Presume | Preperform
   | Patomic_load
   | Pfield_computed | Psequand | Psequor | Pnot | Pnegint | Paddint
   | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint

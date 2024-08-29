@@ -723,7 +723,7 @@ let rec comp_expr stack_info env exp sz cont =
           comp_args stack_info env args (sz + 1) (Kresume :: cont)
       end
   | Lprim(Preperform, args, _) ->
-      let nargs = List.length args - 1 in
+      let nargs = List.length args in
       assert (nargs = 2);
       check_stack stack_info (sz + 3);
       if is_tailcall cont then
