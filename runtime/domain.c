@@ -344,8 +344,8 @@ static void stw_handler(caml_domain_state* domain);
 static int handle_incoming(struct interruptor* s)
 {
   int handled = interruptor_has_pending(s);
-  CAMLassert (s->running);
   if (handled) {
+    CAMLassert (s->running);
     interruptor_set_handled(s);
 
     stw_handler(domain_self->state);
