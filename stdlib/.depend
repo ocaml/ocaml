@@ -593,6 +593,11 @@ stdlib__Out_channel.cmx : out_channel.ml \
 stdlib__Out_channel.cmi : out_channel.mli \
     stdlib.cmi \
     stdlib__Bigarray.cmi
+stdlib__Pair.cmo : pair.ml \
+    stdlib__Pair.cmi
+stdlib__Pair.cmx : pair.ml \
+    stdlib__Pair.cmi
+stdlib__Pair.cmi : pair.mli
 stdlib__Parsing.cmo : parsing.ml \
     stdlib__Obj.cmi \
     stdlib__Lexing.cmi \
