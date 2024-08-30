@@ -25,6 +25,10 @@ Working version
 
 ### Bug fixes:
 
+- #13408: Fix misplaced debug runtime assertion triggerable by a race
+  between domain exit and backup thread
+  (Miod Vallat and Gabriel Scherer, report by Jan Midtgaard)
+
 OCaml 5.3.0
 ___________
 
