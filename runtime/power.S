@@ -358,16 +358,16 @@
 caml_system__code_begin:
 
 /* Reallocate the stack when it is too small. */
-/* Desired size is passed in register TMP2. */
+/* Desired size is passed in register r27. */
 
 FUNCTION caml_call_realloc_stack
    /* Save return address in caller's frame. */
         mflr    0
         std     0, LR_SAVE(SP)
    /* Save all registers, as well as ALLOC_PTR and TRAP_PTR */
-        SAVE_ALL_REGS  /* TMP2 is preserved */
+        SAVE_ALL_REGS  /* r27 is preserved */
    /* Recover desired size, to be passed in r3 */
-        mr      3, TMP2
+        mr      3, 27
    /* Switch stacks and call caml_try_realloc_stack */
         SWITCH_OCAML_TO_C
         Far_call(caml_try_realloc_stack)
