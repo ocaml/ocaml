@@ -566,6 +566,10 @@ ___________
   from a DLL
   (Xavier Leroy, review by Miod Vallat)
 
+- #13408: Fix misplaced debug runtime assertion triggerable by a race
+  between domain exit and backup thread
+  (Miod Vallat and Gabriel Scherer, report by Jan Midtgaard)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
