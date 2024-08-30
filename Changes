@@ -562,6 +562,10 @@ ___________
   (Richard W.M. Jones, review by Guillaume Munch-Maccagnoni and
   Gabriel Scherer)
 
+- #13140: POWER back-end: fix issue with call to `caml_call_realloc_stack`
+  from a DLL
+  (Xavier Leroy, review by Miod Vallat)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
