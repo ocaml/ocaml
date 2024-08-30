@@ -25,6 +25,10 @@ Working version
 
 ### Bug fixes:
 
+- #13140: POWER back-end: fix issue with call to `caml_call_realloc_stack`
+  from a DLL
+  (Xavier Leroy, review by Miod Vallat)
+
 OCaml 5.3.0
 ___________
 
