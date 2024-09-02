@@ -29,6 +29,27 @@
 /* System-dependent part */
 #include "sync_posix.h"
 
+/* Reporting errors */
+
+CAMLexport void caml_check_error(int retcode, char const * msg)
+{
+  char const * err;
+  char buf[1024];
+  int errlen, msglen;
+  value str;
+
+  if (retcode == 0) return;
+  if (retcode == ENOMEM) caml_raise_out_of_memory();
+  err = caml_strerror(retcode, buf, sizeof(buf));
+  msglen = strlen(msg);
+  errlen = strlen(err);
+  str = caml_alloc_string(msglen + 2 + errlen);
+  memcpy(&Byte(str, 0), msg, msglen);
+  memcpy(&Byte(str, msglen), ": ", 2);
+  memcpy(&Byte(str, msglen + 2), err, errlen);
+  caml_raise_sys_error(str);
+}
+
 /* Mutex operations */
 
 static void caml_mutex_finalize(value wrapper)
@@ -74,8 +95,8 @@ CAMLprim value caml_ml_mutex_new(value unit)
   sync_mutex mut = NULL;
   value wrapper;
 
-  sync_check_error(sync_mutex_create(&mut), "Mutex.create");
-  wrapper = caml_alloc_custom(&caml_mutex_ops, sizeof(pthread_mutex_t *),
+  caml_check_error(sync_mutex_create(&mut), "Mutex.create");
+  wrapper = caml_alloc_custom(&caml_mutex_ops, sizeof(sync_mutex *),
                               0, 1);
   Mutex_val(wrapper) = mut;
   return wrapper;
@@ -93,7 +114,7 @@ CAMLprim value caml_ml_mutex_lock(value wrapper)
     caml_enter_blocking_section();
     retcode = sync_mutex_lock(mut);
     caml_leave_blocking_section();
-    sync_check_error(retcode, "Mutex.lock");
+    caml_check_error(retcode, "Mutex.lock");
   }
   CAMLreturn(Val_unit);
 }
@@ -104,7 +125,7 @@ CAMLprim value caml_ml_mutex_unlock(value wrapper)
   sync_mutex mut = Mutex_val(wrapper);
   /* PR#4351: no need to release and reacquire master lock */
   retcode = sync_mutex_unlock(mut);
-  sync_check_error(retcode, "Mutex.unlock");
+  caml_check_error(retcode, "Mutex.unlock");
   return Val_unit;
 }
 
@@ -114,7 +135,7 @@ CAMLprim value caml_ml_mutex_try_lock(value wrapper)
   sync_retcode retcode;
   retcode = sync_mutex_trylock(mut);
   if (retcode == MUTEX_ALREADY_LOCKED) return Val_false;
-  sync_check_error(retcode, "Mutex.try_lock");
+  caml_check_error(retcode, "Mutex.try_lock");
   return Val_true;
 }
 
@@ -153,7 +174,7 @@ CAMLprim value caml_ml_condition_new(value unit)
   value wrapper;
   sync_condvar cond = NULL;
 
-  sync_check_error(sync_condvar_create(&cond), "Condition.create");
+  caml_check_error(sync_condvar_create(&cond), "Condition.create");
   wrapper = caml_alloc_custom(&caml_condition_ops, sizeof(sync_condvar *),
                               0, 1);
   Condition_val(wrapper) = cond;
@@ -171,7 +192,7 @@ CAMLprim value caml_ml_condition_wait(value wcond, value wmut)
   caml_enter_blocking_section();
   retcode = sync_condvar_wait(cond, mut);
   caml_leave_blocking_section();
-  sync_check_error(retcode, "Condition.wait");
+  caml_check_error(retcode, "Condition.wait");
   CAML_EV_END(EV_DOMAIN_CONDITION_WAIT);
 
   CAMLreturn(Val_unit);
@@ -179,14 +200,14 @@ CAMLprim value caml_ml_condition_wait(value wcond, value wmut)
 
 CAMLprim value caml_ml_condition_signal(value wrapper)
 {
-  sync_check_error(sync_condvar_signal(Condition_val(wrapper)),
+  caml_check_error(sync_condvar_signal(Condition_val(wrapper)),
                  "Condition.signal");
   return Val_unit;
 }
 
 CAMLprim value caml_ml_condition_broadcast(value wrapper)
 {
-  sync_check_error(sync_condvar_broadcast(Condition_val(wrapper)),
+  caml_check_error(sync_condvar_broadcast(Condition_val(wrapper)),
                  "Condition.broadcast");
   return Val_unit;
 }
