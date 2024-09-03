@@ -93,7 +93,7 @@
 #endif
 #endif
 
-#if defined(__MINGW32__) && !__USE_MINGW_ANSI_STDIO
+#if defined(__MINGW32__) && !__USE_MINGW_ANSI_STDIO && !defined(_UCRT)
   #define ARCH_INT64_TYPE long long
   #define ARCH_UINT64_TYPE unsigned long long
   #define ARCH_INT64_PRINTF_FORMAT "I64"
