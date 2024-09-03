@@ -39,23 +39,50 @@ CROSS_OVERRIDES=OCAMLRUN=ocamlrun NEW_OCAMLRUN=ocamlrun \
 CROSS_COMPILER_OVERRIDES=$(CROSS_OVERRIDES) CAMLC=ocamlc CAMLOPT=ocamlopt \
   BEST_OCAMLC=ocamlc BEST_OCAMLOPT=ocamlopt BEST_OCAMLLEX=ocamllex
 
+ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
+# Declare flexlink to be an 'old' file, so that make doesn't try to rebuild it
+# with the build rules in `Makefile`; its build is driven by the `cross-flexdll`
+# recipe provided here instead
+OLDS := -o $(BYTE_BINDIR)/flexlink$(EXE)
+else
+OLDS :=
+endif
+
 .PHONY: crossopt
 crossopt:
-	$(MAKE) runtime-all $(NO_ZSTD)
-	$(MAKE) ocamlc $(TOOLS_BYTECODE_TARGETS) expunge$(EXE) \
+ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
+	$(MAKE) cross-flexdll
+endif
+	$(MAKE) $(OLDS) runtime-all $(NO_ZSTD)
+	$(MAKE) $(OLDS) ocamlc $(TOOLS_BYTECODE_TARGETS) expunge$(EXE) \
 	  $(CROSS_COMPILER_OVERRIDES)
-	$(MAKE) library $(CROSS_OVERRIDES)
-	$(MAKE) ocamlyacc $(CROSS_OVERRIDES)
-	$(MAKE) ocamllex $(CROSS_COMPILER_OVERRIDES)
-	$(MAKE) ocaml $(CROSS_COMPILER_OVERRIDES)
-	$(MAKE) dynlink-all $(CROSS_OVERRIDES)
-	$(MAKE) -C otherlibs all $(CROSS_OVERRIDES)
-	$(MAKE) runtimeopt $(NO_ZSTD)
-	$(MAKE) ocamlc.opt ocamlopt.opt $(TOOLS_NATIVE_TARGETS) \
+	$(MAKE) $(OLDS) library $(CROSS_OVERRIDES)
+	$(MAKE) $(OLDS) ocamlyacc $(CROSS_OVERRIDES)
+	$(MAKE) $(OLDS) ocamllex $(CROSS_COMPILER_OVERRIDES)
+	$(MAKE) $(OLDS) ocaml $(CROSS_COMPILER_OVERRIDES)
+	$(MAKE) $(OLDS) dynlink-all $(CROSS_OVERRIDES)
+	$(MAKE) $(OLDS) -C otherlibs all $(CROSS_OVERRIDES)
+	$(MAKE) $(OLDS) runtimeopt $(NO_ZSTD)
+	$(MAKE) $(OLDS) ocamlc.opt ocamlopt.opt $(TOOLS_NATIVE_TARGETS) \
 	  $(NO_ZSTD) $(CROSS_COMPILER_OVERRIDES) $(NATIVE_ZSTD_LIBS)
-	$(MAKE) libraryopt $(NO_ZSTD) $(CROSS_OVERRIDES)
-	$(MAKE) otherlibrariesopt ocamltoolsopt $(NO_ZSTD) $(CROSS_OVERRIDES)
-	$(MAKE) tools-allopt.opt $(NO_ZSTD) $(CROSS_COMPILER_OVERRIDES)
+	$(MAKE) $(OLDS) libraryopt $(NO_ZSTD) $(CROSS_OVERRIDES)
+	$(MAKE) $(OLDS) otherlibrariesopt ocamltoolsopt $(NO_ZSTD) \
+	  $(CROSS_OVERRIDES)
+	$(MAKE) $(OLDS) tools-allopt.opt $(NO_ZSTD) $(CROSS_COMPILER_OVERRIDES)
+
+.PHONY: cross-flexdll
+cross-flexdll: | $(BYTE_BINDIR) $(OPT_BINDIR)
+	rm -f $(FLEXDLL_SOURCE_DIR)/flexlink.exe
+	$(MAKE) -C $(FLEXDLL_SOURCE_DIR) $(FLEXLINK_BUILD_ENV) \
+	  NATDYNLINK=false LINKFLAGS= flexlink.exe support
+	$(LN) $(FLEXDLL_SOURCE_DIR)/flexlink.exe flexlink.opt.exe
+	$(LN) flexlink.opt.exe flexlink.byte.exe
+	cp flexlink.byte.exe $(BYTE_BINDIR)/flexlink
+	(cd $(BYTE_BINDIR); $(LN) flexlink flexlink.exe)
+	cp $(addprefix $(FLEXDLL_SOURCE_DIR)/, $(FLEXDLL_OBJECTS)) $(BYTE_BINDIR)
+	cp flexlink.opt.exe $(OPT_BINDIR)/flexlink
+	(cd $(OPT_BINDIR); $(LN) flexlink flexlink.exe)
+	cp $(addprefix $(FLEXDLL_SOURCE_DIR)/, $(FLEXDLL_OBJECTS)) $(OPT_BINDIR)
 
 INSTALL_OVERRIDES=build_ocamldoc=false WITH_DEBUGGER= OCAMLRUN=ocamlrun
 
