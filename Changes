@@ -605,6 +605,10 @@ ___________
   from a DLL
   (Xavier Leroy, review by Miod Vallat)
 
+- #13417: `Filename.quote_command`: fix handling of forward slashes in program
+  path under Win32.
+  (Nicolás Ojeda Bär)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
