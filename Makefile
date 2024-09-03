@@ -2070,11 +2070,11 @@ ocamltest/ocamltest.html: ocamltest/ocamltest.org
 # The extra libraries
 
 .PHONY: otherlibraries
-otherlibraries: ocamltools
+otherlibraries: ocamltools dynlink-all
 	$(MAKE) -C otherlibs all
 
 .PHONY: otherlibrariesopt
-otherlibrariesopt:
+otherlibrariesopt: dynlink-allopt
 	$(MAKE) -C otherlibs allopt
 
 otherlibs/unix/unix.cmxa: otherlibrariesopt
