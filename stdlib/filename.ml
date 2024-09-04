@@ -221,7 +221,11 @@ Quoting commands for execution by cmd.exe is difficult.
   let quote_cmd_filename f =
     (* In cmd.exe, forward slashes in the program path (argument 0) are
        interpreted as introducing a flag. *)
-    let f = if String.contains f '/' then String.map (function '/' -> '\\' | c -> c) f else f in
+    let f =
+      if String.contains f '/' then
+        String.map (function '/' -> '\\' | c -> c) f
+      else f
+    in
     if String.exists (function '\"' | '%' -> true | _ -> false) f then
       failwith ("Filename.quote_command: bad file name " ^ f)
     else if String.contains f ' ' then
