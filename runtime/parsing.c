@@ -112,7 +112,8 @@ static const char * token_name(const char * names, int number)
   return names;
 }
 
-static void print_token(struct parser_tables *tables, int state, value tok)
+static void print_token(const struct parser_tables *tables, int state,
+                        value tok)
 {
   value v;
 

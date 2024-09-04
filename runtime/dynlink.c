@@ -63,7 +63,7 @@ struct ext_table caml_shared_libs_path;
 
 /* Look up the given primitive name in the built-in primitive table,
    then in the opened shared libraries (shared_libs) */
-static c_primitive lookup_primitive(char * name)
+static c_primitive lookup_primitive(const char * name)
 {
   void * res;
 

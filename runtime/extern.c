@@ -190,7 +190,7 @@ static void extern_free_stack(struct caml_extern_state* s)
 }
 
 static struct extern_item * extern_resize_stack(struct caml_extern_state* s,
-                                                struct extern_item * sp)
+                                                const struct extern_item * sp)
 {
   asize_t newsize = 2 * (s->extern_stack_limit - s->extern_stack);
   asize_t sp_offset = sp - s->extern_stack;

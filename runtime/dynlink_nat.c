@@ -79,7 +79,7 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
 {
   CAMLparam2 (filename, global);
   CAMLlocal3 (res, handle, header);
-  void *sym;
+  const void *sym;
   void *dlhandle;
   char_os *p;
   int global_dup;

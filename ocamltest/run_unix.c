@@ -136,7 +136,7 @@ static int paths_same_file(
 static void update_environment(array local_env)
 {
   for (array envp = local_env; *envp != NULL; envp++) {
-    char *pos_eq = strchr(*envp, '=');
+    const char *pos_eq = strchr(*envp, '=');
     if (pos_eq != NULL) {
       char *name, *value;
       int name_length = pos_eq - *envp;

@@ -465,7 +465,7 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
         return E_CORRUPT_STREAM;
     }
 
-    struct runtime_events_buffer_header *runtime_events_buffer_header =
+    const struct runtime_events_buffer_header *runtime_events_buffer_header =
         (struct runtime_events_buffer_header *)(
           get_map_offset(cursor, cursor->metadata.headers_offset,
                          domain_num,

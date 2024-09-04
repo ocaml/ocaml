@@ -578,8 +578,8 @@ void caml_finalize_channel(value vchan)
 
 static int compare_channel(value vchan1, value vchan2)
 {
-  struct channel * chan1 = Channel(vchan1);
-  struct channel * chan2 = Channel(vchan2);
+  const struct channel * chan1 = Channel(vchan1);
+  const struct channel * chan2 = Channel(vchan2);
   return (chan1 == chan2) ? 0 : (chan1 < chan2) ? -1 : 1;
 }
 
@@ -843,7 +843,7 @@ CAMLprim value caml_ml_set_buffered(value vchannel, value mode)
 
 CAMLprim value caml_ml_is_buffered(value vchannel)
 {
-  struct channel * channel = Channel(vchannel);
+  const struct channel * channel = Channel(vchannel);
   return Val_bool( ! (channel->flags & CHANNEL_FLAG_UNBUFFERED));
 }
 

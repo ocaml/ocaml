@@ -152,7 +152,7 @@ struct code_fragment *
 caml_find_code_fragment_by_digest(unsigned char digest[16]) {
   FOREACH_LF_SKIPLIST_ELEMENT(e, &code_fragments_by_pc, {
     struct code_fragment *cf = (struct code_fragment *)e->data;
-    unsigned char *d = caml_digest_of_code_fragment(cf);
+    const unsigned char *d = caml_digest_of_code_fragment(cf);
     if (d != NULL && memcmp(digest, d, 16) == 0)
       return cf;
   })

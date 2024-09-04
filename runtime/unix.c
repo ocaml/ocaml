@@ -334,9 +334,9 @@ CAMLexport int caml_read_directory(char * dirname, struct ext_table * contents)
 {
   DIR * d;
 #ifdef HAS_DIRENT
-  struct dirent * e;
+  const struct dirent * e;
 #else
-  struct direct * e;
+  const struct direct * e;
 #endif
 
   d = opendir(dirname);

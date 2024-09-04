@@ -61,7 +61,7 @@ CAMLprim value caml_backtrace_status(value vunit)
    0, then li->loc_is_raise is always 1, so the latter test is
    useless. We kept it to keep code identical to the runtime/
    implementation. */
-static void print_location(struct caml_loc_info * li, int index)
+static void print_location(const struct caml_loc_info * li, int index)
 {
   const char * info;
   const char * inlined;

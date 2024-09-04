@@ -79,7 +79,7 @@ static value alloc_host_entry(struct hostent *entry)
 
 CAMLprim value caml_unix_gethostbyaddr(value a)
 {
-  char * adr;
+  const char * adr;
   struct in_addr in4;
   struct hostent * hp;
   int addr_type = AF_INET;

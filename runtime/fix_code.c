@@ -127,7 +127,7 @@ int* caml_init_opcode_nargs(void)
 void caml_thread_code (code_t code, asize_t len)
 {
   code_t p;
-  int* l = caml_init_opcode_nargs();
+  const int* l = caml_init_opcode_nargs();
   len /= sizeof(opcode_t);
   for (p = code; p < code + len; /*nothing*/) {
     opcode_t instr = *p;

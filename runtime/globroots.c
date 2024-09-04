@@ -215,7 +215,8 @@ static void scan_native_globals(scanning_action f, void* fdata)
 
 /* Iterate a GC scanning action over a global root list */
 Caml_inline void caml_iterate_global_roots(scanning_action f,
-                                      struct skiplist * rootlist, void* fdata)
+                                           const struct skiplist * rootlist,
+                                           void* fdata)
 {
   FOREACH_SKIPLIST_ELEMENT(e, rootlist, {
       value * r = (value *) (e->key);
