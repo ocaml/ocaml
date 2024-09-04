@@ -219,12 +219,12 @@ Quoting commands for execution by cmd.exe is difficult.
       s;
     Buffer.contents b
   let quote_cmd_filename f =
+    (* In cmd.exe, forward slashes in the program path (argument 0) are
+       interpreted as introducing a flag. *)
+    let f = if String.contains f '/' then String.map (function '/' -> '\\' | c -> c) f else f in
     if String.exists (function '\"' | '%' -> true | _ -> false) f then
       failwith ("Filename.quote_command: bad file name " ^ f)
-    else if String.exists (function ' ' | '/' -> true | _ -> false) f then
-      (* In cmd.exe, one cannot use forward slashes as path separators in the
-         program path (argument 0), unless it is quoted.  Otherwise, cmd.exe
-         will interpret the slash as introducing a flag. *)
+    else if String.contains f ' ' then
       String.concat "" ["\""; f; "\""]
     else
       f
