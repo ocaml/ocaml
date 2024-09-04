@@ -80,10 +80,10 @@ Caml_inline void st_tls_set(st_tlskey k, void * v)
    threads. */
 
 typedef struct {
-  bool init;                      /* have the mutex and the cond been
+  atomic_bool init;               /* have the mutex and the cond been
                                      initialized already? */
   pthread_mutex_t lock;           /* to protect contents */
-  bool busy;                      /* false = free, true = taken */
+  atomic_bool busy;               /* false = free, true = taken */
   atomic_uintnat waiters;         /* number of threads waiting on master lock */
   pthread_cond_t is_free;         /* signaled when free */
 } st_masterlock;
@@ -195,7 +195,7 @@ Caml_inline void st_thread_yield(st_masterlock * m)
 
 typedef struct st_event_struct {
   pthread_mutex_t lock;         /* to protect contents */
-  bool status;                  /* false = not triggered, true = triggered */
+  atomic_bool status;           /* false = not triggered, true = triggered */
   pthread_cond_t triggered;     /* signaled when triggered */
 } * st_event;
 
