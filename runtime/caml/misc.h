@@ -293,14 +293,25 @@ CAMLextern void caml_failed_assert (char *, char_os *, int)
 #endif
 
 #if __has_builtin(__builtin_trap) || defined(__GNUC__)
-  #define CAMLunreachable() (__builtin_trap())
+  CAMLnoret Caml_inline void caml_abort(void) {
+    __builtin_trap();
+  }
 #elif defined(_MSC_VER)
   #include <intrin.h>
-  CAMLnoret Caml_inline void caml_fastfail(unsigned int);
-  void caml_fastfail(unsigned int i) { __fastfail(i); }
-  #define CAMLunreachable() (caml_fastfail(7 /* FAST_FAIL_FATAL_APP_EXIT */))
+  CAMLnoret Caml_inline void caml_abort(void) {
+    __fastfail(7 /* FAST_FAIL_FATAL_APP_EXIT */);
+  }
 #else
-  #define CAMLunreachable() (abort())
+  CAMLnoret Caml_inline void caml_abort(void) {
+    abort();
+  }
+#endif
+
+#ifdef DEBUG
+CAMLnoret CAMLextern void caml_debug_abort(char_os *, int);
+#define CAMLunreachable() (caml_debug_abort(__OSFILE__, __LINE__))
+#else
+#define CAMLunreachable() (caml_abort())
 #endif
 
 #if __has_builtin(__builtin_expect) || defined(__GNUC__)

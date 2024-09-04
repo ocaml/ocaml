@@ -36,18 +36,26 @@ _Atomic caml_timing_hook caml_finalise_begin_hook = (caml_timing_hook)NULL;
 _Atomic caml_timing_hook caml_finalise_end_hook = (caml_timing_hook)NULL;
 
 #ifdef DEBUG
+void caml_print_loc(char_os *file_os, int line) {
+  char* file = caml_stat_strdup_of_os(file_os);
+  fprintf(stderr, "[%02d] file %s; line %d ### ",
+          (Caml_state_opt != NULL) ? Caml_state_opt->id : -1, file, line);
+  caml_stat_free(file);
+}
 
 void caml_failed_assert (char * expr, char_os * file_os, int line)
 {
-  char* file = caml_stat_strdup_of_os(file_os);
-  fprintf(stderr, "[%02d] file %s; line %d ### Assertion failed: %s\n",
-          (Caml_state_opt != NULL) ? Caml_state_opt->id : -1, file, line, expr);
+  caml_print_loc(file_os, line);
+  fprintf(stderr, "Assertion failed: %s\n", expr);
   fflush(stderr);
-  caml_stat_free(file);
-#if __has_builtin(__builtin_trap) || defined(__GNUC__)
-  __builtin_trap();
-#endif
-  abort();
+  caml_abort();
+}
+
+CAMLnoret void caml_debug_abort(char_os * file_os, int line) {
+  caml_print_loc(file_os, line);
+  fprintf(stderr, "Abort\n");
+  fflush(stderr);
+  caml_abort();
 }
 #endif
 
@@ -113,6 +121,9 @@ CAMLexport void caml_fatal_error (char *msg, ...)
     fprintf (stderr, "\n");
   }
   va_end(ap);
+  /* We could use [caml_abort()] instead of [abort()], but misc.h
+     documents that we call [abort()] so we kept this version
+     for compatibility. */
   abort();
 }
 
