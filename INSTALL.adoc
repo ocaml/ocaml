@@ -115,14 +115,14 @@ fairly verbose; consider redirecting the output to a file:
 == (Optional) Running the testsuite
 
 To be sure everything works well, you can run the test suite
-   that comes with the compiler. To do so, do:
+that comes with the compiler. To do so, do:
 
         make tests
 
 == Installing the compiler
 
 You can now install the OCaml system. This will create the following commands
-   (in the binary directory selected during autoconfiguration):
+(in the binary directory selected during autoconfiguration):
 
 [width="70%",frame="topbot",cols="25%,75%"]
 |===============================================================================
@@ -146,14 +146,14 @@ From the top directory, become superuser and do:
         make install
 
 Installation is complete. Time to clean up. From the toplevel directory,
-   do:
+do:
 
         make clean
 
 After installation, do *not* strip the `ocamldebug` executables.
-   This is a mixed-mode executable (containing both compiled C
-   code and OCaml bytecode) and stripping erases the bytecode!  Other
-   executables such as `ocamlrun` can safely be stripped.
+This is a mixed-mode executable (containing both compiled C
+code and OCaml bytecode) and stripping erases the bytecode!  Other
+executables such as `ocamlrun` can safely be stripped.
 
 == If something goes wrong
 
@@ -183,7 +183,7 @@ and sanity checks that could help you pinpoint the problem.
 == Common problems
 
 * The Makefiles assume that make executes commands by calling `/bin/sh`. They
-  won't work if `/bin/csh` is called instead.  You may have to unset the `SHELL`
+  won’t work if `/bin/csh` is called instead.  You may have to unset the `SHELL`
   environment variable, or set it to `/bin/sh`.
 
 * On some systems, localization causes build problems.  You should try to set

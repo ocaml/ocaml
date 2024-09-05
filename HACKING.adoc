@@ -2,7 +2,7 @@
 
 This document is a work-in-progress attempt to provide useful
 information for people willing to inspect or modify the compiler
-distribution's codebase. Feel free to improve it by sending change
+distribution’s codebase. Feel free to improve it by sending change
 proposals for it.
 
 If you already have a patch that you would like to contribute to the
@@ -31,7 +31,7 @@ make -j 4
 ----
 If you are on a release build and need development options, you can add
 `--enable-ocamltest` (to allow running the testsuite) and `--enable-warn-error`
-(so you don't get caught by CI later!).
+(so you don’t get caught by CI later!).
 
 3. Try the newly built compiler binaries `ocamlc`, `ocamlopt` or their
 `.opt` version. To try the toplevel, use:
@@ -76,12 +76,12 @@ newcomers. Here are various potential projects:
   clarifying comments can be an excellent contribution to help you,
   next time, and other code readers.
 
-* The https://github.com/ocaml/ocaml[github project] contains a lot of
+* The https://github.com/ocaml/ocaml[GitHub project] contains a lot of
   pull requests, many of them being in dire need of a review -- we
   have more people willing to contribute changes than to review
-  someone else's change. Picking one of them, trying to understand the
+  someone else’s change. Picking one of them, trying to understand the
   code (looking at the code around it) and asking questions about what
-  you don't understand or what feels odd is super-useful. It helps the
+  you don’t understand or what feels odd is super-useful. It helps the
   contribution process, and it is also an excellent way to get to know
   various parts of the compiler from the angle of a specific aspect or
   feature.
@@ -179,7 +179,7 @@ has excellent documentation.
 === Complete file listing
 
   BOOTSTRAP.adoc::        instructions for bootstrapping
-  Changes::               what's new with each release
+  Changes::               what’s new with each release
   CONTRIBUTING.md::       how to contribute to OCaml
   HACKING.adoc::          this file
   INSTALL.adoc::          instructions for installation
@@ -221,9 +221,9 @@ has excellent documentation.
 [#tips]
 == Development tips and tricks
 
-=== Keep merge commits when merging and cherry-picking Github PRs
+=== Keep merge commits when merging and cherry-picking GitHub PRs
 
-Having the Github PR number show up in the git log is very useful for
+Having the GitHub PR number show up in the git log is very useful for
 later triaging. We recently disabled the "Rebase and merge" button,
 precisely because it does not produce a merge commit.
 
@@ -238,7 +238,7 @@ git cherry-pick -x -m 1 <merge-commit-hash>
 ----
 
 [#opam-switch]
-=== Testing with `opam`
+=== Testing with opam
 
 If you are working on a development version of the compiler, you can create an
 opam switch from it by running the following from the development repository:
@@ -248,7 +248,7 @@ opam switch create . --empty
 opam install .
 -----
 
-If you want to test someone else's development version from a public
+If you want to test someone else’s development version from a public
 git repository, you can build a switch directly (without cloning their
 work locally) by pinning:
 
@@ -257,16 +257,16 @@ opam switch create my-switch-name --empty
 opam pin add ocaml-variants git+https://$REPO#branch
 ----
 
-==== Incremental builds with `opam`
+==== Incremental builds with opam
 
 This section documents some tips to speed up your workflow when you need to
 alternate between testing your branch and patching the compiler.
-We'll assume that you're currently in a clone of the compiler's source code.
+We’ll assume that you’re currently in a clone of the compiler’s source code.
 
 ===== Initial setup
 
-For the rest of the section to work, you'll need your compiler to be
-configured in the same way as `opam` would have configured it. The simplest
+For the rest of the section to work, you’ll need your compiler to be
+configured in the same way as opam would have configured it. The simplest
 way is to run the normal commands for the switch initialization, with the extra
 `--inplace-build` flag:
 
@@ -277,7 +277,7 @@ opam install . --inplace-build
 
 However, if you need specific configuration options, you can also configure it
 manually, as long as you make sure that the configuration prefix is the one
-where `opam` would install the compiler.
+where opam would install the compiler.
 You will then need to install the compiler, either from the working directory
 (that you must build yourself) or using the regular sandboxed builds.
 
@@ -299,13 +299,13 @@ opam install . --assume-built
 ===== Basic workflow
 
 We will assume that the workflow alternates between work on the compiler and
-external (`opam`-related) commands.
+external (opam-related) commands.
 As an example, debugging an issue in the compiler can be done by a first step
-that triggers the issue (by installing a given `opam` package), then adding
+that triggers the issue (by installing a given opam package), then adding
 some logging to the compiler, re-trigger the issue, and based on the logs either
 add more logging, or try a patch, and so on.
 
-The part of this workflow that we're going to optimize is when we switch from
+The part of this workflow that we’re going to optimize is when we switch from
 working on the compiler to using the compiler. The basic way to do this is to
 run `opam install .` again, but this will recompile the compiler from scratch
 and also trigger a recompilation of all the packages in the switch.
@@ -316,9 +316,9 @@ The `opam-custom-install` plugin allows you to install a package using a custom
 command instead of the package-supplied one. It can be installed following
 instructions https://gitlab.ocamlpro.com/louis/opam-custom-install[here].
 
-In our case, we need to build the compiler, and when we've built everything
+In our case, we need to build the compiler, and when we’ve built everything
 that we need then we run `opam custom-install ocaml-variants -- make install`.
-This will make `opam` remove the previously installed version of the compiler
+This will make opam remove the previously installed version of the compiler
 (if any), then install the new one in its stead.
 
 -----
@@ -326,13 +326,13 @@ This will make `opam` remove the previously installed version of the compiler
 opam custom-install ocaml-variants -- make install
 -----
 
-Since most `opam` packages depend on the compiler, this will trigger a
+Since most opam packages depend on the compiler, this will trigger a
 reinstallation of all the packages in the switch.
 If you want to avoid that (for instance, your patch only adds some logging
 so you expect the core libraries and all the already compiled packages to be
 identical), you can use the additional `--no-recompilations` flag.
-There are no checks that it's safe to do so, so if your patch ends up
-changing even slightly one of the core libraries' files, you will likely
+There are no checks that it’s safe to do so, so if your patch ends up
+changing even slightly one of the core libraries’ files, you will likely
 get inconsistent assumptions errors later.
 
 -----
@@ -342,13 +342,13 @@ opam custom-install --no-recompilations ocaml-variants -- make install
 
 Note about the first installation:
 When you start from an empty switch, and install a compiler (in our case,
-the `ocaml-variants` package provided by the compiler's `opam` file), then
+the `ocaml-variants` package provided by the compiler’s opam file), then
 a number of additional packages are installed to ensure that the switch
 will work correctly. Mainly, the `ocaml` package needs to be installed,
-and while it's done automatically when using regular `opam` commands, the
+and while it’s done automatically when using regular opam commands, the
 `custom-install` plugin will not force installation of dependencies.
 Moreover, if you try to fix the problem by manually installing the `ocaml`
-package, `opam` will try to recompile `ocaml-variants`, using the default
+package, opam will try to recompile `ocaml-variants`, using the default
 instructions. You can get around this by running
 `opam reinstall --forget-pending` just after the `opam custom-install` command
 and just before the `opam install ocaml command`.
@@ -370,8 +370,8 @@ correctly tracks the files associated with the compiler, so if your
 then with `opam-custom-install` you will end up in a state where only the
 bytecode tools are installed, whereas with a raw `make install` you will have
 stale native binaries remaining in your switch.
-Since it's significantly faster to build the bytecode version of the tools,
-and many `opam` packages will pick the native version of the compilers if
+Since it’s significantly faster to build the bytecode version of the tools,
+and many opam packages will pick the native version of the compilers if
 present and the bytecode version otherwise, you can build your initial switch
 with the native versions (to get quickly to a state where a bug appears),
 then clean your working directory and start building bytecode tools only
@@ -385,12 +385,12 @@ Using `opam install . --assume-built` will simply remove the
 package for the compiler, then run the installation instructions
 (`make install`) in the working directory, tracking the installed files
 correctly. The main difference with the `opam-custom-install` version
-is that there's no way to prevent this command from triggering a full
+is that there’s no way to prevent this command from triggering a full
 recompilation of your switch.
 
 You can also run `make install` manually, which will not trigger a
 recompilation, but will not remove the previous version either and can
-mess with `opam`'s tracking of installed files.
+mess with opam’s tracking of installed files.
 
 === Useful Makefile targets and options
 
@@ -420,17 +420,17 @@ repository, but are not available from a tarball.
 === Automatic configure options
 
 If you have options to `configure` which you always (or at least frequently)
-use, it's possible to store them in Git, and `configure` will automatically add
+use, it’s possible to store them in Git, and `configure` will automatically add
 them. For example, you may wish to avoid building the debug runtime by default
 while developing, in which case you can issue
 `git config --global ocaml.configure '--disable-debug-runtime'`. The `configure`
 script will alert you that it has picked up this option and added it _before_
 any options you specified for `configure`.
 
-Options are added before those passed on the command line, so it's possible to
+Options are added before those passed on the command line, so it’s possible to
 override them, for example `./configure --enable-debug-runtime` will build the
 debug runtime, since the enable flag appears after the disable flag. You can
-also use the full power of Git's `config` command and have options specific to
+also use the full power of Git’s `config` command and have options specific to
 particular clone or worktree.
 
 === Speeding up configure
@@ -462,7 +462,7 @@ found in link:BOOTSTRAP.adoc[].
 
 === Speeding up builds
 
-Once you've built a natively-compiled `ocamlc.opt`, you can use it to
+Once you’ve built a natively-compiled `ocamlc.opt`, you can use it to
 speed up future builds by copying it to `boot`:
 
 ----
@@ -583,7 +583,7 @@ Some files need special rules to opt out of `check-typo` checks; this
 is specified in the `.gitattributes` file at the root of the
 repository, using `typo.foo` attributes.
 
-==== GitHub's Continuous Integration: GitHub Actions and AppVeyor
+==== GitHub’s Continuous Integration: GitHub Actions and AppVeyor
 
 The scripts that are run on GitHub Actions are described in
 link:.github/workflows/build.yml[].
@@ -607,7 +607,7 @@ entry needed)_" in one of your commit messages -- but in general all patches
 submitted should come with a Changes entry; see the guidelines in
 link:CONTRIBUTING.md[].
 
-The Windows ports take a long time to test - INRIA's precheck service is the
+The Windows ports take a long time to test - INRIA’s precheck service is the
 best to use when all 6 Windows ports need testing for a branch, but the
 AppVeyor scripts also support the other ports. The matrix is controlled by
 the following environment variables, which should be set in link:appveyor.yml[]:
@@ -623,19 +623,19 @@ the following environment variables, which should be set in link:appveyor.yml[]:
 - `BUILD_MODE`. Default: `world.opt`. Either `world.opt`, `steps`, or `C`.
   Controls whether the build uses the `world.opt` target or the classic
   `world`, `opt`, `opt.opt` targets. The `C` build is a fast test used to
-  build just enough of the tree to cover the C sources (it's used to test
+  build just enough of the tree to cover the C sources (it’s used to test
   old MSVC compilers).
 - `SDK`. Defaults to Visual Studio 2022. Specifies the exact command to run
   to set-up the Microsoft build environment.
 - `CYGWIN_DIST`. Default: `64`. Either `64` or `32`, selects 32-bit or 64-bit
   Cygwin as the build environment.
 
-==== INRIA's Continuous Integration (CI)
+==== INRIA’s Continuous Integration (CI)
 
 INRIA provides a Jenkins continuous integration service that OCaml
 uses, see link:https://ci.inria.fr/ocaml/[]. It provides a wider
 architecture support (MSVC and MinGW, a zsystems s390x machine, and
-various MacOS versions) than the Travis/AppVeyor testing on github,
+various MacOS versions) than the Travis/AppVeyor testing on GitHub,
 but only runs on commits to the trunk or release branches, not on every
 PR.
 
@@ -649,43 +649,43 @@ To be notified by email of build failures, you can subscribe to the
 ocaml-ci-notifications@inria.fr mailing list by visiting
 https://sympa.inria.fr/sympa/info/ocaml-ci-notifications[its web page.]
 
-==== Running INRIA's CI on a publicly available git branch
+==== Running INRIA’s CI on a publicly available git branch
 
 If you have suspicions that your changes may fail on exotic architectures
 (they touch the build system or the backend code generator,
-for example) and would like to get wider testing than github's CI
-provides, it is possible to manually start INRIA's CI on arbitrary git
+for example) and would like to get wider testing than GitHub’s CI
+provides, it is possible to manually start INRIA’s CI on arbitrary git
 branches even before opening a pull request as follows:
 
-1. Make sure you have an account on Inria's CI as described before.
+1. Make sure you have an account on Inria’s CI as described before.
 
 2. Make sure you have been added to the ocaml project.
 
-3. Prepare a branch with the code you'd like to test, say "mybranch". It
+3. Prepare a branch with the code you’d like to test, say "mybranch". It
 is probably a good idea to make sure your branch is based on the latest
 trunk.
 
 4. Make your branch publicly available. For instance, you can fork
-OCaml's GitHub repository and then push "mybranch" to your fork.
+OCaml’s GitHub repository and then push "mybranch" to your fork.
 
 5. Visit https://ci.inria.fr/ocaml/job/precheck and log in. Click on
 "Build with parameters".
 
-6. Fill in the REPO_URL and BRANCH fields as appropriate and run the build.
+6. Fill in the `REPO_URL` and `BRANCH` fields as appropriate and run the build.
 
 7. You should receive a bunch of e-mails with the build logs for each
 slave and each tested configuration (with and without flambda) attached.
 
 ==== Changing what the CI does
 
-INRIA's CI "main" and "precheck" jobs run the script
-tools/ci-build. In particular, when running the CI on a publicly
+INRIA’s CI "main" and "precheck" jobs run the script
+`tools/ci-build`. In particular, when running the CI on a publicly
 available branch via the "precheck" job as explained in the previous
 section, you can edit this script to change what the CI will test.
 
 For instance, parallel builds are only tested for the "trunk"
 branch. In order to use "precheck" to test parallel build on a custom
-branch, add this at the beginning of tools/ci-build:
+branch, add this at the beginning of `tools/ci-build`:
 
 ----
 OCAML_JOBS=10

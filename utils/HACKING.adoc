@@ -32,13 +32,13 @@ underlying representation is compatible.
 
 However, it is more dangerous to forget to update a number than to
 update it too often. If we update too often, at worst tool authors have
-to update their codebase to support more numbers. If we don't update
+to update their codebase to support more numbers. If we don’t update
 often enough, tools break with horrible parsing/deserialization errors
 and their authors can do nothing to prevent it.
 
 We have thus decided to systematically bump all magic numbers on each
-new major release of the compiler. (We don't want to change compiled
-file formats in minor releases, so we shouldn't need to bump magic
+new major release of the compiler. (We don’t want to change compiled
+file formats in minor releases, so we shouldn’t need to bump magic
 numbers systematically. If a format change was necessary for
 a critical bugfix, then we would still need to bump on a minor
 release.)
@@ -52,7 +52,7 @@ tools to test the new release, and if you update *after* that you risk
 breaking them again without them noticing.
 
 Since https://github.com/ocaml/ocaml/pull/12652/[PR #12652], simply run
-the following command to bump the magic numbers to version xyz:
+the following command to bump the magic numbers to version _xyz_:
 
   tools/bump-magic-numbers xyz
 

@@ -11,7 +11,7 @@ The source code is available at these addresses:
  https://github.com/ocaml/ocaml/archive/$VERSION.tar.gz
  https://caml.inria.fr/pub/distrib/ocaml-$BRANCH/ocaml-$VERSION.tar.gz
 
-The compiler can also be installed as an OPAM switch with one of the
+The compiler can also be installed as an opam switch with one of the
 following commands:
 
 opam update

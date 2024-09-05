@@ -4,7 +4,7 @@
 
 * Any prerequisites required to build the OCaml compiler from sources.
 * A LaTeX installation.
-* The HeVeA LaTeX-to-HTML converter (available in OPAM):
+* The HeVeA LaTeX-to-HTML converter (available in opam):
 http://hevea.inria.fr/
 
 Note that you must make sure `+hevea.sty+` is installed into TeX
@@ -13,14 +13,12 @@ properly. Your package manager may not do this for you. Run
 
 === Building the manual
 
-[arabic, start=0]
-. Build the OCaml compiler (including the native one) from sources.
-
+1. Build the OCaml compiler (including the native one) from sources.
++
 You don’t need to install the compiler since the manual is built using
 the one from the source tree.
 
-[arabic]
-. Run `+make+` in the manual directory.
+2. Run `+make+` in the manual directory.
 
 === Outputs
 

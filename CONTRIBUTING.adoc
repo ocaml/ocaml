@@ -1,7 +1,6 @@
 == How to contribute changes
 
-:+1::tada: First off, thank you for taking time to contribute!
-:tada::+1:
+👍🎉 First off, thank you for taking time to contribute! 👍🎉
 
 The following is a set of guidelines for proposing changes to the OCaml
 distribution. These are just guidelines, not rules, use your best
@@ -189,9 +188,9 @@ of the OCaml distribution.
 
 Any user-visible change should have a `+Changes+` entry:
 
-* in the right section (named sections if major feature, generic "`Bug
-fixes`" and "`Feature requests`" otherwise)
-* using the label "``+*+``" if it breaks existing programs, "``+-+``"
+* in the right section (named sections if major feature, generic "```Bug
+fixes```" and "```Feature requests```" otherwise)
+* using the label "```*```" if it breaks existing programs, "```-```"
 otherwise
 * with all relevant issue and PR numbers `+#{N}+`, in ascending
 numerical order (separated by commas if necessary)
@@ -232,7 +231,7 @@ request, you should rebase your patch series:
 
 * on top of the OCaml branch in which you want to merge (usually
 `+trunk+`), solving any conflicts.
-* into a few well-separated, self-contained patches (github PRs can
+* into a few well-separated, self-contained patches (GitHub PRs can
 generate gazillions of micro-changes)
 * erasing history that does not make sense after the issue is merged
 (back-and-forth between different designs, etc. The PR number allows
@@ -252,7 +251,7 @@ should not overflow 80 columns, with the following format:
 
 During review, you may make many other changes to the patch series. You
 can rebase it on the fly (if you `+git push -f+` on the branch of the
-pull request in your personal clone, Github will update the pull request
+pull request in your personal clone, GitHub will update the pull request
 automatically; remember to always create a new branch for any) or wait
 until the discussion has converged, once we agree the request is ready
 for merging. Doing a good rebase is grunt work that takes some time and

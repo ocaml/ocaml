@@ -3,15 +3,16 @@
 OCaml releases follow a linux-like scheme for their version string. The
 OCaml version string consists in three numbers, optionally followed by
 either a prerelease or development tag
-(`+%i.%i.%i[~alpha%i|~beta%i|~rc%i|+%s]+`). For example, `+4.14.1+`,
-5.1.0~alpha2 and 5.3.0+dev0-2023-12-22 are valid OCaml versions.
+(`pass:[%i.%i.%i[~alpha%i|~beta%i|~rc%i|+%s]]`). For example, `4.14.1`,
+`5.1.0~alpha2` and `pass:[5.3.0+dev0-2023-12-22]` are valid OCaml
+versions.
 
 * The first version number (`+4+` in `+4.14.1+`) is the major version of
 OCaml. This version number is updated when major new features are added
 to the OCaml language. For instance, OCaml 5 added shared memory
 parallelism and effect handlers and OCaml 4 introduced GADTs
 (Generalised Abstract Data Types).
-* The second version number (`+14+` in`+4.14.1+`) is the minor version
+* The second version number (`+14+` in `+4.14.1+`) is the minor version
 of OCaml. This number is increased for every new release of OCaml. In
 particular, a new minor version of OCaml can contain breaking changes.
 However, we strive to maintain backward compatibility as much as
@@ -24,10 +25,10 @@ very safe bug fixes.
 in `+5.1.0~alpha2+`) describes a prerelease version of the compiler that
 is currently being tested. See link:#prerelease-versions[below] for a
 more thorough explanation.
-* The development tag `++tag+` indicates a development or experimental
-version of the compiler. `++dev0-2023-12-22+` in
-`+5.3.0+dev0-2023-12-22+` is an example of the tags of the form
-`++dev%i-%date+` used by the compiler for its development versions.
+* The development tag `pass:[+tag]` indicates a development or
+experimental version of the compiler. `pass:[+dev0-2023-12-22]` in
+`pass:[5.3.0+dev0-2023-12-22]` is an example of the tags of the form
+`pass:[+dev%i-%date]` used by the compiler for its development versions.
 
 == When are new versions released?
 
@@ -51,21 +52,21 @@ We may release bugfix releases at any time.
 
 === Feature freeze
 
-All PRs go to the development branch of the compiler, called '`trunk`'.
+All PRs go to the development branch of the compiler, called ’`trunk`’.
 (This was the standard name in the SVN era, and it remains more
-descriptive than '`main`'.)
+descriptive than ’`main`’.)
 
 Three months before a new release, that is, at the half of the time
 window between two releases, we create a separate branch for the next
 version of OCaml. The intention (there are always exceptions) is that
-the release should correspond to the state of '`trunk`' at the time this
+the release should correspond to the state of ’`trunk`’ at the time this
 branch was created, but we wait three more months for quality analysis,
 to get feedback and integrate bugfixes.
 
 We do not integrate new features in the release branch, to avoid
 unplanned regressions coming from last-minute changes. Only bugfixes and
 documentation improvements go to the release branch – by cherry-picking
-them from '`trunk`'.
+them from `trunk`.
 
 We do not have the resources to maintain more than one dev branch, one
 prelease branch, and link:#Exceptional-LTS-versions[one exceptional LTS

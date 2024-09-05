@@ -17,7 +17,7 @@ release`".
 
 Send a mail on caml-devel to warn Gabriel (to make a pass on Changes;
 see the "`Changes curation`" appendix for more details) and the
-OCamlLabs folks (for OPAM testing).
+OCamlLabs folks (for opam testing).
 
 === 0. Release environment setup
 
@@ -186,16 +186,18 @@ git commit -m "first commit on branch $BRANCH" -a
 git push --set-upstream origin $BRANCH
 ----
 
-Adjust github branch settings:
+Adjust GitHub branch settings:
 
 Go to https://github.com/ocaml/ocaml/settings/branches and add a rule
 for protecting the new branch (copy the rights from the previous
 version)
 
-==== 5.1. create the release on github (only for a production release)
+==== 5.1. create the release on GitHub (only for a production release)
 
-open https://github.com/ocaml/ocaml/releases # and click "`Draft a new
-release`" # for a minor release, the description is: Bug fixes. See
+Open https://github.com/ocaml/ocaml/releases and click "`Draft a new
+release`".
+
+For a minor release, the description is: "`Bug fixes`". See
 https://github.com/ocaml/ocaml/blob/$MAJOR.$MINOR/Changes[detailed list
 of changes].
 
@@ -204,11 +206,11 @@ of changes].
 Add the new release branch to the Inria CI list. Remove the oldest
 branch from this list.
 
-==== 5.4. New badge in README.adoc (for a new release branch)
+==== 5.4. New badge in `README.adoc` (for a new release branch)
 
-Add a badge for the new branch in README.adoc. Remove the oldest badge.
+Add a badge for the new branch in `README.adoc`. Remove the oldest badge.
 
-=== 6. Create OPAM packages
+=== 6. Create opam packages
 
 Clone the opam-repository
 
@@ -262,18 +264,19 @@ The switch should build.
 For a production release, you also need to create new opam files for the
 ocaml-manual and ocaml-src packages.
 
-==== 6.1. Update OPAM dev packages after branching
+==== 6.1. Update opam dev packages after branching
 
-Create a new ocaml/ocaml.latexmath:[NEXT/opam file.
-Copy the opam dev files from ocaml-variants/ocaml-variants.]VERSION+trunk__
-into ocaml-variants/ocaml-variants.$NEXT+trunk+__ . Update the version
+Create a new `+ocaml/ocaml.$NEXT/opam+` file. Copy the opam dev files
+from `pass:[ocaml-variants/ocaml-variants.$VERSION+trunk]` _into_
+`pass:[ocaml-variants/ocaml-variants.$NEXT+trunk]`. Update the version
 in those opam files.
 
-Update the synopsis and "`src`" field in the opam
-latexmath:[VERSION packages.
+Update the synopsis and "`src`" field in the opam `$VERSION` packages.
 The "src" field should point to
- src: "https://github.com/ocaml/ocaml/archive/]VERSION.tar.gz” The
-synopsis should be "`latest $VERSION development(,…)`".
+....
+ src: "https://github.com/ocaml/ocaml/archive/$VERSION.tar.gz"
+....
+The synopsis should be "`latest `$VERSION` development(, …)`".
 
 === 7. Build the release archives
 
@@ -355,8 +358,8 @@ scp INSTALL.adoc LICENSE README.adoc README.win32.adoc Changes \
 === 10. Upload the reference manual
 
 You don’t need to do this if the previous release had the same
-latexmath:[MAJOR.]MINOR ($BRANCH) value and the exact same manual – this
-is frequent if it was a release candidate.
+`$MAJOR.$MINOR ($BRANCH)` value and the exact same manual – this is
+frequent if it was a release candidate.
 
 [source,sh]
 ----
@@ -497,20 +500,24 @@ cherry-picker forgets to move the Change entry in the first branch.
 Fix: ensure that the entry is in the same section on all branches, by
 putting it in the "`smallest`" version – assuming that all bigger
 versions also contain this change.
+
 * A change entry is present in a given section, but the change is not
 present in the corresponding release branch.
 +
 There are two common causes for this with radically different solutions:
+
 ** If a PR is merged a long time after they were submitted, the merge
 may put their Changes entry in the section of an older release, while it
 should go in trunk.
 +
 Fix: in trunk, move the entry to the trunk section.
+
 ** Sometimes the author of a PR against trunk intends it to be
 cherry-picked in an older release branch, and places it in the
 corresponding Changes entry, but we forget to cherry-pick.
 +
 Fix: cherry-pick the PR in the appropriate branch.
+
 +
 Reading the PR discussion is often enough to distinguish between the two
 cases, but one should be careful before cherry-picking in a branch (for

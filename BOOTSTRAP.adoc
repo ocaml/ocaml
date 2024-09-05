@@ -75,7 +75,7 @@ There are five steps to renaming a primitive:
 
 1. Rename the primitive and its uses
 
-2. Create a temporary stub with the old primitive's name. This stub simply
+2. Create a temporary stub with the old primitive’s name. This stub simply
    passes its arguments on to the new primitive:
 
         CAMLprim value caml_old_primitive(value a1, value a2) {
@@ -112,7 +112,7 @@ To remove a primitive:
 
 == Bootstrap test script
 
-A script is provided (and used on Inria's continuous
+A script is provided (and used on Inria’s continuous
 integration infrastructure) to make sure the bootstrap works. This
 script implements the bootstrap procedure described above and performs
 two changes to the compiler: it updates the magic numbers and removes

@@ -9,7 +9,7 @@ handlers that are used for all the error reporting in the compiler.
 
 link:parser.mly[parser.mly]:: This file contains the grammar used to
 generated the parser -- using the
-link:http://gallium.inria.fr/~fpottier/menhir/[menhir] parser
+link:https://gallium.inria.fr/~fpottier/menhir/[menhir] parser
 generator, which is an external tool that you need to install if you
 wish to modify the parser.
 
@@ -38,7 +38,7 @@ we recommend using `-j` (without a number) to maximize parallelism:
 make -j build-all-asts
 ----
 
-Finally, the 'list-all-asts' target lists all such '.ast' files.
+Finally, the `list-all-asts` target lists all such `.ast` files.
 
 This is intended to be used to test parser changes, in particular
 those that should not modify the parsed AST at all:

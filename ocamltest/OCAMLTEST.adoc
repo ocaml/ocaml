@@ -8,7 +8,7 @@ ocamltest is a test-driver, that is, a program that can run tests and
 report their results so that they can be used by a test infrastructure.
 
 Originally, the tool has been designed specifically to run the
-integration tests of the OCaml compiler's test suite. However, it has
+integration tests of the OCaml compiler’s test suite. However, it has
 been designed with extensibility in mind and thus has a plugin mechanism
 that makes it possible to extend it with other tests.
 
@@ -35,15 +35,15 @@ distribution such as the `+Unix+` library.
 ==== Test types
 
 As has been noted above, ocamltest has been developed to run the already
-existing integration tests of the OCaml compiler's test suite, which
+existing integration tests of the OCaml compiler’s test suite, which
 were previously run by a set of makefiles. This context explains several
 design decisions which could otherwise seem rather arbitrary.
 
 For example, the reason why ocamltest has no support for running unit
-tests is that there were no such tests in the OCaml compiler's test
+tests is that there were no such tests in the OCaml compiler’s test
 suite.
 
-Indeed, the OCaml compiler's test suite is composed mainly of complete
+Indeed, the OCaml compiler’s test suite is composed mainly of complete
 programs. In this context, the most usual meaning of "testing" a program
 is that the program needs to be compiled and executed. The test will be
 considered successful if the program compiles as expected and, when run,
@@ -153,7 +153,7 @@ Hello, world!
 ----
 +
 To let ocamltest know about this, we create a `+hello.reference+` file
-containing the program's expected output – the line mentioned above.
+containing the program’s expected output – the line mentioned above.
 There is nothing special to do for silent compilations since this is
 what is expected by default and a non-silent compilation would actually
 cause a test failure.
@@ -176,27 +176,27 @@ In addition to this output, it may be noticed that the previous command
 has also created an `+_ocamltest+` directory whose content will be
 examined in the next sub-section.
 . Finally, there is one extra step required if we want our newly created
-test to be run automatically as part of the OCaml compiler's test suite.
+test to be run automatically as part of the OCaml compiler’s test suite.
 We need to move `+hello.ml+` and `+hello.reference+` to a directory (say
 `+newtest+`) located somewhere below `+testsuite/tests+` in the
-compiler's source tree. Once this is done, the command
+compiler’s source tree. Once this is done, the command
 +
 [source,example]
 ----
 make all
 ----
 +
-executed in the `+testsuite+` directory of the OCaml compiler' source
+executed in the `+testsuite+` directory of the OCaml compiler’ source
 tree will run all the test suite, which now also includes our own test.
 
 ==== What exactly is going on during the test
 
-The only thing we know from ocamltest's output when run on `+hello.ml+`
+The only thing we know from ocamltest’s output when run on `+hello.ml+`
 is that it is running two tests named `+bytecode+` and `+native+` and
 that the two of them succeed. This can seem rather uninformative, and in
 a way it is, but it has to be kept in mind that this information is the
 one passed by the test-driver (ocamltest) to the test infrastructure. In
-that respect, this is enough. For us users, though, it is not. That's
+that respect, this is enough. For us users, though, it is not. That’s
 why ocamltest logs much more details about what is going on in a
 per-test log file, which should be located in the
 `+_ocamltest/hello/hello.log+` file found in the directory where
@@ -218,7 +218,7 @@ compiler. So, as we will see, ''testing the bytecode compiler'' actually
 involves testing two compilers, and the same goes for ''testing the
 native compiler''.
 
-Now that all this has been spelled out, let's examine the log file
+Now that all this has been spelled out, let’s examine the log file
 produced by the test. Although it is too long to be reproduced here, it
 is recommended to go through it quickly to get an idea of its structure.
 Here is how it starts:
@@ -247,7 +247,7 @@ the actions have been run or one of them returns `+fail+` or `+skip+`.
 Whatever the last run action returns, this value will be the result of
 the whole test.
 
-To give concrete examples of actions, let's briefly go over the nine
+To give concrete examples of actions, let’s briefly go over the nine
 ones involved in the `+bytecode+` test (those for the `+native+` test
 are quite similar):
 
@@ -262,10 +262,10 @@ will be either symlinked or copied from the test source directory.
 ways. Here, the test program is compiled and linked, but as we will see
 later, different behaviors are possible depending on ocamltest
 _variables_.
-. `+check-ocamlc.byte-output+`:: this action compares the compiler's
+. `+check-ocamlc.byte-output+`:: this action compares the compiler’s
 output to a reference file, if one exists. As has been mentioned
 earlier, the absence of such a reference file specifies that the
-compiler's output is expected to be empty – if it is not, this causes a
+compiler’s output is expected to be empty – if it is not, this causes a
 failure of this action and thus of the whole `+bytecode+` test.
 . `+run+`:: now that the program has been successfully compiled, it is
 run with its standard output and error streams saved to a file.
@@ -341,7 +341,7 @@ store the expected output in a file, namely
 `+hello.reference+`. To figure out what this file shall contain, we can
 run ocamltest even before it has been created. Of course, the action
 that checks compiler output will fail, but in this way we will get the
-compiler's output which we will just have to check (to make sure it is
+compiler’s output which we will just have to check (to make sure it is
 what we expect) and to move to the reference file. Thus, we do:
 +
 [source,example]
@@ -375,7 +375,7 @@ extra flags to all the compilers. There are two other variables one can
 use, namely `+ocamlc_flags+` and `+ocamlopt_flags+`, to pass flags to
 the bytecode or native compilers. Second, in this test all the compilers
 have the same output so one reference file is enough for all of them.
-There are situations, though, where the compiler's output is
+There are situations, though, where the compiler’s output is
 back-end-specific (it depends whether we compile to bytecode or to
 native code) or even compiler-specific. ocamltest is clever enough to
 know how to deal with such situations, provided that the reference files
@@ -387,18 +387,18 @@ back-end-specific reference file is searched, e.g.
 `+ocamlc.byte+` and `+ocamlc.opt+`. If this file does not exist either,
 ocamltest falls back to looking for `+hello.compilers.reference+` as we
 have seen in this example, the absence of which meaning that the
-compiler's output is expected to be empty.
+compiler’s output is expected to be empty.
 
 ==== Using an auxiliary module
 
-Let's start with our original `+hello.ml+` test program and extract the
+Let’s start with our original `+hello.ml+` test program and extract the
 greeting logic into a distinct `+greet.ml+` module:
 
 ....
 let greet guest = Printf.printf "Hello, %s!\n" guest
 ....
 
-Let's also write an interface, `+greet.mli+`:
+Let’s also write an interface, `+greet.mli+`:
 
 ....
 val greet : string -> unit
@@ -456,7 +456,7 @@ let _ =
 
 This test terminates silently if everything goes well and prints a
 message on its standard error only if something goes wrong, which means
-we won't have anything special to do so that ocamltest checks for an
+we won’t have anything special to do so that ocamltest checks for an
 empty output after the program has run. However, to be able to compile
 and link this test, there are several things we need to do so that it
 finds the `+Str+` library it uses. More precisely, we need to add the
@@ -714,7 +714,7 @@ run in an environment where all the variables defined in ocamltest have
 been exported. The script uses its exit status to report its result and
 can write a response to a dedicated file to modify its environment or
 explain why it failed or skipped, as will be explained in chapter
-#builtins. For the moment, let's see how to use a script to "test" our
+#builtins. For the moment, let’s see how to use a script to "test" our
 original `+hello.ml+` example. Our annotated program would look as
 follows:
 
@@ -742,7 +742,7 @@ ocamltest hello.ml
 ----
 
 This of course tests nothing and a real test script should actually do
-something before returning its result. Let's however see how we can make
+something before returning its result. Let’s however see how we can make
 the script test fail gracefully:
 
 ....

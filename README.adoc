@@ -1,7 +1,7 @@
 = README
 
 [CAUTION]
-====
+--
 The developer team released OCaml 5.0.0 in December 2022. OCaml 5.x features a
 full rewrite of its runtime system for shared-memory parallel programming using
 domains and native support for concurrent programming using effect handlers.
@@ -11,7 +11,7 @@ OCaml 4.14 (the final release in the OCaml 4.x series, originally released in
 March 2022) remains supported for the time being. Maintainers of existing
 codebases are strongly encouraged to evaluate OCaml 5.x and to report any
 performance degradations on our issue tracker.
-====
+--
 
 |=====
 | Branch `trunk` | Branch `5.3` | Branch `5.2` | Branch `5.1` | Branch `4.14`
@@ -73,7 +73,7 @@ compiler currently runs on the following platforms:
 Other operating systems for the processors above have not been tested, but
 the compiler may work under other operating systems with little work.
 
-❗ From OCaml 5.0 onwards, native compilation is available only on 64-bit
+WARNING: From OCaml 5.0 onwards, native compilation is available only on 64-bit
 systems.  Native compilation on 32-bit systems is no longer available, nor
 are there plans to bring it back.
 
@@ -152,11 +152,11 @@ link:CONTRIBUTING.md[].
 == Separately maintained components
 
 Some libraries and tools which used to be part of the OCaml distribution are
-now maintained separately and distributed as OPAM packages.
+now maintained separately and distributed as opam packages.
 Please use the issue trackers at their respective new homes:
 
 |====
-| Library           |  Removed since    |  OPAM package
+| Library           |  Removed since    |  opam package
 
 | https://github.com/ocaml/camlp-streams/issues[The Stream and Genlex standard library modules] | OCaml 5.0 | `camlp-streams`
 | https://github.com/ocaml/graphics/issues[The Graphics library] | OCaml 4.09 | `graphics`

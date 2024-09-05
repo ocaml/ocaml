@@ -105,7 +105,7 @@ numbers may differ, but this should not matter):
 
 The command-line tools must be compiled from the Unix source distribution
 (`ocaml-X.YY.Z.tar.gz`), which also contains the files modified for Windows.
-(Note: you should use cygwin's `tar` command to unpack this archive. If you
+(Note: you should use Cygwin’s `tar` command to unpack this archive. If you
 use WinZip, you will need to deselect "TAR file smart CR/LF conversion" in
 the WinZip Options Window.)
 
@@ -136,7 +136,7 @@ of the OCaml distribution.
 The Microsoft Linker is provided by a command called `link` which unfortunately
 conflicts with a Cygwin command of the same name.  It is therefore necessary to
 ensure that the directory containing the Microsoft C/C++ Compiler appears at
-the beginning of `PATH`, before Cygwin's `/usr/bin`.  You can automate this from
+the beginning of `PATH`, before Cygwin’s `/usr/bin`.  You can automate this from
 the top-level of the OCaml distribution by running:
 
   eval $(tools/msvs-promote-path)
@@ -165,7 +165,7 @@ will need to use `ocamlopt` (or `ocamlc -custom`) from the same Visual Studio or
 Windows SDK Command Prompt as you compiled OCaml from, or `ocamlopt` will not
 be able to find `cl`.
 
-If you wish to use `ocamlopt` from Cygwin's bash on a regular basis, you may
+If you wish to use `ocamlopt` from Cygwin’s bash on a regular basis, you may
 like to copy the `tools/msvs-promote-path` script and add the `eval` line to
 your `~/.bashrc` file.
 
@@ -205,7 +205,7 @@ package for 64-bit.
 
 The command-line tools must be compiled from the Unix source distribution
 (`ocaml-X.YY.Z.tar.gz`), which also contains the files modified for Windows.
-(Note: you should use cygwin's `tar` command to unpack this archive. If you
+(Note: you should use Cygwin’s `tar` command to unpack this archive. If you
 use WinZip, you will need to deselect "TAR file smart CR/LF conversion" in
 the WinZip Options Window.)
 
@@ -223,8 +223,8 @@ Finally, use `make` to build the system, e.g.
         make install
 
 After installing, you will need to ensure that `ocamlopt` (or `ocamlc -custom`)
-can access the C compiler.  You can do this either by using OCaml from Cygwin's
-bash or by adding Cygwin's bin directory (e.g. `C:\cygwin64\bin`) to your
+can access the C compiler.  You can do this either by using OCaml from Cygwin’s
+bash or by adding Cygwin’s bin directory (e.g. `C:\cygwin64\bin`) to your
 `PATH`.
 
 * Libraries available in this port: `dynlink`, `num`,
