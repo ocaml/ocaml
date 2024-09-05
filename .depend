@@ -3742,6 +3742,7 @@ asmcomp/emit.cmo : \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     asmcomp/branch_relaxation.cmi \
+    parsing/asttypes.cmi \
     asmcomp/arch.cmi \
     asmcomp/emit.cmi
 asmcomp/emit.cmx : \
@@ -3759,6 +3760,7 @@ asmcomp/emit.cmx : \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     asmcomp/branch_relaxation.cmx \
+    parsing/asttypes.cmx \
     asmcomp/arch.cmx \
     asmcomp/emit.cmi
 asmcomp/proc.cmo : \
