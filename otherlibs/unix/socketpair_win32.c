@@ -170,23 +170,24 @@ fail:
   return SOCKET_ERROR;
 }
 
-CAMLprim value caml_unix_socketpair(value cloexec, value vdomain, value vtype,
-                               value vprotocol)
+CAMLprim value caml_unix_socketpair(value vcloexec, value vdomain, value vtype,
+                                    value vprotocol)
 {
-  CAMLparam4(cloexec, vdomain, vtype, vprotocol);
+  CAMLparam4(vcloexec, vdomain, vtype, vprotocol);
   CAMLlocal1(result);
   SOCKET sv[2];
   int rc;
   int domain = Int_val(vdomain);
   int type = Int_val(vtype);
   int protocol = Int_val(vprotocol);
+  BOOL inherit = ! caml_unix_cloexec_p(vcloexec);
 
   caml_enter_blocking_section();
   rc = socketpair(caml_unix_socket_domain_table[domain],
                   caml_unix_socket_type_table[type],
                   protocol,
                   sv,
-                  ! caml_unix_cloexec_p(cloexec));
+                  inherit);
   caml_leave_blocking_section();
 
   if (rc == SOCKET_ERROR)
