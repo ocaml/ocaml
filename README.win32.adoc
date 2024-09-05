@@ -118,14 +118,20 @@ the Start Menu by the installer, for example using the
 Once you have started a Command Prompt, you can verify that you have the
 compiler you are expecting simply by running:
 
-  cl
-  Microsoft (R) C/C++ Optimizing Compiler Version 19.38.33133 for x64
-  ...
+[source,console]
+----
+> cl
+Microsoft (R) C/C++ Optimizing Compiler Version 19.38.33133 for x64
+...
+----
 
 You then need to start Cygwin from this Command Prompt.  Assuming you have
 installed it to its default location of `C:\cygwin64`, simply run:
 
-  C:\cygwin64\bin\mintty -
+[source,bat]
+----
+C:\cygwin64\bin\mintty -
+----
 
 (note the space and hyphen at the end of the command).
 
@@ -139,25 +145,37 @@ ensure that the directory containing the Microsoft C/C++ Compiler appears at
 the beginning of `PATH`, before Cygwin’s `/usr/bin`.  You can automate this from
 the top-level of the OCaml distribution by running:
 
-  eval $(tools/msvs-promote-path)
+[source,sh]
+----
+eval $(tools/msvs-promote-path)
+----
 
 If you forget to do this, `make` will fail relatively
 quickly as it will be unable to link `ocamlrun`.
 
 For 64-bit, now run:
 
-        ./configure --build=x86_64-pc-cygwin --host=x86_64-pc-windows
+[source,sh]
+----
+./configure --build=x86_64-pc-cygwin --host=x86_64-pc-windows
+----
 
 or, for 32-bit:
 
-        ./configure --build=x86_64-pc-cygwin --host=i686-pc-windows
+[source,sh]
+----
+./configure --build=x86_64-pc-cygwin --host=i686-pc-windows
+----
 
 If you wish to compile with Clang, add `CC=clang-cl`.
 
 Finally, use `make` to build the system, e.g.
 
-        make
-        make install
+[source,sh]
+----
+make
+make install
+----
 
 After installing, it is not necessary to keep the Cygwin installation (although
 you may require it to build additional third party libraries and tools).  You
@@ -211,16 +229,25 @@ the WinZip Options Window.)
 
 For 64-bit, now run:
 
-        ./configure --build=x86_64-pc-cygwin --host=x86_64-w64-mingw32
+[source,sh]
+----
+./configure --build=x86_64-pc-cygwin --host=x86_64-w64-mingw32
+----
 
 or, for 32-bit:
 
-        ./configure --build=x86_64-pc-cygwin --host=i686-w64-mingw32
+[source,sh]
+----
+./configure --build=x86_64-pc-cygwin --host=i686-w64-mingw32
+----
 
 Finally, use `make` to build the system, e.g.
 
-        make
-        make install
+[source,sh]
+----
+make
+make install
+----
 
 After installing, you will need to ensure that `ocamlopt` (or `ocamlc -custom`)
 can access the C compiler.  You can do this either by using OCaml from Cygwin’s
@@ -249,17 +276,26 @@ done in one of three ways:
    https://github.com/ocaml/flexdll/releases
  * Cloning the git repository by running:
 +
-  git clone https://github.com/ocaml/flexdll.git
+[source,sh]
+----
+git clone https://github.com/ocaml/flexdll.git
+----
 
  * If you are compiling from a git clone of the OCaml repository, instead of
    using a sources tarball, you can run:
 +
-  git submodule update --init
+[source,sh]
+----
+git submodule update --init
+----
 
 OCaml is then compiled normally for the port you require.
 
-  make
-  make install
+[source,sh]
+----
+make
+make install
+----
 
  * `make install` will install FlexDLL by placing `flexlink.exe`
    (and the default manifest file for the Microsoft port) in `bin/` and the

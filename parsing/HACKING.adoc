@@ -34,6 +34,7 @@ for each source `.ml` or `.mli` file in the repository, a `.ml.ast` or
 This rule is rather slow to run, and can safely be run in parallel, so
 we recommend using `-j` (without a number) to maximize parallelism:
 
+[source,sh]
 ----
 make -j build-all-asts
 ----
@@ -55,6 +56,7 @@ those that should not modify the parsed AST at all:
    from your index (using `git reset HEAD`), and maybe remove them
    completely (unless you plan to check further changes).
 
+[source,sh]
 ----
 # save pre-change ASTs
 make -j build-all-asts

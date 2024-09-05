@@ -54,7 +54,10 @@ breaking them again without them noticing.
 Since https://github.com/ocaml/ocaml/pull/12652/[PR #12652], simply run
 the following command to bump the magic numbers to version _xyz_:
 
-  tools/bump-magic-numbers xyz
+[source,sh]
+----
+tools/bump-magic-numbers xyz
+----
 
 Once the bootstrap during which the magic numbers have been bumped
 has been completed, the following files need to be committed:

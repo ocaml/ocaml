@@ -17,15 +17,21 @@ Here is how to perform a change that requires a bootstrap:
    `git status`)
 
 2. Configure your source tree by running:
-
-        ./configure
++
+[source,sh]
+----
+./configure
+----
 
 3. Bring your system to a stable state. Concretely, this means that the
    boot/ directory should contain a version of ocamlrun and all the
    \*.cm* files of the standard library. This stable state can be reached
    by running
-
-        make world
++
+[source,sh]
+----
+make world
+----
 +
 (Actually, running `make coldstart` should be enough but `make world` is
 safer. Similarly, `make world.opt` will also bring you to such a stable
@@ -37,21 +43,30 @@ state but builds more things than actually required.)
    represented or anything else in the format of .cmi files, etc.
 
 5. Run:
-
-        make coreall
++
+[source,sh]
+----
+make coreall
+----
 +
 This will rebuild runtime/ocamlrun, ocamlc, etc.
 
 6. (optional) The new system can now be tested:
-
-        echo 'let _ = print_string "Hello world!\n"' > foo.ml
-        ./boot/ocamlrun ./ocamlc -I ./stdlib foo.ml
-        ./runtime/ocamlrun a.out
++
+[source,sh]
+----
+echo 'let _ = print_string "Hello world!\n"' > foo.ml
+./boot/ocamlrun ./ocamlc -I ./stdlib foo.ml
+./runtime/ocamlrun a.out
+----
 
 7. We now know the system works and can thus build the new boot/
    binaries:
-
-        make bootstrap
++
+[source,sh]
+----
+make bootstrap
+----
 
 == Problems
 
@@ -77,22 +92,34 @@ There are five steps to renaming a primitive:
 
 2. Create a temporary stub with the old primitive’s name. This stub simply
    passes its arguments on to the new primitive:
-
-        CAMLprim value caml_old_primitive(value a1, value a2) {
-          return caml_new_primitive(a1, a2);
-        }
++
+[source,c]
+----
+CAMLprim value caml_old_primitive(value a1, value a2) {
+  return caml_new_primitive(a1, a2);
+}
+----
 
 3. Deal with the addition of the new primitive:
-
-        make coldstart
++
+[source,sh]
+----
+make coldstart
+----
 
 4. Ensure the system still works:
-
-        make coreall
++
+[source,sh]
+----
+make coreall
+----
 
 5. Now remove the old primitive stub and issue:
-
-        make bootstrap
++
+[source,sh]
+----
+make bootstrap
+----
 
 It is desirable for bootstraps to be easily repeatable, so you should commit
 changes after step 4.
@@ -102,13 +129,19 @@ To remove a primitive:
 1. Start with a working build of the compiler eg `./configure && make world`
 
 2. Remove uses of the primitive, but not the primitive itself. Then ensure the system still works:
-
-        make coreall
++
+[source,sh]
+----
+make coreall
+----
 
 3. Then, and only then, remove the primitive, and run:
-
-        make coreall
-        make bootstrap
++
+[source,sh]
+----
+make coreall
+make bootstrap
+----
 
 == Bootstrap test script
 
@@ -119,4 +152,7 @@ two changes to the compiler: it updates the magic numbers and removes
 a primitive from the runtime. It then makes sure the bootstrap still
 works after these changes. This script can be run locally as follows:
 
-        OCAML_ARCH=linux ./tools/ci/inria/bootstrap
+[source,sh]
+----
+OCAML_ARCH=linux ./tools/ci/inria/bootstrap
+----

@@ -12,6 +12,7 @@ official distribution, please see link:CONTRIBUTING.md[].
 
 1. Create a new git branch to store your changes.
 +
+[source,sh]
 ----
 git checkout -b my-modification
 ----
@@ -25,6 +26,7 @@ not have this which causes some important development things to be disabled
 
 2. Consult link:INSTALL.adoc[] for build instructions. Here is the gist of it:
 +
+[source,sh]
 ----
 ./configure
 make -j 4
@@ -36,6 +38,7 @@ If you are on a release build and need development options, you can add
 3. Try the newly built compiler binaries `ocamlc`, `ocamlopt` or their
 `.opt` version. To try the toplevel, use:
 +
+[source,sh]
 ----
 make runtop
 ----
@@ -44,6 +47,7 @@ make runtop
 
 5. Run the testsuite from time to time.
 +
+[source,sh]
 ----
 make tests
 ----
@@ -156,6 +160,7 @@ link:manual/README.md[]. However, if you only modify the documentation
 comments in `.mli` files in the compiler codebase, you can observe the
 result by running
 
+[source,sh]
 ----
 make html_doc
 ----
@@ -233,6 +238,7 @@ possible. (Picking a merge commit typically requires the `-m 1`
 option.) You should also use the `-x` option to include the hash of
 the original commit in the commit message.
 
+[source,sh]
 ----
 git cherry-pick -x -m 1 <merge-commit-hash>
 ----
@@ -243,6 +249,7 @@ git cherry-pick -x -m 1 <merge-commit-hash>
 If you are working on a development version of the compiler, you can create an
 opam switch from it by running the following from the development repository:
 
+[source,sh]
 -----
 opam switch create . --empty
 opam install .
@@ -252,6 +259,7 @@ If you want to test someone else’s development version from a public
 git repository, you can build a switch directly (without cloning their
 work locally) by pinning:
 
+[source,sh]
 ----
 opam switch create my-switch-name --empty
 opam pin add ocaml-variants git+https://$REPO#branch
@@ -270,6 +278,7 @@ configured in the same way as opam would have configured it. The simplest
 way is to run the normal commands for the switch initialization, with the extra
 `--inplace-build` flag:
 
+[source,sh]
 -----
 opam switch create . --empty
 opam install . --inplace-build
@@ -281,6 +290,7 @@ where opam would install the compiler.
 You will then need to install the compiler, either from the working directory
 (that you must build yourself) or using the regular sandboxed builds.
 
+[source,sh]
 -----
 # Example with regular opam build
 opam switch create . --empty
@@ -321,6 +331,7 @@ that we need then we run `opam custom-install ocaml-variants -- make install`.
 This will make opam remove the previously installed version of the compiler
 (if any), then install the new one in its stead.
 
+[source,sh]
 -----
 # reinstall the compiler, and rebuild all opam packages
 opam custom-install ocaml-variants -- make install
@@ -335,6 +346,7 @@ There are no checks that it’s safe to do so, so if your patch ends up
 changing even slightly one of the core libraries’ files, you will likely
 get inconsistent assumptions errors later.
 
+[source,sh]
 -----
 # reinstall the compiler, leaving the opam packages untouched -- unsafe!
 opam custom-install --no-recompilations ocaml-variants -- make install
@@ -354,6 +366,7 @@ instructions. You can get around this by running
 and just before the `opam install ocaml command`.
 Full example:
 
+[source,sh]
 -----
 opam switch create . --empty
 ./configure --prefix=$(opam var prefix) --disable-ocamldoc --disable-ocamltest
@@ -465,6 +478,7 @@ found in link:BOOTSTRAP.adoc[].
 Once you’ve built a natively-compiled `ocamlc.opt`, you can use it to
 speed up future builds by copying it to `boot`:
 
+[source,sh]
 ----
 cp ocamlc.opt boot/
 ----
@@ -488,6 +502,7 @@ the build will work all the time). Assuming you already have a recent OCaml
 version installed with merlin and dune, you can just run the following from the
 compiler sources:
 
+[source,sh]
 ----
 ./configure # if not already done
 make clean && dune build @libs
@@ -592,6 +607,7 @@ For example, if you want to reproduce the default build on your
 machine, you can use the configuration values and run command taken from
 link:tools/ci/actions/runner.sh[]:
 
+[source,sh]
 ----
 bash -ex tools/ci/actions/runner.sh configure
 ----
@@ -687,6 +703,7 @@ For instance, parallel builds are only tested for the "trunk"
 branch. In order to use "precheck" to test parallel build on a custom
 branch, add this at the beginning of `tools/ci-build`:
 
+[source,sh]
 ----
 OCAML_JOBS=10
 ----
@@ -707,6 +724,7 @@ upstream directly.
 
 To recreate the `winpthreads` repository from upstream, you can do:
 
+[source,sh]
 ----
 git clone -o upstream https://git.code.sf.net/p/mingw-w64/mingw-w64 winpthreads
 cd winpthreads
@@ -718,6 +736,7 @@ git subtree -P mingw-w64-libraries/winpthreads split -b master
 As subtree splitting is deterministic, repeating these operations later will
 allow to update `master`, for instance by:
 
+[source,sh]
 ----
 git fetch upstream
 git checkout upstream/master

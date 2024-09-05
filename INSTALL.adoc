@@ -53,14 +53,21 @@
 
 From the top directory, do:
 
-        ./configure
+[source,sh]
+----
+./configure
+----
 
 This generates the three configuration files `Makefile.config`,
 `runtime/caml/m.h` and `runtime/caml/s.h`.
 
 The `configure` script accepts options that can be discovered by running:
 
-        ./configure --help
++
+[source,sh]
+----
+./configure --help
+----
 
 Some options or variables like LDLIBS may not be taken into account
 by the OCaml build system at the moment. Please report an issue if you
@@ -69,55 +76,76 @@ discover such a variable or option and this causes troubles to you.
 Examples:
 
 * Standard installation in `/usr/{bin,lib,man}` instead of `/usr/local`:
-    ./configure --prefix=/usr
-
++
+[source,sh]
+----
+./configure --prefix=/usr
+----
 
 * On a Linux x86-64 host, to build a 32-bit version of OCaml:
-
-    ./configure --build=x86_64-pc-linux-gnu --host=i686-linux-gnu
++
+[source,sh]
+----
+./configure --build=x86_64-pc-linux-gnu --host=i686-linux-gnu
+----
 
 * For AIX 7.x with the IBM compiler `xlc`:
-
-    ./configure CC=xlc
++
+[source,sh]
+----
+./configure CC=xlc
+----
 +
 By default, build is 32-bit. For 64-bit build, please set environment variable `OBJECT_MODE=64`
   for _both_ `configure` and `make world` phases. Note, if this variable is set for only one phase,
   your build will break (`ocamlrun` segfaults).
-+
+
 * For Solaris/Illumos on SPARC machines with Sun PRO compiler only 64-bit
   bytecode target is supported (32-bit fails due to alignment issues; the optimization
   is preset to `-O4` for inlining):
-
-    ./configure CC="cc -m64"
++
+[source,sh]
+----
+./configure CC="cc -m64"
+----
 +
 If something goes wrong during the automatic configuration, or if the generated
 files cause errors later on, then look at the template files:
-
-        Makefile.config.in
-        Makefile.build_config.in
-        runtime/caml/m.h.in
-        runtime/caml/s.h.in
+----
+Makefile.config.in
+Makefile.build_config.in
+runtime/caml/m.h.in
+runtime/caml/s.h.in
+----
 +
 for guidance on how to edit the generated files by hand.
 
 == Building the compiler
 
 From the top directory, do:
-
-        make
+[source,sh]
+----
+make
+----
 
 This builds the OCaml compiler for the first time.  This phase is
 fairly verbose; consider redirecting the output to a file:
 
-        make > make.log 2>&1     # in sh
-        make >& make.log         # in csh
+[source,sh]
+----
+make > make.log 2>&1     # in sh
+make >& make.log         # in csh
+----
 
 == (Optional) Running the testsuite
 
 To be sure everything works well, you can run the test suite
 that comes with the compiler. To do so, do:
 
-        make tests
+[source,sh]
+----
+make tests
+----
 
 == Installing the compiler
 
@@ -143,12 +171,18 @@ You can now install the OCaml system. This will create the following commands
 
 From the top directory, become superuser and do:
 
-        make install
+[source,sh]
+----
+make install
+----
 
 Installation is complete. Time to clean up. From the toplevel directory,
 do:
 
-        make clean
+[source,sh]
+----
+make clean
+----
 
 After installation, do *not* strip the `ocamldebug` executables.
 This is a mixed-mode executable (containing both compiled C
