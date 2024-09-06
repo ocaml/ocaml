@@ -183,9 +183,15 @@ val get_temp_dir_name : unit -> string
 (** The name of the temporary directory:
     Under Unix, the value of the [TMPDIR] environment variable, or "/tmp"
     if the variable is not set.
-    Under Windows, the value of the [TEMP] environment variable, or "."
-    if the variable is not set.
+
+    Under Windows, the value returned by [GetTempPath2] (if available)
+    or [GetTempPath].
+
     The temporary directory can be changed with {!Filename.set_temp_dir_name}.
+
+    Under Windows, before OCaml 5.4, it would return the value of the
+    [TEMP] environment variable, or "." if the variable was not set.
+
     @since 4.00
 *)
 

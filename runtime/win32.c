@@ -17,10 +17,9 @@
 
 /* Win32-specific stuff */
 
-/* FILE_INFO_BY_HANDLE_CLASS and FILE_NAME_INFO are only available from Windows
-   Vista onwards */
-#undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600
+/* FILE_INFO_BY_HANDLE_CLASS, FILE_NAME_INFO, and INIT_ONCE are only
+   available from Windows Vista onwards */
+#define _WIN32_WINNT 0x0600 /* _WIN32_WINNT_VISTA */
 
 #define WIN32_LEAN_AND_MEAN
 #include <wtypes.h>
@@ -1257,4 +1256,32 @@ value caml_win32_xdg_defaults(void)
   CoTaskMemFree(wpath);
 
   CAMLreturn(result);
+}
+
+static INIT_ONCE get_temp_path_init_once = INIT_ONCE_STATIC_INIT;
+static BOOL CALLBACK get_temp_path_init_function(PINIT_ONCE InitOnce,
+                                                 PVOID Parameter,
+                                                 PVOID *lpContext)
+{
+  FARPROC pGetTempPath2W =
+    GetProcAddress(GetModuleHandle(L"KERNEL32.DLL"), "GetTempPath2W");
+  if (pGetTempPath2W)
+    *lpContext = pGetTempPath2W;
+  else
+    *lpContext = GetTempPath;
+  return TRUE;
+}
+
+value caml_win32_get_temp_path(void)
+{
+  CAMLparam0();
+  wchar_t buf[MAX_PATH+1];
+  DWORD (WINAPI *get_temp_path)(DWORD, LPWSTR);
+
+  InitOnceExecuteOnce(&get_temp_path_init_once, get_temp_path_init_function,
+                      NULL, (LPVOID *) &get_temp_path);
+
+  if (!get_temp_path(MAX_PATH+1, buf))
+    caml_win32_sys_error(GetLastError());
+  CAMLreturn(caml_copy_string_of_utf16(buf));
 }

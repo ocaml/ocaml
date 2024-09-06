@@ -770,3 +770,15 @@ CAMLprim value caml_xdg_defaults(value unit)
   return Val_emptylist;
 #endif
 }
+
+/* On Windows, returns the path to a directory suitable for storing
+   temporary files. On Unix, this path is more easily computed in
+   OCaml, so the string returned by the primitive is empty. */
+CAMLprim value caml_sys_temp_dir_name(value unit)
+{
+#ifdef _WIN32
+  return caml_win32_get_temp_path();
+#else
+  return caml_copy_string("");
+#endif
+}
