@@ -464,8 +464,8 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Itailcall_imm { func; _ }) ->
       if func = f.fun_name then 1 else epilogue_size f
     | Lop (Iextcall {alloc; stack_ofs} ) ->
-      if stack_ofs > 0 then 6
-      else if alloc then 4
+      if stack_ofs > 0 then 5
+      else if alloc then 3
       else 8
     | Lop (Istackoffset _) -> 2
     | Lop (Iload { memory_chunk; addressing_mode; is_atomic; mutability }) ->
@@ -742,12 +742,10 @@ let emit_instr env i =
           emit_load_symbol_addr reg_x8 func;
           `	bl	{emit_symbol "caml_c_call_stack_args"}\n`;
           `{record_frame env i.live (Dbg_other i.dbg)}\n`;
-          `	dmb	ishld\n`
         end else if alloc then begin
           emit_load_symbol_addr reg_x8 func;
           `	bl	{emit_symbol "caml_c_call"}\n`;
           `{record_frame env i.live (Dbg_other i.dbg)}\n`;
-          `	dmb	ishld\n`
         end else begin
           (* Push frame pointer (x29) onto stack and restore later. *)
           `	str	x29, [sp, -16]!\n`;
