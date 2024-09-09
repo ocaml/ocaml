@@ -1707,6 +1707,7 @@ class html =
         if r.rf_mutable then bs b (self#keyword "mutable&nbsp;") ;
         bp b "<span id=\"%s\">%s</span>&nbsp;: " (gen_name r) r.rf_name;
         self#html_of_type_expr b father r.rf_type;
+        if r.rf_atomic then bs b (self#keyword " [@atomic]") ;
         bs b ";</code></td>\n";
         (
           match r.rf_text with
