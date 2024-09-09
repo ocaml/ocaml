@@ -572,6 +572,7 @@ class man =
              bs b (if r.rf_mutable then "\n\n.B mutable \n" else "\n ");
              bs b (r.rf_name^" : ");
              self#man_of_type_expr b father r.rf_type;
+             bs b (if r.rf_atomic then "\n.B [@atomic] " else "");
              bs b ";";
              self#field_comment b r.rf_text ;
            ) l;
