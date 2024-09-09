@@ -52,7 +52,7 @@ module Deep = struct
   external alloc_stack :
     ('a -> 'b) ->
     (exn -> 'b) ->
-    ('c t -> ('c, 'b) continuation -> last_fiber -> 'b) ->
+    ('c t -> ('c, 'b) continuation -> 'b) ->
     ('a, 'b) stack = "caml_alloc_stack"
   external cont_last_fiber : ('a, 'b) continuation -> last_fiber = "%field1"
 
@@ -71,14 +71,13 @@ module Deep = struct
       exnc: exn -> 'b;
       effc: 'c.'c t -> (('c,'b) continuation -> 'b) option }
 
-  external reperform :
-    'a t -> ('a, 'b) continuation -> last_fiber -> 'b = "%reperform_old"
+  external reperform : 'a t -> ('a, 'b) continuation -> 'b = "%reperform"
 
   let match_with comp arg handler =
-    let effc eff k last_fiber =
+    let effc eff k =
       match handler.effc eff with
       | Some f -> f k
-      | None -> reperform eff k last_fiber
+      | None -> reperform eff k
     in
     let s = alloc_stack handler.retc handler.exnc effc in
     runstack s comp arg
@@ -87,10 +86,10 @@ module Deep = struct
     { effc: 'b. 'b t -> (('b,'a) continuation -> 'a) option }
 
   let try_with comp arg handler =
-    let effc' eff k last_fiber =
+    let effc' eff k =
       match handler.effc eff with
       | Some f -> f k
-      | None -> reperform eff k last_fiber
+      | None -> reperform eff k
     in
     let s = alloc_stack (fun x -> x) (fun e -> raise e) effc' in
     runstack s comp arg
@@ -136,17 +135,16 @@ module Shallow = struct
     ('a,'b) continuation ->
     ('b -> 'c) ->
     (exn -> 'c) ->
-    ('d t -> ('d,'b) continuation -> last_fiber -> 'c) ->
+    ('d t -> ('d,'b) continuation -> 'c) ->
     ('a,'c) stack = "caml_continuation_use_and_update_handler_noexc" [@@noalloc]
 
-  external reperform :
-    'a t -> ('a, 'b) continuation -> last_fiber -> 'c = "%reperform_old"
+  external reperform : 'a t -> ('a, 'b) continuation -> 'c = "%reperform"
 
   let continue_gen k resume_fun v handler =
-    let effc eff k last_fiber =
+    let effc eff k =
       match handler.effc eff with
       | Some f -> f k
-      | None -> reperform eff k last_fiber
+      | None -> reperform eff k
     in
     let last_fiber = cont_last_fiber k in
     let stack = update_handler k handler.retc handler.exnc effc in
