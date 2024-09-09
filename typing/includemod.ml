@@ -1330,7 +1330,8 @@ end
 (* Hide the context and substitution parameters to the outside world *)
 
 let modtypes_with_shape ~shape ~loc env ~mark mty1 mty2 =
-  let direction = Directionality.unknown ~mark in
+  (* modtypes with shape is used when typing module expressions in [Typemod] *)
+  let direction = Directionality.strictly_positive ~mark in
   match
     modtypes ~core:core_inclusion ~direction ~loc env Subst.identity
       mty1 mty2 shape
