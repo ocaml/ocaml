@@ -97,10 +97,10 @@ open Printpat.Compat
 
 module Scoped_location = Debuginfo.Scoped_location
 
-let dbg = false
+let dbg () = !Clflags.dump_matchcomp
 
 let debugf fmt =
-  if dbg
+  if dbg ()
   then Format.eprintf fmt
   else Format.ifprintf Format.err_formatter fmt
 
@@ -1854,7 +1854,7 @@ let separate_debug_output () =
 
 let dbg_split_and_precompile pm next nexts =
   if
-    dbg
+    dbg ()
     && (nexts <> []
        ||
        match next with
@@ -3841,7 +3841,7 @@ and bind_match_arg kind v arg (lam, jumps) =
 
 and combine_handlers ~scopes repr partial ctx first_match rem =
   comp_match_handlers
-    (( if dbg then
+    (( if dbg () then
          do_compile_matching_pr ~scopes
        else
          do_compile_matching ~scopes
