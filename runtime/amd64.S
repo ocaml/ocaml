@@ -1093,7 +1093,6 @@ LBL(do_perform):
      /* Save non-callee-saved registers %rax, %rdi, %rsi, %r10, %r11 before C
         call */
         pushq   %rax; CFI_ADJUST(8);
-        pushq   %rdi; CFI_ADJUST(8);
         pushq   %rsi; CFI_ADJUST(8);
         pushq   %r10; CFI_ADJUST(8);
         pushq   %r11; CFI_ADJUST(8);
@@ -1102,15 +1101,14 @@ LBL(do_perform):
         popq   %r11; CFI_ADJUST(-8);
         popq   %r10; CFI_ADJUST(-8);
         popq   %rsi; CFI_ADJUST(-8);
-        popq   %rdi; CFI_ADJUST(-8);
         popq   %rax; CFI_ADJUST(-8);
 #endif
         SWITCH_OCAML_STACKS /* preserves r11 and rsi */
      /* We have to null the Handler_parent after the switch because the
         Handler_parent is needed to unwind the stack for backtraces */
         movq    $0, Handler_parent(%r11) /* Set parent of performer to NULL */
-        movq    Handler_effect(%r11), %rsi  /* %rsi := effect handler */
-        jmp     GCALL(caml_apply3)
+        movq    Handler_effect(%r11), %rdi  /* %rdi := effect handler */
+        jmp     GCALL(caml_apply2)
 LBL(112):
     /* Switch back to original performer before raising Effect.Unhandled
        (no-op unless this is a reperform) */
@@ -1148,7 +1146,7 @@ CFI_STARTPROC
     /*  %rax: effect to reperform
         %rbx: continuation */
         movq    Caml_state(current_stack), %rsi  /* %rsi := old stack */
-        movq    8(%rbx), %rdi
+        movq    8(%rbx), %rdi                    /* %rdi := last fiber */
         movq    (Stack_handler-1)(%rdi), %r10
         movq    %rsi, Handler_parent(%r10)       /* Append to last_fiber */
         leaq    1(%rsi), %rdi  /* %rdi (last_fiber) := Val_ptr(old stack) */

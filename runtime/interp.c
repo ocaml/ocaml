@@ -1355,26 +1355,24 @@ do_resume: {
 
       domain_state->trap_sp_off = Long_val(sp[0]);
       extra_args = Long_val(sp[1]);
-      sp--;
       sp[0] = accu;
       sp[1] = cont;
-      sp[2] = Val_ptr(old_stack);
       accu = Stack_handle_effect(old_stack);
       pc = Code_val(accu);
       env = accu;
-      extra_args += 2;
+      extra_args += 1;
       goto check_stacks;
     }
 
     Instruct(REPERFORMTERM): {
       value eff = accu;
       value cont = sp[0];
-      struct stack_info* cont_tail = Ptr_val(sp[1]);
+      struct stack_info* cont_tail = Ptr_val(Field(cont, 1));
       struct stack_info* self = domain_state->current_stack;
       struct stack_info* parent = Stack_parent(domain_state->current_stack);
 
       check_trap_barrier_for_effect (domain_state);
-      sp = sp + *pc - 2;
+      sp = sp + *pc - 3;
       sp[0] = Val_long(domain_state->trap_sp_off);
       sp[1] = Val_long(extra_args);
 
@@ -1400,14 +1398,12 @@ do_resume: {
 
       domain_state->trap_sp_off = Long_val(sp[0]);
       extra_args = Long_val(sp[1]);
-      sp--;
       sp[0] = eff;
       sp[1] = cont;
-      sp[2] = Val_ptr(self);
       accu = Stack_handle_effect(self);
       pc = Code_val(accu);
       env = accu;
-      extra_args += 2;
+      extra_args += 1;
       goto check_stacks;
     }
 
