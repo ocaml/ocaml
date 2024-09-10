@@ -194,15 +194,17 @@ jobs:
         run: |
           apt-get update
           apt-get install -y git gcc make parallel
+          adduser --disabled-password --gecos '' ocaml
       - name: Checkout
         # See https://github.com/actions/checkout/issues/334
         uses: actions/checkout@v1
       - name: configure tree
         run: |
-          MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh configure
+          chown -R ocaml:ocaml .
+          MAKE_ARG=-j su ocaml -c "bash -xe tools/ci/actions/runner.sh configure"
       - name: Build
         run: |
-          MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
+          MAKE_ARG=-j su ocaml -c "bash -xe tools/ci/actions/runner.sh build"
       - name: Run the testsuite
         run: |
-          bash -xe tools/ci/actions/runner.sh test
+          su ocaml -c "bash -xe tools/ci/actions/runner.sh test"
