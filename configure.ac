@@ -2377,8 +2377,7 @@ AS_CASE([$host],
     # global CFLAGS and LIBS variables. This means that all the subsequent
     # tests can rely on the assumption that pthread is enabled.
     CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-    LIBS="$LIBS $PTHREAD_LIBS"
-    AC_CHECK_FUNC([sigwait], [AC_DEFINE([HAS_SIGWAIT], [1])])],
+    LIBS="$LIBS $PTHREAD_LIBS"],
     [AC_MSG_ERROR(m4_normalize([POSIX threads are required but not supported on
       this platform]))])])
 
