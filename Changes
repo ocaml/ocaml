@@ -11,6 +11,10 @@ Working version
   available in older, now unsupported Windows versions.
   (Antonin Décimo, review by Nicolás Ojeda Bär and David Allsopp)
 
+- #?????: Constify some function parameters, flags tables, and some
+  pointers in C code (take 3).
+  (Antonin Décimo, review by ???)
+
 ### Code generation and optimizations:
 
 ### Standard library:
