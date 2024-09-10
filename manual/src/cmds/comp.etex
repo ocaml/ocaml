@@ -567,13 +567,10 @@ assumption is necessary (the pattern-matching was partial), and in
 some other cases it is in fact overly conservative (a more
 fine-grained analysis would see that it is in fact total).
 
-This situation happens rarely, and the degradation in code quality is
-very small -- the vast majority of programs will see no performance
-difference at all if it were to happen. In addition, explaining
-precisely which pattern-matchings will be degraded in this way in this
-way is difficult, because it depends on internal implementation
-details of the pattern-matching compiler. For these reasons, the
-warning is disabled by default: we believe that the right approach
+This situation happens rarely: the only known case requires matching
+on mutable fields. Moreover, the vast majority of programs will see no
+performance difference at all if it were to happen. For these reasons,
+the warning is disabled by default: we believe that the right approach
 when this situation occurs is to do nothing at all.
 
 However, some expert users might still be interested in finding out
