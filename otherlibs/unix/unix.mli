@@ -1169,9 +1169,9 @@ val sigprocmask : sigprocmask_command -> int list -> int list
    from the set of blocked signals.
    [sigprocmask] returns the set of previously blocked signals.
 
-   When the systhreads version of the [Thread] module is loaded, this
-   function redirects to [Thread.sigmask]. I.e., [sigprocmask] only
-   changes the mask of the current thread.
+   Each domain, and each thread when the [Thread] module is loaded,
+   has its own signal mask.  [sigprocmask] only changes the mask
+   of the current domain or current thread.
 
    @raise Invalid_argument on Windows (no inter-process signals on
    Windows) *)
