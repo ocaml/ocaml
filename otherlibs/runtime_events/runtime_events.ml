@@ -401,6 +401,7 @@ end
 external start : unit -> unit = "caml_ml_runtime_events_start"
 external pause : unit -> unit = "caml_ml_runtime_events_pause"
 external resume : unit -> unit = "caml_ml_runtime_events_resume"
+external path : unit -> string option = "caml_ml_runtime_events_path"
 
 external create_cursor : (string * int) option -> cursor
                                         = "caml_ml_runtime_events_create_cursor"

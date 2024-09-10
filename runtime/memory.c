@@ -731,13 +731,21 @@ CAMLexport caml_stat_string caml_stat_strdup(const char *s)
 
 #ifdef _WIN32
 
-CAMLexport wchar_t * caml_stat_wcsdup(const wchar_t *s)
+CAMLexport wchar_t * caml_stat_wcsdup_noexc(const wchar_t *s)
 {
   size_t slen = wcslen(s);
   wchar_t* result = caml_stat_alloc((slen + 1)*sizeof(wchar_t));
   if (result == NULL)
-    caml_raise_out_of_memory();
+    return NULL;
   memcpy(result, s, (slen + 1)*sizeof(wchar_t));
+  return result;
+}
+
+CAMLexport wchar_t * caml_stat_wcsdup(const wchar_t *s)
+{
+  wchar_t* result = caml_stat_wcsdup_noexc(s);
+  if (result == NULL)
+    caml_raise_out_of_memory();
   return result;
 }
 

@@ -295,8 +295,10 @@ void caml_runtime_events_destroy(void);
    in a forked child */
 CAMLextern void caml_runtime_events_post_fork(void);
 
-/* Returns the location of the runtime_events for the current process if started
-   or NULL otherwise */
+/* Return the path of the ring buffers file of this process, or NULL
+   if runtime events are not enabled. This is used in the consumer to
+   read the ring buffers of the current process. Always returns a
+   freshly-allocated string. */
 CAMLextern char_os* caml_runtime_events_current_location(void);
 
 /* Functions for putting runtime data on to the runtime_events. These are all

@@ -617,6 +617,10 @@ val start : unit -> unit
   a set of callbacks to be called for each type of event.
 *)
 
+val path : unit -> string option
+(** If runtime events are being collected, [path ()] returns [Some p] where [p]
+  is a path to the runtime events file. Otherwise, it returns None. *)
+
 val pause : unit -> unit
 (** [pause ()] will pause the collection of events in the runtime.
    Traces are collected if the program has called [Runtime_events.start ()] or
