@@ -203,6 +203,7 @@ type expression =
 type codegen_option =
   | Reduce_code_size
   | No_CSE
+  | Use_linscan_regalloc
 
 type fundecl =
   { fun_name: string;
