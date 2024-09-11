@@ -254,10 +254,50 @@ module Compiler_pass : sig
   val to_output_filename: t -> prefix:string -> string
   val of_input_filename: string -> t option
 end
+
 val stop_after : Compiler_pass.t option ref
 val should_stop_after : Compiler_pass.t -> bool
 val set_save_ir_after : Compiler_pass.t -> bool -> unit
 val should_save_ir_after : Compiler_pass.t -> bool
+
+module Dump_option : sig
+  type t =
+    | Source
+    | Parsetree
+    | Typedtree
+    | Shape
+    | Match_comp
+    | Raw_lambda
+    | Lambda
+    | Instr
+    | Raw_clambda
+    | Clambda
+    | Raw_flambda
+    | Flambda
+      (* Note: no support for [-dflambda-let <stamp>] for now. *)
+    | Cmm
+    | Selection
+    | Combine
+    | CSE
+    | Live
+    | Spill
+    | Split
+    | Interf
+    | Prefer
+    | Regalloc
+    | Scheduling
+    | Linear
+    | Interval
+
+  val compare : t -> t -> int
+
+  val of_string : string -> t option
+  val to_string : t -> string
+
+  val flag : t -> bool ref
+
+  val available : t -> (unit, string) Result.t
+end
 
 val arg_spec : (string * Arg.spec * string) list ref
 

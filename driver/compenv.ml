@@ -180,6 +180,31 @@ let set_compiler_pass ppf ~name v flag ~filter =
           "Please specify at most one %s <pass>." name
       end
 
+let handle_dump_option ppf v =
+  let module D = Clflags.Dump_option in
+  let value, key =
+    (* "foo"  => true, "foo"
+       "-foo" => false, "foo"
+       "+foo" => true, "foo" *)
+    let tail () = String.sub v 1 (String.length v - 1) in
+    if String.starts_with ~prefix:"-" v
+    then false, tail ()
+    else if String.starts_with ~prefix:"+" v
+    then true, tail ()
+    else true, v
+  in
+  match D.of_string key with
+  | None ->
+      Printf.ksprintf (print_error ppf)
+        "bad value %s for option \"dump\"." key
+  | Some option ->
+  match D.available option with
+  | Error msg ->
+      Printf.ksprintf (print_error ppf)
+        "dump=%s: %s." key msg
+  | Ok () ->
+      D.flag option := value
+
 (* 'can-discard=' specifies which arguments can be discarded without warning
    because they are not understood by some versions of OCaml. *)
 let can_discard = ref []
@@ -451,6 +476,9 @@ let read_one_param ppf position name v =
     end
   | "dump-into-file" -> Clflags.dump_into_file := true
   | "dump-dir" -> Clflags.dump_dir := Some v
+
+  | "dump" ->
+      handle_dump_option ppf v
 
   | _ ->
     if not (List.mem name !can_discard) then begin
