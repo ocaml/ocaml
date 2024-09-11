@@ -53,16 +53,17 @@ let cat_file f =
 let myecho =
   Filename.concat Filename.current_dir_name "my echo.exe"
 
-let run ?stdin ?stdout ?stderr args =
+let run prog ?stdin ?stdout ?stderr args =
   flush Stdlib.stdout;
   let rc =
-   Sys.command (Filename.quote_command myecho ?stdin ?stdout ?stderr args) in
+   Sys.command (Filename.quote_command prog ?stdin ?stdout ?stderr args) in
   if rc > 0 then begin
-    printf "!!! my echo failed\n";
+    printf "!!! %s failed\n" prog;
     exit 2
   end
 
 let _ =
+  let run = run myecho in
   copy_file "myecho.exe" "my echo.exe";
   printf "-------- Spaces\n";
   run ["Lorem ipsum dolor"; "sit amet,"; "consectetur adipiscing elit,"];
@@ -100,3 +101,7 @@ let _ =
                "in voluptate"; "-out"; "velit esse cillum"; "-err"; "dolore"];
   cat_file "my file.tmp"; Sys.remove "my file.tmp";
   Sys.remove "my echo.exe"
+
+let _ =
+  printf "-------- Forward slashes in program position\n";
+  run "./myecho.exe" ["alea iacta est"]
