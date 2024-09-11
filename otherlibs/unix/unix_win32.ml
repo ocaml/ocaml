@@ -579,6 +579,7 @@ let sigprocmask _cmd _sigs = invalid_arg "Unix.sigprocmask not implemented"
 let sigpending () = invalid_arg "Unix.sigpending not implemented"
 let sigsuspend _sigs = invalid_arg "Unix.sigsuspend not implemented"
 let pause () = invalid_arg "Unix.pause not implemented"
+let sigwait _sigs = invalid_arg "Unix.sigwait not implemented"
 
 (* Time functions *)
 

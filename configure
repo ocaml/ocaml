@@ -20166,13 +20166,6 @@ if test "x$ax_pthread_ok" = "xyes"; then
     # tests can rely on the assumption that pthread is enabled.
     CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
     LIBS="$LIBS $PTHREAD_LIBS"
-    ac_fn_c_check_func "$LINENO" "sigwait" "ac_cv_func_sigwait"
-if test "x$ac_cv_func_sigwait" = xyes
-then :
-  printf "%s\n" "#define HAS_SIGWAIT 1" >>confdefs.h
-
-fi
-
         :
 else
         ax_pthread_ok=no
