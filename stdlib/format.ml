@@ -1304,7 +1304,7 @@ let pp_print_text ppf s =
   let left = ref 0 in
   let right = ref 0 in
   let flush () =
-    pp_print_substring ppf s ~pos:!left ~len:(!right - !left);
+    pp_print_substring ~pos:!left ~len:(!right - !left) ppf s;
     incr right; left := !right;
   in
   while (!right <> len) do
