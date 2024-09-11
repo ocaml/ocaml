@@ -103,7 +103,5 @@ let _ =
   Sys.remove "my echo.exe"
 
 let _ =
-  if not (Sys.file_exists "sub") then Sys.mkdir "sub" 0o777;
-  copy_file "myecho.exe" "sub/myecho.exe";
   printf "-------- Forward slashes in program position\n";
-  run "sub/myecho.exe" ["alea iacta est"]
+  run "./myecho.exe" ["alea iacta est"]
