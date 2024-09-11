@@ -22,4 +22,3 @@ let _ =
   let signo = Unix.sigwait signals_of_interest in
   Domain.join d;
   assert (signo = Sys.sigusr1)
-

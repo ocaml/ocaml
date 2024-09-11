@@ -13,6 +13,11 @@ Working version
 
 ### Other libraries:
 
+- #13429: add `Unix.sigwait`, a binding to the `sigwait` system call;
+  implement `Thread.wait_signal` using `Unix.sigwait`, and
+  `Thread.sigmask` using `Unix.sigprocmask`.
+  (Xavier Leroy, review by Antonin Décimo, Gabriel Scherer, Miod Vallat)
+
 ### Tools:
 
 ### Manual and documentation:
