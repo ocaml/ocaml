@@ -570,6 +570,10 @@ ___________
   between domain exit and backup thread
   (Miod Vallat and Gabriel Scherer, report by Jan Midtgaard)
 
+- #13417: `Filename.quote_command`: fix handling of forward slashes in program
+  path under Win32.
+  (Nicolás Ojeda Bär, review by David Allsopp and Damien Doligez)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
