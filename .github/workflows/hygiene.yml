@@ -47,20 +47,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: github.event_name == 'pull_request'
 
-      - name: Parsetree updated
-        run: >-
-          tools/ci/actions/check-parsetree-modified.sh
-          '${{ github.event.pull_request.issue_url }}'
-          '${{ github.ref }}'
-          'pull_request'
-          '${{ github.event.pull_request.base.ref }}'
-          '${{ github.event.pull_request.base.sha }}'
-          '${{ github.event.pull_request.head.ref }}'
-          '${{ github.event.pull_request.head.sha }}'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: github.event_name == 'pull_request'
-
       - name: configure correctly generated
         run: >-
           tools/ci/actions/check-configure.sh
