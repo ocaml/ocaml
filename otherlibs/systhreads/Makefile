@@ -79,7 +79,7 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 ifeq "$(COMPUTE_DEPS)" "true"
 st_stubs.%.$(O): st_stubs.c
 else
-st_stubs.%.$(O): st_stubs.c $(RUNTIME_HEADERS) $(wildcard *.h)
+st_stubs.%.$(O): st_stubs.c $(RUNTIME_HEADERS)
 endif
 	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
 	  $(OUTPUTOBJ)$@ -c $<
