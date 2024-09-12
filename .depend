@@ -4405,6 +4405,7 @@ lambda/lambda.cmi : \
     lambda/debuginfo.cmi \
     parsing/asttypes.cmi
 lambda/matching.cmo : \
+    utils/warnings.cmi \
     typing/types.cmi \
     typing/typeopt.cmi \
     typing/typedtree.cmi \
@@ -4427,6 +4428,7 @@ lambda/matching.cmo : \
     parsing/asttypes.cmi \
     lambda/matching.cmi
 lambda/matching.cmx : \
+    utils/warnings.cmx \
     typing/types.cmx \
     typing/typeopt.cmx \
     typing/typedtree.cmx \

@@ -4017,6 +4017,15 @@ let toplevel_handler ~scopes loc ~failer partial args cases compile_fun =
       match Jumps.partial jumps with
       | Total -> lam
       | Partial ->
+        if partial.global = Total then begin
+          (* In this case the type-checker believed the
+             pattern-matching to be Total, but the compiler found it
+             to be Partial. See the discussion in the "Warning
+             reference" section of the reference manual. *)
+          let warning = Warnings.Degraded_to_partial_match in
+          if Warnings.is_active warning then
+            Location.prerr_warning loc warning
+        end;
         Lstaticcatch (lam, (final_exit, []),
                       failure_handler ~scopes loc ~failer ())
   end

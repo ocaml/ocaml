@@ -3,6 +3,14 @@
  expect;
 *)
 
+(* We explicitly enable the warning (see the discussion in the
+   "Warning reference" section of the reference manual), which makes
+   it clear which examples have been intentionally pessimized by the
+   compiler. *)
+#warnings "+degraded-to-partial-match";;
+[%%expect {|
+|}];;
+
 (* The original example of unsoundness in #7421. *)
 type t = {a: bool; mutable b: int option}
 
@@ -21,6 +29,16 @@ let f x =
 [%%expect {|
 0
 type t = { a : bool; mutable b : int option; }
+Lines 4-8, characters 2-32:
+4 | ..match x with
+5 |   | {a = false; b = _} -> 0
+6 |   | {a = _;     b = None} -> 1
+7 |   | {a = _;     b = _} when (x.b <- None; false) -> 2
+8 |   | {a = true;  b = Some y} -> y
+Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled
+as partial, even if it appears to be total. It may generate a Match_failure
+exception. This typically occurs due to complex matches on mutable fields.
+(see manual section 13.5.5)
 (let
   (f/280 =
      (function x/282 : int
@@ -35,6 +53,7 @@ type t = { a : bool; mutable b : int option; }
              1))
          0)))
   (apply (field_mut 1 (global Toploop!)) "f" f/280))
+
 val f : t -> int = <fun>
 |}]
 
@@ -75,6 +94,15 @@ let f x =
   | {a = true;  b = Some y} -> y
 ;;
 [%%expect {|
+Lines 2-5, characters 2-32:
+2 | ..match x with
+3 |   | {a = false; b = _} -> 0
+4 |   | {a = _;     b = None} -> 1
+5 |   | {a = true;  b = Some y} -> y
+Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled
+as partial, even if it appears to be total. It may generate a Match_failure
+exception. This typically occurs due to complex matches on mutable fields.
+(see manual section 13.5.5)
 (let
   (f/297 =
      (function x/298 : int
@@ -87,6 +115,7 @@ let f x =
                  1))))
          0)))
   (apply (field_mut 1 (global Toploop!)) "f" f/297))
+
 val f : t -> int = <fun>
 |}]
 
@@ -106,6 +135,16 @@ let f r =
 
    PASS: two different reads (field_mut 0), and a Match_failure case. *)
 [%%expect {|
+Lines 2-6, characters 2-13:
+2 | ..match Some r with
+3 |   | Some { contents = None } -> 0
+4 |   | _ when (r := None; false) -> 1
+5 |   | Some { contents = Some n } -> n
+6 |   | None -> 3
+Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled
+as partial, even if it appears to be total. It may generate a Match_failure
+exception. This typically occurs due to complex matches on mutable fields.
+(see manual section 13.5.5)
 (let
   (f/304 =
      (function r/305 : int
@@ -124,6 +163,7 @@ let f r =
                      (makeblock 0 (global Match_failure/20!) [0: "" 2 2]))))
                3))))))
   (apply (field_mut 1 (global Toploop!)) "f" f/304))
+
 val f : int option ref -> int = <fun>
 |}]
 
@@ -167,6 +207,14 @@ let test = function
 [%%expect {|
 0
 type _ t = Int : int -> int t | Bool : bool -> bool t
+Lines 3-5, characters 11-36:
+3 | ...........function
+4 |   | { contents = None } -> 0
+5 |   | { contents = Some (Int n) } -> n
+Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled
+as partial, even if it appears to be total. It may generate a Match_failure
+exception. This typically occurs due to complex matches on mutable fields.
+(see manual section 13.5.5)
 (let
   (test/323 =
      (function param/325 : int
@@ -179,6 +227,7 @@ type _ t = Int : int -> int t | Bool : bool -> bool t
                (raise (makeblock 0 (global Match_failure/20!) [0: "" 3 11]))))
            0))))
   (apply (field_mut 1 (global Toploop!)) "test" test/323))
+
 val test : int t option ref -> int = <fun>
 |}]
 
@@ -236,6 +285,16 @@ let deep r =
 ;;
 (* PASS: two different reads (field_mut 0), and a Match_failure case. *)
 [%%expect {|
+Lines 2-6, characters 2-13:
+2 | ..match Some r with
+3 |   | Some { contents = ((), None) } -> 0
+4 |   | _ when (r := ((), None); false) -> 1
+5 |   | Some { contents = ((), Some n) } -> n
+6 |   | None -> 3
+Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled
+as partial, even if it appears to be total. It may generate a Match_failure
+exception. This typically occurs due to complex matches on mutable fields.
+(see manual section 13.5.5)
 (let
   (deep/341 =
      (function r/343 : int
@@ -256,6 +315,7 @@ let deep r =
                      (makeblock 0 (global Match_failure/20!) [0: "" 2 2]))))
                3))))))
   (apply (field_mut 1 (global Toploop!)) "deep" deep/341))
+
 val deep : (unit * int option) ref -> int = <fun>
 |}]
 
