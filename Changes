@@ -32,6 +32,10 @@ OCaml 4.14 maintenance version
   (Vincent Laviron, report by François Pottier, review by Nathanaëlle Courant
   and Gabriel Scherer)
 
+- #13430, #13434: protect memory-safety on Lazy.force races
+  (Gabriel Scherer and Vincent Laviron, report by Edwin Török,
+   review by Vincent Laviron)
+
 OCaml 4.14.2 (14 March 2024)
 ----------------------------
 
