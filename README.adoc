@@ -1,19 +1,14 @@
-=== ⚠️ CAUTION
-
-The developer team released OCaml 5.0.0 in December 2022. This release sports a
+[CAUTION]
+====
+The developer team released OCaml 5.0.0 in December 2022. OCaml 5.x features a
 full rewrite of its runtime system for shared-memory parallel programming using
 domains and native support for concurrent programming using effect handlers.
 
-Owing to the large number of changes, the initial 5.0 release is more
-experimental than usual.  It is recommended that all users wanting a stable
-release use the 4.14 release which will continue to be supported and updated
-while 5.x reaches feature and stability parity.
-
-The initial release of OCaml 5.0 only supports the native compiler under ARM64
-and x86-64 architectures under Linux, macOS and the BSDs. On Windows, only the
-MinGW-w64 port is supported in OCaml 5.0; the Cygwin port is restored in 5.1
-and the MSVC port is restored in 5.3. On Linux, native code support for RISC-V
-and s390x/IBM Z is available in OCaml 5.1 and in 5.2 for Power.
+Owing to the large number of changes, especially to the garbage collector,
+OCaml 4.14 (the final release in the OCaml 4.x series, originally released in
+March 2022) remains supported for the time being. Maintainers of existing
+codebases are strongly encouraged to evaluate OCaml 5.x and to report any
+performance degradations on our issue tracker.
 
 |=====
 | Branch `trunk` | Branch `5.2` | Branch `5.1` | Branch `5.0` | Branch `4.14`
