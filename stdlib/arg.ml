@@ -120,18 +120,6 @@ let usage speclist errmsg =
 
 let current = ref 0
 
-let bool_of_string_opt x =
-  try Some (bool_of_string x)
-  with Invalid_argument _ -> None
-
-let int_of_string_opt x =
-  try Some (int_of_string x)
-  with Failure _ -> None
-
-let float_of_string_opt x =
-  try Some (float_of_string x)
-  with Failure _ -> None
-
 let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
                                       errmsg =
   let initpos = !current in
