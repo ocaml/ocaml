@@ -197,6 +197,9 @@ let record_event ev =
   ev.ev_pos <- !out_position;
   events := ev :: !events
 
+let hints = ref ([] : (int * optimization_hint) list)
+let record_hint hint = hints := (!out_position, hint) :: !hints
+
 (* Initialization *)
 
 let clear() =
@@ -205,6 +208,7 @@ let clear() =
   reloc_info := [];
   debug_dirs := String.Set.empty;
   events := [];
+  hints := [];
   out_buffer := create_bigarray 0
 
 let init () =
@@ -331,6 +335,7 @@ let emit_instr = function
   | Kresume -> out opRESUME
   | Kresumeterm n -> out opRESUMETERM; out_int n
   | Kreperformterm n -> out opREPERFORMTERM; out_int n
+  | Khint hint -> record_hint hint
   | Kstop -> out opSTOP
 
 (* Emission of a list of instructions. Include some peephole optimization. *)
@@ -440,6 +445,11 @@ let to_file outchan artifact_info ~required_globals code =
       (p, pos_out outchan - p)
     end else
       (0, 0) in
+  let (pos_hint, size_hint) =
+    let p = pos_out outchan in
+    Compression.output_value outchan !hints;
+    (p, pos_out outchan - p)
+  in
   let compunit =
     { cu_name = Cmo_format.Compunit (Unit_info.Artifact.modname artifact_info);
       cu_pos = pos_code;
@@ -452,7 +462,9 @@ let to_file outchan artifact_info ~required_globals code =
         (Ident.Set.elements required_globals);
       cu_force_link = !Clflags.link_everything;
       cu_debug = pos_debug;
-      cu_debugsize = size_debug } in
+      cu_debugsize = size_debug;
+      cu_hint = pos_hint;
+      cu_hintsize = size_hint } in
   let pos_compunit = pos_out outchan in
   let () =
     (* Remove any cached abbreviation expansion before marshaling.
@@ -489,4 +501,4 @@ let to_packed_file outchan code =
   let events = !events in
   let debug_dirs = !debug_dirs in
   let size = !out_position in
-  (size, reloc, events, debug_dirs))
+  (size, reloc, events, debug_dirs, !hints))

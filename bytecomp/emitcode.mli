@@ -40,7 +40,8 @@ val to_memory:
              debug events *)
 val to_packed_file:
   out_channel -> instruction list ->
-    int * (reloc_info * int) list * debug_event list * Misc.Stdlib.String.Set.t
+    int * (reloc_info * int) list * debug_event list *
+    Misc.Stdlib.String.Set.t * (int * optimization_hint) list
         (* Arguments:
              channel on output file
              list of instructions to emit
@@ -49,6 +50,7 @@ val to_packed_file:
              relocation information
              debug events
              debug directory
+             performance hints
              *)
 
 val marshal_to_channel_with_possibly_32bit_compat :

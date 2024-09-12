@@ -13,6 +13,10 @@ Working version
 
 ### Code generation and optimizations:
 
+- #13438: keep some optimization hints from lambda in bytecode modules
+   and executables (to be used by Js_of_ocaml / Wasm_of_ocaml)
+   (Jérôme Vouillon)
+
 ### Standard library:
 
 ### Other libraries:
