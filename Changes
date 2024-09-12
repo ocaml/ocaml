@@ -7,6 +7,10 @@ Working version
 
 ### Runtime system:
 
+- #?????: Stop using GetProcAddress to load functions that were not
+  available in older, now unsupported Windows versions.
+  (Antonin Décimo, review by ????)
+
 ### Code generation and optimizations:
 
 ### Standard library:
