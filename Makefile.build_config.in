@@ -84,7 +84,7 @@ OC_NATIVE_CFLAGS = @oc_native_cflags@
 
 # The submodules should be searched *before* any other external -I paths
 OC_INCLUDES = $(addprefix -I $(ROOTDIR)/, \
-  runtime @flexdll_source_dir@ @winpthreads_source_include_dir@)
+  runtime @flexdll_source_dir@)
 OC_CPPFLAGS = $(OC_INCLUDES) @oc_cppflags@
 
 OC_BYTECODE_CPPFLAGS = $(OC_INCLUDES) @oc_bytecode_cppflags@
@@ -118,10 +118,6 @@ DOCUMENTATION_TOOL_CMD=@documentation_tool_cmd@
 # Git submodule)
 FLEXDLL_SOURCE_DIR=@flexdll_source_dir@
 BOOTSTRAPPING_FLEXDLL=@bootstrapping_flexdll@
-
-# The location of the Winpthreads sources to use (usually provided as the
-# winpthreads Git submodule)
-WINPTHREADS_SOURCE_DIR=@winpthreads_source_dir@
 
 ### Where to install documentation
 PACKAGE_TARNAME = @PACKAGE_TARNAME@

@@ -25,7 +25,6 @@
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
-#include <pthread.h>
 #include <string.h>
 #include <assert.h>
 #ifdef HAS_GNU_GETAFFINITY_NP
@@ -43,6 +42,9 @@ typedef cpuset_t cpu_set_t;
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <sysinfoapi.h>
+#include <process.h>
+#else
+#include <pthread.h>
 #endif
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
@@ -187,7 +189,7 @@ struct dom_internal {
 
   /* backup thread */
   int backup_thread_running;
-  pthread_t backup_thread;
+  caml_plat_thread backup_thread;
   atomic_uintnat backup_thread_msg;
   caml_plat_mutex domain_lock;
   caml_plat_cond domain_cond;
@@ -1033,7 +1035,8 @@ struct domain_startup_params {
   uintnat unique_id; /* out */
 };
 
-static void* backup_thread_func(void* v)
+static CAML_THREAD_FUNCTION
+backup_thread_func(void* v)
 {
   dom_internal* di = (dom_internal*)v;
   uintnat msg;
@@ -1120,7 +1123,9 @@ static void install_backup_thread (dom_internal* di)
 #endif
 
     atomic_store_release(&di->backup_thread_msg, BT_ENTERING_OCAML);
-    err = pthread_create(&di->backup_thread, 0, backup_thread_func, (void*)di);
+
+    err = caml_plat_thread_create(&di->backup_thread, NULL, backup_thread_func,
+                                  (void*)di);
     caml_check_error(err, "failed to create domain backup thread");
 
 #ifndef _WIN32
@@ -1128,7 +1133,7 @@ static void install_backup_thread (dom_internal* di)
 #endif
 
     di->backup_thread_running = 1;
-    pthread_detach(di->backup_thread);
+    caml_plat_thread_detach(di->backup_thread);
   }
 }
 
@@ -1197,7 +1202,8 @@ static void sync_result(value term_sync, value res)
   CAMLreturn0;
 }
 
-static void* domain_thread_func(void* v)
+static CAML_THREAD_FUNCTION
+domain_thread_func(void* v)
 {
   struct domain_startup_params* p = v;
   struct domain_ml_values *ml_values = p->ml_values;
@@ -1275,7 +1281,7 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
 {
   CAMLparam2 (callback, term_sync);
   struct domain_startup_params p;
-  pthread_t th;
+  caml_plat_thread th;
   int err;
 
 #ifndef NATIVE_CODE
@@ -1290,7 +1296,7 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
                                     sizeof(struct domain_ml_values));
   init_domain_ml_values(p.ml_values, callback, term_sync);
 
-  err = pthread_create(&th, 0, domain_thread_func, (void*)&p);
+  err = caml_plat_thread_create(&th, NULL, domain_thread_func, (void*)&p);
   caml_check_error(err, "failed to create domain thread: pthread_create");
 
   /* While waiting for the child thread to start up, we need to service any
@@ -1311,11 +1317,11 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   if (p.status == Dom_started) {
     /* successfully created a domain.
        p.ml_values is now owned by that domain */
-    pthread_detach(th);
+    caml_plat_thread_detach(th);
   } else {
     CAMLassert (p.status == Dom_failed);
     /* failed */
-    pthread_join(th, 0);
+    caml_plat_thread_join(th);
     free_domain_ml_values(p.ml_values);
     caml_failwith("failed to allocate domain");
   }
@@ -1913,7 +1919,8 @@ CAMLexport int caml_bt_is_in_blocking_section(void)
 
 CAMLexport int caml_bt_is_self(void)
 {
-  return pthread_equal(domain_self->backup_thread, pthread_self());
+  return caml_plat_thread_equal(domain_self->backup_thread,
+                                caml_plat_thread_self());
 }
 
 CAMLexport intnat caml_domain_is_multicore (void)

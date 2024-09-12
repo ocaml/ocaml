@@ -7,6 +7,14 @@ Working version
 
 ### Runtime system:
 
+- #13352: Concurrency refactors and cleanups.
+  (Antonin Décimo, review by Gabriel Scherer, David Allsopp,
+   and Miod Vallat)
+
+- #13416: Implement concurrency primitives using WinAPI instead of
+  winpthreads on Windows.
+  (Antonin Décimo, review by Samuel Hym, Gabriel Scherer, and Miod Vallat)
+
 ### Code generation and optimizations:
 
 ### Standard library:
@@ -181,10 +189,6 @@ ___________
 - #13242: Define and use unreachable and trap annotation, and clean-up some
   runtime assertions.
   (Antonin Décimo, review by Miod Vallat, Gabriel Scherer, and David Allsopp)
-
-- #13352: Concurrency refactors and cleanups.
-  (Antonin Décimo, review by Gabriel Scherer, David Allsopp,
-   and Miod Vallat)
 
 ### Code generation and optimizations:
 

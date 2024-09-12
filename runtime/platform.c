@@ -48,37 +48,6 @@ void caml_plat_fatal_error(const char * action, int err)
 
 /* Mutexes */
 
-CAMLexport void caml_plat_mutex_init(caml_plat_mutex * m)
-{
-  int rc;
-  pthread_mutexattr_t attr;
-  rc = pthread_mutexattr_init(&attr);
-  if (rc != 0) goto error1;
-  rc = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
-  if (rc != 0) goto error2;
-  rc = pthread_mutex_init(m, &attr);
-  // fall through
-error2:
-  pthread_mutexattr_destroy(&attr);
-error1:
-  check_err("mutex_init", rc);
-}
-
-void caml_plat_assert_locked(caml_plat_mutex* m)
-{
-#ifdef DEBUG
-  int r = pthread_mutex_trylock(m);
-  if (r == EBUSY) {
-    /* ok, it was locked */
-    return;
-  } else if (r == 0) {
-    caml_fatal_error("Required mutex not locked");
-  } else {
-    check_err("assert_locked", r);
-  }
-#endif
-}
-
 #ifdef DEBUG
 CAMLexport CAMLthread_local int caml_lockdepth = 0;
 #endif
@@ -88,60 +57,6 @@ void caml_plat_assert_all_locks_unlocked(void)
 #ifdef DEBUG
   if (caml_lockdepth) caml_fatal_error("Locks still locked at termination");
 #endif
-}
-
-CAMLexport void caml_plat_lock_non_blocking_actual(caml_plat_mutex* m)
-{
-  /* Avoid exceptions */
-  caml_enter_blocking_section_no_pending();
-  int rc = pthread_mutex_lock(m);
-  caml_leave_blocking_section();
-  check_err("lock_non_blocking", rc);
-  DEBUG_LOCK(m);
-}
-
-void caml_plat_mutex_free(caml_plat_mutex* m)
-{
-  check_err("mutex_free", pthread_mutex_destroy(m));
-}
-
-static void caml_plat_cond_init_aux(caml_plat_cond *cond)
-{
-  pthread_condattr_t attr;
-  pthread_condattr_init(&attr);
-#if defined(_POSIX_TIMERS) && \
-    defined(_POSIX_MONOTONIC_CLOCK) && \
-    _POSIX_MONOTONIC_CLOCK != (-1)
-  pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
-#endif
-  pthread_cond_init(cond, &attr);
-}
-
-/* Condition variables */
-void caml_plat_cond_init(caml_plat_cond* cond)
-{
-  caml_plat_cond_init_aux(cond);
-}
-
-void caml_plat_wait(caml_plat_cond* cond, caml_plat_mutex* mut)
-{
-  caml_plat_assert_locked(mut);
-  check_err("wait", pthread_cond_wait(cond, mut));
-}
-
-void caml_plat_broadcast(caml_plat_cond* cond)
-{
-  check_err("cond_broadcast", pthread_cond_broadcast(cond));
-}
-
-void caml_plat_signal(caml_plat_cond* cond)
-{
-  check_err("cond_signal", pthread_cond_signal(cond));
-}
-
-void caml_plat_cond_free(caml_plat_cond* cond)
-{
-  check_err("cond_free", pthread_cond_destroy(cond));
 }
 
 /* Futexes */

@@ -162,7 +162,6 @@ check_make_alldepend=false
 jobs=''
 bootstrap=false
 init_submodule_flexdll=false
-init_submodule_winpthreads=false
 
 memory_model_tests="tests/memory-model/forbidden.ml \
 tests/memory-model/publish.ml"
@@ -209,7 +208,6 @@ case "${OCAML_ARCH}" in
     instdir='C:/ocamlms'
     cleanup=true
     init_submodule_flexdll=true
-    init_submodule_winpthreads=true
   ;;
   msvc64)
     build='--build=x86_64-pc-cygwin'
@@ -217,7 +215,6 @@ case "${OCAML_ARCH}" in
     instdir='C:/ocamlms64'
     cleanup=true
     init_submodule_flexdll=true
-    init_submodule_winpthreads=true
   ;;
   *) arch_error;;
 esac
@@ -248,14 +245,6 @@ if $init_submodule_flexdll; then
 elif [ -f flexdll/Makefile ]; then
   if grep -Fq flexdll .gitmodules; then
     git submodule deinit --force flexdll
-  fi
-fi
-
-if $init_submodule_winpthreads; then
-  git submodule update --init winpthreads
-elif [ -f winpthreads/Makefile.in ]; then
-  if grep -Fq winpthreads .gitmodules; then
-    git submodule deinit --force winpthreads
   fi
 fi
 

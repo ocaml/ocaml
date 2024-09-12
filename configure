@@ -858,8 +858,6 @@ supports_shared_libraries
 mklib
 AR
 shebangscripts
-winpthreads_source_include_dir
-winpthreads_source_dir
 flexdll_dir
 bootstrapping_flexdll
 flexdll_source_dir
@@ -1019,7 +1017,6 @@ enable_function_sections
 enable_mmap_map_stack
 with_afl
 with_flexdll
-with_winpthreads_msvc
 with_zstd
 enable_shared
 enable_static
@@ -1734,8 +1731,6 @@ Optional Packages:
   --with-target-sh        location of Posix sh on the target system
   --with-afl              use the AFL fuzzer
   --with-flexdll          bootstrap FlexDLL from the given sources
-  --with-winpthreads-msvc build winpthreads (only for the MSVC port) from the
-                          given sources
   --without-zstd          disable compression of compilation artefacts
   --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
                           both]
@@ -3469,8 +3464,6 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 
 
 
-
-
  # TODO: rename this variable
 
 
@@ -4159,17 +4152,6 @@ then :
   withval=$with_flexdll; if test x"$withval" = 'xyes'
 then :
   with_flexdll=flexdll
-fi
-fi
-
-
-
-# Check whether --with-winpthreads-msvc was given.
-if test ${with_winpthreads_msvc+y}
-then :
-  withval=$with_winpthreads_msvc; if test x"$withval" = 'xyes'
-then :
-  with_winpthreads_msvc=winpthreads
 fi
 fi
 
@@ -14645,104 +14627,6 @@ esac
   *) :
      ;;
 esac
-
-# Winpthreads emulation library for the MSVC port
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for winpthreads sources" >&5
-printf %s "checking for winpthreads sources... " >&6; }
-if test x"$with_winpthreads_msvc" = "xno"
-then :
-  winpthreads_source_dir=''
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: disabled" >&5
-printf "%s\n" "disabled" >&6; }
-else $as_nop
-  winpthreadmsg=''
-  case $target in #(
-  *-pc-windows) :
-                       if test x"$with_winpthreads_msvc" = 'x' || test x"$with_winpthreads_msvc" = x'winpthreads'
-then :
-  if test -f 'winpthreads/src/winpthread_internal.h'
-then :
-  winpthreads_source_dir=winpthreads
-else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: required but not available (uninitialized submodule?)" >&5
-printf "%s\n" "required but not available (uninitialized submodule?)" >&6; }
-        as_fn_error $? "exiting" "$LINENO" 5
-fi
-else $as_nop
-  rm -rf winpthreads-sources
-      if test -f "$with_winpthreads_msvc/src/winpthread_internal.h"
-then :
-  mkdir -p winpthreads-sources/src winpthreads-sources/include
-        cp "$with_winpthreads_msvc"/src/*.c winpthreads-sources/src
-        cp "$with_winpthreads_msvc"/src/*.h winpthreads-sources/src
-        cp "$with_winpthreads_msvc"/include/*.h winpthreads-sources/include
-        winpthreads_source_dir='winpthreads-sources'
-        winpthreadsmsg=" (from $with_winpthreads_msvc)"
-else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: requested but not available" >&5
-printf "%s\n" "requested but not available" >&6; }
-        as_fn_error $? "exiting" "$LINENO" 5
-fi
-fi
-    if test x"$winpthreads_source_dir" = 'x'
-then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $winpthreads_source_dir$winpthreadsmsg" >&5
-printf "%s\n" "$winpthreads_source_dir$winpthreadsmsg" >&6; }
-      winpthreads_source_include_dir="$winpthreads_source_dir/include"
-
-
-  saved_CC="$CC"
-  saved_CFLAGS="$CFLAGS"
-  saved_CPPFLAGS="$CPPFLAGS"
-  saved_LIBS="$LIBS"
-  saved_ac_ext="$ac_ext"
-  saved_ac_compile="$ac_compile"
-  # Move the content of confdefs.h to another file so it does not
-  # get included
-  mv confdefs.h confdefs.h.bak
-  touch confdefs.h
-
-
-  if test -n "$winpthreads_source_include_dir"
-then :
-  CPPFLAGS="-I $winpthreads_source_include_dir $CPPFLAGS"
-fi
-  ac_fn_c_check_header_compile "$LINENO" "pthread.h" "ac_cv_header_pthread_h" "$ac_includes_default"
-if test "x$ac_cv_header_pthread_h" = xyes
-then :
-
-else $as_nop
-  as_fn_error $? "cannot find or use pthread.h from winpthreads" "$LINENO" 5
-fi
-
-
-
-  # Restore the content of confdefs.h
-  mv confdefs.h.bak confdefs.h
-  ac_compile="$saved_ac_compile"
-  ac_ext="$saved_ac_ext"
-  CPPFLAGS="$saved_CPPFLAGS"
-  CFLAGS="$saved_CFLAGS"
-  CC="$saved_CC"
-  LIBS="$saved_LIBS"
-
-
-fi ;; #(
-  *) :
-    if test x"$with_winpthreads_msvc" != 'x'
-then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: requested but not supported" >&5
-printf "%s\n" "requested but not supported" >&6; }
-      as_fn_error $? "exiting" "$LINENO" 5
-else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: skipping on that platform" >&5
-printf "%s\n" "skipping on that platform" >&6; }
-fi ;;
-esac
-fi
 
 ## Program to use to install files
 

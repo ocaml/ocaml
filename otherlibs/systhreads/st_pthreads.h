@@ -45,8 +45,6 @@ static int st_thread_create(st_thread_id * res,
   return rc;
 }
 
-#define ST_THREAD_FUNCTION void *
-
 /* Thread termination */
 
 static void st_thread_join(st_thread_id thr)
@@ -80,10 +78,10 @@ Caml_inline void st_tls_set(st_tlskey k, void * v)
    threads. */
 
 typedef struct {
-  bool init;                      /* have the mutex and the cond been
+  atomic_bool init;               /* have the mutex and the cond been
                                      initialized already? */
   pthread_mutex_t lock;           /* to protect contents */
-  bool busy;                      /* false = free, true = taken */
+  atomic_bool busy;               /* false = free, true = taken */
   atomic_uintnat waiters;         /* number of threads waiting on master lock */
   pthread_cond_t is_free;         /* signaled when free */
 } st_masterlock;
@@ -167,10 +165,10 @@ Caml_inline void st_thread_yield(st_masterlock * m)
   m->busy = false;
   atomic_fetch_add(&m->waiters, +1);
   pthread_cond_signal(&m->is_free);
-  /* releasing the domain lock but not triggering bt messaging
-     messaging the bt should not be required because yield assumes
-     that a thread will resume execution (be it the yielding thread
-     or a waiting thread */
+  /* Releasing the domain lock but not triggering bt messaging.
+     Messaging the bt should not be required because yield assumes
+     that a thread will resume execution (either the yielding thread
+     or a waiting thread). */
   caml_release_domain_lock();
 
   do {
@@ -195,7 +193,7 @@ Caml_inline void st_thread_yield(st_masterlock * m)
 
 typedef struct st_event_struct {
   pthread_mutex_t lock;         /* to protect contents */
-  bool status;                  /* false = not triggered, true = triggered */
+  atomic_bool status;           /* false = not triggered, true = triggered */
   pthread_cond_t triggered;     /* signaled when triggered */
 } * st_event;
 

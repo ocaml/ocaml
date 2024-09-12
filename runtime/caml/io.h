@@ -23,18 +23,7 @@
 #include "camlatomic.h"
 #include "misc.h"
 #include "mlvalues.h"
-
-#ifndef _MSC_VER
 #include "platform.h"
-#else
-/* We avoid including platform.h (which is really only necessary here to declare
-   caml_plat_mutex) because that would end up pulling in pthread.h but we want
-   to hide it on the MSVC port as it is not the native way to handle threads.
-   So we inline here just the implementation of caml_plat_mutex on that port,
-   this should be kept in sync */
-#include <stdint.h>
-typedef intptr_t caml_plat_mutex;
-#endif
 
 #ifndef IO_BUFFER_SIZE
 #define IO_BUFFER_SIZE 65536

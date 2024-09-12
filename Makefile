@@ -1169,15 +1169,6 @@ partialclean::
 
 ## Lists of source files
 
-ifneq "$(WINPTHREADS_SOURCE_DIR)" ""
-winpthreads_SOURCES = cond.c misc.c mutex.c rwlock.c sched.c spinlock.c thread.c
-
-winpthreads_OBJECTS = \
-  $(addprefix runtime/winpthreads/, $(winpthreads_SOURCES:.c=.$(O)))
-else
-winpthreads_OBJECTS =
-endif
-
 runtime_COMMON_C_SOURCES = \
   addrmap \
   afl \
@@ -1299,35 +1290,32 @@ endif
 
 
 libcamlrun_OBJECTS = \
-  $(runtime_BYTECODE_C_SOURCES:.c=.b.$(O)) $(winpthreads_OBJECTS)
+  $(runtime_BYTECODE_C_SOURCES:.c=.b.$(O))
 
 libcamlrun_non_shared_OBJECTS = \
   $(subst $(UNIX_OR_WIN32).b.$(O),$(UNIX_OR_WIN32)_non_shared.b.$(O), \
           $(libcamlrun_OBJECTS))
 
 libcamlrund_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.bd.$(O)) \
-  $(winpthreads_OBJECTS) runtime/instrtrace.bd.$(O)
+  runtime/instrtrace.bd.$(O)
 
 libcamlruni_OBJECTS = \
-  $(runtime_BYTECODE_C_SOURCES:.c=.bi.$(O)) $(winpthreads_OBJECTS)
+  $(runtime_BYTECODE_C_SOURCES:.c=.bi.$(O))
 
 libcamlrunpic_OBJECTS = \
-  $(runtime_BYTECODE_C_SOURCES:.c=.bpic.$(O)) $(winpthreads_OBJECTS)
+  $(runtime_BYTECODE_C_SOURCES:.c=.bpic.$(O))
 
 libasmrun_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.n.$(O)) $(runtime_ASM_OBJECTS) \
-  $(winpthreads_OBJECTS)
+  $(runtime_NATIVE_C_SOURCES:.c=.n.$(O)) $(runtime_ASM_OBJECTS)
 
 libasmrund_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.nd.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.d.$(O)) \
-  $(winpthreads_OBJECTS)
+  $(runtime_NATIVE_C_SOURCES:.c=.nd.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.d.$(O))
 
 libasmruni_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.ni.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.i.$(O)) \
-  $(winpthreads_OBJECTS)
+  $(runtime_NATIVE_C_SOURCES:.c=.ni.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.i.$(O))
 
 libasmrunpic_OBJECTS = $(runtime_NATIVE_C_SOURCES:.c=.npic.$(O)) \
-  $(runtime_ASM_OBJECTS:.$(O)=_libasmrunpic.$(O)) $(winpthreads_OBJECTS)
+  $(runtime_ASM_OBJECTS:.$(O)=_libasmrunpic.$(O))
 
 libcomprmarsh_OBJECTS = runtime/zstd.npic.$(O)
 
@@ -1521,15 +1509,6 @@ endif # ifeq "$(COMPUTE_DEPS)" "true"
 	  $$(OUTPUTOBJ)$$@ -c $$<
 endef
 
-runtime/winpthreads/%.$(O): $(WINPTHREADS_SOURCE_DIR)/src/%.c \
-                            $(wildcard $(WINPTHREADS_SOURCE_DIR)/include/*.h) \
-                              | runtime/winpthreads
-	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
-	  $(OUTPUTOBJ)$@ -c $<
-
-runtime/winpthreads:
-	$(MKDIR) $@
-
 $(DEPDIR)/runtime:
 	$(MKDIR) $@
 
@@ -1616,7 +1595,7 @@ clean::
 	rm -f runtime/primitives runtime/primitives*.new runtime/prims.c \
 	  $(runtime_BUILT_HEADERS)
 	rm -f runtime/domain_state.inc
-	rm -rf $(DEPDIR) runtime/winpthreads
+	rm -rf $(DEPDIR)
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
 
 .PHONY: runtimeopt
@@ -2644,7 +2623,7 @@ endif
 	      boot/flexdll_*.o boot/flexdll_*.obj \
 	      boot/*.cm* boot/libcamlrun.a boot/libcamlrun.lib boot/ocamlc.opt
 	rm -f Makefile.config Makefile.build_config
-	rm -rf autom4te.cache winpthreads-sources flexdll-sources \
+	rm -rf autom4te.cache flexdll-sources \
          $(BYTE_BUILD_TREE) $(OPT_BUILD_TREE)
 	rm -f config.log config.status libtool
 

@@ -359,16 +359,6 @@ EOF
   OCAML_CC_RESTORE_VARIABLES
 ])
 
-AC_DEFUN([OCAML_TEST_WINPTHREADS_PTHREAD_H], [
-  OCAML_CC_SAVE_VARIABLES
-
-  AS_IF([test -n "$1"],[CPPFLAGS="-I $1 $CPPFLAGS"])
-  AC_CHECK_HEADER([pthread.h],[],
-    [AC_MSG_ERROR([cannot find or use pthread.h from winpthreads])])
-
-  OCAML_CC_RESTORE_VARIABLES
-])
-
 AC_DEFUN([OCAML_HOST_IS_EXECUTABLE], [
   AC_MSG_CHECKING([whether host executables can be run in the build])
   old_cross_compiling="$cross_compiling"
