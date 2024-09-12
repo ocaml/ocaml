@@ -199,35 +199,16 @@ let test = function
   | { contents = None } -> 0
   | { contents = Some (Int n) } -> n
 ;;
-(* Performance expectation: there should not be a Match_failure case.
-
-   Currently there *is* a Match_failure case, as the compiler is unable
-   to distinguish this situation from a situation where the matrix is split
-   and there are several accesses to the mutable field. *)
+(* Performance expectation: there should not be a Match_failure case. *)
 [%%expect {|
 0
 type _ t = Int : int -> int t | Bool : bool -> bool t
-Lines 3-5, characters 11-36:
-3 | ...........function
-4 |   | { contents = None } -> 0
-5 |   | { contents = Some (Int n) } -> n
-Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled
-as partial, even if it appears to be total. It may generate a Match_failure
-exception. This typically occurs due to complex matches on mutable fields.
-(see manual section 13.5.5)
 (let
   (test/324 =
      (function param/326 : int
        (let (*match*/327 =o (field_mut 0 param/326))
-         (if *match*/327
-           (let (*match*/328 =a (field_imm 0 *match*/327))
-             (switch* *match*/328
-              case tag 0: (field_imm 0 *match*/328)
-              case tag 1:
-               (raise (makeblock 0 (global Match_failure/20!) [0: "" 3 11]))))
-           0))))
+         (if *match*/327 (field_imm 0 (field_imm 0 *match*/327)) 0))))
   (apply (field_mut 1 (global Toploop!)) "test" test/324))
-
 val test : int t option ref -> int = <fun>
 |}]
 
