@@ -58,21 +58,19 @@ let lazy_needs_partial : _ * bool t ref -> int = function
          (let
            (*match*/298 =a (field_imm 0 param/297)
             *match*/300 =o (field_mut 0 (field_imm 1 param/297)))
-           (if (isint *match*/300)
-             (if *match*/300
-               (let
-                 (*match*/303 =
-                    (let (tag/302 =a (caml_obj_tag *match*/298))
-                      (if (== tag/302 250) (field_mut 0 *match*/298)
-                        (if (|| (== tag/302 246) (== tag/302 244))
-                          (apply (field_imm 1 (global CamlinternalLazy!))
-                            (opaque *match*/298))
-                          *match*/298)))
-                  *match*/305 =o (field_mut 0 (field_imm 1 param/297)))
-                 (if (isint *match*/305) (if *match*/305 12 (exit 3))
-                   (exit 3)))
-               0)
-             (exit 3)))
+           (switch* *match*/300
+            case int 0: 0
+            case int 1:
+             (let
+               (*match*/303 =
+                  (let (tag/302 =a (caml_obj_tag *match*/298))
+                    (if (== tag/302 250) (field_mut 0 *match*/298)
+                      (if (|| (== tag/302 246) (== tag/302 244))
+                        (apply (field_imm 1 (global CamlinternalLazy!))
+                          (opaque *match*/298))
+                        *match*/298)))
+                *match*/305 =o (field_mut 0 (field_imm 1 param/297)))
+               (if (isint *match*/305) (if *match*/305 12 (exit 3)) (exit 3)))))
         with (3)
          (raise (makeblock 0 (global Match_failure/20!) [0: "" 1 49])))))
   (apply (field_mut 1 (global Toploop!)) "lazy_needs_partial"

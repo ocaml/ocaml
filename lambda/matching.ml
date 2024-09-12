@@ -1036,6 +1036,28 @@ end = struct
     }
 end
 
+(* Temporality information *)
+
+type temporality =
+  | First
+  | Following
+(** The [temporality] information tracks information about the
+    placement of the current submatrix within the
+    whole pattern-matching.
+
+    - [First]: this is the first submatrix on this position seen by values
+      that flow into the submatrix.
+    - [Following]: there was a split, some other submatrix was tried first
+      and failed, and the control jumped to the current submatrix.
+
+    This information is used in {!compute_arg_partial}.
+*)
+
+let pp_tempo ppf = function
+  | First -> Format.fprintf ppf "First"
+  | Following -> Format.fprintf ppf "Following"
+
+
 (* Partiality information. *)
 
 (** [Typedtree.partial] is just [Total | Partial].
@@ -1058,12 +1080,16 @@ type partiality = {
       a further split. When it is globally Partial, some jumps may
       fail to match any of the following submatrices, and go to the
       'final exit'. *)
+
+  tempo: temporality;
+  (** The {!temporality} of the current submatrix. *)
 }
 
-let pp_partiality ppf {current; global} =
-  Format.fprintf ppf "{ current = %a; global = %a }"
+let pp_partiality ppf {current; global; tempo} =
+  Format.fprintf ppf "{ current = %a; global = %a; tempo = %a }"
     pp_partial current
     pp_partial global
+    pp_tempo tempo
 
 (* Pattern matching before any compilation *)
 
@@ -3567,11 +3593,19 @@ let rec comp_match_handlers comp_fun partial ctx first_match next_matches =
       let rec c_rec body jumps_body = function
         | [] -> (body, jumps_body)
         | (i, pm_i) :: rem -> (
+            let partial =
+              (* [c_rec] is only called on [Following] sub-matrices;
+                 this is the key point where the [Following]
+                 temporality is introduced in the pattern-matching
+                 compilation. *)
+              { partial with tempo = Following } in
             separate_debug_output ();
             let ctx_i, jumps_rem = Jumps.extract i jumps_body in
             if Context.is_empty ctx_i then
               c_rec body jumps_body rem
             else begin
+              (* All those submatrices are [Partial], except possibly
+                 for the last one. *)
               let partial = match rem with
                 | [] -> partial
                 | _ -> { partial with current = Partial }
@@ -3735,51 +3769,36 @@ and compile_match_simplified ~scopes repr partial ctx
    argument should be considered partial or not, in a way that is
    correct but does not pessimize too many code patterns.
 
-   The criterion that we use is the [mut] information propagated by
-   the matching compiler: is the current sub-value we are switching
-   over under a mutable field?
+   The criterion that we use is based on two contextual informations:
 
-   - If we are *not* under a mutable field, we know that side-effects
-     cannot influence the possible constructors, and we trust the
-     type-checker information.
+   - [mut]: is the current sub-value we are switching over placed
+     (transitively) under a mutable field?
 
-   - If we *are* under a mutable field, side-effects can falsify the
-     type-checker totality information on the current switch, so we
-     trust the compiler information.
+   - [tempo]: is this always the first switch on this position,
+     or did some value jump here after coming from previous submatrices
+     that may already have switched on the position?
+
+   If [mut = Mutable], that is we are in a transitivitely mutable position,
+   and [tempo = Following], this may not be the first switch on this position,
+   then we pessimize totality information.
+
+   Remark: when we split a matrix into several submatrices that have
+   to be tried in turn, and the original matrix was in a [Total]
+   context, we compile all submatrices as [Partial] except for the
+   very last one that remains [Total] -- see
+   {!comp_match_handlers}. And that very last matrix will be
+   a [Following] matrix, unless there was no actual split -- we split
+   into only one matrix. The criterion above can thus be understood
+   as: either we are at an [Immutable] position, or there was no
+   actual split from the root of the pattern-matching to the current
+   submatrix.
 
    With this criterion, pure patterns are never pessimized, but even
    patterns that have some GADTs and some non-GADT mutable components
    work well -- for example, a pair of a GADT value and
    a reference. On the other hand, matching on GADTs inside
-   a reference is pessimized. (Matching on non-GADT constructors
-   inside a reference is also arguably pessimized, given that cases
-   where side-effects occur are exceedingly rare; but we cannot know
-   that they will not occur.)
-
-   We could always do better, at the cost of more complexity. For
-   example, clauses are split in independent submatrices, and we know
-   that mutable positions that only occur in a single submatrix are in
-   fact safe -- we read their field at most once, and never observe
-   value updates during the pattern-matching execution. Our current
-   implementation will pessimize the following program, that could in
-   fact be compiled as total:
-
-     let total_function : int t ref -> int = function
-     | { contents = Int n } -> n
-
-   In other words, we could pessimize only switches on mutable
-   positions that came up in several distinct switches / exit
-   handlers. This could be done by tracking 'dangerous' positions in
-   jump summaries -- mutable positions that come from another switch
-   that jumped to our current exit handler -- and only pessimizing
-   Total switches in exit handlers that are already marked as
-   'dangerous' in the context. However this would require more
-   computation of contexts and jump summaries, with a risk of time-
-   and memory-blowup during compilation (in particular, the crucial
-   'get_mins' optimization may have to be restricted to avoid erasing
-   information on dangerous positions). In contrast, the current
-   approximation has no noticeable computational cost, even in
-   pathological cases.
+   a reference is pessimized when the GADT matching occurs under
+   a mutable constructor and after a split.
 *)
 (* The code should ensure that all partiality information that is used
    to make code-generation decisions has gone through
@@ -3787,9 +3806,10 @@ and compile_match_simplified ~scopes repr partial ctx
    general type [partial] of partiality information from the
    specialized type [arg_partial] used to make code-generation
    decisions for a given argument switch. *)
-and compute_arg_partial partial = function
-  | Mutable -> Arg { partial with global = Partial }
-  | Immutable -> Arg partial
+and compute_arg_partial partial mut =
+  match partial.tempo, mut with
+  | Following, Mutable -> Arg { partial with global = Partial }
+  | First, _ | _, Immutable -> Arg partial
 
 and mut_of_binding_kind =
   (* This is somewhat of a hack: we notice that a pattern-matching
@@ -3870,7 +3890,7 @@ and do_compile_matching_pr ~scopes repr partial ctx x =
   debugf "@]";
   r
 
-and do_compile_matching ~scopes repr (partial : partiality) ctx pmh =
+and do_compile_matching ~scopes repr partial ctx pmh =
   match pmh with
   | Pm pm -> (
       let first = pm.args.first in
@@ -4010,7 +4030,7 @@ let toplevel_handler ~scopes loc ~failer partial args cases compile_fun =
     then Partial
     else partial
   in
-  let partial = { current = partial; global = partial; } in
+  let partial = { current = partial; global = partial; tempo = First; } in
   begin match compile_fun partial pm with
   | exception Unused -> assert false
   | (lam, jumps) ->
