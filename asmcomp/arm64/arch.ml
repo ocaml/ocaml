@@ -24,7 +24,17 @@ let macosx = (Config.system = "macosx")
 
 (* Machine-specific command-line options *)
 
-let command_line_options = []
+type barrier_placement = FenceBeforeStore | BranchAfterLoad
+
+let barrier_placement = ref FenceBeforeStore
+
+let command_line_options =
+  [ "-mbarrier-placement=fence-before-store",
+      Arg.Unit (fun () -> barrier_placement := FenceBeforeStore),
+      " Implement atomicity barriers as fences before non-atomic stores";
+    "-mbarrier-placement=branch-after-load",
+      Arg.Unit (fun () -> barrier_placement := BranchAfterLoad),
+      " Implement atomicity barriers as branches after loads" ]
 
 (* Addressing modes *)
 
