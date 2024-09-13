@@ -82,7 +82,7 @@ atomic_uintnat caml_verb_gc = 0;
 
 void caml_gc_log (const char *msg, ...)
 {
-  if ((atomic_load_relaxed(&caml_verb_gc) & 0x800) != 0) {
+  if ((atomic_load_relaxed(&caml_verb_gc) & CAML_GC_MSG_DEBUG) != 0) {
     char fmtbuf[GC_LOG_LENGTH];
     va_list args;
     va_start (args, msg);

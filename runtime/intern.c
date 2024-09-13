@@ -337,7 +337,7 @@ static void readfloats(struct caml_intern_state* s,
 
 CAMLnoret static void intern_stack_overflow(struct caml_intern_state* s)
 {
-  caml_gc_message (0x04, "Stack overflow in un-marshaling value\n");
+  CAML_GC_MESSAGE(HEAPSIZE, "Stack overflow in un-marshaling value\n");
   intern_cleanup(s);
   caml_raise_out_of_memory();
 }

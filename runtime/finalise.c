@@ -151,7 +151,8 @@ caml_result caml_final_do_calls_res(void)
   if (fi->running_finalisation_function) return Result_unit;
   if (fi->todo_head != NULL) {
     call_timing_hook(&caml_finalise_begin_hook);
-    caml_gc_message (0x80, "Calling finalisation functions.\n");
+    CAML_GC_MESSAGE(FINALIZE,
+                    "Calling finalisation functions.\n");
     while (1) {
       while (fi->todo_head != NULL && fi->todo_head->size == 0) {
         struct final_todo *next_head = fi->todo_head->next;
@@ -168,7 +169,8 @@ caml_result caml_final_do_calls_res(void)
       fi->running_finalisation_function = 0;
       if (caml_result_is_exception(res)) return res;
     }
-    caml_gc_message (0x80, "Done calling finalisation functions.\n");
+    CAML_GC_MESSAGE(FINALIZE,
+                    "Done calling finalisation functions.\n");
     call_timing_hook(&caml_finalise_end_hook);
   }
   return Result_unit;

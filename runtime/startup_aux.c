@@ -56,7 +56,7 @@ static void init_startup_params(void)
   params.runtime_events_log_wsize = Default_runtime_events_log_wsize;
 
 #ifdef DEBUG
-  atomic_store_relaxed(&caml_verb_gc, 0x3F);
+  atomic_store_relaxed(&caml_verb_gc, CAML_GC_MSG_VERBOSE | CAML_GC_MSG_MINOR);
 #endif
 #ifndef NATIVE_CODE
   cds_file = caml_secure_getenv(T("CAML_DEBUG_FILE"));
@@ -149,8 +149,8 @@ int caml_startup_aux(int pooling)
 
 #ifdef DEBUG
   /* Note this must be executed after the call to caml_parse_ocamlrunparam. */
-  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
-  caml_gc_message (-1, "### set OCAMLRUNPARAM=v=0 to silence this message\n");
+  CAML_GC_MESSAGE(ANY, "### OCaml runtime: debug mode ###\n");
+  CAML_GC_MESSAGE(ANY, "### set OCAMLRUNPARAM=v=0 to silence this message\n");
 #endif
 
   /* Second and subsequent calls are ignored,
