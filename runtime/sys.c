@@ -256,12 +256,14 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   CAMLreturn(Val_long(fd));
 }
 
-CAMLprim value caml_sys_close(value fd_v)
+CAMLprim value caml_sys_close(value vfd)
 {
-  int fd = Int_val(fd_v);
+  int fd = Int_val(vfd);
+  int ret;
   caml_enter_blocking_section();
-  close(fd);
+  ret = close(fd);
   caml_leave_blocking_section();
+  if (ret == -1) caml_sys_error(NO_ARG);
   return Val_unit;
 }
 
