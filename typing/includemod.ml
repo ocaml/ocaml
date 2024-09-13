@@ -915,10 +915,12 @@ and signature_components ~core ~direction ~loc old_env env subst
               let paired_uids =
                 let elt1, elt2 = paired_uids in
                 match pos with
-                | Negative -> (Cmt_format.Any, elt2, elt1)
-                | Positive -> (Cmt_format.Any, elt1, elt2)
+                | Negative ->
+                    (Cmt_format.Declaration_to_declaration, elt2, elt1)
+                | Positive ->
+                    (Cmt_format.Declaration_to_declaration, elt1, elt2)
                 | Strictly_positive ->
-                    (Cmt_format.Implementation_to_interface, elt1, elt2)
+                    (Cmt_format. Definition_to_declaration, elt1, elt2)
               in
               Cmt_format.record_declaration_dependency paired_uids
             end;

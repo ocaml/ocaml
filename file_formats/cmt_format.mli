@@ -50,7 +50,7 @@ and binary_part =
   | Partial_signature_item of signature_item
   | Partial_module_type of module_type
 
-type dependency_kind = Implementation_to_interface | Any
+type dependency_kind = Definition_to_declaration | Declaration_to_declaration
 type cmt_infos = {
   cmt_modname : modname;
   cmt_annots : binary_annots;
