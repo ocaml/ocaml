@@ -24,6 +24,12 @@ val macosx : bool
 
 val command_line_options : (string * Arg.spec * string) list
 
+(* Atomicity barrier placement choice *)
+
+type barrier_placement = FenceBeforeStore | BranchAfterLoad
+
+val barrier_placement : barrier_placement ref
+
 (* Addressing modes *)
 
 type addressing_mode =

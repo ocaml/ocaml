@@ -74,6 +74,7 @@ META
 /asmcomp/scheduling.ml
 /asmcomp/CSE.ml
 /asmcomp/stackframe.ml
+/asmcomp/arm64/arch.ml
 
 /boot/ocamlrun
 /boot/runtime-launch-info
