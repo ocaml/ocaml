@@ -510,16 +510,19 @@ void caml_sys_init(char_os * exe_name, char_os **argv)
 #ifdef HAS_SYSTEM
 CAMLprim value caml_sys_system_command(value command)
 {
-  CAMLparam1 (command);
+  CAMLparam1(command);
   int status, retcode;
   char_os *buf;
 
-  if (! caml_string_is_c_safe (command)) {
+  if (! caml_string_is_c_safe(command)) {
     errno = EINVAL;
     caml_sys_error(command);
   }
   buf = caml_stat_strdup_to_os(String_val(command));
   caml_enter_blocking_section ();
+#ifdef _WIN32
+  _flushall();
+#endif
   status = system_os(buf);
   caml_leave_blocking_section ();
   caml_stat_free(buf);
@@ -528,7 +531,7 @@ CAMLprim value caml_sys_system_command(value command)
     retcode = WEXITSTATUS(status);
   else
     retcode = 255;
-  CAMLreturn (Val_int(retcode));
+  CAMLreturn(Val_int(retcode));
 }
 #else
 CAMLprim value caml_sys_system_command(value command)
