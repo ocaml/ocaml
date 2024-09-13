@@ -162,8 +162,8 @@ static value alloc_shared(caml_domain_state* d,
 }
 
 /* in progress updates are zeros except for the lowest color bit set to 1
-   that is a header with: wosize == 0 && color == 1 && tag == 0 */
-#define In_progress_update_val ((header_t)0x100)
+   that is, reserved == wosize == tag == 0, color == 1 */
+#define In_progress_update_val Make_header(0, 0, 1 << HEADER_COLOR_SHIFT)
 #define Is_update_in_progress(hd) ((hd) == In_progress_update_val)
 
 static void spin_on_header(value v) {
