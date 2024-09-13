@@ -767,6 +767,17 @@ Generate position-independent machine code.  This is the default.
 .B \-fno\-PIC
 Generate position-dependent machine code.
 
+.SH OPTIONS FOR THE ARM64 ARCHITECTURE
+
+The arm64 code generator supports the following additional options:
+.TP
+.B \-mbarrier-placement=fence-before-store
+Implement atomicity barriers as fences before non-atomic stores.
+This is the default.
+.TP
+.B \-mbarrier-placement=branch-after-load
+Implement atomicity barriers as branches after loads.
+
 .SH SEE ALSO
 .BR ocamlc (1).
 .br

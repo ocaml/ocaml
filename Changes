@@ -56,6 +56,10 @@ Working version
   (Gabriel Scherer and Clément Allain, review by Vincent Laviron,
    report by Vesa Karvonen)
 
+- #13423: add -mbarrier-placement=fence-before-store|branch-after-load
+  option to choose between the two code generation schemes on arm64.
+  (KC Sivaramakrishnan and Miod Vallat, review by TBD)
+
 ### Standard library:
 
 - #13543: Remove some String-Bytes conversion from the stdlib to behave better
