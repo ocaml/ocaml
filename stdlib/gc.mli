@@ -166,7 +166,7 @@ type control =
 
     stack_limit : int;
     (** The maximum size of the fiber stacks (in words).
-       Default: 1024k. *)
+       Default: 128M. *)
 
     allocation_policy : int;
     (** The policy used for allocating in the major heap.
