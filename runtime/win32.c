@@ -1029,31 +1029,17 @@ void caml_restore_win32_terminal(void)
 /* Detect if a named pipe corresponds to a Cygwin/MSYS pty: see
    https://github.com/mirror/newlib-cygwin/blob/00e9bf2/winsup/cygwin/dtable.cc#L932
 */
-typedef
-BOOL (WINAPI *tGetFileInformationByHandleEx)(HANDLE, FILE_INFO_BY_HANDLE_CLASS,
-                                             LPVOID, DWORD);
-
 static int caml_win32_is_cygwin_pty(HANDLE hFile)
 {
   char buffer[1024];
   FILE_NAME_INFO * nameinfo = (FILE_NAME_INFO *) buffer;
-  static tGetFileInformationByHandleEx pGetFileInformationByHandleEx =
-    INVALID_HANDLE_VALUE;
-
-  if (pGetFileInformationByHandleEx == INVALID_HANDLE_VALUE)
-    pGetFileInformationByHandleEx =
-      (tGetFileInformationByHandleEx)GetProcAddress(
-        GetModuleHandle(L"KERNEL32.DLL"), "GetFileInformationByHandleEx");
-
-  if (pGetFileInformationByHandleEx == NULL)
-    return 0;
 
   /* Get pipe name. GetFileInformationByHandleEx does not NULL-terminate the
      string, so reduce the buffer size to allow for adding one. */
-  if (! pGetFileInformationByHandleEx(hFile,
-                                      FileNameInfo,
-                                      buffer,
-                                      sizeof(buffer) - sizeof(WCHAR)))
+  if (! GetFileInformationByHandleEx(hFile,
+                                     FileNameInfo,
+                                     buffer,
+                                     sizeof(buffer) - sizeof(WCHAR)))
     return 0;
 
   nameinfo->FileName[nameinfo->FileNameLength / sizeof(WCHAR)] = L'\0';
