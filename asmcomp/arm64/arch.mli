@@ -22,6 +22,10 @@ val macosx : bool
 
 (* Machine-specific command-line options *)
 
+type barrier_placement = FenceBeforeStore | BranchAfterLoad
+
+val barrier_placement : barrier_placement ref
+
 val command_line_options : (string * Arg.spec * string) list
 
 (* Addressing modes *)
