@@ -215,12 +215,6 @@ module Directionality = struct
        | Positive | Strictly_positive -> true
        | Negative -> false
 
-  let normalize_pair dir (elt1, elt2) =
-    match dir.pos with
-    | Negative -> (Cmt_format.Any, elt2, elt1)
-    | Positive -> (Cmt_format.Any, elt1, elt2)
-    | Strictly_positive -> (Cmt_format.Implementation_to_interface, elt1, elt2)
-
 end
 
 module Core_inclusion = struct
@@ -911,16 +905,21 @@ and signature_components ~core ~direction ~loc old_env env subst
       let first =
         match item with
         | Ok x ->
-            let paired_uids =
-              Directionality.normalize_pair direction paired_uids
-            in
             begin match direction with
             | { Directionality.in_eq = true; pos = Negative }
             | { Directionality.mark_as_used = Mark_neither; _ } ->
               (* We do not store paired uids when checking for reverse
                 module-type inclusion as it would introduce duplicates. *)
                 ()
-            | _ ->
+            | { Directionality.pos; _} ->
+              let paired_uids =
+                let elt1, elt2 = paired_uids in
+                match pos with
+                | Negative -> (Cmt_format.Any, elt2, elt1)
+                | Positive -> (Cmt_format.Any, elt1, elt2)
+                | Strictly_positive ->
+                    (Cmt_format.Implementation_to_interface, elt1, elt2)
+              in
               Cmt_format.record_declaration_dependency paired_uids
             end;
             let runtime_coercions =
