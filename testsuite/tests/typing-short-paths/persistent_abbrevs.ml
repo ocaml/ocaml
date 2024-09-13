@@ -38,3 +38,26 @@ Error: The value "f" has type "a/2 -> a -> unit"
        Line 1, characters 0-10:
          Definition of type "a/2"
 |}]
+
+type int = A
+type int = B
+let f A = B
+let g f = 0 + f B
+let n = g f
+
+[%%expect{|
+type int = A
+type int = B
+val f : int/2 -> int = <fun>
+val g : (int -> int) -> int = <fun>
+Line 5, characters 10-11:
+5 | let n = g f
+              ^
+Error: The value "f" has type "int/2 -> int"
+       but an expression was expected of type "int -> int"
+       Type "int/2" is not compatible with type "int"
+       Line 2, characters 0-12:
+         Definition of type "int"
+       Line 1, characters 0-12:
+         Definition of type "int/2"
+|}]
