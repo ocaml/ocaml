@@ -494,7 +494,8 @@ ___________
 
 - #13308: keep track of relations between declaration in the cmt files. This is
   useful information for external tools for navigation and analysis purposis.
-  (Ulysse Gérard, Florian Angeletti, review by Florian Angeletti and ...)
+  (Ulysse Gérard, Florian Angeletti, review by Florian Angeletti and Gabriel
+  Scherer)
 
 - #13336: compiler-libs, split the `Printtyp` in three to only keep
   "user-friendly" functions in the `Printtyp` module.
