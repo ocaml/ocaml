@@ -142,8 +142,8 @@ let print_cmt_infos cmt =
     Format.printf "@[<v>";
     Array.iter (fun (rk, u1, u2) ->
       let rk = match rk with
-        | Directed -> "<-"
-        | Undirected -> "<->"
+        | Implementation_to_interface -> "<-"
+        | Any -> "<->"
       in
       Format.printf "@[<h>%a %s %a@]@;"
         Shape.Uid.print u1

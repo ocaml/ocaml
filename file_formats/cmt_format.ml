@@ -45,11 +45,11 @@ and binary_part =
   | Partial_signature_item of signature_item
   | Partial_module_type of module_type
 
-type relation_kind = Directed | Undirected
+type dependency_kind = Implementation_to_interface | Any
 type cmt_infos = {
   cmt_modname : string;
   cmt_annots : binary_annots;
-  cmt_declaration_dependencies : (relation_kind * Uid.t * Uid.t) list;
+  cmt_declaration_dependencies : (dependency_kind * Uid.t * Uid.t) list;
   cmt_comments : (string * Location.t) list;
   cmt_args : string array;
   cmt_sourcefile : string option;
@@ -425,7 +425,7 @@ let read_cmi filename =
     | Some cmi, _ -> cmi
 
 let saved_types = ref []
-let uids_deps : (relation_kind * Uid.t * Uid.t) list ref = ref []
+let uids_deps : (dependency_kind * Uid.t * Uid.t) list ref = ref []
 
 let clear () =
   saved_types := [];

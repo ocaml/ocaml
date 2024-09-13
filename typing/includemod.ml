@@ -217,9 +217,9 @@ module Directionality = struct
 
   let normalize_pair dir (elt1, elt2) =
     match dir.pos with
-    | Negative -> (Cmt_format.Undirected, elt2, elt1)
-    | Positive -> (Cmt_format.Undirected, elt1, elt2)
-    | Strictly_positive -> (Cmt_format.Directed, elt1, elt2)
+    | Negative -> (Cmt_format.Any, elt2, elt1)
+    | Positive -> (Cmt_format.Any, elt1, elt2)
+    | Strictly_positive -> (Cmt_format.Implementation_to_interface, elt1, elt2)
 
 end
 
