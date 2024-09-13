@@ -47,14 +47,14 @@ endif
 COMMON_C_SOURCES = $(addsuffix .c, \
   access addrofstr chdir chmod cst2constr cstringv execv execve execvp fsync \
   mkdir exit getaddrinfo getcwd gethost gethostname getnameinfo getproto \
-  getserv gmtime mmap_ba putenv rmdir socketaddr strofaddr time unlink)
+  getserv gmtime mmap_ba putenv rename rmdir socketaddr strofaddr time unlink)
 
 # OS-specific C source files
 OS_C_SOURCES = $(addsuffix _$(UNIX_OR_WIN32).c, \
   accept bind channels close connect dup envir errmsg getpeername getpid \
-  getsockname gettimeofday isatty link listen lockf lseek mmap open pipe \
-  read readlink realpath rename select sendrecv shutdown sleep socket \
-  socketpair sockopt stat symlink times truncate unixsupport utimes write)
+  getsockname gettimeofday isatty link listen lockf lseek mmap open pipe read \
+  readlink realpath select sendrecv shutdown sleep socket socketpair sockopt \
+  stat symlink times truncate unixsupport utimes write)
 
 # OS-specific modules that have no counterpart on the other OS
 ifeq "$(UNIX_OR_WIN32)" "win32"

@@ -343,7 +343,7 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
   caml_leave_blocking_section();
   caml_stat_free(p_new);
   caml_stat_free(p_old);
-  if (ret != 0)
+  if (ret == -1)
     caml_sys_error(NO_ARG);
   return Val_unit;
 }
