@@ -359,7 +359,7 @@ CAMLprim value caml_sys_chdir(value dirname)
   ret = chdir_os(p);
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret != 0) caml_sys_error(dirname);
+  if (ret == -1) caml_sys_error(dirname);
   CAMLreturn(Val_unit);
 }
 
