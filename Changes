@@ -46,6 +46,15 @@ Working version
   between domain exit and backup thread
   (Miod Vallat and Gabriel Scherer, report by Jan Midtgaard)
 
+- #?????: Symmetrize shared `Sys` and `Unix` functions. Apply fixes of
+  #12072, #12184, #12320, and #13166, from `Sys.rename` to
+  `Unix.rename`.  Make `caml_sys_close` raise on error, allowing
+  `Filename.temp_file` retries if a name collision is found. Flush
+  buffers when calling `caml_sys_system_command` on Windows. Error
+  with EINVAL instead of ENOENT if the command string is not a valid
+  C string.
+  (Antonin Décimo, review by ???)
+
 OCaml 5.3.0
 ___________
 
