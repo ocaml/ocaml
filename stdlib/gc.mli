@@ -42,7 +42,7 @@ type stat =
 
     heap_chunks : int;
     (** Number of contiguous pieces of memory that make up the major heap.
-        This metrics is currently not available in OCaml 5: the field value is
+        This metric is currently not available in OCaml 5: the field value is
         always [0]. *)
 
     live_words : int;
@@ -71,12 +71,12 @@ type stat =
 
     free_blocks : int;
     (** Number of blocks in the free list.
-        This metrics is currently not available in OCaml 5: the field value is
+        This metric is currently not available in OCaml 5: the field value is
         always [0]. *)
 
     largest_free : int;
     (** Size (in words) of the largest block in the free list.
-        This metrics is currently not available in OCaml 5: the field value
+        This metric is currently not available in OCaml 5: the field value
         is always [0]. *)
 
     fragments : int;
@@ -92,7 +92,7 @@ type stat =
 
     stack_size: int;
     (** Current size of the stack, in words.
-        This metrics is currently not available in OCaml 5: the field value is
+        This metric is currently not available in OCaml 5: the field value is
         always [0].
         @since 3.12 *)
 
@@ -224,16 +224,19 @@ type control =
 
 external stat : unit -> stat = "caml_gc_stat"
 (** Return the current values of the memory management counters in a
-   [stat] record that represent the program's total memory stats.
-   This function causes a full major collection. *)
+    [stat] record that represents the program's total memory stats.
+    The [heap_chunks], [free_blocks], [largest_free], and [stack_size] metrics
+    are currently not available in OCaml 5: their returned field values are
+    therefore [0].
+    This function causes a full major collection. *)
 
 external quick_stat : unit -> stat = "caml_gc_quick_stat"
-(** Same as [stat] except that [live_words], [live_blocks], [free_words],
-    [free_blocks], [largest_free], and [fragments] are set to 0. Due to
-    per-domain buffers it may only represent the state of the program's
-    total memory usage since the last minor collection or major cycle.
-    This function is much faster than [stat] because it does not need to
-    trigger a full major collection. *)
+(** Returns a record with the current values of the memory management counters
+    like [stat]. Unlike [stat], [quick_stat] does not perform a full major
+    collection, and hence, is much faster. However, [quick_stat] reports the
+    counters sampled at the last minor collection or at the end of the last
+    major collection cycle (whichever is the latest). Hence, the memory stats
+    returned by [quick_stat] are not instantaneously accurate. *)
 
 external counters : unit -> float * float * float = "caml_gc_counters"
 (** Return [(minor_words, promoted_words, major_words)] for the current
