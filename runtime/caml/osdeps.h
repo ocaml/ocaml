@@ -197,6 +197,8 @@ CAMLextern char* caml_stat_strdup_of_utf16(const wchar_t *s);
 */
 CAMLextern value caml_copy_string_of_utf16(const wchar_t *s);
 
+CAMLextern wchar_t* caml_win32_dos_to_nt_path(wchar_t* DosPath);
+
 #endif /* _WIN32 */
 
 #endif /* CAML_OSDEPS_H */

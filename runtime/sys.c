@@ -363,18 +363,29 @@ CAMLprim value caml_sys_chdir(value dirname)
   CAMLreturn(Val_unit);
 }
 
+static char_os* canonicalize_path(char_os *path)
+{
+#ifdef _WIN32
+  return caml_win32_dos_to_nt_path(path);
+#else
+  return caml_stat_strdup(path);
+#endif
+}
+
 CAMLprim value caml_sys_mkdir(value path, value vperm)
 {
   CAMLparam2(path, vperm);
-  char_os * p;
+  char_os * p, * q;
   int ret;
   int perm = Int_val(vperm);
   caml_sys_check_path(path);
-  p = caml_stat_strdup_to_os(String_val(path));
+  q = caml_stat_strdup_to_os(String_val(path));
+  p = canonicalize_path(q);
   caml_enter_blocking_section();
   ret = mkdir_os(p, perm);
   caml_leave_blocking_section();
   caml_stat_free(p);
+  caml_stat_free(q);
   if (ret == -1) caml_sys_error(path);
   CAMLreturn(Val_unit);
 }

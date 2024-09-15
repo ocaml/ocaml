@@ -1258,3 +1258,47 @@ value caml_win32_xdg_defaults(void)
 
   CAMLreturn(result);
 }
+
+#include <winternl.h>
+
+typedef NTSTATUS (NTAPI *RtlDosLongPathNameToNtPathName_U_t)
+  (PCWSTR DosName, PUNICODE_STRING NtName, PWSTR *FilePart OPTIONAL, PVOID Reserved);
+
+static RtlDosLongPathNameToNtPathName_U_t RtlDosLongPathNameToNtPathName_U = NULL;
+
+PWSTR caml_win32_dos_to_nt_path(PWSTR DosPath)
+{
+  HMODULE hNtdll;
+  UNICODE_STRING NtPathName;
+  NTSTATUS Status;
+  PWSTR NtPath;
+  int LengthInChars;
+
+  hNtdll = GetModuleHandleW(L"ntdll.dll");
+  if (hNtdll == NULL)
+    goto fail;
+
+  if (RtlDosLongPathNameToNtPathName_U == NULL) {
+    RtlDosLongPathNameToNtPathName_U =
+      (RtlDosLongPathNameToNtPathName_U_t)GetProcAddress(hNtdll, "RtlDosLongPathNameToNtPathName_U_WithStatus");
+  }
+
+  if (RtlDosLongPathNameToNtPathName_U == NULL)
+    goto fail;
+
+  Status = RtlDosLongPathNameToNtPathName_U(DosPath, &NtPathName, NULL, NULL);
+
+  if (NT_SUCCESS(Status)) {
+    LengthInChars = NtPathName.Length / sizeof(WCHAR);
+    NtPath = caml_stat_alloc((LengthInChars + 1) * sizeof(WCHAR));
+    memcpy(NtPath, NtPathName.Buffer, NtPathName.Length);
+    NtPath[LengthInChars] = 0;
+    /* Replace the NT prefix \??\ by \\?\ */
+    NtPath[1] = '\\';
+    /* FIXME: how to free NtPathName? */
+    return NtPath;
+  }
+
+ fail:
+  return caml_stat_wcsdup(DosPath);
+}
