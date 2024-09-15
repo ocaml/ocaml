@@ -120,8 +120,8 @@ let usage speclist errmsg =
 
 let current = ref 0
 
-let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
-                                      errmsg =
+let parse_and_expand_argv_dynamic_aux ?(allow_hyphen_values=true) allow_expand
+                                      current argv speclist anonfun errmsg =
   let initpos = !current in
   let convert_error error =
     (* convert an internal error to a Bad/Help exception
@@ -169,8 +169,13 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
         let get_arg () =
           match follow with
           | None ->
-              if !current + 1 < (Array.length !argv) then !argv.(!current + 1)
-              else raise (Stop (Missing s))
+              if !current + 1 < (Array.length !argv) then begin
+                let arg = !argv.(!current + 1) in
+                if (not allow_hyphen_values) &&
+                   (String.starts_with ~prefix:"-" arg)
+                then raise (Stop (Missing s))
+                else arg
+              end else raise (Stop (Missing s))
           | Some arg -> arg
         in
         let consume_arg () =
@@ -271,39 +276,46 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
     incr current
   done
 
-let parse_and_expand_argv_dynamic current argv speclist anonfun errmsg =
-  parse_and_expand_argv_dynamic_aux true current argv speclist anonfun errmsg
+let parse_and_expand_argv_dynamic ?(allow_hyphen_values=true) current
+                                  argv speclist anonfun errmsg =
+  parse_and_expand_argv_dynamic_aux ~allow_hyphen_values:allow_hyphen_values
+    true current argv speclist anonfun errmsg
 
-let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
-  parse_and_expand_argv_dynamic_aux false current (ref argv) speclist anonfun
-    errmsg
+let parse_argv_dynamic ?(allow_hyphen_values=true) ?(current=current) argv
+                       speclist anonfun errmsg =
+  parse_and_expand_argv_dynamic_aux ~allow_hyphen_values:allow_hyphen_values
+    false current (ref argv) speclist anonfun errmsg
 
 
-let parse_argv ?(current=current) argv speclist anonfun errmsg =
-  parse_argv_dynamic ~current:current argv (ref speclist) anonfun errmsg
+let parse_argv ?(allow_hyphen_values=true) ?(current=current) argv
+               speclist anonfun errmsg =
+  parse_argv_dynamic ~current:current ~allow_hyphen_values:allow_hyphen_values
+    argv (ref speclist) anonfun errmsg
 
 
-let parse l f msg =
+let parse ?(allow_hyphen_values=true) l f msg =
   try
-    parse_argv Sys.argv l f msg
+    parse_argv ~allow_hyphen_values:allow_hyphen_values Sys.argv l f msg
   with
   | Bad msg -> eprintf "%s" msg; exit 2
   | Help msg -> printf "%s" msg; exit 0
 
 
-let parse_dynamic l f msg =
+let parse_dynamic ?(allow_hyphen_values=true) l f msg =
   try
-    parse_argv_dynamic Sys.argv l f msg
+    parse_argv_dynamic ~allow_hyphen_values:allow_hyphen_values Sys.argv
+      l f msg
   with
   | Bad msg -> eprintf "%s" msg; exit 2
   | Help msg -> printf "%s" msg; exit 0
 
-let parse_expand l f msg =
+let parse_expand ?(allow_hyphen_values=true) l f msg =
   try
     let argv = ref Sys.argv in
     let spec = ref l in
     let current = ref (!current) in
-    parse_and_expand_argv_dynamic current argv spec f msg
+    parse_and_expand_argv_dynamic ~allow_hyphen_values:allow_hyphen_values
+      current argv spec f msg
   with
   | Bad msg -> eprintf "%s" msg; exit 2
   | Help msg -> printf "%s" msg; exit 0

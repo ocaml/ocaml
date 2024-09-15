@@ -15,6 +15,14 @@ Working version
 
 ### Standard library:
 
+- #????: add an optional argument `allow_hyphen_values`
+  to option parsing functions of `Arg`.
+  When set to `true`, it requires option that starts with hyphens
+  to be passed with `--option='-value'`
+  to prevent accidental incorrect invocation with missing arguments
+  when multiple options are used.
+  (Daniil Baturin, review by ????)
+
 ### Other libraries:
 
 - #13429: add `Unix.sigwait`, a binding to the `sigwait` system call;
