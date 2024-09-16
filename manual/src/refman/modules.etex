@@ -22,7 +22,7 @@ for the specifications expressed in module types.
 module-expr:
           module-path
         | 'struct' [ module-items ] 'end'
-        | 'functor' '(' module-name ':' module-type ')' '->' module-expr
+        | 'functor' {{ '(' module-name ':' module-type ')' }} '->' module-expr
         | module-expr '(' module-expr ')'
         | '(' module-expr ')'
         | '(' module-expr ':' module-type ')'
@@ -245,4 +245,3 @@ The expression @module-expr_1 '(' module-expr_2 ')'@ evaluates
 @module-expr_1@ to a functor and @module-expr_2@ to a module, and
 applies the former to the latter. The type of @module-expr_2@ must
 match the type expected for the arguments of the functor @module-expr_1@.
-
