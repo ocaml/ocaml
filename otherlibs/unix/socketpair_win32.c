@@ -121,12 +121,8 @@ static int socketpair(int domain, int type, int protocol,
   if (client == INVALID_SOCKET)
     goto fail_wsa;
 
-  u_long non_block = 1UL;
-  if (ioctlsocket(client, FIONBIO, &non_block) == SOCKET_ERROR)
-    goto fail_wsa;
-
   rc = connect(client, (struct sockaddr *) &addr, socklen);
-  if (rc != SOCKET_ERROR || WSAGetLastError() != WSAEWOULDBLOCK)
+  if (rc == SOCKET_ERROR)
     goto fail_wsa;
 
   server = accept(listener, NULL, NULL);
@@ -138,32 +134,12 @@ static int socketpair(int domain, int type, int protocol,
   if (rc == SOCKET_ERROR)
     goto fail_wsa;
 
-  fd_set writefds, exceptfds;
-  FD_ZERO(&writefds);
-  FD_SET(client, &writefds);
-  FD_ZERO(&exceptfds);
-  FD_SET(client, &exceptfds);
-
-  rc = select(0 /* ignored */,
-              NULL, &writefds, &exceptfds,
-              NULL /* blocking */);
-  if (rc == SOCKET_ERROR
-      || FD_ISSET(client, &exceptfds)
-      || !FD_ISSET(client, &writefds)) {
-    /* We're not interested in the socket error status */
-    goto fail_wsa;
-  }
-
   /* Socket file no longer needed */
   defer_delete_file = false;
   if (!DeleteFileA(addr.s_unix.sun_path)) {
     caml_win32_maperr(GetLastError());
     goto fail_sockets;
   }
-
-  non_block = 0UL;
-  if (ioctlsocket(client, FIONBIO, &non_block) == SOCKET_ERROR)
-    goto fail_wsa;
 
   /* Check that the process that connected is this self process. */
   u_long peerid = 0UL;
