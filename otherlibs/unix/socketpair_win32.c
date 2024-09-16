@@ -12,6 +12,9 @@
 /*                                                                        */
 /**************************************************************************/
 
+/* INIT_ONCE is only available from Windows Vista onwards */
+#define _WIN32_WINNT 0x0600 /* _WIN32_WINNT_VISTA */
+
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
@@ -19,6 +22,7 @@
 #include <caml/signals.h>
 #include "caml/unixsupport.h"
 #include <errno.h>
+#include <stdbool.h>
 
 #ifdef HAS_SOCKETS
 
@@ -34,11 +38,53 @@ extern const int caml_unix_socket_type_table[]; /* from socket.c */
 
 #else
 
+static INIT_ONCE get_temp_path_init_once = INIT_ONCE_STATIC_INIT;
+static BOOL CALLBACK get_temp_path_init_function(PINIT_ONCE InitOnce,
+                                                 PVOID Parameter,
+                                                 PVOID *lpContext)
+{
+  FARPROC pGetTempPath2A =
+    GetProcAddress(GetModuleHandle(L"KERNEL32.DLL"), "GetTempPath2A");
+  if (pGetTempPath2A)
+    *lpContext = pGetTempPath2A;
+  else
+    *lpContext = GetTempPathA;
+  return TRUE;
+}
+
+static bool gen_sun_path(char (*sun_path)[UNIX_PATH_MAX])
+{
+  DWORD (WINAPI *get_temp_path)(DWORD, LPSTR);
+  InitOnceExecuteOnce(&get_temp_path_init_once, get_temp_path_init_function,
+                      NULL, (LPVOID *) &get_temp_path);
+
+  /* sun_path is char *, not wchar_t */
+  DWORD len = get_temp_path(UNIX_PATH_MAX, *sun_path);
+  if (len == 0) {
+    caml_win32_maperr(GetLastError());
+    return false;
+  } else if (len > UNIX_PATH_MAX) {
+    /* Path to the temporary directory is too long. */
+    errno = ENOMEM; /* no clear error code */
+    return false;
+  }
+
+  /* Simpler and less limited than GetTempFileName */
+  LARGE_INTEGER ticks;
+  if (!QueryPerformanceCounter(&ticks)) {
+    caml_win32_maperr(GetLastError());
+    return false;
+  }
+  snprintf(*sun_path + len, UNIX_PATH_MAX - len,
+           "%" ARCH_INT64_PRINTF_FORMAT "x-%lu.sock",
+           ticks.QuadPart, GetCurrentThreadId());
+  return true;
+}
+
 static int socketpair(int domain, int type, int protocol,
                       SOCKET socket_vector[2],
                       BOOL inherit)
 {
-  wchar_t dirname[MAX_PATH + 1], path[MAX_PATH + 1];
   union sock_addr_union addr;
   socklen_param_type socklen;
 
@@ -50,47 +96,27 @@ static int socketpair(int domain, int type, int protocol,
 
   fd_set writefds, exceptfds;
   u_long non_block, peerid = 0UL;
-
+  bool defer_delete_file = false;
   DWORD drc;
   int rc;
 
-  if (GetTempPath(MAX_PATH + 1, dirname) == 0) {
-    caml_win32_maperr(GetLastError());
-    goto fail;
-  }
-
-  if (GetTempFileName(dirname, L"osp", 0U, path) == 0) {
-    caml_win32_maperr(GetLastError());
-    goto fail;
-  }
-
   addr.s_unix.sun_family = PF_UNIX;
   socklen = sizeof(addr.s_unix);
-
-  /* sun_path needs to be set in UTF-8 */
-  rc = WideCharToMultiByte(CP_UTF8, 0, path, -1, addr.s_unix.sun_path,
-                           UNIX_PATH_MAX, NULL, NULL);
-  if (rc == 0) {
-    caml_win32_maperr(GetLastError());
-    goto fail_path;
-  }
 
   listener = caml_win32_socket(domain, type, protocol, NULL, inherit);
   if (listener == INVALID_SOCKET)
     goto fail_wsa;
 
-  /* The documentation requires removing the file before binding the socket. */
-  if (DeleteFile(path) == 0) {
-    drc = GetLastError();
-    if (drc != ERROR_FILE_NOT_FOUND) {
-      caml_win32_maperr(drc);
+  for (int retries = 3; retries > 0; retries--) {
+    if (!gen_sun_path(&addr.s_unix.sun_path))
       goto fail_sockets;
-    }
-  }
 
-  rc = bind(listener, (struct sockaddr *) &addr, socklen);
-  if (rc == SOCKET_ERROR)
-    goto fail_wsa;
+    rc = bind(listener, (struct sockaddr *) &addr, socklen);
+    if (rc == SOCKET_ERROR && WSAGetLastError() != WSAEADDRINUSE)
+      goto fail_wsa;
+    else break;
+  }
+  defer_delete_file = true;
 
   rc = listen(listener, 1);
   if (rc == SOCKET_ERROR)
@@ -132,14 +158,16 @@ static int socketpair(int domain, int type, int protocol,
     goto fail_wsa;
   }
 
-  non_block = 0UL;
-  if (ioctlsocket(client, FIONBIO, &non_block) == SOCKET_ERROR)
-    goto fail_wsa;
-
-  if (DeleteFile(path) == 0) {
+  /* Socket file no longer needed */
+  defer_delete_file = false;
+  if (!DeleteFileA(addr.s_unix.sun_path)) {
     caml_win32_maperr(GetLastError());
     goto fail_sockets;
   }
+
+  non_block = 0UL;
+  if (ioctlsocket(client, FIONBIO, &non_block) == SOCKET_ERROR)
+    goto fail_wsa;
 
   rc = WSAIoctl(client, SIO_AF_UNIX_GETPEERPID,
                 NULL, 0U,
@@ -155,9 +183,6 @@ static int socketpair(int domain, int type, int protocol,
 fail_wsa:
   caml_win32_maperr(WSAGetLastError());
 
-fail_path:
-  DeleteFile(path);
-
 fail_sockets:
   if(listener != INVALID_SOCKET)
     closesocket(listener);
@@ -166,7 +191,9 @@ fail_sockets:
   if(server != INVALID_SOCKET)
     closesocket(server);
 
-fail:
+  if (defer_delete_file)
+    DeleteFileA(addr.s_unix.sun_path);
+
   return SOCKET_ERROR;
 }
 
