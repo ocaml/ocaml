@@ -20,6 +20,10 @@ Working version
 - #14020: Add Unix.unsetenv.
   (Nicolás Ojeda Bär, review by Antonin Décimo and David Allsopp)
 
+- #13450: Fix Windows emulation of socketpair with PF_UNIX sockets
+  occasionally failing with EADDRINUSE.
+  (Antonin Décimo, review by Gabriel Scherer, report by Vesa Karvonen)
+
 ### Tools:
 
 * #13638: ocamlmklib exits with code 4 if passed an unrecognised option, as it
