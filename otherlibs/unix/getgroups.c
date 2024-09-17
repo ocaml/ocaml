@@ -16,6 +16,7 @@
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
+#include <caml/memory.h>
 
 #ifdef HAS_GETGROUPS
 
@@ -24,19 +25,32 @@
 #include <unistd.h>
 #endif
 #include <limits.h>
+#include <errno.h>
 #include "caml/unixsupport.h"
 
 CAMLprim value caml_unix_getgroups(value unit)
 {
-  gid_t gidset[NGROUPS_MAX];
-  int n;
+  gid_t* gidset = NULL;
+  int n, ngroups_max;
   value res;
 
-  n = getgroups(NGROUPS_MAX, gidset);
-  if (n == -1) caml_uerror("getgroups", Nothing);
+  while (1) {
+    if ((ngroups_max = getgroups(0, NULL)) == -1) {
+      if (gidset != NULL) caml_stat_free(gidset);
+      caml_uerror("getgroups", Nothing);
+    }
+    gidset = caml_stat_resize(gidset, ngroups_max * sizeof(gid_t));
+    if ((n = getgroups(ngroups_max, gidset)) == -1) {
+      if (errno == EINVAL) continue; // result size changed, retry
+      caml_stat_free(gidset);
+      caml_uerror("getgroups", Nothing);
+    }
+    break;
+  }
   res = caml_alloc_tuple(n);
   for (int i = 0; i < n; i++)
     Field(res, i) = Val_int(gidset[i]);
+  caml_stat_free(gidset);
   return res;
 }
 
