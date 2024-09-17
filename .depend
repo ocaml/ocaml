@@ -922,6 +922,35 @@ typing/gprinttyp.cmx : \
 typing/gprinttyp.cmi : \
     utils/warnings.cmi \
     typing/types.cmi
+typing/head_shape.cmo : \
+    typing/types.cmi \
+    typing/predef.cmi \
+    typing/head_shape_types.cmi \
+    typing/env.cmi \
+    typing/data_types.cmi \
+    typing/ctype.cmi \
+    utils/config.cmi \
+    typing/btype.cmi \
+    typing/head_shape.cmi
+typing/head_shape.cmx : \
+    typing/types.cmx \
+    typing/predef.cmx \
+    typing/head_shape_types.cmx \
+    typing/env.cmx \
+    typing/data_types.cmx \
+    typing/ctype.cmx \
+    utils/config.cmx \
+    typing/btype.cmx \
+    typing/head_shape.cmi
+typing/head_shape.cmi : \
+    typing/path.cmi \
+    typing/head_shape_types.cmi \
+    typing/env.cmi
+typing/head_shape_types.cmo : \
+    typing/head_shape_types.cmi
+typing/head_shape_types.cmx : \
+    typing/head_shape_types.cmi
+typing/head_shape_types.cmi :
 typing/ident.cmo : \
     utils/misc.cmi \
     utils/local_store.cmi \
