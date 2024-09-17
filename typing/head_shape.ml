@@ -1,0 +1,207 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*   Gabriel Scherer, projet Partout, INRIA Saclay                        *)
+(*   Nicolas Chataing, ENS Paris                                          *)
+(*                                                                        *)
+(*   Copyright 2021 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
+open Types
+open Data_types
+open Head_shape_types
+
+type t = shape
+
+let rec of_type_expr env ty fuel =
+  match Types.get_desc ty with
+  | Tvar _ | Tunivar _ ->
+      (* FIXME: variables that are universally quantified
+         (including type parameters) should get [any], but GADT
+         variables that are existentially quantified should get
+         [poison] instead -- they are not separated. *)
+      Shape.any
+  | Tconstr (p, args, _abbrev) ->
+      (* Both [of_predef_abstract_type] and [of_typedescr] may loop over
+         infinite types or recursive expansions; decrease fuel now. *)
+      if fuel = 0 then of_unknown_type env p args else
+      let fuel = fuel - 1 in
+      begin match Predef.find_type_constr p with
+      | Some (#Predef.abstract_type_constr as tconstr) ->
+          of_predef_abstract_type env tconstr args fuel
+      | None | Some #Predef.data_type_constr ->
+      match Env.find_type_descrs p env, Env.find_type p env with
+      | descr, decl ->
+          of_typedescr env p decl descr ~args fuel
+      | exception Not_found ->
+          of_unknown_type env p args
+      end
+  | Ttuple _li ->
+      Shape.tuple
+  | Tarrow _ | Tfunctor _ ->
+      Shape.\#function
+  | Tpackage _ ->
+      Shape.tuple
+  | Tobject _ ->
+      Shape.\#object
+  | Tvariant row ->
+      let has_consts, has_nonconsts =
+        if not (Types.row_closed row) then true, true
+        else begin
+          (* Note: for closed polymorphic variants, we could refine
+             our shape by listing specific immediates for constant
+             constructors (the hashes of the name). This would allow
+             merging two unboxed constructors containing disjoint
+             constant polymorphic variants. *)
+          let consts = ref false in
+          let nonconsts = ref false in
+          let notify (_label, row_field) =
+            match Types.row_field_repr row_field with
+            | Types.Rpresent None -> consts := true
+            | Types.Rpresent (Some _) -> nonconsts := true
+            | Types.Rabsent -> ()
+            | Types.Reither (is_const, _, _) ->
+                (if is_const then consts else nonconsts) := true
+          in
+          List.iter notify (Types.row_fields row);
+          !consts, !nonconsts
+        end
+      in
+      Shape.polymorphic_variant ~has_consts ~has_nonconsts
+  | Tpoly (ty, _vars) ->
+      of_type_expr env ty fuel
+  | Tlink _ | Texpand _ | Tsubst _ | Tfield _ | Tnil ->
+      (* cannot be returned by [get_desc] *)
+      assert false
+
+and of_unknown_type env p args =
+  (* FIXME: if one of the parameters contains a non-separated variable,
+     then this unknown type should be considered non-separated as well.
+     (It may be a projection into this parameter.)
+     This corresponds to the DeepSep case of the separability analysis. *)
+  ignore (env, p, args);
+  Shape.any
+
+and of_predef_abstract_type env tconstr args fuel =
+  match tconstr with
+  | `Int | `Char -> Shape.any_immediate
+  | `Array | `Iarray -> Shape.array
+  | `Float -> Shape.float
+  | `Floatarray -> Shape.floatarray
+  | `Nativeint | `Int32 | `Int64 ->
+      Shape.custom
+  | `String | `Bytes ->
+      Shape.string
+  | `Continuation ->
+      Shape.continuation
+  | `Extension_constructor ->
+      Shape.block [Tag Obj.object_tag]
+  | `Lazy_t ->
+      (* Once lazy values are forced, their Forward_tag block can be
+         'cut short', and then they are represented exactly like the
+         underlying type.
+
+         Note that this union may be non-disjoint: it is okay if the
+         underlying type can itself have lazy tags, shortcutting will
+         be disabled by a runtime check.  *)
+      let ty = match args with [ty] -> ty | _ -> assert false in
+      Shape.\#lazy (of_type_expr env ty fuel)
+  | `Atomic_loc ->
+      Shape.tuple
+  | `Todo_info ->
+      Shape.any
+
+and of_typedescr env p ty_decl ty_descr ~args fuel =
+  let with_unify_res instance f =
+    let snap = Btype.snapshot () in
+    Fun.protect ~finally:(fun () -> Btype.backtrack snap) @@ fun () ->
+    Ctype.unify env instance (Ctype.newconstr p args);
+    f ()
+  in
+  let of_type_manifest ty =
+    let ty = Ctype.apply env ty_decl.type_params ty args in
+    of_type_expr env ty fuel
+  in
+  let of_unboxed_label lbl =
+    let (_universals, ty_arg, ty_res) =
+      Ctype.instance_label ~fixed:false lbl in
+    with_unify_res ty_res @@ fun () ->
+    of_type_expr env ty_arg fuel
+  in
+  let of_unboxed_cstr cstr =
+    let cstr_args, cstr_res, _existentials =
+      Ctype.instance_constructor Keep_existentials_flexible cstr in
+    with_unify_res cstr_res @@ fun () ->
+    (* an unboxed variant must have exactly one argument *)
+    begin match cstr_args with
+    | [ty] -> of_type_expr env ty fuel
+    | _ -> assert false
+    end
+  in
+  match ty_descr with
+  | Type_record (_lbls, Record_regular) ->
+      Shape.tuple
+  | Type_record (_lbls, Record_float) ->
+      Shape.floatarray
+  | Type_record (fields, Record_unboxed _) ->
+      (* an [@@unboxed] record must have exactly one field *)
+      begin match fields with
+      | [lbl] -> of_unboxed_label lbl
+      | _ -> assert false
+      end
+  | Type_record (_lbls, Record_inlined tag) ->
+      Shape.block [Tag tag]
+  | Type_record (_lbls, Record_extension _) ->
+      (* non-constant extension constructors have tag 0,
+         and one additional argument storing the
+         extension constructor dynamic value. *)
+      Shape.block [Tag 0]
+  | Type_open ->
+      Shape.extensible_variant
+  | Type_variant (cstrs, Variant_unboxed) ->
+      (* an [@@unboxed] variant must have exactly one constructor
+         with one parameter *)
+      begin match cstrs with
+      | [cstr] -> of_unboxed_cstr cstr
+      | _ -> assert false
+      end
+  | Type_variant (cstr_descrs, Variant_regular) ->
+      let of_cstr_descr descr =
+        match descr.cstr_tag with
+        | Cstr_constant n -> Shape.imm [Imm n]
+        | Cstr_block tag -> Shape.block [Tag tag]
+        | Cstr_unboxed | Cstr_extension _ ->
+            (* cannot occur in regular variants *)
+            assert false
+      in
+      List.map of_cstr_descr cstr_descrs
+      |> List.fold_left Shape.union Shape.empty
+  | Type_abstract _ | Type_external _ ->
+      match ty_decl.type_manifest with
+      | Some ty -> of_type_manifest ty
+      | None ->
+      match ty_decl.type_immediate with
+      | Always -> Shape.any_immediate
+      | Always_on_64bits ->
+        (* TODO maybe refine? *)
+        Shape.any
+      | Unknown ->
+        of_unknown_type env p args
+
+let initial_fuel =
+  (* choice of fuel: see
+     {!Typedecl_unboxed.get_unboxed_type_representation} *)
+  100
+
+let of_type_path env path =
+  let decl = Env.find_type path env in
+  let params = Ctype.instance_list decl.type_params in
+  let ty = Ctype.newconstr path params in
+  of_type_expr env ty initial_fuel
