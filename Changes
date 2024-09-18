@@ -3065,6 +3065,10 @@ OCaml 4.14 maintenance version
   (emitted for Linux in #8805)
   (Hannes Mehnert, review by Nicolás Ojeda Bär)
 
+- #13448, #13449: fix a code-generation bug on unsafe array accesses
+  at type int32, int64, nativeint, which has been introduced in OCaml 4.04.
+  (Gabriel Scherer, review by Nicolás Ojeda Bär and Vincent Laviron,
+   report by Simon Cruanes)
 
 OCaml 4.14.1 (20 December 2022)
 ------------------------------
