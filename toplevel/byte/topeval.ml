@@ -123,16 +123,7 @@ let execute_phrase print_outcome ppf phr =
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
-      Typecore.reset_delayed_checks ();
-      let (str, sg, sn, shape, newenv) =
-        Typemod.type_toplevel_phrase oldenv sstr
-      in
-      if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
-      let sg' = Typemod.Signature_names.simplify newenv sn sg in
-      ignore (Includemod.signatures ~mark:Mark_positive oldenv sg sg');
-      Typecore.force_delayed_checks ();
-      let shape = Shape_reduce.local_reduce Env.empty shape in
-      if !Clflags.dump_shape then Shape.print ppf shape;
+      let (str, sg', newenv) = typecheck_phrase ppf oldenv sstr in
       let lam = Translmod.transl_toplevel_definition str in
       Warnings.check_fatal ();
       begin try

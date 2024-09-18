@@ -7281,8 +7281,13 @@ toplevel/genprintval.cmi : \
     typing/env.cmi
 toplevel/topcommon.cmo : \
     parsing/unit_info.cmi \
+    typing/typemod.cmi \
     typing/typedtree.cmi \
+    typing/typecore.cmi \
     bytecomp/symtable.cmi \
+    typing/shape_reduce.cmi \
+    typing/shape.cmi \
+    typing/printtyped.cmi \
     parsing/printast.cmi \
     typing/predef.cmi \
     parsing/pprintast.cmi \
@@ -7297,6 +7302,7 @@ toplevel/topcommon.cmo : \
     parsing/location.cmi \
     utils/load_path.cmi \
     parsing/lexer.cmi \
+    typing/includemod.cmi \
     typing/ident.cmi \
     toplevel/genprintval.cmi \
     utils/format_doc.cmi \
@@ -7312,8 +7318,13 @@ toplevel/topcommon.cmo : \
     toplevel/topcommon.cmi
 toplevel/topcommon.cmx : \
     parsing/unit_info.cmx \
+    typing/typemod.cmx \
     typing/typedtree.cmx \
+    typing/typecore.cmx \
     bytecomp/symtable.cmx \
+    typing/shape_reduce.cmx \
+    typing/shape.cmx \
+    typing/printtyped.cmx \
     parsing/printast.cmx \
     typing/predef.cmx \
     parsing/pprintast.cmx \
@@ -7328,6 +7339,7 @@ toplevel/topcommon.cmx : \
     parsing/location.cmx \
     utils/load_path.cmx \
     parsing/lexer.cmx \
+    typing/includemod.cmx \
     typing/ident.cmx \
     toplevel/genprintval.cmx \
     utils/format_doc.cmx \
@@ -7491,16 +7503,11 @@ toplevel/trace.cmi : \
 toplevel/byte/topeval.cmo : \
     utils/warnings.cmi \
     typing/types.cmi \
-    typing/typemod.cmi \
     typing/typedtree.cmi \
-    typing/typecore.cmi \
     lambda/translmod.cmi \
     toplevel/topcommon.cmi \
     bytecomp/symtable.cmi \
     lambda/simplif.cmi \
-    typing/shape_reduce.cmi \
-    typing/shape.cmi \
-    typing/printtyped.cmi \
     typing/printtyp.cmi \
     lambda/printlambda.cmi \
     bytecomp/printinstr.cmi \
@@ -7513,7 +7520,6 @@ toplevel/byte/topeval.cmo : \
     bytecomp/meta.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
-    typing/includemod.cmi \
     typing/ident.cmi \
     typing/env.cmi \
     bytecomp/emitcode.cmi \
@@ -7527,16 +7533,11 @@ toplevel/byte/topeval.cmo : \
 toplevel/byte/topeval.cmx : \
     utils/warnings.cmx \
     typing/types.cmx \
-    typing/typemod.cmx \
     typing/typedtree.cmx \
-    typing/typecore.cmx \
     lambda/translmod.cmx \
     toplevel/topcommon.cmx \
     bytecomp/symtable.cmx \
     lambda/simplif.cmx \
-    typing/shape_reduce.cmx \
-    typing/shape.cmx \
-    typing/printtyped.cmx \
     typing/printtyp.cmx \
     lambda/printlambda.cmx \
     bytecomp/printinstr.cmx \
@@ -7549,7 +7550,6 @@ toplevel/byte/topeval.cmx : \
     bytecomp/meta.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
-    typing/includemod.cmx \
     typing/ident.cmx \
     typing/env.cmx \
     bytecomp/emitcode.cmx \
@@ -7630,16 +7630,11 @@ toplevel/byte/trace.cmi : \
 toplevel/native/topeval.cmo : \
     utils/warnings.cmi \
     typing/types.cmi \
-    typing/typemod.cmi \
     typing/typedtree.cmi \
-    typing/typecore.cmi \
     lambda/translmod.cmi \
     toplevel/native/tophooks.cmi \
     toplevel/topcommon.cmi \
     lambda/simplif.cmi \
-    typing/shape_reduce.cmi \
-    typing/shape.cmi \
-    typing/printtyped.cmi \
     typing/printtyp.cmi \
     lambda/printlambda.cmi \
     typing/predef.cmi \
@@ -7663,16 +7658,11 @@ toplevel/native/topeval.cmo : \
 toplevel/native/topeval.cmx : \
     utils/warnings.cmx \
     typing/types.cmx \
-    typing/typemod.cmx \
     typing/typedtree.cmx \
-    typing/typecore.cmx \
     lambda/translmod.cmx \
     toplevel/native/tophooks.cmx \
     toplevel/topcommon.cmx \
     lambda/simplif.cmx \
-    typing/shape_reduce.cmx \
-    typing/shape.cmx \
-    typing/printtyped.cmx \
     typing/printtyp.cmx \
     lambda/printlambda.cmx \
     typing/predef.cmx \
