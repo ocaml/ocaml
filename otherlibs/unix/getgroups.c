@@ -24,7 +24,6 @@
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
-#include <limits.h>
 #include <errno.h>
 #include "caml/unixsupport.h"
 

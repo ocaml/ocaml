@@ -22,7 +22,7 @@ Working version
   `Thread.sigmask` using `Unix.sigprocmask`.
   (Xavier Leroy, review by Antonin Décimo, Gabriel Scherer, Miod Vallat)
 
-- #13442: Fix Unix.getgroups for users belonging to more than 32 groups
+- #13442, #13452: Fix Unix.getgroups for users belonging to more than 32 groups
   when using musl
   (Kate Deplaix, review by Gabriel Scherer, Antonin Décimo, Anil Madhavapeddy)
 
