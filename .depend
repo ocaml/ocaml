@@ -1433,6 +1433,19 @@ typing/primitive.cmi : \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
     parsing/location.cmi
+typing/print_head_shape.cmo : \
+    typing/typedtree.cmi \
+    typing/tast_iterator.cmi \
+    typing/head_shape.cmi \
+    typing/print_head_shape.cmi
+typing/print_head_shape.cmx : \
+    typing/typedtree.cmx \
+    typing/tast_iterator.cmx \
+    typing/head_shape.cmx \
+    typing/print_head_shape.cmi
+typing/print_head_shape.cmi : \
+    typing/typedtree.cmi \
+    typing/head_shape.cmi
 typing/printpat.cmo : \
     typing/typedtree.cmi \
     typing/ident.cmi \
@@ -7184,6 +7197,7 @@ driver/compile_common.cmo : \
     typing/printtyped.cmi \
     typing/printtyp.cmi \
     parsing/printast.cmi \
+    typing/print_head_shape.cmi \
     parsing/pprintast.cmi \
     driver/pparse.cmi \
     utils/misc.cmi \
@@ -7205,6 +7219,7 @@ driver/compile_common.cmx : \
     typing/printtyped.cmx \
     typing/printtyp.cmx \
     parsing/printast.cmx \
+    typing/print_head_shape.cmx \
     parsing/pprintast.cmx \
     driver/pparse.cmx \
     utils/misc.cmx \
@@ -7551,6 +7566,7 @@ toplevel/topcommon.cmo : \
     typing/shape.cmi \
     typing/printtyped.cmi \
     parsing/printast.cmi \
+    typing/print_head_shape.cmi \
     typing/predef.cmi \
     parsing/pprintast.cmi \
     driver/pparse.cmi \
@@ -7588,6 +7604,7 @@ toplevel/topcommon.cmx : \
     typing/shape.cmx \
     typing/printtyped.cmx \
     parsing/printast.cmx \
+    typing/print_head_shape.cmx \
     typing/predef.cmx \
     parsing/pprintast.cmx \
     driver/pparse.cmx \

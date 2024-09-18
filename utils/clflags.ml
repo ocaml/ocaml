@@ -122,6 +122,7 @@ let dump_source = ref false             (* -dsource *)
 let dump_parsetree = ref false          (* -dparsetree *)
 and dump_typedtree = ref false          (* -dtypedtree *)
 and dump_shape = ref false              (* -dshape *)
+let dump_headshape = ref false          (* -dheadshape *)
 and dump_matchcomp = ref false          (* -dmatchcomp *)
 and dump_rawlambda = ref false          (* -drawlambda *)
 and dump_lambda = ref false             (* -dlambda *)
@@ -578,6 +579,7 @@ module Dump_option = struct
     | Parsetree
     | Typedtree
     | Shape
+    | Head_shape
     | Match_comp
     | Raw_lambda
     | Lambda
@@ -608,6 +610,7 @@ module Dump_option = struct
     | Parsetree -> "parsetree"
     | Typedtree -> "typedtree"
     | Shape -> "shape"
+    | Head_shape -> "headshape"
     | Match_comp -> "matchcomp"
     | Raw_lambda -> "rawlambda"
     | Lambda -> "lambda"
@@ -635,6 +638,7 @@ module Dump_option = struct
     | "parsetree" -> Some Parsetree
     | "typedtree" -> Some Typedtree
     | "shape" -> Some Shape
+    | "headshape" -> Some Head_shape
     | "matchcomp" -> Some Match_comp
     | "rawlambda" -> Some Raw_lambda
     | "lambda" -> Some Lambda
@@ -663,6 +667,7 @@ module Dump_option = struct
     | Parsetree -> dump_parsetree
     | Typedtree -> dump_typedtree
     | Shape -> dump_shape
+    | Head_shape -> dump_headshape
     | Match_comp -> dump_matchcomp
     | Raw_lambda -> dump_rawlambda
     | Lambda -> dump_lambda
@@ -705,6 +710,7 @@ module Dump_option = struct
     | Parsetree
     | Typedtree
     | Shape
+    | Head_shape
     | Match_comp
     | Raw_lambda
     | Lambda

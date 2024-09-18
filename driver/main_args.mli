@@ -76,6 +76,7 @@ module type Core_options = sig
   val _dmatchcomp : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dheadshape : unit -> unit
 
 end
 
