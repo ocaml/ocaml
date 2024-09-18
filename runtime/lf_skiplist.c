@@ -372,7 +372,7 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
          must end up at this level and so as long as the node is present, it
          will be found - regardless of whether it has been added to the level
          above. Consider the staircasing referred to in [skiplist_find] earlier,
-         the final step in finding a node is following the reference from it's
+         the final step in finding a node is following the reference from its
          predecessor at the bottom level. */
       pred = preds[0];
       succ = succs[0];
