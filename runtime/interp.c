@@ -47,7 +47,7 @@
         Caml_state->trap_sp_off offset to the current trap frame
         extra_args number of extra arguments provided by the caller
 
-sp is a local copy of the global variable Caml_state->extern_sp. */
+sp is a local copy of the global variable Caml_state->current_stack->sp. */
 
 /* Instruction decoding */
 
