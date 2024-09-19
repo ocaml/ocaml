@@ -14,7 +14,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include <errno.h>
 #include <fcntl.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
@@ -70,10 +69,8 @@ CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
   else {
     /* Negative file offset */
     lock_len.QuadPart = - l_len;
-    if (lock_len.QuadPart > cur_position.QuadPart) {
-      errno = EINVAL;
-      caml_uerror("lockf", Nothing);
-    }
+    if (lock_len.QuadPart > cur_position.QuadPart)
+      caml_unix_error(EINVAL, "lockf", Nothing);
     beg_position.QuadPart = cur_position.QuadPart - lock_len.QuadPart;
     overlap.OffsetHigh = beg_position.HighPart;
     overlap.Offset     = beg_position.LowPart ;
@@ -123,8 +120,7 @@ CAMLprim value caml_unix_lockf(value fd, value cmd, value span)
       err = GetLastError();
     break;
   default:
-    errno = EINVAL;
-    caml_uerror("lockf", Nothing);
+    caml_unix_error(EINVAL, "lockf", Nothing);
   }
   if (err != NO_ERROR) {
     caml_win32_maperr(err);
