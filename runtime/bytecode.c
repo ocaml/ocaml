@@ -20,5 +20,9 @@
 
 opcode_t caml_start_code[] = {STOP};
 asize_t caml_code_size = sizeof(caml_start_code);
+char * caml_marshalled_global_data = NULL;
+asize_t caml_marshalled_global_data_size = 0;
+char * caml_section_table = NULL;
+asize_t caml_section_table_size = 0;
 
 enum caml_byte_program_mode caml_byte_program_mode = STANDARD;
