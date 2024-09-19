@@ -479,7 +479,11 @@ extern double caml_log1p(double);
 #define chdir_os chdir
 #define mkdir_os mkdir
 #define getcwd_os getcwd
+#ifdef __ANDROID__
+#define system_os caml_sys_system
+#else
 #define system_os system
+#endif
 #define rmdir_os rmdir
 #define putenv_os putenv
 #define chmod_os chmod
