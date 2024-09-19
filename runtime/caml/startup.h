@@ -54,6 +54,7 @@ enum caml_byte_program_mode
    COMPLETE_EXE /* embedding the vm, i.e. compiled with --output-complete-exe */
   };
 
+/* Defined in bytecode.c or supplied by the bytecode linker */
 extern enum caml_byte_program_mode caml_byte_program_mode;
 
 #endif /* CAML_INTERNALS */
