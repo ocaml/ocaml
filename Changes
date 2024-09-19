@@ -57,6 +57,9 @@ Working version
   between domain exit and backup thread
   (Miod Vallat and Gabriel Scherer, report by Jan Midtgaard)
 
+- #13454: Output a correct trace of the C_CALLN bytecode.
+  (Miod Vallat, review by Antonin Décimo)
+
 OCaml 5.3.0
 ___________
 
