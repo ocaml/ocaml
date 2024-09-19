@@ -216,7 +216,7 @@ let typecheck_phrase ppf oldenv sstr =
   in
   if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
   let sg' = Typemod.Signature_names.simplify newenv sn sg in
-  ignore (Includemod.signatures ~mark:Mark_positive oldenv sg sg');
+  Includemod.check_implementation oldenv sg sg';
   Typecore.force_delayed_checks ();
   let shape = Shape_reduce.local_reduce Env.empty shape in
   if !Clflags.dump_shape then Shape.print ppf shape;
