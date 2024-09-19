@@ -17,6 +17,36 @@
 
 open Types
 
+type abstract_type_constr = [
+  | `Int
+  | `Char
+  | `String
+  | `Bytes
+  | `Float
+  | `Continuation
+  | `Array
+  | `Nativeint
+  | `Int32
+  | `Int64
+  | `Lazy_t
+  | `Extension_constructor
+  | `Floatarray
+]
+type data_type_constr = [
+  | `Bool
+  | `Unit
+  | `Exn
+  | `Eff
+  | `List
+  | `Option
+]
+type type_constr = [
+  | abstract_type_constr
+  | data_type_constr
+]
+
+val find_type_constr : Path.t -> type_constr option
+
 val type_int: type_expr
 val type_char: type_expr
 val type_string: type_expr

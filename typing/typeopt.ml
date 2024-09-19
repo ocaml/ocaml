@@ -83,22 +83,23 @@ type classification =
   | Addr  (* anything except a float or a lazy *)
   | Any
 
-let classify env ty =
+let classify env ty : classification =
   let ty = scrape_ty env ty in
   if maybe_pointer_type env ty = Immediate then Int
   else match get_desc ty with
   | Tvar _ | Tunivar _ ->
       Any
   | Tconstr (p, _args, _abbrev) ->
-      if Path.same p Predef.path_float then Float
-      else if Path.same p Predef.path_lazy_t then Lazy
-      else if Path.same p Predef.path_string
-           || Path.same p Predef.path_bytes
-           || Path.same p Predef.path_array
-           || Path.same p Predef.path_nativeint
-           || Path.same p Predef.path_int32
-           || Path.same p Predef.path_int64 then Addr
-      else begin
+      begin match Predef.find_type_constr p with
+      | Some `Float -> Float
+      | Some `Lazy_t -> Lazy
+      | Some (`Int | `Char) -> Int
+      | Some (`String | `Bytes
+             | `Int32 | `Int64 | `Nativeint
+             | `Extension_constructor | `Continuation
+             | `Array | `Floatarray)
+        -> Addr
+      | Some #Predef.data_type_constr | None ->
         try
           match (Env.find_type p env).type_kind with
           | Type_abstract _ ->
