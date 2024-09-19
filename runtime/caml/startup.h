@@ -55,6 +55,8 @@ enum caml_byte_program_mode
   };
 
 /* Defined in bytecode.c or supplied by the bytecode linker */
+extern char * caml_marshalled_global_data;
+extern asize_t caml_marshalled_global_data_size;
 extern enum caml_byte_program_mode caml_byte_program_mode;
 
 #endif /* CAML_INTERNALS */
