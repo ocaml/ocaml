@@ -546,7 +546,7 @@ CAMLexport void caml_main(char_os **argv)
   /* Programs compiled with -output-obj/-output-complete-exe (can) come through
      main_os but have linked data which is signalled by caml_byte_program_mode
    */
-  if (caml_byte_program_mode == COMPLETE_EXE) {
+  if (caml_byte_program_mode == EMBEDDED) {
     caml_startup_code_aux(/* pooling */ 0, argv);
     return;
   }

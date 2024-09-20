@@ -50,8 +50,8 @@ extern int32_t caml_seek_section(int fd, struct exec_trailer *trail,
 
 enum caml_byte_program_mode
   {
-   STANDARD /* normal bytecode program requiring "ocamlrun" */,
-   COMPLETE_EXE /* embedding the vm, i.e. compiled with --output-complete-exe */
+   APPENDED /* bytecode appended to a tender (e.g. ocamlrun or -custom) */,
+   EMBEDDED /* bytecode embedded in C (e.g. -output-complete-exe/-output-obj) */
   };
 
 /* Defined in bytecode.c or supplied by the bytecode linker */
