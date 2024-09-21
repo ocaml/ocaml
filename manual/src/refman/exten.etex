@@ -123,5 +123,8 @@ that are implemented in OCaml, but not described in chapter \ref{c:refman}.
 %HEVEA\cutname{effects.html}
 \input{effects.tex}
 
+\section{s:array-literals}{Type-directed disambiguation of array literals}
+%HEVEA\cutname{arrayliterals.html}
+\input{arrayliterals.tex}
 
 %HEVEA\cutend

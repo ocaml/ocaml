@@ -1,0 +1,74 @@
+(Introduced in OCaml 5.4)
+
+Since OCaml 5.4, array literal syntax @"[|" e1 ';' e2 ';' ... ';' eN "|]"@ can
+be used to denote values of type "'a array" as well as "floatarray", both in
+expression and pattern positions. This syntax is also used to display "floatarray" values in the toplevel.
+
+The compiler will use contextual information to infer the type of the array
+literal. However, in the absence of any specific contextual information, it will
+be assumed that the array literal is of type "'a array":
+
+\begin{caml_example}{verbatim}
+let x = [|42.|];;
+\end{caml_example}
+
+The compiler will exploit the knowledge it gleans from the context of the array
+literal to decide which type to assign to it. In the following examples,
+the array literal is assigned type "floatarray":
+
+\begin{caml_example}{verbatim}
+let _ : floatarray = [|42.|];;
+let _ = ([|42.|] : floatarray);;
+let _ = Float.Array.length [|42.|];;
+\end{caml_example}
+
+The same disambiguation mechanism is used for array literals appearing in
+patterns:
+
+\begin{caml_example}{verbatim}
+let f : floatarray -> _ = function
+  | [| 42. |] -> "It's a floatarray containing one element"
+  | _ -> "Also a floatarray"
+;;
+\end{caml_example}
+
+A type annotation is not strictly necessary; the compiler will use any type
+information that it learns from the context of the array literal to disambiguate
+it. In the next example, the use of "Float.Array.get" tells the compiler that
+"a" must be of type "floatarray" and the array literal pattern is interpreted
+accordingly:
+
+\begin{caml_example}{verbatim}
+let f a =
+  let _ = Float.Array.get a 0 in
+  match a with
+  | [| _ |] -> "only one element"
+  | _ -> "more than one"
+;;
+\end{caml_example}
+
+However, the following does not work:
+
+\begin{caml_example}{verbatim}
+let f a =
+  match a with
+  | [| _ |] -> Float.Array.length a
+  | _ -> 42
+[@@expect error];;
+
+let f b (a : floatarray) = if b then [|42.|] else a
+[@@expect error];;
+\end{caml_example}
+
+Indeed, here the information learned from the use of "a" as a "floatarray"
+cannot be propagated back to the array literal. In general, type information
+ocurring ``outside'' the context of the array literal cannot be used by the
+compiler in order to disambiguate its type.
+
+However, the order matters. In the following example, type disambiguation works
+because the type information learned in the "then" branch of the conditional is
+propagated to the "else" branch.
+
+\begin{caml_example}{verbatim}
+let f b (a : floatarray) = if b then a else [|42.|];;
+\end{caml_example}
