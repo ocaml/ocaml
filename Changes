@@ -80,7 +80,7 @@ ___________
 - #12828, #13283: Add short syntax for dependent functor types `(X:A) -> ...`
   (Jeremy Yallop, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
-- Add syntax support for deep effect handlers
+- #12309, #13158: Add syntax support for deep effect handlers
   (Leo White, Tom Kelly, Anil Madhavapeddy, KC Sivaramakrishnan, Xavier Leroy
    and Florian Angeletti, review by the same, Hugo Heuzard, and Ulysse Gérard)
 
@@ -310,7 +310,7 @@ ___________
 
 - #11716: ocamllex: mismatched parentheses and curly brackets are now caught
   by ocamllex, instead of causing invalid OCaml code to be generated.
-  (Demi Marie Obenour)
+  (Demi Marie Obenour, review by Damien Doligez and Xavier Leroy)
 
 - #12904: Run the testsuite with ThreadSanitizer on a PR when label
   `run-thread-sanitizer` is added
@@ -323,7 +323,7 @@ ___________
 
 - #13136: Rewrite GDB extensions and macros in debugger-agnostic Python, and add
   LLDB support for them.
-  (Nick Barnes).
+  (Nick Barnes, review by Tim McGilchrist and Gabriel Scherer)
 
 ### Toplevel:
 
