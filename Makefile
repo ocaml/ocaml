@@ -1235,7 +1235,6 @@ runtime_COMMON_C_SOURCES = \
 
 runtime_BYTECODE_ONLY_C_SOURCES = \
   backtrace_byt \
-  bytecode \
   fail_byt \
   fix_code \
   interp \

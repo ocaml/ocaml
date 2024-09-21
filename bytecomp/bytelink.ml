@@ -755,8 +755,22 @@ let link objfiles output_name =
 extern "C" {
 #endif
 
+#define CAML_INTERNALS
 #define CAML_INTERNALS_NO_PRIM_DECLARATIONS
+
 #include <caml/mlvalues.h>
+#include <caml/instruct.h>
+#include <caml/startup.h>
+
+/* Stub values for caml_startup et al. */
+opcode_t caml_start_code[] = {STOP};
+asize_t caml_code_size = sizeof(caml_start_code);
+char * caml_marshalled_global_data = NULL;
+asize_t caml_marshalled_global_data_size = 0;
+char * caml_section_table = NULL;
+asize_t caml_section_table_size = 0;
+
+enum caml_byte_program_mode caml_byte_program_mode = APPENDED;
 
 |};
          Symtable.output_primitive_table poc;
