@@ -169,9 +169,6 @@ let psubfloat = "Psubfloat"
 let psubint = "Psubint"
 let pxorbint = "Pxorbint"
 let pxorint = "Pxorint"
-let patomic_cas = "Patomic_cas"
-let patomic_exchange = "Patomic_exchange"
-let patomic_fetch_add = "Patomic_fetch_add"
 let patomic_load = "Patomic_load"
 let prunstack = "Prunstack"
 let pperform = "Pperform"
@@ -282,9 +279,6 @@ let psubfloat_arg = "Psubfloat_arg"
 let psubint_arg = "Psubint_arg"
 let pxorbint_arg = "Pxorbint_arg"
 let pxorint_arg = "Pxorint_arg"
-let patomic_cas_arg = "Patomic_cas_arg"
-let patomic_exchange_arg = "Patomic_exchange_arg"
-let patomic_fetch_add_arg = "Patomic_fetch_add_arg"
 let patomic_load_arg = "Patomic_load_arg"
 let prunstack_arg = "Prunstack_arg"
 let pperform_arg = "Pperform_arg"
@@ -427,10 +421,7 @@ let of_primitive : Lambda.primitive -> string = function
   | Pbbswap _ -> pbbswap
   | Pint_as_pointer -> pint_as_pointer
   | Popaque -> popaque
-  | Patomic_cas -> patomic_cas
-  | Patomic_exchange -> patomic_exchange
-  | Patomic_fetch_add -> patomic_fetch_add
-  | Patomic_load _ -> patomic_load
+  | Patomic_load -> patomic_load
   | Prunstack -> prunstack
   | Pperform -> pperform
   | Presume -> presume
@@ -540,10 +531,7 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pbbswap _ -> pbbswap_arg
   | Pint_as_pointer -> pint_as_pointer_arg
   | Popaque -> popaque_arg
-  | Patomic_cas -> patomic_cas_arg
-  | Patomic_exchange -> patomic_exchange_arg
-  | Patomic_fetch_add -> patomic_fetch_add_arg
-  | Patomic_load _ -> patomic_load_arg
+  | Patomic_load -> patomic_load_arg
   | Prunstack -> prunstack_arg
   | Pperform -> pperform_arg
   | Presume -> presume_arg

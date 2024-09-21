@@ -140,14 +140,20 @@ typedef char* caml_stat_string;
    the request fails, and so requires the runtime lock to be held.
 */
 CAMLextern caml_stat_string caml_stat_strdup(const char *s);
-#ifdef _WIN32
-CAMLextern wchar_t* caml_stat_wcsdup(const wchar_t *s);
-#endif
 
 /* [caml_stat_strdup_noexc] is a variant of [caml_stat_strdup] that returns NULL
    in case the request fails, and doesn't require the runtime lock.
 */
 CAMLextern caml_stat_string caml_stat_strdup_noexc(const char *s);
+
+#ifdef _WIN32
+/* On Windows, [caml_stat_wcsdup] and [caml_stat_wcsdup_noexc] are the
+ * obvious equivalents of [caml_stat_strdup] and
+ * [caml_stat_strdup_noexc] for wide characters.
+ */
+CAMLextern wchar_t* caml_stat_wcsdup(const wchar_t *s);
+CAMLextern wchar_t* caml_stat_wcsdup_noexc(const wchar_t *s);
+#endif
 
 /* [caml_stat_strconcat(nargs, strings)] concatenates null-terminated [strings]
    (an array of [char*] of size [nargs]) into a new string, dropping all NULs,

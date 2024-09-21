@@ -232,7 +232,7 @@ let check_type_decl env sg loc id row_id newdecl decl =
     | Some fresh_row_id -> Env.add_type ~check:false fresh_row_id newdecl env
   in
   let env = Env.add_signature sg env in
-  Includemod.type_declarations ~mark:Mark_both ~loc env fresh_id newdecl decl;
+  Includemod.type_declarations ~mark:true ~loc env fresh_id newdecl decl;
   Typedecl.check_coherence env loc path newdecl
 
 let make_variance p n i =
@@ -627,7 +627,7 @@ let merge_constraint initial_env loc sg lid constr =
         let mty = Mtype.scrape_for_type_of ~remove_aliases sig_env mty in
         let md'' = { md' with md_type = mty } in
         let newmd = Mtype.strengthen_decl ~aliasable:false sig_env md'' path in
-        ignore(Includemod.modtypes  ~mark:Mark_both ~loc sig_env
+        ignore(Includemod.modtypes  ~mark:true ~loc sig_env
                  newmd.md_type md.md_type);
         return
           ~replace_by:(Some(Sig_module(id, pres, newmd, rs, priv)))
@@ -637,7 +637,7 @@ let merge_constraint initial_env loc sg lid constr =
         let sig_env = Env.add_signature sg_for_env outer_sig_env in
         let aliasable = not (Env.is_functor_arg path sig_env) in
         ignore
-          (Includemod.strengthened_module_decl ~loc ~mark:Mark_both
+          (Includemod.strengthened_module_decl ~loc ~mark:true
              ~aliasable sig_env md' path md);
         real_ids := [Pident id];
         return ~replace_by:None
@@ -2024,7 +2024,7 @@ let check_recmodule_inclusion env bindings =
         let coercion, shape =
           try
             Includemod.modtypes_with_shape ~shape
-              ~loc:modl.mod_loc ~mark:Mark_both
+              ~loc:modl.mod_loc ~mark:true
               env mty_actual' mty_decl'
           with Includemod.Error msg ->
             raise(Error(modl.mod_loc, env, Not_included msg)) in
@@ -2111,7 +2111,7 @@ let package_subtype env p1 fl1 p2 fl2 =
       Result.Error (Errortrace.Package_cannot_scrape r)
   | mty1, mty2 ->
     let loc = Location.none in
-    match Includemod.modtypes ~loc ~mark:Mark_both env mty1 mty2 with
+    match Includemod.modtypes ~loc ~mark:true env mty1 mty2 with
     | Tcoerce_none -> Ok ()
     | c ->
         let msg =
@@ -2125,7 +2125,6 @@ let package_subtype env p1 fl1 p2 fl2 =
 let () = Ctype.package_subtype := package_subtype
 
 let wrap_constraint_package env mark arg mty explicit =
-  let mark = if mark then Includemod.Mark_both else Includemod.Mark_neither in
   let mty1 = Subst.modtype Keep Subst.identity arg.mod_type in
   let mty2 = Subst.modtype Keep Subst.identity mty in
   let coercion =
@@ -2141,7 +2140,6 @@ let wrap_constraint_package env mark arg mty explicit =
 
 let wrap_constraint_with_shape env mark arg mty
   shape explicit =
-  let mark = if mark then Includemod.Mark_both else Includemod.Mark_neither in
   let coercion, shape =
     try
       Includemod.modtypes_with_shape ~shape ~loc:arg.mod_loc env ~mark
@@ -2409,8 +2407,8 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
       | { loc = app_loc; attributes = app_attributes;
           arg = Some { shape = arg_shape; path = arg_path; arg } } ->
       let coercion =
-        try Includemod.modtypes
-              ~loc:arg.mod_loc ~mark:Mark_both env arg.mod_type mty_param
+        try Includemod.modtypes ~loc:arg.mod_loc ~mark:true env
+              arg.mod_type mty_param
         with Includemod.Error _ -> apply_error ()
       in
       let mty_appl =
@@ -2439,8 +2437,8 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
                     raise (Error(app_loc, env, error))
             in
             begin match
-              Includemod.modtypes
-                ~loc:app_loc ~mark:Mark_neither env mty_res nondep_mty
+              Includemod.modtypes ~loc:app_loc ~mark:false env
+                mty_res nondep_mty
             with
             | Tcoerce_none -> ()
             | _ ->
@@ -3122,7 +3120,7 @@ let type_implementation target initial_env ast =
           in
           let dclsig = Env.read_signature compiled_intf_file in
           let coercion, shape =
-            Includemod.compunit initial_env ~mark:Mark_positive
+            Includemod.compunit initial_env ~mark:true
               sourcefile sg source_intf
               dclsig shape
           in
@@ -3143,7 +3141,7 @@ let type_implementation target initial_env ast =
             (Location.in_file (Unit_info.source_file target))
             Warnings.Missing_mli;
           let coercion, shape =
-            Includemod.compunit initial_env ~mark:Mark_positive
+            Includemod.compunit initial_env ~mark:true
               sourcefile sg "(inferred signature)" simple_sg shape
           in
           check_nongen_signature finalenv simple_sg;
@@ -3254,7 +3252,7 @@ let package_units initial_env objfiles target_cmi =
     end;
     let dclsig = Env.read_signature target_cmi in
     let cc, _shape =
-      Includemod.compunit initial_env ~mark:Mark_both
+      Includemod.compunit initial_env ~mark:true
         "(obtained by packing)" sg mli dclsig shape
     in
     Cmt_format.save_cmt (Unit_info.companion_cmt target_cmi)

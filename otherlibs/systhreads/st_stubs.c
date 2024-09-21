@@ -52,14 +52,42 @@
 #include "caml/sys.h"
 #include "caml/memprof.h"
 
-#include "../../runtime/sync_posix.h"
-
 /* "caml/threads.h" is *not* included since it contains the _external_
    declarations for the caml_c_thread_register and caml_c_thread_unregister
    functions. */
 
 /* Max computation time before rescheduling, in milliseconds */
 #define Thread_timeout 50
+
+typedef int st_retcode;
+
+static void st_bt_lock_acquire(void) {
+
+  /* We do not want to signal the backup thread if it is not "working"
+     as it may very well not be, because we could have just resumed
+     execution from another thread right away. */
+  if (caml_bt_is_in_blocking_section()) {
+    caml_bt_enter_ocaml();
+  }
+
+  caml_acquire_domain_lock();
+
+  return;
+}
+
+static void st_bt_lock_release(bool other_threads_waiting) {
+
+  /* Here we do want to signal the backup thread iff there's
+     no thread waiting to be scheduled, and the backup thread is currently
+     idle. */
+  if (other_threads_waiting && caml_bt_is_in_blocking_section() == 0) {
+    caml_bt_exit_ocaml();
+  }
+
+  caml_release_domain_lock();
+
+  return;
+}
 
 /* OS-specific code */
 #ifdef _WIN32
@@ -440,7 +468,7 @@ static void caml_thread_reinitialize(void)
      the effective owner of the lock. So there is no need to run
      st_masterlock_acquire (busy = 1) */
   st_masterlock *m = Thread_lock(Caml_state->id);
-  m->init = 0; /* force reinitialization */
+  m->init = false; /* force reinitialization */
   /* Note: initializing an already-initialized mutex and cond variable
      is UB (especially mutexes that are locked). This is best
      effort. */
@@ -494,11 +522,9 @@ static void caml_thread_domain_initialize_hook(void)
   caml_thread_t new_thread;
 
   atomic_store_release(&Tick_thread_stop, 0);
-  /* OS-specific initialization */
-  st_initialize();
 
   int ret = st_masterlock_init(Thread_lock(Caml_state->id));
-  sync_check_error(ret, "caml_thread_domain_initialize_hook");
+  caml_check_error(ret, "caml_thread_domain_initialize_hook");
 
   new_thread =
     (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));
@@ -509,6 +535,7 @@ static void caml_thread_domain_initialize_hook(void)
   new_thread->prev = new_thread;
   new_thread->backtrace_last_exn = Val_unit;
   new_thread->memprof = caml_memprof_main_thread(Caml_state);
+  new_thread->signal_stack = NULL;
 
   st_tls_set(caml_thread_key, new_thread);
 
@@ -649,6 +676,32 @@ static void * caml_thread_start(void * v)
   return 0;
 }
 
+struct caml_thread_tick_args {
+  int domain_id;
+  atomic_uintnat* stop;
+};
+
+/* The tick thread: interrupt the domain periodically to force preemption  */
+static void * caml_thread_tick(void * arg)
+{
+  struct caml_thread_tick_args* tick_thread_args =
+    (struct caml_thread_tick_args*) arg;
+  int domain_id = tick_thread_args->domain_id;
+  atomic_uintnat* stop = tick_thread_args->stop;
+  caml_stat_free(tick_thread_args);
+
+  caml_init_domain_self(domain_id);
+  caml_domain_state *domain = Caml_state;
+
+  while(! atomic_load_acquire(stop)) {
+    st_msleep(Thread_timeout);
+
+    atomic_store_release(&domain->requested_external_interrupt, 1);
+    caml_interrupt_self();
+  }
+  return NULL;
+}
+
 static st_retcode create_tick_thread(void)
 {
   if (Tick_thread_running) return 0;
@@ -696,7 +749,7 @@ CAMLprim value caml_thread_new(value clos)
      Because of PR#4666, we start the tick thread late, only when we create
      the first additional thread in the current process */
   st_retcode err = create_tick_thread();
-  sync_check_error(err, "Thread.create");
+  caml_check_error(err, "Thread.create");
 
   /* Create a thread info block */
   caml_thread_t th = thread_alloc_and_add();
@@ -708,7 +761,7 @@ CAMLprim value caml_thread_new(value clos)
   if (err != 0) {
     /* Creation failed, remove thread info block from list of threads */
     caml_thread_remove_and_free(th);
-    sync_check_error(err, "Thread.create");
+    caml_check_error(err, "Thread.create");
   }
 
   CAMLreturn(th->descr);
@@ -836,7 +889,7 @@ CAMLprim value caml_thread_yield(value unit)
 CAMLprim value caml_thread_join(value th)
 {
   st_retcode rc = caml_threadstatus_wait(Terminated(th));
-  sync_check_error(rc, "Thread.join");
+  caml_check_error(rc, "Thread.join");
   return Val_unit;
 }
 
@@ -871,7 +924,7 @@ static value caml_threadstatus_new (void)
 {
   st_event ts = NULL;           /* suppress warning */
   value wrapper;
-  sync_check_error(st_event_create(&ts), "Thread.create");
+  caml_check_error(st_event_create(&ts), "Thread.create");
   wrapper = caml_alloc_custom(&caml_threadstatus_ops,
                               sizeof(st_event *),
                               0, 1);

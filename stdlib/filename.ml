@@ -160,9 +160,9 @@ module Win32 : SYSDEPS = struct
     else
       None
 
+  external temp_dir_name: unit -> string = "caml_sys_temp_dir_name"
+  let temp_dir_name = temp_dir_name ()
 
-  let temp_dir_name =
-    try Sys.getenv "TEMP" with Not_found -> "."
   let quote s =
     let l = String.length s in
     let b = Buffer.create (l + 20) in
@@ -219,6 +219,13 @@ Quoting commands for execution by cmd.exe is difficult.
       s;
     Buffer.contents b
   let quote_cmd_filename f =
+    (* In cmd.exe, forward slashes in the program path (argument 0) are
+       interpreted as introducing a flag. *)
+    let f =
+      if String.contains f '/' then
+        String.map (function '/' -> '\\' | c -> c) f
+      else f
+    in
     if String.exists (function '\"' | '%' -> true | _ -> false) f then
       failwith ("Filename.quote_command: bad file name " ^ f)
     else if String.contains f ' ' then

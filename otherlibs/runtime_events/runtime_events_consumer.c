@@ -89,104 +89,102 @@ struct caml_runtime_events_cursor {
 
 /* C-API for reading from an runtime_events */
 
-runtime_events_error
-caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
-                             struct caml_runtime_events_cursor **cursor_res) {
+/** Creates a new string with the path of the ring file. Returns a
+ * value from the runtime_events_error enum */
+static int format_runtime_ring_file(
+  const char_os *input_path, int input_pid,
+  char_os **out_ring_file
+) {
+  char_os *ring_file;
   int ret;
 
-#ifndef _WIN32
-  int ring_fd;
-  struct stat tmp_stat;
-#endif
-
-  struct caml_runtime_events_cursor *cursor =
-      caml_stat_alloc_noexc(sizeof(struct caml_runtime_events_cursor));
-  char_os *runtime_events_loc;
-
-  if (cursor == NULL) {
-    return E_ALLOC_FAIL;
-  }
-
-  runtime_events_loc = caml_stat_alloc_noexc(RING_FILE_NAME_MAX_LEN);
-
-  if (runtime_events_loc == NULL) {
-    caml_stat_free(cursor);
-    return E_ALLOC_FAIL;
-  }
-
-  /* If pid < 0 then we create a cursor for the current process */
-  if (pid < 0) {
-    runtime_events_loc = caml_runtime_events_current_location();
-
-    if( runtime_events_loc == NULL ) {
-      caml_stat_free(cursor);
-      return E_NO_CURRENT_RING;
+  if (input_pid < 0) {
+    /* Attaching to this process' ring, if it exists */
+    ring_file = caml_runtime_events_current_location();
+    if (ring_file == NULL) {
+      ret = E_NO_CURRENT_RING; /* could also be allocation failure */
+      goto fail_current_file;
     }
   } else {
-  /* In this case we are reading the ring for a different process */
-    if (runtime_events_path) {
-      ret = snprintf_os(runtime_events_loc, RING_FILE_NAME_MAX_LEN,
-                        T("%s/%d.events"), runtime_events_path, pid);
+    /* Attaching to a process by directory and PID */
+    int err;
+    ring_file = caml_stat_alloc_noexc(RING_FILE_NAME_MAX_LEN);
+    if (ring_file == NULL) {
+      ret = E_ALLOC_FAIL;
+      goto fail_alloc_file;
+    }
+
+    if (input_path) {
+      err = snprintf_os(ring_file, RING_FILE_NAME_MAX_LEN,
+                        T("%s/%d.events"), input_path, input_pid);
     } else {
-      ret =
-          snprintf_os(runtime_events_loc, RING_FILE_NAME_MAX_LEN,
-                      T("%d.events"), pid);
+      err = snprintf_os(ring_file, RING_FILE_NAME_MAX_LEN,
+                        T("%d.events"), input_pid);
     }
-
-    if (ret < 0) {
-      caml_stat_free(cursor);
-      caml_stat_free(runtime_events_loc);
-      return E_PATH_FAILURE;
+    if (err < 0) {
+      ret = E_PATH_FAILURE;
+      goto fail_snprintf;
     }
   }
 
+  *out_ring_file = ring_file;
+  return E_SUCCESS;
+
+ fail_snprintf:
+  caml_stat_free(ring_file);
+ fail_alloc_file:
+ fail_current_file:
+  return ret;
+}
+
+/* Creates and maps the ring file. Returns a value from the
+ * runtime_events_error enum */
+
+static int
+cursor_map_ring_file(struct caml_runtime_events_cursor *cursor,
+                     char_os *ring_file)
+{
+  int ret = 0;
 #ifdef _WIN32
-  cursor->ring_file_handle = CreateFile(
-    runtime_events_loc,
-    GENERIC_READ | GENERIC_WRITE,
-    FILE_SHARE_READ | FILE_SHARE_WRITE,
-    NULL,
-    OPEN_EXISTING,
-    FILE_ATTRIBUTE_NORMAL,
-    NULL
-  );
-
-  if (cursor->ring_file_handle == INVALID_HANDLE_VALUE) {
-    caml_stat_free(cursor);
-    caml_stat_free(runtime_events_loc);
-    return E_OPEN_FAILURE;
+  HANDLE ring_file_handle = CreateFile(ring_file,
+                                       GENERIC_READ | GENERIC_WRITE,
+                                       FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                       NULL,
+                                       OPEN_EXISTING,
+                                       FILE_ATTRIBUTE_NORMAL,
+                                       NULL);
+  if (ring_file_handle == INVALID_HANDLE_VALUE) {
+    ret = E_OPEN_FAILURE;
+    goto fail_create_file;
   }
 
-  cursor->ring_handle = CreateFileMapping(
-    cursor->ring_file_handle,
-    NULL,
-    PAGE_READWRITE,
-    0,
-    0,
-    NULL
-  );
-
-  if (cursor->ring_handle == INVALID_HANDLE_VALUE) {
-    caml_stat_free(cursor);
-    caml_stat_free(runtime_events_loc);
-    return E_MAP_FAILURE;
+  HANDLE ring_handle = CreateFileMapping(ring_file_handle, NULL,
+                                         PAGE_READWRITE, 0, 0, NULL);
+  if (ring_handle == INVALID_HANDLE_VALUE) {
+    ret = E_MAP_FAILURE;
+    goto fail_create_mapping;
   }
 
-  cursor->map = MapViewOfFile(
-    cursor->ring_handle,
-    FILE_MAP_ALL_ACCESS,
-    0,
-    0,
-    0
-  );
+  void *map = MapViewOfFile(ring_handle, FILE_MAP_ALL_ACCESS,
+                            0, 0, 0);
 
-  if( cursor->map == NULL ) {
-    caml_stat_free(cursor);
-    caml_stat_free(runtime_events_loc);
-    return E_MAP_FAILURE;
+  if( map == NULL ) {
+    ret = E_MAP_FAILURE;
+    goto fail_map_view;
   }
 
+  cursor->ring_file_handle = ring_file_handle;
+  cursor->ring_handle = ring_handle;
+  cursor->map = map;
   cursor->ring_file_size_bytes = GetFileSize(cursor->ring_file_handle, NULL);
+  return E_SUCCESS;
+
+ fail_map_view:
+  CloseHandle(ring_handle);
+ fail_create_mapping:
+  CloseHandle(ring_file_handle);
+ fail_create_file:
+  return ret;
 #else
 #if defined(__ARM_ARCH) && __ARM_ARCH <= 5
   /* Atomic 64-bit load requires RW memory on Debian armel.  See:
@@ -197,69 +195,117 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
   const int open_flags = O_RDONLY;
   const int mmap_prot = PROT_READ;
 #endif
-  ring_fd = open(runtime_events_loc, open_flags, 0);
-
-  if( ring_fd == -1 ) {
-    caml_stat_free(cursor);
-    caml_stat_free(runtime_events_loc);
-    return E_OPEN_FAILURE;
+  int ring_fd = open(ring_file, open_flags, 0);
+  if(ring_fd == -1) {
+    ret = E_OPEN_FAILURE;
+    goto fail_open;
   }
 
+  struct stat tmp_stat;
   ret = fstat(ring_fd, &tmp_stat);
-
   if (ret < 0) {
-    caml_stat_free(cursor);
-    caml_stat_free(runtime_events_loc);
-    return E_OPEN_FAILURE;
+    ret = E_OPEN_FAILURE;
+    goto fail_fstat;
   }
-
-  cursor->ring_file_size_bytes = tmp_stat.st_size;
+  size_t ring_file_size_bytes = tmp_stat.st_size;
 
   /* This cast is necessary for compatibility with Illumos' non-POSIX
     mmap/munmap */
-  cursor->map = (void*) mmap(NULL, cursor->ring_file_size_bytes, mmap_prot,
-                          MAP_SHARED, ring_fd, 0);
+  void *map = (void*) mmap(NULL, ring_file_size_bytes, mmap_prot,
+                           MAP_SHARED, ring_fd, 0);
 
-  if( cursor->map == MAP_FAILED ) {
-    caml_stat_free(cursor);
-    caml_stat_free(runtime_events_loc);
-    return E_MAP_FAILURE;
+  if( map == MAP_FAILED ) {
+    ret = E_MAP_FAILURE;
+    goto fail_map;
   }
+
+  (void)close(ring_fd);
+  cursor->map = map;
+  cursor->ring_file_size_bytes = ring_file_size_bytes;
+  return E_SUCCESS;
+
+ fail_map:
+ fail_fstat:
+  (void)close(ring_fd);
+ fail_open:
+  return ret;
 #endif
+}
+
+/* unmaps the ring file from a cursor */
+static void cursor_unmap_ring_file(struct caml_runtime_events_cursor *cursor)
+{
+#ifdef _WIN32
+  UnmapViewOfFile(cursor->map);
+  CloseHandle(cursor->ring_file_handle);
+  CloseHandle(cursor->ring_handle);
+#else
+  munmap(cursor->map, cursor->ring_file_size_bytes);
+#endif
+}
+
+runtime_events_error caml_runtime_events_create_cursor(
+  const char_os* runtime_events_path, int pid,
+  struct caml_runtime_events_cursor **cursor_res
+) {
+  int ret = E_SUCCESS;
+
+  struct caml_runtime_events_cursor *cursor =
+    caml_stat_alloc_noexc(sizeof(struct caml_runtime_events_cursor));
+  if (cursor == NULL) {
+    ret = E_ALLOC_FAIL;
+    goto fail_alloc_cursor;
+  }
+  /* zero out all fields, notably the callbacks */
+  memset(cursor, 0, sizeof(*cursor));
+
+  char_os *ring_file;
+  ret = format_runtime_ring_file(runtime_events_path, pid,
+                                 &ring_file);
+  if (ret != E_SUCCESS) {
+    goto fail_format_file;
+  }
+
+  ret = cursor_map_ring_file(cursor, ring_file);
+  if (ret != E_SUCCESS) {
+    goto fail_map_ring_file;
+  }
 
   cursor->metadata = *(struct runtime_events_metadata_header*)cursor->map;
 
   if (cursor->metadata.max_domains > Max_domains_max) {
-    /* avoid overflow in multiplication below */
-    caml_stat_free(cursor);
-    caml_stat_free(runtime_events_loc);
-    return E_CORRUPT_STREAM;
+    ret = E_CORRUPT_STREAM;
+    goto fail_metadata_corrupt;
   }
 
   cursor->current_positions =
-      caml_stat_alloc(cursor->metadata.max_domains * sizeof(uint64_t));
+      caml_stat_alloc_noexc(cursor->metadata.max_domains * sizeof(uint64_t));
+  if (cursor->current_positions == NULL) {
+    ret = E_ALLOC_FAIL;
+    goto fail_current_pos;
+  }
 
   for (int j = 0; j < cursor->metadata.max_domains; j++) {
     cursor->current_positions[j] = 0;
   }
+
   cursor->cursor_open = 1;
   atomic_store(&cursor->cursor_in_poll, 0);
   cursor->next_read_domain = 0;
-
-  cursor->runtime_begin = NULL;
-  cursor->runtime_end = NULL;
-  cursor->runtime_counter = NULL;
-  cursor->alloc = NULL;
-  cursor->lifecycle = NULL;
-  cursor->lost_events = NULL;
-  cursor->user_unit = NULL;
-  cursor->user_int = NULL;
-  cursor->user_span = NULL;
-  cursor->user_custom = NULL;
-
   *cursor_res = cursor;
+  caml_stat_free(ring_file);
 
   return E_SUCCESS;
+
+ fail_current_pos:
+ fail_metadata_corrupt:
+  cursor_unmap_ring_file(cursor);
+ fail_map_ring_file:
+  caml_stat_free(ring_file);
+ fail_format_file:
+  caml_stat_free(cursor);
+ fail_alloc_cursor:
+  return ret;
 }
 
 void caml_runtime_events_set_runtime_begin(
@@ -353,15 +399,7 @@ void caml_runtime_events_set_user_custom(
 void caml_runtime_events_free_cursor(struct caml_runtime_events_cursor *cursor){
   if (cursor->cursor_open) {
     cursor->cursor_open = 0;
-#ifdef _WIN32
-    UnmapViewOfFile(cursor->map);
-    CloseHandle(cursor->ring_file_handle);
-    CloseHandle(cursor->ring_handle);
-#else
-    /* This cast is necessary for compatibility with Illumos' non-POSIX
-      mmap/munmap */
-    munmap((void*)cursor->map, cursor->ring_file_size_bytes);
-#endif
+    cursor_unmap_ring_file(cursor);
     caml_stat_free(cursor->current_positions);
     caml_stat_free(cursor);
   }
@@ -1192,11 +1230,11 @@ CAMLprim value caml_ml_runtime_events_create_cursor(value path_pid_option) {
 
   res = caml_runtime_events_create_cursor(path, pid, &cursor);
 
-  if (res != E_SUCCESS) {
-    if( path != NULL ) {
-      caml_stat_free(path);
-    }
+  if( path != NULL ) {
+    caml_stat_free(path);
+  }
 
+  if (res != E_SUCCESS) {
     switch(res) {
       case E_PATH_FAILURE:
         caml_failwith(
@@ -1228,10 +1266,6 @@ CAMLprim value caml_ml_runtime_events_create_cursor(value path_pid_option) {
   caml_runtime_events_set_user_custom(cursor, ml_user_custom);
 
   Cursor_val(wrapper) = cursor;
-
-  if( path != NULL ) {
-    caml_stat_free(path);
-  }
 
   // 3 words block:
   //  - cursor
@@ -1303,4 +1337,4 @@ CAMLprim value caml_ml_runtime_events_read_poll(value wrapper,
   }
 
   CAMLreturn(Val_int(events_consumed));
-};
+}

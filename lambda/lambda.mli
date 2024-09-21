@@ -29,7 +29,9 @@ type compile_time_constant =
 
 type immediate_or_pointer =
   | Immediate
+  (* The value must be immediate. *)
   | Pointer
+  (* The value may be a pointer or an immediate. *)
 
 type initialization_or_assignment =
   | Assignment
@@ -153,10 +155,7 @@ type primitive =
   (* Integer to external pointer *)
   | Pint_as_pointer
   (* Atomic operations *)
-  | Patomic_load of {immediate_or_pointer : immediate_or_pointer}
-  | Patomic_exchange
-  | Patomic_cas
-  | Patomic_fetch_add
+  | Patomic_load
   (* Inhibition of optimisation *)
   | Popaque
   (* Fetching domain-local state *)

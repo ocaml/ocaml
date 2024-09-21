@@ -97,6 +97,19 @@ CAMLprim value caml_unix_sigsuspend(value vset)
   return Val_unit;
 }
 
+CAMLprim value caml_unix_sigwait(value sigs)
+{
+  sigset_t set;
+  int retcode, signo;
+
+  decode_sigset(sigs, &set);
+  caml_enter_blocking_section();
+  retcode = sigwait(&set, &signo);
+  caml_leave_blocking_section();
+  if (retcode != 0) caml_unix_error(retcode, "sigwait", Nothing);
+  return Val_int(caml_rev_convert_signal_number(signo));
+}
+
 #else
 
 CAMLprim value caml_unix_sigprocmask(value vaction, value vset)
@@ -107,5 +120,8 @@ CAMLprim value caml_unix_sigpending(value unit)
 
 CAMLprim value caml_unix_sigsuspend(value vset)
 { caml_invalid_argument("Unix.sigsuspend not available"); }
+
+CAMLprim value caml_unix_sigwait(value vset)
+{ caml_invalid_argument("Unix.sigwait not available"); }
 
 #endif

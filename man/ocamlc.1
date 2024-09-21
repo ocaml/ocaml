@@ -600,12 +600,8 @@ Cause the compiler to call the given
 .I command
 as a preprocessor for each source file. The output of
 .I command
-is redirected to
-an intermediate file, which is compiled. If there are no compilation
-errors, the intermediate file is deleted afterwards. The name of this
-file is built from the basename of the source file with the
-extension .ppi for an interface (.mli) file and .ppo for an
-implementation (.ml) file.
+is redirected to an intermediate file, which is compiled. If there are
+no compilation errors, the intermediate file is deleted afterwards.
 .TP
 .BI \-ppx " command"
 After parsing, pipe the abstract syntax tree through the preprocessor
@@ -1186,7 +1182,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-7\-9\-27\-29\-30\-32..42\-44\-45\-48\-50\-60\-66..70 .
+.BR \-w\ +a\-4\-7\-9\-27\-29\-30\-32..42\-44\-45\-48\-50\-60\-66..70-74 .
 Note that warnings
 .BR 5 " and " 10
 are not always triggered, depending on the internals of the type checker.

@@ -141,7 +141,8 @@ val wait_pid : int -> int * Unix.process_status
   under Unix, but not under Win32, nor by the VM thread library. *)
 
 val sigmask : Unix.sigprocmask_command -> int list -> int list
-(** [sigmask cmd sigs] changes the set of blocked signals for the
+(** Same function as {!Unix.sigprocmask}.
+   [sigmask cmd sigs] changes the set of blocked signals for the
    calling thread.
    If [cmd] is [SIG_SETMASK], blocked signals are set to those in
    the list [sigs].
@@ -151,9 +152,9 @@ val sigmask : Unix.sigprocmask_command -> int list -> int list
    from the set of blocked signals.
    [sigmask] returns the set of previously blocked signals for the thread. *)
 
-
 val wait_signal : int list -> int
-(** [wait_signal sigs] suspends the execution of the calling thread
+(** Same function as {!Unix.sigwait}.
+   [wait_signal sigs] suspends the execution of the calling thread
    until the process receives one of the signals specified in the
    list [sigs].  It then returns the number of the signal received.
    Signal handlers attached to the signals in [sigs] will not

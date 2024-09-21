@@ -1007,8 +1007,9 @@ let fundecl fundecl =
   || max_frame_size >= stack_threshold_size then begin
     let overflow = new_label () and ret = new_label () in
     (* The return address is saved in a register not used for param passing *)
+    (* The size is passed in a register normally not used for param passing *)
     `{emit_label overflow}:	mflr	28\n`;
-    `	li	12, {emit_int (Config.stack_threshold + max_frame_size / 8)}\n`;
+    `	li	27, {emit_int (Config.stack_threshold + max_frame_size / 8)}\n`;
     emit_call "caml_call_realloc_stack";
     emit_call_nop ();
     `	mtlr	28\n`;

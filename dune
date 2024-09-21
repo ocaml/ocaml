@@ -58,13 +58,13 @@
    ;; TYPING
    ident path primitive shape shape_reduce types btype oprint subst predef
    datarepr cmi_format persistent_env env type_immediacy errortrace
-   typedtree printtyped ctype printtyp includeclass mtype envaux includecore
-   tast_iterator tast_mapper signature_group cmt_format untypeast
-   includemod includemod_errorprinter
+   typedtree printtyped ctype printtyp rawprinttyp includeclass mtype envaux
+   includecore tast_iterator tast_mapper signature_group cmt_format untypeast
+   includemod includemod_errorprinter errortrace_report
    typetexp patterns printpat parmatch stypes typeopt typedecl value_rec_check
    typecore
    typeclass typemod typedecl_variance typedecl_properties typedecl_immediacy
-   typedecl_unboxed typedecl_separability cmt2annot
+   typedecl_unboxed typedecl_separability cmt2annot out_type
    ; manual update: mli only files
    annot outcometree value_rec_types
 

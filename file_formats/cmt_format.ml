@@ -45,11 +45,11 @@ and binary_part =
   | Partial_signature_item of signature_item
   | Partial_module_type of module_type
 
+type dependency_kind =  Definition_to_declaration | Declaration_to_declaration
 type cmt_infos = {
   cmt_modname : string;
   cmt_annots : binary_annots;
-  cmt_value_dependencies :
-    (Types.value_description * Types.value_description) list;
+  cmt_declaration_dependencies : (dependency_kind * Uid.t * Uid.t) list;
   cmt_comments : (string * Location.t) list;
   cmt_args : string array;
   cmt_sourcefile : string option;
@@ -425,19 +425,19 @@ let read_cmi filename =
     | Some cmi, _ -> cmi
 
 let saved_types = ref []
-let value_deps = ref []
+let uids_deps : (dependency_kind * Uid.t * Uid.t) list ref = ref []
 
 let clear () =
   saved_types := [];
-  value_deps := []
+  uids_deps := []
 
 let add_saved_type b = saved_types := b :: !saved_types
 let get_saved_types () = !saved_types
 let set_saved_types l = saved_types := l
 
-let record_value_dependency vd1 vd2 =
-  if vd1.Types.val_loc <> vd2.Types.val_loc then
-    value_deps := (vd1, vd2) :: !value_deps
+let record_declaration_dependency (rk, uid1, uid2) =
+  if not (Uid.equal uid1 uid2) then
+    uids_deps := (rk, uid1, uid2) :: !uids_deps
 
 let save_cmt target binary_annots initial_env cmi shape =
   if !Clflags.binary_annotations && not !Clflags.print_types then begin
@@ -462,7 +462,7 @@ let save_cmt target binary_annots initial_env cmi shape =
          let cmt = {
            cmt_modname = Unit_info.Artifact.modname target;
            cmt_annots;
-           cmt_value_dependencies = !value_deps;
+           cmt_declaration_dependencies = !uids_deps;
            cmt_comments = Lexer.comments ();
            cmt_args = Sys.argv;
            cmt_sourcefile = sourcefile;

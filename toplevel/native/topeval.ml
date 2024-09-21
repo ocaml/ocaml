@@ -163,16 +163,7 @@ let execute_phrase print_outcome ppf phr =
       incr phrase_seqid;
       let phrase_name = "TOP" ^ string_of_int !phrase_seqid in
       Compilenv.reset ?packname:None phrase_name;
-      Typecore.reset_delayed_checks ();
-      let (str, sg, names, shape, newenv) =
-        Typemod.type_toplevel_phrase oldenv sstr
-      in
-      if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
-      let sg' = Typemod.Signature_names.simplify newenv names sg in
-      ignore (Includemod.signatures oldenv ~mark:Mark_positive sg sg');
-      Typecore.force_delayed_checks ();
-      let shape = Shape_reduce.local_reduce Env.empty shape in
-      if !Clflags.dump_shape then Shape.print ppf shape;
+      let (str, sg', newenv) = typecheck_phrase ppf oldenv sstr in
       (* `let _ = <expression>` or even just `<expression>` require special
          handling in toplevels, or nothing is displayed. In bytecode, the
          lambda for <expression> is directly executed and the result _is_ the

@@ -1,16 +1,3 @@
-=== ⚠️ CAUTION
-
-The developer team is currently preparing the release of OCaml 5.0. This release
-sports a full rewrite of its runtime system for shared-memory parallel
-programming using domains and native support for concurrent programming using
-effect handlers.
-
-Owing to the large number of changes, the initial 5.0 release will be more
-experimental than usual.  It is recommended that all users wanting a stable
-release use the 4.14 release which will continue to be supported and updated
-while 5.0 reaches feature and stability parity. Similarly, if you need one of
-the ports not yet supported in the 5.0 release you must use the 4.14 release.
-
 = Release notes for the Microsoft Windows ports of OCaml =
 :toc: macro
 
@@ -58,8 +45,8 @@ Cygwin aims to provide a Unix-like environment on Windows, and the build
 procedure for it is the same as for other flavours of Unix.  See
 link:INSTALL.adoc[] for full instructions.
 
-The native ports require Windows Vista or later and naturally the 64-bit versions
-need a 64-bit edition of Windows (note that this is both to run *and* build).
+OCaml requires Windows 8 or later and naturally the 64-bit versions need a
+64-bit edition of Windows (note that this is both to run *and* build).
 
 The two native Windows ports have to be built differently, and the remainder of
 this document gives more information.
@@ -86,8 +73,8 @@ FlexDLL and OCaml are given <<seflexdll,later in this document>>.  Unless you
 bootstrap FlexDLL, you will need to ensure that the directory to which you
 install FlexDLL is included in your `PATH` environment variable. Note: binary
 distributions of FlexDLL are compatible only with Visual Studio 2013 and
-earlier; for Visual Studio 2015 and later, you will need to compile the C
-objects from source, or configure ocaml with the `--with-flexdll` option.
+earlier; for the MSVC port of OCaml, you will need to compile the C objects from
+source, or configure ocaml with the `--with-flexdll` option.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...) of all three
 ports runs without any additional tools.
@@ -100,22 +87,19 @@ The native-code compiler (`ocamlopt`) and static linking of OCaml bytecode with
 C code (`ocamlc -custom`) require a Microsoft Visual C/C++ Compiler and the
 `flexlink` tool (see <<bmflex,above>>).
 
-Any edition (including Express/Community editions) of Microsoft Visual Studio
-2008 or later may be used to provide the required Windows headers and the C
-compiler. Additionally, some older Microsoft Windows SDKs include the
-Visual C/C++ Compiler as well as the Build Tools for Visual Studio.
+The OCaml runtime requires C11 atomics, which are available in
+Visual Studio 2022 (starting from release 17.8). Earlier versions (either of
+Visual Studio 2022 17.7 and earlier or Visual Studio 2019 and earlier) cannot
+be used to compile OCaml. In addition to the paid versions of Visual Studio,
+OCaml can be compiled with either Visual Studio 2022 Community or Build Tools
+for Visual Studio 2022. The following components are needed (the precise version
+numbers may differ, but this should not matter):
 
-|=====
-|                    | `cl` Version | Express                 | SDK/Build Tools
-| Visual Studio 2008 | 15.00.x.x    | 32-bit only             | Windows SDK 7.0 also provides 32/64-bit compilers
-| Visual Studio 2010 | 16.00.x.x    | 32-bit only             | Windows SDK 7.1 also provides 32/64-bit compilers
-| Visual Studio 2012 | 17.00.x.x    | 32/64-bit               |
-| Visual Studio 2013 | 18.00.x.x    | 32/64-bit               |
-| Visual Studio 2015 | 19.00.x.x    | 32/64-bit               | Build Tools for Visual Studio 2015 also provides 32/64-bit compilers
-| Visual Studio 2017 | 19.10.x.x    | 32/64-bit               | Build Tools for Visual Studio 2017 also provides 32/64-bit compilers
-| Visual Studio 2019 | 19.20.x.x    | 32/64-bit               | Build Tools for Visual Studio 2019 also provides 32/64-bit compilers
-| Visual Studio 2022 | 19.37.x.x    | 32/64-bit               | Build Tools for Visual Studio 2022 also provides 32/64-bit compilers
-|=====
+ - MSVC v143 - VS 2022 C++ x64/x86 build tools (Latest) _for compiling with cl_
+ - C++ Clang Compiler for Windows (16.0.5) _for compiling with clang-cl_
+ - C++/CLI support for v143 build tools (Latest)
+ - Windows 11 SDK (10.0.22621.0)
+
 
 === COMPILATION FROM THE SOURCES
 
@@ -127,62 +111,21 @@ the WinZip Options Window.)
 
 Microsoft Visual C/C++ is designed to be used from special developer mode
 Command Prompts which set the environment variables for the required compiler.
-There are multiple ways of setting up your environment ready for their use.  The
-simplest is to start the appropriate command prompt shortcut from the program
-group of the compiler you have installed.
-
-The details differ depending on whether you are using a Windows SDK to provide
-the compiler or Microsoft Visual Studio itself.
-
-For the Windows SDK, there is only one command prompt called "CMD Shell" in
-versions 6.1 and 7.0 and "Windows SDK 7.1 Command Prompt" in version 7.1. This
-launches a Command Prompt which will usually select a `DEBUG` build environment
-for the operating system that you are running. You should then run:
-
-  SetEnv /Release /x86
-
-for 32-bit or:
-
-  SetEnv /Release /x64
-
-for 64-bit. For Visual Studio 2008-2013, you need to use one of the shortcuts in
-the "Visual Studio Tools" program group under the main program group for the
-version of Visual Studio you installed. For Visual Studio 2015 and 2017, you
-need to use the shortcuts in the "Windows Desktop Command Prompts" (2015) or
-"VC" (2017) group under the "Visual Studio Tools" group.
-
-Unlike `SetEnv` for the Windows SDK, the architecture is selected by using a
-different shortcut, rather than by running a command.
-
-For Visual Studio 2008-2010, excluding version-specific prefixes, these are
-named "Command Prompt" for 32-bit and "x64 Cross Tools Command Prompt" or
-"x64 Win64 Command Prompt" for 64-bit. It does not matter whether you use a
-"Cross Tools" or "Win64" version for x64, this simply refers to whether the
-compiler itself is a 32-bit or 64-bit program; both produce 64-bit output and
-work with OCaml.
-
-For Visual Studio 2012 and 2013, both x86 and x64 Command Prompt shortcuts
-indicate if they are the "Native Tools" or "Cross Tools" versions. Visual Studio
-2015, 2017, and 2022 make the shortcuts even clearer by including the full name
-of the architecture.
-
-The Build Tools for Visual Studio 2015, 2017, and 2022 provide shortcuts similar
-to the ones of their respective Visual Studio version.
-
-You cannot at present use a cross-compiler to compile 64-bit OCaml on 32-bit
-Windows.
+The easiest way to access these is via the "Visual Studio 2022" group added to
+the Start Menu by the installer, for example using the
+"x64 Native Tools Command Prompt for VS 2022" shortcut.
 
 Once you have started a Command Prompt, you can verify that you have the
 compiler you are expecting simply by running:
 
   cl
-  Microsoft (R) C/C++ Optimizing Compiler Version 19.37.32825 for x64
+  Microsoft (R) C/C++ Optimizing Compiler Version 19.38.33133 for x64
   ...
 
 You then need to start Cygwin from this Command Prompt.  Assuming you have
-installed it to its default location of `C:\cygwin`, simply run:
+installed it to its default location of `C:\cygwin64`, simply run:
 
-  C:\cygwin\bin\mintty -
+  C:\cygwin64\bin\mintty -
 
 (note the space and hyphen at the end of the command).
 
@@ -201,15 +144,15 @@ the top-level of the OCaml distribution by running:
 If you forget to do this, `make` will fail relatively
 quickly as it will be unable to link `ocamlrun`.
 
-Now run:
-
-        ./configure --build=x86_64-pc-cygwin --host=i686-pc-windows
-
-for 32-bit, or:
+For 64-bit, now run:
 
         ./configure --build=x86_64-pc-cygwin --host=x86_64-pc-windows
 
-for 64-bit.
+or, for 32-bit:
+
+        ./configure --build=x86_64-pc-cygwin --host=i686-pc-windows
+
+If you wish to compile with Clang, add `CC=clang-cl`.
 
 Finally, use `make` to build the system, e.g.
 
@@ -266,15 +209,13 @@ The command-line tools must be compiled from the Unix source distribution
 use WinZip, you will need to deselect "TAR file smart CR/LF conversion" in
 the WinZip Options Window.)
 
-Now run:
-
-        ./configure --build=x86_64-pc-cygwin --host=i686-w64-mingw32
-
-for 32-bit, or:
+For 64-bit, now run:
 
         ./configure --build=x86_64-pc-cygwin --host=x86_64-w64-mingw32
 
-for 64-bit.
+or, for 32-bit:
+
+        ./configure --build=x86_64-pc-cygwin --host=i686-w64-mingw32
 
 Finally, use `make` to build the system, e.g.
 
@@ -283,7 +224,8 @@ Finally, use `make` to build the system, e.g.
 
 After installing, you will need to ensure that `ocamlopt` (or `ocamlc -custom`)
 can access the C compiler.  You can do this either by using OCaml from Cygwin's
-bash or by adding Cygwin's bin directory (e.g. `C:\cygwin\bin`) to your `PATH`.
+bash or by adding Cygwin's bin directory (e.g. `C:\cygwin64\bin`) to your
+`PATH`.
 
 * Libraries available in this port: `dynlink`, `num`,
   `str`, `threads`, and large parts of `unix`.

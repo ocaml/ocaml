@@ -109,6 +109,7 @@ type t =
   | Unused_tmc_attribute                    (* 71 *)
   | Tmc_breaks_tailcall                     (* 72 *)
   | Generative_application_expects_unit     (* 73 *)
+  | Degraded_to_partial_match               (* 74 *)
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
    the numbers of existing warnings.
@@ -190,12 +191,13 @@ let number = function
   | Unused_tmc_attribute -> 71
   | Tmc_breaks_tailcall -> 72
   | Generative_application_expects_unit -> 73
+  | Degraded_to_partial_match -> 74
 ;;
 (* DO NOT REMOVE the ;; above: it is used by
    the testsuite/ests/warnings/mnemonics.mll test to determine where
    the  definition of the number function above ends *)
 
-let last_warning_number = 73
+let last_warning_number = 74
 
 type description =
   { number : int;
@@ -534,6 +536,11 @@ let descriptions = [
     description = "A generative functor is applied to an empty structure \
                    (struct end) rather than to ().";
     since = since 5 1 };
+  { number = 74;
+    names = ["degraded-to-partial-match"];
+    description = "A pattern-matching is compiled as partial \
+                   even if it appears to be total.";
+    since = since 5 3 };
 ]
 
 let name_to_number =
@@ -863,7 +870,7 @@ let parse_options errflag s =
   alerts
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-7-9-27-29-30-32..42-44-45-48-50-60-66..70"
+let defaults_w = "+a-4-7-9-27-29-30-32..42-44-45-48-50-60-66..70-74"
 let defaults_warn_error = "-a"
 let default_disabled_alerts = [ "unstable"; "unsynchronized_access" ]
 
@@ -1138,6 +1145,16 @@ let message = function
   | Generative_application_expects_unit ->
       "A generative functor\n\
        should be applied to '()'; using '(struct end)' is deprecated."
+  | Degraded_to_partial_match ->
+      let[@manual.ref "ss:warn74"] ref_manual = [ 13; 5; 5 ] in
+      Format.asprintf
+        "This pattern-matching is compiled \n\
+         as partial, even if it appears to be total. \
+         It may generate a Match_failure\n\
+         exception. This typically occurs due to \
+         complex matches on mutable fields.\n\
+         %a"
+        (Format_doc.compat Misc.print_see_manual) ref_manual
 ;;
 
 let nerrors = ref 0

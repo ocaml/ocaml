@@ -97,10 +97,10 @@ open Printpat.Compat
 
 module Scoped_location = Debuginfo.Scoped_location
 
-let dbg = false
+let dbg () = !Clflags.dump_matchcomp
 
 let debugf fmt =
-  if dbg
+  if dbg ()
   then Format.eprintf fmt
   else Format.ifprintf Format.err_formatter fmt
 
@@ -1036,6 +1036,61 @@ end = struct
     }
 end
 
+(* Temporality information *)
+
+type temporality =
+  | First
+  | Following
+(** The [temporality] information tracks information about the
+    placement of the current submatrix within the
+    whole pattern-matching.
+
+    - [First]: this is the first submatrix on this position seen by values
+      that flow into the submatrix.
+    - [Following]: there was a split, some other submatrix was tried first
+      and failed, and the control jumped to the current submatrix.
+
+    This information is used in {!compute_arg_partial}.
+*)
+
+let pp_tempo ppf = function
+  | First -> Format.fprintf ppf "First"
+  | Following -> Format.fprintf ppf "Following"
+
+
+(* Partiality information. *)
+
+(** [Typedtree.partial] is just [Total | Partial].
+    The pattern-matching compiler tracks more fine-grained information as
+    it traverses patterns, grouped in the following [partiality] type. *)
+type partiality = {
+  current : partial;
+  (** The 'current' information tracks whether the current sub-matrix
+      is Partial or Total, that is, if it may fail to match some possible
+      values and have to generate a jump to some external exit. *)
+
+  global : partial;
+  (** The 'global' information indicates whether the pattern-matching
+      as a whole, at the toplevel, is Partial or Total. This
+      information is decided by the type-checker and passed down to
+      the pattern-matching compiler.
+
+      When a pattern-matching is globally Total, a jump out of a given
+      submatrix may only target a default submatrix correspond to
+      a further split. When it is globally Partial, some jumps may
+      fail to match any of the following submatrices, and go to the
+      'final exit'. *)
+
+  tempo: temporality;
+  (** The {!temporality} of the current submatrix. *)
+}
+
+let pp_partiality ppf {current; global; tempo} =
+  Format.fprintf ppf "{ current = %a; global = %a; tempo = %a }"
+    pp_partial current
+    pp_partial global
+    pp_tempo tempo
+
 (* Pattern matching before any compilation *)
 
 type ('args, 'row) pattern_matching = {
@@ -1825,7 +1880,7 @@ let separate_debug_output () =
 
 let dbg_split_and_precompile pm next nexts =
   if
-    dbg
+    dbg ()
     && (nexts <> []
        ||
        match next with
@@ -2871,30 +2926,47 @@ let complete_pats_constrs = function
         (complete_constrs constr (List.map constr_of_pat constrs))
   | _ -> assert false
 
+(* a type of per-argument partiality information used by
+   [mk_failaction_*] functions to reason statically about which
+   partiality information is used for these per-argument functions. *)
+type arg_partiality = Arg of partiality
+
+let pp_arg_partiality ppf (Arg partial) = pp_partiality ppf partial
+
+let comp_final_exit def =
+  (Default_environment.raise_final_exit def, Jumps.empty Partial)
+
+let comp_exit partial ctx def =
+  match Default_environment.pop def with
+  | Some ((i, _), _) -> Some (Lstaticraise (i, []), Jumps.singleton i ctx)
+  | None ->
+      (* If we know that we are in Total match, we do not need to
+         generate a final exit in this case. *)
+      match partial.global with
+      | Total -> None
+      | Partial -> Some (comp_final_exit def)
+
 (*
-    Following two ``failaction'' function compute n, the trap handler
-    to jump to in case of failure of elementary tests
+    The following two ``failaction'' functions compute n, the trap
+    handler to jump to in case of failure of elementary tests.
 *)
 
-let comp_exit ctx def =
-  match Default_environment.pop def with
-  | Some ((i, _), _) -> Lstaticraise (i, []), Jumps.singleton i ctx
-  | None -> Default_environment.raise_final_exit def, Jumps.empty Partial
-
-let mk_failaction_neg partial ctx def =
+let mk_failaction_neg arg_partial ctx def =
   debugf
     "@,@[<v 2>COMBINE (mk_failaction_neg %a)@]"
-    pp_partial partial
+    pp_arg_partiality arg_partial
   ;
-  match partial with
-  | Partial ->
-      let lam, jumps = comp_exit ctx def in
-      (Some lam, jumps)
-  | Total -> (None, Jumps.empty Total)
+  match arg_partial with
+  | Arg { current = Total; _ } ->
+      (None, Jumps.empty Total)
+  | Arg ({ current = Partial; _ } as partial) ->
+      match comp_exit partial ctx def with
+      | None -> (None, Jumps.empty Total)
+      | Some (lam, jumps) -> (Some lam, jumps)
 
 (* In [mk_failaction_pos partial seen ctx defs],
-   - [partial] is Total if we know the current switch
-     is already exhaustive
+   - [partial] indicates whether the current switch
+     is exhaustive
    - [seen] is the list of constructors accepted by the switch
      (those that will be matched)
    - [ctx] is the current context (what we know of the value
@@ -2922,14 +2994,14 @@ let mk_failaction_neg partial ctx def =
    generates a failure clause along with context information that the
    value reaching the failure clause must be [Some _].
 *)
-let mk_failaction_pos partial seen ctx defs =
+let mk_failaction_pos arg_partial seen ctx defs =
   (* The failure patterns are formed of the constructors not present
      in [seen]. For example, if [seen] is [[None]], then [fail_pats]
      will be [[Some _]]. *)
   let input_fail_pats = complete_pats_constrs seen in
   if List.length input_fail_pats >= !Clflags.match_context_rows then (
     (* Too many non-matched constructors -> reduced information. *)
-    let fail, jumps = mk_failaction_neg partial ctx defs in
+    let fail, jumps = mk_failaction_neg arg_partial ctx defs in
     debugf
       "@,@[<v 2>COMBINE (mk_failaction_pos)@,\
            %a@,\
@@ -2994,14 +3066,14 @@ let mk_failaction_pos partial seen ctx defs =
             in
             fails', jumps'
       | None ->
-          match partial with
-          | Total ->
-              (* In [Total] mode, if there are no exits left in the
-                 environment, we judge that the remaining failing patterns
-                 cannot arise. [mk_failaction_neg] has the same
-                 logic. *)
+          match arg_partial with
+          | Arg { global = Total; _ } ->
+              (* If the pattern-matching is globally [Total], all
+                 missing values are either ill-typed or they are
+                 handled by a matrix of the default environment. The
+                 remaining failing patterns cannot arise. *)
               [], Jumps.empty Total
-          | Partial ->
+          | Arg { global = Partial; _ } ->
               (* in [Partial] mode, remaining failing patterns
                  go to the final exit. *)
               let final_pats = List.map fst fail_pats_in_ctx in
@@ -3018,7 +3090,7 @@ let mk_failaction_pos partial seen ctx defs =
              %a@]@,\
            @[<v 2>POSITIVE JUMPS (%a):%a@]\
            @]"
-      pp_partial partial
+      pp_arg_partiality arg_partial
       Default_environment.pp defs
       Context.pp ctx
       (Format.pp_print_list ~pp_sep:Format.pp_print_cut
@@ -3317,8 +3389,8 @@ let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
       sig_complete
       ||
       match partial with
-      | Total -> true
-      | _ -> false
+      | Arg { current = Total; _ } -> true
+      | Arg { current = Partial; _ } -> false
     then
       (None, Jumps.empty Total)
     else
@@ -3460,12 +3532,12 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
   in
   do_rec lambda1 total1 to_catch
 
-let compile_test compile_fun partial divide combine ctx to_match =
+let compile_test compile_fun arg_partial divide combine ctx to_match =
   let division = divide ctx to_match in
   let c_div = compile_list compile_fun division.cells in
   match c_div with
   | [], _, _ -> (
-      match mk_failaction_neg partial ctx to_match.default with
+      match mk_failaction_neg arg_partial ctx to_match.default with
       | None, _ -> raise Unused
       | Some l, total -> (l, total)
     )
@@ -3521,14 +3593,22 @@ let rec comp_match_handlers comp_fun partial ctx first_match next_matches =
       let rec c_rec body jumps_body = function
         | [] -> (body, jumps_body)
         | (i, pm_i) :: rem -> (
+            let partial =
+              (* [c_rec] is only called on [Following] sub-matrices;
+                 this is the key point where the [Following]
+                 temporality is introduced in the pattern-matching
+                 compilation. *)
+              { partial with tempo = Following } in
             separate_debug_output ();
             let ctx_i, jumps_rem = Jumps.extract i jumps_body in
             if Context.is_empty ctx_i then
               c_rec body jumps_body rem
             else begin
+              (* All those submatrices are [Partial], except possibly
+                 for the last one. *)
               let partial = match rem with
                 | [] -> partial
-                | _ -> Partial
+                | _ -> { partial with current = Partial }
               in
               match comp_fun partial ctx_i pm_i with
               | lambda_i, jumps_i ->
@@ -3543,7 +3623,7 @@ let rec comp_match_handlers comp_fun partial ctx first_match next_matches =
             end
           )
       in
-      match comp_fun Partial ctx first_match with
+      match comp_fun { partial with current = Partial } ctx first_match with
       | first_lam, jumps ->
         c_rec first_lam jumps next_matches
       | exception Unused ->
@@ -3601,7 +3681,11 @@ let rec compile_match ~scopes repr partial ctx
 and compile_match_nonempty ~scopes repr partial ctx
     (m : (args, Typedtree.pattern Non_empty_row.t clause) pattern_matching) =
   match m with
-  | { cases = []; args = [] } -> comp_exit ctx m.default
+  | { cases = []; args = [] } ->
+      begin match comp_exit partial ctx m.default with
+      | None -> fatal_error "Matching: impossible empty matrix in a Total match"
+      | Some exit -> exit
+      end
   | { args = { arg; binding_kind; _ } as first :: rest } ->
       let v = arg_to_var arg m.cases in
       bind_match_arg binding_kind v arg (
@@ -3618,6 +3702,128 @@ and compile_match_simplified ~scopes repr partial ctx
     (m : (split_args, Simple.clause) pattern_matching) =
   let first_match, rem = split_and_precompile_simplified m in
   combine_handlers ~scopes repr partial ctx first_match rem
+
+(* Note on [compute_arg_partial].
+
+   Partiality information is provided by the
+   type-checker. A pattern-matching is compiled as Total if the
+   type-checker verified that any well-typed value of the scrutinee
+   type is matched by at least one unguarded clause.
+
+   The pattern-matching compiler also tracks information relevant to
+   partiality/exhaustiveness: it checks that a switch on constructors
+   is 'complete' (all constructors at that type are matched), and it
+   carries fine-grained context information that allows to determine
+   that some incomplete switches are in fact exhaustive
+   (missing constructors were matched previously), or refine
+   information about which constructors are left to match for the
+   following switches.
+
+   Sometimes the pattern-matching compiler cannot tell that a switch
+   on an argument is complete, but the type-checker can. This is the
+   case in particular for GADTs -- the compiler does not use type
+   information to rule certain constructors out.
+
+     type _ t =
+       | Int : int -> int t
+       | Bool : bool -> bool t
+
+     let total_function : int t -> int = function
+       | Int n -> n
+
+   In these cases we want to trust the type-checker totality
+   information to generate better code: we know that the only possible
+   constructor is [Int], so we can generate branchless code that
+   fetches its argument directly. Users rely on this performant
+   compilation scheme for GADTs.
+
+   Trusting the totality information also lets us avoid computing
+   fine-grained 'negative' information, which can avoid some
+   pathological cases for pattern-matching compilation. (The vast
+   majority of 'match' and 'function' uses in practice are total.)
+
+   On the other hand, there are cases where the type-checker wrongly
+   believes that a matching is total, because its totality criterion
+   (all well-typed values are matched by a non-guarded clause) ignores
+   side-effects.
+
+     let r = ref (Some 42)
+
+     let () = match Some r with
+       | { contents = None } -> 0
+       | _ when (r := None; false) -> 1
+       | { contents = Some n } -> n
+
+   In this example, the pattern-matching compiler will notice that the
+   [Some n] case is not total (this is thanks to the use of
+   [set_args_erase_mutable] in Context.combine), but the type-checker
+   believes that it is total, so that the only possible value reaching
+   the third clause has a [Some] constructor. Trusting the
+   type-checker would lead us to generate a direct field access to the
+   [Some] argument, which is unsound as the value at this point has
+   become [None].
+
+   The job of [compute_arg_partial] is to combine the totality
+   information coming from the type-checker and contextual information
+   provided by the compiler to decide whether a switch on a given
+   argument should be considered partial or not, in a way that is
+   correct but does not pessimize too many code patterns.
+
+   The criterion that we use is based on two contextual informations:
+
+   - [mut]: is the current sub-value we are switching over placed
+     (transitively) under a mutable field?
+
+   - [tempo]: is this always the first switch on this position,
+     or did some value jump here after coming from previous submatrices
+     that may already have switched on the position?
+
+   If [mut = Mutable], that is we are in a transitivitely mutable position,
+   and [tempo = Following], this may not be the first switch on this position,
+   then we pessimize totality information.
+
+   Remark: when we split a matrix into several submatrices that have
+   to be tried in turn, and the original matrix was in a [Total]
+   context, we compile all submatrices as [Partial] except for the
+   very last one that remains [Total] -- see
+   {!comp_match_handlers}. And that very last matrix will be
+   a [Following] matrix, unless there was no actual split -- we split
+   into only one matrix. The criterion above can thus be understood
+   as: either we are at an [Immutable] position, or there was no
+   actual split from the root of the pattern-matching to the current
+   submatrix.
+
+   With this criterion, pure patterns are never pessimized, but even
+   patterns that have some GADTs and some non-GADT mutable components
+   work well -- for example, a pair of a GADT value and
+   a reference. On the other hand, matching on GADTs inside
+   a reference is pessimized when the GADT matching occurs under
+   a mutable constructor and after a split.
+*)
+(* The code should ensure that all partiality information that is used
+   to make code-generation decisions has gone through
+   [compute_arg_partial]. To do this statically we distinguish the
+   general type [partial] of partiality information from the
+   specialized type [arg_partial] used to make code-generation
+   decisions for a given argument switch. *)
+and compute_arg_partial partial mut =
+  match partial.tempo, mut with
+  | Following, Mutable -> Arg { partial with global = Partial }
+  | First, _ | _, Immutable -> Arg partial
+
+and mut_of_binding_kind =
+  (* This is somewhat of a hack: we notice that a pattern-matching
+     argument is mutable (its value can change if evaluated
+     several times) exactly when it is bound as StrictOpt. Alias
+     bindings are obviously pure, but Strict bindings are also only
+     used in the pattern-matching compiler for expressions that give
+     the same value when evaluated twice.
+     An alternative would be to track 'mutability of the field'
+     directly.
+  *)
+  function
+  | Strict | Alias -> Immutable
+  | StrictOpt -> Mutable
 
 and bind_match_arg kind v arg (lam, jumps) =
   let jumps =
@@ -3646,21 +3852,7 @@ and bind_match_arg kind v arg (lam, jumps) =
        incorrect. We "fix" the context information on mutable arguments
        by calling [Context.erase_first_col] below.
     *)
-    let mut =
-      (* This is somewhat of a hack: we notice that a pattern-matching
-         argument is mutable (its value can change if evaluated
-         several times) exactly when it is bound as StrictOpt. Alias
-         bindings are obviously pure, but Strict bindings are also only
-         used in the pattern-matching compiler for expressions that give
-         the same value when evaluated twice.
-         An alternative would be to track 'mutability of the field'
-         directly.
-      *)
-      match kind with
-      | Strict | Alias -> Immutable
-      | StrictOpt -> Mutable
-    in
-    match mut with
+    match mut_of_binding_kind kind with
     | Immutable -> jumps
     | Mutable ->
         Jumps.map Context.erase_first_col jumps in
@@ -3669,7 +3861,7 @@ and bind_match_arg kind v arg (lam, jumps) =
 
 and combine_handlers ~scopes repr partial ctx first_match rem =
   comp_match_handlers
-    (( if dbg then
+    (( if dbg () then
          do_compile_matching_pr ~scopes
        else
          do_compile_matching ~scopes
@@ -3682,7 +3874,7 @@ and do_compile_matching_pr ~scopes repr partial ctx x =
   debugf
     "@[<v>MATCH %a\
      @,%a"
-    pp_partial partial
+    pp_partiality partial
     pretty_precompiled x;
   debugf "@,@[<v 2>CTX:@,%a@]"
     Context.pp ctx;
@@ -3701,7 +3893,21 @@ and do_compile_matching_pr ~scopes repr partial ctx x =
 and do_compile_matching ~scopes repr partial ctx pmh =
   match pmh with
   | Pm pm -> (
-      let arg = arg_of_pure pm.args.first.arg in
+      let first = pm.args.first in
+      let arg = arg_of_pure first.arg in
+      let arg_partial =
+        compute_arg_partial partial first.mut
+        (* It is important to distinguish:
+           - [arg_partial]: the partiality information that will
+             be used to compile the 'upcoming' switch on the first argument
+           - [partial]: the partiality information that will be used
+             recursively for all submatrices, including on different columns.
+
+           If the argument is in a transivitely-mutable position, we
+           conservatively consider the switch Partial (this is the
+           role of [compute_arg_partial]), but this should not
+           pessimize the compilation of other columns. *)
+      in
       let ph = what_is_cases pm.cases in
       let pomega = Patterns.Head.to_omega_pattern ph in
       let ploc = head_loc ~scopes ph in
@@ -3711,7 +3917,7 @@ and do_compile_matching ~scopes repr partial ctx pmh =
       let compile_test divide combine =
         compile_test
           (compile_match ~scopes repr partial)
-          partial divide combine ctx pm
+          arg_partial divide combine ctx pm
       in
       let open Patterns.Head in
       match ph.pat_desc with
@@ -3731,16 +3937,16 @@ and do_compile_matching ~scopes repr partial ctx pmh =
       | Constant cst ->
           compile_test
             divide_constant
-            (combine_constant ploc arg cst partial)
+            (combine_constant ploc arg cst arg_partial)
       | Construct cstr ->
           compile_test
             (divide_constructor ~scopes)
-            (combine_constructor ploc arg ph.pat_env cstr partial)
+            (combine_constructor ploc arg ph.pat_env cstr arg_partial)
       | Array _ ->
           let kind = Typeopt.array_pattern_kind pomega in
           compile_test
             (divide_array ~scopes kind)
-            (combine_array ploc arg kind partial)
+            (combine_array ploc arg kind arg_partial)
       | Lazy ->
           compile_no_test
             (divide_lazy ~scopes ph)
@@ -3748,7 +3954,7 @@ and do_compile_matching ~scopes repr partial ctx pmh =
       | Variant { cstr_row = row } ->
           compile_test
             (divide_variant ~scopes !row)
-            (combine_variant ploc !row arg partial)
+            (combine_variant ploc !row arg arg_partial)
     )
   | PmVar { inside = pmh } ->
       let lam, total =
@@ -3768,92 +3974,6 @@ and compile_no_test ~scopes divide up_ctx repr partial ctx to_match =
   (lambda, Jumps.map up_ctx total)
 
 (* The entry points *)
-
-(*
-   If there is a guard in a matching or a lazy pattern,
-   then set exhaustiveness info to Partial.
-   (because of side effects, assume the worst).
-
-   Notice that exhaustiveness information is trusted by the compiler,
-   that is, a match flagged as Total should not fail at runtime.
-   More specifically, for instance if match y with x::_ -> x is flagged
-   total (as it happens during JoCaml compilation) then y cannot be []
-   at runtime. As a consequence, the static Total exhaustiveness information
-   have to be downgraded to Partial, in the dubious cases where guards
-   or lazy pattern execute arbitrary code that may perform side effects
-   and change the subject values.
-LM:
-   Lazy pattern was PR#5992, initial patch by lpw25.
-   I have  generalized the patch, so as to also find mutable fields.
-*)
-
-let is_lazy_pat p =
-  match p.pat_desc with
-  | Tpat_lazy _ -> true
-  | Tpat_alias _
-  | Tpat_variant _
-  | Tpat_record _
-  | Tpat_tuple _
-  | Tpat_construct _
-  | Tpat_array _
-  | Tpat_or _
-  | Tpat_constant _
-  | Tpat_var _
-  | Tpat_any ->
-      false
-
-let has_lazy p = Typedtree.exists_pattern is_lazy_pat p
-
-let is_record_with_mutable_field p =
-  match p.pat_desc with
-  | Tpat_record (lps, _) ->
-      List.exists
-        (fun (_, lbl, _) ->
-          match lbl.Types.lbl_mut with
-          | Mutable -> true
-          | Immutable -> false)
-        lps
-  | Tpat_alias _
-  | Tpat_variant _
-  | Tpat_lazy _
-  | Tpat_tuple _
-  | Tpat_construct _
-  | Tpat_array _
-  | Tpat_or _
-  | Tpat_constant _
-  | Tpat_var _
-  | Tpat_any ->
-      false
-
-let has_mutable p = Typedtree.exists_pattern is_record_with_mutable_field p
-
-(* Downgrade Total when
-   1. Matching accesses some mutable fields;
-   2. And there are  guards or lazy patterns.
-*)
-
-let check_partial has_mutable has_lazy pat_act_list = function
-  | Partial -> Partial
-  | Total ->
-      if
-        pat_act_list = []
-        || (* allow empty case list *)
-           List.exists
-             (fun (pats, lam) ->
-               has_mutable pats && (is_guarded lam || has_lazy pats))
-             pat_act_list
-      then
-        Partial
-      else
-        Total
-
-let check_partial_list pats_act_list =
-  check_partial (List.exists has_mutable) (List.exists has_lazy) pats_act_list
-
-let check_partial pat_act_list =
-  check_partial has_mutable has_lazy pat_act_list
-
-(* have toplevel handler when appropriate *)
 
 type failer_kind =
   | Raise_match_failure
@@ -3901,13 +4021,31 @@ let toplevel_handler ~scopes loc ~failer partial args cases compile_fun =
   let final_exit = next_raise_count () in
   let default = Default_environment.empty ~final_exit in
   let pm = { args; cases; default } in
-  let safe_partial = if !Clflags.safer_matching then Partial else partial in
-  begin match compile_fun safe_partial pm with
+  let partial =
+    let only_refutations =
+      (* Example: [function _ -> .]. *)
+      cases = []
+    in
+    if only_refutations || !Clflags.safer_matching
+    then Partial
+    else partial
+  in
+  let partial = { current = partial; global = partial; tempo = First; } in
+  begin match compile_fun partial pm with
   | exception Unused -> assert false
   | (lam, jumps) ->
       match Jumps.partial jumps with
       | Total -> lam
       | Partial ->
+        if partial.global = Total then begin
+          (* In this case the type-checker believed the
+             pattern-matching to be Total, but the compiler found it
+             to be Partial. See the discussion in the "Warning
+             reference" section of the reference manual. *)
+          let warning = Warnings.Degraded_to_partial_match in
+          if Warnings.is_active warning then
+            Location.prerr_warning loc warning
+        end;
         Lstaticcatch (lam, (final_exit, []),
                       failure_handler ~scopes loc ~failer ())
   end
@@ -3920,7 +4058,6 @@ let root_arg arg binding_kind =
   { arg; binding_kind; mut = Immutable }
 
 let compile_matching ~scopes loc ~failer repr arg pat_act_list partial =
-  let partial = check_partial pat_act_list partial in
   let args = [ root_arg arg Strict ] in
   let rows = map_on_rows (fun pat -> (pat, [])) pat_act_list in
   let handler =
@@ -4124,7 +4261,6 @@ let for_let ~scopes loc param pat body =
 
 (* Easy case since variables are available *)
 let for_tupled_function ~scopes loc paraml pats_act_list partial =
-  let partial = check_partial_list pats_act_list partial in
   let args = List.map (fun id -> root_arg (Lvar id) Strict) paraml in
   let handler =
     toplevel_handler ~scopes loc ~failer:Raise_match_failure
@@ -4212,7 +4348,6 @@ let do_for_multiple_match ~scopes loc idl pat_act_list partial =
     Lprim (Pmakeblock (0, Immutable, None), args, sloc) in
   let input_args = { first = root_arg (Tuple arg) Strict; rest = [] } in
   let handler =
-    let partial = check_partial pat_act_list partial in
     let rows = map_on_rows (fun p -> (p, [])) pat_act_list in
     toplevel_handler ~scopes loc ~failer:Raise_match_failure
       partial input_args rows in

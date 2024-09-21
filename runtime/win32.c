@@ -17,10 +17,9 @@
 
 /* Win32-specific stuff */
 
-/* FILE_INFO_BY_HANDLE_CLASS and FILE_NAME_INFO are only available from Windows
-   Vista onwards */
-#undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600
+/* FILE_INFO_BY_HANDLE_CLASS, FILE_NAME_INFO, and INIT_ONCE are only
+   available from Windows Vista onwards */
+#define _WIN32_WINNT 0x0600 /* _WIN32_WINNT_VISTA */
 
 #define WIN32_LEAN_AND_MEAN
 #include <wtypes.h>
@@ -964,15 +963,25 @@ CAMLexport wchar_t* caml_stat_strdup_to_utf16(const char *s)
   return ws;
 }
 
-CAMLexport caml_stat_string caml_stat_strdup_of_utf16(const wchar_t *s)
+CAMLexport caml_stat_string caml_stat_strdup_noexc_of_utf16(const wchar_t *s)
 {
   caml_stat_string out;
   int retcode;
 
   retcode = caml_win32_wide_char_to_multi_byte(s, -1, NULL, 0);
-  out = caml_stat_alloc(retcode);
-  caml_win32_wide_char_to_multi_byte(s, -1, out, retcode);
+  out = caml_stat_alloc_noexc(retcode);
+  if (out != NULL) {
+    caml_win32_wide_char_to_multi_byte(s, -1, out, retcode);
+  }
 
+  return out;
+}
+
+CAMLexport caml_stat_string caml_stat_strdup_of_utf16(const wchar_t *s)
+{
+  caml_stat_string out = caml_stat_strdup_noexc_of_utf16(s);
+  if (out == NULL)
+    caml_raise_out_of_memory();
   return out;
 }
 
@@ -1019,31 +1028,17 @@ void caml_restore_win32_terminal(void)
 /* Detect if a named pipe corresponds to a Cygwin/MSYS pty: see
    https://github.com/mirror/newlib-cygwin/blob/00e9bf2/winsup/cygwin/dtable.cc#L932
 */
-typedef
-BOOL (WINAPI *tGetFileInformationByHandleEx)(HANDLE, FILE_INFO_BY_HANDLE_CLASS,
-                                             LPVOID, DWORD);
-
 static int caml_win32_is_cygwin_pty(HANDLE hFile)
 {
   char buffer[1024];
   FILE_NAME_INFO * nameinfo = (FILE_NAME_INFO *) buffer;
-  static tGetFileInformationByHandleEx pGetFileInformationByHandleEx =
-    INVALID_HANDLE_VALUE;
-
-  if (pGetFileInformationByHandleEx == INVALID_HANDLE_VALUE)
-    pGetFileInformationByHandleEx =
-      (tGetFileInformationByHandleEx)GetProcAddress(
-        GetModuleHandle(L"KERNEL32.DLL"), "GetFileInformationByHandleEx");
-
-  if (pGetFileInformationByHandleEx == NULL)
-    return 0;
 
   /* Get pipe name. GetFileInformationByHandleEx does not NULL-terminate the
      string, so reduce the buffer size to allow for adding one. */
-  if (! pGetFileInformationByHandleEx(hFile,
-                                      FileNameInfo,
-                                      buffer,
-                                      sizeof(buffer) - sizeof(WCHAR)))
+  if (! GetFileInformationByHandleEx(hFile,
+                                     FileNameInfo,
+                                     buffer,
+                                     sizeof(buffer) - sizeof(WCHAR)))
     return 0;
 
   nameinfo->FileName[nameinfo->FileNameLength / sizeof(WCHAR)] = L'\0';
@@ -1261,4 +1256,32 @@ value caml_win32_xdg_defaults(void)
   CoTaskMemFree(wpath);
 
   CAMLreturn(result);
+}
+
+static INIT_ONCE get_temp_path_init_once = INIT_ONCE_STATIC_INIT;
+static BOOL CALLBACK get_temp_path_init_function(PINIT_ONCE InitOnce,
+                                                 PVOID Parameter,
+                                                 PVOID *lpContext)
+{
+  FARPROC pGetTempPath2W =
+    GetProcAddress(GetModuleHandle(L"KERNEL32.DLL"), "GetTempPath2W");
+  if (pGetTempPath2W)
+    *lpContext = pGetTempPath2W;
+  else
+    *lpContext = GetTempPath;
+  return TRUE;
+}
+
+value caml_win32_get_temp_path(void)
+{
+  CAMLparam0();
+  wchar_t buf[MAX_PATH+1];
+  DWORD (WINAPI *get_temp_path)(DWORD, LPWSTR);
+
+  InitOnceExecuteOnce(&get_temp_path_init_once, get_temp_path_init_function,
+                      NULL, (LPVOID *) &get_temp_path);
+
+  if (!get_temp_path(MAX_PATH+1, buf))
+    caml_win32_sys_error(GetLastError());
+  CAMLreturn(caml_copy_string_of_utf16(buf));
 }

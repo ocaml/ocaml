@@ -384,7 +384,7 @@ let emit_instr env i =
           cfi_def_cfa_register "%r12";
           (* NB: gdb has asserts on contiguous stacks that mean it
              will not unwind through this unless we were to tag this
-             calling frame with cfi_signal_frame in it's definition. *)
+             calling frame with cfi_signal_frame in its definition. *)
           let offset = Domainstate.(idx_of_field Domain_c_stack) * 8 in
           `	lg	%r15, {emit_int offset}(%r10)\n`;
           emit_call func;

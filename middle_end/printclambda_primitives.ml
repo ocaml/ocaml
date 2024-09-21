@@ -213,13 +213,7 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Pbswap16 -> fprintf ppf "bswap16"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
-  | Patomic_load {immediate_or_pointer} ->
-      (match immediate_or_pointer with
-        | Immediate -> fprintf ppf "atomic_load_imm"
-        | Pointer -> fprintf ppf "atomic_load_ptr")
-  | Patomic_exchange -> fprintf ppf "atomic_exchange"
-  | Patomic_cas -> fprintf ppf "atomic_cas"
-  | Patomic_fetch_add -> fprintf ppf "atomic_fetch_add"
+  | Patomic_load -> fprintf ppf "atomic_load"
   | Popaque -> fprintf ppf "opaque"
   | Pdls_get -> fprintf ppf "dls_get"
   | Ppoll -> fprintf ppf "poll"

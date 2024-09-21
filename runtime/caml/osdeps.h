@@ -142,6 +142,8 @@ CAMLextern clock_t caml_win32_clock(void);
 
 CAMLextern value caml_win32_xdg_defaults(void);
 
+CAMLextern value caml_win32_get_temp_path(void);
+
 #endif /* _WIN32 */
 
 /* Returns the current value of a counter that increments once per nanosecond.
@@ -169,12 +171,25 @@ extern void caml_init_os_params(void);
 */
 CAMLextern wchar_t* caml_stat_strdup_to_utf16(const char *s);
 
+/* [caml_stat_strdup_noexc_of_utf16(s)] returns a null-terminated copy of [s],
+   re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero or
+   the current Windows code page otherwise.
+
+   The returned string is allocated with [caml_stat_alloc_noexc], so
+   it should be freed using [caml_stat_free].
+
+   If allocation fails, this returns NULL.
+*/
+CAMLextern char* caml_stat_strdup_noexc_of_utf16(const wchar_t *s);
+
 /* [caml_stat_strdup_of_utf16(s)] returns a null-terminated copy of [s],
    re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero or
    the current Windows code page otherwise.
 
-   The returned string is allocated with [caml_stat_alloc], so it should be free
-   using [caml_stat_free].
+   The returned string is allocated with [caml_stat_alloc_noexc], so
+   it should be freed using [caml_stat_free].
+
+   If allocation fails, this raises Out_of_memory.
 */
 CAMLextern char* caml_stat_strdup_of_utf16(const wchar_t *s);
 

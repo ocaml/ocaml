@@ -42,9 +42,6 @@ void caml_stop_here (void)
 {
 }
 
-char * caml_instr_string (code_t pc);
-
-
 void
 caml_event_trace(code_t pc)
 {
@@ -91,8 +88,13 @@ void caml_disasm_instr(code_t pc)
     snprintf(buf, sizeof(buf), "%s %d, %d\n", opbuf, pc[0], pc[1]); break;
     /* Instructions with a C primitive as operand */
   case C_CALLN:
-    snprintf(buf, sizeof(buf), "%s %d,", opbuf, pc[0]); pc++;
-    fallthrough;
+    if (pc[1] < 0 || pc[1] >= caml_prim_name_table.size)
+      snprintf(buf, sizeof(buf), "%s %d, unknown primitive %d\n", opbuf, pc[0],
+               pc[1]);
+    else
+      snprintf(buf, sizeof(buf), "%s %d, %s\n", opbuf, pc[0],
+               (char *) caml_prim_name_table.contents[pc[1]]);
+    break;
   case C_CALL1: case C_CALL2: case C_CALL3: case C_CALL4: case C_CALL5:
     if (pc[0] < 0 || pc[0] >= caml_prim_name_table.size)
       snprintf(buf, sizeof(buf), "%s unknown primitive %d\n", opbuf, pc[0]);

@@ -619,6 +619,9 @@ let mk_dtypedtree f =
 let mk_dshape f =
   "-dshape", Arg.Unit f, " (undocumented)"
 
+let mk_dmatchcomp f =
+  "-dmatchcomp", Arg.Unit f, " (undocumented)"
+
 let mk_drawlambda f =
   "-drawlambda", Arg.Unit f, " (undocumented)"
 
@@ -818,6 +821,7 @@ module type Core_options = sig
   val _dparsetree : unit -> unit
   val _dtypedtree : unit -> unit
   val _dshape : unit -> unit
+  val _dmatchcomp : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
 
@@ -1122,6 +1126,7 @@ struct
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
     mk_dshape F._dshape;
+    mk_dmatchcomp F._dmatchcomp;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
@@ -1196,6 +1201,7 @@ struct
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
     mk_dshape F._dshape;
+    mk_dmatchcomp F._dmatchcomp;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
@@ -1335,6 +1341,7 @@ struct
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
     mk_dshape F._dshape;
+    mk_dmatchcomp F._dmatchcomp;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_drawclambda F._drawclambda;
@@ -1452,6 +1459,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
     mk_dshape F._dshape;
+    mk_dmatchcomp F._dmatchcomp;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_drawclambda F._drawclambda;
@@ -1623,6 +1631,7 @@ module Default = struct
     let _dsource = set dump_source
     let _dtypedtree = set dump_typedtree
     let _dshape = set dump_shape
+    let _dmatchcomp = set dump_matchcomp
     let _dunique_ids = set unique_ids
     let _dno_unique_ids = clear unique_ids
     let _dlocations = set locations

@@ -1,5 +1,67 @@
 Working version
-_______________
+---------------
+
+(Changes that can break existing programs are marked with a "*")
+
+### Language features:
+
+### Runtime system:
+
+- #13437: Stop using GetProcAddress to load functions that were not
+  available in older, now unsupported Windows versions.
+  (Antonin Décimo, review by Nicolás Ojeda Bär and David Allsopp)
+
+### Code generation and optimizations:
+
+### Standard library:
+
+### Other libraries:
+
+- #13429: add `Unix.sigwait`, a binding to the `sigwait` system call;
+  implement `Thread.wait_signal` using `Unix.sigwait`, and
+  `Thread.sigmask` using `Unix.sigprocmask`.
+  (Xavier Leroy, review by Antonin Décimo, Gabriel Scherer, Miod Vallat)
+
+- #13442, #13452: Fix Unix.getgroups for users belonging to more than 32 groups
+  when using musl
+  (Kate Deplaix, review by Gabriel Scherer, Antonin Décimo, Anil Madhavapeddy)
+
+* #13435: On Windows, use system calls for `Filename.get_temp_dir_name` instead
+  of directly reading the environment, which in particular improves the security
+  of OCaml processes running in the SYSTEM security context by mitigating
+  privileged file operation attacks. For all other processes running with the
+  default environment (where `TEMP` is set), there is no discernible change.
+  (Antonin Décimo, review by Nicolás Ojeda Bär and David Allsopp)
+
+### Tools:
+
+### Manual and documentation:
+
+### Compiler user-interface and warnings:
+
+- #13428: support dump=[source | parsetree | lambda | ... | cmm | ...]
+  in OCAMLRUNPARAM
+  (Gabriel Scherer, review by Vincent Laviron)
+
+### Internal/compiler-libs changes:
+
+- #13425: undocumented -dmatchcomp flag for the debug
+  output of the pattern-matching compiler
+  (Gabriel Scherer, review by Vincent Laviron and Nicolás Ojeda Bär)
+
+### Build system:
+
+### Bug fixes:
+
+- #13408: Fix misplaced debug runtime assertion triggerable by a race
+  between domain exit and backup thread
+  (Miod Vallat and Gabriel Scherer, report by Jan Midtgaard)
+
+- #13454: Output a correct trace of the C_CALLN bytecode.
+  (Miod Vallat, review by Antonin Décimo)
+
+OCaml 5.3.0
+___________
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -15,7 +77,7 @@ _______________
 
 ### Language features:
 
-- #12828, #13282: Add short syntax for dependent functor types `(X:A) -> ...`
+- #12828, #13283: Add short syntax for dependent functor types `(X:A) -> ...`
   (Jeremy Yallop, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
 - Add syntax support for deep effect handlers
@@ -29,6 +91,19 @@ _______________
   (Jacques Garrigue, report and review by Gabriel Scherer and Florian Angeletti)
 
 ### Runtime system:
+
+- #13419: Fix memory bugs in runtime events system.
+  (B. Szilvasy and Nick Barnes, review by Miod Vallat, Nick Barnes,
+   Tim McGilchrist, and Gabriel Scherer)
+
+- #13364: Emit major slice counters in the runtime events.
+  (KC Sivaramakrishnan and Sadiq Jaffer, review by Gabriel Scherer)
+
+- #13382: Add more documentation for Runtime_events types
+  (Sadiq Jaffer, review by Tim McGilchrist, Miod Vallat and KC Sivaramakrishnan)
+
+- #13370: Fix a low-probability crash when calling Gc.counters.
+  (Demi Marie Obenour, review by Gabriel Scherer)
 
 - #13272: Allow maximum number of domains to be specified as a OCAMLRUNPARAM
   parameter.
@@ -125,18 +200,27 @@ _______________
   runtime assertions.
   (Antonin Décimo, review by Miod Vallat, Gabriel Scherer, and David Allsopp)
 
+- #13352: Concurrency refactors and cleanups.
+  (Antonin Décimo, review by Gabriel Scherer, David Allsopp,
+   and Miod Vallat)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously
   unsupported native backends (POWER, riscv64 and s390x)
   (Miod Vallat, review by Nicolás Ojeda Bär)
 
-- #7241, #12555, #13076, #13138: fix a soundness bug in the
-  pattern-matching compiler when side-effects mutate the scrutinee
-  during matching.
-  Note that #7241 is not fully fixed yet, see the issue for the
-  current status.
+- #7241, #12555, #13076, #13138, #13338, #13152, #13153, #13154:
+  fix a soundness bug in the pattern-matching compiler
+  when side-effects mutate the scrutinee during matching.
   (Gabriel Scherer, review by Nick Roberts)
+
+- #13341: a warning when the pattern-matching compiler pessimizes code
+  because side-effects may mutate the scrutinee during
+  matching. (This warning is disabled by default, as this rarely
+  happens and its performance impact is typically not noticeable.)
+  (Gabriel Scherer, review by Nick Roberts, Florian Angeletti
+   and David Allsopp)
 
 - #13179: Fix evaluation of toplevel lets in classes containing
   local opens
@@ -144,6 +228,10 @@ _______________
    and Gabriel Scherer)
 
 ### Standard library:
+
+- #13310: Add Stdlib.Pair
+  (Victoire Noizet, review by Nicolás Ojeda Bär, Daniel Bünzli, Xavier Van de
+   Woestyne, Jeremy Yallop and Florian Angeletti)
 
 - #12884: Add `Queue.drop`
   (Léo Andrès, review by Nicolás Ojeda Bär and Gabriel Scherer)
@@ -247,6 +335,10 @@ _______________
 
 ### Manual and documentation:
 
+- #13370: Document that that temporary variables holding GCd pointers must
+  not be live across a GC.
+  (Demi Marie Obenour)
+
 - #12298: Manual: emphasize that Bigarray.int refers to an OCaml integer,
   which does not match the C int type.
   (Edwin Török, review by Florian Angeletti)
@@ -279,6 +371,10 @@ _______________
   page.
   (KC Sivaramakrishnan, review by Anil Madhavapeddy, Florian Angeletti and Miod
    Vallat)
+
+- #13424: Fix `Gc.quick_stat` documentation to clarify that returned fields
+  `live_words`, `live_blocks`, `free_words`, and `fragments` are not zero.
+  (Jan Midtgaard, review by Damien Doligez and KC Sivaramakrishnan)
 
 ### Compiler user-interface and warnings:
 
@@ -398,6 +494,11 @@ _______________
 
 - #13289: Use C99 for loop to reduce the scope of the for loop iterator.
   (Antonin Décimo, review by Miod Vallat and Gabriel Scherer)
+
+- #13308: keep track of relations between declaration in the cmt files. This is
+  useful information for external tools for navigation and analysis purposis.
+  (Ulysse Gérard, Florian Angeletti, review by Florian Angeletti and Gabriel
+  Scherer)
 
 - #13336: compiler-libs, split the `Printtyp` in three to only keep
   "user-friendly" functions in the `Printtyp` module.
@@ -545,6 +646,19 @@ _______________
   could sometimes, in theory, return the wrong answer. This patch fixes the
   oversight. No known program triggers the bug.
   (Richard Eisenberg, review by Florian Angeletti)
+
+- #13400: Initialize th->signal_stack to avoid free of uninitialized data
+  if the user calls caml_c_thread_unregister on the main thread.
+  (Richard W.M. Jones, review by Guillaume Munch-Maccagnoni and
+  Gabriel Scherer)
+
+- #13140: POWER back-end: fix issue with call to `caml_call_realloc_stack`
+  from a DLL
+  (Xavier Leroy, review by Miod Vallat)
+
+- #13417: `Filename.quote_command`: fix handling of forward slashes in program
+  path under Win32.
+  (Nicolás Ojeda Bär, review by David Allsopp and Damien Doligez)
 
 OCaml 5.2.0 (13 May 2024)
 -------------------------
@@ -2966,6 +3080,10 @@ OCaml 4.14 maintenance version
   (emitted for Linux in #8805)
   (Hannes Mehnert, review by Nicolás Ojeda Bär)
 
+- #13448, #13449: fix a code-generation bug on unsafe array accesses
+  at type int32, int64, nativeint, which has been introduced in OCaml 4.04.
+  (Gabriel Scherer, review by Nicolás Ojeda Bär and Vincent Laviron,
+   report by Raphaël Bocquet and Simon Cruanes)
 
 OCaml 4.14.1 (20 December 2022)
 ------------------------------
