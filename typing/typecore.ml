@@ -3900,7 +3900,8 @@ and type_expect_
             ty
       in
       let argl =
-        List.map (fun sarg -> type_expect env sarg (mk_expected ty_elt)) sargl in
+        List.map (fun sarg -> type_expect env sarg (mk_expected ty_elt)) sargl
+      in
       re {
         exp_desc = Texp_array argl;
         exp_loc = loc; exp_extra = [];
