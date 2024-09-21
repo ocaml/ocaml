@@ -95,7 +95,7 @@ Windows, see link:README.win32.adoc[].
 The OCaml manual is distributed in HTML, PDF, and Emacs
 Info files.  It is available at
 
-https://ocaml.org/releases/latest/manual.html
+https://ocaml.org/manual/latest/
 
 == Availability
 
