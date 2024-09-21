@@ -31,6 +31,8 @@ cat <<'EOF'
 #define CAML_INTERNALS
 #include "caml/mlvalues.h"
 #include "caml/prims.h"
+#include "caml/instruct.h"
+#include "caml/startup.h"
 
 EOF
 
@@ -61,3 +63,15 @@ echo
 echo 'const char * const caml_names_of_builtin_cprim[] = {'
 sed -e 's/.*/  "&",/' "$primitives"
 echo '  0 };'
+
+# Include stub values for caml_startup et al.
+cat <<'EOF'
+opcode_t caml_start_code[] = {STOP};
+asize_t caml_code_size = sizeof(caml_start_code);
+char * caml_marshalled_global_data = NULL;
+asize_t caml_marshalled_global_data_size = 0;
+char * caml_section_table = NULL;
+asize_t caml_section_table_size = 0;
+
+enum caml_byte_program_mode caml_byte_program_mode = APPENDED;
+EOF
