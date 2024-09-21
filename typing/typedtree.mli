@@ -91,7 +91,7 @@ and 'k pattern_desc =
             Invariant: n >= 2
          *)
   | Tpat_construct :
-      Longident.t loc * Types.constructor_description *
+      Longident.t loc * Data_types.constructor_description *
         value general_pattern list * (Ident.t loc list * core_type) option ->
       value pattern_desc
         (** C                             ([], None)
@@ -111,9 +111,12 @@ and 'k pattern_desc =
             See {!Types.row_desc} for an explanation of the last parameter.
          *)
   | Tpat_record :
-      (Longident.t loc * Types.label_description * value general_pattern) list *
-        closed_flag ->
-      value pattern_desc
+      (Longident.t loc
+       * Data_types.label_description
+       * value general_pattern
+      ) list
+      * closed_flag
+      -> value pattern_desc
         (** { l1=P1; ...; ln=Pn }     (flag = Closed)
             { l1=P1; ...; ln=Pn; _}   (flag = Open)
 
@@ -230,14 +233,14 @@ and expression_desc =
   | Texp_tuple of expression list
         (** (E1, ..., EN) *)
   | Texp_construct of
-      Longident.t loc * Types.constructor_description * expression list
+      Longident.t loc * Data_types.constructor_description * expression list
         (** C                []
             C E              [E]
             C (E1, ..., En)  [E1;...;En]
          *)
   | Texp_variant of label * expression option
   | Texp_record of {
-      fields : ( Types.label_description * record_label_definition ) array;
+      fields : ( Data_types.label_description * record_label_definition ) array;
       representation : Types.record_representation;
       extended_expression : expression option;
     }
@@ -252,9 +255,9 @@ and expression_desc =
               { fields = [| l1, Kept t1; l2 Override P2 |]; representation;
                 extended_expression = Some E0 }
         *)
-  | Texp_field of expression * Longident.t loc * Types.label_description
+  | Texp_field of expression * Longident.t loc * Data_types.label_description
   | Texp_setfield of
-      expression * Longident.t loc * Types.label_description * expression
+      expression * Longident.t loc * Data_types.label_description * expression
   | Texp_array of expression list
   | Texp_ifthenelse of expression * expression * expression option
   | Texp_sequence of expression * expression

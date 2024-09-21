@@ -568,6 +568,7 @@ typing/btype.cmo : \
     utils/misc.cmi \
     utils/local_store.cmi \
     typing/ident.cmi \
+    typing/data_types.cmi \
     parsing/asttypes.cmi \
     typing/btype.cmi
 typing/btype.cmx : \
@@ -576,11 +577,13 @@ typing/btype.cmx : \
     utils/misc.cmx \
     utils/local_store.cmx \
     typing/ident.cmx \
+    typing/data_types.cmx \
     parsing/asttypes.cmx \
     typing/btype.cmi
 typing/btype.cmi : \
     typing/types.cmi \
     typing/path.cmi \
+    typing/data_types.cmi \
     parsing/asttypes.cmi
 typing/cmt2annot.cmo : \
     typing/types.cmi \
@@ -630,6 +633,7 @@ typing/ctype.cmo : \
     utils/format_doc.cmi \
     typing/errortrace.cmi \
     typing/env.cmi \
+    typing/data_types.cmi \
     utils/clflags.cmi \
     typing/btype.cmi \
     parsing/asttypes.cmi \
@@ -648,6 +652,7 @@ typing/ctype.cmx : \
     utils/format_doc.cmx \
     typing/errortrace.cmx \
     typing/env.cmx \
+    typing/data_types.cmx \
     utils/clflags.cmx \
     typing/btype.cmx \
     parsing/asttypes.cmx \
@@ -661,13 +666,35 @@ typing/ctype.cmi : \
     typing/ident.cmi \
     typing/errortrace.cmi \
     typing/env.cmi \
+    typing/data_types.cmi \
     typing/btype.cmi \
+    parsing/asttypes.cmi
+typing/data_types.cmo : \
+    typing/types.cmi \
+    typing/path.cmi \
+    parsing/parsetree.cmi \
+    parsing/location.cmi \
+    parsing/asttypes.cmi \
+    typing/data_types.cmi
+typing/data_types.cmx : \
+    typing/types.cmx \
+    typing/path.cmx \
+    parsing/parsetree.cmi \
+    parsing/location.cmx \
+    parsing/asttypes.cmx \
+    typing/data_types.cmi
+typing/data_types.cmi : \
+    typing/types.cmi \
+    typing/path.cmi \
+    parsing/parsetree.cmi \
+    parsing/location.cmi \
     parsing/asttypes.cmi
 typing/datarepr.cmo : \
     typing/types.cmi \
     typing/path.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
+    typing/data_types.cmi \
     typing/btype.cmi \
     parsing/asttypes.cmi \
     typing/datarepr.cmi
@@ -676,6 +703,7 @@ typing/datarepr.cmx : \
     typing/path.cmx \
     parsing/location.cmx \
     typing/ident.cmx \
+    typing/data_types.cmx \
     typing/btype.cmx \
     parsing/asttypes.cmx \
     typing/datarepr.cmi
@@ -683,7 +711,8 @@ typing/datarepr.cmi : \
     parsing/unit_info.cmi \
     typing/types.cmi \
     typing/path.cmi \
-    typing/ident.cmi
+    typing/ident.cmi \
+    typing/data_types.cmi
 typing/env.cmo : \
     utils/warnings.cmi \
     parsing/unit_info.cmi \
@@ -702,6 +731,7 @@ typing/env.cmo : \
     typing/ident.cmi \
     utils/format_doc.cmi \
     typing/datarepr.cmi \
+    typing/data_types.cmi \
     file_formats/cmi_format.cmi \
     utils/clflags.cmi \
     parsing/builtin_attributes.cmi \
@@ -726,6 +756,7 @@ typing/env.cmx : \
     typing/ident.cmx \
     utils/format_doc.cmx \
     typing/datarepr.cmx \
+    typing/data_types.cmx \
     file_formats/cmi_format.cmx \
     utils/clflags.cmx \
     parsing/builtin_attributes.cmx \
@@ -745,6 +776,7 @@ typing/env.cmi : \
     utils/load_path.cmi \
     typing/ident.cmi \
     utils/format_doc.cmi \
+    typing/data_types.cmi \
     file_formats/cmi_format.cmi \
     parsing/asttypes.cmi
 typing/envaux.cmo : \
@@ -1176,6 +1208,7 @@ typing/parmatch.cmo : \
     typing/ident.cmi \
     utils/format_doc.cmi \
     typing/env.cmi \
+    typing/data_types.cmi \
     typing/ctype.cmi \
     typing/btype.cmi \
     parsing/asttypes.cmi \
@@ -1197,6 +1230,7 @@ typing/parmatch.cmx : \
     typing/ident.cmx \
     utils/format_doc.cmx \
     typing/env.cmx \
+    typing/data_types.cmx \
     typing/ctype.cmx \
     typing/btype.cmx \
     parsing/asttypes.cmx \
@@ -1207,6 +1241,7 @@ typing/parmatch.cmi : \
     parsing/parsetree.cmi \
     parsing/location.cmi \
     typing/env.cmi \
+    typing/data_types.cmi \
     parsing/asttypes.cmi
 typing/path.cmo : \
     parsing/lexer.cmi \
@@ -1228,6 +1263,7 @@ typing/patterns.cmo : \
     parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    typing/data_types.cmi \
     typing/ctype.cmi \
     parsing/asttypes.cmi \
     typing/patterns.cmi
@@ -1238,6 +1274,7 @@ typing/patterns.cmx : \
     parsing/location.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    typing/data_types.cmx \
     typing/ctype.cmx \
     parsing/asttypes.cmx \
     typing/patterns.cmi
@@ -1246,6 +1283,7 @@ typing/patterns.cmi : \
     typing/typedtree.cmi \
     parsing/longident.cmi \
     typing/ident.cmi \
+    typing/data_types.cmi \
     parsing/asttypes.cmi
 typing/persistent_env.cmo : \
     utils/warnings.cmi \
@@ -1328,17 +1366,17 @@ typing/primitive.cmi : \
     typing/outcometree.cmi \
     parsing/location.cmi
 typing/printpat.cmo : \
-    typing/types.cmi \
     typing/typedtree.cmi \
     typing/ident.cmi \
     utils/format_doc.cmi \
+    typing/data_types.cmi \
     parsing/asttypes.cmi \
     typing/printpat.cmi
 typing/printpat.cmx : \
-    typing/types.cmx \
     typing/typedtree.cmx \
     typing/ident.cmx \
     utils/format_doc.cmx \
+    typing/data_types.cmx \
     parsing/asttypes.cmx \
     typing/printpat.cmi
 typing/printpat.cmi : \
@@ -1678,6 +1716,7 @@ typing/typecore.cmo : \
     typing/errortrace_report.cmi \
     typing/errortrace.cmi \
     typing/env.cmi \
+    typing/data_types.cmi \
     typing/ctype.cmi \
     file_formats/cmt_format.cmi \
     utils/clflags.cmi \
@@ -1715,6 +1754,7 @@ typing/typecore.cmx : \
     typing/errortrace_report.cmx \
     typing/errortrace.cmx \
     typing/env.cmx \
+    typing/data_types.cmx \
     typing/ctype.cmx \
     file_formats/cmt_format.cmx \
     utils/clflags.cmx \
@@ -1734,6 +1774,7 @@ typing/typecore.cmi : \
     typing/ident.cmi \
     typing/errortrace.cmi \
     typing/env.cmi \
+    typing/data_types.cmi \
     parsing/asttypes.cmi
 typing/typedecl.cmo : \
     utils/warnings.cmi \
@@ -1954,6 +1995,7 @@ typing/typedtree.cmo : \
     parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    typing/data_types.cmi \
     parsing/asttypes.cmi \
     typing/typedtree.cmi
 typing/typedtree.cmx : \
@@ -1967,6 +2009,7 @@ typing/typedtree.cmx : \
     parsing/location.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    typing/data_types.cmx \
     parsing/asttypes.cmx \
     typing/typedtree.cmi
 typing/typedtree.cmi : \
@@ -1980,6 +2023,7 @@ typing/typedtree.cmi : \
     parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    typing/data_types.cmi \
     parsing/asttypes.cmi
 typing/typemod.cmo : \
     utils/warnings.cmi \
@@ -4423,6 +4467,7 @@ lambda/matching.cmo : \
     typing/ident.cmi \
     typing/env.cmi \
     lambda/debuginfo.cmi \
+    typing/data_types.cmi \
     utils/clflags.cmi \
     typing/btype.cmi \
     parsing/asttypes.cmi \
@@ -4446,6 +4491,7 @@ lambda/matching.cmx : \
     typing/ident.cmx \
     typing/env.cmx \
     lambda/debuginfo.cmx \
+    typing/data_types.cmx \
     utils/clflags.cmx \
     typing/btype.cmx \
     parsing/asttypes.cmx \
@@ -4638,6 +4684,7 @@ lambda/translcore.cmo : \
     utils/format_doc.cmi \
     typing/env.cmi \
     lambda/debuginfo.cmi \
+    typing/data_types.cmi \
     utils/config.cmi \
     utils/clflags.cmi \
     typing/btype.cmi \
@@ -4665,6 +4712,7 @@ lambda/translcore.cmx : \
     utils/format_doc.cmx \
     typing/env.cmx \
     lambda/debuginfo.cmx \
+    typing/data_types.cmx \
     utils/config.cmx \
     utils/clflags.cmx \
     typing/btype.cmx \
@@ -4761,7 +4809,6 @@ lambda/translobj.cmi : \
     typing/ident.cmi \
     typing/env.cmi
 lambda/translprim.cmo : \
-    typing/types.cmi \
     typing/typeopt.cmi \
     typing/typedtree.cmi \
     typing/primitive.cmi \
@@ -4780,7 +4827,6 @@ lambda/translprim.cmo : \
     parsing/asttypes.cmi \
     lambda/translprim.cmi
 lambda/translprim.cmx : \
-    typing/types.cmx \
     typing/typeopt.cmx \
     typing/typedtree.cmx \
     typing/primitive.cmx \
@@ -4870,6 +4916,7 @@ file_formats/cmt_format.cmo : \
     parsing/lexer.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    typing/data_types.cmi \
     utils/config.cmi \
     utils/compression.cmi \
     file_formats/cmi_format.cmi \
@@ -4893,6 +4940,7 @@ file_formats/cmt_format.cmx : \
     parsing/lexer.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    typing/data_types.cmx \
     utils/config.cmx \
     utils/compression.cmx \
     file_formats/cmi_format.cmx \
@@ -7251,6 +7299,7 @@ toplevel/genprintval.cmo : \
     utils/format_doc.cmi \
     typing/env.cmi \
     typing/datarepr.cmi \
+    typing/data_types.cmi \
     typing/ctype.cmi \
     typing/btype.cmi \
     toplevel/genprintval.cmi
@@ -7271,6 +7320,7 @@ toplevel/genprintval.cmx : \
     utils/format_doc.cmx \
     typing/env.cmx \
     typing/datarepr.cmx \
+    typing/data_types.cmx \
     typing/ctype.cmx \
     typing/btype.cmx \
     toplevel/genprintval.cmi
@@ -7385,6 +7435,7 @@ toplevel/topdirs.cmo : \
     typing/ident.cmi \
     typing/env.cmi \
     bytecomp/dll.cmi \
+    typing/data_types.cmi \
     typing/ctype.cmi \
     utils/config.cmi \
     driver/compenv.cmi \
@@ -7411,6 +7462,7 @@ toplevel/topdirs.cmx : \
     typing/ident.cmx \
     typing/env.cmx \
     bytecomp/dll.cmx \
+    typing/data_types.cmx \
     typing/ctype.cmx \
     utils/config.cmx \
     driver/compenv.cmx \

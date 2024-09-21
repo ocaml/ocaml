@@ -90,6 +90,7 @@
 open Misc
 open Asttypes
 open Types
+open Data_types
 open Typedtree
 open Lambda
 open Parmatch
@@ -117,7 +118,7 @@ let pp_partial ppf = function
 *)
 
 module MayCompat = Parmatch.Compat (struct
-  let equal = Types.may_equal_constr
+  let equal = Data_types.may_equal_constr
 end)
 
 let may_compat = MayCompat.compat
@@ -436,7 +437,7 @@ let matcher discr (p : Simple.pattern) rem =
       (* NB: may_equal_constr considers (potential) constructor rebinding;
           Types.may_equal_constr does check that the arities are the same,
           preserving row-size coherence. *)
-      yesif (Types.may_equal_constr cstr cstr')
+      yesif (Data_types.may_equal_constr cstr cstr')
   | Construct _, (Constant _ | Variant _ | Lazy | Array _ | Record _ | Tuple _)
     ->
       no ()
@@ -1403,7 +1404,7 @@ let can_group discr pat =
          submatrix for each syntactically-distinct constructor (with a threading
          of exits such that each submatrix falls back to the
          potentially-compatible submatrices below it).  *)
-      Types.equal_tag discr_tag pat_cstr.cstr_tag
+      Data_types.equal_tag discr_tag pat_cstr.cstr_tag
   | Construct _, Construct _
   | Tuple _, (Tuple _ | Any)
   | Record _, (Record _ | Any)
@@ -2058,7 +2059,7 @@ let get_expr_args_constr ~scopes head { arg; mut; _ } rem =
 let divide_constructor ~scopes ctx pm =
   divide
     (get_expr_args_constr ~scopes)
-    (fun cstr1 cstr2 -> Types.equal_tag cstr1.cstr_tag cstr2.cstr_tag)
+    (fun cstr1 cstr2 -> Data_types.equal_tag cstr1.cstr_tag cstr2.cstr_tag)
     get_key_constr
     get_pat_args_constr
     ctx pm

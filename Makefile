@@ -119,6 +119,7 @@ typing_SOURCES = \
   typing/outcometree.mli \
   typing/shape.mli typing/shape.ml \
   typing/types.mli typing/types.ml \
+  typing/data_types.mli typing/data_types.ml \
   typing/rawprinttyp.mli typing/rawprinttyp.ml \
   typing/gprinttyp.mli typing/gprinttyp.ml \
   typing/btype.mli typing/btype.ml \

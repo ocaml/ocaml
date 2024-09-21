@@ -17,6 +17,7 @@
 
 open Asttypes
 open Types
+open Data_types
 
 open Local_store
 

@@ -22,6 +22,7 @@ open Misc
 open Asttypes
 open Parsetree
 open Types
+open Data_types
 open Typedtree
 open Btype
 open Ctype

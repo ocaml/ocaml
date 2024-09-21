@@ -16,6 +16,7 @@
 (* Environment handling *)
 
 open Types
+open Data_types
 open Misc
 
 type value_unbound_reason =

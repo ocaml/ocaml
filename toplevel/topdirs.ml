@@ -18,6 +18,7 @@
 open Format
 open Misc
 open Types
+open Data_types
 open Toploop
 
 let error_fmt () =

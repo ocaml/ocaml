@@ -18,6 +18,7 @@
 
 open Asttypes
 open Types
+open Data_types
 open Btype
 
 (* Simplified version of Ctype.free_vars *)

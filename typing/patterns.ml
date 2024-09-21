@@ -16,6 +16,7 @@
 
 open Asttypes
 open Types
+open Data_types
 open Typedtree
 
 (* useful pattern auxiliary functions *)

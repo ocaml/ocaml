@@ -158,16 +158,16 @@ let iter_on_occurrences
   in
   let add_constructor_description env lid =
     function
-    | { Types.cstr_tag = Cstr_extension (path, _); _ } ->
+    | { Data_types.cstr_tag = Cstr_extension (path, _); _ } ->
         f ~namespace:Extension_constructor env path lid
-    | { Types.cstr_uid = Predef name; _} ->
+    | { Data_types.cstr_uid = Predef name; _} ->
         let id = List.assoc name Predef.builtin_idents in
         f ~namespace:Constructor env (Pident id) lid
-    | { Types.cstr_res; cstr_name; _ } ->
+    | { Data_types.cstr_res; cstr_name; _ } ->
         let path = path_in_type cstr_res cstr_name in
         Option.iter (fun path -> f ~namespace:Constructor env path lid) path
   in
-  let add_label env lid { Types.lbl_name; lbl_res; _ } =
+  let add_label env lid { Data_types.lbl_name; lbl_res; _ } =
     let path = path_in_type lbl_res lbl_name in
     Option.iter (fun path -> f ~namespace:Label env path lid) path
   in

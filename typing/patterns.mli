@@ -17,6 +17,7 @@
 open Asttypes
 open Typedtree
 open Types
+open Data_types
 
 val omega : pattern
 (** aka. "Tpat_any" or "_"  *)

@@ -21,6 +21,7 @@ open Asttypes
 open Longident
 open Path
 open Types
+open Data_types
 
 open Local_store
 

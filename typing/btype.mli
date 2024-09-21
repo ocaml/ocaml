@@ -17,6 +17,7 @@
 
 open Asttypes
 open Types
+open Data_types
 
 (**** Sets, maps and hashtables of types ****)
 
@@ -308,4 +309,4 @@ val instance_variable_type : label -> class_signature -> type_expr
 
 (**** Type information getter ****)
 
-val cstr_type_path : constructor_description -> Path.t
+val cstr_type_path : Data_types.constructor_description -> Path.t
