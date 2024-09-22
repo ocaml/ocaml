@@ -701,6 +701,7 @@ typing/data_types.cmo : \
     typing/path.cmi \
     parsing/parsetree.cmi \
     parsing/location.cmi \
+    typing/head_shape_types.cmi \
     parsing/asttypes.cmi \
     typing/data_types.cmi
 typing/data_types.cmx : \
@@ -708,6 +709,7 @@ typing/data_types.cmx : \
     typing/path.cmx \
     parsing/parsetree.cmi \
     parsing/location.cmx \
+    typing/head_shape_types.cmx \
     parsing/asttypes.cmx \
     typing/data_types.cmi
 typing/data_types.cmi : \
@@ -715,6 +717,7 @@ typing/data_types.cmi : \
     typing/path.cmi \
     parsing/parsetree.cmi \
     parsing/location.cmi \
+    typing/head_shape_types.cmi \
     parsing/asttypes.cmi
 typing/datarepr.cmo : \
     typing/types.cmi \
@@ -722,6 +725,7 @@ typing/datarepr.cmo : \
     parsing/location.cmi \
     typing/ident.cmi \
     typing/data_types.cmi \
+    parsing/builtin_attributes.cmi \
     typing/btype.cmi \
     parsing/asttypes.cmi \
     typing/datarepr.cmi
@@ -731,6 +735,7 @@ typing/datarepr.cmx : \
     parsing/location.cmx \
     typing/ident.cmx \
     typing/data_types.cmx \
+    parsing/builtin_attributes.cmx \
     typing/btype.cmx \
     parsing/asttypes.cmx \
     typing/datarepr.cmi
@@ -925,6 +930,7 @@ typing/gprinttyp.cmi : \
 typing/head_shape.cmo : \
     typing/types.cmi \
     typing/predef.cmi \
+    parsing/location.cmi \
     typing/head_shape_types.cmi \
     typing/env.cmi \
     typing/data_types.cmi \
@@ -935,6 +941,7 @@ typing/head_shape.cmo : \
 typing/head_shape.cmx : \
     typing/types.cmx \
     typing/predef.cmx \
+    parsing/location.cmx \
     typing/head_shape_types.cmx \
     typing/env.cmx \
     typing/data_types.cmx \
@@ -943,6 +950,7 @@ typing/head_shape.cmx : \
     typing/btype.cmx \
     typing/head_shape.cmi
 typing/head_shape.cmi : \
+    typing/types.cmi \
     typing/path.cmi \
     typing/head_shape_types.cmi \
     typing/env.cmi
@@ -1436,16 +1444,23 @@ typing/primitive.cmi : \
 typing/print_head_shape.cmo : \
     typing/typedtree.cmi \
     typing/tast_iterator.cmi \
-    typing/head_shape.cmi \
+    typing/path.cmi \
+    typing/head_shape_types.cmi \
+    utils/format_doc.cmi \
     typing/print_head_shape.cmi
 typing/print_head_shape.cmx : \
     typing/typedtree.cmx \
     typing/tast_iterator.cmx \
-    typing/head_shape.cmx \
+    typing/path.cmx \
+    typing/head_shape_types.cmx \
+    utils/format_doc.cmx \
     typing/print_head_shape.cmi
 typing/print_head_shape.cmi : \
     typing/typedtree.cmi \
-    typing/head_shape.cmi
+    typing/path.cmi \
+    typing/head_shape_types.cmi \
+    utils/format_doc.cmi \
+    typing/env.cmi
 typing/printpat.cmo : \
     typing/typedtree.cmi \
     typing/ident.cmi \
@@ -1919,6 +1934,7 @@ typing/typedecl.cmo : \
     lambda/lambda.cmi \
     typing/includecore.cmi \
     typing/ident.cmi \
+    typing/head_shape.cmi \
     utils/format_doc.cmi \
     typing/errortrace_report.cmi \
     typing/errortrace.cmi \
@@ -1962,6 +1978,7 @@ typing/typedecl.cmx : \
     lambda/lambda.cmx \
     typing/includecore.cmx \
     typing/ident.cmx \
+    typing/head_shape.cmx \
     utils/format_doc.cmx \
     typing/errortrace_report.cmx \
     typing/errortrace.cmx \
@@ -7203,6 +7220,7 @@ driver/compile_common.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
     typing/includemod.cmi \
+    typing/head_shape.cmi \
     typing/env.cmi \
     driver/compmisc.cmi \
     utils/clflags.cmi \
@@ -7225,6 +7243,7 @@ driver/compile_common.cmx : \
     utils/misc.cmx \
     parsing/location.cmx \
     typing/includemod.cmx \
+    typing/head_shape.cmx \
     typing/env.cmx \
     driver/compmisc.cmx \
     utils/clflags.cmx \
@@ -7582,6 +7601,7 @@ toplevel/topcommon.cmo : \
     parsing/lexer.cmi \
     typing/includemod.cmi \
     typing/ident.cmi \
+    typing/head_shape.cmi \
     toplevel/genprintval.cmi \
     utils/format_doc.cmi \
     typing/env.cmi \
@@ -7620,6 +7640,7 @@ toplevel/topcommon.cmx : \
     parsing/lexer.cmx \
     typing/includemod.cmx \
     typing/ident.cmx \
+    typing/head_shape.cmx \
     toplevel/genprintval.cmx \
     utils/format_doc.cmx \
     typing/env.cmx \

@@ -18,3 +18,12 @@ type t = Head_shape_types.shape
 
 (** Returns the head shape information of type path *)
 val of_type_path : Env.t -> Path.t -> t
+
+(** Check a new type declaration, that may be a variant type
+    containing unboxed constructors, to verify that the unboxing
+    requests respect the "disjointness" requirement of constructor
+    unboxing -- the values of two constructors must not conflict.
+
+   This function fails with an error if the declaration is
+   unsafe. *)
+val check_typedecl : Env.t -> Path.t * Types.type_declaration -> unit

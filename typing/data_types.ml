@@ -39,35 +39,37 @@ type constructor_description =
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
   | Cstr_block of int                   (* Regular constructor (a block) *)
-  | Cstr_unboxed                        (* Constructor of an unboxed type *)
+  | Cstr_unboxed of                     (* Constructor of an unboxed type *)
+      Head_shape_types.unboxed_cstr_description
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
 
 and type_data = {
   num_consts: int;                   (* Number of constant constructors *)
   num_nonconsts: int;                (* Number of non-const constructors *)
+  num_unboxed: int;                  (* Number of unboxed constructors *)
 }
 
-let equal_tag t1 t2 =
-  match (t1, t2) with
+let equal_constr cstr1 cstr2 =
+  match cstr1.cstr_tag, cstr2.cstr_tag with
   | Cstr_constant i1, Cstr_constant i2 -> i2 = i1
   | Cstr_block i1, Cstr_block i2 -> i2 = i1
-  | Cstr_unboxed, Cstr_unboxed -> true
+  | Cstr_unboxed _, Cstr_unboxed _ ->
+      String.equal cstr1.cstr_name cstr2.cstr_name
   | Cstr_extension (path1, _), Cstr_extension (path2, _) ->
       Path.same path1 path2
-  | (Cstr_constant _|Cstr_block _|Cstr_unboxed|Cstr_extension _), _ -> false
-
-let equal_constr c1 c2 =
-  equal_tag c1.cstr_tag c2.cstr_tag
+  | (Cstr_constant _|Cstr_block _|Cstr_unboxed _|Cstr_extension _), _ ->
+      false
 
 let may_equal_constr c1 c2 =
   c1.cstr_arity = c2.cstr_arity
   && (match c1.cstr_tag,c2.cstr_tag with
-     | Cstr_extension _,Cstr_extension _ ->
+     | Cstr_extension _, Cstr_extension _ ->
          (* extension constructors may be rebindings of each other *)
          true
-     | tag1, tag2 ->
-         equal_tag tag1 tag2)
+     | (Cstr_extension _ | Cstr_constant _ | Cstr_block _ | Cstr_unboxed _),
+       _ ->
+         equal_constr c1 c2)
 
 let cstr_res_type_path cstr =
   match get_desc cstr.cstr_res with

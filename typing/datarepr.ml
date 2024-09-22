@@ -21,6 +21,12 @@ open Types
 open Data_types
 open Btype
 
+(* TODO: register an error printer for this type. *)
+type error =
+  | Multiple_args_unboxed_constructor of Ident.t
+
+exception Error of Location.t * error
+
 (* Simplified version of Ctype.free_vars *)
 let free_vars ?(param=false) ty =
   let ret = ref TypeSet.empty in
@@ -100,15 +106,21 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
 
 let constructor_descrs ~current_unit ty_path decl cstrs rep =
   let ty_res = newgenconstr ty_path decl.type_params in
+  let variant_unboxed = Builtin_attributes.has_unboxed decl.type_attributes in
   let cstr_type_data =
-    let num_consts = ref 0 and num_nonconsts = ref 0 in
+    let num_consts = ref 0 and num_nonconsts = ref 0 and num_unboxed = ref 0 in
     List.iter
-      (fun {cd_args; _} ->
-        if cd_args = Cstr_tuple [] then incr num_consts else incr num_nonconsts)
+      (fun {cd_args; cd_attributes; _} ->
+        if cd_args = Cstr_tuple []
+        then incr num_consts
+        else if variant_unboxed || Builtin_attributes.has_unboxed cd_attributes
+        then incr num_unboxed
+        else incr num_nonconsts)
       cstrs;
     Some {
       num_consts = !num_consts;
       num_nonconsts = !num_nonconsts;
+      num_unboxed = !num_unboxed;
     }
   in
   let rec describe_constructors idx_const idx_nonconst = function
@@ -119,17 +131,23 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
           | Some ty_res' -> ty_res'
           | None -> ty_res
         in
+        (* A constructor is unboxed if the whole declaration has the
+           [@@unboxed] attr, or if it has the [@unboxed] attr *)
+        let cstr_is_unboxed = variant_unboxed ||
+                              Builtin_attributes.has_unboxed cd_attributes
+        in
         let (tag, descr_rem) =
-          match cd_args, rep with
-          | _, Variant_unboxed ->
-            assert (rem = []);
-            (Cstr_unboxed, [])
-          | Cstr_tuple [], Variant_regular ->
-             (Cstr_constant idx_const,
-              describe_constructors (idx_const+1) idx_nonconst rem)
-          | _, Variant_regular  ->
-             (Cstr_block idx_nonconst,
-              describe_constructors idx_const (idx_nonconst+1) rem) in
+          match cstr_is_unboxed, cd_args with
+          | true, Cstr_tuple [ty]
+          | true, Cstr_record [{ld_type=ty; _}] ->
+              (Cstr_unboxed (ignore ty; TODO),
+               describe_constructors idx_const idx_nonconst rem)
+          | true, _ ->
+              raise (Error (cd_loc, Multiple_args_unboxed_constructor cd_id))
+          | false, Cstr_tuple [] -> (Cstr_constant idx_const,
+                   describe_constructors (idx_const+1) idx_nonconst rem)
+          | false, _ -> (Cstr_block idx_nonconst,
+                   describe_constructors idx_const (idx_nonconst+1) rem) in
         let cstr_name = Ident.name cd_id in
         let existentials, cstr_args, cstr_inlined =
           let representation =
@@ -223,14 +241,14 @@ let label_descrs ty_res lbls repres priv =
 exception Constr_not_found
 
 let rec find_constr tag num_const num_nonconst = function
-    [] ->
+  | [] ->
       raise Constr_not_found
   | {cd_args = Cstr_tuple []; _} as c  :: rem ->
       if tag = Cstr_constant num_const
       then c
       else find_constr tag (num_const + 1) num_nonconst rem
   | c :: rem ->
-      if tag = Cstr_block num_nonconst || tag = Cstr_unboxed
+      if tag = Cstr_block num_nonconst
       then c
       else find_constr tag num_const (num_nonconst + 1) rem
 
