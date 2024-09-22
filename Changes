@@ -559,6 +559,10 @@ ___________
   in Float.Array.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
+- #13464: Use generic types in call to `subtype`. This improves
+  inference of type-directed disambiguation in principal mode.
+  (Richard Eisenberg, review by Jacques Garrigue)
+
 - #13507: A small refactoring to [free_vars] to make it a bit faster
   by not allocating a list when the list is not necessary.
   (Richard Eisenberg, review by Jacques Garrigue)
