@@ -39,13 +39,15 @@ type constructor_description =
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
   | Cstr_block of int                   (* Regular constructor (a block) *)
-  | Cstr_unboxed                        (* Constructor of an unboxed type *)
+  | Cstr_unboxed of                     (* Constructor of an unboxed type *)
+      Head_shape_types.unboxed_cstr_description
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
 
 and type_data = {
   num_consts: int;                   (* Number of constant constructors *)
   num_nonconsts: int;                (* Number of non-const constructors *)
+  num_unboxed: int;                  (* Number of unboxed constructors *)
 }
 
 (* Constructors are the same: they return (structurally)-equal values

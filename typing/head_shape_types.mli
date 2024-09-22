@@ -80,3 +80,5 @@ module Shape : sig
   val abstract : t
   val custom : t
 end
+
+type unboxed_cstr_description = TODO

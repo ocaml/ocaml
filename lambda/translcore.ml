@@ -299,7 +299,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
       end else begin match cstr.cstr_tag with
         Cstr_constant n ->
           Lconst(const_int n)
-      | Cstr_unboxed ->
+      | Cstr_unboxed _ ->
           (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->
           begin try
