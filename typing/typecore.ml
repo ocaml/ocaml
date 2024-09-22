@@ -4446,7 +4446,9 @@ and type_coerce
   match sty with
   | None ->
     let (cty', ty', force) =
-      Typetexp.transl_simple_type_delayed env sty'
+      with_local_level_generalize_structure begin fun () ->
+        Typetexp.transl_simple_type_delayed env sty'
+      end
     in
     let arg, arg_type, gen =
       let lv = get_current_level () in
@@ -4505,7 +4507,9 @@ and type_coerce
         end
       in
       begin try
-        let force'' = subtype env (instance ty) (instance ty') in
+        let force'' =
+          subtype env (generic_instance ty) (generic_instance ty')
+        in
         force (); force' (); force'' ()
       with Subtype err ->
         raise (Error (loc, env, Not_subtype err))
