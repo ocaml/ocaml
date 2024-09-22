@@ -447,89 +447,7 @@ extern void caml_install_invalid_parameter_handler(void);
 
 #endif
 
-/* Main entry point when code is linked in as initialized data */
-
-CAMLexport value caml_startup_code_exn_aux(int pooling, char_os **argv)
-{
-  char_os * exe_name;
-  value res;
-
-  /* Determine options */
-  caml_parse_ocamlrunparam();
-
-  if (caml_params->cleanup_on_exit)
-    pooling = 1;
-  if (!caml_startup_aux(pooling))
-    return Val_unit;
-
-  caml_init_codefrag();
-
-  caml_init_locale();
-#ifdef _MSC_VER
-  caml_install_invalid_parameter_handler();
-#endif
-  caml_init_custom_operations();
-  caml_init_os_params();
-  caml_ext_table_init(&caml_shared_libs_path, 8);
-
-  /* Initialize the abstract machine */
-  caml_init_gc ();
-
-  /* runtime_events has to be brought up after the gc */
-  CAML_RUNTIME_EVENTS_INIT();
-
-  exe_name = caml_executable_name();
-  if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
-
-  Caml_state->external_raise = NULL;
-  /* Setup signal handling */
-  caml_init_signals();
-  /* Initialize the interpreter */
-  caml_interprete(NULL, 0);
-  /* Initialize the debugger, if needed */
-  caml_debugger_init();
-  /* Load the code */
-  caml_init_code_fragments();
-  caml_init_debug_info();
-#ifdef THREADED_CODE
-  caml_thread_code(caml_start_code, caml_code_size);
-#endif
-  /* Use the builtin table of primitives */
-  caml_build_primitive_table_builtin();
-  /* Load the globals */
-  if (caml_marshalled_global_data_size > 0)
-    caml_modify_generational_global_root
-      (&caml_global_data,
-       caml_input_value_from_block(caml_marshalled_global_data,
-                                   caml_marshalled_global_data_size));
-  /* Initialize system libraries */
-  caml_sys_init(exe_name, argv);
-  /* Load debugging info, if b>=2 */
-  caml_load_main_debug_info();
-  /* ensure all globals are in major heap */
-  caml_minor_collection();
-  /* Execute the program */
-  caml_debugger(PROGRAM_START, Val_unit);
-  res = caml_interprete(caml_start_code, caml_code_size);
-  caml_terminate_signals();
-  return res;
-}
-
-CAMLexport void caml_startup_code_aux(int pooling, char_os **argv)
-{
-  value res;
-
-  res = caml_startup_code_exn_aux(pooling, argv);
-  if (Is_exception_result(res)) {
-    value exn = Extract_exception(res);
-    if (caml_debugger_in_use) {
-      Caml_state->current_stack->sp = &exn; /* The debugger needs the
-                                               exception value.*/
-      caml_debugger(UNCAUGHT_EXC, Val_unit);
-    }
-    caml_fatal_uncaught_exception(exn);
-  }
-}
+void caml_startup_code_aux(int, char_os **);;;;
 
 /* Main entry point when loading code from a file */
 
@@ -675,6 +593,90 @@ CAMLexport void caml_main(char_os **argv)
     caml_fatal_uncaught_exception(exn);
   }
   caml_terminate_signals();
+}
+
+/* Main entry point when code is linked in as initialized data */
+
+CAMLexport value caml_startup_code_exn_aux(int pooling, char_os **argv)
+{
+  char_os * exe_name;
+  value res;
+
+  /* Determine options */
+  caml_parse_ocamlrunparam();
+
+  if (caml_params->cleanup_on_exit)
+    pooling = 1;
+  if (!caml_startup_aux(pooling))
+    return Val_unit;
+
+  caml_init_codefrag();
+
+  caml_init_locale();
+#ifdef _MSC_VER
+  caml_install_invalid_parameter_handler();
+#endif
+  caml_init_custom_operations();
+  caml_init_os_params();
+  caml_ext_table_init(&caml_shared_libs_path, 8);
+
+  /* Initialize the abstract machine */
+  caml_init_gc ();
+
+  /* runtime_events has to be brought up after the gc */
+  CAML_RUNTIME_EVENTS_INIT();
+
+  exe_name = caml_executable_name();
+  if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
+
+  Caml_state->external_raise = NULL;
+  /* Setup signal handling */
+  caml_init_signals();
+  /* Initialize the interpreter */
+  caml_interprete(NULL, 0);
+  /* Initialize the debugger, if needed */
+  caml_debugger_init();
+  /* Load the code */
+  caml_init_code_fragments();
+  caml_init_debug_info();
+#ifdef THREADED_CODE
+  caml_thread_code(caml_start_code, caml_code_size);
+#endif
+  /* Use the builtin table of primitives */
+  caml_build_primitive_table_builtin();
+  /* Load the globals */
+  if (caml_marshalled_global_data_size > 0)
+    caml_modify_generational_global_root
+      (&caml_global_data,
+       caml_input_value_from_block(caml_marshalled_global_data,
+                                   caml_marshalled_global_data_size));
+  /* Initialize system libraries */
+  caml_sys_init(exe_name, argv);
+  /* Load debugging info, if b>=2 */
+  caml_load_main_debug_info();
+  /* ensure all globals are in major heap */
+  caml_minor_collection();
+  /* Execute the program */
+  caml_debugger(PROGRAM_START, Val_unit);
+  res = caml_interprete(caml_start_code, caml_code_size);
+  caml_terminate_signals();
+  return res;
+}
+
+CAMLexport void caml_startup_code_aux(int pooling, char_os **argv)
+{
+  value res;
+
+  res = caml_startup_code_exn_aux(pooling, argv);
+  if (Is_exception_result(res)) {
+    value exn = Extract_exception(res);
+    if (caml_debugger_in_use) {
+      Caml_state->current_stack->sp = &exn; /* The debugger needs the
+                                               exception value.*/
+      caml_debugger(UNCAUGHT_EXC, Val_unit);
+    }
+    caml_fatal_uncaught_exception(exn);
+  }
 }
 
 void caml_startup(char_os ** argv)
