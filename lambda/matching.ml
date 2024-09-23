@@ -1397,14 +1397,15 @@ let can_group discr pat =
   | Constant (Const_int64 _), Constant (Const_int64 _)
   | Constant (Const_nativeint _), Constant (Const_nativeint _) ->
       true
-  | Construct { cstr_tag = Cstr_extension _ as discr_tag }, Construct pat_cstr
+  | Construct { cstr_tag = Cstr_extension (p1, _) },
+    Construct { cstr_tag = Cstr_extension (p2, _) }
     ->
       (* Extension constructors with distinct names may be equal thanks to
          constructor rebinding. So we need to produce a specialized
          submatrix for each syntactically-distinct constructor (with a threading
          of exits such that each submatrix falls back to the
          potentially-compatible submatrices below it).  *)
-      Data_types.equal_tag discr_tag pat_cstr.cstr_tag
+      Path.same p1 p2
   | Construct _, Construct _
   | Tuple _, (Tuple _ | Any)
   | Record _, (Record _ | Any)
@@ -2059,7 +2060,7 @@ let get_expr_args_constr ~scopes head { arg; mut; _ } rem =
 let divide_constructor ~scopes ctx pm =
   divide
     (get_expr_args_constr ~scopes)
-    (fun cstr1 cstr2 -> Data_types.equal_tag cstr1.cstr_tag cstr2.cstr_tag)
+    Data_types.equal_constr
     get_key_constr
     get_pat_args_constr
     ctx pm
