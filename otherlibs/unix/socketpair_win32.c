@@ -12,9 +12,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* INIT_ONCE is only available from Windows Vista onwards */
-#define _WIN32_WINNT 0x0600 /* _WIN32_WINNT_VISTA */
-
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
@@ -38,52 +35,9 @@ extern const int caml_unix_socket_type_table[]; /* from socket.c */
 
 #else
 
-static INIT_ONCE get_temp_path_init_once = INIT_ONCE_STATIC_INIT;
-static BOOL CALLBACK get_temp_path_init_function(PINIT_ONCE InitOnce,
-                                                 PVOID Parameter,
-                                                 PVOID *lpContext)
-{
-  FARPROC pGetTempPath2A =
-    GetProcAddress(GetModuleHandle(L"KERNEL32.DLL"), "GetTempPath2A");
-  if (pGetTempPath2A)
-    *lpContext = pGetTempPath2A;
-  else
-    *lpContext = GetTempPathA;
-  return TRUE;
-}
-
-static bool gen_sun_path(char (*sun_path)[UNIX_PATH_MAX])
-{
-  DWORD (WINAPI *get_temp_path)(DWORD, LPSTR);
-  InitOnceExecuteOnce(&get_temp_path_init_once, get_temp_path_init_function,
-                      NULL, (LPVOID *) &get_temp_path);
-
-  /* sun_path is char *, not wchar_t */
-  DWORD len = get_temp_path(UNIX_PATH_MAX, *sun_path);
-  if (len == 0) {
-    caml_win32_maperr(GetLastError());
-    return false;
-  } else if (len > UNIX_PATH_MAX) {
-    /* Path to the temporary directory is too long. */
-    errno = ENOMEM; /* no clear error code */
-    return false;
-  }
-
-  /* Simpler and less limited than GetTempFileName */
-  LARGE_INTEGER ticks;
-  if (!QueryPerformanceCounter(&ticks)) {
-    caml_win32_maperr(GetLastError());
-    return false;
-  }
-  snprintf(*sun_path + len, UNIX_PATH_MAX - len,
-           "%" ARCH_INT64_PRINTF_FORMAT "x-%lu.sock",
-           ticks.QuadPart, GetCurrentThreadId());
-  return true;
-}
-
 static int socketpair(int domain, int type, int protocol,
                       SOCKET socket_vector[2],
-                      BOOL inherit)
+                      BOOL inherit, char *sun_path)
 {
   /* POSIX states that in case of error, the contents of socket_vector
      shall be unmodified. */
@@ -101,16 +55,11 @@ static int socketpair(int domain, int type, int protocol,
   union sock_addr_union addr = { 0 };
   socklen_param_type socklen = sizeof(addr.s_unix);
   addr.s_unix.sun_family = PF_UNIX;
+  memcpy(addr.s_unix.sun_path, sun_path, strlen(sun_path));
 
-  for (int retries = 3; retries > 0; retries--) {
-    if (!gen_sun_path(&addr.s_unix.sun_path))
-      goto fail_sockets;
-
-    rc = bind(listener, (struct sockaddr *) &addr, socklen);
-    if (rc == SOCKET_ERROR && WSAGetLastError() != WSAEADDRINUSE)
-      goto fail_wsa;
-    else break;
-  }
+  rc = bind(listener, (struct sockaddr *) &addr, socklen);
+  if (rc == SOCKET_ERROR && WSAGetLastError() != WSAEADDRINUSE)
+    goto fail_wsa;
   defer_delete_file = true;
 
   rc = listen(listener, 1);
@@ -176,10 +125,11 @@ fail_sockets:
   return SOCKET_ERROR;
 }
 
-CAMLprim value caml_unix_socketpair(value vcloexec, value vdomain, value vtype,
-                                    value vprotocol)
+CAMLprim value caml_win32_socketpair(value vsun_path, value vcloexec,
+                                     value vdomain, value vtype,
+                                     value vprotocol)
 {
-  CAMLparam4(vcloexec, vdomain, vtype, vprotocol);
+  CAMLparam5(vsun_path, vcloexec, vdomain, vtype, vprotocol);
   CAMLlocal1(result);
   SOCKET sv[2];
   int domain = caml_unix_socket_domain_table[Int_val(vdomain)];
@@ -190,10 +140,16 @@ CAMLprim value caml_unix_socketpair(value vcloexec, value vdomain, value vtype,
   if (domain != PF_UNIX)
     caml_unix_error(EOPNOTSUPP, "socketpair", Nothing);
 
+  caml_unix_check_path(vsun_path, "socketpair");
+  if (caml_string_length(vsun_path) + 1 > UNIX_PATH_MAX)
+    caml_unix_error(ENOENT, "socketpair", Nothing);
+  char *sun_path = caml_stat_strdup(String_val(vsun_path));
+
   caml_enter_blocking_section();
-  int rc = socketpair(domain, type, protocol, sv, inherit);
+  int rc = socketpair(domain, type, protocol, sv, inherit, sun_path);
   caml_leave_blocking_section();
 
+  caml_stat_free(sun_path);
   if (rc == SOCKET_ERROR)
     caml_uerror("socketpair", Nothing);
 
