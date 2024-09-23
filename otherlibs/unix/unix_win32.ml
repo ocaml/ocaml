@@ -712,10 +712,20 @@ type msg_flag =
 external socket :
   ?cloexec: bool -> socket_domain -> socket_type -> int -> file_descr
   = "caml_unix_socket"
+
 external socketpair :
-  ?cloexec: bool -> socket_domain -> socket_type -> int ->
-                                           file_descr * file_descr
-  = "caml_unix_socketpair"
+  sun_path: string -> ?cloexec: bool -> socket_domain -> socket_type -> int ->
+  file_descr * file_descr
+  = "caml_win32_socketpair"
+let socketpair ?cloexec socket_domain socket_type protocol =
+  let rec try_sun_path counter =
+    let sun_path = Filename.temp_file "ocaml" ".sock" in
+    unlink sun_path;
+    try socketpair ~sun_path ?cloexec socket_domain socket_type protocol
+    with Unix_error(EADDRINUSE, _, _) as e ->
+      if counter >= 3 then raise e else try_sun_path (counter + 1)
+  in try_sun_path 0
+
 external accept :
   ?cloexec: bool -> file_descr -> file_descr * sockaddr = "caml_unix_accept"
 external bind : file_descr -> sockaddr -> unit = "caml_unix_bind"
