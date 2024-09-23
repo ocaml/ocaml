@@ -122,7 +122,10 @@ type control =
         number is less than or equal to 1000, it is a percentage of
         the current heap size (i.e. setting it to 100 will double the heap
         size at each increase). If it is more than 1000, it is a fixed
-        number of words that will be added to the heap. Default: 15. *)
+        number of words that will be added to the heap.
+
+        This field is currently not available in OCaml 5: the field value is
+        always [0]. *)
 
     space_overhead : int;
     (** The major GC speed is computed from this parameter.
@@ -157,16 +160,19 @@ type control =
        compaction is triggered at the end of each major GC cycle
        (this setting is intended for testing purposes only).
        If [max_overhead >= 1000000], compaction is never triggered.
-       Default: 500. *)
+
+       This field is currently not available in OCaml 5: the field value is
+       always [0]. *)
 
     stack_limit : int;
     (** The maximum size of the fiber stacks (in words).
-       Default: 1024k. *)
+       Default: 128M. *)
 
     allocation_policy : int;
     (** The policy used for allocating in the major heap.
 
-        This option is ignored in OCaml 5.x.
+        This field is currently not available in OCaml 5: the field value is
+        always [0].
 
         Prior to OCaml 5.0, possible values were 0, 1 and 2.
 
@@ -182,8 +188,10 @@ type control =
     (** The size of the window used by the major GC for smoothing
         out variations in its workload. This is an integer between
         1 and 50.
-        Default: 1.
-        @since 4.03 *)
+        @since 4.03
+
+        This field is currently not available in OCaml 5: the field value is
+        always [0]. *)
 
     custom_major_ratio : int;
     (** Target ratio of floating garbage to major heap size for
@@ -257,14 +265,22 @@ external get : unit -> control = "caml_gc_get"
 [@@alert unsynchronized_access
     "GC parameters are a mutable global state."
 ]
-(** Return the current values of the GC parameters in a [control] record. *)
+(** Return the current values of the GC parameters in a [control] record.
+
+    The [major_heap_increment], [max_overhead], [allocation_policy], and
+    [window_size] fields are currently not available in OCaml 5: their returned
+    field values are therefore [0]. *)
 
 external set : control -> unit = "caml_gc_set"
 [@@alert unsynchronized_access
     "GC parameters are a mutable global state."
 ]
- (** [set r] changes the GC parameters according to the [control] record [r].
-   The normal usage is: [Gc.set { (Gc.get()) with Gc.verbose = 0x00d }] *)
+(** [set r] changes the GC parameters according to the [control] record [r].
+    The normal usage is: [Gc.set { (Gc.get()) with Gc.verbose = 0x00d }]
+
+    The [major_heap_increment], [max_overhead], [allocation_policy], and
+    [window_size] fields are currently not available in OCaml 5: setting them
+    therefore has no effect. *)
 
 external minor : unit -> unit = "caml_gc_minor"
 (** Trigger a minor collection. *)

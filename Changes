@@ -380,6 +380,10 @@ ___________
   `live_words`, `live_blocks`, `free_words`, and `fragments` are not zero.
   (Jan Midtgaard, review by Damien Doligez and KC Sivaramakrishnan)
 
+- #13440: Update documentation of `Gc.{control,get,set}` to reflect fields
+  not currently supported on OCaml 5.
+  (Jan Midtgaard, review by Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 * #12084: Check link order when creating archive and when using ocamlopt
