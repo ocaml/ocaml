@@ -36,12 +36,13 @@ type error =
   | Invalid_char_in_ident of Uchar.t
   | Non_lowercase_delimiter of string
   | Capitalized_raw_identifier of string
+  | Unknown_keyword of string
 
 exception Error of error * Location.t
 
 (* The table of keywords *)
 
-let keyword_table =
+let keyword_table_all =
   create_hashtable 149 [
     "and", AND;
     "as", AS;
@@ -103,6 +104,76 @@ let keyword_table =
     "lsr", INFIXOP4("lsr");
     "asr", INFIXOP4("asr")
 ]
+
+let refresh_keywords tbl =
+  Hashtbl.clear tbl;
+  Hashtbl.iter
+    (fun k v -> Hashtbl.replace tbl k (Some v))
+    keyword_table_all
+
+let keyword_table =
+  let tbl = Hashtbl.create 149 in
+  refresh_keywords tbl;
+  tbl
+
+let keyword_edition v =
+  Option.iter (fun v ->
+    if v < (5, 3) then
+      Hashtbl.remove keyword_table "effect"
+  ) v
+
+let parse_keyword_edition s =
+  let parse_version s =
+  if s = "" then None else match String.split_on_char '.' s with
+  | [] | [_] | _ :: _ :: _ :: _ ->
+    raise (Arg.Bad "Ill-formed version in keywords flag")
+  | [major;minor] -> match int_of_string_opt major, int_of_string_opt minor with
+    | Some major, Some minor -> Some (major,minor)
+    | _ -> raise (Arg.Bad "Ill-formed version in keywords flag")
+  in
+  let rec next pos len s =
+    if pos >= len then None
+    else if s.[pos] = '+' then Some (true,pos)
+    else if s.[pos] = '-' then Some (false,pos)
+    else next (pos+1) len s
+  in
+  let rec split (remove,add) kind pos len s =
+    match next (pos+1) len s with
+    | None ->
+      let last = String.sub s (pos+1) (len - pos - 1) in
+      if kind then remove, last :: add
+      else last::remove, add
+    | Some (next_kind, next_pos) ->
+      let sub = String.sub s (pos+1) (next_pos - 1 - pos) in
+      let modifiers =
+       if kind then remove, sub :: add
+       else sub :: remove, add
+      in
+      split modifiers next_kind next_pos len s
+    in
+    let len = String.length s in
+    match next 0 len s with
+    | None -> parse_version s, ([], [])
+    | Some (kind,pos) ->
+      let sub = String.sub s 0 pos in
+      parse_version sub, split ([],[]) kind pos len s
+
+let set_keyword_edition =
+  let keyword_last_edition = ref (None,[],[]) in
+  fun ~remove ~add edition ->
+  if (edition, remove, add) <> !keyword_last_edition then
+    begin match !keyword_last_edition with
+    | None, [], [] -> ()
+    | _ -> refresh_keywords keyword_table;
+    end;
+    keyword_last_edition := edition, remove, add;
+    keyword_edition edition;
+    List.iter (Hashtbl.remove keyword_table) remove;
+    List.iter (fun k ->
+    match Hashtbl.find keyword_table_all k with
+    | name -> Hashtbl.replace keyword_table k (Some name)
+    | exception Not_found -> Hashtbl.replace keyword_table k None
+    ) add
 
 (* To buffer string literals *)
 
@@ -294,7 +365,14 @@ let lax_delim raw_name =
      if Utf8_lexeme.is_lowercase name then Some name
      else None
 
-let is_keyword name = Hashtbl.mem keyword_table name
+let is_keyword name =
+  Hashtbl.mem keyword_table name
+
+let find_keyword lexbuf name =
+  match Hashtbl.find keyword_table name with
+  | Some x -> x
+  | None -> error lexbuf (Unknown_keyword name)
+  | exception Not_found -> LIDENT name
 
 let check_label_name ?(raw_escape=false) lexbuf name =
   if Utf8_lexeme.is_capitalized name then
@@ -395,6 +473,11 @@ let prepare_error loc = function
         "%a cannot be used as a quoted string delimiter,@ \
          it must contain only lowercase letters."
          Style.inline_code name
+  | Unknown_keyword name ->
+      Location.errorf ~loc
+      "%a has been marked as a future keyword,@ \
+      but this version of OCaml cannot handle it."
+      Style.inline_code name
 
 let () =
   Location.register_error_of_exn
@@ -489,8 +572,7 @@ rule token = parse
         OPTLABEL name
       }
   | lowercase identchar * as name
-      { try Hashtbl.find keyword_table name
-        with Not_found -> LIDENT name }
+      { find_keyword lexbuf name }
   | uppercase identchar * as name
       { UIDENT name } (* No capitalized keywords *)
   | (raw_ident_escape? as escape) (ident_ext as raw_name)
@@ -961,6 +1043,10 @@ and skip_hash_bang = parse
       loop NoLine Initial lexbuf
 
   let init () =
+    begin match Option.map parse_keyword_edition !Clflags.keyword_edition with
+    | None -> ()
+    | Some (edition,(remove,add)) -> set_keyword_edition ~remove ~add edition
+    end;
     is_in_string := false;
     comment_start_loc := [];
     comment_list := [];

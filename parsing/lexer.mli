@@ -40,6 +40,7 @@ type error =
   | Invalid_char_in_ident of Uchar.t
   | Non_lowercase_delimiter of string
   | Capitalized_raw_identifier of string
+  | Unknown_keyword of string
 
 exception Error of error * Location.t
 

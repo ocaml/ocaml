@@ -224,6 +224,8 @@ val set_dumped_pass : string -> bool -> unit
 val dump_into_file : bool ref
 val dump_dir : string option ref
 
+val keyword_edition: string option ref
+
 (* Support for flags that can also be set from an environment variable *)
 type 'a env_reader = {
   parse : string -> 'a option;
