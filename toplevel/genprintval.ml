@@ -403,10 +403,13 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
       and tree_of_lazy depth obj ty_arg =
         let obj_tag = O.tag obj in
-        (* Lazy values are represented in three possible ways:
+        (* Lazy values are represented in several possible ways:
 
             1. a lazy thunk that is not yet forced has tag
               Obj.lazy_tag
+
+            1bis. a lazy thunk that is in the process of
+               being forced has tag Obj.forcing_tag
 
             2. a lazy thunk that has just been forced has tag
               Obj.forward_tag; its first field is the forced
@@ -427,6 +430,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             an Obj module talking over a socket).
           *)
         if obj_tag = Obj.lazy_tag then Oval_stuff "<lazy>"
+        else if obj_tag = Obj.forcing_tag then Oval_stuff "<lazy (forcing)>"
         else begin
             let forced_obj =
               if obj_tag = Obj.forward_tag then O.field obj 0 else obj
