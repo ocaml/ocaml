@@ -568,7 +568,6 @@ typing/btype.cmo : \
     utils/misc.cmi \
     utils/local_store.cmi \
     typing/ident.cmi \
-    typing/data_types.cmi \
     parsing/asttypes.cmi \
     typing/btype.cmi
 typing/btype.cmx : \
@@ -577,13 +576,11 @@ typing/btype.cmx : \
     utils/misc.cmx \
     utils/local_store.cmx \
     typing/ident.cmx \
-    typing/data_types.cmx \
     parsing/asttypes.cmx \
     typing/btype.cmi
 typing/btype.cmi : \
     typing/types.cmi \
     typing/path.cmi \
-    typing/data_types.cmi \
     parsing/asttypes.cmi
 typing/cmt2annot.cmo : \
     typing/types.cmi \

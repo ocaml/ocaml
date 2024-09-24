@@ -5133,7 +5133,7 @@ and type_label_exp create env loc ty_expected
           (lid, label, sarg) =
   (* Here also ty_expected may be at generic_level *)
   let separate = !Clflags.principal || Env.has_local_constraints env in
-  let is_poly = label_is_poly label in
+  let is_poly = is_poly_Tpoly label.lbl_arg in
   let (vars, arg) =
     (* raise level to check univars *)
     with_local_level_generalize_if is_poly begin fun () ->
