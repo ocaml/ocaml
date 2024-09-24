@@ -131,44 +131,21 @@ let parse_keyword_edition s =
     | Some major, Some minor -> Some (major,minor)
     | _ -> raise (Arg.Bad "Ill-formed version in keywords flag")
   in
-  let rec next pos len s =
-    if pos >= len then None
-    else if s.[pos] = '+' then Some (true,pos)
-    else if s.[pos] = '-' then Some (false,pos)
-    else next (pos+1) len s
-  in
-  let rec split (remove,add) kind pos len s =
-    match next (pos+1) len s with
-    | None ->
-      let last = String.sub s (pos+1) (len - pos - 1) in
-      if kind then remove, last :: add
-      else last::remove, add
-    | Some (next_kind, next_pos) ->
-      let sub = String.sub s (pos+1) (next_pos - 1 - pos) in
-      let modifiers =
-       if kind then remove, sub :: add
-       else sub :: remove, add
-      in
-      split modifiers next_kind next_pos len s
-    in
-    let len = String.length s in
-    match next 0 len s with
-    | None -> parse_version s, ([], [])
-    | Some (kind,pos) ->
-      let sub = String.sub s 0 pos in
-      parse_version sub, split ([],[]) kind pos len s
+  match String.split_on_char '+' s with
+  | [] -> None, []
+  | [s] -> parse_version s, []
+  | v :: rest -> parse_version v, rest
 
 let set_keyword_edition =
-  let keyword_last_edition = ref (None,[],[]) in
-  fun ~remove ~add edition ->
-  if (edition, remove, add) <> !keyword_last_edition then
+  let keyword_last_edition = ref (None,[]) in
+  fun ~add edition ->
+  if (edition, add) <> !keyword_last_edition then
     begin match !keyword_last_edition with
-    | None, [], [] -> ()
+    | None, [] -> ()
     | _ -> refresh_keywords keyword_table;
     end;
-    keyword_last_edition := edition, remove, add;
+    keyword_last_edition := edition, add;
     keyword_edition edition;
-    List.iter (Hashtbl.remove keyword_table) remove;
     List.iter (fun k ->
     match Hashtbl.find keyword_table_all k with
     | name -> Hashtbl.replace keyword_table k (Some name)
@@ -1045,7 +1022,7 @@ and skip_hash_bang = parse
   let init () =
     begin match Option.map parse_keyword_edition !Clflags.keyword_edition with
     | None -> ()
-    | Some (edition,(remove,add)) -> set_keyword_edition ~remove ~add edition
+    | Some (edition, add) -> set_keyword_edition ~add edition
     end;
     is_in_string := false;
     comment_start_loc := [];
