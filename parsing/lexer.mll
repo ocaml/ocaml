@@ -115,12 +115,23 @@ let keyword_table =
   let tbl = Hashtbl.create 149 in
   refresh_keywords tbl;
   tbl
-
 let keyword_edition v =
-  Option.iter (fun v ->
-    if v < (5, 3) then
-      Hashtbl.remove keyword_table "effect"
-  ) v
+  if v < (3,7) then begin
+      Hashtbl.add keyword_table "parser" None;
+      if v < (1,0) then (
+        List.iter (Hashtbl.remove keyword_table)
+          ["class"; "inherit";"method";"new";"private";"constraint";"private";
+           "virtual"]
+      );
+      if v < (1,6) then (
+        Hashtbl.remove keyword_table "lazy";
+        Hashtbl.remove keyword_table "assert"
+      )
+    end;
+  if v < (4,2) then
+    Hashtbl.remove keyword_table "nonrec";
+  if v < (5, 3) then
+    Hashtbl.remove keyword_table "effect"
 
 let parse_keyword_edition s =
   let parse_version s =
@@ -148,7 +159,7 @@ let set_keyword_edition =
     | _ -> refresh_keywords keyword_table;
     end;
     keyword_last_edition := edition, add;
-    keyword_edition edition;
+    Option.iter keyword_edition edition;
     List.iter (fun k ->
     match Hashtbl.find keyword_table_all k with
     | name -> Hashtbl.replace keyword_table k (Some name)
