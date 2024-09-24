@@ -404,6 +404,7 @@ parsing/lexer.cmo : \
     parsing/location.cmi \
     utils/format_doc.cmi \
     parsing/docstrings.cmi \
+    utils/clflags.cmi \
     parsing/lexer.cmi
 parsing/lexer.cmx : \
     utils/warnings.cmx \
@@ -412,6 +413,7 @@ parsing/lexer.cmx : \
     parsing/location.cmx \
     utils/format_doc.cmx \
     parsing/docstrings.cmx \
+    utils/clflags.cmx \
     parsing/lexer.cmi
 parsing/lexer.cmi : \
     parsing/parser.cmi \
