@@ -1807,6 +1807,7 @@ typing/typedecl.cmo : \
     typing/errortrace_report.cmi \
     typing/errortrace.cmi \
     typing/env.cmi \
+    typing/data_types.cmi \
     typing/ctype.cmi \
     utils/config.cmi \
     utils/clflags.cmi \
@@ -1848,6 +1849,7 @@ typing/typedecl.cmx : \
     typing/errortrace_report.cmx \
     typing/errortrace.cmx \
     typing/env.cmx \
+    typing/data_types.cmx \
     typing/ctype.cmx \
     utils/config.cmx \
     utils/clflags.cmx \
@@ -9006,7 +9008,7 @@ ocamldoc/odoc_ast.cmo : \
     ocamldoc/odoc_class.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
-    typing/btype.cmi \
+    typing/data_types.cmi \
     parsing/asttypes.cmi \
     ocamldoc/odoc_ast.cmi
 ocamldoc/odoc_ast.cmx : \
@@ -9030,7 +9032,7 @@ ocamldoc/odoc_ast.cmx : \
     ocamldoc/odoc_class.cmx \
     parsing/location.cmx \
     typing/ident.cmx \
-    typing/btype.cmx \
+    typing/data_types.cmx \
     parsing/asttypes.cmx \
     ocamldoc/odoc_ast.cmi
 ocamldoc/odoc_ast.cmi : \

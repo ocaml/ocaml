@@ -61,6 +61,11 @@ let may_equal_constr c1 c2 =
      | tag1, tag2 ->
          equal_tag tag1 tag2)
 
+let cstr_res_type_path cstr =
+  match get_desc cstr.cstr_res with
+  | Tconstr (p, _, _) -> p
+  | _ -> assert false
+
 type label_description =
   { lbl_name: string;                   (* Short name *)
     lbl_res: type_expr;                 (* Type of the result *)

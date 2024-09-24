@@ -306,7 +306,3 @@ val method_type : label -> class_signature -> type_expr
 (* Return the type of an instance variable.
    @raises [Assert_failure] if the class has no such method. *)
 val instance_variable_type : label -> class_signature -> type_expr
-
-(**** Type information getter ****)
-
-val cstr_type_path : Data_types.constructor_description -> Path.t

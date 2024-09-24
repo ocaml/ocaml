@@ -448,7 +448,7 @@ let unify_pat ?sdesc_for_hint env pat expected_ty =
 
 (* unification of a type with a Tconstr with freshly created arguments *)
 let unify_head_only ~refine loc penv ty constr =
-  let path = cstr_type_path constr in
+  let path = cstr_res_type_path constr in
   let decl = Env.find_type path !!penv in
   let ty' = Ctype.newconstr path (Ctype.instance_list decl.type_params) in
   unify_pat_types_refine ~refine loc penv ty' ty
