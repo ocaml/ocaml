@@ -454,6 +454,22 @@ Keep documentation strings in generated .cmi files.
 .B \-keep-locs
 Keep locations in generated .cmi files.
 .TP
+.BI \-keywords " version+list"
+Set keywords according to the
+.IR version+list
+specification.
+
+This specification starts with an optional version number, defining the base
+set of keywords, followed by a
+.IR +
+separated list of supplementary keywords to add to this base set.
+Without an explicit version number, the base set of keywords is the
+set of keywords in the current version of OCaml.
+Supplementary keywords that does not match any known keyword in the current
+version of the compiler triggers an error whenever they are present in the
+source code.
+
+.TP
 .B \-labels
 Labels are not ignored in types, labels may be used in applications,
 and labelled parameters can be given in any order.  This is the default.

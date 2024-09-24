@@ -409,7 +409,12 @@ let mk_ppx f =
 
 let mk_keywords f =
   "-keywords", Arg.String f,
-  "<version><list>   use the same keywords as <version> extended by <list>"
+  "<version+list>  set keywords following the <version+list> spec:\n
+  \                -<version> if present specifies the base set of keywords\n
+  \                  (if absent the current set of keywords is used)
+  \                 -<list> is a \"+\"-separated list of keywords to add to\n
+  \                   the base set of keywords.
+  "
 
 let mk_plugin f =
   "-plugin", Arg.String f,
