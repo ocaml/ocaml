@@ -43,6 +43,11 @@ Working version
   in OCAMLRUNPARAM
   (Gabriel Scherer, review by Vincent Laviron)
 
+- #????: add "-keywords <version?+list>" flag to define the list of keywords
+  recognized by the lexer, for instance "-keywords 5.2" disable the "effect"
+  keyword.
+  (Florian Angeletti, ????)
+
 ### Internal/compiler-libs changes:
 
 - #13425: undocumented -dmatchcomp flag for the debug
