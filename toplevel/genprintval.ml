@@ -283,48 +283,11 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               match get_desc (Ctype.expand_head env ty) with
               | Tconstr(path, [ty_arg], _)
                 when Path.same path Predef.path_list ->
-                  if O.is_block obj then
-                    match check_depth depth obj ty with
-                      Some x -> x
-                    | None ->
-                        let rec tree_of_conses tree_list depth obj ty_arg =
-                          if !printer_steps < 0 || depth < 0 then
-                            Oval_ellipsis :: tree_list
-                          else if O.is_block obj then
-                            let tree = nest tree_of_val (depth - 1)
-                                          (O.field obj 0) ty_arg
-                            in
-                            let next_obj = O.field obj 1 in
-                            nest_gen (Oval_stuff "<cycle>" :: tree :: tree_list)
-                              (tree_of_conses (tree :: tree_list))
-                              depth next_obj ty_arg
-                          else tree_list
-                        in
-                        Oval_list
-                            (List.rev (tree_of_conses [] depth obj ty_arg))
-                  else
-                    Oval_list []
+                  tree_of_list depth obj ty_arg
 
               | Tconstr(path, [ty_arg], _)
                 when Path.same path Predef.path_array ->
-                  let length = O.size obj in
-                  if length > 0 then
-                    match check_depth depth obj ty with
-                      Some x -> x
-                    | None ->
-                        let rec tree_of_items tree_list i =
-                          if !printer_steps < 0 || depth < 0 then
-                            Oval_ellipsis :: tree_list
-                          else if i < length then
-                            let tree = nest tree_of_val (depth - 1)
-                                            (O.field obj i) ty_arg
-                            in
-                            tree_of_items (tree :: tree_list) (i + 1)
-                          else tree_list
-                        in
-                        Oval_array (List.rev (tree_of_items [] 0))
-                  else
-                    Oval_array []
+                  tree_of_array depth obj ty_arg
 
               | Tconstr(path, [], _)
                   when Path.same path Predef.path_string ->
@@ -451,6 +414,45 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           | Tpackage _ ->
               Oval_stuff "<module>"
         end
+
+      and tree_of_list depth obj ty_arg =
+        if not (O.is_block obj) then Oval_list []
+        else match check_depth depth obj ty with
+          | Some x -> x
+          | None ->
+              let rec tree_of_conses tree_list depth obj ty_arg =
+                if !printer_steps < 0 || depth < 0 then
+                  Oval_ellipsis :: tree_list
+                else if O.is_block obj then
+                  let tree = nest tree_of_val (depth - 1)
+                                (O.field obj 0) ty_arg
+                  in
+                  let next_obj = O.field obj 1 in
+                  nest_gen (Oval_stuff "<cycle>" :: tree :: tree_list)
+                    (tree_of_conses (tree :: tree_list))
+                    depth next_obj ty_arg
+                else tree_list
+              in
+              Oval_list
+                  (List.rev (tree_of_conses [] depth obj ty_arg))
+
+      and tree_of_array depth obj ty_arg =
+        let length = O.size obj in
+        if length = 0 then Oval_array []
+        else match check_depth depth obj ty with
+          | Some x -> x
+          | None ->
+              let rec tree_of_items tree_list i =
+                if !printer_steps < 0 || depth < 0 then
+                  Oval_ellipsis :: tree_list
+                else if i < length then
+                  let tree = nest tree_of_val (depth - 1)
+                                  (O.field obj i) ty_arg
+                  in
+                  tree_of_items (tree :: tree_list) (i + 1)
+                else tree_list
+              in
+              Oval_array (List.rev (tree_of_items [] 0))
 
       and tree_of_variant depth decl path ty_list obj constr_list rep =
         let unbx = (rep = Variant_unboxed) in
