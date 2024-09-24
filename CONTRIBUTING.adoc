@@ -9,9 +9,9 @@ pull request.
 
 This document assumes that you have a patch against the sources of the
 compiler distribution, that you wish to submit to the OCaml maintainers
-upstream. See INSTALL.adoc for details on how to build the compiler
-distribution from sources. See HACKING.adoc for details on how to modify
-the sources.
+upstream. See xref:INSTALL.adoc[] for details on how to build the
+compiler distribution from sources. See xref:HACKING.adoc[] for details
+on how to modify the sources.
 
 === Contribution
 
@@ -89,14 +89,14 @@ The current list of maintainers is as follows:
 ==== Releases
 
 For more information about when and how new releases are published, see
-link:release-info/introduction.md[the release introduction].
+xref:release-info/introduction.adoc[the release introduction].
 
 === Coding guidelines
 
 You should not leave trailing whitespace; not have line longer than 80
 columns, not use tab characters (spaces only), and not use non-ASCII
 characters. These typographical rules can be checked with the script
-`+tools/check-typo+`, see link:HACKING.adoc#check-typo[HACKING.adoc:
+`+tools/check-typo+`, see xref:HACKING.adoc#check-typo[HACKING.adoc:
 check-typo].
 
 Otherwise, there are no strongly enforced guidelines specific to the
@@ -125,8 +125,8 @@ affected features: regression tests for bug fixes, and correctness tests
 for new features (including corner cases and failure cases). Warnings
 and errors should also be tested.
 
-See testsuite/HACKING.adoc for details on how to write tests and run the
-testsuite.
+See xref:testsuite/HACKING.adoc[] for details on how to write tests and
+run the testsuite.
 
 Adding tests is also a way to make sure reviewers see working (and
 failing) examples of the feature you fix, extend or introduce, rather
@@ -178,7 +178,7 @@ at `+./api_docgen/html/libref/index.html+`.
 It is recommended to include changes to the OCaml Reference Manual (in
 particular for any change in the surface language), which is now part of
 the main repository (under `+manual/+`). To build the full manual, see
-the instructions in `+manual/README.md+`.
+the instructions in xref:manual/README.adoc[].
 
 Finally, changes in command-line options should be integrated in the
 manual, but also in the man pages present in the `+man/+` sub-directory
@@ -274,7 +274,7 @@ sure way to generate ill will.
 === Contributing to the standard library
 
 Contributions to the standard library are very welcome. See the
-dedicated stdlib/CONTRIBUTING.md for more information.
+dedicated xref:stdlib/CONTRIBUTING.adoc[] for more information.
 
 === Contributing optimizations
 

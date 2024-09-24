@@ -43,7 +43,7 @@ Other functions are available (step, goto, run...).
 
 Cygwin aims to provide a Unix-like environment on Windows, and the build
 procedure for it is the same as for other flavours of Unix.  See
-link:INSTALL.adoc[] for full instructions.
+xref:INSTALL.adoc[] for full instructions.
 
 OCaml requires Windows 8 or later and naturally the 64-bit versions need a
 64-bit edition of Windows (note that this is both to run *and* build).

@@ -6,7 +6,7 @@ distribution’s codebase. Feel free to improve it by sending change
 proposals for it.
 
 If you already have a patch that you would like to contribute to the
-official distribution, please see link:CONTRIBUTING.md[].
+official distribution, please see xref:CONTRIBUTING.adoc[].
 
 == Your first compiler modification
 
@@ -24,7 +24,7 @@ The `configure` step for the compiler recognises a development build from the
 not have this which causes some important development things to be disabled
 (ocamltest and converting C compiler warnings to errors).
 
-2. Consult link:INSTALL.adoc[] for build instructions. Here is the gist of it:
+2. Consult xref:INSTALL.adoc[] for build instructions. Here is the gist of it:
 +
 [source,sh]
 ----
@@ -52,7 +52,7 @@ make runtop
 make tests
 ----
 
-6. You did it, Well done! Consult link:CONTRIBUTING.md[] to send your contribution upstream.
+6. You did it, Well done! Consult xref:CONTRIBUTING.adoc[] to send your contribution upstream.
 
 See also our <<tips,development tips and tricks>>, for example on how to
 <<opam-switch,create an opam switch>> to test your modified compiler.
@@ -75,7 +75,7 @@ newcomers. Here are various potential projects:
 
 * Documentation improvements are always much appreciated, either in
   the various `.mli` files or in the official manual
-  (See link:manual/README.md[]). If you invest effort in understanding
+  (See xref:manual/README.adoc[]). If you invest effort in understanding
   a part of the codebase, submitting a pull request that adds
   clarifying comments can be an excellent contribution to help you,
   next time, and other code readers.
@@ -113,7 +113,7 @@ of the compiler described below.
 
 Parses source files and produces an Abstract Syntax Tree (AST)
 (link:parsing/parsetree.mli[] has lot of helpful comments). See
-link:parsing/HACKING.adoc[].
+xref:parsing/HACKING.adoc[].
 
 The logic for Camlp4 and Ppx preprocessing is not in link:parsing/[],
 but in link:driver/[], see link:driver/pparse.mli[] and
@@ -123,7 +123,7 @@ link:driver/pparse.ml[].
 
 Type-checks the AST and produces a typed representation of the program
 (link:typing/typedtree.mli[] has some helpful comments). See
-link:typing/HACKING.adoc[].
+xref:typing/HACKING.adoc[].
 
 ==== The bytecode compiler -- link:bytecomp/[]
 
@@ -145,7 +145,7 @@ common. (See `runtime_COMMON_C_SOURCES`, `runtime_BYTECODE_ONLY_C_SOURCES`,
 and `runtime_NATIVE_ONLY_C_SOURCES` in link:Makefile[] for the list of common,
 bytecode-only, and native-only source files.)
 
-See link:runtime/HACKING.adoc[].
+See xref:runtime/HACKING.adoc[].
 
 === Libraries
 
@@ -156,7 +156,7 @@ link:otherlibs/[]:: External libraries such as `unix`, `threads`,
 `dynlink` and `str`.
 
 Instructions for building the full reference manual are provided in
-link:manual/README.md[]. However, if you only modify the documentation
+xref:manual/README.adoc[]. However, if you only modify the documentation
 comments in `.mli` files in the compiler codebase, you can observe the
 result by running
 
@@ -183,45 +183,45 @@ has excellent documentation.
 
 === Complete file listing
 
-  BOOTSTRAP.adoc::        instructions for bootstrapping
-  Changes::               what’s new with each release
-  CONTRIBUTING.md::       how to contribute to OCaml
-  HACKING.adoc::          this file
-  INSTALL.adoc::          instructions for installation
-  LICENSE::               license and copyright notice
-  Makefile::              main Makefile
-  Makefile.common::       common Makefile definitions
-  README.adoc::           general information on the compiler distribution
-  README.win32.adoc::     general information on the Windows ports of OCaml
-  VERSION::               version string. Run `make configure` after changing.
-  asmcomp/::              native-code compiler and linker
-  boot/::                 bootstrap compiler
-  build-aux/:             autotools support scripts
-  bytecomp/::             bytecode compiler and linker
-  compilerlibs/::         the OCaml compiler as a library
-  configure::             configure script
-  configure.ac:           autoconf input file
-  debugger/::             source-level replay debugger
-  driver/::               driver code for the compilers
-  flexdll/::              git submodule -- see link:README.win32.adoc[]
-  lex/::                  lexer generator
-  man/::                  man pages
-  manual/::               system to generate the manual
-  middle_end/::           the flambda optimisation phase
-  ocamldoc/::             documentation generator
-  ocamltest/::            test driver
-  otherlibs/::            several additional libraries
-  parsing/::              syntax analysis -- see link:parsing/HACKING.adoc[]
-  release-info/::         documentation and tools to prepare releases
-  runtime/::              bytecode interpreter and runtime systems
-  stdlib/::               standard library
-  testsuite/::            tests -- see link:testsuite/HACKING.adoc[]
-  tools/::                various utilities
-  toplevel/::             interactive system
-  typing/::               typechecking -- see link:typing/HACKING.adoc[]
-  utils/::                utility libraries
-  winpthreads/::          winpthreads submodule -- see <<winpthreads,further>>
-  yacc/::                 parser generator
+  xref:BOOTSTRAP.adoc[]::        instructions for bootstrapping
+  link:Changes[]::               what’s new with each release
+  xref:CONTRIBUTING.adoc[]::     how to contribute to OCaml
+  xref:HACKING.adoc[]::          this file
+  xref:INSTALL.adoc[]::          instructions for installation
+  link:LICENSE[]::               license and copyright notice
+  link:Makefile[]::              main Makefile
+  link:Makefile.common[]::       common Makefile definitions
+  xref:README.adoc[]::           general information on the compiler distribution
+  xref:README.win32.adoc[]::     general information on the Windows ports of OCaml
+  link:VERSION[]::               version string. Run `make configure` after changing.
+  link:asmcomp/[]::              native-code compiler and linker
+  link:boot/[]::                 bootstrap compiler
+  link:build-aux/[]::            autotools support scripts
+  link:bytecomp/[]::             bytecode compiler and linker
+  link:compilerlibs/[]::         the OCaml compiler as a library
+  link:configure[]::             configure script
+  link:configure.ac[]::          autoconf input file
+  link:debugger/[]::             source-level replay debugger
+  link:driver/[]::               driver code for the compilers
+  link:flexdll/[]::              git submodule -- see xref:README.win32.adoc[]
+  link:lex/[]::                  lexer generator
+  link:man/[]::                  man pages
+  link:manual/[]::               system to generate the manual
+  link:middle_end/[]::           the flambda optimisation phase
+  link:ocamldoc/[]::             documentation generator
+  link:ocamltest/[]::            test driver
+  link:otherlibs/[]::            several additional libraries
+  link:parsing/[]::              syntax analysis -- see xref:parsing/HACKING.adoc[]
+  link:release-info/[]::         documentation and tools to prepare releases
+  link:runtime/[]::              bytecode interpreter and runtime systems
+  link:stdlib/[]::               standard library
+  link:testsuite/[]::            tests -- see xref:testsuite/HACKING.adoc[]
+  link:tools/[]::                various utilities
+  link:toplevel/[]::             interactive system
+  link:typing/[]::               typechecking -- see xref:typing/HACKING.adoc[]
+  link:utils/[]::                utility libraries
+  link:winpthreads/[]::          winpthreads submodule -- see <<winpthreads,further>>
+  link:yacc/[]::                 parser generator
 
 [#tips]
 == Development tips and tricks
@@ -407,7 +407,7 @@ mess with opam’s tracking of installed files.
 
 === Useful Makefile targets and options
 
-Besides the targets listed in link:INSTALL.adoc[] for build and
+Besides the targets listed in xref:INSTALL.adoc[] for build and
 installation, the following targets may be of use:
 
 `make runtop` :: builds and runs the ocaml toplevel of the distribution
@@ -420,7 +420,7 @@ installation, the following targets may be of use:
 
 `make depend`:: Regenerate the `.depend` file. Should be used each time new dependencies are added between files.
 
-`make -C testsuite parallel`:: see link:testsuite/HACKING.adoc[]
+`make -C testsuite parallel`:: see xref:testsuite/HACKING.adoc[]
 
 You can use `make foo V=1` to build the target foo and show full
 commands instead of abbreviated names like OCAMLC, etc. This can be
@@ -471,7 +471,7 @@ included in the repository under the
 link:boot/[] directory. These bytecode images are used once the
 bytecode runtime (which is written in C) has been built to compile the
 standard library and then to build a fresh compiler. Details can be
-found in link:BOOTSTRAP.adoc[].
+found in xref:BOOTSTRAP.adoc[].
 
 === Speeding up builds
 
@@ -621,7 +621,7 @@ set explicitly to reproduce them locally.
 (hopefully to add a new entry). It can be disabled by including "_(no change
 entry needed)_" in one of your commit messages -- but in general all patches
 submitted should come with a Changes entry; see the guidelines in
-link:CONTRIBUTING.md[].
+xref:CONTRIBUTING.adoc[].
 
 The Windows ports take a long time to test - INRIA’s precheck service is the
 best to use when all 6 Windows ports need testing for a branch, but the

@@ -1,7 +1,7 @@
 == Introduction
 
 This documents how to run the OCaml compiler test suite. To learn how to
-write tests using ocamltest, read link:./OCAMLTEST.org[OCAMLTEST.org].
+write tests using ocamltest, read xref:./OCAMLTEST.adoc[].
 
 === Context
 

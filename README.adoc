@@ -86,9 +86,9 @@ file LICENSE.
 
 == Installation
 
-See the file link:INSTALL.adoc[] for installation instructions on
+See the file xref:INSTALL.adoc[] for installation instructions on
 machines running Unix, Linux, macOS, WSL and Cygwin.  For native Microsoft
-Windows, see link:README.win32.adoc[].
+Windows, see xref:README.win32.adoc[].
 
 == Documentation
 
@@ -106,8 +106,8 @@ https://ocaml.org/docs/install.html
 == Releases
 
 More information about when and how new releases of OCaml are published is
-available at link:release-info/introduction.md[], see also
-link:release-info/calendar.md[] for a prospective calendar for future OCaml
+available at xref:release-info/introduction.adoc[], see also
+xref:release-info/calendar.adoc[] for a prospective calendar for future OCaml
 versions. For past versions, link:release-info/News[] contains a short
 description of major changes in previous versions.
 
@@ -146,8 +146,8 @@ using (machine type, etc).
 
 == Contributing
 
-For information on contributing to OCaml, see link:HACKING.adoc[] and
-link:CONTRIBUTING.md[].
+For information on contributing to OCaml, see xref:HACKING.adoc[] and
+xref:CONTRIBUTING.adoc[].
 
 == Separately maintained components
 

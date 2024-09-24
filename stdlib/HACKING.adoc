@@ -1,12 +1,12 @@
 = Contributing to the standard library
 
 For guidelines about standard library content, see
-link:CONTRIBUTING.md[].
+xref:CONTRIBUTING.adoc[].
 
 Note: All paths are given relative to the root of the repository.
 
 First, build the compiler. Run `./configure`, then `make`. See
-link:../HACKING.adoc[].
+xref:../HACKING.adoc[].
 
 To add a new module, you must:
 

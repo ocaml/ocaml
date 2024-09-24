@@ -44,7 +44,7 @@ are:
 The timing is approximate, as we often delay a release to ensure quality
 when unforeseen issues come up. In consequence, releases are often late,
 typically by up to two months. There is a prospective release calendar
-available at calendar.md
+available at xref:calendar.adoc[].
 
 We may release bugfix releases at any time.
 
@@ -163,4 +163,4 @@ April 2025).
 
 == How are new versions of OCaml released?
 
-The release process is documented at howto.md.
+The release process is documented at xref:howto.adoc[].

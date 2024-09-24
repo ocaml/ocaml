@@ -19,7 +19,7 @@ in build-aux/ocaml_version.m4. To bump all magic numbers is to
 increment the version of every kind of magic number.
 
 The process for bootstrapping the compiler is covered in
-link:../BOOTSTRAP.adoc[BOOTSTRAP.adoc]. There is also a test script in CI which
+xref:../BOOTSTRAP.adoc[]. There is also a test script in CI which
 demonstrates the process in
 link:../tools/ci/inria/bootstrap/script[tools/ci/inria/bootstrap].
 

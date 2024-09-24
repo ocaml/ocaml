@@ -437,9 +437,9 @@ This should be expanded, once we have more experince with the process
 
 See
 
-* templates/beta.md for alpha and beta releases
-* templates/rc.md for release candidate
-* templates/production.md for the production release
+* xref:templates/beta.adoc[] for alpha and beta releases
+* xref:templates/rc.adoc[] for release candidate
+* xref:templates/production.adoc[] for the production release
 
 ==== Changelog template for a new version
 
