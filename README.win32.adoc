@@ -190,10 +190,11 @@ your `~/.bashrc` file.
 * The Microsoft Visual C/C++ compiler does not implement "computed gotos", and
   therefore generates inefficient code for `runtime/interp.c`.  Consequently,
   the performance of bytecode programs is about 2/3 of that obtained under
-  Unix/GCC,  Cygwin or MinGW-w64 on similar hardware.
+  Unix/GCC, Cygwin or MinGW-w64 on similar hardware. The clang-cl compiler
+  supports the "computed gotos" extension.
 
-* Libraries available in this port: `dynlink`, `num`,
-  `str`, `threads`, and large parts of `unix`.
+* Libraries available in this port: `dynlink`, `str`, `threads`, and large parts
+  of `unix`.
 
 * The replay debugger is partially supported (no reverse execution).
 
@@ -254,8 +255,8 @@ can access the C compiler.  You can do this either by using OCaml from Cygwin’
 bash or by adding Cygwin’s bin directory (e.g. `C:\cygwin64\bin`) to your
 `PATH`.
 
-* Libraries available in this port: `dynlink`, `num`,
-  `str`, `threads`, and large parts of `unix`.
+* Libraries available in this port: `dynlink`, `str`, `threads`, and large parts
+  of `unix`.
 
 * The replay debugger is partially supported (no reverse execution).
 
