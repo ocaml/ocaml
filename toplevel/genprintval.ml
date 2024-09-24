@@ -328,30 +328,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               end
             end
           | Tvariant row ->
-              if O.is_block obj then
-                let tag : int = O.obj (O.field obj 0) in
-                let rec find = function
-                  | (l, f) :: fields ->
-                      if Btype.hash_variant l = tag then
-                        match row_field_repr f with
-                        | Rpresent(Some ty) | Reither(_,[ty],_) ->
-                            let args =
-                              nest tree_of_val (depth - 1) (O.field obj 1) ty
-                            in
-                              Oval_variant (l, Some args)
-                        | _ -> find fields
-                      else find fields
-                  | [] -> Oval_stuff "<variant>" in
-                find (row_fields row)
-              else
-                let tag : int = O.obj obj in
-                let rec find = function
-                  | (l, _) :: fields ->
-                      if Btype.hash_variant l = tag then
-                        Oval_variant (l, None)
-                      else find fields
-                  | [] -> Oval_stuff "<variant>" in
-                find (row_fields row)
+              tree_of_polyvariant depth obj row
           | Tobject (_, _) ->
               Oval_stuff "<obj>"
           | Tsubst _ | Tfield(_, _, _, _) | Tnil | Tlink _ ->
@@ -543,6 +520,32 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               (lid, v) :: tree_of_fields (pos + 1) remainder
         in
         Oval_record (tree_of_fields pos lbl_list)
+
+      and tree_of_polyvariant depth obj row =
+        if O.is_block obj then
+          let tag : int = O.obj (O.field obj 0) in
+          let rec find = function
+            | (l, f) :: fields ->
+                if Btype.hash_variant l = tag then
+                  match row_field_repr f with
+                  | Rpresent(Some ty) | Reither(_,[ty],_) ->
+                      let args =
+                        nest tree_of_val (depth - 1) (O.field obj 1) ty
+                      in
+                        Oval_variant (l, Some args)
+                  | _ -> find fields
+                else find fields
+            | [] -> Oval_stuff "<variant>" in
+          find (row_fields row)
+        else
+          let tag : int = O.obj obj in
+          let rec find = function
+            | (l, _) :: fields ->
+                if Btype.hash_variant l = tag then
+                  Oval_variant (l, None)
+                else find fields
+            | [] -> Oval_stuff "<variant>" in
+          find (row_fields row)
 
       and tree_of_val_list start depth obj ty_list =
         let rec tree_list i = function
