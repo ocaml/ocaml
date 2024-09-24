@@ -306,26 +306,23 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 when Path.same path Predef.path_lazy_t ->
                 tree_of_lazy depth obj ty_arg
 
-            | _ -> begin try
-                let decl = Env.find_type path env in
-                match decl with
+              | _ ->
+                match Env.find_type path env with
+                | exception Not_found
                 | {type_kind = Type_abstract _; type_manifest = None} ->
                     Oval_stuff "<abstr>"
-                | {type_kind = Type_abstract _; type_manifest = Some body} ->
+                | {type_kind = Type_abstract _; type_manifest = Some body;
+                   type_params} ->
                     tree_of_val depth obj
-                      (instantiate_type env decl.type_params ty_list body)
-                | {type_kind = Type_variant (constr_list,rep)} ->
-                    tree_of_variant depth decl path ty_list obj constr_list rep
-                | {type_kind = Type_record(lbl_list, rep)} ->
-                    tree_of_record depth decl path ty_list obj lbl_list rep
+                      (instantiate_type env type_params ty_list body)
+                | {type_kind = Type_variant (constr_list,rep); type_params} ->
+                    tree_of_variant depth path type_params ty_list obj
+                      constr_list rep
+                | {type_kind = Type_record(lbl_list, rep); type_params} ->
+                    tree_of_record depth path type_params ty_list obj
+                      lbl_list rep
                 | {type_kind = Type_open} ->
                     tree_of_extension path ty_list depth obj
-              with
-                Not_found ->                (* raised by Env.find_type *)
-                  Oval_stuff "<abstr>"
-              | Datarepr.Constr_not_found -> (* raised by find_constr_by_tag *)
-                  Oval_stuff "<unknown constructor>"
-              end
             end
           | Tvariant row ->
               tree_of_polyvariant depth obj row
@@ -439,15 +436,17 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             Oval_lazy v
           end
 
-      and tree_of_variant depth decl path ty_list obj constr_list rep =
+      and tree_of_variant depth path type_params ty_list obj constr_list rep =
         let unbx = (rep = Variant_unboxed) in
         let tag =
           if unbx then Cstr_unboxed
           else if O.is_block obj
           then Cstr_block(O.tag obj)
           else Cstr_constant(O.obj obj) in
-        let {cd_id;cd_args;cd_res} =
-          Datarepr.find_constr_by_tag tag constr_list in
+        match Datarepr.find_constr_by_tag tag constr_list with
+        | exception Datarepr.Constr_not_found ->
+            Oval_stuff "<unknown constructor>"
+        | {cd_id;cd_args;cd_res} ->
         let type_params =
           match cd_res with
             Some t ->
@@ -455,7 +454,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 Tconstr (_,params,_) ->
                   params
               | _ -> assert false end
-          | None -> decl.type_params
+          | None -> type_params
         in
         begin
           match cd_args with
@@ -476,7 +475,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                           [ r ])
         end
 
-      and tree_of_record depth decl path ty_list obj lbl_list rep =
+      and tree_of_record depth path type_params ty_list obj lbl_list rep =
         match check_depth depth obj ty with
         | Some x -> x
         | None ->
@@ -489,7 +488,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               match rep with Record_unboxed _ -> true | _ -> false
             in
             tree_of_record_fields depth
-              env path decl.type_params ty_list
+              env path type_params ty_list
               lbl_list pos obj unbx
 
       and tree_of_record_fields depth env path type_params ty_list
