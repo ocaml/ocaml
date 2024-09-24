@@ -9914,6 +9914,53 @@ ocamltest/builtin_variables.cmx : \
     ocamltest/builtin_variables.cmi
 ocamltest/builtin_variables.cmi : \
     ocamltest/variables.cmi
+ocamltest/debugger_actions.cmo : \
+    ocamltest/result.cmi \
+    ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/ocaml_variables.cmi \
+    ocamltest/ocaml_directories.cmi \
+    ocamltest/ocaml_commands.cmi \
+    utils/misc.cmi \
+    ocamltest/environments.cmi \
+    ocamltest/debugger_variables.cmi \
+    ocamltest/debugger_flags.cmi \
+    utils/clflags.cmi \
+    ocamltest/builtin_variables.cmi \
+    ocamltest/actions_helpers.cmi \
+    ocamltest/actions.cmi \
+    ocamltest/debugger_actions.cmi
+ocamltest/debugger_actions.cmx : \
+    ocamltest/result.cmx \
+    ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/ocaml_variables.cmx \
+    ocamltest/ocaml_directories.cmx \
+    ocamltest/ocaml_commands.cmx \
+    utils/misc.cmx \
+    ocamltest/environments.cmx \
+    ocamltest/debugger_variables.cmx \
+    ocamltest/debugger_flags.cmx \
+    utils/clflags.cmx \
+    ocamltest/builtin_variables.cmx \
+    ocamltest/actions_helpers.cmx \
+    ocamltest/actions.cmx \
+    ocamltest/debugger_actions.cmi
+ocamltest/debugger_actions.cmi : \
+    ocamltest/actions.cmi
+ocamltest/debugger_flags.cmo : \
+    ocamltest/ocaml_directories.cmi \
+    ocamltest/debugger_flags.cmi
+ocamltest/debugger_flags.cmx : \
+    ocamltest/ocaml_directories.cmx \
+    ocamltest/debugger_flags.cmi
+ocamltest/debugger_flags.cmi :
+ocamltest/debugger_variables.cmo : \
+    ocamltest/variables.cmi \
+    ocamltest/debugger_variables.cmi
+ocamltest/debugger_variables.cmx : \
+    ocamltest/variables.cmx \
+    ocamltest/debugger_variables.cmi
+ocamltest/debugger_variables.cmi : \
+    ocamltest/variables.cmi
 ocamltest/environments.cmo : \
     ocamltest/variables.cmi \
     ocamltest/ocamltest_stdlib.cmi \

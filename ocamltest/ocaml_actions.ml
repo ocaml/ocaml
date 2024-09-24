@@ -534,43 +534,6 @@ let env_with_lib_unix env =
   in
   Environments.add Ocaml_variables.caml_ld_library_path newlibs env
 
-let debug log env =
-  let program = Environments.safe_lookup Builtin_variables.program env in
-  let what = Printf.sprintf "Debugging program %s" program in
-  Printf.fprintf log "%s\n%!" what;
-  let commandline =
-  [
-    Ocaml_commands.ocamlrun_ocamldebug;
-    Ocaml_flags.ocamldebug_default_flags;
-    program
-  ] in
-  let systemenv =
-    Environments.append_to_system_env
-      default_ocaml_env
-      (env_with_lib_unix env)
-  in
-  let expected_exit_status = 0 in
-  let exit_status =
-    Actions_helpers.run_cmd
-      ~environment:systemenv
-      ~stdin_variable: Ocaml_variables.ocamldebug_script
-      ~stdout_variable:Builtin_variables.output
-      ~stderr_variable:Builtin_variables.output
-      ~append:true
-      log (env_with_lib_unix env) commandline in
-  if exit_status=expected_exit_status
-  then (Result.pass, env)
-  else begin
-    let reason =
-      (Actions_helpers.mkreason
-        what (String.concat " " commandline) exit_status) in
-    (Result.fail_with_reason reason, env)
-  end
-
-let ocamldebug =
-  Actions.make ~name:"ocamldebug" ~description:"Run ocamldebug on the program"
-    debug
-
 let objinfo log env =
   let tools_directory = Ocaml_directories.tools in
   let program = Environments.safe_lookup Builtin_variables.program env in
@@ -1444,7 +1407,6 @@ let _ =
     setup_ocamldoc_build_env;
     run_ocamldoc;
     check_ocamldoc_output;
-    ocamldebug;
     ocamlmklib;
     codegen;
     cc;

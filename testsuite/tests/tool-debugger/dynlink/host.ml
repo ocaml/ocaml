@@ -3,7 +3,7 @@
  readonly_files = "host.ml plugin.ml";
  libraries = "";
  flags += " -g ";
- ocamldebug_script = "${test_source_directory}/input_script";
+ debugger_script = "${test_source_directory}/input_script";
  debugger;
  shared-libraries;
  setup-ocamlc.byte-build-env;

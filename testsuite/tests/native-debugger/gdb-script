@@ -1,0 +1,15 @@
+break *(&caml_start_program+0)
+break caml_program
+break ocaml_to_c
+break meander.ml:5
+set debuginfod enabled off
+run
+backtrace
+continue
+backtrace
+continue
+backtrace
+continue
+backtrace
+continue
+quit

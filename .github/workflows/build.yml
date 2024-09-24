@@ -161,9 +161,29 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: OS Dependencies
-        if: runner.os == 'macOS'
-        run: brew install parallel
+
+      - name: MacOS 13 Dependencies
+        if: matrix.os == 'macos-13'
+        run: |
+          brew install parallel
+          # Allows starting up lldb from a remote terminal
+          sudo DevToolsSecurity --enable
+          spctl developer-mode enable-terminal
+          # Select latest supported version
+          sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
+          lldb --version
+
+      - name: MacOS 14 Dependencies
+        if: matrix.os == 'macos-14'
+        run: |
+          brew install parallel
+          # Allows starting up lldb from a remote terminal
+          sudo DevToolsSecurity --enable
+          spctl developer-mode enable-terminal
+          # Select latest supported version
+          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+          lldb --version
+
       - name: configure tree
         run: |
           CONFIG_ARG='${{ matrix.config_arg }}' MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh configure

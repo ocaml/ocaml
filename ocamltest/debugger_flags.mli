@@ -2,10 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Sebastien Hinderer, projet Gallium, INRIA Paris            *)
+(*                           Tim McGilchrist, Tarides                     *)
 (*                                                                        *)
-(*   Copyright 2018 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
+(*   Copyright 2024 Tarides.                                              *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -13,17 +12,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Flags used in OCaml commands *)
+(* Flags used in LLDB commands *)
+val lldb_default_flags : string
 
-val stdlib : string
+(* Flags used in GDB commands *)
+val gdb_default_flags : string
 
-val include_toplevel_directory : string
-
-val c_includes : string
-
-val runtime_flags :
-  Environments.t -> Ocaml_backends.t -> bool -> string
-
-val toplevel_default_flags : string
-
-val ocamlobjinfo_default_flags : string
+(* Flags used in Ocamldebug (bytecode debugger) commands *)
+val ocamldebug_default_flags : string

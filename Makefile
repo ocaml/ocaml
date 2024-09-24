@@ -1920,7 +1920,10 @@ ocamltest_ocaml_PLUGIN = \
   ocaml_compilers.mli ocaml_compilers.ml \
   ocaml_toplevels.mli ocaml_toplevels.ml \
   ocaml_actions.mli ocaml_actions.ml \
-  ocaml_tests.mli ocaml_tests.ml
+  ocaml_tests.mli ocaml_tests.ml \
+  debugger_flags.mli debugger_flags.ml \
+  debugger_variables.mli debugger_variables.ml \
+  debugger_actions.mli debugger_actions.ml \
 
 ocamltest_SOURCES = $(addprefix ocamltest/, \
   $(ocamltest_CORE) $(ocamltest_ocaml_PLUGIN) \
