@@ -15,6 +15,10 @@ Working version
 
 ### Standard library:
 
+* #13469, #13474: Raise Invalid_arg if Hashtbl.create is given a negative init
+  size.
+  (Antonin Décimo, report by Nikolaus Huber and Jan Mitgaard)
+
 ### Other libraries:
 
 - #13429: add `Unix.sigwait`, a binding to the `sigwait` system call;

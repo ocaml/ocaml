@@ -71,6 +71,7 @@ let rec power_2_above x n =
   else power_2_above (x * 2) n
 
 let create ?(random = Atomic.get randomized) initial_size =
+  if initial_size < 0 then invalid_arg "Hashtbl.create";
   let s = power_2_above 16 initial_size in
   let seed =
     if random then Random.State.bits (Domain.DLS.get prng_key) else 0

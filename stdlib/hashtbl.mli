@@ -99,7 +99,9 @@ val create : ?random: (* thwart tools/sync_stdlib_docs *) bool ->
    setting the [R] flag in the [OCAMLRUNPARAM] environment variable.
 
    @before 4.00 the [~random] parameter was not present and all
-   hash tables were created in non-randomized mode. *)
+   hash tables were created in non-randomized mode.
+
+   @raise Invalid_argument if [n < 0] (since 5.4).*)
 
 val clear : ('a, 'b) t -> unit
 (** Empty a hash table. Use [reset] instead of [clear] to shrink the
