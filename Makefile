@@ -1470,8 +1470,9 @@ $(DEPDIR)/runtime/%.bi.$(D): \
   OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
 
 runtime/%.bpic.$(O): OC_CFLAGS = $(OC_BYTECODE_CFLAGS) $(SHAREDLIB_CFLAGS)
-runtime/%.bpic.$(O): OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS)
-$(DEPDIR)/runtime/%.bpic.$(D): OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS)
+runtime/%.bpic.$(O): OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS) $(ocamlrun_CPPFLAGS)
+$(DEPDIR)/runtime/%.bpic.$(D): \
+  OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS) $(ocamlrun_CPPFLAGS)
 
 runtime/%.n.$(O): OC_CFLAGS = $(OC_NATIVE_CFLAGS)
 runtime/%.n.$(O): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlrun_CPPFLAGS)
@@ -1489,8 +1490,9 @@ $(DEPDIR)/runtime/%.ni.$(D): \
   OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
 
 runtime/%.npic.$(O): OC_CFLAGS = $(OC_NATIVE_CFLAGS) $(SHAREDLIB_CFLAGS)
-runtime/%.npic.$(O): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS)
-$(DEPDIR)/runtime/%.npic.$(D): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS)
+runtime/%.npic.$(O): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlrun_CPPFLAGS)
+$(DEPDIR)/runtime/%.npic.$(D): \
+  OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS) $(ocamlrun_CPPFLAGS)
 
 ## Compilation of runtime C files
 
