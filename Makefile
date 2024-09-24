@@ -692,7 +692,7 @@ coldstart: boot/ocamlrun$(EXE) runtime/libcamlrun.$(A)
 	$(MAKE) -C stdlib OCAMLRUN='$$(ROOTDIR)/$<' USE_BOOT_OCAMLC=true all
 	rm -f $(addprefix boot/, libcamlrun.$(A) $(LIBFILES))
 	cp $(addprefix stdlib/, $(LIBFILES)) boot
-	cd boot; $(LN) ../runtime/libcamlrun.$(A) .
+	cd boot && $(LN_S) ../runtime/libcamlrun.$(A) .
 
 # Recompile the core system using the bootstrap compiler
 .PHONY: coreall
@@ -884,7 +884,7 @@ flexlink.opt$(EXE): \
 	  OCAMLOPT='$(FLEXLINK_OCAMLOPT) -nostdlib -I ../stdlib' flexlink.exe
 	cp $(FLEXDLL_SOURCE_DIR)/flexlink.exe $@
 	rm -f $(OPT_BINDIR)/flexlink$(EXE)
-	cd $(OPT_BINDIR); $(LN) $(call ROOT_FROM, $(OPT_BINDIR))/$@ flexlink$(EXE)
+	cd $(OPT_BINDIR) && $(LN_S) $(call ROOT_FROM, $(OPT_BINDIR))/$@ flexlink$(EXE)
 	cp $(addprefix $(BYTE_BINDIR)/, $(FLEXDLL_OBJECTS)) $(OPT_BINDIR)
 
 else
@@ -1071,7 +1071,7 @@ endif
 # to add otherlibs/dynlink/native to the search path as well
 
 otherlibs/dynlink/dynlink.cmx : otherlibs/dynlink/native/dynlink.cmx
-	cd otherlibs/dynlink; $(LN) native/dynlink.cmx .
+	cd otherlibs/dynlink && $(LN_S) native/dynlink.cmx .
 
 DYNLINK_DEPEND_DUMMY_FILES = \
   otherlibs/dynlink/dynlink.ml \
@@ -1116,28 +1116,28 @@ beforedepend:: lambda/runtimedef.ml
 # Choose the right machine-dependent files
 
 asmcomp/arch.mli: asmcomp/$(ARCH)/arch.mli
-	@cd asmcomp; $(LN) $(ARCH)/arch.mli .
+	@cd asmcomp && $(LN_S) $(ARCH)/arch.mli .
 
 asmcomp/arch.ml: asmcomp/$(ARCH)/arch.ml
-	@cd asmcomp; $(LN) $(ARCH)/arch.ml .
+	@cd asmcomp && $(LN_S) $(ARCH)/arch.ml .
 
 asmcomp/proc.ml: asmcomp/$(ARCH)/proc.ml
-	@cd asmcomp; $(LN) $(ARCH)/proc.ml .
+	@cd asmcomp && $(LN_S) $(ARCH)/proc.ml .
 
 asmcomp/selection.ml: asmcomp/$(ARCH)/selection.ml
-	@cd asmcomp; $(LN) $(ARCH)/selection.ml .
+	@cd asmcomp && $(LN_S) $(ARCH)/selection.ml .
 
 asmcomp/CSE.ml: asmcomp/$(ARCH)/CSE.ml
-	@cd asmcomp; $(LN) $(ARCH)/CSE.ml .
+	@cd asmcomp && $(LN_S) $(ARCH)/CSE.ml .
 
 asmcomp/reload.ml: asmcomp/$(ARCH)/reload.ml
-	@cd asmcomp; $(LN) $(ARCH)/reload.ml .
+	@cd asmcomp && $(LN_S) $(ARCH)/reload.ml .
 
 asmcomp/scheduling.ml: asmcomp/$(ARCH)/scheduling.ml
-	@cd asmcomp; $(LN) $(ARCH)/scheduling.ml .
+	@cd asmcomp && $(LN_S) $(ARCH)/scheduling.ml .
 
 asmcomp/stackframe.ml: asmcomp/$(ARCH)/stackframe.ml
-	@cd asmcomp; $(LN) $(ARCH)/stackframe.ml .
+	@cd asmcomp && $(LN_S) $(ARCH)/stackframe.ml .
 
 # Preprocess the code emitters
 cvt_emit = tools/cvt_emit$(EXE)
@@ -1610,7 +1610,7 @@ runtime: stdlib/libcamlrun.$(A)
 .PHONY: makeruntime
 makeruntime: runtime-all
 stdlib/libcamlrun.$(A): runtime-all
-	cd stdlib; $(LN) ../runtime/libcamlrun.$(A) .
+	cd stdlib && $(LN_S) ../runtime/libcamlrun.$(A) .
 clean::
 	rm -f $(addprefix runtime/, *.o *.obj *.a *.lib *.so *.dll ld.conf)
 	rm -f $(addprefix runtime/, ocamlrun ocamlrund ocamlruni ocamlruns sak)
@@ -1628,9 +1628,9 @@ runtimeopt: stdlib/libasmrun.$(A)
 .PHONY: makeruntimeopt
 makeruntimeopt: runtime-allopt
 stdlib/libasmrun.$(A): runtime-allopt
-	cd stdlib; $(LN) ../runtime/libasmrun.$(A) .
+	cd stdlib && $(LN_S) ../runtime/libasmrun.$(A) .
 stdlib/libcomprmarsh.$(A): runtime/libcomprmarsh.$(A)
-	cd stdlib; $(LN) ../runtime/libcomprmarsh.$(A) .
+	cd stdlib && $(LN_S) ../runtime/libcomprmarsh.$(A) .
 
 clean::
 	rm -f stdlib/libasmrun.a stdlib/libasmrun.lib
@@ -2689,9 +2689,9 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	  $(INSTALL_PROG) "tools/$$i$(EXE)" "$(INSTALL_BINDIR)/$$i.byte$(EXE)";\
 	  if test -f "tools/$$i".opt$(EXE); then \
 	    $(INSTALL_PROG) "tools/$$i.opt$(EXE)" "$(INSTALL_BINDIR)" && \
-	    (cd "$(INSTALL_BINDIR)" && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
+	    (cd "$(INSTALL_BINDIR)" && $(LN_S) "$$i.opt$(EXE)" "$$i$(EXE)"); \
 	  else \
-	    (cd "$(INSTALL_BINDIR)" && $(LN) "$$i.byte$(EXE)" "$$i$(EXE)"); \
+	    (cd "$(INSTALL_BINDIR)" && $(LN_S) "$$i.byte$(EXE)" "$$i$(EXE)"); \
 	  fi; \
 	done
 else
@@ -2699,7 +2699,7 @@ else
 	do \
 	  if test -f "tools/$$i".opt$(EXE); then \
 	    $(INSTALL_PROG) "tools/$$i.opt$(EXE)" "$(INSTALL_BINDIR)"; \
-	    (cd "$(INSTALL_BINDIR)" && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
+	    (cd "$(INSTALL_BINDIR)" && $(LN_S) "$$i.opt$(EXE)" "$$i$(EXE)"); \
 	  fi; \
 	done
 endif
@@ -2814,10 +2814,10 @@ endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	if test -f ocamlopt$(EXE); then $(MAKE) installopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
-	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
-	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
+	   $(LN_S) ocamlc.byte$(EXE) ocamlc$(EXE); \
+	   $(LN_S) ocamllex.byte$(EXE) ocamllex$(EXE); \
 	   (test -f flexlink.byte$(EXE) && \
-	      $(LN) flexlink.byte$(EXE) flexlink$(EXE)) || true; \
+	      $(LN_S) flexlink.byte$(EXE) flexlink$(EXE)) || true; \
 	fi
 else
 	if test -f ocamlopt$(EXE); then $(MAKE) installopt; fi
@@ -2904,11 +2904,11 @@ endif
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	if test -f ocamlopt.opt$(EXE); then $(MAKE) installoptopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
-	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
-	   $(LN) ocamlopt.byte$(EXE) ocamlopt$(EXE); \
-	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
+	   $(LN_S) ocamlc.byte$(EXE) ocamlc$(EXE); \
+	   $(LN_S) ocamlopt.byte$(EXE) ocamlopt$(EXE); \
+	   $(LN_S) ocamllex.byte$(EXE) ocamllex$(EXE); \
 	   (test -f flexlink.byte$(EXE) && \
-	     $(LN) flexlink.byte$(EXE) flexlink$(EXE)) || true; \
+	     $(LN_S) flexlink.byte$(EXE) flexlink$(EXE)) || true; \
 	fi
 else
 	if test -f ocamlopt.opt$(EXE); then $(MAKE) installoptopt; fi
@@ -2923,13 +2923,13 @@ installoptopt:
 	$(INSTALL_PROG) ocamlopt.opt$(EXE) "$(INSTALL_BINDIR)"
 	$(INSTALL_PROG) lex/ocamllex.opt$(EXE) "$(INSTALL_BINDIR)"
 	cd "$(INSTALL_BINDIR)"; \
-	   $(LN) ocamlc.opt$(EXE) ocamlc$(EXE); \
-	   $(LN) ocamlopt.opt$(EXE) ocamlopt$(EXE); \
-	   $(LN) ocamllex.opt$(EXE) ocamllex$(EXE)
+	   $(LN_S) ocamlc.opt$(EXE) ocamlc$(EXE); \
+	   $(LN_S) ocamlopt.opt$(EXE) ocamlopt$(EXE); \
+	   $(LN_S) ocamllex.opt$(EXE) ocamllex$(EXE)
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 	$(INSTALL_PROG) flexlink.opt$(EXE) "$(INSTALL_BINDIR)"
 	cd "$(INSTALL_BINDIR)"; \
-	  $(LN) flexlink.opt$(EXE) flexlink$(EXE)
+	  $(LN_S) flexlink.opt$(EXE) flexlink$(EXE)
 endif
 	$(INSTALL_DATA) \
 	   utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \

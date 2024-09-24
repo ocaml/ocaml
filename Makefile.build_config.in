@@ -167,7 +167,7 @@ OC_NATIVE_COMPFLAGS = @oc_native_compflags@
 OC_NATIVE_LINKFLAGS = -g
 
 # Platform-dependent command to create symbolic links
-LN = @ln@
+LN_S = @LN_S@
 
 # Platform-dependent assembler files to use to build the runtime
 runtime_ASM_OBJECTS = $(addprefix runtime/,@runtime_asm_objects@)

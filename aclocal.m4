@@ -544,13 +544,14 @@ AC_DEFUN([OCAML_CC_SUPPORTS_LABELS_AS_VALUES], [
   fi
 ])
 
-AC_DEFUN([OCAML_CHECK_LN_ON_WINDOWS], [
+AC_DEFUN([OCAML_PROG_LN_S_ON_WINDOWS], [
   AC_MSG_CHECKING([for a workable solution for ln -sf])
-  AS_IF([m4_normalize(MSYS=winsymlinks:nativestrict
-                      CYGWIN=winsymlinks:nativestrict
-                      ln -sf configure conftestLink 2>/dev/null)],
-    [ln='ln -sf'],
-    [ln='cp -pf']
-  )
-  AC_MSG_RESULT([$ln])
+  if MSYS=winsymlinks:nativestrict CYGWIN=winsymlinks:nativestrict \
+      ln -s configure conftestLink 2>/dev/null; then
+    ocaml_ln_s='ln -sf'
+  else
+    ocaml_ln_s='cp -pRf'
+  fi
+  rm -rf conftestLink
+  AC_MSG_RESULT([$ocaml_ln_s])
 ])

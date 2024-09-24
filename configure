@@ -888,7 +888,6 @@ syslib
 outputobj
 outputexe
 ocamlyacc_wstr_module
-ln
 unix_or_win32
 ocamlsrcdir
 systhread_support
@@ -3392,7 +3391,6 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
-
 
 
 
@@ -13834,22 +13832,23 @@ case $host in #(
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for a workable solution for ln -sf" >&5
 printf %s "checking for a workable solution for ln -sf... " >&6; }
-  if MSYS=winsymlinks:nativestrict CYGWIN=winsymlinks:nativestrict ln -sf configure conftestLink 2>/dev/null
-then :
-  ln='ln -sf'
-else $as_nop
-  ln='cp -pf'
+  if MSYS=winsymlinks:nativestrict CYGWIN=winsymlinks:nativestrict \
+      ln -s configure conftestLink 2>/dev/null; then
+    ocaml_ln_s='ln -sf'
+  else
+    ocaml_ln_s='cp -pRf'
+  fi
+  rm -rf conftestLink
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ocaml_ln_s" >&5
+printf "%s\n" "$ocaml_ln_s" >&6; }
 
-fi
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ln" >&5
-printf "%s\n" "$ln" >&6; }
-
+    LN_S="$ocaml_ln_s"
     ocamltest_libunix="Some false"
     ocamlsrcdir="$(LC_ALL=C.UTF-8 cygpath -w -- "$ocamlsrcdir")"
     ocamlyacc_wstr_module="yacc/wstr" ;; #(
   *) :
     unix_or_win32="unix"
-  ln='ln -sf'
+  LN_S='ln -sf'
   ocamltest_libunix="Some true"
   ocamlyacc_wstr_module="" ;;
 esac
