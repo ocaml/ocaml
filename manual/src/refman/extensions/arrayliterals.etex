@@ -1,20 +1,18 @@
 (Introduced in OCaml 5.4)
 
 Since OCaml 5.4, array literal syntax @"[|" e1 ';' e2 ';' ... ';' eN "|]"@ can
-be used to denote values of type "'a array" as well as "floatarray", both in
-expression and pattern positions. This syntax is also used to display "floatarray" values in the toplevel.
+be used to denote values of type "floatarray" as well as "'a array", both in
+expression and pattern positions. This syntax is also used to display
+"floatarray" values in the toplevel.
 
-The compiler will use contextual information to infer the type of the array
-literal. However, in the absence of any specific contextual information, it will
-be assumed that the array literal is of type "'a array":
+The compiler matches the expected type of the expression or pattern with the
+type of the literal, in a manner analogous to the disambiguation of constructors
+and record fields (see \ref{ss:record-and-variant-disambiguation}).
 
-\begin{caml_example}{verbatim}
-let x = [|42.|];;
-\end{caml_example}
+In the absence of an expected type, array literals are assumed to be of type "'a
+array".
 
-The compiler will exploit the knowledge it gleans from the context of the array
-literal to decide which type to assign to it. In the following examples,
-the array literal is assigned type "floatarray":
+In the following examples, the array literals are assigned type "floatarray":
 
 \begin{caml_example}{verbatim}
 let _ : floatarray = [|42.|];;
@@ -32,19 +30,10 @@ let f : floatarray -> _ = function
 ;;
 \end{caml_example}
 
-A type annotation is not strictly necessary; the compiler will use any type
-information that it learns from the context of the array literal to disambiguate
-it. In the next example, the use of "Float.Array.get" tells the compiler that
-"a" must be of type "floatarray" and the array literal pattern is interpreted
-accordingly:
+In the example below, "x" is assigned type "float array":
 
 \begin{caml_example}{verbatim}
-let f a =
-  let _ = Float.Array.get a 0 in
-  match a with
-  | [| _ |] -> "only one element"
-  | _ -> "more than one"
-;;
+let x = [|42.|];;
 \end{caml_example}
 
 However, the following does not work:
@@ -60,15 +49,16 @@ let f b (a : floatarray) = if b then [|42.|] else a
 [@@expect error];;
 \end{caml_example}
 
-Indeed, here the information learned from the use of "a" as a "floatarray"
-cannot be propagated back to the array literal. In general, type information
-ocurring ``outside'' the context of the array literal cannot be used by the
-compiler in order to disambiguate its type.
+Here the information learned from the use of "a" as a "floatarray" cannot be
+propagated back to the array literal. In general, expected type information
+cannot be propagated ``backwards''.
 
-However, the order matters. In the following example, type disambiguation works
-because the type information learned in the "then" branch of the conditional is
-propagated to the "else" branch.
+In the following example, type disambiguation works because the type information
+learned in the "then" branch of the conditional is propagated to the "else"
+branch, which occurs ``later''.
 
 \begin{caml_example}{verbatim}
 let f b (a : floatarray) = if b then a else [|42.|];;
 \end{caml_example}
+
+Such cases trigger warning 18 "not-principal", if enabled.
