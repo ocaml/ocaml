@@ -120,6 +120,13 @@ let not_windows = make
     "not running on Windows"
     "running on Windows")
 
+let not_msvc = make
+  ~name:"not-msvc"
+  ~description:"Pass if not using MSVC / clang-cl"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.ccomptype <> "msvc")
+    "not using MSVC / clang-cl"
+    "using MSVC / clang-cl")
+
 let is_bsd_system s =
   match s with
   | "bsd_elf" | "netbsd" | "freebsd" | "openbsd" -> true
@@ -373,6 +380,7 @@ let _ =
     libwin32unix;
     windows;
     not_windows;
+    not_msvc;
     bsd;
     not_bsd;
     linux;
