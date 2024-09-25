@@ -49,7 +49,7 @@ frame 10: meander`_start
 Process XXXX resuming
 Process XXXX stopped
 * thread #1, name = 'XXXX', stop reason = breakpoint 4.1
-    frame #0: 0x00000000000000 meander`ocaml_to_c(unit=1) at meander_c.c:4:31
+    frame #0: 0x00000000000000 meander`ocaml_to_c(unit=1) at meander_c.c:XX
    1   	#include <caml/mlvalues.h>
    2   	#include <caml/callback.h>
    3   	
