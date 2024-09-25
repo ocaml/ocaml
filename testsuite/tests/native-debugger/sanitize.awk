@@ -31,6 +31,12 @@
     # Replace comments with blank comments
     gsub(/; [a-zA-Z0-9._+ ]+/, ";")
 
+    # Replace line numbers in runtime files - one rule for lldb, one for gdb
+    # (it would be better to only match on runtime/*.c, but gsub does not
+    # handle ERE)
+    gsub(/.c:[0-9]+:[0-9]+/, ".c:XX")
+    gsub(/.c:[0-9]+/, ".c:XX")
+
     # Replace printed match results
     gsub("1 match found in /(.*):$", "1 match found in \"XXXX\":")
     print $0

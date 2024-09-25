@@ -46,7 +46,7 @@ warning: meander was compiled with optimization - stepping may behave oddly;
 Process XXXX resuming
 Process XXXX stopped
 * thread #1, queue = 'XXXX', stop reason = breakpoint 4.1
-    frame #0: 0x00000000000000 meander`ocaml_to_c(unit=1) at meander_c.c:5:20 [opt]
+    frame #0: 0x00000000000000 meander`ocaml_to_c(unit=1) at meander_c.c:XX [opt]
    2   	#include <caml/callback.h>
    3   	
    4   	value ocaml_to_c (value unit) {
