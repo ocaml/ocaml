@@ -7,13 +7,16 @@ Working version
 
 ### Runtime system:
 
+- #13352: Concurrency refactors and cleanups.
+  (Antonin Décimo, review by Gabriel Scherer, David Allsopp, and Miod Vallat)
+
 - #13437: Stop using GetProcAddress to load functions that were not
   available in older, now unsupported Windows versions.
   (Antonin Décimo, review by Nicolás Ojeda Bär and David Allsopp)
 
-- #?????: Constify some function parameters, flags tables, and some
+- #13470: Constify some function parameters, flags tables, and some
   pointers in C code (take 3).
-  (Antonin Décimo, review by ???)
+  (Antonin Décimo, review by Stephen Dolan and Miod Vallat)
 
 ### Code generation and optimizations:
 
@@ -207,10 +210,6 @@ ___________
 - #13242: Define and use unreachable and trap annotation, and clean-up some
   runtime assertions.
   (Antonin Décimo, review by Miod Vallat, Gabriel Scherer, and David Allsopp)
-
-- #13352: Concurrency refactors and cleanups.
-  (Antonin Décimo, review by Gabriel Scherer, David Allsopp,
-   and Miod Vallat)
 
 ### Code generation and optimizations:
 
