@@ -53,19 +53,19 @@ This will rebuild runtime/ocamlrun, ocamlc, etc.
 
         make bootstrap
 
-= Problems
+== Problems
 
 If you notice that this procedure fails for a given change you are
 trying to implement, please report it so that the procedure can be
 updated to also cope with your change.
 
-= Upstreaming
+== Upstreaming
 
 If you want to upstream your changes, indicate in the message of the
 commit that the changes need a bootstrap. Perform the bootstrap and
 commit the result of the bootstrap separately, after that commit.
 
-= Adding, removing and renaming primitives
+== Adding, removing and renaming primitives
 
 Primitives can be added without having to bootstrap, however it is necessary
 to repeat `make coldstart` in order to use your new primitive in the standard
@@ -110,7 +110,7 @@ To remove a primitive:
         make coreall
         make bootstrap
 
-= Bootstrap test script
+== Bootstrap test script
 
 A script is provided (and used on Inria's continuous
 integration infrastructure) to make sure the bootstrap works. This

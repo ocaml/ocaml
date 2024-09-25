@@ -133,7 +133,7 @@ the available resources:
 | `1` or unset       | 2 cores, 2 Gb RAM   | 32 or 64 bits
 | `2`                | 4 cores, 4 Gb RAM   | 64 bits
 | `3`                | 8 cores, 8 Gb RAM   | 64 bits
-|=====
+|====
 
 Tests, then, can check the `OCAML_TEST_SIZE` environment variable and
 increase the number of cores or the amount of memory used.  The

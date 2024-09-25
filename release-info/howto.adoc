@@ -1,3 +1,5 @@
+== How to release
+
 These are informal notes on how to do an OCaml release.
 
 Following these steps requires commit right in the OCaml repository, as
@@ -190,19 +192,19 @@ Go to https://github.com/ocaml/ocaml/settings/branches and add a rule
 for protecting the new branch (copy the rights from the previous
 version)
 
-=== 5.1. create the release on github (only for a production release)
+==== 5.1. create the release on github (only for a production release)
 
 open https://github.com/ocaml/ocaml/releases # and click "`Draft a new
 release`" # for a minor release, the description is: Bug fixes. See
 https://github.com/ocaml/ocaml/blob/$MAJOR.$MINOR/Changes[detailed list
 of changes].
 
-=== 5.3. Inria CI (for a new release branch)
+==== 5.3. Inria CI (for a new release branch)
 
 Add the new release branch to the Inria CI list. Remove the oldest
 branch from this list.
 
-=== 5.4. New badge in README.adoc (for a new release branch)
+==== 5.4. New badge in README.adoc (for a new release branch)
 
 Add a badge for the new branch in README.adoc. Remove the oldest badge.
 
@@ -260,7 +262,7 @@ The switch should build.
 For a production release, you also need to create new opam files for the
 ocaml-manual and ocaml-src packages.
 
-=== 6.1. Update OPAM dev packages after branching
+==== 6.1. Update OPAM dev packages after branching
 
 Create a new ocaml/ocaml.latexmath:[NEXT/opam file.
 Copy the opam dev files from ocaml-variants/ocaml-variants.]VERSION+trunk__
@@ -408,7 +410,7 @@ organize the webpage for the new release. See
 
 https://github.com/ocaml/ocaml.org/issues/819
 
-=== 12. Announce the release on caml-list, caml-announce, and discuss.ocaml.org
+=== 12: announce the release on caml-list, caml-announce, and discuss.ocaml.org
 
 See the email announce templates in the `+templates/+` directory.
 
@@ -426,9 +428,9 @@ https://github.com/compiler-explorer/infra/pull/1359 as examples.
 
 This should be expanded, once we have more experince with the process
 
-== Appendix
+=== Appendix
 
-=== Announce templates
+==== Announce templates
 
 See
 
@@ -436,7 +438,7 @@ See
 * templates/rc.md for release candidate
 * templates/production.md for the production release
 
-=== Changelog template for a new version
+==== Changelog template for a new version
 
 A list of common subsection for the "`Changes`" file:
 
@@ -464,7 +466,7 @@ A list of common subsection for the "`Changes`" file:
 ### Bug fixes:
 ....
 
-=== Changes curation
+==== Changes curation
 
 Here is the process that Gabriel uses to curate the Changes entries of a
 release in preparation. Feel free to take care of it if you wish.
@@ -474,7 +476,7 @@ shape so that no curation would be necessary. In practice it is less
 work and less friction to tolerate imperfect Changes entries, and curate
 them before the release.)
 
-==== Synchronizing the trunk Changes with release branches
+===== Synchronizing the trunk Changes with release branches
 
 The Changes entries of a release branch or past release should be
 exactly included in the trunk Changes, in the section of this release
@@ -520,11 +522,11 @@ suffices (note: when you cherry-pick a PR in a release branch, please
 target the merge commit to ensure the PR number is present in the log),
 or parts of the commit message text.
 
-==== Ensure each entry is in the appropriate section
+===== Ensure each entry is in the appropriate section
 
 (of course)
 
-==== Fill more details in unclear Changes entries
+===== Fill more details in unclear Changes entries
 
 Expert users want to learn about the changes in the new release. We want
 to avoid forcing them to read the tortuous PR discussion, by giving
@@ -559,7 +561,7 @@ Having enough details is also useful when you will grep the Changes
 later to know when a given change was introduced (knowing what to grep
 can be difficult).
 
-==== Ordering of Changes entries
+===== Ordering of Changes entries
 
 In the past, we would order Changes entries numerically (this would also
 correspond to a chronological order). Since 4.09 Gabriel is trying to
@@ -579,7 +581,7 @@ release don’t. Usually "`Language features`" is among the first, and
 If some entries feel very anecdotal, consider moving them to the Bug
 Fixes section.
 
-==== Extract release highlights to News
+===== Extract release highlights to News
 
 From time to time, synchronize the `+News+` file with the release
 highlights of each version.

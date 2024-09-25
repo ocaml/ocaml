@@ -13,7 +13,7 @@ link:http://gallium.inria.fr/~fpottier/menhir/[menhir] parser
 generator, which is an external tool that you need to install if you
 wish to modify the parser.
 
-=== Working on the parser grammar
+== Working on the parser grammar
 
 To avoid depending on an external tool, the compiler build system does
 not rebuild the parser from the source grammar link:parser.mly[] each
@@ -25,7 +25,7 @@ target of the root Makefile to rebuild the compiler parser. See
 link:../Makefile.menhir[] for the details of the various
 Menhir-related targets and their use.
 
-==== Testing the grammar
+=== Testing the grammar
 
 The root Makefile contains a `build-all-asts` target that will build,
 for each source `.ml` or `.mli` file in the repository, a `.ml.ast` or

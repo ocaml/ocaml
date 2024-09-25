@@ -1,3 +1,5 @@
+= README
+
 [CAUTION]
 ====
 The developer team released OCaml 5.0.0 in December 2022. OCaml 5.x features a
@@ -37,8 +39,6 @@ performance degradations on our issue tracker.
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.14&svg=true["AppVeyor Build Status (4.14 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
 |=====
-
-= README =
 
 == Overview
 
@@ -166,4 +166,4 @@ Please use the issue trackers at their respective new homes:
 | https://github.com/garrigue/labltk/issues[The LablTk library] | OCaml 4.02 | `labltk`
 | https://github.com/ocaml/dbm/issues[The CamlDBM library] | OCaml 4.00 | `dbm`
 | https://github.com/xavierleroy/ocamltopwin/issues[The OCamlWinTop Windows toplevel] | OCaml 4.00 | none
-|=====
+|====

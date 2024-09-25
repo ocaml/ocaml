@@ -8,7 +8,7 @@ proposals for it.
 If you already have a patch that you would like to contribute to the
 official distribution, please see link:CONTRIBUTING.md[].
 
-=== Your first compiler modification
+== Your first compiler modification
 
 1. Create a new git branch to store your changes.
 +
@@ -53,7 +53,7 @@ make tests
 See also our <<tips,development tips and tricks>>, for example on how to
 <<opam-switch,create an opam switch>> to test your modified compiler.
 
-=== What to do
+== What to do
 
 There is always a lot of potential tasks, both for old and
 newcomers. Here are various potential projects:
