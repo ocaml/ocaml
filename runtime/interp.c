@@ -263,9 +263,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
 #if defined(THREADED_CODE) && defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
 #ifdef JUMPTBL_BASE_REG
-  register char * jumptbl_base JUMPTBL_BASE_REG;
+  register const char * jumptbl_base JUMPTBL_BASE_REG;
 #else
-  register char * jumptbl_base;
+  register const char * jumptbl_base;
 #endif
 #endif
   value env;

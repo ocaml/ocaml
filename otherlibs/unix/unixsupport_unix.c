@@ -336,7 +336,7 @@ int caml_unix_cloexec_p(value cloexec)
     return caml_unix_cloexec_default;
 }
 
-void caml_unix_set_cloexec(int fd, char *cmdname, value cmdarg)
+void caml_unix_set_cloexec(int fd, const char *cmdname, value cmdarg)
 {
   int flags = fcntl(fd, F_GETFD, 0);
   if (flags == -1 ||
@@ -344,7 +344,7 @@ void caml_unix_set_cloexec(int fd, char *cmdname, value cmdarg)
     caml_uerror(cmdname, cmdarg);
 }
 
-void caml_unix_clear_cloexec(int fd, char *cmdname, value cmdarg)
+void caml_unix_clear_cloexec(int fd, const char *cmdname, value cmdarg)
 {
   int flags = fcntl(fd, F_GETFD, 0);
   if (flags == -1 ||

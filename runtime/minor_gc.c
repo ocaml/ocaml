@@ -473,7 +473,7 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
                                    int participating_count,
                                    caml_domain_state** participating)
 {
-  struct caml_minor_tables *self_minor_tables = domain->minor_tables;
+  const struct caml_minor_tables *self_minor_tables = domain->minor_tables;
   value* young_ptr = domain->young_ptr;
   value* young_end = domain->young_end;
   uintnat minor_allocated_bytes = (uintnat)young_end - (uintnat)young_ptr;
@@ -956,7 +956,7 @@ CAMLexport value caml_check_urgent_gc (value extra_root)
 static void realloc_generic_table
 (struct generic_table *tbl, asize_t element_size,
  ev_runtime_counter ev_counter_name,
- char *msg_threshold, char *msg_growing, char *msg_error)
+ const char *msg_threshold, const char *msg_growing, const char *msg_error)
 {
   CAMLassert (tbl->ptr == tbl->limit);
   CAMLassert (tbl->limit <= tbl->end);

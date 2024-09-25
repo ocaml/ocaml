@@ -288,7 +288,7 @@ static struct lf_skipcell *lf_skiplist_lookup(struct lf_skiplist *sk,
 /* Search a skip list */
 
 int caml_lf_skiplist_find(struct lf_skiplist *sk, uintnat key, uintnat *data) {
-  struct lf_skipcell *found_cell = lf_skiplist_lookup(sk, key, NULL);
+  const struct lf_skipcell *found_cell = lf_skiplist_lookup(sk, key, NULL);
 
   if (found_cell->key == key) {
     if (data) {
@@ -304,7 +304,7 @@ int caml_lf_skiplist_find_below(struct lf_skiplist *sk, uintnat k, uintnat *key,
                                 uintnat *data) {
   struct lf_skipcell *pred;
   struct lf_skipcell *curr = lf_skiplist_lookup(sk, k, &pred);
-  struct lf_skipcell *found_cell;
+  const struct lf_skipcell *found_cell;
 
   if (curr->key == k) {
     found_cell = curr;
@@ -486,7 +486,7 @@ int caml_lf_skiplist_remove(struct lf_skiplist *sk, uintnat key) {
 void caml_lf_skiplist_free_garbage(struct lf_skiplist *sk) {
   struct lf_skipcell *curr = atomic_load_acquire(&sk->garbage_head);
 
-  struct lf_skipcell *head = sk->head;
+  const struct lf_skipcell *head = sk->head;
   while (curr != head) {
     struct lf_skipcell *next = atomic_load_relaxed(&curr->garbage_next);
     // acquire not useful, if executed in STW

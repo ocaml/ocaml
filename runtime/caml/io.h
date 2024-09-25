@@ -96,8 +96,8 @@ CAMLextern void caml_flush (struct channel *);
 CAMLextern void caml_flush_if_unbuffered (struct channel *);
 CAMLextern void caml_putch(struct channel *, int);
 CAMLextern void caml_putword (struct channel *, uint32_t);
-CAMLextern int caml_putblock (struct channel *, char *, intnat);
-CAMLextern void caml_really_putblock (struct channel *, char *, intnat);
+CAMLextern int caml_putblock (struct channel *, const char *, intnat);
+CAMLextern void caml_really_putblock (struct channel *, const char *, intnat);
 
 CAMLextern unsigned char caml_refill (struct channel *);
 CAMLextern unsigned char caml_getch(struct channel *);

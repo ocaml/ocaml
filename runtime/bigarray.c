@@ -182,7 +182,7 @@ CAMLexport uintnat caml_ba_num_elts(struct caml_ba_array * b)
 
 /* Size in bytes of a bigarray element, indexed by bigarray kind */
 
-CAMLexport int caml_ba_element_size[] =
+CAMLexport const int caml_ba_element_size[] =
 { 4 /*FLOAT32*/, 8 /*FLOAT64*/,
   1 /*SINT8*/, 1 /*UINT8*/,
   2 /*SINT16*/, 2 /*UINT16*/,
@@ -329,7 +329,7 @@ CAMLexport int caml_ba_compare(value v1, value v2)
   num_elts = caml_ba_num_elts(b1);
 
 #define DO_INTEGER_COMPARISON(type) \
-  { type * p1 = b1->data; type * p2 = b2->data; \
+  { const type * p1 = b1->data; const type * p2 = b2->data; \
     for (uintnat n = 0; n < num_elts; n++) { \
       type e1 = *p1++; type e2 = *p2++; \
       if (e1 < e2) return -1; \
@@ -338,7 +338,7 @@ CAMLexport int caml_ba_compare(value v1, value v2)
     return 0; \
   }
 #define DO_GENERIC_UNORDERED_COMPARISON(ptype, etype, conv) \
-  { ptype * p1 = b1->data; ptype * p2 = b2->data; \
+  { const ptype * p1 = b1->data; const ptype * p2 = b2->data; \
     for (uintnat n = 0; n < num_elts; n++) { \
       etype e1 = conv(*p1++); etype e2 = conv(*p2++); \
       if (e1 < e2) return -1; \
@@ -747,10 +747,10 @@ value caml_ba_get_N(value vb, volatile value * vind, int nind)
   case CAML_BA_CAML_INT:
     return Val_long(((intnat *) b->data)[offset]);
   case CAML_BA_COMPLEX32:
-    { float * p = ((float *) b->data) + offset * 2;
+    { const float * p = ((float *) b->data) + offset * 2;
       return copy_two_doubles((double) p[0], (double) p[1]); }
   case CAML_BA_COMPLEX64:
-    { double * p = ((double *) b->data) + offset * 2;
+    { const double * p = ((double *) b->data) + offset * 2;
       return copy_two_doubles(p[0], p[1]); }
   case CAML_BA_CHAR:
     return Val_int(((unsigned char *) b->data)[offset]);

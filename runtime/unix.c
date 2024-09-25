@@ -135,7 +135,8 @@ caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
 
 caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
 {
-  char * dir, * fullname;
+  const char * dir;
+  char * fullname;
   struct stat st;
 
   for (const char *p = name; *p != 0; p++) {
@@ -333,9 +334,9 @@ CAMLexport int caml_read_directory(char * dirname, struct ext_table * contents)
 {
   DIR * d;
 #ifdef HAS_DIRENT
-  struct dirent * e;
+  const struct dirent * e;
 #else
-  struct direct * e;
+  const struct direct * e;
 #endif
 
   d = opendir(dirname);

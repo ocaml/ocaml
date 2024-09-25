@@ -50,7 +50,7 @@ static value encode_sigset(sigset_t * set)
   CAMLreturn(res);
 }
 
-static int sigprocmask_cmd[3] = { SIG_SETMASK, SIG_BLOCK, SIG_UNBLOCK };
+static const int sigprocmask_cmd[3] = { SIG_SETMASK, SIG_BLOCK, SIG_UNBLOCK };
 
 CAMLprim value caml_unix_sigprocmask(value vaction, value vset)
 {

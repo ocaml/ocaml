@@ -230,7 +230,7 @@ CAMLprim value caml_hexstring_of_float(value arg, value vprec, value vstyle)
   }
   /* Treat special cases */
   if (exp == 0x7FF) {
-    char * txt;
+    const char * txt;
     if (m == 0) txt = "infinity"; else txt = "nan";
     memcpy(p, txt, strlen(txt));
     p[strlen(txt)] = 0;

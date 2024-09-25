@@ -111,7 +111,7 @@ extern void caml_unix_check_path(value path, const char * cmdname);
 
 #define DIR_Val(v) *((DIR **) &Field(v, 0))
 
-extern char_os ** caml_unix_cstringvect(value arg, char * cmdname);
+extern char_os ** caml_unix_cstringvect(value arg, const char * cmdname);
 extern void caml_unix_cstringvect_free(char_os **);
 
 extern int caml_unix_cloexec_default;
@@ -123,8 +123,8 @@ extern int caml_win32_set_inherit(HANDLE fd, BOOL inherit);
 #define caml_win32_set_cloexec(fd, cloexec) \
   caml_win32_set_inherit((fd), ! caml_unix_cloexec_p((cloexec)))
 #else
-extern void caml_unix_set_cloexec(int fd, char * cmdname, value arg);
-extern void caml_unix_clear_cloexec(int fd, char * cmdname, value arg);
+extern void caml_unix_set_cloexec(int fd, const char * cmdname, value arg);
+extern void caml_unix_clear_cloexec(int fd, const char * cmdname, value arg);
 #endif /* _WIN32 */
 
 /* Compatibility definitions for the pre-5.0 names of these functions */

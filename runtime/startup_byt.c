@@ -75,7 +75,7 @@
 static char magicstr[EXEC_MAGIC_LENGTH+1];
 
 /* Print the specified error message followed by an end-of-line and exit */
-static void error(char *msg, ...)
+static void error(const char *msg, ...)
 {
   va_list ap;
   va_start(ap, msg);
@@ -177,7 +177,7 @@ void caml_read_section_descriptors(int fd, struct exec_trailer *trail)
    found with that name. */
 
 int32_t caml_seek_optional_section(int fd, struct exec_trailer *trail,
-                                   char *name)
+                                   const char *name)
 {
   long ofs;
 
@@ -195,7 +195,8 @@ int32_t caml_seek_optional_section(int fd, struct exec_trailer *trail,
 /* Position fd at the beginning of the section having the given name.
    Return the length of the section data in bytes. */
 
-int32_t caml_seek_section(int fd, struct exec_trailer *trail, char *name)
+int32_t caml_seek_section(int fd, struct exec_trailer *trail,
+                          const char *name)
 {
   int32_t len = caml_seek_optional_section(fd, trail, name);
   if (len == -1)
@@ -206,7 +207,8 @@ int32_t caml_seek_section(int fd, struct exec_trailer *trail, char *name)
 /* Read and return the contents of the section having the given name.
    Add a terminating 0.  Return NULL if no such section. */
 
-static char * read_section(int fd, struct exec_trailer *trail, char *name)
+static char * read_section(int fd, struct exec_trailer *trail,
+                           const char *name)
 {
   int32_t len;
   char * data;
@@ -223,7 +225,7 @@ static char * read_section(int fd, struct exec_trailer *trail, char *name)
 #ifdef _WIN32
 
 static char_os * read_section_to_os(int fd, struct exec_trailer *trail,
-                                    char *name)
+                                    const char *name)
 {
   int32_t len, wlen;
   char * data;
@@ -378,7 +380,7 @@ static int parse_command_line(char_os **argv)
    freed, since the runtime will terminate after calling this. */
 static void do_print_config(void)
 {
-  char_os * dir;
+  const char_os * dir;
 
   /* Print the runtime configuration */
   printf("version: %s\n", OCAML_VERSION_STRING);

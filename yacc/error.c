@@ -20,9 +20,9 @@
 #include "defs.h"
 
 /* String displayed if we can't malloc a buffer for the UTF-8 conversion */
-static char *unknown = "<unknown; out of memory>";
+static const char *unknown = "<unknown; out of memory>";
 
-void fatal(char *msg)
+void fatal(const char *msg)
 {
     fprintf(stderr, "%s: f - %s\n", myname, msg);
     done(2);
@@ -36,7 +36,7 @@ void no_space(void)
 }
 
 
-void open_error(char_os *filename)
+void open_error(const char_os *filename)
 {
     char *u8 = caml_stat_strdup_of_os(filename);
     fprintf(stderr, "%s: f - cannot open \"%s\"\n", myname, (u8 ? u8 : unknown));
@@ -77,7 +77,8 @@ static void print_pos(char *st_line, char *st_cptr)
 }
 
 
-CAMLnoret static void gen_error(int st_lineno, char *st_line, char *st_cptr, char *msg)
+CAMLnoret static void gen_error(int st_lineno, char *st_line, char *st_cptr,
+                                const char *msg)
 {
     fprintf(stderr, "File \"%s\", line %d: %s\n",
             virtual_input_file_name, st_lineno, msg);

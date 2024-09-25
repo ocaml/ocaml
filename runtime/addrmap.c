@@ -30,7 +30,7 @@ Caml_inline uintnat pos_initial(struct addrmap* t, value key)
   return pos & (t->size - 1);
 }
 
-Caml_inline uintnat pos_next(struct addrmap* t, uintnat pos)
+Caml_inline uintnat pos_next(const struct addrmap* t, uintnat pos)
 {
   return (pos + 1) & (t->size - 1);
 }

@@ -85,7 +85,7 @@ static uint32_t afl_read(void)
 
 CAMLexport value caml_setup_afl(value unit)
 {
-  char* shm_id_str;
+  const char* shm_id_str;
   char* shm_id_end;
   long int shm_id;
   uint32_t startup_msg = 0;

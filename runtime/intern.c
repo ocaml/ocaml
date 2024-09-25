@@ -343,7 +343,7 @@ CAMLnoret static void intern_stack_overflow(struct caml_intern_state* s)
 }
 
 static struct intern_item * intern_resize_stack(struct caml_intern_state* s,
-                                                struct intern_item * sp)
+                                                const struct intern_item * sp)
 {
   asize_t newsize = 2 * (s->intern_stack_limit - s->intern_stack);
   asize_t sp_offset = sp - s->intern_stack;
@@ -1052,7 +1052,7 @@ CAMLprim value caml_marshal_data_size(value buff, value ofs)
 static char * intern_resolve_code_pointer(unsigned char digest[16],
                                           asize_t offset)
 {
-  struct code_fragment * cf = caml_find_code_fragment_by_digest(digest);
+  const struct code_fragment * cf = caml_find_code_fragment_by_digest(digest);
   if (cf != NULL && cf->code_start + offset < cf->code_end)
     return cf->code_start + offset;
   else
@@ -1207,7 +1207,7 @@ CAMLexport void caml_deserialize_block_float_8(void * data, intnat len)
 #endif
 }
 
-CAMLexport void caml_deserialize_error(char * msg)
+CAMLexport void caml_deserialize_error(const char * msg)
 {
   struct caml_intern_state* s = get_intern_state ();
   intern_cleanup(s);

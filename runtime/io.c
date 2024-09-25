@@ -311,7 +311,7 @@ CAMLexport void caml_putword(struct channel *channel, uint32_t w)
   caml_putch(channel, w);
 }
 
-CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
+CAMLexport int caml_putblock(struct channel *channel, const char *p, intnat len)
 {
   int n, free;
 
@@ -333,7 +333,7 @@ CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
 }
 
 CAMLexport void caml_really_putblock(struct channel *channel,
-                                     char *p, intnat len)
+                                     const char *p, intnat len)
 {
   int written;
   while (len > 0) {
@@ -578,8 +578,8 @@ void caml_finalize_channel(value vchan)
 
 static int compare_channel(value vchan1, value vchan2)
 {
-  struct channel * chan1 = Channel(vchan1);
-  struct channel * chan2 = Channel(vchan2);
+  const struct channel * chan1 = Channel(vchan1);
+  const struct channel * chan2 = Channel(vchan2);
   return (chan1 == chan2) ? 0 : (chan1 < chan2) ? -1 : 1;
 }
 
@@ -843,7 +843,7 @@ CAMLprim value caml_ml_set_buffered(value vchannel, value mode)
 
 CAMLprim value caml_ml_is_buffered(value vchannel)
 {
-  struct channel * channel = Channel(vchannel);
+  const struct channel * channel = Channel(vchannel);
   return Val_bool( ! (channel->flags & CHANNEL_FLAG_UNBUFFERED));
 }
 

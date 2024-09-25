@@ -45,7 +45,7 @@ static value caml_unix_convert_itimer(struct itimerval *tp)
 #undef Get_timeval
 }
 
-static int itimers[3] = { ITIMER_REAL, ITIMER_VIRTUAL, ITIMER_PROF };
+static const int itimers[3] = { ITIMER_REAL, ITIMER_VIRTUAL, ITIMER_PROF };
 
 CAMLprim value caml_unix_setitimer(value which, value newval)
 {

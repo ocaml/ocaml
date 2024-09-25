@@ -101,7 +101,8 @@ int caml_unix_execvpe_emulation(const char * name,
                            char * const argv[],
                            char * const envp[])
 {
-  char * searchpath, * p, * q, * fullname;
+  const char * searchpath, * p, * q;
+  char * fullname;
   size_t namelen, dirlen;
   int r, got_eacces;
 
