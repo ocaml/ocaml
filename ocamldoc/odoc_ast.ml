@@ -269,7 +269,7 @@ module Analyser =
 
         | Typedtree.Tpat_construct (_, cons_desc, _, _) when
             (* we give a name to the parameter only if it is unit *)
-            Path.same (Btype.cstr_type_path cons_desc) Predef.path_unit
+            Path.same (Data_types.cstr_res_type_path cons_desc) Predef.path_unit
           ->
             (* a () argument, it never has description *)
             Simple_name { sn_name = "()" ;

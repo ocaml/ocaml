@@ -92,7 +92,6 @@ val is_poly_Tpoly: type_expr -> bool
 val dummy_method: label
 val type_kind_is_abstract: type_declaration -> bool
 val type_origin: type_declaration -> type_origin
-val label_is_poly: label_description -> bool
 
 (**** polymorphic variants ****)
 
@@ -305,7 +304,3 @@ val method_type : label -> class_signature -> type_expr
 (* Return the type of an instance variable.
    @raises [Assert_failure] if the class has no such method. *)
 val instance_variable_type : label -> class_signature -> type_expr
-
-(**** Type information getter ****)
-
-val cstr_type_path : constructor_description -> Path.t

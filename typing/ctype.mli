@@ -193,9 +193,12 @@ type existential_treatment =
   | Keep_existentials_flexible
   | Make_existentials_abstract of Pattern_env.t
 
-val instance_constructor: existential_treatment ->
-        constructor_description -> type_expr list * type_expr * type_expr list
-        (* Same, for a constructor. Also returns existentials. *)
+val instance_constructor:
+  existential_treatment ->
+  Data_types.constructor_description ->
+  type_expr list * type_expr * type_expr list
+(* Same, for a constructor. Also returns existentials. *)
+
 val instance_parameterized_type:
         ?keep_names:bool ->
         type_expr list -> type_expr -> type_expr list * type_expr
@@ -210,10 +213,13 @@ val instance_poly:
         type_expr list -> type_expr -> type_expr list * type_expr
         (* Take an instance of a type scheme containing free univars *)
 val polyfy: Env.t -> type_expr -> type_expr list -> type_expr * bool
+
 val instance_label:
-        fixed:bool ->
-        label_description -> type_expr list * type_expr * type_expr
-        (* Same, for a label *)
+  fixed:bool ->
+  Data_types.label_description ->
+  type_expr list * type_expr * type_expr
+(* Same, for a label *)
+
 val apply:
         ?use_current_level:bool ->
         Env.t -> type_expr list -> type_expr -> type_expr list -> type_expr

@@ -20,6 +20,7 @@ open Misc
 open Asttypes
 open Primitive
 open Types
+open Data_types
 open Typedtree
 open Typeopt
 open Lambda

@@ -190,7 +190,7 @@ type error =
   | Virtual_class of Longident.t
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr
-  | Private_constructor of constructor_description * type_expr
+  | Private_constructor of Data_types.constructor_description * type_expr
   | Unbound_instance_variable of string * string list
   | Instance_variable_not_mutable of string
   | Not_subtype of Errortrace.Subtype.error

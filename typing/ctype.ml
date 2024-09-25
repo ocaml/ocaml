@@ -18,6 +18,7 @@
 open Misc
 open Asttypes
 open Types
+open Data_types
 open Btype
 open Errortrace
 

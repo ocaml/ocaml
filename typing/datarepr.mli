@@ -17,6 +17,7 @@
    determining their representation. *)
 
 open Types
+open Data_types
 
 val extension_descr:
   current_unit:(Unit_info.t option) -> Path.t -> extension_constructor ->

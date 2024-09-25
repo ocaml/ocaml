@@ -20,6 +20,7 @@ open Format
 open Longident
 open Path
 open Types
+open Data_types
 open Outcometree
 module Out_name = Out_type.Out_name
 

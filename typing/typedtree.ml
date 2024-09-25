@@ -17,6 +17,7 @@
 
 open Asttypes
 open Types
+open Data_types
 
 module Uid = Shape.Uid
 
@@ -111,7 +112,7 @@ and expression_desc =
       Longident.t loc * constructor_description * expression list
   | Texp_variant of label * expression option
   | Texp_record of {
-      fields : ( Types.label_description * record_label_definition ) array;
+      fields : ( Data_types.label_description * record_label_definition ) array;
       representation : Types.record_representation;
       extended_expression : expression option;
     }

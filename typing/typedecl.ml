@@ -1258,12 +1258,13 @@ let transl_extension_constructor ~scope env type_path type_params
             typext_params
         end;
         (* Ensure that constructor's type matches the type being extended *)
-        let cstr_type_path = Btype.cstr_type_path cdescr in
-        let cstr_type_params = (Env.find_type cstr_type_path env).type_params in
+        let cstr_res_type_path = Data_types.cstr_res_type_path cdescr in
+        let cstr_res_type_params =
+          (Env.find_type cstr_res_type_path env).type_params in
         let cstr_types =
           (Btype.newgenty
-             (Tconstr(cstr_type_path, cstr_type_params, ref Mnil)))
-          :: cstr_type_params
+             (Tconstr(cstr_res_type_path, cstr_res_type_params, ref Mnil)))
+          :: cstr_res_type_params
         in
         let ext_types =
           (Btype.newgenty
@@ -1272,7 +1273,7 @@ let transl_extension_constructor ~scope env type_path type_params
         in
         if not (Ctype.is_equal env true cstr_types ext_types) then
           raise (Error(lid.loc,
-                       Rebind_mismatch(lid.txt, cstr_type_path, type_path)));
+                   Rebind_mismatch(lid.txt, cstr_res_type_path, type_path)));
         (* Disallow rebinding private constructors to non-private *)
         begin
           match cdescr.cstr_private, priv with

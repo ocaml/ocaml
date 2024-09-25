@@ -17,7 +17,7 @@
 
 open Asttypes
 open Typedtree
-open Types
+open Data_types
 open Format_doc
 
 let is_cons = function
