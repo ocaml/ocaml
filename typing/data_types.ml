@@ -48,8 +48,8 @@ let equal_tag t1 t2 =
   | Cstr_constant i1, Cstr_constant i2 -> i2 = i1
   | Cstr_block i1, Cstr_block i2 -> i2 = i1
   | Cstr_unboxed, Cstr_unboxed -> true
-  | Cstr_extension (path1, b1), Cstr_extension (path2, b2) ->
-      Path.same path1 path2 && b1 = b2
+  | Cstr_extension (path1, _), Cstr_extension (path2, _) ->
+      Path.same path1 path2
   | (Cstr_constant _|Cstr_block _|Cstr_unboxed|Cstr_extension _), _ -> false
 
 let may_equal_constr c1 c2 =
