@@ -617,7 +617,7 @@ ___________
   incorrectly triggering Warning 53.
   (Nicolás Ojeda Bär, review by Chris Casinghino and Florian Angeletti)
 
-- #13203: Do not issue warning 53 is the compiler is stopping before attributes
+- #13203: Do not issue warning 53 if the compiler is stopping before attributes
   have been accurately marked.
   (Chris Casinghino, review by Florian Angeletti)
 
