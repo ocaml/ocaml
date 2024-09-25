@@ -43,10 +43,12 @@ and constructor_tag =
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
 
-(* Constructors are the same *)
-val equal_tag :  constructor_tag -> constructor_tag -> bool
+(* Constructors are the same: they return (structurally)-equal values
+   when applied to equal arguments. *)
+val equal_constr :
+    constructor_description ->  constructor_description -> bool
 
-(* Constructors may be the same, given potential rebinding *)
+(* Constructors may be the same, given potential rebinding. *)
 val may_equal_constr :
     constructor_description ->  constructor_description -> bool
 

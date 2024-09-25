@@ -4458,6 +4458,7 @@ lambda/matching.cmo : \
     typing/primitive.cmi \
     typing/predef.cmi \
     typing/patterns.cmi \
+    typing/path.cmi \
     typing/parmatch.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
@@ -4482,6 +4483,7 @@ lambda/matching.cmx : \
     typing/primitive.cmx \
     typing/predef.cmx \
     typing/patterns.cmx \
+    typing/path.cmx \
     typing/parmatch.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
