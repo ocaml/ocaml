@@ -79,8 +79,8 @@ numbers have been updated since the last major release. It is preferable
 to do this just before the first testing release for this major version,
 typically the first beta.
 
-See the `+utils/HACKING.adoc+` file for documentation on how to bump the
-magic numbers.
+See the xref:../utils/HACKING.adoc[] file for documentation on how to
+bump the magic numbers.
 
 === 3. build, refresh dependencies, sanity checks
 
@@ -396,7 +396,7 @@ cd $WEB_PATH/caml/pub/docs
 mkdir -p manual-ocaml-$BRANCH
 cd manual-ocaml-$BRANCH
 rm -fR htmlman ocaml-$BRANCH-refman-html.tar.gz
-wget http://caml.inria.fr/pub/distrib/ocaml-$BRANCH/ocaml-$BRANCH-refman-html.tar.gz
+wget https://caml.inria.fr/pub/distrib/ocaml-$BRANCH/ocaml-$BRANCH-refman-html.tar.gz
 tar -xzvf ocaml-$BRANCH-refman-html.tar.gz # this extracts into htmlman/
 /bin/cp -r htmlman/* . # move HTML content to docs/manual-caml-$BRANCH
 rm -fR htmlman ocaml-$BRANCH-refman-html.tar.gz
@@ -590,5 +590,5 @@ Fixes section.
 
 ===== Extract release highlights to News
 
-From time to time, synchronize the `+News+` file with the release
+From time to time, synchronize the link:News[] file with the release
 highlights of each version.

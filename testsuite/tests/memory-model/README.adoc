@@ -27,6 +27,6 @@ relaxations are executed.
 stress its memory system.
 * Other parameters `+-s <S>+` and `+-r <R>+` are integer parameters
 related to how and how many experiments are performed, see
-http://diy.inria.fr/doc/litmus.html#sec%3Aarch. Default
+https://diy.inria.fr/doc/litmus.html#sec%3Aarch. Default
 `+-s 5000 -r 20+` yields acceptable running times. Other values such as
 -s 500 -r 200` are worth trying.

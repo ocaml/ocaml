@@ -3,11 +3,11 @@ will need a good understanding of the OCaml type system and type
 inference. Here is a reading list to ease your discovery of the
 typechecker:
 
-http://caml.inria.fr/pub/docs/u3-ocaml/index.html[_Using, Understanding, and Unraveling the OCaml Language_ by Didier R&eacute;my] ::
+https://caml.inria.fr/pub/docs/u3-ocaml/index.html[_Using, Understanding, and Unraveling the OCaml Language_ by Didier R&eacute;my] ::
 This book provides (among other things) a formal description of parts
 of the core OCaml language, starting with a simple Core ML.
 
-http://okmij.org/ftp/ML/generalization.html[_Efficient and Insightful Generalization_ by Oleg Kiselyov] ::
+https://okmij.org/ftp/ML/generalization.html[_Efficient and Insightful Generalization_ by Oleg Kiselyov] ::
 This article describes the basis of the type inference algorithm used
 by the OCaml type checker. It is a recommended read if you want to
 understand the type-checker codebase, in particular its handling of

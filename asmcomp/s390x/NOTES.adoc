@@ -10,4 +10,4 @@ Operation_, SA22-7832-07, eight edition (Feb 2009). This is the version
 that corresponds to z10. Newer versions of this manual include
 additional instructions that are not in z10.
 * ELF ABI: _zSeries ELF Application Binary Interface Supplement_
-(http://refspecs.linuxfoundation.org/ELF/zSeries/index.html)
+(https://refspecs.linuxfoundation.org/ELF/zSeries/index.html)

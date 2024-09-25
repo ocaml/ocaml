@@ -370,7 +370,7 @@ obvious once a bug is understood, reported and reproduced, and yet
 invaluable for users.)
 * Larger changes that are covered by copyright. For them, we require
 contributors to sign a Contributor License Agreement (CLA), which gives
-http://www.inria.fr/en/[INRIA] (Institut National de Recherche en
+https://www.inria.fr/en/[INRIA] (Institut National de Recherche en
 Informatique et en Automatique) the rights to integrate the
 contribution, maintain it, evolve it, and redistribute it under the
 license of its choice. This is not a copyright _assignment_ (as
@@ -379,8 +379,8 @@ retain the copyright on their contribution, and can use it as they see
 fit. The OCaml CLA is lightly adapted from
 https://apache.org/licenses/icla.pdf[the CLA] of the Apache Foundation,
 and is available in two versions:
-http://caml.inria.fr/pub/docs/CLA-individual.doc[for individual
-contributors] and http://caml.inria.fr/pub/docs/CLA-corporate.doc[for
+https://caml.inria.fr/pub/docs/CLA-individual.doc[for individual
+contributors] and https://caml.inria.fr/pub/docs/CLA-corporate.doc[for
 corporations].
 
 You must understand that, by proposing a contribution for integration in
@@ -389,16 +389,16 @@ those regimes. In particular, in all cases you give INRIA the permission
 to freely re-license the OCaml distribution including the contribution.
 
 This ability to re-license allows INRIA to provide members of the
-http://caml.inria.fr/consortium/[Caml Consortium] with a license on the
+https://caml.inria.fr/consortium/[Caml Consortium] with a license on the
 Caml code base that is more permissive than the public license.
 
 ==== How to sign the CLA
 
 If your contribution is large enough, you should sign the CLA. If you
 are contributing on your own behalf, you should sign
-http://caml.inria.fr/pub/docs/CLA-individual.doc[the individual CLA].
+https://caml.inria.fr/pub/docs/CLA-individual.doc[the individual CLA].
 For corporate contributions, if your employer has not already done so,
-they should sign http://caml.inria.fr/pub/docs/CLA-corporate.doc[the
+they should sign https://caml.inria.fr/pub/docs/CLA-corporate.doc[the
 corporate CLA]. Review the CLA, sign it, and send it – scanned PDF by
 email, or postail mail – to Xavier Leroy
-(http://gallium.inria.fr/%7Exleroy/contact.html[contact info]).
+(https://gallium.inria.fr/%7Exleroy/contact.html[contact info]).

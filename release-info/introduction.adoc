@@ -23,8 +23,8 @@ meant to be completely backward compatible and only contain important or
 very safe bug fixes.
 * The prerelease tag `+~alpha%i+`, `+~beta%i+`, `+~rc%i+` (`+~alpha2+`
 in `+5.1.0~alpha2+`) describes a prerelease version of the compiler that
-is currently being tested. See link:#prerelease-versions[below] for a
-more thorough explanation.
+is currently being tested. See <<_prerelease_versions,below>> for a more
+thorough explanation.
 * The development tag `pass:[+tag]` indicates a development or
 experimental version of the compiler. `pass:[+dev0-2023-12-22]` in
 `pass:[5.3.0+dev0-2023-12-22]` is an example of the tags of the form
@@ -69,8 +69,8 @@ documentation improvements go to the release branch – by cherry-picking
 them from `trunk`.
 
 We do not have the resources to maintain more than one dev branch, one
-prelease branch, and link:#Exceptional-LTS-versions[one exceptional LTS
-branch].
+prelease branch, and <<_exceptional_lts_versions,one exceptional LTS
+branch>>.
 
 ==== Example
 

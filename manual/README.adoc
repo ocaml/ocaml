@@ -5,7 +5,7 @@
 * Any prerequisites required to build the OCaml compiler from sources.
 * A LaTeX installation.
 * The HeVeA LaTeX-to-HTML converter (available in opam):
-http://hevea.inria.fr/
+https://hevea.inria.fr/
 
 Note that you must make sure `+hevea.sty+` is installed into TeX
 properly. Your package manager may not do this for you. Run

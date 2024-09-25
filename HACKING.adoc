@@ -177,7 +177,7 @@ link:lex/[]:: The `ocamllex` lexer generator.
 link:yacc/[]:: The `ocamlyacc` parser generator. We do not recommend
 using it for user projects in need of a parser generator. Please
 consider using and contributing to
-link:http://gallium.inria.fr/~fpottier/menhir/[menhir] instead, which
+link:https://gallium.inria.fr/~fpottier/menhir/[menhir] instead, which
 has tons of extra features, lets you write more readable grammars, and
 has excellent documentation.
 
