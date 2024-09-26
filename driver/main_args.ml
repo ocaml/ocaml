@@ -412,7 +412,7 @@ let mk_keywords f =
   "<version+list>  set keywords following the <version+list> spec:\n
   \                -<version> if present specifies the base set of keywords\n
   \                  (if absent the current set of keywords is used)
-  \                 -<list> is a \"+\"-separated list of keywords to add to\n
+  \                -<list> is a \"+\"-separated list of keywords to add to\n
   \                   the base set of keywords.
   "
 
