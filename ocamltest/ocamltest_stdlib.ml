@@ -45,9 +45,6 @@ end
 
 module List = struct
   include List
-  let rec concatmap f = function
-    | [] -> []
-    | x::xs -> (f x) @ (concatmap f xs)
 
   let rec fold_left_result f acc = function
     | [] -> Ok acc
