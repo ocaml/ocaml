@@ -92,10 +92,11 @@ type result_summary = No_failure | Some_failure | All_skipped
 let join_result summary result =
   let open Result in
   match result.status, summary with
-  | Fail, _
-  | _, Some_failure -> Some_failure
-  | (Skip | Pass), All_skipped -> All_skipped
-  | _ -> No_failure
+  | Fail, (All_skipped | Some_failure | No_failure) -> Some_failure
+  | Skip, (All_skipped | No_failure) -> All_skipped
+  | Skip, Some_failure -> Some_failure
+  | Pass, Some_failure -> Some_failure
+  | Pass, (All_skipped | No_failure) -> No_failure
 
 let join_summaries sa sb =
   match sa, sb with
