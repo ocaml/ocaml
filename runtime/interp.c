@@ -156,7 +156,8 @@ Caml_inline void check_trap_barrier_for_effect
     if (parent_stack != NULL
         && parent_stack->id == domain_state->trap_barrier_block
         && parent_stack->sp + 2 - Stack_high (parent_stack)
-              /* Note: +2 is the same constant as in debugger.c:552 */
+              /* Note: +2 is the same constant as in the REQ_UP_FRAME
+                 case in caml_debugger() in debugger.c */
            == domain_state->trap_barrier_off){
       caml_debugger(TRAP_BARRIER, Val_unit);
     }
