@@ -61,13 +61,15 @@ static void encode_C_literal(const char_os * path)
   putchar('"');
 
   while ((c = *path++) != 0) {
-    /* Escape \, " and \n */
+    /* Escape \, ", \n and \r */
     if (c == '\\') {
       printf("\\\\");
     } else if (c == '"') {
       printf("\\\"");
     } else if (c == '\n') {
       printf("\\n");
+    } else if (c == '\r') {
+      printf("\\r");
 #ifndef _WIN32
     /* On Unix, nothing else needs escaping */
     } else {
