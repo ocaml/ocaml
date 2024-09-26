@@ -15553,21 +15553,21 @@ then :
   *) :
     if test "$ac_cv_alignof_double" -gt 4
 then :
-  align_double=true,
+  align_double=true
        printf "%s\n" "#define ARCH_ALIGN_DOUBLE 1" >>confdefs.h
 
 fi
      if test "x$ac_cv_sizeof_long" = "x8" &&
             test "$ac_cv_alignof_long" -gt 4
 then :
-  align_int64=true,
+  align_int64=true
        printf "%s\n" "#define ARCH_ALIGN_INT64 1" >>confdefs.h
 
 else $as_nop
   if test "x$ac_cv_sizeof_long_long" = "x8" &&
               test "$ac_cv_alignof_long_long" -gt 4
 then :
-  align_int64=true,
+  align_int64=true
        printf "%s\n" "#define ARCH_ALIGN_INT64 1" >>confdefs.h
 
 fi
