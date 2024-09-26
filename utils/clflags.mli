@@ -225,6 +225,7 @@ val dump_into_file : bool ref
 val dump_dir : string option ref
 
 val keyword_edition: string option ref
+val parse_keyword_edition: string -> (int*int) option * string list
 
 (* Support for flags that can also be set from an environment variable *)
 type 'a env_reader = {

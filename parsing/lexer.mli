@@ -20,7 +20,7 @@
 
 *)
 
-val init : unit -> unit
+val init : ?keyword_edition:((int*int) option * string list) -> unit -> unit
 val token: Lexing.lexbuf -> Parser.token
 val skip_hash_bang: Lexing.lexbuf -> unit
 
