@@ -749,7 +749,7 @@ let parse_keyword_edition s =
   let parse_version s =
   let bad_version () =
     raise (Arg.Bad "Ill-formed version in keywords flag,\n\
-                    the expected format is %d.%d .")
+                    the supported format is <major>.<minor>, for example 5.2 .")
   in
   if s = "" then None else match String.split_on_char '.' s with
   | [] | [_] | _ :: _ :: _ :: _ -> bad_version ()
