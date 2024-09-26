@@ -982,7 +982,9 @@ let type_declarations ?(equality = false) ~loc env ~mark name
     | (Type_variant (cstrs1, rep1), Type_variant (cstrs2, rep2)) ->
         if mark then begin
           let mark usage cstrs =
-            List.iter (Env.mark_constructor_used usage) cstrs
+            List.iter (fun cstr ->
+              Env.mark_constructor_used usage cstr.Types.cd_uid
+            ) cstrs
           in
           let usage : Env.constructor_usage =
             if decl2.type_private = Public then Env.Exported
@@ -1001,7 +1003,9 @@ let type_declarations ?(equality = false) ~loc env ~mark name
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
         if mark then begin
           let mark usage lbls =
-            List.iter (Env.mark_label_used usage) lbls
+            List.iter (fun lbl ->
+              Env.mark_label_used usage lbl.Types.ld_uid
+            ) lbls
           in
           let usage : Env.label_usage =
             if decl2.type_private = Public then Env.Exported
@@ -1059,7 +1063,7 @@ let extension_constructors ~loc env ~mark id ext1 ext2 =
       if ext2.ext_private = Public then Env.Exported
       else Env.Exported_private
     in
-    Env.mark_extension_used usage ext1
+    Env.mark_extension_used usage ext1.ext_uid
   end;
   let ty1 =
     Btype.newgenty (Tconstr(ext1.ext_type_path, ext1.ext_type_params, ref Mnil))
