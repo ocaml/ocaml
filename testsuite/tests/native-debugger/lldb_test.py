@@ -1,7 +1,12 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 import lldb
+import re
+
+# Trim trailing numbers on symbols.
+#
+def trim_basename(name):
+    return re.sub(r"(caml.*)_[0-9]+", r"\1", name)
 
 # Print backtrace by walking LLDB frames
 #
@@ -17,11 +22,13 @@ def print_backtrace(debugger, command, result, dict):
             thread = process.GetSelectedThread()
             for thread in process:
                 for frame in thread:
-                    print("frame %i: %s`%s"% (frame.idx, frame.module.file.basename, frame.name))
+                    print("frame %i: %s`%s"% (frame.idx, frame.module.file.basename, trim_basename(frame.name)))
         else:
             result.SetError('No current process for the debugger. Has a process to debug been launched?')
     else:
         result.SetError('No current target for the debugger. Has a process to debug been launched?')
+# Usage:
+# (lldb) backtrace
 
 # Create breakpoint at address
 # lldb.target.BreakpointCreateByAddress(0x0000000100005ad0)

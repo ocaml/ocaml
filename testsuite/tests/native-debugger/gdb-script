@@ -3,13 +3,14 @@ break caml_program
 break ocaml_to_c
 break meander.ml:5
 set debuginfod enabled off
+source gdb_test.py
 run
-backtrace
+print_backtrace
 continue
-backtrace
+print_backtrace
 continue
-backtrace
+print_backtrace
 continue
-backtrace
+print_backtrace
 continue
 quit
