@@ -46,7 +46,10 @@ type 'a parser =
 let wrap (parser : 'a parser) lexbuf : 'a =
   try
     Docstrings.init ();
-    Lexer.init ();
+    let keyword_edition =
+      Clflags.(Option.map parse_keyword_edition !keyword_edition)
+    in
+    Lexer.init ?keyword_edition ();
     let ast = parser token lexbuf in
     Parsing.clear_parser();
     Docstrings.warn_bad_docstrings ();

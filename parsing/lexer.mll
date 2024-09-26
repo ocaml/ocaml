@@ -42,129 +42,95 @@ exception Error of error * Location.t
 
 (* The table of keywords *)
 
-let keyword_table_all =
-  create_hashtable 149 [
-    "and", AND;
-    "as", AS;
-    "assert", ASSERT;
-    "begin", BEGIN;
-    "class", CLASS;
-    "constraint", CONSTRAINT;
-    "do", DO;
-    "done", DONE;
-    "downto", DOWNTO;
-    "effect", EFFECT;
-    "else", ELSE;
-    "end", END;
-    "exception", EXCEPTION;
-    "external", EXTERNAL;
-    "false", FALSE;
-    "for", FOR;
-    "fun", FUN;
-    "function", FUNCTION;
-    "functor", FUNCTOR;
-    "if", IF;
-    "in", IN;
-    "include", INCLUDE;
-    "inherit", INHERIT;
-    "initializer", INITIALIZER;
-    "lazy", LAZY;
-    "let", LET;
-    "match", MATCH;
-    "method", METHOD;
-    "module", MODULE;
-    "mutable", MUTABLE;
-    "new", NEW;
-    "nonrec", NONREC;
-    "object", OBJECT;
-    "of", OF;
-    "open", OPEN;
-    "or", OR;
+let all_keywords =
+  let v5_3 = Some (5,3) in
+  let v1_0 = Some (1,0) in
+  let v1_6 = Some (1,6) in
+  let v4_2 = Some (4,2) in
+  let always = None in
+  [
+    "and", AND, always;
+    "as", AS, always;
+    "assert", ASSERT, v1_6;
+    "begin", BEGIN, always;
+    "class", CLASS, v1_0;
+    "constraint", CONSTRAINT, v1_0;
+    "do", DO, always;
+    "done", DONE, always;
+    "downto", DOWNTO, always;
+    "effect", EFFECT, v5_3;
+    "else", ELSE, always;
+    "end", END, always;
+    "exception", EXCEPTION, always;
+    "external", EXTERNAL, always;
+    "false", FALSE, always;
+    "for", FOR, always;
+    "fun", FUN, always;
+    "function", FUNCTION, always;
+    "functor", FUNCTOR, always;
+    "if", IF, always;
+    "in", IN, always;
+    "include", INCLUDE, always;
+    "inherit", INHERIT, v1_0;
+    "initializer", INITIALIZER, v1_0;
+    "lazy", LAZY, v1_6;
+    "let", LET, always;
+    "match", MATCH, always;
+    "method", METHOD, v1_0;
+    "module", MODULE, always;
+    "mutable", MUTABLE, always;
+    "new", NEW, v1_0;
+    "nonrec", NONREC, v4_2;
+    "object", OBJECT, v1_0;
+    "of", OF, always;
+    "open", OPEN, always;
+    "or", OR, always;
 (*  "parser", PARSER; *)
-    "private", PRIVATE;
-    "rec", REC;
-    "sig", SIG;
-    "struct", STRUCT;
-    "then", THEN;
-    "to", TO;
-    "true", TRUE;
-    "try", TRY;
-    "type", TYPE;
-    "val", VAL;
-    "virtual", VIRTUAL;
-    "when", WHEN;
-    "while", WHILE;
-    "with", WITH;
+    "private", PRIVATE, v1_0;
+    "rec", REC, always;
+    "sig", SIG, always;
+    "struct", STRUCT, always;
+    "then", THEN, always;
+    "to", TO, always;
+    "true", TRUE, always;
+    "try", TRY, always;
+    "type", TYPE, always;
+    "val", VAL, always;
+    "virtual", VIRTUAL, v1_0;
+    "when", WHEN, always;
+    "while", WHILE, always;
+    "with", WITH, always;
 
-    "lor", INFIXOP3("lor"); (* Should be INFIXOP2 *)
-    "lxor", INFIXOP3("lxor"); (* Should be INFIXOP2 *)
-    "mod", INFIXOP3("mod");
-    "land", INFIXOP3("land");
-    "lsl", INFIXOP4("lsl");
-    "lsr", INFIXOP4("lsr");
-    "asr", INFIXOP4("asr")
+    "lor", INFIXOP3("lor"), always; (* Should be INFIXOP2 *)
+    "lxor", INFIXOP3("lxor"), always; (* Should be INFIXOP2 *)
+    "mod", INFIXOP3("mod"), always;
+    "land", INFIXOP3("land"), always;
+    "lsl", INFIXOP4("lsl"), always;
+    "lsr", INFIXOP4("lsr"), always;
+    "asr", INFIXOP4("asr"), always
 ]
 
-let refresh_keywords tbl =
+
+let keyword_table = Hashtbl.create 149
+
+let populate_keywords (version,keywords) =
+  let greater (x:(int*int) option) (y:(int*int) option) =
+    match x, y with
+    | None, _ | _, None -> true
+    | Some x, Some y -> x >= y
+  in
+  let tbl = keyword_table in
   Hashtbl.clear tbl;
-  Hashtbl.iter
-    (fun k v -> Hashtbl.replace tbl k (Some v))
-    keyword_table_all
-
-let keyword_table =
-  let tbl = Hashtbl.create 149 in
-  refresh_keywords tbl;
-  tbl
-let keyword_edition v =
-  if v < (3,7) then begin
-      Hashtbl.add keyword_table "parser" None;
-      if v < (1,0) then (
-        List.iter (Hashtbl.remove keyword_table)
-          ["class"; "inherit";"method";"new";"private";"constraint";"private";
-           "virtual"]
-      );
-      if v < (1,6) then (
-        Hashtbl.remove keyword_table "lazy";
-        Hashtbl.remove keyword_table "assert"
-      )
-    end;
-  if v < (4,2) then
-    Hashtbl.remove keyword_table "nonrec";
-  if v < (5, 3) then
-    Hashtbl.remove keyword_table "effect"
-
-let parse_keyword_edition s =
-  let parse_version s =
-  let bad_version () =
-    raise (Arg.Bad "Ill-formed version in keywords flag,\n\
-                    the expected format is %d.%d .")
+  let add_keyword (name, token, since) =
+    if greater version since then Hashtbl.replace tbl name (Some token)
   in
-  if s = "" then None else match String.split_on_char '.' s with
-  | [] | [_] | _ :: _ :: _ :: _ -> bad_version ()
-  | [major;minor] -> match int_of_string_opt major, int_of_string_opt minor with
-    | Some major, Some minor -> Some (major,minor)
-    | _ -> bad_version ()
-  in
-  match String.split_on_char '+' s with
-  | [] -> None, []
-  | [s] -> parse_version s, []
-  | v :: rest -> parse_version v, rest
+  List.iter add_keyword all_keywords;
+  List.iter (fun name ->
+    match List.find (fun (n,_,_) -> n = name) all_keywords with
+    | (_,tok,_) -> Hashtbl.replace tbl name (Some tok)
+    | exception Not_found -> Hashtbl.replace tbl name None
+    ) keywords
 
-let set_keyword_edition =
-  let keyword_last_edition = ref (None,[]) in
-  fun ~add edition ->
-  if (edition, add) <> !keyword_last_edition then
-    begin match !keyword_last_edition with
-    | None, [] -> ()
-    | _ -> refresh_keywords keyword_table;
-    end;
-    keyword_last_edition := edition, add;
-    Option.iter keyword_edition edition;
-    List.iter (fun k ->
-    match Hashtbl.find keyword_table_all k with
-    | name -> Hashtbl.replace keyword_table k (Some name)
-    | exception Not_found -> Hashtbl.replace keyword_table k None
-    ) add
 
 (* To buffer string literals *)
 
@@ -1033,11 +999,8 @@ and skip_hash_bang = parse
     in
       loop NoLine Initial lexbuf
 
-  let init () =
-    begin match Option.map parse_keyword_edition !Clflags.keyword_edition with
-    | None -> ()
-    | Some (edition, add) -> set_keyword_edition ~add edition
-    end;
+  let init ?(keyword_edition=None,[]) () =
+    populate_keywords keyword_edition;
     is_in_string := false;
     comment_start_loc := [];
     comment_list := [];
