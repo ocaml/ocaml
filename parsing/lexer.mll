@@ -432,8 +432,8 @@ let prepare_error loc = function
          Style.inline_code name
   | Unknown_keyword name ->
       Location.errorf ~loc
-      "%a has been marked as a future keyword,@ \
-      but this version of OCaml cannot handle it."
+      "%a has been defined as an additional keyword.@ \
+       This version of OCaml does not support this keyword."
       Style.inline_code name
 
 let () =
