@@ -479,3 +479,7 @@ let pp_two_columns ?(sep = "|") ?max_lines ppf (lines: (string * string) list) =
   fprintf ppf "@]"
 
 let deprecated_printer pr ppf = ppf := Doc.add !ppf (Doc.Deprecated pr)
+let deprecated pr ppf x =
+  ppf := Doc.add !ppf (Doc.Deprecated (fun ppf -> pr ppf x))
+let deprecated1 pr p1 ppf x =
+  ppf := Doc.add !ppf (Doc.Deprecated (fun ppf -> pr p1 ppf x))
