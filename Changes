@@ -46,6 +46,9 @@ Working version
   output.
   (Romain Beauxis, review by David Allsopp)
 
+- #13484: Fix ocamltest reporting logic to report skipped tests as skipped
+  (Tim McGilchrist, Miod Vallat, review by ???)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
