@@ -94,7 +94,7 @@ let join_result summary result =
   match result.status, summary with
   | Fail, _
   | _, Some_failure -> Some_failure
-  | (Skip | Pass), All_skipped -> All_skipped
+  | Skip, All_skipped -> All_skipped
   | _ -> No_failure
 
 let join_summaries sa sb =
