@@ -190,6 +190,7 @@ type error =
   | Not_an_extension_constructor
   | Invalid_atomic_loc_payload
   | Label_not_atomic of Longident.t
+  | Atomic_in_pattern of Longident.t
   | Literal_overflow of string
   | Unknown_literal of string * char
   | Illegal_letrec_pat
@@ -986,6 +987,10 @@ let solve_Ppat_construct ~refine tps penv loc constr no_existentials
 
 let solve_Ppat_record_field ~refine loc penv label label_lid record_ty =
   with_local_level_generalize_structure begin fun () ->
+    (* [not refine] holds when the pattern comes from the user,
+       rather than a counter-example to exhaustivity. *)
+    if not refine && label.lbl_atomic = Atomic then
+      raise (Error (loc, !!penv, Atomic_in_pattern label_lid.txt)) ;
     let (_, ty_arg, ty_res) = instance_label ~fixed:false label in
     begin try
       unify_pat_types_refine ~refine loc penv ty_res (instance record_ty)
@@ -7036,6 +7041,13 @@ let report_error ~loc env = function
         Style.inline_code "[%atomic.loc]"
   | Label_not_atomic lid ->
       Location.errorf ~loc "The record field %a is not atomic"
+        (Style.as_inline_code longident) lid
+  | Atomic_in_pattern lid ->
+      Location.errorf ~loc
+        "Atomic fields (here %a) are forbidden in patterns, as it is difficult \
+         to reason about when the atomic read will happen during pattern \
+         matching: the field may be read zero, one or several times depending \
+         on the patterns around it."
         (Style.as_inline_code longident) lid
   | Literal_overflow ty ->
       Location.errorf ~loc
