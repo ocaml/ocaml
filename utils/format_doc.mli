@@ -267,6 +267,7 @@ val pp_print_newline: unit printer
 (** {2 Separators }*)
 
 val comma: unit printer
+val semicolon: unit printer
 
 (** {2 Compiler output} *)
 

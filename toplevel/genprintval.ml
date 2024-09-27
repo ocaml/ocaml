@@ -335,6 +335,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 let s = Bytes.to_string (O.obj obj : bytes) in
                 Oval_string (s, !printer_steps, Ostr_bytes)
 
+              | Tconstr(path, [], _)
+                  when Path.same path Predef.path_floatarray ->
+                Oval_floatarray (O.obj obj : floatarray)
+
               | Tconstr (path, [ty_arg], _)
                 when Path.same path Predef.path_lazy_t ->
                 let obj_tag = O.tag obj in

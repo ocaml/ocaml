@@ -342,6 +342,11 @@ let extract_option_type env ty =
     Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty
   | _ -> assert false
 
+let is_floatarray_type env ty =
+  match get_desc (expand_head env ty) with
+    Tconstr(path, [], _) -> Path.same path Predef.path_floatarray
+  | _ -> false
+
 let protect_expansion env ty =
   if Env.has_local_constraints env then generic_instance ty else ty
 
@@ -381,6 +386,20 @@ let extract_label_names env ty =
 
 let is_principal ty =
   not !Clflags.principal || get_level ty = generic_level
+
+(* Returns [Some ty_elt] if the expected type can be used for type-directed
+   disambiguation of an array literal. *)
+let disambiguate_array_literal ~loc env expected_ty =
+  let return ty =
+    if not (is_principal expected_ty) then
+      Location.prerr_warning loc
+        (not_principal "this type-based array disambiguation");
+    Some ty
+  in
+  if is_floatarray_type env expected_ty then
+    return (instance Predef.type_float)
+  else
+    None
 
 (* Typing of patterns *)
 
@@ -976,11 +995,14 @@ let solve_Ppat_record_field ~refine loc penv label label_lid record_ty =
   end
 
 let solve_Ppat_array ~refine loc env expected_ty =
-  let ty_elt = newgenvar() in
   let expected_ty = generic_instance expected_ty in
-  unify_pat_types_refine ~refine
-    loc env (Predef.type_array ty_elt) expected_ty;
-  ty_elt
+  match disambiguate_array_literal ~loc !!env expected_ty with
+  | Some ty_elt -> ty_elt
+  | None ->
+      let ty_elt = newgenvar() in
+      unify_pat_types_refine ~refine
+        loc env (Predef.type_array ty_elt) expected_ty;
+      ty_elt
 
 let solve_Ppat_lazy ~refine loc env expected_ty =
   let nv = newgenvar () in
@@ -3867,12 +3889,20 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_array(sargl) ->
-      let ty = newgenvar() in
-      let to_unify = Predef.type_array ty in
-      with_explanation (fun () ->
-        unify_exp_types loc env to_unify (generic_instance ty_expected));
+      let ty_elt =
+        let ty_expected = generic_instance ty_expected in
+        match disambiguate_array_literal ~loc env ty_expected with
+        | Some ty_elt -> ty_elt
+        | None ->
+            let ty = newgenvar () in
+            let to_unify = Predef.type_array ty in
+            with_explanation (fun () ->
+                unify_exp_types loc env to_unify ty_expected);
+            ty
+      in
       let argl =
-        List.map (fun sarg -> type_expect env sarg (mk_expected ty)) sargl in
+        List.map (fun sarg -> type_expect env sarg (mk_expected ty_elt)) sargl
+      in
       re {
         exp_desc = Texp_array argl;
         exp_loc = loc; exp_extra = [];

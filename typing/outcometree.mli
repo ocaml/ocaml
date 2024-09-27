@@ -56,6 +56,7 @@ type out_value =
   | Oval_tuple of out_value list
   | Oval_variant of string * out_value option
   | Oval_lazy of out_value
+  | Oval_floatarray of floatarray
 
 type out_type_param = {
     ot_non_gen: bool;

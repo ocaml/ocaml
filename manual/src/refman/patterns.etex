@@ -30,8 +30,9 @@ pattern:
 See also the following language extensions:
 \hyperref[s:first-class-modules]{first-class modules},
 \hyperref[s:attributes]{attributes},
-\hyperref[s:extension-nodes]{extension nodes} and
-\hyperref[s:effect-handlers]{effect handlers}.
+\hyperref[s:extension-nodes]{extension nodes},
+\hyperref[s:effect-handlers]{effect handlers} and
+\hyperref[s:array-literals]{type-directed disambiguation of array literals}.
 
 The table below shows the relative precedences and associativity of
 operators and non-closed pattern constructions. The constructions with

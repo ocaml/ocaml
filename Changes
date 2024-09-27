@@ -5,6 +5,13 @@ Working version
 
 ### Language features:
 
+- #13340: Array literal syntax can now be used to denote values of type `'a
+  array` and `floatarray`, both in expressions and patterns. The compiler
+  disambiguates each case by using contextual type information (assuming `'a
+  array` by default).
+  (Nicolás Ojeda Bär, review by Richard Eisenberg, Jeremy Yallop, Jacques
+  Garrigue, and Gabriel Scherer)
+
 ### Runtime system:
 
 - #13352: Concurrency refactors and cleanups.
