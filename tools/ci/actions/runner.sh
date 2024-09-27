@@ -181,6 +181,7 @@ BasicCompiler () {
   ./configure --disable-dependency-generation \
               --disable-debug-runtime \
               --disable-instrumented-runtime \
+              --enable-ocamltest \
       || failed=$?
   if ((failed)) ; then cat config.log ; exit $failed ; fi
 
