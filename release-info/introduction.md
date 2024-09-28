@@ -161,4 +161,4 @@ Currently, we expect to support OCaml 4.14 until OCaml 5.4 (around April 2025).
 
 # How are new versions of OCaml released?
 
-The release process is documented in [the release howto](https://github.com/ocaml/ocaml/release-info/howto.md)
+The release process is documented at [howto.md](howto.md).
