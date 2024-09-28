@@ -153,8 +153,8 @@ typing_SOURCES = \
   typing/cmt2annot.mli typing/cmt2annot.ml \
   typing/typing_recovery_state.mli typing/typing_recovery_state.ml \
   typing/head_shape_types.mli typing/head_shape_types.ml \
-  typing/head_shape.mli typing/head_shape.ml \
   typing/print_head_shape.mli typing/print_head_shape.ml \
+  typing/head_shape.mli typing/head_shape.ml \
   typing/untypeast.mli typing/untypeast.ml \
   typing/includemod.mli typing/includemod.ml \
   typing/signature_matching.mli typing/signature_matching.ml \
