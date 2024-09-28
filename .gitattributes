@@ -57,6 +57,7 @@ META.in                  typo.missing-header
 
 # Github templates and scripts lack headers, have long lines
 /.github/**              typo.missing-header typo.long-line=may typo.very-long-line=may
+/.github/workflows/build-msvc.yml typo.utf8
 
 /.mailmap                typo.long-line typo.missing-header typo.non-ascii
 /CONTRIBUTING.md         typo.non-ascii=may
