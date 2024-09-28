@@ -931,6 +931,7 @@ typing/gprinttyp.cmi : \
     typing/types.cmi
 typing/head_shape.cmo : \
     typing/types.cmi \
+    typing/print_head_shape.cmi \
     typing/predef.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
@@ -943,6 +944,7 @@ typing/head_shape.cmo : \
     typing/head_shape.cmi
 typing/head_shape.cmx : \
     typing/types.cmx \
+    typing/print_head_shape.cmx \
     typing/predef.cmx \
     utils/misc.cmx \
     parsing/location.cmx \

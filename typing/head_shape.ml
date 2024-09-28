@@ -188,6 +188,11 @@ and of_typedescr env p ty_decl ty_descr ~args fuel =
             (* cannot occur in regular variants *)
             assert false
       in
+      (* Here we use the {!union} function to compute the head shape
+         of the variant, without trying to enforce that the union is
+         disjoint. Indeed, we already know that it must be disjoint,
+         otherwise it would have been rejected at declaration time by
+         the {!check_typedecl} function below. *)
       List.map of_cstr_descr cstr_descrs
       |> List.fold_left Shape.union Shape.empty
   | Type_abstract _ | Type_external _ ->
@@ -217,7 +222,7 @@ let of_type_path env path =
    for any possible value of the type parameters; this is what is
    required to check that the definition is valid, and it can be
    cached and reused for pattern-matching compilation. *)
-let _of_unboxed_cstr_description env descr =
+let of_unboxed_cstr_description env descr =
   try Misc.Cached.force descr (fun (decl, ty_arg) ->
     let params = Ctype.instance_list decl.type_params in
     let ty_arg = Ctype.apply env decl.type_params ty_arg params in
@@ -236,21 +241,86 @@ let _of_unboxed_cstr_description env descr =
     *)
     Shape.any
 
-let check_typedecl env (path, decl) =
-  match Env.find_type_descrs path env with
-  | exception Not_found -> assert false
-  | Type_open | Type_record _ -> ()
-  | Type_abstract _ | Type_external _ -> ()
-  | Type_variant (_, Variant_unboxed) -> ()
+let of_regular_cstr_description env descr =
+  match descr.cstr_tag with
+  | Cstr_constant n -> Shape.imm [Imm n]
+  | Cstr_block tag -> Shape.block [Tag tag]
+  | Cstr_unboxed descr -> of_unboxed_cstr_description env descr
+  | Cstr_extension _ ->
+      (* cannot occur in regular variants *)
+      assert false
+
+let cstr_is_unboxed cstr =
+  match cstr.cstr_tag with
+  | Cstr_constant _ | Cstr_block _ | Cstr_extension _ -> false
+  | Cstr_unboxed _ -> true
+
+let find_constructors_with_unboxed = function
+  | Type_open | Type_record _
+  | Type_abstract _ | Type_external _
+  | Type_variant (_, Variant_unboxed) -> None
   | Type_variant (cstrs, Variant_regular) ->
-      cstrs |> List.iter (function
-        | {cstr_tag = (Cstr_constant _ | Cstr_block _ | Cstr_extension _)} ->
-            ()
-        | {cstr_tag = Cstr_unboxed _; cstr_loc; _} ->
-            (* In this temporary state, we have not implemented
-               the shape-disjointness check yet, so we simply fail
-               if the user asks for an unboxed constructor. *)
-            ignore decl;
-            Location.raise_errorf ~loc:cstr_loc
-              "TODO: [@unboxed] constructors are still unsupported"
+      let has_unboxed_cstr = List.exists cstr_is_unboxed cstrs in
+      if has_unboxed_cstr then Some cstrs
+      else None
+
+let check_typedecl_conflicts ~loc genv cstrs =
+  (* Boxed constructors, by construction, cannot have overlapping
+     representations, as they get assigned distinct immediates or tags.
+
+     If an overlap arises, it is necessarily between an unboxed
+     constructor an another constructor (boxed or unboxed).
+  
+     Checking all pairs of a boxed constructor and another constructor
+     would be quadratic. Instead we do as follows:
+     - in one traversal of all constructors, we check if there is
+       a conflict by accumulating the union of all shapes seen so far;
+     - if there is a conflict at position [i], we traverse all
+       constructors at position [j < i] to detect the first constructor
+       [j] that overlaps with [i].
+  *)
+  let cstr_shapes =
+    Array.of_list @@ List.map (fun descr ->
+      of_regular_cstr_description genv descr
+    ) cstrs
+  in
+  let overlap sh1 sh2 = not Shape.(is_empty (inter sh1 sh2)) in
+  let conflict =
+    let acc = ref Shape.empty in
+    cstrs |> List.find_mapi (fun i cstr ->
+      let sh = cstr_shapes.(i) in
+      if cstr_is_unboxed cstr && overlap !acc sh then Some (i, cstr, sh)
+      else (
+        acc := Shape.union !acc sh;
+        None
       )
+    )
+  in
+  match conflict with
+  | None -> ()
+  | Some (i, cstri, shi) ->
+    cstrs |> List.iteri (fun j cstrj ->
+      assert (j < i);
+      let shj = cstr_shapes.(j) in
+      if overlap shi shj then
+        (* TODO: define a proper error with an error printer. *)
+        Location.raise_errorf ~loc
+          "@[Constructors %s and %s have overlapping representations.\
+             @;<1 2>shape of %s: %a\
+             @;<1 2>shape of %s: %a\
+           @]"
+          cstrj.cstr_name cstri.cstr_name
+          cstrj.cstr_name Print_head_shape.doc shj
+          cstri.cstr_name Print_head_shape.doc shi
+    )
+
+let check_typedecl env (path, decl) =
+  let loc = decl.type_loc in
+  let descr =
+    try Env.find_type_descrs path env
+    with Not_found -> assert false
+  in
+  match find_constructors_with_unboxed descr with
+  | None -> ()
+  | Some cstrs ->
+      check_typedecl_conflicts ~loc env cstrs
