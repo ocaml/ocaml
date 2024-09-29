@@ -132,7 +132,7 @@ let rec immediate_subtypes : type_expr -> type_expr list = fun ty ->
      on which immediate_subtypes is called from [check_type] *)
   | Tarrow(_,ty1,ty2,_) ->
       [ty1; ty2]
-  | Ttuple(tys) -> tys
+  | Ttuple(tys) -> List.map snd tys
   | Tpackage(_, fl) -> (snd (List.split fl))
   | Tobject(row,class_ty) ->
       let class_subtys =

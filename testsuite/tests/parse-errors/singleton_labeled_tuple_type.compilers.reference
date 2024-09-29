@@ -1,0 +1,4 @@
+File "singleton_labeled_tuple_type.ml", line 7, characters 26-27:
+7 | let foo (just_x : (x : int)) = just_x
+                              ^
+Error: Syntax error

@@ -275,7 +275,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_try(body, exn_pat_expr_list, eff_pat_expr_list) ->
       transl_handler ~scopes e body None exn_pat_expr_list eff_pat_expr_list
   | Texp_tuple el ->
-      let ll, shape = transl_list_with_shape ~scopes el in
+      let ll, shape = transl_list_with_shape ~scopes (List.map snd el) in
       begin try
         Lconst(Const_block(0, List.map extract_constant ll))
       with Not_constant ->
@@ -1158,8 +1158,9 @@ and transl_match ~scopes e arg pat_expr_list partial =
     | {exp_desc = Texp_tuple argl}, [] ->
       assert (static_handlers = []);
       Matching.for_multiple_match ~scopes e.exp_loc
-        (transl_list ~scopes argl) val_cases partial
+        (transl_list ~scopes (List.map snd argl)) val_cases partial
     | {exp_desc = Texp_tuple argl}, _ :: _ ->
+        let argl = List.map snd argl in
         let val_ids =
           List.map
             (fun arg ->

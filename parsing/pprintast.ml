@@ -223,7 +223,7 @@ let view_expr x =
               (List.rev acc,true)
           | {pexp_desc=
              Pexp_construct ({txt=Lident "::";_},
-                             Some ({pexp_desc= Pexp_tuple([e1;e2]);
+                             Some ({pexp_desc= Pexp_tuple([None, e1; None, e2]);
                                     pexp_attributes = []}));
              pexp_attributes = []}
             ->
@@ -385,12 +385,20 @@ and core_type ctxt f x =
           sl (core_type ctxt) ct
     | _ -> pp f "@[<2>%a@]" (core_type1 ctxt) x
 
+and tuple_type_component ctxt f (label, ty) =
+  begin match label with
+  | None   -> ()
+  | Some s -> pp f "%s:" s
+  end;
+  core_type1 ctxt f ty
+
 and core_type1 ctxt f x =
   if x.ptyp_attributes <> [] then core_type ctxt f x
   else match x.ptyp_desc with
     | Ptyp_any -> pp f "_";
     | Ptyp_var s -> tyvar f  s;
-    | Ptyp_tuple l ->  pp f "(%a)" (list (core_type1 ctxt) ~sep:"@;*@;") l
+    | Ptyp_tuple l ->
+        pp f "(%a)" (list (tuple_type_component ctxt) ~sep:"@;*@;") l
     | Ptyp_constr (li, l) ->
         pp f (* "%a%a@;" *) "%a%a"
           (fun f l -> match l with
@@ -495,7 +503,8 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
     | {ppat_desc =
          Ppat_construct
            ({ txt = Lident("::") ;_},
-            Some ([], {ppat_desc = Ppat_tuple([pat1; pat2]);_}));
+            Some ([], {ppat_desc = Ppat_tuple([None, pat1; None, pat2],
+                                              Closed);_}));
        ppat_attributes = []}
 
       ->
@@ -522,6 +531,29 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
                  (simple_pattern ctxt) x
            | None -> pp f "%a" longident_loc li)
     | _ -> simple_pattern ctxt f x
+
+and tuple_pattern_component ctxt (f:Format.formatter) (label, x) : unit =
+  let simple_name = match x with
+    | {ppat_desc = Ppat_var { txt=s; _ }; ppat_attributes = []; _} -> Some s
+    | _ -> None
+  in
+  match label, simple_name with
+  (* Labeled component can be represented with pun *)
+  | Some lbl, Some simple_name when String.equal simple_name lbl ->
+    pp f "~%s" lbl
+  (* Labeled component general case *)
+  | Some lbl, _ -> pp f "~%s:%a" lbl (pattern1 ctxt) x
+  (* Unlabeled component *)
+  | None, _ -> pattern1 ctxt f x
+
+and tuple_pattern ctxt f l closed =
+  let closed_flag ppf = function
+  | Closed -> ()
+  | Open -> pp ppf ",@;.."
+  in
+  pp f "@[<1>(%a%a)@]"
+    (list ~sep:",@;" (tuple_pattern_component ctxt)) l
+    closed_flag closed
 
 and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
   if x.ppat_attributes <> [] then pattern ctxt f x
@@ -555,8 +587,7 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
         | _ ->
             pp f "@[<2>{@;%a;_}@]" (list longident_x_pattern ~sep:";@;") l
         end
-    | Ppat_tuple l ->
-        pp f "@[<1>(%a)@]" (list  ~sep:",@;" (pattern1 ctxt))  l (* level1*)
+    | Ppat_tuple (l,c) -> tuple_pattern ctxt f l c
     | Ppat_constant (c) -> pp f "%a" constant c
     | Ppat_interval (c1, c2) -> pp f "%a..%a" constant c1 constant c2
     | Ppat_variant (l,None) ->  pp f "`%a" ident_of_name l
@@ -921,7 +952,7 @@ and simple_expr ctxt f x =
     | Pexp_pack me ->
         pp f "(module@;%a)" (module_expr ctxt) me
     | Pexp_tuple l ->
-        pp f "@[<hov2>(%a)@]" (list (simple_expr ctxt) ~sep:",@;") l
+        pp f "@[<hov2>(%a)@]" (list (tuple_expr_component ctxt) ~sep:",@;") l
     | Pexp_constraint (e, ct) ->
         pp f "(%a : %a)" (expression ctxt) e (core_type ctxt) ct
     | Pexp_coerce (e, cto1, ct) ->
@@ -1754,6 +1785,19 @@ and label_x_expression_param ctxt f (l,e) =
         pp f "~%a" ident_of_name lbl
       else
         pp f "~%a:%a" ident_of_name lbl (simple_expr ctxt) e
+
+and tuple_expr_component ctxt f (l,e) =
+  let simple_name = match e with
+    | {pexp_desc=Pexp_ident {txt=Lident l;_}; pexp_attributes=[]} -> Some l
+    | _ -> None
+  in match (simple_name, l) with
+  (* Labeled component can be represented with pun *)
+  | Some simple_name, Some lbl when String.equal simple_name lbl ->
+    pp f "~%s" lbl
+  (* Labeled component general case *)
+  | _, Some lbl -> pp f "~%s:%a" lbl (simple_expr ctxt) e
+  (* Unlabeled component *)
+  | _, None  -> expression2 ctxt f e
 
 and directive_argument f x =
   match x.pdira_desc with

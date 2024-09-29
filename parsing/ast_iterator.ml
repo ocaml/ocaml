@@ -121,7 +121,7 @@ module T = struct
     | Ptyp_var _ -> ()
     | Ptyp_arrow (_lab, t1, t2) ->
         sub.typ sub t1; sub.typ sub t2
-    | Ptyp_tuple tyl -> List.iter (sub.typ sub) tyl
+    | Ptyp_tuple tyl -> List.iter (fun (_, e) -> sub.typ sub e) tyl
     | Ptyp_constr (lid, tl) ->
         iter_loc sub lid; List.iter (sub.typ sub) tl
     | Ptyp_object (ol, _o) ->
@@ -398,7 +398,7 @@ module E = struct
     | Pexp_match (e, pel) ->
         sub.expr sub e; sub.cases sub pel
     | Pexp_try (e, pel) -> sub.expr sub e; sub.cases sub pel
-    | Pexp_tuple el -> List.iter (sub.expr sub) el
+    | Pexp_tuple el -> List.iter (fun (_, e) -> sub.expr sub e) el
     | Pexp_construct (lid, arg) ->
         iter_loc sub lid; iter_opt (sub.expr sub) arg
     | Pexp_variant (_lab, eo) ->
@@ -475,7 +475,7 @@ module P = struct
     | Ppat_alias (p, s) -> sub.pat sub p; iter_loc sub s
     | Ppat_constant _ -> ()
     | Ppat_interval _ -> ()
-    | Ppat_tuple pl -> List.iter (sub.pat sub) pl
+    | Ppat_tuple (pl, _) -> List.iter (fun (_, p) -> sub.pat sub p) pl
     | Ppat_construct (l, p) ->
         iter_loc sub l;
         iter_opt

@@ -122,6 +122,37 @@ let escape_string s =
     Bytes.to_string s'
   end
 
+let print_label_type ppf =
+  function
+  | Some s ->
+    pp_print_string ppf s;
+    pp_print_string ppf ":";
+  | None -> ()
+
+let print_label ppf =
+  function
+  | Some s ->
+    pp_print_string ppf "~";
+    pp_print_string ppf s;
+    pp_print_string ppf ":";
+  | None -> ()
+
+let rec print_labeled_typlist print_elem sep ppf =
+  function
+    [] -> ()
+  | [label, ty] ->
+      pp_open_box ppf 0;
+      print_label_type ppf label;
+      print_elem ppf ty;
+      pp_close_box ppf ()
+  | (label, ty) :: tyl ->
+      pp_open_box ppf 0;
+      print_label_type ppf label;
+      print_elem ppf ty;
+      pp_close_box ppf ();
+      pp_print_string ppf sep;
+      pp_print_space ppf ();
+      print_labeled_typlist print_elem sep ppf tyl
 
 let print_out_string ppf s =
   let not_escaped =
@@ -207,7 +238,8 @@ let print_out_value ppf tree =
     | Oval_ellipsis -> raise Ellipsis
     | Oval_printer f -> f ppf
     | Oval_tuple tree_list ->
-        fprintf ppf "@[<1>(%a)@]" (print_tree_list print_tree_1 ",") tree_list
+        fprintf ppf "@[<1>(%a)@]" (print_labeled_tree_list print_tree_1 ",")
+          tree_list
     | Oval_floatarray arr ->
        fprintf ppf "@[<2>[|%a|]@]"
          (pp_print_seq ~pp_sep:semicolon pp_print_float)
@@ -231,6 +263,17 @@ let print_out_value ppf tree =
           print_list false ppf tree_list
     in
     cautious (print_list true) ppf tree_list
+  and print_labeled_tree_list print_item sep ppf labeled_tree_list =
+    let rec print_list first ppf =
+      function
+        [] -> ()
+      | (label, tree) :: labeled_tree_list ->
+          if not first then fprintf ppf "%s@ " sep;
+          print_label ppf label;
+          print_item ppf tree;
+          print_list false ppf labeled_tree_list
+    in
+    cautious (print_list true) ppf labeled_tree_list
   in
   cautious print_tree_1 ppf tree
 
@@ -283,16 +326,26 @@ and print_out_type_1 ppf =
     Otyp_arrow (lab, ty1, ty2) ->
       pp_open_box ppf 0;
       print_arg_label ppf lab;
-      print_out_type_2 ppf ty1;
+      print_out_type_2 ~arg:true ppf ty1;
       pp_print_string ppf " ->";
       pp_print_space ppf ();
       print_out_type_1 ppf ty2;
       pp_close_box ppf ()
-  | ty -> print_out_type_2 ppf ty
-and print_out_type_2 ppf =
+  | ty -> print_out_type_2 ~arg:false ppf ty
+and print_out_type_2 ~arg ppf =
   function
     Otyp_tuple tyl ->
-      fprintf ppf "@[<0>%a@]" (print_typlist print_simple_out_type " *") tyl
+      (* Tuples require parens in argument function argument position (~arg)
+         when the first element has a label. *)
+      let parens =
+        match tyl with
+        | (Some _, _) :: _ -> arg
+        | _ -> false
+      in
+      if parens then pp_print_char ppf '(';
+      fprintf ppf "@[<0>%a@]"
+        (print_labeled_typlist print_simple_out_type " *") tyl;
+      if parens then pp_print_char ppf ')'
   | ty -> print_simple_out_type ppf ty
 and print_simple_out_type ppf =
   function
@@ -435,7 +488,7 @@ let rec print_out_class_type ppf =
       fprintf ppf "@[%a%a@]" pr_tyl tyl print_ident id
   | Octy_arrow (lab, ty, cty) ->
       fprintf ppf "@[%a%a ->@ %a@]" print_arg_label lab
-        print_out_type_2 ty print_out_class_type cty
+        (print_out_type_2 ~arg:true) ty print_out_class_type cty
   | Octy_signature (self_ty, csil) ->
       let pr_param ppf =
         function

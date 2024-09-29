@@ -201,6 +201,12 @@ type error =
   | Missing_type_constraint
   | Wrong_expected_kind of wrong_kind_sort * wrong_kind_context * type_expr
   | Expr_not_a_record_type of type_expr
+  | Constructor_labeled_arg
+  | Partial_tuple_pattern_bad_type
+  | Extra_tuple_label of string option * type_expr
+  | Missing_tuple_label of string option * type_expr
+  | Repeated_tuple_exp_label of string
+  | Repeated_tuple_pat_label of string
 
 
 let not_principal fmt =
@@ -737,8 +743,9 @@ and build_as_type_aux (env : Env.t) p =
   match p.pat_desc with
     Tpat_alias(p1,_, _, _) -> build_as_type env p1
   | Tpat_tuple pl ->
-      let tyl = List.map (build_as_type env) pl in
-      newty (Ttuple tyl)
+      let labeled_tyl =
+        List.map (fun (label, p) -> label, build_as_type env p) pl in
+      newty (Ttuple labeled_tyl)
   | Tpat_construct(_, cstr, pl, vto) ->
       let keep =
         cstr.cstr_private = Private || cstr.cstr_existentials <> [] ||
@@ -809,8 +816,58 @@ let solve_Ppat_poly_constraint tps env loc sty expected_ty =
 let solve_Ppat_alias env pat =
   with_local_level_generalize (fun () -> build_as_type env pat)
 
-let solve_Ppat_tuple (type a) ~refine loc env (args : a list) expected_ty =
-  let vars = List.map (fun _ -> newgenvar ()) args in
+(* Extracts the first element from a list matching a label. Roughly:
+     pat <- List.assoc_opt label patl;
+     return (pat, List.remove_assoc label patl)
+  *)
+let extract_pat label patl =
+  let rec extract_pat_aux acc = function
+  | [] -> None
+  | ((label', t) as pat) :: rest ->
+      if Option.equal String.equal label label' then
+        Some (t, List.rev_append acc rest)
+      else
+        extract_pat_aux (pat::acc) rest
+  in
+  extract_pat_aux [] patl
+
+let extract_or_mk_pat label rem closed =
+  match extract_pat label rem, closed with
+  (* Take the first match from patl *)
+  | (Some _ as pat_and_rem), _ -> pat_and_rem
+  (* No match, but the partial pattern allows us to generate a _ *)
+  | None, Open -> Some (Ast_helper.Pat.mk Ppat_any, rem)
+  | None, Closed -> None
+
+(* Reorders [patl] to match the label order in [labeled_tl], erroring if [patl]
+   is missing a label or has an a extra label (unlabeled components morally
+   share the same special label).
+
+   If [closed] is [Open], then no "missing label" errors are possible; instead,
+   [_] patterns will be generated for those labels. An unnecessarily [Open]
+   pattern results in a warning.
+   *)
+let reorder_pat loc penv patl closed labeled_tl expected_ty =
+  let take_next (taken, rem) (label, _) =
+    match extract_or_mk_pat label rem closed with
+    | Some (pat, rem) -> (label, pat) :: taken, rem
+    | None ->
+      raise (Error (loc, !!penv, Missing_tuple_label(label, expected_ty)))
+  in
+  match List.fold_left take_next ([], patl) labeled_tl with
+  | taken, [] ->
+    if closed = Open
+        && Int.equal (List.length labeled_tl) (List.length patl) then
+      Location.prerr_warning loc Warnings.Unnecessarily_partial_tuple_pattern;
+    List.rev taken
+  | _, (extra_label, _) :: _ ->
+    raise
+      (Error (loc, !!penv, Extra_tuple_label(extra_label, expected_ty)))
+
+(* This assumes the [args] have already been reordered according to the
+   [expected_ty], if needed.  *)
+let solve_Ppat_tuple ~refine loc env args expected_ty =
+  let vars = List.map (fun (label, _) -> (label, newgenvar ())) args in
   let ty = newgenty (Ttuple vars) in
   let expected_ty = generic_instance expected_ty in
   unify_pat_types_refine ~refine loc env ty expected_ty;
@@ -850,9 +907,10 @@ let solve_constructor_annotation
         unify_pat_types cty.ctyp_loc !!penv ty1 ty_arg;
         [ty2]
     | _ ->
-        unify_pat_types cty.ctyp_loc !!penv ty1 (newty (Ttuple ty_args));
+        unify_pat_types cty.ctyp_loc !!penv ty1
+          (newty (Ttuple (List.map (fun t -> None, t) ty_args)));
         match get_desc (expand_head !!penv ty2) with
-          Ttuple tyl -> tyl
+          Ttuple tyl -> List.map snd tyl
         | _ -> assert false
   in
   if ids_decls <> [] then begin
@@ -1596,9 +1654,10 @@ let rec has_literal_pattern p = match p.ppat_desc with
   | Ppat_lazy p
   | Ppat_open (_, p) ->
      has_literal_pattern p
-  | Ppat_tuple ps
   | Ppat_array ps ->
      List.exists has_literal_pattern ps
+  | Ppat_tuple (ps, _) ->
+     List.exists (fun (_,p) -> has_literal_pattern p) ps
   | Ppat_record (ps, _) ->
      List.exists (fun (_,p) -> has_literal_pattern p) ps
   | Ppat_effect (p, q)
@@ -1796,15 +1855,34 @@ and type_pat_aux
       let p = {p with ppat_loc=loc} in
       type_pat tps category p expected_ty
         (* TODO: record 'extra' to remember about interval *)
-  | Ppat_tuple spl ->
-      assert (List.length spl >= 2);
+  | Ppat_tuple (spl, closed) ->
+      assert (closed = Open || List.length spl >= 2);
+      Option.iter
+        (fun l -> raise (Error (loc, !!penv, Repeated_tuple_pat_label l)))
+        (Misc.repeated_label spl);
+      let args =
+        match get_desc (expand_head !!penv expected_ty) with
+        (* If it's a principally-known tuple pattern, try to reorder *)
+        | Ttuple labeled_tl when is_principal expected_ty ->
+          reorder_pat loc penv spl closed labeled_tl expected_ty
+        (* If not, it's not allowed to be open (partial) *)
+        | _ ->
+          match closed with
+          | Open -> raise (Error (loc, !!penv, Partial_tuple_pattern_bad_type))
+          | Closed -> spl
+      in
       let expected_tys =
-        solve_Ppat_tuple ~refine:false loc penv spl expected_ty in
-      let pl = List.map2 (type_pat tps Value) spl expected_tys in
+        solve_Ppat_tuple ~refine:false loc penv args expected_ty
+      in
+      let pl =
+        List.map2 (fun (lbl, t) (_, p) -> lbl, type_pat tps Value p t)
+          expected_tys args
+      in
       rvp {
         pat_desc = Tpat_tuple pl;
         pat_loc = loc; pat_extra=[];
-        pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl));
+        pat_type =
+          newty (Ttuple (List.map (fun (lbl, p) -> lbl, p.pat_type) pl));
         pat_attributes = sp.ppat_attributes;
         pat_env = !!penv }
   | Ppat_construct(lid, sarg) ->
@@ -1846,10 +1924,15 @@ and type_pat_aux
       let sargs =
         match sarg' with
           None -> []
-        | Some {ppat_desc = Ppat_tuple spl} when
+        | Some {ppat_desc = Ppat_tuple (spl, _)} when
             constr.cstr_arity > 1 ||
             Builtin_attributes.explicit_arity sp.ppat_attributes
-          -> spl
+          ->
+            List.map (fun (l, sp) ->
+              match l with
+              | Some _ -> raise (Error(loc, !!penv, Constructor_labeled_arg))
+              | None -> sp
+            ) spl
         | Some({ppat_desc = Ppat_any} as sp) when
             constr.cstr_arity = 0 && existential_styp = None
           ->
@@ -2426,9 +2509,13 @@ let rec check_counter_example_pat
       assert (List.length tpl >= 2);
       let expected_tys = solve_Ppat_tuple ~refine loc penv tpl expected_ty in
       let tpl_ann = List.combine tpl expected_tys in
-      map_fold_cont (fun (p,t) -> check_rec p t) tpl_ann (fun pl ->
-        mkp k (Tpat_tuple pl)
-          ~pat_type:(newty (Ttuple(List.map (fun p -> p.pat_type) pl))))
+      map_fold_cont (fun ((l,p),(_,t)) k -> check_rec p t (fun p -> k (l, p)))
+        tpl_ann
+        (fun pl ->
+           let pat_type =
+             newty (Ttuple(List.map (fun (l, p) -> l, p.pat_type) pl))
+           in
+           mkp k (Tpat_tuple pl) ~pat_type)
   | Tpat_construct(cstr_lid, constr, targs, _) ->
       if constr.cstr_generalized && must_backtrack_on_gadt then
         raise Need_backtrack;
@@ -2627,7 +2714,7 @@ let rec is_nonexpansive exp =
            && not (contains_exception_pat c_lhs)
         ) cases
   | Texp_tuple el ->
-      List.for_all is_nonexpansive el
+      List.for_all (fun (_, e) -> is_nonexpansive e) el
   | Texp_construct( _, _, el) ->
       List.for_all is_nonexpansive el
   | Texp_variant(_, arg) -> is_nonexpansive_opt arg
@@ -2767,7 +2854,7 @@ let rec approx_type env sty =
       let ty1 = if is_optional p then type_option (newvar ()) else newvar () in
       newty (Tarrow (p, ty1, approx_type env sty, commu_ok))
   | Ptyp_tuple args ->
-      newty (Ttuple (List.map (approx_type env) args))
+      newty (Ttuple (List.map (fun (l, t) -> l, approx_type env t) args))
   | Ptyp_constr (lid, ctl) ->
       let path, decl = Env.lookup_type ~use:false ~loc:lid.loc lid.txt env in
       if List.length ctl <> decl.type_arity then newvar ()
@@ -2830,7 +2917,9 @@ let rec type_approx env sexp =
       type_approx_function env params c body ~loc
   | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e
   | Pexp_try (e, _) -> type_approx env e
-  | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
+  | Pexp_tuple l ->
+    let labeled_tys = List.map (fun (label, _) -> label, newvar ()) l in
+    newty (Ttuple labeled_tys)
   | Pexp_ifthenelse (_,e,_) -> type_approx env e
   | Pexp_sequence (_,e) -> type_approx env e
   | Pexp_constraint (e, sty) ->
@@ -3072,7 +3161,7 @@ let shallow_iter_ppat f p =
   | Ppat_or (p1,p2)
   | Ppat_effect(p1, p2) -> f p1; f p2
   | Ppat_variant (_, arg) -> Option.iter f arg
-  | Ppat_tuple lst ->  List.iter f lst
+  | Ppat_tuple (lst, _) -> List.iter (fun (_, p) -> f p) lst
   | Ppat_construct (_, Some (_, p))
   | Ppat_exception p | Ppat_alias (p,_)
   | Ppat_open (_,p)
@@ -3112,6 +3201,22 @@ let may_contain_gadts p =
    | {ppat_desc = Ppat_construct _} -> true
    | _ -> false)
   p
+
+(* One of the things we do in the presence of GADT constructors (see above
+   definition) is treat `let p = e in ...` as a match `match e with p -> ...`.
+   This changes the way type inference works to check the expression first, and
+   use its type in the checking of the pattern.  We want that behavior for
+   labeled tuple patterns as well.  *)
+let turn_let_into_match p =
+  exists_ppat
+    (fun p ->
+       match p.ppat_desc with
+       | Ppat_construct _ -> true
+       | Ppat_tuple (_, Open) -> true
+       | Ppat_tuple (spl, Closed) ->
+         List.exists (fun (l, _) -> Option.is_some l) spl
+       | _ -> false)
+    p
 
 (* There are various things that we need to do in presence of module patterns
    that aren't required if there are none. Most notably, we need to ensure the
@@ -3410,7 +3515,7 @@ and type_expect_
         exp_env = env }
   | Pexp_let(Nonrecursive,
              [{pvb_pat=spat; pvb_attributes=[]; _ } as vb], sbody)
-    when may_contain_gadts spat ->
+    when turn_let_into_match spat ->
       (* TODO: allow non-empty attributes? *)
       let sval = vb_exp_constraint vb in
       type_expect env
@@ -3660,19 +3765,24 @@ and type_expect_
         exp_env = env }
   | Pexp_tuple sexpl ->
       assert (List.length sexpl >= 2);
-      let subtypes = List.map (fun _ -> newgenvar ()) sexpl in
-      let to_unify = newgenty (Ttuple subtypes) in
+      Option.iter
+        (fun l -> raise (Error (loc, env, Repeated_tuple_exp_label l)))
+        (Misc.repeated_label sexpl);
+      let labeled_subtypes = List.map (fun (l, _) -> l, newgenvar ()) sexpl in
+      let to_unify = newgenty (Ttuple labeled_subtypes) in
       with_explanation (fun () ->
         unify_exp_types loc env to_unify (generic_instance ty_expected));
       let expl =
-        List.map2 (fun body ty -> type_expect env body (mk_expected ty))
-          sexpl subtypes
+        List.map2
+          (fun (l, body) (_, ty) ->
+             (l, type_expect env body (mk_expected ty)))
+          sexpl labeled_subtypes
       in
       re {
         exp_desc = Texp_tuple expl;
         exp_loc = loc; exp_extra = [];
         (* Keep sharing *)
-        exp_type = newty (Ttuple (List.map (fun e -> e.exp_type) expl));
+        exp_type = newty (Ttuple (List.map (fun (l, e) -> l, e.exp_type) expl));
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_construct(lid, sarg) ->
@@ -4322,8 +4432,10 @@ and type_expect_
         | { pbop_pat = spat; _} :: rest ->
             let ty = newvar () in
             let loc = { slet.pbop_op.loc with Location.loc_ghost = true } in
-            let spat_acc = Ast_helper.Pat.tuple ~loc [spat_acc; spat] in
-            let ty_acc = newty (Ttuple [ty_acc; ty]) in
+            let spat_acc =
+              Ast_helper.Pat.tuple ~loc [None, spat_acc; None, spat] Closed
+            in
+            let ty_acc = newty (Ttuple [None, ty_acc; None, ty]) in
             loop spat_acc ty_acc rest
       in
       let op_path, op_desc, op_type, spat_params, ty_params,
@@ -4933,7 +5045,9 @@ and type_format loc str env =
         let arg = match args with
           | []          -> None
           | [ e ]       -> Some e
-          | _ :: _ :: _ -> Some (mk_exp_loc (Pexp_tuple args)) in
+          | _ :: _ :: _ ->
+            Some (mk_exp_loc (Pexp_tuple (List.map (fun e -> None, e) args)))
+        in
         mk_exp_loc (Pexp_construct (mk_lid_loc lid, arg)) in
       let mk_cst cst =
         mk_exp_loc (Pexp_constant {pconst_desc = cst; pconst_loc = loc})
@@ -5001,7 +5115,7 @@ and type_format loc str env =
         | Float_H  -> mk_constr "Float_H"  []
         | Float_F  -> mk_constr "Float_F"  []
         | Float_CF -> mk_constr "Float_CF" [] in
-        mk_exp_loc (Pexp_tuple [flag; kind])
+        mk_exp_loc (Pexp_tuple [None, flag; None, kind])
       and mk_counter cnt = match cnt with
         | Line_counter  -> mk_constr "Line_counter"  []
         | Char_counter  -> mk_constr "Char_counter"  []
@@ -5544,7 +5658,13 @@ and type_construct env ~sexp lid sarg ty_expected_explained =
     | Some {pexp_desc = Pexp_tuple sel} when
         constr.cstr_arity > 1
         || Builtin_attributes.explicit_arity sexp.pexp_attributes
-      -> sel
+      ->
+      List.map (fun (l, se) ->
+        match l with
+        | Some _ ->
+          raise (Error(sexp.pexp_loc, env, Constructor_labeled_arg))
+        | None -> se
+      ) sel
     | Some se -> [se] in
   if List.length sargs <> constr.cstr_arity then
     raise(Error(sexp.pexp_loc, env,
@@ -6448,6 +6568,18 @@ module Printtyp = Printtyp.Doc
 
 let longident = Printtyp.longident
 
+let tuple_component ~print_article ppf lbl =
+  let article =
+    match print_article, lbl with
+    | true, Some _ -> "a "
+    | true, None -> "an "
+    | false, _ -> ""
+  in
+  match lbl with
+  | Some s ->
+      fprintf ppf "%scomponent with label %a" article Style.inline_code s
+  | None -> fprintf ppf "%sunlabeled component" article
+
 (* Returns the first diff of the trace *)
 let type_clash_of_trace trace =
   Errortrace.(explain trace (fun ~prev:_ -> function
@@ -6631,6 +6763,33 @@ let report_error ~loc env = function
        "@[The constructor %a@ expects %i argument(s),@ \
         but is applied here to %i argument(s)@]"
        (Style.as_inline_code longident) lid expected provided
+  | Constructor_labeled_arg ->
+      Location.errorf ~loc
+       "Constructors cannot have labeled arguments.@ \
+        Consider using an inline record instead."
+  | Partial_tuple_pattern_bad_type ->
+      Location.errorf ~loc
+        "Could not determine the type of this partial tuple pattern."
+  | Extra_tuple_label (lbl, typ) ->
+      Location.errorf ~loc
+        "This pattern was expected to match values of type@ %a,@ but it \
+         contains an extra %a."
+        (Style.as_inline_code Printtyp.type_expr) typ
+        (tuple_component ~print_article:false) lbl;
+  | Missing_tuple_label (lbl, typ) ->
+      let hint ppf () =
+        (* We only hint if the missing component is labeled.  This is
+           unlikely to be a correct fix for traditional tuples. *)
+        match lbl with
+        | Some _ -> fprintf ppf "@ Hint: use .. to ignore some components."
+        | None -> ()
+      in
+      Location.errorf ~loc
+        "This pattern was expected to match values of type@ %a,@ but it is \
+         missing %a.%a"
+        (Style.as_inline_code Printtyp.type_expr) typ
+        (tuple_component ~print_article:true) lbl
+        hint ()
   | Label_mismatch(lid, err) ->
       report_unification_error ~loc env err
         (msg "The record field %a@ belongs to the type"
@@ -7083,6 +7242,14 @@ let report_error ~loc env = function
         "This expression has type %a@ \
          which is not a record type."
         (Style.as_inline_code Printtyp.type_expr) ty
+  | Repeated_tuple_exp_label l ->
+      Location.errorf ~loc
+        "@[This tuple expression has two labels named %a@]"
+        Style.inline_code l
+  | Repeated_tuple_pat_label l ->
+      Location.errorf ~loc
+        "@[This tuple pattern has two labels named %a@]"
+        Style.inline_code l
 
 let report_error ~loc env err =
   Printtyp.wrap_printing_env ~error:true env

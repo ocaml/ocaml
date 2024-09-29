@@ -1088,7 +1088,7 @@ File "implementation: LETOP UIDENT DOT WITH", line 1, characters 14-18:
 Error: Syntax error
 File "implementation: LETOP UIDENT LIDENT WITH", line 1, characters 19-23:
 Error: Syntax error
-File "implementation: LETOP UIDENT TILDE", line 1, characters 12-13:
+File "implementation: LETOP UIDENT TILDE", line 1, characters 0-2:
 Error: Syntax error
 File "implementation: LETOP UIDENT WITH", line 1, characters 12-16:
 Error: Syntax error

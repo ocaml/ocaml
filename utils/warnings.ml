@@ -110,6 +110,7 @@ type t =
   | Tmc_breaks_tailcall                     (* 72 *)
   | Generative_application_expects_unit     (* 73 *)
   | Degraded_to_partial_match               (* 74 *)
+  | Unnecessarily_partial_tuple_pattern     (* 75 *)
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
    the numbers of existing warnings.
@@ -192,12 +193,13 @@ let number = function
   | Tmc_breaks_tailcall -> 72
   | Generative_application_expects_unit -> 73
   | Degraded_to_partial_match -> 74
+  | Unnecessarily_partial_tuple_pattern -> 75
 ;;
 (* DO NOT REMOVE the ;; above: it is used by
    the testsuite/ests/warnings/mnemonics.mll test to determine where
    the  definition of the number function above ends *)
 
-let last_warning_number = 74
+let last_warning_number = 75
 
 type description =
   { number : int;
@@ -541,6 +543,11 @@ let descriptions = [
     description = "A pattern-matching is compiled as partial \
                    even if it appears to be total.";
     since = since 5 3 };
+  { number = 75;
+    names = ["unnecessarily-partial-tuple-pattern"];
+    description = "A tuple pattern ends in .. but fully matches its expected \
+                   type.";
+    since = since 5 4 };
 ]
 
 let name_to_number =
@@ -1155,6 +1162,10 @@ let message = function
          complex matches on mutable fields.\n\
          %a"
         (Format_doc.compat Misc.print_see_manual) ref_manual
+  | Unnecessarily_partial_tuple_pattern ->
+      "This tuple pattern\n\
+       unnecessarily ends in '..', as it explicitly matches all components\n\
+       of its expected type."
 ;;
 
 let nerrors = ref 0

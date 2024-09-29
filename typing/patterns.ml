@@ -53,7 +53,7 @@ module Simple = struct
   type view = [
     | `Any
     | `Constant of constant
-    | `Tuple of pattern list
+    | `Tuple of (string option * pattern) list
     | `Construct of
         Longident.t loc * constructor_description * pattern list
     | `Variant of label * pattern option * row_desc ref
@@ -142,7 +142,7 @@ module Head : sig
     | Any
     | Construct of constructor_description
     | Constant of constant
-    | Tuple of int
+    | Tuple of string option list
     | Record of label_description list
     | Variant of
         { tag: label; has_arg: bool;
@@ -167,7 +167,7 @@ end = struct
     | Any
     | Construct of constructor_description
     | Constant of constant
-    | Tuple of int
+    | Tuple of string option list
     | Record of label_description list
     | Variant of
         { tag: label; has_arg: bool;
@@ -185,7 +185,7 @@ end = struct
       | `Any -> Any, []
       | `Constant c -> Constant c, []
       | `Tuple args ->
-          Tuple (List.length args), args
+          Tuple (List.map fst args), (List.map snd args)
       | `Construct (_, c, args) ->
           Construct c, args
       | `Variant (tag, arg, cstr_row) ->
@@ -217,7 +217,8 @@ end = struct
       | Any -> 0
       | Constant _ -> 0
       | Construct c -> c.cstr_arity
-      | Tuple n | Array n -> n
+      | Tuple l -> List.length l
+      | Array n -> n
       | Record l -> List.length l
       | Variant { has_arg; _ } -> if has_arg then 1 else 0
       | Lazy -> 1
@@ -229,7 +230,8 @@ end = struct
       | Any -> Tpat_any
       | Lazy -> Tpat_lazy omega
       | Constant c -> Tpat_constant c
-      | Tuple n -> Tpat_tuple (omegas n)
+      | Tuple lbls ->
+          Tpat_tuple (List.map (fun lbl -> lbl, omega) lbls)
       | Array n -> Tpat_array (omegas n)
       | Construct c ->
           let lid_loc = mkloc (Longident.Lident c.cstr_name) in
