@@ -12,6 +12,9 @@ Working version
   (Nicolás Ojeda Bär, review by Richard Eisenberg, Jeremy Yallop, Jacques
   Garrigue, and Gabriel Scherer)
 
+- #13498: Tuple fields are now optionally labeled.
+  (Ryan Tjoa and Chris Casinghino, review by ???)
+
 ### Runtime system:
 
 - #13352: Concurrency refactors and cleanups.
