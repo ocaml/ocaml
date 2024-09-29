@@ -25,6 +25,11 @@ Working version
   pointers in C code (take 3).
   (Antonin Décimo, review by Stephen Dolan and Miod Vallat)
 
+* #13497: Correct implementation of caml_stat_strdup_to_utf16 to raise
+  Out_of_memory instead of returning of NULL (the behaviour of
+  caml_stat_strdup_to_os was inconsistent between Unix/Windows).
+  (David Allsopp, review by Antonin Décimo)
+
 ### Code generation and optimizations:
 
 ### Standard library:

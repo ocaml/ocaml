@@ -951,16 +951,25 @@ CAMLexport value caml_copy_string_of_utf16(const wchar_t *s)
   return v;
 }
 
-CAMLexport wchar_t* caml_stat_strdup_to_utf16(const char *s)
+CAMLexport wchar_t* caml_stat_strdup_noexc_to_utf16(const char *s)
 {
   wchar_t * ws;
   int retcode;
 
   retcode = caml_win32_multi_byte_to_wide_char(s, -1, NULL, 0);
   ws = caml_stat_alloc_noexc(retcode * sizeof(*ws));
-  caml_win32_multi_byte_to_wide_char(s, -1, ws, retcode);
+  if (ws != NULL)
+    caml_win32_multi_byte_to_wide_char(s, -1, ws, retcode);
 
   return ws;
+}
+
+CAMLexport wchar_t* caml_stat_strdup_to_utf16(const char *s)
+{
+  wchar_t out = caml_stat_strdup_noexc_to_utf16(s);
+  if (out == NULL)
+    caml_raise_out_of_memory();
+  return out;
 }
 
 CAMLexport caml_stat_string caml_stat_strdup_noexc_of_utf16(const wchar_t *s)
