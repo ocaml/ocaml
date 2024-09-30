@@ -49,6 +49,8 @@ val set_name : string -> unit
 (** Set the thread's name. This should be called from within the thread
     function. Setting thread name is available on most systems.
 
+    @raise Invalid_argument If the function is not implemented.
+
     @since 5.4 *)
 
 exception Exit
