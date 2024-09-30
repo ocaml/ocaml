@@ -2419,6 +2419,29 @@ AC_LINK_IFELSE(
     AC_DEFINE([HAS_BSD_GETAFFINITY_NP], [1])],
     [AC_MSG_RESULT([pthread_getaffinity_np not found])])])
 
+## prctl
+AC_MSG_CHECKING([for prctl])
+AC_LINK_IFELSE(
+  [AC_LANG_SOURCE([[
+#include <sys/prctl.h>
+int main(void) {
+  return prctl(0);
+}
+  ]])],
+  [AC_DEFINE([HAS_PRCTL] , [1])
+   AC_MSG_RESULT([yes])],
+  [AC_MSG_RESULT([no])])
+
+## pthread_setname_np
+AC_CHECK_FUNCS(
+  [pthread_setname_np],
+  [AC_DEFINE([HAS_PTHREAD_SETNAME_NP], [1])])
+
+## pthread_set_name_np
+AC_CHECK_FUNCS(
+  [pthread_set_name_np],
+  [AC_DEFINE([HAS_PTHREAD_SET_NAME_NP], [1])])
+
 ## Activate the systhread library
 
 AS_CASE([$enable_systhreads,$enable_unix_lib],

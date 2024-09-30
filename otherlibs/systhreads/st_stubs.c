@@ -15,6 +15,23 @@
 
 #define CAML_INTERNALS
 
+#define _GNU_SOURCE /* helps to find pthread_setname_np() */
+#include "caml/config.h"
+
+#if defined(_WIN32)
+#  include <windows.h>
+#  include <processthreadsapi.h>
+#  include <caml/osdeps.h>
+#elif defined(HAS_PRCTL)
+#  include <sys/prctl.h>
+#elif defined(HAS_PTHREAD_SETNAME_NP) || defined(HAS_PTHREAD_SET_NAME_NP)
+#  include <pthread.h>
+
+#  if defined(HAS_PTHREAD_NP_H)
+#    include <pthread_np.h>
+#  endif
+#endif
+
 #if defined(_WIN32) && !defined(NATIVE_CODE) && !defined(_MSC_VER)
 /* Ensure that pthread.h marks symbols __declspec(dllimport) so that they can be
    picked up from the runtime (which will have linked winpthreads statically).
@@ -947,4 +964,30 @@ static st_retcode caml_threadstatus_wait (value wrapper)
   caml_leave_blocking_section();
 
   CAMLreturnT(st_retcode, retcode);
+}
+
+/* Set the current thread's name. */
+CAMLprim value caml_thread_set_name(value name)
+{
+#if defined(_WIN32)
+  char_os *thread_name = caml_stat_strdup_to_os(String_val(name));
+  SetThreadDescription(GetCurrentThread(), thread_name);
+  caml_stat_free(thread_name);
+#elif defined(HAS_PRCTL)
+  prctl(PR_SET_NAME, String_val(name));
+#elif defined(HAS_PTHREAD_SETNAME_NP)
+#  if defined(__APPLE__)
+  pthread_setname_np(String_val(name));
+#  elif defined(__NetBSD__)
+  pthread_setname_np(pthread_self(), "%s", String_val(name));
+#  else
+  pthread_setname_np(pthread_self(), String_val(name));
+#  endif
+#elif defined(HAS_PTHREAD_SET_NAME_NP)
+  pthread_set_name_np(pthread_self(), String_val(name));
+#else
+  caml_invalid_argument("set thread name not implemented");
+#endif
+
+  return Val_unit;
 }

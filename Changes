@@ -47,6 +47,9 @@ Working version
   default environment (where `TEMP` is set), there is no discernible change.
   (Antonin Décimo, review by Nicolás Ojeda Bär and David Allsopp)
 
+- #13504: Add `Thread.set_name`.
+  (Romain Beauxis)
+
 ### Tools:
 
 - #12019: ocamlc: add `align_double` and `align_int64` to `ocamlc -config`
