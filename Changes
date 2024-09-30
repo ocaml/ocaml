@@ -12,6 +12,15 @@ Working version
   (Nicolás Ojeda Bär, review by Richard Eisenberg, Jeremy Yallop, Jacques
   Garrigue, and Gabriel Scherer)
 
+
+
+- RFCs#39, #13404: atomic record fields
+    `{ ...; mutable readers : int [@atomic]; ... }`
+    `Atomic.Loc.fetch_and_add [%atomic.loc data.readers] 1`
+  (Clément Allain and Gabriel Scherer, review by KC Sivaramakrishnan,
+   Basile Clément and Olivier Nicole)
+
+
 ### Runtime system:
 
 - #13352: Concurrency refactors and cleanups.
