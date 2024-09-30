@@ -27,6 +27,7 @@ external yield : unit -> unit = "caml_thread_yield"
 external self : unit -> t = "caml_thread_self" [@@noalloc]
 external id : t -> int = "caml_thread_id" [@@noalloc]
 external join : t -> unit = "caml_thread_join"
+external set_name : string -> unit = "caml_thread_set_name"
 
 (* For new, make sure the function passed to thread_new never
    raises an exception. *)
@@ -41,9 +42,11 @@ let set_uncaught_exception_handler fn = uncaught_exception_handler := fn
 
 exception Exit
 
-let create fn arg =
+let create ?name fn arg =
   thread_new
     (fun () ->
+      (try match name with Some name -> set_name name | None -> ()
+      with _ -> ());
       try
         fn arg;
         ignore (Sys.opaque_identity (check_memprof_cb ()))

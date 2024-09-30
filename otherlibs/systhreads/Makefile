@@ -39,8 +39,8 @@ LIBNAME=threads
 # That's why this dependency is handled in the Makefile directly
 # and removed from the output of the C compiler during make depend
 
-BYTECODE_C_OBJS=st_stubs.b.$(O)
-NATIVECODE_C_OBJS=st_stubs.n.$(O)
+BYTECODE_C_OBJS=st_stubs.b.$(O) st_stubs_np.b.$(O)
+NATIVECODE_C_OBJS=st_stubs.n.$(O) st_stubs_np.b.$(O)
 
 THREADS_SOURCES = thread.ml event.ml
 
@@ -80,6 +80,14 @@ ifeq "$(COMPUTE_DEPS)" "true"
 st_stubs.%.$(O): st_stubs.c
 else
 st_stubs.%.$(O): st_stubs.c $(RUNTIME_HEADERS) $(wildcard *.h)
+endif
+	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ -c $<
+
+ifeq "$(COMPUTE_DEPS)" "true"
+st_stubs_np.%.$(O): st_stubs_np.c
+else
+st_stubs_np.%.$(O): st_stubs_np.c $(RUNTIME_HEADERS) $(wildcard *.h)
 endif
 	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
 	  $(OUTPUTOBJ)$@ -c $<
@@ -131,9 +139,9 @@ installopt:
 %.cmx: %.ml
 	$(V_OCAMLOPT)$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
-DEP_FILES := st_stubs.b.$(D)
+DEP_FILES := st_stubs.b.$(D) st_stubs_np.b.$(D)
 ifeq "$(NATIVE_COMPILER)" "true"
-DEP_FILES += st_stubs.n.$(D)
+DEP_FILES += st_stubs.n.$(D) st_stubs_np.b.$(D)
 endif
 
 ifeq "$(COMPUTE_DEPS)" "true"

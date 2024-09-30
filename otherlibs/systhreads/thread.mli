@@ -20,8 +20,8 @@ type t
 
 (** {1 Thread creation and termination} *)
 
-val create : ('a -> 'b) -> 'a -> t
-(** [Thread.create funct arg] creates a new thread of control,
+val create : ?name:string -> ('a -> 'b) -> 'a -> t
+(** [Thread.create ?name funct arg] creates a new thread of control,
    in which the function application [funct arg]
    is executed concurrently with the other threads of the domain.
    The application of [Thread.create]
@@ -33,6 +33,9 @@ val create : ('a -> 'b) -> 'a -> t
    but not propagated back to the parent thread. Similarly, the
    result of the application [funct arg] is discarded and not
    directly accessible to the parent thread.
+
+   [name] is an optional name for the created thread. It can be
+   useful to debug your application.
 
    See also {!Domain.spawn} if you want parallel execution instead.
    *)
