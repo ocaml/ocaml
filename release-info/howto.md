@@ -406,9 +406,9 @@ See the email announce templates in the `templates/` directory.
 
 See
 
-- templates/beta.md for alpha and beta releases
-- templates/rc.md for release candidate
-- templates/production.md for the production release
+- [templates/beta.md](templates/beta.md) for alpha and beta releases
+- [templates/rc.md](templates/rc.md) for release candidate
+- [templates/production.md](templates/production.md) for the production release
 
 
 ## Changelog template for a new version
