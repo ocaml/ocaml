@@ -30,6 +30,10 @@ Working version
   entries found in ld.conf.
   (David Allsopp, review by Stephen Dolan)
 
+- #13500: Add frame pointers support for ARM64 on Linux and macOS.
+  (Tim McGilchrist, review by KC Sivaramakrishnan, Fabrice Buoro
+   and Miod Vallat)
+
 ### Code generation and optimizations:
 
 ### Standard library:
