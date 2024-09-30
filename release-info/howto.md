@@ -20,7 +20,7 @@ OCamlLabs folks (for OPAM testing).
 
 ## 0. Release environment setup
 
-```
+```zsh
 rm -f /tmp/env-$USER.sh
 cat >/tmp/env-$USER.sh <<EOF
 # Update the data below
@@ -63,7 +63,7 @@ echo $VERSION
 
 ## 1. Check repository state
 
-```
+```zsh
 cd $WORKTREE
 git checkout $MAJOR.$MINOR
 git status  # check that the local repo is in a clean state
@@ -82,7 +82,7 @@ magic numbers.
 
 ## 3. build, refresh dependencies, sanity checks
 
-```
+```zsh
 make distclean
 git clean -n -d -f -x  # Check that "make distclean" removed everything
 
@@ -113,14 +113,14 @@ make install
 
 ## 4. Tests
 
-```
+```zsh
 make tests
 ```
 
 
 ## 5. build, tag and push the new release
 
-```
+```zsh
 # at this point, the build-aux/ocaml_version.m4 file contains N+devD
 # increment it into N+dev(D+1); for example,
 #   4.07.0+dev8-2018-06-19 => 4.07.0+dev9-2018-06-26
@@ -153,7 +153,7 @@ git push --tags
 ## 5-bis. Alternative for branching
 
 This needs to be more tested, tread with care.
-```
+```zsh
 # at this point, the build-aux/ocaml_version.m4 file contains N+devD
 # increment it into N+dev(D+1); for example,
 #   4.07.0+dev0-2018-06-19 => 4.07.0+dev1-2018-06-26
@@ -208,12 +208,12 @@ Remove the oldest badge.
 ## 6. Create OPAM packages
 
 Clone the opam-repository
-```
+```zsh
 git clone https://github.com/ocaml/opam-repository
 ```
 
 Create a branch for the new release
-```
+```zsh
 git checkout -b OCaml_$VERSION
 ```
 
@@ -243,7 +243,7 @@ request.
 You can test the new opam package before sending a PR to the
 main opam-repository by using the local repository:
 
-```
+```zsh
 opam repo add local /path/to/your/opam-repository
 opam switch create --repo=local,beta=git+https://github.com/ocaml/ocaml-beta-repository.git ocaml-variants.$VERSION
 ```
@@ -267,7 +267,7 @@ The synopsis should be "latest $VERSION development(,...)".
 
 ## 7. Build the release archives
 
-```
+```zsh
 cd $WORKTREE
 TMPDIR=/tmp/ocaml-release
 git checkout $TAGVERSION
@@ -283,12 +283,12 @@ xz <ocaml-$VERSION.tar >ocaml-$VERSION.tar.xz
 
 For the first beta of a major version, create the distribution directory on
 the server:
-```
+```zsh
 ssh $ARCHIVE_HOST "mkdir -p $DIST"
 ```
 
 Upload the archives:
-```
+```zsh
 scp ocaml-$VERSION.tar.{xz,gz} $ARCHIVE_HOST:$DIST
 ```
 
@@ -296,13 +296,13 @@ To update the checksum files on the remote host, we first upload the
 release environment.
 (note: this assumes the user name is the same on the two machines)
 
-```
+```zsh
 scp /tmp/env-$USER.sh $ARCHIVE_HOST:/tmp/env-$USER.sh
 ```
 
 and then login there to update the checksums (MD5SUM, SHA512SUM)
 
-```
+```zsh
 ssh $ARCHIVE_HOST
 source /tmp/env-$USER.sh
 cd $DIST
@@ -328,7 +328,7 @@ exit
 
 ## 9. Update note files (technical documentation)
 
-```
+```zsh
 ssh $ARCHIVE_HOST "mkdir -p $DIST/notes"
 cd ocaml-$VERSION
 scp INSTALL.adoc LICENSE README.adoc README.win32.adoc Changes \
@@ -342,7 +342,7 @@ You don't need to do this if the previous release had the same
 $MAJOR.$MINOR ($BRANCH) value and the exact same manual -- this is frequent if
 it was a release candidate.
 
-```
+```zsh
 cd $WORKTREE
 make
 cd manual
@@ -363,7 +363,7 @@ ssh $ARCHIVE_HOST "cd $DIST; sha512sum ocaml-$BRANCH-refman* >>SHA512SUM"
 Releasing the manual online happens on another machine:
 Do this ONLY FOR A PRODUCTION RELEASE
 
-```
+```zsh
 scp /tmp/env-$USER.sh $ARCHIVE_HOST:/tmp/env-$USER.sh
 ssh $ARCHIVE_HOST
 source /tmp/env-$USER.sh
