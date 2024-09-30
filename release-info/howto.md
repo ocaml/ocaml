@@ -18,7 +18,7 @@ Send a mail on caml-devel to warn Gabriel (to make a pass on Changes;
 see the "Changes curation" appendix for more details) and the
 OCamlLabs folks (for OPAM testing).
 
-## 0: release environment setup
+## 0. Release environment setup
 
 ```
 rm -f /tmp/env-$USER.sh
@@ -61,7 +61,7 @@ echo $VERSION
 ```
 
 
-## 1: check repository state
+## 1. Check repository state
 
 ```
 cd $WORKTREE
@@ -70,7 +70,7 @@ git status  # check that the local repo is in a clean state
 git pull
 ```
 
-## 2: magic numbers
+## 2. Magic numbers
 
 If you are about to do a major release, you should check that the
 magic numbers have been updated since the last major release. It is
@@ -80,7 +80,7 @@ major version, typically the first beta.
 See the `utils/HACKING.adoc` file for documentation on how to bump the
 magic numbers.
 
-## 3: build, refresh dependencies, sanity checks
+## 3. build, refresh dependencies, sanity checks
 
 ```
 make distclean
@@ -111,14 +111,14 @@ make install
 ```
 
 
-## 4: tests
+## 4. Tests
 
 ```
 make tests
 ```
 
 
-## 5: build, tag and push the new release
+## 5. build, tag and push the new release
 
 ```
 # at this point, the build-aux/ocaml_version.m4 file contains N+devD
@@ -150,7 +150,7 @@ git push
 git push --tags
 ```
 
-## 5-bis: Alternative for branching
+## 5-bis. Alternative for branching
 
 This needs to be more tested, tread with care.
 ```
@@ -188,24 +188,24 @@ Go to
 and add a rule for protecting the new branch
 (copy the rights from the previous version)
 
-## 5.1: create the release on github (only for a production release)
+## 5.1. create the release on github (only for a production release)
 
 open https://github.com/ocaml/ocaml/releases
 # and click "Draft a new release"
 # for a minor release, the description is:
  Bug fixes. See [detailed list of changes](https://github.com/ocaml/ocaml/blob/$MAJOR.$MINOR/Changes).
 
-## 5.3: Inria CI (for a new release branch)
+## 5.3. Inria CI (for a new release branch)
 
 Add the new release branch to the Inria CI list.
 Remove the oldest branch from this list.
 
-## 5.4 new badge in README.adoc (for a new release branch)
+## 5.4. New badge in README.adoc (for a new release branch)
 
 Add a badge for the new branch in README.adoc.
 Remove the oldest badge.
 
-## 6: create OPAM packages
+## 6. Create OPAM packages
 
 Clone the opam-repository
 ```
@@ -252,7 +252,7 @@ The switch should build.
 For a production release, you also need to create new opam files for the ocaml-manual and
 ocaml-src packages.
 
-## 6.1 Update OPAM dev packages after branching
+## 6.1. Update OPAM dev packages after branching
 
 Create a new ocaml/ocaml.$NEXT/opam file.
 Copy the opam dev files from ocaml-variants/ocaml-variants.$VERSION+trunk*
@@ -265,7 +265,7 @@ The "src" field should point to
 The synopsis should be "latest $VERSION development(,...)".
 
 
-## 7: build the release archives
+## 7. Build the release archives
 
 ```
 cd $WORKTREE
@@ -279,7 +279,7 @@ gzip -9 <ocaml-$VERSION.tar >ocaml-$VERSION.tar.gz
 xz <ocaml-$VERSION.tar >ocaml-$VERSION.tar.xz
 ```
 
-## 8: upload the archives and compute checksums
+## 8. Upload the archives and compute checksums
 
 For the first beta of a major version, create the distribution directory on
 the server:
@@ -326,7 +326,7 @@ exit
 ```
 
 
-## 9: update note files (technical documentation)
+## 9. Update note files (technical documentation)
 
 ```
 ssh $ARCHIVE_HOST "mkdir -p $DIST/notes"
@@ -336,7 +336,7 @@ scp INSTALL.adoc LICENSE README.adoc README.win32.adoc Changes \
 ```
 
 
-## 10: upload the reference manual
+## 10. Upload the reference manual
 
 You don't need to do this if the previous release had the same
 $MAJOR.$MINOR ($BRANCH) value and the exact same manual -- this is frequent if
@@ -386,7 +386,7 @@ ln -sf manual-ocaml-$BRANCH manual-ocaml
 ```
 
 
-## 11: prepare web announce for the release
+## 11. Prepare web announce for the release
 
 For production releases, you should get in touch with ocaml.org to
 organize the webpage for the new release. See
@@ -394,7 +394,7 @@ organize the webpage for the new release. See
   <https://github.com/ocaml/ocaml.org/issues/819>
 
 
-## 13: announce the release on caml-list, caml-announce, and discuss.ocaml.org
+## 12. Announce the release on caml-list, caml-announce, and discuss.ocaml.org
 
 See the email announce templates in the `templates/` directory.
 
