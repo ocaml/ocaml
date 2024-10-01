@@ -220,6 +220,65 @@ CAMLdeprecated_typedef(addr, char *);
 #endif
 #endif /* CAML_INTERNALS */
 
+/* Function attributes to give hints to the C compiler about optimizations and
+   static analysis. Intended for functions allocating and deallocating memory,
+   or opening and closing resources.
+   https://clang.llvm.org/docs/AttributeReference.html#function-attributes
+   https://gcc.gnu.org/onlinedocs/gcc-14.2.0/gcc/Common-Function-Attributes.html
+*/
+#if __has_attribute(malloc) && __has_attribute(warn_unused_result) &&   \
+  __has_attribute(alloc_size) && __has_attribute(alloc_align) &&        \
+  __has_attribute(returns_nonnull)
+
+/* Indicates that a particular function always returns a non-null pointer. */
+#define CAMLreturns_nonnull() __attribute__ ((returns_nonnull))
+/* [CAMLrealloc(n)] indicates that the function is [realloc]-like, and implies
+   that the [n]-th argument number equals the number of available bytes at the
+   returned pointer. */
+#define CAMLrealloc(alloc_size_N,...)                           \
+  __attribute__ ((warn_unused_result,alloc_size(alloc_size_N)))
+/* [CAMLalloc(dealloc, p)] indicates that the function allocates a resource,
+   which must be deallocated by passing it as the [p]-th argument of the
+   function [dealloc]. */
+#if defined(__GNUC__) && !defined(__llvm__)
+#define CAMLalloc(deallocator,ptr_index,...)                            \
+  __attribute__ ((malloc,malloc(deallocator,ptr_index),warn_unused_result))
+#else
+#define CAMLalloc(deallocator,ptr_index,...)    \
+  __attribute__ ((malloc,warn_unused_result))
+#endif
+/* [CAMLmalloc(dealloc, p, n)] indicates that the function is [malloc]-like, and
+   implies that it allocates a memory block whose size is set by the function's
+   [n]-th argument, and which must be deallocated by passing it as the [p]-th
+   argument of the function [dealloc]. */
+#define CAMLmalloc(deallocator,ptr_index,alloc_size_N,...)      \
+  CAMLalloc(deallocator,ptr_index)                              \
+    __attribute__ ((alloc_size(alloc_size_N)))
+/* [CAMLcalloc(dealloc, p, n, m)] indicates that the function is [calloc]-like,
+   and implies that it allocates a memory block whose size is set by the product
+   of the function's [n]-th and [m]-th arguments, and which must be deallocated
+   by passing it as the [p]-th argument of the function [dealloc]. */
+#define CAMLcalloc(deallocator,ptr_index,alloc_size_N,alloc_size_M,...) \
+  CAMLalloc(deallocator,ptr_index)                                      \
+    __attribute__ ((alloc_size(alloc_size_N,alloc_size_M)))
+/* [CAMLaligned_alloc(dealloc, p, n, a)] indicates that the function is
+   [aligned_alloc]-like, and implies that it allocates a memory block whose size
+   is set by the function's [n]-th argument, aligned on a boundary given by the
+   function's [a]-th argument, and which must be deallocated by passing it as
+   the [p]-th argument of the function [dealloc]. */
+#define CAMLaligned_alloc(deallocator,ptr_index,alloc_size_N,alloc_align_,...) \
+  CAMLmalloc(deallocator,ptr_index,alloc_size_N)                        \
+    __attribute__ ((alloc_align(alloc_align_)))
+
+#else
+#define CAMLreturns_nonnull()
+#define CAMLrealloc(...)
+#define CAMLalloc(...)
+#define CAMLmalloc(...)
+#define CAMLcalloc(...)
+#define CAMLaligned_alloc(...)
+#endif
+
 /* GC timing hooks. These can be assigned by the user. These hooks
    must not allocate, change any heap value, nor call OCaml code. They
    can obtain the domain id with Caml_state->id. These functions must

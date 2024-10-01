@@ -76,9 +76,11 @@ enum {
 
 /* Creating and closing channels from C */
 
-CAMLextern struct channel * caml_open_descriptor_in (int);
-CAMLextern struct channel * caml_open_descriptor_out (int);
 CAMLextern void caml_close_channel (struct channel *);
+CAMLalloc(caml_close_channel, 1) CAMLreturns_nonnull()
+CAMLextern struct channel * caml_open_descriptor_in (int);
+CAMLalloc(caml_close_channel, 1) CAMLreturns_nonnull()
+CAMLextern struct channel * caml_open_descriptor_out (int);
 CAMLextern file_offset caml_channel_size (struct channel *);
 CAMLextern void caml_seek_in (struct channel *, file_offset);
 CAMLextern void caml_seek_out (struct channel *, file_offset);
