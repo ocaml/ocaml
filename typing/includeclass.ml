@@ -111,4 +111,4 @@ let report_error_doc mode ppf = function
         List.iter (fun err -> fprintf ppf "@ %a" (include_err mode) err) errs in
       fprintf ppf "@[<v>%a%a@]" (include_err mode) err print_errs errs
 
-let report_error mode = Format_doc.compat (report_error_doc mode)
+let report_error = Format_doc.compat1 report_error_doc

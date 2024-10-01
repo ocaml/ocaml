@@ -5,22 +5,14 @@ Working version
 
 ### Language features:
 
+- #13340: Array literal syntax can now be used to denote values of type `'a
+  array` and `floatarray`, both in expressions and patterns. The compiler
+  disambiguates each case by using contextual type information (assuming `'a
+  array` by default).
+  (Nicolás Ojeda Bär, review by Richard Eisenberg, Jeremy Yallop, Jacques
+  Garrigue, and Gabriel Scherer)
+
 ### Runtime system:
-
-- #13352: Concurrency refactors and cleanups.
-  (Antonin Décimo, review by Gabriel Scherer, David Allsopp, and Miod Vallat)
-
-- #13437: Stop using GetProcAddress to load functions that were not
-  available in older, now unsupported Windows versions.
-  (Antonin Décimo, review by Nicolás Ojeda Bär and David Allsopp)
-
-- #13470: Constify some function parameters, flags tables, and some
-  pointers in C code (take 3).
-  (Antonin Décimo, review by Stephen Dolan and Miod Vallat)
-
-- #13457: Annotate alloc/free open/close pairs of functions with compiler
-  attributes for static analysis.
-  (Antonin Décimo, review by Gabriel Scherer)
 
 ### Code generation and optimizations:
 
@@ -58,11 +50,31 @@ Working version
   in OCAMLRUNPARAM
   (Gabriel Scherer, review by Vincent Laviron)
 
+- #13492: Parse the CAML_LD_LIBRARY_PATH environment variable for the
+  shared_libs_path item in `ocamlrun -config` in addition to displaying the
+  entries found in ld.conf.
+  (David Allsopp, review by Stephen Dolan)
+
 ### Internal/compiler-libs changes:
+
+- #13352: Concurrency refactors and cleanups.
+  (Antonin Décimo, review by Gabriel Scherer, David Allsopp, and Miod Vallat)
 
 - #13425: undocumented -dmatchcomp flag for the debug
   output of the pattern-matching compiler
   (Gabriel Scherer, review by Vincent Laviron and Nicolás Ojeda Bär)
+
+- #13437: Stop using GetProcAddress to load functions that were not
+  available in older, now unsupported Windows versions.
+  (Antonin Décimo, review by Nicolás Ojeda Bär and David Allsopp)
+
+- #13470: Constify some function parameters, flags tables, and some
+  pointers in C code (take 3).
+  (Antonin Décimo, review by Stephen Dolan and Miod Vallat)
+
+- #13457: Annotate alloc/free open/close pairs of functions with compiler
+  attributes for static analysis.
+  (Antonin Décimo, review by Gabriel Scherer)
 
 ### Build system:
 

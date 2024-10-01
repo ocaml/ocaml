@@ -456,6 +456,7 @@ let pp_print_either  ~left ~right ppf e =
   ppf := Doc.either ~left:(doc_printer left) ~right:(doc_printer right) e !ppf
 
 let comma ppf () = fprintf ppf ",@ "
+let semicolon ppf () = fprintf ppf ";@ "
 
 let pp_two_columns ?(sep = "|") ?max_lines ppf (lines: (string * string) list) =
   let left_column_size =
@@ -479,3 +480,7 @@ let pp_two_columns ?(sep = "|") ?max_lines ppf (lines: (string * string) list) =
   fprintf ppf "@]"
 
 let deprecated_printer pr ppf = ppf := Doc.add !ppf (Doc.Deprecated pr)
+let deprecated pr ppf x =
+  ppf := Doc.add !ppf (Doc.Deprecated (fun ppf -> pr ppf x))
+let deprecated1 pr p1 ppf x =
+  ppf := Doc.add !ppf (Doc.Deprecated (fun ppf -> pr p1 ppf x))

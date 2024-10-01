@@ -154,19 +154,19 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 (fun x -> Oval_int64 (O.obj x : int64)) ))
     ] : (Path.t * printer) list)
 
-    let exn_printer ppf path exn =
+    let exn_printer path ppf exn =
       Format_doc.fprintf ppf "<printer %a raised an exception: %s>"
         Printtyp.Doc.path path
         (Printexc.to_string exn)
 
     let out_exn path exn =
-      Oval_printer (fun ppf -> exn_printer ppf path exn)
+      Oval_printer (fun ppf -> exn_printer path ppf exn)
 
     let user_printer path f ppf x =
       Format_doc.deprecated_printer
         (fun ppf ->
            try f ppf x with
-           | exn -> Format_doc.compat (fun ppf -> exn_printer ppf path) ppf exn
+           | exn -> Format_doc.compat1 exn_printer path ppf exn
         )
         ppf
 
@@ -334,6 +334,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                   when Path.same path Predef.path_bytes ->
                 let s = Bytes.to_string (O.obj obj : bytes) in
                 Oval_string (s, !printer_steps, Ostr_bytes)
+
+              | Tconstr(path, [], _)
+                  when Path.same path Predef.path_floatarray ->
+                Oval_floatarray (O.obj obj : floatarray)
 
               | Tconstr (path, [ty_arg], _)
                 when Path.same path Predef.path_lazy_t ->
