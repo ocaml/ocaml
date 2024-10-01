@@ -79,21 +79,16 @@ CAMLextern void caml_stat_destroy_pool(void);
 
 #endif /* CAML_INTERNALS */
 
-/* [caml_stat_free(block)] deallocates the provided [block]. */
-CAMLextern void caml_stat_free(caml_stat_block);
-
 /* [caml_stat_alloc(size)] allocates a memory block of the requested [size]
    (in bytes) and returns a pointer to it. It throws an OCaml exception in case
    the request fails, and so requires the runtime lock to be held.
 */
-CAMLmalloc(caml_stat_free, 1, 1) CAMLreturns_nonnull()
 CAMLextern caml_stat_block caml_stat_alloc(asize_t);
 
 /* [caml_stat_alloc_noexc(size)] allocates a memory block of the requested
    [size] (in bytes) and returns a pointer to it, or NULL in case the request
    fails.
 */
-CAMLmalloc(caml_stat_free, 1, 1)
 CAMLextern caml_stat_block caml_stat_alloc_noexc(asize_t);
 
 /* [caml_stat_alloc_aligned(size, modulo, block*)] allocates a memory block of
@@ -102,14 +97,12 @@ CAMLextern caml_stat_block caml_stat_alloc_noexc(asize_t);
    well as the unaligned [block] (as an output parameter). It throws an OCaml
    exception in case the request fails, and so requires the runtime lock.
 */
-CAMLaligned_alloc(caml_stat_free, 1, 1, 2) CAMLreturns_nonnull()
 CAMLextern void* caml_stat_alloc_aligned(asize_t, int modulo, caml_stat_block*);
 
 /* [caml_stat_alloc_aligned_noexc] is a variant of [caml_stat_alloc_aligned]
    that returns NULL in case the request fails, and doesn't require the runtime
    lock to be held.
 */
-CAMLaligned_alloc(caml_stat_free, 1, 1, 2)
 CAMLextern void* caml_stat_alloc_aligned_noexc(asize_t, int modulo,
                                                caml_stat_block*);
 
@@ -118,8 +111,10 @@ CAMLextern void* caml_stat_alloc_aligned_noexc(asize_t, int modulo,
    bits to zero, effectively allocating a zero-initialized memory block of
    [num * size] bytes. It returns NULL in case the request fails.
 */
-CAMLcalloc(caml_stat_free, 1, 1, 2)
 CAMLextern caml_stat_block caml_stat_calloc_noexc(asize_t, asize_t);
+
+/* [caml_stat_free(block)] deallocates the provided [block]. */
+CAMLextern void caml_stat_free(caml_stat_block);
 
 /* [caml_stat_resize(block, size)] changes the size of the provided [block] to
    [size] bytes. The function may move the memory block to a new location (whose
@@ -129,13 +124,11 @@ CAMLextern caml_stat_block caml_stat_calloc_noexc(asize_t, asize_t);
    portion is indeterminate. The function throws an OCaml exception in case the
    request fails, and so requires the runtime lock to be held.
 */
-CAMLrealloc(2) CAMLreturns_nonnull()
 CAMLextern caml_stat_block caml_stat_resize(caml_stat_block, asize_t);
 
 /* [caml_stat_resize_noexc] is a variant of [caml_stat_resize] that returns NULL
    in case the request fails, and doesn't require the runtime lock.
 */
-CAMLrealloc(2)
 CAMLextern caml_stat_block caml_stat_resize_noexc(caml_stat_block, asize_t);
 
 
@@ -146,13 +139,11 @@ typedef char* caml_stat_string;
    copy of the null-terminated string [s]. It throws an OCaml exception in case
    the request fails, and so requires the runtime lock to be held.
 */
-CAMLalloc(caml_stat_free, 1) CAMLreturns_nonnull()
 CAMLextern caml_stat_string caml_stat_strdup(const char *s);
 
 /* [caml_stat_strdup_noexc] is a variant of [caml_stat_strdup] that returns NULL
    in case the request fails, and doesn't require the runtime lock.
 */
-CAMLalloc(caml_stat_free, 1)
 CAMLextern caml_stat_string caml_stat_strdup_noexc(const char *s);
 
 #ifdef _WIN32
@@ -160,9 +151,7 @@ CAMLextern caml_stat_string caml_stat_strdup_noexc(const char *s);
  * obvious equivalents of [caml_stat_strdup] and
  * [caml_stat_strdup_noexc] for wide characters.
  */
-CAMLalloc(caml_stat_free, 1) CAMLreturns_nonnull()
 CAMLextern wchar_t* caml_stat_wcsdup(const wchar_t *s);
-CAMLalloc(caml_stat_free, 1)
 CAMLextern wchar_t* caml_stat_wcsdup_noexc(const wchar_t *s);
 #endif
 
@@ -171,10 +160,8 @@ CAMLextern wchar_t* caml_stat_wcsdup_noexc(const wchar_t *s);
    except for the very last one. It throws an OCaml exception in case the
    request fails, and so requires the runtime lock to be held.
 */
-CAMLalloc(caml_stat_free, 1) CAMLreturns_nonnull()
 CAMLextern caml_stat_string caml_stat_strconcat(int n, ...);
 #ifdef _WIN32
-CAMLalloc(caml_stat_free, 1) CAMLreturns_nonnull()
 CAMLextern wchar_t* caml_stat_wcsconcat(int n, ...);
 #endif
 
