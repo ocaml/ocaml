@@ -4469,14 +4469,14 @@ and type_coerce
             && closed_type_expr ~env ty' ->
           if not gen && (* first try a single coercion *)
             let snap = snapshot () in
-            let ty, _b = enlarge_type env ty' in
+            let ty, _b = enlarge_type env (generic_instance ty') in
             try
               force (); Ctype.unify env arg_type ty; true
             with Unify _ ->
               backtrack snap; false
           then ()
           else begin try
-            let force' = subtype env arg_type ty' in
+            let force' = subtype env arg_type (generic_instance ty') in
             force (); force' ();
             if not gen && !Clflags.principal then
               Location.prerr_warning loc
@@ -4486,7 +4486,7 @@ and type_coerce
             raise (Error (loc, env, Not_subtype err))
           end;
       | _ ->
-          let ty, b = enlarge_type env ty' in
+          let ty, b = enlarge_type env (generic_instance ty') in
           force ();
           begin try Ctype.unify env arg_type ty with Unify err ->
             let expanded = full_expand ~may_forget_scope:true env ty' in

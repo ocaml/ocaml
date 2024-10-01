@@ -731,6 +731,9 @@ Error: Multiple definition of the type name "t".
 fun x -> (x :> < m : 'a -> 'a > as 'a);;
 [%%expect{|
 - : < m : (< m : 'a > as 'b) -> 'b as 'a; .. > -> 'b = <fun>
+|}, Principal{|
+- : < m : < m : 'a > -> < m : 'a > as 'a; .. > -> (< m : 'b -> 'b > as 'b) =
+<fun>
 |}];;
 
 fun x -> (x : int -> bool :> 'a -> 'a);;
