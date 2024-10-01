@@ -608,19 +608,19 @@ exception Non_closed of type_expr * variable_kind
    [free_variables] below drops the type/row information
    and only returns a [variable list].
  *)
-let free_vars ?env mark ty =
+let free_vars zero add_one ?env mark ty =
   let rec fv ~kind acc ty =
     if not (try_mark_node mark ty) then acc
     else match get_desc ty, env with
       | Tvar _, _ ->
-          (ty, kind) :: acc
+          add_one ty kind acc
       | Tconstr (path, tl, _), Some env ->
           let acc =
             match Env.find_type_expansion path env with
             | exception Not_found -> acc
             | (_, body, _) ->
                 if get_level body = generic_level then acc
-                else (ty, kind) :: acc
+                else add_one ty kind acc
           in
           List.fold_left (fv ~kind:Type_variable) acc tl
       | Tobject (ty, _), _ ->
@@ -636,15 +636,20 @@ let free_vars ?env mark ty =
           else fv ~kind:Row_variable acc (row_more row)
       | _    ->
           fold_type_expr (fv ~kind) acc ty
-  in fv ~kind:Type_variable [] ty
+  in fv ~kind:Type_variable zero ty
 
 let free_variables ?env ty =
-  with_type_mark (fun mark -> List.map fst (free_vars ?env mark ty))
+  let add_one ty _kind acc = ty :: acc in
+  with_type_mark (fun mark -> free_vars [] add_one ?env mark ty)
 
-let closed_type mark ty =
-  match free_vars mark ty with
-      []           -> ()
-  | (v, real) :: _ -> raise (Non_closed (v, real))
+let closed_type ?env mark ty =
+  let add_one ty kind _acc = raise (Non_closed (ty, kind)) in
+  free_vars () add_one ?env mark ty
+
+let closed_type_expr ?env ty =
+  with_type_mark (fun mark ->
+    try closed_type ?env mark ty; true
+    with Non_closed _ -> false)
 
 let closed_parameterized_type params ty =
   with_type_mark begin fun mark ->
