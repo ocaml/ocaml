@@ -592,23 +592,22 @@ let rec filter_row_fields erase = function
 type variable_kind = Row_variable | Type_variable
 exception Non_closed of type_expr * variable_kind
 
-(* [free_vars] collects the variables of the input type expression. It
+(* [free_vars] walks over the variables of the input type expression. It
    is used for several different things in the type-checker, with the
    following bells and whistles:
    - If [env] is Some typing environment, types in the environment
      are expanded to check whether the apparently-free variable would vanish
      during expansion.
-   - We collect both type variables and row variables, paired with
-     a [variable_kind] to distinguish them.
    - We do not count "virtual" free variables -- free variables stored in
      the abbreviation of an object type that has been expanded (we store
      the abbreviations for use when displaying the type).
 
-   [free_vars] returns a [(variable * bool) list], while
-   [free_variables] below drops the type/row information
-   and only returns a [variable list].
+   [free_vars] accumulates its answer in a monoid-like structure, with
+   an initial element [zero] and a combining function [add_one], passing
+   [add_one] information about whether the variable is a normal type variable
+   or a row variable.
  *)
-let free_vars zero add_one ?env mark ty =
+let free_vars ~zero ~add_one ?env mark ty =
   let rec fv ~kind acc ty =
     if not (try_mark_node mark ty) then acc
     else match get_desc ty, env with
@@ -640,11 +639,11 @@ let free_vars zero add_one ?env mark ty =
 
 let free_variables ?env ty =
   let add_one ty _kind acc = ty :: acc in
-  with_type_mark (fun mark -> free_vars [] add_one ?env mark ty)
+  with_type_mark (fun mark -> free_vars ~zero:[] ~add_one ?env mark ty)
 
 let closed_type ?env mark ty =
   let add_one ty kind _acc = raise (Non_closed (ty, kind)) in
-  free_vars () add_one ?env mark ty
+  free_vars ~zero:() ~add_one ?env mark ty
 
 let closed_type_expr ?env ty =
   with_type_mark (fun mark ->
