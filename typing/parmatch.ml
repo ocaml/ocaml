@@ -390,7 +390,7 @@ let simple_match d h =
   | Constant c1, Constant c2 -> const_compare c1 c2 = 0
   | Lazy, Lazy -> true
   | Record _, Record _ -> true
-  | Tuple len1, Tuple len2 -> len1 = len2
+  | Tuple lbls1, Tuple lbls2 -> lbls1 = lbls2
   | Array len1, Array len2 -> len1 = len2
   | _, Any -> true
   | _, _ -> false
@@ -514,12 +514,10 @@ let rec read_args xs r = match xs,r with
     fatal_error "Parmatch.read_args"
 
 let set_args q r = match q with
-| {pat_desc = Tpat_tuple omegas} ->
-    let args,rest = read_args (List.map snd omegas) r in
-    make_pat
-      (Tpat_tuple
-        (List.map2 (fun (lbl, _) arg -> lbl, arg) omegas args))
-      q.pat_type q.pat_env::rest
+| {pat_desc = Tpat_tuple lbls_omegas} ->
+    let lbls, omegas = List.split lbls_omegas in
+    let args, rest = read_args omegas r in
+    make_pat (Tpat_tuple (List.combine lbls args)) q.pat_type q.pat_env :: rest
 | {pat_desc = Tpat_record (omegas,closed)} ->
     let args,rest = read_args omegas r in
     let args =

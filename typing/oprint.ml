@@ -238,8 +238,10 @@ let print_out_value ppf tree =
     | Oval_ellipsis -> raise Ellipsis
     | Oval_printer f -> f ppf
     | Oval_tuple tree_list ->
-        fprintf ppf "@[<1>(%a)@]" (print_labeled_tree_list print_tree_1 ",")
-          tree_list
+        let print_elem ppf (lbl, item) =
+          print_label ppf lbl; print_tree_1 ppf item
+        in
+        fprintf ppf "@[<1>(%a)@]" (print_tree_list print_elem ",") tree_list
     | Oval_floatarray arr ->
        fprintf ppf "@[<2>[|%a|]@]"
          (pp_print_seq ~pp_sep:semicolon pp_print_float)
@@ -253,7 +255,8 @@ let print_out_value ppf tree =
         fprintf ppf "@[<1>%a@ =@ %a@]" print_ident name (cautious print_tree_1)
           tree;
         print_fields false ppf fields
-  and print_tree_list print_item sep ppf tree_list =
+  and print_tree_list : 'a . (_ -> 'a -> _) -> _ -> _ -> 'a list -> unit =
+    fun print_item sep ppf tree_list ->
     let rec print_list first ppf =
       function
         [] -> ()
@@ -263,17 +266,6 @@ let print_out_value ppf tree =
           print_list false ppf tree_list
     in
     cautious (print_list true) ppf tree_list
-  and print_labeled_tree_list print_item sep ppf labeled_tree_list =
-    let rec print_list first ppf =
-      function
-        [] -> ()
-      | (label, tree) :: labeled_tree_list ->
-          if not first then fprintf ppf "%s@ " sep;
-          print_label ppf label;
-          print_item ppf tree;
-          print_list false ppf labeled_tree_list
-    in
-    cautious (print_list true) ppf labeled_tree_list
   in
   cautious print_tree_1 ppf tree
 
