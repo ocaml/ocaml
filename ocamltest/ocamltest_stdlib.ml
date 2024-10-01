@@ -45,9 +45,13 @@ end
 
 module List = struct
   include List
-  let rec concatmap f = function
-    | [] -> []
-    | x::xs -> (f x) @ (concatmap f xs)
+
+  let rec fold_left_result f acc = function
+    | [] -> Ok acc
+    | x :: xs ->
+        match f acc x with
+        | Error _ as err -> err
+        | Ok acc -> fold_left_result f acc xs
 end
 
 module String = struct

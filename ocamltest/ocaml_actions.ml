@@ -220,7 +220,7 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
   let output_variable = compiler#output_variable in
   let prepare = prepare_module output_variable log env in
   let modules =
-    List.concatmap prepare (List.map Ocaml_filetypes.filetype all_modules) in
+    List.concat_map prepare (List.map Ocaml_filetypes.filetype all_modules) in
   let has_c_file = List.exists is_c_file modules in
   let c_headers_flags =
     if has_c_file then Ocaml_flags.c_includes else "" in
@@ -350,7 +350,7 @@ let find_source_modules log env =
       ((plugins env) @ (modules env) @ [(Actions_helpers.testfile env)]) in
   print_module_names log "Specified" specified_modules;
   let source_modules =
-    List.concatmap
+    List.concat_map
       (add_module_interface source_directory)
       specified_modules in
   print_module_names log "Source" source_modules;

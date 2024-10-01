@@ -35,7 +35,8 @@ end
 
 module List : sig
   include module type of List
-  val concatmap : ('a -> 'b list) -> 'a list -> 'b list
+  val fold_left_result :
+    ('acc -> 'a -> ('acc, 'e) result) -> 'acc -> 'a list -> ('acc, 'e) result
 end
 
 module String : sig

@@ -109,48 +109,52 @@ let string_of_summary = function
   | Some_failure -> "failed"
   | All_skipped -> "skipped"
 
-let rec run_test_tree log add_msg behavior env summ ast =
-  match ast with
-  | Ast (Environment_statement s :: stmts, subs) ->
-    begin match interpret_environment_statement env s with
-    | env ->
-      run_test_tree log add_msg behavior env summ (Ast (stmts, subs))
-    | exception e ->
-      let bt = Printexc.get_backtrace () in
-      let line = s.loc.Location.loc_start.Lexing.pos_lnum in
-      Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
-      Some_failure
-    end
-  | Ast (Test (_, name, mods) :: stmts, subs) ->
-    let locstr =
-      if name.loc = Location.none then
-        "default"
-      else
-        Printf.sprintf "line %d" name.loc.Location.loc_start.Lexing.pos_lnum
-    in
-    let (msg, children_behavior, newenv, result) =
-      match behavior with
-      | Skip_all -> ("=> n/a", Skip_all, env, Result.skip)
-      | Run ->
-        begin try
-          let testenv = List.fold_left apply_modifiers env mods in
-          let test = lookup_test name in
-          let (result, newenv) = Tests.run log testenv test in
-          let msg = Result.string_of_result result in
-          let sub_behavior = if Result.is_pass result then Run else Skip_all in
-          (msg, sub_behavior, newenv, result)
-        with e ->
-          let bt = Printexc.get_backtrace () in
-          (report_error name.loc e bt, Skip_all, env, Result.fail)
-        end
-    in
-    Printf.ksprintf add_msg "%s (%s) %s" locstr name.node msg;
-    let newsumm = join_result summ result in
-    let newast = Ast (stmts, subs) in
-    run_test_tree log add_msg children_behavior newenv newsumm newast
-  | Ast ([], subs) ->
-    List.fold_left join_summaries summ
-      (List.map (run_test_tree log add_msg behavior env All_skipped) subs)
+let run_test_tree log add_msg behavior env summ ast =
+  let run_statement (behavior, env, summ) = function
+    | Environment_statement s ->
+      begin match interpret_environment_statement env s with
+      | env -> Ok (behavior, env, summ)
+      | exception e ->
+        let bt = Printexc.get_backtrace () in
+        let line = s.loc.Location.loc_start.Lexing.pos_lnum in
+        Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
+        Error Some_failure
+      end
+    | Test (_, name, mods) ->
+      let locstr =
+        if name.loc = Location.none then
+          "default"
+        else
+          Printf.sprintf "line %d" name.loc.Location.loc_start.Lexing.pos_lnum
+      in
+      let (msg, behavior, env, result) =
+        match behavior with
+        | Skip_all -> ("=> n/a", Skip_all, env, Result.skip)
+        | Run ->
+          begin try
+            let testenv = List.fold_left apply_modifiers env mods in
+            let test = lookup_test name in
+            let (result, newenv) = Tests.run log testenv test in
+            let msg = Result.string_of_result result in
+            let sub_behavior =
+              if Result.is_pass result then Run else Skip_all in
+            (msg, sub_behavior, newenv, result)
+          with e ->
+            let bt = Printexc.get_backtrace () in
+            (report_error name.loc e bt, Skip_all, env, Result.fail)
+          end
+      in
+      Printf.ksprintf add_msg "%s (%s) %s" locstr name.node msg;
+      let summ = join_result summ result in
+      Ok (behavior, env, summ)
+  in
+  let rec run_tree behavior env summ (Ast (stmts, subs)) =
+    match List.fold_left_result run_statement (behavior, env, summ) stmts with
+    | Error e -> e
+    | Ok (behavior, env, summ) ->
+        List.fold_left join_summaries summ
+          (List.map (run_tree behavior env All_skipped) subs)
+  in run_tree behavior env summ ast
 
 let get_test_source_directory test_dirname =
   if (Filename.is_relative test_dirname) then
