@@ -398,7 +398,19 @@ organize the webpage for the new release. See
 
 See the email announce templates in the `templates/` directory.
 
+## 14: External tools
 
+Try to propagate the new compiler to external open source tools
+
+### Godbold CE (https://godbolt.org)
+
+- Send a PR to both https://github.com/compiler-explorer/infra
+  and https://github.com/compiler-explorer/compiler-explorer
+
+See https://github.com/compiler-explorer/compiler-explorer/pull/6735
+and https://github.com/compiler-explorer/infra/pull/1359 as examples.
+
+This should be expanded, once we have more experince with the process
 
 # Appendix
 
