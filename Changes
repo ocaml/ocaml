@@ -66,6 +66,10 @@ Working version
   in OCAMLRUNPARAM
   (Gabriel Scherer, review by Vincent Laviron)
 
+- #13493: Clearer error message in ocamlc for conflicting link options for
+  C stubs when shared libraries are not available.
+  (David Allsopp, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #13425: undocumented -dmatchcomp flag for the debug

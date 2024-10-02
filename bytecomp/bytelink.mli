@@ -41,6 +41,7 @@ type error =
   | Cannot_open_dll of filepath
   | Camlheader of string * filepath
   | Link_error of Linkdeps.error
+  | Needs_custom_runtime of filepath
 
 exception Error of error
 
