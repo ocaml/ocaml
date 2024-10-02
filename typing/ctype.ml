@@ -2185,7 +2185,7 @@ let occur_univar_or_unscoped ?(inj_only=false) env ty =
           let bound_uv = List.fold_right TypeSet.add tyl bound_uv in
           occur_rec env bound_uv bound_id ty
       | Tconstr (p, tl, _) -> begin
-          let id_escape = Path.unbounded_unscoped bound_id p in
+          let id_escape = Path.check_for_unbound_unscoped_idents bound_id p in
           match id_escape with
           | Some i ->
               begin try
@@ -2216,11 +2216,11 @@ let occur_univar_or_unscoped ?(inj_only=false) env ty =
             end
           end
       | Tobject (_, ({contents = Some (p, _)} as nm))
-        when Path.unbounded_unscoped bound_id p <> None ->
+        when Path.check_for_unbound_unscoped_idents bound_id p <> None ->
           set_name nm None;
           occur_desc env bound_uv bound_id ty
       | Tpackage (p, fl) ->
-          begin match Path.unbounded_unscoped bound_id p with
+          begin match Path.check_for_unbound_unscoped_idents bound_id p with
             Some i ->
               let p' = normalize_package_path env p in
               if Path.same p p' then raise_escape_exn (Module i);
@@ -2230,7 +2230,7 @@ let occur_univar_or_unscoped ?(inj_only=false) env ty =
               List.iter (fun (_, t) -> occur_rec env bound_uv bound_id t) fl
           end
       | Tfunctor (l, id, (p, fl), ty) -> begin
-          let id_escape = Path.unbounded_unscoped bound_id p in
+          let id_escape = Path.check_for_unbound_unscoped_idents bound_id p in
           match id_escape with
             Some i ->
               let p' = normalize_package_path env p in

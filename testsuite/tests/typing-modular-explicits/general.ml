@@ -29,6 +29,12 @@ let f x y = (id (module Int) x, id (module Bool) y)
 val f : Int.t -> Bool.t -> Int.t * Bool.t = <fun>
 |}]
 
+let f2 x y = (id (module Int : Typ) x, id (module Bool : Typ) y)
+
+[%%expect{|
+val f2 : Int.t -> Bool.t -> Int.t * Bool.t = <fun>
+|}]
+
 let merge (module T : Typ) x y = (id (module T) x, id (module T) y)
 
 [%%expect{|
@@ -171,6 +177,13 @@ val build_pair : (module M : Typ) -> x:M.t -> y:M.t -> M.t * M.t = <fun>
 val principality_warning : Int.t * Int.t = (1, 3)
 |}]
 
+let foo f a =
+  let _ = (f ~a : (module M : Typ) -> M.t) in
+  f ~a (fun x -> x)
+
+[%%expect{|
+|}]
+
 (** From here we test possible expressions for the module argument. *)
 
 (* Typing rules make sense only if module argument are
@@ -182,6 +195,20 @@ let x_from_struct = id (module struct type t = int end) 3
 val x_from_struct : int = 3
 |}]
 
+module F () : Typ = struct type t = int end
+
+let x_from_generative_functor = id (module F ())
+
+[%%expect{|
+module F : () -> Typ
+Line 3, characters 35-48:
+3 | let x_from_generative_functor = id (module F ())
+                                       ^^^^^^^^^^^^^
+Error:
+       The module "T" would escape its scope
+  Attempted to remove dependency because
+  could not extract path from module argument.
+|}]
 
 module type Map = sig
   type _ t
