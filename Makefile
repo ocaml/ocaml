@@ -1393,7 +1393,7 @@ C_LITERAL = $(shell $(SAK) encode-C-literal '$(1)')
 
 runtime/build_config.h: $(ROOTDIR)/Makefile.config $(SAK)
 	$(V_GEN)echo '/* This file is generated from $(ROOTDIR)/Makefile.config */' > $@ && \
-	echo '#define OCAML_STDLIB_DIR $(call C_LITERAL,$(LIBDIR))' >> $@ && \
+	echo '#define OCAML_STDLIB_DIR $(call C_LITERAL,$(TARGET_LIBDIR))' >> $@ && \
 	echo '#define HOST "$(HOST)"' >> $@
 
 ## Runtime libraries and programs

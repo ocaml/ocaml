@@ -795,6 +795,7 @@ build_cpu
 build
 ar_supports_response_files
 QS
+target_libdir
 ocaml_libdir
 ocaml_bindir
 compute_deps
@@ -1022,6 +1023,7 @@ enable_flambda
 enable_flambda_invariants
 enable_cmm_invariants
 with_target_bindir
+with_target_libdir
 with_target_sh
 enable_reserved_header_bits
 enable_stdlib_manpages
@@ -1744,6 +1746,8 @@ Optional Packages:
   --with-odoc             build documentation with odoc
   --with-target-bindir    location of the runtime binaries on the target
                           system
+  --with-target-libdir    location of the libraries on the target system, to
+                          be used for dynlink; defaults to the value of libdir
   --with-target-sh        location of Posix sh on the target system
   --with-afl              use the AFL fuzzer
   --with-flexdll          bootstrap FlexDLL from the given sources
@@ -3536,6 +3540,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 
 
 
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -4095,6 +4100,16 @@ then :
   withval=$with_target_bindir; target_bindir=$withval
 else $as_nop
   target_bindir=''
+fi
+
+
+
+# Check whether --with-target-libdir was given.
+if test ${with_target_libdir+y}
+then :
+  withval=$with_target_libdir; target_libdir="$withval"
+else $as_nop
+  target_libdir=""
 fi
 
 
@@ -22459,6 +22474,15 @@ if test x"$libdir" = x'${exec_prefix}/lib'
 then :
   libdir="$libdir"/ocaml
 fi
+
+case $target_libdir in #(
+  "") :
+    target_libdir="$libdir" ;; #(
+  no) :
+    target_libdir='' ;; #(
+  *) :
+     ;;
+esac
 
 if test x"$mandir" = x'${datarootdir}/man'
 then :
