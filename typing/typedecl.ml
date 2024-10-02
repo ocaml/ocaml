@@ -1103,6 +1103,8 @@ let transl_type_decl env rec_flag sdecl_list =
       Uid.mk ~current_unit:(Env.get_current_unit ())
     ) sdecl_list
   in
+  (* Additional scope since update_type may lower some generic levels *)
+  Ctype.with_local_level_generalize begin fun () ->
   (* Translate declarations, using a temporary environment where abbreviations
      expand to a generic type variable. After that, we check the coherence of
      the translated declarations in the resulting new environment. *)
@@ -1231,6 +1233,7 @@ let transl_type_decl env rec_flag sdecl_list =
   in
   (* Done *)
   (final_decls, final_env, shapes)
+  end
 
 (* Translating type extensions *)
 
