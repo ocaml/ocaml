@@ -592,7 +592,7 @@ Thread 3 running on domain 0 saw the write by thread 2
 This program uses a shared reference cell protected by a mutex to communicate
 between the different systhreads running on two different domains. The
 systhread identifiers uniquely identify systhreads in the program. The initial
-domain gets the domain id and the thread id as 0. The newly spawned domain gets
+domain gets the domain id 0 and thread id 0. The newly spawned domain gets
 the domain id as 1.
 
 \section{s:par_c_bindings}{Interaction with C bindings}
