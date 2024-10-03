@@ -224,7 +224,7 @@ For small inputs, the "fib_par" function simply calls the sequential Fibonacci
 function "fib". It is important to switch to sequential mode for small problem
 sizes. If not, the cost of parallelisation will outweigh the work available.
 
-For simplicity, we use "ocamlfind" to compile this program. In general it is
+For simplicity, we use "ocamlfind" to compile this program. In general, it is
 recommended that users use \href{https://github.com/ocaml/dune}{dune} to build
 programs that use libraries installed through
 \href{https://opam.ocaml.org/}{opam}.
