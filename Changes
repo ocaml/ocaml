@@ -91,6 +91,11 @@ Working version
 - #13454: Output a correct trace of the C_CALLN bytecode.
   (Miod Vallat, review by Antonin Décimo)
 
+- #xxxxx: Add and/or fix CFI annotations in the assembly part of the s390x
+  runtime to let debuggers operate correctly.
+  (Miod Vallat, report by Tim McGilchrist, review by TBD)
+
+
 OCaml 5.3.0
 ___________
 
