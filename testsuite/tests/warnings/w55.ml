@@ -58,16 +58,19 @@ let d' x = (c [@inlined hint]) x
    setup-ocamlc.byte-build-env;
    ocamlc.byte;
    check-ocamlc.byte-output;
- }{
-   no-flambda;
-   setup-ocamlopt.byte-build-env;
-   ocamlopt.byte;
-   check-ocamlopt.byte-output;
- }{
-   compiler_reference = "${test_source_directory}/w55.flambda.reference";
+ }
+ {
    flambda;
-   setup-ocamlopt.byte-build-env;
-   ocamlopt.byte;
-   check-ocamlopt.byte-output;
+   then {
+     compiler_reference = "${test_source_directory}/w55.flambda.reference";
+     setup-ocamlopt.byte-build-env;
+     ocamlopt.byte;
+     check-ocamlopt.byte-output;
+   }
+   else {
+     setup-ocamlopt.byte-build-env;
+     ocamlopt.byte;
+     check-ocamlopt.byte-output;
+   }
  }
 *)

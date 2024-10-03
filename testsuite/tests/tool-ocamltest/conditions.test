@@ -1,0 +1,36 @@
+(* TEST
+{
+(* simple test: afer a passing action,
+   positive branches run, negative branches do not run. *)
+pass;
+ { pass; }
+ { skip; }
+ else { fail; }
+ else { fail; }
+}
+{
+(* simple test: after a skipping action,
+   positive branches do not run, negative branches run. *)
+skip;
+then { fail; }
+else { pass; }
+then { fail; }
+else { skip; }
+}
+{
+(* if there are two actions in sequence,
+   we run negative branches if any of the two actions skips *)
+pass;
+skip;
+then { fail; }
+else { pass; }
+}
+{
+(* if there are two actions in sequence,
+   we run negative branches if any of the two actions skips *)
+skip;
+pass;
+else { fail; }
+then { pass; }
+}
+*)

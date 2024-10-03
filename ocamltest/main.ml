@@ -120,7 +120,7 @@ let run_test_tree log add_msg behavior env summ ast =
         Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
         Error Some_failure
       end
-    | Test (_, name, mods) ->
+    | Test (_, sign, name, mods) ->
       let locstr =
         if name.loc = Location.none then
           "default"
@@ -135,6 +135,13 @@ let run_test_tree log add_msg behavior env summ ast =
             let testenv = List.fold_left apply_modifiers env mods in
             let test = lookup_test name in
             let (result, newenv) = Tests.run log testenv test in
+            let result =
+              match sign, result.status with
+              | _, Fail -> result
+              | Pos, _ -> result
+              | Neg, Skip -> { result with status = Pass }
+              | Neg, Pass -> { result with status = Skip }
+            in
             let msg = Result.string_of_result result in
             let sub_behavior =
               if Result.is_pass result then Run else Skip_all in
@@ -149,11 +156,23 @@ let run_test_tree log add_msg behavior env summ ast =
       Ok (behavior, env, summ)
   in
   let rec run_tree behavior env summ (Ast (stmts, subs)) =
+    let old_behavior = behavior in
     match List.fold_left_result run_statement (behavior, env, summ) stmts with
     | Error e -> e
     | Ok (behavior, env, summ) ->
+        let run_child (sign, tree) =
+          let child_behavior =
+            match old_behavior, behavior, sign with
+            | Skip_all, _, _ -> Skip_all
+            | Run, Run, Pos -> Run
+            | Run, Run, Neg -> Skip_all
+            | Run, Skip_all, Pos -> Skip_all
+            | Run, Skip_all, Neg -> Run
+          in
+          run_tree child_behavior env All_skipped tree
+        in
         List.fold_left join_summaries summ
-          (List.map (run_tree behavior env All_skipped) subs)
+          (List.map run_child subs)
   in run_tree behavior env summ ast
 
 let get_test_source_directory test_dirname =
@@ -187,11 +206,11 @@ let test_file test_filename =
   let tsl_ast = match tsl_ast with
     | Ast ([], []) ->
       let default_tests = Tests.default_tests() in
-      let make_tree test =
+      let make_child test =
         let id = make_identifier test.Tests.test_name in
-        Ast ([Test (0, id, [])], [])
+        (Pos, Ast ([Test (0, Pos, id, [])], []))
       in
-      Ast ([], List.map make_tree default_tests)
+      Ast ([], List.map make_child default_tests)
     | _ -> tsl_ast
   in
   let used_tests = tests_in_tree tsl_ast in

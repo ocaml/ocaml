@@ -1,5 +1,5 @@
 (* TEST
- no-tsan; (* Takes too much time with tsan *)
+ not tsan; (* Takes too much time with tsan *)
  {
  bytecode;
  }

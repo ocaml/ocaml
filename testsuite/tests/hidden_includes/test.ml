@@ -93,7 +93,7 @@ ocamlc.byte;
   ocamlc.byte;
 }
 {
-  not-windows;
+  not windows;
   flags = "-H liba -I liba_alt -I libb -nocwd";
   module = "libc/c1.ml";
   setup-ocamlc.byte-build-env;
@@ -104,7 +104,7 @@ ocamlc.byte;
   check-ocamlc.byte-output;
 }
 {
-  not-windows;
+  not windows;
   flags = "-I liba_alt -H liba -I libb -nocwd";
   module = "libc/c1.ml";
   setup-ocamlc.byte-build-env;
@@ -117,7 +117,7 @@ ocamlc.byte;
 
 (* The next two tests show that earlier -Hs take priority over later -Hs *)
 {
-  not-windows;
+  not windows;
   flags = "-H liba_alt -H liba -I libb -nocwd";
   module = "libc/c1.ml";
   setup-ocamlc.byte-build-env;

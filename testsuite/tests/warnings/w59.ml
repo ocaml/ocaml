@@ -73,16 +73,19 @@ let set_opaque =
    ocamlc.byte;
    check-ocamlc.byte-output;
  }{
-   no-flambda;
-   setup-ocamlopt.byte-build-env;
-   ocamlopt.byte;
-   check-ocamlopt.byte-output;
- }{
-   compiler_reference = "${test_source_directory}/w59.flambda.reference";
-   flags = "-w +A-70 -dflambda-invariants";
    flambda;
-   setup-ocamlopt.byte-build-env;
-   ocamlopt.byte;
-   check-ocamlopt.byte-output;
- }
+   then {
+     compiler_reference = "${test_source_directory}/w59.flambda.reference";
+     flags = "-w +A-70 -dflambda-invariants";
+     flambda;
+     setup-ocamlopt.byte-build-env;
+     ocamlopt.byte;
+     check-ocamlopt.byte-output;
+   }
+   else {
+     setup-ocamlopt.byte-build-env;
+     ocamlopt.byte;
+     check-ocamlopt.byte-output;
+   }
+  }
 *)

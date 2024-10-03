@@ -582,6 +582,38 @@ let ocamlobjinfo =
          Result.skip_with_reason "ocamlobjinfo not available", env
     )
 
+let ocamltest_action log env =
+  let (_, env) = Actions_helpers.setup_simple_build_env false [] log env in
+  let program = Environments.safe_lookup Builtin_variables.program env in
+  let what = Printf.sprintf "Running ocamltest on %s" program in
+  Printf.fprintf log "%s\n%!" what;
+  let commandline =
+  [
+    Ocaml_commands.ocamltest;
+    Ocaml_flags.ocamltest_default_flags;
+    flags env;
+    program
+  ] in
+  let expected_exit_status = 0 in
+  let exit_status =
+    Actions_helpers.run_cmd
+      ~stdout_variable:Builtin_variables.output
+      ~stderr_variable:Builtin_variables.output
+      ~append:true
+      log env commandline in
+  if exit_status=expected_exit_status
+  then (Result.pass, env)
+  else begin
+    let reason =
+      (Actions_helpers.mkreason
+        what (String.concat " " commandline) exit_status) in
+    (Result.fail_with_reason reason, env)
+  end
+
+let ocamltest =
+  Actions.make ~name:"ocamltest"
+    ~description:"Run ocamltest on the program" ocamltest_action
+
 let mklib log env =
   let program = Environments.safe_lookup Builtin_variables.program env in
   let what = Printf.sprintf "Running ocamlmklib to produce %s" program in
@@ -1410,5 +1442,6 @@ let _ =
     ocamlmklib;
     codegen;
     cc;
-    ocamlobjinfo
+    ocamlobjinfo;
+    ocamltest;
   ]

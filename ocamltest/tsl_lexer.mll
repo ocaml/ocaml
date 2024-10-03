@@ -66,6 +66,9 @@ and token = parse
   | identchar *
     { let s = Lexing.lexeme lexbuf in
       match s with
+        | "not" -> NOT
+        | "then" -> THEN
+        | "else" -> ELSE
         | "include" -> INCLUDE
         | "set" -> SET
         | "unset" -> UNSET

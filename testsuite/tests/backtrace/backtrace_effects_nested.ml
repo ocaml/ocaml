@@ -48,12 +48,15 @@ let () = f ()
  flags = "-g";
  {
    bytecode;
- }{
-   no-flambda;
-   native;
- }{
-   reference = "${test_source_directory}/backtrace_effects_nested.flambda.reference";
+ }
+ {
    flambda;
-   native;
+   else {
+     native;
+   }
+   then {
+     reference = "${test_source_directory}/backtrace_effects_nested.flambda.reference";
+     native;
+   }
  }
 *)

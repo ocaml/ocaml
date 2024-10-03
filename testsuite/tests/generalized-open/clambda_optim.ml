@@ -1,6 +1,6 @@
 (* TEST
  compile_only = "true";
- no-flambda;
+ not flambda;
  setup-ocamlopt.byte-build-env;
  ocamlopt.byte;
  check-ocamlopt.byte-output;
