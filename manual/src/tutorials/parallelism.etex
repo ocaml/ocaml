@@ -11,7 +11,7 @@ tutorial will first cover high-level parallel programming using domainslib
 followed by low-level primitives exposed by the compiler.
 
 OCaml distinguishes between concurrency and parallelism and provides distinct
-mechanisms for expressing them. Concurrency is overlapped execution of tasks
+mechanisms for expressing them. Concurrency is interleaved execution of tasks
 (section \ref{s:effects-concurrency}) whereas parallelism is simultaneous
 execution of tasks. In particular, parallel tasks overlap in time but
 concurrent tasks may or may not overlap in time. Tasks may execute concurrently
