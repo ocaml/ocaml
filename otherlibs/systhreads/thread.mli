@@ -45,7 +45,7 @@ val id : t -> int
    is an integer that identifies uniquely the thread.
    It can be used to build data structures indexed by threads. *)
 
-val set_name : string -> unit
+val set_current_thread_name : string -> unit
 (** Set the thread's name. This should be called from within the thread
     function. Setting thread name is available on most systems.
 
