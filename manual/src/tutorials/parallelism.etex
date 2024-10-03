@@ -738,5 +738,5 @@ If the "compare_and_set" fails, then some other domain is also attempting to
 update the atomic reference at the same time. In this case, the "push" and
 "pop" operations call "Domain.cpu_relax" to back off for a short duration
 allowing competing domains to make progress before retrying the failed
-operation. This lock-free stack implementation is also known as the 
+operation. This lock-free stack implementation is called a 
 \href{https://en.wikipedia.org/wiki/Treiber_stack}{Treiber stack}.
