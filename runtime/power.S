@@ -96,7 +96,17 @@ caml_hot.code_end:
 .endm
 
 .macro ENDFUNCTION name
-       .size \name, . - \name
+        .size \name, . - \name
+.endm
+
+.macro OBJECT name
+        .globl \name
+        .type \name, @object
+\name:
+.endm
+
+.macro ENDOBJECT name
+        .size \name, . - \name
 .endm
 
 /* Function prologue and epilogue */
@@ -1181,9 +1191,7 @@ caml_system__code_end:
 /* Frame table */
 
         .section ".data"
-        .globl  caml_system.frametable
-        .type   caml_system.frametable, @object
-caml_system.frametable:
+OBJECT caml_system.frametable
         .quad   2               /* two descriptors */
         .quad   .Lcaml_retaddr + 4  /* return address into callback */
         .short  -1              /* negative frame size => use callback link */
@@ -1193,7 +1201,7 @@ caml_system.frametable:
         .short  -1              /* negative frame size => use callback link */
         .short  0               /* no roots here */
         .align 3
-        .size   caml_system.frametable, .-caml_system.frametable
+ENDOBJECT caml_system.frametable
 
 /* TOC entries */
 
