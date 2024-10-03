@@ -40,7 +40,7 @@ structures for allocating memory. Hence, they are relatively expensive to
 create and tear down.
 
 \emph{\textbf{It is recommended that programs do not spawn more domains
-than cores available}}.
+than the number of available cores}}.
 
 In this tutorial we will be implementing, running and measuring the
 performance of parallel programs. The results observed are dependent on the
