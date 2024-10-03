@@ -135,6 +135,9 @@ Working version
 - #13454: Output a correct trace of the C_CALLN bytecode.
   (Miod Vallat, review by Antonin Décimo)
 
+- #131495: Fix typechecker crash while typing objects
+  (Jacques Garrigue, report by Nicolás Ojeda Bär, review by Florian Angeletti)
+
 - #13388, #13540: raises an error message (and not an internal compiler error)
   when two local substitutions are incompatible (for instance `module type
   S:=sig end type t:=(module S)`)
