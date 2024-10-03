@@ -74,6 +74,12 @@
 
 #endif
 
+#define OBJECT(name) \
+        .data; \
+        .globl name; \
+        .align EIGHT_ALIGN; \
+        name:
+
 #if defined(SYS_linux) || defined(SYS_gnu)
 #define ENDFUNCTION(name) \
         .size name, . - name
@@ -1323,10 +1329,7 @@ ENDFUNCTION(G(caml_assert_stack_invariants))
         .globl  G(caml_system__code_end)
 G(caml_system__code_end):
 
-        .data
-        .globl  G(caml_system.frametable)
-        .align  EIGHT_ALIGN
-G(caml_system.frametable):
+OBJECT(G(caml_system.frametable))
         .quad   2           /* two descriptors */
         .quad   LBL(108)    /* return address into callback */
         .value  -1          /* negative frame size => use callback link */
@@ -1335,7 +1338,7 @@ G(caml_system.frametable):
         .quad   LBL(frame_runstack) /* return address into fiber_val_handler */
         .value  -1          /* negative frame size => use callback link */
         .value  0           /* no roots here */
-        ENDOBJECT(G(caml_system.frametable))
+ENDOBJECT(G(caml_system.frametable))
 
 #if defined(SYS_macosx)
         .literal16
