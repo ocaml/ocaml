@@ -2,7 +2,7 @@
 %HEVEA\cutname{parallelism.html}
 \label{c:parallelism}
 
-In this chapter we will look at the parallel programming facilities in OCaml.
+In this chapter we look at the parallel programming facilities in OCaml.
 The OCaml standard library exposes low-level primitives for parallel
 programming. We recommend that users make use of higher-level parallel
 programming libraries such as
