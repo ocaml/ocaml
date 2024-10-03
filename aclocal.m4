@@ -86,12 +86,12 @@ AC_DEFUN([OCAML_SIGNAL_HANDLERS_SEMANTICS], [
   AC_MSG_NOTICE([checking semantics of signal handlers])
   AC_CHECK_FUNC([sigaction], [has_sigaction=true], [has_sigaction=false])
   AC_CHECK_FUNC([sigprocmask], [has_sigprocmask=true], [has_sigprocmask=false])
-  AS_IF([$has_sigaction && $has_sigprocmask],
-    [AC_DEFINE([POSIX_SIGNALS], [1])
-      AC_MSG_NOTICE([POSIX signal handling found.])],
-    [AC_MSG_NOTICE([assuming signals have the System V semantics.])
-    ]
-  )
+  if $has_sigaction && $has_sigprocmask; then
+    AC_DEFINE([POSIX_SIGNALS], [1])
+    AC_MSG_NOTICE([POSIX signal handling found.])
+  else
+    AC_MSG_NOTICE([assuming signals have the System V semantics.])
+  fi
 ])
 
 dnl $1: extra CFLAGS
@@ -165,9 +165,10 @@ camlPervasives__loop_1128:
 AC_DEFUN([OCAML_AS_HAS_CFI_DIRECTIVES], [
   AC_MSG_CHECKING([whether the assembler supports CFI directives])
 
-  AS_IF([test x"$enable_cfi" = "xno"],
-    [AC_MSG_RESULT([disabled])],
-    [OCAML_CC_SAVE_VARIABLES
+  if test x"$enable_cfi" = "xno"; then
+    AC_MSG_RESULT([disabled])
+  else
+    OCAML_CC_SAVE_VARIABLES
 
     # Modify C-compiler variables to use the assembler
     CC="$ASPP"
@@ -188,9 +189,10 @@ camlPervasives__loop_1128:
       [aspp_ok=true],
       [aspp_ok=false])
 
-    AS_IF([test "$AS" = "$ASPP"],
-      [as_ok="$aspp_ok"],
-      [CC="$AS"
+    if test "$AS" = "$ASPP"; then
+      as_ok="$aspp_ok"
+    else
+      CC="$AS"
       ac_compile='$CC $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
       AC_COMPILE_IFELSE(
         [AC_LANG_SOURCE([
@@ -202,20 +204,24 @@ camlPervasives__loop_1128:
         .cfi_endproc
         ])],
         [as_ok=true],
-        [as_ok=false])])
+        [as_ok=false])
+    fi
 
     OCAML_CC_RESTORE_VARIABLES
 
-    AS_IF([$aspp_ok && $as_ok],
-      [asm_cfi_supported=true
+    if $aspp_ok && $as_ok; then
+      asm_cfi_supported=true
       AC_DEFINE([ASM_CFI_SUPPORTED], [1])
-      AC_MSG_RESULT([yes])],
-      [AS_IF([test x"$enable_cfi" = "xyes"],
-        [AC_MSG_RESULT([requested but not available
-        AC_MSG_ERROR([exiting])])],
-        [asm_cfi_supported=false
-        AC_MSG_RESULT([no])])])
-  ])])
+      AC_MSG_RESULT([yes])
+    elif test x"$enable_cfi" = "xyes"; then
+      AC_MSG_RESULT([requested but not available])
+      AC_MSG_ERROR([exiting])
+    else
+      asm_cfi_supported=false
+      AC_MSG_RESULT([no])
+    fi
+  fi
+])
 
 AC_DEFUN([OCAML_MMAP_SUPPORTS_MAP_STACK], [
   AC_MSG_CHECKING([whether mmap supports MAP_STACK])
@@ -307,9 +313,11 @@ AC_DEFUN([OCAML_TEST_FLEXLINK], [
     # flexlink can cope. The reverse test is unnecessary (a Cygwin-compiled
     # flexlink can read anything).
     mv conftest.$ac_objext conftest1.$ac_objext
-    AS_CASE([$4],[*-pc-cygwin],
-      [ln -s conftest1.$ac_objext conftest2.$ac_objext],
-      [cp conftest1.$ac_objext conftest2.$ac_objext])
+    case $4 in
+      *-pc-cygwin)
+         ln -s conftest1.$ac_objext conftest2.$ac_objext ;;
+      *) cp conftest1.$ac_objext conftest2.$ac_objext ;;
+    esac
 
     CC="$1 -chain $2 -exe"
     LIBS="conftest2.$ac_objext"
@@ -329,12 +337,12 @@ AC_DEFUN([OCAML_TEST_FLEXLINK], [
 AC_DEFUN([OCAML_TEST_FLEXDLL_H], [
   OCAML_CC_SAVE_VARIABLES
 
-  AS_IF([test -n "$1"],[CPPFLAGS="-I $1 $CPPFLAGS"])
+  if test -n "$1"; then CPPFLAGS="-I $1 $CPPFLAGS"; fi
   have_flexdll_h=no
   AC_CHECK_HEADER([flexdll.h],[have_flexdll_h=yes],[have_flexdll_h=no])
-  AS_IF([test x"$have_flexdll_h" = 'xno'],
-    [AS_IF([test -n "$1"],
-      [AC_MSG_ERROR([$1/flexdll.h appears unusable])])])
+  if test x"$have_flexdll_h" = 'xno' && test -n "$1"; then
+    AC_MSG_ERROR([$1/flexdll.h appears unusable])
+  fi
 
   OCAML_CC_RESTORE_VARIABLES
 ])
@@ -352,10 +360,12 @@ EOF
 all:
 	$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.c $LIBS
 EOF
-  AS_IF([make -f conftest.Makefile >/dev/null 2>/dev/null],
-    [have_flexdll_h=yes
-    AC_MSG_RESULT([yes])],
-    [AC_MSG_RESULT([no])])
+  if make -f conftest.Makefile >/dev/null 2>/dev/null; then
+    have_flexdll_h=yes
+    AC_MSG_RESULT([yes])
+  else
+    AC_MSG_RESULT([no])
+  fi
 
   OCAML_CC_RESTORE_VARIABLES
 ])
@@ -363,7 +373,7 @@ EOF
 AC_DEFUN([OCAML_TEST_WINPTHREADS_PTHREAD_H], [
   OCAML_CC_SAVE_VARIABLES
 
-  AS_IF([test -n "$1"],[CPPFLAGS="-I $1 $CPPFLAGS"])
+  if test -n "$1"; then CPPFLAGS="-I $1 $CPPFLAGS"; fi
   AC_CHECK_HEADER([pthread.h],[],
     [AC_MSG_ERROR([cannot find or use pthread.h from winpthreads])])
 
@@ -390,7 +400,7 @@ AC_DEFUN([OCAML_HOST_IS_EXECUTABLE], [
 # program can be run, then it is run)
 AC_DEFUN([OCAML_RUN_IFELSE], [
   old_cross_compiling="$cross_compiling"
-  AS_IF([test "x$host_runnable" = 'xtrue'], [cross_compiling='no'])
+  if test "x$host_runnable" = 'xtrue'; then cross_compiling='no'; fi
   AC_RUN_IFELSE([$1],[$2],[$3],[$4])
   cross_compiling="$old_cross_compiling"
 ])
@@ -405,21 +415,23 @@ AC_DEFUN([OCAML_C99_CHECK_ROUND], [
     [AC_MSG_RESULT([yes])
     AC_DEFINE([HAS_WORKING_ROUND], [1])],
     [AC_MSG_RESULT([no])
-    AS_CASE([$enable_imprecise_c99_float_ops,$target],
-      [no,*], [hard_error=true],
-      [yes,*], [hard_error=false],
-      [*,x86_64-w64-mingw32*], [hard_error=false],
-      [hard_error=true])
-    AS_IF([test x"$hard_error" = "xtrue"],
-      [AC_MSG_ERROR(m4_normalize([
-        round does not work, enable emulation with
-        --enable-imprecise-c99-float-ops]))],
-      [AC_MSG_WARN(m4_normalize([
-        round does not work; emulation enabled]))])],
-    [AS_CASE([$target],
-      [x86_64-w64-mingw32*],[AC_MSG_RESULT([cross-compiling; assume not])],
-      [AC_MSG_RESULT([cross-compiling; assume yes])
-      AC_DEFINE([HAS_WORKING_ROUND], [1])])])
+    case $enable_imprecise_c99_float_ops,$target in
+      no,*)  hard_error=true ;;
+      yes,*) hard_error=false ;;
+      *,x86_64-w64-mingw32*) hard_error=false ;;
+      *)     hard_error=true ;;
+    esac
+    if test x"$hard_error" = "xtrue"; then
+      AC_MSG_ERROR(m4_normalize([round does not work, enable emulation with
+        --enable-imprecise-c99-float-ops]))
+    else
+      AC_MSG_WARN(m4_normalize([round does not work; emulation enabled]))
+    fi],
+    [case $target in
+      x86_64-w64-mingw32*) AC_MSG_RESULT([cross-compiling; assume not]) ;;
+      *) AC_MSG_RESULT([cross-compiling; assume yes])
+         AC_DEFINE([HAS_WORKING_ROUND], [1]) ;;
+    esac])
 ])
 
 AC_DEFUN([OCAML_C99_CHECK_FMA], [
@@ -455,22 +467,24 @@ AC_DEFUN([OCAML_C99_CHECK_FMA], [
     [AC_MSG_RESULT([yes])
     AC_DEFINE([HAS_WORKING_FMA], [1])],
     [AC_MSG_RESULT([no])
-    AS_CASE([$enable_imprecise_c99_float_ops,$target],
-      [no,*], [hard_error=true],
-      [yes,*], [hard_error=false],
-      [*,x86_64-w64-mingw32*|*,x86_64-*-cygwin*], [hard_error=false],
-      [hard_error=true])
-    AS_IF([test x"$hard_error" = "xtrue"],
-      [AC_MSG_ERROR(m4_normalize([
-        fma does not work, enable emulation with
-        --enable-imprecise-c99-float-ops]))],
-      [AC_MSG_WARN(m4_normalize([
-        fma does not work; emulation enabled]))])],
-    [AS_CASE([$target],
-      [x86_64-w64-mingw32*|x86_64-*-cygwin*],
-        [AC_MSG_RESULT([cross-compiling; assume not])],
-      [AC_MSG_RESULT([cross-compiling; assume yes])
-      AC_DEFINE([HAS_WORKING_FMA], [1])])])
+    case $enable_imprecise_c99_float_ops,$target in
+      no,*)  hard_error=true ;;
+      yes,*) hard_error=false ;;
+      *,x86_64-w64-mingw32*|*,x86_64-*-cygwin*) hard_error=false ;;
+      *) hard_error=true ;;
+    esac
+    if test x"$hard_error" = "xtrue"; then
+      AC_MSG_ERROR(m4_normalize([fma does not work, enable emulation with
+        --enable-imprecise-c99-float-ops]))
+    else
+      AC_MSG_WARN(m4_normalize([fma does not work; emulation enabled]))
+    fi],
+    [case $target in
+      x86_64-w64-mingw32*|x86_64-*-cygwin*)
+         AC_MSG_RESULT([cross-compiling; assume not]) ;;
+      *) AC_MSG_RESULT([cross-compiling; assume yes])
+         AC_DEFINE([HAS_WORKING_FMA], [1]) ;;
+    esac])
 ])
 
 # Computes a suitable id to insert in quoted strings to ensure that all OCaml
@@ -501,8 +515,8 @@ AC_DEFUN([OCAML_CC_SUPPORTS_ATOMIC], [
   OCAML_CC_SAVE_VARIABLES
 
   opts=""
-  AS_IF([test -n "$1"],[CFLAGS="$CFLAGS $1"; opts="$1"])
-  AS_IF([test -n "$2"],[LIBS="$LIBS $2"; opts="${opts:+$opts }$2"])
+  if test -n "$1"; then CFLAGS="$CFLAGS $1"; opts="$1"; fi
+  if test -n "$2"; then LIBS="$LIBS $2"; opts="${opts:+$opts }$2"; fi
   AC_MSG_CHECKING(m4_normalize([if the C compiler supports _Atomic types with
     ${opts:-no additional options}]))
 
