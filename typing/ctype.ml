@@ -607,7 +607,7 @@ exception Non_closed of type_expr * variable_kind
    [add_one] information about whether the variable is a normal type variable
    or a row variable.
  *)
-let free_vars ~zero ~add_one ?env mark ty =
+let free_vars ~init ~add_one ?env mark ty =
   let rec fv ~kind acc ty =
     if not (try_mark_node mark ty) then acc
     else match get_desc ty, env with
@@ -635,15 +635,15 @@ let free_vars ~zero ~add_one ?env mark ty =
           else fv ~kind:Row_variable acc (row_more row)
       | _    ->
           fold_type_expr (fv ~kind) acc ty
-  in fv ~kind:Type_variable zero ty
+  in fv ~kind:Type_variable init ty
 
 let free_variables ?env ty =
   let add_one ty _kind acc = ty :: acc in
-  with_type_mark (fun mark -> free_vars ~zero:[] ~add_one ?env mark ty)
+  with_type_mark (fun mark -> free_vars ~init:[] ~add_one ?env mark ty)
 
 let closed_type ?env mark ty =
   let add_one ty kind _acc = raise (Non_closed (ty, kind)) in
-  free_vars ~zero:() ~add_one ?env mark ty
+  free_vars ~init:() ~add_one ?env mark ty
 
 let closed_type_expr ?env ty =
   with_type_mark (fun mark ->
