@@ -124,7 +124,7 @@ Benchmark 1: ./fib_twice.exe 42
 \end{verbatim}
 
 As one can see, computing the $n$th Fibonacci number twice takes almost the
-same time as computing it once thanks to parallelism.
+same time as computing it once, thanks to parallelism.
 
 \section{s:par_parfib}{Domainslib: A library for nested-parallel programming}
 
