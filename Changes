@@ -78,6 +78,9 @@ Working version
 - #13454: Output a correct trace of the C_CALLN bytecode.
   (Miod Vallat, review by Antonin Décimo)
 
+- #131495: Fix typechecker crash while typing objects
+  (Jacques Garrigue, report by Nicolás Ojeda Bär, review by ???)
+
 OCaml 5.3.0
 ___________
 
