@@ -419,8 +419,8 @@ allocated. Having domain-local pools avoids synchronisation for most major heap
 allocations. The major heap is collected by a concurrent mark-and-sweep
 algorithm that involves a few short stop-the-world pauses for each major cycle.
 
-Overall, users should expect the garbage collector to scale well with an
-increasing number of domains, with the latency remaining low. For more
+Overall, users should expect the garbage collector to scale well with as
+the number of domains increases, with latency remaining low. For more
 information on the design and evaluation of the garbage collector, please have
 a look at the ICFP 2020 paper on
 \href{https://arxiv.org/abs/2004.11663}{"Retrofitting Parallelism onto OCaml"}.
