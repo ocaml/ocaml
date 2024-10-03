@@ -214,11 +214,12 @@ and ident_cons = ident_create "::"
 and ident_none = ident_create "None"
 and ident_some = ident_create "Some"
 
-let decl_of_type_constr =
+let decl_of_type_constr tconstr =
+  let type_uid = Uid.of_predef_id (ident_of_type_constr tconstr) in
   let decl0
       ?(immediate = Type_immediacy.Unknown)
       ?(kind = Type_abstract Definition)
-      type_ident
+      ()
     =
     {type_params = [];
      type_arity = 0;
@@ -233,17 +234,17 @@ let decl_of_type_constr =
      type_attributes = [];
      type_immediate = immediate;
      type_unboxed_default = false;
-     type_uid = Uid.of_predef_id type_ident;
+     type_uid;
     }
   in
   let decl1
       ~variance
       ?(separability = Separability.Ind)
       ?(kind = fun _ -> Type_abstract Definition)
-      type_ident
+      ()
     =
     let param = newgenvar () in
-    { (decl0 ~kind:(kind param) type_ident) with
+    { (decl0 ~kind:(kind param) ()) with
       type_params = [param];
       type_arity = 1;
       type_variance = [variance];
@@ -254,10 +255,10 @@ let decl_of_type_constr =
       ~variance:(var1, var2)
       ?separability:((sep1, sep2) = (Separability.Ind, Separability.Ind))
       ?(kind = fun _ _ -> Type_abstract Definition)
-      type_ident
+      ()
     =
     let param1, param2 = newgenvar (), newgenvar () in
-    { (decl0 ~kind:(kind param1 param2) type_ident) with
+    { (decl0 ~kind:(kind param1 param2) ()) with
       type_params = [param1; param2];
       type_arity = 2;
       type_variance = [var1; var2];
@@ -276,44 +277,42 @@ let decl_of_type_constr =
   in
   let variant constrs =
     Type_variant (constrs, Variant_regular) in
-  function
-  | `Int -> decl0 ~immediate:Always ident_int
-  | `Char -> decl0 ~immediate:Always ident_char
-  | `String -> decl0 ident_string
-  | `Bytes -> decl0 ident_bytes
-  | `Float -> decl0 ident_float
+  match tconstr with
+  | `Int | `Char
+    -> decl0 ~immediate:Always ()
+  | `String | `Bytes
+  | `Float
+  | `Floatarray
+  | `Nativeint | `Int32 | `Int64
+  | `Extension_constructor
+    -> decl0 ()
   | `Bool ->
       let kind = variant [cstr ident_false [];
                           cstr ident_true []] in
-      decl0 ~immediate:Always ~kind ident_bool
+      decl0 ~immediate:Always ~kind ()
   | `Unit ->
       let kind = variant [cstr ident_void []] in
-      decl0 ~immediate:Always ~kind ident_unit
-  | `Exn -> decl0 ~kind:Type_open ident_exn
+      decl0 ~immediate:Always ~kind ()
+  | `Exn -> decl0 ~kind:Type_open ()
   | `Eff ->
       let kind _ = Type_open in
-      decl1 ~variance:Variance.full ~kind ident_eff
+      decl1 ~variance:Variance.full ~kind ()
   | `Continuation ->
       let variance = Variance.(contravariant, covariant) in
-      decl2 ~variance ident_continuation
+      decl2 ~variance ()
   | `Array ->
-      decl1 ~variance:Variance.full ident_array
+      decl1 ~variance:Variance.full ()
   | `List ->
       let kind tvar =
         variant [cstr ident_nil [];
                  cstr ident_cons [tvar; type_list tvar]] in
-      decl1 ~variance:Variance.covariant ~kind ident_list
+      decl1 ~variance:Variance.covariant ~kind ()
   | `Option ->
       let kind tvar =
         variant [cstr ident_none [];
                  cstr ident_some [tvar]] in
-      decl1 ~variance:Variance.covariant ~kind ident_option
-  | `Nativeint -> decl0 ident_nativeint
-  | `Int32 -> decl0 ident_int32
-  | `Int64 -> decl0 ident_int64
-  | `Lazy_t -> decl1 ~variance:Variance.covariant ident_lazy_t
-  | `Extension_constructor -> decl0 ident_extension_constructor
-  | `Floatarray -> decl0 ident_floatarray
+      decl1 ~variance:Variance.covariant ~kind ()
+  | `Lazy_t -> decl1 ~variance:Variance.covariant ()
 
 let build_initial_env add_type add_extension empty_env =
   let add_extension id l =
