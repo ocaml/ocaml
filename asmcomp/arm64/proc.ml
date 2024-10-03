@@ -248,9 +248,9 @@ let stack_ptr_dwarf_register_number = 31
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_noalloc_call =
-  (* x19-x28, d8-d15 preserved *)
+  (* x20-x28, d8-d15 preserved *)
   Array.of_list (List.map phys_reg
-    [0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;
+    [0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;
      100;101;102;103;104;105;106;107;
      116;117;118;119;120;121;122;123;
      124;125;126;127;128;129;130;131])

@@ -82,10 +82,14 @@ let emit_wreg = function
     {loc = Reg r} -> emit_string int_reg_name_w.(r)
   | _ -> fatal_error "Emit.emit_wreg"
 
+let fp = Config.with_frame_pointers
+
 let initial_stack_offset f =
-  8 * f.fun_num_stack_slots.(0) +
-  8 * f.fun_num_stack_slots.(1) +
-  (if f.fun_frame_required then 8 else 0)
+  8 * f.fun_num_stack_slots.(0) + (* Local int variables *)
+  8 * f.fun_num_stack_slots.(1) + (* Local float variables *)
+    (if f.fun_frame_required then
+       8 + (if fp then 8 else 0) (* Return address plus optional Frame Pointer *)
+     else 0)
 
 let frame_size env =
   let sz =
@@ -98,10 +102,9 @@ let slot_offset env loc cl =
       assert (n >= 0);
       frame_size env + n
   | Local n ->
-      env.stack_offset +
-      (if cl = 0
-       then n * 8
-       else env.f.fun_num_stack_slots.(0) * 8 + n * 8)
+      if cl = 0
+      then env.stack_offset + n * 8
+      else env.stack_offset + (env.f.fun_num_stack_slots.(0) + n) * 8
   | Outgoing n ->
       assert (n >= 0);
       n
@@ -271,13 +274,16 @@ let emit_stack_adjustment n =
 
 (* Deallocate the stack frame and reload the return address
    before a return or tail call *)
-
 let output_epilogue env f =
   let n = frame_size env in
-  if env.f.fun_frame_required then
-    `	ldr	x30, [sp, #{emit_int (n-8)}]\n`;
   if n > 0 then
     emit_stack_adjustment n;
+  if env.f.fun_frame_required then
+    if fp then (
+      `	ldp	x29, x30, [sp, #-16]\n`;
+    ) else (
+      `	ldr	x30, [sp, #-8]\n`;
+    );
   f();
   (* reset CFA back because function body may continue *)
   if n > 0 then cfi_adjust_cfa_offset n
@@ -293,7 +299,7 @@ let rec emit_addimm rd rs n =
     let nl = n land 0xFFF and nh = n land 0xFFF_000 in
     `	add	{emit_reg rd}, {emit_reg rs}, #{emit_int nh}\n`;
     if nl <> 0 then
-      `	add	{emit_reg rd}, {emit_reg rd}, #{emit_int nl}\n`
+    `	add	{emit_reg rd}, {emit_reg rd}, #{emit_int nl}\n`
   end
 
 and emit_subimm rd rs n =
@@ -445,7 +451,7 @@ module BR = Branch_relaxation.Make (struct
 
   let prologue_size f =
     (if initial_stack_offset f > 0 then 2 else 0)
-      + (if f.fun_frame_required then 1 else 0)
+      + (if f.fun_frame_required then (if fp then 2 else 1) else 0)
 
   let epilogue_size f =
     if f.fun_frame_required then 3 else 2
@@ -535,7 +541,7 @@ module BR = Branch_relaxation.Make (struct
         + begin match lbl1 with None -> 0 | Some _ -> 1 end
         + begin match lbl2 with None -> 0 | Some _ -> 1 end
     | Lswitch jumptbl -> 3 + Array.length jumptbl
-    | Lentertrap -> 0
+    | Lentertrap -> if fp then 1 else 0
     | Ladjust_trap_depth _ -> 0
     | Lpushtrap _ -> 3
     | Lpoptrap -> 1
@@ -675,11 +681,20 @@ let emit_instr env i =
     | Lend -> ()
     | Lprologue ->
       let n = frame_size env in
-      if n > 0 then
-        emit_stack_adjustment (-n);
       if env.f.fun_frame_required then begin
-        cfi_offset ~reg:30 (* return address *) ~offset:(-8);
-        `	str	x30, [sp, #{emit_int (n-8)}]\n`
+          if fp then (
+            `	stp	x29, x30, [sp, #-16]\n`;
+            cfi_offset ~reg:29 (* frame pointer *) ~offset:(-16);
+            cfi_offset ~reg:30 (* return address *) ~offset:(-8)
+          ) else (
+            `	str	x30, [sp, #-8]\n`;
+            cfi_offset ~reg:30 (* return address *) ~offset:(-8)
+          );
+      end;
+      if n > 0 then begin
+          emit_stack_adjustment (-n);
+          if env.f.fun_frame_required && fp then
+            `	add	x29,  sp, #{emit_int (n-16)}\n`;
       end
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
@@ -747,18 +762,15 @@ let emit_instr env i =
           `	bl	{emit_symbol "caml_c_call"}\n`;
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
         end else begin
-          (* Push frame pointer (x29) onto stack and restore later. *)
-          `	str	x29, [sp, -16]!\n`;
-          (* Store OCaml stack in the frame pointer register. *)
-          `	mov	x29, sp\n`;
+          (* Store OCaml stack in x19 register and restore later. *)
+          `	mov	x19, sp\n`;
           cfi_remember_state ();
           cfi_def_cfa_register ~reg:29;
           let offset = Domainstate.(idx_of_field Domain_c_stack) * 8 in
           `	ldr	{emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`;
           `	mov	sp, {emit_reg reg_tmp1}\n`;
           `	bl	{emit_symbol func}\n`;
-          `	mov	sp, x29\n`;
-          `	ldr	x29, [sp], 16\n`;
+          `	mov	sp, x19\n`;
           cfi_restore_state ()
         end
     | Lop(Istackoffset n) ->
@@ -1026,7 +1038,10 @@ let emit_instr env i =
         done
 *)
     | Lentertrap ->
-        ()
+       if fp then begin
+         let delta = (frame_size env) - 16 (* return address + frame pointer *) in
+         `	add	x29, sp, #{emit_int delta}\n`
+       end
     | Ladjust_trap_depth { delta_traps } ->
         (* each trap occupies 16 bytes on the stack *)
         let delta = 16 * delta_traps in
