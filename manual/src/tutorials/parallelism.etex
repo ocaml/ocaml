@@ -177,7 +177,7 @@ awaiting their results. On top of this mechanism, domainslib provides parallel
 iterators. At its core, domainslib has an efficient implementation of
 \href{https://en.wikipedia.org/wiki/Work_stealing}{work-stealing queues} in
 order to efficiently share tasks with other domains. A parallel implementation
-of the Fibonacci program is given below.
+of the Fibonacci program follows:
 
 \begin{verbatim}
 (* fib_par2.ml *)
