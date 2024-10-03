@@ -311,7 +311,6 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Closinfo_val(raise_unhandled_effect_closure) = Make_closinfo(0, 2);
     raise_unhandled_effect = raise_unhandled_effect_closure;
     caml_register_generational_global_root(&raise_unhandled_effect);
-    caml_global_data = Val_unit;
     caml_register_generational_global_root(&caml_global_data);
     caml_init_callbacks();
     return Val_unit;
