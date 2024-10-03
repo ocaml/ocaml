@@ -970,7 +970,7 @@ static st_retcode caml_threadstatus_wait (value wrapper)
 CAMLprim value caml_current_thread_set_name(value name)
 {
 #if defined(_WIN32)
-  char_os *thread_name = caml_stat_strdup_to_os(String_val(name));
+  wchar_t *thread_name = caml_stat_strdup_to_utf16(String_val(name));
   SetThreadDescription(GetCurrentThread(), thread_name);
   caml_stat_free(thread_name);
 #elif defined(HAS_PRCTL)
