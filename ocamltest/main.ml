@@ -88,26 +88,33 @@ let report_error loc e bt =
   print_exn loc e bt;
   "=> error in test script"
 
-type result_summary = No_failure | Some_failure | All_skipped
-let join_result summary result =
-  let open Result in
-  match result.status, summary with
-  | Fail, _
-  | _, Some_failure -> Some_failure
-  | Skip, All_skipped -> All_skipped
-  | _ -> No_failure
+type summary = Result.status = Pass | Skip | Fail
 
-let join_summaries sa sb =
-  match sa, sb with
-  | Some_failure, _
-  | _, Some_failure -> Some_failure
-  | All_skipped, All_skipped -> All_skipped
-  | _ -> No_failure
+(* The sequential join passes if both tests pass.
+
+   This implies that a linear sequence of actions, a path along the
+   test tree, is considered succesful if all actions passed. *)
+let join_sequential r1 r2 =
+  match r1, r2 with
+  | Fail, _ | _, Fail -> Fail
+  | Pass, Pass -> Pass
+  | Skip, _ | _, Skip -> Skip
+
+(* The parallel join passes if either test passes.
+
+   This implies that a test formed of several parallel branches is
+   considered succesful if at least one of the branches is succesful.
+*)
+let join_parallel r1 r2 =
+  match r1, r2 with
+  | Fail, _ | _, Fail -> Fail
+  | Pass, _ | _, Pass -> Pass
+  | Skip, Skip -> Skip
 
 let string_of_summary = function
-  | No_failure -> "passed"
-  | Some_failure -> "failed"
-  | All_skipped -> "skipped"
+  | Pass -> "passed"
+  | Fail -> "failed"
+  | Skip -> "skipped"
 
 let run_test_tree log add_msg behavior env summ ast =
   let run_statement (behavior, env, summ) = function
@@ -118,7 +125,7 @@ let run_test_tree log add_msg behavior env summ ast =
         let bt = Printexc.get_backtrace () in
         let line = s.loc.Location.loc_start.Lexing.pos_lnum in
         Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
-        Error Some_failure
+        Error Fail
       end
     | Test (_, name, mods) ->
       let locstr =
@@ -145,15 +152,23 @@ let run_test_tree log add_msg behavior env summ ast =
           end
       in
       Printf.ksprintf add_msg "%s (%s) %s" locstr name.node msg;
-      let summ = join_result summ result in
+      let summ = join_sequential summ result.status in
       Ok (behavior, env, summ)
   in
   let rec run_tree behavior env summ (Ast (stmts, subs)) =
     match List.fold_left_result run_statement (behavior, env, summ) stmts with
     | Error e -> e
     | Ok (behavior, env, summ) ->
-        List.fold_left join_summaries summ
-          (List.map (run_tree behavior env All_skipped) subs)
+        (* If [subs] is empty, there are no further test actions to
+           perform: we are at the end of a test path and can report
+           our current summary. Otherwise we continue with each
+           branch, and parallel-join the result summaries. *)
+        begin match subs with
+        | [] -> summ
+        | _ ->
+            List.fold_left join_parallel Skip
+              (List.map (run_tree behavior env summ) subs)
+        end
   in run_tree behavior env summ ast
 
 let get_test_source_directory test_dirname =
@@ -258,7 +273,7 @@ let test_file test_filename =
        let rootenv, initial_status, initial_summary =
          let rec loop env stmts =
            match stmts with
-           | [] -> (env, initial_status, All_skipped)
+           | [] -> (env, initial_status, Pass)
            | s :: t ->
              begin match interpret_environment_statement env s with
              | env -> loop env t
@@ -267,7 +282,7 @@ let test_file test_filename =
                let line = s.loc.Location.loc_start.Lexing.pos_lnum in
                Printf.ksprintf add_msg "line %d %s" line
                  (report_error s.loc e bt);
-               (env, Skip_all, Some_failure)
+               (env, Skip_all, Fail)
              end
          in
          loop rootenv rootenv_statements
@@ -279,11 +294,11 @@ let test_file test_filename =
        in
        let common_prefix = " ... testing '" ^ test_basename ^ "'" in
        Printf.printf "%s => %s%s\n%!" common_prefix (string_of_summary summary)
-         (if Options.show_timings && summary = No_failure then
+         (if Options.show_timings && summary = Pass then
             let wall_clock_duration = Unix.gettimeofday () -. start in
             Printf.sprintf " (wall clock: %.02fs)" wall_clock_duration
           else "");
-       if summary = Some_failure then
+       if summary = Fail then
          List.iter (Printf.printf "%s with %s\n%!" common_prefix)
            (List.rev !msgs);
        Actions.clear_all_hooks();
@@ -291,10 +306,10 @@ let test_file test_filename =
     ) in
   if not Options.log_to_stderr then close_out log;
   begin match summary with
-  | Some_failure ->
+  | Fail ->
       if not Options.log_to_stderr then
         Sys.dump_file stderr ~prefix:"> " log_filename
-  | No_failure | All_skipped ->
+  | Pass | Skip ->
       if not Options.keep_test_dir_on_success then
         clean_test_build_directory ()
   end
