@@ -465,7 +465,7 @@ Domains may perform blocking synchronisation with the help of
 \stdmoduleref{Mutex}, \stdmoduleref{Condition} and \stdmoduleref{Semaphore}
 modules. These modules are the same as those used to synchronise threads
 created by the threads library (chapter \ref{c:threads}). For clarity, in the
-rest of this chapter, we will call the threads created by the threads library
+rest of this chapter, we refer to the threads created by the threads library
 as \emph{systhreads}. The following program implements a concurrent stack using
 mutex and condition variables.
 
