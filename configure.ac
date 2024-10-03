@@ -1080,7 +1080,9 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
         [AC_MSG_RESULT([requested but not supported])
         AC_MSG_ERROR([exiting])])])])
 
-  AC_CHECK_PROG([flexlink],[flexlink],[flexlink])
+  AS_CASE([$target],
+    [*-*-cygwin*|*-w64-mingw32*|*-pc-windows],
+      [AC_CHECK_PROG([flexlink],[flexlink],[flexlink])])
 
   AS_IF([test -n "$flexlink" && test -z "$flexdll_source_dir"],[
     OCAML_TEST_FLEXLINK([$flexlink], [$flexdll_chain],

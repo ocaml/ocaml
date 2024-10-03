@@ -15665,7 +15665,9 @@ fi ;;
 esac
 fi
 
-  # Extract the first word of "flexlink", so it can be a program name with args.
+  case $target in #(
+  *-*-cygwin*|*-w64-mingw32*|*-pc-windows) :
+    # Extract the first word of "flexlink", so it can be a program name with args.
 set dummy flexlink; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 printf %s "checking for $ac_word... " >&6; }
@@ -15706,7 +15708,10 @@ else
 printf "%s\n" "no" >&6; }
 fi
 
-
+ ;; #(
+  *) :
+     ;;
+esac
 
   if test -n "$flexlink" && test -z "$flexdll_source_dir"
 then :
