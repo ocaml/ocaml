@@ -41,6 +41,11 @@ OCaml 4.14 maintenance version
   (Gabriel Scherer, review by Nicolás Ojeda Bär and Vincent Laviron,
    report by Simon Cruanes)
 
+- #13516: Fix regression where error conditions during bytecode initialisation
+  caused a segmentation fault rather than being properly reported (regression of
+  #5115 in #11788)
+  (David Allsopp, review by Nicolás Ojeda Bär)
+
 OCaml 4.14.2 (14 March 2024)
 ----------------------------
 
