@@ -20253,29 +20253,13 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
 
 ## prctl
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for prctl" >&5
-printf %s "checking for prctl... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <sys/prctl.h>
-int main(void) {
-  return prctl(0);
-}
-
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
+ac_fn_check_decl "$LINENO" "prctl" "ac_cv_have_decl_prctl" "#include <sys/prctl.h>
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_prctl" = xyes
 then :
   printf "%s\n" "#define HAS_PRCTL  1" >>confdefs.h
 
-   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
 
 ## pthread_setname_np
 

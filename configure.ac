@@ -2420,17 +2420,11 @@ AC_LINK_IFELSE(
     [AC_MSG_RESULT([pthread_getaffinity_np not found])])])
 
 ## prctl
-AC_MSG_CHECKING([for prctl])
-AC_LINK_IFELSE(
-  [AC_LANG_SOURCE([[
-#include <sys/prctl.h>
-int main(void) {
-  return prctl(0);
-}
-  ]])],
-  [AC_DEFINE([HAS_PRCTL] , [1])
-   AC_MSG_RESULT([yes])],
-  [AC_MSG_RESULT([no])])
+AC_CHECK_DECL(
+  [prctl],
+  [AC_DEFINE([HAS_PRCTL] , [1])],
+  [],
+  [#include <sys/prctl.h>])
 
 ## pthread_setname_np
 AC_CHECK_FUNCS(
