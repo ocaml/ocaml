@@ -593,7 +593,7 @@ This program uses a shared reference cell protected by a mutex to communicate
 between the different systhreads running on two different domains. The
 systhread identifiers uniquely identify systhreads in the program. The initial
 domain gets the domain id 0 and thread id 0. The newly spawned domain gets
-the domain id as 1.
+the domain id 0.
 
 \section{s:par_c_bindings}{Interaction with C bindings}
 
@@ -601,9 +601,9 @@ During parallel execution with multiple domains, C code running on a domain may
 run in parallel with any C code running in other domains even if neither of
 them has released the ``domain lock''. Prior to OCaml 5.0, C bindings may have
 assumed that if the OCaml runtime lock is not released, then it would be safe
-to manipulate the global C state (e.g. initialise a function-local static
-value). This is no longer true in the presence of parallel execution with
-multiple domains.
+to manipulate global C state (e.g. initialise a function-local static value).
+This is no longer true in the presence of parallel execution with multiple
+domains.
 
 \section{s:par_atomics}{Atomics}
 
