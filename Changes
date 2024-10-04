@@ -82,6 +82,9 @@ Working version
 
 ### Build system:
 
+- #XXXXX: Simplify the build of cross compilers
+  (Samuel Hym)
+
 ### Bug fixes:
 
 - #13408: Fix misplaced debug runtime assertion triggerable by a race
