@@ -398,7 +398,7 @@ organize the webpage for the new release. See
 
 See the email announce templates in the `templates/` directory.
 
-## 14: External tools
+## 13. External tools
 
 Try to propagate the new compiler to external open source tools
 
