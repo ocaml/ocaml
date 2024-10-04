@@ -147,7 +147,7 @@ static void open_shared_lib(char_os * name)
 
   realname = caml_search_dll_in_path(&caml_shared_libs_path, name);
   u8 = caml_stat_strdup_of_os(realname);
-  caml_gc_message(0x100, "Loading shared library %s\n", u8);
+  CAML_GC_MESSAGE(STARTUP, "Loading shared library %s\n", u8);
   caml_stat_free(u8);
   caml_enter_blocking_section();
   handle = caml_dlopen(realname, 1);
@@ -307,7 +307,7 @@ CAMLprim value caml_dynlink_open_lib(value filename)
   value result;
   char_os * p;
 
-  caml_gc_message(0x100, "Opening shared library %s\n",
+  CAML_GC_MESSAGE(STARTUP, "Opening shared library %s\n",
                   String_val(filename));
   p = caml_stat_strdup_to_os(String_val(filename));
   caml_enter_blocking_section();

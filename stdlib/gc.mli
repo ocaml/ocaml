@@ -140,17 +140,19 @@ type control =
     (** This value controls the GC messages on standard error output.
        It is a sum of some of the following flags, to print messages
        on the corresponding events:
-       - [0x001] Start and end of major GC cycle.
-       - [0x002] Minor collection and major GC slice.
-       - [0x004] Growing and shrinking of the heap.
-       - [0x008] Resizing of stacks and memory manager tables.
-       - [0x010] Heap compaction.
-       - [0x020] Change of GC parameters.
-       - [0x040] Computation of major GC slice size.
-       - [0x080] Calling of finalisation functions.
-       - [0x100] Bytecode executable and shared library search at start-up.
-       - [0x200] Computation of compaction-triggering condition.
-       - [0x400] Output GC statistics at program exit.
+       - [0x0001] Start and end of major GC cycle.
+       - [0x0002] Minor collection and major GC slice.
+       - [0x0004] Growing and shrinking of the heap.
+       - [0x0008] Resizing of stacks and memory manager tables.
+       - [0x0010] Heap compaction.
+       - [0x0020] Change of GC parameters.
+       - [0x0040] Computation of major GC slice size.
+       - [0x0080] Calling of finalisation functions.
+       - [0x0100] Bytecode executable and shared library search at start-up.
+       - [0x0200] Computation of compaction-triggering condition.
+       - [0x0400] Output GC statistics at program exit.
+       - [0x0800] GC debugging messages.
+       - [0x1000] Address space reservation changes.
        Default: 0. *)
 
     max_overhead : int;

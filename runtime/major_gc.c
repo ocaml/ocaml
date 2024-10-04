@@ -660,30 +660,30 @@ update_major_slice_work(intnat howmuch,
 
   extra_work = (intnat) (my_extra_count * (double) total_cycle_work);
 
-  caml_gc_message (0x40, "heap_words = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "u\n",
-                   (uintnat)heap_words);
-  caml_gc_message (0x40, "allocated_words = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "u\n",
+  CAML_GC_MESSAGE(SLICESIZE,
+                  "heap_words = %" ARCH_INTNAT_PRINTF_FORMAT "u\n",
+                  (uintnat)heap_words);
+  CAML_GC_MESSAGE(SLICESIZE,
+                  "allocated_words = %" ARCH_INTNAT_PRINTF_FORMAT "u\n",
                    my_alloc_count);
-  caml_gc_message (0x40, "allocated_words_direct = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "u\n",
+  CAML_GC_MESSAGE(SLICESIZE,
+                  "allocated_words_direct = %" ARCH_INTNAT_PRINTF_FORMAT "u\n",
                    my_alloc_direct_count);
-  caml_gc_message (0x40, "alloc work-to-do = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "d\n",
+  CAML_GC_MESSAGE(SLICESIZE,
+                  "alloc work-to-do = %" ARCH_INTNAT_PRINTF_FORMAT "d\n",
                    alloc_work);
-  caml_gc_message (0x40, "dependent_words = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "u\n",
+  CAML_GC_MESSAGE(SLICESIZE,
+                  "dependent_words = %" ARCH_INTNAT_PRINTF_FORMAT "u\n",
                    my_dependent_count);
-  caml_gc_message (0x40, "dependent work-to-do = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "d\n",
-                   dependent_work);
-  caml_gc_message (0x40, "extra_heap_resources = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "uu\n",
-                   (uintnat) (my_extra_count * 1000000));
-  caml_gc_message (0x40, "extra work-to-do = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "d\n",
-                   extra_work);
+  CAML_GC_MESSAGE(SLICESIZE,
+                  "dependent work-to-do = %" ARCH_INTNAT_PRINTF_FORMAT "d\n",
+                  dependent_work);
+  CAML_GC_MESSAGE(SLICESIZE,
+                  "extra_heap_resources = %" ARCH_INTNAT_PRINTF_FORMAT "uu\n",
+                  (uintnat) (my_extra_count * 1000000));
+  CAML_GC_MESSAGE(SLICESIZE,
+                  "extra work-to-do = %" ARCH_INTNAT_PRINTF_FORMAT "d\n",
+                  extra_work);
 
   new_work = max3 (alloc_work, dependent_work, extra_work);
   atomic_fetch_add (&work_counter, dom_st->major_work_done_between_slices);
@@ -1335,9 +1335,9 @@ static void cycle_major_heap_from_stw_single(
               (long unsigned int)caml_major_cycles_completed);
 
   caml_major_cycles_completed++;
-  caml_gc_message(0x40, "Starting major GC cycle\n");
+  CAML_GC_MESSAGE(SLICESIZE, "Starting major GC cycle\n");
 
-  if (atomic_load_relaxed(&caml_verb_gc) & 0x400) {
+  if (atomic_load_relaxed(&caml_verb_gc) & CAML_GC_MSG_STATS) {
     struct gc_stats s;
     intnat heap_words, not_garbage_words, swept_words;
 
@@ -1656,7 +1656,8 @@ static void major_collection_slice(intnat howmuch,
   int may_access_gc_phase = (mode != Slice_opportunistic);
 
   int log_events = mode != Slice_opportunistic ||
-                   (atomic_load_relaxed(&caml_verb_gc) & 0x40);
+                   (atomic_load_relaxed(&caml_verb_gc) &
+                    CAML_GC_MSG_SLICESIZE);
 
   update_major_slice_work(howmuch, may_access_gc_phase, log_events);
 

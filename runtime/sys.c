@@ -137,7 +137,7 @@ CAMLexport void caml_do_exit(int retcode)
   caml_domain_state* domain_state = Caml_state;
   struct gc_stats s;
 
-  if ((atomic_load_relaxed(&caml_verb_gc) & 0x400) != 0) {
+  if ((atomic_load_relaxed(&caml_verb_gc) & CAML_GC_MSG_STATS) != 0) {
     caml_compute_gc_stats(&s);
     {
       /* cf caml_gc_counters */
@@ -160,27 +160,33 @@ CAMLexport void caml_do_exit(int retcode)
         top_heap_words = caml_top_heap_words(Caml_state->shared_heap);
       }
 
-      caml_gc_message(0x400, "allocated_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    (intnat)allocated_words);
-      caml_gc_message(0x400, "minor_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    (intnat) minwords);
-      caml_gc_message(0x400, "promoted_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                      (intnat) s.alloc_stats.promoted_words);
-      caml_gc_message(0x400, "major_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                      (intnat) majwords);
-      caml_gc_message(0x400,
+      CAML_GC_MESSAGE(STATS,
+          "allocated_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+          (intnat)allocated_words);
+      CAML_GC_MESSAGE(STATS,
+          "minor_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+          (intnat) minwords);
+      CAML_GC_MESSAGE(STATS,
+          "promoted_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+          (intnat) s.alloc_stats.promoted_words);
+      CAML_GC_MESSAGE(STATS,
+          "major_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+          (intnat) majwords);
+      CAML_GC_MESSAGE(STATS,
           "minor_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
           (intnat) atomic_load(&caml_minor_collections_count));
-      caml_gc_message(0x400,
+      CAML_GC_MESSAGE(STATS,
           "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
           caml_major_cycles_completed);
-      caml_gc_message(0x400,
+      CAML_GC_MESSAGE(STATS,
           "forced_major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
           (intnat)s.alloc_stats.forced_major_collections);
-      caml_gc_message(0x400, "heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    heap_words);
-      caml_gc_message(0x400, "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                      top_heap_words);
+      CAML_GC_MESSAGE(STATS,
+          "heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+          heap_words);
+      CAML_GC_MESSAGE(STATS,
+          "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+          top_heap_words);
     }
   }
 

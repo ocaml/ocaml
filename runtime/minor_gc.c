@@ -755,7 +755,8 @@ int caml_do_opportunistic_major_slice
   int work_available = caml_opportunistic_major_work_available(domain_state);
   if (work_available) {
     /* NB: need to put guard around the ev logs to prevent spam when we poll */
-    uintnat log_events = atomic_load_relaxed(&caml_verb_gc) & 0x40;
+    uintnat log_events =
+        atomic_load_relaxed(&caml_verb_gc) & CAML_GC_MSG_SLICESIZE;
     if (log_events) CAML_EV_BEGIN(EV_MAJOR_MARK_OPPORTUNISTIC);
     caml_opportunistic_major_collection_slice(Major_slice_work_min);
     if (log_events) CAML_EV_END(EV_MAJOR_MARK_OPPORTUNISTIC);
@@ -967,7 +968,7 @@ static void realloc_generic_table
                          element_size);
   }else if (tbl->limit == tbl->threshold){
     CAML_EV_COUNTER (ev_counter_name, 1);
-    caml_gc_message (0x08, msg_threshold, 0);
+    CAML_GC_MESSAGE(STACKSIZE, msg_threshold, 0);
     tbl->limit = tbl->end;
     caml_request_minor_gc ();
   }else{
@@ -976,7 +977,7 @@ static void realloc_generic_table
 
     tbl->size *= 2;
     sz = (tbl->size + tbl->reserve) * element_size;
-    caml_gc_message (0x08, msg_growing, (intnat) sz/1024);
+    CAML_GC_MESSAGE(STACKSIZE, msg_growing, (intnat) sz/1024);
     tbl->base = caml_stat_resize_noexc (tbl->base, sz);
     if (tbl->base == NULL){
       caml_fatal_error ("%s", msg_error);

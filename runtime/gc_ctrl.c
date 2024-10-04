@@ -168,8 +168,9 @@ CAMLprim value caml_gc_set(value v)
 
   if (newpf != caml_percent_free){
     caml_percent_free = newpf;
-    caml_gc_message (0x20, "New space overhead: %"
-                     ARCH_INTNAT_PRINTF_FORMAT "u%%\n", caml_percent_free);
+    CAML_GC_MESSAGE(PARAMS,
+                    "New space overhead: %" ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                    caml_percent_free);
   }
 
   atomic_store_relaxed(&caml_verb_gc, new_verb_gc);
@@ -178,29 +179,29 @@ CAMLprim value caml_gc_set(value v)
   if (Wosize_val (v) >= 11){
     if (new_custom_maj != caml_custom_major_ratio){
       caml_custom_major_ratio = new_custom_maj;
-      caml_gc_message (0x20, "New custom major ratio: %"
-                       ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
-                       caml_custom_major_ratio);
+      CAML_GC_MESSAGE(PARAMS, "New custom major ratio: %"
+                      ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                      caml_custom_major_ratio);
     }
     if (new_custom_min != caml_custom_minor_ratio){
       caml_custom_minor_ratio = new_custom_min;
-      caml_gc_message (0x20, "New custom minor ratio: %"
-                       ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
-                       caml_custom_minor_ratio);
+      CAML_GC_MESSAGE(PARAMS, "New custom minor ratio: %"
+                      ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                      caml_custom_minor_ratio);
     }
     if (new_custom_sz != caml_custom_minor_max_bsz){
       caml_custom_minor_max_bsz = new_custom_sz;
-      caml_gc_message (0x20, "New custom minor size limit: %"
-                       ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
-                       caml_custom_minor_max_bsz);
+      CAML_GC_MESSAGE(PARAMS, "New custom minor size limit: %"
+                      ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                      caml_custom_minor_max_bsz);
     }
   }
 
   /* Minor heap size comes last because it will trigger a minor collection
      (thus invalidating [v]) and it can raise [Out_of_memory]. */
   if (newminwsz != Caml_state->minor_heap_wsz) {
-    caml_gc_message (0x20, "New minor heap size: %"
-                     ARCH_INTNAT_PRINTF_FORMAT "uk words\n", newminwsz / 1024);
+    CAML_GC_MESSAGE(PARAMS, "New minor heap size: %"
+                    ARCH_INTNAT_PRINTF_FORMAT "uk words\n", newminwsz / 1024);
   }
 
   if (newminwsz > caml_minor_heap_max_wsz) {
