@@ -34,7 +34,7 @@ jobs:
 # We then upload the compiler tree as a build artifact to enable re-use in
 # subsequent jobs.
   build:
-    runs-on: 'ubuntu-latest'
+    runs-on: 'ubuntu-24.04'
     outputs:
       manual_changed: ${{ steps.manual.outputs.manual_changed }}
     steps:
@@ -81,13 +81,13 @@ jobs:
   normal:
     name: ${{ matrix.name }}
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         include:
           - id: normal
             name: normal
-            dependencies: texlive-latex-extra texlive-fonts-recommended hevea sass gdb lldb python3-lldb-14
+            dependencies: texlive-latex-extra texlive-fonts-recommended hevea sass gdb lldb
           - id: debug
             name: extra (debug)
           - id: debug-s4096
@@ -105,8 +105,6 @@ jobs:
         if: matrix.dependencies != ''
         run: |
           sudo apt-get update -y && sudo apt-get install -y ${{ matrix.dependencies }}
-          # Work around lldb on Ubuntu 22.04 issue https://github.com/llvm/llvm-project/issues/55575
-          sudo  ln -s /usr/lib/llvm-14/lib/python3.10/dist-packages/lldb/* /usr/lib/python3/dist-packages/lldb/
       - name: Run the testsuite
         if: matrix.id == 'normal'
         run: |
@@ -152,7 +150,7 @@ jobs:
       matrix:
         include:
           - name: linux-O0
-            os: ubuntu-latest
+            os: ubuntu-24.04
             config_arg: CFLAGS='-O0'
           - name: macos-x86_64
             os: macos-13
@@ -209,7 +207,7 @@ jobs:
           done
 
   i386:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
       image: debian:12
       options: --platform linux/i386 --user root
