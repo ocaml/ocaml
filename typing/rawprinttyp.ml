@@ -63,7 +63,14 @@ let rec raw_type ppf ty =
       (Transient_expr.get_scope ty) (Transient_expr.get_marks ty)
       raw_type_desc ty.desc
   end
+and labeled_type ppf (label, ty) =
+  begin match label with
+  | Some s -> fprintf ppf "label=\"%s\" " s
+  | None -> ()
+  end;
+  raw_type ppf ty
 and raw_type_list tl = raw_list raw_type tl
+and labeled_type_list tl = raw_list labeled_type tl
 and raw_lid_type_list tl =
   raw_list (fun ppf (lid, typ) ->
              fprintf ppf "(@,%a,@,%a)" longident lid raw_type typ)
@@ -75,7 +82,7 @@ and raw_type_desc ppf = function
         (string_of_label l) raw_type t1 raw_type t2
         (if is_commu_ok c then "Cok" else "Cunknown")
   | Ttuple tl ->
-      fprintf ppf "@[<1>Ttuple@,%a@]" raw_type_list tl
+      fprintf ppf "@[<1>Ttuple@,%a@]" labeled_type_list tl
   | Tconstr (p, tl, abbrev) ->
       fprintf ppf "@[<hov1>Tconstr(@,%a,@,%a,@,%a)@]" path p
         raw_type_list tl

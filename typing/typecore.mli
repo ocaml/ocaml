@@ -239,6 +239,12 @@ type error =
   | Missing_type_constraint
   | Wrong_expected_kind of wrong_kind_sort * wrong_kind_context * type_expr
   | Expr_not_a_record_type of type_expr
+  | Constructor_labeled_arg
+  | Partial_tuple_pattern_bad_type
+  | Extra_tuple_label of string option * type_expr
+  | Missing_tuple_label of string option * type_expr
+  | Repeated_tuple_exp_label of string
+  | Repeated_tuple_pat_label of string
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error

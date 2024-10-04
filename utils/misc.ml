@@ -260,6 +260,16 @@ module Stdlib = struct
   external compare : 'a -> 'a -> int = "%compare"
 end
 
+let repeated_label l =
+  let module Set = Stdlib.String.Set in
+  let rec go s = function
+    | [] -> None
+    | (None, _) :: l -> go s l
+    | (Some lbl, _) :: l ->
+      if Set.mem lbl s then Some lbl else go (Set.add lbl s) l
+  in
+  go Set.empty l
+
 (** {1 Minimal support for Unicode characters in identifiers} *)
 
 module Utf8_lexeme = struct

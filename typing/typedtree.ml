@@ -60,7 +60,8 @@ and 'k pattern_desc =
   | Tpat_alias :
       value general_pattern * Ident.t * string loc * Uid.t -> value pattern_desc
   | Tpat_constant : constant -> value pattern_desc
-  | Tpat_tuple : value general_pattern list -> value pattern_desc
+  | Tpat_tuple :
+      (string option * value general_pattern) list -> value pattern_desc
   | Tpat_construct :
       Longident.t loc * constructor_description * value general_pattern list
       * (Ident.t loc list * core_type) option ->
@@ -107,7 +108,7 @@ and expression_desc =
   | Texp_apply of expression * (arg_label * expression option) list
   | Texp_match of expression * computation case list * value case list * partial
   | Texp_try of expression * value case list * value case list
-  | Texp_tuple of expression list
+  | Texp_tuple of (string option * expression) list
   | Texp_construct of
       Longident.t loc * constructor_description * expression list
   | Texp_variant of label * expression option
@@ -474,7 +475,7 @@ and core_type_desc =
     Ttyp_any
   | Ttyp_var of string
   | Ttyp_arrow of arg_label * core_type * core_type
-  | Ttyp_tuple of core_type list
+  | Ttyp_tuple of (string option * core_type) list
   | Ttyp_constr of Path.t * Longident.t loc * core_type list
   | Ttyp_object of object_field list * closed_flag
   | Ttyp_class of Path.t * Longident.t loc * core_type list
@@ -722,7 +723,7 @@ let shallow_iter_pattern_desc
   : type k . pattern_action -> k pattern_desc -> unit
   = fun f -> function
   | Tpat_alias(p, _, _, _) -> f.f p
-  | Tpat_tuple patl -> List.iter f.f patl
+  | Tpat_tuple patl -> List.iter (fun (_, p) -> f.f p) patl
   | Tpat_construct(_, _, patl, _) -> List.iter f.f patl
   | Tpat_variant(_, pat, _) -> Option.iter f.f pat
   | Tpat_record (lbl_pat_list, _) ->
@@ -744,7 +745,7 @@ let shallow_map_pattern_desc
   | Tpat_alias (p1, id, s, uid) ->
       Tpat_alias (f.f p1, id, s, uid)
   | Tpat_tuple pats ->
-      Tpat_tuple (List.map f.f pats)
+      Tpat_tuple (List.map (fun (label, pat) -> label, f.f pat) pats)
   | Tpat_record (lpats, closed) ->
       Tpat_record (List.map (fun (lid, l,p) -> lid, l, f.f p) lpats, closed)
   | Tpat_construct (lid, c, pats, ty) ->

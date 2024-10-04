@@ -124,8 +124,9 @@ See also the following language extensions:
 \hyperref[s:bigarray-access]{syntax for Bigarray access},
 \hyperref[s:attributes]{attributes},
 \hyperref[s:extension-nodes]{extension nodes},
-\hyperref[s:index-operators]{extended indexing operators} and
-\hyperref[s:array-literals]{type-directed disambiguation of array literals}.
+\hyperref[s:index-operators]{extended indexing operators},
+\hyperref[s:array-literals]{type-directed disambiguation of array literals}, and
+\hyperref[s:labeled-tuples]{labeled tuples}.
 
 \subsection{ss:precedence-and-associativity}{Precedence and associativity}
 The table below shows the relative precedences and associativity of

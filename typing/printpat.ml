@@ -55,7 +55,7 @@ let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
   | Tpat_var (x,_,_) -> fprintf ppf "%s" (Ident.name x)
   | Tpat_constant c -> fprintf ppf "%s" (pretty_const c)
   | Tpat_tuple vs ->
-      fprintf ppf "@[(%a)@]" (pretty_vals ",") vs
+      fprintf ppf "@[(%a)@]" (pretty_list pretty_labeled_val ",") vs
   | Tpat_construct (_, cstr, [], _) ->
       fprintf ppf "%s" cstr.cstr_name
   | Tpat_construct (_, cstr, [w], None) ->
@@ -130,11 +130,22 @@ and pretty_or : type k . _ -> k general_pattern -> _ = fun ppf v ->
       fprintf ppf "%a|@,%a" pretty_or v pretty_or w
   | _ -> pretty_val ppf v
 
-and pretty_vals sep ppf = function
-  | [] -> ()
-  | [v] -> pretty_val ppf v
-  | v::vs ->
-      fprintf ppf "%a%s@ %a" pretty_val v sep (pretty_vals sep) vs
+and pretty_list : type k . (_ -> k -> _) -> _ -> _ -> k list -> _ =
+  fun print_val sep ppf ->
+    function
+    | [] -> ()
+    | [v] -> print_val ppf v
+    | v::vs ->
+        fprintf ppf "%a%s@ %a" print_val v sep (pretty_list print_val sep) vs
+
+and pretty_vals sep = pretty_list pretty_val sep
+
+and pretty_labeled_val ppf (l, p) =
+  begin match l with
+  | Some s -> fprintf ppf "~%s:" s
+  | None -> ()
+  end;
+  pretty_val ppf p
 
 and pretty_lvals ppf = function
   | [] -> ()

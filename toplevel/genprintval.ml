@@ -277,8 +277,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               Oval_stuff "<poly>"
           | Tarrow _ ->
               Oval_stuff "<fun>"
-          | Ttuple(ty_list) ->
-              Oval_tuple (tree_of_val_list 0 depth obj ty_list)
+          | Ttuple(labeled_tys) ->
+              Oval_tuple (tree_of_labeled_val_list 0 depth obj labeled_tys)
           | Tconstr(path, ty_list, _) -> begin
               match get_desc (Ctype.expand_head env ty) with
               | Tconstr(path, [ty_arg], _)
@@ -528,6 +528,14 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               (lid, v) :: tree_of_fields (pos + 1) remainder
         in
         Oval_record (tree_of_fields pos lbl_list)
+
+      and tree_of_labeled_val_list start depth obj labeled_tys =
+        let rec tree_list i = function
+          | [] -> []
+          | (label, ty) :: labeled_tys ->
+              let tree = nest tree_of_val (depth - 1) (O.field obj i) ty in
+              (label, tree) :: tree_list (i + 1) labeled_tys in
+      tree_list start labeled_tys
 
       and tree_of_val_list start depth obj ty_list =
         let rec tree_list i = function

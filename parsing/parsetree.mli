@@ -101,9 +101,14 @@ and core_type_desc =
             - [?l:T1 -> T2] when [lbl] is
                                      {{!Asttypes.arg_label.Optional}[Optional]}.
          *)
-  | Ptyp_tuple of core_type list
-      (** [Ptyp_tuple([T1 ; ... ; Tn])]
-          represents a product type [T1 * ... * Tn].
+  | Ptyp_tuple of (string option * core_type) list
+      (** [Ptyp_tuple(tl)] represents a product type:
+          - [T1 * ... * Tn]
+              when [tl] is [(None, T1); ...; (None, Tn)]
+          - [L1:T1 * ... * Ln:Tn]
+              when [tl] is [(Some L1, T1); ...; (Some Ln, Tn)]
+          - A mix, e.g., [L1:T1 * T2]
+              when [tl] is [(Some L1, T1); (None, T2)]
 
            Invariant: [n >= 2].
         *)
@@ -234,11 +239,22 @@ and pattern_desc =
 
            Other forms of interval are recognized by the parser
            but rejected by the type-checker. *)
-  | Ppat_tuple of pattern list
-      (** Patterns [(P1, ..., Pn)].
+  | Ppat_tuple of (string option * pattern) list * Asttypes.closed_flag
+      (** [Ppat_tuple(pl, Closed)] represents
+          - [(P1, ..., Pn)]
+              when [pl] is [(None, P1); ...; (None, Pn)]
+          - [(~L1:P1, ..., ~Ln:Pn)]
+              when [pl] is [(Some L1, P1); ...; (Some Ln, Pn)]
+          - A mix, e.g. [(~L1:P1, P2)]
+              when [pl] is [(Some L1, P1); (None, P2)]
 
-           Invariant: [n >= 2]
-        *)
+          [Ppat_tuple(pl, Open)] is similar, but indicates the pattern
+          additionally ends in a [..].
+
+          Invariant:
+          - If Closed, [n >= 2].
+          - If Open, [n >= 1].
+      *)
   | Ppat_construct of Longident.t loc * (string loc list * pattern) option
       (** [Ppat_construct(C, args)] represents:
             - [C]               when [args] is [None],
@@ -333,8 +349,14 @@ and expression_desc =
       (** [match E0 with P1 -> E1 | ... | Pn -> En] *)
   | Pexp_try of expression * case list
       (** [try E0 with P1 -> E1 | ... | Pn -> En] *)
-  | Pexp_tuple of expression list
-      (** Expressions [(E1, ..., En)]
+  | Pexp_tuple of (string option * expression) list
+      (** [Pexp_tuple(el)] represents
+          - [(E1, ..., En)]
+              when [el] is [(None, E1); ...; (None, En)]
+          - [(~L1:E1, ..., ~Ln:En)]
+              when [el] is [(Some L1, E1); ...; (Some Ln, En)]
+          - A mix, e.g., [(~L1:E1, E2)]
+              when [el] is [(Some L1, E1); (None, E2)]
 
            Invariant: [n >= 2]
         *)

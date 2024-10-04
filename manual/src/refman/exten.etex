@@ -127,4 +127,8 @@ that are implemented in OCaml, but not described in chapter \ref{c:refman}.
 %HEVEA\cutname{arrayliterals.html}
 \input{arrayliterals.tex}
 
+\section{s:labeled-tuples}{Labeled tuples}
+%HEVEA\cutname{labeledtuples.html}
+\input{labeledtuples.tex}
+
 %HEVEA\cutend

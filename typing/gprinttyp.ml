@@ -594,6 +594,17 @@ module Digraph = struct
     snd @@ List.fold_left
       (numbered_edge params id0)
       (0,gh) l
+  and labeled_edge params id0 (i,gh) (l,ty) =
+    let l =
+      match l with
+      | None -> labelr "%d" i
+      | Some l -> labelr "%d<SUP>%s</SUP>" i l
+    in
+    i + 1, edge params id0 l ty gh
+  and labeled_edges params id0 l gh =
+    snd @@ List.fold_left
+      (labeled_edge params id0)
+      (0,gh) l
   and node params color id tynode desc dg =
     let add_tynode l = add_node l color id tynode dg in
     let mk fmt = labelk (fun l -> add_tynode (Decoration.make l)) fmt in
@@ -605,7 +616,7 @@ module Digraph = struct
     | Types.Tarrow(l,t1,t2,_) ->
        mk "→%a" Pp.exponent_of_label l |> numbered [t1; t2]
     | Types.Ttuple tl ->
-        mk "*" |> numbered tl
+        mk "*" |> labeled_edges params id tl
     | Types.Tconstr (p,tl,abbrevs) ->
         let constr = mk "%a" pp_path p |> numbered tl in
         if not params.follow_expansions then

@@ -135,6 +135,10 @@ let arg_label i ppf = function
 let typevars ppf vs =
   List.iter (fun x -> fprintf ppf " %a" Pprintast.tyvar x.txt) vs
 
+let labeled_tuple_element f i ppf (l, ct) =
+  option i string ppf l;
+  f i ppf ct
+
 let rec core_type i ppf x =
   line i ppf "core_type %a\n" fmt_location x.ptyp_loc;
   attributes i ppf x.ptyp_attributes;
@@ -149,7 +153,7 @@ let rec core_type i ppf x =
       core_type i ppf ct2;
   | Ptyp_tuple l ->
       line i ppf "Ptyp_tuple\n";
-      list i core_type ppf l;
+      list i (labeled_tuple_element core_type) ppf l;
   | Ptyp_constr (li, l) ->
       line i ppf "Ptyp_constr %a\n" fmt_longident_loc li;
       list i core_type ppf l;
@@ -210,9 +214,9 @@ and pattern i ppf x =
       line i ppf "Ppat_interval\n";
       fmt_constant i ppf c1;
       fmt_constant i ppf c2;
-  | Ppat_tuple (l) ->
-      line i ppf "Ppat_tuple\n";
-      list i pattern ppf l;
+  | Ppat_tuple (l, c) ->
+      line i ppf "Ppat_tuple\n %a\n" fmt_closed_flag c;
+      list i (labeled_tuple_element pattern) ppf l;
   | Ppat_construct (li, po) ->
       line i ppf "Ppat_construct %a\n" fmt_longident_loc li;
       option i
@@ -291,7 +295,7 @@ and expression i ppf x =
       list i case ppf l;
   | Pexp_tuple (l) ->
       line i ppf "Pexp_tuple\n";
-      list i expression ppf l;
+      list i (labeled_tuple_element expression) ppf l;
   | Pexp_construct (li, eo) ->
       line i ppf "Pexp_construct %a\n" fmt_longident_loc li;
       option i expression ppf eo;

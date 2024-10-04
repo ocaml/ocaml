@@ -620,20 +620,24 @@ Ptop_def
                 expression (//toplevel//[2,1+12]..[2,1+18]) ghost
                   Pexp_tuple
                   [
+                    None
                     expression (//toplevel//[2,1+12]..[2,1+13])
                       Pexp_constant
                       constant (//toplevel//[2,1+12]..[2,1+13])
                         PConst_int (3,None)
+                    None
                     expression (//toplevel//[2,1+15]..[2,1+18]) ghost
                       Pexp_construct "::" (//toplevel//[2,1+15]..[2,1+18]) ghost
                       Some
                         expression (//toplevel//[2,1+15]..[2,1+18]) ghost
                           Pexp_tuple
                           [
+                            None
                             expression (//toplevel//[2,1+15]..[2,1+16])
                               Pexp_constant
                               constant (//toplevel//[2,1+15]..[2,1+16])
                                 PConst_int (4,None)
+                            None
                             expression (//toplevel//[2,1+17]..[2,1+18]) ghost
                               Pexp_construct "[]" (//toplevel//[2,1+17]..[2,1+18]) ghost
                               None

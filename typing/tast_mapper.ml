@@ -280,7 +280,8 @@ let pat
     | Tpat_any
     | Tpat_constant _ -> x.pat_desc
     | Tpat_var (id, s, uid) -> Tpat_var (id, map_loc sub s, uid)
-    | Tpat_tuple l -> Tpat_tuple (List.map (sub.pat sub) l)
+    | Tpat_tuple l ->
+        Tpat_tuple (List.map (fun (label, p) -> label, sub.pat sub p) l)
     | Tpat_construct (loc, cd, l, vto) ->
         let vto = Option.map (fun (vl,cty) ->
           List.map (map_loc sub) vl, sub.typ sub cty) vto in
@@ -376,7 +377,7 @@ let expr sub x =
           List.map (sub.case sub) eff_cases
         )
     | Texp_tuple list ->
-        Texp_tuple (List.map (sub.expr sub) list)
+        Texp_tuple (List.map (fun (label, e) -> label, sub.expr sub e) list)
     | Texp_construct (lid, cd, args) ->
         Texp_construct (map_loc sub lid, cd, List.map (sub.expr sub) args)
     | Texp_variant (l, expo) ->
@@ -763,7 +764,8 @@ let typ sub x =
     | Ttyp_var _ as d -> d
     | Ttyp_arrow (label, ct1, ct2) ->
         Ttyp_arrow (label, sub.typ sub ct1, sub.typ sub ct2)
-    | Ttyp_tuple list -> Ttyp_tuple (List.map (sub.typ sub) list)
+    | Ttyp_tuple list ->
+        Ttyp_tuple (List.map (fun (label, t) -> label, sub.typ sub t) list)
     | Ttyp_constr (path, lid, list) ->
         Ttyp_constr (path, map_loc sub lid, List.map (sub.typ sub) list)
     | Ttyp_object (list, closed) ->
