@@ -776,6 +776,11 @@ CAMLprim value caml_runtime_events_user_write(
 
     res = caml_callback2(serializer, write_buffer, event_content);
 
+    /* Need to check whether the ring is active again as the ring might
+     * potentially have been destroyed during the callback. */
+    if ( !ring_is_active() )
+      CAMLreturn(Val_unit);
+
     uintnat len_bytes = Int_val(res);
     uintnat len_64bit_word = (len_bytes + sizeof(uint64_t)) / sizeof(uint64_t);
     uintnat offset_index = len_64bit_word * sizeof(uint64_t) - 1;
