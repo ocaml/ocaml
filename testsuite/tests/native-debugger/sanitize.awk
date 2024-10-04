@@ -1,4 +1,4 @@
-# Replace sections of LLDB output
+# Replace sections of LLDB and GDB output
 # This primarily looks for hex addresses, process ids, filepaths and
 # other specific details of the machine the test is running on.
 {
@@ -31,6 +31,19 @@
     # Replace comments with blank comments
     gsub(/; [a-zA-Z0-9._+ ]+/, ";")
 
+    # Replace line numbers in runtime files - one rule for lldb, one for gdb
+    # (it would be better to only match on runtime/*.c, but gsub does not
+    # handle ERE)
+    gsub(/.c:[0-9]+:[0-9]+/, ".c:XX")
+    gsub(/.c:[0-9]+/, ".c:XX")
+
+    # Replace line number when setting breakpoints in GDB.
+    gsub(/line [0-9]+/, "line XXX")
+
+    # Work around inconsistent name mangling
+    gsub(/c_to_ocaml_[0-9]+/, "c_to_ocaml")
+
+    gsub("warning: This version of LLDB", "This version of LLDB")
     # Replace printed match results
     gsub("1 match found in /(.*):$", "1 match found in \"XXXX\":")
     print $0

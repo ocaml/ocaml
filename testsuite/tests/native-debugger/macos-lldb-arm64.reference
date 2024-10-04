@@ -46,7 +46,7 @@ warning: meander was compiled with optimization - stepping may behave oddly;
 Process XXXX resuming
 Process XXXX stopped
 * thread #1, queue = 'XXXX', stop reason = breakpoint 4.1
-    frame #0: 0x00000000000000 meander`ocaml_to_c(unit=1) at meander_c.c:5:20 [opt]
+    frame #0: 0x00000000000000 meander`ocaml_to_c(unit=1) at meander_c.c:XX [opt]
    2   	#include <caml/callback.h>
    3   	
    4   	value ocaml_to_c (value unit) {
@@ -59,7 +59,7 @@ Target 0: (meander) stopped.
 (lldb) backtrace
 frame 0: meander`ocaml_to_c
 frame 1: meander`caml_c_call
-frame 2: meander`camlMeander.omain_279
+frame 2: meander`camlMeander.omain
 frame 3: meander`camlMeander.entry
 frame 4: meander`caml_program
 frame 5: meander`caml_start_program
@@ -73,16 +73,16 @@ frame 11: dyld`start
 Process XXXX resuming
 Process XXXX stopped
 * thread #1, queue = 'XXXX', stop reason = breakpoint 3.1
-    frame #0: 0x00000000000000 meander`camlMeander.c_to_ocaml_274
+    frame #0: 0x00000000000000 meander`camlMeander.c_to_ocaml
 Target 0: (meander) stopped.
 (lldb) backtrace
-frame 0: meander`camlMeander.c_to_ocaml_274
+frame 0: meander`camlMeander.c_to_ocaml
 frame 1: meander`caml_start_program
 frame 2: meander`caml_callback_exn
 frame 3: meander`caml_callback
 frame 4: meander`ocaml_to_c
 frame 5: meander`caml_c_call
-frame 6: meander`camlMeander.omain_279
+frame 6: meander`camlMeander.omain
 frame 7: meander`camlMeander.entry
 frame 8: meander`caml_program
 frame 9: meander`caml_start_program
