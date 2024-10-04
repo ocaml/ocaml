@@ -1254,6 +1254,7 @@ let tree_of_label l =
   {
     olab_name = Ident.name l.ld_id;
     olab_mut = l.ld_mutable;
+    olab_atomic = l.ld_atomic;
     olab_type = tree_of_typexp Type l.ld_type;
   }
 

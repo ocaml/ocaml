@@ -741,6 +741,9 @@ let array_indexing ?typ log2size ptr ofs dbg =
       Cop(add, [Cop(add, [ptr; lsl_const ofs (log2size - 1) dbg], dbg);
                     Cconst_int((-1) lsl (log2size - 1), dbg)], dbg)
 
+let field_address_computed ptr ofs dbg =
+  array_indexing log2_size_addr ptr ofs dbg
+
 let addr_array_ref arr ofs dbg =
   Cop(mk_load_mut Word_val,
     [array_indexing log2_size_addr arr ofs dbg], dbg)

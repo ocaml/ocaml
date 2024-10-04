@@ -260,6 +260,7 @@ module Type :
         {
           rf_name : string ; (** Name of the field. *)
           rf_mutable : bool ; (** [true] if mutable. *)
+          rf_atomic : bool ; (** [true] if atomic. *)
           rf_type : Types.type_expr ; (** Type of the field. *)
           mutable rf_text : info option ; (** Optional description in the associated comment.*)
         }

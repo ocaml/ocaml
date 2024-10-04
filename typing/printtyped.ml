@@ -76,6 +76,11 @@ let fmt_mutable_flag f x =
   | Immutable -> fprintf f "Immutable"
   | Mutable -> fprintf f "Mutable"
 
+let fmt_atomic_flag f x =
+  match x with
+  | Nonatomic -> fprintf f "Nonatomic"
+  | Atomic -> fprintf f "Atomic"
+
 let fmt_virtual_flag f x =
   match x with
   | Virtual -> fprintf f "Virtual"
@@ -388,6 +393,10 @@ and expression i ppf x =
       expression i ppf e1;
       longident i ppf li;
       expression i ppf e2;
+  | Texp_atomic_loc (e, li, _) ->
+      line i ppf "Texp_atomic_loc\n";
+      expression i ppf e;
+      longident i ppf li;
   | Texp_array (l) ->
       line i ppf "Texp_array\n";
       list i expression ppf l;
@@ -932,11 +941,12 @@ and constructor_arguments i ppf = function
   | Cstr_tuple l -> list i core_type ppf l
   | Cstr_record l -> list i label_decl ppf l
 
-and label_decl i ppf {ld_id; ld_name = _; ld_mutable; ld_type; ld_loc;
+and label_decl i ppf {ld_id; ld_name= _; ld_mutable; ld_atomic; ld_type; ld_loc;
                       ld_attributes} =
   line i ppf "%a\n" fmt_location ld_loc;
   attributes i ppf ld_attributes;
   line (i+1) ppf "%a\n" fmt_mutable_flag ld_mutable;
+  line (i+1) ppf "%a\n" fmt_atomic_flag ld_atomic;
   line (i+1) ppf "%a" fmt_ident ld_id;
   core_type (i+1) ppf ld_type
 

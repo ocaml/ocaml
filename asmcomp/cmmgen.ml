@@ -860,8 +860,6 @@ and transl_prim_1 env p arg dbg =
        dbg)
   | Pdls_get ->
       Cop(Cdls_get, [transl env arg], dbg)
-  | Patomic_load ->
-      Cop(mk_load_atomic Word_val, [transl env arg], dbg)
   | Ppoll ->
     (Csequence (remove_unit (transl env arg),
                 return_unit dbg (Cop(Cpoll, [], dbg))))
@@ -882,7 +880,9 @@ and transl_prim_1 env p arg dbg =
     | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
     | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
     | Pbigarraydim _ | Pstring_load _ | Pbytes_load _ | Pbytes_set _
-    | Pbigstring_load _ | Pbigstring_set _)
+    | Pbigstring_load _ | Pbigstring_set _
+    | Patomic_load
+    )
     ->
       fatal_errorf "Cmmgen.transl_prim_1: %a"
         Printclambda_primitives.primitive p
@@ -898,6 +898,12 @@ and transl_prim_2 env p arg1 arg2 dbg =
       let ptr = transl env arg1 in
       let float_val = transl_unbox_float dbg env arg2 in
       setfloatfield n init ptr float_val dbg
+
+  | Patomic_load ->
+      let ptr = transl env arg1 in
+      let ofs = transl env arg2 in
+      Cop(mk_load_atomic Word_val,
+          [field_address_computed ptr ofs dbg], dbg)
 
   (* Boolean operations *)
   | Psequand ->
@@ -1051,7 +1057,6 @@ and transl_prim_2 env p arg1 arg2 dbg =
                      [transl_unbox_int dbg env bi arg1;
                       transl_unbox_int dbg env bi arg2], dbg)) dbg
   | Prunstack | Pperform | Presume | Preperform | Pdls_get
-  | Patomic_load
   | Pnot | Pnegint | Pintoffloat | Pfloatofint | Pnegfloat
   | Pabsfloat | Pstringlength | Pbyteslength | Pbytessetu | Pbytessets
   | Pisint | Pbswap16 | Pint_as_pointer | Popaque | Pread_symbol _

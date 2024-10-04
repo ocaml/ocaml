@@ -496,6 +496,13 @@ let expression sub exp =
             [] fields
         in
         Pexp_record (list, Option.map (sub.expr sub) extended_expression)
+    | Texp_atomic_loc (exp, lid, _label) ->
+        Pexp_extension ({ txt = "ocaml.atomic.loc"; loc },
+                        PStr [ Str.eval ~loc
+                                 (Exp.field ~loc
+                                    (sub.expr sub exp)
+                                    (map_loc sub lid))
+                             ])
     | Texp_field (exp, lid, _label) ->
         Pexp_field (sub.expr sub exp, map_loc sub lid)
     | Texp_setfield (exp1, lid, _label, exp2) ->

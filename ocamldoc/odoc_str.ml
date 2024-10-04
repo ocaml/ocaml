@@ -168,9 +168,10 @@ let string_of_record l =
   P.sprintf "{\n%s\n}" (
     String.concat "\n" (
       List.map (fun field ->
-          P.sprintf "   %s%s : %s;%s"
+          P.sprintf "   %s%s : %s%s;%s"
             (if field.M.rf_mutable then "mutable " else "") field.M.rf_name
             (Odoc_print.string_of_type_expr field.M.rf_type)
+            (if field.M.rf_atomic then " [@atomic]" else "")
             (field_doc_str field.M.rf_text)
         ) l
     )

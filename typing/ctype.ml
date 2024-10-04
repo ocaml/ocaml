@@ -2525,7 +2525,8 @@ and mcomp_record_description type_pairs env =
     | l1 :: xs, l2 :: ys ->
         mcomp type_pairs env l1.ld_type l2.ld_type;
         if Ident.name l1.ld_id = Ident.name l2.ld_id &&
-           l1.ld_mutable = l2.ld_mutable
+           l1.ld_mutable = l2.ld_mutable &&
+           l1.ld_atomic = l2.ld_atomic
         then iter xs ys
         else raise Incompatible
     | [], [] -> ()

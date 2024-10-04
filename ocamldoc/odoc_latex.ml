@@ -542,10 +542,11 @@ class latex =
         List.map (fun r ->
             let s_field =
               p fmt
-                "@[<h 6>  %s%s :@ %s ;"
+                "@[<h 6>  %s%s :@ %s %s;"
                 (if r.rf_mutable then "mutable " else "")
                 r.rf_name
-                (self#normal_type mod_name r.rf_type);
+                (self#normal_type mod_name r.rf_type)
+                (if r.rf_atomic then "[@atomic] " else "");
               flush ()
             in
             [ CodePre s_field ] @ (self#entry_comment f r.rf_text)

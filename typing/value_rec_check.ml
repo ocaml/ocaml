@@ -182,6 +182,7 @@ let classify_expression : Typedtree.expression -> sd =
 
     | Texp_variant _
     | Texp_tuple _
+    | Texp_atomic_loc _
     | Texp_extension_constructor _
     | Texp_constant _ ->
         Static
@@ -670,6 +671,8 @@ let rec expression : Typedtree.expression -> term_judg =
               list expression delayed << Guard]
     | Texp_tuple exprs ->
       list expression exprs << Guard
+    | Texp_atomic_loc (expr, _, _) ->
+      expression expr << Guard
     | Texp_array exprs ->
       let array_mode = match Typeopt.array_kind exp with
         | Lambda.Pfloatarray ->
