@@ -11,7 +11,7 @@ let test_Error msg =
   let rec f msg n =
     if n = 0 then raise(Error msg) else 1 + f msg (n-1) in
   let exception_raised_internally () =
-    try Hashtbl.find (Hashtbl.create 3) 0
+    try raise (Sys.opaque_identity Not_found)
     with Not_found -> false in
   try
     f msg 5
@@ -40,14 +40,14 @@ let test_Not_found () =
       Currently the wrong backtrace is used. *)
   with exn ->
     print_string "test_Not_found"; print_newline();
-    (try Hashtbl.find (Hashtbl.create 3) 0 with Not_found -> raise exn)
+    (try raise (Sys.opaque_identity Not_found) with Not_found -> raise exn)
 
 let test_lazy =
   let rec aux n =
     if n = 0 then raise Not_found else 1 + aux (n-1)
   in
   let exception_raised_internally () =
-    try Hashtbl.find (Hashtbl.create 3) 0
+    try raise (Sys.opaque_identity Not_found)
     with Not_found -> () in
   let l = lazy (aux 5) in
   (** Test the backtrace obtained from a lazy value.
