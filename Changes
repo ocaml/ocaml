@@ -682,6 +682,14 @@ ___________
   oversight. No known program triggers the bug.
   (Richard Eisenberg, review by Florian Angeletti)
 
+- #13338, #?????: Fail with a clean error whenever a local type substitution
+  contains first-class module types bound to a temporary module type name:
+  ```
+     module type s := sig end
+     type t := <x: (module s) >
+  ```
+  (Florian Angeletti, review by ????)
+
 - #13400: Initialize th->signal_stack to avoid free of uninitialized data
   if the user calls caml_c_thread_unregister on the main thread.
   (Richard W.M. Jones, review by Guillaume Munch-Maccagnoni and
