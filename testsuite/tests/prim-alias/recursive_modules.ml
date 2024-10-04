@@ -65,19 +65,12 @@ module rec F : sig
   external magic : 'a -> 'b = identity
 end = F
 
-(* It would be better if this printed the aliased primitive's type. *)
 [%%expect {|
-Line 3, characters 6-7:
-3 | end = F
-          ^
-Error: Cannot safely evaluate the definition of the following cycle
-       of recursively-defined modules: F -> F.
-       There are no safe modules in this cycle (see manual section 12.2).
-Line 2, characters 2-38:
+Line 2, characters 19-27:
 2 |   external magic : 'a -> 'b = identity
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  Module "F" defines an unsafe primitive alias, "magic" .
-  The type of the aliased primitive is less general than that of its alias.
+                       ^^^^^^^^
+Error: The type of this alias does not match that of the aliased primitive.
+       Type "'a -> 'b" is not compatible with type "'a0 -> 'a0"
 |}]
 
 external int_to_int : int -> int = identity

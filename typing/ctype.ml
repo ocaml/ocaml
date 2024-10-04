@@ -2282,9 +2282,11 @@ let find_expansion_scope env path =
   | { type_manifest = None ; _ } | exception Not_found -> generic_level
   | decl -> decl.type_expansion_scope
 
-let non_aliasable p decl =
+let non_aliasable env p decl =
   (* in_pervasives p ||  (subsumed by in_current_module) *)
-  in_current_module p && not decl.type_is_newtype
+  not (Env.is_in_signature env) &&
+  in_current_module p &&
+  not decl.type_is_newtype
 
 let is_instantiable env p =
   try
@@ -2293,7 +2295,7 @@ let is_instantiable env p =
     decl.type_private = Public &&
     decl.type_arity = 0 &&
     decl.type_manifest = None &&
-    not (non_aliasable p decl)
+    not (non_aliasable env p decl)
   with Not_found -> false
 
 
@@ -2376,7 +2378,7 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
             begin try
               let decl = Env.find_type p env in
-              if non_aliasable p decl || is_datatype decl then
+              if non_aliasable env p decl || is_datatype decl then
                 raise Incompatible
             with Not_found -> ()
             end
@@ -2475,7 +2477,7 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
       List.iter2
         (fun i (t1,t2) -> if i then mcomp type_pairs env t1 t2)
         inj (List.combine tl1 tl2)
-    end else if non_aliasable p1 decl && non_aliasable p2 decl' then
+    end else if non_aliasable env p1 decl && non_aliasable env p2 decl' then
       raise Incompatible
     else
       match decl.type_kind, decl'.type_kind with
@@ -2488,8 +2490,8 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
       | Type_open, Type_open ->
           mcomp_list type_pairs env tl1 tl2
       | Type_abstract _, Type_abstract _ -> ()
-      | Type_abstract _, _ when not (non_aliasable p1 decl)-> ()
-      | _, Type_abstract _ when not (non_aliasable p2 decl') -> ()
+      | Type_abstract _, _ when not (non_aliasable env p1 decl)-> ()
+      | _, Type_abstract _ when not (non_aliasable env p2 decl') -> ()
       | _ -> raise Incompatible
   with Not_found -> ()
 
@@ -4081,30 +4083,49 @@ let all_distinct_vars env vars =
       (tys := TypeSet.add ty !tys; is_Tvar ty))
     vars
 
-let matches ~expand_error_trace env ty ty' =
+let gen_matches ~unify ~expand_error_trace env ty ty' =
   let snap = snapshot () in
   let vars = rigidify ty in
   cleanup_abbrev ();
   match unify env ty ty' with
   | () ->
-      if not (all_distinct_vars env vars) then begin
-        backtrack snap;
-        let diff =
-          if expand_error_trace
-          then expanded_diff env ~got:ty ~expected:ty'
-          else unexpanded_diff ~got:ty ~expected:ty'
-        in
-        raise (Matches_failure (env, unification_error ~trace:[diff]))
-      end;
-      backtrack snap
-  | exception Unify err ->
+    if not (all_distinct_vars env vars) then begin
       backtrack snap;
-      raise (Matches_failure (env, err))
+      let diff =
+        if expand_error_trace
+        then expanded_diff env ~got:ty ~expected:ty'
+        else unexpanded_diff ~got:ty ~expected:ty'
+      in
+      raise (Matches_failure (env, unification_error ~trace:[diff]))
+    end;
+    backtrack snap
+  | exception Unify err ->
+    backtrack snap;
+    raise (Matches_failure (env, err))
 
-let does_match env ty ty' =
+let matches ~expand_error_trace env ty ty' =
+  gen_matches ~unify ~expand_error_trace env ty ty'
+
+let matches_gadt ~expand_error_trace env ty ty' =
+  let unify env ty ty' =
+    let penv =
+      Pattern_env.make
+        env
+        ~equations_scope:!current_level
+        ~allow_recursive_equations:true
+    in
+    ignore (unify_gadt penv ty ty' : Btype.TypePairs.t)
+  in
+  gen_matches ~unify ~expand_error_trace env ty ty'
+
+let gen_does_match ~matches env ty ty' =
   match matches ~expand_error_trace:false env ty ty' with
   | () -> true
   | exception Matches_failure (_, _) -> false
+
+let does_match env ty ty' = gen_does_match ~matches env ty ty'
+
+let does_match_gadt env ty ty' = gen_does_match ~matches:matches_gadt env ty ty'
 
                  (*********************************************)
                  (*  Equivalence between parameterized types  *)

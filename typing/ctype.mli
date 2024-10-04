@@ -295,6 +295,11 @@ val matches: expand_error_trace:bool -> Env.t -> type_expr -> type_expr -> unit
            should almost always be [true]. *)
 val does_match: Env.t -> type_expr -> type_expr -> bool
         (* Same as [matches], but returns a [bool] *)
+val matches_gadt: expand_error_trace:bool -> Env.t -> type_expr -> type_expr ->
+        unit
+        (* Same as [matches], but using [unify_gadt]. *)
+val does_match_gadt: Env.t -> type_expr -> type_expr -> bool
+        (* Same as [does_match], but using [unify_gadt]. *)
 
 val reify_univars : Env.t -> Types.type_expr -> Types.type_expr
         (* Replaces all the variables of a type by a univar. *)

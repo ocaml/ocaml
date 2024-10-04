@@ -75,6 +75,7 @@ type error =
   | Nonrec_gadt
   | Invalid_private_row_declaration of type_expr
   | Primitive_alias_does_not_refer_to_primitive of string
+  | Primitive_alias_unification of Env.t * Errortrace.unification_error
 
 open Typedtree
 
@@ -1689,15 +1690,27 @@ let transl_prim_desc env loc primdesc =
          | None -> None, v
          | Some pprim_type ->
            let cty = Typetexp.transl_type_scheme env pprim_type in
+           let raise_unification_error env err =
+             raise(Error(cty.ctyp_loc,
+                         Primitive_alias_unification (env, err)))
+           in
            let val_kind =
-             match Env.is_in_signature env with
-             | false ->
-               Ctype.unify env v.val_type cty.ctyp_type;
-               val_kind
-             | true ->
-               if Ctype.is_moregeneral env true v.val_type cty.ctyp_type
-               then val_kind
-               else Val_prim (desc, Unsafe_in_recmod)
+             match
+               Ctype.matches ~expand_error_trace:true env
+                 cty.ctyp_type v.val_type
+             with
+             | () -> val_kind
+             | exception (Ctype.Matches_failure _)
+               when Env.is_in_signature env ->
+               (match
+                  Ctype.matches_gadt ~expand_error_trace:true env
+                    cty.ctyp_type v.val_type
+                with
+                | () -> Val_prim (desc, Unsafe_in_recmod)
+                | exception (Ctype.Matches_failure (env, err)) ->
+                  raise_unification_error env err)
+             | exception (Ctype.Matches_failure (env, err)) ->
+               raise_unification_error env err
            in
            Some cty,
            { v with val_type = cty.ctyp_type; val_kind; val_loc = loc }
@@ -2332,6 +2345,14 @@ let report_error_doc ppf = function
         "@[This@ identifier@ should@ be@ a@ primitive,@ but@ it@ is@ bound@ \
          to@ %s.@]"
         kind
+  | Primitive_alias_unification (env, err) ->
+      let msg = Format_doc.Doc.msg in
+      fprintf ppf "@[<v>The type of this alias does not match that of the \
+                   aliased primitive.@ ";
+      Errortrace_report.unification ppf env err
+        (msg "Type")
+        (msg "is not compatible with type");
+      fprintf ppf "@]"
 
 let () =
   Location.register_error_of_exn

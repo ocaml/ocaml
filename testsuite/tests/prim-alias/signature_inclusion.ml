@@ -8,7 +8,8 @@ external identity : 'a -> 'a = "%identity"
 external identity : 'a -> 'a = "%identity"
 |}]
 
-(* Types are not unified in signatures. *)
+(* We use GADT unification in signatures to check whether the requisite type
+   equalities are possible, given additional equations. *)
 module type Int_backed = sig
   type t
   external to_int : t -> int = identity
@@ -19,7 +20,7 @@ module type Int_backed =
   sig type t external to_int : t -> int = "%identity" end
 |}]
 
-(* Types are unified in structures; this should compile. *)
+(* We use regular unification to check structures; this should compile. *)
 module Int_backed : Int_backed = struct
   type t = int
   external to_int = identity

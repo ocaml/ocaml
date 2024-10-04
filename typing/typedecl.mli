@@ -110,6 +110,7 @@ type error =
   | Nonrec_gadt
   | Invalid_private_row_declaration of type_expr
   | Primitive_alias_does_not_refer_to_primitive of string
+  | Primitive_alias_unification of Env.t * Errortrace.unification_error
 
 exception Error of Location.t * error
 
