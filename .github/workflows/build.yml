@@ -156,6 +156,12 @@ jobs:
             os: macos-13
           - name: macos-arm64
             os: macos-14
+          - name: linux-frame-pointers
+            os: ubuntu-latest
+            config_arg: --enable-frame-pointers
+          - name: macos-arm64-frame-pointers
+            os: macos-14
+            config_arg: --enable-frame-pointers
     steps:
       - name: Checkout
         uses: actions/checkout@v4
