@@ -989,6 +989,7 @@ module Signature_names : sig
     | `From_open
     | `Shadowable of shadowable
     | `Substituted_away of Subst.t
+    | `Type_substituted_away of (type_expr * Subst.t)
     | `Unpackable_modtype_substituted_away of Ident.t * Subst.t
   ]
 
@@ -1026,6 +1027,7 @@ end = struct
   type info = [
     | `From_open
     | `Substituted_away of Subst.t
+    | `Type_substituted_away of (type_expr * Subst.t)
     | `Unpackable_modtype_substituted_away of Ident.t * Subst.t
     | bound_info
   ]
@@ -1087,9 +1089,44 @@ end = struct
     | Class -> names.classes
     | Class_type -> names.class_types
 
+  (*
+    In presence of local module type substitutions where the
+    right-hand side is not a path, we need to check that those module types
+    are never used to pack modules in any type expressions. For instance
+    {[
+    module type T := sig end
+    val x: (module T)
+    ]}
+    should raise an error.
+  *)
+  let check_unpackable_modtypes_on proj ~env ~loc to_remove component =
+    if not (Ident.Set.is_empty to_remove.unpackable_modtypes) then
+      with_type_mark begin fun mark ->
+        let iterator =
+          let error p = Unpackable_local_modtype_subst p in
+          let paths =
+            List.map (fun id -> Pident id)
+              (Ident.Set.elements to_remove.unpackable_modtypes)
+          in
+          check_usage_of_module_types ~loc ~error ~paths (ref (lazy env))
+            (Btype.type_iterators mark)
+        in
+        proj iterator component
+      end
+
+  let check_unpackable_modtypes_type_expr =
+    check_unpackable_modtypes_on (fun it -> it.Btype.it_type_expr it)
+
+  let check_unpackable_modtypes =
+    check_unpackable_modtypes_on (fun it -> it.Btype.it_signature_item it)
+
   let check cl t loc id (info : info) =
     let to_be_removed = t.to_be_removed in
     match info with
+    | `Type_substituted_away (ty, subst) ->
+        let env = Env.empty in
+        check_unpackable_modtypes_type_expr ~env ~loc to_be_removed ty;
+        to_be_removed.subst <- Subst.compose subst to_be_removed.subst;
     | `Substituted_away s ->
         to_be_removed.subst <- Subst.compose s to_be_removed.subst;
     | `Unpackable_modtype_substituted_away (id,s) ->
@@ -1165,30 +1202,6 @@ end = struct
        thus never appear in includes *)
      List.iter (check ?info names loc) (Signature_group.rec_items item.group)
 
-  (*
-    Before applying local module type substitutions where the
-    right-hand side is not a path, we need to check that those module types
-    where never used to pack modules. For instance
-    {[
-    module type T := sig end
-    val x: (module T)
-    ]}
-    should raise an error.
-  *)
-  let check_unpackable_modtypes ~loc ~env to_remove component =
-    if not (Ident.Set.is_empty to_remove.unpackable_modtypes) then
-      with_type_mark begin fun mark ->
-        let iterator =
-          let error p = Unpackable_local_modtype_subst p in
-          let paths =
-            List.map (fun id -> Pident id)
-              (Ident.Set.elements to_remove.unpackable_modtypes)
-          in
-          check_usage_of_module_types ~loc ~error ~paths
-            (ref (lazy env)) (Btype.type_iterators mark)
-        in
-        iterator.Btype.it_signature_item iterator component
-      end
 
   (* We usually require name uniqueness of signature components (e.g. types,
      modules, etc), however in some situation reusing the name is allowed: if
@@ -1449,14 +1462,15 @@ and transl_signature env sg =
               let params = td.typ_type.type_params in
               if params_are_constrained params
               then raise(Error(loc, env, With_cannot_remove_constrained_type));
+              let body = Option.get td.typ_type.type_manifest in
               let info =
                   let subst =
                     Subst.add_type_function (Pident td.typ_id)
                       ~params
-                      ~body:(Option.get td.typ_type.type_manifest)
+                      ~body
                       Subst.identity
                   in
-                  Some (`Substituted_away subst)
+                  Some (`Type_substituted_away (body,subst))
               in
               Signature_names.check_type ?info names td.typ_loc td.typ_id
             ) decls;
