@@ -80,6 +80,9 @@ Working version
   output of the pattern-matching compiler
   (Gabriel Scherer, review by Vincent Laviron and Nicolás Ojeda Bär)
 
+- #13460: introduce a variant of all predefined types
+  (Gabriel Scherer, review by Ulysse Gérard and Florian Angeletti)
+
 ### Build system:
 
 ### Bug fixes:
