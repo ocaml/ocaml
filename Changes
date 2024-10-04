@@ -544,6 +544,10 @@ ___________
   in Float.Array.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
+- #13507: A small refactoring to [free_vars] to make it a bit faster
+  by not allocating a list when the list is not necessary.
+  (Richard Eisenberg, review by Jacques Garrigue)
+
 ### Build system:
 
 - #12909: Reorganise how MKEXE_VIA_CC is built to make it correct for MSVC by

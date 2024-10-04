@@ -717,7 +717,7 @@ and build_as_type_extra env p = function
   | (Tpat_constraint {ctyp_type = ty; _}, _, _) :: rest ->
       (* If the type constraint is ground, then this is the best type
          we can return, so just return an instance (cf. #12313) *)
-      if free_variables ty = [] then instance ty else
+      if closed_type_expr ty then instance ty else
       (* Otherwise we combine the inferred type for the pattern with
          then non-ground constraint in a non-ambivalent way *)
       let as_ty = build_as_type_extra env p rest in
@@ -4463,8 +4463,8 @@ and type_coerce
           (* prerr_endline "self coercion"; *)
           r := loc :: !r;
           force ()
-      | _ when free_variables ~env arg_type = []
-            && free_variables ~env ty' = [] ->
+      | _ when closed_type_expr ~env arg_type
+            && closed_type_expr ~env ty' ->
           if not gen && (* first try a single coercion *)
             let snap = snapshot () in
             let ty, _b = enlarge_type env ty' in

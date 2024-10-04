@@ -2103,7 +2103,7 @@ let modtype_of_package env loc p fl =
 let package_subtype env p1 fl1 p2 fl2 =
   let mkmty p fl =
     let fl =
-      List.filter (fun (_n,t) -> Ctype.free_variables t = []) fl in
+      List.filter (fun (_n,t) -> Ctype.closed_type_expr t) fl in
     modtype_of_package env Location.none p fl
   in
   match mkmty p1 fl1, mkmty p2 fl2 with
@@ -2300,7 +2300,8 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       let mty =
         match get_desc (Ctype.expand_head env exp.exp_type) with
           Tpackage (p, fl) ->
-            if List.exists (fun (_n, t) -> Ctype.free_variables t <> []) fl then
+            if List.exists (fun (_n, t) -> not (Ctype.closed_type_expr t)) fl
+            then
               raise (Error (smod.pmod_loc, env,
                             Incomplete_packed_module exp.exp_type));
             if !Clflags.principal &&
