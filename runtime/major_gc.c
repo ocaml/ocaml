@@ -576,6 +576,14 @@ static inline intnat diffmod (uintnat x1, uintnat x2)
   return (intnat) (x1 - x2);
 }
 
+/* The [log_events] parameter is used to disable writing to the ring for two
+   reasons:
+   1. To prevent spamming the ring with numerous events generated during
+      an opportunistic GC slice.
+   2. To avoid logging events when the calling domain is not part of the
+      Stop-The-World (STW) participant set. If the domain is not part of
+      the STW set, the ring could be torn down concurrently while this domain
+      attempts to write to it. */
 static void
 update_major_slice_work(intnat howmuch,
                         int may_access_gc_phase,
@@ -721,7 +729,6 @@ update_major_slice_work(intnat howmuch,
               );
 
   if (log_events) {
-    /* Avoid spamming the ring when doing opportunistic slices */
     CAML_EV_COUNTER(EV_C_MAJOR_HEAP_WORDS, (uintnat)heap_words);
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_WORDS, my_alloc_count);
     CAML_EV_COUNTER(EV_C_MAJOR_ALLOCATED_WORK, alloc_work);
@@ -2125,8 +2132,10 @@ void caml_teardown_major_gc(void) {
    so we may not access the gc phase. */
   int may_access_gc_phase = 0;
 
-  /* account for latest allocations */
-  update_major_slice_work (0, may_access_gc_phase, 1);
+  /* Account for latest allocations, but do not write to the event ring since
+     we are out of the STW participant set; the ring may be torn down
+     concurrently. */
+  update_major_slice_work (0, may_access_gc_phase, 0);
   CAMLassert(!caml_addrmap_iter_ok(&d->mark_stack->compressed_stack,
                                    d->mark_stack->compressed_stack_iter));
   caml_addrmap_clear(&d->mark_stack->compressed_stack);
