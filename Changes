@@ -134,6 +134,9 @@ ___________
   runtime assertions.
   (Antonin Décimo, review by Miod Vallat, Gabriel Scherer, and David Allsopp)
 
+- #13522: Confirm runtime events ring is still active after callback.
+  (KC Sivaramakrishnan, review by Sadiq Jaffer and Miod Vallat)
+
 - #13529: Do not write to event ring after going out of stw participant set.
   (KC Sivaramakrishnan, review by Sadiq Jaffer)
 
