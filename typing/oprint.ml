@@ -137,23 +137,6 @@ let print_label ppf =
     pp_print_string ppf ":";
   | None -> ()
 
-let rec print_labeled_typlist print_elem sep ppf =
-  function
-    [] -> ()
-  | [label, ty] ->
-      pp_open_box ppf 0;
-      print_label_type ppf label;
-      print_elem ppf ty;
-      pp_close_box ppf ()
-  | (label, ty) :: tyl ->
-      pp_open_box ppf 0;
-      print_label_type ppf label;
-      print_elem ppf ty;
-      pp_close_box ppf ();
-      pp_print_string ppf sep;
-      pp_print_space ppf ();
-      print_labeled_typlist print_elem sep ppf tyl
-
 let print_out_string ppf s =
   let not_escaped =
     (* let the user dynamically choose if strings should be escaped: *)
@@ -335,8 +318,13 @@ and print_out_type_2 ~arg ppf =
         | _ -> false
       in
       if parens then pp_print_char ppf '(';
-      fprintf ppf "@[<0>%a@]"
-        (print_labeled_typlist print_simple_out_type " *") tyl;
+      let print_elem ppf (label, ty) =
+        pp_open_box ppf 0;
+        print_label_type ppf label;
+        print_simple_out_type ppf ty;
+        pp_close_box ppf ()
+      in
+      fprintf ppf "@[<0>%a@]" (print_typlist print_elem " *") tyl;
       if parens then pp_print_char ppf ')'
   | ty -> print_simple_out_type ppf ty
 and print_simple_out_type ppf =
@@ -414,8 +402,9 @@ and print_row_field ppf (l, opt_amp, tyl) =
   fprintf ppf "@[<hv 2>`%a%t%a@]" print_lident l pr_of
     (print_typlist print_out_type " &")
     tyl
-and print_typlist print_elem sep ppf =
-  function
+and print_typlist : 'a . (_ -> 'a -> _) -> _ -> _ -> 'a list -> _ =
+  fun print_elem sep ppf tyl ->
+  match tyl with
     [] -> ()
   | [ty] -> print_elem ppf ty
   | ty :: tyl ->
