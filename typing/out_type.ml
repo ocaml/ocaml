@@ -1578,7 +1578,7 @@ let rec prepare_class_type params = function
       let row = Btype.self_type_row cty in
       if List.memq (proxy row) !Aliases.visited_objects
       || not (List.for_all is_Tvar params)
-      || List.exists (deep_occur row) tyl
+      || deep_occur_list row tyl
       then prepare_class_type params cty
       else List.iter prepare_type tyl
   | Cty_signature sign ->

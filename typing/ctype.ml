@@ -608,7 +608,7 @@ exception Non_closed of type_expr * variable_kind
    [free_variables] below drops the type/row information
    and only returns a [variable list].
  *)
-let free_vars ?env mark ty =
+let free_vars ?env mark acc ty =
   let rec fv ~kind acc ty =
     if not (try_mark_node mark ty) then acc
     else match get_desc ty, env with
@@ -636,13 +636,20 @@ let free_vars ?env mark ty =
           else fv ~kind:Row_variable acc (row_more row)
       | _    ->
           fold_type_expr (fv ~kind) acc ty
-  in fv ~kind:Type_variable [] ty
+  in fv ~kind:Type_variable acc ty
 
 let free_variables ?env ty =
-  with_type_mark (fun mark -> List.map fst (free_vars ?env mark ty))
+  with_type_mark (fun mark -> List.map fst (free_vars ?env mark [] ty))
+
+let free_variables_list ?env tyl =
+  with_type_mark (fun mark ->
+    let acc =
+      List.fold_left (fun acc ty -> free_vars ?env mark acc ty) [] tyl
+    in
+    List.map fst acc)
 
 let closed_type mark ty =
-  match free_vars mark ty with
+  match free_vars mark [] ty with
       []           -> ()
   | (v, real) :: _ -> raise (Non_closed (v, real))
 
@@ -2207,20 +2214,25 @@ let unexpanded_diff ~got ~expected =
 (**** Unification ****)
 
 (* Return whether [t0] occurs in [ty]. Objects are also traversed. *)
-let deep_occur t0 ty =
-  with_type_mark begin fun mark ->
-  let rec occur_rec ty =
-    if get_level ty >= get_level t0 && try_mark_node mark ty then begin
-      if eq_type ty t0 then raise Occur;
-      iter_type_expr occur_rec ty
-    end
-  in
-  try
-    occur_rec ty; false
-  with Occur ->
-    true
+let rec deep_occur_rec mark t0 ty =
+  if get_level ty >= get_level t0 && try_mark_node mark ty then begin
+    if eq_type ty t0 then raise Occur;
+    iter_type_expr (deep_occur_rec mark t0) ty
   end
 
+let deep_occur t0 ty =
+  try
+    with_type_mark (fun mark -> deep_occur_rec mark t0 ty);
+    false
+  with
+  | Occur -> true
+
+let deep_occur_list t0 tyl =
+  try
+    with_type_mark (fun mark -> List.iter (deep_occur_rec mark t0) tyl);
+    false
+  with
+  | Occur -> true
 
 (* A local constraint can be added only if the rhs
    of the constraint does not contain any Tvars.
@@ -4789,7 +4801,7 @@ let rec build_subtype env (visited : transient_expr list)
           (* Fix PR#4505: do not set ty to Tvar when it appears in tl1,
              as this occurrence might break the occur check.
              XXX not clear whether this correct anyway... *)
-          if List.exists (deep_occur ty) tl1 then raise Not_found;
+          if deep_occur_list ty tl1 then raise Not_found;
           set_type_desc ty (Tvar None);
           let t'' = newvar () in
           let loops = (get_id ty, t'') :: loops in
@@ -5374,7 +5386,7 @@ let rec normalize_type_rec mark ty =
         begin match !nm with
         | None -> ()
         | Some (n, v :: l) ->
-            if deep_occur ty (newgenty (Ttuple (List.map (fun t -> None, t) l)))
+            if deep_occur_list ty l
             then
               (* The abbreviation may be hiding something, so remove it *)
               set_name nm None

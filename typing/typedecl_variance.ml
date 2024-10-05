@@ -174,8 +174,7 @@ let compute_variance_type env ~check (required, loc) decl tyl =
                                                         (c,n,i)))))
       params required;
     (* Check propagation from constrained parameters *)
-    let args = Btype.newgenty (Ttuple (List.map (fun t -> None, t) params)) in
-    let fvl = Ctype.free_variables args in
+    let fvl = Ctype.free_variables_list params in
     let fvl =
       List.filter (fun v -> not (List.exists (eq_type v) params)) fvl in
     (* If there are no extra variables there is nothing to do *)

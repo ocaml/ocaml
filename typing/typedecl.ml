@@ -1247,10 +1247,7 @@ let transl_extension_constructor ~scope env type_path type_params
         end;
         (* Remove "_" names from parameters used in the constructor *)
         if not cdescr.cstr_generalized then begin
-          let vars =
-            Ctype.free_variables
-              (Btype.newgenty (Ttuple (List.map (fun t -> None, t) args)))
-          in
+          let vars = Ctype.free_variables_list args in
           List.iter
             (fun ty ->
               if get_desc ty = Tvar (Some "_")
