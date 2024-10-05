@@ -134,6 +134,9 @@ ___________
   runtime assertions.
   (Antonin Décimo, review by Miod Vallat, Gabriel Scherer, and David Allsopp)
 
+- #13529: Do not write to event ring after going out of stw participant set.
+  (KC Sivaramakrishnan, review by Sadiq Jaffer)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously
