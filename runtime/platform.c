@@ -103,6 +103,24 @@ void caml_plat_mutex_free(caml_plat_mutex* m)
   check_err("mutex_free", pthread_mutex_destroy(m));
 }
 
+CAMLexport void caml_plat_mutex_reinit(caml_plat_mutex *m)
+{
+#ifdef DEBUG
+  /* The following logic is needed to let caml_plat_assert_all_locks_unlocked()
+     behave correctly in child processes after a fork operation. */
+  if (caml_plat_try_lock(m)) {
+    /* lock was not held at fork time */
+    caml_plat_unlock(m);
+  } else {
+    /* lock was held at fork time, parent process still holds it, but we
+       don't and need to fix lock count */
+    DEBUG_UNLOCK(m);
+  }
+#endif
+  caml_plat_mutex_init(m);
+}
+
+/* Condition variables */
 static void caml_plat_cond_init_aux(caml_plat_cond *cond)
 {
   pthread_condattr_t attr;
@@ -115,7 +133,6 @@ static void caml_plat_cond_init_aux(caml_plat_cond *cond)
   pthread_cond_init(cond, &attr);
 }
 
-/* Condition variables */
 void caml_plat_cond_init(caml_plat_cond* cond)
 {
   caml_plat_cond_init_aux(cond);

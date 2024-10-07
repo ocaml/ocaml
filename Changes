@@ -57,6 +57,12 @@ ___________
 - #12789: Restore caml_unregister_frametable from OCaml 4
   (Frédéric Recoules, review by Gabriel Scherer)
 
+- #12964: Reintroduce "memory cleanup upon exit" mode. The cleanup will
+  however be incomplete if not all domains have been joined when the main
+  domain terminates.
+  (Miod Vallat, review by KC Sivaramakrishnan, feedback from Nick Barnes
+   and Gabriel Scherer)
+
 - #13003: new, more consistent names for array-creation C functions
   (Gabriel Scherer, review by Olivier Nicole)
 

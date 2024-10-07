@@ -167,7 +167,7 @@ gc_phase_t caml_gc_phase;
    We know of two situations in the runtime that could run in parallel
    with a phase update, and cannot safely access the gc phase:
 
-   - The domain_terminate logic runs after the thread has un-registered
+   - The caml_domain_terminate logic runs after the thread has un-registered
      itself as a STW participant, so it may race with a STW section.
 
    - Opportunistic collections may happen while a domain is waiting on
@@ -459,7 +459,8 @@ void caml_orphan_finalisers (caml_domain_state* domain_state)
     atomic_fetch_add_verify_ge0(&num_domains_orphaning_finalisers, -1);
   }
 
-  /* [caml_orphan_finalisers] is called in a while loop in [domain_terminate].
+  /* [caml_orphan_finalisers] is called in a while loop in
+     [caml_domain_terminate].
      We take care to decrement the [num_domains_to_final_update*] counters only
      if we have not already decremented it for the current cycle. */
   if(!f->updated_first) {
@@ -2142,9 +2143,4 @@ void caml_teardown_major_gc(void) {
   caml_stat_free(d->mark_stack->stack);
   caml_stat_free(d->mark_stack);
   d->mark_stack = NULL;
-}
-
-void caml_finalise_heap (void)
-{
-  return;
 }
