@@ -680,10 +680,16 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   CAML_EV_COUNTER(EV_C_MINOR_ALLOCATED, minor_allocated_bytes);
 
   CAML_EV_END(EV_MINOR);
-  caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live",
-               domain->id,
-               100.0 * (double)st.live_bytes / (double)minor_allocated_bytes,
-               (unsigned)(minor_allocated_bytes + 512)/1024);
+  if (minor_allocated_bytes == 0)
+    caml_gc_log ("Minor collection of domain %d completed:"
+                 " no minor bytes allocated",
+                 domain->id);
+  else
+    caml_gc_log ("Minor collection of domain %d completed:"
+                 " %2.0f%% of %u KB live",
+                 domain->id,
+                 100.0 * (double)st.live_bytes / (double)minor_allocated_bytes,
+                 (unsigned)(minor_allocated_bytes + 512)/1024);
 
   /* leave the barrier */
   if( participating_count > 1 ) {
