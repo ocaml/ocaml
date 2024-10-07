@@ -40,6 +40,12 @@ Working version
 - #13529: Do not write to event ring after going out of stw participant set.
   (KC Sivaramakrishnan, review by Sadiq Jaffer)
 
+- #12964: Reintroduce "memory cleanup upon exit" mode. The cleanup will
+  however be incomplete if not all domains have been joined when the main
+  domain terminates.
+  (Miod Vallat, review by KC Sivaramakrishnan, feedback from Nick Barnes
+   and Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 ### Standard library:

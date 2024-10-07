@@ -480,7 +480,7 @@ static void caml_thread_reinitialize(void)
   for (struct channel *chan = caml_all_opened_channels;
        chan != NULL;
        chan = chan->next) {
-    caml_plat_mutex_init(&chan->mutex);
+    caml_plat_mutex_reinit(&chan->mutex);
   }
 }
 
@@ -729,7 +729,10 @@ static st_retcode create_tick_thread(void)
   pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
 #endif
 
-  if (err != 0) return err;
+  if (err != 0) {
+    caml_stat_free(tick_thread_args);
+    return err;
+  }
 
   Tick_thread_running = 1;
   return 0;
