@@ -36,6 +36,10 @@ OCaml 5.2 maintenance version
   from a DLL
   (Xavier Leroy, review by Miod Vallat)
 
+- #13502: Fix misindexing related to `Gc.finalise_last` that could prevent
+  finalisers from being run.
+  (Nick Roberts, review by Mark Shinwell)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 

@@ -262,7 +262,7 @@ static void generic_final_minor_update
     for (i = final->old; i < final->young; i++) {
       CAMLassert (Is_block (final->table[i].val));
       CAMLassert (Tag_val (final->table[i].val) != Forward_tag);
-      if (Is_young(final->table[j].val) &&
+      if (Is_young(final->table[i].val) &&
           caml_get_header_val(final->table[i].val) != 0) {
         /** dead */
         fi->todo_tail->item[k] = final->table[i];
