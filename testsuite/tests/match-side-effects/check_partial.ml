@@ -29,9 +29,7 @@ type _ t = Int : int -> int t | True : bool t | False : bool t
   (lazy_total/0 =
      (function param/0 : int
        (let (*match*/0 =o (field_mut 0 (field_imm 0 param/0)))
-         (switch* (field_imm 1 param/0)
-          case int 0: 0
-          case int 1:
+         (if (field_imm 1 param/0)
            (let
              (*match*/1 =
                 (let (tag/0 =a (caml_obj_tag *match*/0))
@@ -40,7 +38,8 @@ type _ t = Int : int -> int t | True : bool t | False : bool t
                       (apply (field_imm 1 (global CamlinternalLazy!))
                         (opaque *match*/0))
                       *match*/0))))
-             12)))))
+             12)
+           0))))
   (apply (field_mut 1 (global Toploop!)) "lazy_total" lazy_total/0))
 val lazy_total : unit lazy_t ref * bool t -> int = <fun>
 |}];;
@@ -58,9 +57,7 @@ let lazy_needs_partial : _ * bool t ref -> int = function
          (let
            (*match*/2 =a (field_imm 0 param/1)
             *match*/3 =o (field_mut 0 (field_imm 1 param/1)))
-           (switch* *match*/3
-            case int 0: 0
-            case int 1:
+           (if *match*/3
              (let
                (*match*/4 =
                   (let (tag/1 =a (caml_obj_tag *match*/2))
@@ -71,7 +68,8 @@ let lazy_needs_partial : _ * bool t ref -> int = function
                         *match*/2)))
                 *match*/5 =o (field_mut 0 (field_imm 1 param/1)))
                (if (isint_variant *match*/5) (if *match*/5 12 (exit 3))
-                 (exit 3)))))
+                 (exit 3)))
+             0))
         with (3)
          (raise (makeblock 0 (global Match_failure/0!) [0: "" 1 49])))))
   (apply (field_mut 1 (global Toploop!)) "lazy_needs_partial"
