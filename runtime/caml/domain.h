@@ -23,6 +23,8 @@ extern "C" {
 
 #ifdef CAML_INTERNALS
 
+#include <stdbool.h>
+
 #include "camlatomic.h"
 #include "config.h"
 #include "mlvalues.h"
@@ -117,6 +119,7 @@ int caml_domain_is_in_stw(void);
 
 int caml_domain_terminating(caml_domain_state *);
 int caml_domain_is_terminating(void);
+void caml_domain_terminate(bool last);
 
 int caml_try_run_on_all_domains_with_spin_work(
   int sync,
@@ -233,6 +236,17 @@ void caml_global_barrier_release_as_final(barrier_status status);
          ((CAML_GENSYM(alone) ? (void)0 :                               \
            caml_global_barrier_release_as_final(CAML_GENSYM(b))),       \
           CAML_GENSYM(continue) = 0))
+
+/*
+ * Termination helpers.
+ */
+
+/* Force all other domains to stop their operation. */
+void caml_stop_all_domains(void);
+
+/* Try and release all synchronisation resources set up by
+   caml_init_domains(). Returns whether all resources could be released. */
+bool caml_free_domains(void);
 
 #endif /* CAML_INTERNALS */
 

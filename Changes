@@ -40,6 +40,12 @@ Working version
 - #13529: Do not write to event ring after going out of stw participant set.
   (KC Sivaramakrishnan, review by Sadiq Jaffer)
 
+- #12964: Reintroduce "memory cleanup upon exit" mode. The cleanup will
+  however be incomplete if not all domains have been joined when the main
+  domain terminates.
+  (Miod Vallat, review by KC Sivaramakrishnan, feedback from Nick Barnes
+   and Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 ### Standard library:
@@ -1406,6 +1412,10 @@ OCaml 5.2.0 (13 May 2024)
   (Antonin Décimo, review by Miod Vallat and Sébastien Hinderer)
 
 ### Bug fixes:
+
+- #13502: Fix misindexing related to `Gc.finalise_last` that could prevent
+  finalisers from being run.
+  (Nick Roberts, review by Mark Shinwell)
 
 - #10652, #12720: fix evaluation order in presence of optional arguments
   (Jacques Garrigue, report by Leo White, review by Vincent Laviron)

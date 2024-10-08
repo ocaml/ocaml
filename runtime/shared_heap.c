@@ -148,6 +148,7 @@ static int move_all_pools(pool** src, _Atomic(pool*)* dst,
 
 void caml_teardown_shared_heap(struct caml_heap_state* heap) {
   int released = 0, released_large = 0;
+
   caml_plat_lock_blocking(&pool_freelist.lock);
   for (int i = 0; i < NUM_SIZECLASSES; i++) {
     released +=
@@ -289,8 +290,9 @@ Caml_inline void pool_initialize(pool* r,
 CAMLno_tsan_for_perf
 static intnat pool_sweep(struct caml_heap_state* local,
                          pool**,
-                         sizeclass sz ,
+                         sizeclass sz,
                          int release_to_global_pool);
+static void pool_finalise(struct caml_heap_state* local, pool**, sizeclass sz);
 
 /* Adopt pool from the pool_freelist avail and full pools
    to satisfy an allocation */
@@ -567,6 +569,24 @@ static intnat large_alloc_sweep(struct caml_heap_state* local) {
   return Whsize_hd(hd);
 }
 
+static void large_alloc_finalise(struct caml_heap_state* local) {
+  value* p;
+  header_t hd;
+  large_alloc* a;
+
+  while ((a = local->unswept_large) != 0) {
+    local->unswept_large = a->next;
+
+    p = (value*)((char*)a + LARGE_ALLOC_HEADER_SZ);
+    hd = Hd_hp(p);
+    if (Tag_hd (hd) == Custom_tag) {
+      void (*final_fun)(value) = Custom_ops_val(Val_hp(p))->finalize;
+      if (final_fun != NULL) final_fun(Val_hp(p));
+    }
+    free(a);
+  }
+}
+
 static void verify_swept(struct caml_heap_state*);
 
 intnat caml_sweep(struct caml_heap_state* local, intnat work) {
@@ -601,6 +621,51 @@ intnat caml_sweep(struct caml_heap_state* local, intnat work) {
     verify_swept(local);
   }
   return work;
+}
+
+/* Purging */
+
+static void pool_finalise(struct caml_heap_state* local, pool** plist,
+                         sizeclass sz) {
+  pool *a;
+  while ((a = *plist) != 0) {
+    *plist = a->next;
+
+    header_t* p = POOL_FIRST_BLOCK(a, sz);
+    header_t* end = POOL_END(a);
+    mlsize_t wh = wsize_sizeclass[sz];
+
+    while (p + wh <= end) {
+      header_t hd = (header_t)atomic_load_relaxed((atomic_uintnat*)p);
+      if (hd != 0) {
+        CAMLassert(Whsize_hd(hd) <= wh);
+        if (Tag_hd (hd) == Custom_tag) {
+          void (*final_fun)(value) = Custom_ops_val(Val_hp(p))->finalize;
+          if (final_fun != NULL) final_fun(Val_hp(p));
+        }
+        atomic_store_relaxed((atomic_uintnat*)p, 0);
+        p[1] = (value)0;
+      }
+      p += wh;
+    }
+
+    pool_release(local, a, sz);
+  }
+}
+
+void caml_finalise_heap(void) {
+  struct caml_heap_state *local = Caml_state->shared_heap;
+  sizeclass sz;
+
+  /* local pools */
+  for (sz = 0; sz < NUM_SIZECLASSES; sz++) {
+    pool_finalise(local, &local->unswept_avail_pools[sz], sz);
+    pool_finalise(local, &local->unswept_full_pools[sz], sz);
+  }
+
+  /* global pools */
+  if (local->unswept_large)
+    large_alloc_finalise(local);
 }
 
 uintnat caml_heap_size(struct caml_heap_state* local) {
@@ -1453,4 +1518,18 @@ void caml_cycle_heap(struct caml_heap_state* local) {
                 received_p, received_l);
 
   local->next_to_sweep = 0;
+}
+
+void caml_finalise_freelist(void) {
+  int freed_large = 0;
+
+  caml_plat_lock_blocking(&pool_freelist.lock);
+  while (pool_freelist.global_large) {
+    large_alloc* a = pool_freelist.global_large;
+    pool_freelist.global_large = a->next;
+    free(a);
+    freed_large++;
+  }
+  caml_plat_unlock(&pool_freelist.lock);
+  caml_gc_log("Finalise freelist. Freed %d large", freed_large);
 }
