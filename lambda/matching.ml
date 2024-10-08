@@ -2792,12 +2792,12 @@ let rec last def = function
   | [ (x, _) ] -> x
   | _ :: rem -> last def rem
 
-let get_edges low high l =
+let get_edges ~low ~high l =
   match l with
   | [] -> (low, high)
   | (x, _) :: _ -> (x, last high l)
 
-let as_interval_canfail fail low high l =
+let as_interval_canfail fail ~low ~high l =
   let store = StoreExp.mk_store () in
   let do_store _tag act =
     let i = store.act_store () act in
@@ -2901,15 +2901,15 @@ let sort_int_lambda_list l =
         0)
     l
 
-let as_interval fail low high l =
+let as_interval fail ?(low = min_int) ?(high = max_int) l =
   let l = sort_int_lambda_list l in
-  ( get_edges low high l,
+  ( get_edges ~low ~high l,
     match fail with
     | None -> as_interval_nofail l
-    | Some act -> as_interval_canfail act low high l )
+    | Some act -> as_interval_canfail act ~low ~high l )
 
-let call_switcher loc fail arg low high int_lambda_list =
-  let edges, (cases, actions) = as_interval fail low high int_lambda_list in
+let call_switcher loc fail arg ?low ?high int_lambda_list =
+  let edges, (cases, actions) = as_interval fail ?low ?high int_lambda_list in
   Switcher.zyva loc edges arg cases actions
 
 let rec list_as_pat = function
@@ -3116,7 +3116,7 @@ let combine_constant loc arg cst partial ctx def
               | _ -> assert false)
             const_lambda_list
         in
-        call_switcher loc fail arg min_int max_int int_lambda_list
+        call_switcher loc fail arg int_lambda_list
     | Const_char _ ->
         let int_lambda_list =
           List.map
@@ -3125,7 +3125,7 @@ let combine_constant loc arg cst partial ctx def
               | _ -> assert false)
             const_lambda_list
         in
-        call_switcher loc fail arg 0 255 int_lambda_list
+        call_switcher loc fail arg ~low:0 ~high:255 int_lambda_list
     | Const_string _ ->
         (* Note as the bytecode compiler may resort to dichotomic search,
    the clauses of stringswitch  are sorted with duplicates removed.
@@ -3300,7 +3300,7 @@ let combine_constructor loc arg pat_env cstr partial ctx def
                    (typically the constant cases are dense, so
                    call_switcher will generate a Lswitch, still one
                    instruction.) *)
-                call_switcher loc fail_opt arg 0 (n - 1) consts
+                call_switcher loc fail_opt arg ~low:0 ~high:(n - 1) consts
             | n, _, _, _ -> (
                 let act0 =
                   (* = Some act when all non-const constructors match to act *)
@@ -3331,7 +3331,8 @@ let combine_constructor loc arg pat_env cstr partial ctx def
                        *)
                     Lifthenelse
                       ( Lprim (Pisint, [ arg ], loc),
-                        call_switcher loc fail_opt arg 0 (n - 1) consts,
+                        call_switcher loc fail_opt arg
+                          ~low:0 ~high:(n - 1) consts,
                         act )
                 | None ->
                     (* In the general case, emit a switch. *)
@@ -3352,11 +3353,11 @@ let combine_constructor loc arg pat_env cstr partial ctx def
       (lambda1, Jumps.union local_jumps total1)
 
 let make_test_sequence_variant_constant fail arg int_lambda_list =
-  let _, (cases, actions) = as_interval fail min_int max_int int_lambda_list in
+  let _, (cases, actions) = as_interval fail int_lambda_list in
   Switcher.test_sequence arg cases actions
 
 let call_switcher_variant_constant loc fail arg int_lambda_list =
-  call_switcher loc fail arg min_int max_int int_lambda_list
+  call_switcher loc fail arg int_lambda_list
 
 let call_switcher_variant_constr loc fail arg int_lambda_list =
   let v = Ident.create_local "variant" in
@@ -3365,7 +3366,7 @@ let call_switcher_variant_constr loc fail arg int_lambda_list =
       Pgenval,
       v,
       Lprim (Pfield (0, Pointer, Immutable), [ arg ], loc),
-      call_switcher loc fail (Lvar v) min_int max_int int_lambda_list )
+      call_switcher loc fail (Lvar v) int_lambda_list )
 
 let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
     =
@@ -3437,7 +3438,7 @@ let combine_array loc arg kind partial ctx def (len_lambda_list, total1, _pats)
   let lambda1 =
     let newvar = Ident.create_local "len" in
     let switch =
-      call_switcher loc fail (Lvar newvar) 0 max_int len_lambda_list
+      call_switcher loc fail (Lvar newvar) ~low:0 len_lambda_list
     in
     bind Alias newvar (Lprim (Parraylength kind, [ arg ], loc)) switch
   in
