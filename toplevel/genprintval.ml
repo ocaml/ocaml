@@ -22,7 +22,6 @@ open Path
 open Types
 open Data_types
 open Outcometree
-module Out_name = Out_type.Out_name
 
 module type OBJ =
   sig
@@ -85,6 +84,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           with _exn -> 0
       end)
 
+    let tree_of_name (name : string) =
+      Oide_ident (Out_type.Out_name.create name)
 
     (* Given an exception value, we cannot recover its type,
        hence we cannot print its arguments in general.
@@ -104,7 +105,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           else if O.tag arg = Obj.double_tag then
             list := Oval_float (O.obj arg : float) :: !list
           else
-            list := Oval_constr (Oide_ident (Out_name.create "_"), []) :: !list
+            list := Oval_constr (tree_of_name "_", []) :: !list
         done;
         List.rev !list
       end
@@ -112,8 +113,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     let outval_of_untyped_exception bucket =
       if O.tag bucket <> 0 then
-        let name = Out_name.create (O.obj (O.field bucket 0) : string) in
-        Oval_constr (Oide_ident name, [])
+        let name = (O.obj (O.field bucket 0) : string)in
+        Oval_constr (tree_of_name name, [])
       else
       let name = (O.obj(O.field(O.field bucket 0) 0) : string) in
       let args =
@@ -124,7 +125,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         && O.tag(O.field bucket 1) = 0
         then outval_of_untyped_exception_args (O.field bucket 1) 0
         else outval_of_untyped_exception_args bucket 1 in
-      Oval_constr (Oide_ident (Out_name.create name), args)
+      Oval_constr (tree_of_name name, args)
 
     (* The user-defined printers. Also used for some builtin types. *)
 
@@ -208,21 +209,21 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
     let tree_of_qualified find env ty_path name =
       match ty_path with
       | Pident _ ->
-          Oide_ident name
+          tree_of_name name
       | Pdot(p, _s) ->
           if
-            match get_desc (find (Lident (Out_name.print name)) env) with
+            match get_desc (find (Lident name) env) with
             | Tconstr(ty_path', _, _) -> Path.same ty_path ty_path'
             | _ -> false
             | exception Not_found -> false
-          then Oide_ident name
-          else Oide_dot (Out_type.tree_of_path p, Out_name.print name)
+          then tree_of_name name
+          else Oide_dot (Out_type.tree_of_path p, name)
       | Papply _ ->
           Out_type.tree_of_path ty_path
       | Pextra_ty _ ->
           (* These can only appear directly inside of the associated
              constructor so we can just drop the prefix *)
-          Oide_ident name
+          tree_of_name name
 
     let tree_of_constr =
       tree_of_qualified
@@ -470,8 +471,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                   env path type_params ty_list
                   lbls 0 obj unbx
               in
-              Oval_constr(tree_of_constr env path
-                            (Out_name.create (Ident.name cd_id)),
+              Oval_constr(tree_of_constr env path (Ident.name cd_id),
                           [ r ])
         end
 
@@ -501,8 +501,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               (* PR#5722: print full module path only
                  for first record field *)
               let lid =
-                if pos = 0 then tree_of_label env path (Out_name.create name)
-                else Oide_ident (Out_name.create name)
+                if pos = 0 then tree_of_label env path name
+                else tree_of_name name
               and v =
                 if unboxed then
                   tree_of_val (depth - 1) obj ty_arg
@@ -556,7 +556,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
       and tree_of_constr_with_args
              tree_of_cstr cstr_name inlined start depth obj ty_args unboxed =
-        let lid = tree_of_cstr (Out_name.create cstr_name) in
+        let lid = tree_of_cstr cstr_name in
         let args =
           if inlined || unboxed then
             match ty_args with
@@ -602,7 +602,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         in
         let args = instantiate_types env type_params ty_list cstr.cstr_args in
         tree_of_constr_with_args
-           (fun x -> Oide_ident x) name (cstr.cstr_inlined <> None)
+           tree_of_name name (cstr.cstr_inlined <> None)
            1 depth bucket
            args false
       with Not_found | EVP.Error ->
