@@ -172,7 +172,7 @@ struct core
     short number;
     short accessing_symbol;
     short nitems;
-    short items[1];
+    short items[/* nitems */]; /* flexible array member */
 };
 
 
@@ -184,7 +184,7 @@ struct shifts
     struct shifts *next;
     short number;
     short nshifts;
-    short shift[1];
+    short shift[/* nshifts */]; /* flexible array member */
 };
 
 
@@ -196,7 +196,7 @@ struct reductions
     struct reductions *next;
     short number;
     short nreds;
-    short rules[1];
+    short rules[/* nreds */]; /* flexible array member */
 };
 
 

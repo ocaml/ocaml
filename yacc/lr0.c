@@ -321,7 +321,7 @@ new_state(int symbol)
     iend = kernel_end[symbol];
     n = iend - isp1;
 
-    p = (core *) allocate((unsigned) (sizeof(core) + (n - 1) * sizeof(short)));
+    p = (core *) allocate((unsigned) (sizeof(core) + n * sizeof(short)));
     p->accessing_symbol = symbol;
     p->number = nstates;
     p->nitems = n;
@@ -423,8 +423,8 @@ void save_shifts(void)
     short *sp2;
     short *send;
 
-    p = (shifts *) allocate((unsigned) (sizeof(shifts) +
-                        (nshifts - 1) * sizeof(short)));
+    p = (shifts *) allocate(
+          (unsigned) (sizeof(shifts) + nshifts * sizeof(short)));
 
     p->number = this_state->number;
     p->nshifts = nshifts;
@@ -472,8 +472,8 @@ void save_reductions(void)
 
     if (count)
     {
-        p = (reductions *) allocate((unsigned) (sizeof(reductions) +
-                                        (count - 1) * sizeof(short)));
+        p = (reductions *) allocate(
+              (unsigned) (sizeof(reductions) + count * sizeof(short)));
 
         p->number = this_state->number;
         p->nreds = count;
