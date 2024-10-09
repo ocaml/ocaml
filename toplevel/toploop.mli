@@ -97,10 +97,15 @@ val use_output : formatter -> string -> bool
 val use_silently : formatter -> input -> bool
 val mod_use_input : formatter -> input -> bool
 val use_file : formatter -> string -> bool
+val reload : unit -> bool
+val remember : ('a -> bool) -> 'a -> bool
         (* Read and execute commands from a file.
            [use_input] prints the types and values of the results.
            [use_silently] does not print them.
-           [mod_use_input] wrap the file contents into a module. *)
+           [mod_use_input] wrap the file contents into a module.
+           [reload] rerun one of the above on the last loaded file this session.
+           [remember] saves a successful invocation in the module state.
+        *)
 val eval_module_path: Env.t -> Path.t -> Obj.t
 val eval_value_path: Env.t -> Path.t -> Obj.t
 val eval_extension_path: Env.t -> Path.t -> Obj.t

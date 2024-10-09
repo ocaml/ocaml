@@ -133,7 +133,8 @@ let _ = add_directive "cd" (Directive_string dir_cd)
 let with_error_fmt f x = f (error_fmt ()) x
 
 let dir_load ppf name =
-  action_on_suberror (Topeval.load_file false ppf name)
+  action_on_suberror
+    (Toploop.remember (Topeval.load_file false ppf) name)
 
 let _ = add_directive "load" (Directive_string (with_error_fmt dir_load))
     {
@@ -142,7 +143,8 @@ let _ = add_directive "load" (Directive_string (with_error_fmt dir_load))
     }
 
 let dir_load_rec ppf name =
-  action_on_suberror (Topeval.load_file true ppf name)
+  action_on_suberror
+    (Toploop.remember (Topeval.load_file true ppf) name)
 
 let _ = add_directive "load_rec"
     (Directive_string (with_error_fmt dir_load_rec))
@@ -156,10 +158,16 @@ let load_file = Topeval.load_file false
 (* Load commands from a file *)
 
 let dir_use ppf name =
-  action_on_suberror (Toploop.use_input ppf (Toploop.File name))
-let dir_use_output ppf name = action_on_suberror (Toploop.use_output ppf name)
+  action_on_suberror
+    Toploop.(remember (use_input ppf) (File name))
+
+let dir_use_output ppf name =
+  action_on_suberror
+    Toploop.(remember (use_output ppf) name)
+
 let dir_mod_use ppf name =
-  action_on_suberror (Toploop.mod_use_input ppf (Toploop.File name))
+  action_on_suberror
+    Toploop.(remember (mod_use_input ppf) (File name))
 
 let _ = add_directive "use" (Directive_string (with_error_fmt dir_use))
     {
@@ -181,6 +189,16 @@ let _ = add_directive "mod_use" (Directive_string (with_error_fmt dir_mod_use))
       doc = "Usage is identical to #use but #mod_use \
              wraps the contents in a module.";
     }
+
+(* Reload the last #use*/load* file *)
+
+let dir_reload () = action_on_suberror (Toploop.reload ())
+
+let _ = add_directive "reload" (Directive_none dir_reload)
+  {
+    section = section_run;
+    doc = "Reload the last #use/load invocation.";
+  }
 
 (* Install, remove a printer *)
 
