@@ -43,7 +43,6 @@
 
 # No header for text and META files (would be too obtrusive).
 *.md                     typo.missing-header
-README*                  typo.missing-header
 VERSION                  typo.missing-header
 *.adoc                   typo.missing-header
 api_docgen/*.mld                typo.missing-header
@@ -59,9 +58,7 @@ META.in                  typo.missing-header
 /.github/**              typo.missing-header typo.long-line=may typo.very-long-line=may
 
 /.mailmap                typo.long-line typo.missing-header typo.non-ascii
-/CONTRIBUTING.md         typo.non-ascii=may
-/README.adoc             typo.non-ascii=may
-/README.win32.adoc       typo.non-ascii=may
+*.adoc                   typo.non-ascii=may
 /Changes                 typo.utf8 typo.missing-header
 /release-info/News       typo.utf8 typo.missing-header
 /LICENSE                 typo.very-long-line typo.missing-header
@@ -69,8 +66,6 @@ META.in                  typo.missing-header
 # dra27 too lazy to update check-typo to interpret Cmd-style comments!
 /tools/ci/appveyor/appveyor_build.cmd       typo.very-long-line typo.missing-header typo.non-ascii
 /tools/ci/inria/bootstrap/remove-sinh-primitive.patch typo.prune
-/release-info/howto.md                    typo.missing-header typo.long-line
-/release-info/templates/*.md              typo.missing-header typo.very-long-line=may
 # ignore auto-generated .depend files
 .depend                  typo.prune
 /.depend.menhir          typo.prune

@@ -1,6 +1,6 @@
-## Announcing a production release:
+=== Announcing a production release:
 
-```
+....
 Dear OCaml users,
 
 We have the pleasure of celebrating <event> by announcing the release of
@@ -16,4 +16,4 @@ Happy hacking,
 -- $HUMAN for the OCaml team.
 
 << insert the relevant Changes section >>
-```
+....

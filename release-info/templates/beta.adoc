@@ -1,11 +1,11 @@
+=== Announcing a beta version:
 
-## Announcing a release candidate:
-
-```
+....
 Dear OCaml users,
 
-The release of OCaml version $MAJOR.$MINOR.$BUGFIX is imminent.  We have
-created a release candidate that you can test.
+The release of OCaml $MAJOR.$MINOR.$BUGFIX is approaching. We have created
+a beta version to help you adapt your software to the new features
+ahead of the release.
 
 The source code is available at these addresses:
 
@@ -35,6 +35,4 @@ We want to know about all bugs. Please report them here:
 Happy hacking,
 
 -- $HUMAN for the OCaml team.
-
-<< insert the relevant Changes section >>
-```
+....
