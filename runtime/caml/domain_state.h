@@ -46,7 +46,7 @@ enum {
   CAMLextern CAMLthread_local caml_domain_state* caml_state;
   #define Caml_state_opt caml_state
 #else
-#ifdef __GNUC__
+#if __has_attribute(pure) || defined(__GNUC__)
   __attribute__((pure))
 #endif
   CAMLextern caml_domain_state* caml_get_domain_state(void);
