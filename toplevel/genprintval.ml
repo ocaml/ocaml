@@ -206,34 +206,73 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
        it comes from. Attempt to omit the prefix if the type comes from
        a module that has been opened. *)
 
-    let tree_of_qualified find env ty_path name =
-      match ty_path with
-      | Pident _ ->
-          tree_of_name name
-      | Pdot(p, _s) ->
-          if
-            match get_desc (find (Lident name) env) with
-            | Tconstr(ty_path', _, _) -> Path.same ty_path ty_path'
-            | _ -> false
-            | exception Not_found -> false
-          then tree_of_name name
-          else Oide_dot (Out_type.tree_of_path p, name)
-      | Papply _ ->
-          Out_type.tree_of_path ty_path
-      | Pextra_ty _ ->
-          (* These can only appear directly inside of the associated
-             constructor so we can just drop the prefix *)
-          tree_of_name name
+    let tree_of_qualified lookup_all get_path env ty_path name =
+      (* If [ty_path] is [M.N.t] and [name] is [Foo], we want to find
+         a short name for [M.N.Foo] in the current typing environment.
+         Our strategy is to try [Foo], [N.Foo] and [M.N.Foo] in
+         turn. *)
+
+      (* Start by transforming the path [M.N.t] into the Longident [M.N.Foo]. *)
+      let rec lid_of_path on_last =
+        let lid_non_last lid = lid_of_path Fun.id lid in
+        function
+        | Pident last -> Lident (on_last (Ident.name last))
+        | Pdot (p, last) -> Ldot (lid_non_last p, on_last last)
+        | Papply (f, p) -> Lapply (lid_non_last f, lid_non_last p)
+        | Pextra_ty (p, _) ->
+            (* These can only appear directly inside of the associated
+               constructor so we can just drop the prefix *)
+            lid_of_path on_last p
+      in
+      let lid = lid_of_path (fun _tyname -> name) ty_path in
+
+      (* [candidates exn M.N.Foo] is [Foo; N.Foo; M.N.Foo].
+         @raise [exn] on functor application. *)
+      let candidates apply_exn lid =
+        (* [loop M.N [Foo]] is [[Foo]; [N; Foo]; [M; N; Foo]] *)
+        let rec loop lid suff = match lid with
+          | Lident last -> [suff; (last :: suff)]
+          | Ldot(p, s) -> suff :: loop p (s :: suff)
+          | Lapply _ -> raise apply_exn
+        in
+        loop lid [] (* [[]; [Foo]; [N; Foo]; [M; N; Foo]] *)
+        |> List.filter_map Longident.unflatten
+      in
+
+      (* A shorter name is correct (matches) if one of its possible interpretations
+         (there may be several constructors with the same name at different types in a module)
+         has the same type path as the one we are printing. *)
+      let matches lid =
+        match lookup_all lid env with
+        | Error _ -> false
+        | Ok cstrs ->
+            List.exists (fun (cstr, _) ->
+              Path.same (get_path cstr) ty_path
+            ) cstrs
+      in
+
+      let rec tree_of_lident = function
+        | Lident name -> tree_of_name name
+        | Ldot (lid, name) -> Oide_dot (tree_of_lident lid, name)
+        | Lapply (lid1, lid2) -> Oide_apply (tree_of_lident lid1, tree_of_lident lid2)
+      in
+
+      let exception Functor_application in
+      match List.find matches (candidates Functor_application lid) with
+      | exception (Functor_application | Not_found) ->
+          tree_of_lident lid
+      | best_lid ->
+          tree_of_lident best_lid
 
     let tree_of_constr =
       tree_of_qualified
-        (fun lid env ->
-          (Env.find_constructor_by_name lid env).cstr_res)
+        (Env.lookup_all_constructors ~use:false ~loc:Location.none Env.Positive)
+        Data_types.cstr_res_type_path
 
     and tree_of_label =
       tree_of_qualified
-        (fun lid env ->
-          (Env.find_label_by_name lid env).lbl_res)
+        (Env.lookup_all_labels ~use:false ~loc:Location.none Env.Construct)
+        Data_types.lbl_res_type_path
 
     (* An abstract type *)
 

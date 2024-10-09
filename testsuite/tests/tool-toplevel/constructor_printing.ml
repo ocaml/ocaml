@@ -18,9 +18,8 @@ val it : M.N.t * M.N.t * M.N.t = (M.N.A, M.N.B, M.N.C)
 
 open M
 let it = (N.A, N.B, N.C)
-(* The behavior in this case is known to be suboptimal: #12642. *)
 [%%expect {|
-val it : M.N.t * M.N.t * M.N.t = (M.N.A, M.N.B, M.N.C)
+val it : M.N.t * M.N.t * M.N.t = (N.A, N.B, N.C)
 |}]
 
 open N
