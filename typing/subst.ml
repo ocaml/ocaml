@@ -26,13 +26,18 @@ type type_replacement =
   | Path of Path.t
   | Type_function of { params : type_expr list; body : type_expr }
 
-type t =
+type subst =
   { types: type_replacement Path.Map.t;
     modules: Path.t Path.Map.t;
     modtypes: module_type Path.Map.t;
     for_saving: bool;
     loc: Location.t option;
   }
+
+type 'a s = subst
+type t = [`safe] s
+type local = [`local] s
+exception Module_type_path_substituted_away of Path.t
 
 let identity =
   { types = Path.Map.empty;
@@ -41,6 +46,8 @@ let identity =
     for_saving = false;
     loc = None;
   }
+
+let local x = x
 
 let add_type_path id p s = { s with types = Path.Map.add id (Path p) s.types }
 let add_type id p s = add_type_path (Pident id) p s
@@ -53,6 +60,7 @@ let add_module id p s = add_module_path (Pident id) p s
 
 let add_modtype_path p ty s = { s with modtypes = Path.Map.add p ty s.modtypes }
 let add_modtype id ty s = add_modtype_path (Pident id) ty s
+let add_modtype_id_to_path id p s = add_modtype id (Mty_ident p) s
 
 let for_saving s = { s with for_saving = true }
 
@@ -101,7 +109,7 @@ let modtype_path s path =
       match Path.Map.find path s.modtypes with
       | Mty_ident p -> p
       | Mty_alias _ | Mty_signature _ | Mty_functor _ ->
-         fatal_error "Subst.modtype_path"
+         raise (Module_type_path_substituted_away path)
       | exception Not_found ->
          match path with
          | Pdot(p, n) ->
@@ -832,3 +840,21 @@ let modtype_declaration sc s decl =
 
 let module_declaration scoping s decl =
   Lazy.(decl |> of_module_decl |> module_decl scoping s |> force_module_decl)
+
+module Local = struct
+
+  type error = Fcm_type_substituted_away of Path.t
+
+  let add_modtype_path = add_modtype_path
+  let add_modtype = add_modtype
+
+  let wrap f = match f () with
+    | x -> Ok x
+    | exception Module_type_path_substituted_away p ->
+        Error (Fcm_type_substituted_away p)
+
+  let signature_item sc s comp = wrap (fun () -> signature_item sc s comp)
+  let signature sc s comp = wrap (fun () -> signature sc s comp )
+  let compose s1 s2 = wrap (fun () -> compose s1 s2)
+
+end

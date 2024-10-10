@@ -556,9 +556,8 @@ end = struct
 
   let with_scope f =
     let scope = { saved_desc = [] } in
-    let res = f scope in
-    cleanup scope;
-    res
+    Fun.protect ~finally:(fun () -> cleanup scope) (fun () -> f scope)
+
 end
 
                   (*******************************************)
