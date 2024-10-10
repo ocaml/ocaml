@@ -686,7 +686,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
         let env = Env.add_module scoped_ident Mp_present mty env in
         scoped_ident, transl_type env ~policy ~row_context st
       end in
-    let ident = Ident.create_unscoped name.txt in
+    let ident = Ident.Unscoped.create name.txt in
     let ctyp_type =
         Option.value ~default:cty.ctyp_type
           (instance_funct ~p_out:(Pident (Ident.of_unscoped ident))

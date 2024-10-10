@@ -124,13 +124,13 @@ let subst id_map p =
   try aux p with Unchanged -> p
 
 let check_for_unbound_unscoped_idents idl p =
-  let exception Escape of Ident.unscoped in
+  let exception Escape of Ident.Unscoped.t in
   let rec aux = function
       Pident id ->
         begin match Ident.get_unscoped id with
         | None -> ()
         | Some us ->
-            if Ident.UnscopedSet.exists (Ident.same_unscoped us) idl
+            if Ident.Unscoped.Set.exists (Ident.Unscoped.same us) idl
             then ()
             else raise (Escape us)
         end

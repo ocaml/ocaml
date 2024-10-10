@@ -3534,7 +3534,8 @@ function_type:
       domain = extra_rhs(tuple_type)
       MINUSGREATER
       codomain = function_type
-        { Ptyp_arrow(label, domain, codomain) })
+        { Ptyp_arrow(label, domain, codomain) }
+    )
     { $1 }
   | label = arg_label_no_opt
     LPAREN

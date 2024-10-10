@@ -1093,7 +1093,7 @@ let rec tree_of_typexp mode ty =
         in
         let ty = wrap_env fenv (tree_of_typexp mode) ty in
         let fl = tree_of_pack_fields mode fl in
-        Otyp_functor (lab, Oide_ident { printed_name = Ident.name_unscoped id },
+        Otyp_functor (lab, Oide_ident { printed_name = Ident.Unscoped.name id },
                       (tree_of_path (Some Module_type) p, fl), ty)
     | Ttuple tyl ->
         Otyp_tuple (tree_of_typlist mode tyl)

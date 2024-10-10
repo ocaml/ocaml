@@ -53,7 +53,7 @@ let f (x : (module M : T) -> ((M.t * ((module N : T) -> 'a)) as 'a)) =
 Line 2, characters 3-4:
 2 |   (x : ((module O : T) -> O.t * 'b) as 'b)
        ^
-Error: This expression has type
+Error: The value "x" has type
          "(module O : T) -> (O.t * ((module N : T) -> 'a) as 'a)"
        but an expression was expected of type
          "(module O : T) -> O.t * 'b as 'b"

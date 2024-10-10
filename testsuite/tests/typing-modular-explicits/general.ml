@@ -32,7 +32,14 @@ val f : Int.t -> Bool.t -> Int.t * Bool.t = <fun>
 let f2 x y = (id (module Int : Typ) x, id (module Bool : Typ) y)
 
 [%%expect{|
-val f2 : Int.t -> Bool.t -> Int.t * Bool.t = <fun>
+Line 1, characters 14-16:
+1 | let f2 x y = (id (module Int : Typ) x, id (module Bool : Typ) y)
+                  ^^
+Error: This expression has type "(module T : Typ) -> T.t -> T.t"
+       but an expression was expected of type "(module Typ) -> 'a"
+       The module "T" would escape its scope
+  Attempted to remove dependency because
+  could not extract path from module argument.
 |}]
 
 let merge (module T : Typ) x y = (id (module T) x, id (module T) y)
@@ -92,7 +99,7 @@ let invalid_arg2 = f 3 4 (module Int)
 Line 1, characters 23-24:
 1 | let invalid_arg2 = f 3 4 (module Int)
                            ^
-Error: This expression has type "int" but an expression was expected of type
+Error: The constant "4" has type "int" but an expression was expected of type
          "(module Typ)"
 |}]
 
@@ -122,7 +129,7 @@ let invalid_arg4 =
 Line 3, characters 6-7:
 3 |   f 3 m 4
           ^
-Error: This expression has type "(module Typ with type t = int)"
+Error: The value "m" has type "(module Typ with type t = int)"
        but an expression was expected of type "(module Typ)"
 |}]
 
@@ -169,7 +176,6 @@ val apply_opt : (?opt:int -> (module M : Typ) -> M.t) -> Int.t = <fun>
 
 let build_pair (module M : Typ) ~x ~y : M.t * M.t = (x, y)
 
-(* This shouldn't raise a principality warning *)
 let principality_warning = build_pair (module Int) ~y:3 ~x:1
 
 [%%expect{|
@@ -182,13 +188,46 @@ let foo f a =
   f ~a (fun x -> x)
 
 [%%expect{|
+Line 3, characters 7-19:
+3 |   f ~a (fun x -> x)
+           ^^^^^^^^^^^^
+Error: This expression should not be a function, the expected type is
+       "(module Typ)"
+|}]
+
+let foo2 f a =
+  let m = (module Int : Typ) in
+  let _ = (f ~a : (module M : Typ) -> M.t) in
+  f ~a m
+
+[%%expect{|
+Line 4, characters 2-6:
+4 |   f ~a m
+      ^^^^
+Error: This expression has type "(module M : Typ) -> M.t"
+       but an expression was expected of type "(module Typ) -> 'a"
+       The module "M" would escape its scope
+  Attempted to remove dependency because
+  could not extract path from module argument.
+|}]
+
+let foo3 f a =
+  let _ = (f ~a : (module M : Typ) -> M.t) in
+  f ~a (module Int)
+
+[%%expect{|
+Line 3, characters 2-6:
+3 |   f ~a (module Int)
+      ^^^^
+Error: This expression has type "(module M : Typ) -> M.t"
+       but an expression was expected of type "(module Typ) -> 'a"
+       The module "M" would escape its scope
+  Attempted to remove dependency because
+  could not extract path from module argument.
 |}]
 
 (** From here we test possible expressions for the module argument. *)
 
-(* Typing rules make sense only if module argument are
-   a path (module names, projections and applications). This constraint could be
-  relaxed  *)
 let x_from_struct = id (module struct type t = int end) 3
 
 [%%expect{|
@@ -336,7 +375,7 @@ let try_coerce (f : (module T : Typ) -> T.t -> T.t) =
 Line 2, characters 3-4:
 2 |   (f : (module A : Add) -> A.t -> A.t)
        ^
-Error: This expression has type "(module T : Typ) -> T.t -> T.t"
+Error: The value "f" has type "(module T : Typ) -> T.t -> T.t"
        but an expression was expected of type "(module A : Add) -> A.t -> A.t"
        Modules do not match: Typ is not included in Add
        The value "add" is required but not provided
@@ -403,7 +442,7 @@ let try_coerce4 (f : (module A : Add) -> A.t -> A.t) =
 Line 2, characters 5-6:
 2 |     (f : (module A : Add2) -> A.t -> A.t)
          ^
-Error: This expression has type "(module A : Add) -> A.t -> A.t"
+Error: The value "f" has type "(module A : Add) -> A.t -> A.t"
        but an expression was expected of type "(module A : Add2) -> A.t -> A.t"
        Modules do not match: Add is not included in Add2
        The type "a" is required but not provided
@@ -548,8 +587,7 @@ val r : '_weak1 option ref = {contents = None}
 Line 6, characters 12-13:
 6 |   r := Some x
                 ^
-Error: This expression has type "T.t" but an expression was expected of type
-         "'weak1"
+Error: The value "x" has type "T.t" but an expression was expected of type "'weak1"
        The type constructor "T.t" would escape its scope
 |}]
 
@@ -560,7 +598,7 @@ let f x (module A : Add) (y : A.t) = A.add x y
 Line 1, characters 43-44:
 1 | let f x (module A : Add) (y : A.t) = A.add x y
                                                ^
-Error: This expression has type "'a" but an expression was expected of type "A.t"
+Error: The value "x" has type "'a" but an expression was expected of type "A.t"
        The type constructor "A.t" would escape its scope
 |}]
 
@@ -570,7 +608,7 @@ let f (x : (module T : Typ) -> _) : (module T : Typ) -> T.t = x
 Line 1, characters 62-63:
 1 | let f (x : (module T : Typ) -> _) : (module T : Typ) -> T.t = x
                                                                   ^
-Error: This expression has type "(module T : Typ) -> 'a"
+Error: The value "x" has type "(module T : Typ) -> 'a"
        but an expression was expected of type "(module T : Typ) -> T.t"
        The module "T" would escape its scope
 |}]
@@ -796,7 +834,7 @@ module type S = sig type t = private int val f : t end
 Line 6, characters 50-53:
 6 | let check_escape : _ -> _ = fun (module M : S) -> M.f
                                                       ^^^
-Error: This expression has type "M.t" but an expression was expected of type "'a"
+Error: The value "M.f" has type "M.t" but an expression was expected of type "'a"
        The type constructor "M.t" would escape its scope
 |}]
 

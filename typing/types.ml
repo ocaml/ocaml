@@ -45,7 +45,7 @@ and type_desc =
   | Tunivar of string option
   | Tpoly of type_expr * type_expr list
   | Tpackage of Path.t * (Longident.t * type_expr) list
-  | Tfunctor of arg_label * Ident.unscoped
+  | Tfunctor of arg_label * Ident.Unscoped.t
                 * (Path.t * (Longident.t * type_expr) list) * type_expr
 
 and row_desc =
@@ -450,7 +450,7 @@ type change =
   | Ckind of [`var] field_kind_gen
   | Ccommu of [`var] commutable_gen
   | Cuniv of type_expr option ref * type_expr option
-  | CIdent of Ident.change
+  | Cuident of Ident.Unscoped.change
 
 type changes =
     Change of change * changes ref
@@ -465,7 +465,7 @@ let log_change ch =
   trail := r'
 
 let () =
-    Ident.change_log := (fun change -> log_change (CIdent change))
+    Ident.Unscoped.change_log := (fun change -> log_change (Cuident change))
 
 (* constructor and accessors for [field_kind] *)
 
@@ -753,7 +753,7 @@ let undo_change = function
   | Ckind  (FKvar r) -> r.field_kind <- FKprivate
   | Ccommu (Cvar r)  -> r.commu <- Cunknown
   | Cuniv  (r, v)    -> r := v
-  | CIdent change    -> Ident.undo_change change
+  | Cuident change    -> Ident.Unscoped.undo_change change
 
 type snapshot = changes ref * int
 let last_snapshot = Local_store.s_ref 0

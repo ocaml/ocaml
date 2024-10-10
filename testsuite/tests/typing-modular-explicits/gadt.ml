@@ -69,6 +69,17 @@ Error: This expression has type "int" but an expression was expected of type "'a
 |}]
 
 
+let f2 (type a) (x : a) (el : a t2) : int =
+  match el, x with
+  | A, f -> f 1
+  | B, f -> f (module Int) 2
+  | C, f -> f (module Int) 3
+  | D, f -> f (module Int) 4
+
+[%%expect{|
+val f2 : 'a -> 'a t2 -> int = <fun>
+|}]
+
 (* escape errors *)
 
 let f (type a) (x : a) (el : ((module N : T) -> a) t2) =

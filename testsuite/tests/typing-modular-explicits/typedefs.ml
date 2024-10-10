@@ -75,7 +75,7 @@ let t9_fail (x : (module T : T) -> T.t -> int) = C x
 Line 1, characters 51-52:
 1 | let t9_fail (x : (module T : T) -> T.t -> int) = C x
                                                        ^
-Error: This expression has type "(module T : T) -> T.t -> int"
+Error: The value "x" has type "(module T : T) -> T.t -> int"
        but an expression was expected of type "(module T : T) -> T.t -> T.t"
        Type "int" is not compatible with type "T.t"
 |}]
@@ -215,7 +215,7 @@ let id_fail1 (x : t0) : _ t5 = x
 Line 3, characters 31-32:
 3 | let id_fail1 (x : t0) : _ t5 = x
                                    ^
-Error: This expression has type "t0" = "(module M : T) -> M.t -> M.t"
+Error: The value "x" has type "t0" = "(module M : T) -> M.t -> M.t"
        but an expression was expected of type
          "'a t5" = "(module M : T with type t = 'a) -> 'a -> 'a"
        Type "(module T)" is not compatible with type
@@ -228,7 +228,7 @@ let id_fail2 (x : _ t5) : t0 = x
 Line 1, characters 31-32:
 1 | let id_fail2 (x : _ t5) : t0 = x
                                    ^
-Error: This expression has type
+Error: The value "x" has type
          "'a t5" = "(module M : T with type t = 'a) -> 'a -> 'a"
        but an expression was expected of type
          "t0" = "(module M : T) -> M.t -> M.t"

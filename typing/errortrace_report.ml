@@ -236,7 +236,7 @@ let explain_escape pre = function
   | Errortrace.Module us -> Some(
       doc_printf
         "%a@,@[The module@;<1 2>%a@ would escape its scope@]"
-        pp_doc pre pp_path (Pident (Ident.of_unscoped us))
+        pp_doc pre pp_path (Path.Pident (Ident.of_unscoped us))
     )
   | Errortrace.Equation Errortrace.{ty = _; expanded = t} ->
       Variable_names.reserve t;

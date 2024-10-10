@@ -132,7 +132,7 @@ type type_desc =
   | Tpackage of Path.t * (Longident.t * type_expr) list
   (** Type of a first-class module (a.k.a package). *)
 
-  | Tfunctor of arg_label * Ident.unscoped
+  | Tfunctor of arg_label * Ident.Unscoped.t
                 * (Path.t * (Longident.t * type_expr) list) * type_expr
   (** Type of a dependent arrow *)
 

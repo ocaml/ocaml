@@ -4814,7 +4814,7 @@ and type_function
       !check_closed_package ~loc:name.loc ~env
                            ~typ:(newty (Tpackage (path, fl))) fl;
       let mty = !Ctype.modtype_of_package env pparam_loc path fl in
-      let pv_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) in
+      let pv_uid = Uid.mk ~current_unit:(Env.get_current_unit ()) in
       let arg_md = {
         md_type = mty;
         md_attributes = [];
@@ -4841,7 +4841,7 @@ and type_function
           s_ident
       end
       in
-      let ident = Ident.create_unscoped name.txt in
+      let ident = Ident.Unscoped.create name.txt in
       let exp_type =
         match instance_funct ~p_out:(Pident (Ident.of_unscoped ident))
                              ~id_in:s_ident ~fixed:false res_ty
@@ -4871,7 +4871,7 @@ and type_function
       let param =
         { fp_kind;
           fp_arg_label = arg_label;
-          fp_param = s_ident; (* or Ident.of_unscoped ident *)
+          fp_param = s_ident;
           fp_partial = Total;
           fp_newtypes = newtypes;
           fp_loc = pparam_loc;
@@ -5497,49 +5497,70 @@ and type_application env funct sargs =
   let eliminated_optional_arguments = ref [] in
   let omitted_parameters = ref [] in
   let type_unknown_arg (ty_fun, typed_args) (lbl, sarg) =
-    let (ty_arg, ty_res) =
-      let ty_fun = expand_head env ty_fun in
-      match get_desc ty_fun with
-      | Tvar _ ->
-          let t1 = newvar () and t2 = newvar () in
-          if get_level ty_fun >= get_level t1 &&
-             not (is_prim ~name:"%identity" funct)
-          then
-            Location.prerr_warning sarg.pexp_loc
-              Warnings.Ignored_extra_argument;
-          unify env ty_fun (newty (Tarrow(lbl,t1,t2,commu_var ())));
-          (t1, t2)
-      | Tarrow (l,t1,t2,_) when l = lbl
-        || !Clflags.classic && lbl = Nolabel && not (is_optional l) ->
-          (t1, t2)
-      | td ->
-          let ty_fun = match td with Tarrow _ -> newty td | _ -> ty_fun in
-          let ty_res =
-            result_type (!omitted_parameters @ !eliminated_optional_arguments)
-              ty_fun
-          in
-          match get_desc ty_res with
-          | Tarrow _ ->
-              if !Clflags.classic || not (has_label lbl ty_fun) then
-                raise (Error(sarg.pexp_loc, env,
-                             Apply_wrong_label(lbl, ty_res, false)))
-              else
-                raise (Error(funct.exp_loc, env, Incoherent_label_order))
-          | _ ->
-              raise(Error(funct.exp_loc, env, Apply_non_function {
-                  funct;
-                  func_ty = expand_head env funct.exp_type;
-                  res_ty = expand_head env ty_res;
-                  previous_arg_loc = previous_arg_loc typed_args;
-                  extra_arg_loc = sarg.pexp_loc; }))
-    in
-    let arg () =
+    let arg ty_arg () =
       let arg = type_expect env sarg (mk_expected ty_arg) in
       if is_optional lbl then
         unify_exp ~sexp:sarg env arg (type_option(newvar()));
       arg
     in
-    (ty_res, (lbl, Some (arg, Some sarg.pexp_loc)) :: typed_args)
+    let ty_fun = expand_head env ty_fun in
+    match get_desc ty_fun with
+    | Tvar _ ->
+        let t1 = newvar () and t2 = newvar () in
+        if get_level ty_fun >= get_level t1 &&
+            not (is_prim ~name:"%identity" funct)
+        then
+          Location.prerr_warning sarg.pexp_loc
+            Warnings.Ignored_extra_argument;
+        unify env ty_fun (newty (Tarrow(lbl,t1,t2,commu_var ())));
+        (t2, (lbl, Some (arg t1, Some sarg.pexp_loc)) :: typed_args)
+    | Tarrow (l,t1,t2,_) when l = lbl
+      || !Clflags.classic && lbl = Nolabel && not (is_optional l) ->
+        (t2, (lbl, Some (arg t1, Some sarg.pexp_loc)) :: typed_args)
+    | Tfunctor (l, _, (p, fl), _) when l = lbl
+      || !Clflags.classic && lbl = Nolabel && not (is_optional l) ->
+          begin match unify_to_arrow env ty_fun with
+          | () ->
+            begin match get_desc ty_fun with
+            | Tarrow (_, t1, t2, _) -> 
+              (t2, (lbl, Some (arg t1, Some sarg.pexp_loc)) :: typed_args)
+            | _ -> assert false
+            end
+          | exception Unify trace ->
+            let _ =
+              type_argument env sarg
+                (newgenty (Tpackage (p, fl)))
+                (newgenty (Tpackage (p, fl)))
+            in
+            let previous_arg_loc = previous_arg_loc typed_args in
+            let loc = Location.{
+              loc_start = funct.exp_loc.loc_start;
+              loc_end = previous_arg_loc.loc_end;
+              loc_ghost = previous_arg_loc.loc_ghost
+                            && funct.exp_loc.loc_ghost
+            } in
+            raise (Error(loc, env, Cannot_infer_functor_path trace))
+          end
+    | td ->
+        let ty_fun = match td with Tarrow _ -> newty td | _ -> ty_fun in
+        let ty_res =
+          result_type (!omitted_parameters @ !eliminated_optional_arguments)
+            ty_fun
+        in
+        match get_desc ty_res with
+        | Tarrow _ ->
+            if !Clflags.classic || not (has_label lbl ty_fun) then
+              raise (Error(sarg.pexp_loc, env,
+                            Apply_wrong_label(lbl, ty_res, false)))
+            else
+              raise (Error(funct.exp_loc, env, Incoherent_label_order))
+        | _ ->
+            raise(Error(funct.exp_loc, env, Apply_non_function {
+                funct;
+                func_ty = expand_head env funct.exp_type;
+                res_ty = expand_head env ty_res;
+                previous_arg_loc = previous_arg_loc typed_args;
+                extra_arg_loc = sarg.pexp_loc; }))
   in
   let ignore_labels =
     !Clflags.classic ||
@@ -5666,9 +5687,10 @@ and type_application env funct sargs =
             (not_principal "applying a dependent function");
         let is_packing sarg =
           match sarg.pexp_desc with
-          | Pexp_pack _
+          | Pexp_pack _ -> true
           | Pexp_constraint ({ pexp_desc = Pexp_pack _; _},
-                { ptyp_desc = Ptyp_package _; _}) -> true
+                { ptyp_desc = Ptyp_package _; _}) ->
+                  false (* TODO : clarify if this case should be handled*)
           | _ -> false
         in
         let me_opt =
@@ -5722,7 +5744,7 @@ and type_application env funct sargs =
                   exp_env = env
                 }
               in
-              unify_exp env texp (newty (Tpackage (p0, fl0)));
+              unify_exp ~sexp:sarg env texp (newty (Tpackage (p0, fl0)));
               texp
             | _ -> assert false
           in
