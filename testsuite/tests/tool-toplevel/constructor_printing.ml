@@ -50,3 +50,25 @@ let it = (D, E, F)
 [%%expect {|
 val it : O.P.t * O.P.t * O.P.t = (D, E, F)
 |}]
+
+(* Introduce Q with a Sub submodule *)
+module Q = struct
+  module Sub = struct type t = A end
+end
+
+(* open Q: Q.Sub.A can now be printed as Sub.A *)
+open Q
+
+(* shadow the Sub module:
+   Sub.A is not a valid printing choice for Q.Sub.A anymore *)
+module Sub = struct end
+[%%expect {|
+module Q : sig module Sub : sig type t = A end end
+module Sub : sig end
+|}]
+
+(* Test the printing of Q.Sub.A *)
+let it = Q.Sub.A
+[%%expect {|
+val it : Q.Sub.t = Q.Sub.A
+|}]
