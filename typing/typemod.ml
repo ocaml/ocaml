@@ -690,10 +690,10 @@ let merge_constraint initial_env loc sg lid constr =
        (* See explanation in the [Twith_typesubst] case above. *)
        Subst.signature Make_local sub sg
     | (_, _, Some (Twith_modtypesubst tmty)) ->
-        let add s p = Subst.Local.add_modtype_path p tmty.mty_type s in
+        let add s p = Subst.Unsafe.add_modtype_path p tmty.mty_type s in
         let sub = Subst.change_locs Subst.identity loc in
         let sub = List.fold_left add sub !real_ids in
-        begin match Subst.Local.signature Make_local sub sg with
+        begin match Subst.Unsafe.signature Make_local sub sg with
         | Ok x -> x
         | Error (Fcm_type_substituted_away p) ->
             let error = With_cannot_remove_packed_modtype(p,tmty.mty_type) in
@@ -967,7 +967,7 @@ module Signature_names : sig
     | `Exported
     | `From_open
     | `Shadowable of shadowable
-    | `Substituted_away of Subst.local
+    | `Substituted_away of Subst.unsafe
   ]
 
   val create : unit -> t
@@ -1003,7 +1003,7 @@ end = struct
 
   type info = [
     | `From_open
-    | `Substituted_away of Subst.local
+    | `Substituted_away of Subst.unsafe
     | bound_info
   ]
 
@@ -1012,7 +1012,7 @@ end = struct
     | Shadowed_by of Ident.t * Location.t
 
   type to_be_removed = {
-    mutable subst: Subst.local;
+    mutable subst: Subst.unsafe;
     mutable hide: (Sig_component_kind.t * Location.t * hide_reason) Ident.Map.t;
   }
 
@@ -1064,7 +1064,7 @@ end = struct
 
  let check_local_subst loc env: _ result -> _ = function
     | Ok x -> x
-    | Error (Subst.Local.Fcm_type_substituted_away p) ->
+    | Error (Subst.Unsafe.Fcm_type_substituted_away p) ->
         raise (Error (loc, env, Non_packable_local_modtype_subst p))
 
   let check cl t loc id (info : info) =
@@ -1073,7 +1073,7 @@ end = struct
     | `Substituted_away s ->
         let subst =
           check_local_subst loc Env.empty @@
-          Subst.Local.compose s to_be_removed.subst
+          Subst.Unsafe.compose s to_be_removed.subst
         in
         to_be_removed.subst <- subst;
     | `From_open ->
@@ -1185,7 +1185,7 @@ end = struct
             component
           else
             check_local_subst user_loc env @@
-            Subst.Local.signature_item Keep to_remove.subst component
+            Subst.Unsafe.signature_item Keep to_remove.subst component
         in
         let component =
           match ids_to_remove with
@@ -1564,7 +1564,7 @@ and transl_signature env sg =
                     assert false
               in
               let subst =
-                Subst.Local.add_modtype mtd.mtd_id mty Subst.identity in
+                Subst.Unsafe.add_modtype mtd.mtd_id mty Subst.identity in
               `Substituted_away subst
             in
             Signature_names.check_modtype ~info names pmtd.pmtd_loc mtd.mtd_id;

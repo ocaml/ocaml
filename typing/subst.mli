@@ -31,33 +31,34 @@ open Types
 
    In the presence of local substitutions for module types, a substitution for a
    type expression may fail to produce a well-formed type. In order to confine
-   this issue to local substitution, the type of substitutions is split into a
-   standard and local variant. Only local substitution may expand a module type
+   this issue to local substitutions, the type of substitutions is split into a
+   safe and unsafe variant. Only unsafe substitutions may expand a module type
    path into a generic module type. *)
 
 (** Type familly for substitutions *)
-type 'a s
+type +'k subst
 
-type t = [`safe] s
+type t = [`Safe] subst
 (** Standard substitution*)
 
-type local = [`local] s
+type unsafe = [`Unsafe] subst
 (** Local substitution *)
 
-val identity: 'a s
-val local: t -> local
+val identity: 'a subst
+val unsafe: t -> unsafe
 
-val add_type: Ident.t -> Path.t -> 'a s -> 'a s
-val add_type_path: Path.t -> Path.t -> 'a s -> 'a s
+val add_type: Ident.t -> Path.t -> 'k subst -> 'k subst
+val add_type_path: Path.t -> Path.t -> 'k subst -> 'k subst
 val add_type_function:
-  Path.t -> params:type_expr list -> body:type_expr -> 'a s -> 'a s
-val add_module: Ident.t -> Path.t -> 'a s -> 'a s
-val add_module_path: Path.t -> Path.t -> 'a s -> 'a s
-val add_modtype_id_to_path: Ident.t -> Path.t -> 'a s -> 'a s
+  Path.t -> params:type_expr list -> body:type_expr -> 'k subst -> 'k subst
+val add_module: Ident.t -> Path.t -> 'k subst -> 'k subst
+val add_module_path: Path.t -> Path.t -> 'k subst -> 'k subst
+val add_modtype: Ident.t -> Path.t -> 'k subst -> 'k subst
+val add_modtype_path: Path.t -> Path.t -> 'k subst -> 'k subst
 
 val for_saving: t -> t
 val reset_for_saving: unit -> unit
-val change_locs: 'a s -> Location.t -> 'a s
+val change_locs: 'k subst -> Location.t -> 'k subst
 
 val module_path: t -> Path.t -> Path.t
 val type_path: t -> Path.t -> Path.t
@@ -97,26 +98,26 @@ val module_declaration: scoping -> t -> module_declaration -> module_declaration
      apply (compose s1 s2) x = apply s2 (apply s1 x) **)
 val compose: t -> t -> t
 
-module Local: sig
+module Unsafe: sig
 
-  (** Only local substitution may expand an identifier to a generic module
-      type. *)
-  val add_modtype: Ident.t -> module_type -> 'any s -> local
-  val add_modtype_path: Path.t -> module_type -> 'any s -> local
+(** Replacing a module type name S by a non-path signature is unsafe as the
+    packed module type [(module S)] becomes ill-formed. *)
+  val add_modtype: Ident.t -> module_type -> 'any subst -> unsafe
+  val add_modtype_path: Path.t -> module_type -> 'any subst -> unsafe
 
   type error =
     | Fcm_type_substituted_away of Path.t
 
-  (** Local substituin may fail to expand a module type path *)
   type 'a res := ('a, error) result
 
-  val signature_item: scoping -> local -> signature_item -> signature_item res
+  val signature_item: scoping -> unsafe -> signature_item -> signature_item res
 
-  val signature: scoping -> local -> signature -> signature res
+  val signature: scoping -> unsafe -> signature -> signature res
 
-  val compose: local -> local -> local res
-  (** Due to the eager nature of composition for module types, composition of
-      local substitution may fail. *)
+  val compose: unsafe -> unsafe -> unsafe res
+  (** Composition of substitutions is eager and fails when the two substitution
+      are incompatible, for example [ module type t := sig end] is not
+      compatible with [module type s := sig type t=(module t) end]*)
 
 end
 

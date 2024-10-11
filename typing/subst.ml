@@ -26,7 +26,7 @@ type type_replacement =
   | Path of Path.t
   | Type_function of { params : type_expr list; body : type_expr }
 
-type subst =
+type s =
   { types: type_replacement Path.Map.t;
     modules: Path.t Path.Map.t;
     modtypes: module_type Path.Map.t;
@@ -34,9 +34,9 @@ type subst =
     loc: Location.t option;
   }
 
-type 'a s = subst
-type t = [`safe] s
-type local = [`local] s
+type 'a subst = s
+type t = [`Safe] subst
+type unsafe = [`Unsafe] subst
 exception Module_type_path_substituted_away of Path.t
 
 let identity =
@@ -47,7 +47,7 @@ let identity =
     loc = None;
   }
 
-let local x = x
+let unsafe x = x
 
 let add_type_path id p s = { s with types = Path.Map.add id (Path p) s.types }
 let add_type id p s = add_type_path (Pident id) p s
@@ -58,9 +58,9 @@ let add_type_function id ~params ~body s =
 let add_module_path id p s = { s with modules = Path.Map.add id p s.modules }
 let add_module id p s = add_module_path (Pident id) p s
 
-let add_modtype_path p ty s = { s with modtypes = Path.Map.add p ty s.modtypes }
-let add_modtype id ty s = add_modtype_path (Pident id) ty s
-let add_modtype_id_to_path id p s = add_modtype id (Mty_ident p) s
+let add_modtype_gen p ty s = { s with modtypes = Path.Map.add p ty s.modtypes }
+let add_modtype_path p p' s = add_modtype_gen p (Mty_ident p') s
+let add_modtype id p s = add_modtype_path (Pident id) p s
 
 let for_saving s = { s with for_saving = true }
 
@@ -592,7 +592,7 @@ let rename_bound_idents scoping s sg =
     | SigL_modtype(id, mtd, vis) :: rest ->
         let id' = rename id in
         rename_bound_idents
-          (add_modtype id (Mty_ident(Pident id')) s)
+          (add_modtype id (Pident id') s)
           (SigL_modtype(id', mtd, vis) :: sg)
           rest
     | SigL_class(id, cd, rs, vis) :: rest ->
@@ -841,12 +841,12 @@ let modtype_declaration sc s decl =
 let module_declaration scoping s decl =
   Lazy.(decl |> of_module_decl |> module_decl scoping s |> force_module_decl)
 
-module Local = struct
+module Unsafe = struct
 
   type error = Fcm_type_substituted_away of Path.t
 
-  let add_modtype_path = add_modtype_path
-  let add_modtype = add_modtype
+  let add_modtype_path = add_modtype_gen
+  let add_modtype id mty s = add_modtype_path (Pident id) mty s
 
   let wrap f = match f () with
     | x -> Ok x
