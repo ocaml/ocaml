@@ -108,7 +108,11 @@ let escaped s =
   let b = bos s in
   (* We satisfy [unsafe_escape]'s precondition by passing an
      immutable byte sequence [b]. *)
-  bts (B.unsafe_escape b)
+  let b' = B.unsafe_escape b in
+  (* With js_of_ocaml, [bos] and [bts] are not the identity.
+     We can avoid a [bts] conversion if [unsafe_escape] returned
+     its argument. *)
+  if b == b' then s else bts b'
 
 (* duplicated in bytes.ml *)
 let rec index_rec s lim i c =
