@@ -88,10 +88,6 @@ Some notes:
 
 (** Utility functions. *)
 
-let string_is_prefix sub str =
-  let sublen = String.length sub in
-  String.length str >= sublen && String.sub str 0 sublen = sub
-
 let rec lident_of_path = function
   | Path.Pident id -> Longident.Lident (Ident.name id)
   | Path.Papply (p1, p2) ->
@@ -829,7 +825,7 @@ let core_type sub ct =
 let class_structure sub cs =
   let rec remove_self = function
     | { pat_desc = Tpat_alias (p, id, _s, _) }
-      when string_is_prefix "selfpat-" (Ident.name id) ->
+      when String.starts_with ~prefix:"selfpat-" (Ident.name id) ->
         remove_self p
     | p -> p
   in
@@ -859,7 +855,7 @@ let object_field sub {of_loc; of_desc; of_attributes;} =
 
 and is_self_pat = function
   | { pat_desc = Tpat_alias(_pat, id, _, _) } ->
-      string_is_prefix "self-" (Ident.name id)
+      String.starts_with ~prefix:"self-" (Ident.name id)
   | _ -> false
 
 (* [Typeclass] adds a [self] parameter to initializers and methods that isn't
