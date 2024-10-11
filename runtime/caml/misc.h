@@ -45,7 +45,7 @@
 
 /* Deprecation warnings */
 
-#if defined(__GNUC__) || defined(__clang__)
+#if __has_attribute(deprecated) || defined(__GNUC__)
   /* Supported since at least GCC 3.1 */
   #define CAMLdeprecated_typedef(name, type) \
     typedef type name __attribute__ ((deprecated))
@@ -56,9 +56,7 @@
   #define CAMLdeprecated_typedef(name, type) typedef type name
 #endif
 
-#if defined(__GNUC__)                                           \
-    && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L \
-    || defined(_MSC_VER) && _MSC_VER >= 1925
+#if defined(__GNUC__) || defined(__llvm__) || defined(_MSC_VER)
 
 #define CAML_STRINGIFY(x) #x
 #ifdef _MSC_VER
