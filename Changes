@@ -98,6 +98,10 @@ Working version
 - #13460: introduce a variant of all predefined types
   (Gabriel Scherer, review by Ulysse Gérard and Florian Angeletti)
 
+- #13457, #13537: Annotate alloc/free open/close pairs of functions
+  with compiler attributes for static analysis.
+  (Antonin Décimo, review by Gabriel Scherer and Florian Angeletti)
+
 ### Build system:
 
 ### Bug fixes:

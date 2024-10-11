@@ -64,14 +64,15 @@ CAMLextern char_os * caml_search_exe_in_path(const char_os * name);
 extern char_os * caml_search_dll_in_path(struct ext_table * path,
                                          const char_os * name);
 
+/* Close a shared library handle */
+extern void caml_dlclose(void * handle);
+
 /* Open a shared library and return a handle on it.
    If [global] is true, symbols from the shared library can be used
    to resolve for other libraries to be opened later on.
    Return [NULL] on error. */
+CAMLalloc(caml_dlclose, 1)
 extern void * caml_dlopen(char_os * libname, int global);
-
-/* Close a shared library handle */
-extern void caml_dlclose(void * handle);
 
 /* Look up the given symbol in the given shared library.
    Return [NULL] if not found, or symbol value if found. */
