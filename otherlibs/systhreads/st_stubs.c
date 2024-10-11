@@ -973,6 +973,10 @@ CAMLprim value caml_current_thread_set_name(value name)
   wchar_t *thread_name = caml_stat_strdup_to_utf16(String_val(name));
   SetThreadDescription(GetCurrentThread(), thread_name);
   caml_stat_free(thread_name);
+
+  // We are using both methods.
+  // See: https://github.com/ocaml/ocaml/pull/13504#discussion_r1786358928
+  pthread_setname_np(pthread_self(), String_val(name));
 #elif defined(HAS_PRCTL)
   prctl(PR_SET_NAME, String_val(name));
 #elif defined(HAS_PTHREAD_SETNAME_NP)
