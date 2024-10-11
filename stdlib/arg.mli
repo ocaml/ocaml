@@ -113,8 +113,13 @@ type usage_msg = string
 type anon_fun = (string -> unit)
 
 val parse :
-  (key * spec * doc) list -> anon_fun -> usage_msg -> unit
+  ?allow_hyphen_values:bool -> (key * spec * doc) list ->
+  anon_fun -> usage_msg -> unit
 (** [Arg.parse speclist anon_fun usage_msg] parses the command line.
+    [allow_hyphen_values] controls whether arguments
+    that start with hyphens are allowed to be passed in all cases (default)
+    or must be passed with [--option-name='-option-value'].
+    while trying to write [--option-name -option-value] is an error.
     [speclist] is a list of triples [(key, spec, doc)].
     [key] is the option keyword, it must start with a ['-'] character.
     [spec] gives the option type and the function to call when this option
@@ -142,7 +147,8 @@ val parse :
 *)
 
 val parse_dynamic :
-  (key * spec * doc) list ref -> anon_fun -> usage_msg -> unit
+  ?allow_hyphen_values:bool -> (key * spec * doc) list ref ->
+  anon_fun -> usage_msg -> unit
 (** Same as {!Arg.parse}, except that the [speclist] argument is a reference
     and may be updated during the parsing. A typical use for this feature
     is to parse command lines of the form:
@@ -151,8 +157,8 @@ val parse_dynamic :
     @since 4.01
 *)
 
-val parse_argv : ?current: int ref -> string array ->
-  (key * spec * doc) list -> anon_fun -> usage_msg -> unit
+val parse_argv : ?allow_hyphen_values:bool -> ?current: int ref ->
+  string array -> (key * spec * doc) list -> anon_fun -> usage_msg -> unit
 (** [Arg.parse_argv ~current args speclist anon_fun usage_msg] parses
   the array [args] as if it were the command line.  It uses and updates
   the value of [~current] (if given), or {!Arg.current}.  You must set
@@ -164,16 +170,17 @@ val parse_argv : ?current: int ref -> string array ->
   as argument.
 *)
 
-val parse_argv_dynamic : ?current:int ref -> string array ->
-  (key * spec * doc) list ref -> anon_fun -> string -> unit
+val parse_argv_dynamic : ?allow_hyphen_values:bool -> ?current:int ref ->
+    string array -> (key * spec * doc) list ref -> anon_fun -> string -> unit
 (** Same as {!Arg.parse_argv}, except that the [speclist] argument is a
     reference and may be updated during the parsing.
     See {!Arg.parse_dynamic}.
     @since 4.01
 *)
 
-val parse_and_expand_argv_dynamic : int ref -> string array ref ->
-  (key * spec * doc) list ref -> anon_fun -> string -> unit
+val parse_and_expand_argv_dynamic : ?allow_hyphen_values:bool -> int ref ->
+    string array ref -> (key * spec * doc) list ref -> anon_fun ->
+    string -> unit
 (** Same as {!Arg.parse_argv_dynamic}, except that the [argv] argument is a
     reference and may be updated during the parsing of [Expand] arguments.
     See {!Arg.parse_argv_dynamic}.
@@ -181,7 +188,8 @@ val parse_and_expand_argv_dynamic : int ref -> string array ref ->
 *)
 
 val parse_expand:
-  (key * spec * doc) list -> anon_fun -> usage_msg -> unit
+  ?allow_hyphen_values:bool -> (key * spec * doc) list -> anon_fun ->
+  usage_msg -> unit
 (** Same as {!Arg.parse}, except that the [Expand] arguments are allowed and
     the {!current} reference is not updated.
     @since 4.05
