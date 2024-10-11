@@ -29,7 +29,7 @@
      other values that can vary between two objects of the same class.
 
    - The inner layer is a regular block (with tag zero). It contains
-     all values that are shared between all objects of the same classes,
+     all values that are shared between all objects of the same class,
      which means mostly methods. The first field corresponds to the number of
      public methods, the second field is a mask used for optimising method
      access, the following fields are alternating between the method closures
@@ -446,8 +446,8 @@ let rec build_object_init ~scopes cl_table obj params inh_init obj_init cl =
       in
       (inh_init, Translcore.transl_let ~scopes rec_flag defs obj_init)
   | Tcl_open (_, cl)
-    (* Class local opens are restricted to paths only,
-       so no code is generated *)
+    (* Class local opens are restricted to paths only, so no code is generated
+     *)
   | Tcl_constraint (cl, _, _, _, _) ->
       build_object_init ~scopes cl_table obj params inh_init obj_init cl
 
