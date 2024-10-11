@@ -99,14 +99,35 @@ let get_paths () =
 let get_visible_path_list () = List.rev_map Dir.path !visible_dirs
 let get_hidden_path_list () = List.rev_map Dir.path !hidden_dirs
 
+type error =
+  | Ambiguous_artifacts of {
+      dir:string;
+      normalized: string;
+      similar: string list
+    }
+exception Error of error
+
+(* Check ambiguity *)
+let ambiguity_checker dir map normalized file =
+  match STbl.find_opt map normalized with
+  | Some file' when file <> file' ->
+       let e =
+        Ambiguous_artifacts {dir=dir.Dir.path;similar=[file;file'];normalized}
+       in
+       raise (Error e)
+  | None -> STbl.add map normalized file
+  | Some _ -> ()
+
 (* Optimized version of [add] below, for use in [init] and [remove_dir]: since
    we are starting from an empty cache, we can avoid checking whether a unit
    name already exists in the cache simply by adding entries in reverse
    order. *)
 let prepend_add dir =
+  let local_tbl = STbl.create 42 in
   List.iter (fun base ->
       Result.iter (fun filename ->
           let fn = Filename.concat dir.Dir.path base in
+          ambiguity_checker dir local_tbl filename fn;
           if dir.Dir.hidden then begin
             STbl.replace !hidden_files base fn;
             STbl.replace !hidden_files_uncap filename fn
@@ -143,6 +164,7 @@ let remove_dir dir =
    left-to-right precedence. *)
 let add (dir : Dir.t) =
   assert (not Config.merlin || Local_store.is_bound ());
+  let local_tbl = STbl.create 42 in
   let update base fn visible_files hidden_files =
     if dir.hidden && not (STbl.mem !hidden_files base) then
       STbl.replace !hidden_files base fn
@@ -153,6 +175,7 @@ let add (dir : Dir.t) =
     (fun base ->
        Result.iter (fun ubase ->
            let fn = Filename.concat dir.Dir.path base in
+           ambiguity_checker dir local_tbl base fn;
            update base fn visible_files hidden_files;
            update ubase fn visible_files_uncap hidden_files_uncap
          )

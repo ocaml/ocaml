@@ -961,6 +961,21 @@ let deprecated_script_alert program =
   in
   prerr_alert none alert
 
+(* Error printer for Load_path *)
+
+let report_load_path_error ppf =
+  let open Format_doc in
+  function
+  | Load_path.Ambiguous_artifacts r ->
+      fprintf ppf
+        "@[<v 2>@,@[Multiple artifact files@ (@[%a@])@ in directory %a@ \
+         share the same name after unicode case-folding and normalization.@ \
+         Please only keep one file named %a by directory.@]"
+        (pp_print_list ~pp_sep:comma Style.inline_code) r.similar
+        Style.inline_code r.dir
+        Style.inline_code r.normalized
+
+
 (******************************************************************************)
 (* Reporting errors on exceptions *)
 
@@ -988,6 +1003,8 @@ let () =
     (function
       | Sys_error msg ->
           Some (errorf ~loc:(in_file !input_name) "I/O error: %s" msg)
+      | Load_path.Error e ->
+          Some (errorf "%a" report_load_path_error e)
       | _ -> None
     )
 
