@@ -74,7 +74,7 @@ module BLAKE2 (X: sig val hash_length : int end) : S = struct
   type state
 
   external create_gen: int -> string -> state = "caml_blake2_create"
-  external update: state -> string -> int -> int -> unit = "caml_blake2_update"
+  external update: state -> bytes -> int -> int -> unit = "caml_blake2_update"
   external final: state -> int -> t = "caml_blake2_final"
   external unsafe_string: int -> string -> string -> int -> int -> t
                         = "caml_blake2_string"
@@ -104,7 +104,7 @@ module BLAKE2 (X: sig val hash_length : int end) : S = struct
         let n = In_channel.input ic buf 0 buf_size in
         if n = 0
         then final ctx hash_length
-        else (update ctx (Bytes.unsafe_to_string buf) 0 n; do_read ())
+        else (update ctx buf 0 n; do_read ())
       in do_read ()
     end else begin
       let rec do_read toread =
@@ -113,7 +113,7 @@ module BLAKE2 (X: sig val hash_length : int end) : S = struct
           if n = 0
           then raise End_of_file
           else begin
-            update ctx (Bytes.unsafe_to_string buf) 0 n;
+            update ctx buf 0 n;
             do_read (toread - n)
           end
         end
