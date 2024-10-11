@@ -299,15 +299,6 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[]) {
 #endif
 
 /* Result-returning variants of the above */
-
-Caml_inline caml_result Result_encoded(value encoded)
-{
-  if (Is_exception_result(encoded))
-    return Result_exception(Extract_exception(encoded));
-  else
-    return Result_value(encoded);
-}
-
 CAMLexport caml_result caml_callbackN_res(
   value closure, int narg, value args[])
 {
