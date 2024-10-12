@@ -32,6 +32,8 @@
 #  endif
 #endif
 
+#include "caml/misc.h"
+
 #if defined(_WIN32) && !defined(NATIVE_CODE) && !defined(_MSC_VER)
 /* Ensure that pthread.h marks symbols __declspec(dllimport) so that they can be
    picked up from the runtime (which will have linked winpthreads statically).
@@ -990,7 +992,10 @@ CAMLprim value caml_current_thread_set_name(value name)
 #elif defined(HAS_PTHREAD_SET_NAME_NP)
   pthread_set_name_np(pthread_self(), String_val(name));
 #else
-  fprintf(stderr, "set thread name not implemented");
+  if (caml_runtime_warnings_active()) {
+    fprintf(stderr, "set thread name not implemented");
+    fflush(stderr);
+  }
 #endif
 
   return Val_unit;
