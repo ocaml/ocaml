@@ -993,7 +993,7 @@ CAMLprim value caml_current_thread_set_name(value name)
   pthread_set_name_np(pthread_self(), String_val(name));
 #else
   if (caml_runtime_warnings_active()) {
-    fprintf(stderr, "set thread name not implemented");
+    fprintf(stderr, "set thread name not implemented\n");
     fflush(stderr);
   }
 #endif
