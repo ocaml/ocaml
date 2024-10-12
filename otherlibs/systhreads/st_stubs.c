@@ -990,7 +990,7 @@ CAMLprim value caml_current_thread_set_name(value name)
 #elif defined(HAS_PTHREAD_SET_NAME_NP)
   pthread_set_name_np(pthread_self(), String_val(name));
 #else
-  caml_invalid_argument("set thread name not implemented");
+  fprintf(stderr, "set thread name not implemented");
 #endif
 
   return Val_unit;
