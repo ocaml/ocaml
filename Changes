@@ -163,6 +163,10 @@ ___________
   (Vincent Laviron, review by Hugo Heuzard, Nathanaëlle Courant
    and Gabriel Scherer)
 
+- #13543: Remove some String-Bytes conversion from the stdlib to behave better
+  with js_of_ocaml
+  (Hugo Heuzard, review by Gabriel Scherer)
+
 ### Standard library:
 
 - #12884: Add `Queue.drop`
