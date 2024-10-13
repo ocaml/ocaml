@@ -53,6 +53,10 @@ Working version
 
 ### Standard library:
 
+- #13543: Remove some String-Bytes conversion from the stdlib to behave better
+  with js_of_ocaml
+  (Hugo Heuzard, review by Gabriel Scherer)
+
 ### Other libraries:
 
 - #13429: add `Unix.sigwait`, a binding to the `sigwait` system call;
