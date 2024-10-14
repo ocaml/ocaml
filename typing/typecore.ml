@@ -5522,7 +5522,7 @@ and type_application env funct sargs =
           begin match unify_to_arrow env ty_fun with
           | () ->
             begin match get_desc ty_fun with
-            | Tarrow (_, t1, t2, _) -> 
+            | Tarrow (_, t1, t2, _) ->
               (t2, (lbl, Some (arg t1, Some sarg.pexp_loc)) :: typed_args)
             | _ -> assert false
             end

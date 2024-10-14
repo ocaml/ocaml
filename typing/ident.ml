@@ -90,7 +90,7 @@ module Unscoped = struct
     s1 = s2
     || List.exists (fun (i1, i2) -> (stamp i1 = s1 && stamp i2 = s2)
                             || stamp i2 = s1 && stamp i1 = s2) !id_pairs
-  
+
   module Ops = struct
     type nonrec t = t
     let compare us1 us2 = stamp us1 - stamp us2
