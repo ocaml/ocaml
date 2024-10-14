@@ -469,9 +469,14 @@ void caml_mem_unmap(void* mem, uintnat size)
 #endif
 }
 
-#define Min_sleep_ns       10000 // 10 us
-#define Slow_sleep_ns    1000000 //  1 ms
-#define Max_sleep_ns  1000000000 //  1 s
+#define POW10_3 1000
+#define POW10_4 10000
+#define POW10_6 1000000
+#define POW10_9 1000000000
+
+#define Min_sleep_ns     POW10_4 // 10 us
+#define Slow_sleep_ns    POW10_6 //  1 ms
+#define Max_sleep_ns     POW10_9 //  1 s
 
 unsigned caml_plat_spin_back_off(unsigned sleep_ns,
                                  const struct caml_plat_srcloc* loc)
@@ -484,9 +489,14 @@ unsigned caml_plat_spin_back_off(unsigned sleep_ns,
                 loc->function, loc->file, loc->line);
   }
 #ifdef _WIN32
-  Sleep(sleep_ns/1000000);
+  Sleep(sleep_ns / POW10_6);
+#elif defined (HAS_NANOSLEEP)
+  const struct timespec req = {
+    .tv_sec = sleep_ns / POW10_9,
+    .tv_nsec = sleep_ns % POW10_9 };
+  nanosleep(&req, NULL);
 #else
-  usleep(sleep_ns/1000);
+  usleep(sleep_ns / POW_3);
 #endif
   return next_sleep_ns;
 }
