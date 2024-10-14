@@ -968,7 +968,7 @@ module Signature_names : sig
     | `Exported
     | `From_open
     | `Shadowable of shadowable
-    | `Substituted_away of Subst.unsafe
+    | `Substituted_away of Subst.Unsafe.t
   ]
 
   val create : unit -> t
@@ -1004,7 +1004,7 @@ end = struct
 
   type info = [
     | `From_open
-    | `Substituted_away of Subst.unsafe
+    | `Substituted_away of Subst.Unsafe.t
     | bound_info
   ]
 
@@ -1013,7 +1013,7 @@ end = struct
     | Shadowed_by of Ident.t * Location.t
 
   type to_be_removed = {
-    mutable subst: Subst.unsafe;
+    mutable subst: Subst.Unsafe.t;
     mutable hide: (Sig_component_kind.t * Location.t * hide_reason) Ident.Map.t;
   }
 

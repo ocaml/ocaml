@@ -35,8 +35,9 @@ type s =
   }
 
 type 'a subst = s
-type t = [`Safe] subst
-type unsafe = [`Unsafe] subst
+type safe = [`Safe]
+type unsafe = [`Unsafe]
+type t = safe subst
 exception Module_type_path_substituted_away of Path.t * Types.module_type
 
 let identity =
@@ -840,6 +841,7 @@ let module_declaration scoping s decl =
 
 module Unsafe = struct
 
+  type t = unsafe subst
   type error = Fcm_type_substituted_away of Path.t * Types.module_type
 
   let add_modtype_path = add_modtype_gen

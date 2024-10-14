@@ -38,14 +38,14 @@ open Types
 (** Type familly for substitutions *)
 type +'k subst
 
-type t = [`Safe] subst
+type safe = [`Safe]
+type unsafe = [`Unsafe]
+
+type t = safe subst
 (** Standard substitution*)
 
-type unsafe = [`Unsafe] subst
-(** Local substitution *)
-
 val identity: 'a subst
-val unsafe: t -> unsafe
+val unsafe: t -> unsafe subst
 
 val add_type: Ident.t -> Path.t -> 'k subst -> 'k subst
 val add_module: Ident.t -> Path.t -> 'k subst -> 'k subst
@@ -95,28 +95,32 @@ val compose: t -> t -> t
 
 module Unsafe: sig
 
+  type t = unsafe subst
+  (** Unsafe substitutions introduced by [with] constraints, local substitutions
+      ([type t := int * int]) or recursive module check. *)
+
 (** Replacing a module type name S by a non-path signature is unsafe as the
     packed module type [(module S)] becomes ill-formed. *)
-  val add_modtype: Ident.t -> module_type -> 'any subst -> unsafe
-  val add_modtype_path: Path.t -> module_type -> 'any subst -> unsafe
+  val add_modtype: Ident.t -> module_type -> 'any subst -> t
+  val add_modtype_path: Path.t -> module_type -> 'any subst -> t
 
   (** Deep editing inside a module type require to retypecheck the module, for
       applicative functors in path and module aliases. *)
-  val add_type_path: Path.t -> Path.t -> unsafe -> unsafe
+  val add_type_path: Path.t -> Path.t -> t -> t
   val add_type_function:
-    Path.t -> params:type_expr list -> body:type_expr -> unsafe -> unsafe
-  val add_module_path: Path.t -> Path.t -> unsafe -> unsafe
+    Path.t -> params:type_expr list -> body:type_expr -> t -> t
+  val add_module_path: Path.t -> Path.t -> t -> t
 
   type error =
     | Fcm_type_substituted_away of Path.t * Types.module_type
 
   type 'a res := ('a, error) result
 
-  val type_declaration:  unsafe -> type_declaration -> type_declaration res
-  val signature_item: scoping -> unsafe -> signature_item -> signature_item res
-  val signature: scoping -> unsafe -> signature -> signature res
+  val type_declaration:  t -> type_declaration -> type_declaration res
+  val signature_item: scoping -> t -> signature_item -> signature_item res
+  val signature: scoping -> t -> signature -> signature res
 
-  val compose: unsafe -> unsafe -> unsafe res
+  val compose: t -> t -> t res
   (** Composition of substitutions is eager and fails when the two substitution
       are incompatible, for example [ module type t := sig end] is not
       compatible with [module type s := sig type t=(module t) end]*)
