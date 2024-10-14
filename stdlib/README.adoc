@@ -1,0 +1,208 @@
+= OCaml Stdlib design principles
+
+== High-level goals
+
+The goal of the stdlib is to provide:
+
+* a reasonably small set of widely useful and general purpose features
+   which programmers can consider as being part of the language,
+   always available, with good properties such as stability,
+   portability;
+* simple definitions and abstractions that help third-party libraries
+  interact with each other.
+
+== Design requirement: backward compatibility
+
+Users obviously expect a high-degree of backward compatibility for the
+stdlib. Any breakage can impact (transitively) a large part of the
+ecosystem and complicate adoption of a new version of OCaml.
+
+Breaking changes should thus be accompanied by a reasonable migration
+story, probably multiple releases. Tools available here: deprecation
+attributes (to inform about pending breakages), OPAM to assess the
+consequences. Further rewriting tools should be consider to alleviate
+the constraint of backward compatibility while allowing smooth
+transition to a better design.
+
+== Design requirement: portability
+
+The stdlib should compile on all supported platforms. Some features
+could occasionally be stubbed out (if this is properly documented),
+but this should remain the exception and be properly justified.
+
+== Design goal: coherence of interfaces
+
+It's certainly a desirable property to have coherent designs in
+various parts of the library. This reduces efforts when designing an
+addition (less questions to ask ourselves) and of course, this helps
+users.
+
+When extending the stdlib, there is a tension between maintaining
+coherence with the existing style, even if it known to be imperfect,
+or aiming at a better, different style. The recommended way to address
+this tension is to move the entire stdlib towards the new style,
+accompanied, of course, with a nice migration story. This might imply
+to temporarily introduce solutions which are known to be imperfect or
+to add functions known to become deprecated in the medium term.
+
+== Code quality and documentation
+
+An indirect use of the stdlib (and also of the compiler code base, to
+some extent) is to serve as a model for OCaml programmers (and other
+library designers). So we should be especially careful with code
+quality and precise documentation (including deprecated/since tags and
+attributes); coherent coding style, also in the implementation (not
+just the interface).
+
+== General purpose
+
+There seems to be a consensus that the standard library should remain
+general purpose enough. Nobody suggest to include for instance support
+for various network protocols, mathematical libraries, etc.
+
+Perhaps a good step would be to recognize which part of the standard
+library is there for historical reasons only, but would not be
+accepted if they were proposed today. This is controversial, but
+making this explicit might be a good way to communicate our intents
+about the evolution of the stdlib. Here is my list: Complex, Stream,
+Genlex, Format, Scanf, Lexing, Parsing, and graph/num/regexp
+otherlibs. (Yes, I'd keep Printf. Undecided for Arg and Digest.) I
+believe all of these are either too domain specific or better managed
+as / already superseded by external projects.
+
+On the other hand, various features would be considered by many as
+being of general interest in 2018, at different degrees, and might
+thus deserve some lightweight support in the stdlib: some (limited)
+support for Unicode (e.g. Uchar, perhaps utf8<->latin1 conversion),
+simple encoding/escaping stuff (e.g. Base64), a few more
+datastructures (e.g. bitsets), perhaps even a definition of a JSON
+datatype/parser/printer. Opinions will necessarily vary here. Who will
+decide, and based on which criteria?
+
+== Criteria for extending stdlib
+
+The size in itself should not really be a direct criterion for
+accepting or rejecting a proposed addition to the stdlib, I'd say. We
+should rather focus on other criteria (which are affected by the size,
+but not only):
+
+- The efforts required to maintain it (taking backward compatibility
+  into account).
+- The code and API quality (including the documentation).
+- How general purpose the addition is.
+- The usefulness of extending the stdlib vs maintaining the addition
+  as an external project.
+- In particular, the risk than an external project can do something
+  clearly better (which would leave us in the uncomfortable situation
+  where we need to keep something in the stdlib for backward
+  compatibility while knowing it isn't a good solution to recommend).
+
+For instance, adding a small function to an existing opaque
+datastructure (Set, Map, Stack, Buffer) would generally induce a very
+small maintenance cost and it's not really possible to do that outside
+the stdlib (short of completely reimplementing the datastructure
+altogether). The argument is weaker for extending e.g. List or Array,
+since this can more easily be done outside stdlib. That said, if the
+addition is useful enough, there is no strong reason not to accept it.
+
+
+== More to discuss
+
+* When a module `M` has a main type it must be named `M.t`.
+* Functions should take the main type `t` as first argument (unless
+  there is a good reason for it, see next point).
+* If a functions takes another function as argument, that argument
+  should have the label `f` and not be last (to be able to omit the
+  label).
+* When a function may raise an exception as a non-exceptional
+  behavior, its name must have the suffix `_exn` to remind the user
+  that the exception should be handled.  Another function returning an
+  option instead must be provided.  Example:
+[source,ocaml]
+----
+val find : 'a t -> key -> 'a option
+val find_exn : 'a t -> key -> 'a
+----
+
+
+=== Collections
+
+* If a module `M` defines a collection of values, say `'a M.t`, it
+  must also define the following standard higher order functions:
+
+[source,ocaml]
+----
+val iter : f:('a -> unit) -> 'a t -> unit
+val iteri : f:(int -> 'a -> unit) -> 'a t -> unit
+val map : f:('a -> 'b) -> 'a t -> 'b t
+val mapi : f:(int -> 'a -> 'b) -> 'a t -> 'b t
+val fold : f:('a -> 'b -> 'a) -> init:'a -> 'b t -> 'a
+----
+
+The `iter`, `map` and `fold` function need not to specify the order in
+which arguments are passed to `f`.
+
+* Collections should be convertible to and from sequences by
+  providing:
+[source,ocaml]
+----
+val to_seq : 'a t -> 'a Seq.t
+val of_seq : 'a Seq.t -> 'a t
+----
+
+=== Arithmetic
+
+* When it makes sense, a module should provide _both_ standard infix
+  operators and named functions:
+
+[source,ocaml]
+----
+val neg : t -> t (* unary negation *)
+val add : t -> t -> t (* addition *)
+val sub : t -> t -> t (* subtraction *)
+val mul : t -> t -> t (* multiplication *)
+val div : t -> t -> t (* division *)
+val ( ~+ ) : t -> t (* identity *)
+val ( ~- ) : t -> t (* unary negation *)
+val ( + ) : t -> t -> t
+val ( - ) : t -> t -> t
+val ( * ) : t -> t -> t
+val ( / ) : t -> t -> t
+val ( ** ) : t -> int -> t (* exponentiation *)
+----
+
+The type of exponents of `( ** )` may be more general than `int`.
+
+
+=== Ordering
+
+* Unless it makes no sense, modules must provide a function
+[source,ocaml]
+----
+val compare : t -> t -> int
+----
+that defines a _total_ order on the main type `t`.  This is
+necessary to be able to build collections using `M.t` as the key.
+
+* If a (possibly partial) order makes sense for `M.t`, the following
+  order relations should be provided by the module:
+[source,ocaml]
+----
+val ( = ) : t -> t -> bool
+val ( <> ) : t -> t -> bool
+val ( < ) : t -> t -> bool
+val ( > ) : t -> t -> bool
+val ( <= ) : t -> t -> bool
+val ( >= ) : t -> t -> bool
+----
+The order given by these functions may differ from the one of
+`compare` _if_ the natural order on `M.t` is not total.
+
+- If a total order is provided, the module must also define:
+[source,ocaml]
+----
+val min : t -> t -> t
+val max : t -> t -> t
+----
+In case the order is partial, useful functions `min` and `max` can
+still usually be defined.
