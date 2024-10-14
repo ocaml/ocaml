@@ -597,6 +597,10 @@ ___________
   path under Win32.
   (Nicolás Ojeda Bär, review by David Allsopp and Damien Doligez)
 
+- #13502: Fix misindexing related to `Gc.finalise_last` that could prevent
+  finalisers from being run.
+  (Nick Roberts, review by Mark Shinwell)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
@@ -1295,10 +1299,6 @@ OCaml 5.2.0 (13 May 2024)
   (Antonin Décimo, review by Miod Vallat and Sébastien Hinderer)
 
 ### Bug fixes:
-
-- #13502: Fix misindexing related to `Gc.finalise_last` that could prevent
-  finalisers from being run.
-  (Nick Roberts, review by Mark Shinwell)
 
 - #10652, #12720: fix evaluation order in presence of optional arguments
   (Jacques Garrigue, report by Leo White, review by Vincent Laviron)
