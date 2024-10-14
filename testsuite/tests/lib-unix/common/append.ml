@@ -16,12 +16,11 @@ let append () =
       [ Unix.O_WRONLY; Unix.O_CREAT; Unix.O_APPEND ]
       0o644
   in
-  let b = Bytes.unsafe_of_string str in
-  let len = Bytes.length b in
+  let len = String.length str in
   let rec f = function
     | 0 -> ()
     | rem ->
-        let n = Unix.write fd b (len - rem) rem in
+        let n = Unix.write_substring fd str (len - rem) rem in
         f (rem - n)
   in
   f len;
