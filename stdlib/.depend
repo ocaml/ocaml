@@ -475,14 +475,12 @@ stdlib__Lazy.cmi : lazy.mli \
     camlinternalLazy.cmi
 stdlib__Lexing.cmo : lexing.ml \
     stdlib__Sys.cmi \
-    stdlib__String.cmi \
     stdlib__Int.cmi \
     stdlib__Bytes.cmi \
     stdlib__Array.cmi \
     stdlib__Lexing.cmi
 stdlib__Lexing.cmx : lexing.ml \
     stdlib__Sys.cmx \
-    stdlib__String.cmx \
     stdlib__Int.cmx \
     stdlib__Bytes.cmx \
     stdlib__Array.cmx \

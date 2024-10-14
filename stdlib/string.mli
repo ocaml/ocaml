@@ -347,8 +347,7 @@ val rindex_opt : string -> char -> int option
 
 val to_seq : t -> char Seq.t
 (** [to_seq s] is a sequence made of the string's characters in
-    increasing order. In ["unsafe-string"] mode, modifications of the string
-    during iteration will be reflected in the sequence.
+    increasing order.
 
     @since 4.07 *)
 

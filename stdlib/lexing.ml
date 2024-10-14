@@ -163,10 +163,13 @@ let from_channel ?with_positions ic =
   from_function ?with_positions (fun buf n -> input ic buf 0 n)
 
 let from_string ?(with_positions = true) s =
+  (* We can't use [Bytes.unsafe_of_string] here,
+     [lex_buffer] is exported in the mli, one can mutate
+     it outside this module. *)
+  let lex_buffer = Bytes.of_string s in
   { refill_buff = (fun lexbuf -> lexbuf.lex_eof_reached <- true);
-    lex_buffer = Bytes.of_string s; (* have to make a copy for compatibility
-                                       with unsafe-string mode *)
-    lex_buffer_len = String.length s;
+    lex_buffer;
+    lex_buffer_len = Bytes.length lex_buffer;
     lex_abs_pos = 0;
     lex_start_pos = 0;
     lex_curr_pos = 0;
