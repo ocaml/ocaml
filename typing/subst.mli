@@ -48,13 +48,8 @@ val identity: 'a subst
 val unsafe: t -> unsafe
 
 val add_type: Ident.t -> Path.t -> 'k subst -> 'k subst
-val add_type_path: Path.t -> Path.t -> 'k subst -> 'k subst
-val add_type_function:
-  Path.t -> params:type_expr list -> body:type_expr -> 'k subst -> 'k subst
 val add_module: Ident.t -> Path.t -> 'k subst -> 'k subst
-val add_module_path: Path.t -> Path.t -> 'k subst -> 'k subst
 val add_modtype: Ident.t -> Path.t -> 'k subst -> 'k subst
-val add_modtype_path: Path.t -> Path.t -> 'k subst -> 'k subst
 
 val for_saving: t -> t
 val reset_for_saving: unit -> unit
@@ -105,13 +100,20 @@ module Unsafe: sig
   val add_modtype: Ident.t -> module_type -> 'any subst -> unsafe
   val add_modtype_path: Path.t -> module_type -> 'any subst -> unsafe
 
+  (** Deep editing inside a module type require to retypecheck the module, for
+      applicative functors in path and module aliases. *)
+  val add_type_path: Path.t -> Path.t -> unsafe -> unsafe
+  val add_type_function:
+    Path.t -> params:type_expr list -> body:type_expr -> unsafe -> unsafe
+  val add_module_path: Path.t -> Path.t -> unsafe -> unsafe
+
   type error =
-    | Fcm_type_substituted_away of Path.t
+    | Fcm_type_substituted_away of Path.t * Types.module_type
 
   type 'a res := ('a, error) result
 
+  val type_declaration:  unsafe -> type_declaration -> type_declaration res
   val signature_item: scoping -> unsafe -> signature_item -> signature_item res
-
   val signature: scoping -> unsafe -> signature -> signature res
 
   val compose: unsafe -> unsafe -> unsafe res

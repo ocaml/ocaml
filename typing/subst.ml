@@ -37,7 +37,7 @@ type s =
 type 'a subst = s
 type t = [`Safe] subst
 type unsafe = [`Unsafe] subst
-exception Module_type_path_substituted_away of Path.t
+exception Module_type_path_substituted_away of Path.t * Types.module_type
 
 let identity =
   { types = Path.Map.empty;
@@ -49,14 +49,11 @@ let identity =
 
 let unsafe x = x
 
-let add_type_path id p s = { s with types = Path.Map.add id (Path p) s.types }
-let add_type id p s = add_type_path (Pident id) p s
+let add_type id p s =
+    { s with types = Path.Map.add (Pident id) (Path p) s.types }
 
-let add_type_function id ~params ~body s =
-  { s with types = Path.Map.add id (Type_function { params; body }) s.types }
-
-let add_module_path id p s = { s with modules = Path.Map.add id p s.modules }
-let add_module id p s = add_module_path (Pident id) p s
+let add_module id p s =
+  { s with modules = Path.Map.add (Pident id) p s.modules }
 
 let add_modtype_gen p ty s = { s with modtypes = Path.Map.add p ty s.modtypes }
 let add_modtype_path p p' s = add_modtype_gen p (Mty_ident p') s
@@ -108,8 +105,8 @@ let rec module_path s path =
 let modtype_path s path =
       match Path.Map.find path s.modtypes with
       | Mty_ident p -> p
-      | Mty_alias _ | Mty_signature _ | Mty_functor _ ->
-         raise (Module_type_path_substituted_away path)
+      | Mty_alias _ | Mty_signature _ | Mty_functor _ as mty ->
+         raise (Module_type_path_substituted_away (path,mty))
       | exception Not_found ->
          match path with
          | Pdot(p, n) ->
@@ -843,18 +840,23 @@ let module_declaration scoping s decl =
 
 module Unsafe = struct
 
-  type error = Fcm_type_substituted_away of Path.t
+  type error = Fcm_type_substituted_away of Path.t * Types.module_type
 
   let add_modtype_path = add_modtype_gen
   let add_modtype id mty s = add_modtype_path (Pident id) mty s
+  let add_type_path id p s = { s with types = Path.Map.add id (Path p) s.types }
+  let add_type_function id ~params ~body s =
+    { s with types = Path.Map.add id (Type_function { params; body }) s.types }
+  let add_module_path id p s = { s with modules = Path.Map.add id p s.modules }
 
   let wrap f = match f () with
     | x -> Ok x
-    | exception Module_type_path_substituted_away p ->
-        Error (Fcm_type_substituted_away p)
+    | exception Module_type_path_substituted_away (p,mty) ->
+        Error (Fcm_type_substituted_away (p,mty))
 
   let signature_item sc s comp = wrap (fun () -> signature_item sc s comp)
   let signature sc s comp = wrap (fun () -> signature sc s comp )
   let compose s1 s2 = wrap (fun () -> compose s1 s2)
+  let type_declaration s t = wrap (fun () -> type_declaration s t)
 
 end

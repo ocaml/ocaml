@@ -470,6 +470,17 @@ let merge_constraint initial_env loc sg lid constr =
     in
     split [] ghosts
   in
+  let unsafe_signature_subst sub sg =
+    (* This signature will not be used directly, it will always be freshened
+       by the caller. So what we do with the scope doesn't really matter. But
+       making it local makes it unlikely that we will ever use the result of
+       this function unfreshened without issue. *)
+    match Subst.Unsafe.signature Make_local sub sg with
+    | Ok x -> x
+    | Error (Fcm_type_substituted_away (p,mty)) ->
+        let error = With_cannot_remove_packed_modtype(p,mty) in
+        raise (Error(loc,initial_env,error))
+  in
   let rec patch_item constr namelist outer_sig_env sg_for_env ~ghosts item =
     let return ?(ghosts=ghosts) ~replace_by info =
       Some (info, {Signature_group.ghosts; replace_by})
@@ -663,42 +674,32 @@ let merge_constraint initial_env loc sg lid constr =
               try Env.find_type_by_name lid.txt initial_env
               with Not_found -> assert false
             in
-            fun s path -> Subst.add_type_path path replacement s
+            fun s path -> Subst.Unsafe.add_type_path path replacement s
          | None ->
             let body = Option.get tdecl.typ_type.type_manifest in
             let params = tdecl.typ_type.type_params in
             if params_are_constrained params
             then raise(Error(loc, initial_env,
                              With_cannot_remove_constrained_type));
-            fun s path -> Subst.add_type_function path ~params ~body s
+            fun s path -> Subst.Unsafe.add_type_function path ~params ~body s
        in
        let sub = Subst.change_locs Subst.identity loc in
        let sub = List.fold_left how_to_extend_subst sub !real_ids in
-       (* This signature will not be used directly, it will always be freshened
-          by the caller. So what we do with the scope doesn't really matter. But
-          making it local makes it unlikely that we will ever use the result of
-          this function unfreshened without issue. *)
-       Subst.signature Make_local sub sg
+       unsafe_signature_subst sub sg
     | (_, _, Some (Twith_modsubst (real_path, _))) ->
        let sub = Subst.change_locs Subst.identity loc in
        let sub =
          List.fold_left
-           (fun s path -> Subst.add_module_path path real_path s)
+           (fun s path -> Subst.Unsafe.add_module_path path real_path s)
            sub
            !real_ids
        in
-       (* See explanation in the [Twith_typesubst] case above. *)
-       Subst.signature Make_local sub sg
+       unsafe_signature_subst sub sg
     | (_, _, Some (Twith_modtypesubst tmty)) ->
         let add s p = Subst.Unsafe.add_modtype_path p tmty.mty_type s in
         let sub = Subst.change_locs Subst.identity loc in
         let sub = List.fold_left add sub !real_ids in
-        begin match Subst.Unsafe.signature Make_local sub sg with
-        | Ok x -> x
-        | Error (Fcm_type_substituted_away p) ->
-            let error = With_cannot_remove_packed_modtype(p,tmty.mty_type) in
-            raise (Error(loc,initial_env,error))
-        end
+        unsafe_signature_subst sub sg
     | _ ->
        sg
     in
@@ -1062,9 +1063,9 @@ end = struct
     | Class -> names.classes
     | Class_type -> names.class_types
 
- let check_local_subst loc env: _ result -> _ = function
+  let check_unsafe_subst loc env: _ result -> _ = function
     | Ok x -> x
-    | Error (Subst.Unsafe.Fcm_type_substituted_away p) ->
+    | Error (Subst.Unsafe.Fcm_type_substituted_away (p,_)) ->
         raise (Error (loc, env, Non_packable_local_modtype_subst p))
 
   let check cl t loc id (info : info) =
@@ -1072,7 +1073,7 @@ end = struct
     match info with
     | `Substituted_away s ->
         let subst =
-          check_local_subst loc Env.empty @@
+          check_unsafe_subst loc Env.empty @@
           Subst.Unsafe.compose s to_be_removed.subst
         in
         to_be_removed.subst <- subst;
@@ -1184,7 +1185,7 @@ end = struct
           if to_remove.subst == Subst.identity then
             component
           else
-            check_local_subst user_loc env @@
+            check_unsafe_subst user_loc env @@
             Subst.Unsafe.signature_item Keep to_remove.subst component
         in
         let component =
@@ -1403,7 +1404,7 @@ and transl_signature env sg =
               then raise(Error(loc, env, With_cannot_remove_constrained_type));
               let info =
                   let subst =
-                    Subst.add_type_function (Pident td.typ_id)
+                    Subst.Unsafe.add_type_function (Pident td.typ_id)
                       ~params
                       ~body:(Option.get td.typ_type.type_manifest)
                       Subst.identity
