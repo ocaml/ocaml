@@ -92,6 +92,7 @@ STDLIB_MODULE_BASENAMES = \
   oo \
   camlinternalMod \
   dynarray \
+  pqueue \
   ephemeron \
   filename \
   complex \
