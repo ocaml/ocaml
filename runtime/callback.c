@@ -83,8 +83,12 @@ Caml_inline void restore_stack_parent(caml_domain_state* domain_state,
 #include "caml/fix_code.h"
 #include "caml/fiber.h"
 
-static opcode_t callback_code[] =
-  { ACC, 0, APPLY, 0, POP, 1, STOP };
+enum { CALLBACK_NUM_INSTRS = 7 };
+#define Callback_code(nargs) \
+  { ACC, nargs + 3, APPLY, nargs, POP, 1, STOP }
+static opcode_t callback_code[3][CALLBACK_NUM_INSTRS] =
+  { Callback_code(1), Callback_code(2), Callback_code(3) };
+#undef Callback_code
 
 static void init_callback_code(void)
 {
@@ -92,29 +96,26 @@ static void init_callback_code(void)
                               (char *) callback_code + sizeof(callback_code),
                               DIGEST_IGNORE, NULL);
 #ifdef THREADED_CODE
-  caml_thread_code(callback_code, sizeof(callback_code));
+  caml_thread_code((code_t)callback_code, sizeof(callback_code));
 #endif
 }
 
-CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
+static value callback123_exn(value closure, int narg, value args[])
 {
   CAMLparam0(); /* no need to register closure and args as roots, see below */
   CAMLlocal1(cont);
   value res;
   caml_domain_state* domain_state = Caml_state;
 
-  CAMLassert(narg + 4 <= 256);
+  CAMLassert(1 <= narg && narg <= 3);
   domain_state->current_stack->sp -= narg + 4;
   for (int i = 0; i < narg; i++)
     domain_state->current_stack->sp[i] = args[i]; /* arguments */
 
-  callback_code[1] = narg + 3;
-  callback_code[3] = narg;
-
-  domain_state->current_stack->sp[narg] =
-                     (value)(callback_code + 4); /* return address */
-  domain_state->current_stack->sp[narg + 1] = Val_unit;    /* environment */
-  domain_state->current_stack->sp[narg + 2] = Val_long(0); /* extra args */
+  opcode_t* code = callback_code[narg - 1];
+  domain_state->current_stack->sp[narg] = (value)(code + 4);/* return address */
+  domain_state->current_stack->sp[narg + 1] = Val_unit;     /* environment */
+  domain_state->current_stack->sp[narg + 2] = Val_long(0);  /* extra args */
   domain_state->current_stack->sp[narg + 3] = closure;
 
   cont = alloc_and_clear_stack_parent(domain_state);
@@ -123,7 +124,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
      as they were copied into the root [domain_state->current_stack]. */
 
   caml_update_young_limit_after_c_call(domain_state);
-  res = caml_interprete(callback_code, sizeof(callback_code));
+  res = caml_interprete(code, sizeof(opcode_t) * CALLBACK_NUM_INSTRS);
   if (Is_exception_result(res))
     domain_state->current_stack->sp += narg + 4; /* PR#3419 */
 
@@ -136,7 +137,7 @@ CAMLexport value caml_callback_exn(value closure, value arg1)
 {
   value arg[1];
   arg[0] = arg1;
-  return caml_callbackN_exn(closure, 1, arg);
+  return callback123_exn(closure, 1, arg);
 }
 
 CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
@@ -144,7 +145,7 @@ CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
   value arg[2];
   arg[0] = arg1;
   arg[1] = arg2;
-  return caml_callbackN_exn(closure, 2, arg);
+  return callback123_exn(closure, 2, arg);
 }
 
 CAMLexport value caml_callback3_exn(value closure,
@@ -154,7 +155,7 @@ CAMLexport value caml_callback3_exn(value closure,
   arg[0] = arg1;
   arg[1] = arg2;
   arg[2] = arg3;
-  return caml_callbackN_exn(closure, 3, arg);
+  return callback123_exn(closure, 3, arg);
 }
 
 #else
@@ -262,6 +263,8 @@ CAMLexport value caml_callback3_exn(value closure,
   }
 }
 
+#endif
+
 CAMLexport value caml_callbackN_exn(value closure, int narg, value args[]) {
   while (narg >= 3) {
     /* We apply the first 3 arguments to get a new closure,
@@ -290,8 +293,6 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[]) {
     return caml_callback2_exn(closure, args[0], args[1]);
   }
 }
-
-#endif
 
 /* Result-returning variants of the above */
 
