@@ -83,10 +83,8 @@ Caml_inline void restore_stack_parent(caml_domain_state* domain_state,
 #include "caml/fix_code.h"
 #include "caml/fiber.h"
 
-static CAMLthread_local opcode_t callback_code[] =
+static opcode_t callback_code[] =
   { ACC, 0, APPLY, 0, POP, 1, STOP };
-
-static CAMLthread_local int callback_code_inited = 0;
 
 static void init_callback_code(void)
 {
@@ -96,7 +94,6 @@ static void init_callback_code(void)
 #ifdef THREADED_CODE
   caml_thread_code(callback_code, sizeof(callback_code));
 #endif
-  callback_code_inited = 1;
 }
 
 CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
@@ -110,8 +107,6 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   domain_state->current_stack->sp -= narg + 4;
   for (int i = 0; i < narg; i++)
     domain_state->current_stack->sp[i] = args[i]; /* arguments */
-
-  if (!callback_code_inited) init_callback_code();
 
   callback_code[1] = narg + 3;
   callback_code[3] = narg;
