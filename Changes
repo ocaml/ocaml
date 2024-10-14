@@ -30,6 +30,11 @@ Working version
   entries found in ld.conf.
   (David Allsopp, review by Stephen Dolan)
 
+- #13496: Add missing .type and .size directives to main frametable to silence
+  warnings from the linker when using libasmrun_shared on amd64 and power. The
+  other backends already carried these directives.
+  (David Allsopp, review by Tim McGilchrist and Miod Vallat)
+
 - #13500: Add frame pointers support for ARM64 on Linux and macOS.
   (Tim McGilchrist, review by KC Sivaramakrishnan, Fabrice Buoro
    and Miod Vallat)
