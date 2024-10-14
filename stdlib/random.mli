@@ -254,7 +254,14 @@ end
 
 val get_state : unit -> State.t
 (** [get_state()] returns a fresh copy of the current state of the
-    domain-local generator (which is used by the basic functions). *)
+    domain-local generator (which is used by the basic functions).
+
+    The current state is unchanged, which means that random numbers
+    generated from multiple calls to [get_state ()] will be identical.
+
+    See {!Random.State.make_self_init} and {!Random.split} instead to obtain
+    a fresh state that is not shared.
+ *)
 
 val set_state : State.t -> unit
 (** [set_state s] updates the current state of the domain-local
