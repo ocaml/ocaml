@@ -174,6 +174,7 @@ let prunstack = "Prunstack"
 let pperform = "Pperform"
 let presume = "Presume"
 let preperform = "Preperform"
+let preperform_old = "Preperform_old"
 let pdls_get = "Pdls_get"
 let ppoll = "Ppoll"
 
@@ -284,6 +285,7 @@ let prunstack_arg = "Prunstack_arg"
 let pperform_arg = "Pperform_arg"
 let presume_arg = "Presume_arg"
 let preperform_arg = "Preperform_arg"
+let preperform_old_arg = "Preperform_old_arg"
 let pdls_get_arg = "Pdls_get_arg"
 let ppoll_arg = "Ppoll_arg"
 
@@ -426,6 +428,7 @@ let of_primitive : Lambda.primitive -> string = function
   | Pperform -> pperform
   | Presume -> presume
   | Preperform -> preperform
+  | Preperform_old -> preperform_old
   | Pdls_get -> pdls_get
   | Ppoll -> ppoll
 
@@ -536,5 +539,6 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pperform -> pperform_arg
   | Presume -> presume_arg
   | Preperform -> preperform_arg
+  | Preperform_old -> preperform_old_arg
   | Pdls_get -> pdls_get_arg
   | Ppoll -> ppoll_arg

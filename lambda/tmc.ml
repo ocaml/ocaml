@@ -862,7 +862,7 @@ let rec choice ctx t =
     | Pcompare_ints | Pcompare_floats | Pcompare_bints _
 
     (* we don't handle effect or DLS primitives *)
-    | Prunstack | Pperform | Presume | Preperform | Pdls_get
+    | Prunstack | Pperform | Presume | Preperform | Preperform_old | Pdls_get
 
     (* we don't handle atomic primitives *)
     | Patomic_load

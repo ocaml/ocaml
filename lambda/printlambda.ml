@@ -205,6 +205,7 @@ let primitive ppf = function
   | Pperform -> fprintf ppf "perform"
   | Presume -> fprintf ppf "resume"
   | Preperform -> fprintf ppf "reperform"
+  | Preperform_old -> fprintf ppf "reperform_old"
   | Pccall p -> fprintf ppf "%s" p.prim_name
   | Praise k -> fprintf ppf "%s" (Lambda.raise_kind k)
   | Psequand -> fprintf ppf "&&"
@@ -462,6 +463,7 @@ let name_of_primitive = function
   | Presume -> "Presume"
   | Pperform -> "Pperform"
   | Preperform -> "Preperform"
+  | Preperform_old -> "Preperform_old"
   | Pdls_get -> "Pdls_get"
   | Ppoll -> "Ppoll"
 

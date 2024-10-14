@@ -35,7 +35,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
       No_effects, No_coeffects
   | Pccall _ -> Arbitrary_effects, Has_coeffects
   | Praise _ -> Arbitrary_effects, No_coeffects
-  | Prunstack | Pperform | Presume | Preperform ->
+  | Prunstack | Pperform | Presume | Preperform | Preperform_old ->
       Arbitrary_effects, Has_coeffects
   | Pnot
   | Pnegint
