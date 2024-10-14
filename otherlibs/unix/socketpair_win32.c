@@ -19,6 +19,7 @@
 #include <caml/signals.h>
 #include "caml/unixsupport.h"
 #include <errno.h>
+#include <stdbool.h>
 
 #ifdef HAS_SOCKETS
 
@@ -36,61 +37,30 @@ extern const int caml_unix_socket_type_table[]; /* from socket.c */
 
 static int socketpair(int domain, int type, int protocol,
                       SOCKET socket_vector[2],
-                      BOOL inherit)
+                      BOOL inherit, char *sun_path)
 {
-  wchar_t dirname[MAX_PATH + 1], path[MAX_PATH + 1];
-  union sock_addr_union addr;
-  socklen_param_type socklen;
-
   /* POSIX states that in case of error, the contents of socket_vector
      shall be unmodified. */
   SOCKET listener = INVALID_SOCKET,
     server = INVALID_SOCKET,
     client = INVALID_SOCKET;
 
-  fd_set writefds, exceptfds;
-  u_long non_block, peerid = 0UL;
-
-  DWORD drc;
+  bool defer_delete_file = false;
   int rc;
-
-  if (GetTempPath(MAX_PATH + 1, dirname) == 0) {
-    caml_win32_maperr(GetLastError());
-    goto fail;
-  }
-
-  if (GetTempFileName(dirname, L"osp", 0U, path) == 0) {
-    caml_win32_maperr(GetLastError());
-    goto fail;
-  }
-
-  addr.s_unix.sun_family = PF_UNIX;
-  socklen = sizeof(addr.s_unix);
-
-  /* sun_path needs to be set in UTF-8 */
-  rc = WideCharToMultiByte(CP_UTF8, 0, path, -1, addr.s_unix.sun_path,
-                           UNIX_PATH_MAX, NULL, NULL);
-  if (rc == 0) {
-    caml_win32_maperr(GetLastError());
-    goto fail_path;
-  }
 
   listener = caml_win32_socket(domain, type, protocol, NULL, inherit);
   if (listener == INVALID_SOCKET)
     goto fail_wsa;
 
-  /* The documentation requires removing the file before binding the socket. */
-  if (DeleteFile(path) == 0) {
-    drc = GetLastError();
-    if (drc != ERROR_FILE_NOT_FOUND) {
-      caml_win32_maperr(drc);
-      goto fail_sockets;
-    }
-  }
+  union sock_addr_union addr = { 0 };
+  socklen_param_type socklen = sizeof(addr.s_unix);
+  addr.s_unix.sun_family = PF_UNIX;
+  memcpy(addr.s_unix.sun_path, sun_path, strlen(sun_path));
 
   rc = bind(listener, (struct sockaddr *) &addr, socklen);
-  if (rc == SOCKET_ERROR)
+  if (rc == SOCKET_ERROR && WSAGetLastError() != WSAEADDRINUSE)
     goto fail_wsa;
+  defer_delete_file = true;
 
   rc = listen(listener, 1);
   if (rc == SOCKET_ERROR)
@@ -100,12 +70,8 @@ static int socketpair(int domain, int type, int protocol,
   if (client == INVALID_SOCKET)
     goto fail_wsa;
 
-  non_block = 1UL;
-  if (ioctlsocket(client, FIONBIO, &non_block) == SOCKET_ERROR)
-    goto fail_wsa;
-
   rc = connect(client, (struct sockaddr *) &addr, socklen);
-  if (rc != SOCKET_ERROR || WSAGetLastError() != WSAEWOULDBLOCK)
+  if (rc == SOCKET_ERROR)
     goto fail_wsa;
 
   server = accept(listener, NULL, NULL);
@@ -117,36 +83,26 @@ static int socketpair(int domain, int type, int protocol,
   if (rc == SOCKET_ERROR)
     goto fail_wsa;
 
-  FD_ZERO(&writefds);
-  FD_SET(client, &writefds);
-  FD_ZERO(&exceptfds);
-  FD_SET(client, &exceptfds);
-
-  rc = select(0 /* ignored */,
-              NULL, &writefds, &exceptfds,
-              NULL /* blocking */);
-  if (rc == SOCKET_ERROR
-      || FD_ISSET(client, &exceptfds)
-      || !FD_ISSET(client, &writefds)) {
-    /* We're not interested in the socket error status */
-    goto fail_wsa;
-  }
-
-  non_block = 0UL;
-  if (ioctlsocket(client, FIONBIO, &non_block) == SOCKET_ERROR)
-    goto fail_wsa;
-
-  if (DeleteFile(path) == 0) {
+  /* Socket file no longer needed */
+  defer_delete_file = false;
+  if (!DeleteFileA(addr.s_unix.sun_path)) {
     caml_win32_maperr(GetLastError());
     goto fail_sockets;
   }
 
+  /* Check that the process that connected is this self process. */
+  u_long peerid = 0UL;
+  DWORD drc;
   rc = WSAIoctl(client, SIO_AF_UNIX_GETPEERPID,
                 NULL, 0U,
                 &peerid, sizeof(peerid), &drc /* Windows bug: always 0 */,
                 NULL, NULL);
-  if (rc == SOCKET_ERROR || peerid != GetCurrentProcessId())
+  if (rc == SOCKET_ERROR)
     goto fail_wsa;
+  if (peerid != GetCurrentProcessId()) {
+    errno = EACCES; /* no clear error code */
+    goto fail_sockets;
+  }
 
   socket_vector[0] = client;
   socket_vector[1] = server;
@@ -154,9 +110,6 @@ static int socketpair(int domain, int type, int protocol,
 
 fail_wsa:
   caml_win32_maperr(WSAGetLastError());
-
-fail_path:
-  DeleteFile(path);
 
 fail_sockets:
   if(listener != INVALID_SOCKET)
@@ -166,29 +119,37 @@ fail_sockets:
   if(server != INVALID_SOCKET)
     closesocket(server);
 
-fail:
+  if (defer_delete_file)
+    DeleteFileA(addr.s_unix.sun_path);
+
   return SOCKET_ERROR;
 }
 
-CAMLprim value caml_unix_socketpair(value cloexec, value vdomain, value vtype,
-                               value vprotocol)
+CAMLprim value caml_win32_socketpair(value vsun_path, value vcloexec,
+                                     value vdomain, value vtype,
+                                     value vprotocol)
 {
-  CAMLparam4(cloexec, vdomain, vtype, vprotocol);
+  CAMLparam5(vsun_path, vcloexec, vdomain, vtype, vprotocol);
   CAMLlocal1(result);
   SOCKET sv[2];
-  int rc;
-  int domain = Int_val(vdomain);
-  int type = Int_val(vtype);
+  int domain = caml_unix_socket_domain_table[Int_val(vdomain)];
+  int type = caml_unix_socket_type_table[Int_val(vtype)];
   int protocol = Int_val(vprotocol);
+  BOOL inherit = ! caml_unix_cloexec_p(vcloexec);
+
+  if (domain != PF_UNIX)
+    caml_unix_error(EOPNOTSUPP, "socketpair", Nothing);
+
+  caml_unix_check_path(vsun_path, "socketpair");
+  if (caml_string_length(vsun_path) + 1 > UNIX_PATH_MAX)
+    caml_unix_error(ENOENT, "socketpair", Nothing);
+  char *sun_path = caml_stat_strdup(String_val(vsun_path));
 
   caml_enter_blocking_section();
-  rc = socketpair(caml_unix_socket_domain_table[domain],
-                  caml_unix_socket_type_table[type],
-                  protocol,
-                  sv,
-                  ! caml_unix_cloexec_p(cloexec));
+  int rc = socketpair(domain, type, protocol, sv, inherit, sun_path);
   caml_leave_blocking_section();
 
+  caml_stat_free(sun_path);
   if (rc == SOCKET_ERROR)
     caml_uerror("socketpair", Nothing);
 
