@@ -96,3 +96,6 @@ let asmgen_archmod =
     "asmgen_" ^ Ocamltest_config.arch ^ "." ^ Ocamltest_config.objext
   in
   Filename.make_path [Ocaml_directories.srcdir; "testsuite"; "tools"; objname]
+
+let ocamltest =
+  Filename.make_path [Ocaml_directories.ocamltest; Filename.mkexe "ocamltest"]
