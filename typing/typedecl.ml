@@ -652,7 +652,9 @@ let check_coherence env loc dpath decl =
                     let decl =
                       match Subst.Unsafe.type_declaration subst decl with
                       | Ok decl -> decl
-                      | Error (Fcm_type_substituted_away _) -> assert false
+                      | Error (Fcm_type_substituted_away _) ->
+                           (* no module type substitution in [subst] *)
+                          assert false
                     in
                     Includecore.type_declarations ~loc ~equality:true env
                       ~mark:true
