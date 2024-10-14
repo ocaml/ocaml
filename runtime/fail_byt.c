@@ -98,7 +98,7 @@ CAMLexport void caml_raise_with_string(value tag, char const *msg)
 */
 static void check_global_data(char const *exception_name)
 {
-  if (caml_global_data == 0) {
+  if (!Is_block(caml_global_data)) {
     fprintf(stderr, "Fatal error: exception %s\n", exception_name);
     exit(2);
   }
@@ -106,7 +106,7 @@ static void check_global_data(char const *exception_name)
 
 static void check_global_data_param(char const *exception_name, char const *msg)
 {
-  if (caml_global_data == 0) {
+  if (!Is_block(caml_global_data)) {
     fprintf(stderr, "Fatal error: exception %s(\"%s\")\n", exception_name, msg);
     exit(2);
   }
@@ -208,7 +208,7 @@ int caml_is_special_exception(value exn) {
      a more readable textual representation of some exceptions. It is
      better to fall back to the general, less readable representation
      than to abort with a fatal error as above. */
-  if (caml_global_data == 0) return 0;
+  if (!Is_block(caml_global_data)) return 0;
   return exn == Field(caml_global_data, MATCH_FAILURE_EXN)
     || exn == Field(caml_global_data, ASSERT_FAILURE_EXN)
     || exn == Field(caml_global_data, UNDEFINED_RECURSIVE_MODULE_EXN);
