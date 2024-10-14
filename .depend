@@ -2530,6 +2530,7 @@ bytecomp/emitcode.cmi : \
 bytecomp/instruct.cmo : \
     typing/types.cmi \
     typing/subst.cmi \
+    typing/primitive.cmi \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
@@ -2538,6 +2539,7 @@ bytecomp/instruct.cmo : \
 bytecomp/instruct.cmx : \
     typing/types.cmx \
     typing/subst.cmx \
+    typing/primitive.cmx \
     parsing/location.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
@@ -2546,6 +2548,7 @@ bytecomp/instruct.cmx : \
 bytecomp/instruct.cmi : \
     typing/types.cmi \
     typing/subst.cmi \
+    typing/primitive.cmi \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
@@ -7941,6 +7944,7 @@ tools/cvt_emit.cmx : \
 tools/cvt_emit.cmi :
 tools/dumpobj.cmo : \
     bytecomp/symtable.cmi \
+    typing/primitive.cmi \
     tools/opnames.cmi \
     bytecomp/opcodes.cmi \
     utils/misc.cmi \
@@ -7954,6 +7958,7 @@ tools/dumpobj.cmo : \
     tools/dumpobj.cmi
 tools/dumpobj.cmx : \
     bytecomp/symtable.cmx \
+    typing/primitive.cmx \
     tools/opnames.cmx \
     bytecomp/opcodes.cmx \
     utils/misc.cmx \

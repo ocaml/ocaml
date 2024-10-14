@@ -73,6 +73,17 @@ let record_events orig evl =
       Hashtbl.add event_table ev.ev_pos ev)
     evl
 
+(* Performance hints (indexed by PC) *)
+
+let hint_table = (Hashtbl.create 253 : (int, optimization_hint) Hashtbl.t)
+
+let record_hints orig evl =
+  List.iter
+    (fun (pos, hint) ->
+       let pos = orig + pos in
+       Hashtbl.add hint_table pos hint)
+    evl
+
 (* Print an obj *)
 
 let same_custom x y =
@@ -407,6 +418,65 @@ let print_event ev =
       ls.Lexing.pos_lnum (ls.Lexing.pos_cnum - ls.Lexing.pos_bol)
       (le.Lexing.pos_cnum - ls.Lexing.pos_bol)
 
+let print_hint hint =
+  match hint with
+  | Hint_bigarray { unsafe; elt_kind; layout } ->
+    printf " (%s%s%s)"
+      (if unsafe then "unsafe " else "")
+      (match elt_kind with
+       | Pbigarray_unknown -> "generic"
+       | Pbigarray_float16 -> "float16"
+       | Pbigarray_float32 -> "float32"
+       | Pbigarray_float64 -> "float64"
+       | Pbigarray_sint8 -> "sint8"
+       | Pbigarray_uint8 -> "uint8"
+       | Pbigarray_sint16 -> "sint16"
+       | Pbigarray_uint16 -> "uint16"
+       | Pbigarray_int32 -> "int32"
+       | Pbigarray_int64 -> "int64"
+       | Pbigarray_caml_int -> "camlint"
+       | Pbigarray_native_int -> "nativeint"
+       | Pbigarray_complex32 -> "complex32"
+       | Pbigarray_complex64 -> "complex64")
+      (match layout with
+       | Pbigarray_unknown_layout -> ""
+       | Pbigarray_c_layout -> " C"
+       | Pbigarray_fortran_layout -> " Fortran")
+  | Hint_unsafe ->
+      printf " (unsafe)"
+  | Hint_array kind ->
+      printf " (%s)"
+        (match kind with
+         | Pgenarray -> "generic"
+         | Paddrarray -> "addr"
+         | Pintarray -> "int"
+         | Pfloatarray -> "float")
+  | Hint_int kind ->
+      printf " (%s)"
+        (match kind with
+         | Pnativeint -> "nativeint"
+         | Pint32 -> "int32"
+         | Pint64 -> "int64")
+  | Hint_immutable ->
+      printf " (immutable)"
+  | Hint_primitive p ->
+      printf " (%s:" p.prim_native_name;
+      let print_repr i repr =
+        if i > 0 then printf " ->";
+        printf
+          (let open Primitive in
+           match repr with
+           | Same_as_ocaml_repr -> " value"
+           | Unboxed_float -> " float"
+           | Unboxed_integer Pnativeint -> " nativeint"
+           | Unboxed_integer Pint32 -> " int32"
+           | Unboxed_integer Pint64 -> " int64"
+           | Untagged_immediate -> " immediate")
+      in
+      List.iteri print_repr p.prim_native_repr_args;
+      print_repr 1 p.prim_native_repr_res;
+      printf ")"
+
 let print_instr ic =
   let pos = currpos ic in
   List.iter print_event (Hashtbl.find_all event_table pos);
@@ -464,6 +534,7 @@ let print_instr ic =
     | Nothing -> ()
   with Not_found -> print_string " (unknown arguments)"
   end;
+  List.iter print_hint (Hashtbl.find_all hint_table pos);
   print_string "\n"
 
 (* Disassemble a block of code *)
@@ -508,6 +579,11 @@ let dump_obj ic =
                 (* Skip the list of absolute directory names *)
     record_events 0 evl
   end;
+  if cu.cu_hint > 0 then begin
+    seek_in ic cu.cu_hint;
+    let evl = (Compression.input_value ic : (int * optimization_hint) list) in
+    record_hints 0 evl
+  end;
   seek_in ic cu.cu_pos;
   print_code ic cu.cu_codesize
 
@@ -536,6 +612,18 @@ let dump_exe ic =
           (* Skip the list of absolute directory names *)
           ignore (Compression.input_value ic);
           record_events orig evl
+        done
+  end;
+  begin
+    match Bytesections.seek_section toc ic Bytesections.Name.HINT with
+    | exception Not_found -> ()
+    | (_ : int) ->
+        let num_hintlists = input_binary_int ic in
+        for _i = 1 to num_hintlists do
+          let orig = input_binary_int ic in
+          let hints =
+            (Compression.input_value ic : (int * optimization_hint) list) in
+          record_hints orig hints
         done
   end;
   let code_size = Bytesections.seek_section toc ic Bytesections.Name.CODE in
@@ -569,6 +657,8 @@ let arg_fun filename =
       objfile := true; seek_in ic 0; dump_obj ic
   end;
   close_in ic;
+  Hashtbl.clear event_table;
+  Hashtbl.clear hint_table;
   if !print_banners then printf "## end of ocaml dump of %S\n%!" filename
 
 let main () =

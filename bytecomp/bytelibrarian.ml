@@ -36,6 +36,11 @@ let copy_compunit ic oc compunit =
     seek_in ic compunit.cu_debug;
     compunit.cu_debug <- pos_out oc;
     copy_file_chunk ic oc compunit.cu_debugsize
+  end;
+  if compunit.cu_hint > 0 then begin
+    seek_in ic compunit.cu_hint;
+    compunit.cu_hint <- pos_out oc;
+    copy_file_chunk ic oc compunit.cu_hintsize
   end
 
 (* Add C objects and options and "custom" info from a library descriptor *)
