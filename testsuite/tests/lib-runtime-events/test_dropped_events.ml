@@ -1,5 +1,4 @@
 (* TEST
- not-msvc; (* FIXME: currently flaky on clang-cl 64 bits *)
  include runtime_events;
  include unix;
  ocamlrunparam += ",e=6";
