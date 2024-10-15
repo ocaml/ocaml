@@ -135,6 +135,7 @@ Working version
 - #13454: Output a correct trace of the C_CALLN bytecode.
   (Miod Vallat, review by Antonin Décimo)
 
+<<<<<<< HEAD
 - #131495: Fix typechecker crash while typing objects
   (Jacques Garrigue, report by Nicolás Ojeda Bär, review by Florian Angeletti)
 
@@ -144,6 +145,12 @@ Working version
   (Florian Angeletti, report by Nailen Matschke, review by Gabriel Scherer, and
   Leo White)
 
+||||||| parent of e8161515b1 (make out of scope universal variables fatal, except for equality)
+- #131495: Fix typechecker crash while typing objects
+  (Jacques Garrigue, report by Nicolás Ojeda Bär, review by ???)
+
+=======
+>>>>>>> e8161515b1 (make out of scope universal variables fatal, except for equality)
 OCaml 5.3.0
 ___________
 
@@ -781,6 +788,10 @@ ___________
 - #13417: `Filename.quote_command`: fix handling of forward slashes in program
   path under Win32.
   (Nicolás Ojeda Bär, review by David Allsopp and Damien Doligez)
+
+- #131495: Fix typechecker crash while typing objects
+  (Jacques Garrigue, report by Nicolás Ojeda Bär, review by
+   Nicolas Ojeda Bär, Gabriel Scherer, Stephen Dolan)
 
 - #13263, #13560: fix printing true and false in toplevel and error
   messages (no more unexpected \#true)
