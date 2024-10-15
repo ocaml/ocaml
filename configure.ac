@@ -726,7 +726,7 @@ AS_CASE([$lt_cv_ar_at_file],
 AS_CASE([$host],
   [*-*-mingw32*|*-pc-windows],
     [unix_or_win32="win32"
-    ln='cp -pf'
+    OCAML_CHECK_LN_ON_WINDOWS
     ocamltest_libunix="Some false"
     ocamlsrcdir="$(LC_ALL=C.UTF-8 cygpath -w -- "$ocamlsrcdir")"
     ocamlyacc_wstr_module="yacc/wstr"],

@@ -467,3 +467,12 @@ endef # INSTALL_STRIPPED_BYTE_PROG
 # boot/ as part of coldstart. See read_runtime_launch_info in
 # bytecomp/bytelink.ml for further details.
 HEADER_NAME = runtime-launch-info
+
+ifeq "$(UNIX_OR_WIN32)" "win32"
+# Ensure that no command can create Cygwin symbolic links by ensuring that
+# symlink(2) will fail if native NTFS symlinks aren't available.
+export CYGWIN := $(strip \
+  $(filter-out winsymlinks winsymlinks:%, $(CYGWIN)) winsymlinks:nativestrict)
+export MSYS := $(strip \
+  $(filter-out winsymlinks winsymlinks:%, $(MSYS)) winsymlinks:nativestrict)
+endif

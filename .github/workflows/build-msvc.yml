@@ -95,10 +95,12 @@ jobs:
           CC: ${{ matrix.cc }}
         run: >-
           eval $(tools/msvs-promote-path) ;
-          if ! ./configure --cache-file=config.cache --host=$HOST CC=$CC ; then
+          if ! ./configure --cache-file=config.cache --host=$HOST CC=$CC
+          --prefix "$PROGRAMFILES/Бактріан🐫"; then
           rm -rf config.cache ;
           failed=0 ;
-          ./configure --cache-file=config.cache --host=$HOST CC=$CC \
+          ./configure --cache-file=config.cache --host=$HOST CC=$CC
+          --prefix "$PROGRAMFILES/Бактріан🐫"
           || failed=$?;
           if ((failed)) ; then cat config.log ; exit $failed ; fi ;
           fi ;
@@ -136,3 +138,7 @@ jobs:
         run: >-
           eval $(tools/msvs-promote-path) ;
           make -j tests ;
+
+      - name: Install the compiler
+        shell: bash
+        run: make install
