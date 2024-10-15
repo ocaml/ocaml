@@ -46,9 +46,16 @@ Working version
   (Miod Vallat, review by KC Sivaramakrishnan, feedback from Nick Barnes
    and Gabriel Scherer)
 
+- #13354: Use C99 flexible array member syntax everywhere.
+  (Antonin Décimo, review by Miod Vallat, Gabriel Scherer, and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 ### Standard library:
+
+- #13543: Remove some String-Bytes conversion from the stdlib to behave better
+  with js_of_ocaml
+  (Hugo Heuzard, review by Gabriel Scherer)
 
 ### Other libraries:
 
@@ -94,6 +101,10 @@ Working version
 
 - #13460: introduce a variant of all predefined types
   (Gabriel Scherer, review by Ulysse Gérard and Florian Angeletti)
+
+- #13457, #13537: Annotate alloc/free open/close pairs of functions
+  with compiler attributes for static analysis.
+  (Antonin Décimo, review by Gabriel Scherer and Florian Angeletti)
 
 ### Build system:
 
@@ -418,6 +429,9 @@ ___________
   (KC Sivaramakrishnan, review by Anil Madhavapeddy, Florian Angeletti and Miod
    Vallat)
 
+- #13314: Comment the code of Translclass
+  (Vincent Laviron and Nathanaëlle Courant, review by Olivier Nicole)
+
 - #13424: Fix `Gc.quick_stat` documentation to clarify that returned fields
   `live_words`, `live_blocks`, `free_words`, and `fragments` are not zero.
   (Jan Midtgaard, review by Damien Doligez and KC Sivaramakrishnan)
@@ -558,6 +572,10 @@ ___________
   uniform_array and floatarray versions, use floatarray versions
   in Float.Array.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
+
+- #13464: Use generic types in call to `subtype`. This improves
+  inference of type-directed disambiguation in principal mode.
+  (Richard Eisenberg, review by Jacques Garrigue)
 
 - #13507: A small refactoring to [free_vars] to make it a bit faster
   by not allocating a list when the list is not necessary.

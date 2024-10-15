@@ -67,7 +67,7 @@ CAMLexport void caml_raise(value v)
 */
 static void check_global_data(char const *exception_name)
 {
-  if (caml_global_data == 0 || !Is_block(caml_global_data)) {
+  if (!Is_block(caml_global_data)) {
     fprintf(stderr, "Fatal error: exception %s during initialisation\n",
             exception_name);
     exit(2);
@@ -76,7 +76,7 @@ static void check_global_data(char const *exception_name)
 
 static void check_global_data_param(char const *exception_name, char const *msg)
 {
-  if (caml_global_data == 0 || !Is_block(caml_global_data)) {
+  if (!Is_block(caml_global_data)) {
     fprintf(stderr, "Fatal error: exception %s(\"%s\")\n", exception_name, msg);
     exit(2);
   }
@@ -173,7 +173,7 @@ int caml_is_special_exception(value exn) {
 
   value f;
 
-  if (caml_global_data == 0 || !Is_block(caml_global_data)) {
+  if (!Is_block(caml_global_data)) {
     return 0;
   }
 

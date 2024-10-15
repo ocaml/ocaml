@@ -332,7 +332,7 @@ void caml_maybe_expand_stack (void)
 
 #else /* End NATIVE_CODE, begin BYTE_CODE */
 
-value caml_global_data;
+value caml_global_data = Val_unit;
 
 CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
 {

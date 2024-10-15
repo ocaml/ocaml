@@ -180,6 +180,8 @@ jobs:
         run: |
           brew install parallel
           # Allows starting up lldb from a remote terminal
+          #   Note: in order to start lldb, the user must also be in
+          #   one of these groups: "admin" or "_developer".
           sudo DevToolsSecurity --enable
           spctl developer-mode enable-terminal
           # Select latest supported version
