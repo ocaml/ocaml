@@ -142,7 +142,7 @@ let run_test_tree log add_msg behavior env summ ast =
             let testenv = List.fold_left apply_modifiers env mods in
             let test = lookup_test name in
             let (result, newenv) = Tests.run log testenv test in
-            let msg = Result.string_of_result result in
+            let msg = "=> " ^ (Result.string_of_result result) in
             let sub_behavior =
               if Result.is_pass result then Run else Skip_all in
             (msg, sub_behavior, newenv, result)
