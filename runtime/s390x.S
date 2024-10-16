@@ -551,6 +551,7 @@ LBL(105):
         jl      LBL(106)
         lg      %r0, 0(%r8)
         lay     %r15, -8(%r15)
+        CFI_ADJUST(8)
         stg     %r0, RESERVED_STACK(%r15)
         CFI_ADJUST(8)
         brcl    15, LBL(105)
@@ -601,6 +602,7 @@ CFI_STARTPROC
 LBL(caml_start_program):
     /* Allocate stack frame */
         lay     %r15, -RESERVED_STACK(%r15)
+        CFI_ADJUST(RESERVED_STACK)
     /* Save all callee-save registers + return address */
     /* GPR 6..14 at sp + 0 ... sp + 64
        FPR 10..15 at sp + 72 ... sp + 128 */
@@ -661,10 +663,12 @@ LBL(caml_retaddr):
     /* pop exn handler */
         lg      %r8, 0(%r15)
         la      %r15, 16(%r15)
+        CFI_ADJUST(-16)
         stg     %r8, Caml_state(exn_handler)
 LBL(return_result):  /* restore GC regs */
         lg      %r9, 8(%r15)
         la      %r15, 16(%r15)
+        CFI_ADJUST(-16)
         stg     %r9, Caml_state(gc_regs)
     /* Update alloc ptr */
         stg     ALLOC_PTR, Caml_state(young_ptr)
@@ -677,7 +681,7 @@ LBL(return_result):  /* restore GC regs */
         lg      %r8, Cstack_prev(%r15)
         stg     %r8, Caml_state(c_stack)
         la      %r15, SIZEOF_C_STACK_LINK(%r15)
-        CFI_ADJUST(SIZEOF_C_STACK_LINK)
+        CFI_ADJUST(-SIZEOF_C_STACK_LINK)
 #if defined(WITH_THREAD_SANITIZER)
     /* We can't use TSAN_EXIT_FUNCTION here, as it assumes to run on an
        OCaml stack, and we are back to a C stack at this point. */
@@ -705,6 +709,7 @@ LBL(return_result):  /* restore GC regs */
         ld      %f15, 128(%r15)
     /* Return */
         la     %r15, RESERVED_STACK(%r15)
+        CFI_ADJUST(-RESERVED_STACK)
     /* Return to caller. */
         br      %r14
 LBL(trap_handler):
@@ -725,6 +730,7 @@ ENDFUNCTION(G(caml_start_program))
         lg      TMP,       8(%r15);                    \
         lg      TRAP_PTR,  0(%r15);                    \
         la      %r15,     16(%r15);                    \
+        CFI_ADJUST(-16);                               \
         br      TMP;
 
 /* Raise an exception from OCaml */
