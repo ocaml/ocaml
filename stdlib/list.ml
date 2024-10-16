@@ -108,6 +108,13 @@ let rev_map f l =
   in
   rmap_f [] l
 
+let[@tail_mod_cons] rec append_map f l1 l2 = match l1 with
+  | [] -> l2
+  | [ hd ] -> f hd :: l2
+  | [ hd1 ; hd2 ] -> f hd1 :: f hd2 :: l2
+  | [ hd1 ; hd2 ; hd3 ] -> f hd1 :: f hd2 :: f hd3 :: l2
+  | hd1 :: hd2 :: hd3 :: hd4 :: tl ->
+     f hd1 :: f hd2 :: f hd3 :: f hd4 :: append_map f tl l2
 
 let rec iter f = function
     [] -> ()
