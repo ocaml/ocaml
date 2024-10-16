@@ -119,7 +119,7 @@ let enter_type ?abstract_abbrevs rec_flag env sdecl (id, uid) =
   let abstract_source, type_manifest =
     match sdecl.ptype_manifest, abstract_abbrevs with
     | None, _             -> Definition, None
-    | Some _, None        -> Definition, Some (Btype.newgenvar ())
+    | Some _, None        -> Definition, Some (Ctype.newvar ())
     | Some _, Some reason -> reason, None
   in
   let decl =
@@ -1054,6 +1054,20 @@ let check_redefined_unit (td: Parsetree.type_declaration) =
   | _ ->
       ()
 
+(* Update a temporary definition to share recursion *)
+let update_type temp_env env id loc =
+  let path = Path.Pident id in
+  let decl = Env.find_type path temp_env in
+  match decl.type_manifest with None -> ()
+  | Some ty ->
+      (* Since this function may be called after generalizing declarations,
+         ty is at the generic level.  However, we need to keep possible
+         sharings in recursive type definitions*)
+      let params = List.map (fun _ -> Ctype.newvar ()) decl.type_params in
+      try Ctype.unify env (Ctype.newconstr path params) ty
+      with Ctype.Unify err ->
+        raise (Error(loc, Type_clash (env, err)))
+
 let add_types_to_env decls shapes env =
   List.fold_right2
     (fun (id, decl) shape env ->
@@ -1089,10 +1103,12 @@ let transl_type_decl env rec_flag sdecl_list =
       Uid.mk ~current_unit:(Env.get_current_unit ())
     ) sdecl_list
   in
+  (* Additional scope since update_type may lower some generic levels *)
+  Ctype.with_local_level_generalize begin fun () ->
   (* Translate declarations, using a temporary environment where abbreviations
      expand to a generic type variable. After that, we check the coherence of
      the translated declarations in the resulting new environment. *)
-  let tdecls, decls, shapes, new_env =
+  let tdecls, decls, shapes, temp_env, new_env =
     Ctype.with_local_level_generalize begin fun () ->
       (* Enter types. *)
       let temp_env =
@@ -1139,7 +1155,7 @@ let transl_type_decl env rec_flag sdecl_list =
       check_duplicates sdecl_list;
       (* Build the final env. *)
       let new_env = add_types_to_env decls shapes env in
-      (tdecls, decls, shapes, new_env)
+      (tdecls, decls, shapes, temp_env, new_env)
     end
   in
   (* Check for ill-formed abbrevs *)
@@ -1169,6 +1185,15 @@ let transl_type_decl env rec_flag sdecl_list =
   List.iter (fun (tdecl, _shape) ->
     check_abbrev_regularity ~abs_env new_env id_loc_list to_check tdecl)
     tdecls;
+  (* Update temporary definitions (for well-founded recursive types) *)
+  begin match rec_flag with
+  | Asttypes.Nonrecursive -> ()
+  | Asttypes.Recursive ->
+      List.iter2
+        (fun (id, _) sdecl ->
+          update_type temp_env new_env id sdecl.ptype_loc)
+        ids_list sdecl_list
+  end;
   (* Check that all type variables are closed *)
   List.iter2
     (fun sdecl (tdecl, _shape) ->
@@ -1208,6 +1233,7 @@ let transl_type_decl env rec_flag sdecl_list =
   in
   (* Done *)
   (final_decls, final_env, shapes)
+  end
 
 (* Translating type extensions *)
 
