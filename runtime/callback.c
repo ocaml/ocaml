@@ -102,11 +102,19 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   value res;
   caml_domain_state* domain_state = Caml_state;
 
-  CAMLassert(narg + 3 <= 256);
+  /* Ensure there's enough stack space */
+  intnat req = narg + 3 + Stack_threshold_words;
+  if (domain_state->current_stack->sp - req <
+      Stack_base(domain_state->current_stack))
+    if (!caml_try_realloc_stack(req))
+      caml_raise_stack_overflow();
+
+  /* Push the arguments on the stack */
   domain_state->current_stack->sp -= narg + 3;
   for (int i = 0; i < narg; i++)
     domain_state->current_stack->sp[i] = args[i]; /* arguments */
 
+  /* Push a return frame */
   domain_state->current_stack->sp[narg] =
                      (value)callback_code; /* return address */
   domain_state->current_stack->sp[narg + 1] = Val_unit;    /* environment */

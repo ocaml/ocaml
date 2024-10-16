@@ -1015,7 +1015,7 @@ value caml_bytecode_interpreter(code_t prog, asize_t prog_size,
     check_stacks:
       if (sp < Stack_threshold_ptr(domain_state->current_stack)) {
         domain_state->current_stack->sp = sp;
-        if (!caml_try_realloc_stack(Stack_threshold / sizeof(value))) {
+        if (!caml_try_realloc_stack(Stack_threshold_words)) {
           Setup_for_c_call; caml_raise_stack_overflow();
         }
         sp = domain_state->current_stack->sp;
