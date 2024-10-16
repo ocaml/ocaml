@@ -88,44 +88,16 @@ let report_error loc e bt =
   print_exn loc e bt;
   "=> error in test script"
 
-type summary = Result.status = Pass | Skip | Fail
-
-(* The sequential join passes if both tests pass.
-
-   This implies that a linear sequence of actions, a path along the
-   test tree, is considered succesful if all actions passed. *)
-let join_sequential r1 r2 =
-  match r1, r2 with
-  | Fail, _ | _, Fail -> Fail
-  | Pass, Pass -> Pass
-  | Skip, _ | _, Skip -> Skip
-
-(* The parallel join passes if either test passes.
-
-   This implies that a test formed of several parallel branches is
-   considered succesful if at least one of the branches is succesful.
-*)
-let join_parallel r1 r2 =
-  match r1, r2 with
-  | Fail, _ | _, Fail -> Fail
-  | Pass, _ | _, Pass -> Pass
-  | Skip, Skip -> Skip
-
-let string_of_summary = function
-  | Pass -> "passed"
-  | Fail -> "failed"
-  | Skip -> "skipped"
-
-let run_test_tree log add_msg behavior env summ ast =
-  let run_statement (behavior, env, summ) = function
+let run_test_tree log add_msg behavior env res ast =
+  let run_statement (behavior, env, res) = function
     | Environment_statement s ->
       begin match interpret_environment_statement env s with
-      | env -> Ok (behavior, env, summ)
+      | env -> Ok (behavior, env, res)
       | exception e ->
         let bt = Printexc.get_backtrace () in
         let line = s.loc.Location.loc_start.Lexing.pos_lnum in
         Printf.ksprintf add_msg "line %d %s" line (report_error s.loc e bt);
-        Error Fail
+        Error Result.fail
       end
     | Test (_, name, mods) ->
       let locstr =
@@ -152,24 +124,24 @@ let run_test_tree log add_msg behavior env summ ast =
           end
       in
       Printf.ksprintf add_msg "%s (%s) %s" locstr name.node msg;
-      let summ = join_sequential summ result.status in
-      Ok (behavior, env, summ)
+      let res = Result.Join.sequential res result in
+      Ok (behavior, env, res)
   in
-  let rec run_tree behavior env summ (Ast (stmts, subs)) =
-    match List.fold_left_result run_statement (behavior, env, summ) stmts with
+  let rec run_tree behavior env res (Ast (stmts, subs)) =
+    match List.fold_left_result run_statement (behavior, env, res) stmts with
     | Error e -> e
-    | Ok (behavior, env, summ) ->
+    | Ok (behavior, env, res) ->
         (* If [subs] is empty, there are no further test actions to
            perform: we are at the end of a test path and can report
-           our current summary. Otherwise we continue with each
-           branch, and parallel-join the result summaries. *)
+           our current result. Otherwise we continue with each
+           branch, and parallel-join thir results. *)
         begin match subs with
-        | [] -> summ
+        | [] -> res
         | _ ->
-            List.fold_left join_parallel Skip
-              (List.map (run_tree behavior env summ) subs)
+            List.fold_left Result.Join.parallel Result.skip
+              (List.map (run_tree behavior env res) subs)
         end
-  in run_tree behavior env summ ast
+  in run_tree behavior env res ast
 
 let get_test_source_directory test_dirname =
   if (Filename.is_relative test_dirname) then
@@ -237,7 +209,7 @@ let test_file test_filename =
     if Options.log_to_stderr then stderr else begin
       open_out log_filename
     end in
-  let summary = Sys.with_chdir test_build_directory_prefix
+  let result = Sys.with_chdir test_build_directory_prefix
     (fun () ->
        let promote = string_of_bool Options.promote in
        let default_timeout = string_of_int Options.default_timeout in
@@ -270,10 +242,10 @@ let test_file test_filename =
        in
        let msgs = ref [] in
        let add_msg s = msgs := s :: !msgs in
-       let rootenv, initial_status, initial_summary =
+       let rootenv, initial_status, initial_result =
          let rec loop env stmts =
            match stmts with
-           | [] -> (env, initial_status, Pass)
+           | [] -> (env, initial_status, Result.pass)
            | s :: t ->
              begin match interpret_environment_statement env s with
              | env -> loop env t
@@ -282,36 +254,36 @@ let test_file test_filename =
                let line = s.loc.Location.loc_start.Lexing.pos_lnum in
                Printf.ksprintf add_msg "line %d %s" line
                  (report_error s.loc e bt);
-               (env, Skip_all, Fail)
+               (env, Skip_all, Result.fail)
              end
          in
          loop rootenv rootenv_statements
        in
        let rootenv = Environments.initialize Environments.Post log rootenv in
-       let summary =
-         run_test_tree log add_msg initial_status rootenv initial_summary
+       let result =
+         run_test_tree log add_msg initial_status rootenv initial_result
            tsl_ast
        in
        let common_prefix = " ... testing '" ^ test_basename ^ "'" in
-       Printf.printf "%s => %s%s\n%!" common_prefix (string_of_summary summary)
-         (if Options.show_timings && summary = Pass then
+       Printf.printf "%s => %s%s\n%!" common_prefix
+         Result.(string_of_result result)
+         (if Options.show_timings && (Result.is_pass result) then
             let wall_clock_duration = Unix.gettimeofday () -. start in
             Printf.sprintf " (wall clock: %.02fs)" wall_clock_duration
           else "");
-       if summary = Fail then
+       if (Result.is_fail result) then
          List.iter (Printf.printf "%s with %s\n%!" common_prefix)
            (List.rev !msgs);
        Actions.clear_all_hooks();
-       summary
+       result
     ) in
   if not Options.log_to_stderr then close_out log;
-  begin match summary with
-  | Fail ->
-      if not Options.log_to_stderr then
-        Sys.dump_file stderr ~prefix:"> " log_filename
-  | Pass | Skip ->
-      if not Options.keep_test_dir_on_success then
-        clean_test_build_directory ()
+  if (Result.is_fail result) then begin
+    if not Options.log_to_stderr then
+      Sys.dump_file stderr ~prefix:"> " log_filename
+  end else begin
+    if not Options.keep_test_dir_on_success then
+      clean_test_build_directory ()
   end
 
 let is_test filename =
