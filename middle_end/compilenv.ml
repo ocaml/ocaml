@@ -88,7 +88,8 @@ let current_unit =
     ui_send_fun = [];
     ui_force_link = false;
     ui_export_info = default_ui_export_info;
-    ui_for_pack = None }
+    ui_for_pack = None;
+    ui_archdep = [] }
 
 let symbol_separator =
   match Config.ccomp_type with
@@ -131,6 +132,7 @@ let reset ?packname name =
   Hashtbl.clear exported_constants;
   structured_constants := structured_constants_empty;
   current_unit.ui_export_info <- default_ui_export_info;
+  current_unit.ui_archdep <- [];
   merged_environment := Export_info.empty;
   Hashtbl.clear export_infos_table;
   let compilation_unit =
@@ -362,6 +364,9 @@ let write_unit_info info filename =
 let save_unit_info filename =
   current_unit.ui_imports_cmi <- Env.imports();
   write_unit_info current_unit filename
+
+let set_archdep_info archdep =
+  current_unit.ui_archdep <- archdep
 
 let current_unit () =
   match Compilation_unit.get_current () with

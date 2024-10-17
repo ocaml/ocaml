@@ -570,6 +570,8 @@ FUNCTION(caml_c_call)
         str     TRAP_PTR, Caml_state(exn_handler)
     /* Call the function */
         blr     ADDITIONAL_ARG
+    /* Insert the fence for branch-after-load memory model */
+        dmb     ishld
     /* Reload new allocation pointer & exn handler */
         ldr     ALLOC_PTR, Caml_state(young_ptr)
         ldr     TRAP_PTR, Caml_state(exn_handler)
@@ -622,6 +624,8 @@ FUNCTION(caml_c_call_stack_args)
         b       1b
 2:  /* Call the function */
         blr     ADDITIONAL_ARG
+    /* Insert the fence for branch-after-load memory model */
+        dmb     ishld
     /* Restore stack */
         mov     sp, x19
     /* Reload new allocation pointer & exn handler */
@@ -664,6 +668,8 @@ FUNCTION(caml_start_program)
 /* Arguments to the OCaml code are in x0...x7 */
 
 L(jump_to_caml):
+    /* Insert the fence for branch-after-load memory model */
+        dmb     ishld
     /* Set up stack frame and save callee-save registers */
         CFI_OFFSET(29, -160)
         CFI_OFFSET(30, -152)

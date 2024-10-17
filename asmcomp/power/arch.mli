@@ -23,6 +23,8 @@ type cmm_label = int
 
 val command_line_options : (string * Arg.spec * string) list
 
+val archdep_unit_infos : unit -> (string * string) list
+
 (* Specific operations *)
 
 type specific_operation =
