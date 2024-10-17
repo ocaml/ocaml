@@ -729,6 +729,18 @@ CAMLexport caml_stat_string caml_stat_strdup(const char *s)
   return result;
 }
 
+CAMLexport caml_stat_string caml_stat_strndup(const char *s,
+                                              asize_t len, asize_t *out_len)
+{
+  caml_stat_block result = caml_stat_alloc_noexc(len);
+  if (result == NULL)
+    caml_raise_out_of_memory();
+  memcpy(result, s, len);
+  if (out_len != NULL)
+    *out_len = len;
+  return result;
+}
+
 #ifdef _WIN32
 
 CAMLexport wchar_t * caml_stat_wcsdup_noexc(const wchar_t *s)
