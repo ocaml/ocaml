@@ -717,6 +717,7 @@ typing/env.cmo : \
     typing/subst.cmi \
     typing/shape.cmi \
     typing/predef.cmi \
+    parsing/pprintast.cmi \
     typing/persistent_env.cmi \
     typing/path.cmi \
     utils/misc.cmi \
@@ -742,6 +743,7 @@ typing/env.cmx : \
     typing/subst.cmx \
     typing/shape.cmx \
     typing/predef.cmx \
+    parsing/pprintast.cmx \
     typing/persistent_env.cmx \
     typing/path.cmx \
     utils/misc.cmx \
@@ -1132,7 +1134,6 @@ typing/out_type.cmo : \
     typing/shape.cmi \
     typing/primitive.cmi \
     typing/predef.cmi \
-    parsing/pprintast.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
@@ -1157,7 +1158,6 @@ typing/out_type.cmx : \
     typing/shape.cmx \
     typing/primitive.cmx \
     typing/predef.cmx \
-    parsing/pprintast.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \

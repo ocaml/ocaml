@@ -3524,10 +3524,6 @@ open Format_doc
 
 (* Forward declarations *)
 
-let print_longident : Longident.t printer ref = ref (fun _ _ -> assert false)
-
-let pp_longident ppf l = !print_longident ppf l
-
 let print_path: Path.t printer ref = ref (fun _ _ -> assert false)
 let pp_path ppf l = !print_path ppf l
 
@@ -3569,7 +3565,8 @@ let extract_instance_variables env =
 
 module Style = Misc.Style
 
-let quoted_longident = Style.as_inline_code pp_longident
+let quoted_longident = Style.as_inline_code Pprintast.Doc.longident
+let quoted_constr = Style.as_inline_code Pprintast.Doc.constr
 
 let report_lookup_error_doc _loc env ppf = function
   | Unbound_value(lid, hint) -> begin
@@ -3604,7 +3601,7 @@ let report_lookup_error_doc _loc env ppf = function
     end
   | Unbound_constructor lid ->
       fprintf ppf "Unbound constructor %a"
-        quoted_longident lid;
+        quoted_constr lid;
       spellcheck ppf extract_constructors env lid;
   | Unbound_label lid ->
       fprintf ppf "Unbound record field %a"
@@ -3668,7 +3665,7 @@ let report_lookup_error_doc _loc env ppf = function
         quoted_longident lid
   | Functor_used_as_structure lid ->
       fprintf ppf "@[The module %a is a functor, \
-                   it cannot have any components@]" pp_longident lid
+                   it cannot have any components@]" quoted_longident lid
   | Abstract_used_as_structure lid ->
       fprintf ppf "@[The module %a is abstract, \
                    it cannot have any components@]"
