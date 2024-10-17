@@ -28,6 +28,8 @@ val barrier_placement : barrier_placement ref
 
 val command_line_options : (string * Arg.spec * string) list
 
+val archdep_unit_infos : unit -> (string * string) list
+
 (* Addressing modes *)
 
 type addressing_mode =

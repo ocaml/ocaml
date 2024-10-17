@@ -365,6 +365,9 @@ let save_unit_info filename =
   current_unit.ui_imports_cmi <- Env.imports();
   write_unit_info current_unit filename
 
+let set_archdep_info archdep =
+  current_unit.ui_archdep <- archdep
+
 let current_unit () =
   match Compilation_unit.get_current () with
   | Some current_unit -> current_unit

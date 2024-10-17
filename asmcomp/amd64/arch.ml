@@ -22,6 +22,8 @@ let command_line_options =
     "-fno-PIC", Arg.Clear Clflags.pic_code,
       " Generate position-dependent machine code" ]
 
+let archdep_unit_infos () = []
+
 (* Specific operations for the AMD64 processor *)
 
 open Format

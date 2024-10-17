@@ -25,6 +25,8 @@ type cmm_label = int
 
 let command_line_options = []
 
+let archdep_unit_infos () = []
+
 (* Specific operations *)
 
 type specific_operation =
