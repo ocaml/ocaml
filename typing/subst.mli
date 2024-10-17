@@ -13,13 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Substitutions *)
+(** Substitutions *)
 
 open Types
 
-type t
 
-(*
+(**
    Substitutions are used to translate a type from one context to
    another.  This requires substituting paths for identifiers, and
    possibly also lowering the level of non-generic variables so that
@@ -29,22 +28,32 @@ type t
    Indeed, non-variable node of a type are duplicated, with their
    levels set to generic level.  That way, the resulting type is
    well-formed (decreasing levels), even if the original one was not.
-*)
 
-val identity: t
+   In the presence of local substitutions for module types, a substitution for a
+   type expression may fail to produce a well-formed type. In order to confine
+   this issue to local substitutions, the type of substitutions is split into a
+   safe and unsafe variant. Only unsafe substitutions may expand a module type
+   path into a generic module type. *)
 
-val add_type: Ident.t -> Path.t -> t -> t
-val add_type_path: Path.t -> Path.t -> t -> t
-val add_type_function:
-  Path.t -> params:type_expr list -> body:type_expr -> t -> t
-val add_module: Ident.t -> Path.t -> t -> t
-val add_module_path: Path.t -> Path.t -> t -> t
-val add_modtype: Ident.t -> module_type -> t -> t
-val add_modtype_path: Path.t -> module_type -> t -> t
+(** Type familly for substitutions *)
+type +'k subst
+
+type safe = [`Safe]
+type unsafe = [`Unsafe]
+
+type t = safe subst
+(** Standard substitution*)
+
+val identity: 'a subst
+val unsafe: t -> unsafe subst
+
+val add_type: Ident.t -> Path.t -> 'k subst -> 'k subst
+val add_module: Ident.t -> Path.t -> 'k subst -> 'k subst
+val add_modtype: Ident.t -> Path.t -> 'k subst -> 'k subst
 
 val for_saving: t -> t
 val reset_for_saving: unit -> unit
-val change_locs: t -> Location.t -> t
+val change_locs: 'k subst -> Location.t -> 'k subst
 
 val module_path: t -> Path.t -> Path.t
 val type_path: t -> Path.t -> Path.t
@@ -59,7 +68,7 @@ val extension_constructor:
 val class_declaration: t -> class_declaration -> class_declaration
 val cltype_declaration: t -> class_type_declaration -> class_type_declaration
 
-(*
+(**
    When applied to a signature item, a substitution not only modifies the types
    present in its declaration, but also refreshes the identifier of the item.
    Effectively this creates new declarations, and so one should decide what the
@@ -80,9 +89,43 @@ val modtype_declaration:
   scoping -> t -> modtype_declaration -> modtype_declaration
 val module_declaration: scoping -> t -> module_declaration -> module_declaration
 
-(* Composition of substitutions:
-     apply (compose s1 s2) x = apply s2 (apply s1 x) *)
+(** Composition of substitutions:
+     apply (compose s1 s2) x = apply s2 (apply s1 x) **)
 val compose: t -> t -> t
+
+module Unsafe: sig
+
+  type t = unsafe subst
+  (** Unsafe substitutions introduced by [with] constraints, local substitutions
+      ([type t := int * int]) or recursive module check. *)
+
+(** Replacing a module type name S by a non-path signature is unsafe as the
+    packed module type [(module S)] becomes ill-formed. *)
+  val add_modtype: Ident.t -> module_type -> 'any subst -> t
+  val add_modtype_path: Path.t -> module_type -> 'any subst -> t
+
+  (** Deep editing inside a module type require to retypecheck the module, for
+      applicative functors in path and module aliases. *)
+  val add_type_path: Path.t -> Path.t -> t -> t
+  val add_type_function:
+    Path.t -> params:type_expr list -> body:type_expr -> t -> t
+  val add_module_path: Path.t -> Path.t -> t -> t
+
+  type error =
+    | Fcm_type_substituted_away of Path.t * Types.module_type
+
+  type 'a res := ('a, error) result
+
+  val type_declaration:  t -> type_declaration -> type_declaration res
+  val signature_item: scoping -> t -> signature_item -> signature_item res
+  val signature: scoping -> t -> signature -> signature res
+
+  val compose: t -> t -> t res
+  (** Composition of substitutions is eager and fails when the two substitution
+      are incompatible, for example [ module type t := sig end] is not
+      compatible with [module type s := sig type t=(module t) end]*)
+
+end
 
 module Lazy : sig
   type module_decl =

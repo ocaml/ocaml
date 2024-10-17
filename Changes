@@ -117,6 +117,12 @@ Working version
 - #13454: Output a correct trace of the C_CALLN bytecode.
   (Miod Vallat, review by Antonin Décimo)
 
+- #13388, #13540: raises an error message (and not an internal compiler error)
+  when two local substitutions are incompatible (for instance `module type
+  S:=sig end type t:=(module S)`)
+  (Florian Angeletti, report by Nailen Matschke, review by Gabriel Scherer, and
+  Leo White)
+
 OCaml 5.3.0
 ___________
 

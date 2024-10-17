@@ -322,3 +322,48 @@ end
 [%%expect {|
 module type hidden = sig type u val x : int end
 |}]
+
+
+module type s = sig
+  module type t := sig end
+  type s := (module t)
+end
+[%%expect {|
+Line 3, characters 2-22:
+3 |   type s := (module t)
+      ^^^^^^^^^^^^^^^^^^^^
+Error: The module type "t" is not a valid type for a packed module:
+       it is defined as a local substitution (temporary name)
+       for an anonymous module type. (see manual section 12.7.3)
+|}]
+
+module type s = sig
+  module type t := sig end
+  module type r := t
+  type s := (module r)
+end
+[%%expect {|
+Line 4, characters 2-22:
+4 |   type s := (module r)
+      ^^^^^^^^^^^^^^^^^^^^
+Error: The module type "r" is not a valid type for a packed module:
+       it is defined as a local substitution (temporary name)
+       for an anonymous module type. (see manual section 12.7.3)
+|}]
+
+module type s = sig
+  module type t := sig end
+  module type r := sig
+      type s = (module t)
+  end
+  module type k = r
+end
+[%%expect {|
+Lines 3-5, characters 2-5:
+3 | ..module type r := sig
+4 |       type s = (module t)
+5 |   end
+Error: The module type "t" is not a valid type for a packed module:
+       it is defined as a local substitution (temporary name)
+       for an anonymous module type. (see manual section 12.7.3)
+|}]
