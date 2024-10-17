@@ -49,6 +49,9 @@ Working version
 - #13354: Use C99 flexible array member syntax everywhere.
   (Antonin Décimo, review by Miod Vallat, Gabriel Scherer, and Xavier Leroy)
 
+- #13549: Fix a nasty bug in bytecode VM initialisation.
+  (Stephen Dolan, report by Jan Midtgaard, review by ??)
+
 ### Code generation and optimizations:
 
 ### Standard library:
