@@ -550,16 +550,11 @@ let compile_test usr_bin_sh config env test test_program description =
       | Output_complete_obj(C_ocamlc, Static) ->
           f ~clibs:[] ["-output-complete-obj"]
       | Output_complete_obj(C_ocamlc, Shared) ->
-          (* The partial linker doesn't correctly process
-             -runtime-variant _shared, as the .so gets passed to the partial
-             linker. On macOS, this causes a warning; on other systems, it's an
-             error. *)
-          let compilation_exit_code = fails_if (Config.system <> "macosx") in
           (* Shared compilation isn't available on native Windows and fails on
              Cygwin *)
           let linker_exit_code = fails_if (Sys.win32 || Sys.cygwin) in
-          f ~use_shared_runtime:true ~clibs:[] ~compilation_exit_code
-            ~linker_exit_code ["-output-complete-obj"]
+          f ~use_shared_runtime:true ~clibs:[] ~linker_exit_code
+            ["-output-complete-obj"]
       | Output_complete_obj(C_ocamlopt, Static) ->
           let linker_exit_code =
             (* cf. ocaml/ocaml#13692 - linking fails on ppc64 *)
@@ -568,21 +563,18 @@ let compile_test usr_bin_sh config env test test_program description =
             else
               0
           in
-          (* At the moment, the partial linker will pass -lzstd to ld -r which
-             will (normally) fail). Until this is done, pass the libraries
-             manually, using -noautolink. *)
           f ~mode:Native ~clibs:[Config.compression_c_libraries]
-            ~linker_exit_code
-            ["-output-complete-obj"; "-noautolink"; "-cclib"; "-lunixnat";
-                                                    "-cclib"; "-lcomprmarsh"]
+            ~linker_exit_code ["-output-complete-obj"]
       | Output_complete_obj(C_ocamlopt, Shared) ->
-          (* ocamlopt allows the .so to be passed to the partial linker which
-             fails with GNU ld, but not with the macOS linker *)
-          let compilation_exit_code = fails_if (Config.system <> "macosx") in
-          f ~mode:Native ~use_shared_runtime:true
-            ~compilation_exit_code ~clibs:[Config.compression_c_libraries]
-            ["-output-complete-obj"; "-noautolink"; "-cclib"; "-lunixnat";
-                                                    "-cclib"; "-lcomprmarsh"]
+          (* cf. ocaml/ocaml#13693 - on Fedora/RHEL, this executable
+             segfaults *)
+          let may_segfault = List.mem Config.architecture ["s390x"; "riscv"] in
+          (* Shared compilation isn't available on native Windows and fails on
+             Cygwin *)
+          let linker_exit_code = fails_if (Sys.win32 || Sys.cygwin) in
+          f ~mode:Native ~use_shared_runtime:true ~may_segfault
+            ~linker_exit_code ~clibs:[Config.compression_c_libraries]
+            ["-output-complete-obj"]
       | Output_complete_exe Static ->
           f ~calls_linker:true ["-output-complete-exe"]
       | Output_complete_exe Shared ->

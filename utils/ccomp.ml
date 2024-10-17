@@ -153,16 +153,15 @@ let create_archive archive file_list =
                 (quote_files ~response_files:Config.ar_supports_response_files
                   file_list))
 
-let expand_libname cclibs =
-  cclibs |> List.map (fun cclib ->
-    if String.starts_with ~prefix:"-l" cclib then
-      let libname =
-        "lib" ^ String.sub cclib 2 (String.length cclib - 2) ^ Config.ext_lib in
-      try
-        Load_path.find libname
-      with Not_found ->
-        libname
-    else cclib)
+let expand_libname cclib =
+  if String.starts_with ~prefix:"-l" cclib then
+    let libname =
+      "lib" ^ String.sub cclib 2 (String.length cclib - 2) ^ Config.ext_lib in
+    try
+      Some (Load_path.find libname)
+    with Not_found ->
+      None
+  else Some cclib
 
 type link_mode =
   | Exe
@@ -182,11 +181,16 @@ let call_linker mode output_name files extra =
   Profile.record_call "c-linker" (fun () ->
     let cmd =
       if mode = Partial then
-        let (l_prefix, files) =
+        let l_prefix =
           match Config.ccomp_type with
-          | "msvc" -> ("/libpath:", expand_libname files)
-          | _ -> ("-L", files)
+          | "msvc" -> "/libpath:"
+          | _ -> "-L"
         in
+        (* For partial linking, only include -llib if -llib can be found in the
+           current search path. For ld -r, this PATH is (usually) limited to the
+           -L directories. This should cause OCaml libraries to be linked, but
+           not any system libraries mentioned in .cma/.cmxa files. *)
+        let files = List.filter_map expand_libname files in
         Printf.sprintf "%s%s %s %s %s"
           Config.native_pack_linker
           (Filename.quote output_name)

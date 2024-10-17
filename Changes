@@ -527,6 +527,12 @@ Working version
 * #14388: Remove support for `let rec (module M : S) = e1 in e2`.
   (Alistair O'Brien, review by Vincent Laviron and Gabriel Scherer)
 
+- #14???: `-l` libraries are no longer given to the partial linker (for
+  `-output-complete-obj`) if `ocamlc`/`ocamlopt` cannot resolve them in the
+  current search path. Allows system libraries (e.g. `-lzstd`) to be specified
+  in .cma or .cmxa files without breaking `-output-complete-obj`.
+  (David Allsopp, review by ???)
+
 ### Build system:
 
 - #13810: Support build of cross compilers to native freestanding targets
