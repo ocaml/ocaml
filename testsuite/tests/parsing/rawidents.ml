@@ -98,3 +98,19 @@ let f ~\#let ?\#and () = 1
 [%%expect{|
 val f : \#let:'a -> ?\#and:'b -> unit -> int = <fun>
 |}]
+
+let x = (true:int)
+[%%expect {|
+Line 1, characters 9-13:
+1 | let x = (true:int)
+             ^^^^
+Error: The constructor "true" has type "bool"
+       but an expression was expected of type "int"
+|}]
+
+module M = struct type \#true = true end
+let x = M.(true)
+[%%expect {|
+module M : sig type \#true = true end
+val x : M.\#true = M.(true)
+|}]
