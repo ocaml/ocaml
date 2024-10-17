@@ -574,7 +574,7 @@ ___________
   "user-friendly" functions in the `Printtyp` module.
   (Florian Angeletti, review by Gabriel Scherer)
 
-- #13361: split runtime/array.c functions to consistently expose
+- #13361, #13362: split runtime/array.c functions to consistently expose
   uniform_array and floatarray versions, use floatarray versions
   in Float.Array.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
