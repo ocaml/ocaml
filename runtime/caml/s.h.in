@@ -108,6 +108,12 @@
 
 #undef HAS_PTHREAD_NP_H
 
+#undef HAS_PRCTL
+
+#undef HAS_PTHREAD_SETNAME_NP
+
+#undef HAS_PTHREAD_SET_NAME_NP
+
 #undef HAS_UNISTD
 
 /* Define HAS_UNISTD if you have /usr/include/unistd.h. */
