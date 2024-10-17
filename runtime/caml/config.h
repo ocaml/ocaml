@@ -20,6 +20,11 @@
 #include "s.h"
 #include "compatibility.h"
 
+/* Use WinAPI under MinGW-w64 directly, rather than unistd.h emulation. */
+#if defined(HAVE_UNISTD_H) && defined(__MINGW32__)
+#undef HAVE_UNISTD_H
+#endif
+
 /* CAML_NAME_SPACE was introduced in OCaml 3.08 to declare compatibility with
    the newly caml_-prefixed names of C runtime functions and to disable the
    definition of compatibility macros for the un-prefixed names. The

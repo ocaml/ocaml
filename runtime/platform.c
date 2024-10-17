@@ -17,7 +17,7 @@
 
 #include "caml/config.h"
 #include <string.h>
-#ifdef HAS_UNISTD
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #include <errno.h>

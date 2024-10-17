@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include "caml/config.h"
-#ifdef HAS_UNISTD
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #ifdef __CYGWIN__

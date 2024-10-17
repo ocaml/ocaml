@@ -33,7 +33,7 @@
 #include <sys/wait.h>
 #endif
 #include "caml/config.h"
-#ifdef HAS_UNISTD
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #ifdef HAS_TIMES
@@ -635,7 +635,7 @@ int caml_unix_random_seed(intnat data[16])
 #else
     if (n < 16) data[n++] = time(NULL);
 #endif
-#ifdef HAS_UNISTD
+#ifdef HAVE_UNISTD_H
     if (n < 16) data[n++] = getpid();
     if (n < 16) data[n++] = getppid();
 #endif

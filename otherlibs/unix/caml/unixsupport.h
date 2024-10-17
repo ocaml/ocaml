@@ -30,7 +30,7 @@
 #include <ws2tcpip.h>
 #include <wspiapi.h>
 #else /* Unix */
-#ifdef HAS_UNISTD
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #endif
