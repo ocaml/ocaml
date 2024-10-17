@@ -82,10 +82,12 @@ type contains_gadt =
 
 let wrong_kind_sort_of_constructor (lid : Longident.t) =
   match lid with
-  | Lident "true" | Lident "false" | Ldot(_, "true") | Ldot(_, "false") ->
+  | Lident {txt="true"; _} | Lident {txt="false"; _}
+  | Ldot(_, {txt="true"; _}) | Ldot(_, {txt="false"; _}) ->
       Boolean
-  | Lident "[]" | Lident "::" | Ldot(_, "[]") | Ldot(_, "::") -> List
-  | Lident "()" | Ldot(_, "()") -> Unit
+  | Lident {txt="[]"; _} | Lident {txt="::"; _}
+  | Ldot(_, {txt="[]"; _}) | Ldot(_, {txt="::"; _}) -> List
+  | Lident {txt="()"; _} | Ldot(_, {txt="()"; _}) -> Unit
   | _ -> Constructor
 
 type existential_restriction =
@@ -327,12 +329,12 @@ let mkexp exp_desc exp_type exp_loc exp_env =
   { exp_desc; exp_type; exp_loc; exp_env; exp_extra = []; exp_attributes = [] }
 
 let option_none env ty loc =
-  let lid = Longident.Lident "None" in
+  let lid = Longident.Lident (mknoloc "None") in
   let cnone = Env.find_ident_constructor Predef.ident_none env in
   mkexp (Texp_construct(mknoloc lid, cnone, [])) ty loc env
 
 let option_some env texp =
-  let lid = Longident.Lident "Some" in
+  let lid = Longident.Lident (mknoloc "Some") in
   let csome = Env.find_ident_constructor Predef.ident_some env in
   mkexp ( Texp_construct(mknoloc lid , csome, [texp]) )
     (type_option texp.exp_type) texp.exp_loc texp.exp_env
@@ -1136,7 +1138,7 @@ end) = struct
   let lookup_from_type env type_path usage lid =
     let descrs = lookup_all_from_type lid.loc usage type_path env in
     match lid.txt with
-    | Longident.Lident name -> begin
+    | Longident.Lident { txt = name; _ } -> begin
         match
           List.find (fun (nd, _) -> get_name nd = name) descrs
         with
@@ -1192,7 +1194,7 @@ end) = struct
       in
       if paths <> [] then
         warn lid.loc
-          (Warnings.Ambiguous_name ([Longident.last lid.txt],
+          (Warnings.Ambiguous_name ([(Longident.last lid.txt).txt],
                                     paths, false, expansion))
     end
 
@@ -1210,7 +1212,8 @@ end) = struct
           (fun () -> Format_doc.asprintf "%a" Printtyp.Doc.type_path tpath)
       in
       warn lid.loc
-        (Warnings.Name_out_of_scope (path_s, [Longident.last lid.txt], false))
+        (Warnings.Name_out_of_scope
+          (path_s, [(Longident.last lid.txt).txt], false))
     end
 
   (* warn if the selected name is not the last introduced in scope
@@ -1382,7 +1385,9 @@ let disambiguate_label_by_ids closed ids labels  : (_, _) result =
 
 (* Only issue warnings once per record constructor/pattern *)
 let disambiguate_lid_a_list loc closed env usage expected_type lid_a_list =
-  let ids = List.map (fun (lid, _) -> Longident.last lid.txt) lid_a_list in
+  let ids =
+    List.map (fun (lid, _) -> (Longident.last lid.txt).txt) lid_a_list
+  in
   let w_pr = ref false and w_amb = ref []
   and w_scope = ref [] and w_scope_ty = ref "" in
   let warn loc msg =
@@ -2111,7 +2116,7 @@ let add_module_variables env module_variables =
           Ast_helper.(
             Mod.unpack ~loc:mv_loc
               (Exp.ident ~loc:mv_name.loc
-                  (mkloc (Longident.Lident mv_name.txt)
+                  (mkloc (Longident.Lident mv_name)
                     mv_name.loc)))
       in
       let pres =
@@ -3353,15 +3358,16 @@ and type_expect_
         | Val_ivar (_, cl_num) ->
             let (self_path, _) =
               Env.find_value_by_name
-                (Longident.Lident ("self-" ^ cl_num)) env
+                (Longident.Lident (mknoloc ("self-" ^ cl_num))) env
             in
             Texp_instvar(self_path, path,
                          match lid.txt with
-                             Longident.Lident txt -> { txt; loc = lid.loc }
+                             Longident.Lident id -> { id with loc = lid.loc }
                            | _ -> assert false)
         | Val_self (_, _, _, cl_num) ->
             let (path, _) =
-              Env.find_value_by_name (Longident.Lident ("self-" ^ cl_num)) env
+              Env.find_value_by_name
+                (Longident.Lident (mknoloc ("self-" ^ cl_num))) env
             in
             Texp_ident(path, lid, desc)
         | _ ->
@@ -4062,7 +4068,8 @@ and type_expect_
             type_expect env snewval (mk_expected (instance ty))
           in
           let (path_self, _) =
-            Env.find_value_by_name (Longident.Lident ("self-" ^ cl_num)) env
+            Env.find_value_by_name
+              (Longident.Lident (mknoloc ("self-" ^ cl_num))) env
           in
           rue {
             exp_desc = Texp_setinstvar(path_self, path, lab, newval);
@@ -4085,8 +4092,8 @@ and type_expect_
         [] in
       begin match
         try
-          Env.find_value_by_name (Longident.Lident "selfpat-*") env,
-          Env.find_value_by_name (Longident.Lident "self-*") env
+          Env.find_value_by_name (Longident.Lident (mknoloc "selfpat-*")) env,
+          Env.find_value_by_name (Longident.Lident (mknoloc "self-*")) env
         with Not_found ->
           raise(Error(loc, env, Outside_class))
       with
@@ -4611,7 +4618,7 @@ and type_ident env ?(recarg=Rejected) lid =
 
 and type_binding_op_ident env s =
   let loc = s.loc in
-  let lid = Location.mkloc (Longident.Lident s.txt) loc in
+  let lid = Location.mkloc (Longident.Lident s) loc in
   let path, desc = type_ident env lid in
   let path =
     match desc.val_kind with
@@ -4619,7 +4626,8 @@ and type_binding_op_ident env s =
         fatal_error "Illegal name for instance variable"
     | Val_self (_, _, _, cl_num) ->
         let path, _ =
-          Env.find_value_by_name (Longident.Lident ("self-" ^ cl_num)) env
+          Env.find_value_by_name (
+            Longident.Lident (mknoloc ("self-" ^ cl_num))) env
         in
         path
     | _ -> path
@@ -4933,7 +4941,10 @@ and type_format loc str env =
         loc = loc;
       } in
       let mk_constr name args =
-        let lid = Longident.(Ldot(Lident "CamlinternalFormatBasics", name)) in
+        let lid =
+          Longident.(Ldot(Lident (mknoloc "CamlinternalFormatBasics"),
+                          mknoloc name))
+        in
         let arg = match args with
           | []          -> None
           | [ e ]       -> Some e
@@ -5012,10 +5023,10 @@ and type_format loc str env =
         | Token_counter -> mk_constr "Token_counter" []
       and mk_int_opt n_opt = match n_opt with
         | None ->
-          let lid_loc = mk_lid_loc (Longident.Lident "None") in
+          let lid_loc = mk_lid_loc (Longident.Lident (mkloc "None" loc)) in
           mk_exp_loc (Pexp_construct (lid_loc, None))
         | Some n ->
-          let lid_loc = mk_lid_loc (Longident.Lident "Some") in
+          let lid_loc = mk_lid_loc (Longident.Lident (mkloc "Some" loc)) in
           mk_exp_loc (Pexp_construct (lid_loc, Some (mk_int n)))
       and mk_fmtty : type a b c d e f g h i j k l .
           (a, b, c, d, e, f, g, h, i, j, k, l) fmtty_rel -> Parsetree.expression
@@ -5275,7 +5286,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
         {exp_type = ty; exp_loc = Location.none; exp_env = exp_env;
          exp_extra = []; exp_attributes = [];
          exp_desc =
-         Texp_ident(Path.Pident id, mknoloc (Longident.Lident name), desc)}
+         Texp_ident(Path.Pident id, mknoloc (Longident.Lident (mknoloc name)), desc)}
       in
       let eta_pat, eta_var = var_pair "eta" ty_arg in
       let func texp =
@@ -6159,7 +6170,8 @@ and type_let_def_wrap_warnings
   let is_fake_let =
     match spat_sexp_list with
     | [{pvb_expr={pexp_desc=Pexp_match(
-           {pexp_desc=Pexp_ident({ txt = Longident.Lident "*opt*"})},_)}}] ->
+           {pexp_desc=Pexp_ident(
+               { txt = Longident.Lident { txt = "*opt*"; _ }})},_)}}] ->
         true (* the fake let-declaration introduced by fun ?(x = e) -> ... *)
     | _ ->
         false
@@ -6367,7 +6379,7 @@ and type_send env loc explanation e met =
         let typ = Btype.method_type met sign in
         let (self_path, _) =
           Env.find_value_by_name
-            (Longident.Lident ("self-" ^ cl_num)) env
+            (Longident.Lident (mknoloc ("self-" ^ cl_num))) env
         in
         Tmeth_ancestor(id, self_path), typ
     | _ ->

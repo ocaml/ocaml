@@ -65,7 +65,8 @@ let fixity_of_string  = function
   | _ -> `Normal
 
 let view_fixity_of_exp = function
-  | {pexp_desc = Pexp_ident {txt=Lident l;_}; pexp_attributes = []} ->
+  | {pexp_desc = Pexp_ident {txt=Lident { txt = l; _ };_};
+     pexp_attributes = []} ->
       fixity_of_string l
   | _ -> `Normal
 
@@ -129,8 +130,8 @@ module Doc = struct
       Format_doc.fprintf ppf "%a.(%s)" print_longident longprefix txt
 
   let rec longident f = function
-    | Lident s -> ident_of_name f s
-    | Ldot(y,s) -> protect_longident f longident y s
+    | Lident {txt=s;_} -> ident_of_name f s
+    | Ldot(y,{txt=s;_}) -> protect_longident f longident y s
     | Lapply (y,s) ->
         Format_doc.fprintf f "%a(%a)" longident y longident s
 
@@ -212,17 +213,17 @@ type construct =
 
 let view_expr x =
   match x.pexp_desc with
-  | Pexp_construct ( {txt= Lident "()"; _},_) -> `tuple
-  | Pexp_construct ( {txt= Lident "true"; _},_) -> `btrue
-  | Pexp_construct ( {txt= Lident "false"; _},_) -> `bfalse
-  | Pexp_construct ( {txt= Lident "[]";_},_) -> `nil
-  | Pexp_construct ( {txt= Lident"::";_},Some _) ->
+  | Pexp_construct ( {txt= Lident {txt= "()"; _}; _},_) -> `tuple
+  | Pexp_construct ( {txt= Lident {txt= "true"; _}; _},_) -> `btrue
+  | Pexp_construct ( {txt= Lident {txt= "false"; _}; _},_) -> `bfalse
+  | Pexp_construct ( {txt= Lident {txt= "[]"; _};_},_) -> `nil
+  | Pexp_construct ( {txt= Lident {txt= "::"; _};_},Some _) ->
       let rec loop exp acc = match exp with
-          | {pexp_desc=Pexp_construct ({txt=Lident "[]";_},_);
+          | {pexp_desc=Pexp_construct ({txt=Lident {txt= "[]"; _};_},_);
              pexp_attributes = []} ->
               (List.rev acc,true)
           | {pexp_desc=
-             Pexp_construct ({txt=Lident "::";_},
+             Pexp_construct ({txt=Lident {txt= "::"; _};_},
                              Some ({pexp_desc= Pexp_tuple([e1;e2]);
                                     pexp_attributes = []}));
              pexp_attributes = []}
@@ -494,7 +495,7 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
   let rec pattern_list_helper f = function
     | {ppat_desc =
          Ppat_construct
-           ({ txt = Lident("::") ;_},
+           ({ txt = Lident {txt= "::"; _};_},
             Some ([], {ppat_desc = Ppat_tuple([pat1; pat2]);_}));
        ppat_attributes = []}
 
@@ -506,13 +507,14 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
   else match x.ppat_desc with
     | Ppat_variant (l, Some p) ->
         pp f "@[<2>`%a@;%a@]" ident_of_name l (simple_pattern ctxt) p
-    | Ppat_construct (({txt=Lident("()"|"[]"|"true"|"false");_}), _) ->
+    | Ppat_construct (({txt=Lident{txt=("()"|"[]"|"true"|"false");_};_}), _) ->
         simple_pattern ctxt f x
     | Ppat_construct (({txt;_} as li), po) ->
         (* FIXME The third field always false *)
-        if txt = Lident "::" then
+        (match txt with
+        |  Lident { txt = "::"; _ } ->
           pp f "%a" pattern_list_helper x
-        else
+        | _ ->
           (match po with
            | Some ([], x) ->
                pp f "%a@;%a"  longident_loc li (simple_pattern ctxt) x
@@ -520,13 +522,14 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
                pp f "%a@ (type %a)@;%a" longident_loc li
                  (list ~sep:"@ " ident_of_name_loc) vl
                  (simple_pattern ctxt) x
-           | None -> pp f "%a" longident_loc li)
+           | None -> pp f "%a" longident_loc li))
     | _ -> simple_pattern ctxt f x
 
 and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
   if x.ppat_attributes <> [] then pattern ctxt f x
   else match x.ppat_desc with
-    | Ppat_construct (({txt=Lident ("()"|"[]"|"true"|"false" as x);_}), None) ->
+    | Ppat_construct
+        (({txt=Lident {txt=("()"|"[]"|"true"|"false" as x); _ };_}), None) ->
         pp f  "%s" x
     | Ppat_any -> pp f "_";
     | Ppat_var ({txt = txt;_}) -> ident_of_name f txt
@@ -544,7 +547,7 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
           | ({txt=Lident s;_ },
              {ppat_desc=Ppat_var {txt;_};
               ppat_attributes=[]; _})
-            when s = txt ->
+            when s.txt = txt ->
               pp f "@[<2>%a@]"  longident_loc li
           | _ ->
               pp f "@[<2>%a@;=@;%a@]" longident_loc li (pattern1 ctxt) p
@@ -573,7 +576,8 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
         let with_paren =
         match p.ppat_desc with
         | Ppat_array _ | Ppat_record _
-        | Ppat_construct (({txt=Lident ("()"|"[]"|"true"|"false");_}), None) ->
+        | Ppat_construct
+            (({txt=Lident {txt="()"|"[]"|"true"|"false";_};_}), None) ->
             false
         | _ -> true in
         pp f "@[<2>%a.%a @]" longident_loc lid
@@ -629,28 +633,30 @@ and sugar_expr ctxt f e =
                 (simple_expr ctxt) v; true
             | _ -> false in
       match id, List.map snd args with
-      | Lident "!", [e] ->
+      | Lident {txt="!";_}, [e] ->
         pp f "@[<hov>!%a@]" (simple_expr ctxt) e; true
-      | Ldot (path, ("get"|"set" as func)), a :: other_args -> begin
+      | Ldot (path, {txt=("get"|"set" as func);_}), a :: other_args -> begin
           let assign = func = "set" in
           let print = print_indexop a None assign in
           match path, other_args with
-          | Lident "Array", i :: rest ->
+          | Lident {txt="Array";_}, i :: rest ->
             print ".(" "" ")" (expression ctxt) [i] rest
-          | Lident "String", i :: rest ->
+          | Lident {txt="String";_}, i :: rest ->
             print ".[" "" "]" (expression ctxt) [i] rest
-          | Ldot (Lident "Bigarray", "Array1"), i1 :: rest ->
+          | Ldot (Lident {txt="Bigarray";_}, {txt="Array1";_}), i1 :: rest ->
             print ".{" "," "}" (simple_expr ctxt) [i1] rest
-          | Ldot (Lident "Bigarray", "Array2"), i1 :: i2 :: rest ->
+          | Ldot (Lident {txt="Bigarray";_}, {txt="Array2";_}),
+                  i1 :: i2 :: rest ->
             print ".{" "," "}" (simple_expr ctxt) [i1; i2] rest
-          | Ldot (Lident "Bigarray", "Array3"), i1 :: i2 :: i3 :: rest ->
+          | Ldot (Lident {txt="Bigarray";_}, {txt="Array3";_}),
+                  i1 :: i2 :: i3 :: rest ->
             print ".{" "," "}" (simple_expr ctxt) [i1; i2; i3] rest
-          | Ldot (Lident "Bigarray", "Genarray"),
+          | Ldot (Lident {txt="Bigarray";_}, {txt="Genarray";_}),
             {pexp_desc = Pexp_array indexes; pexp_attributes = []} :: rest ->
               print ".{" "," "}" (simple_expr ctxt) indexes rest
           | _ -> false
         end
-      | (Lident s | Ldot(_,s)) , a :: i :: rest
+      | (Lident {txt=s;_} | Ldot(_,{txt=s;_})) , a :: i :: rest
         when first_is '.' s ->
           (* extract operator:
              assignment operators end with [right_bracket ^ "<-"],
@@ -1435,7 +1441,8 @@ and bindings ctxt f (rf,l) =
 and binding_op ctxt f x =
   match x.pbop_pat, x.pbop_exp with
   | {ppat_desc = Ppat_var { txt=pvar; _ }; ppat_attributes = []; _},
-    {pexp_desc = Pexp_ident { txt=Lident evar; _}; pexp_attributes = []; _}
+    {pexp_desc = Pexp_ident { txt=Lident {txt=evar;_}; _};
+     pexp_attributes = []; _}
        when pvar = evar ->
      pp f "@[<2>%s %s@]" x.pbop_op.txt evar
   | pat, exp ->
@@ -1739,7 +1746,7 @@ and case_list ctxt f l : unit =
 
 and label_x_expression_param ctxt f (l,e) =
   let simple_name = match e with
-    | {pexp_desc=Pexp_ident {txt=Lident l;_};
+    | {pexp_desc=Pexp_ident {txt=Lident {txt=l;_};_};
        pexp_attributes=[]} -> Some l
     | _ -> None
   in match l with

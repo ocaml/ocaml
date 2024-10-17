@@ -495,7 +495,7 @@ let transl_declaration env sdecl (id, uid) =
     if is_fixed_type sdecl then begin
       let p, _ =
         try Env.find_type_by_name
-              (Longident.Lident(Ident.name id ^ "#row")) env
+              (Longident.Lident(mknoloc (Ident.name id ^ "#row"))) env
         with Not_found -> assert false
       in
       set_private_row env sdecl.ptype_loc p decl

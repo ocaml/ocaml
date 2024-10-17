@@ -74,7 +74,8 @@ let get_optional_payload get_from_exp =
 let get_id_from_exp =
   let open Parsetree in
   function
-  | { pexp_desc = Pexp_ident { txt = Longident.Lident id } } -> Result.Ok id
+  | { pexp_desc = Pexp_ident { txt = Longident.Lident { txt = id; _ } } } ->
+      Result.Ok id
   | _ -> Result.Error ()
 
 let get_int_from_exp =
@@ -92,7 +93,8 @@ let get_construct_from_exp =
   let open Parsetree in
   function
     | { pexp_desc =
-          Pexp_construct ({ txt = Longident.Lident constr }, None) } ->
+          Pexp_construct ({ txt = Longident.Lident { txt = constr; _ } },
+                          None) } ->
         Result.Ok constr
     | _ -> Result.Error ()
 

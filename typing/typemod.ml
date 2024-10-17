@@ -2946,8 +2946,8 @@ let type_module_type_of env smod =
 let rec extend_path path =
   fun lid ->
     match lid with
-    | Lident name -> Pdot(path, name)
-    | Ldot(m, name) -> Pdot(extend_path path m, name)
+    | Lident  { txt = name; _ } -> Pdot(path, name)
+    | Ldot(m, { txt = name; _ }) -> Pdot(extend_path path m, name)
     | Lapply _ -> assert false
 
 (* Lookup a type's longident within a signature *)
@@ -2968,14 +2968,14 @@ let lookup_type_in_sig sg =
       (String.Map.empty, String.Map.empty) sg
   in
   let rec module_path = function
-    | Lident name -> Pident (String.Map.find name modules)
-    | Ldot(m, name) -> Pdot(module_path m, name)
+    | Lident { txt = name; _ } -> Pident (String.Map.find name modules)
+    | Ldot(m, { txt = name; _ }) -> Pdot(module_path m, name)
     | Lapply _ -> assert false
   in
   fun lid ->
     match lid with
-    | Lident name -> Pident (String.Map.find name types)
-    | Ldot(m, name) -> Pdot(module_path m, name)
+    | Lident { txt = name; _ } -> Pident (String.Map.find name types)
+    | Ldot(m, { txt = name; _ }) -> Pdot(module_path m, name)
     | Lapply _ -> assert false
 
 let type_package env m p fl =

@@ -88,6 +88,17 @@ let iter_opt f = function None -> () | Some x -> f x
 
 let iter_loc sub {loc; txt = _} = sub.location sub loc
 
+let rec iter_loc_lid sub lid =
+  let open Longident in
+  match lid with
+  | Lident id -> iter_loc sub id
+  | Ldot (lid, id) -> iter_loc_lid sub lid; iter_loc sub id
+  | Lapply (lid, lid') -> iter_loc_lid sub lid; iter_loc_lid sub lid'
+
+let iter_loc_lid sub {loc; txt} =
+  iter_loc_lid sub txt;
+  iter_loc sub {loc; txt}
+
 module T = struct
   (* Type expressions for the core language *)
 
@@ -123,20 +134,20 @@ module T = struct
         sub.typ sub t1; sub.typ sub t2
     | Ptyp_tuple tyl -> List.iter (sub.typ sub) tyl
     | Ptyp_constr (lid, tl) ->
-        iter_loc sub lid; List.iter (sub.typ sub) tl
+        iter_loc_lid sub lid; List.iter (sub.typ sub) tl
     | Ptyp_object (ol, _o) ->
         List.iter (object_field sub) ol
     | Ptyp_class (lid, tl) ->
-        iter_loc sub lid; List.iter (sub.typ sub) tl
+        iter_loc_lid sub lid; List.iter (sub.typ sub) tl
     | Ptyp_alias (t, _) -> sub.typ sub t
     | Ptyp_variant (rl, _b, _ll) ->
         List.iter (row_field sub) rl
     | Ptyp_poly (_, t) -> sub.typ sub t
     | Ptyp_package (lid, l) ->
-        iter_loc sub lid;
-        List.iter (iter_tuple (iter_loc sub) (sub.typ sub)) l
+        iter_loc_lid sub lid;
+        List.iter (iter_tuple (iter_loc_lid sub) (sub.typ sub)) l
     | Ptyp_open (mod_ident, t) ->
-        iter_loc sub mod_ident;
+        iter_loc_lid sub mod_ident;
         sub.typ sub t
     | Ptyp_extension x -> sub.extension sub x
 
@@ -147,7 +158,7 @@ module T = struct
        ptype_manifest;
        ptype_attributes;
        ptype_loc} =
-    iter_loc sub ptype_name;
+       iter_loc sub ptype_name;
     List.iter (iter_fst (sub.typ sub)) ptype_params;
     List.iter
       (iter_tuple3 (sub.typ sub) (sub.typ sub) (sub.location sub))
@@ -175,7 +186,7 @@ module T = struct
        ptyext_private = _;
        ptyext_loc;
        ptyext_attributes} =
-    iter_loc sub ptyext_path;
+    iter_loc_lid sub ptyext_path;
     List.iter (sub.extension_constructor sub) ptyext_constructors;
     List.iter (iter_fst (sub.typ sub)) ptyext_params;
     sub.location sub ptyext_loc;
@@ -193,7 +204,7 @@ module T = struct
         iter_constructor_arguments sub ctl;
         iter_opt (sub.typ sub) cto
     | Pext_rebind li ->
-        iter_loc sub li
+        iter_loc_lid sub li
 
   let iter_extension_constructor sub
       {pext_name;
@@ -215,7 +226,7 @@ module CT = struct
     sub.attributes sub attrs;
     match desc with
     | Pcty_constr (lid, tys) ->
-        iter_loc sub lid; List.iter (sub.typ sub) tys
+        iter_loc_lid sub lid; List.iter (sub.typ sub) tys
     | Pcty_signature x -> sub.class_signature sub x
     | Pcty_arrow (_lab, t, ct) ->
         sub.typ sub t; sub.class_type sub ct
@@ -254,8 +265,8 @@ module MT = struct
     sub.location sub loc;
     sub.attributes sub attrs;
     match desc with
-    | Pmty_ident s -> iter_loc sub s
-    | Pmty_alias s -> iter_loc sub s
+    | Pmty_ident s -> iter_loc_lid sub s
+    | Pmty_alias s -> iter_loc_lid sub s
     | Pmty_signature sg -> sub.signature sub sg
     | Pmty_functor (param, mt2) ->
         iter_functor_param sub param;
@@ -268,17 +279,17 @@ module MT = struct
 
   let iter_with_constraint sub = function
     | Pwith_type (lid, d) ->
-        iter_loc sub lid; sub.type_declaration sub d
+        iter_loc_lid sub lid; sub.type_declaration sub d
     | Pwith_module (lid, lid2) ->
-        iter_loc sub lid; iter_loc sub lid2
+        iter_loc_lid sub lid; iter_loc_lid sub lid2
     | Pwith_modtype (lid, mty) ->
-        iter_loc sub lid; sub.module_type sub mty
+        iter_loc_lid sub lid; sub.module_type sub mty
     | Pwith_typesubst (lid, d) ->
-        iter_loc sub lid; sub.type_declaration sub d
+        iter_loc_lid sub lid; sub.type_declaration sub d
     | Pwith_modsubst (s, lid) ->
-        iter_loc sub s; iter_loc sub lid
+        iter_loc_lid sub s; iter_loc_lid sub lid
     | Pwith_modtypesubst (lid, mty) ->
-        iter_loc sub lid; sub.module_type sub mty
+        iter_loc_lid sub lid; sub.module_type sub mty
 
   let iter_signature_item sub {psig_desc = desc; psig_loc = loc} =
     sub.location sub loc;
@@ -313,7 +324,7 @@ module M = struct
     sub.location sub loc;
     sub.attributes sub attrs;
     match desc with
-    | Pmod_ident x -> iter_loc sub x
+    | Pmod_ident x -> iter_loc_lid sub x
     | Pmod_structure str -> sub.structure sub str
     | Pmod_functor (param, body) ->
         iter_functor_param sub param;
@@ -384,7 +395,7 @@ module E = struct
     sub.location sub loc;
     sub.attributes sub attrs;
     match desc with
-    | Pexp_ident x -> iter_loc sub x
+    | Pexp_ident x -> iter_loc_lid sub x
     | Pexp_constant _ -> ()
     | Pexp_let (_r, vbs, e) ->
         List.iter (sub.value_binding sub) vbs;
@@ -400,16 +411,16 @@ module E = struct
     | Pexp_try (e, pel) -> sub.expr sub e; sub.cases sub pel
     | Pexp_tuple el -> List.iter (sub.expr sub) el
     | Pexp_construct (lid, arg) ->
-        iter_loc sub lid; iter_opt (sub.expr sub) arg
+        iter_loc_lid sub lid; iter_opt (sub.expr sub) arg
     | Pexp_variant (_lab, eo) ->
         iter_opt (sub.expr sub) eo
     | Pexp_record (l, eo) ->
-        List.iter (iter_tuple (iter_loc sub) (sub.expr sub)) l;
+        List.iter (iter_tuple (iter_loc_lid sub) (sub.expr sub)) l;
         iter_opt (sub.expr sub) eo
     | Pexp_field (e, lid) ->
-        sub.expr sub e; iter_loc sub lid
+        sub.expr sub e; iter_loc_lid sub lid
     | Pexp_setfield (e1, lid, e2) ->
-        sub.expr sub e1; iter_loc sub lid;
+        sub.expr sub e1; iter_loc_lid sub lid;
         sub.expr sub e2
     | Pexp_array el -> List.iter (sub.expr sub) el
     | Pexp_ifthenelse (e1, e2, e3) ->
@@ -428,7 +439,7 @@ module E = struct
     | Pexp_constraint (e, t) ->
         sub.expr sub e; sub.typ sub t
     | Pexp_send (e, _s) -> sub.expr sub e
-    | Pexp_new lid -> iter_loc sub lid
+    | Pexp_new lid -> iter_loc_lid sub lid
     | Pexp_setinstvar (s, e) ->
         iter_loc sub s; sub.expr sub e
     | Pexp_override sel ->
@@ -477,7 +488,7 @@ module P = struct
     | Ppat_interval _ -> ()
     | Ppat_tuple pl -> List.iter (sub.pat sub) pl
     | Ppat_construct (l, p) ->
-        iter_loc sub l;
+        iter_loc_lid sub l;
         iter_opt
           (fun (vl,p) ->
             List.iter (iter_loc sub) vl;
@@ -485,19 +496,19 @@ module P = struct
           p
     | Ppat_variant (_l, p) -> iter_opt (sub.pat sub) p
     | Ppat_record (lpl, _cf) ->
-        List.iter (iter_tuple (iter_loc sub) (sub.pat sub)) lpl
+        List.iter (iter_tuple (iter_loc_lid sub) (sub.pat sub)) lpl
     | Ppat_array pl -> List.iter (sub.pat sub) pl
     | Ppat_or (p1, p2) -> sub.pat sub p1; sub.pat sub p2
     | Ppat_constraint (p, t) ->
         sub.pat sub p; sub.typ sub t
-    | Ppat_type s -> iter_loc sub s
+    | Ppat_type s -> iter_loc_lid sub s
     | Ppat_lazy p -> sub.pat sub p
     | Ppat_unpack s -> iter_loc sub s
     | Ppat_effect (p1,p2) -> sub.pat sub p1; sub.pat sub p2
     | Ppat_exception p -> sub.pat sub p
     | Ppat_extension x -> sub.extension sub x
     | Ppat_open (lid, p) ->
-        iter_loc sub lid; sub.pat sub p
+        iter_loc_lid sub lid; sub.pat sub p
 
 end
 
@@ -509,7 +520,7 @@ module CE = struct
     sub.attributes sub attrs;
     match desc with
     | Pcl_constr (lid, tys) ->
-        iter_loc sub lid; List.iter (sub.typ sub) tys
+        iter_loc_lid sub lid; List.iter (sub.typ sub) tys
     | Pcl_structure s ->
         sub.class_structure sub s
     | Pcl_fun (_lab, e, p, ce) ->
@@ -616,7 +627,7 @@ let default_iterator =
     module_substitution =
       (fun this {pms_name; pms_manifest; pms_attributes; pms_loc} ->
          iter_loc this pms_name;
-         iter_loc this pms_manifest;
+         iter_loc_lid this pms_manifest;
          this.location this pms_loc;
          this.attributes this pms_attributes;
       );
@@ -645,7 +656,7 @@ let default_iterator =
 
     open_description =
       (fun this {popen_expr; popen_override = _; popen_attributes; popen_loc} ->
-         iter_loc this popen_expr;
+         iter_loc_lid this popen_expr;
          this.location this popen_loc;
          this.attributes this popen_attributes
       );

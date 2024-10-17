@@ -95,6 +95,9 @@ let mkcf ~loc ?attrs ?docs d =
 let mkrhs rhs loc = mkloc rhs (make_loc loc)
 let ghrhs rhs loc = mkloc rhs (ghost_loc loc)
 
+let lident name loc = Lident (mkrhs name loc)
+let ldot lid name loc = Ldot (lid, mkrhs name loc)
+
 let push_loc x acc =
   if x.Location.loc_ghost
   then acc
@@ -111,7 +114,7 @@ let reloc_typ ~loc x =
            ptyp_loc_stack = push_loc x.ptyp_loc x.ptyp_loc_stack }
 
 let mkexpvar ~loc (name : string) =
-  mkexp ~loc (Pexp_ident(mkrhs (Lident name) loc))
+  mkexp ~loc (Pexp_ident(mkrhs (lident name loc) loc))
 
 let mkoperator =
   mkexpvar
@@ -188,23 +191,23 @@ let mk_attr ~loc name payload =
    one world to the other *)
 
 let mkexp_cons_desc consloc args =
-  Pexp_construct(mkrhs (Lident "::") consloc, Some args)
+  Pexp_construct(mkrhs (lident "::" consloc) consloc, Some args)
 let mkexp_cons ~loc consloc args =
   mkexp ~loc (mkexp_cons_desc consloc args)
 
 let mkpat_cons_desc consloc args =
-  Ppat_construct(mkrhs (Lident "::") consloc, Some ([], args))
+  Ppat_construct(mkrhs (lident "::" consloc) consloc, Some ([], args))
 let mkpat_cons ~loc consloc args =
   mkpat ~loc (mkpat_cons_desc consloc args)
 
 let ghexp_cons_desc consloc args =
-  Pexp_construct(ghrhs (Lident "::") consloc, Some args)
+  Pexp_construct(ghrhs (lident "::" consloc) consloc, Some args)
 let ghpat_cons_desc consloc args =
-  Ppat_construct(ghrhs (Lident "::") consloc, Some ([], args))
+  Ppat_construct(ghrhs (lident "::" consloc) consloc, Some ([], args))
 
 let rec mktailexp nilloc = let open Location in function
     [] ->
-      let nil = ghloc ~loc:nilloc (Lident "[]") in
+      let nil = ghloc ~loc:nilloc (lident "[]" nilloc) in
       Pexp_construct (nil, None), nilloc
   | e1 :: el ->
       let exp_el, el_loc = mktailexp nilloc el in
@@ -214,7 +217,7 @@ let rec mktailexp nilloc = let open Location in function
 
 let rec mktailpat nilloc = let open Location in function
     [] ->
-      let nil = ghloc ~loc:nilloc (Lident "[]") in
+      let nil = ghloc ~loc:nilloc (lident "[]" nilloc) in
       Ppat_construct (nil, None), nilloc
   | p1 :: pl ->
       let pat_pl, el_loc = mktailpat nilloc pl in
@@ -326,19 +329,20 @@ let bigarray_untuplify = function
 let builtin_arraylike_name loc _ ~assign paren_kind n =
   let opname = if assign then "set" else "get" in
   let opname = if !Clflags.unsafe then "unsafe_" ^ opname else opname in
+  let lident name = Lident (mknoloc name) in
   let prefix = match paren_kind with
-    | Paren -> Lident "Array"
+    | Paren -> lident "Array"
     | Bracket ->
         if assign then removed_string_set loc
-        else Lident "String"
+        else lident "String"
     | Brace ->
        let submodule_name = match n with
          | One -> "Array1"
          | Two -> "Array2"
          | Three -> "Array3"
          | Many -> "Genarray" in
-       Ldot(Lident "Bigarray", submodule_name) in
-   ghloc ~loc (Ldot(prefix,opname))
+       Ldot(lident "Bigarray", mknoloc submodule_name) in
+   ghloc ~loc (Ldot(prefix, mknoloc opname))
 
 let builtin_arraylike_index loc paren_kind index = match paren_kind with
     | Paren | Bracket -> One, [Nolabel, index]
@@ -367,8 +371,8 @@ let user_indexing_operator_name loc (prefix,ext) ~assign paren_kind n =
     let left, right = paren_to_strings paren_kind in
     String.concat "" ["."; ext; left; mid; right; assign] in
   let lid = match prefix with
-    | None -> Lident name
-    | Some p -> Ldot(p,name) in
+    | None -> Lident (mknoloc name)
+    | Some p -> Ldot(p,mknoloc name) in
   ghloc ~loc lid
 
 let user_index loc _ index =
@@ -410,10 +414,10 @@ let loc_map (f : 'a -> 'b) (x : 'a Location.loc) : 'b Location.loc =
 let make_ghost x = { x with loc = { x.loc with loc_ghost = true }}
 
 let loc_last (id : Longident.t Location.loc) : string Location.loc =
-  loc_map Longident.last id
+  Longident.last id.txt
 
 let loc_lident (id : string Location.loc) : Longident.t Location.loc =
-  loc_map (fun x -> Lident x) id
+  loc_map (fun x -> Lident (mkloc x id.loc)) id
 
 let exp_of_longident lid =
   let lid = loc_map (fun id -> Lident (Longident.last id)) lid in
@@ -2534,7 +2538,7 @@ simple_expr:
   | BEGIN ext = ext attrs = attributes e = seq_expr END
       { e.pexp_desc, (ext, attrs @ e.pexp_attributes) }
   | BEGIN ext_attributes END
-      { Pexp_construct (mkloc (Lident "()") (make_loc $sloc), None), $2 }
+      { Pexp_construct (mkloc (lident "()" $sloc) (make_loc $sloc), None), $2 }
   | BEGIN ext_attributes seq_expr error
       { unclosed "begin" $loc($1) "end" $loc($4) }
   | NEW ext_attributes mkrhs(class_longident)
@@ -2603,7 +2607,7 @@ simple_expr:
       { mkinfix $1 $2 $3 }
   | extension
       { Pexp_extension $1 }
-  | od=open_dot_declaration DOT mkrhs(LPAREN RPAREN {Lident "()"})
+  | od=open_dot_declaration DOT mkrhs(LPAREN RPAREN {Lident (mknoloc "()")})
       { Pexp_open(od, mkexp ~loc:($loc($3)) (Pexp_construct($3, None))) }
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" $loc($3) ")" $loc($5) }
@@ -2642,7 +2646,7 @@ simple_expr:
           let tail_exp, _tail_loc = mktailexp $loc($5) $4 in
           mkexp ~loc:($startpos($3), $endpos) tail_exp in
         Pexp_open(od, list_exp) }
-  | od=open_dot_declaration DOT mkrhs(LBRACKET RBRACKET {Lident "[]"})
+  | od=open_dot_declaration DOT mkrhs(LBRACKET RBRACKET {Lident (mknoloc "[]")})
       { Pexp_open(od, mkexp ~loc:$loc($3) (Pexp_construct($3, None))) }
   | mod_longident DOT
     LBRACKET expr_semi_list error
@@ -2990,9 +2994,9 @@ simple_pattern_not_ident:
       { Ppat_type ($2) }
   | mkrhs(mod_longident) DOT simple_delimited_pattern
       { Ppat_open($1, $3) }
-  | mkrhs(mod_longident) DOT mkrhs(LBRACKET RBRACKET {Lident "[]"})
+  | mkrhs(mod_longident) DOT mkrhs(LBRACKET RBRACKET {Lident (mknoloc "[]")})
     { Ppat_open($1, mkpat ~loc:$sloc (Ppat_construct($3, None))) }
-  | mkrhs(mod_longident) DOT mkrhs(LPAREN RPAREN {Lident "()"})
+  | mkrhs(mod_longident) DOT mkrhs(LPAREN RPAREN {Lident (mknoloc "()")})
     { Ppat_open($1, mkpat ~loc:$sloc (Ppat_construct($3, None))) }
   | mkrhs(mod_longident) DOT LPAREN pattern RPAREN
       { Ppat_open ($1, $4) }
@@ -3861,13 +3865,13 @@ constr_ident:
 ;
 constr_longident:
     mod_longident       %prec below_DOT  { $1 } /* A.B.x vs (A).B.x */
-  | mod_longident DOT constr_extra_ident { Ldot($1,$3) }
-  | constr_extra_ident                   { Lident $1 }
-  | constr_extra_nonprefix_ident         { Lident $1 }
+  | mod_longident DOT constr_extra_ident { ldot $1 $3 $loc($3) }
+  | constr_extra_ident                   { lident $1 $loc($1) }
+  | constr_extra_nonprefix_ident         { lident $1 $loc($1) }
 ;
 mk_longident(prefix,final):
-   | final            { Lident $1 }
-   | prefix DOT final { Ldot($1,$3) }
+   | final            { lident $1 $loc($1) }
+   | prefix DOT final { ldot $1 $3 $loc($3) }
 ;
 val_longident:
     mk_longident(mod_longident, val_ident) { $1 }
@@ -3906,7 +3910,7 @@ any_longident:
   | mk_longident (mod_ext_longident,
      ident | constr_extra_ident | val_extra_ident { $1 }
     ) { $1 }
-  | constr_extra_nonprefix_ident { Lident $1 }
+  | constr_extra_nonprefix_ident { lident $1 $loc($1) }
 ;
 /* END AVOID */
 

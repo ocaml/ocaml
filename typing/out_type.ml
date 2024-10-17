@@ -88,7 +88,8 @@ module Namespace = struct
       and thus use {!in_printing_env} rather than directly
       accessing the printing environment *)
   let lookup =
-    let to_lookup f lid = fst @@ in_printing_env (f (Lident lid)) in
+    let to_lookup f lid =
+      fst @@ in_printing_env (f (Lident (Location.mknoloc lid))) in
     function
     | Some Type -> to_lookup Env.find_type_by_name
     | Some Module -> to_lookup Env.find_module_by_name
@@ -385,9 +386,9 @@ let rec rewrite_double_underscore_paths env p =
     | Some i ->
       let better_lid =
         Ldot
-          (Lident (String.sub name 0 i),
-           Unit_info.modulize
-             (String.sub name (i + 2) (String.length name - i - 2)))
+          (Lident (Location.mknoloc (String.sub name 0 i)),
+          (Location.mknoloc (Unit_info.modulize
+             (String.sub name (i + 2) (String.length name - i - 2)))))
       in
       match Env.find_module_by_name better_lid env with
       | exception Not_found -> p
@@ -574,9 +575,9 @@ let wrap_printing_env ~error env f =
 
 let rec lid_of_path = function
     Path.Pident id ->
-      Longident.Lident (Ident.name id)
+      Longident.Lident (Location.mknoloc (Ident.name id))
   | Path.Pdot (p1, s) | Path.Pextra_ty (p1, Pcstr_ty s)  ->
-      Longident.Ldot (lid_of_path p1, s)
+      Longident.Ldot (lid_of_path p1, Location.mknoloc s)
   | Path.Papply (p1, p2) ->
       Longident.Lapply (lid_of_path p1, lid_of_path p2)
   | Path.Pextra_ty (p, Pext_ty) -> lid_of_path p

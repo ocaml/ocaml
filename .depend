@@ -437,11 +437,14 @@ parsing/location.cmi : \
     utils/format_doc.cmi
 parsing/longident.cmo : \
     utils/misc.cmi \
+    parsing/location.cmi \
     parsing/longident.cmi
 parsing/longident.cmx : \
     utils/misc.cmx \
+    parsing/location.cmx \
     parsing/longident.cmi
-parsing/longident.cmi :
+parsing/longident.cmi : \
+    parsing/location.cmi
 parsing/parse.cmo : \
     parsing/syntaxerr.cmi \
     parsing/pprintast.cmi \
@@ -4421,6 +4424,7 @@ lambda/lambda.cmo : \
     typing/path.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
+    parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi \
     lambda/debuginfo.cmi \
@@ -4433,6 +4437,7 @@ lambda/lambda.cmx : \
     typing/path.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
+    parsing/location.cmx \
     typing/ident.cmx \
     typing/env.cmx \
     lambda/debuginfo.cmx \
@@ -7295,6 +7300,7 @@ toplevel/genprintval.cmo : \
     typing/oprint.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
+    parsing/location.cmi \
     parsing/lexer.cmi \
     typing/ident.cmi \
     utils/format_doc.cmi \
@@ -7316,6 +7322,7 @@ toplevel/genprintval.cmx : \
     typing/oprint.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
+    parsing/location.cmx \
     parsing/lexer.cmx \
     typing/ident.cmx \
     utils/format_doc.cmx \

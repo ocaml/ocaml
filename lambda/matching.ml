@@ -142,7 +142,7 @@ let all_record_args lbls =
       let t =
         Array.map
           (fun lbl ->
-            (mknoloc (Longident.Lident "?temp?"), lbl, Patterns.omega))
+            (mknoloc (Longident.Lident(mknoloc "?temp?")), lbl, Patterns.omega))
           lbl_all
       in
       List.iter (fun ((_, lbl, _) as x) -> t.(lbl.lbl_pos) <- x) lbls;
@@ -2149,7 +2149,7 @@ let get_mod_field modname field =
      | Error `Not_found ->
          fatal_errorf "Module %s unavailable." modname
      | Ok env -> (
-         match Env.find_value_by_name (Longident.Lident field) env with
+         match Env.find_value_by_name (Longident.Lident(mknoloc field)) env with
          | exception Not_found ->
              fatal_errorf "Primitive %s.%s not found." modname field
          | path, _ -> transl_value_path Loc_unknown env path
