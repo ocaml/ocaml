@@ -614,6 +614,12 @@ ___________
   messages (no more unexpected \#true)
   (Florian Angeletti, report by Samuel Vivien, review by Gabriel Scherer)
 
+- #13388, #13540: raises an error message (and not an internal compiler error)
+  when two local substitutions are incompatible (for instance `module type
+  S:=sig end type t:=(module S)`)
+  (Florian Angeletti, report by Nailen Matschke, review by Gabriel Scherer, and
+  Leo White)
+
 - #13408: Fix misplaced debug runtime assertion triggerable by a race
   between domain exit and backup thread
   (Miod Vallat and Gabriel Scherer, report by Jan Midtgaard)

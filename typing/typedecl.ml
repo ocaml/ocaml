@@ -647,13 +647,21 @@ let check_coherence env loc dpath decl =
                 | exception Ctype.Equality err ->
                     Some (Includecore.Constraint err)
                 | () ->
+                    let subst =
+                      Subst.Unsafe.add_type_path dpath path Subst.identity in
+                    let decl =
+                      match Subst.Unsafe.type_declaration subst decl with
+                      | Ok decl -> decl
+                      | Error (Fcm_type_substituted_away _) ->
+                           (* no module type substitution in [subst] *)
+                          assert false
+                    in
                     Includecore.type_declarations ~loc ~equality:true env
                       ~mark:true
                       (Path.last path)
                       decl'
                       dpath
-                      (Subst.type_declaration
-                         (Subst.add_type_path dpath path Subst.identity) decl)
+                      decl
               end
             in
             if err <> None then
