@@ -60,32 +60,32 @@ contribution.
 
 The current list of maintainers is as follows:
 
-- @abbysmal Abigael
-- @alainfrisch Alain Frisch
-- @Armael Armaël Guéneau
-- @avsm Anil Madhavapeddy
-- @chambart Pierre Chambart
-- @damiendoligez Damien Doligez
-- @dra27 David Allsopp
-- @garrigue Jacques Garrigue
-- @gasche Gabriel Scherer
-- @goldfirere Richard Eisenberg
-- @jhjourdan Jacques-Henri Jourdan
-- @kayceesrk KC Sivaramakrishnan
-- @let-def Frédéric Bour
-- @lpw25 Leo White
-- @lthls Vincent Laviron
-- @maranget Luc Maranget
-- @mshinwell Mark Shinwell
-- @nojb Nicolás Ojeda Bär
-- @Octachron Florian Angeletti
-- @OlivierNicole Olivier Nicole
-- @sadiqj Sadiq Jaffer
-- @shindere Sébastien Hinderer
-- @stedolan Stephen Dolan
-- @trefis Thomas Refis
-- @xavierleroy Xavier Leroy
-- @yallop Jeremy Yallop
+- [@abbysmal](https://github.com/abbysmal) Abigael
+- [@alainfrisch](https://github.com/alainfrisch) Alain Frisch
+- [@Armael](https://github.com/Armael) Armaël Guéneau
+- [@avsm](https://github.com/avsm) Anil Madhavapeddy
+- [@chambart](https://github.com/chambart) Pierre Chambart
+- [@damiendoligez](https://github.com/damiendoligez) Damien Doligez
+- [@dra27](https://github.com/dra27) David Allsopp
+- [@garrigue](https://github.com/garrigue) Jacques Garrigue
+- [@gasche](https://github.com/gasche) Gabriel Scherer
+- [@goldfirere](https://github.com/goldfirere) Richard Eisenberg
+- [@jhjourdan](https://github.com/jhjourdan) Jacques-Henri Jourdan
+- [@kayceesrk](https://github.com/kayceesrk) KC Sivaramakrishnan
+- [@let-def](https://github.com/let-def) Frédéric Bour
+- [@lpw25](https://github.com/lpw25) Leo White
+- [@lthls](https://github.com/lthls) Vincent Laviron
+- [@maranget](https://github.com/maranget) Luc Maranget
+- [@mshinwell](https://github.com/mshinwell) Mark Shinwell
+- [@nojb](https://github.com/nojb) Nicolás Ojeda Bär
+- [@Octachron](https://github.com/Octachron) Florian Angeletti
+- [@OlivierNicole](https://github.com/OlivierNicole) Olivier Nicole
+- [@sadiqj](https://github.com/sadiqj) Sadiq Jaffer
+- [@shindere](https://github.com/shindere) Sébastien Hinderer
+- [@stedolan](https://github.com/stedolan) Stephen Dolan
+- [@trefis](https://github.com/trefis) Thomas Refis
+- [@xavierleroy](https://github.com/xavierleroy) Xavier Leroy
+- [@yallop](https://github.com/yallop) Jeremy Yallop
 
 <!-- Note: the list comes from [this Github
 page](https://github.com/orgs/ocaml/teams/ocaml-dev/members), plus
