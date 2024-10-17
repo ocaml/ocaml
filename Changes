@@ -147,6 +147,10 @@ ___________
   (Leo White, Tom Kelly, Anil Madhavapeddy, KC Sivaramakrishnan, Xavier Leroy
    and Florian Angeletti, review by the same, Hugo Heuzard, and Ulysse Gérard)
 
+* #13275 : Introduce a new type `(module M : S) -> t[M]` that corresponds to
+  module-dependent functions (aka modular explicits).
+  (Samuel Vivien review by Leo White, ...)
+
 ### Type system
 
 - #11891, #12507: Allow to name new locally abstract types in constructor type

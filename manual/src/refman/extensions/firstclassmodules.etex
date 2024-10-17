@@ -1,11 +1,13 @@
 (Introduced in OCaml 3.12; pattern syntax and package type inference
 introduced in 4.00; structural comparison of package types introduced in 4.02.;
-fewer parens required starting from 4.05)
+fewer parens required starting from 4.05; module-dependent functions introduced
+in 5.0x)
 
 \begin{syntax}
 typexpr:
       ...
     | '(''module' package-type')'
+    | '(''module' module-name ':' package-type')' '->' typexpr
 ;
 module-expr:
       ...
@@ -49,18 +51,26 @@ of functors are, no additional parens are needed: "Map.Make(val key)".
 
 The pattern @'(' 'module' module-name ':' package-type ')'@ matches a
 package with type @package-type@ and binds it to @module-name@.
-It is not allowed in toplevel let bindings.
+It is not allowed in toplevel let bindings. When a function takes an argument
+whose pattern is exactly @'(' 'module' module-name ':' package-type ')'@, then
+this function can be a module-dependent function.
 Again @package-type@ can be omitted if it can be inferred from the
 enclosing pattern.
 
 The @package-type@ syntactic class appearing in the  @'(' 'module'
-package-type ')'@ type expression and in the annotated forms represents a
-subset of module types.
+package-type ')'@ type expression, in @'(' 'module' module-name ':'
+package-type ')' '->' typexpr @ type expression and in the annotated forms
+represents a subset of module types.
 This subset consists of named module types with optional constraints
 of a limited form: only non-parametrized types can be specified.
 
 For type-checking purposes (and starting from OCaml 4.02), package types
 are compared using the structural comparison of module types.
+
+When typechecking we also consider
+@'(' 'module' module-name ':' package-type ')' '->' typexpr@ and
+@'(' 'module' package-type ')' '->' typexpr@ to be identical when @module-name@
+does not appear in @typexpr@
 
 In general, the module expression @'(' "val" expr ":" package-type
 ')'@ cannot be used in the body of a functor, because this could cause
@@ -135,6 +145,19 @@ let make_set (type s) cmp =
   end) in
   (module S : Set.S with type elt = s)
 \end{caml_example}
+
+
+Starting from OCaml 5.0x the example of "sort" can be written without the
+"with type elt = s" because we now support module-dependent functions.
+
+\begin{caml_example}{verbatim}
+let sort (module Set : Set.S) l =
+  Set.elements (List.fold_right Set.add l Set.empty)
+\end{caml_example}
+
+However, as a downside from this support, when applying "sort" to an
+argument you will need to pack the argument directly at the application and
+cannot give any value of type @'(' 'module' Set.S ')'@.
 
 \iffalse
 Another advanced use of first-class module is to encode existential

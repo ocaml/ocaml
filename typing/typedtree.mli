@@ -667,6 +667,7 @@ and core_type_desc =
   | Ttyp_poly of string list * core_type
   | Ttyp_package of package_type
   | Ttyp_open of Path.t * Longident.t loc * core_type
+  | Ttyp_functor of arg_label * Ident.t loc * package_type * core_type
 
 and package_type = {
   pack_path : Path.t;

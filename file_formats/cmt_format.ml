@@ -242,6 +242,8 @@ let iter_on_occurrences
           f ~namespace:Type ctyp_env path lid
       |  Ttyp_open (path, lid, _ct) ->
           f ~namespace:Module ctyp_env path lid
+      | Ttyp_functor (_, _, {pack_path; pack_txt}, _) ->
+        f ~namespace:Module_type ctyp_env pack_path pack_txt
       | Ttyp_any | Ttyp_var _ | Ttyp_arrow _ | Ttyp_tuple _ | Ttyp_object _
       | Ttyp_alias _ | Ttyp_variant _ | Ttyp_poly _ -> ());
       default_iterator.typ sub ct);

@@ -604,6 +604,14 @@ module Digraph = struct
     | Types.Tvar name -> mk "%a" Pp.pretty_var name
     | Types.Tarrow(l,t1,t2,_) ->
        mk "→%a" Pp.exponent_of_label l |> numbered [t1; t2]
+    | Types.Tfunctor(l,us,(p,fl),t2) ->
+        let t1 =
+          Types.proto_newty3 ~level:0 ~scope:0 (Types.Tpackage (p, fl))
+          |> Types.Transient_expr.type_expr
+        in
+        mk "→%a %a" Pp.exponent_of_label l
+                    Pp.pretty_var (Some (Ident.Unscoped.name us))
+          |> numbered [t1; t2]
     | Types.Ttuple tl ->
         mk "*" |> numbered tl
     | Types.Tconstr (p,tl,abbrevs) ->

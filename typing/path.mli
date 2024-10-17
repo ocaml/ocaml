@@ -57,11 +57,19 @@ and extra_ty =
   *)
 
 val same: t -> t -> bool
+val equiv: t -> t -> bool
+
 val compare: t -> t -> int
 val compare_extra: extra_ty -> extra_ty -> int
 val find_free_opt: Ident.t list -> t -> Ident.t option
 val exists_free: Ident.t list -> t -> bool
 val scope: t -> int
+val contains: Ident.t -> t -> bool
+
+val subst: (Ident.t * t) list -> t -> t
+val check_for_unbound_unscoped_idents:
+    Ident.Unscoped.Set.t -> t -> Ident.Unscoped.t option
+
 val flatten : t -> [ `Contains_apply | `Ok of Ident.t * string list ]
 
 val name: ?paren:(string -> bool) -> t -> string
