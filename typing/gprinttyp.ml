@@ -302,8 +302,8 @@ module Pp = struct
   let list ~sep = pp_print_list ~pp_sep:sep
   let seq ~sep = pp_print_seq ~pp_sep:sep
   let rec longident ppf = function
-    | Longident.Lident s -> fprintf ppf "%s" s
-    | Longident.Ldot (l,s) -> fprintf ppf "%a.%s"  longident l s
+    | Longident.Lident {txt;_} -> fprintf ppf "%s" txt
+    | Longident.Ldot (l,{txt;_}) -> fprintf ppf "%a.%s"  longident l txt
     | Longident.Lapply(f,x) -> fprintf ppf "%a(%a)" longident f  longident x
 
   let color ppf = function
@@ -673,7 +673,8 @@ module Digraph = struct
         let types = List.map snd fl in
         mk "[mod %a with %a]"
           pp_path p
-          Pp.(list ~sep:semi longident) (List.map fst fl)
+          Pp.(list ~sep:semi longident)
+            (List.map (fun (l, _) -> Longident.unflatten l |> Option.get) fl)
         |> numbered types
   and variant params id0 (elts,main,fields) (name,rf)  =
     let id = Index.subnode ~name id0 in

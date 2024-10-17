@@ -126,7 +126,7 @@ let alert_of_attribute attr =
         Some text
     | _ -> None
   in
-  let load_alert_name name = Longident.last name.Location.txt in
+  let load_alert_name name = (Longident.last name.Location.txt).txt in
   let deprecated_payload = function
     | PStr [ { pstr_desc = Pstr_eval (s, _); _ } ] -> load_constant_string s
     | _ -> None

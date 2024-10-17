@@ -2048,7 +2048,7 @@ let modtype_of_package env loc p fl =
      module type are at generic_level. *)
   let mty =
     package_constraints env loc (Mty_ident p)
-      (List.map (fun (n, t) -> Longident.flatten n, Ctype.duplicate_type t) fl)
+      (List.map (fun (n, t) -> n, Ctype.duplicate_type t) fl)
   in
   Subst.modtype Keep Subst.identity mty
 
@@ -2898,8 +2898,8 @@ let type_module_type_of env smod =
 let rec extend_path path =
   fun lid ->
     match lid with
-    | Lident name -> Pdot(path, name)
-    | Ldot(m, name) -> Pdot(extend_path path m, name)
+    | Lident  { txt = name; _ } -> Pdot(path, name)
+    | Ldot(m, { txt = name; _ }) -> Pdot(extend_path path m, name)
     | Lapply _ -> assert false
 
 (* Lookup a type's longident within a signature *)
@@ -2920,14 +2920,14 @@ let lookup_type_in_sig sg =
       (String.Map.empty, String.Map.empty) sg
   in
   let rec module_path = function
-    | Lident name -> Pident (String.Map.find name modules)
-    | Ldot(m, name) -> Pdot(module_path m, name)
+    | Lident { txt = name; _ } -> Pident (String.Map.find name modules)
+    | Ldot(m, { txt = name; _ }) -> Pdot(module_path m, name)
     | Lapply _ -> assert false
   in
   fun lid ->
     match lid with
-    | Lident name -> Pident (String.Map.find name types)
-    | Ldot(m, name) -> Pdot(module_path m, name)
+    | Lident { txt = name; _ } -> Pident (String.Map.find name types)
+    | Ldot(m, { txt = name; _ }) -> Pdot(module_path m, name)
     | Lapply _ -> assert false
 
 let type_package env m p fl =
@@ -2965,7 +2965,7 @@ let type_package env m p fl =
       let fl' =
         List.fold_right
           (fun (lid, _t) fl ->
-             match type_path lid with
+             match type_path (Longident.unflatten lid |> Option.get) with
              | exception Not_found -> fl
              | path -> begin
                  match Env.find_type path env with
@@ -2990,7 +2990,8 @@ let type_package env m p fl =
     (fun (n, ty) ->
       try Ctype.unify env ty (Ctype.newvar ())
       with Ctype.Unify _ ->
-        raise (Error(modl.mod_loc, env, Scoping_pack (n,ty))))
+        let lid = Longident.unflatten n |> Option.get in
+        raise (Error(modl.mod_loc, env, Scoping_pack (lid,ty))))
     fl';
   let modl = wrap_constraint_package env true modl mty Tmodtype_implicit in
   modl, fl'

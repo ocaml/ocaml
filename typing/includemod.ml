@@ -229,7 +229,11 @@ module Core_inclusion = struct
       Env.mark_value_used vd1.val_uid;
     let vd2 = Subst.value_description subst vd2 in
     try
-      Ok (Includecore.value_descriptions ~loc env (Ident.name id) vd1 vd2)
+      let check =
+        Ok (Includecore.value_descriptions ~loc env (Ident.name id) vd1 vd2)
+      in
+      (* Cmt_format.record_uid_dependency vd1.val_uid vd2.val_uid; *)
+      check
     with Includecore.Dont_match err ->
       Error Error.(Core (Value_descriptions (diff vd1 vd2 err)))
 

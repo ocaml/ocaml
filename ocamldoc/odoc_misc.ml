@@ -82,8 +82,8 @@ let remove_duplicates (type a) compare (li : a list) =
 
 let rec string_of_longident li =
   match li with
-  | Longident.Lident s -> s
-  | Longident.Ldot(li, s) -> string_of_longident li ^ "." ^ s
+  | Longident.Lident { txt = s; _ } -> s
+  | Longident.Ldot(li,  { txt = s; _ }) -> string_of_longident li ^ "." ^ s
   | Longident.Lapply(l1, l2) ->
       string_of_longident l1 ^ "(" ^ string_of_longident l2 ^ ")"
 

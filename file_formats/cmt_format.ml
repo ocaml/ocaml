@@ -206,14 +206,14 @@ let iter_on_occurrences
           | Overridden (lid, _) -> add_label exp_env lid label_descr
           | Kept _ -> ()) fields
       | Texp_instvar  (_self_path, path, name) ->
-          let lid = { name with txt = Longident.Lident name.txt } in
+          let lid = { name with txt = Longident.Lident name } in
           f ~namespace:Value exp_env path lid
       | Texp_setinstvar  (_self_path, path, name, _) ->
-          let lid = { name with txt = Longident.Lident name.txt } in
+          let lid = { name with txt = Longident.Lident name } in
           f ~namespace:Value exp_env path lid
       | Texp_override (_self_path, modifs) ->
           List.iter (fun (id, (name : string Location.loc), _exp) ->
-            let lid = { name with txt = Longident.Lident name.txt } in
+            let lid = { name with txt = Longident.Lident name } in
             f ~namespace:Value exp_env (Path.Pident id) lid)
             modifs
       | Texp_extension_constructor (lid, path) ->
@@ -280,7 +280,7 @@ let iter_on_occurrences
       default_iterator.pat sub pat);
 
   binding_op = (fun sub ({bop_op_path; bop_op_name; bop_exp; _} as bop) ->
-    let lid = { bop_op_name with txt = Longident.Lident bop_op_name.txt } in
+    let lid = { bop_op_name with txt = Longident.Lident bop_op_name } in
     f ~namespace:Value bop_exp.exp_env bop_op_path lid;
     default_iterator.binding_op sub bop);
 

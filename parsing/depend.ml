@@ -48,8 +48,8 @@ let rec lookup_free p m =
 (* Returns the node corresponding to the structure at path p *)
 let rec lookup_map lid m =
   match lid with
-    Lident s    -> String.Map.find s m
-  | Ldot (l, s) -> String.Map.find s (get_map (lookup_map l m))
+    Lident s    -> String.Map.find s.txt m
+  | Ldot (l, s) -> String.Map.find s.txt (get_map (lookup_map l m))
   | Lapply _    -> raise Not_found
 
 let free_structure_names = ref String.Set.empty
@@ -58,14 +58,14 @@ let add_names s =
   free_structure_names := String.Set.union s !free_structure_names
 
 let rec add_path bv ?(p=[]) = function
-  | Lident s ->
+  | Lident { txt = s; _ } ->
       let free =
         try lookup_free (s::p) bv with Not_found -> String.Set.singleton s
       in
       (*String.Set.iter (fun s -> Printf.eprintf "%s " s) free;
         prerr_endline "";*)
       add_names free
-  | Ldot(l, s) -> add_path bv ~p:(s::p) l
+  | Ldot(l, { txt = s; _ }) -> add_path bv ~p:(s::p) l
   | Lapply(l1, l2) -> add_path bv l1; add_path bv l2
 
 let open_module bv lid =
@@ -363,7 +363,7 @@ and add_module_alias bv l =
     lookup_map l.txt bv
   with Not_found ->
     match l.txt with
-      Lident s -> make_leaf s
+      Lident { txt = s; _ } -> make_leaf s
     | _ -> add_module_path bv l; bound (* cannot delay *)
 
 and add_modtype_binding bv mty =

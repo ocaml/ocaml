@@ -232,7 +232,7 @@ end = struct
       | Tuple n -> Tpat_tuple (omegas n)
       | Array n -> Tpat_array (omegas n)
       | Construct c ->
-          let lid_loc = mkloc (Longident.Lident c.cstr_name) in
+          let lid_loc = mkloc (Longident.Lident (mkloc c.cstr_name)) in
           Tpat_construct (lid_loc, c, omegas c.cstr_arity, None)
       | Variant { tag; has_arg; cstr_row } ->
           let arg_opt = if has_arg then Some omega else None in
@@ -240,7 +240,7 @@ end = struct
       | Record lbls ->
           let lst =
             List.map (fun lbl ->
-              let lid_loc = mkloc (Longident.Lident lbl.lbl_name) in
+              let lid_loc = mkloc (Longident.Lident (mkloc lbl.lbl_name)) in
               (lid_loc, lbl, omega)
             ) lbls
           in

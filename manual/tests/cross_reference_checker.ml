@@ -178,9 +178,10 @@ module OCaml_refs = struct
   let rec try_parse_as_list e =
     match e.Parsetree.pexp_desc with
     | Parsetree.Pexp_construct
-        ({ txt = Lident "::"; _ }, Some { pexp_desc = Pexp_tuple [ x; rest]; _ }) ->
+        ({ txt = Lident {txt = "::"; _ }; _ },
+          Some { pexp_desc = Pexp_tuple [ x; rest]; _ }) ->
           ((int x) :: try_parse_as_list rest)
-    | Parsetree.Pexp_construct ({ txt = Lident "[]"; _}, None) ->
+    | Parsetree.Pexp_construct ({ txt = Lident { txt = "[]"; _ }; _}, None) ->
         []
     | _ -> raise Exit
 

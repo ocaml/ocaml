@@ -813,7 +813,7 @@ end
 (* build a pattern from a constructor description *)
 let pat_of_constr ex_pat cstr =
   {ex_pat with pat_desc =
-   Tpat_construct (mknoloc (Longident.Lident cstr.cstr_name),
+   Tpat_construct (mknoloc (Longident.Lident (mknoloc cstr.cstr_name)),
                    cstr, omegas cstr.cstr_arity, None)}
 
 let orify x y = make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env
@@ -840,7 +840,7 @@ let pats_of_type env ty =
       | Type_record (labels, _) ->
           let fields =
             List.map (fun ld ->
-              mknoloc (Longident.Lident ld.lbl_name), ld, omega)
+              mknoloc (Longident.Lident (mknoloc ld.lbl_name)), ld, omega)
               labels
           in
           [make_pat (Tpat_record (fields, Closed)) ty env]

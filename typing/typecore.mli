@@ -264,8 +264,8 @@ val type_object:
   (Env.t -> Location.t -> Parsetree.class_structure ->
    Typedtree.class_structure * string list) ref
 val type_package:
-  (Env.t -> Parsetree.module_expr -> Path.t -> (Longident.t * type_expr) list ->
-  Typedtree.module_expr * (Longident.t * type_expr) list) ref
+  (Env.t -> Parsetree.module_expr -> Path.t -> (string list * type_expr) list ->
+  Typedtree.module_expr * (string list * type_expr) list) ref
 
 val constant: Parsetree.constant -> (Asttypes.constant, error) result
 
