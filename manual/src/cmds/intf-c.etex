@@ -12,6 +12,7 @@ these C functions can call back to OCaml code.
 \begin{syntax}
 definition: ...
             | 'external' value-name ':' typexpr '=' external-declaration
+            | 'external' value-name [':' typexpr] '=' value-path
 ;
 external-declaration: string-literal [ string-literal [ string-literal ] ]
 \end{syntax}
@@ -47,6 +48,12 @@ corresponding OCaml function. On the other hand, it should not be used
 in library modules if they have side-effects at toplevel, as this
 direct call interferes with the linker's algorithm for removing unused
 modules from libraries at link-time.
+
+The second form of declaration seen above enables one to re-bind a
+previously-declared primitive under a new name. This will copy the type, C
+function name(s), and any additional information as discussed in
+section~\ref{s:C-cheaper-call}. One may optionally ascribe a type to the new
+binding as well.
 
 The arity (number of arguments) of a primitive is automatically
 determined from its OCaml type in the "external" declaration, by

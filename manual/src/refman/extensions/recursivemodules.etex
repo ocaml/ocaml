@@ -54,9 +54,11 @@ not final and subject to change in future releases.
 Currently, the compiler requires that all dependency cycles between
 the recursively-defined module identifiers go through at least one
 ``safe'' module.  A module is ``safe'' if all value definitions that
-it contains have function types @typexpr_1 '->' typexpr_2@.  Evaluation of a
-recursive module definition proceeds by building initial values for
-the safe modules involved, binding all (functional) values to
+it contains have function types @typexpr_1 '->' typexpr_2@, and it does
+not contain any primitive aliases with more-general type than that of
+the aliased primitive.  Evaluation of a recursive module definition
+proceeds by building initial values for the safe modules involved, binding
+all (functional) values to
 @'fun' '_' '->' 'raise' @"Undefined_recursive_module".  The defining
 module expressions are then evaluated, and the initial values
 for the safe modules are replaced by the values thus computed.  If a

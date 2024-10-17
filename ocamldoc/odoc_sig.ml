@@ -564,6 +564,7 @@ module Analyser =
         | Parsetree.Psig_attribute _
         | Parsetree.Psig_extension _
         | Parsetree.Psig_value _
+        | Parsetree.Psig_primitive _
         | Parsetree.Psig_typext _
         | Parsetree.Psig_exception _
         | Parsetree.Psig_open _
@@ -839,13 +840,8 @@ module Analyser =
       in
       f [] env last_pos sig_item_list
 
-    (** Analyse the given signature_item_desc to create the corresponding module element
-       (with the given attached comment).*)
-    and analyse_signature_item_desc env _signat table current_module_name
-        sig_item_loc pos_start_ele pos_end_ele pos_limit comment_opt sig_item_desc =
-        match sig_item_desc with
-          Parsetree.Psig_value value_desc ->
-            let name_pre = value_desc.Parsetree.pval_name in
+    and analyse_signature_value_or_primitive env table current_module_name
+          sig_item_loc pos_end_ele pos_limit comment_opt ~name_pre ~attrs =
             let type_expr =
               try Signature_search.search_value table name_pre.txt
               with Not_found ->
@@ -854,8 +850,7 @@ module Analyser =
             let name = Name.parens_if_infix name_pre.txt in
             let subst_typ = Odoc_env.subst_type env type_expr in
             let (maybe_more, comment_opt) =
-              get_info ~attrs:value_desc.Parsetree.pval_attributes comment_opt
-                pos_end_ele pos_limit
+              get_info ~attrs comment_opt pos_end_ele pos_limit
             in
             let v =
               {
@@ -873,6 +868,19 @@ module Analyser =
 
             let new_env = Odoc_env.add_value env v.val_name in
             (maybe_more, new_env, [ Element_value v ])
+
+    (** Analyse the given signature_item_desc to create the corresponding module element
+       (with the given attached comment).*)
+    and analyse_signature_item_desc env _signat table current_module_name
+        sig_item_loc pos_start_ele pos_end_ele pos_limit comment_opt sig_item_desc =
+        match sig_item_desc with
+          Parsetree.Psig_value { pval_name = name_pre; pval_attributes = attrs; _ } ->
+          analyse_signature_value_or_primitive env table current_module_name
+            sig_item_loc pos_end_ele pos_limit comment_opt ~name_pre ~attrs
+
+        | Parsetree.Psig_primitive { pprim_name = name_pre; pprim_attributes = attrs; _ } ->
+          analyse_signature_value_or_primitive env table current_module_name
+            sig_item_loc pos_end_ele pos_limit comment_opt ~name_pre ~attrs
 
         | Parsetree.Psig_typext tyext ->
           let new_env, types_ext_list, last_ext =

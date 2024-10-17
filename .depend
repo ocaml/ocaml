@@ -1343,7 +1343,6 @@ typing/predef.cmi : \
     typing/path.cmi \
     typing/ident.cmi
 typing/primitive.cmo : \
-    parsing/parsetree.cmi \
     typing/outcometree.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
@@ -1351,7 +1350,6 @@ typing/primitive.cmo : \
     parsing/attr_helper.cmi \
     typing/primitive.cmi
 typing/primitive.cmx : \
-    parsing/parsetree.cmi \
     typing/outcometree.cmi \
     utils/misc.cmx \
     parsing/location.cmx \

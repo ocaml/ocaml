@@ -429,7 +429,20 @@ and value_description i ppf x =
        x.pval_name fmt_location x.pval_loc;
   attributes i ppf x.pval_attributes;
   core_type (i+1) ppf x.pval_type;
-  list (i+1) string ppf x.pval_prim
+
+and primitive_description i ppf x =
+  line i ppf "primitive_description %a %a\n" fmt_string_loc
+       x.pprim_name fmt_location x.pprim_loc;
+  attributes i ppf x.pprim_attributes;
+  match x.pprim_kind with
+  | Pprim_decl (pprim_type, pprim_prim) ->
+    line i ppf "Pprim_decl\n";
+    core_type (i+1) ppf pprim_type;
+    list (i+1) string ppf pprim_prim
+  | Pprim_alias (pprim_type, pprim_ident) ->
+    line i ppf "Pprim_alias\n";
+    option (i+1) core_type ppf pprim_type;
+    longident_loc i ppf pprim_ident
 
 and type_parameter i ppf (x, _variance) = core_type i ppf x
 
@@ -726,6 +739,9 @@ and signature_item i ppf x =
   | Psig_value vd ->
       line i ppf "Psig_value\n";
       value_description i ppf vd;
+  | Psig_primitive pd ->
+      line i ppf "Psig_primitive\n";
+      primitive_description i ppf pd;
   | Psig_type (rf, l) ->
       line i ppf "Psig_type %a\n" fmt_rec_flag rf;
       list i type_declaration ppf l;
@@ -855,9 +871,9 @@ and structure_item i ppf x =
   | Pstr_value (rf, l) ->
       line i ppf "Pstr_value %a\n" fmt_rec_flag rf;
       list i value_binding ppf l;
-  | Pstr_primitive vd ->
+  | Pstr_primitive pd ->
       line i ppf "Pstr_primitive\n";
-      value_description i ppf vd;
+      primitive_description i ppf pd;
   | Pstr_type (rf, l) ->
       line i ppf "Pstr_type %a\n" fmt_rec_flag rf;
       list i type_declaration ppf l;

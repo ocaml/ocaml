@@ -112,8 +112,8 @@ type sd = Value_rec_types.recursive_binding_kind
 
 let is_ref : Types.value_description -> bool = function
   | { Types.val_kind =
-        Types.Val_prim { Primitive.prim_name = "%makemutable";
-                          prim_arity = 1 } } ->
+        Types.Val_prim ({ Primitive.prim_name = "%makemutable";
+                          prim_arity = 1 }, _) } ->
         true
   | _ -> false
 

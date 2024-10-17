@@ -94,6 +94,8 @@ type mapper = {
   open_description: mapper -> open_description -> open_description;
   pat: mapper -> pattern -> pattern;
   payload: mapper -> payload -> payload;
+  primitive_description: mapper -> primitive_description
+                         -> primitive_description;
   signature: mapper -> signature -> signature;
   signature_item: mapper -> signature_item -> signature_item;
   structure: mapper -> structure -> structure;

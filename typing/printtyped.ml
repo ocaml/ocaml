@@ -466,8 +466,14 @@ and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_ident x.val_id fmt_location
        x.val_loc;
   attributes i ppf x.val_attributes;
-  core_type (i+1) ppf x.val_desc;
-  list (i+1) string ppf x.val_prim;
+  match x.val_ext with
+  | Tval_val typ -> core_type (i+1) ppf typ
+  | Tval_prim_decl (typ, prim) ->
+    core_type (i+1) ppf typ;
+    list (i+1) string ppf prim
+  | Tval_prim_alias (typ, lid) ->
+    option (i+1) core_type ppf typ;
+    longident (i+1) ppf lid
 
 and binding_op i ppf x =
   line i ppf "binding_op %a %a\n" fmt_path x.bop_op_path
