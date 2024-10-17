@@ -45,7 +45,7 @@ let emit_symbol s =
       if c = Compilenv.symbol_separator then
         output_char !output_channel c
       else
-        Printf.fprintf !output_channel "$%02x" (Char.code c)
+        Printf.fprintf !output_channel "$$%02x" (Char.code c)
   done
 
 let emit_string_literal s =

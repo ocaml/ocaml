@@ -47,13 +47,13 @@
 #endif
 
 #if defined(FUNCTION_SECTIONS)
-        TEXT_SECTION(caml_hot.code_begin)
-        .globl caml_hot.code_begin
-caml_hot.code_begin:
+        TEXT_SECTION(caml_hot$code_begin)
+        .globl caml_hot$code_begin
+caml_hot$code_begin:
 
-        TEXT_SECTION(caml_hot.code_end)
-        .globl caml_hot.code_end
-caml_hot.code_end:
+        TEXT_SECTION(caml_hot$code_end)
+        .globl caml_hot$code_end
+caml_hot$code_end:
 #endif
 
 #define FUNCTION(name) \
@@ -148,8 +148,9 @@ caml_hot.code_end:
 
 #define Caml_state(var) 8*domain_field_caml_##var(%r10)
 
-/* Invoke the garbage collector. */
-
+/* Allocation functions and GC interface.
+   Referenced from C code in runtime/startup_nat.c
+ */
         TEXT_SECTION(caml_system__code_begin)
         .globl  caml_system__code_begin
 caml_system__code_begin:
@@ -1196,13 +1197,13 @@ ENDFUNCTION(G(caml_ml_array_bound_error))
         .globl  caml_system__code_end
 caml_system__code_end:
 
-/* Frame table */
-
+/* Frametable - GC roots for callback */
+/* Uses the same naming convention as ocamlopt generated modules. */
         .section ".data"
         .align 8
-        .globl  caml_system.frametable
-        .type   caml_system.frametable, @object
-caml_system.frametable:
+        .globl  caml_system$frametable
+        .type   caml_system$frametable, @object
+caml_system$frametable:
         .quad   2               /* two descriptors */
         .quad   LBL(caml_retaddr)  /* return address into callback */
         .short  -1              /* negative size count => use callback link */

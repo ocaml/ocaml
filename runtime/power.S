@@ -76,13 +76,13 @@
 .endm
 
 #if defined(FUNCTION_SECTIONS)
-        TEXT_SECTION caml_hot.code_begin
-        .globl caml_hot.code_begin
-caml_hot.code_begin:
+        TEXT_SECTION caml_hot$code_begin
+        .globl caml_hot$code_begin
+caml_hot$code_begin:
 
-        TEXT_SECTION caml_hot.code_end
-        .globl caml_hot.code_end
-caml_hot.code_end:
+        TEXT_SECTION caml_hot$code_end
+        .globl caml_hot$code_end
+caml_hot$code_end:
 #endif
 
 .macro FUNCTION name
@@ -383,6 +383,9 @@ caml_hot.code_end:
 
 #endif /* } WITH_THREAD_SANITIZER */
 
+/* Allocation functions and GC interface.
+   Referenced from C code in runtime/startup_nat.c
+*/
         TEXT_SECTION caml_system__code_begin
         .globl  caml_system__code_begin
 caml_system__code_begin:
@@ -1178,12 +1181,12 @@ ENDFUNCTION caml_ml_array_bound_error
         .globl  caml_system__code_end
 caml_system__code_end:
 
-/* Frame table */
-
+/* Frametable - GC roots for callback */
+/* Uses the same naming convention as ocamlopt generated modules. */
         .section ".data"
-        .globl  caml_system.frametable
-        .type   caml_system.frametable, @object
-caml_system.frametable:
+        .globl  caml_system$frametable
+        .type   caml_system$frametable, @object
+caml_system$frametable:
         .quad   2               /* two descriptors */
         .quad   .Lcaml_retaddr + 4  /* return address into callback */
         .short  -1              /* negative frame size => use callback link */
