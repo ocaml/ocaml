@@ -100,11 +100,17 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
 
 let constructor_descrs ~current_unit ty_path decl cstrs rep =
   let ty_res = newgenconstr ty_path decl.type_params in
-  let num_consts = ref 0 and num_nonconsts = ref 0 in
-  List.iter
-    (fun {cd_args; _} ->
-      if cd_args = Cstr_tuple [] then incr num_consts else incr num_nonconsts)
-    cstrs;
+  let cstr_type_data =
+    let num_consts = ref 0 and num_nonconsts = ref 0 in
+    List.iter
+      (fun {cd_args; _} ->
+        if cd_args = Cstr_tuple [] then incr num_consts else incr num_nonconsts)
+      cstrs;
+    Some {
+      num_consts = !num_consts;
+      num_nonconsts = !num_nonconsts;
+    }
+  in
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
     | {cd_id; cd_args; cd_res; cd_loc; cd_attributes; cd_uid} :: rem ->
@@ -141,8 +147,7 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
             cstr_args;
             cstr_arity = List.length cstr_args;
             cstr_tag = tag;
-            cstr_consts = !num_consts;
-            cstr_nonconsts = !num_nonconsts;
+            cstr_type_data;
             cstr_private = decl.type_private;
             cstr_generalized = cd_res <> None;
             cstr_loc = cd_loc;
@@ -169,8 +174,7 @@ let extension_descr ~current_unit path_ext ext =
       cstr_args;
       cstr_arity = List.length cstr_args;
       cstr_tag = Cstr_extension(path_ext, cstr_args = []);
-      cstr_consts = -1;
-      cstr_nonconsts = -1;
+      cstr_type_data = None;
       cstr_private = ext.ext_private;
       cstr_generalized = ext.ext_ret_type <> None;
       cstr_loc = ext.ext_loc;

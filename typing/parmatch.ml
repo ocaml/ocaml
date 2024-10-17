@@ -140,8 +140,13 @@ let all_coherent column =
   let coherent_heads hp1 hp2 =
     match hp1.pat_desc, hp2.pat_desc with
     | Construct c, Construct c' ->
-      c.cstr_consts = c'.cstr_consts
-      && c.cstr_nonconsts = c'.cstr_nonconsts
+        begin match c.cstr_type_data, c'.cstr_type_data with
+        | None, None -> true
+        | None, Some _ | Some _, None -> false
+        | Some d, Some d' ->
+            d.num_consts = d'.num_consts
+            && d.num_nonconsts = d'.num_nonconsts
+        end
     | Constant c1, Constant c2 -> begin
         match c1, c2 with
         | Const_char _, Const_char _
@@ -766,8 +771,14 @@ let full_match closing env =  match env with
   let open Patterns.Head in
   match discr.pat_desc with
   | Any -> assert false
-  | Construct { cstr_tag = Cstr_extension _ ; _ } -> false
-  | Construct c -> List.length env = c.cstr_consts + c.cstr_nonconsts
+  | Construct c ->
+      begin match c.cstr_type_data with
+      | None -> (* extensible type *) false
+      | Some cstrs ->
+          List.length env =
+            cstrs.num_consts
+            + cstrs.num_nonconsts
+      end
   | Variant { type_row; _ } ->
       let fields =
         List.map

@@ -3310,8 +3310,9 @@ let combine_regular_constructor loc arg cstr partial ctx def
     (descr_lambda_list, total1, pats) =
   let tag_lambda (cstr, act) = (cstr.cstr_tag, act) in
   (* Regular concrete type *)
+  let cstrs = Option.get cstr.cstr_type_data in
   let ncases = List.length descr_lambda_list
-  and nconstrs = cstr.cstr_consts + cstr.cstr_nonconsts in
+  and nconstrs = cstrs.num_consts + cstrs.num_nonconsts in
   let sig_complete = ncases = nconstrs in
   let fail_opt, fails, local_jumps =
     if sig_complete then
@@ -3353,8 +3354,9 @@ let combine_regular_constructor loc arg cstr partial ctx def
         (* Identical actions, no failure: 0 control-flow instructions. *)
         act
     | _ -> (
+        let cstrs = Option.get cstr.cstr_type_data in
         match
-          (cstr.cstr_consts, cstr.cstr_nonconsts, consts, nonconsts)
+          (cstrs.num_consts, cstrs.num_nonconsts, consts, nonconsts)
         with
         | 1, 1, [ (0, act1) ], [ (0, act2) ] ->
             (* This case is very frequent, it corresponds to
@@ -3372,7 +3374,7 @@ let combine_regular_constructor loc arg cstr partial ctx def
               match (fail_opt, nonconsts) with
               | Some a, [] -> Some a
               | Some _, _ ->
-                  if List.length nonconsts = cstr.cstr_nonconsts then
+                  if List.length nonconsts = cstrs.num_nonconsts then
                     same_actions nonconsts
                   else
                     None
@@ -3402,9 +3404,9 @@ let combine_regular_constructor loc arg cstr partial ctx def
             | None ->
                 (* In the general case, emit a switch. *)
                 let sw =
-                  { sw_numconsts = cstr.cstr_consts;
+                  { sw_numconsts = cstrs.num_consts;
                     sw_consts = consts;
-                    sw_numblocks = cstr.cstr_nonconsts;
+                    sw_numblocks = cstrs.num_nonconsts;
                     sw_blocks = nonconsts;
                     sw_failaction = fail_opt
                   }

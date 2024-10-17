@@ -26,8 +26,8 @@ type constructor_description =
     cstr_args: type_expr list;          (* Type of the arguments *)
     cstr_arity: int;                    (* Number of arguments *)
     cstr_tag: constructor_tag;          (* Tag for heap blocks *)
-    cstr_consts: int;                   (* Number of constant constructors *)
-    cstr_nonconsts: int;                (* Number of non-const constructors *)
+    cstr_type_data: type_data option;   (* Type-global data, shared between all constructors.
+                                           [None] for extensible types. *)
     cstr_generalized: bool;             (* Constrained return type? *)
     cstr_private: private_flag;         (* Read-only constructor? *)
     cstr_loc: Location.t;
@@ -42,6 +42,11 @@ and constructor_tag =
   | Cstr_unboxed                        (* Constructor of an unboxed type *)
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
+
+and type_data = {
+  num_consts: int;                   (* Number of constant constructors *)
+  num_nonconsts: int;                (* Number of non-const constructors *)
+}
 
 let equal_tag t1 t2 =
   match (t1, t2) with
