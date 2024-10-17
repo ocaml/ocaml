@@ -198,3 +198,71 @@ and sanity checks that could help you pinpoint the problem.
   requirements for mathematical accuracy, numerical precision, and proper
   handling of mathematical corner cases and error conditions may need to
   consider running their code on a platform with better C99 support.
+
+== (experimental) Building a cross compiler
+
+A cross compiler is a compiler that runs on some machine, named the _host_, but
+generates code for a different machine, named the _target_. To build a cross
+compiler you first need to have a non-cross compiler of the same version
+installed in your `$PATH`. Note that their versions must match since the cross
+compiler will contain the runtime of the non-cross compiler (the build of the
+cross compiler will build only the runtime for the target machine).
+
+It may be useful to keep a note of the flags used to link the non-cross compiler
+with `zstd`, if any:
+
+....
+grep ZSTD_LIBS Makefile.config
+....
+
+before cleaning up the working directory to build the cross compiler.
+
+To start the build of the cross compiler, call `configure` with the
+`target` triplet, possibly setting where the library will be installed
+on the target. So for instance, with the GCC MinGW cross compiler
+installed, one may use:
+
+....
+./configure --prefix=$PWD/cross --target=x86_64-w64-mingw32 --with-target-libdir='C:\somedir' ...
+make crossopt -j
+make installcross
+....
+
+Notes:
+
+* It is advisable to choose a `prefix` that will not end up in
+installing the cross compiler in your `$PATH`, since you probably want
+to make sure the `ocamlopt` command runs the non-cross compiler, not the
+cross one. When you want to call the cross compiler, you will just call
+it using its full path or add it temporarily to your `$PATH`.
+* The cross compiler to Windows needs `flexdll` to link the binaries. A
+simple way to get it is to use the `flexdll` submodule
+(`git submodule update --init` if needed) and let the `crossopt` target
+bootstrap `flexdll`.
+* If `pkg-config --libs libzstd` doesn't return the flags used to link
+the non-cross runtime, you can specify them with:
++
+....
+make crossopt -j HOST_ZSTD_FLAGS="..."
+....
+
+=== Using the cross compiler
+
+If you have built a cross compiler to a Unix target, you can simply run
+as usual:
+
+....
+cross/bin/ocamlopt.opt -o test test.ml
+....
+
+If you have built a cross compiler to Windows on a Unix host, you must
+first make sure that `ocamlopt` can find the `flexlink` executable in
+`$PATH` when it needs to link. Boostrapping `flexdll` builds a
+`flexlink.exe` (note the `.exe`), so you can:
+
+....
+ln -s flexlink.exe cross/bin/flexlink
+(export PATH="$PWD/cross/bin:$PATH"; ocamlopt.opt.exe -o test.exe test.ml)
+....
+
+or any other possibility to make sure `flexlink` can be invoked.

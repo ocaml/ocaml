@@ -46,8 +46,11 @@ BINDIR=@bindir@
 
 datarootdir=@datarootdir@
 
-### Where to install the standard library
+### Where to install the standard library on host
 LIBDIR=@libdir@
+
+### Where to look for the standard library on target
+TARGET_LIBDIR=@target_libdir@
 
 ### Where to install the stub code for the standard library
 STUBLIBDIR=@libdir@/stublibs
@@ -101,6 +104,11 @@ SHAREDLIB_CFLAGS=@sharedlib_cflags@
 # Compile-time option to $(CC) to add a directory to be searched
 # at run-time for shared libraries
 RPATH=@rpath@
+
+### How to build sak
+SAK_CC=@SAK_CC@
+SAK_CFLAGS=@SAK_CFLAGS@
+SAK_LINK=@SAK_LINK@
 
 ############# Configuration for the native-code compiler
 

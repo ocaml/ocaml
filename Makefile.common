@@ -455,7 +455,7 @@ endef # OCAML_LIBRARY
 
 # Installing a bytecode executable, with debug information removed
 define INSTALL_STRIPPED_BYTE_PROG
-$(OCAMLRUN) $(ROOTDIR)/tools/stripdebug $(1) $(1).tmp \
+$(OCAMLRUN) $(ROOTDIR)/tools/stripdebug$(EXE) $(1) $(1).tmp \
 && $(INSTALL_PROG) $(1).tmp $(2) \
 && rm $(1).tmp
 endef # INSTALL_STRIPPED_BYTE_PROG

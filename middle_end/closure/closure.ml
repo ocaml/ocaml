@@ -1058,9 +1058,9 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         | Word_size -> make_const_int (8*B.size_int)
         | Int_size -> make_const_int (8*B.size_int - 1)
         | Max_wosize -> make_const_int ((1 lsl ((8*B.size_int) - 10)) - 1 )
-        | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
-        | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
-        | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
+        | Ostype_unix -> make_const_bool (Config.target_os_type = "Unix")
+        | Ostype_win32 -> make_const_bool (Config.target_os_type = "Win32")
+        | Ostype_cygwin -> make_const_bool (Config.target_os_type = "Cygwin")
         | Backend_type ->
             make_const_int 0 (* tag 0 is the same as Native here *)
       in
