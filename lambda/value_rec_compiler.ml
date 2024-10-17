@@ -246,6 +246,8 @@ let compute_static_size lam =
 
     | Pbytes_to_string
     | Pbytes_of_string
+    | Parray_to_iarray
+    | Parray_of_iarray
     | Pgetglobal _
     | Psetglobal _
     | Pfield _

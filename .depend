@@ -7303,6 +7303,7 @@ toplevel/genprintval.cmo : \
     typing/data_types.cmi \
     typing/ctype.cmi \
     typing/btype.cmi \
+    parsing/asttypes.cmi \
     toplevel/genprintval.cmi
 toplevel/genprintval.cmx : \
     typing/types.cmx \
@@ -7324,6 +7325,7 @@ toplevel/genprintval.cmx : \
     typing/data_types.cmx \
     typing/ctype.cmx \
     typing/btype.cmx \
+    parsing/asttypes.cmi \
     toplevel/genprintval.cmi
 toplevel/genprintval.cmi : \
     typing/types.cmi \

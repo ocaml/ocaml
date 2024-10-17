@@ -670,7 +670,7 @@ let rec expression : Typedtree.expression -> term_judg =
               list expression delayed << Guard]
     | Texp_tuple exprs ->
       list expression exprs << Guard
-    | Texp_array exprs ->
+    | Texp_array (_, exprs) ->
       let array_mode = match Typeopt.array_kind exp with
         | Lambda.Pfloatarray ->
             (* (flat) float arrays unbox their elements *)

@@ -295,7 +295,7 @@ end = struct
       | `Record (fields, closed) ->
           let alpha_field env (lid, l, p) = (lid, l, alpha_pat env p) in
           `Record (List.map (alpha_field env) fields, closed)
-      | `Array ps -> `Array (List.map (alpha_pat env) ps)
+      | `Array (am, ps) -> `Array (am, List.map (alpha_pat env) ps)
       | `Lazy p -> `Lazy (alpha_pat env p)
     in
     { p with pat_desc }
@@ -446,7 +446,7 @@ let matcher discr (p : Simple.pattern) rem =
   | Variant _, (Constant _ | Construct _ | Lazy | Array _ | Record _ | Tuple _)
     ->
       no ()
-  | Array n1, Array n2 -> yesif (n1 = n2)
+  | Array (am1, n1), Array (am2, n2) -> yesif (am1 = am2 && n1 = n2)
   | Array _, (Constant _ | Construct _ | Variant _ | Lazy | Record _ | Tuple _)
     ->
       no ()
@@ -2381,19 +2381,19 @@ let divide_record all_labels ~scopes head ctx pm =
 (* Matching against an array pattern *)
 
 let get_key_array = function
-  | { pat_desc = Tpat_array patl } -> List.length patl
+  | { pat_desc = Tpat_array (_, patl) } -> List.length patl
   | _ -> assert false
 
 let get_pat_args_array p rem =
   match p with
-  | { pat_desc = Tpat_array patl } -> patl @ rem
+  | { pat_desc = Tpat_array (_, patl) } -> patl @ rem
   | _ -> assert false
 
-let get_expr_args_array ~scopes kind head { arg; mut; _ } rem =
-  let len =
+let get_expr_args_array ~scopes kind head { arg; mut } rem =
+  let am, len =
     let open Patterns.Head in
     match head.pat_desc with
-    | Array len -> len
+    | Array (am, len) -> am, len
     | _ -> assert false
   in
   let loc = head_loc ~scopes head in
@@ -2408,8 +2408,11 @@ let get_expr_args_array ~scopes kind head { arg; mut; _ } rem =
       in
       {
         arg;
-        binding_kind = StrictOpt;
-        mut = compose_mut mut Mutable;
+        binding_kind =
+          (match am with
+          | Mutable   -> StrictOpt
+          | Immutable -> Alias);
+        mut = compose_mut mut am;
       } :: make_args (pos + 1)
   in
   make_args 0

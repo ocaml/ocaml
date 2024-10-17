@@ -354,6 +354,8 @@ let primitive ppf = function
   | Popaque -> fprintf ppf "opaque"
   | Pdls_get -> fprintf ppf "dls_get"
   | Ppoll -> fprintf ppf "poll"
+  | Parray_to_iarray -> fprintf ppf "array_to_iarray"
+  | Parray_of_iarray -> fprintf ppf "array_of_iarray"
 
 let name_of_primitive = function
   | Pbytes_of_string -> "Pbytes_of_string"
@@ -464,6 +466,8 @@ let name_of_primitive = function
   | Preperform -> "Preperform"
   | Pdls_get -> "Pdls_get"
   | Ppoll -> "Ppoll"
+  | Parray_of_iarray -> "Parray_of_iarray"
+  | Parray_to_iarray -> "Parray_to_iarray"
 
 let function_attribute ppf t =
   if t.is_a_functor then

@@ -48,12 +48,14 @@ LABELSDOTREGEX="s/([A-Z][a-z_]*)Labels\./\1./g"
 #Stdlib
 perl -p -e "$LABREGEX" stdlib/listLabels.mli > stdlib/list.temp.mli
 perl -p -e "$LABREGEX" stdlib/arrayLabels.mli > stdlib/array.temp.mli
+perl -p -e "$LABREGEX" stdlib/iarrayLabels.mli > stdlib/iarray.temp.mli
 perl -p -e "$LABREGEX" stdlib/stringLabels.mli > stdlib/string.temp.mli
 perl -p -e "$LABREGEX" stdlib/bytesLabels.mli > stdlib/bytes.temp.mli
 
 #Stdlib tildes
 perl -p -e "$TILDEREGEX" stdlib/list.temp.mli > stdlib/list.mli
 perl -p -e "$TILDEREGEX" stdlib/array.temp.mli > stdlib/array.2temp.mli
+perl -p -e "$TILDEREGEX" stdlib/iarray.temp.mli > stdlib/iarray.2temp.mli
 perl -p -e "$TILDEREGEX" stdlib/string.temp.mli > stdlib/string.mli
 perl -p -e "$TILDEREGEX" stdlib/bytes.temp.mli > stdlib/bytes.mli
 
@@ -61,6 +63,8 @@ perl -p -e "$TILDEREGEX" stdlib/bytes.temp.mli > stdlib/bytes.mli
 
 perl -p -e "$LABELSDOTARGREGEX" stdlib/array.2temp.mli > stdlib/array.3temp.mli
 perl -p -e "$LABELSDOTREGEX" stdlib/array.3temp.mli > stdlib/array.mli
+perl -p -e "$LABELSDOTARGREGEX" stdlib/iarray.2temp.mli > stdlib/iarray.3temp.mli
+perl -p -e "$LABELSDOTREGEX" stdlib/iarray.3temp.mli > stdlib/iarray.mli
 
 #FloatArrayLabels
 perl -p -e "$LABREGEX" \
