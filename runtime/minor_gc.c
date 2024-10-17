@@ -874,12 +874,16 @@ void caml_empty_minor_heaps_once (void)
   CAMLassert(!caml_domain_is_in_stw());
   #endif
 
+  CAML_EV_BEGIN(EV_EMPTY_MINOR);
+
   /* To handle the case where multiple domains try to execute a minor gc
      STW section */
   do {
     caml_try_empty_minor_heap_on_all_domains();
   } while (saved_minor_cycle ==
            atomic_load_relaxed(&caml_minor_cycles_started));
+
+  CAML_EV_END(EV_EMPTY_MINOR);
 }
 
 /* Called by minor allocations when [Caml_state->young_ptr] reaches

@@ -450,6 +450,12 @@ evacuation during a compaction.
 Event spanning releasing the evacuated pools at the end of a compaction.
 @since 5.2
 *)
+| EV_EMPTY_MINOR
+(**
+Event spanning a domain needing to empty its minor heap for a new allocation.
+This includes time spent trying to become stop-the-world leader.
+@since 5.4
+*)
 
 (** Lifecycle events for Runtime_events and domains. *)
 type lifecycle =
