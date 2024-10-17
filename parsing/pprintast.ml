@@ -1398,7 +1398,7 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; pvb_constraint = ct; _} =
         (simple_pattern ctxt) p (core_type ctxt) typ (expression ctxt) x
   | Some (Pvc_constraint { locally_abstract_univars = vars; typ }) ->
       pp f "%a@;: type@;%a.@;%a@;=@;%a"
-        (simple_pattern ctxt) p (list pp_print_string ~sep:"@;")
+        (simple_pattern ctxt) p (list ident_of_name ~sep:"@;")
         (List.map (fun x -> x.txt) vars)
         (core_type ctxt) typ (expression ctxt) x
   | Some (Pvc_coercion {ground=None; coercion }) ->

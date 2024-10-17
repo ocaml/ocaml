@@ -7479,6 +7479,8 @@ let x = new M.\#begin
 
 let f = fun x (type \#begin) (type \#end) -> 1
 
+let f: type \#if. \#if -> \#if = fun x -> x
+
 (* check pretty-printing of local module open in core_type *)
 type t = String.( t )
 
