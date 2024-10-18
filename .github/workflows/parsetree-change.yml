@@ -13,6 +13,8 @@ on:
 jobs:
   comment-and-label:
     if: ${{! contains(github.event.pull_request.labels.*.name, 'parsetree-change')}}
+    permissions:
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - name: Notify ppxlib maintainers
