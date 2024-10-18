@@ -56,7 +56,7 @@ let read_member_info pack_path file = (
       in
       if info.ui_symbol <> expected_symbol
       then raise(Error(Wrong_for_pack(file, pack_path)));
-      Asmlink.check_consistency file info crc;
+      Asmlink.check_consistency Fun.id [ (file, info, crc) ];
       Compilenv.cache_unit_info info;
       PM_impl info
     end in

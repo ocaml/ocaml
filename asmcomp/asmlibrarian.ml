@@ -59,9 +59,8 @@ let create_archive file_list lib_name =
        let objfiles = List.map (fun (filename,_) ->
            Filename.chop_suffix filename ".cmx" ^ ext_obj)
            units in
-       List.iter
-         (fun (file_name, (unit, crc)) ->
-            Asmlink.check_consistency file_name unit crc)
+       Asmlink.check_consistency
+         (fun (file_name, (unit, crc)) -> (file_name, unit, crc))
          units;
        let ldeps = Linkdeps.create ~complete:false in
        List.iter
