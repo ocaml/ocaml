@@ -53,7 +53,7 @@ CAMLexport void caml_debugger_cleanup_fork(void)
 
 #else
 
-#ifdef HAS_UNISTD
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #include <errno.h>

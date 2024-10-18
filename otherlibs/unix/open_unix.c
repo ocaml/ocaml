@@ -20,7 +20,7 @@
 #include <caml/signals.h>
 #include "caml/unixsupport.h"
 #include <string.h>
-#ifdef HAS_UNISTD
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #include <fcntl.h>

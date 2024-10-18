@@ -108,9 +108,9 @@
 
 #undef HAS_PTHREAD_NP_H
 
-#undef HAS_UNISTD
+#undef HAVE_UNISTD_H
 
-/* Define HAS_UNISTD if you have /usr/include/unistd.h. */
+/* Define HAVE_UNISTD_H if you have /usr/include/unistd.h. */
 
 #undef HAS_DIRENT
 

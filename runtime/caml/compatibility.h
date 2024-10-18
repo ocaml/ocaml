@@ -28,4 +28,8 @@
 #  define HAS_NANOSECOND_STAT 3
 #endif
 
+#ifdef HAVE_UNISTD_H
+#define HAS_UNISTD 1
+#endif
+
 #endif  /* CAML_COMPATIBILITY_H */

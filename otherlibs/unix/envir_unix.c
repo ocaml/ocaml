@@ -15,7 +15,7 @@
 
 #include <caml/config.h>
 
-#ifdef HAS_UNISTD
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #include <sys/types.h>

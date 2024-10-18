@@ -44,7 +44,7 @@
 #endif
 
 
-#if defined(HAS_UNISTD)
+#if defined(HAVE_UNISTD_H)
 #include <unistd.h>
 #endif
 

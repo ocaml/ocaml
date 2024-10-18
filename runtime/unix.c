@@ -41,7 +41,7 @@
 #include <dlfcn.h>
 #endif
 #endif
-#ifdef HAS_UNISTD
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #ifdef HAS_POSIX_MONOTONIC_CLOCK
