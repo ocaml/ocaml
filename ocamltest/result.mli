@@ -41,3 +41,8 @@ val is_pass : t -> bool
 val is_skip : t -> bool
 
 val is_fail : t -> bool
+
+module Join : sig
+  val sequential : t -> t -> t
+  val parallel : t -> t -> t
+end
