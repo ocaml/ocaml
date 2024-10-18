@@ -1953,6 +1953,41 @@ let rec strput_acc b acc = match acc with
   | End_of_acc               -> ()
 
 (******************************************************************************)
+                      (* Heterogeneous printf variants *)
+
+module Arg_list = struct
+  (* List of heterogeneous values.
+     Type ['a] should match the type signature of the [printf] like functions.
+     Type ['r] should match the format's return type ([format6]'s ['f] type).
+  *)
+  type ('a, 'r) t =
+    | [] : ('r, 'r) t
+    | (::) : 'a * ('b, 'r) t -> ('a -> 'b, 'r) t
+
+  let rec append : type a r1 r2.
+    (a, r1) t -> (r1, r2) t -> (a, r2) t =
+    fun lst1 lst2 ->
+    match lst1 with [] -> lst2 | x :: xs -> x :: append xs lst2
+
+  let ( @ ) lst1 lst2 = append lst1 lst2
+end
+
+let make_lprintf : type a b c f .
+  ((b, c) acc -> f) -> (b, c) acc ->
+  (a, b, c, c, c, f) fmt -> 
+  (a, f) Arg_list.t -> f =
+  fun k acc fmt args ->
+  let rec apply: type a r .
+    a -> (a, r) Arg_list.t -> r =
+    let open! Arg_list in
+    fun f lst -> match lst with
+      | [] -> f
+      | arg :: rest -> apply (f arg) rest
+  in
+  let f = make_printf k acc fmt in
+  apply f args
+
+(******************************************************************************)
                           (* Error management *)
 
 (* Raise [Failure] with a pretty-printed error message. *)
