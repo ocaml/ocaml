@@ -426,6 +426,17 @@ let symbolchar_or_hash =
 let kwdopchar =
   ['$' '&' '*' '+' '-' '/' '<' '=' '>' '@' '^' '|']
 
+(* What we allow in binding operators:
+   - either operator symbols, for example let+, let*
+   - or '/ <lident>', for example let/map, let/bind
+
+   Note that '/' is part of [kwdopchar], so all of (let/), (let/!) and
+   (let/foo) are accepted.
+*)
+let binding_op_suffix =
+  ( kwdopchar dotsymbolchar*
+  | '/' lowercase identchar* )
+
 let ident = (lowercase | uppercase) identchar*
 let ident_ext = identstart_ext  identchar_ext*
 let extattrident = ident_ext ('.' ident_ext)*
@@ -674,9 +685,9 @@ rule token = parse
             { INFIXOP3 op }
   | '#' symbolchar_or_hash + as op
             { HASHOP op }
-  | "let" kwdopchar dotsymbolchar * as op
+  | "let" binding_op_suffix as op
             { LETOP op }
-  | "and" kwdopchar dotsymbolchar * as op
+  | "and" binding_op_suffix as op
             { ANDOP op }
   | eof { EOF }
   | (_ as illegal_char)
