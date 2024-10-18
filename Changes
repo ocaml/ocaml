@@ -741,6 +741,11 @@ ___________
   path under Win32.
   (Nicolás Ojeda Bär, review by David Allsopp and Damien Doligez)
 
+- #13391, #?????: fix a printing bug with `-dsource` when using
+  raw literal inside a locally abstract type constraint
+  (i.e. `let f: type \#for. ... `)
+  (Florian Angeletti, report by Nick Roberts, review by ???)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
