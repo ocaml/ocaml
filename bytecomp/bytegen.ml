@@ -144,7 +144,9 @@ let preserve_tailcall_for_prim = function
   | Popaque | Psequor | Psequand
   | Prunstack | Pperform | Presume | Preperform | Ppoll ->
       true
-  | Pbytes_to_string | Pbytes_of_string | Pignore | Pgetglobal _ | Psetglobal _
+  | Pbytes_to_string | Pbytes_of_string
+  | Parray_to_iarray | Parray_of_iarray
+  | Pignore | Pgetglobal _ | Psetglobal _
   | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
   | Psetfield_computed _ | Pfloatfield _ | Psetfloatfield _ | Pduprecord _
   | Pccall _ | Praise _ | Pnot | Pnegint | Paddint | Psubint | Pmulint
@@ -491,6 +493,8 @@ let comp_primitive stack_info p sz args =
   | Patomic_load -> Kccall("caml_atomic_load", 1)
   | Pdls_get -> Kccall("caml_domain_dls_get", 1)
   | Ppoll -> Kccall("caml_process_pending_actions_with_root", 1)
+  | Parray_to_iarray -> Kccall("caml_iarray_of_array", 1)
+  | Parray_of_iarray -> Kccall("caml_array_of_iarray", 1)
   (* The cases below are handled in [comp_expr] before the [comp_primitive] call
      (in the order in which they appear below),
      so they should never be reached in this function. *)

@@ -287,7 +287,11 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
               | Tconstr(path, [ty_arg], _)
                 when Path.same path Predef.path_array ->
-                  tree_of_array depth obj ty_arg
+                  tree_of_generic_array Asttypes.Mutable depth obj ty_arg
+
+              | Tconstr(path, [ty_arg], _)
+                when Path.same path Predef.path_iarray ->
+                  tree_of_generic_array Asttypes.Immutable depth obj ty_arg
 
               | Tconstr(path, [], _)
                   when Path.same path Predef.path_string ->
@@ -357,9 +361,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               Oval_list
                   (List.rev (tree_of_conses [] depth obj ty_arg))
 
-      and tree_of_array depth obj ty_arg =
+      and tree_of_generic_array am depth obj ty_arg =
         let length = O.size obj in
-        if length = 0 then Oval_array []
+        if length = 0 then Oval_array ([], am)
         else match check_depth depth obj ty with
           | Some x -> x
           | None ->
@@ -373,7 +377,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                   tree_of_items (tree :: tree_list) (i + 1)
                 else tree_list
               in
-              Oval_array (List.rev (tree_of_items [] 0))
+              Oval_array (List.rev (tree_of_items [] 0), am)
 
       and tree_of_lazy depth obj ty_arg =
         let obj_tag = O.tag obj in

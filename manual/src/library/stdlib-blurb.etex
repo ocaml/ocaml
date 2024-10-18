@@ -67,7 +67,8 @@ the above 4 modules \\
 from being garbage-collected \\
 "Atomic" & p.~\stdpageref{Atomic} & atomic references (for compatibility with concurrent runtimes) \\
 "Ephemeron" & p.~\stdpageref{Ephemeron} & ephemerons and weak hash tables \\
-"Bigarray" & p.~\stdpageref{Bigarray} & large, multi-dimensional, numerical arrays
+"Bigarray" & p.~\stdpageref{Bigarray} & large, multi-dimensional, numerical arrays \\
+"Iarray" & p.~\stdpageref{Iarray} & immutable arrays
 \end{tabular}
 \subsubsection*{sss:stdlib-arith}{Arithmetic:}
 \begin{tabular}{lll}
@@ -136,6 +137,7 @@ be called from C \\
 \stddocitem{Domain}{Domain spawn/join and domain local variables}
 \stddocitem{Digest}{MD5 message digest}
 \stddocitem{Dynarray}{Dynamic arrays}
+\stddocitem{Iarray}{Immutable arrays}
 \stddocitem{Effect}{deep and shallow effect handlers}
 \stddocitem{Either}{either values}
 \stddocitem{Ephemeron}{Ephemerons and weak hash table}
@@ -173,7 +175,7 @@ be called from C \\
 \stddocitem{Set}{sets over ordered types}
 \stddocitem{Semaphore}{semaphores, another thread synchronization mechanism}
 \stddocitem{Stack}{last-in first-out stacks}
-\stddocitem{StdLabels}{include modules \texttt{Array}, \texttt{List} and \texttt{String} with labels}
+\stddocitem{StdLabels}{include modules \texttt{Array}, \texttt{List}, \texttt{String} and \texttt{Iarray} with labels}
 \stddocitem{String}{string operations}
 \stddocitem{StringLabels}{string operations (with labels)}
 \stddocitem{Sys}{system interface}
