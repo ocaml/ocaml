@@ -63,7 +63,8 @@ perl -p -e "$TILDEREGEX" stdlib/bytes.temp.mli > stdlib/bytes.mli
 
 perl -p -e "$LABELSDOTARGREGEX" stdlib/array.2temp.mli > stdlib/array.3temp.mli
 perl -p -e "$LABELSDOTREGEX" stdlib/array.3temp.mli > stdlib/array.mli
-perl -p -e "$LABELSDOTARGREGEX" stdlib/iarray.2temp.mli > stdlib/iarray.3temp.mli
+perl -p -e "$LABELSDOTARGREGEX" stdlib/iarray.2temp.mli > \
+  stdlib/iarray.3temp.mli
 perl -p -e "$LABELSDOTREGEX" stdlib/iarray.3temp.mli > stdlib/iarray.mli
 
 #FloatArrayLabels
