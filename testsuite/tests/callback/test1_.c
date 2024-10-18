@@ -50,6 +50,11 @@ value mycallback4(value fun, value arg1, value arg2, value arg3, value arg4)
   return res;
 }
 
+value mycallbackN(value fun, value args)
+{
+  return caml_callbackN(fun, Wosize_val(args), (value *) &Field(args, 0));
+}
+
 value mypushroot(value v, value fun, value arg)
 {
   CAMLparam1(v);
