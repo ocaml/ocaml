@@ -2692,6 +2692,7 @@ asmcomp/asmgen.cmo : \
     middle_end/clambda.cmi \
     asmcomp/CSE.cmi \
     middle_end/backend_intf.cmi \
+    asmcomp/arch.cmi \
     asmcomp/asmgen.cmi
 asmcomp/asmgen.cmx : \
     parsing/unit_info.cmx \
@@ -2737,6 +2738,7 @@ asmcomp/asmgen.cmx : \
     middle_end/clambda.cmx \
     asmcomp/CSE.cmx \
     middle_end/backend_intf.cmi \
+    asmcomp/arch.cmx \
     asmcomp/asmgen.cmi
 asmcomp/asmgen.cmi : \
     parsing/unit_info.cmi \
@@ -3742,6 +3744,7 @@ asmcomp/emit.cmo : \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     asmcomp/branch_relaxation.cmi \
+    parsing/asttypes.cmi \
     asmcomp/arch.cmi \
     asmcomp/emit.cmi
 asmcomp/emit.cmx : \
@@ -3759,6 +3762,7 @@ asmcomp/emit.cmx : \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     asmcomp/branch_relaxation.cmx \
+    parsing/asttypes.cmx \
     asmcomp/arch.cmx \
     asmcomp/emit.cmi
 asmcomp/proc.cmo : \
@@ -10478,7 +10482,7 @@ testsuite/tools/codegen_main.cmx : \
     testsuite/tools/parsecmm.cmx \
     testsuite/tools/lexcmm.cmx \
     asmcomp/emitaux.cmx \
-    asmcomp/emit.cmx \
+    asmcomp/emit.cmi \
     middle_end/compilenv.cmx \
     utils/clflags.cmx \
     asmcomp/asmgen.cmx \
@@ -10545,7 +10549,7 @@ testsuite/tools/parsecmm.cmo : \
     utils/config.cmi \
     asmcomp/cmm.cmi \
     parsing/asttypes.cmi \
-    asmcomp/arch.cmi \
+    asmcomp/arch.cmo \
     testsuite/tools/parsecmm.cmi
 testsuite/tools/parsecmm.cmx : \
     testsuite/tools/parsecmmaux.cmx \
