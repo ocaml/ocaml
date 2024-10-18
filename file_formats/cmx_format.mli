@@ -36,6 +36,10 @@ type export_info =
   | Clambda of Clambda.value_approximation
   | Flambda of Export_info.t
 
+type archdep_info = (string * string) list
+  (* List of architecture-dependent options and their values which require
+     consistency across objects *)
+
 type unit_infos =
   { mutable ui_name: modname;             (* Name of unit implemented *)
     mutable ui_symbol: string;            (* Prefix for symbols *)
@@ -48,7 +52,7 @@ type unit_infos =
     mutable ui_export_info: export_info;
     mutable ui_force_link: bool;          (* Always linked *)
     mutable ui_for_pack: string option;   (* Part of a pack *)
-    mutable ui_archdep: (string * string) list }
+    mutable ui_archdep: archdep_info }
 
 (* Each .a library has a matching .cmxa file that provides the following
    infos on the library: *)
