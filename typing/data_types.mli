@@ -45,10 +45,36 @@ and constructor_tag =
                                            true if a constant false if a block*)
 
 and type_data = {
-  num_consts: int;                   (* Number of constant constructors *)
-  num_nonconsts: int;                (* Number of non-const constructors *)
-  num_unboxed: int;                  (* Number of unboxed constructors *)
+                                (* All the constructors at this type. *)
+  num_consts: int;              (* Number of constant constructors *)
+  num_nonconsts: int;           (* Number of non-const constructors *)
+  num_unboxed: int;             (* Number of unboxed constructors *)
+  repr_data:                    (* Type-global representation information. *)
+    (constructor_description list ref, repr_data) Misc.Cached.t;
+    (* (It is computed on-demand from the list of constructors,
+        as it depends on the environment and
+        mutually-recursive type definitions). *)
 }
+
+and repr_data = {
+  imm_stats: spread_data;
+  tag_stats: spread_data;
+}
+
+and spread_data =
+  | Any
+  | Spread of 
+    (* [num] can be smaller than [max - min + 1] in presence of
+       constructor unboxing, as valid block tags are not necessarily
+       dense/consecutive: for example the shape of an array is a block
+       with tags [0; double_array_tag]: we have
+         {num = 2; min = 0; max = double_array_tag}.
+    *)
+    {
+      num: int; (* number of distinct values (immediates, tags) *)
+      min: int; (* minimal value (immediate, tag) *)
+      max: int; (* maximal value (immediate, tag) *)
+    }
 
 (* Constructors are the same: they return (structurally)-equal values
    when applied to equal arguments. *)

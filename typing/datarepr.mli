@@ -44,3 +44,7 @@ val constructor_existentials :
     - the types of the constructor's arguments
     - the existential variables introduced by the constructor
  *)
+
+val repr_data_of_regular_constructors:
+  get_shape:Head_shape_types.(unboxed_cstr_description -> shape) ->
+  constructor_description list -> repr_data
