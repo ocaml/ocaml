@@ -253,7 +253,12 @@ let print_cmx_infos (ui, crc) =
   printf "For pack: %s\n"
     (match ui.ui_for_pack with
      | None -> "no"
-     | Some pack -> "YES: " ^ pack)
+     | Some pack -> "YES: " ^ pack);
+  if ui.ui_archdep <> [] then
+    let pr_strings pp (param, value) = Format.fprintf pp "%s=%s" param value in
+    Format.fprintf Format.std_formatter "Architecture-dependent details:%a\n"
+      (Format.pp_print_list ~pp_sep:(fun pp () -> Format.fprintf pp ",@ ")
+        pr_strings) ui.ui_archdep
 
 let print_cmxa_infos (lib : Cmx_format.library_infos) =
   printf "Extra C object files:";

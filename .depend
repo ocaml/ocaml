@@ -2692,6 +2692,7 @@ asmcomp/asmgen.cmo : \
     middle_end/clambda.cmi \
     asmcomp/CSE.cmi \
     middle_end/backend_intf.cmi \
+    asmcomp/arch.cmi \
     asmcomp/asmgen.cmi
 asmcomp/asmgen.cmx : \
     parsing/unit_info.cmx \
@@ -2737,6 +2738,7 @@ asmcomp/asmgen.cmx : \
     middle_end/clambda.cmx \
     asmcomp/CSE.cmx \
     middle_end/backend_intf.cmi \
+    asmcomp/arch.cmx \
     asmcomp/asmgen.cmi
 asmcomp/asmgen.cmi : \
     parsing/unit_info.cmi \
