@@ -98,3 +98,55 @@ let f ~\#let ?\#and () = 1
 [%%expect{|
 val f : \#let:'a -> ?\#and:'b -> unit -> int = <fun>
 |}]
+
+let x = (true:int)
+[%%expect {|
+Line 1, characters 9-13:
+1 | let x = (true:int)
+             ^^^^
+Error: The constructor "true" has type "bool"
+       but an expression was expected of type "int"
+|}]
+
+module M = struct type \#true = true end
+let x = M.(true)
+[%%expect {|
+module M : sig type \#true = true end
+val x : M.\#true = M.(true)
+|}]
+
+type t = { \#false:int; x:int }
+type u = { \#true:int }
+
+let f { \#false; \#true } = 0
+[%%expect {|
+type t = { \#false : int; x : int; }
+type u = { \#true : int; }
+Line 4, characters 17-23:
+4 | let f { \#false; \#true } = 0
+                     ^^^^^^
+Error: The record field "\#true" belongs to the type "u"
+       but is mixed here with fields of type "t"
+|}]
+
+
+module M = struct
+  type t = { \#true:int; y:int}
+  type r = { \#true:int; y:int}
+end
+type t = { \#false:int }
+let _ = ( { M.\#true=0 } : t );;
+[%%expect {|
+module M :
+  sig
+    type t = { \#true : int; y : int; }
+    type r = { \#true : int; y : int; }
+  end
+type t = { \#false : int; }
+Line 6, characters 12-20:
+6 | let _ = ( { M.\#true=0 } : t );;
+                ^^^^^^^^
+Error: The field "M.\#true" belongs to one of the following record types:
+         "M.r"  "M.t"
+       but a field was expected belonging to the record type "t"
+|}]

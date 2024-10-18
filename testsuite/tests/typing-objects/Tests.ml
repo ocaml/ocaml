@@ -416,7 +416,7 @@ class c () = object val x = - true val y = -. () end;;
 Line 1, characters 30-34:
 1 | class c () = object val x = - true val y = -. () end;;
                                   ^^^^
-Error: The constructor "\#true" has type "bool"
+Error: The constructor "true" has type "bool"
        but an expression was expected of type "int"
 |}];;
 

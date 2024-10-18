@@ -108,31 +108,40 @@ let tyvar_of_name s =
 
 module Doc = struct
 (* Turn an arbitrary variable name into a valid OCaml identifier by adding \#
-  in case it is a keyword, or parenthesis when it is an infix or prefix
-  operator. *)
-  let ident_of_name ppf txt =
+   in case it is a keyword, or parenthesis when it is an infix or prefix
+   operator. *)
+  let ident_of_name ~is_constr ppf txt =
     let format : (_, _, _) format =
-      if Lexer.is_keyword txt then "\\#%s"
+      if Lexer.is_keyword txt then begin
+        if is_constr && txt="true" || txt = "false" then "%s"
+        else "\\#%s"
+      end
       else if not (needs_parens txt) then "%s"
       else if needs_spaces txt then "(@;%s@;)"
       else "(%s)"
     in Format_doc.fprintf ppf format txt
 
-  let protect_longident ppf print_longident longprefix txt =
+  let protect_longident ~is_constr ppf print_longident longprefix txt =
     if not (needs_parens txt) then
       Format_doc.fprintf ppf "%a.%a"
         print_longident longprefix
-        ident_of_name txt
+        (ident_of_name ~is_constr) txt
     else if needs_spaces txt then
       Format_doc.fprintf ppf "%a.(@;%s@;)" print_longident longprefix txt
     else
       Format_doc.fprintf ppf "%a.(%s)" print_longident longprefix txt
 
-  let rec longident f = function
-    | Lident s -> ident_of_name f s
-    | Ldot(y,s) -> protect_longident f longident y s
+  let rec any_longident ~is_constr f = function
+    | Lident s -> ident_of_name ~is_constr f s
+    | Ldot(y,s) ->
+        protect_longident ~is_constr f (any_longident ~is_constr:false) y s
     | Lapply (y,s) ->
-        Format_doc.fprintf f "%a(%a)" longident y longident s
+        Format_doc.fprintf f "%a(%a)"
+          (any_longident ~is_constr:false) y
+          (any_longident ~is_constr:false) s
+
+  let longident ppf l = any_longident ~is_constr:false ppf l
+  let constr ppf l = any_longident ~is_constr:true ppf l
 
   let tyvar ppf s =
     Format_doc.fprintf ppf "%s" (tyvar_of_name s)
@@ -146,7 +155,8 @@ module Doc = struct
   *)
   let nominal_exp t =
     let open Format_doc.Doc in
-    let longident l = Format_doc.doc_printer longident l.Location.txt in
+    let longident ?(is_constr=false) l =
+      Format_doc.doc_printer (any_longident ~is_constr) l.Location.txt in
     let rec nominal_exp doc exp =
       match exp.pexp_desc with
       | _ when exp.pexp_attributes <> [] -> None
@@ -155,7 +165,7 @@ module Doc = struct
       | Pexp_variant (lbl, None) ->
           Some (printf "`%s" lbl doc)
       | Pexp_construct (l, None) ->
-          Some (longident l doc)
+          Some (longident ~is_constr:true l doc)
       | Pexp_field (parent, lbl) ->
           Option.map
             (printf ".%t" (longident lbl))
@@ -181,7 +191,11 @@ module Doc = struct
 end
 
 let longident ppf l = Format_doc.compat Doc.longident ppf l
-let ident_of_name ppf i = Format_doc.compat Doc.ident_of_name ppf i
+let ident_of_name ppf i =
+  Format_doc.compat (Doc.ident_of_name ~is_constr:false) ppf i
+
+let constr ppf l = Format_doc.compat Doc.constr ppf l
+
 let ident_of_name_loc ppf s = ident_of_name ppf s.txt
 
 type space_formatter = (unit, Format.formatter, unit) format
