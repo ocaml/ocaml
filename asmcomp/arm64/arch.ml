@@ -36,6 +36,12 @@ let command_line_options =
       Arg.Unit (fun () -> barrier_placement := BranchAfterLoad),
       " Implement atomicity barriers as branches after loads" ]
 
+let archdep_unit_infos () =
+  let barrier_option_name = "barrier-placement" in
+  match !barrier_placement with
+  | FenceBeforeStore -> [ (barrier_option_name, "fence-before-store") ]
+  | BranchAfterLoad -> [ (barrier_option_name, "branch-after-load") ]
+
 (* Addressing modes *)
 
 type addressing_mode =

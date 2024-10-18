@@ -150,6 +150,8 @@ val require_global: Ident.t -> unit
 
 val read_library_info: string -> library_infos
 
+val set_archdep_info: (string * string) list -> unit
+
 type error =
     Not_a_unit_info of string
   | Corrupted_unit_info of string

@@ -69,7 +69,8 @@ let reset () =
     linear_unit_info.unit_name <- Compilenv.current_unit_name ();
     linear_unit_info.items <- [];
     linear_unit_info.for_pack <- !Clflags.for_package;
-  end
+  end;
+  Compilenv.set_archdep_info (Arch.archdep_unit_infos ())
 
 let save_data dl =
   if should_save_before_emit () then begin
