@@ -81,6 +81,10 @@ Working version
   output.
   (Romain Beauxis, review by David Allsopp)
 
+- #12642, #13536: in the toplevel, print shorter paths for constructors
+  and labels when only some modules along their path are open.
+  (Gabriel Scherer, review by Florian Angeletti)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
