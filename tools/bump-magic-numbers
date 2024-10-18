@@ -53,7 +53,7 @@ mv utils/config.common.ml.tmp utils/config.common.ml
 
 # Bump magic numbers in otherlibs/dynlink/dynlink_config.ml
 
-sed -e s/'...|magic}'/"$new_num|magic}"/ \
+sed -Ee "s/(Caml1999.)...\\|}/\\1$new_num|}/" \
   otherlibs/dynlink/dynlink_config.ml > otherlibs/dynlink/dynlink_config.ml.tmp
 mv otherlibs/dynlink/dynlink_config.ml.tmp otherlibs/dynlink/dynlink_config.ml
 
