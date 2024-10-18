@@ -278,6 +278,12 @@ let rec typexp copy_scope s ty =
       | Tpackage(p, fl) ->
           Tpackage(modtype_path s p,
                     List.map (fun (n, ty) -> (n, typexp copy_scope s ty)) fl)
+      | Tfunctor(lbl, us, (p, fl), ty) ->
+          let us' = Ident.Unscoped.refresh us in
+          let fl = List.map (fun (n, ty) -> (n, typexp copy_scope s ty)) fl in
+          let s' = add_module (Ident.of_unscoped us)
+                              (Pident (Ident.of_unscoped us')) s in
+          Tfunctor(lbl, us', (modtype_path s p, fl), typexp copy_scope s' ty)
       | Tobject (t1, name) ->
           let t1' = typexp copy_scope s t1 in
           let name' =

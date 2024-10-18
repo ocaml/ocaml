@@ -143,6 +143,10 @@ let print_constr ppf name =
     (* despite being keywords, these are constructor names
        and should not be escaped *)
     fprintf ppf "%s" c
+  | Oide_dot (id, (("true" | "false") as c)) ->
+    (* despite being keywords, these are constructor names
+        and should not be escaped *)
+    print_ident ppf id; pp_print_char ppf '.'; fprintf ppf "%s" c
   | _ -> print_ident ppf name
 
 let print_out_value ppf tree =
@@ -288,6 +292,24 @@ and print_out_type_1 ppf =
       pp_print_space ppf ();
       print_out_type_1 ppf ty2;
       pp_close_box ppf ()
+  | Otyp_functor (lab, id, (p, fl), ty) ->
+      pp_open_box ppf 0;
+      print_arg_label ppf lab;
+      pp_print_string ppf "(module ";
+      print_ident ppf id;
+      pp_print_string ppf " : ";
+      print_ident ppf p;
+      let first = ref true in
+      List.iter
+        (fun (s, t) ->
+          let sep = if !first then (first := false; "with") else "and" in
+          fprintf ppf " %s type %s = %a" sep s print_out_type t
+        )
+        fl;
+      pp_print_string ppf ") ->";
+      pp_print_space  ppf ();
+      print_out_type_1 ppf ty;
+      pp_close_box ppf ()
   | ty -> print_out_type_2 ppf ty
 and print_out_type_2 ppf =
   function
@@ -326,7 +348,8 @@ and print_simple_out_type ppf =
          else if tags = None then "> " else "? ")
         print_fields row_fields
         print_present tags
-  | Otyp_alias _ | Otyp_poly _ | Otyp_arrow _ | Otyp_tuple _ as ty ->
+  | Otyp_alias _ | Otyp_poly _ | Otyp_arrow _
+  | Otyp_functor _ | Otyp_tuple _ as ty ->
       pp_open_box ppf 1;
       pp_print_char ppf '(';
       print_out_type ppf ty;

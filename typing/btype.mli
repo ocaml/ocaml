@@ -131,9 +131,11 @@ val set_static_row_name: type_declaration -> Path.t -> unit
 
 (**** Utilities for type traversal ****)
 
-val iter_type_expr: (type_expr -> unit) -> type_expr -> unit
+val iter_type_expr: ?allow_tsubst:bool -> (type_expr -> unit) ->
+                    type_expr -> unit
         (* Iteration on types *)
-val fold_type_expr: ('a -> type_expr -> 'a) -> 'a -> type_expr -> 'a
+val fold_type_expr: ?allow_tsubst:bool -> ('a -> type_expr -> 'a) ->
+                    'a -> type_expr -> 'a
 val iter_row: (type_expr -> unit) -> row_desc -> unit
         (* Iteration on types in a row *)
 val fold_row: ('a -> type_expr -> 'a) -> 'a -> row_desc -> 'a

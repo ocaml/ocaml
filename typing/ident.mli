@@ -15,6 +15,29 @@
 
 (* Identifiers (unique names) *)
 
+module Unscoped : sig
+   type t
+
+   val create : string -> t
+   val refresh: t -> t
+
+   val name: t -> string
+   val same: t -> t -> bool
+
+   type change
+   val change_log: (change -> unit) ref
+   val undo_change: change -> unit
+   val link: t -> t -> unit
+   val get_id_pairs: unit -> (t * t) list
+   val with_id_pairs: (t * t) list -> (unit -> 'a) -> 'a
+      (** Set an equivalence between identifiers and give to the related
+          identifer a scope. We expect all identifiers to have been created
+          with [create] to obtain the expected semantic. *)
+
+
+   module Set : Stdlib.Set.S with type elt = t
+end
+
 type t
 
 include Identifiable.S with type t := t
@@ -32,6 +55,8 @@ val print_with_scope : t Format_doc.printer
 
 val create_scoped: scope:int -> string -> t
 val create_local: string -> t
+val of_unscoped: Unscoped.t -> t
+val get_unscoped: t -> Unscoped.t option
 val create_persistent: string -> t
 val create_predef: string -> t
 
@@ -51,6 +76,11 @@ val same: t -> t -> bool
             [create_*], or if they are both persistent and have the same
             name. *)
 
+val equiv: t -> t -> bool
+        (** Same as [same] up to the fact that identifiers
+            created by [Unscoped.create] are equivalent only
+            the corresponding pair is stored in the list *)
+
 val compare_stamp: t -> t -> int
         (** Compare only the internal stamps, 0 if absent *)
 
@@ -59,11 +89,13 @@ val compare: t -> t -> int
 
 val global: t -> bool
 val is_predef: t -> bool
+val is_unscoped: t -> bool
 
 val scope: t -> int
 
 val lowest_scope : int
 val highest_scope: int
+
 
 val reinit: unit -> unit
 
