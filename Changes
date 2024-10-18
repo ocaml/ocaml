@@ -738,6 +738,10 @@ ___________
   path under Win32.
   (Nicolás Ojeda Bär, review by David Allsopp and Damien Doligez)
 
+- #13263, #13560: fix printing true and false in toplevel and error
+  messages (no more unexpected \#true)
+  (Florian Angeletti, report by Samuel Vivien, review by Gabriel Scherer)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
