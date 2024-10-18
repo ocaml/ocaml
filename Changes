@@ -48,7 +48,7 @@ Working version
   (Antonin Décimo, review by Nicolás Ojeda Bär and David Allsopp)
 
 - #13504: Add `Thread.set_current_thread_name`.
-  (Romain Beauxis, review by Gabriel Scherer, Antonin Décimo)
+  (Romain Beauxis, review by Gabriel Scherer and Antonin Décimo)
 
 ### Tools:
 
