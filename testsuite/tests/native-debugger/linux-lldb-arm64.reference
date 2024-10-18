@@ -8,8 +8,8 @@ Executing commands in 'XXXX'.
 Breakpoint created for regex caml_start_program.
 (lldb) create caml_program
 Breakpoint created for regex caml_program.
-(lldb) create camlMeander.c_to_ocaml*
-Breakpoint created for regex camlMeander.c_to_ocaml*.
+(lldb) create camlMeander\$c_to_ocaml*
+Breakpoint created for regex camlMeander\$c_to_ocaml*.
 (lldb) create ocaml_to_c
 Breakpoint created for regex ocaml_to_c.
 (lldb) run
@@ -61,8 +61,8 @@ Process XXXX stopped
 (lldb) backtrace
 frame 0: meander`ocaml_to_c
 frame 1: meander`caml_c_call
-frame 2: meander`camlMeander.omain
-frame 3: meander`camlMeander.entry
+frame 2: meander`camlMeander$omain
+frame 3: meander`camlMeander$entry
 frame 4: meander`caml_program
 frame 5: meander`caml_start_program
 frame 6: meander`caml_startup_common
@@ -79,7 +79,7 @@ This version of LLDB has no plugin for the language "assembler". Inspection of f
 Process XXXX resuming
 Process XXXX stopped
 * thread #1, name = 'XXXX', stop reason = breakpoint 3.1
-    frame #0: 0x00000000000000 meander`camlStd_exit.code_end at meander.ml:5
+    frame #0: 0x00000000000000 meander`camlMeander$c_to_ocaml at meander.ml:5
    2   	         : unit -> int = "ocaml_to_c"
    3   	exception E1
    4   	exception E2
@@ -88,14 +88,14 @@ Process XXXX stopped
    7   	          "c_to_ocaml" c_to_ocaml
    8   	let omain () =
 (lldb) backtrace
-frame 0: meander`camlStd_exit.code_end
+frame 0: meander`camlMeander$c_to_ocaml
 frame 1: meander`caml_start_program
 frame 2: meander`caml_callback_exn
 frame 3: meander`caml_callback
 frame 4: meander`ocaml_to_c
 frame 5: meander`caml_c_call
-frame 6: meander`camlMeander.omain
-frame 7: meander`camlMeander.entry
+frame 6: meander`camlMeander$omain
+frame 7: meander`camlMeander$entry
 frame 8: meander`caml_program
 frame 9: meander`caml_start_program
 frame 10: meander`caml_startup_common
