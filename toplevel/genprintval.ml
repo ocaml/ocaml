@@ -211,7 +211,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           Oide_ident name
       | Pdot(p, _s) ->
           if
-            match get_desc (find (Lident (Out_name.print name)) env) with
+            let id = Location.mknoloc (Out_name.print name) in
+            match get_desc (find (Lident id) env) with
             | Tconstr(ty_path', _, _) -> Path.same ty_path ty_path'
             | _ -> false
             | exception Not_found -> false

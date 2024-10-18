@@ -88,7 +88,8 @@ module Namespace = struct
       and thus use {!in_printing_env} rather than directly
       accessing the printing environment *)
   let lookup =
-    let to_lookup f lid = fst @@ in_printing_env (f (Lident lid)) in
+    let to_lookup f lid =
+      fst @@ in_printing_env (f (Lident (Location.mknoloc lid))) in
     function
     | Some Type -> to_lookup Env.find_type_by_name
     | Some Module -> to_lookup Env.find_module_by_name
@@ -385,9 +386,9 @@ let rec rewrite_double_underscore_paths env p =
     | Some i ->
       let better_lid =
         Ldot
-          (Lident (String.sub name 0 i),
-           Unit_info.modulize
-             (String.sub name (i + 2) (String.length name - i - 2)))
+          (Lident (Location.mknoloc (String.sub name 0 i)),
+          (Location.mknoloc (Unit_info.modulize
+             (String.sub name (i + 2) (String.length name - i - 2)))))
       in
       match Env.find_module_by_name better_lid env with
       | exception Not_found -> p
@@ -574,9 +575,9 @@ let wrap_printing_env ~error env f =
 
 let rec lid_of_path = function
     Path.Pident id ->
-      Longident.Lident (Ident.name id)
+      Longident.Lident (Location.mknoloc (Ident.name id))
   | Path.Pdot (p1, s) | Path.Pextra_ty (p1, Pcstr_ty s)  ->
-      Longident.Ldot (lid_of_path p1, s)
+      Longident.Ldot (lid_of_path p1, Location.mknoloc s)
   | Path.Papply (p1, p2) ->
       Longident.Lapply (lid_of_path p1, lid_of_path p2)
   | Path.Pextra_ty (p, Pext_ty) -> lid_of_path p
@@ -593,7 +594,7 @@ let is_unambiguous path env =
       List.for_all (fun p -> Path.same (normalize p) p') rem ||
       (* also allow repeatedly defining and opening (for toplevel) *)
       let id = lid_of_path p in
-      List.for_all (fun p -> lid_of_path p = id) rem &&
+      List.for_all (fun p -> Longident.same (lid_of_path p) (*arg*) id) rem &&
       Path.same p (fst (Env.find_type_by_name id env))
 
 let rec get_best_path r =
@@ -1135,7 +1136,7 @@ let rec tree_of_typexp mode ty =
         let fl =
           List.map
             (fun (li, ty) -> (
-              String.concat "." (Longident.flatten li),
+              String.concat "." li,
               tree_of_typexp mode ty
             )) fl in
         Otyp_module (tree_of_path (Some Module_type) p, fl)

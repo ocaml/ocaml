@@ -342,7 +342,7 @@ let check_package_with_type_constraints = ref (fun _ -> assert false)
 let sort_constraints_no_duplicates loc env l =
   List.sort
     (fun (s1, _t1) (s2, _t2) ->
-       if s1.txt = s2.txt then
+       if Longident.same s1.txt s2.txt then
          raise (Error (loc, env, Multiple_constraints_on_type s1.txt));
        compare s1.txt s2.txt)
     l
@@ -670,7 +670,8 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       in
       let path = !transl_modtype_longident loc env p.txt in
       let ty = newty (Tpackage (path,
-                       List.map (fun (s, cty) -> (s.txt, cty.ctyp_type)) ptys))
+                       List.map (fun (s, cty) ->
+                         (Longident.flatten s.txt, cty.ctyp_type)) ptys))
       in
       ctyp (Ttyp_package {
             pack_path = path;

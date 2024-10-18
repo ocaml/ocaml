@@ -71,8 +71,8 @@ let rec instrument_result env name ppf clos_typ =
   | Tarrow(l, t1, t2, _) ->
       let starred_name =
         match name with
-        | Lident s -> Lident(s ^ "*")
-        | Ldot(lid, s) -> Ldot(lid, s ^ "*")
+        | Lident id -> Lident({ id with txt = id.txt ^ "*" })
+        | Ldot(lid, id) -> Ldot(lid, { id with txt = id.txt ^ "*" })
         | Lapply _ -> fatal_error "Trace.instrument_result" in
       let trace_res = instrument_result env starred_name ppf t2 in
       (fun clos_val ->

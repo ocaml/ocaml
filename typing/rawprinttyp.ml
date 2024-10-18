@@ -66,6 +66,7 @@ let rec raw_type ppf ty =
 and raw_type_list tl = raw_list raw_type tl
 and raw_lid_type_list tl =
   raw_list (fun ppf (lid, typ) ->
+             let lid = Longident.unflatten lid |> Option.get in
              fprintf ppf "(@,%a,@,%a)" longident lid raw_type typ)
     tl
 and raw_type_desc ppf = function

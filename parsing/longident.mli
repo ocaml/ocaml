@@ -23,10 +23,16 @@
 
 *)
 
+open Location
+
 type t =
-    Lident of string
-  | Ldot of t * string
+    Lident of string loc
+  | Ldot of t * string loc
   | Lapply of t * t
+
+(** [same t t'] compares the longidents [t] and [t'] without taking locations
+    into account. *)
+val same: t -> t -> bool
 
 val flatten: t -> string list
 val unflatten: string list -> t option
@@ -36,7 +42,7 @@ val unflatten: string list -> t option
     [unflatten []] is [None].
 *)
 
-val last: t -> string
+val last: t -> string loc
 val parse: string -> t
 [@@deprecated "this function may misparse its input,\n\
 use \"Parse.longident\" or \"Longident.unflatten\""]
