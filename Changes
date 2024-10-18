@@ -741,6 +741,10 @@ ___________
   path under Win32.
   (Nicolás Ojeda Bär, review by David Allsopp and Damien Doligez)
 
+- #131495: Fix typechecker crash while typing objects
+  (Jacques Garrigue, report by Nicolás Ojeda Bär, review by
+   Nicolas Ojeda Bär, Gabriel Scherer, Stephen Dolan)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
