@@ -191,4 +191,5 @@ module Shape = struct
     block [Tag Obj.custom_tag]
 end
 
-type unboxed_cstr_description = TODO
+type unboxed_cstr_data = Types.type_declaration * Types.type_expr
+type unboxed_cstr_description = (unboxed_cstr_data, shape) Misc.Cached.t

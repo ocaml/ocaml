@@ -140,7 +140,7 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
           match cstr_is_unboxed, cd_args with
           | true, Cstr_tuple [ty]
           | true, Cstr_record [{ld_type=ty; _}] ->
-              (Cstr_unboxed (ignore ty; TODO),
+              (Cstr_unboxed (Misc.Cached.create (decl, ty)),
                describe_constructors idx_const idx_nonconst rem)
           | true, _ ->
               raise (Error (cd_loc, Multiple_args_unboxed_constructor cd_id))

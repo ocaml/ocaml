@@ -178,7 +178,12 @@ and of_typedescr env p ty_decl ty_descr ~args fuel =
         | Cstr_constant n -> Shape.imm [Imm n]
         | Cstr_block tag -> Shape.block [Tag tag]
         | Cstr_unboxed _ ->
-            failwith "TODO"
+            (* Note: it would be incorrect to call the function
+               [of_unboxed_cstr_description] below, as the shape we
+               compute here depends on the type parameters [args], in
+               general it is more precise -- and cannot be cached in
+               the type definition. *)
+            of_unboxed_cstr descr
         | Cstr_extension _ ->
             (* cannot occur in regular variants *)
             assert false
@@ -207,6 +212,29 @@ let of_type_path env path =
   let params = Ctype.instance_list decl.type_params in
   let ty = Ctype.newconstr path params in
   of_type_expr env ty initial_fuel
+
+(* This function computes the head shape of each unboxed constructors
+   for any possible value of the type parameters; this is what is
+   required to check that the definition is valid, and it can be
+   cached and reused for pattern-matching compilation. *)
+let _of_unboxed_cstr_description env descr =
+  try Misc.Cached.force descr (fun (decl, ty_arg) ->
+    let params = Ctype.instance_list decl.type_params in
+    let ty_arg = Ctype.apply env decl.type_params ty_arg params in
+    of_type_expr env ty_arg initial_fuel)
+  with Misc.Cached.Forcing_race ->
+    (* There could be a forcing race in the case of a cycle:
+         type foo =
+           | Self of foo [@unboxed]
+           | ...
+       If ... contains a constructor, then the declaration must be
+       rejected: for example if foo has a constructor [Bar], then it
+       conflicts with [Self Bar]. This can only be accepted if there
+       are no other constructors than [Self] in [foo], and in this
+       case the fixpoint is under-determined and we could give any
+       shape; conservatively we use [any].
+    *)
+    Shape.any
 
 let check_typedecl env (path, decl) =
   match Env.find_type_descrs path env with

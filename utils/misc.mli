@@ -430,6 +430,31 @@ val set_or_ignore : ('a -> 'b option) -> 'b option ref -> 'a -> unit
        (** [set_or_ignore f opt x] sets [opt] to [f x] if it returns [Some _],
            or leaves it unmodified if it returns [None]. *)
 
+module Cached : sig
+  type ('a, 'b) t
+  (** A value of type [('a, 'b) t] represents a value of type ['b],
+      computed on-demand (and cached afterwards) from initialization
+      information of type ['a]:
+      - at creation time you only provide an ['a], and
+      - when you want to access the value you provide an ['a -> 'b],
+        which is only called if the ['b] result has not already
+        been computed.
+
+      This is similar to a ['b Lazy.t], except that the function
+      computing the ['b] (from ['a]) is provided at the place where
+      the value is accessed/forced, instead of being provided at the
+      place where the value is defined. Sometimes we don't know at
+      thunk-creation time how the value should be computed, and
+      sometime describing the computation logic at the declaration
+      site would create cyclic module dependencies. *)
+
+  val create : 'a -> ('a, 'b) t
+
+  exception Forcing_race
+  val force : ('a, 'b) t -> ('a -> 'b) -> 'b
+  (** @raise Forcing_race on concurrent or reentrant forcing. *)
+end
+
 (** {1 Operations on triples and quadruples} *)
 
 val fst3: 'a * 'b * 'c -> 'a
