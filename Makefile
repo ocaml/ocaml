@@ -122,6 +122,7 @@ typing_SOURCES = \
   typing/shape.mli typing/shape.ml \
   typing/types.mli typing/types.ml \
   typing/data_types.mli typing/data_types.ml \
+  typing/head_shape_types.mli typing/head_shape_types.ml \
   typing/rawprinttyp.mli typing/rawprinttyp.ml \
   typing/gprinttyp.mli typing/gprinttyp.ml \
   typing/btype.mli typing/btype.ml \
@@ -152,7 +153,6 @@ typing_SOURCES = \
   file_formats/cmt_format.mli file_formats/cmt_format.ml \
   typing/cmt2annot.mli typing/cmt2annot.ml \
   typing/typing_recovery_state.mli typing/typing_recovery_state.ml \
-  typing/head_shape_types.mli typing/head_shape_types.ml \
   typing/print_head_shape.mli typing/print_head_shape.ml \
   typing/head_shape.mli typing/head_shape.ml \
   typing/untypeast.mli typing/untypeast.ml \

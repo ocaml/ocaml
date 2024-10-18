@@ -107,6 +107,15 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
 let constructor_descrs ~current_unit ty_path decl cstrs rep =
   let ty_res = newgenconstr ty_path decl.type_params in
   let variant_unboxed = Builtin_attributes.has_unboxed decl.type_attributes in
+  let constructor_descrs =
+    (* We want to collect the description of each constructor, and
+       store this in [type_data]. But then each constructor
+       description also refers to [type_data]. We break the cycle /
+       tie the knot through a mutable reference: [type_data] points to
+       a mutable list of constructors that is currently
+       un-initialized, and will be initialized at the end of this
+       function. *)
+    ref [] in
   let cstr_type_data =
     let num_consts = ref 0 and num_nonconsts = ref 0 and num_unboxed = ref 0 in
     List.iter
@@ -121,6 +130,7 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
       num_consts = !num_consts;
       num_nonconsts = !num_nonconsts;
       num_unboxed = !num_unboxed;
+      repr_data = Misc.Cached.create constructor_descrs;
     }
   in
   let rec describe_constructors idx_const idx_nonconst = function
@@ -174,7 +184,59 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
             cstr_uid = cd_uid;
           } in
         (cd_id, cstr) :: descr_rem in
-  describe_constructors 0 0 cstrs
+  let constructors = describe_constructors 0 0 cstrs in
+  constructor_descrs := List.map snd constructors;
+  constructors
+
+let repr_data_of_regular_constructors ~get_shape constructors =
+  let num_imms = ref 0 in
+  let min_imm = ref max_int in
+  let max_imm = ref min_int in
+  let any_imm = ref false in
+  let num_tags = ref 0 in
+  let min_tag = ref 255 in
+  let max_tag = ref 0 in
+  let any_tag = ref false in
+  let open Head_shape_types in
+  let notify_imm (Imm i) =
+    incr num_imms;
+    min_imm := min i !min_imm;
+    max_imm := max i !max_imm;
+  in
+  let notify_tag (Tag t) =
+    incr num_tags;
+    min_tag := min t !min_tag;
+    max_tag := max t !max_tag;
+  in
+  List.iter (fun cstr ->
+    match cstr.cstr_tag with
+    | Cstr_constant imm ->
+        notify_imm (Imm imm)
+    | Cstr_block tag ->
+        notify_tag (Tag tag)
+    | Cstr_extension _ ->
+        assert false
+    | Cstr_unboxed descr ->
+        let shape = get_shape descr in
+        let open Head_shape_types in
+        begin match shape.imms with
+        | Any -> any_imm := true
+        | Those imms -> ImmSet.iter notify_imm imms
+        end;
+        begin match shape.blocks with
+        | Any -> any_tag := true
+        | Those tag_set ->
+            TagSet.iter notify_tag tag_set
+        end;
+  ) constructors;
+  {
+    imm_stats =
+      if !any_imm then Any
+      else Spread { num = !num_imms; min = !min_imm; max = !max_imm };
+    tag_stats =
+      if !any_tag then Any
+      else Spread { num = !num_tags; min = !min_tag; max = !max_tag };
+  }
 
 let extension_descr ~current_unit path_ext ext =
   let ty_res =

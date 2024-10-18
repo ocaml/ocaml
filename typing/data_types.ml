@@ -45,10 +45,28 @@ and constructor_tag =
                                            true if a constant false if a block*)
 
 and type_data = {
-  num_consts: int;                   (* Number of constant constructors *)
-  num_nonconsts: int;                (* Number of non-const constructors *)
-  num_unboxed: int;                  (* Number of unboxed constructors *)
+  num_consts: int;              (* Number of constant constructors *)
+  num_nonconsts: int;           (* Number of non-const constructors *)
+  num_unboxed: int;             (* Number of unboxed constructors *)
+  repr_data:                    (* Type-global representation information. *)
+    (constructor_description list ref, repr_data) Misc.Cached.t;
+    (* (It is computed on-demand from the list of constructors,
+        as it depends on the environment and
+        mutually-recursive type definitions). *)
 }
+
+and repr_data = {
+  imm_stats: spread_data;
+  tag_stats: spread_data;
+}
+
+and spread_data =
+  | Any
+  | Spread of {
+      num: int; (* number of distinct values (immediates, tags) *)
+      min: int; (* mimimal value (immediate, tag) *)
+      max: int; (* maximal value (immediate, tag) *)
+    }
 
 let equal_constr cstr1 cstr2 =
   match cstr1.cstr_tag, cstr2.cstr_tag with
