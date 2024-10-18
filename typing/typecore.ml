@@ -4406,6 +4406,84 @@ and type_expect_
       | _ ->
           raise (Error (loc, env, Invalid_extension_constructor_payload))
       end
+
+  | Pexp_extension ({ txt = ("ocaml.poly"|"poly"); _ },
+                    payload) ->
+      begin match payload with
+      | PStr [ { pstr_desc = Pstr_eval (sexp, attrs) } ] ->
+          (*let xty = instance ty_expected in
+          let xpl =
+            match (expand_head env xty).desc with
+            | Tobject (fi, _) ->
+                begin match (repr fi).desc with
+                | Tfield ("app", _, t, _) ->
+                    begin match (repr t).desc with
+                    | Tpoly (t, vars) ->
+                        (* Need also to check principality *)
+                        Some (t, vars)
+                    | _ -> None
+                    end
+                | _ -> None
+                end
+            | _ -> None
+          in*)
+          begin_def();
+          let exp =
+            (*match xpl with
+            | Some (t, vars) ->
+                let (_, xty) = instance_poly true vars t in
+                type_expect env sexp (mk_expected xty)
+            | None ->*)
+                type_exp env sexp
+          in
+          end_def();
+          let ty = exp.exp_type in
+          generalize ty;
+          let ty_poly = reify_univars env ty in
+          let ty_self =
+            newgenty (Tobject (newgenty (Tfield ("app", Fpresent, ty_poly,
+                                                 newgenty Tnil)),
+                               ref None)) in
+          let csig =
+            {csig_self = ty_self;
+             csig_vars = Vars.empty;
+             csig_concr = Concr.singleton "app";
+             csig_inher = []} in
+          let pat () =
+            {pat_desc = Tpat_any;
+             pat_loc = Location.none;
+             pat_extra = [];
+             pat_type = instance ty_self;
+             pat_env = env;
+             pat_attributes = []} in
+          let pat_arg = pat () in
+          let met =
+            {exp_desc = Texp_function
+               {arg_label = Nolabel; param = Ident.create_local "*none*";
+                cases = [{c_lhs = pat_arg; c_guard = None; c_rhs = exp}];
+                partial = Total};
+             exp_loc = exp.exp_loc;
+             exp_extra = [];
+             exp_type = newgenty
+               (Tarrow (Nolabel, pat_arg.pat_type, ty_poly, Cok));
+             exp_env = env;
+             exp_attributes = []} in
+          let cstruct =
+            {cstr_self = pat ();
+             cstr_type = csig;
+             cstr_meths =
+               Meths.add "app" (Ident.create_local "app") Meths.empty;
+             cstr_fields = [{cf_desc = Tcf_method
+                               (Location.mknoloc "app", Public,
+                                Tcfk_concrete (Fresh, met));
+                             cf_loc = exp.exp_loc;
+                             cf_attributes = []} ]} in
+          rue {met with exp_desc = Texp_object (cstruct, []);
+               exp_type = instance ty_self; exp_attributes = attrs}
+      | _ ->
+          raise (Error (loc, env, Invalid_extension_constructor_payload))
+      end
+
   | Pexp_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
