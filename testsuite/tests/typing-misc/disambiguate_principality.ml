@@ -38,7 +38,7 @@ Line 3, characters 2-20:
 3 |   { x with lbl = 4 }
       ^^^^^^^^^^^^^^^^^^
 Warning 23 [useless-record-with]: all the fields are explicitly listed in this record:
-the 'with' clause is useless.
+  the "with" clause is useless.
 
 val after_a : M.r = {M.lbl = 4}
 |}]
@@ -571,8 +571,7 @@ Lines 1-3, characters 8-10:
 2 |   | ({ contents = M.A } : M.t ref) as x ->
 3 |     x := B
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-{contents=B}
+  Here is an example of a case that is not matched: "{contents=B}"
 
 val t : M.t ref -> unit = <fun>
 |}, Principal{|
@@ -586,8 +585,7 @@ Lines 1-3, characters 8-10:
 2 |   | ({ contents = M.A } : M.t ref) as x ->
 3 |     x := B
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-{contents=B}
+  Here is an example of a case that is not matched: "{contents=B}"
 
 val t : M.t ref -> unit = <fun>
 |}]

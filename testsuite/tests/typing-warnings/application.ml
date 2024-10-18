@@ -20,7 +20,7 @@ Line 1, characters 8-22:
 1 | let _ = Array.get [||];;
             ^^^^^^^^^^^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
-maybe some arguments are missing.
+  maybe some arguments are missing.
 
 - : int -> 'a = <fun>
 |}]
@@ -35,7 +35,7 @@ Line 1, characters 16-32:
 1 | let () = ignore (Array.get [||]);;
                     ^^^^^^^^^^^^^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
-maybe some arguments are missing.
+  maybe some arguments are missing.
 |}]
 
 
@@ -50,7 +50,7 @@ Line 1, characters 21-35:
 1 | let _ = if true then Array.get [||] else (fun _ -> 12);;
                          ^^^^^^^^^^^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
-maybe some arguments are missing.
+  maybe some arguments are missing.
 
 - : int -> int = <fun>
 |}]
@@ -74,7 +74,7 @@ Line 1, characters 18-23:
 1 | let f x = let _ = x.r 1 in ();;
                       ^^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
-maybe some arguments are missing.
+  maybe some arguments are missing.
 
 val f : t -> unit = <fun>
 |}]
@@ -88,7 +88,7 @@ Line 2, characters 6-10:
 2 | match f 42 with
           ^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
-maybe some arguments are missing.
+  maybe some arguments are missing.
 
 - : unit = ()
 |}]
@@ -103,7 +103,7 @@ Line 2, characters 6-10:
 2 | match f 42 with
           ^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
-maybe some arguments are missing.
+  maybe some arguments are missing.
 
 - : unit = ()
 |}]
@@ -148,6 +148,6 @@ Line 2, characters 10-15:
               ^^^^^
 Error: This expression has type "int -> int"
        but an expression was expected of type "int"
-  Hint: This function application is partial,
-  maybe some arguments are missing.
+  Hint: This function application is partial, maybe some arguments
+  are missing.
 |}]

@@ -139,9 +139,9 @@ val defaults_warn_error : string
 
 type reporting_information =
   { id : string
-  ; message : string
+  ; message : Format_doc.t
   ; is_error : bool
-  ; sub_locs : (loc * string) list;
+  ; sub_locs : (loc * Format_doc.t) list;
   }
 
 val report : t -> [ `Active of reporting_information | `Inactive ]

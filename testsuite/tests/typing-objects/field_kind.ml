@@ -29,8 +29,8 @@ Lines 2-5, characters 2-5:
 3 |     method private x = 3
 4 |     method m : type a. a t -> 's -> a = fun Int other -> (other#x : int)
 5 |   end..
-Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
- x.
+Warning 15 [implicit-public-methods]: the following private methods were made
+  public implicitly: "x".
 
 val o' : < m : 'a. 'a t -> 'b -> 'a; x : int > as 'b = <obj>
 val aargh : unit = ()
@@ -47,8 +47,8 @@ Lines 2-5, characters 2-5:
 3 |     method private x = 3
 4 |     method m : 's -> int = fun other -> (other#x : int)
 5 |   end..
-Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
- x.
+Warning 15 [implicit-public-methods]: the following private methods were made
+  public implicitly: "x".
 
 val o2 : < m : 'a -> int; x : int > as 'a = <obj>
 |}]
@@ -68,8 +68,8 @@ Lines 2-6, characters 2-5:
 4 |     method m : 's -> int = fun other ->
 5 |       let module M = struct let other = other end in (M.other#x : int)
 6 |   end..
-Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
- x.
+Warning 15 [implicit-public-methods]: the following private methods were made
+  public implicitly: "x".
 
 val o3 : < m : 'a -> int; x : int > as 'a = <obj>
 val aargh : unit = ()

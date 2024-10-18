@@ -32,8 +32,7 @@ Line 17, characters 5-35:
 17 |      match M.is_t () with None -> 0
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Some (Is Eq)
+  Here is an example of a case that is not matched: "Some (Is Eq)"
 
 module Make : (M : T) -> sig val f : unit -> int end
 |}]
