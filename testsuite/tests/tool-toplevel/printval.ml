@@ -76,20 +76,16 @@ type t =
 |}];;
 
 Int 42;;
-(* FIXME *)
 [%%expect {|
-- : t = <unknown constructor>
+- : t = Int 42
 |}];;
 
 Str "foo";;
-(* FIXME *)
 [%%expect {|
-- : t = <unknown constructor>
+- : t = Str "foo"
 |}];;
 
 Pair (Int 42, Proxy (Str "foo"));;
-(* FIXME: the output is incorrect, due to the fact that
-   [Datarepr.find_constr_by_tag] cannot easily support unboxed constructors. *)
 [%%expect {|
-- : t = Int 42
+- : t = Pair (Int 42, Proxy (Str "foo"))
 |}]
