@@ -1409,10 +1409,12 @@ let tree_of_single_constructor cd =
   let name = Ident.name cd.cd_id in
   let ret = Option.map (tree_of_typexp Type) cd.cd_res in
   let args = tree_of_constructor_arguments cd.cd_args in
+  let unboxed = Builtin_attributes.has_unboxed cd.cd_attributes in
   {
       ocstr_name = name;
       ocstr_args = args;
       ocstr_return_type = ret;
+      ocstr_unboxed = unboxed;
   }
 
 (* When printing GADT constructor, we need to forget the naming decision we took

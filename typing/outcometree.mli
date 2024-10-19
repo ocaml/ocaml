@@ -101,6 +101,7 @@ and out_constructor = {
   ocstr_name: string;
   ocstr_args: out_type list;
   ocstr_return_type: out_type option;
+  ocstr_unboxed: bool;
 }
 
 and out_package = {
