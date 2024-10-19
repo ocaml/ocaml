@@ -480,7 +480,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             Oval_lazy v
           end
 
-      and tree_of_variant depth path type_params ty_list obj constr_list rep =
+      and tree_of_variant depth path type_params ty_list obj constr_decl_list rep =
         let of_constr_decl ~unboxed {cd_id; cd_args; cd_res} =
           let type_params =
             match cd_res with
@@ -507,24 +507,40 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               in
               Oval_constr(tree_of_constr env path (Ident.name cd_id),
                           [ r ])
-
         in
-        (* For now we do not support [Cstr_unboxed _] in the general case
-           of unboxed fields in [Variant_regular] types. *)
-        if rep = Variant_unboxed then begin
-          match constr_list with
-          | [c] -> of_constr_decl ~unboxed:true c
-          | _ -> assert false
-        end else begin
-          let tag =
+        let constr_info =
+          let obj_head : Head_shape_types.head =
             if O.is_block obj
-            then Cstr_block(O.tag obj)
-            else Cstr_constant(O.base_obj obj) (* immediate *) in
-          match Datarepr.find_constr_by_tag tag constr_list with
-          | exception Datarepr.Constr_not_found ->
-              Oval_stuff "<unknown constructor>"
-          | constr_decl -> of_constr_decl ~unboxed:false constr_decl
-        end
+            then Block(Tag (O.tag obj))
+            else Immediate(Imm (O.base_obj obj))
+          in
+          let constr_descr_list =
+            match Env.find_type_descrs path env with
+            | exception Not_found -> assert false
+            | Type_variant (constr_list, _) -> constr_list
+            | Type_abstract _ | Type_external _ | Type_record _ | Type_open ->
+                assert false
+          in
+          List.find_mapi (fun i descr ->
+            let cstr_shape =
+              Head_shape.of_regular_cstr_description env descr in
+            if not (Head_shape_types.Shape.mem obj_head cstr_shape)
+            then None
+            else
+              let decl = List.nth constr_decl_list i in
+              Some (decl, descr)
+          ) constr_descr_list
+        in
+        match constr_info with
+        | None ->
+            Oval_stuff "<unknown constructor>"
+        | Some (decl, {cstr_tag; _}) ->
+            let unboxed =
+              (rep = Variant_unboxed) || match cstr_tag with
+              | Cstr_unboxed _ -> true
+              | Cstr_constant _ | Cstr_block _ | Cstr_extension _ -> false
+            in
+            of_constr_decl ~unboxed decl
 
       and tree_of_record depth path type_params ty_list obj lbl_list rep =
         match check_depth depth obj ty with
