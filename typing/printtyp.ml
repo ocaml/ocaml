@@ -112,6 +112,7 @@ module Doc = struct
       Outcometree.ocstr_name = name;
       ocstr_args = args;
       ocstr_return_type = ret;
+      ocstr_unboxed = false;
     }
 
   (* Print a signature body (used by -i when compiling a .ml) *)
