@@ -62,7 +62,7 @@ type benign_cycle =
   | Cycle of benign_cycle [@unboxed]
 [%%expect{|
 shape of benign_cycle: {imm = Any; blocks = Any;}
-type benign_cycle = Cycle of benign_cycle
+type benign_cycle = Cycle of benign_cycle [@unboxed]
 |}]
 
 

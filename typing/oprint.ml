@@ -577,6 +577,7 @@ let constructor_of_extension_constructor
     ocstr_name = ext.oext_name;
     ocstr_args = ext.oext_args;
     ocstr_return_type = ext.oext_ret_type;
+    ocstr_unboxed = false;
   }
 
 let split_anon_functor_arguments params =
@@ -796,11 +797,16 @@ and print_out_constr ppf constr =
     ocstr_name = name;
     ocstr_args = tyl;
     ocstr_return_type = return_type;
+    ocstr_unboxed = unboxed;
   } = constr in
   let name =
     match name with
     | "::" -> "(::)"   (* #7200 *)
     | s -> s
+  in
+  let pp_unboxed ppf = function
+    | false -> ()
+    | true -> fprintf ppf "@ [@unboxed]"
   in
   match return_type with
   | None ->
@@ -808,17 +814,22 @@ and print_out_constr ppf constr =
       | [] ->
           pp_print_string ppf name
       | _ ->
-          fprintf ppf "@[<2>%s of@ %a@]" name
+          fprintf ppf "@[<2>%s of@ %a%a@]" name
             (print_typlist print_simple_out_type " *") tyl
+            pp_unboxed unboxed
       end
   | Some ret_type ->
       begin match tyl with
       | [] ->
-          fprintf ppf "@[<2>%s :@ %a@]" name print_simple_out_type  ret_type
+          fprintf ppf "@[<2>%s :@ %a%a@]" name
+            print_simple_out_type ret_type
+            pp_unboxed unboxed
+
       | _ ->
-          fprintf ppf "@[<2>%s :@ %a -> %a@]" name
+          fprintf ppf "@[<2>%s :@ %a -> %a%a@]" name
             (print_typlist print_simple_out_type " *")
             tyl print_simple_out_type ret_type
+            pp_unboxed unboxed
       end
 
 and print_out_extension_constructor ppf ext =
