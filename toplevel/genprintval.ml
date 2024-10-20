@@ -511,7 +511,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         let constr_info =
           let obj_head : Head_shape_types.head =
             if O.is_block obj
-            then Block(Tag (O.tag obj))
+            then Block(Tag (O.tag obj), Size (O.size obj))
             else Immediate(Imm (O.base_obj obj))
           in
           let constr_descr_list =

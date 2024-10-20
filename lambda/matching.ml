@@ -3261,7 +3261,7 @@ module Cases = struct
 
   type t = {
     consts: (imm, lambda) domain_cases;
-    nonconsts: (tag, lambda) domain_cases;
+    nonconsts: (tag * size or_any, lambda) domain_cases;
   }
 
   let empty = {
@@ -3276,7 +3276,10 @@ module Cases = struct
     { cases with nonconsts = add_case shape act cases.nonconsts }
 
   let add_nonconst tag act cases =
-    add_nonconst_ tag act cases
+    add_nonconst_ (tag, Any) act cases
+
+  let add_nonconst_with_size tag size act cases =
+    add_nonconst_ (tag, Those size) act cases
 
   let add_any_const act cases : t =
     { cases with consts = add_any act cases.consts }
@@ -3284,15 +3287,66 @@ module Cases = struct
   let add_any_nonconst act cases : t =
     { cases with nonconsts = add_any act cases.nonconsts }
 
-  let sort_domain
-    : ('a, lambda) domain_cases -> ('a, lambda) domain_cases
-  = function
+  type sorted = {
+    consts: (imm, lambda) domain_cases;
+    nonconsts: (tag, (size, lambda) domain_cases) domain_cases;
+  }
+
+  let sort_const : (imm, lambda) domain_cases -> (imm, lambda) domain_cases
+    = function
     | Any act -> Any act
     | Those li -> Those (sort_assoc_list Stdlib.compare li)
 
-  let sort (cases : t) : t = {
-    consts = sort_domain cases.consts;
-    nonconsts = sort_domain cases.nonconsts;
+  let sort_nonconst :
+       (tag * size or_any, lambda) domain_cases
+    -> (tag, (size, lambda) domain_cases) domain_cases
+    = function
+      | Any act -> Any (Any act)
+      | Those li ->
+          let same_tag ((tag1, _size1), _act1) ((tag2, _size2), _act2) =
+            tag1 = tag2
+          in
+          (* Take a group of (tag*size) cases that all have the same tags and
+             disjoint sizes, and index them by size. *)
+          let cases_of_group (group : ((tag * size or_any) * lambda) Seq.t)
+            : tag * (size, lambda) domain_cases
+            =
+            let ((common_tag, size), act), rest = Option.get (Seq.uncons group) in
+            match size with
+            | Any ->
+                (* If the size of the first element is Any, then there cannot
+                     be other elements as their sizes would be overlapping. *)
+                assert (Seq.is_empty rest);
+                (common_tag, Any act)
+            | Those _size ->
+                (* If there is a non-Any element, then no element can have size Any
+                     as it would overlap. *)
+                let size_domain : (size, lambda) domain_cases =
+                  Those (
+                    group
+                    |> Seq.map (function
+                      | ((_tag, Any), _) -> assert false
+                      | ((tag, Those size), act) ->
+                          assert (tag = common_tag);
+                          (size, act)
+                    )
+                    |> List.of_seq
+                  )
+                in
+                (common_tag, size_domain)
+          in
+          Those (
+            li
+            |> sort_assoc_list Stdlib.compare
+            |> List.to_seq
+            |> Seq.group same_tag
+            |> Seq.map cases_of_group
+            |> List.of_seq
+          )
+
+  let sort (cases : t) : sorted = {
+    consts = sort_const cases.consts;
+    nonconsts = sort_nonconst cases.nonconsts;
   }
 end
 
@@ -3319,9 +3373,16 @@ let split_cases pat_env tag_lambda_list =
             ImmSet.fold (fun n -> Cases.add_const n act) s
     )
     |> (match head_shape.blocks with
-        | Any -> Cases.add_any_nonconst act
-        | Those s ->
-            TagSet.fold (fun t -> Cases.add_nonconst t act) s
+      | Any -> Cases.add_any_nonconst act
+      | Those block_shapes ->
+          TagMap.fold (fun tag (sizes : SizeSet.t or_any) ->
+            match sizes with
+            | Any -> Cases.add_nonconst tag act
+            | Those sizes ->
+                SizeSet.fold (fun size ->
+                  Cases.add_nonconst_with_size tag size act
+                ) sizes
+          ) block_shapes
     )
   in
   Cases.sort (split_rec tag_lambda_list)
@@ -3348,6 +3409,15 @@ let split_variant_cases pat_env tag_lambda_list =
          polymorphic variants. *)
       assert false
   | Those consts, Those nonconsts ->
+      let nonconsts =
+        List.map (fun (tag, size_domain) ->
+          (* We assume that polymorphic variants have no unboxed
+             constructors, and never discriminate on block size. *)
+          match size_domain with
+          | Cases.Those _ -> assert false
+          | Cases.Any act -> (tag, act)
+        ) nonconsts
+      in
       (consts, nonconsts)
 
 (* Pass [variant_only = true] when the only possible immediate values
@@ -3465,9 +3535,36 @@ let combine_regular_constructor loc arg pat_env cstr partial ctx def
         (* Identical actions, no failure: 0 control-flow instructions. *)
         act
     | _ -> (
-        let Cases.{ consts; nonconsts } =
+        let cases =
           split_cases pat_env
             (List.map tag_lambda descr_lambda_list) in
+        let open Head_shape_types in
+        let consts : (imm, lambda) Cases.domain_cases =
+          cases.consts in
+        let nonconsts : (tag, lambda) Cases.domain_cases =
+          let switch_on_size : (size, lambda) Cases.domain_cases -> lambda =
+            function
+            | Any act -> act
+            | Those size_domain ->
+                let arg_size =
+                  (* Using kind [Paddrarray] gets the block size
+                     directly, without performing any check and
+                     conversion on double arrays, this is what we
+                     want. (This is consistent with our choice of
+                     counting size=2 for floats on 32bits, but this
+                     does not matter as we never discriminate on the
+                     size of a double array. *)
+                  Lprim (Parraylength Paddrarray, [ arg ], loc) in
+                call_switcher loc fail_opt arg_size ~low:0
+                  (List.map (fun (Size s, act) -> (s, act)) size_domain)
+          in
+          match cases.nonconsts with
+          | Any size_domain -> Any (switch_on_size size_domain)
+          | Those size_domain_per_tag ->
+              Those (List.map (fun (tag, size_domain) ->
+                (tag, switch_on_size size_domain)
+              ) size_domain_per_tag)
+        in
         let open struct
           type codegen_choice =
             | Empty
