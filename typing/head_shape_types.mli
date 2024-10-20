@@ -27,13 +27,15 @@
 
 type imm = Imm of int [@@unboxed]
 type tag = Tag of int [@@unboxed]
+type size = Size of int [@@unboxed]
 
 type head =
   | Immediate of imm
-  | Block of tag
+  | Block of tag * size
 
 module ImmSet : Set.S with type elt = imm
-module TagSet : Set.S with type elt = tag
+module SizeSet : Set.S with type elt = size
+module TagMap : Map.S with type key = tag
 
 module Or_any : sig
   type 'a t = Those of 'a | Any
@@ -43,7 +45,8 @@ end
 type 'a or_any = 'a Or_any.t = Those of 'a | Any
 
 type imm_set = ImmSet.t or_any
-type block_set = TagSet.t or_any
+type size_set = SizeSet.t or_any
+type block_set = size_set TagMap.t or_any
 
 type shape = {
   imms: imm_set; (* set of immediates the head can be *)
@@ -65,10 +68,10 @@ module Shape : sig
 
   val any_immediate : t
   val imm : imm list -> t
-  val block : tag list -> t
+  val block : ?size:int -> tag list -> t
   val float : t
   val string : t
-  val tuple : t
+  val tuple : ?size:int -> unit -> t
   val array : t
   val floatarray : t
   val \#function : t
@@ -77,8 +80,8 @@ module Shape : sig
   val continuation : t
   val extensible_variant : t
   val polymorphic_variant : has_consts:bool -> has_nonconsts:bool -> t
-  val abstract : t
-  val custom : t
+  val abstract : ?size:int -> unit -> t
+  val custom : ?size:int -> unit -> t
 end
 
 type unboxed_cstr_data = Types.type_declaration * Types.type_expr

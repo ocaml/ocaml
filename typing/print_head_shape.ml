@@ -30,6 +30,9 @@ let doc_list doc_elem ppf li =
 let doc_imm ppf (Imm n) =
   Format_doc.fprintf ppf "%d" n
 
+let doc_size ppf (Size s) =
+  Format_doc.fprintf ppf "%d" s
+
 let doc_tag ppf (Tag tag) =
   let special_tags = [
     Obj.forcing_tag, "forcing";
@@ -54,10 +57,22 @@ let doc_imm_set ppf imm_set =
     doc_list doc_imm ppf (ImmSet.to_list set)
   ) ppf imm_set
 
-let doc_block_set ppf tag_set =
-  doc_or_any (fun ppf set ->
-    doc_list doc_tag ppf (TagSet.to_list set)
-  ) ppf tag_set
+let doc_size_set ppf = function
+  | Any -> ()
+  | Those sizes ->
+      Format_doc.fprintf ppf "@ size@ %a"
+        (doc_list doc_size) (SizeSet.to_list sizes)
+
+let doc_tag_map ppf tag_map =
+  let doc_binding ppf (tag, sizes) =
+    Format_doc.fprintf ppf "%a%a"
+      doc_tag tag
+      doc_size_set sizes
+  in
+  doc_list doc_binding ppf (TagMap.to_list tag_map)
+
+let doc_block_set ppf block_set =
+  doc_or_any doc_tag_map ppf block_set
 
 let doc ppf {imms; blocks} =
   Format_doc.fprintf ppf "@[{imm = @[%a@];@ blocks = @[%a@];}@]"

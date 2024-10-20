@@ -225,8 +225,8 @@ let repr_data_of_regular_constructors ~get_shape constructors =
         end;
         begin match shape.blocks with
         | Any -> any_tag := true
-        | Those tag_set ->
-            TagSet.iter notify_tag tag_set
+        | Those tag_map ->
+            TagMap.iter (fun tag _sizes -> notify_tag tag) tag_map
         end;
   ) constructors;
   {
