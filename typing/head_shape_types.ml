@@ -16,13 +16,15 @@
 
 type imm = Imm of int [@@unboxed]
 type tag = Tag of int [@@unboxed]
+type size = Size of int [@@unboxed]
 
 type head =
   | Immediate of imm
-  | Block of tag
+  | Block of tag * size
 
 module ImmSet = Set.Make(struct type t = imm let compare = Stdlib.compare end)
-module TagSet = Set.Make(struct type t = tag let compare = Stdlib.compare end)
+module SizeSet = Set.Make(struct type t = size let compare = Stdlib.compare end)
+module TagMap = Map.Make(struct type t = tag let compare = Stdlib.compare end)
 
 module Or_any = struct
   type 'a t = Those of 'a | Any
@@ -38,12 +40,14 @@ end
 type 'a or_any = 'a Or_any.t = Those of 'a | Any
 
 type imm_set = ImmSet.t or_any
-type block_set = TagSet.t or_any
+type size_set = SizeSet.t or_any
+type block_set = size_set TagMap.t or_any
 
 type shape = {
   imms: imm_set;
   blocks: block_set;
 }
+
 
 module Shape = struct
   type t = shape
@@ -55,10 +59,14 @@ module Shape = struct
       | Any -> true
       | Those set -> ImmSet.mem imm set
       end
-    | Block tag ->
+    | Block (tag, size) ->
       begin match shape.blocks with
       | Any -> true
-      | Those set -> TagSet.mem tag set
+      | Those tag_map ->
+        match TagMap.find tag tag_map with
+        | exception Not_found -> false
+        | Any -> true
+        | Those sizes -> SizeSet.mem size sizes
       end
 
   let inter sh1 sh2 =
@@ -70,7 +78,14 @@ module Shape = struct
     in
     {
       imms = inter_on_any ImmSet.inter sh1.imms sh2.imms;
-      blocks = inter_on_any TagSet.inter sh1.blocks sh2.blocks;
+      blocks =
+        inter_on_any (fun tm1 tm2 ->
+          TagMap.merge (fun _tag s1 s2 ->
+            match s1, s2 with
+            | None, _ | _, None -> None
+            | Some s1, Some s2 -> Some (inter_on_any SizeSet.inter s1 s2)
+          ) tm1 tm2
+        ) sh1.blocks sh2.blocks;
     }
 
   let is_any_on_any is_any = function
@@ -78,8 +93,15 @@ module Shape = struct
     | Those a -> is_any a
 
   let is_any_imm _ = false
+  let is_any_size _ = false
+
   let is_any_block tag_map =
-    TagSet.cardinal tag_map = 256
+    TagMap.cardinal tag_map = 256
+    &&
+    TagMap.for_all (fun _ -> function
+      | Any -> true
+      | Those s -> is_any_size s
+    ) tag_map
 
   let is_any sh =
     is_any_on_any is_any_imm sh.imms
@@ -93,21 +115,54 @@ module Shape = struct
       | Any, Those b -> is_any b
       | Those a, Those b -> subset a b
     in
-    subset_on_any ImmSet.subset is_any_imm sh1.imms sh2.imms
+    let subset_imm = ImmSet.subset in
+    let subset_size = SizeSet.subset in
+    let subset_block tm1 tm2 =
+      TagMap.for_all (fun tag sizes1 ->
+        let sizes2 =
+          try TagMap.find tag tm2
+          with Not_found -> Those SizeSet.empty in
+        subset_on_any subset_size is_any_size sizes1 sizes2
+      ) tm1
+    in
+    subset_on_any subset_imm is_any_imm sh1.imms sh2.imms
     &&
-    subset_on_any TagSet.subset is_any_block sh1.blocks sh2.blocks
+    subset_on_any subset_block is_any_block sh1.blocks sh2.blocks
 
   let is_empty sh =
     let empty_on_any is_empty = function
       | Any -> false
       | Those s -> is_empty s
     in
+    let empty_tag_map =
+      TagMap.for_all (fun _tag -> empty_on_any SizeSet.is_empty)
+    in
     empty_on_any ImmSet.is_empty sh.imms
-    && empty_on_any TagSet.is_empty sh.blocks
+    && empty_on_any empty_tag_map sh.blocks
 
   let union sh1 sh2 =
     let imms = Or_any.mon_map2 ImmSet.union sh1.imms sh2.imms in
-    let blocks = Or_any.mon_map2 TagSet.union sh1.blocks sh2.blocks in
+    let blocks =
+      Or_any.mon_bind2 (fun bs1 bs2 ->
+        let any_count = ref 0 in
+        let tag_map =
+          TagMap.union (fun _tag s1 s2 ->
+            let s = Or_any.mon_map2 SizeSet.union s1 s2 in
+            (if s = Any then incr any_count);
+            Some s
+          ) bs1 bs2
+        in
+        if !any_count = 256 then begin
+          assert (
+            List.init 256 Fun.id
+            |> List.for_all (fun i ->
+              TagMap.find_opt (Tag i) tag_map = Some Any)
+          );
+          Any
+        end
+        else Those tag_map
+      ) sh1.blocks sh2.blocks
+    in
     { imms; blocks; }
 
   let any =
@@ -119,7 +174,7 @@ module Shape = struct
   let empty =
     {
       imms = Those ImmSet.empty;
-      blocks = Those TagSet.empty;
+      blocks = Those TagMap.empty;
     }
 
   let any_immediate =
@@ -129,18 +184,28 @@ module Shape = struct
     let imms = Or_any.Those (ImmSet.of_list li) in
     { empty with imms }
 
-  let block tags =
-    let blocks : block_set = Those (TagSet.of_list tags) in
+  let block ?size tags =
+    let blocks : block_set =
+      let size : size_set = match size with
+        | None -> Any
+        | Some fixed -> Those (SizeSet.singleton (Size fixed))
+      in
+      Those (TagMap.of_list (List.map (fun tags -> (tags, size)) tags))
+    in
     { empty with blocks }
 
   let float =
-    block [Tag Obj.double_tag]
+    (* Float values have size 1 or 2 depending
+       on the architecture. *)
+    union
+      (block ~size:1 [Tag Obj.double_tag])
+      (block ~size:2 [Tag Obj.double_tag])
 
   let string =
     block [Tag Obj.string_tag]
 
-  let tuple =
-    block [Tag 0]
+  let tuple ?size () =
+    block ?size [Tag 0]
 
   let array =
     block
@@ -165,7 +230,10 @@ module Shape = struct
 
        Note that this union may be non-disjoint: it is okay if the
        underlying type can itself have lazy tags, shortcutting will be
-       disabled by a runtime check.  *)
+       disabled by a runtime check. *)
+    (* Note: currently lazy/forcing/forward blocks have size 1, but we
+       decided to not reflect this in the type as the representation
+       might change in the future. *)
     union arg_shape
       (block [Tag Obj.lazy_tag; Tag Obj.forcing_tag; Tag Obj.forward_tag])
 
@@ -184,11 +252,11 @@ module Shape = struct
       (if has_consts then any_immediate else empty)
       (if has_nonconsts then block [Tag 0] else empty)
 
-  let abstract =
-    block [Tag Obj.abstract_tag]
+  let abstract ?size () =
+    block ?size [Tag Obj.abstract_tag]
 
-  let custom =
-    block [Tag Obj.custom_tag]
+  let custom ?size () =
+    block ?size [Tag Obj.custom_tag]
 end
 
 type unboxed_cstr_data = Types.type_declaration * Types.type_expr
