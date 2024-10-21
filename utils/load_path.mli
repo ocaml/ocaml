@@ -68,8 +68,8 @@ val init :
   hidden:string list -> unit
 (** [init ~visible ~hidden] is the same as
     [reset ();
-     List.iter add_dir (List.rev hidden);
-     List.iter add_dir (List.rev visible)] *)
+     List.iter (add_dir ~hidden:true) (List.rev hidden);
+     List.iter (add_dir ~hidden:false) (List.rev visible)] *)
 
 val auto_include_otherlibs :
   (string -> unit) -> auto_include_callback
