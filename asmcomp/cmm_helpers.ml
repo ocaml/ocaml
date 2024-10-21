@@ -1369,6 +1369,70 @@ let simplif_primitive p : Clambda_primitives.primitive =
 
 let transl_isout h arg dbg = tag_int (Cop(Ccmpa Clt, [h ; arg], dbg)) dbg
 
+(* Operations on OCaml values *)
+
+let add_int_caml arg1 arg2 dbg =
+  decr_int (add_int arg1 arg2 dbg) dbg
+
+(* Unary primitive delayed to reuse add_int_caml *)
+let offsetint n arg dbg =
+  if Misc.no_overflow_lsl n 1 then
+    add_const arg (n lsl 1) dbg
+  else
+    add_int_caml arg (int_const dbg n) dbg
+
+let sub_int_caml arg1 arg2 dbg =
+  incr_int (sub_int arg1 arg2 dbg) dbg
+
+let mul_int_caml arg1 arg2 dbg =
+  (* decrementing the non-constant part helps when the multiplication is
+     followed by an addition;
+     for example, using this trick compiles (100 * a + 7) into
+       (+ ( * a 100) -85)
+     rather than
+       (+ ( * 200 (>>s a 1)) 15)
+  *)
+  match arg1, arg2 with
+  | Cconst_int _ as c1, c2 ->
+      incr_int (mul_int (untag_int c1 dbg) (decr_int c2 dbg) dbg) dbg
+  | c1, c2 ->
+      incr_int (mul_int (decr_int c1 dbg) (untag_int c2 dbg) dbg) dbg
+
+let div_int_caml is_safe arg1 arg2 dbg =
+  tag_int(div_int (untag_int arg1 dbg)
+            (untag_int arg2 dbg) is_safe dbg) dbg
+
+let mod_int_caml is_safe arg1 arg2 dbg =
+  tag_int(mod_int (untag_int arg1 dbg)
+            (untag_int arg2 dbg) is_safe dbg) dbg
+
+let and_int_caml arg1 arg2 dbg =
+  Cop(Cand, [arg1; arg2], dbg)
+
+let or_int_caml arg1 arg2 dbg =
+  Cop(Cor, [arg1; arg2], dbg)
+
+let xor_int_caml arg1 arg2 dbg =
+  Cop(Cor, [Cop(Cxor, [ignore_low_bit_int arg1;
+                       ignore_low_bit_int arg2], dbg);
+            Cconst_int (1, dbg)], dbg)
+
+let lsl_int_caml arg1 arg2 dbg =
+  incr_int(lsl_int (decr_int arg1 dbg)
+             (untag_int arg2 dbg) dbg) dbg
+
+let lsr_int_caml arg1 arg2 dbg =
+  Cop(Cor, [lsr_int arg1 (untag_int arg2 dbg) dbg;
+            Cconst_int (1, dbg)], dbg)
+
+let asr_int_caml arg1 arg2 dbg =
+  Cop(Cor, [asr_int arg1 (untag_int arg2 dbg) dbg;
+            Cconst_int (1, dbg)], dbg)
+
+let int_comp_caml cmp arg1 arg2 dbg =
+  tag_int(Cop(Ccmpi cmp,
+              [arg1; arg2], dbg)) dbg
+
 (* Build an actual switch (ie jump table) *)
 
 let make_switch arg cases actions dbg =
@@ -2152,68 +2216,6 @@ let setfloatfield n init arg1 arg2 dbg =
         [if n = 0 then arg1
          else Cop(Cadda, [arg1; Cconst_int(n * size_float, dbg)], dbg);
          arg2], dbg))
-
-let add_int_caml arg1 arg2 dbg =
-  decr_int (add_int arg1 arg2 dbg) dbg
-
-(* Unary primitive delayed to reuse add_int_caml *)
-let offsetint n arg dbg =
-  if Misc.no_overflow_lsl n 1 then
-    add_const arg (n lsl 1) dbg
-  else
-    add_int_caml arg (int_const dbg n) dbg
-
-let sub_int_caml arg1 arg2 dbg =
-  incr_int (sub_int arg1 arg2 dbg) dbg
-
-let mul_int_caml arg1 arg2 dbg =
-  (* decrementing the non-constant part helps when the multiplication is
-     followed by an addition;
-     for example, using this trick compiles (100 * a + 7) into
-       (+ ( * a 100) -85)
-     rather than
-       (+ ( * 200 (>>s a 1)) 15)
-  *)
-  match arg1, arg2 with
-  | Cconst_int _ as c1, c2 ->
-      incr_int (mul_int (untag_int c1 dbg) (decr_int c2 dbg) dbg) dbg
-  | c1, c2 ->
-      incr_int (mul_int (decr_int c1 dbg) (untag_int c2 dbg) dbg) dbg
-
-let div_int_caml is_safe arg1 arg2 dbg =
-  tag_int(div_int (untag_int arg1 dbg)
-            (untag_int arg2 dbg) is_safe dbg) dbg
-
-let mod_int_caml is_safe arg1 arg2 dbg =
-  tag_int(mod_int (untag_int arg1 dbg)
-            (untag_int arg2 dbg) is_safe dbg) dbg
-
-let and_int_caml arg1 arg2 dbg =
-  Cop(Cand, [arg1; arg2], dbg)
-
-let or_int_caml arg1 arg2 dbg =
-  Cop(Cor, [arg1; arg2], dbg)
-
-let xor_int_caml arg1 arg2 dbg =
-  Cop(Cor, [Cop(Cxor, [ignore_low_bit_int arg1;
-                       ignore_low_bit_int arg2], dbg);
-            Cconst_int (1, dbg)], dbg)
-
-let lsl_int_caml arg1 arg2 dbg =
-  incr_int(lsl_int (decr_int arg1 dbg)
-             (untag_int arg2 dbg) dbg) dbg
-
-let lsr_int_caml arg1 arg2 dbg =
-  Cop(Cor, [lsr_int arg1 (untag_int arg2 dbg) dbg;
-            Cconst_int (1, dbg)], dbg)
-
-let asr_int_caml arg1 arg2 dbg =
-  Cop(Cor, [asr_int arg1 (untag_int arg2 dbg) dbg;
-            Cconst_int (1, dbg)], dbg)
-
-let int_comp_caml cmp arg1 arg2 dbg =
-  tag_int(Cop(Ccmpi cmp,
-              [arg1; arg2], dbg)) dbg
 
 let stringref_unsafe arg1 arg2 dbg =
   tag_int(Cop(mk_load_mut Byte_unsigned,
