@@ -80,6 +80,17 @@ and debug_event_repr =
   | Event_parent of int ref
   | Event_child of int ref
 
+type optimization_hint =
+  | Hint_immutable
+  | Hint_unsafe
+  | Hint_int of Primitive.boxed_integer
+  | Hint_array of Lambda.array_kind
+  | Hint_bigarray of
+      { unsafe : bool;
+        elt_kind : Lambda.bigarray_kind;
+        layout : Lambda.bigarray_layout }
+  | Hint_primitive of Primitive.description
+
 (* Abstract machine instructions *)
 
 type label = int                        (* Symbolic code labels *)
@@ -142,6 +153,7 @@ type instruction =
   | Kresume
   | Kresumeterm of int
   | Kreperformterm of int
+  | Khint of optimization_hint
   | Kstop
 
 val immed_min: int

@@ -198,6 +198,8 @@ let clear_crc_interfaces () =
 
 let debug_info = ref ([] : (int * Instruct.debug_event list * string list) list)
 
+let hint_info = ref ([] : (int * (int * Instruct.optimization_hint) list) list)
+
 (* Link in a compilation unit *)
 
 let link_compunit output_fun currpos_fun inchan file_name compunit =
@@ -224,6 +226,12 @@ let link_compunit output_fun currpos_fun inchan file_name compunit =
       then debug_dirs
       else file_path :: debug_dirs in
     debug_info := (currpos_fun(), debug_event_list, debug_dirs) :: !debug_info
+  end;
+  if compunit.cu_hint > 0 then begin
+    seek_in inchan compunit.cu_hint;
+    let hint_list : (int * Instruct.optimization_hint) list =
+      Compression.input_value inchan in
+    hint_info := (currpos_fun(), hint_list) :: !hint_info
   end;
   output_fun code_block;
   if !Clflags.link_everything then
@@ -285,6 +293,15 @@ let output_debug_info oc =
       output_value oc debug_dirs)
     !debug_info;
   debug_info := []
+
+let output_hint_info oc =
+  output_binary_int oc (List.length !hint_info);
+  List.iter
+    (fun (ofs, hints) ->
+      output_binary_int oc ofs;
+      output_value oc hints)
+    !hint_info;
+  hint_info := []
 
 (* Transform a file name into an absolute file name *)
 
@@ -530,6 +547,8 @@ let link_bytecode ?final_name tolink exec_name standalone =
          output_debug_info outchan;
          Bytesections.record toc_writer DBUG
        end;
+       output_hint_info outchan;
+       Bytesections.record toc_writer HINT;
        (* The table of contents and the trailer *)
        Bytesections.write_toc_and_trailer toc_writer;
     )
@@ -586,6 +605,9 @@ let output_cds_file outfile =
        (* Debug info *)
        output_debug_info outchan;
        Bytesections.record toc_writer DBUG;
+       (* Hint info *)
+       output_hint_info outchan;
+       Bytesections.record toc_writer HINT;
        (* The table of contents and the trailer *)
        Bytesections.write_toc_and_trailer toc_writer;
     )
@@ -928,4 +950,5 @@ let reset () =
   lib_dllibs := [];
   Consistbl.clear crc_interfaces;
   debug_info := [];
+  hint_info := [];
   output_code_string_counter := 0
