@@ -1,6 +1,6 @@
 File "unclosed_class_simpl_expr1.ml", line 10, characters 0-0:
-Error: Syntax error: "end" expected
+Error: Syntax error: end expected
 File "unclosed_class_simpl_expr1.ml", line 8, characters 10-16:
 8 | class c = object
               ^^^^^^
-  This "object" might be unmatched
+  This object might be unmatched

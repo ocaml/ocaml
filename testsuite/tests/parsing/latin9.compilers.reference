@@ -11,13 +11,13 @@ val s : string = "ok"
 Line 3, characters 0-47:
 3 | module Élégant (* NFD encoded *) = struct end;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Multiple definition of the module name "Élégant".
+Error: Multiple definition of the module name Élégant.
        Names must be unique in a given structure or signature.
 val x : string = "x"
 Line 1, characters 9-14:
 1 | let ko = {Là|x|Là};;
              ^^^^^
-Error: "Là" cannot be used as a quoted string delimiter,
+Error: Là cannot be used as a quoted string delimiter,
        it must contain only lowercase letters.
 Line 2, characters 10-20:
 2 | let x = {%âcre.name été|x|été};;

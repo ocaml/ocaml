@@ -1,6 +1,6 @@
 File "pr5026_bad.ml", line 11, characters 0-36:
 11 | type -'typing wrapped = private sexp
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation "wrapped" is cyclic:
-         "'a wrapped" = "sexp",
-         "sexp" = "untyped wrapped"
+Error: The type abbreviation wrapped is cyclic:
+         'a wrapped = sexp,
+         sexp = untyped wrapped

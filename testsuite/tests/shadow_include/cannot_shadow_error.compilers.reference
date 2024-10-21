@@ -1,12 +1,12 @@
 File "cannot_shadow_error.ml", line 24, characters 2-36:
 24 |   include Comparable with type t = t
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Illegal shadowing of included type "t/2" by "t".
+Error: Illegal shadowing of included type t/2 by t.
 File "cannot_shadow_error.ml", line 23, characters 2-19:
 23 |   include Printable
        ^^^^^^^^^^^^^^^^^
-  Type "t/2" came from this include.
+  Type t/2 came from this include.
 File "cannot_shadow_error.ml", line 14, characters 2-23:
 14 |   val print : t -> unit
        ^^^^^^^^^^^^^^^^^^^^^
-  The value "print" has no valid type if "t/2" is shadowed.
+  The value print has no valid type if t/2 is shadowed.
