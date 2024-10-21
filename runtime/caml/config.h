@@ -264,7 +264,7 @@ typedef uint64_t uintnat;
 /* Default setting for maximum size of custom objects counted as garbage
    in the minor heap.
    Documented in gc.mli */
-#define Custom_minor_max_bsz_def 8192
+#define Custom_minor_max_bsz_def 70000
 
 /* Default allocation policy. */
 #define Allocation_policy_def caml_policy_best_fit
