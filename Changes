@@ -51,6 +51,11 @@ Working version
 
 ### Code generation and optimizations:
 
+- #13565: less tagging in switches compiled to affine transformations
+  by ocamlopt.
+  (Gabriel Scherer and Clément Allain, review by Vincent Laviron,
+   report by Vesa Karvonen)
+
 ### Standard library:
 
 - #13543: Remove some String-Bytes conversion from the stdlib to behave better
