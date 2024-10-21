@@ -568,7 +568,7 @@ let rec transl env e =
          can be checked *)
       if Array.length s.us_index_blocks = 0 then
         make_switch
-          (untag_int (transl env arg) dbg)
+          (Tagged (transl env arg))
           s.us_index_consts
           (Array.map (fun expr -> transl env expr, dbg) s.us_actions_consts)
           dbg
