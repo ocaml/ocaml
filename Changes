@@ -324,6 +324,12 @@ ___________
   not currently supported on OCaml 5.
   (Jan Midtgaard, review by Gabriel Scherer)
 
+- #13469, #13474, #13535: Document that [Hashtbl.create n] creates a hash table
+  with a default minimal size, even if [n] is very small or negative.
+  (Antonin Décimo, Nick Bares, report by Nikolaus Huber and Jan Midtgaard,
+   review by Florian Angeletti, Anil Madhavapeddy, Gabriel Scherer,
+   and Miod Vallat)
+
 ### Compiler user-interface and warnings:
 
 * #12084: Check link order when creating archive and when using ocamlopt
