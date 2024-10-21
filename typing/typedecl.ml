@@ -1974,6 +1974,7 @@ end
 
 let quoted_out_type ppf ty = Style.as_inline_code !Oprint.out_type ppf ty
 let quoted_type ppf ty = Style.as_inline_code Printtyp.type_expr ppf ty
+let quoted_constr = Style.as_inline_code Pprintast.Doc.constr
 
 let report_error_doc ppf = function
   | Repeated_parameter ->
@@ -2102,20 +2103,20 @@ let report_error_doc ppf = function
       let msg = Format_doc.doc_printf in
       Errortrace_report.unification ppf env err
         (msg "The constructor %a@ has type"
-             (Style.as_inline_code Printtyp.longident) lid)
+             quoted_constr lid)
         (msg "but was expected to be of type")
   | Rebind_mismatch (lid, p, p') ->
       fprintf ppf
         "@[%s@ %a@ %s@ %a@ %s@ %s@ %a@]"
         "The constructor"
-        (Style.as_inline_code Printtyp.longident) lid
+        quoted_constr lid
         "extends type" Style.inline_code (Path.name p)
         "whose declaration does not match"
         "the declaration of type" Style.inline_code (Path.name p')
   | Rebind_private lid ->
       fprintf ppf "@[%s@ %a@ %s@]"
         "The constructor"
-        (Style.as_inline_code Printtyp.longident) lid
+        quoted_constr lid
         "is private"
   | Variance (Typedecl_variance.Bad_variance (n, v1, v2)) ->
       let variance (p,n,i) =

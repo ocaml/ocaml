@@ -33,10 +33,6 @@ module Style = Misc.Style
 module Fmt = Format_doc
 open Format_doc
 
-let longident = Pprintast.Doc.longident
-
-let () = Env.print_longident := longident
-
 (* Print an identifier avoiding name collisions *)
 
 module Out_name = struct

@@ -485,8 +485,6 @@ val strengthen:
 (* Forward declaration to break mutual recursion with Ctype. *)
 val same_constr: (t -> type_expr -> type_expr -> bool) ref
 (* Forward declaration to break mutual recursion with Printtyp. *)
-val print_longident: Longident.t Format_doc.printer ref
-(* Forward declaration to break mutual recursion with Printtyp. *)
 val print_path: Path.t Format_doc.printer ref
 
 
