@@ -2633,6 +2633,7 @@ ifneq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
 	$(MAKE) -C flexdll distclean MSVC_DETECT=0
 endif
 	$(MAKE) -C manual distclean
+	rm -f asmcomp/arm64/arch.ml
 	rm -f ocamldoc/META
 	rm -f $(addprefix ocamltest/,ocamltest_config.ml ocamltest_unix.ml)
 	rm -f otherlibs/dynlink/META otherlibs/dynlink/dynlink_config.ml \

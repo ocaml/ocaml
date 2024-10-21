@@ -1,4 +1,5 @@
-# 2 "asmcomp/arm64/arch.ml"
+(* @configure_input@ *)
+# 2 "asmcomp/arm64/arch.ml.in"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -26,7 +27,7 @@ let macosx = (Config.system = "macosx")
 
 type barrier_placement = FenceBeforeStore | BranchAfterLoad
 
-let barrier_placement = ref FenceBeforeStore
+let barrier_placement = ref @arm64_barrier_placement_default@
 
 let command_line_options =
   [ "-mbarrier-placement=fence-before-store",
