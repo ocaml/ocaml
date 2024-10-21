@@ -123,7 +123,7 @@ module F : (X : sig end) -> sig val x : int end
 Line 2, characters 0-3:
 2 | F.x;; (* fail *)
     ^^^
-Error: The module F is a functor, it cannot have any components
+Error: The module "F" is a functor, it cannot have any components
 |}];;
 
 type t = ..;;

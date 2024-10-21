@@ -6450,7 +6450,8 @@ open Format_doc
 module Fmt = Format_doc
 module Printtyp = Printtyp.Doc
 
-let longident = Printtyp.longident
+let quoted_longident = Style.as_inline_code Pprintast.Doc.longident
+let quoted_constr = Style.as_inline_code Pprintast.Doc.constr
 
 (* Returns the first diff of the trace *)
 let type_clash_of_trace trace =
@@ -6634,11 +6635,10 @@ let report_error ~loc env = function
       Location.errorf ~loc
        "@[The constructor %a@ expects %i argument(s),@ \
         but is applied here to %i argument(s)@]"
-       (Style.as_inline_code longident) lid expected provided
+       quoted_constr lid expected provided
   | Label_mismatch(lid, err) ->
       report_unification_error ~loc env err
-        (msg "The record field %a@ belongs to the type"
-                   (Style.as_inline_code longident) lid)
+        (msg "The record field %a@ belongs to the type" quoted_longident lid)
         (msg "but is mixed here with fields of type")
   | Pattern_type_clash (err, pat) ->
       let diff = type_clash_of_trace err.trace in
@@ -6757,7 +6757,7 @@ let report_error ~loc env = function
         print_labels labels
   | Label_not_mutable lid ->
       Location.errorf ~loc "The record field %a is not mutable"
-        (Style.as_inline_code longident) lid
+        quoted_longident lid
   | Wrong_name (eorp, ty_expected, { type_path; kind; name; valid_names; }) ->
       Location.error_of_printer ~loc (fun ppf () ->
         Printtyp.wrap_printing_env ~error:true env (fun () ->
@@ -6783,13 +6783,16 @@ let report_error ~loc env = function
   | Name_type_mismatch (kind, lid, tp, tpl) ->
       let type_name = Datatype_kind.type_name kind in
       let name = Datatype_kind.label_name kind in
+      let pr = match kind with
+        | Datatype_kind.Record -> quoted_longident
+        | Datatype_kind.Variant -> quoted_constr
+      in
       Location.error_of_printer ~loc (fun ppf () ->
         Errortrace_report.ambiguous_type ppf env tp tpl
           (msg "The %s %a@ belongs to the %s type"
-               name (Style.as_inline_code longident) lid
-              type_name)
+               name pr lid type_name)
           (msg "The %s %a@ belongs to one of the following %s types:"
-               name (Style.as_inline_code longident) lid type_name)
+               name pr lid type_name)
           (msg "but a %s was expected belonging to the %s type"
                name type_name)
         ) ()
@@ -6822,7 +6825,7 @@ let report_error ~loc env = function
       ) ()
   | Virtual_class cl ->
       Location.errorf ~loc "Cannot instantiate the virtual class %a"
-        (Style.as_inline_code longident) cl
+        quoted_longident cl
   | Unbound_instance_variable (var, valid_vars) ->
       Location.error_of_printer ~loc (fun ppf () ->
         fprintf ppf "Unbound instance variable %a" Style.inline_code var;
@@ -6905,7 +6908,7 @@ let report_error ~loc env = function
         (Style.as_inline_code Printtyp.type_expr) ty
   | Private_label (lid, ty) ->
       Location.errorf ~loc "Cannot assign field %a of the private type %a"
-        (Style.as_inline_code longident) lid
+        quoted_longident lid
         (Style.as_inline_code Printtyp.type_expr) ty
   | Private_constructor (constr, ty) ->
       Location.errorf ~loc
@@ -6914,7 +6917,7 @@ let report_error ~loc env = function
         (Style.as_inline_code Printtyp.type_expr) ty
   | Not_a_polymorphic_variant_type lid ->
       Location.errorf ~loc "The type %a@ is not a variant type"
-        (Style.as_inline_code longident) lid
+        quoted_longident lid
   | Incoherent_label_order ->
       Location.errorf ~loc
         "This function is applied to arguments@ \
