@@ -15,6 +15,8 @@
 
 (** Function manipulation.
 
+    See {{!examples} the examples} below.
+
     @since 4.08 *)
 
 (** {1:combinators Combinators} *)
@@ -67,3 +69,81 @@ exception Finally_raised of exn
     an unexpected exception or a programming error. As a general rule,
     one should not catch a [Finally_raised] exception except as part of
     a catch-all handler. *)
+
+(** {1:examples Examples}
+
+    {2 Combinators}
+
+    {{!combinators}Combinators} provide a lightweight and sometimes more
+    readable way to create anonymous functions, best used as short-lived
+    arguments rather than standalone definitions. The examples below will
+    demonstrate this mainly with the {!module:List} module.
+
+    {!val:id}
+    {[
+    # List.init 3 Fun.id;;
+    - : int list = [0; 1; 2]
+
+    # List.filter_map Fun.id [None; Some 2; Some 3; None; Some 5];;
+    - : int list = [2; 3; 5]
+
+    # let to_flat = Float.Array.map_from_array Fun.id
+    val to_flat : float array -> Float.Array.t
+    ]}
+    Dispatching functions of type [foo -> foo] conditionally is another place
+    where [id] may be useful
+    {[
+    if Sys.win32 then String.map (function '\\' -> '/' | c -> c) else Fun.id
+    ]}
+
+    {!val:const}
+    {[
+    # List.init 3 (Fun.const 0);;
+    - : int list = [0; 0; 0]
+
+    # let last xs = List.fold_left (Fun.const Option.some) None xs;;
+    val last : 'a list -> 'a option
+    # last [1; 2; 3];;
+    - : int option = Some 3
+    # last [];;
+    - : int option = None
+    ]}
+    Note that applying [const (...)] evaluates the expression [(...)] once, and
+    returns a function that only has the result of this evaluation. To
+    demonstrate this, consider if [(...)] was a call to {!val:Random.bool}[()]:
+
+    [List.init n (Fun.const (Random.bool()))] for any [n > 0] will have
+    {i exactly two} possible outcomes,
+    - [[true; true; ...; true]] or
+    - [[false; false; ...; false]].
+
+    whereas [List.init n (fun _ -> Random.bool())] will have 2{^n} possible
+    outcomes, because the randomness effect is performed with every element.
+
+    {!val:flip}
+    {[
+    # List.sort (Fun.flip Int.compare) [5; 3; 9; 0; 1; 6; 8];;
+    - : int list = [9; 8; 6; 5; 3; 1; 0]
+
+    # let subtract = Fun.flip (-) in
+      List.map (subtract 2) [4; 6; 8];;
+    - : int list = [2; 4; 6]
+
+    # List.fold_left (Fun.flip List.cons) [] [1; 2; 3];;
+    - : int list = [3; 2; 1]
+    ]}
+    Thanks to currying, [flip] can work with functions that take more than two
+    arguments, by flipping the first two and leaving the rest in order. Given a
+    function [f : a -> b -> c -> d]:
+    - [flip f m] will have type [a -> c -> d], whereas
+    - [flip (f n)] will have type [c -> b -> d]
+
+    {!val:negate}
+    {[
+    # List.find_all (Fun.negate List.is_empty) [[0]; [1; 2; 3]; []; [4; 5]];;
+    - : int list list = [[0]; [1; 2; 3]; [4; 5]]
+
+    # let is_free_path = Fun.negate Sys.file_exists
+    val is_free_path : string -> bool = <fun>
+    ]}
+*)
