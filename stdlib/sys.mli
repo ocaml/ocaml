@@ -210,7 +210,8 @@ external runtime_parameters : unit -> string = "caml_runtime_parameters"
 
 external poll_actions : unit -> unit = "%poll"
 (** Run any pending runtime actions, such as minor collections, major
-    GC slices, signal handlers, finalizers, or memprof callbacks. *)
+    GC slices, signal handlers, finalizers, or memprof callbacks.
+    @since 5.3 *)
 
 
 (** {1 Signal handling} *)
