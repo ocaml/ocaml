@@ -49,10 +49,12 @@ val make
   -> native_repr_res: native_repr
   -> description
 
-val parse_declaration
-  :  Parsetree.value_description
-  -> native_repr_args:native_repr list
+val parse_description
+  :  native_repr_args:native_repr list
   -> native_repr_res:native_repr
+  -> prim:string list
+  -> attrs:Parsetree.attributes
+  -> loc:Location.t
   -> description
 
 val print

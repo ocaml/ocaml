@@ -22,6 +22,8 @@ open Ast_helper
 
 module T = Typedtree
 
+type ('a, 'b) either = Left of 'a | Right of 'b
+
 type mapper = {
   attribute: mapper -> T.attribute -> attribute;
   attributes: mapper -> T.attribute list -> attribute list;
@@ -69,7 +71,8 @@ type mapper = {
   type_exception: mapper -> T.type_exception -> type_exception;
   type_kind: mapper -> T.type_kind -> type_kind;
   value_binding: mapper -> T.value_binding -> value_binding;
-  value_description: mapper -> T.value_description -> value_description;
+  value_description: mapper -> Typedtree.value_description
+    -> (value_description, primitive_description) either;
   with_constraint:
     mapper -> (Path.t * Longident.t Location.loc * T.with_constraint)
     -> with_constraint;
@@ -158,7 +161,10 @@ let structure_item sub item =
     | Tstr_value (rec_flag, list) ->
         Pstr_value (rec_flag, List.map (sub.value_binding sub) list)
     | Tstr_primitive vd ->
-        Pstr_primitive (sub.value_description sub vd)
+        begin match sub.value_description sub vd with
+        | Right pd -> Pstr_primitive pd
+        | Left _vd -> assert false
+        end
     | Tstr_type (rec_flag, list) ->
         Pstr_type (rec_flag, List.map (sub.type_declaration sub) list)
     | Tstr_typext tyext ->
@@ -193,10 +199,23 @@ let structure_item sub item =
 let value_description sub v =
   let loc = sub.location sub v.val_loc in
   let attrs = sub.attributes sub v.val_attributes in
-  Val.mk ~loc ~attrs
-    ~prim:v.val_prim
-    (map_loc sub v.val_name)
-    (sub.typ sub v.val_desc)
+  match v.val_ext with
+  | Tval_val typ ->
+    Left
+      (Val.mk ~loc ~attrs
+        (map_loc sub v.val_name)
+        (sub.typ sub typ))
+  | Tval_prim_decl (typ, prim) ->
+    Right
+      (Prim.mk_decl ~loc ~attrs ~prim
+        (map_loc sub v.val_name)
+        (sub.typ sub typ))
+  | Tval_prim_alias (typ, lid) ->
+    Right
+      (Prim.mk_alias ~loc ~attrs
+        (map_loc sub v.val_name)
+        (Option.map (sub.typ sub) typ)
+        lid)
 
 let module_binding sub mb =
   let loc = sub.location sub mb.mb_loc in
@@ -585,7 +604,10 @@ let signature_item sub item =
   let desc =
     match item.sig_desc with
       Tsig_value v ->
-        Psig_value (sub.value_description sub v)
+        begin match sub.value_description sub v with
+        | Left v -> Psig_value v
+        | Right p -> Psig_primitive p
+        end
     | Tsig_type (rec_flag, list) ->
         Psig_type (rec_flag, List.map (sub.type_declaration sub) list)
     | Tsig_typesubst list ->

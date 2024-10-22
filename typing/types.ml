@@ -119,13 +119,18 @@ type value_description =
 
 and value_kind =
     Val_reg                             (* Regular value *)
-  | Val_prim of Primitive.description   (* Primitive *)
+  | Val_prim of Primitive.description * primitive_safety
+                                        (* Primitive (safe ?) *)
   | Val_ivar of mutable_flag * string   (* Instance variable (mutable ?) *)
   | Val_self of
       class_signature * self_meths * Ident.t Vars.t * string
                                         (* Self *)
   | Val_anc of class_signature * Ident.t Meths.t * string
                                         (* Ancestor *)
+
+and primitive_safety =
+  | Safe
+  | Unsafe_in_recmod
 
 and self_meths =
   | Self_concrete of Ident.t Meths.t

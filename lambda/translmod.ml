@@ -31,6 +31,7 @@ type unsafe_component =
   | Unsafe_module_binding
   | Unsafe_functor
   | Unsafe_non_function
+  | Unsafe_primitive
   | Unsafe_typext
 
 type unsafe_info =
@@ -211,7 +212,7 @@ let compose_coercions c1 c2 =
 
 let primitive_declarations = ref ([] : Primitive.description list)
 let record_primitive = function
-  | {val_kind=Val_prim p;val_loc} ->
+  | {val_kind=Val_prim (p, _);val_loc} ->
       Translprim.check_primitive_arity val_loc p;
       primitive_declarations := p :: !primitive_declarations
   | _ -> ()
@@ -258,8 +259,13 @@ let init_shape id modl =
               in
               raise (Initialization_failure not_a_function) in
         init_v :: init_shape_struct env rem
-    | Sig_value(_, {val_kind=Val_prim _}, _) :: rem ->
-        init_shape_struct env rem
+    | Sig_value(subid, {val_kind=Val_prim (_, exn); val_loc = loc}, _) :: rem ->
+        begin match exn with
+        | Safe -> init_shape_struct env rem
+        | Unsafe_in_recmod ->
+          raise (Initialization_failure
+                  (Unsafe {reason=Unsafe_primitive; loc; subid}))
+        end
     | Sig_value _ :: _rem ->
         assert false
     | Sig_type(id, tdecl, _, _) :: rem ->
@@ -1684,6 +1690,10 @@ let explanation_submsg (id, unsafe_info) =
       | Unsafe_functor -> print "Module %a defines an unsafe functor, %a ."
       | Unsafe_typext ->
           print "Module %a defines an unsafe extension constructor, %a ."
+      | Unsafe_primitive ->
+        print "Module %a defines an unsafe primitive alias, %a .@ \
+               The type of the aliased primitive is less general than@ \
+               that of its alias."
       | Unsafe_non_function -> print "Module %a defines an unsafe value, %a ."
 
 let report_error loc = function

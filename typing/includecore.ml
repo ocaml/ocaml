@@ -76,12 +76,12 @@ exception Dont_match of value_mismatch
    [vd2] kind. *)
 let value_descriptions_consistency env vd1 vd2 =
   match (vd1.val_kind, vd2.val_kind) with
-  | (Val_prim p1, Val_prim p2) -> begin
+  | (Val_prim (p1, _), Val_prim (p2, _)) -> begin
       match primitive_descriptions p1 p2 with
       | None -> Tcoerce_none
       | Some err -> raise (Dont_match (Primitive_mismatch err))
     end
-  | (Val_prim p, _) ->
+  | (Val_prim (p, _), _) ->
       let pc =
         { pc_desc = p; pc_type = vd2.Types.val_type;
           pc_env = env; pc_loc = vd1.Types.val_loc; }

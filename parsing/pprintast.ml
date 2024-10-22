@@ -987,11 +987,22 @@ and floating_attribute ctxt f a =
 and value_description ctxt f x =
   (* note: value_description has an attribute field,
            but they're already printed by the callers this method *)
-  pp f "@[<hov2>%a%a@]" (core_type ctxt) x.pval_type
-    (fun f x ->
-       if x.pval_prim <> []
-       then pp f "@ =@ %a" (list constant_string) x.pval_prim
-    ) x
+  pp f "@[<hov2>%a@]" (core_type ctxt) x.pval_type
+
+and primitive_description ctxt f x =
+  (* note: primitive_description has an attribute field,
+           but they're already printed by the callers this method *)
+  match x.pprim_kind with
+  | Pprim_decl (pprim_type, pprim_prim) ->
+      pp f ":@ @[<hov2>%a@ =@ %a@]"
+        (core_type ctxt) pprim_type
+        (list constant_string) pprim_prim
+  | Pprim_alias (Some pprim_type, pprim_ident) ->
+      pp f ":@ @[<hov2>%a@ =@ %a@]"
+        (core_type ctxt) pprim_type
+        longident_loc pprim_ident
+  | Pprim_alias (None, pprim_ident) ->
+      pp f "@[@ =@ %a@]" longident_loc pprim_ident
 
 and extension ctxt f (s, e) =
   pp f "@[<2>[%%%s@ %a]@]" s.txt (payload ctxt) e
@@ -1259,11 +1270,15 @@ and signature_item ctxt f x : unit =
       *)
       type_def_list ctxt f (Recursive, false, l)
   | Psig_value vd ->
-      let intro = if vd.pval_prim = [] then "val" else "external" in
-      pp f "@[<2>%s@ %a@ :@ %a@]%a" intro
+      pp f "@[<2>val@ %a@ :@ %a@]%a"
         ident_of_name vd.pval_name.txt
         (value_description ctxt) vd
         (item_attributes ctxt) vd.pval_attributes
+  | Psig_primitive pd ->
+      pp f "@[<2>external@ %a@ %a@]%a"
+        ident_of_name pd.pprim_name.txt
+        (primitive_description ctxt) pd
+        (item_attributes ctxt) pd.pprim_attributes
   | Psig_typext te ->
       type_extension ctxt f te
   | Psig_exception ed ->
@@ -1550,11 +1565,11 @@ and structure_item ctxt f x =
               (list ~sep:"@," (class_declaration "and")) xs
       end
   | Pstr_class_type l -> class_type_declaration_list ctxt f l
-  | Pstr_primitive vd ->
-      pp f "@[<hov2>external@ %a@ :@ %a@]%a"
-        ident_of_name vd.pval_name.txt
-        (value_description ctxt) vd
-        (item_attributes ctxt) vd.pval_attributes
+  | Pstr_primitive pd ->
+      pp f "@[<hov2>external@ %a@ %a@]%a"
+        ident_of_name pd.pprim_name.txt
+        (primitive_description ctxt) pd
+        (item_attributes ctxt) pd.pprim_attributes
   | Pstr_include incl ->
       pp f "@[<hov2>include@ %a@]%a"
         (module_expr ctxt) incl.pincl_mod

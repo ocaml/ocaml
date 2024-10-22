@@ -932,6 +932,22 @@ and approx_sig env ssg =
             ]
           ) decls [rem]
           |> List.flatten
+      | Psig_primitive sdesc ->
+          begin match sdesc.pprim_kind with
+          | Pprim_decl _ ->
+            let tdesc, env =
+              Typedecl.transl_prim_desc env sdesc.pprim_loc sdesc
+            in
+            Sig_value(tdesc.val_id, tdesc.val_val, Exported)
+            :: approx_sig env srem
+          | Pprim_alias (_, lid) ->
+            begin match Env.find_value_by_name lid.txt env with
+            | _, v ->
+              let id, env = Env.enter_value sdesc.pprim_name.txt v env in
+              Sig_value(id, v, Exported) :: approx_sig env srem
+            | exception Not_found -> approx_sig env srem
+            end
+          end
       | _ ->
           approx_sig env srem
 
@@ -1368,6 +1384,15 @@ and transl_signature env sg =
         | Psig_value sdesc ->
             let (tdesc, newenv) =
               Typedecl.transl_value_decl env item.psig_loc sdesc
+            in
+            Signature_names.check_value names tdesc.val_loc tdesc.val_id;
+            let (trem,rem, final_env) = transl_sig newenv srem in
+            mksig (Tsig_value tdesc) env loc :: trem,
+            Sig_value(tdesc.val_id, tdesc.val_val, Exported) :: rem,
+              final_env
+        | Psig_primitive sdesc ->
+            let (tdesc, newenv) =
+              Typedecl.transl_prim_desc env item.psig_loc sdesc
             in
             Signature_names.check_value names tdesc.val_loc tdesc.val_id;
             let (trem,rem, final_env) = transl_sig newenv srem in
@@ -2524,7 +2549,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
         shape_map,
         newenv
     | Pstr_primitive sdesc ->
-        let (desc, newenv) = Typedecl.transl_value_decl env loc sdesc in
+        let (desc, newenv) = Typedecl.transl_prim_desc env loc sdesc in
         Signature_names.check_value names desc.val_loc desc.val_id;
         Tstr_primitive desc,
         [Sig_value(desc.val_id, desc.val_val, Exported)],

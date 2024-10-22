@@ -198,11 +198,21 @@ module Exp:
     val binding_op: str -> pattern -> expression -> loc -> binding_op
   end
 
-(** Value declarations *)
+(** Value descriptions *)
 module Val:
   sig
     val mk: ?loc:loc -> ?attrs:attrs -> ?docs:docs ->
-      ?prim:string list -> str -> core_type -> value_description
+      str -> core_type -> value_description
+  end
+
+(** Primitive descriptions *)
+module Prim:
+  sig
+    val mk_decl: ?loc:loc -> ?attrs:attrs -> ?docs:docs -> prim:string list ->
+      str -> core_type -> primitive_description
+
+    val mk_alias: ?loc:loc -> ?attrs:attrs -> ?docs:docs -> str ->
+      core_type option -> lid -> primitive_description
   end
 
 (** Type declarations *)
@@ -287,6 +297,7 @@ module Sig:
     val mk: ?loc:loc -> signature_item_desc -> signature_item
 
     val value: ?loc:loc -> value_description -> signature_item
+    val primitive: ?loc:loc -> primitive_description -> signature_item
     val type_: ?loc:loc -> rec_flag -> type_declaration list -> signature_item
     val type_subst: ?loc:loc -> type_declaration list -> signature_item
     val type_extension: ?loc:loc -> type_extension -> signature_item
@@ -312,7 +323,7 @@ module Str:
 
     val eval: ?loc:loc -> ?attrs:attributes -> expression -> structure_item
     val value: ?loc:loc -> rec_flag -> value_binding list -> structure_item
-    val primitive: ?loc:loc -> value_description -> structure_item
+    val primitive: ?loc:loc -> primitive_description -> structure_item
     val type_: ?loc:loc -> rec_flag -> type_declaration list -> structure_item
     val type_extension: ?loc:loc -> type_extension -> structure_item
     val exception_: ?loc:loc -> type_exception -> structure_item

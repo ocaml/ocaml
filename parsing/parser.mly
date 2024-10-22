@@ -62,8 +62,8 @@ let mkconst ~loc c = Const.mk ~loc:(make_loc loc) c
 
 let pstr_typext (te, ext) =
   (Pstr_typext te, ext)
-let pstr_primitive (vd, ext) =
-  (Pstr_primitive vd, ext)
+let pstr_primitive (pd, ext) =
+  (Pstr_primitive pd, ext)
 let pstr_type ((nr, ext), tys) =
   (Pstr_type (nr, tys), ext)
 let pstr_exception (te, ext) =
@@ -77,6 +77,8 @@ let psig_typext (te, ext) =
   (Psig_typext te, ext)
 let psig_value (vd, ext) =
   (Psig_value vd, ext)
+let psig_primitive (pd, ext) =
+  (Psig_primitive pd, ext)
 let psig_type ((nr, ext), tys) =
   (Psig_type (nr, tys), ext)
 let psig_typesubst ((nr, ext), tys) =
@@ -247,6 +249,9 @@ let syntax_error () =
 let unclosed opening_name opening_loc closing_name closing_loc =
   raise(Syntaxerr.Error(Syntaxerr.Unclosed(make_loc opening_loc, opening_name,
                                            make_loc closing_loc, closing_name)))
+
+let ill_formed_ast loc msg =
+  raise(Syntaxerr.Error(Syntaxerr.Ill_formed_ast(make_loc loc, msg)))
 
 let expecting loc nonterm =
     raise Syntaxerr.(Error(Expecting(make_loc loc, nonterm)))
@@ -1533,10 +1538,11 @@ structure_item:
         { Pstr_attribute $1 }
     )
   | wrap_mkstr_ext(
-      primitive_declaration
+      primitive_description
         { pstr_primitive $1 }
     | value_description
-        { pstr_primitive $1 }
+        { ill_formed_ast $sloc
+          "Value declarations are only allowed in signatures" }
     | type_declarations
         { pstr_type $1 }
     | str_type_extension
@@ -1777,8 +1783,8 @@ signature_item:
   | wrap_mksig_ext(
       value_description
         { psig_value $1 }
-    | primitive_declaration
-        { psig_value $1 }
+    | primitive_description
+        { psig_primitive $1 }
     | type_declarations
         { psig_type $1 }
     | type_subst_declarations
@@ -3087,23 +3093,49 @@ value_description:
       ext }
 ;
 
-/* Primitive declarations */
+/* Primitive descriptions */
 
-primitive_declaration:
-  EXTERNAL
-  ext = ext
-  attrs1 = attributes
-  id = mkrhs(val_ident)
-  COLON
-  ty = possibly_poly(core_type)
-  EQUAL
-  prim = raw_string+
-  attrs2 = post_item_attributes
-    { let attrs = attrs1 @ attrs2 in
-      let loc = make_loc $sloc in
-      let docs = symbol_docs $sloc in
-      Val.mk id ty ~prim ~attrs ~loc ~docs,
-      ext }
+primitive_description:
+  | EXTERNAL
+    ext = ext
+    attrs1 = attributes
+    id = mkrhs(val_ident)
+    COLON
+    ty = possibly_poly(core_type)
+    EQUAL
+    prim = raw_string+
+    attrs2 = post_item_attributes
+      { let attrs = attrs1 @ attrs2 in
+        let loc = make_loc $sloc in
+        let docs = symbol_docs $sloc in
+        Prim.mk_decl id ty ~prim ~attrs ~loc ~docs,
+        ext }
+  | EXTERNAL
+    ext = ext
+    attrs1 = attributes
+    id = mkrhs(val_ident)
+    EQUAL
+    lid = mkrhs(val_longident)
+    attrs2 = post_item_attributes
+      { let attrs = attrs1 @ attrs2 in
+        let loc = make_loc $sloc in
+        let docs = symbol_docs $sloc in
+        Prim.mk_alias id None lid ~attrs ~loc ~docs,
+        ext }
+  | EXTERNAL
+    ext = ext
+    attrs1 = attributes
+    id = mkrhs(val_ident)
+    COLON
+    ty = possibly_poly(core_type)
+    EQUAL
+    lid = mkrhs(val_longident)
+    attrs2 = post_item_attributes
+      { let attrs = attrs1 @ attrs2 in
+        let loc = make_loc $sloc in
+        let docs = symbol_docs $sloc in
+        Prim.mk_alias id (Some ty) lid ~attrs ~loc ~docs,
+        ext }
 ;
 
 (* Type declarations and type substitutions. *)

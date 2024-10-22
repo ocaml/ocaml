@@ -2677,8 +2677,8 @@ let rec is_nonexpansive exp =
       is_nonexpansive exp
   | Texp_apply (
       { exp_desc = Texp_ident (_, _, {val_kind =
-             Val_prim {Primitive.prim_name =
-                         ("%raise" | "%reraise" | "%raise_notrace")}}) },
+             Val_prim ({Primitive.prim_name =
+                         ("%raise" | "%reraise" | "%raise_notrace")}, _)}) },
       [Nolabel, Some e]) ->
      is_nonexpansive e
   | Texp_array (_ :: _)
@@ -2756,7 +2756,7 @@ let check_recursive_class_bindings env ids exprs =
 
 let is_prim ~name funct =
   match funct.exp_desc with
-  | Texp_ident (_, _, {val_kind=Val_prim{Primitive.prim_name; _}}) ->
+  | Texp_ident (_, _, {val_kind=Val_prim({Primitive.prim_name; _}, _)}) ->
       prim_name = name
   | _ -> false
 (* Approximate the type of an expression, for better recursion *)
@@ -3568,13 +3568,15 @@ and type_expect_
         let funct = type_sfunct sfunct in
         match funct.exp_desc, sargs with
         | Texp_ident (_, _,
-                      {val_kind = Val_prim {prim_name="%revapply"}; val_type}),
+                      {val_kind = Val_prim ({prim_name="%revapply"}, _);
+                       val_type}),
           [Nolabel, sarg; Nolabel, actual_sfunct]
           when is_inferred actual_sfunct
             && check_apply_prim_type Revapply val_type ->
             type_sfunct actual_sfunct, [Nolabel, sarg]
         | Texp_ident (_, _,
-                      {val_kind = Val_prim {prim_name="%apply"}; val_type}),
+                      {val_kind = Val_prim ({prim_name="%apply"}, _);
+                       val_type}),
           [Nolabel, actual_sfunct; Nolabel, sarg]
           when check_apply_prim_type Apply val_type ->
             type_sfunct actual_sfunct, [Nolabel, sarg]
