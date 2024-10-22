@@ -47,7 +47,7 @@ type t =
   | Ignored_partial_application             (*  5 *)
   | Labels_omitted of string list           (*  6 *)
   | Method_override of string list          (*  7 *)
-  | Partial_match of string                 (*  8 *)
+  | Partial_match of Format_doc.t           (*  8 *)
   | Missing_record_field_pattern of string  (*  9 *)
   | Non_unit_statement                      (* 10 *)
   | Redundant_case                          (* 11 *)

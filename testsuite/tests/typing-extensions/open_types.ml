@@ -309,9 +309,9 @@ Line 3, characters 8-26:
             ^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
   Here is an example of a case that is not matched:
-    "*extension*
-Matching over values of extensible variant types (the *extension* above)
-must include a wild card pattern in order to be exhaustive."
+    "*extension*"
+    Matching over values of extensible variant types (the *extension* above)
+    must include a wild card pattern in order to be exhaustive.
 
 val f : foo -> unit = <fun>
 |}]
@@ -331,9 +331,9 @@ Lines 1-4, characters 8-11:
 4 |   | [] -> 2
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
   Here is an example of a case that is not matched:
-    "*extension*::[]
-Matching over values of extensible variant types (the *extension* above)
-must include a wild card pattern in order to be exhaustive."
+    "*extension*::[]"
+    Matching over values of extensible variant types (the *extension* above)
+    must include a wild card pattern in order to be exhaustive.
 
 val f : foo list -> int = <fun>
 |}]
@@ -355,9 +355,9 @@ Line 1, characters 8-62:
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
   Here is an example of a case that is not matched:
-    "*extension*
-Matching over values of extensible variant types (the *extension* above)
-must include a wild card pattern in order to be exhaustive."
+    "*extension*"
+    Matching over values of extensible variant types (the *extension* above)
+    must include a wild card pattern in order to be exhaustive.
 
 val f : t -> string = <fun>
 |}]

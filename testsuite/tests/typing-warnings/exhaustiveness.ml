@@ -345,8 +345,8 @@ Lines 1-4, characters 8-28:
 4 |   | Some x when x <= 0 -> ()
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
   Here is an example of a case that is not matched:
- "Some _
-(However, some guarded clause may match this value.)"
+    "Some _"
+    (However, some guarded clause may match this value.)
 
 val f : int option -> unit = <fun>
 |}]

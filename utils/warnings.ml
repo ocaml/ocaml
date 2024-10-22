@@ -42,7 +42,7 @@ type t =
   | Ignored_partial_application             (*  5 *)
   | Labels_omitted of string list           (*  6 *)
   | Method_override of string list          (*  7 *)
-  | Partial_match of string                 (*  8 *)
+  | Partial_match of Format_doc.t           (*  8 *)
   | Missing_record_field_pattern of string  (*  9 *)
   | Non_unit_statement                      (* 10 *)
   | Redundant_case                          (* 11 *)
@@ -920,11 +920,13 @@ let message = function
         Style.inline_code cname
         space_inline_list slist
   | Method_override [] -> assert false
-  | Partial_match "" -> msg "this pattern-matching is not exhaustive."
-  | Partial_match s ->
+  | Partial_match doc ->
+      if doc = Format_doc.Doc.empty then
+        msg "this pattern-matching is not exhaustive."
+     else
       msg "this pattern-matching is not exhaustive.@ \
            @[Here is an example of a case that is not matched:@;<1 2>%a@]"
-        Style.inline_code s
+        Format_doc.pp_doc doc
   | Missing_record_field_pattern s ->
       msg "the following labels are not bound@ in@ this@ \
            record@ pattern:@;<1 2>%a.@ \
