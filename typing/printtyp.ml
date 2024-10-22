@@ -879,6 +879,49 @@ end = struct
     else new_name ()
 
   let name_of_type ~non_gen name_generator t =
+    let available name =
+      List.for_all
+        (fun (_, name') -> name <> name')
+        !names
+    in
+    let find_better_name name =
+      (* Some part of the type we've already printed has assigned another unification
+         variable to that name. Yet we want to keep the name we have, even though it's
+         taken. Our approach:
+         - If the name is a single letter, try the next 4 single letters. This will get us
+         from 'a to 'e or from 'k to 'o.  Why 4? No good reason; it just seems the right
+         number.
+         - Otherwise, add an increasing numeric suffix until we find an available name.
+         *)
+      let with_suffix () =
+        let suffixed i = name ^ Int.to_string i in
+        let i =
+          Misc.find_first_mono (fun i -> available (suffixed i))
+        in
+        suffixed i
+      in
+      if String.length name = 1 &&
+         Char.compare name.[0] 'a' >= 0 &&
+         Char.compare name.[0] 'z' <= 0
+      then
+        let code = Char.code name.[0] in
+        let max_num_letters_to_try = 4 in
+        let num_letters = 26 in
+        let num_letters_left =
+          num_letters - (code - Char.code 'a') - 1
+        in
+        let actual_num_letters_to_try =
+          Int.min max_num_letters_to_try num_letters_left
+        in
+        let possible_names =
+          List.init actual_num_letters_to_try
+            (fun n -> String.make 1 (Char.chr (code + n + 1)))
+        in
+        match List.find_opt available possible_names with
+        | Some avail_name -> avail_name
+        | None -> with_suffix ()
+      else with_suffix ()
+    in
     (* We've already been through repr at this stage, so t is our representative
        of the union-find class. *)
     let t = substitute t in
@@ -887,50 +930,8 @@ end = struct
       let name =
         match t.desc with
           Tvar (Some name) | Tunivar (Some name) when not non_gen ->
-            let available name =
-              List.for_all
-                (fun (_, name') -> name <> name')
-                !names
-            in
             if available name then name
-            else
-              (* Some part of the type we've already printed has assigned
-                 another unification variable to that name. Yet we want to
-                 keep the name we have, even though it's taken. Our approach:
-                 - If the name is a single letter, try the next 4 single
-                   letters. This will get us from 'a to 'e or from 'k to 'o.
-                   Why 4? No good reason; it just seems the right number.
-                 - Otherwise, add an increasing numeric suffix until we find an
-                   available name.
-              *)
-              let with_suffix () =
-                let suffixed i = name ^ Int.to_string i in
-                let i =
-                  Misc.find_first_mono (fun i -> available (suffixed i))
-                in
-                suffixed i
-              in
-              if String.length name = 1 &&
-                 Char.compare name.[0] 'a' >= 0 &&
-                 Char.compare name.[0] 'z' <= 0
-              then
-                let code = Char.code name.[0] in
-                let max_num_letters_to_try = 4 in
-                let num_letters = 26 in
-                let num_letters_left =
-                  num_letters - (code - Char.code 'a') - 1
-                in
-                let actual_num_letters_to_try =
-                  Int.min max_num_letters_to_try num_letters_left
-                in
-                let possible_names =
-                  List.init actual_num_letters_to_try
-                    (fun n -> String.make 1 (Char.chr (code + n + 1)))
-                in
-                match List.find_opt available possible_names with
-                | Some avail_name -> avail_name
-                | None -> with_suffix ()
-              else with_suffix ()
+            else find_better_name name
         | _ ->
             (* No name available, create a new one *)
             name_generator ()
