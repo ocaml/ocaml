@@ -189,7 +189,7 @@ Line 2, characters 29-41:
                                  ^^^^^^^^^^^^
 Error: The local name "c" can only be given to an existential variable
        introduced by this GADT constructor.
-       The type annotation tries to bind it to the type "_"
+       The type annotation tries to bind it to the type "'b"
        that is not a locally abstract type.
 |}]
 let ko3 () =
