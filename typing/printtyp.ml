@@ -885,14 +885,14 @@ end = struct
         !names
     in
     let find_better_name name =
-      (* Some part of the type we've already printed has assigned another unification
-         variable to that name. Yet we want to keep the name we have, even though it's
-         taken. Our approach:
-         - If the name is a single letter, try the next 4 single letters. This will get us
-         from 'a to 'e or from 'k to 'o.  Why 4? No good reason; it just seems the right
-         number.
-         - Otherwise, add an increasing numeric suffix until we find an available name.
-         *)
+      (* Some part of the type we've already printed has assigned another
+         unification variable to that name. Yet we want to keep the name we
+         have, even though it's taken. Our approach:
+         - If the name is a single letter, try the next 4 single letters. This
+         will get us from 'a to 'e or from 'k to 'o.  Why 4? No good reason; it
+         just seems the right number.
+         - Otherwise, add an increasing numeric suffix until we find an
+         available name.  *)
       let with_suffix () =
         let suffixed i = name ^ Int.to_string i in
         let i =
@@ -929,7 +929,9 @@ end = struct
       try TransientTypeMap.find t !weak_var_map with Not_found ->
       let name =
         match t.desc with
-          Tvar (Some name) | Tunivar (Some name) when not non_gen ->
+          Tvar (Some name) | Tunivar (Some name) when
+            not non_gen (* [non_gen] (that is, weak) variables should
+                           always get fresh names *) ->
             if available name then name
             else find_better_name name
         | _ ->
