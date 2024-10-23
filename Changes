@@ -153,6 +153,11 @@ ___________
   (Leo White, Tom Kelly, Anil Madhavapeddy, KC Sivaramakrishnan, Xavier Leroy
    and Florian Angeletti, review by the same, Hugo Heuzard, and Ulysse Gérard)
 
+- #11736, #12664: Support utf-8 encoded source files and latin-9 compatible
+  identifiers.
+  (Xavier Leroy and Florian Angeletti, review by Daniel Bünzli and
+   Jules Aguillon)
+
 ### Type system
 
 - #11891, #12507: Allow to name new locally abstract types in constructor type
@@ -821,11 +826,6 @@ OCaml 5.2.0 (13 May 2024)
 - #13130: minor fixes to pprintast for raw identifiers and local module open
   syntax for types.
   (Chet Murthy, review by Gabriel Scherer)
-
-- #11736, #12664: Support utf-8 encoded source files and latin-9 compatible
-  identifiers.
-  (Xavier Leroy and Florian Angeletti, review by Daniel Bünzli and
-   Jules Aguillon)
 
 ### Type system:
 
