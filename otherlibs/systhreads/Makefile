@@ -141,6 +141,7 @@ include $(addprefix $(DEPDIR)/, $(DEP_FILES))
 endif
 
 %.b.$(D): OC_CPPFLAGS = $(OC_BYTECODE_CPPFLAGS)
+%.n.$(O): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS)
 %.n.$(D): OC_CPPFLAGS = $(OC_NATIVE_CPPFLAGS)
 
 define GEN_RULE
