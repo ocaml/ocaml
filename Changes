@@ -616,6 +616,10 @@ ___________
   finalisers from being run.
   (Nick Roberts, review by Mark Shinwell)
 
+- #13520: Fix compilation of native-code version of systhreads. Bytecode fields
+  were being included in the thread descriptors.
+  (David Allsopp, review by Sébastien Hinderer and Miod Vallat)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
