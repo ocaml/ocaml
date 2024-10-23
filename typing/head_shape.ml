@@ -20,6 +20,40 @@ open Head_shape_types
 
 type t = shape
 
+let constructor_tag ~loc n =
+  if (n < 0 || n > Obj.last_non_constant_constructor_tag) then
+    (* TODO: turn into a proper error with a registered printer. *)
+    Location.raise_errorf ~loc
+      "The shape (constr ~tag:n) can only be used for regular block \
+       constructor, ~tag:%d is outside valid range." n;
+  Tag n
+
+let rec of_shape_name loc : Asttypes.shape_name -> shape = function
+  | Any -> Shape.any
+  | Imm n -> Shape.imm [Imm n]
+  | Constructor { tag; size } -> Shape.block ?size [constructor_tag ~loc tag]
+  | Int -> Shape.any_immediate
+  | Float -> Shape.float
+  | String -> Shape.string
+  | Tuple { size } -> Shape.tuple ?size ()
+  | Array -> Shape.array
+  | Floatarray -> Shape.floatarray
+  | Function -> Shape.\#function
+  | Object -> Shape.\#object
+  | Lazy arg_shape_names ->
+      let arg_shape =
+        List.fold_left (fun shape name ->
+          Shape.union shape (of_shape_name loc name)
+        ) Shape.empty arg_shape_names
+      in
+      Shape.\#lazy arg_shape
+  | Continuation -> Shape.continuation
+  | Extensible_variant -> Shape.extensible_variant
+  | Polymorphic_variant { has_consts; has_nonconsts } ->
+      Shape.polymorphic_variant ~has_consts ~has_nonconsts
+  | Abstract { size } -> Shape.abstract ?size ()
+  | Custom { size } -> Shape.custom ?size ()
+
 let rec of_type_expr env ty fuel =
   match Types.get_desc ty with
   | Tvar _ | Tunivar _ ->
