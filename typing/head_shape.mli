@@ -28,6 +28,11 @@ val of_regular_cstr_description :
 val of_unboxed_cstr_description :
   Env.t -> Head_shape_types.unboxed_cstr_description -> t
 
+(** The shape corresponding to a shape description
+    provided by the user. *)
+val of_shape_name :
+  Location.t -> Asttypes.shape_name -> t
+
 (** Check a new type declaration, that may be a variant type
     containing unboxed constructors, to verify that the unboxing
     requests respect the "disjointness" requirement of constructor
