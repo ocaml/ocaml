@@ -700,6 +700,7 @@ typing/data_types.cmo : \
     typing/types.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
+    utils/misc.cmi \
     parsing/location.cmi \
     typing/head_shape_types.cmi \
     parsing/asttypes.cmi \
@@ -708,6 +709,7 @@ typing/data_types.cmx : \
     typing/types.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
+    utils/misc.cmx \
     parsing/location.cmx \
     typing/head_shape_types.cmx \
     parsing/asttypes.cmx \
@@ -716,6 +718,7 @@ typing/data_types.cmi : \
     typing/types.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
+    utils/misc.cmi \
     parsing/location.cmi \
     typing/head_shape_types.cmi \
     parsing/asttypes.cmi
@@ -725,6 +728,7 @@ typing/datarepr.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
+    typing/head_shape_types.cmi \
     typing/data_types.cmi \
     parsing/builtin_attributes.cmi \
     typing/btype.cmi \
@@ -736,6 +740,7 @@ typing/datarepr.cmx : \
     utils/misc.cmx \
     parsing/location.cmx \
     typing/ident.cmx \
+    typing/head_shape_types.cmx \
     typing/data_types.cmx \
     parsing/builtin_attributes.cmx \
     typing/btype.cmx \
@@ -746,6 +751,7 @@ typing/datarepr.cmi : \
     typing/types.cmi \
     typing/path.cmi \
     typing/ident.cmi \
+    typing/head_shape_types.cmi \
     typing/data_types.cmi
 typing/env.cmo : \
     utils/warnings.cmi \
@@ -931,6 +937,7 @@ typing/gprinttyp.cmi : \
     typing/types.cmi
 typing/head_shape.cmo : \
     typing/types.cmi \
+    typing/shape.cmi \
     typing/print_head_shape.cmi \
     typing/predef.cmi \
     utils/misc.cmi \
@@ -939,11 +946,10 @@ typing/head_shape.cmo : \
     typing/env.cmi \
     typing/data_types.cmi \
     typing/ctype.cmi \
-    utils/config.cmi \
-    typing/btype.cmi \
     typing/head_shape.cmi
 typing/head_shape.cmx : \
     typing/types.cmx \
+    typing/shape.cmx \
     typing/print_head_shape.cmx \
     typing/predef.cmx \
     utils/misc.cmx \
@@ -952,21 +958,22 @@ typing/head_shape.cmx : \
     typing/env.cmx \
     typing/data_types.cmx \
     typing/ctype.cmx \
-    utils/config.cmx \
-    typing/btype.cmx \
     typing/head_shape.cmi
 typing/head_shape.cmi : \
     typing/types.cmi \
     typing/path.cmi \
     typing/head_shape_types.cmi \
-    typing/env.cmi
+    typing/env.cmi \
+    typing/data_types.cmi
 typing/head_shape_types.cmo : \
     typing/types.cmi \
     utils/misc.cmi \
+    utils/config.cmi \
     typing/head_shape_types.cmi
 typing/head_shape_types.cmx : \
     typing/types.cmx \
     utils/misc.cmx \
+    utils/config.cmx \
     typing/head_shape_types.cmi
 typing/head_shape_types.cmi : \
     typing/types.cmi \
@@ -1238,6 +1245,7 @@ typing/out_type.cmo : \
     typing/env.cmi \
     typing/ctype.cmi \
     utils/clflags.cmi \
+    parsing/builtin_attributes.cmi \
     typing/btype.cmi \
     parsing/asttypes.cmi \
     typing/out_type.cmi
@@ -1262,6 +1270,7 @@ typing/out_type.cmx : \
     typing/env.cmx \
     typing/ctype.cmx \
     utils/clflags.cmx \
+    parsing/builtin_attributes.cmx \
     typing/btype.cmx \
     parsing/asttypes.cmx \
     typing/out_type.cmi
@@ -4703,8 +4712,11 @@ lambda/matching.cmo : \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
+    typing/head_shape_types.cmi \
+    typing/head_shape.cmi \
     typing/env.cmi \
     lambda/debuginfo.cmi \
+    typing/datarepr.cmi \
     typing/data_types.cmi \
     typing/ctype.cmi \
     utils/clflags.cmi \
@@ -4728,8 +4740,11 @@ lambda/matching.cmx : \
     parsing/location.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
+    typing/head_shape_types.cmx \
+    typing/head_shape.cmx \
     typing/env.cmx \
     lambda/debuginfo.cmx \
+    typing/datarepr.cmx \
     typing/data_types.cmx \
     typing/ctype.cmx \
     utils/clflags.cmx \
@@ -7550,9 +7565,10 @@ toplevel/genprintval.cmo : \
     parsing/location.cmi \
     parsing/lexer.cmi \
     typing/ident.cmi \
+    typing/head_shape_types.cmi \
+    typing/head_shape.cmi \
     utils/format_doc.cmi \
     typing/env.cmi \
-    typing/datarepr.cmi \
     typing/data_types.cmi \
     typing/ctype.cmi \
     typing/btype.cmi \
@@ -7574,9 +7590,10 @@ toplevel/genprintval.cmx : \
     parsing/location.cmx \
     parsing/lexer.cmx \
     typing/ident.cmx \
+    typing/head_shape_types.cmx \
+    typing/head_shape.cmx \
     utils/format_doc.cmx \
     typing/env.cmx \
-    typing/datarepr.cmx \
     typing/data_types.cmx \
     typing/ctype.cmx \
     typing/btype.cmx \
