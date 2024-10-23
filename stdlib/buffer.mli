@@ -92,6 +92,15 @@ val nth : t -> int -> char
 val length : t -> int
 (** Return the number of characters currently contained in the buffer. *)
 
+val iter_chunks : t -> (bytes -> int -> int -> unit) -> unit
+(** [iter_chunks buf f] calls [f chunk offset len] for each contiguous chunk
+    of data in [buf]. [f] might not be called at all if [buf] is empty,
+    or might be called on one or more chunks.
+
+    The sum of the lengths of each chunk is equal to [length buf].
+    @since 5.3
+*)
+
 val clear : t -> unit
 (** Empty the buffer. *)
 

@@ -57,6 +57,8 @@ Working version
   with js_of_ocaml
   (Hugo Heuzard, review by Gabriel Scherer)
 
+- Add `Buffer.iter_chunks` (Simon Cruanes)
+
 ### Other libraries:
 
 - #13429: add `Unix.sigwait`, a binding to the `sigwait` system call;

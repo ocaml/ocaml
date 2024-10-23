@@ -67,8 +67,12 @@ let nth b ofs =
    invalid_arg "Buffer.nth"
   else Bytes.unsafe_get buffer ofs
 
-
 let length b = b.position
+
+let[@inline] iter_chunks b f =
+  let {position; inner={buffer; length}; _} = b in
+  let position = min position length in
+  if position > 0 then f buffer 0 position
 
 let clear b = b.position <- 0
 
