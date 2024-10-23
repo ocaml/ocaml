@@ -861,6 +861,7 @@ val get_formatter_output_functions :
 
 type formatter_out_functions = {
   out_string : string -> int -> int -> unit;
+  out_width: string -> pos:int -> len:int -> int;
   out_flush : unit -> unit;
   out_newline : unit -> unit;
   out_spaces : int -> unit;
@@ -871,6 +872,9 @@ type formatter_out_functions = {
   It is called with a string [s], a start position [p], and a number of
   characters [n]; it is supposed to output characters [p] to [p + n - 1] of
   [s].
+- the [out_width] function informs the formatting engine of the width of the
+  substring as rendered on the output device. Notably, it can be used to compute
+  an approximative width for unicode substrings.
 - the [out_flush] function flushes the pretty-printer output device.
 - [out_newline] is called to open a new line when the pretty-printer splits
   the line.
@@ -885,6 +889,7 @@ type formatter_out_functions = {
   (e.g. {!Stdlib.output_string} and {!Stdlib.flush} for a
    {!Stdlib.out_channel} device, or [Buffer.add_substring] and
    {!Stdlib.ignore} for a [Buffer.t] output device),
+- fields [out_width] is the byte length of the substring
 - field [out_newline] is equivalent to [out_string "\n" 0 1];
 - fields [out_spaces] and [out_indent] are equivalent to
   [out_string (String.make n ' ') 0 n].
