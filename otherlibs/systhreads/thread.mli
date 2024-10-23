@@ -47,8 +47,10 @@ val id : t -> int
 
 val set_current_thread_name : string -> unit
 (** Set the thread's name. This should be called from within the thread
-    function. Setting thread name is available on most systems. Does nothing
-    if the functionality is not implemented.
+    function. Setting thread name is available on most systems.
+
+    This does nothing if the functionality is not implemented but will
+    print a warning on the standard error if enabled.
 
     @since 5.4 *)
 

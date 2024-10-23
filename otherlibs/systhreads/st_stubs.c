@@ -969,7 +969,7 @@ static st_retcode caml_threadstatus_wait (value wrapper)
 }
 
 /* Set the current thread's name. */
-CAMLprim value caml_current_thread_set_name(value name)
+CAMLprim value caml_set_current_thread_name(value name)
 {
 #if defined(_WIN32)
   wchar_t *thread_name = caml_stat_strdup_to_utf16(String_val(name));

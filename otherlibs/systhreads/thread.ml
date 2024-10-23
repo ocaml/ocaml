@@ -94,4 +94,4 @@ let sigmask = Unix.sigprocmask
 let wait_signal = Unix.sigwait
 
 external set_current_thread_name : string -> unit =
-        "caml_current_thread_set_name"
+        "caml_set_current_thread_name"
