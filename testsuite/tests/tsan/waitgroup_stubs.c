@@ -5,8 +5,12 @@
 #include <caml/mlvalues.h>
 #include <caml/tsan.h>
 
+#define POW10_3       1000
+#define POW10_7   10000000
+#define POW10_9 1000000000
+
 #define MAX_WAITGROUP   8
-#define SPIN_WAIT_MS    10
+#define SPIN_WAIT_NS    POW10_7 /* 10ms */
 
 /* waitgroup inspired by Golang's `sync.WaitGroup`. This version does *not*
  * allow to restart a waitgroup. */
@@ -52,7 +56,14 @@ CAMLno_tsan value wg_wait(value t)
    * checkpoint. This allows TSan to always generate a report with a
    * 'As if synchronized via sleep' section. */
   do {
-    usleep(SPIN_WAIT_MS);
+#ifdef HAS_NANOSLEEP
+    const struct timespec ts = {
+      .tv_sec = SPIN_WAIT_NS / POW10_9,
+      .tv_nsec = SPIN_WAIT_NS % POW10_9 };
+    nanosleep(&ts, NULL);
+#else
+    usleep(SPIN_WAIT_NS / POW10_3);
+#endif
   }
   while (wg->count != wg->limit);
   return Val_unit;
