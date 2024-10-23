@@ -17,6 +17,7 @@ external id : 'a -> 'a = "%identity"
 let const c _ = c
 let compose f g x = f (g x)
 let flip f x y = f y x
+let on f g x y = g (f x) (f y)
 let negate p v = not (p v)
 
 exception Finally_raised of exn
