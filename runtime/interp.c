@@ -248,7 +248,8 @@ static value raise_unhandled_effect;
 
 CAMLno_tsan /* No need to TSan-instrument this (and pay a slowdown) function as
                TSan is not supported for bytecode. */
-value caml_interprete(code_t prog, asize_t prog_size)
+value caml_bytecode_interpreter(code_t prog, asize_t prog_size,
+                                value initial_env, intnat initial_extra_args)
 {
 #ifdef PC_REG
   register code_t pc PC_REG;
@@ -342,8 +343,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
   sp = domain_state->current_stack->sp;
   pc = prog;
-  extra_args = 0;
-  env = Atom(0);
+  extra_args = initial_extra_args;
+  env = initial_env;
   accu = Val_int(0);
 
 #ifdef THREADED_CODE
@@ -1016,7 +1017,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     check_stacks:
       if (sp < Stack_threshold_ptr(domain_state->current_stack)) {
         domain_state->current_stack->sp = sp;
-        if (!caml_try_realloc_stack(Stack_threshold / sizeof(value))) {
+        if (!caml_try_realloc_stack(Stack_threshold_words)) {
           Setup_for_c_call; caml_raise_stack_overflow();
         }
         sp = domain_state->current_stack->sp;

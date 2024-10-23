@@ -78,12 +78,9 @@ Caml_inline void restore_stack_parent(caml_domain_state* domain_state,
 #include "caml/fix_code.h"
 #include "caml/fiber.h"
 
-static CAMLthread_local opcode_t callback_code[] =
-  { ACC, 0, APPLY, 0, POP, 1, STOP };
+static opcode_t callback_code[] = { STOP };
 
-static CAMLthread_local int callback_code_inited = 0;
-
-static void init_callback_code(void)
+void caml_init_callbacks(void)
 {
   caml_register_code_fragment((char *) callback_code,
                               (char *) callback_code + sizeof(callback_code),
@@ -91,42 +88,44 @@ static void init_callback_code(void)
 #ifdef THREADED_CODE
   caml_thread_code(callback_code, sizeof(callback_code));
 #endif
-  callback_code_inited = 1;
 }
 
 CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 {
-  CAMLparam0(); /* no need to register closure and args as roots, see below */
+  CAMLparam1(closure); /* no need to register args as roots, see below */
   CAMLlocal1(cont);
   value res;
-  int i;
   caml_domain_state* domain_state = Caml_state;
 
-  CAMLassert(narg + 4 <= 256);
-  domain_state->current_stack->sp -= narg + 4;
-  for (i = 0; i < narg; i++)
+  /* Ensure there's enough stack space */
+  intnat req = narg + 3 + Stack_threshold_words;
+  if (domain_state->current_stack->sp - req <
+      Stack_base(domain_state->current_stack))
+    if (!caml_try_realloc_stack(req))
+      caml_raise_stack_overflow();
+
+  /* Push the arguments on the stack */
+  domain_state->current_stack->sp -= narg + 3;
+  for (int i = 0; i < narg; i++)
     domain_state->current_stack->sp[i] = args[i]; /* arguments */
 
-  if (!callback_code_inited) init_callback_code();
-
-  callback_code[1] = narg + 3;
-  callback_code[3] = narg;
-
+  /* Push a return frame */
   domain_state->current_stack->sp[narg] =
-                     (value)(callback_code + 4); /* return address */
+                     (value)callback_code; /* return address */
   domain_state->current_stack->sp[narg + 1] = Val_unit;    /* environment */
   domain_state->current_stack->sp[narg + 2] = Val_long(0); /* extra args */
-  domain_state->current_stack->sp[narg + 3] = closure;
 
   cont = alloc_and_clear_stack_parent(domain_state);
-  /* This can call the GC and invalidate the values [closure] and [args].
+  /* This can call the GC and invalidate the values [args].
      However, they are never used afterwards,
      as they were copied into the root [domain_state->current_stack]. */
 
   caml_update_young_limit_after_c_call(domain_state);
-  res = caml_interprete(callback_code, sizeof(callback_code));
+  res = caml_bytecode_interpreter(Code_val(closure), 0 /* unknown size */,
+                                  closure, /* environment */
+                                  narg - 1 /* extra args beyond the 1st */);
   if (Is_exception_result(res))
-    domain_state->current_stack->sp += narg + 4; /* PR#3419 */
+    domain_state->current_stack->sp += narg + 3; /* PR#3419 */
 
   restore_stack_parent(domain_state, cont);
 
@@ -162,8 +161,9 @@ CAMLexport value caml_callback3_exn(value closure,
 
 /* Native-code callbacks.  caml_callback[123]_asm are implemented in asm. */
 
-static void init_callback_code(void)
+void caml_init_callbacks(void)
 {
+  /* Nothing to do */
 }
 
 typedef value (callback_stub)(caml_domain_state* state,
@@ -329,11 +329,6 @@ struct named_value {
 
 static struct named_value * named_value_table[Named_value_size] = { NULL, };
 static caml_plat_mutex named_value_lock = CAML_PLAT_MUTEX_INITIALIZER;
-
-void caml_init_callbacks(void)
-{
-  init_callback_code();
-}
 
 static unsigned int hash_value_name(char const *name)
 {

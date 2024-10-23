@@ -36,6 +36,11 @@ OCaml 5.2 maintenance version
   from a DLL
   (Xavier Leroy, review by Miod Vallat)
 
+- #13402, #13512, #13549, #13553: Revise bytecode implementation of callbacks
+  so that it no longer produces dangling registered bytecode fragments.
+  (Xavier Leroy, report by Jan Midtgaard, analysis by Stephen Dolan,
+   review by Miod Vallat)
+
 - #13502: Fix misindexing related to `Gc.finalise_last` that could prevent
   finalisers from being run.
   (Nick Roberts, review by Mark Shinwell)
