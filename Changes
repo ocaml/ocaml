@@ -134,6 +134,14 @@ ___________
   runtime assertions.
   (Antonin Décimo, review by Miod Vallat, Gabriel Scherer, and David Allsopp)
 
+- #13402, #13512, #13549, #13553: Revise bytecode implementation of callbacks
+  so that it no longer produces dangling registered bytecode fragments.
+  (Xavier Leroy, report by Jan Midtgaard, analysis by Stephen Dolan,
+   review by Miod Vallat)
+
+- #13407: Add Runtime_events.EV_EMPTY_MINOR
+  (Thomas Leonard)
+
 - #13522: Confirm runtime events ring is still active after callback.
   (KC Sivaramakrishnan, review by Sadiq Jaffer and Miod Vallat)
 
