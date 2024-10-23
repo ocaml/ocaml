@@ -310,6 +310,8 @@ let simplif_arith_prim_pure ~backend fpc p (args, approxs) dbg =
       | Pintoffloat -> make_const_int (int_of_float n1)
       | Pnegfloat -> make_const_float (-. n1)
       | Pabsfloat -> make_const_float (abs_float n1)
+      | Pccall {prim_native_name = "caml_signbit"; _} ->
+          make_const_bool (Float.sign_bit n1)
       | _ -> default
       end
   (* float, float *)
