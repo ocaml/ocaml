@@ -1320,6 +1320,50 @@ let pp_print_text ppf s =
   done;
   if !left <> len then flush ()
 
+(* To format free-flowing text *)
+let format_text fmt6 =
+  let open CamlinternalFormatBasics in
+  let Format(fmt,s) = fmt6 in
+  let cons_substring ~first ~last s fmt =
+    if first = last then fmt
+    else String_literal(String.sub s first (last-first),fmt) in
+  let cons_space ~spaces fmt = Formatting_lit (Break("",spaces,0), fmt) in
+  let cons ~first ~last s ~spaces fmt =
+    cons_substring ~first ~last s (cons_space ~spaces fmt)
+  in
+  let rec skip_spaces len s pos =
+    if pos >= len || s.[pos] <> ' ' then pos
+    else skip_spaces len s (pos+1)
+  in
+  let rec split len s pos fmt =
+    if pos >= len then fmt
+    else
+      let space = String.index_from_opt s pos ' ' in
+      let newline = String.index_from_opt s pos '\n' in
+      match space, newline with
+      | None, None -> cons_substring ~first:pos ~last:len s fmt
+      | Some last, None ->
+          let after_spaces = skip_spaces len s (last+1) in
+          let spaces = after_spaces - last in
+          cons ~first:pos ~last s ~spaces (split len s after_spaces fmt)
+      | Some last, Some l when last < l ->
+          let after_spaces = skip_spaces len s (last+1) in
+          let spaces = after_spaces - last in
+        cons ~first:pos ~last s ~spaces (split len s after_spaces fmt)
+      | _, Some last ->
+          let after_spaces = skip_spaces len s (last+1) in
+          let spaces = after_spaces - last - 1 in
+          cons ~first:pos ~last s ~spaces (split len s after_spaces fmt)
+  in
+  let concat s fmt = match s with
+    | `Char ' ' -> cons_space ~spaces:1 fmt
+    | `Char '\n' -> cons_space ~spaces:2 fmt
+    | `Char c -> Char_literal(c,fmt)
+    | `String s -> split (String.length s) s 0 fmt in
+  let fmt = string_concat_map {f=concat} fmt in
+  Format(fmt,s)
+
+
 let pp_print_option ?(none = fun _ () -> ()) pp_v ppf = function
 | None -> none ppf ()
 | Some v -> pp_v ppf v

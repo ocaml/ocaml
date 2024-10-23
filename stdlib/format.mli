@@ -1246,6 +1246,13 @@ val pp_print_text : formatter -> string -> unit
   @since 4.02
 *)
 
+val format_text: ('a,'b,'c,'d,'e,'f) format6 -> ('a,'b,'c,'d,'e,'f) format6
+(** [text fmt] replaces spaces and newlines in the format string literal [fmt]
+    with hint breaks.
+  @since 5.4
+*)
+
+
 val pp_print_option :
   ?none:(formatter -> unit -> unit) ->
   (formatter -> 'a -> unit) -> (formatter -> 'a option -> unit)
