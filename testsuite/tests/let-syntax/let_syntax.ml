@@ -732,3 +732,103 @@ Error: This pattern matches values of type "GADT_ordering.point"
        This instance of "GADT_ordering.point" is ambiguous:
        it would escape the scope of its equation
 |}];;
+
+
+(* Named binding operators *)
+
+(* We now also support named binding operators
+   such as let/map, and/prod, etc.
+
+   This first test rephrases the List tests above in this syntax.
+*)
+module Named_list_syntax = struct
+  let ( let/map ) = List.map
+  let ( and/prod ) = List.product
+  let ( let/bind ) = List.concat_map
+end
+
+let map =
+  Named_list_syntax.(
+    let/map x = [1; 2; 3] in
+    x + 1
+  );;
+[%%expect{|
+module Named_list_syntax :
+  sig
+    val ( let/map ) : 'a list -> ('a -> 'b) -> 'b list
+    val ( and/prod ) : 'a list -> 'b list -> ('a * 'b) list
+    val ( let/bind ) : 'a list -> ('a -> 'b list) -> 'b list
+  end
+val map : int list = [2; 3; 4]
+|}];;
+
+let map_and =
+  Named_list_syntax.(
+    let/map x = [1; 2; 3]
+    and/prod y = [7; 8; 9] in
+    x + y
+  );;
+[%%expect{|
+val map_and : int list = [8; 9; 10; 9; 10; 11; 10; 11; 12]
+|}];;
+
+let bind =
+  Named_list_syntax.(
+    let/bind x = [1; 2; 3] in
+    let/bind y = [7; 8; 9] in
+    [x + y]
+  );;
+[%%expect{|
+val bind : int list = [8; 9; 10; 9; 10; 11; 10; 11; 12]
+|}];;
+
+let bind_and =
+  Named_list_syntax.(
+    let/bind x = [1; 2; 3]
+    and/prod y = [7; 8; 9] in
+    [x + y]
+  );;
+[%%expect{|
+val bind_and : int list = [8; 9; 10; 9; 10; 11; 10; 11; 12]
+|}];;
+
+let bind_map =
+  Named_list_syntax.(
+    let/bind x = [1; 2; 3] in
+    let/map y = [7; 8; 9] in
+    x + y
+  );;
+[%%expect{|
+val bind_map : int list = [8; 9; 10; 9; 10; 11; 10; 11; 12]
+|}];;
+
+
+
+(* There is a small ambiguity between named binding operators and
+   symbolic binding operators, which is that "let/" is a valid prefix
+   for both. *)
+module Weird_list_syntax = struct
+  let ( let/map ) = List.map
+  let ( and/ ) = List.product
+  let ( let/* ) = List.concat_map
+end
+[%%expect{|
+module Weird_list_syntax :
+  sig
+    val ( let/map ) : 'a list -> ('a -> 'b) -> 'b list
+    val ( and/ ) : 'a list -> 'b list -> ('a * 'b) list
+    val ( let/* ) : 'a list -> ('a -> 'b list) -> 'b list
+  end
+|}];;
+
+let test =
+  Weird_list_syntax.(
+    let/* x = [0; 10] in
+    let/map xplus =  [x + 1; x + 2]
+    and/    xminus = [x - 1; x - 2]
+    in (xplus, xminus)
+  )
+[%%expect{|
+val test : (int * int) list =
+  [(1, -1); (1, -2); (2, -1); (2, -2); (11, 9); (11, 8); (12, 9); (12, 8)]
+|}];;
