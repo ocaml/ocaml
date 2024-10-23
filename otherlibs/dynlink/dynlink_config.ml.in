@@ -21,6 +21,6 @@
 let magic_length = @MAGIC_LENGTH@
 
 let ext_dll = "." ^ {@QS@|@SO@|@QS@}
-and cmo_magic_number = {@QS@|@CMO_MAGIC_NUMBER@|@QS@}
-and cma_magic_number = {@QS@|@CMA_MAGIC_NUMBER@|@QS@}
-and cmxs_magic_number = {@QS@|@CMXS_MAGIC_NUMBER@|@QS@}
+and cmo_magic_number = {magic|@CMO_MAGIC_NUMBER@|magic}
+and cma_magic_number = {magic|@CMA_MAGIC_NUMBER@|magic}
+and cmxs_magic_number = {magic|@CMXS_MAGIC_NUMBER@|magic}
