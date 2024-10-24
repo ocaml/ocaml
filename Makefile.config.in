@@ -221,6 +221,13 @@ NAKED_POINTERS=false
 
 # Deprecated variables
 
+## Variables deprecated since OCaml 5.3
+
+OCAMLC_CFLAGS=$(BYTECODE_CFLAGS)
+OCAMLOPT_CFLAGS=$(OCAMLOPT_CFLAGS)
+OCAMLC_CPPFLAGS=$(BYTECODE_CPPFLAGS)
+OCAMLOPT_CPPFLAGS=@native_cppflags@
+
 ## Variables deprecated since OCaml 5.2
 
 STDLIB_MANPAGES=@build_libraries_manpages@
