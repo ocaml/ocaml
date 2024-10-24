@@ -2,6 +2,34 @@
 expect;
 *)
 
+let () =
+  Format.set_geometry ~max_indent:28 ~margin:30;
+  Format.printf (
+    Format.format_text
+      "@[\
+A first paragraph containing
+a newline and some characters.
+
+A second paragraph,
+split from the first one by a new line,
+and with few more newlines inside.
+
+The end.@]@."
+         )
+
+[%%expect {|
+A first paragraph containing
+a newline and some
+characters.
+
+A second paragraph, split
+from the first one by a new
+line, and with few more
+newlines inside.
+
+The end.
+|}]
+
 let test n =
   let open Format in
   set_geometry ~max_indent:(n-2) ~margin:n;

@@ -1248,7 +1248,15 @@ val pp_print_text : formatter -> string -> unit
 
 val format_text: ('a,'b,'c,'d,'e,'f) format6 -> ('a,'b,'c,'d,'e,'f) format6
 (** [text fmt] replaces spaces and newlines in the format string literal [fmt]
-    with hint breaks.
+    with hint breaks or forced newlines:
+- Only ascii spaces ([" " = "\u{20}"]) and linefeeds ["\n" = "\u{A}"] are
+  replaced. In particular, this means that non-breaking spaces (for instance
+  ["\u{A0}"]) are left unchanged.
+- [0<=k<=1] newlines followed by [n] spaces are converted to a [@;<0 (k+n)>]
+  break hint (when [k+n>=1]).
+- Two and more newlines followed by spaces are converted to two forced
+  newlines ["@\n@\n"].
+- Newlines can be inserted with ["@\n"].
   @since 5.4
 *)
 
