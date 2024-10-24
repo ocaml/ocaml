@@ -649,6 +649,10 @@ ___________
 
 ### Bug fixes:
 
+- #12738, #13433: better integration between short-paths and path disambiguation
+  and error messages (`open Base` no longer rename `int` to `int/2`)
+  (Florian Angeletti, report by Nick Roberts , review by Gabriel Scherer)
+
 - #12854: Add a test in the regression suite that flags the bug #12825.
   (Luc Maranget)
 

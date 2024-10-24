@@ -630,7 +630,8 @@ let best_type_path p =
    identifiers whenever the short-path algorithm detected a better path than
    the original one.*)
 let tree_of_best_type_path p p' =
-  if Path.same p p' then tree_of_path (Some Type) p'
+  if Path.same p p' && not (Path.Map.mem p' !printing_map) then
+    tree_of_path (Some Type) p'
   else tree_of_path ~disambiguation:false None p'
 
 (* Print a type expression *)
