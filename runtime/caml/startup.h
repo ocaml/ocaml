@@ -50,10 +50,13 @@ extern int32_t caml_seek_section(int fd, struct exec_trailer *trail,
 
 enum caml_byte_program_mode
   {
-   STANDARD /* normal bytecode program requiring "ocamlrun" */,
-   COMPLETE_EXE /* embedding the vm, i.e. compiled with --output-complete-exe */
+   APPENDED /* bytecode appended to a tender (e.g. ocamlrun or -custom) */,
+   EMBEDDED /* bytecode embedded in C (e.g. -output-complete-exe/-output-obj) */
   };
 
+/* Defined in prims.c or supplied by the bytecode linker */
+extern char * caml_marshalled_global_data;
+extern asize_t caml_marshalled_global_data_size;
 extern enum caml_byte_program_mode caml_byte_program_mode;
 
 #endif /* CAML_INTERNALS */

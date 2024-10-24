@@ -64,8 +64,6 @@ extern void caml_parse_ocamlrunparam (void);
 extern int caml_startup_aux (int pooling);
 
 void caml_init_exe_name(const char_os* exe_name);
-void caml_init_section_table(const char* section_table,
-                             asize_t section_table_size);
 
 #endif /* CAML_INTERNALS */
 

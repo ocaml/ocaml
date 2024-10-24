@@ -21,6 +21,15 @@ Working version
   available in older, now unsupported Windows versions.
   (Antonin Décimo, review by Nicolás Ojeda Bär and David Allsopp)
 
+- #13465: Unify the bytecode and native startup API by always providing the 4
+  caml_startup functions in libcamlrun (as is already the case in libasmrun) by
+  exposing data symbols instead of functions from objects compiled with
+  `-output-obj`, `-output-complete-obj` and `-output-complete-exe`. This has no
+  effect on the linking of OCaml code with a C (or other language) driving
+  program, but can simplify the writing of interop libraries to other languages
+  by ensuring the caml_startup symbol is always defined.
+  (David Allsopp, review by ???)
+
 - #13470: Constify some function parameters, flags tables, and some
   pointers in C code (take 3).
   (Antonin Décimo, review by Stephen Dolan and Miod Vallat)

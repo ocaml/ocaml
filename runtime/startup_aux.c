@@ -66,6 +66,8 @@ static void init_startup_params(void)
   if (cds_file != NULL) {
     params.cds_file = caml_stat_strdup_os(cds_file);
   }
+  params.section_table = caml_section_table;
+  params.section_table_size = caml_section_table_size;
 #endif
   params.trace_level = 0;
   params.cleanup_on_exit = 0;
@@ -216,11 +218,4 @@ CAMLexport void caml_shutdown(void)
 void caml_init_exe_name(const char_os* exe_name)
 {
   params.exe_name = exe_name;
-}
-
-void caml_init_section_table(const char* section_table,
-                             asize_t section_table_size)
-{
-  params.section_table = section_table;
-  params.section_table_size = section_table_size;
 }
