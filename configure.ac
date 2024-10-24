@@ -1159,12 +1159,6 @@ AC_SEARCH_LIBS([cos], [m],
 
 # Checks for header files
 
-# Don't check for unistd.h on Windows
-AS_CASE([$host],
-  [*-*-mingw32*|*-pc-windows], [],
-  [AC_CHECK_HEADERS([unistd.h],[AC_DEFINE([HAS_UNISTD], [1])])])
-
-AC_CHECK_HEADER([math.h])
 AC_CHECK_HEADER([pthread_np.h],[AC_DEFINE([HAS_PTHREAD_NP_H], [1])])
 AC_CHECK_HEADER([dirent.h], [AC_DEFINE([HAS_DIRENT], [1])], [],
   [#include <sys/types.h>])
@@ -1416,7 +1410,7 @@ AS_CASE(["$ocaml_cc_vendor,$host"],
       [$warn_error_flag])])
 
 ## Check whether __attribute__((optimize("tree-vectorize")))) is supported
-OCAML_CC_SUPPORTS_TREE_VECTORIZE
+OCAML_CC_SUPPORTS_TREE_VECTORIZE([$warn_error_flag])
 
 # Check whether the C compiler supports the labels as values extension.
 OCAML_CC_SUPPORTS_LABELS_AS_VALUES

@@ -28,4 +28,9 @@
 #  define HAS_NANOSECOND_STAT 3
 #endif
 
+#ifndef _WIN32
+/* unistd.h is assumed to be available */
+#define HAS_UNISTD 1
+#endif
+
 #endif  /* CAML_COMPATIBILITY_H */

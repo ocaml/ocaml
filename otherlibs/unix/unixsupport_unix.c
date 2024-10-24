@@ -24,7 +24,7 @@
 #include "caml/unixsupport.h"
 #include "cst2constr.h"
 #include <errno.h>
-#ifdef HAS_UNISTD
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 #include <fcntl.h>

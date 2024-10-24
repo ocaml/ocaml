@@ -21,7 +21,7 @@
 #ifdef HAS_GETGROUPS
 
 #include <sys/types.h>
-#ifdef HAS_UNISTD
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 #include <errno.h>

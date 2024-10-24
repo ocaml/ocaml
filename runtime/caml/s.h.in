@@ -108,10 +108,6 @@
 
 #undef HAS_PTHREAD_NP_H
 
-#undef HAS_UNISTD
-
-/* Define HAS_UNISTD if you have /usr/include/unistd.h. */
-
 #undef HAS_DIRENT
 
 /* Define HAS_DIRENT if you have /usr/include/dirent.h and the result of
