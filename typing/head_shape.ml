@@ -355,13 +355,32 @@ let check_typedecl_conflicts ~loc genv cstrs =
           cstri.cstr_name Print_head_shape.doc shi
     )
 
+let check_typedecl_constraint env (path, decl) =
+  match Builtin_attributes.find_shapes decl.type_attributes with
+  | Some shape_names ->
+      let loc = decl.type_loc in
+      let expected_shape =
+        List.map (of_shape_name loc) shape_names
+        |> List.fold_left Shape.union Shape.empty
+      in
+      let actual_shape = of_type_path env path in
+      if not (Shape.subset actual_shape expected_shape) then
+        Location.raise_errorf ~loc
+          "@[%a@]"
+          Format_doc.pp_print_text
+          "In this type declaration, the actual head shape does not \
+           match the expected type shape."
+  | None -> ()
+
 let check_typedecl env (path, decl) =
   let loc = decl.type_loc in
   let descr =
     try Env.find_type_descrs path env
     with Not_found -> assert false
   in
-  match find_constructors_with_unboxed descr with
+  begin match find_constructors_with_unboxed descr with
   | None -> ()
   | Some cstrs ->
       check_typedecl_conflicts ~loc env cstrs
+  end;
+  check_typedecl_constraint env (path, decl);

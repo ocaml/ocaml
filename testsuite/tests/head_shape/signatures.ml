@@ -11,14 +11,22 @@ type t = A
 (* We expect this to fail, the shape annotation is too restrictive. *)
 type t = A | B [@@shape [imm 0]]
 [%%expect {|
-type t = A | B
-|}] (* unexpected result *)
+Line 1, characters 0-32:
+1 | type t = A | B [@@shape [imm 0]]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this type declaration, the actual head shape does not match the
+       expected type shape.
+|}] (* expected result *)
 
 (* We expect this to fail, the shape annotation is too restrictive. *)
 type t = int [@@shape [imm 0]]
 [%%expect {|
-type t = int
-|}] (* unexpected result *)
+Line 1, characters 0-30:
+1 | type t = int [@@shape [imm 0]]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this type declaration, the actual head shape does not match the
+       expected type shape.
+|}] (* expected result *)
 
 
 (* Buildup for further tests. *)
@@ -67,11 +75,15 @@ module Valid :
 |}] (* expected result *)
 
 module Invalid (T : ImmOrFun) = struct
-  type t = T.t [@@shape string]
+  type t = T.t [@@shape [string]]
 end
 [%%expect {|
-module Invalid : (T : ImmOrFun) -> sig type t = T.t end
-|}] (* unexpected result *)
+Line 2, characters 2-33:
+2 |   type t = T.t [@@shape [string]]
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this type declaration, the actual head shape does not match the
+       expected type shape.
+|}] (* expected result *)
 
 (* This functor application should be rejected. *)
 module InvalidApplication = Valid(struct type t = string end)
