@@ -150,6 +150,8 @@ type primitive =
   | Pdls_get
   (* Poll for runtime actions *)
   | Ppoll
+  | Parray_to_iarray
+  | Parray_of_iarray
 
 and integer_comparison =
     Ceq | Cne | Clt | Cgt | Cle | Cge

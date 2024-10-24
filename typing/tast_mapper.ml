@@ -289,7 +289,7 @@ let pat
         Tpat_variant (l, Option.map (sub.pat sub) po, rd)
     | Tpat_record (l, closed) ->
         Tpat_record (List.map (tuple3 (map_loc sub) id (sub.pat sub)) l, closed)
-    | Tpat_array l -> Tpat_array (List.map (sub.pat sub) l)
+    | Tpat_array (mut, l) -> Tpat_array (mut, List.map (sub.pat sub) l)
     | Tpat_alias (p, id, s, uid) ->
         Tpat_alias (sub.pat sub p, id, map_loc sub s, uid)
     | Tpat_lazy p -> Tpat_lazy (sub.pat sub p)
@@ -401,8 +401,8 @@ let expr sub x =
           ld,
           sub.expr sub exp2
         )
-    | Texp_array list ->
-        Texp_array (List.map (sub.expr sub) list)
+    | Texp_array (mut, list) ->
+        Texp_array (mut, List.map (sub.expr sub) list)
     | Texp_ifthenelse (exp1, exp2, expo) ->
         Texp_ifthenelse (
           sub.expr sub exp1,

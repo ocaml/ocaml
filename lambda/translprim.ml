@@ -381,6 +381,8 @@ let primitives_table =
     "%resume", Primitive (Presume, 4);
     "%dls_get", Primitive (Pdls_get, 1);
     "%poll", Primitive (Ppoll, 1);
+    "%array_to_iarray", Primitive (Parray_to_iarray, 1);
+    "%array_of_iarray", Primitive (Parray_of_iarray, 1);
   ]
 
 
@@ -815,7 +817,9 @@ let lambda_primitive_needs_event_after = function
   | Prunstack | Pperform | Preperform | Presume
   | Pbbswap _ | Ppoll -> true
 
-  | Pbytes_to_string | Pbytes_of_string | Pignore | Psetglobal _
+  | Pbytes_to_string | Pbytes_of_string
+  | Parray_to_iarray | Parray_of_iarray
+  | Pignore | Psetglobal _
   | Pgetglobal _ | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
   | Psetfield_computed _ | Pfloatfield _ | Psetfloatfield _ | Praise _
   | Psequor | Psequand | Pnot | Pnegint | Paddint | Psubint | Pmulint

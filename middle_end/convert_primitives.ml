@@ -154,6 +154,8 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Pignore
   | Pgetglobal _
   | Psetglobal _
+  | Parray_to_iarray
+  | Parray_of_iarray
     ->
       Misc.fatal_errorf "lambda primitive %a can't be converted to \
                          clambda primitive"
