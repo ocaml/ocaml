@@ -20252,6 +20252,43 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
 
+## prctl
+ac_fn_check_decl "$LINENO" "prctl" "ac_cv_have_decl_prctl" "#include <sys/prctl.h>
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_prctl" = xyes
+then :
+  printf "%s\n" "#define HAS_PRCTL  1" >>confdefs.h
+
+fi
+
+## pthread_setname_np
+
+  for ac_func in pthread_setname_np
+do :
+  ac_fn_c_check_func "$LINENO" "pthread_setname_np" "ac_cv_func_pthread_setname_np"
+if test "x$ac_cv_func_pthread_setname_np" = xyes
+then :
+  printf "%s\n" "#define HAVE_PTHREAD_SETNAME_NP 1" >>confdefs.h
+ printf "%s\n" "#define HAS_PTHREAD_SETNAME_NP 1" >>confdefs.h
+
+fi
+
+done
+
+## pthread_set_name_np
+
+  for ac_func in pthread_set_name_np
+do :
+  ac_fn_c_check_func "$LINENO" "pthread_set_name_np" "ac_cv_func_pthread_set_name_np"
+if test "x$ac_cv_func_pthread_set_name_np" = xyes
+then :
+  printf "%s\n" "#define HAVE_PTHREAD_SET_NAME_NP 1" >>confdefs.h
+ printf "%s\n" "#define HAS_PTHREAD_SET_NAME_NP 1" >>confdefs.h
+
+fi
+
+done
+
 ## Activate the systhread library
 
 case $enable_systhreads,$enable_unix_lib in #(
