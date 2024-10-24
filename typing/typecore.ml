@@ -6949,7 +6949,7 @@ let report_error ~loc env = function
         | At_toplevel ->
             dprintf "Existential types are not allowed in toplevel bindings"
         | In_group ->
-            dprintf "Existential types are not allowed in %a bindings"
+            dprintf "Existential types are not allowed in grouped (%a) bindings"
               Style.inline_code "let ... and ..."
         | In_rec ->
             dprintf "Existential types are not allowed in recursive bindings"

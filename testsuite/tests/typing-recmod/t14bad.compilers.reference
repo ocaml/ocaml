@@ -1,6 +1,6 @@
 File "t14bad.ml", line 23, characters 2-43:
 23 |   module rec U : T with type D.t = U'.t = U
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of "U.D.t" contains a cycle:
-         "U'.t" = "U'.t",
-         "U'.t" = "U'.t"
+Error: The definition of U.D.t contains a cycle:
+         U'.t = U'.t,
+         U'.t = U'.t

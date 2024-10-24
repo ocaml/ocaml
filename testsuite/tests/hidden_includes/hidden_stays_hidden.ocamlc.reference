@@ -1,4 +1,4 @@
 File "libc/c4.ml", line 2, characters 8-11:
 2 | let y = A.x + 1
             ^^^
-Error: Unbound module "A"
+Error: Unbound module A

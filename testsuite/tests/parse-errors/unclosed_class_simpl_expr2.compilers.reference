@@ -1,6 +1,6 @@
 File "unclosed_class_simpl_expr2.ml", line 9, characters 0-0:
-Error: Syntax error: ")" expected
+Error: Syntax error: ) expected
 File "unclosed_class_simpl_expr2.ml", line 8, characters 10-11:
 8 | class c = (object end : object end
               ^
-  This "(" might be unmatched
+  This ( might be unmatched

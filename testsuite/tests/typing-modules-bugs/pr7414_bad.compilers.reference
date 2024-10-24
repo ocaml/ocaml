@@ -12,8 +12,8 @@ Error: Modules do not match:
        val r : '_weak1 list ref ref
      is not included in
        val r : Choice.t list ref ref
-     The type "'_weak1 list ref ref" is not compatible with the type
-       "Choice.t list ref ref"
-     The type constructor "Choice.t" would escape its scope
+     The type '_weak1 list ref ref is not compatible with the type
+       Choice.t list ref ref
+     The type constructor Choice.t would escape its scope
      File "pr7414_bad.ml", line 38, characters 2-31: Expected declaration
      File "pr7414_bad.ml", line 33, characters 6-7: Actual declaration
