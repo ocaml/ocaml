@@ -106,11 +106,19 @@ let alloc_boxedintnat_header dbg = Cconst_natint (boxedintnat_header, dbg)
 let max_repr_int = max_int asr 1
 let min_repr_int = min_int asr 1
 
+let tag_const (n : int) : nativeint =
+  Nativeint.(add (shift_left (of_int n) 1) 1n)
+
+let untag_const (n : nativeint) : int =
+  if Nativeint.(logand n 1n <> 1n) then
+    Misc.fatal_error
+      "Cmm_helpers.untag_const was called on an non-tagged constant";
+  Nativeint.(to_int (shift_right n 1))
+
 let int_const dbg n =
   if n <= max_repr_int && n >= min_repr_int
   then Cconst_int((n lsl 1) + 1, dbg)
-  else Cconst_natint
-          (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n, dbg)
+  else Cconst_natint (tag_const n, dbg)
 
 let natint_const_untagged dbg n =
   if n > Nativeint.of_int max_int
@@ -119,7 +127,7 @@ let natint_const_untagged dbg n =
   else Cconst_int (Nativeint.to_int n, dbg)
 
 let cint_const n =
-  Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
+  Cint(tag_const n)
 
 let targetint_const n =
   Targetint.add (Targetint.shift_left (Targetint.of_int n) 1)
@@ -1369,13 +1377,93 @@ let simplif_primitive p : Clambda_primitives.primitive =
 
 let transl_isout h arg dbg = tag_int (Cop(Ccmpa Clt, [h ; arg], dbg)) dbg
 
+(* Operations on OCaml values *)
+
+let add_int_caml arg1 arg2 dbg =
+  decr_int (add_int arg1 arg2 dbg) dbg
+
+(* Unary primitive delayed to reuse add_int_caml *)
+let offsetint n arg dbg =
+  if Misc.no_overflow_lsl n 1 then
+    add_const arg (n lsl 1) dbg
+  else
+    add_int_caml arg (int_const dbg n) dbg
+
+let sub_int_caml arg1 arg2 dbg =
+  incr_int (sub_int arg1 arg2 dbg) dbg
+
+let mul_int_caml arg1 arg2 dbg =
+  (* decrementing the non-constant part helps when the multiplication is
+     followed by an addition;
+     for example, using this trick compiles (100 * a + 7) into
+       (+ ( * a 100) -85)
+     rather than
+       (+ ( * 200 (>>s a 1)) 15)
+  *)
+  match arg1, arg2 with
+  | Cconst_int _ as c1, c2 ->
+      incr_int (mul_int (untag_int c1 dbg) (decr_int c2 dbg) dbg) dbg
+  | c1, c2 ->
+      incr_int (mul_int (decr_int c1 dbg) (untag_int c2 dbg) dbg) dbg
+
+let div_int_caml is_safe arg1 arg2 dbg =
+  tag_int(div_int (untag_int arg1 dbg)
+            (untag_int arg2 dbg) is_safe dbg) dbg
+
+let mod_int_caml is_safe arg1 arg2 dbg =
+  tag_int(mod_int (untag_int arg1 dbg)
+            (untag_int arg2 dbg) is_safe dbg) dbg
+
+let and_int_caml arg1 arg2 dbg =
+  Cop(Cand, [arg1; arg2], dbg)
+
+let or_int_caml arg1 arg2 dbg =
+  Cop(Cor, [arg1; arg2], dbg)
+
+let xor_int_caml arg1 arg2 dbg =
+  Cop(Cor, [Cop(Cxor, [ignore_low_bit_int arg1;
+                       ignore_low_bit_int arg2], dbg);
+            Cconst_int (1, dbg)], dbg)
+
+let lsl_int_caml arg1 arg2 dbg =
+  incr_int(lsl_int (decr_int arg1 dbg)
+             (untag_int arg2 dbg) dbg) dbg
+
+let lsr_int_caml arg1 arg2 dbg =
+  Cop(Cor, [lsr_int arg1 (untag_int arg2 dbg) dbg;
+            Cconst_int (1, dbg)], dbg)
+
+let asr_int_caml arg1 arg2 dbg =
+  Cop(Cor, [asr_int arg1 (untag_int arg2 dbg) dbg;
+            Cconst_int (1, dbg)], dbg)
+
+let int_comp_caml cmp arg1 arg2 dbg =
+  tag_int(Cop(Ccmpi cmp,
+              [arg1; arg2], dbg)) dbg
+
 (* Build an actual switch (ie jump table) *)
 
+type switch_arg = Tagged of expression | Untagged of expression
+
+(** This function takes a switch on immedate values,
+    for example:
+      int 0: 1
+      int 1: 3
+      int 2: 5
+
+    It tries to perform two optimizations:
+    - If the switch implements an affine function [x -> a*x + b],
+      produce the affine expression [a * arg + b]. In particular, when
+      a=1 and b=0, return the argument [arg] unchanged.
+    - If the switch only has constant right-hand-sides (but is not an
+      affine function), produce a table lookup.
+*)
 let make_switch arg cases actions dbg =
+  (* We only apply those optimizations if the right-hand-side is
+     made of valid OCaml constants. In particular, if all machine
+     integers appearing in the right-hand-side are tagged (least bit 1). *)
   let extract_uconstant =
     function
-    (* Constant integers loaded from a table should end in 1,
-       so that Cload never produces untagged integers *)
     | Cconst_int     (n, _), _dbg when (n land 1) = 1 ->
         Some (Cint (Nativeint.of_int n))
     | Cconst_natint     (n, _), _dbg
@@ -1390,10 +1478,27 @@ let make_switch arg cases actions dbg =
     if length >= 2
     then begin
       match const_actions.(cases.(0)), const_actions.(cases.(1)) with
-      | Cint v0, Cint v1 ->
-          let slope = Nativeint.sub v1 v0 in
+      | Cint n0, Cint n1 ->
+          (* The right-hand-sides are tagged, so we can translate them
+             back to OCaml integers without loss of information, to
+             compute the offset and slope on OCaml integers.
+
+             For example, consider the identity function on OCaml integers
+               0 -> 0
+               1 -> 1
+               2 -> 2
+             If we computed the slope with native integers on the
+             right-hand-side, we would see
+               0 -> 1n
+               1 -> 3n
+               2 -> 5n
+             and compute offset=1n, slope=2n.
+             We want offset=0, slope=1 instead.
+          *)
+          let v0, v1 = untag_const n0, untag_const n1 in
+          let slope = v1 - v0 in
           let check i = function
-            | Cint v -> v = Nativeint.(add (mul (of_int i) slope) v0)
+            | Cint n -> untag_const n = (slope * i + v0)
             | _ -> false
           in
           if Misc.Stdlib.Array.for_alli
@@ -1405,29 +1510,42 @@ let make_switch arg cases actions dbg =
     end
     else None
   in
-  let make_table_lookup ~cases ~const_actions arg dbg =
+  let make_switch ~arg_untagged ~cases ~actions =
+    (* We need an untagged argument here. *)
+    Cswitch (arg_untagged, cases, actions, dbg)
+  in
+  let make_table_lookup ~arg_tagged ~cases ~const_actions =
+    (* We need a tagged argument here, to call a [*_array_ref] helper. *)
     let table = Compilenv.new_const_symbol () in
     Cmmgen_state.add_constant table (Const_table (Local,
         Array.to_list (Array.map (fun act ->
           const_actions.(act)) cases)));
-    addr_array_ref (Cconst_symbol (table, dbg)) (tag_int arg dbg) dbg
+    (* Constant integers loaded from a table are tagged,
+       so that Cload never produces untagged integers. *)
+    addr_array_ref (Cconst_symbol (table, dbg)) arg_tagged dbg
   in
-  let make_affine_computation ~offset ~slope arg dbg =
-    (* In case the resulting integers are an affine function of the index, we
-       don't emit a table, and just compute the result directly *)
-    add_int
-      (mul_int arg (natint_const_untagged dbg slope) dbg)
-      (natint_const_untagged dbg offset)
-      dbg
+  let make_affine_computation ~arg_tagged ~offset ~slope =
+    (* Asking for a tagged argument here does not introduce extra tagging,
+       as any (tag_int ..) logic around the argument will be undone by
+       [mul_int_caml]. *)
+    add_int_caml
+      (mul_int_caml (int_const dbg slope) arg_tagged dbg)
+      (int_const dbg offset) dbg
+  in
+  let arg_tagged, arg_untagged =
+    match arg with
+    | Tagged arg_tagged -> arg_tagged, untag_int arg_tagged dbg
+    | Untagged arg_untagged -> tag_int arg_untagged dbg, arg_untagged
   in
   match Misc.Stdlib.Array.all_somes (Array.map extract_uconstant actions) with
   | None ->
-      Cswitch (arg,cases,actions,dbg)
+      make_switch ~arg_untagged ~cases ~actions
   | Some const_actions ->
       match extract_affine ~cases ~const_actions with
       | Some (offset, slope) ->
-          make_affine_computation ~offset ~slope arg dbg
-      | None -> make_table_lookup ~cases ~const_actions arg dbg
+          make_affine_computation ~arg_tagged ~offset ~slope
+      | None ->
+          make_table_lookup ~arg_tagged ~cases ~const_actions
 
 module SArgBlocks =
 struct
@@ -1459,7 +1577,7 @@ struct
       Debuginfo.none)
   let make_switch dbg arg cases actions =
     let actions = Array.map (fun expr -> expr, dbg) actions in
-    make_switch arg cases actions dbg
+    make_switch (Untagged arg) cases actions dbg
   let bind arg body = bind "switcher" arg body
 
   let make_catch handler = match handler with
@@ -2152,68 +2270,6 @@ let setfloatfield n init arg1 arg2 dbg =
         [if n = 0 then arg1
          else Cop(Cadda, [arg1; Cconst_int(n * size_float, dbg)], dbg);
          arg2], dbg))
-
-let add_int_caml arg1 arg2 dbg =
-  decr_int (add_int arg1 arg2 dbg) dbg
-
-(* Unary primitive delayed to reuse add_int_caml *)
-let offsetint n arg dbg =
-  if Misc.no_overflow_lsl n 1 then
-    add_const arg (n lsl 1) dbg
-  else
-    add_int_caml arg (int_const dbg n) dbg
-
-let sub_int_caml arg1 arg2 dbg =
-  incr_int (sub_int arg1 arg2 dbg) dbg
-
-let mul_int_caml arg1 arg2 dbg =
-  (* decrementing the non-constant part helps when the multiplication is
-     followed by an addition;
-     for example, using this trick compiles (100 * a + 7) into
-       (+ ( * a 100) -85)
-     rather than
-       (+ ( * 200 (>>s a 1)) 15)
-  *)
-  match arg1, arg2 with
-  | Cconst_int _ as c1, c2 ->
-      incr_int (mul_int (untag_int c1 dbg) (decr_int c2 dbg) dbg) dbg
-  | c1, c2 ->
-      incr_int (mul_int (decr_int c1 dbg) (untag_int c2 dbg) dbg) dbg
-
-let div_int_caml is_safe arg1 arg2 dbg =
-  tag_int(div_int (untag_int arg1 dbg)
-            (untag_int arg2 dbg) is_safe dbg) dbg
-
-let mod_int_caml is_safe arg1 arg2 dbg =
-  tag_int(mod_int (untag_int arg1 dbg)
-            (untag_int arg2 dbg) is_safe dbg) dbg
-
-let and_int_caml arg1 arg2 dbg =
-  Cop(Cand, [arg1; arg2], dbg)
-
-let or_int_caml arg1 arg2 dbg =
-  Cop(Cor, [arg1; arg2], dbg)
-
-let xor_int_caml arg1 arg2 dbg =
-  Cop(Cor, [Cop(Cxor, [ignore_low_bit_int arg1;
-                       ignore_low_bit_int arg2], dbg);
-            Cconst_int (1, dbg)], dbg)
-
-let lsl_int_caml arg1 arg2 dbg =
-  incr_int(lsl_int (decr_int arg1 dbg)
-             (untag_int arg2 dbg) dbg) dbg
-
-let lsr_int_caml arg1 arg2 dbg =
-  Cop(Cor, [lsr_int arg1 (untag_int arg2 dbg) dbg;
-            Cconst_int (1, dbg)], dbg)
-
-let asr_int_caml arg1 arg2 dbg =
-  Cop(Cor, [asr_int arg1 (untag_int arg2 dbg) dbg;
-            Cconst_int (1, dbg)], dbg)
-
-let int_comp_caml cmp arg1 arg2 dbg =
-  tag_int(Cop(Ccmpi cmp,
-              [arg1; arg2], dbg)) dbg
 
 let stringref_unsafe arg1 arg2 dbg =
   tag_int(Cop(mk_load_mut Byte_unsigned,
