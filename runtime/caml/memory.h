@@ -166,6 +166,14 @@ CAMLalloc(caml_stat_free, 1)
 CAMLextern wchar_t* caml_stat_wcsdup_noexc(const wchar_t *s);
 #endif
 
+/* [caml_stat_memdup(s, size, &out_size)] returns a copy of the first [size]
+   bytes of [s]. If [out_size] is not [NULL], then [size] is stored in
+   [*out_size]. This function is the "dummy" Unix implementation of the
+   Windows-only functions caml_stat_char_array_{to,from}_utf16.
+*/
+CAMLextern caml_stat_string caml_stat_memdup(const char *s, asize_t size,
+                                             asize_t *out_size);
+
 /* [caml_stat_strconcat(nargs, strings)] concatenates null-terminated [strings]
    (an array of [char*] of size [nargs]) into a new string, dropping all NULs,
    except for the very last one. It throws an OCaml exception in case the

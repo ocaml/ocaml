@@ -14,6 +14,13 @@ Working version
 
 ### Runtime system:
 
+* #11449, #13497: Add caml_stat_char_array_{to,of}_os functions allowing
+  conversion of string data which may contain NUL characters. Correct
+  implementation of caml_stat_strdup_to_utf16 to raise Out_of_memory instead of
+  returning of NULL (the behaviour of caml_stat_strdup_to_os was inconsistent
+  between Unix/Windows).
+  (David Allsopp, review by Nick Barnes, Antonin Décimo and Miod Vallat)
+
 - #13352: Concurrency refactors and cleanups.
   (Antonin Décimo, review by Gabriel Scherer, David Allsopp, and Miod Vallat)
 
