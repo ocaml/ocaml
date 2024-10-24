@@ -211,6 +211,8 @@ ENDM
 
         .CODE
 
+; Allocation functions and GC interface.
+; Referenced from C code in runtime/startup_nat.c
         PUBLIC  caml_system__code_begin
 caml_system__code_begin:
         ret  ; just one instruction, so that debuggers don't display
@@ -665,6 +667,8 @@ L310:
         PUBLIC caml_system__code_end
 caml_system__code_end:
 
+; Frametable - GC roots for callback
+; Uses the same naming convention as ocamlopt generated modules.
         .DATA
         PUBLIC  caml_system$frametable
 caml_system$frametable LABEL QWORD

@@ -82,12 +82,8 @@ let string_of_symbol prefix s =
     Buffer.add_string b prefix;
     String.iter
       (fun c ->
-       (* FIXME: using $ to prefix escaped characters can make names
-          ambiguous if the symbol separator is also set to $; a different
-          escape prefix should be used in this case, if this ever causes
-          problems in the real world. *)
        if is_special_char c then
-         Printf.bprintf b "$%02x" (Char.code c)
+         Printf.bprintf b "$$%02x" (Char.code c)
        else
          Buffer.add_char b c
       )

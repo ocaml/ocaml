@@ -313,6 +313,16 @@ ___________
   (Vincent Laviron, review by Hugo Heuzard, Nathanaëlle Courant
    and Gabriel Scherer)
 
+* #13050: Use '$' instead of '.' to separate module names in symbol names.
+  This changes mangling of OCaml identifiers from
+  `camlModule.name_NNN` to `camlModule$name_NNN`. Additionally it
+  changes the encoding of special characters from $xx (two hex digits)
+  to $$xx (two dollar signs followed by two hex digits).
+  Mangled names are now consistent across all platforms.
+  (Tim McGilchrist, with contributions from Xavier Leroy,
+   reviewed by Xavier Leroy, Miod Vallat, Gabriel Scherer
+   Nick Barnes and Hugo Heuzard)
+
 ### Standard library:
 
 - #13310: Add Stdlib.Pair

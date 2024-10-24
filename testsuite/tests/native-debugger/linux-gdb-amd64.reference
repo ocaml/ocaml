@@ -28,8 +28,8 @@ Breakpoint 3, ocaml_to_c (unit=1) at meander_c.c:XX
 4	value ocaml_to_c (value unit) {
 frame 0: ocaml_to_c
 frame 1: caml_c_call
-frame 2: camlMeander.omain
-frame 3: camlMeander.entry
+frame 2: camlMeander$omain
+frame 3: camlMeander$entry
 frame 4: caml_program
 frame 5: caml_start_program
 frame 6: caml_startup_common
@@ -39,16 +39,16 @@ frame 9: caml_startup
 frame 10: caml_main
 frame 11: main
 
-Breakpoint 4, camlMeander.c_to_ocaml () at meander.ml:5
+Breakpoint 4, camlMeander$c_to_ocaml () at meander.ml:5
 5	let c_to_ocaml () = raise E1
-frame 0: camlMeander.c_to_ocaml
+frame 0: camlMeander$c_to_ocaml
 frame 1: caml_start_program
 frame 2: caml_callback_exn
 frame 3: caml_callback
 frame 4: ocaml_to_c
 frame 5: caml_c_call
-frame 6: camlMeander.omain
-frame 7: camlMeander.entry
+frame 6: camlMeander$omain
+frame 7: camlMeander$entry
 frame 8: caml_program
 frame 9: caml_start_program
 frame 10: caml_startup_common
