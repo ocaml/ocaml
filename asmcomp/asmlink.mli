@@ -25,7 +25,8 @@ val link_shared: ppf_dump:formatter -> string list -> string -> unit
 val call_linker_shared: string list -> string -> unit
 
 val reset : unit -> unit
-val check_consistency: filepath -> Cmx_format.unit_infos -> Digest.t -> unit
+val check_consistency: ('a -> filepath * Cmx_format.unit_infos * Digest.t) ->
+  'a list -> unit
 val extract_crc_interfaces: unit -> crcs
 val extract_crc_implementations: unit -> crcs
 
@@ -38,6 +39,7 @@ type error =
   | Linking_error of int
   | Missing_cmx of filepath * modname
   | Link_error of Linkdeps.error
+  | Incompatible_flags of filepath * string * string * string
 
 exception Error of error
 

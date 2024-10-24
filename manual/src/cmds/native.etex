@@ -137,6 +137,17 @@ the default.
 \item["-fno-PIC"] Generate position-dependent machine code.
 \end{options}
 
+\paragraph{Options for the arm64 architecture}
+The arm64 code generator supports the following additional options:
+
+\begin{options}
+\item["-mbarrier-placement=fence-before-store"] Implement atomicity barriers
+as fences before non-atomic stores.
+This is the default.
+\item["-mbarrier-placement=branch-after-load"] Implement atomicity barriers
+as branches after loads.
+\end{options}
+
 \paragraph{Contextual control of command-line options}
 
 The compiler command line can be modified ``from the outside''

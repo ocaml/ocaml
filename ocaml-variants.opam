@@ -85,6 +85,7 @@ build: [
     "--enable-frame-pointers" {ocaml-option-fp:installed}
     "--without-zstd" {ocaml-option-no-compression:installed}
     "--enable-tsan" {ocaml-option-tsan:installed}
+    "--enable-alternate-arm64-code-generation" {arch = "arm64" && ocaml-option-alternate-arm64:installed}
     "CC=cc" {!ocaml-option-32bit:installed & !ocaml-option-musl:installed & (os="openbsd"|os="macos")}
     "CC=clang" {ocaml-option-tsan:installed & (os="macos")}
     "CC=musl-gcc" {ocaml-option-musl:installed & os-distribution!="alpine"}
@@ -117,4 +118,5 @@ depopts: [
   "ocaml-option-address-sanitizer"
   "ocaml-option-static"
   "ocaml-option-tsan"
+  "ocaml-option-alternate-arm64"
 ]

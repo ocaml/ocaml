@@ -785,6 +785,7 @@ build_os
 build_vendor
 build_cpu
 build
+arm64_barrier_placement_default
 ar_supports_response_files
 QS
 ocaml_libdir
@@ -1031,6 +1032,7 @@ with_aix_soname
 with_gnu_ld
 with_sysroot
 enable_libtool_lock
+enable_alternate_arm64_code_generation
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1726,6 +1728,9 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --enable-alternate-arm64-code-generation
+                          default to -mbarrier-placement=branch-after-load on
+                          arm64
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -3357,7 +3362,7 @@ OCAML_VERSION_SHORT=5.4
 
 printf "%s\n" "#define MAGIC_NUMBER_PREFIX \"Caml1999\"" >>confdefs.h
 
-printf "%s\n" "#define MAGIC_NUMBER_VERSION \"035\"" >>confdefs.h
+printf "%s\n" "#define MAGIC_NUMBER_VERSION \"036\"" >>confdefs.h
 
 printf "%s\n" "#define EXEC_MAGIC_LENGTH 12" >>confdefs.h
 
@@ -3365,25 +3370,25 @@ MAGIC_LENGTH=12
 
 printf "%s\n" "#define EXEC_FORMAT \"X\"" >>confdefs.h
 
-EXEC_MAGIC_NUMBER=Caml1999X035
+EXEC_MAGIC_NUMBER=Caml1999X036
 
-CMI_MAGIC_NUMBER=Caml1999I035
+CMI_MAGIC_NUMBER=Caml1999I036
 
-CMO_MAGIC_NUMBER=Caml1999O035
+CMO_MAGIC_NUMBER=Caml1999O036
 
-CMA_MAGIC_NUMBER=Caml1999A035
+CMA_MAGIC_NUMBER=Caml1999A036
 
 
 
-AST_IMPL_MAGIC_NUMBER=Caml1999M035
+AST_IMPL_MAGIC_NUMBER=Caml1999M036
 
-AST_INTF_MAGIC_NUMBER=Caml1999N035
+AST_INTF_MAGIC_NUMBER=Caml1999N036
 
-CMXS_MAGIC_NUMBER=Caml1999D035
+CMXS_MAGIC_NUMBER=Caml1999D036
 
-CMT_MAGIC_NUMBER=Caml1999T035
+CMT_MAGIC_NUMBER=Caml1999T036
 
-LINEAR_MAGIC_NUMBER=Caml1999L035
+LINEAR_MAGIC_NUMBER=Caml1999L036
 
 
 
@@ -3522,6 +3527,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L035
 
 
 
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -3541,6 +3547,8 @@ ac_config_files="$ac_config_files otherlibs/dynlink/dynlink_config.ml"
 ac_config_files="$ac_config_files utils/config.common.ml"
 
 ac_config_files="$ac_config_files utils/config.generated.ml"
+
+ac_config_files="$ac_config_files asmcomp/arm64/arch.ml"
 
 ac_config_headers="$ac_config_headers runtime/caml/exec.h"
 
@@ -20475,6 +20483,18 @@ printf "%s\n" "$as_me: not using frame pointers" >&6;}
   frame_pointers=false
 fi
 
+## arm64-specific options
+arm64_barrier_placement_default=FenceBeforeStore
+# Check whether --enable-alternate-arm64-code-generation was given.
+if test ${enable_alternate_arm64_code_generation+y}
+then :
+  enableval=$enable_alternate_arm64_code_generation; if test "x$enableval" != "xno"
+then :
+  arm64_barrier_placement_default=BranchAfterLoad
+fi
+fi
+
+
 ## Check for mmap support for huge pages and contiguous heap
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether mmap supports huge pages" >&5
@@ -20710,11 +20730,11 @@ fi
 
 if $flambda
 then :
-  CMX_MAGIC_NUMBER=Caml1999y035
-  CMXA_MAGIC_NUMBER=Caml1999z035
+  CMX_MAGIC_NUMBER=Caml1999y036
+  CMXA_MAGIC_NUMBER=Caml1999z036
 else $as_nop
-  CMX_MAGIC_NUMBER=Caml1999Y035
-  CMXA_MAGIC_NUMBER=Caml1999Z035
+  CMX_MAGIC_NUMBER=Caml1999Y036
+  CMXA_MAGIC_NUMBER=Caml1999Z036
 fi
 
 if test x"$enable_cmm_invariants" = "xyes"
@@ -22121,6 +22141,7 @@ do
     "otherlibs/dynlink/dynlink_config.ml") CONFIG_FILES="$CONFIG_FILES otherlibs/dynlink/dynlink_config.ml" ;;
     "utils/config.common.ml") CONFIG_FILES="$CONFIG_FILES utils/config.common.ml" ;;
     "utils/config.generated.ml") CONFIG_FILES="$CONFIG_FILES utils/config.generated.ml" ;;
+    "asmcomp/arm64/arch.ml") CONFIG_FILES="$CONFIG_FILES asmcomp/arm64/arch.ml" ;;
     "runtime/caml/exec.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/exec.h" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;

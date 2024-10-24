@@ -472,21 +472,38 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Iextcall {alloc; stack_ofs} ) ->
       if stack_ofs > 0 then 5
       else if alloc then 3
-      else 7
+      else if !barrier_placement = BranchAfterLoad then 8 else 7
     | Lop (Istackoffset _) -> 2
-    | Lop (Iload  { memory_chunk; addressing_mode; is_atomic }) ->
-      let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
-      and barrier = if is_atomic then 1 else 0
-      and single = match memory_chunk with Single -> 2 | _ -> 1 in
-      based + barrier + single
+    | Lop (Iload  { memory_chunk; addressing_mode; is_atomic; mutability }) ->
+      (match !barrier_placement with
+      | BranchAfterLoad ->
+        let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
+        and insns = match memory_chunk with
+          | Single -> 2
+          | (Word_int | Word_val)
+              when is_atomic || mutability = Asttypes.Mutable -> 2
+          | _ -> 1
+        in
+        based + insns
+      | FenceBeforeStore ->
+        let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
+        and barrier = if is_atomic then 1 else 0
+        and single = match memory_chunk with Single -> 2 | _ -> 1 in
+        based + barrier + single)
     | Lop (Istore (memory_chunk, addressing_mode, assignment)) ->
-      let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
-      and barrier =
-        match memory_chunk, assignment with
-        | (Word_int | Word_val), true -> 1
-        | _ -> 0
-      and single = match memory_chunk with Single -> 2 | _ -> 1 in
-      based + barrier + single
+      (match !barrier_placement with
+      | BranchAfterLoad ->
+        let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
+        and single = match memory_chunk with Single -> 2 | _ -> 1 in
+        based + single
+      | FenceBeforeStore ->
+        let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
+        and barrier =
+          match memory_chunk, assignment with
+          | (Word_int | Word_val), true -> 1
+          | _ -> 0
+        and single = match memory_chunk with Single -> 2 | _ -> 1 in
+        based + barrier + single)
     | Lop (Ialloc _) when f.fun_fast -> 5
     | Lop (Ispecific (Ialloc_far _)) when f.fun_fast -> 6
     | Lop (Ipoll _) -> 3
@@ -756,11 +773,11 @@ let emit_instr env i =
           `	add	{emit_reg reg_stack_arg_end}, sp, #{emit_int (Misc.align stack_ofs 16)}\n`;
           emit_load_symbol_addr reg_x8 func;
           `	bl	{emit_symbol "caml_c_call_stack_args"}\n`;
-          `{record_frame env i.live (Dbg_other i.dbg)}\n`
+          `{record_frame env i.live (Dbg_other i.dbg)}\n`;
         end else if alloc then begin
           emit_load_symbol_addr reg_x8 func;
           `	bl	{emit_symbol "caml_c_call"}\n`;
-          `{record_frame env i.live (Dbg_other i.dbg)}\n`
+          `{record_frame env i.live (Dbg_other i.dbg)}\n`;
         end else begin
           (* Store OCaml stack in x19 register and restore later. *)
           `	mov	x19, sp\n`;
@@ -771,13 +788,15 @@ let emit_instr env i =
           `	mov	sp, {emit_reg reg_tmp1}\n`;
           `	bl	{emit_symbol func}\n`;
           `	mov	sp, x19\n`;
+          if !barrier_placement = BranchAfterLoad then
+            `	dmb	ishld\n`;
           cfi_restore_state ()
         end
     | Lop(Istackoffset n) ->
         assert (n mod 16 = 0);
         emit_stack_adjustment (-n);
         env.stack_offset <- env.stack_offset + n
-    | Lop(Iload { memory_chunk; addressing_mode; is_atomic }) ->
+    | Lop(Iload { memory_chunk; addressing_mode; is_atomic; mutability }) ->
         assert(memory_chunk = Word_int || memory_chunk = Word_val || is_atomic = false);
         let dst = i.res.(0) in
         let base =
@@ -805,11 +824,23 @@ let emit_instr env i =
             `	fcvt	{emit_reg dst}, s7\n`
         | Word_int | Word_val ->
             if is_atomic then begin
-              assert (addressing_mode = Iindexed 0);
+              assert (addressing_mode = Iindexed 0 &&
+                      mutability = Asttypes.Mutable);
               `	dmb	ishld\n`;
               `	ldar	{emit_reg dst}, [{emit_reg i.arg.(0)}]\n`
-            end else
-              `	ldr	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
+            end else begin
+              if !barrier_placement = BranchAfterLoad then
+                match mutability with
+                | Asttypes.Mutable ->
+                  let lbl = new_label () in
+                  `	ldr	{emit_reg dst}, {emit_addressing addressing_mode base}\n`;
+                  `	cbz	{emit_reg dst}, {emit_label lbl}\n`;
+                  `{emit_label lbl}:\n`
+                | Immutable ->
+                  `	ldr	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
+              else
+                `	ldr	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
+            end
         | Double ->
             `	ldr	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
         end
@@ -835,9 +866,13 @@ let emit_instr env i =
             `	fcvt	s7, {emit_reg src}\n`;
             `	str	s7, {emit_addressing addr base}\n`;
         | Word_int | Word_val ->
-            (* memory model barrier for non-initializing store *)
-            if assignment then `	dmb	ishld\n`;
-            `	str	{emit_reg src}, {emit_addressing addr base}\n`
+            if !barrier_placement = BranchAfterLoad then begin
+              `	str	{emit_reg src}, {emit_addressing addr base}\n`
+            end else begin
+              (* memory model barrier for non-initializing store *)
+              if assignment then `	dmb	ishld\n`;
+              `	str	{emit_reg src}, {emit_addressing addr base}\n`
+            end
         | Double ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         end

@@ -257,6 +257,7 @@ AC_SUBST([ocaml_bindir])
 AC_SUBST([ocaml_libdir])
 AC_SUBST([QS])
 AC_SUBST([ar_supports_response_files])
+AC_SUBST([arm64_barrier_placement_default])
 
 ## Generated files
 
@@ -269,6 +270,7 @@ AC_CONFIG_FILES([ocamltest/ocamltest_config.ml])
 AC_CONFIG_FILES([otherlibs/dynlink/dynlink_config.ml])
 AC_CONFIG_FILES([utils/config.common.ml])
 AC_CONFIG_FILES([utils/config.generated.ml])
+AC_CONFIG_FILES([asmcomp/arm64/arch.ml])
 AC_CONFIG_HEADERS([runtime/caml/exec.h])
 AC_CONFIG_HEADERS([runtime/caml/m.h])
 AC_CONFIG_HEADERS([runtime/caml/s.h])
@@ -2461,6 +2463,15 @@ AS_IF([test x"$enable_frame_pointers" = "xyes"],
   )],
   [AC_MSG_NOTICE([not using frame pointers])
   frame_pointers=false])
+
+## arm64-specific options
+arm64_barrier_placement_default=FenceBeforeStore
+AC_ARG_ENABLE([alternate-arm64-code-generation],
+  [AS_HELP_STRING([--enable-alternate-arm64-code-generation],
+    [default to -mbarrier-placement=branch-after-load on arm64])],
+  [AS_IF([test "x$enableval" != "xno"],
+         [arm64_barrier_placement_default=BranchAfterLoad])],
+  [])
 
 ## Check for mmap support for huge pages and contiguous heap
 OCAML_MMAP_SUPPORTS_HUGE_PAGES

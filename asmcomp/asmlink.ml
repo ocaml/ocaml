@@ -31,6 +31,7 @@ type error =
   | Linking_error of int
   | Missing_cmx of filepath * modname
   | Link_error of Linkdeps.error
+  | Incompatible_flags of filepath * string * string * string
 
 exception Error of error
 
@@ -45,7 +46,7 @@ let crc_implementations = Cmx_consistbl.create ()
 let implementations = ref ([] : string list)
 let cmx_required = ref ([] : string list)
 
-let check_consistency file_name unit crc =
+let check_consistency_one file_name archdep_ref unit crc =
   begin try
     List.iter
       (fun (name, crco) ->
@@ -82,7 +83,31 @@ let check_consistency file_name unit crc =
   implementations := unit.ui_name :: !implementations;
   Cmx_consistbl.check crc_implementations unit.ui_name crc file_name;
   if unit.ui_symbol <> unit.ui_name then
-    cmx_required := unit.ui_name :: !cmx_required
+    cmx_required := unit.ui_name :: !cmx_required;
+  let check_archdep_consistency_one (opt, value) =
+    match List.find_opt (fun (name, _) -> name = opt) archdep_ref with
+    | None ->
+      (* This really should not happen, all cmx files with the same version
+         number should contain the same set of archdep options, if any. *)
+      raise(Error(Incompatible_flags(file_name, opt, "", value)))
+    | Some (_, v) ->
+      if v <> value then
+        raise(Error(Incompatible_flags(file_name, opt, v, value)))
+  in
+  List.iter check_archdep_consistency_one unit.ui_archdep
+
+let check_consistency extractor units_tolink =
+  match units_tolink with
+  | [] -> ()
+  | hd :: _ ->
+    (* Pick the architecture-dependent flags of the first unit, against
+       which all units must match *)
+    let _, ui, _ = extractor hd in
+    let archdep_ref = ui.ui_archdep
+    in
+    List.iter
+      (fun item -> let file_name, info, crc = extractor item in
+       check_consistency_one file_name archdep_ref info crc) units_tolink
 
 let extract_crc_interfaces () =
   Cmi_consistbl.extract !interfaces crc_interfaces
@@ -270,9 +295,8 @@ let link_shared ~ppf_dump objfiles output_name =
     (match Linkdeps.check ldeps with
      | None -> ()
      | Some e -> raise (Error (Link_error e)));
-    List.iter
-      (fun (info, file_name, crc) -> check_consistency file_name info crc)
-      units_tolink;
+    check_consistency
+      (fun (info, file_name, crc) -> (file_name, info, crc)) units_tolink;
     Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
     Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
     let objfiles =
@@ -334,9 +358,8 @@ let link ~ppf_dump objfiles output_name =
     (match Linkdeps.check ldeps with
      | None -> ()
      | Some e -> raise (Error (Link_error e)));
-    List.iter
-      (fun (info, file_name, crc) -> check_consistency file_name info crc)
-      units_tolink;
+    check_consistency
+      (fun (info, file_name, crc) -> (file_name, info, crc)) units_tolink;
     let crc_interfaces = extract_crc_interfaces () in
     Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
     Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
@@ -403,6 +426,12 @@ let report_error_doc ppf = function
         Style.inline_code (name^".cmx")
   | Link_error e ->
       Linkdeps.report_error_doc ~print_filename:Location.Doc.filename ppf e
+  | Incompatible_flags (file, flag, value, expected) ->
+      fprintf ppf
+        "@[<hov>File %a@ has been compiled with option \"%s\" set to \"%s\".@ \
+         It can't be used with other files compiled \
+         with this option set to \"%s\".@]"
+        Location.Doc.quoted_filename file flag value expected
 
 let () =
   Location.register_error_of_exn

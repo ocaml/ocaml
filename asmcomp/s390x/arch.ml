@@ -28,6 +28,8 @@ let command_line_options =
     "-fno-PIC", Arg.Clear Clflags.pic_code,
       " Generate position-dependent machine code" ]
 
+let archdep_unit_infos () = []
+
 (* Specific operations *)
 
 type specific_operation =
