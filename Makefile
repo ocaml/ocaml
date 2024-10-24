@@ -31,7 +31,7 @@ include stdlib/StdlibModules
 
 CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -use-prims runtime/primitives
 CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) $(STDLIBFLAGS) -I otherlibs/dynlink
-ARCHES=amd64 arm64 power s390x riscv
+ARCHES=amd64 arm64 loongarch64 power s390x riscv
 VPATH = utils parsing typing bytecomp file_formats lambda middle_end \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types \
   asmcomp driver toplevel tools runtime \
@@ -1113,8 +1113,18 @@ partialclean::
 
 beforedepend:: lambda/runtimedef.ml
 
-# Choose the right machine-dependent files
+# If any of these loongarch files need to be modified, please copy the
+# corresponding file from asmcomp/riscv64 to asmcomp/loongarch64, delete the
+# corresponding rule below, update the clean target accordingly, and remove
+# the file from .gitignore.
+asmcomp/loongarch64/CSE.ml: asmcomp/riscv/CSE.ml
+	cp $< $@
+asmcomp/loongarch64/reload.ml: asmcomp/riscv/reload.ml
+	cp $< $@
+asmcomp/loongarch64/scheduling.ml: asmcomp/riscv/scheduling.ml
+	cp $< $@
 
+# Choose the right machine-dependent files
 asmcomp/arch.mli: asmcomp/$(ARCH)/arch.mli
 	@cd asmcomp; $(LN) $(ARCH)/arch.mli .
 
@@ -1621,6 +1631,7 @@ clean::
 	rm -f runtime/domain_state.inc
 	rm -rf $(DEPDIR) runtime/winpthreads
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
+	rm -f asmcomp/loongarch64/CSE.ml asmcomp/loongarch64/reload.ml asmcomp/loongarch64/scheduling.ml
 
 .PHONY: runtimeopt
 runtimeopt: stdlib/libasmrun.$(A)
