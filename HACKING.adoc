@@ -215,7 +215,6 @@ has excellent documentation.
   toplevel/::             interactive system
   typing/::               typechecking -- see link:typing/HACKING.adoc[]
   utils/::                utility libraries
-  winpthreads/::          winpthreads submodule -- see <<winpthreads,further>>
   yacc/::                 parser generator
 
 [#tips]
@@ -696,37 +695,5 @@ OCAML_JOBS=10
 If you would like to receive email notifications of all commits made to the main
 git repository, you can subscribe to the caml-commits@inria.fr mailing list by
 visiting https://sympa.inria.fr/sympa/info/caml-commits[its web page.]
-
-[#winpthreads]
-=== The `winpthreads` library for the MSVC port
-
-The `winpthreads` library is used to emulate `pthread` for the MSVC
-port. Upstream bundles it along with all the MinGW libraries so our
-`winpthreads` submodule points to `git subtree` repository rather than
-upstream directly.
-
-To recreate the `winpthreads` repository from upstream, you can do:
-
-----
-git clone -o upstream https://git.code.sf.net/p/mingw-w64/mingw-w64 winpthreads
-cd winpthreads
-git checkout upstream/master
-git branch -D master
-git subtree -P mingw-w64-libraries/winpthreads split -b master
-----
-
-As subtree splitting is deterministic, repeating these operations later will
-allow to update `master`, for instance by:
-
-----
-git fetch upstream
-git checkout upstream/master
-git subtree -P mingw-w64-libraries/winpthreads split -b tmp
-git checkout master
-git merge --ff-only tmp
-git branch -d tmp
-----
-
-and then go on updating the `winpthreads` submodule in the `ocaml` repository.
 
 Happy Hacking!

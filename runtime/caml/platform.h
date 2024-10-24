@@ -20,7 +20,15 @@
 
 #ifdef CAML_INTERNALS
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define ATOM ATOM_WS
+#include <windows.h>
+#undef ATOM
+#else
 #include <pthread.h>
+#endif
+
 #include <errno.h>
 #include <string.h>
 #include "config.h"
@@ -102,8 +110,52 @@ Caml_inline uintnat atomic_fetch_add_verify_ge0(atomic_uintnat* p, intnat v) {
    functions from caml/sync.h should be used instead.
 */
 
+#ifdef _WIN32
+
+typedef struct {
+  SRWLOCK lock;
+  _Atomic DWORD owner_tid;      /* 0 if not owned */
+} caml_plat_mutex;
+#define CAML_PLAT_MUTEX_INITIALIZER { SRWLOCK_INIT, 0 }
+
+typedef CONDITION_VARIABLE caml_plat_cond;
+#define CAML_PLAT_COND_INITIALIZER CONDITION_VARIABLE_INIT
+
+typedef HANDLE caml_plat_thread;
+typedef void * caml_plat_thread_attr;
+
+int caml_plat_thread_create(caml_plat_thread *restrict,
+                            const caml_plat_thread_attr *restrict,
+                            unsigned (WINAPI *)(void *),
+                            void *restrict);
+#define CAML_THREAD_FUNCTION unsigned WINAPI
+
+#else
+
 typedef pthread_mutex_t caml_plat_mutex;
 #define CAML_PLAT_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
+
+typedef pthread_cond_t caml_plat_cond;
+#define CAML_PLAT_COND_INITIALIZER PTHREAD_COND_INITIALIZER
+
+typedef pthread_t caml_plat_thread;
+typedef pthread_attr_t caml_plat_thread_attr;
+
+int caml_plat_thread_create(caml_plat_thread *restrict,
+                            const caml_plat_thread_attr *restrict,
+                            void *(*)(void *),
+                            void *restrict);
+#define CAML_THREAD_FUNCTION void *
+
+#endif
+
+int caml_plat_thread_equal(caml_plat_thread, caml_plat_thread);
+caml_plat_thread caml_plat_thread_self(void);
+int caml_plat_thread_detach(caml_plat_thread);
+int caml_plat_thread_join(caml_plat_thread);
+CAMLnoret void caml_plat_thread_exit(void);
+int caml_plat_thread_cancel(caml_plat_thread);
+
 CAMLextern void caml_plat_mutex_init(caml_plat_mutex*);
 Caml_inline void caml_plat_lock_blocking(caml_plat_mutex*);
 Caml_inline void caml_plat_lock_non_blocking(caml_plat_mutex*);
@@ -113,8 +165,6 @@ void caml_plat_assert_all_locks_unlocked(void);
 Caml_inline void caml_plat_unlock(caml_plat_mutex*);
 void caml_plat_mutex_free(caml_plat_mutex*);
 CAMLextern void caml_plat_mutex_reinit(caml_plat_mutex*);
-typedef pthread_cond_t caml_plat_cond;
-#define CAML_PLAT_COND_INITIALIZER PTHREAD_COND_INITIALIZER
 void caml_plat_cond_init(caml_plat_cond*);
 void caml_plat_wait(caml_plat_cond*, caml_plat_mutex*); /* blocking */
 void caml_plat_broadcast(caml_plat_cond*);
@@ -453,6 +503,45 @@ CAMLextern CAMLthread_local int caml_lockdepth;
 #define DEBUG_UNLOCK(m)
 #endif
 
+#ifdef _WIN32
+
+Caml_inline void caml_plat_lock_blocking(caml_plat_mutex* m)
+{
+  DWORD self_tid = GetCurrentThreadId();
+  if (m->owner_tid != self_tid) {
+    AcquireSRWLockExclusive(&m->lock);
+    m->owner_tid = self_tid;
+    DEBUG_LOCK(m);
+  } else {
+    check_err("lock", EDEADLK);
+  }
+}
+
+Caml_inline int caml_plat_try_lock(caml_plat_mutex* m)
+{
+  if (TryAcquireSRWLockExclusive(&m->lock)) {
+    m->owner_tid = GetCurrentThreadId();
+    DEBUG_LOCK(m);
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+Caml_inline void caml_plat_unlock(caml_plat_mutex* m)
+{
+  DWORD self_tid = GetCurrentThreadId();
+  DEBUG_UNLOCK(m);
+  if (m->owner_tid == self_tid) {
+    m->owner_tid = 0;
+    ReleaseSRWLockExclusive(&m->lock);
+  } else {
+    check_err("unlock", EPERM);
+  }
+}
+
+#else
+
 Caml_inline void caml_plat_lock_blocking(caml_plat_mutex* m)
 {
   check_err("lock", pthread_mutex_lock(m));
@@ -471,6 +560,14 @@ Caml_inline int caml_plat_try_lock(caml_plat_mutex* m)
   }
 }
 
+Caml_inline void caml_plat_unlock(caml_plat_mutex* m)
+{
+  DEBUG_UNLOCK(m);
+  check_err("unlock", pthread_mutex_unlock(m));
+}
+
+#endif  /* _WIN32 */
+
 CAMLextern void caml_plat_lock_non_blocking_actual(caml_plat_mutex* m);
 
 Caml_inline void caml_plat_lock_non_blocking(caml_plat_mutex* m)
@@ -478,12 +575,6 @@ Caml_inline void caml_plat_lock_non_blocking(caml_plat_mutex* m)
   if (!caml_plat_try_lock(m)) {
     caml_plat_lock_non_blocking_actual(m);
   }
-}
-
-Caml_inline void caml_plat_unlock(caml_plat_mutex* m)
-{
-  DEBUG_UNLOCK(m);
-  check_err("unlock", pthread_mutex_unlock(m));
 }
 
 extern intnat caml_plat_pagesize;

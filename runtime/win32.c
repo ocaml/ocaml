@@ -22,6 +22,7 @@
 #define _WIN32_WINNT 0x0600 /* _WIN32_WINNT_VISTA */
 
 #define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #include <wtypes.h>
 #include <winbase.h>
 #include <winsock2.h>
@@ -29,6 +30,7 @@
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <direct.h>
+#include <process.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -1147,6 +1149,168 @@ void caml_plat_mem_unmap(void* mem, uintnat size)
 {
   if (!VirtualFree(mem, 0, MEM_RELEASE))
     CAMLassert(0);
+}
+
+/* Threads */
+
+int caml_plat_thread_create(caml_plat_thread *restrict thread,
+                            const caml_plat_thread_attr *restrict attr,
+                            unsigned ( WINAPI *start_address )( void * ),
+                            void *restrict arg)
+{
+  (void) attr; /* unused */
+  *thread = (caml_plat_thread) _beginthreadex(
+    NULL, /* security: handle can't be inherited */
+    0,    /* stack size */
+    start_address,
+    arg,
+    0,    /* run immediately */
+    NULL  /* thread identifier */
+    );
+  return (*thread != 0) ? 0 : errno;
+}
+
+int caml_plat_thread_equal(caml_plat_thread t1, caml_plat_thread t2)
+{
+  DWORD id1 = GetThreadId(t1), id2 = GetThreadId(t2);
+  return id1 == 0 || id2 == 0 ? -1 : id1 == id2;
+}
+
+caml_plat_thread caml_plat_thread_self(void)
+{
+  /* A pseudo handle is a special constant that is interpreted as the
+   * current thread handle. The function cannot be used by one thread
+   * to create a handle that can be used by other threads to refer to
+   * the first thread. The handle is always interpreted as referring
+   * to the thread that is using it. */
+  return GetCurrentThread();
+}
+
+int caml_plat_thread_detach(caml_plat_thread thread)
+{
+  /* This works as the thread handle is never duplicated. */
+  if (CloseHandle(thread)) {
+    return 0;
+  } else {
+    int err = caml_posixerr_of_win32err(GetLastError());
+    return err == 0 ? EINVAL : err;
+  }
+}
+
+int caml_plat_thread_join(caml_plat_thread thread)
+{
+  DWORD rc = WaitForSingleObject(thread, INFINITE);
+  switch (rc) {
+  case WAIT_OBJECT_0:
+    return 0;
+  case WAIT_FAILED: {
+    int err = caml_posixerr_of_win32err(GetLastError());
+    return err == 0 ? EINVAL : err;
+  }
+  default:
+    CAMLunreachable();
+  }
+}
+
+int caml_plat_thread_cancel(caml_plat_thread t)
+{
+  if (!TerminateThread(t, 0)) {
+    int err = caml_posixerr_of_win32err(GetLastError());
+    return err == 0 ? EINVAL : err;
+  }
+  return 0;
+}
+
+void caml_plat_thread_exit(void)
+{
+  _endthreadex(0);
+  /* The noreturn annotation is missing on _endthreadex, which per the
+   * documentation ends with a call to ExitThread, itself noreturn. */
+  CAMLunreachable();
+}
+
+/* Mutexes */
+
+CAMLexport void caml_plat_mutex_init(caml_plat_mutex * m)
+{
+  InitializeSRWLock(&m->lock);
+  m->owner_tid = 0;
+}
+
+void caml_plat_assert_locked(caml_plat_mutex *m)
+{
+#ifdef DEBUG
+  BOOLEAN r = TryAcquireSRWLockExclusive(&m->lock);
+  if (r == 0) {
+    /* ok, it was locked */
+    return;
+  } else {
+    caml_fatal_error("Required mutex not locked");
+  }
+#endif
+}
+
+CAMLexport void caml_plat_lock_non_blocking_actual(caml_plat_mutex* m)
+{
+  /* Avoid exceptions */
+  caml_enter_blocking_section_no_pending();
+  DWORD self_tid = GetCurrentThreadId();
+  if (m->owner_tid != self_tid) {
+    AcquireSRWLockExclusive(&m->lock);
+    m->owner_tid = self_tid;
+  } else {
+    check_err("lock_non_blocking", EDEADLK);
+  }
+  caml_leave_blocking_section();
+  DEBUG_LOCK(m);
+}
+
+void caml_plat_mutex_free(caml_plat_mutex* m)
+{
+  /* nothing to do */
+}
+
+/* Condition variables */
+
+void caml_plat_cond_init(caml_plat_cond *cond)
+{
+  InitializeConditionVariable(cond);
+}
+
+void caml_plat_wait(caml_plat_cond *cond, caml_plat_mutex* mut)
+{
+  caml_plat_assert_locked(mut);
+  DWORD self_tid = GetCurrentThreadId();
+  int rc = 0;
+  if (mut->owner_tid == self_tid) {
+    mut->owner_tid = 0;
+    if (SleepConditionVariableSRW(cond, &mut->lock, INFINITE,
+                                  0 /* exclusive */)) {
+      mut->owner_tid = self_tid;
+    } else {
+      rc = caml_posixerr_of_win32err(GetLastError());
+      /* Not clear if the thread owns the mutex or not, but there's a
+       * fatal error anyway.  */
+    }
+  } else {
+    rc = EPERM;
+  }
+  check_err("wait", rc);
+}
+
+void caml_plat_broadcast(caml_plat_cond* cond)
+{
+  WakeAllConditionVariable(cond);
+}
+
+void caml_plat_signal(caml_plat_cond* cond)
+{
+  WakeConditionVariable(cond);
+}
+
+void caml_plat_cond_free(caml_plat_cond* cond)
+{
+  /* nothing to do */
 }
 
 /* Mapping Win32 error codes to POSIX error codes */

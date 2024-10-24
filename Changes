@@ -49,6 +49,10 @@ Working version
 - #13354: Use C99 flexible array member syntax everywhere.
   (Antonin Décimo, review by Miod Vallat, Gabriel Scherer, and Xavier Leroy)
 
+- #13416: Implement concurrency primitives using WinAPI instead of
+  winpthreads on Windows.
+  (Antonin Décimo, review by Samuel Hym, Gabriel Scherer, and Miod Vallat)
+
 ### Code generation and optimizations:
 
 - #13565: less tagging in switches compiled to affine transformations
