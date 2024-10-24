@@ -67,6 +67,21 @@ val output_acc : out_channel -> (out_channel, unit) acc -> unit
 val bufput_acc : Buffer.t -> (Buffer.t, unit) acc -> unit
 val strput_acc : Buffer.t -> (unit, string) acc -> unit
 
+module Arg_list : sig
+  type ('a, 'r) t =
+    | [] : ('r, 'r) t
+    | (::) : 'a * ('b, 'r) t -> ('a -> 'b, 'r) t
+
+  val apply : 'a -> ('a, 'r) t -> 'r
+
+  val ( @ ) : ('a, 'r1) t -> ('r1, 'r2) t -> ('a, 'r2) t
+end
+
+val make_lprintf :
+  (('b, 'c) acc -> 'f) -> ('b, 'c) acc ->
+  ('a, 'b, 'c, 'c, 'c, 'f) CamlinternalFormatBasics.fmt ->
+  ('a, 'f) Arg_list.t -> 'f
+
 val type_format :
   ('x, 'b, 'c, 't, 'u, 'v) CamlinternalFormatBasics.fmt ->
   ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.fmtty ->

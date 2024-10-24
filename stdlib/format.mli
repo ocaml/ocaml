@@ -1472,6 +1472,82 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
   @since 4.03
 *)
 
+(** Formatted Pretty-Printing with heterogeneous list as arguments.
+
+  The following functions behave the same as their non-'l' counter-parts, but
+  receive their arguments as a heterogeneous list.
+
+  The heterogeneous list serves as a syntactically-delimited
+  collection of arguments, eliminating the need for continuation variants.
+  This approach also improves the clarity of type error messages,
+  especially when there is a mismatch between the format string and the
+  number of arguments provided.
+
+  The heterogeneous list form of [dprintf] can be easily derived
+  from [lfprintf], as [dprintf] is the same as [fprintf] with its formatter
+  as the last argument.
+
+  For example:
+{[
+  let ldprintf fmt args ppf = Format.lfprintf ppf fmt args;;
+  let t = ldprintf "%i@ %s@ %.02f" [ 42; "ocaml"; 3.14 ];;
+  ...
+  Format.lprintf "@[<v>%t@]" [ t ]
+]}
+*)
+
+module Arg_list : sig
+  type ('a, 'r) t =
+    | [] : ('r, 'r) t
+    | (::) : 'a * ('b, 'r) t -> ('a -> 'b, 'r) t
+
+  val apply : 'a -> ('a, 'r) t -> 'r
+
+  val ( @ ) : ('a, 'r1) t -> ('r1, 'r2) t -> ('a, 'r2) t
+end
+(** Contains the type (and append function) of the heterogeneous list used
+    as arguments for the printf-like functions that accept it.
+
+    An example:
+  {[
+    let lst = let open Format.Arg_list in "ocaml" :: [ 42; 3.14 ] @ [ 'c' ];;
+    Format.lprintf "%s@ %d@ %.02f@ %c@." lst
+  ]}
+  @since 5.4
+*)
+
+val lfprintf :
+  formatter -> ('a, formatter, unit) format ->
+  ('a, unit) Arg_list.t -> unit
+(** Same as [fprintf] above, but accepts a heterogeneous list as arguments.
+
+  @since 5.4
+*)
+
+val lprintf :
+  ('a, formatter, unit) format ->
+  ('a, unit) Arg_list.t -> unit
+(** Same as [printf] above, but accepts a heterogeneous list as arguments.
+
+  @since 5.4
+*)
+
+val leprintf :
+  ('a, formatter, unit) format ->
+  ('a, unit) Arg_list.t -> unit
+(** Same as [eprintf] above, but accepts a heterogeneous list as arguments.
+
+  @since 5.4
+*)
+
+val lasprintf :
+  ('a, formatter, unit, string) format4 ->
+  ('a, string) Arg_list.t -> string
+(** Same as [asprintf] above, but accepts a heterogeneous list as arguments.
+
+  @since 5.4
+*)
+
 (** {1:examples Examples}
 
   A few warmup examples to get an idea of how Format is used.
@@ -1610,3 +1686,5 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
   using {{: ppx_deriving.show} https://github.com/ocaml-ppx/ppx_deriving}
   or similar ppx derivers.
 *)
+
+
