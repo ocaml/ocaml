@@ -1426,7 +1426,7 @@ let transl_type_decl env rec_flag sdecl_list =
   let final_env = add_types_to_env decls shapes env in
   (* Check re-exportation *)
   List.iter2 (check_abbrev final_env) sdecl_list decls;
-  (* Check head shape conflicts *)
+  (* Check head shape conflicts and heap shape constraints. *)
   List.iter (fun (id, decl) ->
     let path = Path.Pident id in
     Head_shape.check_typedecl final_env (path, decl)
