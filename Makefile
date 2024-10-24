@@ -837,6 +837,8 @@ bootstrap: coreboot
 # utils/config.ml must be restored to config.status's configuration
 # lex/ocamllex$(EXE) was stripped in order to compare it
 	rm -f utils/config.ml lex/ocamllex$(EXE)
+# Cleanup the build artifacts to avoid incompatible artifacts lying around.
+	$(MAKE) partialclean
 	$(MAKE) all
 
 # Compile everything the first time
