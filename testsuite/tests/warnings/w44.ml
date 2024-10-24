@@ -14,7 +14,8 @@ let g f = f (); M.(f ());;
 Line 1, characters 16-17:
 1 | let g f = f (); M.(f ());;
                     ^
-Warning 44 [open-shadow-identifier]: this open statement shadows the value identifier f (which is later used)
+Warning 44 [open-shadow-identifier]: this open statement shadows the
+  value identifier "f" (which is later used)
 
 val g : (unit -> 'a) -> int = <fun>
 |}]

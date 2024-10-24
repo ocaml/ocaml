@@ -970,10 +970,10 @@ let solve_Ppat_construct ~refine tps penv loc constr no_existentials
             let msg =
               Format_doc.doc_printf
                 "typing this pattern requires considering@ %a@ and@ %a@ as \
-                equal.@,\
+                equal.@ \
                 But the knowledge of these types"
-                    Printtyp.Doc.type_expr t1
-                    Printtyp.Doc.type_expr t2
+                    (Style.as_inline_code Printtyp.Doc.type_expr) t1
+                    (Style.as_inline_code Printtyp.Doc.type_expr) t2
             in
             Location.prerr_warning loc (Warnings.Not_principal msg);
             raise Warn_only_once)
@@ -6540,8 +6540,8 @@ let report_partial_application = function
       match get_desc tr.Errortrace.got.Errortrace.expanded with
       | Tarrow _ ->
           [ Location.msg
-              "@[@{<hint>Hint@}: This function application is partial,@ \
-               maybe some arguments are missing.@]" ]
+              "@[@{<hint>Hint@}:@ This function application is partial,@ \
+               maybe@ some@ arguments@ are missing.@]" ]
       | _ -> []
     end
   | None -> []

@@ -1,4 +1,5 @@
 File "non_local.ml", line 21, characters 16-25:
 21 |   let[@local] f y = x + y in
                      ^^^^^^^^^
-Warning 55 [inlining-impossible]: Cannot inline: This function cannot be compiled into a static continuation
+Warning 55 [inlining-impossible]: Cannot inline:
+  This function cannot be compiled into a static continuation

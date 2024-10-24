@@ -1,12 +1,12 @@
 File "pr7402.ml", line 1:
-Warning 63 [erroneous-printed-signature]: The printed interface differs from the inferred interface.
-The inferred interface contained items which could not be printed
-properly due to name collisions between identifiers.
-File "pr7402.ml", lines 14-16, characters 0-5:
+Warning 63 [erroneous-printed-signature]: The printed interface differs from
+  the inferred interface. The inferred interface contained items which could
+  not be printed properly due to name collisions between identifiers.
+  File "pr7402.ml", lines 14-16, characters 0-5:
   Definition of module M
 File "pr7402.ml", lines 8-11, characters 0-3:
   Definition of module M/2
-Beware that this warning is purely informational and will not catch
-all instances of erroneous printed interface.
+  Beware that this warning is purely informational and will not catch all
+  instances of erroneous printed interface.
 module M : sig type t val v : t end
 module F : sig module M : sig val v : M.t end val v : M/2.t end

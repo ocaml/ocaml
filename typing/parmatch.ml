@@ -1883,25 +1883,27 @@ let do_check_partial ~pred loc casel pss = match pss with
     match counter_examples () with
     | Seq.Nil -> Total
     | Seq.Cons (v, _rest) ->
-      if Warnings.is_active (Warnings.Partial_match "") then begin
-        let errmsg =
-          let doc = ref Format_doc.Doc.empty in
-          let fmt = Format_doc.formatter doc in
-          Format_doc.fprintf fmt "@[<v>%a" Printpat.top_pretty v;
-          if do_match (initial_only_guarded casel) [v] then
-            Format_doc.fprintf fmt
-              "@,(However, some guarded clause may match this value.)";
-          if contains_extension v then
-            Format_doc.fprintf fmt
-              "@,@[Matching over values of extensible variant types \
-               (the *extension* above)@,\
-               must include a wild card pattern@ in order to be exhaustive.@]"
-          ;
-          Format_doc.fprintf fmt "@]";
-          Format_doc.(asprintf "%a" pp_doc) !doc
-        in
-        Location.prerr_warning loc (Warnings.Partial_match errmsg)
-      end;
+      if Warnings.is_active (Warnings.Partial_match Format_doc.Doc.empty) then
+        begin
+          let errmsg =
+            let doc = ref Format_doc.Doc.empty in
+            let fmt = Format_doc.formatter doc in
+            Format_doc.fprintf fmt "@[<v>%a"
+              (Misc.Style.as_inline_code Printpat.top_pretty) v;
+            if do_match (initial_only_guarded casel) [v] then
+              Format_doc.fprintf fmt
+                "@,(However, some guarded clause may match this value.)";
+            if contains_extension v then
+              Format_doc.fprintf fmt
+                "@,@[Matching over values of extensible variant types \
+                 (the *extension* above)@,\
+                 must include a wild card pattern@ in order to be exhaustive.@]"
+            ;
+            Format_doc.fprintf fmt "@]";
+            !doc
+          in
+          Location.prerr_warning loc (Warnings.Partial_match errmsg)
+        end;
       Partial
 
 (*****************)

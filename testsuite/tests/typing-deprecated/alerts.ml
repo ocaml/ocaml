@@ -269,20 +269,20 @@ end
 Line 2, characters 13-25:
 2 |   val x: int [@@alert 42]
                  ^^^^^^^^^^^^
-Warning 47 [attribute-payload]: illegal payload for attribute 'alert'.
-Invalid payload
+Warning 47 [attribute-payload]: illegal payload for attribute "alert".
+  Invalid payload
 
 Line 3, characters 13-29:
 3 |   val y: int [@@alert bla 42]
                  ^^^^^^^^^^^^^^^^
-Warning 47 [attribute-payload]: illegal payload for attribute 'alert'.
-Invalid payload
+Warning 47 [attribute-payload]: illegal payload for attribute "alert".
+  Invalid payload
 
 Line 4, characters 13-28:
 4 |   val z: int [@@alert "bla"]
                  ^^^^^^^^^^^^^^^
-Warning 47 [attribute-payload]: illegal payload for attribute 'alert'.
-Ill-formed list of alert settings
+Warning 47 [attribute-payload]: illegal payload for attribute "alert".
+  Ill-formed list of alert settings
 
 module X : sig val x : int val y : int val z : int end
 |}]
