@@ -122,6 +122,11 @@ Working version
 
 ### Build system:
 
+- #13431: Simplify github action responsible for flagging PRs with
+  the `parsetree-changes` label and extend it to mention the @ppxlib-dev
+  team.
+  (Nathan Rebours, review by Florian Angeletti)
+
 ### Bug fixes:
 
 - #13408: Fix misplaced debug runtime assertion triggerable by a race
