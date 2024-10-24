@@ -1,0 +1,293 @@
+name: Cross compilers
+
+on:
+  push:
+    branches:
+      - '4.**'
+      - '5.**'
+      - 'trunk'
+  pull_request:
+
+# Restrict the GITHUB_TOKEN
+permissions: {}
+
+# See build.yml
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' || github.sha }}
+  cancel-in-progress: true
+
+env:
+  TESTDIR: >-
+    C:\Бактріан🐫
+  STR_UTF8: >-
+    "C:\\Бактріан🐫"
+  STR_UTF16: >-
+    L"C:\\\x0411\x0430\x043a\x0442\x0440\x0456\x0430\x043d\xd83d\xdc2b"
+  STR_UTF8_ENC: >-
+    "C:\\\xd0\x91\xd0\xb0\xd0\xba\xd1\x82\xd1\x80\xd1\x96\xd0\xb0\xd0\xbd\xf0\x9f\x90\xab"
+  EXAMPLE_PROGRAM: |
+    let _ =
+      Printf.printf "Version: %s\nOS: %s\nUnix: %b\nWin: %b\nCygwin: %b\n"
+        Sys.ocaml_version Sys.os_type Sys.unix Sys.win32 Sys.cygwin
+
+jobs:
+  non-cross:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout OCaml
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Configure, build and install OCaml
+        run: |
+          PREFIX="$HOME/.local"
+          echo "$PREFIX/bin" >> "$GITHUB_PATH"
+          set -x
+          if ! ./configure --disable-warn-error --disable-ocamldoc \
+                   --disable-ocamltest --disable-stdlib-manpages \
+                   --disable-dependency-generation --prefix="$PREFIX" ; then
+            cat config.log
+            exit 1
+          fi
+          make -j
+          make install
+          cd "$HOME"
+          tar caf /tmp/ocaml.tar.zst .local
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: non-cross-ocaml
+          path: /tmp/ocaml.tar.zst
+          retention-days: 1
+
+  cross-windows:
+    runs-on: ubuntu-latest
+    needs: non-cross
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: non-cross-ocaml
+      - name: Install non-cross OCaml and set up environment
+        run: |
+          set -x
+          tar xaf ocaml.tar.zst -C "$HOME"
+          rm -f ocaml.tar.zst
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          sudo apt-get install -y gcc-mingw-w64-x86-64
+      - name: Checkout OCaml
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Configure, build and install Linux-to-Windows OCaml
+        run: |
+          set -x
+          if ! ./configure --prefix="$HOME/cross" --target=x86_64-w64-mingw32 \
+                   --with-target-libdir="$TESTDIR"; then
+            cat config.log
+            exit 1
+          fi
+          make crossopt -j$(nproc)
+          make installcross
+          ln -sr "$HOME/cross/bin/flexlink.opt.exe" "$HOME/.local/bin/flexlink"
+      - name: Show opt.opt configuration
+        run: |
+          $HOME/cross/bin/ocamlopt.opt.exe -config
+      - name: Cross compile a small program
+        run: |
+          printf %s "$EXAMPLE_PROGRAM" > example.ml
+          set -x
+          cat example.ml
+          $HOME/cross/bin/ocamlopt.opt.exe example.ml -o example.exe -verbose
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-executable
+          path: example.exe
+          retention-days: 1
+      - name: Test cross sak
+        run: |
+          printf %s "$STR_UTF16" > utf16.ref
+          printf %s "$STR_UTF8" > utf8.ref
+          set -x
+          runtime/sak.exe encode-C-utf16-literal "$TESTDIR" > utf16
+          git diff --no-index utf16.ref utf16
+          runtime/sak.exe encode-C-utf8-literal "$TESTDIR" > utf8
+          git diff --no-index utf8.ref utf8
+
+  run-windows:
+    runs-on: windows-latest
+    needs: cross-windows
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-executable
+      - name: Run example program
+        run: |
+          .\example.exe
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - name: Fetch OCaml
+        uses: actions/checkout@v4
+      - name: Generate a dummy misc.h and result files to test sak
+        shell: bash
+        run: |
+          echo '#include <stdlib.h>' > runtime/caml/misc.h
+          echo 'typedef wchar_t char_os;' >> runtime/caml/misc.h
+          echo '#define T(x) L ## x' >> runtime/caml/misc.h
+          echo '#define main_os wmain' >> runtime/caml/misc.h
+          echo '#define strcmp_os wcscmp' >> runtime/caml/misc.h
+          printf %s "$STR_UTF16" > utf16.ref
+          printf %s "$STR_UTF8_ENC" > utf8.ref
+      - name: Build sak
+        run: >
+          cl -std:c11 -experimental:c11atomics -I runtime
+          -D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=1
+          /Fesak.exe runtime\sak.c
+      - name: Test cross sak
+        run: |
+          .\sak.exe encode-C-utf16-literal "${env:TESTDIR}" > utf16
+          git diff --no-index utf16.ref utf16
+          .\sak.exe encode-C-utf8-literal "${env:TESTDIR}" > utf8
+          git diff --no-index utf8.ref utf8
+
+  cross-arm-linux:
+    runs-on: ubuntu-latest
+    needs: non-cross
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: non-cross-ocaml
+      - name: Install non-cross OCaml and set up environment
+        run: |
+          set -x
+          tar xaf ocaml.tar.zst -C "$HOME"
+          rm -f ocaml.tar.zst
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          sudo apt-get install -y gcc-aarch64-linux-gnu qemu-user
+      - name: Checkout OCaml
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Configure, build and install Linux-to-Windows OCaml
+        run: |
+          set -x
+          if ! ./configure --prefix="$HOME/cross" --target=aarch64-linux-gnu ;
+          then
+            cat config.log
+            exit 1
+          fi
+          make crossopt -j
+          make installcross
+      - name: Show opt.opt configuration
+        run: |
+          $HOME/cross/bin/ocamlopt.opt -config
+      - name: Cross compile a small program
+        run: |
+          printf %s "$EXAMPLE_PROGRAM" > example.ml
+          set -x
+          cat example.ml
+          $HOME/cross/bin/ocamlopt.opt example.ml -o example -verbose
+      - name: Run the small example program
+        run: |
+          set -x
+          qemu-aarch64 -L /usr/aarch64-linux-gnu example
+      - name: Test cross sak
+        run: |
+          printf %s "$STR_UTF16" > utf16.ref
+          printf %s "$STR_UTF8" > utf8.ref
+          set -x
+          runtime/sak encode-C-utf16-literal "$TESTDIR" > utf16
+          git diff --no-index utf16.ref utf16
+          runtime/sak encode-C-utf8-literal "$TESTDIR" > utf8
+          git diff --no-index utf8.ref utf8
+
+  cross-android:
+    runs-on: ubuntu-latest
+    needs: non-cross
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: non-cross-ocaml
+      - name: Install non-cross OCaml
+        run: |
+          set -x
+          tar xaf ocaml.tar.zst -C "$HOME"
+          rm -f ocaml.tar.zst
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Restore the Android NDK from cache
+        uses: actions/cache/restore@v4
+        id: cache
+        with:
+          path: |
+            /home/runner/android
+          key: android-ndk
+      - name: Download the Android NDK
+        run: |
+          set -x
+          mkdir -p "$HOME/android"
+          cd "$HOME/android"
+          wget --no-verbose https://dl.google.com/android/repository/android-ndk-r27b-linux.zip
+          unzip android-ndk-r27b-linux.zip
+          rm android-ndk-r27b-linux.zip
+        if: steps.cache.outputs.cache-hit != 'true'
+      - name: Save the Android NDK to cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            /home/runner/android
+          key: android-ndk
+        if: steps.cache.outputs.cache-hit != 'true'
+      - name: Checkout OCaml
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Configure, build and install Linux-to-Android OCaml
+        env:
+          TARGET: x86_64-linux-android21
+          TOOLDIR: android-ndk-r27b/toolchains/llvm/prebuilt/linux-x86_64/bin
+        run: |
+          DIR="$HOME/android/$TOOLDIR"
+          set -x
+          # Hack around the fact that pthread_cancel isn't available on Android
+          # So the result program should _not_ be run with cleanup on exit
+          # (so no `c=1` in `OCAMLRUNPARAM`)
+          if ! ./configure --prefix="$HOME/cross" --target=$TARGET \
+                   --with-target-libdir="/dummy/directory" \
+                   CC="$DIR/clang --target=$TARGET" \
+                   CPPFLAGS='-Dpthread_cancel=assert' \
+                   AR="$DIR/llvm-ar" \
+                   PARTIALLD="$DIR/ld -r" \
+                   RANLIB="$DIR/llvm-ranlib" \
+                   STRIP="$DIR/llvm-strip" ; then
+            cat config.log
+            exit 1
+          fi
+          make crossopt -j
+          make installcross
+      - name: Show opt.opt configuration
+        run: |
+          $HOME/cross/bin/ocamlopt.opt -config
+      - name: Cross compile a small program
+        run: |
+          printf %s "$EXAMPLE_PROGRAM" > example.ml
+          set -x
+          cat example.ml
+          $HOME/cross/bin/ocamlopt.opt example.ml -o example -verbose
+          file example
+      - name: Run example
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 21
+          arch: x86_64
+          disable-animations: true
+          script: |
+            adb push example /data/local/tmp/example
+            adb shell /data/local/tmp/example

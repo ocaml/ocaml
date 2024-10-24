@@ -163,6 +163,12 @@ val model: string
 val system: string
 (** Name of operating system for the native-code compiler *)
 
+val target_os_type: string
+(** Operating system targetted by the native-code compiler. One of
+-  ["Unix"] (for all Unix versions, including Linux and Mac OS X),
+-  ["Win32"] (for MS-Windows, OCaml compiled with MSVC++ or MinGW-w64),
+-  ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin). *)
+
 val asm: string
 (** The assembler (and flags) to use for assembling
     ocamlopt-generated code. *)

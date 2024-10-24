@@ -397,9 +397,12 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         | Int_size -> lambda_const_int (8*Backend.size_int - 1)
         | Max_wosize ->
             lambda_const_int ((1 lsl ((8*Backend.size_int) - 10)) - 1)
-        | Ostype_unix -> lambda_const_bool (String.equal Sys.os_type "Unix")
-        | Ostype_win32 -> lambda_const_bool (String.equal Sys.os_type "Win32")
-        | Ostype_cygwin -> lambda_const_bool (String.equal Sys.os_type "Cygwin")
+        | Ostype_unix ->
+            lambda_const_bool (String.equal Config.target_os_type "Unix")
+        | Ostype_win32 ->
+            lambda_const_bool (String.equal Config.target_os_type "Win32")
+        | Ostype_cygwin ->
+            lambda_const_bool (String.equal Config.target_os_type "Cygwin")
         | Backend_type ->
             Lambda.const_int 0 (* tag 0 is the same as Native *)
         end

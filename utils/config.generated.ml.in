@@ -72,6 +72,7 @@ let native_compiler = @native_compiler@
 let architecture = {@QS@|@arch@|@QS@}
 let model = {@QS@|@model@|@QS@}
 let system = {@QS@|@system@|@QS@}
+let target_os_type = {@QS@|@target_os_type@|@QS@}
 
 let asm = {@QS@|@AS@|@QS@}
 let asm_cfi_supported = @asm_cfi_supported@
