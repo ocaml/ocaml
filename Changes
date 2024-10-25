@@ -65,6 +65,17 @@ Working version
   (Gabriel Scherer and Clément Allain, review by Vincent Laviron,
    report by Vesa Karvonen)
 
+- #13423: add --enable-branch-after-load-arm64-codegen option to configure
+  to use an alternate code generation scheme on arm64 with regard to
+  synchronization barrier instructions placement. The alternate scheme
+  might be faster on some arm64 processors (especially on Apple Silicon
+  hardware), at the expense of a slight code size increase.
+  Object files built with one code generation scheme will not be allowed
+  to be used with other object files built with the other code generation
+  scheme. An Opam option, alternate-arm64, controlling the use of this
+  configure flag, is provided for convenience.
+  (KC Sivaramakrishnan and Miod Vallat, review by TBD)
+
 ### Standard library:
 
 - #13371: Avoid Queue.empty to be raised by Format when used concurrently.
