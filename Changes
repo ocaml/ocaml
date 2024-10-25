@@ -218,9 +218,10 @@ _______________
 - #13326: Implement Unix.O_APPEND on windows.
   (Romain Beauxis, review by Miod Vallat, Gabriel Scherer and Antonin Décimo)
 
-- #13376: Allow Dynlink.loadfile_private to load bytecode libraries with
+* #13376: Allow Dynlink.loadfile_private to load bytecode libraries with
   internal dependencies
-  (Vincent Laviron, report by Stéphane Glondu, review by Nicolás Ojeda Bär)
+  (Vincent Laviron, report by Stéphane Glondu, review by Nicolás Ojeda Bär
+   and Xavier Leroy)
 
 ### Tools:
 
