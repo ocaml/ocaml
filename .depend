@@ -378,7 +378,8 @@ parsing/builtin_attributes.cmx : \
 parsing/builtin_attributes.cmi : \
     parsing/parsetree.cmi \
     utils/misc.cmi \
-    parsing/location.cmi
+    parsing/location.cmi \
+    parsing/asttypes.cmi
 parsing/camlinternalMenhirLib.cmo : \
     parsing/camlinternalMenhirLib.cmi
 parsing/camlinternalMenhirLib.cmx : \
@@ -943,9 +944,12 @@ typing/head_shape.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
     typing/head_shape_types.cmi \
+    utils/format_doc.cmi \
     typing/env.cmi \
     typing/data_types.cmi \
     typing/ctype.cmi \
+    parsing/builtin_attributes.cmi \
+    parsing/asttypes.cmi \
     typing/head_shape.cmi
 typing/head_shape.cmx : \
     typing/types.cmx \
@@ -955,16 +959,22 @@ typing/head_shape.cmx : \
     utils/misc.cmx \
     parsing/location.cmx \
     typing/head_shape_types.cmx \
+    utils/format_doc.cmx \
     typing/env.cmx \
     typing/data_types.cmx \
     typing/ctype.cmx \
+    parsing/builtin_attributes.cmx \
+    parsing/asttypes.cmx \
     typing/head_shape.cmi
 typing/head_shape.cmi : \
     typing/types.cmi \
     typing/path.cmi \
+    parsing/parsetree.cmi \
+    parsing/location.cmi \
     typing/head_shape_types.cmi \
     typing/env.cmi \
-    typing/data_types.cmi
+    typing/data_types.cmi \
+    parsing/asttypes.cmi
 typing/head_shape_types.cmo : \
     typing/types.cmi \
     utils/misc.cmi \
@@ -1027,10 +1037,13 @@ typing/includecore.cmo : \
     typing/typedtree.cmi \
     typing/type_immediacy.cmi \
     typing/printtyp.cmi \
+    typing/print_head_shape.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
     utils/misc.cmi \
     typing/ident.cmi \
+    typing/head_shape_types.cmi \
+    typing/head_shape.cmi \
     utils/format_doc.cmi \
     typing/errortrace_report.cmi \
     typing/errortrace.cmi \
@@ -1046,10 +1059,13 @@ typing/includecore.cmx : \
     typing/typedtree.cmx \
     typing/type_immediacy.cmx \
     typing/printtyp.cmx \
+    typing/print_head_shape.cmx \
     typing/primitive.cmx \
     typing/path.cmx \
     utils/misc.cmx \
     typing/ident.cmx \
+    typing/head_shape_types.cmx \
+    typing/head_shape.cmx \
     utils/format_doc.cmx \
     typing/errortrace_report.cmx \
     typing/errortrace.cmx \
@@ -1067,6 +1083,7 @@ typing/includecore.cmi : \
     typing/path.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
+    typing/head_shape.cmi \
     utils/format_doc.cmi \
     typing/errortrace.cmi \
     typing/env.cmi \
