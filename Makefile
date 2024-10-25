@@ -139,22 +139,22 @@ typing_SOURCES = \
   typing/signature_group.mli typing/signature_group.ml \
   typing/printtyped.mli typing/printtyped.ml \
   typing/ctype.mli typing/ctype.ml \
+  typing/tast_iterator.mli typing/tast_iterator.ml \
+  typing/tast_mapper.mli typing/tast_mapper.ml \
   typing/out_type.mli typing/out_type.ml \
   typing/printtyp.mli typing/printtyp.ml \
+  typing/print_head_shape.mli typing/print_head_shape.ml \
   typing/errortrace_report.mli typing/errortrace_report.ml \
   typing/includeclass.mli typing/includeclass.ml \
   typing/mtype.mli typing/mtype.ml \
   typing/envaux.mli typing/envaux.ml \
+  typing/head_shape.mli typing/head_shape.ml \
   typing/includecore.mli typing/includecore.ml \
-  typing/tast_iterator.mli typing/tast_iterator.ml \
-  typing/tast_mapper.mli typing/tast_mapper.ml \
   typing/stypes.mli typing/stypes.ml \
   typing/shape_reduce.mli typing/shape_reduce.ml \
   file_formats/cmt_format.mli file_formats/cmt_format.ml \
   typing/cmt2annot.mli typing/cmt2annot.ml \
   typing/typing_recovery_state.mli typing/typing_recovery_state.ml \
-  typing/print_head_shape.mli typing/print_head_shape.ml \
-  typing/head_shape.mli typing/head_shape.ml \
   typing/untypeast.mli typing/untypeast.ml \
   typing/includemod.mli typing/includemod.ml \
   typing/signature_matching.mli typing/signature_matching.ml \

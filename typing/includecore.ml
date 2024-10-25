@@ -193,6 +193,11 @@ type private_object_mismatch =
   | Missing of string
   | Types of Errortrace.equality_error
 
+type shape_mismatch = {
+  got : Head_shape.t;
+  expected: Head_shape.t;
+}
+
 type variant_change =
   (Types.constructor_declaration as 'l, 'l, constructor_mismatch)
     Diffing_with_keys.change
@@ -210,6 +215,7 @@ type type_mismatch =
   | Variant_mismatch of variant_change list
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
+  | Shape of shape_mismatch
 
 module Style = Misc.Style
 module Fmt = Format_doc
@@ -475,12 +481,18 @@ let report_type_mismatch first second decl env ppf err =
          "uses unboxed representation"
   | Immediate violation ->
       let first = StringLabels.capitalize_ascii first in
-      match violation with
+      begin match violation with
       | Type_immediacy.Violation.Not_always_immediate ->
           pr "%s is not an immediate type." first
       | Type_immediacy.Violation.Not_always_immediate_on_64bits ->
           pr "%s is not a type that is always immediate on 64 bit platforms."
             first
+      end
+  | Shape shapes ->
+      pr "@[<hv 2>The shape of the type provided,@ @[%a@],@;<1 -2>\
+          is not included in the expected shape,@ @[%a@].@]"
+        Print_head_shape.doc shapes.got
+        Print_head_shape.doc shapes.expected
 
 module Record_diffing = struct
 
@@ -1042,6 +1054,15 @@ let type_declarations ?(equality = false) ~loc env ~mark name
       with
       | Ok () -> None
       | Error violation -> Some (Immediate violation)
+  in
+  if err <> None then err else
+  let err =
+    match Head_shape.of_attributes decl2.type_loc decl2.type_attributes with
+    | None -> None
+    | Some expected ->
+        let got = Head_shape.of_type_path env path in
+        if Head_shape_types.Shape.subset got expected then None
+        else Some (Shape { got; expected })
   in
   if err <> None then err else
   (* We need to check coherence of internal and exported variance  either

@@ -94,6 +94,11 @@ type private_object_mismatch =
   | Missing of string
   | Types of Errortrace.equality_error
 
+type shape_mismatch = {
+  got : Head_shape.t;
+  expected: Head_shape.t;
+}
+
 type type_mismatch =
   | Arity
   | Privacy of privacy_mismatch
@@ -107,6 +112,7 @@ type type_mismatch =
   | Variant_mismatch of variant_change list
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
+  | Shape of shape_mismatch
 
 val value_descriptions:
   loc:Location.t -> Env.t -> string ->

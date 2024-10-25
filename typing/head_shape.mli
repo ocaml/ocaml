@@ -33,6 +33,10 @@ val of_unboxed_cstr_description :
 val of_shape_name :
   Location.t -> Asttypes.shape_name -> t
 
+(** A shape provided as [@shape ...] attributes. *)
+val of_attributes :
+  Location.t -> Parsetree.attributes -> t option
+
 (** Check a new type declaration, that may be a variant type
     containing unboxed constructors, to verify that the unboxing
     requests respect the "disjointness" requirement of constructor

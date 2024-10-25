@@ -44,15 +44,31 @@ module Valid : ImmOrFun = struct
 end
 [%%expect {|
 module Valid : ImmOrFun
-|}]
+|}] (* expected result *)
 
 (* We expect this to fail: the implementation does not match the signature *)
 module Invalid : ImmOrFun = struct
   type t = int list
 end
 [%%expect {|
-module Invalid : ImmOrFun
-|}] (* unexpected result *)
+Lines 1-3, characters 28-3:
+1 | ............................struct
+2 |   type t = int list
+3 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = int list end
+       is not included in
+         ImmOrFun
+       Type declarations do not match:
+         type t = int list
+       is not included in
+         type t
+       The shape of the type provided,
+         {imm = [0]; blocks = [0 size [2]];},
+       is not included in the expected shape,
+         {imm = Any; blocks = [closure; infix];}.
+|}] (* expected result *)
 
 (* This functor declaration should be accepted *)
 module Valid (T : ImmOrFun) = struct
@@ -88,13 +104,20 @@ Error: In this type declaration, the actual head shape does not match the
 (* This functor application should be rejected. *)
 module InvalidApplication = Valid(struct type t = string end)
 [%%expect {|
-module InvalidApplication :
-  sig
-    type t = string
-    type u = t
-    type other = ImmOrFun of string [@unboxed] | String of string [@unboxed]
-  end
-|}] (* unexpected result *)
+Line 1, characters 28-61:
+1 | module InvalidApplication = Valid(struct type t = string end)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Modules do not match: sig type t = string end is not included in
+       ImmOrFun
+     Type declarations do not match:
+       type t = string
+     is not included in
+       type t
+     The shape of the type provided,
+       {imm = []; blocks = [string];},
+     is not included in the expected shape,
+       {imm = Any; blocks = [closure; infix];}.
+|}] (* expected result *)
 
 (* If we apply the functor to a type that is narrower than the signature,
    do we get back a narrow type? *)
@@ -110,5 +133,5 @@ module ValidApplication :
 type t =
     T of ValidApplication.t [@unboxed]
   | Function of (int -> int) [@unboxed]
-|}]
-
+|}] (* Yes, we get back a narrower type,
+       otherwise this would not be accepted. *)
