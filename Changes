@@ -59,7 +59,7 @@ Working version
 ### Standard library:
 
 - #13371: Avoid Queue.empty to be raised by Format when used concurrently.
-  prefer undefined behavior to uncaught exception. 
+  prefer undefined behavior to uncaught exception.
   (Chritophe Raffalli, review by ....)
 
 - #13543: Remove some String-Bytes conversion from the stdlib to behave better
