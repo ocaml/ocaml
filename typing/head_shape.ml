@@ -54,6 +54,16 @@ let rec of_shape_name loc : Asttypes.shape_name -> shape = function
   | Abstract { size } -> Shape.abstract ?size ()
   | Custom { size } -> Shape.custom ?size ()
 
+let of_attributes loc attrs =
+  match Builtin_attributes.find_shapes attrs with
+  | None -> None
+  | Some shapes ->
+      Some (
+        List.fold_left (fun acc shape ->
+          Shape.union acc (of_shape_name loc shape)
+        ) Shape.empty shapes
+      )
+
 let rec of_type_expr env ty fuel =
   match Types.get_desc ty with
   | Tvar _ | Tunivar _ ->
@@ -235,17 +245,22 @@ and of_typedescr env p ty_decl ty_descr ~args fuel =
       match ty_decl.type_manifest with
       | Some ty -> of_type_manifest ty
       | None ->
-      match Builtin_attributes.find_shapes ty_decl.type_attributes with
-      | Some shape_names ->
-        List.map (of_shape_name ty_decl.type_loc) shape_names
-        |> List.fold_left Shape.union Shape.empty
-      | None ->
-      match ty_decl.type_immediate with
-      | Always -> Shape.any_immediate
-      | Always_on_64bits ->
-        (* TODO maybe refine? *)
-        Shape.any
-      | Unknown ->
+      let from_immediacy =
+        match ty_decl.type_immediate with
+        | Always -> Some Shape.any_immediate
+        | Always_on_64bits ->
+          (* TODO maybe refine? *)
+          None
+        | Unknown ->
+          None
+      in
+      let from_attributes =
+        of_attributes ty_decl.type_loc ty_decl.type_attributes
+      in
+      match from_immediacy, from_attributes with
+      | Some sh1, Some sh2 -> Shape.inter sh1 sh2
+      | Some sh, None | None, Some sh -> sh
+      | None, None ->
         of_unknown_type env p args
 
 let initial_fuel =
@@ -356,13 +371,9 @@ let check_typedecl_conflicts ~loc genv cstrs =
     )
 
 let check_typedecl_constraint env (path, decl) =
-  match Builtin_attributes.find_shapes decl.type_attributes with
-  | Some shape_names ->
-      let loc = decl.type_loc in
-      let expected_shape =
-        List.map (of_shape_name loc) shape_names
-        |> List.fold_left Shape.union Shape.empty
-      in
+  let loc = decl.type_loc in
+  match of_attributes loc decl.type_attributes with
+  | Some expected_shape ->
       let actual_shape = of_type_path env path in
       if not (Shape.subset actual_shape expected_shape) then
         Location.raise_errorf ~loc
