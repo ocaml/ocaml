@@ -46,6 +46,7 @@ type block_set = size_set TagMap.t or_any
 type shape = {
   imms: imm_set;
   blocks: block_set;
+  separated: bool;
 }
 
 
@@ -69,6 +70,43 @@ module Shape = struct
         | Those sizes -> SizeSet.mem size sizes
       end
 
+  let is_empty_on_any is_empty = function
+    | Any -> false
+    | Those s -> is_empty s
+
+  let is_empty_imms imms =
+    is_empty_on_any ImmSet.is_empty imms
+
+  let is_empty_sizes sizes =
+    is_empty_on_any SizeSet.is_empty sizes
+
+  let is_empty_blocks blocks =
+    is_empty_on_any (TagMap.for_all (fun _ -> is_empty_sizes)) blocks
+
+  let is_empty sh =
+    is_empty_imms sh.imms
+    && is_empty_blocks sh.blocks
+
+  let has_no_float sh =
+    is_empty_on_any (fun blocks ->
+      match TagMap.find (Tag Obj.double_tag) blocks with
+      | exception Not_found -> true
+      | sizes -> is_empty_sizes sizes
+    ) sh.blocks
+
+  let has_only_float sh =
+    is_empty_imms sh.imms
+    &&
+    match sh.blocks with
+    | Any -> false
+    | Those blocks ->
+        TagMap.for_all (fun (Tag tag) sizes ->
+          tag = Obj.double_tag || is_empty_sizes sizes
+        ) blocks
+
+  let has_float sh = not (has_no_float sh)
+  let has_nonfloat sh = not (has_only_float sh)
+
   let inter sh1 sh2 =
     let inter_on_any inter any1 any2 =
       match any1, any2 with
@@ -76,17 +114,23 @@ module Shape = struct
           other
       | Those a, Those b -> Those (inter a b)
     in
-    {
-      imms = inter_on_any ImmSet.inter sh1.imms sh2.imms;
-      blocks =
-        inter_on_any (fun tm1 tm2 ->
-          TagMap.merge (fun _tag s1 s2 ->
-            match s1, s2 with
-            | None, _ | _, None -> None
-            | Some s1, Some s2 -> Some (inter_on_any SizeSet.inter s1 s2)
-          ) tm1 tm2
-        ) sh1.blocks sh2.blocks;
-    }
+    let imms = inter_on_any ImmSet.inter sh1.imms sh2.imms in
+    let blocks =
+      inter_on_any (fun tm1 tm2 ->
+        TagMap.merge (fun _tag s1 s2 ->
+          match s1, s2 with
+          | None, _ | _, None -> None
+          | Some s1, Some s2 -> Some (inter_on_any SizeSet.inter s1 s2)
+        ) tm1 tm2
+      ) sh1.blocks sh2.blocks
+    in
+    let separated =
+      (* Shapes have a relational interpretation as sets of sets of values.
+         If either [sh1] or [sh2] are separated, they only contains separated
+         sets of values, so the intersection is also separated. *)
+      sh1.separated || sh2.separated
+    in
+    { imms; blocks; separated; }
 
   let is_any_on_any is_any = function
     | Any -> true
@@ -129,17 +173,6 @@ module Shape = struct
     &&
     subset_on_any subset_block is_any_block sh1.blocks sh2.blocks
 
-  let is_empty sh =
-    let empty_on_any is_empty = function
-      | Any -> false
-      | Those s -> is_empty s
-    in
-    let empty_tag_map =
-      TagMap.for_all (fun _tag -> empty_on_any SizeSet.is_empty)
-    in
-    empty_on_any ImmSet.is_empty sh.imms
-    && empty_on_any empty_tag_map sh.blocks
-
   let union sh1 sh2 =
     let imms = Or_any.mon_map2 ImmSet.union sh1.imms sh2.imms in
     let blocks =
@@ -163,18 +196,28 @@ module Shape = struct
         else Those tag_map
       ) sh1.blocks sh2.blocks
     in
-    { imms; blocks; }
+    let separated =
+      sh1.separated
+      && sh2.separated
+      && not (has_float sh1 && has_nonfloat sh2)
+      && not (has_nonfloat sh2 && has_float sh1)
+    in
+    { imms; blocks; separated }
 
   let any =
     {
       imms = Any;
       blocks = Any;
+      separated = true;
     }
+
+  let poison = { any with separated = false }
 
   let empty =
     {
       imms = Those ImmSet.empty;
       blocks = Those TagMap.empty;
+      separated = true;
     }
 
   let any_immediate =
@@ -230,12 +273,15 @@ module Shape = struct
 
        Note that this union may be non-disjoint: it is okay if the
        underlying type can itself have lazy tags, shortcutting will be
-       disabled by a runtime check. *)
+       disabled by a runtime check. Shortcutting is also disabled on float
+       values, to preserve separatedness. *)
     (* Note: currently lazy/forcing/forward blocks have size 1, but we
        decided to not reflect this in the type as the representation
        might change in the future. *)
-    union arg_shape
-      (block [Tag Obj.lazy_tag; Tag Obj.forcing_tag; Tag Obj.forward_tag])
+    { (union arg_shape
+         (block [Tag Obj.lazy_tag; Tag Obj.forcing_tag; Tag Obj.forward_tag]))
+      with separated = true;
+    }
 
   let continuation =
     block [Tag Obj.cont_tag]

@@ -74,10 +74,12 @@ let doc_tag_map ppf tag_map =
 let doc_block_set ppf block_set =
   doc_or_any doc_tag_map ppf block_set
 
-let doc ppf {imms; blocks} =
-  Format_doc.fprintf ppf "@[{imm = @[%a@];@ blocks = @[%a@];}@]"
+let doc ppf {imms; blocks; separated} =
+  Format_doc.fprintf ppf "@[{imm = @[%a@];@ blocks = @[%a@];%s}@]"
     doc_imm_set imms
     doc_block_set blocks
+    (if separated then ""
+     else "separated = false;")
 
 let pp ppf sh = Format_doc.compat doc ppf sh
 

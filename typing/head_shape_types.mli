@@ -51,12 +51,47 @@ type block_set = size_set TagMap.t or_any
 type shape = {
   imms: imm_set; (* set of immediates the head can be *)
   blocks: block_set; (* set of block shapes the head can be *)
+  separated: bool;
+  (* A type is separated if either (a) it has no floats or
+     (b) it has only floats.
+
+     Non-separated types are unsound in OCaml due to the dynamic
+     flat-float-array optimization.
+
+     More precisely, we give a relational semantics to shapes, as sets
+     of sets of values. Let us write interp(imms) and interp(blocks) for the
+     sets of values described by an imm_set and a block_set. We define
+     the interpretation of a shape interp(sh) as:
+
+       interp(sh) =
+         { S |
+           S ⊆ interp(sh.imms) ⊎ interp(sh.blocks),
+           separated(S) if sh.separated
+          }
+
+     In other words, separated shapes are interpreted by sets of
+     separated sets of values, and non-separated shapes are
+     interpreted by sets of arbitrary sets of values.
+
+     For example, the shape
+       { imms = Those [];
+         blocks = [float; string];
+         separated = true; }
+     is interpreted by all the sets of the form S or F, where S is an
+     arbitrary subset of strings and F an arbitrary subset of
+     floating-point values. The non-separated variant
+       { imms = Those [];
+         blocks = [float; string];
+         separated = false; }
+     is interpreted by the sets of the form S, F, or (S ⊎ F)
+  *)
 }
 
 module Shape : sig
   type t = shape
   val empty : t
-  val any : t
+  val any : t (* [any] is separated *)
+  val poison : t (* { any with separated = false } *)
 
   val mem : head -> shape -> bool
 
