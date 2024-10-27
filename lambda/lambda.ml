@@ -82,6 +82,7 @@ type primitive =
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
   | Pintcomp of integer_comparison
+  | Pphyscomp of physical_comparison
   | Pcompare_ints | Pcompare_floats | Pcompare_bints of boxed_integer
   | Poffsetint of int
   | Poffsetref of int
@@ -164,6 +165,9 @@ type primitive =
 
 and integer_comparison =
     Ceq | Cne | Clt | Cgt | Cle | Cge
+
+and physical_comparison =
+    CPeq | CPneq
 
 and float_comparison =
     CFeq | CFneq | CFlt | CFnlt | CFgt | CFngt | CFle | CFnle | CFge | CFnge

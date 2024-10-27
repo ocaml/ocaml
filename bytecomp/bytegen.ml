@@ -149,7 +149,8 @@ let preserve_tailcall_for_prim = function
   | Psetfield_computed _ | Pfloatfield _ | Psetfloatfield _ | Pduprecord _
   | Pccall _ | Praise _ | Pnot | Pnegint | Paddint | Psubint | Pmulint
   | Pdivint _ | Pmodint _ | Pandint | Porint | Pxorint | Plslint | Plsrint
-  | Pasrint | Pintcomp _ | Poffsetint _ | Poffsetref _ | Pintoffloat
+  | Pasrint | Pintcomp _ | Pphyscomp _
+  | Poffsetint _ | Poffsetref _ | Pintoffloat
   | Pfloatofint | Pnegfloat | Pabsfloat | Paddfloat | Psubfloat | Pmulfloat
   | Pdivfloat | Pfloatcomp _ | Pstringlength | Pstringrefu  | Pstringrefs
   | Pcompare_ints | Pcompare_floats | Pcompare_bints _
@@ -366,6 +367,8 @@ let comp_primitive stack_info p sz args =
     Pgetglobal id -> Kgetglobal id
   | Psetglobal id -> Ksetglobal id
   | Pintcomp cmp -> Kintcomp cmp
+  | Pphyscomp CPeq -> Kintcomp Ceq
+  | Pphyscomp CPneq -> Kintcomp Cne
   | Pcompare_ints -> Kccall("caml_int_compare", 2, None)
   | Pcompare_floats -> Kccall("caml_float_compare", 2, None)
   | Pcompare_bints bi -> comp_bint_primitive bi "compare" args
@@ -777,6 +780,12 @@ let rec comp_expr stack_info env exp sz cont =
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)], _) ->
       let p = Pintcomp (swap_integer_comparison c)
       and args = [k ; arg] in
+      let nargs = List.length args - 1 in
+      comp_args stack_info env args sz
+        (comp_primitive stack_info p (sz + nargs - 1) args :: cont)
+(* Constant first for enabling further optimization (cf. emitcode.ml)  *)
+  | Lprim (Pphyscomp _ as p, [arg ; (Lconst _ as k)], _) ->
+      let args = [k ; arg] in
       let nargs = List.length args - 1 in
       comp_args stack_info env args sz
         (comp_primitive stack_info p (sz + nargs - 1) args :: cont)

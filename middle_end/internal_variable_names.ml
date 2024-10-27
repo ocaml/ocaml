@@ -121,6 +121,7 @@ let pgetglobal = "Pgetglobal"
 let pignore = "Pignore"
 let pint_as_pointer = "Pint_as_pointer"
 let pintcomp = "Pintcomp"
+let pphyscomp = "Pphyscomp"
 let pcompare_ints = "Pcompare_ints"
 let pcompare_floats = "Pcompare_floats"
 let pcompare_bints = "Pcompare_bints"
@@ -230,6 +231,7 @@ let pgetglobal_arg = "Pgetglobal_arg"
 let pignore_arg = "Pignore_arg"
 let pint_as_pointer_arg = "Pint_as_pointer_arg"
 let pintcomp_arg = "Pintcomp_arg"
+let pphyscomp_arg = "Pphyscomp_arg"
 let pcompare_ints_arg = "Pcompare_ints_arg"
 let pcompare_floats_arg = "Pcompare_floats_arg"
 let pcompare_bints_arg = "Pcompare_bints_arg"
@@ -356,6 +358,7 @@ let of_primitive : Lambda.primitive -> string = function
   | Plsrint -> plsrint
   | Pasrint -> pasrint
   | Pintcomp _ -> pintcomp
+  | Pphyscomp _ -> pphyscomp
   | Pcompare_ints -> pcompare_ints
   | Pcompare_floats -> pcompare_floats
   | Pcompare_bints _ -> pcompare_bints
@@ -468,6 +471,7 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Plsrint -> plsrint_arg
   | Pasrint -> pasrint_arg
   | Pintcomp _ -> pintcomp_arg
+  | Pphyscomp _ -> pphyscomp_arg
   | Pcompare_ints -> pcompare_ints_arg
   | Pcompare_floats -> pcompare_floats_arg
   | Pcompare_bints _ -> pcompare_bints_arg

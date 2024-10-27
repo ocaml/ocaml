@@ -323,6 +323,7 @@ let compute_static_size lam =
     | Pandint | Porint | Pxorint
     | Plslint | Plsrint | Pasrint
     | Pintcomp _
+    | Pphyscomp _
     | Pcompare_ints | Pcompare_floats | Pcompare_bints _
     | Pintoffloat | Pfloatofint
     | Pnegfloat | Pabsfloat

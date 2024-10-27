@@ -187,8 +187,8 @@ let primitives_table =
     "%lslint", Primitive (Plslint, 2);
     "%lsrint", Primitive (Plsrint, 2);
     "%asrint", Primitive (Pasrint, 2);
-    "%eq", Primitive ((Pintcomp Ceq), 2);
-    "%noteq", Primitive ((Pintcomp Cne), 2);
+    "%eq", Primitive ((Pphyscomp CPeq), 2);
+    "%noteq", Primitive ((Pphyscomp CPneq), 2);
     "%ltint", Primitive ((Pintcomp Clt), 2);
     "%leint", Primitive ((Pintcomp Cle), 2);
     "%gtint", Primitive ((Pintcomp Cgt), 2);
@@ -967,7 +967,8 @@ let lambda_primitive_needs_event_after = function
   | Psetfield_computed _ | Pfloatfield _ | Psetfloatfield _ | Praise _
   | Psequor | Psequand | Pnot | Pnegint | Paddint | Psubint | Pmulint
   | Pdivint _ | Pmodint _ | Pandint | Porint | Pxorint | Plslint | Plsrint
-  | Pasrint | Pintcomp _ | Poffsetint _ | Poffsetref _ | Pintoffloat
+  | Pasrint | Poffsetint _ | Poffsetref _ | Pintoffloat
+  | Pintcomp _ | Pphyscomp _
   | Pcompare_ints | Pcompare_floats
   | Pfloatcomp _ | Pstringlength | Pstringrefu | Pbyteslength | Pbytesrefu
   | Pbytessetu | Pmakearray ((Pintarray | Paddrarray | Pfloatarray), _)

@@ -133,6 +133,10 @@ let integer_comparison ppf = function
   | Cgt -> fprintf ppf ">"
   | Cge -> fprintf ppf ">="
 
+let physical_comparison ppf = function
+  | CPeq -> fprintf ppf "=="
+  | CPneq -> fprintf ppf "!="
+
 let float_comparison ppf = function
   | CFeq -> fprintf ppf "==."
   | CFneq -> fprintf ppf "!=."
@@ -228,6 +232,7 @@ let primitive ppf = function
   | Plsrint -> fprintf ppf "lsr"
   | Pasrint -> fprintf ppf "asr"
   | Pintcomp(cmp) -> integer_comparison ppf cmp
+  | Pphyscomp(cmp) -> physical_comparison ppf cmp
   | Pcompare_ints -> fprintf ppf "compare_ints"
   | Pcompare_floats -> fprintf ppf "compare_floats"
   | Pcompare_bints bi -> fprintf ppf "compare_bints %s" (boxed_integer_name bi)
@@ -393,6 +398,7 @@ let name_of_primitive = function
   | Plsrint -> "Plsrint"
   | Pasrint -> "Pasrint"
   | Pintcomp _ -> "Pintcomp"
+  | Pphyscomp _ -> "Pphyscomp"
   | Pcompare_ints -> "Pcompare_ints"
   | Pcompare_floats -> "Pcompare_floats"
   | Pcompare_bints _ -> "Pcompare"
