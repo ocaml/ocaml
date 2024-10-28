@@ -445,7 +445,9 @@ let rec advance_left state =
       match Queue.take_opt state.pp_queue with
       | None -> () (* This only happens if misused with concurrent code *)
       | Some _ ->  (* Not empty: we peek into it *)
-        let size = if Size.is_known size then Size.to_int size else pp_infinity in
+        let size = 
+          if Size.is_known size then Size.to_int size else pp_infinity 
+        in
         format_pp_token state size token;
         state.pp_left_total <- length + state.pp_left_total;
         (advance_left [@tailcall]) state
