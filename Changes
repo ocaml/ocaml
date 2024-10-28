@@ -60,7 +60,7 @@ Working version
 
 - #13371: Avoid Queue.empty to be raised by Format when used concurrently.
   prefer undefined behavior to uncaught exception.
-  (Chritophe Raffalli, review by ....)
+  (Chritophe Raffalli, review by Gabriel Scherer)
 
 - #13543: Remove some String-Bytes conversion from the stdlib to behave better
   with js_of_ocaml
