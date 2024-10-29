@@ -443,7 +443,7 @@ let rec advance_left state =
     let pending_count = state.pp_right_total - state.pp_left_total in
     if Size.is_known size || pending_count >= state.pp_space_left then begin
       match Queue.take_opt state.pp_queue with
-      | None -> invalig_arg "Thread unsafe use of formatter"
+      | None -> invalid_arg "Thread unsafe use of formatter"
       | Some _ ->  (* Not empty: we peek into it *)
         let size =
           if Size.is_known size then Size.to_int size else pp_infinity
