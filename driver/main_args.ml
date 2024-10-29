@@ -413,7 +413,7 @@ let mk_keywords f =
   \                -<version> if present specifies the base set of keywords\n
   \                  (if absent the current set of keywords is used)
   \                -<list> is a \"+\"-separated list of keywords to add to\n
-  \                   the base set of keywords.
+  \                  the base set of keywords.
   "
 
 let mk_plugin f =
