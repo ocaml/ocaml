@@ -520,6 +520,11 @@ ___________
     The constant "42" has type ...
   (Jules Aguillon, review by Gabriel Scherer and Florian Angeletti)
 
+- #13471: add `-keywords <version?+list>` flag to define the list of keywords
+  recognized by the lexer, for instance `-keywords 5.2` disable the `effect`
+  keyword.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #11129, #11148: enforce that ppxs do not produce `parsetree`s with
