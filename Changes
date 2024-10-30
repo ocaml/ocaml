@@ -783,6 +783,9 @@ ___________
   were being included in the thread descriptors.
   (David Allsopp, review by Sébastien Hinderer and Miod Vallat)
 
+- #13579: Unsoundness involving non-injective types + gadts
+  (Jacques Garrigue, report by @v-gb)
+
 OCaml 5.2.0 (13 May 2024)
 -------------------------
 
