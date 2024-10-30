@@ -46,8 +46,8 @@
    {b Warning}: Since {{!section:formatter}formatters} contain
    mutable state, it is not thread-safe to use the same formatter on multiple
    domains in parallel without synchronization. This may result in
-   [Invalid_argument "Thread unsafe use of formatter"] to be raised or an
-   undefined behavior.
+   [Invalid_argument "Format: Unsynchronized access to formatter"] to be raised
+   or an undefined behavior.
 
    If multiple domains write to the same output channel using the
    predefined formatters (as obtained by {!get_std_formatter} or
