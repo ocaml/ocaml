@@ -14,6 +14,10 @@ Working version
 
 ### Code generation and optimizations:
 
+- #13554: Add `List.append_map` and `List.rev_append_map`.
+  (Sylvain Boilard and Hugo Heuzard, review by Nicolás Ojeda Bär, Daniel Bünzli
+   and Damien Doligez)
+
 ### Standard library:
 
 ### Other libraries:
