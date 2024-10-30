@@ -2,7 +2,7 @@
  expect;
 *)
 
-(* #13679 *)
+(* #13579 *)
 
 module F(X : sig type 'a t end) = struct
   type (_, _) gadt = T : ('a X.t, 'a) gadt
