@@ -54,6 +54,12 @@ extern void caml_skiplist_init(struct skiplist * sk);
 extern int caml_skiplist_find(struct skiplist * sk, uintnat key,
                               /*out*/ uintnat * data);
 
+/* Search a skip list.
+   If [key] is found, return a pointer to its associated data.
+   If [key] is not found, return NULL. */
+extern uintnat* caml_skiplist_find_ptr(struct skiplist * sk, uintnat key);
+
+
 /* Search the entry of the skip list that has the largest key less than
    or equal to [k].
    If such an entry exists, store its key in [*key], the associated data in

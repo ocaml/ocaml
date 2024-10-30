@@ -49,6 +49,9 @@ Working version
 - #13354: Use C99 flexible array member syntax everywhere.
   (Antonin Décimo, review by Miod Vallat, Gabriel Scherer, and Xavier Leroy)
 
+- #11865, #??: Fix a deadlock triggered by deleting a C root from a C finaliser
+  (Stephen Dolan, report by Timothy Bourke, review by ??)
+
 ### Code generation and optimizations:
 
 - #13565: less tagging in switches compiled to affine transformations
