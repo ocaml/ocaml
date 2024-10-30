@@ -33,7 +33,7 @@ open Mach
     a0-a7        0-7       arguments/results
     s2-s9        8-15      arguments/results (preserved by C)
     t2-t6        16-20     temporary
-    s0           21        general purpose (preserved by C)
+    s0           21        general purpose or frame pointer (preserved by C)
     t0, t1       22-23     temporaries (used by call veneers)
     s10          24        trap pointer (preserved by C)
     s1           25        allocation pointer (preserved by C)
@@ -59,6 +59,8 @@ open Mach
       arguments and may be clobbered by [Ialloc] in the presence of dynamic
       linking.
 *)
+
+let fp = Config.with_frame_pointers
 
 let int_reg_name =
   [| "a0"; "a1"; "a2"; "a3"; "a4"; "a5"; "a6"; "a7";  (* 0 - 7 *)
@@ -233,8 +235,10 @@ let loc_exn_bucket = phys_reg 0
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_noalloc_call =
-  (* s0-s11 and fs0-fs11 are callee-save, but s0 is
-     used to preserve OCaml sp. *)
+  (* s0-s11 and fs0-fs11 are callee-save, but s0 is used to preserve the
+     OCaml sp across the call when frame pointers are disabled.  With frame
+     pointers, s0 is the frame pointer and the OCaml sp is saved on the
+     C stack instead. *)
   Array.of_list(List.map phys_reg
     [0; 1; 2; 3; 4; 5; 6; 7; 16; 17; 18; 19; 20; 21 (* s0 *);
      100; 101; 102; 103; 104; 105; 106; 107; 110; 111; 112; 113; 114; 115; 116;
@@ -263,11 +267,11 @@ let destroyed_at_reloadretaddr = [| |]
 
 let safe_register_pressure = function
   | Iextcall _ -> 9
-  | _ -> 23
+  | _ -> if fp then 22 else 23
 
 let max_register_pressure = function
   | Iextcall _ -> [| 9; 12 |]
-  | _ -> [| 23; 30 |]
+  | _ -> if fp then [| 22; 30 |] else [| 23; 30 |]
 
 (* See
    https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/riscv-elf.adoc
@@ -305,4 +309,8 @@ let assemble_file infile outfile =
   Ccomp.command
     (Config.asm ^ " -o " ^ Filename.quote outfile ^ " " ^ Filename.quote infile)
 
-let init () = ()
+let init () =
+  if fp then
+    num_available_registers.(0) <- 21
+  else
+    num_available_registers.(0) <- 22

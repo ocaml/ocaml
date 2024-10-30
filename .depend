@@ -4278,10 +4278,12 @@ asmcomp/selection.cmx : \
 asmcomp/stackframe.cmo : \
     asmcomp/stackframegen.cmi \
     asmcomp/mach.cmi \
+    utils/config.cmi \
     asmcomp/stackframe.cmi
 asmcomp/stackframe.cmx : \
     asmcomp/stackframegen.cmx \
     asmcomp/mach.cmx \
+    utils/config.cmx \
     asmcomp/stackframe.cmi
 endif # ifeq "$(ARCH)" "riscv"
 middle_end/backend_intf.cmi : \

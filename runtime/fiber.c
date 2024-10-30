@@ -474,6 +474,7 @@ void caml_rewrite_exception_stack(struct stack_info *old_stack,
     fiber_debug_log ("exn_ptr is null");
   }
 }
+
 #endif
 
 int caml_try_realloc_stack(asize_t required_space)
@@ -538,7 +539,27 @@ int caml_try_realloc_stack(asize_t required_space)
            This is somewhat tricky to guarantee when there are stack
            arguments to C calls: see caml_c_call_copy_stack_args */
         struct stack_frame* fp = ((struct stack_frame*)link) - 1;
-        CAMLassert(fp->prev == link->sp);
+
+#if defined(TARGET_riscv)
+        /* On RISC-V, the frame pointer s0 = CFA = sp + frame_size,
+           pointing to the address just AFTER the {saved_s0, saved_ra}
+           frame record.  So fp->prev gives a CFA value, and the
+           actual frame record is at (CFA - sizeof(struct stack_frame)).
+           ENTER_FUNCTION sets s0 = sp + 16, so the saved s0 in the
+           C function's frame equals link->sp + 16. */
+        CAMLassert(fp->prev ==
+                   (struct stack_frame*)((char*)link->sp + 16));
+
+        /* Rewrite OCaml frame pointers above this C frame.
+           fp->prev is a CFA; the frame record is at CFA - 1 (in
+           struct stack_frame units, i.e. CFA - 16 bytes). */
+        while ((value*)fp->prev > Stack_base(old_stack) &&
+               (value*)fp->prev <= Stack_high(old_stack)) {
+          fp->prev = (struct stack_frame*)((char*)fp->prev + delta);
+          fp = fp->prev - 1; /* CFA - 16 = frame record */
+        }
+#else
+        CAMLassert(fp->prev == (struct stack_frame*)link->sp);
 
         /* Rewrite OCaml frame pointers above this C frame */
         while (Stack_base(old_stack) <= (value*)fp->prev &&
@@ -546,6 +567,7 @@ int caml_try_realloc_stack(asize_t required_space)
           fp->prev = (struct stack_frame*)((char*)fp->prev + delta);
           fp = fp->prev;
         }
+#endif
 #endif
         link->stack = new_stack;
         link->sp = (char*)link->sp + delta;

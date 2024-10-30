@@ -43,8 +43,8 @@
    https://github.com/riscv-non-isa/riscv-elf-psabi-doc/releases/tag/v1.0
 
 */
-#define DW_REG_s4                 20
-#define DW_REG_sp                 2
+#define DW_REG_s4                 20 /* x20 */
+#define DW_REG_sp                 2  /* x2  */
 
         .set    domain_curr_field, 0
 #define DOMAIN_STATE(c_type, name) \
@@ -113,14 +113,22 @@ name:
 /* Function prologue and epilogue */
 
 .macro ENTER_FUNCTION
-        CFI_OFFSET(ra, -8)
         addi    sp, sp, -16
-        sd      ra, 8(sp)
         CFI_ADJUST(16)
+        sd      ra, 8(sp)
+        CFI_OFFSET(ra, -8)
+#ifdef WITH_FRAME_POINTERS
+        sd      s0, 0(sp)
+        CFI_OFFSET(s0, -16)
+        add     s0, sp, 16
+#endif
 .endm
 
 .macro LEAVE_FUNCTION
         ld      ra, 8(sp)
+#ifdef WITH_FRAME_POINTERS
+        ld      s0, 0(sp)
+#endif
         addi    sp, sp, 16
         CFI_ADJUST(-16)
 .endm
@@ -147,7 +155,12 @@ name:
 #define Handler_parent(reg)     24(reg)
 #define Handler_parent_offset   24
 
-/* Switch from OCaml to C stack. */
+/* Switch from OCaml to C stack.
+
+   If a C function is called which might call back into OCaml,
+   then nothing may be pushed to the C stack between SWITCH_OCAML_TO_C
+   and the next C call. (This is to ensure frame pointers are correctly
+   maintained if the stack is reallocated) */
 .macro SWITCH_OCAML_TO_C
     /* Fill in Caml_state->current_stack->sp */
         ld      TMP, Caml_state(current_stack)
@@ -291,6 +304,34 @@ name:
         ld      ALLOC_PTR, Caml_state(young_ptr)
         ld      TRAP_PTR, Caml_state(exn_handler)
 .endm
+
+/* Updates the oldest saved frame pointer in the target fiber.
+
+   A fiber stack may need to grow, causing the reallocation of the entire fiber,
+   including stack_info and stack_handler structures.
+   caml_try_realloc_stack will not be able to update the linked list of
+   frame-pointers if it has been split (i.e., in a continuation).
+   caml_resume and caml_reperform use this macro to update the oldest saved s0
+   (highest one in the stack) in case the fiber was reallocated to reattach the
+   frame-pointer linked list.
+
+   REG: Stack_handler(target_fiber)
+
+   The frame record is pushed immediately after these instructions, by the
+   ENTER_FUNCTION in SWITCH_OCAML_STACKS.  It spans [sp-16, sp), so the value
+   s0 will take -- its CFA -- is the current sp.
+
+   The offset of the oldest saved s0 in a fiber from the stack handler is
+   48 = 4 words (caml_runstack) + 2 words (ra and s0).
+   */
+#ifdef WITH_FRAME_POINTERS
+.macro UPDATE_BASE_POINTER reg
+        sd     sp, -48(\reg)
+.endm
+#else
+.macro UPDATE_BASE_POINTER reg
+.endm
+#endif
 
 #if defined(WITH_THREAD_SANITIZER) /* { */
 
@@ -583,6 +624,14 @@ FUNCTION(caml_c_call_stack_args)
     /* Make the exception handler alloc ptr available to the C code */
         sd      ALLOC_PTR, Caml_state(young_ptr)
         sd      TRAP_PTR, Caml_state(exn_handler)
+#ifdef WITH_FRAME_POINTERS
+    /* Copy the arguments and call.
+       This is done in a separate function so that nothing is pushed
+       between the c_stack_link and the first frame pointer on the C stack
+       (required for correct frame pointer rewriting during stack
+       reallocation; see caml_try_realloc_stack in fiber.c). */
+        call    PLT(caml_c_call_copy_stack_args)
+#else
     /* Store sp to restore after call */
         mv      s2, sp
     /* Copy arguments from OCaml to C stack
@@ -600,6 +649,7 @@ FUNCTION(caml_c_call_stack_args)
         jalr    ADDITIONAL_ARG
     /* Restore stack */
         mv      sp, s2
+#endif
     /* Reload new allocation pointer & exn handler */
         ld      ALLOC_PTR, Caml_state(young_ptr)
         ld      TRAP_PTR, Caml_state(exn_handler)
@@ -612,6 +662,50 @@ FUNCTION(caml_c_call_stack_args)
         LEAVE_FUNCTION
         RET_FROM_C_CALL
 END_FUNCTION(caml_c_call_stack_args)
+
+#ifdef WITH_FRAME_POINTERS
+/* To correctly maintain frame pointers during stack reallocation,
+   the runtime assumes that the caml_c_call stub does not push
+   anything to the stack before the first frame pointer on the C stack.
+   To guarantee this when stack arguments are used, the actual pushing
+   of arguments is done by this separate function. */
+FUNCTION(caml_c_call_copy_stack_args)
+        ENTER_FUNCTION
+#if defined(WITH_THREAD_SANITIZER)
+        TSAN_SAVE_CALLER_REGS
+        /* TSAN_ENTER_FUNCTION, but without switching stacks
+           (we are already on the C stack) */
+        mv      a0, ra
+        call    PLT(caml_tsan_func_entry_asm)
+        TSAN_RESTORE_CALLER_REGS
+#endif
+    /* Copy arguments from OCaml to C stack
+       NB: STACK_ARG_END - STACK_ARG_BEGIN is a multiple of 16 */
+1:      addi    STACK_ARG_END, STACK_ARG_END, -16
+        bltu    STACK_ARG_END, STACK_ARG_BEGIN, 2f
+        ld      TMP, 0(STACK_ARG_END)
+        ld      TMP2, 8(STACK_ARG_END)
+        addi    sp, sp, -16
+        sd      TMP, 0(sp)
+        sd      TMP2, 8(sp)
+        CFI_ADJUST(16)
+        j       1b
+2:  /* Call the function */
+        jalr    ADDITIONAL_ARG
+#if defined(WITH_THREAD_SANITIZER)
+        TSAN_PUSH_RETURN_REGS /* Save return value. */
+        /* TSAN_EXIT_FUNCTION, but without switching stacks */
+        call    PLT(caml_tsan_func_exit_asm)
+        TSAN_POP_RETURN_REGS
+#endif
+    /* Restore stack: s0 = CFA = sp before args were pushed + 16.
+       The loop pushed a dynamic number of words, so resync the CFA. */
+        addi    sp, s0, -16
+        CFI_DEF_CFA_OFFSET(16)
+        LEAVE_FUNCTION
+        ret
+END_FUNCTION(caml_c_call_copy_stack_args)
+#endif
 
 /* Start the OCaml program */
 
@@ -641,14 +735,32 @@ FUNCTION(caml_start_program)
 /* Arguments to the OCaml code are in a0...a7 */
 
 L(jump_to_caml):
-    /* Set up stack frame and save callee-save registers */
+    /* Set up stack frame and save callee-save registers.
+       Without frame pointers the frame is 208 bytes: {s0, ra} at sp+0/sp+8,
+       then the 24 callee-save registers at sp+16..sp+200.
+       With frame pointers the frame is 224 bytes: the {s0, ra} record moves
+       to CFA-16/CFA-8 (sp+208/sp+216) so that a frame-pointer walker can
+       find it, the callee-saves stay put, and sp+0..sp+15 becomes padding. */
+#ifdef WITH_FRAME_POINTERS
+#define JUMP_TO_CAML_FRAME_SZ 224
+        CFI_OFFSET(s0, -16)
+        CFI_OFFSET(ra, -8)
+        addi    sp, sp, -JUMP_TO_CAML_FRAME_SZ
+        sd      s0, (26*8)(sp)
+        sd      ra, (27*8)(sp)
+        CFI_ADJUST(JUMP_TO_CAML_FRAME_SZ)
+        sd      s0, (2*8)(sp)
+        add     s0, sp, JUMP_TO_CAML_FRAME_SZ
+#else
+#define JUMP_TO_CAML_FRAME_SZ 208
         CFI_OFFSET(s0, -208)
         CFI_OFFSET(ra, -200)
-        addi    sp, sp, -208
+        addi    sp, sp, -JUMP_TO_CAML_FRAME_SZ
         sd      s0, 0(sp)
         sd      ra, 8(sp)
-        CFI_ADJUST(208)
+        CFI_ADJUST(JUMP_TO_CAML_FRAME_SZ)
         sd      s0, (2*8)(sp)
+#endif
         sd      s1, (3*8)(sp)
         sd      s2, (4*8)(sp)
         sd      s3, (5*8)(sp)
@@ -705,15 +817,23 @@ L(jump_to_caml):
         mv      sp, t2
 #ifdef ASM_CFI_SUPPORTED
         CFI_REMEMBER_STATE
-        .cfi_escape DW_CFA_def_cfa_expression, 3 + 2 + 2,             \
-            /* sp points to the exn handler on the OCaml stack */     \
-            /* sp + 16 contains the C_STACK_SP */                     \
-          DW_OP_breg + DW_REG_sp, 16 /* exn handler */, DW_OP_deref,  \
-            /* 32   struct c_stack_link + pad */                      \
-            /* 24*8 callee save regs */                               \
-            /* 16   fp + ret addr */                                  \
-            /* need to split to get under 127 limit */                \
+    /* sp points to the exn handler on the OCaml stack, and sp + 16 contains
+       the C_STACK_SP.  The CFA is C_STACK_SP + 32 (struct c_stack_link + pad)
+       + JUMP_TO_CAML_FRAME_SZ, and the addend has to be split into terms
+       below the 127 limit of a single-byte ULEB128 operand. */
+#ifdef WITH_FRAME_POINTERS
+    /* 32 + 224 = 256 = 85 + 85 + 86; the frame carries the {s0, ra} record */
+        .cfi_escape DW_CFA_def_cfa_expression, 3 + 2 + 2 + 2,          \
+          DW_OP_breg + DW_REG_sp, 16 /* exn handler */, DW_OP_deref,   \
+          DW_OP_plus_uconst, 85, DW_OP_plus_uconst, 85,                \
+          DW_OP_plus_uconst, 86
+#else
+    /* 32 + 208 = 240 = 120 + 120
+       208 = 24*8 callee save regs + 16 fp + ret addr */
+        .cfi_escape DW_CFA_def_cfa_expression, 3 + 2 + 2,              \
+          DW_OP_breg + DW_REG_sp, 16 /* exn handler */, DW_OP_deref,   \
           DW_OP_plus_uconst, 120, DW_OP_plus_uconst, 120
+#endif
 #endif
     /* Call the OCaml code */
         jalr    TMP2
@@ -781,9 +901,13 @@ L(return_result):
         fld     fs9, (23*8)(sp)
         fld     fs10, (24*8)(sp)
         fld     fs11, (25*8)(sp)
+#ifdef WITH_FRAME_POINTERS
+        ld      ra, (27*8)(sp)
+#else
         ld      ra, 8(sp)
-        addi    sp, sp, 208
-        CFI_ADJUST(-208)
+#endif
+        addi    sp, sp, JUMP_TO_CAML_FRAME_SZ
+        CFI_ADJUST(-JUMP_TO_CAML_FRAME_SZ)
     /* Return to C caller */
         ret
 END_FUNCTION(caml_start_program)
@@ -1097,6 +1221,9 @@ FUNCTION(caml_reperform)
         ld      a4, Handler_parent(TMP) /* a4 := cont_head */
         sd      a2, Handler_parent(TMP) /* parent(cont_tail) := current_stack */
         addi    a3, a2, 1 /* a3 := Val_ptr(current_stack) */
+     /* Need to update the oldest saved frame pointer here as the execution of
+        the handler may have caused the current fiber stack to reallocate. */
+        UPDATE_BASE_POINTER TMP
         j       L(do_perform)
 END_FUNCTION(caml_reperform)
 
@@ -1145,6 +1272,9 @@ FUNCTION(caml_resume)
         ld      t2, Stack_handler(a3)
         ld      t3, Caml_state(current_stack)
         sd      t3, Handler_parent(t2)
+    /* Need to update the oldest saved frame pointer here as the execution of
+       the handler may have caused the current fiber stack to reallocate. */
+        UPDATE_BASE_POINTER t2
         SWITCH_OCAML_STACKS t3, a0
         mv      a0, a2
         jr      a4
@@ -1208,7 +1338,10 @@ FUNCTION(caml_runstack)
           DW_OP_plus_uconst, Stack_sp_offset, DW_OP_deref,  \
           DW_OP_plus_uconst, 16 /* fp + ret addr */
 #endif
-    /* Call the function on the new stack */
+    /* Call the function on the new stack.
+       With frame pointers, s0 points to the parent stack's CFA (from
+       ENTER_FUNCTION above).  The OCaml function will save it, creating
+       a cross-fiber chain that fp_backtrace can follow. */
         mv      a0, a2
         jalr    a3
 L(frame_runstack):
