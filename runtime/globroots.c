@@ -67,6 +67,7 @@ Caml_inline void caml_insert_global_root(struct skiplist * list, value * r)
 Caml_inline void caml_delete_global_root(struct skiplist * list, value * r)
 {
   if (iterating_roots > 0) {
+    /* We hold the roots_mutex because we are iterating */
     uintnat* p = caml_skiplist_find_ptr(list, (uintnat) r);
     if (p != NULL) {
       *p = ROOT_DELETED;
@@ -270,12 +271,8 @@ void caml_scan_global_young_roots(scanning_action f, void* fdata)
 
   /* Move young roots to old roots */
   FOREACH_SKIPLIST_ELEMENT(e, &caml_global_roots_young, {
-      if (e->data == ROOT_DELETED) {
-        caml_skiplist_remove(&caml_global_roots_young, e->key);
-      } else {
-        value * r = (value *) (e->key);
-        caml_skiplist_insert(&caml_global_roots_old, (uintnat) r, 0);
-      }
+      value * r = (value *) (e->key);
+      caml_skiplist_insert(&caml_global_roots_old, (uintnat) r, 0);
     });
   caml_skiplist_empty(&caml_global_roots_young);
 

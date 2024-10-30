@@ -17,7 +17,7 @@ static void box_finalize(value v)
 }
 
 static struct custom_operations box_ops = {
-  "_box",
+  "box",
   box_finalize,
   custom_compare_default,
   custom_hash_default,

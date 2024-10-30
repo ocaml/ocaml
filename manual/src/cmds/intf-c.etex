@@ -2145,10 +2145,11 @@ interactions with the OCaml runtime. Within these functions, do not call any of
 the OCaml allocation functions, and do not perform any callback into OCaml
 code. Do not use "CAMLparam" to register the parameters to these functions, and
 do not use "CAMLreturn" to return the result. Do not raise exceptions (to
-signal an error during deserialization, use "caml_deserialize_error"). Do not
-remove global roots. When in doubt, err on the side of caution. Within
-"serialize" and "deserialize" functions, use of the corresponding functions
-from section~\ref{ss:c-custom-serialization} is allowed (and even recommended).
+signal an error during deserialization, use "caml_deserialize_error"). When in
+doubt, err on the side of caution. However, note that "finalize" functions may
+freely use "caml_remove_global_root" and "caml_remove_generational_global_root",
+and "serialize" and "deserialize" functions may freely use the corresponding
+functions from section~\ref{ss:c-custom-serialization}.
 
 \subsection{ss:c-custom-alloc}{Allocating custom blocks}
 
