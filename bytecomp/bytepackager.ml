@@ -22,11 +22,6 @@ open Cmo_format
 module String = Misc.Stdlib.String
 module Compunit = Symtable.Compunit
 
-let rec rev_append_map f l rest =
-  match l with
-  | [] -> rest
-  | x :: xs -> rev_append_map f xs (f x :: rest)
-
 type error =
     Forward_reference of string * compunit
   | Multiple_definition of string * compunit
@@ -162,7 +157,7 @@ let rename_append_bytecode packagename oc state objfile compunit =
   try
     Bytelink.check_consistency objfile compunit;
     let relocs =
-      rev_append_map
+      List.rev_append_map
         (rename_relocation packagename objfile state.mapping state.offset)
         compunit.cu_reloc
         state.relocs in
@@ -174,7 +169,7 @@ let rename_append_bytecode packagename oc state objfile compunit =
         seek_in ic compunit.cu_debug;
         let unit_events = (Compression.input_value ic : debug_event list) in
         let events =
-          rev_append_map
+          List.rev_append_map
             (relocate_debug state.offset packagename state.subst)
             unit_events
             state.events in
@@ -232,7 +227,7 @@ let build_global_target ~ppf_dump oc target_name state components coercion =
   let events = List.rev_append pack_events state.events in
   let debug_dirs = String.Set.union pack_debug_dirs state.debug_dirs in
   let relocs =
-    rev_append_map
+    List.rev_append_map
       (fun (r, ofs) -> (r, state.offset + ofs))
       pack_relocs state.relocs in
   { state with events; debug_dirs; relocs; offset = state.offset + size}
