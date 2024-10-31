@@ -2402,9 +2402,18 @@ let rec mcomp type_pairs env t1 t2 =
             mcomp_fields type_pairs env t1' t2'
         | (Tnil, Tnil) ->
             ()
-        | (Tpoly (t1, _), Tpoly (t2, _)) ->
+        | (Tpoly (t1, []), Tpoly (t2, [])) ->
             mcomp type_pairs env t1 t2
-        | (Tunivar _, Tunivar _) -> ()
+        | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
+            (try
+               enter_poly env
+                 t1 tl1 t2 tl2 (mcomp type_pairs env)
+             with Escape _ -> raise Incompatible)
+        | (Tunivar _, Tunivar _) ->
+            begin try unify_univar t1' t2' !univar_pairs with
+            | Cannot_unify_universal_variables -> raise Incompatible
+            | Out_of_scope_universal_variable -> ()
+            end
         | (_, _) ->
             raise Incompatible
       end
