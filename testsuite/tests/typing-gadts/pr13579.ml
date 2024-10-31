@@ -32,3 +32,27 @@ let () =
   print_string (cast eq 1)
 ;;
 *)
+
+(* Side-effect of the fix *)
+
+module M = struct type 'a p end
+type _ t = W: int M.p t
+[%%expect{|
+module M : sig type 'a p end
+type _ t = W : int M.p t
+|}]
+
+let f (W: _ M.p t) = ()
+[%%expect{|
+Line 1, characters 7-8:
+1 | let f (W: _ M.p t) = ()
+           ^
+Error: This pattern matches values of type "int M.p t"
+       but a pattern was expected which matches values of type "$0 M.p t"
+       The type constructor "$0" would escape its scope
+|}]
+
+let f (W: _ t) = ()
+[%%expect{|
+val f : int M.p t -> unit = <fun>
+|}]
