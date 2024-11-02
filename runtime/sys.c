@@ -687,6 +687,11 @@ CAMLprim value caml_sys_const_max_wosize(value unit)
   return Val_long(Max_wosize) ;
 }
 
+CAMLprim value caml_sys_io_buffer_size(value unit)
+{
+  return Val_long(IO_BUFFER_SIZE);
+}
+
 CAMLprim value caml_sys_const_ostype_unix(value unit)
 {
   return Val_bool(0 == strcmp(OCAML_OS_TYPE,"Unix"));

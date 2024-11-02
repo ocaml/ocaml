@@ -232,6 +232,9 @@ let stdin = 0
 let stdout = 1
 let stderr = 2
 
+external io_buffer_size : unit -> int = "caml_unix_io_buffer_size"
+let io_buffer_size = io_buffer_size ()
+
 type open_flag =
     O_RDONLY
   | O_WRONLY

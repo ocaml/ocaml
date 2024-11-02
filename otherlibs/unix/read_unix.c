@@ -54,3 +54,8 @@ CAMLprim value caml_unix_read_bigarray(value vfd, value vbuf,
   if (ret == -1) caml_uerror("read_bigarray", Nothing);
   CAMLreturn(Val_long(ret));
 }
+
+CAMLprim value caml_unix_io_buffer_size(value unit) 
+{
+  return Val_long(UNIX_BUFFER_SIZE);
+}

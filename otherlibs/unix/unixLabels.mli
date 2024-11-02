@@ -334,6 +334,12 @@ val stdout : file_descr
 val stderr : file_descr
 (** File descriptor for standard error. *)
 
+val io_buffer_size: int
+(** Size of the unix io buffers
+
+    @since 5.4
+*)
+
 type open_flag = Unix.open_flag =
     O_RDONLY                    (** Open for reading *)
   | O_WRONLY                    (** Open for writing *)

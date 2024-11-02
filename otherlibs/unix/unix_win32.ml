@@ -256,6 +256,9 @@ let stdin = filedescr_of_unix_fd_num 0
 let stdout = filedescr_of_unix_fd_num 1
 let stderr = filedescr_of_unix_fd_num 2
 
+external io_buffer_size : unit -> int = "caml_unix_io_buffer_size"
+let io_buffer_size = io_buffer_size ()
+
 type open_flag =
     O_RDONLY
   | O_WRONLY

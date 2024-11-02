@@ -70,6 +70,9 @@ external rmdir: string -> unit = "caml_sys_rmdir"
 external getcwd: unit -> string = "caml_sys_getcwd"
 external readdir : string -> string array = "caml_sys_read_directory"
 
+external io_buffer_size: unit -> int = "caml_sys_io_buffer_size"
+let io_buffer_size = io_buffer_size ()
+
 let interactive = ref false
 
 type signal_behavior =

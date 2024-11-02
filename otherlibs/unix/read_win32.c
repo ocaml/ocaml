@@ -103,3 +103,8 @@ CAMLprim value caml_unix_read_bigarray(value fd, value vbuf,
   }
   CAMLreturn(Val_int(numread));
 }
+
+CAMLprim value caml_unix_io_buffer_size(value unit) 
+{
+  return Val_long(UNIX_BUFFER_SIZE);
+}

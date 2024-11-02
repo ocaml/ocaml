@@ -126,6 +126,12 @@ external readdir : string -> string array = "caml_sys_read_directory"
    in any specific order; they are not, in particular, guaranteed to
    appear in alphabetical order. *)
 
+val io_buffer_size: int
+(** Size of the buffer channels
+
+    @since 5.4
+*)
+
 val interactive : bool ref
 [@@alert unsynchronized_access
     "The interactive status is a mutable global state."
