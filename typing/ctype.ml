@@ -1979,7 +1979,8 @@ let unify_univar_for (type a) (tr_exn : a trace_exn) t1 t2 univar_pairs =
   try unify_univar t1 t2 univar_pairs with
   | Cannot_unify_universal_variables -> raise_unexplained_for tr_exn
   | Out_of_scope_universal_variable ->
-      (* allow unscoped univars when checking for equality;
+      (* Allow unscoped univars when checking for equality, since one
+         might want to compare arbitrary subparts of types, ignoring scopes;
          see Typedecl_variance (#13514) for instance *)
       match tr_exn with
       | Equality -> raise_unexplained_for tr_exn
