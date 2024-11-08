@@ -2876,11 +2876,7 @@ and unify3 uenv t1 t1' t2 t2' =
               with Not_found -> List.map (fun _ -> false) tl1
             in
             List.iter2
-              (fun i (t1, t2) ->
-                if i then unify uenv t1 t2 else begin
-                  reify uenv t1;
-                  reify uenv t2
-                end)
+              (fun i (t1, t2) -> if i then unify uenv t1 t2)
               inj (List.combine tl1 tl2)
       | (Tconstr (path,[],_),
          Tconstr (path',[],_))

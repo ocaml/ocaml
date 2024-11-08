@@ -44,15 +44,64 @@ type _ t = W : int M.p t
 
 let f (W: _ M.p t) = ()
 [%%expect{|
-Line 1, characters 7-8:
-1 | let f (W: _ M.p t) = ()
-           ^
-Error: This pattern matches values of type "int M.p t"
-       but a pattern was expected which matches values of type "$0 M.p t"
-       The type constructor "$0" would escape its scope
+val f : 'a M.p t -> unit = <fun>
 |}]
 
 let f (W: _ t) = ()
 [%%expect{|
 val f : int M.p t -> unit = <fun>
+|}]
+
+
+type _ t = W: int M.p t | W2: float M.p t
+[%%expect{|
+type _ t = W : int M.p t | W2 : float M.p t
+|}]
+
+let f (W: _ M.p t) = ()
+[%%expect{|
+Line 1, characters 6-18:
+1 | let f (W: _ M.p t) = ()
+          ^^^^^^^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+W2
+
+val f : 'a M.p t -> unit = <fun>
+|}]
+
+let f =  function W -> () | W2 -> ()
+[%%expect{|
+val f : int M.p t -> unit = <fun>
+|}]
+
+let f =  function (W: _ M.p t) -> () | W2 -> ()
+[%%expect{|
+val f : 'a M.p t -> unit = <fun>
+|}]
+
+let f: type a. a M.p t -> unit =  function W -> () | W2 -> ()
+[%%expect{|
+val f : 'a M.p t -> unit = <fun>
+|}]
+
+let f (type a) (Equal : ('a M.p * a, 'b M.p * int) Type.eq) = ();;
+[%%expect{|
+val f : ('a M.p * 'a0, 'b M.p * int) Type.eq -> unit = <fun>
+|}]
+
+(** Counter-example side *)
+
+type 'a cstr = X of 'a constraint 'a = _ M.p
+type x = int M.p cstr
+type ab = A of x | B of x
+
+let test = function
+   | A a -> [a]
+   | B a -> [a]
+[%%expect {|
+type 'a cstr = X of 'a constraint 'a = 'b M.p
+type x = int M.p cstr
+type ab = A of x | B of x
+val test : ab -> x list = <fun>
 |}]
