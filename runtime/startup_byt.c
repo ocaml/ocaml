@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include "caml/config.h"
 #ifndef _WIN32
 #include <unistd.h>
@@ -75,6 +76,9 @@
 
 const char_os * caml_runtime_standard_library_effective = NULL;
 
+static bool print_magic = false;
+static bool print_config = false;
+
 static char magicstr[EXEC_MAGIC_LENGTH+1];
 
 /* Print the specified error message followed by an end-of-line and exit */
@@ -107,7 +111,7 @@ int caml_read_trailer(int fd, struct exec_trailer *trail)
   memcpy(magicstr, trail->magic, EXEC_MAGIC_LENGTH);
   magicstr[EXEC_MAGIC_LENGTH] = 0;
 
-  if (caml_params->print_magic) {
+  if (print_magic) {
     printf("%s\n", magicstr);
     exit(0);
   }
@@ -337,7 +341,7 @@ static int parse_command_line(char_os **argv)
         }
         break;
       case 'm':
-        params->print_magic = 1;
+        print_magic = true;
         break;
       case 'M':
         printf("%s\n", EXEC_MAGIC);
@@ -361,7 +365,7 @@ static int parse_command_line(char_os **argv)
         do_print_help();
         exit(0);
       } else if (!strcmp_os(argv[i], T("-config"))) {
-        params->print_config = 1;
+        print_config = true;
       } else {
         parsed = 0;
       }
@@ -584,7 +588,7 @@ CAMLexport void caml_main(char_os **argv)
 
     if (fd < 0) {
       pos = parse_command_line(argv);
-      if (caml_params->print_config) {
+      if (print_config) {
         caml_runtime_standard_library_effective =
           caml_locate_standard_library(argv0,
                                        caml_runtime_standard_library_default,

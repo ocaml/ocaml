@@ -72,8 +72,6 @@ static void init_startup_params(void)
 #endif
   params.trace_level = 0;
   params.cleanup_on_exit = 0;
-  params.print_magic = 0;
-  params.print_config = 0;
   params.event_trace = 0;
 }
 

@@ -43,8 +43,6 @@ struct caml_params {
   uintnat trace_level;
   uintnat runtime_events_log_wsize;
   uintnat verify_heap;
-  uintnat print_magic;
-  uintnat print_config;
 
   uintnat init_percent_free;
   uintnat init_minor_heap_wsz;
