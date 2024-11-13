@@ -136,6 +136,9 @@ Working version
 - #13539: Use nanosleep instead of usleep, if available.
   (Antonin Décimo, review by Miod Vallat and Gabriel Scherer)
 
+- #13606: Fix Numbers.Int_base.compare
+  (Mark Shinwell, review by Vincent Laviron)
+
 ### Build system:
 
 ### Bug fixes:
