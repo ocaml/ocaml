@@ -219,18 +219,6 @@ caml_stat_string caml_search_exe_in_path(const char * name)
   return res;
 }
 
-caml_stat_string caml_search_dll_in_path(struct ext_table * path,
-                                         const char * name)
-{
-  caml_stat_string dllname;
-  caml_stat_string res;
-
-  dllname = caml_stat_strconcat(2, name, ".so");
-  res = caml_search_in_path(path, dllname);
-  caml_stat_free(dllname);
-  return res;
-}
-
 #ifdef WITH_DYNAMIC_LINKING
 #ifdef __CYGWIN__
 /* Use flexdll */

@@ -210,17 +210,6 @@ CAMLexport wchar_t * caml_search_exe_in_path(const wchar_t * name)
   }
 }
 
-wchar_t * caml_search_dll_in_path(struct ext_table * path, const wchar_t * name)
-{
-  wchar_t * dllname;
-  wchar_t * res;
-
-  dllname = caml_stat_wcsconcat(2, name, L".dll");
-  res = caml_search_in_path(path, dllname);
-  caml_stat_free(dllname);
-  return res;
-}
-
 #ifdef WITH_DYNAMIC_LINKING
 
 void * caml_dlopen(wchar_t * libname, int global)

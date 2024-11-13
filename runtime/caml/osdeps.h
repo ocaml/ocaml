@@ -156,11 +156,13 @@ CAMLextern value caml_win32_get_temp_path(void);
 
 #define CAML_DIR_SEP T("\\")
 #define Is_separator(c) (c == '\\' || c == '/')
+#define EXT_DLL L".dll"
 
 #else
 
 #define CAML_DIR_SEP T("/")
 #define Is_separator(c) (c == '/')
+#define EXT_DLL ".so"
 
 #endif /* _WIN32 */
 
