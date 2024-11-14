@@ -199,10 +199,6 @@ typedef char ** argv_t;
 #define unsafe_copy(dst, src, dstsize) strcpy(dst, src)
 #endif
 
-#ifndef __CYGWIN__
-
-/* Normal Unix search path function */
-
 static char * searchpath(char * name)
 {
   static char fullname[PATH_MAX + 1];
@@ -229,56 +225,6 @@ static char * searchpath(char * name)
   }
   return fullname;
 }
-
-#else
-
-/* Special version for Cygwin32: takes care of the ".exe" implicit suffix */
-
-static int file_ok(char * name)
-{
-  int fd;
-  /* Cannot use stat() here because it adds ".exe" implicitly */
-  fd = open(name, O_RDONLY);
-  if (fd == -1) return 0;
-  close(fd);
-  return 1;
-}
-
-static char * searchpath(char * name)
-{
-  char * path, * fullname;
-
-  path = getenv("PATH");
-  fullname = malloc(strlen(name) + (path == NULL ? 0 : strlen(path)) + 6);
-  /* 6 = "/" plus ".exe" plus final "\0" */
-  if (fullname == NULL) return name;
-  /* Check for absolute path name */
-  for (char *p = name; *p != 0; p++) {
-    if (*p == '/' || *p == '\\') {
-      if (file_ok(name)) return name;
-      strcpy(fullname, name);
-      strcat(fullname, ".exe");
-      if (file_ok(fullname)) return fullname;
-      return name;
-    }
-  }
-  /* Search in path */
-  if (path == NULL) return name;
-  while(1) {
-    char * p;
-    for (p = fullname; *path != 0 && *path != ':'; p++, path++) *p = *path;
-    if (p != fullname) *p++ = '/';
-    strcpy(p, name);
-    if (file_ok(fullname)) return fullname;
-    strcat(fullname, ".exe");
-    if (file_ok(fullname)) return fullname;
-    if (*path == 0) break;
-    path++;
-  }
-  return name;
-}
-
-#endif
 
 NORETURN static void exit_with_error(const char *str1,
                                      const char *str2,

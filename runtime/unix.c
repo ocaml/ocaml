@@ -157,50 +157,6 @@ caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
   return caml_stat_strdup(name);
 }
 
-#ifdef __CYGWIN__
-
-/* Cygwin needs special treatment because of the implicit ".exe" at the
-   end of executable file names */
-
-static int cygwin_file_exists(const char * name)
-{
-  int fd, ret;
-  struct stat st;
-  /* Cannot use stat() here because it adds ".exe" implicitly */
-  fd = open(name, O_RDONLY);
-  if (fd == -1) return 0;
-  ret = fstat(fd, &st);
-  close(fd);
-  return ret == 0 && S_ISREG(st.st_mode);
-}
-
-static caml_stat_string cygwin_search_exe_in_path(struct ext_table * path,
-                                                  const char * name)
-{
-  char * dir, * fullname;
-  for (const char *p = name; *p != 0; p++) {
-    if (*p == '/' || *p == '\\') goto not_found;
-  }
-  for (int i = 0; i < path->size; i++) {
-    dir = path->contents[i];
-    if (dir[0] == 0) dir = ".";  /* empty path component = current dir */
-    fullname = caml_stat_strconcat(3, dir, "/", name);
-    if (cygwin_file_exists(fullname)) return fullname;
-    caml_stat_free(fullname);
-    fullname = caml_stat_strconcat(4, dir, "/", name, ".exe");
-    if (cygwin_file_exists(fullname)) return fullname;
-    caml_stat_free(fullname);
-  }
- not_found:
-  if (cygwin_file_exists(name)) return caml_stat_strdup(name);
-  fullname = caml_stat_strconcat(2, name, ".exe");
-  if (cygwin_file_exists(fullname)) return fullname;
-  caml_stat_free(fullname);
-  return caml_stat_strdup(name);
-}
-
-#endif
-
 caml_stat_string caml_search_exe_in_path(const char * name)
 {
   struct ext_table path;
@@ -209,11 +165,7 @@ caml_stat_string caml_search_exe_in_path(const char * name)
 
   caml_ext_table_init(&path, 8);
   tofree = caml_decompose_path(&path, getenv("PATH"));
-#ifndef __CYGWIN__
   res = caml_search_in_path(&path, name);
-#else
-  res = cygwin_search_exe_in_path(&path, name);
-#endif
   caml_stat_free(tofree);
   caml_ext_table_free(&path, 0);
   return res;
