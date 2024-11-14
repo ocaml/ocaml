@@ -159,15 +159,9 @@ caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
 
 caml_stat_string caml_search_exe_in_path(const char * name)
 {
-  struct ext_table path;
-  char * tofree;
-  caml_stat_string res;
-
-  caml_ext_table_init(&path, 8);
-  tofree = caml_decompose_path(&path, getenv("PATH"));
-  res = caml_search_in_path(&path, name);
-  caml_stat_free(tofree);
-  caml_ext_table_free(&path, 0);
+  caml_stat_string res = caml_search_in_system_path(name);
+  if (res == NULL)
+    res = caml_stat_strdup(name);
   return res;
 }
 

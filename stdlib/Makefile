@@ -118,7 +118,7 @@ HEADERLIBS =
 endif
 
 .INTERMEDIATE: tmpheader.exe
-tmpheader.exe: header.$(O)
+tmpheader.exe: header.$(O) libcamlrun.$(A)
 	$(V_MKEXE)$(call MKEXE_VIA_CC,$@,$^ $(HEADERLIBS))
 # Do not strip the header produced by cl
 ifneq "$(TOOLCHAIN)" "msvc"

@@ -69,10 +69,10 @@ CROSSCOMPILERLIBS := $(addprefix compilerlibs/,$(addsuffix .cmxa,\
 .PHONY: crossopt
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 crossopt: cross-flexdll
-	$(MAKE) runtime-all $(OLDS)
+	$(MAKE) runtime $(OLDS)
 else
 # In that case, $(OLDS) is empty, we can depend directly on runtime-all
-crossopt: runtime-all
+crossopt: runtime
 endif
 	$(MAKE) ocamlc $(TOOLS_BYTECODE_TARGETS) expunge$(EXE) \
 	  $(CROSS_COMPILER_OVERRIDES) $(OLDS)

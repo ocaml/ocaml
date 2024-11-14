@@ -172,7 +172,6 @@ NORETURN static void exit_with_error(const wchar_t *wstr1,
 #include <libgen.h>
 #endif
 #include <sys/types.h>
-#include <sys/stat.h>
 
 /* O_BINARY is defined in Gnulib, but is not POSIX */
 #ifndef O_BINARY
@@ -199,34 +198,10 @@ typedef char ** argv_t;
 #define unsafe_copy(dst, src, dstsize) strcpy(dst, src)
 #endif
 
-static char * searchpath(char *name)
+/* caml_search_in_system_path uses caml_stat_alloc */
+void *caml_stat_alloc(size_t size)
 {
-  char *fullname;
-  char *path;
-  struct stat st;
-  size_t len = 0;
-
-  for (char *p = name, len = 0; *p != 0; p++, len++) {
-    if (*p == '/') return NULL;
-  }
-  if ((path = getenv("PATH")) == NULL) return NULL;
-  /* len is now strlen(name) + strlen(path) + separator + terminator */
-  len += strlen(path) + 2;
-  if ((fullname = (char *)malloc(len)) == NULL) return NULL;
-  while(1) {
-    char *p;
-    for (p = fullname; *path != 0 && *path != ':'; p++, path++)
-      if (p < fullname + len) *p = *path;
-    if (p != fullname && p < fullname + len)
-      *p++ = '/';
-    for (char *q = name; *q != 0; p++, q++)
-      if (p < fullname + len) *p = *q;
-    *p = 0;
-    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) break;
-    if (*path == 0) return NULL;
-    path++;
-  }
-  return fullname;
+  return malloc(size);
 }
 
 NORETURN static void exit_with_error(const char *str1,
@@ -418,6 +393,9 @@ NORETURN void __cdecl wmainCRTStartup(void)
 
 #else
 
+/* Borrowed from libcamlrun */
+char * caml_search_in_system_path(const char *);
+
 int main(int argc, char *argv[])
 {
   char *truename, *runtime_path, *argv0_dirname;
@@ -427,7 +405,7 @@ int main(int argc, char *argv[])
   if (argc < 1)
     exit_with_error("Unable to load bytecode image", NULL, NULL);
 
-  truename = searchpath(argv[0]);
+  truename = caml_search_in_system_path(argv[0]);
   if (truename == NULL) truename = argv[0];
   fd = open(truename, O_RDONLY | O_BINARY);
   if (fd == -1 || (runtime_path = read_runtime_path(fd, &rntm_strlen)) == NULL)
