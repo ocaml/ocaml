@@ -441,7 +441,7 @@ static void read_main_debug_info(struct debug_info *di)
 {
   CAMLparam0();
   CAMLlocal3(events, evl, l);
-  char_os *exec_name;
+  const char_os *exec_name;
   int fd, num_events, orig;
   struct channel *chan;
   struct exec_trailer trail;
@@ -458,12 +458,12 @@ static void read_main_debug_info(struct debug_info *di)
     CAMLreturn0;
 
   if (caml_params->cds_file != NULL) {
-    exec_name = (char_os*) caml_params->cds_file;
+    exec_name = caml_params->cds_file;
   } else {
-    exec_name = (char_os*) caml_params->exe_name;
+    exec_name = caml_params->exe_name;
   }
 
-  fd = caml_attempt_open(&exec_name, &trail, 1);
+  fd = caml_attempt_open(exec_name, &trail, 1);
   if (fd < 0) {
     /* Record the failure of caml_attempt_open in di->already-read */
     di->already_read = fd;

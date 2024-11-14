@@ -62,9 +62,11 @@ static void init_startup_params(void)
   atomic_store_relaxed(&caml_verb_gc, CAML_GC_MSG_VERBOSE | CAML_GC_MSG_MINOR);
 #endif
 #ifndef NATIVE_CODE
+  /* TODO #4703 The .cds file should be determined from exe_name */
   cds_file = caml_secure_getenv(T("CAML_DEBUG_FILE"));
   if (cds_file != NULL) {
-    params.cds_file = caml_stat_strdup_os(cds_file);
+    /* Largely by historical accident, resolve CAML_DEBUG_FILE in PATH */
+    params.cds_file = caml_search_exe_in_path(cds_file);
   }
 #endif
   params.trace_level = 0;
