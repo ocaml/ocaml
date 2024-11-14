@@ -306,12 +306,16 @@ let test_runs usr_bin_sh test_program_path test_program
                    uses caml_executable_name) but fails to hand off the bytecode
                    image, which causes ocamlrun to exit with code 127 *)
                 Fail 127
-              else
-                (* stdlib/header.c will fail to find ocamlrun, because it never
-                   uses caml_executable_name and so will either fail to find the
-                   executable or will identify that it is not a bytecode
-                   executable. Somewhat confusingly, it exits with code 2 *)
+              else if Harness.no_caml_executable_name then
+                (* stdlib/header.c will fail to find ocamlrun because
+                   caml_executable_name isn't implemented so will either fail to
+                   find the executable or will identify that it is not a
+                   bytecode executable. Somewhat confusingly, it exits with
+                   code 2 *)
                 Fail 2
+              else
+                Success {executable_name = test_program_path;
+                         argv0 = test_program_path}
             else if Sys.win32 then
               (* stdlib/header.c correctly preserves argv[0] for Windows *)
               Success {executable_name = test_program_path; argv0}
@@ -323,8 +327,13 @@ let test_runs usr_bin_sh test_program_path test_program
               Fail 134
             else
               (* stdlib/header.c does not preserve argv[0] for Unix *)
-              Success {executable_name = argv0_resolved;
-                       argv0 = argv0_resolved}
+              let executable_name =
+                if Harness.no_caml_executable_name then
+                  argv0_resolved
+                else
+                  test_program_path
+              in
+              Success {executable_name; argv0 = executable_name}
         | Custom ->
             if Harness.no_caml_executable_name then
               if argv0_not_ocaml then
