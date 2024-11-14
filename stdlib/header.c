@@ -421,6 +421,9 @@ int main(int argc, char *argv[])
   uint32_t rntm_strlen = 0;
   int fd;
 
+  if (argc < 1)
+    exit_with_error("Unable to load bytecode image", NULL, NULL);
+
   truename = searchpath(argv[0]);
   fd = open(truename, O_RDONLY | O_BINARY);
   if (fd == -1 || (runtime_path = read_runtime_path(fd, &rntm_strlen)) == NULL)
