@@ -279,9 +279,11 @@ static int caml_sys_file_mode(value name)
   struct stat st;
 #endif
   int ret;
-
+  char_os *p;
+  
   if (! caml_string_is_c_safe(name)) { errno = ENOENT; return -1; }
-  ret = stat_os(String_val(name), &st);
+  p = caml_stat_strdup_to_os(String_val(name));
+  ret = stat_os(p, &st);
   if (ret == -1) return -1; else return st.st_mode;
 }
 
