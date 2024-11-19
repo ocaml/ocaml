@@ -20,10 +20,10 @@
 (**
 A type node is printed as
 {[
-    .------------.
-    | <desc>  id |---->
-    |            |--->
-    .------------.
+    .-------------.
+    | <desc>  idˡᵛˡ |---->
+    |             |--->
+    .-------------.
 ]}
 where the description part might be:
 - a path: [list/8!]
