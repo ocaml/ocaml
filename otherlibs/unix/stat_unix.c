@@ -115,6 +115,21 @@ CAMLprim value caml_unix_stat(value path)
   CAMLreturn(stat_aux(0, &buf));
 }
 
+CAMLprim value caml_unix_nonblock_stat(value path)
+{
+  CAMLparam1(path);
+  int ret;
+  struct stat buf;
+  const char * p;
+  caml_unix_check_path(path, "stat");
+  p = String_val(path);
+  ret = stat(p, &buf);
+  if (ret == -1) caml_uerror("stat", path);
+  if (buf.st_size > Max_long && (buf.st_mode & S_IFMT) == S_IFREG)
+    caml_unix_error(EOVERFLOW, "stat", path);
+  CAMLreturn(stat_aux(0, &buf));
+}
+
 CAMLprim value caml_unix_lstat(value path)
 {
   CAMLparam1(path);
@@ -144,6 +159,17 @@ CAMLprim value caml_unix_fstat(value fd)
   caml_enter_blocking_section();
   ret = fstat(Int_val(fd), &buf);
   caml_leave_blocking_section();
+  if (ret == -1) caml_uerror("fstat", Nothing);
+  if (buf.st_size > Max_long && (buf.st_mode & S_IFMT) == S_IFREG)
+    caml_unix_error(EOVERFLOW, "fstat", Nothing);
+  return stat_aux(0, &buf);
+}
+
+CAMLprim value caml_unix_nonblock_fstat(value fd)
+{
+  int ret;
+  struct stat buf;
+  ret = fstat(Int_val(fd), &buf);
   if (ret == -1) caml_uerror("fstat", Nothing);
   if (buf.st_size > Max_long && (buf.st_mode & S_IFMT) == S_IFREG)
     caml_unix_error(EOVERFLOW, "fstat", Nothing);
