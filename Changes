@@ -71,6 +71,10 @@ Working version
   with js_of_ocaml
   (Hugo Heuzard, review by Gabriel Scherer)
 
+- #13620: Avoid copying the string in String.concat and String.split_on_char
+  when the full string is returned.
+  (Christophe Raffalli, review by ...)
+
 ### Other libraries:
 
 - #13429: add `Unix.sigwait`, a binding to the `sigwait` system call;
