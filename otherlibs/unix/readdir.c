@@ -40,3 +40,14 @@ CAMLprim value caml_unix_readdir(value vd)
   if (e == (directory_entry *) NULL) caml_raise_end_of_file();
   return caml_copy_string(e->d_name);
 }
+
+CAMLprim value caml_unix_nonblock_readdir(value vd)
+{
+  DIR * d;
+  directory_entry * e;
+  d = DIR_Val(vd);
+  if (d == (DIR *) NULL) caml_unix_error(EBADF, "readdir", Nothing);
+  e = readdir((DIR *) d);
+  if (e == (directory_entry *) NULL) caml_raise_end_of_file();
+  return caml_copy_string(e->d_name);
+}

@@ -1957,4 +1957,5 @@ module Fast : sig
 
   val stat : string -> stats
   val fstat : file_descr -> stats
+  val readdir : dir_handle -> string
 end

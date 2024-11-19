@@ -350,21 +350,6 @@ CAMLprim value caml_unix_stat(value path)
   CAMLreturn (stat_aux(0, st_ino, &buf));
 }
 
-# FIXME
-CAMLprim value caml_unix_nonblock_stat(value path)
-{
-  CAMLparam1(path);
-  struct _stat64 buf;
-  __int64 st_ino;
-
-  caml_unix_check_path(path, "stat");
-  if (!do_stat(0, 0, String_val(path), NULL, &st_ino, &buf)) {
-    caml_uerror("stat", path);
-  }
-  CAMLreturn (stat_aux(0, st_ino, &buf));
-}
-
-
 CAMLprim value caml_unix_stat_64(value path)
 {
   CAMLparam1(path);
@@ -451,11 +436,6 @@ static value do_fstat(value handle, int use_64)
 }
 
 CAMLprim value caml_unix_fstat(value handle)
-{
-  return do_fstat(handle, 0);
-}
-
-CAMLprim value caml_unix_nonblock_fstat(value handle)
 {
   return do_fstat(handle, 0);
 }

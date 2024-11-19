@@ -1272,8 +1272,9 @@ module Fast = struct
     = "caml_byte_unix_nonblock_single_write" "caml_unix_nonblock_single_write"
         [@@noalloc]
 
-  external stat : string -> stats = "caml_unix_nonblock_stat"
-  external fstat : file_descr -> stats = "caml_unix_nonblock_fstat"
+  let stat = stat
+  let fstat = fstat
+  let readdir = readdir
 
   let read fd buf ofs len =
     if ofs < 0 || len < 0 || ofs+len > Bytes.length buf then
