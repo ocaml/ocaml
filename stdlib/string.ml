@@ -62,6 +62,7 @@ let rec unsafe_blits dst pos sep seplen = function
 
 let concat sep = function
     [] -> ""
+  | [s] -> s
   | l -> let seplen = length sep in bts @@
           unsafe_blits
             (B.create (sum_lengths 0 seplen l))
@@ -228,14 +229,15 @@ let hash x = seeded_hash 0 x
 (* duplicated in bytes.ml *)
 let split_on_char sep s =
   let r = ref [] in
-  let j = ref (length s) in
+  let len = length s in
+  let j = ref len in
   for i = length s - 1 downto 0 do
     if unsafe_get s i = sep then begin
       r := sub s (i + 1) (!j - i - 1) :: !r;
       j := i
     end
   done;
-  sub s 0 !j :: !r
+  if !j = len then [s] else sub s 0 !j :: !r
 
 type t = string
 
