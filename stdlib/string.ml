@@ -40,7 +40,7 @@ let empty = ""
 let of_bytes = B.to_string
 let to_bytes = B.of_string
 let sub s ofs len =
-  if ofs = 0 && length s == len then s else
+  if length s = len then s else
   B.sub (bos s) ofs len |> bts
 let blit =
   B.blit_string
@@ -230,9 +230,8 @@ let hash x = seeded_hash 0 x
 (* duplicated in bytes.ml *)
 let split_on_char sep s =
   let r = ref [] in
-  let len = length s in
-  let j = ref len in
-  for i = len - 1 downto 0 do
+  let j = ref (length s) in
+  for i = length s - 1 downto 0 do
     if unsafe_get s i = sep then begin
       r := sub s (i + 1) (!j - i - 1) :: !r;
       j := i
