@@ -393,7 +393,7 @@ type t = bytes
 let compare (x: t) (y: t) = Stdlib.compare x y
 external equal : t -> t -> bool = "caml_bytes_equal" [@@noalloc]
 
-(* duplicated in string.ml, except the extra case returning [s] *)
+(* duplicated in string.ml *)
 let split_on_char sep s =
   let r = ref [] in
   let j = ref (length s) in
