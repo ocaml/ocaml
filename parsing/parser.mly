@@ -3302,7 +3302,7 @@ str_exception_declaration:
   attrs = post_item_attributes
   { let loc = make_loc $sloc in
     let docs = symbol_docs $sloc in
-    Te.mk_exception ~attrs
+    Te.mk_exception ~attrs ~loc
       (Te.rebind id lid ~attrs:(attrs1 @ attrs2) ~loc ~docs)
     , ext }
 ;
@@ -3317,7 +3317,7 @@ sig_exception_declaration:
     { let vars, args, res = vars_args_res in
       let loc = make_loc ($startpos, $endpos(attrs2)) in
       let docs = symbol_docs $sloc in
-      Te.mk_exception ~attrs
+      Te.mk_exception ~attrs ~loc
         (Te.decl id ~vars ~args ?res ~attrs:(attrs1 @ attrs2) ~loc ~docs)
       , ext }
 ;
@@ -3390,7 +3390,7 @@ label_declaration_semi:
   attrs2 = post_item_attributes
     { let docs = symbol_docs $sloc in
       let attrs = attrs1 @ attrs2 in
-      Te.mk tid cs ~params ~priv ~attrs ~docs,
+      Te.mk tid cs ~params ~priv ~attrs ~docs ~loc:(make_loc $sloc),
       ext }
 ;
 %inline extension_constructor(opening):

@@ -129,6 +129,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #XXXXX: Added location to exception definitions and type extensions
+  (Samuel Vivien, review by ...)
+
 - #13425: undocumented -dmatchcomp flag for the debug
   output of the pattern-matching compiler
   (Gabriel Scherer, review by Vincent Laviron and Nicolás Ojeda Bär)
