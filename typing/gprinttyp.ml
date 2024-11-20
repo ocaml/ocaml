@@ -553,7 +553,8 @@ module Digraph = struct
     | 6 -> "⁶"
     | 7 -> "⁷"
     | 8 -> "⁸"
-    | _ -> "⁹"
+    | 9 -> "⁹"
+    | _ -> assert false
     in
     Format.pp_print_string ppf s
 
