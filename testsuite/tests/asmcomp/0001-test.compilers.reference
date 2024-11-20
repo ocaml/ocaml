@@ -1,2 +1,2 @@
 File "0001-test.ml", line 1:
-Warning 24 [bad-module-name]: bad source file name: "0001-test" is not a valid module name.
+Warning 24 [bad-module-name]: bad source file name: 0001-test is not a valid module name.

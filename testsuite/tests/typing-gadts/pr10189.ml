@@ -55,8 +55,7 @@ Line 6, characters 2-20:
 6 |   let None = y in () ;;
       ^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Some A
+  Here is an example of a case that is not matched: "Some A"
 
 val g : M.j t option -> unit = <fun>
 |}]
@@ -83,8 +82,7 @@ Line 9, characters 2-20:
 9 |   let None = y in () ;;
       ^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Some A
+  Here is an example of a case that is not matched: "Some A"
 
 val g : M.j t option -> unit = <fun>
 |}]
@@ -110,8 +108,7 @@ Line 9, characters 2-20:
 9 |   let None = y in () ;;
       ^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Some A
+  Here is an example of a case that is not matched: "Some A"
 
 val g : 'a M.j t option -> unit = <fun>
 |}]

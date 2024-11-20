@@ -1,32 +1,32 @@
 File "w53_without_cmi.ml", line 6, characters 4-9:
 6 | [@@@alert xyz "xyz"] (* rejected *)
         ^^^^^
-Warning 53 [misplaced-attribute]: the "alert" attribute cannot appear in this context
+Warning 53 [misplaced-attribute]: the alert attribute cannot appear in this context
 
 File "w53_without_cmi.ml", line 9, characters 6-11:
 9 |   [@@@alert foo "foo"] (* rejected *)
           ^^^^^
-Warning 53 [misplaced-attribute]: the "alert" attribute cannot appear in this context
+Warning 53 [misplaced-attribute]: the alert attribute cannot appear in this context
 
 File "w53_with_cmi.mli", line 6, characters 4-9:
 6 | [@@@alert xyz "xyz"] (* rejected *)
         ^^^^^
-Warning 53 [misplaced-attribute]: the "alert" attribute cannot appear in this context
+Warning 53 [misplaced-attribute]: the alert attribute cannot appear in this context
 
 File "w53_with_cmi.ml", line 1, characters 4-9:
 1 | [@@@alert foo "foo"] (* rejected *)
         ^^^^^
-Warning 53 [misplaced-attribute]: the "alert" attribute cannot appear in this context
+Warning 53 [misplaced-attribute]: the alert attribute cannot appear in this context
 
 File "w53_with_cmi.ml", line 2, characters 4-9:
 2 | [@@@alert bar "bar"] (* rejected *)
         ^^^^^
-Warning 53 [misplaced-attribute]: the "alert" attribute cannot appear in this context
+Warning 53 [misplaced-attribute]: the alert attribute cannot appear in this context
 
 File "w53_with_cmi.ml", line 6, characters 4-9:
 6 | [@@@alert xyz "xyz"] (* rejected *)
         ^^^^^
-Warning 53 [misplaced-attribute]: the "alert" attribute cannot appear in this context
+Warning 53 [misplaced-attribute]: the alert attribute cannot appear in this context
 File "w53_across_cmi.ml", line 17, characters 5-20:
 17 | open W53_without_cmi
           ^^^^^^^^^^^^^^^

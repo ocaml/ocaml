@@ -73,8 +73,8 @@ let rec test x = (test[@tailcall foobar]) x;;
 Line 1, characters 24-32:
 1 | let rec test x = (test[@tailcall foobar]) x;;
                             ^^^^^^^^
-Warning 47 [attribute-payload]: illegal payload for attribute 'tailcall'.
-Only an optional boolean literal is supported.
+Warning 47 [attribute-payload]: illegal payload for attribute "tailcall".
+  Only an optional boolean literal is supported.
 
 val test : 'a -> 'b = <fun>
 |}]

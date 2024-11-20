@@ -889,6 +889,7 @@ module Style = struct
     pp_close_stag ppf ()
 
   let inline_code ppf s = as_inline_code Format_doc.pp_print_string ppf s
+  let hint ppf = Format_doc.fprintf ppf "@{<hint>Hint@}"
 
   (* either prints the tag of [s] or delegates to [or_else] *)
   let mark_open_tag ~or_else s =

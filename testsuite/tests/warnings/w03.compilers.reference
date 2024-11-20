@@ -6,4 +6,4 @@ Alert deprecated: A
 File "w03.ml", line 17, characters 15-25:
 17 | exception B [@@deprecated]
                     ^^^^^^^^^^
-Warning 53 [misplaced-attribute]: the "deprecated" attribute cannot appear in this context
+Warning 53 [misplaced-attribute]: the deprecated attribute cannot appear in this context

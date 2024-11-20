@@ -507,6 +507,7 @@ module Style : sig
     inline_code: tag_style;
   }
 
+  val hint: Format_doc.formatter -> unit
   val as_inline_code: 'a Format_doc.printer -> 'a Format_doc.printer
   val inline_code: string Format_doc.printer
 

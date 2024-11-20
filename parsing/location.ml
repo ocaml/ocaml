@@ -742,19 +742,12 @@ let batch_mode_printer : report_printer =
     Format.fprintf ppf "@[<v>%a:@ %a@]" print_loc loc
       (Fmt.compat highlight) loc
   in
-  let pp_txt ppf txt = Format.fprintf ppf "@[%a@]" Fmt.Doc.format txt in
+  let pp_txt ppf txt = Format.fprintf ppf "%a" Fmt.Doc.format txt in
   let pp_footnote ppf f =
     Option.iter (Format.fprintf ppf "@,%a" pp_txt) f
   in
-  let pp self ppf report =
-    setup_tags ();
-    separate_new_message ppf;
-    (* Make sure we keep [num_loc_lines] updated.
-       The tabulation box is here to give submessage the option
-       to be aligned with the main message box
-    *)
-    print_updating_num_loc_lines ppf (fun ppf () ->
-      Format.fprintf ppf "@[<v>%a%a%a: %a%a%a%a%a@]@."
+  let error_format self ppf report =
+    Format.fprintf ppf "@[<v>%a%a%a: %a@[%a@]%a%a%a@]@."
       Format.pp_open_tbox ()
       (self.pp_main_loc self report) report.main.loc
       (self.pp_report_kind self report) report.kind
@@ -763,7 +756,30 @@ let batch_mode_printer : report_printer =
       (self.pp_submsgs self report) report.sub
       pp_footnote report.footnote
       Format.pp_close_tbox ()
-    ) ()
+  in
+  let warning_format self ppf report =
+    Format.fprintf ppf "@[<v>%a@[<b 2>%a: %a@]%a%a@]@."
+      (self.pp_main_loc self report) report.main.loc
+      (self.pp_report_kind self report) report.kind
+      (self.pp_main_txt self report) report.main.txt
+      (self.pp_submsgs self report) report.sub
+      pp_footnote report.footnote
+  in
+  let pp self ppf report =
+    setup_tags ();
+    separate_new_message ppf;
+    let printer ppf () = match report.kind with
+      | Report_warning _
+      | Report_warning_as_error _
+      | Report_alert _ | Report_alert_as_error _ ->
+          warning_format self ppf report
+      | Report_error -> error_format self ppf report
+    in
+    (* Make sure we keep [num_loc_lines] updated.
+       The tabulation box is here to give submessage the option
+       to be aligned with the main message box
+    *)
+    print_updating_num_loc_lines ppf printer ()
   in
   let pp_report_kind _self _ ppf = function
     | Report_error -> Format.fprintf ppf "@{<error>Error@}"
@@ -786,7 +802,7 @@ let batch_mode_printer : report_printer =
     ) msgs
   in
   let pp_submsg self report ppf { loc; txt } =
-    Format.fprintf ppf "@[%a  %a@]"
+    Format.fprintf ppf "@[%a  @[%a@]@]"
       (self.pp_submsg_loc self report) loc
       (self.pp_submsg_txt self report) txt
   in
@@ -871,11 +887,10 @@ let default_warning_alert_reporter report mk (loc: t) w : report option =
   match report w with
   | `Inactive -> None
   | `Active { Warnings.id; message; is_error; sub_locs } ->
-      let msg_of_str str = Format_doc.Doc.(empty |> string str) in
       let kind = mk is_error id in
-      let main = { loc; txt = msg_of_str message } in
+      let main = { loc; txt = message } in
       let sub = List.map (fun (loc, sub_message) ->
-        { loc; txt = msg_of_str sub_message }
+        { loc; txt = sub_message }
       ) sub_locs in
       Some { kind; main; sub; footnote=None }
 
