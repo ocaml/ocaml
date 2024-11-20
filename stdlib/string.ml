@@ -40,7 +40,7 @@ let empty = ""
 let of_bytes = B.to_string
 let to_bytes = B.of_string
 let sub s ofs len =
-  if ofs = 0 && s == len then s else
+  if ofs = 0 && length s == len then s else
   B.sub (bos s) ofs len |> bts
 let blit =
   B.blit_string
