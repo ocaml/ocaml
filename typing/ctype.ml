@@ -134,6 +134,8 @@ exception Cannot_subst
 
 exception Cannot_unify_universal_variables
 
+exception Out_of_scope_universal_variable
+
 exception Matches_failure of Env.t * unification_error
 
 exception Incompatible
@@ -349,10 +351,6 @@ end
 
 (**** unification mode ****)
 
-type equations_generation =
-  | Forbidden
-  | Allowed of { equated_types : TypePairs.t }
-
 type unification_environment =
   | Expression of
       { env : Env.t;
@@ -360,7 +358,7 @@ type unification_environment =
     (* normal unification mode *)
   | Pattern of
       { penv : Pattern_env.t;
-        equations_generation : equations_generation;
+        equated_types : TypePairs.t;
         assume_injective : bool;
         unify_eq_set : TypePairs.t; }
     (* GADT constraint unification mode:
@@ -407,16 +405,12 @@ let in_subst_mode = function
   | Expression {in_subst} -> in_subst
   | Pattern _ -> false
 
-let can_generate_equations = function
-  | Expression _ | Pattern { equations_generation = Forbidden } -> false
-  | Pattern { equations_generation = Allowed _ } -> true
-
 (* Can only be called when generate_equations is true *)
 let record_equation uenv t1 t2 =
   match uenv with
-  | Expression _ | Pattern { equations_generation = Forbidden } ->
+  | Expression _ ->
       invalid_arg "Ctype.record_equation"
-  | Pattern { equations_generation = Allowed { equated_types } } ->
+  | Pattern { equated_types } ->
       TypePairs.add equated_types (t1, t2)
 
 let can_assume_injective = function
@@ -437,11 +431,6 @@ let without_assume_injective uenv f =
   match uenv with
   | Expression _ as uenv -> f uenv
   | Pattern r -> f (Pattern { r with assume_injective = false })
-
-let without_generating_equations uenv f =
-  match uenv with
-  | Expression _ as uenv -> f uenv
-  | Pattern r -> f (Pattern { r with equations_generation = Forbidden })
 
 (*** Checks for type definitions ***)
 
@@ -1982,13 +1971,20 @@ let rec unify_univar t1 t2 = function
           raise Cannot_unify_universal_variables
       end
   | [] ->
-     Misc.fatal_error "Ctype.unify_univar: univar not in scope"
+      raise Out_of_scope_universal_variable
 
 (* The same as [unify_univar], but raises the appropriate exception instead of
    [Cannot_unify_universal_variables] *)
-let unify_univar_for tr_exn t1 t2 univar_pairs =
-  try unify_univar t1 t2 univar_pairs
-  with Cannot_unify_universal_variables -> raise_unexplained_for tr_exn
+let unify_univar_for (type a) (tr_exn : a trace_exn) t1 t2 univar_pairs =
+  try unify_univar t1 t2 univar_pairs with
+  | Cannot_unify_universal_variables -> raise_unexplained_for tr_exn
+  | Out_of_scope_universal_variable ->
+      (* Allow unscoped univars when checking for equality, since one
+         might want to compare arbitrary subparts of types, ignoring scopes;
+         see Typedecl_variance (#13514) for instance *)
+      match tr_exn with
+      | Equality -> raise_unexplained_for tr_exn
+      | _ -> fatal_error "Ctype.unify_univar_for: univar not in scope"
 
 (* Test the occurrence of free univars in a type *)
 (* That's way too expensive. Must do some kind of caching *)
@@ -2334,12 +2330,21 @@ let rec expands_to_datatype env ty =
       end
   | _ -> false
 
-(* [mcomp] tests if two types are "compatible" -- i.e., if they could ever
-   unify.  (This is distinct from [eqtype], which checks if two types *are*
-   exactly the same.)  This is used to decide whether GADT cases are
-   unreachable.  It is broadly part of unification. *)
+(* [mcomp] tests if two types are "compatible" -- i.e., if there could
+   exist a witness of their equality. This is distinct from [eqtype],
+   which checks if two types *are*  exactly the same.
+   [mcomp] is used to decide whether GADT cases are unreachable.
+   The existence of a witness is necessarily an incomplete property,
+   i.e. there exists types for which we cannot tell if an equality
+   witness could exist or not. Typically, this is the case for
+   abstract types, which could be equal to anything, depending on
+   their actual definition. As a result [mcomp] overapproximates
+   compatibilty, i.e. when it says that two types are incompatible, we
+   are sure that there exists no equality witness, but if it does not
+   say so, there is no guarantee that such a witness could exist.
+ *)
 
-(* mcomp type_pairs subst env t1 t2 does not raise an
+(* [mcomp type_pairs subst env t1 t2] should not raise an
    exception if it is possible that t1 and t2 are actually
    equal, assuming the types in type_pairs are equal and
    that the mapping subst holds.
@@ -2406,8 +2411,10 @@ let rec mcomp type_pairs env t1 t2 =
                  t1 tl1 t2 tl2 (mcomp type_pairs env)
              with Escape _ -> raise Incompatible)
         | (Tunivar _, Tunivar _) ->
-            (try unify_univar t1' t2' !univar_pairs
-             with Cannot_unify_universal_variables -> raise Incompatible)
+            begin try unify_univar t1' t2' !univar_pairs with
+            | Cannot_unify_universal_variables -> raise Incompatible
+            | Out_of_scope_universal_variable -> ()
+            end
         | (_, _) ->
             raise Incompatible
       end
@@ -2694,10 +2701,8 @@ let unify3_var uenv t1' t2 t2' =
   | exception Unify_trace _ when in_pattern_mode uenv ->
       reify uenv t1';
       reify uenv t2';
-      if can_generate_equations uenv then begin
-        occur_univar ~inj_only:true (get_env uenv) t2';
-        record_equation uenv t1' t2';
-      end
+      occur_univar ~inj_only:true (get_env uenv) t2';
+      record_equation uenv t1' t2'
 
 (*
    1. When unifying two non-abbreviated types, one type is made a link
@@ -2856,7 +2861,7 @@ and unify3 uenv t1 t1' t2 t2' =
       | (Ttuple tl1, Ttuple tl2) ->
           unify_list uenv tl1 tl2
       | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
-          if not (can_generate_equations uenv) then
+          if not (in_pattern_mode uenv) then
             unify_list uenv tl1 tl2
           else if can_assume_injective uenv then
             without_assume_injective uenv (fun uenv -> unify_list uenv tl1 tl2)
@@ -2872,21 +2877,16 @@ and unify3 uenv t1 t1' t2 t2' =
             in
             List.iter2
               (fun i (t1, t2) ->
-                if i then unify uenv t1 t2 else
-                without_generating_equations uenv
-                  begin fun uenv ->
-                    let snap = snapshot () in
-                    try unify uenv t1 t2 with Unify_trace _ ->
-                      backtrack snap;
-                      reify uenv t1;
-                      reify uenv t2
-                  end)
+                if i then unify uenv t1 t2 else begin
+                  reify uenv t1;
+                  reify uenv t2
+                end)
               inj (List.combine tl1 tl2)
       | (Tconstr (path,[],_),
          Tconstr (path',[],_))
-        when let env = get_env uenv in
-        is_instantiable env path && is_instantiable env path'
-        && can_generate_equations uenv ->
+        when in_pattern_mode uenv &&
+        let env = get_env uenv in
+        is_instantiable env path && is_instantiable env path' ->
           let source, destination =
             if Path.scope path > Path.scope path'
             then  path , t2'
@@ -2895,24 +2895,20 @@ and unify3 uenv t1 t1' t2 t2' =
           record_equation uenv t1' t2';
           add_gadt_equation uenv source destination
       | (Tconstr (path,[],_), _)
-        when is_instantiable (get_env uenv) path
-        && can_generate_equations uenv ->
+        when in_pattern_mode uenv && is_instantiable (get_env uenv) path ->
           reify uenv t2';
           record_equation uenv t1' t2';
           add_gadt_equation uenv path t2'
       | (_, Tconstr (path,[],_))
-        when is_instantiable (get_env uenv) path
-        && can_generate_equations uenv ->
+        when in_pattern_mode uenv && is_instantiable (get_env uenv) path ->
           reify uenv t1';
           record_equation uenv t1' t2';
           add_gadt_equation uenv path t1'
       | (Tconstr (_,_,_), _) | (_, Tconstr (_,_,_)) when in_pattern_mode uenv ->
           reify uenv t1';
           reify uenv t2';
-          if can_generate_equations uenv then (
-            mcomp_for Unify (get_env uenv) t1' t2';
-            record_equation uenv t1' t2'
-          )
+          mcomp_for Unify (get_env uenv) t1' t2';
+          record_equation uenv t1' t2'
       | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
           unify_fields uenv fi1 fi2;
           (* Type [t2'] may have been instantiated by [unify_fields] *)
@@ -2934,10 +2930,8 @@ and unify3 uenv t1 t1' t2 t2' =
               backtrack snap;
               reify uenv t1';
               reify uenv t2';
-              if can_generate_equations uenv then (
-                mcomp_for Unify (get_env uenv) t1' t2';
-                record_equation uenv t1' t2'
-              )
+              mcomp_for Unify (get_env uenv) t1' t2';
+              record_equation uenv t1' t2'
           end
       | (Tfield(f,kind,_,rem), Tnil) | (Tnil, Tfield(f,kind,_,rem)) ->
           begin match field_kind_repr kind with
@@ -3285,10 +3279,9 @@ let unify uenv ty1 ty2 =
 
 let unify_gadt (penv : Pattern_env.t) ty1 ty2 =
   let equated_types = TypePairs.create 0 in
-  let equations_generation = Allowed { equated_types } in
   let uenv = Pattern
       { penv;
-        equations_generation;
+        equated_types;
         assume_injective = true;
         unify_eq_set = TypePairs.create 11; }
   in

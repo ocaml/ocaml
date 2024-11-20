@@ -390,7 +390,7 @@ let format_pp_token state size = function
     end
 
   | Pp_if_newline ->
-    if state.pp_current_indent != state.pp_margin - state.pp_space_left
+    if state.pp_current_indent <> state.pp_margin - state.pp_space_left
     then pp_skip_token state
 
   | Pp_break { fits; breaks } ->

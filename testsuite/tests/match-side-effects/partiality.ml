@@ -35,10 +35,10 @@ Lines 4-8, characters 2-32:
 6 |   | {a = _;     b = None} -> 1
 7 |   | {a = _;     b = _} when (x.b <- None; false) -> 2
 8 |   | {a = true;  b = Some y} -> y
-Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled
-as partial, even if it appears to be total. It may generate a Match_failure
-exception. This typically occurs due to complex matches on mutable fields.
-(see manual section 13.5.5)
+Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled as
+  partial, even if it appears to be total. It may generate a "Match_failure"
+  exception. This typically occurs due to complex matches on mutable fields.
+  (see manual section 13.5.5)
 (let
   (f/281 =
      (function x/283 : int
@@ -99,10 +99,10 @@ Lines 2-5, characters 2-32:
 3 |   | {a = false; b = _} -> 0
 4 |   | {a = _;     b = None} -> 1
 5 |   | {a = true;  b = Some y} -> y
-Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled
-as partial, even if it appears to be total. It may generate a Match_failure
-exception. This typically occurs due to complex matches on mutable fields.
-(see manual section 13.5.5)
+Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled as
+  partial, even if it appears to be total. It may generate a "Match_failure"
+  exception. This typically occurs due to complex matches on mutable fields.
+  (see manual section 13.5.5)
 (let
   (f/298 =
      (function x/299 : int
@@ -141,10 +141,10 @@ Lines 2-6, characters 2-13:
 4 |   | _ when (r := None; false) -> 1
 5 |   | Some { contents = Some n } -> n
 6 |   | None -> 3
-Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled
-as partial, even if it appears to be total. It may generate a Match_failure
-exception. This typically occurs due to complex matches on mutable fields.
-(see manual section 13.5.5)
+Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled as
+  partial, even if it appears to be total. It may generate a "Match_failure"
+  exception. This typically occurs due to complex matches on mutable fields.
+  (see manual section 13.5.5)
 (let
   (f/305 =
      (function r/306 : int
@@ -272,10 +272,10 @@ Lines 2-6, characters 2-13:
 4 |   | _ when (r := ((), None); false) -> 1
 5 |   | Some { contents = ((), Some n) } -> n
 6 |   | None -> 3
-Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled
-as partial, even if it appears to be total. It may generate a Match_failure
-exception. This typically occurs due to complex matches on mutable fields.
-(see manual section 13.5.5)
+Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled as
+  partial, even if it appears to be total. It may generate a "Match_failure"
+  exception. This typically occurs due to complex matches on mutable fields.
+  (see manual section 13.5.5)
 (let
   (deep/342 =
      (function r/344 : int

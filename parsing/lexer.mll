@@ -36,73 +36,101 @@ type error =
   | Invalid_char_in_ident of Uchar.t
   | Non_lowercase_delimiter of string
   | Capitalized_raw_identifier of string
+  | Unknown_keyword of string
 
 exception Error of error * Location.t
 
 (* The table of keywords *)
 
-let keyword_table =
-  create_hashtable 149 [
-    "and", AND;
-    "as", AS;
-    "assert", ASSERT;
-    "begin", BEGIN;
-    "class", CLASS;
-    "constraint", CONSTRAINT;
-    "do", DO;
-    "done", DONE;
-    "downto", DOWNTO;
-    "effect", EFFECT;
-    "else", ELSE;
-    "end", END;
-    "exception", EXCEPTION;
-    "external", EXTERNAL;
-    "false", FALSE;
-    "for", FOR;
-    "fun", FUN;
-    "function", FUNCTION;
-    "functor", FUNCTOR;
-    "if", IF;
-    "in", IN;
-    "include", INCLUDE;
-    "inherit", INHERIT;
-    "initializer", INITIALIZER;
-    "lazy", LAZY;
-    "let", LET;
-    "match", MATCH;
-    "method", METHOD;
-    "module", MODULE;
-    "mutable", MUTABLE;
-    "new", NEW;
-    "nonrec", NONREC;
-    "object", OBJECT;
-    "of", OF;
-    "open", OPEN;
-    "or", OR;
+let all_keywords =
+  let v5_3 = Some (5,3) in
+  let v1_0 = Some (1,0) in
+  let v1_6 = Some (1,6) in
+  let v4_2 = Some (4,2) in
+  let always = None in
+  [
+    "and", AND, always;
+    "as", AS, always;
+    "assert", ASSERT, v1_6;
+    "begin", BEGIN, always;
+    "class", CLASS, v1_0;
+    "constraint", CONSTRAINT, v1_0;
+    "do", DO, always;
+    "done", DONE, always;
+    "downto", DOWNTO, always;
+    "effect", EFFECT, v5_3;
+    "else", ELSE, always;
+    "end", END, always;
+    "exception", EXCEPTION, always;
+    "external", EXTERNAL, always;
+    "false", FALSE, always;
+    "for", FOR, always;
+    "fun", FUN, always;
+    "function", FUNCTION, always;
+    "functor", FUNCTOR, always;
+    "if", IF, always;
+    "in", IN, always;
+    "include", INCLUDE, always;
+    "inherit", INHERIT, v1_0;
+    "initializer", INITIALIZER, v1_0;
+    "lazy", LAZY, v1_6;
+    "let", LET, always;
+    "match", MATCH, always;
+    "method", METHOD, v1_0;
+    "module", MODULE, always;
+    "mutable", MUTABLE, always;
+    "new", NEW, v1_0;
+    "nonrec", NONREC, v4_2;
+    "object", OBJECT, v1_0;
+    "of", OF, always;
+    "open", OPEN, always;
+    "or", OR, always;
 (*  "parser", PARSER; *)
-    "private", PRIVATE;
-    "rec", REC;
-    "sig", SIG;
-    "struct", STRUCT;
-    "then", THEN;
-    "to", TO;
-    "true", TRUE;
-    "try", TRY;
-    "type", TYPE;
-    "val", VAL;
-    "virtual", VIRTUAL;
-    "when", WHEN;
-    "while", WHILE;
-    "with", WITH;
+    "private", PRIVATE, v1_0;
+    "rec", REC, always;
+    "sig", SIG, always;
+    "struct", STRUCT, always;
+    "then", THEN, always;
+    "to", TO, always;
+    "true", TRUE, always;
+    "try", TRY, always;
+    "type", TYPE, always;
+    "val", VAL, always;
+    "virtual", VIRTUAL, v1_0;
+    "when", WHEN, always;
+    "while", WHILE, always;
+    "with", WITH, always;
 
-    "lor", INFIXOP3("lor"); (* Should be INFIXOP2 *)
-    "lxor", INFIXOP3("lxor"); (* Should be INFIXOP2 *)
-    "mod", INFIXOP3("mod");
-    "land", INFIXOP3("land");
-    "lsl", INFIXOP4("lsl");
-    "lsr", INFIXOP4("lsr");
-    "asr", INFIXOP4("asr")
+    "lor", INFIXOP3("lor"), always; (* Should be INFIXOP2 *)
+    "lxor", INFIXOP3("lxor"), always; (* Should be INFIXOP2 *)
+    "mod", INFIXOP3("mod"), always;
+    "land", INFIXOP3("land"), always;
+    "lsl", INFIXOP4("lsl"), always;
+    "lsr", INFIXOP4("lsr"), always;
+    "asr", INFIXOP4("asr"), always
 ]
+
+
+let keyword_table = Hashtbl.create 149
+
+let populate_keywords (version,keywords) =
+  let greater (x:(int*int) option) (y:(int*int) option) =
+    match x, y with
+    | None, _ | _, None -> true
+    | Some x, Some y -> x >= y
+  in
+  let tbl = keyword_table in
+  Hashtbl.clear tbl;
+  let add_keyword (name, token, since) =
+    if greater version since then Hashtbl.replace tbl name (Some token)
+  in
+  List.iter add_keyword all_keywords;
+  List.iter (fun name ->
+    match List.find (fun (n,_,_) -> n = name) all_keywords with
+    | (_,tok,_) -> Hashtbl.replace tbl name (Some tok)
+    | exception Not_found -> Hashtbl.replace tbl name None
+    ) keywords
+
 
 (* To buffer string literals *)
 
@@ -294,7 +322,14 @@ let lax_delim raw_name =
      if Utf8_lexeme.is_lowercase name then Some name
      else None
 
-let is_keyword name = Hashtbl.mem keyword_table name
+let is_keyword name =
+  Hashtbl.mem keyword_table name
+
+let find_keyword lexbuf name =
+  match Hashtbl.find keyword_table name with
+  | Some x -> x
+  | None -> error lexbuf (Unknown_keyword name)
+  | exception Not_found -> LIDENT name
 
 let check_label_name ?(raw_escape=false) lexbuf name =
   if Utf8_lexeme.is_capitalized name then
@@ -395,6 +430,11 @@ let prepare_error loc = function
         "%a cannot be used as a quoted string delimiter,@ \
          it must contain only lowercase letters."
          Style.inline_code name
+  | Unknown_keyword name ->
+      Location.errorf ~loc
+      "%a has been defined as an additional keyword.@ \
+       This version of OCaml does not support this keyword."
+      Style.inline_code name
 
 let () =
   Location.register_error_of_exn
@@ -489,8 +529,7 @@ rule token = parse
         OPTLABEL name
       }
   | lowercase identchar * as name
-      { try Hashtbl.find keyword_table name
-        with Not_found -> LIDENT name }
+      { find_keyword lexbuf name }
   | uppercase identchar * as name
       { UIDENT name } (* No capitalized keywords *)
   | (raw_ident_escape? as escape) (ident_ext as raw_name)
@@ -960,7 +999,8 @@ and skip_hash_bang = parse
     in
       loop NoLine Initial lexbuf
 
-  let init () =
+  let init ?(keyword_edition=None,[]) () =
+    populate_keywords keyword_edition;
     is_in_string := false;
     comment_start_loc := [];
     comment_list := [];

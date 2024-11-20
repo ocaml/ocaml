@@ -16181,10 +16181,10 @@ case $host in #(
     arch=i386; system=beos ;; #(
   i[3456]86-*-cygwin) :
     arch=i386; system=cygwin ;; #(
-  i[3456]86-*-gnu*) :
-    arch=i386; system=gnu ;; #(
   i[3456]86-*-mingw32*) :
     arch=i386; system=mingw ;; #(
+  i[3456]86-*-gnu*) :
+    arch=i386; system=gnu ;; #(
   i686-pc-windows) :
     arch=i386; system=win32 ;; #(
   x86_64-pc-windows) :
@@ -16230,8 +16230,6 @@ case $host in #(
     arch=arm; system=openbsd ;; #(
   x86_64-*-linux*) :
     has_native_backend=yes; arch=amd64; system=linux ;; #(
-  x86_64-*-gnu*) :
-    arch=amd64; system=gnu ;; #(
   x86_64-*-dragonfly*) :
     arch=amd64; system=dragonfly ;; #(
   x86_64-*-solaris*) :
@@ -16268,7 +16266,9 @@ fi ;; #(
   x86_64-*-cygwin*) :
     has_native_backend=yes; arch=amd64; system=cygwin ;; #(
   riscv64-*-linux*) :
-    has_native_backend=yes; arch=riscv; model=riscv64; system=linux
+    has_native_backend=yes; arch=riscv; model=riscv64; system=linux ;; #(
+  x86_64-*-gnu*) :
+    has_native_backend=yes; arch=amd64; system=gnu
  ;; #(
   *) :
      ;;
@@ -20251,6 +20251,67 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
+
+## prctl
+ac_fn_check_decl "$LINENO" "prctl" "ac_cv_have_decl_prctl" "#include <sys/prctl.h>
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_prctl" = xyes
+then :
+  printf "%s\n" "#define HAS_DECL_PRCTL  1" >>confdefs.h
+
+fi
+
+## pthread_setname_np
+
+  for ac_func in pthread_setname_np
+do :
+  ac_fn_c_check_func "$LINENO" "pthread_setname_np" "ac_cv_func_pthread_setname_np"
+if test "x$ac_cv_func_pthread_setname_np" = xyes
+then :
+  printf "%s\n" "#define HAVE_PTHREAD_SETNAME_NP 1" >>confdefs.h
+ printf "%s\n" "#define HAS_PTHREAD_SETNAME_NP 1" >>confdefs.h
+
+fi
+
+done
+
+## pthread_set_name_np
+
+  for ac_func in pthread_set_name_np
+do :
+  ac_fn_c_check_func "$LINENO" "pthread_set_name_np" "ac_cv_func_pthread_set_name_np"
+if test "x$ac_cv_func_pthread_set_name_np" = xyes
+then :
+  printf "%s\n" "#define HAVE_PTHREAD_SET_NAME_NP 1" >>confdefs.h
+ printf "%s\n" "#define HAS_PTHREAD_SET_NAME_NP 1" >>confdefs.h
+
+fi
+
+done
+
+## SetThreadDescription
+
+  for ac_func in SetThreadDescription
+do :
+  ac_fn_c_check_func "$LINENO" "SetThreadDescription" "ac_cv_func_SetThreadDescription"
+if test "x$ac_cv_func_SetThreadDescription" = xyes
+then :
+  printf "%s\n" "#define HAVE_SETTHREADDESCRIPTION 1" >>confdefs.h
+ printf "%s\n" "#define HAS_SETTHREADDESCRIPTION 1" >>confdefs.h
+
+fi
+
+done
+
+ac_fn_check_decl "$LINENO" "SetThreadDescription" "ac_cv_have_decl_SetThreadDescription" "#define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+    #include <processthreadsapi.h>
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_SetThreadDescription" = xyes
+then :
+  printf "%s\n" "#define HAS_DECL_SETTHREADDESCRIPTION 1" >>confdefs.h
+
+fi
 
 ## Activate the systhread library
 

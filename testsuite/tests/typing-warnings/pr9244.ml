@@ -22,7 +22,7 @@ end
 Line 5, characters 8-9:
 5 |     let x = 13
             ^
-Warning 32 [unused-value-declaration]: unused value x.
+Warning 32 [unused-value-declaration]: unused value "x".
 
 module M : sig module F2 : U -> U end
 |}]
@@ -41,7 +41,7 @@ end
 Line 5, characters 8-9:
 5 |     let x = 13
             ^
-Warning 32 [unused-value-declaration]: unused value x.
+Warning 32 [unused-value-declaration]: unused value "x".
 
 module N : sig module F2 : U -> U end
 |}]
@@ -52,7 +52,7 @@ module F (X : sig type t type s end) = struct type t = X.t end
 Line 1, characters 25-31:
 1 | module F (X : sig type t type s end) = struct type t = X.t end
                              ^^^^^^
-Warning 34 [unused-type-declaration]: unused type s.
+Warning 34 [unused-type-declaration]: unused type "s".
 
 module F : (X : sig type t type s end) -> sig type t = X.t end
 |}]

@@ -653,8 +653,7 @@ Line 1, characters 4-31:
 1 | let ([][@ocaml.ppwarning "XX"]) = []
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-_::_
+  Here is an example of a case that is not matched: "_::_"
 |}]
 let[@ocaml.warning "-8-22"] ([][@ocaml.ppwarning "XX"]) = []
 ;;

@@ -119,6 +119,8 @@ and dump_flambda_verbose = ref false    (* -dflambda-verbose *)
 and dump_instr = ref false              (* -dinstr *)
 and keep_camlprimc_file = ref false     (* -dcamlprimc *)
 
+let keyword_edition: string option ref = ref None
+
 let keep_asm_file = ref false           (* -S *)
 let optimize_for_speed = ref true       (* -compact *)
 and opaque = ref false                  (* -opaque *)
@@ -742,6 +744,23 @@ module Dump_option = struct
     | Backend ->
         check_native
 end
+
+let parse_keyword_edition s =
+  let parse_version s =
+  let bad_version () =
+    raise (Arg.Bad "Ill-formed version in keywords flag,\n\
+                    the supported format is <major>.<minor>, for example 5.2 .")
+  in
+  if s = "" then None else match String.split_on_char '.' s with
+  | [] | [_] | _ :: _ :: _ :: _ -> bad_version ()
+  | [major;minor] -> match int_of_string_opt major, int_of_string_opt minor with
+    | Some major, Some minor -> Some (major,minor)
+    | _ -> bad_version ()
+  in
+  match String.split_on_char '+' s with
+  | [] -> None, []
+  | [s] -> parse_version s, []
+  | v :: rest -> parse_version v, rest
 
 module String = Misc.Stdlib.String
 

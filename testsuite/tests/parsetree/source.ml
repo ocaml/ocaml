@@ -7473,11 +7473,47 @@ module M = struct
   class \#let = object
     inherit \#val \#let as \#mutable
   end
+  let \#true = 0
+  let \#mod = 0
+  type \#mod = [ `A | `B ]
+
+  class \#mod = object end
+
 end
 
 let x = new M.\#begin
 
 let f = fun x (type \#begin) (type \#end) -> 1
+
+let f: type \#if. \#if -> \#if = fun x -> x
+
+let mlet = M.\#let
+let mtrue = M.\#true
+let mmod = M.\#mod
+type tmod = M.\#mod
+type tlet = M.\#let
+type ttrue = M.\#true
+
+class \#mod = object end
+let f: #M.\#mod -> _ =  new \#mod, new M.\#mod
+
+class type \#mod = object end
+class type \#let = \#mod
+
+module type \#mod = sig type \#mod module type \#mod  end
+
+module type t =
+  \#mod with type \#mod = M.\#mod
+         and module type \#mod = M.\#mod
+
+type \#mod = [`A | `B ]
+let g = function #\#mod | #M.\#mod -> ()
+
+type \#mod = ..
+type M.\#mod += A
+
+type t = true of int
+let x = true 0
 
 (* check pretty-printing of local module open in core_type *)
 type t = String.( t )

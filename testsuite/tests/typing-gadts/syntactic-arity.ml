@@ -33,8 +33,8 @@ Line 1, characters 14-21:
                   ^^^^^^^
 Error: This expression has type "'a -> 'b"
        but an expression was expected of type "string"
-  Hint: This function application is partial,
-  maybe some arguments are missing.
+  Hint: This function application is partial, maybe some arguments
+  are missing.
 |}];;
 
 (* And the fully polymorphic definition is rejected. *)
@@ -91,8 +91,7 @@ Line 5, characters 16-48:
 5 | let ok (type a) (Eq : (a, int -> int) eq_or_not) : a =
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Neq
+  Here is an example of a case that is not matched: "Neq"
 
 val ok : ('a -> 'b, int -> int) eq_or_not -> 'a -> 'b = <fun>
 |}];;
@@ -105,8 +104,7 @@ Line 2, characters 6-38:
 2 |   fun (Eq : (a, int -> int) eq_or_not) x -> x + 1;;
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Neq
+  Here is an example of a case that is not matched: "Neq"
 
 Line 2, characters 2-49:
 2 |   fun (Eq : (a, int -> int) eq_or_not) x -> x + 1;;

@@ -863,7 +863,7 @@ module Style = struct
       error = no_markup [Bold; FG Red];
       loc = no_markup [Bold];
       hint = no_markup [Bold; FG Blue];
-      inline_code= { ansi=[Bold]; text_open = {|"|}; text_close = {|"|} }
+      inline_code= no_markup [Bold]
     }
 
   let cur_styles = ref default_styles
@@ -889,6 +889,7 @@ module Style = struct
     pp_close_stag ppf ()
 
   let inline_code ppf s = as_inline_code Format_doc.pp_print_string ppf s
+  let hint ppf = Format_doc.fprintf ppf "@{<hint>Hint@}"
 
   (* either prints the tag of [s] or delegates to [or_else] *)
   let mark_open_tag ~or_else s =

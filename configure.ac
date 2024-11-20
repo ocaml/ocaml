@@ -1444,10 +1444,10 @@ AS_CASE([$host],
     [arch=i386; system=beos],
   [[i[3456]86-*-cygwin]],
     [arch=i386; system=cygwin],
-  [[i[3456]86-*-gnu*]],
-    [arch=i386; system=gnu],
   [[i[3456]86-*-mingw32*]],
     [arch=i386; system=mingw],
+  [[i[3456]86-*-gnu*]],
+    [arch=i386; system=gnu],
   [i686-pc-windows],
     [arch=i386; system=win32],
   [x86_64-pc-windows],
@@ -1493,8 +1493,6 @@ AS_CASE([$host],
     [arch=arm; system=openbsd],
   [x86_64-*-linux*],
     [has_native_backend=yes; arch=amd64; system=linux],
-  [x86_64-*-gnu*],
-    [arch=amd64; system=gnu],
   [x86_64-*-dragonfly*],
     [arch=amd64; system=dragonfly],
   [x86_64-*-solaris*],
@@ -1528,7 +1526,9 @@ AS_CASE([$host],
   [x86_64-*-cygwin*],
     [has_native_backend=yes; arch=amd64; system=cygwin],
   [riscv64-*-linux*],
-    [has_native_backend=yes; arch=riscv; model=riscv64; system=linux]
+    [has_native_backend=yes; arch=riscv; model=riscv64; system=linux],
+  [x86_64-*-gnu*],
+    [has_native_backend=yes; arch=amd64; system=gnu]
 )
 
 AS_CASE([$arch],
@@ -2418,6 +2418,36 @@ AC_LINK_IFELSE(
     [AC_MSG_RESULT([BSD])
     AC_DEFINE([HAS_BSD_GETAFFINITY_NP], [1])],
     [AC_MSG_RESULT([pthread_getaffinity_np not found])])])
+
+## prctl
+AC_CHECK_DECL(
+  [prctl],
+  [AC_DEFINE([HAS_DECL_PRCTL] , [1])],
+  [],
+  [#include <sys/prctl.h>])
+
+## pthread_setname_np
+AC_CHECK_FUNCS(
+  [pthread_setname_np],
+  [AC_DEFINE([HAS_PTHREAD_SETNAME_NP], [1])])
+
+## pthread_set_name_np
+AC_CHECK_FUNCS(
+  [pthread_set_name_np],
+  [AC_DEFINE([HAS_PTHREAD_SET_NAME_NP], [1])])
+
+## SetThreadDescription
+AC_CHECK_FUNCS(
+  [SetThreadDescription],
+  [AC_DEFINE([HAS_SETTHREADDESCRIPTION], [1])])
+
+AC_CHECK_DECL(
+  [SetThreadDescription],
+  [AC_DEFINE([HAS_DECL_SETTHREADDESCRIPTION], [1])],
+  [],
+  [[#define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+    #include <processthreadsapi.h>]])
 
 ## Activate the systhread library
 

@@ -154,11 +154,13 @@ name:
         sd      sp, Cstack_sp(TMP2)
     /* Switch to C stack */
         mv      sp, TMP2
+#ifdef ASM_CFI_SUPPORTED
         CFI_REMEMBER_STATE
     /* sp points to the c_stack_link. */
         .cfi_escape DW_CFA_def_cfa_expression, 5,                 \
            DW_OP_breg + DW_REG_sp, Cstack_sp_offset, DW_OP_deref, \
            DW_OP_plus_uconst, 16 /* fp + retaddr */
+#endif
 .endm
 
 /* Switch from C to OCaml stack. */
@@ -683,6 +685,7 @@ L(jump_to_caml):
         mv      TRAP_PTR, t2
     /* Switch stacks and call the OCaml code */
         mv      sp, t2
+#ifdef ASM_CFI_SUPPORTED
         CFI_REMEMBER_STATE
         .cfi_escape DW_CFA_def_cfa_expression, 3 + 2 + 2,             \
             /* sp points to the exn handler on the OCaml stack */     \
@@ -693,6 +696,7 @@ L(jump_to_caml):
             /* 16   fp + ret addr */                                  \
             /* need to split to get under 127 limit */                \
           DW_OP_plus_uconst, 120, DW_OP_plus_uconst, 120
+#endif
     /* Call the OCaml code */
         jalr    TMP2
 L(caml_retaddr):
@@ -1177,6 +1181,7 @@ FUNCTION(caml_runstack)
         mv      TRAP_PTR, t3
     /* Switch to the new stack */
         mv      sp, t3
+#ifdef ASM_CFI_SUPPORTED
         CFI_REMEMBER_STATE
         .cfi_escape DW_CFA_def_cfa_expression, 3+3+2,       \
           DW_OP_breg + DW_REG_sp,                           \
@@ -1186,7 +1191,7 @@ FUNCTION(caml_runstack)
             + Handler_parent_offset, DW_OP_deref,           \
           DW_OP_plus_uconst, Stack_sp_offset, DW_OP_deref,  \
           DW_OP_plus_uconst, 16 /* fp + ret addr */
-
+#endif
     /* Call the function on the new stack */
         mv      a0, a2
         jalr    a3

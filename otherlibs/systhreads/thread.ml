@@ -92,3 +92,6 @@ let wait_pid p = Unix.waitpid [] p
 
 let sigmask = Unix.sigprocmask
 let wait_signal = Unix.sigwait
+
+external set_current_thread_name : string -> unit =
+        "caml_set_current_thread_name"

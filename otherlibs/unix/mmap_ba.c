@@ -33,7 +33,7 @@ static void caml_ba_mapped_finalize(value v)
   if (b->proxy == NULL) {
     caml_ba_unmap_file(b->data, caml_ba_byte_size(b));
   } else {
-    if (-- b->proxy->refcount == 0) {
+    if (caml_atomic_counter_decr(&b->proxy->refcount) == 0) {
       caml_ba_unmap_file(b->proxy->data, b->proxy->size);
       free(b->proxy);
     }

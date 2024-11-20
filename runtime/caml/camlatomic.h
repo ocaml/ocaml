@@ -17,6 +17,7 @@
 #define CAML_ATOMIC_H
 
 #include "config.h"
+#include "misc.h"
 
 /*
  * C11 atomics types and utility macros.
@@ -55,6 +56,40 @@ typedef _Atomic intnat atomic_intnat;
   atomic_store_explicit((p), (v), memory_order_release)
 #define atomic_store_relaxed(p, v)                      \
   atomic_store_explicit((p), (v), memory_order_relaxed)
+
+/* Atomic counters, abstracted here for use across the runtime. */
+
+Caml_inline void caml_atomic_counter_init(atomic_uintnat* counter, uintnat n)
+{
+  atomic_store_release(counter, n);
+}
+
+/* Atomically get the current value of an atomic uintnat counter */
+
+Caml_inline uintnat caml_atomic_counter_value(atomic_uintnat* counter)
+{
+  return atomic_load_acquire(counter);
+}
+
+/* Decrement an atomic uintnat counter. Assertion check for
+ * underflow. Returns the new value. */
+
+Caml_inline uintnat caml_atomic_counter_decr(atomic_uintnat* counter)
+{
+  uintnat old = atomic_fetch_sub(counter, 1);
+  CAMLassert (old > 0);
+  return old-1;
+}
+
+/* Increment an atomic uintnat counter. Assertion check for
+ * overflow. Returns the new value. */
+
+Caml_inline uintnat caml_atomic_counter_incr(atomic_uintnat* counter)
+{
+  uintnat old = atomic_fetch_add(counter, 1);
+  CAMLassert (old+1 != 0);
+  return old+1;
+}
 
 #endif /* CAML_INTERNALS */
 

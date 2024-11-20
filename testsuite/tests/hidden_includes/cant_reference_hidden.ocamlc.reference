@@ -1,4 +1,4 @@
 File "libc/c3.ml", line 1, characters 8-11:
 1 | let x = A.x + 1
             ^^^
-Error: Unbound module "A"
+Error: Unbound module A

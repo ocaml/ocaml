@@ -2,4 +2,4 @@ File "partial_application.ml", line 7, characters 26-36:
 7 | let[@tail_mod_cons] rec f () () = ()
                               ^^^^^^^^^^
 Warning 71 [unused-tmc-attribute]: This function is marked @tail_mod_cons
-but is never applied in TMC position.
+  but is never applied in TMC position.

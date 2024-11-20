@@ -19,6 +19,7 @@
 #include "config.h"
 #include "misc.h"
 #include "tsan.h"
+#include "camlatomic.h"
 
 #ifdef __cplusplus
 extern "C" {

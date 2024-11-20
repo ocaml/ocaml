@@ -2,4 +2,4 @@ File "max_arity.ml", line 154, characters 8-12:
 154 | let _ = f ();;
               ^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
-maybe some arguments are missing.
+  maybe some arguments are missing.

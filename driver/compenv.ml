@@ -480,6 +480,8 @@ let read_one_param ppf position name v =
   | "dump" ->
       handle_dump_option ppf v
 
+  |  "keywords"  -> Clflags.keyword_edition := Some v
+
   | _ ->
     if not (List.mem name !can_discard) then begin
       can_discard := name :: !can_discard;

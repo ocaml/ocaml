@@ -66,7 +66,8 @@ val f : Float.Array.t -> unit = <fun>
 Line 4, characters 4-8:
 4 |   | [||] -> ()
         ^^^^
-Warning 18 [not-principal]: this type-based array disambiguation is not principal.
+Warning 18 [not-principal]: this type-based array disambiguation is not
+  principal.
 
 val f : Float.Array.t -> unit = <fun>
 |}]

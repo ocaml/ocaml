@@ -75,16 +75,15 @@ Line 9, characters 0-41:
 9 | function (`A|`B), _ -> 0 | _,(`A|`B) -> 1;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(`AnyOtherTag, `AnyOtherTag)
+  Here is an example of a case that is not matched:
+    "(`AnyOtherTag, `AnyOtherTag)"
 
 - : [> `A | `B ] * [> `A | `B ] -> int = <fun>
 Line 10, characters 0-29:
 10 | function `B,1 -> 1 | _,1 -> 2;;
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(_, 0)
+  Here is an example of a case that is not matched: "(_, 0)"
 
 Line 10, characters 21-24:
 10 | function `B,1 -> 1 | _,1 -> 2;;
@@ -96,8 +95,7 @@ Line 11, characters 0-29:
 11 | function 1,`B -> 1 | 1,_ -> 2;;
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(0, _)
+  Here is an example of a case that is not matched: "(0, _)"
 
 Line 11, characters 21-24:
 11 | function 1,`B -> 1 | 1,_ -> 2;;
@@ -145,8 +143,7 @@ Line 2, characters 0-24:
 2 | function (`A x : t) -> x;;
     ^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-`<some private tag>
+  Here is an example of a case that is not matched: "`<some private tag>"
 
 - : t -> string = <fun>
 |}]
@@ -157,8 +154,8 @@ Line 1, characters 8-76:
 1 | let f = function `AnyOtherTag, _ -> 1 | _, (`AnyOtherTag|`AnyOtherTag') -> 2;;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(`AnyOtherTag', `AnyOtherTag'')
+  Here is an example of a case that is not matched:
+    "(`AnyOtherTag', `AnyOtherTag'')"
 
 val f : [> `AnyOtherTag ] * [> `AnyOtherTag | `AnyOtherTag' ] -> int = <fun>
 |}]

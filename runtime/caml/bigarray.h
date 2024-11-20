@@ -18,6 +18,7 @@
 
 #include "config.h"
 #include "mlvalues.h"
+#include "camlatomic.h"
 
 typedef signed char caml_ba_int8;
 typedef unsigned char caml_ba_uint8;

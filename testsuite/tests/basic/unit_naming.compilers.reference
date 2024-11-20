@@ -1,4 +1,4 @@
 File "unit_naming.ml", line 9, characters 10-25:
 9 | print_int Camlcase.answer
               ^^^^^^^^^^^^^^^
-Error: Unbound module "Camlcase"
+Error: Unbound module Camlcase

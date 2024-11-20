@@ -30,6 +30,11 @@ Working version
   entries found in ld.conf.
   (David Allsopp, review by Stephen Dolan)
 
+- #13496: Add missing .type and .size directives to main frametable to silence
+  warnings from the linker when using libasmrun_shared on amd64 and power. The
+  other backends already carried these directives.
+  (David Allsopp, review by Tim McGilchrist and Miod Vallat)
+
 - #13500: Add frame pointers support for ARM64 on Linux and macOS.
   (Tim McGilchrist, review by KC Sivaramakrishnan, Fabrice Buoro
    and Miod Vallat)
@@ -48,6 +53,10 @@ Working version
 
 - #13354: Use C99 flexible array member syntax everywhere.
   (Antonin Décimo, review by Miod Vallat, Gabriel Scherer, and Xavier Leroy)
+
+- #11865, #13584: Fix a deadlock triggered by deleting C roots from C finalisers
+  (Stephen Dolan, report by Timothy Bourke, review by Mark Shinwell and Damien
+  Doligez)
 
 ### Code generation and optimizations:
 
@@ -84,6 +93,9 @@ Working version
   default environment (where `TEMP` is set), there is no discernible change.
   (Antonin Décimo, review by Nicolás Ojeda Bär and David Allsopp)
 
+- #13504: Add `Thread.set_current_thread_name`.
+  (Romain Beauxis, review by Gabriel Scherer and Antonin Décimo)
+
 ### Tools:
 
 - #12019: ocamlc: add `align_double` and `align_int64` to `ocamlc -config`
@@ -108,6 +120,17 @@ Working version
   C stubs when shared libraries are not available.
   (David Allsopp, review by Gabriel Scherer)
 
+- #13563, lighter inline code styling for output without bold support: inline
+  code is no longer printed as "..." to avoid confusion with OCaml strings.
+  (Florian Angeletti, review by Richard Eisenberg)
+
+- #13568, composable formatting for warning and alert messages
+  (Florian Angeletti, review by Richard Eisenberg)
+
+- #13587: Enable native backend on x86_64 GNU/Hurd.
+  (Samuel Thibault, review by Antonin Décimo, Sébastien Hinderer and Miod
+   Vallat)
+
 ### Internal/compiler-libs changes:
 
 - #13425: undocumented -dmatchcomp flag for the debug
@@ -123,6 +146,9 @@ Working version
 
 - #13539: Use nanosleep instead of usleep, if available.
   (Antonin Décimo, review by Miod Vallat and Gabriel Scherer)
+
+- #13606: Fix Numbers.Int_base.compare
+  (Mark Shinwell, review by Vincent Laviron)
 
 ### Build system:
 
@@ -396,6 +422,11 @@ ___________
 - #13326: Implement Unix.O_APPEND on windows.
   (Romain Beauxis, review by Miod Vallat, Gabriel Scherer and Antonin Décimo)
 
+* #13376: Allow Dynlink.loadfile_private to load bytecode libraries with
+  internal dependencies
+  (Vincent Laviron, report by Stéphane Glondu, review by Nicolás Ojeda Bär
+   and Xavier Leroy)
+
 ### Tools:
 
 - #11716: ocamllex: mismatched parentheses and curly brackets are now caught
@@ -519,6 +550,11 @@ ___________
     The constant "42" has type ...
   (Jules Aguillon, review by Gabriel Scherer and Florian Angeletti)
 
+- #13471: add `-keywords <version?+list>` flag to define the list of keywords
+  recognized by the lexer, for instance `-keywords 5.2` disable the `effect`
+  keyword.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #11129, #11148: enforce that ppxs do not produce `parsetree`s with
@@ -639,11 +675,12 @@ ___________
   (Sébastien Hinderer, review by Miod Vallat, Gabriel Scherer and
   Olivier Nicole)
 
-* #12578, #12589, #13322: Use configured CFLAGS and CPPFLAGS *only* during the
-  build of the compiler itself. Do not use them when compiling third-party
-  C sources through the compiler. Flags for compiling third-party C
-  sources can still be specified at configure time in the
-  COMPILER_{BYTECODE,NATIVE}_{CFLAGS,CPPFLAGS} configuration variables.
+* #12578, #12589, #13322, #13519: Use configured CFLAGS and CPPFLAGS *only*
+  during the build of the compiler itself. Do not use them when
+  compiling third-party C sources through the compiler. Flags for
+  compiling third-party C sources can still be specified at configure
+  time in the COMPILER_{BYTECODE,NATIVE}_{CFLAGS,CPPFLAGS}
+  configuration variables.
   (Sébastien Hinderer, report by William Hu, review by David Allsopp)
 
 - #13285: continue the merge of the sub-makefiles into the root
@@ -769,13 +806,30 @@ ___________
   path under Win32.
   (Nicolás Ojeda Bär, review by David Allsopp and Damien Doligez)
 
+- #13495, #13514: Fix typechecker crash while typing objects
+  (Jacques Garrigue, report by Nicolás Ojeda Bär, review by
+   Nicolas Ojeda Bär, Gabriel Scherer, Stephen Dolan, Florian Angeletti)
+
 - #13263, #13560: fix printing true and false in toplevel and error
   messages (no more unexpected \#true)
   (Florian Angeletti, report by Samuel Vivien, review by Gabriel Scherer)
 
+- #13391, #13551: fix a printing bug with `-dsource` when using
+  raw literal inside a locally abstract type constraint
+  (i.e. `let f: type \#for. ... `)
+  (Florian Angeletti, report by Nick Roberts, review by Richard Eisenberg)
+
 - #13520: Fix compilation of native-code version of systhreads. Bytecode fields
   were being included in the thread descriptors.
   (David Allsopp, review by Sébastien Hinderer and Miod Vallat)
+
+- #13579, #13583: Unsoundness involving non-injective types + gadts
+  (Jacques Garrigue, report by @v-gb,
+   review by Richard Eisenberg and Florian Angeletti)
+
+- #13603, #13604: fix source printing in the presence of the escaped raw
+  identifier `\#mod`.
+  (Florian Angeletti, report by Chris Casinghino, review by Gabriel Scherer)
 
 OCaml 5.2.0 (13 May 2024)
 -------------------------

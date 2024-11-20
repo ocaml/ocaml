@@ -64,6 +64,14 @@ caml_hot.code_end:
 
 #define ENDFUNCTION(name)
 
+#define OBJECT(name) \
+        .align 8; \
+        .globl name; \
+        .type name, @object; \
+        name:
+
+#define ENDOBJECT(name)
+
 /* Stack space to be reserved by the caller of a C function */
 #define RESERVED_STACK          160
 
@@ -135,9 +143,6 @@ caml_hot.code_end:
 /******************************************************************************/
 /* Access to the current domain state block. */
 /******************************************************************************/
-
-#define CAML_CONFIG_H_NO_TYPEDEFS
-#include "../runtime/caml/config.h"
 
         .set    domain_curr_field, 0
 #define DOMAIN_STATE(c_type, name) \
@@ -1199,10 +1204,7 @@ caml_system__code_end:
 /* Frame table */
 
         .section ".data"
-        .align 8
-        .globl  caml_system.frametable
-        .type   caml_system.frametable, @object
-caml_system.frametable:
+OBJECT(caml_system.frametable)
         .quad   2               /* two descriptors */
         .quad   LBL(caml_retaddr)  /* return address into callback */
         .short  -1              /* negative size count => use callback link */
@@ -1212,6 +1214,7 @@ caml_system.frametable:
         .short  -1              /* negative size count => use callback link */
         .short  0               /* no roots here */
         .align  8
+ENDOBJECT(caml_system.frametable)
 
 /* Mark stack as non-executable */
         .section .note.GNU-stack,"",%progbits

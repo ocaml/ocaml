@@ -451,6 +451,7 @@ parsing/parse.cmo : \
     parsing/lexer.cmi \
     utils/format_doc.cmi \
     parsing/docstrings.cmi \
+    utils/clflags.cmi \
     parsing/parse.cmi
 parsing/parse.cmx : \
     parsing/syntaxerr.cmx \
@@ -461,6 +462,7 @@ parsing/parse.cmx : \
     parsing/lexer.cmx \
     utils/format_doc.cmx \
     parsing/docstrings.cmx \
+    utils/clflags.cmx \
     parsing/parse.cmi
 parsing/parse.cmi : \
     parsing/parsetree.cmi \

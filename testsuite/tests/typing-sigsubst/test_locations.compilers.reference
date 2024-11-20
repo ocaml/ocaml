@@ -7,7 +7,7 @@ Error: Signature mismatch:
          type elt = String.t
        is not included in
          type elt = unit
-       The type "String.t" = "string" is not equal to the type "unit"
+       The type String.t = string is not equal to the type unit
        File "test_loc_type_eq.ml", line 1, characters 31-46:
          Expected declaration
        File "test_functor.ml", line 8, characters 45-61: Actual declaration
@@ -27,7 +27,7 @@ Error: Signature mismatch:
          type elt = String.t
        is not included in
          type elt = unit
-       The type "String.t" = "string" is not equal to the type "unit"
+       The type String.t = string is not equal to the type unit
        File "test_loc_modtype_type_eq.ml", line 1, characters 36-51:
          Expected declaration
        File "test_functor.ml", line 8, characters 45-61: Actual declaration
@@ -47,8 +47,8 @@ Error: Signature mismatch:
          val create : elt -> t
        is not included in
          val create : unit -> t
-       The type "elt -> t" is not compatible with the type "unit -> t"
-       Type "elt" = "string" is not compatible with type "unit"
+       The type elt -> t is not compatible with the type unit -> t
+       Type elt = string is not compatible with type unit
        File "test_loc_type_subst.ml", line 1, characters 11-47:
          Expected declaration
        File "test_functor.ml", line 5, characters 2-23: Actual declaration
@@ -68,8 +68,8 @@ Error: Signature mismatch:
          val create : elt -> t
        is not included in
          val create : unit -> t
-       The type "elt -> t" is not compatible with the type "unit -> t"
-       Type "elt" = "string" is not compatible with type "unit"
+       The type elt -> t is not compatible with the type unit -> t
+       Type elt = string is not compatible with type unit
        File "test_loc_modtype_type_subst.ml", line 1, characters 16-52:
          Expected declaration
        File "test_functor.ml", line 5, characters 2-23: Actual declaration

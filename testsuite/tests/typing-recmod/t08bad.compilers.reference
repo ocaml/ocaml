@@ -2,11 +2,11 @@ File "t08bad.ml", lines 10-11, characters 0-71:
 10 | module rec A : sig type 'a t = <m: 'a list B.t; n: 'a array B.t> end
 11 |              = struct type 'a t = <m: 'a list B.t; n: 'a array B.t> end
 Error: This recursive type is not regular.
-       The type constructor "A.t" is defined as
-         type "'a A.t"
+       The type constructor A.t is defined as
+         type 'a A.t
        but it is used as
-         "'a array A.t"
+         'a array A.t
        after the following expansion(s):
-         "< m : 'a list B.t; n : 'a array B.t >" contains "'a array B.t",
-         "'a array B.t" = "'a array A.t"
+         < m : 'a list B.t; n : 'a array B.t > contains 'a array B.t,
+         'a array B.t = 'a array A.t
        All uses need to match the definition for the recursive type to be regular.
