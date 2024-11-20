@@ -568,7 +568,7 @@ module Digraph = struct
 
   let superscript_level ppf lvl =
     (* avoid a dependency on Btype *)
-    if lvl = Ident.highest_scope then Format.pp_print_string ppf "ʷ"
+    if lvl = Ident.highest_scope then Format.pp_print_string ppf "᪲"
     else superscript ppf lvl
 
   let add_node explicit_d color id ?lvl tynode dg =
