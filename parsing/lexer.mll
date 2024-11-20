@@ -456,7 +456,7 @@ let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
 let utf8 = ['\192'-'\255'] ['\128'-'\191']*
 let identstart_ext = identstart | utf8
 let identchar_ext = identchar | utf8
-let delim_ext = (lowercase | uppercase | utf8)+
+let delim_ext = (lowercase | uppercase | utf8)*
 
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
@@ -556,7 +556,7 @@ rule token = parse
   | "\""
       { let s, loc = wrap_string_lexer string lexbuf in
         STRING (s, loc, None) }
-  | "{" (delim_ext? as raw_name) '|'
+  | "{" (delim_ext as raw_name) '|'
       { let delim = validate_delim lexbuf raw_name in
         let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
         STRING (s, loc, Some delim)
@@ -770,7 +770,7 @@ and comment = parse
         is_in_string := false;
         store_string_char '\"';
         comment lexbuf }
-  | "{" ('%' '%'? extattrident blank*)? (delim_ext? as raw_delim) "|"
+  | "{" ('%' '%'? extattrident blank*)? (delim_ext as raw_delim) "|"
       { match lax_delim raw_delim with
         | None -> store_lexeme lexbuf; comment lexbuf
         | Some delim ->
