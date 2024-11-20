@@ -16194,32 +16194,32 @@ case $host in #(
   powerpc64*-*-linux-musl*) :
     has_native_backend=yes; arch=power; model=ppc64; system=linux ;; #(
   s390x*-*-linux*) :
-    has_native_backend=yes; arch=s390x; model=z10; system=linux ;; #(
+    has_native_backend=yes; arch=s390x; system=linux ;; #(
   # expected to match "gnueabihf" as well as "musleabihf"
   armv6*-*-linux-*eabihf) :
-    arch=arm; model=armv6; system=linux ;; #(
+    arch=arm; system=linux ;; #(
   armv7*-*-linux-*eabihf) :
-    arch=arm; model=armv7; system=linux ;; #(
+    arch=arm; system=linux ;; #(
   armv8*-*-linux-*eabihf) :
-    arch=arm; model=armv8; system=linux ;; #(
+    arch=arm; system=linux ;; #(
   armv8*-*-linux-*eabi) :
-    arch=arm; model=armv8; system=linux ;; #(
+    arch=arm; system=linux ;; #(
   armv7*-*-linux-*eabi) :
-    arch=arm; model=armv7; system=linux ;; #(
+    arch=arm; system=linux ;; #(
   armv6t2*-*-linux-*eabi) :
-    arch=arm; model=armv6t2; system=linux ;; #(
+    arch=arm; system=linux ;; #(
   armv6*-*-linux-*eabi) :
-    arch=arm; model=armv6; system=linux ;; #(
+    arch=arm; system=linux ;; #(
   armv6*-*-freebsd*) :
-    arch=arm; model=armv6; system=freebsd ;; #(
+    arch=arm; system=freebsd ;; #(
   earmv6*-*-netbsd*) :
-    arch=arm; model=armv6; system=netbsd ;; #(
+    arch=arm; system=netbsd ;; #(
   earmv7*-*-netbsd*) :
-    arch=arm; model=armv7; system=netbsd ;; #(
+    arch=arm; system=netbsd ;; #(
   armv5te*-*-linux-*eabi) :
-    arch=arm; model=armv5te; system=linux ;; #(
+    arch=arm; system=linux ;; #(
   armv5*-*-linux-*eabi) :
-    arch=arm; model=armv5; system=linux ;; #(
+    arch=arm; system=linux ;; #(
   arm*-*-linux-*eabihf) :
     arch=arm; system=linux ;; #(
   arm*-*-linux-*eabi) :
@@ -16255,7 +16255,7 @@ case $host in #(
 then :
   has_native_backend=yes; arch=arm64; system=linux
 else $as_nop
-  arch=arm; model=armv8; system=linux
+  arch=arm; system=linux
 fi ;; #(
   aarch64-*-freebsd*) :
     has_native_backend=yes; arch=arm64; system=freebsd ;; #(
@@ -16266,7 +16266,7 @@ fi ;; #(
   x86_64-*-cygwin*) :
     has_native_backend=yes; arch=amd64; system=cygwin ;; #(
   riscv64-*-linux*) :
-    has_native_backend=yes; arch=riscv; model=riscv64; system=linux ;; #(
+    has_native_backend=yes; arch=riscv; system=linux ;; #(
   x86_64-*-gnu*) :
     has_native_backend=yes; arch=amd64; system=gnu
  ;; #(
