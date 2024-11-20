@@ -40,6 +40,7 @@ let empty = ""
 let of_bytes = B.to_string
 let to_bytes = B.of_string
 let sub s ofs len =
+  if ofs = 0 && s == len then s else
   B.sub (bos s) ofs len |> bts
 let blit =
   B.blit_string
@@ -226,7 +227,7 @@ let ends_with ~suffix s =
 external seeded_hash : int -> string -> int = "caml_string_hash" [@@noalloc]
 let hash x = seeded_hash 0 x
 
-(* duplicated in bytes.ml, except for the case returning [s] *)
+(* duplicated in bytes.ml *)
 let split_on_char sep s =
   let r = ref [] in
   let len = length s in
@@ -237,7 +238,7 @@ let split_on_char sep s =
       j := i
     end
   done;
-  if !j = len then [s] else sub s 0 !j :: !r
+  sub s 0 !j :: !r
 
 type t = string
 
