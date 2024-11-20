@@ -73,7 +73,8 @@ Working version
 
 - #13620: Avoid copying the string in String.concat, String.sub and
   String.split_on_char when the full string is returned.
-  (Christophe Raffalli, review by Nicolás Ojeda Bär and Gabriel Scherer)
+  (Christophe Raffalli, review by Nicolás Ojeda Bär and Gabriel Scherer and
+   Hugo Heuzard)
 
 ### Other libraries:
 
