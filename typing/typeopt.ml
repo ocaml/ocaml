@@ -93,7 +93,7 @@ let classify env ty : classification =
       begin match Predef.find_type_constr p with
       | Some `Float -> Float
       | Some `Lazy_t -> Lazy
-      | Some (`Int | `Char) -> Int
+      | Some (`Int | `Char | `Atomic_field) -> Int
       | Some (`String | `Bytes
              | `Int32 | `Int64 | `Nativeint
              | `Extension_constructor | `Continuation
