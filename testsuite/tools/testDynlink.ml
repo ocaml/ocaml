@@ -107,10 +107,7 @@ let () =
       | None ->
           (* Systems configured with --disable-shared can't load bytecode
              libraries which need C stubs *)
-          if (Sys.cygwin && mode = Native && List.mem "unix" libraries)
-             || (not Config.supports_shared_libraries && has_c_stubs) then
-            (* cf. ocaml/flexdll#146 - Cygwin's natdynlink can't load
-                   unix.cmxs *)
+          if not Config.supports_shared_libraries && has_c_stubs then
             2
           else
             0

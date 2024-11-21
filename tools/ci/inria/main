@@ -186,11 +186,13 @@ case "${OCAML_ARCH}" in
     cleanup=true
     check_make_alldepend=true
     export OCAMLTEST_SKIP_TESTS="$memory_model_tests"
+    init_submodule_flexdll=true
   ;;
   cygwin64)
     cleanup=true
     check_make_alldepend=true
     export OCAMLTEST_SKIP_TESTS="$memory_model_tests"
+    init_submodule_flexdll=true
   ;;
   mingw)
     build='--build=i686-pc-cygwin'
