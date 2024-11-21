@@ -257,6 +257,10 @@ and expression_desc =
         *)
   | Texp_atomic_loc of
       expression * Longident.t loc * Data_types.label_description
+        (** [%atomic.loc r.f] is represented as
+            [Texp_atomic_loc((r : expression), (f : longident), f_label_description)]
+            (Similar to {!Texp_field} below.)
+        *)
   | Texp_field of
       expression * Longident.t loc * Data_types.label_description
   | Texp_setfield of
