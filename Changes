@@ -191,8 +191,8 @@ ___________
   (Leo White, Tom Kelly, Anil Madhavapeddy, KC Sivaramakrishnan, Xavier Leroy
    and Florian Angeletti, review by the same, Hugo Heuzard, and Ulysse Gérard)
 
-- #11736, #12664: Support utf-8 encoded source files and latin-9 compatible
-  identifiers.
+- #11736, #12664, #13628: Support utf-8 encoded source files and latin-9
+  compatible identifiers.
   (Xavier Leroy and Florian Angeletti, review by Daniel Bünzli and
    Jules Aguillon)
 
