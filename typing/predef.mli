@@ -88,6 +88,7 @@ val path_lazy_t: Path.t
 val path_extension_constructor: Path.t
 val path_floatarray: Path.t
 val path_continuation: Path.t
+val path_atomic_loc: Path.t
 
 val path_match_failure: Path.t
 val path_assert_failure : Path.t
