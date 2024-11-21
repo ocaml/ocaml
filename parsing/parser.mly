@@ -3390,7 +3390,8 @@ label_declaration_semi:
   attrs2 = post_item_attributes
     { let docs = symbol_docs $sloc in
       let attrs = attrs1 @ attrs2 in
-      Te.mk tid cs ~params ~priv ~attrs ~docs ~loc:(make_loc $sloc),
+      let loc = make_loc $sloc in
+      Te.mk tid cs ~params ~priv ~attrs ~docs ~loc,
       ext }
 ;
 %inline extension_constructor(opening):
