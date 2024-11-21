@@ -457,6 +457,9 @@ let utf8 = ['\192'-'\255'] ['\128'-'\191']*
 let identstart_ext = identstart | utf8
 let identchar_ext = identchar | utf8
 let delim_ext = (lowercase | uppercase | utf8)*
+(* ascii uppercase letters in quoted string delimiters ({delim||delim}) are
+   rejected by the delimiter validation function, we accept them temporarily to
+   have the same error message for ascii and non-ascii uppercase letters *)
 
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
