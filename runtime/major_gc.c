@@ -359,11 +359,10 @@ static intnat ephe_mark (intnat budget, uintnat for_cycle,
             }
           }
         }
-        else {
-          if (Tag_val (key) == Infix_tag) key -= Infix_offset_val (key);
-          if (is_unmarked (key))
-            alive_data = 0;
-        }
+
+        if (Tag_val (key) == Infix_tag) key -= Infix_offset_val (key);
+        if (is_unmarked (key))
+          alive_data = 0;
       }
     }
     budget -= Whsize_wosize(i);
