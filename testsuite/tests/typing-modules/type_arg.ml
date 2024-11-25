@@ -210,7 +210,7 @@ Error: The functor was expected to be applicative at this position
 module Gen () : Typ = struct type t = int end
 
 [%%expect{|
-module Gen : functor () -> Typ
+module Gen : () -> Typ
 |}]
 
 
@@ -268,4 +268,102 @@ let id (type a) (x : List(type a).t) = x
 
 [%%expect{|
 val id : 'a list -> 'a list = <fun>
+|}]
+
+
+(* Test all error messages for all disallowed cases *)
+
+module F_exception (type a) = struct
+  exception E
+end
+
+[%%expect{|
+Line 2, characters 2-13:
+2 |   exception E
+      ^^^^^^^^^^^
+Error: This expression in not allowed in type functors.
+|}]
+
+type ext = ..
+
+module F_typeext (type a) = struct
+  type ext += C
+end
+
+[%%expect{|
+type ext = ..
+Line 4, characters 2-15:
+4 |   type ext += C
+      ^^^^^^^^^^^^^
+Error: This expression in not allowed in type functors.
+|}]
+
+module F_typeext2 (type a) = struct
+  type ext2 = ..
+  type ext2 += C2
+end
+
+[%%expect{|
+Line 3, characters 2-17:
+3 |   type ext2 += C2
+      ^^^^^^^^^^^^^^^
+Error: This expression in not allowed in type functors.
+|}]
+
+module F_value (type a) = struct
+  print_newline ()
+end
+
+[%%expect{|
+Line 2, characters 2-18:
+2 |   print_newline ()
+      ^^^^^^^^^^^^^^^^
+Error: This expression in not allowed in type functors.
+|}]
+
+(* Could be allowed using relaxed value restriction *)
+module F_let1 (type a) = struct
+  let f = (fun x -> x) (fun () -> ())
+end
+
+[%%expect{|
+Line 2, characters 2-37:
+2 |   let f = (fun x -> x) (fun () -> ())
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression in not allowed in type functors.
+|}]
+
+(* Could be allowed if the type of f is defined before F_let2 *)
+module F_let2 (type a) = struct
+  let f = ref None
+end
+
+[%%expect{|
+Line 2, characters 2-18:
+2 |   let f = ref None
+      ^^^^^^^^^^^^^^^^
+Error: This expression in not allowed in type functors.
+|}]
+
+module F_let3 (type a) = struct
+  let f : a option ref = ref None
+end
+
+[%%expect{|
+Line 2, characters 2-33:
+2 |   let f : a option ref = ref None
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression in not allowed in type functors.
+|}]
+
+module F_class (type a) = struct
+  class c = object
+  end
+end
+
+[%%expect{|
+Lines 2-3, characters 2-5:
+2 | ..class c = object
+3 |   end
+Error: This expression in not allowed in type functors.
 |}]

@@ -46,6 +46,13 @@ type hiding_error =
       user_loc: Location.t;
     }
 
+type disallowed_in_functor =
+  | TypeGen
+  | ExceptionDef
+  | TypeExtension
+  | Expansive
+  | Class
+
 type error =
     Cannot_apply of module_type
   | Not_included of Includemod.explanation
@@ -65,7 +72,7 @@ type error =
       { vars : type_expr list; item : value_description; mty : module_type }
   | Implementation_is_required of string
   | Interface_not_compiled of string
-  | Not_allowed_in_functor_body
+  | Not_allowed_in_functor_body of disallowed_in_functor
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr
@@ -2181,6 +2188,11 @@ let check_package_closed ~loc ~env ~typ fl =
 
 let not_principal msg = Warnings.Not_principal (Format_doc.Doc.msg msg)
 
+type last_arg =
+    | Gen
+    | AppM
+    | AppT
+
 let rec type_module ?(alias=false) ~strengthen ~funct_body anchor env smod =
   Builtin_attributes.warning_scope smod.pmod_attributes
     (fun () -> type_module_aux ~alias ~strengthen ~funct_body anchor env smod)
@@ -2245,13 +2257,13 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
         match arg_opt with
         | Unit ->
           Typedtree.Unit, Types.Unit, env,
-          Shape.for_unnamed_functor_param, false
+          Shape.for_unnamed_functor_param, Gen
         | Newtype newtype ->
           let decl = Ctype.new_local_type ~loc:newtype.loc Definition in
           let scope = Ctype.create_scope () in
           let (id, newenv) = Env.enter_type ~scope newtype.txt decl env in
           Newtype (id, newtype), Types.Newtype id, newenv,
-          Shape.for_unnamed_functor_param, true
+          Shape.for_unnamed_functor_param, AppT
         | Named (param, smty) ->
           let mty = transl_modtype_functor_arg env smty in
           let scope = Ctype.create_scope () in
@@ -2275,7 +2287,7 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
               Some id, newenv, id
           in
           Named (id, param, mty), Types.Named (id, mty.mty_type), newenv,
-          var, true
+          var, AppM
       in
       let body, body_shape =
         type_module ~strengthen:true ~funct_body None newenv sbody
@@ -2323,8 +2335,8 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
         | _ ->
             raise (Error(smod.pmod_loc, env, Not_a_packed_module exp.exp_type))
       in
-      if funct_body && Mtype.contains_type env mty then
-        raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body));
+      if funct_body != Gen && Mtype.contains_type env mty then
+        raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body TypeGen));
       { mod_desc = Tmod_unpack(exp, mty);
         mod_type = mty;
         mod_env = env;
@@ -2414,8 +2426,8 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
         | Arg _ | Type _ ->
             raise (Error (app_view.f_loc, env, Apply_generative));
       end;
-      if funct_body && Mtype.contains_type env funct.mod_type then
-        raise (Error (apply_loc, env, Not_allowed_in_functor_body));
+      if funct_body != Gen && Mtype.contains_type env funct.mod_type then
+        raise (Error (apply_loc, env, Not_allowed_in_functor_body TypeGen));
       { mod_desc = Tmod_apply_unit funct;
         mod_type = mty_res;
         mod_env = env;
@@ -2618,6 +2630,9 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
           Builtin_attributes.warning_scope attrs
             (fun () -> Typecore.type_expression env sexpr)
         in
+        if funct_body = AppT && not (Typecore.is_nonexpansive expr) then
+          raise (Error (expr.exp_loc, env,
+                        Not_allowed_in_functor_body Expansive));
         Tstr_eval (expr, attrs), [], shape_map, env
     | Pstr_value(rec_flag, sdefs) ->
         let (defs, newenv) =
@@ -2626,6 +2641,11 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
           | Recursive -> Typecore.annotate_recursive_bindings env defs
           | Nonrecursive -> defs
         in
+        if funct_body = AppT then
+          List.iter (fun d ->
+            if not (Typecore.is_nonexpansive d.vb_expr)
+            then raise (Error (d.vb_loc, env,
+                  Not_allowed_in_functor_body Expansive))) defs;
         (* Note: Env.find_value does not trigger the value_used event. Values
            will be marked as being used during the signature inclusion test. *)
         let items, shape_map =
@@ -2673,6 +2693,9 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
         shape_map,
         enrich_type_decls anchor decls env newenv
     | Pstr_typext styext ->
+        if funct_body = AppT then
+          raise (Error (styext.ptyext_loc, env,
+            Not_allowed_in_functor_body TypeExtension));
         let (tyext, newenv, shapes) =
           Typedecl.transl_type_extension true env loc styext
         in
@@ -2689,6 +2712,9 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
         shape_map,
          newenv)
     | Pstr_exception sext ->
+        if funct_body = AppT then
+          raise (Error (sext.ptyexn_loc, env,
+            Not_allowed_in_functor_body ExceptionDef));
         let (ext, newenv, shape) = Typedecl.transl_type_exception env sext in
         let constructor = ext.tyexn_constructor in
         Signature_names.check_typext names constructor.ext_loc
@@ -2855,6 +2881,9 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
         in
         Tstr_open od, sg, shape_map, newenv
     | Pstr_class cl ->
+        if funct_body = AppT then
+          List.iter (fun c -> raise (Error (c.pci_loc, env,
+            Not_allowed_in_functor_body Class))) cl;
         let (classes, new_env) = Typeclass.class_declarations env cl in
         let shape_map = List.fold_left (fun acc cls ->
             let open Typeclass in
@@ -2969,14 +2998,14 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
 
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
-  type_structure ~toplevel:true ~funct_body:false None env s
+  type_structure ~toplevel:true ~funct_body:Gen None env s
 
 let type_module_alias =
-  type_module ~alias:true ~strengthen:true ~funct_body:false None
+  type_module ~alias:true ~strengthen:true ~funct_body:Gen None
 let type_module =
-  type_module ~strengthen:true ~funct_body:false None
+  type_module ~strengthen:true ~funct_body:Gen None
 let type_structure =
-  type_structure ~funct_body:false None
+  type_structure ~funct_body:Gen None
 
 (* Normalize types in a signature *)
 
@@ -3122,7 +3151,7 @@ let type_package env m p fl =
 (* Fill in the forward declarations *)
 
 let type_open_decl ?used_slot env od =
-  type_open_decl ?used_slot ?toplevel:None ~funct_body:false
+  type_open_decl ?used_slot ?toplevel:None ~funct_body:Gen
     (Signature_names.create ()) env od
 
 let type_open_descr ?used_slot env od =
@@ -3482,10 +3511,13 @@ let report_error ~loc _env = function
       Location.errorf ~loc
         "@[Could not find the .cmi file for interface@ %a.@]"
         Location.Doc.quoted_filename intf_name
-  | Not_allowed_in_functor_body ->
+  | Not_allowed_in_functor_body TypeGen ->
       Location.errorf ~loc
         "@[This expression creates fresh types.@ %s@]"
         "It is not allowed inside applicative functors."
+  | Not_allowed_in_functor_body _ ->
+      Location.errorf ~loc
+        "@[This expression in not allowed in type functors.@]"
   | Not_a_packed_module ty ->
       Location.errorf ~loc
         "This expression is not a packed module. It has type@ %a"
