@@ -165,7 +165,7 @@ let parse_arguments argv =
     else if s = "-framework" then
       (let a = next_arg s in c_opts := a :: s :: !c_opts)
     else if starts_with s "-" then
-      prerr_endline ("Unknown option " ^ s)
+      raise (Bad_argument("Unknown option " ^ s))
     else
       raise (Bad_argument("Don't know what to do with " ^ s))
   done;

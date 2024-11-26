@@ -15,6 +15,10 @@ Working version
 
 ### Tools:
 
+* #13638: ocamlmklib exits with code 4 if passed an unrecognised option, as it
+  does with an unrecognised file.
+  (David Allsopp, review by Antonin Décimo and Sébastien Hinderer)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:
