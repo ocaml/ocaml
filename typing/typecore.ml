@@ -6282,27 +6282,22 @@ and type_label_exp create env loc ty_expected
 
 and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
   (* ty_expected' may be generic *)
-  let no_labels ty =
-    let ls, ~is_ret_tvar = arrow_labels env ty in
-    not is_ret_tvar && List.for_all ((=) Nolabel) ls
-  in
   let may_coerce =
     if not (is_inferred sarg) then None else
-    let work () =
-      let te = expand_head env ty_expected' in
-      match get_desc te with
-        Tarrow(Nolabel,_,ty_res0,_) ->
-          Some (no_labels ty_res0, get_level te)
-      | _ -> None
-    in
-    (* Need to be careful not to expand local constraints here *)
-    if Env.has_local_constraints env then
-      let snap = Btype.snapshot () in
-      try_finally ~always:(fun () -> Btype.backtrack snap) work
-    else work ()
+      let work () =
+        let te = expand_head env ty_expected' in
+        match get_desc te with
+          Tarrow(Nolabel,_,_,_) -> Some (get_level te)
+        | _ -> None
+      in
+      (* Need to be careful not to expand local constraints here *)
+      if Env.has_local_constraints env then
+        let snap = Btype.snapshot () in
+        try_finally ~always:(fun () -> Btype.backtrack snap) work
+      else work ()
   in
   match may_coerce with
-    Some (safe_expect, lv) ->
+    Some lv ->
       (* apply omittable arguments when expected type is "" *)
       (* we must be very careful about not breaking the semantics *)
       let texp =
@@ -6316,17 +6311,13 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
               option_none env (instance (tpoly_get_mono ty_arg)) sarg.pexp_loc
             in
             make_args ((l, Arg ty) :: args) ty_fun
-        | Tarrow (l,_,ty_res',_) when l = Nolabel || !Clflags.classic ->
-            List.rev args, ty_fun, no_labels ty_res'
-        | Tvar _ ->  List.rev args, ty_fun, false
-        |  _ -> [], texp.exp_type, false
+        | Tarrow (l,_,_ty_res',_) when l = Nolabel || !Clflags.classic ->
+            List.rev args, ty_fun
+        | Tvar _ ->  List.rev args, ty_fun
+        |  _ -> [], texp.exp_type
       in
-      let args, ty_fun', simple_res = make_args [] texp.exp_type
+      let args, ty_fun' = make_args [] texp.exp_type
       and texp = {texp with exp_type = instance texp.exp_type} in
-      if not (simple_res || safe_expect) then begin
-        unify_exp ~sexp:sarg env texp ty_expected;
-        texp
-      end else begin
       let warn = !Clflags.principal &&
         (lv <> generic_level || get_level ty_fun' <> generic_level)
       and ty_fun = instance ty_fun' in
@@ -6391,7 +6382,6 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
                        vb_loc=Location.none; vb_rec_kind = Dynamic;
                       }],
                      func let_var) }
-      end
   | None ->
       let texp = type_expect ?recarg env sarg
         (mk_expected ?explanation ty_expected') in
