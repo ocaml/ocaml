@@ -935,7 +935,6 @@ and expression ctxt f x =
           (binding_op ctxt) let_
           (list ~sep:"@," (binding_op ctxt)) ands
           (expression ctxt) body
-    | Pexp_extension e -> extension ctxt f e
     | Pexp_unreachable -> pp f "."
     | _ -> expression1 ctxt f x
 
@@ -1013,6 +1012,7 @@ and simple_expr ctxt f x =
         let expression = expression ctxt in
         pp f fmt (pattern ctxt) s expression e1 direction_flag
           df expression e2 expression e3
+    | Pexp_extension e -> extension ctxt f e
     | _ ->  paren true (expression ctxt) f x
 
 and attributes ctxt f l =
@@ -1040,7 +1040,18 @@ and value_description ctxt f x =
     ) x
 
 and extension ctxt f (s, e) =
-  pp f "@[<2>[%%%s@ %a]@]" s.txt (payload ctxt) e
+  if String.equal "metaocaml.escape" s.txt && Location.is_none s.loc
+  then
+    match e with
+    | PStr [({pstr_desc= Pstr_eval ({pexp_desc = Pexp_ident _}, []); _})] ->
+       pp f ".~%a" (payload ctxt) e
+    | _ ->
+       pp f ".~(%a)" (payload ctxt) e
+  else if String.equal "metaocaml.bracket" s.txt && Location.is_none s.loc
+  then
+    pp f "@[<2>%s@ %a@ %s@]" ".<" (payload ctxt) e ">."
+  else
+    pp f "@[<2>[%%%s@ %a]@]" s.txt (payload ctxt) e
 
 and item_extension ctxt f (s, e) =
   pp f "@[<2>[%%%%%s@ %a]@]" s.txt (payload ctxt) e
