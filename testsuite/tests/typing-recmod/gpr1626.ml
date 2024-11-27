@@ -12,5 +12,7 @@ module rec M : S with module M := M = M;;
 Line 1, characters 34-35:
 1 | module rec M : S with module M := M = M;;
                                       ^
-Error: Illegal recursive module reference
+Error: The module type of the recursive module "M"
+       cannot be accessed from the definition of the module type of "M".
+       Recursive module types are not allowed.
 |}];;

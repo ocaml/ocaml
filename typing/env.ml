@@ -138,7 +138,8 @@ type value_unbound_reason =
   | Val_unbound_ghost_recursive of Location.t
 
 type module_unbound_reason =
-  | Mod_unbound_illegal_recursion
+  | Mod_unbound_illegal_recursion of
+      { container : string option; unbound : string }
 
 type summary =
     Env_empty
@@ -653,7 +654,8 @@ type lookup_error =
   | Functor_used_as_structure of Longident.t
   | Abstract_used_as_structure of Longident.t
   | Generative_used_as_applicative of Longident.t
-  | Illegal_reference_to_recursive_module
+  | Illegal_reference_to_recursive_module of
+      { container: string option; unbound : string }
   | Cannot_scrape_alias of Longident.t * Path.t
 
 type error =
@@ -2669,9 +2671,10 @@ let may_lookup_error report_errors loc env err =
 
 let report_module_unbound ~errors ~loc env reason =
   match reason with
-  | Mod_unbound_illegal_recursion ->
+  | Mod_unbound_illegal_recursion { container; unbound } ->
       (* see #5965 *)
-    may_lookup_error errors loc env Illegal_reference_to_recursive_module
+      may_lookup_error errors loc env
+        (Illegal_reference_to_recursive_module { container; unbound })
 
 let report_value_unbound ~errors ~loc env reason lid =
   match reason with
@@ -3655,8 +3658,13 @@ let report_lookup_error_doc _loc env ppf = function
         "The ancestor variable %a@ \
          cannot be accessed from the definition of an instance variable"
        quoted_longident lid
-  | Illegal_reference_to_recursive_module ->
-     fprintf ppf "Illegal recursive module reference"
+  | Illegal_reference_to_recursive_module { container; unbound } ->
+      fprintf ppf
+        "@[The module type of the recursive module %a@ \
+         cannot be accessed from the definition of the module type of %a.@ \
+         Recursive module types are not allowed.@]"
+       Style.inline_code unbound
+       Style.inline_code (Option.value ~default:"_" container)
   | Structure_used_as_functor lid ->
       fprintf ppf "@[The module %a is a structure, it cannot be applied@]"
         quoted_longident lid

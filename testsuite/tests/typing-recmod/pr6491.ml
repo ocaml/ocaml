@@ -9,7 +9,9 @@ and Baz : sig class type c = object inherit Bar.c end end = Baz;;
 Line 2, characters 44-49:
 2 | and Bar : sig class type c = object inherit Foo.c end end = Bar
                                                 ^^^^^
-Error: Illegal recursive module reference
+Error: The module type of the recursive module "Foo"
+       cannot be accessed from the definition of the module type of "Bar".
+       Recursive module types are not allowed.
 |}]
 
 module rec Foo : sig class type c = object method x : int end end = Foo
@@ -23,7 +25,9 @@ let baz (x : Baz.c) = x#x;;
 Line 2, characters 29-34:
 2 | and Bar : sig class type c = Foo.c end = Bar
                                  ^^^^^
-Error: Illegal recursive module reference
+Error: The module type of the recursive module "Foo"
+       cannot be accessed from the definition of the module type of "Bar".
+       Recursive module types are not allowed.
 |}]
 
 (* #12480 *)

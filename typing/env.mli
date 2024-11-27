@@ -26,7 +26,8 @@ type value_unbound_reason =
   | Val_unbound_ghost_recursive of Location.t
 
 type module_unbound_reason =
-  | Mod_unbound_illegal_recursion
+  | Mod_unbound_illegal_recursion of
+      { container : string option; unbound: string }
 
 type summary =
     Env_empty
@@ -182,7 +183,8 @@ type lookup_error =
   | Functor_used_as_structure of Longident.t
   | Abstract_used_as_structure of Longident.t
   | Generative_used_as_applicative of Longident.t
-  | Illegal_reference_to_recursive_module
+  | Illegal_reference_to_recursive_module of
+      { container : string option; unbound : string }
   | Cannot_scrape_alias of Longident.t * Path.t
 
 val lookup_error: Location.t -> t -> lookup_error -> 'a
