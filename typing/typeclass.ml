@@ -1931,7 +1931,20 @@ let () =
 let rec check_recmod_class_type env cty =
   match cty.pcty_desc with
   | Pcty_constr(lid, _) ->
-      ignore (Env.lookup_cltype ~use:false ~loc:lid.loc lid.txt env)
+      begin try
+        ignore (Env.lookup_cltype ~use:false ~loc:lid.loc lid.txt env)
+      with
+      | Env.Error
+          (Lookup_error
+             (location, env,
+              Illegal_reference_to_recursive_module { container; unbound; })) ->
+          raise (Env.Error
+                   (Lookup_error (location, env,
+                                  Illegal_reference_to_recursive_class_type
+                                    { container;
+                                      unbound;
+                                      class_type = lid.txt })))
+      end
   | Pcty_extension _ -> ()
   | Pcty_arrow(_, _, cty) ->
       check_recmod_class_type env cty
@@ -1964,6 +1977,8 @@ let approx_class_declarations env sdecls =
   let decls, env = class_type_declarations env (List.map approx_class sdecls) in
   List.iter (check_recmod_decl env) sdecls;
   decls, env
+
+
 
 (*******************************)
 

@@ -185,6 +185,11 @@ type lookup_error =
   | Generative_used_as_applicative of Longident.t
   | Illegal_reference_to_recursive_module of
       { container : string option; unbound : string }
+  | Illegal_reference_to_recursive_class_type of
+      { container : string option;
+        unbound : string;
+        class_type : Longident.t;
+      }
   | Cannot_scrape_alias of Longident.t * Path.t
 
 val lookup_error: Location.t -> t -> lookup_error -> 'a

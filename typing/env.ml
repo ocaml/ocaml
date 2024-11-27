@@ -656,6 +656,11 @@ type lookup_error =
   | Generative_used_as_applicative of Longident.t
   | Illegal_reference_to_recursive_module of
       { container: string option; unbound : string }
+  | Illegal_reference_to_recursive_class_type of
+      { container : string option;
+        unbound : string;
+        class_type : Longident.t;
+      }
   | Cannot_scrape_alias of Longident.t * Path.t
 
 type error =
@@ -3665,6 +3670,15 @@ let report_lookup_error_doc _loc env ppf = function
          Recursive module types are not allowed.@]"
        Style.inline_code unbound
        Style.inline_code (Option.value ~default:"_" container)
+  | Illegal_reference_to_recursive_class_type
+      { container; unbound; class_type } ->
+      fprintf ppf
+        "@[The class type %a in the module type of the recursive module %a@ \
+         cannot be accessed from the definition of the module type of %a.@ \
+         Recursive class types are not allowed.@]"
+        quoted_longident class_type
+        Style.inline_code unbound
+        Style.inline_code (Option.value ~default:"_" container)
   | Structure_used_as_functor lid ->
       fprintf ppf "@[The module %a is a structure, it cannot be applied@]"
         quoted_longident lid

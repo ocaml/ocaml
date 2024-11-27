@@ -152,6 +152,10 @@ Working version
   checked.
   (Stefan Muenzel, review by Gabriel Scherer and Florian Angeletti)
 
+- #13646: Improve the error message when a recursive module type
+  references another recursive module type.
+  (Stefan Muenzel, review by ???)
+
 ### Internal/compiler-libs changes:
 
 - #13624: Added location to exception definitions and type extensions
