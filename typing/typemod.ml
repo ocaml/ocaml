@@ -1742,7 +1742,9 @@ and transl_recmodule_modtypes env sdecls =
       (fun env ->
          Option.fold ~none:env ~some:(fun id -> (* cf #5965 *)
            Env.enter_unbound_module (Ident.name id)
-             (Mod_unbound_illegal_recursion { container; unbound = Ident.name id }) env
+             (Mod_unbound_illegal_recursion
+                { container; unbound = Ident.name id })
+             env
          ))
       env ids
   in
@@ -1751,7 +1753,8 @@ and transl_recmodule_modtypes env sdecls =
       (fun id pmd ->
          let md_uid = Uid.mk ~current_unit:(Env.get_current_unit ()) in
          let md =
-           { md_type = approx_modtype (approx_env pmd.pmd_name.txt) pmd.pmd_type;
+           { md_type =
+               approx_modtype (approx_env pmd.pmd_name.txt) pmd.pmd_type;
              md_loc = pmd.pmd_loc;
              md_attributes = pmd.pmd_attributes;
              md_uid }
