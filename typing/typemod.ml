@@ -2693,12 +2693,15 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
         shape_map,
         enrich_type_decls anchor decls env newenv
     | Pstr_typext styext ->
-        if funct_body = AppT then
-          raise (Error (styext.ptyext_loc, env,
-            Not_allowed_in_functor_body TypeExtension));
         let (tyext, newenv, shapes) =
           Typedecl.transl_type_extension true env loc styext
         in
+        if funct_body = AppT then
+          List.iter (fun d ->
+            match d.ext_kind with
+            | Text_decl _ -> raise (Error (styext.ptyext_loc, env,
+                                 Not_allowed_in_functor_body TypeExtension))
+            | Text_rebind _ -> ()) tyext.tyext_constructors;
         let constructors = tyext.tyext_constructors in
         let shape_map = List.fold_left2 (fun shape_map ext shape ->
             Signature_names.check_typext names ext.ext_loc ext.ext_id;
@@ -2712,11 +2715,13 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
         shape_map,
          newenv)
     | Pstr_exception sext ->
-        if funct_body = AppT then
-          raise (Error (sext.ptyexn_loc, env,
-            Not_allowed_in_functor_body ExceptionDef));
         let (ext, newenv, shape) = Typedecl.transl_type_exception env sext in
         let constructor = ext.tyexn_constructor in
+        if funct_body = AppT then begin match constructor.ext_kind with
+          | Text_decl _ -> raise (Error (sext.ptyexn_loc, env,
+            Not_allowed_in_functor_body ExceptionDef))
+          | Text_rebind _ -> ()
+        end;
         Signature_names.check_typext names constructor.ext_loc
           constructor.ext_id;
         Tstr_exception ext,

@@ -284,6 +284,17 @@ Line 2, characters 2-13:
 Error: This expression in not allowed in type functors.
 |}]
 
+exception E2
+
+module S_exception2 (type a) = struct
+  exception E = E2
+end
+
+[%%expect{|
+exception E2
+module S_exception2 : (type a) -> sig exception E end
+|}]
+
 type ext = ..
 
 module F_typeext (type a) = struct
@@ -298,16 +309,26 @@ Line 4, characters 2-15:
 Error: This expression in not allowed in type functors.
 |}]
 
-module F_typeext2 (type a) = struct
+(* Defining an extensible type is pure, thus accepted *)
+module S_typeext2 (type a) = struct
   type ext2 = ..
-  type ext2 += C2
 end
 
 [%%expect{|
-Line 3, characters 2-17:
-3 |   type ext2 += C2
-      ^^^^^^^^^^^^^^^
-Error: This expression in not allowed in type functors.
+module S_typeext2 : (type a) -> sig type ext2 = .. end
+|}]
+
+
+type ext3 = ..
+type ext3 += C3
+module S_typeext3 (type a) = struct
+  type ext3 += LocalC = C3
+end
+
+[%%expect{|
+type ext3 = ..
+type ext3 += C3
+module S_typeext3 : (type a) -> sig type ext3 += LocalC end
 |}]
 
 module F_value (type a) = struct
