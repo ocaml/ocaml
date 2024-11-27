@@ -4886,6 +4886,10 @@ let subtype_error ~env ~trace ~unification_trace =
                     ~trace:(expand_subtype_trace env (List.rev trace))
                     ~unification_trace))
 
+let is_immediate env p1 =
+  let decl = Env.find_type p1 env in
+  decl.type_immediate = Type_immediacy.Always
+
 let rec subtype_rec env trace t1 t2 cstrs =
   if eq_type t1 t2 then cstrs else
 
@@ -4955,6 +4959,8 @@ let rec subtype_rec env trace t1 t2 cstrs =
         subtype_rec env trace (expand_abbrev_opt env t1) t2 cstrs
 (*  | (_, Tconstr(p2, _, _)) when generic_private_abbrev false env p2 ->
         subtype_rec env trace t1 (expand_abbrev_opt env t2) cstrs *)
+    | (Tconstr(p1,_,_), _) when is_immediate env p1 ->
+       subtype_rec env trace Predef.type_int t2 cstrs
     | (Tobject (f1, _), Tobject (f2, _))
       when is_Tvar (object_row f1) && is_Tvar (object_row f2) ->
         (* Same row variable implies same object. *)
