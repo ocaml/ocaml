@@ -27,12 +27,14 @@
 #ifndef NATIVE_CODE
 #include "caml/dynlink.h"
 #endif
+#include "caml/gc_ctrl.h"
 #include "caml/gc_stats.h"
 #include "caml/osdeps.h"
 #include "caml/shared_heap.h"
 #include "caml/startup_aux.h"
 #include "caml/prims.h"
 #include "caml/signals.h"
+#include "caml/platform.h"
 
 #ifdef _WIN32
 extern void caml_win32_unregister_overflow_detection (void);
@@ -111,7 +113,10 @@ void caml_parse_ocamlrunparam(void)
       case 'n': scanmult (opt, &params.init_custom_minor_max_bsz); break;
       case 'o': scanmult (opt, &params.init_percent_free); break;
       case 'p': scanmult (opt, &params.parser_trace); break;
-      case 'R': break; /*  see stdlib/hashtbl.mli */
+      case 'R':
+        scanmult (opt, &val);
+        caml_runtime_randomized = !!val;
+        break;
       case 's': scanmult (opt, &params.init_minor_heap_wsz); break;
       case 't': scanmult (opt, &params.trace_level); break;
       case 'v':
@@ -137,7 +142,6 @@ void caml_parse_ocamlrunparam(void)
                      "The maximum value is %d.", Max_domains_max);
   }
 }
-
 
 /* The number of outstanding calls to caml_startup */
 static int startup_count = 0;

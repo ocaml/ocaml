@@ -18,6 +18,8 @@
 
 #ifdef CAML_INTERNALS
 
+#include <stdbool.h>
+
 #include "misc.h"
 
 CAMLextern atomic_uintnat caml_max_stack_wsize;
@@ -28,6 +30,7 @@ void caml_init_gc (void);
 value caml_gc_stat(value);
 value caml_gc_major(value);
 
+extern atomic_bool caml_runtime_randomized;
 
 #define caml_stat_top_heap_wsz caml_top_heap_words(Caml_state->shared_heap)
 #define caml_stat_compactions 0
