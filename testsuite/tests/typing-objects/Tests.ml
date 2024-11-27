@@ -736,6 +736,14 @@ fun x -> (x :> < m : 'a -> 'a > as 'a);;
 <fun>
 |}];;
 
+fun x -> (x : int -> bool :> int -> int);;
+[%%expect{|
+- : (int -> bool) -> int -> int = <fun>
+|}];;
+fun x -> (x : int -> int :> bool -> int);;
+[%%expect{|
+- : (int -> int) -> bool -> int = <fun>
+|}];;
 fun x -> (x : int -> bool :> 'a -> 'a);;
 [%%expect{|
 Line 1, characters 9-38:
@@ -744,13 +752,13 @@ Line 1, characters 9-38:
 Error: Type "int -> bool" is not a subtype of "int -> int"
        Type "bool" is not a subtype of "int"
 |}];;
-fun x -> (x : int -> bool :> int -> int);;
+fun x -> (x : int -> string :> int -> int);;
 [%%expect{|
-Line 1, characters 9-40:
-1 | fun x -> (x : int -> bool :> int -> int);;
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type "int -> bool" is not a subtype of "int -> int"
-       Type "bool" is not a subtype of "int"
+Line 1, characters 9-42:
+1 | fun x -> (x : int -> string :> int -> int);;
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Type "int -> string" is not a subtype of "int -> int"
+       Type "string" is not a subtype of "int"
 |}];;
 fun x -> (x : < > :> < .. >);;
 [%%expect{|
