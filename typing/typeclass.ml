@@ -1938,12 +1938,12 @@ let rec check_recmod_class_type env cty =
           (Lookup_error
              (location, env,
               Illegal_reference_to_recursive_module { container; unbound; })) ->
-          raise (Env.Error
-                   (Lookup_error (location, env,
-                                  Illegal_reference_to_recursive_class_type
-                                    { container;
-                                      unbound;
-                                      class_type = lid.txt })))
+          Env.lookup_error
+            location env
+            (Illegal_reference_to_recursive_class_type
+               { container;
+                 unbound;
+                 class_type = lid.txt })
       end
   | Pcty_extension _ -> ()
   | Pcty_arrow(_, _, cty) ->
