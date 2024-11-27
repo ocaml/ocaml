@@ -12,7 +12,7 @@ Working version
   (Nicolás Ojeda Bär, review by Richard Eisenberg, Jeremy Yallop, Jacques
   Garrigue, and Gabriel Scherer)
 
-- #13644: Allow to use (ty :> int) for any immediate type ty.
+- #13645: Allow to use (ty :> int) for any immediate type ty.
   (Christophe Raffalli, review by ...)
 
 ### Runtime system:
