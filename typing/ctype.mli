@@ -181,10 +181,10 @@ module Pattern_env : sig
     { mutable env : Env.t;
       equations_scope : int;
       (* scope for local type declarations *)
-      allow_recursive_equations : bool;
+      in_counterexample : bool;
       (* true iff checking counter examples *)
     }
-  val make: Env.t -> equations_scope:int -> allow_recursive_equations:bool -> t
+  val make: Env.t -> equations_scope:int -> in_counterexample:bool -> t
   val copy: ?equations_scope:int -> t -> t
   val set_env: t -> Env.t -> unit
 end
@@ -272,14 +272,14 @@ val get_new_abstract_name : Env.t -> string -> string
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val unify_gadt:
-        Pattern_env.t -> type_expr -> type_expr -> Btype.TypePairs.t
-        (* [unify_gadt penv ty1 ty2] unifies [ty1] and [ty2] in
-           [Pattern] mode, possible adding local constraints to the
+    Pattern_env.t -> pat:type_expr -> expected:type_expr -> Btype.TypePairs.t
+        (* [unify_gadt penv ~pat:ty1 ~expected:ty2] unifies [ty1] and [ty2]
+           in [Pattern] mode, possible adding local constraints to the
            environment in [penv]. Raises [Unify] if not possible.
            Returns the pairs of types that have been equated.
-           Type variables in [ty1] are assumed to be non-leaking (safely
-           reifiable), moreover if [penv.allow_recursive_equations = true]
-           the same assumption is made for [ty2]. *)
+           Type variables in [ty1] are alwaus assumed to be non-leaking
+           (safely reifiable); if [penv.allow_recursive_equations = true]
+           then both [ty1] and [ty2] are asumed to be non-leaking. *)
 val unify_var: Env.t -> type_expr -> type_expr -> unit
         (* Same as [unify], but allow free univars when first type
            is a variable. *)

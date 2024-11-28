@@ -445,20 +445,23 @@ let unify_pat_types loc env ty ty' =
 
 (* GADT unification inside solve_Ppat_construct and check_counter_example_pat *)
 let nothing_equated = TypePairs.create 0
-let unify_pat_types_return_equated_pairs ~refine loc penv ty ty' =
+let unify_pat_types_return_equated_pairs ~refine loc penv ~pat ~expected =
   try
-    if refine then unify_gadt penv ty ty'
-    else (unify !!penv ty ty'; nothing_equated)
+    if refine || penv.Pattern_env.in_counterexample
+    then unify_gadt penv ~pat ~expected
+    else (unify !!penv pat expected; nothing_equated)
   with
   | Unify err ->
       raise(Error(loc, !!penv, Pattern_type_clash(err, None)))
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, !!penv, Typetexp.Variant_tags (l1, l2)))
 
-let unify_pat_types_refine ~refine loc penv ty ty' =
-  (* [refine=true] only in calls originating from [check_counter_example_pat],
+let unify_pat_types_penv loc penv ty ty' =
+  (* [penv.in_counterexample = true] only in calls originating
+     from [check_counter_example_pat],
      which in turn may contain only non-leaking type variables *)
-  ignore (unify_pat_types_return_equated_pairs ~refine loc penv ty ty')
+  ignore (unify_pat_types_return_equated_pairs ~refine:false loc penv
+              ~pat:ty ~expected:ty')
 
 (** [sdesc_for_hint] is used by error messages to report literals in their
     original formatting *)
@@ -468,11 +471,11 @@ let unify_pat ?sdesc_for_hint env pat expected_ty =
     raise(Error(loc, env, Pattern_type_clash(err, sdesc_for_hint)))
 
 (* unification of a type with a Tconstr with freshly created arguments *)
-let unify_head_only ~refine loc penv ty constr =
+let unify_head_only loc penv ty constr =
   let path = cstr_res_type_path constr in
   let decl = Env.find_type path !!penv in
   let ty' = Ctype.newconstr path (Ctype.instance_list decl.type_params) in
-  unify_pat_types_refine ~refine loc penv ty' ty
+  unify_pat_types_penv loc penv ty' ty
 
 (* Creating new conjunctive types is not allowed when typing patterns *)
 (* make all Reither present in open variants *)
@@ -811,15 +814,16 @@ let solve_Ppat_poly_constraint tps env loc sty expected_ty =
 let solve_Ppat_alias env pat =
   with_local_level_generalize (fun () -> build_as_type env pat)
 
-let solve_Ppat_tuple (type a) ~refine loc env (args : a list) expected_ty =
+let solve_Ppat_tuple (type a) loc env (args : a list) expected_ty =
   let vars = List.map (fun _ -> newgenvar ()) args in
   let ty = newgenty (Ttuple vars) in
   let expected_ty = generic_instance expected_ty in
-  unify_pat_types_refine ~refine loc env ty expected_ty;
+  unify_pat_types_penv loc env ty expected_ty;
   vars
 
 let solve_constructor_annotation
     tps (penv : Pattern_env.t) name_list sty ty_args ty_ex unify_res =
+  assert (not penv.in_counterexample);
   let expansion_scope = penv.equations_scope in
   (* Introduce fresh type names that expand to type variables.
      They should eventually be bound to ground types. *)
@@ -914,20 +918,20 @@ let solve_constructor_annotation
   end;
   ty_args, Some (List.map fst ids_decls, cty)
 
-let solve_Ppat_construct ~refine tps penv loc constr no_existentials
+let solve_Ppat_construct tps (penv : Pattern_env.t) loc constr no_existentials
         existential_styp expected_ty =
   (* if constructor is gadt, we must verify that the expected type has the
      correct head *)
   if constr.cstr_generalized then
-    unify_head_only ~refine loc penv (instance expected_ty) constr;
+    unify_head_only loc penv (instance expected_ty) constr;
 
   (* PR#7214: do not use gadt unification for toplevel lets *)
   let unify_res ty_res expected_ty =
-    let refine =
-      refine || constr.cstr_generalized && no_existentials = None in
+    let refine = constr.cstr_generalized && no_existentials = None in
     (* Here [ty_res] contains only fresh (non-leaking) type variables,
        so the requirement of [unify_gadt] is fulfilled. *)
-    unify_pat_types_return_equated_pairs ~refine loc penv ty_res expected_ty
+    unify_pat_types_return_equated_pairs ~refine loc penv ~pat:ty_res
+      ~expected:expected_ty
   in
 
   let ty_args, equated_types, existential_ctyp =
@@ -964,7 +968,7 @@ let solve_Ppat_construct ~refine tps penv loc constr no_existentials
       (ty_args, equated_types, existential_ctyp)
     end
   in
-  if !Clflags.principal && not refine then begin
+  if !Clflags.principal && not penv.in_counterexample then begin
     (* Do not warn for counter-examples *)
     let exception Warn_only_once in
     try
@@ -986,11 +990,11 @@ let solve_Ppat_construct ~refine tps penv loc constr no_existentials
   end;
   (ty_args, existential_ctyp)
 
-let solve_Ppat_record_field ~refine loc penv label label_lid record_ty =
+let solve_Ppat_record_field loc penv label label_lid record_ty =
   with_local_level_generalize_structure begin fun () ->
     let (_, ty_arg, ty_res) = instance_label ~fixed:false label in
     begin try
-      unify_pat_types_refine ~refine loc penv ty_res (instance record_ty)
+      unify_pat_types_penv loc penv ty_res (instance record_ty)
     with Error(_loc, _env, Pattern_type_clash(err, _)) ->
       raise(Error(label_lid.loc, !!penv,
                   Label_mismatch(label_lid.txt, err)))
@@ -998,19 +1002,18 @@ let solve_Ppat_record_field ~refine loc penv label label_lid record_ty =
     ty_arg
   end
 
-let solve_Ppat_array ~refine loc env expected_ty =
+let solve_Ppat_array loc env expected_ty =
   let expected_ty = generic_instance expected_ty in
   match disambiguate_array_literal ~loc !!env expected_ty with
   | Some ty_elt -> ty_elt
   | None ->
       let ty_elt = newgenvar() in
-      unify_pat_types_refine ~refine
-        loc env (Predef.type_array ty_elt) expected_ty;
+      unify_pat_types_penv loc env (Predef.type_array ty_elt) expected_ty;
       ty_elt
 
-let solve_Ppat_lazy ~refine loc env expected_ty =
+let solve_Ppat_lazy loc env expected_ty =
   let nv = newgenvar () in
-  unify_pat_types_refine ~refine loc env (Predef.type_lazy_t nv)
+  unify_pat_types_penv loc env (Predef.type_lazy_t nv)
     (generic_instance expected_ty);
   nv
 
@@ -1024,7 +1027,7 @@ let solve_Ppat_constraint tps loc env sty expected_ty =
   unify_pat_types loc env ty (instance expected_ty);
   (cty, ty, expected_ty')
 
-let solve_Ppat_variant ~refine loc env tag no_arg expected_ty =
+let solve_Ppat_variant loc env tag no_arg expected_ty =
   let arg_type = if no_arg then [] else [newgenvar()] in
   let fields = [tag, rf_either ~no_arg arg_type ~matched:true] in
   let make_row more =
@@ -1035,7 +1038,7 @@ let solve_Ppat_variant ~refine loc env tag no_arg expected_ty =
   (* PR#7404: allow some_private_tag blindly, as it would not unify with
      the abstract row variable *)
   if tag <> Parmatch.some_private_tag then
-    unify_pat_types_refine ~refine loc env (newgenty(Tvariant row)) expected_ty;
+    unify_pat_types_penv loc env (newgenty(Tvariant row)) expected_ty;
   (arg_type, make_row (newvar ()), instance expected_ty)
 
 (* Building the or-pattern corresponding to a polymorphic variant type *)
@@ -1803,7 +1806,7 @@ and type_pat_aux
   | Ppat_tuple spl ->
       assert (List.length spl >= 2);
       let expected_tys =
-        solve_Ppat_tuple ~refine:false loc penv spl expected_ty in
+        solve_Ppat_tuple loc penv spl expected_ty in
       let pl = List.map2 (type_pat tps Value) spl expected_tys in
       rvp {
         pat_desc = Tpat_tuple pl;
@@ -1874,7 +1877,7 @@ and type_pat_aux
                                      constr.cstr_arity, List.length sargs)));
 
       let (ty_args, existential_ctyp) =
-        solve_Ppat_construct ~refine:false tps penv loc constr no_existentials
+        solve_Ppat_construct tps penv loc constr no_existentials
           existential_styp expected_ty
       in
 
@@ -1905,7 +1908,7 @@ and type_pat_aux
       assert (tag <> Parmatch.some_private_tag);
       let constant = (sarg = None) in
       let arg_type, row, pat_type =
-        solve_Ppat_variant ~refine:false loc penv tag constant expected_ty in
+        solve_Ppat_variant loc penv tag constant expected_ty in
       let arg =
         (* PR#6235: propagate type information *)
         match sarg, arg_type with
@@ -1932,8 +1935,7 @@ and type_pat_aux
       in
       let type_label_pat (label_lid, label, sarg) =
         let ty_arg =
-          solve_Ppat_record_field ~refine:false loc penv label label_lid
-            record_ty in
+          solve_Ppat_record_field loc penv label label_lid record_ty in
         (label_lid, label, type_pat tps Value sarg ty_arg)
       in
       let make_record_pat lbl_pat_list =
@@ -1955,7 +1957,7 @@ and type_pat_aux
       in
       rvp @@ solve_expected (make_record_pat lbl_a_list)
   | Ppat_array spl ->
-      let ty_elt = solve_Ppat_array ~refine:false loc penv expected_ty in
+      let ty_elt = solve_Ppat_array loc penv expected_ty in
       let pl = List.map (fun p -> type_pat tps Value p ty_elt) spl in
       rvp {
         pat_desc = Tpat_array pl;
@@ -2022,7 +2024,7 @@ and type_pat_aux
            pat_attributes = sp.ppat_attributes;
            pat_env = !!penv }
   | Ppat_lazy sp1 ->
-      let nv = solve_Ppat_lazy ~refine:false loc penv expected_ty in
+      let nv = solve_Ppat_lazy loc penv expected_ty in
       let p1 = type_pat tps Value sp1 nv in
       rvp {
         pat_desc = Tpat_lazy p1;
@@ -2138,7 +2140,7 @@ let type_pat tps category ?no_existentials penv =
 let type_pattern category ~lev env spat expected_ty ?cont allow_modules =
   let tps = create_type_pat_state ?cont allow_modules in
   let new_penv = Pattern_env.make env
-      ~equations_scope:lev ~allow_recursive_equations:false in
+      ~equations_scope:lev ~in_counterexample:false in
   let pat = type_pat tps category new_penv spat expected_ty in
   let { tps_pattern_variables = pvs;
         tps_module_variables = mvs;
@@ -2152,7 +2154,7 @@ let type_pattern_list
   let tps = create_type_pat_state allow_modules in
   let equations_scope = get_current_level () in
   let new_penv = Pattern_env.make env
-      ~equations_scope ~allow_recursive_equations:false in
+      ~equations_scope ~in_counterexample:false in
   let type_pat (attrs, pat) ty =
     Builtin_attributes.warning_scope ~ppwarning:false attrs
       (fun () ->
@@ -2171,7 +2173,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
   let nv = newvar () in
   let equations_scope = get_current_level () in
   let new_penv = Pattern_env.make val_env
-      ~equations_scope ~allow_recursive_equations:false in
+      ~equations_scope ~in_counterexample:false in
   let pat =
     type_pat tps Value ~no_existentials:In_class_args new_penv spat nv in
   if has_variants pat then begin
@@ -2221,7 +2223,7 @@ let type_self_pattern env spat =
   let nv = newvar() in
   let equations_scope = get_current_level () in
   let new_penv = Pattern_env.make env
-      ~equations_scope ~allow_recursive_equations:false in
+      ~equations_scope ~in_counterexample:false in
   let pat =
     type_pat tps Value ~no_existentials:In_self_pattern new_penv spat nv in
   List.iter (fun f -> f()) tps.tps_pattern_force;
@@ -2388,9 +2390,8 @@ let rec check_counter_example_pat
   let check_rec ?(info=info) ?(penv=penv) =
     check_counter_example_pat ~info ~penv type_pat_state in
   let loc = tp.pat_loc in
-  let refine = true in
   let solve_expected (x : pattern) : pattern =
-    unify_pat_types_refine ~refine x.pat_loc penv x.pat_type
+    unify_pat_types_penv x.pat_loc penv x.pat_type
       (instance expected_ty);
     x
   in
@@ -2428,7 +2429,7 @@ let rec check_counter_example_pat
       k @@ solve_expected (mp (Tpat_constant cst) ~pat_type:(type_constant cst))
   | Tpat_tuple tpl ->
       assert (List.length tpl >= 2);
-      let expected_tys = solve_Ppat_tuple ~refine loc penv tpl expected_ty in
+      let expected_tys = solve_Ppat_tuple loc penv tpl expected_ty in
       let tpl_ann = List.combine tpl expected_tys in
       map_fold_cont (fun (p,t) -> check_rec p t) tpl_ann (fun pl ->
         mkp k (Tpat_tuple pl)
@@ -2438,7 +2439,7 @@ let rec check_counter_example_pat
         raise Need_backtrack;
       let (ty_args, existential_ctyp) =
         solve_Ppat_construct
-          ~refine type_pat_state penv loc constr None None expected_ty
+          type_pat_state penv loc constr None None expected_ty
       in
       map_fold_cont
         (fun (p,t) -> check_rec p t)
@@ -2448,7 +2449,7 @@ let rec check_counter_example_pat
   | Tpat_variant(tag, targ, _) ->
       let constant = (targ = None) in
       let arg_type, row, pat_type =
-        solve_Ppat_variant ~refine loc penv tag constant expected_ty in
+        solve_Ppat_variant loc penv tag constant expected_ty in
       let k arg =
         mkp k ~pat_type (Tpat_variant(tag, arg, ref row))
       in begin
@@ -2461,13 +2462,13 @@ let rec check_counter_example_pat
       let record_ty = generic_instance expected_ty in
       let type_label_pat (label_lid, label, targ) k =
         let ty_arg =
-          solve_Ppat_record_field ~refine loc penv label label_lid record_ty in
+          solve_Ppat_record_field loc penv label label_lid record_ty in
         check_rec targ ty_arg (fun arg -> k (label_lid, label, arg))
       in
       map_fold_cont type_label_pat fields
         (fun fields -> mkp k (Tpat_record (fields, closed)))
   | Tpat_array tpl ->
-      let ty_elt = solve_Ppat_array ~refine loc penv expected_ty in
+      let ty_elt = solve_Ppat_array loc penv expected_ty in
       map_fold_cont (fun p -> check_rec p ty_elt) tpl
         (fun pl -> mkp k (Tpat_array pl))
   | Tpat_or(tp1, tp2, _) ->
@@ -2511,7 +2512,7 @@ let rec check_counter_example_pat
           mkp k (Tpat_or (p1, p2, None))
       end
   | Tpat_lazy tp1 ->
-      let nv = solve_Ppat_lazy ~refine loc penv expected_ty in
+      let nv = solve_Ppat_lazy loc penv expected_ty in
       (* do not explode under lazy: PR#7421 *)
       check_rec ~info:(no_explosion info) tp1 nv
         (fun p1 -> mkp k (Tpat_lazy p1))
@@ -2530,7 +2531,7 @@ let check_counter_example_pat ~counter_example_args penv tp expected_ty =
    to type check gadt nonexhaustiveness *)
 let partial_pred ~lev ~splitting_mode ?(explode=0) env expected_ty p =
   let penv = Pattern_env.make env
-      ~equations_scope:lev ~allow_recursive_equations:true in
+      ~equations_scope:lev ~in_counterexample:true in
   let state = save_state penv in
   let counter_example_args =
       {

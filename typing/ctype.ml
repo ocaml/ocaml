@@ -328,19 +328,19 @@ module Pattern_env : sig
   type t = private
     { mutable env : Env.t;
       equations_scope : int;
-      allow_recursive_equations : bool; }
-  val make: Env.t -> equations_scope:int -> allow_recursive_equations:bool -> t
+      in_counterexample : bool; }
+  val make: Env.t -> equations_scope:int -> in_counterexample:bool -> t
   val copy: ?equations_scope:int -> t -> t
   val set_env: t -> Env.t -> unit
 end = struct
   type t =
     { mutable env : Env.t;
       equations_scope : int;
-      allow_recursive_equations : bool; }
-  let make env ~equations_scope ~allow_recursive_equations =
+      in_counterexample : bool; }
+  let make env ~equations_scope ~in_counterexample =
     { env;
       equations_scope;
-      allow_recursive_equations; }
+      in_counterexample; }
   let copy ?equations_scope penv =
     let equations_scope =
       match equations_scope with None -> penv.equations_scope | Some s -> s in
@@ -419,7 +419,7 @@ let can_assume_injective = function
 let in_counterexample uenv =
   match uenv with
   | Expression _ -> false
-  | Pattern { penv } -> penv.allow_recursive_equations
+  | Pattern { penv } -> penv.in_counterexample
 
 let allow_recursive_equations uenv =
   !Clflags.recursive_types || in_counterexample uenv
@@ -3277,7 +3277,7 @@ let unify uenv ty1 ty2 =
       undo_compress snap;
       raise (Unify (expand_to_unification_error (get_env uenv) trace))
 
-let unify_gadt (penv : Pattern_env.t) ty1 ty2 =
+let unify_gadt (penv : Pattern_env.t) ~pat:ty1 ~expected:ty2 =
   let equated_types = TypePairs.create 0 in
   let do_unify_gadt () =
     let uenv = Pattern
@@ -3289,7 +3289,7 @@ let unify_gadt (penv : Pattern_env.t) ty1 ty2 =
     unify uenv ty1 ty2;
     equated_types
   in
-  let no_leak = penv.allow_recursive_equations || closed_type_expr ty2 in
+  let no_leak = penv.in_counterexample || closed_type_expr ty2 in
   if no_leak then with_univar_pairs [] do_unify_gadt else
   let snap = Btype.snapshot () in
   try
