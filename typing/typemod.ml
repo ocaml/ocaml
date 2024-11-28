@@ -52,6 +52,7 @@ type disallowed_in_functor =
   | TypeExtension
   | Expansive
   | Class
+  | ModApp
 
 type error =
     Cannot_apply of module_type
@@ -2428,6 +2429,8 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
       end;
       if funct_body != Gen && Mtype.contains_type env funct.mod_type then
         raise (Error (apply_loc, env, Not_allowed_in_functor_body TypeGen));
+      if funct_body = AppT then
+        raise (Error (apply_loc, env, Not_allowed_in_functor_body ModApp));
       { mod_desc = Tmod_apply_unit funct;
         mod_type = mty_res;
         mod_env = env;
@@ -2534,6 +2537,9 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
             end;
             nondep_mty
       in
+      (* Could be relaxed to allow PURE functors applications *)
+      if funct_body = AppT then
+        raise (Error (apply_loc, env, Not_allowed_in_functor_body ModApp));
       check_well_formed_module env apply_loc
         "the signature of this functor application" mty_appl;
       { mod_desc = Tmod_apply(funct, arg, coercion);

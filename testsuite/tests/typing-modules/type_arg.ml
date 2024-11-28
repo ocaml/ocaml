@@ -388,3 +388,35 @@ Lines 2-3, characters 2-5:
 3 |   end
 Error: This expression in not allowed in type functors.
 |}]
+
+module DefineException (X : sig type t end) = struct
+  exception E of X.t
+end
+
+module F_define_exception_hidden (type a) = struct
+  module M = DefineException(struct type t = a end)
+  include M
+end
+
+[%%expect{|
+module DefineException : (X : sig type t end) -> sig exception E of X.t end
+Line 6, characters 13-51:
+6 |   module M = DefineException(struct type t = a end)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression in not allowed in type functors.
+|}]
+
+module DefineException2 (X : sig type t end) = struct
+  exception E of X.t
+end
+
+module F_define_exception_hidden2 (type a) =
+  DefineException2(struct type t = a end)
+
+[%%expect{|
+module DefineException2 : (X : sig type t end) -> sig exception E of X.t end
+Line 6, characters 2-41:
+6 |   DefineException2(struct type t = a end)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression in not allowed in type functors.
+|}]

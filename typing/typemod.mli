@@ -109,6 +109,7 @@ type disallowed_in_functor =
     | TypeExtension
     | Expansive
     | Class
+    | ModApp
 
 type error =
     Cannot_apply of module_type
