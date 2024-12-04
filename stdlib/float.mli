@@ -188,6 +188,24 @@ external of_string : string -> float = "caml_float_of_string"
     @raise Failure if the given string is not a valid
     representation of a float. *)
 
+external of_string_exn : string -> float = "caml_float_of_string"
+(** Convert the given string to a float.  The string is read in decimal
+    (by default) or in hexadecimal (marked by [0x] or [0X]).
+    The format of decimal floating-point numbers is
+    [ [-] dd.ddd (e|E) [+|-] dd ], where [d] stands for a decimal digit.
+    The format of hexadecimal floating-point numbers is
+    [ [-] 0(x|X) hh.hhh (p|P) [+|-] dd ], where [h] stands for an
+    hexadecimal digit and [d] for a decimal digit.
+    In both cases, at least one of the integer and fractional parts must be
+    given; the exponent part is optional.
+    The [_] (underscore) character can appear anywhere in the string
+    and is ignored.
+    Depending on the execution platforms, other representations of
+    floating-point numbers can be accepted, but should not be relied upon.
+    @raise Failure if the given string is not a valid
+    representation of a float.
+    @since 5.4 *)
+
 val of_string_opt: string -> float option
 (** Same as [of_string], but returns [None] instead of raising. *)
 

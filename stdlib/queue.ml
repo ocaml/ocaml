@@ -55,10 +55,12 @@ let add x q =
 let push =
   add
 
-let peek q =
+let peek_exn q =
   match q.first with
   | Nil -> raise Empty
   | Cons { content } -> content
+
+let peek = peek_exn
 
 let peek_opt q =
   match q.first with
@@ -68,7 +70,7 @@ let peek_opt q =
 let top =
   peek
 
-let take q =
+let take_exn q =
   match q.first with
   | Nil -> raise Empty
   | Cons { content; next = Nil } ->
@@ -78,6 +80,8 @@ let take q =
     q.length <- q.length - 1;
     q.first <- next;
     content
+
+let take = take_exn
 
 let take_opt q =
   match q.first with

@@ -298,6 +298,7 @@ module type S =
     val add: 'a t -> key -> 'a -> unit
     val remove: 'a t -> key -> unit
     val find: 'a t -> key -> 'a
+    val find_exn: 'a t -> key -> 'a
     val find_opt: 'a t -> key -> 'a option
     val find_all: 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
@@ -326,6 +327,7 @@ module type SeededS =
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
     val find : 'a t -> key -> 'a
+    val find_exn : 'a t -> key -> 'a
     val find_opt: 'a t -> key -> 'a option
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
@@ -380,13 +382,13 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
       let i = key_index h key in
       remove_bucket h i key Empty h.data.(i)
 
-    let rec find_rec key = function
+    let rec find_exn_rec key = function
       | Empty ->
           raise Not_found
       | Cons{key=k; data; next} ->
-          if H.equal key k then data else find_rec key next
+          if H.equal key k then data else find_exn_rec key next
 
-    let find h key =
+    let find_exn h key =
       match h.data.(key_index h key) with
       | Empty -> raise Not_found
       | Cons{key=k1; data=d1; next=next1} ->
@@ -398,7 +400,9 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
               match next2 with
               | Empty -> raise Not_found
               | Cons{key=k3; data=d3; next=next3} ->
-                  if H.equal key k3 then d3 else find_rec key next3
+                  if H.equal key k3 then d3 else find_exn_rec key next3
+
+    let find = find_exn
 
     let rec find_rec_opt key = function
       | Empty ->
@@ -531,13 +535,13 @@ let remove h key =
   let i = key_index h key in
   remove_bucket h i key Empty h.data.(i)
 
-let rec find_rec key = function
+let rec find_exn_rec key = function
   | Empty ->
       raise Not_found
   | Cons{key=k; data; next} ->
-      if compare key k = 0 then data else find_rec key next
+      if compare key k = 0 then data else find_exn_rec key next
 
-let find h key =
+let find_exn h key =
   match h.data.(key_index h key) with
   | Empty -> raise Not_found
   | Cons{key=k1; data=d1; next=next1} ->
@@ -549,7 +553,9 @@ let find h key =
           match next2 with
           | Empty -> raise Not_found
           | Cons{key=k3; data=d3; next=next3} ->
-              if compare key k3 = 0 then d3 else find_rec key next3
+              if compare key k3 = 0 then d3 else find_exn_rec key next3
+
+let find = find_exn
 
 let rec find_rec_opt key = function
   | Empty ->

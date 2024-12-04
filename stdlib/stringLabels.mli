@@ -305,6 +305,14 @@ val index_from : string -> int -> char -> int
     @raise Not_found if [c] does not occur in [s] after position [i].
     @raise Invalid_argument if [i] is not a valid position in [s]. *)
 
+val index_from_exn : string -> int -> char -> int
+(** [index_from_exn s i c] is the index of the first occurrence of [c] in
+    [s] after position [i].
+
+    @raise Not_found if [c] does not occur in [s] after position [i].
+    @raise Invalid_argument if [i] is not a valid position in [s].
+
+    @since 5.4 *)
 
 val index_from_opt : string -> int -> char -> int option
 (** [index_from_opt s i c] is the index of the first occurrence of [c]
@@ -320,6 +328,15 @@ val rindex_from : string -> int -> char -> int
     @raise Not_found if [c] does not occur in [s] before position [i+1].
     @raise Invalid_argument if [i+1] is not a valid position in [s]. *)
 
+val rindex_from_exn : string -> int -> char -> int
+(** [rindex_from_exn s i c] is the index of the last occurrence of [c] in
+    [s] before position [i+1].
+
+    @raise Not_found if [c] does not occur in [s] before position [i+1].
+    @raise Invalid_argument if [i+1] is not a valid position in [s].
+
+    @since 5.4 *)
+
 val rindex_from_opt : string -> int -> char -> int option
 (** [rindex_from_opt s i c] is the index of the last occurrence of [c]
     in [s] before position [i+1] (if any).
@@ -330,6 +347,9 @@ val rindex_from_opt : string -> int -> char -> int option
 val index : string -> char -> int
 (** [index s c] is {!String.index_from}[ s 0 c]. *)
 
+val index_exn : string -> char -> int
+(** [index_exn s c] is {!String.index_from_exn}[ s 0 c]. *)
+
 val index_opt : string -> char -> int option
 (** [index_opt s c] is {!String.index_from_opt}[ s 0 c].
 
@@ -337,6 +357,9 @@ val index_opt : string -> char -> int option
 
 val rindex : string -> char -> int
 (** [rindex s c] is {!String.rindex_from}[ s (length s - 1) c]. *)
+
+val rindex_exn : string -> char -> int
+(** [rindex_exn s c] is {!String.rindex_from_exn}[ s (length s - 1) c]. *)
 
 val rindex_opt : string -> char -> int option
 (** [rindex_opt s c] is {!String.rindex_from_opt}[ s (length s - 1) c].

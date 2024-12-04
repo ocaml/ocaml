@@ -36,16 +36,22 @@ module type S =
     val cardinal: 'a t -> int
     val bindings: 'a t -> (key * 'a) list
     val min_binding: 'a t -> (key * 'a)
+    val min_binding_exn: 'a t -> (key * 'a)
     val min_binding_opt: 'a t -> (key * 'a) option
     val max_binding: 'a t -> (key * 'a)
+    val max_binding_exn: 'a t -> (key * 'a)
     val max_binding_opt: 'a t -> (key * 'a) option
     val choose: 'a t -> (key * 'a)
+    val choose_exn: 'a t -> (key * 'a)
     val choose_opt: 'a t -> (key * 'a) option
     val find: key -> 'a t -> 'a
+    val find_exn: key -> 'a t -> 'a
     val find_opt: key -> 'a t -> 'a option
     val find_first: (key -> bool) -> 'a t -> key * 'a
+    val find_first_exn: (key -> bool) -> 'a t -> key * 'a
     val find_first_opt: (key -> bool) -> 'a t -> (key * 'a) option
     val find_last: (key -> bool) -> 'a t -> key * 'a
+    val find_last_exn: (key -> bool) -> 'a t -> key * 'a
     val find_last_opt: (key -> bool) -> 'a t -> (key * 'a) option
     val iter: (key -> 'a -> unit) -> 'a t -> unit
     val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
@@ -136,31 +142,35 @@ module Make(Ord: OrderedType) = struct
             let rr = add x data r in
             if r == rr then m else bal l v d rr
 
-    let rec find x = function
+    let rec find_exn x = function
         Empty ->
           raise Not_found
       | Node {l; v; d; r} ->
           let c = Ord.compare x v in
           if c = 0 then d
-          else find x (if c < 0 then l else r)
+          else find_exn x (if c < 0 then l else r)
 
-    let rec find_first_aux v0 d0 f = function
+    let find = find_exn
+
+    let rec find_first_exn_aux v0 d0 f = function
         Empty ->
           (v0, d0)
       | Node {l; v; d; r} ->
           if f v then
-            find_first_aux v d f l
+            find_first_exn_aux v d f l
           else
-            find_first_aux v0 d0 f r
+            find_first_exn_aux v0 d0 f r
 
-    let rec find_first f = function
+    let rec find_first_exn f = function
         Empty ->
           raise Not_found
       | Node {l; v; d; r} ->
           if f v then
-            find_first_aux v d f l
+            find_first_exn_aux v d f l
           else
-            find_first f r
+            find_first_exn f r
+
+    let find_first = find_first_exn
 
     let rec find_first_opt_aux v0 d0 f = function
         Empty ->
@@ -180,23 +190,25 @@ module Make(Ord: OrderedType) = struct
           else
             find_first_opt f r
 
-    let rec find_last_aux v0 d0 f = function
+    let rec find_last_exn_aux v0 d0 f = function
         Empty ->
           (v0, d0)
       | Node {l; v; d; r} ->
           if f v then
-            find_last_aux v d f r
+            find_last_exn_aux v d f r
           else
-            find_last_aux v0 d0 f l
+            find_last_exn_aux v0 d0 f l
 
-    let rec find_last f = function
+    let rec find_last_exn f = function
         Empty ->
           raise Not_found
       | Node {l; v; d; r} ->
           if f v then
-            find_last_aux v d f r
+            find_last_exn_aux v d f r
           else
-            find_last f l
+            find_last_exn f l
+
+    let find_last = find_last_exn
 
     let rec find_last_opt_aux v0 d0 f = function
         Empty ->
@@ -231,20 +243,24 @@ module Make(Ord: OrderedType) = struct
           let c = Ord.compare x v in
           c = 0 || mem x (if c < 0 then l else r)
 
-    let rec min_binding = function
+    let rec min_binding_exn = function
         Empty -> raise Not_found
       | Node {l=Empty; v; d} -> (v, d)
-      | Node {l} -> min_binding l
+      | Node {l} -> min_binding_exn l
+
+    let min_binding = min_binding_exn
 
     let rec min_binding_opt = function
         Empty -> None
       | Node {l=Empty; v; d} -> Some (v, d)
       | Node {l}-> min_binding_opt l
 
-    let rec max_binding = function
+    let rec max_binding_exn = function
         Empty -> raise Not_found
       | Node {v; d; r=Empty} -> (v, d)
-      | Node {r} -> max_binding r
+      | Node {r} -> max_binding_exn r
+
+    let max_binding = max_binding_exn
 
     let rec max_binding_opt = function
         Empty -> None
@@ -501,7 +517,9 @@ module Make(Ord: OrderedType) = struct
     let bindings s =
       bindings_aux [] s
 
-    let choose = min_binding
+    let choose_exn = min_binding
+
+    let choose = choose_exn
 
     let choose_opt = min_binding_opt
 

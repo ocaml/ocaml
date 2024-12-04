@@ -158,6 +158,12 @@ module type S =
         [Not_found] if the map is empty.
         @since 3.12 *)
 
+    val min_binding_exn: 'a t -> (key * 'a)
+    (** Return the binding with the smallest key in a given map
+        (with respect to the [Ord.compare] ordering), or raise
+        [Not_found] if the map is empty.
+        @since 5.4 *)
+
     val min_binding_opt: 'a t -> (key * 'a) option
     (** Return the binding with the smallest key in the given map
         (with respect to the [Ord.compare] ordering), or [None]
@@ -168,6 +174,11 @@ module type S =
     (** Same as {!min_binding}, but returns the binding with
         the largest key in the given map.
         @since 3.12 *)
+
+    val max_binding_exn: 'a t -> (key * 'a)
+    (** Same as {!min_binding}, but returns the binding with
+        the largest key in the given map.
+        @since 5.4 *)
 
     val max_binding_opt: 'a t -> (key * 'a) option
     (** Same as {!min_binding_opt}, but returns the binding with
@@ -180,6 +191,12 @@ module type S =
         but equal bindings will be chosen for equal maps.
         @since 3.12 *)
 
+    val choose_exn: 'a t -> (key * 'a)
+    (** Return one binding of the given map, or raise [Not_found] if
+        the map is empty. Which binding is chosen is unspecified,
+        but equal bindings will be chosen for equal maps.
+        @since 5.4 *)
+
     val choose_opt: 'a t -> (key * 'a) option
     (** Return one binding of the given map, or [None] if
         the map is empty. Which binding is chosen is unspecified,
@@ -191,6 +208,11 @@ module type S =
     val find: key -> 'a t -> 'a
     (** [find x m] returns the current value of [x] in [m],
         or raises [Not_found] if no binding for [x] exists. *)
+
+    val find_exn: key -> 'a t -> 'a
+    (** [find_exn x m] returns the current value of [x] in [m],
+        or raises [Not_found] if no binding for [x] exists.
+        @since 5.4 *)
 
     val find_opt: key -> 'a t -> 'a option
     (** [find_opt x m] returns [Some v] if the current value of [x]
@@ -209,6 +231,18 @@ module type S =
 
         @since 4.05 *)
 
+    val find_first_exn: (key -> bool) -> 'a t -> key * 'a
+    (** [find_first_exn f m], where [f] is a monotonically increasing
+        function, returns the binding of [m] with the lowest key [k]
+        such that [f k], or raises [Not_found] if no such key exists.
+
+        For example, [find_first_exn (fun k -> Ord.compare k x >= 0) m] will
+        return the first binding [k, v] of [m] where [Ord.compare k x >= 0]
+        (intuitively: [k >= x]), or raise [Not_found] if [x] is greater than
+        any element of [m].
+
+        @since 5.4 *)
+
     val find_first_opt: (key -> bool) -> 'a t -> (key * 'a) option
     (** [find_first_opt f m], where [f] is a monotonically increasing
         function, returns an option containing the binding of [m] with the
@@ -220,6 +254,12 @@ module type S =
         returns the binding of [m] with the highest key [k] such that [f k],
         or raises [Not_found] if no such key exists.
         @since 4.05 *)
+
+    val find_last_exn: (key -> bool) -> 'a t -> key * 'a
+    (** [find_last_exn f m], where [f] is a monotonically decreasing
+        function, returns the binding of [m] with the highest key [k]
+        such that [f k], or raises [Not_found] if no such key exists.
+        @since 5.4 *)
 
     val find_last_opt: (key -> bool) -> 'a t -> (key * 'a) option
     (** [find_last_opt f m], where [f] is a monotonically decreasing

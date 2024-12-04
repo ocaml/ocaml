@@ -289,16 +289,22 @@ module StringSet :
     val cardinal : t -> int
     val elements : t -> elt list
     val min_elt : t -> elt
+    val min_elt_exn : t -> elt
     val min_elt_opt : t -> elt option
     val max_elt : t -> elt
+    val max_elt_exn : t -> elt
     val max_elt_opt : t -> elt option
     val choose : t -> elt
+    val choose_exn : t -> elt
     val choose_opt : t -> elt option
     val find : elt -> t -> elt
+    val find_exn : elt -> t -> elt
     val find_opt : elt -> t -> elt option
     val find_first : (elt -> bool) -> t -> elt
+    val find_first_exn : (elt -> bool) -> t -> elt
     val find_first_opt : (elt -> bool) -> t -> elt option
     val find_last : (elt -> bool) -> t -> elt
+    val find_last_exn : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
     val iter : (elt -> unit) -> t -> unit
     val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
@@ -337,16 +343,22 @@ module SSet :
     val cardinal : t -> int
     val elements : t -> elt list
     val min_elt : t -> elt
+    val min_elt_exn : t -> elt
     val min_elt_opt : t -> elt option
     val max_elt : t -> elt
+    val max_elt_exn : t -> elt
     val max_elt_opt : t -> elt option
     val choose : t -> elt
+    val choose_exn : t -> elt
     val choose_opt : t -> elt option
     val find : elt -> t -> elt
+    val find_exn : elt -> t -> elt
     val find_opt : elt -> t -> elt option
     val find_first : (elt -> bool) -> t -> elt
+    val find_first_exn : (elt -> bool) -> t -> elt
     val find_first_opt : (elt -> bool) -> t -> elt option
     val find_last : (elt -> bool) -> t -> elt
+    val find_last_exn : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
     val iter : (elt -> unit) -> t -> unit
     val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
@@ -417,16 +429,22 @@ module A :
         val cardinal : t -> int
         val elements : t -> elt list
         val min_elt : t -> elt
+        val min_elt_exn : t -> elt
         val min_elt_opt : t -> elt option
         val max_elt : t -> elt
+        val max_elt_exn : t -> elt
         val max_elt_opt : t -> elt option
         val choose : t -> elt
+        val choose_exn : t -> elt
         val choose_opt : t -> elt option
         val find : elt -> t -> elt
+        val find_exn : elt -> t -> elt
         val find_opt : elt -> t -> elt option
         val find_first : (elt -> bool) -> t -> elt
+        val find_first_exn : (elt -> bool) -> t -> elt
         val find_first_opt : (elt -> bool) -> t -> elt option
         val find_last : (elt -> bool) -> t -> elt
+        val find_last_exn : (elt -> bool) -> t -> elt
         val find_last_opt : (elt -> bool) -> t -> elt option
         val iter : (elt -> unit) -> t -> unit
         val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
@@ -549,16 +567,22 @@ module SInt :
     val cardinal : t -> int
     val elements : t -> elt list
     val min_elt : t -> elt
+    val min_elt_exn : t -> elt
     val min_elt_opt : t -> elt option
     val max_elt : t -> elt
+    val max_elt_exn : t -> elt
     val max_elt_opt : t -> elt option
     val choose : t -> elt
+    val choose_exn : t -> elt
     val choose_opt : t -> elt option
     val find : elt -> t -> elt
+    val find_exn : elt -> t -> elt
     val find_opt : elt -> t -> elt option
     val find_first : (elt -> bool) -> t -> elt
+    val find_first_exn : (elt -> bool) -> t -> elt
     val find_first_opt : (elt -> bool) -> t -> elt option
     val find_last : (elt -> bool) -> t -> elt
+    val find_last_exn : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
     val iter : (elt -> unit) -> t -> unit
     val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc

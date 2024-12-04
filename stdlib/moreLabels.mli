@@ -147,6 +147,11 @@ module Hashtbl : sig
   (** [Hashtbl.find tbl x] returns the current binding of [x] in [tbl],
      or raises [Not_found] if no such binding exists. *)
 
+  val find_exn : ('a, 'b) t -> 'a -> 'b
+  (** [Hashtbl.find_exn tbl x] returns the current binding of [x] in [tbl],
+     or raises [Not_found] if no such binding exists.
+     @since 5.4 *)
+
   val find_opt : ('a, 'b) t -> 'a -> 'b option
   (** [Hashtbl.find_opt tbl x] returns the current binding of [x] in [tbl],
       or [None] if no such binding exists.
@@ -398,6 +403,10 @@ module Hashtbl : sig
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
       val find : 'a t -> key -> 'a
+
+      val find_exn : 'a t -> key -> 'a
+      (** @since 5.4 *)
+
       val find_opt : 'a t -> key -> 'a option
       (** @since 4.05 *)
 
@@ -478,6 +487,10 @@ module Hashtbl : sig
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
       val find : 'a t -> key -> 'a
+
+      val find_exn : 'a t -> key -> 'a
+      (** @since 5.4 *)
+
       val find_opt : 'a t -> key -> 'a option (** @since 4.05 *)
 
       val find_all : 'a t -> key -> 'a list
@@ -809,6 +822,12 @@ module Map : sig
           [Not_found] if the map is empty.
           @since 3.12 *)
 
+      val min_binding_exn: 'a t -> (key * 'a)
+      (** Return the binding with the smallest key in a given map
+          (with respect to the [Ord.compare] ordering), or raise
+          [Not_found] if the map is empty.
+          @since 5.4 *)
+
       val min_binding_opt: 'a t -> (key * 'a) option
       (** Return the binding with the smallest key in the given map
           (with respect to the [Ord.compare] ordering), or [None]
@@ -819,6 +838,11 @@ module Map : sig
       (** Same as {!min_binding}, but returns the binding with
           the largest key in the given map.
           @since 3.12 *)
+
+      val max_binding_exn: 'a t -> (key * 'a)
+      (** Same as {!min_binding}, but returns the binding with
+          the largest key in the given map.
+          @since 5.4 *)
 
       val max_binding_opt: 'a t -> (key * 'a) option
       (** Same as {!min_binding_opt}, but returns the binding with
@@ -831,6 +855,12 @@ module Map : sig
           but equal bindings will be chosen for equal maps.
           @since 3.12 *)
 
+      val choose_exn: 'a t -> (key * 'a)
+      (** Return one binding of the given map, or raise [Not_found] if
+          the map is empty. Which binding is chosen is unspecified,
+          but equal bindings will be chosen for equal maps.
+          @since 5.4 *)
+
       val choose_opt: 'a t -> (key * 'a) option
       (** Return one binding of the given map, or [None] if
           the map is empty. Which binding is chosen is unspecified,
@@ -842,6 +872,11 @@ module Map : sig
       val find: key -> 'a t -> 'a
       (** [find x m] returns the current value of [x] in [m],
           or raises [Not_found] if no binding for [x] exists. *)
+
+      val find_exn: key -> 'a t -> 'a
+      (** [find_exn x m] returns the current value of [x] in [m],
+          or raises [Not_found] if no binding for [x] exists.
+          @since 5.4 *)
 
       val find_opt: key -> 'a t -> 'a option
       (** [find_opt x m] returns [Some v] if the current value of [x]
@@ -860,6 +895,18 @@ module Map : sig
 
           @since 4.05 *)
 
+      val find_first_exn: f:(key -> bool) -> 'a t -> key * 'a
+      (** [find_first_exn ~f m], where [f] is a monotonically increasing
+          function, returns the binding of [m] with the lowest key [k]
+          such that [f k], or raises [Not_found] if no such key exists.
+
+          For example, [find_first_exn (fun k -> Ord.compare k x >= 0) m] will
+          return the first binding [k, v] of [m] where [Ord.compare k x >= 0]
+          (intuitively: [k >= x]), or raise [Not_found] if [x] is greater than
+          any element of [m].
+
+          @since 5.4 *)
+
       val find_first_opt: f:(key -> bool) -> 'a t -> (key * 'a) option
       (** [find_first_opt ~f m], where [f] is a monotonically increasing
           function, returns an option containing the binding of [m] with the
@@ -871,6 +918,12 @@ module Map : sig
           returns the binding of [m] with the highest key [k] such that [f k],
           or raises [Not_found] if no such key exists.
           @since 4.05 *)
+
+      val find_last_exn: f:(key -> bool) -> 'a t -> key * 'a
+      (** [find_last_exn ~f m], where [f] is a monotonically decreasing
+          function, returns the binding of [m] with the highest key [k]
+          such that [f k], or raises [Not_found] if no such key exists.
+          @since 5.4 *)
 
       val find_last_opt: f:(key -> bool) -> 'a t -> (key * 'a) option
       (** [find_last_opt ~f m], where [f] is a monotonically decreasing
@@ -1129,6 +1182,12 @@ module Set : sig
           (with respect to the [Ord.compare] ordering), or raise
           [Not_found] if the set is empty. *)
 
+      val min_elt_exn: t -> elt
+      (** Return the smallest element of the given set
+          (with respect to the [Ord.compare] ordering), or raise
+          [Not_found] if the set is empty.
+          @since 5.4 *)
+
       val min_elt_opt: t -> elt option
       (** Return the smallest element of the given set
           (with respect to the [Ord.compare] ordering), or [None]
@@ -1138,6 +1197,11 @@ module Set : sig
       val max_elt: t -> elt
       (** Same as {!min_elt}, but returns the largest element of the
           given set. *)
+
+      val max_elt_exn: t -> elt
+      (** Same as {!min_elt_exn}, but returns the largest element of the
+          given set.
+          @since 5.4 *)
 
       val max_elt_opt: t -> elt option
       (** Same as {!min_elt_opt}, but returns the largest element of the
@@ -1149,6 +1213,12 @@ module Set : sig
           the set is empty. Which element is chosen is unspecified,
           but equal elements will be chosen for equal sets. *)
 
+      val choose_exn: t -> elt
+      (** Return one element of the given set, or raise [Not_found] if
+          the set is empty. Which element is chosen is unspecified,
+          but equal elements will be chosen for equal sets.
+          @since 5.4 *)
+
       val choose_opt: t -> elt option
       (** Return one element of the given set, or [None] if
           the set is empty. Which element is chosen is unspecified,
@@ -1157,11 +1227,17 @@ module Set : sig
 
       (** {1:searching Searching} *)
 
-          val find: elt -> t -> elt
+      val find: elt -> t -> elt
       (** [find x s] returns the element of [s] equal to [x] (according
           to [Ord.compare]), or raise [Not_found] if no such element
           exists.
           @since 4.01 *)
+
+      val find_exn: elt -> t -> elt
+      (** [find_exn x s] returns the element of [s] equal to [x] (according
+          to [Ord.compare]), or raise [Not_found] if no such element
+          exists.
+          @since 5.4 *)
 
       val find_opt: elt -> t -> elt option
       (** [find_opt x s] returns the element of [s] equal to [x] (according
@@ -1181,6 +1257,18 @@ module Set : sig
 
           @since 4.05 *)
 
+      val find_first_exn: f:(elt -> bool) -> t -> elt
+      (** [find_first_exn ~f s], where [f] is a monotonically increasing
+          function, returns the lowest element [e] of [s] such that [f e],
+          or raises [Not_found] if no such element exists.
+
+          For example, [find_first_exn (fun e -> Ord.compare e x >= 0) s] will
+          return the first element [e] of [s] where [Ord.compare e x >= 0]
+          (intuitively: [e >= x]), or raise [Not_found] if [x] is greater than
+          any element of [s].
+
+          @since 5.4 *)
+
       val find_first_opt: f:(elt -> bool) -> t -> elt option
       (** [find_first_opt ~f s], where [f] is a monotonically increasing
           function, returns an option containing the lowest element [e] of [s]
@@ -1193,6 +1281,12 @@ module Set : sig
           returns the highest element [e] of [s] such that [f e],
           or raises [Not_found] if no such element exists.
           @since 4.05 *)
+
+      val find_last_exn: f:(elt -> bool) -> t -> elt
+      (** [find_last_exn ~f s], where [f] is a monotonically decreasing
+          function, returns the highest element [e] of [s] such that [f e],
+          or raises [Not_found] if no such element exists.
+          @since 5.4 *)
 
       val find_last_opt: f:(elt -> bool) -> t -> elt option
       (** [find_last_opt ~f s], where [f] is a monotonically decreasing

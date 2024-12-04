@@ -84,6 +84,9 @@ Working version
   (Christophe Raffalli, review by Nicolás Ojeda Bär and Gabriel Scherer and
    Hugo Heuzard)
 
+- #13659: Add _exn variants of stdlib functions.
+  (Léo Andrès, review by ?)
+
 ### Other libraries:
 
 - #13429: add `Unix.sigwait`, a binding to the `sigwait` system call;

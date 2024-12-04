@@ -25,10 +25,12 @@ let copy s = { c = s.c; len = s.len; }
 
 let push x s = s.c <- x :: s.c; s.len <- s.len + 1
 
-let pop s =
+let pop_exn s =
   match s.c with
   | hd::tl -> s.c <- tl; s.len <- s.len - 1; hd
   | []     -> raise Empty
+
+let pop = pop_exn
 
 let pop_opt s =
   match s.c with
@@ -40,10 +42,12 @@ let drop s =
   | _hd::tl -> s.c <- tl; s.len <- s.len - 1
   | [] -> raise Empty
 
-let top s =
+let top_exn s =
   match s.c with
   | hd::_ -> hd
   | []    -> raise Empty
+
+let top = top_exn
 
 let top_opt s =
   match s.c with
