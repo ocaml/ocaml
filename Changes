@@ -84,6 +84,9 @@ Working version
   (Christophe Raffalli, review by Nicolás Ojeda Bär and Gabriel Scherer and
    Hugo Heuzard)
 
+- #136567: Add `Char.is_digit`.
+  (Léo Andrès, review by ?)
+
 ### Other libraries:
 
 - #13429: add `Unix.sigwait`, a binding to the `sigwait` system call;

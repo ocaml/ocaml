@@ -24,6 +24,7 @@ module C' :
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val seeded_hash : int -> t -> int
+    val is_digit : t -> bool
     val hash : t -> int
     external unsafe_chr : int -> char = "%identity"
   end
@@ -39,6 +40,7 @@ module C3 :
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val seeded_hash : int -> t -> int
+    val is_digit : t -> bool
     val hash : t -> int
     external unsafe_chr : int -> char = "%identity"
   end
@@ -69,6 +71,7 @@ module F :
       val equal : t -> t -> bool
       val seeded_hash : int -> t -> int
       val hash : t -> int
+      val is_digit : t -> bool
       external unsafe_chr : int -> char = "%identity"
     end
 module C4 :
@@ -83,6 +86,7 @@ module C4 :
     val equal : t -> t -> bool
     val seeded_hash : int -> t -> int
     val hash : t -> int
+    val is_digit : t -> bool
     external unsafe_chr : int -> char = "%identity"
   end
 - : char = 'B'

@@ -67,6 +67,11 @@ val hash : t -> int
 
     @since 5.1 *)
 
+val is_digit: t -> bool
+  (** Check if a character belongs to the set [{'0'..'9'}].
+
+      @since 5.4 *)
+
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)
