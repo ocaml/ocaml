@@ -277,9 +277,9 @@ val unify_gadt:
            in [Pattern] mode, possible adding local constraints to the
            environment in [penv]. Raises [Unify] if not possible.
            Returns the pairs of types that have been equated.
-           Type variables in [ty1] are alwaus assumed to be non-leaking
+           Type variables in [ty1] are always assumed to be non-leaking
            (safely reifiable); if [penv.allow_recursive_equations = true]
-           then both [ty1] and [ty2] are asumed to be non-leaking. *)
+           then both [ty1] and [ty2] are assumed to be non-leaking. *)
 val unify_var: Env.t -> type_expr -> type_expr -> unit
         (* Same as [unify], but allow free univars when first type
            is a variable. *)

@@ -436,6 +436,8 @@ let unify_exp_types loc env ty expected_ty =
 let (!!) (penv : Pattern_env.t) = penv.env
 
 (* Unification inside type_pat *)
+(* If you call this function and have a [penv] available,
+   ensure that [penv.in_counterexample = false] *)
 let unify_pat_types loc env ty ty' =
   try unify env ty ty' with
   | Unify err ->
@@ -461,7 +463,7 @@ let unify_pat_types_penv loc penv ty ty' =
      from [check_counter_example_pat],
      which in turn may contain only non-leaking type variables *)
   ignore (unify_pat_types_return_equated_pairs ~refine:false loc penv
-              ~pat:ty ~expected:ty')
+            ~pat:ty ~expected:ty')
 
 (** [sdesc_for_hint] is used by error messages to report literals in their
     original formatting *)
