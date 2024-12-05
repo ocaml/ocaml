@@ -467,6 +467,8 @@ let unify_pat_types_penv loc penv ty ty' =
 
 (** [sdesc_for_hint] is used by error messages to report literals in their
     original formatting *)
+(* If you call this function and have a [penv] available,
+   ensure that [penv.in_counterexample = false] *)
 let unify_pat ?sdesc_for_hint env pat expected_ty =
   try unify_pat_types pat.pat_loc env pat.pat_type expected_ty
   with Error (loc, env, Pattern_type_clash(err, None)) ->
