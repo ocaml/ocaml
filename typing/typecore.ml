@@ -436,8 +436,8 @@ let unify_exp_types loc env ty expected_ty =
 let (!!) (penv : Pattern_env.t) = penv.env
 
 (* Unification inside type_pat *)
-(* If you call this function and have a [penv] available,
-   ensure that [penv.in_counterexample = false] *)
+(* If [penv] is available, calling this function requires
+   [penv.in_counterexample = false] *)
 let unify_pat_types loc env ty ty' =
   try unify env ty ty' with
   | Unify err ->
@@ -467,8 +467,8 @@ let unify_pat_types_penv loc penv ty ty' =
 
 (** [sdesc_for_hint] is used by error messages to report literals in their
     original formatting *)
-(* If you call this function and have a [penv] available,
-   ensure that [penv.in_counterexample = false] *)
+(* If [penv] is available, calling this function requires
+   [penv.in_counterexample = false] *)
 let unify_pat ?sdesc_for_hint env pat expected_ty =
   try unify_pat_types pat.pat_loc env pat.pat_type expected_ty
   with Error (loc, env, Pattern_type_clash(err, None)) ->
@@ -1692,6 +1692,7 @@ and type_pat_aux
   : type k . type_pat_state -> k pattern_category -> no_existentials:_ ->
          penv:Pattern_env.t -> _ -> _ -> k general_pattern
   = fun tps category ~no_existentials ~penv sp expected_ty ->
+  assert (penv.in_counterexample = false);
   let type_pat tps category ?(penv=penv) =
     type_pat tps category ~no_existentials ~penv
   in
@@ -2391,6 +2392,7 @@ let enter_nonsplit_or info =
 
 let rec check_counter_example_pat
     ~info ~(penv : Pattern_env.t) type_pat_state tp expected_ty k =
+  assert (penv.in_counterexample = true);
   let check_rec ?(info=info) ?(penv=penv) =
     check_counter_example_pat ~info ~penv type_pat_state in
   let loc = tp.pat_loc in
