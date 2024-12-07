@@ -659,7 +659,8 @@ type lookup_error =
   | Illegal_reference_to_recursive_class_type of
       { container : string option;
         unbound : string;
-        class_type : Longident.t;
+        unbound_class_type : Longident.t;
+        container_class_type : string;
       }
   | Cannot_scrape_alias of Longident.t * Path.t
 
@@ -3664,21 +3665,44 @@ let report_lookup_error_doc _loc env ppf = function
          cannot be accessed from the definition of an instance variable"
        quoted_longident lid
   | Illegal_reference_to_recursive_module { container; unbound } ->
+      let container = Option.value ~default:"_" container in
       fprintf ppf
-        "@[The module type of the recursive module %a@ \
-         cannot be accessed from the definition of the module type of %a.@ \
-         Recursive module types are not allowed.@]"
-       Style.inline_code unbound
-       Style.inline_code (Option.value ~default:"_" container)
-  | Illegal_reference_to_recursive_class_type
-      { container; unbound; class_type } ->
-      fprintf ppf
-        "@[The class type %a in the module type of the recursive module %a@ \
-         cannot be accessed from the definition of the module type of %a.@ \
-         Recursive class types are not allowed.@]"
-        quoted_longident class_type
+        "@[<hov>This module type is recursive.@ \
+         This use of the recursive module %a@ \
+         within the definition of the module %a@ \
+         makes the module type of %a depend on "
         Style.inline_code unbound
-        Style.inline_code (Option.value ~default:"_" container)
+        Style.inline_code container
+        Style.inline_code container;
+      if String.equal container unbound
+      then fprintf ppf "itself"
+      else fprintf ppf "the module type of %a" Style.inline_code unbound;
+      fprintf ppf
+        ".@ \
+         Such recursive definitions of module types are not allowed.@]"
+  | Illegal_reference_to_recursive_class_type
+      { container; unbound; unbound_class_type; container_class_type } ->
+      let container = Option.value ~default:"_" container in
+      fprintf ppf
+        "@[<hov>This class type is recursive.@ \
+         This use of the class type %a@ \
+         from the recursive module %a@ \
+         within the definition of@ the class type %a@ \
+         in the recursive module %a@ \
+         makes the module type of %a@ \
+         depend on "
+        quoted_longident unbound_class_type
+        Style.inline_code unbound
+        Style.inline_code container_class_type
+        Style.inline_code container
+        Style.inline_code container;
+      if String.equal container unbound
+      then fprintf ppf "itself"
+      else fprintf ppf "the module type of %a" Style.inline_code unbound;
+      fprintf ppf
+        ".@ \
+         Such definitions of class types within recursive modules are not \
+         allowed.@]"
   | Structure_used_as_functor lid ->
       fprintf ppf "@[The module %a is a structure, it cannot be applied@]"
         quoted_longident lid

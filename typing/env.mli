@@ -188,7 +188,8 @@ type lookup_error =
   | Illegal_reference_to_recursive_class_type of
       { container : string option;
         unbound : string;
-        class_type : Longident.t;
+        unbound_class_type : Longident.t;
+        container_class_type : string
       }
   | Cannot_scrape_alias of Longident.t * Path.t
 

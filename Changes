@@ -152,9 +152,9 @@ Working version
   checked.
   (Stefan Muenzel, review by Gabriel Scherer and Florian Angeletti)
 
-- #13646: Improve the error message when a recursive module type
+- #13646: Improve the error messages when a recursive module type
   references another recursive module type.
-  (Stefan Muenzel, review by ???)
+  (Stefan Muenzel, review by Florian Angeletti and Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
 
