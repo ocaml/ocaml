@@ -76,8 +76,8 @@ Working version
 
 ### Standard library:
 
-- ?: Add eager boolean operations logand, logor, logxor
-  (Jeremy Yallop, review by ?)
+- #13662: Add eager boolean operations Bool.logand, Bool.logor, Bool.logxor
+  (Jeremy Yallop, review by Nicolás Ojeda Bär)
 
 - #13463, #13572: Avoid Queue.empty to be raised by Format when used
   concurrently. prefer undefined behavior to uncaught exception.

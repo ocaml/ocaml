@@ -40,16 +40,13 @@ external ( || ) : bool -> bool -> bool = "%sequor"
     operator at precedence level 2/11. *)
 
 val logand : bool -> bool -> bool
-(** [logand e1 e2] is the eager boolean conjunction of expressions [e1] and
-    [e2]. *)
+(** [logand b1 b2] is [true] if and only if [b1] and [b2] are both [true]. *)
 
 val logor : bool -> bool -> bool
-(** [logor e1 e2] is the eager boolean disjunction of expressions [e1] and
-    [e2]. *)
+(** [logor b1 b2] is [true] if and only if either [b1] or [b2] is [true]. *)
 
 val logxor : bool -> bool -> bool
-(** [logxor e1 e2] is the eager boolean exclusive disjunction of
-    expressions [e1] and [e2]. *)
+(** [logxor b1 b2] is [true] if exactly one of [b1] and [b2] is [true]. *)
 
 (** {1:preds Predicates and comparisons} *)
 
