@@ -2192,9 +2192,10 @@ let report_error_doc ppf = function
   | Unavailable_type_constructor p ->
       fprintf ppf "The definition of type %a@ is unavailable"
         (Style.as_inline_code Printtyp.path) p
-  | Variance Typedecl_variance.Varying_anonymous ->
-      fprintf ppf "@[%s@ %s@ %s@]"
-        "In this GADT definition," "the variance of some parameter"
+  | Variance (Typedecl_variance.Varying_anonymous n) ->
+      fprintf ppf "@[%s@ %s %d%s %s@ %s@]"
+        "In this GADT constructor definition," "the variance of the"
+        n (Misc.ordinal_suffix n)"parameter"
         "cannot be checked"
   | Val_in_structure ->
       fprintf ppf "Value declarations are only allowed in signatures"

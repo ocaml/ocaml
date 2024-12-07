@@ -143,6 +143,10 @@ Working version
 - #13601: Enable natdynlink on x86_64 GNU/Hurd
   (Samuel Thibault, review by Sébastien Hinderer)
 
+- #?????: Improve the error message when GADT parameter variance cannot be
+  checked.
+  (Stefan Muenzel, review by ????)
+
 ### Internal/compiler-libs changes:
 
 - #13624: Added location to exception definitions and type extensions

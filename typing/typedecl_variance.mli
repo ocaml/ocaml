@@ -49,7 +49,7 @@ type variance_error =
 
 type error =
   | Bad_variance of variance_error * surface_variance * surface_variance
-  | Varying_anonymous
+  | Varying_anonymous of int
 
 exception Error of Location.t * error
 

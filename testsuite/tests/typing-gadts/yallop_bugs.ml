@@ -37,10 +37,20 @@ let magic : 'a 'b. 'a -> 'b =
     (downcast bad_proof ((object method m = x end) :> < >)) # m
 ;;
 [%%expect{|
-Line 1, characters 0-36:
+Line 1, characters 18-36:
 1 | type (_, +_) eq = Refl : ('a, 'a) eq
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this GADT definition, the variance of some parameter
+                      ^^^^^^^^^^^^^^^^^^
+Error: In this GADT constructor definition, the variance of the 2nd parameter
+       cannot be checked
+|}];;
+
+type (_, +_) eq2 = Neq : ('a, 'b) eq2 | Refl : ('a, 'a) eq2
+;;
+[%%expect{|
+Line 1, characters 38-59:
+1 | type (_, +_) eq2 = Neq : ('a, 'b) eq2 | Refl : ('a, 'a) eq2
+                                          ^^^^^^^^^^^^^^^^^^^^^
+Error: In this GADT constructor definition, the variance of the 2nd parameter
        cannot be checked
 |}];;
 

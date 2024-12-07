@@ -42,7 +42,7 @@ type variance_error =
 
 type error =
   | Bad_variance of variance_error * surface_variance * surface_variance
-  | Varying_anonymous
+  | Varying_anonymous of int
 
 
 exception Error of Location.t * error
@@ -259,8 +259,8 @@ let for_constr = function
         (fun {Types.ld_mutable; ld_type} -> (ld_mutable = Mutable, ld_type))
         l
 
-let compute_variance_gadt env ~check (required, loc as rloc) decl
-    (tl, ret_type_opt) =
+let compute_variance_gadt env ~check (required, _ as rloc) decl
+    (cloc, tl, ret_type_opt) =
   match ret_type_opt with
   | None ->
       compute_variance_type env ~check rloc {decl with type_private = Private}
@@ -272,14 +272,14 @@ let compute_variance_gadt env ~check (required, loc as rloc) decl
           let fvl = List.map (Ctype.free_variables ?env:None) tyl in
           let _ =
             List.fold_left2
-              (fun (fv1,fv2) ty (c,n,_) ->
+              (fun (index, fv1,fv2) ty (c,n,_) ->
                 match fv2 with [] -> assert false
                 | fv :: fv2 ->
                     (* fv1 @ fv2 = free_variables of other parameters *)
                     if (c||n) && constrained (fv1 @ fv2) ty then
-                      raise (Error(loc, Varying_anonymous));
-                    (fv :: fv1, fv2))
-              ([], fvl) tyl required
+                      raise (Error(cloc, Varying_anonymous index));
+                    (succ index, fv :: fv1, fv2))
+              (1, [], fvl) tyl required
           in
           compute_variance_type env ~check rloc
             {decl with type_params = tyl; type_private = Private}
@@ -293,7 +293,7 @@ let compute_variance_extension env decl ext rloc =
   let ext = ext.Typedtree.ext_type in
   compute_variance_gadt env ~check rloc
     {decl with type_params = ext.ext_type_params}
-    (ext.ext_args, ext.ext_ret_type)
+    (ext.ext_loc, ext.ext_args, ext.ext_ret_type)
 
 let compute_variance_gadt_constructor env ~check rloc decl tl =
   let check =
@@ -302,7 +302,7 @@ let compute_variance_gadt_constructor env ~check rloc decl tl =
     | None -> None
   in
   compute_variance_gadt env ~check rloc decl
-    (tl.Types.cd_args, tl.Types.cd_res)
+    (tl.Types.cd_loc, tl.Types.cd_args, tl.Types.cd_res)
 
 let compute_variance_decl env ~check decl (required, _ as rloc) =
   let check =
