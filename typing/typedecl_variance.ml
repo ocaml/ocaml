@@ -40,9 +40,13 @@ type variance_error =
        variable : type_expr
      }
 
+type anonymous_variance_error =
+  | Variable_constrained of type_expr
+  | Variable_instantiated of type_expr
+
 type error =
   | Bad_variance of variance_error * surface_variance * surface_variance
-  | Varying_anonymous of int
+  | Varying_anonymous of int * anonymous_variance_error
 
 
 exception Error of Location.t * error
@@ -249,8 +253,12 @@ let add_false = List.map (fun ty -> false, ty)
    or it is a variable appearing in another parameter *)
 let constrained vars ty =
   match get_desc ty with
-  | Tvar _ -> List.exists (List.exists (eq_type ty)) vars
-  | _ -> true
+  | Tvar _ ->
+      begin match List.find_map (List.find_opt (eq_type ty)) vars with
+      | Some var -> Some (Variable_constrained var)
+      | None -> None
+      end
+  | _ -> Some (Variable_instantiated ty)
 
 let for_constr = function
   | Types.Cstr_tuple l -> add_false l
@@ -276,8 +284,14 @@ let compute_variance_gadt env ~check (required, _ as rloc) decl
                 match fv2 with [] -> assert false
                 | fv :: fv2 ->
                     (* fv1 @ fv2 = free_variables of other parameters *)
-                    if (c||n) && constrained (fv1 @ fv2) ty then
-                      raise (Error(cloc, Varying_anonymous index));
+                    if (c || n)
+                    then begin
+                      match constrained (fv1 @ fv2) ty with
+                      | None -> ()
+                      | Some reason ->
+                          raise (Error(cloc,
+                                       Varying_anonymous (index, reason)))
+                    end;
                     (succ index, fv :: fv1, fv2))
               (1, [], fvl) tyl required
           in
