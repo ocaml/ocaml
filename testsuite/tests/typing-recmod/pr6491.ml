@@ -13,7 +13,8 @@ Error: This class type is recursive. This use of the class type "Foo.c"
        from the recursive module "Foo" within the definition of
        the class type "c" in the recursive module "Bar"
        makes the module type of "Bar" depend on the module type of "Foo".
-       Such definitions of class types within recursive modules are not allowed.
+       Such recursive definitions of class types within recursive modules
+       are not allowed.
 |}]
 
 module rec Foo : sig class type c = object inherit Foo.c end end = Foo;;
@@ -25,7 +26,8 @@ Error: This class type is recursive. This use of the class type "Foo.c"
        from the recursive module "Foo" within the definition of
        the class type "c" in the recursive module "Foo"
        makes the module type of "Foo" depend on itself.
-       Such definitions of class types within recursive modules are not allowed.
+       Such recursive definitions of class types within recursive modules
+       are not allowed.
 |}]
 
 module rec Foo : sig class type c = object method x : int end end = Foo
@@ -43,7 +45,8 @@ Error: This class type is recursive. This use of the class type "Foo.c"
        from the recursive module "Foo" within the definition of
        the class type "c" in the recursive module "Bar"
        makes the module type of "Bar" depend on the module type of "Foo".
-       Such definitions of class types within recursive modules are not allowed.
+       Such recursive definitions of class types within recursive modules
+       are not allowed.
 |}]
 
 (* #12480 *)

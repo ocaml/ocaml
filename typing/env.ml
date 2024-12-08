@@ -3666,43 +3666,42 @@ let report_lookup_error_doc _loc env ppf = function
        quoted_longident lid
   | Illegal_reference_to_recursive_module { container; unbound } ->
       let container = Option.value ~default:"_" container in
+      let self_or_unbound =
+        if String.equal container unbound
+        then dprintf "itself"
+        else dprintf "the module type of %a" Style.inline_code unbound
+      in
       fprintf ppf
         "@[<hov>This module type is recursive.@ \
          This use of the recursive module %a@ \
          within the definition of the module %a@ \
-         makes the module type of %a depend on "
+         makes the module type of %a depend on@ %t.@ \
+         Such recursive definitions of module types are not allowed.@]"
         Style.inline_code unbound
         Style.inline_code container
-        Style.inline_code container;
-      if String.equal container unbound
-      then fprintf ppf "itself"
-      else fprintf ppf "the module type of %a" Style.inline_code unbound;
-      fprintf ppf
-        ".@ \
-         Such recursive definitions of module types are not allowed.@]"
+        Style.inline_code container
+        self_or_unbound
   | Illegal_reference_to_recursive_class_type
       { container; unbound; unbound_class_type; container_class_type } ->
       let container = Option.value ~default:"_" container in
+      let self_or_unbound =
+        if String.equal container unbound
+        then dprintf "itself"
+        else dprintf "the module type of %a" Style.inline_code unbound
+      in
       fprintf ppf
-        "@[<hov>This class type is recursive.@ \
-         This use of the class type %a@ \
-         from the recursive module %a@ \
-         within the definition of@ the class type %a@ \
-         in the recursive module %a@ \
-         makes the module type of %a@ \
-         depend on "
+        "@[<hov>This class type is recursive.@ This use of the class type %a@ \
+         from the recursive module %a@ within the definition of@ \
+         the class type %a@ in the recursive module %a@ \
+         makes the module type of %a@ depend on %t.@ \
+         Such recursive definitions of@ class types within recursive modules@ \
+         are not allowed.@]"
         quoted_longident unbound_class_type
         Style.inline_code unbound
         Style.inline_code container_class_type
         Style.inline_code container
-        Style.inline_code container;
-      if String.equal container unbound
-      then fprintf ppf "itself"
-      else fprintf ppf "the module type of %a" Style.inline_code unbound;
-      fprintf ppf
-        ".@ \
-         Such definitions of class types within recursive modules are not \
-         allowed.@]"
+        Style.inline_code container
+        self_or_unbound
   | Structure_used_as_functor lid ->
       fprintf ppf "@[The module %a is a structure, it cannot be applied@]"
         quoted_longident lid
