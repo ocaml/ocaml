@@ -42,7 +42,7 @@ Line 1, characters 18-36:
                       ^^^^^^^^^^^^^^^^^^
 Error: In this GADT constructor definition, the variance of the 2nd parameter
        cannot be checked, because the type variable 'a appears
-       in other parameters. Co- or contra-variant parameters
+       in other parameters. Co- or contra-variant type parameters
        must not depend on other parameters.
 |}];;
 
@@ -54,7 +54,7 @@ Line 1, characters 38-59:
                                           ^^^^^^^^^^^^^^^^^^^^^
 Error: In this GADT constructor definition, the variance of the 2nd parameter
        cannot be checked, because the type variable 'a appears
-       in other parameters. Co- or contra-variant parameters
+       in other parameters. Co- or contra-variant type parameters
        must not depend on other parameters.
 |}];;
 
@@ -68,8 +68,8 @@ Line 2, characters 19-37:
                        ^^^^^^^^^^^^^^^^^^
 Error: In this GADT constructor definition, the variance of the 2nd parameter
        cannot be checked, because it is instantiated to the type q.
-       Co- or contra-variant parameters may only appear as type variables
-       in GADT constructor definitions.
+       Co- or contra-variant type parameters may only appear
+       as type variables in GADT constructor definitions.
 |}];;
 
 type (_, +_) eq_ext = ..
@@ -82,7 +82,7 @@ Line 2, characters 21-43:
                          ^^^^^^^^^^^^^^^^^^^^^^
 Error: In this GADT constructor definition, the variance of the 2nd parameter
        cannot be checked, because the type variable 'a appears
-       in other parameters. Co- or contra-variant parameters
+       in other parameters. Co- or contra-variant type parameters
        must not depend on other parameters.
 |}];;
 

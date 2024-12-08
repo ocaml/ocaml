@@ -2193,25 +2193,28 @@ let report_error_doc ppf = function
       fprintf ppf "The definition of type %a@ is unavailable"
         (Style.as_inline_code Printtyp.path) p
   | Variance (Typedecl_variance.Varying_anonymous (n, reason)) ->
-      fprintf ppf "@[<hov>%s@ %s %d%s %s@ %s@ %s@ "
-        "In this GADT constructor definition," "the variance of the"
-        n (Misc.ordinal_suffix n) "parameter"
-        "cannot be checked," "because";
-      begin match reason with
-      | Variable_constrained ty ->
-          fprintf ppf
-            "the type variable %a appears@ in other parameters.@ \
-             Co- or contra-variant parameters@ \
-             must not depend on other parameters.@]"
-            Printtyp.type_expr ty
-      | Variable_instantiated ty ->
-          fprintf ppf
-            "it is instantiated to the type %a.@ \
-             Co- or contra-variant parameters@ \
-             may only appear as type variables@ \
-             in GADT constructor definitions.@]"
-            Printtyp.type_expr ty
-      end
+      let reason_text =
+        match reason with
+        | Variable_constrained ty ->
+            dprintf
+              "the type variable %a appears@ in other parameters.@ \
+               Co- or contra-variant@ type parameters@ \
+               must not depend@ on other parameters."
+              Printtyp.type_expr ty
+        | Variable_instantiated ty ->
+            dprintf
+              "it is instantiated to the type %a.@ \
+               Co- or contra-variant@ type parameters@ \
+               may only appear@ as type variables@ \
+               in GADT constructor definitions."
+              Printtyp.type_expr ty
+      in
+      fprintf ppf
+        "@[<hov>In this GADT constructor definition,@ \
+         the variance of the@ %d%s parameter@ \
+         cannot be checked,@ because %t@]"
+        n (Misc.ordinal_suffix n)
+        reason_text
   | Val_in_structure ->
       fprintf ppf "Value declarations are only allowed in signatures"
   | Multiple_native_repr_attributes ->
