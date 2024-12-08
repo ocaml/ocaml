@@ -43,7 +43,7 @@ Line 1, characters 18-36:
 Error: In this GADT constructor definition, the variance of the 2nd parameter
        cannot be checked, because the type variable "'a" appears
        in other parameters.
-       In GADTS, Covariant or contravariant type parameters must not depend
+       In GADTS, covariant or contravariant type parameters must not depend
        on other parameters.
 |}];;
 
@@ -56,7 +56,7 @@ Line 1, characters 38-59:
 Error: In this GADT constructor definition, the variance of the 2nd parameter
        cannot be checked, because the type variable "'a" appears
        in other parameters.
-       In GADTS, Covariant or contravariant type parameters must not depend
+       In GADTS, covariant or contravariant type parameters must not depend
        on other parameters.
 |}];;
 
@@ -85,7 +85,7 @@ Line 2, characters 21-43:
 Error: In this GADT constructor definition, the variance of the 2nd parameter
        cannot be checked, because the type variable "'a" appears
        in other parameters.
-       In GADTS, Covariant or contravariant type parameters must not depend
+       In GADTS, covariant or contravariant type parameters must not depend
        on other parameters.
 |}];;
 

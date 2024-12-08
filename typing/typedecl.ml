@@ -2197,13 +2197,13 @@ let report_error_doc ppf = function
         match reason with
         | Variable_constrained ty ->
             dprintf
-              "the type variable %a appears@ in other parameters.@ \
-               In GADTS, Covariant or contravariant type parameters@ \
+              ", because the type variable %a appears@ in other parameters.@ \
+               In GADTS, covariant or contravariant type parameters@ \
                must not depend@ on other parameters."
               (Style.as_inline_code Printtyp.type_expr) ty
         | Variable_instantiated ty ->
             dprintf
-              "it is instantiated to the type %a.@ \
+              ", because it is instantiated to the type %a.@ \
                Covariant or contravariant type parameters@ \
                may only appear@ as type variables@ \
                in GADT constructor definitions."
@@ -2212,7 +2212,7 @@ let report_error_doc ppf = function
       fprintf ppf
         "@[<hov>In this GADT constructor definition,@ \
          the variance of the@ %d%s parameter@ \
-         cannot be checked,@ because %t@]"
+         cannot be checked%t@]"
         n (Misc.ordinal_suffix n)
         reason_text
   | Val_in_structure ->
