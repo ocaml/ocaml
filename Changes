@@ -145,7 +145,7 @@ Working version
 
 - #13663: Improve the error message when GADT parameter variance cannot be
   checked.
-  (Stefan Muenzel, review by ????)
+  (Stefan Muenzel, review by Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
 
