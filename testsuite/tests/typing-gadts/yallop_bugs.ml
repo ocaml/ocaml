@@ -41,9 +41,10 @@ Line 1, characters 18-36:
 1 | type (_, +_) eq = Refl : ('a, 'a) eq
                       ^^^^^^^^^^^^^^^^^^
 Error: In this GADT constructor definition, the variance of the 2nd parameter
-       cannot be checked, because the type variable 'a appears
-       in other parameters. Co- or contra-variant type parameters
-       must not depend on other parameters.
+       cannot be checked, because the type variable "'a" appears
+       in other parameters.
+       In GADTS, Covariant or contravariant type parameters must not depend
+       on other parameters.
 |}];;
 
 type (_, +_) eq2 = Neq : ('a, 'b) eq2 | Refl : ('a, 'a) eq2
@@ -53,9 +54,10 @@ Line 1, characters 38-59:
 1 | type (_, +_) eq2 = Neq : ('a, 'b) eq2 | Refl : ('a, 'a) eq2
                                           ^^^^^^^^^^^^^^^^^^^^^
 Error: In this GADT constructor definition, the variance of the 2nd parameter
-       cannot be checked, because the type variable 'a appears
-       in other parameters. Co- or contra-variant type parameters
-       must not depend on other parameters.
+       cannot be checked, because the type variable "'a" appears
+       in other parameters.
+       In GADTS, Covariant or contravariant type parameters must not depend
+       on other parameters.
 |}];;
 
 type q
@@ -67,8 +69,8 @@ Line 2, characters 19-37:
 2 | type (_, +_) eq3 = Refl : ('a, q) eq3
                        ^^^^^^^^^^^^^^^^^^
 Error: In this GADT constructor definition, the variance of the 2nd parameter
-       cannot be checked, because it is instantiated to the type q.
-       Co- or contra-variant type parameters may only appear
+       cannot be checked, because it is instantiated to the type "q".
+       Covariant or contravariant type parameters may only appear
        as type variables in GADT constructor definitions.
 |}];;
 
@@ -81,9 +83,10 @@ Line 2, characters 21-43:
 2 | type (_,_) eq_ext += Refl : ('a, 'a) eq_ext
                          ^^^^^^^^^^^^^^^^^^^^^^
 Error: In this GADT constructor definition, the variance of the 2nd parameter
-       cannot be checked, because the type variable 'a appears
-       in other parameters. Co- or contra-variant type parameters
-       must not depend on other parameters.
+       cannot be checked, because the type variable "'a" appears
+       in other parameters.
+       In GADTS, Covariant or contravariant type parameters must not depend
+       on other parameters.
 |}];;
 
 (* Record patterns *)

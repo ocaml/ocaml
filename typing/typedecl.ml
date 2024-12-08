@@ -2198,16 +2198,16 @@ let report_error_doc ppf = function
         | Variable_constrained ty ->
             dprintf
               "the type variable %a appears@ in other parameters.@ \
-               Co- or contra-variant@ type parameters@ \
+               In GADTS, Covariant or contravariant type parameters@ \
                must not depend@ on other parameters."
-              Printtyp.type_expr ty
+              (Style.as_inline_code Printtyp.type_expr) ty
         | Variable_instantiated ty ->
             dprintf
               "it is instantiated to the type %a.@ \
-               Co- or contra-variant@ type parameters@ \
+               Covariant or contravariant type parameters@ \
                may only appear@ as type variables@ \
                in GADT constructor definitions."
-              Printtyp.type_expr ty
+              (Style.as_inline_code Printtyp.type_expr) ty
       in
       fprintf ppf
         "@[<hov>In this GADT constructor definition,@ \
