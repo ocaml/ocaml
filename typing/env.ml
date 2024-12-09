@@ -3666,19 +3666,21 @@ let report_lookup_error_doc _loc env ppf = function
        quoted_longident lid
   | Illegal_reference_to_recursive_module { container; unbound } ->
       let container = Option.value ~default:"_" container in
-      let self_or_unbound =
+      let self_or_definition, self_or_unbound =
         if String.equal container unbound
-        then dprintf "itself"
-        else dprintf "the module type of %a" Style.inline_code unbound
+        then dprintf "its own definition", dprintf "itself"
+        else
+          dprintf "the definition of the module %a" Style.inline_code container,
+          dprintf "the module type of %a" Style.inline_code unbound
       in
       fprintf ppf
         "@[<hov>This module type is recursive.@ \
          This use of the recursive module %a@ \
-         within the definition of the module %a@ \
+         within %t@ \
          makes the module type of %a depend on@ %t.@ \
          Such recursive definitions of module types are not allowed.@]"
         Style.inline_code unbound
-        Style.inline_code container
+        self_or_definition
         Style.inline_code container
         self_or_unbound
   | Illegal_reference_to_recursive_class_type

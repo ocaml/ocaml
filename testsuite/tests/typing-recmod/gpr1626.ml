@@ -13,8 +13,7 @@ Line 1, characters 34-35:
 1 | module rec M : S with module M := M = M;;
                                       ^
 Error: This module type is recursive. This use of the recursive module "M"
-       within the definition of the module "M"
-       makes the module type of "M" depend on itself.
+       within its own definition makes the module type of "M" depend on itself.
        Such recursive definitions of module types are not allowed.
 |}];;
 
