@@ -34,7 +34,7 @@ jobs:
 # We then upload the compiler tree as a build artifact to enable re-use in
 # subsequent jobs.
   build:
-    runs-on: 'ubuntu-latest'
+    runs-on: ubuntu-22.04
     outputs:
       manual_changed: ${{ steps.manual.outputs.manual_changed }}
     steps:
@@ -81,7 +81,7 @@ jobs:
   normal:
     name: ${{ matrix.name }}
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         include:
@@ -152,7 +152,7 @@ jobs:
       matrix:
         include:
           - name: linux-O0
-            os: ubuntu-latest
+            os: ubuntu-22.04
             config_arg: CFLAGS='-O0'
           - name: macos-x86_64
             os: macos-13
@@ -209,7 +209,7 @@ jobs:
           done
 
   i386:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: debian:12
       options: --platform linux/i386 --user root
