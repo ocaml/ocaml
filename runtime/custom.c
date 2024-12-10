@@ -63,14 +63,15 @@ static value alloc_custom_gen (const struct custom_operations * ops,
                                uintnat bsz,
                                mlsize_t mem,
                                mlsize_t max_major,
-                               mlsize_t max_minor)
+                               mlsize_t max_minor,
+                               int minor_ok)
 {
   mlsize_t wosize;
   CAMLparam0();
   CAMLlocal1(result);
 
   wosize = 1 + (bsz + sizeof(value) - 1) / sizeof(value);
-  if (wosize <= Max_young_wosize && mem <= caml_custom_minor_max_bsz) {
+  if (wosize <= Max_young_wosize && minor_ok) {
     result = caml_alloc_small(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
     if (ops->finalize != NULL || mem != 0) {
@@ -105,14 +106,22 @@ CAMLexport value caml_alloc_custom(const struct custom_operations * ops,
 {
   mlsize_t max_major = max;
   mlsize_t max_minor = max == 0 ? get_max_minor() : max;
-  return alloc_custom_gen (ops, bsz, mem, max_major, max_minor);
+  return alloc_custom_gen (ops, bsz, mem, max_major, max_minor, 1);
 }
 
 CAMLexport value caml_alloc_custom_mem(const struct custom_operations * ops,
                                        uintnat bsz,
                                        mlsize_t mem)
 {
-  value v = alloc_custom_gen (ops, bsz, mem, 0, get_max_minor());
+  mlsize_t max_minor = get_max_minor (); /* total allocs before minor GC */
+  mlsize_t max_minor_single;      /* largest allowed alloc on minor heap */
+  if (caml_custom_minor_max_bsz > 100) {
+    max_minor_single = caml_custom_minor_max_bsz;
+  } else {
+    max_minor_single = max_minor * caml_custom_minor_max_bsz / 100;
+  }
+  value v = alloc_custom_gen (ops, bsz, mem, 0,
+                              max_minor, (mem < max_minor_single));
   size_t mem_words = (mem + sizeof(value) - 1) / sizeof(value);
   caml_memprof_sample_block(v, mem_words, mem_words, CAML_MEMPROF_SRC_CUSTOM);
   return v;

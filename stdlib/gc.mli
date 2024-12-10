@@ -215,7 +215,15 @@ type control =
         heap. Expressed as a percentage of minor heap size.
         Note: this only applies to values allocated with
         [caml_alloc_custom_mem] (e.g. bigarrays).
-        Default: 100.
+
+        The main reason to limit the size of memory held in the minor
+        heap is to avoid long minor GC pauses. Since custom values are
+        typically faster to GC than normal values (they cannot hold
+        pointers so need no scanning), an large amount of data can be
+        held by the minor heap in custom blocks without significantly
+        affecting GC time. So, by default, this value is above 100%.
+
+        Default: 400.
         @since 4.08 *)
 
     custom_minor_max_size : int;
@@ -224,7 +232,11 @@ type control =
         than this many bytes are allocated on the major heap.
         Note: this only applies to values allocated with
         [caml_alloc_custom_mem] (e.g. bigarrays).
-        Default: 70000 bytes.
+        Numbers <=100 are interpreted as percentages of the size
+        that would immediately trigger minor GC (minor heap size
+        times custom_minor_ratio).
+        Default: 10 %.
+
         @since 4.08 *)
   }
 (** The GC parameters are given as a [control] record.  Note that

@@ -67,6 +67,9 @@ Working version
   (Stephen Dolan and David Allsopp, report by Thomas Leonard, review by Tim
    McGilchrist and Fabrice Buoro)
 
+- #??: Allow more minor custom blocks
+  (Stephen Dolan, review by ??)
+
 ### Code generation and optimizations:
 
 - #13565: less tagging in switches compiled to affine transformations
