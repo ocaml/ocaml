@@ -850,7 +850,7 @@ and build_as_type_aux (env : Env.t) p =
       newty (Ttuple labeled_tyl)
   | Tpat_construct(_, cstr, pl, vto) ->
       let keep =
-        cstr.cstr_private = Private || cstr.cstr_existentials <> [] ||
+        cstr.cstr_private = Private ||
         vto <> None (* be lazy and keep the type for node constraints *) in
       if keep then p.pat_type else
       let tyl = List.map (build_as_type env) pl in
