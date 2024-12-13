@@ -446,6 +446,8 @@ let unify_pat_types loc env ty ty' =
       raise(Typetexp.Error(loc, env, Typetexp.Variant_tags (l1, l2)))
 
 (* GADT unification inside solve_Ppat_construct and check_counter_example_pat *)
+(* We need to distinguish [pat] and [expected] if [refine = true] and
+   [penv.in_counterexample = false] (see [unify_gadt] for details) *)
 let nothing_equated = TypePairs.create 0
 let unify_pat_types_return_equated_pairs ~refine loc penv ~pat ~expected =
   try
@@ -458,6 +460,11 @@ let unify_pat_types_return_equated_pairs ~refine loc penv ~pat ~expected =
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, !!penv, Typetexp.Variant_tags (l1, l2)))
 
+(* Unify pattern types in functions that can be called either from
+   [unify_pat] or [check_counter_example_pat].
+   Since it only calls either normal unification, or [unify_gadt]
+   with [penv.in_counterexample = true], [ty] and [ty'] have
+   symmetric roles. *)
 let unify_pat_types_penv loc penv ty ty' =
   (* [penv.in_counterexample = true] only in calls originating
      from [check_counter_example_pat],
@@ -475,7 +482,7 @@ let unify_pat ?sdesc_for_hint env pat expected_ty =
     raise(Error(loc, env, Pattern_type_clash(err, sdesc_for_hint)))
 
 (* unification of a type with a Tconstr with freshly created arguments *)
-let unify_head_only loc penv ty constr =
+let unify_head_only loc penv constr ~expected:ty =
   let path = cstr_res_type_path constr in
   let decl = Env.find_type path !!penv in
   let ty' = Ctype.newconstr path (Ctype.instance_list decl.type_params) in
@@ -927,7 +934,7 @@ let solve_Ppat_construct tps (penv : Pattern_env.t) loc constr no_existentials
   (* if constructor is gadt, we must verify that the expected type has the
      correct head *)
   if constr.cstr_generalized then
-    unify_head_only loc penv (instance expected_ty) constr;
+    unify_head_only loc penv constr ~expected:(instance expected_ty);
 
   (* PR#7214: do not use gadt unification for toplevel lets *)
   let unify_res ty_res expected_ty =
