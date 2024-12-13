@@ -461,10 +461,10 @@ let unify_pat_types_return_equated_pairs ~refine loc penv ~pat ~expected =
       raise(Typetexp.Error(loc, !!penv, Typetexp.Variant_tags (l1, l2)))
 
 (* Unify pattern types in functions that can be called either from
-   [unify_pat] or [check_counter_example_pat].
-   Since it only calls either normal unification, or [unify_gadt]
-   with [penv.in_counterexample = true], [ty] and [ty'] have
-   symmetric roles. *)
+   [type_pat] or [check_counter_example_pat].
+   Since it calls normal unification when [penv.in_counterexample = false],
+   or [unify_gadt] when [penv.in_counterexample = true],
+   [ty] and [ty'] always have symmetric roles. *)
 let unify_pat_types_penv loc penv ty ty' =
   (* [penv.in_counterexample = true] only in calls originating
      from [check_counter_example_pat],
