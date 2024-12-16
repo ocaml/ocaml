@@ -43,9 +43,8 @@
     # Work around inconsistent name mangling
     gsub(/c_to_ocaml_[0-9]+/, "c_to_ocaml")
 
-    gsub("This version of LLDB has no plugin for the language \"assembler\". Inspection of frame variables will be limited.", "")
-
     gsub("warning: This version of LLDB", "This version of LLDB")
+    gsub("This version of LLDB has no plugin for the language \"assembler\". Inspection of frame variables will be limited.", "")
     # Replace printed match results
     gsub("1 match found in /(.*):$", "1 match found in \"XXXX\":")
     print $0
