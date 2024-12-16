@@ -150,7 +150,7 @@ jobs:
       matrix:
         include:
           - name: linux-O0
-            os: ubuntu-24.04
+            os: ubuntu-latest
             config_arg: CFLAGS='-O0'
           - name: macos-x86_64
             os: macos-13
@@ -207,7 +207,7 @@ jobs:
           done
 
   i386:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     container:
       image: debian:12
       options: --platform linux/i386 --user root
