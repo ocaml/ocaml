@@ -450,22 +450,22 @@ let f x y =
 (* PASS: no Match_failure generated *)
 [%%expect {|
 (let
-  (f/504 =
-     (function x/505[int] y/506[int] : int
+  (f/505 =
+     (function x/506[int] y/507[int] : int
        (catch
          (catch
            (catch
-             (if (isint y/506) (if (!= y/506 19896) (exit 45) 0) (exit 45))
+             (if (isint y/507) (if (!= y/507 19896) (exit 45) 0) (exit 45))
             with (45)
-             (if (!= x/505 19674)
-               (if (>= x/505 19675) (exit 44)
-                 (if (>= y/506 19898) (exit 42) 1))
-               (if (isint y/506) (if (!= y/506 19897) (exit 44) (exit 42))
+             (if (!= x/506 19674)
+               (if (>= x/506 19675) (exit 44)
+                 (if (>= y/507 19898) (exit 42) 1))
+               (if (isint y/507) (if (!= y/507 19897) (exit 44) (exit 42))
                  (exit 44))))
           with (44)
-           (if (isint y/506) (if (!= y/506 19898) (exit 42) 2) (exit 42)))
+           (if (isint y/507) (if (!= y/507 19898) (exit 42) 2) (exit 42)))
         with (42) 3)))
-  (apply (field_mut 1 (global Toploop!)) "f" f/504))
+  (apply (field_mut 1 (global Toploop!)) "f" f/505))
 val f : [< `X1 | `X2 | `X3 ] -> [< `Y1 | `Y2 | `Y3 ] -> int = <fun>
 |}];;
 
@@ -479,34 +479,34 @@ let check_results r1 r2 =
 (* PASS: no Match_failure case generated *)
 [%%expect {|
 (let
-  (check_results/507 =
-     (function r1/509 r2/510
-       (let (*match*/516 = (apply r1/509 r2/510))
+  (check_results/508 =
+     (function r1/510 r2/511
+       (let (*match*/517 = (apply r1/510 r2/511))
          (catch
            (catch
-             (let (r/515 =a (field_imm 0 *match*/516))
+             (let (r/516 =a (field_imm 0 *match*/517))
                (catch
-                 (switch* r/515
-                  case tag 0: (exit 50 r/515)
+                 (switch* r/516
+                  case tag 0: (exit 50 r/516)
                   case tag 1:
                    (catch
-                     (if (>= (field_imm 0 r/515) 66)
-                       (let (*match*/524 =a (field_imm 1 *match*/516))
-                         (switch* *match*/524
+                     (if (>= (field_imm 0 r/516) 66)
+                       (let (*match*/525 =a (field_imm 1 *match*/517))
+                         (switch* *match*/525
                           case tag 0: (exit 52)
                           case tag 1:
-                           (let (*match*/525 =a (field_imm 0 *match*/524))
-                             (if (isint *match*/525)
-                               (if (!= *match*/525 66) (exit 53) r/515)
+                           (let (*match*/526 =a (field_imm 0 *match*/525))
+                             (if (isint *match*/526)
+                               (if (!= *match*/526 66) (exit 53) r/516)
                                (exit 53)))))
-                       (switch* (field_imm 1 *match*/516)
+                       (switch* (field_imm 1 *match*/517)
                         case tag 0: (exit 52)
-                        case tag 1: (exit 51 r/515)))
-                    with (53) (exit 51 (field_imm 1 *match*/516))))
-                with (52) (exit 50 (field_imm 1 *match*/516))))
-            with (50 r/511) r/511)
-          with (51 r/513) r/513))))
-  (apply (field_mut 1 (global Toploop!)) "check_results" check_results/507))
+                        case tag 1: (exit 51 r/516)))
+                    with (53) (exit 51 (field_imm 1 *match*/517))))
+                with (52) (exit 50 (field_imm 1 *match*/517))))
+            with (50 r/512) r/512)
+          with (51 r/514) r/514))))
+  (apply (field_mut 1 (global Toploop!)) "check_results" check_results/508))
 val check_results :
   ('a -> ('b, [< `A | `B ]) result * ('b, [< `A | `B ]) result) ->
   'a -> ('b, [> `A | `B ]) result = <fun>
