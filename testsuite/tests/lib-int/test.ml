@@ -67,6 +67,14 @@ let test_hash () =
   in
   f 0; f 123; f (-456); f 0x3FFFFFFF; f (-0x40000000)
 
+let test_repr () =
+  assert (Int.repr 1 = 3n);
+  let f x =
+    let n = Int.repr x in
+    assert (n = Nativeint.(add 1n (mul 2n (of_int x))))
+  in
+  List.iter f [0; 1; -1; 42; min_int; max_int]
+
 let tests () =
   test_consts ();
   test_arith ();
@@ -77,6 +85,7 @@ let tests () =
   test_string_conv ();
   test_min_max ();
   test_hash ();
+  test_repr ();
   ()
 
 let () =
