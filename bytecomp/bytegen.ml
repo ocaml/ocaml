@@ -164,7 +164,7 @@ let preserve_tailcall_for_prim = function
   | Pbytes_set_64 _ | Pbigstring_load_16 _ | Pbigstring_load_32 _
   | Pbigstring_load_64 _ | Pbigstring_set_16 _ | Pbigstring_set_32 _
   | Pbigstring_set_64 _ | Pctconst _ | Pbswap16 | Pbbswap _ | Pint_as_pointer
-  | Patomic_load
+  | Pint_repr | Patomic_load
   | Pdls_get ->
       false
 
@@ -502,6 +502,7 @@ let comp_primitive stack_info p sz args =
   | Pfloatcomp _
   | Pmakeblock _
   | Pfloatfield _
+  | Pint_repr
     ->
       fatal_error "Bytegen.comp_primitive"
 
@@ -772,6 +773,23 @@ let rec comp_expr stack_info env exp sz cont =
   | Lprim(Pfloatfield n, args, loc) ->
       let cont = add_pseudo_event loc !compunit_name cont in
       comp_args stack_info env args sz (Kgetfloatfield n :: cont)
+  | Lprim(Pint_repr, args, loc) ->
+      let cont = add_pseudo_event loc !compunit_name cont in
+      (* Compute by hand to avoid adding a runtime primitive *)
+      let to_nativeint =
+        Lprim (Pbintofint Pnativeint, args, loc)
+      in
+      let shifted =
+        Lprim (Plslbint Pnativeint,
+               [to_nativeint; Lconst (Const_base (Const_int 1))],
+               loc)
+      in
+      let tagged =
+        Lprim (Paddbint Pnativeint,
+               [shifted; Lconst (Const_base (Const_nativeint 1n))],
+               loc)
+      in
+      comp_expr stack_info env tagged sz cont
   | Lprim(p, args, _) ->
       let nargs = List.length args - 1 in
       comp_args stack_info env args sz

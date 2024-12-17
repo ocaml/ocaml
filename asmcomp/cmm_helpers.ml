@@ -2170,6 +2170,9 @@ let int_as_pointer arg dbg =
   Cop(Caddi, [arg; Cconst_int (-1, dbg)], dbg)
   (* always a pointer outside the heap *)
 
+let int_repr arg dbg =
+  box_int_gen dbg Pnativeint arg
+
 let raise_prim raise_kind arg dbg =
   if !Clflags.debug then
     Cop (Craise raise_kind, [arg], dbg)

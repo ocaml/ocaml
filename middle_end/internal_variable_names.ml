@@ -120,6 +120,7 @@ let pfloatofint = "Pfloatofint"
 let pgetglobal = "Pgetglobal"
 let pignore = "Pignore"
 let pint_as_pointer = "Pint_as_pointer"
+let pint_repr = "Pint_repr"
 let pintcomp = "Pintcomp"
 let pcompare_ints = "Pcompare_ints"
 let pcompare_floats = "Pcompare_floats"
@@ -227,6 +228,7 @@ let pfloatofint_arg = "Pfloatofint_arg"
 let pgetglobal_arg = "Pgetglobal_arg"
 let pignore_arg = "Pignore_arg"
 let pint_as_pointer_arg = "Pint_as_pointer_arg"
+let pint_repr_arg = "Pint_repr_arg"
 let pintcomp_arg = "Pintcomp_arg"
 let pcompare_ints_arg = "Pcompare_ints_arg"
 let pcompare_floats_arg = "Pcompare_floats_arg"
@@ -420,6 +422,7 @@ let of_primitive : Lambda.primitive -> string = function
   | Pbswap16 -> pbswap16
   | Pbbswap _ -> pbbswap
   | Pint_as_pointer -> pint_as_pointer
+  | Pint_repr -> pint_repr
   | Popaque -> popaque
   | Patomic_load -> patomic_load
   | Prunstack -> prunstack
@@ -530,6 +533,7 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pbswap16 -> pbswap16_arg
   | Pbbswap _ -> pbbswap_arg
   | Pint_as_pointer -> pint_as_pointer_arg
+  | Pint_repr -> pint_repr_arg
   | Popaque -> popaque_arg
   | Patomic_load -> patomic_load_arg
   | Prunstack -> prunstack_arg

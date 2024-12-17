@@ -894,6 +894,7 @@ let rec choice ctx t =
     | Pbswap16
     | Pbbswap _
     | Pint_as_pointer
+    | Pint_repr
     | Psequand | Psequor
     | Ppoll
       ->

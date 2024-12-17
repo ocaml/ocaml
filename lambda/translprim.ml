@@ -359,6 +359,7 @@ let primitives_table =
     "%bswap_int64", Primitive ((Pbbswap(Pint64)), 1);
     "%bswap_native", Primitive ((Pbbswap(Pnativeint)), 1);
     "%int_as_pointer", Primitive (Pint_as_pointer, 1);
+    "%int_repr", Primitive (Pint_repr, 1);
     "%opaque", Primitive (Popaque, 1);
     "%sys_argv", External prim_sys_argv;
     "%send", Send;
@@ -826,7 +827,8 @@ let lambda_primitive_needs_event_after = function
   | Pbytessetu | Pmakearray ((Pintarray | Paddrarray | Pfloatarray), _)
   | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint | Pisout
   | Patomic_load
-  | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque | Pdls_get
+  | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Pint_repr | Popaque
+  | Pdls_get
       -> false
 
 (* Determine if a primitive should be surrounded by an "after" debug event *)

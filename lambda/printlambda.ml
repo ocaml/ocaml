@@ -350,6 +350,7 @@ let primitive ppf = function
   | Pbswap16 -> fprintf ppf "bswap16"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
+  | Pint_repr -> fprintf ppf "int_repr"
   | Patomic_load -> fprintf ppf "atomic_load"
   | Popaque -> fprintf ppf "opaque"
   | Pdls_get -> fprintf ppf "dls_get"
@@ -456,6 +457,7 @@ let name_of_primitive = function
   | Pbswap16 -> "Pbswap16"
   | Pbbswap _ -> "Pbbswap"
   | Pint_as_pointer -> "Pint_as_pointer"
+  | Pint_repr -> "Pint_repr"
   | Patomic_load -> "Patomic_load"
   | Popaque -> "Popaque"
   | Prunstack -> "Prunstack"

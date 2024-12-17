@@ -142,6 +142,8 @@ type primitive =
   | Pbbswap of boxed_integer
   (* Integer to external pointer *)
   | Pint_as_pointer
+  (* Integer to native integer *)
+  | Pint_repr
   (* Atomic operations *)
   | Patomic_load
   (* Inhibition of optimisation *)

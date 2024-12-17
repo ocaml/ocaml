@@ -129,7 +129,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
       Arbitrary_effects, No_coeffects
   | Pbswap16
   | Pbbswap _ -> No_effects, No_coeffects
-  | Pint_as_pointer -> No_effects, No_coeffects
+  | Pint_as_pointer | Pint_repr -> No_effects, No_coeffects
   | Popaque | Ppoll -> Arbitrary_effects, Has_coeffects
   | Psequand
   | Psequor ->
