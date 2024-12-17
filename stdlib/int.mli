@@ -166,3 +166,8 @@ val hash : int -> int
     to the functor {!Hashtbl.Make}.
 
     @since 5.1 *)
+
+external repr : int -> nativeint = "%int_repr"
+(** Return the raw machine representation of the number, including the tag bit.
+
+    @since 5.4 *)
