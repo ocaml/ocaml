@@ -84,6 +84,9 @@ Working version
 
 ### Standard library:
 
+- #13695: Add Stdlib.Char.Ascii
+  (Daniel Bünzli, review by …)
+
 - #13310: Add Stdlib.Pair
   (Victoire Noizet, review by Nicolás Ojeda Bär, Daniel Bünzli, Xavier Van de
    Woestyne, Jeremy Yallop and Florian Angeletti)
