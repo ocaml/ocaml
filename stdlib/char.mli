@@ -23,6 +23,11 @@
     the range \[[0x00];[0x7F]\] as the characters of the ASCII character
     set. *)
 
+(** {1:characters Characters} *)
+
+type t = char
+(** An alias for the type of characters. *)
+
 external code : char -> int = "%identity"
 (** Return the integer code of the argument. *)
 
@@ -38,18 +43,7 @@ val escaped : char -> string
     All characters outside the ASCII printable range \[[0x20];[0x7E]\] are
     escaped, as well as backslash, double-quote, and single-quote. *)
 
-val lowercase_ascii : char -> char
-(** Convert the given character to its equivalent lowercase character,
-   using the ASCII character set.
-   @since 4.03 *)
-
-val uppercase_ascii : char -> char
-(** Convert the given character to its equivalent uppercase character,
-   using the ASCII character set.
-   @since 4.03 *)
-
-type t = char
-(** An alias for the type of characters. *)
+(** {1:predicates Predicates and comparisons} *)
 
 val compare: t -> t -> int
 (** The comparison function for characters, with the same specification as
@@ -60,6 +54,20 @@ val compare: t -> t -> int
 val equal: t -> t -> bool
 (** The equal function for chars.
     @since 4.03 *)
+
+(** {1:ascii_characters ASCII characters} *)
+
+val lowercase_ascii : char -> char
+(** Convert the given character to its equivalent lowercase character,
+   using the ASCII character set.
+   @since 4.03 *)
+
+val uppercase_ascii : char -> char
+(** Convert the given character to its equivalent uppercase character,
+   using the ASCII character set.
+   @since 4.03 *)
+
+(** {1:hashing Hashing} *)
 
 val seeded_hash : int -> t -> int
 (** A seeded hash function for characters, with the same output value as
