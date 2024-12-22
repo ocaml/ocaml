@@ -13,7 +13,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Character operations. *)
+(** Character operations.
+
+    Characters are the elements of [string] and [bytes]
+    values. Characters represent bytes, that is an integer in the
+    range \[[0x00];[0xFF]\].
+
+    Some of the functions of this module interpret the characters in
+    the range \[[0x00];[0x7F]\] as the characters of the ASCII character
+    set. *)
 
 external code : char -> int = "%identity"
 (** Return the ASCII code of the argument. *)
