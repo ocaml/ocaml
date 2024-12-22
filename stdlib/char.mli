@@ -29,23 +29,23 @@ external code : char -> int = "%identity"
 val chr : int -> char
 (** Return the character with the given integer code.
    @raise Invalid_argument if the argument is
-   outside the range 0--255. *)
+   outside the range \[[0x00];[0xFF]\]. *)
 
 val escaped : char -> string
 (** Return a string representing the given character,
     with special characters escaped following the lexical conventions
     of OCaml.
-    All characters outside the ASCII printable range (32..126) are
+    All characters outside the ASCII printable range \[[0x20];[0x7E]\] are
     escaped, as well as backslash, double-quote, and single-quote. *)
 
 val lowercase_ascii : char -> char
 (** Convert the given character to its equivalent lowercase character,
-   using the US-ASCII character set.
+   using the ASCII character set.
    @since 4.03 *)
 
 val uppercase_ascii : char -> char
 (** Convert the given character to its equivalent uppercase character,
-   using the US-ASCII character set.
+   using the ASCII character set.
    @since 4.03 *)
 
 type t = char
