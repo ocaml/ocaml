@@ -24,10 +24,10 @@
     set. *)
 
 external code : char -> int = "%identity"
-(** Return the ASCII code of the argument. *)
+(** Return the integer code of the argument. *)
 
 val chr : int -> char
-(** Return the character with the given ASCII code.
+(** Return the character with the given integer code.
    @raise Invalid_argument if the argument is
    outside the range 0--255. *)
 
