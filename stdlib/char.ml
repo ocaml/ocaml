@@ -108,12 +108,12 @@ module Ascii = struct
     | c -> invalid_arg (escaped c ^ ": not a hexadecimal digit")
 
   let lower_hex_digit_of_int n =
-    let n = n land 0xF in
-    unsafe_chr (if n < 10 then 0x30 + n else 0x57 + n)
+    let d = abs (n mod 16) in
+    unsafe_chr (if d < 10 then 0x30 + d else 0x57 + d)
 
   let upper_hex_digit_of_int n =
-    let n = n land 0xF in
-    unsafe_chr (if n < 10 then 0x30 + n else 0x37 + n)
+    let d = abs (n mod 16) in
+    unsafe_chr (if d < 10 then 0x30 + d else 0x37 + d)
 
   (* Casing transforms *)
 

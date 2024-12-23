@@ -129,7 +129,7 @@ module Ascii : sig
   (** {1:decimal_digits Decimal digits} *)
 
   val is_digit : char -> bool
-  (** [is_digit c] is [true] if and only if [c] is an ASCII digit
+  (** [is_digit c] is [true] if and only if [c] is an ASCII decimal digit
       ['0'] to ['9'], that is a byte in the range \[[0x30];[0x39]\]. *)
 
   val digit_to_int : char -> int
@@ -138,8 +138,8 @@ module Ascii : sig
       {!is_digit}[ c] is [false]. *)
 
   val digit_of_int : int -> char
-  (** [digit_of_int n] is an ASCII digit for the decimal
-      digit [n mod 10]. *)
+  (** [digit_of_int n] is an ASCII decimal digit for the decimal
+      value [abs (n mod 10)]. *)
 
   (** {1:hex_digits Hexadecimal digits} *)
 
@@ -156,11 +156,11 @@ module Ascii : sig
 
   val lower_hex_digit_of_int : int -> char
   (** [lower_hex_digit_of_int n] is a lowercase ASCII hexadecimal digit for
-      the integer [n] truncated to its lowest 4 bits. *)
+      the hexadecimal value [abs (n mod 16)]. *)
 
   val upper_hex_digit_of_int : int -> char
   (** [upper_hex_digit_of_int n] is an uppercase ASCII hexadecimal
-      digit for the integer [n] truncated to its lowest 4 bits. *)
+      digit for the hexadecimal value [abs (n mod 16)]. *)
 
   (** {1:casing Casing transforms} *)
 
