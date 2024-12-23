@@ -122,6 +122,23 @@ let test_to_option_list_seq () =
   assert ((Result.to_seq (Error "ha!")) () = Seq.Nil);
   ()
 
+let test_syntax () =
+  let open Result.Syntax in
+  assert (Ok 5 =
+          let parse n = Ok n in
+          let* n0 = parse 3 in
+          let* n1 = parse 2 in
+          Ok (n0 + n1));
+  assert (Ok 3 =
+          let+ one = Ok 1
+          and+ two = Ok 2 in
+          one + two);
+  assert (Ok 1 =
+          let* three = Ok 3 in
+          let+ two = Ok 2 in
+          three - two);
+  ()
+
 let tests () =
   test_ok_error ();
   test_value ();
@@ -137,6 +154,7 @@ let tests () =
   test_equal ();
   test_compare ();
   test_to_option_list_seq ();
+  test_syntax ();
   ()
 
 let () =

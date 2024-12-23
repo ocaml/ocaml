@@ -50,3 +50,10 @@ let compare ~ok ~error r0 r1 = match r0, r1 with
 let to_option = function Ok v -> Some v | Error _ -> None
 let to_list = function Ok v -> [v] | Error _ -> []
 let to_seq = function Ok v -> Seq.return v | Error _ -> Seq.empty
+
+module Syntax = struct
+  let ( let* ) = bind
+  let ( and* ) = product
+  let ( let+ ) r f = map f r
+  let ( and+ ) = product
+end

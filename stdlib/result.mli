@@ -112,3 +112,23 @@ val to_list : ('a, 'e) result -> 'a list
 val to_seq : ('a, 'e) result -> 'a Seq.t
 (** [to_seq r] is [r] as a sequence. [Ok v] is the singleton sequence
     containing [v] and [Error _] is the empty sequence. *)
+
+(** {1:syntax Syntax} *)
+
+(** Binding operators.
+
+    @since 5.4 *)
+module Syntax : sig
+
+  val ( let* ) : ('a, 'e) result -> ('a -> ('b, 'e) result) -> ('b, 'e) result
+  (** [( let* )] is {!Result.bind}. *)
+
+  val ( and* ) : ('a, 'e) result -> ('b, 'e) result -> ('a * 'b, 'e) result
+  (** [( and* )] is {!Result.product}. *)
+
+  val ( let+ ) : ('a, 'e) result -> ('a -> 'b) -> ('b, 'e) result
+  (** [( let+ )] is {!Result.map}. *)
+
+  val ( and+ ) : ('a, 'e) result -> ('b, 'e) result -> ('a * 'b, 'e) result
+  (** [( and+ )] is {!Result.product}. *)
+end
