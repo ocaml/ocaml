@@ -42,6 +42,13 @@ let test_maps () =
   assert (Result.map_error succ (Ok 2) = Ok 2);
   ()
 
+let test_product () =
+  assert (Result.product (Ok "a") (Ok 3) = Ok ("a", 3));
+  assert (Result.product (Ok "a") (Error "ha") = Error "ha");
+  assert (Result.product (Error "hi") (Error "ha") = Error "hi");
+  assert (Result.product (Error "hi") (Ok 3) = Error "hi");
+  ()
+
 let test_fold () =
   assert (Result.fold ~ok:succ ~error:succ (Ok 1) = 2);
   assert (Result.fold ~ok:succ ~error:succ (Error 1) = 2);
@@ -122,6 +129,7 @@ let tests () =
   test_bind ();
   test_join ();
   test_maps ();
+  test_product ();
   test_fold ();
   test_retract ();
   test_iters ();
