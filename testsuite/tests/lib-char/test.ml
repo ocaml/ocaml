@@ -50,9 +50,13 @@ let test_decimal () =
   assert (Char.Ascii.digit_to_int '9' = 9);
   assert_raise_invalid_argument Char.Ascii.digit_to_int 'A';
   assert (Char.Ascii.digit_of_int 5 = '5');
+  assert (Char.Ascii.digit_of_int (-5) = '5');
   assert (Char.Ascii.digit_of_int 9 = '9');
+  assert (Char.Ascii.digit_of_int (-9) = '9');
   assert (Char.Ascii.digit_of_int 10 = '0');
+  assert (Char.Ascii.digit_of_int (-10) = '0');
   assert (Char.Ascii.digit_of_int 112 = '2');
+  assert (Char.Ascii.digit_of_int (-112) = '2');
   ()
 
 let test_hexadecimal () =

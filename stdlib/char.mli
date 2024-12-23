@@ -112,24 +112,24 @@ module Ascii : sig
       carriage return ['\r'] ([0x0D]) or space [' '] ([0x20]),  *)
 
   val is_blank : char -> bool
-  (** [is_blank c] is [true] iff [c] is an ASCII blank character,
+  (** [is_blank c] is [true] if and only if [c] is an ASCII blank character,
       that is either space [' '] ([0x20]) or tab ['\t'] ([0x09]). *)
 
   val is_graphic : char -> bool
-  (** [is_graphic c] is [true] iff [c] is an ASCII graphic
-      character that is a byte in the range \[[0x21];[0x7E]\]. *)
+  (** [is_graphic c] is [true] if and only if [c] is an ASCII graphic
+      character, that is a byte in the range \[[0x21];[0x7E]\]. *)
 
   val is_print : char -> bool
   (** [is_print c] is {!is_graphic}[ c || c = ' ']. *)
 
   val is_control : char -> bool
-  (** [is_control c] is [true] iff [c] is an ASCII control character,
+  (** [is_control c] is [true] if and only if [c] is an ASCII control character,
       that is a byte in the range \[[0x00];[0x1F]\] or [0x7F]. *)
 
   (** {1:decimal_digits Decimal digits} *)
 
   val is_digit : char -> bool
-  (** [is_digit c] is [true] iff [c] is an ASCII digit
+  (** [is_digit c] is [true] if and only if [c] is an ASCII digit
       ['0'] to ['9'], that is a byte in the range \[[0x30];[0x39]\]. *)
 
   val digit_to_int : char -> int
@@ -144,7 +144,7 @@ module Ascii : sig
   (** {1:hex_digits Hexadecimal digits} *)
 
   val is_hex_digit : char -> bool
-  (** [is_hex_digit c] is [true] iff [c] is an ASCII hexadecimal
+  (** [is_hex_digit c] is [true] if and only if [c] is an ASCII hexadecimal
       digit ['0'] to ['9'], ['a'] to ['f'] or ['A'] to ['F'],
       that is a byte in one of the ranges \[[0x30];[0x39]\],
       \[[0x41];[0x46]\], \[[0x61];[0x66]\]. *)
@@ -155,7 +155,7 @@ module Ascii : sig
       {!is_hex_digit}[ c] is [false]. *)
 
   val lower_hex_digit_of_int : int -> char
-  (** [lower_hex_digit n] is an lowercase ASCII hexadecimal digit for
+  (** [lower_hex_digit_of_int n] is a lowercase ASCII hexadecimal digit for
       the integer [n] truncated to its lowest 4 bits. *)
 
   val upper_hex_digit_of_int : int -> char

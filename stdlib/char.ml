@@ -93,7 +93,7 @@ module Ascii = struct
     | '0' .. '9' as c -> code c - 0x30
     | c -> invalid_arg (escaped c ^ ": not a decimal digit")
 
-  let digit_of_int n = unsafe_chr (0x30 + (n mod 10))
+  let digit_of_int n = unsafe_chr (0x30 + abs (n mod 10))
 
   (* Hexadecimal digits *)
 
@@ -105,7 +105,7 @@ module Ascii = struct
     | '0' .. '9' as c -> code c - 0x30
     | 'A' .. 'F' as c -> 10 + code c - 0x41
     | 'a' .. 'f' as c -> 10 + code c - 0x61
-    | c -> invalid_arg (escaped c ^ ": not an hexadecimal digit")
+    | c -> invalid_arg (escaped c ^ ": not a hexadecimal digit")
 
   let lower_hex_digit_of_int n =
     let n = n land 0xF in
