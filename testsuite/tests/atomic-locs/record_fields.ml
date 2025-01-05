@@ -222,3 +222,100 @@ module Float_records :
     val get : t -> float
   end
 |}];;
+
+
+(* Atomic field expressions *)
+module Basic_field = struct
+  type t = { mutable count : int [@atomic] }
+  let accessor = [%atomic.field count]
+end
+[%%expect {|
+(apply (field_mut 1 (global Toploop!)) "Basic_field/399"
+  (let (accessor = 0) (makeblock 0 accessor)))
+module Basic_field :
+  sig
+    type t = { mutable count : int [@atomic]; }
+    val accessor : (t, int) atomic_field
+  end
+|}]
+
+module Qualified_access = struct
+  module Inner = struct
+    type t = { mutable count : int [@atomic] }
+  end
+  let accessor = [%atomic.field Inner.count]
+end
+[%%expect {|
+(apply (field_mut 1 (global Toploop!)) "Qualified_access/404"
+  (let (Inner = (makeblock 0) accessor = 0) (makeblock 0 Inner accessor)))
+module Qualified_access :
+  sig
+    module Inner : sig type t = { mutable count : int [@atomic]; } end
+    val accessor : (Inner.t, int) atomic_field
+  end
+|}]
+
+
+module Disambiguated_access = struct
+  type t = { mutable count : int [@atomic] }
+  type u = { mutable count : int [@atomic] }
+
+  (* this default to a [u] accessor, using
+     the same "last in scope" rule as field accesses. *)
+  let accessor_ambiguous = [%atomic.field count]
+
+  let accessor_disambiguated =
+    ([%atomic.field count] : (t, _) atomic_field)
+end
+[%%expect {|
+(apply (field_mut 1 (global Toploop!)) "Disambiguated_access/412"
+  (let (accessor_ambiguous = 0 accessor_disambiguated = 0)
+    (makeblock 0 accessor_ambiguous accessor_disambiguated)))
+module Disambiguated_access :
+  sig
+    type t = { mutable count : int [@atomic]; }
+    type u = { mutable count : int [@atomic]; }
+    val accessor_ambiguous : (u, int) atomic_field
+    val accessor_disambiguated : (t, int) atomic_field
+  end
+|}]
+
+
+
+module Error_with_inline_record_field = struct
+  type t = Foo of { mutable count : int [@atomic] }
+  (* Inline record fields are not added in the typing
+     environment like ordinary record fields,
+     and their lookup fails in absence of type annotations. *)
+  let accessor = [%atomic.field count]
+  (* Note that it is not possible to disambiguate by adding
+     a type annotation, as there is no surface syntax to
+     denote the inline record type of a constructor. *)
+end
+[%%expect {|
+Line 6, characters 32-37:
+6 |   let accessor = [%atomic.field count]
+                                    ^^^^^
+Error: Unbound record field "count"
+|}]
+
+
+module Worse_error_with_inline_record_field = struct
+  type t = Foo of { mutable count : int [@atomic] }
+
+  external atomic_field_get : 'r -> ('r, 'a) atomic_field -> 'a
+    = "%atomic_load_field"
+
+  (* In this representative example, the type information
+     could propagated from [r] to the [%atomic.field ...]
+     expression. But this is not allowed by the OCaml
+     type-checker, as [r] is type-checked in mode [~recarg:false], which does not allow inline record types in its result type. *)
+  let getter (Foo r) =
+    atomic_field_get r [%atomic.field count]
+end
+[%%expect {|
+Line 12, characters 21-22:
+12 |     atomic_field_get r [%atomic.field count]
+                          ^
+Error: This form is not allowed as the type of the inlined record could escape.
+|}]
