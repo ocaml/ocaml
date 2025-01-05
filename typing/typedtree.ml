@@ -120,6 +120,7 @@ and expression_desc =
   | Texp_field of expression * Longident.t loc * label_description
   | Texp_setfield of
       expression * Longident.t loc * label_description * expression
+  | Texp_atomic_field of Longident.t loc * Data_types.label_description
   | Texp_array of expression list
   | Texp_ifthenelse of expression * expression * expression option
   | Texp_sequence of expression * expression

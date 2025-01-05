@@ -204,7 +204,7 @@ type error =
   | Missing_type_constraint
   | Wrong_expected_kind of wrong_kind_sort * wrong_kind_context * type_expr
   | Expr_not_a_record_type of type_expr
-
+  | Atomic_field_record_not_a_record_type of type_expr
 
 let not_principal fmt =
   Format_doc.Doc.kmsg (fun x -> Warnings.Not_principal x) fmt
@@ -367,6 +367,13 @@ let extract_concrete_record env ty =
     Record_type (p0, p, fields)
   | Has_no_typedecl | Typedecl(_, _, _) -> Not_a_record_type
   | May_have_typedecl -> Maybe_a_record_type
+
+let extract_atomic_field_record_type env ty =
+  match get_desc (expand_head env ty) with
+  | Tconstr(path, [record_ty; _elt_ty], _)
+    when Path.same path Predef.path_atomic_field ->
+      Some record_ty
+  | _ -> None
 
 type variant_extraction_result =
   | Variant_type of Path.t * Path.t * Types.constructor_declaration list
@@ -2647,6 +2654,7 @@ let rec is_nonexpansive exp =
            | Kept _ -> true)
         fields
       && is_nonexpansive_opt extended_expression
+  | Texp_atomic_field _ -> true
   | Texp_atomic_loc(exp, _, _) -> is_nonexpansive exp
   | Texp_field(exp, _, _) -> is_nonexpansive exp
   | Texp_ifthenelse(_cond, ifso, ifnot) ->
@@ -2990,6 +2998,7 @@ let check_partial_application ~statement exp =
             | Texp_setinstvar _ | Texp_override _ | Texp_assert _
             | Texp_lazy _ | Texp_object _ | Texp_pack _ | Texp_unreachable
             | Texp_extension_constructor _ | Texp_ifthenelse (_, _, None)
+            | Texp_atomic_field _
             | Texp_function _ ->
                 check_statement ()
             | Texp_match (_, cases, eff_cases, _) ->
@@ -4412,6 +4421,49 @@ and type_expect_
       | _ ->
           raise (Error (loc, env, Invalid_extension_constructor_payload))
       end
+  | Pexp_extension ({ txt = ("ocaml.atomic.field"
+                             |"atomic.field"); _ },
+                    payload) ->
+      begin match payload with
+      | PStr [ { pstr_desc =
+                  Pstr_eval (
+                    { pexp_desc = Pexp_ident lid; _ } as sexp, _
+                  )
+               } ] ->
+          let record_type =
+            match extract_atomic_field_record_type env ty_expected with
+            | Some record_type -> record_type
+            | None -> newvar ()
+          in
+          let concrete_record_type =
+            match extract_concrete_record env record_type with
+            | Record_type(p0, p, _) ->
+                Some(p0, p, is_principal record_type)
+            | Maybe_a_record_type -> None
+            | Not_a_record_type ->
+                let error = Atomic_field_record_not_a_record_type record_type in
+                raise (Error (sexp.pexp_loc, env, error))
+          in
+          let labels =
+            Env.lookup_all_labels ~loc:lid.loc Env.Mutation lid.txt env in
+          let label =
+            wrap_disambiguate "This atomic field has"
+              (mk_expected record_type)
+              (Label.disambiguate Env.Mutation lid env concrete_record_type) labels in
+          let _, ty_arg, ty_res = instance_label ~fixed:false label in
+          unify_exp_types loc env (instance record_type) ty_res;
+          Env.mark_label_used Env.Projection label.lbl_uid;
+          if label.lbl_atomic = Nonatomic then
+            raise (Error (loc, env, Label_not_atomic lid.txt)) ;
+          rue {
+            exp_desc = Texp_atomic_field (lid, label);
+            exp_loc = loc; exp_extra = [];
+            exp_type = instance (Predef.type_atomic_field ty_res ty_arg);
+            exp_attributes = sexp.pexp_attributes;
+            exp_env = env }
+      | _ ->
+          raise (Error (loc, env, Invalid_atomic_loc_payload))
+      end
   | Pexp_extension ({ txt = ("ocaml.atomic.loc"
                              |"atomic.loc"); _ },
                     payload) ->
@@ -4922,7 +4974,6 @@ and type_function
         the body is a [Tfunction_cases] whose patterns include a GADT.
      *)
     exp_type, [], body, [], No_gadt
-
 
 and type_label_access env srecord usage lid =
   let record =
@@ -7141,6 +7192,11 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "This expression has type %a@ \
          which is not a record type."
+        (Style.as_inline_code Printtyp.type_expr) ty
+  | Atomic_field_record_not_a_record_type ty ->
+      Location.errorf ~loc
+        "The expected type of this atomic field expression
+         uses a non-record type@ %a"
         (Style.as_inline_code Printtyp.type_expr) ty
 
 let report_error ~loc env err =

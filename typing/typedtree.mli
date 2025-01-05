@@ -265,6 +265,9 @@ and expression_desc =
       expression * Longident.t loc * Data_types.label_description
   | Texp_setfield of
       expression * Longident.t loc * Data_types.label_description * expression
+  | Texp_atomic_field of Longident.t loc * Data_types.label_description
+        (** [%atomic.field f] is represented as
+            [Texp_atomic_loc((f : longident), f_label_description)] *)
   | Texp_array of expression list
   | Texp_ifthenelse of expression * expression * expression option
   | Texp_sequence of expression * expression

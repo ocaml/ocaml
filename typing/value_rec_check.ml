@@ -183,6 +183,7 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_variant _
     | Texp_tuple _
     | Texp_atomic_loc _
+    | Texp_atomic_field _
     | Texp_extension_constructor _
     | Texp_constant _ ->
         Static
@@ -622,6 +623,7 @@ let rec expression : Typedtree.expression -> term_judg =
         expression high << Dereference;
         expression body << Guard;
       ]
+    | Texp_atomic_field _
     | Texp_constant _ ->
       empty
     | Texp_new (pth, _, _) ->

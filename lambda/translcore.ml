@@ -326,6 +326,8 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_record {fields; representation; extended_expression} ->
       transl_record ~scopes e.exp_loc e.exp_env
         fields representation extended_expression
+  | Texp_atomic_field (_, lbl) ->
+      transl_atomic_field ~scopes lbl
   | Texp_atomic_loc (arg, _, lbl) ->
       let shape = Some [Typeopt.value_kind arg.exp_env arg.exp_type; Pintval] in
       let (arg, lbl) = transl_atomic_loc ~scopes arg lbl in
@@ -1101,8 +1103,7 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
     end
   end
 
-and transl_atomic_loc ~scopes arg lbl =
-  let arg = transl_exp ~scopes arg in
+and transl_atomic_field ~scopes:_ lbl =
   let offset =
     match lbl.lbl_repres with
     | Record_regular
@@ -1115,7 +1116,11 @@ and transl_atomic_loc ~scopes arg lbl =
           "Translcore.transl_atomic_loc: atomic field in unboxed record"
     | Record_extension _ -> 1
   in
-  let lbl = Lconst (Const_base (Const_int (lbl.lbl_pos + offset))) in
+  Lconst (Const_base (Const_int (lbl.lbl_pos + offset)))
+
+and transl_atomic_loc ~scopes arg lbl =
+  let arg = transl_exp ~scopes arg in
+  let lbl = transl_atomic_field ~scopes lbl in
   (arg, lbl)
 
 and transl_match ~scopes e arg pat_expr_list partial =
