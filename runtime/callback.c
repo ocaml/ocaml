@@ -26,6 +26,7 @@
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
+#include "caml/sync.h"
 
 /* A note about callbacks and GC.  For best performance, a callback such as
      [caml_callback_exn(value closure, value arg)]
@@ -391,7 +392,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
   unsigned int h = hash_value_name(name);
   int found = 0;
 
-  caml_plat_lock_non_blocking(&named_value_lock);
+  caml_mutex_lock_non_blocking(&named_value_lock);
   name = NULL; /* block may have moved while we waited for the lock. */
   for (struct named_value *nv = named_value_table[h];
        nv != NULL;
@@ -412,28 +413,28 @@ CAMLprim value caml_register_named_value(value vname, value val)
     named_value_table[h] = nv;
     caml_register_generational_global_root(&nv->val);
   }
-  caml_plat_unlock(&named_value_lock);
+  caml_mutex_unlock(&named_value_lock);
   CAMLreturn(Val_unit);
 }
 
 CAMLexport const value* caml_named_value(char const *name)
 {
-  caml_plat_lock_non_blocking(&named_value_lock);
+  caml_mutex_lock_non_blocking(&named_value_lock);
   for (struct named_value *nv = named_value_table[hash_value_name(name)];
        nv != NULL;
        nv = nv->next) {
     if (strcmp(name, nv->name) == 0){
-      caml_plat_unlock(&named_value_lock);
+      caml_mutex_unlock(&named_value_lock);
       return &nv->val;
     }
   }
-  caml_plat_unlock(&named_value_lock);
+  caml_mutex_unlock(&named_value_lock);
   return NULL;
 }
 
 CAMLexport void caml_iterate_named_values(caml_named_action f)
 {
-  caml_plat_lock_non_blocking(&named_value_lock);
+  caml_mutex_lock_non_blocking(&named_value_lock);
   for (int i = 0; i < Named_value_size; i++){
     for (struct named_value *nv = named_value_table[i];
          nv != NULL;
@@ -441,5 +442,5 @@ CAMLexport void caml_iterate_named_values(caml_named_action f)
       f( Op_val(nv->val), nv->name );
     }
   }
-  caml_plat_unlock(&named_value_lock);
+  caml_mutex_unlock(&named_value_lock);
 }

@@ -80,14 +80,41 @@ static const struct custom_operations caml_mutex_ops = {
   custom_fixed_length_default
 };
 
-CAMLexport int caml_mutex_lock(sync_mutex mut)
-{
-  return sync_mutex_lock(mut);
+CAMLexport void caml_mutex_init(sync_mutex *mut) {
+    check_err("caml_mutex_init", sync_mutex_create(mut));
 }
 
-CAMLexport int caml_mutex_unlock(sync_mutex mut)
+CAMLexport void caml_mutex_reinit(sync_mutex *mut) {
+    caml_plat_mutex_reinit(*mut);
+}
+
+CAMLexport void caml_mutex_free(sync_mutex *mut) {
+    check_err("caml_mutex_free", sync_mutex_destroy(*mut));
+    *mut = NULL;
+}
+
+CAMLexport void caml_mutex_lock_non_blocking(sync_mutex mut)
 {
-  return sync_mutex_unlock(mut);
+  if (Caml_state_opt == NULL) {
+    /* If we do not own the domain lock,
+       we can lock the mutex directly. */
+    check_err("caml_mutex_lock", sync_mutex_lock(mut));
+  }
+  else if (sync_mutex_trylock(mut) != MUTEX_PREVIOUSLY_UNLOCKED) {
+    /* If we own the domain lock and would block on the mutex,
+       release the domain lock before taking the lock. */
+    caml_enter_blocking_section();
+    int retcode = sync_mutex_lock(mut);
+    caml_leave_blocking_section();
+    check_err("caml_mutex_lock", retcode);
+  }
+  DEBUG_LOCK(mut);
+}
+
+CAMLexport void caml_mutex_unlock(sync_mutex mut)
+{
+  DEBUG_UNLOCK(mut);
+  check_err("caml_mutex_unlock", sync_mutex_unlock(mut));
 }
 
 CAMLprim value caml_ml_mutex_new(value unit)
