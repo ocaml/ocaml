@@ -544,7 +544,7 @@ let rec check_constraints_rec env loc visited ty =
            *already* violate the constraints -- we need to report a problem with
            the unexpanded types, or we get errors that talk about the same type
            twice.  This is generally true for constraint errors. *)
-        try Ctype.matches ~expand_error_trace:false env ty ty'
+        try Ctype.matches ~expand_error_trace:false env (Ctype.instance ty) ty'
         with Ctype.Matches_failure (env, err) ->
           raise (Error(loc, Constraint_failed (env, err)))
       end;
