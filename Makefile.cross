@@ -96,10 +96,9 @@ cross-flexdll: | $(BYTE_BINDIR) $(OPT_BINDIR)
 	$(LN) flexlink.opt.exe flexlink.byte.exe
 	cp flexlink.byte.exe $(BYTE_BINDIR)/flexlink
 	cd $(BYTE_BINDIR) && $(LN) flexlink flexlink.exe
-	cp $(addprefix $(FLEXDLL_SOURCE_DIR)/, $(FLEXDLL_OBJECTS)) $(BYTE_BINDIR)
+	cp $(addprefix $(FLEXDLL_SOURCE_DIR)/, $(FLEXDLL_OBJECTS)) $(ROOTDIR)
 	cp flexlink.opt.exe $(OPT_BINDIR)/flexlink
 	cd $(OPT_BINDIR) && $(LN) flexlink flexlink.exe
-	cp $(addprefix $(FLEXDLL_SOURCE_DIR)/, $(FLEXDLL_OBJECTS)) $(OPT_BINDIR)
 
 INSTALL_OVERRIDES=build_ocamldoc=false WITH_DEBUGGER= OCAMLRUN=ocamlrun
 

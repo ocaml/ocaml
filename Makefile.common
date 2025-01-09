@@ -141,9 +141,29 @@ ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 ifeq "$(filter $(REAL_ROOT_DIR)/$(BYTE_BINDIR), $(subst :, ,$(PATH)))" ""
   export PATH := \
     $(REAL_ROOT_DIR)/$(OPT_BINDIR):$(REAL_ROOT_DIR)/$(BYTE_BINDIR):$(PATH)
+  # $(BUILD_COMPANY_SYSTEM) is the last two parts of $(BUILD_TRIPLET)
+  BUILD_TRIPLET_FIELDS := $(subst -,$(SPACE),$(BUILD_TRIPLET))
+  BUILD_COMPANY_SYSTEM := $(subst $(SPACE),-,$\
+    $(wordlist 2, $(words $(BUILD_TRIPLET_FIELDS)), $(BUILD_TRIPLET_FIELDS)))
+  # Use the FLEXDIR environment variable to tell flexlink where the support
+  # objects are located. Passing this location using -I would defeat the whole
+  # purpose of the PATH-trick (bootstrapped flexlink is indistinguishable from
+  # an installed flexlink). flexlink also looks for the objects in the same
+  # directory as the executable, but this is slightly irritating as it requires
+  # copying them to both byte/bin/ and opt/bin/ but also doesn't work if
+  # opt/bin/flexlink.exe is a symlink to flexlink.opt.exe, as flexlink can end
+  # up looking in the directory for the target of the symlink, rather than the
+  # symlink itself.
+ifeq "" "$(filter pc-msys pc-cygwin%, $(BUILD_COMPANY_SYSTEM))"
+  export FLEXDIR := $(REAL_ROOT_DIR)
+else
+  export FLEXDIR := $(shell cygpath -w "$(REAL_ROOT_DIR)")
+endif
+  undefine BUILD_TRIPLET_FIELDS
+  undefine BUILD_COMPANY_SYSTEM
 endif
   undefine REAL_ROOT_DIR
-endif
+endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 
 # List of other libraries
 ALL_OTHERLIBS = dynlink str systhreads unix runtime_events

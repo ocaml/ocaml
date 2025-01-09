@@ -645,9 +645,10 @@ flexlink.byte$(EXE): $(FLEXDLL_SOURCES)
 	  OCAMLOPT='$(value BOOT_OCAMLC) $(USE_RUNTIME_PRIMS) $(USE_STDLIB)' \
 	  flexlink.exe support
 	cp $(FLEXDLL_SOURCE_DIR)/flexlink.exe $@
+	cp $(addprefix $(FLEXDLL_SOURCE_DIR)/, $(FLEXDLL_OBJECTS)) $(ROOTDIR)
 
 partialclean::
-	rm -f flexlink.byte flexlink.byte.exe
+	rm -f flexlink.byte flexlink.byte.exe flexdll_*.o flexdll_*.obj
 
 $(BYTE_BINDIR)/flexlink$(EXE): \
     boot/ocamlrun$(EXE) flexlink.byte$(EXE) | $(BYTE_BINDIR)
@@ -655,7 +656,6 @@ $(BYTE_BINDIR)/flexlink$(EXE): \
 # Start with a copy to ensure that the result is always executable
 	cp boot/ocamlrun$(EXE) $@
 	cat flexlink.byte$(EXE) >> $@
-	cp $(addprefix $(FLEXDLL_SOURCE_DIR)/, $(FLEXDLL_OBJECTS)) $(BYTE_BINDIR)
 
 partialclean::
 	rm -f $(BYTE_BINDIR)/flexlink $(BYTE_BINDIR)/flexlink.exe
@@ -886,7 +886,6 @@ flexlink.opt$(EXE): \
 	cp $(FLEXDLL_SOURCE_DIR)/flexlink.exe $@
 	rm -f $(OPT_BINDIR)/flexlink$(EXE)
 	cd $(OPT_BINDIR); $(LN) $(call ROOT_FROM, $(OPT_BINDIR))/$@ flexlink$(EXE)
-	cp $(addprefix $(BYTE_BINDIR)/, $(FLEXDLL_OBJECTS)) $(OPT_BINDIR)
 
 else
 
@@ -2803,8 +2802,7 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	  flexlink.byte$(EXE) "$(INSTALL_BINDIR)"
 endif # ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(MKDIR) "$(INSTALL_FLEXDLLDIR)"
-	$(INSTALL_DATA) $(addprefix $(BYTE_BINDIR)/, $(FLEXDLL_OBJECTS)) \
-    "$(INSTALL_FLEXDLLDIR)"
+	$(INSTALL_DATA) $(FLEXDLL_OBJECTS) "$(INSTALL_FLEXDLLDIR)"
 endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 	$(INSTALL_DATA) Makefile.config "$(INSTALL_LIBDIR)"
 	$(INSTALL_DATA) $(DOC_FILES) "$(INSTALL_DOCDIR)"

@@ -177,6 +177,8 @@ OC_NATIVE_COMPFLAGS = @oc_native_compflags@
 
 OC_NATIVE_LINKFLAGS = -g
 
+BUILD_TRIPLET = @build@
+
 # Platform-dependent command to create symbolic links
 LN = @ln@
 
