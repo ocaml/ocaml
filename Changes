@@ -226,6 +226,9 @@ Working version
   (Ulysse Gérard, Leo White, review by Antonin Décimo, Gabriel Scherer,
    Samuel Vivien, Florian Angeletti and Jacques Garrigue)
 
+- #13725: Add a missing `instance` to type-declaration checking
+  (Richard Eisenberg, review by ???)
+
 ### Build system:
 
 - #13431: Simplify github action responsible for flagging PRs with
