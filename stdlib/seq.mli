@@ -456,6 +456,14 @@ val filter : ('a -> bool) -> 'a t -> 'a t
     In other words, [filter p xs] is the sequence [xs],
     deprived of the elements [x] such that [p x] is false. *)
 
+val filteri : (int -> 'a -> bool) -> 'a t -> 'a t
+(** Same as {!filter}, but the predicate is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+
+   @since 5.4
+*)
+
 val filter_map : ('a -> 'b option) -> 'a t -> 'b t
 (** [filter_map f xs] is the sequence of the elements [y] such that
     [f x = Some y], where [x] ranges over [xs].

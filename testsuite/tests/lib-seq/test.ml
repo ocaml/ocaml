@@ -20,6 +20,16 @@ let () =
   ()
 ;;
 
+(* filteri *)
+let () =
+  assert
+    ([5;4] =
+      (List.to_seq [5;4;3;2;1;]
+      |> Seq.filteri (fun i _ -> i < 2)
+     |> List.of_seq));
+  ()
+;;
+
 (* unfold *)
 let () =
   let range first last =

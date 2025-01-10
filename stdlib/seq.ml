@@ -50,6 +50,17 @@ let rec filter f seq () = match seq() with
       then Cons (x, filter f next)
       else filter f next ()
 
+let rec filteri_aux f i seq () = match seq() with
+  | Nil -> Nil
+  | Cons (x, next) ->
+      let i' = i + 1 in
+      if f i x
+      then Cons (x, filteri_aux f i' next)
+      else filteri_aux f i' next ()
+
+let[@inline] filteri f seq () =
+  filteri_aux f 0 seq ()
+
 let rec concat seq () = match seq () with
   | Nil -> Nil
   | Cons (x, next) ->

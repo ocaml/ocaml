@@ -93,6 +93,9 @@ Working version
 
 ### Standard library:
 
+- #13729: Add Seq.filteri
+  (Tima Kinsart, review by Nicolás Ojeda Bär and Daniel Bünzli)
+
 - #13721: Add Result.retract
   (Daniel Bünzli, review by Gabriel Scherer)
 
