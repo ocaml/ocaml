@@ -93,11 +93,15 @@ Working version
 
 ### Standard library:
 
+- #13729: Add Either.retract
+  (Daniel Bünzli, review by Nicolás Ojeda Bär and David Allsopp)
+
 - #13729: Add Seq.filteri
   (Tima Kinsart, review by Nicolás Ojeda Bär and Daniel Bünzli)
 
 - #13721: Add Result.retract
-  (Daniel Bünzli, review by Gabriel Scherer)
+  (Daniel Bünzli, review by Gabriel Scherer, Nicolás Ojeda Bär and
+   David Allsopp)
 
 - #13695: Add Stdlib.Char.Ascii
   (Daniel Bünzli, review by by Nicolás Ojeda Bär and Jeremy Yallop)
