@@ -50,6 +50,10 @@ let fold ~left ~right = function
 | Left v -> left v
 | Right v -> right v
 
+let retract = function
+| Left v -> v
+| Right v -> v
+
 let iter = fold
 
 let for_all = fold

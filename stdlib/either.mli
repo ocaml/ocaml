@@ -92,6 +92,11 @@ val fold : left:('a -> 'c) -> right:('b -> 'c) -> ('a, 'b) t -> 'c
 (** [fold ~left ~right (Left v)] is [left v], and
     [fold ~left ~right (Right v)] is [right v]. *)
 
+val retract : ('a, 'a) t -> 'a
+(** [retract (Left v)] is [v], and [retract (Right v)] is [v].
+
+    @since 5.4 *)
+
 val iter : left:('a -> unit) -> right:('b -> unit) -> ('a, 'b) t -> unit
 (** [iter ~left ~right (Left v)] is [left v], and
     [iter ~left ~right (Right v)] is [right v]. *)
