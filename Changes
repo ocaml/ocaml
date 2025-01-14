@@ -122,6 +122,9 @@ Working version
   (Christophe Raffalli, review by Nicolás Ojeda Bär and Gabriel Scherer and
    Hugo Heuzard)
 
+- #13659: Add _exn variants of stdlib functions.
+  (Léo Andrès, review by ?)
+
 ### Other libraries:
 
 * #13376: Allow Dynlink.loadfile_private to load bytecode libraries with

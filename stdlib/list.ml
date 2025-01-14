@@ -34,13 +34,15 @@ let tl = function
     [] -> failwith "tl"
   | _::l -> l
 
-let nth l n =
+let nth_exn l n =
   if n < 0 then invalid_arg "List.nth" else
   let rec nth_aux l n =
     match l with
     | [] -> failwith "nth"
     | a::l -> if n = 0 then a else nth_aux l (n-1)
   in nth_aux l n
+
+let nth = nth_exn
 
 let nth_opt l n =
   if n < 0 then invalid_arg "List.nth" else
@@ -195,17 +197,21 @@ let rec memq x = function
     [] -> false
   | a::l -> a == x || memq x l
 
-let rec assoc x = function
+let rec assoc_exn x = function
     [] -> raise Not_found
-  | (a,b)::l -> if compare a x = 0 then b else assoc x l
+  | (a,b)::l -> if compare a x = 0 then b else assoc_exn x l
+
+let assoc = assoc_exn
 
 let rec assoc_opt x = function
     [] -> None
   | (a,b)::l -> if compare a x = 0 then Some b else assoc_opt x l
 
-let rec assq x = function
+let rec assq_exn x = function
     [] -> raise Not_found
-  | (a,b)::l -> if a == x then b else assq x l
+  | (a,b)::l -> if a == x then b else assq_exn x l
+
+let assq = assq_exn
 
 let rec assq_opt x = function
     [] -> None
@@ -228,9 +234,11 @@ let rec remove_assq x = function
   | [] -> []
   | (a, _ as pair) :: l -> if a == x then l else pair :: remove_assq x l
 
-let rec find p = function
+let rec find_exn p = function
   | [] -> raise Not_found
-  | x :: l -> if p x then x else find p l
+  | x :: l -> if p x then x else find_exn p l
+
+let find = find_exn
 
 let rec find_opt p = function
   | [] -> None

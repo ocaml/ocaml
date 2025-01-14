@@ -36,16 +36,22 @@ module type S =
     val cardinal: t -> int
     val elements: t -> elt list
     val min_elt: t -> elt
+    val min_elt_exn: t -> elt
     val min_elt_opt: t -> elt option
     val max_elt: t -> elt
+    val max_elt_exn: t -> elt
     val max_elt_opt: t -> elt option
     val choose: t -> elt
+    val choose_exn: t -> elt
     val choose_opt: t -> elt option
     val find: elt -> t -> elt
+    val find_exn: elt -> t -> elt
     val find_opt: elt -> t -> elt option
     val find_first: (elt -> bool) -> t -> elt
+    val find_first_exn: (elt -> bool) -> t -> elt
     val find_first_opt: (elt -> bool) -> t -> elt option
     val find_last: (elt -> bool) -> t -> elt
+    val find_last_exn: (elt -> bool) -> t -> elt
     val find_last_opt: (elt -> bool) -> t -> elt option
     val iter: (elt -> unit) -> t -> unit
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
@@ -174,20 +180,24 @@ module Make(Ord: OrderedType) =
 
     (* Smallest and greatest element of a set *)
 
-    let rec min_elt = function
+    let rec min_elt_exn = function
         Empty -> raise Not_found
       | Node{l=Empty; v} -> v
-      | Node{l} -> min_elt l
+      | Node{l} -> min_elt_exn l
+
+    let min_elt = min_elt_exn
 
     let rec min_elt_opt = function
         Empty -> None
       | Node{l=Empty; v} -> Some v
       | Node{l} -> min_elt_opt l
 
-    let rec max_elt = function
+    let rec max_elt_exn = function
         Empty -> raise Not_found
       | Node{v; r=Empty} -> v
-      | Node{r} -> max_elt r
+      | Node{r} -> max_elt_exn r
+
+    let max_elt = max_elt_exn
 
     let rec max_elt_opt = function
         Empty -> None
@@ -424,34 +434,40 @@ module Make(Ord: OrderedType) =
     let elements s =
       elements_aux [] s
 
-    let choose = min_elt
+    let choose_exn = min_elt
+
+    let choose = choose_exn
 
     let choose_opt = min_elt_opt
 
-    let rec find x = function
+    let rec find_exn x = function
         Empty -> raise Not_found
       | Node{l; v; r} ->
           let c = Ord.compare x v in
           if c = 0 then v
-          else find x (if c < 0 then l else r)
+          else find_exn x (if c < 0 then l else r)
 
-    let rec find_first_aux v0 f = function
+    let find = find_exn
+
+    let rec find_first_exn_aux v0 f = function
         Empty ->
           v0
       | Node{l; v; r} ->
           if f v then
-            find_first_aux v f l
+            find_first_exn_aux v f l
           else
-            find_first_aux v0 f r
+            find_first_exn_aux v0 f r
 
-    let rec find_first f = function
+    let rec find_first_exn f = function
         Empty ->
           raise Not_found
       | Node{l; v; r} ->
           if f v then
-            find_first_aux v f l
+            find_first_exn_aux v f l
           else
-            find_first f r
+            find_first_exn f r
+
+    let find_first = find_first_exn
 
     let rec find_first_opt_aux v0 f = function
         Empty ->
@@ -471,23 +487,25 @@ module Make(Ord: OrderedType) =
           else
             find_first_opt f r
 
-    let rec find_last_aux v0 f = function
+    let rec find_last_exn_aux v0 f = function
         Empty ->
           v0
       | Node{l; v; r} ->
           if f v then
-            find_last_aux v f r
+            find_last_exn_aux v f r
           else
-            find_last_aux v0 f l
+            find_last_exn_aux v0 f l
 
-    let rec find_last f = function
+    let rec find_last_exn f = function
         Empty ->
           raise Not_found
       | Node{l; v; r} ->
           if f v then
-            find_last_aux v f r
+            find_last_exn_aux v f r
           else
-            find_last f l
+            find_last_exn f l
+
+    let find_last = find_last_exn
 
     let rec find_last_opt_aux v0 f = function
         Empty ->

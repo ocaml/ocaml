@@ -25,7 +25,7 @@ frame 6: caml_main
 frame 7: main
 
 Breakpoint 3, ocaml_to_c (unit=1) at meander_c.c:XX
-4	value ocaml_to_c (value unit) {
+5	    caml_callback(*caml_named_value
 frame 0: ocaml_to_c
 frame 1: caml_c_call
 frame 2: camlMeander$omain
