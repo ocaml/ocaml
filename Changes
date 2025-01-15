@@ -70,6 +70,9 @@ Working version
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer, tests by
   Jan Midtgaard)
 
+- #13736: Fix major GC pacing bug triggered by synchronous collections.
+  (Nick Barnes, review by ?)
+
 ### Code generation and optimizations:
 
 * #13050: Use '$' instead of '.' to separate module names in symbol names.

@@ -669,6 +669,30 @@ static inline intnat diffmod (uintnat x1, uintnat x2)
   return (intnat) (x1 - x2);
 }
 
+/* Reset the work and alloc counters to be equal to each other, by
+ * setting them both equal to the "larger" (in the wrapping-around
+ * sense we are using here for work_counter and alloc_counter).
+ *
+ * For use at times when we have disturbed the major GC from its usual
+ * pacing and tempo, for example, after any synchronous major
+ * collection.
+ */
+
+void caml_reset_major_pacing(void)
+{
+  bool res;
+  do {
+    uintnat alloc = atomic_load(&alloc_counter);
+    uintnat work = atomic_load(&work_counter);
+    uintnat target = alloc;
+    if (diffmod(work, alloc) > 0) {
+      target = work;
+    }
+    res = (atomic_compare_exchange_strong(&alloc_counter, &alloc, target) &&
+           atomic_compare_exchange_strong(&work_counter, &work, target));
+  } while (!res);
+}
+
 /* The [log_events] parameter is used to disable writing to the ring for two
    reasons:
    1. To prevent spamming the ring with numerous events generated during
