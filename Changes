@@ -78,6 +78,9 @@ Working version
 
 ### Bug fixes:
 
+- #14492: Fix Obj.dup on closures.
+  (Mark Shinwell and Nick Barnes, review by Gabriel Scherer)
+
 OCaml 5.5.0
 -----------
 
