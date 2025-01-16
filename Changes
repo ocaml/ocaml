@@ -122,6 +122,10 @@ Working version
   (Christophe Raffalli, review by Nicolás Ojeda Bär and Gabriel Scherer and
    Hugo Heuzard)
 
+- #13737: Avoid closure allocations in Weak.Make.add when resizing the
+  table
+  (Vincent Laviron, review by Gabriel Scherer and Daniel Bünzli)
+
 ### Other libraries:
 
 * #13376: Allow Dynlink.loadfile_private to load bytecode libraries with
