@@ -239,35 +239,29 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let hashes = t.hashes.(index) in
     let sz = length bucket in
     let i = ref 0 in
-    let continue = ref true in
-    while !continue do
-      if !i >= sz then begin
-        continue := false;
-        let newsz =
-          Int.min (3 * sz / 2 + 3) (Sys.max_array_length - additional_values)
-        in
-        if newsz <= sz then failwith "Weak.Make: hash bucket cannot grow more";
-        let newbucket = weak_create newsz in
-        let newhashes = Array.make newsz 0 in
-        blit bucket 0 newbucket 0 sz;
-        Array.blit hashes 0 newhashes 0 sz;
-        setter newbucket sz d;
-        newhashes.(sz) <- h;
-        t.table.(index) <- newbucket;
-        t.hashes.(index) <- newhashes;
-        if sz <= t.limit && newsz > t.limit then begin
-          t.oversize <- t.oversize + 1;
-          for _i = 0 to over_limit do test_shrink_bucket t done;
-        end;
-        if t.oversize > Array.length t.table / over_limit then resize t;
-      end else if check bucket !i then begin
-        incr i
-      end else begin
-        continue := false;
-        setter bucket !i d;
-        hashes.(!i) <- h;
+    while !i < sz && check bucket !i do incr i done;
+    if !i >= sz then begin
+      let newsz =
+        Int.min (3 * sz / 2 + 3) (Sys.max_array_length - additional_values)
+      in
+      if newsz <= sz then failwith "Weak.Make: hash bucket cannot grow more";
+      let newbucket = weak_create newsz in
+      let newhashes = Array.make newsz 0 in
+      blit bucket 0 newbucket 0 sz;
+      Array.blit hashes 0 newhashes 0 sz;
+      setter newbucket sz d;
+      newhashes.(sz) <- h;
+      t.table.(index) <- newbucket;
+      t.hashes.(index) <- newhashes;
+      if sz <= t.limit && newsz > t.limit then begin
+        t.oversize <- t.oversize + 1;
+        for _i = 0 to over_limit do test_shrink_bucket t done;
       end;
-    done
+      if t.oversize > Array.length t.table / over_limit then resize t;
+    end else begin
+      setter bucket !i d;
+      hashes.(!i) <- h;
+    end
 
   let add t d =
     let h = H.hash d in
