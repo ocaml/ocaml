@@ -816,6 +816,7 @@ stdlib__Unit.cmx : unit.ml \
 stdlib__Unit.cmi : unit.mli
 stdlib__Weak.cmo : weak.ml \
     stdlib__Sys.cmi \
+    stdlib__Option.cmi \
     stdlib__Obj.cmi \
     stdlib__Int.cmi \
     stdlib__Hashtbl.cmi \
@@ -823,6 +824,7 @@ stdlib__Weak.cmo : weak.ml \
     stdlib__Weak.cmi
 stdlib__Weak.cmx : weak.ml \
     stdlib__Sys.cmx \
+    stdlib__Option.cmx \
     stdlib__Obj.cmx \
     stdlib__Int.cmx \
     stdlib__Hashtbl.cmx \
