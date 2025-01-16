@@ -238,8 +238,11 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let bucket = t.table.(index) in
     let hashes = t.hashes.(index) in
     let sz = length bucket in
-    let rec loop i =
-      if i >= sz then begin
+    let i = ref 0 in
+    let continue = ref true in
+    while !continue do
+      if !i >= sz then begin
+        continue := false;
         let newsz =
           Int.min (3 * sz / 2 + 3) (Sys.max_array_length - additional_values)
         in
@@ -257,15 +260,14 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
           for _i = 0 to over_limit do test_shrink_bucket t done;
         end;
         if t.oversize > Array.length t.table / over_limit then resize t;
-      end else if check bucket i then begin
-        loop (i + 1)
+      end else if check bucket !i then begin
+        incr i
       end else begin
-        setter bucket i d;
-        hashes.(i) <- h;
+        continue := false;
+        setter bucket !i d;
+        hashes.(!i) <- h;
       end;
-    in
-    loop 0
-
+    done
 
   let add t d =
     let h = H.hash d in
