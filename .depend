@@ -114,7 +114,6 @@ utils/diffing.cmx : \
     utils/format_doc.cmx \
     utils/diffing.cmi
 utils/diffing.cmi : \
-    utils/misc.cmi \
     utils/format_doc.cmi
 utils/diffing_with_keys.cmo : \
     utils/misc.cmi \
