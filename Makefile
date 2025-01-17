@@ -75,6 +75,7 @@ utils_SOURCES = $(addprefix utils/, \
   diagnostic_validation.mli diagnostic_validation.ml \
   log.mli log.ml \
   compiler_diagnostic.mli compiler_diagnostic.ml \
+  diagnostic_backends.mli diagnostic_backends.ml \
   clflags.mli clflags.ml \
   profile.mli profile.ml \
   terminfo.mli terminfo.ml \
