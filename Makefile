@@ -1064,8 +1064,6 @@ natruntop:
 
 dynlink_SOURCES = $(addprefix otherlibs/dynlink/,\
   dynlink_config.mli dynlink_config.ml \
-  dynlink_types.mli dynlink_types.ml \
-  dynlink_platform_intf.mli dynlink_platform_intf.ml \
   dynlink_common.mli dynlink_common.ml \
   byte/dynlink_symtable.mli byte/dynlink_symtable.ml \
   byte/dynlink.mli byte/dynlink.ml \
@@ -2791,8 +2789,7 @@ endif
 	rm -f $(addprefix ocamltest/,ocamltest_config.ml ocamltest_unix.ml)
 	rm -f otherlibs/dynlink/META otherlibs/dynlink/dynlink_config.ml \
 	  otherlibs/dynlink/dynlink_cmo_format.mli \
-	  otherlibs/dynlink/dynlink_cmxs_format.mli \
-	  otherlibs/dynlink/dynlink_platform_intf.mli
+	  otherlibs/dynlink/dynlink_cmxs_format.mli
 	$(MAKE) -C otherlibs distclean
 	rm -f $(runtime_CONFIGURED_HEADERS) runtime/ld.conf
 	rm -rf runtime/api-testing

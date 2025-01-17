@@ -22,7 +22,6 @@ module Config = Dynlink_config
 open Dynlink_cmxs_format
 
 module DC = Dynlink_common
-module DT = Dynlink_types
 
 type global_map = {
   name : string;
@@ -79,7 +78,7 @@ module Native = struct
         let implementation =
           match crc_impl with
           | None -> None
-          | Some _ as crco -> Some (crco, DT.Check_inited !rank)
+          | Some _ as crco -> Some (crco, DC.Check_inited !rank)
         in
         f acc ~compunit:name ~interface:crc_intf
             ~implementation ~defined_symbols:syms)
@@ -94,7 +93,7 @@ module Native = struct
         begin try
           ndl_register handle.ndl_handle (Array.of_list syms);
         with exn ->
-          raise (DT.Error (Cannot_open_dynamic_library exn))
+          raise (DC.Error (Cannot_open_dynamic_library exn))
         end;
         ndl_run handle.ndl_handle "_shared_startup"
 
@@ -104,18 +103,18 @@ module Native = struct
         try ndl_run handle.ndl_handle cu
         with exn ->
           Printexc.raise_with_backtrace
-            (DT.Error (Library's_module_initializers_failed exn))
+            (DC.Error (Library's_module_initializers_failed exn))
             (Printexc.get_raw_backtrace ()))
       (Unit_header.defined_symbols unit_header)
 
   let load ~filename ~priv =
     let ndl_handle, header =
       try ndl_open filename (not priv)
-      with exn -> raise (DT.Error (Cannot_open_dynamic_library exn))
+      with exn -> raise (DC.Error (Cannot_open_dynamic_library exn))
     in
     if header.dynu_magic <> Config.cmxs_magic_number then begin
       ndl_close ndl_handle;
-      raise (DT.Error (Not_a_bytecode_file filename))
+      raise (DC.Error (Not_a_bytecode_file filename))
     end;
     let syms =
       "_shared_startup" ::
@@ -137,12 +136,12 @@ end
 
 include DC.Make (Native)
 
-type linking_error = DT.linking_error =
+type linking_error = DC.linking_error =
   | Undefined_global of string
   | Unavailable_primitive of string
   | Uninitialized_global of string
 
-type error = DT.error =
+type error = DC.error =
   | Not_a_bytecode_file of string
   | Inconsistent_import of string
   | Unavailable_unit of string
@@ -155,5 +154,5 @@ type error = DT.error =
   | Module_already_loaded of string
   | Private_library_cannot_implement_interface of string
 
-exception Error = DT.Error
-let error_message = DT.error_message
+exception Error = DC.Error
+let error_message = DC.error_message

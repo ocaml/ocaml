@@ -1000,7 +1000,6 @@ m4_define([dldir], [otherlibs/dynlink])
 AC_CONFIG_LINKS(
   dldir[/dynlink_cmo_format.mli:file_formats/cmo_format.mli]
   dldir[/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli]
-  dldir[/dynlink_platform_intf.mli:]dldir[/dynlink_platform_intf.ml]
 )
 m4_undefine([dldir])
 lib_runtime_events=true
