@@ -60,16 +60,19 @@ let ()  =
     while !sz <= 0 do push big l; sz += Sys.max_string_length done;
     try ignore (String.concat "" !l); assert false
     with Invalid_argument _ -> ();
-    assert(String.starts_with ~prefix:"foob" "foobarbaz");
-    assert(String.starts_with ~prefix:"" "foobarbaz");
-    assert(String.starts_with ~prefix:"" "");
-    assert(not (String.starts_with ~prefix:"foobar" "bar"));
-    assert(not (String.starts_with ~prefix:"foo" ""));
-    assert(not (String.starts_with ~prefix:"fool" "foobar"));
-    assert(String.ends_with ~suffix:"baz" "foobarbaz");
-    assert(String.ends_with ~suffix:"" "foobarbaz");
-    assert(String.ends_with ~suffix:"" "");
-    assert(not (String.ends_with ~suffix:"foobar" "bar"));
-    assert(not (String.ends_with ~suffix:"foo" ""));
-    assert(not (String.ends_with ~suffix:"obaz" "foobar"));
   end
+
+let () =
+  assert(String.starts_with ~prefix:"foob" "foobarbaz");
+  assert(String.starts_with ~prefix:"" "foobarbaz");
+  assert(String.starts_with ~prefix:"" "");
+  assert(not (String.starts_with ~prefix:"foobar" "bar"));
+  assert(not (String.starts_with ~prefix:"foo" ""));
+  assert(not (String.starts_with ~prefix:"fool" "foobar"));
+  assert(String.ends_with ~suffix:"baz" "foobarbaz");
+  assert(String.ends_with ~suffix:"" "foobarbaz");
+  assert(String.ends_with ~suffix:"" "");
+  assert(not (String.ends_with ~suffix:"foobar" "bar"));
+  assert(not (String.ends_with ~suffix:"foo" ""));
+  assert(not (String.ends_with ~suffix:"obaz" "foobar"));
+;;
