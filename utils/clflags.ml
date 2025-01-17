@@ -435,6 +435,43 @@ let error_style_reader = {
   env_var = "OCAML_ERROR_STYLE";
 }
 
+let log_format = ref None
+let log_format_reader = {
+  parse = (function
+      | "stdout" -> Some Diagnostic_backends.fmt
+      | "json" -> Some Diagnostic_backends.json
+      | "sexp" -> Some Diagnostic_backends.sexp
+      | _ -> None
+    );
+  print = (fun x -> x.Diagnostic_backends.name);
+  usage={|expected "stdout", "json", or "sexp"|};
+  env_var = "OCAML_LOG_FORMAT"
+}
+
+let log_version = ref None
+let log_version_reader =
+  let parse s =
+    Scanf.sscanf_opt s "%d.%d"
+      (fun major minor -> Diagnostic_history.version ~minor ~major)
+  in
+  {
+    parse;
+    print = (Format.asprintf "%a" Diagnostic_history.pp);
+    usage={|expected "%d.%d"|};
+    env_var = "OCAML_LOG_VERSION"
+  }
+
+let log_file = ref None
+let log_file_reader =
+  {
+    parse = (fun x -> Some x);
+    print = Fun.id;
+    usage={|expected "filename"|};
+    env_var = "OCAML_LOG_FILE"
+  }
+
+
+
 let unboxed_types = ref false
 
 (* This is used by the -save-ir-after option. *)
@@ -809,3 +846,24 @@ let create_usage_msg program =
 
 let print_arguments program =
   Arg.usage !arg_spec (create_usage_msg program)
+
+
+let create_log_device ppf =
+  match !log_file with
+  | None -> Log.Device.make (ref ppf)
+  | Some f ->
+      let out = Out_channel.open_text f in
+      let on_close () = Out_channel.close out in
+      let ppf = Format.formatter_of_out_channel out in
+      Log.Device.make ~on_close (ref ppf)
+
+let create_log ~default_backend history scheme device =
+  let current_version = Diagnostic_history.current_version history in
+  let version = match !log_version with
+    | None -> Diagnostic_validation.Downward_compatible current_version
+    | Some v -> Diagnostic_validation.Exact v
+  in
+  let backend =
+    Option.value ~default:default_backend !log_format
+  in
+  backend.Diagnostic_backends.make ?color:!color ~version ~device scheme

@@ -243,7 +243,7 @@ let execute_phrase print_outcome ppf phr =
         begin match out_phr with
         | Ophr_signature [] -> ()
         | _ ->
-            Location.separate_new_message ppf;
+            Location.separate_new_message' ppf;
             Format_doc.compat !print_out_phrase ppf out_phr;
         end;
         begin match out_phr with

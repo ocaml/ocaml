@@ -634,6 +634,36 @@ let mk_error_style f =
     \  If the option is not specified, these setting can alternatively\n\
     \  be set through the OCAML_ERROR_STYLE environment variable."
 
+let mk_log_format f =
+  "-log-format", Arg.Symbol (["stdout"; "sexp"; "json"], f),
+  Printf.sprintf
+    "<format>  Control the way error messages and warnings are printed\n\
+    \    The following formats are supported:\n\
+    \      stdout      classic mode\n\
+    \      json        json object\n\
+    \      sexp        s-expression\n\
+    \    The default setting is 'fmt'.\n\
+    \  If the option is not specified, these setting can alternatively\n\
+    \  be set through the OCAML_LOG_FORMAT environment variable."
+
+let mk_log_version f =
+  "-log-version", Arg.String f,
+  Printf.sprintf
+    "<version>  Control the way compiler diagnostics are printed.\n\
+    \    The compiler restricts the schema of the printed diagnostics to the\n\
+    \    required possibly older version. Previous minor versions are fully\n\
+    \    supported. Only the previous major version is partially supported.\n\
+    \  If the option is not specified, these setting can alternatively\n\
+    \  be set through the OCAML_LOG_VERSION environment variable."
+
+let mk_log_file f =
+  "-log-file", Arg.String f,
+  Printf.sprintf
+    "<filename>  Output compiler diagnostics to <filename>.\n
+    \  If the option is not specified, these setting can alternatively\n\
+    \  be set through the OCAML_LOG_FILE environment variable."
+
+
 let mk_where f =
   "-where", Arg.Unit f, " Print location of standard library and exit"
 
@@ -885,6 +915,9 @@ module type Core_options = sig
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
 
+  val _log_format: string -> unit
+  val _log_version: string -> unit
+  val _log_file: string -> unit
 end
 
 module type Compiler_options = sig
@@ -1103,6 +1136,9 @@ struct
     mk_cmi_file F._cmi_file;
     mk_color F._color;
     mk_error_style F._error_style;
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
     mk_compat_32 F._compat_32;
     mk_config F._config;
     mk_config_var F._config_var;
@@ -1272,6 +1308,9 @@ struct
     mk__ F.anonymous;
     mk_color F._color;
     mk_error_style F._error_style;
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
 
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
@@ -1317,6 +1356,9 @@ struct
     mk_classic_inlining F._classic_inlining;
     mk_color F._color;
     mk_error_style F._error_style;
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
     mk_compact F._compact;
     mk_config F._config;
     mk_config_var F._config_var;
@@ -1546,7 +1588,9 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk__ F.anonymous;
     mk_color F._color;
     mk_error_style F._error_style;
-
+    mk_log_format F._log_format;
+    mk_log_version F._log_version;
+    mk_log_file F._log_file;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dparsetree_loc_ghost_invariants F._dparsetree_loc_ghost_invariants;
@@ -1737,6 +1781,9 @@ module Default = struct
     let _dno_locations = clear locations
     let _error_style =
       Misc.set_or_ignore error_style_reader.parse error_style
+    let _log_format = Misc.set_or_ignore log_format_reader.parse log_format
+    let _log_version = Misc.set_or_ignore log_version_reader.parse log_version
+    let _log_file = Misc.set_or_ignore log_file_reader.parse log_file
     let _nopervasives = set nopervasives
     let _ppx s = Compenv.first_ppx := (s :: (!Compenv.first_ppx))
     let _keywords s = Clflags.keyword_edition := (Some s)
