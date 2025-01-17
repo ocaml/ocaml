@@ -18,8 +18,7 @@
 open Dynlink_cmo_format
 
 module Compunit : sig
-  type t = compunit
-  val name : t -> string
+  val name : compunit -> string
   val is_packed : compunit -> bool
 end
 
@@ -28,7 +27,6 @@ module Global : sig
     | Glob_compunit of compunit
     | Glob_predef of predef
   val name: t -> string
-  val description: Format.formatter -> t -> unit
 end
 
 val open_dlls : (suffixed:bool * string) list -> unit
@@ -50,13 +48,3 @@ val empty_global_map: global_map
 val current_state: unit -> global_map
 val hide_additions: global_map -> unit
 val is_defined_in_global_map: global_map -> Global.t -> bool
-
-(* Error report *)
-
-type error =
-    Undefined_global of Global.t
-  | Unavailable_primitive of string
-  | Wrong_vm of string
-  | Uninitialized_global of Global.t
-
-exception Error of error

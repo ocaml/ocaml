@@ -10973,6 +10973,7 @@ otherlibs/dynlink/byte/dynlink.cmo : \
 otherlibs/dynlink/byte/dynlink.cmi :
 otherlibs/dynlink/byte/dynlink_symtable.cmo : \
     otherlibs/dynlink/dynlink_config.cmi \
+    otherlibs/dynlink/dynlink_common.cmi \
     otherlibs/dynlink/dynlink_cmo_format.cmi \
     otherlibs/dynlink/byte/dynlink_symtable.cmi
 otherlibs/dynlink/byte/dynlink_symtable.cmi : \

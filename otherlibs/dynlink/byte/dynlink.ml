@@ -132,18 +132,8 @@ module Bytecode = struct
           Symtable.patch_object code compunit.cu_reloc;
           Symtable.check_global_initialized compunit.cu_reloc;
           Symtable.update_global_table ()
-        with Symtable.Error error ->
-          let new_error : DC.linking_error =
-            match error with
-            | Symtable.Undefined_global global ->
-              let desc = Symtable.Global.description in
-              Undefined_global (Format.asprintf "%a" desc global)
-            | Symtable.Unavailable_primitive s -> Unavailable_primitive s
-            | Symtable.Uninitialized_global global ->
-              Uninitialized_global (Symtable.Global.name global)
-            | Symtable.Wrong_vm _ -> assert false
-          in
-          raise (DC.Error (Linking_error (file_name, new_error)))
+        with DC.Error (Linking_error (_, error)) ->
+          raise (DC.Error (Linking_error (file_name, error)))
         end;
         (* PR#5215: identify this code fragment by
            digest of file contents + unit name.
@@ -235,8 +225,12 @@ end
 
 include DC.Make (Bytecode)
 
+type global = DC.global =
+  | Compilation_unit of string
+  | Predefined_exception of string
+
 type linking_error = DC.linking_error =
-  | Undefined_global of string
+  | Undefined_global of global
   | Unavailable_primitive of string
   | Uninitialized_global of string
 
