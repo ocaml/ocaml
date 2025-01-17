@@ -159,7 +159,7 @@ let execute_phrase print_outcome ppf phr =
         | Ophr_signature [] -> ()
         | _ ->
             Location.separate_new_message ppf;
-            !print_out_phrase ppf out_phr;
+            Format_doc.compat !print_out_phrase ppf out_phr;
         end;
         if Printexc.backtrace_status ()
         then begin
@@ -236,7 +236,7 @@ let load_compunit ic filename ppf compunit =
     record_backtrace ();
     may_trace := false;
     Symtable.restore_state initial_symtable;
-    print_exception_outcome ppf exn;
+    Format_doc.compat print_exception_outcome ppf exn;
     raise Load_failed
   end
 
