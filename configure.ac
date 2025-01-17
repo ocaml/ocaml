@@ -72,7 +72,6 @@ instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
 flexdll_dir=
-lib_dynlink=false
 lib_str=false
 lib_systhreads=false
 lib_unix=false
@@ -192,8 +191,6 @@ AC_SUBST([AR])
 AC_SUBST([mklib])
 AC_SUBST([supports_shared_libraries])
 AC_SUBST([natdynlink])
-AC_SUBST([natdynlinkopts])
-AC_SUBST([natdynlink_archive])
 AC_SUBST([cmxs])
 AC_SUBST([debug_runtime])
 AC_SUBST([codegen_invariants])
@@ -201,7 +198,6 @@ AC_SUBST([instrumented_runtime])
 AC_SUBST([instrumented_runtime_libs])
 AC_SUBST([otherlibraries])
 AC_SUBST([otherlibs])
-AC_SUBST([lib_dynlink])
 AC_SUBST([lib_runtime_events])
 AC_SUBST([lib_str])
 AC_SUBST([lib_systhreads])
@@ -280,7 +276,6 @@ AC_CONFIG_HEADERS([runtime/caml/m.h])
 AC_CONFIG_HEADERS([runtime/caml/s.h])
 AC_CONFIG_HEADERS([runtime/caml/version.h])
 AC_CONFIG_FILES([compilerlibs/META])
-AC_CONFIG_FILES([otherlibs/dynlink/META])
 AC_CONFIG_FILES([otherlibs/runtime_events/META])
 AC_CONFIG_FILES([stdlib/META])
 
@@ -798,11 +793,9 @@ AS_CASE([$target],
     [exeext=".exe"],
   [exeext=''])
 
-otherlibraries="dynlink runtime_events"
+otherlibraries="runtime_events"
 otherlibs="runtime_events"
-optional_libraries="$optional_libraries otherlibs/dynlink/dynlink"
-lib_dynlink=true
-dldir=otherlibs/dynlink
+optional_libraries="$optional_libraries"
 lib_runtime_events=true
 AS_IF([test x"$enable_unix_lib" != "xno"],
   [enable_unix_lib=yes
@@ -1352,7 +1345,6 @@ mkdll='shared-libs-not-available'
 mkdll_exp='shared-libs-not-available'
 rpath=''
 mksharedlibrpath=''
-natdynlinkopts=""
 
 AS_IF([test x"$enable_shared" != "xno"],
   [mkdll=''
@@ -1398,7 +1390,6 @@ AS_IF([test x"$enable_shared" != "xno"],
       oc_ldflags="$oc_ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
-      natdynlinkopts="-Wl,-E"
       supports_shared_libraries=true],
       [mkdll='shared-libs-not-available'])
   AS_IF([test -z "$mkdll"],
@@ -1414,15 +1405,13 @@ AS_IF([test -z "$mkmaindll"],
 
 AS_CASE([$target],
   [[*-*-openbsd7.[3-9]|*-*-openbsd[89].*]],
-    [oc_ldflags="$oc_ldflags -Wl,--no-execute-only"
-     natdynlinkopts="$natdynlinkopts -Wl,--no-execute-only"])
+    [oc_ldflags="$oc_ldflags -Wl,--no-execute-only"])
 
 # Disable control flow integrity
 
 AS_CASE([$target],
   [[*-*-openbsd7.[4-9]|*-*-openbsd[89].*]],
-    [oc_ldflags="$oc_ldflags -Wl,-z,nobtcfi"
-     natdynlinkopts="$natdynlinkopts -Wl,-z,nobtcfi"])
+    [oc_ldflags="$oc_ldflags -Wl,-z,nobtcfi"])
 
 
 # Configure native dynlink
@@ -1618,9 +1607,6 @@ AS_IF([$native_compiler],
 AS_IF([! $native_compiler], [natdynlink=false])
 
 AS_IF([$natdynlink], [cmxs="cmxs"], [cmxs="cmx"])
-AS_IF([$natdynlink],
-  [natdynlink_archive="dynlink.cmxa"],
-  [natdynlink_archive=""])
 
 AS_CASE([$enable_native_toplevel,$natdynlink],
   [yes,false],

@@ -254,6 +254,8 @@ stdlib__Dynarray.cmx : dynarray.ml \
     stdlib__Dynarray.cmi
 stdlib__Dynarray.cmi : dynarray.mli \
     stdlib__Seq.cmi
+stdlib__Dynlink.cmi : dynlink.mli \
+    stdlib__Obj.cmi
 stdlib__Effect.cmo : effect.ml \
     stdlib__Printf.cmi \
     stdlib__Printexc.cmi \
@@ -832,6 +834,45 @@ stdlib__Weak.cmx : weak.ml \
     stdlib__Weak.cmi
 stdlib__Weak.cmi : weak.mli \
     stdlib__Hashtbl.cmi
+stdlib__Dynlink.cmo : byte/dynlink.ml \
+    stdlib__Sys.cmi \
+    stdlib__String.cmi \
+    stdlib__Set.cmi \
+    stdlib__Printf.cmi \
+    stdlib__Printexc.cmi \
+    stdlib__Option.cmi \
+    stdlib__Obj.cmi \
+    stdlib__Mutex.cmi \
+    stdlib__Map.cmi \
+    stdlib__List.cmi \
+    stdlib__Lazy.cmi \
+    stdlib__In_channel.cmi \
+    stdlib__Hashtbl.cmi \
+    stdlib__Fun.cmi \
+    stdlib__Format.cmi \
+    stdlib__Filename.cmi \
+    stdlib__Digest.cmi \
+    stdlib__Char.cmi \
+    stdlib__Bigarray.cmi \
+    stdlib__Array.cmi \
+    stdlib__Dynlink.cmi
+stdlib__Dynlink.cmx : native/dynlink.ml \
+    stdlib__Sys.cmx \
+    stdlib__String.cmx \
+    stdlib__Set.cmx \
+    stdlib__Printf.cmx \
+    stdlib__Printexc.cmx \
+    stdlib__Obj.cmx \
+    stdlib__Mutex.cmx \
+    stdlib__Map.cmx \
+    stdlib__List.cmx \
+    stdlib__Lazy.cmx \
+    stdlib__Fun.cmx \
+    stdlib__Format.cmx \
+    stdlib__Filename.cmx \
+    stdlib__Digest.cmx \
+    stdlib__Array.cmx \
+    stdlib__Dynlink.cmi
 stdlib.cmo : \
     camlinternalFormatBasics.cmi \
     stdlib.cmi

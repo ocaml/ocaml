@@ -1,5 +1,4 @@
 (* TEST
- include dynlink;
  readonly_files = "test3_plugin_a.ml test3_plugin_b.ml";
  libraries = "";
  shared-libraries;
@@ -23,7 +22,6 @@
 
    program = "${test_build_directory}/test3.byte";
    unset flags;
-   libraries = "dynlink";
    all_modules = "test3_main.cmo";
    ocamlc.byte;
    run;
@@ -48,7 +46,6 @@
 
    unset flags;
    program = "${test_build_directory}/test3.exe";
-   libraries = "dynlink";
    all_modules = "test3_main.cmx";
    ocamlopt.byte;
    run;

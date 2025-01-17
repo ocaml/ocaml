@@ -7713,7 +7713,6 @@ toplevel/native/topeval.cmo : \
     typing/includemod.cmi \
     typing/ident.cmi \
     typing/env.cmi \
-    otherlibs/dynlink/dynlink.cmi \
     utils/config.cmi \
     driver/compmisc.cmi \
     middle_end/compilenv.cmi \
@@ -7741,7 +7740,6 @@ toplevel/native/topeval.cmx : \
     typing/includemod.cmx \
     typing/ident.cmx \
     typing/env.cmx \
-    otherlibs/dynlink/dynlink.cmx \
     utils/config.cmx \
     driver/compmisc.cmx \
     middle_end/compilenv.cmx \
@@ -7758,7 +7756,6 @@ toplevel/native/tophooks.cmo : \
     lambda/lambda.cmi \
     middle_end/flambda/import_approx.cmi \
     middle_end/flambda/flambda_middle_end.cmi \
-    otherlibs/dynlink/dynlink.cmi \
     utils/config.cmi \
     middle_end/compilenv.cmi \
     middle_end/closure/closure_middle_end.cmi \
@@ -7775,7 +7772,6 @@ toplevel/native/tophooks.cmx : \
     lambda/lambda.cmx \
     middle_end/flambda/import_approx.cmx \
     middle_end/flambda/flambda_middle_end.cmx \
-    otherlibs/dynlink/dynlink.cmx \
     utils/config.cmx \
     middle_end/compilenv.cmx \
     middle_end/closure/closure_middle_end.cmx \
@@ -8526,7 +8522,6 @@ debugger/loadprinter.cmo : \
     typing/ident.cmi \
     utils/format_doc.cmi \
     typing/env.cmi \
-    otherlibs/dynlink/dynlink.cmi \
     typing/ctype.cmi \
     file_formats/cmo_format.cmi \
     debugger/loadprinter.cmi
@@ -8544,13 +8539,11 @@ debugger/loadprinter.cmx : \
     typing/ident.cmx \
     utils/format_doc.cmx \
     typing/env.cmx \
-    otherlibs/dynlink/dynlink.cmx \
     typing/ctype.cmx \
     file_formats/cmo_format.cmi \
     debugger/loadprinter.cmi
 debugger/loadprinter.cmi : \
-    parsing/longident.cmi \
-    otherlibs/dynlink/dynlink.cmi
+    parsing/longident.cmi
 debugger/main.cmo : \
     debugger/unix_tools.cmi \
     otherlibs/unix/unix.cmi \
@@ -8892,7 +8885,6 @@ ocamldoc/odoc.cmo : \
     ocamldoc/odoc_config.cmi \
     ocamldoc/odoc_args.cmi \
     ocamldoc/odoc_analyse.cmi \
-    otherlibs/dynlink/dynlink.cmi \
     ocamldoc/odoc.cmi
 ocamldoc/odoc.cmx : \
     ocamldoc/odoc_messages.cmx \
@@ -8902,7 +8894,6 @@ ocamldoc/odoc.cmx : \
     ocamldoc/odoc_config.cmx \
     ocamldoc/odoc_args.cmx \
     ocamldoc/odoc_analyse.cmx \
-    otherlibs/dynlink/dynlink.cmx \
     ocamldoc/odoc.cmi
 ocamldoc/odoc.cmi :
 ocamldoc/odoc_analyse.cmo : \
@@ -10590,9 +10581,3 @@ testsuite/tools/parsecmmaux.cmi : \
     parsing/location.cmi \
     lambda/debuginfo.cmi \
     middle_end/backend_var.cmi
-otherlibs/dynlink/byte/dynlink.cmo : \
-    otherlibs/dynlink/byte/dynlink.cmi
-otherlibs/dynlink/byte/dynlink.cmi :
-otherlibs/dynlink/dynlink.cmi :
-otherlibs/dynlink/native/dynlink.cmx : \
-    otherlibs/dynlink/native/dynlink.cmi

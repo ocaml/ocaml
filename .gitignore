@@ -212,10 +212,6 @@ META
 /opt/**
 
 /otherlibs/*/.dep
-/otherlibs/dynlink/byte/dynlink.mli
-/otherlibs/dynlink/byte/dynlink.ml
-/otherlibs/dynlink/native/dynlink.mli
-/otherlibs/dynlink/native/dynlink.ml
 /otherlibs/unix/unix.ml
 
 /parsing/parser.ml
@@ -253,6 +249,10 @@ META
 /stdlib/runtime-launch-info
 /stdlib/labelled-*
 /stdlib/caml
+/stdlib/byte/dynlink.mli
+/stdlib/byte/dynlink.ml
+/stdlib/native/dynlink.mli
+/stdlib/native/dynlink.ml
 /stdlib/sys.ml
 /stdlib/target_runtime.info
 /stdlib/target_runtime-launch-info

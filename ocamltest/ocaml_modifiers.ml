@@ -84,11 +84,6 @@ let tool_ocaml_lib = make_module_modifier
 let unix = make_library_modifier
   "unix" [compiler_subdir ["otherlibs"; "unix"]]
 
-let dynlink =
-  make_library_modifier "dynlink"
-    [compiler_subdir ["otherlibs"; "dynlink"];
-     compiler_subdir ["otherlibs"; "dynlink"; "native"]]
-
 let str = make_library_modifier
   "str" [compiler_subdir ["otherlibs"; "str"]]
 
@@ -130,7 +125,6 @@ let _ =
   register_modifiers "config" config;
   register_modifiers "testing" testing;
   register_modifiers "unix" unix;
-  register_modifiers "dynlink" dynlink;
   register_modifiers "str" str;
   List.iter
     (fun archive -> register_modifiers archive (compilerlibs_archive archive))

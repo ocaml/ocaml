@@ -47,7 +47,6 @@ build_ocamltest = @build_ocamltest@
 
 build_ocamltex = @build_ocamltex@
 
-lib_dynlink = @lib_dynlink@
 lib_runtime_events = @lib_runtime_events@
 lib_str = @lib_str@
 lib_systhreads = @lib_systhreads@

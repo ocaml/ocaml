@@ -1,6 +1,8 @@
 \chapter{The dynlink library: dynamic loading and linking of object files}
 %HEVEA\cutname{libdynlink.html}
 
+% TODO Move this to old.etex; remove it completely; update it?
+
 The "dynlink" library supports type-safe dynamic loading and linking
 of bytecode object files (".cmo" and ".cma" files) in a running
 bytecode program, or of native plugins (usually ".cmxs" files) in a

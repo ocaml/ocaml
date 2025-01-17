@@ -1,5 +1,4 @@
 (* TEST
- include dynlink;
  readonly_files = "entry.c main.cs plugin.ml";
  csharp-compiler;
  set csharp_cmd = "${csc} ${csc_flags} /out:main.exe main.cs";

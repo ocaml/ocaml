@@ -35,6 +35,7 @@ case $1 in
   *Labels.cm[ox]) echo ' -nolabels -no-alias-deps';;
   stdlib__Float.cm[ox]) echo ' -nolabels -no-alias-deps';;
   stdlib__Oo.cmi) echo ' -no-principal';;
+  stdlib__Dynlink.cm[ox]) echo ' -w -40';;
     # preserve structure sharing in Oo.copy (PR#9767)
   *) echo ' ';;
 esac

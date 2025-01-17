@@ -15,7 +15,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Dynamic loading of .cmo, .cma and .cmxs files. *)
+(** Dynamic loading of .cmo, .cma and .cmxs files.
+
+   @since 5.4 Part of the Standard Library. *)
 
 val is_native : bool
 (** [true] if the program is native,

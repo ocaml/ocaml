@@ -1,4 +1,4 @@
-#2 "otherlibs/dynlink/dynlink_common.ml.in"
+#2 "dynlink_common.ml.in"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)

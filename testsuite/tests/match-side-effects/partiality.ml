@@ -40,19 +40,19 @@ Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled as
   exception. This typically occurs due to complex matches on mutable fields.
   (see manual section 13.5.5)
 (let
-  (f/281 =
-     (function x/283 : int
-       (if (field_int 0 x/283)
-         (let (*match*/287 =o (field_mut 1 x/283))
-           (if *match*/287
-             (if (seq (setfield_ptr 1 x/283 0) 0) 2
-               (let (*match*/288 =o (field_mut 1 x/283))
-                 (if *match*/288 (field_imm 0 *match*/288)
+  (f/282 =
+     (function x/284 : int
+       (if (field_int 0 x/284)
+         (let (*match*/288 =o (field_mut 1 x/284))
+           (if *match*/288
+             (if (seq (setfield_ptr 1 x/284 0) 0) 2
+               (let (*match*/289 =o (field_mut 1 x/284))
+                 (if *match*/289 (field_imm 0 *match*/289)
                    (raise
                      (makeblock 0 (global Match_failure/20!) [0: "" 4 2])))))
              1))
          0)))
-  (apply (field_mut 1 (global Toploop!)) "f" f/281))
+  (apply (field_mut 1 (global Toploop!)) "f" f/282))
 
 val f : t -> int = <fun>
 |}]
@@ -73,11 +73,11 @@ let simple x =
 0
 type t = { a : bool; mutable b : int option; }
 (let
-  (simple/292 =
-     (function x/294 : int
-       (let (*match*/297 =o (field_mut 1 x/294))
-         (if *match*/297 (field_imm 0 *match*/297) 1))))
-  (apply (field_mut 1 (global Toploop!)) "simple" simple/292))
+  (simple/293 =
+     (function x/295 : int
+       (let (*match*/298 =o (field_mut 1 x/295))
+         (if *match*/298 (field_imm 0 *match*/298) 1))))
+  (apply (field_mut 1 (global Toploop!)) "simple" simple/293))
 val simple : t -> int = <fun>
 |}]
 
@@ -104,17 +104,17 @@ Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled as
   exception. This typically occurs due to complex matches on mutable fields.
   (see manual section 13.5.5)
 (let
-  (f/298 =
-     (function x/299 : int
-       (if (field_int 0 x/299)
-         (let (*match*/303 =o (field_mut 1 x/299))
-           (if *match*/303 (field_imm 0 *match*/303)
-             (let (*match*/304 =o (field_mut 1 x/299))
-               (if *match*/304
+  (f/299 =
+     (function x/300 : int
+       (if (field_int 0 x/300)
+         (let (*match*/304 =o (field_mut 1 x/300))
+           (if *match*/304 (field_imm 0 *match*/304)
+             (let (*match*/305 =o (field_mut 1 x/300))
+               (if *match*/305
                  (raise (makeblock 0 (global Match_failure/20!) [0: "" 2 2]))
                  1))))
          0)))
-  (apply (field_mut 1 (global Toploop!)) "f" f/298))
+  (apply (field_mut 1 (global Toploop!)) "f" f/299))
 
 val f : t -> int = <fun>
 |}]
@@ -146,23 +146,23 @@ Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled as
   exception. This typically occurs due to complex matches on mutable fields.
   (see manual section 13.5.5)
 (let
-  (f/305 =
-     (function r/306 : int
-       (let (*match*/308 = (makeblock 0 r/306))
+  (f/306 =
+     (function r/307 : int
+       (let (*match*/309 = (makeblock 0 r/307))
          (catch
-           (if *match*/308
-             (let (*match*/310 =o (field_mut 0 (field_imm 0 *match*/308)))
-               (if *match*/310 (exit 13) 0))
+           (if *match*/309
+             (let (*match*/311 =o (field_mut 0 (field_imm 0 *match*/309)))
+               (if *match*/311 (exit 13) 0))
              (exit 13))
           with (13)
-           (if (seq (setfield_ptr 0 r/306 0) 0) 1
-             (if *match*/308
-               (let (*match*/312 =o (field_mut 0 (field_imm 0 *match*/308)))
-                 (if *match*/312 (field_imm 0 *match*/312)
+           (if (seq (setfield_ptr 0 r/307 0) 0) 1
+             (if *match*/309
+               (let (*match*/313 =o (field_mut 0 (field_imm 0 *match*/309)))
+                 (if *match*/313 (field_imm 0 *match*/313)
                    (raise
                      (makeblock 0 (global Match_failure/20!) [0: "" 2 2]))))
                3))))))
-  (apply (field_mut 1 (global Toploop!)) "f" f/305))
+  (apply (field_mut 1 (global Toploop!)) "f" f/306))
 
 val f : int option ref -> int = <fun>
 |}]
@@ -183,10 +183,10 @@ let test = function
 0
 type _ t = Int : int -> int t | Bool : bool -> bool t
 (let
-  (test/316 =
-     (function param/319 : int
-       (if param/319 (field_imm 0 (field_imm 0 param/319)) 0)))
-  (apply (field_mut 1 (global Toploop!)) "test" test/316))
+  (test/317 =
+     (function param/320 : int
+       (if param/320 (field_imm 0 (field_imm 0 param/320)) 0)))
+  (apply (field_mut 1 (global Toploop!)) "test" test/317))
 val test : int t option -> int = <fun>
 |}]
 
@@ -204,11 +204,11 @@ let test = function
 0
 type _ t = Int : int -> int t | Bool : bool -> bool t
 (let
-  (test/324 =
-     (function param/326 : int
-       (let (*match*/327 =o (field_mut 0 param/326))
-         (if *match*/327 (field_imm 0 (field_imm 0 *match*/327)) 0))))
-  (apply (field_mut 1 (global Toploop!)) "test" test/324))
+  (test/325 =
+     (function param/327 : int
+       (let (*match*/328 =o (field_mut 0 param/327))
+         (if *match*/328 (field_imm 0 (field_imm 0 *match*/328)) 0))))
+  (apply (field_mut 1 (global Toploop!)) "test" test/325))
 val test : int t option ref -> int = <fun>
 |}]
 
@@ -229,19 +229,19 @@ let test n =
 0
 type _ t = Int : int -> int t | Bool : bool -> bool t
 (let
-  (test/332 =
-     (function n/333 : int
+  (test/333 =
+     (function n/334 : int
        (let
-         (*match*/336 =
+         (*match*/337 =
             (makeblock 0 (makeblock 0 (makemutable 0 (int) 1) [0: 42])))
-         (if *match*/336
+         (if *match*/337
            (let
-             (*match*/337 =a (field_imm 0 *match*/336)
-              *match*/339 =o (field_mut 0 (field_imm 0 *match*/337)))
-             (if *match*/339 (field_imm 0 (field_imm 1 *match*/337))
-               (~ (field_imm 0 (field_imm 1 *match*/337)))))
+             (*match*/338 =a (field_imm 0 *match*/337)
+              *match*/340 =o (field_mut 0 (field_imm 0 *match*/338)))
+             (if *match*/340 (field_imm 0 (field_imm 1 *match*/338))
+               (~ (field_imm 0 (field_imm 1 *match*/338)))))
            3))))
-  (apply (field_mut 1 (global Toploop!)) "test" test/332))
+  (apply (field_mut 1 (global Toploop!)) "test" test/333))
 val test : 'a -> int = <fun>
 |}]
 
@@ -277,25 +277,25 @@ Warning 74 [degraded-to-partial-match]: This pattern-matching is compiled as
   exception. This typically occurs due to complex matches on mutable fields.
   (see manual section 13.5.5)
 (let
-  (deep/342 =
-     (function r/344 : int
-       (let (*match*/346 = (makeblock 0 r/344))
+  (deep/343 =
+     (function r/345 : int
+       (let (*match*/347 = (makeblock 0 r/345))
          (catch
-           (if *match*/346
-             (let (*match*/348 =o (field_mut 0 (field_imm 0 *match*/346)))
-               (if (field_imm 1 *match*/348) (exit 21) 0))
+           (if *match*/347
+             (let (*match*/349 =o (field_mut 0 (field_imm 0 *match*/347)))
+               (if (field_imm 1 *match*/349) (exit 21) 0))
              (exit 21))
           with (21)
-           (if (seq (setfield_ptr 0 r/344 [0: 0 0]) 0) 1
-             (if *match*/346
+           (if (seq (setfield_ptr 0 r/345 [0: 0 0]) 0) 1
+             (if *match*/347
                (let
-                 (*match*/352 =o (field_mut 0 (field_imm 0 *match*/346))
-                  *match*/354 =a (field_imm 1 *match*/352))
-                 (if *match*/354 (field_imm 0 *match*/354)
+                 (*match*/353 =o (field_mut 0 (field_imm 0 *match*/347))
+                  *match*/355 =a (field_imm 1 *match*/353))
+                 (if *match*/355 (field_imm 0 *match*/355)
                    (raise
                      (makeblock 0 (global Match_failure/20!) [0: "" 2 2]))))
                3))))))
-  (apply (field_mut 1 (global Toploop!)) "deep" deep/342))
+  (apply (field_mut 1 (global Toploop!)) "deep" deep/343))
 
 val deep : (unit * int option) ref -> int = <fun>
 |}]
@@ -322,13 +322,13 @@ let test : type a . a t * a t -> unit = function
 0
 type _ t = Bool : bool t | Int : int t | Char : char t
 (let
-  (test/359 =
-     (function param/361 : int
+  (test/360 =
+     (function param/362 : int
        (catch
-         (if (>= (field_imm 0 param/361) 2) (exit 24)
-           (if (>= (field_imm 1 param/361) 2) (exit 24) 0))
+         (if (>= (field_imm 0 param/362) 2) (exit 24)
+           (if (>= (field_imm 1 param/362) 2) (exit 24) 0))
         with (24) 0)))
-  (apply (field_mut 1 (global Toploop!)) "test" test/359))
+  (apply (field_mut 1 (global Toploop!)) "test" test/360))
 val test : 'a t * 'a t -> unit = <fun>
 |}];;
 
@@ -350,18 +350,18 @@ type nothing = |
 0
 type t = A | B | C of nothing
 (let
-  (f/371 =
-     (function param/372 : int
+  (f/372 =
+     (function param/373 : int
        (catch
-         (if (field_imm 0 param/372)
-           (switch* (field_imm 1 param/372)
+         (if (field_imm 0 param/373)
+           (switch* (field_imm 1 param/373)
             case int 0: 3
             case int 1: (exit 27))
-           (switch* (field_imm 1 param/372)
+           (switch* (field_imm 1 param/373)
             case int 0: 4
             case int 1: (exit 27)))
         with (27) 5)))
-  (apply (field_mut 1 (global Toploop!)) "f" f/371))
+  (apply (field_mut 1 (global Toploop!)) "f" f/372))
 val f : bool * t -> int = <fun>
 |}];;
 
@@ -393,45 +393,45 @@ let compare t1 t2 =
 0
 type t = A of int | B of string | C of string | D of string
 (let
-  (compare/382 =
-     (function t1/383 t2/384 : int
+  (compare/383 =
+     (function t1/384 t2/385 : int
        (catch
-         (switch* t1/383
+         (switch* t1/384
           case tag 0:
-           (switch t2/384
+           (switch t2/385
             case tag 0:
-             (apply (field_imm 8 (global Stdlib__Int!)) (field_imm 0 t1/383)
-               (field_imm 0 t2/384))
+             (apply (field_imm 8 (global Stdlib__Int!)) (field_imm 0 t1/384)
+               (field_imm 0 t2/385))
             default: -1)
           case tag 1:
            (catch
-             (switch* t2/384
+             (switch* t2/385
               case tag 0: (exit 31)
               case tag 1:
                (apply (field_imm 9 (global Stdlib__String!))
-                 (field_imm 0 t1/383) (field_imm 0 t2/384))
+                 (field_imm 0 t1/384) (field_imm 0 t2/385))
               case tag 2: (exit 36)
               case tag 3: (exit 36))
             with (36) -1)
           case tag 2:
-           (switch* t2/384
+           (switch* t2/385
             case tag 0: (exit 31)
             case tag 1: (exit 31)
             case tag 2:
              (apply (field_imm 9 (global Stdlib__String!))
-               (field_imm 0 t1/383) (field_imm 0 t2/384))
+               (field_imm 0 t1/384) (field_imm 0 t2/385))
             case tag 3: -1)
           case tag 3:
-           (switch* t2/384
+           (switch* t2/385
             case tag 0: (exit 31)
             case tag 1: (exit 31)
             case tag 2: 1
             case tag 3:
              (apply (field_imm 9 (global Stdlib__String!))
-               (field_imm 0 t1/383) (field_imm 0 t2/384))))
-        with (31) (switch* t2/384 case tag 0: 1
+               (field_imm 0 t1/384) (field_imm 0 t2/385))))
+        with (31) (switch* t2/385 case tag 0: 1
                                   case tag 1: 1))))
-  (apply (field_mut 1 (global Toploop!)) "compare" compare/382))
+  (apply (field_mut 1 (global Toploop!)) "compare" compare/383))
 val compare : t -> t -> int = <fun>
 |}];;
 
@@ -450,22 +450,22 @@ let f x y =
 (* PASS: no Match_failure generated *)
 [%%expect {|
 (let
-  (f/504 =
-     (function x/505[int] y/506[int] : int
+  (f/505 =
+     (function x/506[int] y/507[int] : int
        (catch
          (catch
            (catch
-             (if (isint y/506) (if (!= y/506 19896) (exit 45) 0) (exit 45))
+             (if (isint y/507) (if (!= y/507 19896) (exit 45) 0) (exit 45))
             with (45)
-             (if (!= x/505 19674)
-               (if (>= x/505 19675) (exit 44)
-                 (if (>= y/506 19898) (exit 42) 1))
-               (if (isint y/506) (if (!= y/506 19897) (exit 44) (exit 42))
+             (if (!= x/506 19674)
+               (if (>= x/506 19675) (exit 44)
+                 (if (>= y/507 19898) (exit 42) 1))
+               (if (isint y/507) (if (!= y/507 19897) (exit 44) (exit 42))
                  (exit 44))))
           with (44)
-           (if (isint y/506) (if (!= y/506 19898) (exit 42) 2) (exit 42)))
+           (if (isint y/507) (if (!= y/507 19898) (exit 42) 2) (exit 42)))
         with (42) 3)))
-  (apply (field_mut 1 (global Toploop!)) "f" f/504))
+  (apply (field_mut 1 (global Toploop!)) "f" f/505))
 val f : [< `X1 | `X2 | `X3 ] -> [< `Y1 | `Y2 | `Y3 ] -> int = <fun>
 |}];;
 
@@ -479,34 +479,34 @@ let check_results r1 r2 =
 (* PASS: no Match_failure case generated *)
 [%%expect {|
 (let
-  (check_results/507 =
-     (function r1/509 r2/510
-       (let (*match*/516 = (apply r1/509 r2/510))
+  (check_results/508 =
+     (function r1/510 r2/511
+       (let (*match*/517 = (apply r1/510 r2/511))
          (catch
            (catch
-             (let (r/515 =a (field_imm 0 *match*/516))
+             (let (r/516 =a (field_imm 0 *match*/517))
                (catch
-                 (switch* r/515
-                  case tag 0: (exit 50 r/515)
+                 (switch* r/516
+                  case tag 0: (exit 50 r/516)
                   case tag 1:
                    (catch
-                     (if (>= (field_imm 0 r/515) 66)
-                       (let (*match*/524 =a (field_imm 1 *match*/516))
-                         (switch* *match*/524
+                     (if (>= (field_imm 0 r/516) 66)
+                       (let (*match*/525 =a (field_imm 1 *match*/517))
+                         (switch* *match*/525
                           case tag 0: (exit 52)
                           case tag 1:
-                           (let (*match*/525 =a (field_imm 0 *match*/524))
-                             (if (isint *match*/525)
-                               (if (!= *match*/525 66) (exit 53) r/515)
+                           (let (*match*/526 =a (field_imm 0 *match*/525))
+                             (if (isint *match*/526)
+                               (if (!= *match*/526 66) (exit 53) r/516)
                                (exit 53)))))
-                       (switch* (field_imm 1 *match*/516)
+                       (switch* (field_imm 1 *match*/517)
                         case tag 0: (exit 52)
-                        case tag 1: (exit 51 r/515)))
-                    with (53) (exit 51 (field_imm 1 *match*/516))))
-                with (52) (exit 50 (field_imm 1 *match*/516))))
-            with (50 r/511) r/511)
-          with (51 r/513) r/513))))
-  (apply (field_mut 1 (global Toploop!)) "check_results" check_results/507))
+                        case tag 1: (exit 51 r/516)))
+                    with (53) (exit 51 (field_imm 1 *match*/517))))
+                with (52) (exit 50 (field_imm 1 *match*/517))))
+            with (50 r/512) r/512)
+          with (51 r/514) r/514))))
+  (apply (field_mut 1 (global Toploop!)) "check_results" check_results/508))
 val check_results :
   ('a -> ('b, [< `A | `B ]) result * ('b, [< `A | `B ]) result) ->
   'a -> ('b, [> `A | `B ]) result = <fun>

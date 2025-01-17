@@ -1,4 +1,4 @@
-#2 "otherlibs/dynlink/byte/dynlink.ml.in"
+#2 "byte/dynlink.ml.in"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -18,7 +18,7 @@
 
 module Compression = struct (* Borrowed from utils/compression.ml *)
   external zstd_initialize: unit -> bool = "caml_zstd_initialize"
-  let input_value = Stdlib.input_value
+  external input_value : in_channel -> 'a = "caml_input_value"
 end
 
 let _compression_supported = Compression.zstd_initialize ()
@@ -55,14 +55,14 @@ module Bytecode = struct
   end
 
   type handle =
-    Stdlib.in_channel * filename * Digest.t * Symtable.global_map option
+    In_channel.t * filename * Digest.t * Symtable.global_map option
 
   let default_crcs = ref []
   let default_global_map = ref Symtable.empty_global_map
 
   let init () =
     if !Sys.interactive then begin (* PR#6802 *)
-      invalid_arg "The dynlink.cma library cannot be used \
+      invalid_arg "The Dynlink module cannot be used \
         inside the OCaml toplevel"
     end;
     default_crcs := Symtable.init_toplevel ();

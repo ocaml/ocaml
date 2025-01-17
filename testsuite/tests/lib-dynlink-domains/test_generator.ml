@@ -511,7 +511,6 @@ maybe_start plugin_opt
   let main_header ppf node =
     Format.fprintf ppf {|@[<v>(* TEST
 
-include dynlink
 libraries = ""
 readonly_files = "@[<h>store.ml main.ml%a@]"
 
@@ -535,7 +534,6 @@ module = "store.ml"@ @]|}
        module = \"main.ml\"@ \
        %a ocamlc.byte@ \
        program = \"./main.byte.exe\"@ \
-       libraries= \"dynlink\"@ \
        all_modules = \"store.cmo main.cmo\"@ \
        module = \"\"@,\
        %a run@ \
@@ -577,7 +575,6 @@ module = "store.ml"@ @]|}
        module = \"main.ml\"@ \
        %a ocamlopt.byte@ \
        program = \"./main.exe\"@ \
-       libraries=\"dynlink\"@ \
        all_modules = \"store.cmx main.cmx\"@ \
        module = \"\"@,\
        %a run@ \

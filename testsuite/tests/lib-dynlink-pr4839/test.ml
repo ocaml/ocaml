@@ -1,5 +1,4 @@
 (* TEST
- include dynlink;
  libraries = "";
  subdirectories = "host plugin1 plugin2 plugin3 plugin4";
  shared-libraries;
@@ -114,7 +113,6 @@
      ocamlc.byte;
    }{
      program = "./host.byt";
-     libraries = "dynlink";
      all_modules = "packed.cmo host.ml";
      ocamlc.byte;
      {
@@ -260,7 +258,6 @@
        ocamlopt.byte;
      }{
        program = "./host.exe";
-       libraries = "dynlink";
        all_modules = "packed.cmx host.ml";
        ocamlopt.byte;
        {

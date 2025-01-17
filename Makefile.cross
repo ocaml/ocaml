@@ -73,7 +73,6 @@ endif
 	$(MAKE) ocamlyacc $(CROSS_OVERRIDES) $(OLDS)
 	$(MAKE) ocamllex $(CROSS_COMPILER_OVERRIDES) $(OLDS)
 	$(MAKE) ocaml $(CROSS_COMPILER_OVERRIDES) $(OLDS)
-	$(MAKE) dynlink-all $(CROSS_OVERRIDES) $(OLDS)
 	$(MAKE) -C otherlibs all $(CROSS_OVERRIDES) $(OLDS)
 	$(MAKE) runtimeopt $(OLDS)
 	$(MAKE) ocamlc.opt ocamlopt.opt $(TOOLS_NATIVE_TARGETS) \
