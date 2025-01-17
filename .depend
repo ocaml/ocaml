@@ -8456,6 +8456,25 @@ tools/cvt_emit.cmo : \
 tools/cvt_emit.cmx : \
     tools/cvt_emit.cmi
 tools/cvt_emit.cmi :
+tools/diaginfo.cmo : \
+    toplevel/toplevel_diagnostic.cmi \
+    utils/misc.cmi \
+    utils/diagnostic_history.cmi \
+    utils/diagnostic_backends.cmi \
+    utils/diagnostic.cmi \
+    utils/config_diagnostic.cmi \
+    utils/compiler_diagnostic.cmi \
+    tools/diaginfo.cmi
+tools/diaginfo.cmx : \
+    toplevel/toplevel_diagnostic.cmx \
+    utils/misc.cmx \
+    utils/diagnostic_history.cmx \
+    utils/diagnostic_backends.cmx \
+    utils/diagnostic.cmx \
+    utils/config_diagnostic.cmx \
+    utils/compiler_diagnostic.cmx \
+    tools/diaginfo.cmi
+tools/diaginfo.cmi :
 tools/dumpobj.cmo : \
     bytecomp/symtable.cmi \
     typing/primitive.cmi \

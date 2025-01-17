@@ -287,6 +287,7 @@ META
 /tools/dumpobj.opt
 /tools/ocamlobjinfo
 /tools/ocamlobjinfo.opt
+/tools/ocamldiaginfo
 /tools/cvt_emit
 /tools/cvt_emit.opt
 /tools/cvt_emit.ml
