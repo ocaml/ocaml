@@ -215,11 +215,10 @@ META
 /opt/**
 
 /otherlibs/*/.dep
-/otherlibs/dynlink/dynlink_config.ml
-/otherlibs/dynlink/dynlink_cmo_format.mli
-/otherlibs/dynlink/dynlink_cmxs_format.mli
 /otherlibs/dynlink/byte/dynlink.mli
+/otherlibs/dynlink/byte/dynlink.ml
 /otherlibs/dynlink/native/dynlink.mli
+/otherlibs/dynlink/native/dynlink.ml
 /otherlibs/unix/unix.ml
 
 /parsing/parser.ml

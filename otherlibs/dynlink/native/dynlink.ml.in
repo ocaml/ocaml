@@ -1,3 +1,4 @@
+#2 "otherlibs/dynlink/native/dynlink.ml.in"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -16,12 +17,6 @@
 (**************************************************************************)
 
 (* Dynamic loading of .cmx files *)
-
-module Config = Dynlink_config
-
-open Dynlink_cmxs_format
-
-module DC = Dynlink_common
 
 type global_map = {
   name : string;
@@ -112,7 +107,7 @@ module Native = struct
       try ndl_open filename (not priv)
       with exn -> raise (DC.Error (Cannot_open_dynamic_library exn))
     in
-    if header.dynu_magic <> Config.cmxs_magic_number then begin
+    if header.dynu_magic <> cmxs_magic_number then begin
       ndl_close ndl_handle;
       raise (DC.Error (Not_a_bytecode_file filename))
     end;

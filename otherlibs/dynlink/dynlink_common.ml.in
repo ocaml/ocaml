@@ -1,3 +1,4 @@
+#2 "otherlibs/dynlink/dynlink_common.ml.in"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -15,7 +16,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type implem_state =
+type[@warning "-37"] implem_state =
   | Loaded
   | Not_initialized
   | Check_inited of int

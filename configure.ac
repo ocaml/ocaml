@@ -321,7 +321,6 @@ AC_SUBST([header_libs])
 AC_CONFIG_FILES([Makefile.build_config])
 AC_CONFIG_FILES([Makefile.config])
 AC_CONFIG_FILES([stdlib/sys.ml])
-AC_CONFIG_FILES([otherlibs/dynlink/dynlink_config.ml])
 AC_CONFIG_FILES([utils/config.common.ml])
 AC_CONFIG_FILES([utils/config.generated.ml])
 AC_CONFIG_HEADERS([runtime/caml/exec.h])
@@ -993,15 +992,6 @@ otherlibraries="dynlink runtime_events"
 otherlibs="runtime_events"
 optional_libraries="$optional_libraries otherlibs/dynlink/dynlink"
 lib_dynlink=true
-dnl dldir needs to be expanded by autoconf, not by configure, if it were instead
-dnl put in $dldir, this would end up in config.status, except that the value
-dnl would be missing.
-m4_define([dldir], [otherlibs/dynlink])
-AC_CONFIG_LINKS(
-  dldir[/dynlink_cmo_format.mli:file_formats/cmo_format.mli]
-  dldir[/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli]
-)
-m4_undefine([dldir])
 lib_runtime_events=true
 AS_IF([test x"$enable_unix_lib" != "xno"],
   [enable_unix_lib=yes

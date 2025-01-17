@@ -1,3 +1,4 @@
+#2 "otherlibs/dynlink/byte/dynlink_symtable.ml.in"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -14,10 +15,6 @@
 (**************************************************************************)
 
 (* To assign numbers to globals and primitives *)
-
-open Dynlink_cmo_format
-module Config = Dynlink_config
-module DC = Dynlink_common
 
 #25 "bytecomp/symtable.ml"
 module Compunit = struct
@@ -39,7 +36,7 @@ module Global = struct
 #72 "bytecomp/symtable.ml"
   module Map = Map.Make(struct type nonrec t = t let compare = compare end)
 end
-#43 "otherlibs/dynlink/byte/dynlink_symtable.ml"
+#40 "otherlibs/dynlink/byte/dynlink_symtable.ml.in"
 module Dll = struct
 #18 "bytecomp/dll.ml"
 type dll_handle
@@ -58,7 +55,7 @@ external get_current_dlls: unit -> dll_handle array
 let search_path = ref ([] : string list)
 #42 "bytecomp/dll.ml"
 (* DLLs currently opened *)
-#62 "otherlibs/dynlink/byte/dynlink_symtable.ml"
+#59 "otherlibs/dynlink/byte/dynlink_symtable.ml.in"
 let opened_dlls = ref ([] : (string * dll_handle) list)
 (* Each known primitive and its ID number *)
 let primitives : (string, int) Hashtbl.t = Hashtbl.create 100
@@ -76,13 +73,13 @@ let extract_dll_name (~suffixed, file) =
       file
     in
       if suffixed then
-#80 "otherlibs/dynlink/byte/dynlink_symtable.ml"
+#77 "otherlibs/dynlink/byte/dynlink_symtable.ml.in"
         (* This name must be in sync with Misc.RuntimeID.stubslib *)
-        Printf.sprintf "%s-%s-%s" file Config.target Config.bytecode_runtime_id
+        Printf.sprintf "%s-%s-%s" file target bytecode_runtime_id
 #66 "bytecomp/dll.ml"
       else
         file
-#86 "otherlibs/dynlink/byte/dynlink_symtable.ml"
+#83 "otherlibs/dynlink/byte/dynlink_symtable.ml.in"
 (* Specialized version of [Dll.{open_dll,open_dlls,find_primitive}] for the
     execution mode. *)
 let open_dll name =
@@ -179,7 +176,7 @@ let slot_for_getglobal global =
   try
     GlobalMap.find !global_table global
   with Not_found ->
-#183 "otherlibs/dynlink/byte/dynlink_symtable.ml"
+#180 "otherlibs/dynlink/byte/dynlink_symtable.ml.in"
     let global =
       match global with
       | Global.Glob_compunit (Compunit cu) -> DC.Compilation_unit cu
@@ -226,12 +223,12 @@ let patch_object buff patchlist =
 (* Functions for toplevel use *)
 
 (* Update the in-core table of globals *)
-#230 "otherlibs/dynlink/byte/dynlink_symtable.ml"
+#227 "otherlibs/dynlink/byte/dynlink_symtable.ml.in"
 module Meta = struct
 #16 "bytecomp/meta.ml"
 external global_data : unit -> Obj.t array = "caml_get_global_data"
 external realloc_global_data : int -> unit = "caml_realloc_global"
-#235 "otherlibs/dynlink/byte/dynlink_symtable.ml"
+#232 "otherlibs/dynlink/byte/dynlink_symtable.ml.in"
 end
 #331 "bytecomp/symtable.ml"
 let update_global_table () =
@@ -257,7 +254,7 @@ external get_bytecode_sections : unit -> bytecode_sections =
 let init_toplevel () =
   let sect = get_bytecode_sections () in
   global_table := sect.symb;
-#261 "otherlibs/dynlink/byte/dynlink_symtable.ml"
+#258 "otherlibs/dynlink/byte/dynlink_symtable.ml.in"
   Dll.init ~dllpaths:sect.dlpt ~prims:sect.prim;
 #357 "bytecomp/symtable.ml"
   sect.crcs
@@ -297,7 +294,7 @@ let check_global_initialized patchlist =
         let global = Global.Glob_compunit compunit in
         if not (List.mem compunit initialized_compunits)
         && Obj.is_int (get_global_value global)
-#301 "otherlibs/dynlink/byte/dynlink_symtable.ml"
+#298 "otherlibs/dynlink/byte/dynlink_symtable.ml.in"
         then let global = Global.name global in
              raise (DC.Error (Linking_error ("", Uninitialized_global global)))
 #399 "bytecomp/symtable.ml"
@@ -313,7 +310,7 @@ let current_state () = !global_table
 #411 "bytecomp/symtable.ml"
 let hide_additions (st : global_map) =
   if st.cnt > !global_table.cnt then
-#317 "otherlibs/dynlink/byte/dynlink_symtable.ml"
+#314 "otherlibs/dynlink/byte/dynlink_symtable.ml.in"
     failwith "Symtable.hide_additions";
 #414 "bytecomp/symtable.ml"
   global_table :=
