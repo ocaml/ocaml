@@ -104,6 +104,9 @@ let read_clflags_from_env () =
   if Option.is_none !Clflags.color && no_color () then
     Clflags.color := Some Misc.Color.Never;
   set_from_env Clflags.error_style Clflags.error_style_reader;
+  set_from_env Clflags.log_format Clflags.log_format_reader;
+  set_from_env Clflags.log_version Clflags.log_version_reader;
+  set_from_env Clflags.log_file Clflags.log_file_reader;
   ()
 
 let rec make_directory dir =
@@ -131,6 +134,5 @@ let with_ppf_dump ~file_prefix f =
           Filename.open_temp_file ~temp_dir:d (file_prefix ^ ".")  ".dump"
         in
         with_ch ch
-
   in
   Misc.try_finally (fun () -> f ppf_dump) ~always:finally

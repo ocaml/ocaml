@@ -15,7 +15,6 @@
 
 (** The batch compiler *)
 
-open Misc
 open Compile_common
 
 let tool_name = "ocamlopt"
@@ -23,7 +22,9 @@ let tool_name = "ocamlopt"
 let with_info =
   Compile_common.with_info ~native:true ~tool_name
 
-let interface ~source_file ~output_prefix =
+let print_if = Misc.print_if
+
+let interface ~log:_ ~source_file ~output_prefix =
   let unit_info = Unit_info.make ~source_file Intf output_prefix in
   with_info ~dump_ext:"cmi" unit_info @@ fun info ->
   Compile_common.interface info
@@ -101,7 +102,7 @@ let emit i =
   Compilenv.reset ?packname:!Clflags.for_package (Unit_info.modname i.target);
   Asmgen.compile_implementation_linear i.target
 
-let implementation ~backend ~start_from ~source_file ~output_prefix =
+let implementation ~backend ~log:_ ~start_from ~source_file ~output_prefix =
   let backend info typed =
     Compilenv.reset ?packname:!Clflags.for_package
       (Unit_info.modname info.target);

@@ -142,43 +142,55 @@ module Toplevel = struct
   (** Record locations in the main error and suberrors without printing them *)
   let printer_register_locs =
     let base = Location.batch_mode_printer in
-    { Location.pp_main_loc = (fun _ _ _ loc -> register_loc loc);
-      pp_submsg_loc = (fun _ _ _ loc -> register_loc loc);
+    { Location.pp_main_loc = (fun _ (_,loc) -> register_loc loc);
+      pp_sub_loc = (fun _ (_,loc) -> register_loc loc);
 
       (* The following fields are kept identical to [base],
          listed explicitly so that future field additions result in an error
          -- using (Location.batch_mode_printer with ...) would be the symmetric
          problem to a fragile pattern-matching. *)
-      pp = base.pp;
       pp_report_kind = base.pp_report_kind;
-      pp_main_txt = base.pp_main_txt;
-      pp_submsgs = base.pp_submsgs;
-      pp_submsg = base.pp_submsg;
-      pp_submsg_txt = base.pp_submsg_txt;
+      pp_msg = base.pp_msg;
+      pp_highlight_locs = base.pp_highlight_locs;
     }
 
   (** Capture warnings and keep them in a list *)
   let warnings = ref []
-  let report_printer =
+  let pp_report ppf report =
     (* Extend [printer_register_locs] *)
-    let pp self ppf report =
       match report.Location.kind with
       | Location.Report_warning _ | Location.Report_warning_as_error _ ->
-          printer_register_locs.pp self (snd warning_fmt) report;
+          Location.pp_report printer_register_locs (snd warning_fmt) report;
           let w = flush_fmt warning_fmt in
           warnings := w :: !warnings
       | _ ->
-          printer_register_locs.pp self ppf report
-    in
-    { printer_register_locs with pp }
+          Location.pp_report printer_register_locs ppf report
+
+
+  let error_extension: type a.
+    a Diagnostic.extension -> (Format.formatter -> a -> unit) option = function
+    | Location.Error_diagnostic.Error -> Some pp_report
+    | _ -> None
+
+  let () = Diagnostic_backends.add_extension { extension = error_extension }
 
   let fatal ic oc fmt =
     Format.kfprintf
       (fun ppf -> Format.fprintf ppf "@]@."; close_in ic; close_out oc; exit 1)
       self_error_fmt ("@[<hov 2>  Error " ^^ fmt)
 
+
+  let report_exception ppf exn =
+      match Location.error_of_exn exn with
+      | None ->
+      let bt = Printexc.get_raw_backtrace () in
+          eprintf "Uncaught exception: %s\n%s\n"
+            (Printexc.to_string exn)
+            (Printexc.raw_backtrace_to_string bt)
+      | Some `Already_displayed -> ()
+      | Some (`Ok err) -> pp_report ppf err
+
   let init () =
-    Location.report_printer := (fun () -> report_printer);
     Clflags.color := Some Misc.Color.Never;
     Clflags.no_std_include := true;
     Compenv.last_include_dirs := [Filename.concat !repo_root "stdlib"];
@@ -190,16 +202,13 @@ module Toplevel = struct
       (eprintf "Invalid repo root: %s?%!" !repo_root; exit 2)
 
   let exec (_,ppf) p =
+    let log = Topcommon.log_on_device (Log.Device.make (ref ppf)) in
     try
       ignore @@ Toploop.execute_phrase true ppf p
     with exn ->
-      let bt = Printexc.get_raw_backtrace () in
-      begin try Location.report_exception (snd error_fmt) exn
-      with _ ->
-        eprintf "Uncaught exception: %s\n%s\n"
-          (Printexc.to_string exn)
-          (Printexc.raw_backtrace_to_string bt)
-      end
+      report_exception (snd error_fmt) exn
+    ;
+    Log.flush log
 
   let parse fname mode s =
     let lex = Lexing.from_string s in

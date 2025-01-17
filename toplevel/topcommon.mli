@@ -57,6 +57,9 @@ val typecheck_phrase :
 
 val record_backtrace : unit -> unit
 
+(*Log creation *)
+
+val log_on_device: Log.Device.t -> Compiler_diagnostic.id Log.t
 
 (* Printing of values *)
 
@@ -158,7 +161,8 @@ val parse_toplevel_phrase : (Lexing.lexbuf -> Parsetree.toplevel_phrase) ref
 val parse_use_file : (Lexing.lexbuf -> Parsetree.toplevel_phrase list) ref
 val print_location : formatter -> Location.t -> unit
 val print_error : formatter -> Location.error -> unit
-val print_warning : Location.t -> formatter -> Warnings.t -> unit
+val log_warning :
+  Location.t -> Compiler_diagnostic.id Log.t -> Warnings.t -> unit
 val input_name : string ref
 
 (* Hooks for external line editor *)
