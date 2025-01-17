@@ -35,23 +35,23 @@ let backend = (module Backend : Backend_intf.S)
 
 
 module Options = Main_args.Make_optcomp_options (Main_args.Default.Optmain)
-let main argv ppf =
-  native_code := true;
+
+let main_log rlog ppf =
+  let device = Clflags.create_log_device ppf in
+  rlog := Location.log_on_device ~prev:!rlog device;
+  !rlog
+
+let process argv log ppf =
   let program = "ocamlopt" in
-  match
-    Compenv.readenv ppf Before_args;
-    Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
-    Clflags.add_arguments __LOC__
-      ["-depend", Arg.Unit Makedepend.main_from_option,
-       "<options> Compute dependencies \
-        (use 'ocamlopt -depend -help' for details)"];
+    Compenv.readenv !log Before_args;
     Compenv.parse_arguments (ref argv) Compenv.anonymous program;
     Compmisc.read_clflags_from_env ();
+    let log = main_log log ppf in
     if !Clflags.plugin then
       Compenv.fatal "-plugin is only supported up to OCaml 4.08.0";
     begin try
       Compenv.process_deferred_actions {
-        log = ppf;
+        log;
         compile_implementation = Optcompile.implementation ~backend;
         compile_interface = Optcompile.interface;
         ocaml_mod_ext = ".cmx";
@@ -64,7 +64,7 @@ let main argv ppf =
         exit 2
       end
     end;
-    Compenv.readenv ppf Before_link;
+    Compenv.readenv log Before_link;
     if
       List.length (List.filter (fun x -> !x)
                      [make_package; make_archive; shared;
@@ -84,59 +84,76 @@ let main argv ppf =
           (String.concat "|"
              (P.available_pass_names ~filter:(fun _ -> true) ~native:true))
     end;
-    if !make_archive then begin
-      Compmisc.init_path ();
-      let target = Compenv.extract_output !output_name in
-      Asmlibrarian.create_archive
-        (Compenv.get_objfiles ~with_ocamlparam:false) target;
-      Warnings.check_fatal ();
-    end
-    else if !make_package then begin
-      Compmisc.init_path ();
-      let target = Compenv.extract_output !output_name in
-      Compmisc.with_ppf_dump ~file_prefix:target (fun ppf_dump ->
-        Asmpackager.package_files ~ppf_dump (Compmisc.initial_env ())
-          (Compenv.get_objfiles ~with_ocamlparam:false) target ~backend);
-      Warnings.check_fatal ();
-    end
-    else if !shared then begin
-      Compmisc.init_path ();
-      let target = Compenv.extract_output !output_name in
-      Compmisc.with_ppf_dump ~file_prefix:target (fun ppf_dump ->
+  if !make_archive then begin
+    Compmisc.init_path ();
+    let target = Compenv.extract_output !output_name in
+    Asmlibrarian.create_archive
+      (Compenv.get_objfiles ~with_ocamlparam:false) target;
+    Warnings.check_fatal ();
+  end
+  else if !make_package then begin
+    Compmisc.init_path ();
+    let target = Compenv.extract_output !output_name in
+    Compmisc.with_ppf_dump ~file_prefix:target (fun ppf_dump ->
+    Asmpackager.package_files ~ppf_dump (Compmisc.initial_env ())
+      (Compenv.get_objfiles ~with_ocamlparam:false) target ~backend
+      );
+    Warnings.check_fatal ();
+end
+  else if !shared then begin
+    Compmisc.init_path ();
+    let target = Compenv.extract_output !output_name in
+    Compmisc.with_ppf_dump ~file_prefix:target (fun ppf_dump ->
         Asmlink.link_shared ~ppf_dump
-          (Compenv.get_objfiles ~with_ocamlparam:false) target);
+          (Compenv.get_objfiles ~with_ocamlparam:false) target
+      );
       Warnings.check_fatal ();
-    end
-    else if not !Compenv.stop_early &&
-            (!objfiles <> [] || !Compenv.has_linker_inputs) then begin
-      let target =
-        if !output_c_object then
-          let s = Compenv.extract_output !output_name in
-          if (Filename.check_suffix s Config.ext_obj
+  end
+  else if not !Compenv.stop_early &&
+          (!objfiles <> [] || !Compenv.has_linker_inputs) then begin
+    let target =
+      if !output_c_object then
+        let s = Compenv.extract_output !output_name in
+        if (Filename.check_suffix s Config.ext_obj
             || Filename.check_suffix s Config.ext_dll)
-          then s
-          else
-            Compenv.fatal
-              (Printf.sprintf
-                 "The extension of the output file must be %s or %s"
-                 Config.ext_obj Config.ext_dll
-              )
+        then s
         else
-          Compenv.default_output !output_name
-      in
-      Compmisc.init_path ();
-      Compmisc.with_ppf_dump ~file_prefix:target (fun ppf_dump ->
-          let objs = Compenv.get_objfiles ~with_ocamlparam:true in
-          Asmlink.link ~ppf_dump objs target);
-      Warnings.check_fatal ();
-    end;
-  with
-  | exception (Compenv.Exit_with_status n) ->
-    n
-  | exception x ->
-    Location.report_exception ppf x;
-    2
-  | () ->
-      Compmisc.with_ppf_dump ~file_prefix:"profile"
-        (fun ppf -> Profile.print ppf !Clflags.profile_columns);
-      0
+          Compenv.fatal
+            (Printf.sprintf
+               "The extension of the output file must be %s or %s"
+               Config.ext_obj Config.ext_dll
+            )
+      else
+        Compenv.default_output !output_name
+    in
+    Compmisc.init_path ();
+    Compmisc.with_ppf_dump ~file_prefix:target (fun ppf_dump ->
+    let objs = Compenv.get_objfiles ~with_ocamlparam:true in
+    Asmlink.link ~ppf_dump objs target;
+    Warnings.check_fatal ();
+      )
+  end
+
+
+let main argv ppf =
+  native_code := true;
+  Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
+  Clflags.add_arguments __LOC__
+    ["-depend", Arg.Unit Makedepend.main_from_option,
+     "<options> Compute dependencies \
+      (use 'ocamlopt -depend -help' for details)"];
+  let log = ref (Location.temporary_log ()) in
+  let exit_number =
+    match process argv log ppf with
+    | exception (Compenv.Exit_with_status n) ->
+        n
+    | exception x ->
+        Location.log_exception !log x;
+        2
+    | () ->
+        Compmisc.with_ppf_dump ~file_prefix:"profile"
+          (fun ppf -> Profile.print ppf !Clflags.profile_columns);
+        0
+  in
+  Log.flush !log;
+  exit_number

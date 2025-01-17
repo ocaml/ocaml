@@ -16,6 +16,7 @@
 open Format
 include Topcommon
 include Topeval
+type log = Compiler_diagnostic.id Log.t
 
 type input =
   | Stdin
@@ -31,6 +32,8 @@ let filename_of_input = function
 let use_lexbuf ppf ~wrap_in_module lb ~modpath ~filename =
   Warnings.reset_fatal ();
   Location.init lb filename;
+  let dev = Clflags.create_log_device ppf in
+  let log = Topcommon.log_on_device dev in
   (* Skip initial #! line if any *)
   Lexer.skip_hash_bang lb;
   Misc.protect_refs
@@ -50,7 +53,7 @@ let use_lexbuf ppf ~wrap_in_module lb ~modpath ~filename =
     with
     | Exit -> false
     | Sys.Break -> fprintf ppf "Interrupted.@."; false
-    | x -> Location.report_exception ppf x; false)
+    | x -> Location.log_exception log x; false)
 
 (** [~modpath] is used to determine the module name when [wrap_in_module]
     [~filepath] is the filesystem path to the input,
@@ -342,7 +345,7 @@ let is_blank_with_linefeed lb =
 (* Read and parse toplevel phrases, stop when a complete phrase has been
    parsed and the lexbuf contains and end of line with optional whitespace
    and comments. *)
-let rec get_phrases ppf lb phrs =
+let rec get_phrases ppf log lb phrs =
   match !parse_toplevel_phrase lb with
   | phr ->
     if is_blank_with_linefeed lb then begin
@@ -351,9 +354,9 @@ let rec get_phrases ppf lb phrs =
       ignore (look_ahead ~print_warnings:true lb);
       List.rev (phr :: phrs)
     end else
-      get_phrases ppf lb (phr :: phrs)
+      get_phrases ppf log lb (phr :: phrs)
   | exception Exit -> raise PPerror
-  | exception e -> Location.report_exception ppf e; []
+  | exception e -> Location.log_exception log e; []
 
 (* Type, compile and execute a phrase. *)
 let process_phrase ppf snap phr =
@@ -382,12 +385,12 @@ let process_phrases ppf snap phrs =
         (fun () -> List.iter process rest)
     end
 
-let loop ppf =
-  Misc.Style.setup !Clflags.color;
+let loop ppf log =
   Clflags.debug := true;
   Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
-    fprintf ppf "OCaml version %s%s%s@.Enter %a for help.@.@."
+    Format.printf
+      "@[<v>OCaml version %s%s%s@,Enter %a for help.@,@,@]%!"
       Config.version
       (if Topeval.implementation_label = "" then "" else " - ")
       Topeval.implementation_label
@@ -408,25 +411,26 @@ let loop ppf =
       Buffer.reset phrase_buffer;
       Location.reset();
       first_line := true;
-      let phrs = get_phrases ppf lb [] in
+      let phrs = get_phrases ppf log lb [] in
       process_phrases ppf snap phrs
     with
     | End_of_file -> raise (Compenv.Exit_with_status 0)
     | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack !snap
     | PPerror -> ()
-    | x -> Location.report_exception ppf x; Btype.backtrack !snap
+    | x -> Location.log_exception log x; Btype.backtrack !snap
   done
 
 let preload_objects = ref []
 
-let prepare ppf ?input () =
+let prepare ppf log ?input () =
   let dir =
     Option.map (fun inp -> Filename.dirname (filename_of_input inp)) input in
   Topcommon.set_paths ?dir ();
   begin try
     initialize_toplevel_env ()
   with Env.Error.In_context _ | Typetexp.Error.In_context _ as exn ->
-    Location.report_exception ppf exn; raise (Compenv.Exit_with_status 2)
+    Location.log_exception log exn; Log.flush log;
+    raise (Compenv.Exit_with_status 2)
   end;
   try
     let res =
@@ -438,7 +442,7 @@ let prepare ppf ?input () =
     Topcommon.run_hooks Topcommon.Startup;
     res
   with x ->
-    try Location.report_exception ppf x; false
+    try Location.log_exception log x; false
     with x ->
       Format.fprintf ppf "Uncaught exception: %s\n" (Printexc.to_string x);
       false

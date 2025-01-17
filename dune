@@ -96,7 +96,7 @@
     bytegen bytelibrarian bytelink bytepackager emitcode printinstr
 
     ;; driver/
-    errors compile maindriver
+    compile maindriver
  ))
 
 (library
@@ -171,7 +171,7 @@
    linear_format
 
    ;; driver/
-   optcompile opterrors optmaindriver
+   optcompile optmaindriver
  )
 )
 

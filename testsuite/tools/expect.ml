@@ -458,6 +458,8 @@ let eval_expect_file _fname ~file_contents =
   let () =
     visible_inline_code ();
     Misc.Style.set_tag_handling ~color:false ppf in
+  let dev = Log.Device.make (ref ppf) in
+  let log = Topcommon.log_on_device dev in
   let exec_phrases phrases =
     let phrases =
       match min_line_number phrases with
@@ -481,7 +483,7 @@ let eval_expect_file _fname ~file_contents =
                 else Some 0
               with exn ->
                 let bt = Printexc.get_raw_backtrace () in
-                begin try Location.report_exception ppf exn
+                begin try Location.log_exception log exn
                 with _ ->
                   Format.fprintf ppf "Uncaught exception: %s\n%s\n"
                     (Printexc.to_string exn)
@@ -715,5 +717,7 @@ let () =
     Printf.eprintf "expect: no input file\n";
     exit 2
   with exn ->
-    Location.report_exception Format.err_formatter exn;
+    let log = Location.log_on_device Log.Device.err in
+    Location.log_exception  log exn;
+    Log.flush log;
     exit 2
