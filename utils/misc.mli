@@ -616,16 +616,6 @@ val print_see_manual : int list Format_doc.printer
 val print_manual_hint : int list Format_doc.printer
 (** Manual hint, reserved for hints that are essentially quoting the manual *)
 
-(** {1 Displaying configuration variables} *)
-
-val show_config_and_exit : unit -> unit
-  (** Display the values of all compiler configuration variables from module
-      [Config], then exit the program with code 0. *)
-
-val show_config_variable_and_exit : string -> unit
-  (** Display the value of the given configuration variable,
-      then exit the program with code 0. *)
-
 (** {1 Handling of build maps} *)
 
 (** Build maps cause the compiler to normalize file names embedded in
