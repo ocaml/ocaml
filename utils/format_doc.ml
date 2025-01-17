@@ -340,8 +340,8 @@ type stream_element =
         | Open_tbox | Close_tbox | Core Set_tab | With_size _
        ) :: r ->
         approx_len acc r
-    | Core (Tab_break _ | Break _ | Simple_break _ | Flush _ | Newline | If_newline
-       | Deprecated _ ) :: _ ->
+    | Core ( Tab_break _ | Break _ | Simple_break _ | Flush _ | Newline | If_newline
+           | Deprecated _ ) :: _ ->
         None
 
    type ralign_split = {
