@@ -15,5 +15,6 @@ end
 {
  "S"[module type] -> <.2>;
  }
+
 module type S = sig module M : sig end module type T = sig end end
 |}]

@@ -24,15 +24,18 @@ let tracing_function_ptr =
   get_code_pointer
     (Obj.repr (fun arg -> Trace.print_trace (current_environment()) arg))
 
-let dir_trace ppf lid =
+let quoted_longident = Misc.Style.as_inline_code Printtyp.Doc.longident
+let quoted_path = Misc.Style.as_inline_code Printtyp.Doc.path
+
+let dir_trace log lid =
   match Env.find_value_by_name lid !Topcommon.toplevel_env with
   | (path, desc) -> begin
       (* Check if this is a primitive *)
       match desc.val_kind with
       | Val_prim _ ->
-          Format.fprintf ppf
-            "%a is an external function and cannot be traced.@."
-          Printtyp.longident lid
+          Log.itemd Toplevel_diagnostic.errors log
+            "%a is an external function and cannot be traced."
+          quoted_longident lid
       | _ ->
           let clos = Toploop.eval_value_path !Topcommon.toplevel_env path in
           (* Nothing to do if it's not a closure *)
@@ -45,9 +48,10 @@ let dir_trace ppf lid =
           then begin
           match is_traced clos with
           | Some opath ->
-              Format.fprintf ppf "%a is already traced (under the name %a).@."
-              Printtyp.path path
-              Printtyp.path opath
+              Log.itemd Toplevel_diagnostic.trace log
+                "%a is already traced (under the name %a)."
+              quoted_path path
+              quoted_path opath
           | None ->
               (* Instrument the old closure *)
               traced_functions :=
@@ -56,46 +60,53 @@ let dir_trace ppf lid =
                   actual_code = get_code_pointer clos;
                   instrumented_fun =
                     instrument_closure
-                      !Topcommon.toplevel_env lid ppf desc.val_type }
+                      !Topcommon.toplevel_env lid log desc.val_type }
                 :: !traced_functions;
               (* Redirect the code field of the closure to point
                  to the instrumentation function *)
               set_code_pointer clos tracing_function_ptr;
-              Format.fprintf ppf "%a is now traced.@." Printtyp.longident lid
+               Log.itemd Toplevel_diagnostic.trace log "%a is now traced."
+                 quoted_longident lid
           end else
-            Format.fprintf ppf "%a is not a function.@." Printtyp.longident lid
+             Log.itemd Toplevel_diagnostic.trace log "%a is not a function."
+               quoted_longident lid
     end
   | exception Not_found ->
-      Format.fprintf ppf "Unbound value %a.@." Printtyp.longident lid
+       Log.itemd Toplevel_diagnostic.trace log "Unbound value %a."
+         quoted_longident lid
 
-let dir_untrace ppf lid =
+let dir_untrace log lid =
   match Env.find_value_by_name lid !Topcommon.toplevel_env with
   | (path, _desc) ->
       let rec remove = function
       | [] ->
-          Format.fprintf ppf "%a was not traced.@." Printtyp.longident lid;
+          Log.itemd Toplevel_diagnostic.trace log "%a was not traced."
+            quoted_longident lid;
           []
       | f :: rem ->
           if Path.same f.path path then begin
             set_code_pointer f.closure f.actual_code;
-            Format.fprintf ppf "%a is no longer traced.@."
-              Printtyp.longident lid;
+            Log.itemd Toplevel_diagnostic.trace log "%a is no longer traced."
+              quoted_longident lid;
             rem
           end else f :: remove rem in
       traced_functions := remove !traced_functions
   | exception Not_found ->
-      Format.fprintf ppf "Unbound value %a.@." Printtyp.longident lid
+      Log.itemd Toplevel_diagnostic.trace log "Unbound value %a."
+        quoted_longident lid
 
-let dir_untrace_all ppf () =
+let dir_untrace_all log () =
   List.iter
     (fun f ->
       set_code_pointer f.closure f.actual_code;
-      Format.fprintf ppf "%a is no longer traced.@." Printtyp.path f.path)
+      Log.itemd Toplevel_diagnostic.trace log
+        "%a is no longer traced." quoted_path f.path
+    )
     !traced_functions;
   traced_functions := []
 
 let _ = Topcommon.add_directive "trace"
-    (Directive_ident (dir_trace Format.std_formatter))
+    (Directive_ident dir_trace)
     {
       section = Topdirs.section_trace;
       doc = "All calls to the function \
@@ -103,14 +114,14 @@ let _ = Topcommon.add_directive "trace"
     }
 
 let _ = Topcommon.add_directive "untrace"
-    (Directive_ident (dir_untrace Format.std_formatter))
+    (Directive_ident dir_untrace)
     {
       section = Topdirs.section_trace;
       doc = "Stop tracing the given function.";
     }
 
 let _ = Topcommon.add_directive "untrace_all"
-    (Directive_none (dir_untrace_all Format.std_formatter))
+    (Directive_none dir_untrace_all)
     {
       section = Topdirs.section_trace;
       doc = "Stop tracing all functions traced so far.";
@@ -140,9 +151,9 @@ let expand_position pos len =
 
 let input_argument name =
   let filename = Toploop.filename_of_input name in
-  let ppf = Format.err_formatter in
   let device = Log.Device.err in
   let log = Topcommon.log_on_device device in
+  let clog = Topcommon.compiler_log log in
   if Filename.check_suffix filename ".cmo"
           || Filename.check_suffix filename ".cma"
   then Toploop.preload_objects := filename :: !Toploop.preload_objects
@@ -159,10 +170,10 @@ let input_argument name =
       let newargs = Array.sub !argv !current
                               (Array.length !argv - !current)
       in
-      Compenv.readenv log Before_link;
+      Compenv.readenv clog Before_link;
       Compmisc.read_clflags_from_env ();
-      if Toploop.prepare ppf log ~input:name () &&
-         Toploop.run_script ppf name newargs
+      if Toploop.prepare log ~input:name () &&
+         Toploop.run_script log name newargs
       then raise (Compenv.Exit_with_status 0)
       else raise (Compenv.Exit_with_status 2)
     end
@@ -185,7 +196,6 @@ module Options = Main_args.Make_bytetop_options (struct
 end)
 
 let main () =
-  let ppf = Format.err_formatter in
   let setup_dev = Log.Device.err in
   let log = Location.temporary_log () in
   let program = "ocaml" in
@@ -203,9 +213,9 @@ let main () =
   let tlog = Location.log_on_device ~prev:log setup_dev in
   Log.flush tlog;
   let log = Topcommon.log_on_device Log.Device.std in
-  if not (Toploop.prepare ppf log ()) then raise (Compenv.Exit_with_status 2);
+  if not (Toploop.prepare log ()) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();
-  Toploop.loop Format.std_formatter log
+  Toploop.loop log
 
 let main () =
   match main () with

@@ -13,10 +13,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Format
 include Topcommon
 include Topeval
-type log = Compiler_diagnostic.id Log.t
+
+type log = Toplevel_diagnostic.id Log.t
 
 type input =
   | Stdin
@@ -29,13 +29,12 @@ let filename_of_input = function
   | File name -> name
   | Stdin | String _ -> ""
 
-let use_lexbuf ppf ~wrap_in_module lb ~modpath ~filename =
+let use_lexbuf log ~wrap_in_module lb ~modpath ~filename =
   Warnings.reset_fatal ();
   Location.init lb filename;
-  let dev = Clflags.create_log_device ppf in
-  let log = Topcommon.log_on_device dev in
   (* Skip initial #! line if any *)
   Lexer.skip_hash_bang lb;
+  let main_log = Log.detach log Toplevel_diagnostic.compiler in
   Misc.protect_refs
     [ R (Location.input_name, filename);
       R (Location.input_lexbuf, Some lb); ]
@@ -43,8 +42,10 @@ let use_lexbuf ppf ~wrap_in_module lb ~modpath ~filename =
     try
       List.iter
         (fun ph ->
-          let ph = preprocess_phrase ppf ph in
-          if not (execute_phrase !use_print_results ppf ph) then raise Exit)
+           let ph = preprocess_phrase (debug_log log) ph in
+           if not (execute_phrase !use_print_results log ph) then
+             raise Exit
+        )
         (if wrap_in_module then
            parse_mod_use_file modpath lb
          else
@@ -52,8 +53,9 @@ let use_lexbuf ppf ~wrap_in_module lb ~modpath ~filename =
       true
     with
     | Exit -> false
-    | Sys.Break -> fprintf ppf "Interrupted.@."; false
-    | x -> Location.log_exception log x; false)
+    | Sys.Break ->
+        Log.itemd Toplevel_diagnostic.errors log "Interrupted."; false
+    | x -> Location.log_exception main_log x; false)
 
 (** [~modpath] is used to determine the module name when [wrap_in_module]
     [~filepath] is the filesystem path to the input,
@@ -64,7 +66,7 @@ let use_file ppf ~wrap_in_module ~modpath ~filepath ~filename =
   let lexbuf = Lexing.from_string source in
   use_lexbuf ppf ~wrap_in_module lexbuf ~modpath ~filename
 
-let use_output ppf command =
+let use_output log command =
   let fn = Filename.temp_file "ocaml" "_toploop.ml" in
   Misc.try_finally ~always:(fun () ->
       try Sys.remove fn with Sys_error _ -> ())
@@ -75,27 +77,28 @@ let use_output ppf command =
            (Filename.quote fn)
        with
        | 0 ->
-         use_file ppf ~wrap_in_module:false ~modpath:""
+         use_file log ~wrap_in_module:false ~modpath:""
            ~filepath:fn ~filename:"(command-output)"
        | n ->
-         fprintf ppf "Command exited with code %d.@." n;
+         Log.itemd Toplevel_diagnostic.errors log
+           "Command exited with code %d." n;
          false)
 
-let use_input ppf ~wrap_in_module input =
+let use_input log ~wrap_in_module input =
   match input with
   | Stdin ->
     let lexbuf = Lexing.from_channel stdin in
-    use_lexbuf ppf ~wrap_in_module lexbuf ~modpath:"" ~filename:"(stdin)"
+    use_lexbuf log ~wrap_in_module lexbuf ~modpath:"" ~filename:"(stdin)"
   | String value ->
     let lexbuf = Lexing.from_string value in
-    use_lexbuf ppf ~wrap_in_module lexbuf
+    use_lexbuf log ~wrap_in_module lexbuf
       ~modpath:"" ~filename:"(command-line input)"
   | File name ->
     match Load_path.find name with
     | filename ->
-      use_file ppf ~wrap_in_module ~modpath:name ~filename ~filepath:filename
+      use_file log ~wrap_in_module ~modpath:name ~filename ~filepath:filename
     | exception Not_found ->
-      fprintf ppf "Cannot find file %s.@." name;
+      Log.itemd Toplevel_diagnostic.errors log "Cannot find file %s." name;
       false
 
 let mod_use_input ppf input =
@@ -112,13 +115,13 @@ let use_silently ppf input =
 
 let load_file = load_file false
 
-let load_explicit_ocamlinit ppf f =
-  if Sys.file_exists f then ignore (use_silently ppf (File f) )
-  else fprintf ppf "Init file not found: \"%s\".@." f
+let load_explicit_ocamlinit log f =
+  if Sys.file_exists f then ignore (use_silently log (File f) )
+  else Log.itemd Toplevel_diagnostic.errors log "Init file not found: \"%s\"." f
 
 (* Execute a script.  If [name] is "", read the script from stdin. *)
 
-let run_script ppf name args =
+let run_script log name args =
   Clflags.debug := true;
   override_sys_argv args;
   let filename = filename_of_input name in
@@ -135,8 +138,8 @@ let run_script ppf name args =
     else filename)
     | (Stdin | String _) as x -> x
   in
-  Option.iter (load_explicit_ocamlinit ppf) !Clflags.init_file;
-  use_silently ppf explicit_name
+  Option.iter (load_explicit_ocamlinit log) !Clflags.init_file;
+  use_silently log explicit_name
 
 (* Toplevel initialization. Performed here instead of at the
    beginning of loop() so that user code linked in with ocamlmktop
@@ -268,14 +271,14 @@ let find_ocamlinit () =
                  check_xdg_config_dirs;
                  check_home]
 
-let load_ocamlinit ppf =
+let load_ocamlinit log =
   if !Clflags.noinit then ()
   else match !Clflags.init_file with
-  | Some f -> load_explicit_ocamlinit ppf f
+  | Some f -> load_explicit_ocamlinit log f
   | None ->
       match find_ocamlinit () with
       | None -> ()
-      | Some file -> ignore (use_silently ppf (File file))
+      | Some file -> ignore (use_silently log (File file))
 
 (* The interactive loop *)
 
@@ -345,7 +348,7 @@ let is_blank_with_linefeed lb =
 (* Read and parse toplevel phrases, stop when a complete phrase has been
    parsed and the lexbuf contains and end of line with optional whitespace
    and comments. *)
-let rec get_phrases ppf log lb phrs =
+let rec get_phrases log lb phrs =
   match !parse_toplevel_phrase lb with
   | phr ->
     if is_blank_with_linefeed lb then begin
@@ -354,17 +357,18 @@ let rec get_phrases ppf log lb phrs =
       ignore (look_ahead ~print_warnings:true lb);
       List.rev (phr :: phrs)
     end else
-      get_phrases ppf log lb (phr :: phrs)
+      get_phrases log lb (phr :: phrs)
   | exception Exit -> raise PPerror
   | exception e -> Location.log_exception log e; []
 
 (* Type, compile and execute a phrase. *)
-let process_phrase ppf snap phr =
+let process_phrase log snap phr =
   snap := Btype.snapshot ();
   Warnings.reset_fatal ();
-  let phr = preprocess_phrase ppf phr in
+  let phr = preprocess_phrase (debug_log log) phr in
   Env.reset_cache_toplevel ();
-  ignore(execute_phrase true ppf phr)
+  ignore(execute_phrase true log phr);
+  Log.flush log
 
 (* Type, compile and execute a list of phrases, setting the report printer
    to batch mode for all but the first one.
@@ -385,9 +389,8 @@ let process_phrases ppf snap phrs =
         (fun () -> List.iter process rest)
     end
 
-let loop ppf log =
+let loop log =
   Clflags.debug := true;
-  Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
     Format.printf
       "@[<v>OCaml version %s%s%s@,Enter %a for help.@,@,@]%!"
@@ -402,7 +405,7 @@ let loop ppf log =
   Location.input_phrase_buffer := Some phrase_buffer;
   Sys.catch_break true;
   run_hooks After_setup;
-  load_ocamlinit ppf;
+  load_ocamlinit log;
   while true do
     let snap = ref (Btype.snapshot ()) in
     try
@@ -411,25 +414,31 @@ let loop ppf log =
       Buffer.reset phrase_buffer;
       Location.reset();
       first_line := true;
-      let phrs = get_phrases ppf log lb [] in
-      process_phrases ppf snap phrs
+      let phrs = get_phrases (compiler_log log) lb [] in
+      process_phrases log snap phrs
     with
     | End_of_file -> raise (Compenv.Exit_with_status 0)
-    | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack !snap
+    | Sys.Break ->
+        Log.itemd Toplevel_diagnostic.errors log "Interrupted.";
+        Log.flush log;
+        Btype.backtrack !snap
     | PPerror -> ()
-    | x -> Location.log_exception log x; Btype.backtrack !snap
+    | x ->
+        Location.log_exception (compiler_log log) x;
+        Log.flush log;
+        Btype.backtrack !snap
   done
 
 let preload_objects = ref []
 
-let prepare ppf log ?input () =
+let prepare log ?input () =
   let dir =
     Option.map (fun inp -> Filename.dirname (filename_of_input inp)) input in
   Topcommon.set_paths ?dir ();
   begin try
     initialize_toplevel_env ()
   with Env.Error.In_context _ | Typetexp.Error.In_context _ as exn ->
-    Location.log_exception log exn; Log.flush log;
+    Location.log_exception (compiler_log log) exn; Log.flush log;
     raise (Compenv.Exit_with_status 2)
   end;
   try
@@ -437,12 +446,14 @@ let prepare ppf log ?input () =
       let objects =
         List.rev (!preload_objects @ !Compenv.first_objfiles)
       in
-      List.for_all (Topeval.load_file false ppf) objects
+      List.for_all (Topeval.load_file false log) objects
     in
     Topcommon.run_hooks Topcommon.Startup;
     res
   with x ->
-    try Location.log_exception log x; false
+    try Location.log_exception (compiler_log log) x; false
     with x ->
-      Format.fprintf ppf "Uncaught exception: %s\n" (Printexc.to_string x);
+      Log.itemd Toplevel_diagnostic.errors log
+        "Uncaught exception: %s"
+        (Printexc.to_string x);
       false
