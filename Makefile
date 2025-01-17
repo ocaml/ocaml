@@ -72,6 +72,7 @@ utils_SOURCES = $(addprefix utils/, \
   load_path.mli load_path.ml \
   diagnostic_history.mli diagnostic_history.ml \
   diagnostic.mli diagnostic.ml \
+  diagnostic_validation.mli diagnostic_validation.ml \
   clflags.mli clflags.ml \
   profile.mli profile.ml \
   terminfo.mli terminfo.ml \
