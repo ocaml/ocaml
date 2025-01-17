@@ -65,6 +65,7 @@ end
 type hierarchy =
   | E of (string, Measure_diff.t * hierarchy) Hashtbl.t
 [@@unboxed]
+type column = [ `Time | `Alloc | `Top_heap | `Abs_top_heap ]
 
 let create () = E (Hashtbl.create 2)
 let hierarchy = ref (create ())
@@ -189,6 +190,35 @@ let compute_other_category (E table : hierarchy) (total : Measure_diff.t) =
 
 type row = R of string * (float * display) list * row list
 
+module _ = struct
+  [@@@warning "-32"]
+  module D = Diagnostic
+  type _ D.extension += Profile: (string list * row list) D.extension
+  let v1 = Compiler_diagnostic.v1
+  include D.New_record(Compiler_diagnostic.V)(struct
+      let name = "profile"
+      let description = "Profiling information for the compilation pipeline"
+      let update = v1
+    end)()
+
+  let name = new_field v1 "name" String
+  let columns = new_field_opt v1 "columns" (List Float)
+  let children = new_field_opt v1 "children" (List raw_type)
+  let () = seal v1
+
+  let typ =
+    let rec pull_r v (R (n,ms,c)) =
+      make v [
+              name^=n;
+              columns^=List.map fst ms;
+              children^=pull_rows v c
+      ]
+    and pull_rows v rows = List.map (pull_r v) rows in
+    let pull v (x,y) = x, pull_rows v y in
+    let default = D.(Pair (List String, List raw_type)) in
+    D.Custom {id = Profile; pull; default }
+end
+
 let rec rows_of_hierarchy ~nesting make_row name measure_diff hierarchy env =
   let rows =
     rows_of_hierarchy_list
@@ -300,18 +330,16 @@ let display_rows ppf rows =
   in
   List.iter (loop ~indentation:"") rows
 
-let print ppf columns =
-  match columns with
-  | [] -> ()
-  | _ :: _ ->
-     let initial_measure =
-       match !initial_measure with
-       | Some v -> v
-       | None -> Measure.zero
-     in
-     let total = Measure_diff.of_diff Measure.zero (Measure.create ()) in
-     display_rows ppf
-       (rows_of_hierarchy !hierarchy total initial_measure columns)
+let compute_rows columns =
+  let initial_measure =
+    match !initial_measure with
+    | Some v -> v
+    | None -> Measure.zero
+  in
+  let total = Measure_diff.of_diff Measure.zero (Measure.create ()) in
+  rows_of_hierarchy !hierarchy total initial_measure columns
+
+let print ppf rows = display_rows ppf rows
 
 let column_mapping = [
   "time", `Time;
