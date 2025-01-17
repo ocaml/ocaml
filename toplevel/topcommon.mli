@@ -69,16 +69,14 @@ val max_printer_steps: int ref
 
 type 'a printer := 'a Oprint.printer
 
-val print_out_value :
-  (formatter -> Outcometree.out_value -> unit) ref
+val print_out_value : Outcometree.out_value printer
 val print_out_type : Outcometree.out_type printer
 val print_out_class_type :  Outcometree.out_class_type printer
 val print_out_module_type : Outcometree.out_module_type printer
 val print_out_type_extension : Outcometree.out_type_extension printer
 val print_out_sig_item :  Outcometree.out_sig_item printer
 val print_out_signature :  Outcometree.out_sig_item list printer
-val print_out_phrase :
-  (formatter -> Outcometree.out_phrase -> unit) ref
+val print_out_phrase : Outcometree.out_phrase printer
 
 
 exception Undefined_global of string
@@ -105,11 +103,12 @@ module MakeEvalPrinter (_ : EVAL_BASE) : sig
 
   module Printer: Genprintval.S with type t = Obj.t
 
-  val print_value: Env.t -> Printer.t -> formatter -> Types.type_expr -> unit
+  val print_value:
+    Env.t -> Printer.t -> Format_doc.formatter -> Types.type_expr -> unit
 
-  val print_untyped_exception: formatter -> Printer.t -> unit
+  val print_untyped_exception: Printer.t Format_doc.printer
 
-  val print_exception_outcome : formatter -> exn -> unit
+  val print_exception_outcome : exn Format_doc.printer
     (* Print an exception resulting from the evaluation of user code. *)
 
   val outval_of_value:

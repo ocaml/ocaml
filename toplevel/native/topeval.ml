@@ -244,7 +244,7 @@ let execute_phrase print_outcome ppf phr =
         | Ophr_signature [] -> ()
         | _ ->
             Location.separate_new_message ppf;
-            !print_out_phrase ppf out_phr;
+            Format_doc.compat !print_out_phrase ppf out_phr;
         end;
         begin match out_phr with
         | Ophr_eval (_, _) | Ophr_signature _ -> true
@@ -294,7 +294,7 @@ let load_file _ (* fixme *) ppf name0 =
           name (Dynlink.error_message err);
         false
       | exn ->
-        print_exception_outcome ppf exn;
+        Format_doc.compat print_exception_outcome ppf exn;
         false
     in
     if tmp then (try Sys.remove fn with Sys_error _ -> ());

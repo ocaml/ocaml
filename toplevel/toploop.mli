@@ -81,7 +81,7 @@ val toplevel_env : Env.t ref
         (* Typing environment for the toplevel *)
 val initialize_toplevel_env : unit -> unit
         (* Initialize the typing environment for the toplevel *)
-val print_exception_outcome : formatter -> exn -> unit
+val print_exception_outcome : exn Format_doc.printer
         (* Print an exception resulting from the evaluation of user code. *)
 val execute_phrase : bool -> formatter -> Parsetree.toplevel_phrase -> bool
         (* Execute the given toplevel phrase. Return [true] if the
@@ -111,9 +111,9 @@ val record_backtrace : unit -> unit
 val load_file: formatter -> string -> bool
 
 (* Printing of values *)
-
-val print_value: Env.t -> Obj.t -> formatter -> Types.type_expr -> unit
-val print_untyped_exception: formatter -> Obj.t -> unit
+val print_value:
+  Env.t -> Obj.t -> Format_doc.formatter -> Types.type_expr -> unit
+val print_untyped_exception: Obj.t Format_doc.printer
 
 val max_printer_depth: int ref
 val max_printer_steps: int ref
@@ -127,18 +127,15 @@ val print_error : formatter -> Location.error -> unit
 val print_warning : Location.t -> formatter -> Warnings.t -> unit
 val input_name : string ref
 
-val print_out_value :
-  (formatter -> Outcometree.out_value -> unit) ref
-
 type 'a oprinter := 'a Oprint.printer
+val print_out_value : Outcometree.out_value oprinter
 val print_out_type : Outcometree.out_type oprinter
 val print_out_class_type : Outcometree.out_class_type oprinter
 val print_out_module_type : Outcometree.out_module_type oprinter
 val print_out_type_extension : Outcometree.out_type_extension oprinter
 val print_out_sig_item : Outcometree.out_sig_item oprinter
 val print_out_signature : Outcometree.out_sig_item list oprinter
-val print_out_phrase :
-  (formatter -> Outcometree.out_phrase -> unit) ref
+val print_out_phrase : Outcometree.out_phrase oprinter
 
 (* Hooks for external line editor *)
 
