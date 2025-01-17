@@ -10591,7 +10591,6 @@ testsuite/tools/parsecmmaux.cmi : \
     lambda/debuginfo.cmi \
     middle_end/backend_var.cmi
 otherlibs/dynlink/byte/dynlink.cmo : \
-    otherlibs/dynlink/dynlink_types.cmi \
     otherlibs/dynlink/byte/dynlink_symtable.cmi \
     otherlibs/dynlink/dynlink_config.cmi \
     otherlibs/dynlink/dynlink_common.cmi \
@@ -10608,35 +10607,16 @@ otherlibs/dynlink/dynlink.cmi :
 otherlibs/dynlink/dynlink_cmo_format.cmi :
 otherlibs/dynlink/dynlink_cmxs_format.cmi :
 otherlibs/dynlink/dynlink_common.cmo : \
-    otherlibs/dynlink/dynlink_types.cmi \
-    otherlibs/dynlink/dynlink_platform_intf.cmi \
     otherlibs/dynlink/dynlink_common.cmi
-otherlibs/dynlink/dynlink_common.cmi : \
-    otherlibs/dynlink/dynlink_platform_intf.cmi
+otherlibs/dynlink/dynlink_common.cmi :
 otherlibs/dynlink/dynlink_config.cmo : \
     otherlibs/dynlink/dynlink_config.cmi
 otherlibs/dynlink/dynlink_config.cmi :
-otherlibs/dynlink/dynlink_platform_intf.cmo : \
-    otherlibs/dynlink/dynlink_types.cmi \
-    otherlibs/dynlink/dynlink_platform_intf.cmi
-otherlibs/dynlink/dynlink_platform_intf.cmi : \
-    otherlibs/dynlink/dynlink_types.cmi
-otherlibs/dynlink/dynlink_types.cmo : \
-    otherlibs/dynlink/dynlink_types.cmi
-otherlibs/dynlink/dynlink_types.cmi :
 otherlibs/dynlink/dynlink_common.cmx : \
-    otherlibs/dynlink/dynlink_types.cmx \
-    otherlibs/dynlink/dynlink_platform_intf.cmx \
     otherlibs/dynlink/dynlink_common.cmi
 otherlibs/dynlink/dynlink_config.cmx : \
     otherlibs/dynlink/dynlink_config.cmi
-otherlibs/dynlink/dynlink_platform_intf.cmx : \
-    otherlibs/dynlink/dynlink_types.cmx \
-    otherlibs/dynlink/dynlink_platform_intf.cmi
-otherlibs/dynlink/dynlink_types.cmx : \
-    otherlibs/dynlink/dynlink_types.cmi
 otherlibs/dynlink/native/dynlink.cmx : \
-    otherlibs/dynlink/dynlink_types.cmx \
     otherlibs/dynlink/dynlink_config.cmx \
     otherlibs/dynlink/dynlink_common.cmx \
     otherlibs/dynlink/dynlink_cmxs_format.cmi \
