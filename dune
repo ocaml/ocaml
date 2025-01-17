@@ -43,7 +43,7 @@
  (modules
    ;; UTILS
    config build_path_prefix_map misc identifiable numbers arg_helper
-   diagnostic_history diagnostic diagnostic_validation
+   diagnostic_history diagnostic diagnostic_validation log
    clflags profile terminfo ccomp format_doc warnings consistbl
    strongly_connected_components targetint load_path
    int_replace_polymorphic_compare binutils local_store lazy_backtrack diffing
