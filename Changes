@@ -127,7 +127,7 @@ Working version
   (Vincent Laviron, review by Gabriel Scherer and Daniel Bünzli)
 
 - #13740: Improve performance of Weak.find_aux
-  (Josh Berdine, review by ???)
+  (Josh Berdine, review by Gabriel Scherer)
 
 ### Other libraries:
 
