@@ -92,6 +92,19 @@ utils/diagnostic_history.cmo : \
 utils/diagnostic_history.cmx : \
     utils/diagnostic_history.cmi
 utils/diagnostic_history.cmi :
+utils/diagnostic_validation.cmo : \
+    utils/misc.cmi \
+    utils/diagnostic_history.cmi \
+    utils/diagnostic.cmi \
+    utils/diagnostic_validation.cmi
+utils/diagnostic_validation.cmx : \
+    utils/misc.cmx \
+    utils/diagnostic_history.cmx \
+    utils/diagnostic.cmx \
+    utils/diagnostic_validation.cmi
+utils/diagnostic_validation.cmi : \
+    utils/diagnostic_history.cmi \
+    utils/diagnostic.cmi
 utils/diffing.cmo : \
     utils/misc.cmi \
     utils/format_doc.cmi \
