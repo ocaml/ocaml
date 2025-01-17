@@ -182,6 +182,25 @@ utils/local_store.cmo : \
 utils/local_store.cmx : \
     utils/local_store.cmi
 utils/local_store.cmi :
+utils/log.cmo : \
+    utils/misc.cmi \
+    utils/format_doc.cmi \
+    utils/diagnostic_validation.cmi \
+    utils/diagnostic_history.cmi \
+    utils/diagnostic.cmi \
+    utils/log.cmi
+utils/log.cmx : \
+    utils/misc.cmx \
+    utils/format_doc.cmx \
+    utils/diagnostic_validation.cmx \
+    utils/diagnostic_history.cmx \
+    utils/diagnostic.cmx \
+    utils/log.cmi
+utils/log.cmi : \
+    utils/misc.cmi \
+    utils/format_doc.cmi \
+    utils/diagnostic_validation.cmi \
+    utils/diagnostic.cmi
 utils/misc.cmo : \
     utils/format_doc.cmi \
     utils/config.cmi \
@@ -401,8 +420,10 @@ parsing/builtin_attributes.cmi : \
     utils/misc.cmi \
     parsing/location.cmi
 parsing/camlinternalMenhirLib.cmo : \
+    utils/log.cmi \
     parsing/camlinternalMenhirLib.cmi
 parsing/camlinternalMenhirLib.cmx : \
+    utils/log.cmx \
     parsing/camlinternalMenhirLib.cmi
 parsing/camlinternalMenhirLib.cmi :
 parsing/depend.cmo : \

@@ -521,7 +521,6 @@ module Color: sig
   type setting = Auto | Always | Never
 
   val default_setting : setting
-  val is_enabled : unit -> bool
 end
 
 
@@ -575,7 +574,10 @@ module Style : sig
      according to the value of color setting [opt].
      Only the first call to this function has an effect. *)
 
-  val set_tag_handling : Format.formatter -> unit
+  val enable_color: Color.setting option  -> bool
+ (* Check flags and environment variables to see if we should use color *)
+
+  val set_tag_handling : color:bool -> Format.formatter -> unit
   (* adds functions to support color tags to the given formatter. *)
 end
 

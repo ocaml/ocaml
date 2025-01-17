@@ -457,7 +457,7 @@ let eval_expect_file _fname ~file_contents =
   let ppf = Format.formatter_of_buffer buf in
   let () =
     visible_inline_code ();
-    Misc.Style.set_tag_handling ppf in
+    Misc.Style.set_tag_handling ~color:false ppf in
   let exec_phrases phrases =
     let phrases =
       match min_line_number phrases with
