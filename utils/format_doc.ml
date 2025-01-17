@@ -332,23 +332,23 @@ type stream_element =
 
    let rec approx_len acc = function
      | [] -> Some acc
-     | Text x :: r->
+     | Core (Text x) :: r->
          let len = Format.utf_8_scalar_width ~pos:0 ~len:(String.length x) x in
          approx_len (acc + len) r
-     | With_size n :: Text _ :: r -> approx_len (acc + n) r
+     | With_size n :: Core (Text _) :: r -> approx_len (acc + n) r
      | (Open_box _ | Close_box | Open_tag _ | Close_tag
-        | Open_tbox | Close_tbox | Set_tab | With_size _
+        | Open_tbox | Close_tbox | Core Set_tab | With_size _
        ) :: r ->
         approx_len acc r
-    | (Tab_break _ | Break _ | Simple_break _ | Flush _ | Newline | If_newline
+    | Core (Tab_break _ | Break _ | Simple_break _ | Flush _ | Newline | If_newline
        | Deprecated _ ) :: _ ->
         None
 
    type ralign_split = {
        close_pos:int;
-       before: element list;
-       mid: element list;
-       after: element list;
+       before: stream_element list;
+       mid: stream_element list;
+       after: stream_element list;
      }
 
    let split_ralign (doc, shift) =
@@ -366,7 +366,7 @@ type stream_element =
      let aligned_before =
        let before = Open_tag ralign_tag :: r.before in
        if r.close_pos >= max_pos then before
-       else Text (String.make (max_pos - r.close_pos) ' ') :: before
+       else Core (Text (String.make (max_pos - r.close_pos) ' ')) :: before
      in
      let mid_to_start = Close_tag :: r.mid @ aligned_before in
      { rev = List.rev_append r.after mid_to_start }

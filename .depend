@@ -43,6 +43,22 @@ utils/clflags.cmx : \
 utils/clflags.cmi : \
     utils/misc.cmi \
     utils/config.cmi
+utils/compiler_diagnostic.cmo : \
+    utils/misc.cmi \
+    utils/format_doc.cmi \
+    utils/diagnostic_history.cmi \
+    utils/diagnostic.cmi \
+    utils/compiler_diagnostic.cmi
+utils/compiler_diagnostic.cmx : \
+    utils/misc.cmx \
+    utils/format_doc.cmx \
+    utils/diagnostic_history.cmx \
+    utils/diagnostic.cmx \
+    utils/compiler_diagnostic.cmi
+utils/compiler_diagnostic.cmi : \
+    utils/format_doc.cmi \
+    utils/diagnostic_history.cmi \
+    utils/diagnostic.cmi
 utils/compression.cmo : \
     utils/compression.cmi
 utils/compression.cmx : \
@@ -8183,7 +8199,7 @@ tools/cvt_emit.cmi :
 tools/dumpobj.cmo : \
     bytecomp/symtable.cmi \
     typing/primitive.cmi \
-    bytecomp/opnames.cmi \
+    tools/opnames.cmo \
     bytecomp/opcodes.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
@@ -8198,7 +8214,7 @@ tools/dumpobj.cmo : \
 tools/dumpobj.cmx : \
     bytecomp/symtable.cmx \
     typing/primitive.cmx \
-    bytecomp/opnames.cmx \
+    tools/opnames.cmx \
     bytecomp/opcodes.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
@@ -8238,6 +8254,8 @@ tools/lintapidiff.cmx : \
     typing/ident.cmx \
     tools/lintapidiff.cmi
 tools/lintapidiff.cmi :
+tools/make_opcodes.cmo :
+tools/make_opcodes.cmx :
 tools/objinfo.cmo : \
     typing/typedtree.cmi \
     bytecomp/symtable.cmi \
@@ -8421,6 +8439,8 @@ tools/ocamltex.cmx : \
     parsing/ast_helper.cmx \
     tools/ocamltex.cmi
 tools/ocamltex.cmi :
+tools/opnames.cmo :
+tools/opnames.cmx :
 tools/primreq.cmo : \
     utils/misc.cmi \
     utils/config.cmi \
