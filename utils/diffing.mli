@@ -80,7 +80,7 @@ type change_kind =
   | Modification
   | Preservation
 val prefix: (int * change_kind) Format_doc.printer
-val style: change_kind -> Misc.Style.style list
+val style: change_kind -> Format.stag
 
 
 type ('left,'right,'eq,'diff) change =
