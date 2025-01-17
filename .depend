@@ -77,6 +77,21 @@ utils/consistbl.cmx : \
     utils/consistbl.cmi
 utils/consistbl.cmi : \
     utils/misc.cmi
+utils/diagnostic.cmo : \
+    utils/misc.cmi \
+    utils/diagnostic_history.cmi \
+    utils/diagnostic.cmi
+utils/diagnostic.cmx : \
+    utils/misc.cmx \
+    utils/diagnostic_history.cmx \
+    utils/diagnostic.cmi
+utils/diagnostic.cmi : \
+    utils/diagnostic_history.cmi
+utils/diagnostic_history.cmo : \
+    utils/diagnostic_history.cmi
+utils/diagnostic_history.cmx : \
+    utils/diagnostic_history.cmi
+utils/diagnostic_history.cmi :
 utils/diffing.cmo : \
     utils/misc.cmi \
     utils/format_doc.cmi \
