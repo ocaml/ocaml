@@ -126,6 +126,9 @@ utils/misc.ml            typo.non-ascii
 runtime/sak.c            typo.non-ascii
 tools/opam/process.sh    typo.non-ascii
 
+# No header for json schema
+diagnostic_schemes/*json typo.missing-header typo.very-long-line=may
+
 testsuite/tests/**                                      typo.missing-header typo.long-line=may
 testsuite/tests/lib-bigarray-2/bigarrf.f                typo.tab linguist-language=Fortran
 testsuite/tests/lib-unix/win-stat/fakeclock.c           typo.missing-header=false
