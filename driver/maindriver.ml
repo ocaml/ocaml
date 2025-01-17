@@ -125,8 +125,12 @@ let main argv ppf =
         n
     | exception Continue
     | _ ->
-        Compmisc.with_ppf_dump ~file_prefix:"profile"
-          (fun ppf -> Profile.print ppf !Clflags.profile_columns);
+        let print_profile = not @@ List.is_empty !Clflags.profile_columns in
+        if print_profile then begin
+          let rows = Profile.compute_rows !Clflags.profile_columns in
+          Compmisc.with_ppf_dump ~file_prefix:"profile"
+            (fun ppf -> Profile.print ppf rows)
+        end;
         0
     | exception x ->
         Location.log_exception !log x;
