@@ -897,3 +897,16 @@ let dump_item_on_log log field fmt =
   else
     (* the formatter argument is not used *)
     Format.ifprintf Format.std_formatter fmt
+
+(* showing configuration and configuration variables *)
+let show_config_and_exit () =
+  let device = create_log_device Format.std_formatter in
+  let log =
+    create_log
+      ~default_backend:Diagnostic_backends.fmt_with_fields
+      Config_diagnostic.Versions.history
+      Config_diagnostic.scheme
+      device
+  in
+  Config_diagnostic.print log;
+  exit 0

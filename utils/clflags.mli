@@ -334,3 +334,7 @@ val dump_on_log:
 val dump_item_on_log:
  'id Log.t -> (string list,'id) Log.field -> ('b, Format.formatter, unit) format
  -> 'b
+
+val show_config_and_exit : unit -> unit
+  (** Display the values of all compiler configuration variables from module
+      [Config], then exit the program with code 0. *)
