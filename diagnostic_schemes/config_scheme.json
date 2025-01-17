@@ -1,0 +1,138 @@
+{
+  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+  "$id" :
+    "https://github.com/ocaml/ocaml/blob/trunk/diagnostic_schemes/config.json",
+  "version" : "1.0",
+  "$defs" :
+    {
+      "metadata" :
+        {
+          "type" : "object",
+          "description" : "Diagnostic metadata",
+          "properties" :
+            {
+              "deprecated_paths" :
+                {
+                  "type" : "array",
+                  "items" :
+                    { "type" : "array", "items" : { "type" : "string"}}
+                },
+              "invalid_paths" :
+                {
+                  "type" : "array",
+                  "items" :
+                    { "type" : "array", "items" : { "type" : "string"}}
+                },
+              "valid" : { "$ref" : "#/$defs/validity"},
+              "downward_compatible" : { "type" : "boolean"},
+              "version" :
+                {
+                  "type" : "array",
+                  "prefixItems" :
+                    [{ "type" : "integer"}, { "type" : "integer"}]
+                }
+            },
+          "required" : ["valid", "downward_compatible", "version"]
+        },
+      "validity" :
+        {
+          "description" :
+            "Status of the current diagnostic: - Full: fully valid\n             - Deprecated: some of the contents is deprecated according to the current scheme\n             - Invalid: invalid data",
+          "oneOf" :
+            [{ "const" : "Invalid"}, { "const" : "Deprecated"},
+              { "const" : "Full"}]
+        }
+    },
+  "schema" : { "type" : "object"},
+  "type" : "object",
+  "description" :
+    "The set of compiler options selected at configuration time",
+  "properties" :
+    {
+      "metadata" : { "$ref" : "#/$defs/metadata"},
+      "linear_magic_number" : { "type" : "string"},
+      "cmt_magic_number" : { "type" : "string"},
+      "cmxs_magic_number" : { "type" : "string"},
+      "ast_intf_magic_number" : { "type" : "string"},
+      "ast_impl_magic_number" : { "type" : "string"},
+      "cmxa_magic_number" : { "type" : "string"},
+      "cmx_magic_number" : { "type" : "string"},
+      "cma_magic_number" : { "type" : "string"},
+      "cmo_magic_number" : { "type" : "string"},
+      "cmi_magic_number" : { "type" : "string"},
+      "exec_magic_number" : { "type" : "string"},
+      "with_codegen_invariants" : { "type" : "boolean"},
+      "naked_pointers" : { "type" : "boolean"},
+      "native_dynlink" : { "type" : "boolean"},
+      "supports_shared_libraries" : { "type" : "boolean"},
+      "windows_unicode" : { "type" : "boolean"},
+      "tsan" : { "type" : "boolean"},
+      "afl_instrument" : { "type" : "boolean"},
+      "function_sections" : { "type" : "boolean"},
+      "align_int64" : { "type" : "boolean"},
+      "align_double" : { "type" : "boolean"},
+      "flat_float_array" : { "type" : "boolean"},
+      "default_safe_string" : { "type" : "boolean"},
+      "safe_string" : { "type" : "boolean"},
+      "flambda" : { "type" : "boolean"},
+      "target" : { "type" : "string"},
+      "host" : { "type" : "string"},
+      "systhread_supported" : { "type" : "boolean"},
+      "default_executable_name" : { "type" : "string"},
+      "os_type" : { "type" : "string"},
+      "ext_dll" : { "type" : "string"},
+      "ext_lib" : { "type" : "string"},
+      "ext_asm" : { "type" : "string"},
+      "ext_obj" : { "type" : "string"},
+      "ext_exe" : { "type" : "string"},
+      "with_frame_pointers" : { "type" : "boolean"},
+      "asm_cfi_supported" : { "type" : "boolean"},
+      "asm" : { "type" : "string"},
+      "system" : { "type" : "string"},
+      "word_size" : { "type" : "integer"},
+      "int_size" : { "type" : "integer"},
+      "model" : { "type" : "string"},
+      "architecture" : { "type" : "string"},
+      "native_compiler" : { "type" : "boolean"},
+      "native_pack_linker" : { "type" : "string"},
+      "native_ldflags" : { "type" : "string"},
+      "compression_c_libraries" : { "type" : "string"},
+      "native_c_libraries" : { "type" : "string"},
+      "bytecomp_c_libraries" : { "type" : "string"},
+      "native_c_compiler" : { "type" : "string"},
+      "bytecomp_c_compiler" : { "type" : "string"},
+      "ocamlopt_cppflags" : { "type" : "string"},
+      "native_cppflags" : { "type" : "string"},
+      "ocamlopt_cflags" : { "type" : "string"},
+      "native_cflags" : { "type" : "string"},
+      "ocamlc_cppflags" : { "type" : "string"},
+      "bytecode_cppflags" : { "type" : "string"},
+      "ocamlc_cflags" : { "type" : "string"},
+      "bytecode_cflags" : { "type" : "string"},
+      "c_compiler" : { "type" : "string"},
+      "ccomp_type" : { "type" : "string"},
+      "standard_library" : { "type" : "string"},
+      "standard_library_default" : { "type" : "string"},
+      "version" : { "type" : "string"}
+    },
+  "required" :
+    ["metadata", "linear_magic_number", "cmt_magic_number",
+      "cmxs_magic_number", "ast_intf_magic_number", "ast_impl_magic_number",
+      "cmxa_magic_number", "cmx_magic_number", "cma_magic_number",
+      "cmo_magic_number", "cmi_magic_number", "exec_magic_number",
+      "with_codegen_invariants", "naked_pointers", "native_dynlink",
+      "supports_shared_libraries", "windows_unicode", "tsan",
+      "afl_instrument", "function_sections", "align_int64", "align_double",
+      "flat_float_array", "default_safe_string", "safe_string", "flambda",
+      "target", "host", "systhread_supported", "default_executable_name",
+      "os_type", "ext_dll", "ext_lib", "ext_asm", "ext_obj", "ext_exe",
+      "with_frame_pointers", "asm_cfi_supported", "asm", "system",
+      "word_size", "int_size", "model", "architecture", "native_compiler",
+      "native_pack_linker", "native_ldflags", "compression_c_libraries",
+      "native_c_libraries", "bytecomp_c_libraries", "native_c_compiler",
+      "bytecomp_c_compiler", "ocamlopt_cppflags", "native_cppflags",
+      "ocamlopt_cflags", "native_cflags", "ocamlc_cppflags",
+      "bytecode_cppflags", "ocamlc_cflags", "bytecode_cflags", "c_compiler",
+      "ccomp_type", "standard_library", "standard_library_default",
+      "version"]
+}
