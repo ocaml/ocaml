@@ -542,7 +542,17 @@ module Style : sig
     | BG of color (* background *)
     | Bold
     | Reset
-  type Format.stag += Style of style list
+  type Format.stag +=
+    | Error
+    | Warning
+    | Hint
+    | Loc
+    | Inline_code
+    | Deletion
+    | Insertion
+    | Modification
+    | Preservation
+    | Style of style list
 
   val ansi_of_style_l : style list -> string
   (* ANSI escape sequence for the given style *)
@@ -554,11 +564,15 @@ module Style : sig
   }
 
   type styles = {
-    error: tag_style;
-    warning: tag_style;
-    loc: tag_style;
-    hint: tag_style;
-    inline_code: tag_style;
+    error : tag_style;
+    warning : tag_style;
+    loc : tag_style;
+    hint : tag_style;
+    deletion : tag_style;
+    insertion : tag_style;
+    modification : tag_style;
+    preservation : tag_style;
+    inline_code : tag_style;
   }
 
   val hint: Format_doc.formatter -> unit

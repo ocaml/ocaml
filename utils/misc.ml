@@ -946,7 +946,17 @@ module Style = struct
     "\x1b[" ^ s ^ "m"
 
 
-  type Format.stag += Style of style list
+  type Format.stag +=
+    | Error
+    | Warning
+    | Hint
+    | Loc
+    | Inline_code
+    | Deletion
+    | Insertion
+    | Modification
+    | Preservation
+    | Style of style list
 
   type tag_style ={
     ansi: style list;
@@ -959,6 +969,10 @@ module Style = struct
     warning: tag_style;
     loc: tag_style;
     hint: tag_style;
+    deletion: tag_style;
+    insertion: tag_style;
+    modification: tag_style;
+    preservation: tag_style;
     inline_code: tag_style;
   }
 
@@ -969,7 +983,11 @@ module Style = struct
       error = no_markup [Bold; FG Red];
       loc = no_markup [Bold];
       hint = no_markup [Bold; FG Blue];
-      inline_code= no_markup [Bold]
+      preservation = no_markup [FG Green];
+      deletion = no_markup [FG Red; Bold];
+      insertion = no_markup [FG Red; Bold];
+      modification = no_markup [FG Magenta; Bold];
+      inline_code= no_markup [Bold];
     }
 
   let cur_styles = ref default_styles
@@ -979,24 +997,33 @@ module Style = struct
   (* map a tag to a style, if the tag is known.
      @raise Not_found otherwise *)
   let style_of_tag s = match s with
-    | Format.String_tag "error" ->  (!cur_styles).error
-    | Format.String_tag "warning" ->(!cur_styles).warning
-    | Format.String_tag "loc" -> (!cur_styles).loc
-    | Format.String_tag "hint" -> (!cur_styles).hint
-    | Format.String_tag "inline_code" -> (!cur_styles).inline_code
+    | Format.String_tag "error" | Error ->  (!cur_styles).error
+    | Format.String_tag "warning" | Warning ->(!cur_styles).warning
+    | Format.String_tag "loc" | Loc -> (!cur_styles).loc
+    | Format.String_tag "hint" | Hint -> (!cur_styles).hint
+    | Format.String_tag "inline_code" | Inline_code -> (!cur_styles).inline_code
     | Format.String_tag "ralign" -> no_markup []
+    | Deletion -> (!cur_styles).deletion
+    | Insertion -> (!cur_styles).insertion
+    | Preservation -> (!cur_styles).preservation
+    | Modification -> !(cur_styles).modification
     | Style s -> no_markup s
     | _ -> raise Not_found
 
 
   let as_inline_code printer ppf x =
     let open Format_doc in
-    pp_open_stag ppf (Format.String_tag "inline_code");
+    pp_open_stag ppf Inline_code;
     printer ppf x;
     pp_close_stag ppf ()
 
   let inline_code ppf s = as_inline_code Format_doc.pp_print_string ppf s
-  let hint ppf = Format_doc.fprintf ppf "@{<hint>Hint@}"
+
+  let hint ppf =
+    let open Format_doc in
+    pp_open_stag ppf Hint;
+    pp_print_string ppf "Hint";
+    pp_close_stag ppf ()
 
   (* either prints the tag of [s] or delegates to [or_else] *)
   let mark_open_tag ~color ~or_else s =
