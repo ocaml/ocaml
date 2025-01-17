@@ -24,26 +24,32 @@ module Doc = struct
 
   type stag = Format.stag
 
-  type element =
+  type core_elt =
     | Text of string
+    | Tab_break of { width : int; offset : int }
+    | Set_tab
+    | Simple_break of { spaces : int; indent : int }
+    | Break of { fits : string * int * string as 'a; breaks : 'a }
+    | Flush of { newline:bool }
+    | Newline
+    | If_newline
+    | Deprecated of (Format.formatter -> unit)
+    (** Escape hatch: a {!Format} printer used to provide backward-compatibility
+        for user-defined printer (from the [#install_printer] toplevel directive
+        for instance). *)
+
+type stream_element =
+    | Core of core_elt
     | With_size of int
     | Open_box of { kind: box_type ; indent:int }
     | Close_box
     | Open_tag of Format.stag
     | Close_tag
     | Open_tbox
-    | Tab_break of { width : int; offset : int }
-    | Set_tab
     | Close_tbox
-    | Simple_break of { spaces : int; indent: int }
-    | Break of { fits : string * int * string as 'a; breaks : 'a }
-    | Flush of { newline:bool }
-    | Newline
-    | If_newline
 
-    | Deprecated of (Format.formatter -> unit)
-
-  type t = { rev:element list } [@@unboxed]
+  type t = { rev:stream_element list } [@@unboxed]
+  type doc = t
 
   let empty = { rev = [] }
 
@@ -61,27 +67,29 @@ module Doc = struct
     | B -> Format.pp_open_box ppf indent
 
   let interpret_elt ppf = function
-    | Text x -> Format.pp_print_string ppf x
+    | Core (Text x) -> Format.pp_print_string ppf x
     | Open_box { kind; indent } -> format_open_box_gen ppf kind indent
     | Close_box -> Format.pp_close_box ppf ()
     | Open_tag tag -> Format.pp_open_stag ppf tag
     | Close_tag -> Format.pp_close_stag ppf ()
     | Open_tbox -> Format.pp_open_tbox ppf ()
-    | Tab_break {width;offset} -> Format.pp_print_tbreak ppf width offset
-    | Set_tab -> Format.pp_set_tab ppf ()
+    | Core (Tab_break {width;offset}) -> Format.pp_print_tbreak ppf width offset
+    | Core Set_tab -> Format.pp_set_tab ppf ()
     | Close_tbox -> Format.pp_close_tbox ppf ()
-    | Simple_break {spaces;indent} -> Format.pp_print_break ppf spaces indent
-    | Break {fits;breaks} -> Format.pp_print_custom_break ppf ~fits ~breaks
-    | Flush {newline=true} -> Format.pp_print_newline ppf ()
-    | Flush {newline=false} -> Format.pp_print_flush ppf ()
-    | Newline -> Format.pp_force_newline ppf ()
-    | If_newline -> Format.pp_print_if_newline ppf ()
+    | Core (Simple_break {spaces;indent}) ->
+        Format.pp_print_break ppf spaces indent
+    | Core (Break {fits;breaks}) ->
+        Format.pp_print_custom_break ppf ~fits ~breaks
+    | Core (Flush {newline=true}) -> Format.pp_print_newline ppf ()
+    | Core (Flush {newline=false}) -> Format.pp_print_flush ppf ()
+    | Core Newline -> Format.pp_force_newline ppf ()
+    | Core If_newline -> Format.pp_print_if_newline ppf ()
     | With_size _ ->  ()
-    | Deprecated pr -> pr ppf
+    | Core (Deprecated pr) -> pr ppf
 
   let rec interpret ppf = function
     | [] -> ()
-    | With_size size :: Text text :: l ->
+    | With_size size :: Core (Text text) :: l ->
         Format.pp_print_as ppf size text;
         interpret ppf l
     | x :: l ->
@@ -92,33 +100,84 @@ module Doc = struct
 
 
 
+  module Tree = struct
+
+    type t =
+      | Box of { kind: box_type; indent:int; subtrees:t list}
+      | Tbox of t list
+      | Tagged of { tag:Format.stag; subtrees: t list }
+      | With_size of { size:int; text:string }
+      | Core of core_elt
+
+
+    let rec parse c (s:stream_element list) k = match s with
+      | [] -> k c []
+      | Open_box b :: q ->
+          parse_box c q k
+            (fun subtrees -> Box {kind=b.kind; indent=b.indent; subtrees})
+      | Open_tag tag :: q ->
+          parse_box c q k (fun subtrees -> Tagged {tag; subtrees})
+      | Open_tbox :: q -> parse_box c q k (fun s -> Tbox s)
+      | With_size size :: q ->
+          begin match q with
+          | Core (Text text) :: q ->
+              parse (With_size {size; text}::c) q k
+          | q -> parse c q k
+          end
+      | Core (Text x) :: Core (Text y) :: q ->
+          let b = Buffer.create 10 in
+          Buffer.add_string b x;
+          Buffer.add_string b y;
+          let t , r = merge_text b q in
+          parse (Core (Text t) :: c) r k
+      | Core x :: q -> parse (Core x :: c) q k
+      | (Close_box | Close_tag | Close_tbox) :: q -> k c q
+     and parse_box c q k constr =
+       parse [] q (fun l r ->
+           let b = constr (List.rev l) in
+           parse (b::c) r k
+         )
+     and merge_text b: stream_element list -> _ =
+       function
+       | [] -> Buffer.contents b, []
+       | Core (Text x) :: q ->
+           Buffer.add_string b x;
+           merge_text b q
+       | q ->
+           Buffer.contents b, q
+
+      let parse d = parse [] (List.rev d.rev) (fun l _ -> List.rev l)
+
+
+  end
+
   let open_box kind indent doc = add doc (Open_box {kind;indent})
   let close_box doc = add doc Close_box
 
-  let string s doc = add doc (Text s)
-  let bytes b doc = add doc (Text (Bytes.to_string b))
+  let string s doc = add doc (Core(Text s))
+  let bytes b doc = add doc (Core(Text (Bytes.to_string b)))
   let with_size size doc = add doc (With_size size)
 
-  let int n doc = add doc (Text (string_of_int n))
-  let float f doc = add doc (Text (string_of_float f))
-  let char c doc = add doc (Text (String.make 1 c))
-  let bool c doc = add doc (Text (Bool.to_string c))
+  let int n doc = add doc (Core(Text (string_of_int n)))
+  let float f doc = add doc (Core(Text (string_of_float f)))
+  let char c doc = add doc (Core(Text (String.make 1 c)))
+  let bool c doc = add doc (Core(Text (Bool.to_string c)))
 
-  let break ~spaces ~indent doc = add doc (Simple_break {spaces; indent})
+  let break ~spaces ~indent doc = add doc (Core(Simple_break {spaces; indent}))
   let space doc = break ~spaces:1 ~indent:0 doc
   let cut = break ~spaces:0 ~indent:0
 
-  let custom_break ~fits ~breaks doc = add doc (Break {fits;breaks})
+  let custom_break ~fits ~breaks doc = add doc (Core(Break {fits;breaks}))
 
-  let force_newline doc = add doc Newline
-  let if_newline doc = add doc If_newline
+  let force_newline doc = add doc (Core Newline)
+  let if_newline doc = add doc (Core If_newline)
 
-  let flush doc = add doc (Flush {newline=false})
-  let force_stop doc = add doc (Flush {newline=true})
+  let flush doc = add doc (Core(Flush {newline=false}))
+  let force_stop doc = add doc (Core(Flush {newline=true}))
 
   let open_tbox doc = add doc Open_tbox
-  let set_tab doc = add doc Set_tab
-  let tab_break ~width ~offset doc = add doc (Tab_break {width;offset})
+  let set_tab doc = add doc (Core Set_tab)
+  let tab_break ~width ~offset doc = add doc (Core(Tab_break {width;offset}))
   let tab doc = tab_break ~width:0 ~offset:0 doc
   let close_tbox doc = add doc Close_tbox
 
@@ -198,7 +257,7 @@ module Doc = struct
   let to_string doc =
     let b = Buffer.create 20 in
     let convert = function
-      | Text s -> Buffer.add_string b s
+      | Core (Text s) -> Buffer.add_string b s
       | _ -> ()
     in
     fold (fun () x -> convert x) () doc;
@@ -555,8 +614,7 @@ let pp_two_columns ?(sep = "|") ?max_lines ppf (lines: (string * string) list) =
     ) lines;
   fprintf ppf "@]"
 
-let deprecated_printer pr ppf = ppf := Doc.add !ppf (Doc.Deprecated pr)
-let deprecated pr ppf x =
-  ppf := Doc.add !ppf (Doc.Deprecated (fun ppf -> pr ppf x))
-let deprecated1 pr p1 ppf x =
-  ppf := Doc.add !ppf (Doc.Deprecated (fun ppf -> pr p1 ppf x))
+let deprecated_printer pr ppf =
+  ppf := Doc.add !ppf Doc.(Core (Deprecated pr))
+let deprecated pr ppf x = deprecated_printer (fun ppf -> pr ppf x) ppf
+let deprecated1 pr p1 ppf x = deprecated_printer (fun ppf -> pr p1 ppf x) ppf
