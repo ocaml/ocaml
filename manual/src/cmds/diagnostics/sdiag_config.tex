@@ -1,0 +1,78 @@
+\begin{camlexample}{verbatim}
+\begin{caml}
+\begin{camlinput}
+type config = {
+  metadata: metadata;
+  linear_magic_number: string;
+  cmt_magic_number: string;
+  cmxs_magic_number: string;
+  ast_intf_magic_number: string;
+  ast_impl_magic_number: string;
+  cmxa_magic_number: string;
+  cmx_magic_number: string;
+  cma_magic_number: string;
+  cmo_magic_number: string;
+  cmi_magic_number: string;
+  exec_magic_number: string;
+  reserved_header_bits: int;
+  with_codegen_invariants: bool;
+  naked_pointers: bool;
+  native_dynlink: bool;
+  supports_shared_libraries: bool;
+  windows_unicode: bool;
+  tsan: bool;
+  afl_instrument: bool;
+  function_sections: bool;
+  align_int64: bool;
+  align_double: bool;
+  flat_float_array: bool;
+  default_safe_string: bool;
+  safe_string: bool;
+  flambda: bool;
+  native_runtime_id: string;
+  bytecode_runtime_id: string;
+  target: string;
+  host: string;
+  systhread_supported: bool;
+  default_executable_name: string;
+  os_type: string;
+  ext_dll: string;
+  ext_lib: string;
+  ext_asm: string;
+  ext_obj: string;
+  ext_exe: string;
+  with_frame_pointers: bool;
+  asm_cfi_supported: bool;
+  asm: string;
+  system: string;
+  word_size: int;
+  int_size: int;
+  model: string;
+  architecture: string;
+  native_compiler: bool;
+  native_pack_linker: string;
+  native_ldflags: string;
+  compression_c_libraries: string;
+  native_c_libraries: string;
+  bytecomp_c_libraries: string;
+  native_c_compiler: string;
+  bytecomp_c_compiler: string;
+  ocamlopt_cppflags: string;
+  native_cppflags: string;
+  ocamlopt_cflags: string;
+  native_cflags: string;
+  ocamlc_cppflags: string;
+  bytecode_cppflags: string;
+  ocamlc_cflags: string;
+  bytecode_cflags: string;
+  c_compiler: string;
+  ccomp_type: string;
+  standard_library: string;
+  standard_library_relative: string array;
+  standard_library_default: string;
+  version: string;
+} [@@since 1.0]
+[@@version 1.0]
+\end{camlinput}
+\end{caml}
+\end{camlexample}

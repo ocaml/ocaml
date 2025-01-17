@@ -57,7 +57,6 @@ val standard_library_default: string
 
     @since 5.5 *)
 
-val standard_library_default: string
 val standard_library: string
 (** The effective directory containing the standard libraries, taking CAMLLIB
     and OCAMLLIB into account. *)

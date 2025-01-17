@@ -430,6 +430,15 @@ long functions and modules. On the other hand, the generated code can be a bit
 slower.
 }%nat
 
+\item{"-log-format" \var{format}}
+Use the format \var{format} for diagnostics (warnings, error messages, REPL evaluation).
+
+\item{"-log-version" \var{major.minor}}
+Emit diagnostics with a format compatible with the version \var{major.minor}.
+
+\item{"-log-file" \var{filename}}
+Emit diagnostics to the file \var {filename}
+
 \comp{%
 \item["-make-runtime"]
 Build a custom runtime system (in the file specified by option "-o")

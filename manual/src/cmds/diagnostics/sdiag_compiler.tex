@@ -1,0 +1,14 @@
+\begin{camlexample}{verbatim}
+\begin{caml}
+\begin{camlinput}
+type compiler = {
+  metadata: metadata;
+  alerts: error_report array option [@optional];
+  warnings: error_report array option [@optional];
+  error: error_report option [@optional];
+  debug: debug option [@optional];
+} [@@since 0.1]
+[@@version 0.1]
+\end{camlinput}
+\end{caml}
+\end{camlexample}
