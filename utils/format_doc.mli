@@ -42,30 +42,49 @@ module Doc: sig
   type stag = Format.stag
 
   (** Base formatting instruction recognized by {!Format} *)
-  type element =
+
+  type core_elt =
     | Text of string
+    | Tab_break of { width : int; offset : int }
+    | Set_tab
+    | Simple_break of { spaces : int; indent : int }
+    | Break of { fits : string * int * string as 'a; breaks : 'a }
+    | Flush of { newline:bool }
+    | Newline
+    | If_newline
+    | Deprecated of (Format.formatter -> unit)
+    (** Escape hatch: a {!Format} printer used to provide backward-compatibility
+        for user-defined printer (from the [#install_printer] toplevel directive
+        for instance). *)
+
+  (** Stream representation of a document *)
+  type stream_element =
+    | Core of core_elt
     | With_size of int
     | Open_box of { kind: box_type ; indent:int }
     | Close_box
     | Open_tag of Format.stag
     | Close_tag
     | Open_tbox
-    | Tab_break of { width : int; offset : int }
-    | Set_tab
     | Close_tbox
-    | Simple_break of { spaces : int; indent : int }
-    | Break of { fits : string * int * string as 'a; breaks : 'a }
-    | Flush of { newline:bool }
-    | Newline
-    | If_newline
-
-    | Deprecated of (Format.formatter -> unit)
-    (** Escape hatch: a {!Format} printer used to provide backward-compatibility
-        for user-defined printer (from the [#install_printer] toplevel directive
-        for instance). *)
 
   (** Immutable document type*)
   type t
+  type doc = t
+
+module Tree: sig
+  (** Tree representation of a document *)
+
+  type t =
+    | Box of { kind: box_type; indent:int; subtrees:t list}
+    | Tbox of t list
+    | Tagged of { tag:Format.stag; subtrees: t list }
+    | With_size of {size:int; text:string}
+    | Core of core_elt
+
+  val parse: doc -> t list
+
+end
 
   type ('a,'b) fmt = ('a, t, t,'b) format4
 
@@ -81,7 +100,7 @@ module Doc: sig
   val format: Format.formatter -> t -> unit
 
   (** Fold over a document as a sequence of instructions *)
-  val fold: ('acc -> element -> 'acc) -> 'acc -> t -> 'acc
+  val fold: ('acc -> stream_element -> 'acc) -> 'acc -> t -> 'acc
 
   (** {!msg} and {!kmsg} produce a document from a format string and its
       argument *)
