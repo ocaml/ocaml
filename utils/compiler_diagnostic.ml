@@ -193,11 +193,11 @@ module Debug = struct
   let raw_clambda = new_field_opt v1 "raw_clambda" slist
   let cmm = new_field_opt v1 "cmm" slist
   let remove_free_vars_equal_to_args =
-    new_field_opt v1 "remove-free-vars-equal-to-args" slist
+    new_field_opt v1 "remove_free_vars_equal_to_args" slist
   let unbox_free_vars_of_closures =
-    new_field_opt v1 "unbox-free-vars-of-closures" slist
-  let unbox_closures = new_field_opt v1 "unbox-closures" slist
-  let unbox_specialised_args = new_field_opt v1 "unbox-specialised-args" slist
+    new_field_opt v1 "unbox_free_vars_of_closures" slist
+  let unbox_closures = new_field_opt v1 "unbox_closures" slist
+  let unbox_specialised_args = new_field_opt v1 "unbox_specialised_args" slist
   let mach = new_field_opt v1 "mach" slist
   let linear = new_field_opt v1 "linear" slist
   let cmm_invariant = new_field_opt v1 "cmm_invariant" String

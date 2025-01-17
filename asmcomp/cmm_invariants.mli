@@ -32,4 +32,4 @@
 (** [run ppf fundecl] analyses the given function, and returns whether
     any errors were encountered (with corresponding error messages printed
     on the given formatter). *)
-val run : Format.formatter -> Cmm.fundecl -> bool
+val run : Compiler_diagnostic.Debug.id Log.t -> Cmm.fundecl -> bool

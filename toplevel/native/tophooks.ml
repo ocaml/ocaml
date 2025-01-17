@@ -58,6 +58,9 @@ end
 let backend = (module Backend : Backend_intf.S)
 
 let load ppf phrase_name program =
+  let dev = Log.Device.make (ref ppf) in
+  let clog = Location.log_on_device dev in
+  let log = Log.detach clog Compiler_diagnostic.debug in
   let dll =
     if !Clflags.keep_asm_file then phrase_name ^ ext_dll
     else Filename.temp_file ("caml" ^ phrase_name) ext_dll
@@ -69,7 +72,7 @@ let load ppf phrase_name program =
   in
   Asmgen.compile_implementation ~toplevel:need_symbol
     ~backend ~prefixname:filename
-    ~middle_end ~ppf_dump:ppf program;
+    ~middle_end ~log program;
   Asmlink.call_linker_shared [filename ^ ext_obj] dll;
   Sys.remove (filename ^ ext_obj);
 
@@ -95,8 +98,8 @@ let load ppf phrase_name program =
      Exception x
 
 type lookup_fn = string -> Obj.t option
-type load_fn =
-  Format.formatter -> string -> Lambda.program -> Topcommon.evaluation_outcome
+type load_fn = Format.formatter -> string -> Lambda.program ->
+  Topcommon.evaluation_outcome
 type assembler = {mutable lookup: lookup_fn; mutable load: load_fn}
 
 let fns = {lookup; load}

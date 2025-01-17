@@ -27,6 +27,7 @@ let equal_mutability m1 m2 =
   | Mutable, Mutable | Immutable, Immutable -> true
   | Mutable, Immutable | Immutable, Mutable -> false
 
+
 let mutability_to_string m =
   match m with
   | Mutable -> "mutable"
@@ -47,7 +48,8 @@ module Env : sig
 
   val use_var : t -> V.t -> mutability -> unit
 
-  val report : Format.formatter -> bool
+  val report : Format.formatter -> unit
+  val in_error_state: unit -> bool
 end = struct
   type t = {
     bound_handlers : int Int.Map.t;
@@ -168,14 +170,11 @@ end = struct
         (mutability_to_string use_mut)
 
   let print_error_newline ppf error =
-    Format.fprintf ppf "%a@." print_error error
+    Format.fprintf ppf "%a" print_error error
 
   let report ppf =
-    if ErrorSet.is_empty state.errors then false
-    else begin
-      ErrorSet.iter (fun err -> print_error_newline ppf err) state.errors;
-      true
-    end
+      ErrorSet.iter (fun err -> print_error_newline ppf err) state.errors
+  let in_error_state () = not (ErrorSet.is_empty state.errors)
 end
 
 let rec check env (expr : Cmm.expression) =
@@ -240,7 +239,10 @@ let rec check env (expr : Cmm.expression) =
     check env body;
     check (Env.bind_var env (VP.var id) Immutable) handler
 
-let run ppf (fundecl : Cmm.fundecl) =
+let run log (fundecl : Cmm.fundecl) =
   let env = Env.bind_params (Env.init ()) fundecl.fun_args in
   check env fundecl.fun_body;
-  Env.report ppf
+  let err = Env.in_error_state () in
+  Log.log_if log Compiler_diagnostic.Debug.cmm_invariant err
+    (fun ppf () -> Env.report ppf) ();
+  err

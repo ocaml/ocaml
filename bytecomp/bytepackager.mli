@@ -17,7 +17,8 @@
    original compilation units as sub-modules. *)
 
 val package_files:
-  ppf_dump:Format.formatter -> Env.t -> string list -> string -> unit
+  log:Compiler_diagnostic.Debug.id Log.t -> Env.t -> string list -> string ->
+  unit
 
 type error =
     Forward_reference of string * Cmo_format.compunit

@@ -190,8 +190,7 @@ let compute_other_category (E table : hierarchy) (total : Measure_diff.t) =
 
 type row = R of string * (float * display) list * row list
 
-module _ = struct
-  [@@@warning "-32"]
+module Profile_report = struct
   module D = Diagnostic
   type _ D.extension += Profile: (string list * row list) D.extension
   let v1 = Compiler_diagnostic.v1
@@ -218,6 +217,9 @@ module _ = struct
     let default = D.(Pair (List String, List raw_type)) in
     D.Custom {id = Profile; pull; default }
 end
+let profile =
+  Compiler_diagnostic.(Debug.new_field_opt v1 "profile" Profile_report.typ)
+let () = Compiler_diagnostic.(Debug.seal v1)
 
 let rec rows_of_hierarchy ~nesting make_row name measure_diff hierarchy env =
   let rows =
@@ -347,6 +349,23 @@ let column_mapping = [
   "top-heap", `Top_heap;
   "absolute-top-heap", `Abs_top_heap;
 ]
+
+let report columns log =
+  let name l =
+    List.find_map (fun (x,y) -> if y = l then Some x else None)
+    column_mapping
+  in
+  log.Log.%[profile] <- (List.filter_map name columns, compute_rows columns)
+
+let () =
+  let extension: type a.
+    a Diagnostic.extension -> (Format.formatter -> a -> unit) option =
+    function
+    | Profile_report.Profile -> Some (fun ppf (_,rows) -> print ppf rows)
+    | _ -> None
+  in
+  Diagnostic_backends.add_extension { extension }
+
 
 let column_names = List.map fst column_mapping
 
