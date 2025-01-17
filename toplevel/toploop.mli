@@ -36,28 +36,31 @@ val set_paths :
   ?auto_include:Load_path.auto_include_callback -> ?dir:string -> unit -> unit
 
 (* The interactive toplevel loop *)
-type log = Compiler_diagnostic.id Log.t
+type log = Toplevel_diagnostic.id Log.t
 
-val loop : formatter -> log -> unit
+val loop : log -> unit
 
 (* Read and execute a script from the given file *)
 
-val run_script : formatter -> input -> string array -> bool
+val run_script : log -> input -> string array -> bool
         (* true if successful, false if error *)
 
 (* Interface with toplevel directives *)
 
+type 'a directive = log -> 'a -> unit
+
 type directive_fun =
-   | Directive_none of (unit -> unit)
-   | Directive_string of (string -> unit)
-   | Directive_int of (int -> unit)
-   | Directive_ident of (Longident.t -> unit)
-   | Directive_bool of (bool -> unit)
+  | Directive_none of unit directive
+  | Directive_string of string directive
+  | Directive_int of int directive
+  | Directive_ident of Longident.t directive
+  | Directive_bool of bool directive
 
 type directive_info = {
   section: string;
   doc: string;
 }
+
 
 val add_directive : string -> directive_fun -> directive_info -> unit
         (* Add toplevel directive and its documentation.
@@ -84,20 +87,21 @@ val initialize_toplevel_env : unit -> unit
         (* Initialize the typing environment for the toplevel *)
 val print_exception_outcome : exn Format_doc.printer
         (* Print an exception resulting from the evaluation of user code. *)
-val execute_phrase : bool -> formatter -> Parsetree.toplevel_phrase -> bool
+val execute_phrase : bool -> log -> Parsetree.toplevel_phrase -> bool
         (* Execute the given toplevel phrase. Return [true] if the
            phrase executed with no errors and [false] otherwise.
            First bool says whether the values and types of the results
            should be printed. Uncaught exceptions are always printed. *)
 val preprocess_phrase :
-      formatter -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
+  Compiler_diagnostic.Debug.id Log.t -> Parsetree.toplevel_phrase ->
+  Parsetree.toplevel_phrase
         (* Preprocess the given toplevel phrase using regular and ppx
            preprocessors. Return the updated phrase. *)
-val use_input : formatter -> input -> bool
-val use_output : formatter -> string -> bool
-val use_silently : formatter -> input -> bool
-val mod_use_input : formatter -> input -> bool
-val use_file : formatter -> string -> bool
+val use_input : log -> input -> bool
+val use_output : log -> string -> bool
+val use_silently : log -> input -> bool
+val mod_use_input : log -> input -> bool
+val use_file : log -> string -> bool
         (* Read and execute commands from a file.
            [use_input] prints the types and values of the results.
            [use_silently] does not print them.
@@ -109,7 +113,7 @@ val eval_class_path: Env.t -> Path.t -> Obj.t
         (* Return the toplevel object referred to by the given path *)
 val record_backtrace : unit -> unit
 
-val load_file: formatter -> string -> bool
+val load_file: log -> string -> bool
 
 (* Printing of values *)
 val print_value:
@@ -129,6 +133,7 @@ val log_warning :
   Location.t -> Compiler_diagnostic.id Log.t -> Warnings.t -> unit
 val input_name : string ref
 
+
 type 'a oprinter := 'a Oprint.printer
 val print_out_value : Outcometree.out_value oprinter
 val print_out_type : Outcometree.out_type oprinter
@@ -141,7 +146,8 @@ val print_out_phrase : Outcometree.out_phrase oprinter
 
 (* Hooks for external line editor *)
 
-val read_interactive_input : (string -> bytes -> int -> int * bool) ref
+val read_interactive_input :
+  (string -> bytes -> int -> int * bool) ref
 
 (* Hooks *)
 
@@ -189,6 +195,6 @@ val preload_objects : string list ref
 (** List of compilation units to be loaded before entering the interactive
     loop. *)
 
-val prepare : Format.formatter -> log -> ?input:input -> unit -> bool
+val prepare : Toplevel_diagnostic.id Log.t -> ?input:input -> unit -> bool
 (** Setup the load paths and initial toplevel environment and load compilation
     units in {!preload_objects}. *)

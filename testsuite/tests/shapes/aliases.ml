@@ -11,6 +11,7 @@ module B = A
                  "t"[type] -> <.0>;
                  };
  }
+
 module A : sig type t end
 {
  "B"[module] -> Alias(<.2>
@@ -18,6 +19,7 @@ module A : sig type t end
                        "t"[type] -> <.0>;
                        });
  }
+
 module B = A
 |}]
 
@@ -27,6 +29,7 @@ type u = B.t
 {
  "u"[type] -> <.3>;
  }
+
 type u = B.t
 |}]
 
@@ -36,11 +39,13 @@ module F' = F
 {
  "F"[module] -> Abs<.6>(X, X<.5>);
  }
+
 module F : (X : sig type t end) -> sig type t = X.t end
 {
  "F'"[module] -> Alias(<.7>
                        Abs<.6>(X, X<.5>));
  }
+
 module F' = F
 |}]
 
@@ -51,6 +56,7 @@ module C = F'(A)
                  "t"[type] -> <.0>;
                  };
  }
+
 module C : sig type t = A.t end
 |}]
 
@@ -64,6 +70,7 @@ module C = F(B)
                        "t"[type] -> <.0>;
                        });
  }
+
 module C : sig type t = B.t end
 |}]
 
@@ -77,6 +84,7 @@ module D = C
                              "t"[type] -> <.0>;
                              }));
  }
+
 module D = C
 |}]
 
@@ -87,6 +95,7 @@ module G (X : sig type t end) = struct include X end
                              "t"[type] -> X<.12> . "t"[type];
                              });
  }
+
 module G : (X : sig type t end) -> sig type t = X.t end
 |}]
 
@@ -97,6 +106,7 @@ module E = G(B)
                  "t"[type] -> <.0>;
                  };
  }
+
 module E : sig type t = B.t end
 |}]
 
@@ -110,12 +120,14 @@ module O = N
                  "x"[value] -> <.16>;
                  };
  }
+
 module M : sig type t val x : int end
 {
  "N"[module] -> {<.19>
                  "t"[type] -> <.15>;
                  };
  }
+
 module N : sig type t end
 {
  "O"[module] -> Alias(<.20>
@@ -123,5 +135,6 @@ module N : sig type t end
                        "t"[type] -> <.15>;
                        });
  }
+
 module O = N
 |}]
