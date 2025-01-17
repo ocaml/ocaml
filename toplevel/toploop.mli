@@ -36,8 +36,9 @@ val set_paths :
   ?auto_include:Load_path.auto_include_callback -> ?dir:string -> unit -> unit
 
 (* The interactive toplevel loop *)
+type log = Compiler_diagnostic.id Log.t
 
-val loop : formatter -> unit
+val loop : formatter -> log -> unit
 
 (* Read and execute a script from the given file *)
 
@@ -124,7 +125,8 @@ val parse_toplevel_phrase : (Lexing.lexbuf -> Parsetree.toplevel_phrase) ref
 val parse_use_file : (Lexing.lexbuf -> Parsetree.toplevel_phrase list) ref
 val print_location : formatter -> Location.t -> unit
 val print_error : formatter -> Location.error -> unit
-val print_warning : Location.t -> formatter -> Warnings.t -> unit
+val log_warning :
+  Location.t -> Compiler_diagnostic.id Log.t -> Warnings.t -> unit
 val input_name : string ref
 
 type 'a oprinter := 'a Oprint.printer
@@ -187,6 +189,6 @@ val preload_objects : string list ref
 (** List of compilation units to be loaded before entering the interactive
     loop. *)
 
-val prepare : Format.formatter -> ?input:input -> unit -> bool
+val prepare : Format.formatter -> log -> ?input:input -> unit -> bool
 (** Setup the load paths and initial toplevel environment and load compilation
     units in {!preload_objects}. *)

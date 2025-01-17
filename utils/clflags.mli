@@ -252,6 +252,13 @@ val color_reader : Misc.Color.setting env_reader
 val error_style : Misc.Error_style.setting option ref
 val error_style_reader : Misc.Error_style.setting env_reader
 
+val log_format: Diagnostic_backends.t option ref
+val log_format_reader: Diagnostic_backends.t env_reader
+val log_version: Diagnostic.version option ref
+val log_version_reader: Diagnostic.version env_reader
+val log_file: string option ref
+val log_file_reader: string env_reader
+
 val unboxed_types : bool ref
 
 val insn_sched : bool ref
@@ -329,3 +336,15 @@ val print_arguments : string -> unit
 
 (* [reset_arguments ()] clear all declared arguments *)
 val reset_arguments : unit -> unit
+
+
+(** create a logger *)
+
+val create_log_device: Format.formatter -> Log.Device.t
+
+val create_log:
+  default_backend:Diagnostic_backends.t
+  -> 'v Diagnostic_history.t
+  -> 'a Diagnostic.t
+  -> Log.Device.t
+  -> 'a Log.t

@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Misc
+let print_if = Misc.print_if
 open Compile_common
 
 let tool_name = "ocamlc"
@@ -21,12 +21,13 @@ let tool_name = "ocamlc"
 let with_info =
   Compile_common.with_info ~native:false ~tool_name
 
-let interface ~source_file ~output_prefix =
+let interface ~log:_ ~source_file ~output_prefix =
   let unit_info = Unit_info.make ~source_file Intf output_prefix in
   with_info ~dump_ext:"cmi" unit_info @@ fun info ->
   Compile_common.interface info
 
 (** Bytecode compilation backend for .ml files. *)
+
 
 let to_bytecode i Typedtree.{structure; coercion; _} =
   (structure, coercion)
@@ -57,7 +58,7 @@ let emit_bytecode i (bytecode, required_globals) =
          (Emitcode.to_file oc cmo ~required_globals);
     )
 
-let implementation ~start_from ~source_file ~output_prefix =
+let implementation ~log:_ ~start_from ~source_file ~output_prefix =
   let backend info typed =
     let bytecode = to_bytecode info typed in
     emit_bytecode info bytecode

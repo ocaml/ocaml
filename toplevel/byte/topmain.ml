@@ -141,6 +141,8 @@ let expand_position pos len =
 let input_argument name =
   let filename = Toploop.filename_of_input name in
   let ppf = Format.err_formatter in
+  let device = Log.Device.err in
+  let log = Topcommon.log_on_device device in
   if Filename.check_suffix filename ".cmo"
           || Filename.check_suffix filename ".cma"
   then Toploop.preload_objects := filename :: !Toploop.preload_objects
@@ -157,9 +159,9 @@ let input_argument name =
       let newargs = Array.sub !argv !current
                               (Array.length !argv - !current)
       in
-      Compenv.readenv ppf Before_link;
+      Compenv.readenv log Before_link;
       Compmisc.read_clflags_from_env ();
-      if Toploop.prepare ppf ~input:name () &&
+      if Toploop.prepare ppf log ~input:name () &&
          Toploop.run_script ppf name newargs
       then raise (Compenv.Exit_with_status 0)
       else raise (Compenv.Exit_with_status 2)
@@ -184,21 +186,26 @@ end)
 
 let main () =
   let ppf = Format.err_formatter in
+  let setup_dev = Log.Device.err in
+  let log = Location.temporary_log () in
   let program = "ocaml" in
   let display_deprecated_script_alert =
     Array.length !argv >= 2 && Topcommon.is_command_like_name !argv.(1)
   in
   Topcommon.update_search_path_from_env ();
-  Compenv.readenv ppf Before_args;
+  Compenv.readenv log Before_args;
   if display_deprecated_script_alert then
     Location.deprecated_script_alert program;
   Clflags.add_arguments __LOC__ Options.list;
   Compenv.parse_arguments ~current argv file_argument program;
-  Compenv.readenv ppf Before_link;
+  Compenv.readenv log Before_link;
   Compmisc.read_clflags_from_env ();
-  if not (Toploop.prepare ppf ()) then raise (Compenv.Exit_with_status 2);
+  let tlog = Location.log_on_device ~prev:log setup_dev in
+  Log.flush tlog;
+  let log = Topcommon.log_on_device Log.Device.std in
+  if not (Toploop.prepare ppf log ()) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();
-  Toploop.loop Format.std_formatter
+  Toploop.loop Format.std_formatter log
 
 let main () =
   match main () with

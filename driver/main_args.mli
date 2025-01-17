@@ -76,7 +76,9 @@ module type Core_options = sig
   val _dmatchcomp : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
-
+  val _log_format : string -> unit
+  val _log_version : string -> unit
+  val _log_file : string -> unit
 end
 
 module type Compiler_options = sig

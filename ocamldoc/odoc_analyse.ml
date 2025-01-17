@@ -122,7 +122,8 @@ module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
 (** Handle an error. *)
 
 let process_error exn =
-  try Location.report_exception Format.err_formatter exn
+  let log = Location.log_on_device Log.Device.err in
+  try Location.log_exception log exn
   with exn ->
     fprintf Format.err_formatter
       "Compilation error(%s). Use the OCaml compiler to get more details.@."
