@@ -32,6 +32,7 @@ val record : ?accumulate:bool -> string -> ('a -> 'b) -> 'a -> 'b
 (** [record pass f arg] records the profile information of [f arg] *)
 
 type column = [ `Time | `Alloc | `Top_heap | `Abs_top_heap ]
+val report: column list -> Compiler_diagnostic.Debug.id Log.t -> unit
 
 type row
 val compute_rows: column list -> row list

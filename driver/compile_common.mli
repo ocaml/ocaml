@@ -19,7 +19,7 @@
 type info = {
   target : Unit_info.t;
   env : Env.t;
-  ppf_dump : Format.formatter;
+  debug_log : Compiler_diagnostic.Debug.id Log.t;
   tool_name : string;
   native : bool;
 }
@@ -29,6 +29,7 @@ val with_info :
   native:bool ->
   tool_name:string ->
   dump_ext:string ->
+  log:Compiler_diagnostic.id Log.t ->
   Unit_info.t ->
   (info -> 'a) -> 'a
 (** [with_info ~native ~tool_name ~dump_ext unit_info k] invokes its

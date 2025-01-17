@@ -22,14 +22,16 @@ let tool_name = "ocamlopt"
 let with_info =
   Compile_common.with_info ~native:true ~tool_name
 
-let print_if = Misc.print_if
-
-let interface ~log:_ ~source_file ~output_prefix =
+let interface ~log ~source_file ~output_prefix =
   let unit_info = Unit_info.make ~source_file Intf output_prefix in
-  with_info ~dump_ext:"cmi" unit_info @@ fun info ->
+  with_info ~log ~dump_ext:"cmi" unit_info @@ fun info ->
   Compile_common.interface info
 
 let (|>>) (x, y) f = (x, f y)
+
+let dump_if i field printer x =
+  Clflags.dump_on_log i.debug_log field printer x; x
+module D = Compiler_diagnostic.Debug
 
 (** Native compilation backend for .ml files. *)
 
@@ -50,9 +52,9 @@ let flambda i backend Typedtree.{structure; coercion; _} =
       let () =
         let (module_ident, main_module_block_size), code =
           ((module_ident, main_module_block_size), code)
-          |>> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.lambda
+          |>> dump_if i D.raw_lambda Printlambda.lambda
           |>> Simplif.simplify_lambda
-          |>> print_if i.ppf_dump Clflags.dump_lambda Printlambda.lambda
+          |>> dump_if i D.lambda Printlambda.lambda
         in
 
         if Clflags.(should_stop_after Compiler_pass.Lambda) then () else (
@@ -68,7 +70,7 @@ let flambda i backend Typedtree.{structure; coercion; _} =
             ~backend
             ~prefixname:(Unit_info.prefix i.target)
             ~middle_end:Flambda_middle_end.lambda_to_clambda
-            ~ppf_dump:i.ppf_dump
+            ~log:i.debug_log
             program)
       in
       Compilenv.save_unit_info Unit_info.(Artifact.filename @@ cmx i.target))
@@ -79,19 +81,19 @@ let clambda i backend Typedtree.{structure; coercion; _} =
   (structure, coercion)
   |> Profile.(record transl)
     (Translmod.transl_store_implementation (Unit_info.modname i.target))
-  |> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.program
+  |> dump_if i D.raw_lambda Printlambda.program
   |> Profile.(record generate)
     (fun program ->
        let code = Simplif.simplify_lambda program.Lambda.code in
        { program with Lambda.code }
-       |> print_if i.ppf_dump Clflags.dump_lambda Printlambda.program
+       |> dump_if i D.lambda Printlambda.program
        |>(fun lambda ->
            if Clflags.(should_stop_after Compiler_pass.Lambda) then () else
              Asmgen.compile_implementation
                ~backend
                ~prefixname:(Unit_info.prefix i.target)
                ~middle_end:Closure_middle_end.lambda_to_clambda
-               ~ppf_dump:i.ppf_dump
+               ~log:i.debug_log
                lambda;
            Compilenv.save_unit_info
              Unit_info.(Artifact.filename @@ cmx i.target)))
@@ -102,7 +104,7 @@ let emit i =
   Compilenv.reset ?packname:!Clflags.for_package (Unit_info.modname i.target);
   Asmgen.compile_implementation_linear i.target
 
-let implementation ~backend ~log:_ ~start_from ~source_file ~output_prefix =
+let implementation ~backend ~log ~start_from ~source_file ~output_prefix =
   let backend info typed =
     Compilenv.reset ?packname:!Clflags.for_package
       (Unit_info.modname info.target);
@@ -111,7 +113,7 @@ let implementation ~backend ~log:_ ~start_from ~source_file ~output_prefix =
     else clambda info backend typed
   in
   let unit_info = Unit_info.make ~source_file Impl output_prefix in
-  with_info ~dump_ext:"cmx" unit_info @@ fun info ->
+  with_info ~log ~dump_ext:"cmx" unit_info @@ fun info ->
   match (start_from:Clflags.Compiler_pass.t) with
   | Parsing -> Compile_common.implementation info ~backend
   | Emit -> emit info
