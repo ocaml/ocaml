@@ -72,11 +72,12 @@ include Topcommon.MakeEvalPrinter(EvalBase)
 let may_trace = ref false (* Global lock on tracing *)
 
 let load_lambda ppf lam =
-  if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
+  if Clflags.Dump_option.get Raw_lambda then
+    fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
-  if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
+  if Clflags.Dump_option.get  Lambda then fprintf ppf "%a@." Printlambda.lambda slam;
   let instrs, can_free = Bytegen.compile_phrase slam in
-  if !Clflags.dump_instr then
+  if Clflags.Dump_option.get Instr then
     fprintf ppf "%a@."
     Printinstr.instrlist instrs;
   let (code, reloc, events) =

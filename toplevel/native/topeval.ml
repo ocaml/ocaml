@@ -89,9 +89,10 @@ include Topcommon.MakeEvalPrinter(EvalBase)
 let may_trace = ref false (* Global lock on tracing *)
 
 let load_lambda ppf ~module_ident ~required_globals phrase_name lam size =
-  if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
+  if Clflags.Dump_option.get  Raw_lambda then fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
-  if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
+  if Clflags.Dump_option.get  Lambda then
+    fprintf ppf "%a@." Printlambda.lambda slam;
 
   let program =
     { Lambda.
@@ -267,6 +268,9 @@ let setvalue _ _ = assert false
 (* Load in-core a .cmxs file *)
 
 let load_file _ (* fixme *) ppf name0 =
+  let dev = Log.Device.make (ref ppf) in
+  let clog = Location.log_on_device dev in
+  let log = Log.detach clog Compiler_diagnostic.debug in
   let name =
     try Some (Load_path.find name0)
     with Not_found -> None
@@ -278,7 +282,7 @@ let load_file _ (* fixme *) ppf name0 =
       if Filename.check_suffix name ".cmx" || Filename.check_suffix name ".cmxa"
       then
         let cmxs = Filename.temp_file "caml" ".cmxs" in
-        Asmlink.link_shared ~ppf_dump:ppf [name] cmxs;
+        Asmlink.link_shared ~log [name] cmxs;
         cmxs,true
       else
         name,false

@@ -20,16 +20,16 @@ open! Int_replace_polymorphic_compare
 let register ~pass_name =
   Clflags.all_passes := pass_name :: !Clflags.all_passes
 
-let with_dump ~ppf_dump ~pass_name ~f ~input ~print_input ~print_output =
+let with_log ~log ~field ~pass_name ~f ~input ~print_input ~print_output =
   let dump = Clflags.dumped_pass pass_name in
   let result = f () in
   match result with
   | None ->
-    if dump then Format.fprintf ppf_dump "%s: no-op.\n\n%!" pass_name;
+    if dump then Log.itemf field log "%s: no-op.\n\n%!" pass_name;
     None
   | Some result ->
     if dump then begin
-      Format.fprintf ppf_dump "Before %s:@ %a@.@." pass_name print_input input;
-      Format.fprintf ppf_dump "After %s:@ %a@.@." pass_name print_output result;
+      Log.itemf field log "Before %s:@ %a@.@." pass_name print_input input;
+      Log.itemf field log "After %s:@ %a@.@." pass_name print_output result;
     end;
     Some result
