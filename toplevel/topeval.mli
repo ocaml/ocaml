@@ -21,8 +21,6 @@
 
 (**/**)
 
-open Format
-
 (* Accessors for the table of toplevel value bindings. For the bytecode
    toplevel, these functions must appear as first and second exported functions
    in this module.
@@ -35,7 +33,8 @@ val setvalue : string -> Obj.t -> unit
 (* Label appended after [OCaml version XXX] when starting the toplevel. *)
 val implementation_label: string
 
-val execute_phrase : bool -> formatter -> Parsetree.toplevel_phrase -> bool
+val execute_phrase :
+  bool -> Toplevel_diagnostic.id Log.t -> Parsetree.toplevel_phrase -> bool
         (* Read and execute commands from a file.
            [use_file] prints the types and values of the results.
            [use_silently] does not print them.
@@ -48,6 +47,6 @@ module EvalBase: Topcommon.EVAL_BASE
 include module type of Topcommon.MakeEvalPrinter(EvalBase)
 
 (* For topmain.ml. Maybe shouldn't be there *)
-val load_file : bool -> formatter -> string -> bool
+val load_file : bool -> Toplevel_diagnostic.id Log.t -> string -> bool
 
 val init: unit -> unit

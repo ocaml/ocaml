@@ -57,10 +57,7 @@ module Backend = struct
 end
 let backend = (module Backend : Backend_intf.S)
 
-let load ppf phrase_name program =
-  let dev = Log.Device.make (ref ppf) in
-  let clog = Location.log_on_device dev in
-  let log = Log.detach clog Compiler_diagnostic.debug in
+let load log phrase_name program =
   let dll =
     if !Clflags.keep_asm_file then phrase_name ^ ext_dll
     else Filename.temp_file ("caml" ^ phrase_name) ext_dll
@@ -98,7 +95,8 @@ let load ppf phrase_name program =
      Exception x
 
 type lookup_fn = string -> Obj.t option
-type load_fn = Format.formatter -> string -> Lambda.program ->
+type load_fn =
+  Compiler_diagnostic.Debug.id Log.t -> string -> Lambda.program ->
   Topcommon.evaluation_outcome
 type assembler = {mutable lookup: lookup_fn; mutable load: load_fn}
 

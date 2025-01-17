@@ -10,14 +10,17 @@ module App = F(List)
 {
  "M"[module] -> {<.0>};
  }
+
 module M : sig end
 {
  "F"[module] -> Abs<.2>(X, {<.0>});
  }
+
 module F : (X : sig end) -> sig end
 {
  "App"[module] -> {<.3>};
  }
+
 module App : sig end
 |}]
 
@@ -29,18 +32,21 @@ module App = F(List)
 {
  "M"[module] -> {<.4>};
  }
+
 module M : sig end
 {
  "F"[module] -> Abs<.7>(X, {
                             "t"[type] -> <.6>;
                             });
  }
+
 module F : (X : sig end) -> sig type t end
 {
  "App"[module] -> {<.8>
                    "t"[type] -> <.6>;
                    };
  }
+
 module App : sig type t = F(List).t end
 |}]
 
@@ -51,14 +57,17 @@ module App = F(M)
 {
  "M"[module] -> {<.9>};
  }
+
 module M : sig end
 {
  "F"[module] -> Abs<.11>(X, X<.10>);
  }
+
 module F : (X : sig end) -> sig end
 {
  "App"[module] -> {<.12>};
  }
+
 module App : sig end
 |}]
 
@@ -70,6 +79,7 @@ end
 {
  "Id"[module] -> Abs<.14>(X, X<.13>);
  }
+
 module Id : (X : sig end) -> sig end
 {
  "Struct"[module] ->
@@ -78,6 +88,7 @@ module Id : (X : sig end) -> sig end
                          CU Stdlib . "List"[module]);
     };
  }
+
 module Struct : sig module L = List end
 |}]
 
@@ -88,12 +99,14 @@ module Proj = Struct.L
 {
  "App"[module] -> (CU Stdlib . "List"[module])<.17>;
  }
+
 module App : sig end
 {
  "Proj"[module] -> Alias(<.18>
                          Alias(<.15>
                                CU Stdlib . "List"[module]));
  }
+
 module Proj = Struct.L
 |}]
 
@@ -106,16 +119,19 @@ module O = N.M
                              "M"[module] -> X<.19>;
                              });
  }
+
 module F : (X : sig end) -> sig module M : sig end end
 {
  "N"[module] -> {<.22>
                  "M"[module] -> {<.19>};
                  };
  }
+
 module N : sig module M : sig end end
 {
  "O"[module] -> Alias(<.23>
                       {<.19>});
  }
+
 module O = N.M
 |}]

@@ -33,7 +33,6 @@ let expand_position pos len =
 
 let input_argument name =
   let filename = Toploop.filename_of_input name in
-  let ppf = Format.err_formatter in
   let dev = Log.Device.err in
   let log = Topcommon.log_on_device dev in
   if Filename.check_suffix filename ".cmxs"
@@ -54,8 +53,8 @@ let input_argument name =
                               (Array.length !argv - !Arg.current)
       in
       Compmisc.read_clflags_from_env ();
-      if Toploop.prepare ppf log ~input:name () &&
-         Toploop.run_script ppf name newargs
+      if Toploop.prepare log ~input:name () &&
+         Toploop.run_script log name newargs
       then raise (Compenv.Exit_with_status 0)
       else raise (Compenv.Exit_with_status 2)
     end
@@ -79,7 +78,6 @@ module Options = Main_args.Make_opttop_options (struct
 end)
 
 let main () =
-  let ppf = Format.err_formatter in
   let setup_dev = Log.Device.err in
   let log = Location.temporary_log () in
   Clflags.native_code := true;
@@ -97,9 +95,9 @@ let main () =
   let tlog = Location.log_on_device ~prev:log setup_dev in
   Log.flush tlog;
   let log = Topcommon.log_on_device Log.Device.std in
-  if not (Toploop.prepare ppf log ()) then raise (Compenv.Exit_with_status 2);
+  if not (Toploop.prepare log ()) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();
-  Toploop.loop Format.std_formatter log
+  Toploop.loop log
 
 let main () =
   match main () with

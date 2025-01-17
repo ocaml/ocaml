@@ -16,9 +16,11 @@
 
 #use  "contexts_1.ml";;
 
+
 type u = {
   a: bool ;
   mutable b: (bool, int) Either.t };;
+
 0
 type u = { a : bool; mutable b : (bool, int) Either.t; }
 
@@ -30,6 +32,7 @@ let example_1 () =
   | { a = _; b = _ } when input.b <- (Either.Right 3); false ->
       Result.Error 3
   | { a = true; b = Either.Left y } -> Result.Ok y;;
+
 (let
   (example_1/0 =
      (function param/0[int]
@@ -57,14 +60,17 @@ val example_1 : unit -> (bool, int) Result.t = <fun>
 
 #use  "contexts_2.ml";;
 
+
 type 'a myref = {
   mutable mut: 'a };;
+
 0
 type 'a myref = { mutable mut : 'a; }
 
 type u = {
   a: bool ;
   b: (bool, int) Either.t myref };;
+
 0
 type u = { a : bool; b : (bool, int) Either.t myref; }
 
@@ -76,6 +82,7 @@ let example_2 () =
   | { a = _; b = _ } when (input.b).mut <- (Either.Right 3); false ->
       Result.Error 3
   | { a = true; b = { mut = Either.Left y } } -> Result.Ok y;;
+
 (let
   (example_2/0 =
      (function param/1[int]
@@ -104,12 +111,15 @@ val example_2 : unit -> (bool, int) Result.t = <fun>
 
 #use  "contexts_3.ml";;
 
+
 type 'a myref = {
   mutable mut: 'a };;
+
 0
 type 'a myref = { mutable mut : 'a; }
 
 type u = (bool * (bool, int) Either.t) myref;;
+
 0
 type u = (bool * (bool, int) Either.t) myref
 
@@ -121,6 +131,7 @@ let example_3 () =
   | { mut = (_, _) } when input.mut <- (true, (Either.Right 3)); false ->
       Result.Error 3
   | { mut = (true, Either.Left y) } -> Result.Ok y;;
+
 (let
   (example_3/0 =
      (function param/2[int]
