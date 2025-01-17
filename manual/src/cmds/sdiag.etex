@@ -1,0 +1,244 @@
+\chapter{Structured diagnostics}
+\label{c:sdiag}\cutname{sdiag.html}
+
+Both the bytecode and native compiler can emit diagnostic under
+a structured format by using the "--log-format <format>" flag.
+Supported formats are currently
+\begin{itemize}
+\item json
+\item s-expression
+\end{itemize}
+
+\section{s:sdiag_versioning}{Versioning policy and subtyping}
+
+In order to make the compiler diagnostics as easy to use as possible by
+independent tools, The compiler and its tools enforce a strict versioning
+and evolution policy.
+
+This policy is a data-oriented version of semantic versioning for algebraic data
+types:
+
+\begin{itemize}
+\item minor updates can only refine schemata into a subtype of the previous schema
+\item major update can delete deprecated fields from record type or add new
+  constructors to sum type.
+\end{itemize}
+
+Then a versioned and structured diagnostic can be seen as an algebraic data
+types annotated with versioning and evolution annotation.
+
+\begin{caml_example*}{verbatim}
+type error_kind =
+  | Fatal of string [@since 1.0][@deleted 1.1]
+  | Error of string [@since 1.0]
+  | Warning of
+      { contents:string; number:int; name:string }
+      [@since 1.0] [@expanded 1.1]
+  | Lint of string [@preview 1.1][@since 2.0]
+\end{caml_example*}
+
+
+With this policy, we can ensure that a compiler at version "major.minor" can
+output a structured diagnostic for any version "major.prev" where "prev" $\le$
+"minor" by coercing the diagnostic at version "major.minor" into its subtype at
+version "major.prev".
+
+
+\subsection{ss:sdiag-record-subtyping}{Record subtyping rule}
+
+The subtyping rules for records are straightforward because we can
+easily elide fields when coercing to a previous version.
+This gives us three subtyping rules:
+
+\begin{enumerate}
+\item add new fields to a record type
+\item promote an optional field to a required field
+\item deprecate a field
+\end{enumerate}
+
+In particular, the last two rules only refine metadata information about the
+field and do not affect coercion.
+
+
+\subsection{ss:sdiag-variant-subtyping}{Variant constructors subtyping rules}
+
+The three subtyping rules for constructor are more interesting:
+
+\begin{enumerate}
+\item remove constructors from a sum type
+\item expand the argument type of a variant constructor
+\item introduce a new derived variant constructor
+\end{enumerate}
+
+
+The first rule is straightforward: if diagnostic consumers know how to handle
+a constructor, it doesn't matter if the compiler actually emit this constructor or not.
+
+Unfortunately, this first rule is also insufficient by itself to allow any
+meaningful evolution of the sum type. A solution is to allow minor update to add
+constructors that are related to previously existing constructors. There are two
+relationship that seems worthy to track.
+
+First, consider a constructor "c" which exists in both "v1" $<$ "v2" with only a
+change of its argument type. If the argument type in the "v2" version is a
+subtype of the argument type in "v1", then consumers can coerce the new type
+to the old one.
+
+Second, if the semantics of a new constructor "c2" in "v2" $>$ "v1" might be
+approximated by an old constructor "c1" in "v1", then the compiler can
+coerce the new constructor to the old one in version "v1".
+
+For instance, one of the sum type presents in compiler diagnostics is the error
+kind, which is represented as:
+
+\begin{caml_example*}{verbatim}
+type report_kind =
+  | Report_error
+  | Report_warning of string
+  | Report_warning_as_error of string
+  | Report_alert of string
+  | Report_alert_as_error of string
+\end{caml_example*}
+
+It seems possible that in the future the compiler may want to
+update this part of the diagnostic to
+
+\begin{itemize}
+\item expand the "Report_warning"
+argument to split the warning number and name in two fields
+\item delete the "Report_warning_as_error" constructor
+\item add a new constructor "Report_Lint", derived from non-error warning.
+\end{itemize}
+
+\begin{caml_example*}{verbatim}
+type report_kind =
+  | Report_error
+  | Report_warning of { contents:string; name:string; number:int}
+  | Report_lint of string
+  | Report_alert of string
+  | Report_alert_as_error of string
+\end{caml_example*}
+
+With the three expansion rules above, this change can be done in a minor update
+"v2".
+
+\subsection{ss:sdiag-major-update}{Backward-compatibility beyond major versions}
+
+Going back to major version, when publish a new major version of the
+diagnostics, we may
+
+\begin{enumerate}
+\item delete unused records and sum types
+\item remove a deprecated field from a record type
+\item add a new variant constructor to a variant type
+\end{enumerate}
+
+With those changes, enforcing compatibility between major versions is not always
+possible, in particular for the variant constructor side. However, we can afford
+some long term guarantees.
+
+First, to avoid reuse of previous names with different meaning, we must keep a
+set of tombstones for deleted nominal types, record fields, and sum
+constructors.
+
+Second, in the record case, the specification of deleting only deprecated fields
+means that we already keep producing deprecated fields for at least one compiler
+version.
+
+
+Third, backward-compatibility for variant constructor is more complex. If there
+is a completely new constructor in version "major.0", it is not always possible
+to translate this new constructor to a constructor in the previous version. We
+could replace future constructor by a special constructor "<future>", but it is
+unclear if this would help tools more than having an unknown constructor name.
+Thus reliable deserializers that expect to work across major version would need
+to parse variant sum as if they were always extensible.
+
+
+\subsection{ss:sdiag-variant-subtyping}{Variant constructors and record fields lifecycle}
+
+Resuming the previous evolution rules, this means that constructors and records goes
+through stages during the evolution of a diagnostic
+
+\begin{enumerate}
+\item preview "[\@preview M.m]", a derived constructor can be created in a preview state
+\item publication "[\@since M.m]"
+\item expansion "[\@expanded M.m]", a constructor argument can be expanded
+\item requirement "[\@required M.m]", an optional record field can be made mandatory
+\item deprecation "[\@deprecated M.m]"
+\item deletion "[\@deleted M.m]"
+\end{enumerate}
+
+
+\section{s:metadata-diag}{Compiler diagnostics}
+
+The current schema of compiler diagnostics are hosted on in json-schema format
+on \href{https://github.com/ocaml/ocaml}. Moreover, this section contains a more
+human readable retranscription of those schema in the form of annotated
+algebraic data types.
+
+The current last version is:
+\begin{itemize}
+\item "1.0" for the "metadata" diagnostic
+\item "1.0" for the "config" diagnostic
+\item "1.0" for the compiler, toplevel and derived diagnostics
+\end{itemize}
+
+All those schema descriptions (and more) are generated using the
+"ocamldiaginfo" tool available in the compiler source tree.
+
+\subsection{ss:metadata-diag}{Metadata information}
+
+The metadata field is present at the root of diagnostics directly
+emitted by the compiler and contains both information about the version
+of the scheme used to emit the diagnostics and if this specific diagnostic
+is valid according to this scheme.
+
+\input{sdiag_validity.tex}
+\input{sdiag_metadata.tex}
+
+\subsection{ss:compiler-diag}{Compiler diagnostic}
+
+The main compiler diagnostic contains the following fields:
+
+\input{sdiag_compiler.tex}
+
+\subsection{ss:compiler-diag}{Compiler debugging record}
+
+The compiler debugging records contains the output of the various
+"-d*" flags.
+
+\input{sdiag_debug.tex}
+
+The output of the "-dprofile" flag is slightly more structured:
+
+\input{sdiag_profile.tex}
+
+
+\subsection{ss:format-doc-diag}{Formatted text message}
+
+\input{sdiag_box_type.tex}
+\input{sdiag_format_tag.tex}
+\input{sdiag_structured_text.tex}
+
+
+\subsection{ss:error-messages-diag}{Error messages}
+
+\input{sdiag_error_kind.tex}
+\input{sdiag_loc.tex}
+\input{sdiag_error_msg.tex}
+\input{sdiag_error_report.tex}
+
+
+\subsection{ss:compiler-diag}{Toplevel response}
+
+This diagnostic corresponds to the response of the toplevel to a toplevel directive
+or a query to evaluate a sentence.
+
+\input{sdiag_toplevel.tex}
+
+
+\subsection{ss:error-messages-diag}{Compiler configuration}
+
+This diagnostic is emitted by the compiler when using the the flag "-config".
+\input{sdiag_config.tex}

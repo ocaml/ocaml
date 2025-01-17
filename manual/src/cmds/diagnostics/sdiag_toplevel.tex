@@ -1,0 +1,15 @@
+\begin{camlexample}{verbatim}
+\begin{caml}
+\begin{camlinput}
+type toplevel = {
+  metadata: metadata;
+  trace: structured_text array array option [@optional];
+  errors: structured_text array array option [@optional];
+  compiler: compiler option [@optional];
+  backtrace: structured_text array option [@optional];
+  output: structured_text array option [@optional];
+} [@@since 0.1]
+[@@version 0.1]
+\end{camlinput}
+\end{caml}
+\end{camlexample}
