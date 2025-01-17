@@ -15,8 +15,6 @@
 
 (* Configuration values needed by the dynlink library *)
 
-val magic_length : int
-
 val ext_dll: string
 val cmo_magic_number: string
 val cma_magic_number: string
