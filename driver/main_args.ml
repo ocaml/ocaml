@@ -1723,6 +1723,7 @@ let options_with_command_line_syntax options r =
 
 module Default = struct
   let set r () = r := true
+  let dump_set flag () = Clflags.Dump_option.set flag true
   let clear r () = r := false
 
   module Common = struct
@@ -1765,15 +1766,15 @@ module Default = struct
     let _H dir =
       Clflags.hidden_include_dirs := dir :: (!Clflags.hidden_include_dirs)
     let _color = Misc.set_or_ignore Clflags.color_reader.parse Clflags.color
-    let _dlambda = set Clflags.dump_lambda
-    let _dparsetree = set Clflags.dump_parsetree
+    let _dlambda = dump_set Lambda
+    let _dparsetree = dump_set Parsetree
     let _dparsetree_loc_ghost_invariants =
       set Clflags.parsetree_ghost_loc_invariant
-    let _drawlambda = set Clflags.dump_rawlambda
-    let _dsource = set Clflags.dump_source
-    let _dtypedtree = set Clflags.dump_typedtree
-    let _dshape = set Clflags.dump_shape
-    let _dmatchcomp = set Clflags.dump_matchcomp
+    let _drawlambda = dump_set Raw_lambda
+    let _dsource = dump_set Source
+    let _dtypedtree = dump_set Typedtree
+    let _dshape = dump_set Shape
+    let _dmatchcomp = dump_set Match_comp
     let _dunique_ids = set Clflags.unique_ids
     let _dno_unique_ids = clear Clflags.unique_ids
     let _dcanonical_ids = set Clflags.canonical_ids
@@ -1802,30 +1803,30 @@ module Default = struct
     let _clambda_checks () = Clflags.clambda_checks := true
     let _classic_inlining () = Clflags.classic_inlining := true
     let _compact = clear Clflags.optimize_for_speed
-    let _dalloc = set Clflags.dump_regalloc
-    let _dclambda = set Clflags.dump_clambda
-    let _dcmm = set Clflags.dump_cmm
+    let _dalloc = dump_set Regalloc
+    let _dclambda = dump_set Clambda
+    let _dcmm = dump_set Cmm
     let _dcmm_invariants = set Clflags.cmm_invariants
-    let _dcombine = set Clflags.dump_combine
-    let _dcse = set Clflags.dump_cse
-    let _dflambda = set Clflags.dump_flambda
+    let _dcombine = dump_set Combine
+    let _dcse = dump_set CSE
+    let _dflambda = dump_set Flambda
     let _dflambda_invariants = set Clflags.flambda_invariant_checks
     let _dflambda_let stamp = Clflags.dump_flambda_let := (Some stamp)
     let _dflambda_no_invariants = clear Clflags.flambda_invariant_checks
     let _dflambda_verbose () =
-      set Clflags.dump_flambda (); set Clflags.dump_flambda_verbose ()
-    let _dinterval = set Clflags.dump_interval
-    let _dinterf = set Clflags.dump_interf
-    let _dlinear = set Clflags.dump_linear
-    let _dlive () = Clflags.dump_live := true
-    let _dprefer = set Clflags.dump_prefer
-    let _drawclambda = set Clflags.dump_rawclambda
-    let _drawflambda = set Clflags.dump_rawflambda
-    let _dreload = set Clflags.dump_reload
-    let _dscheduling = set Clflags.dump_scheduling
-    let _dsel = set Clflags.dump_selection
-    let _dspill = set Clflags.dump_spill
-    let _dsplit = set Clflags.dump_split
+      dump_set Flambda (); dump_set Flambda_verbose ()
+    let _dinterval = dump_set Interval
+    let _dinterf = dump_set Interf
+    let _dlinear = dump_set Linear
+    let _dlive () = dump_set Live ()
+    let _dprefer = dump_set Prefer
+    let _drawclambda = dump_set Raw_clambda
+    let _drawflambda = dump_set Raw_flambda
+    let _dreload = dump_set Reload
+    let _dscheduling = dump_set Scheduling
+    let _dsel = dump_set Selection
+    let _dspill = dump_set Spill
+    let _dsplit = dump_set Split
     let _dstartup = set Clflags.keep_startup_file
     let _dump_pass pass = Clflags.set_dumped_pass pass true
     let _inline spec =
@@ -1921,7 +1922,7 @@ module Default = struct
     let _config_var = Misc.show_config_variable_and_exit
     let _dprofile () = Clflags.profile_columns := Profile.all_columns
     let _dtimings () = Clflags.profile_columns := [`Time]
-    let _dump_into_file = set Clflags.dump_into_file
+    let _dump_into_file () = Clflags.dump_into_file := true
     let _dump_dir s = Clflags.dump_dir := Some s
     let _for_pack s = Clflags.for_package := (Some s)
     let _g = set Clflags.debug
@@ -1999,7 +2000,7 @@ module Default = struct
   module Topmain = struct
     include Toplevel
     include Core
-    let _dinstr = set Clflags.dump_instr
+    let _dinstr = dump_set Instr
   end
 
   module Opttopmain = struct
@@ -2074,7 +2075,7 @@ third-party libraries such as Lwt, but with a different API."
     let _compat_32 = set Clflags.bytecode_compatible_32
     let _custom = set Clflags.custom_runtime
     let _dcamlprimc = set Clflags.keep_camlprimc_file
-    let _dinstr = set Clflags.dump_instr
+    let _dinstr = dump_set Instr
     let _dllib s = Compenv.defer (ProcessDLLs (false, Misc.rev_split_words s))
     let _dllib_suffixed s =
       Compenv.defer (ProcessDLLs (true, Misc.rev_split_words s))

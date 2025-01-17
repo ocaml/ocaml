@@ -31,7 +31,7 @@ type t = {
     Set_of_closures_id.t for_one_or_more_units;
   imported_units :
     Simple_value_approx.function_declarations for_one_or_more_units;
-  ppf_dump : Format.formatter;
+  log : Compiler_diagnostic.Debug.id Log.t;
   mutable constants_for_instrumentation :
     Clambda.ustructured_constant Symbol.Map.t;
 }
@@ -571,7 +571,7 @@ and to_clambda_closed_set_of_closures t env symbol
         function_decl.params (env, [])
     in
     let body =
-      Un_anf.apply ~ppf_dump:t.ppf_dump ~what:symbol
+      Un_anf.apply ~log:t.log ~what:symbol
         (to_clambda t env_body function_decl.body)
     in
     { label = Compilenv.function_label (Closure_id.wrap id);
@@ -703,7 +703,7 @@ type result = {
   exported : Export_info.t;
 }
 
-let convert ~ppf_dump (program, exported_transient) : result =
+let convert ~log (program, exported_transient) : result =
   let current_unit =
     let closures =
       Closure_id.Map.keys (Flambda_utils.make_closure_map program)
@@ -742,7 +742,7 @@ let convert ~ppf_dump (program, exported_transient) : result =
     { current_unit;
       imported_units;
       constants_for_instrumentation = Symbol.Map.empty;
-      ppf_dump;
+      log;
     }
   in
   let expr, structured_constants, preallocated_blocks =

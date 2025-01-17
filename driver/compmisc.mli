@@ -22,7 +22,10 @@ val initial_env : unit -> Env.t
 val set_from_env : 'a option ref -> 'a Clflags.env_reader -> unit
 val read_clflags_from_env : unit -> unit
 
-val with_ppf_dump : file_prefix:string -> (Format.formatter -> 'a) -> 'a
+val with_debug_log:
+  file_prefix:string -> Compiler_diagnostic.id Log.t
+  -> (Compiler_diagnostic.Debug.id Log.t -> 'a) -> 'a
+
 
 val auto_include : Load_path.auto_include_callback
 (** [auto_include find_in_dir fn] is a callback function to be passed to

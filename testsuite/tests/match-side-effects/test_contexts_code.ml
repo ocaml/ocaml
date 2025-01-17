@@ -16,6 +16,7 @@
 
 #use  "contexts_1.ml";;
 
+
 type u = {
   a: bool ;
   mutable b: (bool, int) Either.t };;
@@ -56,6 +57,7 @@ val example_1 : unit -> (bool, int) Result.t = <fun>
 [%%expect {|
 
 #use  "contexts_2.ml";;
+
 
 type 'a myref = {
   mutable mut: 'a };;
@@ -103,6 +105,7 @@ val example_2 : unit -> (bool, int) Result.t = <fun>
 [%%expect {|
 
 #use  "contexts_3.ml";;
+
 
 type 'a myref = {
   mutable mut: 'a };;

@@ -26,10 +26,12 @@ module M :
     class \#and = let \#and = 1 in
       object val mutable \#and = \#and method \#and = 2 end
   end ;;
+
 module M :
   sig class \#and : object val mutable \#and : int method \#and : int end end
 
 let obj = new M.\#and;;
+
 val obj : M.\#and = <obj>
 |}]
 
@@ -37,6 +39,7 @@ module M : sig type \#and = int end = struct type \#and = string end
 [%%expect{|
 
 module M : sig type \#and = int end = struct type \#and = string end ;;
+
 Line 1, characters 38-68:
 1 | module M : sig type \#and = int end = struct type \#and = string end
                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -57,9 +60,11 @@ let `\#let \#rec = x
 [%%expect{|
 
 let x = (`\#let `\#and : [ `\#let of [ `\#and ] ]);;
+
 val x : [ `\#let of [ `\#and ] ] = `\#let `\#and
 
 let `\#let \#rec = x;;
+
 val \#rec : [ `\#and ] = `\#and
 |}]
 
@@ -69,6 +74,7 @@ let f g ~\#let ?\#and ?(\#for = \#and) () =
 [%%expect{|
 
 let f g ~\#let ?\#and ?(\#for= \#and) () = g ~\#let ?\#and ();;
+
 val f :
   (\#let:'a -> ?\#and:'b -> unit -> 'c) ->
   \#let:'a -> ?\#and:'b -> ?\#for:'b option -> unit -> 'c = <fun>
@@ -79,6 +85,7 @@ type t = '\#let
 [%%expect{|
 
 type t = '\#let;;
+
 Line 1, characters 9-15:
 1 | type t = '\#let
              ^^^^^^
@@ -91,9 +98,11 @@ let rec \#rec = { \#mutable = \#rec }
 
 type \#mutable = {
   mutable \#mutable: \#mutable };;
+
 type \#mutable = { mutable \#mutable : \#mutable; }
 
 let rec \#rec = { \#mutable = \#rec };;
+
 val \#rec : \#mutable = {\#mutable = <cycle>}
 |}]
 
@@ -102,10 +111,12 @@ type \#and += Foo
 [%%expect{|
 
 type \#and = ..;;
+
 type \#and = ..
 
 type \#and +=
   | Foo ;;
+
 type \#and += Foo
 |}]
 
@@ -113,6 +124,7 @@ let x = (++);;
 [%%expect{|
 
 let x = (++);;
+
 Line 1, characters 8-12:
 1 | let x = (++);;
             ^^^^
@@ -123,6 +135,7 @@ let x = \#let;;
 [%%expect{|
 
 let x = \#let;;
+
 Line 1, characters 8-13:
 1 | let x = \#let;;
             ^^^^^
@@ -133,6 +146,7 @@ let f ~\#let ?\#and () = 1
 [%%expect{|
 
 let f ~\#let ?\#and () = 1;;
+
 val f : \#let:'a -> ?\#and:'b -> unit -> int = <fun>
 |}]
 
@@ -140,6 +154,7 @@ let x = (true:int)
 [%%expect {|
 
 let x = (true : int);;
+
 Line 1, characters 9-13:
 1 | let x = (true:int)
              ^^^^
@@ -153,9 +168,11 @@ let x = M.(true)
 
 module M = struct type \#true =
                     | true  end;;
+
 module M : sig type \#true = true end
 
 let x = let open M in true;;
+
 val x : M.\#true = M.(true)
 |}]
 
@@ -168,13 +185,16 @@ let f { \#false; \#true } = 0
 type t = {
   \#false: int ;
   x: int };;
+
 type t = { \#false : int; x : int; }
 
 type u = {
   \#true: int };;
+
 type u = { \#true : int; }
 
 let f { \#false; \#true } = 0;;
+
 Line 4, characters 17-23:
 4 | let f { \#false; \#true } = 0
                      ^^^^^^
@@ -198,6 +218,7 @@ module M =
          type r = {
            \#true: int ;
            y: int } end;;
+
 module M :
   sig
     type t = { \#true : int; y : int; }
@@ -206,9 +227,11 @@ module M :
 
 type t = {
   \#false: int };;
+
 type t = { \#false : int; }
 
 let _ = ({ M.\#true = 0 } : t);;
+
 Line 6, characters 12-20:
 6 | let _ = ( { M.\#true=0 } : t );;
                 ^^^^^^^^
@@ -223,13 +246,16 @@ let f {\#mod} = (mod)#\#mod;;
 [%%expect {|
 
 let f (mod) = (mod);;
+
 val f : 'a -> 'a = <fun>
 
 type 'a t = {
   \#mod: 'a };;
+
 type 'a t = { \#mod : 'a; }
 
 let f { \#mod } = (mod)#\#mod;;
+
 val f : < \#mod : 'a; .. > t -> 'a = <fun>
 |}]
 
@@ -246,6 +272,7 @@ class \#mod =
     val mutable \#mod = (mod)
     method \#mod = \#mod <- (mod); {<\#mod = (+)>}
   end;;
+
 class \#mod :
   object ('a) val mutable \#mod : int -> int -> int method \#mod : 'a end
 |}]
@@ -254,6 +281,7 @@ let f o = o#\#if; o#\#let
 [%%expect {|
 
 let f o = o#\#if; o#\#let;;
+
 val f : < \#if : 'a; \#let : 'b; .. > -> 'b = <fun>
 |}]
 
@@ -261,6 +289,7 @@ let f (o: <\#if:int; \#let:int>) = o#\#if ^ "s"
 [%%expect {|
 
 let f (o : < \#if: int  ;\#let: int   > ) = o#\#if ^ "s";;
+
 Line 1, characters 35-41:
 1 | let f (o: <\#if:int; \#let:int>) = o#\#if ^ "s"
                                        ^^^^^^
@@ -280,18 +309,23 @@ module type T = S with module type \#functor = M.\#struct
 [%%expect {|
 
 module type \#module  = sig  end;;
+
 module type \#module = sig end
 
 module type \#sig;;
+
 module type \#sig
 
 module M = struct module type \#struct  = sig  end end;;
+
 module M : sig module type \#struct = sig end end
 
 module type S  = sig module type \#functor module type \#open := \#module end;;
+
 module type S = sig module type \#functor end
 
 module type T  = S with module type \#functor = M.\#struct;;
+
 module type T = sig module type \#functor = M.\#struct end
 |}]
 
@@ -300,9 +334,11 @@ type u = (module T with type \#if = int and type N.\#and = float)
 [%%expect {|
 
 module type T  = sig type \#if module N : sig type \#and end end;;
+
 module type T = sig type \#if module N : sig type \#and end end
 
 type u = (module T with type \#if = int and type N.\#and = float);;
+
 type u = (module T with type \#if = int and type N.\#and = float)
 |}]
 
@@ -315,6 +351,7 @@ let f: (\#if:int * \#let:int) ->  (\#let:int * \#if:int)  = fun (~\#if,~\#let:\#
 let f : (\#if:int * \#let:int) -> (\#let:int * \#if:int) =
   fun ((~\#if, ~\#let:\#and) as x) ->
     let (~\#if, ..) = x in (~\#let:\#and, ~\#if);;
+
 val f : (\#if:int * \#let:int) -> \#let:int * \#if:int = <fun>
 |}]
 
@@ -323,5 +360,6 @@ let f (let*) \#if = let* \#if in ()
 
 let f ( let* ) \#if = let* \#if
                        in ();;
+
 val f : ('a -> ('b -> unit) -> 'c) -> 'a -> 'c = <fun>
 |}]

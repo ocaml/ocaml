@@ -200,8 +200,8 @@ let preprocess_phrase ppf phr =
         Ptop_def str
     | phr -> phr
   in
-  if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
-  if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
+  if Clflags.Dump_option.get Parsetree then Printast.top_phrase ppf phr;
+  if Clflags.Dump_option.get Source then Pprintast.top_phrase ppf phr;
   phr
 
 let typecheck_phrase ppf oldenv sstr =
@@ -209,12 +209,12 @@ let typecheck_phrase ppf oldenv sstr =
   let (str, sg, sn, shape, newenv) =
     Typemod.type_toplevel_phrase oldenv sstr
   in
-  if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
+  if Clflags.Dump_option.get  Typedtree then Printtyped.implementation ppf str;
   let sg' = Typemod.Signature_names.simplify newenv sn sg in
   Includemod.check_implementation oldenv sg sg';
   Typecore.force_delayed_checks ();
   let shape = Shape_reduce.local_reduce Env.empty shape in
-  if !Clflags.dump_shape then Shape.print ppf shape;
+  if Clflags.Dump_option.get Shape then Shape.print ppf shape;
   (str, sg', newenv)
 
 (* Phrase buffer that stores the last toplevel phrase (see

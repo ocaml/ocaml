@@ -154,6 +154,8 @@ let dump_regalloc = ref false           (* -dalloc *)
 let dump_reload = ref false             (* -dreload *)
 let dump_scheduling = ref false         (* -dscheduling *)
 let dump_linear = ref false             (* -dlinear *)
+
+
 let keep_startup_file = ref false       (* -dstartup *)
 let profile_columns : profile_column list ref = ref [] (* -dprofile/-dtimings *)
 
@@ -623,12 +625,14 @@ module Dump_option = struct
     | Clambda
     | Raw_flambda
     | Flambda
+    | Flambda_verbose
     | Cmm
     | Selection
     | Combine
     | CSE
     | Live
     | Spill
+    | Reload
     | Split
     | Interf
     | Prefer
@@ -653,12 +657,14 @@ module Dump_option = struct
     | Clambda -> "clambda"
     | Raw_flambda -> "rawflambda"
     | Flambda -> "flambda"
+    | Flambda_verbose -> "flambda_verbose"
     | Cmm -> "cmm"
     | Selection -> "selection"
     | Combine -> "combine"
     | CSE -> "cse"
     | Live -> "live"
     | Spill -> "spill"
+    | Reload -> "reload"
     | Split -> "split"
     | Interf -> "interf"
     | Prefer -> "prefer"
@@ -666,34 +672,6 @@ module Dump_option = struct
     | Scheduling -> "scheduling"
     | Linear -> "linear"
     | Interval -> "interval"
-
-  let of_string = function
-    | "source" -> Some Source
-    | "parsetree" -> Some Parsetree
-    | "typedtree" -> Some Typedtree
-    | "shape" -> Some Shape
-    | "matchcomp" -> Some Match_comp
-    | "rawlambda" -> Some Raw_lambda
-    | "lambda" -> Some Lambda
-    | "instr" -> Some Instr
-    | "rawclambda" -> Some Raw_clambda
-    | "clambda" -> Some Clambda
-    | "rawflambda" -> Some Raw_flambda
-    | "flambda" -> Some Flambda
-    | "cmm" -> Some Cmm
-    | "selection" -> Some Selection
-    | "combine" -> Some Combine
-    | "cse" -> Some CSE
-    | "live" -> Some Live
-    | "spill" -> Some Spill
-    | "split" -> Some Split
-    | "interf" -> Some Interf
-    | "prefer" -> Some Prefer
-    | "regalloc" -> Some Regalloc
-    | "scheduling" -> Some Scheduling
-    | "linear" -> Some Linear
-    | "interval" -> Some Interval
-    | _ -> None
 
   let flag = function
     | Source -> dump_source
@@ -708,6 +686,7 @@ module Dump_option = struct
     | Clambda -> dump_clambda
     | Raw_flambda -> dump_rawflambda
     | Flambda -> dump_flambda
+    | Flambda_verbose -> dump_flambda_verbose
     | Cmm -> dump_cmm
     | Selection -> dump_selection
     | Combine -> dump_combine
@@ -715,12 +694,43 @@ module Dump_option = struct
     | Live -> dump_live
     | Spill -> dump_spill
     | Split -> dump_split
+    | Reload -> dump_reload
     | Interf -> dump_interf
     | Prefer -> dump_prefer
     | Regalloc -> dump_regalloc
     | Scheduling -> dump_scheduling
     | Linear -> dump_linear
     | Interval -> dump_interval
+
+
+  let of_string = function
+    | "source" -> Some Source
+    | "parsetree" -> Some Parsetree
+    | "typedtree" -> Some Typedtree
+    | "shape" -> Some Shape
+    | "matchcomp" -> Some Match_comp
+    | "rawlambda" -> Some Raw_lambda
+    | "lambda" -> Some Lambda
+    | "instr" -> Some Instr
+    | "rawclambda" -> Some Raw_clambda
+    | "clambda" -> Some Clambda
+    | "rawflambda" -> Some Raw_flambda
+    | "flambda" -> Some Flambda
+    | "flambda_verbose" -> Some Flambda_verbose
+    | "cmm" -> Some Cmm
+    | "selection" -> Some Selection
+    | "combine" -> Some Combine
+    | "cse" -> Some CSE
+    | "live" -> Some Live
+    | "spill" -> Some Spill
+    | "split" -> Some Split
+    | "interf" -> Some Interf
+    | "prefer" -> Some Prefer
+    | "regalloc" -> Some Regalloc
+    | "scheduling" -> Some Scheduling
+    | "linear" -> Some Linear
+    | "interval" -> Some Interval
+    | _ -> None
 
   type middle_end =
     | Flambda
@@ -753,6 +763,7 @@ module Dump_option = struct
       -> Middle Any
     | Raw_flambda
     | Flambda
+    | Flambda_verbose
       -> Middle Flambda
     | Cmm
     | Selection
@@ -760,6 +771,7 @@ module Dump_option = struct
     | CSE
     | Live
     | Spill
+    | Reload
     | Split
     | Interf
     | Prefer
@@ -768,6 +780,13 @@ module Dump_option = struct
     | Linear
     | Interval
       -> Backend
+
+  let set option b = flag option := b
+  let get option = !(flag option)
+  let get_from_name name =
+    match of_string name with
+    | None -> false
+    | Some x -> get x
 
   let available (option : t) : (unit, string) result =
     let pass = Result.ok () in
@@ -867,3 +886,14 @@ let create_log ~default_backend history scheme device =
     Option.value ~default:default_backend !log_format
   in
   backend.Diagnostic_backends.make ?color:!color ~version ~device scheme
+
+let dump_on_log log field pr x =
+  let status = Dump_option.(get_from_name @@ Diagnostic.field_name field) in
+  Log.log_if log field status pr x
+
+let dump_item_on_log log field fmt =
+  if Dump_option.(get_from_name @@ Diagnostic.field_name field) then
+    Log.itemf field log fmt
+  else
+    (* the formatter argument is not used *)
+    Format.ifprintf Format.std_formatter fmt

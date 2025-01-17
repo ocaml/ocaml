@@ -126,6 +126,11 @@ let parse_bool name log s f = match s with
 let setter log f name options s =
   parse_bool name log s (fun bool -> List.iter (fun b -> b := f bool) options)
 
+let set_dump_flag log name flag s =
+  parse_bool name log s (Clflags.Dump_option.set flag)
+
+
+
 let int_setter log name option s =
   try
     option := int_of_string s
@@ -198,7 +203,7 @@ let handle_dump_option ppf v =
       Printf.ksprintf (print_error ppf)
         "dump=%s: %s." key msg
   | Ok () ->
-      D.flag option := value
+      D.set option value
 
 (* 'can-discard=' specifies which arguments can be discarded without warning
    because they are not understood by some versions of OCaml. *)
@@ -366,7 +371,7 @@ let read_one_param log position name v =
         set "inlining-report" [ Clflags.inlining_report ] v
 
   | "flambda-verbose" ->
-      set "flambda-verbose" [ Clflags.dump_flambda_verbose ] v
+      set_dump_flag log "flambda-verbose" Flambda_verbose v
   | "flambda-invariants" ->
       set "flambda-invariants" [ Clflags.flambda_invariant_checks ] v
   | "cmm-invariants" ->

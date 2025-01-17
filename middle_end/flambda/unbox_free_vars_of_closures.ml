@@ -20,6 +20,7 @@ open! Int_replace_polymorphic_compare
 module B = Inlining_cost.Benefit
 
 let pass_name = "unbox-free-vars-of-closures"
+let field = Compiler_diagnostic.Debug.unbox_free_vars_of_closures
 let () = Pass_wrapper.register ~pass_name
 
 (* CR-someday mshinwell: Nearly but not quite the same as something that
@@ -163,7 +164,7 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
         Some (expr, benefit)
 
 let run ~env ~set_of_closures =
-  Pass_wrapper.with_dump ~ppf_dump:(Inline_and_simplify_aux.Env.ppf_dump env)
+  Pass_wrapper.with_log ~field ~log:(Inline_and_simplify_aux.Env.log env)
     ~pass_name ~input:set_of_closures
     ~print_input:Flambda.print_set_of_closures
     ~print_output:(fun ppf (expr, _) -> Flambda.print ppf expr)

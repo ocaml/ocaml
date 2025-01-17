@@ -16,11 +16,12 @@
 (* Link a set of .cmx/.o files and produce an executable or a plugin *)
 
 open Misc
-open Format
 
-val link: ppf_dump:formatter -> string list -> string -> unit
+val link:
+  log:Compiler_diagnostic.Debug.id Log.t -> string list -> string -> unit
 
-val link_shared: ppf_dump:formatter -> string list -> string -> unit
+val link_shared:
+  log:Compiler_diagnostic.Debug.id Log.t -> string list -> string -> unit
 
 val call_linker_shared: string list -> string -> unit
 
