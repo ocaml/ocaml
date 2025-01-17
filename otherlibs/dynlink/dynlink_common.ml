@@ -22,8 +22,12 @@ type implem_state =
 
 type filename = string
 
+type global =
+  | Compilation_unit of string
+  | Predefined_exception of string
+
 type linking_error =
-  | Undefined_global of string
+  | Undefined_global of global
   | Unavailable_primitive of string
   | Uninitialized_global of string
 
@@ -51,9 +55,12 @@ let error_message = function
     "no implementation available for " ^ name
   | Unsafe_file ->
     "this object file uses unsafe features"
-  | Linking_error (name, Undefined_global s) ->
+  | Linking_error (name, Undefined_global (Compilation_unit s)) ->
     "error while linking " ^ name ^ ".\n" ^
-      "Reference to undefined global `" ^ s ^ "'"
+      "Reference to undefined compilation unit `" ^ s ^ "'"
+  | Linking_error (name, Undefined_global (Predefined_exception s)) ->
+    "error while linking " ^ name ^ ".\n" ^
+      "Reference to undefined predefined exception `" ^ s ^ "'"
   | Linking_error (name, Unavailable_primitive s) ->
     "error while linking " ^ name ^ ".\n" ^
       "The external function `" ^ s ^ "' is not available"
@@ -84,8 +91,13 @@ let () =
       | Inconsistent_import s -> Printf.sprintf "Inconsistent_import %S" s
       | Unavailable_unit s -> Printf.sprintf "Unavailable_unit %S" s
       | Unsafe_file -> "Unsafe_file"
-      | Linking_error (s, Undefined_global s') ->
-        Printf.sprintf "Linking_error (%S, Dynlink.Undefined_global %S)"
+      | Linking_error (s, Undefined_global (Compilation_unit s')) ->
+        Printf.sprintf "Linking_error (%S, Dynlink.Undefined_global \
+                                             (Dynlink.Compilation_unit %S))"
+          s s'
+      | Linking_error (s, Undefined_global (Predefined_exception s')) ->
+        Printf.sprintf "Linking_error (%S, Dynlink.Undefined_global \
+                                             (Dynlink.Predefined_exception %S))"
           s s'
       | Linking_error (s, Unavailable_primitive s') ->
         Printf.sprintf "Linking_error (%S, Dynlink.Unavailable_primitive %S)"

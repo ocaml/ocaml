@@ -24,8 +24,12 @@ type implem_state =
 
 type filename = string
 
+type global =
+  | Compilation_unit of string
+  | Predefined_exception of string
+
 type linking_error =
-  | Undefined_global of string
+  | Undefined_global of global
   | Unavailable_primitive of string
   | Uninitialized_global of string
 
