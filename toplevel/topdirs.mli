@@ -15,17 +15,17 @@
 
 (* The toplevel directives. *)
 
-open Format
+type 'a directive = Toplevel_diagnostic.id Log.t -> 'a -> unit
 
-val dir_quit : unit -> unit
-val dir_directory : string -> unit
-val dir_remove_directory : string -> unit
-val dir_cd : string -> unit
-val dir_load : formatter -> string -> unit
-val dir_use : formatter -> string -> unit
-val dir_use_output : formatter -> string -> unit
-val dir_install_printer : formatter -> Longident.t -> unit
-val dir_remove_printer : formatter -> Longident.t -> unit
+val dir_quit : unit directive
+val dir_directory : string directive
+val dir_remove_directory : string directive
+val dir_cd : string directive
+val dir_load : string directive
+val dir_use : string directive
+val dir_use_output : string directive
+val dir_install_printer : Longident.t directive
+val dir_remove_printer : Longident.t directive
 
 (* These are now injected from [Topeval], for the bytecode toplevel only:
 val dir_trace : formatter -> Longident.t -> unit
@@ -44,4 +44,4 @@ val section_options : string
 val section_undocumented : string
 
 (* Here for backwards compatibility, use [Toploop.load_file]. *)
-val[@deprecated] load_file : formatter -> string -> bool
+val[@deprecated] load_file : Toplevel_diagnostic.id Log.t -> string -> bool

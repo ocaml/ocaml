@@ -391,6 +391,7 @@ ocamloptcomp_SOURCES = $(ocamlmiddleend_SOURCES) $(asmcomp_SOURCES)
 
 ocamltoplevel_SOURCES = $(addprefix toplevel/, \
   genprintval.mli genprintval.ml \
+  toplevel_diagnostic.mli toplevel_diagnostic.ml \
   topcommon.mli topcommon.ml \
   native/tophooks.mli native/tophooks.ml \
   byte/topeval.mli byte/topeval.ml \
@@ -2268,6 +2269,7 @@ debugger/%: VPATH += otherlibs/unix otherlibs/dynlink
 
 ocamldebug_COMPILER_SOURCES = $(addprefix toplevel/, \
   genprintval.mli genprintval.ml \
+  toplevel_diagnostic.mli toplevel_diagnostic.ml \
   topprinters.mli topprinters.ml)
 
 # The modules listed in the following variable are packed into ocamldebug.cmo

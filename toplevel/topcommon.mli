@@ -45,12 +45,13 @@ val initialize_toplevel_env : unit -> unit
         (* Initialize the typing environment for the toplevel *)
 
 val preprocess_phrase :
-  formatter -> Parsetree.toplevel_phrase -> Parsetree.toplevel_phrase
+  Compiler_diagnostic.Debug.id Log.t -> Parsetree.toplevel_phrase
+  -> Parsetree.toplevel_phrase
 (* Preprocess the given toplevel phrase using regular and ppx
    preprocessors. Return the updated phrase. *)
 
 val typecheck_phrase :
-  formatter -> Env.t -> Parsetree.structure ->
+  Compiler_diagnostic.Debug.id Log.t -> Env.t -> Parsetree.structure ->
   Typedtree.structure * Types.signature * Env.t
 (* Type-check the current toplevel phrase (not a directive)
    in the current typing environment, return an updated typing environment. *)
@@ -59,7 +60,10 @@ val record_backtrace : unit -> unit
 
 (*Log creation *)
 
-val log_on_device: Log.Device.t -> Compiler_diagnostic.id Log.t
+val log_on_device: Log.Device.t -> Toplevel_diagnostic.id Log.t
+val compiler_log: Toplevel_diagnostic.id Log.t -> Compiler_diagnostic.id Log.t
+val debug_log:
+  Toplevel_diagnostic.id Log.t -> Compiler_diagnostic.Debug.id Log.t
 
 (* Printing of values *)
 
@@ -122,12 +126,14 @@ end
 
 (* Interface with toplevel directives *)
 
+type 'a directive = Toplevel_diagnostic.id Log.t -> 'a -> unit
+
 type directive_fun =
-  | Directive_none of (unit -> unit)
-  | Directive_string of (string -> unit)
-  | Directive_int of (int -> unit)
-  | Directive_ident of (Longident.t -> unit)
-  | Directive_bool of (bool -> unit)
+  | Directive_none of unit directive
+  | Directive_string of string directive
+  | Directive_int of int directive
+  | Directive_ident of Longident.t directive
+  | Directive_bool of bool directive
 
 type directive_info = {
   section: string;
@@ -145,7 +151,8 @@ val get_directive_info : string -> directive_info option
 val all_directive_names : unit -> string list
 
 val try_run_directive :
-  formatter -> string -> Parsetree.directive_argument option -> bool
+  Toplevel_diagnostic.id Log.t -> string ->
+  Parsetree.directive_argument option -> bool
 
 val[@deprecated] directive_table : (string, directive_fun) Hashtbl.t
   (* @deprecated please use [add_directive] instead of inserting

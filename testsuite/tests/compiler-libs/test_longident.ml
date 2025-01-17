@@ -1,5 +1,5 @@
 (* TEST
- flags = "-I ${ocamlsrcdir}/parsing -I ${ocamlsrcdir}/toplevel";
+ flags = "-I ${ocamlsrcdir}/utils -I ${ocamlsrcdir}/parsing -I ${ocamlsrcdir}/toplevel";
  expect;
 *)
 [@@@alert "-deprecated"]
@@ -9,7 +9,8 @@ let mknoloc = Location.mknoloc
 let lident l = mknoloc (L.Lident l)
 
 let () =
-  Topdirs.dir_install_printer Format.err_formatter
+  let log = Log.tmp Toplevel_diagnostic.scheme in
+  Topdirs.dir_install_printer log
    (L.parse "Location.print_loc")
 
 [%%expect {|

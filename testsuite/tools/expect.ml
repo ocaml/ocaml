@@ -380,14 +380,14 @@ let capture_everything buf ~f =
     ~f
 
 
-let exec_phrase dlog ppf phrase =
+let exec_phrase log phrase =
   let log_if kind pr x =
-    Clflags.dump_on_log dlog kind pr x
+    Clflags.dump_on_log (Topcommon.debug_log log) kind pr x
   in
   Location.reset ();
   log_if Compiler_diagnostic.Debug.parsetree Printast.top_phrase phrase;
   log_if Compiler_diagnostic.Debug.source Pprintast.top_phrase phrase;
-  Toploop.execute_phrase true ppf phrase
+  Toploop.execute_phrase true log phrase
 
 let parse_contents ~fname contents =
   let lexbuf = Lexing.from_string contents in
@@ -457,7 +457,6 @@ let eval_expect_file _fname ~file_contents =
     Misc.Style.set_tag_handling ~color:false ppf in
   let dev = Log.Device.make (ref ppf) in
   let log = Topcommon.log_on_device dev in
-  let dlog = Log.detach log Compiler_diagnostic.debug in
   let exec_phrases phrases =
     let phrases =
       match min_line_number phrases with
@@ -465,7 +464,8 @@ let eval_expect_file _fname ~file_contents =
       | Some lnum -> shift_lines (1 - lnum) phrases
     in
     (* For formatting purposes *)
-    Buffer.add_char buf '\n';
+    let () = Log.itemd Toplevel_diagnostic.trace log "" in
+    let clog = Topcommon.compiler_log log in
     let skipped_phrases =
       List.fold_left phrases ~init:None ~f:(fun acc phrase ->
           match (phrase : Parsetree.toplevel_phrase) with
@@ -476,12 +476,12 @@ let eval_expect_file _fname ~file_contents =
           | None ->
               let snap = Btype.snapshot () in
               try
-                if exec_phrase ppf phrase
+                if exec_phrase log phrase
                 then acc
                 else Some 0
               with exn ->
                 let bt = Printexc.get_raw_backtrace () in
-                begin try Location.log_exception log exn
+                begin try Location.log_exception clog exn
                 with _ ->
                   Format.fprintf ppf "Uncaught exception: %s\n%s\n"
                     (Printexc.to_string exn)
@@ -492,18 +492,13 @@ let eval_expect_file _fname ~file_contents =
                 Some 0
       )
     in
-    Format.pp_print_flush ppf ();
-    let len = Buffer.length buf in
-    if len > 0 && Buffer.nth buf (len - 1) <> '\n' then
-      (* For formatting purposes *)
-      Buffer.add_char buf '\n';
     begin match skipped_phrases with
     | None | Some 0 -> ()
     | Some i ->
-        Format.fprintf ppf
-          "Unexecuted phrases: %i phrases did not execute due to an error\n" i
+        Log.itemd Toplevel_diagnostic.errors log
+          "Unexecuted phrases: %i phrases did not execute due to an error" i
     end;
-    Format.pp_print_flush ppf ();
+    Log.flush log;
     let s = Buffer.contents buf in
     Buffer.clear buf;
     Misc.delete_eol_spaces s
