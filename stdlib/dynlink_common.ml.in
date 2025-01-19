@@ -39,7 +39,7 @@ type error =
   | Unsafe_file
   | Linking_error of string * linking_error
   | Corrupted_interface of string
-  | Cannot_open_dynamic_library of exn
+  | Cannot_open_dynamic_library of string * exn
   | Library's_module_initializers_failed of exn
   | Inconsistent_implementation of string
   | Module_already_loaded of string
@@ -70,8 +70,8 @@ let error_message = function
       "The module `" ^ s ^ "' is not yet initialized"
   | Corrupted_interface name ->
     "corrupted interface file " ^ name
-  | Cannot_open_dynamic_library exn ->
-    "error loading shared library: " ^ (Printexc.to_string exn)
+  | Cannot_open_dynamic_library (lib, exn) ->
+    "error loading shared library" ^ lib ^ ": " ^ (Printexc.to_string exn)
   | Inconsistent_implementation name ->
     "implementation mismatch on " ^ name
   | Library's_module_initializers_failed exn ->
@@ -108,8 +108,8 @@ let () =
           s s'
       | Corrupted_interface s ->
         Printf.sprintf "Corrupted_interface %S" s
-      | Cannot_open_dynamic_library exn ->
-        Printf.sprintf "Cannot_open_dll %s" (Printexc.to_string exn)
+      | Cannot_open_dynamic_library (lib, exn) ->
+        Printf.sprintf "Cannot_open_dll (%S, %s)" lib (Printexc.to_string exn)
       | Inconsistent_implementation s ->
         Printf.sprintf "Inconsistent_implementation %S" s
       | Library's_module_initializers_failed exn ->
@@ -252,9 +252,6 @@ module Make (P : S) = struct
   end
   open Global
 
-  let allow_unsafe_modules b =
-    with_lock (fun global -> global.unsafe_allowed <- b)
-
   let check_symbols_disjoint ~descr syms1 syms2 =
     let exe = Sys.executable_name in
     let overlap = String.Set.inter syms1 syms2 in
@@ -317,6 +314,10 @@ module Make (P : S) = struct
       default_available_units global;
       global.inited <- true
     end)
+
+  let allow_unsafe_modules b =
+    init ();
+    with_lock (fun global -> global.unsafe_allowed <- b)
 
   let set_loaded_implem filename ui implems =
     String.Map.add (UH.name ui) (UH.crc ui, filename, Loaded) implems

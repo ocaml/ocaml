@@ -61,10 +61,6 @@ module Bytecode = struct
   let default_global_map = ref Symtable.empty_global_map
 
   let init () =
-    if !Sys.interactive then begin (* PR#6802 *)
-      invalid_arg "The Dynlink module cannot be used \
-        inside the OCaml toplevel"
-    end;
     default_crcs := Symtable.init_toplevel ();
     default_global_map := Symtable.current_state ()
 
@@ -157,7 +153,8 @@ module Bytecode = struct
   let load ~filename:file_name ~priv =
     let ic =
       try open_in_bin file_name
-      with exc -> raise (DC.Error (Cannot_open_dynamic_library exc))
+      with exc ->
+        raise (DC.Error (Cannot_open_dynamic_library (file_name, exc)))
     in
     try
       let file_digest = Digest.channel ic (-1) in
@@ -198,7 +195,7 @@ module Bytecode = struct
       raise exc
     | exc ->
       close_in_noerr ic;
-      raise (DC.Error (Cannot_open_dynamic_library exc))
+      raise (DC.Error (Cannot_open_dynamic_library (file_name, exc)))
 
   let unsafe_get_global_value ~bytecode_or_asm_symbol =
     let global =
@@ -235,7 +232,7 @@ type error = DC.error =
   | Unsafe_file
   | Linking_error of string * linking_error
   | Corrupted_interface of string
-  | Cannot_open_dynamic_library of exn
+  | Cannot_open_dynamic_library of string * exn
   | Library's_module_initializers_failed of exn
   | Inconsistent_implementation of string
   | Module_already_loaded of string
@@ -243,3 +240,6 @@ type error = DC.error =
 
 exception Error = DC.Error
 let error_message = DC.error_message
+
+let add_path = Symtable.Dll.add_path
+let remove_path = Symtable.Dll.remove_path

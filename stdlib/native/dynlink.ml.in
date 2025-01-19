@@ -86,7 +86,7 @@ module Native = struct
   let load ~filename ~priv =
     let handle, header =
       try ndl_open filename (not priv)
-      with exn -> raise (DC.Error (Cannot_open_dynamic_library exn))
+      with exn -> raise (DC.Error (Cannot_open_dynamic_library (filename, exn)))
     in
     if header.dynu_magic <> cmxs_magic_number then begin
       raise (DC.Error (Not_a_bytecode_file filename))
@@ -98,7 +98,7 @@ module Native = struct
     try
       ndl_register handle (Array.of_list syms);
       handle, header.dynu_units
-    with exn -> raise (DC.Error (Cannot_open_dynamic_library exn))
+    with exn -> raise (DC.Error (Cannot_open_dynamic_library (filename, exn)))
 
   let unsafe_get_global_value ~bytecode_or_asm_symbol =
     match ndl_loadsym bytecode_or_asm_symbol with
@@ -126,7 +126,7 @@ type error = DC.error =
   | Unsafe_file
   | Linking_error of string * linking_error
   | Corrupted_interface of string
-  | Cannot_open_dynamic_library of exn
+  | Cannot_open_dynamic_library of string * exn
   | Library's_module_initializers_failed of exn
   | Inconsistent_implementation of string
   | Module_already_loaded of string
@@ -134,3 +134,10 @@ type error = DC.error =
 
 exception Error = DC.Error
 let error_message = DC.error_message
+
+(* XXX These can probably just be noops! *)
+let search_path = ref ([] : string list)
+let add_path dirs =
+  search_path := dirs @ !search_path
+let remove_path dirs =
+  search_path := List.filter (fun d -> not (List.mem d dirs)) !search_path

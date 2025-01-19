@@ -7370,7 +7370,6 @@ toplevel/topcommon.cmo : \
     toplevel/genprintval.cmi \
     utils/format_doc.cmi \
     typing/env.cmi \
-    bytecomp/dll.cmi \
     utils/config.cmi \
     driver/compmisc.cmi \
     driver/compenv.cmi \
@@ -7407,7 +7406,6 @@ toplevel/topcommon.cmx : \
     toplevel/genprintval.cmx \
     utils/format_doc.cmx \
     typing/env.cmx \
-    bytecomp/dll.cmx \
     utils/config.cmx \
     driver/compmisc.cmx \
     driver/compenv.cmx \
@@ -7447,7 +7445,6 @@ toplevel/topdirs.cmo : \
     utils/load_path.cmi \
     typing/ident.cmi \
     typing/env.cmi \
-    bytecomp/dll.cmi \
     typing/data_types.cmi \
     typing/ctype.cmi \
     utils/config.cmi \
@@ -7474,7 +7471,6 @@ toplevel/topdirs.cmx : \
     utils/load_path.cmx \
     typing/ident.cmx \
     typing/env.cmx \
-    bytecomp/dll.cmx \
     typing/data_types.cmx \
     typing/ctype.cmx \
     utils/config.cmx \
@@ -7577,7 +7573,6 @@ toplevel/byte/topeval.cmo : \
     lambda/printlambda.cmi \
     bytecomp/printinstr.cmi \
     typing/predef.cmi \
-    typing/persistent_env.cmi \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
     typing/out_type.cmi \
@@ -7588,7 +7583,6 @@ toplevel/byte/topeval.cmo : \
     typing/ident.cmi \
     typing/env.cmi \
     bytecomp/emitcode.cmi \
-    bytecomp/dll.cmi \
     utils/config.cmi \
     driver/compmisc.cmi \
     file_formats/cmo_format.cmi \
@@ -7607,7 +7601,6 @@ toplevel/byte/topeval.cmx : \
     lambda/printlambda.cmx \
     bytecomp/printinstr.cmx \
     typing/predef.cmx \
-    typing/persistent_env.cmx \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
     typing/out_type.cmx \
@@ -7618,7 +7611,6 @@ toplevel/byte/topeval.cmx : \
     typing/ident.cmx \
     typing/env.cmx \
     bytecomp/emitcode.cmx \
-    bytecomp/dll.cmx \
     utils/config.cmx \
     driver/compmisc.cmx \
     file_formats/cmo_format.cmi \

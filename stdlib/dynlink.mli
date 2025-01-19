@@ -138,7 +138,7 @@ type error = private
   | Unsafe_file
   | Linking_error of string * linking_error
   | Corrupted_interface of string
-  | Cannot_open_dynamic_library of exn
+  | Cannot_open_dynamic_library of string * exn
   | Library's_module_initializers_failed of exn
   | Inconsistent_implementation of string
   | Module_already_loaded of string
@@ -175,3 +175,6 @@ val unsafe_get_global_value : bytecode_or_asm_symbol:string -> Obj.t option
     client's version of [Symtable]). This is why we can't use [Dynlink] from the
     toplevel interactive loop, in particular.
 *)
+
+val add_path : string list -> unit
+val remove_path : string list -> unit
