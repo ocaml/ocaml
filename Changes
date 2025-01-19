@@ -95,6 +95,11 @@ Working version
   (Stephen Dolan and Tim McGilchrist, review by Xavier Leroy
   and David Allsopp)
 
+- #13746 Fix instr_size computation on power. Uses the
+  --enable-codegen-invariants configuration option to check
+  instr_size calculations are correct at assembly compile time.
+  (Tim McGilchrist, review by ????)
+
 ### Standard library:
 
 - #13729: Add Either.retract
