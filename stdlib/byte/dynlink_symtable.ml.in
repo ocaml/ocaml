@@ -38,12 +38,9 @@ module Global = struct
 end
 #40 "byte/dynlink_symtable.ml.in"
 module Dll = struct
-#18 "../bytecomp/dll.ml"
 type dll_handle
 type dll_address
-#22 "../bytecomp/dll.ml"
 external dll_open: string -> dll_handle = "caml_dynlink_open_lib"
-#24 "../bytecomp/dll.ml"
 external dll_sym: dll_handle -> string -> dll_address
                 = "caml_dynlink_lookup_symbol"
          (* returned dll_address may be Val_unit *)
@@ -54,11 +51,8 @@ external get_current_dlls: unit -> dll_handle array
 (* Current search path for DLLs *)
 let search_path = ref ([] : string list)
 
-#42 "../bytecomp/dll.ml"
 (* DLLs currently opened *)
-#60 "byte/dynlink_symtable.ml.in"
 let opened_dlls = ref ([] : (string * dll_handle) list)
-#44 "../bytecomp/dll.ml"
 
 (* Add the given directories to the search path for DLLs. *)
 let add_path dirs =
@@ -66,10 +60,10 @@ let add_path dirs =
 
 let remove_path dirs =
   search_path := List.filter (fun d -> not (List.mem d dirs)) !search_path
-#70 "byte/dynlink_symtable.ml.in"
+#64 "byte/dynlink_symtable.ml.in"
 (* Each known primitive and its ID number *)
 let primitives : (string, int) Hashtbl.t = Hashtbl.create 100
-#52 "../bytecomp/dll.ml"
+#28 "../bytecomp/dll.ml"
 (* Extract the name of a DLLs from its external name (xxx.so or -lxxx) *)
 
 let extract_dll_name file =
@@ -79,7 +73,7 @@ let extract_dll_name file =
     "dll" ^ String.sub file 2 (String.length file - 2)
   else
     file (* will cause error later *)
-#83 "byte/dynlink_symtable.ml.in"
+#77 "byte/dynlink_symtable.ml.in"
 (* Specialized version of [Dll.{open_dll,open_dlls,find_primitive}] for the
     execution mode. *)
 let open_dll name =
@@ -171,39 +165,39 @@ end
 #111 "../bytecomp/symtable.ml"
 (* Global variables and the C primitives *)
 
-#175 "byte/dynlink_symtable.ml.in"
+#169 "byte/dynlink_symtable.ml.in"
 type[@ocaml.warning "-69"] vm = {
-#136 "../bytecomp/symtable.ml"
+#132 "../bytecomp/symtable.ml"
   global_table : GlobalMap.t ref;
   literal_table : (int * Obj.t) list ref;
   of_prim : string -> int;
-#181 "byte/dynlink_symtable.ml.in"
+#175 "byte/dynlink_symtable.ml.in"
   mutable crcs : (string * Digest.t option) list;
-#139 "../bytecomp/symtable.ml"
+#135 "../bytecomp/symtable.ml"
 }
 
 let vm = {
   global_table = ref GlobalMap.empty;
   literal_table = ref [];
-#189 "byte/dynlink_symtable.ml.in"
+#183 "byte/dynlink_symtable.ml.in"
   of_prim;
   crcs = [];
-#145 "../bytecomp/symtable.ml"
+#141 "../bytecomp/symtable.ml"
 }
 
-#150 "../bytecomp/symtable.ml"
+#146 "../bytecomp/symtable.ml"
 let slot_for_getglobal global =
   try
     GlobalMap.find vm.global_table.contents global
   with Not_found ->
-#200 "byte/dynlink_symtable.ml.in"
+#194 "byte/dynlink_symtable.ml.in"
     let global =
       match global with
       | Global.Glob_compunit (Compunit cu) -> DC.Compilation_unit cu
       | Global.Glob_predef (Predef_exn exn) -> DC.Predefined_exception exn
     in
     raise (DC.Error (Linking_error ("", Undefined_global global)))
-#155 "../bytecomp/symtable.ml"
+#151 "../bytecomp/symtable.ml"
 
 let slot_for_setglobal global =
   GlobalMap.enter vm.global_table global
@@ -212,7 +206,7 @@ let slot_for_literal cst =
   let n = GlobalMap.incr vm.global_table in
   vm.literal_table := (n, cst) :: vm.literal_table.contents;
   n
-#288 "../bytecomp/symtable.ml"
+#284 "../bytecomp/symtable.ml"
 (* Relocate a block of object bytecode *)
 
 let patch_int buff pos n =
@@ -239,16 +233,16 @@ let patch_object buff patchlist =
       | (Reloc_primitive name, pos) ->
           patch_int buff pos (vm.of_prim name))
     patchlist
-#333 "../bytecomp/symtable.ml"
+#329 "../bytecomp/symtable.ml"
 (* Functions for toplevel use *)
 
-#246 "byte/dynlink_symtable.ml.in"
+#240 "byte/dynlink_symtable.ml.in"
 (* Update the in-core table of globals *)
 module Meta = struct
 #16 "../toplevel/byte/meta.ml"
 external global_data : unit -> Obj.t array = "caml_get_global_data"
 external realloc_global_data : int -> unit = "caml_realloc_global"
-#252 "byte/dynlink_symtable.ml.in"
+#246 "byte/dynlink_symtable.ml.in"
 end
 let update_global_table () =
   let ng = vm.global_table.contents.cnt in
@@ -268,24 +262,24 @@ type bytecode_sections =
 external get_bytecode_sections : unit -> bytecode_sections =
   "caml_dynlink_get_bytecode_sections"
 
-#335 "../bytecomp/symtable.ml"
+#331 "../bytecomp/symtable.ml"
 external link_vm : vm -> (string * Digest.t option) list =
   "caml_dynlink_vm_link"
 
 (* Initialize the linker for toplevel use *)
 
 let init_toplevel () =
-#279 "byte/dynlink_symtable.ml.in"
+#273 "byte/dynlink_symtable.ml.in"
   let sect = get_bytecode_sections () in
   vm.crcs <- sect.crcs;
   ignore (link_vm vm);
   vm.global_table := sect.symb;
   Dll.init ~dllpaths:sect.dlpt ~prims:sect.prim;
   sect.crcs
-#342 "../bytecomp/symtable.ml"
+#338 "../bytecomp/symtable.ml"
 
 (* Find the value of a global identifier *)
-#289 "byte/dynlink_symtable.ml.in"
+#283 "byte/dynlink_symtable.ml.in"
 let get_global_value global =
   (Meta.global_data()).(slot_for_getglobal global)
 
@@ -301,7 +295,7 @@ let initialized_compunits patchlist =
     []
     patchlist
 
-#350 "../bytecomp/symtable.ml"
+#346 "../bytecomp/symtable.ml"
 let required_compunits patchlist =
   List.fold_left (fun compunits rel ->
       match fst rel with
@@ -311,7 +305,7 @@ let required_compunits patchlist =
     []
     patchlist
 
-#315 "byte/dynlink_symtable.ml.in"
+#309 "byte/dynlink_symtable.ml.in"
 let check_global_initialized patchlist =
   (* First determine the compilation units we will define *)
   let initialized_compunits = initialized_compunits patchlist in
@@ -327,13 +321,13 @@ let check_global_initialized patchlist =
     | Reloc_primitive _ -> () in
   List.iter check_reference patchlist
 
-#359 "../bytecomp/symtable.ml"
+#355 "../bytecomp/symtable.ml"
 (* Save and restore the current state *)
 
 type global_map = GlobalMap.t
 
 let current_state () = vm.global_table.contents
-#337 "byte/dynlink_symtable.ml.in"
+#331 "byte/dynlink_symtable.ml.in"
 let hide_additions (st : global_map) =
   if st.cnt > vm.global_table.contents.cnt then
     failwith "Symtable.hide_additions";

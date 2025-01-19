@@ -123,14 +123,10 @@ let of_prim_compiler name =
        || !Clflags.no_check_prims
     then
       PrimMap.enter c_prim_table name
-    else begin
-      match Dll.find_primitive name with
-      | None -> raise(Error(Unavailable_primitive name))
-      | Some Prim_exists ->
-          PrimMap.enter c_prim_table name
-      | Some (Prim_loaded _symb) ->
-          PrimMap.enter c_prim_table name
-    end
+    else if Dll.have_primitive name then
+      PrimMap.enter c_prim_table name
+    else
+      raise(Error(Unavailable_primitive name))
 
 type vm = {
   global_table : GlobalMap.t ref;

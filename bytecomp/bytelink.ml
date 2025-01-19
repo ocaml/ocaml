@@ -491,14 +491,13 @@ let link_bytecode ?final_name tolink exec_name standalone =
          (* Initialize the DLL machinery *)
          Dll.init_compile !Clflags.no_std_include;
          Dll.add_path (Load_path.get_path_list ());
-         try Dll.open_dlls Dll.For_checking sharedobjs
+         try Dll.open_dlls sharedobjs
          with Failure reason -> raise(Error(Cannot_open_dll reason))
        end;
        let output_fun buf =
          Out_channel.output_bigarray outchan buf 0 (Bigarray.Array1.dim buf)
        and currpos_fun () = pos_out outchan - start_code in
        List.iter (link_file output_fun currpos_fun) tolink;
-       if check_dlls then Dll.close_all_dlls();
        (* The final STOP instruction *)
        output_byte outchan Opcodes.opSTOP;
        output_byte outchan 0; output_byte outchan 0; output_byte outchan 0;
