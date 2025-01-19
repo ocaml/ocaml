@@ -48,6 +48,7 @@ let pred n = sub n 1L
 let abs n = if n >= 0L then n else neg n
 let min_int = 0x8000000000000000L
 let max_int = 0x7FFFFFFFFFFFFFFFL
+let unsigned_max_int = 0xFFFFFFFFFFFFFFFFL
 let lognot n = logxor n (-1L)
 
 let unsigned_to_int =

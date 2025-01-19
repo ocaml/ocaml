@@ -95,6 +95,10 @@ val max_int : int32
 val min_int : int32
 (** The smallest representable 32-bit integer, -2{^31}. *)
 
+val unsigned_max_int: int32
+(** The greatest representable {e unsigned} 32-bit integer, 2{^32} - 1.
+
+    @since 5.4 *)
 
 external logand : int32 -> int32 -> int32 = "%int32_and"
 (** Bitwise logical and. *)

@@ -97,6 +97,9 @@ Working version
 
 ### Standard library:
 
+- #13743: Add `Int32.unsigned_max_int` and `Int64.unsigned_max_int`
+  (Tima Kinsart, review by ???)
+
 - #13729: Add Either.retract
   (Daniel Bünzli, review by Nicolás Ojeda Bär and David Allsopp)
 

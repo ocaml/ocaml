@@ -95,6 +95,11 @@ val max_int : int64
 val min_int : int64
 (** The smallest representable 64-bit integer, -2{^63}. *)
 
+val unsigned_max_int: int64
+(** The greatest representable {e unsigned} 64-bit integer, 2{^64} - 1.
+
+    @since 5.4 *)
+
 external logand : int64 -> int64 -> int64 = "%int64_and"
 (** Bitwise logical and. *)
 
