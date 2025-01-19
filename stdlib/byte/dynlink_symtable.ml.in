@@ -16,14 +16,11 @@
 
 (* To assign numbers to globals and primitives *)
 
-#25 "../bytecomp/symtable.ml"
 module Compunit = struct
-#27 "../bytecomp/symtable.ml"
   let name (Compunit cu_name) = cu_name
   let is_packed (Compunit name) = String.contains name '.'
-#32 "../bytecomp/symtable.ml"
 end
-#42 "../bytecomp/symtable.ml"
+
 module Global = struct
   type t =
     | Glob_compunit of compunit
@@ -33,11 +30,9 @@ module Global = struct
     | Glob_compunit (Compunit cu) -> cu
     | Glob_predef (Predef_exn exn) -> exn
 
-#72 "../bytecomp/symtable.ml"
   module Map = Map.Make(struct type nonrec t = t let compare = compare end)
 end
-#40 "byte/dynlink_symtable.ml.in"
-module Dll = struct
+
 type dll_handle
 type dll_address
 external dll_open: string -> dll_handle = "caml_dynlink_open_lib"
@@ -60,10 +55,10 @@ let add_path dirs =
 
 let remove_path dirs =
   search_path := List.filter (fun d -> not (List.mem d dirs)) !search_path
-#64 "byte/dynlink_symtable.ml.in"
+
 (* Each known primitive and its ID number *)
 let primitives : (string, int) Hashtbl.t = Hashtbl.create 100
-#28 "../bytecomp/dll.ml"
+
 (* Extract the name of a DLLs from its external name (xxx.so or -lxxx) *)
 
 let extract_dll_name file =
@@ -73,9 +68,7 @@ let extract_dll_name file =
     "dll" ^ String.sub file 2 (String.length file - 2)
   else
     file (* will cause error later *)
-#77 "byte/dynlink_symtable.ml.in"
-(* Specialized version of [Dll.{open_dll,open_dlls,find_primitive}] for the
-    execution mode. *)
+
 let open_dll name =
   let extracted_name = extract_dll_name name in
   let name = extracted_name ^ Config.ext_dll in
@@ -111,7 +104,7 @@ let open_dll name =
 let open_dlls names =
   List.iter open_dll names
 
-let find_primitive prim_name =
+let of_prim prim_name =
   try Hashtbl.find primitives prim_name
   with Not_found ->
     let rec find seen = function
@@ -128,16 +121,14 @@ let find_primitive prim_name =
         end
     in
     find [] !opened_dlls
-(* Adapted from Dll.init_toplevel *)
+
 let init ~dllpaths ~prims =
   search_path := dllpaths;
   opened_dlls :=
     List.map (fun dll -> "", dll)
       (Array.to_list (get_current_dlls ()));
   List.iteri (fun n p -> Hashtbl.add primitives p n) prims
-end
-let of_prim = Dll.find_primitive
-let open_dlls = Dll.open_dlls
+
 (* Adapted from "../bytecomp/symtable.ml"*)
 module GlobalMap = struct
 
@@ -162,42 +153,33 @@ module GlobalMap = struct
     n
 
 end
-#111 "../bytecomp/symtable.ml"
+
 (* Global variables and the C primitives *)
 
-#169 "byte/dynlink_symtable.ml.in"
 type[@ocaml.warning "-69"] vm = {
-#132 "../bytecomp/symtable.ml"
   global_table : GlobalMap.t ref;
   literal_table : (int * Obj.t) list ref;
   of_prim : string -> int;
-#175 "byte/dynlink_symtable.ml.in"
   mutable crcs : (string * Digest.t option) list;
-#135 "../bytecomp/symtable.ml"
 }
 
 let vm = {
   global_table = ref GlobalMap.empty;
   literal_table = ref [];
-#183 "byte/dynlink_symtable.ml.in"
   of_prim;
   crcs = [];
-#141 "../bytecomp/symtable.ml"
 }
 
-#146 "../bytecomp/symtable.ml"
 let slot_for_getglobal global =
   try
     GlobalMap.find vm.global_table.contents global
   with Not_found ->
-#194 "byte/dynlink_symtable.ml.in"
     let global =
       match global with
       | Global.Glob_compunit (Compunit cu) -> DC.Compilation_unit cu
       | Global.Glob_predef (Predef_exn exn) -> DC.Predefined_exception exn
     in
     raise (DC.Error (Linking_error ("", Undefined_global global)))
-#151 "../bytecomp/symtable.ml"
 
 let slot_for_setglobal global =
   GlobalMap.enter vm.global_table global
@@ -206,7 +188,7 @@ let slot_for_literal cst =
   let n = GlobalMap.incr vm.global_table in
   vm.literal_table := (n, cst) :: vm.literal_table.contents;
   n
-#284 "../bytecomp/symtable.ml"
+
 (* Relocate a block of object bytecode *)
 
 let patch_int buff pos n =
@@ -233,21 +215,17 @@ let patch_object buff patchlist =
       | (Reloc_primitive name, pos) ->
           patch_int buff pos (vm.of_prim name))
     patchlist
-#329 "../bytecomp/symtable.ml"
+
 (* Functions for toplevel use *)
 
-#240 "byte/dynlink_symtable.ml.in"
 (* Update the in-core table of globals *)
-module Meta = struct
-#16 "../toplevel/byte/meta.ml"
 external global_data : unit -> Obj.t array = "caml_get_global_data"
 external realloc_global_data : int -> unit = "caml_realloc_global"
-#246 "byte/dynlink_symtable.ml.in"
-end
+
 let update_global_table () =
   let ng = vm.global_table.contents.cnt in
-  if ng > Array.length(Meta.global_data()) then Meta.realloc_global_data ng;
-  let glob = Meta.global_data() in
+  if ng > Array.length(global_data()) then realloc_global_data ng;
+  let glob = global_data() in
   List.iter
     (fun (slot, cst) -> glob.(slot) <- cst)
     vm.literal_table.contents;
@@ -262,26 +240,22 @@ type bytecode_sections =
 external get_bytecode_sections : unit -> bytecode_sections =
   "caml_dynlink_get_bytecode_sections"
 
-#331 "../bytecomp/symtable.ml"
 external link_vm : vm -> (string * Digest.t option) list =
   "caml_dynlink_vm_link"
 
 (* Initialize the linker for toplevel use *)
 
 let init_toplevel () =
-#273 "byte/dynlink_symtable.ml.in"
   let sect = get_bytecode_sections () in
   vm.crcs <- sect.crcs;
   ignore (link_vm vm);
   vm.global_table := sect.symb;
-  Dll.init ~dllpaths:sect.dlpt ~prims:sect.prim;
+  init ~dllpaths:sect.dlpt ~prims:sect.prim;
   sect.crcs
-#338 "../bytecomp/symtable.ml"
 
 (* Find the value of a global identifier *)
-#283 "byte/dynlink_symtable.ml.in"
 let get_global_value global =
-  (Meta.global_data()).(slot_for_getglobal global)
+  (global_data()).(slot_for_getglobal global)
 
 (* Check that all compilation units referenced in the given patch list
    have already been initialized *)
@@ -295,7 +269,6 @@ let initialized_compunits patchlist =
     []
     patchlist
 
-#346 "../bytecomp/symtable.ml"
 let required_compunits patchlist =
   List.fold_left (fun compunits rel ->
       match fst rel with
@@ -305,7 +278,6 @@ let required_compunits patchlist =
     []
     patchlist
 
-#309 "byte/dynlink_symtable.ml.in"
 let check_global_initialized patchlist =
   (* First determine the compilation units we will define *)
   let initialized_compunits = initialized_compunits patchlist in
@@ -321,13 +293,12 @@ let check_global_initialized patchlist =
     | Reloc_primitive _ -> () in
   List.iter check_reference patchlist
 
-#355 "../bytecomp/symtable.ml"
 (* Save and restore the current state *)
 
 type global_map = GlobalMap.t
 
 let current_state () = vm.global_table.contents
-#331 "byte/dynlink_symtable.ml.in"
+
 let hide_additions (st : global_map) =
   if st.cnt > vm.global_table.contents.cnt then
     failwith "Symtable.hide_additions";

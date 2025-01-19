@@ -243,7 +243,7 @@ type error = DC.error =
 exception Error = DC.Error
 let error_message = DC.error_message
 
-let add_path = Symtable.Dll.add_path
-let remove_path = Symtable.Dll.remove_path
+let add_path = Symtable.add_path
+let remove_path = Symtable.remove_path
 let update_global_table = Symtable.update_global_table
 let check_global_initialized = Symtable.check_global_initialized
