@@ -141,3 +141,5 @@ let add_path dirs =
   search_path := dirs @ !search_path
 let remove_path dirs =
   search_path := List.filter (fun d -> not (List.mem d dirs)) !search_path
+let update_global_table () = ()
+let check_global_initialized _ = ()

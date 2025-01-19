@@ -19,16 +19,15 @@ type modname = string
 type crcs = (modname * Digest.t option) list
 
 (* Names of compilation units as represented in CMO files *)
-type compunit = Compunit of string [@@unboxed]
+type nonrec compunit = Dynlink.compunit = Compunit of string [@@unboxed]
 
 (* Predefined symbols as represented in CMO files *)
 
-type predef =
-  | Predef_exn of string [@@unboxed]
+type nonrec predef = Dynlink.predef = Predef_exn of string [@@unboxed]
 
 (* Relocation information *)
 
-type reloc_info =
+type nonrec reloc_info = Dynlink.reloc_info =
   | Reloc_literal of Obj.t (* structured constant *)
   | Reloc_getcompunit of compunit (* reference to a compunit *)
   | Reloc_getpredef of predef (* reference to a predef *)

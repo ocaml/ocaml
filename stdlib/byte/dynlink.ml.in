@@ -23,6 +23,8 @@ end
 
 let _compression_supported = Compression.zstd_initialize ()
 
+open Cmo_format
+
 module Bytecode = struct
   type filename = string
 
@@ -243,3 +245,5 @@ let error_message = DC.error_message
 
 let add_path = Symtable.Dll.add_path
 let remove_path = Symtable.Dll.remove_path
+let update_global_table = Symtable.update_global_table
+let check_global_initialized = Symtable.check_global_initialized

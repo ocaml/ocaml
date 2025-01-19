@@ -46,15 +46,10 @@ module EvalBase = struct
   let eval_ident id =
     if Ident.global id then begin
       let name = Ident.name id in
-      let global =
-        if Ident.persistent id
-        then Symtable.Global.Glob_compunit (Cmo_format.Compunit name)
-        else Symtable.Global.Glob_predef (Cmo_format.Predef_exn name)
-      in
-      try
-        Symtable.get_global_value global
-      with Symtable.Error (Undefined_global _) ->
-        raise (Undefined_global name)
+      match Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol:name with
+      | Some v -> v
+      | None ->
+          raise (Undefined_global name)
     end else begin
       let name = Translmod.toplevel_name id in
       try
@@ -84,8 +79,8 @@ let load_lambda ppf lam =
   in
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code reloc;
-  Symtable.check_global_initialized reloc;
-  Symtable.update_global_table();
+  Dynlink.check_global_initialized reloc;
+  Dynlink.update_global_table();
   let initial_bindings = !toplevel_value_bindings in
   let bytecode, closure = Meta.reify_bytecode code [| events |] None in
   match

@@ -61,24 +61,16 @@ val transl_const: Lambda.structured_constant -> Obj.t
 (* Functions for the toplevel *)
 
 val init_toplevel: unit -> (string * Digest.t option) list
-val update_global_table: unit -> unit
-val get_global_value: Global.t -> Obj.t
 val is_global_defined: Global.t -> bool
-val assign_global_value: Global.t -> Obj.t -> unit
 val get_global_position: Global.t -> int
-val check_global_initialized: (reloc_info * int) list -> unit
-val initialized_compunits: (reloc_info * int) list -> compunit list
 val required_compunits: (reloc_info * int) list -> compunit list
 
 type global_map
 
-val empty_global_map: global_map
 val current_state: unit -> global_map
 val restore_state: global_map -> unit
-val hide_additions: global_map -> unit
 val filter_global_map: (Global.t -> bool) -> global_map -> global_map
 val iter_global_map : (Global.t -> int -> unit) -> global_map -> unit
-val is_defined_in_global_map: global_map -> Global.t -> bool
 
 (* Error report *)
 

@@ -332,17 +332,6 @@ let data_global_map () =
 
 (* Functions for toplevel use *)
 
-(* Update the in-core table of globals *)
-
-let update_global_table () =
-  let ng = vm.global_table.contents.cnt in
-  if ng > Array.length(Meta.global_data()) then Meta.realloc_global_data ng;
-  let glob = Meta.global_data() in
-  List.iter
-    (fun (slot, cst) -> glob.(slot) <- cst)
-    vm.literal_table.contents;
-  vm.literal_table := []
-
 external link_vm : vm -> (string * Digest.t option) list =
   "caml_dynlink_vm_link"
 
@@ -355,22 +344,8 @@ let init_toplevel () =
 
 let get_global_position = slot_for_getglobal
 
-let get_global_value global =
-  (Meta.global_data()).(slot_for_getglobal global)
-let assign_global_value global v =
-  (Meta.global_data()).(slot_for_getglobal global) <- v
-
 (* Check that all compilation units referenced in the given patch list
    have already been initialized *)
-
-let initialized_compunits patchlist =
-  List.fold_left (fun compunits rel ->
-      match fst rel with
-      | Reloc_setcompunit compunit -> compunit :: compunits
-      | Reloc_literal _ | Reloc_getcompunit _ | Reloc_getpredef _
-      | Reloc_primitive _ -> compunits)
-    []
-    patchlist
 
 let required_compunits patchlist =
   List.fold_left (fun compunits rel ->
@@ -381,20 +356,6 @@ let required_compunits patchlist =
     []
     patchlist
 
-let check_global_initialized patchlist =
-  (* First determine the compilation units we will define *)
-  let initialized_compunits = initialized_compunits patchlist in
-  (* Then check that all referenced, not defined comp units have a value *)
-  let check_reference (rel, _) = match rel with
-      Reloc_getcompunit compunit ->
-        let global = Global.Glob_compunit compunit in
-        if not (List.mem compunit initialized_compunits)
-        && Obj.is_int (get_global_value global)
-        then raise (Error(Uninitialized_global global))
-    | Reloc_literal _ | Reloc_getpredef _ | Reloc_setcompunit _
-    | Reloc_primitive _ -> () in
-  List.iter check_reference patchlist
-
 (* Save and restore the current state *)
 
 type global_map = GlobalMap.t
@@ -402,14 +363,6 @@ type global_map = GlobalMap.t
 let current_state () = vm.global_table.contents
 
 let restore_state st = vm.global_table := st
-
-let hide_additions (st : global_map) =
-  if st.cnt > vm.global_table.contents.cnt then
-    fatal_error "Symtable.hide_additions";
-  vm.global_table :=
-    {GlobalMap.
-      cnt = vm.global_table.contents.cnt;
-      tbl = st.tbl }
 
 (* "Filter" the global map according to some predicate.
    Used to expunge the global map for the toplevel. *)
@@ -424,11 +377,6 @@ let filter_global_map p (gmap : global_map) =
 
 let iter_global_map f (gmap : global_map) =
   Global.Map.iter f gmap.tbl
-
-let is_defined_in_global_map (gmap : global_map) global =
-  Global.Map.mem global gmap.tbl
-
-let empty_global_map = GlobalMap.empty
 
 (* Error report *)
 

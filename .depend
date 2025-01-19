@@ -2587,7 +2587,6 @@ bytecomp/symtable.cmo : \
     lambda/runtimedef.cmi \
     typing/predef.cmi \
     utils/misc.cmi \
-    bytecomp/meta.cmi \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
@@ -2601,7 +2600,6 @@ bytecomp/symtable.cmx : \
     lambda/runtimedef.cmx \
     typing/predef.cmx \
     utils/misc.cmx \
-    bytecomp/meta.cmx \
     parsing/location.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \

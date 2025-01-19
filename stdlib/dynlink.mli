@@ -169,12 +169,20 @@ val unsafe_get_global_value : bytecode_or_asm_symbol:string -> Obj.t option
     note for programs such as the debugger: even though the linking of a packed
     (subset of) compilerlibs into [Dynlink] hides the copy of [Symtable] that
     [Dynlink] uses from its clients, there is still only one table of global
-    values in the bytecode VM. Changes to this table are NOT synchronized
-    between [Dynlink] and the functions that change the global value table
-    ([update_global_table] and [assign_global_value], accessed through a
-    client's version of [Symtable]). This is why we can't use [Dynlink] from the
-    toplevel interactive loop, in particular.
+    values in the bytecode VM.
 *)
+
+type compunit = Compunit of string [@@unboxed]
+type predef = Predef_exn of string [@@unboxed]
+type reloc_info =
+  | Reloc_literal of Obj.t (* structured constant *)
+  | Reloc_getcompunit of compunit (* reference to a compunit *)
+  | Reloc_getpredef of predef (* reference to a predef *)
+  | Reloc_setcompunit of compunit (* definition of a compunit *)
+  | Reloc_primitive of string (* C primitive number *)
+
+val check_global_initialized: (reloc_info * int) list -> unit
+val update_global_table : unit -> unit
 
 val add_path : string list -> unit
 val remove_path : string list -> unit
