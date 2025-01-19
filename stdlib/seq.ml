@@ -28,29 +28,29 @@ let return x () = Cons (x, empty)
 let cons x next () = Cons (x, next)
 
 let rec append seq1 seq2 () =
-  match seq1() with
-  | Nil -> seq2()
+  match seq1 () with
+  | Nil -> seq2 ()
   | Cons (x, next) -> Cons (x, append next seq2)
 
-let rec map f seq () = match seq() with
+let rec map f seq () = match seq () with
   | Nil -> Nil
   | Cons (x, next) -> Cons (f x, map f next)
 
-let rec filter_map f seq () = match seq() with
+let rec filter_map f seq () = match seq () with
   | Nil -> Nil
   | Cons (x, next) ->
       match f x with
         | None -> filter_map f next ()
         | Some y -> Cons (y, filter_map f next)
 
-let rec filter f seq () = match seq() with
+let rec filter f seq () = match seq () with
   | Nil -> Nil
   | Cons (x, next) ->
       if f x
       then Cons (x, filter f next)
       else filter f next ()
 
-let rec filteri_aux f i seq () = match seq() with
+let rec filteri_aux f i seq () = match seq () with
   | Nil -> Nil
   | Cons (x, next) ->
       let i' = i + 1 in
@@ -93,14 +93,14 @@ let rec unfold f u () =
   | Some (x, u') -> Cons (x, unfold f u')
 
 let is_empty xs =
-  match xs() with
+  match xs () with
   | Nil ->
       true
   | Cons (_, _) ->
       false
 
 let uncons xs =
-  match xs() with
+  match xs () with
   | Cons (x, xs) ->
       Some (x, xs)
   | Nil ->
@@ -109,7 +109,7 @@ let uncons xs =
 
 
 let rec length_aux accu xs =
-  match xs() with
+  match xs () with
   | Nil ->
       accu
   | Cons (_, xs) ->
@@ -119,7 +119,7 @@ let[@inline] length xs =
   length_aux 0 xs
 
 let rec iteri_aux f i xs =
-  match xs() with
+  match xs () with
   | Nil ->
       ()
   | Cons (x, xs) ->
@@ -130,7 +130,7 @@ let[@inline] iteri f xs =
   iteri_aux f 0 xs
 
 let rec fold_lefti_aux f accu i xs =
-  match xs() with
+  match xs () with
   | Nil ->
       accu
   | Cons (x, xs) ->
@@ -141,28 +141,28 @@ let[@inline] fold_lefti f accu xs =
   fold_lefti_aux f accu 0 xs
 
 let rec for_all p xs =
-  match xs() with
+  match xs () with
   | Nil ->
       true
   | Cons (x, xs) ->
       p x && for_all p xs
 
 let rec exists p xs =
-  match xs() with
+  match xs () with
   | Nil ->
       false
   | Cons (x, xs) ->
       p x || exists p xs
 
 let rec find p xs =
-  match xs() with
+  match xs () with
   | Nil ->
       None
   | Cons (x, xs) ->
       if p x then Some x else find p xs
 
 let find_index p xs =
-  let rec aux i xs = match xs() with
+  let rec aux i xs = match xs () with
     | Nil ->
         None
     | Cons (x, xs) ->
@@ -170,7 +170,7 @@ let find_index p xs =
   aux 0 xs
 
 let rec find_map f xs =
-  match xs() with
+  match xs () with
   | Nil ->
       None
   | Cons (x, xs) ->
@@ -181,7 +181,7 @@ let rec find_map f xs =
           result
 
 let find_mapi f xs =
-  let rec aux i xs = match xs() with
+  let rec aux i xs = match xs () with
     | Nil ->
         None
     | Cons (x, xs) ->
@@ -196,15 +196,15 @@ let find_mapi f xs =
    the case where the two sequences have different lengths. They stop as soon
    as one sequence is exhausted. Their behavior is slightly asymmetric: when
    [xs] is empty, they do not force [ys]; however, when [ys] is empty, [xs] is
-   forced, even though the result of the function application [xs()] turns out
+   forced, even though the result of the function application [xs ()] turns out
    to be useless. *)
 
 let rec iter2 f xs ys =
-  match xs() with
+  match xs () with
   | Nil ->
       ()
   | Cons (x, xs) ->
-      match ys() with
+      match ys () with
       | Nil ->
           ()
       | Cons (y, ys) ->
@@ -212,11 +212,11 @@ let rec iter2 f xs ys =
           iter2 f xs ys
 
 let rec fold_left2 f accu xs ys =
-  match xs() with
+  match xs () with
   | Nil ->
       accu
   | Cons (x, xs) ->
-      match ys() with
+      match ys () with
       | Nil ->
           accu
       | Cons (y, ys) ->
@@ -224,29 +224,29 @@ let rec fold_left2 f accu xs ys =
           fold_left2 f accu xs ys
 
 let rec for_all2 f xs ys =
-  match xs() with
+  match xs () with
   | Nil ->
       true
   | Cons (x, xs) ->
-      match ys() with
+      match ys () with
       | Nil ->
           true
       | Cons (y, ys) ->
           f x y && for_all2 f xs ys
 
 let rec exists2 f xs ys =
-  match xs() with
+  match xs () with
   | Nil ->
       false
   | Cons (x, xs) ->
-      match ys() with
+      match ys () with
       | Nil ->
           false
       | Cons (y, ys) ->
           f x y || exists2 f xs ys
 
 let rec equal eq xs ys =
-  match xs(), ys() with
+  match xs (), ys () with
   | Nil, Nil ->
       true
   | Cons (x, xs), Cons (y, ys) ->
@@ -256,7 +256,7 @@ let rec equal eq xs ys =
       false
 
 let rec compare cmp xs ys =
-  match xs(), ys() with
+  match xs (), ys () with
   | Nil, Nil ->
       0
   | Cons (x, xs), Cons (y, ys) ->
@@ -288,7 +288,7 @@ let rec repeat x () =
   Cons (x, repeat x)
 
 let rec forever f () =
-  Cons (f(), forever f)
+  Cons (f (), forever f)
 
 (* This preliminary definition of [cycle] requires the sequence [xs]
    to be nonempty. Applying it to an empty sequence would produce a
@@ -303,7 +303,7 @@ let rec cycle_nonempty xs () =
    check is performed just once. *)
 
 let cycle xs () =
-  match xs() with
+  match xs () with
   | Nil ->
       Nil
   | Cons (x, xs') ->
@@ -332,7 +332,7 @@ let iterate f x =
 
 
 let rec mapi_aux f i xs () =
-  match xs() with
+  match xs () with
   | Nil ->
       Nil
   | Cons (x, xs) ->
@@ -348,7 +348,7 @@ let[@inline] mapi f xs =
    elements too early; see the above comment about [iterate1] and [iterate]. *)
 
 let rec tail_scan f s xs () =
-  match xs() with
+  match xs () with
   | Nil ->
       Nil
   | Cons (x, xs) ->
@@ -366,7 +366,7 @@ let rec take_aux n xs =
     empty
   else
     fun () ->
-      match xs() with
+      match xs () with
       | Nil ->
           Nil
       | Cons (x, xs) ->
@@ -381,13 +381,13 @@ let take n xs =
    [force_drop] is used as a building block in the definition of [drop]. *)
 
 let rec force_drop n xs =
-  match xs() with
+  match xs () with
   | Nil ->
       Nil
   | Cons (_, xs) ->
       let n = n - 1 in
       if n = 0 then
-        xs()
+        xs ()
       else
         force_drop n xs
 
@@ -403,21 +403,21 @@ let drop n xs =
       force_drop n xs
 
 let rec take_while p xs () =
-  match xs() with
+  match xs () with
   | Nil ->
       Nil
   | Cons (x, xs) ->
       if p x then Cons (x, take_while p xs) else Nil
 
 let rec drop_while p xs () =
-  match xs() with
+  match xs () with
   | Nil ->
       Nil
   | Cons (x, xs) as node ->
       if p x then drop_while p xs () else node
 
 let rec group eq xs () =
-  match xs() with
+  match xs () with
   | Nil ->
       Nil
   | Cons (x, xs) ->
@@ -434,7 +434,7 @@ module Suspension = struct
 
   let to_lazy : 'a suspension -> 'a Lazy.t =
     Lazy.from_fun
-    (* fun s -> lazy (s()) *)
+    (* fun s -> lazy (s ()) *)
 
   let from_lazy (s : 'a Lazy.t) : 'a suspension =
     fun () -> Lazy.force s
@@ -460,15 +460,15 @@ module Suspension = struct
     fun () ->
       (* Get the function currently stored in [action], and write the
          function [failure] in its place, so the next access will result
-         in a call to [failure()]. *)
+         in a call to [failure ()]. *)
       let f = Atomic.exchange action failure in
-      f()
+      f ()
 
 end (* Suspension *)
 
 let rec memoize xs =
   Suspension.memoize (fun () ->
-    match xs() with
+    match xs () with
     | Nil ->
         Nil
     | Cons (x, xs) ->
@@ -477,7 +477,7 @@ let rec memoize xs =
 
 let rec once xs =
   Suspension.once (fun () ->
-    match xs() with
+    match xs () with
     | Nil ->
         Nil
     | Cons (x, xs) ->
@@ -486,31 +486,31 @@ let rec once xs =
 
 
 let rec zip xs ys () =
-  match xs() with
+  match xs () with
   | Nil ->
       Nil
   | Cons (x, xs) ->
-      match ys() with
+      match ys () with
       | Nil ->
           Nil
       | Cons (y, ys) ->
           Cons ((x, y), zip xs ys)
 
 let rec map2 f xs ys () =
-  match xs() with
+  match xs () with
   | Nil ->
       Nil
   | Cons (x, xs) ->
-      match ys() with
+      match ys () with
       | Nil ->
           Nil
       | Cons (y, ys) ->
           Cons (f x y, map2 f xs ys)
 
 let rec interleave xs ys () =
-  match xs() with
+  match xs () with
   | Nil ->
-      ys()
+      ys ()
   | Cons (x, xs) ->
       Cons (x, interleave ys xs)
 
@@ -527,14 +527,14 @@ let rec interleave xs ys () =
    of [sorted_merge]. *)
 
 let rec sorted_merge1l cmp x xs ys () =
-  match ys() with
+  match ys () with
   | Nil ->
       Cons (x, xs)
   | Cons (y, ys) ->
       sorted_merge1 cmp x xs y ys
 
 and sorted_merge1r cmp xs y ys () =
-  match xs() with
+  match xs () with
   | Nil ->
       Cons (y, ys)
   | Cons (x, xs) ->
@@ -547,7 +547,7 @@ and sorted_merge1 cmp x xs y ys =
     Cons (y, sorted_merge1l cmp x xs ys)
 
 let sorted_merge cmp xs ys () =
-  match xs(), ys() with
+  match xs (), ys () with
     | Nil, Nil ->
         Nil
     | Nil, c
@@ -558,14 +558,14 @@ let sorted_merge cmp xs ys () =
 
 
 let rec map_fst xys () =
-  match xys() with
+  match xys () with
   | Nil ->
       Nil
   | Cons ((x, _), xys) ->
       Cons (x, map_fst xys)
 
 let rec map_snd xys () =
-  match xys() with
+  match xys () with
   | Nil ->
       Nil
   | Cons ((_, y), xys) ->
@@ -581,7 +581,7 @@ let split =
    [filter_map Either.find_left (map f xs)]. *)
 
 let rec filter_map_find_left_map f xs () =
-  match xs() with
+  match xs () with
   | Nil ->
       Nil
   | Cons (x, xs) ->
@@ -592,7 +592,7 @@ let rec filter_map_find_left_map f xs () =
           filter_map_find_left_map f xs ()
 
 let rec filter_map_find_right_map f xs () =
-  match xs() with
+  match xs () with
   | Nil ->
       Nil
   | Cons (x, xs) ->
@@ -635,9 +635,9 @@ let rec transpose xss () =
    discovered. *)
 
 let rec diagonals remainders xss () =
-  match xss() with
+  match xss () with
   | Cons (xs, xss) ->
-      begin match xs() with
+      begin match xs () with
       | Cons (x, xs) ->
           (* We discover a new nonempty row [x :: xs]. Thus, the next diagonal
              is [x :: heads]: this diagonal begins with [x] and continues with
@@ -689,7 +689,7 @@ let product xs ys =
 
 let of_dispenser it =
   let rec c () =
-    match it() with
+    match it () with
     | None ->
         Nil
     | Some x ->
@@ -700,7 +700,7 @@ let of_dispenser it =
 let to_dispenser xs =
   let s = ref xs in
   fun () ->
-    match (!s)() with
+    match (!s) () with
     | Nil ->
         None
     | Cons (x, xs) ->

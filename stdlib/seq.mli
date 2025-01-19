@@ -66,8 +66,8 @@
    are demanded. In other words,
    the definition [let ys = map f xs] terminates immediately and
    does not invoke [f]. The function call [f x0] takes place only when the
-   first element of [ys] is demanded, via the function call [ys()].
-   Furthermore, calling [ys()] twice causes [f x0] to be called twice
+   first element of [ys] is demanded, via the function call [ys ()].
+   Furthermore, calling [ys ()] twice causes [f x0] to be called twice
    as well. If one wishes for [f] to be applied at most once to each
    element of [xs], even in scenarios where [ys] is queried more than once,
    then one should use [let ys = memoize (map f xs)].
@@ -90,7 +90,7 @@
 type 'a t = unit -> 'a node
 (** A sequence [xs] of type ['a t] is a delayed list of elements of
     type ['a]. Such a sequence is queried by performing a function
-    application [xs()]. This function application returns a node,
+    application [xs ()]. This function application returns a node,
     allowing the caller to determine whether the sequence is empty
     or nonempty, and in the latter case, to obtain its head and tail. *)
 
@@ -355,10 +355,10 @@ val cons : 'a -> 'a t -> 'a t
 (** [cons x xs] is the sequence that begins with the element [x],
     followed with the sequence [xs].
 
-    Writing [cons (f()) xs] causes the function call [f()]
+    Writing [cons (f ()) xs] causes the function call [f ()]
     to take place immediately. For this call to be delayed until the
     sequence is queried, one must instead write
-    [(fun () -> Cons(f(), xs))].
+    [(fun () -> Cons(f (), xs))].
 
     @since 4.11 *)
 
@@ -398,7 +398,7 @@ val repeat : 'a -> 'a t
 
 val forever : (unit -> 'a) -> 'a t
 (** [forever f] is an infinite sequence where every element is produced
-    (on demand) by the function call [f()].
+    (on demand) by the function call [f ()].
 
     For instance,
     [forever Random.bool] is an infinite sequence of random bits.
