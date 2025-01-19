@@ -182,7 +182,6 @@ comp_SOURCES = \
   file_formats/cmo_format.mli \
   file_formats/cmx_format.mli \
   file_formats/cmxs_format.mli \
-  bytecomp/meta.mli bytecomp/meta.ml \
   bytecomp/opcodes.mli bytecomp/opcodes.ml \
   bytecomp/bytesections.mli bytecomp/bytesections.ml \
   bytecomp/dll.mli bytecomp/dll.ml \
@@ -374,6 +373,7 @@ $(addprefix middle_end/, \
 ocamloptcomp_SOURCES = $(ocamlmiddleend_SOURCES) $(asmcomp_SOURCES)
 
 ocamltoplevel_SOURCES = $(addprefix toplevel/, \
+  byte/meta.mli byte/meta.ml \
   genprintval.mli genprintval.ml \
   topcommon.mli topcommon.ml \
   native/tophooks.mli native/tophooks.ml \

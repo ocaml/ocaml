@@ -245,7 +245,7 @@ let patch_object buff patchlist =
 #246 "byte/dynlink_symtable.ml.in"
 (* Update the in-core table of globals *)
 module Meta = struct
-#16 "../bytecomp/meta.ml"
+#16 "../toplevel/byte/meta.ml"
 external global_data : unit -> Obj.t array = "caml_get_global_data"
 external realloc_global_data : int -> unit = "caml_realloc_global"
 #252 "byte/dynlink_symtable.ml.in"
