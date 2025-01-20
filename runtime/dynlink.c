@@ -295,8 +295,6 @@ CAMLprim value caml_dynlink_get_bytecode_sections(value unit)
   CAMLreturn (ret);
 }
 
-#endif /* NATIVE_CODE */
-
 /** dlopen interface for the bytecode linker **/
 
 #define Handle_val(v) (*((void **) (v)))
@@ -339,8 +337,6 @@ CAMLprim value caml_dynlink_lookup_symbol(value handle, value symbolname)
   Handle_val(result) = symb;
   return result;
 }
-
-#ifndef NATIVE_CODE
 
 CAMLprim value caml_dynlink_add_primitive(value handle)
 {
