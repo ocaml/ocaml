@@ -294,7 +294,7 @@ let set_paths ?(auto_include=Compmisc.auto_include) ?(dir="") () =
     ]
   in
   Load_path.init ~auto_include ~visible ~hidden;
-  Dynlink.add_path (visible @ hidden)
+  visible @ hidden
 
 let update_search_path_from_env () =
   let extra_paths =

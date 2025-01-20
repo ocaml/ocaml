@@ -43,8 +43,6 @@
 
 #include "build_config.h"
 
-#ifndef NATIVE_CODE
-
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
@@ -356,34 +354,3 @@ CAMLprim value caml_dynlink_get_current_libs(value unit)
   }
   CAMLreturn(res);
 }
-
-static value vm = Val_unit;
-
-CAMLprim value caml_dynlink_vm_link(value links)
-{
-  CAMLparam1(links);
-
-  if (Is_block(vm)) {
-    /* Toplevel or debugger initialisation - plumb into Dynlink */
-    Store_field(links, 0, Field(vm, 0));
-    Store_field(links, 1, Field(vm, 1));
-    Store_field(links, 2, Field(vm, 2));
-  } else {
-    /* Dynlink initialisation - stash the VM fields away in case the toplevel
-       subsequently connects */
-    vm = links;
-    caml_register_generational_global_root(&vm);
-  }
-
-  CAMLreturn(Field(vm, 3));
-}
-
-#else
-
-value caml_dynlink_vm_link(value vm)
-{
-  caml_invalid_argument("caml_dynlink_vm_link");
-  return Val_unit; /* not reached */
-}
-
-#endif /* NATIVE_CODE */

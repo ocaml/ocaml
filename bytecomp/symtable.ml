@@ -108,36 +108,18 @@ end
 module GlobalMap = Num_tbl(Global.Map)
 module PrimMap = Num_tbl(Misc.Stdlib.String.Map)
 
-(* Global variables and the C primitives *)
-
-let c_prim_table = ref PrimMap.empty
-
-let set_prim_table name =
-  ignore(PrimMap.enter c_prim_table name)
-
-let of_prim_compiler name =
-  try
-    PrimMap.find !c_prim_table name
-  with Not_found ->
-    if !Clflags.custom_runtime || Config.host <> Config.target
-       || !Clflags.no_check_prims
-    then
-      PrimMap.enter c_prim_table name
-    else if Dll.have_primitive name then
-      PrimMap.enter c_prim_table name
-    else
-      raise(Error(Unavailable_primitive name))
+(* Global variables *)
 
 type vm = {
-  global_table : GlobalMap.t ref;
-  literal_table : (int * Obj.t) list ref;
-  of_prim : string -> int;
+  mutable global_table : GlobalMap.t ref;
+  mutable literal_table : (int * Obj.t) list ref;
+  mutable of_prim : string -> int;
 }
 
 let vm = {
   global_table = ref GlobalMap.empty;
   literal_table = ref [];
-  of_prim = of_prim_compiler
+  of_prim = Fun.const 0;
 }
 
 let is_global_defined global =
@@ -156,6 +138,29 @@ let slot_for_literal cst =
   let n = GlobalMap.incr vm.global_table in
   vm.literal_table := (n, cst) :: vm.literal_table.contents;
   n
+
+(* The C primitives *)
+
+let c_prim_table = ref PrimMap.empty
+
+let set_prim_table name =
+  ignore(PrimMap.enter c_prim_table name)
+
+let () =
+  let of_prim name =
+    try
+      PrimMap.find !c_prim_table name
+    with Not_found ->
+      if !Clflags.custom_runtime || Config.host <> Config.target
+         || !Clflags.no_check_prims
+      then
+        PrimMap.enter c_prim_table name
+      else if Dll.have_primitive name then
+        PrimMap.enter c_prim_table name
+      else
+        raise(Error(Unavailable_primitive name))
+  in
+  vm.of_prim <- of_prim
 
 let require_primitive name =
   if name.[0] <> '%' then ignore(vm.of_prim name)
@@ -328,13 +333,32 @@ let data_global_map () =
 
 (* Functions for toplevel use *)
 
-external link_vm : vm -> (string * Digest.t option) list =
-  "caml_dynlink_vm_link"
+(* Retrieve values registered with Callback.register *)
+external named_value : string -> 'a = "caml_retrieve_named_value"
 
 (* Initialize the linker for toplevel use *)
 
 let init_toplevel () =
-  link_vm vm
+  let (crcs : (string * Digest.t option) list) =
+    try named_value "Stdlib.Dynlink.crcs"
+    with Not_found -> []
+  in
+  try
+    let (global_table : GlobalMap.t ref),
+        (literal_table : (int * Obj.t) list ref),
+        (of_prim : string -> int),
+        (add_path : string list -> unit),
+        (remove_path : string list -> unit),
+        (check_global_initialized : (reloc_info * int) list -> unit),
+        (update_global_table : unit -> unit) = named_value "Stdlib.Dynlink.vm"
+    in
+    vm.global_table <- global_table;
+    vm.literal_table <- literal_table;
+    vm.of_prim <- of_prim;
+    crcs, add_path, remove_path, check_global_initialized, update_global_table
+  with Not_found ->
+    let f _ = () in
+    crcs, f, f, f, f
 
 (* Find the value of a global identifier *)
 

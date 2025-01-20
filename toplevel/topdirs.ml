@@ -75,7 +75,7 @@ let _ = add_directive "quit" (Directive_none dir_quit)
 
 let dir_directory s =
   let d = expand_directory Config.standard_library s in
-  Dynlink.add_path [d];
+  Topeval.add_path [d];
   let dir = Load_path.Dir.create ~hidden:false d in
   Load_path.prepend_dir dir;
   toplevel_env :=
@@ -102,7 +102,7 @@ let dir_remove_directory s =
   in
   toplevel_env := Env.filter_non_loaded_persistent keep !toplevel_env;
   Load_path.remove_dir s;
-  Dynlink.remove_path [d]
+  Topeval.remove_path [d]
 
 let _ = add_directive "remove_directory" (Directive_string dir_remove_directory)
     {

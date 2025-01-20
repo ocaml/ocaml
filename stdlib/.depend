@@ -853,6 +853,7 @@ stdlib__Dynlink.cmo : byte/dynlink.ml \
     stdlib__Filename.cmi \
     stdlib__Digest.cmi \
     stdlib__Char.cmi \
+    stdlib__Callback.cmi \
     stdlib__Bigarray.cmi \
     stdlib__Array.cmi \
     stdlib__Dynlink.cmi

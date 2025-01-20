@@ -171,18 +171,3 @@ val unsafe_get_global_value : bytecode_or_asm_symbol:string -> Obj.t option
     [Dynlink] uses from its clients, there is still only one table of global
     values in the bytecode VM.
 *)
-
-type compunit = Compunit of string [@@unboxed]
-type predef = Predef_exn of string [@@unboxed]
-type reloc_info =
-  | Reloc_literal of Obj.t (* structured constant *)
-  | Reloc_getcompunit of compunit (* reference to a compunit *)
-  | Reloc_getpredef of predef (* reference to a predef *)
-  | Reloc_setcompunit of compunit (* definition of a compunit *)
-  | Reloc_primitive of string (* C primitive number *)
-
-val check_global_initialized: (reloc_info * int) list -> unit
-val update_global_table : unit -> unit
-
-val add_path : string list -> unit
-val remove_path : string list -> unit

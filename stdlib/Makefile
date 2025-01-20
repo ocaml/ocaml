@@ -63,7 +63,6 @@ opt.opt: allopt
 byte/dynlink.ml: byte/dynlink.mli \
   dynlink_common.ml.in \
   $(ROOTDIR)/Makefile.build_config $(ROOTDIR)/Makefile.config \
-  dynlink_info.ml.in \
   $(ROOTDIR)/file_formats/cmo_format.mli \
   byte/dynlink_symtable.ml.in byte/dynlink.ml.in
 	$(V_GEN){ \
@@ -73,12 +72,9 @@ byte/dynlink.ml: byte/dynlink.mli \
 	  echo 'module Config = struct let ext_dll = "$(EXT_DLL)" end'; \
 	  echo 'let cmo_magic_number = $(CMO_MAGIC_TOKEN)'; \
 	  echo 'let cma_magic_number = $(CMA_MAGIC_TOKEN)'; \
-	  cat dynlink_info.ml.in; \
 	  echo '[@@@ocaml.warning "-37-69"]'; \
-	  echo 'module Cmo_format = struct'; \
 	  echo '#1 "$(ROOTDIR)/file_formats/cmo_format.mli"'; \
-	  sed -e 's| Dynlink\.||g' $(ROOTDIR)/file_formats/cmo_format.mli; \
-	  echo 'end'; \
+	  cat $(ROOTDIR)/file_formats/cmo_format.mli; \
 	  echo '[@@@ocaml.warning "+37+69"]'; \
 	  echo 'module Symtable = struct'; \
 	  cat byte/dynlink_symtable.ml.in; \
@@ -89,7 +85,6 @@ byte/dynlink.ml: byte/dynlink.mli \
 native/dynlink.ml: native/dynlink.mli \
   dynlink_common.ml.in \
   $(ROOTDIR)/Makefile.build_config \
-  dynlink_info.ml.in \
   $(ROOTDIR)/file_formats/cmxs_format.mli \
   native/dynlink.ml.in
 	$(V_GEN){ \
@@ -98,7 +93,6 @@ native/dynlink.ml: native/dynlink.mli \
 	  echo 'end'; \
 	  echo 'let cmxs_magic_number = $(CMXS_MAGIC_TOKEN)'; \
 	  echo '#1 "$(ROOTDIR)/file_formats/cmxs_format.mli"'; \
-	  cat dynlink_info.ml.in; \
 	  cat $(ROOTDIR)/file_formats/cmxs_format.mli; \
 	  cat native/dynlink.ml.in; \
 	} > $@

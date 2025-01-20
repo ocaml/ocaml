@@ -60,6 +60,23 @@ module EvalBase = struct
 
 end
 
+(* Functions are retrived from Dynlink via the Callback interface *)
+type vm = {
+  mutable add_path : string list -> unit;
+  mutable remove_path : string list -> unit;
+  mutable check_global_initialized : (Cmo_format.reloc_info * int) list -> unit;
+  mutable update_global_table : unit -> unit;
+}
+
+let vm =
+  let f _ = () in
+  {
+    add_path = f;
+    remove_path = f;
+    check_global_initialized = f;
+    update_global_table = f
+  }
+
 include Topcommon.MakeEvalPrinter(EvalBase)
 
 (* Load in-core and execute a lambda term *)
@@ -79,8 +96,8 @@ let load_lambda ppf lam =
   in
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code reloc;
-  Dynlink.check_global_initialized reloc;
-  Dynlink.update_global_table();
+  vm.check_global_initialized reloc;
+  vm.update_global_table();
   let initial_bindings = !toplevel_value_bindings in
   let bytecode, closure = Meta.reify_bytecode code [| events |] None in
   match
@@ -268,11 +285,23 @@ let () =
       | _ -> None
     )
 
+let add_path d = vm.add_path d
+let remove_path d = vm.remove_path d
+
 let init () =
   (* This call must precede the call to Symtable.init_toplevel - Dynlink must be
      initialised before the bytecode compiler. *)
   Dynlink.allow_unsafe_modules true;
-  let crc_intfs = Symtable.init_toplevel() in
+  let crc_intfs,
+      add_path,
+      remove_path,
+      check_global_initialized,
+      update_global_table = Symtable.init_toplevel()
+  in
+  vm.add_path <- add_path;
+  vm.remove_path <- remove_path;
+  vm.check_global_initialized <- check_global_initialized;
+  vm.update_global_table <- update_global_table;
   Compmisc.init_path ();
   Env.import_crcs ~source:Sys.executable_name crc_intfs;
   ()

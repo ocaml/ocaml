@@ -416,10 +416,13 @@ let loop ppf =
 
 let preload_objects = ref []
 
+let set_paths ?auto_include ?dir () =
+  Topeval.add_path (Topcommon.set_paths ?auto_include ?dir ())
+
 let prepare ppf ?input () =
   let dir =
     Option.map (fun inp -> Filename.dirname (filename_of_input inp)) input in
-  Topcommon.set_paths ?dir ();
+  set_paths ?dir ();
   begin try
     initialize_toplevel_env ()
   with Env.Error _ | Typetexp.Error _ as exn ->

@@ -1123,7 +1123,6 @@ runtime_COMMON_C_SOURCES = \
   custom \
   debugger \
   domain \
-  dynlink \
   extern \
   fail \
   fiber \
@@ -1165,6 +1164,7 @@ runtime_COMMON_C_SOURCES = \
 
 runtime_BYTECODE_ONLY_C_SOURCES = \
   backtrace_byt \
+  dynlink_byt \
   fail_byt \
   fix_code \
   interp \
@@ -2398,7 +2398,7 @@ endif
 
 ocamlnat_LIBRARIES = \
   compilerlibs/ocamlcommon compilerlibs/ocamloptcomp \
-  compilerlibs/ocamlbytecomp compilerlibs/ocamltoplevel
+  compilerlibs/ocamltoplevel
 
 ocamlnat_SOURCES = $(ocaml_SOURCES)
 

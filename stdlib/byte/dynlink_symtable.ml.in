@@ -156,23 +156,12 @@ end
 
 (* Global variables and the C primitives *)
 
-type[@ocaml.warning "-69"] vm = {
-  global_table : GlobalMap.t ref;
-  literal_table : (int * Obj.t) list ref;
-  of_prim : string -> int;
-  mutable crcs : (string * Digest.t option) list;
-}
-
-let vm = {
-  global_table = ref GlobalMap.empty;
-  literal_table = ref [];
-  of_prim;
-  crcs = [];
-}
+let global_table = ref GlobalMap.empty
+let literal_table = ref []
 
 let slot_for_getglobal global =
   try
-    GlobalMap.find vm.global_table.contents global
+    GlobalMap.find !global_table global
   with Not_found ->
     let global =
       match global with
@@ -182,11 +171,11 @@ let slot_for_getglobal global =
     raise (DC.Error (Linking_error ("", Undefined_global global)))
 
 let slot_for_setglobal global =
-  GlobalMap.enter vm.global_table global
+  GlobalMap.enter global_table global
 
 let slot_for_literal cst =
-  let n = GlobalMap.incr vm.global_table in
-  vm.literal_table := (n, cst) :: vm.literal_table.contents;
+  let n = GlobalMap.incr global_table in
+  literal_table := (n, cst) :: !literal_table;
   n
 
 (* Relocate a block of object bytecode *)
@@ -213,7 +202,7 @@ let patch_object buff patchlist =
           let global = Global.Glob_compunit cu in
           patch_int buff pos (slot_for_setglobal global)
       | (Reloc_primitive name, pos) ->
-          patch_int buff pos (vm.of_prim name))
+          patch_int buff pos (of_prim name))
     patchlist
 
 (* Functions for toplevel use *)
@@ -223,35 +212,13 @@ external global_data : unit -> Obj.t array = "caml_get_global_data"
 external realloc_global_data : int -> unit = "caml_realloc_global"
 
 let update_global_table () =
-  let ng = vm.global_table.contents.cnt in
+  let ng = !global_table.cnt in
   if ng > Array.length(global_data()) then realloc_global_data ng;
   let glob = global_data() in
   List.iter
     (fun (slot, cst) -> glob.(slot) <- cst)
-    vm.literal_table.contents;
-  vm.literal_table := []
-
-type bytecode_sections =
-  { symb: GlobalMap.t;
-    crcs: (string * Digest.t option) list;
-    prim: string list;
-    dlpt: string list }
-
-external get_bytecode_sections : unit -> bytecode_sections =
-  "caml_dynlink_get_bytecode_sections"
-
-external link_vm : vm -> (string * Digest.t option) list =
-  "caml_dynlink_vm_link"
-
-(* Initialize the linker for toplevel use *)
-
-let init_toplevel () =
-  let sect = get_bytecode_sections () in
-  vm.crcs <- sect.crcs;
-  ignore (link_vm vm);
-  vm.global_table := sect.symb;
-  init ~dllpaths:sect.dlpt ~prims:sect.prim;
-  sect.crcs
+    !literal_table;
+  literal_table := []
 
 (* Find the value of a global identifier *)
 let get_global_value global =
@@ -293,18 +260,40 @@ let check_global_initialized patchlist =
     | Reloc_primitive _ -> () in
   List.iter check_reference patchlist
 
+type bytecode_sections =
+  { symb: GlobalMap.t;
+    crcs: (string * Digest.t option) list;
+    prim: string list;
+    dlpt: string list }
+
+external get_bytecode_sections : unit -> bytecode_sections =
+  "caml_dynlink_get_bytecode_sections"
+
+(* Initialize the linker for toplevel use *)
+
+let init_toplevel () =
+  let sect = get_bytecode_sections () in
+  (* These get picked up by Symtable.init_toplevel for the toplevel *)
+  Callback.register "Stdlib.Dynlink.crcs" sect.crcs;
+  Callback.register "Stdlib.Dynlink.vm"
+    (global_table, literal_table, of_prim, add_path, remove_path,
+     check_global_initialized, update_global_table);
+  global_table := sect.symb;
+  init ~dllpaths:sect.dlpt ~prims:sect.prim;
+  sect.crcs
+
 (* Save and restore the current state *)
 
 type global_map = GlobalMap.t
 
-let current_state () = vm.global_table.contents
+let current_state () = !global_table
 
 let hide_additions (st : global_map) =
-  if st.cnt > vm.global_table.contents.cnt then
+  if st.cnt > !global_table.cnt then
     failwith "Symtable.hide_additions";
-  vm.global_table :=
+  global_table :=
     {GlobalMap.
-      cnt = vm.global_table.contents.cnt;
+      cnt = !global_table.cnt;
       tbl = st.tbl }
 
 let is_defined_in_global_map (gmap : global_map) global =

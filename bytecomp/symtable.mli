@@ -60,7 +60,12 @@ val transl_const: Lambda.structured_constant -> Obj.t
 
 (* Functions for the toplevel *)
 
-val init_toplevel: unit -> (string * Digest.t option) list
+val init_toplevel: unit ->
+  (string * Digest.t option) list
+  * (string list -> unit)
+  * (string list -> unit)
+  * ((reloc_info * int) list -> unit)
+  * (unit -> unit)
 val is_global_defined: Global.t -> bool
 val get_global_position: Global.t -> int
 val required_compunits: (reloc_info * int) list -> compunit list
