@@ -152,6 +152,9 @@ jobs:
           - name: linux-O0
             os: ubuntu-latest
             config_arg: CFLAGS='-O0'
+          - name: linux-arm64
+            os: ubuntu-24.04-arm
+            config_arg: --enable-frame-pointers
           - name: macos-x86_64
             os: macos-13
           - name: macos-arm64
