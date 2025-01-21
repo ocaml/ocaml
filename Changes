@@ -373,8 +373,8 @@ Working version
 ### Bug fixes:
 
 - #13691: Make four globals underlying Gc.control atomic to avoid C data
-  races against them
-  (Jan Midtgaard, review by Miod Vallat and Sadiq Jaffer)
+  races against them.
+  (Jan Midtgaard, review by Miod Vallat, Sadiq Jaffer, and Antonin Décimo)
 
 - #13454: Output a correct trace of the C_CALLN bytecode.
   (Miod Vallat, review by Antonin Décimo)
