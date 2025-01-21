@@ -1,7 +1,3 @@
-#ifndef __cplusplus
-#error "A C++ compiler was expected!"
-#endif
-
 // Generate all-includes.h with:
 //
 //   find runtime/caml otherlibs/*/caml       \
@@ -11,17 +7,20 @@
 //
 //   FIXME: Could the list be generated automatically?
 
+#ifndef __cplusplus
+#error "A C++ compiler is required!"
+#endif
+
 #include "all-includes.h"
 
 extern "C" {
-value test_cxx(value);
+  CAMLprim value test_cxx(value);
 }
 
-value test_cxx(value vunit) {
+value test_cxx(value vunit)
+{
   CAMLparam0();
-  CAMLlocal1(pair);
-  pair = caml_alloc_tuple(2);
-  Store_field(pair, 0, Val_int(42));
-  Store_field(pair, 1, Val_int(1337));
-  CAMLreturn(pair);
+  CAMLlocal1(str);
+  str = caml_copy_string("ok\n");
+  CAMLreturn(str);
 }

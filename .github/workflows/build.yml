@@ -87,7 +87,7 @@ jobs:
         include:
           - id: normal
             name: normal
-            dependencies: texlive-latex-extra texlive-fonts-recommended texlive-luatex hevea sass gdb lldb
+            dependencies: texlive-latex-extra texlive-fonts-recommended texlive-luatex hevea sass gdb lldb jq
           - id: debug
             name: extra (debug)
           - id: debug-s4096
