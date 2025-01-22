@@ -18143,7 +18143,7 @@ fi
 # macOS and MinGW-w64 have problems with thread local storage accessed from DLLs
 
 case $target in #(
-  *-apple-darwin*|*-w64-mingw32*|*-pc-windows) :
+  *-apple-darwin*|*-w64-mingw32*|*-pc-windows|*-pc-cygwin) :
      ;; #(
   *) :
     printf "%s\n" "#define HAS_FULL_THREAD_VARIABLES 1" >>confdefs.h

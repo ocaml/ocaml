@@ -407,6 +407,12 @@ Working version
   with the compiler.
   (David Allsopp, review by Antonin Décimo and Miod Vallat)
 
+- #13541, #13777: Cygwin doesn't allow accessing thread-local variables from
+  DLLs. This causes name-mangling issues when linking. Use an intermediate
+  function to access the caml state. Fix C++ incompatibilities in public
+  headers.
+  (Antonin Décimo, report by Kate Deplaix)
+
 OCaml 5.3.0 (8 January 2025)
 ----------------------------
 
