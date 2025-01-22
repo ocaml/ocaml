@@ -548,11 +548,7 @@ let compile_test usr_bin_sh config env test test_program description =
             ~clibs:["-lcomprmarsh"; "-lunixnat"; Config.compression_c_libraries]
             ~linker_exit_code ["-output-obj"]
       | Output_complete_obj(C_ocamlc, Static) ->
-          (* At the moment, the partial linker will pass -lws2_32 and -ladvapi32
-             on to the partial linker on mingw-w64 which causes a failure. Until
-             this is fixed, pass the libraries manually, using -noautolink. *)
-          f ~clibs:[]
-            ["-output-complete-obj"; "-noautolink"; "-cclib"; "-lunixbyt"]
+          f ~clibs:[] ["-output-complete-obj"]
       | Output_complete_obj(C_ocamlc, Shared) ->
           (* The partial linker doesn't correctly process
              -runtime-variant _shared, as the .so gets passed to the partial

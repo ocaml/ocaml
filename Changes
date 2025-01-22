@@ -289,6 +289,10 @@ Working version
   unavailable.
   (David Allsopp, review by ???)
 
+- #14???: Remove duplicated linker options from unix.cma and unix.cmxa on
+  Windows.
+  (David Allsopp, review by ???)
+
 ### Tools:
 
 - #14055: Invert BUILD_PATH_PREFIX_MAP in directories loaded at startup

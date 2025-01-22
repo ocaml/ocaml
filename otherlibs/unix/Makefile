@@ -35,9 +35,7 @@ unixLabels.cmi: \
   EXTRACAMLFLAGS += -pp "$(AWK) -f $(ROOTDIR)/stdlib/expand_module_aliases.awk"
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
-WIN32_LIBS=$(call SYSLIB,ws2_32) $(call SYSLIB,advapi32)
-LINKOPTS=$(addprefix -cclib ,$(WIN32_LIBS))
-LDOPTS=$(addprefix -ldopt ,$(WIN32_LIBS))
+LDOPTS=-lws2_32 -ladvapi32
 else # Unix
 # dllunix.so particularly requires libm for modf symbols
 LDOPTS=$(NATIVECCLIBS)

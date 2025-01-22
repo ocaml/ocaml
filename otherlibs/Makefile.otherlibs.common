@@ -102,7 +102,7 @@ else
 endif
 
 $(LIBNAME).cmxs: $(LIBNAME).cmxa $(STUBSLIB_NATIVE)
-	$(V_OCAMLOPT)$(CAMLOPT) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa
+	$(V_OCAMLOPT)$(CAMLOPT) -shared -o $@ -I . $< $(addprefix -cclib , $(LDOPTS))
 
 lib$(CLIBNAME_BYTECODE).$(A): $(COBJS)
 	$(V_OCAMLMKLIB)$(MKLIB) -oc $(CLIBNAME_BYTECODE) $(COBJS_BYTECODE) $(LDOPTS)
