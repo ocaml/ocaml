@@ -2317,9 +2317,9 @@ let find_expansion_scope env path =
   | { type_manifest = None ; _ } | exception Not_found -> generic_level
   | decl -> decl.type_expansion_scope
 
-let non_aliasable p decl =
+let non_aliasable _p _decl = false
   (* in_pervasives p ||  (subsumed by in_current_module) *)
-  in_current_module p && not decl.type_is_newtype
+(*  in_current_module p && not decl.type_is_newtype*)
 
 let is_instantiable env p =
   try
@@ -2331,12 +2331,6 @@ let is_instantiable env p =
     not (non_aliasable p decl)
   with Not_found -> false
 
-
-let compatible_paths p1 p2 =
-  let open Predef in
-  Path.same p1 p2 ||
-  Path.same p1 path_bytes && Path.same p2 path_string ||
-  Path.same p1 path_string && Path.same p2 path_bytes
 
 (* Two labels are considered compatible under certain conditions.
   - they are the same
@@ -2523,7 +2517,7 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
   try
     let decl = Env.find_type p1 env in
     let decl' = Env.find_type p2 env in
-    if compatible_paths p1 p2 then begin
+    if Path.same p1 p2 then begin
       let inj =
         try List.map Variance.(mem Inj) (Env.find_type p1 env).type_variance
         with Not_found -> List.map (fun _ -> false) tl1

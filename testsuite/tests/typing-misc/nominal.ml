@@ -22,14 +22,9 @@ let _ : (int, char) Type.eq -> _ = function _ -> .;;
 - : (int, char) Type.eq -> 'a = <fun>
 |}]
 
-(* exceptionally, string and bytes share the same name *)
 let _ : (string, bytes) Type.eq -> _ = function _ -> .;;
 [%%expect {|
-Line 1, characters 48-49:
-1 | let _ : (string, bytes) Type.eq -> _ = function _ -> .;;
-                                                    ^
-Error: This match case could not be refuted.
-       Here is an example of a value that would reach it: "Equal"
+- : (string, bytes) Type.eq -> 'a = <fun>
 |}]
 
 

@@ -131,9 +131,8 @@ let ident_of_type_constr : type_constr -> Ident.t = function
 let name_of_type_constr = function
   | `Int -> "int"
   | `Char -> "char"
-  | `String
-  | `Bytes -> "string"
-        (* string and bytes share the name to be compatible *)
+  | `String -> "string"
+  | `Bytes -> "bytes"
   | `Float -> "float"
   | `Bool -> "bool"
   | `Unit -> "unit"
