@@ -703,11 +703,16 @@ val ( ^ ) : string -> string -> string
 external int_of_char : char -> int = "%identity"
 (** Return the ASCII code of the argument. *)
 
-val char_of_int : int -> char
-(** Return the character with the given ASCII code.
-   @raise Invalid_argument if the argument is
-   outside the range 0--255. *)
 
+val char_of_int_opt : int -> char option
+(** Return the character with the given ASCII code.
+    Return [None] if the argument is outside the range 0--255.
+    @since 5.4 *)
+
+val char_of_int : int -> char
+(** Same as {!Stdlib.char_of_int_opt}, but raise
+    [Invalid_argument "char_of_int"] instead of returning [None].
+    @raise Invalid_argument if the argument is outside the range 0--255. *)
 
 (** {1 Unit operations} *)
 

@@ -104,6 +104,9 @@ Working version
 
 ### Standard library:
 
+- #13752: Add Stdlib.char_of_int_opt
+  (Léo Andrès, review by ?)
+
 - #13729: Add Either.retract
   (Daniel Bünzli, review by Nicolás Ojeda Bär and David Allsopp)
 
