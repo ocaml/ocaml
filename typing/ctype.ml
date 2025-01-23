@@ -2317,18 +2317,13 @@ let find_expansion_scope env path =
   | { type_manifest = None ; _ } | exception Not_found -> generic_level
   | decl -> decl.type_expansion_scope
 
-let non_aliasable _p _decl = false
-  (* in_pervasives p ||  (subsumed by in_current_module) *)
-(*  in_current_module p && not decl.type_is_newtype*)
-
 let is_instantiable env p =
   try
     let decl = Env.find_type p env in
     type_kind_is_abstract decl &&
     decl.type_private = Public &&
     decl.type_arity = 0 &&
-    decl.type_manifest = None &&
-    not (non_aliasable p decl)
+    decl.type_manifest = None
   with Not_found -> false
 
 
@@ -2414,8 +2409,7 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
             begin try
               let decl = Env.find_type p env in
-              if non_aliasable p decl || is_datatype decl then
-                raise Incompatible
+              if is_datatype decl then raise Incompatible
             with Not_found -> ()
             end
         (*
@@ -2525,9 +2519,7 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
       List.iter2
         (fun i (t1,t2) -> if i then mcomp type_pairs env t1 t2)
         inj (List.combine tl1 tl2)
-    end else if non_aliasable p1 decl && non_aliasable p2 decl' then
-      raise Incompatible
-    else
+    end else
       match decl.type_kind, decl'.type_kind with
       | Type_record (lst,r), Type_record (lst',r') when r = r' ->
           mcomp_list type_pairs env tl1 tl2;
@@ -2540,9 +2532,7 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
             (* thus, exn and eff are incompatible *)
       | Type_nominal n1, Type_nominal n2 when n1 = n2 ->
           mcomp_list type_pairs env tl1 tl2
-      | Type_abstract _, Type_abstract _ -> ()
-      | Type_abstract _, _ when not (non_aliasable p1 decl)-> ()
-      | _, Type_abstract _ when not (non_aliasable p2 decl') -> ()
+      | Type_abstract _, _ | _, Type_abstract _ -> ()
       | _ -> raise Incompatible
   with Not_found -> ()
 
