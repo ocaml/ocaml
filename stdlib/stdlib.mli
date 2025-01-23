@@ -188,20 +188,25 @@ val max : 'a -> 'a -> 'a
     The result is unspecified if one of the arguments contains
     the float value [nan]. *)
 
-external ( == ) : 'a -> 'a -> bool = "%eq"
-(** [e1 == e2] tests for physical equality of [e1] and [e2].
+external phys_equal : 'a -> 'a -> bool = "%eq"
+(** [phys_equal e1 e2] tests for physical equality of [e1] and [e2].
    On mutable types such as references, arrays, byte sequences, records with
    mutable fields and objects with mutable instance variables,
-   [e1 == e2] is true if and only if physical modification of [e1]
+   [phys_equal e1 e2] is true if and only if physical modification of [e1]
    also affects [e2].
-   On non-mutable types, the behavior of [( == )] is
+   On non-mutable types, the behavior of [phys_equal] is
    implementation-dependent; however, it is guaranteed that
-   [e1 == e2] implies [compare e1 e2 = 0].
+   [phys_equal e1 e2] implies [compare e1 e2 = 0].
+   @since 5.4
+*)
+
+external ( == ) : 'a -> 'a -> bool = "%eq"
+(** Operator alias to {!Stdlib.phys_equal}.
    Left-associative operator,  see {!Ocaml_operators} for more information.
 *)
 
 external ( != ) : 'a -> 'a -> bool = "%noteq"
-(** Negation of {!Stdlib.( == )}.
+(** Negation of {!Stdlib.phys_equal}.
     Left-associative operator,  see {!Ocaml_operators} for more information.
 *)
 
