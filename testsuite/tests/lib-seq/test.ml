@@ -101,6 +101,18 @@ let () =
     Seq.fold_lefti (fun acc i x -> (i, x) :: acc) [] xs = [ 1, "b"; 0, "a" ]
   )
 
+(* [mem] *)
+let () =
+  let xs = List.to_seq [1;2;3;4;5] in
+  assert (Seq.mem 1 xs = true);
+  assert (Seq.mem 7 xs = false)
+
+(* [memq] *)
+let () =
+  let five = 5 in
+  let xs = List.to_seq [five; 6; 7] in
+  assert (Seq.memq five xs = true)
+
 (* [scan] *)
 let () =
   let xs = Seq.(scan (+) 0 !?[1;2;3;4;5]) in

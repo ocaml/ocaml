@@ -154,6 +154,20 @@ let rec exists p xs =
   | Cons (x, xs) ->
       p x || exists p xs
 
+let rec mem x xs =
+  match xs() with
+  | Nil ->
+      false
+  | Cons (x', xs) ->
+      compare x' x = 0 || mem x xs
+
+let rec memq x xs =
+  match xs() with
+  | Nil ->
+      false
+  | Cons (x', xs) ->
+      x' == x || memq x xs
+
 let rec find p xs =
   match xs() with
   | Nil ->

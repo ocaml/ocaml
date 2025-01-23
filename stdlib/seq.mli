@@ -210,6 +210,19 @@ val exists : ('a -> bool) -> 'a t -> bool
 
     @since 4.14 *)
 
+val mem : 'a -> 'a t -> bool
+(** [mem x xs] is true if and only if [x] is equal to an element of [xs].
+
+    May not terminate if [xs] is infinite.
+
+    @since 5.4 *)
+
+val memq : 'a -> 'a t -> bool
+(** Same as {!mem}, but uses physical equality instead of structural equality to
+    compare sequence elements.
+
+    @since 5.4 *)
+
 val find : ('a -> bool) -> 'a t -> 'a option
 (** [find p xs] returns [Some x], where [x] is the first element of the
     sequence [xs] that satisfies [p x], if there is such an element.

@@ -114,6 +114,9 @@ Working version
 
 ### Standard library:
 
+- #13750: Add Seq.mem and Seq.memq
+  (T. Kinsart, review by ???)
+
 - #13731: Add Either.retract
   (Daniel Bünzli, review by Nicolás Ojeda Bär and David Allsopp)
 
