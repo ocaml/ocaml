@@ -159,7 +159,7 @@ let fuse_method_arity parent_params parent_body =
 let rec iter_exn_names f pat =
   match pat.pat_desc with
   | Tpat_var (id, _, _) -> f id
-  | Tpat_alias (p, id, _, _) ->
+  | Tpat_alias (p, id, _, _, _) ->
       f id;
       iter_exn_names f p
   | _ -> ()
@@ -974,7 +974,7 @@ and transl_let ~scopes ?(in_structure=false) rec_flag pat_expr_list =
         List.map
           (fun {vb_pat=pat} -> match pat.pat_desc with
               Tpat_var (id,_,_) -> id
-            | Tpat_alias ({pat_desc=Tpat_any}, id,_,_) -> id
+            | Tpat_alias ({pat_desc=Tpat_any}, id,_,_,_) -> id
             | _ -> assert false)
         pat_expr_list in
       let transl_case {vb_expr=expr; vb_attributes; vb_rec_kind = rkind;

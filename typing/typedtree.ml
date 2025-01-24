@@ -58,7 +58,8 @@ and 'k pattern_desc =
   | Tpat_any : value pattern_desc
   | Tpat_var : Ident.t * string loc * Uid.t -> value pattern_desc
   | Tpat_alias :
-      value general_pattern * Ident.t * string loc * Uid.t -> value pattern_desc
+      value general_pattern * Ident.t * string loc * Uid.t * type_expr ->
+      value pattern_desc
   | Tpat_constant : constant -> value pattern_desc
   | Tpat_tuple :
       (string option * value general_pattern) list -> value pattern_desc
@@ -729,7 +730,7 @@ type pattern_action =
 let shallow_iter_pattern_desc
   : type k . pattern_action -> k pattern_desc -> unit
   = fun f -> function
-  | Tpat_alias(p, _, _, _) -> f.f p
+  | Tpat_alias(p, _, _, _, _) -> f.f p
   | Tpat_tuple patl -> List.iter (fun (_, p) -> f.f p) patl
   | Tpat_construct(_, _, patl, _) -> List.iter f.f patl
   | Tpat_variant(_, pat, _) -> Option.iter f.f pat
@@ -749,8 +750,8 @@ type pattern_transformation =
 let shallow_map_pattern_desc
   : type k . pattern_transformation -> k pattern_desc -> k pattern_desc
   = fun f d -> match d with
-  | Tpat_alias (p1, id, s, uid) ->
-      Tpat_alias (f.f p1, id, s, uid)
+  | Tpat_alias (p1, id, s, uid, ty) ->
+      Tpat_alias (f.f p1, id, s, uid, ty)
   | Tpat_tuple pats ->
       Tpat_tuple (List.map (fun (label, pat) -> label, f.f pat) pats)
   | Tpat_record (lpats, closed) ->
@@ -813,9 +814,9 @@ let rec iter_bound_idents
   match pat.pat_desc with
   | Tpat_var (id, s, uid) ->
      f (id,s,pat.pat_type, uid)
-  | Tpat_alias(p, id, s, uid) ->
+  | Tpat_alias(p, id, s, uid, ty) ->
       iter_bound_idents f p;
-      f (id,s,pat.pat_type, uid)
+      f (id, s, ty, uid)
   | Tpat_or(p1, _, _) ->
       (* Invariant : both arguments bind the same variables *)
       iter_bound_idents f p1
@@ -858,10 +859,10 @@ let rec alpha_pat
       {p with pat_desc =
        try Tpat_var (alpha_var env id, s, uid) with
        | Not_found -> Tpat_any}
-  | Tpat_alias (p1, id, s, uid) ->
+  | Tpat_alias (p1, id, s, uid, ty) ->
       let new_p =  alpha_pat env p1 in
       begin try
-        {p with pat_desc = Tpat_alias (new_p, alpha_var env id, s, uid)}
+        {p with pat_desc = Tpat_alias (new_p, alpha_var env id, s, uid, ty)}
       with
       | Not_found -> new_p
       end

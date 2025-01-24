@@ -98,7 +98,7 @@ let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
       fprintf ppf "@[[| %a |]@]" (pretty_vals " ;") vs
   | Tpat_lazy v ->
       fprintf ppf "@[<2>lazy@ %a@]" pretty_arg v
-  | Tpat_alias (v, x,_,_) ->
+  | Tpat_alias (v, x,_,_,_) ->
       fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.doc_print x
   | Tpat_value v ->
       fprintf ppf "%a" pretty_val (v :> pattern)

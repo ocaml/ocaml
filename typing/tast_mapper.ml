@@ -291,8 +291,8 @@ let pat
     | Tpat_record (l, closed) ->
         Tpat_record (List.map (tuple3 (map_loc sub) id (sub.pat sub)) l, closed)
     | Tpat_array (mut, l) -> Tpat_array (mut, List.map (sub.pat sub) l)
-    | Tpat_alias (p, id, s, uid) ->
-        Tpat_alias (sub.pat sub p, id, map_loc sub s, uid)
+    | Tpat_alias (p, id, s, uid, ty) ->
+        Tpat_alias (sub.pat sub p, id, map_loc sub s, uid, ty)
     | Tpat_lazy p -> Tpat_lazy (sub.pat sub p)
     | Tpat_value p ->
        (as_computation_pattern (sub.pat sub (p :> pattern))).pat_desc

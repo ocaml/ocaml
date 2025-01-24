@@ -81,7 +81,8 @@ and 'k pattern_desc =
   | Tpat_var : Ident.t * string loc * Uid.t -> value pattern_desc
         (** x *)
   | Tpat_alias :
-      value general_pattern * Ident.t * string loc * Uid.t -> value pattern_desc
+      value general_pattern * Ident.t * string loc * Uid.t * Types.type_expr ->
+      value pattern_desc
         (** P as a *)
   | Tpat_constant : constant -> value pattern_desc
         (** 1, 'a', "true", 1.0, 1l, 1L, 1n *)

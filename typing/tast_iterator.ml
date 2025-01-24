@@ -255,7 +255,7 @@ let pat
   | Tpat_record (l, _) ->
       List.iter (fun (lid, _, i) -> iter_loc sub lid; sub.pat sub i) l
   | Tpat_array (_, l) -> List.iter (sub.pat sub) l
-  | Tpat_alias (p, _, s, _) -> sub.pat sub p; iter_loc sub s
+  | Tpat_alias (p, _, s, _, _) -> sub.pat sub p; iter_loc sub s
   | Tpat_lazy p -> sub.pat sub p
   | Tpat_value p -> sub.pat sub (p :> pattern)
   | Tpat_exception p -> sub.pat sub p

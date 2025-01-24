@@ -798,7 +798,7 @@ and build_as_type_extra env p = function
 
 and build_as_type_aux (env : Env.t) p =
   match p.pat_desc with
-    Tpat_alias(p1,_, _, _) -> build_as_type env p1
+    Tpat_alias(p1,_, _, _, _) -> build_as_type env p1
   | Tpat_tuple pl ->
       let labeled_tyl =
         List.map (fun (label, p) -> label, build_as_type env p) pl in
@@ -1885,7 +1885,7 @@ and type_pat_aux
         enter_variable
           ~is_as_variable:true tps name.loc name ty_var sp.ppat_attributes
       in
-      rvp { pat_desc = Tpat_alias(q, id, name, uid);
+      rvp { pat_desc = Tpat_alias(q, id, name, uid, ty_var);
             pat_loc = loc; pat_extra=[];
             pat_type = q.pat_type;
             pat_attributes = sp.ppat_attributes;
@@ -2184,7 +2184,7 @@ and type_pat_aux
             pat_type = ty;
             pat_desc =
             Tpat_alias
-              ({p with pat_desc = Tpat_any; pat_attributes = []}, id,s, uid);
+              ({p with pat_desc = Tpat_any; pat_attributes = []}, id, s, uid, ty);
             pat_extra = [extra];
           }
       | _, p ->
@@ -2564,7 +2564,7 @@ let rec check_counter_example_pat
           in
           check_rec ~info:(decrease 5) tp expected_ty k
       end
-  | Tpat_alias (p, _, _, _) -> check_rec ~info p expected_ty k
+  | Tpat_alias (p, _, _, _, _) -> check_rec ~info p expected_ty k
   | Tpat_constant cst ->
       let cst = constant_or_raise !!penv loc (Untypeast.constant cst) in
       k @@ solve_expected (mp (Tpat_constant cst) ~pat_type:(type_constant cst))
@@ -3571,7 +3571,7 @@ let rec name_pattern default = function
   | p :: rem ->
     match p.pat_desc with
       Tpat_var (id, _, _) -> id
-    | Tpat_alias(_, id, _, _) -> id
+    | Tpat_alias(_, id, _, _, _) -> id
     | _ -> name_pattern default rem
 
 let name_cases default lst =
@@ -6423,7 +6423,7 @@ and type_let ?check ?check_strict
     List.iter
       (fun {vb_pat=pat} -> match pat.pat_desc with
            Tpat_var _ -> ()
-         | Tpat_alias ({pat_desc=Tpat_any}, _, _, _) -> ()
+         | Tpat_alias ({pat_desc=Tpat_any}, _, _, _, _) -> ()
          | _ -> raise(Error(pat.pat_loc, env, Illegal_letrec_pat)))
       l;
   List.iter (fun vb ->

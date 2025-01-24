@@ -322,7 +322,7 @@ let create_object cl obj init =
 let name_pattern default p =
   match p.pat_desc with
   | Tpat_var (id, _, _) -> id
-  | Tpat_alias(_, id, _, _) -> id
+  | Tpat_alias(_, id, _, _, _) -> id
   | _ -> Ident.create_local default
 
 (*

@@ -81,7 +81,7 @@ module General = struct
   type view = [
     | Half_simple.view
     | `Var of Ident.t * string loc * Uid.t
-    | `Alias of pattern * Ident.t * string loc * Uid.t
+    | `Alias of pattern * Ident.t * string loc * Uid.t * Types.type_expr
   ]
   type pattern = view pattern_data
 
@@ -90,8 +90,8 @@ module General = struct
        `Any
     | Tpat_var (id, str, uid) ->
        `Var (id, str, uid)
-    | Tpat_alias (p, id, str, uid) ->
-       `Alias (p, id, str, uid)
+    | Tpat_alias (p, id, str, uid, ty) ->
+       `Alias (p, id, str, uid, ty)
     | Tpat_constant cst ->
        `Constant cst
     | Tpat_tuple ps ->
@@ -112,7 +112,7 @@ module General = struct
   let erase_desc = function
     | `Any -> Tpat_any
     | `Var (id, str, uid) -> Tpat_var (id, str, uid)
-    | `Alias (p, id, str, uid) -> Tpat_alias (p, id, str, uid)
+    | `Alias (p, id, str, uid, ty) -> Tpat_alias (p, id, str, uid, ty)
     | `Constant cst -> Tpat_constant cst
     | `Tuple ps -> Tpat_tuple ps
     | `Construct (cstr, cst_descr, args) ->
@@ -130,7 +130,7 @@ module General = struct
 
   let rec strip_vars (p : pattern) : Half_simple.pattern =
     match p.pat_desc with
-    | `Alias (p, _, _, _) -> strip_vars (view p)
+    | `Alias (p, _, _, _, _) -> strip_vars (view p)
     | `Var _ -> { p with pat_desc = `Any }
     | #Half_simple.view as view -> { p with pat_desc = view }
 end
