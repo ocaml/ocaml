@@ -1249,6 +1249,10 @@ void caml_compact_heap(caml_domain_state* domain_state,
               if (final_fun) final_fun(Val_hp(p));
             }
 
+            heap->stats.pool_live_blocks--;
+            heap->stats.pool_live_words -= Whsize_hd(hd);
+            heap->stats.pool_frag_words -= (wh - Whsize_hd(hd));
+
             /* In the DEBUG runtime, we should overwrite the fields of swept
                blocks. Note: this pool can't be allocated in to again and so
                we overwrite the header and first fields too. */
