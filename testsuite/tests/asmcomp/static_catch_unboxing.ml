@@ -15,4 +15,3 @@ let () =
   ignore (f false 1.);
   let x2 = Gc.allocated_bytes () in
   assert(x1 -. x0 = x2 -. x1)
-
