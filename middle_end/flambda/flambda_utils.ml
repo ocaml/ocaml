@@ -123,7 +123,10 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   | Static_raise _, _ | _, Static_raise _ -> false
   | Static_catch (s1, v1, a1, b1), Static_catch (s2, v2, a2, b2) ->
     Static_exception.equal s1 s2
-      && Misc.Stdlib.List.equal Variable.equal v1 v2
+      && Misc.Stdlib.List.equal
+        (fun (v1, k1) (v2, k2) -> Variable.equal v1 v2
+                                  && Lambda.equal_value_kind k1 k2)
+        v1 v2
       && same a1 a2
       && same b1 b2
   | Static_catch _, _ | _, Static_catch _ -> false

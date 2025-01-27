@@ -304,9 +304,9 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
       List.map (subst_var env) args)
   | Static_catch (static_exn, vars, body, handler) ->
     let env_handler, ids =
-      List.fold_right (fun var (env, ids) ->
+      List.fold_right (fun (var, kind) (env, ids) ->
           let id, env = Env.add_fresh_ident env var in
-          env, (VP.create id, Lambda.Pgenval) :: ids)
+          env, (VP.create id, kind) :: ids)
         vars (env, [])
     in
     Ucatch (Static_exception.to_int static_exn, ids,

@@ -1160,17 +1160,17 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
           | Static_raise (j, args) ->
             assert (Static_exception.equal i j);
             let handler =
-              List.fold_left2 (fun body var arg ->
+              List.fold_left2 (fun body (var, _) arg ->
                   Flambda.create_let var (Expr (Var arg)) body)
                 handler vars args
             in
             let r = R.exit_scope_catch r i in
             simplify env r handler
           | _ ->
-            let vars, sb = Freshening.add_variables' (E.freshening env) vars in
+            let vars, sb = Freshening.add_variables (E.freshening env) vars in
             let approx = R.approx r in
             let env =
-              List.fold_left (fun env id ->
+              List.fold_left (fun env (id, _) ->
                   E.add env id (A.value_unknown Other))
                 (E.set_freshening env sb) vars
             in

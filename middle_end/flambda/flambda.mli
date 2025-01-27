@@ -101,7 +101,8 @@ type t =
   | String_switch of Variable.t * (string * t) list * t option
   (** Restrictions on [Lambda.Lstringswitch] also apply to [String_switch]. *)
   | Static_raise of Static_exception.t * Variable.t list
-  | Static_catch of Static_exception.t * Variable.t list * t * t
+  | Static_catch of
+      Static_exception.t * (Variable.t * Lambda.value_kind) list * t * t
   | Try_with of t * Variable.t * t
   | While of t * t
   | For of for_loop
