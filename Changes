@@ -102,6 +102,9 @@ Working version
   (Stephen Dolan and Tim McGilchrist, review by Xavier Leroy
   and David Allsopp)
 
+- #13758: Propagate more value kinds in Flambda to allow more unboxing
+  (Vincent Laviron, review by Pierre Chambart)
+
 ### Standard library:
 
 - #13731: Add Either.retract
