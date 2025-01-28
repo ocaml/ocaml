@@ -735,7 +735,12 @@
   "description" : "OCaml Toplevel diagnostic",
   "properties" :
     {
-      "metadata" : { "$ref" : "#/$defs/metadata"},
+      "metadata" :
+        {
+          "description" :
+            "This field describes the scheme version used to generate the diagnostic instance, and if this instance is valid according to this scheme.",
+          "$ref" : "#/$defs/metadata"
+        },
       "trace" :
         {
           "type" : "array",

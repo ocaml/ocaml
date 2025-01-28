@@ -57,6 +57,7 @@ and label_metadata = {
   ltyp: any_typ;
   optional: bool;
   parent: string option;
+  desc: string option;
   status:Diagnostic_history.Lifetime.t;
 }
 and 'a t = {
@@ -151,21 +152,22 @@ and with_parens: type a. Format.formatter -> a typ -> unit = fun ppf elt ->
   in
   if parens_needed then Format.fprintf ppf "(%a)" pp_typ elt else pp_typ ppf elt
 
-let label_metadata ~optional ?parent update typ = {
+let label_metadata ~desc ~optional ?parent update typ = {
     status = H.(Lifetime.make @@ v update);
     optional;
     parent;
+    desc;
     ltyp = T typ
   }
 
-let register_label_metadata ~optional update scheme name typ =
+let register_label_metadata ~desc ~optional update scheme name typ =
   begin match scheme.polarity with
   | Positive -> ()
   | Negative -> Diagnostic_history.breaking_change update scheme.name
   end;
   if List.mem_assoc name scheme.labels then
     Diagnostic_history.(error update scheme.name (Duplicate_key name));
-  let metadata = label_metadata ~optional update typ in
+  let metadata = label_metadata ~desc ~optional update typ in
   scheme.!(name) <- metadata;
   Diagnostic_history.register_event update scheme.name
     (Creation {
@@ -197,8 +199,9 @@ module type Record = sig
     with type id := id
      and type definition = id record
      and type 'a label :='a field
-  val new_field: ?opt:bool -> vl update  -> string -> 'a typ -> 'a field
-  val new_field_opt: vl update  -> string -> 'a typ -> 'a field
+  val new_field:
+    ?opt:bool ->  ?desc:string -> vl update  -> string -> 'a typ -> 'a field
+  val new_field_opt: ?desc:string -> vl update  -> string -> 'a typ -> 'a field
   val make_required: vl update -> 'a field -> unit
   type record_fragment
   val make:
@@ -252,11 +255,12 @@ module type Sum = sig
      and type definition := id sum
      and type 'a label := 'a constructor
   val app: version option -> 'a constructor -> 'a -> raw_type
-  val new_constr: vl update -> string -> 'a typ -> 'a constructor
-  val new_constr0: vl update -> string -> unit constructor
+  val new_constr:
+    ?desc:string -> vl update -> string -> 'a typ -> 'a constructor
+  val new_constr0: ?desc:string -> vl update -> string -> unit constructor
 
   val refine:
-    vl update -> 'a constructor -> ('b -> 'a)
+    ?desc:string -> vl update -> 'a constructor -> ('b -> 'a)
     -> string -> 'b typ -> 'b constructor
   val expand:
     vl update -> 'a constructor -> ('b->'a) -> 'b typ -> 'b constructor
@@ -298,7 +302,7 @@ let register_constructor_expansion u old new_typ scheme =
   scheme.!(old.cname) <- { kmd with status; ltyp=T new_typ }
 
 
-let register_constructor_inception u old new_name new_typ scheme =
+let register_constructor_inception ~desc u old new_name new_typ scheme =
   let&? kmd = scheme.?(old.cname) in
   H.inconsistent_if_inactive u ~scheme:scheme.name old.cname kmd.status;
   H.register_event u scheme.name
@@ -309,7 +313,7 @@ let register_constructor_inception u old new_name new_typ scheme =
       }
     );
   let status = H.(Lifetime.make ~published:false @@ v u) in
-  let lmd = label_metadata ~parent:old.cname ~optional:false u new_typ in
+  let lmd = label_metadata ~desc ~parent:old.cname ~optional:false u new_typ in
   scheme.!(new_name) <- { lmd with status }
 
 let register_constructor_publication u name scheme =
@@ -429,8 +433,8 @@ module New_record(Vl:H.S)(Info:Info with type vl:=Vl.id)() = struct
 
   let () = H.register_event Info.update Info.name Declaration
 
-  let new_field ?(opt=false) (type t) u label (ty:t typ): t field =
-    register_label_metadata ~optional:opt u scheme label ty;
+  let new_field ?(opt=false) ?desc  (type t) u label (ty:t typ): t field =
+    register_label_metadata ~desc ~optional:opt u scheme label ty;
     {
       label;
       typ = ty;
@@ -438,7 +442,7 @@ module New_record(Vl:H.S)(Info:Info with type vl:=Vl.id)() = struct
       id = Type.Id.make ();
       range = H.(Lifetime.make @@ v u)
     }
-  let new_field_opt v name ty = new_field ~opt:true v name ty
+  let new_field_opt ?desc v name ty = new_field ~opt:true ?desc v name ty
   let deprecate u f =
     deprecate_lbl u f.label scheme;
     let range = { f.range with deprecation = Some (H.v u) } in
@@ -468,13 +472,13 @@ module New_sum(Vl:H.S)(Info:Info with type vl:=Vl.id)() = struct
   let raw_type = Sum scheme
   type nonrec 'a constructor = ('a,id) constructor
   let () = H.register_event Info.update Info.name Declaration
-  let new_constr u name (ty:'a typ): 'a constructor  =
-    register_label_metadata ~optional:false u scheme name ty;
+  let new_constr ?desc u name (ty:'a typ): 'a constructor  =
+    register_label_metadata ~desc ~optional:false u scheme name ty;
     { cname = name;
       typ = ty;
       projection = None;
     }
-  let new_constr0 u name = new_constr u name Unit
+  let new_constr0 ?desc u name = new_constr ?desc u name Unit
   let app = app
 
   let expand u old map new_ty =
@@ -482,8 +486,10 @@ module New_sum(Vl:H.S)(Info:Info with type vl:=Vl.id)() = struct
     let projection = Some(Proj {map;old;version=H.v u}) in
     { old with typ=new_ty; projection }
 
-  let refine u old map new_name new_ty =
-    let () = register_constructor_inception u old new_name new_ty scheme in
+  let refine ?desc u old map new_name new_ty =
+    let () =
+      register_constructor_inception ~desc u old new_name new_ty scheme
+    in
     let projection = Some(Proj {map;old;version=H.v u}) in
     { cname=new_name; typ=new_ty; projection }
 
@@ -518,9 +524,15 @@ let universal_metafield () =
     range = H.(Lifetime.make @@ v Metadata_versions.v1);
     label = "metadata";
     opt=false;
+
     typ = Metadata.raw_type;
     id = Type.Id.make ()
   }
 let metakey =
+  let desc =
+    Some
+      "This field describes the scheme version used to generate the diagnostic \
+       instance, and if this instance is valid according to this scheme."
+  in
   "metadata",
-  label_metadata ~optional:false Metadata_versions.v1 Metadata.raw_type
+  label_metadata ~desc ~optional:false Metadata_versions.v1 Metadata.raw_type
