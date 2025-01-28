@@ -49,7 +49,12 @@
     "The set of compiler options selected at configuration time",
   "properties" :
     {
-      "metadata" : { "$ref" : "#/$defs/metadata"},
+      "metadata" :
+        {
+          "description" :
+            "This field describes the scheme version used to generate the diagnostic instance, and if this instance is valid according to this scheme.",
+          "$ref" : "#/$defs/metadata"
+        },
       "linear_magic_number" : { "type" : "string"},
       "cmt_magic_number" : { "type" : "string"},
       "cmxs_magic_number" : { "type" : "string"},

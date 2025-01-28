@@ -175,6 +175,9 @@ module JSchema = struct
   let any_typ = tfield {|object|}
 
   let desc_field d = item ~key:"description" @@ string d
+  let with_desc desc l = match desc with
+    | None -> l
+    | Some d -> desc_field d :: l
 
   let obj_typ = item ~key:"type" (string "object")
   let record_type desc fields required =
@@ -187,7 +190,7 @@ module JSchema = struct
   let one_of l = item ~key:"oneOf" (array l)
   let const name = item ~key:"const" @@ string name
   let sum ~v ~desc x =
-    let brule name core =
+    let brule desc name core =
       let name = const name in
       let forward_record =
         let kcontents = "contents" in
@@ -197,25 +200,25 @@ module JSchema = struct
         record_type desc [contents; next] [string kcontents]
       in
       obj [one_of [
-        obj [tuple_typ (name::core)];
-        obj [tuple [obj [name]; obj forward_record]]
+        obj (with_desc desc [tuple_typ (name::core)]);
+        obj (with_desc desc [tuple [obj [name]; obj forward_record]])
       ]]
     in
     let constructor (name, kty) =
       match kty.ltyp with
       | T Unit -> obj [const name]
-      | T (Pair(x,y)) -> brule name [typ x; typ y]
-      | T (Triple(x,y,z)) -> brule name [typ x; typ y; typ z]
+      | T (Pair(x,y)) -> brule kty.desc name [typ x; typ y]
+      | T (Triple(x,y,z)) -> brule kty.desc name [typ x; typ y; typ z]
       | T (Quadruple(x,y,z,w)) ->
-          brule name [typ x; typ y; typ z; typ w]
-      | T ty -> brule name [typ ty]
+          brule kty.desc name [typ x; typ y; typ z; typ w]
+      | T ty -> brule kty.desc name [typ ty]
     in
     obj [
       desc_field desc;
       one_of (List.map constructor (field_infos ~version:(Some v) x))
     ]
 
-  let field (v, (key, {status; ltyp=T ty; _ })) =
+  let field (v, (key, {status; ltyp=T ty; desc })) =
     let stage = Diagnostic_history.Lifetime.stage_at (Some v) status in
     match stage with
     | Future | Deletion -> None
@@ -225,8 +228,8 @@ module JSchema = struct
           match stage with
           | Deprecation ->
               let deprecated = item ~key:"deprecated" (bool true) in
-              [typ; deprecated]
-          | _ -> [typ]
+              (with_desc desc [typ; deprecated])
+          | _ -> (with_desc desc [typ])
         in
         Some (item ~key (obj fields))
 
@@ -369,16 +372,20 @@ module Annotated_adt = struct
       "deleted", (fun x -> x.deletion);
     ]
 
+  let pp_desc ppf desc = Option.iter (Format.fprintf ppf "@ (**%s*)") desc
+
   let sum ~version x ppf =
     let constructor stages ppf (name, kty) =
       match kty.ltyp with
       | T Unit ->
-          Format.fprintf ppf "@ | %s%a"
+          Format.fprintf ppf "@ | %s%a%a"
           name (pp_stage ?parent:kty.parent stages) kty.status
+          pp_desc kty.desc
       | T t ->
-        Format.fprintf ppf "@ @[<2>| %s of@ %t%a@]"
+        Format.fprintf ppf "@ @[<2>| %s of@ %t%a%a@]"
           name (typ ~parentheses:false t)
           (pp_stage ?parent:kty.parent stages) kty.status
+          pp_desc kty.desc
     in
     let fields = field_infos ~version:(Some version) x in
     let common, specific = split_stages lifetime_phases fields in
@@ -395,16 +402,18 @@ module Annotated_adt = struct
         Format.fprintf ppf "%t option [@@optional]" (typ ~parentheses:true ty)
       else typ ~parentheses:false ty ppf
     in
-    let field phases ppf (name, { ltyp=T ty; optional; status }) =
-      Format.fprintf ppf "@ @[<2>%s:@ %a%a;@]"
+    let field phases ppf (name, { ltyp=T ty; optional; status; desc }) =
+      Format.fprintf ppf "@ @[<2>%s:@ %a%a%a;@]"
         name (pp_typ_field optional) ty
         (pp_stage phases) status
+        pp_desc desc
     in
     let fields = field_infos ~version:(Some version) x in
     let common, specific = split_stages lifetime_phases fields in
     Format.fprintf ppf " {";
     if root then
-      Format.fprintf ppf "@ @[<2>metadata: metadata;@]";
+      Format.fprintf ppf "@ @[<2>metadata: metadata%a;@]"
+        pp_desc (snd metakey).desc;
     List.iter (field specific ppf) fields;
     Format.fprintf ppf "@;<1 -2>}@] @]%a@,%a"
       pp_common_stage common

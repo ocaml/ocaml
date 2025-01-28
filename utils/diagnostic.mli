@@ -94,11 +94,13 @@ module type Record = sig
 
   (** {1:record_field_definition Field definition } *)
 
-  val new_field: ?opt:bool -> vl update  -> string -> 'a typ -> 'a field
-  (** [new_field ?opt u name typ] creates a new field named [name] for the
-      record at update [u]. The field is optional if [opt] is [Some true] *)
+  val new_field:
+    ?opt:bool -> ?desc:string -> vl update -> string -> 'a typ -> 'a field
+  (** [new_field ?opt ?desc u name typ] creates a new field named [name] for the
+      record at update [u] with an optional description [?desc]. The field is
+      optional if [opt] is [Some true] *)
 
-  val new_field_opt: vl update  -> string -> 'a typ -> 'a field
+  val new_field_opt: ?desc:string -> vl update  -> string -> 'a typ -> 'a field
   (** [new_field_opt] is a short-hand for [new_field ~opt:true] *)
 
   (** {1:record_field_update Field update } *)
@@ -146,12 +148,13 @@ module type Sum = sig
 
 
   (** {1:constructor_creation Constructor creation }*)
-  val new_constr: vl update -> string -> 'a typ -> 'a constructor
-  val new_constr0: vl update -> string -> unit constructor
+  val new_constr:
+    ?desc:string -> vl update -> string -> 'a typ -> 'a constructor
+  val new_constr0: ?desc:string -> vl update -> string -> unit constructor
 
   (** {1:constructor_updates Constructor updates } *)
   val refine:
-    vl update -> 'a constructor -> ('b -> 'a)
+    ?desc:string -> vl update -> 'a constructor -> ('b -> 'a)
     -> string -> 'b typ -> 'b constructor
   (** [refine u parent_constr conv name new_type] creates a derived constructor
       [name] with argument of type [new_type] from the [parent_constr]
@@ -203,6 +206,7 @@ type label_metadata = {
   ltyp: any_typ;
   optional: bool;
   parent: string option;
+  desc: string option;
   status:Diagnostic_history.Lifetime.t
 }
 
@@ -218,7 +222,8 @@ module Record_introspection: sig
 end
 
 val label_metadata:
-  optional:bool -> ?parent:string -> 'v update -> 't typ -> label_metadata
+  desc:string option -> optional:bool -> ?parent:string ->
+  'v update -> 't typ -> label_metadata
 val destruct: 'a sum -> ((string * typed_val) Array.t -> 'b) -> 'b
 val field_infos:
   version:version option -> 'a t -> (string * label_metadata) list
