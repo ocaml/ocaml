@@ -53,9 +53,12 @@ module S :
     val app :
       Diagnostic_history.version option -> 'a constructor -> 'a -> raw_type
     val new_constr :
+      ?desc:string ->
       V.id Diagnostic.update -> string -> 'a Diagnostic.typ -> 'a constructor
-    val new_constr0 : V.id Diagnostic.update -> string -> unit constructor
+    val new_constr0 :
+      ?desc:string -> V.id Diagnostic.update -> string -> unit constructor
     val refine :
+      ?desc:string ->
       V.id Diagnostic.update ->
       'a constructor ->
       ('b -> 'a) -> string -> 'b Diagnostic.typ -> 'b constructor
@@ -124,8 +127,10 @@ module Inline_b :
     val seal : V.id Diagnostic.update -> unit
     val new_field :
       ?opt:bool ->
+      ?desc:string ->
       V.id Diagnostic.update -> string -> 'a Diagnostic.typ -> 'a field
     val new_field_opt :
+      ?desc:string ->
       V.id Diagnostic.update -> string -> 'a Diagnostic.typ -> 'a field
     val make_required : V.id Diagnostic.update -> 'a field -> unit
     type record_fragment
@@ -210,8 +215,10 @@ module R :
     val seal : V.id Diagnostic.update -> unit
     val new_field :
       ?opt:bool ->
+      ?desc:string ->
       V.id Diagnostic.update -> string -> 'a Diagnostic.typ -> 'a field
     val new_field_opt :
+      ?desc:string ->
       V.id Diagnostic.update -> string -> 'a Diagnostic.typ -> 'a field
     val make_required : V.id Diagnostic.update -> 'a field -> unit
     type record_fragment
