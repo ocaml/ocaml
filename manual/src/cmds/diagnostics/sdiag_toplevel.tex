@@ -2,7 +2,8 @@
 \begin{caml}
 \begin{camlinput}
 type toplevel = {
-  metadata: metadata;
+  metadata: metadata
+    (**This field describes the scheme version used to generate the diagnostic instance, and if this instance is valid according to this scheme.*);
   trace: structured_text array array option [@optional];
   errors: structured_text array array option [@optional];
   compiler: compiler option [@optional];
