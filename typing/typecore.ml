@@ -258,14 +258,6 @@ let rcp node =
   Cmt_format.add_saved_type (Cmt_format.Partial_pattern (Computation, node));
   node
 
-
-(* Context for inline record arguments; see [type_ident] *)
-
-type recarg =
-  | Allowed
-  | Required
-  | Rejected
-
 let mk_expected ?explanation ty = { ty; explanation; }
 
 let case lhs rhs =
@@ -1942,23 +1934,6 @@ and type_pat_aux
           existential_styp expected_ty
       in
 
-      let rec check_non_escaping p =
-        match p.ppat_desc with
-        | Ppat_or (p1, p2) ->
-            check_non_escaping p1;
-            check_non_escaping p2
-        | Ppat_alias (p, _) ->
-            check_non_escaping p
-        | Ppat_constraint _ ->
-            raise (Error (p.ppat_loc, !!penv, Inlined_record_escape))
-        | _ ->
-            ()
-      in
-      if constr.cstr_inlined <> None then begin
-        List.iter check_non_escaping sargs;
-        Option.iter (fun (_, sarg) -> check_non_escaping sarg) sarg
-      end;
-
       let args = List.map2 (type_pat tps Value) sargs ty_args in
       rvp { pat_desc=Tpat_construct(lid, constr, args, existential_ctyp);
             pat_loc = loc; pat_extra=[];
@@ -3596,9 +3571,9 @@ type 'ret constraint_arg =
     (** Whether the thing being constrained is a [Val_self] ident. *)
   }
 
-let rec type_exp ?recarg env sexp =
+let rec type_exp env sexp =
   (* We now delegate everything to type_expect *)
-  type_expect ?recarg env sexp (mk_expected (newvar ()))
+  type_expect env sexp (mk_expected (newvar ()))
 
 (* Typing of an expression with an expected type.
    This provide better error messages, and allows controlled
@@ -3607,21 +3582,19 @@ let rec type_exp ?recarg env sexp =
    at [generic_level] (but its variables no higher than [!current_level]).
  *)
 
-and type_expect ?recarg env sexp ty_expected_explained =
+and type_expect env sexp ty_expected_explained =
   let previous_saved_types = Cmt_format.get_saved_types () in
   let exp =
     Builtin_attributes.warning_scope sexp.pexp_attributes
       (fun () ->
-         type_expect_ ?recarg env sexp ty_expected_explained
+         type_expect_ env sexp ty_expected_explained
       )
   in
   Cmt_format.set_saved_types
     (Cmt_format.Partial_expression exp :: previous_saved_types);
   exp
 
-and type_expect_
-    ?(recarg=Rejected)
-    env sexp ty_expected_explained =
+and type_expect_ env sexp ty_expected_explained =
   let { ty = ty_expected; explanation } = ty_expected_explained in
   let loc = sexp.pexp_loc in
   (* Record the expression type before unifying it with the expected type *)
@@ -3634,7 +3607,7 @@ and type_expect_
   in
   match sexp.pexp_desc with
   | Pexp_ident lid ->
-      let path, desc = type_ident env ~recarg lid in
+      let path, desc = type_ident env lid in
       let exp_desc =
         match desc.val_kind with
         | Val_ivar (_, cl_num) ->
@@ -4013,7 +3986,7 @@ and type_expect_
         | Some sexp ->
             let exp =
               with_local_level_generalize_structure_if_principal
-                (fun () -> type_exp ~recarg env sexp)
+                (fun () -> type_exp env sexp)
             in
             Some exp
       in
@@ -4882,23 +4855,8 @@ and type_newtype
   end
   ~before_generalize:(fun (_,ety) -> enforce_current_level env ety)
 
-and type_ident env ?(recarg=Rejected) lid =
-  let (path, desc) = Env.lookup_value ~loc:lid.loc lid.txt env in
-  let is_recarg =
-    match get_desc desc.val_type with
-    | Tconstr(p, _, _) -> Path.is_constructor_typath p
-    | _ -> false
-  in
-  begin match is_recarg, recarg, get_desc desc.val_type with
-  | _, Allowed, _
-  | true, Required, _
-  | false, Rejected, _ -> ()
-  | true, Rejected, _
-  | false, Required, (Tvar _ | Tconstr _) ->
-      raise (Error (lid.loc, env, Inlined_record_escape))
-  | false, Required, _  -> () (* will fail later *)
-  end;
-  path, desc
+and type_ident env lid =
+  Env.lookup_value ~loc:lid.loc lid.txt env
 
 and type_binding_op_ident env s =
   let loc = s.loc in
@@ -5188,7 +5146,7 @@ and type_function
 and type_label_access env srecord usage lid =
   let record =
     with_local_level_generalize_structure_if_principal
-      (fun () -> type_exp ~recarg:Allowed env srecord)
+      (fun () -> type_exp env srecord)
   in
   let ty_exp = record.exp_type in
   let expected_type =
@@ -5491,7 +5449,7 @@ and type_label_exp create env loc ty_expected
   if is_poly then check_univars env "field value" arg label.lbl_arg vars;
   (lid, label, {arg with exp_type = instance arg.exp_type})
 
-and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
+and type_argument ?explanation env sarg ty_expected' ty_expected =
   (* ty_expected' may be generic *)
   let no_labels ty =
     let ls, tvar = list_labels env ty in
@@ -5602,7 +5560,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
                      func let_var) }
       end
   | None ->
-      let texp = type_expect ?recarg env sarg
+      let texp = type_expect env sarg
         (mk_expected ?explanation ty_expected') in
       unify_exp ~sexp:sarg env texp ty_expected;
       texp
@@ -5762,21 +5720,8 @@ and type_construct env ~sexp lid sarg ty_expected_explained =
   in
   let texp = {texp with exp_type = ty_res} in
   if not separate then unify_exp ~sexp env texp (instance ty_expected);
-  let recarg =
-    match constr.cstr_inlined with
-    | None -> Rejected
-    | Some _ ->
-      begin match sargs with
-      | [{pexp_desc =
-            Pexp_ident _ |
-            Pexp_record (_, (Some {pexp_desc = Pexp_ident _}| None))}] ->
-        Required
-      | _ ->
-        raise (Error(sexp.pexp_loc, env, Inlined_record_expected))
-      end
-  in
   let args =
-    List.map2 (fun e (t,t0) -> type_argument ~recarg env e t t0) sargs
+    List.map2 (fun e (t,t0) -> type_argument env e t t0) sargs
       (List.combine ty_args ty_args0) in
   if constr.cstr_private = Private then
     begin match constr.cstr_tag with
@@ -7293,7 +7238,5 @@ let () =
 let check_partial ?lev a b c cases =
   check_partial ?lev a b c (List.map Parmatch.typed_case cases)
 
-(* drop ?recarg argument from the external API *)
-let type_expect env e ty = type_expect env e ty
-let type_exp env e = type_exp env e
+(* drop ?explanation argument from the external API *)
 let type_argument env e t1 t2 = type_argument env e t1 t2
