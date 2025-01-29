@@ -803,7 +803,8 @@ and build_as_type_aux (env : Env.t) p =
       if keep then p.pat_type else
       let tyl = List.map (build_as_type env) pl in
       let ty_args, ty_res, _ =
-        instance_constructor Keep_existentials_flexible cstr
+        instance_constructor ~scope:Ident.lowest_scope
+          Keep_existentials_flexible cstr
       in
       List.iter2 (fun (p,ty) -> unify_pat env {p with pat_type = ty})
         (List.combine pl tyl) ty_args;
@@ -989,11 +990,13 @@ let solve_Ppat_construct tps (penv : Pattern_env.t) loc constr no_existentials
   let ty_args, equated_types, existential_ctyp =
     with_local_level_generalize_structure begin fun () ->
       let expected_ty = instance expected_ty in
+      let equations_scope = penv.Pattern_env.equations_scope in
       let ty_args, ty_res, equated_types, existential_ctyp =
         match existential_styp with
           None ->
             let ty_args, ty_res, _ =
-              instance_constructor (Make_existentials_abstract penv) constr
+              instance_constructor ~scope:equations_scope
+                (Make_existentials_abstract penv) constr
             in
             ty_args, ty_res, unify_res ty_res expected_ty, None
         | Some (name_list, sty) ->
@@ -1006,7 +1009,8 @@ let solve_Ppat_construct tps (penv : Pattern_env.t) loc constr no_existentials
                 Keep_existentials_flexible
             in
             let ty_args, ty_res, ty_ex =
-              instance_constructor existential_treatment constr
+              instance_constructor ~scope:equations_scope
+                existential_treatment constr
             in
             let equated_types = lazy (unify_res ty_res expected_ty) in
             let ty_args, existential_ctyp =
@@ -1016,7 +1020,7 @@ let solve_Ppat_construct tps (penv : Pattern_env.t) loc constr no_existentials
             ty_args, ty_res, Lazy.force equated_types, existential_ctyp
       in
       if constr.cstr_existentials <> [] then
-        lower_variables_only !!penv penv.Pattern_env.equations_scope ty_res;
+        lower_variables_only !!penv equations_scope ty_res;
       (ty_args, equated_types, existential_ctyp)
     end
   in
@@ -3527,6 +3531,9 @@ let with_explanation explanation f =
 let may_lower_contravariant env exp =
   if maybe_expansive exp then lower_contravariant env exp.exp_type
 
+let lower_exp_type env loc ty =
+  unify_exp_types loc env ty (newvar ())
+
 (* value binding elaboration *)
 
 let vb_exp_constraint {pvb_expr=expr; pvb_pat=pat; pvb_constraint=ct; _ } =
@@ -5718,12 +5725,19 @@ and type_construct env ~sexp lid sarg ty_expected_explained =
                 Constructor_arity_mismatch
                   (lid.txt, constr.cstr_arity, List.length sargs)));
   let separate = !Clflags.principal || Env.has_local_constraints env in
+  let check_inline_record_escape = constr.cstr_inlined <> None in
+  with_local_level_if ~post:ignore check_inline_record_escape @@ fun () ->
+  let inline_record_scope =
+    if check_inline_record_escape then create_scope ()
+    else Ident.lowest_scope
+  in
   let ty_args, ty_res, texp =
     with_local_level_generalize_structure_if separate begin fun () ->
       let ty_args, ty_res, texp =
         with_local_level_generalize_structure_if separate begin fun () ->
           let (ty_args, ty_res, _) =
-            instance_constructor Keep_existentials_flexible constr
+            instance_constructor ~scope:inline_record_scope
+              Keep_existentials_flexible constr
           in
           let texp =
             re {
@@ -5867,7 +5881,10 @@ and map_half_typed_cases
     | _ -> true
   in
   let outer_level = get_current_level () in
-  with_local_level_iter_if create_inner_level begin fun () ->
+  with_local_level_iter_if create_inner_level
+    (* Ensure that existential types do not escape *)
+    ~post:(lower_exp_type env loc)
+  begin fun () ->
   let lev = get_current_level () in
   let allow_modules =
     if may_contain_modules
@@ -6062,8 +6079,6 @@ and map_half_typed_cases
   end;
   (result, partial), [ty_res']
   end
-  (* Ensure that existential types do not escape *)
-  ~post:(fun ty_res' -> unify_exp_types loc env ty_res' (newvar ()))
 
 (* Typing of match cases *)
 and type_cases

@@ -194,6 +194,7 @@ type existential_treatment =
   | Make_existentials_abstract of Pattern_env.t
 
 val instance_constructor:
+  scope:int ->
   existential_treatment ->
   Data_types.constructor_description ->
   type_expr list * type_expr * type_expr list

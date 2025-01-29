@@ -1325,7 +1325,7 @@ type existential_treatment =
   | Keep_existentials_flexible
   | Make_existentials_abstract of Pattern_env.t
 
-let instance_constructor existential_treatment cstr =
+let instance_constructor ~scope existential_treatment cstr =
   For_copy.with_scope (fun copy_scope ->
     let name_counter = ref 0 in
     let copy_existential =
@@ -1347,9 +1347,21 @@ let instance_constructor existential_treatment cstr =
             link_type tv to_unify;
             tv
     in
+    let copy_argument ty_arg_gen =
+      (* On patterns (Foo p) where p has an inline record type
+           | Foo of { x : ...; y : ... }
+         we do not want inline record type to escape the current clause,
+         so we restrict its scope. *)
+      let ty_arg = copy copy_scope ty_arg_gen in
+      if is_inline_record_type ty_arg then
+        (* TODO: use [update_scope_for]
+           with a new ['a escape] kind for inline records. *)
+        update_scope scope ty_arg;
+      ty_arg
+    in
     let ty_ex = List.map copy_existential cstr.cstr_existentials in
     let ty_res = copy copy_scope cstr.cstr_res in
-    let ty_args = List.map (copy copy_scope) cstr.cstr_args in
+    let ty_args = List.map copy_argument cstr.cstr_args in
     (ty_args, ty_res, ty_ex)
   )
 
