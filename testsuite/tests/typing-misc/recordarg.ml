@@ -1,0 +1,192 @@
+(* TEST
+ expect;
+*)
+
+type t = A of {x:int; mutable y:int}
+[%%expect{|
+type t = A of { x : int; mutable y : int; }
+|}]
+
+let f (A r) = r  (* -> escape *)
+[%%expect{|
+Line 1, characters 14-15:
+1 | let f (A r) = r  (* -> escape *)
+                  ^
+Error: This form is not allowed as the type of the inlined record could escape.
+|}]
+
+let f (A r) = r.x (* ok *)
+[%%expect{|
+val f : t -> int = <fun>
+|}]
+
+let f x = A {x; y = x} (* ok *)
+[%%expect{|
+val f : int -> t = <fun>
+|}]
+
+let f (A r) = A {r with y = r.x + 1} (* ok *)
+[%%expect{|
+val f : t -> t = <fun>
+|}]
+
+let f () = A {a = 1} (* customized error message *)
+[%%expect{|
+Line 1, characters 14-15:
+1 | let f () = A {a = 1} (* customized error message *)
+                  ^
+Error: The field "a" is not part of the record argument for the "t.A" constructor
+|}]
+
+let f () = A {x = 1; y = 3} (* ok *)
+[%%expect{|
+val f : unit -> t = <fun>
+|}]
+
+type _ t = A: {x : 'a; y : 'b} -> 'a t
+[%%expect{|
+type _ t = A : { x : 'a; y : 'b; } -> 'a t
+|}]
+let f (A {x; y}) = A {x; y = ()}  (* ok *)
+[%%expect{|
+val f : 'a t -> 'a t = <fun>
+|}]
+let f (A ({x; y} as r)) = A {x = r.x; y = r.y} (* ok *)
+[%%expect{|
+val f : 'a t -> 'a t = <fun>
+|}]
+
+module M = struct
+  type 'a t =
+    | A of {x : 'a}
+    | B: {u : 'b} -> unit t
+
+  exception Foo of {x : int}
+end
+[%%expect{|
+module M :
+  sig
+    type 'a t = A of { x : 'a; } | B : { u : 'b; } -> unit t
+    exception Foo of { x : int; }
+  end
+|}]
+
+module N : sig
+  type 'b t = 'b M.t =
+    | A of {x : 'b}
+    | B: {u : 'bla} -> unit t
+
+  exception Foo of {x : int}
+end = struct
+  type 'b t = 'b M.t =
+    | A of {x : 'b}
+    | B: {u : 'z} -> unit t
+
+  exception Foo = M.Foo
+end
+[%%expect{|
+module N :
+  sig
+    type 'b t = 'b M.t = A of { x : 'b; } | B : { u : 'bla; } -> unit t
+    exception Foo of { x : int; }
+  end
+|}]
+
+module type S = sig exception A of {x:int}  end
+module F (X : sig val x : (module S) end) = struct
+  module A = (val X.x)
+end  (* -> this expression creates fresh types (not really!) *)
+[%%expect{|
+module type S = sig exception A of { x : int; } end
+Line 3, characters 13-22:
+3 |   module A = (val X.x)
+                 ^^^^^^^^^
+Error: This expression creates fresh types.
+       It is not allowed inside applicative functors.
+|}]
+
+module type S = sig
+  exception A of {x : int}
+  exception A of {x : string}
+end
+[%%expect{|
+Line 3, characters 2-29:
+3 |   exception A of {x : string}
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Multiple definition of the extension constructor name "A".
+       Names must be unique in a given structure or signature.
+|}]
+
+module M = struct
+  exception A of {x : int}
+  exception A of {x : string}
+end
+[%%expect{|
+Line 3, characters 2-29:
+3 |   exception A of {x : string}
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Multiple definition of the extension constructor name "A".
+       Names must be unique in a given structure or signature.
+|}]
+
+module M1 = struct
+  exception A of {x : int}
+end
+module M = struct
+  include M1
+  include M1
+end
+[%%expect{|
+module M1 : sig exception A of { x : int; } end
+module M : sig exception A of { x : int; } end
+|}]
+
+module type S1 = sig
+  exception A of {x : int}
+end
+module type S = sig
+  include S1
+  include S1
+end
+[%%expect{|
+module type S1 = sig exception A of { x : int; } end
+module type S = sig exception A of { x : int; } end
+|}]
+
+module M = struct
+  exception A = M1.A
+end
+[%%expect{|
+module M : sig exception A of { x : int; } end
+|}]
+
+module X1 = struct
+  type t = ..
+end
+module X2 = struct
+  type t = ..
+end
+module Z = struct
+  type X1.t += A of {x: int}
+  type X2.t += A of {x: int}
+end
+[%%expect{|
+module X1 : sig type t = .. end
+module X2 : sig type t = .. end
+Line 9, characters 15-28:
+9 |   type X2.t += A of {x: int}
+                   ^^^^^^^^^^^^^
+Error: Multiple definition of the extension constructor name "A".
+       Names must be unique in a given structure or signature.
+|}]
+
+(* PR#6716 *)
+
+type _ c = C : [`A] c
+type t = T : {x:[<`A] c} -> t
+let f (T { x = C }) = ()
+[%%expect{|
+type _ c = C : [ `A ] c
+type t = T : { x : [< `A ] c; } -> t
+val f : t -> unit = <fun>
+|}]
