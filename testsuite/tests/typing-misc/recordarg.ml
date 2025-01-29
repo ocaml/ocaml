@@ -56,6 +56,30 @@ let f (A ({x; y} as r)) = A {x = r.x; y = r.y} (* ok *)
 val f : 'a t -> 'a t = <fun>
 |}]
 
+
+(* other escape cases *)
+let glob = ref None
+let f (A r) = (glob := Some r)
+[%%expect{|
+val glob : '_weak1 option ref = {contents = None}
+Line 2, characters 28-29:
+2 | let f (A r) = (glob := Some r)
+                                ^
+Error: This form is not allowed as the type of the inlined record could escape.
+|}]
+
+(* this one could arguably be accepted,
+   as the record type does not leak outside the right-hand-side. *)
+let f (A r) = ignore r
+[%%expect{|
+Line 1, characters 21-22:
+1 | let f (A r) = ignore r
+                         ^
+Error: This form is not allowed as the type of the inlined record could escape.
+|}]
+
+
+
 module M = struct
   type 'a t =
     | A of {x : 'a}
