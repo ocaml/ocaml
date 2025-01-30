@@ -660,6 +660,13 @@ CAMLexport void caml_main(char_os **argv)
   /* Build the table of primitives */
   shared_lib_path = read_section_to_os(fd, &trail, "DLPT");
   shared_libs = read_section_to_os(fd, &trail, "DLLS");
+#ifndef SUPPORT_DYNAMIC_LINKING
+  if (shared_libs != NULL)
+    error(
+      "the file '%s' requires shared libraries to be loaded, which this "
+      "runtime does not support",
+      caml_stat_strdup_of_os(exe_name));
+#endif
   req_prims = read_section(fd, &trail, "PRIM");
   if (req_prims == NULL) caml_fatal_error("no PRIM section");
   caml_build_primitive_table(shared_lib_path, shared_libs, req_prims);

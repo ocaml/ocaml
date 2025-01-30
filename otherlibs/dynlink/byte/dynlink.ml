@@ -171,6 +171,8 @@ module Bytecode = struct
         (DT.Error (Library's_module_initializers_failed exn))
         (Printexc.get_raw_backtrace ())
 
+  external supports_shared_libraries : unit -> bool = "%shared_libraries"
+
   let load ~filename:file_name ~priv =
     let ic =
       try open_in_bin file_name
@@ -200,7 +202,11 @@ module Bytecode = struct
         let toc_pos = input_binary_int ic in  (* Go to table of contents *)
         seek_in ic toc_pos;
         let lib = (input_value ic : library) in
-        Symtable.open_dlls lib.lib_dllibs;
+        if supports_shared_libraries () then
+          Symtable.open_dlls lib.lib_dllibs
+        else
+          raise (DT.Error (Cannot_open_dynamic_library (Failure
+            "loading shared libraries not supported by this runtime")));
         handle, lib.lib_units
       end else begin
         raise (DT.Error (Not_a_bytecode_file file_name))
