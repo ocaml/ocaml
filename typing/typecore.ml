@@ -2184,7 +2184,8 @@ and type_pat_aux
             pat_type = ty;
             pat_desc =
             Tpat_alias
-              ({p with pat_desc = Tpat_any; pat_attributes = []}, id, s, uid, ty);
+              ({p with pat_desc = Tpat_any; pat_attributes = []},
+               id, s, uid, ty);
             pat_extra = [extra];
           }
       | _, p ->

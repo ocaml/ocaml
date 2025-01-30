@@ -237,7 +237,8 @@ end = struct
       in
       match p.pat_desc with
       | `Any -> stop p `Any
-      | `Var (id, s, uid) -> continue p (`Alias (Patterns.omega, id, s, uid, p.pat_type))
+      | `Var (id, s, uid) ->
+          continue p (`Alias (Patterns.omega, id, s, uid, p.pat_type))
       | `Alias (p, id, _, _, _) ->
           aux
             ( (General.view p, patl),
@@ -336,7 +337,8 @@ end = struct
       | `Alias (p, id, _, _, _) -> split_explode p (id :: aliases) rem
       | `Var (id, str, uid) ->
           explode
-            { p with pat_desc = `Alias (Patterns.omega, id, str, uid, p.pat_type) }
+            { p with pat_desc =
+                       `Alias (Patterns.omega, id, str, uid, p.pat_type) }
             aliases rem
       | #view as view ->
           (* We are doing two things here:
