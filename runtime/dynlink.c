@@ -54,12 +54,19 @@ struct ext_table caml_prim_table;
 
 /* The names of primitives */
 struct ext_table caml_prim_name_table;
+#ifndef DEBUG
+/* The buffer for the strings in caml_prim_name_table */
+static char *prim_names = NULL;
+#endif
 
 /* The table of shared libraries currently opened */
 static struct ext_table shared_libs;
 
 /* The search path for shared libraries */
 struct ext_table caml_shared_libs_path;
+/* Buffers under-pinning caml_shared_libs_path */
+static char_os *shared_libs_buffer1 = NULL;
+static char_os *shared_libs_buffer2 = NULL;
 
 /* Look up the given primitive name in the built-in primitive table,
    then in the opened shared libraries (shared_libs) */
@@ -301,13 +308,15 @@ void caml_build_primitive_table(char_os * lib_path,
 
      caml_shared_libs_path and caml_prim_name_table are not freed afterwards:
      they may later be used by caml_dynlink_get_bytecode_sections. */
-  caml_decompose_path(&caml_shared_libs_path,
-                      caml_secure_getenv(T("CAML_LD_LIBRARY_PATH")));
+  shared_libs_buffer1 =
+    caml_decompose_path(&caml_shared_libs_path,
+                        caml_secure_getenv(T("CAML_LD_LIBRARY_PATH")));
   if (lib_path != NULL)
     for (char_os *p = lib_path; *p != 0; p += strlen_os(p) + 1)
       caml_ext_table_add(&caml_shared_libs_path, p);
-  caml_parse_ld_conf(caml_runtime_standard_library_effective,
-                     &caml_shared_libs_path);
+  shared_libs_buffer2 =
+    caml_parse_ld_conf(caml_runtime_standard_library_effective,
+                       &caml_shared_libs_path);
   /* Open the shared libraries */
   caml_ext_table_init(&shared_libs, 8);
   if (libs != NULL)
@@ -316,14 +325,18 @@ void caml_build_primitive_table(char_os * lib_path,
   /* Build the primitive table */
   caml_ext_table_init(&caml_prim_table, 0x180);
   caml_ext_table_init(&caml_prim_name_table, 0x180);
-  if (req_prims != NULL)
+  if (req_prims != NULL) {
+#ifndef DEBUG
+    prim_names = req_prims;
+#endif
     for (char *q = req_prims; *q != 0; q += strlen(q) + 1) {
       c_primitive prim = lookup_primitive(q);
       if (prim == NULL)
             caml_fatal_error("unknown C primitive `%s'", q);
       caml_ext_table_add(&caml_prim_table, (void *) prim);
-      caml_ext_table_add(&caml_prim_name_table, caml_stat_strdup(q));
+      caml_ext_table_add(&caml_prim_name_table, q);
     }
+  }
 }
 
 /* Build the table of primitives as a copy of the builtin primitive table.
@@ -407,6 +420,13 @@ CAMLprim value caml_dynlink_get_bytecode_sections(value unit)
     list = caml_alloc_2(Tag_cons, str, list);
   }
   Store_field(ret, 2, list);
+#ifndef DEBUG
+  if (caml_prim_name_table.size > 0) {
+    /* caml_prim_name_table is no longer required */
+    caml_ext_table_free(&caml_prim_name_table, 0);
+    caml_stat_free(prim_names);
+  }
+#endif
 
   list = Val_emptylist;
   for (int i = caml_shared_libs_path.size - 1; i >= 0; i--) {
@@ -414,6 +434,13 @@ CAMLprim value caml_dynlink_get_bytecode_sections(value unit)
     list = caml_alloc_2(Tag_cons, str, list);
   }
   Store_field(ret, 3, list);
+
+  if (caml_shared_libs_path.size > 0) {
+    /* caml_shared_libs_path is no longer required */
+    caml_ext_table_free(&caml_shared_libs_path, 0);
+    caml_stat_free(shared_libs_buffer1);
+    caml_stat_free(shared_libs_buffer2);
+  }
 
   CAMLreturn (ret);
 }

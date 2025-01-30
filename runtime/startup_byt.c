@@ -670,9 +670,9 @@ CAMLexport void caml_main(char_os **argv)
   req_prims = read_section(fd, &trail, "PRIM");
   if (req_prims == NULL) caml_fatal_error("no PRIM section");
   caml_build_primitive_table(shared_lib_path, shared_libs, req_prims);
+  /* caml_build_primitive_table is responsible for freeing req_prims */
   caml_stat_free(shared_lib_path);
   caml_stat_free(shared_libs);
-  caml_stat_free(req_prims);
   /* Load the globals */
   caml_seek_section(fd, &trail, "DATA");
   chan = caml_open_descriptor_in(fd);
