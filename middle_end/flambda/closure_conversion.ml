@@ -407,6 +407,8 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
           let symbol = t.symbol_for_global' Compilenv.stdlib_symbol_name in
           t.imported_symbols <- Symbol.Set.add symbol t.imported_symbols;
           name_expr (Symbol symbol) ~name:Names.pgetglobal
+      | Shared_libraries ->
+          cst lambda_const_bool Config.supports_shared_libraries
       end
   | Lprim (Pfield _, [Lprim (Pgetglobal id, [],_)], _)
       when Ident.same id t.current_unit_id ->

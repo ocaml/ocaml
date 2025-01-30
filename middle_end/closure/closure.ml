@@ -1078,6 +1078,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
           let dbg = Debuginfo.from_location loc in
           let id = Ident.name Compilenv.stdlib_symbol_name in
           Uprim(P.Pread_symbol id, [], dbg), Value_const (Uconst_ref (id, None))
+      | Shared_libraries -> make_const_bool Config.supports_shared_libraries
       end
   | Lprim(Pignore, [arg], _loc) ->
       let expr, approx = make_const_int 0 in

@@ -214,6 +214,17 @@ CAMLexport wchar_t * caml_search_exe_in_path(const wchar_t * name)
   }
 }
 
+/* Primitive is defined here rather than sys.c as otherwise sys.c would need
+   duplicating for libcamlrun_non_shared */
+CAMLprim value caml_sys_const_shared_libraries(value unit)
+{
+#ifdef WITH_DYNAMIC_LINKING
+  return Val_true;
+#else
+  return Val_false;
+#endif
+}
+
 #ifdef WITH_DYNAMIC_LINKING
 
 void * caml_dlopen(wchar_t * libname, int global)

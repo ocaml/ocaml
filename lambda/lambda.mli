@@ -27,6 +27,7 @@ type compile_time_constant =
   | Ostype_cygwin
   | Backend_type
   | Standard_library_default
+  | Shared_libraries
 
 type immediate_or_pointer =
   | Immediate

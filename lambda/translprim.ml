@@ -161,6 +161,7 @@ let primitives_table =
     "%boolnot", Primitive (Pnot, 1);
     "%big_endian", Primitive ((Pctconst Big_endian), 1);
     "%backend_type", Primitive ((Pctconst Backend_type), 1);
+    "%shared_libraries", Primitive ((Pctconst Shared_libraries), 1);
     "%word_size", Primitive ((Pctconst Word_size), 1);
     "%int_size", Primitive ((Pctconst Int_size), 1);
     "%max_wosize", Primitive ((Pctconst Max_wosize), 1);
