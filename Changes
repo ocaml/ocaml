@@ -370,6 +370,9 @@ Working version
 - #13710: Support unicode identifiers in comments.
   (Pieter Goetschalckx, review by Florian Angeletti and Gabriel Scherer)
 
+- #13763: Track type of variables bound by as-patterns
+  (Leo White, review by Gabriel Scherer, port by Vincent Laviron)
+
 - #13790: Fix bytecode-only build of Cygwin when flexlink is being bootstrapped
   with the compiler.
   (David Allsopp, review by Antonin Décimo and Miod Vallat)
