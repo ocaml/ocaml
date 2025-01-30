@@ -2,12 +2,16 @@
 \label{c:sdiag}\cutname{sdiag.html}
 
 Both the bytecode and native compiler can emit diagnostic under
-a structured format by using the "--log-format <format>" flag.
+a structured format by using the "-log-format <format>" flag.
 Supported formats are currently
 \begin{itemize}
 \item json
 \item s-expression
 \end{itemize}
+
+The flag "-log-file <path>" determine where the diagnostics are stored if
+present. Otherwise, the structured diagnostic are displayed on the terminal
+standard output.
 
 \section{s:sdiag_versioning}{Versioning policy and subtyping}
 
@@ -19,17 +23,47 @@ This policy is a data-oriented version of semantic versioning for algebraic data
 types:
 
 \begin{itemize}
-\item minor updates can only refine schemata into a subtype of the previous schema
-\item major update can delete deprecated fields from record type or add new
+\item minor updates can refine a schema into a subtype of the previous schema
+\item major updates can delete deprecated fields from record type or add new
   constructors to sum type.
 \end{itemize}
 
-Then a versioned and structured diagnostic can be seen as an algebraic data
-types annotated with versioning and evolution annotation.
+
+With this policy, we can ensure that a compiler which is internally building a
+diagnostic for the version "major.minor" of a schema can always externally
+output a structured diagnostic for any version "major.prev" where "prev" $\le$
+"minor" by coercing the diagnostic at version "major.minor" into its subtype at
+version "major.prev".
+
+The version of the schema used can be controlled with the "-log-version" flag.
+In the absence of such flags, the compiler emits structured diagnostic in a
+format as downward compatible as possible.
+
+\subsection{ss:sdiag-variant-subtyping}{Annotated versioned data types}
+
+A good way to visualise the evolution of diagnostic data types across versions is
+to represent them as usual algebraic data types but annotated with versioning and
+evolution metadata. During the life cycle of a specific versioned data types, a
+given variant constructor or record field may go through the following stages:
+
+\begin{enumerate}
+\item preview "[\@preview M.m Parent]",
+  a constructor can be derived from a "Parent" constructor
+\item publication "[\@since M.m]"
+\item expansion "[\@expanded M.m]",
+  a constructor argument type can be expanded to a record type
+\item requirement "[\@required M.m]",
+  an optional record field can be made mandatory
+\item deprecation "[\@deprecated M.m]",
+  a record field can be marked as deprecated
+\item deletion "[\@deleted M.m]"
+\end{enumerate}
+
+For instance, a fictional history of the "error_kind" might look like
 
 \begin{caml_example*}{verbatim}
 type error_kind =
-  | Fatal of string [@since 1.0][@deleted 1.1]
+  | Fatal of string [@since 2.0][@deleted 3.0]
   | Error of string [@since 1.0]
   | Warning of
       { contents:string; number:int; name:string }
@@ -37,18 +71,14 @@ type error_kind =
   | Lint of string [@preview 1.1][@since 2.0]
 \end{caml_example*}
 
-
-With this policy, we can ensure that a compiler at version "major.minor" can
-output a structured diagnostic for any version "major.prev" where "prev" $\le$
-"minor" by coercing the diagnostic at version "major.minor" into its subtype at
-version "major.prev".
-
+Then the versioning policy merely describe the set of valid diagnostic data
+types history.
 
 \subsection{ss:sdiag-record-subtyping}{Record subtyping rule}
 
 The subtyping rules for records are straightforward because we can
 easily elide fields when coercing to a previous version.
-This gives us three subtyping rules:
+This gives us three subtyping rules, a minor update may:
 
 \begin{enumerate}
 \item add new fields to a record type
@@ -60,9 +90,10 @@ In particular, the last two rules only refine metadata information about the
 field and do not affect coercion.
 
 
-\subsection{ss:sdiag-variant-subtyping}{Variant constructors subtyping rules}
+\subsection{ss:sdiag-variant-subtyping}{Variant subtyping rules}
 
-The three subtyping rules for constructor are more interesting:
+The three subtyping rules for variants are more interesting. In this case,
+a minor update may:
 
 \begin{enumerate}
 \item remove constructors from a sum type
@@ -71,56 +102,73 @@ The three subtyping rules for constructor are more interesting:
 \end{enumerate}
 
 
-The first rule is straightforward: if diagnostic consumers know how to handle
-a constructor, it doesn't matter if the compiler actually emit this constructor or not.
+The first rule merely states that if a diagnostic consumer knows how to handle a
+constructor, it doesn't matter if the compiler actually emit this constructor or
+not.
 
 Unfortunately, this first rule is also insufficient by itself to allow any
-meaningful evolution of the sum type. A solution is to allow minor update to add
-constructors that are related to previously existing constructors. There are two
-relationship that seems worthy to track.
+meaningful evolution of the variants type.
 
-First, consider a constructor "c" which exists in both "v1" $<$ "v2" with only a
-change of its argument type. If the argument type in the "v2" version is a
-subtype of the argument type in "v1", then consumers can coerce the new type
-to the old one.
+The second rule alleviates this issue by allowing a minor update to change the
+type of a constructor argument to a record type containing the original argument
+inside a "content" field. Client relying on the original scheme can still read
+this compatibility field.
 
-Second, if the semantics of a new constructor "c2" in "v2" $>$ "v1" might be
+For instance, a minor update might expand the constructor "Report_warning" in
+
+\begin{caml_example*}{verbatim}
+type example =
+  | Report_warning of string [@since 1.0]
+\end{caml_example*}
+
+to
+
+\begin{caml_example*}{verbatim}
+type report_warning = { contents: string; name:string; number:int } [@@since 1.1]
+type example =
+  | Report_warning of report_warning [@since 1.0] [@expanded 1.1]
+\end{caml_example*}
+
+
+Finally, if a new constructor "c2" in version "v2" might be
 approximated by an old constructor "c1" in "v1", then the compiler can
-coerce the new constructor to the old one in version "v1".
+emit the new constructor as an optional refinement to old constructor.
 
-For instance, one of the sum type presents in compiler diagnostics is the error
-kind, which is represented as:
-
-\begin{caml_example*}{verbatim}
-type report_kind =
-  | Report_error
-  | Report_warning of string
-  | Report_warning_as_error of string
-  | Report_alert of string
-  | Report_alert_as_error of string
-\end{caml_example*}
-
-It seems possible that in the future the compiler may want to
-update this part of the diagnostic to
-
-\begin{itemize}
-\item expand the "Report_warning"
-argument to split the warning number and name in two fields
-\item delete the "Report_warning_as_error" constructor
-\item add a new constructor "Report_Lint", derived from non-error warning.
-\end{itemize}
+For instance, if we want to add a "hint" report kind to the type
 
 \begin{caml_example*}{verbatim}
 type report_kind =
-  | Report_error
-  | Report_warning of { contents:string; name:string; number:int}
-  | Report_lint of string
-  | Report_alert of string
-  | Report_alert_as_error of string
+  | Report_error [@since 1.0]
+  | Report_warning of string [@since 1.0]
+  | Report_warning_as_error of string [@since 1.0]
+  | Report_alert of string [@since 1.0]
+  | Report_alert_as_error of string [@since 1.0]
 \end{caml_example*}
 
-With the three expansion rules above, this change can be done in a minor update
-"v2".
+we can introduce the "Report_hint" as a derived constructor of "Report_warning"
+
+\begin{caml_example*}{verbatim}
+type report_kind =
+  | Report_error [@since 1.0]
+  | Report_warning of string [@since 1.0]
+  | Report_warning_as_error of string [@since 1.0]
+  | Report_alert of string [@since 1.0]
+  | Report_alert_as_error of string [@since 1.0]
+  | Report_hint of string [@preview 1.1 Report_warning]
+\end{caml_example*}
+
+Then for as long as the  "Report_hint" constructor will be in a preview version,
+it will be represented as
+\begin{caml_eval}
+type hreport_warning = { contents: string; next: report_kind option [@optional] }
+type hrw = Report_warning of hreport_warning
+\end{caml_eval}
+\begin{caml_example*}{verbatim}
+let contents = "warning_name" [@ellipsis] in
+Report_warning { contents; next = Some (Report_hint contents) }
+\end{caml_example*}
+allowing consumers to easily ignore the existence of this constructor in preview
+stage.
 
 \subsection{ss:sdiag-major-update}{Backward-compatibility beyond major versions}
 
@@ -134,40 +182,19 @@ diagnostics, we may
 \end{enumerate}
 
 With those changes, enforcing compatibility between major versions is not always
-possible, in particular for the variant constructor side. However, we can afford
-some long term guarantees.
+possible, in particular for the variant constructor side. However, the compiler
+does strive to provide some long term guarantees.
 
-First, to avoid reuse of previous names with different meaning, we must keep a
-set of tombstones for deleted nominal types, record fields, and sum
+First, to avoid reuse of previous names with different meaning, the compiler
+keeps a set of tombstones for deleted nominal types, record fields, and sum
 constructors.
 
 Second, in the record case, the specification of deleting only deprecated fields
-means that we already keep producing deprecated fields for at least one compiler
-version.
+means that the compiler supports a new field for at least two compiler versions.
 
-
-Third, backward-compatibility for variant constructor is more complex. If there
-is a completely new constructor in version "major.0", it is not always possible
-to translate this new constructor to a constructor in the previous version. We
-could replace future constructor by a special constructor "<future>", but it is
-unclear if this would help tools more than having an unknown constructor name.
-Thus reliable deserializers that expect to work across major version would need
+Third, backward-compatibility for variant constructors is necessarily imperfect.
+Thus reliable deserializers that expect to work across major versions would need
 to parse variant sum as if they were always extensible.
-
-
-\subsection{ss:sdiag-variant-subtyping}{Variant constructors and record fields lifecycle}
-
-Resuming the previous evolution rules, this means that constructors and records goes
-through stages during the evolution of a diagnostic
-
-\begin{enumerate}
-\item preview "[\@preview M.m]", a derived constructor can be created in a preview state
-\item publication "[\@since M.m]"
-\item expansion "[\@expanded M.m]", a constructor argument can be expanded
-\item requirement "[\@required M.m]", an optional record field can be made mandatory
-\item deprecation "[\@deprecated M.m]"
-\item deletion "[\@deleted M.m]"
-\end{enumerate}
 
 
 \section{s:metadata-diag}{Compiler diagnostics}
@@ -181,7 +208,7 @@ The current last version is:
 \begin{itemize}
 \item "1.0" for the "metadata" diagnostic
 \item "1.0" for the "config" diagnostic
-\item "1.0" for the compiler, toplevel and derived diagnostics
+\item "0.1" for the compiler, toplevel and derived diagnostics
 \end{itemize}
 
 All those schema descriptions (and more) are generated using the
