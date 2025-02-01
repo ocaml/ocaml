@@ -691,7 +691,7 @@ CAMLexport void caml_main(char_os **argv)
   /* ensure all globals are in major heap */
   caml_minor_collection();
 #ifdef _WIN32
-  /* Start a thread to handle signals */
+  /* Start a thread to handle signals - used by ocamlbrowser */
   if (caml_secure_getenv(T("CAMLSIGPIPE")))
     _beginthread(caml_signal_thread, 4096, NULL);
 #endif

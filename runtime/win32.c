@@ -440,7 +440,10 @@ CAMLexport int caml_read_directory(wchar_t * dirname,
 
 #ifndef NATIVE_CODE
 
-/* Set up a new thread for control-C emulation and termination */
+/* Set up a new thread for control-C emulation and termination. This mechanism
+   is used by the ocamlbrowser program which was part of the OCaml distribution
+   until OCaml 4.02 but now lives at https://github.com/garrigue/labltk. The
+   mechanism isn't known to be used by any other software. */
 
 void caml_signal_thread(void * lpParam)
 {
