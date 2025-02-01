@@ -655,7 +655,7 @@ type group_entry =
     gr_gid : int;
     gr_mem : string array }
 
-let getlogin () = try Sys.getenv "USERNAME" with Not_found -> ""
+let getlogin () = Option.value (Sys.getenv_opt "USERNAME") ~default:""
 let getpwnam _x = raise Not_found
 let getgrnam = getpwnam
 let getpwuid = getpwnam
@@ -1115,8 +1115,9 @@ let open_process_args_full prog args =
 
 let open_process_shell fn cmd =
   let shell =
-    try Sys.getenv "COMSPEC"
-    with Not_found -> raise(Unix_error(ENOEXEC, "open_process_shell", cmd)) in
+    match Sys.getenv_opt "COMSPEC" with
+    | None | Some "" -> raise(Unix_error(ENOEXEC, "open_process_shell", cmd))
+    | Some shell -> shell in
   fn shell (shell ^ " /c " ^ cmd)
 let open_process_in cmd =
   open_process_shell open_process_cmdline_in cmd
