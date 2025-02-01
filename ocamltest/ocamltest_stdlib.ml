@@ -223,7 +223,9 @@ module Sys = struct
     Fun.protect ~finally:(fun () -> Sys.chdir oldcwd) f
 
   let getenv_with_default_value variable default_value =
-    try Sys.getenv variable with Not_found -> default_value
+    match Sys.getenv_opt variable with
+    | None | Some "" -> default_value
+    | Some value -> value
   let safe_getenv variable = getenv_with_default_value variable ""
 end
 
