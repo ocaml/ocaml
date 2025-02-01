@@ -44,10 +44,7 @@ let f = function (A (x:_)) -> 0
 
 [%%expect{|
 type t = A of { x : int; }
-Line 2, characters 20-25:
-2 | let f = function (A (x:_)) -> 0
-                        ^^^^^
-Error: This form is not allowed as the type of the inlined record could escape.
+val f : t -> int = <fun>
 |}]
 
 
@@ -289,10 +286,10 @@ type t = A of { x: int }
 let x = A 1
 [%%expect {|
 type t = A of { x : int; }
-Line 2, characters 8-11:
+Line 2, characters 10-11:
 2 | let x = A 1
-            ^^^
-Error: This constructor expects an inlined record argument.
+              ^
+Error: The constant "1" has type "int" but an expression was expected of type "t.A"
 |}]
 
 (** Illegal let rec *)

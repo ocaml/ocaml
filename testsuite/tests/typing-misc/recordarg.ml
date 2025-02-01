@@ -12,7 +12,9 @@ let f (A r) = r  (* -> escape *)
 Line 1, characters 14-15:
 1 | let f (A r) = r  (* -> escape *)
                   ^
-Error: This form is not allowed as the type of the inlined record could escape.
+Error: The value "r" has type "t.A" but an expression was expected of type "'a"
+       This instance of "t.A" is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 let f (A r) = r.x (* ok *)
@@ -65,17 +67,18 @@ val glob : '_weak1 option ref = {contents = None}
 Line 2, characters 28-29:
 2 | let f (A r) = (glob := Some r)
                                 ^
-Error: This form is not allowed as the type of the inlined record could escape.
+Error: The value "r" has type "('a, $b) t.A"
+       but an expression was expected of type "'weak1"
+       This instance of "('a, $b) t.A" is ambiguous:
+       it would escape the scope of its equation
+       Hint: "$b" is an existential type bound by the constructor "A".
 |}]
 
 (* this one could arguably be accepted,
    as the record type does not leak outside the right-hand-side. *)
 let f (A r) = ignore r
 [%%expect{|
-Line 1, characters 21-22:
-1 | let f (A r) = ignore r
-                         ^
-Error: This form is not allowed as the type of the inlined record could escape.
+val f : 'a t -> unit = <fun>
 |}]
 
 
