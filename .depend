@@ -9533,6 +9533,7 @@ ocamldoc/odoc_misc.cmo : \
     typing/path.cmi \
     ocamldoc/odoc_types.cmi \
     ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_global.cmi \
     parsing/longident.cmi \
     typing/btype.cmi \
     ocamldoc/odoc_misc.cmi
@@ -9543,6 +9544,7 @@ ocamldoc/odoc_misc.cmx : \
     typing/path.cmx \
     ocamldoc/odoc_types.cmx \
     ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_global.cmx \
     parsing/longident.cmx \
     typing/btype.cmx \
     ocamldoc/odoc_misc.cmi

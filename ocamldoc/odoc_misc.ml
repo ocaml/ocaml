@@ -247,14 +247,28 @@ let string_of_date ?(absolute=false) ?(hour=true) d =
      ""
   )
 
+let date_warning = ref (Fun.const ())
+
 let current_date =
   let time =
-    try
-      float_of_string (Sys.getenv "SOURCE_DATE_EPOCH")
-    with
-      Not_found -> Unix.time ()
+    match Sys.getenv_opt "SOURCE_DATE_EPOCH" with
+    | None -> Unix.time ()
+    | Some value ->
+        match Float.of_string_opt value with
+        | Some stamp -> stamp
+        | None ->
+            date_warning := (fun () ->
+              Odoc_global.pwarning
+                "The SOURCE_DATE_EPOCH environment variable could not be \
+                 parsed and has been ignored.";
+              date_warning := Fun.const ());
+            Unix.time ()
   in string_of_date ~absolute: true ~hour: false time
 
+let current_date () =
+  (* Displays a warning the first time this is called if SOURCE_DATE_EPOCH was
+     set but could not be parsed. *)
+  !date_warning (); current_date
 
 let rec text_list_concat sep l =
   match l with

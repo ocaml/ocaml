@@ -66,7 +66,7 @@ val string_of_date : ?absolute:bool -> ?hour:bool -> float -> string
 (* Value returned by string_of_date for current time.
  * Uses environment variable SOURCE_DATE_EPOCH if set; falls back to
  * current timestamp otherwise. *)
-val current_date : string
+val current_date : unit -> string
 
 (** Return the first sentence (until the first dot) of a text.
    Don't stop in the middle of [Code], [Verbatim], [List], [Lnum],
