@@ -293,7 +293,8 @@ void create_file_names(void)
     if (tmpdir == 0) tmpdir = L".";
 #else
     tmpdir = getenv("TMPDIR");
-    if (tmpdir == 0) tmpdir = "/tmp";
+    /* Write to /tmp instead of . if TMPDIR is "Set But Null" */
+    if (tmpdir == 0 || *tmpdir == 0) tmpdir = "/tmp";
 #endif
     len = strlen_os(tmpdir);
     i = len + sizeof(temp_form);

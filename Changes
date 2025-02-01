@@ -302,6 +302,10 @@ Working version
   executable (either from the RNTM section or by analysing the shebang lines)
   (David Allsopp, review by Damien Doligez and Samuel Hym)
 
+- #14???: ocamlyacc treats TMPDIR='' (i.e. set, but to the empty string) as
+  TMPDIR=/tmp (as it already does if TMPDIR is not set at all).
+  (David Allsopp, review by ???)
+
 ### Manual and documentation:
 
 - #14397: Improve documentation of type-directed disambiguation of array
