@@ -64,7 +64,8 @@ static void init_startup_params(void)
 #ifndef NATIVE_CODE
   /* TODO #4703 The .cds file should be determined from exe_name */
   cds_file = caml_secure_getenv(T("CAML_DEBUG_FILE"));
-  if (cds_file != NULL) {
+  /* Ignore CAML_DEBUG_FILE if it's "Set But Null" */
+  if (cds_file != NULL && *cds_file != '\0') {
     /* Largely by historical accident, resolve CAML_DEBUG_FILE in PATH */
     params.cds_file = caml_search_exe_in_path(cds_file);
   }
