@@ -193,6 +193,11 @@ Working version
   (Émile Trotignon, review by Nicolás Ojeda Bär, Jan Midtgaard and
    Damien Doligez)
 
+- #14???: On Unix, the Filename module now treats TMPDIR='' (i.e. TMPDIR set,
+  but to an empty string) as TMPDIR=/tmp (as it already does if TMPDIR is not
+  set at all).
+  (David Allsopp, review by ???)
+
 ### Type system:
 
 - #13781: Set scope of internal type nodes during abbreviation expansion

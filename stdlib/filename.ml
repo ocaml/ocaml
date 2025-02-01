@@ -102,7 +102,9 @@ module Unix : SYSDEPS = struct
     String.ends_with ~suffix:suff name
 
   let temp_dir_name =
-    try Sys.getenv "TMPDIR" with Not_found -> "/tmp"
+    match Sys.getenv_opt "TMPDIR" with
+    | None | Some "" -> "/tmp"
+    | Some dir -> dir
   let quote = generic_quote "'\\''"
   let quote_command cmd ?stdin ?stdout ?stderr args =
     String.concat " " (List.map quote (cmd :: args))
