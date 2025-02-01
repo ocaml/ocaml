@@ -32,6 +32,12 @@ let f (A r) = A {r with y = r.x + 1} (* ok *)
 val f : t -> t = <fun>
 |}]
 
+let f (A r) = A r (* ok *)
+[%%expect{|
+val f : t -> t = <fun>
+|}]
+
+
 let f () = A {a = 1} (* customized error message *)
 [%%expect{|
 Line 1, characters 14-15:
