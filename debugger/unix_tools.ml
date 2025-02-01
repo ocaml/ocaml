@@ -136,6 +136,8 @@ let rec expand_path ch =
                  in
                    try Filename.concat (Sys.getenv "HOME") tail
                    with Not_found ->
+                     (* If Sys.getenv "LOGNAME" = "" then getpwnam will raise
+                        Not_found instead *)
                      concat_root (Sys.getenv "LOGNAME") tail)
             |  n -> concat_root
                       (String.sub ch 1 (n - 1))

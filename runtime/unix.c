@@ -156,6 +156,8 @@ caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
 
 caml_stat_string caml_search_exe_in_path(const char * name)
 {
+  /* caml_search_in_system_path treats PATH being "Set But Null" (i.e. equal to
+     "") as being equivalent to being set to "." */
   caml_stat_string res = caml_search_in_system_path(name);
   if (res == NULL)
     res = caml_stat_strdup(name);

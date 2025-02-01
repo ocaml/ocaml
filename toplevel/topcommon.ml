@@ -294,6 +294,7 @@ let set_paths ?(auto_include=Compmisc.auto_include) ?(dir="") () =
 let update_search_path_from_env () =
   let extra_paths =
     let env = Sys.getenv_opt "OCAMLTOP_INCLUDE_PATH" in
+    (* NB: Misc.split_path_contents "" = [] *)
     Option.fold ~none:[] ~some:Misc.split_path_contents env
   in
   Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
