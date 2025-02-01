@@ -26,6 +26,14 @@ let is_right = function
 | Left _ -> false
 | Right _ -> true
 
+let get_left = function
+| Left v -> v
+| Right _ -> invalid_arg "Either.t is Right _"
+
+let get_right = function
+| Left _ -> invalid_arg "Either.t is Left _"
+| Right v -> v
+
 let find_left = function
 | Left v -> Some v
 | Right _ -> None
