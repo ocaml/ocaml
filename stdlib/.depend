@@ -408,6 +408,7 @@ stdlib__Hashtbl.cmo : hashtbl.ml \
     stdlib__String.cmi \
     stdlib__Seq.cmi \
     stdlib__Random.cmi \
+    stdlib__Option.cmi \
     stdlib__Obj.cmi \
     stdlib__Int.cmi \
     stdlib__Domain.cmi \
@@ -419,6 +420,7 @@ stdlib__Hashtbl.cmx : hashtbl.ml \
     stdlib__String.cmx \
     stdlib__Seq.cmx \
     stdlib__Random.cmx \
+    stdlib__Option.cmx \
     stdlib__Obj.cmx \
     stdlib__Int.cmx \
     stdlib__Domain.cmx \

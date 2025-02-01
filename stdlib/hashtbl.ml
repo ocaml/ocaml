@@ -48,8 +48,11 @@ let flip_ongoing_traversal h =
 
 let randomized_default =
   let params =
-    try Sys.getenv "OCAMLRUNPARAM" with Not_found ->
-    try Sys.getenv "CAMLRUNPARAM" with Not_found -> "" in
+    match Sys.getenv_opt "OCAMLRUNPARAM" with
+    | None | Some "" ->
+        Option.value (Sys.getenv_opt "CAMLRUNPARAM") ~default:""
+    | Some value ->
+        value in
   String.contains params 'R'
 
 let randomized = Atomic.make randomized_default

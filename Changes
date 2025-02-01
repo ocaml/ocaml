@@ -139,6 +139,12 @@ Working version
   the empty string.
   (David Allsopp, review by ???)
 
+* #14???: When set to the empty string, OCAMLRUNPARAM, OCAMLLIB and CAMLLIB are
+  now ignored (i.e. treated as if they were unset). In particular, this means
+  that a blank value for OCAMLLIB no longer prevents the compiler's default
+  Standard Library from being used.
+  (David Allsopp, review by ???)
+
 ### Code generation and optimizations:
 
 ### Standard library:

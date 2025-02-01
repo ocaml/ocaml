@@ -97,7 +97,8 @@ void caml_parse_ocamlrunparam(void)
   uintnat val;
 
   char_os *opt = caml_secure_getenv (T("OCAMLRUNPARAM"));
-  if (opt == NULL) opt = caml_secure_getenv (T("CAMLRUNPARAM"));
+  if (opt == NULL || *opt == '\0')
+    opt = caml_secure_getenv (T("CAMLRUNPARAM"));
 
   if (opt != NULL){
     while (*opt != '\0'){
