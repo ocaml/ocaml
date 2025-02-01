@@ -142,7 +142,10 @@ Working version
 * #14???: When set to the empty string, OCAMLRUNPARAM, OCAMLLIB and CAMLLIB are
   now ignored (i.e. treated as if they were unset). In particular, this means
   that a blank value for OCAMLLIB no longer prevents the compiler's default
-  Standard Library from being used.
+  Standard Library from being used. CAML_LD_LIBRARY_PATH now ignores empty
+  segments (instead of interpreting them as being ".") which also means that
+  CAML_LD_LIBRARY_PATH is ignored if it is just set to the empty string. Blank
+  lines in ld.conf are now likewise ignored.
   (David Allsopp, review by ???)
 
 ### Code generation and optimizations:
@@ -314,6 +317,13 @@ Working version
 
 - #14???: ocamlyacc treats TMPDIR='' (i.e. set, but to the empty string) as
   TMPDIR=/tmp (as it already does if TMPDIR is not set at all).
+  (David Allsopp, review by ???)
+
+### Toplevel:
+
+- #14???: Empty segments in OCAMLTOP_INCLUDE_PATH are no longer interpreted as
+  adding the current working directory to the search path. The current working
+  directory can of course still be included in the search path by adding ".".
   (David Allsopp, review by ???)
 
 ### Manual and documentation:

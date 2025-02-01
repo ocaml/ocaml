@@ -122,9 +122,15 @@ caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
   if (path == NULL) return NULL;
   p = caml_stat_strdup(path);
   q = p;
+
   while (1) {
+    /* Skip any prefixing colons */
+    while (*q == ':')
+      q++;
+    /* Find the end of this entry */
     for (n = 0; q[n] != 0 && q[n] != ':'; n++) /*nothing*/;
-    caml_ext_table_add(tbl, q);
+    if (n > 0)
+      caml_ext_table_add(tbl, q);
     q = q + n;
     if (*q == 0) break;
     *q = 0;

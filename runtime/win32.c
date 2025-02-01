@@ -141,8 +141,12 @@ wchar_t * caml_decompose_path(struct ext_table * tbl, wchar_t * path)
   p = caml_stat_wcsdup(path);
   q = p;
   while (1) {
+    /* Don't include blank entries */
+    while (*q == ';')
+      q++;
     for (n = 0; q[n] != 0 && q[n] != L';'; n++) /*nothing*/;
-    caml_ext_table_add(tbl, q);
+    if (n > 0)
+      caml_ext_table_add(tbl, q);
     q = q + n;
     if (*q == 0) break;
     *q = 0;

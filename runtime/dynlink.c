@@ -175,10 +175,12 @@ CAMLexport char_os * caml_parse_ld_conf(const char_os * stdlib,
           while (q > p && *(q - 1) == '\r')
             q--;
         }
-        *q = '\0';
-        char_os *entry = make_relative_path_absolute(p, libroot);
-        length += strlen_os(entry) + 1;
-        caml_ext_table_add(&entries, entry);
+        if (p < q) {
+          *q = '\0';
+          char_os *entry = make_relative_path_absolute(p, libroot);
+          length += strlen_os(entry) + 1;
+          caml_ext_table_add(&entries, entry);
+        }
         p = r;
       }
 

@@ -579,7 +579,7 @@ let path_separator =
 
 let split_path_contents ?(sep = path_separator) = function
   | "" -> []
-  | s -> String.split_on_char sep s
+  | s -> List.filter ((<>) "") (String.split_on_char sep s)
 
 (* Hashtable functions *)
 

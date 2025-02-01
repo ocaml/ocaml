@@ -246,7 +246,9 @@ val split_path_contents: ?sep:char -> string -> string list
           directories. [s] is split using the platform-specific delimiter, or
           [~sep] if it is passed.
 
-          Returns the empty list if [s] is empty. *)
+          Returns the empty list if [s] is empty. Empty strings are filtered
+          out - include [Filename.current_dir_name] explicitly if the current
+          working directory is supposed to be searched. *)
 
 val copy_file: in_channel -> out_channel -> unit
        (** [copy_file ic oc] reads the contents of file [ic] and copies

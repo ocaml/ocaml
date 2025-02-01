@@ -387,8 +387,6 @@ static const char_os * get_stdlib_location(void)
    freed, since the runtime will terminate after calling this. */
 static void do_print_config(void)
 {
-  const char_os * dir;
-
   /* Print the runtime configuration */
   printf("version: %s\n", OCAML_VERSION_STRING);
   printf("standard_library_default: %s\n",
@@ -434,17 +432,8 @@ static void do_print_config(void)
                       caml_secure_getenv(T("CAML_LD_LIBRARY_PATH")));
   caml_parse_ld_conf(caml_runtime_standard_library_effective,
                      &caml_shared_libs_path);
-  for (int i = 0; i < caml_shared_libs_path.size; i++) {
-    dir = caml_shared_libs_path.contents[i];
-    if (dir[0] == 0)
-#ifdef _WIN32
-      /* See caml_search_in_path in win32.c */
-      continue;
-#else
-      dir = ".";
-#endif
-    printf("  %s\n", caml_stat_strdup_of_os(dir));
-  }
+  for (int i = 0; i < caml_shared_libs_path.size; i++)
+    printf("  %s\n", caml_stat_strdup_of_os(caml_shared_libs_path.contents[i]));
 }
 
 #ifdef _WIN32
