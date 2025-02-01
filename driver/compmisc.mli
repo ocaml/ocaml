@@ -18,7 +18,9 @@ val init_path :
   -> ?dir:string -> unit -> unit
 val initial_env : unit -> Env.t
 
-(* Support for flags that can also be set from an environment variable *)
+(* Support for flags that can also be set from an environment variable.
+   Environment variables which are set, but to the empty string are ignored
+   (i.e. they are treated as if they were not set at all) *)
 val set_from_env : 'a option ref -> 'a Clflags.env_reader -> unit
 val read_clflags_from_env : unit -> unit
 

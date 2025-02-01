@@ -81,16 +81,16 @@ let initial_env () =
     ~open_implicit_modules:(List.rev !Clflags.open_modules)
 
 let set_from_env flag Clflags.{ parse; usage; env_var } =
-  try
-    match parse (Sys.getenv env_var) with
-    | None ->
-        Location.prerr_warning Location.none
-          (Warnings.Bad_env_variable (env_var, usage))
-    | Some x -> match !flag with
-      | None -> flag := Some x
-      | Some _ -> ()
-  with
-    Not_found -> ()
+  match Sys.getenv_opt env_var with
+  | None | Some "" -> ()
+  | Some value ->
+      match parse value with
+      | None ->
+          Location.prerr_warning Location.none
+            (Warnings.Bad_env_variable (env_var, usage))
+      | Some x -> match !flag with
+        | None -> flag := Some x
+        | Some _ -> ()
 
 let read_clflags_from_env () =
   set_from_env Clflags.color Clflags.color_reader;
