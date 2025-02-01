@@ -838,12 +838,10 @@ let check_scope_escape env level ty =
     raise (Escape { e with context = Some ty })
   end
 
-let rec update_scope scope ty =
+let update_scope scope ty =
   if get_scope ty < scope then begin
     if get_level ty < scope then raise_scope_escape_exn ty;
     set_scope ty scope;
-    (* Only recurse in principal mode as this is not necessary for soundness *)
-    if !Clflags.principal then iter_type_expr (update_scope scope) ty
   end
 
 let update_scope_for tr_exn scope ty =
