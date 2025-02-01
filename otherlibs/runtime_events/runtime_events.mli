@@ -34,16 +34,16 @@
     The runtime events system's behaviour can be controlled by the following
     environment variables:
 
-    - OCAML_RUNTIME_EVENTS_START if set will cause the runtime events system
-    to be started as part of the OCaml runtime initialization.
+    - OCAML_RUNTIME_EVENTS_START if non-empty will cause the runtime events
+    system to be started as part of the OCaml runtime initialization.
 
     - OCAML_RUNTIME_EVENTS_DIR sets the directory where the runtime events
     ring buffers will be located. If not present the program's working directory
     will be used.
 
-  - OCAML_RUNTIME_EVENTS_PRESERVE if set will prevent the OCaml runtime from
-    removing its ring buffers when it terminates. This can help if monitoring
-    very short running programs.
+  - OCAML_RUNTIME_EVENTS_PRESERVE if non-empty will prevent the OCaml runtime
+    from removing its ring buffers when it terminates. This can help if
+    monitoring very short running programs.
 *)
 
 (** The type for counter events emitted by the runtime. Counter events are used

@@ -138,17 +138,19 @@ void caml_runtime_events_init(void) {
 
   runtime_events_path = caml_secure_getenv(T("OCAML_RUNTIME_EVENTS_DIR"));
 
-  if (runtime_events_path) {
+  if (runtime_events_path && *runtime_events_path != '\0') {
     /* caml_secure_getenv's return shouldn't be cached */
     runtime_events_path = caml_stat_strdup_os(runtime_events_path);
   }
 
   ring_size_words = 1 << caml_params->runtime_events_log_wsize;
 
+  char_os *value = caml_secure_getenv(T("OCAML_RUNTIME_EVENTS_PRESERVE"));
   preserve_ring =
-            caml_secure_getenv(T("OCAML_RUNTIME_EVENTS_PRESERVE")) ? 1 : 0;
+    (value && *value != '\0') ? 1 : 0;
 
-  if (caml_secure_getenv(T("OCAML_RUNTIME_EVENTS_START"))) {
+  value = caml_secure_getenv(T("OCAML_RUNTIME_EVENTS_START"));
+  if (value && *value != '\0') {
     runtime_events_create_from_stw_single();
     /* stw_single: mutators and domains have not started yet. */
   }
