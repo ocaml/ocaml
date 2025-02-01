@@ -290,15 +290,18 @@ void create_file_names(void)
 
 #ifdef _WIN32
     tmpdir = _wgetenv(L"TEMP");
-    if (tmpdir == 0) tmpdir = L".";
+    /* Ensure tmpdir is neither NULL nor zero-length */
+    if (tmpdir == 0 || *tmpdir == 0) tmpdir = L".";
 #else
     tmpdir = getenv("TMPDIR");
-    /* Write to /tmp instead of . if TMPDIR is "Set But Null" */
+    /* Write to /tmp instead of . if TMPDIR is "Set But Null" (also ensures
+       tmpdir is neither NULL nor zero-length */
     if (tmpdir == 0 || *tmpdir == 0) tmpdir = "/tmp";
 #endif
     len = strlen_os(tmpdir);
     i = len + sizeof(temp_form);
-    if (len && tmpdir[len-1] != dirsep)
+    /* Technically, tmpdir != NULL && *tmpdir != 0 - i.e. len > 0 */
+    if (tmpdir[len-1] != dirsep)
         ++i;
 
     action_file_name = MALLOC(i * sizeof(char_os));
@@ -312,7 +315,7 @@ void create_file_names(void)
     strcpy_os(entry_file_name, tmpdir);
     strcpy_os(text_file_name, tmpdir);
 
-    if (len && tmpdir[len - 1] != dirsep)
+    if (tmpdir[len - 1] != dirsep)
     {
         action_file_name[len] = dirsep;
         entry_file_name[len] = dirsep;
