@@ -18,6 +18,9 @@ Working version
   (Sadiq Jaffer, report by KC Sivaramakrishnan and Jan Midtgaard, review by
   Gabriel Scherer)
 
+- #13773: Ensure that shared pool owners are correctly set on pool adoption.
+  (Stephen Dolan, review by Sadiq Jaffer and Gabriel Scherer)
+
 * #11449, #13497: Add caml_stat_char_array_{to,of}_os functions allowing
   conversion of string data which may contain NUL characters. Correct
   implementation of caml_stat_strdup_to_utf16 to raise Out_of_memory instead of
