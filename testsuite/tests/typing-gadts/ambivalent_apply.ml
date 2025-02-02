@@ -40,3 +40,17 @@ let f (type a b) (w1 : (a, b -> b) eq) (w2 : (a, int -> int) eq) (g : a) : b =
 [%%expect{|
 val f : ('a, 'b -> 'b) eq -> ('a, int -> int) eq -> 'a -> 'b = <fun>
 |}]
+
+(* This should work. *)
+let f (type a b) (w : (a, int -> int) eq) (g : a) =
+   let Refl = w in g 3;;
+[%%expect{|
+val f : ('a, int -> int) eq -> 'a -> int = <fun>
+|}, Principal{|
+Line 2, characters 19-22:
+2 |    let Refl = w in g 3;;
+                       ^^^
+Error: This expression has type "int" but an expression was expected of type "'a"
+       This instance of "int" is ambiguous:
+       it would escape the scope of its equation
+|}]
