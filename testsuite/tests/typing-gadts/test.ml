@@ -1099,14 +1099,6 @@ Line 3, characters 2-26:
 Error: This expression has type "< bar : int; foo : int; .. >"
        but an expression was expected of type "'a"
        The type constructor "$1" would escape its scope
-|}, Principal{|
-Line 3, characters 2-26:
-3 |   (x:<foo:int;bar:int;..>)
-      ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "< bar : int; foo : int; .. >"
-       but an expression was expected of type "'a"
-       This instance of "$1" is ambiguous:
-       it would escape the scope of its equation
 |}];;
 
 let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) : t =
@@ -1123,14 +1115,6 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
 ;;
 [%%expect{|
 val g : 't -> 't int_foo -> 't int_bar -> 't * int * int = <fun>
-|}, Principal{|
-Line 3, characters 5-10:
-3 |   x, x#foo, x#bar
-         ^^^^^
-Error: The method call "x#foo" has type "int"
-       but an expression was expected of type "'a"
-       This instance of "int" is ambiguous:
-       it would escape the scope of its equation
 |}];;
 
 (* PR#5554 *)
