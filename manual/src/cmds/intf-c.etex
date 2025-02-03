@@ -153,8 +153,8 @@ CAMLprim value caml_int64_float_of_bits(value vi)
 macros for the type "value", that will be described later.  The "CAMLprim" macro
 expands to the required compiler directives to ensure that the
 function is exported and accessible from OCaml.)
-The hard work is performed by the function "caml_int64_float_of_bits_unboxed", which is
-declared as:
+The hard work is performed by the function "caml_int64_float_of_bits_unboxed",
+which is declared as:
 \begin{verbatim}
 double caml_int64_float_of_bits_unboxed(int64_t i)
 {
@@ -328,7 +328,8 @@ Using this mechanism, users of the library "mylib.cma" do not need to
 know that it references C code, nor whether this C code must be
 statically linked (using "-custom") or dynamically linked.
 
-\subsection{ss:c-static-vs-dynamic}{Choosing between static linking and dynamic linking}
+\subsection{ss:c-static-vs-dynamic}
+{Choosing between static linking and dynamic linking}
 
 After having described two different ways of linking C code with OCaml
 code, we now review the pros and cons of each, to help developers of
@@ -465,7 +466,8 @@ just by casting the pointer to type "value".  This usage is no longer
 supported since OCaml 5.0. There are now three canonical ways of
 manipulating such out-of-heap values.
 
-{\bf Copying to the OCaml heap:} The first correct way is to copy out-of-heap objects to the OCaml heap.
+{\bf Copying to the OCaml heap:} The first correct way is to copy out-of-heap
+objects to the OCaml heap.
 To do so safely, one must allocate a fresh block on the OCaml heap
 and tag this block using "Abstract_tag" or "Custom_tag", thereby
 indicating to the OCaml runtime that the bytes should
@@ -501,8 +503,9 @@ GC roots, preventing their collection during the execution of the function.
 Usage of these macros is further explained in Section~\ref{s:c-gc-harmony}.
 In addition, you may find conversion functions such as "typtr_of_val" defined
 in existing codebases without using "CAML*" macros. That is because two above
-functions do not strictly require the use of these macros, as they do not trigger
-the GC. However, it is good practice to use them anyway, since understanding
+functions do not strictly require the use of these macros,
+as they do not trigger the GC.
+However, it is good practice to use them anyway, since understanding
 when the GC is triggered can be subtle.
 
 {\bf Treating pointers as ``native'' integers: }
@@ -527,7 +530,8 @@ static ty * typtr_of_val(value v)
 
 {\bf Treating pointers as tagged integers: }
 For pointers that are \emph{at least 2-aligned} (the low bit is guaranteed to
-be zero), we can modify the low bit so that the OCaml runtime considers it an integer.
+be zero), we can modify the low bit so that the OCaml runtime considers it
+an integer.
 \begin{verbatim}
 /* Create an OCaml value encapsulating the pointer p */
 static value val_of_typtr(ty * p)
@@ -847,11 +851,11 @@ length \var{n} bytes. The sequence initially contains uninitialized bytes.
 (or string) value of length \var{n} bytes.  The value is initialized from the
 \var{n} bytes starting at address \var{p}.
 \item
-"caml_copy_string("\var{s}")" allocates and returns a string or byte sequence value
-containing a copy of the null-terminated C string \var{s} (a "char *").
+"caml_copy_string("\var{s}")" allocates and returns a string or byte sequence
+value containing a copy of the null-terminated C string \var{s} (a "char *").
 \item
-"caml_copy_double("\var{d}")" allocates and returns a floating-point value initialized
-with the "double" \var{d}.
+"caml_copy_double("\var{d}")" allocates and returns a floating-point value
+initialized with the "double" \var{d}.
 \item
 "caml_copy_int32("\var{i}")", "caml_copy_int64("\var{i}")" and
 "caml_copy_nativeint("\var{i}")" return a value of OCaml type "int32",
@@ -869,8 +873,8 @@ an array of floating-point numbers.)
 \item
 "caml_copy_string_array("\var{p}")" allocates an array of strings or byte
 sequences, copied from the pointer to a string array \var{p}
-(a "char **").  \var{p} must be a NULL-terminated array of pointers, each of which must
-   point to a null-terminated C string.
+(a "char **"). \var{p} must be a NULL-terminated array of pointers,
+each of which must point to a null-terminated C string.
 \item "caml_alloc_float_array("\var{n}")" allocates an array of floating point
   numbers of size \var{n}. The array initially contains uninitialized values.
 \item "caml_alloc_unboxed("\var{v}")" returns the value (of any unboxed
