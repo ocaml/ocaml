@@ -574,13 +574,13 @@ let history () =
       Config:@,%a@;<0 -2>\
        Main:@,%a@]%!"
       Pp.history Diagnostic.Metadata_versions.history
-      Pp.history Config_diagnostic.Versions.history
+      Pp.history Conf_diagnostic.Versions.history
       Pp.history V.history
     )
 
 
 let config_version =
-  Diagnostic_history.current_version Config_diagnostic.Versions.history
+  Diagnostic_history.current_version Conf_diagnostic.Versions.history
 
 
 let schemas compiler_version =
@@ -588,13 +588,13 @@ let schemas compiler_version =
   |> Defs.add_refs
     (Some Defs.metadata_version)
     (Record Diagnostic.Metadata.scheme)
-  |> Defs.add_refs (Some config_version) (Record Config_diagnostic.scheme)
+  |> Defs.add_refs (Some config_version) (Record Conf_diagnostic.scheme)
   |> Defs.add_refs (Some compiler_version) (Record Compiler_diagnostic.scheme)
   |> Defs.add_refs (Some compiler_version) (Record Toplevel_diagnostic.scheme)
 
 let roots =
   String_set.of_list Diagnostic.[
-    scheme_name Config_diagnostic.scheme;
+    scheme_name Conf_diagnostic.scheme;
     scheme_name Compiler_diagnostic.scheme;
     scheme_name Toplevel_diagnostic.scheme;
   ]

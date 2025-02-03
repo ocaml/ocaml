@@ -1910,7 +1910,7 @@ module Default = struct
     let _ccopt s = Compenv.first_ccopts := (s :: (!Compenv.first_ccopts))
     let _cmi_file s = cmi_file := (Some s)
     let _config = Clflags.show_config_and_exit
-    let _config_var = Config_diagnostic.show_variable_and_exit
+    let _config_var = Conf_diagnostic.show_variable_and_exit
     let _dprofile () = profile_columns := Profile.all_columns
     let _dtimings () = profile_columns := [`Time]
     let _dump_into_file () = dump_into_file := true
