@@ -317,6 +317,7 @@ let decl_of_type_constr tconstr =
       cd_id = id;
       cd_args = Cstr_tuple args;
       cd_res = None;
+      cd_generative = Nongenerative;
       cd_loc = Location.none;
       cd_attributes = [];
       cd_uid = Uid.of_predef_id id;

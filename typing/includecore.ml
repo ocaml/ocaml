@@ -173,6 +173,7 @@ type constructor_mismatch =
   | Inline_record of record_change list
   | Kind of position
   | Explicit_return_type of position
+  | Generativity of position
 
 type extension_constructor_mismatch =
   | Constructor_privacy
@@ -348,6 +349,10 @@ let report_constructor_mismatch first second decl env ppf err =
         (choose_other ord first second)
   | Explicit_return_type ord ->
       pr "%s has explicit return type and %s doesn't."
+        (String.capitalize_ascii (choose ord first second))
+        (choose_other ord first second)
+  | Generativity ord ->
+      pr "%s is generative and %s isn't."
         (String.capitalize_ascii (choose ord first second))
         (choose_other ord first second)
 
@@ -678,6 +683,23 @@ module Variant_diffing = struct
     | None, Some _ -> Some (Explicit_return_type Second)
     | None, None ->
         compare_constructor_arguments ~loc env params1 params2 args1 args2
+  let compare_constructors ~loc env
+    params1 params2
+    res1 res2
+    args1 args2
+    generative1 generative2
+  =
+    match generative1, generative2 with
+    | Generative, Nongenerative ->
+        Some (Generativity First)
+    | Nongenerative, Generative ->
+        Some (Generativity Second)
+    | Generative, Generative
+    | Nongenerative, Nongenerative ->
+        compare_constructors ~loc env
+          params1 params2
+          res1 res2
+          args1 args2
 
   let equal ~loc env params1 params2
       (cstrs1 : Types.constructor_declaration list)
@@ -695,8 +717,13 @@ module Variant_diffing = struct
             cd1.cd_attributes cd2.cd_attributes
             (Ident.name cd1.cd_id)
           ;
-        match compare_constructors ~loc env params1 params2
-                cd1.cd_res cd2.cd_res cd1.cd_args cd2.cd_args with
+        match
+          compare_constructors ~loc env
+            params1 params2
+            cd1.cd_res cd2.cd_res
+            cd1.cd_args cd2.cd_args
+            cd1.cd_generative cd2.cd_generative
+        with
         | Some _ -> false
         | None -> true
       end) cstrs1 cstrs2
@@ -725,16 +752,26 @@ module Variant_diffing = struct
     let name1, name2 = Ident.name cd1.cd_id, Ident.name cd2.cd_id in
     if  name1 <> name2 then
       let types_match =
-        match compare_constructors ~loc env params1 params2
-                cd1.cd_res cd2.cd_res cd1.cd_args cd2.cd_args with
+        match
+          compare_constructors ~loc env
+            params1 params2
+            cd1.cd_res cd2.cd_res
+            cd1.cd_args cd2.cd_args
+            cd1.cd_generative cd2.cd_generative
+        with
         | Some _ -> false
         | None -> true
       in
       Error
         (Diffing_with_keys.Name {types_match; pos; got=name1; expected=name2})
     else
-      match compare_constructors ~loc env params1 params2
-              cd1.cd_res cd2.cd_res cd1.cd_args cd2.cd_args with
+      match
+        compare_constructors ~loc env
+          params1 params2
+          cd1.cd_res cd2.cd_res
+          cd1.cd_args cd2.cd_args
+          cd1.cd_generative cd2.cd_generative
+      with
       | Some reason ->
           Error (Diffing_with_keys.Type {pos; got=cd1; expected=cd2; reason})
       | None -> Ok ()
@@ -1107,6 +1144,7 @@ let extension_constructors ~loc env ~mark id ext1 ext2 =
         ext1.ext_type_params ext2.ext_type_params
         ext1.ext_ret_type ext2.ext_ret_type
         ext1.ext_args ext2.ext_args
+        Nongenerative Nongenerative
     in
     match r with
     | Some r -> Some (Constructor_mismatch (id, ext1, ext2, r))

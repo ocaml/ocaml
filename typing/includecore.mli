@@ -70,6 +70,7 @@ type constructor_mismatch =
   | Inline_record of record_change list
   | Kind of position
   | Explicit_return_type of position
+  | Generativity of position
 
 type extension_constructor_mismatch =
   | Constructor_privacy

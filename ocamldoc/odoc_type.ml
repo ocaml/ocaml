@@ -36,6 +36,7 @@ type variant_constructor = {
     vc_name : string ;
     vc_args : constructor_args ;
     vc_ret : Types.type_expr option ;
+    vc_generative : Asttypes.generative_flag;
     mutable vc_text : Odoc_types.info option ; (** optional user description *)
   }
 

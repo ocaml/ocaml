@@ -1027,7 +1027,7 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
         let cl = List.map extract_constant ll in
         match repres with
         | Record_regular -> Lconst(Const_block(0, cl))
-        | Record_inlined tag -> Lconst(Const_block(tag, cl))
+        | Record_inlined (tag, _) -> Lconst(Const_block(tag, cl))
         | Record_unboxed _ -> Lconst(match cl with [v] -> v | _ -> assert false)
         | Record_float ->
             Lconst(Const_float_array(List.map extract_float cl))
@@ -1038,7 +1038,7 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
         match repres with
           Record_regular ->
             Lprim(Pmakeblock(0, mut, Some shape), ll, loc)
-        | Record_inlined tag ->
+        | Record_inlined (tag, _) ->
             Lprim(Pmakeblock(tag, mut, Some shape), ll, loc)
         | Record_unboxed _ -> (match ll with [v] -> v | _ -> assert false)
         | Record_float ->

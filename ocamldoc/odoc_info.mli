@@ -275,6 +275,7 @@ module Type :
           vc_name : string ; (** Name of the constructor. *)
           vc_args : constructor_args;
           vc_ret : Types.type_expr option ;
+          vc_generative : Asttypes.generative_flag;
           mutable vc_text : info option ; (** Optional description in the associated comment. *)
         }
 

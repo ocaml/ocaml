@@ -589,6 +589,7 @@ and constructor_declaration =
      cd_vars: string loc list;
      cd_args: constructor_arguments;
      cd_res: core_type option;
+     cd_generative: generative_flag;
      cd_loc: Location.t;
      cd_attributes: attribute list;
     }
