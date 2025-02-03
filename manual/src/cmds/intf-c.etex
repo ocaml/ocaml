@@ -481,7 +481,7 @@ gives a more complete example using "Custom_tag" blocks.
 /* Create an OCaml value encapsulating the pointer p */
 static value val_of_typtr(ty * p)
 {
-  CAMLParam0();
+  CAMLparam0();
   CAMLlocal1(v);
   v = caml_alloc(1, Abstract_tag);
   // Data_abstract_val provides a pointer to the data area of the block
@@ -499,7 +499,7 @@ static ty * typtr_of_val(value v)
 Note: the "CAML*" macros are used to register and unregister local values as
 GC roots, preventing their collection during the execution of the function.
 Usage of these macros is further explained in Section~\ref{s:c-gc-harmony}.
-In addition, you may find conversation functions such as "typtr_of_val" defined
+In addition, you may find conversion functions such as "typtr_of_val" defined
 in existing codebases without using "CAML*" macros. That is because two above
 functions do not strictly require the use of these macros, as they do not trigger
 the GC. However, it is good practice to use them anyway, since understanding
@@ -521,7 +521,7 @@ static value val_of_typtr(ty * p)
 static ty * typtr_of_val(value v)
 {
   CAMLparam1(v);
-  CAMLParamT(ty *, (ty *) Nativeint_val(v))
+  CAMLreturnT(ty *, (ty *) Nativeint_val(v))
 }
 \end{verbatim}
 
