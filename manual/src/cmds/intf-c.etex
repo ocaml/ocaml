@@ -471,7 +471,7 @@ and tag this block using "Abstract_tag" or "Custom_tag", thereby
 indicating to the OCaml runtime that the bytes should
 not be interpreted in a standard way. "Abstract_tag" makes the block
 entirely opaque to the runtime, while blocks tagged with "Custom_tag"
-must provide additional operations that can be used by the runtime to,
+can provide additional operations that can be used by the runtime to,
 for instance, compare, hash, or serialize the block.
 
 Here is an example of encapsulation of out-of-heap pointers of C type
