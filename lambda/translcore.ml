@@ -302,18 +302,28 @@ and transl_exp0 ~in_new_scope ~scopes e =
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->
-          begin try
-            Lconst(Const_block(n, List.map extract_constant ll))
-          with Not_constant ->
-            Lprim(Pmakeblock(n, Immutable, Some shape), ll,
+          if cstr.cstr_generative = Generative then
+            Lprim(Pmakeblock(n, Mutable, Some shape), ll,
                   of_location ~scopes e.exp_loc)
-          end
+          else
+            begin try
+              Lconst(Const_block(n, List.map extract_constant ll))
+            with Not_constant ->
+              Lprim(Pmakeblock(n, Immutable, Some shape), ll,
+                    of_location ~scopes e.exp_loc)
+            end
       | Cstr_extension(path, is_const) ->
           let lam = transl_extension_path
                       (of_location ~scopes e.exp_loc) e.exp_env path in
           if is_const then lam
           else
-            Lprim(Pmakeblock(0, Immutable, Some (Pgenval :: shape)),
+            let mut =
+              if cstr.cstr_generative = Generative then
+                Mutable
+              else
+                Immutable
+            in
+            Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape)),
                   lam :: ll, of_location ~scopes e.exp_loc)
       end
   | Texp_extension_constructor (_, path) ->
@@ -1018,9 +1028,15 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
     in
     let ll, shape = List.split (Array.to_list lv) in
     let mut =
-      if Array.exists (fun (lbl, _) -> lbl.lbl_mut = Mutable) fields
-      then Mutable
-      else Immutable in
+      if Array.exists (fun (lbl, _) -> lbl.lbl_mut = Mutable) fields then
+        Mutable
+      else
+        match repres with
+        | Record_inlined (_, Generative) ->
+            Mutable
+        | _ ->
+            Immutable
+    in
     let lam =
       try
         if mut = Mutable then raise Not_constant;
