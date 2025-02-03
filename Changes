@@ -15,7 +15,8 @@ Working version
 ### Runtime system:
 
 - #13774: Fix for inaccurate live blocks/words stats in compaction.
-  (Sadiq Jaffer, review by ?)
+  (Sadiq Jaffer, report by KC Sivaramakrishnan and Jan Midtgaard, review by
+  Gabriel Scherer)
 
 * #11449, #13497: Add caml_stat_char_array_{to,of}_os functions allowing
   conversion of string data which may contain NUL characters. Correct
