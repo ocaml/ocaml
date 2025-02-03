@@ -14,6 +14,9 @@ Working version
 
 ### Runtime system:
 
+- #13774: Fix for inaccurate live blocks/words stats in compaction.
+  (Sadiq Jaffer, review by ?)
+
 * #11449, #13497: Add caml_stat_char_array_{to,of}_os functions allowing
   conversion of string data which may contain NUL characters. Correct
   implementation of caml_stat_strdup_to_utf16 to raise Out_of_memory instead of
