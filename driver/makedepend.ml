@@ -594,6 +594,9 @@ let run_main argv =
         "<f>  Process <f> as a .ml file";
       "-intf", Arg.String (add_dep_arg (fun f -> Src (f, Some MLI))),
         "<f>  Process <f> as a .mli file";
+      "-keywords", Arg.String (fun s -> Clflags.keyword_edition := Some s ),
+      "<version+list>  set keywords following the <version+list> spec \
+       (see ocamlc)";
       "-map", Arg.String (add_dep_arg (fun f -> Map f)),
         "<f>  Read <f> and propagate delayed dependencies to following files";
       "-ml-synonym", Arg.String(add_to_synonym_list ml_synonyms),

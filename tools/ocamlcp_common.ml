@@ -106,6 +106,11 @@ module Make(T: OCAMLCP) = struct
       cannot_deal_with "-intf" ".ml files";
     if !with_impl then rev_profargs := "-impl" :: !rev_profargs;
     if !with_intf then rev_profargs := "-intf" :: !rev_profargs;
+    begin match !Clflags.keyword_edition with
+    | None -> ()
+    | Some k ->
+       rev_profargs := ("-keywords " ^ k) :: !rev_profargs
+    end;
     let status =
       let profiling_object =
         if T.bytecode then "profiling.cmo" else "profiling.cmx" in
