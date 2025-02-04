@@ -524,6 +524,7 @@ extern double caml_log1p(double);
 #define strlen_os wcslen
 #define sscanf_os swscanf
 #define strcpy_os wcscpy
+#define strdup_os wcsdup
 #define mktemp_os _wmktemp
 #define fopen_os _wfopen
 
@@ -569,6 +570,7 @@ extern double caml_log1p(double);
 #define strlen_os strlen
 #define sscanf_os sscanf
 #define strcpy_os strcpy
+#define strdup_os strdup
 #define mktemp_os mktemp
 #define fopen_os fopen
 

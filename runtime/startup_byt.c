@@ -475,8 +475,9 @@ CAMLexport void caml_main(char_os **argv)
      caml_executable_ocamlrunparam into account, but for tendered bytecode
      images (or for explicit invocation as ocamlrun ./foo.byte) the ORUN section
      has not yet been read. The only relevant setting between here and ORUN
-     being read is c=1 (pooling), which is prohibited by the bytecode linker
-     from appearing in an ORUN section. */
+     being read is c=1 (pooling). If ORUN includes c=1 and OCAMLRUNPARAM does
+     not include c=0, then a brief memory dance is done to re-initialise the
+     runtime in pooling mode. */
   caml_parse_ocamlrunparam();
 
   if (!caml_startup_aux(/* pooling */ caml_params->cleanup_on_exit))
@@ -644,20 +645,70 @@ CAMLexport void caml_main(char_os **argv)
   /* If caml_executable_ocamlrunparam was set, don't also process ORUN */
   if (!caml_executable_ocamlrunparam) {
     /* Load the embedded runtime parameters */
-    caml_executable_ocamlrunparam = read_section_to_os(fd, &trail, "ORUN");
-
+    char_os *orun = read_section_to_os(fd, &trail, "ORUN");
     /* Re-parse options, taking these defaults into account (see note when
        caml_parse-ocamlrunparam was previously called in this function) */
-    if (caml_executable_ocamlrunparam)
+    if (orun != NULL) {
+      int pooling = caml_params->cleanup_on_exit;
+      caml_executable_ocamlrunparam = orun;
       caml_parse_ocamlrunparam();
 
-    /* caml_parse_ocamlrunparam resets the params fields: re-apply the three
-       which are affected by command-line parsing. */
-    params->trace_level += trace_level;
-    if (backtrace_enabled)
-      params->backtrace_enabled = 1;
-    if (event_trace)
-      params->event_trace = 1;
+      /* caml_parse_ocamlrunparam resets the params fields: re-apply the three
+         which are affected by command-line parsing. */
+      params->trace_level += trace_level;
+      if (backtrace_enabled)
+        params->backtrace_enabled = 1;
+      if (event_trace)
+        params->event_trace = 1;
+
+      /* c=1 was specified in ORUN, but c not included in OCAMLRUNPARAM */
+      if (caml_params->cleanup_on_exit && !pooling) {
+        /* In order to re-start with pooling, everything which has been
+           allocated with caml_stat_alloc (i.e. malloc) must be passed to
+           caml_stat_free (i.e. free) and then reallocated */
+        char_os *old_proc_self_exe = NULL;
+        char_os *old_exe_name = strdup_os(exe_name);
+        if (proc_self_exe)
+          old_proc_self_exe = strdup_os(proc_self_exe);
+        int search_path_size = caml_shared_libs_path.size;
+        char_os **search_path =
+          (char_os **)malloc(sizeof(char_os *) * search_path_size);
+        if (search_path)
+          memcpy(search_path, caml_shared_libs_path.contents,
+                 sizeof(char_os *) * search_path_size);
+        else
+          search_path_size = 0;
+
+        /* caml_stat_free everything which is currently allocated */
+        caml_stat_free(orun);
+        caml_stat_free(proc_self_exe);
+        caml_stat_free(exe_name);
+        caml_stat_free(trail.section);
+        caml_ext_table_free(&caml_shared_libs_path, 0);
+
+        /* Enable pooling */
+        caml_stat_create_pool();
+
+        /* Re-initialise state with pooled memory */
+        if (old_proc_self_exe) {
+          proc_self_exe = caml_stat_strdup_os(old_proc_self_exe);
+          free(old_proc_self_exe);
+        }
+        exe_name = caml_stat_strdup_os(old_exe_name);
+        free(old_exe_name);
+
+        /* Re-read the table of contents (section descriptors) */
+        caml_read_section_descriptors(fd, &trail);
+        caml_executable_ocamlrunparam = read_section_to_os(fd, &trail, "ORUN");
+
+        /* Re-initialise caml_shared_libs_path */
+        caml_ext_table_init(&caml_shared_libs_path, 8);
+        for (int i = 0; i < search_path_size; i++) {
+          caml_ext_table_add(&caml_shared_libs_path, search_path[i]);
+        }
+        free(search_path);
+      }
+    }
   }
 
   caml_runtime_standard_library_effective =

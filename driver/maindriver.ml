@@ -103,10 +103,6 @@ let main argv ppf =
         else
           Compenv.default_output !output_name
       in
-      if not !Clflags.custom_runtime && not !Clflags.output_c_object
-         && Hashtbl.find_opt Clflags.runtime_parameters "c" = Some "1" then
-        Compenv.fatal "Runtime parameter 'c' cannot be set for bytecode \
-                       executables unless compiled with -custom or -output-*";
       Compmisc.init_path ();
       Bytelink.link (Compenv.get_objfiles ~with_ocamlparam:true) target;
       Warnings.check_fatal ();
