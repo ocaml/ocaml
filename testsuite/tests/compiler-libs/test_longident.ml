@@ -9,9 +9,8 @@ let mknoloc = Location.mknoloc
 let lident l = mknoloc (L.Lident l)
 
 let () =
-  let log = Log.tmp Toplevel_diagnostic.scheme in
-  Topdirs.dir_install_printer log
-   (L.parse "Location.print_loc")
+  Topdirs.dir_install_printer Format.err_formatter
+    (L.parse "Location.print_loc")
 
 [%%expect {|
 module L = Longident

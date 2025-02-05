@@ -204,7 +204,7 @@ module Toplevel = struct
   let exec (_,ppf) p =
     let log = Topcommon.log_on_device (Log.Device.make (ref ppf)) in
     try
-      ignore @@ Toploop.execute_phrase true log p
+      ignore @@ Toploop.V2.execute_phrase true log p
     with exn ->
       report_exception (snd error_fmt) exn
     ;

@@ -15,17 +15,25 @@
 
 (* The toplevel directives. *)
 
-type 'a directive = Toplevel_diagnostic.id Log.t -> 'a -> unit
+val dir_quit : unit -> unit
+val dir_directory : string -> unit
+val dir_remove_directory : string -> unit
+val dir_cd : string -> unit
 
-val dir_quit : unit directive
-val dir_directory : string directive
-val dir_remove_directory : string directive
-val dir_cd : string directive
-val dir_load : string directive
-val dir_use : string directive
-val dir_use_output : string directive
-val dir_install_printer : Longident.t directive
-val dir_remove_printer : Longident.t directive
+module V2: sig
+  val dir_load : Toplevel_diagnostic.id Log.t -> string -> unit
+  val dir_use : Toplevel_diagnostic.id Log.t -> string -> unit
+  val dir_use_output : Toplevel_diagnostic.id Log.t -> string -> unit
+  val dir_install_printer : Toplevel_diagnostic.id Log.t -> Longident.t -> unit
+  val dir_remove_printer : Toplevel_diagnostic.id Log.t -> Longident.t -> unit
+end
+val dir_load : Format.formatter -> string -> unit
+val dir_use : Format.formatter -> string -> unit
+val dir_use_output : Format.formatter -> string -> unit
+val dir_install_printer : Format.formatter -> Longident.t -> unit
+val dir_remove_printer : Format.formatter -> Longident.t -> unit
+
+
 
 (* These are now injected from [Topeval], for the bytecode toplevel only:
 val dir_trace : formatter -> Longident.t -> unit
@@ -44,4 +52,4 @@ val section_options : string
 val section_undocumented : string
 
 (* Here for backwards compatibility, use [Toploop.load_file]. *)
-val[@deprecated] load_file : Toplevel_diagnostic.id Log.t -> string -> bool
+val[@deprecated] load_file :  Toplevel_diagnostic.id Log.t -> string -> bool

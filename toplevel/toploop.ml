@@ -16,8 +16,6 @@
 include Topcommon
 include Topeval
 
-type log = Toplevel_diagnostic.id Log.t
-
 type input =
   | Stdin
   | File of string
@@ -457,3 +455,79 @@ let prepare log ?input () =
         "Uncaught exception: %s"
         (Printexc.to_string x);
       false
+
+
+(** External api *)
+module type S = sig
+  type log
+  type debug_log
+
+  val prepare : log -> ?input:input -> unit -> bool
+  (** Setup the load paths and initial toplevel environment and load compilation
+      units in {!preload_objects}. *)
+
+  val loop : log -> unit
+
+  (* Read and execute a script from the given file *)
+  val run_script : log -> input -> string array -> bool
+  (* true if successful, false if error *)
+
+  val execute_phrase : bool -> log -> Parsetree.toplevel_phrase -> bool
+  (* Execute the given toplevel phrase. Return [true] if the
+     phrase executed with no errors and [false] otherwise.
+     First bool says whether the values and types of the results
+     should be printed. Uncaught exceptions are always printed. *)
+
+  val preprocess_phrase :
+    debug_log -> Parsetree.toplevel_phrase -> Parsetree.toplevel_phrase
+  (* Preprocess the given toplevel phrase using regular and ppx
+     preprocessors. Return the updated phrase. *)
+
+  val use_input : log -> input -> bool
+  val use_output : log -> string -> bool
+  val use_silently : log -> input -> bool
+  val mod_use_input : log -> input -> bool
+  val use_file : log -> string -> bool
+  (* Read and execute commands from a file.
+     [use_input] prints the types and values of the results.
+     [use_silently] does not print them.
+     [mod_use_input] wrap the file contents into a module. *)
+
+  val load_file: log -> string -> bool
+end
+
+module V2 = struct
+  let prepare = prepare
+  let loop = loop
+  let run_script = run_script
+  let execute_phrase = execute_phrase
+  let preprocess_phrase = preprocess_phrase
+  let use_input = use_input
+  let use_output = use_output
+  let use_silently = use_silently
+  let mod_use_input = mod_use_input
+  let use_file = use_file
+  let load_file = load_file
+end
+
+let with_log ppf f =
+  let dev = Log.Device.make (ref ppf) in
+  let log = Topcommon.log_on_device dev in
+  Fun.protect ~finally:(fun () -> Log.flush log) (fun () -> f log ())
+
+let with_log1 f ppf x = with_log ppf (fun log () -> f log x)
+
+let prepare ppf ?input x = with_log ppf (fun log () -> V2.prepare log ?input x)
+let loop ppf = with_log ppf V2.loop
+let run_script ppf i s = with_log ppf (fun log () -> V2.run_script log i s)
+let execute_phrase p = with_log1 (V2.execute_phrase p)
+let preprocess_phrase ppf phrase =
+  with_log ppf (fun log () ->
+      V2.preprocess_phrase (Topcommon.debug_log log) phrase
+    )
+let use_input = with_log1 V2.use_input
+let use_output = with_log1 V2.use_output
+let use_silently = with_log1 V2.use_silently
+let mod_use_input = with_log1 V2.mod_use_input
+let use_file = with_log1 V2.use_file
+let load_file = with_log1 V2.load_file
