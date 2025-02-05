@@ -66,6 +66,7 @@
       "cmo_magic_number" : { "type" : "string"},
       "cmi_magic_number" : { "type" : "string"},
       "exec_magic_number" : { "type" : "string"},
+      "reserved_header_bits" : { "type" : "integer"},
       "with_codegen_invariants" : { "type" : "boolean"},
       "naked_pointers" : { "type" : "boolean"},
       "native_dynlink" : { "type" : "boolean"},
@@ -80,6 +81,8 @@
       "default_safe_string" : { "type" : "boolean"},
       "safe_string" : { "type" : "boolean"},
       "flambda" : { "type" : "boolean"},
+      "native_runtime_id" : { "type" : "string"},
+      "bytecode_runtime_id" : { "type" : "string"},
       "target" : { "type" : "string"},
       "host" : { "type" : "string"},
       "systhread_supported" : { "type" : "boolean"},
@@ -117,6 +120,8 @@
       "c_compiler" : { "type" : "string"},
       "ccomp_type" : { "type" : "string"},
       "standard_library" : { "type" : "string"},
+      "standard_library_relative" :
+        { "type" : "array", "items" : { "type" : "string"}},
       "standard_library_default" : { "type" : "string"},
       "version" : { "type" : "string"}
     },
@@ -125,10 +130,11 @@
       "cmxs_magic_number", "ast_intf_magic_number", "ast_impl_magic_number",
       "cmxa_magic_number", "cmx_magic_number", "cma_magic_number",
       "cmo_magic_number", "cmi_magic_number", "exec_magic_number",
-      "with_codegen_invariants", "naked_pointers", "native_dynlink",
-      "supports_shared_libraries", "windows_unicode", "tsan",
-      "afl_instrument", "function_sections", "align_int64", "align_double",
-      "flat_float_array", "default_safe_string", "safe_string", "flambda",
+      "reserved_header_bits", "with_codegen_invariants", "naked_pointers",
+      "native_dynlink", "supports_shared_libraries", "windows_unicode",
+      "tsan", "afl_instrument", "function_sections", "align_int64",
+      "align_double", "flat_float_array", "default_safe_string",
+      "safe_string", "flambda", "native_runtime_id", "bytecode_runtime_id",
       "target", "host", "systhread_supported", "default_executable_name",
       "os_type", "ext_dll", "ext_lib", "ext_asm", "ext_obj", "ext_exe",
       "with_frame_pointers", "asm_cfi_supported", "asm", "system",
@@ -138,6 +144,6 @@
       "bytecomp_c_compiler", "ocamlopt_cppflags", "native_cppflags",
       "ocamlopt_cflags", "native_cflags", "ocamlc_cppflags",
       "bytecode_cppflags", "ocamlc_cflags", "bytecode_cflags", "c_compiler",
-      "ccomp_type", "standard_library", "standard_library_default",
-      "version"]
+      "ccomp_type", "standard_library", "standard_library_relative",
+      "standard_library_default", "version"]
 }
