@@ -7829,6 +7829,7 @@ toplevel/topdirs.cmo : \
     toplevel/toploop.cmi \
     toplevel/toplevel_diagnostic.cmi \
     toplevel/topeval.cmi \
+    toplevel/topcommon.cmi \
     typing/printtyp.cmi \
     typing/predef.cmi \
     typing/path.cmi \
@@ -7859,6 +7860,7 @@ toplevel/topdirs.cmx : \
     toplevel/toploop.cmx \
     toplevel/toplevel_diagnostic.cmx \
     toplevel/topeval.cmi \
+    toplevel/topcommon.cmx \
     typing/printtyp.cmx \
     typing/predef.cmx \
     typing/path.cmx \
@@ -7912,6 +7914,7 @@ toplevel/toploop.cmo : \
     toplevel/toplevel_diagnostic.cmi \
     toplevel/topeval.cmi \
     toplevel/topcommon.cmi \
+    parsing/parsetree.cmi \
     utils/misc.cmi \
     utils/log.cmi \
     parsing/location.cmi \
@@ -7931,6 +7934,7 @@ toplevel/toploop.cmx : \
     toplevel/toplevel_diagnostic.cmx \
     toplevel/topeval.cmi \
     toplevel/topcommon.cmx \
+    parsing/parsetree.cmi \
     utils/misc.cmx \
     utils/log.cmx \
     parsing/location.cmx \
@@ -8090,7 +8094,6 @@ toplevel/byte/topmain.cmo : \
     typing/types.cmi \
     toplevel/byte/trace.cmi \
     toplevel/toploop.cmi \
-    toplevel/toplevel_diagnostic.cmi \
     toplevel/topdirs.cmi \
     toplevel/topcommon.cmi \
     typing/printtyp.cmi \
@@ -8109,7 +8112,6 @@ toplevel/byte/topmain.cmx : \
     typing/types.cmx \
     toplevel/byte/trace.cmx \
     toplevel/toploop.cmx \
-    toplevel/toplevel_diagnostic.cmx \
     toplevel/topdirs.cmx \
     toplevel/topcommon.cmx \
     typing/printtyp.cmx \

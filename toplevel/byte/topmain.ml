@@ -27,15 +27,15 @@ let tracing_function_ptr =
 let quoted_longident = Misc.Style.as_inline_code Printtyp.Doc.longident
 let quoted_path = Misc.Style.as_inline_code Printtyp.Doc.path
 
-let dir_trace log lid =
+let dir_trace lid =
   match Env.find_value_by_name lid !Topcommon.toplevel_env with
   | (path, desc) -> begin
       (* Check if this is a primitive *)
       match desc.val_kind with
       | Val_prim _ ->
-          Log.itemd Toplevel_diagnostic.errors log
+          Topcommon.errorf
             "%a is an external function and cannot be traced."
-          quoted_longident lid
+            quoted_longident lid
       | _ ->
           let clos = Toploop.eval_value_path !Topcommon.toplevel_env path in
           (* Nothing to do if it's not a closure *)
@@ -48,10 +48,10 @@ let dir_trace log lid =
           then begin
           match is_traced clos with
           | Some opath ->
-              Log.itemd Toplevel_diagnostic.trace log
+              Topcommon.tracef
                 "%a is already traced (under the name %a)."
-              quoted_path path
-              quoted_path opath
+                quoted_path path
+                quoted_path opath
           | None ->
               (* Instrument the old closure *)
               traced_functions :=
@@ -60,46 +60,46 @@ let dir_trace log lid =
                   actual_code = get_code_pointer clos;
                   instrumented_fun =
                     instrument_closure
-                      !Topcommon.toplevel_env lid log desc.val_type }
+                      !Topcommon.toplevel_env lid !Topcommon.directive_log
+                      desc.val_type }
                 :: !traced_functions;
               (* Redirect the code field of the closure to point
                  to the instrumentation function *)
               set_code_pointer clos tracing_function_ptr;
-               Log.itemd Toplevel_diagnostic.trace log "%a is now traced."
+               Topcommon.tracef "%a is now traced."
                  quoted_longident lid
           end else
-             Log.itemd Toplevel_diagnostic.trace log "%a is not a function."
+             Topcommon.tracef "%a is not a function."
                quoted_longident lid
     end
   | exception Not_found ->
-       Log.itemd Toplevel_diagnostic.trace log "Unbound value %a."
+        Topcommon.tracef "Unbound value %a."
          quoted_longident lid
 
-let dir_untrace log lid =
+let dir_untrace lid =
   match Env.find_value_by_name lid !Topcommon.toplevel_env with
   | (path, _desc) ->
       let rec remove = function
       | [] ->
-          Log.itemd Toplevel_diagnostic.trace log "%a was not traced."
+          Topcommon.tracef "%a was not traced."
             quoted_longident lid;
           []
       | f :: rem ->
           if Path.same f.path path then begin
             set_code_pointer f.closure f.actual_code;
-            Log.itemd Toplevel_diagnostic.trace log "%a is no longer traced."
+            Topcommon.tracef "%a is no longer traced."
               quoted_longident lid;
             rem
           end else f :: remove rem in
       traced_functions := remove !traced_functions
   | exception Not_found ->
-      Log.itemd Toplevel_diagnostic.trace log "Unbound value %a."
-        quoted_longident lid
+      Topcommon.errorf "Unbound value %a." quoted_longident lid
 
-let dir_untrace_all log () =
+let dir_untrace_all () =
   List.iter
     (fun f ->
       set_code_pointer f.closure f.actual_code;
-      Log.itemd Toplevel_diagnostic.trace log
+      Topcommon.tracef
         "%a is no longer traced." quoted_path f.path
     )
     !traced_functions;
@@ -172,8 +172,8 @@ let input_argument name =
       in
       Compenv.readenv clog Before_link;
       Compmisc.read_clflags_from_env ();
-      if Toploop.prepare log ~input:name () &&
-         Toploop.run_script log name newargs
+      if Toploop.V2.prepare log ~input:name () &&
+         Toploop.V2.run_script log name newargs
       then raise (Compenv.Exit_with_status 0)
       else raise (Compenv.Exit_with_status 2)
     end
@@ -213,9 +213,9 @@ let main () =
   let tlog = Location.log_on_device ~prev:log setup_dev in
   Log.flush tlog;
   let log = Topcommon.log_on_device Log.Device.std in
-  if not (Toploop.prepare log ()) then raise (Compenv.Exit_with_status 2);
+  if not (Toploop.V2.prepare log ()) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();
-  Toploop.loop log
+  Toploop.V2.loop log
 
 let main () =
   match main () with

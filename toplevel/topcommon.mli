@@ -60,6 +60,10 @@ val record_backtrace : unit -> unit
 
 (*Log creation *)
 
+val directive_log: Toplevel_diagnostic.id Log.t ref
+val errorf: ('a, Format_doc.formatter, unit) format -> 'a
+val tracef: ('a, Format_doc.formatter, unit) format -> 'a
+
 val log_on_device: Log.Device.t -> Toplevel_diagnostic.id Log.t
 val compiler_log: Toplevel_diagnostic.id Log.t -> Compiler_diagnostic.id Log.t
 val debug_log:
@@ -126,7 +130,7 @@ end
 
 (* Interface with toplevel directives *)
 
-type 'a directive = Toplevel_diagnostic.id Log.t -> 'a -> unit
+type 'a directive = 'a -> unit
 
 type directive_fun =
   | Directive_none of unit directive
@@ -151,8 +155,8 @@ val get_directive_info : string -> directive_info option
 val all_directive_names : unit -> string list
 
 val try_run_directive :
-  Toplevel_diagnostic.id Log.t -> string ->
-  Parsetree.directive_argument option -> bool
+   Toplevel_diagnostic.id Log.t -> string ->
+   Parsetree.directive_argument option -> bool
 
 val[@deprecated] directive_table : (string, directive_fun) Hashtbl.t
   (* @deprecated please use [add_directive] instead of inserting
@@ -168,6 +172,7 @@ val parse_toplevel_phrase : (Lexing.lexbuf -> Parsetree.toplevel_phrase) ref
 val parse_use_file : (Lexing.lexbuf -> Parsetree.toplevel_phrase list) ref
 val print_location : formatter -> Location.t -> unit
 val print_error : formatter -> Location.error -> unit
+val print_warning : Location.t -> Warnings.t -> unit
 val log_warning :
   Location.t -> Compiler_diagnostic.id Log.t -> Warnings.t -> unit
 val input_name : string ref

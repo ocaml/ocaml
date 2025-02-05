@@ -20,6 +20,7 @@ Config:
       Declaration
       New label version, s
       New label standard_library_default, s
+      New label standard_library_relative, l s
       New label standard_library, s
       New label ccomp_type, s
       New label c_compiler, s
@@ -57,6 +58,8 @@ Config:
       New label systhread_supported, b
       New label host, s
       New label target, s
+      New label bytecode_runtime_id, s
+      New label native_runtime_id, s
       New label flambda, b
       New label safe_string, b
       New label default_safe_string, b
@@ -71,6 +74,7 @@ Config:
       New label native_dynlink, b
       New label naked_pointers, b
       New label with_codegen_invariants, b
+      New label reserved_header_bits, i
       New label exec_magic_number, s
       New label cmi_magic_number, s
       New label cmo_magic_number, s
