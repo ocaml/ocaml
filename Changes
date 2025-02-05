@@ -194,6 +194,9 @@ Working version
   (Tim McGilchrist and Sebastien Hinderer, review by Sebastien Hinderer,
    Gabriel Scherer and Antonin Décimo)
 
+- #13764, #13779: add missing "-keywords" flag to ocamldep and ocamlprof
+  (Florian Angeletti, report by Prashanth Mundkur, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #13694: Fix name for caml_hash_variant in the C interface.
