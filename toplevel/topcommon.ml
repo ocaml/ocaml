@@ -30,6 +30,7 @@ let parse_use_file = ref Parse.use_file
 let print_location = Location.print_loc
 let print_error = Location.print_report
 let log_warning = Location.log_warning
+let print_warning = Location.prerr_warning
 let input_name = Location.input_name
 
 let parse_mod_use_file name lb =
@@ -320,7 +321,7 @@ let is_command_like_name s =
 (* The table of toplevel directives.
    Filled by functions from module topdirs. *)
 
-type 'a directive = Toplevel_diagnostic.id Log.t -> 'a -> unit
+type 'a directive = 'a -> unit
 
 type directive_fun =
   | Directive_none of unit directive
@@ -355,8 +356,13 @@ let all_directive_names () =
 module Style = Misc.Style
 let inline_code = Style.inline_code
 
-let try_run_directive log dir_name pdir_arg =
-  let log_error fmt = Log.itemd Toplevel_diagnostic.errors log fmt in
+let directive_log = ref (Log.tmp Toplevel_diagnostic.scheme)
+let tracef f =
+  Log.itemd Toplevel_diagnostic.trace !directive_log f
+let errorf f =
+  Log.itemd Toplevel_diagnostic.errors !directive_log f
+
+let try_run_directive dir_name pdir_arg =
   begin match get_directive dir_name with
   | None ->
       let print ppf =
@@ -366,27 +372,27 @@ let try_run_directive log dir_name pdir_arg =
           Style.inline_code dir_name
           (Misc.did_you_mean (Misc.spellcheck directives dir_name))
       in
-      log_error "%t" print;
+      errorf "%t" print;
       false
   | Some d ->
       match d, pdir_arg with
-      | Directive_none f, None -> f log (); true
-      | Directive_string f, Some {pdira_desc = Pdir_string s} -> f log s; true
+      | Directive_none f, None -> f (); true
+      | Directive_string f, Some {pdira_desc = Pdir_string s} -> f s; true
       | Directive_int f, Some {pdira_desc = Pdir_int (n,None) } ->
          begin match Misc.Int_literal_converter.int n with
-         | n -> f log n; true
+         | n -> f n; true
          | exception _ ->
-             log_error "Integer literal exceeds the range of \
-                  representable integers for directive %a."
-               Style.inline_code dir_name;
-             false
+           errorf "Integer literal exceeds the range of \
+                   representable integers for directive %a."
+                   inline_code dir_name;
+           false
          end
       | Directive_int _, Some {pdira_desc = Pdir_int (_, Some _)} ->
-          log_error "Wrong integer literal for directive %a."
-            Style.inline_code dir_name;
+          errorf "Wrong integer literal for directive %a."
+            inline_code dir_name;
           false
-      | Directive_ident f, Some {pdira_desc = Pdir_ident lid} -> f log lid; true
-      | Directive_bool f, Some {pdira_desc = Pdir_bool b} -> f log b; true
+      | Directive_ident f, Some {pdira_desc = Pdir_ident lid} -> f lid; true
+      | Directive_bool f, Some {pdira_desc = Pdir_bool b} -> f b; true
       | _ ->
           let dir_type  = match d with
           | Directive_none _   -> `None
@@ -413,10 +419,15 @@ let try_run_directive log dir_name pdir_arg =
           | `Bool ->
               Format_doc.fprintf ppf "a %a literal" inline_code "bool"
           in
-          log_error "Directive %a expects %a, got %a."
+          errorf "Directive %a expects %a, got %a."
             Style.inline_code dir_name pp_type dir_type pp_type arg_type;
           false
   end
+
+let try_run_directive log dir_name pdir_arg =
+  Misc.protect_refs [ R (directive_log, log)] (fun () ->
+      try_run_directive dir_name pdir_arg
+    )
 
 let compiler_log log =
   let clog = Log.detach log Toplevel_diagnostic.compiler in
@@ -439,6 +450,7 @@ let log_on_device device =
   let _ = compiler_log log in
   log
 
+
 let debug_log log = Log.detach (compiler_log log) Compiler_diagnostic.debug
 
 
@@ -451,7 +463,7 @@ let loading_hint_printer ppf cu =
   let find_with_ext ext =
     try Some (Load_path.find_normalized (cu ^ ext)) with Not_found -> None
   in
-    fprintf ppf
+  fprintf ppf
     "Hint: @[\
      This means that the interface of a module is loaded, \
      but its implementation is not.@,";

@@ -19,12 +19,14 @@
   "metadata" :
     { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"]},
   "errors" :
-    [[["Text", "Unknown directive "],
+    [[["Tag", ["String_tag", "ralign"], [["Text", " Unknown directive "]]],
        ["Tag", ["Inline_code"], [["Text", "shw"]]], ["Text", "."],
-       ["Flush", false], ["Newline"],
+       ["Flush", true],
        ["Box", ["B"], 0,
-         [["Tag", ["Hint"], [["Text", "Hint"]]], ["Text", ": Did you mean "],
-           ["Tag", ["Inline_code"], [["Text", "show"]]], ["Text", "?"]]]]]
+         [["Tag", ["Hint"], [["Text", "Hint"]]], ["Text", ": "],
+           ["Tag", ["String_tag", "ralign"], [["Text", "Did you mean "]]],
+           ["Text", ""], ["Tag", ["Inline_code"], [["Text", "show"]]],
+           ["Text", "?"]]]]]
 }
 {
   "metadata" :
