@@ -5,7 +5,6 @@
   plugin_thread.ml";
  subdirectories = "sub";
  include systhreads;
- include dynlink;
  hassysthreads;
  libraries = ""; (* We will add them manually where appropriated *)
  native-dynlink;
@@ -180,7 +179,7 @@
      all_modules = "mylib.cmxa";
      ocamlopt.byte;
      program = "${test_build_directory}/main.exe";
-     libraries = "unix threads dynlink";
+     libraries = "unix threads";
      flags = "-linkall";
      all_modules = "api.cmx main.cmx";
      ocamlopt.byte;

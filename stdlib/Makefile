@@ -60,6 +60,46 @@ all: stdlib.cma std_exit.cmo $(HEADER_NAME) target_$(HEADER_NAME)
 allopt: stdlib.cmxa std_exit.cmx
 opt.opt: allopt
 
+byte/dynlink.ml: byte/dynlink.mli \
+  dynlink_common.ml.in \
+  $(ROOTDIR)/Makefile.build_config $(ROOTDIR)/Makefile.config \
+  $(ROOTDIR)/file_formats/cmo_format.mli \
+  byte/dynlink_symtable.ml.in byte/dynlink.ml.in
+	$(V_GEN){ \
+	  echo 'module DC = struct'; \
+	  cat dynlink_common.ml.in; \
+	  echo 'end'; \
+	  echo 'module Config = struct let ext_dll = "$(EXT_DLL)" end'; \
+	  echo 'let cmo_magic_number = $(CMO_MAGIC_TOKEN)'; \
+	  echo 'let cma_magic_number = $(CMA_MAGIC_TOKEN)'; \
+	  echo '[@@@ocaml.warning "-37-69"]'; \
+	  echo '#1 "$(ROOTDIR)/file_formats/cmo_format.mli"'; \
+	  cat $(ROOTDIR)/file_formats/cmo_format.mli; \
+	  echo '[@@@ocaml.warning "+37+69"]'; \
+	  echo 'module Symtable = struct'; \
+	  cat byte/dynlink_symtable.ml.in; \
+	  echo 'end'; \
+	  cat byte/dynlink.ml.in; \
+	} > $@
+
+native/dynlink.ml: native/dynlink.mli \
+  dynlink_common.ml.in \
+  $(ROOTDIR)/Makefile.build_config \
+  $(ROOTDIR)/file_formats/cmxs_format.mli \
+  native/dynlink.ml.in
+	$(V_GEN){ \
+	  echo 'module DC = struct'; \
+	  cat dynlink_common.ml.in; \
+	  echo 'end'; \
+	  echo 'let cmxs_magic_number = $(CMXS_MAGIC_TOKEN)'; \
+	  echo '#1 "$(ROOTDIR)/file_formats/cmxs_format.mli"'; \
+	  cat $(ROOTDIR)/file_formats/cmxs_format.mli; \
+	  cat native/dynlink.ml.in; \
+	} > $@
+
+%/dynlink.mli: dynlink.mli
+	cd $*; $(LN) ../$^ $^
+
 INSTALL_STDLIB_META_DIR=$(DESTDIR)$(LIBDIR)/stdlib
 
 .PHONY: install
@@ -110,7 +150,8 @@ distclean: clean
 
 .PHONY: clean
 clean::
-	rm -f $(HEADER_NAME) target_$(HEADER_NAME)
+	rm -f $(HEADER_NAME) target_$(HEADER_NAME) \
+	  byte/dynlink.mli byte/dynlink.ml native/dynlink.mli native/dynlink.ml
 
 export AWK
 
@@ -159,20 +200,22 @@ clean::
 
 include .depend
 
-STDLIB_NAMESPACE_MODULES = $(subst $(SPACE),|,$(STDLIB_PREFIXED_MODULES))
+NAMESPACE_MODULES = $(subst $(SPACE),|,$(STDLIB_PREFIXED_MODULES))
 
 GNUISH_SED = \
   $(if $(filter X,$(shell echo x | $(SED) -E -e 's/./\u&/' 2>/dev/null)),\
        $(SED),$(error GNU sed is needed for make depend))
 
 .PHONY: depend
-depend:
+depend: byte/dynlink.ml native/dynlink.ml
 	$(V_OCAMLDEP){ \
 	  $(OCAMLDEP_CMD) $(filter-out stdlib.%,$(wildcard *.mli *.ml)); \
+	  $(OCAMLDEP_CMD) -bytecode byte/dynlink.ml | sed -e 's| byte/| |'; \
+	  $(OCAMLDEP_CMD) -native native/dynlink.ml | sed -e 's| native/| |'; \
 	  $(OCAMLDEP_CMD) -pp "$(AWK) -f ./remove_module_aliases.awk" \
-	  stdlib.ml stdlib.mli; \
+	  stdlib.ml stdlib.mli ; \
 	} | \
 	$(GNUISH_SED) -E \
-	-e 's/^(${STDLIB_NAMESPACE_MODULES})(\.[^i]*)(i?) :/\1\2\3 : \1.ml\3/' \
-	-e 's#(^| )(${STDLIB_NAMESPACE_MODULES})[.]#\1stdlib__\u\2.#' \
+	-e 's/^([^\/]+\/)?(${NAMESPACE_MODULES})(\.[^i]*)(i?) :/\2\3\4 : \1\2.ml\4/' \
+	-e 's#(^| )(${NAMESPACE_MODULES})[.]#\1stdlib__\u\2.#' \
 	> .$@

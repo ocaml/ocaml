@@ -29,7 +29,6 @@ endef
 runtime_events_MLIS := runtime_events.mli
 str_MLIS := str.mli
 unix_MLIS := unix.mli unixLabels.mli
-dynlink_MLIS := dynlink.mli
 thread_MLIS := \
   thread.mli event.mli
 
@@ -37,7 +36,7 @@ STDLIB=$(STDLIB_MODULES)
 
 stdlib_UNPREFIXED=$(STDLIB_MODULE_BASENAMES)
 
-otherlibref := $(dynlink_MLIS:%.mli=%)
+otherlibref =
 
 ifeq "$(lib_str)" "true"
 otherlibref += $(str_MLIS:%.mli=%)

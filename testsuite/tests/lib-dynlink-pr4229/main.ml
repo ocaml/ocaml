@@ -1,5 +1,4 @@
 (* TEST
- include dynlink;
  readonly_files = "abstract.mli abstract.ml static.ml client.ml main.ml";
  subdirectories = "sub";
  libraries = "";
@@ -25,7 +24,6 @@
    module = "main.ml";
    ocamlc.byte;
    program = "${test_build_directory}/main";
-   libraries = "dynlink";
    module = "";
    all_modules = "abstract.cmo static.cmo main.cmo";
    ocamlc.byte;
@@ -64,7 +62,6 @@
    unset all_modules;
    ocamlopt.byte;
    program = "${test_build_directory}/main_native";
-   libraries = "dynlink";
    module = "";
    all_modules = "abstract.cmx static.cmx main.cmx";
    ocamlopt.byte;

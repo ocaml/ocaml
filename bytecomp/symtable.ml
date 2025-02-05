@@ -110,24 +110,33 @@ module PrimMap = Num_tbl(Misc.Stdlib.String.Map)
 
 (* Global variables *)
 
-let global_table = ref GlobalMap.empty
-and literal_table = ref([] : (int * Obj.t) list)
+type vm = {
+  mutable global_table : GlobalMap.t ref;
+  mutable literal_table : (int * Obj.t) list ref;
+  mutable of_prim : string -> int;
+}
+
+let vm = {
+  global_table = ref GlobalMap.empty;
+  literal_table = ref [];
+  of_prim = Fun.const 0;
+}
 
 let is_global_defined global =
-  Global.Map.mem global (!global_table).tbl
+  Global.Map.mem global vm.global_table.contents.tbl
 
 let slot_for_getglobal global =
   try
-    GlobalMap.find !global_table global
+    GlobalMap.find vm.global_table.contents global
   with Not_found ->
     raise(Error (Undefined_global global))
 
 let slot_for_setglobal global =
-  GlobalMap.enter global_table global
+  GlobalMap.enter vm.global_table global
 
 let slot_for_literal cst =
-  let n = GlobalMap.incr global_table in
-  literal_table := (n, cst) :: !literal_table;
+  let n = GlobalMap.incr vm.global_table in
+  vm.literal_table := (n, cst) :: vm.literal_table.contents;
   n
 
 (* The C primitives *)
@@ -137,27 +146,24 @@ let c_prim_table = ref PrimMap.empty
 let set_prim_table name =
   ignore(PrimMap.enter c_prim_table name)
 
-let of_prim name =
-  try
-    PrimMap.find !c_prim_table name
-  with Not_found ->
-    if !Clflags.custom_runtime || Config.host <> Config.target
-       || !Clflags.no_check_prims
-    then
-      PrimMap.enter c_prim_table name
-    else begin
-      match Dll.find_primitive name with
-      | None -> raise(Error(Unavailable_primitive name))
-      | Some Prim_exists ->
-          PrimMap.enter c_prim_table name
-      | Some (Prim_loaded symb) ->
-          let num = PrimMap.enter c_prim_table name in
-          Dll.synchronize_primitive num symb;
-          num
-    end
+let () =
+  let of_prim name =
+    try
+      PrimMap.find !c_prim_table name
+    with Not_found ->
+      if !Clflags.custom_runtime || Config.host <> Config.target
+         || !Clflags.no_check_prims
+      then
+        PrimMap.enter c_prim_table name
+      else if Dll.have_primitive name then
+        PrimMap.enter c_prim_table name
+      else
+        raise(Error(Unavailable_primitive name))
+  in
+  vm.of_prim <- of_prim
 
 let require_primitive name =
-  if name.[0] <> '%' then ignore(of_prim name)
+  if name.[0] <> '%' then ignore(vm.of_prim name)
 
 let all_primitives () =
   let prim = Array.make !c_prim_table.cnt "" in
@@ -242,7 +248,7 @@ let init () =
             Const_base(Const_int (-i-1))
            ])
       in
-      literal_table := (c, transl_const cst) :: !literal_table)
+      vm.literal_table := (c, transl_const cst) :: vm.literal_table.contents)
     Runtimedef.builtin_exceptions;
   (* Initialize the known C primitives *)
   let set_prim_table_from_file primfile =
@@ -304,79 +310,62 @@ let patch_object buff patchlist =
           let global = Global.Glob_compunit cu in
           patch_int buff pos (slot_for_setglobal global)
       | (Reloc_primitive name, pos) ->
-          patch_int buff pos (of_prim name))
+          patch_int buff pos (vm.of_prim name))
     patchlist
 
 (* Build the initial table of globals *)
 
 let initial_global_table () =
-  let glob = Array.make !global_table.cnt (Obj.repr 0) in
+  let glob = Array.make vm.global_table.contents.cnt (Obj.repr 0) in
   List.iter
     (fun (slot, cst) -> glob.(slot) <- cst)
-    !literal_table;
-  literal_table := [];
+    vm.literal_table.contents;
+  vm.literal_table := [];
   glob
 
 (* Save the table of globals *)
 
 let output_global_map oc =
-  output_value oc !global_table
+  output_value oc vm.global_table.contents
 
 let data_global_map () =
-  Obj.repr !global_table
+  Obj.repr vm.global_table.contents
 
 (* Functions for toplevel use *)
 
-(* Update the in-core table of globals *)
-
-let update_global_table () =
-  let ng = !global_table.cnt in
-  if ng > Array.length(Meta.global_data()) then Meta.realloc_global_data ng;
-  let glob = Meta.global_data() in
-  List.iter
-    (fun (slot, cst) -> glob.(slot) <- cst)
-    !literal_table;
-  literal_table := []
-
-type bytecode_sections =
-  { symb: GlobalMap.t;
-    crcs: (string * Digest.t option) list;
-    prim: string list;
-    dlpt: string list }
-
-external get_bytecode_sections : unit -> bytecode_sections =
-  "caml_dynlink_get_bytecode_sections"
+(* Retrieve values registered with Callback.register *)
+external named_value : string -> 'a = "caml_retrieve_named_value"
 
 (* Initialize the linker for toplevel use *)
 
 let init_toplevel () =
-  let sect = get_bytecode_sections () in
-  global_table := sect.symb;
-  c_prim_table := PrimMap.empty;
-  List.iter set_prim_table sect.prim;
-  Dll.init_toplevel sect.dlpt;
-  sect.crcs
+  let (crcs : (string * Digest.t option) list) =
+    try named_value "Stdlib.Dynlink.crcs"
+    with Not_found -> []
+  in
+  try
+    let (global_table : GlobalMap.t ref),
+        (literal_table : (int * Obj.t) list ref),
+        (of_prim : string -> int),
+        (add_path : string list -> unit),
+        (remove_path : string list -> unit),
+        (check_global_initialized : (reloc_info * int) list -> unit),
+        (update_global_table : unit -> unit) = named_value "Stdlib.Dynlink.vm"
+    in
+    vm.global_table <- global_table;
+    vm.literal_table <- literal_table;
+    vm.of_prim <- of_prim;
+    crcs, add_path, remove_path, check_global_initialized, update_global_table
+  with Not_found ->
+    let f _ = () in
+    crcs, f, f, f, f
 
 (* Find the value of a global identifier *)
 
 let get_global_position = slot_for_getglobal
 
-let get_global_value global =
-  (Meta.global_data()).(slot_for_getglobal global)
-let assign_global_value global v =
-  (Meta.global_data()).(slot_for_getglobal global) <- v
-
 (* Check that all compilation units referenced in the given patch list
    have already been initialized *)
-
-let initialized_compunits patchlist =
-  List.fold_left (fun compunits rel ->
-      match fst rel with
-      | Reloc_setcompunit compunit -> compunit :: compunits
-      | Reloc_literal _ | Reloc_getcompunit _ | Reloc_getpredef _
-      | Reloc_primitive _ -> compunits)
-    []
-    patchlist
 
 let required_compunits patchlist =
   List.fold_left (fun compunits rel ->
@@ -387,35 +376,13 @@ let required_compunits patchlist =
     []
     patchlist
 
-let check_global_initialized patchlist =
-  (* First determine the compilation units we will define *)
-  let initialized_compunits = initialized_compunits patchlist in
-  (* Then check that all referenced, not defined comp units have a value *)
-  let check_reference (rel, _) = match rel with
-      Reloc_getcompunit compunit ->
-        let global = Global.Glob_compunit compunit in
-        if not (List.mem compunit initialized_compunits)
-        && Obj.is_int (get_global_value global)
-        then raise (Error(Uninitialized_global global))
-    | Reloc_literal _ | Reloc_getpredef _ | Reloc_setcompunit _
-    | Reloc_primitive _ -> () in
-  List.iter check_reference patchlist
-
 (* Save and restore the current state *)
 
 type global_map = GlobalMap.t
 
-let current_state () = !global_table
+let current_state () = vm.global_table.contents
 
-let restore_state st = global_table := st
-
-let hide_additions (st : global_map) =
-  if st.cnt > !global_table.cnt then
-    fatal_error "Symtable.hide_additions";
-  global_table :=
-    {GlobalMap.
-      cnt = !global_table.cnt;
-      tbl = st.tbl }
+let restore_state st = vm.global_table := st
 
 (* "Filter" the global map according to some predicate.
    Used to expunge the global map for the toplevel. *)
@@ -430,11 +397,6 @@ let filter_global_map p (gmap : global_map) =
 
 let iter_global_map f (gmap : global_map) =
   Global.Map.iter f gmap.tbl
-
-let is_defined_in_global_map (gmap : global_map) global =
-  Global.Map.mem global gmap.tbl
-
-let empty_global_map = GlobalMap.empty
 
 (* Error report *)
 
@@ -463,6 +425,6 @@ let () =
 let report_error = Format_doc.compat report_error_doc
 
 let reset () =
-  global_table := GlobalMap.empty;
-  literal_table := [];
+  vm.global_table := GlobalMap.empty;
+  vm.literal_table := [];
   c_prim_table := PrimMap.empty

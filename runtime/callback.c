@@ -429,6 +429,17 @@ CAMLexport const value* caml_named_value(char const *name)
   return NULL;
 }
 
+CAMLprim value caml_retrieve_named_value(value name)
+{
+  CAMLparam1(name);
+  const value *val = caml_named_value(String_val(name));
+
+  if (val == NULL)
+    caml_raise_not_found();
+
+  CAMLreturn(*val);
+}
+
 CAMLexport void caml_iterate_named_values(caml_named_action f)
 {
   caml_plat_lock_non_blocking(&named_value_lock);

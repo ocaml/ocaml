@@ -1,5 +1,4 @@
 (* TEST
- include dynlink;
  readonly_files = "host.ml plugin.ml";
  libraries = "";
  flags += " -g ";
@@ -14,7 +13,6 @@
  module = "";
  all_modules = "host.cmo";
  program = "${test_build_directory}/host.byte";
- libraries = "dynlink";
  ocamlc.byte;
  output = "host.output";
  run;

@@ -46,15 +46,10 @@ module EvalBase = struct
   let eval_ident id =
     if Ident.global id then begin
       let name = Ident.name id in
-      let global =
-        if Ident.persistent id
-        then Symtable.Global.Glob_compunit (Cmo_format.Compunit name)
-        else Symtable.Global.Glob_predef (Cmo_format.Predef_exn name)
-      in
-      try
-        Symtable.get_global_value global
-      with Symtable.Error (Undefined_global _) ->
-        raise (Undefined_global name)
+      match Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol:name with
+      | Some v -> v
+      | None ->
+          raise (Undefined_global name)
     end else begin
       let name = Translmod.toplevel_name id in
       try
@@ -64,6 +59,23 @@ module EvalBase = struct
     end
 
 end
+
+(* Functions are retrived from Dynlink via the Callback interface *)
+type vm = {
+  mutable add_path : string list -> unit;
+  mutable remove_path : string list -> unit;
+  mutable check_global_initialized : (Cmo_format.reloc_info * int) list -> unit;
+  mutable update_global_table : unit -> unit;
+}
+
+let vm =
+  let f _ = () in
+  {
+    add_path = f;
+    remove_path = f;
+    check_global_initialized = f;
+    update_global_table = f
+  }
 
 include Topcommon.MakeEvalPrinter(EvalBase)
 
@@ -84,8 +96,8 @@ let load_lambda ppf lam =
   in
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code reloc;
-  Symtable.check_global_initialized reloc;
-  Symtable.update_global_table();
+  vm.check_global_initialized reloc;
+  vm.update_global_table();
   let initial_bindings = !toplevel_value_bindings in
   let bytecode, closure = Meta.reify_bytecode code [| events |] None in
   match
@@ -196,50 +208,6 @@ open Cmo_format
 
 exception Load_failed
 
-let check_consistency ppf filename cu =
-  try Env.import_crcs ~source:filename cu.cu_imports
-  with Persistent_env.Consistbl.Inconsistency {
-      unit_name = name;
-      inconsistent_source = user;
-      original_source = auth;
-    } ->
-    fprintf ppf "@[<hv 0>The files %s@ and %s@ \
-                 disagree over interface %s@]@."
-            user auth name;
-    raise Load_failed
-
-(* This is basically Dynlink.Bytecode.run with no digest *)
-let load_compunit ic filename ppf compunit =
-  check_consistency ppf filename compunit;
-  seek_in ic compunit.cu_pos;
-  let code =
-    Bigarray.Array1.create Bigarray.Char Bigarray.c_layout compunit.cu_codesize
-  in
-  match In_channel.really_input_bigarray ic code 0 compunit.cu_codesize with
-    | None -> raise End_of_file
-    | Some () -> ();
-  let initial_symtable = Symtable.current_state() in
-  Symtable.patch_object code compunit.cu_reloc;
-  Symtable.update_global_table();
-  let events =
-    if compunit.cu_debug = 0 then [| |]
-    else begin
-      seek_in ic compunit.cu_debug;
-      [| input_value ic |]
-    end in
-  begin try
-    may_trace := true;
-    let _bytecode, closure = Meta.reify_bytecode code events None in
-    ignore (closure ());
-    may_trace := false;
-  with exn ->
-    record_backtrace ();
-    may_trace := false;
-    Symtable.restore_state initial_symtable;
-    print_exception_outcome ppf exn;
-    raise Load_failed
-  end
-
 let rec load_file recursive ppf name =
   let filename =
     try Some (Load_path.find name) with Not_found -> None
@@ -276,33 +244,64 @@ and really_load_file recursive ppf name filename ic =
             | Reloc_primitive _ -> ()
           )
           cu.cu_reloc;
-      load_compunit ic filename ppf cu;
-      true
+      try Dynlink.loadfile filename; true
+      with Dynlink.Error (Dynlink.Library's_module_initializers_failed x) ->
+        print_exception_outcome ppf x; false
     end else
-      if buffer = Config.cma_magic_number then begin
-        let toc_pos = input_binary_int ic in  (* Go to table of contents *)
-        seek_in ic toc_pos;
-        let lib = (input_value ic : library) in
-        List.iter
-          (fun dllib ->
-            let name = Dll.extract_dll_name dllib in
-            try Dll.open_dlls Dll.For_execution [name]
-            with Failure reason ->
-              fprintf ppf
-                "Cannot load required shared library %s.@.Reason: %s.@."
-                name reason;
-              raise Load_failed)
-          lib.lib_dllibs;
-        List.iter (load_compunit ic filename ppf) lib.lib_units;
-        true
-      end else begin
+      if buffer = Config.cma_magic_number then
+        try Dynlink.loadfile filename; true
+        with
+          | Dynlink.Error (Cannot_open_dynamic_library (name, Failure msg)) ->
+              fprintf ppf "Cannot load required shared library %s.@.\
+                           Reason: %s.@." name msg;
+              false
+          | Dynlink.Error (Library's_module_initializers_failed x) ->
+              print_exception_outcome ppf x;
+              false
+      else begin
         fprintf ppf "File %s is not a bytecode object file.@." name;
         false
       end
   with Load_failed -> false
 
+let () =
+  Location.register_error_of_exn
+    (function
+      | Dynlink.Error(Linking_error(_, err)) ->
+          let err = match err with
+          | Dynlink.Undefined_global (Compilation_unit cu) ->
+              Symtable.Undefined_global
+                (Symtable.Global.Glob_compunit (Cmo_format.Compunit cu))
+          | Dynlink.Undefined_global (Predefined_exception exn) ->
+              Symtable.Undefined_global
+                (Symtable.Global.Glob_predef(Cmo_format.Predef_exn exn))
+          | Dynlink.Unavailable_primitive s ->
+              Symtable.Unavailable_primitive s
+          | Dynlink.Uninitialized_global s ->
+              Symtable.Uninitialized_global
+                (Symtable.Global.Glob_compunit(Cmo_format.Compunit s))
+          in
+          Some (Location.error_of_printer_file Symtable.report_error_doc err)
+      | _ -> None
+    )
+
+let add_path d = vm.add_path d
+let remove_path d = vm.remove_path d
+
 let init () =
-  let crc_intfs = Symtable.init_toplevel() in
+  (* This call must precede the call to Symtable.init_toplevel - Dynlink must be
+     initialised before the bytecode compiler. *)
+  Dynlink.allow_unsafe_modules true;
+  let crc_intfs,
+      add_path,
+      remove_path,
+      check_global_initialized,
+      update_global_table = Symtable.init_toplevel()
+  in
+  vm.add_path <- add_path;
+  vm.remove_path <- remove_path;
+  vm.check_global_initialized <- check_global_initialized;
+  vm.update_global_table <- update_global_table;
   Compmisc.init_path ();
   Env.import_crcs ~source:Sys.executable_name crc_intfs;
   ()

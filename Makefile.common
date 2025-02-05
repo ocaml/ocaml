@@ -146,7 +146,7 @@ endif
 endif
 
 # List of other libraries
-ALL_OTHERLIBS = dynlink str systhreads unix runtime_events
+ALL_OTHERLIBS = str systhreads unix runtime_events
 
 # Flags to pass to the C preprocessor when preprocessing assembly files
 OC_ASPPFLAGS=$(OC_CPPFLAGS) $(OC_NATIVE_CPPFLAGS)

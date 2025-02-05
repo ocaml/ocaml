@@ -15,7 +15,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Dynamic loading of .cmo, .cma and .cmxs files. *)
+(** Dynamic loading of .cmo, .cma and .cmxs files.
+
+   @since 5.4 Part of the Standard Library. *)
 
 val is_native : bool
 (** [true] if the program is native,
@@ -120,8 +122,12 @@ val allow_unsafe_modules : bool -> unit
 
 (** {1 Error reporting} *)
 
+type global = private
+  | Compilation_unit of string
+  | Predefined_exception of string
+
 type linking_error = private
-  | Undefined_global of string
+  | Undefined_global of global
   | Unavailable_primitive of string
   | Uninitialized_global of string
 
@@ -132,7 +138,7 @@ type error = private
   | Unsafe_file
   | Linking_error of string * linking_error
   | Corrupted_interface of string
-  | Cannot_open_dynamic_library of exn
+  | Cannot_open_dynamic_library of string * exn
   | Library's_module_initializers_failed of exn
   | Inconsistent_implementation of string
   | Module_already_loaded of string
@@ -163,9 +169,5 @@ val unsafe_get_global_value : bytecode_or_asm_symbol:string -> Obj.t option
     note for programs such as the debugger: even though the linking of a packed
     (subset of) compilerlibs into [Dynlink] hides the copy of [Symtable] that
     [Dynlink] uses from its clients, there is still only one table of global
-    values in the bytecode VM. Changes to this table are NOT synchronized
-    between [Dynlink] and the functions that change the global value table
-    ([update_global_table] and [assign_global_value], accessed through a
-    client's version of [Symtable]). This is why we can't use [Dynlink] from the
-    toplevel interactive loop, in particular.
+    values in the bytecode VM.
 *)

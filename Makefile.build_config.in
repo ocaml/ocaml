@@ -47,7 +47,6 @@ build_ocamltest = @build_ocamltest@
 
 build_ocamltex = @build_ocamltex@
 
-lib_dynlink = @lib_dynlink@
 lib_runtime_events = @lib_runtime_events@
 lib_str = @lib_str@
 lib_systhreads = @lib_systhreads@
@@ -191,3 +190,8 @@ TSAN=@tsan@
 # Contains TSan-specific runtime files, or nothing if TSan support is
 # disabled
 TSAN_NATIVE_RUNTIME_C_SOURCES = @tsan_native_runtime_c_sources@
+
+# The magic numbers used by Dynlink, as OCaml quoted strings
+CMXS_MAGIC_TOKEN = {magic|@CMXS_MAGIC_NUMBER@|magic}
+CMO_MAGIC_TOKEN = {magic|@CMO_MAGIC_NUMBER@|magic}
+CMA_MAGIC_TOKEN = {magic|@CMA_MAGIC_NUMBER@|magic}

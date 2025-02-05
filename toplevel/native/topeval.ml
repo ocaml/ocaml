@@ -300,6 +300,10 @@ let load_file _ (* fixme *) ppf name0 =
     if tmp then (try Sys.remove fn with Sys_error _ -> ());
     success
 
+(* ocamlnat doesn't need an additional search path *)
+let add_path _ = ()
+let remove_path _ = ()
+
 let init () =
   Compmisc.init_path ();
   Clflags.dlcode := true;

@@ -46,7 +46,6 @@ let ()  =
      print_endline "ERROR"
 
 (* TEST
- include dynlink;
  readonly_files = "backtrace_dynlink_plugin.ml";
  libraries = "";
  shared-libraries;
@@ -65,7 +64,6 @@ let ()  =
 
  program = "${test_build_directory}/main.exe";
  unset flags;
- libraries = "dynlink";
  all_modules = "backtrace_dynlink.cmx";
  ocamlopt.byte;
 

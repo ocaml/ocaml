@@ -43,8 +43,6 @@
 
 #include "build_config.h"
 
-#ifndef NATIVE_CODE
-
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
@@ -295,8 +293,6 @@ CAMLprim value caml_dynlink_get_bytecode_sections(value unit)
   CAMLreturn (ret);
 }
 
-#endif /* NATIVE_CODE */
-
 /** dlopen interface for the bytecode linker **/
 
 #define Handle_val(v) (*((void **) (v)))
@@ -340,8 +336,6 @@ CAMLprim value caml_dynlink_lookup_symbol(value handle, value symbolname)
   return result;
 }
 
-#ifndef NATIVE_CODE
-
 CAMLprim value caml_dynlink_add_primitive(value handle)
 {
   return Val_int(caml_ext_table_add(&caml_prim_table, Handle_val(handle)));
@@ -360,25 +354,3 @@ CAMLprim value caml_dynlink_get_current_libs(value unit)
   }
   CAMLreturn(res);
 }
-
-#else
-
-value caml_dynlink_add_primitive(value handle)
-{
-  caml_invalid_argument("dynlink_add_primitive");
-  return Val_unit; /* not reached */
-}
-
-value caml_dynlink_get_current_libs(value unit)
-{
-  caml_invalid_argument("dynlink_get_current_libs");
-  return Val_unit; /* not reached */
-}
-
-value caml_dynlink_get_bytecode_sections(value unit)
-{
-  caml_invalid_argument("dynlink_get_bytecode_sections");
-  return Val_unit; /* not reached */
-}
-
-#endif /* NATIVE_CODE */

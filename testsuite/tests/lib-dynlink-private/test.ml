@@ -1,5 +1,4 @@
 (* TEST
- include dynlink;
  libraries = "";
  readonly_files = "sheep.mli sheep.ml pig.mli";
  subdirectories = "plugin1 plugin2 plugin2b plugin2c plugin3 plugin4 plugin5 plugin6";
@@ -69,7 +68,6 @@
    ocamlc.byte;
    flags = "";
    program = "./test.byte.exe";
-   libraries = "dynlink";
    all_modules = "sheep.cmo test.cmo";
    module = "";
    ocamlc.byte;
@@ -159,7 +157,6 @@
    ocamlopt.byte;
    flags = "";
    program = "./test.opt.exe";
-   libraries = "dynlink";
    all_modules = "sheep.cmx test.cmx";
    ocamlopt.byte;
    run;

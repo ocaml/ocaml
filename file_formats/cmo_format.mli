@@ -23,8 +23,7 @@ type compunit = Compunit of string [@@unboxed]
 
 (* Predefined symbols as represented in CMO files *)
 
-type predef =
-  | Predef_exn of string [@@unboxed]
+type predef = Predef_exn of string [@@unboxed]
 
 (* Relocation information *)
 

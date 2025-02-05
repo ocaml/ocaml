@@ -175,7 +175,6 @@ SUPPORTS_SHARED_LIBRARIES=@supports_shared_libraries@
 MKSHAREDLIBRPATH=@mksharedlibrpath@
 DYNLINKOPTS=@DLLIBS@
 NATDYNLINK=@natdynlink@
-NATDYNLINKOPTS=@natdynlinkopts@
 SYSLIB=@syslib@
 MKLIB=@mklib@
 

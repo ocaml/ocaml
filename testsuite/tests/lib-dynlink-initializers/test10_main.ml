@@ -57,7 +57,6 @@ let () =
       Printexc.print_backtrace stderr
 
 (* TEST
- include dynlink;
  readonly_files = "test10_plugin.ml";
  flags += "-g";
  libraries = "";
@@ -73,7 +72,6 @@ let () =
 
    unset module;
    program = "${test_build_directory}/test10.byte";
-   libraries = "dynlink";
    all_modules = "test10_main.cmo";
    ocamlc.byte;
    run;
@@ -95,7 +93,6 @@ let () =
 
    program = "${test_build_directory}/test10.exe";
    unset flags;
-   libraries = "dynlink";
    all_modules = "test10_main.cmx";
    ocamlopt.byte;
    run;

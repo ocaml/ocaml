@@ -2554,14 +2554,6 @@ bytecomp/instruct.cmi : \
     lambda/lambda.cmi \
     typing/ident.cmi \
     typing/env.cmi
-bytecomp/meta.cmo : \
-    bytecomp/instruct.cmi \
-    bytecomp/meta.cmi
-bytecomp/meta.cmx : \
-    bytecomp/instruct.cmx \
-    bytecomp/meta.cmi
-bytecomp/meta.cmi : \
-    bytecomp/instruct.cmi
 bytecomp/opcodes.cmo : \
     bytecomp/opcodes.cmi
 bytecomp/opcodes.cmx : \
@@ -2587,7 +2579,6 @@ bytecomp/symtable.cmo : \
     lambda/runtimedef.cmi \
     typing/predef.cmi \
     utils/misc.cmi \
-    bytecomp/meta.cmi \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
@@ -2601,7 +2592,6 @@ bytecomp/symtable.cmx : \
     lambda/runtimedef.cmx \
     typing/predef.cmx \
     utils/misc.cmx \
-    bytecomp/meta.cmx \
     parsing/location.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
@@ -7370,7 +7360,6 @@ toplevel/topcommon.cmo : \
     toplevel/genprintval.cmi \
     utils/format_doc.cmi \
     typing/env.cmi \
-    bytecomp/dll.cmi \
     utils/config.cmi \
     driver/compmisc.cmi \
     driver/compenv.cmi \
@@ -7407,7 +7396,6 @@ toplevel/topcommon.cmx : \
     toplevel/genprintval.cmx \
     utils/format_doc.cmx \
     typing/env.cmx \
-    bytecomp/dll.cmx \
     utils/config.cmx \
     driver/compmisc.cmx \
     driver/compenv.cmx \
@@ -7447,7 +7435,6 @@ toplevel/topdirs.cmo : \
     utils/load_path.cmi \
     typing/ident.cmi \
     typing/env.cmi \
-    bytecomp/dll.cmi \
     typing/data_types.cmi \
     typing/ctype.cmi \
     utils/config.cmi \
@@ -7474,7 +7461,6 @@ toplevel/topdirs.cmx : \
     utils/load_path.cmx \
     typing/ident.cmx \
     typing/env.cmx \
-    bytecomp/dll.cmx \
     typing/data_types.cmx \
     typing/ctype.cmx \
     utils/config.cmx \
@@ -7565,6 +7551,14 @@ toplevel/trace.cmi : \
     typing/path.cmi \
     parsing/longident.cmi \
     typing/env.cmi
+toplevel/byte/meta.cmo : \
+    bytecomp/instruct.cmi \
+    toplevel/byte/meta.cmi
+toplevel/byte/meta.cmx : \
+    bytecomp/instruct.cmx \
+    toplevel/byte/meta.cmi
+toplevel/byte/meta.cmi : \
+    bytecomp/instruct.cmi
 toplevel/byte/topeval.cmo : \
     utils/warnings.cmi \
     typing/types.cmi \
@@ -7577,18 +7571,16 @@ toplevel/byte/topeval.cmo : \
     lambda/printlambda.cmi \
     bytecomp/printinstr.cmi \
     typing/predef.cmi \
-    typing/persistent_env.cmi \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
     typing/out_type.cmi \
     utils/misc.cmi \
-    bytecomp/meta.cmi \
+    toplevel/byte/meta.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
     typing/ident.cmi \
     typing/env.cmi \
     bytecomp/emitcode.cmi \
-    bytecomp/dll.cmi \
     utils/config.cmi \
     driver/compmisc.cmi \
     file_formats/cmo_format.cmi \
@@ -7607,18 +7599,16 @@ toplevel/byte/topeval.cmx : \
     lambda/printlambda.cmx \
     bytecomp/printinstr.cmx \
     typing/predef.cmx \
-    typing/persistent_env.cmx \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
     typing/out_type.cmx \
     utils/misc.cmx \
-    bytecomp/meta.cmx \
+    toplevel/byte/meta.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
     typing/ident.cmx \
     typing/env.cmx \
     bytecomp/emitcode.cmx \
-    bytecomp/dll.cmx \
     utils/config.cmx \
     driver/compmisc.cmx \
     file_formats/cmo_format.cmi \
@@ -7669,7 +7659,7 @@ toplevel/byte/trace.cmo : \
     typing/predef.cmi \
     typing/path.cmi \
     utils/misc.cmi \
-    bytecomp/meta.cmi \
+    toplevel/byte/meta.cmi \
     parsing/longident.cmi \
     typing/ctype.cmi \
     parsing/asttypes.cmi \
@@ -7682,7 +7672,7 @@ toplevel/byte/trace.cmx : \
     typing/predef.cmx \
     typing/path.cmx \
     utils/misc.cmx \
-    bytecomp/meta.cmx \
+    toplevel/byte/meta.cmx \
     parsing/longident.cmx \
     typing/ctype.cmx \
     parsing/asttypes.cmx \
@@ -7713,7 +7703,6 @@ toplevel/native/topeval.cmo : \
     typing/includemod.cmi \
     typing/ident.cmi \
     typing/env.cmi \
-    otherlibs/dynlink/dynlink.cmi \
     utils/config.cmi \
     driver/compmisc.cmi \
     middle_end/compilenv.cmi \
@@ -7741,7 +7730,6 @@ toplevel/native/topeval.cmx : \
     typing/includemod.cmx \
     typing/ident.cmx \
     typing/env.cmx \
-    otherlibs/dynlink/dynlink.cmx \
     utils/config.cmx \
     driver/compmisc.cmx \
     middle_end/compilenv.cmx \
@@ -7758,7 +7746,6 @@ toplevel/native/tophooks.cmo : \
     lambda/lambda.cmi \
     middle_end/flambda/import_approx.cmi \
     middle_end/flambda/flambda_middle_end.cmi \
-    otherlibs/dynlink/dynlink.cmi \
     utils/config.cmi \
     middle_end/compilenv.cmi \
     middle_end/closure/closure_middle_end.cmi \
@@ -7775,7 +7762,6 @@ toplevel/native/tophooks.cmx : \
     lambda/lambda.cmx \
     middle_end/flambda/import_approx.cmx \
     middle_end/flambda/flambda_middle_end.cmx \
-    otherlibs/dynlink/dynlink.cmx \
     utils/config.cmx \
     middle_end/compilenv.cmx \
     middle_end/closure/closure_middle_end.cmx \
@@ -8225,11 +8211,6 @@ tools/stripdebug.cmx : \
     bytecomp/bytesections.cmx \
     tools/stripdebug.cmi
 tools/stripdebug.cmi :
-tools/sync_dynlink.cmo : \
-    tools/sync_dynlink.cmi
-tools/sync_dynlink.cmx : \
-    tools/sync_dynlink.cmi
-tools/sync_dynlink.cmi :
 debugger/breakpoints.cmo : \
     debugger/symbols.cmi \
     debugger/pos.cmi \
@@ -8526,7 +8507,6 @@ debugger/loadprinter.cmo : \
     typing/ident.cmi \
     utils/format_doc.cmi \
     typing/env.cmi \
-    otherlibs/dynlink/dynlink.cmi \
     typing/ctype.cmi \
     file_formats/cmo_format.cmi \
     debugger/loadprinter.cmi
@@ -8544,13 +8524,11 @@ debugger/loadprinter.cmx : \
     typing/ident.cmx \
     utils/format_doc.cmx \
     typing/env.cmx \
-    otherlibs/dynlink/dynlink.cmx \
     typing/ctype.cmx \
     file_formats/cmo_format.cmi \
     debugger/loadprinter.cmi
 debugger/loadprinter.cmi : \
-    parsing/longident.cmi \
-    otherlibs/dynlink/dynlink.cmi
+    parsing/longident.cmi
 debugger/main.cmo : \
     debugger/unix_tools.cmi \
     otherlibs/unix/unix.cmi \
@@ -8892,7 +8870,6 @@ ocamldoc/odoc.cmo : \
     ocamldoc/odoc_config.cmi \
     ocamldoc/odoc_args.cmi \
     ocamldoc/odoc_analyse.cmi \
-    otherlibs/dynlink/dynlink.cmi \
     ocamldoc/odoc.cmi
 ocamldoc/odoc.cmx : \
     ocamldoc/odoc_messages.cmx \
@@ -8902,7 +8879,6 @@ ocamldoc/odoc.cmx : \
     ocamldoc/odoc_config.cmx \
     ocamldoc/odoc_args.cmx \
     ocamldoc/odoc_analyse.cmx \
-    otherlibs/dynlink/dynlink.cmx \
     ocamldoc/odoc.cmi
 ocamldoc/odoc.cmi :
 ocamldoc/odoc_analyse.cmo : \
@@ -10590,54 +10566,3 @@ testsuite/tools/parsecmmaux.cmi : \
     parsing/location.cmi \
     lambda/debuginfo.cmi \
     middle_end/backend_var.cmi
-otherlibs/dynlink/byte/dynlink.cmo : \
-    otherlibs/dynlink/dynlink_types.cmi \
-    otherlibs/dynlink/byte/dynlink_symtable.cmi \
-    otherlibs/dynlink/dynlink_config.cmi \
-    otherlibs/dynlink/dynlink_common.cmi \
-    otherlibs/dynlink/dynlink_cmo_format.cmi \
-    otherlibs/dynlink/byte/dynlink.cmi
-otherlibs/dynlink/byte/dynlink.cmi :
-otherlibs/dynlink/byte/dynlink_symtable.cmo : \
-    otherlibs/dynlink/dynlink_config.cmi \
-    otherlibs/dynlink/dynlink_cmo_format.cmi \
-    otherlibs/dynlink/byte/dynlink_symtable.cmi
-otherlibs/dynlink/byte/dynlink_symtable.cmi : \
-    otherlibs/dynlink/dynlink_cmo_format.cmi
-otherlibs/dynlink/dynlink.cmi :
-otherlibs/dynlink/dynlink_cmo_format.cmi :
-otherlibs/dynlink/dynlink_cmxs_format.cmi :
-otherlibs/dynlink/dynlink_common.cmo : \
-    otherlibs/dynlink/dynlink_types.cmi \
-    otherlibs/dynlink/dynlink_platform_intf.cmi \
-    otherlibs/dynlink/dynlink_common.cmi
-otherlibs/dynlink/dynlink_common.cmi : \
-    otherlibs/dynlink/dynlink_platform_intf.cmi
-otherlibs/dynlink/dynlink_config.cmo : \
-    otherlibs/dynlink/dynlink_config.cmi
-otherlibs/dynlink/dynlink_config.cmi :
-otherlibs/dynlink/dynlink_platform_intf.cmo : \
-    otherlibs/dynlink/dynlink_types.cmi \
-    otherlibs/dynlink/dynlink_platform_intf.cmi
-otherlibs/dynlink/dynlink_platform_intf.cmi : \
-    otherlibs/dynlink/dynlink_types.cmi
-otherlibs/dynlink/dynlink_types.cmo : \
-    otherlibs/dynlink/dynlink_types.cmi
-otherlibs/dynlink/dynlink_types.cmi :
-otherlibs/dynlink/dynlink_common.cmx : \
-    otherlibs/dynlink/dynlink_types.cmx \
-    otherlibs/dynlink/dynlink_platform_intf.cmx \
-    otherlibs/dynlink/dynlink_common.cmi
-otherlibs/dynlink/dynlink_config.cmx : \
-    otherlibs/dynlink/dynlink_config.cmi
-otherlibs/dynlink/dynlink_platform_intf.cmx : \
-    otherlibs/dynlink/dynlink_types.cmx \
-    otherlibs/dynlink/dynlink_platform_intf.cmi
-otherlibs/dynlink/dynlink_types.cmx : \
-    otherlibs/dynlink/dynlink_types.cmi
-otherlibs/dynlink/native/dynlink.cmx : \
-    otherlibs/dynlink/dynlink_types.cmx \
-    otherlibs/dynlink/dynlink_config.cmx \
-    otherlibs/dynlink/dynlink_common.cmx \
-    otherlibs/dynlink/dynlink_cmxs_format.cmi \
-    otherlibs/dynlink/native/dynlink.cmi

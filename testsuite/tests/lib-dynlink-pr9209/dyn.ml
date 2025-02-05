@@ -1,5 +1,4 @@
 (* TEST
- include dynlink;
  readonly_files = "lib.ml lib2.ml test.c";
  ld_library_path += "${test_build_directory}";
  shared-libraries;
@@ -18,7 +17,6 @@
    compile_only = "false";
    flags = "-a";
    ocamlc.byte;
-   libraries += "dynlink";
    program = "${test_build_directory}/main.exe";
    all_modules = "dyn.cmo";
    flags = "";
@@ -47,7 +45,6 @@
    compile_only = "false";
    flags = "-shared";
    ocamlopt.byte;
-   libraries += "dynlink";
    program = "${test_build_directory}/main.exe";
    all_modules = "dyn.cmx";
    flags = "";

@@ -1,5 +1,4 @@
 (* TEST
- include dynlink;
  libraries = "";
  readonly_files = "config.ml b.ml";
  shared-libraries;
@@ -14,7 +13,6 @@
      program = "${test_build_directory}/loader.byte";
      flags = "-linkall";
      include ocamlcommon;
-     libraries += "dynlink";
      all_modules = "loader.ml";
      ocamlc.byte;
      arguments = "plugin.cma";
@@ -35,7 +33,6 @@
      program = "${test_build_directory}/loader.exe";
      flags = "-linkall";
      include ocamlcommon;
-     libraries += "dynlink";
      all_modules = "loader.ml";
      ocamlopt.byte;
      arguments = "plugin.cmxs";

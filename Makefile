@@ -30,19 +30,13 @@ defaultentry: $(DEFAULT_BUILD_TARGET)
 include stdlib/StdlibModules
 
 CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -use-prims runtime/primitives
-CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) $(STDLIBFLAGS) -I otherlibs/dynlink
+CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) $(STDLIBFLAGS)
 ARCHES=amd64 arm64 power s390x riscv
 VPATH = utils parsing typing bytecomp file_formats lambda middle_end \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types \
   asmcomp driver toplevel tools runtime \
   $(addprefix otherlibs/, $(ALL_OTHERLIBS))
 INCLUDES = $(addprefix -I ,$(VPATH))
-
-ifeq "$(strip $(NATDYNLINKOPTS))" ""
-OCAML_NATDYNLINKOPTS=
-else
-OCAML_NATDYNLINKOPTS = -ccopt "$(NATDYNLINKOPTS)"
-endif
 
 OC_OCAMLDEPDIRS = $(VPATH)
 
@@ -188,7 +182,6 @@ comp_SOURCES = \
   file_formats/cmo_format.mli \
   file_formats/cmx_format.mli \
   file_formats/cmxs_format.mli \
-  bytecomp/meta.mli bytecomp/meta.ml \
   bytecomp/opcodes.mli bytecomp/opcodes.ml \
   bytecomp/bytesections.mli bytecomp/bytesections.ml \
   bytecomp/dll.mli bytecomp/dll.ml \
@@ -380,6 +373,7 @@ $(addprefix middle_end/, \
 ocamloptcomp_SOURCES = $(ocamlmiddleend_SOURCES) $(asmcomp_SOURCES)
 
 ocamltoplevel_SOURCES = $(addprefix toplevel/, \
+  byte/meta.mli byte/meta.ml \
   genprintval.mli genprintval.ml \
   topcommon.mli topcommon.ml \
   native/tophooks.mli native/tophooks.ml \
@@ -573,7 +567,7 @@ $(foreach PROGRAM, $(OCAML_BYTECODE_PROGRAMS),\
 # OCaml programs that are compiled only in native code
 
 OCAML_NATIVE_PROGRAMS = \
-  ocamlnat tools/lintapidiff.opt tools/sync_dynlink.opt $(OPTIONAL_NATIVE_TOOLS)
+  ocamlnat tools/lintapidiff.opt $(OPTIONAL_NATIVE_TOOLS)
 
 $(foreach PROGRAM, $(OCAML_NATIVE_PROGRAMS),\
   $(eval $(call OCAML_NATIVE_PROGRAM,$(PROGRAM))))
@@ -1031,70 +1025,6 @@ natruntop:
 	$(MAKE) ocamlnat
 	@$(RUN_OCAMLNAT)
 
-# The dynlink library
-
-dynlink_SOURCES = $(addprefix otherlibs/dynlink/,\
-  dynlink_config.mli dynlink_config.ml \
-  dynlink_types.mli dynlink_types.ml \
-  dynlink_platform_intf.mli dynlink_platform_intf.ml \
-  dynlink_common.mli dynlink_common.ml \
-  byte/dynlink_symtable.mli byte/dynlink_symtable.ml \
-  byte/dynlink.mli byte/dynlink.ml \
-  native/dynlink.mli native/dynlink.ml)
-
-dynlink_LIBRARIES =
-
-otherlibs/dynlink/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
-otherlibs/dynlink/%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
-
-
-otherlibs/dynlink/%/dynlink.cmi: \
-  otherlibs/dynlink/dynlink.cmi otherlibs/dynlink/dynlink.mli
-	cp $^ otherlibs/dynlink/$*/
-
-.PHONY: dynlink-all
-dynlink-all: otherlibs/dynlink/dynlink.cma
-
-.PHONY: dynlink-allopt
-dynlink-allopt: otherlibs/dynlink/dynlink.cmxa
-
-otherlibs/dynlink/dynlink.cma: VPATH += otherlibs/dynlink/byte
-otherlibs/dynlink/dynlink.cmxa: VPATH += otherlibs/dynlink/native
-
-ifeq "$(FLAMBDA)" "true"
-otherlibs/dynlink/%: OC_NATIVE_COMPFLAGS += -O3
-endif
-
-# dynlink.cmx needs to be available in the search path (since
-# it is not compiled with -opaque), and we prefer to make the file
-# available in a directory that is already searched rather than have
-# to add otherlibs/dynlink/native to the search path as well
-
-otherlibs/dynlink/dynlink.cmx : otherlibs/dynlink/native/dynlink.cmx
-	cd otherlibs/dynlink; $(LN) native/dynlink.cmx .
-
-DYNLINK_DEPEND_DUMMY_FILES = \
-  otherlibs/dynlink/dynlink.ml \
-  otherlibs/dynlink/byte/dynlink.mli \
-  otherlibs/dynlink/native/dynlink.mli
-
-beforedepend::
-	@touch $(DYNLINK_DEPEND_DUMMY_FILES)
-
-otherlibs/dynlink.depend: beforedepend
-	@$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I otherlibs/dynlink $(INCLUDES) \
-	  $(OCAMLDEPFLAGS) \
-	  -I otherlibs/dynlink/byte \
-	  -bytecode otherlibs/dynlink/*.mli otherlibs/dynlink/dynlink_*.ml \
-	  otherlibs/dynlink/byte/*.mli otherlibs/dynlink/byte/*.ml \
-	  > $@
-	@$(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I otherlibs/dynlink $(INCLUDES) \
-	  $(OCAMLDEPFLAGS) \
-	  -I otherlibs/dynlink/native \
-	  -native otherlibs/dynlink/dynlink_*.ml \
-	  otherlibs/dynlink/native/dynlink.ml \
-	  >> $@
-
 # Cleanup the lexer
 
 partialclean::
@@ -1193,7 +1123,6 @@ runtime_COMMON_C_SOURCES = \
   custom \
   debugger \
   domain \
-  dynlink \
   extern \
   fail \
   fiber \
@@ -1235,6 +1164,7 @@ runtime_COMMON_C_SOURCES = \
 
 runtime_BYTECODE_ONLY_C_SOURCES = \
   backtrace_byt \
+  dynlink_byt \
   fail_byt \
   fix_code \
   interp \
@@ -1825,8 +1755,7 @@ ocamldoc_LIBRARIES = \
   compilerlibs/ocamlcommon \
   $(addprefix otherlibs/,\
     unix/unix \
-    str/str \
-    dynlink/dynlink) \
+    str/str) \
   ocamldoc/odoc_info
 
 ocamldoc_SOURCES = $(addprefix ocamldoc/,\
@@ -2072,37 +2001,25 @@ ocamltest/ocamltest.html: ocamltest/ocamltest.org
 # The extra libraries
 
 .PHONY: otherlibraries
-otherlibraries: ocamltools dynlink-all
+otherlibraries: ocamltools
 	$(MAKE) -C otherlibs all
 
 .PHONY: otherlibrariesopt
-otherlibrariesopt: dynlink-allopt
+otherlibrariesopt:
 	$(MAKE) -C otherlibs allopt
 
 otherlibs/unix/unix.cmxa: otherlibrariesopt
 otherlibs/str/str.cmxa: otherlibrariesopt
 
 partialclean::
-	rm -f otherlibs/dynlink/*.cm[ioaxt] otherlibs/dynlink/*.cmti \
-	  otherlibs/dynlink/*.cmxa otherlibs/dynlink/byte/*.cm[iot] \
-	  otherlibs/dynlink/byte/*.cmti otherlibs/dynlink/native/*.cm[ixt] \
-	  otherlibs/dynlink/native/*.cmti otherlibs/dynlink/native/*.o \
-	  otherlibs/dynlink/native/*.obj
 	$(MAKE) -C otherlibs partialclean
 
 clean::
-	rm -f otherlibs/dynlink/*.a otherlibs/dynlink/*.lib \
-	  otherlibs/dynlink/*.o otherlibs/dynlink/*.obj \
-	  otherlibs/dynlink/*.so otherlibs/dynlink/*.dll \
-	  otherlibs/dynlink/byte/dynlink.mli \
-	  otherlibs/dynlink/native/dynlink.mli \
-
 	$(MAKE) -C otherlibs clean
 
 # The replay debugger
 
-ocamldebug_LIBRARIES = compilerlibs/ocamlcommon \
-  $(addprefix otherlibs/,unix/unix dynlink/dynlink)
+ocamldebug_LIBRARIES = compilerlibs/ocamlcommon otherlibs/unix/unix
 
 # The following dependencies are necessary at the moment, because the
 # root Makefile does not know yet how to build the other libraries
@@ -2112,7 +2029,7 @@ ocamldebug_LIBRARIES = compilerlibs/ocamlcommon \
 otherlibs/unix/unix.cma: otherlibraries
 otherlibs/str/str.cma: otherlibraries
 
-debugger/%: VPATH += otherlibs/unix otherlibs/dynlink
+debugger/%: VPATH += otherlibs/unix
 
 ocamldebug_COMPILER_SOURCES = $(addprefix toplevel/, \
   genprintval.mli genprintval.ml \
@@ -2236,18 +2153,6 @@ lintapidiff: tools/lintapidiff.opt$(EXE)
 	    grep -Ev internal\|obj\|stdLabels\|moreLabels |\
 	    tools/lintapidiff.opt $(VERSIONS)
 
-# Regenerate otherlibs/dynlink/byte/dynlink_symtable from its bytecomp sources
-
-sync_dynlink_SOURCES = tools/sync_dynlink.mli tools/sync_dynlink.ml
-sync_dynlink_LIBRARIES =
-
-.PHONY: sync_dynlink
-sync_dynlink: tools/sync_dynlink.opt$(EXE)
-	    ./tools/sync_dynlink.opt$(EXE) \
-        otherlibs/dynlink/byte/dynlink_symtable.ml \
-      > synced_dynlink.tmp
-	    diff -u synced_dynlink.tmp otherlibs/dynlink/byte/dynlink_symtable.ml
-	    rm synced_dynlink.tmp
 # Tools
 
 TOOLS_BYTECODE_TARGETS = \
@@ -2493,7 +2398,6 @@ endif
 
 ocamlnat_LIBRARIES = \
   compilerlibs/ocamlcommon compilerlibs/ocamloptcomp \
-  compilerlibs/ocamlbytecomp otherlibs/dynlink/dynlink \
   compilerlibs/ocamltoplevel
 
 ocamlnat_SOURCES = $(ocaml_SOURCES)
@@ -2514,8 +2418,6 @@ $(ocamlnat_CMX_FILES): toplevel/native/topmain.cmx
 
 partialclean::
 	rm -f ocamlnat ocamlnat.exe
-
-toplevel/native/topeval.cmx: otherlibs/dynlink/dynlink.cmxa
 
 # The numeric opcodes
 
@@ -2612,7 +2514,7 @@ DEP_DIRS = \
   utils parsing typing bytecomp asmcomp middle_end lambda file_formats \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types driver \
   toplevel toplevel/byte toplevel/native lex tools debugger ocamldoc ocamltest \
-  testsuite/lib testsuite/tools otherlibs/dynlink
+  testsuite/lib testsuite/tools
 
 DEP_FILES = $(addsuffix .depend, $(DEP_DIRS))
 
@@ -2621,7 +2523,6 @@ DEP_FILES = $(addsuffix .depend, $(DEP_DIRS))
 .PHONY: depend
 depend: $(DEP_FILES) | beforedepend
 	$(V_GEN)cat $^ > .$@
-	@rm -f $(DYNLINK_DEPEND_DUMMY_FILES)
 
 .PHONY: distclean
 distclean: clean
@@ -2631,10 +2532,6 @@ endif
 	$(MAKE) -C manual distclean
 	rm -f ocamldoc/META
 	rm -f $(addprefix ocamltest/,ocamltest_config.ml ocamltest_unix.ml)
-	rm -f otherlibs/dynlink/META otherlibs/dynlink/dynlink_config.ml \
-	  otherlibs/dynlink/dynlink_cmo_format.mli \
-	  otherlibs/dynlink/dynlink_cmxs_format.mli \
-	  otherlibs/dynlink/dynlink_platform_intf.mli
 	$(MAKE) -C otherlibs distclean
 	rm -f $(runtime_CONFIGURED_HEADERS)
 	$(MAKE) -C stdlib distclean
@@ -2649,8 +2546,6 @@ endif
 	rm -rf autom4te.cache winpthreads-sources flexdll-sources \
          $(BYTE_BUILD_TREE) $(OPT_BUILD_TREE)
 	rm -f config.log config.status libtool
-
-INSTALL_LIBDIR_DYNLINK = $(INSTALL_LIBDIR)/dynlink
 
 # Installation
 .PHONY: install
@@ -2755,18 +2650,7 @@ endif
 # For dynlink, if installing over a previous OCaml version, ensure
 # dynlink is removed from the previous installation.
 	rm -f "$(INSTALL_LIBDIR)"/dynlink.cm* "$(INSTALL_LIBDIR)/dynlink.mli" \
-        "$(INSTALL_LIBDIR)/dynlink.$(A)" \
-        $(addprefix "$(INSTALL_LIBDIR)/", $(notdir $(dynlink_CMX_FILES)))
-	$(MKDIR) "$(INSTALL_LIBDIR_DYNLINK)"
-	$(INSTALL_DATA) \
-	  otherlibs/dynlink/dynlink.cmi otherlibs/dynlink/dynlink.cma \
-	  otherlibs/dynlink/META \
-	  "$(INSTALL_LIBDIR_DYNLINK)"
-ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
-	$(INSTALL_DATA) \
-	  otherlibs/dynlink/dynlink.cmti otherlibs/dynlink/dynlink.mli \
-	  "$(INSTALL_LIBDIR_DYNLINK)"
-endif
+        "$(INSTALL_LIBDIR)/dynlink.$(A)" "$(INSTALL_LIBDIR)"/dynlink_*.cmx
 	for i in $(OTHERLIBS); do \
 	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
 	done
@@ -2887,12 +2771,6 @@ endif
 	  ocamldoc/ocamldoc.hva ocamldoc/*.cmx ocamldoc/odoc_info.$(A) \
 	  ocamldoc/odoc_info.cmxa \
 	  "$(INSTALL_LIBDIR)/ocamldoc"
-endif
-ifeq "$(strip $(NATDYNLINK))" "true"
-	$(INSTALL_DATA) \
-	  $(dynlink_CMX_FILES) otherlibs/dynlink/dynlink.cmxa \
-	  otherlibs/dynlink/dynlink.$(A) \
-	  "$(INSTALL_LIBDIR_DYNLINK)"
 endif
 	for i in $(OTHERLIBS); do \
 	  $(MAKE) -C otherlibs/$$i installopt || exit $$?; \

@@ -27,10 +27,11 @@
 
 open Format
 
-(* Set the load paths, before running anything *)
+(* Set and return the load paths, before running anything *)
 
 val set_paths :
-  ?auto_include:Load_path.auto_include_callback -> ?dir:string -> unit -> unit
+  ?auto_include:Load_path.auto_include_callback -> ?dir:string -> unit ->
+    string list
 
 (* Add directories listed in OCAMLTOP_INCLUDE_PATH to the end of the search
    path *)

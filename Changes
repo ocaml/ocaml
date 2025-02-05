@@ -153,6 +153,9 @@ Working version
 - #13740: Improve performance of Weak.find_aux
   (Josh Berdine, review by Gabriel Scherer)
 
+- #13745: Move Dynlink into the Standard Library.
+  (David Allsopp, review by ???)
+
 ### Other libraries:
 
 * #13376: Allow Dynlink.loadfile_private to load bytecode libraries with
