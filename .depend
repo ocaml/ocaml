@@ -8106,10 +8106,12 @@ tools/ocamlcp.cmi :
 tools/ocamlcp_common.cmo : \
     driver/main_args.cmi \
     driver/compenv.cmi \
+    utils/clflags.cmi \
     tools/ocamlcp_common.cmi
 tools/ocamlcp_common.cmx : \
     driver/main_args.cmx \
     driver/compenv.cmx \
+    utils/clflags.cmx \
     tools/ocamlcp_common.cmi
 tools/ocamlcp_common.cmi : \
     driver/main_args.cmi
@@ -8152,12 +8154,14 @@ tools/ocamlprof.cmo : \
     parsing/parsetree.cmi \
     parsing/parse.cmi \
     parsing/location.cmi \
+    utils/clflags.cmi \
     tools/ocamlprof.cmi
 tools/ocamlprof.cmx : \
     utils/warnings.cmx \
     parsing/parsetree.cmi \
     parsing/parse.cmx \
     parsing/location.cmx \
+    utils/clflags.cmx \
     tools/ocamlprof.cmi
 tools/ocamlprof.cmi :
 tools/ocamltex.cmo : \
