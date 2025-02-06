@@ -1162,7 +1162,7 @@ let rec copy ?partial ?keep_names ?scope copy_scope ty =
       match scope, desc with
       | None, _
       | _, Tvar _ -> get_scope ty
-      | Some scope, _ -> max scope (get_scope ty)
+      | Some scope, _ -> Int.max scope (get_scope ty)
     in
     let t = newstub ~scope in
     For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
