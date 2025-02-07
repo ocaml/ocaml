@@ -1334,3 +1334,15 @@ CAMLprim value caml_ml_runtime_events_read_poll(value wrapper,
 
   CAMLreturn(Val_int(events_consumed));
 }
+
+CAMLprim uint64_t caml_ml_runtime_current_timestamp(value unit) {
+  CAMLparam0();
+  uint64_t ts = caml_time_counter();
+  CAMLreturn(ts);
+}
+
+CAMLprim value caml_ml_runtime_current_timestamp_byte(value unit) {
+  CAMLparam0();
+  uint64_t ts = caml_time_counter();
+  CAMLreturn(Val_long(ts));
+}

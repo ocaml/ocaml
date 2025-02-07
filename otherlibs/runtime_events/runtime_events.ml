@@ -221,6 +221,11 @@ module Timestamp = struct
 
   let to_int64 t =
     t
+
+  external current_timestamp : unit -> (int64 [@unboxed]) =
+    "caml_ml_runtime_current_timestamp_byte"
+    "caml_ml_runtime_current_timestamp"
+    [@@noalloc]
 end
 
 module Type = struct

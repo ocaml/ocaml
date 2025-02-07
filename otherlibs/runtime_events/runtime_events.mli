@@ -521,6 +521,11 @@ module Timestamp : sig
     (** Type for the int64 timestamp to allow for future changes. *)
 
     val to_int64 : t -> int64
+
+    val current_timestamp : unit -> int64
+    (** Access the current timestamp. Timestamps are monotonic but otherwise
+        unspecified.
+        @since 5.4 *)
 end
 
 module Type : sig
