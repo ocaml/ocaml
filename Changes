@@ -17,6 +17,9 @@ Working version
 
 ### Runtime system:
 
+- #13785: Add `Runtime_events.Timestamp.current_timestamp`.
+  (Simon Cruanes)
+
 - #13774: Fix for inaccurate live blocks/words stats in compaction.
   (Sadiq Jaffer, report by KC Sivaramakrishnan and Jan Midtgaard, review by
   Gabriel Scherer)
