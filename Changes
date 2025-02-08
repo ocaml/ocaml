@@ -305,6 +305,11 @@ Working version
 - #13744: Refactor in `collect_apply_args`
   (Samuel Vivien, review by Florian Angeletti and Gabriel Scherer)
 
+- #13787: a new -dcanonical-ids option to show canonicalized identifier stamps
+  in -d{lambda,cmm,...} outputs.
+  (Gabriel Scherer, review by Vincent Laviron and David Allsopp,
+   suggested by David Allsopp)
+
 ### Build system:
 
 - #13431: Simplify github action responsible for flagging PRs with
