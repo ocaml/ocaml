@@ -1,5 +1,5 @@
 (* TEST
- flags = "-dlambda";
+ flags = "-dlambda -dcanonical-ids";
  expect;
 *)
 
@@ -26,22 +26,22 @@ let lazy_total : _ * bool t -> int = function
 0
 type _ t = Int : int -> int t | True : bool t | False : bool t
 (let
-  (lazy_total/284 =
-     (function param/286 : int
-       (let (*match*/288 =o (field_mut 0 (field_imm 0 param/286)))
-         (switch* (field_imm 1 param/286)
+  (lazy_total =
+     (function param : int
+       (let (*match* =o (field_mut 0 (field_imm 0 param)))
+         (switch* (field_imm 1 param)
           case int 0: 0
           case int 1:
            (let
-             (*match*/296 =
-                (let (tag/291 =a (caml_obj_tag *match*/288))
-                  (if (== tag/291 250) (field_mut 0 *match*/288)
-                    (if (|| (== tag/291 246) (== tag/291 244))
+             (*match*/1 =
+                (let (tag =a (caml_obj_tag *match*))
+                  (if (== tag 250) (field_mut 0 *match*)
+                    (if (|| (== tag 246) (== tag 244))
                       (apply (field_imm 1 (global CamlinternalLazy!))
-                        (opaque *match*/288))
-                      *match*/288))))
+                        (opaque *match*))
+                      *match*))))
              12)))))
-  (apply (field_mut 1 (global Toploop!)) "lazy_total" lazy_total/284))
+  (apply (field_mut 1 (global Toploop!)) "lazy_total" lazy_total))
 val lazy_total : unit lazy_t ref * bool t -> int = <fun>
 |}];;
 
@@ -52,29 +52,28 @@ let lazy_needs_partial : _ * bool t ref -> int = function
    necessary for soundness. *)
 [%%expect {|
 (let
-  (lazy_needs_partial/298 =
-     (function param/300 : int
+  (lazy_needs_partial =
+     (function param/1 : int
        (catch
          (let
-           (*match*/301 =a (field_imm 0 param/300)
-            *match*/303 =o (field_mut 0 (field_imm 1 param/300)))
-           (switch* *match*/303
+           (*match*/2 =a (field_imm 0 param/1)
+            *match*/3 =o (field_mut 0 (field_imm 1 param/1)))
+           (switch* *match*/3
             case int 0: 0
             case int 1:
              (let
-               (*match*/306 =
-                  (let (tag/305 =a (caml_obj_tag *match*/301))
-                    (if (== tag/305 250) (field_mut 0 *match*/301)
-                      (if (|| (== tag/305 246) (== tag/305 244))
+               (*match*/4 =
+                  (let (tag/1 =a (caml_obj_tag *match*/2))
+                    (if (== tag/1 250) (field_mut 0 *match*/2)
+                      (if (|| (== tag/1 246) (== tag/1 244))
                         (apply (field_imm 1 (global CamlinternalLazy!))
-                          (opaque *match*/301))
-                        *match*/301)))
-                *match*/308 =o (field_mut 0 (field_imm 1 param/300)))
-               (if (isint *match*/308) (if *match*/308 12 (exit 3)) (exit 3)))))
-        with (3)
-         (raise (makeblock 0 (global Match_failure/21!) [0: "" 1 49])))))
+                          (opaque *match*/2))
+                        *match*/2)))
+                *match*/5 =o (field_mut 0 (field_imm 1 param/1)))
+               (if (isint *match*/5) (if *match*/5 12 (exit 3)) (exit 3)))))
+        with (3) (raise (makeblock 0 (global Match_failure!) [0: "" 1 49])))))
   (apply (field_mut 1 (global Toploop!)) "lazy_needs_partial"
-    lazy_needs_partial/298))
+    lazy_needs_partial))
 val lazy_needs_partial : unit lazy_t * bool t ref -> int = <fun>
 |}];;
 
@@ -86,13 +85,13 @@ let guard_total : bool t ref -> int = function
    necessary for soundness. *)
 [%%expect {|
 (let
-  (guard_total/309 =
-     (function param/387 : int
+  (guard_total =
+     (function param/2 : int
        (if (opaque 0) 1
-         (let (*match*/388 =o (field_mut 0 param/387))
-           (if (isint *match*/388) (if *match*/388 12 0)
-             (raise (makeblock 0 (global Match_failure/21!) [0: "" 1 38])))))))
-  (apply (field_mut 1 (global Toploop!)) "guard_total" guard_total/309))
+         (let (*match*/6 =o (field_mut 0 param/2))
+           (if (isint *match*/6) (if *match*/6 12 0)
+             (raise (makeblock 0 (global Match_failure!) [0: "" 1 38])))))))
+  (apply (field_mut 1 (global Toploop!)) "guard_total" guard_total))
 val guard_total : bool t ref -> int = <fun>
 |}];;
 
@@ -104,15 +103,15 @@ let guard_needs_partial : bool t ref -> int = function
    necessary for soundness. *)
 [%%expect {|
 (let
-  (guard_needs_partial/389 =
-     (function param/391 : int
-       (let (*match*/392 =o (field_mut 0 param/391))
-         (catch (if (isint *match*/392) (if *match*/392 (exit 9) 0) (exit 9))
+  (guard_needs_partial =
+     (function param/3 : int
+       (let (*match*/7 =o (field_mut 0 param/3))
+         (catch (if (isint *match*/7) (if *match*/7 (exit 9) 0) (exit 9))
           with (9)
            (if (opaque 0) 1
-             (if (isint *match*/392) 12
-               (raise (makeblock 0 (global Match_failure/21!) [0: "" 1 46]))))))))
+             (if (isint *match*/7) 12
+               (raise (makeblock 0 (global Match_failure!) [0: "" 1 46]))))))))
   (apply (field_mut 1 (global Toploop!)) "guard_needs_partial"
-    guard_needs_partial/389))
+    guard_needs_partial))
 val guard_needs_partial : bool t ref -> int = <fun>
 |}];;
