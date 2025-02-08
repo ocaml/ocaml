@@ -63,6 +63,8 @@ module type Core_options = sig
 
   val _dno_unique_ids : unit -> unit
   val _dunique_ids : unit -> unit
+  val _dno_canonical_ids : unit -> unit
+  val _dcanonical_ids : unit -> unit
   val _dno_locations : unit -> unit
   val _dlocations : unit -> unit
   val _dsource : unit -> unit

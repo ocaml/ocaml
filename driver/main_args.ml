@@ -640,6 +640,12 @@ let mk_dno_unique_ids f =
 let mk_dunique_ids f =
   "-dunique-ids", Arg.Unit f, " (undocumented)"
 
+let mk_dno_canonical_ids f =
+  "-dno-canonical-ids", Arg.Unit f, " (undocumented)"
+
+let mk_dcanonical_ids f =
+  "-dcanonical-ids", Arg.Unit f, " (undocumented)"
+
 let mk_dno_locations f =
   "-dno-locations", Arg.Unit f, " (undocumented)"
 
@@ -824,6 +830,8 @@ module type Core_options = sig
 
   val _dno_unique_ids : unit -> unit
   val _dunique_ids : unit -> unit
+  val _dno_canonical_ids : unit -> unit
+  val _dcanonical_ids : unit -> unit
   val _dno_locations : unit -> unit
   val _dlocations : unit -> unit
 
@@ -1131,6 +1139,8 @@ struct
     mk_use_prims F._use_prims;
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
+    mk_dno_canonical_ids F._dno_canonical_ids;
+    mk_dcanonical_ids F._dcanonical_ids;
     mk_dno_locations F._dno_locations;
     mk_dlocations F._dlocations;
     mk_dsource F._dsource;
@@ -1207,6 +1217,8 @@ struct
 
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
+    mk_dno_canonical_ids F._dno_canonical_ids;
+    mk_dcanonical_ids F._dcanonical_ids;
     mk_dno_locations F._dno_locations;
     mk_dlocations F._dlocations;
     mk_dsource F._dsource;
@@ -1348,6 +1360,8 @@ struct
     mk_match_context_rows F._match_context_rows;
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
+    mk_dno_canonical_ids F._dno_canonical_ids;
+    mk_dcanonical_ids F._dcanonical_ids;
     mk_dno_locations F._dno_locations;
     mk_dlocations F._dlocations;
     mk_dsource F._dsource;
@@ -1649,6 +1663,8 @@ module Default = struct
     let _dmatchcomp = set dump_matchcomp
     let _dunique_ids = set unique_ids
     let _dno_unique_ids = clear unique_ids
+    let _dcanonical_ids = set canonical_ids
+    let _dno_canonical_ids = clear canonical_ids
     let _dlocations = set locations
     let _dno_locations = clear locations
     let _error_style =
