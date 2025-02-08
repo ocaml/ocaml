@@ -127,7 +127,9 @@ external readdir : string -> string array = "caml_sys_read_directory"
    appear in alphabetical order. *)
 
 val io_buffer_size: int
-(** Size of I/O buffer used by input and output channels.
+(** Size of C buffers used by the runtime system and [Unix] IO primitives to
+    which OCaml [bytes] and [string]s are copied to/from to perform the IO
+    operations without holding the domain lock.
 
     @since 5.4
 *)
