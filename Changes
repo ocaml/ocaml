@@ -167,6 +167,10 @@ Working version
   [%extension_constructor] instead of Obj.Extension_constructor.of_val.
   (Basile Clément, review by Vincent Laviron and Nicolás Ojeda Bär)
 
+- #13589: Expose Sys.io_buffer_size, the size of internal buffers used by the
+  runtime system and the `unix` library.
+  (@EruEri and Nicolás Ojeda Bär, review by Daniel Bünzli and Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 * #13376: Allow Dynlink.loadfile_private to load bytecode libraries with
