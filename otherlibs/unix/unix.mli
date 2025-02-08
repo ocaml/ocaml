@@ -381,7 +381,8 @@ val fsync : file_descr -> unit
 val read : file_descr -> bytes -> int -> int -> int
 (** [read fd buf pos len] reads [len] bytes from descriptor [fd],
     storing them in byte sequence [buf], starting at position [pos] in
-    [buf]. Return the number of bytes actually read. *)
+    [buf]. Return the number of bytes actually read.
+    Uses an internal buffer of size {!Sys.io_buffer_size}. *)
 
 val read_bigarray :
   file_descr ->
@@ -395,13 +396,15 @@ val write : file_descr -> bytes -> int -> int -> int
     taking them from byte sequence [buf], starting at position [pos]
     in [buff]. Return the number of bytes actually written.  [write]
     repeats the writing operation until all bytes have been written or
-    an error occurs.  *)
+    an error occurs.
+    Uses an internal buffer of size {!Sys.io_buffer_size}. *)
 
 val write_bigarray :
   file_descr ->
   (_, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
   int -> int -> int
 (** Same as {!write}, but take the data from a bigarray.
+    No internal buffer is used.
     @since 5.2 *)
 
 val single_write : file_descr -> bytes -> int -> int -> int
@@ -425,6 +428,7 @@ val single_write_bigarray :
   (_, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
   int -> int -> int
 (** Same as {!single_write}, but take the data from a bigarray.
+    No internal buffer is used.
     @since 5.2 *)
 
 (** {1 Interfacing with the standard input/output library} *)
@@ -1558,16 +1562,19 @@ type msg_flag =
 
 val recv :
   file_descr -> bytes -> int -> int -> msg_flag list -> int
-(** Receive data from a connected socket. *)
+(** Receive data from a connected socket.
+    Uses an internal buffer of size {!Sys.io_buffer_size}. *)
 
 val recvfrom :
   file_descr -> bytes -> int -> int -> msg_flag list ->
     int * sockaddr
-(** Receive data from an unconnected socket. *)
+(** Receive data from an unconnected socket.
+    Uses an internal buffer of size {!Sys.io_buffer_size}. *)
 
 val send :
   file_descr -> bytes -> int -> int -> msg_flag list -> int
-(** Send data over a connected socket. *)
+(** Send data over a connected socket.
+    Uses an internal buffer of size {!Sys.io_buffer_size}. *)
 
 val send_substring :
   file_descr -> string -> int -> int -> msg_flag list -> int
@@ -1578,7 +1585,8 @@ val send_substring :
 val sendto :
   file_descr -> bytes -> int -> int -> msg_flag list ->
     sockaddr -> int
-(** Send data over an unconnected socket. *)
+(** Send data over an unconnected socket. Uses an internal buffer of size
+    {!Sys.io_buffer_size}. *)
 
 val sendto_substring :
   file_descr -> string -> int -> int -> msg_flag list

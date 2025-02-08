@@ -127,7 +127,7 @@ external readdir : string -> string array = "caml_sys_read_directory"
    appear in alphabetical order. *)
 
 val io_buffer_size: int
-(** Size of the buffer channels
+(** Size of I/O buffer used by input and output channels.
 
     @since 5.4
 *)
