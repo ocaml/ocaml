@@ -107,7 +107,7 @@ CAMLnoret extern void caml_uerror (const char * cmdname, value arg);
 
 extern void caml_unix_check_path(value path, const char * cmdname);
 
-#define UNIX_BUFFER_SIZE 65536
+#define UNIX_BUFFER_SIZE IO_BUFFER_SIZE
 
 #define DIR_Val(v) *((DIR **) &Field(v, 0))
 

@@ -804,6 +804,10 @@ Caml_inline struct timespec caml_timespec_of_nsec(uint64_t nsec)
  */
 typedef void * backtrace_slot;
 
+#ifndef IO_BUFFER_SIZE
+#define IO_BUFFER_SIZE 65536
+#endif
+
 #ifdef __cplusplus
 }
 #endif
