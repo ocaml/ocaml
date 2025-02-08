@@ -87,10 +87,10 @@ let guard_total : bool t ref -> int = function
 [%%expect {|
 (let
   (guard_total/309 =
-     (function param/386 : int
+     (function param/387 : int
        (if (opaque 0) 1
-         (let (*match*/387 =o (field_mut 0 param/386))
-           (if (isint *match*/387) (if *match*/387 12 0)
+         (let (*match*/388 =o (field_mut 0 param/387))
+           (if (isint *match*/388) (if *match*/388 12 0)
              (raise (makeblock 0 (global Match_failure/21!) [0: "" 1 38])))))))
   (apply (field_mut 1 (global Toploop!)) "guard_total" guard_total/309))
 val guard_total : bool t ref -> int = <fun>
@@ -104,15 +104,15 @@ let guard_needs_partial : bool t ref -> int = function
    necessary for soundness. *)
 [%%expect {|
 (let
-  (guard_needs_partial/388 =
-     (function param/390 : int
-       (let (*match*/391 =o (field_mut 0 param/390))
-         (catch (if (isint *match*/391) (if *match*/391 (exit 9) 0) (exit 9))
+  (guard_needs_partial/389 =
+     (function param/391 : int
+       (let (*match*/392 =o (field_mut 0 param/391))
+         (catch (if (isint *match*/392) (if *match*/392 (exit 9) 0) (exit 9))
           with (9)
            (if (opaque 0) 1
-             (if (isint *match*/391) 12
+             (if (isint *match*/392) 12
                (raise (makeblock 0 (global Match_failure/21!) [0: "" 1 46]))))))))
   (apply (field_mut 1 (global Toploop!)) "guard_needs_partial"
-    guard_needs_partial/388))
+    guard_needs_partial/389))
 val guard_needs_partial : bool t ref -> int = <fun>
 |}];;
