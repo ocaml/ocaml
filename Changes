@@ -169,7 +169,7 @@ Working version
 
 - #13589: Expose Sys.io_buffer_size, the size of internal buffers used by the
   runtime system and the `unix` library.
-  (@EruEri and Nicolás Ojeda Bär, review by Daniel Bünzli and Nicolás Ojeda Bär)
+  (Yves Ndiaye and Nicolás Ojeda Bär, review by Daniel Bünzli and Nicolás Ojeda Bär)
 
 ### Other libraries:
 
