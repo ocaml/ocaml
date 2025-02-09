@@ -12,4 +12,4 @@ let () =
     ignore (Sys.opaque_identity _i : int)
   done;
   let t2 = Timestamp.get_current() in
-  assert (t2 > t1)
+  assert (Int64.succ t2 > Int64.succ t1)
