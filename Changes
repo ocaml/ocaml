@@ -234,7 +234,7 @@ Working version
 - #13732: Document that custom finalizers must not access the OCaml heap, etc.
   (Josh Berdine, review by Stephen Dolan and Guillaume Munch-Maccagnoni)
 
-- #NNNNN: Add examples to Stdlib.Option documentation, update tests to match.
+- #13792: Add examples to Stdlib.Option documentation, update tests to match.
   (Noah Bogart)
 
 ### Compiler user-interface and warnings:
