@@ -162,10 +162,7 @@ let pp_stamped ppf (name, stamp) =
       if not !Clflags.canonical_ids then stamp
       else canonicalize name stamp
     in
-    if !Clflags.canonical_ids && stamp = 0 then
-      fprintf ppf "%s" name
-    else
-      fprintf ppf "%s/%i" name stamp
+    fprintf ppf "%s/%i" name stamp
   end
 
 let print ~with_scope ppf =

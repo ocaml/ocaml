@@ -3,7 +3,7 @@ Breakpoint 2 at 0x00000000000000
 Breakpoint 3 at 0x00000000000000: file meander_c.c, line XXX.
 Breakpoint 4 at 0x00000000000000: file meander.ml, line XXX.
 [Thread debugging using libthread_db enabled]
-Using host libthread_db library "/lib/$ARCH-linux-gnu/libthread_db.so.1".
+Using host libthread_db library "/lib64/libthread_db.so.1".
 Breakpoint 1, <signal handler called>
 frame 0: caml_start_program
 frame 1: caml_startup_common
@@ -22,7 +22,7 @@ frame 5: caml_startup
 frame 6: caml_main
 frame 7: main
 Breakpoint 3, ocaml_to_c (unit=1) at meander_c.c:XX
-4	value ocaml_to_c (value unit) {
+5	    caml_callback(*caml_named_value
 frame 0: ocaml_to_c
 frame 1: caml_c_call
 frame 2: camlMeander$omain

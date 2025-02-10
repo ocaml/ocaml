@@ -26,15 +26,15 @@ match (3, 2, 1) with
 | _ -> false
 ;;
 [%%expect{|
-(let (*match* = 3 *match*/1 = 2 *match*/2 = 1)
+(let (*match*/0 = 3 *match*/1 = 2 *match*/2 = 1)
   (catch
     (catch
       (catch (if (!= *match*/1 3) (exit 4) (exit 2)) with (4)
-        (if (!= *match* 1) (exit 3) (exit 2)))
+        (if (!= *match*/0 1) (exit 3) (exit 2)))
      with (3) 0)
    with (2) 1))
-(let (*match* = 3 *match*/1 = 2 *match*/2 = 1)
-  (catch (if (!= *match*/1 3) (if (!= *match* 1) 0 (exit 2)) (exit 2))
+(let (*match*/0 = 3 *match*/1 = 2 *match*/2 = 1)
+  (catch (if (!= *match*/1 3) (if (!= *match*/0 1) 0 (exit 2)) (exit 2))
    with (2) 1))
 - : bool = false
 |}];;
@@ -52,7 +52,8 @@ match (3, 2, 1) with
     (catch
       (catch
         (if (!= *match*/4 3) (exit 8)
-          (let (x =a (makeblock 0 *match*/3 *match*/4 *match*/5)) (exit 6 x)))
+          (let (x/0 =a (makeblock 0 *match*/3 *match*/4 *match*/5))
+            (exit 6 x/0)))
        with (8)
         (if (!= *match*/3 1) (exit 7)
           (let (x/1 =a (makeblock 0 *match*/3 *match*/4 *match*/5))
@@ -75,8 +76,8 @@ let _ = fun a b ->
   | ((true, _) as _g)
   | ((false, _) as _g) -> ()
 [%%expect{|
-(function a[int] b : int 0)
-(function a[int] b : int 0)
+(function a/0[int] b/0 : int 0)
+(function a/0[int] b/0 : int 0)
 - : bool -> 'a -> unit = <fun>
 |}];;
 
@@ -95,7 +96,7 @@ let _ = fun a b -> match a, b with
 | (false, _) as p -> p
 (* outside, trivial *)
 [%%expect {|
-(function a/1[int] b/1 (let (p =a (makeblock 0 a/1 b/1)) p))
+(function a/1[int] b/1 (let (p/0 =a (makeblock 0 a/1 b/1)) p/0))
 (function a/1[int] b/1 (makeblock 0 a/1 b/1))
 - : bool -> 'a -> bool * 'a = <fun>
 |}]
@@ -182,7 +183,7 @@ let _ = fun a b -> match a, b with
 [%%expect {|
 (function a/7[int] b/7[int]
   (if a/7
-    (let (x/10 =a[int] a/7 _p =a (makeblock 0 a/7 b/7))
+    (let (x/10 =a[int] a/7 _p/0 =a (makeblock 0 a/7 b/7))
       (makeblock 0 (int,*) x/10 [0: 1 1]))
     (let (x/11 =a[int] a/7 p/9 =a (makeblock 0 a/7 b/7))
       (makeblock 0 (int,*) x/11 p/9))))
