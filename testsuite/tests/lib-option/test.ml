@@ -11,87 +11,53 @@ let test_none_some () =
   ()
 
 let test_value () =
-  let o = Some 3 in
-  assert (Option.value ~default:5 o = 3);
-
-  let o = None in
-  assert (Option.value ~default:5 o = 5);
+  assert (Option.value None ~default:5 = 5);
+  assert (Option.value (Some 3) ~default:5 = 3);
   ()
 
 let test_get () =
-  let o = Some 3 in
-  assert (Option.get o = 3);
-
-  let o = None in
-  assert_raise_invalid_argument Option.get o;
+  assert_raise_invalid_argument Option.get None;
+  assert (Option.get (Some 2) = 2);
   ()
 
 let test_bind () =
-  let o = Some 3 in
-  assert (Option.bind o (fun x -> Some (succ x)) = Some 4);
-  assert (Option.bind o (fun _ -> None) = None);
-
-  let o = None in
-  assert (Option.bind o (fun x -> Some (succ x)) = None);
-  assert (Option.bind o (fun _ -> None) = None);
+  assert (Option.bind (Some 3) (fun x -> Some (succ x)) = Some 4);
+  assert (Option.bind (Some 3) (fun _ -> None) = None);
+  assert (Option.bind None (fun x -> Some (succ x)) = None);
+  assert (Option.bind None (fun _ -> None) = None);
   ()
 
 let test_join () =
-  let oo = Some (Some 3) in
-  assert (Option.join oo = Some 3);
-
-  let oo = Some None in
-  assert (Option.join oo = None);
-
-  let oo = None in
-  assert (Option.join oo = None);
+  assert (Option.join (Some (Some 3)) = Some 3);
+  assert (Option.join (Some None) = None);
+  assert (Option.join None = None);
   ()
 
 let test_map () =
-  let o = Some 3 in
-  assert (Option.map succ o = Some 4);
-
-  let o = None in
-  assert (Option.map succ o = None);
+  assert (Option.map succ (Some 3) = Some 4);
+  assert (Option.map succ None = None);
   ()
 
 let test_fold () =
-  let o = Some 3 in
-  assert (Option.fold ~none:0 ~some:succ o = 4);
-  assert (Option.(fold ~none ~some) o = (Some 3));
-
-  let o = None in
-  assert (Option.fold ~none:0 ~some:succ o = 0);
-  assert (Option.(fold ~none ~some) o = None);
+  assert (Option.fold ~none:3 ~some:succ (Some 1) = 2);
+  assert (Option.fold ~none:3 ~some:succ None = 3);
+  assert (Option.(fold ~none ~some) (Some 1) = (Some 1));
+  assert (Option.(fold ~none ~some) None = None);
   ()
 
 let test_iter () =
   let count = ref 0 in
   let set_count x = count := x in
-
-  let o = Some 3 in
-  Option.iter set_count o;
-  assert (!count = 3);
-
-  let o = None in
-  Option.iter set_count o;
-  assert (!count = 3);
+  assert (!count = 0);
+  Option.iter set_count (Some 2); assert (!count = 2);
+  Option.iter set_count None; assert (!count = 2);
   ()
 
-let test_is_none () =
-  let o = Some 3 in
-  assert (Option.is_none o = false);
-
-  let o = None in
-  assert (Option.is_none o = true);
-  ()
-
-let test_is_some () =
-  let o = Some 3 in
-  assert (Option.is_some o = true);
-
-  let o = None in
-  assert (Option.is_some o = false);
+let test_is_none_some () =
+  assert (Option.is_none None = true);
+  assert (Option.is_some None = false);
+  assert (Option.is_none (Some 2) = false);
+  assert (Option.is_some (Some 2) = true);
   ()
 
 let test_equal () =
@@ -139,8 +105,7 @@ let tests () =
   test_map ();
   test_fold ();
   test_iter ();
-  test_is_none ();
-  test_is_some ();
+  test_is_none_some ();
   test_equal ();
   test_compare ();
   test_to_option_list_seq ();
