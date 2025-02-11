@@ -222,7 +222,7 @@ module Timestamp = struct
   let to_int64 t =
     t
 
-  external get_current : unit -> (int64 [@unboxed]) =
+  external get_current : unit -> (t [@unboxed]) =
     "caml_ml_runtime_current_timestamp"
     "caml_ml_runtime_current_timestamp_unboxed"
     [@@noalloc]
