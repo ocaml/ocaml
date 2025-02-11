@@ -17,8 +17,7 @@
 
     Option values explicitly indicate the presence or absence of a value. If the
     value exists, then the option will be [Some value]; otherwise, it will be
-    [None]. Option values have a variety of uses but they are primarily a safe
-    means of dealing with data that may or may not exist.
+    [None].
 
     Option values are typically used with pattern matching to access the
     contents:
@@ -30,9 +29,10 @@
       else
         Some (num / denom)
 
-    match divide 2 5 with
-    | None -> print_endline "Given 0!"
-    | Some v -> Printf.printf "The result is %f." v
+    let () =
+      match divide 2 4 with
+      | None -> print_endline "Given 0!"
+      | Some v -> Printf.printf "The result is %d." v
     ]}
 
     @since 4.08 *)
