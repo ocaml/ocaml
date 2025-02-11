@@ -131,8 +131,8 @@ Working version
 - #13768: Add Either.get_left and Either.get_right
   (T. Kinsart, review by Nicolás Ojeda Bär and Florian Angeletti)
 
-- #13570, Format: add an out_width function to Format device for approximating
-   unicode width.
+- #13570, #13794: Format, add an out_width function to Format device for
+   approximating unicode width.
   (Florian Angeletti, review by Nicolás Ojeda Bär, Daniel Bünzli,
    and Gabriel Scherer)
 

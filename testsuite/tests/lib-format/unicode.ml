@@ -34,7 +34,7 @@ val test :
 
 (** Alphabetic scripts *)
 let () =
-  test ~out_width:Format.utf8_scalar_width 40
+  test ~out_width:Format.utf_8_scalar_width 40
   "Μῆνιν ἄειδε θεὰ Πηληϊάδεω Ἀχιλῆος οὐλομένην, ἣ μυρί᾿ Ἀχαιοῖς ἄλγε᾿ ἔθηκε, \
    πολλὰς δ᾿ ἰφθίμους ψυχὰς Ἄϊδι προΐαψεν ἡρώων, αὐτοὺς δὲ ἑλώρια τεῦχε κύνεσσιν \
    οἰωνοῖσί τε πᾶσι· Διὸς δ᾿ ἐτελείετο βουλή ἐξ οὗ δὴ τὰ πρῶτα διαστήτην \
@@ -51,7 +51,7 @@ let () =
 |}]
 
 let () =
-  setup ~out_width:Format.utf8_scalar_width 40;
+  setup ~out_width:Format.utf_8_scalar_width 40;
   Format.printf
     "@[Μῆνιν@ ἄειδε@ θεὰ@ Πηληϊάδεω@ Ἀχιλῆος@ οὐλομένην,@ ἣ@ μυρί᾿@ Ἀχαιοῖς@ ἄλγε᾿@ ἔθηκε,@ \
      πολλὰς@ δ᾿@ ἰφθίμους@ ψυχὰς@ Ἄϊδι@ προΐαψεν@ ἡρώων,@ αὐτοὺς@ δὲ@ ἑλώρια@ τεῦχε@ \
@@ -96,7 +96,7 @@ let () =
 
 (** Vietnamese tends to use many combining diacritics *)
 let () =
-  test ~out_width:Format.utf8_scalar_width 40
+  test ~out_width:Format.utf_8_scalar_width 40
     "Trăm năm trong cõi người ta, \
      Chữ tài chữ mệnh khéo là ghét nhau. \
      Trải qua một cuộc bể dâu, \
@@ -135,7 +135,7 @@ let () =
 |}]
 
 let () =
-  test ~out_width:Format.utf8_scalar_width 40
+  test ~out_width:Format.utf_8_scalar_width 40
     "めぐり逢ひ \
      見しやそれとも \
      わかぬ間に \
@@ -150,7 +150,7 @@ let () =
     abugida scripts, but those scripts width tend to be really dependent on
     shaping anyway. *)
 let () =
-  test  ~out_width:Format.utf8_scalar_width 40
+  test  ~out_width:Format.utf_8_scalar_width 40
     "अग्निमीळे पुरोहितं यज्ञस्य देवं रत्वीजम होतारं रत्नधातमम अग्निः \
      पूर्वेभिर्र्षिभिरीड्यो नूतनैरुत स देवानेह वक्षति"
 [%%expect{|

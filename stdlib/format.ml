@@ -970,7 +970,7 @@ let default_pp_mark_close_tag = function
 let default_pp_print_open_tag = ignore
 let default_pp_print_close_tag = ignore
 
-let utf8_scalar_width s ~pos ~len =
+let utf_8_scalar_width s ~pos ~len =
   let rec width s count current stop =
     if current >= stop then count
     else
@@ -993,7 +993,7 @@ let pp_make_formatter f g h i j =
   let scan_stack = Stack.create () in
   initialize_scan_stack scan_stack;
   Stack.push { left_total = 1; queue_elem = sys_tok } scan_stack;
-  let pp_out_width = utf8_scalar_width in
+  let pp_out_width = utf_8_scalar_width in
   let pp_margin = 78
   and pp_min_space_left = 10 in
   {
