@@ -53,26 +53,26 @@ val value : 'a option -> default:'a -> 'a
 
     {b Examples}
     {[
-    let o = Some 3 in
-    assert (Option.value ~default:5 o = 3);
+    let o = Some "foo" in
+    assert (Option.value ~default:"bar" o = "foo");
 
     let o = None in
-    assert (Option.value ~default:5 o = 5);
+    assert (Option.value ~default:"bar" o = "bar");
     ]} *)
 
 val get : 'a option -> 'a
 (** [get o] is [v] if [o] is [Some v] and raise otherwise.
 
+    @raise Invalid_argument if [o] is [None]. 
+
     {b Examples}
     {[
-    let o = Some 3 in
-    assert (Option.get o = 3);
+    let o = Some "foo" in
+    assert (Option.get o = "foo");
 
     let o = None in
-    assert (Option.get o = 5); (* raises [Invalid_argument] *)
-    ]}
-
-    @raise Invalid_argument if [o] is [None]. *)
+    assert (Option.get o = "bar"); (* raises [Invalid_argument] *)
+    ]} *)
 
 val bind : 'a option -> ('a -> 'b option) -> 'b option
 (** [bind o f] is [f v] if [o] is [Some v] and [None] if [o] is [None].
@@ -93,8 +93,8 @@ val join : 'a option option -> 'a option
 
     {b Examples}
     {[
-    let oo = Some (Some 3) in
-    assert (Option.join oo = Some 3);
+    let oo = Some (Some "foo") in
+    assert (Option.join oo = Some "foo");
 
     let oo = Some None in
     assert (Option.join oo = None);
@@ -138,13 +138,13 @@ val iter : ('a -> unit) -> 'a option -> unit
     let count = ref 0 in
     let set_count x = count := x in
 
-    let o = Some 3 in
+    let o = Some "foo" in
     Option.iter set_count o;
-    assert (!count = 3);
+    assert (!count = "foo");
 
     let o = None in
     Option.iter set_count o;
-    assert (!count = 3);
+    assert (!count = "foo");
     ]} *)
 
 (** {1:preds Predicates and comparisons} *)
@@ -154,7 +154,7 @@ val is_none : 'a option -> bool
 
     {b Examples}
     {[
-    let o = Some 3 in
+    let o = Some "foo" in
     assert (Option.is_none o = false);
 
     let o = None in
@@ -162,11 +162,11 @@ val is_none : 'a option -> bool
     ]} *)
 
 val is_some : 'a option -> bool
-(** [is_some o] is [true] if and only if [o] is [Some o].
+(** [is_some o] is [true] if and only if [o] is [Some v].
 
     {b Examples}
     {[
-    let o = Some 3 in
+    let o = Some "foo" in
     assert (Option.is_some o = true);
 
     let o = None in
@@ -189,11 +189,11 @@ val to_result : none:'e -> 'a option -> ('a, 'e) result
 
     {b Examples}
     {[
-    let o = Some 3 in
-    assert (Option.to_result ~none:6 o = Ok 3);
+    let o = Some "foo" in
+    assert (Option.to_result ~none:"bar" o = Ok "foo");
 
     let o = None in
-    assert (Option.to_result ~none:6 o = Error 6);
+    assert (Option.to_result ~none:"bar" o = Error "bar");
     ]} *)
 
 val to_list : 'a option -> 'a list
@@ -201,8 +201,8 @@ val to_list : 'a option -> 'a list
 
     {b Examples}
     {[
-    let o = Some 3 in
-    assert (Option.to_list o = [3]);
+    let o = Some "foo" in
+    assert (Option.to_list o = ["foo"]);
 
     let o = None in
     assert (Option.to_list o = []);
@@ -214,8 +214,8 @@ val to_seq : 'a option -> 'a Seq.t
 
     {b Examples}
     {[
-    let o = Some 3 in
-    assert (Option.to_seq o |> List.of_seq = [3]);
+    let o = Some "foo" in
+    assert (Option.to_seq o |> List.of_seq = ["foo"]);
 
     let o = None in
     assert (Option.to_seq o |> List.of_seq = []);
