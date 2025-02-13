@@ -87,7 +87,24 @@ let f (A r) = ignore r
 val f : 'a t -> unit = <fun>
 |}]
 
-
+(* check that scope-escape rules still work correctly through rebinding,
+   even on parametrized types, even when their parameters are constrained. *)
+type 'a t = A of {x: 'a; mutable y: unit} constraint 'a = int * 'b
+module Alias = struct
+  type 'a t2 = 'a t = A of {x: 'a; mutable y: unit}
+end
+let f (Alias.A r) = ignore r
+let f (Alias.A {x; y}) = A {x; y = ()}
+[%%expect{|
+type 'a t = A of { x : 'a; mutable y : unit; } constraint 'a = int * 'b
+module Alias :
+  sig
+    type 'a t2 = 'a t = A of { x : 'a; mutable y : unit; }
+      constraint 'a = int * 'b
+  end
+val f : (int * 'a) Alias.t2 -> unit = <fun>
+val f : (int * 'a) Alias.t2 -> (int * 'a) t = <fun>
+|}]
 
 module M = struct
   type 'a t =
