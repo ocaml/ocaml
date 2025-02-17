@@ -240,3 +240,34 @@ type _ c = C : [ `A ] c
 type t = T : { x : [< `A ] c; } -> t
 val f : t -> unit = <fun>
 |}]
+
+
+(* An advanced scope-escape example from typing/types.ml *)
+module Types = struct
+  type any = [`some | `none | `var]
+  and field_kind = [`some|`var] field_kind_gen
+  and _ field_kind_gen =
+      FKvar : {mutable field_kind: any field_kind_gen} -> [> `var] field_kind_gen
+    | FKprivate : [> `none] field_kind_gen  (* private method; only under FKvar *)
+    | FKpublic  : [> `some] field_kind_gen  (* public method *)
+    | FKabsent  : [> `some] field_kind_gen  (* hidden private method *)
+
+  let rec field_kind_internal_repr : field_kind -> field_kind = function
+    | FKvar {field_kind = FKvar _ | FKpublic | FKabsent as fk} ->
+        field_kind_internal_repr fk
+    | kind -> kind
+end
+[%%expect{|
+module Types :
+  sig
+    type any = [ `none | `some | `var ]
+    and field_kind = [ `some | `var ] field_kind_gen
+    and _ field_kind_gen =
+        FKvar : { mutable field_kind : any field_kind_gen;
+        } -> [> `var ] field_kind_gen
+      | FKprivate : [> `none ] field_kind_gen
+      | FKpublic : [> `some ] field_kind_gen
+      | FKabsent : [> `some ] field_kind_gen
+    val field_kind_internal_repr : field_kind -> field_kind
+  end
+|}]
