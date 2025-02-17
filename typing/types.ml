@@ -795,7 +795,7 @@ let set_level ty level =
 (* TODO: introduce a guard and rename it to set_higher_scope? *)
 let set_scope ty scope =
   let ty = repr ty in
-  let prev_scope = ty.scope land marks_mask in
+  let prev_scope = ty.scope land scope_mask in
   if scope <> prev_scope then begin
     if ty.id <= !last_snapshot then log_change (Cscope (ty, prev_scope));
     Transient_expr.set_scope ty scope
