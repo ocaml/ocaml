@@ -2034,6 +2034,29 @@ and type_pat_aux
       List.iter (fun { pv_type; pv_loc; _ } ->
         check_scope_escape pv_loc env2 outer_lev pv_type
       ) p2_variables;
+      begin
+      (* Now that we checked against escapes of bound variables,
+         lower the scopes back to [equations_scope]. *)
+        let equations_scope = penv.equations_scope in
+        assert (equations_scope >= 0 && equations_scope < 1 lsl 27);
+        let rec lower_scope mark ty =
+          if get_level ty >= outer_lev
+          && try_mark_node mark ty
+          then begin
+            if get_scope ty > equations_scope then
+              set_scope ty equations_scope;
+            iter_type_expr (lower_scope mark) ty
+          end
+        in
+        let lower_pat pat =
+          with_type_mark (fun mark -> lower_scope mark pat.pat_type)
+        in
+        let open Tast_iterator in
+        let it = { default_iterator with pat = (fun it pat ->
+          lower_pat pat;
+          default_iterator.pat it pat) } in
+        List.iter (it.pat it) [p1; p2]
+      end;
       let alpha_env =
         enter_orpat_variables loc !!penv p1_variables p2_variables in
       (* Propagate the outcome of checking the or-pattern back to
