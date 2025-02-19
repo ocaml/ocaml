@@ -1,5 +1,6 @@
 (* TEST
    native-compiler;
+   no-tsan; (* Skip, TSan inserts extra frames into backtraces *)
    linux;
    arch_amd64;
    script = "sh ${test_source_directory}/has_lldb.sh linux";
