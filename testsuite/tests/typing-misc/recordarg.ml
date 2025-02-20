@@ -106,6 +106,35 @@ val f : (int * 'a) Alias.t2 -> unit = <fun>
 val f : (int * 'a) Alias.t2 -> (int * 'a) t = <fun>
 |}]
 
+(* record-update tests from Jacques Garrigue *)
+type t = A of { x : int; y : int }
+let f1 (A r) = A {r with y = 3}
+[%%expect{|
+type t = A of { x : int; y : int; }
+val f1 : t -> t = <fun>
+|}]
+
+let f2 (A r) = let r' = {r with y = 3} in ()
+[%%expect{|
+Line 1, characters 19-21:
+1 | let f2 (A r) = let r' = {r with y = 3} in ()
+                       ^^
+Warning 26 [unused-var]: unused variable "r'".
+
+val f2 : t -> unit = <fun>
+|}]
+
+let f3 (A r) = let r' = {r with y = 1 + 2} in A r'
+[%%expect{|
+val f3 : t -> t = <fun>
+|}]
+
+let f4 (A r) = {r with y = 3} (* should be rejected *)
+[%%expect{|
+val f4 : t -> t.A = <fun>
+|}]
+
+
 module M = struct
   type 'a t =
     | A of {x : 'a}
