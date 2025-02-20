@@ -53,7 +53,8 @@ those that should not modify the parsed AST at all:
 
 4. Before committing any change, remember to remove the `.ast` files
    from your index (using `git reset HEAD`), and maybe remove them
-   completely (unless you plan to check further changes).
+   completely (unless you plan to check further changes) -- you can
+   run `make clean-all-asts` to remove them.
 
 ----
 # save pre-change ASTs
