@@ -5707,55 +5707,57 @@ and type_construct env ~sexp lid sarg ty_expected_explained =
                   (lid.txt, constr.cstr_arity, List.length sargs)));
   let separate = !Clflags.principal || Env.has_local_constraints env in
   let check_inline_record_escape = constr.cstr_inlined <> None in
-  with_local_level_if ~post:ignore check_inline_record_escape @@ fun () ->
-  let inline_record_scope =
-    if check_inline_record_escape then create_scope ()
-    else Ident.lowest_scope
-  in
-  let ty_args, ty_res, texp =
-    with_local_level_generalize_structure_if separate begin fun () ->
-      let ty_args, ty_res, texp =
-        with_local_level_generalize_structure_if separate begin fun () ->
-          let (ty_args, ty_res, _) =
-            instance_constructor ~scope:inline_record_scope
-              Keep_existentials_flexible constr
-          in
-          let texp =
-            re {
-            exp_desc = Texp_construct(lid, constr, []);
-            exp_loc = sexp.pexp_loc; exp_extra = [];
-            exp_type = ty_res;
-            exp_attributes = sexp.pexp_attributes;
-            exp_env = env } in
-          (ty_args, ty_res, texp)
-        end
-      in
-      with_explanation explanation (fun () ->
-        unify_exp ~sexp env {texp with exp_type = instance ty_res}
-          (instance ty_expected));
-      (ty_args, ty_res, texp)
-    end
-  in
-  let ty_args0, ty_res =
-    match instance_list (ty_res :: ty_args) with
-      t :: tl -> tl, t
-    | _ -> assert false
-  in
-  let texp = {texp with exp_type = ty_res} in
-  if not separate then unify_exp ~sexp env texp (instance ty_expected);
-  let args =
-    List.map2 (fun e (t,t0) -> type_argument env e t t0) sargs
-      (List.combine ty_args ty_args0) in
-  if constr.cstr_private = Private then
-    begin match constr.cstr_tag with
-    | Cstr_extension _ ->
-        raise(Error(sexp.pexp_loc, env, Private_constructor (constr, ty_res)))
-    | Cstr_constant _ | Cstr_block _ | Cstr_unboxed ->
-        raise (Error(sexp.pexp_loc, env, Private_type ty_res));
-    end;
-  (* NOTE: shouldn't we call "re" on this final expression? -- AF *)
-  { texp with
-    exp_desc = Texp_construct(lid, constr, args) }
+  with_local_level_if ~post:ignore check_inline_record_escape begin fun () ->
+    let inline_record_scope =
+      if check_inline_record_escape then create_scope ()
+      else Ident.lowest_scope
+    in
+    let ty_args, ty_res, texp =
+      with_local_level_generalize_structure_if separate begin fun () ->
+        let ty_args, ty_res, texp =
+          with_local_level_generalize_structure_if separate begin fun () ->
+            let (ty_args, ty_res, _) =
+              instance_constructor ~scope:inline_record_scope
+                Keep_existentials_flexible constr
+            in
+            let texp =
+              re {
+              exp_desc = Texp_construct(lid, constr, []);
+              exp_loc = sexp.pexp_loc; exp_extra = [];
+              exp_type = ty_res;
+              exp_attributes = sexp.pexp_attributes;
+              exp_env = env } in
+            (ty_args, ty_res, texp)
+          end
+        in
+        with_explanation explanation (fun () ->
+          unify_exp ~sexp env {texp with exp_type = instance ty_res}
+            (instance ty_expected));
+        (ty_args, ty_res, texp)
+      end
+    in
+    let ty_args0, ty_res =
+      match instance_list (ty_res :: ty_args) with
+        t :: tl -> tl, t
+      | _ -> assert false
+    in
+    let texp = {texp with exp_type = ty_res} in
+    if not separate then unify_exp ~sexp env texp (instance ty_expected);
+    let args =
+      List.map2 (fun e (t,t0) -> type_argument env e t t0) sargs
+        (List.combine ty_args ty_args0)
+    in
+    if constr.cstr_private = Private then
+      begin match constr.cstr_tag with
+      | Cstr_extension _ ->
+          raise(Error(sexp.pexp_loc, env, Private_constructor (constr, ty_res)))
+      | Cstr_constant _ | Cstr_block _ | Cstr_unboxed ->
+          raise (Error(sexp.pexp_loc, env, Private_type ty_res));
+      end;
+    (* NOTE: shouldn't we call "re" on this final expression? -- AF *)
+    { texp with
+      exp_desc = Texp_construct(lid, constr, args) }
+  end
 
 (* Typing of statements (expressions whose values are discarded) *)
 
