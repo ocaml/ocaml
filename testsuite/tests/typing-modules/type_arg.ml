@@ -420,3 +420,31 @@ Line 6, characters 2-41:
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This expression in not allowed in type functors.
 |}]
+
+module type S = sig end
+let m = (module struct end : S)
+
+[%%expect{|
+module type S = sig end
+val m : (module S) = <module>
+|}]
+
+module F_unpack1 (type a) = (val m)
+
+[%%expect{|
+Line 1, characters 28-35:
+1 | module F_unpack1 (type a) = (val m)
+                                ^^^^^^^
+Error: This expression in not allowed in type functors.
+|}]
+
+module F_unpack2 (type a) = struct
+    module M = (val m)
+end
+
+[%%expect{|
+Line 2, characters 15-22:
+2 |     module M = (val m)
+                   ^^^^^^^
+Error: This expression in not allowed in type functors.
+|}]

@@ -53,6 +53,7 @@ type disallowed_in_functor =
   | Expansive
   | Class
   | ModApp
+  | Unpack
 
 type error =
     Cannot_apply of module_type
@@ -2338,6 +2339,8 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
       in
       if funct_body != Gen && Mtype.contains_type env mty then
         raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body TypeGen));
+      if funct_body = AppT then
+        raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body Unpack));
       { mod_desc = Tmod_unpack(exp, mty);
         mod_type = mty;
         mod_env = env;
