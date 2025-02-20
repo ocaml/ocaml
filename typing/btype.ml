@@ -174,6 +174,11 @@ let type_origin decl =
 
 let dummy_method = "*dummy method*"
 
+let is_inline_record_type ty =
+  match get_desc ty with
+  | Tconstr(p, _, _) when Path.is_constructor_typath p -> true
+  | _ -> false
+
 (**** Representative of a type ****)
 
 let merge_fixed_explanation fixed1 fixed2 =
