@@ -131,7 +131,12 @@ val f3 : t -> t = <fun>
 
 let f4 (A r) = {r with y = 3} (* should be rejected *)
 [%%expect{|
-val f4 : t -> t.A = <fun>
+Line 1, characters 15-29:
+1 | let f4 (A r) = {r with y = 3} (* should be rejected *)
+                   ^^^^^^^^^^^^^^
+Error: This expression has type "t.A" but an expression was expected of type "'a"
+       This instance of "t.A" is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 

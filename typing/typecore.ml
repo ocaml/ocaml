@@ -4035,15 +4035,27 @@ and type_expect_ env sexp ty_expected_explained =
               let error = Expr_not_a_record_type exp.exp_type in
               raise (Error (exp.exp_loc, env, error))
         in
+        (* In record update expressions [{r with ...}],
+           [r] may have an inline record type with a restricted scope.
+           We must propagate this restricted scope if we build a new
+           return type below. *)
+        let ty_record_scope = match opt_exp with
+          | None -> Ident.lowest_scope
+          | Some exp -> get_scope exp.exp_type
+        in
         match expected_opath, opt_exp_opath with
-        | None, None -> newvar (), None
+        | None, None ->
+            let ty = new_scoped_ty ty_record_scope (Tvar None) in
+            ty, None
         | Some _, None -> ty_expected, expected_opath
         | Some(_, _, true), Some _ -> ty_expected, expected_opath
         | (None | Some (_, _, false)), Some (_, p', _) ->
             let decl = Env.find_type p' env in
             let ty =
-              with_local_level_generalize_structure
-                (fun () -> newconstr p' (instance_list decl.type_params))
+              with_local_level_generalize_structure (fun () ->
+                let args = instance_list decl.type_params in
+                new_scoped_ty ty_record_scope (Tconstr (p', args, ref Mnil))
+              )
             in
             ty, opt_exp_opath
       in
