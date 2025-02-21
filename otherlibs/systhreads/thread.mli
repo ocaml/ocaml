@@ -52,6 +52,8 @@ val set_current_thread_name : string -> unit
     This does nothing if the functionality is not implemented but will
     print a warning on the standard error if enabled.
 
+    Likewise, a warning is printed if the operation fails.
+
     @since 5.4 *)
 
 exception Exit
