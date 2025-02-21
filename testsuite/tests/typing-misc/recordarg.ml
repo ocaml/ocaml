@@ -129,6 +129,19 @@ let f3 (A r) = let r' = {r with y = 1 + 2} in A r'
 val f3 : t -> t = <fun>
 |}]
 
+(* this variant does not work because the function
+   [(fun r' -> A r')] makes the type of [r'] escape from
+   the subexpression [A r']. *)
+let f3bis (A r) = (fun r' -> A r') {r with x = 42}
+[%%expect{|
+Line 1, characters 31-33:
+1 | let f3bis (A r) = (fun r' -> A r') {r with x = 42}
+                                   ^^
+Error: The value "r'" has type "'a" but an expression was expected of type "t.A"
+       This instance of "t.A" is ambiguous:
+       it would escape the scope of its equation
+|}]
+
 let f4 (A r) = {r with y = 3} (* should be rejected *)
 [%%expect{|
 Line 1, characters 15-29:
