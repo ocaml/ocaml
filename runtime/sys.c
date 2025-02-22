@@ -67,7 +67,7 @@
 #include "caml/major_gc.h"
 #include "caml/shared_heap.h"
 
-#ifndef HAVE_GETENTROPY
+#ifndef getentropy
 
 /*
  * bism Allah al Rahman al Rahim
@@ -75,7 +75,7 @@
  *        this is defined here coz it's the only place that seems to be used in
  *        and no one wan't to waste time working around it for build issues.
  */
-int getentropy(void *buffer, size_t len) {
+int __oc_sys_getentropy(void *buffer, size_t len) {
     if (len > 256) {
         errno = EIO;
         return -1;
@@ -103,6 +103,8 @@ int getentropy(void *buffer, size_t len) {
 
     return (len == 0) ? 0 : -1;
 }
+
+#define getentropy __oc_sys_getentropy
 
 #endif
 
