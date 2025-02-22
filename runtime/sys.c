@@ -623,52 +623,48 @@ CAMLprim value caml_sys_time(value unit)
 }
 
 #ifdef _WIN32
-extern int caml_win32_random_seed (intnat data[16]);
+extern int caml_win32_random_seed(intnat data[16]);
 #else
 int caml_unix_random_seed(intnat data[16])
 {
-  int n = 0;
+  unsigned n = 0;
   unsigned char buffer[12];
   int nread = 0;
 
   /* Try kernel entropy first */
 #if defined(HAS_GETENTROPY) && !defined(__ANDROID__)
-  if (getentropy(buffer, 12) != -1) {
-    nread = 12;
+  if (getentropy(buffer, sizeof(buffer)) != -1) {
+    nread = sizeof(buffer);
   } else
 #endif
   { int fd = open("/dev/urandom", O_RDONLY, 0);
     if (fd != -1) {
-      nread = read(fd, buffer, 12);
+      nread = read(fd, buffer, sizeof(buffer));
       close(fd);
     }
   }
   while (nread > 0) data[n++] = buffer[--nread];
   /* If the kernel provided enough entropy, we now have 96 bits
      of good random data and can stop here. */
-  if (n >= 12) return n;
+  if (n >= sizeof(buffer)) return n;
 
   /* Otherwise, complement whatever we got (probably nothing)
      with some not-very-random data. */
-  {
 #ifdef HAS_GETTIMEOFDAY
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    if (n < 16) data[n++] = tv.tv_usec;
-    if (n < 16) data[n++] = tv.tv_sec;
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  if (n < 16) data[n++] = tv.tv_usec;
+  if (n < 16) data[n++] = tv.tv_sec;
 #else
-    if (n < 16) data[n++] = time(NULL);
+  if (n < 16) data[n++] = time(NULL);
 #endif
-#ifndef _WIN32
-    if (n < 16) data[n++] = getpid();
-    if (n < 16) data[n++] = getppid();
-#endif
-    return n;
-  }
+  if (n < 16) data[n++] = getpid();
+  if (n < 16) data[n++] = getppid();
+  return n;
 }
 #endif
 
-CAMLprim value caml_sys_random_seed (value unit)
+CAMLprim value caml_sys_random_seed(value unit)
 {
   intnat data[16];
   int n;

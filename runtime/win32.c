@@ -22,6 +22,7 @@
 #define _WIN32_WINNT 0x0600 /* _WIN32_WINNT_VISTA */
 
 #define WIN32_LEAN_AND_MEAN
+#define _CRT_RAND_S
 #include <wtypes.h>
 #include <winbase.h>
 #include <winsock2.h>
@@ -620,22 +621,30 @@ void caml_win32_unregister_overflow_detection(void)
 
 /* Seeding of pseudo-random number generators */
 
-int caml_win32_random_seed (intnat data[16])
+int caml_win32_random_seed(intnat data[16])
 {
-  /* For better randomness, consider:
-     http://msdn.microsoft.com/library/en-us/seccrypto/security/rtlgenrandom.asp
-     http://blogs.msdn.com/b/michael_howard/archive/2005/01/14/353379.aspx
-  */
+  int n = 0;
+
+  /* Try kernel entropy first */
+  for (int i = 0; i < 3; i++)
+    if (rand_s((unsigned int *) &data[n]) == 0)
+      n++;
+
+  /* If the kernel provided enough entropy, we now have 96 bits
+     of good random data and can stop here. */
+  if (n == 3) return n;
+
+  /* Otherwise, use some not-very-random data. */
   FILETIME t;
   LARGE_INTEGER pc;
   GetSystemTimeAsFileTime(&t);
   QueryPerformanceCounter(&pc);  /* PR#6032 */
-  data[0] = t.dwLowDateTime;
-  data[1] = t.dwHighDateTime;
-  data[2] = GetCurrentProcessId();
-  data[3] = pc.LowPart;
-  data[4] = pc.HighPart;
-  return 5;
+  data[n++] = t.dwLowDateTime;
+  data[n++] = t.dwHighDateTime;
+  data[n++] = GetCurrentProcessId();
+  data[n++] = pc.LowPart;
+  data[n++] = pc.HighPart;
+  return n;
 }
 
 

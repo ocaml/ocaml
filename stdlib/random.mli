@@ -39,11 +39,11 @@ val full_init : int array -> unit
 (** Same as {!Random.init} but takes more data as seed. *)
 
 val self_init : unit -> unit
-(** Initialize the domain-local generator with a random seed chosen
-    in a system-dependent way.  If [/dev/urandom] is available on the host
-    machine, it is used to provide a highly random initial seed.  Otherwise, a
-    less random seed is computed from system parameters (current time, process
-    IDs, domain-local state). *)
+(** Initialize the domain-local generator with a random seed chosen in a
+    system-dependent way.  If a cryptographically secure pseudorandom number
+    generator is available on the host machine, it is used to provide a highly
+    random initial seed.  Otherwise, a less random seed is computed from system
+    parameters (current time, process IDs, domain-local state). *)
 
 val bits : unit -> int
 (** Return 30 random bits in a nonnegative integer.
