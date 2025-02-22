@@ -303,15 +303,11 @@ AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 
-# Check for the --with-android option
-AC_ARG_WITH([android],
-  [AS_HELP_STRING([--with-android], [enable Android support])],
-  [android=yes], [android=no])
-
-# If --with-android is specified, add -landroid-shmem to oc_ldflags
-# This in shea Allah ensures that it compiles within termux/android.
-AS_IF([test "$with_android" = "yes"],
-    [oc_ldflags="$oc_flags -landroid-shmem"])
+# This in shea Allah ensures that it links properly on termux/android.
+AC_CHECK_LIB([android-shmem], [libandroid_shmat])
+if test "$ac_cv_lib_android_shmem_libandroid_shmat" = "yes"; then
+   oc_flags="-landroid-shmem $oc_flags"
+fi
 
 # Override cross_compiling and ac_tool_prefix variables since the C toolchain is
 # used to generate target code when building a cross compiler
