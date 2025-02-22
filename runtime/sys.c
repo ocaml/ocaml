@@ -67,47 +67,6 @@
 #include "caml/major_gc.h"
 #include "caml/shared_heap.h"
 
-#ifndef getentropy
-
-/*
- * bism Allah al Rahman al Rahim
- * @brief fill a buffer with random data from /dev/urandom.
- *        this is defined here coz it's the only place that seems to be used in
- *        and no one wan't to waste time working around it for build issues.
- */
-int __oc_sys_getentropy(void *buffer, size_t len) {
-    if (len > 256) {
-        errno = EIO;
-        return -1;
-    }
-
-    int fd = open("/dev/urandom", O_RDONLY);
-    if (fd < 0)
-        return -1;
-
-    ssize_t ret;
-    char *pos = buffer;
-
-    while (len > 0) {
-        ret = read(fd, pos, len);
-        if (ret < 0) {
-            if (errno == EINTR)
-                continue;
-            break;
-        }
-        pos += ret;
-        len -= ret;
-    }
-
-    close(fd);
-
-    return (len == 0) ? 0 : -1;
-}
-
-#define getentropy __oc_sys_getentropy
-
-#endif
-
 CAMLexport char * caml_strerror(int errnum, char * buf, size_t buflen)
 {
 #ifdef _WIN32
@@ -673,7 +632,7 @@ int caml_unix_random_seed(intnat data[16])
   int nread = 0;
 
   /* Try kernel entropy first */
-#ifdef HAS_GETENTROPY
+#if defined(HAS_GETENTROPY) && !defined(__ANDROID__)
   if (getentropy(buffer, 12) != -1) {
     nread = 12;
   } else
