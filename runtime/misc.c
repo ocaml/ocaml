@@ -261,7 +261,7 @@ CAMLexport int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 uintnat caml_runtime_warnings = 0;
 static int caml_runtime_warnings_first = 1;
 
-int caml_runtime_warnings_active(void)
+CAMLextern int caml_runtime_warnings_active(void)
 {
   if (!caml_runtime_warnings) return 0;
   if (caml_runtime_warnings_first) {

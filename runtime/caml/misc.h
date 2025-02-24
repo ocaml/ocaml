@@ -682,7 +682,7 @@ void caml_gc_log (const char *, ...)
 
 /* Runtime warnings */
 extern uintnat caml_runtime_warnings;
-int caml_runtime_warnings_active(void);
+CAMLextern int caml_runtime_warnings_active(void);
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR

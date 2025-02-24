@@ -18,8 +18,6 @@
 #define _GNU_SOURCE /* helps to find pthread_setname_np() */
 #include "caml/config.h"
 
-#include <string.h>
-
 #if defined(_WIN32)
 #  include <windows.h>
 #  include <processthreadsapi.h>
@@ -980,48 +978,57 @@ static st_retcode caml_threadstatus_wait (value wrapper)
   CAMLreturnT(st_retcode, retcode);
 }
 
-#define caml_set_current_thread_name_warning(w) do {            \
-  if (caml_runtime_warnings_active()) {                         \
-    fprintf(stderr, "Could not set thread name: %s\n", w);      \
-    fflush(stderr);                                             \
-  }                                                             \
-} while (0)
+#define caml_set_current_thread_name_warning(w)                                \
+  do {                                                                         \
+    if (caml_runtime_warnings_active()) {                                      \
+      fprintf(stderr, "Error while setting thread name: %s\n", w);             \
+      fflush(stderr);                                                          \
+    }                                                                          \
+  } while (0)
 
 /* Set the current thread's name. */
 CAMLprim value caml_set_current_thread_name(value name)
 {
 #if defined(_WIN32)
-
 #  if defined(HAS_SETTHREADDESCRIPTION)
   wchar_t *thread_name = caml_stat_strdup_to_utf16(String_val(name));
   HRESULT hr = SetThreadDescription(GetCurrentThread(), thread_name);
   caml_stat_free(thread_name);
   if (FAILED(hr))
-    caml_set_current_thread_name_warning(strerror(HRESULT_CODE(hr)));
+    caml_set_current_thread_name_warning("SetThreadDescription failed!");
 #  endif
 
 #  if defined(HAS_PTHREAD_SETNAME_NP)
   // We are using both methods.
   // See: https://github.com/ocaml/ocaml/pull/13504#discussion_r1786358928
+  char buf[1024];
   int ret = pthread_setname_np(pthread_self(), String_val(name));
-  if (ret != 0) caml_set_current_thread_name_warning(strerror(ret));
+  if (ret != 0)
+    caml_set_current_thread_name_warning(caml_strerror(ret, buf, sizeof(buf)));
 #  endif
 
 #elif defined(HAS_PRCTL)
+  char buf[1024];
   int ret = prctl(PR_SET_NAME, String_val(name));
-  if (ret == -1) caml_set_current_thread_name_warning(strerror(errno));
+  if (ret == -1)
+    caml_set_current_thread_name_warning(
+      caml_strerror(errno, buf, sizeof(buf)));
 #elif defined(HAS_PTHREAD_SETNAME_NP)
 #  if defined(__APPLE__)
   // Darwin implementation does not return any error code.
   pthread_setname_np(String_val(name));
 #  elif defined(__NetBSD__)
+  char buf[1024];
   int ret = pthread_setname_np(pthread_self(), "%s", String_val(name));
-  if (ret != 0) caml_set_current_thread_name_warning(strerror(ret));
+  if (ret != 0)
+    caml_set_current_thread_name_warning(caml_strerror(ret, buf, sizeof(buf)));
 #  else
+  char buf[1024];
   // Both linux and freebsd document return value as 0 or error
   // code.
   int ret = pthread_setname_np(pthread_self(), String_val(name));
-  if (ret != 0) caml_set_current_thread_name_warning(strerror(ret));
+  if (ret != 0)
+    caml_set_current_thread_name_warning(caml_strerror(ret, buf, sizeof(buf)));
 #  endif
 #elif defined(HAS_PTHREAD_SET_NAME_NP)
   // pthread_set_name_np seems to be the no-error alternative.
