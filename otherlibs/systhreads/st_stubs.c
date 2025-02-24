@@ -981,7 +981,7 @@ static st_retcode caml_threadstatus_wait (value wrapper)
 #define caml_set_current_thread_name_warning(w)                                \
   do {                                                                         \
     if (caml_runtime_warnings_active()) {                                      \
-      fprintf(stderr, "Error while setting thread name: %s\n", w);             \
+      fprintf(stderr, "[ocaml] error while setting thread name: %s\n", w);     \
       fflush(stderr);                                                          \
     }                                                                          \
   } while (0)
