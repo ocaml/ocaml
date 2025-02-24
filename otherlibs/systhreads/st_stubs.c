@@ -980,12 +980,12 @@ static st_retcode caml_threadstatus_wait (value wrapper)
   CAMLreturnT(st_retcode, retcode);
 }
 
-#define caml_set_current_thread_name_warning(w) { \
-  if (caml_runtime_warnings_active()) { \
-    fprintf(stderr, "Could not set thread name: %s\n", w); \
-    fflush(stderr); \
-  } \
-}
+#define caml_set_current_thread_name_warning(w) do {            \
+  if (caml_runtime_warnings_active()) {                         \
+    fprintf(stderr, "Could not set thread name: %s\n", w);      \
+    fflush(stderr);                                             \
+  }                                                             \
+} while (0)
 
 /* Set the current thread's name. */
 CAMLprim value caml_set_current_thread_name(value name)
