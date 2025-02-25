@@ -58,7 +58,7 @@ Line 3, characters 4-5:
         ^
 Error: This pattern matches values of type "int"
        but a pattern was expected which matches values of type "float"
-  Hint: Did you mean "1."?
+Hint: Did you mean "1."?
 |}];;
 
 match marray with

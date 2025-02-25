@@ -65,5 +65,5 @@ Line 2, characters 25-27:
 2 | class c = object inherit ct end
                              ^^
 Error: Unbound class "ct"
-Hint: There is a class type named "ct", but classes are not class types
+Hint: There is a class type named "ct", but classes are not class types.
 |}]

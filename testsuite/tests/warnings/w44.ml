@@ -50,8 +50,8 @@ end;;
 Line 3, characters 10-11:
 3 |   val y = x + 1
               ^
-Error: The instance variable "x"
-       cannot be accessed from the definition of another instance variable
+Error: The instance variable "x" cannot be accessed from the definition of
+       another instance variable
 |}]
 
 module M = struct let x = 0 end

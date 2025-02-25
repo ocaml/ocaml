@@ -33,8 +33,7 @@ Line 1, characters 14-21:
                   ^^^^^^^
 Error: This expression has type "'a -> 'b"
        but an expression was expected of type "string"
-  Hint: This function application is partial, maybe some arguments
-  are missing.
+Hint: This function application is partial, maybe some arguments are missing.
 |}];;
 
 (* And the fully polymorphic definition is rejected. *)

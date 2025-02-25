@@ -96,9 +96,6 @@ type error =
 
 exception Error of Location.t * Env.t * error
 
-val report_error: Env.t -> error Format_doc.format_printer
-val report_error_doc: Env.t -> error Format_doc.printer
-
 (* Support for first-class modules. *)
 val transl_modtype_longident:  (* from Typemod *)
     (Location.t -> Env.t -> Longident.t -> Path.t) ref

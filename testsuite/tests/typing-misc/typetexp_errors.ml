@@ -20,8 +20,7 @@ Line 1, characters 18-53:
 Error: The constructor "`C" is missing from the upper bound (between "<" and ">")
        of this polymorphic variant but is present in
        its lower bound (after ">").
-       Hint: Either add "`C" in the upper bound, or remove it
-       from the lower bound.
+Hint: Either add "`C" in the upper bound, or remove it from the lower bound.
 |}]
 
 type ('_a) underscored = A of '_a

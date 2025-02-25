@@ -433,7 +433,6 @@ let report_kind_mismatch first second ppf (kind1, kind2) =
 
 let report_type_mismatch first second decl env ppf err =
   let pr fmt = Fmt.fprintf ppf fmt in
-  pr "@ ";
   match err with
   | Arity ->
       pr "They have different arities."

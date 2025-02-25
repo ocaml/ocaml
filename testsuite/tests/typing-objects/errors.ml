@@ -40,7 +40,8 @@ let foo = 42#m;;
 Line 1, characters 10-12:
 1 | let foo = 42#m;;
               ^^
-Error: This expression is not an object; it has type "int"
+Error: This expression is not an object;
+              it has type "int"
 |}]
 
 let foo = object (self) method foo = self#bar end;;

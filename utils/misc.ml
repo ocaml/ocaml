@@ -1014,19 +1014,21 @@ let spellcheck env name =
   let env = List.sort_uniq (fun s1 s2 -> String.compare s2 s1) env in
   fst (List.fold_left (compare name) ([], max_int) env)
 
+let align_hint ~prefix ~main ~hint =
+    let prefix_shift = String.length prefix in
+    Format_doc.Doc.align_prefix2 (main,prefix_shift) (hint,0)
+
+let align_error_hint main hint = align_hint ~prefix:"Error: " ~main ~hint
+
 let aligned_hint ~prefix ppf main_fmt  =
   let open Format_doc in
   kdoc_printf (fun main hint ->
       match hint with
       | None -> pp_doc ppf main
-      | Some h ->
-        let error_shift = String.length prefix in
-        let h, main = Format_doc.Doc.align_prefix2 (h,0) (main,error_shift) in
-        fprintf ppf "%a@.%a" pp_doc main pp_doc h
+      | Some hint ->
+        let main, hint = align_hint ~prefix ~main ~hint in
+        fprintf ppf "%a@.%a" pp_doc main pp_doc hint
     ) main_fmt
-
-let aligned_error_hint ppf main_fmt =
-  aligned_hint ~prefix:"Error: " ppf main_fmt
 
 let did_you_mean ?(pp=Style.inline_code) choices =
   let open Format_doc in

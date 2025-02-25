@@ -79,7 +79,8 @@ type ('a, 'b) foo += A of int
 Line 1, characters 0-29:
 1 | type ('a, 'b) foo += A of int
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This extension does not match the definition of type "foo"
+Error: This extension does not match the definition of type
+         "foo"
        They have different arities.
 |}]
 
@@ -570,7 +571,8 @@ type +'a bar += D of (int -> 'a)
 Line 1, characters 0-32:
 1 | type +'a bar += D of (int -> 'a)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This extension does not match the definition of type "bar"
+Error: This extension does not match the definition of type
+         "bar"
        Their variances do not agree.
 |}]
 

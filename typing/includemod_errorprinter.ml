@@ -689,7 +689,7 @@ let core env id x =
            "the first" "the second" env) diff.symptom
         show_locs (diff.got.val_loc, diff.expected.val_loc)
   | Err.Type_declarations diff ->
-      Fmt.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
+      Fmt.dprintf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]@,%a%a@]"
         "Type declarations do not match"
         !Oprint.out_sig_item
         (Out_type.tree_of_type_declaration id diff.got Trec_first)

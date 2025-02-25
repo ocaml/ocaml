@@ -219,7 +219,8 @@ type d = { x : int; y : int; }
 Line 2, characters 0-37:
 2 | type mut = d = {x:int; mutable y:int}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "d"
+Error: This variant or record definition does not match that of type
+         "d"
        Fields do not match:
          "y : int;"
        is not the same as:
@@ -232,7 +233,8 @@ type missing = d = { x:int }
 Line 1, characters 0-28:
 1 | type missing = d = { x:int }
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "d"
+Error: This variant or record definition does not match that of type
+         "d"
        An extra field, "y", is provided in the original definition.
 |}]
 
@@ -241,7 +243,8 @@ type wrong_type = d = {x:float}
 Line 1, characters 0-31:
 1 | type wrong_type = d = {x:float}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "d"
+Error: This variant or record definition does not match that of type
+         "d"
        1. Fields do not match:
          "x : int;"
        is not the same as:
@@ -257,7 +260,8 @@ type mono = { foo : int; }
 Line 2, characters 0-43:
 2 | type unboxed = mono = {foo:int} [@@unboxed]
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "mono"
+Error: This variant or record definition does not match that of type
+         "mono"
        Their internal representations differ:
        this definition uses unboxed representation.
 |}]
@@ -267,7 +271,8 @@ type perm = d = {y:int; x:int}
 Line 1, characters 0-30:
 1 | type perm = d = {y:int; x:int}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "d"
+Error: This variant or record definition does not match that of type
+         "d"
        Fields "x" and "y" have been swapped.
 |}]
 

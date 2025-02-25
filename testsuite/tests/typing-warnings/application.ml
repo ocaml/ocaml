@@ -148,6 +148,5 @@ Line 2, characters 10-15:
               ^^^^^
 Error: This expression has type "int -> int"
        but an expression was expected of type "int"
-  Hint: This function application is partial, maybe some arguments
-  are missing.
+Hint: This function application is partial, maybe some arguments are missing.
 |}]

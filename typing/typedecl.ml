@@ -2002,31 +2002,118 @@ module Reaching_path = struct
     in
     Fmt.(pp_print_list ~pp_sep:comma) pp_step ppf reaching_path
 
+
   let pp_colon ppf path =
-    Fmt.fprintf ppf ":@;<1 2>@[<v>%a@]" pp path
+    Fmt.fprintf ppf ":@\n  @[<v>%a@]" pp path
 end
 
 let quoted_out_type ppf ty = Style.as_inline_code !Oprint.out_type ppf ty
 let quoted_type ppf ty = Style.as_inline_code Printtyp.type_expr ppf ty
 let quoted_constr = Style.as_inline_code Pprintast.Doc.constr
 
-let report_error_doc ppf = function
-  | Repeated_parameter ->
-      fprintf ppf "A type parameter occurs several times"
-  | Duplicate_constructor s ->
-      fprintf ppf "Two constructors are named %a" Style.inline_code s
-  | Too_many_constructors ->
+let explain_unbounded ty decl ppf =
+  match decl.type_kind, decl.type_manifest with
+  | Type_variant (tl, _rep), _ ->
+      explain_unbound_gen ppf ty tl (fun c ->
+          let tl = tys_of_constr_args c.Types.cd_args in
+          Btype.newgenty (Ttuple (List.map (fun t -> None, t) tl))
+        )
+        "case" (fun ppf c ->
+          fprintf ppf
+            "%a of %a" Printtyp.ident c.Types.cd_id
+            Printtyp.constructor_arguments c.Types.cd_args)
+  | Type_record (tl, _), _ ->
+      explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
+        "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")
+  | Type_abstract _, Some ty' ->
+      explain_unbound_single ppf ty ty'
+  | _ -> ()
+
+let variance (p,n,i) =
+  let inj = if i then "injective " else "" in
+  match p, n with
+    true,  true  -> inj ^ "invariant"
+  | true,  false -> inj ^ "covariant"
+  | false, true  -> inj ^ "contravariant"
+  | false, false -> if inj = "" then "unrestricted" else inj
+
+let variance_context =
+  let open Typedecl_variance in
+  function
+  | Type_declaration (id, decl) ->
+      Out_type.add_type_declaration_to_preparation id decl;
+      Format_doc.doc_printf "In the definition@\n  @[%a@]@\n"
+        (Style.as_inline_code @@ Out_type.prepared_type_declaration id)
+        decl
+  | Gadt_constructor c ->
+      Out_type.add_constructor_to_preparation c;
+      doc_printf "In the GADT constructor@\n  @[%a@]@\n"
+        (Style.as_inline_code Out_type.prepared_constructor)
+        c
+  | Extension_constructor (id, e) ->
+      Out_type.add_extension_constructor_to_preparation e;
+      doc_printf "In the extension constructor@\n  @[%a@]@\n"
+        (Out_type.prepared_extension_constructor id)
+        e
+
+
+let variance_variable_error ~v1 ~v2 variable error ppf =
+  let open Typedecl_variance in
+  match error with
+  | Variance_not_reflected ->
       fprintf ppf
-        "@[Too many non-constant constructors@ -- maximum is %i %s@]"
-        (Config.max_tag + 1) "non-constant constructors"
+        "the type variable@ %a@ has a variance that@ \
+         is not reflected by its occurrence in type parameters.@ \
+         It was expected to be %s,@ but it is %s."
+        (Style.as_inline_code Out_type.prepared_type_expr) variable
+        (variance v2) (variance v1)
+  | No_variable ->
+      fprintf ppf
+        "the type variable@ %a@ cannot be deduced@ \
+         from the type parameters."
+        (Style.as_inline_code Out_type.prepared_type_expr) variable
+  | Variance_not_deducible ->
+      fprintf ppf
+        "the type variable@ %a@ has a variance that@ \
+         cannot be deduced from the type parameters.@ \
+         It was expected to be %s,@ but it is %s."
+        (Style.as_inline_code Out_type.prepared_type_expr) variable
+        (variance v2) (variance v1)
+
+let variance_error ~loc ~v1 ~v2 =
+  let open Typedecl_variance in
+  function
+  | Variance_variable_error { error; variable; context } ->
+      Out_type.prepare_for_printing [ variable ];
+      let intro = variance_context context in
+      Location.errorf ~loc "%a%t" pp_doc intro
+        (variance_variable_error ~v1 ~v2 variable error)
+  | Variance_not_satisfied n ->
+        Location.errorf ~loc
+          "In this definition, expected parameter@ \
+           variances are not satisfied.@ \
+           The %d%s type parameter was expected to be %s,@ but it is %s."
+          n (Misc.ordinal_suffix n)
+          (variance v2) (variance v1)
+
+let report_error ~loc = function
+  | Repeated_parameter ->
+      Location.errorf ~loc "A type parameter occurs several times"
+  | Duplicate_constructor s ->
+      Location.errorf ~loc "Two constructors are named %a" Style.inline_code s
+  | Too_many_constructors ->
+      Location.errorf ~loc
+      "Too many non-constant constructors@ \
+       -- maximum is %i non-constant constructors@]"
+      (Config.max_tag + 1)
   | Duplicate_label s ->
-      fprintf ppf "Two labels are named %a" Style.inline_code s
+      Location.errorf "Two labels are named %a" Style.inline_code s
   | Recursive_abbrev (s, env, reaching_path) ->
       let reaching_path = Reaching_path.simplify reaching_path in
       Printtyp.wrap_printing_env ~error:true env @@ fun () ->
       Out_type.reset ();
       Reaching_path.add_to_preparation reaching_path;
-      fprintf ppf "@[<v>The type abbreviation %a is cyclic%a@]"
+      Location.errorf ~loc "The type abbreviation %a is cyclic%a"
         Style.inline_code s
         Reaching_path.pp_colon reaching_path
   | Cycle_in_def (s, env, reaching_path) ->
@@ -2034,35 +2121,37 @@ let report_error_doc ppf = function
       Printtyp.wrap_printing_env ~error:true env @@ fun () ->
       Out_type.reset ();
       Reaching_path.add_to_preparation reaching_path;
-      fprintf ppf "@[<v>The definition of %a contains a cycle%a@]"
+      Location.errorf ~loc "The definition of %a contains a cycle%a"
         Style.inline_code s
         Reaching_path.pp_colon reaching_path
-  | Definition_mismatch (ty, _env, None) ->
-      fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]@]"
-        "This variant or record definition" "does not match that of type"
+  | Definition_mismatch (ty, env, err) ->
+      let err ppf = match err with
+        | None -> ()
+        | Some err ->
+            Format_doc.fprintf ppf "@\n@[<v>%a@]"
+            (Includecore.report_type_mismatch "the original" "this" "definition"
+              env) err
+      in
+      Location.errorf ~loc
+        "This variant or record definition@ \
+         does not match that of type@;<1 2>%a%t"
         quoted_type ty
-  | Definition_mismatch (ty, env, Some err) ->
-      fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]%a@]"
-        "This variant or record definition" "does not match that of type"
-        quoted_type ty
-        (Includecore.report_type_mismatch
-           "the original" "this" "definition" env)
         err
   | Constraint_failed (env, err) ->
-      let msg = Format_doc.Doc.msg in
-      fprintf ppf "@[<v>Constraints are not satisfied in this type.@ ";
-      Errortrace_report.unification ppf env err
-        (msg "Type")
-        (msg "should be an instance of");
-      fprintf ppf "@]"
+      Location.errorf ~loc "Constraints are not satisfied in this type.@\n%t"
+        (fun ppf ->
+          Errortrace_report.unification ppf env err
+            (Doc.msg "Type")
+            (Doc.msg "should be an instance of")
+        )
   | Non_regular { definition; used_as; defined_as; reaching_path } ->
       let reaching_path = Reaching_path.simplify reaching_path in
       Out_type.prepare_for_printing [used_as; defined_as];
       Reaching_path.add_to_preparation reaching_path;
-      fprintf ppf
-        "@[<hv>This recursive type is not regular.@ \
-         The type constructor %a is defined as@;<1 2>type %a@ \
-         but it is used as@;<1 2>%a%t\
+      Location.errorf ~loc
+        "This recursive type is not regular.@ \
+         @[<v>The type constructor %a is defined as@;<1 2>type %a@ \
+         but it is used as@;<1 2>%a%t@,\
          All uses need to match the definition for the recursive type \
          to be regular.@]"
         Style.inline_code (Path.name definition)
@@ -2071,151 +2160,76 @@ let report_error_doc ppf = function
         (fun pp ->
            let is_expansion = function Expands_to _ -> true | _ -> false in
            if List.exists is_expansion reaching_path then
-             fprintf pp "@ after the following expansion(s)%a@ "
+             fprintf pp "@ after the following expansion(s)%a"
              Reaching_path.pp_colon reaching_path
-           else fprintf pp ".@ ")
+           else fprintf pp ".")
   | Inconsistent_constraint (env, err) ->
-      let msg = Format_doc.Doc.msg in
-      fprintf ppf "@[<v>The type constraints are not consistent.@ ";
-      Errortrace_report.unification ppf env err
-        (msg "Type")
-        (msg "is not compatible with type");
-      fprintf ppf "@]"
+      Location.errorf ~loc "The type constraints are not consistent.@\n%t"
+      (fun ppf -> Errortrace_report.unification ppf env err
+        (Doc.msg "Type")
+        (Doc.msg "is not compatible with type")
+      )
   | Type_clash (env, err) ->
       let msg = Format_doc.Doc.msg in
-      Errortrace_report.unification ppf env err
+      Location.errorf ~loc "%t" @@ fun ppf ->
+        Errortrace_report.unification ppf env err
         (msg "This type constructor expands to type")
         (msg "but is used here with type")
   | Null_arity_external ->
-      fprintf ppf "External identifiers must be functions"
+      Location.errorf ~loc "External identifiers must be functions"
   | Missing_native_external ->
-      fprintf ppf "@[<hv>An external function with more than 5 arguments \
-                   requires a second stub function@ \
-                   for native-code compilation@]"
+      Location.errorf ~loc
+        "An external function with more than 5 arguments \
+         requires a second stub function@
+         for native-code compilation"
   | Unbound_type_var (ty, decl) ->
-      fprintf ppf "@[A type variable is unbound in this type declaration";
-      begin match decl.type_kind, decl.type_manifest with
-      | Type_variant (tl, _rep), _ ->
-          explain_unbound_gen ppf ty tl (fun c ->
-            let tl = tys_of_constr_args c.Types.cd_args in
-            Btype.newgenty (Ttuple (List.map (fun t -> None, t) tl))
-          )
-            "case" (fun ppf c ->
-              fprintf ppf
-                "%a of %a" Printtyp.ident c.Types.cd_id
-                Printtyp.constructor_arguments c.Types.cd_args)
-      | Type_record (tl, _), _ ->
-          explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
-            "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")
-      | Type_abstract _, Some ty' ->
-          explain_unbound_single ppf ty ty'
-      | _ -> ()
-      end;
-      fprintf ppf "@]"
+      Location.errorf ~loc
+        "A type variable is unbound in this type declaration%t"
+        (explain_unbounded ty decl)
   | Unbound_type_var_ext (ty, ext) ->
-      fprintf ppf "@[A type variable is unbound in this extension constructor";
-      let args = tys_of_constr_args ext.ext_args in
-      explain_unbound ppf ty args (fun c -> c) "type" (fun _ -> "");
-      fprintf ppf "@]"
+      let explain ppf =
+        let args = tys_of_constr_args ext.ext_args in
+        explain_unbound ppf ty args (fun c -> c) "type" (fun _ -> "")
+      in
+      Location.errorf ~loc
+        "A type variable is unbound in this extension constructor%t"
+        explain
   | Cannot_extend_private_type path ->
-      fprintf ppf "@[%s@ %a@]"
-        "Cannot extend private type definition"
+      Location.errorf ~loc
+        "Cannot extend private type definition@ %a"
         Printtyp.path path
   | Not_extensible_type path ->
-      fprintf ppf "@[%s@ %a@ %s@]"
-        "Type definition"
+      Location.errorf ~loc
+        "Type definition@ %a@ is not extensible@]"
         (Style.as_inline_code Printtyp.path) path
-        "is not extensible"
   | Extension_mismatch (path, env, err) ->
-      fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]%a@]"
-        "This extension" "does not match the definition of type"
+      Location.errorf ~loc
+        "This extension@ does not match the definition of type\
+         @;<1 2>%a@\n@[<v>%a@]"
         Style.inline_code (Path.name path)
         (Includecore.report_type_mismatch
            "the type" "this extension" "definition" env)
         err
   | Rebind_wrong_type (lid, env, err) ->
-      let msg = Format_doc.doc_printf in
+      Location.errorf ~loc "%t" @@ fun ppf ->
       Errortrace_report.unification ppf env err
-        (msg "The constructor %a@ has type"
+        (doc_printf "The constructor %a@ has type"
              quoted_constr lid)
-        (msg "but was expected to be of type")
+        (Doc.msg "but was expected to be of type")
   | Rebind_mismatch (lid, p, p') ->
-      fprintf ppf
-        "@[%s@ %a@ %s@ %a@ %s@ %s@ %a@]"
-        "The constructor"
+      Location.errorf ~loc
+        "The constructor@ %a@ extends type@ %a@ \
+         whose declaration does not match@ the declaration of type@ %a"
         quoted_constr lid
-        "extends type" Style.inline_code (Path.name p)
-        "whose declaration does not match"
-        "the declaration of type" Style.inline_code (Path.name p')
+        Style.inline_code (Path.name p)
+        Style.inline_code (Path.name p')
   | Rebind_private lid ->
-      fprintf ppf "@[%s@ %a@ %s@]"
-        "The constructor"
+      Location.errorf ~loc "The constructor@ %a@ is private"
         quoted_constr lid
-        "is private"
   | Variance (Typedecl_variance.Bad_variance (n, v1, v2)) ->
-      let variance (p,n,i) =
-        let inj = if i then "injective " else "" in
-        match p, n with
-          true,  true  -> inj ^ "invariant"
-        | true,  false -> inj ^ "covariant"
-        | false, true  -> inj ^ "contravariant"
-        | false, false -> if inj = "" then "unrestricted" else inj
-      in
-      (match n with
-       | Variance_variable_error { error; variable; context } ->
-           Out_type.prepare_for_printing [ variable ];
-           begin match context with
-           | Type_declaration (id, decl) ->
-               Out_type.add_type_declaration_to_preparation id decl;
-               fprintf ppf "@[<v>%s@;<1 2>%a@;"
-                 "In the definition"
-                 (Style.as_inline_code @@ Out_type.prepared_type_declaration id)
-                 decl
-           | Gadt_constructor c ->
-               Out_type.add_constructor_to_preparation c;
-               fprintf ppf "@[<v>%s@;<1 2>%a@;"
-                 "In the GADT constructor"
-                 (Style.as_inline_code Out_type.prepared_constructor)
-                 c
-           | Extension_constructor (id, e) ->
-               Out_type.add_extension_constructor_to_preparation e;
-               fprintf ppf "@[<v>%s@;<1 2>%a@;"
-                 "In the extension constructor"
-                 (Out_type.prepared_extension_constructor id)
-                 e
-           end;
-           begin match error with
-           | Variance_not_reflected ->
-               fprintf ppf "@[%s@ %a@ %s@ %s@ It"
-                 "the type variable"
-                 (Style.as_inline_code Out_type.prepared_type_expr) variable
-                 "has a variance that"
-                 "is not reflected by its occurrence in type parameters."
-           | No_variable ->
-               fprintf ppf "@[%s@ %a@ %s@ %s@]@]"
-                 "the type variable"
-                 (Style.as_inline_code Out_type.prepared_type_expr) variable
-                 "cannot be deduced"
-                 "from the type parameters."
-           | Variance_not_deducible ->
-               fprintf ppf "@[%s@ %a@ %s@ %s@ It"
-                 "the type variable"
-                 (Style.as_inline_code Out_type.prepared_type_expr) variable
-                 "has a variance that"
-                 "cannot be deduced from the type parameters."
-           end
-       | Variance_not_satisfied n ->
-           fprintf ppf "@[@[%s@ %s@ The %d%s type parameter"
-             "In this definition, expected parameter"
-             "variances are not satisfied."
-             n (Misc.ordinal_suffix n));
-      (match n with
-       | Variance_variable_error { error = No_variable; _ } -> ()
-       | _ ->
-           fprintf ppf " was expected to be %s,@ but it is %s.@]@]"
-             (variance v2) (variance v1))
+      variance_error ~loc ~v1 ~v2 n
   | Unavailable_type_constructor p ->
-      fprintf ppf "The definition of type %a@ is unavailable"
+      Location.errorf ~loc "The definition of type %a@ is unavailable"
         (Style.as_inline_code Printtyp.path) p
   | Variance (Typedecl_variance.Varying_anonymous (n, reason)) ->
       let reason_text =
@@ -2234,53 +2248,55 @@ let report_error_doc ppf = function
                in GADT constructor definitions."
               (Style.as_inline_code Printtyp.type_expr) ty
       in
-      fprintf ppf
-        "@[<hov>In this GADT constructor definition,@ \
+      Location.errorf ~loc
+        "In this GADT constructor definition,@ \
          the variance of the@ %d%s parameter@ \
-         cannot be checked%t@]"
+         cannot be checked%t"
         n (Misc.ordinal_suffix n)
         reason_text
   | Val_in_structure ->
-      fprintf ppf "Value declarations are only allowed in signatures"
+      Location.errorf ~loc "Value declarations are only allowed in signatures"
   | Multiple_native_repr_attributes ->
-      fprintf ppf "Too many %a/%a attributes"
+      Location.errorf ~loc "Too many %a/%a attributes"
         Style.inline_code "[@@unboxed]"
         Style.inline_code "[@@untagged]"
   | Cannot_unbox_or_untag_type Unboxed ->
-      fprintf ppf "@[Don't know how to unbox this type.@ \
-                   Only %a, %a, %a, and %a can be unboxed.@]"
+      Location.errorf ~loc
+        "Don't know how to unbox this type.@ \
+         Only %a, %a, %a, and %a can be unboxed."
         Style.inline_code "float"
         Style.inline_code "int32"
         Style.inline_code "int64"
         Style.inline_code "nativeint"
   | Cannot_unbox_or_untag_type Untagged ->
-      fprintf ppf "@[Don't know how to untag this type. Only %a@ \
-                   and other immediate types can be untagged.@]"
+      Location.errorf ~loc
+        "Don't know how to untag this type. Only %a@ \
+         and other immediate types can be untagged."
         Style.inline_code "int"
   | Deep_unbox_or_untag_attribute kind ->
-      fprintf ppf
-        "@[The attribute %a should be attached to@ \
+      Location.errorf ~loc
+        "The attribute %a should be attached to@ \
          a direct argument or result of the primitive,@ \
-         it should not occur deeply into its type.@]"
+         it should not occur deeply into its type."
         Style.inline_code
         (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
   | Immediacy (Typedecl_immediacy.Bad_immediacy_attribute violation) ->
       (match violation with
        | Type_immediacy.Violation.Not_always_immediate ->
-           fprintf ppf
-             "@[Types@ marked@ with@ the@ immediate@ attribute@ must@ be@ \
-              non-pointer@ types@ like@ %a@ or@ %a.@]"
+           Location.errorf ~loc
+             "Types@ marked@ with@ the@ immediate@ attribute@ must@ be@ \
+              non-pointer@ types@ like@ %a@ or@ %a."
              Style.inline_code "int"
              Style.inline_code "bool"
        | Type_immediacy.Violation.Not_always_immediate_on_64bits ->
-           fprintf ppf
-             "@[Types@ marked@ with@ the@ %a@ attribute@ must@ be@ \
-              produced@ using@ the@ %a@ functor.@]"
+           Location.errorf ~loc
+           "Types@ marked@ with@ the@ %a@ attribute@ must@ be@ \
+              produced@ using@ the@ %a@ functor."
              Style.inline_code "immediate64"
              Style.inline_code "Stdlib.Sys.Immediate64.Make"
       )
   | Bad_unboxed_attribute msg ->
-      fprintf ppf "@[This type cannot be unboxed because@ %s.@]" msg
+      Location.errorf ~loc "This type cannot be unboxed because@ %s." msg
   | Separability (Typedecl_separability.Non_separable_evar evar) ->
       let pp_evar ppf = function
         | None ->
@@ -2288,37 +2304,40 @@ let report_error_doc ppf = function
         | Some str ->
             fprintf ppf "the existential variable %a"
               (Style.as_inline_code Pprintast.Doc.tyvar) str in
-      fprintf ppf "@[This type cannot be unboxed because@ \
-                   it might contain both float and non-float values,@ \
-                   depending on the instantiation of %a.@ \
-                   You should annotate it with %a.@]"
+      Location.errorf ~loc
+        "This type cannot be unboxed because@ \
+         it might contain both float and non-float values,@ \
+         depending on the instantiation of %a.@ \
+         You should annotate it with %a."
         pp_evar evar
         Style.inline_code "[@@ocaml.boxed]"
   | Boxed_and_unboxed ->
-      fprintf ppf "@[A type cannot be boxed and unboxed at the same time.@]"
+      Location.errorf ~loc
+        "A type cannot be boxed and unboxed at the same time."
   | Nonrec_gadt ->
-      fprintf ppf
-        "@[GADT case syntax cannot be used in a %a block.@]"
+      Location.errorf ~loc
+        "GADT case syntax cannot be used in a %a block."
         Style.inline_code "nonrec"
   | Invalid_private_row_declaration ty ->
       let pp_private ppf ty = fprintf ppf "private %a" Printtyp.type_expr ty in
-      fprintf ppf
-        "@[<hv>This private row type declaration is invalid.@ \
-         The type expression on the right-hand side reduces to@;<1 2>%a@ \
-         which does not have a free row type variable.@]@,\
-         @[<hv>@[@{<hint>Hint@}: If you intended to define a private \
-         type abbreviation,@ \
-         write explicitly@]@;<1 2>%a@]"
+      let sub = [
+          Location.msg
+            "@[<hv>@[@{<hint>Hint@}: If you intended to define a private \
+             type abbreviation,@ \
+             write explicitly@]@;<1 2>%a@]"
+            (Style.as_inline_code pp_private) ty
+        ]
+      in
+      Location.errorf ~sub ~loc
+        "This private row type declaration is invalid.@\n\
+         @[<v>The type expression on the right-hand side reduces to@;<1 2>%a@ \
+         which does not have a free row type variable.@]"
         (Style.as_inline_code Printtyp.type_expr) ty
-        (Style.as_inline_code pp_private) ty
 
 let () =
   Location.register_error_of_exn
     (function
-      | Error (loc, err) ->
-        Some (Location.error_of_printer ~loc report_error_doc err)
+      | Error (loc, err) -> Some (report_error ~loc err)
       | _ ->
         None
     )
-
-let report_error = Format_doc.compat report_error_doc

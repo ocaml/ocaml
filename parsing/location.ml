@@ -739,7 +739,7 @@ let batch_mode_printer : report_printer =
       | Misc.Error_style.Short ->
           ()
     in
-    Format.fprintf ppf "@[<v>%a:@ %a@]" print_loc loc
+    Format.fprintf ppf "%a:@ %a" print_loc loc
       (Fmt.compat highlight) loc
   in
   let pp_txt ppf txt = Format.fprintf ppf "%a" Fmt.Doc.format txt in
@@ -802,9 +802,12 @@ let batch_mode_printer : report_printer =
     ) msgs
   in
   let pp_submsg self report ppf { loc; txt } =
-    Format.fprintf ppf "@[%a  @[%a@]@]"
-      (self.pp_submsg_loc self report) loc
-      (self.pp_submsg_txt self report) txt
+    if loc.loc_ghost then
+      Format.fprintf ppf "@[%a@]" (self.pp_submsg_txt self report) txt
+    else
+      Format.fprintf ppf "%a  @[%a@]"
+        (self.pp_submsg_loc self report) loc
+        (self.pp_submsg_txt self report) txt
   in
   let pp_submsg_loc self report ppf loc =
     if not loc.loc_ghost then
@@ -869,6 +872,30 @@ let mkerror loc sub footnote txt =
 
 let errorf ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) =
   Fmt.kdoc_printf (mkerror loc sub footnote)
+
+let align_msgs core hint sub =
+  match hint with
+  | None -> core, sub
+  | Some hint ->
+      let core, hint = Misc.align_error_hint core hint in
+      core, mknoloc hint :: sub
+
+let aligned_error_hint
+    ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) fmt =
+  Fmt.kdoc_printf (fun main hint ->
+    let main, sub = align_msgs main hint sub in
+    mkerror loc sub footnote main
+  ) fmt
+
+let aligned_error_hint_segmented
+    ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) fmt =
+  Fmt.kdoc_printf (fun intro fmt2 ->
+    Fmt.kdoc_printf (fun core hint ->
+      let core, sub = align_msgs core hint sub in
+      errorf ~loc ~sub ~footnote "%a%a"
+      Format_doc.pp_doc intro Format_doc.pp_doc core
+    ) fmt2) fmt
+
 
 let error ?(loc = none) ?(sub = []) ?(footnote=Fun.const None) msg_str =
   mkerror loc sub footnote Fmt.Doc.(string msg_str empty)

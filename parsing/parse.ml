@@ -166,13 +166,20 @@ let prepare_error err =
       in
       Location.errorf ~loc "Syntax error: invalid package type: %a" invalid ipt
   | Removed_string_set loc ->
-      Location.errorf ~loc
-        "Syntax error: strings are immutable, there is no assignment \
-         syntax for them.\n\
-         @{<hint>Hint@}: Mutable sequences of bytes are available in \
-         the Bytes module.\n\
-         @{<hint>Hint@}: Did you mean to use %a?"
-        Style.inline_code "Bytes.set"
+      let sub =
+        [ Location.msg
+            "@{<hint>Hint@}: Mutable sequences of bytes are available in \
+             the %a module."
+            Style.inline_code "Bytes";
+          Location.msg
+            "@{<hint>Hint@}: Did you mean to use %a?"
+            Style.inline_code "Bytes.set"
+        ]
+      in
+      Location.errorf ~loc ~sub
+        "Syntax error: strings are immutable,@ there@ is@ no assignment \
+         syntax for them."
+
 let () =
   Location.register_error_of_exn
     (function

@@ -3583,49 +3583,52 @@ let extract_instance_variables env =
        | Val_ivar _ -> name :: acc
        | _ -> acc) None env []
 
-let report_lookup_error_doc _loc env ppf = function
-  | Unbound_value(lid, hint) -> begin
-      Misc.aligned_error_hint ppf
+let report_lookup_error_doc loc env = function
+  | Unbound_value(lid, hint) ->
+      Location.aligned_error_hint ~loc
         "@{<ralign>Unbound value @}%a" quoted_longident lid
-        (spellcheck extract_values env lid);
-      match hint with
-      | No_hint -> ()
-      | Missing_rec def_loc ->
-          let (_, line, _) =
-            Location.get_pos_info def_loc.Location.loc_start
-          in
-          fprintf ppf
-            "@.@[@{<hint>Hint@}: If this is a recursive definition,@ \
-             you should add the %a keyword on line %i@]"
-            Style.inline_code "rec"
-            line
-    end
+        (spellcheck extract_values env lid)
+        ~sub:(
+          match hint with
+          | No_hint ->[]
+          | Missing_rec def_loc ->
+             let (_, line, _) =
+               Location.get_pos_info def_loc.Location.loc_start
+             in
+             [Location.msg
+                "@[@{<hint>Hint@}: If this is a recursive definition,@ \
+                 you should add the %a keyword on line %i@]"
+                Style.inline_code "rec"
+                line
+             ]
+        )
   | Unbound_type lid ->
-     Misc.aligned_error_hint ppf
+     Location.aligned_error_hint ~loc
        "@{<ralign>Unbound type constructor @}%a"
        quoted_longident lid
        (spellcheck extract_types env lid)
   | Unbound_module lid -> begin
       let main ppf =
         fprintf ppf "@{<ralign>Unbound module @}%a" quoted_longident lid in
-       match find_modtype_by_name lid env with
+      match find_modtype_by_name lid env with
       | exception Not_found ->
-         Misc.aligned_error_hint ppf "%t" main
+         Location.aligned_error_hint ~loc "%t" main
            (spellcheck extract_modules env lid)
       | _ ->
-         fprintf ppf
-           "%t@.@[@{<hint>Hint@}: There is a module type named %a, %s@]"
-           main
-           quoted_longident lid
-           "but module types are not modules"
+         Location.errorf ~loc "%t" main
+           ~sub:[Location.msg
+                   "@{<hint>Hint@}: There is a module type named %a,@ \
+                    but module types are not modules"
+                   quoted_longident lid
+           ]
     end
   | Unbound_constructor lid ->
-     Misc.aligned_error_hint ppf
+     Location.aligned_error_hint ~loc
        "@{<ralign>Unbound constructor @}%a"
        quoted_constr lid
        (spellcheck extract_constructors env lid)
   | Unbound_label lid ->
-     Misc.aligned_error_hint ppf
+     Location.aligned_error_hint ~loc
        "@{<ralign>Unbound record field @}%a"
        quoted_longident lid
        (spellcheck extract_labels env lid)
@@ -3635,14 +3638,16 @@ let report_lookup_error_doc _loc env ppf = function
       in
       match find_cltype_by_name lid env with
       | exception Not_found ->
-         Misc.aligned_error_hint ppf "%t" main
+         Location.aligned_error_hint ~loc "%t" main
            (spellcheck extract_classes env lid)
       | _ ->
-         fprintf ppf
-           "%t@.@[@{<hint>Hint@}: There is a class type named %a, %s@]"
-           main
-           quoted_longident lid
-           "but classes are not class types"
+         Location.errorf ~loc "%t" main
+         ~sub:[
+           Location.msg
+             "@{<hint>Hint@}: There is a class type named %a,@ \
+              but classes are not class types."
+             quoted_longident lid
+         ]
     end
   | Unbound_modtype lid -> begin
       let main ppf  =
@@ -3650,44 +3655,46 @@ let report_lookup_error_doc _loc env ppf = function
           quoted_longident lid in
       match find_module_by_name lid env with
       | exception Not_found ->
-         Misc.aligned_error_hint ppf "%t" main
+         Location.aligned_error_hint ~loc "%t" main
            (spellcheck extract_modtypes env lid)
       | _ ->
-         fprintf ppf
-           "%t@.@[@{<hint>Hint@}: There is a module named %a, %s@]"
-           main
-           quoted_longident lid
-           "but modules are not module types"
-    end
+         Location.errorf ~loc "%t" main
+           ~sub:[
+             Location.msg
+               "@{<hint>Hint@}: There is a module named %a,@ \
+                but modules are not module types"
+               quoted_longident lid
+           ]
+      end
   | Unbound_cltype lid ->
-     Misc.aligned_error_hint ppf
+     Location.aligned_error_hint ~loc
        "@{<ralign>Unbound class type @}%a" quoted_longident lid
       (spellcheck extract_cltypes env lid)
   | Unbound_instance_variable s ->
-        Misc.aligned_error_hint ppf
+        Location.aligned_error_hint ~loc
           "@{<ralign>Unbound instance variable @}%a"
           Style.inline_code s
           (spellcheck_name extract_instance_variables env s)
   | Not_an_instance_variable s ->
-     Misc.aligned_error_hint ppf
+     Location.aligned_error_hint ~loc
         "@{<ralign>The value @}%a is not an instance variable"
         Style.inline_code s
         (spellcheck_name extract_instance_variables env s)
   | Masked_instance_variable lid ->
-      fprintf ppf
-        "The instance variable %a@ \
-         cannot be accessed from the definition of another instance variable"
+      Location.errorf ~loc
+        "The instance variable %a@ cannot@ be@ accessed@ from@ the@ \
+         definition@ of@ another instance variable"
         quoted_longident lid
   | Masked_self_variable lid ->
-      fprintf ppf
-        "The self variable %a@ \
-         cannot be accessed from the definition of an instance variable"
+      Location.errorf ~loc
+        "The self variable %a@ cannot@ be@ accessed@ \
+         from@ the@ definition of an instance variable"
         quoted_longident lid
   | Masked_ancestor_variable lid ->
-      fprintf ppf
-        "The ancestor variable %a@ \
-         cannot be accessed from the definition of an instance variable"
-       quoted_longident lid
+      Location.errorf ~loc
+        "The ancestor variable %a@ cannot@ be@ accessed@ from@ \
+         the definition of an instance variable"
+        quoted_longident lid
   | Illegal_reference_to_recursive_module { container; unbound } ->
       let container = Option.value ~default:"_" container in
       let self_or_definition, self_or_unbound =
@@ -3697,7 +3704,7 @@ let report_lookup_error_doc _loc env ppf = function
           dprintf "the definition of the module %a" Style.inline_code container,
           dprintf "the module type of %a" Style.inline_code unbound
       in
-      fprintf ppf
+      Location.errorf ~loc
         "@[<hov>This module type is recursive.@ \
          This use of the recursive module %a@ \
          within %t@ \
@@ -3715,7 +3722,7 @@ let report_lookup_error_doc _loc env ppf = function
         then dprintf "itself"
         else dprintf "the module type of %a" Style.inline_code unbound
       in
-      fprintf ppf
+      Location.errorf ~loc
         "@[<hov>This class type is recursive.@ This use of the class type %a@ \
          from the recursive module %a@ within the definition of@ \
          the class type %a@ in the recursive module %a@ \
@@ -3729,35 +3736,39 @@ let report_lookup_error_doc _loc env ppf = function
         Style.inline_code container
         self_or_unbound
   | Structure_used_as_functor lid ->
-      fprintf ppf "@[The module %a is a structure, it cannot be applied@]"
+     Location.errorf ~loc
+       "The module %a is a structure, it cannot be applied"
         quoted_longident lid
   | Abstract_used_as_functor lid ->
-      fprintf ppf "@[The module %a is abstract, it cannot be applied@]"
-        quoted_longident lid
+     Location.errorf ~loc
+       "The module %a is abstract, it cannot be applied"
+       quoted_longident lid
   | Functor_used_as_structure lid ->
-      fprintf ppf "@[The module %a is a functor, \
-                   it cannot have any components@]" quoted_longident lid
+     Location.errorf ~loc
+       "The module %a is a functor, it cannot have any components"
+       quoted_longident lid
   | Abstract_used_as_structure lid ->
-      fprintf ppf "@[The module %a is abstract, \
-                   it cannot have any components@]"
-        quoted_longident lid
+     Location.errorf ~loc
+       "The module %a is abstract, it cannot have any components"
+       quoted_longident lid
   | Generative_used_as_applicative lid ->
-      fprintf ppf "@[The functor %a is generative,@ it@ cannot@ be@ \
-                   applied@ in@ type@ expressions@]"
+     Location.errorf ~loc
+       "The functor %a is generative,@ it@ cannot@ be@ \
+        applied@ in@ type@ expressions"
         quoted_longident lid
   | Cannot_scrape_alias(lid, p) ->
       let cause =
         if Current_unit.Name.is_path p then "is the current compilation unit"
         else "is missing"
       in
-      fprintf ppf
+      Location.errorf ~loc
         "The module %a is an alias for module %a, which %s"
         quoted_longident lid
         (Style.as_inline_code pp_path) p cause
 
-let report_error_doc ppf = function
-  | Missing_module(_, path1, path2) ->
-      fprintf ppf "@[@[<hov>";
+let report_error_doc = function
+  | Missing_module(loc, path1, path2) ->
+     let pp_path path1 path2 ppf =
       if Path.same path1 path2 then
         fprintf ppf "Internal path@ %a@ is dangling."
           Style.inline_code (Path.name path1)
@@ -3765,34 +3776,20 @@ let report_error_doc ppf = function
         fprintf ppf "Internal path@ %a@ expands to@ %a@ which is dangling."
           Style.inline_code (Path.name path1)
           Style.inline_code (Path.name path2);
-      fprintf ppf "@]@ @[%s@ %a@ %s.@]@]"
-        "The compiled interface for module"
+     in
+     Location.errorf ~loc
+       "%t@ @[The compiled interface for module@ %a@ was not found.@]"
+        (pp_path path1 path2)
         Style.inline_code (Ident.name (Path.head path2))
-        "was not found"
-  | Illegal_value_name(_loc, name) ->
-      fprintf ppf "%a is not a valid value identifier."
+  | Illegal_value_name(loc, name) ->
+      Location.errorf ~loc "%a is not a valid value identifier."
        Style.inline_code name
-  | Lookup_error(loc, t, err) -> report_lookup_error_doc loc t ppf err
+  | Lookup_error(loc, t, err) -> report_lookup_error_doc loc t err
 
 let () =
   Location.register_error_of_exn
     (function
-      | Error err ->
-          let loc =
-            match err with
-            | Missing_module (loc, _, _)
-            | Illegal_value_name (loc, _)
-            | Lookup_error(loc, _, _) -> loc
-          in
-          let error_of_printer =
-            if loc = Location.none
-            then Location.error_of_printer_file
-            else Location.error_of_printer ~loc ?sub:None ?footnote:None
-          in
-          Some (error_of_printer report_error_doc err)
+      | Error err ->  Some (report_error_doc err)
       | _ ->
           None
     )
-
-let report_lookup_error = Format_doc.compat2 report_lookup_error_doc
-let report_error = Format_doc.compat report_error_doc
