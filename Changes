@@ -103,6 +103,10 @@ Working version
   (Tim McGilchrist, review by Nick Barnes, Antonin Décimo,
    Stephen Dolan and Miod Vallat)
 
+- #13827: Avoid re-marking ephemerons with trivial data.
+  (Stephen Dolan, review by Nick Barnes and Josh Berdine, benchmarking by
+   Nicolás Ojeda Bär)
+
 ### Code generation and optimizations:
 
 * #13050: Use '$' instead of '.' to separate module names in symbol names.
