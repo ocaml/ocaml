@@ -227,13 +227,12 @@ val inspect : [< `A of a & int ] -> unit = <fun>
 (** Error messages with weakly polymorphic row variables *)
 let x = Fun.id (function `X -> () | _ -> ())
 [%%expect {|
-val x : ([> `X ] as '_weak1) -> unit = <fun>
+val x : [> `X ] -> unit = <fun>
 |}]
 
 let x = let rec x = `X (`Y (fun y -> x = y)) in Fun.id x
 [%%expect {|
-val x : [> `X of [> `Y of '_weak2 -> bool ] as '_weak3 ] as '_weak2 =
-  `X (`Y <fun>)
+val x : [> `X of [> `Y of 'a -> bool ] ] as 'a = `X (`Y <fun>)
 |}]
 
 (** Code coverage for [unify_row_field] errors *)

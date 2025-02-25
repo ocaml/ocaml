@@ -3110,12 +3110,16 @@ let rec is_nonexpansive exp =
      See GPR#1142 *)
   | Texp_assert (exp, _) ->
       is_nonexpansive exp
-  | Texp_apply (
-      { exp_desc = Texp_ident (_, _, {val_kind =
-             Val_prim {Primitive.prim_name =
-                         ("%raise" | "%reraise" | "%raise_notrace")}}) },
-      [Nolabel, Arg e]) ->
-     is_nonexpansive e
+  | Texp_apply ({ exp_desc = Texp_ident (_, _, {val_kind = Val_prim p}) },
+                args) ->
+    begin match p, args with
+    | { Primitive.prim_name = ("%raise" | "%reraise" | "%raise_notrace"
+                              | "%identity") },
+      [Nolabel, Arg e] ->
+        is_nonexpansive e
+    | _ ->
+        false
+    end
   | Texp_struct_item (si, e) ->
       is_nonexpansive_struct_item si && is_nonexpansive e
   | Texp_array (_, _ :: _)

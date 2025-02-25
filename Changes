@@ -14,6 +14,10 @@ Working version
   `let exception` and `let open`.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
+- #14029: Recognize `%identity` as nonexpansive
+  (Stephen Dolan and Olivier Nicole, review by Hugo Heuzard, Jacques Guarrigue,
+  Jeremy Yallop,  and Gabriel Scherer)
+
 * #13712: Introduce a new kind `Type_external` and syntax
   `type t = external "name"` to discriminate external types from other types
   and each other.  This PR turns primitive types into external and removes the
