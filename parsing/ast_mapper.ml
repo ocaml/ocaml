@@ -512,13 +512,6 @@ module E = struct
     | Pexp_override sel ->
         override ~loc ~attrs
           (List.map (map_tuple (map_loc sub) (sub.expr sub)) sel)
-    | Pexp_letmodule (s, me, e) ->
-        letmodule ~loc ~attrs (map_loc sub s) (sub.module_expr sub me)
-          (sub.expr sub e)
-    | Pexp_letexception (cd, e) ->
-        letexception ~loc ~attrs
-          (sub.extension_constructor sub cd)
-          (sub.expr sub e)
     | Pexp_assert e -> assert_ ~loc ~attrs (sub.expr sub e)
     | Pexp_lazy e -> lazy_ ~loc ~attrs (sub.expr sub e)
     | Pexp_poly (e, t) ->
@@ -529,8 +522,6 @@ module E = struct
     | Pexp_pack (me, optyp) ->
         let optyp = Option.map (sub.package_type sub) optyp in
         pack ~loc ~attrs (sub.module_expr sub me) optyp
-    | Pexp_open (o, e) ->
-        open_ ~loc ~attrs (sub.open_declaration sub o) (sub.expr sub e)
     | Pexp_letop {let_; ands; body} ->
         letop ~loc ~attrs (sub.binding_op sub let_)
           (List.map (sub.binding_op sub) ands) (sub.expr sub body)

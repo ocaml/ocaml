@@ -453,12 +453,6 @@ module E = struct
         iter_loc sub s; sub.expr sub e
     | Pexp_override sel ->
         List.iter (iter_tuple (iter_loc sub) (sub.expr sub)) sel
-    | Pexp_letmodule (s, me, e) ->
-        iter_loc sub s; sub.module_expr sub me;
-        sub.expr sub e
-    | Pexp_letexception (cd, e) ->
-        sub.extension_constructor sub cd;
-        sub.expr sub e
     | Pexp_assert e -> sub.expr sub e
     | Pexp_lazy e -> sub.expr sub e
     | Pexp_poly (e, t) ->
@@ -468,8 +462,6 @@ module E = struct
     | Pexp_pack (me, optyp) ->
         sub.module_expr sub me;
         Option.iter (sub.package_type sub) optyp
-    | Pexp_open (o, e) ->
-        sub.open_declaration sub o; sub.expr sub e
     | Pexp_letop {let_; ands; body} ->
         sub.binding_op sub let_;
         List.iter (sub.binding_op sub) ands;

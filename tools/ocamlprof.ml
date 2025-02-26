@@ -280,13 +280,6 @@ and rw_exp iflag sexp =
   | Pexp_override l ->
       List.iter (fun (_, sexp) -> rewrite_exp iflag sexp) l
 
-  | Pexp_letmodule (_, smod, sexp) ->
-      rewrite_mod iflag smod;
-      rewrite_exp iflag sexp
-
-  | Pexp_letexception (_cd, exp) ->
-      rewrite_exp iflag exp
-
   | Pexp_assert (cond) -> rewrite_exp iflag cond
 
   | Pexp_lazy (expr) -> rewrite_exp iflag expr
@@ -297,7 +290,6 @@ and rw_exp iflag sexp =
       List.iter (rewrite_class_field iflag) cl.pcstr_fields
 
   | Pexp_newtype (_, sexp) -> rewrite_exp iflag sexp
-  | Pexp_open (_, e) -> rewrite_exp iflag e
   | Pexp_pack (smod, _) -> rewrite_mod iflag smod
   | Pexp_letop {let_; ands; body; _} ->
       rewrite_exp iflag let_.pbop_exp;

@@ -240,15 +240,6 @@ let rec add_expr bv exp =
   | Pexp_new li -> add bv li
   | Pexp_setinstvar(_v, e) -> add_expr bv e
   | Pexp_override sel -> List.iter (fun (_s, e) -> add_expr bv e) sel
-  | Pexp_letmodule(id, m, e) ->
-      let b = add_module_binding bv m in
-      let bv =
-        match id.txt with
-        | None -> bv
-        | Some id -> String.Map.add id b bv
-      in
-      add_expr bv e
-  | Pexp_letexception(_, e) -> add_expr bv e
   | Pexp_assert (e) -> add_expr bv e
   | Pexp_lazy (e) -> add_expr bv e
   | Pexp_poly (e, t) -> add_expr bv e; add_opt add_type bv t
@@ -257,9 +248,6 @@ let rec add_expr bv exp =
   | Pexp_newtype (_, e) -> add_expr bv e
   | Pexp_pack (m, opty) ->
       add_module_expr bv m; add_opt add_package_type bv opty
-  | Pexp_open (o, e) ->
-      let bv = open_declaration bv o in
-      add_expr bv e
   | Pexp_letop {let_; ands; body} ->
       let bv' = add_binding_op bv bv let_ in
       let bv' = List.fold_left (add_binding_op bv) bv' ands in

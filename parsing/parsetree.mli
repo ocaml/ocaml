@@ -411,10 +411,6 @@ and expression_desc =
   | Pexp_setinstvar of label loc * expression  (** [x <- 2] *)
   | Pexp_override of (label loc * expression) list
       (** [{< x1 = E1; ...; xn = En >}] *)
-  | Pexp_letmodule of string option loc * module_expr * expression
-      (** [let module M = ME in E] *)
-  | Pexp_letexception of extension_constructor * expression
-      (** [let exception C in E] *)
   | Pexp_struct_item of structure_item * expression
       (** [let SI in E] *)
   | Pexp_assert of expression
@@ -433,10 +429,6 @@ and expression_desc =
   | Pexp_newtype of string loc * expression  (** [fun (type t) -> E] *)
   | Pexp_pack of module_expr * package_type option
       (** [(module ME)] or [(module ME : S)]. *)
-  | Pexp_open of open_declaration * expression
-      (** - [M.(E)]
-            - [let open M in E]
-            - [let open! M in E] *)
   | Pexp_letop of letop
       (** - [let* P = E0 in E1]
             - [let* P0 = E00 and* P1 = E01 in E1] *)

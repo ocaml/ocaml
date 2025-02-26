@@ -541,12 +541,6 @@ let expression sub exp =
         Pexp_override (List.map (fun (_path, lid, exp) ->
               (map_loc sub lid, sub.expr sub exp)
           ) list)
-    | Texp_letmodule (_id, name, _pres, mexpr, exp) ->
-        Pexp_letmodule (name, sub.module_expr sub mexpr,
-          sub.expr sub exp)
-    | Texp_letexception (ext, exp) ->
-        Pexp_letexception (sub.extension_constructor sub ext,
-                           sub.expr sub exp)
     | Texp_assert (exp, _) -> Pexp_assert (sub.expr sub exp)
     | Texp_lazy exp -> Pexp_lazy (sub.expr sub exp)
     | Texp_object (cl, _) ->
@@ -568,8 +562,6 @@ let expression sub exp =
                         PStr [ Str.eval ~loc
                                  (Exp.construct ~loc (map_loc sub lid) None)
                              ])
-    | Texp_open (od, exp) ->
-        Pexp_open (sub.open_declaration sub od, sub.expr sub exp)
     | Texp_struct_item (si, exp) ->
         Pexp_struct_item (sub.structure_item sub si, sub.expr sub exp)
   in
