@@ -816,8 +816,7 @@ and expression ctxt f x =
         paren true (expression reset_ctxt) f x
     | Pexp_ifthenelse _ | Pexp_sequence _ when ctxt.ifthenelse ->
         paren true (expression reset_ctxt) f x
-    | Pexp_let _ | Pexp_letmodule _ | Pexp_open _
-      | Pexp_letexception _ | Pexp_letop _
+    | Pexp_let _ | Pexp_letop _
         when ctxt.semi ->
         paren true (expression reset_ctxt) f x
     | Pexp_newtype (lid, e) ->
@@ -941,14 +940,6 @@ and expression ctxt f x =
           pp f "@[<hov2>%a@ =@ %a@]" ident_of_name s.txt (expression ctxt) e in
         pp f "@[<hov2>{<%a>}@]"
           (list string_x_expression  ~sep:";"  )  l;
-    | Pexp_letmodule (s, me, e) ->
-        pp f "@[<hov2>let@ module@ %s@ =@ %a@ in@ %a@]"
-          (Option.value s.txt ~default:"_")
-          (module_expr reset_ctxt) me (expression ctxt) e
-    | Pexp_letexception (cd, e) ->
-        pp f "@[<hov2>let@ exception@ %a@ in@ %a@]"
-          (extension_constructor ctxt) cd
-          (expression ctxt) e
     | Pexp_assert e ->
         pp f "@[<hov2>assert@ %a@]" (simple_expr ctxt) e
     | Pexp_lazy (e) ->
@@ -960,10 +951,6 @@ and expression ctxt f x =
     | Pexp_poly (e, Some ct) ->
         pp f "@[<hov2>(!poly!@ %a@ : %a)@]"
           (simple_expr ctxt) e (core_type ctxt) ct
-    | Pexp_open (o, e) ->
-        pp f "@[<2>let open%s %a in@;%a@]"
-          (override o.popen_override) (module_expr ctxt) o.popen_expr
-          (expression ctxt) e
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%a@;%a@]" ident_of_name l (simple_expr ctxt) eo
     | Pexp_letop {let_; ands; body} ->

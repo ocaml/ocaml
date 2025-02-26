@@ -496,22 +496,6 @@ and transl_exp0 ~in_new_scope ~scopes e =
                             (Lvar cpy) (Lvar id) expr, rem))
              modifs
              (Lvar cpy))
-  | Texp_letmodule(None, loc, Mp_present, modl, body) ->
-      let lam = !transl_module ~scopes Tcoerce_none None modl in
-      Lsequence(Lprim(Pignore, [lam], of_location ~scopes loc.loc),
-                transl_exp ~scopes body)
-  | Texp_letmodule(Some id, _loc, Mp_present, modl, body) ->
-      let defining_expr =
-        let mod_scopes = enter_module_definition ~scopes id in
-        !transl_module ~scopes:mod_scopes Tcoerce_none None modl
-      in
-      Llet(Strict, Pgenval, id, defining_expr, transl_exp ~scopes body)
-  | Texp_letmodule(_, _, Mp_absent, _, body) ->
-      transl_exp ~scopes body
-  | Texp_letexception(cd, body) ->
-      Llet(Strict, Pgenval,
-           cd.ext_id, transl_extension_constructor ~scopes e.exp_env None cd,
-           transl_exp ~scopes body)
   | Texp_pack modl ->
       !transl_module ~scopes Tcoerce_none None modl
   | Texp_assert ({exp_desc=Texp_construct(_, {cstr_name="false"}, _)}, loc) ->
@@ -580,28 +564,6 @@ and transl_exp0 ~in_new_scope ~scopes e =
         (transl_letop ~scopes e.exp_loc e.exp_env let_ ands param body partial)
   | Texp_unreachable ->
       raise (Error (e.exp_loc, Unreachable_reached))
-  | Texp_open (od, e) ->
-      let pure = pure_module od.open_expr in
-      (* this optimization shouldn't be needed because Simplif would
-          actually remove the [Llet] when it's not used.
-          But since [scan_used_globals] runs before Simplif, we need to
-          do it. *)
-      begin match od.open_bound_items with
-      | [] when pure = Alias -> transl_exp ~scopes e
-      | _ ->
-          let oid = Ident.create_local "open" in
-          let body, _ =
-            List.fold_left (fun (body, pos) id ->
-              Llet(Alias, Pgenval, id,
-                   Lprim(Pfield (pos, Pointer, Mutable), [Lvar oid],
-                         of_location ~scopes od.open_loc), body),
-              pos + 1
-            ) (transl_exp ~scopes e, 0)
-              (bound_value_identifiers od.open_bound_items)
-          in
-          Llet(pure, Pgenval, oid,
-               !transl_module ~scopes Tcoerce_none None od.open_expr, body)
-      end
   | Texp_stritem (si, e) ->
       !transl_struct_item ~scopes [] None si (fun _ -> transl_exp ~scopes e)
 

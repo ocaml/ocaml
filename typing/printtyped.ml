@@ -439,14 +439,6 @@ and expression i ppf x =
   | Texp_override (_, l) ->
       line i ppf "Texp_override\n";
       list i string_x_expression ppf l;
-  | Texp_letmodule (s, _, _, me, e) ->
-      line i ppf "Texp_letmodule \"%a\"\n" fmt_modname s;
-      module_expr i ppf me;
-      expression i ppf e;
-  | Texp_letexception (cd, e) ->
-      line i ppf "Texp_letexception\n";
-      extension_constructor i ppf cd;
-      expression i ppf e;
   | Texp_assert (e, _) ->
       line i ppf "Texp_assert";
       expression i ppf e;
@@ -469,12 +461,6 @@ and expression i ppf x =
       line i ppf "Texp_unreachable"
   | Texp_extension_constructor (li, _) ->
       line i ppf "Texp_extension_constructor %a" fmt_longident li
-  | Texp_open (o, e) ->
-      line i ppf "Texp_open %a\n"
-        fmt_override_flag o.open_override;
-      module_expr i ppf o.open_expr;
-      attributes i ppf o.open_attributes;
-      expression i ppf e;
   | Texp_stritem (si, e) ->
       line i ppf "Texp_stritem\n";
       structure_item i ppf si;

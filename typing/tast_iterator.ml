@@ -376,13 +376,6 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
       sub.expr sub exp
   | Texp_override (_, list) ->
       List.iter (fun (_, s, e) -> iter_loc sub s; sub.expr sub e) list
-  | Texp_letmodule (_, s, _, mexpr, exp) ->
-      iter_loc sub s;
-      sub.module_expr sub mexpr;
-      sub.expr sub exp
-  | Texp_letexception (cd, exp) ->
-      sub.extension_constructor sub cd;
-      sub.expr sub exp
   | Texp_assert (exp, _) -> sub.expr sub exp
   | Texp_lazy exp -> sub.expr sub exp
   | Texp_object (cl, _) -> sub.class_structure sub cl
@@ -393,9 +386,6 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
       sub.case sub body
   | Texp_unreachable -> ()
   | Texp_extension_constructor (lid, _) -> iter_loc_lid sub lid
-  | Texp_open (od, e) ->
-      sub.open_declaration sub od;
-      sub.expr sub e
   | Texp_stritem (si, e) ->
       sub.structure_item sub si;
       sub.expr sub e

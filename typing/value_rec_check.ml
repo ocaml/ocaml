@@ -150,23 +150,11 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_let (rec_flag, vb, e) ->
         let env = classify_value_bindings rec_flag env vb in
         classify_expression env e
-    | Texp_letmodule (Some mid, _, _, mexp, e) ->
-        (* Note on module presence:
-           For absent modules (i.e. module aliases), the module being bound
-           does not have a physical representation, but its size can still be
-           derived from the alias itself, so we can reuse the same code as
-           for modules that are present. *)
-        let size = classify_module_expression env mexp in
-        let env = Ident.add mid size env in
-        classify_expression env e
     | Texp_ident (path, _, _) ->
         classify_path env path
 
     (* non-binding cases *)
-    | Texp_open (_, e)
-    | Texp_letmodule (None, _, _, _, e)
     | Texp_sequence (_, e)
-    | Texp_letexception (_, e)
     | Texp_stritem (_, e) ->
         classify_expression env e
 
@@ -551,8 +539,6 @@ let array : 'a. ('a -> term_judg) -> 'a array -> term_judg =
     Array.fold_left (fun env item -> Env.join env (f item m)) Env.empty ar
 
 let single : Ident.t -> term_judg = Env.single
-let remove_id : Ident.t -> term_judg -> term_judg =
-  fun id f m -> Env.remove id (f m)
 let remove_ids : Ident.t list -> term_judg -> term_judg =
   fun ids f m -> Env.remove_list ids (f m)
 
@@ -591,8 +577,6 @@ let rec expression : Typedtree.expression -> term_judg =
          G |- let <bindings> in body : m
       *)
       value_bindings rec_flag bindings >> expression body
-    | Texp_letmodule (x, _, _, mexp, e) ->
-      module_binding (x, mexp) >> expression e
     | Texp_match (e, cases, eff_cases, _) ->
       (* TODO: update comment below for eff_cases
          (Gi; mi |- pi -> ei : m)^i
@@ -806,12 +790,6 @@ let rec expression : Typedtree.expression -> term_judg =
         path pth << Dereference;
         expression e << Dereference;
       ]
-    | Texp_letexception ({ext_id}, e) ->
-      (* G |- e: m
-         ----------------------------
-         G |- let exception A in e: m
-      *)
-      remove_id ext_id (expression e)
     | Texp_assert (e, _) ->
       (*
         G |- e: m[Dereference]
@@ -940,8 +918,6 @@ let rec expression : Typedtree.expression -> term_judg =
       empty
     | Texp_extension_constructor (_lid, pth) ->
       path pth << Dereference
-    | Texp_open (od, e) ->
-      open_declaration od >> expression e
     | Texp_stritem (si, e) ->
       structure_item si >> expression e
 

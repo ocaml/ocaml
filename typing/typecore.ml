@@ -2750,9 +2750,6 @@ let rec final_subexpression exp =
   | Texp_try (e, _, _)
   | Texp_ifthenelse (_, e, _)
   | Texp_match (_, {c_rhs=e} :: _, _, _)
-  | Texp_letmodule (_, _, _, _, e)
-  | Texp_letexception (_, e)
-  | Texp_open (_, e)
   | Texp_stritem (_, e)
     -> final_subexpression e
   | _ -> exp
@@ -3090,9 +3087,6 @@ let rec is_nonexpansive exp =
       Vars.fold (fun _ (mut,_,_) b -> decr count; b && mut = Immutable)
         vars true &&
       !count = 0
-  | Texp_letmodule (_, _, _, mexp, e)
-  | Texp_open ({ open_expr = mexp; _}, e) ->
-      is_nonexpansive_mod mexp && is_nonexpansive e
   | Texp_pack mexp ->
       is_nonexpansive_mod mexp
   (* Computations which raise exceptions are nonexpansive, since (raise e) is
@@ -3119,7 +3113,6 @@ let rec is_nonexpansive exp =
   | Texp_instvar _
   | Texp_setinstvar _
   | Texp_override _
-  | Texp_letexception _
   | Texp_letop _
   | Texp_extension_constructor _ ->
     false
@@ -3340,8 +3333,6 @@ let check_statement exp =
         match exp_desc with
         | Texp_let (_, _, e)
         | Texp_sequence (_, e)
-        | Texp_letexception (_, e)
-        | Texp_letmodule (_, _, _, _, e)
         | Texp_stritem (_, e) ->
             loop e
         | _ ->
@@ -3407,8 +3398,7 @@ let check_partial_application ~statement exp =
                 List.iter (fun {c_rhs; _} -> check c_rhs) eff_cases
             | Texp_ifthenelse (_, e1, Some e2) ->
                 check e1; check e2
-            | Texp_let (_, _, e) | Texp_sequence (_, e) | Texp_open (_, e)
-            | Texp_letexception (_, e) | Texp_letmodule (_, _, _, _, e)
+            | Texp_let (_, _, e) | Texp_sequence (_, e)
             | Texp_stritem (_, e) ->
                 check e
             | Texp_apply _ | Texp_send _ | Texp_new _ | Texp_letop _ ->
@@ -3602,7 +3592,7 @@ let rec is_inferred sexp =
   match sexp.pexp_desc with
   | Pexp_ident _ | Pexp_apply _ | Pexp_field _ | Pexp_constraint _
   | Pexp_coerce _ | Pexp_send _ | Pexp_new _ | Pexp_pack (_, Some _) -> true
-  | Pexp_sequence (_, e) | Pexp_open (_, e) -> is_inferred e
+  | Pexp_sequence (_, e) -> is_inferred e
   | Pexp_ifthenelse (_, e1, Some e2) -> is_inferred e1 && is_inferred e2
   | _ -> false
 
@@ -4524,69 +4514,6 @@ and type_expect_
       | _ ->
           assert false
       end
-  | Pexp_letmodule(name, smodl, sbody) ->
-      let lv = get_current_level () in
-      let (id, pres, modl, _, body) =
-        with_local_level_generalize begin fun () ->
-          let modl, pres, id, new_env =
-            Typetexp.TyVarEnv.with_local_scope begin fun () ->
-              let modl, md_shape = !type_module env smodl in
-              Mtype.lower_nongen lv modl.mod_type;
-              let pres =
-                match modl.mod_type with
-                | Mty_alias _ -> Mp_absent
-                | _ -> Mp_present
-              in
-              let scope = create_scope () in
-              let md_uid = Uid.mk ~current_unit:(Env.get_current_unit ()) in
-              let md_shape = Shape.set_uid_if_none md_shape md_uid in
-              let md =
-                { md_type = modl.mod_type; md_attributes = [];
-                  md_loc = name.loc;
-                  md_uid; }
-              in
-              let (id, new_env) =
-                match name.txt with
-                | None -> None, env
-                | Some name ->
-                    let id, env =
-                      Env.enter_module_declaration
-                        ~scope ~shape:md_shape name pres md env
-                    in
-                    Some id, env
-              in
-              modl, pres, id, new_env
-            end
-          in
-          (* Ideally, we should catch Expr_type_clash errors
-             in type_expect triggered by escaping identifiers
-             from the local module and refine them into
-             Scoping_let_module errors
-           *)
-          let body = type_expect new_env sbody ty_expected_explained in
-          (id, pres, modl, new_env, body)
-        end
-        ~before_generalize: begin fun (_id, _pres, _modl, new_env, body) ->
-          (* Ensure that local definitions do not leak. *)
-          (* required for implicit unpack *)
-          enforce_current_level new_env body.exp_type
-        end
-      in
-      re {
-        exp_desc = Texp_letmodule(id, name, pres, modl, body);
-        exp_loc = loc; exp_extra = [];
-        exp_type = body.exp_type;
-        exp_attributes = sexp.pexp_attributes;
-        exp_env = env }
-  | Pexp_letexception(cd, sbody) ->
-      let (cd, newenv, _shape) = Typedecl.transl_exception env cd in
-      let body = type_expect newenv sbody ty_expected_explained in
-      re {
-        exp_desc = Texp_letexception(cd, body);
-        exp_loc = loc; exp_extra = [];
-        exp_type = body.exp_type;
-        exp_attributes = sexp.pexp_attributes;
-        exp_env = env }
 
   | Pexp_assert (e) ->
       let cond = type_expect env e
@@ -4730,21 +4657,6 @@ and type_expect_
             exp_attributes = sexp.pexp_attributes;
             exp_env = env }
       end
-  | Pexp_open (od, e) ->
-      let tv = newvar () in
-      let (od, _, newenv) = !type_open_decl env od in
-      let exp = type_expect newenv e ty_expected_explained in
-      (* Force the return type to be well-formed in the original
-         environment. *)
-      unify_var newenv tv exp.exp_type;
-      re {
-        exp_desc = Texp_open (od, exp);
-        exp_type = exp.exp_type;
-        exp_loc = loc;
-        exp_extra = [];
-        exp_attributes = sexp.pexp_attributes;
-        exp_env = env;
-      }
   | Pexp_letop{ let_ = slet; ands = sands; body = sbody } ->
       let rec loop spat_acc ty_acc sands =
         match sands with

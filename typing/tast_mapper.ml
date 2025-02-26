@@ -476,19 +476,6 @@ let expr sub x =
           path,
           List.map (tuple3 id (map_loc sub) (sub.expr sub)) list
         )
-    | Texp_letmodule (id, s, pres, mexpr, exp) ->
-        Texp_letmodule (
-          id,
-          map_loc sub s,
-          pres,
-          sub.module_expr sub mexpr,
-          sub.expr sub exp
-        )
-    | Texp_letexception (cd, exp) ->
-        Texp_letexception (
-          sub.extension_constructor sub cd,
-          sub.expr sub exp
-        )
     | Texp_assert (exp, loc) ->
         Texp_assert (sub.expr sub exp, loc)
     | Texp_lazy exp ->
@@ -509,8 +496,6 @@ let expr sub x =
         Texp_unreachable
     | Texp_extension_constructor (lid, path) ->
         Texp_extension_constructor (map_loc_lid sub lid, path)
-    | Texp_open (od, e) ->
-        Texp_open (sub.open_declaration sub od, sub.expr sub e)
     | Texp_stritem (si, e) ->
         Texp_stritem (sub.structure_item sub si, sub.expr sub e)
   in
