@@ -2465,7 +2465,8 @@ fun_expr:
 ;
 %inline fun_expr_attrs:
   | LET MODULE ext_attributes mkrhs(module_name) module_binding_body IN seq_expr
-      { Pexp_letmodule($4, $5, $7), $3 }
+      { let loc = make_loc ($startpos($2), $endpos($5)) in
+        Pexp_stritem(Str.module_ ~loc (Mb.mk ~loc:(make_loc $loc($4)) $4 $5), $7), $3 }
   | LET EXCEPTION ext_attributes let_exception_declaration IN seq_expr
       { Pexp_letexception($4, $6), $3 }
   | LET OPEN override_flag ext_attributes module_expr IN seq_expr
