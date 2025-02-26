@@ -291,7 +291,10 @@ let of_path ~find_shape ~namespace path =
           | _ -> Module
         in
         proj (aux namespace path) (name, ns)
-    | Papply (p1, p2) -> app (aux Module p1) ~arg:(aux Module p2)
+    | Papply (Longident.Kmod, p1, p2) ->
+        app (aux Module p1) ~arg:(aux Module p2)
+    | Papply (Longident.Ktype, p1, p2) ->
+        app (aux Module p1) ~arg:(aux Type p2)
     | Pextra_ty (path, extra) -> begin
         match extra with
           Pcstr_ty name -> proj (aux Type path) (name, Constructor)

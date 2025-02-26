@@ -390,7 +390,7 @@ and rewrite_mod iflag smod =
   | Pmod_apply(smod1, smod2) ->
       rewrite_mod iflag smod1;
       rewrite_mod iflag smod2
-  | Pmod_apply_unit smod1 ->
+  | Pmod_apply_type(smod1, _) | Pmod_apply_unit smod1 ->
       rewrite_mod iflag smod1
   | Pmod_constraint(smod, _smty) -> rewrite_mod iflag smod
   | Pmod_unpack(sexp) -> rewrite_exp iflag sexp

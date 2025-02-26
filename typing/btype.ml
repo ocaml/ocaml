@@ -436,7 +436,7 @@ let type_iterators_without_type_expr =
     it.it_class_type it ctd.clty_type;
     it.it_path ctd.clty_path
   and it_functor_param it = function
-    | Unit -> ()
+    | Unit | Newtype _ -> ()
     | Named (_, mt) -> it.it_module_type it mt
   and it_module_type it = function
       Mty_ident p

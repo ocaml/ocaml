@@ -1422,6 +1422,11 @@ class html =
       | Module_apply_unit k1 ->
           self#html_of_module_kind b father k1;
           self#html_of_text b [Code "()"]
+      | Module_apply_type (k1, t2) ->
+          self#html_of_module_kind b father k1;
+          self#html_of_text b [Code "(type "];
+          self#html_of_type_expr b father t2;
+          self#html_of_text b [Code ")"]
       | Module_with (k, s) ->
           (* TODO: modify when Module_with will be more detailed *)
           self#html_of_module_type_kind b father ?modu k;

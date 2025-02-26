@@ -29,7 +29,7 @@ val out_module_type : out_module_type printer
 val out_sig_item : out_sig_item printer
 val out_signature :out_sig_item list printer
 val out_functor_parameters :
-  (string option * Outcometree.out_module_type) option list printer
+  (string option * Outcometree.out_module_type option) option list printer
 val out_type_extension : out_type_extension printer
 val out_phrase : out_phrase toplevel_printer
 

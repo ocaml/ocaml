@@ -103,6 +103,15 @@ type hiding_error =
       user_loc: Location.t;
     }
 
+type disallowed_in_functor =
+    | TypeGen
+    | ExceptionDef
+    | TypeExtension
+    | Expansive
+    | Class
+    | ModApp
+    | Unpack
+
 type error =
     Cannot_apply of module_type
   | Not_included of Includemod.explanation
@@ -122,7 +131,7 @@ type error =
       { vars : type_expr list; item : value_description; mty : module_type }
   | Implementation_is_required of string
   | Interface_not_compiled of string
-  | Not_allowed_in_functor_body
+  | Not_allowed_in_functor_body of disallowed_in_functor
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr

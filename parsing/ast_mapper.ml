@@ -100,10 +100,10 @@ let rec map_loc_lid sub lid =
   | Ldot (lid, id) ->
       let lid = { lid with txt = map_loc_lid sub lid.txt } in
       Ldot (map_loc sub lid, map_loc sub id)
-  | Lapply (lid, lid') ->
+  | Lapply (k, lid, lid') ->
     let lid = { lid with txt = map_loc_lid sub lid.txt } in
     let lid' = { lid' with txt = map_loc_lid sub lid'.txt } in
-    Lapply(map_loc sub lid, map_loc sub lid')
+    Lapply(k, map_loc sub lid, map_loc sub lid')
 
 let map_loc_lid sub {loc; txt} =
   let txt = map_loc_lid sub txt in
@@ -304,6 +304,7 @@ end
 
 let map_functor_param sub = function
   | Unit -> Unit
+  | Newtype ty -> Newtype (map_loc sub ty)
   | Named (s, mt) -> Named (map_loc sub s, sub.module_type sub mt)
 
 module MT = struct
@@ -387,6 +388,8 @@ module M = struct
           (sub.module_expr sub body)
     | Pmod_apply (m1, m2) ->
         apply ~loc ~attrs (sub.module_expr sub m1) (sub.module_expr sub m2)
+    | Pmod_apply_type (m1, t2) ->
+        apply_type ~loc ~attrs (sub.module_expr sub m1) (sub.typ sub t2)
     | Pmod_apply_unit m1 ->
         apply_unit ~loc ~attrs (sub.module_expr sub m1)
     | Pmod_constraint (m, mty) ->

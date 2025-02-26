@@ -271,6 +271,7 @@ module Mod = struct
   let functor_ ?loc ?attrs arg body =
     mk ?loc ?attrs (Pmod_functor (arg, body))
   let apply ?loc ?attrs m1 m2 = mk ?loc ?attrs (Pmod_apply (m1, m2))
+  let apply_type ?loc ?attrs m1 t2 = mk ?loc ?attrs (Pmod_apply_type (m1, t2))
   let apply_unit ?loc ?attrs m1 = mk ?loc ?attrs (Pmod_apply_unit m1)
   let constraint_ ?loc ?attrs m mty = mk ?loc ?attrs (Pmod_constraint (m, mty))
   let unpack ?loc ?attrs e = mk ?loc ?attrs (Pmod_unpack e)

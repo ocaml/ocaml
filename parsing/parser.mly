@@ -409,7 +409,13 @@ let indexop_unclosed_error loc_s s loc_e =
 
 let lapply ~loc p1 loc_p1 p2 loc_p2 =
   if !Clflags.applicative_functors
-  then Lapply(mkrhs p1 loc_p1, mkrhs p2 loc_p2)
+  then Lapply(Kmod, mkrhs p1 loc_p1, mkrhs p2 loc_p2)
+  else raise (Syntaxerr.Error(
+                  Syntaxerr.Applicative_path (make_loc loc)))
+
+let lapplyt ~loc p1 loc_p1 p2 loc_p2 =
+  if !Clflags.applicative_functors
+  then Lapply(Ktype, mkrhs p1 loc_p1, mkrhs p2 loc_p2)
   else raise (Syntaxerr.Error(
                   Syntaxerr.Applicative_path (make_loc loc)))
 
@@ -1401,6 +1407,9 @@ functor_arg:
     (* An anonymous and untyped argument. *)
     LPAREN RPAREN
       { $startpos, Unit }
+    (* A type argument *)
+  | LPAREN TYPE ty_param = mkrhs(LIDENT) RPAREN
+      { $startpos, Newtype ty_param }
   | (* An argument accompanied with an explicit type. *)
     LPAREN x = mkrhs(module_name) COLON mty = module_type RPAREN
       { $startpos, Named (x, mty) }
@@ -1448,6 +1457,9 @@ module_expr:
     | (* In a functor application, the actual argument must be parenthesized. *)
       me1 = module_expr me2 = paren_module_expr
         { Pmod_apply(me1, me2) }
+    | (* In a functor application, the actual argument must be parenthesized. *)
+      me = module_expr LPAREN TYPE ty = core_type RPAREN
+        { Pmod_apply_type(me, ty) }
     | (* Functor applied to unit. *)
       me = module_expr LPAREN RPAREN
         { Pmod_apply_unit me }
@@ -4076,6 +4088,8 @@ mod_ext_longident:
     mk_longident(mod_ext_longident, UIDENT) { $1 }
   | mod_ext_longident LPAREN mod_ext_longident RPAREN
       { lapply ~loc:$sloc $1 $loc($1) $3 $loc($3) }
+  | mod_ext_longident LPAREN TYPE type_longident RPAREN
+      { lapplyt ~loc:$sloc $1 $loc($1) $4 $loc($4) }
   | mod_ext_longident LPAREN error
       { expecting $loc($3) "module path" }
 ;

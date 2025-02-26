@@ -770,9 +770,14 @@ let components_of_module_maker' =
             (module_components_repr, module_components_failure) result)
 
 let components_of_functor_appl' =
-  ref ((fun ~loc:_ ~f_path:_ ~f_comp:_ ~arg:_ _env -> assert false) :
+  ref ((fun ~loc:_ ~f_path:_ ~f_comp:_ ~kind:_ ~arg:_ _env -> assert false) :
           loc:Location.t -> f_path:Path.t -> f_comp:functor_components ->
-            arg:Path.t -> t -> module_components)
+            kind:Longident.arg_kind -> arg:Path.t -> t -> module_components)
+
+type mod_arg =
+  | Mod of module_type
+  | Type of type_declaration
+
 let check_functor_application =
   (* to be filled by Includemod *)
   ref ((fun ~errors:_ ~loc:_
@@ -782,8 +787,8 @@ let check_functor_application =
          -> assert false) :
          errors:bool -> loc:Location.t ->
        lid_whole_app:Longident.t ->
-       f0_path:Path.t -> args:(Path.t * Types.module_type) list ->
-       arg_path:Path.t -> arg_mty:module_type -> param_mty:module_type ->
+       f0_path:Path.t -> args:(Path.t * mod_arg) list ->
+       arg_path:Path.t -> arg_mty:mod_arg -> param_mty:module_type option ->
        t -> unit)
 let strengthen =
   (* to be filled with Mtype.strengthen *)
@@ -1019,13 +1024,16 @@ let modtype_of_functor_appl fcomp p1 p2 =
       try
         Hashtbl.find fcomp.fcomp_subst_cache p2
       with Not_found ->
-        let scope = Path.scope (Papply(p1, p2)) in
+        let scope = Path.scope (Papply(Longident.Kmod, p1, p2)) in
         let mty =
           let subst =
             match fcomp.fcomp_arg with
             | Unit
             | Named (None, _) -> Subst.identity
-            | Named (Some param, _) -> Subst.add_module param p2 Subst.identity
+            | Named (Some param, _) ->
+                Subst.add_module param p2 Subst.identity
+            | Newtype param ->
+                Subst.add_type param p2 Subst.identity
           in
           Subst.modtype (Rescope scope) subst mty
         in
@@ -1057,10 +1065,10 @@ let rec find_module_components path env =
   | Pdot(p, s) ->
       let sc = find_structure_components p env in
       (NameMap.find s sc.comp_modules).mda_components
-  | Papply(f_path, arg) ->
+  | Papply(kind, f_path, arg) ->
       let f_comp = find_functor_components f_path env in
       let loc = Location.(in_file !input_name) in
-      !components_of_functor_appl' ~loc ~f_path ~f_comp ~arg env
+      !components_of_functor_appl' ~loc ~f_path ~f_comp ~kind ~arg env
   | Pextra_ty _ -> raise Not_found
 
 and find_structure_components path env =
@@ -1082,7 +1090,7 @@ let find_module ~alias path env =
       let sc = find_structure_components p env in
       let data = NameMap.find s sc.comp_modules in
       Subst.Lazy.force_module_decl data.mda_declaration
-  | Papply(p1, p2) ->
+  | Papply(_, p1, p2) ->
       let fc = find_functor_components p1 env in
       if alias then md (fc.fcomp_res)
       else md (modtype_of_functor_appl fc p1 p2)
@@ -1097,7 +1105,7 @@ let find_module_lazy ~alias path env =
       let sc = find_structure_components p env in
       let data = NameMap.find s sc.comp_modules in
       data.mda_declaration
-  | Papply(p1, p2) ->
+  | Papply(_, p1, p2) ->
       let fc = find_functor_components p1 env in
       let md =
         if alias then md (fc.fcomp_res)
@@ -1343,11 +1351,11 @@ let rec normalize_module_path lax env = function
       let p' = normalize_module_path lax env p in
       if p == p' then expand_module_path lax env path
       else expand_module_path lax env (Pdot(p', s))
-  | Papply (p1, p2) as path ->
+  | Papply (k, p1, p2) as path ->
       let p1' = normalize_module_path lax env p1 in
       let p2' = normalize_module_path true env p2 in
       if p1 == p1' && p2 == p2' then expand_module_path lax env path
-      else expand_module_path lax env (Papply(p1', p2'))
+      else expand_module_path lax env (Papply(k, p1', p2'))
   | Pident _ as path ->
       expand_module_path lax env path
   | Pextra_ty _ -> assert false
@@ -1881,6 +1889,7 @@ let rec components_of_module_maker
           fcomp_arg =
             (match arg with
             | Unit -> Unit
+            | Newtype param -> Newtype param
             | Named (param, ty_arg) ->
               Named (param, force_modtype (modtype scoping sub ty_arg)));
           fcomp_res = force_modtype (modtype scoping sub ty_res);
@@ -2152,17 +2161,24 @@ let scrape_alias env mty = scrape_alias env mty
 
 (* Compute the components of a functor application in a path. *)
 
-let components_of_functor_appl ~loc ~f_path ~f_comp ~arg env =
+let components_of_functor_appl ~loc ~f_path ~f_comp ~kind ~arg env =
   try
     let c = Hashtbl.find f_comp.fcomp_cache arg in
     c
   with Not_found ->
-    let p = Papply(f_path, arg) in
-    let sub =
+    let p = Papply(kind, f_path, arg) in
+    let shape_arg () =
+      shape_of_path ~namespace:Shape.Sig_component_kind.Module env arg
+    in
+    let sub, shape_arg =
       match f_comp.fcomp_arg with
       | Unit
-      | Named (None, _) -> Subst.identity
-      | Named (Some param, _) -> Subst.add_module param arg Subst.identity
+      | Named (None, _) -> Subst.identity, shape_arg ()
+      | Named (Some param, _) ->
+          Subst.add_module param arg Subst.identity, shape_arg ()
+      | Newtype param ->
+          Subst.add_type param arg Subst.identity,
+          Shape.dummy_mod
     in
     (* we have to apply eagerly instead of passing sub to [components_of_module]
        because of the call to [check_well_formed_module]. *)
@@ -2170,9 +2186,6 @@ let components_of_functor_appl ~loc ~f_path ~f_comp ~arg env =
     let addr = Lazy_backtrack.create_failed Not_found in
     !check_well_formed_module env loc
       ("the signature of " ^ Path.name p) mty;
-    let shape_arg =
-      shape_of_path ~namespace:Shape.Sig_component_kind.Module env arg
-    in
     let shape = Shape.app f_comp.fcomp_shape ~arg:shape_arg in
     let comps =
       components_of_module ~alerts:Misc.Stdlib.String.Map.empty
@@ -2883,11 +2896,11 @@ let rec lookup_module_components ~errors ~use ~loc lid env =
   | Ldot(l, s) ->
       let path, data = lookup_dot_module ~errors ~use ~loc l s env in
       path, data.mda_components
-  | Lapply _ as lid ->
+  | Lapply (kind, _, _) as lid ->
       let f_path, f_comp, arg = lookup_apply ~errors ~use ~loc lid env in
       let comps =
-        !components_of_functor_appl' ~loc ~f_path ~f_comp ~arg env in
-      Papply (f_path, arg), comps
+        !components_of_functor_appl' ~loc ~f_path ~f_comp ~kind ~arg env in
+      Papply (kind, f_path, arg), comps
 
 and lookup_structure_components ~errors ~use l env =
   let { txt=lid; loc } = l in
@@ -2907,7 +2920,8 @@ and get_functor_components ~errors ~loc lid env comps =
       match fcomps.fcomp_arg with
       | Unit -> (* PR#7611 *)
           may_lookup_error errors loc env (Generative_used_as_applicative lid)
-      | Named (_, arg) -> fcomps, arg
+      | Newtype _ -> fcomps, None
+      | Named (_, arg) -> fcomps, Some arg
     end
   | Ok (Structure_comps _) ->
       may_lookup_error errors loc env (Structure_used_as_functor lid)
@@ -2920,10 +2934,14 @@ and lookup_all_args ~errors ~use lid0 env =
   let rec loop_lid_arg args = function
     | Lident _ | Ldot _ as f_lid ->
         (f_lid, args)
-    | Lapply (f_lid, arg_lid) ->
+    | Lapply (Longident.Kmod, f_lid, arg_lid) ->
         let { txt = arg_lid; loc } = arg_lid in
         let arg_path, arg_md = lookup_module ~errors ~use ~loc arg_lid env in
-        loop_lid_arg ((f_lid,arg_path,arg_md.md_type)::args) f_lid.txt
+        loop_lid_arg ((f_lid,arg_path, Mod arg_md.md_type)::args) f_lid.txt
+    | Lapply (Longident.Ktype, f_lid, arg_lid) ->
+      let { txt = arg_lid; loc } = arg_lid in
+      let arg_path, arg_td = lookup_type ~errors ~use ~loc arg_lid env in
+        loop_lid_arg ((f_lid,arg_path, Type arg_td)::args) f_lid.txt
   in
   loop_lid_arg [] lid0
 
@@ -2958,10 +2976,14 @@ and lookup_apply ~errors ~use ~loc lid0 env =
           check_one_apply ~errors ~loc ~f_lid ~f_comp
             ~arg_path ~arg_mty env
         in
-        let comp =
-          !components_of_functor_appl' ~loc ~f_path ~f_comp ~arg:arg_path env
+        let kind = match arg_mty with
+          | Mod _ -> Longident.Kmod | Type _ -> Longident.Ktype
         in
-        let path = Papply (f_path, arg_path) in
+        let comp =
+          !components_of_functor_appl' ~loc ~f_path ~f_comp ~kind
+                                       ~arg:arg_path env
+        in
+        let path = Papply (kind, f_path, arg_path) in
         check_apply ~path ~comp args
   in
   check_apply ~path:f0_path ~comp:f0_comp args0
@@ -2976,10 +2998,10 @@ and lookup_module ~errors ~use ~loc lid env =
       let path, data = lookup_dot_module ~errors ~use ~loc l s env in
       let md = Subst.Lazy.force_module_decl data.mda_declaration in
       path, md
-  | Lapply _ as lid ->
+  | Lapply (kind, _, _) as lid ->
       let path_f, comp_f, path_arg = lookup_apply ~errors ~use ~loc lid env in
       let md = md (modtype_of_functor_appl comp_f path_f path_arg) in
-      Papply(path_f, path_arg), md
+      Papply(kind, path_f, path_arg), md
 
 and lookup_dot_module ~errors ~use ~loc l s env =
   let p, comps = lookup_structure_components ~errors ~use l env in
@@ -2990,6 +3012,26 @@ and lookup_dot_module ~errors ~use ~loc l s env =
       (path, mda)
   | exception Not_found ->
       may_lookup_error errors loc env (Unbound_module (Ldot(l, s)))
+
+and lookup_dot_type ~errors ~use ~loc l s env =
+  let (p, comps) = lookup_structure_components ~errors ~use l env in
+  match NameMap.find s.txt comps.comp_types with
+  | tda ->
+      let path = Pdot(p, s.txt) in
+      use_type ~use ~loc path tda;
+      (path, tda)
+  | exception Not_found ->
+      may_lookup_error errors loc env (Unbound_type (Ldot(l, s)))
+
+and lookup_type_full ~errors ~use ~loc lid env =
+  match lid with
+  | Lident s -> lookup_ident_type ~errors ~use ~loc s env
+  | Ldot(l, s) -> lookup_dot_type ~errors ~use ~loc l s env
+  | Lapply _ -> assert false
+
+and lookup_type ~errors ~use ~loc lid env =
+  let (path, tda) = lookup_type_full ~errors ~use ~loc lid env in
+  path, tda.tda_declaration
 
 let lookup_dot_value ~errors ~use ~loc l s env =
   let (path, comps) =
@@ -3002,16 +3044,6 @@ let lookup_dot_value ~errors ~use ~loc l s env =
       (path, vda.vda_description)
   | exception Not_found ->
       may_lookup_error errors loc env (Unbound_value (Ldot(l, s), No_hint))
-
-let lookup_dot_type ~errors ~use ~loc l s env =
-  let (p, comps) = lookup_structure_components ~errors ~use l env in
-  match NameMap.find s.txt comps.comp_types with
-  | tda ->
-      let path = Pdot(p, s.txt) in
-      use_type ~use ~loc path tda;
-      (path, tda)
-  | exception Not_found ->
-      may_lookup_error errors loc env (Unbound_type (Ldot(l, s)))
 
 let lookup_dot_modtype ~errors ~use ~loc l s env =
   let (p, comps) = lookup_structure_components ~errors ~use l env in
@@ -3084,25 +3116,15 @@ let lookup_module_path ~errors ~use ~loc ~load lid env : Path.t =
       else
         fst (lookup_ident_module Load ~errors ~use ~loc s env)
   | Ldot(l, s) -> fst (lookup_dot_module ~errors ~use ~loc l s env)
-  | Lapply _ as lid ->
+  | Lapply (kind, _, _) as lid ->
       let path_f, _comp_f, path_arg = lookup_apply ~errors ~use ~loc lid env in
-      Papply(path_f, path_arg)
+      Papply(kind, path_f, path_arg)
 
 let lookup_value ~errors ~use ~loc lid env =
   match lid with
   | Lident s -> lookup_ident_value ~errors ~use ~loc s env
   | Ldot(l, s) -> lookup_dot_value ~errors ~use ~loc l s env
   | Lapply _ -> assert false
-
-let lookup_type_full ~errors ~use ~loc lid env =
-  match lid with
-  | Lident s -> lookup_ident_type ~errors ~use ~loc s env
-  | Ldot(l, s) -> lookup_dot_type ~errors ~use ~loc l s env
-  | Lapply _ -> assert false
-
-let lookup_type ~errors ~use ~loc lid env =
-  let (path, tda) = lookup_type_full ~errors ~use ~loc lid env in
-  path, tda.tda_declaration
 
 let lookup_modtype_lazy ~errors ~use ~loc lid env =
   match lid with

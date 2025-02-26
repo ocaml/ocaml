@@ -54,7 +54,7 @@ let global_path glob = Some(Pident glob)
 let functor_path path param =
   match path with
     None -> None
-  | Some p -> Some(Papply(p, Pident param))
+  | Some p -> Some(Papply(Longident.Kmod, p, Pident param))
 let field_path path field =
   match path with
     None -> None
@@ -457,19 +457,24 @@ let merge_functors ~scopes mexp coercion root_path =
         | _ -> fatal_error "Translmod.merge_functors: bad coercion"
       in
       let loc = of_location ~scopes mexp.mod_loc in
-      let path, param =
+      let param_opt =
         match param with
-        | Unit -> None, Ident.create_local "*"
+        | Unit -> Some (None, Ident.create_local "*")
+        | Newtype _ -> None
         | Named (None, _, _) ->
           let id = Ident.create_local "_" in
-          functor_path path id, id
-        | Named (Some id, _, _) -> functor_path path id, id
+          Some (functor_path path id, id)
+        | Named (Some id, _, _) -> Some (functor_path path id, id)
       in
-      let inline_attribute =
-        merge_inline_attributes inline_attribute inline_attribute' loc
-      in
-      merge ~scopes body res_coercion path ((param, loc, arg_coercion) :: acc)
-        inline_attribute
+      begin match param_opt with
+      | Some (path, param) ->
+        let inline_attribute =
+          merge_inline_attributes inline_attribute inline_attribute' loc
+        in
+        merge ~scopes body res_coercion path ((param, loc, arg_coercion) :: acc)
+          inline_attribute
+      | None -> merge ~scopes body res_coercion path acc inline_attribute
+      end
     | _ -> finished
   in
   merge ~scopes mexp coercion root_path [] Default_inline
@@ -516,6 +521,12 @@ and transl_module ~scopes cc rootpath mexp =
         (transl_module_path loc mexp.mod_env path)
   | Tmod_structure str ->
       fst (transl_struct ~scopes loc [] cc rootpath str)
+  | Tmod_functor (Newtype _, mexp') ->
+      let cc' = match cc with
+        | Tcoerce_none -> Tcoerce_none
+        | Tcoerce_functor (Tcoerce_none, cc') -> cc'
+        | _ -> fatal_error "Translmod.transl_module : bad coercion"
+      in transl_module ~scopes cc' rootpath mexp'
   | Tmod_functor _ ->
       oo_wrap mexp.mod_env true (fun () ->
         compile_functor ~scopes mexp cc rootpath loc) ()
@@ -524,6 +535,8 @@ and transl_module ~scopes cc rootpath mexp =
       transl_apply ~scopes ~loc ~cc mexp.mod_env funct translated_arg
   | Tmod_apply_unit funct ->
       transl_apply ~scopes ~loc ~cc mexp.mod_env funct lambda_unit
+  | Tmod_apply_type (funct, _) ->
+      transl_module ~scopes (Tcoerce_functor (Tcoerce_none, cc)) rootpath funct
   | Tmod_constraint(arg, _, _, ccarg) ->
       transl_module ~scopes (compose_coercions cc ccarg) rootpath arg
   | Tmod_unpack(arg, _) ->

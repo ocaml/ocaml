@@ -98,8 +98,8 @@ let rec module_path s path =
     | Pident _ -> path
     | Pdot(p, n) ->
        Pdot(module_path s p, n)
-    | Papply(p1, p2) ->
-       Papply(module_path s p1, module_path s p2)
+    | Papply(k, p1, p2) ->
+       Papply(k, module_path s p1, module_path s p2)
     | Pextra_ty _ ->
        fatal_error "Subst.module_path"
 
@@ -560,6 +560,7 @@ module Lazy_types = struct
 
   and functor_parameter =
     | Unit
+    | Newtype of Ident.t
     | Named of Ident.t option * modtype
 
 end
@@ -642,6 +643,7 @@ and lazy_modtype = function
   | Mty_signature sg ->
      MtyL_signature (Lazy_backtrack.create_forced (S_eager sg))
   | Mty_functor (Unit, mty) -> MtyL_functor (Unit, lazy_modtype mty)
+  | Mty_functor (Newtype id, mty) -> MtyL_functor (Newtype id, lazy_modtype mty)
   | Mty_functor (Named (id, arg), res) ->
      MtyL_functor (Named (id, lazy_modtype arg), lazy_modtype res)
   | Mty_alias p -> MtyL_alias p
@@ -663,6 +665,10 @@ and subst_lazy_modtype scoping s = function
       MtyL_signature(subst_lazy_signature scoping s sg)
   | MtyL_functor(Unit, res) ->
       MtyL_functor(Unit, subst_lazy_modtype scoping s res)
+  | MtyL_functor(Newtype id, res) ->
+    let id' = Ident.rename id in
+    MtyL_functor(Newtype id',
+                subst_lazy_modtype scoping (add_type id (Pident id') s) res)
   | MtyL_functor(Named (None, arg), res) ->
       MtyL_functor(Named (None, (subst_lazy_modtype scoping s) arg),
                    subst_lazy_modtype scoping s res)
@@ -680,6 +686,7 @@ and force_modtype = function
      let param : Types.functor_parameter =
        match param with
        | Unit -> Unit
+       | Newtype id -> Newtype id
        | Named (id, mty) -> Named (id, force_modtype mty) in
      Mty_functor (param, force_modtype res)
   | MtyL_alias p -> Mty_alias p

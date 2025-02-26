@@ -36,8 +36,11 @@ let rec fmt_longident_aux f x =
   match x with
   | Longident.Lident (s) -> fprintf f "%s" s;
   | Longident.Ldot (y, s) -> fprintf f "%a.%s" fmt_longident_aux y.txt s.txt;
-  | Longident.Lapply (y, z) ->
-      fprintf f "%a(%a)" fmt_longident_aux y.txt fmt_longident_aux z.txt
+  | Longident.Lapply (k, y, z) ->
+      fprintf f "%a(%s%a)"
+        fmt_longident_aux y.txt
+        (Longident.string_of_kind k)
+        fmt_longident_aux z.txt
 
 let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x.txt
 
@@ -52,8 +55,11 @@ let rec fmt_path_aux f x =
   | Path.Pident (s) -> fprintf f "%a" fmt_ident s
   | Path.Pdot (y, s) | Path.(Pextra_ty (y, Pcstr_ty s)) ->
       fprintf f "%a.%s" fmt_path_aux y s
-  | Path.Papply (y, z) ->
-      fprintf f "%a(%a)" fmt_path_aux y fmt_path_aux z
+  | Path.Papply (k, y, z) ->
+      fprintf f "%a(%s%a)"
+        fmt_path_aux y
+        (Longident.string_of_kind k)
+        fmt_path_aux z
   | Path.Pextra_ty (y, Pext_ty) -> fmt_path_aux f y
 
 let fmt_path f x = fprintf f "\"%a\"" fmt_path_aux x
@@ -738,6 +744,9 @@ and module_type i ppf x =
   | Tmty_functor (Unit, mt2) ->
       line i ppf "Tmty_functor ()\n";
       module_type i ppf mt2;
+  | Tmty_functor (Newtype (ty, _), mt2) ->
+    line i ppf "Tmty_functor (type %a)\n" Ident.print ty;
+    module_type i ppf mt2;
   | Tmty_functor (Named (s, _, mt1), mt2) ->
       line i ppf "Tmty_functor \"%a\"\n" fmt_modname s;
       module_type i ppf mt1;
@@ -851,6 +860,9 @@ and module_expr i ppf x =
   | Tmod_functor (Unit, me) ->
       line i ppf "Tmod_functor ()\n";
       module_expr i ppf me;
+  | Tmod_functor (Newtype (ty, _), me) ->
+    line i ppf "Tmod_functor (type %a)\n" Ident.print ty;
+    module_expr i ppf me;
   | Tmod_functor (Named (s, _, mt), me) ->
       line i ppf "Tmod_functor \"%a\"\n" fmt_modname s;
       module_type i ppf mt;
@@ -862,6 +874,10 @@ and module_expr i ppf x =
   | Tmod_apply_unit me1 ->
       line i ppf "Tmod_apply_unit\n";
       module_expr i ppf me1;
+  | Tmod_apply_type (me1, ty2) ->
+      line i ppf "Tmod_apply_type\n";
+      module_expr i ppf me1;
+      core_type i ppf ty2;
   | Tmod_constraint (me, _, Tmodtype_explicit mt, _) ->
       line i ppf "Tmod_constraint\n";
       module_expr i ppf me;

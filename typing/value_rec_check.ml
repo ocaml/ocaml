@@ -303,6 +303,8 @@ let classify_expression : Typedtree.expression -> sd =
         Dynamic
     | Tmod_apply_unit _ ->
         Dynamic
+    | Tmod_apply_type _ ->
+        Dynamic
     | Tmod_constraint (mexp, _, _, coe) ->
         begin match coe with
         | Tcoerce_none ->
@@ -1015,6 +1017,8 @@ and modexp : Typedtree.module_expr -> term_judg =
       ]
     | Tmod_apply_unit f ->
       modexp f << Dereference
+    | Tmod_apply_type (f, _) ->
+        modexp f << Dereference
     | Tmod_constraint (mexp, _, _, coe) ->
       let rec coercion coe k = match coe with
         | Tcoerce_none ->
@@ -1059,7 +1063,7 @@ and path : Path.t -> term_judg =
         single x
     | Path.Pdot (t, _) ->
         path t << Dereference
-    | Path.Papply (f, p) ->
+    | Path.Papply (_, f, p) ->
         join [
           path f << Dereference;
           path p << Dereference;

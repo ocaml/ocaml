@@ -289,7 +289,7 @@ let iter_on_occurrences
       (match mod_desc with
       | Tmod_ident (path, lid) -> f ~namespace:Module mod_env path lid
       | Tmod_structure _ | Tmod_functor _ | Tmod_apply _ | Tmod_apply_unit _
-      | Tmod_constraint _ | Tmod_unpack _ -> ());
+      | Tmod_apply_type _ | Tmod_constraint _ | Tmod_unpack _ -> ());
       default_iterator.module_expr sub me);
 
   open_description =

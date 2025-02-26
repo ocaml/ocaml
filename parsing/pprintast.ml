@@ -169,9 +169,10 @@ module Doc = struct
     | Lident s -> ident_of_name ~kind f s
     | Ldot(y,s) ->
         protect_longident ~kind f (any_longident ~kind:Other) y.txt s.txt
-    | Lapply (y,s) ->
-        Format_doc.fprintf f "%a(%a)"
+    | Lapply (k, y,s) ->
+        Format_doc.fprintf f "%a(%s%a)"
           (any_longident ~kind:Other) y.txt
+          (Longident.string_of_kind k)
           (any_longident ~kind:Other) s.txt
 
   let value_longident ppf l = any_longident ~kind:Other ppf l
@@ -1280,6 +1281,8 @@ and module_type ctxt f x =
     match x.pmty_desc with
     | Pmty_functor (Unit, mt2) ->
         pp f "@[<hov2>() ->@ %a@]" (module_type ctxt) mt2
+    | Pmty_functor (Newtype ty, mt2) ->
+      pp f "@[<hov2>(type %s) ->@ %a@]" ty.txt (module_type ctxt) mt2
     | Pmty_functor (Named (s, mt1), mt2) ->
         begin match s.txt with
         | None ->
@@ -1454,6 +1457,8 @@ and module_expr ctxt f x =
         pp f "%a" value_longident_loc li;
     | Pmod_functor (Unit, me) ->
         pp f "functor ()@;->@;%a" (module_expr ctxt) me
+    | Pmod_functor (Newtype ty, me) ->
+        pp f "functor (type %s)@;->@;%a" ty.txt (module_expr ctxt) me
     | Pmod_functor (Named (s, mt), me) ->
         pp f "functor@ (%s@ :@ %a)@;->@;%a"
           (Option.value s.txt ~default:"_")
@@ -1461,6 +1466,8 @@ and module_expr ctxt f x =
     | Pmod_apply (me1, me2) ->
         pp f "(%a)(%a)" (module_expr ctxt) me1 (module_expr ctxt) me2
         (* Cf: #7200 *)
+    | Pmod_apply_type (me1, ty2) ->
+      pp f "(%a)(%a)" (module_expr ctxt) me1 (core_type ctxt) ty2
     | Pmod_apply_unit me1 ->
         pp f "(%a)()" (module_expr ctxt) me1
     | Pmod_unpack e ->
@@ -1562,6 +1569,7 @@ and structure_item ctxt f x =
         | {pmod_desc=Pmod_functor(arg_opt,me'); pmod_attributes = []} ->
             begin match arg_opt with
             | Unit -> pp f "()"
+            | Newtype ty -> pp f "(type %s)" ty.txt
             | Named (s, mt) ->
               pp f "(%s:%a)" (Option.value s.txt ~default:"_")
                 (module_type ctxt) mt

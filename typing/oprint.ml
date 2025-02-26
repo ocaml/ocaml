@@ -32,8 +32,9 @@ let rec print_ident ppf =
     Oide_ident s -> print_lident ppf s.printed_name
   | Oide_dot (id, s) ->
       print_ident ppf id; pp_print_char ppf '.'; print_lident ppf s
-  | Oide_apply (id1, id2) ->
-      fprintf ppf "%a(%a)" print_ident id1 print_ident id2
+  | Oide_apply (k, id1, id2) ->
+      fprintf ppf "%a(%s%a)" print_ident id1 (Longident.string_of_kind k)
+        print_ident id2
 
 let out_ident = ref print_ident
 
@@ -567,14 +568,17 @@ and print_out_functor_parameters ppf l =
   let print_nonanon_arg ppf = function
     | None ->
         fprintf ppf "()"
-    | Some (param, mty) ->
+    | Some (param, None) ->
+        fprintf ppf "(type %s)"
+          (Option.value param ~default:"_")
+    | Some (param, Some mty) ->
         fprintf ppf "(%s : %a)"
           (Option.value param ~default:"_")
           print_out_module_type mty
   in
   let rec print_args ppf = function
     | [] -> ()
-    | Some (None, mty_arg) :: l ->
+    | Some (None, Some mty_arg) :: l ->
         fprintf ppf "%a ->@ %a"
           print_simple_out_module_type mty_arg
           print_args l

@@ -282,6 +282,7 @@ and module_type_constraint =
 
 and functor_parameter =
   | Unit
+  | Newtype of Ident.t * string loc
   | Named of Ident.t option * string option loc * module_type
 
 and module_expr_desc =
@@ -290,6 +291,7 @@ and module_expr_desc =
   | Tmod_functor of functor_parameter * module_expr
   | Tmod_apply of module_expr * module_expr * module_coercion
   | Tmod_apply_unit of module_expr
+  | Tmod_apply_type of module_expr * core_type
   | Tmod_constraint of
       module_expr * Types.module_type * module_type_constraint * module_coercion
   | Tmod_unpack of expression * Types.module_type

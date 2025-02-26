@@ -25,10 +25,14 @@
 
 open Location
 
+type arg_kind =
+  | Ktype
+  | Kmod
+
 type t =
     Lident of string
   | Ldot of t loc * string loc
-  | Lapply of t loc * t loc
+  | Lapply of arg_kind * t loc * t loc
 
 (** [same t t'] compares the longidents [t] and [t'] without taking locations
     into account. *)
@@ -62,3 +66,5 @@ use \"Parse.longident\" or \"Longident.unflatten\""]
    input-location support.
 
 *)
+
+val string_of_kind : arg_kind -> string

@@ -469,6 +469,10 @@ OCaml 5.3.0 (8 January 2025)
 
 ### Language features:
 
+- #XXXXX: Added support for type arguments to modules :
+  `M(type int)` and `functor (type a) -> ...`
+  (Samuel Vivien, review by ...)
+
 - #12828, #13283: Add short syntax for dependent functor types `(X:A) -> ...`
   (Jeremy Yallop, review by Nicolás Ojeda Bär and Gabriel Scherer)
 

@@ -39,8 +39,11 @@ let rec fmt_longident_aux f x =
   match x with
   | Longident.Lident (s) -> fprintf f "%s" s
   | Longident.Ldot (y, s) -> fprintf f "%a.%s" fmt_longident_aux y.txt s.txt
-  | Longident.Lapply (y, z) ->
-      fprintf f "%a(%a)" fmt_longident_aux y.txt fmt_longident_aux z.txt
+  | Longident.Lapply (k, y, z) ->
+      fprintf f "%a(%s%a)"
+        fmt_longident_aux y.txt
+        (Longident.string_of_kind k)
+        fmt_longident_aux z.txt
 
 let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x
 
@@ -713,6 +716,9 @@ and module_type i ppf x =
   | Pmty_functor (Unit, mt2) ->
       line i ppf "Pmty_functor ()\n";
       module_type i ppf mt2;
+  | Pmty_functor (Newtype ty, mt2) ->
+      line i ppf "Pmty_functor (type %a)\n" fmt_string_loc ty;
+      module_type i ppf mt2
   | Pmty_functor (Named (s, mt1), mt2) ->
       line i ppf "Pmty_functor %a\n" fmt_str_opt_loc s;
       module_type i ppf mt1;
@@ -831,6 +837,9 @@ and module_expr i ppf x =
   | Pmod_functor (Unit, me) ->
       line i ppf "Pmod_functor ()\n";
       module_expr i ppf me;
+  | Pmod_functor (Newtype ty, me) ->
+      line i ppf "Pmod_functor (type %a)\n" fmt_string_loc ty;
+      module_expr i ppf me;
   | Pmod_functor (Named (s, mt), me) ->
       line i ppf "Pmod_functor %a\n" fmt_str_opt_loc s;
       module_type i ppf mt;
@@ -839,6 +848,10 @@ and module_expr i ppf x =
       line i ppf "Pmod_apply\n";
       module_expr i ppf me1;
       module_expr i ppf me2;
+  | Pmod_apply_type (me1, ty2) ->
+      line i ppf "Pmod_apply_type\n";
+      module_expr i ppf me1;
+      core_type i ppf ty2;
   | Pmod_apply_unit me1 ->
       line i ppf "Pmod_apply_unit\n";
       module_expr i ppf me1

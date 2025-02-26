@@ -369,8 +369,8 @@ let rec rewrite_double_underscore_paths env p =
   match p with
   | Pdot (p, s) ->
     Pdot (rewrite_double_underscore_paths env p, s)
-  | Papply (a, b) ->
-    Papply (rewrite_double_underscore_paths env a,
+  | Papply (k, a, b) ->
+    Papply (k, rewrite_double_underscore_paths env a,
             rewrite_double_underscore_paths env b)
   | Pextra_ty (p, extra) ->
     Pextra_ty (rewrite_double_underscore_paths env p, extra)
@@ -409,10 +409,10 @@ let rec tree_of_path ?(disambiguation=true) namespace p =
       Oide_ident (Out_name.create s)
   | Pdot(p, s) ->
       Oide_dot (tree_of_path (Some Module) p, s)
-  | Papply(p1, p2) ->
+  | Papply(k, p1, p2) ->
       let t1 = tree_of_path (Some Module) p1 in
       let t2 = tree_of_path (Some Module) p2 in
-      Oide_apply (t1, t2)
+      Oide_apply (k, t1, t2)
   | Pextra_ty (p, extra) -> begin
       (* inline record types are syntactically prevented from escaping their
          binding scope, and are never shown to users. *)
@@ -521,7 +521,7 @@ let rec path_size = function
       penalty (Ident.name id), -Ident.scope id
   | Pdot (p, _) | Pextra_ty (p, Pcstr_ty _) ->
       let (l, b) = path_size p in (1+l, b)
-  | Papply (p1, p2) ->
+  | Papply (_, p1, p2) ->
       let (l, b) = path_size p1 in
       (l + fst (path_size p2), b)
   | Pextra_ty (p, _) -> path_size p
@@ -573,9 +573,10 @@ let rec lid_of_path = function
       Longident.Lident (Ident.name id)
   | Path.Pdot (p1, s) | Path.Pextra_ty (p1, Pcstr_ty s)  ->
       Longident.Ldot (Location.mknoloc (lid_of_path p1), Location.mknoloc s)
-  | Path.Papply (p1, p2) ->
-      Longident.Lapply
-        (Location.mknoloc (lid_of_path p1), Location.mknoloc (lid_of_path p2))
+  | Path.Papply (k, p1, p2) ->
+      Longident.Lapply (k,
+        Location.mknoloc (lid_of_path p1),
+        Location.mknoloc (lid_of_path p2))
   | Path.Pextra_ty (p, Pext_ty) -> lid_of_path p
 
 let is_unambiguous path env =
@@ -1814,6 +1815,9 @@ let rec tree_of_modtype ?(ellipsis=false) = function
 and tree_of_functor_parameter = function
   | Unit ->
       None, fun k -> k
+  | Newtype id ->
+      let decl = Ctype.new_local_type ~loc:Location.none Definition in
+      Some (Some (Ident.name id), None), Env.add_type ~check:true id decl
   | Named (param, ty_arg) ->
       let name, env =
         match param with
@@ -1822,7 +1826,7 @@ and tree_of_functor_parameter = function
             Some (Ident.name id),
             Env.add_module ~arg:true id Mp_present ty_arg
       in
-      Some (name, tree_of_modtype ~ellipsis:false ty_arg), env
+      Some (name, Some (tree_of_modtype ~ellipsis:false ty_arg)), env
 
 and tree_of_signature sg =
   wrap_env (fun env -> env)(fun sg ->

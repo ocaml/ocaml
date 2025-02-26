@@ -31,6 +31,7 @@ module Error: sig
     | Anonymous
     | Named of Path.t
     | Unit
+    | Newtype of Path.t option
     | Empty_struct
      (** For backward compatibility's sake, an empty struct can be implicitly
          converted to an unit module. *)
@@ -220,6 +221,12 @@ exception Apply_error of {
     app_name : application_name ;
     mty_f : module_type ;
     args : (Error.functor_arg_descr * Types.module_type)  list ;
+  }
+exception Type_expected_param of {
+    loc : Location.t ;
+    env : Env.t ;
+    path : Path.t ;
+    arity : int ;
   }
 
 val expand_module_alias: strengthen:bool -> Env.t -> Path.t -> Types.module_type
