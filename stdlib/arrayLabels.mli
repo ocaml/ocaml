@@ -158,6 +158,21 @@ val of_list : 'a list -> 'a array
    @raise Invalid_argument if the length of [l] is greater than
    [Sys.max_array_length]. *)
 
+(** {1:comparison Comparison} *)
+
+val equal : eq:('a -> 'a -> bool) -> 'a array -> 'a array -> bool
+(** [equal eq a b] is [true] if and only if [a] and [b] have the
+    same length [n] and for all [i] in \[[0];[n-1]\], [eq a.(i) b.(i)]
+    is [true].
+
+    @since 5.4 *)
+
+val compare : cmp:('a -> 'a -> int) -> 'a array -> 'a array -> int
+(** [compare cmp a b] orders [a] and [b] in lexicographic order
+    (see {!List.compare}) using [cmp] to compare elements.
+
+    @since 5.4 *)
+
 (** {1 Iterators} *)
 
 val iter : f:('a -> unit) -> 'a array -> unit

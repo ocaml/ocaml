@@ -185,6 +185,27 @@ let of_list = function
         | hd::tl -> unsafe_set a i hd; fill (i+1) tl in
       fill 1 tl
 
+let equal eq a b =
+  if length a <> length b then false else
+  try
+    for i = 0 to length a - 1 do
+      if eq (unsafe_get a i) (unsafe_get b i) then () else raise_notrace Exit
+    done;
+    true
+  with Exit -> false
+
+let stdlib_compare = compare
+let compare cmp a b =
+  let len_a = length a and len_b = length b in
+  let imax = (if len_a < len_b then len_a else len_b) - 1 in
+  let i = ref 0 in
+  let c = ref 0 in
+  while (!i <= imax && !c = 0) do
+    c := cmp (unsafe_get a !i) (unsafe_get b !i);
+    incr i
+  done;
+  if !c = 0 then (stdlib_compare : int -> int -> int) len_a len_b else !c
+
 let fold_left f x a =
   let r = ref x in
   for i = 0 to length a - 1 do
@@ -253,7 +274,7 @@ let mem x a =
   let n = length a in
   let rec loop i =
     if i = n then false
-    else if compare (unsafe_get a i) x = 0 then true
+    else if stdlib_compare (unsafe_get a i) x = 0 then true
     else loop (succ i) in
   loop 0
 

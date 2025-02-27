@@ -117,6 +117,21 @@ val of_list : float list -> t
     @raise Invalid_argument if the length of [l] is greater than
     [Sys.max_floatarray_length].*)
 
+(** {1:comparison Comparison} *)
+
+val equal : eq:(float -> float -> bool) -> t -> t -> bool
+(** [equal eq a b] is [true] if and only if [a] and [b] have the
+    same length [n] and for all [i] in \[[0];[n-1]\], [eq a.(i) b.(i)]
+    is [true].
+
+    @since 5.4 *)
+
+val compare : cmp:(float -> float -> int) -> t -> t -> int
+(** [compare cmp a b] orders [a] and [b] in lexicographic order
+    (see {!List.compare}) using [cmp] to compare elements.
+
+    @since 5.4 *)
+
 (** {1 Iterators} *)
 
 val iter : f:(float -> unit) -> t -> unit

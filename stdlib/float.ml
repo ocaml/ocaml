@@ -293,6 +293,29 @@ module Array = struct
     fill 0 l
 
   (* duplicated from array.ml *)
+  let equal eq a b =
+  if length a <> length b then false else
+  try
+    for i = 0 to length a - 1 do
+      if eq (unsafe_get a i) (unsafe_get b i) then () else raise_notrace Exit
+    done;
+    true
+  with Exit -> false
+
+  (* duplicated from array.ml *)
+  let float_compare = compare
+  let compare cmp a b =
+    let len_a = length a and len_b = length b in
+    let imax = (if len_a < len_b then len_a else len_b) - 1 in
+    let i = ref 0 in
+    let c = ref 0 in
+    while (!i <= imax && !c = 0) do
+      c := cmp (unsafe_get a !i) (unsafe_get b !i);
+      incr i
+    done;
+    if !c = 0 then (Stdlib.compare : int -> int -> int) len_a len_b else !c
+
+  (* duplicated from array.ml *)
   let iter f a =
     for i = 0 to length a - 1 do f (unsafe_get a i) done
 
@@ -387,7 +410,7 @@ module Array = struct
     let n = length a in
     let rec loop i =
       if i = n then false
-      else if compare (unsafe_get a i) x = 0 then true
+      else if float_compare (unsafe_get a i) x = 0 then true
       else loop (i + 1)
     in
     loop 0
