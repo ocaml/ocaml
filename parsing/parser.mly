@@ -1589,40 +1589,42 @@ structure:
 structure_item:
     let_bindings(ext)
       { val_of_let_bindings ~loc:$sloc $1 }
-  | mkstr(
-      item_extension post_item_attributes
-        { let docs = symbol_docs $sloc in
-          Pstr_extension ($1, add_docs_attrs docs $2) }
-    | floating_attribute
-        { Pstr_attribute $1 }
-    )
   | wrap_mkstr_ext(
-      primitive_declaration
-        { pstr_primitive $1 }
-    | value_description
-        { pstr_primitive $1 }
-    | type_declarations
-        { pstr_type $1 }
-    | str_type_extension
-        { pstr_typext $1 }
-    | str_exception_declaration
-        { pstr_exception $1 }
-    | module_binding
+      include_statement(module_expr)
+        { let incl, ext = pstr_include $1 in incl, (ext, []) }
+    | local_structure_item
         { $1 }
-    | rec_module_bindings
-        { pstr_recmodule $1 }
-    | module_type_declaration
-        { let (body, ext) = $1 in (Pstr_modtype body, ext) }
-    | open_declaration
-        { let (body, ext) = $1 in (Pstr_open body, ext) }
-    | class_declarations
-        { let (ext, l) = $1 in (Pstr_class l, ext) }
-    | class_type_declarations
-        { let (ext, l) = $1 in (Pstr_class_type l, ext) }
-    | include_statement(module_expr)
-        { pstr_include $1 }
     )
     { $1 }
+;
+local_structure_item:
+    item_extension post_item_attributes
+      { let docs = symbol_docs $sloc in
+        Pstr_extension ($1, add_docs_attrs docs $2), (None, []) }
+  | floating_attribute
+      { Pstr_attribute $1, (None, []) }
+  | primitive_declaration
+      { pstr_primitive $1 }
+  | value_description
+      { pstr_primitive $1 }
+  | type_declarations
+      { pstr_type $1 }
+  | str_type_extension
+      { pstr_typext $1 }
+  | str_exception_declaration
+      { pstr_exception $1 }
+  | module_binding
+      { $1 }
+  | rec_module_bindings
+      { pstr_recmodule $1 }
+  | module_type_declaration
+      { let (body, ext) = $1 in (Pstr_modtype body, ext) }
+  | open_declaration
+      { let (body, ext) = $1 in (Pstr_open body, ext) }
+  | class_declarations
+      { let (ext, l) = $1 in (Pstr_class l, ext) }
+  | class_type_declarations
+      { let (ext, l) = $1 in (Pstr_class_type l, ext) }
 ;
 
 (* A single module binding. *)
@@ -2513,16 +2515,9 @@ fun_expr:
   | or_function(fun_expr) { $1 }
 ;
 %inline fun_expr_attrs:
-  | LET MODULE ext_attributes mkrhs(module_name) module_binding_body IN seq_expr
-      { let loc = make_loc ($startpos($2), $endpos($5)) in
-        Pexp_stritem(Str.module_ ~loc (Mb.mk ~loc:(make_loc $loc($4)) $4 $5), $7), $3 }
-  | LET EXCEPTION ext_attributes let_exception_declaration IN seq_expr
-      { let loc = make_loc ($startpos($2), $endpos($4)) in
-        Pexp_stritem(Str.exception_ ~loc (Te.mk_exception ~loc:(make_loc $loc($4)) $4), $6), $3 }
-  | LET OPEN override_flag ext_attributes module_expr IN seq_expr
-      { let open_loc = make_loc ($startpos($2), $endpos($5)) in
-        let od = Opn.mk $5 ~override:$3 ~loc:open_loc in
-        Pexp_stritem(Str.open_ ~loc:open_loc od, $7), $4 }
+  | LET local_structure_item IN seq_expr
+      { let desc, ext_attrs = $2 in
+        Pexp_stritem(Str.mk ~loc:(make_loc $loc($2)) desc, $4), ext_attrs }
   /* Cf #5939: we used to accept (fun p when e0 -> e) */
   | FUN ext_attributes fun_params preceded(COLON, atomic_type)?
       MINUSGREATER fun_body
@@ -3509,11 +3504,6 @@ sig_exception_declaration:
       Te.mk_exception ~attrs ~loc
         (Te.decl id ~vars ~args ?res ~attrs:attrs2 ~loc ~docs)
       , ext_attrs }
-;
-%inline let_exception_declaration:
-    mkrhs(constr_ident) generalized_constructor_arguments attributes
-      { let vars, args, res = $2 in
-        Te.decl $1 ~vars ~args ?res ~attrs:$3 ~loc:(make_loc $sloc) }
 ;
 generalized_constructor_arguments:
     /*empty*/                     { ([],Pcstr_tuple [],None) }
