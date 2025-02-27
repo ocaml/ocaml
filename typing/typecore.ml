@@ -3133,38 +3133,37 @@ let rec is_nonexpansive exp =
   | Texp_extension_constructor _ ->
     false
 
+and is_nonexpansive_stritem item =
+  match item.str_desc with
+  | Tstr_eval _ | Tstr_primitive _ | Tstr_type _
+  | Tstr_modtype _ | Tstr_class_type _  -> true
+  | Tstr_value (_, pat_exp_list) ->
+      List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list
+  | Tstr_module {mb_expr=m;_}
+  | Tstr_open {open_expr=m;_}
+  | Tstr_include {incl_mod=m;_} -> is_nonexpansive_mod m
+  | Tstr_recmodule id_mod_list ->
+      List.for_all (fun {mb_expr=m;_} -> is_nonexpansive_mod m)
+        id_mod_list
+  | Tstr_exception {tyexn_constructor = {ext_kind = Text_decl _}} ->
+      false (* true would be unsound *)
+  | Tstr_exception {tyexn_constructor = {ext_kind = Text_rebind _}} ->
+      true
+  | Tstr_typext te ->
+      List.for_all
+        (function {ext_kind = Text_decl _} -> false
+                | {ext_kind = Text_rebind _} -> true)
+        te.tyext_constructors
+  | Tstr_class _ -> false (* could be more precise *)
+  | Tstr_attribute _ -> true
+
 and is_nonexpansive_mod mexp =
   match mexp.mod_desc with
   | Tmod_ident _
   | Tmod_functor _ -> true
   | Tmod_unpack (e, _) -> is_nonexpansive e
   | Tmod_constraint (m, _, _, _) -> is_nonexpansive_mod m
-  | Tmod_structure str ->
-      List.for_all
-        (fun item -> match item.str_desc with
-          | Tstr_eval _ | Tstr_primitive _ | Tstr_type _
-          | Tstr_modtype _ | Tstr_class_type _  -> true
-          | Tstr_value (_, pat_exp_list) ->
-              List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list
-          | Tstr_module {mb_expr=m;_}
-          | Tstr_open {open_expr=m;_}
-          | Tstr_include {incl_mod=m;_} -> is_nonexpansive_mod m
-          | Tstr_recmodule id_mod_list ->
-              List.for_all (fun {mb_expr=m;_} -> is_nonexpansive_mod m)
-                id_mod_list
-          | Tstr_exception {tyexn_constructor = {ext_kind = Text_decl _}} ->
-              false (* true would be unsound *)
-          | Tstr_exception {tyexn_constructor = {ext_kind = Text_rebind _}} ->
-              true
-          | Tstr_typext te ->
-              List.for_all
-                (function {ext_kind = Text_decl _} -> false
-                        | {ext_kind = Text_rebind _} -> true)
-                te.tyext_constructors
-          | Tstr_class _ -> false (* could be more precise *)
-          | Tstr_attribute _ -> true
-        )
-        str.str_items
+  | Tmod_structure str -> List.for_all is_nonexpansive_stritem str.str_items
   | Tmod_apply _ | Tmod_apply_unit _ -> false
 
 and is_nonexpansive_opt = function
