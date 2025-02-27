@@ -2765,6 +2765,7 @@ let rec final_subexpression exp =
   | Texp_letmodule (_, _, _, _, e)
   | Texp_letexception (_, e)
   | Texp_open (_, e)
+  | Texp_struct_item (_, e)
     -> final_subexpression e
   | _ -> exp
 
@@ -3118,6 +3119,8 @@ let rec is_nonexpansive exp =
                          ("%raise" | "%reraise" | "%raise_notrace")}}) },
       [Nolabel, Arg e]) ->
      is_nonexpansive e
+  | Texp_struct_item (si, e) ->
+      is_nonexpansive_struct_item si && is_nonexpansive e
   | Texp_array (_, _ :: _)
   | Texp_apply _
   | Texp_try _
@@ -3133,7 +3136,7 @@ let rec is_nonexpansive exp =
   | Texp_extension_constructor _ ->
     false
 
-and is_nonexpansive_stritem item =
+and is_nonexpansive_struct_item item =
   match item.str_desc with
   | Tstr_eval _ | Tstr_primitive _ | Tstr_type _
   | Tstr_modtype _ | Tstr_class_type _  -> true
@@ -3163,7 +3166,7 @@ and is_nonexpansive_mod mexp =
   | Tmod_functor _ -> true
   | Tmod_unpack (e, _) -> is_nonexpansive e
   | Tmod_constraint (m, _, _, _) -> is_nonexpansive_mod m
-  | Tmod_structure str -> List.for_all is_nonexpansive_stritem str.str_items
+  | Tmod_structure str -> List.for_all is_nonexpansive_struct_item str.str_items
   | Tmod_apply _ | Tmod_apply_unit _ -> false
 
 and is_nonexpansive_opt = function
@@ -3413,7 +3416,8 @@ let check_statement exp =
         | Texp_let (_, _, e)
         | Texp_sequence (_, e)
         | Texp_letexception (_, e)
-        | Texp_letmodule (_, _, _, _, e) ->
+        | Texp_letmodule (_, _, _, _, e)
+        | Texp_struct_item (_, e) ->
             loop e
         | _ ->
             let loc =
@@ -3479,7 +3483,8 @@ let check_partial_application ~statement exp =
             | Texp_ifthenelse (_, e1, Some e2) ->
                 check e1; check e2
             | Texp_let (_, _, e) | Texp_sequence (_, e) | Texp_open (_, e)
-            | Texp_letexception (_, e) | Texp_letmodule (_, _, _, _, e) ->
+            | Texp_letexception (_, e) | Texp_letmodule (_, _, _, _, e)
+            | Texp_struct_item (_, e) ->
                 check e
             | Texp_apply _ | Texp_send _ | Texp_new _ | Texp_letop _ ->
                 Location.prerr_warning exp_loc
@@ -4917,6 +4922,20 @@ and type_expect_
            exp_type = instance ty_expected;
            exp_attributes = sexp.pexp_attributes;
            exp_env = env }
+
+  | Pexp_struct_item (si, e) ->
+      let tv = newvar () in
+      let (si, newenv) = !type_str_item env si in
+      let exp = type_expect newenv e ty_expected_explained in
+      unify_var newenv tv exp.exp_type;
+      re {
+        exp_desc = Texp_struct_item (si, exp);
+        exp_type = exp.exp_type;
+        exp_loc = loc;
+        exp_extra = [];
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env;
+      }
 
 and expression_constraint pexp =
   { type_without_constraint = (fun env ->

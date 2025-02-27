@@ -396,7 +396,9 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
   | Texp_open (od, e) ->
       sub.open_declaration sub od;
       sub.expr sub e
-
+  | Texp_struct_item (si, e) ->
+      sub.structure_item sub si;
+      sub.expr sub e
 
 let package_type sub {tpt_cstrs; tpt_txt; _} =
   List.iter (fun (lid, p) -> iter_loc_lid sub lid; sub.typ sub p) tpt_cstrs;

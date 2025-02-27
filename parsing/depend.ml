@@ -273,6 +273,9 @@ let rec add_expr bv exp =
       end
   | Pexp_extension e -> handle_extension e
   | Pexp_unreachable -> ()
+  | Pexp_struct_item (si, e) ->
+      let bv, _ = add_struct_item (bv, String.Map.empty) si in
+      add_expr bv e
 
 and add_function_param bv param =
   match param.pparam_desc with

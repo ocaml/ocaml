@@ -404,6 +404,10 @@ and expression i ppf x =
       payload i ppf arg
   | Pexp_unreachable ->
       line i ppf "Pexp_unreachable"
+  | Pexp_struct_item (si, e) ->
+      line i ppf "Pexp_struct_item\n";
+      structure_item i ppf si;
+      expression i ppf e
 
 and function_param i ppf { pparam_desc = desc; pparam_loc = loc } =
   match desc with

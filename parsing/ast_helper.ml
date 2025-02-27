@@ -230,6 +230,7 @@ module Exp = struct
     mk ?loc ?attrs (Pexp_letop {let_; ands; body})
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pexp_extension a)
   let unreachable ?loc ?attrs () = mk ?loc ?attrs Pexp_unreachable
+  let struct_item ?loc ?attrs si e = mk ?loc ?attrs (Pexp_struct_item (si, e))
 
   let case lhs ?guard rhs =
     {

@@ -974,6 +974,9 @@ and expression ctxt f x =
           (expression ctxt) body
     | Pexp_extension e -> extension ctxt f e
     | Pexp_unreachable -> pp f "."
+    | Pexp_struct_item (si, e) ->
+        pp f "@[<hov2>let@ %a@ in@ %a@]"
+          (structure_item reset_ctxt) si (expression ctxt) e
     | _ -> expression1 ctxt f x
 
 and expression1 ctxt f x =
