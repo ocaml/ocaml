@@ -599,154 +599,142 @@ and transl_structure ~scopes loc fields cc rootpath final_env = function
       else
         body
   | item :: rem ->
-      match item.str_desc with
-      | Tstr_eval (expr, _) ->
-          let body =
-            transl_structure ~scopes loc fields cc rootpath final_env rem
-          in
-          Lsequence(transl_exp ~scopes expr, body)
-      | Tstr_value(rec_flag, pat_expr_list) ->
-          (* Translate bindings first *)
-          let mk_lam_let =
-            transl_let ~scopes ~in_structure:true rec_flag pat_expr_list in
-          let ext_fields =
-            List.rev_append (let_bound_idents pat_expr_list) fields in
-          (* Then, translate remainder of struct *)
-          let body =
-            transl_structure ~scopes loc ext_fields cc rootpath final_env rem
-          in
-          mk_lam_let body
-      | Tstr_primitive descr ->
-          record_primitive descr.val_val;
-          transl_structure ~scopes loc fields cc rootpath final_env rem
-      | Tstr_type _ ->
-          transl_structure ~scopes loc fields cc rootpath final_env rem
-      | Tstr_typext(tyext) ->
-          let ids = List.map (fun ext -> ext.ext_id) tyext.tyext_constructors in
-          let body =
-            transl_structure ~scopes loc (List.rev_append ids fields)
-              cc rootpath final_env rem
-          in
-          transl_type_extension ~scopes item.str_env rootpath tyext body
-      | Tstr_exception ext ->
-          let id = ext.tyexn_constructor.ext_id in
-          let path = field_path rootpath id in
-          let body =
-            transl_structure ~scopes loc (id::fields) cc rootpath final_env rem
-          in
-          Llet(Strict, Pgenval, id,
-               transl_extension_constructor ~scopes
-                                            item.str_env
-                                            path
-                                            ext.tyexn_constructor, body)
-      | Tstr_module ({mb_presence=Mp_present} as mb) ->
-          let id = mb.mb_id in
-          (* Translate module first *)
-          let subscopes = match id with
-            | None -> scopes
-            | Some id -> enter_module_definition ~scopes id in
-          let module_body =
-            transl_module ~scopes:subscopes Tcoerce_none
-              (Option.bind id (field_path rootpath)) mb.mb_expr
-          in
-          let module_body =
-            Translattribute.add_inline_attribute module_body mb.mb_loc
-                                                 mb.mb_attributes
-          in
-          (* Translate remainder second *)
-          let body =
-            transl_structure ~scopes loc (cons_opt id fields)
-              cc rootpath final_env rem
-          in
-          begin match id with
-          | None ->
-              Lsequence (Lprim(Pignore, [module_body],
-                               of_location ~scopes mb.mb_name.loc), body)
-          | Some id ->
-              Llet(pure_module mb.mb_expr, Pgenval, id, module_body, body)
-          end
-      | Tstr_module ({mb_presence=Mp_absent}) ->
-          transl_structure ~scopes loc fields cc rootpath final_env rem
-      | Tstr_recmodule bindings ->
-          let ext_fields =
-            List.rev_append (List.filter_map (fun mb -> mb.mb_id) bindings)
-              fields
-          in
-          let body =
-            transl_structure ~scopes loc ext_fields cc rootpath final_env rem
-          in
-          let lam =
-            compile_recmodule ~scopes (fun id modl ->
-              match id with
-              | None -> transl_module ~scopes Tcoerce_none None modl
-              | Some id ->
-                  transl_module
-                    ~scopes:(enter_module_definition ~scopes id)
-                    Tcoerce_none (field_path rootpath id) modl
-            ) bindings body
-          in
-          lam
-      | Tstr_class cl_list ->
-          let (ids, class_bindings) = transl_class_bindings ~scopes cl_list in
-          let body =
-            transl_structure ~scopes loc (List.rev_append ids fields)
-              cc rootpath final_env rem
-          in
-          Value_rec_compiler.compile_letrec class_bindings body
-      | Tstr_include incl ->
-          let ids = bound_value_identifiers incl.incl_type in
-          let modl = incl.incl_mod in
-          let mid = Ident.create_local "include" in
+      transl_struct_item ~scopes fields rootpath item
+        (fun fields ->
+           transl_structure ~scopes loc fields cc rootpath final_env rem)
+
+and transl_struct_item ~scopes fields rootpath item next =
+  match item.str_desc with
+  | Tstr_eval (expr, _) ->
+      let body = next fields in
+      Lsequence(transl_exp ~scopes expr, body)
+  | Tstr_value(rec_flag, pat_expr_list) ->
+      (* Translate bindings first *)
+      let mk_lam_let =
+        transl_let ~scopes ~in_structure:true rec_flag pat_expr_list in
+      let ext_fields =
+        List.rev_append (let_bound_idents pat_expr_list) fields in
+      (* Then, translate remainder of struct *)
+      let body = next ext_fields in
+      mk_lam_let body
+  | Tstr_primitive descr ->
+      record_primitive descr.val_val;
+      next fields
+  | Tstr_type _ ->
+      next fields
+  | Tstr_typext(tyext) ->
+      let ids = List.map (fun ext -> ext.ext_id) tyext.tyext_constructors in
+      let body = next (List.rev_append ids fields) in
+      transl_type_extension ~scopes item.str_env rootpath tyext body
+  | Tstr_exception ext ->
+      let id = ext.tyexn_constructor.ext_id in
+      let path = field_path rootpath id in
+      let body = next (id::fields) in
+      Llet(Strict, Pgenval, id,
+           transl_extension_constructor ~scopes
+             item.str_env
+             path
+             ext.tyexn_constructor, body)
+  | Tstr_module ({mb_presence=Mp_present} as mb) ->
+      let id = mb.mb_id in
+      (* Translate module first *)
+      let subscopes = match id with
+        | None -> scopes
+        | Some id -> enter_module_definition ~scopes id in
+      let module_body =
+        transl_module ~scopes:subscopes Tcoerce_none
+          (Option.bind id (field_path rootpath)) mb.mb_expr
+      in
+      let module_body =
+        Translattribute.add_inline_attribute module_body mb.mb_loc
+          mb.mb_attributes
+      in
+      (* Translate remainder second *)
+      let body = next (cons_opt id fields) in
+      begin match id with
+      | None ->
+          Lsequence (Lprim(Pignore, [module_body],
+                           of_location ~scopes mb.mb_name.loc), body)
+      | Some id ->
+          Llet(pure_module mb.mb_expr, Pgenval, id, module_body, body)
+      end
+  | Tstr_module ({mb_presence=Mp_absent}) ->
+      next fields
+  | Tstr_recmodule bindings ->
+      let ext_fields =
+        List.rev_append (List.filter_map (fun mb -> mb.mb_id) bindings)
+          fields
+      in
+      let body = next ext_fields in
+      let lam =
+        compile_recmodule ~scopes (fun id modl ->
+            match id with
+            | None -> transl_module ~scopes Tcoerce_none None modl
+            | Some id ->
+                transl_module
+                  ~scopes:(enter_module_definition ~scopes id)
+                  Tcoerce_none (field_path rootpath id) modl
+          ) bindings body
+      in
+      lam
+  | Tstr_class cl_list ->
+      let (ids, class_bindings) = transl_class_bindings ~scopes cl_list in
+      let body = next (List.rev_append ids fields) in
+      Value_rec_compiler.compile_letrec class_bindings body
+  | Tstr_include incl ->
+      let ids = bound_value_identifiers incl.incl_type in
+      let modl = incl.incl_mod in
+      let mid = Ident.create_local "include" in
+      let rec rebind_idents pos newfields = function
+          [] ->
+            next newfields
+        | id :: ids ->
+            let body =
+              rebind_idents (pos + 1) (id :: newfields) ids
+            in
+            Llet(Alias, Pgenval, id,
+                 Lprim(Pfield (pos, Pointer, Mutable),
+                       [Lvar mid], of_location ~scopes incl.incl_loc), body)
+      in
+      let body = rebind_idents 0 fields ids in
+      Llet(pure_module modl, Pgenval, mid,
+           transl_module ~scopes Tcoerce_none None modl, body)
+
+  | Tstr_open od ->
+      let pure = pure_module od.open_expr in
+      (* this optimization shouldn't be needed because Simplif would
+         actually remove the [Llet] when it's not used.
+         But since [scan_used_globals] runs before Simplif, we need to do
+         it. *)
+      begin match od.open_bound_items with
+      | [] when pure = Alias ->
+          next fields
+      | _ ->
+          let ids = bound_value_identifiers od.open_bound_items in
+          let mid = Ident.create_local "open" in
           let rec rebind_idents pos newfields = function
-              [] ->
-                transl_structure ~scopes loc newfields cc rootpath final_env rem
+              [] -> next newfields
             | id :: ids ->
                 let body =
                   rebind_idents (pos + 1) (id :: newfields) ids
                 in
                 Llet(Alias, Pgenval, id,
-                     Lprim(Pfield (pos, Pointer, Mutable),
-                        [Lvar mid], of_location ~scopes incl.incl_loc), body)
+                     Lprim(Pfield (pos, Pointer, Mutable), [Lvar mid],
+                           of_location ~scopes od.open_loc), body)
           in
           let body = rebind_idents 0 fields ids in
-          Llet(pure_module modl, Pgenval, mid,
-               transl_module ~scopes Tcoerce_none None modl, body)
-
-      | Tstr_open od ->
-          let pure = pure_module od.open_expr in
-          (* this optimization shouldn't be needed because Simplif would
-             actually remove the [Llet] when it's not used.
-             But since [scan_used_globals] runs before Simplif, we need to do
-             it. *)
-          begin match od.open_bound_items with
-          | [] when pure = Alias ->
-              transl_structure ~scopes loc fields cc rootpath final_env rem
-          | _ ->
-              let ids = bound_value_identifiers od.open_bound_items in
-              let mid = Ident.create_local "open" in
-              let rec rebind_idents pos newfields = function
-                  [] -> transl_structure
-                          ~scopes loc newfields cc rootpath final_env rem
-                | id :: ids ->
-                  let body =
-                    rebind_idents (pos + 1) (id :: newfields) ids
-                  in
-                  Llet(Alias, Pgenval, id,
-                      Lprim(Pfield (pos, Pointer, Mutable), [Lvar mid],
-                            of_location ~scopes od.open_loc), body)
-              in
-              let body = rebind_idents 0 fields ids in
-              Llet(pure, Pgenval, mid,
-                   transl_module ~scopes Tcoerce_none None od.open_expr, body)
-          end
-      | Tstr_modtype _
-      | Tstr_class_type _
-      | Tstr_attribute _ ->
-          transl_structure ~scopes loc fields cc rootpath final_env rem
+          Llet(pure, Pgenval, mid,
+               transl_module ~scopes Tcoerce_none None od.open_expr, body)
+      end
+  | Tstr_modtype _
+  | Tstr_class_type _
+  | Tstr_attribute _ ->
+      next fields
 
 (* Update forward declaration in Translcore *)
 let _ =
-  Translcore.transl_module := transl_module
+  Translcore.transl_module := transl_module;
+  Translcore.transl_struct_item := transl_struct_item
 
 (* Introduce dependencies on modules referenced only by "external". *)
 

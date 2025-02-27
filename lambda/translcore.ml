@@ -40,6 +40,11 @@ let transl_module =
       scopes:scopes -> module_coercion -> Path.t option ->
       module_expr -> lambda)
 
+let transl_struct_item =
+  ref ((fun ~scopes:_ _fields _rootpath _stri _next -> assert false) :
+       scopes:scopes -> Ident.t list -> Path.t option ->
+       structure_item -> (Ident.t list -> lambda) -> lambda)
+
 let transl_object =
   ref (fun ~scopes:_ _id _s _cl -> assert false :
        scopes:scopes -> Ident.t -> string list -> class_expr -> lambda)
