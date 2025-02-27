@@ -150,6 +150,9 @@ Working version
 
 ### Standard library:
 
+- #13836: Add [Float.]Array.{equal,compare}.
+  (Daniel Bünzli, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
 - #13796: Add Uchar.utf_8_decode_length_of_byte and
   Uchar.max_utf_8_decode_length.
   (Daniel Bünzli, review by Nicolás Ojeda Bär and Florian Angeletti)
