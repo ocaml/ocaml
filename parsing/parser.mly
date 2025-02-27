@@ -60,6 +60,30 @@ let mkclass ~loc ?attrs d = Cl.mk ~loc:(make_loc loc) ?attrs d
 let mkcty ~loc ?attrs d = Cty.mk ~loc:(make_loc loc) ?attrs d
 let mkconst ~loc c = Const.mk ~loc:(make_loc loc) c
 
+let wrap_val_attrs attrs body =
+  {body with pval_attributes = attrs @ body.pval_attributes}
+let wrap_type_attrs attrs body =
+  {body with ptype_attributes = attrs @ body.ptype_attributes}
+let wrap_tyext_attrs attrs body =
+  {body with ptyext_attributes = attrs @ body.ptyext_attributes}
+let wrap_tyexn_attrs attrs body =
+  let c = body.ptyexn_constructor in
+  let c = {c with pext_attributes = attrs @ c.pext_attributes} in
+  {body with ptyexn_constructor = c}
+let wrap_mb_attrs attrs body =
+  {body with pmb_attributes = attrs @ body.pmb_attributes}
+let wrap_mtd_attrs attrs body =
+  {body with pmtd_attributes = attrs @ body.pmtd_attributes}
+let wrap_od_attrs attrs body =
+  {body with popen_attributes = attrs @ body.popen_attributes}
+let wrap_ci_attrs attrs body =
+  {body with pci_attributes = attrs @ body.pci_attributes}
+let wrap_incl_attrs attrs body =
+  {body with pincl_attributes = attrs @ body.pincl_attributes}
+let wrap_head_attrs f attrs = function
+  | [] -> []
+  | x :: xs -> f attrs x :: xs
+
 let pstr_typext (te, ext) =
   (Pstr_typext te, ext)
 let pstr_primitive (vd, ext) =
@@ -73,19 +97,23 @@ let pstr_include (body, ext) =
 let pstr_recmodule (ext, bindings) =
   (Pstr_recmodule bindings, ext)
 
-let psig_typext (te, ext) =
-  (Psig_typext te, ext)
-let psig_value (vd, ext) =
-  (Psig_value vd, ext)
-let psig_type ((nr, ext), tys) =
-  (Psig_type (nr, tys), ext)
-let psig_typesubst ((nr, ext), tys) =
+let psig_typext (te, (ext, attrs)) =
+  (Psig_typext (wrap_tyext_attrs attrs te), ext)
+let psig_value (vd, (ext, attrs)) =
+  (Psig_value (wrap_val_attrs attrs vd), ext)
+let psig_type ((nr, (ext, attrs)), tys) =
+  (Psig_type (nr, wrap_head_attrs wrap_type_attrs attrs tys), ext)
+let psig_typesubst ((nr, (ext, attrs)), tys) =
   assert (nr = Recursive); (* see [no_nonrec_flag] *)
-  (Psig_typesubst tys, ext)
-let psig_exception (te, ext) =
-  (Psig_exception te, ext)
+  (Psig_typesubst (wrap_head_attrs wrap_type_attrs attrs tys), ext)
+let psig_exception (te, (ext, attrs)) =
+  (Psig_exception (wrap_tyexn_attrs attrs te), ext)
 let psig_include (body, ext) =
   (Psig_include body, ext)
+let psig_modtype (body, (ext, attrs)) =
+  (Psig_modtype (wrap_mtd_attrs attrs body), ext)
+let psig_class_type ((ext, attrs), l) =
+  (Psig_class_type (wrap_head_attrs wrap_ci_attrs attrs l), ext)
 
 let mkctf ~loc ?attrs ?docs d =
   Ctf.mk ~loc:(make_loc loc) ?attrs ?docs d
@@ -487,7 +515,35 @@ let wrap_str_ext ~loc body ext =
   | None -> body
   | Some id -> ghstr ~loc (Pstr_extension ((id, PStr [body]), []))
 
-let wrap_mkstr_ext ~loc (item, ext) =
+let wrap_str_desc_attrs item attrs =
+  match item with
+  | Pstr_eval _ | Pstr_value _ | Pstr_attribute _
+  | Pstr_extension _ -> item
+  | Pstr_primitive vd ->
+      Pstr_primitive (wrap_val_attrs attrs vd)
+  | Pstr_type (rf, typl) ->
+      Pstr_type (rf, wrap_head_attrs wrap_type_attrs attrs typl)
+  | Pstr_typext typext ->
+      Pstr_typext (wrap_tyext_attrs attrs typext)
+  | Pstr_exception tyexn ->
+      Pstr_exception (wrap_tyexn_attrs attrs tyexn)
+  | Pstr_module mb ->
+      Pstr_module (wrap_mb_attrs attrs mb)
+  | Pstr_recmodule mbl ->
+      Pstr_recmodule (wrap_head_attrs wrap_mb_attrs attrs mbl)
+  | Pstr_modtype mtd ->
+      Pstr_modtype (wrap_mtd_attrs attrs mtd)
+  | Pstr_open od ->
+      Pstr_open (wrap_od_attrs attrs od)
+  | Pstr_class cil ->
+      Pstr_class (wrap_head_attrs wrap_ci_attrs attrs cil)
+  | Pstr_class_type cil ->
+      Pstr_class_type (wrap_head_attrs wrap_ci_attrs attrs cil)
+  | Pstr_include incl ->
+      Pstr_include (wrap_incl_attrs attrs incl)
+
+let wrap_mkstr_ext ~loc (item, (ext, attrs)) =
+  let item = wrap_str_desc_attrs item attrs in
   wrap_str_ext ~loc (mkstr ~loc item) ext
 
 let wrap_sig_ext ~loc body ext =
@@ -586,9 +642,7 @@ let val_of_let_bindings ~loc lbs =
       lbs.lbs_bindings
   in
   let str = mkstr ~loc (Pstr_value(lbs.lbs_rec, List.rev bindings)) in
-  match lbs.lbs_extension with
-  | None -> str
-  | Some id -> ghstr ~loc (Pstr_extension((id, PStr [str]), []))
+  wrap_str_ext ~loc str lbs.lbs_extension
 
 let expr_of_let_bindings ~loc lbs body =
   let bindings =
@@ -1574,15 +1628,15 @@ structure_item:
 (* A single module binding. *)
 %inline module_binding:
   MODULE
-  ext = ext attrs1 = attributes
+  ext_attrs = ext_attributes
   name = mkrhs(module_name)
   body = module_binding_body
   attrs2 = post_item_attributes
     { let docs = symbol_docs $sloc in
       let loc = make_loc $sloc in
-      let attrs = attrs1 @ attrs2 in
+      let attrs = attrs2 in
       let body = Mb.mk name body ~attrs ~loc ~docs in
-      Pstr_module body, ext }
+      Pstr_module body, ext_attrs }
 ;
 
 (* The body (right-hand side) of a module binding. *)
@@ -1609,17 +1663,16 @@ module_binding_body:
 (* The first binding in a group of recursive module bindings. *)
 %inline rec_module_binding:
   MODULE
-  ext = ext
-  attrs1 = attributes
+  ext_attrs = ext_attributes
   REC
   name = mkrhs(module_name)
   body = module_binding_body
   attrs2 = post_item_attributes
   {
     let loc = make_loc $sloc in
-    let attrs = attrs1 @ attrs2 in
+    let attrs = attrs2 in
     let docs = symbol_docs $sloc in
-    ext,
+    ext_attrs,
     Mb.mk name body ~attrs ~loc ~docs
   }
 ;
@@ -1663,16 +1716,15 @@ module_binding_body:
 (* A module type declaration. *)
 module_type_declaration:
   MODULE TYPE
-  ext = ext
-  attrs1 = attributes
+  ext_attrs = ext_attributes
   id = mkrhs(ident)
   typ = preceded(EQUAL, module_type)?
   attrs2 = post_item_attributes
   {
-    let attrs = attrs1 @ attrs2 in
+    let attrs = attrs2 in
     let loc = make_loc $sloc in
     let docs = symbol_docs $sloc in
-    Mtd.mk id ?typ ~attrs ~loc ~docs, ext
+    Mtd.mk id ?typ ~attrs ~loc ~docs, ext_attrs
   }
 ;
 
@@ -1683,15 +1735,14 @@ module_type_declaration:
 open_declaration:
   OPEN
   override = override_flag
-  ext = ext
-  attrs1 = attributes
+  ext_attrs = ext_attributes
   me = module_expr
   attrs2 = post_item_attributes
   {
-    let attrs = attrs1 @ attrs2 in
+    let attrs = attrs2 in
     let loc = make_loc $sloc in
     let docs = symbol_docs $sloc in
-    Opn.mk me ~override ~attrs ~loc ~docs, ext
+    Opn.mk me ~override ~attrs ~loc ~docs, ext_attrs
   }
 ;
 
@@ -1806,7 +1857,7 @@ signature_item:
     | rec_module_declarations
         { let (ext, l) = $1 in (Psig_recmodule l, ext) }
     | module_type_declaration
-        { let (body, ext) = $1 in (Psig_modtype body, ext) }
+        { psig_modtype $1 }
     | module_type_subst
         { let (body, ext) = $1 in (Psig_modtypesubst body, ext) }
     | open_description
@@ -1816,7 +1867,7 @@ signature_item:
     | class_descriptions
         { let (ext, l) = $1 in (Psig_class l, ext) }
     | class_type_declarations
-        { let (ext, l) = $1 in (Psig_class_type l, ext) }
+        { psig_class_type $1 }
     )
     { $1 }
 
@@ -1950,18 +2001,17 @@ module_type_subst:
 ;
 %inline class_declaration:
   CLASS
-  ext = ext
-  attrs1 = attributes
+  ext_attrs = ext_attributes
   virt = virtual_flag
   params = formal_class_parameters
   id = mkrhs(LIDENT)
   body = class_fun_binding
   attrs2 = post_item_attributes
   {
-    let attrs = attrs1 @ attrs2 in
+    let attrs = attrs2 in
     let loc = make_loc $sloc in
     let docs = symbol_docs $sloc in
-    ext,
+    ext_attrs,
     Ci.mk id body ~virt ~params ~attrs ~loc ~docs
   }
 ;
@@ -2278,8 +2328,7 @@ class_type_declarations:
 ;
 %inline class_type_declaration:
   CLASS TYPE
-  ext = ext
-  attrs1 = attributes
+  ext_attrs = ext_attributes
   virt = virtual_flag
   params = formal_class_parameters
   id = mkrhs(LIDENT)
@@ -2287,10 +2336,10 @@ class_type_declarations:
   csig = class_signature
   attrs2 = post_item_attributes
     {
-      let attrs = attrs1 @ attrs2 in
+      let attrs = attrs2 in
       let loc = make_loc $sloc in
       let docs = symbol_docs $sloc in
-      ext,
+      ext_attrs,
       Ci.mk id csig ~virt ~params ~attrs ~loc ~docs
     }
 ;
@@ -3219,36 +3268,34 @@ labeled_tuple_pattern(self):
 
 value_description:
   VAL
-  ext = ext
-  attrs1 = attributes
+  ext_attrs = ext_attributes
   id = mkrhs(val_ident)
   COLON
   ty = possibly_poly(core_type)
   attrs2 = post_item_attributes
-    { let attrs = attrs1 @ attrs2 in
+    { let attrs = attrs2 in
       let loc = make_loc $sloc in
       let docs = symbol_docs $sloc in
       Val.mk id ty ~attrs ~loc ~docs,
-      ext }
+      ext_attrs }
 ;
 
 /* Primitive declarations */
 
 primitive_declaration:
   EXTERNAL
-  ext = ext
-  attrs1 = attributes
+  ext_attrs = ext_attributes
   id = mkrhs(val_ident)
   COLON
   ty = possibly_poly(core_type)
   EQUAL
   prim = raw_string+
   attrs2 = post_item_attributes
-    { let attrs = attrs1 @ attrs2 in
+    { let attrs = attrs2 in
       let loc = make_loc $sloc in
       let docs = symbol_docs $sloc in
       Val.mk id ty ~prim ~attrs ~loc ~docs,
-      ext }
+      ext_attrs }
 ;
 
 (* Type declarations and type substitutions. *)
@@ -3289,8 +3336,7 @@ primitive_declaration:
 
 generic_type_declaration(flag, kind):
   TYPE
-  ext = ext
-  attrs1 = attributes
+  ext_attrs = ext_attributes
   flag = flag
   params = type_parameters
   id = mkrhs(LIDENT)
@@ -3300,9 +3346,9 @@ generic_type_declaration(flag, kind):
     {
       let (kind, priv, manifest) = kind_priv_manifest in
       let docs = symbol_docs $sloc in
-      let attrs = attrs1 @ attrs2 in
+      let attrs = attrs2 in
       let loc = make_loc $sloc in
-      (flag, ext),
+      (flag, ext_attrs),
       Type.mk id ~params ~cstrs ~kind ~priv ?manifest ~attrs ~loc ~docs
     }
 ;
@@ -3438,8 +3484,7 @@ str_exception_declaration:
   sig_exception_declaration
     { $1 }
 | EXCEPTION
-  ext = ext
-  attrs1 = attributes
+  ext_attrs = ext_attributes
   id = mkrhs(constr_ident)
   EQUAL
   lid = mkrhs(constr_longident)
@@ -3448,13 +3493,12 @@ str_exception_declaration:
   { let loc = make_loc $sloc in
     let docs = symbol_docs $sloc in
     Te.mk_exception ~attrs ~loc
-      (Te.rebind id lid ~attrs:(attrs1 @ attrs2) ~loc ~docs)
-    , ext }
+      (Te.rebind id lid ~attrs:attrs2 ~loc ~docs)
+    , ext_attrs }
 ;
 sig_exception_declaration:
   EXCEPTION
-  ext = ext
-  attrs1 = attributes
+  ext_attrs = ext_attributes
   id = mkrhs(constr_ident)
   vars_args_res = generalized_constructor_arguments
   attrs2 = attributes
@@ -3463,8 +3507,8 @@ sig_exception_declaration:
       let loc = make_loc ($startpos, $endpos(attrs2)) in
       let docs = symbol_docs $sloc in
       Te.mk_exception ~attrs ~loc
-        (Te.decl id ~vars ~args ?res ~attrs:(attrs1 @ attrs2) ~loc ~docs)
-      , ext }
+        (Te.decl id ~vars ~args ?res ~attrs:attrs2 ~loc ~docs)
+      , ext_attrs }
 ;
 %inline let_exception_declaration:
     mkrhs(constr_ident) generalized_constructor_arguments attributes
@@ -3524,8 +3568,7 @@ label_declaration_semi:
 ;
 %inline type_extension(declaration):
   TYPE
-  ext = ext
-  attrs1 = attributes
+  ext_attrs = ext_attributes
   no_nonrec_flag
   params = type_parameters
   tid = mkrhs(type_longident)
@@ -3534,10 +3577,10 @@ label_declaration_semi:
   cs = bar_llist(declaration)
   attrs2 = post_item_attributes
     { let docs = symbol_docs $sloc in
-      let attrs = attrs1 @ attrs2 in
+      let attrs = attrs2 in
       let loc = make_loc $sloc in
       Te.mk tid cs ~params ~priv ~attrs ~docs ~loc,
-      ext }
+      ext_attrs }
 ;
 %inline extension_constructor(opening):
     extension_constructor_declaration(opening)
