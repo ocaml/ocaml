@@ -2468,7 +2468,8 @@ fun_expr:
       { let loc = make_loc ($startpos($2), $endpos($5)) in
         Pexp_stritem(Str.module_ ~loc (Mb.mk ~loc:(make_loc $loc($4)) $4 $5), $7), $3 }
   | LET EXCEPTION ext_attributes let_exception_declaration IN seq_expr
-      { Pexp_letexception($4, $6), $3 }
+      { let loc = make_loc ($startpos($2), $endpos($4)) in
+        Pexp_stritem(Str.exception_ ~loc (Te.mk_exception ~loc:(make_loc $loc($4)) $4), $6), $3 }
   | LET OPEN override_flag ext_attributes module_expr IN seq_expr
       { let open_loc = make_loc ($startpos($2), $endpos($5)) in
         let od = Opn.mk $5 ~override:$3 ~loc:open_loc in
