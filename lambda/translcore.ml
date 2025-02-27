@@ -602,6 +602,8 @@ and transl_exp0 ~in_new_scope ~scopes e =
           Llet(pure, Pgenval, oid,
                !transl_module ~scopes Tcoerce_none None od.open_expr, body)
       end
+  | Texp_stritem (si, e) ->
+      !transl_struct_item ~scopes [] None si (fun _ -> transl_exp ~scopes e)
 
 and pure_module m =
   match m.mod_desc with

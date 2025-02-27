@@ -305,6 +305,9 @@ and rw_exp iflag sexp =
       rewrite_exp iflag body
   | Pexp_extension _ -> ()
   | Pexp_unreachable -> ()
+  | Pexp_stritem (si, exp) ->
+      rewrite_str_item iflag si;
+      rewrite_exp iflag exp
 
 and rewrite_ifbody iflag ghost sifbody =
   if !instr_if && not ghost then

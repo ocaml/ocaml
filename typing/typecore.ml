@@ -2753,6 +2753,7 @@ let rec final_subexpression exp =
   | Texp_letmodule (_, _, _, _, e)
   | Texp_letexception (_, e)
   | Texp_open (_, e)
+  | Texp_stritem (_, e)
     -> final_subexpression e
   | _ -> exp
 
@@ -3106,6 +3107,8 @@ let rec is_nonexpansive exp =
                          ("%raise" | "%reraise" | "%raise_notrace")}}) },
       [Nolabel, Arg e]) ->
      is_nonexpansive e
+  | Texp_stritem (si, e) ->
+      is_nonexpansive_stritem si && is_nonexpansive e
   | Texp_array (_, _ :: _)
   | Texp_apply _
   | Texp_try _
@@ -3338,7 +3341,8 @@ let check_statement exp =
         | Texp_let (_, _, e)
         | Texp_sequence (_, e)
         | Texp_letexception (_, e)
-        | Texp_letmodule (_, _, _, _, e) ->
+        | Texp_letmodule (_, _, _, _, e)
+        | Texp_stritem (_, e) ->
             loop e
         | _ ->
             let loc =
@@ -3404,7 +3408,8 @@ let check_partial_application ~statement exp =
             | Texp_ifthenelse (_, e1, Some e2) ->
                 check e1; check e2
             | Texp_let (_, _, e) | Texp_sequence (_, e) | Texp_open (_, e)
-            | Texp_letexception (_, e) | Texp_letmodule (_, _, _, _, e) ->
+            | Texp_letexception (_, e) | Texp_letmodule (_, _, _, _, e)
+            | Texp_stritem (_, e) ->
                 check e
             | Texp_apply _ | Texp_send _ | Texp_new _ | Texp_letop _ ->
                 Location.prerr_warning exp_loc
@@ -4842,6 +4847,20 @@ and type_expect_
            exp_type = instance ty_expected;
            exp_attributes = sexp.pexp_attributes;
            exp_env = env }
+
+  | Pexp_stritem (si, e) ->
+      let tv = newvar () in
+      let (si, newenv) = !type_str_item env si in
+      let exp = type_expect newenv e ty_expected_explained in
+      unify_var newenv tv exp.exp_type;
+      re {
+        exp_desc = Texp_stritem (si, exp);
+        exp_type = exp.exp_type;
+        exp_loc = loc;
+        exp_extra = [];
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env;
+      }
 
 and expression_constraint pexp =
   { type_without_constraint = (fun env ->

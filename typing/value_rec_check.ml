@@ -166,7 +166,8 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_open (_, e)
     | Texp_letmodule (None, _, _, _, e)
     | Texp_sequence (_, e)
-    | Texp_letexception (_, e) ->
+    | Texp_letexception (_, e)
+    | Texp_stritem (_, e) ->
         classify_expression env e
 
     | Texp_construct (_, {cstr_tag = Cstr_unboxed}, [e]) ->
@@ -941,6 +942,8 @@ let rec expression : Typedtree.expression -> term_judg =
       path pth << Dereference
     | Texp_open (od, e) ->
       open_declaration od >> expression e
+    | Texp_stritem (si, e) ->
+      structure_item si >> expression e
 
 (* Function bodies.
 
