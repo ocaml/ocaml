@@ -43,9 +43,12 @@
                         expression (shortcut_ext_attr.ml[12,222+3]..[12,222+35]) ghost
                           attribute "foo"
                             []
-                          Pexp_letmodule "M" (shortcut_ext_attr.ml[12,222+24]..[12,222+25])
-                          module_expr (shortcut_ext_attr.ml[12,222+28]..[12,222+29])
-                            Pmod_ident "M" (shortcut_ext_attr.ml[12,222+28]..[12,222+29])
+                          Pexp_struct_item
+                          structure_item (shortcut_ext_attr.ml[12,222+7]..[12,222+29])
+                            Pstr_module
+                            "M" (shortcut_ext_attr.ml[12,222+24]..[12,222+25])
+                              module_expr (shortcut_ext_attr.ml[12,222+28]..[12,222+29])
+                                Pmod_ident "M" (shortcut_ext_attr.ml[12,222+28]..[12,222+29])
                           expression (shortcut_ext_attr.ml[12,222+33]..[12,222+35])
                             Pexp_construct "()" (shortcut_ext_attr.ml[12,222+33]..[12,222+35])
                             None
@@ -60,9 +63,11 @@
                           expression (shortcut_ext_attr.ml[13,261+3]..[13,261+29]) ghost
                             attribute "foo"
                               []
-                            Pexp_open Fresh
-                            module_expr (shortcut_ext_attr.ml[13,261+22]..[13,261+23])
-                              Pmod_ident "M" (shortcut_ext_attr.ml[13,261+22]..[13,261+23])
+                            Pexp_struct_item
+                            structure_item (shortcut_ext_attr.ml[13,261+7]..[13,261+23])
+                              Pstr_open Fresh
+                              module_expr (shortcut_ext_attr.ml[13,261+22]..[13,261+23])
+                                Pmod_ident "M" (shortcut_ext_attr.ml[13,261+22]..[13,261+23])
                             expression (shortcut_ext_attr.ml[13,261+27]..[13,261+29])
                               Pexp_construct "()" (shortcut_ext_attr.ml[13,261+27]..[13,261+29])
                               None
