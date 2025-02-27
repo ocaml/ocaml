@@ -2603,8 +2603,37 @@ and type_open_decl_aux ?used_slot ?toplevel ~funct_body names env od =
 
 and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
   let names = Signature_names.create () in
+  let rec type_struct env shape_map sstr =
+    match sstr with
+    | [] -> ([], [], shape_map, env)
+    | pstr :: srem ->
+        let previous_saved_types = Cmt_format.get_saved_types () in
+        let str, sg, shape_map, new_env =
+          type_str_item ~names ~toplevel ~funct_body anchor env shape_map pstr
+        in
+        Cmt_format.set_saved_types (Cmt_format.Partial_structure_item str
+                                    :: previous_saved_types);
+        let (str_rem, sig_rem, shape_map, final_env) =
+          type_struct new_env shape_map srem
+        in
+        (str :: str_rem, sg @ sig_rem, shape_map, final_env)
+  in
+  let previous_saved_types = Cmt_format.get_saved_types () in
+  let run () =
+    let (items, sg, shape_map, final_env) =
+      type_struct env Shape.Map.empty sstr
+    in
+    let str = { str_items = items; str_type = sg; str_final_env = final_env } in
+    Cmt_format.set_saved_types
+      (Cmt_format.Partial_structure str :: previous_saved_types);
+    str, sg, names, Shape.str shape_map, final_env
+  in
+  if toplevel then run ()
+  else Builtin_attributes.warning_scope [] run
 
-  let type_str_item env shape_map {pstr_loc = loc; pstr_desc = desc} =
+and type_str_item ~names ~toplevel ~funct_body anchor env shape_map
+    {pstr_loc = loc; pstr_desc = desc} =
+  let desc, sg, shape_map, new_env =
     match desc with
     | Pstr_eval (sexpr, attrs) ->
         let expr =
@@ -2933,32 +2962,7 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
         Builtin_attributes.warning_attribute x;
         Tstr_attribute x, [], shape_map, env
   in
-  let rec type_struct env shape_map sstr =
-    match sstr with
-    | [] -> ([], [], shape_map, env)
-    | pstr :: srem ->
-        let previous_saved_types = Cmt_format.get_saved_types () in
-        let desc, sg, shape_map, new_env = type_str_item env shape_map pstr in
-        let str = { str_desc = desc; str_loc = pstr.pstr_loc; str_env = env } in
-        Cmt_format.set_saved_types (Cmt_format.Partial_structure_item str
-                                    :: previous_saved_types);
-        let (str_rem, sig_rem, shape_map, final_env) =
-          type_struct new_env shape_map srem
-        in
-        (str :: str_rem, sg @ sig_rem, shape_map, final_env)
-  in
-  let previous_saved_types = Cmt_format.get_saved_types () in
-  let run () =
-    let (items, sg, shape_map, final_env) =
-      type_struct env Shape.Map.empty sstr
-    in
-    let str = { str_items = items; str_type = sg; str_final_env = final_env } in
-    Cmt_format.set_saved_types
-      (Cmt_format.Partial_structure str :: previous_saved_types);
-    str, sg, names, Shape.str shape_map, final_env
-  in
-  if toplevel then run ()
-  else Builtin_attributes.warning_scope [] run
+  { str_desc = desc; str_loc = loc; str_env = env }, sg, shape_map, new_env
 
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
@@ -3121,8 +3125,17 @@ let type_open_decl ?used_slot env od =
 let type_open_descr ?used_slot env od =
   type_open_descr ?used_slot ?toplevel:None env od
 
+let type_str_item env pstri =
+  let si, _, _, new_env =
+    type_str_item
+      ~toplevel:false ~funct_body:false ~names:(Signature_names.create ())
+      None env Shape.Map.empty pstri
+  in
+  si, new_env
+
 let () =
   Typecore.type_module := type_module_alias;
+  Typecore.type_str_item := type_str_item;
   Typetexp.transl_modtype_longident := transl_modtype_longident;
   Typetexp.transl_modtype := transl_modtype;
   Typecore.type_open := type_open_ ?toplevel:None;
