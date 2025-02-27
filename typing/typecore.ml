@@ -223,6 +223,10 @@ let type_module =
   ref ((fun _env _md -> assert false) :
        Env.t -> Parsetree.module_expr -> Typedtree.module_expr * Shape.t)
 
+let type_str_item =
+  ref ((fun _env _sstr -> assert false) :
+         Env.t -> Parsetree.structure_item -> Typedtree.structure_item * Env.t)
+
 (* Forward declaration, to be filled in by Typemod.type_open *)
 
 let type_open :
