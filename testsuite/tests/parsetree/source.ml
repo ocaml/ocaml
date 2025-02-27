@@ -7520,3 +7520,20 @@ type t = String.( t )
 
 (* Utf8 identifier *)
 let là = function ça -> ça
+
+(* Local structure items *)
+let _ =
+  let type t = int in
+  let type 'a t = 'a in
+  let type 'a t = {a: s} and s = {b: int t option} in
+  let type 'a t += A of 'a in
+  let class c = object method f = 13 end in
+  let class type c = object method f : int end in
+  let external f : int -> int = "%foo" in
+  let exception E of int in
+  let open M in
+  let module M = A in
+  let [@@@abc] in
+  let [%%xyz] in
+  let {%%hello|world|} [@@a] in
+  ()
