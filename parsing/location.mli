@@ -406,6 +406,10 @@ val raise_errorf: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
 val log_exception: Compiler_diagnostic.id Log.t -> exn -> unit
 (** Reraise the exception if it is unknown or log it. *)
 
+val report_exception: Format.formatter -> exn -> unit
+(** Create a log on the formatter, call {!log_exception} and then close the
+    log. *)
+
 val log_on_device:
   ?prev:Compiler_diagnostic.id Log.t
   -> Log.Device.t -> Compiler_diagnostic.id Log.t
