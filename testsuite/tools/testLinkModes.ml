@@ -284,7 +284,8 @@ let test_runs usr_bin_sh test_program_path test_program
       {argv0_not_ocaml = false; argv0_resolved = test_program_relative}
     ]
   in
-  let test_with_outcome (({argv0; _} as test), properties) =
+  let test_with_outcome
+        (({argv0; prefix_path_with_cwd; _} as test), properties) =
     let {argv0_not_ocaml; argv0_resolved} = properties in
     let outcome =
       (* If strategy has been specified, this program is going to be executed as
@@ -301,12 +302,7 @@ let test_runs usr_bin_sh test_program_path test_program
                      argv0 = test_program_path}
         | Tendered {header = Header_exe; _} ->
             if argv0_not_ocaml then
-              if Sys.win32 then
-                (* stdlib/header.c will find ocamlrun (because it effectively
-                   uses caml_executable_name) but fails to hand off the bytecode
-                   image, which causes ocamlrun to exit with code 127 *)
-                Fail 127
-              else if Harness.no_caml_executable_name then
+              if Harness.no_caml_executable_name then
                 (* stdlib/header.c will fail to find ocamlrun because
                    caml_executable_name isn't implemented so will either fail to
                    find the executable or will identify that it is not a
@@ -314,8 +310,10 @@ let test_runs usr_bin_sh test_program_path test_program
                    code 2 *)
                 Fail 2
               else
-                Success {executable_name = test_program_path;
-                         argv0 = test_program_path}
+                (* stdlib/header.c will find ocamlrun (because it effectively
+                   uses caml_executable_name) but fails to hand off the bytecode
+                   image, which causes ocamlrun to exit with code 127 *)
+                Fail 127
             else if Sys.win32 then
               (* stdlib/header.c correctly preserves argv[0] for Windows *)
               Success {executable_name = test_program_path; argv0}
@@ -326,14 +324,14 @@ let test_runs usr_bin_sh test_program_path test_program
                  which will fail. *)
               Fail 134
             else
-              (* stdlib/header.c does not preserve argv[0] for Unix *)
+              (* stdlib/header.c correctly preserves argv[0] *)
               let executable_name =
-                if Harness.no_caml_executable_name then
+                if Harness.no_caml_executable_name || prefix_path_with_cwd then
                   argv0_resolved
                 else
-                  test_program_path
+                  argv0
               in
-              Success {executable_name; argv0 = executable_name}
+              Success {executable_name; argv0}
         | Custom ->
             if Harness.no_caml_executable_name then
               if argv0_not_ocaml then

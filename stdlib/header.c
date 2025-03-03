@@ -427,7 +427,6 @@ int main(int argc, char *argv[])
   argv0_dirname = NULL;
 #endif
 
-  argv[0] = truename;
   /* read_runtime_path returns the actual size of RNTM, but the buffer returned
      is guaranteed to have a null character following the final character of
      RNTM. */
