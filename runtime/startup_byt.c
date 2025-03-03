@@ -120,7 +120,7 @@ int caml_attempt_open(const char_os *name, struct exec_trailer *trail,
 {
   int fd;
   int err;
-  char buf [2], * u8;
+  char *u8;
 
   u8 = caml_stat_strdup_of_os(name);
   CAML_GC_MESSAGE(STARTUP, "Opening bytecode executable %s\n", u8);
@@ -133,14 +133,17 @@ int caml_attempt_open(const char_os *name, struct exec_trailer *trail,
     else
       return FILE_NOT_FOUND;
   }
+#ifndef _WIN32
+  char buf[2];
   if (!do_open_script) {
     err = read (fd, buf, 2);
-    if (err < 2 || (buf [0] == '#' && buf [1] == '!')) {
+    if (err < 2 || (buf[0] == '#' && buf[1] == '!')) {
       close(fd);
       CAML_GC_MESSAGE(STARTUP, "Rejected #! script\n");
       return BAD_BYTECODE;
     }
   }
+#endif
   err = caml_read_trailer(fd, trail);
   if (err != 0) {
     close(fd);
