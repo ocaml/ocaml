@@ -1217,7 +1217,7 @@ let () =
 
 external reraise : exn -> 'a = "%reraise"
 
-let report_exception log exn =
+let log_exception log exn =
   let rec loop n exn =
     match error_of_exn exn with
     | None -> reraise exn
@@ -1227,7 +1227,11 @@ let report_exception log exn =
   in
   loop 5 exn
 
-let log_exception = report_exception
+let report_exception ppf exn =
+  let dev = Log.Device.make (ref ppf) in
+  let log = log_on_device dev in
+  log_exception log exn;
+  Log.close log
 
 exception Error of error
 
