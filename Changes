@@ -384,6 +384,9 @@ Working version
   (Ulysse Gérard and Jules Aguillon, review by Jules Aguillon
    and Florian Angeletti)
 
+- #13848: Add all paths components to the cmt files indexes
+  (Ulysse Gérard, review by ...)
+
 ### Build system:
 
 - #13431: Simplify github action responsible for flagging PRs with
