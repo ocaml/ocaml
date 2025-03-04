@@ -177,8 +177,8 @@ let prepare_error err =
         ]
       in
       Location.errorf ~loc ~sub
-        "Syntax error: strings are immutable,@ there@ is@ no assignment \
-         syntax for them."
+        "Syntax error: strings are immutable,@ there@ is@ no@ assignment@ \
+         syntax@ for@ them."
 
 let () =
   Location.register_error_of_exn

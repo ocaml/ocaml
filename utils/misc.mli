@@ -485,7 +485,7 @@ Hint: Did you mean "foobar"?
 
 
 val align_error_hint:
-  Format_doc.t -> Format_doc.t -> Format_doc.t * Format_doc.t
+  main:Format_doc.t -> hint:Format_doc.t -> Format_doc.t * Format_doc.t
 (** Same as [align_hint ~prefix:"Error: "] *)
 
 val aligned_hint:

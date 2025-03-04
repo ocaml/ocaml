@@ -1018,7 +1018,7 @@ let align_hint ~prefix ~main ~hint =
     let prefix_shift = String.length prefix in
     Format_doc.Doc.align_prefix2 (main,prefix_shift) (hint,0)
 
-let align_error_hint main hint = align_hint ~prefix:"Error: " ~main ~hint
+let align_error_hint ~main ~hint = align_hint ~prefix:"Error: " ~main ~hint
 
 let aligned_hint ~prefix ppf main_fmt  =
   let open Format_doc in

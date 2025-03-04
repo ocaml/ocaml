@@ -7118,15 +7118,24 @@ let report_error ~loc env = function
              (Style.as_inline_code Printtyp.type_path) type_path
              (spellcheck name.txt valid_names)
          else
-           Location.aligned_error_hint_segmented ~loc
-             "%s type@ %a%a@\n"
+           let intro ppf = Fmt.fprintf ppf "@[%s type@;<1 2>%a%a@]@\n"
              eorp (Style.as_inline_code Printtyp.type_expr) ty
              pp_doc (report_type_expected_explanation_opt explanation)
-             ("@{<ralign>There is no %s @}%a within type %a": _ format6)
+           in
+           let main =
+             Fmt.doc_printf "@{<ralign>There is no %s @}%a within type %a"
              (Datatype_kind.label_name kind)
              Style.inline_code name.txt
              (Style.as_inline_code Printtyp.type_path) type_path
-             (spellcheck name.txt valid_names)
+           in
+           let main, sub =
+             match spellcheck name.txt valid_names with
+             | None -> main, []
+             | Some hint ->
+                 let main, hint = Misc.align_error_hint ~main ~hint in
+                 main, [Location.mknoloc hint]
+           in
+           Location.errorf ~loc ~sub "%t%a" intro pp_doc main
        )
   | Name_type_mismatch (kind, lid, tp, tpl) ->
       let type_name = Datatype_kind.type_name kind in
@@ -7148,18 +7157,28 @@ let report_error ~loc env = function
       Location.errorf ~loc "%s" msg
   | Not_an_object (ty, explanation) ->
     Location.errorf ~loc
-      "This expression is not an object;@
-       it has type %a%a"
+      "This expression is not an object;@ it has type %a%a"
       (Style.as_inline_code Printtyp.type_expr) ty
       pp_doc (report_type_expected_explanation_opt explanation)
   | Undefined_method (ty, me, valid_methods) ->
      Printtyp.wrap_printing_env ~error:true env (fun () ->
-         Location.aligned_error_hint_segmented ~loc
-           "@[<v>@[This expression has type@;<1 2>%a@]@,@]"
-           (Style.as_inline_code Printtyp.type_expr) ty
-           ("@{<ralign>It has no method @}%a": _ format6)
-           Style.inline_code me
-           (Option.bind valid_methods (spellcheck me))
+          let intro ppf =
+            Fmt.fprintf ppf
+              "@[<v>@[This expression has type@;<1 2>%a@]@,@]"
+              (Style.as_inline_code Printtyp.type_expr) ty
+          in
+          let main =
+            Fmt.doc_printf "@{<ralign>It has no method @}%a"
+              Style.inline_code me
+          in
+          let main, sub =
+            match Option.bind valid_methods (spellcheck me) with
+            | None -> main, []
+            | Some hint ->
+                let main, hint = Misc.align_error_hint ~main ~hint in
+                main, [Location.mknoloc hint]
+          in
+          Location.errorf ~sub ~loc "%t%a" intro pp_doc main
        )
   | Undefined_self_method (me, valid_methods) ->
      Location.aligned_error_hint ~loc
