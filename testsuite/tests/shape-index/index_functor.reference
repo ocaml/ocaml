@@ -3,6 +3,8 @@ Resolved: Index_functor.3 :
   N (File "index_functor.ml", line 22, characters 8-9)
 Alias: Index_functor.4 -> Resolved: Index_functor.0  :
   O (File "index_functor.ml", line 21, characters 8-9)
+Resolved: Index_functor.3 :
+  N (File "index_functor.ml", line 20, characters 11-12)
 Resolved: Index_functor.0 :
   N.M (File "index_functor.ml", line 20, characters 11-14)
 Resolved: Index_functor.2 :

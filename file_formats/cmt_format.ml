@@ -367,13 +367,29 @@ let index_occurrences binary_annots =
   in
   let f ~namespace env path lid =
     let not_ghost { Location.loc = { loc_ghost; _ }; _ } = not loc_ghost in
-    if not_ghost lid then
+    let reduce_and_store ~namespace lid path = if not_ghost lid then
       match Env.shape_of_path ~namespace env path with
       | exception Not_found -> ()
       | { uid = Some (Predef _); _ } -> ()
       | path_shape ->
         let result = Shape_reduce.local_reduce_for_uid env path_shape in
         index := (lid, result) :: !index
+    in
+    (* Shape reduction can be expensive, but the persistent memoïzation tables
+       should make these successive reductions fast. *)
+    let rec index_components namespace lid path  =
+      let module_ = Shape.Sig_component_kind.Module in
+      match lid.Location.txt, path with
+      | Longident.Ldot (lid', _), Path.Pdot (path', _) ->
+        reduce_and_store ~namespace lid path;
+        index_components module_ lid' path'
+      | Longident.Lapply (lid', lid''), Path.Papply (path', path'') ->
+        index_components module_ lid'' path'';
+        index_components module_ lid' path'
+      | _, _ ->
+        reduce_and_store ~namespace lid path;
+    in
+    index_components namespace lid path
   in
   iter_on_annots (iter_on_occurrences ~f) binary_annots;
   !index

@@ -4,11 +4,18 @@ Resolved: Index_aliases.26 :
   FArg (File "index_aliases.ml", line 49, characters 5-9)
 Resolved: Index_aliases.25 :
   Arg (File "index_aliases.ml", line 48, characters 19-22)
+Resolved: Index_aliases.22 :
+  X (File "index_aliases.ml", line 48, characters 14-15)
 Approximated: Index_aliases.22 :
   X.F (File "index_aliases.ml", line 48, characters 14-17)
+Alias: Index_aliases.24 -> Alias: Index_aliases.23 -> Approximated: Index_aliases.22
+                             :
+  Z (File "index_aliases.ml", line 45, characters 8-9)
 Missing uid : Z.s (File "index_aliases.ml", line 45, characters 8-11)
 Alias: Index_aliases.23 -> Approximated: Index_aliases.22  :
   Y (File "index_aliases.ml", line 42, characters 11-12)
+Resolved: Index_aliases.22 :
+  X (File "index_aliases.ml", line 41, characters 11-12)
 Approximated: Index_aliases.22 :
   X.M (File "index_aliases.ml", line 41, characters 11-14)
 Resolved: Index_aliases.17 :

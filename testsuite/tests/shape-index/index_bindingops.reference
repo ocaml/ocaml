@@ -25,16 +25,22 @@ Resolved: Index_bindingops.7 :
   y (File "index_bindingops.ml", line 21, characters 27-28)
 Resolved: Index_bindingops.6 :
   x (File "index_bindingops.ml", line 21, characters 24-25)
+Unresolved: CU Stdlib . "Option"[module]  :
+  Option (File "index_bindingops.ml", line 21, characters 2-8)
 Unresolved: CU Stdlib . "Option"[module] . "map"[value]  :
   Option.map (File "index_bindingops.ml", line 21, characters 2-12)
 Resolved: Index_bindingops.4 :
   x (File "index_bindingops.ml", line 20, characters 14-15)
+Unresolved: CU Stdlib . "Option"[module]  :
+  Option (File "index_bindingops.ml", line 20, characters 2-8)
 Unresolved: CU Stdlib . "Option"[module] . "bind"[value]  :
   Option.bind (File "index_bindingops.ml", line 20, characters 2-13)
 Resolved: Index_bindingops.1 :
   x (File "index_bindingops.ml", line 17, characters 30-31)
 Resolved: Index_bindingops.2 :
   f (File "index_bindingops.ml", line 17, characters 28-29)
+Unresolved: CU Stdlib . "Option"[module]  :
+  Option (File "index_bindingops.ml", line 17, characters 17-23)
 Unresolved: CU Stdlib . "Option"[module] . "map"[value]  :
   Option.map (File "index_bindingops.ml", line 17, characters 17-27)
 

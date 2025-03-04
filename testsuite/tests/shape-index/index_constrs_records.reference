@@ -49,6 +49,8 @@ Resolved: Index_constrs_records.19 :
   M (File "index_constrs_records.ml", line 27, characters 5-6)
 Resolved: Index_constrs_records.3 :
   l_c (File "index_constrs_records.ml", line 25, characters 14-17)
+Approximated: Index_constrs_records.19 :
+  M (File "index_constrs_records.ml", line 25, characters 8-9)
 Resolved: Index_constrs_records.4 :
   M.A (File "index_constrs_records.ml", line 25, characters 8-11)
 Resolved: Index_constrs_records.3 :
