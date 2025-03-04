@@ -375,7 +375,7 @@ let index_occurrences binary_annots =
         let result = Shape_reduce.local_reduce_for_uid env path_shape in
         index := (lid, result) :: !index
     in
-    (* Shape reduction can be expensive, but the persistent memoïzation tables
+    (* Shape reduction can be expensive, but the persistent memoization tables
        should make these successive reductions fast. *)
     let rec index_components namespace lid path  =
       let module_ = Shape.Sig_component_kind.Module in
