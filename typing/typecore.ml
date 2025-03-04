@@ -3017,9 +3017,13 @@ let type_omitted_parameters_and_build_result_type ty_ret args =
   in
   ty_ret, args
 
-(* Generalization criterion for expressions *)
+(** Generalization criterion for expressions
 
-let rec is_nonexpansive exp =
+  When [pure] is set to true, tests if the expression is pure based on a
+  syntactic over-approximation.
+*)
+
+let rec is_nonexpansive ~pure exp =
   match exp.exp_desc with
   | Texp_ident _
   | Texp_constant _
@@ -3027,10 +3031,11 @@ let rec is_nonexpansive exp =
   | Texp_function _
   | Texp_array (_, []) -> true
   | Texp_let(_rec_flag, pat_exp_list, body) ->
-      List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list &&
-      is_nonexpansive body
+      List.for_all (fun vb -> is_nonexpansive ~pure vb.vb_expr) pat_exp_list
+      && is_nonexpansive ~pure body
   | Texp_apply(e, (_,Omitted ())::el) ->
-      is_nonexpansive e && List.for_all is_nonexpansive_arg (List.map snd el)
+      is_nonexpansive ~pure e
+      && List.for_all (is_nonexpansive_arg ~pure) (List.map snd el)
   | Texp_match(e, cases, _, _) ->
      (* Not sure this is necessary, if [e] is nonexpansive then we shouldn't
          care if there are exception patterns. But the previous version enforced
@@ -3041,43 +3046,50 @@ let rec is_nonexpansive exp =
           | Tpat_exception _ -> true
           | _ -> false } pat
       in
-      is_nonexpansive e &&
+      is_nonexpansive ~pure e &&
       List.for_all
         (fun {c_lhs; c_guard; c_rhs} ->
-           is_nonexpansive_opt c_guard && is_nonexpansive c_rhs
+           is_nonexpansive_opt ~pure c_guard && is_nonexpansive ~pure c_rhs
            && not (contains_exception_pat c_lhs)
         ) cases
   | Texp_tuple el ->
-      List.for_all (fun (_, e) -> is_nonexpansive e) el
+      List.for_all (fun (_, e) -> is_nonexpansive ~pure e) el
   | Texp_construct( _, _, el) ->
-      List.for_all is_nonexpansive el
-  | Texp_variant(_, arg) -> is_nonexpansive_opt arg
+      List.for_all (is_nonexpansive ~pure) el
+  | Texp_variant(_, arg) -> is_nonexpansive_opt ~pure arg
   | Texp_record { fields; extended_expression } ->
       Array.for_all
         (fun (lbl, definition) ->
            match definition with
            | Overridden (_, exp) ->
-               lbl.lbl_mut = Immutable && is_nonexpansive exp
+               lbl.lbl_mut = Immutable && is_nonexpansive ~pure exp
            | Kept _ -> true)
         fields
-      && is_nonexpansive_opt extended_expression
-  | Texp_field(exp, _, _) -> is_nonexpansive exp
-  | Texp_ifthenelse(_cond, ifso, ifnot) ->
-      is_nonexpansive ifso && is_nonexpansive_opt ifnot
-  | Texp_sequence (_e1, e2) -> is_nonexpansive e2  (* PR#4354 *)
-  | Texp_new (_, _, cl_decl) -> Btype.class_type_arity cl_decl.cty_type > 0
+      && is_nonexpansive_opt ~pure extended_expression
+  | Texp_field(exp, _, lbl) ->
+      (not pure || lbl.lbl_mut = Immutable)
+      && is_nonexpansive ~pure exp
+  | Texp_ifthenelse(cond, ifso, ifnot) ->
+      (not pure || is_nonexpansive ~pure cond)
+      && is_nonexpansive ~pure ifso && is_nonexpansive_opt ~pure ifnot
+  | Texp_sequence (e1, e2) ->
+      (not pure || is_nonexpansive ~pure e1)
+      && is_nonexpansive ~pure e2  (* PR#4354 *)
+  | Texp_new (_, _, cl_decl) ->
+      (not pure && Btype.class_type_arity cl_decl.cty_type > 0)
   (* Note: nonexpansive only means no _observable_ side effects *)
-  | Texp_lazy e -> is_nonexpansive e
+  | Texp_lazy e -> is_nonexpansive ~pure e
   | Texp_object ({cstr_fields=fields; cstr_type = { csig_vars=vars}}, _) ->
       let count = ref 0 in
+      not pure &&
       List.for_all
         (fun field -> match field.cf_desc with
             Tcf_method _ -> true
           | Tcf_val (_, _, _, Tcfk_concrete (_, e), _) ->
-              incr count; is_nonexpansive e
+              incr count; is_nonexpansive ~pure e
           | Tcf_val (_, _, _, Tcfk_virtual _, _) ->
               incr count; true
-          | Tcf_initializer e -> is_nonexpansive e
+          | Tcf_initializer e -> is_nonexpansive ~pure e
           | Tcf_constraint _ -> true
           | Tcf_inherit _ -> false
           | Tcf_attribute _ -> true)
@@ -3087,21 +3099,21 @@ let rec is_nonexpansive exp =
       !count = 0
   | Texp_letmodule (_, _, _, mexp, e)
   | Texp_open ({ open_expr = mexp; _}, e) ->
-      is_nonexpansive_mod mexp && is_nonexpansive e
+      is_nonexpansive_mod ~pure mexp && is_nonexpansive ~pure e
   | Texp_pack mexp ->
-      is_nonexpansive_mod mexp
+      is_nonexpansive_mod ~pure mexp
   (* Computations which raise exceptions are nonexpansive, since (raise e) is
      equivalent to (raise e; diverge), and a nonexpansive "diverge" can be
      produced using lazy values or the relaxed value restriction.
      See GPR#1142 *)
   | Texp_assert (exp, _) ->
-      is_nonexpansive exp
+      not pure && is_nonexpansive ~pure exp
   | Texp_apply (
       { exp_desc = Texp_ident (_, _, {val_kind =
              Val_prim {Primitive.prim_name =
                          ("%raise" | "%reraise" | "%raise_notrace")}}) },
       [Nolabel, Arg e]) ->
-     is_nonexpansive e
+     (not pure && is_nonexpansive ~pure e)
   | Texp_array (_, _ :: _)
   | Texp_apply _
   | Texp_try _
@@ -3117,24 +3129,26 @@ let rec is_nonexpansive exp =
   | Texp_extension_constructor _ ->
     false
 
-and is_nonexpansive_mod mexp =
+and is_nonexpansive_mod ~pure mexp =
   match mexp.mod_desc with
   | Tmod_ident _
   | Tmod_functor _ -> true
-  | Tmod_unpack (e, _) -> is_nonexpansive e
-  | Tmod_constraint (m, _, _, _) -> is_nonexpansive_mod m
+  | Tmod_unpack (e, _) -> is_nonexpansive ~pure e
+  | Tmod_constraint (m, _, _, _) -> is_nonexpansive_mod ~pure m
   | Tmod_structure str ->
       List.for_all
         (fun item -> match item.str_desc with
-          | Tstr_eval _ | Tstr_primitive _ | Tstr_type _
+          | Tstr_eval (e, _) -> not pure || is_nonexpansive ~pure e
+          | Tstr_primitive _ | Tstr_type _
           | Tstr_modtype _ | Tstr_class_type _  -> true
           | Tstr_value (_, pat_exp_list) ->
-              List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list
+              List.for_all (fun vb -> is_nonexpansive ~pure vb.vb_expr)
+                pat_exp_list
           | Tstr_module {mb_expr=m;_}
           | Tstr_open {open_expr=m;_}
-          | Tstr_include {incl_mod=m;_} -> is_nonexpansive_mod m
+          | Tstr_include {incl_mod=m;_} -> is_nonexpansive_mod ~pure m
           | Tstr_recmodule id_mod_list ->
-              List.for_all (fun {mb_expr=m;_} -> is_nonexpansive_mod m)
+              List.for_all (fun {mb_expr=m;_} -> is_nonexpansive_mod ~pure m)
                 id_mod_list
           | Tstr_exception {tyexn_constructor = {ext_kind = Text_decl _}} ->
               false (* true would be unsound *)
@@ -3149,17 +3163,19 @@ and is_nonexpansive_mod mexp =
           | Tstr_attribute _ -> true
         )
         str.str_items
-  | Tmod_apply _ | Tmod_apply_unit _ | Tmod_apply_type _ -> false
+  | Tmod_apply _ | Tmod_apply_unit _
+  | Tmod_apply_type _ -> false (* could be more precise *)
 
-and is_nonexpansive_opt = function
+and is_nonexpansive_opt ~pure = function
   | None -> true
-  | Some e -> is_nonexpansive e
+  | Some e -> is_nonexpansive ~pure e
 
-and is_nonexpansive_arg = function
+and is_nonexpansive_arg ~pure = function
   | Omitted () -> true
-  | Arg e -> is_nonexpansive e
+  | Arg e -> is_nonexpansive ~pure e
 
-let maybe_expansive e = not (is_nonexpansive e)
+let maybe_expansive e = not (is_nonexpansive ~pure:false e)
+let is_nonexpansive ?(pure = false) e = is_nonexpansive ~pure e
 
 let annotate_recursive_bindings env valbinds =
   let ids = let_bound_idents valbinds in

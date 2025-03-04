@@ -331,7 +331,7 @@ type ext3 += C3
 module S_typeext3 : (type a) -> sig type ext3 += LocalC end
 |}]
 
-module F_value (type a) = struct
+module F_value1 (type a) = struct
   print_newline ()
 end
 
@@ -339,6 +339,17 @@ end
 Line 2, characters 2-18:
 2 |   print_newline ()
       ^^^^^^^^^^^^^^^^
+Error: This expression in not allowed in type functors.
+|}]
+
+module F_value2 (type a) = struct
+    print_newline (); ()
+end
+
+[%%expect{|
+Line 2, characters 4-24:
+2 |     print_newline (); ()
+        ^^^^^^^^^^^^^^^^^^^^
 Error: This expression in not allowed in type functors.
 |}]
 

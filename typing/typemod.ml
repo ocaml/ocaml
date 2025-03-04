@@ -2639,8 +2639,8 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
           Builtin_attributes.warning_scope attrs
             (fun () -> Typecore.type_expression env sexpr)
         in
-        if funct_body = AppT && not (Typecore.is_nonexpansive expr) then
-          raise (Error (expr.exp_loc, env,
+        if funct_body = AppT && not (Typecore.is_nonexpansive ~pure:true expr)
+        then raise (Error (expr.exp_loc, env,
                         Not_allowed_in_functor_body Expansive));
         Tstr_eval (expr, attrs), [], shape_map, env
     | Pstr_value(rec_flag, sdefs) ->
@@ -2652,7 +2652,7 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
         in
         if funct_body = AppT then
           List.iter (fun d ->
-            if not (Typecore.is_nonexpansive d.vb_expr)
+            if not (Typecore.is_nonexpansive ~pure:true d.vb_expr)
             then raise (Error (d.vb_loc, env,
                   Not_allowed_in_functor_body Expansive))) defs;
         (* Note: Env.find_value does not trigger the value_used event. Values
