@@ -48,7 +48,7 @@ let scrape env ty =
 let scrape_poly env ty =
   let ty = scrape_ty env ty in
   match get_desc ty with
-  | Tpoly (ty, _) -> get_desc ty
+  | Tpoly {poly_body = ty} -> get_desc ty
   | d -> d
 
 let is_function_type env ty =

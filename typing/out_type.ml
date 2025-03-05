@@ -984,9 +984,9 @@ module Aliases = struct
               visited_objects := px :: !visited_objects;
             printer_iter_type_expr (mark_loops_rec visited) ty
           end
-      | Tpoly(ty, tyl) ->
-          List.iter add tyl;
-          mark_loops_rec visited ty
+      | Tpoly tpoly ->
+          List.iter add tpoly.poly_univars;
+          mark_loops_rec visited tpoly.poly_body
       | _ ->
           printer_iter_type_expr (mark_loops_rec visited) ty
 
@@ -1108,9 +1108,9 @@ let rec tree_of_typexp mode ty =
         Otyp_stuff "<Tsubst>"
     | Tlink _ ->
         fatal_error "Out_type.tree_of_typexp"
-    | Tpoly (ty, []) ->
+    | Tpoly {poly_body = ty; poly_univars = []} ->
         tree_of_typexp mode ty
-    | Tpoly (ty, tyl) ->
+    | Tpoly {poly_body = ty; poly_univars = tyl} ->
         (*let print_names () =
           List.iter (fun (_, name) -> prerr_string (name ^ " ")) !names;
           prerr_string "; " in *)
@@ -1561,7 +1561,7 @@ let tree_of_value_description id decl =
 
 let method_type priv ty =
   match priv, get_desc ty with
-  | Mpublic, Tpoly(ty, tyl) -> (ty, tyl)
+  | Mpublic, Tpoly {poly_body = ty; poly_univars = tyl} -> (ty, tyl)
   | _ , _ -> (ty, [])
 
 let prepare_method _lab (priv, _virt, ty) =

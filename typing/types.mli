@@ -129,10 +129,10 @@ type type_desc =
   (** Occurrence of a type variable introduced by a
       forall quantifier / [Tpoly]. *)
 
-  | Tpoly of type_expr * type_expr list
-  (** [Tpoly (ty,tyl)] ==> ['a1... 'an. ty],
-      where 'a1 ... 'an are names given to types in tyl
-      and occurrences of those types in ty. *)
+  | Tpoly of { poly_body : type_expr; poly_univars : type_expr list }
+  (** [Tpoly {poly_body; poly_univars}] ==> ['a1... 'an. poly_body],
+      where 'a1 ... 'an are names given to types in poly_univars
+      and occurrences of those types in poly_body. *)
 
   | Tpackage of package
   (** Type of a first-class module (a.k.a package). *)

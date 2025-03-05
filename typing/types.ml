@@ -43,7 +43,7 @@ and type_desc =
   | Tsubst of type_expr * type_expr option
   | Tvariant of row_desc
   | Tunivar of string option
-  | Tpoly of type_expr * type_expr list
+  | Tpoly of { poly_body : type_expr; poly_univars : type_expr list }
   | Tpackage of package
 
 and package =

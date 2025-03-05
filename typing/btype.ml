@@ -164,7 +164,7 @@ let is_Tvar ty = match get_desc ty with Tvar _ -> true | _ -> false
 let is_Tunivar ty = match get_desc ty with Tunivar _ -> true | _ -> false
 let is_Tconstr ty = match get_desc ty with Tconstr _ -> true | _ -> false
 let is_poly_Tpoly ty =
-  match get_desc ty with Tpoly (_, _ :: _) -> true | _ -> false
+  match get_desc ty with Tpoly {poly_univars = _ :: _} -> true | _ -> false
 let type_kind_is_abstract decl =
   match decl.type_kind with Type_abstract _ -> true | _ -> false
 let type_origin decl =
@@ -326,7 +326,7 @@ let fold_type_expr f init ty =
   | Tlink _
   | Tsubst _            -> assert false
   | Tunivar _           -> init
-  | Tpoly (ty, tyl)     ->
+  | Tpoly {poly_body = ty; poly_univars = tyl} ->
     let result = f init ty in
     List.fold_left f result tyl
   | Tpackage pack ->
@@ -527,9 +527,9 @@ let rec copy_type_desc ?(keep_names=false) f = function
   | Tlink ty            -> copy_type_desc f (get_desc ty)
   | Tsubst _            -> assert false
   | Tunivar _ as ty     -> ty (* always keep the name *)
-  | Tpoly (ty, tyl)     ->
+  | Tpoly {poly_body = ty; poly_univars = tyl} ->
       let tyl = List.map f tyl in
-      Tpoly (f ty, tyl)
+      Tpoly {poly_body = f ty; poly_univars = tyl}
   | Tpackage pack       ->
       Tpackage {pack with
         pack_cstrs = List.map (fun (n, ty) -> (n, f ty)) pack.pack_cstrs}

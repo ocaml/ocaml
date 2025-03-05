@@ -864,7 +864,7 @@ let solve_Ppat_poly_constraint tps env loc sty expected_ty =
   unify_pat_types loc env ty (instance expected_ty);
   tps.tps_pattern_force <- force :: tps.tps_pattern_force;
   match get_desc ty with
-  | Tpoly (body, tyl) ->
+  | Tpoly {poly_body = body; poly_univars = tyl} ->
       let _, ty' =
         with_level ~level:generic_level
           (fun () -> instance_poly ~keep_names:true ~fixed:false tyl body)
@@ -3296,7 +3296,7 @@ let check_univars env kind exp ty_expected vars =
   let exp_ty, vars =
     with_local_level_generalize begin fun () ->
       match get_desc pty with
-        Tpoly (body, tl) ->
+        Tpoly {poly_body = body; poly_univars = tl} ->
           (* Enforce scoping for type_let:
              since body is not generic,  instance_poly only makes
              copies of nodes that have a Tunivar as descendant *)
@@ -4419,16 +4419,17 @@ and type_expect_
       in
       let typ =
         match get_desc typ with
-        | Tpoly (ty, []) ->
+        | Tpoly {poly_body = ty; poly_univars = []} ->
             instance ty
-        | Tpoly (ty, tl) ->
+        | Tpoly {poly_body = ty; poly_univars = tl} ->
             if !Clflags.principal && get_level typ <> generic_level then
               Location.prerr_warning loc
                 (not_principal "this use of a polymorphic method");
             snd (instance_poly ~fixed:false tl ty)
         | Tvar _ ->
             let ty' = newvar () in
-            unify env (instance typ) (newty(Tpoly(ty',[])));
+            unify env (instance typ)
+              (newty(Tpoly {poly_body = ty'; poly_univars = []}));
             (* if not !Clflags.nolabels then
                Location.prerr_warning loc (Warnings.Unknown_method met); *)
             ty'
@@ -4641,10 +4642,10 @@ and type_expect_
           unify_exp_types loc env (instance ty) (instance ty_expected));
       let exp =
         match get_desc (expand_head env ty) with
-          Tpoly (ty', []) ->
+          Tpoly {poly_body = ty'; poly_univars = []} ->
             let exp = type_expect env sbody (mk_expected ty') in
             { exp with exp_type = instance ty }
-        | Tpoly (ty', tl) ->
+        | Tpoly {poly_body = ty'; poly_univars = tl} ->
             (* One more level to generalize locally *)
             let (exp, vars) =
               with_local_level_generalize begin fun () ->
@@ -4660,7 +4661,8 @@ and type_expect_
             { exp with exp_type = instance ty }
         | Tvar _ ->
             let exp = type_exp env sbody in
-            let exp = {exp with exp_type = newty (Tpoly (exp.exp_type, []))} in
+            let tpoly = Tpoly {poly_body = exp.exp_type; poly_univars = []} in
+            let exp = {exp with exp_type = newty tpoly} in
             unify_exp ~sexp env exp ty;
             exp
         | _ -> assert false
@@ -6345,7 +6347,7 @@ and type_let ?check ?check_strict
               (fun pat binding ->
                 let pat =
                   match get_desc pat.pat_type with
-                  | Tpoly (ty, tl) ->
+                  | Tpoly {poly_body = ty; poly_univars = tl} ->
                       {pat with pat_type =
                        snd (instance_poly ~keep_names:true ~fixed:false tl ty)}
                   | _ -> pat
@@ -6397,7 +6399,7 @@ and type_let ?check ?check_strict
           (fun exp_env ({pvb_attributes; _} as vb) pat ->
             let sexp = vb_exp_constraint vb in
             match get_desc pat.pat_type with
-            | Tpoly (ty, tl) ->
+            | Tpoly {poly_body = ty; poly_univars = tl} ->
                 let vars, ty' =
                   with_local_level_generalize_structure_if_principal
                     (fun () -> instance_poly ~keep_names:true ~fixed:true tl ty)
