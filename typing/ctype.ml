@@ -3873,12 +3873,8 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
                 t1' t2'
           | (Tnil, Tnil) ->
               ()
-          | (Tpoly {poly_body = t1; poly_univars = []},
-             Tpoly {poly_body = t2; poly_univars = []}) ->
-              moregen inst_nongen type_pairs env t1 t2
           | (Tpoly tpoly1, Tpoly tpoly2) ->
-              enter_poly_for Moregen env tpoly1 tpoly2
-                (moregen inst_nongen type_pairs env)
+              moregen_poly inst_nongen type_pairs env tpoly1 tpoly2
           | (Tunivar _, Tunivar _) ->
               unify_univar_for Moregen t1' t2' !univar_pairs
           | (_, _) ->
@@ -3887,6 +3883,13 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
   with Moregen_trace trace ->
     raise_trace_for Moregen (Diff {got = t1; expected = t2} :: trace)
 
+and moregen_poly inst_nongen type_pairs env tpoly1 tpoly2 =
+  match (tpoly1.poly_univars, tpoly2.poly_univars) with
+    ([], []) ->
+      moregen inst_nongen type_pairs env tpoly1.poly_body tpoly2.poly_body
+  | (_ , _ ) ->
+      enter_poly_for Moregen env tpoly1 tpoly2
+        (moregen inst_nongen type_pairs env)
 
 and moregen_list inst_nongen type_pairs env tl1 tl2 =
   if List.length tl1 <> List.length tl2 then
