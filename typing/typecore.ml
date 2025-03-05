@@ -7207,6 +7207,12 @@ let report_error ~loc env = function
         "The instance variable %a is overridden several times"
         Style.inline_code v
   | Coercion_failure (ty_exp, err, b) ->
+     let intro =
+       let ty_exp = Out_type.prepare_expansion ty_exp in
+       doc_printf "This expression cannot be coerced to type@;<1 2>%a;@ \
+                   it has type"
+         (Style.as_inline_code @@ Printtyp.type_expansion Type) ty_exp
+     in
      let sub =
        if not b then [] else
          [ Location.msg "This simple coercion was not fully general";
@@ -7215,12 +7221,6 @@ let report_error ~loc env = function
               of the form: %a"
              Style.inline_code "(foo : ty1 :> ty2)"
          ]
-     in
-     let intro =
-       let ty_exp = Out_type.prepare_expansion ty_exp in
-       doc_printf "This expression cannot be coerced to type@;<1 2>%a;@ \
-                   it has type"
-         (Style.as_inline_code @@ Printtyp.type_expansion Type) ty_exp
      in
       Location.errorf ~sub ~loc "%t" (fun ppf ->
         Errortrace_report.unification ppf env err
