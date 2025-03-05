@@ -1437,8 +1437,8 @@ let instance_class params cty =
    type variable ['c] when outside of its binder, and kept as universal
    when under its binder.
    Assumption: in the first call to [copy_sep], all the free univars should
-   be bound by the same [Tpoly] node. This guarantees that they are only
-   bound when under this [Tpoly] node, which has no free univars, and as
+   be bound by the same [tpoly] node. This guarantees that they are only
+   bound when under this [tpoly] node, which has no free univars, and as
    such is not part of the separate copy. In turn, this allows the separate
    copy to keep the sharing of the original type without breaking its
    binding structure.
@@ -1492,7 +1492,8 @@ let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) sch =
   List.iter (fun force -> force ()) !delayed_copies;
   ty
 
-let instance_poly' copy_scope ~keep_names ~fixed univars sch =
+let instance_poly' copy_scope ~keep_names ~fixed tpoly =
+  let {poly_body = sch; poly_univars = univars} = tpoly in
   (* In order to compute univars below, [sch] should not contain [Tsubst] *)
   let copy_var ty =
     match get_desc ty with
@@ -1505,17 +1506,16 @@ let instance_poly' copy_scope ~keep_names ~fixed univars sch =
   let ty = copy_sep ~copy_scope ~fixed ~visited sch in
   vars, ty
 
-let instance_poly ?(keep_names=false) ~fixed univars sch =
+let instance_poly ?(keep_names=false) ~fixed tpoly =
   For_copy.with_scope (fun copy_scope ->
-    instance_poly' copy_scope ~keep_names ~fixed univars sch
+    instance_poly' copy_scope ~keep_names ~fixed tpoly
   )
 
 let instance_label ~fixed lbl =
   For_copy.with_scope (fun copy_scope ->
     let vars, ty_arg =
       match get_desc lbl.lbl_arg with
-        Tpoly {poly_body = ty; poly_univars = tl} ->
-          instance_poly' copy_scope ~keep_names:false ~fixed tl ty
+        Tpoly tpoly -> instance_poly' copy_scope ~keep_names:false ~fixed tpoly
       | _ ->
           [], copy copy_scope lbl.lbl_arg
     in
@@ -5058,9 +5058,8 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (Tpoly {poly_body = u1; poly_univars = []},
        Tpoly {poly_body = u2; poly_univars = []}) ->
         subtype_rec env trace u1 u2 cstrs
-    | (Tpoly {poly_body = u1; poly_univars = tl1},
-       Tpoly {poly_body = u2; poly_univars = []}) ->
-        let _, u1' = instance_poly ~fixed:false tl1 u1 in
+    | (Tpoly tpoly1, Tpoly {poly_body = u2; poly_univars = []}) ->
+        let _, u1' = instance_poly ~fixed:false tpoly1 in
         subtype_rec env trace u1' u2 cstrs
     | (Tpoly {poly_body = u1; poly_univars = tl1},
        Tpoly {poly_body = u2; poly_univars = tl2}) ->

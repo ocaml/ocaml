@@ -777,8 +777,8 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
                       (Ctype.newty (Tpoly {poly_body = ty'; poly_univars = []}))
                       ty;
                    Ctype.unify val_env (type_approx val_env sbody) ty'
-               | Tpoly {poly_body = ty1; poly_univars = tl} ->
-                   let _, ty1' = Ctype.instance_poly ~fixed:false tl ty1 in
+               | Tpoly tpoly ->
+                   let _, ty1' = Ctype.instance_poly ~fixed:false tpoly in
                    let ty2 = type_approx val_env sbody in
                    Ctype.unify val_env ty2 ty1'
                | _ -> assert false
