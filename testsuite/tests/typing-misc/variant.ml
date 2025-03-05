@@ -88,8 +88,7 @@ type d = X of int | Y of int
 Line 3, characters 0-27:
 3 | type missing = d = X of int
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type
-         "d"
+Error: This variant or record definition does not match that of type "d"
        An extra constructor, "Y", is provided in the original definition.
 |}]
 
@@ -98,8 +97,7 @@ type wrong_type = d = X of float
 Line 1, characters 0-32:
 1 | type wrong_type = d = X of float
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type
-         "d"
+Error: This variant or record definition does not match that of type "d"
        1. Constructors do not match:
          "X of int"
        is not the same as:
@@ -115,8 +113,7 @@ type mono = Foo of float
 Line 2, characters 0-46:
 2 | type unboxed = mono = Foo of float [@@unboxed]
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type
-         "mono"
+Error: This variant or record definition does not match that of type "mono"
        Their internal representations differ:
        this definition uses unboxed representation.
 |}]
@@ -126,8 +123,7 @@ type perm = d = Y of int | X of int
 Line 1, characters 0-35:
 1 | type perm = d = Y of int | X of int
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type
-         "d"
+Error: This variant or record definition does not match that of type "d"
        Constructors "X" and "Y" have been swapped.
 |}]
 

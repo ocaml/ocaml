@@ -2002,7 +2002,6 @@ module Reaching_path = struct
     in
     Fmt.(pp_print_list ~pp_sep:comma) pp_step ppf reaching_path
 
-
   let pp_colon ppf path =
     Fmt.fprintf ppf ":@\n  @[<v>%a@]" pp path
 end
@@ -2133,8 +2132,8 @@ let report_error ~loc = function
               env) err
       in
       Location.errorf ~loc
-        "This variant or record definition@ \
-         does not match that of type@;<1 2>%a%t"
+        "@[This variant or record definition@ \
+         does not match that of type@;<1 2>%a@]%t"
         quoted_type ty
         err
   | Constraint_failed (env, err) ->
@@ -2204,8 +2203,8 @@ let report_error ~loc = function
         (Style.as_inline_code Printtyp.path) path
   | Extension_mismatch (path, env, err) ->
       Location.errorf ~loc
-        "This extension@ does not match the definition of type\
-         @;<1 2>%a@\n@[<v>%a@]"
+        "@[This extension@ does not match the definition of type\
+         @;<1 2>%a@]@\n@[<v>%a@]"
         Style.inline_code (Path.name path)
         (Includecore.report_type_mismatch
            "the type" "this extension" "definition" env)
