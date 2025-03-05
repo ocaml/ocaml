@@ -2112,27 +2112,25 @@ let with_univar_pairs pairs f =
     ~always:(fun () -> univar_pairs := old)
 
 (* Wrapper checking that no variable escapes and updating univar_pairs *)
-let enter_poly env t1 tl1 t2 tl2 f =
+let enter_poly env tpoly1 tpoly2 f =
   let old_univars = !univar_pairs in
   let known_univars =
     List.fold_left (fun s (cl,_) -> add_univars s cl)
       TypeSet.empty old_univars
   in
-  if List.exists (fun t -> TypeSet.mem t known_univars) tl1 then
-     univars_escape env old_univars tl1
-      (newty (Tpoly {poly_body = t2; poly_univars = tl2}));
-  if List.exists (fun t -> TypeSet.mem t known_univars) tl2 then
-    univars_escape env old_univars tl2
-      (newty (Tpoly {poly_body = t1; poly_univars = tl1}));
-  let cl1 = List.map (fun t -> t, ref None) tl1
-  and cl2 = List.map (fun t -> t, ref None) tl2 in
+  if List.exists (fun t -> TypeSet.mem t known_univars) tpoly1.poly_univars then
+    univars_escape env old_univars tpoly1.poly_univars (newty (Tpoly tpoly2));
+  if List.exists (fun t -> TypeSet.mem t known_univars) tpoly2.poly_univars then
+    univars_escape env old_univars tpoly2.poly_univars (newty (Tpoly tpoly1));
+  let cl1 = List.map (fun t -> t, ref None) tpoly1.poly_univars
+  and cl2 = List.map (fun t -> t, ref None) tpoly2.poly_univars in
   with_univar_pairs
     ((cl1,cl2) :: (cl2,cl1) :: old_univars)
-    (fun () -> f t1 t2)
+    (fun () -> f tpoly1.poly_body tpoly2.poly_body)
 
-let enter_poly_for tr_exn env t1 tl1 t2 tl2 f =
+let enter_poly_for tr_exn env tpoly1 tpoly2 f =
   try
-    enter_poly env t1 tl1 t2 tl2 f
+    enter_poly env tpoly1 tpoly2 f
   with Escape e -> raise_for tr_exn (Escape e)
 
 (**** Instantiate a generic type into a poly type ***)
@@ -2426,11 +2424,9 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tpoly {poly_body = t1; poly_univars = []},
            Tpoly {poly_body = t2; poly_univars = []}) ->
             mcomp type_pairs env t1 t2
-        | (Tpoly {poly_body = t1; poly_univars = tl1},
-           Tpoly {poly_body = t2; poly_univars = tl2}) ->
+        | (Tpoly tpoly1, Tpoly tpoly2) ->
             (try
-               enter_poly env
-                 t1 tl1 t2 tl2 (mcomp type_pairs env)
+               enter_poly env tpoly1 tpoly2 (mcomp type_pairs env)
              with Escape _ -> raise Incompatible)
         | (Tunivar _, Tunivar _) ->
             begin try unify_univar t1' t2' !univar_pairs with
@@ -2978,10 +2974,8 @@ and unify3 uenv t1 t1' t2 t2' =
       | (Tpoly {poly_body = t1; poly_univars = []},
          Tpoly {poly_body = t2; poly_univars = []}) ->
           unify uenv t1 t2
-      | (Tpoly {poly_body = t1; poly_univars = tl1},
-         Tpoly {poly_body = t2; poly_univars = tl2}) ->
-          enter_poly_for Unify (get_env uenv) t1 tl1 t2 tl2
-            (unify uenv)
+      | (Tpoly tpoly1, Tpoly tpoly2) ->
+          enter_poly_for Unify (get_env uenv) tpoly1 tpoly2 (unify uenv)
       | (Tpackage pack1, Tpackage pack2) ->
           unify_package uenv (get_level t1) pack1 (get_level t2) pack2
       | (Tnil,  Tconstr _ ) ->
@@ -3875,9 +3869,8 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           | (Tpoly {poly_body = t1; poly_univars = []},
              Tpoly {poly_body = t2; poly_univars = []}) ->
               moregen inst_nongen type_pairs env t1 t2
-          | (Tpoly {poly_body = t1; poly_univars = tl1},
-             Tpoly {poly_body = t2; poly_univars = tl2}) ->
-              enter_poly_for Moregen env t1 tl1 t2 tl2
+          | (Tpoly tpoly1, Tpoly tpoly2) ->
+              enter_poly_for Moregen env tpoly1 tpoly2
                 (moregen inst_nongen type_pairs env)
           | (Tunivar _, Tunivar _) ->
               unify_univar_for Moregen t1' t2' !univar_pairs
@@ -4255,9 +4248,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           | (Tpoly {poly_body = t1; poly_univars = []},
              Tpoly {poly_body = t2; poly_univars = []}) ->
               eqtype rename type_pairs subst env t1 t2
-          | (Tpoly {poly_body = t1; poly_univars = tl1},
-             Tpoly {poly_body = t2; poly_univars = tl2}) ->
-              enter_poly_for Equality env t1 tl1 t2 tl2
+          | (Tpoly tpoly1, Tpoly tpoly2) ->
+              enter_poly_for Equality env tpoly1 tpoly2
                 (eqtype rename type_pairs subst env)
           | (Tunivar _, Tunivar _) ->
               unify_univar_for Equality t1' t2' !univar_pairs
@@ -5061,10 +5053,9 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (Tpoly tpoly1, Tpoly {poly_body = u2; poly_univars = []}) ->
         let _, u1' = instance_poly ~fixed:false tpoly1 in
         subtype_rec env trace u1' u2 cstrs
-    | (Tpoly {poly_body = u1; poly_univars = tl1},
-       Tpoly {poly_body = u2; poly_univars = tl2}) ->
+    | (Tpoly tpoly1, Tpoly tpoly2) ->
         begin try
-          enter_poly env u1 tl1 u2 tl2
+          enter_poly env tpoly1 tpoly2
             (fun t1 t2 -> subtype_rec env trace t1 t2 cstrs)
         with Escape _ ->
           (trace, t1, t2, !univar_pairs)::cstrs
