@@ -457,7 +457,6 @@ type error =
 
 exception Error of error
 
-
 val in_signature: bool -> t -> t
 
 val is_in_signature: t -> bool

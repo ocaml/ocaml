@@ -195,7 +195,6 @@ type msg = Format_doc.t loc
 
 val msg: ?loc:t -> ('a, Format_doc.formatter, unit, msg) format4 -> 'a
 
-
 type report_kind =
   | Report_error
   | Report_warning of string

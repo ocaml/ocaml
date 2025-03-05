@@ -2055,7 +2055,6 @@ let variance_context =
         (Out_type.prepared_extension_constructor id)
         e
 
-
 let variance_variable_error ~v1 ~v2 variable error ppf =
   let open Typedecl_variance in
   match error with
