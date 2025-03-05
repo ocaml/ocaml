@@ -1108,24 +1108,8 @@ let rec tree_of_typexp mode ty =
         Otyp_stuff "<Tsubst>"
     | Tlink _ ->
         fatal_error "Out_type.tree_of_typexp"
-    | Tpoly {poly_body = ty; poly_univars = []} ->
-        tree_of_typexp mode ty
-    | Tpoly {poly_body = ty; poly_univars = tyl} ->
-        (*let print_names () =
-          List.iter (fun (_, name) -> prerr_string (name ^ " ")) !names;
-          prerr_string "; " in *)
-        if tyl = [] then tree_of_typexp mode ty else begin
-          let tyl = List.map Transient_expr.repr tyl in
-          let old_delayed = !Aliases.delayed in
-          (* Make the names delayed, so that the real type is
-             printed once when used as proxy *)
-          List.iter Aliases.add_delayed tyl;
-          let tl = List.map Variable_names.(name_of_type new_name) tyl in
-          let tr = Otyp_poly (tl, tree_of_typexp mode ty) in
-          (* Forget names when we leave scope *)
-          Variable_names.remove_names tyl;
-          Aliases.delayed := old_delayed; tr
-        end
+    | Tpoly tpoly ->
+        tree_of_poly mode tpoly
     | Tunivar _ ->
         Otyp_var (false, Variable_names.(name_of_type new_name) tty)
     | Tpackage pack ->
@@ -1142,6 +1126,23 @@ let rec tree_of_typexp mode ty =
     let alias = Variable_names.(name_of_type (new_var_name ~non_gen ty)) px in
     Otyp_alias {non_gen;  aliased = pr_typ (); alias } end
   else pr_typ ()
+
+and tree_of_poly mode tpoly =
+  (*let print_names () =
+    List.iter (fun (_, name) -> prerr_string (name ^ " ")) !names;
+    prerr_string "; " in *)
+  if tpoly.poly_univars = [] then tree_of_typexp mode tpoly.poly_body else begin
+    let tyl = List.map Transient_expr.repr tpoly.poly_univars in
+    let old_delayed = !Aliases.delayed in
+    (* Make the names delayed, so that the real type is
+        printed once when used as proxy *)
+    List.iter Aliases.add_delayed tyl;
+    let tl = List.map Variable_names.(name_of_type new_name) tyl in
+    let tr = Otyp_poly (tl, tree_of_typexp mode tpoly.poly_body) in
+    (* Forget names when we leave scope *)
+    Variable_names.remove_names tyl;
+    Aliases.delayed := old_delayed; tr
+  end
 
 and tree_of_row_field mode (l, f) =
   match row_field_repr f with
