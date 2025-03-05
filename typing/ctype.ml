@@ -5061,25 +5061,28 @@ let rec subtype_rec env trace t1 t2 cstrs =
         with Exit ->
           (trace, t1, t2, !univar_pairs)::cstrs
         end
-    | (Tpoly {poly_body = u1; poly_univars = []},
-       Tpoly {poly_body = u2; poly_univars = []}) ->
-        subtype_rec env trace u1 u2 cstrs
-    | (Tpoly tpoly1, Tpoly {poly_body = u2; poly_univars = []}) ->
-        let _, u1' = instance_poly ~fixed:false tpoly1 in
-        subtype_rec env trace u1' u2 cstrs
     | (Tpoly tpoly1, Tpoly tpoly2) ->
-        begin try
-          enter_poly env tpoly1 tpoly2
-            (fun t1 t2 -> subtype_rec env trace t1 t2 cstrs)
-        with Escape _ ->
-          (trace, t1, t2, !univar_pairs)::cstrs
-        end
+        subtype_poly env trace tpoly1 tpoly2 cstrs
     | (Tpackage pack1, Tpackage pack2) ->
         subtype_package env trace (get_level t1) pack1
           (get_level t2) pack2 cstrs
     | (_, _) ->
         (trace, t1, t2, !univar_pairs)::cstrs
   end
+
+and subtype_poly env trace tpoly1 tpoly2 cstrs =
+  match tpoly1.poly_univars, tpoly2.poly_univars with
+  | ([], []) -> subtype_rec env trace tpoly1.poly_body tpoly2.poly_body cstrs
+  | (_ , []) ->
+    let _, u1' = instance_poly ~fixed:false tpoly1 in
+    subtype_rec env  trace u1' tpoly2.poly_body cstrs
+  | (_ , _ ) ->
+    begin try
+      enter_poly env tpoly1 tpoly2
+        (fun t1 t2 -> subtype_rec env trace t1 t2 cstrs)
+    with Escape _ ->
+      (trace, newty (Tpoly tpoly1), newty (Tpoly tpoly2), !univar_pairs)::cstrs
+    end
 
 and subtype_labeled_list env trace labeled_tl1 labeled_tl2 cstrs =
   if 0 <> List.compare_lengths labeled_tl1 labeled_tl2 then
