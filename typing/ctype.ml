@@ -4255,12 +4255,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
                 t1' t2'
           | (Tnil, Tnil) ->
               ()
-          | (Tpoly {poly_body = t1; poly_univars = []},
-             Tpoly {poly_body = t2; poly_univars = []}) ->
-              eqtype rename type_pairs subst env t1 t2
           | (Tpoly tpoly1, Tpoly tpoly2) ->
-              enter_poly_for Equality env tpoly1 tpoly2
-                (eqtype rename type_pairs subst env)
+              eqtype_poly rename type_pairs subst env tpoly1 tpoly2
           | (Tunivar _, Tunivar _) ->
               unify_univar_for Equality t1' t2' !univar_pairs
           | (_, _) ->
@@ -4268,6 +4264,14 @@ let rec eqtype rename type_pairs subst env t1 t2 =
         end
   with Equality_trace trace ->
     raise_trace_for Equality (Diff {got = t1; expected = t2} :: trace)
+
+and eqtype_poly rename type_pairs subst env tpoly1 tpoly2 =
+  match tpoly1.poly_univars, tpoly2.poly_univars with
+    ([], []) ->
+      eqtype rename type_pairs subst env tpoly1.poly_body tpoly2.poly_body
+  | (_ , _ ) ->
+      enter_poly_for Equality env tpoly1 tpoly2
+        (eqtype rename type_pairs subst env)
 
 and eqtype_list_same_length rename type_pairs subst env tl1 tl2 =
   List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
