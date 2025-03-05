@@ -2976,11 +2976,8 @@ and unify3 uenv t1 t1' t2 t2' =
           end
       | (Tnil, Tnil) ->
           ()
-      | (Tpoly {poly_body = t1; poly_univars = []},
-         Tpoly {poly_body = t2; poly_univars = []}) ->
-          unify uenv t1 t2
       | (Tpoly tpoly1, Tpoly tpoly2) ->
-          enter_poly_for Unify (get_env uenv) tpoly1 tpoly2 (unify uenv)
+          unify_poly uenv tpoly1 tpoly2
       | (Tpackage pack1, Tpackage pack2) ->
           unify_package uenv (get_level t1) pack1 (get_level t2) pack2
       | (Tnil,  Tconstr _ ) ->
@@ -3004,6 +3001,11 @@ and unify3 uenv t1 t1' t2 t2' =
       Transient_expr.set_desc tt1' d1;
       raise_trace_for Unify trace
   end
+
+and unify_poly uenv tpoly1 tpoly2 =
+  match tpoly1.poly_univars, tpoly2.poly_univars with
+    ([], []) -> unify uenv tpoly1.poly_body tpoly2.poly_body
+  | (_ , _ ) -> enter_poly_for Unify (get_env uenv) tpoly1 tpoly2 (unify uenv)
 
 and unify_list env tl1 tl2 =
   if List.length tl1 <> List.length tl2 then
