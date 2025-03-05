@@ -341,6 +341,9 @@ Working version
               Hint:              Did you mean "array"?
   (Florian Angeletti, suggestion by Daniel Bünzli, review by Gabriel Scherer)
 
+- #13818: better delimited hints in error message
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #13314: Comment the code of Translclass
