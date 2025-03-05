@@ -1884,7 +1884,6 @@ typing/typedecl.cmi : \
     parsing/location.cmi \
     typing/includecore.cmi \
     typing/ident.cmi \
-    utils/format_doc.cmi \
     typing/errortrace.cmi \
     typing/env.cmi \
     parsing/asttypes.cmi
@@ -2258,7 +2257,6 @@ typing/typetexp.cmi : \
     parsing/parsetree.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
-    utils/format_doc.cmi \
     typing/errortrace.cmi \
     typing/env.cmi \
     parsing/asttypes.cmi
