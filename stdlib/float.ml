@@ -304,14 +304,12 @@ module Array = struct
   (* duplicated from array.ml *)
   let compare cmp a b =
     let len_a = length a and len_b = length b in
-    let imax = (if len_a < len_b then len_a else len_b) - 1 in
-    let i = ref 0 in
-    let c = ref 0 in
-    while !i <= imax && !c = 0 do
-      c := cmp (unsafe_get a !i) (unsafe_get b !i);
-      incr i
-    done;
-    if !c = 0 then (Stdlib.compare : int -> int -> int) len_a len_b else !c
+    let diff = len_a - len_b in
+    if diff <> 0 then (if diff < 0 then -1 else 1) else
+    let i = ref 0 and c = ref 0 in
+    while !i < len_a && !c = 0
+    do c := cmp (unsafe_get a !i) (unsafe_get b !i); incr i done;
+    !c
 
   (* duplicated from array.ml *)
   let iter f a =
