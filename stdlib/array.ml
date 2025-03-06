@@ -198,7 +198,7 @@ let compare cmp a b =
   let imax = (if len_a < len_b then len_a else len_b) - 1 in
   let i = ref 0 in
   let c = ref 0 in
-  while (!i <= imax && !c = 0) do
+  while !i <= imax && !c = 0 do
     c := cmp (unsafe_get a !i) (unsafe_get b !i);
     incr i
   done;

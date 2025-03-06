@@ -297,7 +297,7 @@ module Array = struct
     if length a <> length b then false else
     let i = ref 0 in
     let len = length a in
-    while !i < len && eq (unsafe_get a i) (unsafe_get b i) do incr i done;
+    while !i < len && eq (unsafe_get a !i) (unsafe_get b !i) do incr i done;
     !i = len
 
   let float_compare = compare
@@ -307,7 +307,7 @@ module Array = struct
     let imax = (if len_a < len_b then len_a else len_b) - 1 in
     let i = ref 0 in
     let c = ref 0 in
-    while (!i <= imax && !c = 0) do
+    while !i <= imax && !c = 0 do
       c := cmp (unsafe_get a !i) (unsafe_get b !i);
       incr i
     done;
