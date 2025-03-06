@@ -168,6 +168,11 @@ and expression =
     exp_attributes: attributes;
    }
 
+and quantified_expression =
+  { qexp_expr: expression;
+    qexp_vars: Types.type_expr list;
+  }
+
 and exp_extra =
   | Texp_constraint of core_type
         (** E : T *)
@@ -218,7 +223,8 @@ and expression_desc =
                          (Labelled "y", Arg (Texp_constant Const_int 3))
                         ])
          *)
-  | Texp_match of expression * computation case list * value case list * partial
+  | Texp_match of
+      quantified_expression * computation case list * value case list * partial
         (** match E0 with
             | P1 -> E1
             | P2 | exception P3 -> E2
@@ -514,7 +520,7 @@ and module_binding =
 and value_binding =
   {
     vb_pat: pattern;
-    vb_expr: expression;
+    vb_expr: quantified_expression;
     vb_rec_kind: Value_rec_types.recursive_binding_kind;
     vb_attributes: attributes;
     vb_loc: Location.t;

@@ -411,17 +411,22 @@ let type_declaration s decl =
   For_copy.with_scope (fun copy_scope -> type_declaration' copy_scope s decl)
 
 let class_signature copy_scope s sign =
-  { csig_self = typexp copy_scope s sign.csig_self;
-    csig_self_row = typexp copy_scope s sign.csig_self_row;
-    csig_vars =
-      Vars.map
-        (function (m, v, t) -> (m, v, typexp copy_scope s t))
-        sign.csig_vars;
-    csig_meths =
-      Meths.map
-        (function (p, v, t) -> (p, v, typexp copy_scope s t))
-        sign.csig_meths;
-  }
+  let csig_self = typexp copy_scope s sign.csig_self
+  and csig_self_row = typexp copy_scope s sign.csig_self_row
+  and csig_vars =
+    Vars.map
+      (function (m, v, t) -> (m, v, typexp copy_scope s t))
+      sign.csig_vars
+  and csig_meths =
+    Meths.map
+      (function (p, v, t) -> (p, v, typexp copy_scope s t))
+      sign.csig_meths
+  in
+  (* Must be executed last *)
+  let csig_bound_type_vars =
+    List.map (typexp copy_scope s) sign.csig_bound_type_vars
+  in
+  { csig_self; csig_self_row; csig_vars; csig_meths; csig_bound_type_vars }
 
 let rec class_type copy_scope s = function
   | Cty_constr (p, tyl, cty) ->
@@ -470,11 +475,15 @@ let class_type s cty =
   For_copy.with_scope (fun copy_scope -> class_type copy_scope s cty)
 
 let value_description' copy_scope s descr =
-  { val_type = typexp copy_scope s descr.val_type;
+  let val_type = typexp copy_scope s descr.val_type in
+  let val_bound_type_vars =
+    List.map (typexp copy_scope s) descr.val_bound_type_vars in
+  { val_type;
     val_kind = descr.val_kind;
     val_loc = loc s descr.val_loc;
     val_attributes = attrs s descr.val_attributes;
     val_uid = descr.val_uid;
+    val_bound_type_vars;
    }
 
 let value_description s descr =

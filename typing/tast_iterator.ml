@@ -326,7 +326,7 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
         | (_, Arg exp) -> sub.expr sub exp
         | (_, Omitted ()) -> ())
         list
-  | Texp_match (exp, cases, effs, _) ->
+  | Texp_match ({qexp_expr=exp}, cases, effs, _) ->
       sub.expr sub exp;
       List.iter (sub.case sub) cases;
       List.iter (sub.case sub) effs
@@ -654,7 +654,7 @@ let value_binding sub ({vb_loc; vb_pat; vb_expr; vb_attributes; _} as vb) =
   sub.location sub vb_loc;
   sub.attributes sub vb_attributes;
   sub.pat sub vb_pat;
-  sub.expr sub vb_expr
+  sub.expr sub vb_expr.qexp_expr
 
 let env _sub _ = ()
 

@@ -147,6 +147,9 @@ val enforce_current_level: Env.t -> type_expr -> unit
         (* Lower whole type to !current_level *)
 val generalize_class_signature_spine: class_signature -> unit
        (* Special function to generalize methods during inference *)
+val generic_free_variables: type_expr -> type_expr list
+        (* Collect variables that are about to be bound
+           in the surrounding type *)
 val limited_generalize: type_expr -> inside:type_expr -> unit
         (* Only generalize some part of the type
            Make the remaining of the type non-generalizable *)
