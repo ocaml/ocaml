@@ -294,16 +294,14 @@ module Array = struct
 
   (* duplicated from array.ml *)
   let equal eq a b =
-  if length a <> length b then false else
-  try
-    for i = 0 to length a - 1 do
-      if eq (unsafe_get a i) (unsafe_get b i) then () else raise_notrace Exit
-    done;
-    true
-  with Exit -> false
+    if length a <> length b then false else
+    let i = ref 0 in
+    let len = length a in
+    while !i < len && eq (unsafe_get a i) (unsafe_get b i) do incr i done;
+    !i = len
 
-  (* duplicated from array.ml *)
   let float_compare = compare
+  (* duplicated from array.ml *)
   let compare cmp a b =
     let len_a = length a and len_b = length b in
     let imax = (if len_a < len_b then len_a else len_b) - 1 in

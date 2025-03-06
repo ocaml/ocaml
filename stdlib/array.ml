@@ -187,12 +187,10 @@ let of_list = function
 
 let equal eq a b =
   if length a <> length b then false else
-  try
-    for i = 0 to length a - 1 do
-      if eq (unsafe_get a i) (unsafe_get b i) then () else raise_notrace Exit
-    done;
-    true
-  with Exit -> false
+  let i = ref 0 in
+  let len = length a in
+  while !i < len && eq (unsafe_get a !i) (unsafe_get b !i) do incr i done;
+  !i = len
 
 let stdlib_compare = compare
 let compare cmp a b =
