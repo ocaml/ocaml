@@ -100,7 +100,9 @@ module Error = struct
   and arg_functor_param_symptom =
     (functor_parameter, Ident.t) functor_param_symptom
 
-  and functor_params_diff = (functor_parameter list * module_type) core_diff
+  and functor_params_info =
+    { params: functor_parameter list; res: module_type }
+  and functor_params_diff = functor_params_info core_diff
 
   and signature_symptom = {
     env: Env.t;
@@ -131,6 +133,12 @@ module Error = struct
         Ident.t * (Types.module_type,module_type_declaration_symptom) diff
     | In_Type_declaration of Ident.t * core_sigitem_symptom
     | In_Expansion of core_module_type_symptom
+
+  let cons_arg arg params_info =
+    { params = arg :: params_info.params; res = params_info.res }
+
+  let functor_params info1 info2 =
+    Error (Functor (Params (sdiff info1 info2)))
 
 end
 
@@ -417,15 +425,15 @@ let retrieve_functor_params env mty =
     | Mty_ident p as res ->
         begin match expand_modtype_path env p with
         | Some mty -> retrieve_functor_params before env mty
-        | None -> List.rev before, res
+        | None -> { Error.params = List.rev before; res }
         end
     | Mty_alias p as res ->
         begin match expand_module_alias ~strengthen:false env p with
         | Ok mty ->  retrieve_functor_params before env mty
-        | Error _ -> List.rev before, res
+        | Error _ -> { Error.params = List.rev before; res }
         end
     | Mty_functor (p, res) -> retrieve_functor_params (p :: before) env res
-    | Mty_signature _ as res -> List.rev before, res
+    | Mty_signature _ as res -> { Error.params = List.rev before; res }
   in
   retrieve_functor_params [] env mty
 
@@ -550,9 +558,9 @@ and try_modtypes ~core ~direction ~loc env subst mty1 mty2 orig_shape =
       | None ->
           begin match mty1 with
           | Mty_functor _ ->
-              let params1 = retrieve_functor_params env mty1 in
-              let d = Error.sdiff params1 ([],mty2) in
-              Error Error.(Functor (Params d))
+              Error.functor_params
+                (retrieve_functor_params env mty1)
+                { params = []; res=mty2 }
           | _ -> Error Error.(Mt_core Not_an_identifier)
           end
       end
@@ -602,26 +610,22 @@ and try_modtypes ~core ~direction ~loc env subst mty1 mty2 orig_shape =
           in
           Ok (Tcoerce_functor(cc_arg, cc_res), final_shape)
       | _, Error {Error.symptom = Error.Functor Error.Params res; _} ->
-          let got_params, got_res = res.got in
-          let expected_params, expected_res = res.expected in
-          let d = Error.sdiff
-              (param1::got_params, got_res)
-              (param2::expected_params, expected_res) in
-          Error Error.(Functor (Params d))
+          let got = Error.cons_arg param1 res.got in
+          let expected = Error.cons_arg param2 res.expected in
+          Error.functor_params got expected
       | Error _, _ ->
-          let params1, res1 = retrieve_functor_params env res1 in
-          let params2, res2 = retrieve_functor_params env res2 in
-          let d = Error.sdiff (param1::params1, res1) (param2::params2, res2) in
-          Error Error.(Functor (Params d))
+          let params env param res =
+            Error.cons_arg param (retrieve_functor_params env res)
+          in
+          Error.functor_params (params env param1 res1) (params env param2 res2)
       | Ok _, Error res ->
           Error Error.(Functor (Result res))
       end
   | Mty_functor _, _
   | _, Mty_functor _ ->
-      let params1 = retrieve_functor_params env mty1 in
-      let params2 = retrieve_functor_params env mty2 in
-      let d = Error.sdiff params1 params2 in
-      Error Error.(Functor (Params d))
+     Error.functor_params
+       (retrieve_functor_params env mty1)
+       (retrieve_functor_params env mty2)
   | _, Mty_alias _ ->
       Error (Error.Mt_core Error.Not_an_alias)
 
@@ -1164,8 +1168,8 @@ module Functor_inclusion_diff = struct
     | None -> None
     | Some res ->
         match retrieve_functor_params env res with
-        | [], _ -> None
-        | params, res ->
+        | { params = []; _ } -> None
+        | { params; res} ->
             let more = Array.of_list params  in
             Some (keep_expansible_param res, more)
 
@@ -1295,7 +1299,7 @@ module Functor_app_diff = struct
         I.expand_params { st with env; res}
 
   let diff env ~f ~args =
-    let params, res = retrieve_functor_params env f in
+    let {Error.params; res} = retrieve_functor_params env f in
     let module Compute = Diff.Right_variadic(struct
         let update = update
         let test (state:Defs.state) (arg,arg_mty) param =

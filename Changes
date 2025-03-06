@@ -323,6 +323,11 @@ Working version
   references another recursive module type.
   (Stefan Muenzel, review by Florian Angeletti and Gabriel Scherer)
 
+- #13702, #????: Specialized error messages for functors appearing in contexts
+  where non-functors were expected `module A: sig ... end = Set.Make`
+  (and the reverse)
+  (Florian Angeletti, report by Jeremy Yallop, review by ????)
+
 - #13788, #13813: Keep the module context in spellchecking hints.
   `Fun.protact` now prompts `Did you mean "Fun.protect?"` rather than
   `Did you mean "protect?"`.

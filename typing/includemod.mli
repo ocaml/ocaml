@@ -77,7 +77,9 @@ module Error: sig
     (Types.functor_parameter, Ident.t) functor_param_symptom
 
   and functor_params_diff =
-    (Types.functor_parameter list * Types.module_type) core_diff
+    functor_params_info core_diff
+   and functor_params_info =
+     { params: functor_parameter list; res: module_type }
 
   and signature_symptom = {
     env: Env.t;
