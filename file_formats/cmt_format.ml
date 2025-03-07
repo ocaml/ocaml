@@ -386,8 +386,9 @@ let index_occurrences binary_annots =
       | Longident.Lapply (lid', lid''), Path.Papply (path', path'') ->
         index_components module_ lid'' path'';
         index_components module_ lid' path'
-      | _, _ ->
+      | Longident.Lident _, _ ->
         reduce_and_store ~namespace lid path;
+      | _, _ -> ()
     in
     index_components namespace lid path
   in
