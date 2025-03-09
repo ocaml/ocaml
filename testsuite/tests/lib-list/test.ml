@@ -143,6 +143,33 @@ let () =
   ()
 ;;
 
+(* Check that List.sort_uniq keeps first occurrences of duplicates. *)
+let () =
+  let keep_first_duplicates l =
+    let tagged = List.combine l (List.init (List.length l) Fun.id) in
+    let sorted =
+      List.sort_uniq (fun c1 c2 -> Int.compare (fst c1) (fst c2)) tagged
+    in
+    let is_first_tag (x, y) =
+      (* Check whether the second component of the argument is the element
+         first associated by [tagged] with the first component of the
+         argument. *)
+      List.assoc x tagged = y
+    in
+    List.for_all is_first_tag sorted
+  in
+  let randlist maxlen =
+    let len = Random.int maxlen in
+    (* Take values in [0, (3 * len) / 2] to have some collisions. *)
+    List.init len (fun _ -> Random.int ( 1 + (3 * len) / 2 ))
+  in
+  for _ = 0 to 99 do
+    let l = randlist 99 in
+    if not (keep_first_duplicates l) then
+      failwith "List.sort_uniq did not keep first duplicates."
+  done
+;;
+
 (* Empty test case *)
 let () =
   assert ((List.init 0 (fun x -> x)) = []);

@@ -444,7 +444,7 @@ let fast_sort = stable_sort
    entries to the resulting list. Impossible now that Obj.truncate has
    been removed. *)
 
-(** sorting + removing duplicates *)
+(** sorting + removing nonfirst duplicates *)
 
 let sort_uniq cmp l =
   let rec rev_merge l1 l2 accu =
@@ -481,8 +481,8 @@ let sort_uniq cmp l =
         let s =
           let c = cmp x1 x2 in
           if c = 0 then
-            let c = cmp x2 x3 in
-            if c = 0 then [x2] else if c < 0 then [x2; x3] else [x3; x2]
+            let c = cmp x1 x3 in
+            if c = 0 then [x1] else if c < 0 then [x1; x3] else [x3; x1]
           else if c < 0 then
             let c = cmp x2 x3 in
             if c = 0 then [x1; x2]
@@ -521,8 +521,8 @@ let sort_uniq cmp l =
         let s =
           let c = cmp x1 x2 in
           if c = 0 then
-            let c = cmp x2 x3 in
-            if c = 0 then [x2] else if c > 0 then [x2; x3] else [x3; x2]
+            let c = cmp x1 x3 in
+            if c = 0 then [x1] else if c > 0 then [x1; x3] else [x3; x1]
           else if c > 0 then
             let c = cmp x2 x3 in
             if c = 0 then [x1; x2]
