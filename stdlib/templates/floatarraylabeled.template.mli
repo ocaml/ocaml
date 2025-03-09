@@ -128,7 +128,7 @@ val equal : eq:(float -> float -> bool) -> t -> t -> bool
 
 val compare : cmp:(float -> float -> int) -> t -> t -> int
 (** [compare cmp a b] orders [a] and [b] in lexicographic order
-    (see {!List.compare}) using [cmp] to compare elements.
+    using [cmp] to compare elements.
 
     @since 5.4 *)
 

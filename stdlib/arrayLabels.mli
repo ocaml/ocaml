@@ -169,7 +169,7 @@ val equal : eq:('a -> 'a -> bool) -> 'a array -> 'a array -> bool
 
 val compare : cmp:('a -> 'a -> int) -> 'a array -> 'a array -> int
 (** [compare cmp a b] orders [a] and [b] in lexicographic order
-    (see {!List.compare}) using [cmp] to compare elements.
+    using [cmp] to compare elements.
 
     @since 5.4 *)
 
