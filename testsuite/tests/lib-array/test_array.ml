@@ -227,6 +227,10 @@ let () = (* Array.compare *)
   test [|0;1;2|] [|0;1;2|] ~cmp:0;
   test [|0;2;2|] [|0;1;2|] ~cmp:1;
   test [|0;1;2|] [|0;1|] ~cmp:1;
+  (* Check that the result of compare is normalized in -1,0,1 on large
+     array length differences. *)
+  test [|0;1;2;2;2|] [|0;1|] ~cmp:1;
+  test [|0;1|] [|0;1;2;2;2|] ~cmp:~-1;
   (* If the length is different it is sufficent to order arrays and
      we do not compare elements. This tests that so that
      a possible behaviour change in the future can be detected *)
