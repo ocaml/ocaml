@@ -52,6 +52,30 @@ UPSTREAM_HEAD="$2"
 PR_BRANCH="$3"
 PR_HEAD="$4"
 
+# The target here is to get the merge-base of $UPSTREAM_HEAD and $PR_HEAD. Let's
+# call that $MERGE_BASE. With a fully cloned git repository, the first entry of
+#   git log ${MERGE_BASE}~1..${UPSTREAM_HEAD} --reverse --first-parent
+# should be $MERGE_BASE again.
+# For a shallow clone, containing grafted commits, either git merge-base returns
+# an error (so $MERGE_BASE = '') or it can git merge-base can return the wrong
+# answer. However, what it returns, we can fetch more commits from
+# $UPSTREAM_BRANCH until we have enough commits to "see" ${MERGE_BASE} in the
+# log.
+
+# Determine if a commit $1 exists in the UPSTREAM log.
+have_root ()
+{
+  if [[ -z $1 ]]; then
+    return 1;
+  else
+    log_entry=$(git log "$1~1..$UPSTREAM_HEAD" --format=%H \
+                        --first-parent --reverse | head -1)
+    if [[ $log_entry != $1 ]]; then
+      return 1;
+    fi
+  fi
+}
+
 # Ensure that enough has been fetched to have all the commits between the
 # the two branches.
 
@@ -66,22 +90,22 @@ elif ! git log -1 "$UPSTREAM_HEAD" &> /dev/null ; then
   git fetch origin "$UPSTREAM_HEAD" &> /dev/null
 fi
 
-if ! git merge-base "$UPSTREAM_HEAD" "$PR_HEAD" &> /dev/null; then
+MERGE_BASE=$(git merge-base "$UPSTREAM_HEAD" "$PR_HEAD" 2>/dev/null || true)
+if ! have_root "$MERGE_BASE"; then
   echo "Determining merge-base of $UPSTREAM_HEAD..$PR_HEAD for $PR_BRANCH"
-
   DEEPEN=50
   MSG='Deepening'
 
-  while ! git merge-base "$UPSTREAM_HEAD" "$PR_HEAD" &> /dev/null
-  do
+  while ! have_root "$MERGE_BASE"; do
     echo " - $MSG by $DEEPEN commits from $FETCH_REF"
     git fetch origin --deepen=$DEEPEN "$FETCH_REF" &> /dev/null
+    MERGE_BASE=$(git merge-base "$UPSTREAM_HEAD" "$PR_HEAD" 2>/dev/null || true)
     MSG='Further deepening'
     ((DEEPEN*=2))
   done
 fi
 
-MERGE_BASE=$(git merge-base "$UPSTREAM_HEAD" "$PR_HEAD")
+have_root $MERGE_BASE
 
 if [[ $UPSTREAM_BRANCH != $PR_BRANCH ]]; then
   echo "$PR_BRANCH branched from $UPSTREAM_BRANCH at: $MERGE_BASE"

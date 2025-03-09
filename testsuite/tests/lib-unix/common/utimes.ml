@@ -1,9 +1,12 @@
 (* TEST
-* hasunix
-include unix
-readonly_files = "utimes.txt"
-** bytecode
-** native
+ include unix;
+ readonly_files = "utimes.txt";
+ hasunix;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 (* We do not check setting the "last access time" because it is hard to do so on

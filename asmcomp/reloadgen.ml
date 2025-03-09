@@ -46,7 +46,7 @@ method makereg r =
       newr.spill_cost <- 100000;
       newr
 
-method private makeregs rv =
+method makeregs rv =
   let n = Array.length rv in
   let newv = Array.make n Reg.dummy in
   for i = 0 to n-1 do newv.(i) <- self#makereg rv.(i) done;
@@ -130,11 +130,7 @@ method private reload i =
 method fundecl f num_stack_slots =
   redo_regalloc <- false;
   let new_body = self#reload f.fun_body in
-  ({fun_name = f.fun_name; fun_args = f.fun_args;
-    fun_body = new_body; fun_codegen_options = f.fun_codegen_options;
-    fun_dbg  = f.fun_dbg;
-    fun_contains_calls = f.fun_contains_calls;
-    fun_num_stack_slots = Array.copy num_stack_slots;
-   },
+  ({f with fun_body = new_body;
+           fun_num_stack_slots = Array.copy num_stack_slots},
    redo_regalloc)
 end

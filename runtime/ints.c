@@ -81,7 +81,7 @@ static intnat parse_intnat(value s, int nbits, const char *errmsg)
   int sign, base, signedness, d;
 
   p = parse_sign_and_base(String_val(s), &base, &signedness, &sign);
-  threshold = ((uintnat) -1) / base;
+  threshold = CAML_UINTNAT_MAX / base;
   d = parse_digit(*p);
   if (d < 0 || d >= base) caml_failwith(errmsg);
   for (p++, res = d; /*nothing*/; p++) {
@@ -142,7 +142,7 @@ CAMLprim value caml_int_of_string(value s)
 #define FORMAT_BUFFER_SIZE 32
 
 static char parse_format(value fmt,
-                         char * suffix,
+                         const char * suffix,
                          char format_string[FORMAT_BUFFER_SIZE])
 {
   char * p;
@@ -214,7 +214,7 @@ static uintnat int32_deserialize(void * dst)
 
 static const struct custom_fixed_length int32_length = { 4, 4 };
 
-CAMLexport struct custom_operations caml_int32_ops = {
+CAMLexport const struct custom_operations caml_int32_ops = {
   "_i",
   custom_finalize_default,
   int32_cmp,
@@ -251,7 +251,7 @@ CAMLprim value caml_int32_div(value v1, value v2)
   if (divisor == 0) caml_raise_zero_divide();
   /* PR#4740: on some processors, division crashes on overflow.
      Implement the same behavior as for type "int". */
-  if (dividend == (1<<31) && divisor == -1) return v1;
+  if (dividend == INT32_MIN && divisor == -1) return v1;
   return caml_copy_int32(dividend / divisor);
 }
 
@@ -262,7 +262,7 @@ CAMLprim value caml_int32_mod(value v1, value v2)
   if (divisor == 0) caml_raise_zero_divide();
   /* PR#4740: on some processors, modulus crashes if division overflows.
      Implement the same behavior as for type "int". */
-  if (dividend == (1<<31) && divisor == -1) return caml_copy_int32(0);
+  if (dividend == INT32_MIN && divisor == -1) return caml_copy_int32(0);
   return caml_copy_int32(dividend % divisor);
 }
 
@@ -413,7 +413,7 @@ static uintnat int64_deserialize(void * dst)
 
 static const struct custom_fixed_length int64_length = { 8, 8 };
 
-CAMLexport struct custom_operations caml_int64_ops = {
+CAMLexport const struct custom_operations caml_int64_ops = {
   "_j",
   custom_finalize_default,
   int64_cmp,
@@ -438,61 +438,50 @@ CAMLexport value caml_copy_int64(int64_t i)
   return res;
 }
 
-#define CAMLprim_int64_1(name)                                          \
-  CAMLprim int64_t caml_int64_##name##_native(int64_t);                 \
-                                                                        \
-  CAMLprim value caml_int64_##name(value v)                             \
-  { return caml_copy_int64(caml_int64_##name##_native(Int64_val(v))); } \
-                                                                        \
-  CAMLprim int64_t caml_int64_##name##_native
+CAMLprim value caml_int64_neg(value v)
+{ return caml_copy_int64(- Int64_val(v)); }
 
-#define CAMLprim_int64_2(name)                                          \
-  CAMLprim int64_t caml_int64_##name##_native(int64_t, int64_t);        \
-                                                                        \
-  CAMLprim value caml_int64_##name(value v1, value v2)                  \
-  { return caml_copy_int64(caml_int64_##name##_native(Int64_val(v1),    \
-                                                      Int64_val(v2))); } \
-                                                                        \
-  CAMLprim int64_t caml_int64_##name##_native
+CAMLprim value caml_int64_add(value v1, value v2)
+{ return caml_copy_int64(Int64_val(v1) + Int64_val(v2)); }
 
-CAMLprim_int64_1(neg)(int64_t i)
-{ return -i; }
+CAMLprim value caml_int64_sub(value v1, value v2)
+{ return caml_copy_int64(Int64_val(v1) - Int64_val(v2)); }
 
-CAMLprim_int64_2(add)(int64_t i1, int64_t i2)
-{ return i1 + i2; }
+CAMLprim value caml_int64_mul(value v1, value v2)
+{ return caml_copy_int64(Int64_val(v1) * Int64_val(v2)); }
 
-CAMLprim_int64_2(sub)(int64_t i1, int64_t i2)
-{ return i1 - i2; }
-
-CAMLprim_int64_2(mul)(int64_t i1, int64_t i2)
-{ return i1 * i2; }
-
-CAMLprim_int64_2(div)(int64_t dividend, int64_t divisor)
+CAMLprim value caml_int64_div(value v1, value v2)
 {
+  int64_t dividend = Int64_val(v1);
+  int64_t divisor = Int64_val(v2);
   if (divisor == 0) caml_raise_zero_divide();
   /* PR#4740: on some processors, division crashes on overflow.
      Implement the same behavior as for type "int". */
-  if (dividend == ((int64_t)1 << 63) && divisor == -1) return dividend;
-  return dividend / divisor;
+  if (dividend == INT64_MIN && divisor == -1) return v1;
+  return caml_copy_int64(dividend / divisor);
 }
 
-CAMLprim_int64_2(mod)(int64_t dividend, int64_t divisor)
+CAMLprim value caml_int64_mod(value v1, value v2)
 {
+  int64_t dividend = Int64_val(v1);
+  int64_t divisor = Int64_val(v2);
   if (divisor == 0) caml_raise_zero_divide();
   /* PR#4740: on some processors, division crashes on overflow.
      Implement the same behavior as for type "int". */
-  if (dividend == ((int64_t)1 << 63) && divisor == -1) return 0;
-  return dividend % divisor;
+  if (dividend == INT64_MIN && divisor == -1){
+    return caml_copy_int64(0);
+  }
+  return caml_copy_int64(dividend % divisor);
 }
 
-CAMLprim_int64_2(and)(int64_t i1, int64_t i2)
-{ return i1 & i2; }
+CAMLprim value caml_int64_and(value v1, value v2)
+{ return caml_copy_int64(Int64_val(v1) & Int64_val(v2)); }
 
-CAMLprim_int64_2(or)(int64_t i1, int64_t i2)
-{ return i1 | i2; }
+CAMLprim value caml_int64_or(value v1, value v2)
+{ return caml_copy_int64(Int64_val(v1) | Int64_val(v2)); }
 
-CAMLprim_int64_2(xor)(int64_t i1, int64_t i2)
-{ return i1 ^ i2; }
+CAMLprim value caml_int64_xor(value v1, value v2)
+{ return caml_copy_int64(Int64_val(v1) ^ Int64_val(v2)); }
 
 CAMLprim value caml_int64_shift_left(value v1, value v2)
 { return caml_copy_int64(Int64_val(v1) << Int_val(v2)); }
@@ -524,14 +513,14 @@ CAMLprim value caml_int64_bswap(value v)
 {
   int64_t x = Int64_val(v);
   return caml_copy_int64
-    (((x & INT64_LITERAL(0x00000000000000FFU)) << 56) |
-     ((x & INT64_LITERAL(0x000000000000FF00U)) << 40) |
-     ((x & INT64_LITERAL(0x0000000000FF0000U)) << 24) |
-     ((x & INT64_LITERAL(0x00000000FF000000U)) << 8) |
-     ((x & INT64_LITERAL(0x000000FF00000000U)) >> 8) |
-     ((x & INT64_LITERAL(0x0000FF0000000000U)) >> 24) |
-     ((x & INT64_LITERAL(0x00FF000000000000U)) >> 40) |
-     ((x & INT64_LITERAL(0xFF00000000000000U)) >> 56));
+    (((x & 0x00000000000000FFULL) << 56) |
+     ((x & 0x000000000000FF00ULL) << 40) |
+     ((x & 0x0000000000FF0000ULL) << 24) |
+     ((x & 0x00000000FF000000ULL) << 8) |
+     ((x & 0x000000FF00000000ULL) >> 8) |
+     ((x & 0x0000FF0000000000ULL) >> 24) |
+     ((x & 0x00FF000000000000ULL) >> 40) |
+     ((x & 0xFF00000000000000ULL) >> 56));
 }
 
 CAMLprim value caml_int64_of_int(value v)
@@ -615,7 +604,7 @@ CAMLprim value caml_int64_of_string(value s)
       if (res >  (uint64_t)1 << 63) caml_failwith(INT64_ERRMSG);
     }
   }
-  if (sign < 0) res = - res;
+  if (sign < 0) res = -(int64_t)res;
   return caml_copy_int64(res);
 }
 
@@ -675,7 +664,7 @@ static void nativeint_serialize(value v, uintnat * bsize_32,
 {
   intnat l = Nativeint_val(v);
 #ifdef ARCH_SIXTYFOUR
-  if (l >= -((intnat)1 << 31) && l < ((intnat)1 << 31)) {
+  if ((intnat)INT32_MIN <= l && l <= (intnat)INT32_MAX) {
     caml_serialize_int_1(1);
     caml_serialize_int_4((int32_t) l);
   } else {
@@ -710,7 +699,7 @@ static uintnat nativeint_deserialize(void * dst)
 }
 
 static const struct custom_fixed_length nativeint_length = { 4, 8 };
-CAMLexport struct custom_operations caml_nativeint_ops = {
+CAMLexport const struct custom_operations caml_nativeint_ops = {
   "_n",
   custom_finalize_default,
   nativeint_cmp,
@@ -740,8 +729,6 @@ CAMLprim value caml_nativeint_sub(value v1, value v2)
 CAMLprim value caml_nativeint_mul(value v1, value v2)
 { return caml_copy_nativeint(Nativeint_val(v1) * Nativeint_val(v2)); }
 
-#define Nativeint_min_int ((intnat) 1 << (sizeof(intnat) * 8 - 1))
-
 CAMLprim value caml_nativeint_div(value v1, value v2)
 {
   intnat dividend = Nativeint_val(v1);
@@ -749,7 +736,7 @@ CAMLprim value caml_nativeint_div(value v1, value v2)
   if (divisor == 0) caml_raise_zero_divide();
   /* PR#4740: on some processors, modulus crashes if division overflows.
      Implement the same behavior as for type "int". */
-  if (dividend == Nativeint_min_int && divisor == -1) return v1;
+  if (dividend == CAML_INTNAT_MIN && divisor == -1) return v1;
   return caml_copy_nativeint(dividend / divisor);
 }
 
@@ -760,7 +747,7 @@ CAMLprim value caml_nativeint_mod(value v1, value v2)
   if (divisor == 0) caml_raise_zero_divide();
   /* PR#4740: on some processors, modulus crashes if division overflows.
      Implement the same behavior as for type "int". */
-  if (dividend == Nativeint_min_int && divisor == -1){
+  if (dividend == CAML_INTNAT_MIN && divisor == -1){
     return caml_copy_nativeint(0);
   }
   return caml_copy_nativeint(dividend % divisor);

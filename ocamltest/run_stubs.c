@@ -17,6 +17,8 @@
 
 #define _GNU_SOURCE
 
+#define CAML_INTERNALS
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -34,11 +36,11 @@
 static array cstringvect(value arg)
 {
   array res;
-  mlsize_t size, i;
+  mlsize_t size;
 
   size = Wosize_val(arg);
   res = (array) caml_stat_alloc((size + 1) * sizeof(char_os *));
-  for (i = 0; i < size; i++)
+  for (mlsize_t i = 0; i < size; i++)
     res[i] = caml_stat_strdup_to_os(String_val(Field(arg, i)));
   res[size] = NULL;
   return res;
@@ -46,8 +48,7 @@ static array cstringvect(value arg)
 
 static void free_cstringvect(array v)
 {
-  char_os **p;
-  for (p = v; *p != NULL; p++)
+  for (char_os **p = v; *p != NULL; p++)
     caml_stat_free(*p);
   caml_stat_free(v);
 }
@@ -71,10 +72,10 @@ static void logToChannel(void *voidchannel, const char *fmt, va_list ap)
     if (text == NULL) return;
     if (vsnprintf(text, length, fmt, ap) != length) goto end;
   }
-  Lock(channel);
+  caml_channel_lock(channel);
   caml_putblock(channel, text, length);
   caml_flush(channel);
-  Unlock(channel);
+  caml_channel_unlock(channel);
 end:
   free(text);
 }

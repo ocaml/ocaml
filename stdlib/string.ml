@@ -23,14 +23,9 @@
 
 external length : string -> int = "%string_length"
 external get : string -> int -> char = "%string_safe_get"
-external set : bytes -> int -> char -> unit = "%string_safe_set"
-external create : int -> bytes = "caml_create_string"
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
-external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
 external unsafe_blit : string -> int ->  bytes -> int -> int -> unit
                      = "caml_blit_string" [@@noalloc]
-external unsafe_fill : bytes -> int -> int -> char -> unit
-                     = "caml_fill_string" [@@noalloc]
 
 module B = Bytes
 
@@ -42,14 +37,11 @@ let make n c =
 let init n f =
   B.init n f |> bts
 let empty = ""
-let copy s =
-  B.copy (bos s) |> bts
 let of_bytes = B.to_string
 let to_bytes = B.of_string
 let sub s ofs len =
+  if ofs = 0 && length s = len then s else
   B.sub (bos s) ofs len |> bts
-let fill =
-  B.fill
 let blit =
   B.blit_string
 
@@ -71,6 +63,7 @@ let rec unsafe_blits dst pos sep seplen = function
 
 let concat sep = function
     [] -> ""
+  | [s] -> s
   | l -> let seplen = length sep in bts @@
           unsafe_blits
             (B.create (sum_lengths 0 seplen l))
@@ -114,14 +107,14 @@ let trim s =
   else s
 
 let escaped s =
-  let rec escape_if_needed s n i =
-    if i >= n then s else
-      match unsafe_get s i with
-      | '\"' | '\\' | '\000'..'\031' | '\127'.. '\255' ->
-          bts (B.escaped (bos s))
-      | _ -> escape_if_needed s n (i+1)
-  in
-  escape_if_needed s (length s) 0
+  let b = bos s in
+  (* We satisfy [unsafe_escape]'s precondition by passing an
+     immutable byte sequence [b]. *)
+  let b' = B.unsafe_escape b in
+  (* With js_of_ocaml, [bos] and [bts] are not the identity.
+     We can avoid a [bts] conversion if [unsafe_escape] returned
+     its argument. *)
+  if b == b' then s else bts b'
 
 (* duplicated in bytes.ml *)
 let rec index_rec s lim i c =
@@ -231,6 +224,9 @@ let ends_with ~suffix s =
     else aux (i + 1)
   in diff >= 0 && aux 0
 
+external seeded_hash : int -> string -> int = "caml_string_hash" [@@noalloc]
+let hash x = seeded_hash 0 x
+
 (* duplicated in bytes.ml *)
 let split_on_char sep s =
   let r = ref [] in
@@ -242,17 +238,6 @@ let split_on_char sep s =
     end
   done;
   sub s 0 !j :: !r
-
-(* Deprecated functions implemented via other deprecated functions *)
-[@@@ocaml.warning "-3"]
-let uppercase s =
-  B.uppercase (bos s) |> bts
-let lowercase s =
-  B.lowercase (bos s) |> bts
-let capitalize s =
-  B.capitalize (bos s) |> bts
-let uncapitalize s =
-  B.uncapitalize (bos s) |> bts
 
 type t = string
 
@@ -266,6 +251,17 @@ let to_seq s = bos s |> B.to_seq
 let to_seqi s = bos s |> B.to_seqi
 
 let of_seq g = B.of_seq g |> bts
+
+(* UTF decoders and validators *)
+
+let get_utf_8_uchar s i = B.get_utf_8_uchar (bos s) i
+let is_valid_utf_8 s = B.is_valid_utf_8 (bos s)
+
+let get_utf_16be_uchar s i = B.get_utf_16be_uchar (bos s) i
+let is_valid_utf_16be s = B.is_valid_utf_16be (bos s)
+
+let get_utf_16le_uchar s i = B.get_utf_16le_uchar (bos s) i
+let is_valid_utf_16le s = B.is_valid_utf_16le (bos s)
 
 (** {6 Binary encoding/decoding of integers} *)
 
@@ -284,3 +280,101 @@ let get_int32_le s i = B.get_int32_le (bos s) i
 let get_int32_be s i = B.get_int32_be (bos s) i
 let get_int64_le s i = B.get_int64_le (bos s) i
 let get_int64_be s i = B.get_int64_be (bos s) i
+
+(* Spellchecking *)
+
+let utf_8_uchar_length s =
+  let slen = length s in
+  let i = ref 0 and ulen = ref 0 in
+  while (!i < slen) do
+    let dec_len = Uchar.utf_8_decode_length_of_byte (unsafe_get s !i) in
+    i := (!i + if dec_len = 0 then 1 (* count one Uchar.rep *) else dec_len);
+    incr ulen;
+  done;
+  !ulen
+
+let uchar_array_of_utf_8_string s =
+  let slen = length s in (* is an upper bound on Uchar.t count *)
+  let uchars = Array.make slen Uchar.max in
+  let k = ref 0 and i = ref 0 in
+  while (!i < slen) do
+    let dec = get_utf_8_uchar s !i in
+    i := !i + Uchar.utf_decode_length dec;
+    uchars.(!k) <- Uchar.utf_decode_uchar dec;
+    incr k;
+  done;
+  uchars, !k
+
+let edit_distance' ?(limit = Int.max_int) s (s0, len0) s1 =
+  if limit <= 1 then (if equal s s1 then 0 else limit) else
+  let[@inline] minimum a b c = Int.min a (Int.min b c) in
+  let s1, len1 = uchar_array_of_utf_8_string s1 in
+  let limit = Int.min (Int.max len0 len1) limit in
+  if Int.abs (len1 - len0) >= limit then limit else
+  let s0, s1 = if len0 > len1 then s0, s1 else s1, s0 in
+  let len0, len1 = if len0 > len1 then len0, len1 else len1, len0 in
+  let rec loop row_minus2 row_minus1 row i len0 limit s0 s1 =
+    if i > len0 then row_minus1.(Array.length row_minus1 - 1) else
+    let len1 = Array.length row - 1 in
+    let row_min = ref Int.max_int in
+    row.(0) <- i;
+    let jmax =
+      let jmax = Int.min len1 (i + limit - 1) in
+      if jmax < 0 then (* overflow *) len1 else jmax
+    in
+    for j = Int.max 1 (i - limit) to jmax do
+      let cost = if Uchar.equal s0.(i-1) s1.(j-1) then 0 else 1 in
+      let min = minimum
+          (row_minus1.(j-1) + cost) (* substitute *)
+          (row_minus1.(j) + 1)      (* delete *)
+          (row.(j-1) + 1)           (* insert *)
+          (* Note when j = i - limit, the latter [row] read makes a bogus read
+             on the value that was in the matrix at d.(i-2).(i - limit - 1).
+             Since by induction for all i,j, d.(i).(j) >= abs (i - j),
+             (row.(j-1) + 1) is greater or equal to [limit] and thus does
+             not affect adversely the minimum computation. *)
+      in
+      let min =
+        if (i > 1 && j > 1 &&
+            Uchar.equal s0.(i-1) s1.(j-2) &&
+            Uchar.equal s0.(i-2) s1.(j-1))
+        then Int.min min (row_minus2.(j-2) + cost) (* transpose *)
+        else min
+      in
+      row.(j) <- min;
+      row_min := Int.min !row_min min;
+    done;
+    if !row_min >= limit then (* can no longer decrease *) limit else
+    loop row_minus1 row row_minus2 (i + 1) len0 limit s0 s1
+  in
+  let ignore =
+    (* Value used to make the values around the diagonal stripe ignored
+       by the min computations when we have a limit. *)
+    limit + 1
+  in
+  let row_minus2 = Array.make (len1 + 1) ignore in
+  let row_minus1 = Array.init (len1 + 1) (fun x -> x) in
+  let row = Array.make (len1 + 1) ignore in
+  let d = loop row_minus2 row_minus1 row 1 len0 limit s0 s1 in
+  if d > limit then limit else d
+
+let edit_distance ?limit s0 s1 =
+  let us0 = uchar_array_of_utf_8_string s0 in
+  edit_distance' ?limit s0 us0 s1
+
+let default_max_dist s = match utf_8_uchar_length s with
+  | 0 | 1 | 2 -> 0
+  | 3 | 4 -> 1
+  | _ -> 2
+
+let spellcheck ?(max_dist = default_max_dist) iter_dict s =
+  let min = ref (max_dist s) in
+  let acc = ref [] in
+  let select_words s us word =
+    let d = edit_distance' ~limit:(!min + 1) s us word in
+    if d = !min then (acc := word :: !acc) else
+    if d < !min then (min := d; acc := [word]) else ()
+  in
+  let us = uchar_array_of_utf_8_string s in
+  iter_dict (select_words s us);
+  List.rev !acc

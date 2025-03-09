@@ -39,7 +39,7 @@
 
 .api {
     // font-size: 16px;
-    // font-family: "Fira Sans", Helvetica, Arial, sans-serif;
+    // font-family: $font-sans;
     // text-align: left;
     // color: #333;
     // background: #FFFFFF;
@@ -51,7 +51,7 @@
 	    background: rgb(228, 217, 211);
 	}
 	/* must be same as <pre>: */
-	background: linear-gradient(to left, white 0%, rgb(237, 232, 229) 100%);
+	background-color: #ede8e6;
 	width: 100%;
 	td {
 	    padding-left: 1ex;
@@ -108,9 +108,8 @@
     }
     
     .sig_block {
-	border-left: 4px solid #e69c7f;
 	padding-left: 1em;
-	background: linear-gradient(to left, white 0%, rgb(237, 232, 229) 100%);
+	background-color: #ede8e6;
 	// PROBLEM the sig_block ends too soon, it should actually
 	// include the "end)" line ==> REPORT THIS
 	// (eg: compilerlibref/Arg_helper.html)
@@ -162,7 +161,7 @@
 	list-style-position: outside
     }
     ul>li {
-	margin-left: 22px;
+	margin-left: 2rem;
     }
     ol>li {
 	margin-left: 27.2px;
@@ -171,7 +170,7 @@
 	margin-top: 0
     }
 
-    /* Text alignements, this should be forbidden. */
+    /* Text alignments, this should be forbidden. */
 
     .left {
 	text-align: left;
@@ -199,7 +198,7 @@
 	/*box-shadow: 0 0px 0 1px rgba(255, 215, 181, 0.8) !important;*/
 	border-radius: 1px;
 	/*border-bottom: 4px solid rgb(255, 215, 181);*/
-	box-shadow: 0 4px 0 0px rgb(255, 215, 181);
+	background-color: #ffd6b5;
 	z-index: 0;
 	@if $ocamlorg {
 	    /* Because of fixed banner in the ocaml.org site, we have to offset the targets. See https://stackoverflow.com/questions/10732690/offsetting-an-html-anchor-to-adjust-for-fixed-header */
@@ -259,7 +258,7 @@
     we restart the sequence there like h2  */
 
        h1, h2, h3, h4, h5, h6, .h7, .h8, .h9, .h10 {
-	font-family: "Fira Sans", Helvetica, Arial, sans-serif;
+	font-family: $font-sans;
 	font-weight: 400;
 	margin: 0.5em 0 0.5em 0;
 	padding-top: 0.1em;
@@ -316,12 +315,12 @@
     /* Preformatted and code */
 
     tt, code, pre {
-	font-family: "Fira Mono", courier;
+	font-family: $font-mono;
 	font-weight: 400;
     }
 
     pre {
-	border-left: 4px solid #e69c7f;
+	border-top: 1px solid #e69c7f;
 	white-space: pre-wrap;
 	word-wrap: break-word;
 	padding-left: 1ex;
@@ -352,6 +351,7 @@
     /* Code lexemes */
 
     .keyword {
+  font-family: $font-sans;
 	font-weight: 500;
 	color: inherit;
     }
@@ -705,13 +705,13 @@
     span.arrow {
 	font-size: 20px;
 	line-height: 8pt;
-	font-family: "Fira Mono";
+	font-family: $font-mono;
     }
     header dl dd, header dl dt {
 	display: inline-block;
     } 
     pre {
-	background: linear-gradient(to left, white 0%, rgb(237, 232, 229) 100%);
+	background-color: #ede8e6;
     }
 
     #search_results li.match::before {
@@ -742,7 +742,7 @@
     }
     
     ul.tutos_menu {
-	font-family: "Fira Sans";
+	font-family: $font-sans;
 	text-align: right;
 	list-style: none;
     }
@@ -756,7 +756,7 @@
     }
 
     span.c003 {
-	font-family: "Fira Mono", courier;
+	font-family: $font-mono;
 	background-color: #f3ece6;
 	border-radius: 6px;
     }
@@ -793,8 +793,7 @@
 
     code span.constructor,
     .caml-input span.kw2 {
-	font-weight: 500;
-	color: #a28867;
+	color: #8d543c;
     }
 
     .caml-input span.numeric {
@@ -879,25 +878,21 @@
 	vertical-align: bottom;
     }
 
-    .search_comment .search_help {
+    .search_comment .hide {
 	height: 0;
-	opacity: 0;
-	font-size: 10px;
+	visibility : hidden;
+	opacity: 0
+    }
+    .search_comment #search_help {
 	overflow: hidden;
-	transition: all 0.5s;
-	ul {
-	    margin-top: 0;
-	}
-    }
-    .search_comment:hover .search_help {
-	height: auto;
-	margin-top:-1px;
-	opacity: 0.8;
-	background: linear-gradient(to bottom, white 0%, rgb(237, 232, 229) 100%);
+	font-size: smaller;
+	background-color: #ede8e6;
 	transition: all 0.5s;
     }
-    .search_comment .search_help:hover {
-	font-size: 14px;
+    #help_icon {
+	margin-left: 1ex;
+	vertical-align: inherit;
+	cursor: help;
     }
 
     

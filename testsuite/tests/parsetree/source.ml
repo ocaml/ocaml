@@ -106,6 +106,7 @@ let () =
   (* Pattern expressions *)
   | lazy%foo[@foo] x -> ()
   | exception%foo[@foo] x -> ()
+  | effect x, k -> ()
 
 (* Class expressions *)
 class x =
@@ -5052,10 +5053,10 @@ let get_buf s i =
 let set_buf s i u =
   let n = UChar.uint_code u in
   begin
-    s.[i] <- Char.chr (n lsr 24);
-    s.[i + 1] <- Char.chr (n lsr 16 lor 0xff);
-    s.[i + 2] <- Char.chr (n lsr 8 lor 0xff);
-    s.[i + 3] <- Char.chr (n lor 0xff);
+    s.![i] <- Char.chr (n lsr 24);
+    s.![i + 1] <- Char.chr (n lsr 16 lor 0xff);
+    s.![i + 2] <- Char.chr (n lsr 8 lor 0xff);
+    s.![i + 3] <- Char.chr (n lor 0xff);
   end
 
 let init_buf buf pos init =
@@ -5108,7 +5109,7 @@ class string init = string_raw (make_buf init)
 let of_string s =
   let buf = String.make (4 * String.length s) '\000' in
   for i = 0 to String.length s - 1 do
-    buf.[4 * i] <- s.[i]
+    buf.![4 * i] <- s.[i]
   done;
   new text_raw buf
 
@@ -7228,7 +7229,7 @@ let _ = function
       ignore (bg.{1, 2, 3, 4})
     end
   | b, s, ba1, ba2, ba3, bg -> begin
-      y.(0) <- 1; s.[1] <- 'c';
+      y.(0) <- 1; s.![1] <- 'c';
       ba1.{1} <- 2; ba2.{1, 2} <- 3; ba3.{1, 2, 3} <- 4;
       bg.{1, 2, 3, 4, 5} <- 0
     end
@@ -7436,4 +7437,86 @@ let f x y z = x in
 f object method f = 1 end
   object method f = 1 end # f
   object end
-;;
+
+(* Punning of labelled function argument with type constraint *)
+let g y =
+  let f ~y = y + 1 in
+  f ~(y:int)
+
+let goober a = match a with C (type a b) y -> y
+
+
+(** With constraints *)
+
+module type s = sig type ('a,'b) t end with type (-!'a, !+'b) t = 'b -> 'a list
+module type s = sig type ('a,'b) t end with type (!-'a, +!'b) t := 'b -> 'a list
+module type s = sig type ('a,'b) t end with type ('a,'b) t := 'b -> 'a list
+
+(* Coercion in value constraint *)
+
+let x: [`A] :> [> `A | `B ] = `A
+let x :> [> `A | `B ] = `A
+
+(* Raw identifiers *)
+
+module type A = sig
+  type ('\#let, '\#a) \#virtual = ('\#let * '\#a) as '\#mutable
+  val foo : '\#let '\#a . '\#a -> '\#let -> unit
+  type \#foo = { \#let : int }
+end
+
+module M = struct
+  let (\#let,\#foo) as \#val = (\#mutable,\#baz)
+  let _ = fun (type \#let) (type \#foo) -> 1
+  let f g ~\#let ?\#and ?(\#for = \#and) () =
+    g ~\#let ?\#and ()
+  class \#let = object
+    inherit \#val \#let as \#mutable
+  end
+  let \#true = 0
+  let \#mod = 0
+  type \#mod = [ `A | `B ]
+
+  class \#mod = object end
+
+end
+
+let x = new M.\#begin
+
+let f = fun x (type \#begin) (type \#end) -> 1
+
+let f: type \#if. \#if -> \#if = fun x -> x
+
+let mlet = M.\#let
+let mtrue = M.\#true
+let mmod = M.\#mod
+type tmod = M.\#mod
+type tlet = M.\#let
+type ttrue = M.\#true
+
+class \#mod = object end
+let f: #M.\#mod -> _ =  new \#mod, new M.\#mod
+
+class type \#mod = object end
+class type \#let = \#mod
+
+module type \#mod = sig type \#mod module type \#mod  end
+
+module type t =
+  \#mod with type \#mod = M.\#mod
+         and module type \#mod = M.\#mod
+
+type \#mod = [`A | `B ]
+let g = function #\#mod | #M.\#mod -> ()
+
+type \#mod = ..
+type M.\#mod += A
+
+type t = true of int
+let x = true 0
+
+(* check pretty-printing of local module open in core_type *)
+type t = String.( t )
+
+(* Utf8 identifier *)
+let là = function ça -> ça

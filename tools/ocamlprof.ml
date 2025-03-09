@@ -20,8 +20,8 @@ open Location
 open Parsetree
 
 (* User programs must not use identifiers that start with these prefixes. *)
-let idprefix = "__ocaml_prof_";;
-let modprefix = "OCAML__prof_";;
+let idprefix = "__ocaml_prof_"
+let modprefix = "OCAML__prof_"
 
 (* Errors specific to the profiler *)
 exception Profiler of string
@@ -64,19 +64,17 @@ let copy next =
   assert (next >= !cur_point);
   seek_in !inchan !cur_point;
   copy_chars (next - !cur_point);
-  cur_point := next;
-;;
+  cur_point := next
 
-let prof_counter = ref 0;;
+let prof_counter = ref 0
 
 let instr_mode = ref false
 
-type insert = Open | Close;;
-let to_insert = ref ([] : (insert * int) list);;
+type insert = Open | Close
+let to_insert = ref ([] : (insert * int) list)
 
 let insert_action st en =
   to_insert := (Open, st) :: (Close, en) :: !to_insert
-;;
 
 (* Producing instrumented code *)
 let add_incr_counter modul (kind,pos) =
@@ -85,9 +83,8 @@ let add_incr_counter modul (kind,pos) =
    | Open ->
          fprintf !outchan "(%sProfiling.incr %s%s_cnt %d; "
                  modprefix idprefix modul !prof_counter;
-         incr prof_counter;
-   | Close -> fprintf !outchan ")";
-;;
+         incr prof_counter
+   | Close -> fprintf !outchan ")"
 
 let counters = ref (Array.make 0 0)
 
@@ -101,7 +98,6 @@ let add_val_counter (kind,pos) =
     fprintf !outchan "(* %s%d *) " !special_id !counters.(!prof_counter);
     incr prof_counter;
   end
-;;
 
 (* ************* rewrite ************* *)
 
@@ -116,7 +112,6 @@ let insert_profile rw_exp ex =
     insert_action st en;
     rw_exp false ex;
   end
-;;
 
 
 let pos_len = ref 0
@@ -143,12 +138,18 @@ let final_rewrite add_function =
     if String.length len > 9 then raise (Profiler "too many counters");
     seek_out !outchan (!pos_len - String.length len);
     output_string !outchan len
-  end;
+  end
   (* Cannot close because outchan is stdout and Format doesn't like
      a closed stdout.
     close_out !outchan;
   *)
-;;
+
+type case =
+  { rhs : expression;
+    guard : expression option;
+  }
+
+let case { pc_rhs; pc_guard } = { rhs = pc_rhs; guard = pc_guard }
 
 let rec rewrite_patexp_list iflag l =
   rewrite_exp_list iflag (List.map (fun x -> x.pvb_expr) l)
@@ -183,30 +184,29 @@ and rw_exp iflag sexp =
     rewrite_patexp_list iflag spat_sexp_list;
     rewrite_exp iflag sbody
 
-  | Pexp_function caselist ->
+  | Pexp_function (_, _, Pfunction_body e) ->
     if !instr_fun then
-      rewrite_function iflag caselist
+      rewrite_function iflag [{ rhs = e; guard = None }]
     else
-      rewrite_cases iflag caselist
+      rewrite_exp iflag e
 
-  | Pexp_fun (_, _, p, e) ->
-      let l = [{pc_lhs=p; pc_guard=None; pc_rhs=e}] in
-      if !instr_fun then
-        rewrite_function iflag l
-      else
-        rewrite_cases iflag l
+  | Pexp_function (_, _, Pfunction_cases (cases, _, _)) ->
+    if !instr_fun then
+      rewrite_function iflag (List.map case cases)
+    else
+      rewrite_cases iflag cases
 
   | Pexp_match(sarg, caselist) ->
     rewrite_exp iflag sarg;
     if !instr_match && not sexp.pexp_loc.loc_ghost then
-      rewrite_funmatching caselist
+      rewrite_funmatching (List.map case caselist)
     else
       rewrite_cases iflag caselist
 
   | Pexp_try(sbody, caselist) ->
     rewrite_exp iflag sbody;
     if !instr_try && not sexp.pexp_loc.loc_ghost then
-      rewrite_trymatching caselist
+      rewrite_trymatching (List.map case caselist)
     else
       rewrite_cases iflag caselist
 
@@ -215,7 +215,7 @@ and rw_exp iflag sexp =
     rewrite_exp_list iflag (List.map snd sargs)
 
   | Pexp_tuple sexpl ->
-    rewrite_exp_list iflag sexpl
+    List.iter (fun (_, e) -> rewrite_exp iflag e) sexpl
 
   | Pexp_construct(_, None) -> ()
   | Pexp_construct(_, Some sarg) ->
@@ -238,7 +238,7 @@ and rw_exp iflag sexp =
     rewrite_exp iflag srecord;
     rewrite_exp iflag snewval
 
-  | Pexp_array(sargl) ->
+  | Pexp_array sargl ->
     rewrite_exp_list iflag sargl
 
   | Pexp_ifthenelse(scond, sifso, None) ->
@@ -298,7 +298,7 @@ and rw_exp iflag sexp =
 
   | Pexp_newtype (_, sexp) -> rewrite_exp iflag sexp
   | Pexp_open (_, e) -> rewrite_exp iflag e
-  | Pexp_pack (smod) -> rewrite_mod iflag smod
+  | Pexp_pack (smod, _) -> rewrite_mod iflag smod
   | Pexp_letop {let_; ands; body; _} ->
       rewrite_exp iflag let_.pbop_exp;
       List.iter (fun {pbop_exp; _} -> rewrite_exp iflag pbop_exp) ands;
@@ -316,17 +316,18 @@ and rewrite_ifbody iflag ghost sifbody =
 and rewrite_annotate_exp_list l =
   List.iter
     (function
-     | {pc_guard=Some scond; pc_rhs=sbody} ->
+     | {guard=Some scond; rhs=sbody} ->
          insert_profile rw_exp scond;
          insert_profile rw_exp sbody;
-     | {pc_rhs={pexp_desc = Pexp_constraint(sbody, _)}} (* let f x : t = e *)
+     | {rhs={pexp_desc = Pexp_constraint(sbody, _)}} (* let f x : t = e *)
         -> insert_profile rw_exp sbody
-     | {pc_rhs=sexp} -> insert_profile rw_exp sexp)
+     | {rhs=sexp} -> insert_profile rw_exp sexp)
     l
 
 and rewrite_function iflag = function
-  | [{pc_lhs=_; pc_guard=None;
-      pc_rhs={pexp_desc = (Pexp_function _|Pexp_fun _)} as sexp}] ->
+  | [{guard=None;
+      rhs={pexp_desc = (Pexp_function _)} as sexp}]
+    ->
         rewrite_exp iflag sexp
   | l -> rewrite_funmatching l
 
@@ -343,8 +344,8 @@ and rewrite_class_field iflag cf =
     Pcf_inherit (_, cexpr, _)     -> rewrite_class_expr iflag cexpr
   | Pcf_val (_, _, Cfk_concrete (_, sexp))  -> rewrite_exp iflag sexp
   | Pcf_method (_, _,
-                Cfk_concrete (_, ({pexp_desc = (Pexp_function _|Pexp_fun _)}
-                                    as sexp))) ->
+       Cfk_concrete (_,
+        ({pexp_desc = (Pexp_function _)} as sexp))) ->
       rewrite_exp iflag sexp
   | Pcf_method (_, _, Cfk_concrete(_, sexp)) ->
       let loc = cf.pcf_loc in
@@ -386,7 +387,11 @@ and rewrite_mod iflag smod =
     Pmod_ident _ -> ()
   | Pmod_structure sstr -> List.iter (rewrite_str_item iflag) sstr
   | Pmod_functor(_param, sbody) -> rewrite_mod iflag sbody
-  | Pmod_apply(smod1, smod2) -> rewrite_mod iflag smod1; rewrite_mod iflag smod2
+  | Pmod_apply(smod1, smod2) ->
+      rewrite_mod iflag smod1;
+      rewrite_mod iflag smod2
+  | Pmod_apply_unit smod1 ->
+      rewrite_mod iflag smod1
   | Pmod_constraint(smod, _smty) -> rewrite_mod iflag smod
   | Pmod_unpack(sexp) -> rewrite_exp iflag sexp
   | Pmod_extension _ -> ()
@@ -416,7 +421,6 @@ let null_rewrite srcfile =
   inchan := open_in_bin srcfile;
   copy (in_channel_length !inchan);
   close_in !inchan
-;;
 
 (* Setting flags from saved config *)
 let set_flags s =
@@ -440,7 +444,7 @@ let dumpfile = ref "ocamlprof.dump"
 
 (* Process a file *)
 
-let process_intf_file filename = null_rewrite filename;;
+let process_intf_file filename = null_rewrite filename
 
 let process_impl_file filename =
    let modname = Filename.basename(Filename.chop_extension filename) in
@@ -467,30 +471,26 @@ let process_impl_file filename =
      init_rewrite modes modname;
      rewrite_file filename add_val_counter;
    end
-;;
 
 let process_anon_file filename =
   if Filename.check_suffix filename ".ml" then
     process_impl_file filename
   else
     process_intf_file filename
-;;
 
 (* Main function *)
 
 open Format
 
-let usage = "Usage: ocamlprof <options> <files>\noptions are:"
+let usage = "Usage: ocamlprof <options> <files>\nOptions are:"
 
 let print_version () =
   printf "ocamlprof, version %s@." Sys.ocaml_version;
-  exit 0;
-;;
+  exit 0
 
 let print_version_num () =
   printf "%s@." Sys.ocaml_version;
-  exit 0;
-;;
+  exit 0
 
 let main () =
   try
@@ -505,6 +505,8 @@ let main () =
        "-instrument", Arg.Set instr_mode, "  (undocumented)";
        "-intf", Arg.String process_intf_file,
                 "<file>  Process <file> as a .mli file";
+       "-keywords", Arg.String (fun s -> Clflags.keyword_edition := Some s),
+       "<version+keywords> Specify keyword set.";
        "-m", Arg.String (fun s -> modes := s), "<flags>    (undocumented)";
        "-version", Arg.Unit print_version,
                    "     Print version and exit";

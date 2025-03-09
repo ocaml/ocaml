@@ -1,6 +1,5 @@
 (* TEST
-   flags += " -w -a "
-   modules = "globrootsprim.c"
+ modules = "globrootsprim.c";
 *)
 
 module type GLOBREF = sig
@@ -27,9 +26,14 @@ module Generational : GLOBREF = struct
   external remove: t -> unit = "gb_generational_remove"
 end
 
-module Test(G: GLOBREF) = struct
+module Test(G: GLOBREF) () = struct
 
   let size = 1024
+
+  let random_state =
+    Domain.DLS.new_key
+      ~split_from_parent:Random.State.split
+      Random.State.make_self_init
 
   let vals = Array.init size Int.to_string
 
@@ -44,49 +48,35 @@ module Test(G: GLOBREF) = struct
     done
 
   let change () =
-    match Random.int 37 with
+    match Random.State.int (Domain.DLS.get random_state) 37 with
     | 0 ->
         Gc.full_major()
     | 1|2|3|4 ->
         Gc.minor()
     | 5|6|7|8|9|10|11|12 ->             (* update with young value *)
-        let i = Random.int size in
+        let i = Random.State.int (Domain.DLS.get random_state) size in
         G.set a.(i) (Int.to_string i)
     | 13|14|15|16|17|18|19|20 ->        (* update with old value *)
-        let i = Random.int size in
+        let i = Random.State.int (Domain.DLS.get random_state) size in
         G.set a.(i) vals.(i)
     | 21|22|23|24|25|26|27|28 ->        (* re-register young value *)
-        let i = Random.int size in
+        let i = Random.State.int (Domain.DLS.get random_state) size in
         G.remove a.(i);
         a.(i) <- G.register (Int.to_string i)
     | (*29|30|31|32|33|34|35|36*) _ ->  (* re-register old value *)
-        let i = Random.int size in
+        let i = Random.State.int (Domain.DLS.get random_state) size in
         G.remove a.(i);
         a.(i) <- G.register vals.(i)
 
   let test n =
     for i = 1 to n do
-      change();
-      print_string "."; flush stdout
+      change(); check();
     done
 end
 
-module TestClassic = Test(Classic)
-module TestGenerational = Test(Generational)
+module TestClassic = Test(Classic) ()
+module TestGenerational = Test(Generational) ()
 
 external young2old : unit -> unit = "gb_young2old"
-let _ = young2old (); Gc.full_major ()
 
 external static2young : int * int -> (unit -> unit) -> int = "gb_static2young"
-let _ =
-  assert (static2young (1, 1) Gc.full_major == 0x42)
-
-let _ =
-  let n =
-    if Array.length Sys.argv < 2 then 10000 else int_of_string Sys.argv.(1) in
-  print_string "Non-generational API\n";
-  TestClassic.test n;
-  print_newline();
-  print_string "Generational API\n";
-  TestGenerational.test n;
-  print_newline()

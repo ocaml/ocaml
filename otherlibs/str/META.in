@@ -1,0 +1,8 @@
+# @configure_input@
+
+version = "@VERSION@"
+description = "Regular expressions and string processing"
+archive(byte) = "str.cma"
+archive(native) = "str.cmxa"
+plugin(byte) = "str.cma"
+plugin(native) = "str.cmxs"

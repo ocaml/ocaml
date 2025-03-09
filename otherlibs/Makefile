@@ -16,13 +16,17 @@
 ROOTDIR=..
 include $(ROOTDIR)/Makefile.common
 
-OTHERLIBRARIES ?= bigarray dynlink str systhreads \
-                  unix win32unix
+# Although the OTHERLIBS variable is defined in ../Makefile.config,
+# its following conditional definition needs to be kept because,
+# at the moment, the clean targets depend on this variable but
+# when they are invoked ../Makefile.config is not included, so that
+# OTHERLIBS would be empty and the clean target would thus not work.
+OTHERLIBS ?= str systhreads unix runtime_events
 
 # $1: target name to dispatch to all otherlibs/*/Makefile
 define dispatch_
 $1:
-	@for lib in $$(OTHERLIBRARIES); do \
+	for lib in $$(OTHERLIBS); do \
 	  ($$(MAKE) -C $$$$lib $1) || exit $$$$?; \
 	done
 endef
@@ -30,8 +34,9 @@ define dispatch
 $(eval $(call dispatch_,$1))
 endef
 
-.PHONY: all allopt clean partialclean
+.PHONY: all allopt clean distclean partialclean
 $(call dispatch,all)
 $(call dispatch,allopt)
 $(call dispatch,clean)
+$(call dispatch,distclean)
 $(call dispatch,partialclean)

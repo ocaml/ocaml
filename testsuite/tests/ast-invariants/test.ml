@@ -1,9 +1,9 @@
 (* TEST
-   include ocamlcommon
-   * hasunix
-   include unix
-   arguments = "${ocamlsrcdir}"
-   ** native
+ include ocamlcommon;
+ include unix;
+ arguments = "${ocamlsrcdir}";
+ hasunix;
+ native;
 *)
 
 (* This test checks all ml files in the ocaml repository that are accepted
@@ -62,7 +62,11 @@ let kind fn =
 let rec walk dir =
   Array.iter
     (fun fn ->
-       if fn = "" || fn.[0] = '.' then
+       (* Ignore any "hidden" names (.git, etc.). Similarly ignore anything
+          beginning with _ - catches both the ancient use of _ instead of . on
+          Windows and also means we don't recurse into either _ocamltest or
+          _build directories. *)
+       if fn = "" || fn.[0] = '.' || fn.[0] = '_' then
          ()
        else begin
          let fn = Filename.concat dir fn in

@@ -60,6 +60,9 @@ command line, unless the "-noautolink" option is given.
 \item["-absname"]
 Force error messages to show absolute paths for file names.
 
+\item["-no-absname"]
+Do not try to show absolute filenames in error messages.
+
 \notop{\item["-annot"]
 Deprecated since OCaml 4.11. Please use "-bin-annot" instead.
 }%notop
@@ -97,7 +100,9 @@ compile modules separately.
 \item["-cc" \var{ccomp}]
 Use \var{ccomp} as the C linker \nat{called to build the final executable }
 \comp{when linking in ``custom runtime'' mode (see the "-custom" option)}
-and as the C compiler for compiling ".c" source files.
+and as the C compiler for compiling ".c" source files. When linking object
+files produced by a C++ compiler (such as "g++" or "clang++"), it is recommended
+to use "-cc c++".
 }%notop
 
 \notop{%
@@ -110,10 +115,20 @@ This causes the given C library to be linked with the program.
 \notop{%
 \item["-ccopt" \var{option}]
 Pass the given option to the C compiler and linker.
-\comp{When linking in ``custom runtime'' mode, for instance}%
-\nat{For instance,}%
+\comp{When linking in ``custom runtime'' mode, for instance }%
+\nat{For instance, }%
 "-ccopt -L"\var{dir} causes the C linker to search for C libraries in
-directory \var{dir}.\comp{(See the "-custom" option.)}
+directory \var{dir}. \comp{(See the "-custom" option.)}
+}%notop
+
+\notop{%
+\item["-cmi-file" \var{filename}]
+Use the given interface file to type-check the ML source file to compile.
+When this option is not specified, the compiler looks for a \var{.mli} file
+with the same base name than the implementation it is compiling and in the
+same directory. If such a file is found, the compiler looks for a
+corresponding \var{.cmi} file in the included directories and reports an
+error if it fails to find one.
 }%notop
 
 \notop{%
@@ -126,12 +141,15 @@ The following modes are supported:
   \item["always"] enable colors unconditionally;
   \item["never"] disable color output.
 \end{description}
-The default setting is 'auto', and the current heuristic
-checks that the "TERM" environment variable exists and is
-not empty or "dumb", and that 'isatty(stderr)' holds.
 
 The environment variable "OCAML_COLOR" is considered if "-color" is not
 provided. Its values are auto/always/never as above.
+
+If "-color" is not provided, "OCAML_COLOR" is not set and the environment
+variable "NO_COLOR" is set, then color output is disabled. Otherwise,
+the default setting is 'auto', and the current heuristic
+checks that the "TERM" environment variable exists and is
+not empty or "dumb", and that 'isatty(stderr)' holds.
 }%notop
 
 \notop{%
@@ -244,6 +262,11 @@ section~\ref{s:ocamlrun-options}).
 }%notop
 
 \notop{%
+\item["-no-g"]
+Do not record debugging information (default).
+}%notop
+
+\notop{%
 \item["-i"]
 Cause the compiler to print all defined names (with their inferred
 types or their definitions) when compiling an implementation (".ml"
@@ -277,12 +300,37 @@ the toplevel is running with the "#directory" directive
 (section~\ref{s:toplevel-directives}).
 }%top
 
+\notop{%
+\item["-H" \var{directory}]
+Behaves identically to "-I", except that (a) programs may not directly refer to
+modules added to the search path this way, and (b) these directories are
+searched after any "-I" directories.  This makes it possible to provide the
+compiler with compiled interface and object code files for the current program's
+transitive dependencies (the dependencies of its dependencies) without allowing
+them to silently become direct dependencies.
+}%notop
+
 \top{%
 \item["-init" \var{file}]
 Load the given file instead of the default initialization file.
-The default file is ".ocamlinit" in the current directory if it
-exists, otherwise "XDG_CONFIG_HOME/ocaml/init.ml" or
-".ocamlinit" in the user's home directory.
+The default initialization file is the first found of:
+\begin{enumerate}
+  \item ".ocamlinit" in the current directory;
+  \item "XDG_CONFIG_HOME/ocaml/init.ml", if "XDG_CONFIG_HOME" is an absolute
+    path;
+  \item otherwise, on Unix, "HOME/ocaml/init.ml" or, on Windows,
+    "ocaml\\init.ml" under "LocalAppData"
+    (e.g. "C:\\Users\\Bactrian\\AppData\\Local\\ocaml\\init.ml");
+  \item "ocaml/init.ml" under any of the absolute paths in "XDG_CONFIG_DIRS".
+    Paths in "XDG_CONFIG_DIRS" are colon-delimited on Unix, and
+    semicolon-delimited on Windows;
+  \item if "XDG_CONFIG_DIRS" contained no absolute paths,
+    "/usr/xdg/ocaml/init.ml" on Unix or, "ocaml\\init.ml" under any of
+    "LocalAppData" (e.g. "C:\\Users\\Bactrian\\AppData\\Local"),
+    "RoamingAppData" (e.g. "C:\\Users\\Bactrian\\AppData\\Roaming"), or
+    "ProgramData" (e.g. "C:\\ProgramData") on Windows;
+  \item "HOME/.ocamlinit", if "HOME" is non-empty;
+\end{enumerate}
 }%top
 
 \notop{%
@@ -314,6 +362,20 @@ extension is not ".mli".
 Recognize file names ending with \var{string} as interface files
 (instead of the default ".mli").
 }%\notop
+
+\item["-keywords" \var{version+list}]
+Set keywords according to the \var{version+list}
+specification.
+
+This specification starts with an optional version number, defining the base set
+of keywords, followed by a \var{+}-separated list of additional keywords to add
+to this base set.
+
+Without an explicit version number, the base set of keywords is the
+set of keywords in the current version of OCaml.
+Additional keywords that do not match any known keyword in the current
+version of the language trigger an error whenever they are present in the
+source code.
 
 \item["-labels"]
 Labels are not ignored in types, labels may be used in applications,
@@ -438,14 +500,13 @@ object code files (".cmx"), and libraries (".cmxa"). See also option
 }%nat
 
 \notop{%
-\item["-o" \var{exec-file}]
-Specify the name of the output file produced by the
-\nat{linker}\comp{compiler}. The
+\item["-o" \var{output-file}]
+Specify the name of the output file to produce. For executable files, the
 default output name is "a.out" under Unix and "camlprog.exe" under
 Windows. If the "-a" option is given, specify the name of the library
 produced.  If the "-pack" option is given, specify the name of the
 packed object file produced.  If the "-output-obj" or "-output-complete-obj"
-options are given, specify the name of the output file produced.
+options are given, specify the name of the produced object file.
 \nat{If the "-shared" option is given, specify the name of plugin
 file produced.}
 \comp{If the "-c" option is given, specify the name of the object
@@ -612,12 +673,22 @@ runtime, which is useful for debugging pointer problems in low-level
 code such as C stubs.
 }%notop
 
-\notop{
-\item["-stop-after" \var{pass}]
-Stop compilation after the given compilation pass. The currently
-supported passes are:
-"parsing", "typing"\nat{, "scheduling", "emit"}.
-}%notop
+\nat{%
+\item["-S"]
+Keep the assembly code produced during the compilation. The assembly
+code for the source file \var{x}".ml" is saved in the file \var{x}".s".
+}%nat
+
+\item["-safe-string"]
+Enforce the separation between types "string" and "bytes",
+thereby making strings read-only. This is the default, and enforced
+since OCaml 5.0.
+
+\item["-safer-matching"]
+Do not use type information to optimize pattern-matching.
+This allows to detect match failures even if a pattern-matching was
+wrongly assumed to be exhaustive. This only impacts GADT and
+polymorphic variant compilation.
 
 \nat{
 \item["-save-ir-after" \var{pass}]
@@ -636,12 +707,6 @@ using "compiler-libs" library (see
 }%nat
 
 \nat{%
-\item["-S"]
-Keep the assembly code produced during the compilation. The assembly
-code for the source file \var{x}".ml" is saved in the file \var{x}".s".
-}%nat
-
-\nat{%
 \item["-shared"]
 Build a plugin (usually ".cmxs") that can be dynamically loaded with
 the "Dynlink" module. The name of the plugin must be
@@ -655,10 +720,6 @@ apply to the way the extra native objects have been compiled (under
 Linux AMD 64, they must contain only position-independent code).
 }%nat
 
-\item["-safe-string"]
-Enforce the separation between types "string" and "bytes",
-thereby making strings read-only. This is the default.
-
 \item["-short-paths"]
 When a type is visible under several module-paths, use the shortest
 one when printing the type's name in inferred interfaces and error and
@@ -671,6 +732,13 @@ their length.
 Read the standard input as a script file rather than starting an
 interactive session.
 }%top
+
+\notop{
+\item["-stop-after" \var{pass}]
+Stop compilation after the given compilation pass. The currently
+supported passes are:
+"parsing", "typing"\nat{, "scheduling", "emit"}.
+}%notop
 
 \item["-strict-sequence"]
 Force the left-hand part of each sequence to have type unit.
@@ -708,7 +776,8 @@ unspecified result instead of raising a "Division_by_zero" exception.
 \item["-unsafe-string"]
 Identify the types "string" and "bytes", thereby making strings writable.
 This is intended for compatibility with old source code and should not
-be used with new software.
+be used with new software. This option raises an error unconditionally
+since OCaml 5.0.
 
 \comp{%
 \item["-use-runtime" \var{runtime-name}]
@@ -818,7 +887,7 @@ arguments to "-warn-error"
 in production code, because this can break your build when future versions
 of OCaml add some new warnings.
 
-The default setting is "-warn-error -a+31" (only warning 31 is fatal).
+The default setting is "-warn-error -a" (no warning is fatal).
 
 \item["-warn-help"]
 Show the description of all available warning numbers.
@@ -830,13 +899,33 @@ Print the location of the standard library, then exit.
 
 \notop{%
 \item["-with-runtime"]
-Include the runtime system in the generated program. This is the default.
+The pair of options \texttt{-with-runtime} and \texttt{-without-runtime} give
+precise control over the way the runtime is linked. \texttt{-with-runtime} is
+the default. In summary, it instructs to include the runtime system, or a
+reference to the default path of the runtime system, in the generated
+program/executable/object file. The detailed behaviour depends on the compiler
+and options used:
+
+For ocamlc, in its default linking mode (no use of \texttt{-custom} or
+\texttt{-output-*}), \texttt{-with-runtime} creates a file which can be
+executed, whereas \texttt{-without-runtime} creates a pure bytecode image which
+must be explicitly passed to a runtime (i.e. \texttt{./foo} vs \texttt{ocamlrun
+./foo}).
+
+For all other uses of ocamlc and ocamlopt, \texttt{-with-runtime} and
+\texttt{-without-runtime} control whether the compiler passes flags for linking
+with the installed runtime (\texttt{-with-runtime}) or whether the user is
+required to pass them (\texttt{-without-runtime}).
+
+For more information about the options \texttt{-custom} and \texttt{-output-*},
+see their documentation and section~\ref{ss:c-embedded-code} of the manual.
 }
 
 \notop{%
 \item["-without-runtime"]
 The compiler does not include the runtime system (nor a reference to it) in the
-generated program; it must be supplied separately.
+generated program, executable or object file; it must be supplied separately.
+See option \texttt{-with-runtime} for details.
 }
 
 \item["-" \var{file}]

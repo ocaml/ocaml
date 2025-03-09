@@ -1,5 +1,5 @@
 (* TEST
-   * ocamldoc with latex
+ ocamldoc with latex;
 *)
 
 (** Testing display of extensible variant types and exceptions.

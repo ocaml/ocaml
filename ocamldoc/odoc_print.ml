@@ -14,7 +14,7 @@
 (**************************************************************************)
 
 open Format
-let () = Printtyp.Naming_context.enable false
+let () = Out_type.Ident_names.enable false
 
 let new_fmt () =
   let buf = Buffer.create 512 in
@@ -39,8 +39,7 @@ let (modtype_fmt, flush_modtype_fmt) = new_fmt ()
 
 
 let string_of_type_expr t =
-  Printtyp.mark_loops t;
-  Printtyp.type_scheme_max ~b_reset_names: false type_fmt t;
+  Printtyp.shared_type_scheme type_fmt t;
   flush_type_fmt ()
 
 exception Use_code of string
@@ -81,27 +80,29 @@ let string_of_module_type ?code ?(complete=false) t =
    from the signatures. Used when we don't want to print a too long class type.*)
 let simpl_class_type t =
   let rec iter t =
+    let open Types in
     match t with
-      Types.Cty_constr _ -> t
-    | Types.Cty_signature cs ->
+      Cty_constr _ -> t
+    | Cty_signature cs ->
         (* we delete vals and methods in order to not print them when
            displaying the type *)
-      let tself =
-        let t = cs.Types.csig_self in
-        let t' = Types.Private_type_expr.create Types.Tnil
-            ~level:0 ~scope:Btype.lowest_level ~id:0 in
-        let desc = Types.Tobject (t', ref None) in
-        Types.Private_type_expr.create desc
-          ~level:t.Types.level ~scope:t.Types.scope ~id:t.Types.id
+      let self_row =
+        Transient_expr.create Tnil
+          ~level:0 ~scope:Btype.lowest_level ~id:0
       in
-        Types.Cty_signature { Types.csig_self = tself;
-                              csig_vars = Types.Vars.empty ;
-                              csig_concr = Types.Concr.empty ;
-                              csig_inher = []
-                             }
+      let tself =
+        let t = cs.csig_self in
+        let desc = Tobject (Transient_expr.type_expr self_row, ref None) in
+        Transient_expr.create desc
+          ~level:(get_level t) ~scope:(get_scope t) ~id:(get_id t)
+      in
+        Types.Cty_signature { csig_self = Transient_expr.type_expr tself;
+                              csig_self_row = Transient_expr.type_expr self_row;
+                              csig_vars = Vars.empty ;
+                              csig_meths = Meths.empty ; }
     | Types.Cty_arrow (l, texp, ct) ->
         let new_ct = iter ct in
-        Types.Cty_arrow (l, texp, new_ct)
+        Cty_arrow (l, texp, new_ct)
   in
   iter t
 

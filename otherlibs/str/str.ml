@@ -29,6 +29,20 @@ let last_chars s n = String.sub s (String.length s - n) n
 
 (** Representation of character sets **)
 
+let lowercase_latin1 = function
+  | 'A' .. 'Z'
+  | '\192' .. '\214'
+  | '\216' .. '\222' as c ->
+    Char.unsafe_chr(Char.code c + 32)
+  | c -> c
+
+let uppercase_latin1 = function
+  | 'a' .. 'z'
+  | '\224' .. '\246'
+  | '\248' .. '\254' as c ->
+    Char.unsafe_chr(Char.code c - 32)
+  | c -> c
+
 module Charset =
   struct
     type t = bytes (* of length 32 *)
@@ -94,9 +108,9 @@ module Charset =
       r
 
     let fold_case s =
-      (let r = make_empty() in
-       iter (fun c -> add r (Char.lowercase c); add r (Char.uppercase c)) s;
-       r)[@ocaml.warning "-3"]
+      let r = make_empty() in
+      iter (fun c -> add r (lowercase_latin1 c); add r (uppercase_latin1 c)) s;
+      r
 
   end
 
@@ -218,9 +232,9 @@ let charclass_of_regexp fold_case re =
 (* The case fold table: maps characters to their lowercase equivalent *)
 
 let fold_case_table =
-  (let t = Bytes.create 256 in
-   for i = 0 to 255 do Bytes.set t i (Char.lowercase(Char.chr i)) done;
-   Bytes.to_string t)[@ocaml.warning "-3"]
+  let t = Bytes.create 256 in
+  for i = 0 to 255 do Bytes.set t i (lowercase_latin1(Char.chr i)) done;
+  Bytes.to_string t
 
 module StringMap =
   Map.Make(struct type t = string let compare (x:t) y = compare x y end)
@@ -276,8 +290,7 @@ let compile fold_case re =
   let rec emit_code = function
     Char c ->
       if fold_case then
-        emit_instr op_CHARNORM (Char.code (Char.lowercase c))
-          [@ocaml.warning "-3"]
+        emit_instr op_CHARNORM (Char.code (lowercase_latin1 c))
       else
         emit_instr op_CHAR (Char.code c)
   | String s ->
@@ -285,8 +298,7 @@ let compile fold_case re =
         0 -> ()
       | 1 ->
         if fold_case then
-          emit_instr op_CHARNORM (Char.code (Char.lowercase s.[0]))
-            [@ocaml.warning "-3"]
+          emit_instr op_CHARNORM (Char.code (lowercase_latin1 s.[0]))
         else
           emit_instr op_CHAR (Char.code s.[0])
       | _ ->
@@ -299,8 +311,8 @@ let compile fold_case re =
           emit_code (String (string_after s (i+1)))
         with Not_found ->
           if fold_case then
-            emit_instr op_STRINGNORM (cpool_index (String.lowercase s))
-              [@ocaml.warning "-3"]
+            emit_instr op_STRINGNORM
+              (cpool_index (String.map lowercase_latin1 s))
           else
             emit_instr op_STRING (cpool_index s)
       end
@@ -595,51 +607,54 @@ external re_search_forward: regexp -> string -> int -> int array
 external re_search_backward: regexp -> string -> int -> int array
      = "re_search_backward"
 
-let last_search_result = ref [||]
+let last_search_result_key = Domain.DLS.new_key (fun () -> [||])
 
 let string_match re s pos =
   let res = re_string_match re s pos in
-  last_search_result := res;
+  Domain.DLS.set last_search_result_key res;
   Array.length res > 0
 
 let string_partial_match re s pos =
   let res = re_partial_match re s pos in
-  last_search_result := res;
+  Domain.DLS.set last_search_result_key res;
   Array.length res > 0
 
 let search_forward re s pos =
   let res = re_search_forward re s pos in
-  last_search_result := res;
+  Domain.DLS.set last_search_result_key res;
   if Array.length res = 0 then raise Not_found else res.(0)
 
 let search_backward re s pos =
   let res = re_search_backward re s pos in
-  last_search_result := res;
+  Domain.DLS.set last_search_result_key res;
   if Array.length res = 0 then raise Not_found else res.(0)
 
 let group_beginning n =
+  let last_search_result = Domain.DLS.get last_search_result_key in
   let n2 = n + n in
-  if n < 0 || n2 >= Array.length !last_search_result then
+  if n < 0 || n2 >= Array.length last_search_result then
     invalid_arg "Str.group_beginning"
   else
-    let pos = !last_search_result.(n2) in
+    let pos = last_search_result.(n2) in
     if pos = -1 then raise Not_found else pos
 
 let group_end n =
+  let last_search_result = Domain.DLS.get last_search_result_key in
   let n2 = n + n in
-  if n < 0 || n2 >= Array.length !last_search_result then
+  if n < 0 || n2 >= Array.length last_search_result then
     invalid_arg "Str.group_end"
   else
-    let pos = !last_search_result.(n2 + 1) in
+    let pos = last_search_result.(n2 + 1) in
     if pos = -1 then raise Not_found else pos
 
 let matched_group n txt =
+  let last_search_result = Domain.DLS.get last_search_result_key in
   let n2 = n + n in
-  if n < 0 || n2 >= Array.length !last_search_result then
+  if n < 0 || n2 >= Array.length last_search_result then
     invalid_arg "Str.matched_group"
   else
-    let b = !last_search_result.(n2)
-    and e = !last_search_result.(n2 + 1) in
+    let b = last_search_result.(n2)
+    and e = last_search_result.(n2 + 1) in
     if b = -1 then raise Not_found else String.sub txt b (e - b)
 
 let match_beginning () = group_beginning 0
@@ -652,7 +667,8 @@ external re_replacement_text: string -> int array -> string -> string
     = "re_replacement_text"
 
 let replace_matched repl matched =
-  re_replacement_text repl !last_search_result matched
+  let last_search_result = Domain.DLS.get last_search_result_key in
+  re_replacement_text repl last_search_result matched
 
 let substitute_first expr repl_fun text =
   try

@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type line_tracker;;
+type line_tracker
 val open_tracker : string -> out_channel -> line_tracker
 val close_tracker : line_tracker -> unit
 val copy_chunk :
@@ -28,4 +28,4 @@ val output_args : out_channel -> string list -> unit
 val output_refill_handler :
   in_channel -> out_channel -> line_tracker -> Syntax.location option -> bool
 
-val quiet_mode : bool ref;;
+val quiet_mode : bool ref

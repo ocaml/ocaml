@@ -1,7 +1,7 @@
 (* TEST
-readonly_files = "main.c"
-arguments = "-DINT_INT -DFUN=pgcd_30030 main.c"
-* asmgen
+ readonly_files = "main.c";
+ arguments = "-DINT_INT -DFUN=pgcd_30030 main.c";
+ asmgen;
 *)
 
 (function "pgcd_30030" (a:int)

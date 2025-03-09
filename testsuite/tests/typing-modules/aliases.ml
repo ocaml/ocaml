@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module C = Char;;
@@ -15,31 +15,56 @@ module C = Char
 - : char = 'B'
 module C' :
   sig
+    type t = char
     external code : char -> int = "%identity"
     val chr : int -> char
     val escaped : char -> string
-    val lowercase : char -> char
-    val uppercase : char -> char
-    val lowercase_ascii : char -> char
-    val uppercase_ascii : char -> char
-    type t = char
     val compare : t -> t -> int
     val equal : t -> t -> bool
+    module Ascii :
+      sig
+        val min : char
+        val max : char
+        val is_valid : char -> bool
+        val is_upper : char -> bool
+        val is_lower : char -> bool
+        val is_letter : char -> bool
+        val is_alphanum : char -> bool
+        val is_white : char -> bool
+        val is_blank : char -> bool
+        val is_graphic : char -> bool
+        val is_print : char -> bool
+        val is_control : char -> bool
+        val is_digit : char -> bool
+        val digit_to_int : char -> int
+        val digit_of_int : int -> char
+        val is_hex_digit : char -> bool
+        val hex_digit_to_int : char -> int
+        val lower_hex_digit_of_int : int -> char
+        val upper_hex_digit_of_int : int -> char
+        val uppercase : char -> char
+        val lowercase : char -> char
+      end
+    val lowercase_ascii : char -> char
+    val uppercase_ascii : char -> char
+    val seeded_hash : int -> t -> int
+    val hash : t -> int
     external unsafe_chr : int -> char = "%identity"
   end
 - : char = 'B'
 module C3 :
   sig
+    type t = char
     external code : char -> int = "%identity"
     val chr : int -> char
     val escaped : char -> string
-    val lowercase : char -> char
-    val uppercase : char -> char
-    val lowercase_ascii : char -> char
-    val uppercase_ascii : char -> char
-    type t = char
     val compare : t -> t -> int
     val equal : t -> t -> bool
+    module Ascii = Char.Ascii
+    val lowercase_ascii : char -> char
+    val uppercase_ascii : char -> char
+    val seeded_hash : int -> t -> int
+    val hash : t -> int
     external unsafe_chr : int -> char = "%identity"
   end
 - : char = 'B'
@@ -57,32 +82,34 @@ module C4 = F(struct end);;
 C4.chr 66;;
 [%%expect{|
 module F :
-  functor (X : sig end) ->
+  (X : sig end) ->
     sig
+      type t = char
       external code : char -> int = "%identity"
       val chr : int -> char
       val escaped : char -> string
-      val lowercase : char -> char
-      val uppercase : char -> char
-      val lowercase_ascii : char -> char
-      val uppercase_ascii : char -> char
-      type t = char
       val compare : t -> t -> int
       val equal : t -> t -> bool
+      module Ascii = Char.Ascii
+      val lowercase_ascii : char -> char
+      val uppercase_ascii : char -> char
+      val seeded_hash : int -> t -> int
+      val hash : t -> int
       external unsafe_chr : int -> char = "%identity"
     end
 module C4 :
   sig
+    type t = char
     external code : char -> int = "%identity"
     val chr : int -> char
     val escaped : char -> string
-    val lowercase : char -> char
-    val uppercase : char -> char
-    val lowercase_ascii : char -> char
-    val uppercase_ascii : char -> char
-    type t = char
     val compare : t -> t -> int
     val equal : t -> t -> bool
+    module Ascii = Char.Ascii
+    val lowercase_ascii : char -> char
+    val uppercase_ascii : char -> char
+    val seeded_hash : int -> t -> int
+    val hash : t -> int
     external unsafe_chr : int -> char = "%identity"
   end
 - : char = 'B'
@@ -91,7 +118,7 @@ module C4 :
 module G(X:sig end) = struct module M = X end;; (* does not alias X *)
 module M = G(struct end);;
 [%%expect{|
-module G : functor (X : sig end) -> sig module M : sig end end
+module G : (X : sig end) -> sig module M : sig end end
 module M : sig module M : sig end end
 |}];;
 
@@ -141,9 +168,8 @@ module M5 = G(struct end);;
 M5.N'.x;;
 [%%expect{|
 module F :
-  functor (X : sig end) ->
-    sig module N : sig val x : int end module N' = N end
-module G : functor (X : sig end) -> sig module N' : sig val x : int end end
+  (X : sig end) -> sig module N : sig val x : int end module N' = N end
+module G : (X : sig end) -> sig module N' : sig val x : int end end
 module M5 : sig module N' : sig val x : int end end
 - : int = 1
 |}];;
@@ -265,7 +291,7 @@ val pow : t -> t -> t = <fun>
 
 module F(X:sig module C = Char end) = struct module C = X.C end;;
 [%%expect{|
-module F : functor (X : sig module C = Char end) -> sig module C = Char end
+module F : (X : sig module C = Char end) -> sig module C = Char end
 |}];;
 
 (* Applicative functors *)
@@ -280,8 +306,6 @@ module StringSet :
     type elt = String.t
     type t = Set.Make(String).t
     val empty : t
-    val is_empty : t -> bool
-    val mem : elt -> t -> bool
     val add : elt -> t -> t
     val singleton : elt -> t
     val remove : elt -> t -> t
@@ -289,17 +313,6 @@ module StringSet :
     val inter : t -> t -> t
     val disjoint : t -> t -> bool
     val diff : t -> t -> t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val subset : t -> t -> bool
-    val iter : (elt -> unit) -> t -> unit
-    val map : (elt -> elt) -> t -> t
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-    val for_all : (elt -> bool) -> t -> bool
-    val exists : (elt -> bool) -> t -> bool
-    val filter : (elt -> bool) -> t -> t
-    val filter_map : (elt -> elt option) -> t -> t
-    val partition : (elt -> bool) -> t -> t * t
     val cardinal : t -> int
     val elements : t -> elt list
     val min_elt : t -> elt
@@ -308,13 +321,27 @@ module StringSet :
     val max_elt_opt : t -> elt option
     val choose : t -> elt
     val choose_opt : t -> elt option
-    val split : elt -> t -> t * bool * t
     val find : elt -> t -> elt
     val find_opt : elt -> t -> elt option
     val find_first : (elt -> bool) -> t -> elt
     val find_first_opt : (elt -> bool) -> t -> elt option
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
+    val iter : (elt -> unit) -> t -> unit
+    val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
+    val map : (elt -> elt) -> t -> t
+    val filter : (elt -> bool) -> t -> t
+    val filter_map : (elt -> elt option) -> t -> t
+    val partition : (elt -> bool) -> t -> t * t
+    val split : elt -> t -> t * bool * t
+    val is_empty : t -> bool
+    val mem : elt -> t -> bool
+    val equal : t -> t -> bool
+    val compare : t -> t -> int
+    val subset : t -> t -> bool
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val to_list : t -> elt list
     val of_list : elt list -> t
     val to_seq_from : elt -> t -> elt Seq.t
     val to_seq : t -> elt Seq.t
@@ -327,8 +354,6 @@ module SSet :
     type elt = S.t
     type t = Set.Make(S).t
     val empty : t
-    val is_empty : t -> bool
-    val mem : elt -> t -> bool
     val add : elt -> t -> t
     val singleton : elt -> t
     val remove : elt -> t -> t
@@ -336,17 +361,6 @@ module SSet :
     val inter : t -> t -> t
     val disjoint : t -> t -> bool
     val diff : t -> t -> t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val subset : t -> t -> bool
-    val iter : (elt -> unit) -> t -> unit
-    val map : (elt -> elt) -> t -> t
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-    val for_all : (elt -> bool) -> t -> bool
-    val exists : (elt -> bool) -> t -> bool
-    val filter : (elt -> bool) -> t -> t
-    val filter_map : (elt -> elt option) -> t -> t
-    val partition : (elt -> bool) -> t -> t * t
     val cardinal : t -> int
     val elements : t -> elt list
     val min_elt : t -> elt
@@ -355,13 +369,27 @@ module SSet :
     val max_elt_opt : t -> elt option
     val choose : t -> elt
     val choose_opt : t -> elt option
-    val split : elt -> t -> t * bool * t
     val find : elt -> t -> elt
     val find_opt : elt -> t -> elt option
     val find_first : (elt -> bool) -> t -> elt
     val find_first_opt : (elt -> bool) -> t -> elt option
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
+    val iter : (elt -> unit) -> t -> unit
+    val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
+    val map : (elt -> elt) -> t -> t
+    val filter : (elt -> bool) -> t -> t
+    val filter_map : (elt -> elt option) -> t -> t
+    val partition : (elt -> bool) -> t -> t * t
+    val split : elt -> t -> t * bool * t
+    val is_empty : t -> bool
+    val mem : elt -> t -> bool
+    val equal : t -> t -> bool
+    val compare : t -> t -> int
+    val subset : t -> t -> bool
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val to_list : t -> elt list
     val of_list : elt list -> t
     val to_seq_from : elt -> t -> elt Seq.t
     val to_seq : t -> elt Seq.t
@@ -381,7 +409,7 @@ end;;
 include T;;
 let f (x : t) : T.t = x ;;
 [%%expect{|
-module F : functor (M : sig end) -> sig type t end
+module F : (M : sig end) -> sig type t end
 module T : sig module M : sig end type t = F(M).t end
 module M = T.M
 type t = F(M).t
@@ -406,8 +434,6 @@ module A :
         type elt = B.t
         type t = Set.Make(B).t
         val empty : t
-        val is_empty : t -> bool
-        val mem : elt -> t -> bool
         val add : elt -> t -> t
         val singleton : elt -> t
         val remove : elt -> t -> t
@@ -415,17 +441,6 @@ module A :
         val inter : t -> t -> t
         val disjoint : t -> t -> bool
         val diff : t -> t -> t
-        val compare : t -> t -> int
-        val equal : t -> t -> bool
-        val subset : t -> t -> bool
-        val iter : (elt -> unit) -> t -> unit
-        val map : (elt -> elt) -> t -> t
-        val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-        val for_all : (elt -> bool) -> t -> bool
-        val exists : (elt -> bool) -> t -> bool
-        val filter : (elt -> bool) -> t -> t
-        val filter_map : (elt -> elt option) -> t -> t
-        val partition : (elt -> bool) -> t -> t * t
         val cardinal : t -> int
         val elements : t -> elt list
         val min_elt : t -> elt
@@ -434,13 +449,27 @@ module A :
         val max_elt_opt : t -> elt option
         val choose : t -> elt
         val choose_opt : t -> elt option
-        val split : elt -> t -> t * bool * t
         val find : elt -> t -> elt
         val find_opt : elt -> t -> elt option
         val find_first : (elt -> bool) -> t -> elt
         val find_first_opt : (elt -> bool) -> t -> elt option
         val find_last : (elt -> bool) -> t -> elt
         val find_last_opt : (elt -> bool) -> t -> elt option
+        val iter : (elt -> unit) -> t -> unit
+        val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
+        val map : (elt -> elt) -> t -> t
+        val filter : (elt -> bool) -> t -> t
+        val filter_map : (elt -> elt option) -> t -> t
+        val partition : (elt -> bool) -> t -> t * t
+        val split : elt -> t -> t * bool * t
+        val is_empty : t -> bool
+        val mem : elt -> t -> bool
+        val equal : t -> t -> bool
+        val compare : t -> t -> int
+        val subset : t -> t -> bool
+        val for_all : (elt -> bool) -> t -> bool
+        val exists : (elt -> bool) -> t -> bool
+        val to_list : t -> elt list
         val of_list : elt list -> t
         val to_seq_from : elt -> t -> elt Seq.t
         val to_seq : t -> elt Seq.t
@@ -467,11 +496,11 @@ module G = F (M.Y);;
 module N = G (M);;
 module N = F (M.Y) (M);;
 [%%expect{|
-module FF : functor (X : sig end) -> sig type t end
+module FF : (X : sig end) -> sig type t end
 module M :
   sig module X : sig end module Y : sig type t = FF(X).t end type t = Y.t end
-module F : functor (Y : sig type t end) (M : sig type t = Y.t end) -> sig end
-module G : functor (M : sig type t = M.Y.t end) -> sig end
+module F : (Y : sig type t end) (M : sig type t = Y.t end) -> sig end
+module G : (M : sig type t = M.Y.t end) -> sig end
 module N : sig end
 module N : sig end
 |}];;
@@ -485,7 +514,7 @@ end
 include T
 let f (x : t) : T.t = x
 [%%expect {|
-module F : functor (M : sig end) -> sig type t end
+module F : (M : sig end) -> sig type t end
 module T : sig module M : sig end type t = F(M).t end
 module M = T.M
 type t = F(M).t
@@ -508,7 +537,7 @@ module A1 : sig end
 module A2 : sig end
 module L1 : sig module X = A1 end
 module L2 : sig module X = A2 end
-module F : functor (L : sig module X : sig end end) -> sig end
+module F : (L : sig module X : sig end end) -> sig end
 module F1 : sig end
 module F2 : sig end
 |}];;
@@ -537,8 +566,6 @@ module SInt :
     type elt = Int.t
     type t = Set.Make(Int).t
     val empty : t
-    val is_empty : t -> bool
-    val mem : elt -> t -> bool
     val add : elt -> t -> t
     val singleton : elt -> t
     val remove : elt -> t -> t
@@ -546,17 +573,6 @@ module SInt :
     val inter : t -> t -> t
     val disjoint : t -> t -> bool
     val diff : t -> t -> t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val subset : t -> t -> bool
-    val iter : (elt -> unit) -> t -> unit
-    val map : (elt -> elt) -> t -> t
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-    val for_all : (elt -> bool) -> t -> bool
-    val exists : (elt -> bool) -> t -> bool
-    val filter : (elt -> bool) -> t -> t
-    val filter_map : (elt -> elt option) -> t -> t
-    val partition : (elt -> bool) -> t -> t * t
     val cardinal : t -> int
     val elements : t -> elt list
     val min_elt : t -> elt
@@ -565,13 +581,27 @@ module SInt :
     val max_elt_opt : t -> elt option
     val choose : t -> elt
     val choose_opt : t -> elt option
-    val split : elt -> t -> t * bool * t
     val find : elt -> t -> elt
     val find_opt : elt -> t -> elt option
     val find_first : (elt -> bool) -> t -> elt
     val find_first_opt : (elt -> bool) -> t -> elt option
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
+    val iter : (elt -> unit) -> t -> unit
+    val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
+    val map : (elt -> elt) -> t -> t
+    val filter : (elt -> bool) -> t -> t
+    val filter_map : (elt -> elt option) -> t -> t
+    val partition : (elt -> bool) -> t -> t * t
+    val split : elt -> t -> t * bool * t
+    val is_empty : t -> bool
+    val mem : elt -> t -> bool
+    val equal : t -> t -> bool
+    val compare : t -> t -> int
+    val subset : t -> t -> bool
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val to_list : t -> elt list
     val of_list : elt list -> t
     val to_seq_from : elt -> t -> elt Seq.t
     val to_seq : t -> elt Seq.t
@@ -595,7 +625,7 @@ module Int2 : sig type t = int val compare : 'a -> 'a -> int end
 Line 15, characters 10-30:
 15 |   include S with module I := I
                ^^^^^^^^^^^^^^^^^^^^
-Error: In this `with' constraint, the new definition of I
+Error: In this "with" constraint, the new definition of "I"
        does not match its original definition in the constrained signature:
        Modules do not match: (module Int2) is not included in (module Int)
 |}];;
@@ -684,19 +714,19 @@ module type A = Alias with module N := F(List);;
 module rec Bad : A = Bad;;
 [%%expect{|
 module type Alias = sig module N : sig end module M = N end
-module F : functor (X : sig end) -> sig type t end
+module F : (X : sig end) -> sig type t end
 Line 1:
 Error: Module type declarations do not match:
          module type A = sig module M = F(List) end
        does not match
          module type A = sig module M = F(List) end
-       At position module type A = <here>
+       At position "module type A = <here>"
        Module types do not match:
          sig module M = F(List) end
        is not equal to
          sig module M = F(List) end
-       At position module type A = sig module M : <here> end
-       Module F(List) cannot be aliased
+       At position "module type A = sig module M : <here> end"
+       Module "F(List)" cannot be aliased
 |}];;
 
 (* Shinwell 2014-04-23 *)
@@ -776,7 +806,7 @@ end = struct
   type a = Foo.b
 end;;
 [%%expect{|
-module F : functor (X : sig end) -> sig type t end
+module F : (X : sig end) -> sig type t end
 module M :
   sig type a module Foo : sig module Bar : sig end type b = a end end
 |}];;
@@ -876,7 +906,7 @@ module M :
         module A : sig val x : string end
         module B : sig val x : int end
       end
-    module F : functor (X : sig module A = N.A end) -> sig val s : string end
+    module F : (X : sig module A = N.A end) -> sig val s : string end
   end
 module N : sig val s : string end
 val s : string = "hello"

@@ -20,27 +20,27 @@
 #ifdef HAS_INITGROUPS
 
 #include <sys/types.h>
-#ifdef HAS_UNISTD
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 #include <errno.h>
 #include <limits.h>
 #include <grp.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
-CAMLprim value unix_initgroups(value user, value group)
+CAMLprim value caml_unix_initgroups(value user, value group)
 {
   if (! caml_string_is_c_safe(user))
-    unix_error(EINVAL, "initgroups", user);
+    caml_unix_error(EINVAL, "initgroups", user);
   if (initgroups(String_val(user), Int_val(group)) == -1) {
-    uerror("initgroups", Nothing);
+    caml_uerror("initgroups", Nothing);
   }
   return Val_unit;
 }
 
 #else
 
-CAMLprim value unix_initgroups(value user, value group)
+CAMLprim value caml_unix_initgroups(value user, value group)
 { caml_invalid_argument("initgroups not implemented"); }
 
 #endif

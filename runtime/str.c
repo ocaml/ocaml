@@ -268,6 +268,9 @@ CAMLprim value caml_bytes_set64(value str, value index, value newval)
   return Val_unit;
 }
 
+CAMLno_tsan_for_perf /* This attribute needs to stay on its own line for this
+                        function to be detected as a primitive by the build
+                        system. */
 CAMLprim value caml_string_equal(value s1, value s2)
 {
   mlsize_t sz1, sz2;
@@ -403,7 +406,9 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
      excluding the terminating '\0'. */
   n = vsnprintf(buf, sizeof(buf), format, args);
   va_end(args);
-  if (n < sizeof(buf)) {
+  if (n < 0) {
+    caml_raise_out_of_memory();
+  } else if (n < sizeof(buf)) {
     /* All output characters were written to buf, including the
        terminating '\0'.  Allocate a Caml string with length "n"
        as computed by vsnprintf, and copy the output of vsnprintf into it. */

@@ -13,6 +13,19 @@
 #*                                                                        *
 #**************************************************************************
 
+# Insertion sort in awk, because asort is a GNU extension. Lifted carefully
+# with tongs out of the mawk manpage.
+function isort(A, n) {
+  for (i = 1; i < n; i++) {
+    hold = A[j = i];
+    while (A[j-1] > hold) {
+      j--;
+      A[j+1] = A[j];
+    }
+    A[j] = hold;
+  }
+}
+
 function check() {
     if (!in_test){
         printf("error at line %d: found test result without test start\n", NR);
@@ -49,14 +62,10 @@ function record_na() {
     clear();
 }
 
-# The output cares only if the test passes at least once so if a test passes,
-# but then fails in a re-run triggered by a different test, ignore it.
 function record_fail() {
     check();
-    if (!(key in RESULTS) || RESULTS[key] == "s"){
-        if (!(key in RESULTS)) ++nresults;
-        RESULTS[key] = "f";
-    }
+    if (!(key in RESULTS)) ++nresults;
+    RESULTS[key] = "f";
     delete SKIPPED[curdir];
     clear();
 }
@@ -90,21 +99,21 @@ function record_unexp() {
     errored = 1;
 }
 
+/^ ... testing '[^']*' with / {
+    if (in_test) record_unexp();
+    next;
+}
+
 /^ ... testing '[^']*'/ {
     if (in_test) record_unexp();
     match($0, /... testing '[^']*'/);
     curfile = substr($0, RSTART+13, RLENGTH-14);
-    if (match($0, /... testing '[^']*' with [^:=]*/)){
-        curfile = substr($0, RSTART+12, RLENGTH-12);
+    if (match($0, /\(wall clock: .*s\)/)){
+        duration = substr($0, RSTART+13, RLENGTH-15);
+        if (duration + 0.0 > 10.0)
+          slow[slowcount++] = sprintf("%s: %s", curfile, duration);
     }
     key = sprintf ("%s/%s", curdir, curfile);
-    DIRS[key] = curdir;
-    in_test = 1;
-}
-
-/^ ... testing (with|[^'])/ {
-    if (in_test) record_unexp();
-    key = curdir;
     DIRS[key] = curdir;
     in_test = 1;
 }
@@ -129,17 +138,14 @@ function record_unexp() {
     record_unexp();
 }
 
-/^re-ran / {
-    if (in_test){
-        printf("error at line %d: found re-ran inside a test\n", NR);
-        errored = 1;
-    }else{
-        RERAN[substr($0, 8, length($0)-7)] += 1;
-        ++ reran;
-    }
+/make[^:]*: \*\*\* \[[^]]*\] Error/ {
+    errored = 1;
 }
 
 END {
+    if (ENVIRON["GITHUB_ACTIONS"] == "true") start_group = "::group::";
+    if (in_test) record_unexp();
+
     if (errored){
         printf ("\n#### Some fatal error occurred during testing.\n\n");
         exit (3);
@@ -176,10 +182,21 @@ END {
                 ++ ignored;
             }
         }
+        isort(skips, skipidx);
+        isort(blanks, empty);
+        isort(fail, failed);
+        isort(unexp, unexped);
+        isort(slow, slowcount);
         printf("\n");
         if (skipped != 0){
-            printf("\nList of skipped tests:\n");
+            printf("\n%sList of skipped tests:\n", start_group);
             for (i=0; i < skipidx; i++) printf("    %s\n", skips[i]);
+            if (ENVIRON["GITHUB_ACTIONS"] == "true") print "::endgroup::";
+        }
+        if (slowcount != 0){
+            printf("\n\n%sTests taking longer than 10s:\n", start_group);
+            for (i=0; i < slowcount; i++) printf("    %s\n", slow[i]);
+            if (ENVIRON["GITHUB_ACTIONS"] == "true") print "::endgroup::";
         }
         if (empty != 0){
             printf("\nList of directories returning no results:\n");
@@ -195,20 +212,17 @@ END {
         }
         printf("\n");
         printf("Summary:\n");
-        printf("  %3d tests passed\n", passed);
-        printf("  %3d tests skipped\n", skipped);
-        printf("  %3d tests failed\n", failed);
-        printf("  %3d tests not started (parent test skipped or failed)\n",
+        printf("  %4d tests passed\n", passed);
+        printf("  %4d tests skipped\n", skipped);
+        printf("  %4d tests failed\n", failed);
+        printf("  %4d tests not started (parent test skipped or failed)\n",
                ignored);
-        printf("  %3d unexpected errors\n", unexped);
-        printf("  %3d tests considered", nresults);
+        printf("  %4d unexpected errors\n", unexped);
+        printf("  %4d tests considered", nresults);
         if (nresults != passed + skipped + ignored + failed + unexped){
             printf (" (totals don't add up??)");
         }
         printf ("\n");
-        if (reran != 0){
-            printf("  %3d test dir re-runs\n", reran);
-        }
         if (failed || unexped){
             printf("#### Something failed. Exiting with error status.\n\n");
             exit 4;

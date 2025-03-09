@@ -141,18 +141,6 @@ and lam ppf = function
         phantom_defining_expr_opt defining_expr;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
-  | Uletrec(id_arg_list, body) ->
-      let bindings ppf id_arg_list =
-        let spc = ref false in
-        List.iter
-          (fun (id, l) ->
-            if !spc then fprintf ppf "@ " else spc := true;
-            fprintf ppf "@[<2>%a@ %a@]"
-              VP.print id
-              lam l)
-          id_arg_list in
-      fprintf ppf
-        "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
   | Uprim(prim, largs, _) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in

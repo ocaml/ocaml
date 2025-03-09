@@ -26,9 +26,13 @@ val binary_modules : Variables.t
 val bytecc_libs : Variables.t
 (** Libraries to link with for bytecode *)
 
-val c_preprocessor : Variables.t
+val cpp : Variables.t
+
+val cppflags : Variables.t
 
 val cc : Variables.t
+
+val cflags : Variables.t
 
 val caml_ld_library_path : Variables.t
 
@@ -115,7 +119,6 @@ val ocamlsrcdir : Variables.t
 
 val ocamldebug_flags : Variables.t
 
-val ocamldebug_script : Variables.t
 
 val os_type : Variables.t
 

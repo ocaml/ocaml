@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let () =
   let test ~suffix name exp =

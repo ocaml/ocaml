@@ -1,6 +1,6 @@
 (* TEST
-   flags = " -w +A -strict-sequence "
-   * expect
+ flags = " -w +A -strict-sequence ";
+ expect;
 *)
 
 module Unused : sig
@@ -12,7 +12,8 @@ end
 Line 3, characters 2-19:
 3 |   type unused = int
       ^^^^^^^^^^^^^^^^^
-Warning 34 [unused-type-declaration]: unused type unused.
+Warning 34 [unused-type-declaration]: unused type "unused".
+
 module Unused : sig end
 |}]
 
@@ -26,7 +27,8 @@ end
 Line 4, characters 2-27:
 4 |   type nonrec unused = used
       ^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 34 [unused-type-declaration]: unused type unused.
+Warning 34 [unused-type-declaration]: unused type "unused".
+
 module Unused_nonrec : sig end
 |}]
 
@@ -39,11 +41,13 @@ end
 Line 3, characters 2-27:
 3 |   type unused = A of unused
       ^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 34 [unused-type-declaration]: unused type unused.
+Warning 34 [unused-type-declaration]: unused type "unused".
+
 Line 3, characters 16-27:
 3 |   type unused = A of unused
                     ^^^^^^^^^^^
-Warning 37 [unused-constructor]: unused constructor A.
+Warning 37 [unused-constructor]: unused constructor "A".
+
 module Unused_rec : sig end
 |}]
 
@@ -69,7 +73,8 @@ end
 Line 4, characters 11-12:
 4 |   type t = T
                ^
-Warning 37 [unused-constructor]: unused constructor T.
+Warning 37 [unused-constructor]: unused constructor "T".
+
 module Unused_constructor : sig type t end
 |}]
 
@@ -86,8 +91,9 @@ end
 Line 5, characters 11-12:
 5 |   type t = T
                ^
-Warning 37 [unused-constructor]: constructor T is never used to build values.
-(However, this constructor appears in patterns.)
+Warning 37 [unused-constructor]: constructor "T" is never used to build values.
+  (However, this constructor appears in patterns.)
+
 module Unused_constructor_outside_patterns :
   sig type t val nothing : t -> unit end
 |}]
@@ -102,8 +108,9 @@ end
 Line 4, characters 11-12:
 4 |   type t = T
                ^
-Warning 37 [unused-constructor]: constructor T is never used to build values.
-Its type is exported as a private type.
+Warning 37 [unused-constructor]: constructor "T" is never used to build values.
+  Its type is exported as a private type.
+
 module Unused_constructor_exported_private : sig type t = private T end
 |}]
 
@@ -130,7 +137,8 @@ end
 Line 4, characters 19-20:
 4 |   type t = private T
                        ^
-Warning 37 [unused-constructor]: unused constructor T.
+Warning 37 [unused-constructor]: unused constructor "T".
+
 module Unused_private_constructor : sig type t end
 |}]
 
@@ -177,7 +185,8 @@ end
 Line 3, characters 2-26:
 3 |   exception Nobody_uses_me
       ^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 38 [unused-extension]: unused exception Nobody_uses_me
+Warning 38 [unused-extension]: unused exception "Nobody_uses_me"
+
 module Unused_exception : sig end
 |}]
 
@@ -192,8 +201,25 @@ end
 Line 5, characters 12-26:
 5 |   type t += Nobody_uses_me
                 ^^^^^^^^^^^^^^
-Warning 38 [unused-extension]: unused extension constructor Nobody_uses_me
+Warning 38 [unused-extension]: unused extension constructor "Nobody_uses_me"
+
 module Unused_extension_constructor : sig type t = .. end
+|}]
+
+module Unused_extension_disabled_warning : sig
+  type t = ..
+end = struct
+  type t = ..
+  type t += Dont_warn_on_me [@warning "-unused-extension"] | Nobody_uses_me
+end
+;;
+[%%expect {|
+Line 5, characters 59-75:
+5 |   type t += Dont_warn_on_me [@warning "-unused-extension"] | Nobody_uses_me
+                                                               ^^^^^^^^^^^^^^^^
+Warning 38 [unused-extension]: unused extension constructor "Nobody_uses_me"
+
+module Unused_extension_disabled_warning : sig type t = .. end
 |}]
 
 module Unused_exception_outside_patterns : sig
@@ -209,8 +235,9 @@ end
 Line 4, characters 2-32:
 4 |   exception Nobody_constructs_me
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 38 [unused-extension]: exception Nobody_constructs_me is never used to build values.
-(However, this constructor appears in patterns.)
+Warning 38 [unused-extension]: exception "Nobody_constructs_me" is never used
+  to build values. (However, this constructor appears in patterns.)
+
 module Unused_exception_outside_patterns : sig val falsity : exn -> bool end
 |}]
 
@@ -229,8 +256,9 @@ end
 Line 6, characters 12-27:
 6 |   type t += Noone_builds_me
                 ^^^^^^^^^^^^^^^
-Warning 38 [unused-extension]: extension constructor Noone_builds_me is never used to build values.
-(However, this constructor appears in patterns.)
+Warning 38 [unused-extension]: extension constructor "Noone_builds_me" is never used
+  to build values. (However, this constructor appears in patterns.)
+
 module Unused_extension_outside_patterns :
   sig type t = .. val falsity : t -> bool end
 |}]
@@ -245,8 +273,9 @@ end
 Line 4, characters 2-23:
 4 |   exception Private_exn
       ^^^^^^^^^^^^^^^^^^^^^
-Warning 38 [unused-extension]: exception Private_exn is never used to build values.
-It is exported or rebound as a private extension.
+Warning 38 [unused-extension]: exception "Private_exn" is never used to build
+  values. It is exported or rebound as a private extension.
+
 module Unused_exception_exported_private :
   sig type exn += private Private_exn end
 |}]
@@ -263,8 +292,9 @@ end
 Line 6, characters 12-23:
 6 |   type t += Private_ext
                 ^^^^^^^^^^^
-Warning 38 [unused-extension]: extension constructor Private_ext is never used to build values.
-It is exported or rebound as a private extension.
+Warning 38 [unused-extension]: extension constructor "Private_ext" is never used
+  to build values. It is exported or rebound as a private extension.
+
 module Unused_extension_exported_private :
   sig type t = .. type t += private Private_ext end
 |}]
@@ -294,7 +324,8 @@ end
 Line 5, characters 20-31:
 5 |   type t += private Private_ext
                         ^^^^^^^^^^^
-Warning 38 [unused-extension]: unused extension constructor Private_ext
+Warning 38 [unused-extension]: unused extension constructor "Private_ext"
+
 module Unused_private_extension : sig type t end
 |}]
 
@@ -330,7 +361,8 @@ end;;
 Line 3, characters 11-12:
 3 |   type t = A [@@warning "-34"]
                ^
-Warning 37 [unused-constructor]: unused constructor A.
+Warning 37 [unused-constructor]: unused constructor "A".
+
 module Unused_type_disable_warning : sig end
 |}]
 
@@ -342,10 +374,28 @@ end;;
 Line 3, characters 2-30:
 3 |   type t = A [@@warning "-37"]
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 34 [unused-type-declaration]: unused type t.
+Warning 34 [unused-type-declaration]: unused type "t".
+
 module Unused_constructor_disable_warning : sig end
 |}]
 
+module Unused_constructor_disable_one_warning : sig
+end = struct
+  type t = A [@warning "-37"] | B
+end;;
+[%%expect {|
+Line 3, characters 2-33:
+3 |   type t = A [@warning "-37"] | B
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 34 [unused-type-declaration]: unused type "t".
+
+Line 3, characters 30-33:
+3 |   type t = A [@warning "-37"] | B
+                                  ^^^
+Warning 37 [unused-constructor]: unused constructor "B".
+
+module Unused_constructor_disable_one_warning : sig end
+|}]
 
 module Unused_record : sig end = struct
   type t = { a : int; b : int }
@@ -356,11 +406,13 @@ end;;
 Line 2, characters 13-21:
 2 |   type t = { a : int; b : int }
                  ^^^^^^^^
-Warning 69 [unused-field]: unused record field a.
+Warning 69 [unused-field]: unused record field "a".
+
 Line 2, characters 22-29:
 2 |   type t = { a : int; b : int }
                           ^^^^^^^
-Warning 69 [unused-field]: unused record field b.
+Warning 69 [unused-field]: unused record field "b".
+
 module Unused_record : sig end
 |}]
 
@@ -373,8 +425,9 @@ end;;
 Line 2, characters 13-20:
 2 |   type t = { a : int }
                  ^^^^^^^
-Warning 69 [unused-field]: record field a is never read.
-(However, this field is used to build or mutate values.)
+Warning 69 [unused-field]: record field "a" is never read.
+  (However, this field is used to build or mutate values.)
+
 module Unused_field : sig end
 |}]
 
@@ -389,8 +442,9 @@ end;;
 Line 2, characters 22-30:
 2 |   type t = { a : int; b : int; c : int }
                           ^^^^^^^^
-Warning 69 [unused-field]: record field b is never read.
-(However, this field is used to build or mutate values.)
+Warning 69 [unused-field]: record field "b" is never read.
+  (However, this field is used to build or mutate values.)
+
 module Unused_field : sig end
 |}]
 
@@ -404,7 +458,8 @@ end;;
 Line 2, characters 22-37:
 2 |   type t = { a : int; mutable b : int }
                           ^^^^^^^^^^^^^^^
-Warning 69 [unused-field]: mutable record field b is never mutated.
+Warning 69 [unused-field]: mutable record field "b" is never mutated.
+
 module Unused_mutable_field : sig end
 |}]
 
@@ -439,7 +494,198 @@ end;;
 Line 4, characters 22-37:
 4 |   type t = { a : int; mutable b : int }
                           ^^^^^^^^^^^^^^^
-Warning 69 [unused-field]: mutable record field b is never mutated.
+Warning 69 [unused-field]: mutable record field "b" is never mutated.
+
 module Unused_mutable_field_exported_private :
   sig type t = private { a : int; mutable b : int; } end
+|}]
+
+module Unused_field_disable_warning : sig
+end = struct
+  type t = { a: int; b:int } [@@warning "-unused-field"]
+end;;
+[%%expect {|
+Line 3, characters 2-56:
+3 |   type t = { a: int; b:int } [@@warning "-unused-field"]
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 34 [unused-type-declaration]: unused type "t".
+
+module Unused_field_disable_warning : sig end
+|}]
+
+module Unused_field_disable_one_warning : sig
+end = struct
+  type t = { a: int [@warning "-unused-field"]; b:int }
+end;;
+[%%expect {|
+Line 3, characters 2-55:
+3 |   type t = { a: int [@warning "-unused-field"]; b:int }
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 34 [unused-type-declaration]: unused type "t".
+
+Line 3, characters 48-53:
+3 |   type t = { a: int [@warning "-unused-field"]; b:int }
+                                                    ^^^^^
+Warning 69 [unused-field]: unused record field "b".
+
+module Unused_field_disable_one_warning : sig end
+|}]
+
+(* Locally abstract types *)
+
+let u (type unused) = ()
+[%%expect {|
+Line 1, characters 12-18:
+1 | let u (type unused) = ()
+                ^^^^^^
+Warning 34 [unused-type-declaration]: unused type "unused".
+
+val u : unit = ()
+|}]
+
+let u = fun (type unused) -> ()
+[%%expect {|
+Line 1, characters 18-24:
+1 | let u = fun (type unused) -> ()
+                      ^^^^^^
+Warning 34 [unused-type-declaration]: unused type "unused".
+
+val u : unit = ()
+|}]
+
+let u : type unused. unit = ()
+[%%expect {|
+Line 1, characters 13-19:
+1 | let u : type unused. unit = ()
+                 ^^^^^^
+Warning 34 [unused-type-declaration]: unused type "unused".
+
+val u : unit = ()
+|}]
+
+let f (type unused) x = x
+[%%expect {|
+Line 1, characters 12-18:
+1 | let f (type unused) x = x
+                ^^^^^^
+Warning 34 [unused-type-declaration]: unused type "unused".
+
+val f : 'a -> 'a = <fun>
+|}]
+
+let f = fun (type unused) x -> x
+[%%expect {|
+Line 1, characters 18-24:
+1 | let f = fun (type unused) x -> x
+                      ^^^^^^
+Warning 34 [unused-type-declaration]: unused type "unused".
+
+val f : 'a -> 'a = <fun>
+|}]
+
+let f = fun (type unused) x -> x
+[%%expect {|
+Line 1, characters 18-24:
+1 | let f = fun (type unused) x -> x
+                      ^^^^^^
+Warning 34 [unused-type-declaration]: unused type "unused".
+
+val f : 'a -> 'a = <fun>
+|}]
+
+let f (type used unused) (x : used) = x
+[%%expect {|
+Line 1, characters 17-23:
+1 | let f (type used unused) (x : used) = x
+                     ^^^^^^
+Warning 34 [unused-type-declaration]: unused type "unused".
+
+val f : 'used -> 'used = <fun>
+|}]
+
+let f = fun (type used unused) (x : used) -> x
+
+[%%expect{|
+Line 1, characters 23-29:
+1 | let f = fun (type used unused) (x : used) -> x
+                           ^^^^^^
+Warning 34 [unused-type-declaration]: unused type "unused".
+
+val f : 'used -> 'used = <fun>
+|}]
+
+let f : type used unused. used -> used = fun x -> x
+
+[%%expect{|
+Line 1, characters 18-24:
+1 | let f : type used unused. used -> used = fun x -> x
+                      ^^^^^^
+Warning 34 [unused-type-declaration]: unused type "unused".
+
+val f : 'used -> 'used = <fun>
+|}]
+
+let f (type unused1 unused2) x = x
+[%%expect {|
+Line 1, characters 12-19:
+1 | let f (type unused1 unused2) x = x
+                ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type "unused1".
+
+Line 1, characters 20-27:
+1 | let f (type unused1 unused2) x = x
+                        ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type "unused2".
+
+val f : 'a -> 'a = <fun>
+|}]
+
+let f = fun (type unused1 unused2) x -> x
+
+[%%expect{|
+Line 1, characters 18-25:
+1 | let f = fun (type unused1 unused2) x -> x
+                      ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type "unused1".
+
+Line 1, characters 26-33:
+1 | let f = fun (type unused1 unused2) x -> x
+                              ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type "unused2".
+
+val f : 'a -> 'a = <fun>
+|}]
+
+let f : type unused1 unused2. 'a -> 'a = fun x -> x
+
+[%%expect{|
+Line 1, characters 13-20:
+1 | let f : type unused1 unused2. 'a -> 'a = fun x -> x
+                 ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type "unused1".
+
+Line 1, characters 21-28:
+1 | let f : type unused1 unused2. 'a -> 'a = fun x -> x
+                         ^^^^^^^
+Warning 34 [unused-type-declaration]: unused type "unused2".
+
+val f : 'a -> 'a = <fun>
+|}]
+
+let f (x1 : int as 'unused1) (x2 : int as 'unused2)
+      (x3 : int as 'used1) (x4 : 'used1) (x5 : 'used2) = (x1, x2, x3, x4, x5)
+
+[%%expect{|
+Line 1, characters 19-27:
+1 | let f (x1 : int as 'unused1) (x2 : int as 'unused2)
+                       ^^^^^^^^
+Warning 34 [unused-type-declaration]: unused type alias "'unused1".
+
+Line 1, characters 42-50:
+1 | let f (x1 : int as 'unused1) (x2 : int as 'unused2)
+                                              ^^^^^^^^
+Warning 34 [unused-type-declaration]: unused type alias "'unused2".
+
+val f : int -> int -> int -> int -> 'used2 -> int * int * int * int * 'used2 =
+  <fun>
 |}]

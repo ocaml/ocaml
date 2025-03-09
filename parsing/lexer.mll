@@ -29,75 +29,108 @@ type error =
   | Unterminated_string_in_comment of Location.t * Location.t
   | Empty_character_literal
   | Keyword_as_label of string
+  | Capitalized_label of string
   | Invalid_literal of string
   | Invalid_directive of string * string option
-;;
+  | Invalid_encoding of string
+  | Invalid_char_in_ident of Uchar.t
+  | Non_lowercase_delimiter of string
+  | Capitalized_raw_identifier of string
+  | Unknown_keyword of string
 
-exception Error of error * Location.t;;
+exception Error of error * Location.t
 
 (* The table of keywords *)
 
-let keyword_table =
-  create_hashtable 149 [
-    "and", AND;
-    "as", AS;
-    "assert", ASSERT;
-    "begin", BEGIN;
-    "class", CLASS;
-    "constraint", CONSTRAINT;
-    "do", DO;
-    "done", DONE;
-    "downto", DOWNTO;
-    "else", ELSE;
-    "end", END;
-    "exception", EXCEPTION;
-    "external", EXTERNAL;
-    "false", FALSE;
-    "for", FOR;
-    "fun", FUN;
-    "function", FUNCTION;
-    "functor", FUNCTOR;
-    "if", IF;
-    "in", IN;
-    "include", INCLUDE;
-    "inherit", INHERIT;
-    "initializer", INITIALIZER;
-    "lazy", LAZY;
-    "let", LET;
-    "match", MATCH;
-    "method", METHOD;
-    "module", MODULE;
-    "mutable", MUTABLE;
-    "new", NEW;
-    "nonrec", NONREC;
-    "object", OBJECT;
-    "of", OF;
-    "open", OPEN;
-    "or", OR;
+let all_keywords =
+  let v5_3 = Some (5,3) in
+  let v1_0 = Some (1,0) in
+  let v1_6 = Some (1,6) in
+  let v4_2 = Some (4,2) in
+  let always = None in
+  [
+    "and", AND, always;
+    "as", AS, always;
+    "assert", ASSERT, v1_6;
+    "begin", BEGIN, always;
+    "class", CLASS, v1_0;
+    "constraint", CONSTRAINT, v1_0;
+    "do", DO, always;
+    "done", DONE, always;
+    "downto", DOWNTO, always;
+    "effect", EFFECT, v5_3;
+    "else", ELSE, always;
+    "end", END, always;
+    "exception", EXCEPTION, always;
+    "external", EXTERNAL, always;
+    "false", FALSE, always;
+    "for", FOR, always;
+    "fun", FUN, always;
+    "function", FUNCTION, always;
+    "functor", FUNCTOR, always;
+    "if", IF, always;
+    "in", IN, always;
+    "include", INCLUDE, always;
+    "inherit", INHERIT, v1_0;
+    "initializer", INITIALIZER, v1_0;
+    "lazy", LAZY, v1_6;
+    "let", LET, always;
+    "match", MATCH, always;
+    "method", METHOD, v1_0;
+    "module", MODULE, always;
+    "mutable", MUTABLE, always;
+    "new", NEW, v1_0;
+    "nonrec", NONREC, v4_2;
+    "object", OBJECT, v1_0;
+    "of", OF, always;
+    "open", OPEN, always;
+    "or", OR, always;
 (*  "parser", PARSER; *)
-    "private", PRIVATE;
-    "rec", REC;
-    "sig", SIG;
-    "struct", STRUCT;
-    "then", THEN;
-    "to", TO;
-    "true", TRUE;
-    "try", TRY;
-    "type", TYPE;
-    "val", VAL;
-    "virtual", VIRTUAL;
-    "when", WHEN;
-    "while", WHILE;
-    "with", WITH;
+    "private", PRIVATE, v1_0;
+    "rec", REC, always;
+    "sig", SIG, always;
+    "struct", STRUCT, always;
+    "then", THEN, always;
+    "to", TO, always;
+    "true", TRUE, always;
+    "try", TRY, always;
+    "type", TYPE, always;
+    "val", VAL, always;
+    "virtual", VIRTUAL, v1_0;
+    "when", WHEN, always;
+    "while", WHILE, always;
+    "with", WITH, always;
 
-    "lor", INFIXOP3("lor"); (* Should be INFIXOP2 *)
-    "lxor", INFIXOP3("lxor"); (* Should be INFIXOP2 *)
-    "mod", INFIXOP3("mod");
-    "land", INFIXOP3("land");
-    "lsl", INFIXOP4("lsl");
-    "lsr", INFIXOP4("lsr");
-    "asr", INFIXOP4("asr")
+    "lor", INFIXOP3("lor"), always; (* Should be INFIXOP2 *)
+    "lxor", INFIXOP3("lxor"), always; (* Should be INFIXOP2 *)
+    "mod", INFIXOP3("mod"), always;
+    "land", INFIXOP3("land"), always;
+    "lsl", INFIXOP4("lsl"), always;
+    "lsr", INFIXOP4("lsr"), always;
+    "asr", INFIXOP4("asr"), always
 ]
+
+
+let keyword_table = Hashtbl.create 149
+
+let populate_keywords (version,keywords) =
+  let greater (x:(int*int) option) (y:(int*int) option) =
+    match x, y with
+    | None, _ | _, None -> true
+    | Some x, Some y -> x >= y
+  in
+  let tbl = keyword_table in
+  Hashtbl.clear tbl;
+  let add_keyword (name, token, since) =
+    if greater version since then Hashtbl.replace tbl name (Some token)
+  in
+  List.iter add_keyword all_keywords;
+  List.iter (fun name ->
+    match List.find (fun (n,_,_) -> n = name) all_keywords with
+    | (_,tok,_) -> Hashtbl.replace tbl name (Some tok)
+    | exception Not_found -> Hashtbl.replace tbl name None
+    ) keywords
+
 
 (* To buffer string literals *)
 
@@ -108,12 +141,39 @@ let get_stored_string () = Buffer.contents string_buffer
 let store_string_char c = Buffer.add_char string_buffer c
 let store_string_utf_8_uchar u = Buffer.add_utf_8_uchar string_buffer u
 let store_string s = Buffer.add_string string_buffer s
+let store_substring s ~pos ~len = Buffer.add_substring string_buffer s pos len
+
 let store_lexeme lexbuf = store_string (Lexing.lexeme lexbuf)
+let store_normalized_newline newline =
+  (* #12502: we normalize "\r\n" to "\n" at lexing time,
+     to avoid behavior difference due to OS-specific
+     newline characters in string literals.
+
+     (For example, Git for Windows will translate \n in versioned
+     files into \r\n sequences when checking out files on Windows. If
+     your code contains multiline quoted string literals, the raw
+     content of the string literal would be different between Git for
+     Windows users and all other users. Thanks to newline
+     normalization, the value of the literal as a string constant will
+     be the same no matter which programming tools are used.)
+
+     Many programming languages use the same approach, for example
+     Java, Javascript, Kotlin, Python, Swift and C++.
+  *)
+  (* Our 'newline' regexp accepts \r*\n, but we only wish
+     to normalize \r?\n into \n -- see the discussion in #12502.
+     All carriage returns except for the (optional) last one
+     are reproduced in the output. We implement this by skipping
+     the first carriage return, if any. *)
+  let len = String.length newline in
+  if len = 1
+  then store_string_char '\n'
+  else store_substring newline ~pos:1 ~len:(len - 1)
 
 (* To store the position of the beginning of a string and comment *)
-let string_start_loc = ref Location.none;;
-let comment_start_loc = ref [];;
-let in_comment () = !comment_start_loc <> [];;
+let string_start_loc = ref Location.none
+let comment_start_loc = ref []
+let in_comment () = !comment_start_loc <> []
 let is_in_string = ref false
 let in_string () = !is_in_string
 let print_warnings = ref true
@@ -229,10 +289,53 @@ let uchar_for_uchar_escape lexbuf =
       illegal_escape lexbuf
         (Printf.sprintf "%X is not a Unicode scalar value" cp)
 
-let is_keyword name = Hashtbl.mem keyword_table name
+let validate_encoding lexbuf raw_name =
+  match Utf8_lexeme.normalize raw_name with
+  | Error _ -> error lexbuf (Invalid_encoding raw_name)
+  | Ok name -> name
 
-let check_label_name lexbuf name =
-  if is_keyword name then error lexbuf (Keyword_as_label name)
+let ident_for_extended lexbuf raw_name =
+  let name = validate_encoding lexbuf raw_name in
+  match Utf8_lexeme.validate_identifier name with
+  | Utf8_lexeme.Valid -> name
+  | Utf8_lexeme.Invalid_character u -> error lexbuf (Invalid_char_in_ident u)
+  | Utf8_lexeme.Invalid_beginning _ ->
+  assert false (* excluded by the regexps *)
+
+let validate_delim lexbuf raw_name =
+  let name = validate_encoding lexbuf raw_name in
+  if Utf8_lexeme.is_lowercase name then name
+  else error lexbuf (Non_lowercase_delimiter name)
+
+let validate_ext lexbuf name =
+    let name = validate_encoding lexbuf name in
+    match Utf8_lexeme.validate_identifier ~with_dot:true name with
+    | Utf8_lexeme.Valid -> name
+    | Utf8_lexeme.Invalid_character u -> error lexbuf (Invalid_char_in_ident u)
+    | Utf8_lexeme.Invalid_beginning _ ->
+    assert false (* excluded by the regexps *)
+
+let lax_delim raw_name =
+  match Utf8_lexeme.normalize raw_name with
+  | Error _ -> None
+  | Ok name ->
+     if Utf8_lexeme.is_lowercase name then Some name
+     else None
+
+let is_keyword name =
+  Hashtbl.mem keyword_table name
+
+let find_keyword lexbuf name =
+  match Hashtbl.find keyword_table name with
+  | Some x -> x
+  | None -> error lexbuf (Unknown_keyword name)
+  | exception Not_found -> LIDENT name
+
+let check_label_name ?(raw_escape=false) lexbuf name =
+  if Utf8_lexeme.is_capitalized name then
+    error lexbuf (Capitalized_label name);
+  if not raw_escape && is_keyword name then
+    error lexbuf (Keyword_as_label name)
 
 (* Update the current location with file name and line number. *)
 
@@ -247,18 +350,10 @@ let update_loc lexbuf file line absolute chars =
     pos_lnum = if absolute then line else pos.pos_lnum + line;
     pos_bol = pos.pos_cnum - chars;
   }
-;;
 
 let preprocessor = ref None
 
 let escaped_newlines = ref false
-
-(* Warn about Latin-1 characters used in idents *)
-
-let warn_latin1 lexbuf =
-  Location.deprecated
-    (Location.curr lexbuf)
-    "ISO-Latin1 characters in identifiers"
 
 let handle_docstrings = ref true
 let comment_list = ref []
@@ -276,7 +371,7 @@ let comments () = List.rev !comment_list
 
 (* Error report *)
 
-open Format
+open Format_doc
 
 let prepare_error loc = function
   | Illegal_character c ->
@@ -305,11 +400,15 @@ let prepare_error loc = function
       let msg = "Illegal empty character literal ''" in
       let sub =
         [Location.msg
-           "Hint: Did you mean ' ' or a type variable 'a?"] in
+           "@{<hint>Hint@}: Did you mean ' ' or a type variable 'a?"] in
       Location.error ~loc ~sub msg
   | Keyword_as_label kwd ->
       Location.errorf ~loc
-        "`%s' is a keyword, it cannot be used as label name" kwd
+        "%a is a keyword, it cannot be used as label name" Style.inline_code kwd
+  | Capitalized_label lbl ->
+      Location.errorf ~loc
+        "%a cannot be used as label name, \
+         it must start with a lowercase letter" Style.inline_code lbl
   | Invalid_literal s ->
       Location.errorf ~loc "Invalid literal %s" s
   | Invalid_directive (dir, explanation) ->
@@ -317,6 +416,25 @@ let prepare_error loc = function
         (fun ppf -> match explanation with
            | None -> ()
            | Some expl -> fprintf ppf ": %s" expl)
+  | Invalid_encoding s ->
+    Location.errorf ~loc "Invalid encoding of identifier %s." s
+  | Invalid_char_in_ident u ->
+      Location.errorf ~loc "Invalid character U+%04X in identifier"
+         (Uchar.to_int u)
+  | Capitalized_raw_identifier lbl ->
+      Location.errorf ~loc
+        "%a cannot be used as a raw identifier, \
+         it must start with a lowercase letter" Style.inline_code lbl
+  | Non_lowercase_delimiter name ->
+      Location.errorf ~loc
+        "%a cannot be used as a quoted string delimiter,@ \
+         it must contain only lowercase letters."
+         Style.inline_code name
+  | Unknown_keyword name ->
+      Location.errorf ~loc
+      "%a has been defined as an additional keyword.@ \
+       This version of OCaml does not support this keyword."
+      Style.inline_code name
 
 let () =
   Location.register_error_of_exn
@@ -333,12 +451,15 @@ let newline = ('\013'* '\010')
 let blank = [' ' '\009' '\012']
 let lowercase = ['a'-'z' '_']
 let uppercase = ['A'-'Z']
+let identstart = lowercase | uppercase
 let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
-let lowercase_latin1 = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
-let uppercase_latin1 = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar_latin1 =
-  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
-(* This should be kept in sync with the [is_identchar] function in [env.ml] *)
+let utf8 = ['\192'-'\255'] ['\128'-'\191']*
+let identstart_ext = identstart | utf8
+let identchar_ext = identchar | utf8
+let delim_ext = (lowercase | uppercase | utf8)*
+(* ascii uppercase letters in quoted string delimiters ({delim||delim}) are
+   rejected by the delimiter validation function, we accept them temporarily to
+   have the same error message for ascii and non-ascii uppercase letters *)
 
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
@@ -349,8 +470,8 @@ let symbolchar_or_hash =
 let kwdopchar =
   ['$' '&' '*' '+' '-' '/' '<' '=' '>' '@' '^' '|']
 
-let ident = (lowercase | uppercase) identchar*
-let extattrident = ident ('.' ident)*
+let ident_ext = identstart_ext  identchar_ext*
+let extattrident = ident_ext ('.' ident_ext)*
 
 let decimal_literal =
   ['0'-'9'] ['0'-'9' '_']*
@@ -374,6 +495,7 @@ let hex_float_literal =
   ('.' ['0'-'9' 'A'-'F' 'a'-'f' '_']* )?
   (['p' 'P'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']* )?
 let literal_modifier = ['G'-'Z' 'g'-'z']
+let raw_ident_escape = "\\#"
 
 rule token = parse
   | ('\\' as bs) newline {
@@ -392,29 +514,38 @@ rule token = parse
   | ".~"
       { error lexbuf
           (Reserved_sequence (".~", Some "is reserved for use in MetaOCaml")) }
-  | "~" (lowercase identchar * as name) ':'
+  | "~" (identstart identchar * as name) ':'
       { check_label_name lexbuf name;
         LABEL name }
-  | "~" (lowercase_latin1 identchar_latin1 * as name) ':'
-      { warn_latin1 lexbuf;
+  | "~" (raw_ident_escape? as escape) (ident_ext as raw_name) ':'
+      { let name = ident_for_extended lexbuf raw_name in
+        check_label_name ~raw_escape:(escape<>"") lexbuf name;
         LABEL name }
   | "?"
       { QUESTION }
   | "?" (lowercase identchar * as name) ':'
       { check_label_name lexbuf name;
         OPTLABEL name }
-  | "?" (lowercase_latin1 identchar_latin1 * as name) ':'
-      { warn_latin1 lexbuf;
-        OPTLABEL name }
+  | "?" (raw_ident_escape? as escape) (ident_ext as raw_name) ':'
+      { let name = ident_for_extended lexbuf raw_name in
+        check_label_name ~raw_escape:(escape<>"") lexbuf name;
+        OPTLABEL name
+      }
   | lowercase identchar * as name
-      { try Hashtbl.find keyword_table name
-        with Not_found -> LIDENT name }
-  | lowercase_latin1 identchar_latin1 * as name
-      { warn_latin1 lexbuf; LIDENT name }
+      { find_keyword lexbuf name }
   | uppercase identchar * as name
       { UIDENT name } (* No capitalized keywords *)
-  | uppercase_latin1 identchar_latin1 * as name
-      { warn_latin1 lexbuf; UIDENT name }
+  | (raw_ident_escape? as escape) (ident_ext as raw_name)
+      { let name = ident_for_extended lexbuf raw_name in
+        if Utf8_lexeme.is_capitalized name then begin
+            if escape="" then UIDENT name
+            else
+              (* we don't have capitalized keywords, and thus no needs for
+                 capitalized raw identifiers. *)
+              error lexbuf (Capitalized_raw_identifier name)
+        end else
+          LIDENT name
+      } (* No non-ascii keywords *)
   | int_literal as lit { INT (lit, None) }
   | (int_literal as lit) (literal_modifier as modif)
       { INT (lit, Some modif) }
@@ -427,26 +558,34 @@ rule token = parse
   | "\""
       { let s, loc = wrap_string_lexer string lexbuf in
         STRING (s, loc, None) }
-  | "{" (lowercase* as delim) "|"
-      { let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
-        STRING (s, loc, Some delim) }
-  | "{%" (extattrident as id) "|"
+  | "{" (delim_ext as raw_name) '|'
+      { let delim = validate_delim lexbuf raw_name in
+        let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
+        STRING (s, loc, Some delim)
+       }
+  | "{%" (extattrident as raw_id) "|"
       { let orig_loc = Location.curr lexbuf in
+        let id = validate_ext lexbuf raw_id in
         let s, loc = wrap_string_lexer (quoted_string "") lexbuf in
         let idloc = compute_quoted_string_idloc orig_loc 2 id in
         QUOTED_STRING_EXPR (id, idloc, s, loc, Some "") }
-  | "{%" (extattrident as id) blank+ (lowercase* as delim) "|"
+  | "{%" (extattrident as raw_id) blank+ (delim_ext as raw_delim) "|"
       { let orig_loc = Location.curr lexbuf in
+        let id = validate_ext lexbuf raw_id in
+        let delim = validate_delim lexbuf raw_delim in
         let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
         let idloc = compute_quoted_string_idloc orig_loc 2 id in
         QUOTED_STRING_EXPR (id, idloc, s, loc, Some delim) }
-  | "{%%" (extattrident as id) "|"
+  | "{%%" (extattrident as raw_id) "|"
       { let orig_loc = Location.curr lexbuf in
+        let id = validate_ext lexbuf raw_id in
         let s, loc = wrap_string_lexer (quoted_string "") lexbuf in
         let idloc = compute_quoted_string_idloc orig_loc 3 id in
         QUOTED_STRING_ITEM (id, idloc, s, loc, Some "") }
-  | "{%%" (extattrident as id) blank+ (lowercase* as delim) "|"
+  | "{%%" (extattrident as raw_id) blank+ (delim_ext as raw_delim) "|"
       { let orig_loc = Location.curr lexbuf in
+        let id = validate_ext lexbuf raw_id in
+        let delim = validate_delim lexbuf raw_delim in
         let s, loc = wrap_string_lexer (quoted_string delim) lexbuf in
         let idloc = compute_quoted_string_idloc orig_loc 3 id in
         QUOTED_STRING_ITEM (id, idloc, s, loc, Some delim) }
@@ -464,7 +603,7 @@ rule token = parse
       { CHAR(char_for_octal_code lexbuf 3) }
   | "\'\\" 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "\'"
       { CHAR(char_for_hexadecimal_code lexbuf 3) }
-  | "\'" ("\\" _ as esc)
+  | "\'" ("\\" [^ '#'] as esc)
       { error lexbuf (Illegal_escape (esc, None)) }
   | "\'\'"
       { error lexbuf Empty_character_literal }
@@ -633,8 +772,10 @@ and comment = parse
         is_in_string := false;
         store_string_char '\"';
         comment lexbuf }
-  | "{" ('%' '%'? extattrident blank*)? (lowercase* as delim) "|"
-      {
+  | "{" ('%' '%'? extattrident blank*)? (delim_ext as raw_delim) "|"
+      { match lax_delim raw_delim with
+        | None -> store_lexeme lexbuf; comment lexbuf
+        | Some delim ->
         string_start_loc := Location.curr lexbuf;
         store_lexeme lexbuf;
         is_in_string := true;
@@ -654,9 +795,11 @@ and comment = parse
         comment lexbuf }
   | "\'\'"
       { store_lexeme lexbuf; comment lexbuf }
-  | "\'" newline "\'"
+  | "\'" (newline as nl) "\'"
       { update_loc lexbuf None 1 false 1;
-        store_lexeme lexbuf;
+        store_string_char '\'';
+        store_normalized_newline nl;
+        store_string_char '\'';
         comment lexbuf
       }
   | "\'" [^ '\\' '\'' '\010' '\013' ] "\'"
@@ -677,12 +820,12 @@ and comment = parse
           comment_start_loc := [];
           error_loc loc (Unterminated_comment start)
       }
-  | newline
+  | newline as nl
       { update_loc lexbuf None 1 false 0;
-        store_lexeme lexbuf;
+        store_normalized_newline nl;
         comment lexbuf
       }
-  | ident
+  | ident_ext
       { store_lexeme lexbuf; comment lexbuf }
   | _
       { store_lexeme lexbuf; comment lexbuf }
@@ -690,9 +833,13 @@ and comment = parse
 and string = parse
     '\"'
       { lexbuf.lex_start_p }
-  | '\\' newline ([' ' '\t'] * as space)
+  | '\\' (newline as nl) ([' ' '\t'] * as space)
       { update_loc lexbuf None 1 false (String.length space);
-        if in_comment () then store_lexeme lexbuf;
+        if in_comment () then begin
+          store_string_char '\\';
+          store_normalized_newline nl;
+          store_string space;
+        end;
         string lexbuf
       }
   | '\\' (['\\' '\'' '\"' 'n' 't' 'b' 'r' ' '] as c)
@@ -721,11 +868,9 @@ and string = parse
         store_lexeme lexbuf;
         string lexbuf
       }
-  | newline
-      { if not (in_comment ()) then
-          Location.prerr_warning (Location.curr lexbuf) Warnings.Eol_in_string;
-        update_loc lexbuf None 1 false 0;
-        store_lexeme lexbuf;
+  | newline as nl
+      { update_loc lexbuf None 1 false 0;
+        store_normalized_newline nl;
         string lexbuf
       }
   | eof
@@ -736,16 +881,17 @@ and string = parse
         string lexbuf }
 
 and quoted_string delim = parse
-  | newline
+  | newline as nl
       { update_loc lexbuf None 1 false 0;
-        store_lexeme lexbuf;
+        store_normalized_newline nl;
         quoted_string delim lexbuf
       }
   | eof
       { is_in_string := false;
         error_loc !string_start_loc Unterminated_string }
-  | "|" (lowercase* as edelim) "}"
+  | "|" (ident_ext? as raw_edelim) "}"
       {
+        let edelim = validate_encoding lexbuf raw_edelim in
         if delim = edelim then lexbuf.lex_start_p
         else (store_lexeme lexbuf; quoted_string delim lexbuf)
       }
@@ -856,7 +1002,8 @@ and skip_hash_bang = parse
     in
       loop NoLine Initial lexbuf
 
-  let init () =
+  let init ?(keyword_edition=None,[]) () =
+    populate_keywords keyword_edition;
     is_in_string := false;
     comment_start_loc := [];
     comment_list := [];

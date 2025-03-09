@@ -18,3 +18,10 @@ let baz x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 =
   func_with_10_params x1 x2 x3 x4 x5 x6 x7 x8 x9 x10;
   func_with_10_params x1 x2 x3 x4 x5 x6 x7 x8 x9 x10;
   perform_stack_walk ()
+
+(* https://github.com/ocaml-multicore/ocaml-multicore/issues/274 *)
+external do_no_alloc: unit -> unit = "ml_do_no_alloc" [@@noalloc]
+
+let bob x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 =
+   func_with_10_params x1 x2 x3 x4 x5 x6 x7 x8 x9 x10;
+   do_no_alloc ()

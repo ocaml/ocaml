@@ -1,3 +1,4 @@
+# 2 "asmcomp/power/arch.ml"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -17,31 +18,12 @@
 
 open Format
 
-let ppc64 =
-  match Config.model with
-  | "ppc" -> false
-  | "ppc64" | "ppc64le" -> true
-  | _ -> assert false
-
-type abi = ELF32 | ELF64v1 | ELF64v2
-
-let abi =
-  match Config.model with
-  | "ppc" -> ELF32
-  | "ppc64" -> ELF64v1
-  | "ppc64le" -> ELF64v2
-  | _ -> assert false
+type cmm_label = int
+(* Do not introduce a dependency to Cmm *)
 
 (* Machine-specific command-line options *)
 
-let big_toc = ref true
-
-let command_line_options = [
-  "-flarge-toc", Arg.Set big_toc,
-     " Support TOC (table of contents) greater than 64 kbytes (default)";
-  "-fsmall-toc", Arg.Clear big_toc,
-     " TOC (table of contents) is limited to 64 kbytes"
-]
+let command_line_options = []
 
 (* Specific operations *)
 
@@ -50,6 +32,11 @@ type specific_operation =
   | Imultsubf                           (* multiply and subtract *)
   | Ialloc_far of                       (* allocation in large functions *)
       { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
+  | Ipoll_far of { return_label : cmm_label option }
+                                        (* poll point in large functions *)
+  | Icheckbound_far                     (* bounds check in large functions *)
+  | Icheckbound_imm_far of int          (* bounds check in large functions,
+                                           constant 2nd arg (the index) *)
 
 (* Addressing modes *)
 
@@ -62,12 +49,10 @@ type addressing_mode =
 
 let big_endian =
   match Config.model with
-  | "ppc" -> true
   | "ppc64" -> true
   | "ppc64le" -> false
   | _ -> assert false
-
-let size_addr = if ppc64 then 8 else 4
+let size_addr = 8
 let size_int = size_addr
 let size_float = 8
 
@@ -86,11 +71,6 @@ let offset_addressing addr delta =
     Ibased(s, n) -> Ibased(s, n + delta)
   | Iindexed n -> Iindexed(n + delta)
   | Iindexed2 -> assert false
-
-let num_args_addressing = function
-    Ibased _ -> 0
-  | Iindexed _ -> 1
-  | Iindexed2 -> 2
 
 (* Printing operations and addressing modes *)
 
@@ -115,15 +95,27 @@ let print_specific_operation printreg op ppf arg =
         printreg arg.(0) printreg arg.(1) printreg arg.(2)
   | Ialloc_far { bytes; _ } ->
       fprintf ppf "alloc_far %d" bytes
+  | Ipoll_far _ ->
+      fprintf ppf "poll_far"
+  | Icheckbound_far ->
+      fprintf ppf "check_far > %a %a" printreg arg.(0) printreg arg.(1)
+  | Icheckbound_imm_far n ->
+      fprintf ppf "check_far > %a %d" printreg arg.(0) n
 
 (* Specific operations that are pure *)
 
 let operation_is_pure = function
-  | Ialloc_far _ -> false
+  | Ialloc_far _
+  | Ipoll_far _
+  | Icheckbound_far
+  | Icheckbound_imm_far _ -> false
   | _ -> true
 
 (* Specific operations that can raise *)
 
 let operation_can_raise = function
-  | Ialloc_far _ -> true
+  | Ialloc_far _
+  | Ipoll_far _
+  | Icheckbound_far
+  | Icheckbound_imm_far _ -> true
   | _ -> false

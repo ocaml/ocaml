@@ -246,3 +246,7 @@ function mySearch (includeDescr) {
     }
     document.getElementById("search_results").innerHTML = html;
 }
+
+function showHelp () {
+    document.getElementById("search_help").classList.toggle("hide");
+}

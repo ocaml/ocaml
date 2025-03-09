@@ -13,24 +13,72 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "-40"]
-
 (* To assign numbers to globals and primitives *)
 
 open Misc
-open Asttypes
 open Lambda
 open Cmo_format
 
 module String = Misc.Stdlib.String
+module Style = Misc.Style
+
+module Compunit = struct
+  type t = compunit
+  let name (Compunit cu_name) = cu_name
+  let is_packed (Compunit name) = String.contains name '.'
+  let to_ident (Compunit cu_name) = Ident.create_persistent cu_name
+  module Set = Set.Make(struct type nonrec t = t let compare = compare end)
+  module Map = Map.Make(struct type nonrec t = t let compare = compare end)
+end
+
+let builtin_values = Predef.builtin_values
+
+module Predef = struct
+  type t = predef
+  module Set = Set.Make(struct type nonrec t = t let compare = compare end)
+  module Map = Map.Make(struct type nonrec t = t let compare = compare end)
+end
+
+module Global = struct
+  type t =
+    | Glob_compunit of compunit
+    | Glob_predef of predef
+
+  let name = function
+    | Glob_compunit (Compunit cu) -> cu
+    | Glob_predef (Predef_exn exn) -> exn
+
+  let quote s = "`" ^ s ^ "'"
+
+  let description ppf g =
+    let open Format_doc in
+    match g with
+    | Glob_compunit (Compunit cu) ->
+        fprintf ppf "compilation unit %a"
+          Style.inline_code (quote cu)
+    | Glob_predef (Predef_exn exn) ->
+        fprintf ppf "predefined exception %a"
+          Style.inline_code (quote exn)
+
+  let of_ident id =
+    let name = Ident.name id in
+    if (Ident.is_predef id)
+    then Some (Glob_predef (Predef_exn name))
+    else if (Ident.global id)
+    then Some (Glob_compunit (Compunit name))
+    else None
+
+  module Set = Set.Make(struct type nonrec t = t let compare = compare end)
+  module Map = Map.Make(struct type nonrec t = t let compare = compare end)
+end
 
 (* Functions for batch linking *)
 
 type error =
-    Undefined_global of string
+    Undefined_global of Global.t
   | Unavailable_primitive of string
   | Wrong_vm of string
-  | Uninitialized_global of string
+  | Uninitialized_global of Global.t
 
 exception Error of error
 
@@ -57,25 +105,25 @@ module Num_tbl (M : Map.S) = struct
     n
 
 end
-module GlobalMap = Num_tbl(Ident.Map)
+module GlobalMap = Num_tbl(Global.Map)
 module PrimMap = Num_tbl(Misc.Stdlib.String.Map)
 
 (* Global variables *)
 
 let global_table = ref GlobalMap.empty
-and literal_table = ref([] : (int * structured_constant) list)
+and literal_table = ref([] : (int * Obj.t) list)
 
-let is_global_defined id =
-  Ident.Map.mem id (!global_table).tbl
+let is_global_defined global =
+  Global.Map.mem global (!global_table).tbl
 
-let slot_for_getglobal id =
+let slot_for_getglobal global =
   try
-    GlobalMap.find !global_table id
+    GlobalMap.find !global_table global
   with Not_found ->
-    raise(Error(Undefined_global(Ident.name id)))
+    raise(Error (Undefined_global global))
 
-let slot_for_setglobal id =
-  GlobalMap.enter global_table id
+let slot_for_setglobal global =
+  GlobalMap.enter global_table global
 
 let slot_for_literal cst =
   let n = GlobalMap.incr global_table in
@@ -117,34 +165,66 @@ let all_primitives () =
   prim
 
 let data_primitive_names () =
-  let prim = all_primitives() in
-  let b = Buffer.create 512 in
-  for i = 0 to Array.length prim - 1 do
-    Buffer.add_string b prim.(i); Buffer.add_char b '\000'
-  done;
-  Buffer.contents b
+  all_primitives()
+  |> Array.to_list
 
 let output_primitive_names outchan =
-  output_string outchan (data_primitive_names())
+  output_string outchan (data_primitive_names() |> concat_null_terminated)
 
 open Printf
 
 let output_primitive_table outchan =
   let prim = all_primitives() in
   for i = 0 to Array.length prim - 1 do
-    fprintf outchan "extern value %s();\n" prim.(i)
+    fprintf outchan "extern value %s(void);\n" prim.(i)
   done;
-  fprintf outchan "typedef value (*primitive)();\n";
-  fprintf outchan "primitive caml_builtin_cprim[] = {\n";
+  fprintf outchan {|
+typedef value (*c_primitive)(void);
+
+#if defined __cplusplus
+extern
+#endif
+const c_primitive caml_builtin_cprim[] = {
+|};
   for i = 0 to Array.length prim - 1 do
     fprintf outchan "  %s,\n" prim.(i)
   done;
-  fprintf outchan "  (primitive) 0 };\n";
-  fprintf outchan "const char * caml_names_of_builtin_cprim[] = {\n";
+  fprintf outchan
+{|  0 };
+
+#if defined __cplusplus
+extern
+#endif
+const char * const caml_names_of_builtin_cprim[] = {
+|};
   for i = 0 to Array.length prim - 1 do
     fprintf outchan "  \"%s\",\n" prim.(i)
   done;
-  fprintf outchan "  (char *) 0 };\n"
+  fprintf outchan "  0 };\n"
+
+(* Translate structured constants *)
+
+let rec transl_const = function
+    Const_base(Const_int i) -> Obj.repr i
+  | Const_base(Const_char c) -> Obj.repr c
+  | Const_base(Const_string (s, _, _)) -> Obj.repr s
+  | Const_base(Const_float f) -> Obj.repr (float_of_string f)
+  | Const_base(Const_int32 i) -> Obj.repr i
+  | Const_base(Const_int64 i) -> Obj.repr i
+  | Const_base(Const_nativeint i) -> Obj.repr i
+  | Const_immstring s -> Obj.repr s
+  | Const_block(tag, fields) ->
+      let block = Obj.new_block tag (List.length fields) in
+      let transl_field pos cst =
+        Obj.set_field block pos (transl_const cst)
+      in
+      List.iteri transl_field fields;
+      block
+  | Const_float_array fields ->
+      let res = Array.Floatarray.create (List.length fields) in
+      List.iteri (fun i f -> Array.Floatarray.set res i (float_of_string f))
+        fields;
+      Obj.repr res
 
 (* Initialization for batch linking *)
 
@@ -152,17 +232,17 @@ let init () =
   (* Enter the predefined exceptions *)
   Array.iteri
     (fun i name ->
-      let id =
-        try List.assoc name Predef.builtin_values
-        with Not_found -> fatal_error "Symtable.init" in
-      let c = slot_for_setglobal id in
+        if not (List.mem_assoc name builtin_values)
+        then fatal_error "Symtable.init";
+      let global = Global.Glob_predef (Predef_exn name) in
+      let c = slot_for_setglobal global in
       let cst = Const_block
           (Obj.object_tag,
            [Const_base(Const_string (name, Location.none,None));
             Const_base(Const_int (-i-1))
            ])
       in
-      literal_table := (c, cst) :: !literal_table)
+      literal_table := (c, transl_const cst) :: !literal_table)
     Runtimedef.builtin_exceptions;
   (* Initialize the known C primitives *)
   let set_prim_table_from_file primfile =
@@ -184,8 +264,15 @@ let init () =
     Misc.try_finally
       ~always:(fun () -> remove_file primfile)
       (fun () ->
-         if Sys.command(Printf.sprintf "%s -p > %s"
-                          !Clflags.use_runtime primfile) <> 0
+         let cmd =
+           Filename.quote_command
+             !Clflags.use_runtime
+             ~stdout:primfile
+             ["-p"]
+         in
+         if !Clflags.verbose then
+           Printf.eprintf "+ %s\n%!" cmd;
+         if Sys.command cmd <> 0
          then raise(Error(Wrong_vm !Clflags.use_runtime));
          set_prim_table_from_file primfile
       )
@@ -196,54 +283,36 @@ let init () =
 (* Relocate a block of object bytecode *)
 
 let patch_int buff pos n =
-  LongString.set buff pos (Char.unsafe_chr n);
-  LongString.set buff (pos + 1) (Char.unsafe_chr (n asr 8));
-  LongString.set buff (pos + 2) (Char.unsafe_chr (n asr 16));
-  LongString.set buff (pos + 3) (Char.unsafe_chr (n asr 24))
+  let open Bigarray.Array1 in
+  set buff pos (Char.unsafe_chr n);
+  set buff (pos + 1) (Char.unsafe_chr (n asr 8));
+  set buff (pos + 2) (Char.unsafe_chr (n asr 16));
+  set buff (pos + 3) (Char.unsafe_chr (n asr 24))
 
 let patch_object buff patchlist =
   List.iter
     (function
         (Reloc_literal sc, pos) ->
           patch_int buff pos (slot_for_literal sc)
-      | (Reloc_getglobal id, pos) ->
-          patch_int buff pos (slot_for_getglobal id)
-      | (Reloc_setglobal id, pos) ->
-          patch_int buff pos (slot_for_setglobal id)
+      | (Reloc_getcompunit cu, pos) ->
+          let global = Global.Glob_compunit cu in
+          patch_int buff pos (slot_for_getglobal global)
+      | (Reloc_getpredef pd, pos) ->
+          let global = Global.Glob_predef pd in
+          patch_int buff pos (slot_for_getglobal global)
+      | (Reloc_setcompunit cu, pos) ->
+          let global = Global.Glob_compunit cu in
+          patch_int buff pos (slot_for_setglobal global)
       | (Reloc_primitive name, pos) ->
           patch_int buff pos (of_prim name))
     patchlist
-
-(* Translate structured constants *)
-
-let rec transl_const = function
-    Const_base(Const_int i) -> Obj.repr i
-  | Const_base(Const_char c) -> Obj.repr c
-  | Const_base(Const_string (s, _, _)) -> Obj.repr s
-  | Const_base(Const_float f) -> Obj.repr (float_of_string f)
-  | Const_base(Const_int32 i) -> Obj.repr i
-  | Const_base(Const_int64 i) -> Obj.repr i
-  | Const_base(Const_nativeint i) -> Obj.repr i
-  | Const_immstring s -> Obj.repr s
-  | Const_block(tag, fields) ->
-      let block = Obj.new_block tag (List.length fields) in
-      let pos = ref 0 in
-      List.iter
-        (fun c -> Obj.set_field block !pos (transl_const c); incr pos)
-        fields;
-      block
-  | Const_float_array fields ->
-      let res = Array.Floatarray.create (List.length fields) in
-      List.iteri (fun i f -> Array.Floatarray.set res i (float_of_string f))
-        fields;
-      Obj.repr res
 
 (* Build the initial table of globals *)
 
 let initial_global_table () =
   let glob = Array.make !global_table.cnt (Obj.repr 0) in
   List.iter
-    (fun (slot, cst) -> glob.(slot) <- transl_const cst)
+    (fun (slot, cst) -> glob.(slot) <- cst)
     !literal_table;
   literal_table := [];
   glob
@@ -265,103 +334,71 @@ let update_global_table () =
   if ng > Array.length(Meta.global_data()) then Meta.realloc_global_data ng;
   let glob = Meta.global_data() in
   List.iter
-    (fun (slot, cst) -> glob.(slot) <- transl_const cst)
+    (fun (slot, cst) -> glob.(slot) <- cst)
     !literal_table;
   literal_table := []
 
-(* Recover data for toplevel initialization.  Data can come either from
-   executable file (normal case) or from linked-in data (-output-obj). *)
+type bytecode_sections =
+  { symb: GlobalMap.t;
+    crcs: (string * Digest.t option) list;
+    prim: string list;
+    dlpt: string list }
 
-type section_reader = {
-  read_string: string -> string;
-  read_struct: string -> Obj.t;
-  close_reader: unit -> unit
-}
-
-let read_sections () =
-  try
-    let sections = Meta.get_section_table () in
-    { read_string =
-        (fun name -> (Obj.magic(List.assoc name sections) : string));
-      read_struct =
-        (fun name -> List.assoc name sections);
-      close_reader =
-        (fun () -> ()) }
-  with Not_found ->
-    let ic = open_in_bin Sys.executable_name in
-    Bytesections.read_toc ic;
-    { read_string = Bytesections.read_section_string ic;
-      read_struct = Bytesections.read_section_struct ic;
-      close_reader = fun () -> close_in ic }
+external get_bytecode_sections : unit -> bytecode_sections =
+  "caml_dynlink_get_bytecode_sections"
 
 (* Initialize the linker for toplevel use *)
 
 let init_toplevel () =
-  try
-    let sect = read_sections () in
-    (* Locations of globals *)
-    global_table := (Obj.magic (sect.read_struct "SYMB") : GlobalMap.t);
-    (* Primitives *)
-    let prims = sect.read_string "PRIM" in
-    c_prim_table := PrimMap.empty;
-    let pos = ref 0 in
-    while !pos < String.length prims do
-      let i = String.index_from prims !pos '\000' in
-      set_prim_table (String.sub prims !pos (i - !pos));
-      pos := i + 1
-    done;
-    (* DLL initialization *)
-    let dllpath = try sect.read_string "DLPT" with Not_found -> "" in
-    Dll.init_toplevel dllpath;
-    (* Recover CRC infos for interfaces *)
-    let crcintfs =
-      try
-        (Obj.magic (sect.read_struct "CRCS") : (string * Digest.t option) list)
-      with Not_found -> [] in
-    (* Done *)
-    sect.close_reader();
-    crcintfs
-  with Bytesections.Bad_magic_number | Not_found | Failure _ ->
-    fatal_error "Toplevel bytecode executable is corrupted"
+  let sect = get_bytecode_sections () in
+  global_table := sect.symb;
+  c_prim_table := PrimMap.empty;
+  List.iter set_prim_table sect.prim;
+  Dll.init_toplevel sect.dlpt;
+  sect.crcs
 
 (* Find the value of a global identifier *)
 
-let get_global_position id = slot_for_getglobal id
+let get_global_position = slot_for_getglobal
 
-let get_global_value id =
-  (Meta.global_data()).(slot_for_getglobal id)
-let assign_global_value id v =
-  (Meta.global_data()).(slot_for_getglobal id) <- v
+let get_global_value global =
+  (Meta.global_data()).(slot_for_getglobal global)
+let assign_global_value global v =
+  (Meta.global_data()).(slot_for_getglobal global) <- v
 
-(* Check that all globals referenced in the given patch list
-   have been initialized already *)
+(* Check that all compilation units referenced in the given patch list
+   have already been initialized *)
 
-let defined_globals patchlist =
-  List.fold_left (fun accu rel ->
-      match rel with
-      | (Reloc_setglobal id, _pos) -> id :: accu
-      | _ -> accu)
+let initialized_compunits patchlist =
+  List.fold_left (fun compunits rel ->
+      match fst rel with
+      | Reloc_setcompunit compunit -> compunit :: compunits
+      | Reloc_literal _ | Reloc_getcompunit _ | Reloc_getpredef _
+      | Reloc_primitive _ -> compunits)
     []
     patchlist
 
-let required_globals patchlist =
-  List.fold_left (fun accu rel ->
-      match rel with
-      | (Reloc_getglobal id, _pos) -> id :: accu
-      | _ -> accu)
+let required_compunits patchlist =
+  List.fold_left (fun compunits rel ->
+      match fst rel with
+      | Reloc_getcompunit compunit -> compunit :: compunits
+      | Reloc_literal _ | Reloc_getpredef _ | Reloc_setcompunit _
+      | Reloc_primitive _ -> compunits)
     []
     patchlist
 
 let check_global_initialized patchlist =
-  (* First determine the globals we will define *)
-  let defined_globals = defined_globals patchlist in
-  (* Then check that all referenced, not defined globals have a value *)
-  let check_reference = function
-      (Reloc_getglobal id, _pos) ->
-        if not (List.mem id defined_globals)
-        && Obj.is_int (get_global_value id)
-        then raise (Error(Uninitialized_global(Ident.name id)))
-    | _ -> () in
+  (* First determine the compilation units we will define *)
+  let initialized_compunits = initialized_compunits patchlist in
+  (* Then check that all referenced, not defined comp units have a value *)
+  let check_reference (rel, _) = match rel with
+      Reloc_getcompunit compunit ->
+        let global = Global.Glob_compunit compunit in
+        if not (List.mem compunit initialized_compunits)
+        && Obj.is_int (get_global_value global)
+        then raise (Error(Uninitialized_global global))
+    | Reloc_literal _ | Reloc_getpredef _ | Reloc_setcompunit _
+    | Reloc_primitive _ -> () in
   List.iter check_reference patchlist
 
 (* Save and restore the current state *)
@@ -384,40 +421,46 @@ let hide_additions (st : global_map) =
    Used to expunge the global map for the toplevel. *)
 
 let filter_global_map p (gmap : global_map) =
-  let newtbl = ref Ident.Map.empty in
-  Ident.Map.iter
-    (fun id num -> if p id then newtbl := Ident.Map.add id num !newtbl)
+  let newtbl = ref Global.Map.empty in
+  Global.Map.iter
+    (fun global num ->
+      if p global then newtbl := Global.Map.add global num !newtbl)
     gmap.tbl;
   {GlobalMap. cnt = gmap.cnt; tbl = !newtbl}
 
 let iter_global_map f (gmap : global_map) =
-  Ident.Map.iter f gmap.tbl
+  Global.Map.iter f gmap.tbl
 
-let is_defined_in_global_map (gmap : global_map) id =
-  Ident.Map.mem id gmap.tbl
+let is_defined_in_global_map (gmap : global_map) global =
+  Global.Map.mem global gmap.tbl
 
 let empty_global_map = GlobalMap.empty
 
 (* Error report *)
 
-open Format
+open Format_doc
 
-let report_error ppf = function
-  | Undefined_global s ->
-      fprintf ppf "Reference to undefined global `%s'" s
+let report_error_doc ppf = function
+  | Undefined_global global ->
+      fprintf ppf "Reference to undefined %a" Global.description global
   | Unavailable_primitive s ->
-      fprintf ppf "The external function `%s' is not available" s
+      fprintf ppf "The external function %a is not available"
+        Style.inline_code s
   | Wrong_vm s ->
-      fprintf ppf "Cannot find or execute the runtime system %s" s
-  | Uninitialized_global s ->
-      fprintf ppf "The value of the global `%s' is not yet computed" s
+      fprintf ppf "Cannot find or execute the runtime system %a"
+      Style.inline_code s
+  | Uninitialized_global global ->
+      fprintf ppf "The value of the %a is not yet computed"
+        Global.description global
 
 let () =
   Location.register_error_of_exn
     (function
-      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | Error err -> Some (Location.error_of_printer_file report_error_doc err)
       | _ -> None
     )
+
+let report_error = Format_doc.compat report_error_doc
 
 let reset () =
   global_table := GlobalMap.empty;

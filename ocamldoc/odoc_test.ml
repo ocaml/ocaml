@@ -121,6 +121,6 @@ struct
         base#generate l;
         g#generate l
     end
-end;;
+end
 
-let _ = Odoc_args.extend_base_generator (module Generator : Odoc_gen.Base_functor);;
+let _ = Odoc_args.extend_base_generator (module Generator : Odoc_gen.Base_functor)

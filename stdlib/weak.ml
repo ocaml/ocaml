@@ -19,13 +19,16 @@ type !'a t
 
 external create : int -> 'a t = "caml_weak_create"
 
+(** number of additional values in a weak pointer
+ *    - Link
+ *    - Data *)
+let additional_values = 2 (* CAML_EPHE_FIRST_KEY in weak.h *)
+
 let create l =
   if not (0 <= l && l <= Obj.Ephemeron.max_ephe_length) then
     invalid_arg("Weak.create");
   create l
 
-(** number of additional values in a weak pointer *)
-let additional_values = 2
 
 let length x = Obj.size(Obj.repr x) - additional_values
 
@@ -90,7 +93,7 @@ module type S = sig
   val find_all : t -> data -> data list
   val mem : t -> data -> bool
   val iter : (data -> unit) -> t -> unit
-  val fold : (data -> 'a -> 'a) -> t -> 'a -> 'a
+  val fold : (data -> 'acc -> 'acc) -> t -> 'acc -> 'acc
   val count : t -> int
   val stats : t -> int * int * int * int * int * int
 end
@@ -235,110 +238,75 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let bucket = t.table.(index) in
     let hashes = t.hashes.(index) in
     let sz = length bucket in
-    let rec loop i =
-      if i >= sz then begin
-        let newsz =
-          Int.min (3 * sz / 2 + 3) (Sys.max_array_length - additional_values)
-        in
-        if newsz <= sz then failwith "Weak.Make: hash bucket cannot grow more";
-        let newbucket = weak_create newsz in
-        let newhashes = Array.make newsz 0 in
-        blit bucket 0 newbucket 0 sz;
-        Array.blit hashes 0 newhashes 0 sz;
-        setter newbucket sz d;
-        newhashes.(sz) <- h;
-        t.table.(index) <- newbucket;
-        t.hashes.(index) <- newhashes;
-        if sz <= t.limit && newsz > t.limit then begin
-          t.oversize <- t.oversize + 1;
-          for _i = 0 to over_limit do test_shrink_bucket t done;
-        end;
-        if t.oversize > Array.length t.table / over_limit then resize t;
-      end else if check bucket i then begin
-        loop (i + 1)
-      end else begin
-        setter bucket i d;
-        hashes.(i) <- h;
+    let i = ref 0 in
+    while !i < sz && check bucket !i do incr i done;
+    if !i < sz then begin
+      setter bucket !i d;
+      hashes.(!i) <- h;
+    end else begin
+      let newsz =
+        Int.min (3 * sz / 2 + 3) (Sys.max_array_length - additional_values)
+      in
+      if newsz <= sz then failwith "Weak.Make: hash bucket cannot grow more";
+      let newbucket = weak_create newsz in
+      let newhashes = Array.make newsz 0 in
+      blit bucket 0 newbucket 0 sz;
+      Array.blit hashes 0 newhashes 0 sz;
+      setter newbucket sz d;
+      newhashes.(sz) <- h;
+      t.table.(index) <- newbucket;
+      t.hashes.(index) <- newhashes;
+      if sz <= t.limit && newsz > t.limit then begin
+        t.oversize <- t.oversize + 1;
+        for _i = 0 to over_limit do test_shrink_bucket t done;
       end;
-    in
-    loop 0
-
+      if t.oversize > Array.length t.table / over_limit then resize t;
+    end
 
   let add t d =
     let h = H.hash d in
     add_aux t set (Some d) h (get_index t h)
 
+  (* General auxiliary function for searching for a particular value
+   * in a hash-set, and acting according to whether or not it's found *)
 
-  let find_or t d ifnotfound =
+  let find_aux t d k_found k_notfound =
     let h = H.hash d in
     let index = get_index t h in
     let bucket = t.table.(index) in
     let hashes = t.hashes.(index) in
     let sz = length bucket in
-    let rec loop i =
-      if i >= sz then ifnotfound h index
-      else if h = hashes.(i) then begin
-        match get_copy bucket i with
-        | Some v when H.equal v d
-           -> begin match get bucket i with
-              | Some v -> v
-              | None -> loop (i + 1)
-              end
-        | _ -> loop (i + 1)
-      end else loop (i + 1)
-    in
-    loop 0
+    let found = ref None in
+    let i = ref 0 in
+    while !i < sz && Option.is_none !found do
+      if h = hashes.(!i) then begin
+        match get bucket !i with
+        | Some v as opt ->
+           if H.equal v d then
+             found := opt
+           else incr i
+        | _ -> incr i
+      end else incr i
+    done;
+    match !found with
+    | Some v as opt -> k_found bucket !i opt v
+    | None -> k_notfound h index
 
+  let find_opt t d = find_aux t d (fun _b _i  o _v -> o)
+                                  (fun _h _i -> None)
 
-  let merge t d =
-    find_or t d (fun h index -> add_aux t set (Some d) h index; d)
+  let merge t d    = find_aux t d (fun _b _i _o  v -> v)
+                                  (fun  h  i ->
+                                        add_aux t set (Some d) h i; d)
 
+  let find t d     = find_aux t d (fun _b _i _o  v -> v)
+                                  (fun _h _i -> raise Not_found)
 
-  let find t d = find_or t d (fun _h _index -> raise Not_found)
+  let remove t d   = find_aux t d (fun  b  i _o _v -> set b i None)
+                                  (fun _h _i -> ())
 
-  let find_opt t d =
-    let h = H.hash d in
-    let index = get_index t h in
-    let bucket = t.table.(index) in
-    let hashes = t.hashes.(index) in
-    let sz = length bucket in
-    let rec loop i =
-      if i >= sz then None
-      else if h = hashes.(i) then begin
-        match get_copy bucket i with
-        | Some v when H.equal v d
-           -> begin match get bucket i with
-              | Some _ as v -> v
-              | None -> loop (i + 1)
-              end
-        | _ -> loop (i + 1)
-      end else loop (i + 1)
-    in
-    loop 0
-
-
-  let find_shadow t d iffound ifnotfound =
-    let h = H.hash d in
-    let index = get_index t h in
-    let bucket = t.table.(index) in
-    let hashes = t.hashes.(index) in
-    let sz = length bucket in
-    let rec loop i =
-      if i >= sz then ifnotfound
-      else if h = hashes.(i) then begin
-        match get_copy bucket i with
-        | Some v when H.equal v d -> iffound bucket i
-        | _ -> loop (i + 1)
-      end else loop (i + 1)
-    in
-    loop 0
-
-
-  let remove t d = find_shadow t d (fun w i -> set w i None) ()
-
-
-  let mem t d = find_shadow t d (fun _w _i -> true) false
-
+  let mem t d      = find_aux t d (fun _b _i _o _v -> true)
+                                  (fun _h _i -> false)
 
   let find_all t d =
     let h = H.hash d in
@@ -349,17 +317,12 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let rec loop i accu =
       if i >= sz then accu
       else if h = hashes.(i) then begin
-        match get_copy bucket i with
-        | Some v when H.equal v d
-           -> begin match get bucket i with
-              | Some v -> loop (i + 1) (v :: accu)
-              | None -> loop (i + 1) accu
-              end
+        match get bucket i with
+        | Some v when H.equal v d -> loop (i + 1) (v :: accu)
         | _ -> loop (i + 1) accu
       end else loop (i + 1) accu
     in
     loop 0 []
-
 
   let stats t =
     let len = Array.length t.table in

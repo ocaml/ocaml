@@ -94,14 +94,14 @@ let rec loop (program : Flambda.program_body)
              Flambda.Effect (field, program), dep)
         (program, dep) fields
     end
-  | Effect (effect, program) ->
+  | Effect (eff, program) ->
     let program, dep = loop program in
-    if Effect_analysis.no_effects effect then begin
+    if Effect_analysis.no_effects eff then begin
       program, dep
     end else begin
-      let new_dep = dependency effect in
+      let new_dep = dependency eff in
       let dep = Symbol.Set.union new_dep dep in
-      Effect (effect, program), dep
+      Effect (eff, program), dep
     end
   | End symbol -> program, Symbol.Set.singleton symbol
 

@@ -1,12 +1,8 @@
 \documentclass[11pt]{book}
-\usepackage{ae}
 
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-% HEVEA\@def@charset{UTF-8}%
-% Unicode character declarations
-\DeclareUnicodeCharacter{207A}{{}^{+}}
-\DeclareUnicodeCharacter{2014}{---}
+% HEVEA\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{fontspec}
 
 \usepackage{fullpage}
 \usepackage{syntaxdef}
@@ -20,13 +16,16 @@
 % Package for code examples:
 \usepackage{listings}
 \usepackage{alltt}
-\usepackage{lmodern}% for supporting bold ttfamily in code examples
 \usepackage[normalem]{ulem}% for underlining errors in code examples
 \input{ifocamldoc}
 \ifocamldoc\else
 \usepackage{changepage}
 \fi
 \input{macros.tex}
+
+% No ligatures in typewriter font
+\DisableLigatures{encoding = T1, family = tt* }
+
 % Listing environments
 \lstnewenvironment{camloutput}{
   \lstset{
@@ -123,7 +122,6 @@
 \fi
 }{}
 
-\newcommand{\?}{\color{black}\normalsize\tt\#{}}
 
 \ifocamldoc\else
 \lstnewenvironment{ocamlcodeblock}{
@@ -153,6 +151,7 @@
 \newcommand{\ocamlcodefragment}[1]{{\ttfamily\setlength{\parindent}{0cm}%
 \raggedright#1}}
 \newcommand{\ocamlinlinecode}[1]{{\ttfamily#1}}
+\newenvironment{ocamlarrow}{}{}
 \newenvironment{ocamlexception}{\bfseries}{}
 \newenvironment{ocamlextension}{\bfseries}{}
 \newenvironment{ocamlconstructor}{\bfseries}{}
@@ -181,9 +180,11 @@
 % Make _ a normal character in text mode
 % it must be the last package included
 \usepackage[strings,nohyphen]{underscore}
+% Babel enables a finer control of the catcode of '_'
+% and ensures that '_' is allowed in labels and references.
+\usepackage[english]{babel}
 
 %\makeatletter \def\@wrindex#1#2{\xdef \@indexfile{\csname #1@idxfile\endcsname}\@@wrindex#2||\\}\makeatother
-\def\th{^{\hbox{\scriptsize th}}}
 
 
 \raggedbottom

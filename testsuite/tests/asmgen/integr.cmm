@@ -1,9 +1,9 @@
 (* TEST
-readonly_files = "main.c"
-arguments = "-DINT_FLOAT -DFUN=test main.c"
-* skip
-reason = "This test is currently broken"
-** asmgen
+ readonly_files = "main.c";
+ arguments = "-DINT_FLOAT -DFUN=test main.c";
+ reason = "This test is currently broken";
+ skip;
+ asmgen;
 *)
 
 (**************************************************************************)

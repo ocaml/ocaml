@@ -1,5 +1,6 @@
 (* TEST
-   include testing
+ include testing;
+ flags = "-no-strict-formats";
 *)
 
 (*
@@ -10,6 +11,10 @@ A test file for the Printf module.
 
 open Testing;;
 open Printf;;
+
+let test_roundtrip fmt of_string s =
+  test (sprintf fmt (of_string s) = s)
+;;
 
 try
 
@@ -71,11 +76,11 @@ try
   test (sprintf "%*u" (-4) 42 = "42  ");
 
   printf "\nu negative\n%!";
-  begin match Sys.word_size with
-  | 32 ->
+  begin match Sys.int_size with
+  | 31 ->
      test (sprintf "%u" (-1) = "2147483647");
      test (sprintf "%#u" (-1) = "2_147_483_647");
-  | 64 ->
+  | 63 ->
      test (sprintf "%u" (-1) = "9223372036854775807");
      test (sprintf "%#u" (-1) = "9_223_372_036_854_775_807");
   | _ -> test false
@@ -99,10 +104,10 @@ try
   test (sprintf "%-0+ #*x" 5 42 = "0x2a ");
 
   printf "\nx negative\n%!";
-  begin match Sys.word_size with
-  | 32 ->
+  begin match Sys.int_size with
+  | 31 ->
      test (sprintf "%x" (-42) = "7fffffd6");
-  | 64 ->
+  | 63 ->
      test (sprintf "%x" (-42) = "7fffffffffffffd6");
   | _ -> test false
   end;
@@ -122,10 +127,10 @@ try
     (* >> '-' is incompatible with '0' *)
 
   printf "\nx negative\n%!";
-  begin match Sys.word_size with
-  | 32 ->
+  begin match Sys.int_size with
+  | 31 ->
      test (sprintf "%X" (-42) = "7FFFFFD6");
-  | 64 ->
+  | 63 ->
      test (sprintf "%X" (-42) = "7FFFFFFFFFFFFFD6");
   | _ -> test false
   end;
@@ -145,10 +150,10 @@ try
     (* >> '-' is incompatible with 'o' *)
 
   printf "\no negative\n%!";
-  begin match Sys.word_size with
-  | 32 ->
+  begin match Sys.int_size with
+  | 31 ->
      test (sprintf "%o" (-42) = "17777777726");
-  | 64 ->
+  | 63 ->
      test (sprintf "%o" (-42) = "777777777777777777726");
   | _ -> test false
   end;
@@ -491,9 +496,16 @@ try
   test (sprintf "%*lX" 5 42l = "   2A");
   (*test (sprintf "%-0+ #*lX" 5 42l = "0X2A ");*)
     (* >> '-' is incompatible with '0' *)
+  test_roundtrip "0x%lX" Int32.of_string "0x0";
+  test_roundtrip "0x%lX" Int32.of_string "0x123";
+  test_roundtrip "0x%lX" Int32.of_string "0xABCDEF";
+  test_roundtrip "0x%lX" Int32.of_string "0x12345678";
+  test_roundtrip "0x%lX" Int32.of_string "0x7FFFFFFF";
 
-  printf "\nlx negative\n%!";
+  printf "\nlX negative\n%!";
   test (sprintf "%lX" (-42l) = "FFFFFFD6");
+  test_roundtrip "0x%lX" Int32.of_string "0x80000000";
+  test_roundtrip "0x%lX" Int32.of_string "0xFFFFFFFF";
 
   printf "\nlo positive\n%!";
   test (sprintf "%lo" 42l = "52");
@@ -593,9 +605,16 @@ try
   test (sprintf "%*LX" 5 42L = "   2A");
   (*test (sprintf "%-0+ #*LX" 5 42L = "0X2A ");*)
     (* >> '-' is incompatible with '0' *)
+  test_roundtrip "0x%LX" Int64.of_string "0x0";
+  test_roundtrip "0x%LX" Int64.of_string "0x123";
+  test_roundtrip "0x%LX" Int64.of_string "0xABCDEF";
+  test_roundtrip "0x%LX" Int64.of_string "0x1234567812345678";
+  test_roundtrip "0x%LX" Int64.of_string "0x7FFFFFFFFFFFFFFF";
 
-  printf "\nLx negative\n%!";
+  printf "\nLX negative\n%!";
   test (sprintf "%LX" (-42L) = "FFFFFFFFFFFFFFD6");
+  test_roundtrip "0x%LX" Int64.of_string "0x8000000000000000";
+  test_roundtrip "0x%LX" Int64.of_string "0xFFFFFFFFFFFFFFFF";
 
   printf "\nLo positive\n%!";
   test (sprintf "%Lo" 42L = "52");

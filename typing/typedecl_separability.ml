@@ -50,7 +50,7 @@ type type_structure =
 let structure : type_definition -> type_structure = fun def ->
   match def.type_kind with
   | Type_open -> Open
-  | Type_abstract ->
+  | Type_abstract _ ->
       begin match def.type_manifest with
       | None -> Abstract
       | Some type_expr -> Synonym type_expr
@@ -63,9 +63,8 @@ let structure : type_definition -> type_structure = fun def ->
      let params =
        match def.type_kind with
        | Type_variant ([{cd_res = Some ret_type}], _) ->
-          begin match Ctype.repr ret_type with
-          | {desc=Tconstr (_, tyl, _)} ->
-             List.map Ctype.repr tyl
+          begin match get_desc ret_type with
+          | Tconstr (_, tyl, _) -> tyl
           | _ -> assert false
           end
        | _ -> def.type_params
@@ -128,12 +127,12 @@ let rec immediate_subtypes : type_expr -> type_expr list = fun ty ->
        parameters as well as the subtype
      - it performs a shallow traversal of object types,
        while our implementation collects all method types *)
-  match (Ctype.repr ty).desc with
+  match get_desc ty with
   (* these are the important cases,
      on which immediate_subtypes is called from [check_type] *)
   | Tarrow(_,ty1,ty2,_) ->
       [ty1; ty2]
-  | Ttuple(tys) -> tys
+  | Ttuple(tys) -> List.map snd tys
   | Tpackage(_, fl) -> (snd (List.split fl))
   | Tobject(row,class_ty) ->
       let class_subtys =
@@ -156,7 +155,7 @@ let rec immediate_subtypes : type_expr -> type_expr list = fun ty ->
   | Tpoly (pty, _) -> [pty]
   | Tconstr (_path, tys, _) -> tys
 
-and immediate_subtypes_object_row acc ty = match (Ctype.repr ty).desc with
+and immediate_subtypes_object_row acc ty = match get_desc ty with
   | Tnil -> acc
   | Tfield (_label, _kind, ty, rest) ->
       let acc = ty :: acc in
@@ -167,31 +166,28 @@ and immediate_subtypes_variant_row acc desc =
   let add_subtypes acc =
     let add_subtype acc (_l, rf) =
       immediate_subtypes_variant_row_field acc rf in
-    List.fold_left add_subtype acc desc.row_fields in
+    List.fold_left add_subtype acc (row_fields desc) in
   let add_row acc =
-    let row = Ctype.repr desc.row_more in
-    match row.desc with
+    let row = row_more desc in
+    match get_desc row with
     | Tvariant more -> immediate_subtypes_variant_row acc more
     | _ -> row :: acc
   in
   add_row (add_subtypes acc)
 
-and immediate_subtypes_variant_row_field acc = function
+and immediate_subtypes_variant_row_field acc f =
+  match row_field_repr f with
   | Rpresent(None)
   | Rabsent            -> acc
   | Rpresent(Some(ty)) -> ty :: acc
-  | Reither(_,field_types,_,r) ->
-      let acc = List.rev_append field_types acc in
-      begin match !r with
-      | None -> acc
-      | Some rf -> immediate_subtypes_variant_row_field acc rf
-      end
+  | Reither(_,field_types,_) ->
+      List.rev_append field_types acc
 
 let free_variables ty =
-  Ctype.free_variables (Ctype.repr ty)
-  |> List.map (fun {desc; id; _} ->
-      match desc with
-      | Tvar text -> {text; id}
+  Ctype.free_variables ty
+  |> List.map (fun ty ->
+      match get_desc ty with
+        Tvar text -> {text; id = get_id ty}
       | _ ->
           (* Ctype.free_variables only returns Tvar nodes *)
           assert false)
@@ -393,12 +389,11 @@ let check_type
   : Env.t -> type_expr -> mode -> context
   = fun env ty m ->
   let rec check_type hyps ty m =
-    let ty = Ctype.repr ty in
     if Hyps.safe ty m hyps then empty
     else if Hyps.unsafe ty m hyps then worst_case ty
     else
     let hyps = Hyps.add ty m hyps in
-    match (ty.desc, m) with
+    match (get_desc ty, m) with
     (* Impossible case due to the call to [Ctype.repr]. *)
     | (Tlink _            , _      ) -> assert false
     (* Impossible case (according to comment in [typing/types.mli]. *)
@@ -407,7 +402,7 @@ let check_type
     | (_                  , Ind    ) -> empty
     (* Variable case, add constraint. *)
     | (Tvar(alpha)        , m      ) ->
-        TVarMap.singleton {text = alpha; id = ty.Types.id} m
+        TVarMap.singleton {text = alpha; id = get_id ty} m
     (* "Separable" case for constructors with known memory representation. *)
     | (Tarrow _           , Sep    )
     | (Ttuple _           , Sep    )
@@ -535,7 +530,6 @@ let msig_of_context : decl_loc:Location.t -> parameters:type_expr list
          we build a list of modes by repeated consing into
          an accumulator variable [acc], setting existential variables
          to Ind as we go. *)
-      let param_instance = Ctype.repr param_instance in
       let get context var =
         try TVarMap.find var context with Not_found -> Ind in
       let set_ind context var =
@@ -543,9 +537,9 @@ let msig_of_context : decl_loc:Location.t -> parameters:type_expr list
       let is_ind context var = match get context var with
         | Ind -> true
         | Sep | Deepsep -> false in
-      match param_instance.desc with
+      match get_desc param_instance with
       | Tvar text ->
-          let var = {text; id = param_instance.Types.id} in
+          let var = {text; id = get_id param_instance} in
           (get context var) :: acc, (set_ind context var)
       | _ ->
           let instance_exis = free_variables param_instance in

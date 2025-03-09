@@ -164,7 +164,8 @@
 
 \pagestyle{myheadings}
 \def\partmark#1{\markboth{Part \thepart. \ #1}{}}
-\def\chaptermark#1{\markright{Chapter \thechapter. \ #1}}
+\def\chaptermark#1{\markboth{Chapter \thechapter. \ #1}{}}
+\def\sectionmark#1{\markright{\thesection. \ #1}}
 
 % nth
 
@@ -221,16 +222,21 @@
 
 %%% Linking to modules
 \ifocamldoc
-\newcommand{\stdmoduleref}[1]{\hyperref[#1]{\texttt{#1}}[\ref{#1}]}
+\newcommand{\moduleref}[3]{\hyperref[#2]{#3}[\ref{#2}]}
+\newcommand{\stdmoduleref}[1]{\moduleref{}{#1}{\texttt{#1}}}
 \newcommand{\stdpageref}[1]{\pageref{#1}}
 \else
-\newcommand{\stdmoduleref}[1]{\hyperref[container-page-libref-module-Stdlib-module-#1]{\texttt{#1}}[\ref{container-page-libref-module-Stdlib-module-#1}]}
-\newcommand{\stdpageref}[1]{\pageref{container-page-libref-module-Stdlib-module-#1}}
+\newcommand{\moduleLabel}[2]{page-#1-module-#2}
+\newcommand{\moduleref}[3]{%
+\hyperref[\moduleLabel{#1}{#2}]{#3}[\ref{\moduleLabel{#1}{#2}}]%
+}
+\newcommand{\stdmoduleref}[1]{\moduleref{libref-module-Stdlib}{#1}{\texttt{#1}}}
+\newcommand{\stdpageref}[1]{\pageref{\moduleLabel{libref-module-Stdlib}{#1}}}
 \fi
 \newenvironment{linklist}{\begingroup\ocamldocinputstart}{\endgroup}
 
-\newcommand{\compilerdocitem}[2]{\input{#1.tex}}
-\newcommand{\libdocitem}[2]{\input{#1.tex}}
+\newcommand{\compilerdocitem}[2]{\input{library/#1.tex}}
+\newcommand{\libdocitem}[2]{\input{library/#1.tex}}
 \ifocamldoc
 \newcommand{\stddocitem}[2]{\libdocitem{#1}{#2}}
 \else
@@ -247,6 +253,7 @@
 \newcommand{\ocamlhighlight}{\bfseries\uline}
 \newcommand{\ocamlerror}{\bfseries}
 \newcommand{\ocamlwarning}{\bfseries}
+\newcommand{\?}{\color{black}\normalsize\tt\#{}}
 
 \definecolor{gray}{gray}{0.5}
 \newcommand{\ocamlcomment}{\color{gray}\normalfont\small}

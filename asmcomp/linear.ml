@@ -49,14 +49,15 @@ let has_fallthrough = function
 
 type fundecl =
   { fun_name: string;
+    fun_args: Reg.Set.t;
     fun_body: instruction;
     fun_fast: bool;
     fun_dbg : Debuginfo.t;
     fun_tailrec_entry_point_label : label;
-    fun_contains_calls: bool;
+    fun_contains_nontail_calls: bool;
     fun_num_stack_slots: int array;
     fun_frame_required: bool;
-    fun_prologue_required: bool;
+    fun_extra_stack_used: int
   }
 
 (* Invert a test *)

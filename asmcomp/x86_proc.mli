@@ -28,6 +28,7 @@ val string_of_reg64: reg64 -> string
 val string_of_registerf: registerf -> string
 val string_of_string_literal: string -> string
 val string_of_condition: condition -> string
+val string_of_float_condition: float_condition -> string
 val string_of_symbol: (*prefix*) string -> string -> string
 val string_of_rounding: rounding -> string
 val buf_bytes_directive:
@@ -57,23 +58,17 @@ val assemble_file: (*infile*) string -> (*outfile*) string -> (*retcode*) int
 (** System detection *)
 
 type system =
-  (* 32 bits and 64 bits *)
   | S_macosx
   | S_gnu
   | S_cygwin
-
-  (* 32 bits only *)
   | S_solaris
-  | S_win32
-  | S_linux_elf
-  | S_bsd_elf
   | S_beos
-  | S_mingw
-
-  (* 64 bits only *)
   | S_win64
   | S_linux
   | S_mingw64
+  | S_freebsd
+  | S_netbsd
+  | S_openbsd
 
   | S_unknown
 
@@ -87,3 +82,5 @@ val use_plt : bool
 (** Support for plumbing a binary code emitter *)
 
 val register_internal_assembler: (asm_program -> string -> unit) -> unit
+val with_internal_assembler:
+  (asm_program -> string -> unit) -> (unit -> 'a) -> 'a

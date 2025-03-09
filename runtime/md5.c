@@ -37,6 +37,11 @@ CAMLprim value caml_md5_string(value str, value ofs, value len)
   return res;
 }
 
+CAMLprim value caml_md5_bytes(value b, value ofs, value len)
+{
+  return caml_md5_string(b, ofs, len);
+}
+
 CAMLexport value caml_md5_channel(struct channel *chan, intnat toread)
 {
   CAMLparam0();
@@ -45,7 +50,7 @@ CAMLexport value caml_md5_channel(struct channel *chan, intnat toread)
   intnat read;
   char buffer[4096];
 
-  Lock(chan);
+  caml_channel_lock(chan);
   caml_MD5Init(&ctx);
   if (toread < 0){
     while (1){
@@ -64,7 +69,7 @@ CAMLexport value caml_md5_channel(struct channel *chan, intnat toread)
   }
   res = caml_alloc_string(16);
   caml_MD5Final(&Byte_u(res, 0), &ctx);
-  Unlock(chan);
+  caml_channel_unlock(chan);
   CAMLreturn (res);
 }
 

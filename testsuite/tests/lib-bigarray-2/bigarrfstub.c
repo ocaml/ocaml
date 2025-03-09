@@ -13,7 +13,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-#define CAML_NAME_SPACE
 #include <stdio.h>
 #include <caml/mlvalues.h>
 #include <caml/bigarray.h>

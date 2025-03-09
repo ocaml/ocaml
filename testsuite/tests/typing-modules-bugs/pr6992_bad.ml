@@ -1,9 +1,9 @@
-(* TEST
-flags = " -w -a "
-ocamlc_byte_exit_status = "2"
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-*** check-ocamlc.byte-output
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
+
+
+
+
 *)
 
 (* PR#6992, reported by Stephen Dolan *)
@@ -20,4 +20,12 @@ end
 module FixId = Fix (struct type 'a f = 'a end)
  let bad : (int, string) eq = FixId.uniq Eq Eq
  let _ = Printf.printf "Oh dear: %s" (cast bad 42)
+*)
+
+(* TEST
+ flags = " -w -a ";
+ ocamlc_byte_exit_status = "2";
+ setup-ocamlc.byte-build-env;
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)

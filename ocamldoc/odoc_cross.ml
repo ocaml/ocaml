@@ -77,16 +77,16 @@ type alias_state =
   | Alias_to_resolve
 
 (** Couples of module name aliases. *)
-let (module_aliases : (Name.t, Name.t * alias_state) Hashtbl.t) = Hashtbl.create 13 ;;
+let (module_aliases : (Name.t, Name.t * alias_state) Hashtbl.t) = Hashtbl.create 13
 
 (** Couples of module or module type name aliases. *)
-let module_and_modtype_aliases = Hashtbl.create 13;;
+let module_and_modtype_aliases = Hashtbl.create 13
 
 (** Couples of extension name aliases. *)
-let extension_aliases = Hashtbl.create 13;;
+let extension_aliases = Hashtbl.create 13
 
 (** Couples of exception name aliases. *)
-let exception_aliases = Hashtbl.create 13;;
+let exception_aliases = Hashtbl.create 13
 
 let rec build_alias_list = function
     [] -> ()
@@ -341,6 +341,9 @@ let rec associate_in_module module_list (acc_b_modif, acc_incomplete_top_module_
     | Module_apply (k1, k2) ->
         let (acc_b2, acc_inc2, acc_names2) = iter_kind (acc_b, acc_inc, acc_names) k1 in
         iter_kind (acc_b2, acc_inc2, acc_names2) k2
+
+    | Module_apply_unit k1 ->
+        iter_kind (acc_b, acc_inc, acc_names) k1
 
     | Module_constraint (k, tk) ->
         let (acc_b2, acc_inc2, acc_names2) = iter_kind (acc_b, acc_inc, acc_names) k in
@@ -936,8 +939,12 @@ and assoc_comments_module_kind parent_name module_list mk =
   | Module_functor _ ->
       mk
   | Module_apply (mk1, mk2) ->
-      Module_apply (assoc_comments_module_kind parent_name module_list mk1,
-                    assoc_comments_module_kind parent_name module_list mk2)
+      Module_apply
+        (assoc_comments_module_kind parent_name module_list mk1,
+         assoc_comments_module_kind parent_name module_list mk2)
+  | Module_apply_unit mk1 ->
+      Module_apply_unit
+        (assoc_comments_module_kind parent_name module_list mk1)
   | Module_with (mtk, s) ->
       Module_with (assoc_comments_module_type_kind parent_name module_list mtk, s)
   | Module_constraint (mk1, mtk) ->

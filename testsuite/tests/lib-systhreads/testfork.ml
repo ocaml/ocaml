@@ -1,10 +1,14 @@
 (* TEST
-   * hassysthreads
-   include systhreads
-   ** not-bsd
-   *** libunix
-   **** bytecode
-   **** native
+ include systhreads;
+ hassysthreads;
+ not-bsd;
+ libunix;
+ no-tsan; (* tsan limitation: starting new threads after fork is not supported *)
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 (* POSIX threads and fork() *)

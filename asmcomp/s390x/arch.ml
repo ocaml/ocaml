@@ -1,3 +1,4 @@
+# 2 "asmcomp/s390x/arch.ml"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -21,12 +22,10 @@ open Format
 
 (* Machine-specific command-line options *)
 
-let pic_code = ref true
-
 let command_line_options =
-  [ "-fPIC", Arg.Set pic_code,
+  [ "-fPIC", Arg.Set Clflags.pic_code,
       " Generate position-independent machine code (default)";
-    "-fno-PIC", Arg.Clear pic_code,
+    "-fno-PIC", Arg.Clear Clflags.pic_code,
       " Generate position-dependent machine code" ]
 
 (* Specific operations *)
@@ -63,10 +62,6 @@ let offset_addressing addr delta =
   match addr with
   | Iindexed n -> Iindexed(n + delta)
   | Iindexed2 n -> Iindexed2(n + delta)
-
-let num_args_addressing = function
-  | Iindexed _ -> 1
-  | Iindexed2 _ -> 2
 
 (* Printing operations and addressing modes *)
 

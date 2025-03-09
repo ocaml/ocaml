@@ -42,9 +42,39 @@ let merge_before_tags l =
       iter acc l2
   in
   iter [] l
-;;
 
-let version_separators = Str.regexp "[\\.\\+]";;
+let version_separators = Str.regexp "[\\.\\+]"
+
+let merge_opt cond x y merge = match x, y with
+  | None, None -> None
+  | Some _ as x, None | None, (Some _ as x) -> x
+  | Some x, Some y ->
+      if cond then
+        Some (merge x y)
+      else Some x
+
+let merge_lists cond x y merge = match x, y with
+  | [], [] -> []
+  | _ :: _ as x, [] | [], ( _ :: _ as x) -> x
+  | _ :: _ as x, (_ :: _ as y) ->
+      if cond then
+        merge x y
+      else x
+
+let merge_assoc l1 l2 =
+  let l_in_m1_and_m2, l_in_m2_only = List.partition
+      (fun (param2, _) -> List.mem_assoc param2 l1)
+      l2
+  in
+  let rec iter = function
+      [] -> []
+    | (param2, desc2) :: q ->
+        let desc1 = List.assoc param2 l1 in
+        (param2, desc1 @ (Newline :: desc2)) :: (iter q)
+  in
+  let l1_completed = iter l_in_m1_and_m2 in
+  l1_completed @ l_in_m2_only
+
 
 (** Merge two Odoctypes.info structures, completing the information of
    the first one with the information in the second one.
@@ -52,154 +82,53 @@ let version_separators = Str.regexp "[\\.\\+]";;
    @return the new info structure.*)
 let merge_info merge_options (m1 : info) (m2 : info) =
   let new_desc_opt =
-    match m1.i_desc, m2.i_desc with
-      None, None -> None
-    | None, Some d
-    | Some d, None -> Some d
-    | Some d1, Some d2 ->
-        if List.mem Merge_description merge_options then
-          Some (d1 @ (Newline :: d2))
-        else
-          Some d1
+    let merge d1 d2 = d1 @ (Newline :: d2) in
+    merge_opt (List.mem Merge_description merge_options) m1.i_desc m2.i_desc merge
   in
   let new_authors =
-    match m1.i_authors, m2.i_authors with
-      [], [] -> []
-    | l, []
-    | [], l -> l
-    | l1, l2 ->
-        if List.mem Merge_author merge_options then
-          l1 @ l2
-        else
-          l1
+    merge_lists (List.mem Merge_author merge_options) m1.i_authors m2.i_authors (@)
   in
   let new_version =
-    match m1.i_version , m2.i_version with
-      None, None -> None
-    | Some v, None
-    | None, Some v -> Some v
-    | Some v1, Some v2 ->
-        if List.mem Merge_version merge_options then
-          Some (v1^" "^v2)
-        else
-          Some v1
+    merge_opt (List.mem Merge_version merge_options) m1.i_version m2.i_version
+      (fun v1 v2 -> v1^" "^v2)
   in
   let new_sees =
-    match m1.i_sees, m2.i_sees with
-      [], [] -> []
-    | l, []
-    | [], l -> l
-    | l1, l2 ->
-        if List.mem Merge_see merge_options then
-          l1 @ l2
-        else
-          l1
+    merge_lists (List.mem Merge_see merge_options) m1.i_sees m2.i_sees (@)
   in
   let new_since =
-    match m1.i_since, m2.i_since with
-      None, None -> None
-    | Some v, None
-    | None, Some v -> Some v
-    | Some v1, Some v2 ->
-        if List.mem Merge_since merge_options then
-          Some (v1^" "^v2)
-        else
-          Some v1
+    merge_opt (List.mem Merge_since merge_options) m1.i_since m2.i_since (fun v1 v2 ->
+        v1^" "^v2
+      )
   in
   let new_before =
-    match m1.i_before, m2.i_before with
-      [], [] -> []
-    | l, []
-    | [], l -> l
-    | l1, _ ->
-        if List.mem Merge_before merge_options then
-          merge_before_tags (m1.i_before @ m2.i_before)
-        else
-          l1 in
+    merge_lists (List.mem Merge_before merge_options) m1.i_before m2.i_before (fun b1 b2 ->
+        merge_before_tags (b1 @ b2)
+      )
+  in
   let new_before = List.map (fun (v, t) -> (Str.split version_separators v, v, t)) new_before in
   let new_before = List.sort Stdlib.compare new_before in
   let new_before = List.map (fun (_, v, t) -> (v, t)) new_before in
   let new_dep =
-    match m1.i_deprecated, m2.i_deprecated with
-      None, None -> None
-    | None, Some t
-    | Some t, None -> Some t
-    | Some t1, Some t2 ->
-        if List.mem Merge_deprecated merge_options then
-          Some (t1 @ (Newline :: t2))
-        else
-          Some t1
+    merge_opt (List.mem Merge_deprecated merge_options)
+      m1.i_deprecated m2.i_deprecated (fun t1 t2 -> t1 @ (Newline :: t2))
   in
   let new_params =
-    match m1.i_params, m2.i_params with
-      [], [] -> []
-    | l, []
-    | [], l -> l
-    | l1, l2 ->
-        if List.mem Merge_param merge_options then
-          (
-           let l_in_m1_and_m2, l_in_m2_only = List.partition
-               (fun (param2, _) -> List.mem_assoc param2 l1)
-               l2
-           in
-           let rec iter = function
-               [] -> []
-             | (param2, desc2) :: q ->
-                 let desc1 = List.assoc param2 l1 in
-                 (param2, desc1 @ (Newline :: desc2)) :: (iter q)
-           in
-           let l1_completed = iter l_in_m1_and_m2 in
-           l1_completed @ l_in_m2_only
-          )
-        else
-          l1
+    merge_lists (List.mem Merge_param merge_options) m1.i_params m2.i_params merge_assoc
   in
   let new_raised_exceptions =
-    match m1.i_raised_exceptions, m2.i_raised_exceptions with
-      [], [] -> []
-    | l, []
-    | [], l -> l
-    | l1, l2 ->
-        if List.mem Merge_raised_exception merge_options then
-          (
-           let l_in_m1_and_m2, l_in_m2_only = List.partition
-               (fun (exc2, _) -> List.mem_assoc exc2 l1)
-               l2
-           in
-           let rec iter = function
-               [] -> []
-             | (exc2, desc2) :: q ->
-                 let desc1 = List.assoc exc2 l1 in
-                 (exc2, desc1 @ (Newline :: desc2)) :: (iter q)
-           in
-           let l1_completed = iter l_in_m1_and_m2 in
-           l1_completed @ l_in_m2_only
-          )
-        else
-          l1
+    merge_lists (List.mem Merge_raised_exception merge_options)
+      m1.i_raised_exceptions m2.i_raised_exceptions merge_assoc
   in
   let new_rv =
-    match m1.i_return_value, m2.i_return_value with
-      None, None -> None
-    | None, Some t
-    | Some t, None -> Some t
-    | Some t1, Some t2 ->
-        if List.mem Merge_return_value merge_options then
-          Some (t1 @ (Newline :: t2))
-        else
-          Some t1
+    merge_opt (List.mem Merge_return_value merge_options)
+      m1.i_return_value m2.i_return_value (fun t1 t2 -> t1 @ (Newline :: t2))
   in
-  let new_custom =
-    match m1.i_custom, m2.i_custom with
-      [], [] -> []
-    | [], l
-    | l, [] -> l
-    | l1, l2 ->
-        if List.mem Merge_custom merge_options then
-          l1 @ l2
-        else
-          l1
+  let new_custom = merge_lists (List.mem Merge_custom merge_options)
+      m1.i_custom m2.i_custom (@)
   in
+  (* When merging comments, alerts should always be added after the merge. When
+     merging modules, only alerts in the interface are kept. *)
+  let new_alerts = m1.i_alerts in
   {
     Odoc_types.i_desc = new_desc_opt ;
     Odoc_types.i_authors = new_authors ;
@@ -212,12 +141,15 @@ let merge_info merge_options (m1 : info) (m2 : info) =
     Odoc_types.i_raised_exceptions = new_raised_exceptions ;
     Odoc_types.i_return_value = new_rv ;
     Odoc_types.i_custom = new_custom ;
+    Odoc_types.i_alerts = new_alerts ;
   }
 
 (** Merge of two optional info structures. *)
 let merge_info_opt merge_options mli_opt ml_opt =
   match mli_opt, ml_opt with
-    None, Some i -> Some i
+    None, Some i ->
+      (* Be sure not to take alerts from an impl when an intf is present. *)
+      Some { i with i_alerts = [] }
   | Some i, None -> Some i
   | None, None -> None
   | Some i1, Some i2 -> Some (merge_info merge_options i1 i2)

@@ -20,10 +20,12 @@
 #include <string.h>
 #include "caml/alloc.h"
 #include "caml/backtrace_prim.h"
+#include "caml/bigarray.h"
 #include "caml/codefrag.h"
 #include "caml/config.h"
 #include "caml/debugger.h"
 #include "caml/fail.h"
+#include "caml/fiber.h"
 #include "caml/fix_code.h"
 #include "caml/interp.h"
 #include "caml/intext.h"
@@ -33,8 +35,8 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/prims.h"
-#include "caml/signals.h"
-#include "caml/stacks.h"
+#include "caml/startup_aux.h"
+#include "caml/instruct.h"
 
 #ifndef NATIVE_CODE
 
@@ -43,50 +45,11 @@ CAMLprim value caml_get_global_data(value unit)
   return caml_global_data;
 }
 
-char * caml_section_table = NULL;
-asize_t caml_section_table_size;
-
-CAMLprim value caml_get_section_table(value unit)
-{
-  if (caml_section_table == NULL) caml_raise_not_found();
-  return caml_input_value_from_block(caml_section_table,
-                                     caml_section_table_size);
-}
-
 struct bytecode {
   code_t prog;
   asize_t len;
 };
 #define Bytecode_val(p) ((struct bytecode*)Data_abstract_val(p))
-
-/* Convert a bytes array (= LongString.t) to a contiguous buffer.
-   The result is allocated with caml_stat_alloc */
-static char* buffer_of_bytes_array(value ls, asize_t *len)
-{
-  CAMLparam1(ls);
-  CAMLlocal1(s);
-  asize_t off;
-  char *ret;
-  int i;
-
-  *len = 0;
-  for (i = 0; i < Wosize_val(ls); i++) {
-    s = Field(ls, i);
-    *len += caml_string_length(s);
-  }
-
-  ret = caml_stat_alloc(*len);
-  off = 0;
-  for (i = 0; i < Wosize_val(ls); i++) {
-    size_t s_len;
-    s = Field(ls, i);
-    s_len = caml_string_length(s);
-    memcpy(ret + off, Bytes_val(s), s_len);
-    off += s_len;
-  }
-
-  CAMLreturnT (char*, ret);
-}
 
 CAMLprim value caml_reify_bytecode(value ls_prog,
                                    value debuginfo,
@@ -95,28 +58,35 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
   CAMLparam3(ls_prog, debuginfo, digest_opt);
   CAMLlocal3(clos, bytecode, retval);
   code_t prog;
-  asize_t len;
+  asize_t len; /* in bytes */
   enum digest_status digest_kind;
   unsigned char * digest;
   int fragnum;
 
-  prog = (code_t)buffer_of_bytes_array(ls_prog, &len);
+  len = caml_ba_byte_size(Caml_ba_array_val(ls_prog));
+
+  prog = caml_stat_alloc(len + sizeof(opcode_t) * 2 /* for 'RETURN 1' */);
+
+  memcpy(prog, Caml_ba_data_val(ls_prog), len);
+#ifdef ARCH_BIG_ENDIAN
+  caml_fixup_endianness(prog, len);
+#endif
+  prog[len / sizeof(opcode_t)] = RETURN;
+  len += sizeof(opcode_t);
+  prog[len / sizeof(opcode_t)] = 1;
+  len += sizeof(opcode_t);
+
   caml_add_debug_info(prog, Val_long(len), debuginfo);
   /* match (digest_opt : string option) with */
-  if (Is_block(digest_opt)) {
-    /* | Some digest -> */
+  if (Is_some(digest_opt)) {
     digest_kind = DIGEST_PROVIDED;
-    digest = (unsigned char *) String_val(Field(digest_opt, 0));
+    digest = (unsigned char *) String_val(Some_val(digest_opt));
   } else {
-    /* | None -> */
     digest_kind = DIGEST_LATER;
     digest = NULL;
   }
   fragnum = caml_register_code_fragment((char *) prog, (char *) prog + len,
                                         digest_kind, digest);
-#ifdef ARCH_BIG_ENDIAN
-  caml_fixup_endianness((code_t) prog, len);
-#endif
 #ifdef THREADED_CODE
   caml_thread_code((code_t) prog, len);
 #endif
@@ -161,32 +131,31 @@ CAMLprim value caml_static_release_bytecode(value bc)
 
 CAMLprim value caml_realloc_global(value size)
 {
-  mlsize_t requested_size, actual_size, i;
-  value new_global_data;
+  mlsize_t requested_size, actual_size;
+  value new_global_data, old_global_data;
+  old_global_data = caml_global_data;
 
   requested_size = Long_val(size);
-  actual_size = Wosize_val(caml_global_data);
+  actual_size = Wosize_val(old_global_data);
   if (requested_size >= actual_size) {
     requested_size = (requested_size + 0x100) & 0xFFFFFF00;
-    caml_gc_message (0x08, "Growing global data to %"
+    CAML_GC_MESSAGE(STACKSIZE, "Growing global data to %"
                      ARCH_INTNAT_PRINTF_FORMAT "u entries\n",
                      requested_size);
     new_global_data = caml_alloc_shr(requested_size, 0);
-    for (i = 0; i < actual_size; i++)
-      caml_initialize(&Field(new_global_data, i), Field(caml_global_data, i));
-    for (i = actual_size; i < requested_size; i++){
+    for (mlsize_t i = 0; i < actual_size; i++)
+      caml_initialize(&Field(new_global_data, i), Field(old_global_data, i));
+    for (mlsize_t i = actual_size; i < requested_size; i++){
       Field (new_global_data, i) = Val_long (0);
     }
-    // Give gc a chance to run, and run memprof callbacks
-    caml_global_data = new_global_data;
-    caml_process_pending_actions();
+    caml_modify_generational_global_root(&caml_global_data, new_global_data);
   }
   return Val_unit;
 }
 
 CAMLprim value caml_get_current_environment(value unit)
 {
-  return *Caml_state->extern_sp;
+  return *Caml_state->current_stack->sp;
 }
 
 CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
@@ -217,12 +186,11 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
        saved env */
 
   value * osp, * nsp;
-  int i;
 
-  osp = Caml_state->extern_sp;
-  Caml_state->extern_sp -= 4;
-  nsp = Caml_state->extern_sp;
-  for (i = 0; i < 7; i++) nsp[i] = osp[i];
+  osp = Caml_state->current_stack->sp;
+  Caml_state->current_stack->sp -= 4;
+  nsp = Caml_state->current_stack->sp;
+  for (int i = 0; i < 7; i++) nsp[i] = osp[i];
   nsp[7] = (value) Nativeint_val(codeptr);
   nsp[8] = env;
   nsp[9] = Val_int(0);
@@ -237,12 +205,6 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
 value caml_get_global_data(value unit)
 {
   caml_invalid_argument("Meta.get_global_data");
-  return Val_unit; /* not reached */
-}
-
-value caml_get_section_table(value unit)
-{
-  caml_invalid_argument("Meta.get_section_table");
   return Val_unit; /* not reached */
 }
 

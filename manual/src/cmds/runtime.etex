@@ -68,7 +68,8 @@ section~\ref{s:ocamlrun-dllpath}).
 Print the magic number of the bytecode executable given as argument
 and exit.
 \item["-M"]
-Print the magic number expected by this version of the runtime and exit.
+Print the magic number expected for bytecode executables by this version
+of the runtime and exit.
 \item["-p"]
 Print the names of the primitives known to this version of
 "ocamlrun" and exit.
@@ -108,8 +109,8 @@ The following environment variables are also consulted:
   A parameter specification is an option letter followed by an "="
   sign, a decimal number (or an hexadecimal number prefixed by "0x"),
   and an optional multiplier.  The options are documented below;
-  the last six correspond to the fields of the
-  "control" record documented in
+  the options "l, m, M, n, o, s, v" correspond to fields of the "control"
+  record documented in
 \ifouthtml
  \ahref{libref/Gc.html}{Module \texttt{Gc}}.
 \else
@@ -124,6 +125,45 @@ The following environment variables are also consulted:
         startup time instead of at backtrace printing time. "b=2" can be used if
         the runtime is unable to load debugging information at backtrace
         printing time, for example if there are no file descriptors available.
+  \item[c] ("cleanup_on_exit") Shut the runtime down gracefully on exit (see
+        "caml_shutdown" in section~\ref{ss:c-embedded-code}). The option also enables
+        pooling (as in "caml_startup_pooled"). This mode can be used to detect
+        leaks with a third-party memory debugger.
+  \item[d] ("max_domains") Maximum number of domains that can be active
+        concurrently. Defaults to 128 on 64-bit platforms and 16 on 32-bit
+        platforms.
+  \item[e] ("runtime_events_log_wsize") Size of the per-domain runtime events ring
+        buffers in log powers of two words. Defaults to 16, giving 64k word or
+        512kb buffers on 64-bit systems.
+  \item[l] ("stack_limit") The limit (in words) of the stack size. This is
+        relevant to both the byte-code runtime and the native code runtime:
+        OCaml always uses its own stack and not the operating system's stack.
+  \item[m] ("custom_minor_ratio") Bound on floating garbage for
+        out-of-heap memory
+        held by custom values in the minor heap. A minor GC is triggered
+        when this much memory is held by custom values located in the minor
+        heap. Expressed as a percentage of minor heap size. Default:
+        100. Note: this only applies to values allocated with
+        "caml_alloc_custom_mem".
+  \item[M] ("custom_major_ratio") Target ratio of floating garbage to
+        major heap size for out-of-heap memory held by custom values
+        (e.g. bigarrays) located in the major heap. The GC speed is adjusted
+        to try to use this much memory for dead values that are not yet
+        collected. Expressed as a percentage of major heap size. Default:
+        44. Note: this only applies to values allocated with
+        "caml_alloc_custom_mem".
+  \item[n] ("custom_minor_max_size") Maximum amount of out-of-heap
+        memory for each custom value allocated in the minor heap. When a custom
+        value is allocated on the minor heap and holds more than this many
+        bytes, only this value is counted against "custom_minor_ratio" and
+        the rest is directly counted against "custom_major_ratio".
+        Default: 8192 bytes. Note:
+        this only applies to values allocated with "caml_alloc_custom_mem".
+        \end{options}
+        The multiplier is "k", "M", or "G", for multiplication by $2^{10}$,
+        $2^{20}$, and $2^{30}$ respectively.
+  \item[o] ("space_overhead")  The major GC speed setting.
+        See the Gc module documentation for details.
   \item[p] (parser trace) Turn on debugging support for
         "ocamlyacc"-generated parsers.  When this option is on,
         the pushdown automaton that executes the parsers prints a
@@ -136,21 +176,8 @@ The following environment variables are also consulted:
   section~\ref{Hashtbl}).
 \fi
         This option takes no argument.
-  \item[h] The initial size of the major heap (in words).
-  \item[a] ("allocation_policy")
-    The policy used for allocating in the OCaml heap. Possible values
-    are "0" for the next-fit policy, "1" for the first-fit
-    policy, and "2" for the best-fit policy. The default is "2" (best-fit).
-    See the Gc module documentation for details.
   \item[s] ("minor_heap_size")  Size of the minor heap. (in words)
-  \item[i] ("major_heap_increment")  Default size increment for the
-  major heap. (in words)
-  \item[o] ("space_overhead")  The major GC speed setting.
-    See the Gc module documentation for details.
-  \item[O] ("max_overhead")  The heap compaction trigger setting.
-  \item[l] ("stack_limit") The limit (in words) of the stack size. This is only
-  relevant to the byte-code runtime, as the native code runtime uses the
-  operating system's stack.
+  \item[t] Set the trace level for the debug runtime (ignored by the standard runtime).
   \item[v] ("verbose")  What GC messages to print to stderr.  This
   is a sum of values selected from the following:
   \begin{options}
@@ -166,36 +193,13 @@ The following environment variables are also consulted:
            executable file, resolving shared libraries).
         \item[512 (= 0x200)] Computation of compaction-triggering condition.
         \item[1024 (= 0x400)] Output GC statistics at program exit.
+        \item[2048 (= 0x800)] GC debugging messages.
+        \item[4096 (= 0x1000)] Address space reservation changes.
   \end{options}
-  \item[c] ("cleanup_on_exit") Shut the runtime down gracefully on exit (see
-  "caml_shutdown" in section~\ref{ss:c-embedded-code}). The option also enables
-  pooling (as in "caml_startup_pooled"). This mode can be used to detect
-  leaks with a third-party memory debugger.
-  % FIXME missing: H, t, w, W see MPR#7870
-  \item[M] ("custom_major_ratio") Target ratio of floating garbage to
-  major heap size for out-of-heap memory held by custom values
-  (e.g. bigarrays) located in the major heap. The GC speed is adjusted
-  to try to use this much memory for dead values that are not yet
-  collected. Expressed as a percentage of major heap size. Default:
-  44. Note: this only applies to values allocated with
-  "caml_alloc_custom_mem".
-  \item[m] ("custom_minor_ratio") Bound on floating garbage for
-  out-of-heap memory
-  held by custom values in the minor heap. A minor GC is triggered
-  when this much memory is held by custom values located in the minor
-  heap. Expressed as a percentage of minor heap size. Default:
-  100. Note: this only applies to values allocated with
-  "caml_alloc_custom_mem".
-  \item[n] ("custom_minor_max_size") Maximum amount of out-of-heap
-  memory for each custom value allocated in the minor heap. When a custom
-  value is allocated on the minor heap and holds more than this many
-  bytes, only this value is counted against "custom_minor_ratio" and
-  the rest is directly counted against "custom_major_ratio".
-  Default: 8192 bytes. Note:
-  this only applies to values allocated with "caml_alloc_custom_mem".
-  \end{options}
-  The multiplier is "k", "M", or "G", for multiplication by $2^{10}$,
-  $2^{20}$, and $2^{30}$ respectively.
+  \item[V] ("verify_heap") runs an integrity check on the heap just after
+    the completion of a major GC cycle
+  \item[W] Print runtime warnings to stderr (such as Channel opened on file
+    dies without being closed, unflushed data, etc.)
 
   If the option letter is not recognized, the whole parameter is ignored;
   if the equal sign or the number is missing, the value is taken as 1;

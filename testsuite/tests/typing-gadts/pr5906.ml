@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type _ constant =
@@ -34,8 +34,8 @@ Lines 12-16, characters 2-36:
 15 |   | Leq, Bool x, Bool y -> Bool (x <= y)
 16 |   | Add, Int x, Int y -> Int (x + y)
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(Eq, Int _, _)
+  Here is an example of a case that is not matched: "(Eq, Int _, _)"
+
 val eval : ('a, 'b, 'c) binop -> 'a constant -> 'b constant -> 'c constant =
   <fun>
 Exception: Match_failure ("", 12, 2).

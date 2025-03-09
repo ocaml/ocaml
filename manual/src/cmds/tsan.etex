@@ -1,0 +1,256 @@
+\chapter{Runtime detection of data races with ThreadSanitizer}
+\label{c:tsan}\cutname{tsan.html}
+%HEVEA\cutname{tsan.html}
+
+\section{s:tsan-overview}{Overview and usage}
+
+OCaml, since version 5.0, allows shared-memory parallelism and thus mutation of
+data shared between multiple threads. This creates the possibility of data
+races, i.e., unordered accesses to the same memory location with at least one
+of them being a write. In OCaml, data races are easy to introduce, and the
+behaviour of programs with data races can be unintuitive — the observed
+behaviours cannot be explained by simply interleaving operations from different
+concurrent threads. More information about data races and their consequences
+can be found in section~\ref{s:par_mm_easy} and Chapter~\ref{c:memorymodel}.
+
+To help detect data races, OCaml supports ThreadSantizer (TSan), a dynamic data
+race detector that has been successfully used in languages such as C/C++,
+Swift, etc. TSan support for OCaml is available since OCaml 5.2.
+
+To use TSan, you must configure the compiler with \texttt{--enable-tsan}. You
+can also install an \texttt{opam} switch with the TSan feature enabled as
+follows:
+
+\begin{verbatim}
+opam switch create <YOUR-SWITCH-NAME-HERE> ocaml-option-tsan
+\end{verbatim}
+
+TSan support for OCaml is currently available for the x86_64 architecture, on
+FreeBSD, Linux and macOS, for the arm64 architecture on Linux and macOS, and
+for the POWER, riscv and s390x architectures on Linux.
+
+Building OCaml with TSan support requires GCC or Clang. Minimal supported
+versions are GCC 11 and Clang 14. Note that TSan data race reports with GCC 11
+are known to result in poor stack trace reporting (no line numbers), which is
+fixed in GCC 12.
+
+A TSan-enabled compiler differs from a regular compiler in the following way:
+all programs compiled by \texttt{ocamlopt} are instrumented with calls to the
+TSan runtime, and TSan will detect data races encountered during execution.
+
+For instance, consider the following program:
+
+\begin{caml_example*}{verbatim}
+let a = ref 0 and b = ref 0
+
+let d1 () =
+  a := 1;
+  !b
+
+let d2 () =
+  b := 1;
+  !a
+
+let () =
+  let h = Domain.spawn d2 in
+  let r1 = d1 () in
+  let r2 = Domain.join h in
+  assert (not (r1 = 0 && r2 = 0))
+\end{caml_example*}
+
+This program has data races. The memory locations \texttt{a} and \texttt{b}
+are read and written concurrently by multiple domains \texttt{d1} and
+\texttt{d2}. \texttt{a} and \texttt{b} are ``non-atomic'' locations according
+to the memory model (see Chapter~\ref{c:memorymodel}), and there is no
+synchronization between accesses to them. Hence, there are two data races here
+corresponding to the two memory locations \texttt{a} and \texttt{b}.
+
+When you compile and run this program with \texttt{ocamlopt}, you may observe
+data race reports on the standard error, such as:
+
+\begin{verbatim}
+==================
+WARNING: ThreadSanitizer: data race (pid=3808831)
+  Write of size 8 at 0x8febe0 by thread T1 (mutexes: write M90):
+    #0 camlSimple_race.d2_274 simple_race.ml:8 (simple_race.exe+0x420a72)
+    #1 camlDomain.body_706 stdlib/domain.ml:211 (simple_race.exe+0x440f2f)
+    #2 caml_start_program <null> (simple_race.exe+0x47cf37)
+    #3 caml_callback_exn runtime/callback.c:197 (simple_race.exe+0x445f7b)
+    #4 domain_thread_func runtime/domain.c:1167 (simple_race.exe+0x44a113)
+
+  Previous read of size 8 at 0x8febe0 by main thread (mutexes: write M86):
+    #0 camlSimple_race.d1_271 simple_race.ml:5 (simple_race.exe+0x420a22)
+    #1 camlSimple_race.entry simple_race.ml:13 (simple_race.exe+0x420d16)
+    #2 caml_program <null> (simple_race.exe+0x41ffb9)
+    #3 caml_start_program <null> (simple_race.exe+0x47cf37)
+[...]
+
+WARNING: ThreadSanitizer: data race (pid=3808831)
+  Read of size 8 at 0x8febf0 by thread T1 (mutexes: write M90):
+    #0 camlSimple_race.d2_274 simple_race.ml:9 (simple_race.exe+0x420a92)
+    #1 camlDomain.body_706 stdlib/domain.ml:211 (simple_race.exe+0x440f2f)
+    #2 caml_start_program <null> (simple_race.exe+0x47cf37)
+    #3 caml_callback_exn runtime/callback.c:197 (simple_race.exe+0x445f7b)
+    #4 domain_thread_func runtime/domain.c:1167 (simple_race.exe+0x44a113)
+
+  Previous write of size 8 at 0x8febf0 by main thread (mutexes: write M86):
+    #0 camlSimple_race.d1_271 simple_race.ml:4 (simple_race.exe+0x420a01)
+    #1 camlSimple_race.entry simple_race.ml:13 (simple_race.exe+0x420d16)
+    #2 caml_program <null> (simple_race.exe+0x41ffb9)
+    #3 caml_start_program <null> (simple_race.exe+0x47cf37)
+[...]
+
+==================
+ThreadSanitizer: reported 2 warnings
+\end{verbatim}
+
+For each detected data race, TSan reports the location of the conflicting
+accesses, their nature (read, write, atomic read, etc.), and the associated
+stack trace.
+
+If you run the above program several times, the output may vary: sometimes TSan
+will report two data races, sometimes one, and sometimes none. This is due to
+the combination of two factors:
+
+\begin{itemize}
+  \item First, TSan reports only the data races encountered during execution,
+    i.e., conflicting, unordered memory accesses that are effectively performed.
+  \item In addition, in this program, depending on executions, there may be no
+    such memory accesses: if \texttt{d1} returns before \texttt{d2} has
+    finished spawning, then all memory accesses originating from \texttt{d1}
+    may happen-before the ones originating from \texttt{d2}, since spawning a
+    domain involves inter-thread synchronization. In that case, the accesses
+    are considered to be ordered and no data race is reported.
+\end{itemize}
+
+This example illustrates the fact that data races can sometimes be hidden by
+unrelated synchronizing operations.
+
+\section{s:tsan-performance}{Performance implications}
+
+TSan instrumentation imposes a non-negligible cost at runtime. Empirically,
+this cost has been observed to cause a slowdown which can range from 2x to 7x.
+One of the main factors of high slowdowns is frequent access to mutable data.
+In contrast, the initialising writes to and reads from immutable memory
+locations are not instrumented. TSan also allocates very large amounts of virtual
+memory, although it uses only a fraction of it. The memory consumption is
+increased by a factor between 4 and 7.
+
+\section{s:tsan-false-neg-false-pos}{False negatives and false positives}
+
+As illustrated by the previous example, TSan will only report the data races
+encountered during execution. Another important caveat is that TSan remembers
+only a finite number of memory accesses per memory location. At
+the time of writing, this number is 4. Data races involving a forgotten access
+will not be detected. Lastly, the
+\href{https://github.com/google/sanitizers/wiki/ThreadSanitizerAlgorithm}{documentation
+of TSan} states that there is a tiny probability to miss a race if two threads
+access the same location at the same time. TSan may overlook data races only 
+in these three specific cases.
+
+For data races between two memory accesses made from OCaml code, TSan does not
+produce false positives; that is, TSan will not emit spurious reports.
+
+When mixing OCaml and C code, through the use of C primitives, the very notion
+of false positive becomes less clear, as it involves two memory models -- OCaml
+and C11.
+However, TSan should behave mostly as one would expect: non-atomic reads and
+writes in C will race with non-atomic reads and writes in OCaml, and C atomics
+will not race with OCaml atomics. There is one theoretical possibility of false
+positive: if a \texttt{value} is initialized from C without using
+\texttt{caml_initialize} (which is allowed under the condition that the GC does
+not run between the allocation and the write, see Chapter~\ref{c:intf-c}) and a
+conflicting access is made later by another thread. This does not constitute a
+data race, but TSan may report it as such.
+
+\section{s:tsan-runtime-flags}{Runtime options}
+
+TSan supports a number of configuration options at runtime using the
+\texttt{TSAN\_OPTIONS} environment variable. \texttt{TSAN\_OPTIONS} should
+contain one or more options separated by spaces. See the
+\href{https://github.com/google/sanitizers/wiki/ThreadSanitizerFlags}{documentation
+of TSan flags} and the
+\href{https://github.com/google/sanitizers/wiki/SanitizerCommonFlags}{documentation
+of flags common to all sanitizers} for more information. Notably,
+\texttt{TSAN\_OPTIONS} allows suppressing some data races from TSan reports.
+Suppressing data race reports is useful for intentional races or libraries that
+cannot be fixed.
+
+For example, to suppress reports originating from functions in the OCaml module
+\texttt{My_module}, one can run
+
+\begin{verbatim}
+TSAN_OPTIONS="suppressions=suppr.txt" ./my_instrumented_program
+\end{verbatim}
+
+with \texttt{suppr.txt} a file containing:
+
+\begin{verbatim}
+race_top:^camlMy_module
+\end{verbatim}
+
+(Note that this depends on the format of OCaml symbols in the executable. Some
+builders, like Dune, might result in different formats. You should adapt this
+example to the symbols effectively present in your stack traces.)
+
+The \texttt{TSAN\_OPTIONS} variable also allows for increasing the ``history
+size'', e.g.:
+
+\begin{verbatim}
+TSAN_OPTIONS="history_size=7" ./my_instrumented_program
+\end{verbatim}
+
+TSan’s history records events such as function entry and exit, and is used to
+reconstruct stack traces. Increasing the history size can sometimes be
+necessary to obtain the second stack trace, but it also increases memory
+consumption. This setting does not change the number of memory accesses
+remembered per memory location.
+
+Another useful runtime option is \texttt{exitcode=0}, which still reports data
+races but does not change the exit code. This can be useful if TSan complains
+about data races in programs that you don't care about and the non-zero exit
+code disturbs your workflow.
+
+\section{s:tsan-c-code}{Guidelines for linking}
+
+As a general rule, OCaml programs instrumented with TSan should only be linked
+with OCaml or C objects also instrumented with TSan. Doing otherwise may result
+in crashes. The only exception to this rule are C libraries that do not call
+into the OCaml runtime system in any way, i.e., do not allocate, raise
+exceptions, call back into OCaml code, etc. Examples include the libc or system
+libraries. Data races in non-instrumented libraries will not be reported.
+
+C code interacting with OCaml should always be built through the
+\texttt{ocamlopt} command, which will pass the required instrumentation flags
+to the C compiler. The \texttt{CAMLno_tsan} qualifier can be used to prevent
+functions from being instrumented:
+
+\begin{verbatim}
+CAMLno_tsan void f(int arg)
+{
+  /* This function will not be instrumented. */
+  ...
+}
+\end{verbatim}
+
+Races from non-instrumented functions will not be reported.
+\texttt{CAMLno_tsan} should only be used by experts. It can be used to reduce
+the performance overhead in certain corner cases, or to suppress some known
+alarms. For the latter, using a suppressions file with \texttt{TSAN\_OPTIONS}
+should be preferred when possible, as it allows for finer-grained control, and
+qualifying a function \texttt{f} with \texttt{CAMLno_tsan} results in missing
+entries in TSan’s stack traces when a data race happens in a transitive callee
+of \texttt{f}.
+
+There is no way to disable instrumentation in OCaml code.
+
+\section{s:tsan-signal-changes}{Changes in the delivery of signals}
+
+TSan intercepts all signals and passes them down to the instrumented program.
+This overlay from TSan is not always transparent for the program. Synchronous
+signals such as \texttt{SIGSEV}, \texttt{SIGILL}, \texttt{SIGBUS}, etc.\ will be
+passed down immediately, whereas asynchronous signals such as \texttt{SIGINT}
+will be delayed until the next call to the TSan runtime (e.g.\ until the next
+access to mutable data). This limitation of TSan can have surprising effects:
+for instance, pure, recursive functions that do not allocate cannot be
+interrupted until they terminate.

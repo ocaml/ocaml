@@ -28,6 +28,7 @@ type error =
     Not_a_unit_info of string
   | Corrupted_unit_info of string
   | Illegal_renaming of string * string * string
+  | Mismatching_for_pack of string * string * string * string option
 
 exception Error of error
 
@@ -86,26 +87,20 @@ let current_unit =
     ui_apply_fun = [];
     ui_send_fun = [];
     ui_force_link = false;
-    ui_export_info = default_ui_export_info }
+    ui_export_info = default_ui_export_info;
+    ui_for_pack = None }
+
+let symbol_separator = '$'
+
+let concat_symbol unitname id =
+  Printf.sprintf "%s%c%s" unitname symbol_separator id
 
 let symbolname_for_pack pack name =
   match pack with
   | None -> name
-  | Some p ->
-      let b = Buffer.create 64 in
-      for i = 0 to String.length p - 1 do
-        match p.[i] with
-        | '.' -> Buffer.add_string b "__"
-        |  c  -> Buffer.add_char b c
-      done;
-      Buffer.add_string b "__";
-      Buffer.add_string b name;
-      Buffer.contents b
+  | Some p -> concat_symbol p name
 
 let unit_id_from_name name = Ident.create_persistent name
-
-let concat_symbol unitname id =
-  unitname ^ "__" ^ id
 
 let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
   let prefix = "caml" ^ unitname in
@@ -129,6 +124,7 @@ let reset ?packname name =
   current_unit.ui_apply_fun <- [];
   current_unit.ui_send_fun <- [];
   current_unit.ui_force_link <- !Clflags.link_everything;
+  current_unit.ui_for_pack <- packname;
   Hashtbl.clear exported_constants;
   structured_constants := structured_constants_empty;
   current_unit.ui_export_info <- default_ui_export_info;
@@ -184,6 +180,12 @@ let read_library_info filename =
 
 (* Read and cache info on global identifiers *)
 
+(* Referring to a packed unit is only allowed from a unit that will
+   ultimately end up in the same pack, including through nested packs. *)
+let is_import_from_same_pack ~imported ~current =
+  String.equal imported current
+  || String.starts_with ~prefix:(imported ^ ".") current
+
 let get_global_info global_ident = (
   let modname = Ident.name global_ident in
   if modname = current_unit.ui_name then
@@ -197,10 +199,22 @@ let get_global_info global_ident = (
         else begin
           try
             let filename =
-              Load_path.find_uncap (modname ^ ".cmx") in
+              Load_path.find_normalized (modname ^ ".cmx") in
             let (ui, crc) = read_unit_info filename in
             if ui.ui_name <> modname then
               raise(Error(Illegal_renaming(modname, ui.ui_name, filename)));
+            (* Linking to a compilation unit expected to go into a
+               pack (ui_for_pack = Some ...) is possible only from
+               inside the same pack, but it is perfectly ok to link to
+               an unit outside of the pack. *)
+            (match ui.ui_for_pack, current_unit.ui_for_pack with
+             | None, _ -> ()
+             | Some p1, Some p2 when
+                 is_import_from_same_pack ~imported:p1 ~current:p2 ->
+                 ()
+             | Some p1, p2 ->
+               raise (Error (Mismatching_for_pack
+                               (filename, p1, current_unit.ui_name, p2))));
             (Some ui, Some crc)
           with Not_found ->
             let warn = Warnings.No_cmx_file modname in
@@ -435,23 +449,41 @@ let require_global global_ident =
 
 (* Error report *)
 
-open Format
+open Format_doc
+module Style = Misc.Style
 
-let report_error ppf = function
+let report_error_doc ppf = function
   | Not_a_unit_info filename ->
       fprintf ppf "%a@ is not a compilation unit description."
-        Location.print_filename filename
+        Location.Doc.quoted_filename filename
   | Corrupted_unit_info filename ->
       fprintf ppf "Corrupted compilation unit description@ %a"
-        Location.print_filename filename
+       Location.Doc.quoted_filename filename
   | Illegal_renaming(name, modname, filename) ->
       fprintf ppf "%a@ contains the description for unit\
-                   @ %s when %s was expected"
-        Location.print_filename filename name modname
+                   @ %a when %a was expected"
+        Location.Doc.quoted_filename filename
+        Style.inline_code name
+        Style.inline_code modname
+  | Mismatching_for_pack(filename, pack_1, current_unit, None) ->
+      fprintf ppf "%a@ was built with %a, but the \
+                   @ current unit %a is not"
+        Location.Doc.quoted_filename filename
+        Style.inline_code ("-for-pack " ^ pack_1)
+        Style.inline_code current_unit
+  | Mismatching_for_pack(filename, pack_1, current_unit, Some pack_2) ->
+      fprintf ppf "%a@ was built with %a, but the \
+                   @ current unit %a is built with %a"
+        Location.Doc.quoted_filename filename
+        Style.inline_code ("-for-pack " ^ pack_1)
+        Style.inline_code current_unit
+        Style.inline_code ("-for-pack " ^ pack_2)
 
 let () =
   Location.register_error_of_exn
     (function
-      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | Error err -> Some (Location.error_of_printer_file report_error_doc err)
       | _ -> None
     )
+
+let report_error = Format_doc.compat report_error_doc

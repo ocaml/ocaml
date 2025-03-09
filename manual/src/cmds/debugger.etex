@@ -4,13 +4,9 @@
 This chapter describes the OCaml source-level replay debugger
 "ocamldebug".
 
-\begin{unix} The debugger is available on Unix systems that provide
-BSD sockets.
-\end{unix}
-
-\begin{windows} The debugger is available under the Cygwin port of
-OCaml, but not under the native Win32 ports.
-\end{windows}
+The debugger is available on systems that provide BSD sockets,
+including Windows. Under the native Windows ports, the "replay"
+functions are not enabled.
 
 \section{s:debugger-compilation}{Compiling for debugging}
 

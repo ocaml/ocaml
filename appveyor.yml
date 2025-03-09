@@ -12,11 +12,17 @@
 #*                                                                        *
 #**************************************************************************
 
+branches:
+  only:
+    - /4\.*/
+    - /5\.*/
+    - trunk
+
 # Compile the 64 bits version
 platform:
   - x64
 
-image: Visual Studio 2015
+image: Visual Studio 2022
 
 # Do a shallow clone of the repo to speed up the build
 clone_depth: 1
@@ -26,21 +32,24 @@ environment:
     CYG_ROOT: C:/cygwin64
     CYG_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
     CYG_CACHE: C:/cygwin64/var/cache/setup
-    FLEXDLL_VERSION: 0.39
+    FLEXDLL_VERSION: 0.43
     OCAMLRUNPARAM: v=0,b
     FORCE_CYGWIN_UPGRADE: 0
     BUILD_MODE: world.opt
+    # Fully print commands executed by Make
+    # MAKEFLAGS: V=1
   matrix:
-    - PORT: mingw32
+    - PORT: mingw64
       BOOTSTRAP_FLEXDLL: true
-    - PORT: msvc64
-      BOOTSTRAP_FLEXDLL: false
-      BUILD_MODE: steps
-    - PORT: msvc32
-      BOOTSTRAP_FLEXDLL: false
-      BUILD_MODE: C
-      SDK: |-
-        "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x86
+# OCaml 5.0 does not yet support MSVC
+#    - PORT: msvc64
+#      BOOTSTRAP_FLEXDLL: false
+#      BUILD_MODE: steps
+#    - PORT: msvc32
+#      BOOTSTRAP_FLEXDLL: false
+#      BUILD_MODE: C
+#      SDK: |-
+#        "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x86
 
 matrix:
   fast_finish: true

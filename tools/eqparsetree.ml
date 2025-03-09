@@ -60,7 +60,8 @@ end
 module Asttypes = struct
   open Asttypes
   let eq_constant : (constant * constant) -> 'result =
-    function
+    fun (a, b) ->
+    match a.pconst_desc, b.pconst_desc with
     | (Const_int a0, Const_int b0) -> eq_int (a0, b0)
     | (Const_char a0, Const_char b0) -> eq_char (a0, b0)
     | (Const_string a0, Const_string b0) -> eq_string (a0, b0)
@@ -175,7 +176,7 @@ and eq_core_type_desc :
          (eq_list eq_core_type (a1, b1)))
         && (eq_list Asttypes.eq_label (a2, b2))
   | (Ptyp_alias (a0, a1), Ptyp_alias (b0, b1)) ->
-      (eq_core_type (a0, b0)) && (eq_string (a1, b1))
+      (eq_core_type (a0, b0)) && (eq_string (a1.txt, b1.txt))
   | (Ptyp_variant (a0, a1, a2), Ptyp_variant (b0, b1, b2)) ->
       ((eq_list eq_row_field (a0, b0)) && (eq_bool (a1, b1))) &&
         (eq_option (eq_list Asttypes.eq_label) (a2, b2))

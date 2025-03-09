@@ -15,17 +15,13 @@ how to build the compiler distribution from sources. See
 
 ## Contribution
 
-Modifying its sources is far from the only way to contribute to the
+Modifying the sources is far from the only way to contribute to the
 OCaml distribution. Bug reports (in particular when they come with
 a reproducible example), simple typos or clarifications in the
 documentation also help, and help evaluating and integrating existing
 change proposals also help. Providing good answers on the discussion
 forums, or asking the good questions that highlight deficiencies in
-existing documentations, also help. We currently have more
-contributors willing to propose changes than contributors willing to
-review other people's changes, so more eyes on the existing change
-requests is a good way to increase the integration bandwidth of
-external contributions.
+existing documentations, also help.
 
 There are also many valuable ways to contribute to the wider OCaml
 ecosystem that do not involve changes to the OCaml distribution.
@@ -60,6 +56,61 @@ https://help.github.com/articles/allowing-changes-to-a-pull-request-branch-creat
 significantly delay the inclusion of an otherwise perfectly ok
 contribution.
 
+### Maintainers
+
+The current list of maintainers is as follows:
+
+- @abbysmal Abigael
+- @alainfrisch Alain Frisch
+- @Armael Armaël Guéneau
+- @avsm Anil Madhavapeddy
+- @chambart Pierre Chambart
+- @damiendoligez Damien Doligez
+- @dra27 David Allsopp
+- @garrigue Jacques Garrigue
+- @gasche Gabriel Scherer
+- @goldfirere Richard Eisenberg
+- @jhjourdan Jacques-Henri Jourdan
+- @kayceesrk KC Sivaramakrishnan
+- @let-def Frédéric Bour
+- @lpw25 Leo White
+- @lthls Vincent Laviron
+- @maranget Luc Maranget
+- @mshinwell Mark Shinwell
+- @nojb Nicolás Ojeda Bär
+- @Octachron Florian Angeletti
+- @OlivierNicole Olivier Nicole
+- @sadiqj Sadiq Jaffer
+- @shindere Sébastien Hinderer
+- @stedolan Stephen Dolan
+- @trefis Thomas Refis
+- @xavierleroy Xavier Leroy
+- @yallop Jeremy Yallop
+
+<!-- Note: the list comes from [this Github
+page](https://github.com/orgs/ocaml/teams/ocaml-dev/members), plus
+Anil as co-owner of the github/ocaml/ organization. Oddly enough,
+Github does not make the page publicly accessible. -->
+
+### OCaml Language Committee
+
+Sometimes, consensus or decisions might be elusive during the review process, or
+you might feel that some of the proposed design choices might warrant a wider
+discussion.
+
+For those situations, we are experimenting with a new OCaml Language Committee
+as a collegial instance for shepherding deliberations on the evolution of the
+OCaml language and its standard library in a timely fashion.
+
+If you think that your PR or issue might be a good fit for consideration by the
+OCaml Language Committee (see
+https://github.com/ocaml/RFCs/blob/master/Committee.md for a more detailed
+description), you just have to mention it to the current chair (@Octachron) in
+the PR or issue.
+
+### Releases
+
+For more information about when and how new releases are published, see [the release introduction](release-info/introduction.md).
 
 ## Coding guidelines
 
@@ -89,101 +140,17 @@ preserving the code semantics.
 
 ## Test you must.
 
-Whenever applicable, merge requests must come with tests
-exercising the affected features: regression tests for bug fixes,
-and correctness tests for new features (including corner cases and
-failure cases). For regression tests, testing other aspects of the
-feature (in particular, related edge cases) that are not currently
-covered is a good way to catch other instances of bugs -- this did
-happen several times in the past. Warnings and errors should also
-be tested.
+Whenever applicable, merge requests must come with tests exercising
+the affected features: regression tests for bug fixes, and correctness
+tests for new features (including corner cases and
+failure cases). Warnings and errors should also be tested.
 
-Tests go in the sub-directories of `testsuite/tests`. Running
-`make all` in `testsuite/` runs all tests (this takes
-a few minutes), and you can use `make one DIR=tests/foo` to run
-the tests of a specific sub-directory. There are many kind of tests
-already, so the easiest way to start is to extend or copy an
-existing test.
+See [testsuite/HACKING.adoc](testsuite/HACKING.adoc) for details on
+how to write tests and run the testsuite.
 
-In general, running a test produces one (or several) `.result` file,
-that are compared to one (or several) `.reference` file present in the
-repository; the test succeeds if they are identical. If your patch
-breaks a test, diffing the `.result` and `.reference` file is a way to
-see what went wrong. Some reasonable compiler changes affect the
-compiler output in way that make those outputs differ (for example
-slight modifications of warning or error messages may break all tests
-checking warnings). If you are positive that the new `.result` file
-is correct (and that the change in behavior does not endanger
-backward compatibility), you can replace the old `.reference` file
-with it. Finally, when adding new tests, do not forget to include your
-`.reference` files (but not `.result`) in the versioned repository.
-
-Testing is also a way to make sure reviewers see working
+Adding tests is also a way to make sure reviewers see working
 (and failing) examples of the feature you fix, extend or
 introduce, rather than just an abstract description of it.
-
-
-### Run tests before sending a PR
-
-You should run all the tests before creating the merge request or
-pushing new commits (even if Travis will also do it for you): `make
-tests` (this takes a few minutes).
-
-Unfortunately some of the `lib-threads` test are non-deterministic
-and fail once in a while (it's hard to test these well). If they
-consistently break after your change, you should investigate, but if
-you only see a transient failure once and your change has no reason
-to affect threading, it's probably not your fault.
-
-
-### Benchmarking
-
-If your contribution can impact the performance of the code generated
-by the native compiler, you can use the infrastructure that the
-flambda team put together to benchmark the compiler to assess the
-consequences of your contribution. It has two main accessible parts:
-
-- The website that hosts benchmarks results, at
-[http://bench.flambda.ocamlpro.com/](http://bench.flambda.ocamlpro.com/).
-It exposes two ways to compare compilers: the first, under the header
-`Plot a given benchmark`, allows to select a benchmark and
-see graphs plotting the evolution of the performance of the different
-compilers over time. The second, under `Compare two runs`, allows
-to get an overview of the differences between a reference compiler
-(selected using the `ref` button) and a compiler under test (using
-the `tst` button). Clicking on the `Compare` button at the bottom
-right of the page will create a new page containing summaries and
-raw data comparing the selected runs.
-
-- The git repository containing the data about which benchmarks
-to run, on which compilers, at [https://github.com/OCamlPro/ocamlbench-repo](
-https://github.com/OCamlPro/ocamlbench-repo). This needs to be a valid
-opam 2.0 repository, and contains the benchmarks as normal packages
-and the compilers as versions of the package `ocaml-variants`.
-To add a compiler to the list, you must have a publicly accessible
-version of your branch (if you're making a pull request again the
-compiler, you should have a branch on github that was used to make
-the pull request, that you can use for this purpose).
-Then, you should make a pull request against `ocamlbench-repo`
-that adds a repertory in the `packages/ocaml-variants` sub-folder
-which contains a single `opam` file. The contents of the file
-should be inspired from the other files already present, with
-the main points of interest being the `url` field, which should
-point to your branch, the `build` field that should be adapted
-if the features that you want to benchmark depend on configure-time
-options, and the `setenv` field that can be used to pass compiler
-options via the `OCAMLPARAM` environment variable.
-The `trunk+flambda+opt` compiler, for instance, both uses a
-`configure` option and sets the `OCAMLPARAM` variable.
-The folder you add has to be named `ocaml-variants.%VERSION%+%DESCR%`,
-where `%VERSION%` is the version that will be used by opam to
-check compatibility with the opam packages that are needed for the
-benchmarks, and `%DESCR%` should be a short description of the feature
-you're benchmarking (if you're making a pull request against `ocaml`,
-you can use the PR number in the description, e.g. `+gpr0000`).
-Once your pull request is merged, it will likely take a few hours
-until the benchmark server picks up the new definition and again
-up to a few hours before the results are available on the results page.
 
 
 ## Description of the proposed change
@@ -193,9 +160,14 @@ up to a few hours before the results are available on the results page.
 The description of the merge request must contain a precise
 explanation of the proposed change.
 
-Before going in the implementation details, you should include
-a summary of the change, and a high-level description of the design
-of the proposed change, with example use-cases.
+Before going into the implementation details, you should include
+a summary of the change, a justification of why it is beneficial, and
+a high-level description of the design of the proposed change with
+example use cases.
+
+Changes have a cost, they require review work and may accidentally
+introduce new bugs. Communicating as clearly as you can the benefits
+of your PR will reassure and motivate potential reviewers.
 
 ### In the patches
 
@@ -381,6 +353,59 @@ the compiler is the balance between the increased complexity of the
 compiler code and the expected benefits of the benchmark. Contributors
 are asked to bear this in mind when making submissions.
 
+## Collective maintenance
+
+Proposing changes to the OCaml compiler contribution generates
+"maintenance work" for other people. Maintenance work includes, for
+example:
+
+- reviewing Pull Requests or language change proposals,
+
+- considering change suggestions and giving feedback to turn them into
+  actionable issues,
+
+- implementing bug fixes or feature requests of general interest,
+
+- improving the documentation of the tools or other usability aspects,
+
+- or documenting or clarifying the codebase to preserve and improve
+  our ability to change it in the future.
+
+Doing this collective maintenance work is a selfless task, and we
+typically have much fewer people willing to to do it than people
+willing to submit new language features or generally evolve the
+codebase for their own specific needs. Without a collective effort to
+participate, we end up with a handful of people doing the vast
+majority of this collective maintenance work. This is exhausting, does
+not scale, and slows down the pace of improvement of the compiler
+distribution.
+
+To keep a healthy open source project, we need the total maintenance
+work performed by all contributors to scale proportionally with the
+total demand for maintenance work they generate. This can only work if
+as many contributors as possible perform some (possibly small) amount of
+maintenance work: collective maintenance. One could use the metaphor
+of a shared house: things work well when most people, not just a few
+people, participate to the house chores.
+
+If your contributions generate maintenance work for others -- in
+particular, if you spend a substantial effort working on a change to
+the language or compiler codebase meant to be eventually proposed
+upstream -- we expect that you will spend a fraction of your
+contribution time on maintenance tasks, typically on the parts of the
+compiler codebase that you are already working on. This approach is
+good for the project, and also for you: helping maintain the codebase
+will improve the quality of your own contributions, and the social
+ties created by infrequent collaboration with other contributors will
+be useful when submitting your own work.
+
+Note: we have been asked whether groups of contributors could balance
+maintenance work at the level of the whole group, rather than
+individual contributors -- for example a company where some frequent
+OCaml contributors would do less maintenance and others would do more
+to compensate. Yes, that sounds reasonable, but also harder to balance
+than encouraging everyone to play nice individually.
+
 ## Contributor License Agreement
 
 We distinguish two kind of contributions:
@@ -403,7 +428,7 @@ We distinguish two kind of contributions:
   (as requested by the Free Software Foundation for example),
   contributors retain the copyright on their contribution, and can use
   it as they see fit. The OCaml CLA is lightly adapted from [the
-  CLA](https://www.apache.org/licenses/icla.txt) of the Apache
+  CLA](https://apache.org/licenses/icla.pdf) of the Apache
   Foundation, and is available in two versions: [for individual
   contributors](http://caml.inria.fr/pub/docs/CLA-individual.doc) and
   [for corporations](http://caml.inria.fr/pub/docs/CLA-corporate.doc).

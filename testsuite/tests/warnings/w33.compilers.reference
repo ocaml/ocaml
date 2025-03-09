@@ -2,10 +2,12 @@ File "w33.ml", line 19, characters 6-11:
 19 | let f M.(x) = x (* useless open *)
            ^^^^^
 Warning 33 [unused-open]: unused open M.
+
 File "w33.ml", line 26, characters 0-7:
 26 | open! M (* useless open! *)
      ^^^^^^^
 Warning 66 [unused-open-bang]: unused open! M.
+
 File "w33.ml", line 27, characters 0-6:
 27 | open M (* useless open *)
      ^^^^^^

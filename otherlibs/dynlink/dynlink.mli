@@ -17,8 +17,6 @@
 
 (** Dynamic loading of .cmo, .cma and .cmxs files. *)
 
-[@@@ocaml.warning "+a-4-30-40-41-42"]
-
 val is_native : bool
 (** [true] if the program is native,
     [false] if the program is bytecode. *)

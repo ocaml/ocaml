@@ -50,7 +50,7 @@
    The labeled version of this module can be used as described in the
    {!StdLabels} module.
 
-   @since 4.02.0
+   @since 4.02
 
    *)
 
@@ -116,7 +116,7 @@ val extend : bytes -> int -> int -> bytes
     the corresponding side of [s].
     @raise Invalid_argument if the result length is negative or
     longer than {!Sys.max_string_length} bytes.
-    @since 4.05.0 in BytesLabels *)
+    @since 4.05 in BytesLabels *)
 
 val fill : bytes -> int -> int -> char -> unit
 (** [fill s pos len c] modifies [s] in place, replacing [len]
@@ -127,10 +127,10 @@ val fill : bytes -> int -> int -> char -> unit
 val blit :
   bytes -> int -> bytes -> int -> int
   -> unit
-(** [blit src src_pos dst dst_pos len] copies [len] bytes from sequence
-    [src], starting at index [src_pos], to sequence [dst], starting at
-    index [dst_pos]. It works correctly even if [src] and [dst] are the
-    same byte sequence, and the source and destination intervals
+(** [blit src src_pos dst dst_pos len] copies [len] bytes from byte
+    sequence [src], starting at index [src_pos], to byte sequence [dst],
+    starting at index [dst_pos]. It works correctly even if [src] and [dst] are
+    the same byte sequence, and the source and destination intervals
     overlap.
     @raise Invalid_argument if [src_pos] and [len] do not
     designate a valid range of [src], or if [dst_pos] and [len]
@@ -139,13 +139,13 @@ val blit :
 val blit_string :
   string -> int -> bytes -> int -> int
   -> unit
-(** [blit src src_pos dst dst_pos len] copies [len] bytes from string
-    [src], starting at index [src_pos], to byte sequence [dst],
+(** [blit_string src src_pos dst dst_pos len] copies [len] bytes from
+    string [src], starting at index [src_pos], to byte sequence [dst],
     starting at index [dst_pos].
     @raise Invalid_argument if [src_pos] and [len] do not
     designate a valid range of [src], or if [dst_pos] and [len]
     do not designate a valid range of [dst].
-    @since 4.05.0 in BytesLabels *)
+    @since 4.05 in BytesLabels *)
 
 val concat : bytes -> bytes list -> bytes
 (** [concat sep sl] concatenates the list of byte sequences [sl],
@@ -160,7 +160,7 @@ val cat : bytes -> bytes -> bytes
     as a new byte sequence.
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes.
-    @since 4.05.0 in BytesLabels *)
+    @since 4.05 in BytesLabels *)
 
 val iter : (char -> unit) -> bytes -> unit
 (** [iter f s] applies function [f] in turn to all the bytes of [s].
@@ -182,26 +182,26 @@ val mapi : (int -> char -> char) -> bytes -> bytes
     index (in increasing index order) and stores the resulting bytes
     in a new sequence that is returned as the result. *)
 
-val fold_left : ('a -> char -> 'a) -> 'a -> bytes -> 'a
+val fold_left : ('acc -> char -> 'acc) -> 'acc -> bytes -> 'acc
 (** [fold_left f x s] computes
     [f (... (f (f x (get s 0)) (get s 1)) ...) (get s (n-1))],
     where [n] is the length of [s].
-    @since 4.13.0 *)
+    @since 4.13 *)
 
-val fold_right : (char -> 'a -> 'a) -> bytes -> 'a -> 'a
+val fold_right : (char -> 'acc -> 'acc) -> bytes -> 'acc -> 'acc
 (** [fold_right f s x] computes
     [f (get s 0) (f (get s 1) ( ... (f (get s (n-1)) x) ...))],
     where [n] is the length of [s].
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val for_all : (char -> bool) -> bytes -> bool
 (** [for_all p s] checks if all characters in [s] satisfy the predicate [p].
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val exists : (char -> bool) -> bytes -> bool
 (** [exists p s] checks if at least one character of [s] satisfies the predicate
     [p].
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val trim : bytes -> bytes
 (** Return a copy of the argument, without leading and trailing
@@ -281,55 +281,25 @@ val rcontains_from : bytes -> int -> char -> bool
     @raise Invalid_argument if [stop < 0] or [stop+1] is not a valid
     position in [s]. *)
 
-val uppercase : bytes -> bytes
-  [@@ocaml.deprecated
-    "Use Bytes.uppercase_ascii/BytesLabels.uppercase_ascii instead."]
-(** Return a copy of the argument, with all lowercase letters
-   translated to uppercase, including accented letters of the ISO
-   Latin-1 (8859-1) character set.
-   @deprecated Functions operating on Latin-1 character set are deprecated. *)
-
-val lowercase : bytes -> bytes
-  [@@ocaml.deprecated
-    "Use Bytes.lowercase_ascii/BytesLabels.lowercase_ascii instead."]
-(** Return a copy of the argument, with all uppercase letters
-   translated to lowercase, including accented letters of the ISO
-   Latin-1 (8859-1) character set.
-   @deprecated Functions operating on Latin-1 character set are deprecated. *)
-
-val capitalize : bytes -> bytes
-  [@@ocaml.deprecated
-    "Use Bytes.capitalize_ascii/BytesLabels.capitalize_ascii instead."]
-(** Return a copy of the argument, with the first character set to uppercase,
-   using the ISO Latin-1 (8859-1) character set.
-   @deprecated Functions operating on Latin-1 character set are deprecated. *)
-
-val uncapitalize : bytes -> bytes
-  [@@ocaml.deprecated
-    "Use Bytes.uncapitalize_ascii/BytesLabels.uncapitalize_ascii instead."]
-(** Return a copy of the argument, with the first character set to lowercase,
-   using the ISO Latin-1 (8859-1) character set.
-   @deprecated Functions operating on Latin-1 character set are deprecated. *)
-
 val uppercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all lowercase letters
    translated to uppercase, using the US-ASCII character set.
-   @since 4.03.0 (4.05.0 in BytesLabels) *)
+   @since 4.03 (4.05 in BytesLabels) *)
 
 val lowercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all uppercase letters
    translated to lowercase, using the US-ASCII character set.
-   @since 4.03.0 (4.05.0 in BytesLabels) *)
+   @since 4.03 (4.05 in BytesLabels) *)
 
 val capitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to uppercase,
    using the US-ASCII character set.
-   @since 4.03.0 (4.05.0 in BytesLabels) *)
+   @since 4.03 (4.05 in BytesLabels) *)
 
 val uncapitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to lowercase,
    using the US-ASCII character set.
-   @since 4.03.0 (4.05.0 in BytesLabels) *)
+   @since 4.03 (4.05 in BytesLabels) *)
 
 type t = bytes
 (** An alias for the type of byte sequences. *)
@@ -342,29 +312,29 @@ val compare: t -> t -> int
 
 val equal: t -> t -> bool
 (** The equality function for byte sequences.
-    @since 4.03.0 (4.05.0 in BytesLabels) *)
+    @since 4.03 (4.05 in BytesLabels) *)
 
 val starts_with :
   prefix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
-(** [starts_with ][~][prefix s] is [true] if and only if [s] starts with
+(** [starts_with ][~prefix s] is [true] if and only if [s] starts with
     [prefix].
 
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val ends_with :
   suffix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
-(** [ends_with suffix s] is [true] if and only if [s] ends with [suffix].
+(** [ends_with ][~suffix s] is [true] if and only if [s] ends with [suffix].
 
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 (** {1:unsafe Unsafe conversions (for advanced users)}
 
     This section describes unsafe, low-level conversion functions
     between [bytes] and [string]. They do not copy the internal data;
     used improperly, they can break the immutability invariant on
-    strings provided by the [-safe-string] option. They are available for
-    expert library authors, but for most purposes you should use the
-    always-correct {!to_string} and {!of_string} instead.
+    strings. They are available for expert library authors, but for
+    most purposes you should use the always-correct {!to_string} and
+    {!of_string} instead.
 *)
 
 val unsafe_to_string : bytes -> string
@@ -490,6 +460,7 @@ let s = Bytes.of_string "hello"
 val split_on_char: char -> bytes -> bytes list
 (** [split_on_char sep s] returns the list of all (possibly empty)
     subsequences of [s] that are delimited by the [sep] character.
+    If [s] is empty, the result is the singleton list [[empty]].
 
     The function's output is specified by the following invariants:
 
@@ -499,7 +470,7 @@ val split_on_char: char -> bytes -> bytes list
       (Bytes.split_on_char sep s) = s]).
     - No byte sequence in the result contains the [sep] character.
 
-    @since 4.13.0
+    @since 4.13
 *)
 
 (** {1 Iterators} *)
@@ -516,6 +487,61 @@ val to_seqi : t -> (int * char) Seq.t
 val of_seq : char Seq.t -> t
 (** Create a string from the generator
     @since 4.07 *)
+
+(** {1:utf UTF codecs and validations}
+
+    @since 4.14 *)
+
+(** {2:utf_8 UTF-8} *)
+
+val get_utf_8_uchar : t -> int -> Uchar.utf_decode
+(** [get_utf_8_uchar b i] decodes an UTF-8 character at index [i] in
+    [b]. *)
+
+val set_utf_8_uchar : t -> int -> Uchar.t -> int
+(** [set_utf_8_uchar b i u] UTF-8 encodes [u] at index [i] in [b]
+    and returns the number of bytes [n] that were written starting
+    at [i]. If [n] is [0] there was not enough space to encode [u]
+    at [i] and [b] was left untouched. Otherwise a new character can
+    be encoded at [i + n]. *)
+
+val is_valid_utf_8 : t -> bool
+(** [is_valid_utf_8 b] is [true] if and only if [b] contains valid
+    UTF-8 data. *)
+
+(** {2:utf_16be UTF-16BE} *)
+
+val get_utf_16be_uchar : t -> int -> Uchar.utf_decode
+(** [get_utf_16be_uchar b i] decodes an UTF-16BE character at index
+    [i] in [b]. *)
+
+val set_utf_16be_uchar : t -> int -> Uchar.t -> int
+(** [set_utf_16be_uchar b i u] UTF-16BE encodes [u] at index [i] in [b]
+    and returns the number of bytes [n] that were written starting
+    at [i]. If [n] is [0] there was not enough space to encode [u]
+    at [i] and [b] was left untouched. Otherwise a new character can
+    be encoded at [i + n]. *)
+
+val is_valid_utf_16be : t -> bool
+(** [is_valid_utf_16be b] is [true] if and only if [b] contains valid
+    UTF-16BE data. *)
+
+(** {2:utf_16le UTF-16LE} *)
+
+val get_utf_16le_uchar : t -> int -> Uchar.utf_decode
+(** [get_utf_16le_uchar b i] decodes an UTF-16LE character at index
+    [i] in [b]. *)
+
+val set_utf_16le_uchar : t -> int -> Uchar.t -> int
+(** [set_utf_16le_uchar b i u] UTF-16LE encodes [u] at index [i] in [b]
+    and returns the number of bytes [n] that were written starting
+    at [i]. If [n] is [0] there was not enough space to encode [u]
+    at [i] and [b] was left untouched. Otherwise a new character can
+    be encoded at [i + n]. *)
+
+val is_valid_utf_16le : t -> bool
+(** [is_valid_utf_16le b] is [true] if and only if [b] contains valid
+    UTF-16LE data. *)
 
 (** {1 Binary encoding/decoding of integers} *)
 
@@ -537,13 +563,14 @@ val of_seq : char Seq.t -> t
 
     8-bit and 16-bit integers are represented by the [int] type,
     which has more bits than the binary encoding.  These extra bits
-    are handled as follows: {ul
+    are handled as follows:
+    {ul
     {- Functions that decode signed (resp. unsigned) 8-bit or 16-bit
-    integers represented by [int] values sign-extend
-    (resp. zero-extend) their result.}
+       integers represented by [int] values sign-extend
+       (resp. zero-extend) their result.}
     {- Functions that encode 8-bit or 16-bit integers represented by
-    [int] values truncate their input to their least significant
-    bytes.}}
+       [int] values truncate their input to their least significant
+       bytes.}}
 *)
 
 val get_uint8 : bytes -> int -> int
@@ -713,6 +740,72 @@ val set_int64_le : bytes -> int -> int64 -> unit
 *)
 
 
+(** {1:bytes_concurrency Byte sequences and concurrency safety}
+
+    Care must be taken when concurrently accessing byte sequences from
+    multiple domains: accessing a byte sequence will never crash a program,
+    but unsynchronized accesses might yield surprising
+    (non-sequentially-consistent) results.
+
+    {2:byte_atomicity Atomicity}
+
+    Every byte sequence operation that accesses more than one byte is not
+    atomic. This includes iteration and scanning.
+
+    For example, consider the following program:
+{[let size = 100_000_000
+let b = Bytes.make size  ' '
+let update b f ()  =
+  Bytes.iteri (fun i x -> Bytes.set b i (Char.chr (f (Char.code x)))) b
+let d1 = Domain.spawn (update b (fun x -> x + 1))
+let d2 = Domain.spawn (update b (fun x -> 2 * x + 1))
+let () = Domain.join d1; Domain.join d2
+]}
+    the bytes sequence [b] may contain a non-deterministic mixture
+    of ['!'], ['A'], ['B'], and ['C'] values.
+
+
+    After executing this code, each byte of the sequence [b] is either ['!'],
+    ['A'], ['B'], or ['C']. If atomicity is required, then the user must
+    implement their own synchronization (for example, using {!Mutex.t}).
+
+    {2:bytes_data_race Data races}
+
+    If two domains only access disjoint parts of a byte sequence, then the
+    observed behaviour is the equivalent to some sequential interleaving of the
+    operations from the two domains.
+
+    A data race is said to occur when two domains access the same byte
+    without synchronization and at least one of the accesses is a write.
+    In the absence of data races, the observed behaviour is equivalent to some
+    sequential interleaving of the operations from different domains.
+
+    Whenever possible, data races should be avoided by using synchronization
+    to mediate the accesses to the elements of the sequence.
+
+    Indeed, in the presence of data races, programs will not crash but the
+    observed behaviour may not be equivalent to any sequential interleaving of
+    operations from different domains. Nevertheless, even in the presence of
+    data races, a read operation will return the value of some prior write to
+    that location.
+
+    {2:bytes_mixed_access Mixed-size accesses }
+
+    Another subtle point is that if a data race involves mixed-size writes and
+    reads to the same location, the order in which those writes and reads
+    are observed by domains is not specified.
+    For instance, the following code write sequentially a 32-bit integer and a
+    [char] to the same index
+{[
+let b = Bytes.make 10 '\000'
+let d1 = Domain.spawn (fun () -> Bytes.set_int32_ne b 0 100; b.[0] <- 'd' )
+]}
+
+    In this situation, a domain that observes the write of 'd' to b.[0] is not
+    guaranteed to also observe the write to indices [1], [2], or [3].
+
+*)
+
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)
@@ -727,3 +820,5 @@ external unsafe_blit_string :
   = "caml_blit_string" [@@noalloc]
 external unsafe_fill :
   bytes -> int -> int -> char -> unit = "caml_fill_bytes" [@@noalloc]
+
+val unsafe_escape : bytes -> bytes

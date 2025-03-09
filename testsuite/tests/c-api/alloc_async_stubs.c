@@ -1,20 +1,35 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "caml/alloc.h"
-#include "caml/memory.h"
+#include <caml/alloc.h>
+#include <caml/memory.h>
+#define CAML_INTERNALS
+#include <caml/gc_ctrl.h>
+
+
+void print_status(const char *str, int n)
+{
+  printf("%s: %d\n", str, n);
+  fflush(stdout);
+}
+
+value print_status_caml(value str, value n)
+{
+  print_status(String_val(str), Int_val(n));
+  return Val_unit;
+}
 
 const char* strs[] = { "foo", "bar", 0 };
 value stub(value ref)
 {
   CAMLparam1(ref);
   CAMLlocal2(x, y);
-  int i; char* s; intnat coll_before;
+  char* s; intnat coll_before;
 
-  printf("C, before: %d\n", Int_val(Field(ref, 0)));
+  print_status("C, before", Int_val(Field(ref, 0)));
 
   /* First, do enough major allocations to do a full major collection cycle */
-  coll_before = Caml_state_field(stat_major_collections);
-  while (Caml_state_field(stat_major_collections) <= coll_before+1) {
+  coll_before = caml_stat_major_collections;
+  while (caml_stat_major_collections <= coll_before+1) {
     caml_alloc(10000, 0);
   }
 
@@ -39,7 +54,7 @@ value stub(value ref)
 
   /* Large allocations */
   caml_alloc(1000, 0);
-  caml_alloc_shr(1000, 0);
+  caml_alloc_shr(1000, String_tag);
   caml_alloc_tuple(1000);
   caml_alloc_float_array(1000);
   caml_alloc_string(10000);
@@ -48,7 +63,6 @@ value stub(value ref)
   free(s);
 
 
-  printf("C, after: %d\n", Int_val(Field(ref, 0)));
-  fflush(stdout);
+  print_status("C, after", Int_val(Field(ref, 0)));
   CAMLreturn (Val_unit);
 }

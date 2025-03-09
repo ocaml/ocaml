@@ -1,6 +1,9 @@
 (* TEST
-   * ocamldoc with html
-   * ocamldoc with latex
+ {
+   ocamldoc with html;
+ }{
+   ocamldoc with latex;
+ }
 *)
 
 (** Test [include module type of...] variants *)

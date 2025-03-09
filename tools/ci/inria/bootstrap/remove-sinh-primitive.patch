@@ -47,19 +47,6 @@ index ba84d9b0e..8132f93f7 100644
  external tanh : float -> float = "caml_tanh_float" "tanh"
  [@@unboxed] [@@noalloc]
  (** Hyperbolic tangent.  Argument is in radians. *)
-diff --git a/stdlib/pervasives.ml b/stdlib/pervasives.ml
-index e9b2e5cde..3a39cf754 100644
---- a/stdlib/pervasives.ml
-+++ b/stdlib/pervasives.ml
-@@ -99,8 +99,6 @@ external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot"
-   [@@unboxed] [@@noalloc]
- external cosh : float -> float = "caml_cosh_float" "cosh"
-   [@@unboxed] [@@noalloc]
--external sinh : float -> float = "caml_sinh_float" "sinh"
--  [@@unboxed] [@@noalloc]
- external tanh : float -> float = "caml_tanh_float" "tanh"
-   [@@unboxed] [@@noalloc]
- external ceil : float -> float = "caml_ceil_float" "ceil"
 diff --git a/stdlib/stdlib.ml b/stdlib/stdlib.ml
 index aac8fcc17..663ce44f2 100644
 --- a/stdlib/stdlib.ml

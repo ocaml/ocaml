@@ -18,7 +18,7 @@
 open Cmo_format
 open Instruct
 
-val to_file: out_channel -> string -> string ->
+val to_file: out_channel -> Unit_info.Artifact.t ->
   required_globals:Ident.Set.t -> instruction list -> unit
         (* Arguments:
              channel on output file
@@ -28,8 +28,9 @@ val to_file: out_channel -> string -> string ->
                evaluated before this one
              list of instructions to emit *)
 val to_memory:
-  instruction list -> instruction list ->
-    Misc.LongString.t * (reloc_info * int) list * debug_event list
+  instruction list ->
+    (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t *
+    (reloc_info * int) list * debug_event list
         (* Arguments:
              initialization code (terminated by STOP)
              function code
@@ -38,14 +39,17 @@ val to_memory:
              relocation information
              debug events *)
 val to_packed_file:
-  out_channel -> instruction list -> (reloc_info * int) list
+  out_channel -> instruction list ->
+    int * (reloc_info * int) list * debug_event list * Misc.Stdlib.String.Set.t
         (* Arguments:
              channel on output file
              list of instructions to emit
            Result:
-             relocation information (reversed) *)
-
-val reset: unit -> unit
+             size of the emitted code
+             relocation information
+             debug events
+             debug directory
+             *)
 
 val marshal_to_channel_with_possibly_32bit_compat :
   filename:string -> kind:string -> out_channel -> 'a -> unit

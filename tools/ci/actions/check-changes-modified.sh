@@ -18,8 +18,12 @@ set -e
 # Hygiene Checks: check that Changes has been updated in PRs
 # One of the following must be true:
 #   - A commit in the PR alters the Changes file
-#   - A commit in the PR contains a line like 'No change needed' ($REGEX below)
-#   - The no-change-entry-needed label is applied to the PR (handled in YAML)
+#   - The no-change-entry-needed label is applied to the PR
+
+API_URL="$1"
+shift 1
+
+AUTH="authorization: Bearer $GITHUB_TOKEN"
 
 # We need all the commits in the PR to be available
 . tools/ci/actions/deepen-fetch.sh
@@ -27,15 +31,15 @@ set -e
 MSG='Check Changes has been updated'
 COMMIT_RANGE="$MERGE_BASE..$PR_HEAD"
 
+LABEL='no-change-entry-needed'
 # Check if Changes has been updated in the PR
-if git diff "$COMMIT_RANGE" --name-only --exit-code Changes > /dev/null; then
-  # Check if any commit messages include something like No Changes entry needed
-  REGEX='[Nn]o [Cc]hange.* needed'
-  if [[ -n $(git log --grep="$REGEX" --max-count=1 "$COMMIT_RANGE") ]]; then
-    echo -e "$MSG: \e[33mSKIPPED\e[0m (owing to commit message)"
-  else
-    echo -e "$MSG: \e[31mNO\e[0m"
-    cat <<"EOF"
+if ! git diff "$COMMIT_RANGE" --name-only --exit-code Changes > /dev/null; then
+  echo -e "$MSG: \e[32mYES\e[0m"
+elif curl --silent --header "$AUTH" "$API_URL/labels" | grep -q "$LABEL"; then
+  echo -e "$MSG: \e[33mSKIP\e[0m"
+else
+  echo -e "$MSG: \e[31mNO\e[0m"
+  cat <<"EOF"
 ------------------------------------------------------------------------
 Most contributions should come with a message in the Changes file, as
 described in our contributor documentation:
@@ -44,13 +48,8 @@ described in our contributor documentation:
 
 Some very minor changes (typo fixes for example) may not need
 a Changes entry. In this case, you may explicitly disable this test by
-adding the code word "No change entry needed" (on a single line) to
-a commit message of the PR, or using the "no-change-entry-needed" label
-on the github pull request.
+using the "no-change-entry-needed" label on the github pull request.
 ------------------------------------------------------------------------
 EOF
-    exit 1
-  fi
-else
-  echo -e "$MSG: \e[32mYES\e[0m"
+  exit 1
 fi

@@ -1,6 +1,6 @@
 (* TEST
-   modules = "stubs.c"
-   * native
+ modules = "stubs.c";
+ native;
 *)
 
 external ( + ) : int64 -> int64 -> int64

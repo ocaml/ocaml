@@ -13,11 +13,11 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* Based on public-domain code from Berkeley Yacc */
+#ifndef YACC_DEFS_H
+#define YACC_DEFS_H
 
-#ifndef DEBUG
-#define NDEBUG
-#endif
+
+/* Based on public-domain code from Berkeley Yacc */
 
 #include <assert.h>
 #include <ctype.h>
@@ -26,10 +26,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #define CAML_INTERNALS
-#include "caml/config.h"
-#include "caml/mlvalues.h"
 #include "caml/osdeps.h"
+#include "caml/misc.h"
 
 #define caml_stat_strdup strdup
 
@@ -41,7 +41,7 @@
 /*  MAXSHORT is the largest value of a C short                 */
 /*  MINSHORT is the most negative value of a C short           */
 /*  MAXTABLE is the maximum table size                         */
-/*  BITS_PER_WORD is the number of bits in a C unsigned        */
+/*  BITS_PER_INT is the number of bits in a C unsigned         */
 /*  WORDSIZE computes the number of words needed to            */
 /*        store n bits                                         */
 /*  BIT returns the value of the n-th bit starting             */
@@ -53,10 +53,10 @@
 #define MINSHORT        SHRT_MIN
 #define MAXTABLE        32500
 
-#define BITS_PER_WORD        (8*sizeof(unsigned))
-#define        WORDSIZE(n)        (((n)+(BITS_PER_WORD-1))/BITS_PER_WORD)
-#define        BIT(r, n)        ((((r)[(n)/BITS_PER_WORD])>>((n)%BITS_PER_WORD))&1)
-#define        SETBIT(r, n)        ((r)[(n)/BITS_PER_WORD]|=(1<<((n)%BITS_PER_WORD)))
+#define BITS_PER_INT    (8*sizeof(unsigned))
+#define WORDSIZE(n)     (((n)+(BITS_PER_INT-1))/BITS_PER_INT)
+#define BIT(r, n)       ((((r)[(n)/BITS_PER_INT])>>((n)%BITS_PER_INT))&1)
+#define SETBIT(r, n)    ((r)[(n)/BITS_PER_INT]|=(1<<((n)%BITS_PER_INT)))
 
 /*  character names  */
 
@@ -147,6 +147,8 @@ struct bucket
     char assoc;
     unsigned char entry;  /* 1..MAX_ENTRY_POINT (0 for unassigned) */
     char true_token;
+    int lineno;
+    int column;
 };
 
 /* MAX_ENTRY_POINT is the maximal number of entry points into the grammar. */
@@ -170,7 +172,7 @@ struct core
     short number;
     short accessing_symbol;
     short nitems;
-    short items[1];
+    short items[/* nitems */]; /* flexible array member */
 };
 
 
@@ -182,7 +184,7 @@ struct shifts
     struct shifts *next;
     short number;
     short nshifts;
-    short shift[1];
+    short shift[/* nshifts */]; /* flexible array member */
 };
 
 
@@ -194,7 +196,7 @@ struct reductions
     struct reductions *next;
     short number;
     short nreds;
-    short rules[1];
+    short rules[/* nreds */]; /* flexible array member */
 };
 
 
@@ -225,7 +227,7 @@ extern char eflag;
 extern char big_endian;
 
 /* myname should be UTF-8 encoded */
-extern char *myname;
+extern const char *myname;
 extern char *cptr;
 extern char *line;
 extern int lineno;
@@ -236,7 +238,7 @@ extern int outline;
 extern char_os *action_file_name;
 extern char_os *entry_file_name;
 extern char_os *code_file_name;
-extern char_os *input_file_name;
+extern const char_os *input_file_name;
 extern char_os *output_file_name;
 extern char_os *text_file_name;
 extern char_os *verbose_file_name;
@@ -244,6 +246,7 @@ extern char_os *interface_file_name;
 
 /* UTF-8 versions of code_file_name and input_file_name */
 extern char *code_file_name_disp;
+extern char *interface_file_name_disp;
 extern char *input_file_name_disp;
 
 extern FILE *action_file;
@@ -313,33 +316,33 @@ extern short final_state;
 /* global functions */
 
 extern char *allocate(unsigned int n);
-extern bucket *lookup(char *name);
-extern bucket *make_bucket(char *name);
-extern action *parse_actions(register int stateno);
+extern bucket *lookup(const char *name);
+extern bucket *make_bucket(const char *name);
+extern action *parse_actions(int stateno);
 extern action *get_shifts(int stateno);
-extern action *add_reductions(int stateno, register action *actions);
-extern action *add_reduce(register action *actions, register int ruleno, register int symbol);
+extern action *add_reductions(int stateno, action *actions);
+extern action *add_reduce(action *actions, int ruleno, int symbol);
 extern void closure (short int *nucleus, int n);
 extern void create_symbol_table (void);
-extern void default_action_error (void) Noreturn;
-extern void done (int k) Noreturn;
-extern void entry_without_type (char *s) Noreturn;
-extern void fatal (char *msg) Noreturn;
+CAMLnoret extern void default_action_error (void);
+CAMLnoret extern void done (int k);
+CAMLnoret extern void entry_without_type (char *s);
+CAMLnoret extern void fatal (const char *msg);
 extern void finalize_closure (void);
 extern void free_parser (void);
 extern void free_symbol_table (void);
 extern void free_symbols (void);
-extern void illegal_character (char *c_cptr) Noreturn;
-extern void illegal_token_ref (int i, char *name) Noreturn;
+CAMLnoret extern void illegal_character (char *c_cptr);
+CAMLnoret extern void illegal_token_ref (int i, char *name);
 extern void lalr (void);
 extern void lr0 (void);
 extern void make_parser (void);
-extern void no_grammar (void) Noreturn;
-extern void no_space (void) Noreturn;
-extern void open_error (char_os *filename) Noreturn;
+CAMLnoret extern void no_grammar (void);
+CAMLnoret extern void no_space (void);
+CAMLnoret extern void open_error (const char_os *filename);
 extern void output (void);
 extern void prec_redeclared (void);
-extern void polymorphic_entry_point(char *s) Noreturn;
+CAMLnoret extern void polymorphic_entry_point(char *s);
 extern void forbidden_conflicts (void);
 extern void reader (void);
 extern void reflexive_transitive_closure (unsigned int *R, int n);
@@ -347,18 +350,22 @@ extern void reprec_warning (char *s);
 extern void retyped_warning (char *s);
 extern void revalued_warning (char *s);
 extern void set_first_derives (void);
-extern void syntax_error (int st_lineno, char *st_line, char *st_cptr) Noreturn, terminal_lhs (int s_lineno) Noreturn;
-extern void terminal_start (char *s) Noreturn;
-extern void tokenized_start (char *s) Noreturn;
-extern void too_many_entries (void) Noreturn;
+CAMLnoret extern void syntax_error (int st_lineno, char *st_line, char *st_cptr);
+CAMLnoret extern void terminal_lhs (int s_lineno);
+CAMLnoret extern void terminal_start (char *s);
+CAMLnoret extern void tokenized_start (char *s);
+CAMLnoret extern void too_many_entries (void);
 extern void undefined_goal (char *s);
 extern void undefined_symbol (char *s);
-extern void unexpected_EOF (void) Noreturn;
-extern void unknown_rhs (int i) Noreturn;
-extern void unterminated_action (int a_lineno, char *a_line, char *a_cptr) Noreturn;
-extern void unterminated_comment (int c_lineno, char *c_line, char *c_cptr) Noreturn;
-extern void unterminated_string (int s_lineno, char *s_line, char *s_cptr) Noreturn;
-extern void unterminated_text (int t_lineno, char *t_line, char *t_cptr) Noreturn;
-extern void used_reserved (char *s) Noreturn;
+CAMLnoret extern void unexpected_EOF (void);
+CAMLnoret extern void unknown_rhs (int i);
+CAMLnoret extern void unterminated_action (int a_lineno, char *a_line, char *a_cptr);
+CAMLnoret extern void unterminated_comment (int c_lineno, char *c_line, char *c_cptr, char start_char);
+CAMLnoret extern void unterminated_string (int s_lineno, char *s_line, char *s_cptr);
+CAMLnoret extern void unterminated_text (int t_lineno, char *t_line, char *t_cptr);
+CAMLnoret extern void used_reserved (char *s);
 extern void verbose (void);
-extern void write_section (char **section);
+extern void write_section (char const * const * section);
+CAMLnoret extern void invalid_literal(int s_lineno, char *s_line, char *s_cptr);
+
+#endif /* YACC_DEFS_H */

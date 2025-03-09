@@ -27,14 +27,75 @@ MKDIR=mkdir -p
 EMPTY :=
 # $(SPACE) contains a single space
 SPACE := $(EMPTY) $(EMPTY)
+# $( ) suppresses warning from the alignments in the V_ macros below
+$(SPACE) :=
+
+ifeq "$(UNIX_OR_WIN32)" "win32"
+DIR_SEP := \$ # There must a space following the $
+CONVERT_PATH = $(subst /,$(DIR_SEP),$(strip $(1)))
+else
+DIR_SEP = /
+CONVERT_PATH = $(strip $(1))
+endif
+
+V ?= 0
+
+ifeq "$(V)" "0"
+
+V_CC         = @$(info $   CC $@)
+V_CCDEPS     = @$(info $   CCDEPS $@)
+V_OCAMLC     = @$(info $   OCAMLC $@)
+V_OCAMLOPT   = @$(info $   OCAMLOPT $@)
+V_GEN        = @$(info $   GEN $@)
+V_LINKC      = @$(info $   LINKC $@)
+V_LINKOPT    = @$(info $   LINKOPT $@)
+V_MKEXE      = @$(info $   MKEXE $@)
+V_MKLIB      = @$(info $   MKLIB $@)
+V_MKDLL      = @$(info $   MKDLL $@)
+V_OCAMLLEX   = @$(info $   OCAMLLEX $@)
+V_OCAMLYACC  = @$(info $   OCAMLYACC $@)
+V_OCAMLDEP   = @$(info $   OCAMLDEP $@)
+V_ASM        = @$(info $   ASM $@)
+V_OCAMLMKLIB = @$(info $   OCAMLMKLIB $@)
+V_OCAMLDOC   = @$(info $   OCAMLDOC $@)
+V_ODOC       = @$(info $   ODOC $@)
+
+else
+
+V_CC         =
+V_CCDEPS     =
+V_OCAMLC     =
+V_OCAMLOPT   =
+V_GEN        =
+V_LINKC      =
+V_LINKOPT    =
+V_MKEXE      =
+V_MKLIB      =
+V_MKDLL      =
+V_OCAMLLEX   =
+V_OCAMLYACC  =
+V_OCAMLDEP   =
+V_ASM        =
+V_OCAMLMKLIB =
+V_OCAMLDOC   =
+V_ODOC       =
+
+endif
 
 DESTDIR ?=
 INSTALL_BINDIR := $(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR := $(DESTDIR)$(LIBDIR)
+INSTALL_INCDIR=$(INSTALL_LIBDIR)/caml
 INSTALL_STUBLIBDIR := $(DESTDIR)$(STUBLIBDIR)
+INSTALL_LIBDIR_PROFILING = $(INSTALL_LIBDIR)/profiling
 INSTALL_MANDIR := $(DESTDIR)$(MANDIR)
+INSTALL_PROGRAMS_MAN_DIR := $(DESTDIR)$(PROGRAMS_MAN_DIR)
+INSTALL_LIBRARIES_MAN_DIR := $(DESTDIR)$(LIBRARIES_MAN_DIR)
+INSTALL_DOCDIR := $(DESTDIR)$(DOCDIR)
 
 FLEXDLL_SUBMODULE_PRESENT := $(wildcard $(ROOTDIR)/flexdll/Makefile)
+
+IN_COREBOOT_CYCLE ?= false
 
 # Variables used to represent the OCaml runtime system
 # Most of the time, boot/ocamlrun and runtime/ocamlrun are the same.
@@ -45,6 +106,10 @@ FLEXDLL_SUBMODULE_PRESENT := $(wildcard $(ROOTDIR)/flexdll/Makefile)
 # to runtime/ocamlrun, because it's less frequently used.
 OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
 NEW_OCAMLRUN ?= $(ROOTDIR)/runtime/ocamlrun$(EXE)
+
+# Standard library flags
+STDLIBFLAGS ?= -nostdlib -I $(ROOTDIR)/stdlib
+BOOT_STDLIBFLAGS ?= -nostdlib -I $(ROOTDIR)/boot
 
 TEST_BOOT_OCAMLC_OPT = $(shell \
   test $(ROOTDIR)/boot/ocamlc.opt -nt $(ROOTDIR)/boot/ocamlc; \
@@ -57,62 +122,46 @@ else
   BOOT_OCAMLC = $(OCAMLRUN) $(ROOTDIR)/boot/ocamlc
 endif
 
-ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
-  FLEXLINK_ENV =
-  CAMLOPT_CMD = $(CAMLOPT)
-  OCAMLOPT_CMD = $(OCAMLOPT)
-  MKLIB_CMD = $(MKLIB)
-  ocamlc_cmd = $(ocamlc)
-  ocamlopt_cmd = $(ocamlopt)
-else
-ifeq "$(wildcard $(ROOTDIR)/flexlink.opt$(EXE))" ""
-  FLEXLINK_ENV = \
-    OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun$(EXE) \
-                    $(ROOTDIR)/boot/flexlink.byte$(EXE)"
-else
-  FLEXLINK_ENV = \
-    OCAML_FLEXLINK="$(ROOTDIR)/flexlink.opt$(EXE) -I $(ROOTDIR)/stdlib/flexdll"
-endif # ifeq "$(wildcard $(ROOTDIR)/flexlink.opt$(EXE))" ""
-  CAMLOPT_CMD = $(FLEXLINK_ENV) $(CAMLOPT)
-  OCAMLOPT_CMD = $(FLEXLINK_ENV) $(OCAMLOPT)
-  MKLIB_CMD = $(FLEXLINK_ENV) $(MKLIB)
-  ocamlc_cmd = $(FLEXLINK_ENV) $(ocamlc)
-  ocamlopt_cmd = $(FLEXLINK_ENV) $(ocamlopt)
-endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
+BOOT_OCAMLDEP = $(BOOT_OCAMLC) -depend
+
+# Takes an implicit path and converts it to a path expression which returns to
+# the current directory. e.g. $(call ROOT_FROM, foo/bar/) expands to ../..
+REMOVE_SLASH = $(strip $(patsubst %/,%, $(1)))
+ROOT_FROM = \
+  $(subst $(SPACE),/,$(patsubst %,..,$(subst /, ,$(call REMOVE_SLASH, $(1)))))
+
+BYTE_BUILD_TREE = byte
+OPT_BUILD_TREE = opt
+
+BYTE_BINDIR = $(BYTE_BUILD_TREE)/bin
+OPT_BINDIR = $(OPT_BUILD_TREE)/bin
+
+ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
+  override REAL_ROOT_DIR := $(realpath $(ROOTDIR))
+ifeq "$(filter $(REAL_ROOT_DIR)/$(BYTE_BINDIR), $(subst :, ,$(PATH)))" ""
+  export PATH := \
+    $(REAL_ROOT_DIR)/$(OPT_BINDIR):$(REAL_ROOT_DIR)/$(BYTE_BINDIR):$(PATH)
+endif
+  undefine REAL_ROOT_DIR
+endif
+
+# List of other libraries
+ALL_OTHERLIBS = dynlink str systhreads unix runtime_events
+
+# Flags to pass to the C preprocessor when preprocessing assembly files
+OC_ASPPFLAGS=$(OC_CPPFLAGS) $(OC_NATIVE_CPPFLAGS)
 
 OPTCOMPFLAGS=
 ifeq "$(FUNCTION_SECTIONS)" "true"
 OPTCOMPFLAGS += -function-sections
 endif
 
-# Escape special characters in the argument string.
-# There are four characters that need escaping:
-# - backslash and ampersand, which are special in the replacement text
-#   of sed's "s" command
-# - exclamation mark, which is the delimiter we use for sed's "s" command
-# - single quote, which interferes with shell quoting.  We are inside
-#   single quotes already, so the proper escape is '\''
-#   (close single quotation, insert single quote character,
-#    reopen single quotation).
-SED_ESCAPE=$(subst ','\'',$(subst !,\!,$(subst &,\&,$(subst \,\\,$1))))
-
-# Escape special characters in an OCaml string literal "..."
-# There are two: backslash and double quote.
-OCAML_ESCAPE=$(subst ",\",$(subst \,\\,$1))
-
-# SUBST generates the sed substitution for the variable *named* in $1
-SUBST=-e 's!%%$1%%!$(call SED_ESCAPE,$($1))!'
-
-# SUBST_STRING does the same, for a variable that occurs between "..."
-# in config.mlp.  Thus, backslashes and double quotes must be escaped.
-SUBST_STRING=-e 's!%%$1%%!$(call SED_ESCAPE,$(call OCAML_ESCAPE,$($1)))!'
-
 # The rule to compile C files
 
 # This rule is similar to GNU make's implicit rule, except that it is more
 # general (it supports both .o and .obj)
 
-ifneq "$(COMPUTE_DEPS)" "false"
+ifeq "$(COMPUTE_DEPS)" "true"
 RUNTIME_HEADERS :=
 REQUIRED_HEADERS :=
 else
@@ -122,8 +171,8 @@ REQUIRED_HEADERS := $(RUNTIME_HEADERS) $(wildcard *.h)
 endif
 
 %.$(O): %.c $(REQUIRED_HEADERS)
-	$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
-	  $(OUTPUTOBJ)$@ $<
+	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ -c $<
 
 $(DEPDIR):
 	$(MKDIR) $@
@@ -136,6 +185,19 @@ ifneq ($(EXE),)
 $(1): $(1)$(EXE)
 endif
 endef # PROGRAM_SYNONYM
+
+# Definitions related to ocamldep
+
+# Default value for OCAMLDEP
+# In those directories where this needs to be overridden, the overriding
+# should take place *before* Makefile.common is included.
+
+OCAMLDEP ?= $(BEST_OCAMLDEP)
+OCAMLDEPFLAGS ?=
+OC_OCAMLDEPFLAGS = -slash
+OC_OCAMLDEPDIRS =
+OCAMLDEP_CMD = $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) \
+  $(addprefix -I ,$(OC_OCAMLDEPDIRS)) $(OCAMLDEPFLAGS)
 
 # Lexer generation
 
@@ -150,13 +212,265 @@ OCAMLLEX ?= $(BEST_OCAMLLEX)
 OCAMLLEXFLAGS ?= -q
 
 %.ml: %.mll
-	$(OCAMLLEX) $(OCAMLLEXFLAGS) $<
+	$(V_OCAMLLEX)$(OCAMLLEX) $(OCAMLLEXFLAGS) $<
 
 # Parser generation
 
 OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 
-OCAMLYACCFLAGS ?=
+OCAMLYACCFLAGS ?= --strict -v
 
 %.ml %.mli: %.mly
-	$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
+	$(V_OCAMLYACC)$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
+
+# Used with the Microsoft toolchain to merge generated manifest files into
+# executables
+if_file_exists = ( test ! -f $(1) || $(2) && rm -f $(1) )
+MERGEMANIFESTEXE = $(call if_file_exists, $(1).manifest, \
+  mt -nologo -outputresource:$(1) -manifest $(1).manifest)
+
+# Macros and rules to compile OCaml programs and libraries
+
+# The following variable is used to accumulate a list of all the CMX
+# files that get built. Is is then used in the root Makefile to express
+# the dependency on all these files on the native compiler, so that
+# they get rebuilt if the native compiler is updated
+
+ALL_CMX_FILES =
+
+# We use secondary expansion here so that variables like
+# foo_LIBRARIES and foo_SOURCES can be defined after the calls
+# to the macros below. Without secondary expansion, those variables
+# would have to be defined before the calls to OCAML_BYTECODE_PROGRAM etc.
+
+.SECONDEXPANSION:
+
+# Definitions that are common to both programs and libraries
+
+define _OCAML_COMMON_BASE
+$(basename $(notdir $(1)))_C_FILES = \
+  $$(filter %.c, $$($(basename $(notdir $(1)))_SOURCES))
+$(basename $(notdir $(1)))_MLI_FILES = \
+  $$(filter %.mli, \
+    $$(subst .mly,.mli,\
+      $$($(basename $(notdir $(1)))_SOURCES)))
+$(basename $(notdir $(1)))_CMI_FILES = \
+  $$(subst .mli,.cmi,$$($(basename $(notdir $(1)))_MLI_FILES))
+$(basename $(notdir $(1)))_ML_FILES = \
+  $$(filter %.ml, \
+    $$(subst .ml.in,.ml,$$(subst .mll,.ml,$$(subst .mly,.ml,\
+      $$($(basename $(notdir $(1)))_SOURCES)))))
+$(basename $(notdir $(1)))_MLL_FILES = \
+  $$(filter %.mll, \
+    $$($(basename $(notdir $(1)))_SOURCES))
+$(basename $(notdir $(1)))_MLY_FILES = \
+  $$(filter %.mly, \
+    $$($(basename $(notdir $(1)))_SOURCES))
+$(basename $(notdir $(1)))_SECONDARY_FILES = \
+  $$(patsubst %.mll,%.ml, $$($(basename $(notdir $(1)))_MLL_FILES)) \
+  $$(patsubst %.mly,%.mli, $$($(basename $(notdir $(1)))_MLY_FILES)) \
+  $$(patsubst %.mly,%.ml, $$($(basename $(notdir $(1)))_MLY_FILES))
+.SECONDARY: $$$$($(basename $(notdir $(1)))_SECONDARY_FILES)
+beforedepend:: $$$$($(basename $(notdir $(1)))_SECONDARY_FILES)
+$(basename $(notdir $(1)))_GENERATED_FILES = \
+  $$($(basename $(notdir $(1)))_SECONDARY_FILES) \
+  $$(patsubst %.mly,%.output, $$($(basename $(notdir $(1)))_MLY_FILES))
+endef # _OCAML_COMMON_BASE
+
+# Macros to build OCaml programs
+
+# Each program foo is characterised by the foo_LIBRARIES and foo_SOURCES
+# variables. The following macros provide the infrastructure to build foo
+# from the object files whose names are derived from these two
+# variables. In particular, the following macros define several
+# variables whose names are prefixed with foo_ to compute the
+# different lists of files used to build foo.
+
+# The first macro, _OCAML_PROGRAM_BASE, is a private macro (hence the _ at the
+# beginning of its name) which defines foo_ variables common to both
+# bytecode and native programs. The next two macros, OCAML_BYTECODE_PROGRAM
+# and OCAML_NATIVE_PROGRAM are used to define programs that are provided
+# only in bytecode or native form, respectively. Programs provided
+# in both forms should use OCAML_PROGRAM.
+
+define _OCAML_PROGRAM_BASE
+$(eval $(call _OCAML_COMMON_BASE,$(1)))
+# To be overridden by the programs needing special link flags
+$(basename $(notdir $(1)))_COMMON_LINKFLAGS =
+endef # _OCAML_PROGRAM_BASE
+
+LINK_BYTECODE_PROGRAM =\
+  $(CAMLC) $(OC_COMMON_LINKFLAGS) $(OC_BYTECODE_LINKFLAGS)
+
+# The _OCAML_BYTECODE_PROGRAM macro defines a bytecode program but assuming
+# that _OCAML_PROGRAM_BASE has already been called. Its public counterpart
+# does not rely on this assumption and rather does call _OCAML_PROGRAM_BASE
+# itself.
+
+define _OCAML_BYTECODE_PROGRAM
+$(eval $(call PROGRAM_SYNONYM,$(1)))
+$(basename $(notdir $(1)))_CMA_FILES = \
+  $$(patsubst %,%.cma, $$($(basename $(notdir $(1)))_LIBRARIES))
+$(basename $(notdir $(1)))_BO_FILES = \
+  $$(patsubst %.c,%.b.$(O), $$($(basename $(notdir $(1)))_C_FILES))
+$(basename $(notdir $(1)))_CMO_FILES = \
+  $$(patsubst %.ml,%.cmo, $$($(basename $(notdir $(1)))_ML_FILES))
+$(basename $(notdir $(1)))_BCOBJS = \
+  $$($(basename $(notdir $(1)))_CMA_FILES) \
+  $$($(basename $(notdir $(1)))_BO_FILES) \
+  $$($(basename $(notdir $(1)))_CMO_FILES)
+# To be overridden by the programs needing special bytecode link flags
+$(basename $(notdir $(1)))_BYTECODE_LINKFLAGS =
+
+$(basename $(notdir $(1)))_BYTECODE_LINKCMD = \
+$(strip \
+  $$(CAMLC) $$(OC_COMMON_LINKFLAGS) $$(OC_BYTECODE_LINKFLAGS) \
+  $$($(basename $(notdir $(1)))_COMMON_LINKFLAGS) \
+  $$($(basename $(notdir $(1)))_BYTECODE_LINKFLAGS))
+
+$(1)$(EXE): $$$$($(basename $(notdir $(1)))_BCOBJS)
+	$$(V_LINKC)$$($(basename $(notdir $(1)))_BYTECODE_LINKCMD) -o $$@ \
+	  $$($(basename $(notdir $(1)))_BCOBJS)
+endef # _OCAML_BYTECODE_PROGRAM
+
+define OCAML_BYTECODE_PROGRAM
+$(eval $(call _OCAML_PROGRAM_BASE,$(1)))
+$(eval $(call _OCAML_BYTECODE_PROGRAM,$(1)))
+endef # OCAML_BYTECODE_PROGRAM
+
+define _OCAML_NATIVE_PROGRAM
+$(eval $(call PROGRAM_SYNONYM,$(1)))
+$(basename $(notdir $(1)))_CMXA_FILES = \
+  $$(patsubst %,%.cmxa, $$($(basename $(notdir $(1)))_LIBRARIES))
+$(basename $(notdir $(1)))_NO_FILES = \
+  $$(patsubst %.c,%.n.$(O), $$($(basename $(notdir $(1)))_C_FILES))
+$(basename $(notdir $(1)))_CMX_FILES = \
+  $$(patsubst %.ml,%.cmx, $$($(basename $(notdir $(1)))_ML_FILES))
+ALL_CMX_FILES += $$($(basename $(notdir $(1)))_CMX_FILES)
+$(basename $(notdir $(1)))_NCOBJS = \
+  $$($(basename $(notdir $(1)))_CMXA_FILES) \
+  $$($(basename $(notdir $(1)))_NO_FILES) \
+  $$($(basename $(notdir $(1)))_CMX_FILES)
+
+# To be overridden by the programs needing special native link flags
+$(basename $(notdir $(1)))_NATIVE_LINKFLAGS =
+
+$(basename $(notdir $(1)))_NATIVE_LINKCMD = \
+$(strip \
+  $$(CAMLOPT) $$(OC_COMMON_LINKFLAGS) $$(OC_NATIVE_LINKFLAGS) \
+  $$($(basename $(notdir $(1)))_COMMON_LINKFLAGS) \
+  $$($(basename $(notdir $(1)))_NATIVE_LINKFLAGS))
+
+$(1)$(EXE): $$$$($(basename $(notdir $(1)))_NCOBJS)
+	$$(V_LINKOPT)$$($(basename $(notdir $(1)))_NATIVE_LINKCMD) -o $$@ \
+	  $$($(basename $(notdir $(1)))_NCOBJS)
+endef # _OCAML_NATIVE_PROGRAM
+
+define OCAML_NATIVE_PROGRAM
+$(eval $(call _OCAML_PROGRAM_BASE,$(1)))
+$(eval $(call _OCAML_NATIVE_PROGRAM,$(1)))
+endef # OCAML_NATIVE_PROGRAM
+
+define OCAML_PROGRAM
+$(eval $(call _OCAML_PROGRAM_BASE,$(1)))
+$(eval $(call _OCAML_BYTECODE_PROGRAM,$(1)))
+$(eval $(call _OCAML_NATIVE_PROGRAM,$(1).opt))
+endef # OCAML_PROGRAM
+
+# Macros for OCaml libraries, similar to those for OCaml programs
+
+define _OCAML_LIBRARY_BASE
+$(eval $(call _OCAML_COMMON_BASE,$(1)))
+endef # _OCAML_LIBRARY_BASE
+
+LINK_BYTECODE_LIBRARY =\
+  $(CAMLC) $(OC_COMMON_LINKFLAGS) $(OC_BYTECODE_LINKFLAGS)
+
+# The _OCAML_BYTECODE_LIBRARY macro defines a bytecode library but assuming
+# that _OCAML_LIBRARY_BASE has already been called. Its public counterpart
+# does not rely on this assumption and rather does call _OCAML_LIBRARY_BASE
+# itself.
+
+define _OCAML_BYTECODE_LIBRARY
+$(basename $(notdir $(1)))_BYTE_CMI_FILES = \
+  $$(foreach F,$$($(basename $(notdir $(1)))_CMI_FILES),\
+    $$(if $$(findstring /native/,$$(F)),,$$(F)))
+$(basename $(notdir $(1)))_BO_FILES = \
+  $$(patsubst %.c,%.b.$(O), $$($(basename $(notdir $(1)))_C_FILES))
+$(basename $(notdir $(1)))_CMO_FILES = \
+  $$(patsubst %.ml,%.cmo, \
+    $$(foreach F,$$($(basename $(notdir $(1)))_ML_FILES),\
+      $$(if $$(findstring /native/,$$(F)),,$$(F))))
+$(basename $(notdir $(1)))_BCOBJS = \
+  $$($(basename $(notdir $(1)))_BO_FILES) \
+  $$($(basename $(notdir $(1)))_CMO_FILES)
+$(1).cma: \
+  $$$$($(basename $(notdir $(1)))_BYTE_CMI_FILES) \
+  $$$$($(basename $(notdir $(1)))_BCOBJS)
+	$$(V_LINKC)$$(LINK_BYTECODE_LIBRARY) -a -o $$@ \
+	  $$($(basename $(notdir $(1)))_BCOBJS)
+endef # _OCAML_BYTECODE_LIBRARY
+
+define OCAML_BYTECODE_LIBRARY
+$(eval $(call _OCAML_LIBRARY_BASE,$(1)))
+$(eval $(call _OCAML_BYTECODE_LIBRARY,$(1)))
+endef # OCAML_BYTECODE_LIBRARY
+
+LINK_NATIVE_LIBRARY =\
+  $(CAMLOPT) $(OC_COMMON_LINKFLAGS) $(OC_NATIVE_LINKFLAGS)
+
+define _OCAML_NATIVE_LIBRARY
+$(basename $(notdir $(1)))_NATIVE_CMI_FILES = \
+  $$(foreach F,$$($(basename $(notdir $(1)))_CMI_FILES),\
+    $$(if $$(findstring /byte/,$$(F)),,$$(F)))
+$(basename $(notdir $(1)))_NO_FILES = \
+  $$(patsubst %.c,%.n.$(O), $$($(basename $(notdir $(1)))_C_FILES))
+$(basename $(notdir $(1)))_CMX_FILES = \
+  $$(patsubst %.ml,%.cmx, \
+    $$(foreach F,$$($(basename $(notdir $(1)))_ML_FILES),\
+      $$(if $$(findstring /byte/,$$(F)),,$$(F))))
+ALL_CMX_FILES += $$($(basename $(notdir $(1)))_CMX_FILES)
+$(basename $(notdir $(1)))_NCOBJS = \
+  $$($(basename $(notdir $(1)))_NO_FILES) \
+  $$($(basename $(notdir $(1)))_CMX_FILES)
+$(1).cmxa: \
+  $$$$($(basename $(notdir $(1)))_NATIVE_CMI_FILES) \
+  $$$$($(basename $(notdir $(1)))_NCOBJS)
+	$$(V_LINKOPT)$$(LINK_NATIVE_LIBRARY) -a -o $$@ \
+	  $$($(basename $(notdir $(1)))_NCOBJS)
+endef # _OCAML_NATIVE_LIBRARY
+
+define OCAML_NATIVE_LIBRARY
+$(eval $(call _OCAML_LIBRARY_BASE,$(1)))
+$(eval $(call _OCAML_NATIVE_LIBRARY,$(1)))
+endef # OCAML_NATIVE_LIBRARY
+
+define OCAML_LIBRARY
+$(eval $(call _OCAML_LIBRARY_BASE,$(1)))
+$(eval $(call _OCAML_BYTECODE_LIBRARY,$(1)))
+$(eval $(call _OCAML_NATIVE_LIBRARY,$(1)))
+endef # OCAML_LIBRARY
+
+# Installing a bytecode executable, with debug information removed
+define INSTALL_STRIPPED_BYTE_PROG
+$(OCAMLRUN) $(ROOTDIR)/tools/stripdebug$(EXE) $(1) $(1).tmp \
+&& $(INSTALL_PROG) $(1).tmp $(2) \
+&& rm $(1).tmp
+endef # INSTALL_STRIPPED_BYTE_PROG
+
+# ocamlc has several mechanisms for linking a bytecode image to the runtime
+# which executes it. The exact mechanism depends on the platform and the precise
+# location of the runtime. The boot compiler (boot/ocamlc) therefore needs this
+# additional information, which comes from the stdlib build and is copied into
+# boot/ as part of coldstart. See read_runtime_launch_info in
+# bytecomp/bytelink.ml for further details.
+HEADER_NAME = runtime-launch-info
+
+ifeq "$(UNIX_OR_WIN32)" "win32"
+# Ensure that no command can create Cygwin symbolic links by ensuring that
+# symlink(2) will fail if native NTFS symlinks aren't available.
+export CYGWIN := $(strip \
+  $(filter-out winsymlinks winsymlinks:%, $(CYGWIN)) winsymlinks:nativestrict)
+export MSYS := $(strip \
+  $(filter-out winsymlinks winsymlinks:%, $(MSYS)) winsymlinks:nativestrict)
+endif

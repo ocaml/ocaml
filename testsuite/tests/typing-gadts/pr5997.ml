@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type (_, _) comp =
@@ -26,8 +26,8 @@ Line 16, characters 0-33:
 16 | match M.comp with | Diff -> false;;
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Eq
+  Here is an example of a case that is not matched: "Eq"
+
 Exception: Match_failure ("", 16, 0).
 |}];;
 
@@ -49,7 +49,7 @@ Line 11, characters 0-33:
 11 | match M.comp with | Diff -> false;;
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Eq
+  Here is an example of a case that is not matched: "Eq"
+
 Exception: Match_failure ("", 11, 0).
 |}];;

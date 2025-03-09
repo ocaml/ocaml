@@ -1,22 +1,32 @@
 (* TEST
-* function_sections
-flags = "-S -function-sections"
-** arch_arm
-*** native
-reference = "${test_source_directory}/func_sections.arm.reference"
-** arch_arm64
-*** native
-reference = "${test_source_directory}/func_sections.arm.reference"
-** arch_amd64
-*** native
-reference = "${test_source_directory}/func_sections.reference"
-** arch_i386
-*** native
-reference = "${test_source_directory}/func_sections.reference"
+ flags = "-S -function-sections";
+ function_sections;
+ {
+   arch_arm64;
+   reference = "${test_source_directory}/func_sections.no_jump_tables_in_rodata.reference";
+   native;
+ }{
+   arch_amd64;
+   reference = "${test_source_directory}/func_sections.reference";
+   native;
+ }{
+   arch_power;
+   reference = "${test_source_directory}/func_sections.no_jump_tables_in_rodata.reference";
+   native;
+ }{
+   arch_riscv;
+   reference = "${test_source_directory}/func_sections.no_jump_tables_in_rodata.reference";
+   native;
+ }{
+   arch_s390x;
+   reference = "${test_source_directory}/func_sections.reference";
+   native;
+ }
 *)
 
-(* We have a separate reference output for ARM because
-   it doesn't emit .text after jump tables. *)
+(* We have a separate reference output for the backends which do not emit
+   jump tables in .rodata, and thus do not need to emit text section
+   directives after them. This only affects compilation of f5 below. *)
 
 (* Test for anonymous functions which result in a mangled symbol *)
 let f4 list =

@@ -12,7 +12,7 @@ module Msg :
         val write : t -> string
         val read : string -> t
       end
-    module Define : functor (D : Desc) -> sig type 'a tag += C : D.t tag end
+    module Define : (D : Desc) -> sig type 'a tag += C : D.t tag end
   end
 val write_int : int -> unit = <fun>
 module StrM : sig type 'a Msg.tag += C : string Msg.tag end

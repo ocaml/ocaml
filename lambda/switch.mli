@@ -37,8 +37,6 @@ type ('a, 'ctx) t_store =
      act_store : 'ctx -> 'a -> int ;
      act_store_shared : 'ctx -> 'a -> int ; }
 
-exception Not_simple
-
 module type Stored = sig
   type t
   type key
@@ -74,28 +72,53 @@ module type S =
     val ltint : primitive
     val geint : primitive
     val gtint : primitive
-    (* type of actions *)
-    type act
+
     (* type of source locations *)
     type loc
+    (* type of switch scrutinees *)
+    type arg
+    (* type of tests on scrutinees *)
+    type test
+    (* type of actions *)
+    type act
 
     (* Various constructors, for making a binder,
         adding one integer, etc. *)
-    val bind : act -> (act -> act) -> act
-    val make_const : int -> act
-    val make_offset : act -> int -> act
-    val make_prim : primitive -> act list -> act
-    val make_isout : act -> act -> act
-    val make_isin : act -> act -> act
-    val make_if : act -> act -> act -> act
+
+    (* [bind arg cont] should bind the expression arg to a variable,
+       then call [cont] on that variable, and return the term made of
+       the binding and the result of the call. *)
+    val bind : arg -> (arg -> act) -> act
+    (* [make_const n] generates a term for the integer constant [n] *)
+    val make_const : int -> arg
+    (* [make_offset arg n] generates a term for adding the constant
+       integer [n] to the term [arg] *)
+    val make_offset : arg -> int -> arg
+    (* [make_prim p args] generates a test using the primitive operation [p]
+       applied to arguments [args] *)
+    val make_prim : primitive -> arg list -> test
+    (* [make_isout h arg] generates a test that holds when [arg] is out of
+       the interval [0, h] *)
+    val make_isout : arg -> arg -> test
+    (* [make_isin h arg] generates a test that holds when [arg] is in
+       the interval [0, h] *)
+    val make_isin : arg -> arg -> test
+    (* [make_is_nonzero arg] generates a test that holds when [arg] is any
+       value except 0 *)
+    val make_is_nonzero : arg -> test
+    (* [arg_as_test arg] casts [arg], known to be either 0 or 1,
+       to a boolean test *)
+    val arg_as_test : arg -> test
+    (* [make_if cond ifso ifnot] generates a conditional branch *)
+    val make_if : test -> act -> act -> act
    (* construct an actual switch :
       make_switch arg cases acts
       NB:  cases is in the value form *)
-    val make_switch : loc -> act -> int array -> act array -> act
+    val make_switch : loc -> arg -> int array -> act array -> act
+
    (* Build last minute sharing of action stuff *)
    val make_catch : act -> int * (act -> act)
    val make_exit : int -> act
-
   end
 
 
@@ -116,14 +139,14 @@ module Make :
       val zyva :
           Arg.loc ->
           (int * int) ->
-           Arg.act ->
+           Arg.arg ->
            (int * int * int) array ->
            (Arg.act, _) t_store ->
            Arg.act
 
 (* Output test sequence, sharing tracked *)
      val test_sequence :
-           Arg.act ->
+           Arg.arg ->
            (int * int * int) array ->
            (Arg.act, _) t_store ->
            Arg.act

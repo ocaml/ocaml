@@ -50,7 +50,7 @@ external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
    @raise Invalid_argument
    if [n] is outside the range 0 to [length a - 1]. *)
 
-external make : int -> 'a -> 'a array = "caml_make_vect"
+external make : int -> 'a -> 'a array = "caml_array_make"
 (** [make n x] returns a fresh array of length [n],
    initialized with [x].
    All the elements of this new array are initially
@@ -63,25 +63,16 @@ external make : int -> 'a -> 'a array = "caml_make_vect"
    If the value of [x] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2].*)
 
-external create : int -> 'a -> 'a array = "caml_make_vect"
-  [@@ocaml.deprecated "Use Array.make/ArrayLabels.make instead."]
-(** @deprecated [create] is an alias for {!make}. *)
-
-external create_float: int -> float array = "caml_make_float_vect"
+external create_float: int -> float array = "caml_array_create_float"
 (** [create_float n] returns a fresh float array of length [n],
     with uninitialized data.
     @since 4.03 *)
-
-val make_float: int -> float array
-  [@@ocaml.deprecated
-    "Use Array.create_float/ArrayLabels.create_float instead."]
-(** @deprecated [make_float] is an alias for {!create_float}. *)
 
 val init : int -> (int -> 'a) -> 'a array
 (** [init n f] returns a fresh array of length [n],
    with element number [i] initialized to the result of [f i].
    In other terms, [init n f] tabulates the results of [f]
-   applied to the integers [0] to [n-1].
+   applied in order to the integers [0] to [n-1].
 
    @raise Invalid_argument if [n < 0] or [n > Sys.max_array_length].
    If the return type of [f] is [float], then the maximum
@@ -100,10 +91,20 @@ val make_matrix : int -> int -> 'a -> 'a array array
    If the value of [e] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2]. *)
 
-val create_matrix : int -> int -> 'a -> 'a array array
-  [@@ocaml.deprecated
-    "Use Array.make_matrix/ArrayLabels.make_matrix instead."]
-(** @deprecated [create_matrix] is an alias for {!make_matrix}. *)
+val init_matrix : int -> int -> (int -> int -> 'a) -> 'a array array
+(** [init_matrix dimx dimy f] returns a two-dimensional array
+   (an array of arrays)
+   with first dimension [dimx] and second dimension [dimy],
+   where the element at index ([x,y]) is initialized with [f x y].
+   The element ([x,y]) of a matrix [m] is accessed
+   with the notation [m.(x).(y)].
+
+   @raise Invalid_argument if [dimx] or [dimy] is negative or
+   greater than {!Sys.max_array_length}.
+   If the return type of [f] is [float],
+   then the maximum size is only [Sys.max_array_length / 2].
+
+   @since 5.2 *)
 
 val append : 'a array -> 'a array -> 'a array
 (** [append v1 v2] returns a fresh array containing the
@@ -174,23 +175,33 @@ val map : ('a -> 'b) -> 'a array -> 'b array
    and builds an array with the results returned by [f]:
    [[| f a.(0); f a.(1); ...; f a.(length a - 1) |]]. *)
 
+val map_inplace : ('a -> 'a) -> 'a array -> unit
+(** [map_inplace f a] applies function [f] to all elements of [a],
+    and updates their values in place.
+    @since 5.1 *)
+
 val mapi : (int -> 'a -> 'b) -> 'a array -> 'b array
 (** Same as {!map}, but the
    function is applied to the index of the element as first argument,
    and the element itself as second argument. *)
 
-val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
+val mapi_inplace : (int -> 'a -> 'a) -> 'a array -> unit
+(** Same as {!map_inplace}, but the function is applied to the index of the
+    element as first argument, and the element itself as second argument.
+    @since 5.1 *)
+
+val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a array -> 'acc
 (** [fold_left f init a] computes
    [f (... (f (f init a.(0)) a.(1)) ...) a.(n-1)],
    where [n] is the length of the array [a]. *)
 
 val fold_left_map :
-  ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
+  ('acc -> 'a -> 'acc * 'b) -> 'acc -> 'a array -> 'acc * 'b array
 (** [fold_left_map] is a combination of {!fold_left} and {!map} that threads an
     accumulator through calls to [f].
-    @since 4.13.0 *)
+    @since 4.13 *)
 
-val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
+val fold_right : ('a -> 'acc -> 'acc) -> 'a array -> 'acc -> 'acc
 (** [fold_right f a init] computes
    [f a.(0) (f a.(1) ( ... (f a.(n-1) init) ...))],
    where [n] is the length of the array [a]. *)
@@ -203,7 +214,7 @@ val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
 (** [iter2 f a b] applies function [f] to all the elements of [a]
    and [b].
    @raise Invalid_argument if the arrays are not the same size.
-   @since 4.03.0 (4.05.0 in ArrayLabels)
+   @since 4.03 (4.05 in ArrayLabels)
    *)
 
 val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
@@ -211,7 +222,7 @@ val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
    and [b], and builds an array with the results returned by [f]:
    [[| f a.(0) b.(0); ...; f a.(length a - 1) b.(length b - 1)|]].
    @raise Invalid_argument if the arrays are not the same size.
-   @since 4.03.0 (4.05.0 in ArrayLabels) *)
+   @since 4.03 (4.05 in ArrayLabels) *)
 
 
 (** {1 Array scanning} *)
@@ -220,62 +231,78 @@ val for_all : ('a -> bool) -> 'a array -> bool
 (** [for_all f [|a1; ...; an|]] checks if all elements
    of the array satisfy the predicate [f]. That is, it returns
    [(f a1) && (f a2) && ... && (f an)].
-   @since 4.03.0 *)
+   @since 4.03 *)
 
 val exists : ('a -> bool) -> 'a array -> bool
 (** [exists f [|a1; ...; an|]] checks if at least one element of
     the array satisfies the predicate [f]. That is, it returns
     [(f a1) || (f a2) || ... || (f an)].
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
 (** Same as {!for_all}, but for a two-argument predicate.
    @raise Invalid_argument if the two arrays have different lengths.
-   @since 4.11.0 *)
+   @since 4.11 *)
 
 val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
 (** Same as {!exists}, but for a two-argument predicate.
    @raise Invalid_argument if the two arrays have different lengths.
-   @since 4.11.0 *)
+   @since 4.11 *)
 
 val mem : 'a -> 'a array -> bool
 (** [mem a set] is true if and only if [a] is structurally equal
-    to an element of [l] (i.e. there is an [x] in [l] such that
+    to an element of [set] (i.e. there is an [x] in [set] such that
     [compare a x = 0]).
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val memq : 'a -> 'a array -> bool
 (** Same as {!mem}, but uses physical equality
-   instead of structural equality to compare list elements.
-   @since 4.03.0 *)
+   instead of structural equality to compare array elements.
+   @since 4.03 *)
 
 val find_opt : ('a -> bool) -> 'a array -> 'a option
 (** [find_opt f a] returns the first element of the array [a] that satisfies
     the predicate [f], or [None] if there is no value that satisfies [f] in the
     array [a].
 
-    @since 4.13.0 *)
+    @since 4.13 *)
+
+val find_index : ('a -> bool) -> 'a array -> int option
+(** [find_index f a] returns [Some i], where [i] is the index of the first
+    element of the array [a] that satisfies [f x], if there is such an
+    element.
+
+    It returns [None] if there is no such element.
+
+    @since 5.1 *)
 
 val find_map : ('a -> 'b option) -> 'a array -> 'b option
 (** [find_map f a] applies [f] to the elements of [a] in order, and returns the
     first result of the form [Some v], or [None] if none exist.
 
-    @since 4.13.0 *)
+    @since 4.13 *)
+
+val find_mapi : (int -> 'a -> 'b option) -> 'a array -> 'b option
+(** Same as [find_map], but the predicate is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+
+   @since 5.1 *)
 
 (** {1 Arrays of pairs} *)
 
 val split : ('a * 'b) array -> 'a array * 'b array
 (** [split [|(a1,b1); ...; (an,bn)|]] is [([|a1; ...; an|], [|b1; ...; bn|])].
 
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val combine : 'a array -> 'b array -> ('a * 'b) array
 (** [combine [|a1; ...; an|] [|b1; ...; bn|]] is [[|(a1,b1); ...; (an,bn)|]].
     Raise [Invalid_argument] if the two arrays have different lengths.
 
-    @since 4.13.0 *)
+    @since 4.13 *)
 
-(** {1 Sorting} *)
+(** {1:sorting_and_shuffling Sorting and shuffling} *)
 
 val sort : ('a -> 'a -> int) -> 'a array -> unit
 (** Sort an array in increasing order according to a comparison
@@ -299,7 +326,7 @@ val sort : ('a -> 'a -> int) -> 'a array -> unit
 
    When [sort] returns, [a] contains the same elements as before,
    reordered in such a way that for all i and j valid indices of [a] :
--   [cmp a.(i) a.(j)] >= 0 if and only if i >= j
+-   [cmp a.(i) a.(j)] >= 0 if i >= j
 *)
 
 val stable_sort : ('a -> 'a -> int) -> 'a array -> unit
@@ -316,6 +343,17 @@ val fast_sort : ('a -> 'a -> int) -> 'a array -> unit
 (** Same as {!sort} or {!stable_sort}, whichever is
     faster on typical input. *)
 
+val shuffle :
+  rand: (* thwart tools/sync_stdlib_docs *) (int -> int) -> 'a array -> unit
+(** [shuffle rand a] randomly permutes [a]'s element using [rand] for
+    randomness. The distribution of permutations is uniform.
+
+    [rand] must be such that a call to [rand n] returns a uniformly
+    distributed random number in the range \[[0];[n-1]\].
+    {!Random.int} can be used for this (do not forget to
+    {{!Random.self_init}initialize} the generator).
+
+    @since 5.2 *)
 
 (** {1 Arrays and Sequences} *)
 
@@ -333,6 +371,78 @@ val to_seqi : 'a array -> (int * 'a) Seq.t
 val of_seq : 'a Seq.t -> 'a array
 (** Create an array from the generator
     @since 4.07 *)
+
+(** {1:array_concurrency Arrays and concurrency safety}
+
+    Care must be taken when concurrently accessing arrays from multiple
+    domains: accessing an array will never crash a program, but unsynchronized
+    accesses might yield surprising (non-sequentially-consistent) results.
+
+    {2:array_atomicity Atomicity}
+
+    Every array operation that accesses more than one array element is not
+    atomic. This includes iteration, scanning, sorting, splitting and
+    combining arrays.
+
+    For example, consider the following program:
+{[let size = 100_000_000
+let a = Array.make size 1
+let d1 = Domain.spawn (fun () ->
+   Array.iteri (fun i x -> a.(i) <- x + 1) a
+)
+let d2 = Domain.spawn (fun () ->
+  Array.iteri (fun i x -> a.(i) <- 2 * x + 1) a
+)
+let () = Domain.join d1; Domain.join d2
+]}
+
+    After executing this code, each field of the array [a] is either [2], [3],
+    [4] or [5]. If atomicity is required, then the user must implement their own
+    synchronization (for example, using {!Mutex.t}).
+
+    {2:array_data_race Data races}
+
+    If two domains only access disjoint parts of the array, then the
+    observed behaviour is the equivalent to some sequential interleaving of the
+    operations from the two domains.
+
+    A data race is said to occur when two domains access the same array element
+    without synchronization and at least one of the accesses is a write.
+    In the absence of data races, the observed behaviour is equivalent to some
+    sequential interleaving of the operations from different domains.
+
+    Whenever possible, data races should be avoided by using synchronization to
+    mediate the accesses to the array elements.
+
+    Indeed, in the presence of data races, programs will not crash but the
+    observed behaviour may not be equivalent to any sequential interleaving of
+    operations from different domains. Nevertheless, even in the presence of
+    data races, a read operation will return the value of some prior write to
+    that location (with a few exceptions for float arrays).
+
+    {2:array_data_race_exceptions Float arrays}
+
+    Float arrays have two supplementary caveats in the presence of data races.
+
+    First, the blit operation might copy an array byte-by-byte. Data races
+    between such a blit operation and another operation might produce surprising
+    values due to tearing: partial writes interleaved with other operations can
+    create float values that would not exist with a sequential execution.
+
+    For instance, at the end of
+ {[let zeros = Array.make size 0.
+let max_floats = Array.make size Float.max_float
+let res = Array.copy zeros
+let d1 = Domain.spawn (fun () -> Array.blit zeros 0 res 0 size)
+let d2 = Domain.spawn (fun () -> Array.blit max_floats 0 res 0 size)
+let () = Domain.join d1; Domain.join d2
+]}
+    the [res] array might contain values that are neither [0.] nor [max_float].
+
+    Second, on 32-bit architectures, getting or setting a field involves two
+    separate memory accesses. In the presence of data races, the user may
+    observe tearing on any operation.
+*)
 
 (**/**)
 

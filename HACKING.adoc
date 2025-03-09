@@ -27,7 +27,7 @@ not have this which causes some important development things to be disabled
 +
 ----
 ./configure
-make
+make -j 4
 ----
 If you are on a release build and need development options, you can add
 `--enable-ocamltest` (to allow running the testsuite) and `--enable-warn-error`
@@ -127,13 +127,29 @@ link:typing/HACKING.adoc[].
 
 === Runtime system
 
+The low-level routines that OCaml programs use during their execution:
+garbage collection, interaction with the operating system
+(IO in particular), low-level primitives to manipulate some OCaml data
+structures, etc. Mostly implemented in C, with some rare bits of
+assembly code in architecture-specific files. The "includes"
+corresponding to the `.c` files are in the link:runtime/caml[]
+subdirectory.
+
+Some files are only used by bytecode programs, some only used by
+native-compiled programs, but most of the runtime code is
+common. (See `runtime_COMMON_C_SOURCES`, `runtime_BYTECODE_ONLY_C_SOURCES`,
+and `runtime_NATIVE_ONLY_C_SOURCES` in link:Makefile[] for the list of common,
+bytecode-only, and native-only source files.)
+
+See link:runtime/HACKING.adoc[].
+
 === Libraries
 
 link:stdlib/[]:: The standard library. Each file is largely
 independent and should not need further knowledge.
 
 link:otherlibs/[]:: External libraries such as `unix`, `threads`,
-`dynlink`, `str` and `bigarray`.
+`dynlink` and `str`.
 
 Instructions for building the full reference manual are provided in
 link:manual/README.md[]. However, if you only modify the documentation
@@ -144,7 +160,10 @@ result by running
 make html_doc
 ----
 
-and then opening link:./api_docgen/build/html/libref/index.html[] in a web browser.
+and then opening link:./api_docgen/ocamldoc/build/html/libref/index.html[] in a web browser.
+The documentation is located in
+link:./api_docgen/odoc/build/html/libref/index.html[] when `--with-odoc` is
+passed to the configure script.
 
 === Tools
 
@@ -169,14 +188,14 @@ has excellent documentation.
   Makefile.common::       common Makefile definitions
   README.adoc::           general information on the compiler distribution
   README.win32.adoc::     general information on the Windows ports of OCaml
-  VERSION::               version string. Run `make configure` after changing.
+  VERSION::               version string. Run `tools/autogen` after changing.
   asmcomp/::              native-code compiler and linker
   boot/::                 bootstrap compiler
-  build-aux/:             autotools support scripts
+  build-aux/::            autotools support scripts
   bytecomp/::             bytecode compiler and linker
   compilerlibs/::         the OCaml compiler as a library
   configure::             configure script
-  configure.ac:           autoconf input file
+  configure.ac::          autoconf input file
   debugger/::             source-level replay debugger
   driver/::               driver code for the compilers
   flexdll/::              git submodule -- see link:README.win32.adoc[]
@@ -196,6 +215,7 @@ has excellent documentation.
   toplevel/::             interactive system
   typing/::               typechecking -- see link:typing/HACKING.adoc[]
   utils/::                utility libraries
+  winpthreads/::          winpthreads submodule -- see <<winpthreads,further>>
   yacc/::                 parser generator
 
 [#tips]
@@ -217,6 +237,16 @@ the original commit in the commit message.
 git cherry-pick -x -m 1 <merge-commit-hash>
 ----
 
+=== Code style
+
+Keep the style of the code you’re modifying. We don’t enforce the use of
+automated formatters. For OCaml code,
+https://github.com/OCamlPro/ocp-indent[ocp-indent] has been used.
+We use https://editorconfig.org/[EditorConfig] for simple styling. Lots of
+editors support EditorConfig
+https://editorconfig.org/#pre-installed[out-of-the-box], or with
+https://editorconfig.org/#download[plugins].
+
 [#opam-switch]
 === Testing with `opam`
 
@@ -234,8 +264,7 @@ work locally) by pinning:
 
 ----
 opam switch create my-switch-name --empty
-# Replace $VERSION by the trunk version
-opam pin add ocaml-variants.$VERSION+branch git+https://$REPO#branch
+opam pin add ocaml-variants git+https://$REPO#branch
 ----
 
 ==== Incremental builds with `opam`
@@ -270,11 +299,10 @@ opam install .
 -----
 
 -----
-# Example with installation from the current directory, installing only the
-# bytecode versions of the tools
+# Example with installation from the current directory
 opam switch create . --empty
 ./configure --prefix=$(opam var prefix) # put extra configuration args here
-make world && make opt
+make -j
 opam install . --assume-built
 -----
 
@@ -374,13 +402,15 @@ You can also run `make install` manually, which will not trigger a
 recompilation, but will not remove the previous version either and can
 mess with `opam`'s tracking of installed files.
 
-=== Useful Makefile targets
+=== Useful Makefile targets and options
 
 Besides the targets listed in link:INSTALL.adoc[] for build and
 installation, the following targets may be of use:
 
 `make runtop` :: builds and runs the ocaml toplevel of the distribution
                           (optionally uses `rlwrap` for readline+history support)
+                          (use `make runtop-with-otherlibs` if you need `Unix` or other
+                           `otherlibs/` libraries)
 `make natruntop`:: builds and runs the native ocaml toplevel (experimental)
 
 `make partialclean`:: Clean the OCaml files but keep the compiled C files.
@@ -388,6 +418,10 @@ installation, the following targets may be of use:
 `make depend`:: Regenerate the `.depend` file. Should be used each time new dependencies are added between files.
 
 `make -C testsuite parallel`:: see link:testsuite/HACKING.adoc[]
+
+You can use `make foo V=1` to build the target foo and show full
+commands instead of abbreviated names like OCAMLC, etc. This can be
+useful to know the flags to use to manually rebuild a file.
 
 Additionally, there are some developer specific targets in link:Makefile.dev[].
 These targets are automatically available when working in a Git clone of the
@@ -470,8 +504,7 @@ make clean && dune build @libs
 ----
 
 which will do a bytecode build of all the distribution (without linking
-the executables), using your OCaml compiler, and generate a .merlin
-file.
+the executables), using your OCaml compiler.
 
 Merlin will be looking at the artefacts generated by dune (in `_build`), rather
 than trying to open the incompatible artefacts produced by a Makefile build. In
@@ -495,6 +528,44 @@ third-party code, by installing a local <<opam-switch,opam switch>>: opam
 packages tend to be compatible with released versions of the compiler, whereas
 most packages are incompatible with the in-progress development version.
 
+
+=== License
+
+The OCaml distribution in this repository, which includes the OCaml
+compiler and runtime, the OCaml standard library, and some extra
+tools, is licensed under the LGPL version 2.1, with a linking
+exception. See link:LICENSE[] for the full license text. Using the
+https://spdx.org/licenses/[SPDX] standard for license identifiers,
+this is the license "LGPL-2.1 WITH
+https://spdx.org/licenses/OCaml-LGPL-linking-exception.html[OCaml-LGPL-linking-exception]".
+Let us include here a few explanations about the intent of this
+licensing choice -- note that only the license text has legal value.
+
+The broad intent of the LGPL is that if you modify the OCaml
+distribution, and distribute your modified version to your users, then
+you have to provide the source code of your version -- the LGPL, like
+the GPL and unlike the BSD and MIT licenses, is "hereditary"; modified
+versions of LGPL programs must remain free software under the same
+license. (For more general discussion of the LGPL license, see the
+https://www.gnu.org/licenses/gpl-faq.en.html[FAQ] maintained by the
+GNU project.)
+
+On the other hand, if your code is not derived from the OCaml
+distribution, it only uses it, then you can use the licensing terms of
+your choice. We use an explicit "linking exception" precisely to make
+it clear that it is fine to link statically or dynamically with parts
+of the OCaml distribution, typically the OCaml runtime and the
+standard library. Linking exceptions are a common practice for
+language compilers and runtime libraries, for example the GCC project
+uses such an exception. See the
+https://en.wikipedia.org/wiki/GPL_linking_exception[Wikipedia article]
+on linking exceptions for more details.
+
+Finally: If you have your own fork of the OCaml distribution, it must
+be distributed to your own users under the same license
+(LGPL + exception), and your users will also benefit from the linking
+exception.
+
 === Continuous integration
 
 [#check-typo]
@@ -514,13 +585,40 @@ runs much faster than a full `./tools/check-typo`, typically instantly.
 
 You can also setup a git commit-hook to automatically run `check-typo`
 on the changes you commit, by copying the file
-`tools/pre-commit-githook` to `.git/hooks/pre-commit`. If changes in a commit
-alter the `configure` script, the hook also checks that committed `configure`
-script is up-to-date.
+`tools/pre-commit-githook` to `.git/hooks/pre-commit`. If changes in a
+commit alter the `configure` script, the hook also checks that the
+committed `configure` script is up-to-date.
 
 Some files need special rules to opt out of `check-typo` checks; this
 is specified in the `.gitattributes` file at the root of the
 repository, using `typo.foo` attributes.
+
+===== Regenerating the `configure` script
+
+The `configure` script may be regenerated by running `tools/autogen`,
+with GNU Autoconf installed.
+
+If you're using a version of GNU Autoconf that differs from our CI,
+then the generated `configure` script might differ too. The latest
+Ubuntu LTS packages may be used as a reasonable base to generate this
+file. Using a Docker image with GNU Autoconf installed, and `git
+rebase --exec`, one can properly regenerate the `configure` script for
+each commit in a branch.
+
+[source,sh]
+----
+docker build -t ocaml-make-configure:latest - <<'EOF'
+# syntax=docker/dockerfile:1
+FROM ubuntu:latest
+RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt update && apt-get --no-install-recommends install -y autoconf make
+WORKDIR /mnt
+ENTRYPOINT ["tools/autogen"]
+EOF
+git rebase trunk --exec "docker run --rm -it -v $PWD:/mnt ocaml-make-configure:latest"
+----
 
 ==== GitHub's Continuous Integration: GitHub Actions and AppVeyor
 
@@ -532,7 +630,7 @@ machine, you can use the configuration values and run command taken from
 link:tools/ci/actions/runner.sh[]:
 
 ----
-XARCH=x64 bash -ex tools/ci/actions/runner.sh configure
+bash -ex tools/ci/actions/runner.sh configure
 ----
 
 The link:.github/workflows/hygiene.yml[] script supports other kinds of
@@ -564,7 +662,7 @@ the following environment variables, which should be set in link:appveyor.yml[]:
   `world`, `opt`, `opt.opt` targets. The `C` build is a fast test used to
   build just enough of the tree to cover the C sources (it's used to test
   old MSVC compilers).
-- `SDK`. Defaults to Visual Studio 2015. Specifies the exact command to run
+- `SDK`. Defaults to Visual Studio 2022. Specifies the exact command to run
   to set-up the Microsoft build environment.
 - `CYGWIN_DIST`. Default: `64`. Either `64` or `32`, selects 32-bit or 64-bit
   Cygwin as the build environment.
@@ -635,5 +733,37 @@ OCAML_JOBS=10
 If you would like to receive email notifications of all commits made to the main
 git repository, you can subscribe to the caml-commits@inria.fr mailing list by
 visiting https://sympa.inria.fr/sympa/info/caml-commits[its web page.]
+
+[#winpthreads]
+=== The `winpthreads` library for the MSVC port
+
+The `winpthreads` library is used to emulate `pthread` for the MSVC
+port. Upstream bundles it along with all the MinGW libraries so our
+`winpthreads` submodule points to `git subtree` repository rather than
+upstream directly.
+
+To recreate the `winpthreads` repository from upstream, you can do:
+
+----
+git clone -o upstream https://git.code.sf.net/p/mingw-w64/mingw-w64 winpthreads
+cd winpthreads
+git checkout upstream/master
+git branch -D master
+git subtree -P mingw-w64-libraries/winpthreads split -b master
+----
+
+As subtree splitting is deterministic, repeating these operations later will
+allow to update `master`, for instance by:
+
+----
+git fetch upstream
+git checkout upstream/master
+git subtree -P mingw-w64-libraries/winpthreads split -b tmp
+git checkout master
+git merge --ff-only tmp
+git branch -d tmp
+----
+
+and then go on updating the `winpthreads` submodule in the `ocaml` repository.
 
 Happy Hacking!

@@ -1,5 +1,5 @@
-(* TEST
-*)
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)*)
 
 (* PR#9494 *)
 
@@ -36,3 +36,6 @@ let _ = try
   let basic_set = IdSet.singleton {id = 0} in
   IdSet.mem {id = 1} basic_set (* diverge here *)
 with e -> print_endline @@ Printexc.to_string e; false
+
+(* TEST
+*)

@@ -1,5 +1,5 @@
 (* TEST
-  modules = "offset.ml pr6726.ml pr7427.ml pr4008.ml"
+ modules = "offset.ml pr6726.ml pr7427.ml pr4008.ml";
 *)
 
 (* PR#6435 *)

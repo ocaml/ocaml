@@ -1,8 +1,11 @@
 (* TEST
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-ocamlc_byte_exit_status = "0"
-** check-ocamlc.byte-output
+ setup-ocamlc.byte-build-env;
+ {
+   ocamlc_byte_exit_status = "0";
+   ocamlc.byte;
+ }{
+   check-ocamlc.byte-output;
+ }
 *)
 
 module Make_sure_val : sig

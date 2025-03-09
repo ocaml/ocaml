@@ -1,0 +1,64 @@
+(Introduced in OCaml 5.4)
+
+Since OCaml 5.4, array literal syntax @"[|" e1 ';' e2 ';' ... ';' eN "|]"@ can
+be used to denote values of type "floatarray" as well as "'a array", both in
+expression and pattern positions. This syntax is also used to display
+"floatarray" values in the toplevel.
+
+The compiler matches the expected type of the expression or pattern with the
+type of the literal, in a manner analogous to the disambiguation of constructors
+and record fields (see \ref{ss:record-and-variant-disambiguation}).
+
+In the absence of an expected type, array literals are assumed to be of type "'a
+array".
+
+In the following examples, the array literals are assigned type "floatarray":
+
+\begin{caml_example}{verbatim}
+let _ : floatarray = [|42.|];;
+let _ = ([|42.|] : floatarray);;
+let _ = Float.Array.length [|42.|];;
+\end{caml_example}
+
+The same disambiguation mechanism is used for array literals appearing in
+patterns:
+
+\begin{caml_example}{verbatim}
+let f : floatarray -> _ = function
+  | [| 42. |] -> "It's a floatarray containing one element"
+  | _ -> "Also a floatarray"
+;;
+\end{caml_example}
+
+In the example below, "x" is assigned type "float array":
+
+\begin{caml_example}{verbatim}
+let x = [|42.|];;
+\end{caml_example}
+
+However, the following does not work:
+
+\begin{caml_example}{verbatim}
+let f a =
+  match a with
+  | [| _ |] -> Float.Array.length a
+  | _ -> 42
+[@@expect error];;
+
+let f b (a : floatarray) = if b then [|42.|] else a
+[@@expect error];;
+\end{caml_example}
+
+Here the information learned from the use of "a" as a "floatarray" cannot be
+propagated back to the array literal. In general, expected type information
+cannot be propagated ``backwards''.
+
+In the following example, type disambiguation works because the type information
+learned in the "then" branch of the conditional is propagated to the "else"
+branch, which occurs ``later''.
+
+\begin{caml_example}{verbatim}
+let f b (a : floatarray) = if b then a else [|42.|];;
+\end{caml_example}
+
+Such cases trigger warning 18 "not-principal", if enabled.

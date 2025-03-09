@@ -51,6 +51,7 @@ module Make (T : Branch_relaxation_intf.S) = struct
       in
       match instr.desc with
       | Lop (Ialloc _)
+      | Lop (Ipoll { return_label = None })
       | Lop (Iintop (Icheckbound))
       | Lop (Iintop_imm (Icheckbound, _))
       | Lop (Ispecific _) ->
@@ -64,6 +65,11 @@ module Make (T : Branch_relaxation_intf.S) = struct
         opt_branch_overflows map pc lbl0 max_branch_offset
           || opt_branch_overflows map pc lbl1 max_branch_offset
           || opt_branch_overflows map pc lbl2 max_branch_offset
+      | Lop (Ipoll { return_label = Some lbl }) ->
+        (* A poll-and-branch instruction can branch to the label lbl,
+           but also to an out-of-line code block. *)
+        code_size + max_out_of_line_code_offset - pc >= max_branch_offset
+        || branch_overflows map pc lbl max_branch_offset
       | _ ->
         Misc.fatal_error "Unsupported instruction for branch relaxation"
 
@@ -86,6 +92,9 @@ module Make (T : Branch_relaxation_intf.S) = struct
           fixup did_fix (pc + T.instr_size f instr.desc) instr.next
         else
           match instr.desc with
+          | Lop (Ipoll { return_label }) ->
+            instr.desc <- T.relax_poll ~return_label;
+            fixup true (pc + T.instr_size f instr.desc) instr.next
           | Lop (Ialloc { bytes = num_bytes; dbginfo }) ->
             instr.desc <- T.relax_allocation ~num_bytes ~dbginfo;
             fixup true (pc + T.instr_size f instr.desc) instr.next

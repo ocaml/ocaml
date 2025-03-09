@@ -84,8 +84,13 @@ type param = (string * text)
 (** Raised exception name and description. *)
 type raised_exception = (string * text)
 
+type alert = Odoc_types.alert = {
+  alert_name : string;
+  alert_payload : string option;
+}
+
 (** Information in a special comment
-@before 3.12.0 \@before information was not present.
+@before 3.12 \@before information was not present.
 *)
 type info = Odoc_types.info = {
     i_desc : text option; (** The description text. *)
@@ -99,6 +104,7 @@ type info = Odoc_types.info = {
     i_raised_exceptions : raised_exception list; (** The list of raised exceptions. *)
     i_return_value : text option; (** The description text of the return value. *)
     i_custom : (string * text) list ; (** A text associated to a custom @-tag. *)
+    i_alerts : alert list ; (** Alerts associated to the same item. Not from special comments. *)
   }
 
 (** Location of elements in implementation and interface files. *)
@@ -295,8 +301,8 @@ module Type :
         {
           ty_name : Name.t ; (** Complete name of the type. *)
           mutable ty_info : info option ; (** Information found in the optional associated comment. *)
-          ty_parameters : (Types.type_expr * bool * bool) list ;
-                    (** type parameters: (type, covariant, contravariant) *)
+          ty_parameters : (Types.type_expr * Types.Variance.t) list ;
+                    (** type parameters: (type, variance) *)
           ty_kind : type_kind; (** Type kind. *)
           ty_private : private_flag; (** Private or public type. *)
           ty_manifest : type_manifest option ;
@@ -517,6 +523,8 @@ module Module :
                      (** A functor, with its parameter and the rest of its definition *)
       | Module_apply of module_kind * module_kind
                      (** A module defined by application of a functor. *)
+      | Module_apply_unit of module_kind
+                     (** A generative application of a functor. *)
       | Module_with of module_type_kind * string
                      (** A module whose type is a with ... constraint.
                         Should appear in interface files only. *)
@@ -681,12 +689,10 @@ module Module :
    classes (call it) and methods and attributes (don't call it).*)
 val reset_type_names : unit -> unit
 
-(** [string_of_variance t (covariant, invariant)] returns ["+"] if
-   the given information means "covariant", ["-"] if it means
-   "contravariant", orelse [""], and always [""] if the given
-   type is not an abstract type with no manifest (i.e. no need
-   for the variance to be printed).*)
-val string_of_variance : Type.t_type -> (bool * bool) -> string
+(** [string_of_variance t variance] returns the variance and injectivity
+   annotation (e.g ["+"] for covariance, ["-"] for contravariance,
+   ["!-"] for injectivity) if the type [t] is abstract.*)
+val string_of_variance : Type.t_type -> Types.Variance.t -> string
 
 (** This function returns a string representing a Types.type_expr. *)
 val string_of_type_expr : Types.type_expr -> string
@@ -843,11 +849,6 @@ val text_string_of_text : text -> string
    @return an empty structure if there was a syntax error. TODO: change this
 *)
 val info_of_string : string -> info
-
-(** [info_string_of_info info] returns the string representing
-   the given [info]. This string can then be parsed again
-   by {!Odoc_info.info_of_string}.*)
-val info_string_of_info : info -> string
 
 (** [info_of_comment_file file] parses the given file
    and return an {!Odoc_info.info} structure. The content of the
@@ -1081,12 +1082,13 @@ end
 val analyse_files :
     ?merge_options:Odoc_types.merge_option list ->
       ?include_dirs:string list ->
-        ?labels:bool ->
-          ?sort_modules:bool ->
-            ?no_stop:bool ->
-              ?init: Odoc_module.t_module list ->
-                Odoc_global.source_file list ->
-                  Module.t_module list
+        ?hidden_include_dirs:string list ->
+          ?labels:bool ->
+            ?sort_modules:bool ->
+              ?no_stop:bool ->
+                ?init: Odoc_module.t_module list ->
+                  Odoc_global.source_file list ->
+                    Module.t_module list
 
 (** Dump of a list of modules into a file.
    @raise Failure if an error occurs.*)

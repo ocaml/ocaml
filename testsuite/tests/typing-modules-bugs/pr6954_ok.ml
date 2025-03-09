@@ -1,8 +1,8 @@
 (* TEST
-flags = " -w -a "
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-*** check-ocamlc.byte-output
+ flags = " -w -a ";
+ setup-ocamlc.byte-build-env;
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)
 
 module X = struct module Y = struct module type S = sig type t end end end

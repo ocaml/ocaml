@@ -29,6 +29,7 @@
 # - maximum line length of 132 characters (very-long-line)
 # - presence of a copyright header (missing-header)
 # - absence of a leftover "$Id" string (svn-keyword)
+# - formatting of version numbers in @since, @after and @before (doc-version)
 
 # Exceptions are handled with git attributes: "typo.*".
 # Its value for a given file is a comma-separated list of rule names,
@@ -63,9 +64,11 @@
 # You can ignore a rule by giving the option -<rule> on the command
 # line (before any file names).
 
-# Files which include the utf8 rule will be validated using grep and line-length
-# computations will take UTF-8 sequences into account. As a special case, UTF-8
-# sequences are always allowed in the copyright headers.
+# Files which include the non-ascii rule will be validated using grep and
+# line-length computations will take UTF-8 sequences into account. As a special
+# case, UTF-8 sequences are always allowed in the copyright headers. Files which
+# include the non-ascii rule must still be valid UTF-8 (the only alternative is
+# to mark the file as binary).
 
 # First prevent i18n from messing up everything.
 export LC_ALL=C
@@ -112,6 +115,9 @@ case "$1" in
           echo "INFO: pruned path $2 (.git)" >&2
           exit 0;;
     esac
+    if git check-ignore -q "$2"; then
+        exit 0
+    fi
     if test -n "$(check_prune "$2")"; then
         echo "INFO: pruned path $2 (typo.prune)" >&2
         exit 0
@@ -198,6 +204,7 @@ EXIT_CODE=0
       *$f*) is_cmd_line=true;;
       *) is_cmd_line=false;;
     esac
+    if $path_in_index || $is_cmd_line; then :; else continue; fi
     if [ -z "$OCAML_CT_PREFIX" ] ; then
       if [ -x "$f" ] ; then
         check_script "$f"
@@ -207,7 +214,6 @@ EXIT_CODE=0
         check_script "$f"
       fi
     fi
-    if $path_in_index || $is_cmd_line; then :; else continue; fi
     attr_rules=''
     if $path_in_index; then
       # Below is a git plumbing command to detect whether git regards a
@@ -232,17 +238,14 @@ EXIT_CODE=0
     rules=" $(echo $rules) "
     attr_rules=" $(echo $attr_rules) "
 
-    if test -n "$(echo "$rules $attr_rules" | grep " utf8 ")"
-    then
-        # grep -a is used to force the file to be considered as text and -x
-        # requires the entire line to match. This specifically detects the
-        # presence of lines containing malformed UTF-8. It may be tested using
-        # https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt
-        if $OCAML_CT_CAT "$OCAML_CT_PREFIX$f" \
-             | LC_ALL=en_US.UTF8 grep -qaxv '.*' ; then
-          echo "File \"$f\" is not correctly encoded in UTF-8"
-          exit 2
-        fi
+    # grep -a is used to force the file to be considered as text and -x
+    # requires the entire line to match. This specifically detects the
+    # presence of lines containing malformed UTF-8. It may be tested using
+    # https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt
+    if $OCAML_CT_CAT "$OCAML_CT_PREFIX$f" \
+         | LC_ALL=C.UTF-8 grep -qaxv '.*' ; then
+      echo "File \"$f\" is not correctly encoded in UTF-8"
+      exit 2
     fi
     if ! \
     ($OCAML_CT_CAT "$OCAML_CT_PREFIX$f" | tr -d '\r'; echo) \
@@ -290,14 +293,14 @@ EXIT_CODE=0
         }
 
         function utf8_decode(str) {
-          if (is_err("utf8")) {
+          if (is_err("non-ascii")) {
             return str;
           } else {
             # This script assumes that the UTF-8 has been externally validated
             t = str;
             gsub(/[\300-\367][\200-\277]+/, "?", t);
             if (t != str) {
-              ++ counts["utf8"];
+              ++ counts["non-ascii"];
             }
             return t;
           }
@@ -361,14 +364,24 @@ EXIT_CODE=0
 
         match($0, /[\200-\377]/) \
         && state != "authors" && state != "copyright" {
-          if (is_err("utf8")) {
+          if (is_err("non-ascii")) {
             err("non-ascii", "non-ASCII character(s)");
-            if (header_utf8 && !is_err("non-ascii")) {
-              err("non-ascii-utf8", \
-                  "non-ASCII character(s) AND UTF-8 encountered");
-            }
           } else {
-            ++ counts["utf8"];
+            ++ counts["non-ascii"];
+          }
+        }
+
+        match($0, /@(since|after|before) +[0-9.]+/) {
+          if (match($0, / [34]\.[0-9]([^0-9]|$)/)) {
+            err("doc-version", "version should be formatted M.mm (e.g. 4.08)");
+          } else {
+            if (match($0, / [5-9][0-9]*\.0[0-9]/)) {
+              err("doc-version", "version should be formatted M.m (e.g. 5.0)");
+            } else {
+              if (match($0, / [0-9]+\.[0-9]+\.0/)) {
+                err("doc-version", "version should not include .0 revision");
+              }
+            }
           }
         }
 
@@ -386,7 +399,7 @@ EXIT_CODE=0
 
         $0 !~ /\t/ && length($0) > 80 {
           t = utf8_decode($0);
-          sub(/https?:[A-Za-z0-9._~:\/?#\[\]@!$&\047()*+,;=%-]{73,}$/, "", t);
+          sub(/https?:[A-Za-z0-9._~:\/?#\[\]@!$&\047()*+,;=%-]{73,}/, "", t);
           if (length(t) > 80) {
             RSTART = 81;
             RLENGTH = 0;
@@ -398,18 +411,9 @@ EXIT_CODE=0
           RSTART = 133;
           RLENGTH = 0;
           t = utf8_decode($0);
+          sub(/https?:[A-Za-z0-9._~:\/?#\[\]@!$&\047()*+,;=%-]{125,}/, "", t);
           if (length(t) > 132) {
             err("very-long-line", "line is over 132 columns");
-          }
-        }
-
-        # Record that the header contained UTF-8 sequences
-        match($0, /[\300-\367][\200-\277]+/) \
-        && (state == "authors" || state == "copyright") {
-          header_utf8 = 1;
-          if (counts["non-ascii"] > 0 && is_err("non-ascii")) {
-            err("non-ascii-utf8", \
-                "non-ASCII character(s) AND UTF-8 encountered");
           }
         }
 

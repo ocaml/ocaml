@@ -18,6 +18,7 @@
 (* These types in must be kept in sync with the tables in
    ../typing/typeopt.ml *)
 
+type float16_elt = Float16_elt
 type float32_elt = Float32_elt
 type float64_elt = Float64_elt
 type int8_signed_elt = Int8_signed_elt
@@ -31,8 +32,11 @@ type nativeint_elt = Nativeint_elt
 type complex32_elt = Complex32_elt
 type complex64_elt = Complex64_elt
 
+(* Keep the order of these constructors in sync with the caml_ba_kind
+   enumeration in bigarray.h *)
+
 type ('a, 'b) kind =
-    Float32 : (float, float32_elt) kind
+  | Float32 : (float, float32_elt) kind
   | Float64 : (float, float64_elt) kind
   | Int8_signed : (int, int8_signed_elt) kind
   | Int8_unsigned : (int, int8_unsigned_elt) kind
@@ -45,6 +49,7 @@ type ('a, 'b) kind =
   | Complex32 : (Complex.t, complex32_elt) kind
   | Complex64 : (Complex.t, complex64_elt) kind
   | Char : (char, int8_unsigned_elt) kind
+  | Float16 : (float, float16_elt) kind
 
 type c_layout = C_layout_typ
 type fortran_layout = Fortran_layout_typ (**)
@@ -53,9 +58,7 @@ type 'a layout =
     C_layout: c_layout layout
   | Fortran_layout: fortran_layout layout
 
-(* Keep those constants in sync with the caml_ba_kind enumeration
-   in bigarray.h *)
-
+let float16 = Float16
 let float32 = Float32
 let float64 = Float64
 let int8_signed = Int8_signed
@@ -71,6 +74,7 @@ let complex64 = Complex64
 let char = Char
 
 let kind_size_in_bytes : type a b. (a, b) kind -> int = function
+  | Float16 -> 2
   | Float32 -> 4
   | Float64 -> 8
   | Int8_signed -> 1
@@ -114,11 +118,10 @@ module Genarray = struct
          done
   let init (type t) kind (layout : t layout) dims f =
     let arr = create kind layout dims in
-    match Array.length dims, layout with
-    | 0, _ -> arr
-    | dlen, C_layout -> cloop arr (Array.make dlen 0) f 0 dims; arr
-    | dlen, Fortran_layout -> floop arr (Array.make dlen 1) f (pred dlen) dims;
-                              arr
+    let dlen = Array.length dims in
+    match layout with
+    | C_layout -> cloop arr (Array.make dlen 0) f 0 dims; arr
+    | Fortran_layout -> floop arr (Array.make dlen 1) f (pred dlen) dims; arr
 
   external num_dims: ('a, 'b, 'c) t -> int = "caml_ba_num_dims"
   external nth_dim: ('a, 'b, 'c) t -> int -> int = "caml_ba_dim"

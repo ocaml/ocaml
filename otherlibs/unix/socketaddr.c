@@ -18,18 +18,19 @@
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include <errno.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifdef HAS_SOCKETS
 
-#include "socketaddr.h"
+#include "caml/socketaddr.h"
 
 #ifdef _WIN32
 #undef EAFNOSUPPORT
 #define EAFNOSUPPORT WSAEAFNOSUPPORT
+#include <io.h>
 #endif
 
-CAMLexport value alloc_inet_addr(struct in_addr * a)
+CAMLexport value caml_unix_alloc_inet_addr(struct in_addr * a)
 {
   value res;
   /* Use a string rather than an abstract block so that it can be
@@ -41,7 +42,7 @@ CAMLexport value alloc_inet_addr(struct in_addr * a)
 
 #ifdef HAS_IPV6
 
-CAMLexport value alloc_inet6_addr(struct in6_addr * a)
+CAMLexport value caml_unix_alloc_inet6_addr(struct in6_addr * a)
 {
   value res;
   res = caml_alloc_initialized_string(16, (char *)a);
@@ -50,12 +51,11 @@ CAMLexport value alloc_inet6_addr(struct in6_addr * a)
 
 #endif
 
-void get_sockaddr(value mladr,
-                  union sock_addr_union * adr /*out*/,
-                  socklen_param_type * adr_len /*out*/)
+void caml_unix_get_sockaddr(value mladr,
+                       union sock_addr_union * adr /*out*/,
+                       socklen_param_type * adr_len /*out*/)
 {
   switch(Tag_val(mladr)) {
-#ifndef _WIN32
   case 0:                       /* ADDR_UNIX */
     { value path;
       mlsize_t len;
@@ -63,11 +63,11 @@ void get_sockaddr(value mladr,
       len = caml_string_length(path);
       adr->s_unix.sun_family = AF_UNIX;
       if (len >= sizeof(adr->s_unix.sun_path)) {
-        unix_error(ENAMETOOLONG, "", path);
+        caml_unix_error(ENAMETOOLONG, "", path);
       }
       /* "Abstract" sockets in Linux have names starting with '\0' */
       if (Byte(path, 0) != 0 && ! caml_string_is_c_safe(path)) {
-        unix_error(ENOENT, "", path);
+        caml_unix_error(ENOENT, "", path);
       }
       memmove (adr->s_unix.sun_path, String_val(path), len + 1);
       *adr_len =
@@ -75,7 +75,6 @@ void get_sockaddr(value mladr,
         + len;
       break;
     }
-#endif
   case 1:                       /* ADDR_INET */
 #ifdef HAS_IPV6
     if (caml_string_length(Field(mladr, 0)) == 16) {
@@ -102,7 +101,7 @@ void get_sockaddr(value mladr,
   }
 }
 
-value alloc_unix_sockaddr(value path) {
+static value alloc_unix_sockaddr(value path) {
   CAMLparam1(path);
   CAMLlocal1(res);
   res = caml_alloc_small(1, 0);
@@ -110,20 +109,19 @@ value alloc_unix_sockaddr(value path) {
   CAMLreturn(res);
 }
 
-value alloc_sockaddr(union sock_addr_union * adr /*in*/,
-                     socklen_param_type adr_len, int close_on_error)
+value caml_unix_alloc_sockaddr(union sock_addr_union * adr /*in*/,
+                          socklen_param_type adr_len, int close_on_error)
 {
+  CAMLparam0();
+  CAMLlocal1(a);
   value res;
-#ifndef _WIN32
   if (adr_len < offsetof(struct sockaddr, sa_data)) {
     // Only possible for an unnamed AF_UNIX socket, in
     // which case sa_family might be uninitialized.
-    return alloc_unix_sockaddr(caml_alloc_string(0));
+    CAMLreturn(alloc_unix_sockaddr(caml_alloc_string(0)));
   }
-#endif
 
   switch(adr->s_gen.sa_family) {
-#ifndef _WIN32
   case AF_UNIX:
     { /* Based on recommendation in section BUGS of Linux unix(7). See
          http://man7.org/linux/man-pages/man7/unix.7.html. */
@@ -147,32 +145,27 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
       );
       break;
     }
-#endif
   case AF_INET:
-    { value a = alloc_inet_addr(&adr->s_inet.sin_addr);
-      Begin_root (a);
-        res = caml_alloc_small(2, 1);
-        Field(res,0) = a;
-        Field(res,1) = Val_int(ntohs(adr->s_inet.sin_port));
-      End_roots();
+    { a = caml_unix_alloc_inet_addr(&adr->s_inet.sin_addr);
+      res = caml_alloc_small(2, 1);
+      Field(res,0) = a;
+      Field(res,1) = Val_int(ntohs(adr->s_inet.sin_port));
       break;
     }
 #ifdef HAS_IPV6
   case AF_INET6:
-    { value a = alloc_inet6_addr(&adr->s_inet6.sin6_addr);
-      Begin_root (a);
-        res = caml_alloc_small(2, 1);
-        Field(res,0) = a;
-        Field(res,1) = Val_int(ntohs(adr->s_inet6.sin6_port));
-      End_roots();
+    { a = caml_unix_alloc_inet6_addr(&adr->s_inet6.sin6_addr);
+      res = caml_alloc_small(2, 1);
+      Field(res,0) = a;
+      Field(res,1) = Val_int(ntohs(adr->s_inet6.sin6_port));
       break;
     }
 #endif
   default:
     if (close_on_error != -1) close (close_on_error);
-    unix_error(EAFNOSUPPORT, "", Nothing);
+    caml_unix_error(EAFNOSUPPORT, "", Nothing);
   }
-  return res;
+  CAMLreturn(res);
 }
 
 #endif

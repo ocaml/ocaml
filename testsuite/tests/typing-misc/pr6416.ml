@@ -1,6 +1,6 @@
 (* TEST
-  flags="-no-alias-deps -w +40"
-  * expect
+ flags = "-no-alias-deps -w +40";
+ expect;
 *)
 module M = struct
   type t = A
@@ -23,13 +23,15 @@ Error: Signature mismatch:
        is not included in
          sig val f : t -> unit end
        Values do not match:
-         val f : t/1 -> unit
+         val f : t -> unit
        is not included in
          val f : t/2 -> unit
+       The type "t -> unit" is not compatible with the type "t/2 -> unit"
+       Type "t" is not compatible with type "t/2"
        Line 6, characters 4-14:
-         Definition of type t/1
+         Definition of type "t"
        Line 2, characters 2-12:
-         Definition of type t/2
+         Definition of type "t/2"
 |}]
 
 module N = struct
@@ -47,18 +49,18 @@ Error: Signature mismatch:
        is not included in
          sig type u = A of t end
        Type declarations do not match:
-         type u = A of t/1
+         type u = A of t
        is not included in
          type u = A of t/2
        Constructors do not match:
-         A of t/1
-       is not compatible with:
-         A of t/2
-       The types are not equal.
+         "A of t"
+       is not the same as:
+         "A of t/2"
+       The type "t" is not equal to the type "t/2"
        Line 4, characters 9-19:
-         Definition of type t/1
+         Definition of type "t"
        Line 2, characters 2-11:
-         Definition of type t/2
+         Definition of type "t/2"
 |}]
 
 module K = struct
@@ -78,22 +80,19 @@ Lines 4-7, characters 4-7:
 7 |     end
 Error: Signature mismatch:
        Modules do not match:
-         sig module type s module A : functor (X : s) -> sig end end
+         sig module type s module A : (X : s) -> sig end end
        is not included in
-         sig module A : functor (X : s) -> sig end end
-       In module A:
+         sig module A : (X : s) -> sig end end
+       In module "A":
        Modules do not match:
-         functor (X : s/1) -> ...
+         (X : s) -> ...
        is not included in
-         functor (X : s/2) -> ...
-       Module types do not match:
-         s/1
-       does not include
-         s/2
-       Line 5, characters 6-19:
-         Definition of module type s/1
-       Line 2, characters 2-15:
-         Definition of module type s/2
+         (X : s/2) -> ...
+       Module types do not match: s does not include s/2
+Line 5, characters 6-19:
+  Definition of module type "s"
+Line 2, characters 2-15:
+  Definition of module type "s/2"
 |}]
 
 module L = struct
@@ -116,18 +115,18 @@ Error: Signature mismatch:
        is not included in
          sig type t = A of T.t end
        Type declarations do not match:
-         type t = A of T/1.t
+         type t = A of T.t
        is not included in
          type t = A of T/2.t
        Constructors do not match:
-         A of T/1.t
-       is not compatible with:
-         A of T/2.t
-       The types are not equal.
+         "A of T.t"
+       is not the same as:
+         "A of T/2.t"
+       The type "T.t" is not equal to the type "T/2.t"
        Line 5, characters 6-34:
-         Definition of module T/1
+         Definition of module "T"
        Line 2, characters 2-30:
-         Definition of module T/2
+         Definition of module "T/2"
 |}]
 
 module O = struct
@@ -143,21 +142,24 @@ Line 5, characters 2-62:
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
-         sig module type s type t = B val f : (module s) -> t/2 -> t/1 end
+         sig module type s type t = B val f : (module s) -> t/2 -> t end
        is not included in
          sig val f : (module s) -> t -> t end
        Values do not match:
-         val f : (module s/1) -> t/2 -> t/1
+         val f : (module s) -> t/2 -> t
        is not included in
          val f : (module s/2) -> t/2 -> t/2
+       The type "(module s) -> t/2 -> t" is not compatible with the type
+         "(module s/2) -> t/2 -> t/2"
+       Modules do not match: s is not included in s/2
        Line 5, characters 23-33:
-         Definition of type t/1
+         Definition of type "t"
        Line 3, characters 2-12:
-         Definition of type t/2
+         Definition of type "t/2"
        Line 5, characters 9-22:
-         Definition of module type s/1
+         Definition of module type "s"
        Line 2, characters 2-15:
-         Definition of module type s/2
+         Definition of module type "s/2"
 |}]
 
 module P = struct
@@ -173,17 +175,20 @@ Line 5, characters 5-41:
          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
-         sig type a = B val f : a/2 -> 'a -> a/1 end
+         sig type a = B val f : a/2 -> 'a -> a end
        is not included in
          sig val f : a -> (module a) -> a end
        Values do not match:
-         val f : a/2 -> 'a -> a/1
+         val f : a/2 -> 'a -> a
        is not included in
          val f : a/2 -> (module a) -> a/2
+       The type "a/2 -> (module a) -> a" is not compatible with the type
+         "a/2 -> (module a) -> a/2"
+       Type "a" is not compatible with type "a/2"
        Line 5, characters 12-22:
-         Definition of type a/1
+         Definition of type "a"
        Line 3, characters 2-12:
-         Definition of type a/2
+         Definition of type "a/2"
 |}]
 
 module Q = struct
@@ -211,12 +216,12 @@ Error: Signature mismatch:
          class b : a
        does not match
          class b : a/2
-       The first class type has no method m
        The public method c cannot be hidden
-       Line 5, characters 4-74:
-         Definition of class type a/1
-       Line 2, characters 2-36:
-         Definition of class type a/2
+       The first class type has no method m
+Line 5, characters 4-74:
+  Definition of class type "a"
+Line 2, characters 2-36:
+  Definition of class type "a/2"
 |}]
 
 module R = struct
@@ -240,14 +245,14 @@ Error: Signature mismatch:
        is not included in
          sig class type b = a end
        Class type declarations do not match:
-         class type b = a/1
+         class type b = a
        does not match
          class type b = a/2
        The first class type has no method m
-       Line 5, characters 4-29:
-         Definition of class type a/1
-       Line 2, characters 2-42:
-         Definition of class type a/2
+Line 5, characters 4-29:
+  Definition of class type "a"
+Line 2, characters 2-42:
+  Definition of class type "a/2"
 |}]
 
 module S = struct
@@ -298,22 +303,22 @@ Error: Signature mismatch:
            class type a = object method m : t end
            module K : sig type t class type c = object method m : t end end
          end
-       In module K:
+       In module "K":
        Modules do not match:
          sig type t = K.t class type c = object method m : t/2 end end
        is not included in
          sig type t class type c = object method m : t end end
-       In module K:
+       In module "K":
        Class type declarations do not match:
          class type c = object method m : t/2 end
        does not match
-         class type c = object method m : t/1 end
-       The method m has type t/2 but is expected to have type t/1
-       Type t/2 is not equal to type t/1 = K.t
+         class type c = object method m : t end
+       The method m has type "t/2" but is expected to have type "t"
+       Type "t/2" is not equal to type "t" = "K.t"
        Line 12, characters 4-10:
-         Definition of type t/1
+         Definition of type "t"
        Line 9, characters 2-8:
-         Definition of type t/2
+         Definition of type "t/2"
 |}]
 ;;
 
@@ -330,13 +335,14 @@ Error: Signature mismatch:
        is not included in
          sig type t type a = M.t end
        Type declarations do not match:
-         type a = M/1.t
+         type a = M.t
        is not included in
          type a = M/2.t
+       The type "M.t" = "M/2.M.t" is not equal to the type "M/2.t"
        Line 2, characters 14-42:
-         Definition of module M/1
+         Definition of module "M"
        File "_none_", line 1:
-         Definition of module M/2
+         Definition of module "M/2"
 |}]
 
 
@@ -359,21 +365,24 @@ Lines 5-7, characters 44-3:
 7 | end..
 Error: Signature mismatch:
        Modules do not match:
-         sig val f : t/2 -> t/3 -> t/4 -> t/1 end
+         sig val f : t/4 -> t/3 -> t/2 -> t end
        is not included in
          sig val f : t -> t -> t -> t end
        Values do not match:
-         val f : t/2 -> t/3 -> t/4 -> t/1
+         val f : t/4 -> t/3 -> t/2 -> t
        is not included in
-         val f : t/1 -> t/1 -> t/1 -> t/1
+         val f : t -> t -> t -> t
+       The type "t/4 -> t/3 -> t/2 -> t" is not compatible with the type
+         "t -> t -> t -> t"
+       Type "t/4" is not compatible with type "t"
        Line 4, characters 0-10:
-         Definition of type t/1
-       Line 1, characters 0-10:
-         Definition of type t/2
-       Line 2, characters 0-10:
-         Definition of type t/3
+         Definition of type "t"
        Line 3, characters 0-10:
-         Definition of type t/4
+         Definition of type "t/2"
+       Line 2, characters 0-10:
+         Definition of type "t/3"
+       Line 1, characters 0-10:
+         Definition of type "t/4"
 |}]
 
 (** Check interaction with no-alias-deps *)
@@ -387,9 +396,10 @@ module Foo : sig type info = { doc : unit; } type t = { info : info; } end
 Line 5, characters 38-41:
 5 | let add_extra_info arg = arg.Foo.info.doc
                                           ^^^
-Warning 40 [name-out-of-scope]: doc was selected from type Foo.info.
-It is not visible in the current scope, and will not
-be selected if the type becomes unknown.
+Warning 40 [name-out-of-scope]: "doc" was selected from type "Foo.info".
+  It is not visible in the current scope, and will not be selected
+  if the type becomes unknown.
+
 val add_extra_info : Foo.t -> unit = <fun>
 |}]
 
@@ -409,8 +419,9 @@ module Bar : sig end
 Line 8, characters 38-41:
 8 | let add_extra_info arg = arg.Foo.info.doc
                                           ^^^
-Warning 40 [name-out-of-scope]: doc was selected from type Bar/2.info.
-It is not visible in the current scope, and will not
-be selected if the type becomes unknown.
+Warning 40 [name-out-of-scope]: "doc" was selected from type "Bar/2.info".
+  It is not visible in the current scope, and will not be selected
+  if the type becomes unknown.
+
 val add_extra_info : Foo.t -> unit = <fun>
 |}]

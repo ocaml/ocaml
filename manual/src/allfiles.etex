@@ -12,7 +12,8 @@
                 release \ocamlversion \\[1cm]
 \Large          Documentation and user's manual \\[1cm]
 \large          Xavier Leroy, \\
-                Damien Doligez, Alain Frisch, Jacques Garrigue, Didier Rémy and Jérôme Vouillon \\[1cm]
+                Damien Doligez, Alain Frisch, Jacques Garrigue, \\
+                Didier Rémy, KC Sivaramakrishnan and Jérôme Vouillon \\[1cm]
                 \today \\
                 ~
 \vfill
@@ -45,8 +46,12 @@ and as a
 \input{moduleexamples.tex}
 \input{objectexamples.tex}
 \input{lablexamples.tex}
+\input{polyvariant.tex}
 \input{polymorphism.tex}
+\input{gadtexamples.tex}
 \input{advexamples.tex}
+\input{parallelism.tex}
+\input{memorymodel.tex}
 
 \part{The OCaml language}
 \label{p:refman}
@@ -68,7 +73,9 @@ and as a
 \input{intf-c.tex}
 \input{flambda.tex}
 \input{afl-fuzz.tex}
-\input{instrumented-runtime.tex}
+\input{runtime-tracing.tex}
+\input{tail-mod-cons.tex}
+\input{tsan.tex}
 
 \part{The OCaml library}
 \label{p:library}
@@ -77,6 +84,7 @@ and as a
 \input{compilerlibs.tex}
 \input{libunix.tex}
 \input{libstr.tex}
+\input{libruntime_events.tex}
 \input{libthreads.tex}
 \input{libdynlink.tex}
 \input{old.tex}

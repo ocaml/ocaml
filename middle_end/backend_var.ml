@@ -29,7 +29,7 @@ module Provenance = struct
     let printf fmt = Format.fprintf ppf fmt in
     printf "@[<hov 1>(";
     printf "@[<hov 1>(module_path@ %a)@]@ "
-      Path.print module_path;
+      (Format_doc.compat Path.print) module_path;
     if !Clflags.locations then
       printf "@[<hov 1>(location@ %a)@]@ "
         Debuginfo.print_compact location;

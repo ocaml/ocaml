@@ -29,6 +29,7 @@
 #include <string.h>
 #include <float.h>
 #include <limits.h>
+#include <assert.h>
 
 #include "caml/alloc.h"
 #include "caml/fail.h"
@@ -36,7 +37,7 @@
 #include "caml/mlvalues.h"
 #include "caml/misc.h"
 #include "caml/reverse.h"
-#include "caml/stacks.h"
+#include "caml/fiber.h"
 
 #if defined(HAS_LOCALE) || defined(__MINGW32__)
 
@@ -81,11 +82,12 @@
 
 #ifdef ARCH_ALIGN_DOUBLE
 
+static_assert(sizeof(double) == 2 * sizeof(value), "");
+
 CAMLexport double caml_Double_val(value val)
 {
   union { value v[2]; double d; } buffer;
 
-  CAMLassert(sizeof(double) == 2 * sizeof(value));
   buffer.v[0] = Field(val, 0);
   buffer.v[1] = Field(val, 1);
   return buffer.d;
@@ -95,7 +97,6 @@ CAMLexport void caml_Store_double_val(value val, double dbl)
 {
   union { value v[2]; double d; } buffer;
 
-  CAMLassert(sizeof(double) == 2 * sizeof(value));
   buffer.d = dbl;
   Field(val, 0) = buffer.v[0];
   Field(val, 1) = buffer.v[1];
@@ -151,13 +152,10 @@ void caml_free_locale(void)
 
 CAMLexport value caml_copy_double(double d)
 {
+  Caml_check_caml_state();
   value res;
 
-#define Setup_for_gc
-#define Restore_after_gc
-  Alloc_small(res, Double_wosize, Double_tag);
-#undef Setup_for_gc
-#undef Restore_after_gc
+  Alloc_small(res, Double_wosize, Double_tag, Alloc_small_enter_GC);
   Store_double_val(res, d);
   return res;
 }
@@ -232,7 +230,7 @@ CAMLprim value caml_hexstring_of_float(value arg, value vprec, value vstyle)
   }
   /* Treat special cases */
   if (exp == 0x7FF) {
-    char * txt;
+    const char * txt;
     if (m == 0) txt = "infinity"; else txt = "nan";
     memcpy(p, txt, strlen(txt));
     p[strlen(txt)] = 0;
@@ -1103,16 +1101,6 @@ CAMLprim value caml_signbit_float(value f)
   return caml_signbit(Double_val(f));
 }
 
-CAMLprim value caml_neq_float(value f, value g)
-{
-  return Val_bool(Double_val(f) != Double_val(g));
-}
-
-#define DEFINE_NAN_CMP(op) (value f, value g) \
-{ \
-  return Val_bool(Double_val(f) op Double_val(g)); \
-}
-
 intnat caml_float_compare_unboxed(double f, double g)
 {
   /* If one or both of f and g is NaN, order according to the convention
@@ -1127,11 +1115,15 @@ intnat caml_float_compare_unboxed(double f, double g)
   return res;
 }
 
-CAMLprim value caml_eq_float DEFINE_NAN_CMP(==)
-CAMLprim value caml_le_float DEFINE_NAN_CMP(<=)
-CAMLprim value caml_lt_float DEFINE_NAN_CMP(<)
-CAMLprim value caml_ge_float DEFINE_NAN_CMP(>=)
-CAMLprim value caml_gt_float DEFINE_NAN_CMP(>)
+#define FLOAT_CMP(op, f, g) \
+  return Val_bool(Double_val(f) op Double_val(g));
+
+CAMLprim value caml_neq_float(value f, value g) { FLOAT_CMP(!=, f, g) }
+CAMLprim value caml_eq_float(value f, value g) { FLOAT_CMP(==, f, g) }
+CAMLprim value caml_le_float(value f, value g) { FLOAT_CMP(<=, f, g) }
+CAMLprim value caml_lt_float(value f, value g) { FLOAT_CMP(<, f, g) }
+CAMLprim value caml_ge_float(value f, value g) { FLOAT_CMP(>=, f, g) }
+CAMLprim value caml_gt_float(value f, value g) { FLOAT_CMP(>, f, g) }
 
 CAMLprim value caml_float_compare(value vf, value vg)
 {

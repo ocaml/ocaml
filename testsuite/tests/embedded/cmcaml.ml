@@ -1,5 +1,5 @@
 (* TEST
-   modules = "cmstub.c cmmain.c"
+ modules = "cmstub.c cmmain.c";
 *)
 
 (* OCaml part of the code *)

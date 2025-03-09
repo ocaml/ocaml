@@ -1,0 +1,6 @@
+File "poll_attr_both.ml", line 1:
+Error: Function with poll-error attribute contains polling points:
+	allocation at File "poll_attr_both.ml", line 16, characters 29-37
+	function call at File "poll_attr_both.ml", line 17, characters 13-16
+	(plus compiler-inserted polling point(s) in prologue and/or loop back edges)
+

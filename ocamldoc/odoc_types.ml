@@ -67,6 +67,8 @@ type param = (string * text)
 
 type raised_exception = (string * text)
 
+type alert = { alert_name : string; alert_payload : string option }
+
 type info = {
     i_desc : text option;
     i_authors : string list;
@@ -79,6 +81,7 @@ type info = {
     i_raised_exceptions : raised_exception list;
     i_return_value : text option ;
     i_custom : (string * text) list ;
+    i_alerts : alert list ;
   }
 
 let dummy_info = {
@@ -93,6 +96,7 @@ let dummy_info = {
   i_raised_exceptions = [] ;
   i_return_value = None ;
   i_custom = [] ;
+  i_alerts = [] ;
 }
 
 type location = {

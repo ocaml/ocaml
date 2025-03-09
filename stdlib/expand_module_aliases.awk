@@ -23,7 +23,7 @@ NR == 1 { printf ("# 1 \"%s\"\n", FILENAME) }
   else if (state==1)
     state=2;
   else if ($1 == "module")
-  { if (ocamldoc!="true") printf("\n(** @canonical %s *)", $2);
+  { if (ocamldoc!="true") printf("\n(** @canonical Stdlib.%s *)", $2);
     printf("\nmodule %s = Stdlib__%s\n", $2, $4);
   }
   else

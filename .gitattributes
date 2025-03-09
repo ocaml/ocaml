@@ -17,12 +17,14 @@
 * text=auto
 
 # It is not possible to wrap lines lines in .gitattributes files
-.gitattributes typo.long-line=may
+.gitattributes typo.long-line=may typo.non-ascii
+.gitmodules typo.long-line=may typo.tab=may
+
+.editorconfig typo.missing-header=may
 
 # Binary files
 /boot/ocamlc binary
 /boot/ocamllex binary
-/boot/ocamldep binary
 *.gif binary
 *.png binary
 *.tfm binary
@@ -42,24 +44,28 @@
 # the lines involved in the conflict, which is arguably worse
 #/Changes                 merge=union
 
-# No header for text files (would be too obtrusive).
+# No header for text and META files (would be too obtrusive).
 *.md                     typo.missing-header
 README*                  typo.missing-header
+VERSION                  typo.missing-header
 *.adoc                   typo.missing-header
 api_docgen/*.mld                typo.missing-header
 api_docgen/alldoc.tex           typo.missing-header
 tools/mantis2gh_stripped.csv typo.missing-header
+META.in                  typo.missing-header
 
-*.adoc                   typo.long-line=may
+# Hyperlinks and other markup features cause long lines
+*.adoc                   typo.long-line=may typo.very-long-line=may typo.non-ascii=may
+*.md                     typo.long-line=may typo.very-long-line=may typo.non-ascii=may
 
 # Github templates and scripts lack headers, have long lines
 /.github/**              typo.missing-header typo.long-line=may typo.very-long-line=may
+/.github/workflows/*.yml typo.non-ascii=may
 
 /.mailmap                typo.long-line typo.missing-header typo.non-ascii
-/.merlin                 typo.missing-header
-/Changes                 typo.utf8 typo.missing-header
-/release-info/News       typo.utf8 typo.missing-header
-/INSTALL                 typo.missing-header
+/CONTRIBUTING.md         typo.non-ascii
+/Changes                 typo.non-ascii typo.missing-header
+/release-info/News       typo.non-ascii typo.missing-header
 /LICENSE                 typo.very-long-line typo.missing-header
 # tools/ci/appveyor/appveyor_build.cmd only has missing-header because
 # dra27 too lazy to update check-typo to interpret Cmd-style comments!
@@ -76,6 +82,10 @@ Makefile*                typo.makefile-whitespace=may
 
 asmcomp/*/emit.mlp       typo.tab=may typo.long-line=may
 
+# Unicode character used for graphical debugging and box drawing
+typing/gprinttyp.mli     typo.non-ascii
+typing/gprinttyp.ml      typo.non-ascii
+
 # The build-aux directory contains bundled files so do not check it
 build-aux                typo.prune
 
@@ -87,33 +97,41 @@ configure                typo.prune
 
 ocaml-variants.opam      typo.prune
 
-emacs/*.el               typo.long-line=may
-emacs/caml.el            typo.long-line=may typo.missing-header
-emacs/COPYING            typo.prune
-emacs/ocamltags.in       typo.non-printing
-
 ocamldoc/**              typo.long-line=may
 ocamldoc/Changes.txt     typo.missing-header
 ocamldoc/ocamldoc.sty    typo.missing-header
 ocamldoc/odoc_index.html typo.missing-header
 
-otherlibs/win32unix/readlink.c    typo.long-line
-otherlibs/win32unix/stat.c        typo.long-line
-otherlibs/win32unix/symlink.c     typo.long-line
+otherlibs/unix/readlink_win32.c    typo.long-line
+otherlibs/unix/stat_win32.c        typo.long-line
+otherlibs/unix/symlink_win32.c     typo.long-line
 
-stdlib/hashbang     typo.white-at-eol typo.missing-lf
+# Some Unicode characters here and there
+utils/misc.ml            typo.non-ascii
+runtime/sak.c            typo.non-ascii
 
 testsuite/tests/**                                      typo.missing-header typo.long-line=may
-testsuite/tests/lib-bigarray-2/bigarrf.f                typo.tab
+testsuite/tests/lib-bigarray-2/bigarrf.f                typo.tab linguist-language=Fortran
 testsuite/tests/lib-unix/win-stat/fakeclock.c           typo.missing-header=false
 testsuite/tests/misc-unsafe/almabench.ml                typo.long-line
-testsuite/tests/tool-toplevel/strings.ml                typo.utf8
-testsuite/tests/win-unicode/*.ml                        typo.utf8
+testsuite/tests/parsing/latin9.ml                       typo.non-ascii typo.very-long-line
+testsuite/tests/parsing/comments.ml                     typo.non-ascii
+testsuite/tests/tool-ocamldoc/Latin9.ml                 typo.non-ascii
+testsuite/tests/parsetree/source.ml                     typo.non-ascii
+testsuite/tests/typing-unicode/*.ml                     typo.non-ascii
+testsuite/tests/tool-toplevel/strings.ml                typo.non-ascii
+testsuite/tests/win-unicode/*.ml                        typo.non-ascii
+testsuite/tests/unicode/見.ml                           typo.non-ascii
+testsuite/tests/lib-format/unicode.ml                   typo.non-ascii
+testsuite/tests/lib-string/test_string.ml               typo.non-ascii
+testsuite/tests/lib-uchar/test.ml                       typo.non-ascii
+testsuite/tests/lexing/reject_bad_encoding.ml           typo.prune
 testsuite/tests/asmgen/immediates.cmm                   typo.very-long-line
 testsuite/tests/generated-parse-errors/errors.*         typo.very-long-line
 testsuite/tools/*.S                                     typo.missing-header
 testsuite/tools/*.asm                                   typo.missing-header
-testsuite/typing                                        typo.missing-header
+testsuite/tests/messages/highlight_tabs.ml              typo.tab
+testsuite/tests/tool-toplevel/multi_phrase_line.ml      typo.very-long-line
 
 # prune testsuite reference files
 testsuite/tests/**/*.reference               typo.prune
@@ -121,29 +139,29 @@ testsuite/tests/**/*.reference               typo.prune
 # Expect tests with overly long lines of expected output
 testsuite/tests/parsing/docstrings.ml        typo.very-long-line
 
+# Generated test with overly long ocamltest description
+testsuite/tests/lib-dynlink-domains/main.ml  typo.very-long-line
+
 # The normalisation tests have very specific line endings which mustn't be
 # corrupted by git.
 testsuite/tests/tool-ocamltest/norm*.reference binary
 
 tools/magic                       typo.missing-header
-tools/eventlog_metadata.in        typo.missing-header
 
 # TODO we should fix the long-line errors in yacc/*.c
 /yacc/*.[ch]         typo.very-long-line=may
-
-menhir-bench.bash typo.missing-header typo.utf8
 
 # bootstrap files produced by Menhir
 /boot/menhir/** typo.long-line=may typo.very-long-line=may
 /boot/menhir/** typo.missing-header=may
 /boot/menhir/** typo.white-at-eol=may
-/boot/menhir/** typo.utf8=may
+/boot/menhir/** typo.non-ascii=may
 
 # Line-ending specifications, for Windows interoperability
 *.sh text eol=lf
 *.sh.in text eol=lf
 *.awk text eol=lf
-*.m4 text eol=lf
+*.m4 text eol=lf linguist-language=M4Sugar
 
 # ocamltest hooks which are used in the testsuite
 *.check-program-output text eol=lf
@@ -151,51 +169,56 @@ menhir-bench.bash typo.missing-header typo.utf8
 
 /tools/ci/appveyor/appveyor_build.cmd text eol=crlf
 
-aclocal.m4 typo.tab
+Makefile* linguist-language=Makefile
+*.c linguist-language=C
+*.h linguist-language=C
+*.h.in linguist-language=C
+*.hva linguist-language=TeX
+*.ml linguist-language=OCaml
+*.ml? linguist-language=OCaml
+*.mld linguist-documentation
+*.ml*.in linguist-language=OCaml
+*.tbl linguist-language=C
+
+aclocal.m4 typo.tab -linguist-vendored linguist-language=M4Sugar
 configure.ac text eol=lf
-build-aux/compile text eol=lf
-build-aux/config.guess text eol=lf
-build-aux/config.sub text eol=lf
-build-aux/install text eol=lf
-build-aux/missing text eol=lf
-ocamldoc/remove_DEBUG text eol=lf
-ocamltest/getocamloptdefaultflags text eol=lf
-ocamltest/ocamltest.org typo.long-line=may typo.missing-header
+# These scripts are all parts of autoconf and are tagged linguist-generated
+# to suppress inclusion in PR diffs.
+build-aux/config.guess linguist-generated text eol=lf
+build-aux/config.sub linguist-generated text eol=lf
+build-aux/install-sh linguist-generated text eol=lf
+build-aux/ltmain.sh linguist-generated text eol=lf
+build-aux/*.m4 linguist-vendored
+build-aux/ocaml_version.m4 -linguist-vendored linguist-language=M4Sugar
+ocamltest/OCAMLTEST.org typo.long-line=may typo.missing-header
 stdlib/Compflags text eol=lf
-stdlib/sharpbang text eol=lf
+stdlib/hashbang -text
 tools/autogen text eol=lf
-tools/ci/inria/remove-sinh-primitive.patch text eol=lf
+tools/bump-magic-numbers eol=lf typo.long-line
+tools/ci/inria/bootstrap/remove-sinh-primitive.patch -text
+tools/ci/inria/bootstrap/script text eol=lf
+tools/ci/inria/dune-build/script text eol=lf
+tools/ci/inria/launch text eol=lf
+tools/ci/inria/light text eol=lf
+tools/ci/inria/main text eol=lf
+tools/ci/inria/other-configs/script text eol=lf
+tools/ci/inria/sanitizers/script text eol=lf
+tools/ci/inria/step-by-step-build/script text eol=lf
 tools/check-typo text eol=lf
 tools/check-symbol-names text eol=lf
-tools/ci-build text eol=lf
 tools/msvs-promote-path text eol=lf
-tools/gdb-macros text eol=lf
 tools/magic text eol=lf
-tools/make-opcodes text eol=lf
-tools/make-package-macosx text eol=lf
-tools/ocaml-objcopy-macosx text eol=lf
 tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
-tools/markdown-add-pr-links.sh text eol=lf
-runtime/caml/m.h.in text eol=lf
-runtime/caml/s.h.in text eol=lf
-runtime/caml/compatibility.h typo.long-line=may
+runtime/caml/sizeclasses.h typo.missing-header
 
-# These are all Perl scripts, so may not actually require this
-manual/tools/caml-tex text eol=lf
-manual/tools/format-intf text eol=lf
-manual/tools/htmlcut text eol=lf
-manual/tools/htmltbl text eol=lf
-manual/tools/htmlthread text eol=lf
-manual/tools/texexpand text eol=lf
+/tools/gdb_ocamlrun.py typo.long-line
 
 # Tests which include references spanning multiple lines fail with \r\n
 # endings, so use \n endings only, even on Windows.
-testsuite/tests/backtrace/names.ml text eol=lf
 testsuite/tests/basic-modules/anonymous.ml text eol=lf
 testsuite/tests/formatting/test_locations.ml text eol=lf
 testsuite/tests/functors/functors.ml text eol=lf
-testsuite/tests/lib-dynlink-initializers/test10_main.ml text eol=lf
 testsuite/tests/parsing/attributes.ml text eol=lf
 testsuite/tests/parsing/extensions.ml text eol=lf
 testsuite/tests/parsing/hash_ambiguity.ml text eol=lf

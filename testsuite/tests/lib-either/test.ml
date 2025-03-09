@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 open Either;;
@@ -17,6 +17,21 @@ List.map is_left [left 1; right true];;
 List.map is_right [left 1; right true];;
 [%%expect {|
 - : bool list = [false; true]
+|}];;
+
+[get_left (Left 1); get_right (Right 2)];;
+[%%expect {|
+- : int list = [1; 2]
+|}];;
+
+ignore (get_left (Right 1));;
+[%%expect {|
+Exception: Invalid_argument "Either.t is Right _".
+|}];;
+
+ignore (get_right (Left 1));;
+[%%expect {|
+Exception: Invalid_argument "Either.t is Left _".
 |}];;
 
 [find_left (Left 1); find_left (Right 1)];;

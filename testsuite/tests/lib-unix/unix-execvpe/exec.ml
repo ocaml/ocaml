@@ -1,10 +1,14 @@
 (* TEST
-   * hasunix
-   include unix
-   script = "sh ${test_source_directory}/has-execvpe.sh"
-   ** script
-   *** bytecode
-   *** native
+ unset FOO;
+ include unix;
+ script = "sh ${test_source_directory}/has-execvpe.sh";
+ hasunix;
+ script;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 open Printf

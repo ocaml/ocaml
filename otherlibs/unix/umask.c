@@ -16,9 +16,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <caml/mlvalues.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
-CAMLprim value unix_umask(value perm)
+CAMLprim value caml_unix_umask(value perm)
 {
   return Val_int(umask(Int_val(perm)));
 }

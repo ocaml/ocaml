@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 [@@@ ocaml.warning "+4"]
@@ -24,4 +24,5 @@ Error: Signature mismatch:
          type t = X.t = A | B
        is not included in
          type t = int * bool
+       The type "X.t" is not equal to the type "int * bool"
 |}];;

@@ -26,35 +26,40 @@ define capitalize
 $(foreach m,$(1),$(call capitalize_one,$m))
 endef
 
-define sort
-$(shell $(BEST_OCAMLDEP) -sort $(1))
-endef
-
-
+runtime_events_MLIS := runtime_events.mli
 str_MLIS := str.mli
 unix_MLIS := unix.mli unixLabels.mli
 dynlink_MLIS := dynlink.mli
 thread_MLIS := \
-  thread.mli condition.mli mutex.mli event.mli \
-  threadUnix.mli semaphore.mli
+  thread.mli event.mli
 
-STDLIB=$(filter-out stdlib__Pervasives, $(STDLIB_MODULES))
+STDLIB=$(STDLIB_MODULES)
 
-stdlib_UNPREFIXED=$(filter-out pervasives, $(STDLIB_MODULE_BASENAMES))
+stdlib_UNPREFIXED=$(STDLIB_MODULE_BASENAMES)
 
-otherlibref= \
-  $(str_MLIS:%.mli=%) \
-  $(unix_MLIS:%.mli=%) \
-  $(dynlink_MLIS:%.mli=%) \
-  $(thread_MLIS:%.mli=%)
-libref_EXTRA=stdlib__pervasives
+otherlibref := $(dynlink_MLIS:%.mli=%)
+
+ifeq "$(lib_str)" "true"
+otherlibref += $(str_MLIS:%.mli=%)
+endif
+
+ifeq "$(lib_unix)" "true"
+otherlibref += $(unix_MLIS:%.mli=%)
+endif
+
+ifeq "$(lib_systhreads)" "true"
+otherlibref += $(thread_MLIS:%.mli=%)
+endif
+
+ifeq "$(lib_runtime_events)" "true"
+otherlibref += $(runtime_events_MLIS:%.mli=%)
+endif
+
 libref_TEXT=Ocaml_operators Format_tutorial
-libref_C=$(call capitalize,$(libref) $(libref_EXTRA))
+libref_C=$(call capitalize,$(libref))
 
-PARSING_MLIS := $(call sort, \
-  $(notdir $(wildcard $(ROOTDIR)/parsing/*.mli))\
-)
-UTILS_MLIS := $(call sort,$(notdir $(wildcard $(ROOTDIR)/utils/*.mli)))
+PARSING_MLIS := $(notdir $(wildcard $(ROOTDIR)/parsing/*.mli))
+UTILS_MLIS := $(notdir $(wildcard $(ROOTDIR)/utils/*.mli))
 DRIVER_MLIS := pparse.mli
 
 compilerlibref_MLIS= \
@@ -65,8 +70,20 @@ compilerlibref=$(compilerlibref_MLIS:%.mli=%)
 compilerlibref_TEXT=Compiler_libs
 compilerlibref_C=$(call capitalize,$(compilerlibref))
 
-ALL_LIBREF= $(libref_TEXT:%=libref/%) $(libref:%=libref/%)
+ALL_LIBREF= \
+  $(sort $(libref_TEXT:%=libref/%)) \
+  $(sort $(filter-out libref/camlinternal%, $(libref:%=libref/%))) \
+  $(sort $(filter libref/camlinternal%, $(libref:%=libref/%)))
+
 ALL_COMPILERLIBREF= \
   $(compilerlibref_TEXT:%=compilerlibref/%) \
   $(compilerlibref:%=compilerlibref/%)
+# Note that the output of $(wildcard ...) is sorted alphabetically.
+# The compilerlibs index will be thus be sorted first by category:
+# - text documentation
+# - parsing modules
+# - utils modules
+# - driver modules
+# And then alphabetically inside each category.
+
 ALL_DOC= $(ALL_LIBREF) $(ALL_COMPILERLIBREF)

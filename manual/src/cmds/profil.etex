@@ -125,6 +125,10 @@ extension is not ".ml".
 Process the file \var{filename} as an interface file, even if its
 extension is not ".mli".
 
+\item["-keywords" \var{version+list}]
+Set keywords according to the \var{version+list}
+specification.
+
 \item["-version"]
 Print version string and exit.
 

@@ -24,21 +24,23 @@ type error =
   | Illegal_renaming of modname * modname * filepath
   | Inconsistent_import of modname * filepath * filepath
   | Need_recursive_types of modname
-  | Depend_on_unsafe_string_unit of modname
 
 exception Error of error
 
-val report_error: Format.formatter -> error -> unit
+val report_error: error Format_doc.format_printer
+val report_error_doc: error Format_doc.printer
 
 module Persistent_signature : sig
   type t =
     { filename : string; (** Name of the file containing the signature. *)
-      cmi : Cmi_format.cmi_infos }
+      cmi : Cmi_format.cmi_infos;
+      visibility : Load_path.visibility
+    }
 
   (** Function used to load a persistent signature. The default is to look for
       the .cmi file in the load path. This function can be overridden to load
       it from memory, for instance to build a self-contained toplevel. *)
-  val load : (unit_name:string -> t option) ref
+  val load : (allow_hidden:bool -> unit_name:string -> t option) ref
 end
 
 type can_load_cmis =
@@ -54,14 +56,13 @@ val clear_missing : 'a t -> unit
 
 val fold : 'a t -> (modname -> 'a -> 'b -> 'b) -> 'b -> 'b
 
-val read : 'a t -> (Persistent_signature.t -> 'a)
-  -> modname -> filepath -> 'a
-val find : 'a t -> (Persistent_signature.t -> 'a)
+val read : 'a t -> (Persistent_signature.t -> 'a) -> Unit_info.Artifact.t -> 'a
+val find : allow_hidden:bool -> 'a t -> (Persistent_signature.t -> 'a)
   -> modname -> 'a
 
 val find_in_cache : 'a t -> modname -> 'a option
 
-val check : 'a t -> (Persistent_signature.t -> 'a)
+val check : allow_hidden:bool -> 'a t -> (Persistent_signature.t -> 'a)
   -> loc:Location.t -> modname -> unit
 
 (* [looked_up penv md] checks if one has already tried

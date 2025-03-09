@@ -31,6 +31,11 @@ let minus_one = -1.
 let infinity = Stdlib.infinity
 let neg_infinity = Stdlib.neg_infinity
 let nan = Stdlib.nan
+let quiet_nan = nan
+external float_of_bits : int64 -> float
+  = "caml_int64_float_of_bits" "caml_int64_float_of_bits_unboxed"
+  [@@unboxed] [@@noalloc]
+let signaling_nan = float_of_bits 0x7F_F0_00_00_00_00_00_01L
 let is_finite (x: float) = x -. x = 0.
 let is_infinite (x: float) = 1. /. x = 0.
 let is_nan (x: float) = x <> x
@@ -159,8 +164,9 @@ let[@inline] min_max_num (x: float) (y: float) =
   else if is_nan y then (x,x)
   else if y > x || (not(sign_bit y) && sign_bit x) then (x,y) else (y,x)
 
-external seeded_hash_param : int -> int -> int -> float -> int
-                           = "caml_hash" [@@noalloc]
+external seeded_hash_param :
+  int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
+let seeded_hash seed x = seeded_hash_param 10 100 seed x
 let hash x = seeded_hash_param 10 100 0 x
 
 module Array = struct
@@ -174,20 +180,24 @@ module Array = struct
   external unsafe_get : t -> int -> float = "%floatarray_unsafe_get"
   external unsafe_set : t -> int -> float -> unit = "%floatarray_unsafe_set"
 
-  let unsafe_fill a ofs len v =
-    for i = ofs to ofs + len - 1 do unsafe_set a i v done
+  external make : (int[@untagged]) -> (float[@unboxed]) -> t =
+    "caml_floatarray_make" "caml_floatarray_make_unboxed"
+
+  external unsafe_fill
+    : t -> (int[@untagged]) -> (int[@untagged]) -> (float[@unboxed]) -> unit
+    = "caml_floatarray_fill" "caml_floatarray_fill_unboxed"
 
   external unsafe_blit: t -> int -> t -> int -> int -> unit =
     "caml_floatarray_blit" [@@noalloc]
+
+  external unsafe_sub : t -> int -> int -> t = "caml_floatarray_sub"
+  external append_prim : t -> t -> t = "caml_floatarray_append"
 
   let check a ofs len msg =
     if ofs < 0 || len < 0 || ofs + len < 0 || ofs + len > length a then
       invalid_arg msg
 
-  let make n v =
-    let result = create n in
-    unsafe_fill result 0 n v;
-    result
+  let empty = create 0
 
   let init l f =
     if l < 0 then invalid_arg "Float.Array.init"
@@ -198,13 +208,31 @@ module Array = struct
       done;
       res
 
-  let append a1 a2 =
-    let l1 = length a1 in
-    let l2 = length a2 in
-    let result = create (l1 + l2) in
-    unsafe_blit a1 0 result 0 l1;
-    unsafe_blit a2 0 result l1 l2;
-    result
+  let make_matrix sx sy v =
+    (* We raise even if [sx = 0 && sy < 0]: *)
+    if sy < 0 then invalid_arg "Float.Array.make_matrix";
+    let res = Array.make sx (create 0) in
+    if sy > 0 then begin
+      for x = 0 to sx - 1 do
+        Array.unsafe_set res x (make sy v)
+      done;
+    end;
+    res
+
+  let init_matrix sx sy f =
+    (* We raise even if [sx = 0 && sy < 0]: *)
+    if sy < 0 then invalid_arg "Float.Array.init_matrix";
+    let res = Array.make sx (create 0) in
+    if sy > 0 then begin
+      for x = 0 to sx - 1 do
+        let row = create sy in
+        for y = 0 to sy - 1 do
+          unsafe_set row y (f x y)
+        done;
+        Array.unsafe_set res x row
+      done;
+    end;
+    res
 
   (* next 3 functions: modified copy of code from string.ml *)
   let ensure_ge (x:int) y =
@@ -230,15 +258,18 @@ module Array = struct
 
   let sub a ofs len =
     check a ofs len "Float.Array.sub";
-    let result = create len in
-    unsafe_blit a ofs result 0 len;
-    result
+    unsafe_sub a ofs len
 
   let copy a =
     let l = length a in
-    let result = create l in
-    unsafe_blit a 0 result 0 l;
-    result
+    if l = 0 then empty
+    else unsafe_sub a 0 l
+
+  let append a1 a2 =
+    let l1 = length a1 in
+    if l1 = 0 then copy a2
+    else if length a2 = 0 then unsafe_sub a1 0 l1
+    else append_prim a1 a2
 
   let fill a ofs len v =
     check a ofs len "Float.Array.fill";
@@ -280,6 +311,12 @@ module Array = struct
     done;
     r
 
+  (* duplicated from array.ml *)
+  let map_inplace f a =
+    for i = 0 to length a - 1 do
+      unsafe_set a i (f (unsafe_get a i))
+    done
+
   let map2 f a b =
     let la = length a in
     let lb = length b in
@@ -304,6 +341,12 @@ module Array = struct
       unsafe_set r i (f i (unsafe_get a i))
     done;
     r
+
+  (* duplicated from array.ml *)
+  let mapi_inplace f a =
+    for i = 0 to length a - 1 do
+      unsafe_set a i (f i (unsafe_get a i))
+    done
 
   (* duplicated from array.ml *)
   let fold_left f x a =
@@ -356,6 +399,51 @@ module Array = struct
       if i = n then false
       else if x = (unsafe_get a i) then true
       else loop (i + 1)
+    in
+    loop 0
+
+  (* duplicated from array.ml *)
+  let find_opt p a =
+    let n = length a in
+    let rec loop i =
+      if i = n then None
+      else
+        let x = unsafe_get a i in
+        if p x then Some x
+        else loop (i + 1)
+    in
+    loop 0
+
+  (* duplicated from array.ml *)
+  let find_index p a =
+    let n = length a in
+    let rec loop i =
+      if i = n then None
+      else if p (unsafe_get a i) then Some i
+      else loop (i + 1) in
+    loop 0
+
+  (* duplicated from array.ml *)
+  let find_map f a =
+    let n = length a in
+    let rec loop i =
+      if i = n then None
+      else
+        match f (unsafe_get a i) with
+        | None -> loop (i + 1)
+        | Some _ as r -> r
+    in
+    loop 0
+
+  (* duplicated from array.ml *)
+  let find_mapi f a =
+    let n = length a in
+    let rec loop i =
+      if i = n then None
+      else
+        match f i (unsafe_get a i) with
+        | None -> loop (i + 1)
+        | Some _ as r -> r
     in
     loop 0
 
@@ -463,6 +551,15 @@ module Array = struct
     end
 
   let fast_sort = stable_sort
+
+  (* duplicated from array.ml *)
+  let shuffle ~rand a = (* Fisher-Yates *)
+    for i = length a - 1 downto 1 do
+      let j = rand (i + 1) in
+      let v = unsafe_get a i in
+      unsafe_set a i (get a j);
+      unsafe_set a j v
+    done
 
   (* duplicated from array.ml *)
   let to_seq a =

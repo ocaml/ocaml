@@ -31,7 +31,7 @@ systems, including Linux and macOS.
 \end{unix}
 
 \begin{windows} This is material specific to Microsoft Windows
-  (Vista, 7, 8, 10).
+  (Vista, 7, 8, 10, 11).
 \end{windows}
 
 \section*{license}{License}
@@ -54,13 +54,26 @@ Automatique (INRIA).
 The OCaml documentation and user's manual is licensed under a Creative
 Commons Attribution-ShareAlike 4.0 International License (CC BY-SA
 4.0), \url{https://creativecommons.org/licenses/by-sa/4.0/}.
+
+The sample code in the user's manual and in the reference documentation
+of the standard library is licensed under a Creative Commons
+CC0 1.0 Universal (CC0 1.0) Public Domain Dedication License,
+\url{https://creativecommons.org/publicdomain/zero/1.0/}.
 \end{latexonly}
 
 \begin{htmlonly}
 \begin{rawhtml}
-<a id="cc_license_logo" rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png"></a>
+<a id="cc_license_logo" rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://licensebuttons.net/l/by-sa/4.0/88x31.png"></a>
 The OCaml documentation and user's manual is licensed under a
 <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+\end{rawhtml}
+
+\begin{rawhtml}
+<a id="cc_license_logo" rel="license" href="https://creativecommons.org/publicdomain/zero/1.0/"><img alt="Creative Commons License" style="border-width:0" src="https://licensebuttons.net/l/publicdomain/88x31.png"></a>
+The sample code in the user's manual and in the reference documentation
+of the standard library is licensed under a
+<a rel="license" href="https://creativecommons.org/publicdomain/zero/1.0/">Creative Commons
+CC0 1.0 Universal (CC0 1.0) Public Domain Dedication License</a>.
 \end{rawhtml}
 \end{htmlonly}
 

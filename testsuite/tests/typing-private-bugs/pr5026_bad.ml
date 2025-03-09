@@ -1,9 +1,9 @@
-(* TEST
-flags = " -w -a "
-ocamlc_byte_exit_status = "2"
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-*** check-ocamlc.byte-output
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
+
+
+
+
 *)
 
 type untyped;;
@@ -17,3 +17,11 @@ end;;
 class ['a] s3object r : ['a] s3 = object
   val underlying = r
 end;;
+
+(* TEST
+ flags = " -w -a ";
+ ocamlc_byte_exit_status = "2";
+ setup-ocamlc.byte-build-env;
+ ocamlc.byte;
+ check-ocamlc.byte-output;
+*)

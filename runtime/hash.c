@@ -163,10 +163,10 @@ CAMLexport uint32_t caml_hash_mix_string(uint32_t h, value s)
   /* Finish with up to 3 bytes */
   w = 0;
   switch (len & 3) {
-  case 3: w  = Byte_u(s, i+2) << 16;   /* fallthrough */
-  case 2: w |= Byte_u(s, i+1) << 8;    /* fallthrough */
+  case 3: w  = Byte_u(s, i+2) << 16; fallthrough;
+  case 2: w |= Byte_u(s, i+1) << 8;  fallthrough;
   case 1: w |= Byte_u(s, i);
-          MIX(h, w);
+          MIX(h, w);                 fallthrough;
   default: /*skip*/;     /* len & 3 == 0, no extra bytes, do nothing */
   }
   /* Finally, mix in the length.  Ignore the upper 32 bits, generally 0. */
@@ -190,7 +190,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
   intnat num;                   /* Max number of meaningful values to see */
   uint32_t h;                     /* Rolling hash */
   value v;
-  mlsize_t i, len;
+  mlsize_t len;
 
   sz = Long_val(limit);
   if (sz < 0 || sz > HASH_QUEUE_SIZE) sz = HASH_QUEUE_SIZE;
@@ -204,14 +204,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
     if (Is_long(v)) {
       h = caml_hash_mix_intnat(h, v);
       num--;
-    }
-    else if (!Is_in_value_area(v)) {
-      /* v is a pointer outside the heap, probably a code pointer.
-         Shall we count it?  Let's say yes by compatibility with old code. */
-      h = caml_hash_mix_intnat(h, v);
-      num--;
-    }
-    else {
+    } else {
       switch (Tag_val(v)) {
       case String_tag:
         h = caml_hash_mix_string(h, v);
@@ -222,7 +215,9 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         num--;
         break;
       case Double_array_tag:
-        for (i = 0, len = Wosize_val(v) / Double_wosize; i < len; i++) {
+        for (mlsize_t i = 0, len = Wosize_val(v) / Double_wosize;
+             i < len;
+             i++) {
           h = caml_hash_mix_double(h, Double_flat_field(v, i));
           num--;
           if (num <= 0) break;
@@ -240,9 +235,9 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
       case Forward_tag:
         /* PR#6361: we can have a loop here, so limit the number of
            Forward_tag links being followed */
-        for (i = MAX_FORWARD_DEREFERENCE; i > 0; i--) {
+        for (mlsize_t i = MAX_FORWARD_DEREFERENCE; i > 0; i--) {
           v = Forward_val(v);
-          if (Is_long(v) || !Is_in_value_area(v) || Tag_val(v) != Forward_tag)
+          if (Is_long(v) || Tag_val(v) != Forward_tag)
             goto again;
         }
         /* Give up on this object and move to the next */
@@ -260,14 +255,13 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
           num--;
         }
         break;
-#ifdef NO_NAKED_POINTERS
       case Closure_tag: {
-        mlsize_t startenv;
+        mlsize_t i, startenv;
         len = Wosize_val(v);
         startenv = Start_env_closinfo(Closinfo_val(v));
         CAMLassert (startenv <= len);
         /* Mix in the tag and size, but do not count this towards [num] */
-        h = caml_hash_mix_uint32(h, Whitehd_hd(Hd_val(v)));
+        h = caml_hash_mix_uint32(h, Cleanhd_hd(Hd_val(v)));
         /* Mix the code pointers, closure info fields, and infix headers */
         for (i = 0; i < startenv; i++) {
           h = caml_hash_mix_intnat(h, Field(v, i));
@@ -281,12 +275,16 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         }
         break;
       }
-#endif
+      case Cont_tag:
+        /* All continuations hash to the same value,
+           since we have no idea how to distinguish them. */
+        break;
+
       default:
         /* Mix in the tag and size, but do not count this towards [num] */
-        h = caml_hash_mix_uint32(h, Whitehd_hd(Hd_val(v)));
+        h = caml_hash_mix_uint32(h, Cleanhd_hd(Hd_val(v)));
         /* Copy fields into queue, not exceeding the total size [sz] */
-        for (i = 0, len = Wosize_val(v); i < len; i++) {
+        for (mlsize_t i = 0, len = Wosize_val(v); i < len; i++) {
           if (wr >= sz) break;
           queue[wr++] = Field(v, i);
         }
@@ -298,6 +296,15 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
   FINAL_MIX(h);
   /* Fold result to the range [0, 2^30-1] so that it is a nonnegative
      OCaml integer both on 32 and 64-bit platforms. */
+  return Val_int(h & 0x3FFFFFFFU);
+}
+
+CAMLprim value caml_string_hash(value seed, value string)
+{
+  uint32_t h;
+  h = Int_val(seed);
+  h = caml_hash_mix_string (h, string);
+  FINAL_MIX(h);
   return Val_int(h & 0x3FFFFFFFU);
 }
 

@@ -1,6 +1,6 @@
 (* TEST
-   flags = " -w +A -strict-sequence "
-   * expect
+ flags = " -w +A -strict-sequence ";
+ expect;
 *)
 
 (* Ignore OCAMLRUNPARAM=b to be reproducible *)
@@ -20,7 +20,8 @@ Line 1, characters 8-22:
 1 | let _ = Array.get [||];;
             ^^^^^^^^^^^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
-maybe some arguments are missing.
+  maybe some arguments are missing.
+
 - : int -> 'a = <fun>
 |}]
 
@@ -34,7 +35,7 @@ Line 1, characters 16-32:
 1 | let () = ignore (Array.get [||]);;
                     ^^^^^^^^^^^^^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
-maybe some arguments are missing.
+  maybe some arguments are missing.
 |}]
 
 
@@ -49,7 +50,8 @@ Line 1, characters 21-35:
 1 | let _ = if true then Array.get [||] else (fun _ -> 12);;
                          ^^^^^^^^^^^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
-maybe some arguments are missing.
+  maybe some arguments are missing.
+
 - : int -> int = <fun>
 |}]
 
@@ -72,8 +74,55 @@ Line 1, characters 18-23:
 1 | let f x = let _ = x.r 1 in ();;
                       ^^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
-maybe some arguments are missing.
+  maybe some arguments are missing.
+
 val f : t -> unit = <fun>
+|}]
+
+let f a b = a + b;;
+match f 42 with
+| _ -> ();;
+[%%expect {|
+val f : int -> int -> int = <fun>
+Line 2, characters 6-10:
+2 | match f 42 with
+          ^^^^
+Warning 5 [ignored-partial-application]: this function application is partial,
+  maybe some arguments are missing.
+
+- : unit = ()
+|}]
+
+let f a b = a + b;;
+match f 42 with
+| _ -> ()
+| exception _ -> ();;
+[%%expect {|
+val f : int -> int -> int = <fun>
+Line 2, characters 6-10:
+2 | match f 42 with
+          ^^^^
+Warning 5 [ignored-partial-application]: this function application is partial,
+  maybe some arguments are missing.
+
+- : unit = ()
+|}]
+
+let f a b = a + b;;
+match f 42 with
+| x -> ignore (x 34);;
+[%%expect {|
+val f : int -> int -> int = <fun>
+- : unit = ()
+|}]
+
+
+let f a b = a + b;;
+match (f 42 : _) with
+| _ -> ();;
+[%%expect {|
+val f : int -> int -> int = <fun>
+- : unit = ()
 |}]
 
 let _ = raise Exit 3;;
@@ -82,6 +131,7 @@ Line 1, characters 19-20:
 1 | let _ = raise Exit 3;;
                        ^
 Warning 20 [ignored-extra-argument]: this argument will not be used by the function.
+
 Exception: Stdlib.Exit.
 |}]
 
@@ -96,11 +146,8 @@ val g : int -> int = <fun>
 Line 2, characters 10-15:
 2 | let _ = g (f 1);;
               ^^^^^
-Warning 5 [ignored-partial-application]: this function application is partial,
-maybe some arguments are missing.
-Line 2, characters 10-15:
-2 | let _ = g (f 1);;
-              ^^^^^
-Error: This expression has type int -> int
-       but an expression was expected of type int
+Error: This expression has type "int -> int"
+       but an expression was expected of type "int"
+  Hint: This function application is partial, maybe some arguments
+  are missing.
 |}]

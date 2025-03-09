@@ -1,0 +1,56 @@
+Breakpoint 1 at 0x00000000000000
+Breakpoint 2 at 0x00000000000000
+Breakpoint 3 at 0x00000000000000: file meander_c.c, line XXX.
+Breakpoint 4 at 0x00000000000000: file meander.ml, line XXX.
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/aarch64-linux-gnu/libthread_db.so.1".
+Breakpoint 1, <signal handler called>
+frame 0: caml_start_program
+frame 1: caml_startup_common
+frame 2: caml_startup_common
+frame 3: caml_startup_exn
+frame 4: caml_startup
+frame 5: caml_main
+frame 6: main
+Breakpoint 2, 0x00000000000000 in caml_program ()
+frame 0: caml_program
+frame 1: caml_start_program
+frame 2: caml_startup_common
+frame 3: caml_startup_common
+frame 4: caml_startup_exn
+frame 5: caml_startup
+frame 6: caml_main
+frame 7: main
+Breakpoint 3, ocaml_to_c (unit=1) at meander_c.c:XX
+5	    caml_callback(*caml_named_value
+frame 0: ocaml_to_c
+frame 1: caml_c_call
+frame 2: camlMeander$omain
+frame 3: camlMeander$entry
+frame 4: caml_program
+frame 5: caml_start_program
+frame 6: caml_startup_common
+frame 7: caml_startup_common
+frame 8: caml_startup_exn
+frame 9: caml_startup
+frame 10: caml_main
+frame 11: main
+Breakpoint 4, camlMeander$c_to_ocaml () at meander.ml:5
+5	let c_to_ocaml () = raise E1
+frame 0: camlMeander$c_to_ocaml
+frame 1: caml_start_program
+frame 2: caml_callback_exn
+frame 3: caml_callback
+frame 4: ocaml_to_c
+frame 5: caml_c_call
+frame 6: camlMeander$omain
+frame 7: camlMeander$entry
+frame 8: caml_program
+frame 9: caml_start_program
+frame 10: caml_startup_common
+frame 11: caml_startup_common
+frame 12: caml_startup_exn
+frame 13: caml_startup
+frame 14: caml_main
+frame 15: main
+[Inferior 1 (process XXXX) exited normally]

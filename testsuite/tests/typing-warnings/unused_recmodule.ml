@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 [@@@ocaml.warning "+a"]
@@ -26,6 +26,7 @@ end;;
 Line 14, characters 4-10:
 14 |     type t
          ^^^^^^
-Warning 34 [unused-type-declaration]: unused type t.
+Warning 34 [unused-type-declaration]: unused type "t".
+
 module M : sig end
 |}];;

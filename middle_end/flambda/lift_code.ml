@@ -118,41 +118,7 @@ and lift_lets_named _var (named:Flambda.named) ~toplevel : Flambda.named =
   | Project_var _ | Prim _ | Set_of_closures _ ->
     named
 
-module Sort_lets = Strongly_connected_components.Make (Variable)
-
-let rebuild_let_rec (defs:(Variable.t * Flambda.named) list) body =
-  let map = Variable.Map.of_list defs in
-  let graph =
-    Variable.Map.map
-      (fun named ->
-         Variable.Set.filter (fun v -> Variable.Map.mem v map)
-           (Flambda.free_variables_named named))
-      map
-  in
-  let components =
-    Sort_lets.connected_components_sorted_from_roots_to_leaf graph
-  in
-  Array.fold_left (fun body (component:Sort_lets.component) ->
-      match component with
-      | No_loop v ->
-          let def = Variable.Map.find v map in
-          Flambda.create_let v def body
-      | Has_loop l ->
-          Flambda.Let_rec
-            (List.map (fun v -> v, Variable.Map.find v map) l,
-             body))
-    body components
-
-let lift_let_rec program =
-  Flambda_iterators.map_exprs_at_toplevel_of_program program
-    ~f:(Flambda_iterators.map_expr
-          (fun expr -> match expr with
-             | Let_rec (defs, body) ->
-                 rebuild_let_rec defs body
-             | expr -> expr))
-
 let lift_lets program =
-  let program = lift_let_rec program in
   Flambda_iterators.map_exprs_at_toplevel_of_program program
     ~f:(lift_lets_expr ~toplevel:false)
 

@@ -1,5 +1,5 @@
 (* TEST
-   flags += " -w -a "
+ flags += " -w -a ";
 *)
 
 (* Test int32 arithmetic and optimizations using the MD5 algorithm *)

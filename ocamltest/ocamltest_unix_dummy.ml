@@ -16,3 +16,4 @@
 let has_symlink () = false
 let symlink ?to_dir:_ _ _ = invalid_arg "symlink not available"
 let chmod _ _ = invalid_arg "chmod not available"
+let gettimeofday () = invalid_arg "gettimeofday not available"

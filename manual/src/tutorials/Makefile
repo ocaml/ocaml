@@ -1,18 +1,18 @@
 ROOTDIR = ../../..
 include $(ROOTDIR)/Makefile.common
 
-LD_PATH = "$(ROOTDIR)/otherlibs/str:$(ROOTDIR)/otherlibs/unix"
+LD_PATH = $(ROOTDIR)/otherlibs/str $(ROOTDIR)/otherlibs/unix
 
 TOOLS = ../../tools
-CAMLLATEX = $(SET_LD_PATH) \
-  $(OCAMLRUN) $(ROOTDIR)/tools/caml-tex \
-  -repo-root $(ROOTDIR) -n 80 -v false
+CAMLLATEX = $(OCAMLRUN) $(addprefix -I ,$(LD_PATH)) \
+  $(ROOTDIR)/tools/ocamltex -repo-root $(ROOTDIR) -n 80 -v false
 TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
-TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
+TRANSF = $(OCAMLRUN) $(TOOLS)/transf
 
 
-FILES = coreexamples.tex lablexamples.tex objectexamples.tex \
-  moduleexamples.tex advexamples.tex polymorphism.tex
+FILES = coreexamples.tex lablexamples.tex polyvariant.tex objectexamples.tex \
+        gadtexamples.tex moduleexamples.tex advexamples.tex polymorphism.tex \
+        parallelism.tex memorymodel.tex
 
 
 etex-files: $(FILES)
@@ -30,3 +30,6 @@ all: $(FILES)
 .PHONY: clean
 clean:
 	rm -f *.tex
+
+.PHONY: distclean
+distclean: clean

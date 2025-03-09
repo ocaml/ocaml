@@ -20,17 +20,25 @@ let err = Syntaxerr.ill_formed_ast
 
 let empty_record loc = err loc "Records cannot be empty."
 let invalid_tuple loc = err loc "Tuples must have at least 2 components."
+let empty_open_tuple_pat loc =
+  err loc "Open tuple patterns must have at least one component."
+let short_closed_tuple_pat loc =
+  err loc "Closed tuple patterns must have at least two components."
 let no_args loc = err loc "Function application with no argument."
 let empty_let loc = err loc "Let with no bindings."
 let empty_type loc = err loc "Type declarations cannot be empty."
+let empty_poly_binder loc =
+  err loc "Explicit universal type quantification cannot be empty."
 let complex_id loc = err loc "Functor application not allowed here."
 let module_type_substitution_missing_rhs loc =
   err loc "Module type substitution with no right hand side"
+let function_without_value_parameters loc =
+  err loc "Function without any value parameters"
 
 let simple_longident id =
   let rec is_simple = function
     | Longident.Lident _ -> true
-    | Longident.Ldot (id, _) -> is_simple id
+    | Longident.Ldot (id, _) -> is_simple id.txt
     | Longident.Lapply _ -> false
   in
   if not (is_simple id.txt) then complex_id id.loc
@@ -49,8 +57,9 @@ let iterator =
     let loc = ty.ptyp_loc in
     match ty.ptyp_desc with
     | Ptyp_tuple ([] | [_]) -> invalid_tuple loc
-    | Ptyp_package (_, cstrs) ->
-      List.iter (fun (id, _) -> simple_longident id) cstrs
+    | Ptyp_package ptyp ->
+      List.iter (fun (id, _) -> simple_longident id) ptyp.ppt_cstrs
+    | Ptyp_poly([],_) -> empty_poly_binder loc
     | _ -> ()
   in
   let pat self pat =
@@ -63,7 +72,8 @@ let iterator =
     end;
     let loc = pat.ppat_loc in
     match pat.ppat_desc with
-    | Ppat_tuple ([] | [_]) -> invalid_tuple loc
+    | Ppat_tuple (([] | [_]), Closed) -> short_closed_tuple_pat loc
+    | Ppat_tuple ([], Open) -> empty_open_tuple_pat loc
     | Ppat_record ([], _) -> empty_record loc
     | Ppat_construct (id, _) -> simple_longident id
     | Ppat_record (fields, _) ->
@@ -91,6 +101,14 @@ let iterator =
     | Pexp_new id -> simple_longident id
     | Pexp_record (fields, _) ->
       List.iter (fun (id, _) -> simple_longident id) fields
+    | Pexp_function (params, _, Pfunction_body _) ->
+        if
+          List.for_all
+            (function
+              | { pparam_desc = Pparam_newtype _ } -> true
+              | { pparam_desc = Pparam_val _ } -> false)
+            params
+        then function_without_value_parameters loc
     | _ -> ()
   in
   let extension_constructor self ec =
@@ -170,6 +188,14 @@ let iterator =
           "In object types, attaching attributes to inherited \
            subtypes is not allowed."
   in
+  let attribute self attr =
+    (* The change to `self` here avoids registering attributes within attributes
+       for the purposes of warning 53, while keeping all the other invariant
+       checks for attribute payloads.  See comment on [current_phase] in
+       [builtin_attributes.mli]. *)
+    super.attribute { self with attribute = super.attribute } attr;
+    Builtin_attributes.(register_attr Invariant_check attr.attr_name)
+  in
   { super with
     type_declaration
   ; typ
@@ -185,6 +211,7 @@ let iterator =
   ; signature_item
   ; row_field
   ; object_field
+  ; attribute
   }
 
 let structure st = iterator.structure iterator st

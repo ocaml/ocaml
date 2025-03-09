@@ -24,12 +24,15 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <errno.h>
 #include <sys/ioctl.h>
-#include <fcntl.h>
+#include <sys/types.h>
 #include "caml/config.h"
+#ifdef HAS_GETTIMEOFDAY
+#include <sys/time.h>
+#endif
+#include <sys/stat.h>
+#include <fcntl.h>
 #if defined(SUPPORT_DYNAMIC_LINKING) && !defined(BUILDING_LIBCAMLRUNS)
 #define WITH_DYNAMIC_LINKING
 #ifdef __CYGWIN__
@@ -38,8 +41,13 @@
 #include <dlfcn.h>
 #endif
 #endif
-#ifdef HAS_UNISTD
+#ifndef _WIN32
 #include <unistd.h>
+#endif
+#ifdef HAS_POSIX_MONOTONIC_CLOCK
+#include <time.h>
+#elif defined(HAS_CLOCK_GETTIME_NSEC_NP)
+#include <time.h>
 #endif
 #ifdef HAS_DIRENT
 #include <dirent.h>
@@ -49,6 +57,9 @@
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif
+#ifdef HAS_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
@@ -57,6 +68,7 @@
 #include "caml/sys.h"
 #include "caml/io.h"
 #include "caml/alloc.h"
+#include "caml/platform.h"
 
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
@@ -78,10 +90,6 @@ int caml_read_fd(int fd, int flags, void * buf, int n)
   caml_enter_blocking_section_no_pending();
   retcode = read(fd, buf, n);
   caml_leave_blocking_section();
-  if (retcode == -1) {
-    if (errno == EINTR) return Io_interrupted;
-    else caml_sys_io_error(NO_ARG);
-  }
   return retcode;
 }
 
@@ -93,7 +101,6 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
   retcode = write(fd, buf, n);
   caml_leave_blocking_section();
   if (retcode == -1) {
-    if (errno == EINTR) return Io_interrupted;
     if ((errno == EAGAIN || errno == EWOULDBLOCK) && n > 1) {
       /* We couldn't do a partial write here, probably because
          n <= PIPE_BUF and POSIX says that writes of less than
@@ -103,8 +110,7 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
       n = 1; goto again;
     }
   }
-  if (retcode == -1) caml_sys_io_error(NO_ARG);
-  CAMLassert (retcode > 0);
+  CAMLassert (retcode > 0 || retcode == -1);
   return retcode;
 }
 
@@ -129,15 +135,14 @@ caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
 
 caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
 {
-  const char * p;
-  char * dir, * fullname;
-  int i;
+  const char * dir;
+  char * fullname;
   struct stat st;
 
-  for (p = name; *p != 0; p++) {
+  for (const char *p = name; *p != 0; p++) {
     if (*p == '/') goto not_found;
   }
-  for (i = 0; i < path->size; i++) {
+  for (int i = 0; i < path->size; i++) {
     dir = path->contents[i];
     if (dir[0] == 0) dir = ".";  /* empty path component = current dir */
     fullname = caml_stat_strconcat(3, dir, "/", name);
@@ -169,14 +174,11 @@ static int cygwin_file_exists(const char * name)
 static caml_stat_string cygwin_search_exe_in_path(struct ext_table * path,
                                                   const char * name)
 {
-  const char * p;
   char * dir, * fullname;
-  int i;
-
-  for (p = name; *p != 0; p++) {
+  for (const char *p = name; *p != 0; p++) {
     if (*p == '/' || *p == '\\') goto not_found;
   }
-  for (i = 0; i < path->size; i++) {
+  for (int i = 0; i < path->size; i++) {
     dir = path->contents[i];
     if (dir[0] == 0) dir = ".";  /* empty path component = current dir */
     fullname = caml_stat_strconcat(3, dir, "/", name);
@@ -230,10 +232,9 @@ caml_stat_string caml_search_dll_in_path(struct ext_table * path,
 #ifdef __CYGWIN__
 /* Use flexdll */
 
-void * caml_dlopen(char * libname, int for_execution, int global)
+void * caml_dlopen(char * libname, int global)
 {
   int flags = (global ? FLEXDLL_RTLD_GLOBAL : 0);
-  if (!for_execution) flags |= FLEXDLL_RTLD_NOEXEC;
   return flexdll_dlopen(libname, flags);
 }
 
@@ -267,10 +268,9 @@ char * caml_dlerror(void)
 #define RTLD_LOCAL 0
 #endif
 
-void * caml_dlopen(char * libname, int for_execution, int global)
+void * caml_dlopen(char * libname, int global)
 {
   return dlopen(libname, RTLD_NOW | (global ? RTLD_GLOBAL : RTLD_LOCAL));
-  /* Could use RTLD_LAZY if for_execution == 0, but needs testing */
 }
 
 void caml_dlclose(void * handle)
@@ -300,7 +300,7 @@ char * caml_dlerror(void)
 #endif /* __CYGWIN__ */
 #else
 
-void * caml_dlopen(char * libname, int for_execution, int global)
+void * caml_dlopen(char * libname, int global)
 {
   return NULL;
 }
@@ -334,9 +334,9 @@ CAMLexport int caml_read_directory(char * dirname, struct ext_table * contents)
 {
   DIR * d;
 #ifdef HAS_DIRENT
-  struct dirent * e;
+  const struct dirent * e;
 #else
-  struct direct * e;
+  const struct direct * e;
 #endif
 
   d = opendir(dirname);
@@ -345,7 +345,8 @@ CAMLexport int caml_read_directory(char * dirname, struct ext_table * contents)
     e = readdir(d);
     if (e == NULL) break;
     if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0) continue;
-    caml_ext_table_add(contents, caml_stat_strdup(e->d_name));
+    int rc = caml_ext_table_add_noexc(contents, caml_stat_strdup(e->d_name));
+    if (rc == -1) { closedir(d); errno = ENOMEM; return -1; }
   }
   closedir(d);
   return 0;
@@ -421,6 +422,29 @@ char *caml_secure_getenv (char const *var)
 #endif
 }
 
+uint64_t caml_time_counter(void)
+{
+#if defined(HAS_CLOCK_GETTIME_NSEC_NP)
+  return (clock_gettime_nsec_np(CLOCK_UPTIME_RAW));
+#elif defined(HAS_POSIX_MONOTONIC_CLOCK)
+  struct timespec t;
+  clock_gettime(CLOCK_MONOTONIC, &t);
+  return
+    (uint64_t) t.tv_sec  * NSEC_PER_SEC +
+    (uint64_t) t.tv_nsec;
+#elif defined(HAS_GETTIMEOFDAY)
+  struct timeval t;
+  gettimeofday(&t, 0);
+  return
+    (uint64_t) t.tv_sec  * NSEC_PER_SEC +
+    (uint64_t) t.tv_usec * NSEC_PER_USEC;
+#else
+# error "No timesource available"
+#endif
+}
+
+
+
 int caml_num_rows_fd(int fd)
 {
 #ifdef TIOCGWINSZ
@@ -433,4 +457,88 @@ int caml_num_rows_fd(int fd)
 #else
   return -1;
 #endif
+}
+
+void caml_init_os_params(void)
+{
+  caml_plat_mmap_alignment = caml_plat_pagesize = sysconf(_SC_PAGESIZE);
+  return;
+}
+
+#ifndef __CYGWIN__
+
+void *caml_plat_mem_map(uintnat size, int reserve_only)
+{
+  uintnat alloc_sz = size;
+  void* mem;
+
+  mem = mmap(0, alloc_sz, reserve_only ? PROT_NONE : (PROT_READ | PROT_WRITE),
+             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (mem == MAP_FAILED)
+    return 0;
+
+  return mem;
+}
+
+static void* map_fixed(void* mem, uintnat size, int prot)
+{
+  if (mmap(mem, size, prot, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED,
+           -1, 0) == MAP_FAILED) {
+    return 0;
+  } else {
+    return mem;
+  }
+}
+
+#else
+
+/* Cygwin implementation: memory reserved using mmap, but relying on the large
+   allocation granularity of the underlying Windows VirtualAlloc call to ensure
+   alignment (since on Windows it is not possible to trim the region). Commit
+   done using mprotect, since Cygwin's mmap doesn't implement the required
+   functions for committing using mmap. */
+
+void *caml_plat_mem_map(uintnat size, int reserve_only)
+{
+  void* mem;
+
+  mem = mmap(0, size, reserve_only ? PROT_NONE : (PROT_READ | PROT_WRITE),
+             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (mem == MAP_FAILED)
+    return 0;
+
+  return mem;
+}
+
+static void* map_fixed(void* mem, uintnat size, int prot)
+{
+  if (mprotect(mem, size, prot) != 0) {
+    return 0;
+  } else {
+    return mem;
+  }
+}
+
+#endif /* !__CYGWIN__ */
+
+void* caml_plat_mem_commit(void* mem, uintnat size)
+{
+  void* p = map_fixed(mem, size, PROT_READ | PROT_WRITE);
+  /*
+    FIXME: On Linux, it might be useful to populate page tables with
+    MAP_POPULATE to reduce the time spent blocking on page faults at
+    a later point.
+  */
+  return p;
+}
+
+void caml_plat_mem_decommit(void* mem, uintnat size)
+{
+  map_fixed(mem, size, PROT_NONE);
+}
+
+void caml_plat_mem_unmap(void* mem, uintnat size)
+{
+  if (munmap(mem, size) != 0)
+    CAMLassert(0);
 }

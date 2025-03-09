@@ -44,9 +44,6 @@ let variables_not_used_as_local_reference (tree:Flambda.t) =
     | Let { defining_expr; body; _ } ->
       loop_named defining_expr;
       loop body
-    | Let_rec (defs, body) ->
-      List.iter (fun (_var, named) -> loop_named named) defs;
-      loop body
     | Var v ->
       set := Variable.Set.add v !set
     | Let_mutable { initial_value = v; body } ->
@@ -148,14 +145,14 @@ let eliminate_ref_of_expr flam =
         expr
       | Let _ | Let_mutable _
       | Assign _ | Var _ | Apply _
-      | Let_rec _ | Switch _ | String_switch _
+      | Switch _ | String_switch _
       | Static_raise _ | Static_catch _
       | Try_with _ | If_then_else _
       | While _ | For _ | Send _ | Proved_unreachable ->
         flam
     and aux_named (named : Flambda.named) : Flambda.named =
       match named with
-      | Prim(Pfield field, [v], _)
+      | Prim(Pfield (field, _, _), [v], _)
         when convertible_variable v ->
         (match get_variable v field with
          | None -> Expr Proved_unreachable

@@ -48,8 +48,8 @@ type label = string
 
 type arg_label =
     Nolabel
-  | Labelled of string (*  label:T -> ... *)
-  | Optional of string (* ?label:T -> ... *)
+  | Labelled of string (** [label:T -> ...] *)
+  | Optional of string (** [?label:T -> ...] *)
 
 type 'a loc = 'a Location.loc = {
   txt : 'a;
@@ -65,3 +65,5 @@ type variance =
 type injectivity =
   | Injective
   | NoInjectivity
+
+val string_of_label: arg_label -> string

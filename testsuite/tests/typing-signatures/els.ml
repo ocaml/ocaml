@@ -1,5 +1,5 @@
 (* TEST
-   * toplevel
+ toplevel;
 *)
 
 (* Adapted from: An Expressive Language of Signatures

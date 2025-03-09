@@ -14,13 +14,13 @@
 /**************************************************************************/
 
 #include <caml/mlvalues.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <errno.h>
-#ifdef HAS_UNISTD
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 
-CAMLprim value unix_nice(value incr)
+CAMLprim value caml_unix_nice(value incr)
 {
   int ret;
   errno = 0;
@@ -29,6 +29,6 @@ CAMLprim value unix_nice(value incr)
 #else
   ret = 0;
 #endif
-  if (ret == -1 && errno != 0) uerror("nice", Nothing);
+  if (ret == -1 && errno != 0) caml_uerror("nice", Nothing);
   return Val_int(ret);
 }

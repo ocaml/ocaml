@@ -125,7 +125,7 @@ end
 let rec check env (expr : Cmm.expression) =
   match expr with
   | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
-  | Cvar _ ->
+  | Cvar _ | Creturn_addr ->
     ()
   | Clet (_, expr, body)
   | Clet_mut (_, _, expr, body) ->

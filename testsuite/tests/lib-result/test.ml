@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let strf = Printf.sprintf
 let assert_raise_invalid_argument f v =
@@ -48,6 +47,11 @@ let test_fold () =
   assert (Result.fold ~ok:succ ~error:succ (Error 1) = 2);
   assert (Result.(fold ~ok ~error) (Ok 1) = (Ok 1));
   assert (Result.(fold ~ok ~error) (Error "ha!") = (Error "ha!"));
+  ()
+
+let test_retract () =
+  assert (Result.retract (Ok 3) = 3);
+  assert (Result.retract (Error 2) = 2);
   ()
 
 let test_iters () =
@@ -119,6 +123,7 @@ let tests () =
   test_join ();
   test_maps ();
   test_fold ();
+  test_retract ();
   test_iters ();
   test_is_ok_error ();
   test_equal ();

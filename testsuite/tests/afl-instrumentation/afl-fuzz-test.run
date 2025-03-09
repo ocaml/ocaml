@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+output="${program}".output
+exec > ${output} 2>&1
+
+mkdir readline-input
+echo a > readline-input/testcase
+export AFL_SKIP_CPUFREQ=1 AFL_FAST_CAL=1 AFL_NO_UI=1 AFL_BENCH_UNTIL_CRASH=1
+timeout 10s afl-fuzz -m none -i readline-input -o readline-output ./readline > afl-output
+
+if [ `grep "unique_crashes" readline-output/fuzzer_stats | cut -d ':' -f 2` -gt 0 ];
+then
+  echo "all tests passed";
+  exit ${TEST_PASS}
+else
+  echo "failed:"
+  cat afl-output
+  exit ${TEST_FAIL};
+fi

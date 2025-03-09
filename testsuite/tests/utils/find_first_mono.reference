@@ -1,0 +1,54 @@
+Testing small values
+0: 1 calls
+1: 2 calls
+2: 4 calls
+3: 4 calls
+4: 6 calls
+5: 6 calls
+6: 6 calls
+7: 6 calls
+8: 8 calls
+9: 8 calls
+10: 8 calls
+11: 8 calls
+12: 8 calls
+13: 8 calls
+14: 8 calls
+15: 8 calls
+16: 10 calls
+17: 10 calls
+18: 10 calls
+19: 10 calls
+
+Testing around max_int/2
+
+Testing around max_int
+
+Showing predicate calls for find_first_mono to find n=100
+call on 0
+call on 1
+call on 3
+call on 7
+call on 15
+call on 31
+call on 63
+call on 127
+call on 95
+call on 111
+call on 103
+call on 99
+call on 101
+call on 100
+result: 100
+
+Test constantly-false predicates
+Constantly-false predicates are outside the spec,
+but we ask them to return [max_int] rather than loop or crash.
+
+Test non-monotonous predicates
+Non-monotonous predicates are outside the spec,
+but we ask them to find a satisfying value rather than loop or crash
+as long as they are asymptotically true.
+
+
+All tests succeeded.

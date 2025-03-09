@@ -1,7 +1,7 @@
 (* TEST
-readonly_files = "mainimmed.c"
-arguments = "-I ${test_source_directory} mainimmed.c"
-* asmgen
+ readonly_files = "mainimmed.c";
+ arguments = "-I ${test_source_directory} mainimmed.c";
+ asmgen;
 *)
 (* Regenerate with cpp -P immediates.cmmpp > immediates.cmm *)
 (function "testimm" ()

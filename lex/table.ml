@@ -16,11 +16,9 @@
 type 'a t = {mutable next : int ; mutable data : 'a array}
 
 let default_size = 32
-;;
 
 let create x = {next = 0 ; data = Array.make default_size x}
 and reset t = t.next <- 0
-;;
 
 let incr_table table new_size =
   let t = Array.make new_size table.data.(0) in
@@ -33,7 +31,6 @@ let emit table i =
     incr_table table (2*size);
  table.data.(table.next) <- i ;
  table.next <- table.next + 1
-;;
 
 
 exception Error

@@ -163,32 +163,37 @@ let subst_type env t =
   print_env_types env ;
   print_newline ();
 *)
-  Printtyp.mark_loops t;
   let deja_vu = ref [] in
   let rec iter t =
     if List.memq t !deja_vu then () else begin
       deja_vu := t :: !deja_vu;
       Btype.iter_type_expr iter t;
-      match t.Types.desc with
-      | Types.Tconstr (p, [_], _) when Path.same p Predef.path_option ->
+      let open Types in
+      match get_desc t with
+      | Tconstr (p, [_], _) when Path.same p Predef.path_option ->
           ()
-      | Types.Tconstr (p, l, a) ->
+      | Tconstr (p, l, a) ->
           let new_p =
             Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
-          Btype.set_type_desc t (Types.Tconstr (new_p, l, a))
-      | Types.Tpackage (p, fl) ->
+          set_type_desc t (Tconstr (new_p, l, a))
+      | Tpackage (p, fl) ->
           let new_p =
-            Odoc_name.to_path (full_module_type_name env (Odoc_name.from_path p)) in
-          Btype.set_type_desc t (Types.Tpackage (new_p, fl))
-      | Types.Tobject (_, ({contents=Some(p,tyl)} as r)) ->
+            Odoc_name.to_path
+              (full_module_type_name env (Odoc_name.from_path p)) in
+          set_type_desc t (Tpackage (new_p, fl))
+      | Tobject (_, ({contents=Some(p,tyl)} as r)) ->
           let new_p =
             Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
           r := Some (new_p, tyl)
-      | Types.Tvariant ({Types.row_name=Some(p, tyl)} as row) ->
-          let new_p =
-            Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
-          Btype.set_type_desc t
-            (Types.Tvariant {row with Types.row_name=Some(new_p, tyl)})
+      | Tvariant row ->
+          begin match row_name row with
+          | Some (p, tyl) ->
+              let new_p =
+                Odoc_name.to_path (full_type_name env (Odoc_name.from_path p))
+              in
+              set_type_desc t (Tvariant (set_row_name row (Some(new_p, tyl))))
+          | None -> ()
+          end
       | _ ->
           ()
     end
@@ -202,7 +207,9 @@ let subst_module_type env t =
     let open Types in
     match t with
       Mty_ident p ->
-        let new_p = Odoc_name.to_path (full_module_type_name env (Odoc_name.from_path p)) in
+        let new_p =
+          Odoc_name.to_path (full_module_type_name env (Odoc_name.from_path p))
+        in
         Mty_ident new_p
     | Mty_alias _
     | Mty_signature _ ->
@@ -215,18 +222,20 @@ let subst_module_type env t =
 
 let subst_class_type env t =
   let rec iter t =
+    let open Types in
     match t with
-      Types.Cty_constr (p,texp_list,ct) ->
-        let new_p = Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
+      Cty_constr (p,texp_list,ct) ->
+        let new_p =
+          Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
         let new_texp_list = List.map (subst_type env) texp_list in
         let new_ct = iter ct in
-        Types.Cty_constr (new_p, new_texp_list, new_ct)
-    | Types.Cty_signature _ ->
+        Cty_constr (new_p, new_texp_list, new_ct)
+    | Cty_signature _ ->
         (* we don't handle vals and methods *)
         t
-    | Types.Cty_arrow (l, texp, ct) ->
+    | Cty_arrow (l, texp, ct) ->
         let new_texp = subst_type env texp in
         let new_ct = iter ct in
-        Types.Cty_arrow (l, new_texp, new_ct)
+        Cty_arrow (l, new_texp, new_ct)
   in
   iter t

@@ -1,14 +1,13 @@
 ROOTDIR = ../../..
 include $(ROOTDIR)/Makefile.common
 
-LD_PATH = "$(ROOTDIR)/otherlibs/str:$(ROOTDIR)/otherlibs/unix"
+LD_PATH = $(ROOTDIR)/otherlibs/str $(ROOTDIR)/otherlibs/unix
 
 TOOLS = ../../tools
-CAMLLATEX = $(SET_LD_PATH) \
-  $(OCAMLRUN) $(ROOTDIR)/tools/caml-tex \
-  -repo-root $(ROOTDIR) -n 80 -v false
+CAMLLATEX = $(OCAMLRUN) $(addprefix -I ,$(LD_PATH)) \
+  $(ROOTDIR)/tools/ocamltex -repo-root $(ROOTDIR) -n 80 -v false
 TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
-TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
+TRANSF = $(OCAMLRUN) $(TOOLS)/transf
 
 EXTENSION_FILES = letrecvalues.tex recursivemodules.tex locallyabstract.tex \
   firstclassmodules.tex moduletypeof.tex signaturesubstitution.tex \
@@ -16,7 +15,8 @@ EXTENSION_FILES = letrecvalues.tex recursivemodules.tex locallyabstract.tex \
   attributes.tex extensionnodes.etex extensiblevariants.tex \
   generativefunctors.tex extensionsyntax.tex inlinerecords.tex \
   doccomments.tex indexops.tex emptyvariants.tex alerts.tex \
-  generalizedopens.tex bindingops.tex extensionnodes.tex
+  generalizedopens.tex bindingops.tex extensionnodes.tex privatetypes.tex \
+  effects.tex arrayliterals.tex labeledtuples.tex
 
 FILES =  $(addprefix extensions/,$(EXTENSION_FILES)) \
   refman.tex lex.tex names.tex values.tex const.tex types.tex \
@@ -42,3 +42,6 @@ all: $(FILES)
 clean:
 	rm -f *.tex
 	rm -f extensions/*.tex
+
+.PHONY: distclean
+distclean: clean

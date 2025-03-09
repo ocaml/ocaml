@@ -19,21 +19,104 @@
 # OCaml's build system and so itself includes Makefile.config. It assumes that
 # $(ROOTDIR) has been defined.
 
+# This variable is added to prevent double-inclusion of this Makefile by
+# Makefile.config_if_required. override is used as this has highest $(origin )
+# priority (including over make BUILD_CONFIG_INCLUDED)
+override BUILD_CONFIG_INCLUDED =
+
 include $(ROOTDIR)/Makefile.config
-INSTALL ?= @INSTALL@
+INSTALL ?= @INSTALL@ -p
 INSTALL_DATA ?= @INSTALL_DATA@
 INSTALL_PROG ?= @INSTALL_PROGRAM@
+
+# Whether to build certain libraries and tools
+
+build_ocamldebug = @build_ocamldebug@
+
+build_ocamldoc = @build_ocamldoc@
+build_libraries_manpages = @build_libraries_manpages@
+
+OCAMLDOC_TARGET = @ocamldoc_target@
+OCAMLTEST_TARGET = @ocamltest_target@
+
+OCAMLDOC_OPT_TARGET = @ocamldoc_opt_target@
+OCAMLTEST_OPT_TARGET = @ocamltest_opt_target@
+
+build_ocamlobjinfo = @build_ocamlobjinfo@
+build_ocamltest = @build_ocamltest@
+
+build_ocamltex = @build_ocamltex@
+
+lib_dynlink = @lib_dynlink@
+lib_runtime_events = @lib_runtime_events@
+lib_str = @lib_str@
+lib_systhreads = @lib_systhreads@
+lib_unix = @lib_unix@
+
+# The following variable is added to keep track of which other libraries
+# have to be built by the recursive makefiles (not to be confused with
+# the OTHERLIBRARIES variable defined in Makefile.config.in and which
+# lists all the other libraries that get built, no matter how).
+# This variable is expected to disappear once all the makefiles under
+# otherlibs/ have been merged into the root Makefile
+
+OTHERLIBS = @otherlibs@
+
+OPTIONAL_LIBRARIES = @optional_libraries@
+OPTIONAL_BYTECODE_TOOLS = @optional_bytecode_tools@
+OPTIONAL_NATIVE_TOOLS = @optional_native_tools@
+
+# Whether to install the native toplevel (ocamlnat)
+INSTALL_OCAMLNAT = @install_ocamlnat@
 
 # The command to generate C dependency information
 DEP_CC=@DEP_CC@ -MM
 COMPUTE_DEPS=@compute_deps@
 
-# This is munged into utils/config.ml, not overridable by other parts of
-# the build system.
+# Default flags to use to compile C files
+OC_CFLAGS = @oc_cflags@
+
+# Flags to use when compiling C files to be linked with bytecode
+OC_BYTECODE_CFLAGS = @oc_bytecode_cflags@
+
+# Flags to use when compiling C files to be linked with native code
+OC_NATIVE_CFLAGS = @oc_native_cflags@
+
+# The submodules should be searched *before* any other external -I paths
+OC_INCLUDES = $(addprefix -I $(ROOTDIR)/, \
+  runtime @flexdll_source_dir@ @winpthreads_source_include_dir@)
+OC_CPPFLAGS = $(OC_INCLUDES) @oc_cppflags@
+
+OC_BYTECODE_CPPFLAGS = $(OC_INCLUDES) @oc_bytecode_cppflags@
+
+OC_NATIVE_CPPFLAGS = $(OC_INCLUDES) @oc_native_cppflags@
+
+# Additional link-time options
+# To support dynamic loading of shared libraries (they need to look at
+# our own symbols):
+OC_LDFLAGS=@oc_ldflags@
 OC_DLL_LDFLAGS=@oc_dll_ldflags@
+
+MKEXE_VIA_CC=$(CC) @mkexe_via_cc_ldflags@ @mkexe_via_cc_extra_cmd@
+
+# How to build sak
+SAK_BUILD=@SAK_BUILD@
+# How to invoke sak
+SAK=@SAK@
+
+# sak command to encode C literals
+ENCODE_C_LITERAL=@encode_C_literal@
+
+# Which tool to use to display differences between files
+DIFF=@DIFF@
+# Which flags to pass to the diff tool
+DIFF_FLAGS=@DIFF_FLAGS@
 
 # The rlwrap command (for the *runtop targets)
 RLWRAP=@rlwrap@
+
+# The best sed which is available (GNU sed if available)
+SED=@SED@
 
 # Which document generator: odoc or ocamldoc?
 DOCUMENTATION_TOOL=@documentation_tool@
@@ -41,5 +124,73 @@ DOCUMENTATION_TOOL_CMD=@documentation_tool_cmd@
 
 # The location of the FlexDLL sources to use (usually provided as the flexdll
 # Git submodule)
-FLEXDLL_SOURCES=@flexdir@
+FLEXDLL_SOURCE_DIR=@flexdll_source_dir@
 BOOTSTRAPPING_FLEXDLL=@bootstrapping_flexdll@
+
+# The location of the Winpthreads sources to use (usually provided as the
+# winpthreads Git submodule)
+WINPTHREADS_SOURCE_DIR=@winpthreads_source_dir@
+
+### Where to install documentation
+PACKAGE_TARNAME = @PACKAGE_TARNAME@
+datarootdir = @datarootdir@
+DOCDIR=@docdir@
+
+### Where to look for the standard library on target
+TARGET_LIBDIR=@TARGET_LIBDIR@
+
+unix_directory = @unix_directory@
+unix_library = @unix_library@
+
+# Which make target to build, depending on whether the native compiler
+# has been enabled or not during the configuration stage
+
+DEFAULT_BUILD_TARGET = @default_build_target@
+
+# Flags to use when compiling and linking OCaml programs
+
+# The names of the variables below take the form XXX_YYY_ZZZ where
+#
+# XXX is one of OC, OCAML or the lower-case name of a module. The OC prefix
+# is for private variables (i.e. reserved by the compiler's build system),
+# the OCAML prefix is used for variables users can define to add their
+# own flags and the module-name prefix is for flags that apply only
+# to one module.
+#
+# YYY refers to the backend. At the moment, it can take the values
+# COMMON for the flags shared by all the backends, BYTECODE or NATIVE
+# (other backends may be added in the future).
+#
+# ZZZ is either COMPFLAGS (compile-time flags) or LINKFLAGS (link-time flags).
+# The flags in the COMPFLAGS category are not passed at link time,
+# so if a flag is needed at both stages, like e.g. -g, it should be
+# added to both XXX_YYY_COMPFLAGS and XXX_YYY_LINKFLAGS.
+
+OC_COMMON_COMPFLAGS = -g -strict-sequence -principal -absname \
+  -w +a-4-9-40-41-42-44-45-48 -warn-error +a -bin-annot \
+  -strict-formats
+OC_COMMON_LINKFLAGS = $(INCLUDES)
+
+OC_BYTECODE_LINKFLAGS =
+
+OC_NATIVE_COMPFLAGS = @oc_native_compflags@
+
+OC_NATIVE_LINKFLAGS = -g
+
+# Platform-dependent command to create symbolic links
+LN = @ln@
+
+# Platform-dependent assembler files to use to build the runtime
+runtime_ASM_OBJECTS = $(addprefix runtime/,@runtime_asm_objects@)
+
+# Platform-dependent module for ocamlyacc
+ocamlyacc_WSTR_MODULE = @ocamlyacc_wstr_module@
+
+# Architecture-specific modules, if any
+arch_specific_SOURCES = @arch_specific_SOURCES@
+
+# ThreadSanitizer support enabled
+TSAN=@tsan@
+# Contains TSan-specific runtime files, or nothing if TSan support is
+# disabled
+TSAN_NATIVE_RUNTIME_C_SOURCES = @tsan_native_runtime_c_sources@

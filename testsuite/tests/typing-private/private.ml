@@ -1,6 +1,9 @@
 (* TEST
-   * toplevel
-   * toplevel with principal
+ {
+   toplevel;
+ }{
+   toplevel with principal;
+ }
 *)
 
 module Foobar : sig

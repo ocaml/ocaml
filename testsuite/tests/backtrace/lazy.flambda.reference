@@ -1,0 +1,12 @@
+Uncaught exception Not_found
+Raised at Lazy.l1 in file "lazy.ml", line 3, characters 28-45
+Called from CamlinternalLazy.do_force_block in file "camlinternalLazy.ml", line 49, characters 17-27
+Re-raised at CamlinternalLazy.do_force_block in file "camlinternalLazy.ml", line 56, characters 4-11
+Called from Lazy.test1 in file "lazy.ml", line 6, characters 11-24
+Called from Lazy.run in file "lazy.ml", line 15, characters 4-11
+Uncaught exception Not_found
+Raised at Lazy.l2 in file "lazy.ml", line 8, characters 28-45
+Called from CamlinternalLazy.do_force_block in file "camlinternalLazy.ml", line 49, characters 17-27
+Re-raised at CamlinternalLazy.do_force_block in file "camlinternalLazy.ml", line 56, characters 4-11
+Called from Lazy.test2 in file "lazy.ml", line 11, characters 6-15
+Called from Lazy.run in file "lazy.ml", line 15, characters 4-11

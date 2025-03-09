@@ -24,6 +24,7 @@ type source_file =
   | Text_file of string
 
 let include_dirs = Clflags.include_dirs
+let hidden_include_dirs = Clflags.hidden_include_dirs
 
 let errors = ref 0
 

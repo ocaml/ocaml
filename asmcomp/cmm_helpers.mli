@@ -176,6 +176,10 @@ val test_bool : Debuginfo.t -> expression -> expression
 val box_float : Debuginfo.t -> expression -> expression
 val unbox_float : Debuginfo.t -> expression -> expression
 
+(** Conversions for 16-bit floats *)
+val float_of_float16 : Debuginfo.t -> expression -> expression
+val float16_of_float : Debuginfo.t -> expression -> expression
+
 (** Complex number creation and access *)
 val box_complex : Debuginfo.t -> expression -> expression -> expression
 val complex_re : expression -> Debuginfo.t -> expression
@@ -189,14 +193,21 @@ val remove_unit : expression -> expression
 
 (** Blocks *)
 
+(** Non-atomic load of a mutable field *)
+val mk_load_mut : memory_chunk -> operation
+
+(** Atomic load. All atomic fields are mutable. *)
+val mk_load_atomic : memory_chunk -> operation
+
 (** [field_address ptr n dbg] returns an expression for the address of the
     [n]th field of the block pointed to by [ptr] *)
 val field_address : expression -> int -> Debuginfo.t -> expression
 
-(** [get_field_gen mut ptr n dbg] returns an expression for the access to the
-    [n]th field of the block pointed to by [ptr] *)
+(** [get_field_gen ?memory_chunk mut ptr n dbg] returns an expression for
+    the access to the [n]th field of the block pointed to by [ptr]. *)
 val get_field_gen :
-  Asttypes.mutable_flag -> expression -> int -> Debuginfo.t -> expression
+  ?memory_chunk:memory_chunk -> Asttypes.mutable_flag -> expression -> int ->
+  Debuginfo.t -> expression
 
 (** [set_field ptr n newval init dbg] returns an expression for setting the
     [n]th field of the block pointed to by [ptr] to [newval] *)
@@ -207,9 +218,8 @@ val set_field :
 (** Load a block's header *)
 val get_header : expression -> Debuginfo.t -> expression
 
-(** Same as [get_header], but also set all profiling bits of the header
-    are to 0 (if profiling is enabled) *)
-val get_header_without_profinfo : expression -> Debuginfo.t -> expression
+(** Same as [get_header], but also clear all reserved bits of the result *)
+val get_header_masked : expression -> Debuginfo.t -> expression
 
 (** Load a block's tag *)
 val get_tag : expression -> Debuginfo.t -> expression
@@ -231,8 +241,7 @@ val is_addr_array_ptr : expression -> Debuginfo.t -> expression
     Shifts by one bit less than necessary, keeping one of the GC colour bits,
     to save an operation when returning the length as a caml integer or when
     comparing it to a caml integer.
-    Assumes the header does not have any profiling info
-    (as returned by get_header_without_profinfo) *)
+    Assumes that the reserved bits are clear (see get_header_masked) *)
 val addr_array_length_shifted : expression -> Debuginfo.t -> expression
 val float_array_length_shifted : expression -> Debuginfo.t -> expression
 
@@ -530,10 +539,12 @@ val bigstring_set :
 (** [transl_isout h arg dbg] *)
 val transl_isout : expression -> expression -> Debuginfo.t -> expression
 
+type switch_arg = Tagged of expression | Untagged of expression
 (** [make_switch arg cases actions dbg] : Generate a Cswitch construct,
-    or optimize as a static table lookup when possible. *)
+    or optimize as a static table lookup when possible.
+*)
 val make_switch :
-  expression -> int array -> (expression * Debuginfo.t) array -> Debuginfo.t ->
+  switch_arg -> int array -> (expression * Debuginfo.t) array -> Debuginfo.t ->
   expression
 
 (** [transl_int_switch loc arg low high cases default] *)

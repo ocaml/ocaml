@@ -615,6 +615,7 @@ and simplify_set_of_closures original_env r
         ~inline:function_decl.inline ~specialise:function_decl.specialise
         ~is_a_functor:function_decl.is_a_functor
         ~closure_origin:function_decl.closure_origin
+        ~poll:function_decl.poll
     in
     let used_params' = Flambda.used_params function_decl in
     Variable.Map.add fun_var function_decl funs,
@@ -834,7 +835,6 @@ and simplify_partial_application env r ~lhs_of_application
       ~is_classic_mode:false
       ~body
       ~params:remaining_args
-      ~stub:true
   in
   let with_known_args =
     Flambda_utils.bind
@@ -991,7 +991,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       let tree = Flambda.Prim (prim, args, dbg) in
       begin match prim, args, args_approxs with
       (* CR-someday mshinwell: Optimise [Pfield_computed]. *)
-      | Pfield field_index, [arg], [arg_approx] ->
+      | Pfield (field_index, _, _), [arg], [arg_approx] ->
         let projection : Projection.t = Field (field_index, arg) in
         begin match E.find_projection env ~projection with
         | Some var ->
@@ -1134,24 +1134,6 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
           body;
           contents_kind },
       r)
-  | Let_rec (defs, body) ->
-    let defs, sb = Freshening.add_variables (E.freshening env) defs in
-    let env = E.set_freshening env sb in
-    let def_env =
-      List.fold_left (fun env_acc (id, _lam) ->
-          E.add env_acc id (A.value_unknown Other))
-        env defs
-    in
-    let defs, body_env, r =
-      List.fold_right (fun (id, lam) (defs, env_acc, r) ->
-          let lam, r = simplify_named def_env r lam in
-          let defs = (id, lam) :: defs in
-          let env_acc = E.add env_acc id (R.approx r) in
-          defs, env_acc, r)
-        defs ([], env, r)
-    in
-    let body, r = simplify body_env r body in
-    Let_rec (defs, body), r
   | Static_raise (i, args) ->
     let i = Freshening.apply_static_exception (E.freshening env) i in
     simplify_free_variables env args ~f:(fun _env args _args_approxs ->
@@ -1178,17 +1160,17 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
           | Static_raise (j, args) ->
             assert (Static_exception.equal i j);
             let handler =
-              List.fold_left2 (fun body var arg ->
+              List.fold_left2 (fun body (var, _) arg ->
                   Flambda.create_let var (Expr (Var arg)) body)
                 handler vars args
             in
             let r = R.exit_scope_catch r i in
             simplify env r handler
           | _ ->
-            let vars, sb = Freshening.add_variables' (E.freshening env) vars in
+            let vars, sb = Freshening.add_variables (E.freshening env) vars in
             let approx = R.approx r in
             let env =
-              List.fold_left (fun env id ->
+              List.fold_left (fun env (id, _) ->
                   E.add env id (A.value_unknown Other))
                 (E.set_freshening env sb) vars
             in
@@ -1428,6 +1410,7 @@ and duplicate_function ~env ~(set_of_closures : Flambda.set_of_closures)
       ~inline:function_decl.inline ~specialise:function_decl.specialise
       ~is_a_functor:function_decl.is_a_functor
       ~closure_origin:(Closure_origin.create (Closure_id.wrap new_fun_var))
+      ~poll:function_decl.poll
   in
   function_decl, specialised_args
 

@@ -13,6 +13,176 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(*
+   # Translation of class and object expressions
+
+   ## Objects
+
+   ### Memory layout
+
+   Objects are represented in memory using two layers:
+   - The outer layer is a block with tag [Obj.object_tag].
+     It has a first field pointing to the inner layer (the methods),
+     a second field acting as a unique identifier to allow
+     polymorphic comparison, and the rest of the block contains
+     the values of the instance variables, class parameters, and
+     other values that can vary between two objects of the same class.
+
+   - The inner layer is a regular block (with tag zero). It contains
+     all values that are shared between all objects of the same class,
+     which means mostly methods. The first field corresponds to the number of
+     public methods, the second field is a mask used for optimising method
+     access, the following fields are alternating between the method closures
+     and the hash of their name (sorted in increasing hash order).
+     Additional fields are used for private methods.
+
+   +-------+------+-------+-------+-----+-------+-------+-----------+
+   | n_pub | mask | met_1 | tag_1 | ... | met_n | tag_n | other ... |
+   +-------+------+-------+-------+-----+-------+-------+-----------+
+
+   ### Primitives
+
+   Method access is compiled in one of three possible ways:
+   - Generic method access (outside a class, or to an object that is not
+     self or an ancestor) uses dynamic lookup. A dichotomic search in
+     the part of the method array that stores public methods finds
+     the expected closure and calls it on the current object.
+     In most cases, a fast path also exists: each method access in the
+     source code has an associated cache location that stores the offset
+     of the last method called at this point in its method array.
+     Before the dichotomic search, the last stored offset (clamped
+     to the actual size of the method array using the mask) is checked,
+     and if the tag matches the associated closure is called directly.
+   - Method access through the self object inside a class:
+     the (runtime) index of the method inside the method array
+     has been computed at class creation time, so the method is fetched
+     from the block through a dynamic block load (like an array load).
+   - Accessing the method of an ancestor inside a class (ancestors are
+     variables bound by [inherit ... as ancestor] constructions):
+     at class creation time, the closure of the ancestor method is bound
+     to a variable, and the method call just calls this function without
+     any (further) dynamic lookup.
+
+   Instance variable access (getting and setting) also computes offsets
+   at class initialisation time, with those offsets used to index directly
+   in the outer layer of the object.
+
+   Functional object copy [ {< ... >} ] copies the outer layer, resets the
+   unique ID, and performs the required instance variable updates.
+
+   There are no other object primitives (objects cannot be allocated
+   in the IR directly, they are allocated in [CamlinternalOO])
+
+   ## Classes
+
+   Classes are stored as module fields. The runtime value that represents
+   classes is used in two contexts:
+
+   - When using the [new] construction, to generate an object from a class.
+   - When referencing a class inside another class (either through
+     inheritance or other class expressions).
+
+   This is done by storing classes as blocks where the first field
+   is used to generate objects, and the second field is used to derive
+   classes (in a general sense, not only for inheritance).
+   In practice classes also contain one other field, which is used to
+   implement some optimisations in the main compiler (to ensure that each
+   class only runs its initialisation code once in the whole program, even
+   if its definition is in a context that is expected to be run several
+   times like a functor).
+   So the block layout is the following:
+   - A field named [obj_init] that is used for creating objects
+   - A field named [class_init] that is used for deriving classes
+   - A field named [env] containing values for all the variables
+     captured by [Translobj.oo_wrap] calls.
+
+   The module [CamlinternalOO] also defines a type [table] that represents
+   class layouts. Such values are not stored in the class block directly,
+   but the [obj_init] field captures the table for the class and [class_init]
+   manipulates such tables.
+
+   ### The [obj_init] field
+
+   As described earlier, each object contains an inner layer that is computed
+   only once at class initialisation time; it seems natural to store this
+   block in the runtime value of the class (this block is one of the fields of
+   the [CamlinternalOO.table] type). However, given that creating an
+   object also involves setting up the instance variables and running the
+   initialisers, in practice the class only exports a function that creates
+   objects, and the table is captured in this function's closure along with
+   any value necessary to properly initialise the object.
+   Classes can have parameters, so in practice this object creation function
+   takes a first unit parameter (to ensure that it is always a function)
+   and returns a regular OCaml value that is either an object (if the class
+   doesn't have parameters) or a function which, given values
+   for the class parameters, will return an object.
+
+   Here is the type of the [obj_init] function for a class which type is
+   [p1 -> ... -> pn -> object method m1 : t1 ... method mn : tn end]:
+   [unit -> p1 -> ... -> pn -> < m1 : t1; ... mn : tn >]
+   (If the class has instance variables or initialisers, they are not
+   reflected in the type of [obj_init]).
+
+   ### The [class_init] field
+
+   This field is used in two cases:
+   - When a class is defined in terms of another class, for instance as an
+     alias, a partial application, or some other kind of wrapper.
+   - When a class structure (i.e. the [object ... end] syntactic construction)
+     contains inheritance fields (e.g. [inherit cl as super]).
+
+   In both cases, we only have access to the other class' public type at
+   compile time, but we must still make sure all of the private fields
+   are setup correctly, in a way that is compatible with the current
+   class.
+
+   This is where tables come into play: the [class_init] field is a function
+   taking a table as parameter, updates it in-place, and returns a function
+   that is very similar to the [obj_init] function, except that instead of
+   taking [unit] as its first parameter and returning an object, it takes
+   a partially initialised object, and updates the parts of it that are
+   relevant for the corresponding class. It also takes the [env] field as
+   a parameter, so that different instances of the class can share the
+   same [class_init] function.
+
+   Thus, the type of [class_init] is:
+   [table -> env -> Obj.t -> p1 -> ... -> pn -> unit]
+
+   ### The [env] field
+
+   The [env] field is a structure similar to a function's closure, storing
+   the value of free variables of the class expression. The actual
+   representation is a bit complex and not very important.
+
+   ### Compilation scheme
+
+   The algorithm implemented below aims at sharing code as much as possible
+   between the various similar parts of the class.
+
+   - The code of the [obj_init] function is very similar to the code of
+     the function returned by [class_init]. The main difference is that
+     [obj_init] starts from scratch, allocating then initialising the object,
+     while inside [class_init] we want to run initialisation code on an already
+     allocated object (that we don't need to return).
+     So in practice we will build a single function that, depending on the value
+     of its first parameter, will either do the allocation and return the object
+     (if the parameter is the integer constant 0), or assume the parameter is
+     an already allocated and update it.
+     The body of this function is returned by [build_object_init].
+   - The table for the current class (that [obj_init] will read from) is
+     computed by allocating a basic table, then passing it to [class_init],
+     and finally calling [CamlinternalOO.init_class] on it.
+     This means that all the code for setting up the class (computing instance
+     variable indices, calling inherited class initialisers, and so on) is only
+     generated once, in the [class_init] function.
+     After building [obj_init], [build_class_init] wraps it with the class
+     initialization code to build the [class_init] function.
+
+   That's all for the high-level algorithm; the rest will be detailed close to
+   the corresponding code.
+
+*)
+
 open Asttypes
 open Types
 open Typedtree
@@ -31,16 +201,18 @@ let lfunction params body =
   if params = [] then body else
   match body with
   | Lfunction {kind = Curried; params = params'; body = body'; attr; loc}
-    when List.length params + List.length params' <= Lambda.max_arity() ->
-      Lfunction {kind = Curried; params = params @ params';
-                 return = Pgenval;
-                 body = body'; attr;
-                 loc}
+    when attr.may_fuse_arity &&
+         List.length params + List.length params' <= Lambda.max_arity() ->
+      lfunction ~kind:Curried ~params:(params @ params')
+                ~return:Pgenval
+                ~body:body'
+                ~attr
+                ~loc
   |  _ ->
-      Lfunction {kind = Curried; params; return = Pgenval;
-                 body;
-                 attr = default_function_attribute;
-                 loc = Loc_unknown}
+      lfunction ~kind:Curried ~params ~return:Pgenval
+                ~body
+                ~attr:default_function_attribute
+                ~loc:Loc_unknown
 
 let lapply ap =
   match ap.ap_func with
@@ -57,12 +229,13 @@ let mkappl (func, args) =
     ap_tailcall=Default_tailcall;
     ap_inlined=Default_inline;
     ap_specialised=Default_specialise;
-  };;
+  }
 
 let lsequence l1 l2 =
   if l2 = lambda_unit then l1 else Lsequence(l1, l2)
 
-let lfield v i = Lprim(Pfield i, [Lvar v], Loc_unknown)
+let lfield v i = Lprim(Pfield (i, Pointer, Mutable),
+                       [Lvar v], Loc_unknown)
 
 let transl_label l = share (Const_immstring l)
 
@@ -95,6 +268,33 @@ let meths_super tbl meths inh_meths =
        with Not_found -> rem)
     inh_meths []
 
+(*
+[build_class_init] has two parameters ([cstr] and [super]) that are set when
+translating the expression of a class that will be inherited in an outer class.
+
+They could be replaced with the following type:
+
+```
+type inheritance_status =
+  | Normal (** Not under an [inherit] construct *)
+  | Inheriting of {
+      must_narrow : bool;
+      (** [false] if we already went through a call to [narrow] *)
+      method_getters : (Ident.t * lambda) list;
+      (** Ancestor methods are accessed through identifiers.
+          These identifiers are bound at class initialisation time,
+          by fetching the actual closures from the table just
+          after setting up the inherited class. *)
+      instance_vars : (string * Ident.t) list;
+      (** Inherited instance variables need to have their index bound
+          in the scope of the child class *)
+    }
+```
+
+[cstr] is the negation of [must_narrow], and [super] is the pair
+[(instance_vars, method_getters)].
+*)
+
 let bind_super tbl (vals, meths) cl_init =
   transl_vals tbl false StrictOpt vals
     (List.fold_right (fun (_nm, id, def) rem ->
@@ -107,7 +307,7 @@ let create_object cl obj init =
   if obj_init = lambda_unit then
     (inh_init,
      mkappl (oo_prim (if has_init then "create_object_and_run_initializers"
-                      else"create_object_opt"),
+                      else "create_object_opt"),
              [obj; Lvar cl]))
   else begin
    (inh_init,
@@ -121,37 +321,76 @@ let create_object cl obj init =
 
 let name_pattern default p =
   match p.pat_desc with
-  | Tpat_var (id, _) -> id
-  | Tpat_alias(_, id, _) -> id
+  | Tpat_var (id, _, _) -> id
+  | Tpat_alias(_, id, _, _, _) -> id
   | _ -> Ident.create_local default
+
+(*
+   [build_object_init] returns an expression that creates and initialises new
+   objects. If the class takes parameters, it is a function that, given values
+   for the parameters, performs the initialisations and (if needed) object
+   creation.
+   The [obj] expression will be bound to either the integer 0, in which case
+   [obj_init] must allocate the object and return it, or to an already allocated
+   object, in which case [obj_init] will initialize the relevant parts of it
+   through side-effects. In the case of an immediate object it is always 0.
+   Parameters:
+   - [scopes] corresponds to the location scopes (as in the rest of the
+     translation code)
+   - [cl_table] is the variable to which the table for the current class is
+     bound
+   - [obj] is the parameter of the [obj_init] function we want to create.
+     As explained above at runtime it might point to either an already allocated
+     object, when inheriting, or a dummy zero value, when calling [new].
+   - [params] stores the anonymous instance variables associated with all
+     variables that occur inside the class definition but outside the
+     [object ... end] structure: class parameters and class let bindings.
+     The definition is always the identifier corresponding to the original
+     variable.
+   - [inh_init] accumulates data about the class identifiers encountered, and is
+     returned at the end to be reused in [build_class_init].
+   - [cl] is the class we're compiling *)
 
 let rec build_object_init ~scopes cl_table obj params inh_init obj_init cl =
   match cl.cl_desc with
     Tcl_ident (path, _, _) ->
+      (* The object initialiser for the class in [path], specialised
+         to the class being defined *)
       let obj_init = Ident.create_local "obj_init" in
       let envs, inh_init = inh_init in
       let env =
         match envs with None -> []
         | Some envs ->
-            [Lprim(Pfield (List.length inh_init + 1),
+            [Lprim(Pfield (List.length inh_init + 1, Pointer, Mutable),
                    [Lvar envs],
                    Loc_unknown)]
       in
       let loc = of_location ~scopes cl.cl_loc in
       let path_lam = transl_class_path loc cl.cl_env path in
+      (* Note: we don't need to bind [params] here, as they are
+         only used in structures. Outside structures (in class lets or
+         applications) we use the regular identifiers. *)
       ((envs, (path, path_lam, obj_init) :: inh_init),
        mkappl(Lvar obj_init, env @ [obj]))
   | Tcl_structure str ->
+      (* Initialising a concrete class structure *)
       create_object cl_table obj (fun obj ->
+        (* [obj] will be bound to the allocated object,
+           unlike the original [obj] which might be zero if called directly
+           from an object creation expression. *)
         let (inh_init, obj_init, has_init) =
           List.fold_right
             (fun field (inh_init, obj_init, has_init) ->
                match field.cf_desc with
                  Tcf_inherit (_, cl, _, _, _) ->
                    let (inh_init, obj_init') =
+                     (* Reset [params]. The current ones will be bound
+                        outside the structure. *)
                      build_object_init ~scopes cl_table (Lvar obj) [] inh_init
                        (fun _ -> lambda_unit) cl
                    in
+                   (* Since [obj] is bound to a concrete object,
+                      only the side-effects of [obj_init'] are relevant. *)
                    (inh_init, lsequence obj_init' obj_init, true)
                | Tcf_val (_, _, id, Tcfk_concrete (_, exp), _) ->
                    (inh_init,
@@ -165,6 +404,8 @@ let rec build_object_init ~scopes cl_table obj params inh_init obj_init cl =
             str.cstr_fields
             (inh_init, obj_init obj, false)
         in
+        (* Set the instance variables associated to the class parameters and
+           let bindings to their expected value. *)
         (inh_init,
          List.fold_right
            (fun (id, expr) rem ->
@@ -173,18 +414,20 @@ let rec build_object_init ~scopes cl_table obj params inh_init obj_init cl =
          has_init))
   | Tcl_fun (_, pat, vals, cl, partial) ->
       let (inh_init, obj_init) =
+        (* [vals] maps all pattern variables to idents for use inside methods *)
         build_object_init ~scopes cl_table obj (vals @ params)
           inh_init obj_init cl
       in
       (inh_init,
        let build params rem =
          let param = name_pattern "param" pat in
-         Lfunction {kind = Curried; params = (param, Pgenval)::params;
-                    return = Pgenval;
-                    attr = default_function_attribute;
-                    loc = of_location ~scopes pat.pat_loc;
-                    body = Matching.for_function ~scopes pat.pat_loc
-                             None (Lvar param) [pat, rem] partial}
+         Lambda.lfunction
+                   ~kind:Curried ~params:((param, Pgenval)::params)
+                   ~return:Pgenval
+                   ~attr:default_function_attribute
+                   ~loc:(of_location ~scopes pat.pat_loc)
+                   ~body:(Matching.for_function ~scopes pat.pat_loc
+                             None (Lvar param) [pat, rem] partial)
        in
        begin match obj_init with
          Lfunction {kind = Curried; params; body = rem} -> build params rem
@@ -196,21 +439,29 @@ let rec build_object_init ~scopes cl_table obj params inh_init obj_init cl =
       in
       (inh_init, transl_apply ~scopes obj_init oexprs Loc_unknown)
   | Tcl_let (rec_flag, defs, vals, cl) ->
+      (* See comment on the [Tcl_fun] case for the meaning of [vals] *)
       let (inh_init, obj_init) =
         build_object_init ~scopes cl_table obj (vals @ params)
           inh_init obj_init cl
       in
       (inh_init, Translcore.transl_let ~scopes rec_flag defs obj_init)
   | Tcl_open (_, cl)
+    (* Class local opens are restricted to paths only, so no code is generated
+     *)
   | Tcl_constraint (cl, _, _, _, _) ->
       build_object_init ~scopes cl_table obj params inh_init obj_init cl
 
+(* The manual specifies that toplevel lets *must* be evaluated outside of the
+   class. This piece of code makes sure we skip them. *)
 let rec build_object_init_0
           ~scopes cl_table params cl copy_env subst_env top ids =
   match cl.cl_desc with
     Tcl_let (_rec_flag, _defs, vals, cl) ->
       build_object_init_0
         ~scopes cl_table (vals@params) cl copy_env subst_env top ids
+  | Tcl_open (_descr, cl) ->
+      build_object_init_0
+        ~scopes cl_table params cl copy_env subst_env top ids
   | _ ->
       let self = Ident.create_local "self" in
       let env = Ident.create_local "env" in
@@ -271,6 +522,25 @@ let rec index a = function
 
 let bind_id_as_val (id, _) = ("", id)
 
+(** Build the class initialisation code.
+    Parameters:
+    - [scopes] corresponds to the location scopes (as in the rest of the
+      translation code)
+    - [cla] is the variable to which the table for the current class is bound
+    - [cstr] is [true] when called from outside, but [false] when called
+      from an [inherit] field. Narrowing is necessary during inheritance to
+      prevent clashes between methods/variables in the child class and private
+      methods/variables in the parent.
+    - [super] stores, if we're building an inherited class, the variables and
+      methods exposed to the child. The variables need to have their associated
+      index exposed, and methods have to be bound in case the child refers to
+      them through the ancestor variables.
+    - [inh_init] is the sequence of inheritance paths computed during
+      [build_object_init].
+    - [cl_init] is the expression we're building.
+    - [msubst] replaces methods with builtin methods when possible.
+    - [top] is [false] if the current class is under [Translobj.oo_wrap].
+    - [cl] is the class we're compiling *)
 let rec build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl =
   match cl.cl_desc with
   | Tcl_ident _ ->
@@ -278,9 +548,17 @@ let rec build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl =
       | (_, path_lam, obj_init)::inh_init ->
           (inh_init,
            Llet (Strict, Pgenval, obj_init,
-                 mkappl(Lprim(Pfield 1, [path_lam], Loc_unknown), Lvar cla ::
-                        if top then [Lprim(Pfield 3, [path_lam], Loc_unknown)]
+              (* Load the [class_init] field of the class,
+                 and apply it to our current table and the class' environment.
+                 This gets us the object initialiser. *)
+                 mkappl(Lprim(Pfield (1, Pointer, Mutable),
+                              [path_lam], Loc_unknown), Lvar cla ::
+                        if top then [Lprim(Pfield (2, Pointer, Mutable),
+                                     [path_lam], Loc_unknown)]
                         else []),
+              (* The methods and variables for this class are fully registered
+                 in the table. If we are in an inheritance context, we can now
+                 bind everything. *)
                  bind_super cla super cl_init))
       | _ ->
           assert false
@@ -294,11 +572,18 @@ let rec build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl =
               Tcf_inherit (_, cl, _, vals, meths) ->
                 let cl_init = output_methods cla methods cl_init in
                 let inh_init, cl_init =
+                 (* Build the initialisation code for the inherited class,
+                    plus its wrappers.
+                    Make sure the wrappers bind the inherited methods
+                    and variables. *)
                   build_class_init ~scopes cla false
                     (vals, meths_super cla str.cstr_meths meths)
                     inh_init cl_init msubst top cl in
                 (inh_init, cl_init, [], values)
             | Tcf_val (name, _, id, _, over) ->
+                (* If this is an override, the variable is the same as
+                   the one from the earlier definition, and must not be
+                   bound again. *)
                 let values =
                   if over then values else (name.txt, id) :: values
                 in
@@ -333,12 +618,21 @@ let rec build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl =
           str.cstr_fields
           (inh_init, cl_init, [], [])
       in
+        (* In order of execution at runtime:
+           - Bind the method and variable indices for the current class
+             ([bind_methods])
+           - Run the code for setting up the individual fields ([cl_init], plus
+             [output_methods] for the remaining unset methods)
+           - If we are in an inheritance context, bind the inherited variables
+             and methods for use in the child ([bind_super] at the top of this
+             branch) *)
       let cl_init = output_methods cla methods cl_init in
       (inh_init, bind_methods cla str.cstr_meths values cl_init)
   | Tcl_fun (_, _pat, vals, cl, _) ->
       let (inh_init, cl_init) =
         build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl
       in
+      (* Create anonymous instance variables and define them in the table *)
       let vals = List.map bind_id_as_val vals in
       (inh_init, transl_vals cla true StrictOpt vals cl_init)
   | Tcl_apply (cl, _exprs) ->
@@ -347,12 +641,13 @@ let rec build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl =
       let (inh_init, cl_init) =
         build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl
       in
+      (* Create anonymous instance variables and define them in the table *)
       let vals = List.map bind_id_as_val vals in
       (inh_init, transl_vals cla true StrictOpt vals cl_init)
   | Tcl_constraint (cl, _, vals, meths, concr_meths) ->
       let virt_meths =
-        List.filter (fun lab -> not (Concr.mem lab concr_meths)) meths in
-      let concr_meths = Concr.elements concr_meths in
+        List.filter (fun lab -> not (MethSet.mem lab concr_meths)) meths in
+      let concr_meths = MethSet.elements concr_meths in
       let narrow_args =
         [Lvar cla;
          transl_meth_list vals;
@@ -389,6 +684,7 @@ let rec build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl =
             build_class_init
               ~scopes cla true super inh_init cl_init msubst top cl
           in
+          (* Skip narrowing if we're not directly under [inherit] *)
           if cstr then core cl_init else
           let (inh_init, cl_init) =
             core (Lsequence (mkappl (oo_prim "widen", [Lvar cla]), cl_init))
@@ -404,10 +700,16 @@ let rec build_class_lets ~scopes cl =
   match cl.cl_desc with
     Tcl_let (rec_flag, defs, _vals, cl') ->
       let env, wrap = build_class_lets ~scopes cl' in
-      (env, fun x ->
-          Translcore.transl_let ~scopes rec_flag defs (wrap x))
+      (env, fun lam_and_kind ->
+          let lam, rkind = wrap lam_and_kind in
+          Translcore.transl_let ~scopes rec_flag defs lam, rkind)
+  | Tcl_open (open_descr, cl) ->
+      (* Failsafe to ensure we get a compilation error if arbitrary
+         module expressions become allowed *)
+      let _ : Path.t * Longident.t loc = open_descr.open_expr in
+      build_class_lets ~scopes cl
   | _ ->
-      (cl.cl_env, fun x -> x)
+      (cl.cl_env, fun lam_and_kind -> lam_and_kind)
 
 let rec get_class_meths cl =
   match cl.cl_desc with
@@ -440,12 +742,13 @@ let rec transl_class_rebind ~scopes obj_init cl vf =
         transl_class_rebind ~scopes obj_init cl vf in
       let build params rem =
         let param = name_pattern "param" pat in
-        Lfunction {kind = Curried; params = (param, Pgenval)::params;
-                   return = Pgenval;
-                   attr = default_function_attribute;
-                   loc = of_location ~scopes pat.pat_loc;
-                   body = Matching.for_function ~scopes pat.pat_loc
-                            None (Lvar param) [pat, rem] partial}
+        Lambda.lfunction
+                  ~kind:Curried ~params:((param, Pgenval)::params)
+                  ~return:Pgenval
+                  ~attr:default_function_attribute
+                  ~loc:(of_location ~scopes pat.pat_loc)
+                  ~body:(Matching.for_function ~scopes pat.pat_loc
+                            None (Lvar param) [pat, rem] partial)
       in
       (path, path_lam,
        match obj_init with
@@ -521,20 +824,12 @@ let transl_class_rebind ~scopes cl vf =
                    lfunction [envs, Pgenval]
                      (mkappl(Lvar new_init,
                              [mkappl(Lvar env_init, [Lvar envs])]))));
-           lfield cla 2;
-           lfield cla 3],
+           lfield cla 2],
           Loc_unknown)))
   with Exit ->
     lambda_unit
 
 (* Rewrite a closure using builtins. Improves native code size. *)
-
-let rec module_path = function
-    Lvar id ->
-      let s = Ident.name id in s <> "" && s.[0] >= 'A' && s.[0] <= 'Z'
-  | Lprim(Pfield _, [p], _)    -> module_path p
-  | Lprim(Pgetglobal _, [], _) -> true
-  | _                          -> false
 
 let const_path local = function
     Lvar id -> not (List.mem id local)
@@ -542,7 +837,7 @@ let const_path local = function
   | Lfunction {kind = Curried; body} ->
       let fv = free_variables body in
       List.for_all (fun x -> not (Ident.Set.mem x fv)) local
-  | p -> module_path p
+  | _ -> false
 
 let rec builtin_meths self env env2 body =
   let const_path = const_path (env::self) in
@@ -551,7 +846,7 @@ let rec builtin_meths self env env2 body =
     | p when const_path p -> "const", [p]
     | Lprim(Parrayrefu _, [Lvar s; Lvar n], _) when List.mem s self ->
         "var", [Lvar n]
-    | Lprim(Pfield n, [Lvar e], _) when Ident.same e env ->
+    | Lprim(Pfield(n, _, _), [Lvar e], _) when Ident.same e env ->
         "env", [Lvar env2; Lconst(const_int n)]
     | Lsend(Self, met, Lvar s, [], _) when List.mem s self ->
         "meth", [met]
@@ -635,16 +930,26 @@ open M
     * class without local dependencies -> direct translation
     * with local dependencies -> generate a stubs tree,
       with a node for every local classes inherited
-   A class is a 4-tuple:
-    (obj_init, class_init, env_init, env)
-    obj_init: creation function (unit -> obj)
-    class_init: inheritance function (table -> env_init)
+   A class is a 3-tuple:
+    (obj_init, class_init, env)
+    obj_init: creation function (unit -> params -> obj)
+    class_init: inheritance function (table -> env -> obj_init)
       (one by source code)
-    env_init: parameterisation by the local environment
-      (env -> params -> obj_init)
-      (one for each combination of inherited class_init )
     env: local environment
-   If ids=0 (immediate object), then only env_init is conserved.
+
+   The local environment is used for cached classes. When a
+   class definition occurs under a call to Translobj.oo_wrap
+   (typically inside a functor), the class creation code is
+   split between a static part (depending only on toplevel names)
+   and a dynamic part, the environment. The static part is cached
+   in a toplevel structure, so that only the first class creation
+   computes it and the subsequent classes can reuse it.
+   Because of that, the (static) [class_init] function takes both
+   the class table to be filled and the environment as parameters,
+   and when called is given the [env] field of the class.
+   For the [obj_init] part, an [env_init] function (of type [env -> obj_init])
+   is stored in the cache, and called on the environment to generate
+   the [obj_init] at class creation time.
 *)
 
 (*
@@ -667,7 +972,7 @@ let free_methods l =
     | Lmutlet(_k, id, _arg, _body) ->
         fv := Ident.Set.remove id !fv
     | Lletrec(decl, _body) ->
-        List.iter (fun (id, _exp) -> fv := Ident.Set.remove id !fv) decl
+        List.iter (fun { id } -> fv := Ident.Set.remove id !fv) decl
     | Lstaticcatch(_e1, (_,vars), _e2) ->
         List.iter (fun (id, _) -> fv := Ident.Set.remove id !fv) vars
     | Ltrywith(_e1, exn, _e2) ->
@@ -682,15 +987,18 @@ let free_methods l =
   in free l; !fv
 
 let transl_class ~scopes ids cl_id pub_meths cl vflag =
+  let open Value_rec_types in
   (* First check if it is not only a rebind *)
   let rebind = transl_class_rebind ~scopes cl vflag in
-  if rebind <> lambda_unit then rebind else
+  if rebind <> lambda_unit then rebind, Dynamic else
 
   (* Prepare for heavy environment handling *)
   let scopes = enter_class_definition ~scopes cl_id in
   let tables = Ident.create_local (Ident.name cl_id ^ "_tables") in
   let (top_env, req) = oo_add_class tables in
   let top = not req in
+  (* The manual specifies that toplevel lets *must* be evaluated outside of the
+     class *)
   let cl_env, llets = build_class_lets ~scopes cl in
   let new_ids = if top then [] else Env.diff top_env cl_env in
   let env2 = Ident.create_local "env" in
@@ -771,10 +1079,12 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
   and class_init = Ident.create_local (Ident.name cl_id ^ "_init")
   and env_init = Ident.create_local "env_init"
   and obj_init = Ident.create_local "obj_init" in
+  (* Sort methods by hash *)
   let pub_meths =
     List.sort
       (fun s s' -> compare (Btype.hash_variant s) (Btype.hash_variant s'))
       pub_meths in
+  (* Check for hash conflicts *)
   let tags = List.map Btype.hash_variant pub_meths in
   let rev_map = List.combine tags pub_meths in
   List.iter2
@@ -791,21 +1101,31 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
                    mkappl (Lvar obj_init, [lambda_unit])))
   in
   (* Simplest case: an object defined at toplevel (ids=[]) *)
-  if top && ids = [] then llets (ltable cla (ldirect obj_init)) else
+  if top && ids = [] then llets (ltable cla (ldirect obj_init), Dynamic) else
 
   let concrete = (vflag = Concrete)
-  and lclass lam =
-    let cl_init = llets (Lfunction{kind = Curried;
-                                   attr = default_function_attribute;
-                                   loc = Loc_unknown;
-                                   return = Pgenval;
-                                   params = [cla, Pgenval]; body = cl_init}) in
-    Llet(Strict, Pgenval, class_init, cl_init, lam (free_variables cl_init))
+  and lclass mk_lam_and_kind =
+    let cl_init, _ =
+      llets (Lambda.lfunction
+               ~kind:Curried
+               ~attr:default_function_attribute
+               ~loc:Loc_unknown
+               ~return:Pgenval
+               ~params:[cla, Pgenval]
+               ~body:cl_init,
+            Dynamic (* Placeholder, real kind is computed in [lbody] below *))
+    in
+    let lam, rkind = mk_lam_and_kind (free_variables cl_init) in
+    Llet(Strict, Pgenval, class_init, cl_init, lam), rkind
   and lbody fv =
     if List.for_all (fun id -> not (Ident.Set.mem id fv)) ids then
+      (* Not recursive: can use make_class directly *)
       mkappl (oo_prim "make_class",[transl_meth_list pub_meths;
-                                    Lvar class_init])
+                                    Lvar class_init]),
+      Dynamic
     else
+      (* Recursive: need to have an actual allocation for let rec compilation
+         to work, so hardcode make_class *)
       ltable table (
       Llet(
       Strict, Pgenval, env_init, mkappl (Lvar class_init, [Lvar table]),
@@ -813,17 +1133,22 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
       mkappl (oo_prim "init_class", [Lvar table]),
       Lprim(Pmakeblock(0, Immutable, None),
             [mkappl (Lvar env_init, [lambda_unit]);
-             Lvar class_init; Lvar env_init; lambda_unit],
-            Loc_unknown))))
+             Lvar class_init; lambda_unit],
+            Loc_unknown)))),
+      Static
   and lbody_virt lenvs =
+    (* Virtual classes only need to provide the [class_init] and [env]
+       fields. [obj_init] is filled with a dummy [lambda_unit] value. *)
     Lprim(Pmakeblock(0, Immutable, None),
-          [lambda_unit; Lfunction{kind = Curried;
-                                  attr = default_function_attribute;
-                                  loc = Loc_unknown;
-                                  return = Pgenval;
-                                  params = [cla, Pgenval]; body = cl_init};
-           lambda_unit; lenvs],
-         Loc_unknown)
+          [lambda_unit; Lambda.lfunction
+                          ~kind:Curried
+                          ~attr:default_function_attribute
+                          ~loc:Loc_unknown
+                          ~return:Pgenval
+                          ~params:[cla, Pgenval] ~body:cl_init;
+           lenvs],
+         Loc_unknown),
+    Static
   in
   (* Still easy: a class defined at toplevel *)
   if top && concrete then lclass lbody else
@@ -848,15 +1173,17 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
           Loc_unknown)
   and linh_envs =
     List.map
-      (fun (_, path_lam, _) -> Lprim(Pfield 3, [path_lam], Loc_unknown))
+      (fun (_, path_lam, _) ->
+        Lprim(Pfield (2, Pointer, Mutable), [path_lam], Loc_unknown))
       (List.rev inh_init)
   in
-  let make_envs lam =
+  let make_envs (lam, rkind) =
     Llet(StrictOpt, Pgenval, envs,
          (if linh_envs = [] then lenv else
          Lprim(Pmakeblock(0, Immutable, None),
                lenv :: linh_envs, Loc_unknown)),
-         lam)
+         lam),
+    rkind
   and def_ids cla lam =
     Llet(StrictOpt, Pgenval, env2,
          mkappl (oo_prim "new_variable", [Lvar cla; transl_label ""]),
@@ -868,23 +1195,18 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
   in
   let inh_keys =
     List.map
-      (fun (_, path_lam, _) -> Lprim(Pfield 1, [path_lam], Loc_unknown))
+      (fun (_, path_lam, _) ->
+        Lprim(Pfield (1, Pointer, Mutable), [path_lam], Loc_unknown))
       inh_paths
   in
   let lclass lam =
     Llet(Strict, Pgenval, class_init,
-         Lfunction{kind = Curried; params = [cla, Pgenval];
-                   return = Pgenval;
-                   attr = default_function_attribute;
-                   loc = Loc_unknown;
-                   body = def_ids cla cl_init}, lam)
-  and lcache lam =
-    if inh_keys = [] then Llet(Alias, Pgenval, cached, Lvar tables, lam) else
-    Llet(Strict, Pgenval, cached,
-         mkappl (oo_prim "lookup_tables",
-                [Lvar tables; Lprim(Pmakeblock(0, Immutable, None),
-                                    inh_keys, Loc_unknown)]),
-         lam)
+         Lambda.lfunction
+                   ~kind:Curried ~params:[cla, Pgenval]
+                   ~return:Pgenval
+                   ~attr:default_function_attribute
+                   ~loc:Loc_unknown
+                   ~body:(def_ids cla cl_init), lam)
   and lset cached i lam =
     Lprim(Psetfield(i, Pointer, Assignment),
           [Lvar cached; lam], Loc_unknown)
@@ -896,16 +1218,13 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
                       lset cached 0 (Lvar env_init))))
   and lclass_virt () =
     lset cached 0
-      (Lfunction
-         {
-           kind = Curried;
-           attr = default_function_attribute;
-           loc = Loc_unknown;
-           return = Pgenval;
-           params = [cla, Pgenval];
-           body = def_ids cla cl_init;
-         }
-      )
+      (Lambda.lfunction
+         ~kind:Curried
+         ~attr:default_function_attribute
+         ~loc:Loc_unknown
+         ~return:Pgenval
+         ~params:[cla, Pgenval]
+         ~body:(def_ids cla cl_init))
   in
   let lupdate_cache =
     if ids = [] then ldirect () else
@@ -921,20 +1240,35 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
       lupdate_cache
     else
       Lifthenelse(lfield cached 0, lambda_unit, lupdate_cache) in
+  let lcache (lam, rkind) =
+    let lam = Lsequence (lcheck_cache, lam) in
+    let lam =
+      if inh_keys = []
+      then Llet(Alias, Pgenval, cached, Lvar tables, lam)
+      else
+        Llet(Strict, Pgenval, cached,
+             mkappl (oo_prim "lookup_tables",
+                     [Lvar tables; Lprim(Pmakeblock(0, Immutable, None),
+                                         inh_keys, Loc_unknown)]),
+             lam)
+    in
+    lam, rkind
+  in
   llets (
   lcache (
-  Lsequence(lcheck_cache,
   make_envs (
-  if ids = [] then mkappl (lfield cached 0, [lenvs]) else
-  Lprim(Pmakeblock(0, Immutable, None),
+  if ids = []
+  then mkappl (lfield cached 0, [lenvs]), Dynamic
+  else
+    Lprim(Pmakeblock(0, Immutable, None),
         (if concrete then
           [mkappl (lfield cached 0, [lenvs]);
            lfield cached 1;
-           lfield cached 0;
            lenvs]
-        else [lambda_unit; lfield cached 0; lambda_unit; lenvs]),
+        else [lambda_unit; lfield cached 0; lenvs]),
         Loc_unknown
-       )))))
+       ),
+    Static)))
 
 (* Wrapper for class compilation *)
 (*
@@ -947,26 +1281,32 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
 *)
 
 let transl_class ~scopes ids id pub_meths cl vf =
-  oo_wrap cl.cl_env false (transl_class ~scopes ids id pub_meths cl) vf
+  oo_wrap_gen cl.cl_env false (transl_class ~scopes ids id pub_meths cl) vf
 
 let () =
   transl_object := (fun ~scopes id meths cl ->
-    transl_class ~scopes [] id meths cl Concrete)
+    let lam, _rkind = transl_class ~scopes [] id meths cl Concrete in
+    lam)
 
 (* Error report *)
 
-open Format
+open Format_doc
+module Style = Misc.Style
 
-let report_error ppf = function
+let report_error_doc ppf = function
   | Tags (lab1, lab2) ->
-      fprintf ppf "Method labels `%s' and `%s' are incompatible.@ %s"
-        lab1 lab2 "Change one of them."
+      fprintf ppf "Method labels %a and %a are incompatible.@ %s"
+        Style.inline_code lab1
+        Style.inline_code lab2
+        "Change one of them."
 
 let () =
   Location.register_error_of_exn
     (function
       | Error (loc, err) ->
-        Some (Location.error_of_printer ~loc report_error err)
+        Some (Location.error_of_printer ~loc report_error_doc err)
       | _ ->
         None
     )
+
+let report_error = Format_doc.compat report_error_doc

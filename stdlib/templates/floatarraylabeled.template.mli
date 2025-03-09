@@ -16,7 +16,7 @@
 
 type t = floatarray
 (** The type of float arrays with packed representation.
-    @since 4.08.0
+    @since 4.08
   *)
 
 val length : t -> int
@@ -48,6 +48,27 @@ val init : int -> f:(int -> float) -> t
     In other terms, [init n ~f] tabulates the results of [f]
     applied to the integers [0] to [n-1].
     @raise Invalid_argument if [n < 0] or [n > Sys.max_floatarray_length]. *)
+
+val make_matrix : dimx:int -> dimy:int -> float -> t array
+(** [make_matrix ~dimx ~dimy e] returns a two-dimensional array
+    (an array of arrays) with first dimension [dimx] and
+    second dimension [dimy], where all elements are initialized with [e].
+
+    @raise Invalid_argument if [dimx] or [dimy] is negative or
+    greater than {!Sys.max_floatarray_length}.
+
+    @since 5.2 *)
+
+val init_matrix : dimx:int -> dimy:int -> f:(int -> int -> float) -> t array
+(** [init_matrix ~dimx ~dimy ~f] returns a two-dimensional array
+    (an array of arrays)
+    with first dimension [dimx] and second dimension [dimy],
+    where the element at index ([x,y]) is initialized with [f x y].
+
+    @raise Invalid_argument if [dimx] or [dimy] is negative or
+    greater than {!Sys.max_floatarray_length}.
+
+    @since 5.2 *)
 
 val append : t -> t -> t
 (** [append v1 v2] returns a fresh floatarray containing the
@@ -96,7 +117,7 @@ val of_list : float list -> t
     @raise Invalid_argument if the length of [l] is greater than
     [Sys.max_floatarray_length].*)
 
-(** {2 Iterators} *)
+(** {1 Iterators} *)
 
 val iter : f:(float -> unit) -> t -> unit
 (** [iter ~f a] applies function [f] in turn to all
@@ -112,22 +133,32 @@ val map : f:(float -> float) -> t -> t
 (** [map ~f a] applies function [f] to all the elements of [a],
     and builds a floatarray with the results returned by [f]. *)
 
+val map_inplace : f:(float -> float) -> t -> unit
+(** [map_inplace f a] applies function [f] to all elements of [a],
+    and updates their values in place.
+    @since 5.1 *)
+
 val mapi : f:(int -> float -> float) -> t -> t
 (** Same as {!map}, but the
     function is applied to the index of the element as first argument,
     and the element itself as second argument. *)
 
-val fold_left : f:('a -> float -> 'a) -> init:'a -> t -> 'a
+val mapi_inplace : f:(int -> float -> float) -> t -> unit
+(** Same as {!map_inplace}, but the function is applied to the index of the
+    element as first argument, and the element itself as second argument.
+    @since 5.1 *)
+
+val fold_left : f:('acc -> float -> 'acc) -> init:'acc -> t -> 'acc
 (** [fold_left ~f x ~init] computes
     [f (... (f (f x init.(0)) init.(1)) ...) init.(n-1)],
     where [n] is the length of the floatarray [init]. *)
 
-val fold_right : f:(float -> 'a -> 'a) -> t -> init:'a -> 'a
+val fold_right : f:(float -> 'acc -> 'acc) -> t -> init:'acc -> 'acc
 (** [fold_right f a init] computes
     [f a.(0) (f a.(1) ( ... (f a.(n-1) init) ...))],
     where [n] is the length of the floatarray [a]. *)
 
-(** {2 Iterators on two arrays} *)
+(** {1 Iterators on two arrays} *)
 
 val iter2 : f:(float -> float -> unit) -> t -> t -> unit
 (** [Array.iter2 ~f a b] applies function [f] to all the elements of [a]
@@ -140,7 +171,7 @@ val map2 : f:(float -> float -> float) -> t -> t -> t
     [[| f a.(0) b.(0); ...; f a.(length a - 1) b.(length b - 1)|]].
     @raise Invalid_argument if the floatarrays are not the same size. *)
 
-(** {2 Array scanning} *)
+(** {1 Array scanning} *)
 
 val for_all : f:(float -> bool) -> t -> bool
 (** [for_all ~f [|a1; ...; an|]] checks if all elements of the floatarray
@@ -160,7 +191,35 @@ val mem : float -> set:t -> bool
 val mem_ieee : float -> set:t -> bool
 (** Same as {!mem}, but uses IEEE equality instead of structural equality. *)
 
-(** {2 Sorting} *)
+(** {1 Array searching} *)
+
+val find_opt : f:(float -> bool) -> t -> float option
+(* [find_opt ~f a] returns the first element of the array [a] that satisfies
+   the predicate [f]. Returns [None] if there is no value that satisfies [f]
+   in the array [a].
+   @since 5.1 *)
+
+val find_index : f:(float-> bool) -> t -> int option
+(** [find_index ~f a] returns [Some i], where [i] is the index of the first
+    element of the array [a] that satisfies [f x], if there is such an
+    element.
+
+    It returns [None] if there is no such element.
+    @since 5.1 *)
+
+val find_map : f:(float -> 'a option) -> t -> 'a option
+(* [find_map ~f a] applies [f] to the elements of [a] in order, and returns
+   the first result of the form [Some v], or [None] if none exist.
+   @since 5.1 *)
+
+val find_mapi : f:(int -> float -> 'a option) -> t -> 'a option
+(** Same as [find_map], but the predicate is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+
+   @since 5.1 *)
+
+(** {1:sorting_and_shuffling Sorting and shuffling} *)
 
 val sort : cmp:(float -> float -> int) -> t -> unit
 (** Sort a floatarray in increasing order according to a comparison
@@ -184,7 +243,7 @@ val sort : cmp:(float -> float -> int) -> t -> unit
 
     When [sort] returns, [a] contains the same elements as before,
     reordered in such a way that for all i and j valid indices of [a] :
--      [cmp a.(i) a.(j)] >= 0 if and only if i >= j
+-      [cmp a.(i) a.(j)] >= 0 if i >= j
 *)
 
 val stable_sort : cmp:(float -> float -> int) -> t -> unit
@@ -200,7 +259,19 @@ val fast_sort : cmp:(float -> float -> int) -> t -> unit
 (** Same as {!sort} or {!stable_sort}, whichever is faster
     on typical input. *)
 
-(** {2 Float arrays and Sequences} *)
+val shuffle :
+  rand: (* thwart tools/sync_stdlib_docs *) (int -> int) -> t -> unit
+(** [shuffle ~rand a] randomly permutes [a]'s elements using [rand]
+    for randomness. The distribution of permutations is uniform.
+
+    [rand] must be such that a call to [rand n] returns a uniformly
+    distributed random number in the range \[[0];[n-1]\].
+    {!Random.int} can be used for this (do not forget to
+    {{!Random.self_init}initialize} the generator).
+
+    @since 5.2 *)
+
+(** {1 Float arrays and Sequences} *)
 
 val to_seq : t -> float Seq.t
 (** Iterate on the floatarray, in increasing order. Modifications of the
@@ -224,9 +295,83 @@ val map_from_array : f:('a -> float) -> 'a array -> t
 (** [map_from_array ~f a] applies function [f] to all the elements of [a],
     and builds a floatarray with the results returned by [f]. *)
 
+(** {1:floatarray_concurrency Arrays and concurrency safety}
+
+    Care must be taken when concurrently accessing float arrays from multiple
+    domains: accessing an array will never crash a program, but unsynchronized
+    accesses might yield surprising (non-sequentially-consistent) results.
+
+    {2:floatarray_atomicity Atomicity}
+
+    Every float array operation that accesses more than one array element is
+    not atomic. This includes iteration, scanning, sorting, splitting and
+    combining arrays.
+
+    For example, consider the following program:
+{[let size = 100_000_000
+let a = Float.ArrayLabels.make size 1.
+let update a f () =
+   Float.ArrayLabels.iteri ~f:(fun i x -> Float.Array.set a i (f x)) a
+let d1 = Domain.spawn (update a (fun x -> x +. 1.))
+let d2 = Domain.spawn (update a (fun x ->  2. *. x +. 1.))
+let () = Domain.join d1; Domain.join d2
+]}
+
+    After executing this code, each field of the float array [a] is either
+    [2.], [3.], [4.] or [5.]. If atomicity is required, then the user must
+    implement their own synchronization (for example, using {!Mutex.t}).
+
+    {2:floatarray_data_race Data races}
+
+    If two domains only access disjoint parts of the array, then the
+    observed behaviour is the equivalent to some sequential interleaving of
+    the operations from the two domains.
+
+    A data race is said to occur when two domains access the same array
+    element without synchronization and at least one of the accesses is a
+    write. In the absence of data races, the observed behaviour is equivalent
+    to some sequential interleaving of the operations from different domains.
+
+    Whenever possible, data races should be avoided by using synchronization
+    to mediate the accesses to the array elements.
+
+    Indeed, in the presence of data races, programs will not crash but the
+    observed behaviour may not be equivalent to any sequential interleaving of
+    operations from different domains. Nevertheless, even in the presence of
+    data races, a read operation will return the value of some prior write to
+    that location with a few exceptions.
+
+
+    {2:floatarray_datarace_tearing Tearing }
+
+    Float arrays have two supplementary caveats in the presence of data races.
+
+    First, the blit operation might copy an array byte-by-byte. Data races
+    between such a blit operation and another operation might produce
+    surprising values due to tearing: partial writes interleaved with other
+    operations can create float values that would not exist with a sequential
+    execution.
+
+    For instance, at the end of
+{[let zeros = Float.Array.make size 0.
+let max_floats = Float.Array.make size Float.max_float
+let res = Float.Array.copy zeros
+let d1 = Domain.spawn (fun () -> Float.Array.blit zeros 0 res 0 size)
+let d2 = Domain.spawn (fun () -> Float.Array.blit max_floats 0 res 0 size)
+let () = Domain.join d1; Domain.join d2
+]}
+
+    the [res] float array might contain values that are neither [0.]
+    nor [max_float].
+
+    Second, on 32-bit architectures, getting or setting a field involves two
+    separate memory accesses. In the presence of data races, the user may
+    observe tearing on any operation.
+*)
+
 (**/**)
 
-(** {2 Undocumented functions} *)
+(** {1 Undocumented functions} *)
 
 (* These functions are for system use only. Do not call directly. *)
 external unsafe_get : t -> int -> float = "%floatarray_unsafe_get"

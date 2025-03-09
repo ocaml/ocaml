@@ -1,0 +1,6 @@
+File "poll_attr_user.ml", line 1:
+Error: Function with poll-error attribute contains polling points:
+	allocation at File "poll_attr_user.ml", line 16, characters 29-37
+	function call at File "poll_attr_user.ml", line 17, characters 13-16
+	allocation at File "poll_attr_user.ml", line 19, characters 34-42
+

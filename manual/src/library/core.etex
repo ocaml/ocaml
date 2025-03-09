@@ -30,7 +30,4 @@ indexed at the end of this report.
 \fi
 \begin{linklist}
 \libdocitem{Stdlib}{the initially opened module}
-\ifouthtml%
-\item Module \texttt{Pervasives}: deprecated alias for Stdlib
-\fi%
 \end{linklist}

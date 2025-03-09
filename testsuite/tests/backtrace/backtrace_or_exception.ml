@@ -1,6 +1,6 @@
-(* TEST
-   flags = "-g"
-   ocamlrunparam += ",b=1"
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
+
 *)
 
 exception Exn
@@ -46,3 +46,8 @@ let _ =
   run without_reraise;
   run with_reraise;
   run trickier
+
+(* TEST
+ flags = "-g";
+ ocamlrunparam += ",b=1";
+*)

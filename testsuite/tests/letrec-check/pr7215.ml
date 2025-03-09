@@ -1,5 +1,5 @@
 (* TEST
-   * toplevel
+ toplevel;
 *)
 
 (* From Stephen Dolan *)

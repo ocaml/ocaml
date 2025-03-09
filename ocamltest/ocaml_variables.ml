@@ -38,11 +38,17 @@ let binary_modules = make ("binary_modules",
 let bytecc_libs = make ("bytecc_libs",
   "Libraries to link with for bytecode")
 
-let c_preprocessor = make ("c_preprocessor",
+let cpp = make ("cpp",
   "Command to use to invoke the C preprocessor")
+
+let cppflags = make ("cppflags",
+  "Flags passed to the C preprocessor")
 
 let cc = make ("cc",
   "Command to use to invoke the C compiler")
+
+let cflags = make ("cflags",
+  "Flags passed to the C compiler")
 
 let caml_ld_library_path_name = "CAML_LD_LIBRARY_PATH"
 
@@ -54,7 +60,7 @@ let export_caml_ld_library_path value =
     if local_value="" then current_value else
     if current_value="" then local_value else
     String.concat Filename.path_sep [local_value; current_value] in
-  Printf.sprintf "%s=%s" caml_ld_library_path_name new_value
+  (caml_ld_library_path_name, new_value)
 
 let caml_ld_library_path =
   make_with_exporter
@@ -183,7 +189,7 @@ let ocamlopt_opt_exit_status = make ("ocamlopt_opt_exit_status",
   "Expected exit status of ocamlopt.opt")
 
 let export_ocamlrunparam value =
-  Printf.sprintf "%s=%s" "OCAMLRUNPARAM" value
+  ("OCAMLRUNPARAM", value)
 
 let ocamlrunparam =
   make_with_exporter
@@ -196,9 +202,6 @@ let ocamlsrcdir = make ("ocamlsrcdir",
 
 let ocamldebug_flags = make ("ocamldebug_flags",
   "Flags for ocamldebug")
-
-let ocamldebug_script = make ("ocamldebug_script",
-  "Where ocamldebug should read its commands")
 
 let os_type = make ("os_type",
   "The OS we are running on")
@@ -244,7 +247,10 @@ let _ = List.iter register_variable
     arch;
     binary_modules;
     bytecc_libs;
-    c_preprocessor;
+    cpp;
+    cppflags;
+    cc;
+    cflags;
     caml_ld_library_path;
     codegen_exit_status;
     compare_programs;
@@ -292,7 +298,6 @@ let _ = List.iter register_variable
     ocamldoc_reference;
     ocamldoc_exit_status;
     ocamldebug_flags;
-    ocamldebug_script;
     ocaml_script_as_argument;
     os_type;
     plugins;

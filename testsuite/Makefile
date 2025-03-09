@@ -16,10 +16,23 @@
 .NOTPARALLEL:
 
 BASEDIR := $(shell pwd)
+ifneq "$(words |$(BASEDIR)|)" "1"
+$(error The Testsuite does not handle spaces\
+   in the ocaml working directory path: $(BASEDIR))
+endif
 
-FIND=find
 ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
+
+ifeq "$(UNIX_OR_WIN32)" "win32"
+  CYGPATH=cygpath -m
+  # Ensure that the test runners definitely use Cygwin's sort and not the
+  # Windows sort command
+  SORT=/usr/bin/sort
+else
+  CYGPATH=echo
+  SORT=sort
+endif
 
 BASEDIR_HOST := $(shell $(CYGPATH) "$(BASEDIR)")
 ROOTDIR_HOST := $(BASEDIR_HOST)/$(ROOTDIR)
@@ -42,70 +55,71 @@ ifeq "$(UNIX_OR_WIN32)" "unix"
   else # Non-cygwin Unix
     find := find
   endif
+  # $(IFS_LINE) for Unix simply clears IFS, so entire lines are read
+  IFS_LINE = IFS=''
 else # Windows
   find := /usr/bin/find
+  # On Windows, ocamltest will produce Windows line-endings (\r\n) and the final
+  # \r is kept by the shell. This can either be stripped with tr -d '\r' but we
+  # can avoid the additional process by instead setting IFS in the while loop to
+  # be the CR character (i.e. treat \r as a field delimiter).
+  # The dance with $(CR_CHAR) is because POSIX doesn't provide a way to write \r
+  # in a string.
+  export CR_CHAR := $(shell printf "\r")
+  IFS_LINE = IFS="$$CR_CHAR"
 endif
-
-ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
-  FLEXLINK_ENV =
-else
-  # The testsuite needs an absolute path to the runtime, so override the
-  # definition in Makefile.common
-  FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
-  FLEXLINK_EXE_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
-ifeq "$(wildcard $(ROOTDIR_HOST)/flexlink.opt$(EXE))" ""
-  FLEXLINK_ENV = \
-    OCAML_FLEXLINK="$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
-                    $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE)"
-  MKDLL=$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
-        $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE) \
-        $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
-  MKEXE=$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
-        $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE) \
-        $(FLEXLINK_FLAGS) -exe $(FLEXLINK_EXE_LDFLAGS)
-else
-  FLEXLINK_ENV = \
-    OCAML_FLEXLINK="$(ROOTDIR_HOST)/flexlink.opt$(EXE) \
-      -I $(ROOTDIR_HOST)/stdlib/flexdll"
-  MKDLL=$(ROOTDIR_HOST)/flexlink.opt$(EXE) -I $(ROOTDIR_HOST)/stdlib/flexdll \
-        $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
-  MKEXE=$(ROOTDIR_HOST)/flexlink.opt$(EXE) -I $(ROOTDIR_HOST)/stdlib/flexdll \
-        $(FLEXLINK_FLAGS) -exe $(FLEXLINK_EXE_LDFLAGS)
-endif # ifeq "$(wildcard $(ROOTDIR_HOST)/flexlink.opt$(EXE))" ""
-endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 
 ifeq "$(ocamltest_program)" ""
   ocamltest = $(error ocamltest not found in $(ocamltest_directory))
 else
-  ocamltest := $(FLEXLINK_ENV) MKEXE="$(MKEXE)" MKDLL="$(MKDLL)" SORT=$(SORT) \
-                               MAKE=$(MAKE) $(ocamltest_program)
+  ocamltest := SORT=$(SORT) MAKE=$(MAKE) $(ocamltest_program)
 endif
 
 # PROMOTE is only meant to be used internally in recursive calls;
 # users should call the 'promote' target explicitly.
 PROMOTE =
 ifeq "$(PROMOTE)" ""
-  OCAMLTEST_PROMOTE_FLAG :=
+  OCAMLTEST_PROMOTE_FLAG =
 else
-  OCAMLTEST_PROMOTE_FLAG := -promote
+  OCAMLTEST_PROMOTE_FLAG = -promote
 endif
 
 # KEEP_TEST_DIR_ON_SUCCESS should be set by the user (to a non-empty value)
 # if they want to pass the -keep-test-dir-on-success option to ocamltest,
 # to preserve test data of successful tests.
-KEEP_TEST_DIR_ON_SUCCESS ?=
-ifeq "$(KEEP_TEST_DIR_ON_SUCCESS)" ""
-  OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG :=
+
+# KEEP is provided as a rather easier to remmber alias of
+# KEEP_TEST_DIR_ON_SUCCESS, but to prevent the risk of naming conflict it's only
+# recognised when used as make -C testsuite KEEP=1 ...
+ifeq "$(origin KEEP)" "command line"
+KEEP_TEST_DIR_ON_SUCCESS ?= $(KEEP)
 else
-  OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG := -keep-test-dir-on-success
+KEEP_TEST_DIR_ON_SUCCESS ?=
+endif
+
+ifeq "$(KEEP_TEST_DIR_ON_SUCCESS)" ""
+  OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG =
+else
+  OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG = -keep-test-dir-on-success
 endif
 
 TIMEOUT ?= 600 # 10 minutes
 
-OCAMLTESTFLAGS := \
+# SHOW_TIMINGS should be set by the user (to a non-empty value) if they want
+# the timings for each test file to be included in the log
+SHOW_TIMINGS ?=
+OCAMLTEST_SHOW_TIMINGS_FLAG =
+ifneq "$(SHOW_TIMINGS)" ""
+ifeq "$(lib_unix)" "true"
+  OCAMLTEST_SHOW_TIMINGS_FLAG = -show-timings
+endif
+endif
+
+OCAMLTESTFLAGS = \
   -timeout $(TIMEOUT) \
   $(OCAMLTEST_PROMOTE_FLAG) \
-  $(OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG)
+  $(OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG) \
+  $(OCAMLTEST_SHOW_TIMINGS_FLAG)
 
 # Make sure USE_RUNTIME is defined
 USE_RUNTIME ?=
@@ -124,23 +138,27 @@ endif
 .PHONY: default
 default:
 	@echo "Available targets:"
-	@echo "  all             launch all tests"
-	@echo "  all-foo         launch all tests beginning with foo"
-	@echo "  parallel        launch all tests using GNU parallel"
-	@echo "  parallel-foo    launch all tests beginning with foo using \
+	@echo "  all                        launch all tests"
+	@echo "  all-foo                    launch all tests beginning with foo"
+	@echo "  parallel                   launch all tests using GNU parallel"
+	@echo "  parallel-foo               launch all tests beginning with foo using \
 	GNU parallel"
-	@echo "  one TEST=f      launch just this single test"
-	@echo "  one DIR=p       launch the tests located in path p"
-	@echo "  one LIST=f      launch the tests listed in f (one per line)"
-	@echo "  promote DIR=p   promote the reference files for the tests in p"
-	@echo "  lib             build library modules"
-	@echo "  tools           build test tools"
-	@echo "  clean           delete generated files"
-	@echo "  report          print the report for the last execution"
+	@echo "  one (TEST|DIR|LIST)=x      launch the specified tests ..."
+	@echo "  promote (TEST|DIR|LIST)=x  promote the output for the specified \
+	tests ..."
+	@echo "    ... TEST=f                 ... the single test in the file f"
+	@echo "    ... DIR=d                  ... the tests located in the directory d"
+	@echo "    ... LIST=f                 ... the tests listed in the file f (one \
+	per line)"
+	@echo "  clean                      delete generated files"
+	@echo "  report                     print the report for the last execution"
 	@echo
-	@echo "all*, parallel* and list can automatically re-run failed test"
-	@echo "directories if MAX_TESTSUITE_DIR_RETRIES permits"
-	@echo "(default value = $(MAX_TESTSUITE_DIR_RETRIES))"
+	@echo "By default, artefacts from tests which pass are not kept, but this can"
+	@echo "be changed by adding KEEP=1 to the make command line or by setting the"
+	@echo "KEEP_TEST_DIR_ON_SUCCESS environment variable to a non-empty value."
+	@echo
+	@echo "Set the environment variable USE_RUNTIME to \"d\" or \"i\" to run"
+	@echo "the tests with the debug or the instrumented runtime."
 
 .PHONY: all
 all:
@@ -148,12 +166,11 @@ all:
 	@$(MAKE) --no-print-directory report
 
 .PHONY: new-without-report
-new-without-report: lib tools
+new-without-report:
 	@rm -f $(failstamp)
-	@(IFS=$$(printf "\r\n"); \
-	$(ocamltest) -find-test-dirs tests | while IFS='' read -r dir; do \
+	@($(ocamltest) -find-test-dirs tests | while $(IFS_LINE) read -r dir; do \
 	  echo Running tests from \'$$dir\' ... ; \
-	  $(MAKE) exec-ocamltest DIR=$$dir \
+	  $(MAKE) exec-ocamltest DIR="$$dir" \
 	    OCAMLTESTENV=""; \
 	done || echo outer loop >> $(failstamp)) 2>&1 | tee $(TESTLOG)
 	@$(MAKE) check-failstamp
@@ -168,7 +185,7 @@ check-failstamp:
 	fi
 
 .PHONY: all-%
-all-%: lib tools
+all-%:
 	@for dir in tests/$**; do \
 	  $(MAKE) --no-print-directory exec-one DIR=$$dir; \
 	done 2>&1 | tee $(TESTLOG)
@@ -198,8 +215,15 @@ all-%: lib tools
 # I chose to keep the previous behavior exactly unchanged,
 # but the demangling separation is arguably nicer behavior that we might
 # want to implement at the exec-one level to also have it in the 'all' target.
+
+# If make has been invoked with "-j n", pass this on to GNU parallel. parallel
+# does not support -j without an argument, hence the double-filter. Note that
+# GNU make normalises -j in $(MAKEFLAGS) so it will either be -j alone or -jn
+# (i.e. with no space).
+J_ARGUMENT = $(filter-out -j,$(filter -j%,$(MAKEFLAGS)))
+
 .PHONY: parallel-%
-parallel-%: lib tools
+parallel-%:
 	@echo | parallel >/dev/null 2>/dev/null \
 	 || (echo "Unable to run the GNU parallel tool;";\
 	     echo "You should install it before using the parallel* targets.";\
@@ -209,7 +233,7 @@ parallel-%: lib tools
 	     echo "This target requires GNU parallel.";\
 	     exit 1)
 	@for dir in tests/$**; do echo $$dir; done \
-	 | parallel --gnu --no-notice --keep-order \
+	 | parallel --gnu --no-notice --keep-order $(J_ARGUMENT) \
 	     "$(MAKE) --no-print-directory exec-one DIR={} 2>&1" \
 	 | tee $(TESTLOG)
 	@$(MAKE) report
@@ -218,7 +242,7 @@ parallel-%: lib tools
 parallel: parallel-*
 
 .PHONY: list
-list: lib tools
+list:
 	@if [ -z "$(FILE)" ]; \
     then echo "No value set for variable 'FILE'."; \
     exit 1; \
@@ -226,11 +250,11 @@ list: lib tools
 	@$(MAKE) --no-print-directory one LIST="$(FILE)"
 
 .PHONY: one
-one: lib tools
+one:
 	@case "$(words $(DIR) $(LIST) $(TEST))" in \
    0) echo 'No value set for variable DIR, LIST or TEST'>&2; exit 1;; \
    1) exit 0;; \
-   *) echo 'Please specify just one of DIR, LIST or TEST'>&2; exit 1;; \
+   *) echo 'Please specify exactly one of DIR, LIST or TEST'>&2; exit 1;; \
    esac
 	@if [ -n '$(DIR)' ] && [ ! -d '$(DIR)' ]; then \
     echo "Directory '$(DIR)' does not exist."; exit 1; \
@@ -258,26 +282,19 @@ one: lib tools
 
 .PHONY: exec-one
 exec-one:
-	@if $(ocamltest) -list-tests $(DIR) >/dev/null 2>&1; then \
-	  echo "Running tests from '$$DIR' ..."; \
-	  $(MAKE) exec-ocamltest DIR=$(DIR) \
+	@$(ocamltest) -find-test-dirs $(DIR) | while $(IFS_LINE) read -r dir; do \
+	  echo "Running tests from '$$dir' ..."; \
+	  $(MAKE) exec-ocamltest DIR="$$dir" \
 	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR)"; \
-	else \
-	  for dir in $(DIR)/*; do \
-	    if [ -d $$dir ]; then \
-	      $(MAKE) exec-one DIR=$$dir; \
-	    fi; \
-	  done; \
-	fi
+	done
 
 .PHONY: exec-ocamltest
 exec-ocamltest:
 	@if [ -z "$(DIR)" ]; then exit 1; fi
 	@if [ ! -d "$(DIR)" ]; then exit 1; fi
-	@(IFS=$$(printf "\r\n"); \
-	$(ocamltest) -list-tests $(DIR) | while IFS='' read -r testfile; do \
+	@($(ocamltest) -list-tests $(DIR) | while $(IFS_LINE) read -r testfile; do \
 	   TERM=dumb $(OCAMLTESTENV) \
-	     $(ocamltest) $(OCAMLTESTFLAGS) $(DIR)/$$testfile || \
+	     $(ocamltest) $(OCAMLTESTFLAGS) "$(DIR)/$$testfile" || \
 	   echo " ... testing '$$testfile' => unexpected error"; \
 	done) || echo directory "$(DIR)" >>$(failstamp)
 
@@ -295,36 +312,16 @@ clean-one:
 
 .PHONY: promote
 promote:
-	@if [ -z "$(DIR)" ]; then \
-	  echo "No value set for variable 'DIR'."; \
-	  exit 1; \
-	fi
-	@if [ ! -d $(DIR) ]; then \
-	  echo "Directory '$(DIR)' does not exist."; \
-	  exit 1; \
-	fi
-	@if $(ocamltest) -list-tests $(DIR) >/dev/null 2>&1; then \
-	  $(MAKE) exec-ocamltest DIR=$(DIR) \
-	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR)" \
-	    PROMOTE="true"; \
-	else \
-	  cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote; \
-	fi
-
-.PHONY: lib
-lib:
-	@$(MAKE) -s -C lib
-
-.PHONY: tools
-tools:
-	@cd tools && $(MAKE) -s BASEDIR=$(BASEDIR)
+	@$(MAKE) one PROMOTE=true
 
 .PHONY: clean
 clean:
-	@$(MAKE) -C lib clean
-	@cd tools && $(MAKE) BASEDIR=$(BASEDIR) clean
-	$(FIND) . -name '*_ocamltest*' | xargs rm -rf
+	find . -name '*_ocamltest*' | xargs rm -rf
 	rm -f $(failstamp)
+
+.PHONY: distclean
+distclean: clean
+	rm -f _log*
 
 .PHONY: report
 report:

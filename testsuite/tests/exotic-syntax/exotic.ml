@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 (* Exotic OCaml syntax constructs found in the manual that are not *)
 (* used in the source of the OCaml distribution (even in the tests). *)
@@ -94,8 +93,8 @@ end ;;
 let module M (M1 : sig end) = struct end in ();;
 
 (* let-binding with a type coercion *)
-let x :> int = 1;;
-let x : int :> int = 1;;
+let x :> <m:int> = object method m = 0 method n=1 end;;
+let x : [`A ] :> [> `A | `B ] = (`A: [`A]);;
 
 (* "begin end" as an alias for "()" *)
 begin end;;

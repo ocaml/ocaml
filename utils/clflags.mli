@@ -71,10 +71,13 @@ val use_inlining_arguments_set : ?round:int -> inlining_arguments -> unit
 val objfiles : string list ref
 val ccobjs : string list ref
 val dllibs : string list ref
+val cmi_file : string option ref
 val compile_only : bool ref
 val output_name : string option ref
 val include_dirs : string list ref
+val hidden_include_dirs : string list ref
 val no_std_include : bool ref
+val no_cwd : bool ref
 val print_types : bool ref
 val make_archive : bool ref
 val debug : bool ref
@@ -92,12 +95,14 @@ val all_ccopts : string list ref
 val classic : bool ref
 val nopervasives : bool ref
 val match_context_rows : int ref
+val safer_matching : bool ref
 val open_modules : string list ref
 val preprocessor : string option ref
 val all_ppx : string list ref
 val absname : bool ref
 val annotations : bool ref
 val binary_annotations : bool ref
+val store_occurrences : bool ref
 val use_threads : bool ref
 val noassert : bool ref
 val verbose : bool ref
@@ -125,10 +130,13 @@ val error_size : int ref
 val float_const_prop : bool ref
 val transparent_modules : bool ref
 val unique_ids : bool ref
+val canonical_ids : bool ref
 val locations : bool ref
 val dump_source : bool ref
 val dump_parsetree : bool ref
 val dump_typedtree : bool ref
+val dump_shape : bool ref
+val dump_matchcomp : bool ref
 val dump_rawlambda : bool ref
 val dump_lambda : bool ref
 val dump_rawclambda : bool ref
@@ -191,7 +199,6 @@ val with_runtime : bool ref
 val force_slash : bool ref
 val keep_docs : bool ref
 val keep_locs : bool ref
-val unsafe_string : bool ref
 val opaque : bool ref
 val profile_columns : Profile.column list ref
 val flambda_invariant_checks : bool ref
@@ -216,6 +223,10 @@ val dumped_pass : string -> bool
 val set_dumped_pass : string -> bool -> unit
 
 val dump_into_file : bool ref
+val dump_dir : string option ref
+
+val keyword_edition: string option ref
+val parse_keyword_edition: string -> (int*int) option * string list
 
 (* Support for flags that can also be set from an environment variable *)
 type 'a env_reader = {
@@ -237,7 +248,7 @@ val insn_sched : bool ref
 val insn_sched_default : bool
 
 module Compiler_pass : sig
-  type t = Parsing | Typing | Scheduling | Emit
+  type t = Parsing | Typing | Lambda | Scheduling | Emit
   val of_string : string -> t option
   val to_string : t -> string
   val is_compilation_pass : t -> bool
@@ -247,10 +258,50 @@ module Compiler_pass : sig
   val to_output_filename: t -> prefix:string -> string
   val of_input_filename: string -> t option
 end
+
 val stop_after : Compiler_pass.t option ref
 val should_stop_after : Compiler_pass.t -> bool
 val set_save_ir_after : Compiler_pass.t -> bool -> unit
 val should_save_ir_after : Compiler_pass.t -> bool
+
+module Dump_option : sig
+  type t =
+    | Source
+    | Parsetree
+    | Typedtree
+    | Shape
+    | Match_comp
+    | Raw_lambda
+    | Lambda
+    | Instr
+    | Raw_clambda
+    | Clambda
+    | Raw_flambda
+    | Flambda
+      (* Note: no support for [-dflambda-let <stamp>] for now. *)
+    | Cmm
+    | Selection
+    | Combine
+    | CSE
+    | Live
+    | Spill
+    | Split
+    | Interf
+    | Prefer
+    | Regalloc
+    | Scheduling
+    | Linear
+    | Interval
+
+  val compare : t -> t -> int
+
+  val of_string : string -> t option
+  val to_string : t -> string
+
+  val flag : t -> bool ref
+
+  val available : t -> (unit, string) Result.t
+end
 
 val arg_spec : (string * Arg.spec * string) list ref
 

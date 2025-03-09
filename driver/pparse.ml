@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Format
+open Format_doc
 
 type error =
   | CannotRun of string
@@ -165,39 +165,60 @@ let parse (type a) (kind : a ast_kind) lexbuf : a =
   | Structure -> Parse.implementation lexbuf
   | Signature -> Parse.interface lexbuf
 
-let file_aux ~tool_name inputfile (type a) parse_fun invariant_fun
+let set_input_lexbuf ic =
+  let source =
+    (* We read the whole source file at once. This guarantees that all
+       input is in the lexing buffer and can be reused by error printers
+       to quote source code at specific locations -- see #12238 and the
+       Location.lines_around* functions. *)
+    In_channel.input_all ic
+  in
+  let lexbuf = Lexing.from_string source in
+  Location.input_lexbuf := Some lexbuf;
+  lexbuf
+
+let file_aux ~tool_name ~sourcefile inputfile (type a) parse_fun invariant_fun
              (kind : a ast_kind) : a =
-  let ast_magic = magic_of_kind kind in
-  let (ic, is_ast_file) = open_and_check_magic inputfile ast_magic in
   let ast =
-    try
-      if is_ast_file then begin
+    let ast_magic = magic_of_kind kind in
+    let (ic, is_ast_file) = open_and_check_magic inputfile ast_magic in
+    let close_ic () = close_in ic in
+    if is_ast_file then begin
+      let ast =
+        Fun.protect ~finally:close_ic @@ fun () ->
         Location.input_name := (input_value ic : string);
+        begin match
+          In_channel.with_open_bin !Location.input_name set_input_lexbuf
+        with
+        | (_ : Lexing.lexbuf) -> ()
+        | exception Sys_error _ -> ()
+        end;
         if !Clflags.unsafe then
           Location.prerr_warning (Location.in_file !Location.input_name)
             Warnings.Unsafe_array_syntax_without_parsing;
-        let ast = (input_value ic : a) in
-        if !Clflags.all_ppx = [] then invariant_fun ast;
-        (* if all_ppx <> [], invariant_fun will be called by apply_rewriters *)
-        ast
-      end else begin
+        (input_value ic : a)
+      in
+      if !Clflags.all_ppx = [] then invariant_fun ast;
+      (* if all_ppx <> [], invariant_fun will be called by apply_rewriters *)
+      ast
+    end else begin
+      let lexbuf =
+        Fun.protect ~finally:close_ic @@ fun () ->
         seek_in ic 0;
-        let lexbuf = Lexing.from_channel ic in
-        Location.init lexbuf inputfile;
-        Location.input_lexbuf := Some lexbuf;
-        Profile.record_call "parser" (fun () -> parse_fun lexbuf)
-      end
-    with x -> close_in ic; raise x
+        set_input_lexbuf ic
+      in
+      Location.init lexbuf sourcefile;
+      Profile.record_call "parser" (fun () -> parse_fun lexbuf)
+    end
   in
-  close_in ic;
   Profile.record_call "-ppx" (fun () ->
       apply_rewriters ~restore:false ~tool_name kind ast
     )
 
 let file ~tool_name inputfile parse_fun ast_kind =
-  file_aux ~tool_name inputfile parse_fun ignore ast_kind
+  file_aux ~tool_name ~sourcefile:inputfile inputfile parse_fun ignore ast_kind
 
-let report_error ppf = function
+let report_error_doc ppf = function
   | CannotRun cmd ->
       fprintf ppf "Error while running external preprocessor@.\
                    Command line: %s@." cmd
@@ -208,9 +229,11 @@ let report_error ppf = function
 let () =
   Location.register_error_of_exn
     (function
-      | Error err -> Some (Location.error_of_printer_file report_error err)
+      | Error err -> Some (Location.error_of_printer_file report_error_doc err)
       | _ -> None
     )
+
+let report_error = Format_doc.compat report_error_doc
 
 let parse_file ~tool_name invariant_fun parse kind sourcefile =
   Location.input_name := sourcefile;
@@ -218,7 +241,7 @@ let parse_file ~tool_name invariant_fun parse kind sourcefile =
   Misc.try_finally
     (fun () ->
        Profile.record_call "parsing" @@ fun () ->
-       file_aux ~tool_name inputfile parse invariant_fun kind)
+       file_aux ~tool_name ~sourcefile inputfile parse invariant_fun kind)
     ~always:(fun () -> remove_preprocessed inputfile)
 
 let parse_implementation ~tool_name sourcefile =

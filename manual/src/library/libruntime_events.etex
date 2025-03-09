@@ -1,0 +1,19 @@
+\chapter{The runtime_events library}
+\label{c:runtime_events}\cutname{runtime_events.html}
+%HEVEA\cutname{runtime_events.html}
+
+The "runtime_events" library provides an API for consuming runtime tracing and
+metrics information from the runtime. See chapter~\ref{c:runtime-tracing} for
+more information.
+
+Programs that use runtime_events must be linked as follows:
+\begin{alltt}
+        ocamlc -I +runtime_events \var{other options} unix.cma runtime_events.cma \var{other files}
+        ocamlopt -I +runtime_events \var{other options} unix.cmxa runtime_events.cmxa \var{other files}
+\end{alltt}
+Compilation units that use the runtime_events library must also be compiled with
+the "-I +runtime_events" option (see chapter~\ref{c:camlc}).
+
+\begin{linklist}
+\libdocitem{Runtime_events}{tracing system}
+\end{linklist}

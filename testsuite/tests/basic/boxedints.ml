@@ -55,9 +55,10 @@ module type TESTSIG = sig
     val minus_one: t
     val min_int: t
     val max_int: t
-    val format : string -> t -> string
     val to_string: t -> string
     val of_string: string -> t
+    val seeded_hash: int -> t -> int
+    val hash: t -> int
   end
   val testcomp: t -> t -> bool*bool*bool*bool*bool*bool*int*int
   val skip_float_tests: bool
@@ -114,18 +115,15 @@ struct
     test 10 (of_string "0x80000000") min_int;
     test 11 (of_string "0xFFFFFFFF") minus_one;
 
-    testing_function "to_string, format";
+    testing_function "to_string";
     List.iter (fun (n, s) -> test n (to_string (of_string s)) s)
       [1, "0"; 2, "123"; 3, "-456"; 4, "1234567890";
        5, "1073741824"; 6, "2147483647"; 7, "-2147483648"];
-    List.iter (fun (n, s) -> test n (format "0x%X" (of_string s)) s)
-      [8, "0x0"; 9, "0x123"; 10, "0xABCDEF"; 11, "0x12345678";
-       12, "0x7FFFFFFF"; 13, "0x80000000"; 14, "0xFFFFFFFF"];
-    test 15 (to_string max_int) "2147483647";
-    test 16 (to_string min_int) "-2147483648";
-    test 17 (to_string zero) "0";
-    test 18 (to_string one) "1";
-    test 19 (to_string minus_one) "-1";
+    test 8 (to_string max_int) "2147483647";
+    test 9 (to_string min_int) "-2147483648";
+    test 10 (to_string zero) "0";
+    test 11 (to_string one) "1";
+    test 12 (to_string minus_one) "-1";
 
     testing_function "neg";
     test 1 (neg (of_int 0)) (of_int 0);
@@ -332,7 +330,17 @@ struct
     test 7 (testcomp max_int min_int)
            (false,true,false,true,false,true,1,-1);
 
-    ()
+    testing_function "Hashing";
+    List.iter (fun (n, a) ->
+        test (2*n) (Hashtbl.hash (of_int a)) (hash (of_int a));
+        test (2*n+1) (Hashtbl.seeded_hash 16 (of_int a)) (seeded_hash 16 (of_int a)))
+      [1, 0;
+       2, 123;
+       3, -456;
+       4, 0x3FFFFFFF;
+       5, -0x40000000];
+
+    ();
 end
 
 (********* Tests on 64-bit arithmetic ***********)
@@ -373,21 +381,17 @@ struct
     test 10 (of_string "0x8000000000000000") min_int;
     test 11 (of_string "0xFFFFFFFFFFFFFFFF") minus_one;
 
-    testing_function "to_string, format";
+    testing_function "to_string";
     List.iter (fun (n, s) -> test n (to_string (of_string s)) s)
       [1, "0"; 2, "123"; 3, "-456"; 4, "1234567890";
        5, "1234567890123456789";
        6, "9223372036854775807";
        7, "-9223372036854775808"];
-    List.iter (fun (n, s) -> test n ("0x" ^ format "%X" (of_string s)) s)
-      [8, "0x0"; 9, "0x123"; 10, "0xABCDEF"; 11, "0x1234567812345678";
-       12, "0x7FFFFFFFFFFFFFFF"; 13, "0x8000000000000000";
-       14, "0xFFFFFFFFFFFFFFFF"];
-    test 15 (to_string max_int) "9223372036854775807";
-    test 16 (to_string min_int) "-9223372036854775808";
-    test 17 (to_string zero) "0";
-    test 18 (to_string one) "1";
-    test 19 (to_string minus_one) "-1";
+    test 8 (to_string max_int) "9223372036854775807";
+    test 9 (to_string min_int) "-9223372036854775808";
+    test 10 (to_string zero) "0";
+    test 11 (to_string one) "1";
+    test 12 (to_string minus_one) "-1";
 
     testing_function "neg";
     test 1 (neg (of_int 0)) (of_int 0);
@@ -577,6 +581,16 @@ struct
            (false,true,false,true,false,true,1,-1);
     test 7 (testcomp max_int min_int)
            (false,true,false,true,false,true,1,-1);
+
+    testing_function "Hashing";
+    List.iter (fun (n, a) ->
+        test (2*n) (Hashtbl.hash (of_int a)) (hash (of_int a));
+        test (2*n+1) (Hashtbl.seeded_hash 16 (of_int a)) (seeded_hash 16 (of_int a)))
+      [1, 0;
+       2, 123;
+       3, -456;
+       4, 0x3FFFFFFF;
+       5, -0x40000000];
 
     ()
 end

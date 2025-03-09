@@ -1,5 +1,6 @@
 (* TEST
-   * toplevel
+ flags = "-no-strict-formats";
+ toplevel;
 *)
 
 (* the legacy parser ignores flags on formatters on which they make no

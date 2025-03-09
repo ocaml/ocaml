@@ -1,19 +1,18 @@
 ROOTDIR = ../../..
 include $(ROOTDIR)/Makefile.common
 
-LD_PATH = "$(ROOTDIR)/otherlibs/str:$(ROOTDIR)/otherlibs/unix"
+LD_PATH = $(ROOTDIR)/otherlibs/str $(ROOTDIR)/otherlibs/unix
 
 TOOLS = ../../tools
-CAMLLATEX = $(SET_LD_PATH) \
-  $(OCAMLRUN) $(ROOTDIR)/tools/caml-tex \
-  -repo-root $(ROOTDIR) -n 80 -v false
+CAMLLATEX = $(OCAMLRUN) $(addprefix -I ,$(LD_PATH)) \
+  $(ROOTDIR)/tools/ocamltex -repo-root $(ROOTDIR) -n 80 -v false
 TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
-TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
+TRANSF = $(OCAMLRUN) $(TOOLS)/transf
 
 FILES = comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
   ocamldep.tex profil.tex debugger.tex ocamldoc.tex \
-  warnings-help.tex flambda.tex \
-  afl-fuzz.tex instrumented-runtime.tex unified-options.tex
+  warnings-help.tex flambda.tex tail-mod-cons.tex \
+  afl-fuzz.tex runtime-tracing.tex unified-options.tex tsan.tex
 
 etex-files: $(FILES)
 all: $(FILES)
@@ -30,3 +29,6 @@ all: $(FILES)
 .PHONY: clean
 clean:
 	rm -f *.tex
+
+.PHONY: distclean
+distclean: clean

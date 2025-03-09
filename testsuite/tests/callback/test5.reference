@@ -1,0 +1,9 @@
+[Caml] Call caml_to_c
+[C] Enter caml_to_c
+[C] Call c_to_caml
+[Caml] Enter c_to_caml
+c_to_caml: n=66
+[Caml] Leave c_to_caml
+[C] Return from c_to_caml
+[C] Leave caml_to_c
+[Caml] Return from caml_to_c

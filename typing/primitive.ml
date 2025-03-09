@@ -24,7 +24,7 @@ type native_repr =
   | Same_as_ocaml_repr
   | Unboxed_float
   | Unboxed_integer of boxed_integer
-  | Untagged_int
+  | Untagged_immediate
 
 type description =
   { prim_name: string;         (* Name of primitive  or C function *)
@@ -45,16 +45,16 @@ let is_ocaml_repr = function
   | Same_as_ocaml_repr -> true
   | Unboxed_float
   | Unboxed_integer _
-  | Untagged_int -> false
+  | Untagged_immediate -> false
 
 let is_unboxed = function
   | Same_as_ocaml_repr
-  | Untagged_int -> false
+  | Untagged_immediate -> false
   | Unboxed_float
   | Unboxed_integer _ -> true
 
 let is_untagged = function
-  | Untagged_int -> true
+  | Untagged_immediate -> true
   | Same_as_ocaml_repr
   | Unboxed_float
   | Unboxed_integer _ -> false
@@ -95,8 +95,7 @@ let parse_declaration valdecl ~native_repr_args ~native_repr_res =
         fatal_error "Primitive.parse_declaration"
   in
   let noalloc_attribute =
-    Attr_helper.has_no_payload_attribute ["noalloc"; "ocaml.noalloc"]
-      valdecl.pval_attributes
+    Attr_helper.has_no_payload_attribute "noalloc" valdecl.pval_attributes
   in
   if old_style_float &&
      not (List.for_all is_ocaml_repr native_repr_args &&
@@ -181,7 +180,7 @@ let print p osig_val_decl =
     | Same_as_ocaml_repr -> None
     | Unboxed_float
     | Unboxed_integer _ -> if all_unboxed then None else Some oattr_unboxed
-    | Untagged_int -> if all_untagged then None else Some oattr_untagged
+    | Untagged_immediate -> if all_untagged then None else Some oattr_untagged
   in
   let type_attrs =
     List.map attr_of_native_repr p.prim_native_repr_args @
@@ -213,33 +212,40 @@ let equal_native_repr nr1 nr2 =
   match nr1, nr2 with
   | Same_as_ocaml_repr, Same_as_ocaml_repr -> true
   | Same_as_ocaml_repr,
-    (Unboxed_float | Unboxed_integer _ | Untagged_int) -> false
+    (Unboxed_float | Unboxed_integer _ | Untagged_immediate) -> false
   | Unboxed_float, Unboxed_float -> true
   | Unboxed_float,
-    (Same_as_ocaml_repr | Unboxed_integer _ | Untagged_int) -> false
+    (Same_as_ocaml_repr | Unboxed_integer _ | Untagged_immediate) -> false
   | Unboxed_integer bi1, Unboxed_integer bi2 -> equal_boxed_integer bi1 bi2
   | Unboxed_integer _,
-    (Same_as_ocaml_repr | Unboxed_float | Untagged_int) -> false
-  | Untagged_int, Untagged_int -> true
-  | Untagged_int,
+    (Same_as_ocaml_repr | Unboxed_float | Untagged_immediate) -> false
+  | Untagged_immediate, Untagged_immediate -> true
+  | Untagged_immediate,
     (Same_as_ocaml_repr | Unboxed_float | Unboxed_integer _) -> false
 
 let native_name_is_external p =
   let nat_name = native_name p in
   nat_name <> "" && nat_name.[0] <> '%'
 
+module Style = Misc.Style
+
 let report_error ppf err =
   match err with
   | Old_style_float_with_native_repr_attribute ->
-    Format.fprintf ppf "Cannot use \"float\" in conjunction with \
-                        [%@unboxed]/[%@untagged]."
+    Format_doc.fprintf ppf "Cannot use %a in conjunction with %a/%a."
+      Style.inline_code "float"
+      Style.inline_code "[@unboxed]"
+      Style.inline_code  "[@untagged]"
   | Old_style_noalloc_with_noalloc_attribute ->
-    Format.fprintf ppf "Cannot use \"noalloc\" in conjunction with \
-                        [%@%@noalloc]."
+    Format_doc.fprintf ppf "Cannot use %a in conjunction with %a."
+      Style.inline_code "noalloc"
+      Style.inline_code "[@@noalloc]"
   | No_native_primitive_with_repr_attribute ->
-    Format.fprintf ppf
-      "[@The native code version of the primitive is mandatory@ \
-       when attributes [%@untagged] or [%@unboxed] are present.@]"
+    Format_doc.fprintf ppf
+      "@[The native code version of the primitive is mandatory@ \
+       when attributes %a or %a are present.@]"
+      Style.inline_code "[@untagged]"
+      Style.inline_code "[@unboxed]"
 
 let () =
   Location.register_error_of_exn

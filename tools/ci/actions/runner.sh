@@ -31,7 +31,6 @@ Configure () {
 ------------------------------------------------------------------------
 This test builds the OCaml compiler distribution with your pull request
 and runs its testsuite.
-
 Failing to build the compiler distribution, or testsuite failures are
 critical errors that must be understood and fixed before your pull
 request can be merged.
@@ -45,36 +44,64 @@ EOF
     --disable-dependency-generation \
     $CONFIG_ARG"
 
-  case $XARCH in
-  x64)
-    ./configure $configure_flags
-    ;;
-  i386)
-    ./configure --build=x86_64-pc-linux-gnu --host=i386-linux \
-      CC='gcc -m32' AS='as --32' ASPP='gcc -m32 -c' \
-      PARTIALLD='ld -r -melf_i386' \
-      $configure_flags
-    ;;
-  *)
-    echo unknown arch
-    exit 1
-    ;;
-  esac
+  local failed
+  ./configure $configure_flags || failed=$?
+  if ((failed)) ; then cat config.log ; exit $failed ; fi
 }
 
 Build () {
-  script --return --command "$MAKE_WARN world.opt" build.log
-  script --return --append --command "$MAKE_WARN ocamlnat" build.log
+  local failed
+  export TERM=ansi
+  if [ "$(uname)" = 'Darwin' ]; then
+    script -q build.log $MAKE_WARN || failed=$?
+    if ((failed)); then
+      script -q build.log $MAKE_WARN make -j1 V=1
+      exit $failed
+    fi
+  else
+    script --return --command "$MAKE_WARN" build.log || failed=$?
+    if ((failed)); then
+      script --return --command "$MAKE_WARN -j1 V=1" build.log
+      exit $failed
+    fi
+  fi
+  if grep -Fq ' warning: undefined variable ' build.log; then
+    echo Undefined Makefile variables detected:
+    grep -F ' warning: undefined variable ' build.log
+    failed=1
+  fi
+  rm build.log
   echo Ensuring that all names are prefixed in the runtime
-  ./tools/check-symbol-names runtime/*.a
+  if ! ./tools/check-symbol-names runtime/*.a otherlibs/*/lib*.a ; then
+    failed=1
+  fi
+  if ((failed)); then
+    exit $failed
+  fi
 }
 
 Test () {
-  cd testsuite
-  echo Running the testsuite with the normal runtime
-  $MAKE all
-  echo Running the testsuite with the debug runtime
-  $MAKE USE_RUNTIME='d' OCAMLTESTDIR="$(pwd)/_ocamltestd" TESTLOG=_logd all
+  if [ "$1" = "sequential" ]; then
+    echo Running the testsuite sequentially
+    $MAKE -C testsuite all
+    cd ..
+  elif [ "$1" = "parallel" ]; then
+    echo Running the testsuite in parallel
+    $MAKE -C testsuite parallel
+    cd ..
+  else
+    echo "Error: unexpected argument '$1' to function Test(). " \
+         "It should be 'sequential' or 'parallel'."
+    exit 1
+  fi
+}
+
+# By default, TestPrefix will attempt to run the tests
+# in the given directory in parallel.
+TestPrefix () {
+  TO_RUN=parallel-"$1"
+  echo Running single testsuite directory with $TO_RUN
+  $MAKE -C testsuite $TO_RUN
   cd ..
 }
 
@@ -88,15 +115,6 @@ Install () {
 }
 
 Checks () {
-  set +x
-  STATUS=0
-  if grep -Fq ' warning: undefined variable ' build.log; then
-    echo -e '\e[31mERROR\e[0m Undefined Makefile variables detected!'
-    grep -F ' warning: undefined variable ' build.log | sort | uniq
-    STATUS=1
-  fi
-  rm build.log
-  set -x
   if fgrep 'SUPPORTS_SHARED_LIBRARIES=true' Makefile.config &>/dev/null ; then
     echo Check the code examples in the manual
     $MAKE manual-pregen
@@ -118,7 +136,6 @@ Checks () {
   test -z "$(git status --porcelain)"
   # Check that there are no ignored files
   test -z "$(git ls-files --others -i --exclude-standard)"
-  exit $STATUS
 }
 
 CheckManual () {
@@ -129,7 +146,9 @@ This test checks the global structure of the reference manual
 --------------------------------------------------------------------------
 EOF
   # we need some of the configuration data provided by configure
-  ./configure
+  local failed
+  ./configure || failed=$?
+  if ((failed)) ; then cat config.log ; exit $failed ; fi
   $MAKE check-stdlib check-case-collision -C manual/tests
 
 }
@@ -150,21 +169,34 @@ ReportBuildStatus () {
   else
     STATUS='success'
   fi
-  echo "::set-output name=build-status::$STATUS"
+  echo "build-status=$STATUS" >>"$GITHUB_OUTPUT"
   exit $CODE
 }
 
 BasicCompiler () {
+  local failed
   trap ReportBuildStatus ERR
 
+  local failed
   ./configure --disable-dependency-generation \
               --disable-debug-runtime \
-              --disable-instrumented-runtime
+              --disable-instrumented-runtime \
+              --enable-ocamltest \
+      || failed=$?
+  if ((failed)) ; then cat config.log ; exit $failed ; fi
 
   # Need a runtime
-  make -j coldstart
+  make -j coldstart || failed=$?
+  if ((failed)) ; then
+    make -j1 V=1 coldstart
+    exit $failed
+  fi
   # And generated files (ocamllex compiles ocamlyacc)
-  make -j ocamllex
+  make -j ocamllex || failed=$?
+  if ((failed)) ; then
+    make -j1 V=1 ocamllex
+    exit $failed
+  fi
 
   ReportBuildStatus 0
 }
@@ -172,7 +204,9 @@ BasicCompiler () {
 case $1 in
 configure) Configure;;
 build) Build;;
-test) Test;;
+test) Test parallel;;
+test_sequential) Test sequential;;
+test_prefix) TestPrefix $2;;
 api-docs) API_Docs;;
 install) Install;;
 manual) BuildManual;;

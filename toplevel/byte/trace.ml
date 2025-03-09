@@ -61,17 +61,18 @@ let invoke_traced_function codeptr env arg =
   Meta.invoke_traced_function codeptr env arg
 
 let print_label ppf l =
-  if l <> Asttypes.Nolabel then fprintf ppf "%s:" (Printtyp.string_of_label l)
+  if l <> Asttypes.Nolabel then fprintf ppf "%s:"
+  (Asttypes.string_of_label l)
 
 (* If a function returns a functional value, wrap it into a trace code *)
 
 let rec instrument_result env name ppf clos_typ =
-  match (Ctype.repr(Ctype.expand_head env clos_typ)).desc with
+  match get_desc (Ctype.expand_head env clos_typ) with
   | Tarrow(l, t1, t2, _) ->
       let starred_name =
         match name with
-        | Lident s -> Lident(s ^ "*")
-        | Ldot(lid, s) -> Ldot(lid, s ^ "*")
+        | Lident s -> Lident(s ^ "*" )
+        | Ldot(lid, id) -> Ldot(lid, { id with txt = id.txt ^ "*" })
         | Lapply _ -> fatal_error "Trace.instrument_result" in
       let trace_res = instrument_result env starred_name ppf t2 in
       (fun clos_val ->
@@ -109,7 +110,7 @@ exception Dummy
 let _ = Dummy
 
 let instrument_closure env name ppf clos_typ =
-  match (Ctype.repr(Ctype.expand_head env clos_typ)).desc with
+  match get_desc (Ctype.expand_head env clos_typ) with
   | Tarrow(l, t1, t2, _) ->
       let trace_res = instrument_result env name ppf t2 in
       (fun actual_code closure arg ->

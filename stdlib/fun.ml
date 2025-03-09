@@ -15,6 +15,7 @@
 
 external id : 'a -> 'a = "%identity"
 let const c _ = c
+let compose f g x = f (g x)
 let flip f x y = f y x
 let negate p v = not (p v)
 

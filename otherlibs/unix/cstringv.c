@@ -19,25 +19,25 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/osdeps.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
-char_os ** cstringvect(value arg, char * cmdname)
+char_os ** caml_unix_cstringvect(value arg, const char * cmdname)
 {
   char_os ** res;
-  mlsize_t size, i;
+  mlsize_t size;
 
   size = Wosize_val(arg);
-  for (i = 0; i < size; i++)
+  for (mlsize_t i = 0; i < size; i++)
     if (! caml_string_is_c_safe(Field(arg, i)))
-      unix_error(EINVAL, cmdname, Field(arg, i));
+      caml_unix_error(EINVAL, cmdname, Field(arg, i));
   res = (char_os **) caml_stat_alloc((size + 1) * sizeof(char_os *));
-  for (i = 0; i < size; i++)
+  for (mlsize_t i = 0; i < size; i++)
     res[i] = caml_stat_strdup_to_os(String_val(Field(arg, i)));
   res[size] = NULL;
   return res;
 }
 
-void cstringvect_free(char_os ** v)
+void caml_unix_cstringvect_free(char_os ** v)
 {
   int i = 0;
   while (v[i]) caml_stat_free(v[i++]);

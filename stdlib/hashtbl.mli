@@ -19,6 +19,40 @@
 (** Hash tables and hash functions.
 
    Hash tables are hashed association tables, with in-place modification.
+   Because most operations on a hash table modify their input, they're
+   more commonly used in imperative code. The lookup of the value associated
+   with a key (see {!find}, {!find_opt}) is normally very fast, often faster
+   than the equivalent lookup in {!Map}.
+
+   The functors {!Make} and {!MakeSeeded} can be used when
+   performance or flexibility are key.
+   The user provides custom equality and hash functions for the key type,
+   and obtains a custom hash table type for this particular type of key.
+
+   {b Warning} a hash table is only as good as the hash function. A bad hash
+   function will turn the table into a degenerate association list,
+   with linear time lookup instead of constant time lookup.
+
+   The polymorphic {!t} hash table is useful in simpler cases or
+   in interactive environments. It uses the polymorphic {!hash} function
+   defined in the OCaml runtime (at the time of writing, it's SipHash),
+   as well as the polymorphic equality [(=)].
+
+   See {{!examples} the examples section}.
+*)
+
+(** {b Unsynchronized accesses} *)
+
+[@@@warning "-53"]
+[@@@alert unsynchronized_access
+    "Unsynchronized accesses to hash tables are a programming error."
+]
+[@@@warning "+53"]
+
+ (**
+    Unsynchronized accesses to a hash table may lead to an invalid hash table
+    state. Thus, concurrent accesses to a hash tables must be synchronized
+    (for instance with a {!Mutex.t}).
 *)
 
 
@@ -30,17 +64,18 @@ type (!'a, !'b) t
 
 val create : ?random: (* thwart tools/sync_stdlib_docs *) bool ->
              int -> ('a, 'b) t
-(** [Hashtbl.create n] creates a new, empty hash table, with
-   initial size [n].  For best results, [n] should be on the
-   order of the expected number of elements that will be in
-   the table.  The table grows as needed, so [n] is just an
-   initial guess.
+(** [Hashtbl.create n] creates a new, empty hash table, with initial
+   size greater or equal to the suggested size [n].  For best results,
+   [n] should be on the order of the expected number of elements that
+   will be in the table.  The table grows as needed, so [n] is just an
+   initial guess.  If [n] is very small or negative then it is
+   disregarded and a small default size is used.
 
-   The optional [~][random] parameter (a boolean) controls whether
+   The optional [~random] parameter (a boolean) controls whether
    the internal organization of the hash table is randomized at each
    execution of [Hashtbl.create] or deterministic over all executions.
 
-   A hash table that is created with [~][random] set to [false] uses a
+   A hash table that is created with [~random] set to [false] uses a
    fixed hash function ({!hash}) to distribute keys among
    buckets.  As a consequence, collisions between keys happen
    deterministically.  In Web-facing applications or other
@@ -49,7 +84,7 @@ val create : ?random: (* thwart tools/sync_stdlib_docs *) bool ->
    denial-of-service attack: the attacker sends input crafted to
    create many collisions in the table, slowing the application down.
 
-   A hash table that is created with [~][random] set to [true] uses the seeded
+   A hash table that is created with [~random] set to [true] uses the seeded
    hash function {!seeded_hash} with a seed that is randomly chosen at hash
    table creation time.  In effect, the hash function used is randomly
    selected among [2^{30}] different hash functions.  All these hash
@@ -59,12 +94,12 @@ val create : ?random: (* thwart tools/sync_stdlib_docs *) bool ->
    or {!iter} is no longer deterministic: elements are enumerated in
    different orders at different runs of the program.
 
-   If no [~][random] parameter is given, hash tables are created
+   If no [~random] parameter is given, hash tables are created
    in non-random mode by default.  This default can be changed
    either programmatically by calling {!randomize} or by
    setting the [R] flag in the [OCAMLRUNPARAM] environment variable.
 
-   @before 4.00.0 the [~][random] parameter was not present and all
+   @before 4.00 the [~random] parameter was not present and all
    hash tables were created in non-randomized mode. *)
 
 val clear : ('a, 'b) t -> unit
@@ -74,7 +109,7 @@ val clear : ('a, 'b) t -> unit
 val reset : ('a, 'b) t -> unit
 (** Empty a hash table and shrink the size of the bucket table
     to its initial size.
-    @since 4.00.0 *)
+    @since 4.00 *)
 
 val copy : ('a, 'b) t -> ('a, 'b) t
 (** Return a copy of the given hashtable. *)
@@ -82,10 +117,14 @@ val copy : ('a, 'b) t -> ('a, 'b) t
 val add : ('a, 'b) t -> 'a -> 'b -> unit
 (** [Hashtbl.add tbl key data] adds a binding of [key] to [data]
    in table [tbl].
-   Previous bindings for [key] are not removed, but simply
+
+   {b Warning}: Previous bindings for [key] are not removed, but simply
    hidden. That is, after performing {!remove}[ tbl key],
    the previous binding for [key], if any, is restored.
-   (Same behavior as with association lists.) *)
+   (Same behavior as with association lists.)
+
+   If you desire the classic behavior of replacing elements,
+   see {!replace}. *)
 
 val find : ('a, 'b) t -> 'a -> 'b
 (** [Hashtbl.find tbl x] returns the current binding of [x] in [tbl],
@@ -133,7 +172,7 @@ val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
    of OCaml.  For randomized hash tables, the order of enumeration
    is entirely random.
 
-   The behavior is not defined if the hash table is modified
+   The behavior is not specified if the hash table is modified
    by [f] during the iteration.
 *)
 
@@ -146,9 +185,10 @@ val filter_map_inplace: ('a -> 'b -> 'b option) -> ('a, 'b) t ->
     to [new_val].
 
     Other comments for {!iter} apply as well.
-    @since 4.03.0 *)
+    @since 4.03 *)
 
-val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
+val fold :
+  ('a -> 'b -> 'acc -> 'acc) -> ('a, 'b) t -> 'acc -> 'acc
 (** [Hashtbl.fold f tbl init] computes
    [(f kN dN ... (f k1 d1 init)...)],
    where [k1 ... kN] are the keys of all bindings in [tbl],
@@ -166,7 +206,7 @@ val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
    of OCaml.  For randomized hash tables, the order of enumeration
    is entirely random.
 
-   The behavior is not defined if the hash table is modified
+   The behavior is not specified if the hash table is modified
    by [f] during the iteration.
 *)
 
@@ -186,19 +226,19 @@ val randomize : unit -> unit
     It is recommended that applications or Web frameworks that need to
     protect themselves against the denial-of-service attack described
     in {!create} call [Hashtbl.randomize()] at initialization
-    time.
+    time before any domains are created.
 
     Note that once [Hashtbl.randomize()] was called, there is no way
     to revert to the non-randomized default behavior of {!create}.
     This is intentional.  Non-randomized hash tables can still be
     created using [Hashtbl.create ~random:false].
 
-    @since 4.00.0 *)
+    @since 4.00 *)
 
 val is_randomized : unit -> bool
 (** Return [true] if the tables are currently created in randomized mode
     by default, [false] otherwise.
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val rebuild : ?random (* thwart tools/sync_stdlib_docs *) :bool ->
     ('a, 'b) t -> ('a, 'b) t
@@ -215,9 +255,9 @@ val rebuild : ?random (* thwart tools/sync_stdlib_docs *) :bool ->
     to produce a hash table for the current version of the {!Hashtbl}
     module.
 
-    @since 4.12.0 *)
+    @since 4.12 *)
 
-(** @since 4.00.0 *)
+(** @since 4.00 *)
 type statistics = {
   num_bindings: int;
     (** Number of bindings present in the table.
@@ -236,7 +276,7 @@ val stats : ('a, 'b) t -> statistics
 (** [Hashtbl.stats tbl] returns statistics about the table [tbl]:
    number of buckets, size of the biggest bucket, distribution of
    buckets by size.
-   @since 4.00.0 *)
+   @since 4.00 *)
 
 (** {1 Hash tables and Sequences} *)
 
@@ -246,7 +286,7 @@ val to_seq : ('a,'b) t -> ('a * 'b) Seq.t
     several bindings for the same key, they appear in reversed order of
     introduction, that is, the most recent binding appears first.
 
-    The behavior is not defined if the hash table is modified
+    The behavior is not specified if the hash table is modified
     during the iteration.
 
     @since 4.07 *)
@@ -335,14 +375,14 @@ module type S =
     type !'a t
     val create : int -> 'a t
     val clear : 'a t -> unit
-    val reset : 'a t -> unit (** @since 4.00.0 *)
+    val reset : 'a t -> unit (** @since 4.00 *)
 
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
     val find : 'a t -> key -> 'a
     val find_opt : 'a t -> key -> 'a option
-    (** @since 4.05.0 *)
+    (** @since 4.05 *)
 
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
@@ -350,11 +390,12 @@ module type S =
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t ->
       unit
-    (** @since 4.03.0 *)
+    (** @since 4.03 *)
 
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val fold :
+      (key -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
     val length : 'a t -> int
-    val stats: 'a t -> statistics (** @since 4.00.0 *)
+    val stats: 'a t -> statistics (** @since 4.00 *)
 
     val to_seq : 'a t -> (key * 'a) Seq.t
     (** @since 4.07 *)
@@ -396,15 +437,15 @@ module type SeededHashedType =
     val equal: t -> t -> bool
     (** The equality predicate used to compare keys. *)
 
-    val hash: int -> t -> int
+    val seeded_hash: int -> t -> int
       (** A seeded hashing function on keys.  The first argument is
           the seed.  It must be the case that if [equal x y] is true,
-          then [hash seed x = hash seed y] for any value of [seed].
-          A suitable choice for [hash] is the function {!seeded_hash}
-          below. *)
+          then [seeded_hash seed x = seeded_hash seed y] for any value of
+          [seed].  A suitable choice for [seeded_hash] is the function
+          {!Hashtbl.seeded_hash} below. *)
   end
 (** The input signature of the functor {!MakeSeeded}.
-    @since 4.00.0 *)
+    @since 4.00 *)
 
 module type SeededS =
   sig
@@ -418,7 +459,7 @@ module type SeededS =
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
     val find : 'a t -> key -> 'a
-    val find_opt : 'a t -> key -> 'a option (** @since 4.05.0 *)
+    val find_opt : 'a t -> key -> 'a option (** @since 4.05 *)
 
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
@@ -426,9 +467,10 @@ module type SeededS =
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t ->
       unit
-    (** @since 4.03.0 *)
+    (** @since 4.03 *)
 
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val fold :
+      (key -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
     val length : 'a t -> int
     val stats: 'a t -> statistics
 
@@ -451,7 +493,7 @@ module type SeededS =
     (** @since 4.07 *)
   end
 (** The output signature of the functor {!MakeSeeded}.
-    @since 4.00.0 *)
+    @since 4.00 *)
 
 module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
 (** Functor building an implementation of the hashtable structure.
@@ -462,10 +504,10 @@ module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
     interface, but use the seeded hashing and equality functions
     specified in the functor argument [H] instead of generic
     equality and hashing.  The [create] operation of the
-    result structure supports the [~][random] optional parameter
+    result structure supports the [~random] optional parameter
     and returns randomized hash tables if [~random:true] is passed
     or if randomization is globally on (see {!Hashtbl.randomize}).
-    @since 4.00.0 *)
+    @since 4.00 *)
 
 
 (** {1 The polymorphic hash functions} *)
@@ -480,7 +522,7 @@ val hash : 'a -> int
 val seeded_hash : int -> 'a -> int
 (** A variant of {!hash} that is further parameterized by
    an integer seed.
-   @since 4.00.0 *)
+   @since 4.00 *)
 
 val hash_param : int -> int -> 'a -> int
 (** [Hashtbl.hash_param meaningful total x] computes a hash value for [x],
@@ -505,4 +547,98 @@ val seeded_hash_param : int -> int -> int -> 'a -> int
 (** A variant of {!hash_param} that is further parameterized by
    an integer seed.  Usage:
    [Hashtbl.seeded_hash_param meaningful total seed x].
-   @since 4.00.0 *)
+   @since 4.00 *)
+
+(** {1:examples Examples}
+
+  {2 Basic Example}
+
+  {[
+    (* 0...99 *)
+    let seq = Seq.ints 0 |> Seq.take 100
+
+    (* build from Seq.t *)
+    # let tbl =
+        seq
+        |> Seq.map (fun x -> x, string_of_int x)
+        |> Hashtbl.of_seq
+    val tbl : (int, string) Hashtbl.t = <abstr>
+
+    # Hashtbl.length tbl
+    - : int = 100
+
+    # Hashtbl.find_opt tbl 32
+    - : string option = Some "32"
+
+    # Hashtbl.find_opt tbl 166
+    - : string option = None
+
+    # Hashtbl.replace tbl 166 "one six six"
+    - : unit = ()
+
+    # Hashtbl.find_opt tbl 166
+    - : string option = Some "one six six"
+
+    # Hashtbl.length tbl
+    - : int = 101
+    ]}
+
+
+  {2 Counting Elements}
+
+  Given a sequence of elements (here, a {!Seq.t}), we want to count how many
+  times each distinct element occurs in the sequence. A simple way to do this,
+  assuming the elements are comparable and hashable, is to use a hash table
+  that maps elements to their number of occurrences.
+
+  Here we illustrate that principle using a sequence of (ascii) characters
+  (type [char]).
+  We use a custom [Char_tbl] specialized for [char].
+
+  {[
+    # module Char_tbl = Hashtbl.Make(struct
+        type t = char
+        let equal = Char.equal
+        let hash = Hashtbl.hash
+      end)
+
+    (*  count distinct occurrences of chars in [seq] *)
+    # let count_chars (seq : char Seq.t) : _ list =
+        let counts = Char_tbl.create 16 in
+        Seq.iter
+          (fun c ->
+            let count_c =
+              Char_tbl.find_opt counts c
+              |> Option.value ~default:0
+            in
+            Char_tbl.replace counts c (count_c + 1))
+          seq;
+        (* turn into a list *)
+        Char_tbl.fold (fun c n l -> (c,n) :: l) counts []
+          |> List.sort (fun (c1,_)(c2,_) -> Char.compare c1 c2)
+    val count_chars : Char_tbl.key Seq.t -> (Char.t * int) list = <fun>
+
+    (* basic seq from a string *)
+    # let seq = String.to_seq "hello world, and all the camels in it!"
+    val seq : char Seq.t = <fun>
+
+    # count_chars seq
+    - : (Char.t * int) list =
+    [(' ', 7); ('!', 1); (',', 1); ('a', 3); ('c', 1); ('d', 2); ('e', 3);
+     ('h', 2); ('i', 2); ('l', 6); ('m', 1); ('n', 2); ('o', 2); ('r', 1);
+     ('s', 1); ('t', 2); ('w', 1)]
+
+    (* "abcabcabc..." *)
+    # let seq2 =
+        Seq.cycle (String.to_seq "abc") |> Seq.take 31
+    val seq2 : char Seq.t = <fun>
+
+    # String.of_seq seq2
+    - : String.t = "abcabcabcabcabcabcabcabcabcabca"
+
+    # count_chars seq2
+    - : (Char.t * int) list = [('a', 11); ('b', 10); ('c', 10)]
+
+  ]}
+
+*)

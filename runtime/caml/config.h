@@ -17,6 +17,17 @@
 #define CAML_CONFIG_H
 
 #include "m.h"
+#include "s.h"
+#include "compatibility.h"
+
+/* CAML_NAME_SPACE was introduced in OCaml 3.08 to declare compatibility with
+   the newly caml_-prefixed names of C runtime functions and to disable the
+   definition of compatibility macros for the un-prefixed names. The
+   compatibility layer was removed in OCaml 5.0, so CAML_NAME_SPACE is the
+   default. */
+#ifndef CAML_NAME_SPACE
+#define CAML_NAME_SPACE
+#endif
 
 /* If supported, tell gcc that we can use 32-bit code addresses for
  * threaded code, unless we are compiled for a shared library (-fPIC option) */
@@ -26,36 +37,21 @@
 #endif /* __PIC__ */
 #endif /* HAS_ARCH_CODE32 */
 
-/* Microsoft introduced the LL integer literal suffix in Visual C++ .NET 2003 */
-#if defined(_MSC_VER) && _MSC_VER < 1400
-#define INT64_LITERAL(s) s ## i64
-#else
+/* No longer used in the codebase, but kept because it was exported */
 #define INT64_LITERAL(s) s ## LL
-#endif
 
-#if defined(_MSC_VER) && !defined(__cplusplus)
-#define Caml_inline static __inline
-#else
 #define Caml_inline static inline
-#endif
-
-#include "s.h"
-
-#ifndef CAML_NAME_SPACE
-#include "compatibility.h"
-#endif
 
 #ifndef CAML_CONFIG_H_NO_TYPEDEFS
 
 #include <stddef.h>
+#include <limits.h>
 
 #if defined(HAS_LOCALE_H) || defined(HAS_XLOCALE_H)
 #define HAS_LOCALE
 #endif
 
-#ifdef HAS_STDINT_H
 #include <stdint.h>
-#endif
 
 /* Disable the mingw-w64 *printf shims */
 #if defined(CAML_INTERNALS) && defined(__MINGW32__)
@@ -70,7 +66,7 @@
   #define __USE_MINGW_ANSI_STDIO 0
 #endif
 
-#if defined(__MINGW32__) || (defined(_MSC_VER) && _MSC_VER < 1800)
+#if defined(__MINGW32__)
 #define ARCH_SIZET_PRINTF_FORMAT "I"
 #else
 #define ARCH_SIZET_PRINTF_FORMAT "z"
@@ -97,7 +93,7 @@
 #endif
 #endif
 
-#if defined(__MINGW32__) && !__USE_MINGW_ANSI_STDIO
+#if defined(__MINGW32__) && !__USE_MINGW_ANSI_STDIO && !defined(_UCRT)
   #define ARCH_INT64_TYPE long long
   #define ARCH_UINT64_TYPE unsigned long long
   #define ARCH_INT64_PRINTF_FORMAT "I64"
@@ -119,21 +115,6 @@
   #endif
 #endif
 
-#ifndef HAS_STDINT_H
-/* Not a C99 compiler, typically MSVC.  Define the C99 types we use. */
-typedef ARCH_INT32_TYPE int32_t;
-typedef ARCH_UINT32_TYPE uint32_t;
-typedef ARCH_INT64_TYPE int64_t;
-typedef ARCH_UINT64_TYPE uint64_t;
-#if SIZEOF_SHORT == 2
-typedef short int16_t;
-typedef unsigned short uint16_t;
-#else
-#error "No 16-bit integer type available"
-#endif
-typedef unsigned char uint8_t;
-#endif
-
 #if SIZEOF_PTR == SIZEOF_LONG
 /* Standard models: ILP32 or I32LP64 */
 typedef long intnat;
@@ -153,6 +134,11 @@ typedef uint64_t uintnat;
 #error "No integer type available to represent pointers"
 #endif
 
+#define CAML_INTNAT_MIN INTPTR_MIN
+#define CAML_INTNAT_MAX INTPTR_MAX
+#define CAML_UINTNAT_MIN UINTPTR_MIN
+#define CAML_UINTNAT_MAX UINTPTR_MAX
+
 #endif /* CAML_CONFIG_H_NO_TYPEDEFS */
 
 /* Endianness of floats */
@@ -171,11 +157,9 @@ typedef uint64_t uintnat;
 #endif
 
 
-/* We use threaded code interpretation if the compiler provides labels
-   as first-class values (GCC 2.x). */
-
-#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG) \
-    && !defined (SHRINKED_GNUC)
+/* We use threaded code interpretation if the C compiler supports the labels as
+   values extension. */
+#if defined(HAVE_LABELS_AS_VALUES) && !defined(DEBUG)
 #define THREADED_CODE
 #endif
 
@@ -190,13 +174,27 @@ typedef uint64_t uintnat;
 #define Page_size (1 << Page_log)
 
 /* Initial size of stack (bytes). */
-#define Stack_size (4096 * sizeof(value))
+#ifdef DEBUG
+#define Stack_init_bsize (64 * sizeof(value))
+#else
+#define Stack_init_bsize (4096 * sizeof(value))
+#endif
 
 /* Minimum free size of stack (bytes); below that, it is reallocated. */
-#define Stack_threshold (256 * sizeof(value))
+#define Stack_threshold_words 32
+#define Stack_threshold (Stack_threshold_words * sizeof(value))
+
+/* Number of words used in the control structure at the start of a stack
+   (see fiber.h) */
+#ifdef ARCH_SIXTYFOUR
+#define Stack_ctx_words (6 + 1)
+#else
+#define Stack_ctx_words (6 + 2)
+#endif
 
 /* Default maximum size of the stack (words). */
-#define Max_stack_def (1024 * 1024)
+/* (1 Gib for 64-bit platforms, 512 Mib for 32-bit platforms) */
+#define Max_stack_def (128 * 1024 * 1024)
 
 
 /* Maximum size of a block allocated in the young generation (words). */
@@ -206,44 +204,21 @@ typedef uint64_t uintnat;
 
 
 /* Minimum size of the minor zone (words).
-   This must be at least [2 * Max_young_whsize]. */
-#define Minor_heap_min 4096
-
-/* Maximum size of the minor zone (words).
-   Must be greater than or equal to [Minor_heap_min].
-*/
-#define Minor_heap_max (1 << 28)
+   This must be at least [Max_young_wosize + 1]. */
+#define Minor_heap_min (Max_young_wosize + 1)
 
 /* Default size of the minor zone. (words)  */
 #define Minor_heap_def 262144
 
-
 /* Minimum size increment when growing the heap (words).
    Must be a multiple of [Page_size / sizeof (value)]. */
 #define Heap_chunk_min (15 * Page_size)
-
-/* Default size increment when growing the heap.
-   If this is <= 1000, it's a percentage of the current heap size.
-   If it is > 1000, it's a number of words. */
-#define Heap_chunk_def 15
-
-/* Default initial size of the major heap (words);
-   Must be a multiple of [Page_size / sizeof (value)]. */
-#define Init_heap_def (31 * Page_size)
-/* (about 512 kB for a 32-bit platform, 1 MB for a 64-bit platform.) */
 
 
 /* Default speed setting for the major GC.  The heap will grow until
    the dead objects and the free list represent this percentage of the
    total size of live objects. */
 #define Percent_free_def 120
-
-/* Default setting for the compacter: 500%
-   (i.e. trigger the compacter when 5/6 of the heap is free or garbage)
-   This can be set quite high because the overhead is over-estimated
-   when fragmentation occurs.
- */
-#define Max_percent_free_def 500
 
 /* Default setting for the major GC slice smoothing window: 1
    (i.e. no smoothing)
@@ -264,9 +239,28 @@ typedef uint64_t uintnat;
 /* Default setting for maximum size of custom objects counted as garbage
    in the minor heap.
    Documented in gc.mli */
-#define Custom_minor_max_bsz_def 8192
+#define Custom_minor_max_bsz_def 70000
+
+/* Minimum amount of work to do in a major GC slice. */
+#define Major_slice_work_min 512
 
 /* Default allocation policy. */
 #define Allocation_policy_def caml_policy_best_fit
+
+/* Default size of runtime_events ringbuffers, in words, in powers of two */
+#define Default_runtime_events_log_wsize 16
+
+/* Assumed size of cache line. This value can be bigger than the actual L1
+   cache line size. Atomics allocated with aligned constructor are
+   memory-aligned this value to avoid false sharing of cache line. */
+#if defined(TARGET_s390x)
+   #define Cache_line_bsize 256
+#elif defined(TARGET_arm64) || defined(TARGET_power)
+   #define Cache_line_bsize 128
+#elif defined(TARGET_amd64) || defined(TARGET_riscv)
+   #define Cache_line_bsize 64
+#elif (!defined(NATIVE_CODE))
+   #define Cache_line_bsize 64
+#endif
 
 #endif /* CAML_CONFIG_H */

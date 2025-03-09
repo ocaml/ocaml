@@ -8,8 +8,8 @@ such as "awk", "perl" or "sed".
 
 Programs that use the "str" library must be linked as follows:
 \begin{alltt}
-        ocamlc \var{other options} str.cma \var{other files}
-        ocamlopt \var{other options} str.cmxa \var{other files}
+        ocamlc \var{other options} -I +str str.cma \var{other files}
+        ocamlopt \var{other options}  -I +str str.cmxa \var{other files}
 \end{alltt}
 For interactive use of the "str" library, do:
 \begin{alltt}
@@ -17,7 +17,11 @@ For interactive use of the "str" library, do:
         ./mytop
 \end{alltt}
 or (if dynamic linking of C libraries is supported on your platform),
-start "ocaml" and type "#load \"str.cma\";;".
+start "ocaml" and type
+\begin{caml_example*}{toplevel}
+#directory "+str";;
+#load  "str.cma";;
+\end{caml_example*}
 
 \begin{linklist}
 \libdocitem{Str}{regular expressions and string processing}

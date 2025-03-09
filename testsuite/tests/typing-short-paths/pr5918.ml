@@ -1,6 +1,6 @@
-(* TEST
-   flags = " -short-paths "
-   * toplevel
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
+
 *)
 
 module rec A : sig
@@ -10,3 +10,8 @@ end = struct
  let _ = { a = () }
 end
 ;;
+
+(* TEST
+ flags = " -short-paths ";
+ toplevel;
+*)

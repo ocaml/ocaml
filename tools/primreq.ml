@@ -26,9 +26,10 @@ let exclude_file = ref ""
 
 let primitives = ref String.Set.empty
 
-let scan_reloc = function
-    (Reloc_primitive s, _) -> primitives := String.Set.add s !primitives
-  | _ -> ()
+let scan_reloc (rel, _) = match rel with
+    Reloc_primitive s -> primitives := String.Set.add s !primitives
+  | Reloc_literal _ | Reloc_getcompunit _ | Reloc_setcompunit _
+  | Reloc_getpredef _ -> ()
 
 let scan_prim s =
   primitives := String.Set.add s !primitives
@@ -67,7 +68,7 @@ let exclude filename =
   with End_of_file -> close_in ic
      | x -> close_in ic; raise x
 
-let main() =
+let main () =
   Arg.parse_expand
     ["-used", Arg.Unit(fun () -> used := true; defined := false),
         "show primitives referenced in the object files";

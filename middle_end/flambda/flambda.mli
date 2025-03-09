@@ -93,8 +93,6 @@ type t =
   | Var of Variable.t
   | Let of let_expr
   | Let_mutable of let_mutable
-  | Let_rec of (Variable.t * named) list * t
-  (** CR-someday lwhite: give Let_rec the same fields as Let. *)
   | Apply of apply
   | Send of send
   | Assign of assign
@@ -103,7 +101,8 @@ type t =
   | String_switch of Variable.t * (string * t) list * t option
   (** Restrictions on [Lambda.Lstringswitch] also apply to [String_switch]. *)
   | Static_raise of Static_exception.t * Variable.t list
-  | Static_catch of Static_exception.t * Variable.t list * t * t
+  | Static_catch of
+      Static_exception.t * (Variable.t * Lambda.value_kind) list * t * t
   | Try_with of t * Variable.t * t
   | While of t * t
   | For of for_loop
@@ -325,6 +324,8 @@ and function_declaration = private {
   (** Specialising requirements from the source code. *)
   is_a_functor : bool;
   (** Whether the function is known definitively to be a functor. *)
+  poll: Lambda.poll_attribute;
+  (** Behaviour for polls *)
 }
 
 (** Equivalent to the similar type in [Lambda]. *)
@@ -554,6 +555,7 @@ val create_function_declaration
   -> specialise:Lambda.specialise_attribute
   -> is_a_functor:bool
   -> closure_origin:Closure_origin.t
+  -> poll:Lambda.poll_attribute
   -> function_declaration
 
 (** Create a function declaration based on another function declaration *)

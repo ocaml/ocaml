@@ -1,1 +1,2 @@
-Fatal error: exception Failure("callback failed")
+Run without exception.
+Exception from major allocation callback.

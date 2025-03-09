@@ -1,6 +1,6 @@
 (* TEST
-   include ocamlcommon
-   * toplevel
+ include ocamlcommon;
+ toplevel;
 *)
 
 Parse.expression (Lexing.from_string "1");;

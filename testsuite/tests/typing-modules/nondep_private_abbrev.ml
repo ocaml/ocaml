@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module F(_ : sig end) : sig
@@ -20,7 +20,7 @@ module G(X : sig end) : sig
   type t = F(X).t
 end = F(X);;
 [%%expect{|
-module G : functor (X : sig end) -> sig type t = F(X).t end
+module G : (X : sig end) -> sig type t = F(X).t end
 |}]
 
 module Indirect = G(struct end);;
@@ -58,14 +58,14 @@ module H(X : sig end) : sig
   type t = Pub(X).t
 end = Pub(X);;
 [%%expect{|
-module H : functor (X : sig end) -> sig type t = Pub(X).t end
+module H : (X : sig end) -> sig type t = Pub(X).t end
 |}]
 
 module I(X : sig end) : sig
   type t = Priv(X).t
 end = Priv(X);;
 [%%expect{|
-module I : functor (X : sig end) -> sig type t = Priv(X).t end
+module I : (X : sig end) -> sig type t = Priv(X).t end
 |}]
 
 module IndirectPub = H(struct end);;
@@ -125,6 +125,9 @@ Error: Signature mismatch:
          type s = t
        is not included in
          type s = private [ `Bar of int | `Foo of 'a -> int ] as 'a
+       The type "[ `Bar of int | `Foo of t -> int ]" is not equal to the type
+         "[ `Bar of int | `Foo of 'a -> int ] as 'a"
+       Types for tag "`Foo" are incompatible
 |}]
 
 (* nondep_type_decl + nondep_type_rec *)
@@ -141,7 +144,7 @@ module I(X : sig end) : sig
   type t = Priv(X).t
 end = Priv(X);;
 [%%expect{|
-module I : functor (X : sig end) -> sig type t = Priv(X).t end
+module I : (X : sig end) -> sig type t = Priv(X).t end
 |}]
 
 module IndirectPriv = I(struct end);;

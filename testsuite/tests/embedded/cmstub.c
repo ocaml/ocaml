@@ -11,6 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
+#define _CRT_NONSTDC_NO_WARNINGS  /* for strdup */
 #include <string.h>
 #include <caml/mlvalues.h>
 #include <caml/callback.h>

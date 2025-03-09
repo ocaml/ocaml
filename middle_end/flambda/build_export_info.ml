@@ -238,14 +238,6 @@ let rec approx_of_expr (env : Env.t) (flam : Flambda.t) : Export_info.approx =
     approx_of_expr env body
   | Let_mutable { body } ->
     approx_of_expr env body
-  | Let_rec (defs, body) ->
-    let env =
-      List.fold_left (fun env (var, defining_expr) ->
-          let approx = descr_of_named env defining_expr in
-          Env.add_approx env var approx)
-        env defs
-    in
-    approx_of_expr env body
   | Apply { func; kind; _ } ->
     begin match kind with
     | Indirect -> Value_unknown
@@ -286,7 +278,7 @@ and descr_of_named (env : Env.t) (named : Flambda.named)
       Value_block (Tag.create_exn tag, Array.of_list approxs)
     in
     Value_id (Env.new_descr env descr)
-  | Prim (Pfield i, [arg], _) ->
+  | Prim (Pfield (i, _, _), [arg], _) ->
     begin match Env.get_descr env (Env.find_approx env arg) with
     | Some (Value_block (_, fields)) when Array.length fields > i -> fields.(i)
     | _ -> Value_unknown

@@ -229,11 +229,12 @@ let check_file ?(tool = default_comparison_tool) files =
 
 let diff files =
   let temporary_file = Filename.temp_file "ocamltest" "diff" in
+  let diff = Ocamltest_config.diff in
+  let diff_flags = String.words Ocamltest_config.diff_flags in
+  let diff_files = [files.reference_filename; files.output_filename] in
   let diff_commandline =
-    Filename.quote_command "diff" ~stdout:temporary_file
-      [ "--strip-trailing-cr"; "-u";
-        files.reference_filename;
-        files.output_filename ]
+    Filename.quote_command diff ~stdout:temporary_file
+      (diff_flags @ diff_files)
   in
   let result =
     match Sys.command diff_commandline with

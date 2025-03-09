@@ -1,3 +1,4 @@
+# 2 "asmcomp/riscv/proc.ml"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -21,10 +22,6 @@ open Reg
 open Arch
 open Mach
 
-(* Instruction selection *)
-
-let word_addressed = false
-
 (* Registers available for register allocation *)
 
 (* Integer register map
@@ -37,8 +34,7 @@ let word_addressed = false
     s2-s9        8-15      arguments/results (preserved by C)
     t2-t6        16-20     temporary
     s0           21        general purpose (preserved by C)
-    t0           22        temporary
-    t1           23        temporary (used by code generator)
+    t0, t1       22-23     temporaries (used by call veneers)
     s1           24        trap pointer (preserved by C)
     s10          25        allocation pointer (preserved by C)
     s11          26        domain pointer (preserved by C)
@@ -86,7 +82,7 @@ let register_class r =
   | Val | Int | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 23; 32 |]
+let num_available_registers = [| 22; 32 |]
 
 let first_available_register = [| 0; 100 |]
 
@@ -122,12 +118,14 @@ let stack_slot slot ty =
 
 (* Calling conventions *)
 
+let size_domainstate_args = 64 * size_int
+
 let calling_conventions
-    first_int last_int first_float last_float make_stack arg =
+    first_int last_int first_float last_float make_stack first_stack arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
-  let ofs = ref 0 in
+  let ofs = ref first_stack in
   for i = 0 to Array.length arg - 1 do
     match arg.(i) with
     | Val | Int | Addr as ty ->
@@ -147,32 +145,38 @@ let calling_conventions
           ofs := !ofs + size_float
         end
   done;
-  (loc, Misc.align !ofs 16) (* Keep stack 16-aligned. *)
+  (loc, Misc.align (max 0 !ofs) 16) (* Keep stack 16-aligned. *)
 
-let incoming ofs = Incoming ofs
-let outgoing ofs = Outgoing ofs
+let incoming ofs =
+  if ofs >= 0
+  then Incoming ofs
+  else Domainstate (ofs + size_domainstate_args)
+let outgoing ofs =
+  if ofs >= 0
+  then Outgoing ofs
+  else Domainstate (ofs + size_domainstate_args)
 let not_supported _ = fatal_error "Proc.loc_results: cannot call"
 
-let max_arguments_for_tailcalls = 16
+let max_arguments_for_tailcalls = 16 (* in regs *) + 64 (* in domain state *)
 
 (* OCaml calling convention:
      first integer args in a0 .. a7, s2 .. s9
      first float args in fa0 .. fa7, fs2 .. fs9
-     remaining args on stack.
+     remaining args in domain state area, then on stack.
    Return values in a0 .. a7, s2 .. s9 or fa0 .. fa7, fs2 .. fs9. *)
 
 let loc_arguments arg =
-  calling_conventions 0 15 110 125 outgoing arg
+  calling_conventions 0 15 110 125 outgoing (- size_domainstate_args) arg
 
 let loc_parameters arg =
   let (loc, _ofs) =
-    calling_conventions 0 15 110 125 incoming arg
+    calling_conventions 0 15 110 125 incoming (- size_domainstate_args) arg
   in
   loc
 
 let loc_results res =
   let (loc, _ofs) =
-    calling_conventions 0 15 110 125 not_supported res
+    calling_conventions 0 15 110 125 not_supported 0 res
   in
   loc
 
@@ -219,38 +223,36 @@ let loc_external_arguments ty_args =
   external_calling_conventions 0 7 110 117 outgoing arg
 
 let loc_external_results res =
-  let (loc, _ofs) = calling_conventions 0 1 110 111 not_supported res
+  let (loc, _ofs) = calling_conventions 0 1 110 111 not_supported 0 res
   in loc
 
 (* Exceptions are in a0 *)
 
 let loc_exn_bucket = phys_reg 0
 
-(* Volatile registers: none *)
-
-let regs_are_volatile _ = false
-
 (* Registers destroyed by operations *)
 
-let destroyed_at_c_call =
-  (* s0-s11 and fs0-fs11 are callee-save.  However s2 needs to be in this
-     list since it is clobbered by caml_c_call itself. *)
+let destroyed_at_c_noalloc_call =
+  (* s0-s11 and fs0-fs11 are callee-save, but s0 is
+     used to preserve OCaml sp. *)
   Array.of_list(List.map phys_reg
-    [0; 1; 2; 3; 4; 5; 6; 7; 8; 16; 17; 18; 19; 20; 22;
+    [0; 1; 2; 3; 4; 5; 6; 7; 16; 17; 18; 19; 20; 21 (* s0 *);
      100; 101; 102; 103; 104; 105; 106; 107; 110; 111; 112; 113; 114; 115; 116;
      117; 128; 129; 130; 131])
 
 let destroyed_at_alloc =
   (* t0-t6 are used for PLT stubs *)
-  if !Clflags.dlcode then Array.map phys_reg [|16; 17; 18; 19; 20; 22|]
-  else [| |]
+  if !Clflags.dlcode then Array.map phys_reg [|16; 17; 18; 19; 20|]
+  else [| phys_reg 16 |] (* t2 is used to pass the argument to caml_allocN *)
 
 let destroyed_at_oper = function
-  | Iop(Icall_ind | Icall_imm _ | Iextcall{alloc = true; _}) -> all_phys_regs
-  | Iop(Iextcall{alloc = false; _}) -> destroyed_at_c_call
-  | Iop(Ialloc _) -> destroyed_at_alloc
+  | Iop(Icall_ind | Icall_imm _) -> all_phys_regs
+  | Iop(Iextcall{alloc; stack_ofs; _}) ->
+      assert (stack_ofs >= 0);
+      if alloc || stack_ofs > 0 then all_phys_regs
+      else destroyed_at_c_noalloc_call
+  | Iop(Ialloc _) | Iop(Ipoll _) -> destroyed_at_alloc
   | Iop(Istore(Single, _, _)) -> [| phys_reg 100 |]
-  | Iswitch _ -> [| phys_reg 22 |]  (* t0 *)
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
@@ -267,18 +269,9 @@ let max_register_pressure = function
   | Iextcall _ -> [| 9; 12 |]
   | _ -> [| 23; 30 |]
 
-(* Layout of the stack *)
-
-let frame_required fd =
-  fd.fun_contains_calls
-  || fd.fun_num_stack_slots.(0) > 0
-  || fd.fun_num_stack_slots.(1) > 0
-
-let prologue_required fd =
-  frame_required fd
-
 (* See
-   https://github.com/riscv/riscv-elf-psabi-doc/blob/master/riscv-elf.md *)
+   https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/riscv-elf.adoc
+*)
 
 let int_dwarf_reg_numbers =
   [| 10; 11; 12; 13; 14; 15; 16; 17;

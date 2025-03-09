@@ -49,7 +49,7 @@ module Effect_and_coeffect : sig
   val none : t
   val arbitrary : t
 
-  val effect : t -> Effect.t
+  val effect_ : t -> Effect.t
   val coeffect : t -> Coeffect.t
 
   val effect_only : Effect.t -> t
@@ -115,36 +115,14 @@ class virtual selector_generic : object
     (* Fill a freshly allocated block.  Can be overridden for architectures
        that do not provide Arch.offset_addressing. *)
 
-  method mark_call : unit
-  (* informs the code emitter that the current function is non-leaf:
-     it may perform a (non-tail) call; by default, sets
-     [contains_calls := true] *)
-
-  method mark_tailcall : unit
-  (* informs the code emitter that the current function may end with
-     a tail-call; by default, does nothing *)
-
-  method mark_c_tailcall : unit
-  (* informs the code emitter that the current function may call
-     a C function that never returns; by default, does nothing.
-
-     It is unnecessary to save the stack pointer in this situation
-     (which is the main purpose of tracking leaf functions) but some
-     architectures still need to ensure that the stack is properly
-     aligned when the C function is called. This is achieved by
-     overloading this method to set [contains_calls := true] *)
-
-  method mark_instr : Mach.instruction_desc -> unit
-  (* dispatches on instructions to call one of the marking function
-     above; overloading this is useful if Ispecific instructions need
-     marking *)
-
-  (* The following method is the entry point and should not be overridden. *)
-  method emit_fundecl : Cmm.fundecl -> Mach.fundecl
+  (* The following method is the entry point and should not be overridden *)
+  method emit_fundecl : future_funcnames:Misc.Stdlib.String.Set.t
+                                              -> Cmm.fundecl -> Mach.fundecl
 
   (* The following methods should not be overridden.  They cannot be
      declared "private" in the current implementation because they
      are not always applied to "self", but ideally they should be private. *)
+  method extract_onto : Mach.instruction -> Mach.instruction
   method extract : Mach.instruction
   method insert :
     environment -> Mach.instruction_desc -> Reg.t array -> Reg.t array -> unit
@@ -160,11 +138,6 @@ class virtual selector_generic : object
   method emit_expr :
     environment -> Cmm.expression -> Reg.t array option
   method emit_tail : environment -> Cmm.expression -> unit
-
-  (* [contains_calls] is declared as a reference instance variable,
-     instead of a mutable boolean instance variable,
-     because the traversal uses functional object copies. *)
-  val contains_calls : bool ref
 end
 
 val reset : unit -> unit

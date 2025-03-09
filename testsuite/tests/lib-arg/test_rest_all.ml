@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type arg = AString of string | ARest of string | ARest_all of string list

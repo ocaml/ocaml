@@ -13,4 +13,4 @@
 (*                                                                        *)
 (**************************************************************************)
 
-val get_desc : Events.code_event -> string;;
+val get_desc : Events.code_event -> string

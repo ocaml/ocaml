@@ -1,5 +1,5 @@
 (* TEST
-   * ocamldoc with html
+ ocamldoc with html;
 *)
 
 (** Test the html rendering of ocamldoc documentation tags *)

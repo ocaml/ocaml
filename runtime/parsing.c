@@ -23,6 +23,7 @@
 #include "caml/mlvalues.h"
 #include "caml/memory.h"
 #include "caml/alloc.h"
+#include "caml/startup.h"
 
 #define ERRCODE 256
 
@@ -72,16 +73,12 @@ struct parser_env {       /* Mirrors parser_env in ../stdlib/parsing.ml */
 #define Short(tbl,n) (((short *)(tbl))[n])
 #endif
 
-int caml_parser_trace = 0;
-
 /* Input codes */
 /* Mirrors parser_input in ../stdlib/parsing.ml */
-#define START 0
-#define TOKEN_READ 1
-#define STACKS_GROWN_1 2
-#define STACKS_GROWN_2 3
-#define SEMANTIC_ACTION_COMPUTED 4
-#define ERROR_DETECTED 5
+enum input_codes {
+  START, TOKEN_READ, STACKS_GROWN_1, STACKS_GROWN_2, SEMANTIC_ACTION_COMPUTED,
+  ERROR_DETECTED,
+};
 
 /* Output codes */
 /* Mirrors parser_output in ../stdlib/parsing.ml */
@@ -106,7 +103,7 @@ int caml_parser_trace = 0;
 
 /* Auxiliary for printing token just read */
 
-static char * token_name(char * names, int number)
+static const char * token_name(const char * names, int number)
 {
   for (/*nothing*/; number > 0; number--) {
     if (names[0] == 0) return "<unknown token>";
@@ -115,7 +112,8 @@ static char * token_name(char * names, int number)
   return names;
 }
 
-static void print_token(struct parser_tables *tables, int state, value tok)
+static void print_token(const struct parser_tables *tables, int state,
+                        value tok)
 {
   value v;
 
@@ -136,19 +134,39 @@ static void print_token(struct parser_tables *tables, int state, value tok)
       fprintf(stderr, "_");
     fprintf(stderr, ")\n");
   }
+  fflush(stderr);
+}
+
+static int trace(void)
+{
+  return caml_params->parser_trace || Caml_state->parser_trace;
+}
+
+static void print_trace (const char *template, ...){
+  va_list ap;
+  if(trace()) {
+     va_start (ap, template);
+     vfprintf (stderr, template, ap);
+     va_end (ap);
+     /* Windows seem to sometimes perform buffering on stderr. Better
+        to flush explicitly. */
+     fflush(stderr);
+  }
 }
 
 /* The pushdown automata */
 
-CAMLprim value caml_parse_engine(struct parser_tables *tables,
-                                 struct parser_env *env, value cmd, value arg)
+CAMLprim value caml_parse_engine(value vtables, value venv,
+                                 value cmd, value arg)
 {
+  struct parser_tables * tables = (struct parser_tables *) vtables;
+  struct parser_env * env = (struct parser_env *) venv;
   int state;
   mlsize_t sp, asp;
   int errflag;
   int n, n1, n2, m, state1;
 
-  switch(Int_val(cmd)) {
+  switch((enum input_codes)Int_val(cmd)) {
 
   case START:
     state = 0;
@@ -172,7 +190,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
       env->curr_char = Field(tables->transl_const, Int_val(arg));
       caml_modify(&env->lval, Val_long(0));
     }
-    if (caml_parser_trace) print_token(tables, state, arg);
+    if (trace()) print_token(tables, state, arg);
 
   testshift:
     n1 = Short(tables->sindex, state);
@@ -201,17 +219,12 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
         n2 = n1 + ERRCODE;
         if (n1 != 0 && n2 >= 0 && n2 <= Int_val(tables->tablesize) &&
             Short(tables->check, n2) == ERRCODE) {
-          if (caml_parser_trace)
-            fprintf(stderr, "Recovering in state %d\n", state1);
+          print_trace("Recovering in state %d\n", state1);
           goto shift_recover;
         } else {
-          if (caml_parser_trace){
-            fprintf(stderr, "Discarding state %d\n", state1);
-          }
+          print_trace("Discarding state %d\n", state1);
           if (sp <= Int_val(env->stackbase)) {
-            if (caml_parser_trace){
-              fprintf(stderr, "No more states to discard\n");
-            }
+            print_trace("No more states to discard\n");
             return RAISE_PARSE_ERROR; /* The ML code raises Parse_error */
           }
           sp--;
@@ -220,7 +233,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     } else {
       if (Int_val(env->curr_char) == 0)
         return RAISE_PARSE_ERROR; /* The ML code raises Parse_error */
-      if (caml_parser_trace) fprintf(stderr, "Discarding last token read\n");
+      print_trace("Discarding last token read\n");
       env->curr_char = Val_int(-1);
       goto loop;
     }
@@ -229,9 +242,8 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     env->curr_char = Val_int(-1);
     if (errflag > 0) errflag--;
   shift_recover:
-    if (caml_parser_trace)
-      fprintf(stderr, "State %d: shift to state %d\n",
-              state, Short(tables->table, n2));
+    print_trace("State %d: shift to state %d\n",
+                state, Short(tables->table, n2));
     state = Short(tables->table, n2);
     sp++;
     if (sp < Long_val(env->stacksize)) goto push;
@@ -248,8 +260,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     goto loop;
 
   reduce:
-    if (caml_parser_trace)
-      fprintf(stderr, "State %d: reduce by rule %d\n", state, n);
+    print_trace("State %d: reduce by rule %d\n", state, n);
     m = Short(tables->len, n);
     env->asp = Val_int(sp);
     env->rule_number = Val_int(n);
@@ -288,17 +299,15 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     goto loop;
 
   default:                      /* Should not happen */
-    CAMLassert(0);
-    return RAISE_PARSE_ERROR;   /* Keeps gcc -Wall happy */
+    CAMLunreachable();
   }
-
 }
 
 /* Control printing of debugging info */
 
 CAMLprim value caml_set_parser_trace(value flag)
 {
-  value oldflag = Val_bool(caml_parser_trace);
-  caml_parser_trace = Bool_val(flag);
+  value oldflag = Val_bool(trace());
+  Caml_state->parser_trace = Bool_val(flag);
   return oldflag;
 }

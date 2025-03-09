@@ -17,25 +17,20 @@
 
 (** Types *)
 
-(** Representation of a simple parameter name *)
 type simple_name = {
     sn_name : string ;
     sn_type : Types.type_expr ;
     mutable sn_text : Odoc_types.text option ;
   }
 
-(** Representation of parameter names. We need it to represent parameter names in tuples.
-   The value [Tuple ([], t)] stands for an anonymous parameter.*)
 type param_info =
   | Simple_name of simple_name
   | Tuple of param_info list * Types.type_expr
 
-(** A parameter is just a param_info.*)
 type parameter = param_info
 
 (** Functions *)
 
-(** access to the name as a string. For tuples, parentheses and commas are added. *)
 let complete_name p =
   let rec iter pi =
     match pi with
@@ -48,14 +43,11 @@ let complete_name p =
   in
   iter p
 
-(** access to the complete type *)
 let typ pi =
   match pi with
     Simple_name sn -> sn.sn_type
   | Tuple (_, typ) -> typ
 
-(** Update the text of a parameter using a function returning
-   the optional text associated to a parameter name.*)
 let update_parameter_text f p =
   let rec iter pi =
     match pi with
@@ -66,8 +58,6 @@ let update_parameter_text f p =
   in
   iter p
 
-(** access to the description of a specific name.
-   @raise Not_found if no description is associated to the given name. *)
 let desc_by_name pi name =
   let rec iter acc pi =
     match pi with
@@ -79,9 +69,6 @@ let desc_by_name pi name =
   let l = iter [] pi in
   List.assoc name l
 
-
-(** access to the list of names ; only one for a simple parameter, or
-   a list for tuples. *)
 let names pi =
   let rec iter acc pi =
     match pi with
@@ -92,8 +79,6 @@ let names pi =
   in
   iter [] pi
 
-(** access to the type of a specific name.
-   @raise Not_found if no type is associated to the given name. *)
 let type_by_name pi name =
   let rec iter acc pi =
     match pi with
@@ -105,7 +90,6 @@ let type_by_name pi name =
   let l = iter [] pi in
   List.assoc name l
 
-(** access to the optional description of a parameter name from an optional info structure.*)
 let desc_from_info_opt info_opt s =
   match info_opt with
     None -> None

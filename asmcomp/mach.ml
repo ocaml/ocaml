@@ -49,17 +49,25 @@ type operation =
   | Itailcall_imm of { func : string; }
   | Iextcall of { func : string;
                   ty_res : Cmm.machtype; ty_args : Cmm.exttype list;
-                  alloc : bool; }
+                  alloc : bool;
+                  stack_ofs : int; }
   | Istackoffset of int
-  | Iload of Cmm.memory_chunk * Arch.addressing_mode * Asttypes.mutable_flag
+  | Iload of { memory_chunk : Cmm.memory_chunk;
+               addressing_mode : Arch.addressing_mode;
+               mutability : Asttypes.mutable_flag;
+               is_atomic : bool }
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
   | Ialloc of { bytes : int; dbginfo : Debuginfo.alloc_dbginfo; }
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int
+  | Icompf of float_comparison
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Iopaque
   | Ispecific of Arch.specific_operation
+  | Ipoll of { return_label: Cmm.label option }
+  | Idls_get
+  | Ireturn_addr
 
 type instruction =
   { desc: instruction_desc;
@@ -87,8 +95,8 @@ type fundecl =
     fun_body: instruction;
     fun_codegen_options : Cmm.codegen_option list;
     fun_dbg : Debuginfo.t;
+    fun_poll: Lambda.poll_attribute;
     fun_num_stack_slots: int array;
-    fun_contains_calls: bool;
   }
 
 let rec dummy_instr =
@@ -145,7 +153,8 @@ let rec instr_iter f i =
 
 let operation_is_pure = function
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
-  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _ | Ipoll _
+  | Idls_get
   | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) | Iopaque -> false
   | Ispecific sop -> Arch.operation_is_pure sop
   | _ -> true
@@ -154,6 +163,6 @@ let operation_can_raise op =
   match op with
   | Icall_ind | Icall_imm _ | Iextcall _
   | Iintop (Icheckbound) | Iintop_imm (Icheckbound, _)
-  | Ialloc _ -> true
+  | Ialloc _ | Ipoll _ -> true
   | Ispecific sop -> Arch.operation_can_raise sop
   | _ -> false

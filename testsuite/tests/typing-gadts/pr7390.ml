@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type empty = Empty and filled = Filled
@@ -21,11 +21,11 @@ type 'fill either =
 let f (* : filled either -> string *) =
   fun (Either (Y a, N)) -> a;;
 [%%expect{|
-Line 2, characters 2-28:
+Line 2, characters 6-23:
 2 |   fun (Either (Y a, N)) -> a;;
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+          ^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Either (N, Y _)
+  Here is an example of a case that is not matched: "Either (N, Y _)"
+
 val f : filled either -> string = <fun>
 |}]

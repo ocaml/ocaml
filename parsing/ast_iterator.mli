@@ -13,9 +13,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** {!iterator} enables AST inspection using open recursion.  A
-    typical mapper would be based on {!default_iterator}, a trivial iterator,
-    and will fall back on it for handling the syntax it does not modify.
+(** {!Ast_iterator.iterator} enables AST inspection using open recursion.  A
+    typical mapper would be based on {!Ast_iterator.default_iterator}, a
+    trivial iterator, and will fall back on it for handling the syntax it does
+    not modify.
 
   {b Warning:} this module is unstable and part of
   {{!Compiler_libs}compiler-libs}.
@@ -42,6 +43,7 @@ type iterator = {
   class_type_declaration: iterator -> class_type_declaration -> unit;
   class_type_field: iterator -> class_type_field -> unit;
   constructor_declaration: iterator -> constructor_declaration -> unit;
+  directive_argument: iterator -> directive_argument -> unit;
   expr: iterator -> expression -> unit;
   extension: iterator -> extension -> unit;
   extension_constructor: iterator -> extension_constructor -> unit;
@@ -57,12 +59,15 @@ type iterator = {
   module_type_declaration: iterator -> module_type_declaration -> unit;
   open_declaration: iterator -> open_declaration -> unit;
   open_description: iterator -> open_description -> unit;
+  package_type: iterator -> package_type -> unit;
   pat: iterator -> pattern -> unit;
   payload: iterator -> payload -> unit;
   signature: iterator -> signature -> unit;
   signature_item: iterator -> signature_item -> unit;
   structure: iterator -> structure -> unit;
   structure_item: iterator -> structure_item -> unit;
+  toplevel_directive: iterator -> toplevel_directive -> unit;
+  toplevel_phrase: iterator -> toplevel_phrase -> unit;
   typ: iterator -> core_type -> unit;
   row_field: iterator -> row_field -> unit;
   object_field: iterator -> object_field -> unit;

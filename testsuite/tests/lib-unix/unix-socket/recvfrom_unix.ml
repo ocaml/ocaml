@@ -1,10 +1,13 @@
 (* TEST
-include unix
-modules = "recvfrom.ml"
-* hasunix
-** not-windows
-*** bytecode
-*** native
+ include unix;
+ modules = "recvfrom.ml";
+ hasunix;
+ not-windows;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 open Recvfrom
 

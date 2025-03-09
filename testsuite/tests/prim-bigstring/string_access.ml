@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 external caml_bytes_get_16 : bytes -> int -> int = "%caml_bytes_get16"
 external caml_bytes_get_32 : bytes -> int -> int32 = "%caml_bytes_get32"

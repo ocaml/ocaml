@@ -23,21 +23,38 @@
 extern void caml_init_locale(void);
 extern void caml_free_locale(void);
 
-extern void caml_init_atom_table (void);
+/* readonly after startup */
+struct caml_params {
+  const char_os* exe_name;
 
-extern uintnat caml_init_percent_free;
-extern uintnat caml_init_max_percent_free;
-extern uintnat caml_init_minor_heap_wsz;
-extern uintnat caml_init_heap_chunk_sz;
-extern uintnat caml_init_heap_wsz;
-extern uintnat caml_init_max_stack_wsz;
-extern uintnat caml_init_major_window;
-extern uintnat caml_init_custom_major_ratio;
-extern uintnat caml_init_custom_minor_ratio;
-extern uintnat caml_init_custom_minor_max_bsz;
-extern uintnat caml_init_policy;
-extern uintnat caml_trace_level;
-extern int caml_cleanup_on_exit;
+  /* for meta.c */
+  const char* section_table;
+  asize_t section_table_size;
+
+  const char_os* cds_file;
+
+  uintnat parser_trace;
+  uintnat trace_level;
+  uintnat runtime_events_log_wsize;
+  uintnat verify_heap;
+  uintnat print_magic;
+  uintnat print_config;
+
+  uintnat init_percent_free;
+  uintnat init_minor_heap_wsz;
+  uintnat init_custom_major_ratio;
+  uintnat init_custom_minor_ratio;
+  uintnat init_custom_minor_max_bsz;
+  uintnat init_max_stack_wsz;
+
+  uintnat backtrace_enabled;
+  uintnat runtime_warnings;
+  uintnat cleanup_on_exit;
+  uintnat event_trace;
+  uintnat max_domains;
+};
+
+extern const struct caml_params* const caml_params;
 
 extern void caml_parse_ocamlrunparam (void);
 
@@ -45,6 +62,10 @@ extern void caml_parse_ocamlrunparam (void);
    Returns 0 if the runtime is already initialized.
    If [pooling] is 0, [caml_stat_*] functions will not be backed by a pool. */
 extern int caml_startup_aux (int pooling);
+
+void caml_init_exe_name(const char_os* exe_name);
+void caml_init_section_table(const char* section_table,
+                             asize_t section_table_size);
 
 #endif /* CAML_INTERNALS */
 

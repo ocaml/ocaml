@@ -1,0 +1,10 @@
+Key:
+  <function description>: <function arity>
+
+3 params: 3-ary fun
+2 params then 1 param: 2-ary fun returning 1-ary fun
+1 param then 2 params: 1-ary fun returning 2-ary fun
+1 param, then 1 param, then 1 param: 1-ary fun returning 1-ary fun returning 1-ary fun
+1 param then let-bound 2 params: 1-ary fun returning 2-ary fun
+2 params then let-bound 1 param: 2-ary fun returning 1-ary fun
+1 param, then let-bound 1 param, then let-bound 1 param: 1-ary fun returning 1-ary fun returning 1-ary fun

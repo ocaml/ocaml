@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module M : sig
@@ -31,8 +31,8 @@ let y =
 Line 2, characters 8-41:
 2 |   match (M.bar :> [ `Bar of M.t | `Foo ]) with
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type M.t is not a subtype of [ `Bar of M.t | `Foo ]
-       Type M.t = [ `Bar of M.t | `Foo ] is not a subtype of M.t
+Error: Type "M.t" is not a subtype of "[ `Bar of M.t | `Foo ]"
+       Type "M.t" = "[ `Bar of M.t | `Foo ]" is not a subtype of "M.t"
 |}]
 
 module F(X : sig end) : sig
@@ -48,7 +48,7 @@ end = struct
 end;;
 [%%expect{|
 module F :
-  functor (X : sig end) ->
+  (X : sig end) ->
     sig
       type s = private [ `Bar of 'a | `Foo ] as 'a
       val from : M.t -> s
@@ -75,6 +75,6 @@ let y =
 Line 2, characters 8-48:
 2 |   match (N.from M.bar :> [ `Bar of N.s | `Foo ]) with
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type N.s is not a subtype of [ `Bar of N.s | `Foo ]
-       Type N.s = [ `Bar of N.s | `Foo ] is not a subtype of N.s
+Error: Type "N.s" is not a subtype of "[ `Bar of N.s | `Foo ]"
+       Type "N.s" = "[ `Bar of N.s | `Foo ]" is not a subtype of "N.s"
 |}]

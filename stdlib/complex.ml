@@ -48,15 +48,7 @@ let inv x = div one x
 
 let norm2 x = x.re *. x.re +. x.im *. x.im
 
-let norm x =
-  (* Watch out for overflow in computing re^2 + im^2 *)
-  let r = abs_float x.re and i = abs_float x.im in
-  if r = 0.0 then i
-  else if i = 0.0 then r
-  else if r >= i then
-    let q = i /. r in r *. sqrt(1.0 +. q *. q)
-  else
-    let q = r /. i in i *. sqrt(1.0 +. q *. q)
+let norm x = Float.hypot x.re x.im
 
 let arg x = atan2 x.im x.re
 

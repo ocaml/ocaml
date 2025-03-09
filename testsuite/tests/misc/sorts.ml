@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 (* Test bench for sorting algorithms. *)
 
@@ -4452,4 +4451,4 @@ let main () =
     end;
 ;;
 
-if not !Sys.interactive then Printexc.catch main ();;
+if not !Sys.interactive then main ();;

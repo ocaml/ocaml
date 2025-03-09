@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module O (T : sig
@@ -20,7 +20,7 @@ module T = struct
 end;;
 [%%expect{|
 module O :
-  functor (T : sig module N : sig val foo : int -> int end end) ->
+  (T : sig module N : sig val foo : int -> int end end) ->
     sig val go : unit -> int end
 module T : sig module N : sig val foo : int -> int end end
 |}]

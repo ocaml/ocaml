@@ -1,5 +1,5 @@
 (* TEST
-   modules = "custom_finalize.c"
+ modules = "custom_finalize.c";
 *)
 
 type t

@@ -1,5 +1,5 @@
 (* TEST
-  ocamllex_flags = " -q "
+ ocamllex_flags = " -q ";
 *)
 
 rule read = shortest

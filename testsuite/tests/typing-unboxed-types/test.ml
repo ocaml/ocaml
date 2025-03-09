@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 (* Check the unboxing *)
@@ -101,7 +101,7 @@ let rec x = A x;;
 Line 1, characters 12-15:
 1 | let rec x = A x;;
                 ^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 (* Representation mismatch between module and signature must be rejected *)

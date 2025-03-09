@@ -19,7 +19,7 @@
 open Unix
 
 (* Convert a socket name into a socket address. *)
-val convert_address : string -> socket_domain * sockaddr
+val convert_address : string -> addr_info
 
 (* Report an unix error. *)
 val report_error : exn -> unit

@@ -1,9 +1,9 @@
-(* TEST
-   readonly_files = "error_highlighting_use1.ml \
-                     error_highlighting_use2.ml \
-                     error_highlighting_use3.ml \
-                     error_highlighting_use4.ml"
-   * toplevel
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
+
+
+
+
 *)
 
 let x = (1 + 2) +. 3. in ();;
@@ -109,3 +109,8 @@ let x = 1 in ();;
 #use "error_highlighting_use2.ml";;
 #use "error_highlighting_use3.ml";;
 #use "error_highlighting_use4.ml";;
+
+(* TEST
+ readonly_files = "error_highlighting_use1.ml error_highlighting_use2.ml error_highlighting_use3.ml error_highlighting_use4.ml";
+ toplevel;
+*)

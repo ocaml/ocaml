@@ -51,11 +51,15 @@ module EvalPath =
     exception Error
     let rec eval_address = function
     | Env.Aident id ->
-        begin try
-          Debugcom.Remote_value.global (Symtable.get_global_position id)
-        with Symtable.Error _ ->
-          raise Error
-        end
+      begin match Symtable.Global.of_ident id with
+        | Some global ->
+          begin
+            try Debugcom.Remote_value.global (Symtable.get_global_position
+              global)
+            with Symtable.Error _ -> raise Error
+          end
+        | None -> raise Error
+      end
     | Env.Adot(root, pos) ->
         let v = eval_address root in
         if not (Debugcom.Remote_value.is_block v)

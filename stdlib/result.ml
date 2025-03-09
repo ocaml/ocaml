@@ -25,6 +25,7 @@ let join = function Ok r -> r | Error _ as e -> e
 let map f = function Ok v -> Ok (f v) | Error _ as e -> e
 let map_error f = function Error e -> Error (f e) | Ok _ as v -> v
 let fold ~ok ~error = function Ok v -> ok v | Error e -> error e
+let retract = function Ok v -> v | Error v -> v
 let iter f = function Ok v -> f v | Error _ -> ()
 let iter_error f = function Error e -> f e | Ok _ -> ()
 let is_ok = function Ok _ -> true | Error _ -> false

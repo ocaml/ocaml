@@ -1,0 +1,3 @@
+Fatal error: exception Stdlib.Exit
+Raised at Print_location.f in file "print_location.ml", lines 8-9, characters 11-6
+Called from Print_location in file "print_location.ml", line 12, characters 2-6

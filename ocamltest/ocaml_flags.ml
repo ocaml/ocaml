@@ -53,9 +53,4 @@ let runtime_flags env backend c_files =
 
 let toplevel_default_flags = "-noinit -no-version -noprompt"
 
-let ocamldebug_default_flags =
-  "-no-version -no-prompt -no-time -no-breakpoint-message " ^
-  ("-I " ^ Ocaml_directories.stdlib ^ " ") ^
-  ("-topdirs-path " ^ Ocaml_directories.toplevel)
-
 let ocamlobjinfo_default_flags = "-null-crc"

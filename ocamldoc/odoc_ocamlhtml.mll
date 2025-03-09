@@ -17,18 +17,11 @@
 (** Generation of html code to display OCaml code. *)
 open Lexing
 
-exception Fatal_error
-
-let fatal_error msg =
-  prerr_string ">> Fatal error: "; prerr_endline msg; raise Fatal_error
-
 type error =
   | Illegal_character of char
   | Unterminated_comment
   | Unterminated_string
-  | Unterminated_string_in_comment
   | Keyword_as_label of string
-;;
 
 exception Error of error * int * int
 
@@ -74,13 +67,11 @@ let escape_base s =
 
 let print ?(esc=true) s =
   Format.pp_print_string !fmt (if esc then escape s else s)
-;;
 
 let print_class ?(esc=true) cl s =
   print ~esc: false ("<span class=\""^cl^"\">"^
                      (if esc then escape s else s)^
                      "</span>")
-;;
 
 (** The table of keywords with colors *)
 let create_hashtable size init =
@@ -168,7 +159,6 @@ let margin = ref 0
 let comment_buffer = Buffer.create 32
 let reset_comment_buffer () = Buffer.reset comment_buffer
 let store_comment_char = Buffer.add_char comment_buffer
-let add_comment_string = Buffer.add_string comment_buffer
 
 let make_margin () =
   let rec iter n =
@@ -211,55 +201,30 @@ let store_string_char = Buffer.add_char string_buffer
 let get_stored_string () =
   Buffer.contents string_buffer
 
-(** To translate escape sequences *)
-
-let char_for_backslash = function
-  | 'n' -> '\010'
-  | 'r' -> '\013'
-  | 'b' -> '\008'
-  | 't' -> '\009'
-  | c   -> c
-
-let char_for_decimal_code lexbuf i =
-  let c = 100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
-           10 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
-                (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in
-  Char.chr(c land 0xFF)
-
-let char_for_hexa_code lexbuf i =
-  let c = 16 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
-                (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) in
-  Char.chr(c land 0xFF)
-
 (** To store the position of the beginning of a string and comment *)
-let string_start_pos = ref 0;;
-let comment_start_pos = ref [];;
-let in_comment () = !comment_start_pos <> [];;
+let string_start_pos = ref 0
+let comment_start_pos = ref []
 
-(** Error report *)
-
-open Format
-
-let report_error ppf = function
-  | Illegal_character c ->
-      fprintf ppf "Illegal character (%s)" (Char.escaped c)
-  | Unterminated_comment ->
-      fprintf ppf "Comment not terminated"
-  | Unterminated_string ->
-      fprintf ppf "String literal not terminated"
-  | Unterminated_string_in_comment ->
-      fprintf ppf "This comment contains an unterminated string literal"
-  | Keyword_as_label kwd ->
-      fprintf ppf "`%s' is a keyword, it cannot be used as label name" kwd
-;;
+(** Normalizing utf-8 *)
+let normalize raw_name =
+  (* we are printing documentation, it is too late to be strict *)
+  match Misc.Utf8_lexeme.normalize raw_name with
+  | Error s -> s
+  | Ok name -> name
 
 }
 
 let blank = [' ' '\010' '\013' '\009' '\012']
-let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
-let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar =
-  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+
+let lowercase = ['a'-'z' '_']
+let uppercase = ['A'-'Z']
+let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
+let utf8 = ['\192'-'\255'] ['\128'-'\191']*
+let identstart_ext = uppercase | lowercase | utf8
+let identchar_ext = identchar | utf8
+let ident_ext = identstart_ext identchar_ext*
+
+
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 let decimal_literal = ['0'-'9']+
@@ -286,30 +251,31 @@ rule token = parse
   | "_"
       { print "_" ; token lexbuf }
   | "~"  { print "~" ; token lexbuf }
-  | "~" lowercase identchar * ':'
+  | "~" (ident_ext as raw_id ) ':'
       { let s = Lexing.lexeme lexbuf in
-        let name = String.sub s 1 (String.length s - 2) in
+        let name = normalize raw_id in
         if Hashtbl.mem keyword_table name then
           raise (Error(Keyword_as_label name, Lexing.lexeme_start lexbuf,
                        Lexing.lexeme_end lexbuf));
         print s ; token lexbuf }
   | "?"  { print "?" ; token lexbuf }
-  | "?" lowercase identchar * ':'
-      { let s = Lexing.lexeme lexbuf in
-        let name = String.sub s 1 (String.length s - 2) in
+  | "?" (ident_ext as raw_id)  ':'
+      {
+        let name = normalize raw_id in
         if Hashtbl.mem keyword_table name then
           raise (Error(Keyword_as_label name, Lexing.lexeme_start lexbuf,
                        Lexing.lexeme_end lexbuf));
-        print s ; token lexbuf }
-  | lowercase identchar *
-      { let s = Lexing.lexeme lexbuf in
-          try
+        print "?"; print name ; print ":"; token lexbuf }
+  | (ident_ext as raw_id)
+      {  let s = normalize raw_id in
+         if Misc.Utf8_lexeme.is_capitalized s then
+            (print_class constructor_class (Lexing.lexeme lexbuf);
+            token lexbuf)
+         else try
             let cl = Hashtbl.find keyword_table s in
             (print_class cl s ; token lexbuf )
           with Not_found ->
             (print s ; token lexbuf )}
-  | uppercase identchar *
-      { print_class constructor_class (Lexing.lexeme lexbuf) ; token lexbuf }       (* No capitalized keywords *)
   | decimal_literal | hex_literal | oct_literal | bin_literal
       { print (Lexing.lexeme lexbuf) ; token lexbuf }
   | float_literal

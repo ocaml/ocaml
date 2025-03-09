@@ -18,14 +18,14 @@ Send a mail on caml-devel to warn Gabriel (to make a pass on Changes;
 see the "Changes curation" appendix for more details) and the
 OCamlLabs folks (for OPAM testing).
 
-## 0: release environment setup
+## 0. Release environment setup
 
-```
+```sh
 rm -f /tmp/env-$USER.sh
 cat >/tmp/env-$USER.sh <<EOF
 # Update the data below
-export MAJOR=4
-export MINOR=12
+export MAJOR=5
+export MINOR=2
 export BUGFIX=0
 export PLUSEXT=
 
@@ -35,7 +35,7 @@ export HUMAN=
 # do we need to use tar or gtar?
 export TAR=tar
 
-export WORKTREE=~/o/\$MAJOR.\$MINOR
+export WORKTREE=~/ocaml/\$MAJOR.\$MINOR
   # must be the git worktree for the branch you are releasing
 
 export BRANCH=\$MAJOR.\$MINOR
@@ -61,16 +61,16 @@ echo $VERSION
 ```
 
 
-## 1: check repository state
+## 1. Check repository state
 
-```
+```sh
 cd $WORKTREE
 git checkout $MAJOR.$MINOR
 git status  # check that the local repo is in a clean state
 git pull
 ```
 
-## 2: magic numbers
+## 2. Magic numbers
 
 If you are about to do a major release, you should check that the
 magic numbers have been updated since the last major release. It is
@@ -80,9 +80,9 @@ major version, typically the first beta.
 See the `utils/HACKING.adoc` file for documentation on how to bump the
 magic numbers.
 
-## 3: build, refresh dependencies, sanity checks
+## 3. build, refresh dependencies, sanity checks
 
-```
+```sh
 make distclean
 git clean -n -d -f -x  # Check that "make distclean" removed everything
 
@@ -111,63 +111,62 @@ make install
 ```
 
 
-## 4: tests
+## 4. Tests
 
-```
+```sh
 make tests
 ```
 
 
-## 5: build, tag and push the new release
+## 5. build, tag and push the new release
 
-```
-# at this point, the VERSION file contains N+devD
+```sh
+# at this point, the build-aux/ocaml_version.m4 file contains N+devD
 # increment it into N+dev(D+1); for example,
 #   4.07.0+dev8-2018-06-19 => 4.07.0+dev9-2018-06-26
 # for production releases: check and change the Changes header
 #  (remove "next version" and add a date)
-make -B configure
+tools/autogen
 git commit -a -m "last commit before tagging $VERSION"
 
-# update VERSION with the new release; for example,
+# update build-aux/ocaml_version.m4 with the new release; for example,
 #   4.07.0+dev9-2018-06-26 => 4.07.0+rc2
 # Update ocaml-variants.opam with new version.
-# Update \year in manual/src/macros.hva
-make -B configure
+tools/autogen
 # For a production release
 make coreboot -j5
 make coreboot -j5 # must say "Fixpoint reached, bootstrap succeeded."
 git commit -m "release $VERSION" -a
 git tag -m "release $VERSION" $TAGVERSION
 
-# for production releases, change the VERSION file into (N+1)+dev0; for example,
+# for production releases, change the build-aux/ocaml_version.m4 file into (N+1)+dev0; for example,
 #   4.08.0 => 4.08.1+dev0
 # for testing candidates, use N+dev(D+2) instead; for example,
 #   4.07.0+rc2 => 4.07.0+dev10-2018-06-26
 # Revert ocaml-variants.opam to its "trunk" version.
-make -B configure
-git commit -m "increment version number after tagging $VERSION" VERSION configure ocaml-variants.opam
+tools/autogen
+git commit -m "increment version number after tagging $VERSION" build-aux/ocaml_version.m4 VERSION configure ocaml-variants.opam
 git push
 git push --tags
 ```
 
-## 5-bis: Alternative for branching
+## 5-bis. Alternative for branching
 
 This needs to be more tested, tread with care.
-```
-# at this point, the VERSION file contains N+devD
+```sh
+# at this point, the build-aux/ocaml_version.m4 file contains N+devD
 # increment it into N+dev(D+1); for example,
 #   4.07.0+dev0-2018-06-19 => 4.07.0+dev1-2018-06-26
 # Rename the "Working version" header in Changes
 # to "OCaml $BRANCH"
-make -B configure
+tools/autogen
 git commit -a -m "last commit before branching $BRANCH"
 git branch $BRANCH
 
-# update VERSION with the new future branch,
+# update build-aux/ocaml_version.m4 with the new future branch,
 #   4.07.0+dev1-2018-06-26 => 4.08.0+dev0-2018-06-30
 # Update ocaml-variants.opam with new version.
-make -B configure
+tools/autogen
 # Add a "Working version" section" to Changes
 # Add common subsections in Changes, see Changelog.
 git commit -m "first commit after branching $BRANCH" -a
@@ -177,7 +176,7 @@ git push
 git checkout $BRANCH
 # increment VERSION, for instance
 #   4.07.0+dev1-2018-06-26 => 4.07.0+dev2-2018-06-30
-make -B configure
+tools/autogen
 git commit -m "first commit on branch $BRANCH" -a
 git push --set-upstream origin $BRANCH
 ```
@@ -189,37 +188,53 @@ Go to
 and add a rule for protecting the new branch
 (copy the rights from the previous version)
 
-## 5.1: create the release on github (only for a production release)
+## 5.1. create the release on github (only for a production release)
 
 open https://github.com/ocaml/ocaml/releases
 # and click "Draft a new release"
 # for a minor release, the description is:
  Bug fixes. See [detailed list of changes](https://github.com/ocaml/ocaml/blob/$MAJOR.$MINOR/Changes).
 
-## 5.3: Inria CI (for a new release branch)
+## 5.3. Inria CI (for a new release branch)
 
 Add the new release branch to the Inria CI list.
 Remove the oldest branch from this list.
 
-## 5.4 new badge in README.adoc (for a new release branch)
+## 5.4. New badge in README.adoc (for a new release branch)
 
 Add a badge for the new branch in README.adoc.
 Remove the oldest badge.
 
-## 6: create OPAM packages
+## 6. Create OPAM packages
 
 Clone the opam-repository
-```
+```sh
 git clone https://github.com/ocaml/opam-repository
 ```
 
 Create a branch for the new release
-```
+```sh
 git checkout -b OCaml_$VERSION
 ```
 
-Create ocaml-variants packages for the new version, copying the particular
-switch configuration choices from the previous version.
+The following opam packages are needed for all releases:
+
+- `ocaml-base-compiler.$VERSION`
+- `ocaml-variants.$VERSION+options`
+
+For production release, the following packages need to be updated:
+
+- `ocaml-system.$VERSION`
+- `ocaml-src.$VERSION`
+- `ocaml-src.$MAJOR.$MINOR.dev`
+- `ocaml-manual.$VERSION`
+- `ocaml.$NEXTVERSION`
+- `ocaml-variants.$NEXTVERSION+trunk` should be moved to
+   `ocaml-variants.$NEXTNEXTVERSION+trunk`
+
+Note that the `ocaml` virtual package needs to be updated to the next version.
+
+Similarly, the `ocurrent/ocaml-version` library should be updated.
 
 Do not forget to add/update the checksum field for the tarballs in the
 "url" section of the opam files. Use opam-lint before sending the pull
@@ -228,7 +243,7 @@ request.
 You can test the new opam package before sending a PR to the
 main opam-repository by using the local repository:
 
-```
+```sh
 opam repo add local /path/to/your/opam-repository
 opam switch create --repo=local,beta=git+https://github.com/ocaml/ocaml-beta-repository.git ocaml-variants.$VERSION
 ```
@@ -237,7 +252,7 @@ The switch should build.
 For a production release, you also need to create new opam files for the ocaml-manual and
 ocaml-src packages.
 
-## 6.1 Update OPAM dev packages after branching
+## 6.1. Update OPAM dev packages after branching
 
 Create a new ocaml/ocaml.$NEXT/opam file.
 Copy the opam dev files from ocaml-variants/ocaml-variants.$VERSION+trunk*
@@ -250,29 +265,30 @@ The "src" field should point to
 The synopsis should be "latest $VERSION development(,...)".
 
 
-## 7: build the release archives
+## 7. Build the release archives
 
-```
+```sh
 cd $WORKTREE
 TMPDIR=/tmp/ocaml-release
 git checkout $TAGVERSION
 git checkout-index -a -f --prefix=$TMPDIR/ocaml-$VERSION/
+git switch $BRANCH
 cd $TMPDIR
 $TAR -c --owner 0 --group 0 -f ocaml-$VERSION.tar ocaml-$VERSION
 gzip -9 <ocaml-$VERSION.tar >ocaml-$VERSION.tar.gz
 xz <ocaml-$VERSION.tar >ocaml-$VERSION.tar.xz
 ```
 
-## 8: upload the archives and compute checksums
+## 8. Upload the archives and compute checksums
 
 For the first beta of a major version, create the distribution directory on
 the server:
-```
+```sh
 ssh $ARCHIVE_HOST "mkdir -p $DIST"
 ```
 
 Upload the archives:
-```
+```sh
 scp ocaml-$VERSION.tar.{xz,gz} $ARCHIVE_HOST:$DIST
 ```
 
@@ -280,13 +296,13 @@ To update the checksum files on the remote host, we first upload the
 release environment.
 (note: this assumes the user name is the same on the two machines)
 
-```
+```sh
 scp /tmp/env-$USER.sh $ARCHIVE_HOST:/tmp/env-$USER.sh
 ```
 
 and then login there to update the checksums (MD5SUM, SHA512SUM)
 
-```
+```sh
 ssh $ARCHIVE_HOST
 source /tmp/env-$USER.sh
 cd $DIST
@@ -310,9 +326,9 @@ exit
 ```
 
 
-## 9: update note files (technical documentation)
+## 9. Update note files (technical documentation)
 
-```
+```sh
 ssh $ARCHIVE_HOST "mkdir -p $DIST/notes"
 cd ocaml-$VERSION
 scp INSTALL.adoc LICENSE README.adoc README.win32.adoc Changes \
@@ -320,17 +336,15 @@ scp INSTALL.adoc LICENSE README.adoc README.win32.adoc Changes \
 ```
 
 
-## 10: upload the reference manual
+## 10. Upload the reference manual
 
 You don't need to do this if the previous release had the same
 $MAJOR.$MINOR ($BRANCH) value and the exact same manual -- this is frequent if
 it was a release candidate.
 
-```
+```sh
 cd $WORKTREE
 make
-make install
-export PATH="$INSTDIR/bin:$PATH"
 cd manual
 make clean
 make
@@ -349,7 +363,7 @@ ssh $ARCHIVE_HOST "cd $DIST; sha512sum ocaml-$BRANCH-refman* >>SHA512SUM"
 Releasing the manual online happens on another machine:
 Do this ONLY FOR A PRODUCTION RELEASE
 
-```
+```sh
 scp /tmp/env-$USER.sh $ARCHIVE_HOST:/tmp/env-$USER.sh
 ssh $ARCHIVE_HOST
 source /tmp/env-$USER.sh
@@ -372,7 +386,7 @@ ln -sf manual-ocaml-$BRANCH manual-ocaml
 ```
 
 
-## 11: prepare web announce for the release
+## 11. Prepare web announce for the release
 
 For production releases, you should get in touch with ocaml.org to
 organize the webpage for the new release. See
@@ -380,11 +394,23 @@ organize the webpage for the new release. See
   <https://github.com/ocaml/ocaml.org/issues/819>
 
 
-## 13: announce the release on caml-list, caml-announce, and discuss.ocaml.org
+## 12. Announce the release on caml-list, caml-announce, and discuss.ocaml.org
 
 See the email announce templates in the `templates/` directory.
 
+## 13. External tools
 
+Try to propagate the new compiler to external open source tools
+
+### Godbold CE (https://godbolt.org)
+
+- Send a PR to both https://github.com/compiler-explorer/infra
+  and https://github.com/compiler-explorer/compiler-explorer
+
+See https://github.com/compiler-explorer/compiler-explorer/pull/6735
+and https://github.com/compiler-explorer/infra/pull/1359 as examples.
+
+This should be expanded, once we have more experince with the process
 
 # Appendix
 
@@ -392,9 +418,9 @@ See the email announce templates in the `templates/` directory.
 
 See
 
-- templates/beta.md for alpha and beta releases
-- templates/rc.md for release candidate
-- templates/production.md for the production release
+- [templates/beta.md](templates/beta.md) for alpha and beta releases
+- [templates/rc.md](templates/rc.md) for release candidate
+- [templates/production.md](templates/production.md) for the production release
 
 
 ## Changelog template for a new version

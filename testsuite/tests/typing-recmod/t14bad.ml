@@ -1,9 +1,9 @@
-(* TEST
-flags = " -w -a "
-ocamlc_byte_exit_status = "2"
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-*** check-ocamlc.byte-output
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
+
+
+
+
 *)
 
 (* Bad - PR 4261 *)
@@ -23,3 +23,11 @@ module PR_4261 = struct
   module rec U : T with type D.t = U'.t = U
   and U' : S with type t = U'.t = U
 end;;
+
+(* TEST
+ flags = " -w -a ";
+ ocamlc_byte_exit_status = "2";
+ setup-ocamlc.byte-build-env;
+ ocamlc.byte;
+ check-ocamlc.byte-output;
+*)

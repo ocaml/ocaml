@@ -22,7 +22,7 @@ let skip_with_reason reason =
     let result = Result.skip_with_reason reason in
     (result, env)
   in
-  Actions.make "skip" code
+  Actions.make ~name:"skip" ~description:"Skip the test" code
 
 let pass_or_skip test pass_reason skip_reason _log env =
   let open Result in
@@ -160,9 +160,9 @@ let run_cmd
   log_redirection "stdout" stdout_filename;
   log_redirection "stderr" stderr_filename;
   let systemenv =
-    Array.append
+    Environments.append_to_system_env
       environment
-      (Environments.to_system_env env)
+      env
   in
   let timeout =
     match timeout with
@@ -275,6 +275,12 @@ let run_script log env =
           Printf.sprintf "error in script response: unknown variable %s" name
         in
         (Result.fail_with_reason reason, newenv)
+      | exception Variables.Recursive_variable_definition name ->
+        let reason =
+          Printf.sprintf "error in script response: \
+            recursive variable definition %s" name
+        in
+        (Result.fail_with_reason reason, newenv)
     end else begin
       let reason = String.trim (Sys.string_of_file response_file) in
       let newresult = { result with Result.reason = Some reason } in
@@ -319,6 +325,12 @@ let run_hook hook_name log input_env =
       | exception Variables.No_such_variable name ->
         let reason =
           Printf.sprintf "error in script response: unknown variable %s" name
+        in
+        (Result.fail_with_reason reason, hookenv)
+      | exception Variables.Recursive_variable_definition name ->
+        let reason =
+          Printf.sprintf "error in script response: \
+            recursive variable definition %s" name
         in
         (Result.fail_with_reason reason, hookenv)
       end

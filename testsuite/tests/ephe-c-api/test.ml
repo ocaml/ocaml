@@ -1,5 +1,7 @@
 (* TEST
-   modules = "stubs.c"
+ modules = "stubs.c";
+ reason = "port the new Ephemeron C-api to multicore : https://github.com/ocaml/ocaml/pull/676";
+ skip;
 *)
 
 (* C version of ephetest.ml *)

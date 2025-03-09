@@ -14,3 +14,7 @@ module F (X : sig val x : int end) : sig end
 module G (X : sig val x : int end) : sig end
 
 module H (X : sig val x : int end) : sig val x : int end
+
+module type S = sig
+  module F:  sig val x : int end -> sig end
+end

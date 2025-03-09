@@ -1,5 +1,5 @@
 (* TEST
-modules = "stubs.c"
+ modules = "stubs.c";
 *)
 
 external setlocale : string -> unit = "ml_setlocale"

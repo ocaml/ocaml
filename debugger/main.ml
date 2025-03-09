@@ -152,20 +152,17 @@ let add_include d =
     Misc.expand_directory Config.standard_library d :: !default_load_path
 let set_socket s =
   socket_name := s
-let set_topdirs_path s =
-  topdirs_path := s
 let set_checkpoints n =
   checkpoint_max_count := n
 let set_directory dir =
   Sys.chdir dir
 let print_version () =
   printf "The OCaml debugger, version %s@." Sys.ocaml_version;
-  exit 0;
-;;
+  exit 0
+
 let print_version_num () =
   printf "%s@." Sys.ocaml_version;
-  exit 0;
-;;
+  exit 0
 
 let speclist = [
    "-c", Arg.Int set_checkpoints,
@@ -192,16 +189,16 @@ let speclist = [
       " Do not print times";
    "-no-breakpoint-message", Arg.Clear Parameters.breakpoint,
       " Do not print message at breakpoint setup and removal";
-   "-topdirs-path", Arg.String set_topdirs_path,
-      " Set path to the directory containing topdirs.cmi";
    ]
 
 let function_placeholder () =
-  raise Not_found
+  failwith "custom printer tried to invoke a function from the debuggee"
 
 let report report_error error =
   eprintf "Debugger [version %s] environment error:@ @[@;%a@]@.;"
     Config.version report_error error
+
+let usage = "Usage: ocamldebug [options] <program> [arguments]\nOptions are:"
 
 let main () =
   Callback.register "Debugger.function_placeholder" function_placeholder;
@@ -216,11 +213,8 @@ let main () =
                                 ("camldebug" ^ (Int.to_string (Unix.getpid ())))
       );
     begin try
-      Arg.parse speclist anonymous "";
-      Arg.usage speclist
-        "No program name specified\n\
-         Usage: ocamldebug [options] <program> [arguments]\n\
-         Options are:";
+      Arg.parse speclist anonymous usage;
+      Arg.usage speclist ("No program name specified\n" ^ usage);
       exit 2
     with Found_program_name ->
       for j = !Arg.current + 1 to Array.length Sys.argv - 1 do
@@ -229,8 +223,8 @@ let main () =
     end;
     if !Parameters.version
     then printf "\tOCaml Debugger version %s@.@." Config.version;
-    Loadprinter.init();
-    Load_path.init !default_load_path;
+    Load_path.init ~auto_include:Compmisc.auto_include
+      ~visible:!default_load_path ~hidden:[];
     Clflags.recursive_types := true;    (* Allow recursive types. *)
     toplevel_loop ();                   (* Toplevel. *)
     kill_program ();
@@ -244,6 +238,3 @@ let main () =
   | Cmi_format.Error e ->
       report Cmi_format.report_error e;
       exit 2
-
-let _ =
-  Unix.handle_unix_error main ()

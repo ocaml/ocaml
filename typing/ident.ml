@@ -16,7 +16,8 @@
 open Local_store
 
 let lowest_scope  = 0
-let highest_scope = 100000000
+let highest_scope = 100_000_000
+  (* assumed to fit in 27 bits, see Types.scope_field *)
 
 type t =
   | Local of { name: string; stamp: int }
@@ -111,6 +112,9 @@ let stamp = function
   | Scoped { stamp; _ } -> stamp
   | _ -> 0
 
+let compare_stamp id1 id2 =
+  compare (stamp id1) (stamp id2)
+
 let scope = function
   | Scoped { scope; _ } -> scope
   | Local _ -> highest_scope
@@ -133,25 +137,67 @@ let is_predef = function
   | Predef _ -> true
   | _ -> false
 
+let canonical_stamps = s_table Hashtbl.create 0
+let next_canonical_stamp = s_table Hashtbl.create 0
+
+let canonicalize name stamp =
+  try Hashtbl.find !canonical_stamps (name, stamp)
+  with Not_found ->
+    let canonical_stamp =
+      try Hashtbl.find !next_canonical_stamp name
+      with Not_found -> 0
+    in
+    Hashtbl.replace !next_canonical_stamp name
+      (canonical_stamp + 1);
+    Hashtbl.add !canonical_stamps (name, stamp)
+      canonical_stamp;
+    canonical_stamp
+
+let pp_stamped ppf (name, stamp) =
+  let open Format_doc in
+  if not !Clflags.unique_ids then
+    fprintf ppf "%s" name
+  else begin
+    let stamp =
+      if not !Clflags.canonical_ids then stamp
+      else canonicalize name stamp
+    in
+    fprintf ppf "%s/%i" name stamp
+  end
+
 let print ~with_scope ppf =
-  let open Format in
+  let open Format_doc in
   function
-  | Global name -> fprintf ppf "%s!" name
-  | Predef { name; stamp = n } ->
-      fprintf ppf "%s%s!" name
-        (if !Clflags.unique_ids then sprintf "/%i" n else "")
-  | Local { name; stamp = n } ->
-      fprintf ppf "%s%s" name
-        (if !Clflags.unique_ids then sprintf "/%i" n else "")
-  | Scoped { name; stamp = n; scope } ->
-      fprintf ppf "%s%s%s" name
-        (if !Clflags.unique_ids then sprintf "/%i" n else "")
-        (if with_scope then sprintf "[%i]" scope else "")
+  | Global name ->
+      fprintf ppf "%s!" name
+  | Predef { name; stamp } ->
+      fprintf ppf "%a!"
+        pp_stamped (name, stamp)
+  | Local { name; stamp } ->
+      fprintf ppf "%a"
+        pp_stamped (name, stamp)
+  | Scoped { name; stamp; scope } ->
+      fprintf ppf "%a%s"
+        pp_stamped (name, stamp)
+        (if with_scope then asprintf "[%i]" scope else "")
 
 let print_with_scope ppf id = print ~with_scope:true ppf id
 
-let print ppf id = print ~with_scope:false ppf id
+let doc_print ppf id = print ~with_scope:false ppf id
+let print ppf id = Format_doc.compat doc_print ppf id
+(* For the documentation of ['a Ident.tbl], see ident.mli.
 
+   The implementation is a copy-paste specialization of
+   a balanced-tree implementation similar to Map.
+     ['a tbl]
+   is a slightly more compact version of
+     [(Ident.t * 'a) list Map.Make(String)]
+
+   This implementation comes from Caml Light where duplication was
+   unavoidable in absence of functors. It works well enough, and so
+   far we have not had strong incentives to do the deduplication work
+   (implementation, tests, benchmarks, etc.).
+*)
 type 'a tbl =
     Empty
   | Node of 'a tbl * 'a data * 'a tbl * int
@@ -283,6 +329,21 @@ let rec find_all n = function
         (k.ident, k.data) :: get_all k.previous
       else
         find_all n (if c < 0 then l else r)
+
+let get_all_seq k () =
+  Seq.unfold (Option.map (fun k -> (k.ident, k.data), k.previous))
+    k ()
+
+let rec find_all_seq n tbl () =
+  match tbl with
+  | Empty -> Seq.Nil
+  | Node(l, k, r, _) ->
+      let c = String.compare n (name k.ident) in
+      if c = 0 then
+        Seq.Cons((k.ident, k.data), get_all_seq k.previous)
+      else
+        find_all_seq n (if c < 0 then l else r) ()
+
 
 let rec fold_aux f stack accu = function
     Empty ->

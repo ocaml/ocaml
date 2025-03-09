@@ -73,7 +73,7 @@ let load_plugin file =
       prerr_endline (Odoc_messages.load_file_error file s);
       exit 1
 ;;
-List.iter load_plugin plugins;;
+List.iter load_plugin plugins
 
 let () = Odoc_args.parse ()
 

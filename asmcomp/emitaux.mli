@@ -20,7 +20,7 @@ val emit_string: string -> unit
 val emit_int: int -> unit
 val emit_nativeint: nativeint -> unit
 val emit_int32: int32 -> unit
-val emit_symbol: char -> string -> unit
+val emit_symbol: string -> unit
 val emit_printf: ('a, out_channel, unit) format -> 'a
 val emit_char: char -> unit
 val emit_string_literal: string -> unit
@@ -29,6 +29,19 @@ val emit_bytes_directive: string -> string -> unit
 val emit_float64_directive: string -> int64 -> unit
 val emit_float64_split_directive: string -> int64 -> unit
 val emit_float32_directive: string -> int32 -> unit
+
+val emit_size_directive: string -> unit
+(** [emit_size_directive symbol]
+    Emit a [.size] assembler directive for the given [symbol] when it is
+    supported by the assembler *)
+
+val emit_type_directive: string -> string -> unit
+(** [emit_type_directive symbol typ]
+    Emit a [.type] assembler directive that [symbol] has type [typ] when it is
+    supported by the assembler *)
+
+val emit_nonexecstack_note : unit -> unit
+(** Emit a [.note.GNU-stack] section when it is supported by the linker *)
 
 val reset : unit -> unit
 val reset_debug_info: unit -> unit
@@ -70,6 +83,10 @@ val cfi_startproc : unit -> unit
 val cfi_endproc : unit -> unit
 val cfi_adjust_cfa_offset : int -> unit
 val cfi_offset : reg:int -> offset:int -> unit
+val cfi_def_cfa_offset : int -> unit
+val cfi_remember_state : unit -> unit
+val cfi_restore_state : unit -> unit
+val cfi_def_cfa_register: reg:int -> unit
 
 val binary_backend_available: bool ref
     (** Is a binary backend available.  If yes, we don't need
@@ -83,6 +100,10 @@ type error =
   | Stack_frame_too_large of int
 
 exception Error of error
-val report_error: Format.formatter -> error -> unit
+val report_error: error Format_doc.format_printer
+val report_error_doc: error Format_doc.printer
 
 val mk_env : Linear.fundecl -> Emitenv.per_function_env
+
+(* Output .text section directive, or named .text.caml.<name> if enabled. *)
+val emit_named_text_section : string -> char -> unit

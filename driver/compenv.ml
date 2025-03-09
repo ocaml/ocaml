@@ -62,43 +62,6 @@ let first_objfiles = ref []
 let last_objfiles = ref []
 let stop_early = ref false
 
-(* Check validity of module name *)
-let is_unit_name name =
-  try
-    if name = "" then raise Exit;
-    begin match name.[0] with
-    | 'A'..'Z' -> ()
-    | _ ->
-       raise Exit;
-    end;
-    for i = 1 to String.length name - 1 do
-      match name.[i] with
-      | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' | '\'' -> ()
-      | _ ->
-         raise Exit;
-    done;
-    true
-  with Exit -> false
-;;
-
-let check_unit_name filename name =
-  if not (is_unit_name name) then
-    Location.prerr_warning (Location.in_file filename)
-      (Warnings.Bad_module_name name);;
-
-(* Compute name of module from output file name *)
-let module_of_filename inputfile outputprefix =
-  let basename = Filename.basename outputprefix in
-  let name =
-    try
-      let pos = String.index basename '.' in
-      String.sub basename 0 pos
-    with Not_found -> basename
-  in
-  let name = String.capitalize_ascii name in
-  check_unit_name inputfile name;
-  name
-;;
 
 type filename = string
 
@@ -217,6 +180,31 @@ let set_compiler_pass ppf ~name v flag ~filter =
           "Please specify at most one %s <pass>." name
       end
 
+let handle_dump_option ppf v =
+  let module D = Clflags.Dump_option in
+  let value, key =
+    (* "foo"  => true, "foo"
+       "-foo" => false, "foo"
+       "+foo" => true, "foo" *)
+    let tail () = String.sub v 1 (String.length v - 1) in
+    if String.starts_with ~prefix:"-" v
+    then false, tail ()
+    else if String.starts_with ~prefix:"+" v
+    then true, tail ()
+    else true, v
+  in
+  match D.of_string key with
+  | None ->
+      Printf.ksprintf (print_error ppf)
+        "bad value %s for option \"dump\"." key
+  | Some option ->
+  match D.available option with
+  | Error msg ->
+      Printf.ksprintf (print_error ppf)
+        "dump=%s: %s." key msg
+  | Ok () ->
+      D.flag option := value
+
 (* 'can-discard=' specifies which arguments can be discarded without warning
    because they are not understood by some versions of OCaml. *)
 let can_discard = ref []
@@ -227,6 +215,16 @@ let parse_warnings error v =
 let read_one_param ppf position name v =
   let set name options s =  setter ppf (fun b -> b) name options s in
   let clear name options s = setter ppf (fun b -> not b) name options s in
+  let compat name s =
+    let error_if_unset = function
+      | true -> true
+      | false ->
+        Printf.ksprintf (print_error ppf)
+          "Unsetting %s is not supported anymore" name;
+        true
+    in
+    setter ppf error_if_unset name [ ref true ] s
+  in
   match name with
   | "g" -> set "g" [ Clflags.debug ] v
   | "bin-annot" -> set "bin-annot" [ Clflags.binary_annotations ] v
@@ -239,11 +237,12 @@ let read_one_param ppf position name v =
   | "noassert" -> set "noassert" [ noassert ] v
   | "noautolink" -> set "noautolink" [ no_auto_link ] v
   | "nostdlib" -> set "nostdlib" [ no_std_include ] v
+  | "nocwd" -> set "nocwd" [ no_cwd ] v
   | "linkall" -> set "linkall" [ link_everything ] v
   | "nolabels" -> set "nolabels" [ classic ] v
   | "principal" -> set "principal"  [ principal ] v
   | "rectypes" -> set "rectypes" [ recursive_types ] v
-  | "safe-string" -> clear "safe-string" [ unsafe_string ] v
+  | "safe-string" -> compat "safe-string" v (* kept for compatibility *)
   | "strict-sequence" -> set "strict-sequence" [ strict_sequence ] v
   | "strict-formats" -> set "strict-formats" [ strict_formats ] v
   | "thread" -> set "thread" [ use_threads ] v
@@ -252,6 +251,7 @@ let read_one_param ppf position name v =
   | "verbose" -> set "verbose" [ verbose ] v
   | "nopervasives" -> set "nopervasives" [ nopervasives ] v
   | "slash" -> set "slash" [ force_slash ] v (* for ocamldep *)
+  | "no-slash" -> clear "no-slash" [ force_slash ] v (* for ocamldep *)
   | "keep-docs" -> set "keep-docs" [ Clflags.keep_docs ] v
   | "keep-locs" -> set "keep-locs" [ Clflags.keep_locs ] v
 
@@ -474,6 +474,13 @@ let read_one_param ppf position name v =
       | None -> ()
       | Some pass -> set_save_ir_after pass true
     end
+  | "dump-into-file" -> Clflags.dump_into_file := true
+  | "dump-dir" -> Clflags.dump_dir := Some v
+
+  | "dump" ->
+      handle_dump_option ppf v
+
+  |  "keywords"  -> Clflags.keyword_edition := Some v
 
   | _ ->
     if not (List.mem name !can_discard) then begin
@@ -514,7 +521,7 @@ type file_option = {
 }
 
 let scan_line ic =
-  Scanf.bscanf ic "%[0-9a-zA-Z_.*] : %[a-zA-Z_-] = %s "
+  Scanf.bscanf ic "%[0-9a-zA-Z_.*/] : %[a-zA-Z_-] = %s "
     (fun pattern name value ->
        let pattern =
          match pattern with
@@ -645,7 +652,7 @@ let process_action
         | None -> c_object_of_filename name
         | Some n -> n
       in
-      if Ccomp.compile_file ~output:obj_name name <> 0
+      if Ccomp.compile_file ?output:!output_name name <> 0
       then raise (Exit_with_status 2);
       ccobjs := obj_name :: !ccobjs
   | ProcessObjects names ->
@@ -670,7 +677,7 @@ let process_action
         | Some start_from ->
           Location.input_name := name;
           impl ~start_from name
-        | None -> raise(Arg.Bad("don't know what to do with " ^ name))
+        | None -> raise(Arg.Bad("Don't know what to do with " ^ name))
 
 
 let action_of_file name =
@@ -710,10 +717,14 @@ let process_deferred_actions env =
             fatal "Options -c -o are incompatible with compiling multiple files"
         end;
   end;
-  if !make_archive && List.exists (function
-      | ProcessOtherFile name -> Filename.check_suffix name ".cmxa"
-      | _ -> false) !deferred_actions then
-    fatal "Option -a cannot be used with .cmxa input files.";
+  if !make_archive then begin
+    if List.exists (function
+        | ProcessOtherFile name -> Filename.check_suffix name ".cmxa"
+        | _ -> false) !deferred_actions then
+      fatal "Option -a cannot be used with .cmxa input files."
+    end
+  else if !deferred_actions = [] then
+    fatal "No input files";
   List.iter (process_action env) (List.rev !deferred_actions);
   output_name := final_output_name;
   stop_early :=

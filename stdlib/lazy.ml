@@ -39,7 +39,7 @@
    If OCaml was configured with the -flat-float-array option (which is
    currently the default), the following is also true:
    We cannot use representation (3) for a [float Lazy.t] because
-   [caml_make_array] assumes that only a [float] value can have tag
+   [caml_array_make] assumes that only a [float] value can have tag
    [Double_tag].
 
    We have to use the built-in type constructor [lazy_t] to
@@ -50,13 +50,10 @@
 type 'a t = 'a CamlinternalLazy.t
 
 exception Undefined = CamlinternalLazy.Undefined
-
 external make_forward : 'a -> 'a lazy_t = "caml_lazy_make_forward"
-
 external force : 'a t -> 'a = "%lazy_force"
 
-
-let force_val = CamlinternalLazy.force_val
+let force_val l = CamlinternalLazy.force_gen ~only_val:true l
 
 let from_fun (f : unit -> 'arg) =
   let x = Obj.new_block Obj.lazy_tag 1 in
@@ -65,26 +62,19 @@ let from_fun (f : unit -> 'arg) =
 
 let from_val (v : 'arg) =
   let t = Obj.tag (Obj.repr v) in
-  if t = Obj.forward_tag || t = Obj.lazy_tag || t = Obj.double_tag then begin
+  if t = Obj.forward_tag || t = Obj.lazy_tag ||
+     t = Obj.forcing_tag || t = Obj.double_tag then begin
     make_forward v
   end else begin
     (Obj.magic v : 'arg t)
   end
 
-
 let is_val (l : 'arg t) = Obj.tag (Obj.repr l) <> Obj.lazy_tag
-
-let lazy_from_fun = from_fun
-
-let lazy_from_val = from_val
-
-let lazy_is_val = is_val
-
 
 let map f x =
   lazy (f (force x))
 
 let map_val f x =
   if is_val x
-  then lazy_from_val (f (force x))
+  then from_val (f (force x))
   else lazy (f (force x))

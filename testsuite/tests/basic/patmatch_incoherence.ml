@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type tlist = { x: 'a. 'a list };;
@@ -40,8 +40,8 @@ Lines 1-3, characters 0-20:
 2 | | { x = 3 } -> ()
 3 | | { x = None } -> ()
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-{x=Some _}
+  Here is an example of a case that is not matched: "{x=Some _}"
+
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -55,8 +55,8 @@ Lines 1-3, characters 0-18:
 2 | | { x = None } -> ()
 3 | | { x = "" } -> ()
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-{x="*"}
+  Here is an example of a case that is not matched: "{x="*"}"
+
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -70,8 +70,8 @@ Lines 1-3, characters 0-18:
 2 | | { x = None } -> ()
 3 | | { x = `X } -> ()
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-{x=`AnyOtherTag}
+  Here is an example of a case that is not matched: "{x=`AnyOtherTag}"
+
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -85,8 +85,8 @@ Lines 1-3, characters 0-17:
 2 | | { x = [||] } -> ()
 3 | | { x = 3 } -> ()
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-{x=0}
+  Here is an example of a case that is not matched: "{x=0}"
+
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -100,8 +100,8 @@ Lines 1-3, characters 0-17:
 2 | | { x = `X } -> ()
 3 | | { x = 3 } -> ()
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-{x=0}
+  Here is an example of a case that is not matched: "{x=0}"
+
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -115,8 +115,8 @@ Lines 1-3, characters 0-17:
 2 | | { x = `X "lol" } -> ()
 3 | | { x = 3 } -> ()
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-{x=0}
+  Here is an example of a case that is not matched: "{x=0}"
+
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -132,7 +132,7 @@ Lines 1-4, characters 0-17:
 3 | | { x = None } -> ()
 4 | | { x = 3 } -> ()
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-{x=0}
+  Here is an example of a case that is not matched: "{x=0}"
+
 Exception: Assert_failure ("", 1, 12).
 |}];;

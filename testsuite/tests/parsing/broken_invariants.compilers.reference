@@ -26,4 +26,28 @@ Line 2, characters 4-15:
 2 |  [%%missing_rhs]
         ^^^^^^^^^^^
 Error: broken invariant in parsetree: Module type substitution with no right hand side
+Line 2, characters 9-26:
+2 | let x: [%empty_poly_binder] = 0;;
+             ^^^^^^^^^^^^^^^^^
+Error: broken invariant in parsetree: Explicit universal type quantification cannot be empty.
+Line 2, characters 11-28:
+2 | let f (x:[%empty_poly_binder]) = 0;;
+               ^^^^^^^^^^^^^^^^^
+Error: broken invariant in parsetree: Explicit universal type quantification cannot be empty.
+Line 2, characters 15-32:
+2 | let f x = (x:[%empty_poly_binder]);;
+                   ^^^^^^^^^^^^^^^^^
+Error: broken invariant in parsetree: Explicit universal type quantification cannot be empty.
+Line 1, characters 16-33:
+1 | let g: int -> [%empty_poly_binder] = fun n x -> x;;
+                    ^^^^^^^^^^^^^^^^^
+Error: broken invariant in parsetree: Explicit universal type quantification cannot be empty.
+Line 2, characters 9-29:
+2 | let f ([%empty_open_tuple_pat]) = ();;
+             ^^^^^^^^^^^^^^^^^^^^
+Error: broken invariant in parsetree: Open tuple patterns must have at least one component.
+Line 1, characters 9-31:
+1 | let f ([%short_closed_tuple_pat]) = ();;
+             ^^^^^^^^^^^^^^^^^^^^^^
+Error: broken invariant in parsetree: Closed tuple patterns must have at least two components.
 

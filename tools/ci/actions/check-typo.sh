@@ -50,8 +50,8 @@ CheckTypoTree () {
   COMMIT="$1"
   COMMITS_TO_SEARCH="$2"
   export OCAML_CT_HEAD="$COMMIT"
-  export OCAML_CT_LS_FILES="git diff-tree --no-commit-id --name-only -r \
-$COMMITS_TO_SEARCH --"
+  export OCAML_CT_LS_FILES="git -c core.quotePath=false diff-tree \
+    --no-commit-id --name-only -r $COMMITS_TO_SEARCH --"
   export OCAML_CT_CAT='git cat-file --textconv'
   export OCAML_CT_PREFIX="$COMMIT:"
   GIT_INDEX_FILE=tmp-index git read-tree --reset -i "$COMMIT"
@@ -77,11 +77,24 @@ export OCAML_CT_CA_FLAG='--cached'
 rm -f failed
 
 COMMIT_RANGE="$MERGE_BASE..$PR_HEAD"
+
+# If either .gitattributes or tools/check-typo have been changed, set an
+# indicator for the "full tree" stage to run
+if git diff-tree --diff-filter=d --no-commit-id --name-only -r "$COMMIT_RANGE" \
+     | grep -qx '.gitattributes\|tools/check-typo'; then
+  full_check_needed=true
+else
+  full_check_needed=false
+fi
+echo "full_check_needed=$full_check_needed" >>"$GITHUB_OUTPUT"
+
 if ((CHECK_ALL_COMMITS)); then
   # Check each commit in turn
   for commit in $(git rev-list "$COMMIT_RANGE" --reverse); do
     CheckTypoTree "$commit" "$commit"
   done
+elif $full_check_needed; then
+  echo "Full check of the tree is required - skipping checking of changed files"
 else
   # Use the range of commits just to get the list of files to check; only HEAD
   # is scanned.

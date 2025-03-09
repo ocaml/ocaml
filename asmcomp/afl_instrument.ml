@@ -42,13 +42,19 @@ let rec with_afl_logging b dbg =
     let afl_area = V.create_local "shared_mem" in
     let op oper args = Cop (oper, args, dbg) in
     Clet(VP.create afl_area,
-      op (Cload (Word_int, Asttypes.Mutable)) [afl_area_ptr dbg],
-      Clet(VP.create cur_pos, op Cxor [op (Cload (Word_int, Asttypes.Mutable))
+      op (Cload ({memory_chunk=Word_int;
+                  mutability=Asttypes.Mutable;
+                  is_atomic=false})) [afl_area_ptr dbg],
+      Clet(VP.create cur_pos, op Cxor [op (Cload {memory_chunk=Word_int;
+                                                  mutability=Asttypes.Mutable;
+                                                  is_atomic=false})
         [afl_prev_loc dbg]; Cconst_int (cur_location, dbg)],
       Csequence(
         op (Cstore(Byte_unsigned, Assignment))
           [op Cadda [Cvar afl_area; Cvar cur_pos];
-            op Cadda [op (Cload (Byte_unsigned, Asttypes.Mutable))
+            op Cadda [op (Cload {memory_chunk=Byte_unsigned;
+                                 mutability=Asttypes.Mutable;
+                                 is_atomic=false})
                         [op Cadda [Cvar afl_area; Cvar cur_pos]];
                       Cconst_int (1, dbg)]],
         op (Cstore(Word_int, Assignment))
@@ -91,7 +97,7 @@ and instrument = function
 
   (* these are base cases and have no logging *)
   | Cconst_int _ | Cconst_natint _ | Cconst_float _
-  | Cconst_symbol _
+  | Cconst_symbol _ | Creturn_addr
   | Cvar _ as c -> c
 
 let instrument_function c dbg =
@@ -101,10 +107,8 @@ let instrument_initialiser c dbg =
   (* Each instrumented module calls caml_setup_afl at
      initialisation, which is a no-op on the second and subsequent
      calls *)
-  with_afl_logging
-    (Csequence
-       (Cop (Cextcall ("caml_setup_afl", typ_int, [], false),
-             [Cconst_int (0, dbg ())],
-             dbg ()),
-        c))
-    (dbg ())
+  Csequence
+   (Cop (Cextcall ("caml_setup_afl", typ_int, [], false),
+         [Cconst_int (0, dbg ())],
+         dbg ()),
+    with_afl_logging c (dbg ()))

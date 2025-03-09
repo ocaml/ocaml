@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 (* Encoding generics using GADTs *)
@@ -604,10 +604,10 @@ let ty_list : type a e. (a,e) ty -> (a vlist,e) ty = fun t ->
 Line 7, characters 41-58:
 7 |     | "Cons", Some (Tdyn (Pair (_, Var), (p : a * a vlist))) -> `Cons p)))
                                              ^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type a * a vlist
-       but a pattern was expected which matches values of type
-         $Tdyn_'a = $0 * $1
-       Type a is not compatible with type $0
+Error: This pattern matches values of type "a * a vlist"
+       but a pattern was expected which matches values of type "$a" = "$0 * $1"
+       Type "a" is not compatible with type "$0"
+       Hint: "$a" is an existential type bound by the constructor "Tdyn".
 |}];;
 
 (* Define Sum using object instead of record for first-class polymorphism *)

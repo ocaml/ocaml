@@ -17,7 +17,7 @@
 
 type value = string
 
-type exporter = value -> string
+type exporter = value -> string * string
 
 type t
 
@@ -28,6 +28,8 @@ exception Empty_variable_name
 exception Variable_already_registered of string
 
 exception No_such_variable of string
+
+exception Recursive_variable_definition of string
 
 val make : string * string -> t
 

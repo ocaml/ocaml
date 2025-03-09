@@ -25,7 +25,6 @@ external magic : 'a -> 'b = "%identity"
 external is_int : t -> bool = "%obj_is_int"
 let [@inline always] is_block a = not (is_int a)
 external tag : t -> int = "caml_obj_tag" [@@noalloc]
-external set_tag : t -> int -> unit = "caml_obj_set_tag"
 external size : t -> int = "%obj_size"
 external reachable_words : t -> int = "caml_obj_reachable_words"
 external field : t -> int -> t = "%obj_field"
@@ -42,18 +41,14 @@ external set_raw_field : t -> int -> raw_data -> unit
 
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
-external truncate : t -> int -> unit = "caml_obj_truncate"
 external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
 external with_tag : int -> t -> t = "caml_obj_with_tag"
 
-let marshal (obj : t) =
-  Marshal.to_bytes obj []
-let unmarshal str pos =
-  (Marshal.from_bytes str pos, pos + Marshal.total_size str pos)
-
 let first_non_constant_constructor_tag = 0
-let last_non_constant_constructor_tag = 245
+let last_non_constant_constructor_tag = 243
 
+let forcing_tag = 244
+let cont_tag = 245
 let lazy_tag = 246
 let closure_tag = 247
 let object_tag = 248
@@ -67,39 +62,11 @@ let string_tag = 252
 let double_tag = 253
 let double_array_tag = 254
 let custom_tag = 255
-let final_tag = custom_tag
 
 
 let int_tag = 1000
 let out_of_heap_tag = 1001
 let unaligned_tag = 1002
-
-module Closure = struct
-  type info = {
-    arity: int;
-    start_env: int;
-  }
-
-  let info_of_raw (info : nativeint) =
-    let open Nativeint in
-    let arity =
-      (* signed: negative for tupled functions *)
-      if Sys.word_size = 64 then
-        to_int (shift_right info 56)
-      else
-        to_int (shift_right info 24)
-    in
-    let start_env =
-      (* start_env is unsigned, but we know it can always fit an OCaml
-         integer so we use [to_int] instead of [unsigned_to_int]. *)
-      to_int (shift_right_logical (shift_left info 8) 9) in
-    { arity; start_env }
-
-  (* note: we expect a closure, not an infix pointer *)
-  let info (obj : t) =
-    assert (tag obj = closure_tag);
-    info_of_raw (raw_field obj 1)
-end
 
 module Extension_constructor =
 struct
@@ -124,10 +91,6 @@ struct
     (obj (field (repr slot) 1) : int)
 end
 
-let extension_constructor = Extension_constructor.of_val
-let extension_name = Extension_constructor.name
-let extension_id = Extension_constructor.id
-
 module Ephemeron = struct
   type obj_t = t
 
@@ -137,7 +100,7 @@ module Ephemeron = struct
   let additional_values = 2
   let max_ephe_length = Sys.max_array_length - additional_values
 
-  external create : int -> t = "caml_ephe_create";;
+  external create : int -> t = "caml_ephe_create"
   let create l =
     if not (0 <= l && l <= max_ephe_length) then
       invalid_arg "Obj.Ephemeron.create";

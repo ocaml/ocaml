@@ -20,9 +20,18 @@
 
 *)
 
+(** {1 Reporting fatal errors} *)
+
 val fatal_error: string -> 'a
+  (** Raise the [Fatal_error] exception with the given string. *)
+
 val fatal_errorf: ('a, Format.formatter, unit, 'b) format4 -> 'a
+  (** Format the arguments according to the given format string
+      and raise [Fatal_error] with the resulting string. *)
+
 exception Fatal_error
+
+(** {1 Exceptions and finalization} *)
 
 val try_finally :
   ?always:(unit -> unit) ->
@@ -63,33 +72,47 @@ val reraise_preserving_backtrace : exn -> (unit -> unit) -> 'a
 (** [reraise_preserving_backtrace e f] is (f (); raise e) except that the
     current backtrace is preserved, even if [f] uses exceptions internally. *)
 
+(** {1 List operations} *)
 
 val map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
-        (* [map_end f l t] is [map f l @ t], just more efficient. *)
+       (** [map_end f l t] is [map f l @ t], just more efficient. *)
+
+val rev_map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
+       (** [map_end f l t] is [map f (rev l) @ t], just more efficient. *)
+
 val map_left_right: ('a -> 'b) -> 'a list -> 'b list
-        (* Like [List.map], with guaranteed left-to-right evaluation order *)
+       (** Like [List.map], with guaranteed left-to-right evaluation order *)
+
 val for_all2: ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
-        (* Same as [List.for_all] but for a binary predicate.
+       (** Same as [List.for_all] but for a binary predicate.
            In addition, this [for_all2] never fails: given two lists
            with different lengths, it returns false. *)
+
 val replicate_list: 'a -> int -> 'a list
-        (* [replicate_list elem n] is the list with [n] elements
+       (** [replicate_list elem n] is the list with [n] elements
            all identical to [elem]. *)
+
 val list_remove: 'a -> 'a list -> 'a list
-        (* [list_remove x l] returns a copy of [l] with the first
+       (** [list_remove x l] returns a copy of [l] with the first
            element equal to [x] removed. *)
+
 val split_last: 'a list -> 'a list * 'a
-        (* Return the last element and the other elements of the given list. *)
+       (** Return the last element and the other elements of the given list. *)
 
-type ref_and_value = R : 'a ref * 'a -> ref_and_value
+val repeated_label : (string option * 'a) list -> string option
+       (** Detects a repeated label - for use with labeled tuples. *)
 
-val protect_refs : ref_and_value list -> (unit -> 'a) -> 'a
-(** [protect_refs l f] temporarily sets [r] to [v] for each [R (r, v)] in [l]
-    while executing [f]. The previous contents of the references is restored
-    even if [f] raises an exception, without altering the exception backtrace.
-*)
+(** {1 Hash table operations} *)
+
+val create_hashtable: int -> ('a * 'b) list -> ('a, 'b) Hashtbl.t
+       (** Create a hashtable with the given initial size and fills it
+           with the given bindings. *)
+
+(** {1 Extensions to the standard library} *)
 
 module Stdlib : sig
+
+(** {2 Extensions to the List module} *)
   module List : sig
     type 'a t = 'a list
 
@@ -111,10 +134,20 @@ module Stdlib : sig
         If [l1] is of length n and [l2 = h2 @ t2] with h2 of length n,
         r1 is [List.map2 f l1 h1] and r2 is t2. *)
 
+    val iteri2 : (int -> 'a -> 'b -> unit) -> 'a list -> 'b list -> unit
+    (** Same as {!List.iter2}, but the function is applied to the index of
+        the element as first argument (counting from 0) *)
+
     val split_at : int -> 'a t -> 'a t * 'a t
     (** [split_at n l] returns the pair [before, after] where [before] is
         the [n] first elements of [l] and [after] the remaining ones.
         If [l] has less than [n] elements, raises Invalid_argument. *)
+
+    val chunks_of : int -> 'a t -> 'a t t
+    (** [chunks_of n t] returns a list of nonempty lists whose
+        concatenation is equal to the original list. Every list has [n]
+        elements, except for possibly the last list, which may have fewer.
+        [chunks_of] raises if [n <= 0]. *)
 
     val is_prefix
        : equal:('a -> 'a -> bool)
@@ -140,6 +173,7 @@ module Stdlib : sig
         each with such longest common prefix removed, are also returned. *)
   end
 
+(** {2 Extensions to the Option module} *)
   module Option : sig
     type 'a t = 'a option
 
@@ -150,20 +184,20 @@ module Stdlib : sig
       -> unit
   end
 
+(** {2 Extensions to the Array module} *)
   module Array : sig
     val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
-    (* Same as [Array.exists], but for a two-argument predicate. Raise
-       Invalid_argument if the two arrays are determined to have
-       different lengths. *)
+    (** Same as [Array.exists2] from the standard library. *)
 
     val for_alli : (int -> 'a -> bool) -> 'a array -> bool
-    (** Same as {!Array.for_all}, but the
+    (** Same as [Array.for_all] from the standard library, but the
         function is applied with the index of the element as first argument,
         and the element itself as second argument. *)
 
     val all_somes : 'a option array -> 'a array option
   end
 
+(** {2 Extensions to the String module} *)
   module String : sig
     include module type of String
     module Set : Set.S with type elt = string
@@ -178,113 +212,213 @@ module Stdlib : sig
   external compare : 'a -> 'a -> int = "%compare"
 end
 
+(** {1 Operations on files and file paths} *)
+
 val find_in_path: string list -> string -> string
-        (* Search a file in a list of directories. *)
+       (** Search a file in a list of directories. *)
+
 val find_in_path_rel: string list -> string -> string
-        (* Search a relative file in a list of directories. *)
-val find_in_path_uncap: string list -> string -> string
-        (* Same, but search also for uncapitalized name, i.e.
-           if name is Foo.ml, allow /path/Foo.ml and /path/foo.ml
-           to match. *)
+       (** Search a relative file in a list of directories. *)
+
+ (** Normalize file name [Foo.ml] to [foo.ml], using NFC and case-folding.
+     Return [Error] if the input is not a valid utf-8 byte sequence *)
+val normalized_unit_filename: string -> (string,string) Result.t
+
+val find_in_path_normalized: string list -> string -> string
+(** Same as {!find_in_path_rel} , but search also for normalized unit filename,
+    i.e. if name is [Foo.ml], allow [/path/Foo.ml] and [/path/foo.ml] to
+    match. *)
+
 val remove_file: string -> unit
-        (* Delete the given file if it exists. Never raise an error. *)
+       (** Delete the given file if it exists and is a regular file.
+           Does nothing for other kinds of files.
+           Never raises an error. *)
+
 val expand_directory: string -> string -> string
-        (* [expand_directory alt file] eventually expands a [+] at the
+       (** [expand_directory alt file] eventually expands a [+] at the
            beginning of file into [alt] (an alternate root directory) *)
 
 val split_path_contents: ?sep:char -> string -> string list
-(* [split_path_contents ?sep s] interprets [s] as the value of a "PATH"-like
-   variable and returns the corresponding list of directories. [s] is split
-   using the platform-specific delimiter, or [~sep] if it is passed.
+      (** [split_path_contents ?sep s] interprets [s] as the value of
+          a "PATH"-like variable and returns the corresponding list of
+          directories. [s] is split using the platform-specific delimiter, or
+          [~sep] if it is passed.
 
-   Returns the empty list if [s] is empty. *)
-
-val create_hashtable: int -> ('a * 'b) list -> ('a, 'b) Hashtbl.t
-        (* Create a hashtable of the given size and fills it with the
-           given bindings. *)
+          Returns the empty list if [s] is empty. *)
 
 val copy_file: in_channel -> out_channel -> unit
-        (* [copy_file ic oc] reads the contents of file [ic] and copies
+       (** [copy_file ic oc] reads the contents of file [ic] and copies
            them to [oc]. It stops when encountering EOF on [ic]. *)
+
 val copy_file_chunk: in_channel -> out_channel -> int -> unit
-        (* [copy_file_chunk ic oc n] reads [n] bytes from [ic] and copies
+       (** [copy_file_chunk ic oc n] reads [n] bytes from [ic] and copies
            them to [oc]. It raises [End_of_file] when encountering
            EOF on [ic]. *)
+
 val string_of_file: in_channel -> string
-        (* [string_of_file ic] reads the contents of file [ic] and copies
+       (** [string_of_file ic] reads the contents of file [ic] and copies
            them to a string. It stops when encountering EOF on [ic]. *)
+
 val output_to_file_via_temporary:
       ?mode:open_flag list -> string -> (string -> out_channel -> 'a) -> 'a
-        (* Produce output in temporary file, then rename it
+       (** Produce output in temporary file, then rename it
            (as atomically as possible) to the desired output file name.
            [output_to_file_via_temporary filename fn] opens a temporary file
            which is passed to [fn] (name + output channel).  When [fn] returns,
            the channel is closed and the temporary file is renamed to
            [filename]. *)
 
-(** Open the given [filename] for writing (in binary mode), pass the
-    [out_channel] to the given function, then close the channel. If the function
-    raises an exception then [filename] will be removed. *)
 val protect_writing_to_file
    : filename:string
   -> f:(out_channel -> 'a)
   -> 'a
+      (** Open the given [filename] for writing (in binary mode), pass
+          the [out_channel] to the given function, then close the
+          channel. If the function raises an exception then [filename]
+          will be removed. *)
 
-val log2: int -> int
-        (* [log2 n] returns [s] such that [n = 1 lsl s]
-           if [n] is a power of 2*)
-val align: int -> int -> int
-        (* [align n a] rounds [n] upwards to a multiple of [a]
-           (a power of 2). *)
-val no_overflow_add: int -> int -> bool
-        (* [no_overflow_add n1 n2] returns [true] if the computation of
-           [n1 + n2] does not overflow. *)
-val no_overflow_sub: int -> int -> bool
-        (* [no_overflow_sub n1 n2] returns [true] if the computation of
-           [n1 - n2] does not overflow. *)
-val no_overflow_mul: int -> int -> bool
-        (* [no_overflow_mul n1 n2] returns [true] if the computation of
-           [n1 * n2] does not overflow. *)
-val no_overflow_lsl: int -> int -> bool
-        (* [no_overflow_lsl n k] returns [true] if the computation of
-           [n lsl k] does not overflow. *)
+val concat_null_terminated : string list -> string
+(** [concat_null_terminated [x1;x2; ... xn]] is
+    [x1 ^ "\000" ^ x2 ^ "\000" ^ ... ^ xn ^ "\000"] *)
 
-module Int_literal_converter : sig
-  val int : string -> int
-  val int32 : string -> int32
-  val int64 : string -> int64
-  val nativeint : string -> nativeint
-end
+val split_null_terminated : string -> string list
+(** [split_null_terminated s] is similar
+    [String.split_on_char '\000'] but ignores the trailing separator, if any *)
 
 val chop_extensions: string -> string
-        (* Return the given file name without its extensions. The extensions
+       (** Return the given file name without its extensions. The extensions
            is the longest suffix starting with a period and not including
            a directory separator, [.xyz.uvw] for instance.
 
            Return the given name if it does not contain an extension. *)
 
+(** {1 Integer operations} *)
+
+val log2: int -> int
+       (** [log2 n] returns [s] such that [n = 1 lsl s]
+           if [n] is a power of 2*)
+
+val align: int -> int -> int
+       (** [align n a] rounds [n] upwards to a multiple of [a]
+           (a power of 2). *)
+
+val no_overflow_add: int -> int -> bool
+       (** [no_overflow_add n1 n2] returns [true] if the computation of
+           [n1 + n2] does not overflow. *)
+
+val no_overflow_sub: int -> int -> bool
+       (** [no_overflow_sub n1 n2] returns [true] if the computation of
+           [n1 - n2] does not overflow. *)
+
+val no_overflow_mul: int -> int -> bool
+       (** [no_overflow_mul n1 n2] returns [true] if the computation of
+           [n1 * n2] does not overflow. *)
+
+val no_overflow_lsl: int -> int -> bool
+       (** [no_overflow_lsl n k] returns [true] if the computation of
+           [n lsl k] does not overflow. *)
+
+val letter_of_int : int -> string
+
+module Int_literal_converter : sig
+  val int : string -> int
+    (** Convert a string to an integer.  Unlike {!Stdlib.int_of_string},
+        this function accepts the string representation of [max_int + 1]
+        and returns [min_int] in this case. *)
+
+  val int32 : string -> int32
+    (** Likewise, at type [int32] *)
+
+  val int64 : string -> int64
+    (** Likewise, at type [int64] *)
+
+  val nativeint : string -> nativeint
+    (** Likewise, at type [nativeint] *)
+
+end
+
+val find_first_mono : (int -> bool) -> int
+  (**[find_first_mono p] takes an integer predicate [p : int -> bool]
+     that we assume:
+     1. is monotonic on natural numbers:
+        if [a <= b] then [p a] implies [p b],
+     2. is satisfied for some natural numbers in range [0; max_int]
+        (this is equivalent to: [p max_int = true]).
+
+     [find_first_mono p] is the smallest natural number N that satisfies [p],
+     computed in O(log(N)) calls to [p].
+
+     Our implementation supports two cases where the preconditions on [p]
+     are not respected:
+     - If [p] is always [false], we silently return [max_int]
+       instead of looping or crashing.
+     - If [p] is non-monotonic but eventually true,
+       we return some satisfying value.
+  *)
+
+(** {1 String operations} *)
+
 val search_substring: string -> string -> int -> int
-        (* [search_substring pat str start] returns the position of the first
+       (** [search_substring pat str start] returns the position of the first
            occurrence of string [pat] in string [str].  Search starts
            at offset [start] in [str].  Raise [Not_found] if [pat]
            does not occur. *)
 
 val replace_substring: before:string -> after:string -> string -> string
-        (* [replace_substring ~before ~after str] replaces all
+       (** [replace_substring ~before ~after str] replaces all
            occurrences of [before] with [after] in [str] and returns
            the resulting string. *)
 
 val rev_split_words: string -> string list
-        (* [rev_split_words s] splits [s] in blank-separated words, and returns
+       (** [rev_split_words s] splits [s] in blank-separated words, and returns
            the list of words in reverse order. *)
 
+val cut_at : string -> char -> string * string
+(** [String.cut_at s c] returns a pair containing the sub-string before
+   the first occurrence of [c] in [s], and the sub-string after the
+   first occurrence of [c] in [s].
+   [let (before, after) = String.cut_at s c in
+    before ^ String.make 1 c ^ after] is the identity if [s] contains [c].
+
+   Raise [Not_found] if the character does not appear in the string
+   @since 4.01
+*)
+
+val ordinal_suffix : int -> string
+(** [ordinal_suffix n] is the appropriate suffix to append to the numeral [n] as
+    an ordinal number: [1] -> ["st"], [2] -> ["nd"], [3] -> ["rd"],
+    [4] -> ["th"], and so on.  Handles larger numbers (e.g., [42] -> ["nd"]) and
+    the numbers 11--13 (which all get ["th"]) correctly. *)
+
+val normalise_eol : string -> string
+(** [normalise_eol s] returns a fresh copy of [s] with any '\r' characters
+   removed. Intended for pre-processing text which will subsequently be printed
+   on a channel which performs EOL transformations (i.e. Windows) *)
+
+val delete_eol_spaces : string -> string
+(** [delete_eol_spaces s] returns a fresh copy of [s] with any end of
+   line spaces removed. Intended to normalize the output of the
+   toplevel for tests. *)
+
+(** {1 Operations on references} *)
+
+type ref_and_value = R : 'a ref * 'a -> ref_and_value
+
+val protect_refs : ref_and_value list -> (unit -> 'a) -> 'a
+(** [protect_refs l f] temporarily sets [r] to [v] for each [R (r, v)] in [l]
+    while executing [f]. The previous contents of the references is restored
+    even if [f] raises an exception, without altering the exception backtrace.
+*)
+
 val get_ref: 'a list ref -> 'a list
-        (* [get_ref lr] returns the content of the list reference [lr] and reset
+       (** [get_ref lr] returns the content of the list reference [lr] and reset
            its content to the empty list. *)
 
 val set_or_ignore : ('a -> 'b option) -> 'b option ref -> 'a -> unit
-        (* [set_or_ignore f opt x] sets [opt] to [f x] if it returns [Some _],
+       (** [set_or_ignore f opt x] sets [opt] to [f x] if it returns [Some _],
            or leaves it unmodified if it returns [None]. *)
+
+(** {1 Operations on triples and quadruples} *)
 
 val fst3: 'a * 'b * 'c -> 'a
 val snd3: 'a * 'b * 'c -> 'b
@@ -295,19 +429,7 @@ val snd4: 'a * 'b * 'c * 'd -> 'b
 val thd4: 'a * 'b * 'c * 'd -> 'c
 val for4: 'a * 'b * 'c * 'd -> 'd
 
-module LongString :
-  sig
-    type t = bytes array
-    val create : int -> t
-    val length : t -> int
-    val get : t -> int -> char
-    val set : t -> int -> char -> unit
-    val blit : t -> int -> t -> int -> int -> unit
-    val blit_string : string -> int -> t -> int -> int -> unit
-    val output : out_channel -> t -> int -> int -> unit
-    val input_bytes_into : t -> in_channel -> int -> unit
-    val input_bytes : in_channel -> int -> t
-  end
+(** {1 Spell checking and ``did you mean'' suggestions} *)
 
 val edit_distance : string -> string -> int -> int option
 (** [edit_distance a b cutoff] computes the edit distance between
@@ -327,32 +449,63 @@ val spellcheck : string list -> string -> string list
     list of suggestions taken from [env], that are close enough to
     [name] that it may be a typo for one of them. *)
 
-val did_you_mean : Format.formatter -> (unit -> string list) -> unit
-(** [did_you_mean ppf get_choices] hints that the user may have meant
-    one of the option returned by calling [get_choices]. It does nothing
-    if the returned list is empty.
+val aligned_hint:
+  prefix:string -> Format_doc.formatter ->
+  ('a, Format_doc.formatter, unit, Format_doc.t option -> unit) format4 -> 'a
+(** [aligned_hint ~prefix ppf fmt ... hint] vertically aligns a main message
+    (described by the [fmt] format string) and a possible hint message. The
+    vertical alignment is controlled by the use of [@{<ralign> ... @}] boxes:
+    the start of one box, in either the hint or the main message, will be
+    shifted on the left to ensure that the end of the two boxes are vertically
+    aligned, taking in account a pre-existing [prefix] before the main message.
+    For instance, if you have already printed ["Error: "] at the beginning of
+    the current line
 
-    The [unit -> ...] thunking is meant to delay any potentially-slow
-    computation (typically computing edit-distance with many things
-    from the current environment) to when the hint message is to be
-    printed. You should print an understandable error message before
-    calling [did_you_mean], so that users get a clear notification of
-    the failure even if producing the hint is slow.
+{[aligned_hint
+    ~prefix:"Error: " "@{<ralign>The value @}%a is not an instance variable"
+      Style.inline_code "foobar"
+    (Some(doc_printf
+      "@{<ralign>Did you mean @}%a" Style.inline_code "foobaz"
+    ))]}
+
+  produces the following text:
+
+{[
+Error:   The value "foobaz" is not an instance variable
+Hint: Did you mean "foobar"?
+]}
+
+  where the main message has been shifted to the left to align ["foobaz"] and
+  ["foobar"].
 *)
 
-val cut_at : string -> char -> string * string
-(** [String.cut_at s c] returns a pair containing the sub-string before
-   the first occurrence of [c] in [s], and the sub-string after the
-   first occurrence of [c] in [s].
-   [let (before, after) = String.cut_at s c in
-    before ^ String.make 1 c ^ after] is the identity if [s] contains [c].
+val aligned_error_hint:
+  Format_doc.formatter ->
+  ('a, Format_doc.formatter, unit, Format_doc.t option -> unit) format4 -> 'a
+(** Same as [aligned_hint ~prefix:"Error: "] *)
 
-   Raise [Not_found] if the character does not appear in the string
-   @since 4.01
+val did_you_mean :
+    ?pp:string Format_doc.printer -> string list -> Format_doc.t option
+(** [did_you_mean ~pp choices] hints that the user may have meant one of the
+  option in [choices].
+
+  Each choice is printed with the [pp] function, or [Style.inline_code] if
+  [pp]=[None].
 *)
 
-(* Color handling *)
-module Color : sig
+(** {1 Color support detection }*)
+module Color: sig
+
+  type setting = Auto | Always | Never
+
+  val default_setting : setting
+
+end
+
+
+(** {1 Styling handling for terminal output } *)
+
+module Style : sig
   type color =
     | Black
     | Red
@@ -362,39 +515,45 @@ module Color : sig
     | Magenta
     | Cyan
     | White
-  ;;
 
   type style =
     | FG of color (* foreground *)
     | BG of color (* background *)
     | Bold
     | Reset
-
   type Format.stag += Style of style list
 
   val ansi_of_style_l : style list -> string
   (* ANSI escape sequence for the given style *)
 
-  type styles = {
-    error: style list;
-    warning: style list;
-    loc: style list;
+  type tag_style ={
+    ansi: style list;
+    text_open:string;
+    text_close:string
   }
+
+  type styles = {
+    error: tag_style;
+    warning: tag_style;
+    loc: tag_style;
+    hint: tag_style;
+    inline_code: tag_style;
+  }
+
+  val hint: Format_doc.formatter -> unit
+  val as_inline_code: 'a Format_doc.printer -> 'a Format_doc.printer
+  val inline_code: string Format_doc.printer
 
   val default_styles: styles
   val get_styles: unit -> styles
   val set_styles: styles -> unit
 
-  type setting = Auto | Always | Never
-
-  val default_setting : setting
-
-  val setup : setting option -> unit
+  val setup : Color.setting option -> unit
   (* [setup opt] will enable or disable color handling on standard formatters
      according to the value of color setting [opt].
      Only the first call to this function has an effect. *)
 
-  val set_color_tag_handling : Format.formatter -> unit
+  val set_tag_handling : Format.formatter -> unit
   (* adds functions to support color tags to the given formatter. *)
 end
 
@@ -407,45 +566,29 @@ module Error_style : sig
   val default_setting : setting
 end
 
-val normalise_eol : string -> string
-(** [normalise_eol s] returns a fresh copy of [s] with any '\r' characters
-   removed. Intended for pre-processing text which will subsequently be printed
-   on a channel which performs EOL transformations (i.e. Windows) *)
+(** {1 Formatted output} *)
 
-val delete_eol_spaces : string -> string
-(** [delete_eol_spaces s] returns a fresh copy of [s] with any end of
-   line spaces removed. Intended to normalize the output of the
-   toplevel for tests. *)
+val print_if :
+  Format.formatter -> bool ref -> (Format.formatter -> 'a -> unit) -> 'a -> 'a
+(** [print_if ppf flag fmt x] prints [x] with [fmt] on [ppf] if [b] is true. *)
 
-val pp_two_columns :
-  ?sep:string -> ?max_lines:int ->
-  Format.formatter -> (string * string) list -> unit
-(** [pp_two_columns ?sep ?max_lines ppf l] prints the lines in [l] as two
-   columns separated by [sep] ("|" by default). [max_lines] can be used to
-   indicate a maximum number of lines to print -- an ellipsis gets inserted at
-   the middle if the input has too many lines.
+val print_see_manual : int list Format_doc.printer
+(** See manual section *)
 
-   Example:
+(** {1 Displaying configuration variables} *)
 
-    {v pp_two_columns ~max_lines:3 Format.std_formatter [
-      "abc", "hello";
-      "def", "zzz";
-      "a"  , "bllbl";
-      "bb" , "dddddd";
-    ] v}
-
-    prints
-
-    {v
-    abc | hello
-    ...
-    bb  | dddddd
-    v}
-*)
-
-(** configuration variables *)
 val show_config_and_exit : unit -> unit
+  (** Display the values of all compiler configuration variables from module
+      [Config], then exit the program with code 0. *)
+
 val show_config_variable_and_exit : string -> unit
+  (** Display the value of the given configuration variable,
+      then exit the program with code 0. *)
+
+(** {1 Handling of build maps} *)
+
+(** Build maps cause the compiler to normalize file names embedded in
+    object files, thus leading to more reproducible builds. *)
 
 val get_build_path_prefix_map: unit -> Build_path_prefix_map.map option
 (** Returns the map encoded in the [BUILD_PATH_PREFIX_MAP] environment
@@ -455,17 +598,7 @@ val debug_prefix_map_flags: unit -> string list
 (** Returns the list of [--debug-prefix-map] flags to be passed to the
     assembler, built from the [BUILD_PATH_PREFIX_MAP] environment variable. *)
 
-val print_if :
-  Format.formatter -> bool ref -> (Format.formatter -> 'a -> unit) -> 'a -> 'a
-(** [print_if ppf flag fmt x] prints [x] with [fmt] on [ppf] if [b] is true. *)
-
-
-type filepath = string
-type modname = string
-type crcs = (modname * Digest.t option) list
-
-type alerts = string Stdlib.String.Map.t
-
+(** {1 Handling of magic numbers} *)
 
 module Magic_number : sig
   (** a typical magic number is "Caml1999I011"; it is formed of an
@@ -519,7 +652,7 @@ module Magic_number : sig
       will generate a textual explanation of each error,
       for use in error messages.
 
-      @since 4.11.0
+      @since 4.11
   *)
 
   type native_obj_config = {
@@ -661,7 +794,73 @@ module Magic_number : sig
       version by the parsing functions above.
    *)
 
-  (**/**)
-
   val all_kinds : kind list
 end
+
+(** {1 Minimal support for Unicode characters in identifiers} *)
+
+(** Characters allowed in identifiers are, currently:
+      - ASCII letters A-Z a-z
+      - Latin-1 letters (U+00C0 - U+00FF except U+00D7 and U+00F7)
+      - Character sequences which normalize to the above character under NFC
+      - digits 0-9, underscore, single quote
+*)
+
+module Utf8_lexeme: sig
+  type t = string
+
+  val normalize: string -> (t,t) Result.t
+  (** Normalize the given UTF-8 encoded string.
+      Invalid UTF-8 sequences results in a error and are replaced
+      by U+FFFD.
+      Identifier characters are put in NFC normalized form.
+      Other Unicode characters are left unchanged. *)
+
+  val capitalize: string -> (t,t) Result.t
+  (** Like [normalize], but if the string starts with a lowercase identifier
+      character, it is replaced by the corresponding uppercase character.
+      Subsequent characters are not changed. *)
+
+  val uncapitalize: string -> (t,t) Result.t
+  (** Like [normalize], but if the string starts with an uppercase identifier
+      character, it is replaced by the corresponding lowercase character.
+      Subsequent characters are not changed. *)
+
+  val is_capitalized: t -> bool
+  (** Returns [true] if the given normalized string starts with an
+      uppercase identifier character, [false] otherwise.  May return
+      wrong results if the string is not normalized. *)
+
+  val is_valid_identifier: t -> bool
+  (** Check whether the given normalized string is a valid OCaml identifier:
+      - all characters are identifier characters
+      - it does not start with a digit or a single quote
+  *)
+
+  val is_lowercase: t -> bool
+  (** Returns [true] if the given normalized string only contains lowercase
+      identifier character, [false] otherwise. May return wrong results if the
+      string is not normalized. *)
+
+  type validation_result =
+    | Valid
+    | Invalid_character of Uchar.t   (** Character not allowed *)
+    | Invalid_beginning of Uchar.t   (** Character not allowed as first char *)
+
+  val validate_identifier: ?with_dot:bool -> t -> validation_result
+  (** Like [is_valid_identifier], but returns a more detailed error code. Dots
+      can be allowed to extend support to path-like identifiers. *)
+
+  val starts_like_a_valid_identifier: t -> bool
+  (** Checks whether the given normalized string starts with an identifier
+      character other than a digit or a single quote.  Subsequent characters
+      are not checked. *)
+end
+
+(** {1 Miscellaneous type aliases} *)
+
+type filepath = string
+type modname = string
+type crcs = (modname * Digest.t option) list
+
+type alerts = string Stdlib.String.Map.t

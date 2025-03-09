@@ -1,10 +1,13 @@
 (* TEST
-* hasunix
-include unix
-stdin = "/dev/null"
-stderr = "/dev/null"
-** bytecode
-** native
+ include unix;
+ stdin = "/dev/null";
+ stderr = "/dev/null";
+ hasunix;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 Printf.printf

@@ -1,7 +1,5 @@
 (* TEST
-
-ocamllex_flags = "-q"
-
+ ocamllex_flags = "-q";
 *)
 
 {
@@ -65,11 +63,20 @@ let mnemonics =
 let mnemonic_of_constructor s =
   String.map (function '_' -> '-' | c -> Char.lowercase_ascii c) s
 
+let deprecated_warnings = function
+  | 3 | 25 | 31 -> true
+  | _  -> false
+
 let () =
   List.iter (fun (s, n) ->
       let f (c, m) = mnemonic_of_constructor c = s && n = m in
-      if not (List.exists f constructors) then
+      match List.exists f constructors, deprecated_warnings n with
+      | true, false -> ()
+      | false, true -> ()
+      | false, false ->
         Printf.printf "Could not find constructor corresponding to mnemonic %S (%d)\n%!" s n
+      | true, true ->
+        Printf.printf "Found constructor for deprecated warnings %S (%d)\n%!" s n
     ) mnemonics
 
 let _ =

@@ -1,40 +1,49 @@
 (* TEST
+ include dynlink;
+ readonly_files = "test1_inited_second.ml test1_plugin.ml";
+ libraries = "";
+ shared-libraries;
+ {
+   setup-ocamlc.byte-build-env;
 
-include dynlink
+   module = "test1_main.ml";
+   ocamlc.byte;
 
-readonly_files = "test1_inited_second.ml test1_plugin.ml"
+   module = "test1_inited_second.ml";
+   ocamlc.byte;
 
-libraries = ""
+   module = "test1_plugin.ml";
+   ocamlc.byte;
 
-* shared-libraries
-** setup-ocamlc.byte-build-env
-*** ocamlc.byte
-module = "test1_main.ml"
-*** ocamlc.byte
-module = "test1_inited_second.ml"
-*** ocamlc.byte
-module = "test1_plugin.ml"
-*** ocamlc.byte
-program = "${test_build_directory}/test1.byte"
-libraries = "dynlink"
-all_modules = "test1_main.cmo test1_inited_second.cmo"
-**** run
+   unset module;
+   program = "${test_build_directory}/test1.byte";
+   libraries = "dynlink";
+   all_modules = "test1_main.cmo test1_inited_second.cmo";
+   ocamlc.byte;
+   run;
+ }{
+   native-dynlink;
+   setup-ocamlopt.byte-build-env;
 
-** native-dynlink
-*** setup-ocamlopt.byte-build-env
-**** ocamlopt.byte
-module = "test1_main.ml"
-**** ocamlopt.byte
-module = "test1_inited_second.ml"
-**** ocamlopt.byte
-program = "test1_plugin.cmxs"
-flags = "-shared"
-all_modules = "test1_plugin.ml"
-**** ocamlopt.byte
-program = "${test_build_directory}/test1.exe"
-libraries = "dynlink"
-all_modules = "test1_main.cmx test1_inited_second.cmx"
-***** run
+   module = "test1_main.ml";
+   ocamlopt.byte;
+
+   module = "test1_inited_second.ml";
+   ocamlopt.byte;
+
+   unset module;
+   program = "test1_plugin.cmxs";
+   flags = "-shared";
+   all_modules = "test1_plugin.ml";
+   ocamlopt.byte;
+
+   program = "${test_build_directory}/test1.exe";
+   unset flags;
+   libraries = "dynlink";
+   all_modules = "test1_main.cmx test1_inited_second.cmx";
+   ocamlopt.byte;
+   run;
+ }
 *)
 
 (* Check that a module in the main program whose initializer has not

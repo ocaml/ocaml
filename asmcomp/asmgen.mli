@@ -34,7 +34,7 @@ val compile_implementation
   -> unit
 
 val compile_implementation_linear :
-    string -> progname:string -> unit
+    Unit_info.t -> unit
 
 val compile_phrase :
     ppf_dump:Format.formatter -> Cmm.phrase -> unit
@@ -45,7 +45,8 @@ type error =
   | Asm_generation of string * Emitaux.error
 
 exception Error of error
-val report_error: Format.formatter -> error -> unit
+val report_error: error Format_doc.format_printer
+val report_error_doc: error Format_doc.printer
 
 val compile_unit
    : output_prefix:string

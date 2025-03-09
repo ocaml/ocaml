@@ -1,11 +1,11 @@
-(* TEST
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
 
-flags = "-w +A-70"
 
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-compile_only = "true"
-*** check-ocamlc.byte-output
+
+
+
+
 
 *)
 
@@ -21,3 +21,11 @@ type t = A | B
 let g x = match x with
 | A -> 0
 | _ -> 1
+
+(* TEST
+ flags = "-w +A-70";
+ setup-ocamlc.byte-build-env;
+ compile_only = "true";
+ ocamlc.byte;
+ check-ocamlc.byte-output;
+*)

@@ -1,11 +1,9 @@
-SRC = $(abspath ../..)
--include $(SRC)/Makefile.config
+ROOTDIR = ../..
+include $(ROOTDIR)/Makefile.common
 
-export LD_LIBRARY_PATH   ?= "$(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/"
-export DYLD_LIBRARY_PATH ?= "$(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/"
-SET_LD_PATH = CAML_LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)
+TEXQUOTE = $(ROOTDIR)/runtime/ocamlrun ../tools/texquote2
 
-TEXQUOTE = $(SRC)/runtime/ocamlrun ../tools/texquote2
+DIRS = infoman texstuff textman
 
 FILES = allfiles.tex biblio.tex foreword.tex version.tex cmds/warnings-help.etex ifocamldoc.tex
 
@@ -19,35 +17,48 @@ INFO_FLAGS = -fix -exec xxdate.exe -info -w 79 -s
 HTML_FLAGS = -fix -exec xxdate.exe -O
 TEXT_FLAGS = -fix -exec xxdate.exe -text -w 79 -s
 
-# Copy the documentation files from SRC/api_docgen
-APIDOC=$(SRC)/api_docgen
+# Copy the documentation files from ROOTDIR/api_docgen
+APIDOC=$(ROOTDIR)/api_docgen
 .PHONY: html_files
 .PHONY: latex_files
 ifeq ($(DOCUMENTATION_TOOL),odoc)
 latex_files:
 	make -C $(APIDOC) latex
-	cp $(APIDOC)/build/latex/*/*.tex library
+	cp $(APIDOC)/odoc/build/latex/*/*.tex library
+
 html_files:
 	make -C $(APIDOC) html
-	cp -r $(APIDOC)/build/html/*  htmlman
+	cp -r $(APIDOC)/odoc/build/html/*  htmlman
+
+ifocamldoc.tex: $(ROOTDIR)/Makefile.build_config
+	$(MAKE) -C $(APIDOC)/odoc build/latex/ifocamldoc.tex
+	cp $(APIDOC)/odoc/build/latex/ifocamldoc.tex $@
 else
 latex_files:
 	$(MAKE) -C $(APIDOC) latex
-	cp $(APIDOC)/build/latex/*.tex library
+	cp $(APIDOC)/ocamldoc/build/latex/*.tex library
+
 html_files:
 	$(MAKE) -C $(APIDOC) html
 	mkdir -p htmlman/libref
-	cp -r $(APIDOC)/build/html/libref htmlman
-	cp -r $(APIDOC)/build/html/compilerlibref htmlman
+	cp -r $(APIDOC)/ocamldoc/build/html/libref htmlman
+	cp -r $(APIDOC)/ocamldoc/build/html/compilerlibref htmlman
 	cp style.css htmlman/libref
 	cp style.css htmlman/compilerlibref
+
+ifocamldoc.tex: $(ROOTDIR)/Makefile.build_config
+	$(MAKE) -C $(APIDOC)/ocamldoc build/latex/ifocamldoc.tex
+	cp $(APIDOC)/ocamldoc/build/latex/ifocamldoc.tex $@
 endif
 
-manual: files latex_files
-	cd texstuff \
-	  && TEXINPUTS=$(TEXINPUTS) pdflatex manual.tex
+$(DIRS):
+	$(MKDIR) $@
 
-index:
+pdf: files latex_files | texstuff
+	cd texstuff \
+	  && TEXINPUTS=$(TEXINPUTS) lualatex manual.tex
+
+index: | texstuff
 	cd texstuff \
 	  && sh ../../tools/fix_index.sh manual.idx \
 	  && makeindex manual.idx \
@@ -64,7 +75,7 @@ html: etex-files html_files
 	    manual.hva -e macros.tex ../manual.tex \
 	  && $(HACHA) -tocter manual.html
 
-info: files latex_files
+info: files latex_files | infoman
 	cd infoman \
 	  && rm -f ocaml.info* \
 	  && $(HEVEA) $(INFO_FLAGS) -o ocaml.info.body \
@@ -77,7 +88,7 @@ info: files latex_files
 	  && rm -f ocaml.info.tmp ocaml.info.body \
 	  && gzip -9 ocaml.info*
 
-text: files latex_files
+text: files latex_files | textman
 	cd textman \
 	  && $(HEVEA) $(TEXT_FLAGS) \
 	    -I .. -I ../cmds -I ../library -I ../refman \
@@ -85,14 +96,14 @@ text: files latex_files
 	    -I ../../styles -I ../texstuff \
 	    ../manual.inf -e macros.tex ../manual.tex
 
-
+.PHONY: all
 all:
 	$(MAKE) html
 	$(MAKE) text
 	$(MAKE) info
-	$(MAKE) manual
+	$(MAKE) pdf
 	$(MAKE) index
-	$(MAKE) manual
+	$(MAKE) pdf
 
 release: all
 	cp htmlman/manual.html $(RELEASE)refman.html
@@ -126,17 +137,14 @@ etex-files: $(FILES)
 	$(TEXQUOTE) < $< > $*.texquote_error.tex
 	mv $*.texquote_error.tex $@
 
-version.tex: $(SRC)/VERSION
-	sed -n -e '1s/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' $< > $@
-
-cmds/warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
+cmds/warnings-help.etex: $(ROOTDIR)/utils/warnings.ml $(ROOTDIR)/ocamlc
 	(echo "% This file is generated from (ocamlc -warn-help)";\
 	 echo "% according to a rule in manual/src/Makefile.";\
 	 echo "% In particular, the reference to documentation sections";\
 	 echo "% are inserted through the Makefile, which should be updated";\
 	 echo "% when a new warning is documented.";\
 	 echo "%";\
-	 $(SET_LD_PATH) $(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help \
+	 $(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -warn-help \
 	 | LC_ALL=C sed -e 's/^ *\([0-9][0-9]*\) *\[\([a-z][a-z-]*\)\]\(.*\)/\\item[\1 "\2"] \3/' \
 	                -e 's/^ *\([0-9A-Z][0-9]*\) *\([^]].*\)/\\item[\1] \2/'\
 	 | sed -e 's/@/\\@/g' \
@@ -149,24 +157,24 @@ cmds/warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	  mv $@.tmp $@;\
 	done
 
-ifocamldoc.tex: $(SRC)/Makefile.config
-	$(MAKE) -C $(APIDOC) build/latex/ifocamldoc.tex
-	cp $(APIDOC)/build/latex/ifocamldoc.tex $@
-
 .PHONY: clean
 clean:
-	rm -f $(FILES) *.texquote_error
-	$(MAKE) -C cmds      clean
-	$(MAKE) -C library   clean
-	$(MAKE) -C refman    clean
-	$(MAKE) -C tutorials clean
+	rm -f $(filter-out version.tex,$(FILES)) *.texquote_error
+	$(MAKE) -C cmds clean
 	$(MAKE) -C html_processing clean
-	-rm -f texstuff/*
+	$(MAKE) -C library clean
+	$(MAKE) -C refman clean
+	$(MAKE) -C tutorials clean
 	cd htmlman; rm -rf libref compilerlibref *.htoc *.html *.haux *.hind *.svg \
-	                   manual.hmanual manual.hmanual.kwd manual.css
-	cd textman; rm -f manual.txt *.haux *.hind *.htoc
-	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind *.info*.gz
+                       fonts/KaTeX* katex.min.css katex.min.js highlight.pack.js \
+	                   manual.hmanual manual.hmanual.kwd manual.css odoc.css
+	rm -rf $(DIRS)
 
 .PHONY: distclean
 distclean: clean
+	rm -f version.tex
+	$(MAKE) -C cmds distclean
 	$(MAKE) -C html_processing distclean
+	$(MAKE) -C library distclean
+	$(MAKE) -C refman distclean
+	$(MAKE) -C tutorials distclean

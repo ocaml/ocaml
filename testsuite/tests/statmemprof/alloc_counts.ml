@@ -1,5 +1,13 @@
 (* TEST *)
+
+(* Checks that the allocated words counted by statmemprof
+   (with sampling rate of 1) match the numbers reported by
+   Gc.counters(). *)
+
 module MP = Gc.Memprof
+
+(* Returns the number of words allocated on the minor and major heaps
+   when f is called, as counted by statmemprof *)
 
 let allocs_by_memprof f =
   let minor = ref 0 in
@@ -10,10 +18,14 @@ let allocs_by_memprof f =
   let alloc_major (info : MP.allocation) =
     major := !major + info.n_samples;
     None in
-  MP.start ~sampling_rate:1. ({MP.null_tracker with alloc_minor; alloc_major});
+  let _:MP.t = MP.start ~sampling_rate:1.
+          ({MP.null_tracker with alloc_minor; alloc_major}) in
   match Sys.opaque_identity f () with
   | _ -> MP.stop (); (!minor, !major)
   | exception e -> MP.stop (); raise e
+
+(* Returns the number of words allocated on the minor and major heaps
+   when f is called, as counted by Gc.counters() *)
 
 let allocs_by_counters f =
   let minor1, prom1, major1 = Gc.counters () in
@@ -31,6 +43,8 @@ let allocs_by_counters f =
   int_of_float minor,
   int_of_float (major -. prom)
 
+(* Compares memprof results with Gc.counters() results *)
+
 let compare name f =
   let mp_minor, mp_major = allocs_by_memprof f in
   let ct_minor, ct_major = allocs_by_counters f in
@@ -43,6 +57,9 @@ let many f =
   for i = 1 to 10 do
     ignore (Sys.opaque_identity f ())
   done
+
+(* Compare allocated word counts for repetitions of various functions
+   which allocate large or small objects of different kinds. *)
 
 let () =
   compare "ref" (many (fun () -> ref (ref (ref 42))));

@@ -29,12 +29,10 @@ end
 module Filename = struct
   include Filename
   let path_sep = if Sys.win32 then ";" else ":"
-  (* This function comes from otherlibs/win32unix/unix.ml *)
+  (* This function comes from otherlibs/unix/unix_win32.ml *)
   let maybe_quote f =
-    if String.contains f ' ' ||
-      String.contains f '\"' ||
-      String.contains f '\t' ||
-       f = ""
+    if f = ""
+    || String.exists (function ' ' | '\"' | '\t' -> true | _ -> false) f
     then Filename.quote f
     else f
 
@@ -47,9 +45,13 @@ end
 
 module List = struct
   include List
-  let rec concatmap f = function
-    | [] -> []
-    | x::xs -> (f x) @ (concatmap f xs)
+
+  let rec fold_left_result f acc = function
+    | [] -> Ok acc
+    | x :: xs ->
+        match f acc x with
+        | Error _ as err -> err
+        | Ok acc -> fold_left_result f acc xs
 end
 
 module String = struct

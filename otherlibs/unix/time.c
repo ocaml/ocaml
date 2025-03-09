@@ -16,14 +16,14 @@
 #include <time.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
-double unix_time_unboxed(value unit)
+double caml_unix_time_unboxed(value unit)
 {
   return ((double) time((time_t *) NULL));
 }
 
-CAMLprim value unix_time(value unit)
+CAMLprim value caml_unix_time(value unit)
 {
-  return caml_copy_double(unix_time_unboxed(unit));
+  return caml_copy_double(caml_unix_time_unboxed(unit));
 }

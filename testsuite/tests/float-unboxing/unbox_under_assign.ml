@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 module Float = struct
   type _ t =

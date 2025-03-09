@@ -21,12 +21,14 @@ let show_objects title string_of_object objects =
   List.iter print_object objects;
   exit 0
 
-let string_of_action = Actions.name
+let string_of_action a =
+  Printf.sprintf "%s: %s" (Actions.name a) (Actions.description a)
 
 let string_of_test test =
-  if test.Tests.test_run_by_default
-  then (test.Tests.test_name ^ " (run by default)")
-  else test.Tests.test_name
+  if test.Tests.test_run_by_default then
+    test.Tests.test_name ^ " (run by default): " ^ test.Tests.test_description
+  else
+    test.Tests.test_name ^ ": " ^ test.Tests.test_description
 
 let string_of_variable v =
   Printf.sprintf "%s: %s"
@@ -57,6 +59,13 @@ let find_test_dirs = ref []
 
 let list_tests = ref []
 
+let show_timings = ref false
+
+let translate = ref false
+let style = ref Translate.Plain
+let compact = ref false
+
+
 let add_to_list r x =
   r := !r @ [x]
 
@@ -68,6 +77,8 @@ let commandline_options =
   ("-show-actions", Arg.Unit show_actions, " Show available actions.");
   ("-show-tests", Arg.Unit show_tests, " Show available tests.");
   ("-show-variables", Arg.Unit show_variables, " Show available variables.");
+  ("-show-timings", Arg.Set show_timings,
+   " Show the wall clock time taken for each test file.");
   ("-timeout",
      Arg.Int (fun t -> if t >= 0
                        then default_timeout := t
@@ -79,6 +90,14 @@ let commandline_options =
    " List tests in given directory.");
   ("-keep-test-dir-on-success", Arg.Set keep_test_dir_on_success,
    " Keep the test directory (with the generated test artefacts) on success.");
+  ("-translate", Arg.Set translate,
+   " Translate the test script from old to new syntax");
+  ("-compact", Arg.Set compact,
+   " If translating, output the new script in compact mode.");
+  ("-keep-lines", Arg.Unit (fun () -> style := Translate.Lines),
+   " If translating, preserve line numbers in the output.");
+  ("-keep-chars", Arg.Unit (fun () -> style := Translate.Chars),
+   " If translating, preserve char offsets in the output.");
 ]
 
 let files_to_test = ref []
@@ -95,3 +114,7 @@ let default_timeout = !default_timeout
 let find_test_dirs = !find_test_dirs
 let list_tests = !list_tests
 let keep_test_dir_on_success = !keep_test_dir_on_success
+let show_timings = !show_timings
+let translate = !translate
+let style = !style
+let compact = !compact

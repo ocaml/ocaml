@@ -29,8 +29,11 @@ pattern:
 \end{syntax}
 See also the following language extensions:
 \hyperref[s:first-class-modules]{first-class modules},
-\hyperref[s:attributes]{attributes} and
-\hyperref[s:extension-nodes]{extension nodes}.
+\hyperref[s:attributes]{attributes},
+\hyperref[s:extension-nodes]{extension nodes},
+\hyperref[s:effect-handlers]{effect handlers},
+\hyperref[s:array-literals]{type-directed disambiguation of array literals} and
+\hyperref[s:labeled-tuples]{labeled tuples}.
 
 The table below shows the relative precedences and associativity of
 operators and non-closed pattern constructions. The constructions with
@@ -294,10 +297,6 @@ let classify_char = function
 \ikwd{lazy\@\texttt{lazy}}
 
 (Introduced in Objective Caml 3.11)
-
-\begin{syntax}
-pattern: ...
-\end{syntax}
 
 The pattern @"lazy" pattern@ matches a value \var{v} of type "Lazy.t",
 provided @pattern@ matches the result of forcing \var{v} with

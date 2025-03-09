@@ -1,6 +1,6 @@
-(* TEST
-   flags = "-dparsetree"
-   * toplevel *)
+(* TEST_BELOW
+Filler_text_added_
+to_preserve_lo*)
 
 (* Using a toplevel test and not an expect test, because the locs get shifted
    by the expect blocks and the output is therefore not stable. *)
@@ -56,6 +56,10 @@ let x = function { contents } -> contents;;
 let x = function { contents : int } -> contents;;
 
 let x = function { contents : int = i } -> i;;
+
+let _ =
+  object val foo = 12 method x foo = {< foo >} end
+;;
 
 (* Local open *)
 
@@ -122,3 +126,14 @@ f object method f = 1 end
   object method f = 1 end # f
   object end
 ;;
+
+(* Punning of labelled function argument with type constraint *)
+let g y =
+  let f ~y = y + 1 in
+  f ~(y:int)
+;;
+
+(* TEST
+ flags = "-dparsetree";
+ toplevel;
+*)

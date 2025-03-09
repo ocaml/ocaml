@@ -26,9 +26,6 @@ let apply_on_subexpressions f f_named (flam : Flambda.t) =
     f body
   | Let_mutable { body; _ } ->
     f body
-  | Let_rec (defs, body) ->
-    List.iter (fun (_,l) -> f_named l) defs;
-    f body
   | Switch (_, sw) ->
     List.iter (fun (_,l) -> f l) sw.consts;
     List.iter (fun (_,l) -> f l) sw.blocks;
@@ -85,15 +82,6 @@ let map_subexpressions f f_named (tree:Flambda.t) : Flambda.t =
       tree
     else
       Flambda.create_let var new_named new_body
-  | Let_rec (defs, body) ->
-    let new_defs =
-      list_map_sharing (map_snd_sharing f_named) defs
-    in
-    let new_body = f body in
-    if new_defs == defs && new_body == body then
-      tree
-    else
-      Let_rec (new_defs, new_body)
   | Let_mutable mutable_let ->
     let new_body = f mutable_let.body in
     if new_body == mutable_let.body then
@@ -176,18 +164,16 @@ let iter_toplevel f f_named t =
 let iter_named_toplevel f f_named named =
   iter_general ~toplevel:true f f_named (Is_named named)
 
-let iter_all_immutable_let_and_let_rec_bindings t ~f =
+let iter_all_immutable_let_bindings t ~f =
   iter_expr (function
       | Let { var; defining_expr; _ } -> f var defining_expr
-      | Let_rec (defs, _) -> List.iter (fun (var, named) -> f var named) defs
       | _ -> ())
     t
 
-let iter_all_toplevel_immutable_let_and_let_rec_bindings t ~f =
+let iter_all_toplevel_immutable_let_bindings t ~f =
   iter_general ~toplevel:true
     (function
       | Let { var; defining_expr; _ } -> f var defining_expr
-      | Let_rec (defs, _) -> List.iter (fun (var, named) -> f var named) defs
       | _ -> ())
     (fun _ -> ())
     (Is_expr t)
@@ -299,18 +285,6 @@ let map_general ~toplevel f f_named tree =
             tree
           else
             Let_mutable { mutable_let with body = new_body }
-        | Let_rec (defs, body) ->
-          let done_something = ref false in
-          let defs =
-            List.map (fun (id, lam) ->
-                id, aux_named_done_something id lam done_something)
-              defs
-          in
-          let body = aux_done_something body done_something in
-          if not !done_something then
-            tree
-          else
-            Let_rec (defs, body)
         | Switch (arg, sw) ->
           let done_something = ref false in
           let sw =
@@ -433,12 +407,6 @@ let map_general ~toplevel f f_named tree =
         else Expr new_expr
     in
     f_named id named
-  and aux_named_done_something id named done_something =
-    let new_named = aux_named id named in
-    if not (new_named == named) then begin
-      done_something := true
-    end;
-    new_named
   in
   aux tree
 

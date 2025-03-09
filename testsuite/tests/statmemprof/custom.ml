@@ -1,6 +1,7 @@
 (* TEST *)
 
-open Gc.Memprof
+module MP = Gc.Memprof
+let () = Gc.set { (Gc.get ()) with minor_heap_size = 262144 }
 
 let bigstring_create sz =
   Bigarray.Array1.create Bigarray.char Bigarray.c_layout sz
@@ -13,7 +14,7 @@ let test sampling_rate =
   let size_words = size / (Sys.word_size / 8) in
   let alloc = ref 0 and collect = ref 0 and promote = ref 0 in
   let tracker =
-    { null_tracker with
+    { MP.null_tracker with
       alloc_minor = (fun info ->
         if info.source <> Custom then None
         else begin
@@ -24,14 +25,14 @@ let test sampling_rate =
         promote := !promote + ns; None);
       dealloc_minor = (fun ns ->
         collect := !collect + ns) } in
-  start ~sampling_rate tracker;
+  let _:MP.t = MP.start ~sampling_rate tracker in
   for i = 1 to iters do
     let str = Sys.opaque_identity bigstring_create size in
     if i mod 10 = 0 then keep := str :: !keep
   done;
   keep := [];
   Gc.full_major ();
-  stop ();
+  MP.stop ();
   assert (!alloc = !promote + !collect);
   let iters = float_of_int iters and size_words = float_of_int size_words in
   (* see comballoc.ml for notes on precision *)

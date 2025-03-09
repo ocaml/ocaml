@@ -1,6 +1,6 @@
 // SCSS Module for manual.scss and style.scss
 
-// set this to true for integration into the ocaml.org wesite
+// set this to true for integration into the ocaml.org website
 $ocamlorg:false;
 /* ocaml logo color */
 $logocolor:#ec6a0d;
@@ -18,6 +18,10 @@ $logo_height:67px;
 @import url(https://fonts.googleapis.com/css?family=Fira+Mono:400,500);
 @import url(https://fonts.googleapis.com/css?family=Noticia+Text:400,400i,700);
 @import url(https://fonts.googleapis.com/css?family=Fira+Sans:400,400i,500,500i,600,600i,700,700i);
+
+$font-sans: "Fira Sans", Helvetica, Arial, sans-serif;
+$font-mono: "Fira Mono", courier, monospace;
+$font-serif: "Noticia Text", Georgia, serif;
 
 /* Reset */
 .pre,a,b,body,code,div,em,form,h1,h2,h3,h4,h5,h6,header,html,i,img,li,mark,menu,nav,object,output,p,pre,s,section,span,time,ul,td,var{
@@ -47,7 +51,7 @@ html.smooth-scroll {
 }
 
 body{
-    font-family:"Fira Sans",Helvetica,Arial,sans-serif;
+    font-family: $font-sans;
     text-align:left;
     color:#333;
     background:#fff
@@ -76,7 +80,7 @@ html {
     &>header {
 	margin-bottom: 30px;
 	nav {
-	    font-family: "Fira Sans", Helvetica, Arial, sans-serif;
+	    font-family: $font-sans;
 	}
     }
 }
@@ -87,7 +91,7 @@ html {
     margin-right:4ex;
     margin-top:20px;
     margin-bottom:50px;
-    font-family:"Noticia Text",Georgia,serif;
+    font-family: $font-serif;
     line-height:1.5
 }
 
@@ -106,7 +110,7 @@ html {
     max-width:30ex;
     min-width:26ex;
     width:20%;
-    background:linear-gradient(to left,#ccc,transparent);
+    background-color: #ede8e6;
     overflow:auto;
     color:#1F2D3D;
     padding-left:2ex;
@@ -131,7 +135,7 @@ html {
 		padding-left:12px;
 	    }
 	    a {
-		font-family:"Fira Sans",sans-serif;
+		font-family: $font-sans;
 		font-size:.95em;
 		color:#333;
 		font-weight:400;
@@ -139,7 +143,8 @@ html {
 		display:block;
 		&:hover {
 		    box-shadow:none;
-		    background-color: #edbf84;}
+		    background-color: white;
+		    text-decoration: underline;}
 	    }
 	    &.top a {
 		color: #848484;
@@ -245,14 +250,9 @@ html {
     margin-left:-1em
 }
 
-@mixin disc {
-    content:"●";
-    color:$logocolor;
-    margin-right:4px;
-    margin-left:-1em;
-    font-family:"Fira Sans",Helvetica,Arial,sans-serif;
-    font-size:13px;
-    vertical-align:1px;
+@mixin colored-disc-marker {
+    list-style-type: disc;
+    li::marker { color:$logocolor; }
 }
 
 @mixin diamond {
@@ -260,7 +260,7 @@ html {
     color:$logocolor;
     margin-right:4px;
     margin-left:-1em;
-    font-family:"Fira Sans",Helvetica,Arial,sans-serif;
+    font-family: $font-sans;
     font-size:14px;
     vertical-align:1px;
 }

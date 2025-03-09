@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 (** Test type-directed disambiguation and spellchecker hints *)
 
@@ -19,8 +19,7 @@ type t = ..
 type t += Alpha | Aleph
 module M : sig type w = .. type w += Alpha | Beta type t += Beth end
 module F :
-  functor (X : sig end) ->
-    sig type u = .. type t += Gamma type u += Gamme end
+  (X : sig end) -> sig type u = .. type t += Gamma type u += Gamme end
 module X : sig end
 |}]
 
@@ -29,9 +28,9 @@ let x: t = Alph;;
 Line 1, characters 11-15:
 1 | let x: t = Alph;;
                ^^^^
-Error: This variant expression is expected to have type t
-       There is no constructor Alph within type t
-Hint: Did you mean Aleph or Alpha?
+Error: This variant expression is expected to have type "t"
+       There is no constructor "Alph" within type "t"
+Hint:             Did you mean "Aleph" or "Alpha"?
 |}]
 
 open M;;
@@ -40,9 +39,9 @@ let y : w = Alha;;
 Line 2, characters 12-16:
 2 | let y : w = Alha;;
                 ^^^^
-Error: This variant expression is expected to have type M.w
-       There is no constructor Alha within type M.w
-Hint: Did you mean Alpha?
+Error: This variant expression is expected to have type "M.w"
+       There is no constructor "Alha" within type "M.w"
+Hint:             Did you mean "Alpha"?
 |}]
 
 let z: t = Bet;;
@@ -50,9 +49,9 @@ let z: t = Bet;;
 Line 1, characters 11-14:
 1 | let z: t = Bet;;
                ^^^
-Error: This variant expression is expected to have type t
-       There is no constructor Bet within type t
-Hint: Did you mean Beth?
+Error: This variant expression is expected to have type "t"
+       There is no constructor "Bet" within type "t"
+Hint:             Did you mean "Beth"?
 |}]
 
 
@@ -64,9 +63,9 @@ module N : sig type u = F(X).u = .. type t += Gamma type u += Gamme end
 Line 3, characters 9-13:
 3 | let g = (Gamm:t);;
              ^^^^
-Error: This variant expression is expected to have type t
-       There is no constructor Gamm within type t
-Hint: Did you mean Gamma?
+Error: This variant expression is expected to have type "t"
+       There is no constructor "Gamm" within type "t"
+Hint:             Did you mean "Gamma"?
 |}];;
 
 raise Not_Found;;
@@ -74,9 +73,9 @@ raise Not_Found;;
 Line 1, characters 6-15:
 1 | raise Not_Found;;
           ^^^^^^^^^
-Error: This variant expression is expected to have type exn
-       There is no constructor Not_Found within type exn
-Hint: Did you mean Not_found?
+Error: This variant expression is expected to have type "exn"
+       There is no constructor "Not_Found" within type "exn"
+Hint:             Did you mean "Not_found"?
 |}]
 
 (** Aliasing *)
@@ -134,7 +133,7 @@ module FX = F(X) open FX
 type exn += Beth;;
 let x : X.t = Beth;;
 [%%expect {|
-module F : functor (X : sig type t = .. end) -> sig type X.t += Beth end
+module F : (X : sig type t = .. end) -> sig type X.t += Beth end
 module X : sig type t = .. end
 module FX : sig type X.t += Beth end
 type exn += Beth
@@ -155,9 +154,9 @@ module P : sig type p = x end
 Line 7, characters 13-17:
 7 | let x: P.p = Alha;;
                  ^^^^
-Error: This variant expression is expected to have type P.p
-       There is no constructor Alha within type x
-Hint: Did you mean Alpha?
+Error: This variant expression is expected to have type "P.p"
+       There is no constructor "Alha" within type "x"
+Hint:             Did you mean "Alpha"?
 |}]
 
 module M = struct type t = .. type t += T end
@@ -169,8 +168,8 @@ module N : sig type s = M.t end
 Line 3, characters 13-14:
 3 | let y: N.s = T ;;
                  ^
-Error: This variant expression is expected to have type N.s
-       There is no constructor T within type M.t
+Error: This variant expression is expected to have type "N.s"
+       There is no constructor "T" within type "M.t"
 |}]
 
 (** Pattern matching *)
@@ -196,9 +195,9 @@ let x =
 Line 3, characters 8-12:
 3 |   raise Locl;;
             ^^^^
-Error: This variant expression is expected to have type exn
-       There is no constructor Locl within type exn
-Hint: Did you mean Local?
+Error: This variant expression is expected to have type "exn"
+       There is no constructor "Locl" within type "exn"
+Hint:             Did you mean "Local"?
 |}]
 
 let x =
@@ -242,7 +241,24 @@ type b = Unique
 Line 7, characters 8-14:
 7 | let x = Unique;;
             ^^^^^^
-Warning 41 [ambiguous-name]: Unique belongs to several types: b M.s t a
-The first one was selected. Please disambiguate if this is wrong.
+Warning 41 [ambiguous-name]: "Unique" belongs to several types: "b" "M.s" "t" "a".
+  The first one was selected. Please disambiguate if this is wrong.
+
 val x : b = Unique
+|}]
+
+(* Optional argument defaults *)
+module M = struct
+  type t = A | B
+end;;
+
+let f1 ?(x : M.t = A) () = ();;
+let f2 ?x:(_ : M.t = A) () = ();;
+let f3 ?x:((_ : M.t) = A) () = ();;
+
+[%%expect {|
+module M : sig type t = A | B end
+val f1 : ?x:M.t -> unit -> unit = <fun>
+val f2 : ?x:M.t -> unit -> unit = <fun>
+val f3 : ?x:M.t -> unit -> unit = <fun>
 |}]

@@ -1,9 +1,8 @@
 ROOTDIR = ../..
-include $(ROOTDIR)/stdlib/StdlibModules
 include $(ROOTDIR)/api_docgen/Makefile.docfiles
 include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/stdlib/StdlibModules
 include $(ROOTDIR)/Makefile.best_binaries
-STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC ?= $(BEST_OCAMLC) $(STDLIBFLAGS)
 
 MANUAL=$(ROOTDIR)/manual/src
@@ -16,18 +15,19 @@ tools: cross-reference-checker
 
 cross-reference-checker: cross_reference_checker.ml
 	$(OCAMLC) $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
-	  -I $(ROOTDIR)/parsing -I $(ROOTDIR)/driver \
+	  -I $(ROOTDIR)/utils -I $(ROOTDIR)/parsing -I $(ROOTDIR)/driver \
 	  $< -o $@
 
 # check cross-references between the manual and error messages
 .PHONY: check-cross-references
 check-cross-references: cross-reference-checker
-	$(SET_LD_PATH) \
-	  $(OCAMLRUN) ./cross-reference-checker \
+	$(OCAMLRUN) ./cross-reference-checker \
 	  -auxfile $(MANUAL)/texstuff/manual.aux \
 	  $(ROOTDIR)/utils/warnings.ml \
 	  $(ROOTDIR)/driver/main_args.ml \
-	  $(ROOTDIR)/lambda/translmod.ml
+	  $(ROOTDIR)/lambda/translmod.ml \
+	  $(ROOTDIR)/typing/typemod.ml \
+	  $(ROOTDIR)/typing/typeclass.ml
 
 # check that all standard library modules are referenced by the
 # standard library chapter of the manual
@@ -59,3 +59,6 @@ endif
 .PHONY: clean
 clean:
 	rm -f *.cm? *.cmx? cross-reference-checker
+
+.PHONY: distclean
+distclean: clean

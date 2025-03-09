@@ -14,9 +14,9 @@
 /**************************************************************************/
 
 #include <caml/mlvalues.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
-CAMLprim value unix_exit(value n)
+CAMLprim value caml_unix_exit(value n)
 {
   _exit(Int_val(n));
   return Val_unit;                  /* never reached, but suppress warnings */

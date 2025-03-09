@@ -22,16 +22,28 @@ val afl_instrument : bool
 (** Whether AFL support has been enabled in the compiler *)
 
 val asm : string
-(** Path to the assembler*)
+(** Path to the assembler *)
+
+val cpp : string
+(** Command to use to invoke the C preprocessor *)
+
+val cppflags : string
+(** Flags to pass to the C preprocessor *)
 
 val cc : string
-(** Path to the C compiler*)
+(** Command to use to invoke the C compiler *)
 
 val cflags : string
 (** Flags to pass to the C compiler *)
 
 val ccomptype : string
 (** Type of C compiler (msvc, cc, etc.) *)
+
+val diff : string
+(** Path to the diff tool *)
+
+val diff_flags : string
+(** Flags to pass to the diff tool *)
 
 val shared_libraries : bool
 (** [true] if shared libraries are supported, [false] otherwise *)
@@ -58,9 +70,6 @@ val asmext : string
 val system : string
 (** The content of the SYSTEM Make variable *)
 
-val c_preprocessor : string
-(** Command to use to invoke the C preprocessor *)
-
 val ocamlc_default_flags : string
 (** Flags passed by default to ocamlc.byte and ocamlc.opt *)
 
@@ -73,17 +82,17 @@ val ocamlsrcdir : string
 val flambda : bool
 (** Whether flambda has been enabled at configure time *)
 
-val safe_string : bool
-(** Whether the compiler was configured with -safe-string *)
-
 val flat_float_array : bool
-(* Whether the compiler was configured with -flat-float-array *)
+(* Whether the compiler was configured with --enable-flat-float-array *)
 
 val ocamldoc : bool
 (** Whether ocamldoc has been enabled at configure time *)
 
 val ocamldebug : bool
 (** Whether ocamldebug has been enabled at configure time *)
+
+val ocamlobjinfo : bool
+(** Whether ocamlobjinfo has been enabled at configure time *)
 
 val native_compiler : bool
 (** Whether the native compiler has been enabled at configure time *)
@@ -122,5 +131,8 @@ val function_sections : bool
 val instrumented_runtime : bool
 (** Whether the instrumented runtime is available *)
 
-val naked_pointers : bool
-(** Whether the runtime system supports naked pointers outside the heap *)
+val frame_pointers : bool
+(** Whether frame-pointers have been enabled at configure time *)
+
+val tsan : bool
+(** Whether ThreadSanitizer support has been enabled at configure time *)

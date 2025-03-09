@@ -198,6 +198,9 @@ let allocate_registers() =
           best_slot := n
         end
       done;
+      (* Mark this register as spilled so that we don't waste time trying
+         to put in in a register if we have to redo regalloc due to Reload *)
+      reg.spill <- true;
       (* Found one? *)
       if !best_slot >= 0 then
         reg.loc <- Stack(Local !best_slot)

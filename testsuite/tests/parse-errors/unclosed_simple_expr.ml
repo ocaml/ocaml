@@ -1,5 +1,5 @@
 (* TEST
-   * toplevel
+ toplevel;
 *)
 
 (3; 2;;
@@ -46,4 +46,8 @@ List.{< x = 3; y ;;
 
 List.(module struct end :;;
 
-(=;
+(=;;
+
+while true do ();;
+
+for _ = e1 to e2 do ();;

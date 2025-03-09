@@ -1,58 +1,53 @@
 (* TEST
-
-include dynlink
-
-ld_library_path += "${test_build_directory}"
-
-readonly_files = "plug1.ml plug2.ml registry.ml stub1.c stub2.c"
-
-* shared-libraries
-** setup-ocamlc.byte-build-env
-*** ocamlc.byte
-compile_only = "true"
-all_modules = "registry.ml stub1.c stub2.c plug1.ml plug2.ml main.ml"
-**** ocamlmklib
-program = "plug1"
-modules = "stub1.${objext}"
-***** ocamlmklib
-program = "plug2"
-modules = "stub2.${objext}"
-****** ocamlmklib
-program = "plug1"
-modules = "plug1.cmo"
-******* ocamlmklib
-program = "plug2"
-modules = "plug2.cmo"
-
-compile_only = "false"
-
-******** ocamlc.byte
-program = "${test_build_directory}/main.exe"
-all_modules = "registry.cmo main.cmo"
-********* run
-arguments = "plug1.cma plug2.cma"
-output = "main.output"
-********** check-program-output
-
-******** ocamlc.byte
-program = "${test_build_directory}/static.exe"
-flags = "-linkall"
-all_modules = "registry.cmo plug1.cma plug2.cma"
-********* run
-output = "static.output"
-********** check-program-output
-reference = "${test_source_directory}/static.reference"
-
-******** ocamlc.byte
-program = "${test_build_directory}/custom.exe"
-flags = "-custom -linkall -I ."
-all_modules = "registry.cmo plug2.cma plug1.cma"
-use_runtime = "false"
-********* run
-output = "custom.output"
-********** check-program-output
-reference = "${test_source_directory}/custom.reference"
-
+ include dynlink;
+ ld_library_path += "${test_build_directory}";
+ readonly_files = "plug1.ml plug2.ml registry.ml stub1.c stub2.c";
+ shared-libraries;
+ setup-ocamlc.byte-build-env;
+ compile_only = "true";
+ all_modules = "registry.ml stub1.c stub2.c plug1.ml plug2.ml main.ml";
+ ocamlc.byte;
+ program = "plug1";
+ modules = "stub1.${objext}";
+ ocamlmklib;
+ program = "plug2";
+ modules = "stub2.${objext}";
+ ocamlmklib;
+ program = "plug1";
+ modules = "plug1.cmo";
+ ocamlmklib;
+ program = "plug2";
+ modules = "plug2.cmo";
+ compile_only = "false";
+ ocamlmklib;
+ {
+   program = "${test_build_directory}/main.exe";
+   all_modules = "registry.cmo main.cmo";
+   ocamlc.byte;
+   arguments = "plug1.cma plug2.cma";
+   output = "main.output";
+   run;
+   check-program-output;
+ }{
+   program = "${test_build_directory}/static.exe";
+   flags = "-linkall";
+   all_modules = "registry.cmo plug1.cma plug2.cma";
+   ocamlc.byte;
+   output = "static.output";
+   run;
+   reference = "${test_source_directory}/static.reference";
+   check-program-output;
+ }{
+   program = "${test_build_directory}/custom.exe";
+   flags = "-custom -linkall -I .";
+   all_modules = "registry.cmo plug2.cma plug1.cma";
+   use_runtime = "false";
+   ocamlc.byte;
+   output = "custom.output";
+   run;
+   reference = "${test_source_directory}/custom.reference";
+   check-program-output;
+ }
 *)
 
 let f x = print_string "This is Main.f\n"; x

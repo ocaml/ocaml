@@ -27,12 +27,19 @@ external yield : unit -> unit = "caml_thread_yield"
 external self : unit -> t = "caml_thread_self" [@@noalloc]
 external id : t -> int = "caml_thread_id" [@@noalloc]
 external join : t -> unit = "caml_thread_join"
-external exit_stub : unit -> unit = "caml_thread_exit"
 
 (* For new, make sure the function passed to thread_new never
    raises an exception. *)
 
 let[@inline never] check_memprof_cb () = ref ()
+
+let default_uncaught_exception_handler = thread_uncaught_exception
+
+let uncaught_exception_handler = ref default_uncaught_exception_handler
+
+let set_uncaught_exception_handler fn = uncaught_exception_handler := fn
+
+exception Exit
 
 let create fn arg =
   thread_new
@@ -40,48 +47,40 @@ let create fn arg =
       try
         fn arg;
         ignore (Sys.opaque_identity (check_memprof_cb ()))
-      with exn ->
-             flush stdout; flush stderr;
-             thread_uncaught_exception exn)
+      with
+      | Exit ->
+        ignore (Sys.opaque_identity (check_memprof_cb ()))
+      | exn ->
+        let raw_backtrace = Printexc.get_raw_backtrace () in
+        flush stdout; flush stderr;
+        try
+          !uncaught_exception_handler exn
+        with
+        | Exit -> ()
+        | exn' ->
+          Printf.eprintf
+            "Thread %d killed on uncaught exception %s\n"
+            (id (self ())) (Printexc.to_string exn);
+          Printexc.print_raw_backtrace stderr raw_backtrace;
+          Printf.eprintf
+            "Thread %d uncaught exception handler raised %s\n"
+            (id (self ())) (Printexc.to_string exn');
+          Printexc.print_backtrace stdout;
+          flush stderr)
 
 let exit () =
-  ignore (Sys.opaque_identity (check_memprof_cb ()));
-  exit_stub ()
-
-(* Thread.kill is currently not implemented due to problems with
-   cleanup handlers on several platforms *)
-
-let kill th = invalid_arg "Thread.kill: not implemented"
-
-(* Preemption *)
-
-let preempt signal = yield()
+  raise Exit
 
 (* Initialization of the scheduler *)
 
-let preempt_signal =
-  match Sys.os_type with
-  | "Win32" -> Sys.sigterm
-  | _       -> Sys.sigvtalrm
-
 let () =
-  Sys.set_signal preempt_signal (Sys.Signal_handle preempt);
   thread_initialize ();
-  Callback.register "Thread.at_shutdown" (fun () ->
-    thread_cleanup();
-    (* In case of DLL-embedded OCaml the preempt_signal handler
-       will point to nowhere after DLL unloading and an accidental
-       preempt_signal will crash the main program. So restore the
-       default handler. *)
-    Sys.set_signal preempt_signal Sys.Signal_default
-  )
+  (* Called back in [caml_shutdown], when the last domain exits. *)
+  Callback.register "Thread.at_shutdown" thread_cleanup
 
 (* Wait functions *)
 
 let delay = Unix.sleepf
-
-let wait_read fd = ()
-let wait_write fd = ()
 
 let wait_timed_read fd d =
   match Unix.select [fd] [] [] d with ([], _, _) -> false | (_, _, _) -> true
@@ -91,6 +90,8 @@ let select = Unix.select
 
 let wait_pid p = Unix.waitpid [] p
 
-external sigmask : Unix.sigprocmask_command -> int list -> int list
-   = "caml_thread_sigmask"
-external wait_signal : int list -> int = "caml_wait_signal"
+let sigmask = Unix.sigprocmask
+let wait_signal = Unix.sigwait
+
+external set_current_thread_name : string -> unit =
+        "caml_set_current_thread_name"

@@ -16,6 +16,11 @@ that are implemented in OCaml, but not described in chapter \ref{c:refman}.
 %HEVEA\cutname{recursivemodules.html}
 \input{recursivemodules.tex}
 
+\section{s:private-types}{Private types}
+%HEVEA\cutname{privatetypes.html}
+\ikwd{private\@\texttt{private}}
+\input{privatetypes.tex}
+
 \section{s:locally-abstract}{Locally abstract types}
 \ikwd{type\@\texttt{type}}
 \ikwd{fun\@\texttt{fun}}
@@ -113,5 +118,17 @@ that are implemented in OCaml, but not described in chapter \ref{c:refman}.
 \section{s:binding-operators}{Binding operators}
 %HEVEA\cutname{bindingops.html}
 \input{bindingops.tex}
+
+\section{s:effect-handlers}{Effect handlers}
+%HEVEA\cutname{effects.html}
+\input{effects.tex}
+
+\section{s:array-literals}{Type-directed disambiguation of array literals}
+%HEVEA\cutname{arrayliterals.html}
+\input{arrayliterals.tex}
+
+\section{s:labeled-tuples}{Labeled tuples}
+%HEVEA\cutname{labeledtuples.html}
+\input{labeledtuples.tex}
 
 %HEVEA\cutend

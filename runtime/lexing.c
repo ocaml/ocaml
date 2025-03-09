@@ -19,7 +19,7 @@
 
 #include "caml/fail.h"
 #include "caml/mlvalues.h"
-#include "caml/stacks.h"
+#include "caml/fiber.h"
 
 struct lexer_buffer {
   value refill_buff;
@@ -54,13 +54,18 @@ struct lexing_table {
 #define Short(tbl,n) \
   (*((unsigned char *)((tbl) + (n) * 2)) + \
           (*((signed char *)((tbl) + (n) * 2 + 1)) << 8))
+#define UShort(tbl,n) \
+  (*((unsigned char *)((tbl) + (n) * 2)) + \
+          (*((unsigned char *)((tbl) + (n) * 2 + 1)) << 8))
 #else
 #define Short(tbl,n) (((short *)(tbl))[(n)])
+#define UShort(tbl,n) (((unsigned short *)(tbl))[(n)])
 #endif
 
-CAMLprim value caml_lex_engine(struct lexing_table *tbl, value start_state,
-                               struct lexer_buffer *lexbuf)
+CAMLprim value caml_lex_engine(value vtbl, value start_state, value vlexbuf)
 {
+  struct lexing_table * tbl = (struct lexing_table *) vtbl;
+  struct lexer_buffer * lexbuf = (struct lexer_buffer *) vlexbuf;
   int state, base, backtrk, c;
 
   state = Int_val(start_state);
@@ -138,7 +143,7 @@ static void run_mem(char *pc, value mem, value curr_pos) {
   }
 }
 
-static void run_tag(char *pc, value mem) {
+static void run_tag(const char *pc, value mem) {
   for (;;) {
     unsigned char dst, src ;
 
@@ -156,9 +161,11 @@ static void run_tag(char *pc, value mem) {
   }
 }
 
-CAMLprim value caml_new_lex_engine(struct lexing_table *tbl, value start_state,
-                                   struct lexer_buffer *lexbuf)
+CAMLprim value caml_new_lex_engine(value vtbl, value start_state,
+                                   value vlexbuf)
 {
+  struct lexing_table * tbl = (struct lexing_table *) vtbl;
+  struct lexer_buffer * lexbuf = (struct lexer_buffer *) vlexbuf;
   int state, base, backtrk, c, pstate ;
   state = Int_val(start_state);
   if (state >= 0) {
@@ -173,7 +180,7 @@ CAMLprim value caml_new_lex_engine(struct lexing_table *tbl, value start_state,
     /* Lookup base address or action number for current state */
     base = Short(tbl->lex_base, state);
     if (base < 0) {
-      int pc_off = Short(tbl->lex_base_code, state) ;
+      int pc_off = UShort(tbl->lex_base_code, state) ;
       run_tag(Bp_val(tbl->lex_code) + pc_off, lexbuf->lex_mem);
       /*      fprintf(stderr,"Perform: %d\n",-base-1) ; */
       return Val_int(-base-1);
@@ -181,7 +188,7 @@ CAMLprim value caml_new_lex_engine(struct lexing_table *tbl, value start_state,
     /* See if it's a backtrack point */
     backtrk = Short(tbl->lex_backtrk, state);
     if (backtrk >= 0) {
-      int pc_off =  Short(tbl->lex_backtrk_code, state);
+      int pc_off =  UShort(tbl->lex_backtrk_code, state);
       run_tag(Bp_val(tbl->lex_code) + pc_off, lexbuf->lex_mem);
       lexbuf->lex_last_pos = lexbuf->lex_curr_pos;
       lexbuf->lex_last_action = Val_int(backtrk);
@@ -215,12 +222,12 @@ CAMLprim value caml_new_lex_engine(struct lexing_table *tbl, value start_state,
       }
     }else{
       /* If some transition, get and perform memory moves */
-      int base_code = Short(tbl->lex_base_code, pstate) ;
+      int base_code = UShort(tbl->lex_base_code, pstate) ;
       int pc_off ;
       if (Short(tbl->lex_check_code, base_code + c) == pstate)
-        pc_off = Short(tbl->lex_trans_code, base_code + c) ;
+        pc_off = UShort(tbl->lex_trans_code, base_code + c) ;
       else
-        pc_off = Short(tbl->lex_default_code, pstate) ;
+        pc_off = UShort(tbl->lex_default_code, pstate) ;
       if (pc_off > 0)
         run_mem(Bp_val(tbl->lex_code) + pc_off, lexbuf->lex_mem,
                 lexbuf->lex_curr_pos) ;

@@ -32,7 +32,7 @@ expr:
   | '(' expr ')'
   | 'begin' expr 'end'
   | '(' expr ':' typexpr ')'
-  | expr {{',' expr}}
+  | expr {{ ',' expr }}
   | constr expr
   | "`"tag-name expr
   | expr '::' expr
@@ -123,8 +123,10 @@ See also the following language extensions:
 \hyperref[s:explicit-overriding-open]{overriding in open statements},
 \hyperref[s:bigarray-access]{syntax for Bigarray access},
 \hyperref[s:attributes]{attributes},
-\hyperref[s:extension-nodes]{extension nodes} and
-\hyperref[s:index-operators]{extended indexing operators}.
+\hyperref[s:extension-nodes]{extension nodes},
+\hyperref[s:index-operators]{extended indexing operators},
+\hyperref[s:array-literals]{type-directed disambiguation of array literals}, and
+\hyperref[s:labeled-tuples]{labeled tuples}.
 
 \subsection{ss:precedence-and-associativity}{Precedence and associativity}
 The table below shows the relative precedences and associativity of
@@ -553,6 +555,9 @@ implementation-dependent. The current implementation also supports
 a certain class of recursive definitions of non-functional values,
 as explained in section~\ref{s:letrecvalues}.
 
+\subsubsection{sss:expr-let-exception}{Local exceptions}
+(Introduced in OCaml 4.04)
+
 It is possible to define local exceptions in expressions:
 @ "let" exception constr-decl "in" expr @ .
 
@@ -661,10 +666,10 @@ exception "Match_failure" is raised.
 %
 \index{Matchfailure\@\verb`Match_failure`}
 
-\begin{caml_example}{toplevel}[warning=8, error]
+\begin{caml_example}{toplevel}
 let unoption o =
   match o with
-  | Some x -> x 
+  | Some x -> x [@@expect warning 8];;
 
 let l = List.map unoption [Some 1; Some 10; None; Some 2];;
 \end{caml_example}
@@ -720,6 +725,10 @@ let chars_of_string s =
     done;
     List.rev !chars;;
 \end{caml_example}
+
+As a special case, @'while' 'true' 'do' expr 'done'@ is given a
+polymorphic type, allowing it to be used in place of any expression
+(for example as a branch of any pattern-matching).
 
 \ikwd{for\@\texttt{for}}
 The expression @'for' name '=' expr_1 'to' expr_2 'do' expr_3 'done'@

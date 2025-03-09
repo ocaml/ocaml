@@ -568,7 +568,7 @@ module FlexDLL = struct
     array_find (function ({name; _} : section) -> name = sectname) sections
 
   (* We extract the list of exported symbols as encoded by flexlink, see
-     https://github.com/alainfrisch/flexdll/blob/bd636def70d941674275b2f4b6c13a34ba23f9c9/reloc.ml
+     https://github.com/ocaml/flexdll/blob/bd636def70d941674275b2f4b6c13a34ba23f9c9/reloc.ml
      #L500-L525 *)
 
   let read_symbols d {image_base; _} sections =

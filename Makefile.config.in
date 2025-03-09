@@ -17,7 +17,14 @@
 
 # The configuration Makefile
 
-## The EMPTY variable, used in other definitions
+## Variables defining the current version of OCaml
+OCAML_DEVELOPMENT_VERSION=@OCAML_DEVELOPMENT_VERSION@
+OCAML_VERSION_MAJOR=@OCAML_VERSION_MAJOR@
+OCAML_VERSION_MINOR=@OCAML_VERSION_MINOR@
+OCAML_VERSION_PATCHLEVEL=@OCAML_VERSION_PATCHLEVEL@
+OCAML_VERSION_EXTRA=@OCAML_VERSION_EXTRA@
+
+## The EMPTY variable, used in other definitions to preserve spaces
 EMPTY=
 
 ## Arguments passed to the configure script
@@ -39,27 +46,18 @@ BINDIR=@bindir@
 
 datarootdir=@datarootdir@
 
-### Where to install the standard library
+### Where to install the standard library on host
 LIBDIR=@libdir@
 
 ### Where to install the stub code for the standard library
 STUBLIBDIR=@libdir@/stublibs
 
 ### Where to install the man pages
-# Man pages for commands go in $(MANDIR)/man$(PROGRAMS_MAN_SECTION)
-# Man pages for the library go in $(MANDIR)/man/man$(LIBRARIES_MAN_SECTION)
+# Man pages for commands go in $(MANDIR)/man1
+# Man pages for the library go in $(MANDIR)/man3
 MANDIR=@mandir@
-PROGRAMS_MAN_SECTION=@programs_man_section@
-LIBRARIES_MAN_SECTION=@libraries_man_section@
-
-### Do #! scripts work on your system?
-### Beware: on some systems (e.g. SunOS 4), this will work only if
-### the string "#!$(BINDIR)/ocamlrun" is less than 32 characters long.
-### In doubt, set HASHBANGSCRIPTS to false.
-SHEBANGSCRIPTS=@shebangscripts@
-LONG_SHEBANG=@long_shebang@
-# For compatibility
-HASHBANGSCRIPTS:=$(SHEBANGSCRIPTS)
+PROGRAMS_MAN_DIR=$(MANDIR)/man1
+LIBRARIES_MAN_DIR=$(MANDIR)/man3
 
 ### Path to the libtool script
 LIBTOOL = $(TOP_BUILDDIR)/libtool
@@ -71,19 +69,10 @@ CC=@CC@
 CC_HAS_DEBUG_PREFIX_MAP=@cc_has_debug_prefix_map@
 AS_HAS_DEBUG_PREFIX_MAP=@as_has_debug_prefix_map@
 
-### Additional link-time options
-# To support dynamic loading of shared libraries (they need to look at
-# our own symbols):
-OC_LDFLAGS=@oc_ldflags@
-
 LDFLAGS?=@LDFLAGS@
 
 ### How to invoke the C preprocessor through the C compiler
 CPP=@CPP@
-
-### How to invoke ranlib
-RANLIB=@RANLIB@
-RANLIBCMD=@RANLIBCMD@
 
 ### How to invoke ar
 ARCMD=@AR@
@@ -93,7 +82,7 @@ O=@OBJEXT@
 EXT_OBJ=.@OBJEXT@
 
 ### How to tell the C compiler to output an object file
-OUTPUTOBJ=@outputobj@
+OUTPUTOBJ=@outputobj@$(EMPTY)
 
 ### Extension of static libraries
 A=@libext@
@@ -161,34 +150,24 @@ INSTALL_BYTECODE_PROGRAMS=@install_bytecode_programs@
 
 ### Which libraries to compile and install
 # Currently available:
-#       bigarray          Large, multidimensional numerical arrays
-#                           (legacy support: this library is now part of the
-#                            Standard Library)
 #       dynlink           Dynamic linking (bytecode and native)
 #       (win32)unix       Unix system calls
 #       str               Regular expressions and high-level string processing
 #       systhreads        Same as threads, requires POSIX threads
 OTHERLIBRARIES=@otherlibraries@
 
-### Link-time options to ocamlc or ocamlopt for linking with POSIX threads
-# Needed for the "systhreads" package
-PTHREAD_LIBS=@PTHREAD_LIBS@
-PTHREAD_CAML_LIBS=$(addprefix -cclib ,$(PTHREAD_LIBS))
-
 UNIX_OR_WIN32=@unix_or_win32@
-UNIXLIB=@unixlib@
 INSTALL_SOURCE_ARTIFACTS=@install_source_artifacts@
 
-OC_CFLAGS=@oc_cflags@
-CFLAGS?=@CFLAGS@
-OC_CPPFLAGS=@oc_cppflags@
-CPPFLAGS?=@CPPFLAGS@
-OCAMLC_CFLAGS=@ocamlc_cflags@
+CFLAGS=@CFLAGS@
+CPPFLAGS=@CPPFLAGS@
+BYTECODE_CFLAGS=@bytecode_cflags@
 
-OCAMLC_CPPFLAGS=@ocamlc_cppflags@
-BYTECCLIBS=@bytecclibs@
-EXE=@exeext@
-OUTPUTEXE=@outputexe@
+BYTECODE_CPPFLAGS=@bytecode_cppflags@
+ZSTD_LIBS=@zstd_libs@
+BYTECCLIBS=@zstd_libs@ @cclibs@
+EXE=@EXEEXT@
+OUTPUTEXE=@outputexe@$(EMPTY)
 SUPPORTS_SHARED_LIBRARIES=@supports_shared_libraries@
 MKSHAREDLIBRPATH=@mksharedlibrpath@
 DYNLINKOPTS=@DLLIBS@
@@ -196,103 +175,72 @@ NATDYNLINK=@natdynlink@
 NATDYNLINKOPTS=@natdynlinkopts@
 SYSLIB=@syslib@
 MKLIB=@mklib@
-# #7678: ocamlopt uses these only to compile .c files, and the behaviour for the
-#        two drivers should be identical.
-OCAMLOPT_CFLAGS=@ocamlc_cflags@
-OCAMLOPT_CPPFLAGS=@ocamlc_cppflags@
-NATIVECCLIBS=@nativecclibs@
+
+# The following variable defines flags to be passed to the C preprocessor
+# when compiling C files to be linked with native code. This includes
+# the native runtime itself and can also include the stub code around
+# C libraries when it needs to be different from the one used to
+# link with bytecode.
+
+NATIVECCLIBS=@cclibs@
 SYSTHREAD_SUPPORT=@systhread_support@
-PACKLD=@PACKLD@
-FLEXDLL_CHAIN=@flexdll_chain@
-EXTRALIBS=@extralibs@
+STRIP=@STRIP@
+PACKLD=@PACKLD@$(EMPTY)
 CCOMPTYPE=@ccomptype@
 TOOLCHAIN=@toolchain@
 CMXS=@cmxs@
 
-# On Windows, MKDLL, MKEXE and MKMAINDLL must ultimately be equivalent to
-#   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
-# or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
+FLEXDLL_CHAIN=@flexdll_chain@
 
 MKEXE=@mkexe@
-MKDLL=@mksharedlib@
+MKDLL=@mkdll@
 MKMAINDLL=@mkmaindll@
-
 MKEXEDEBUGFLAG=@mkexedebugflag@
+
 RUNTIMED=@debug_runtime@
 INSTRUMENTED_RUNTIME=@instrumented_runtime@
 INSTRUMENTED_RUNTIME_LIBS=@instrumented_runtime_libs@
 WITH_DEBUGGER=@with_debugger@
-WITH_CAMLTEX=@with_camltex@
-WITH_OCAMLDOC=@ocamldoc@
-WITH_OCAMLTEST=@ocamltest@
 ASM_CFI_SUPPORTED=@asm_cfi_supported@
 WITH_FRAME_POINTERS=@frame_pointers@
-WITH_PROFINFO=@profinfo@
-PROFINFO_WIDTH=@profinfo_width@
+HEADER_RESERVED_BITS=@reserved_header_bits@
 WITH_FPIC=@fpic@
 TARGET=@target@
 HOST=@host@
 FLAMBDA=@flambda@
 WITH_FLAMBDA_INVARIANTS=@flambda_invariants@
 WITH_CMM_INVARIANTS=@cmm_invariants@
-FORCE_SAFE_STRING=@force_safe_string@
-DEFAULT_SAFE_STRING=@default_safe_string@
+WITH_CODEGEN_INVARIANTS=@codegen_invariants@
+FORCE_SAFE_STRING=true
+DEFAULT_SAFE_STRING=true
 WINDOWS_UNICODE=@windows_unicode@
 AFL_INSTRUMENT=@afl@
 FLAT_FLOAT_ARRAY=@flat_float_array@
 FUNCTION_SECTIONS=@function_sections@
 AWK=@AWK@
-STDLIB_MANPAGES=@stdlib_manpages@
-NAKED_POINTERS=@naked_pointers@
-
-### Native command to build ocamlrun.exe
-
-ifeq "$(TOOLCHAIN)" "msvc"
-  MERGEMANIFESTEXE=test ! -f $(1).manifest \
-          || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
-          && rm -f $(1).manifest
-  MKEXE_USING_COMPILER=$(CC) $(OC_CFLAGS) $(CFLAGS) $(OUTPUTEXE)$(1) $(2) \
-    /link /subsystem:console $(OC_LDFLAGS) $(LDFLAGS) && ($(MERGEMANIFESTEXE))
-else
-  MKEXE_USING_COMPILER=$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_LDFLAGS) $(LDFLAGS) \
-    $(OUTPUTEXE)$(1) $(2)
-endif # ifeq "$(TOOLCHAIN)" "msvc"
-
-# The following variables were defined only in the Windows-specific makefiles.
-# They were not defined by the configure script used on Unix systems,
-# so we also make sure to provide them only under Windows
-# User code should absolutely not rely on their presence because
-# in the future their definition may be moved to a more private part of
-# the compiler's build system
-ifeq "$(UNIX_OR_WIN32)" "win32"
-  CYGPATH=cygpath -m
-  DIFF=/usr/bin/diff -q --strip-trailing-cr
-  FIND=/usr/bin/find
-  SORT=/usr/bin/sort
-  SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
-else # ifeq "$(UNIX_OR_WIN32)" "win32"
-  # On Unix, make sure FLEXLINK is defined but empty
-  SORT=sort
-  CYGPATH=echo
-  SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
-endif # ifeq "$(UNIX_OR_WIN32)" "win32"
-
-FLEXLINK_FLAGS=@flexlink_flags@
-FLEXLINK_CMD=flexlink
-FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
+NAKED_POINTERS=false
 
 # Deprecated variables
+
+## Variables deprecated since OCaml 5.3
+
+OCAMLC_CFLAGS=@bytecode_cflags@
+OCAMLOPT_CFLAGS=@native_cflags@
+OCAMLC_CPPFLAGS=@bytecode_cppflags@
+OCAMLOPT_CPPFLAGS=@native_cppflags@
+
+## Variables deprecated since OCaml 5.2
+
+STDLIB_MANPAGES=@build_libraries_manpages@
+WITH_OCAMLDOC=@with_ocamldoc@
+WITH_OCAMLTEST=@ocamltest@
+SHEBANGSCRIPTS=@shebangscripts@
+HASHBANGSCRIPTS=$(SHEBANGSCRIPTS)
+
+## Variables deprecated since OCaml 5.0
+
+UNIXLIB=unix
 
 ## Variables renamed in OCaml 4.13
 
 RUNTIMEI=$(INSTRUMENTED_RUNTIME)
-
-### pthread-related variables
-
-PTHREAD_LINK=$(PTHREAD_LIBS)
-PTHREAD_CAML_LINK=$(PTHREAD_CAML_LIBS)
-
-### It is expected that the value of PTHREAD_LINK changes between OCaml
-### 4.12 and 4.13. Indeed, for OCaml 4.12 most of the time the variable
-### contained -lpthread. From 4.13 onward it will most of the time be
-### empty since we have -pthread in CFLAGS which implies -lpthread.

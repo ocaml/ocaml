@@ -76,7 +76,9 @@ module Make(I:I) = struct
   let mk_let_cell id str ind body =
     let dbg = Debuginfo.none in
     let cell =
-      Cop(Cload (Word_int, Asttypes.Mutable),
+      Cop(Cload {memory_chunk=Word_int;
+                 mutability=Asttypes.Mutable;
+                 is_atomic=false},
         [Cop(Cadda,[str;Cconst_int(Arch.size_int*ind, dbg)], dbg)],
         dbg) in
     Clet(id, cell, body)

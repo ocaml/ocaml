@@ -29,8 +29,9 @@ method-type:
 \end{syntax}
 See also the following language extensions:
 \hyperref[s:first-class-modules]{first-class modules},
-\hyperref[s:attributes]{attributes} and
-\hyperref[s:extension-nodes]{extension nodes}.
+\hyperref[s:attributes]{attributes},
+\hyperref[s:extension-nodes]{extension nodes} and
+\hyperref[s:labeled-tuples]{labeled tuples}.
 
 The table below shows the relative precedences and associativity of
 operators and non-closed type constructions. The constructions with
@@ -206,7 +207,7 @@ an explicit polymorphic type can only be unified to an
 equivalent one, where only the order and names of polymorphic
 variables may change.
 
-The type @'<' {method-type ';'} '..'  '>'@ is the
+The type @'<' { method-type ';' } '..'  '>'@ is the
 type of an object whose method names and types are described by
 @method-type_1, \ldots, method-type_n@, and possibly some other
 methods represented by the ellipsis.  This ellipsis actually is
@@ -227,11 +228,6 @@ Each type expression @'#' classtype-path@ defines a new type variable, so
 type @'#' classtype-path '->' '#' classtype-path@ is usually not the same as
 type @('#' classtype-path 'as' "'" ident) '->' "'" ident@.
 %
-
-Use of \#-types to abbreviate polymorphic variant types is deprecated.
-If @@t@@ is an exact variant type then @"#"@t@@ translates to @"[<" @t@"]"@,
-and @"#"@t@"[>" "`"tag_1 \dots"`"tag_k"]"@ translates to
-@"[<" @t@ ">" "`"tag_1 \dots"`"tag_k"]"@
 
 \subsubsection*{sss:typexpr-variant-record}{Variant and record types}
 

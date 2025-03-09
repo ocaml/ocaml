@@ -1,5 +1,5 @@
 (* TEST
-   * toplevel
+ toplevel;
 *)
 
 (* Typed names *)

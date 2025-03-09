@@ -46,7 +46,10 @@ type 'a parser =
 let wrap (parser : 'a parser) lexbuf : 'a =
   try
     Docstrings.init ();
-    Lexer.init ();
+    let keyword_edition =
+      Clflags.(Option.map parse_keyword_edition !keyword_edition)
+    in
+    Lexer.init ?keyword_edition ();
     let ast = parser token lexbuf in
     Parsing.clear_parser();
     Docstrings.warn_bad_docstrings ();
@@ -95,6 +98,8 @@ and use_file = wrap Parser.use_file
 and core_type = wrap Parser.parse_core_type
 and expression = wrap Parser.parse_expression
 and pattern = wrap Parser.parse_pattern
+let module_type = wrap Parser.parse_module_type
+let module_expr = wrap Parser.parse_module_expr
 
 let longident = wrap Parser.parse_any_longident
 let val_ident = wrap Parser.parse_val_longident
@@ -106,6 +111,8 @@ let type_ident = wrap Parser.parse_mty_longident
 (* Error reporting for Syntaxerr *)
 (* The code has been moved here so that one can reuse Pprintast.tyvar *)
 
+module Style = Misc.Style
+
 let prepare_error err =
   let open Syntaxerr in
   match err with
@@ -114,31 +121,58 @@ let prepare_error err =
         ~loc:closing_loc
         ~sub:[
           Location.msg ~loc:opening_loc
-            "This '%s' might be unmatched" opening
+            "This %a might be unmatched" Style.inline_code opening
         ]
-        "Syntax error: '%s' expected" closing
+        "Syntax error: %a expected" Style.inline_code closing
 
   | Expecting (loc, nonterm) ->
-      Location.errorf ~loc "Syntax error: %s expected." nonterm
+      Location.errorf ~loc "Syntax error: %a expected."
+        Style.inline_code nonterm
   | Not_expecting (loc, nonterm) ->
-      Location.errorf ~loc "Syntax error: %s not expected." nonterm
+      Location.errorf ~loc "Syntax error: %a not expected."
+        Style.inline_code nonterm
   | Applicative_path loc ->
       Location.errorf ~loc
-        "Syntax error: applicative paths of the form F(X).t \
-         are not supported when the option -no-app-func is set."
+        "Syntax error: applicative paths of the form %a \
+         are not supported when the option %a is set."
+        Style.inline_code "F(X).t"
+        Style.inline_code "-no-app-func"
   | Variable_in_scope (loc, var) ->
       Location.errorf ~loc
         "In this scoped type, variable %a \
-         is reserved for the local type %s."
-        Pprintast.tyvar var var
+         is reserved for the local type %a."
+        (Style.as_inline_code Pprintast.Doc.tyvar) var
+        Style.inline_code var
   | Other loc ->
       Location.errorf ~loc "Syntax error"
   | Ill_formed_ast (loc, s) ->
       Location.errorf ~loc
         "broken invariant in parsetree: %s" s
-  | Invalid_package_type (loc, s) ->
-      Location.errorf ~loc "invalid package type: %s" s
-
+  | Invalid_package_type (loc, ipt) ->
+      let invalid ppf ipt = match ipt with
+        | Syntaxerr.Parameterized_types ->
+            Format_doc.fprintf ppf "parametrized types are not supported"
+        | Constrained_types ->
+            Format_doc.fprintf ppf "constrained types are not supported"
+        | Private_types ->
+            Format_doc.fprintf ppf  "private types are not supported"
+        | Not_with_type ->
+            Format_doc.fprintf ppf "only %a constraints are supported"
+              Style.inline_code "with type t ="
+        | Neither_identifier_nor_with_type ->
+            Format_doc.fprintf ppf
+              "only module type identifier and %a constraints are supported"
+              Style.inline_code "with type"
+      in
+      Location.errorf ~loc "Syntax error: invalid package type: %a" invalid ipt
+  | Removed_string_set loc ->
+      Location.errorf ~loc
+        "Syntax error: strings are immutable, there is no assignment \
+         syntax for them.\n\
+         @{<hint>Hint@}: Mutable sequences of bytes are available in \
+         the Bytes module.\n\
+         @{<hint>Hint@}: Did you mean to use %a?"
+        Style.inline_code "Bytes.set"
 let () =
   Location.register_error_of_exn
     (function

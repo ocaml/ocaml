@@ -22,6 +22,7 @@ set -e
 mainjob=./tools/ci/inria/main
 main="${mainjob} -j8"
 
+echo "============== minimal build ================="
 # The "MIN_BUILD" (formerly on Travis) builds with everything disabled (apart
 # from ocamltest). Its goals:
 #  - Ensure that the system builds correctly without native compilation
@@ -34,13 +35,23 @@ ${main} -conf --disable-native-compiler \
         -conf --disable-systhreads \
         -conf --disable-str-lib \
         -conf --disable-unix-lib \
-        -conf --disable-bigarray-lib \
         -conf --disable-ocamldoc \
-        -conf --disable-native-compiler \
         -conf --disable-dependency-generation \
         -no-native
-${main} -conf --disable-naked-pointers
-${main} -with-bootstrap -conf --disable-flat-float-array
-${main} -conf --enable-flambda -conf --disable-naked-pointers
-${main} -conf --enable-reserved-header-bits=27
-OCAMLRUNPARAM="c=1" ${main}
+
+echo "============== no flat float arrays, clang, C23 ================="
+${main} -conf --disable-flat-float-array \
+        -conf CC=clang-18 \
+        -conf CFLAGS=-std=gnu2x
+
+echo "============== flambda ================="
+${main} -conf --enable-flambda
+
+echo "============== frame pointers, reserved header bits ================="
+${main} -conf --enable-frame-pointers -conf --enable-reserved-header-bits=27
+
+echo "============== bootstrap, pic ================="
+${main} -with-bootstrap -conf --with-pic
+
+echo "============== cleanup at exit, clang ================="
+OCAMLRUNPARAM="c=1" ${main} -conf CC=clang-18

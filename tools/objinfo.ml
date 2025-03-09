@@ -19,30 +19,21 @@
    and on bytecode executables. *)
 
 open Printf
-open Misc
 open Cmo_format
 
 (* Command line options to prevent printing approximation,
    function code and CRC
  *)
+let quiet = ref false
 let no_approx = ref false
 let no_code = ref false
 let no_crc = ref false
+let shape = ref false
+let index = ref false
+let decls = ref false
+let uid_deps = ref false
 
 module Magic_number = Misc.Magic_number
-
-let input_stringlist ic len =
-  let get_string_list sect len =
-    let rec fold s e acc =
-      if e != len then
-        if sect.[e] = '\000' then
-          fold (e+1) (e+1) (String.sub sect s (e-s) :: acc)
-        else fold s (e+1) acc
-      else acc
-    in fold 0 0 []
-  in
-  let sect = really_input_string ic len in
-  get_string_list sect len
 
 let dummy_crc = String.make 32 '-'
 let null_crc = String.make 32 '0'
@@ -60,15 +51,15 @@ let print_name_crc (name, crco) =
 let print_line name =
   printf "\t%s\n" name
 
-let print_required_global id =
-  printf "\t%s\n" (Ident.name id)
+let print_required_compunit (Compunit cu_name) =
+  printf "\t%s\n" cu_name
 
 let print_cmo_infos cu =
-  printf "Unit name: %s\n" cu.cu_name;
+  printf "Unit name: %s\n" (Symtable.Compunit.name cu.cu_name);
   print_string "Interfaces imported:\n";
   List.iter print_name_crc cu.cu_imports;
   print_string "Required globals:\n";
-  List.iter print_required_global cu.cu_required_globals;
+  List.iter print_required_compunit cu.cu_required_compunits;
   printf "Uses unsafe features: ";
   (match cu.cu_primitives with
     | [] -> printf "no\n"
@@ -95,26 +86,108 @@ let print_cma_infos (lib : Cmo_format.library) =
   List.iter print_cmo_infos lib.lib_units
 
 let print_cmi_infos name crcs =
-  printf "Unit name: %s\n" name;
-  printf "Interfaces imported:\n";
-  List.iter print_name_crc crcs
+  if not !quiet then begin
+    printf "Unit name: %s\n" name;
+    printf "Interfaces imported:\n";
+    List.iter print_name_crc crcs
+  end
 
 let print_cmt_infos cmt =
   let open Cmt_format in
-  printf "Cmt unit name: %s\n" cmt.cmt_modname;
-  print_string "Cmt interfaces imported:\n";
-  List.iter print_name_crc cmt.cmt_imports;
-  printf "Source file: %s\n"
-         (match cmt.cmt_sourcefile with None -> "(none)" | Some f -> f);
-  printf "Compilation flags:";
-  Array.iter print_spaced_string cmt.cmt_args;
-  printf "\nLoad path:";
-  List.iter print_spaced_string cmt.cmt_loadpath;
-  printf "\n";
-  printf "cmt interface digest: %s\n"
-    (match cmt.cmt_interface_digest with
-     | None -> ""
-     | Some crc -> string_of_crc crc)
+  if not !quiet then begin
+    printf "Cmt unit name: %s\n" cmt.cmt_modname;
+    print_string "Cmt interfaces imported:\n";
+    List.iter print_name_crc cmt.cmt_imports;
+    printf "Source file: %s\n"
+          (match cmt.cmt_sourcefile with None -> "(none)" | Some f -> f);
+    printf "Compilation flags:";
+    Array.iter print_spaced_string cmt.cmt_args;
+    printf "\nLoad path:\n  Visible:";
+    List.iter print_spaced_string cmt.cmt_loadpath.visible;
+    printf "\n  Hidden:";
+    List.iter print_spaced_string cmt.cmt_loadpath.hidden;
+    printf "\n";
+    printf "cmt interface digest: %s\n"
+      (match cmt.cmt_interface_digest with
+      | None -> ""
+      | Some crc -> string_of_crc crc);
+  end;
+  if !shape then begin
+    printf "Implementation shape: ";
+    (match cmt.cmt_impl_shape with
+    | None -> printf "(none)\n"
+    | Some shape -> Format.printf "\n%a" Shape.print shape)
+  end;
+  if !index then begin
+    printf "Indexed shapes:\n";
+    List.iter (fun (loc, item) ->
+      let pp_loc fmt { Location.txt; loc } =
+        Format.fprintf fmt "%a (%a)"
+          Pprintast.longident txt Location.print_loc loc
+      in
+      Format.printf "@[<hov 2>%a:@ %a@]@;"
+        Shape_reduce.print_result item pp_loc loc)
+      cmt.cmt_ident_occurrences;
+    Format.print_flush ()
+  end;
+  if !uid_deps then begin
+    printf "\nUid dependencies:\n";
+    let arr = Array.of_list cmt.cmt_declaration_dependencies in
+    let () =
+      Array.sort (fun (_tr, u1, u2) (_tr', u1', u2') ->
+                    match Shape.Uid.compare u1 u1' with
+                    | 0 -> Shape.Uid.compare u2 u2'
+                    | n -> n) arr
+    in
+    Format.printf "@[<v>";
+    Array.iter (fun (rk, u1, u2) ->
+      let rk = match rk with
+        | Definition_to_declaration -> "<-"
+        | Declaration_to_declaration -> "<->"
+      in
+      Format.printf "@[<h>%a %s %a@]@;"
+        Shape.Uid.print u1
+        rk
+        Shape.Uid.print u2) arr;
+    Format.printf "@]";
+  end;
+  if !decls then begin
+    printf "\nUid of decls:\n";
+    let decls = Array.of_list (Shape.Uid.Tbl.to_list cmt.cmt_uid_to_decl) in
+    Array.sort (fun (uid, _) (uid', _) -> Shape.Uid.compare uid uid') decls;
+    Array.iter (fun (uid, item) ->
+      let loc = match (item : Typedtree.item_declaration) with
+        | Value vd -> vd.val_name
+        | Value_binding vb ->
+          let (_, name, _, _) =
+            List.hd (Typedtree.let_bound_idents_full [vb])
+          in
+          name
+        | Type td -> td.typ_name
+        | Constructor cd -> cd.cd_name
+        | Extension_constructor ec -> ec.ext_name
+        | Label ld -> ld.ld_name
+        | Module md ->
+          { md.md_name with
+            txt = Option.value md.md_name.txt ~default:"_" }
+        | Module_substitution ms -> ms.ms_name
+        | Module_binding mb ->
+          { mb.mb_name with
+            txt = Option.value mb.mb_name.txt ~default:"_" }
+        | Module_type mtd -> mtd.mtd_name
+        | Class cd -> cd.ci_id_name
+        | Class_type ctd -> ctd.ci_id_name
+      in
+      let pp_loc fmt { Location.txt; loc } =
+        Format.fprintf fmt "%s (%a)"
+           txt Location.print_loc loc
+      in
+      Format.printf "@[<hov 2>%a:@ %a@]@;"
+        Shape.Uid.print uid
+        pp_loc loc)
+      decls;
+    Format.print_flush ()
+  end
 
 let print_general_infos name crc defines cmi cmx =
   printf "Name: %s\n" name;
@@ -129,7 +202,10 @@ let print_general_infos name crc defines cmi cmx =
 let print_global_table table =
   printf "Globals defined:\n";
   Symtable.iter_global_map
-    (fun id _ -> print_line (Ident.name id))
+    (fun global _ ->
+       let desc = Format_doc.compat Symtable.Global.description in
+       print_line (Format.asprintf "%a" desc global)
+    )
     table
 
 open Cmx_format
@@ -173,7 +249,11 @@ let print_cmx_infos (ui, crc) =
   printf "Currying functions:%a\n" pr_funs ui.ui_curry_fun;
   printf "Apply functions:%a\n" pr_funs ui.ui_apply_fun;
   printf "Send functions:%a\n" pr_funs ui.ui_send_fun;
-  printf "Force link: %s\n" (if ui.ui_force_link then "YES" else "no")
+  printf "Force link: %s\n" (if ui.ui_force_link then "YES" else "no");
+  printf "For pack: %s\n"
+    (match ui.ui_for_pack with
+     | None -> "no"
+     | Some pack -> "YES: " ^ pack)
 
 let print_cmxa_infos (lib : Cmx_format.library_infos) =
   printf "Extra C object files:";
@@ -209,39 +289,38 @@ let p_list title print = function
       List.iter print l
 
 let dump_byte ic =
-  Bytesections.read_toc ic;
-  let toc = Bytesections.toc () in
-  let toc = List.sort Stdlib.compare toc in
+  let toc = Bytesections.read_toc ic in
+  let all = Bytesections.all toc in
   List.iter
-    (fun (section, _) ->
+    (fun {Bytesections.name = section; len; _} ->
        try
-         let len = Bytesections.seek_section ic section in
          if len > 0 then match section with
-           | "CRCS" ->
-               p_section
-                 "Imported units"
-                 (input_value ic : (string * Digest.t option) list)
-           | "DLLS" ->
-               p_list
-                 "Used DLLs"
-                 print_line
-                 (input_stringlist ic len)
-           | "DLPT" ->
-               p_list
-                 "Additional DLL paths"
-                 print_line
-                 (input_stringlist ic len)
-           | "PRIM" ->
-               p_list
-                 "Primitives used"
-                 print_line
-                 (input_stringlist ic len)
-           | "SYMB" ->
-               print_global_table (input_value ic)
+           | CRCS ->
+               let imported_units : (string * Digest.t option) list =
+                 Bytesections.read_section_struct toc ic section in
+               p_section "Imported units" imported_units
+           | DLLS ->
+               let dlls =
+                 Bytesections.read_section_string toc ic section
+                 |> Misc.split_null_terminated in
+               p_list "Used DLLs" print_line dlls
+           | DLPT ->
+               let dll_paths =
+                 Bytesections.read_section_string toc ic section
+                 |> Misc.split_null_terminated in
+               p_list "Additional DLL paths" print_line dll_paths
+           | PRIM ->
+               let prims =
+                 Bytesections.read_section_string toc ic section
+                 |> Misc.split_null_terminated in
+               p_list "Primitives used" print_line prims
+           | SYMB ->
+               let symb = Bytesections.read_section_struct toc ic section in
+               print_global_table symb
            | _ -> ()
        with _ -> ()
     )
-    toc
+    all
 
 let find_dyn_offset filename =
   match Binutils.read filename with
@@ -366,7 +445,7 @@ let dump_obj filename =
          dump_obj_by_kind filename ic Cmxs;
          ()
   in
-  printf "File %s\n" filename;
+  if not !quiet then printf "File %s\n" filename;
   let ic = open_in_bin filename in
   match dump_standard ic with
     | Ok () -> ()
@@ -378,12 +457,32 @@ let dump_obj filename =
   then dump_cmxs ic
   else exit_magic_error ~expected_kind:None (Parse_error head_error)
 
+let print_version () =
+  Format.printf "ocamlobjinfo, version %s@." Sys.ocaml_version;
+  exit 0
+
+let print_version_num () =
+  Format.printf "%s@." Sys.ocaml_version;
+  exit 0
+
 let arg_list = [
+  "-quiet", Arg.Set quiet,
+    " Only print explicitly required information";
   "-no-approx", Arg.Set no_approx,
     " Do not print module approximation information";
   "-no-code", Arg.Set no_code,
     " Do not print code from exported flambda functions";
+  "-shape", Arg.Set shape,
+    " Print the shape of the module";
+  "-index", Arg.Set index,
+    " Print a list of all usages of values, types, etc. in the module";
+  "-decls", Arg.Set decls,
+    " Print a list of all declarations in the module";
+  "-uid-deps", Arg.Set uid_deps,
+    " Print the declarations' uids dependencies of the module";
   "-null-crc", Arg.Set no_crc, " Print a null CRC for imported interfaces";
+  "-version", Arg.Unit print_version, " Print version and exit";
+  "-vnum", Arg.Unit print_version_num, " Print version number and exit";
   "-args", Arg.Expand Arg.read_arg,
      "<file> Read additional newline separated command line arguments \n\
      \      from <file>";
@@ -394,7 +493,7 @@ let arg_list = [
 let arg_usage =
    Printf.sprintf "%s [OPTIONS] FILES : give information on files" Sys.argv.(0)
 
-let main() =
+let main () =
   Arg.parse_expand arg_list dump_obj arg_usage;
   exit 0
 

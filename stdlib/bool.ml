@@ -18,6 +18,9 @@ type t = bool = false | true
 external not : bool -> bool = "%boolnot"
 external ( && ) : bool -> bool -> bool = "%sequand"
 external ( || ) : bool -> bool -> bool = "%sequor"
+external logand : bool -> bool -> bool = "%andint"
+external logor : bool -> bool -> bool = "%orint"
+external logxor : bool -> bool -> bool = "%xorint"
 let equal : bool -> bool -> bool = ( = )
 let compare : bool -> bool -> int = Stdlib.compare
 external to_int : bool -> int = "%identity"
@@ -31,3 +34,8 @@ let of_string = function
 *)
 
 let to_string = function false -> "false" | true -> "true"
+
+external seeded_hash_param :
+  int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
+let seeded_hash seed x = seeded_hash_param 10 100 seed x
+let hash x = seeded_hash_param 10 100 0 x

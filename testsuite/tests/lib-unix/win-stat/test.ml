@@ -1,16 +1,18 @@
 (* TEST
-modules = "fakeclock.c"
-* libwin32unix
-include unix
-** bytecode
-** native
+ modules = "fakeclock.c";
+ include unix;
+ libwin32unix;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
-
-open Unix
 
 external set_fake_clock : int64 -> unit = "set_fake_clock"
 
-let real_time tm = {tm with tm_year = tm.tm_year + 1900; tm_mon = tm.tm_mon + 1}
+let real_time tm =
+  Unix.{tm with tm_year = tm.tm_year + 1900; tm_mon = tm.tm_mon + 1}
 
 let print_time () =
   let time = Unix.time () |> Unix.gmtime |> real_time in

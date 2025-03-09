@@ -1,10 +1,12 @@
 (* TEST
-
-* hassysthreads
-include systhreads
-** bytecode
-** native
-
+ unset DOES_NOT_EXIST;
+ include systhreads;
+ hassysthreads;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 (* MPR#7638 repro case *)
@@ -15,5 +17,5 @@ let crashme v =
   | s -> print_string "Surprising but OK\n"
 
 let _ =
-  let th = Thread.create crashme "no such variable" in
+  let th = Thread.create crashme "DOES_NOT_EXIST" in
   Thread.join th

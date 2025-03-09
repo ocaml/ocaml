@@ -16,7 +16,6 @@
 (* Loading and installation of user-defined printer functions *)
 
 open Misc
-open Longident
 open Types
 
 (* Error report *)
@@ -41,8 +40,8 @@ let rec loadfiles ppf name =
     Dynlink.loadfile filename;
     let d = Filename.dirname name in
     if d <> Filename.current_dir_name then begin
-      if not (List.mem d (Load_path.get_paths ())) then
-        Load_path.add_dir d;
+      if not (List.mem d (Load_path.get_path_list ())) then
+        Load_path.add_dir ~hidden:false d;
     end;
     fprintf ppf "File %s loaded@."
       (if d <> Filename.current_dir_name then
@@ -52,7 +51,7 @@ let rec loadfiles ppf name =
     true
   with
   | Dynlink.Error (Dynlink.Unavailable_unit unit) ->
-      loadfiles ppf (String.uncapitalize_ascii unit ^ ".cmo")
+      loadfiles ppf (Unit_info.normalize unit ^ ".cmo")
         &&
       loadfiles ppf name
   | Not_found ->
@@ -77,7 +76,9 @@ let rec eval_address = function
     let bytecode_or_asm_symbol = Ident.name id in
     begin match Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol with
     | None ->
-      raise (Symtable.Error (Symtable.Undefined_global bytecode_or_asm_symbol))
+      raise (Symtable.Error (Symtable.Undefined_global
+        (Symtable.Global.Glob_compunit (Cmo_format.Compunit
+          bytecode_or_asm_symbol))))
     | Some obj -> obj
     end
   | Env.Adot(addr, pos) -> Obj.field (eval_address addr) pos
@@ -90,39 +91,22 @@ let eval_value_path env path =
 
 (* Install, remove a printer (as in toplevel/topdirs) *)
 
-(* since 4.00, "topdirs.cmi" is not in the same directory as the standard
-  library, so we load it beforehand as it cannot be found in the search path. *)
-let init () =
-  let topdirs =
-    Filename.concat !Parameters.topdirs_path "topdirs.cmi" in
-  ignore (Env.read_signature "Topdirs" topdirs)
-
-let match_printer_type desc typename =
-  let printer_type =
-    match
-      Env.find_type_by_name
-        (Ldot(Lident "Topdirs", typename)) Env.empty
-    with
-    | path, _ -> path
-    | exception Not_found ->
-        raise (Error(Unbound_identifier(Ldot(Lident "Topdirs", typename))))
-  in
-  Ctype.begin_def();
-  let ty_arg = Ctype.newvar() in
-  Ctype.unify Env.empty
-    (Ctype.newconstr printer_type [ty_arg])
-    (Ctype.instance desc.val_type);
-  Ctype.end_def();
-  Ctype.generalize ty_arg;
-  ty_arg
+let match_printer_type desc make_printer_type =
+  Ctype.with_local_level_generalize begin fun () ->
+    let ty_arg = Ctype.newvar() in
+    Ctype.unify Env.empty
+      (make_printer_type ty_arg)
+      (Ctype.instance desc.val_type);
+    ty_arg
+  end
 
 let find_printer_type lid =
   match Env.find_value_by_name lid Env.empty with
   | (path, desc) -> begin
-      match match_printer_type desc "printer_type_new" with
+      match match_printer_type desc Topprinters.printer_type_new with
       | ty_arg -> (ty_arg, path, false)
       | exception Ctype.Unify _ -> begin
-          match match_printer_type desc "printer_type_old" with
+          match match_printer_type desc Topprinters.printer_type_old with
           | ty_arg -> (ty_arg, path, true)
           | exception Ctype.Unify _ -> raise(Error(Wrong_type lid))
         end
@@ -135,7 +119,8 @@ let install_printer ppf lid =
   let v =
     try
       eval_value_path Env.empty path
-    with Symtable.Error(Symtable.Undefined_global s) ->
+    with Symtable.Error(Symtable.Undefined_global global) ->
+      let s = Symtable.Global.name global in
       raise(Error(Unavailable_module(s, lid))) in
   let print_function =
     if is_old_style then
@@ -154,6 +139,9 @@ let remove_printer lid =
 (* Error report *)
 
 open Format
+module Style = Misc.Style
+let quoted_longident =
+  Format_doc.compat @@ Style.as_inline_code Printtyp.Doc.longident
 
 let report_error ppf = function
   | Load_failure e ->
@@ -161,15 +149,15 @@ let report_error ppf = function
         (Dynlink.error_message e)
   | Unbound_identifier lid ->
       fprintf ppf "@[Unbound identifier %a@]@."
-      Printtyp.longident lid
+        quoted_longident lid
   | Unavailable_module(md, lid) ->
       fprintf ppf
         "@[The debugger does not contain the code for@ %a.@ \
-           Please load an implementation of %s first.@]@."
-        Printtyp.longident lid md
+         Please load an implementation of %s first.@]@."
+        quoted_longident lid md
   | Wrong_type lid ->
       fprintf ppf "@[%a has the wrong type for a printing function.@]@."
-      Printtyp.longident lid
+        quoted_longident lid
   | No_active_printer lid ->
       fprintf ppf "@[%a is not currently active as a printing function.@]@."
-      Printtyp.longident lid
+        quoted_longident lid

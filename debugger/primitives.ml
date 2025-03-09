@@ -117,8 +117,7 @@ let io_channel_of_descr fd = {
 
 let close_io io_channel =
   close_out_noerr io_channel.io_out;
-  close_in_noerr io_channel.io_in;
-;;
+  close_in_noerr io_channel.io_in
 
 let std_io = {
   io_in = stdin;

@@ -36,7 +36,7 @@ let test_mapper argv =
     expr = fun mapper expr ->
       match expr with
       | { pexp_desc = Pexp_extension ({ txt = "test" }, PStr [])} ->
-        Ast_helper.Exp.constant (Const_int 42)
+        Ast_helper.Exp.constant (Pconst_integer ("42", None))
       | other -> default_mapper.expr mapper other; }
 
 let () =
@@ -74,6 +74,7 @@ type mapper = {
   constant: mapper -> constant -> constant;
   constructor_declaration: mapper -> constructor_declaration
                            -> constructor_declaration;
+  directive_argument: mapper -> directive_argument -> directive_argument;
   expr: mapper -> expression -> expression;
   extension: mapper -> extension -> extension;
   extension_constructor: mapper -> extension_constructor
@@ -91,12 +92,15 @@ type mapper = {
                            -> module_type_declaration;
   open_declaration: mapper -> open_declaration -> open_declaration;
   open_description: mapper -> open_description -> open_description;
+  package_type: mapper -> package_type -> package_type;
   pat: mapper -> pattern -> pattern;
   payload: mapper -> payload -> payload;
   signature: mapper -> signature -> signature;
   signature_item: mapper -> signature_item -> signature_item;
   structure: mapper -> structure -> structure;
   structure_item: mapper -> structure_item -> structure_item;
+  toplevel_directive: mapper -> toplevel_directive -> toplevel_directive;
+  toplevel_phrase: mapper -> toplevel_phrase -> toplevel_phrase;
   typ: mapper -> core_type -> core_type;
   type_declaration: mapper -> type_declaration -> type_declaration;
   type_extension: mapper -> type_extension -> type_extension;
@@ -122,8 +126,8 @@ val tool_name: unit -> string
     ["ocaml"], ...  Some global variables that reflect command-line
     options are automatically synchronized between the calling tool
     and the ppx preprocessor: {!Clflags.include_dirs},
-    {!Load_path}, {!Clflags.open_modules}, {!Clflags.for_package},
-    {!Clflags.debug}. *)
+    {!Clflags.hidden_include_dirs}, {!Load_path}, {!Clflags.open_modules},
+    {!Clflags.for_package}, {!Clflags.debug}. *)
 
 
 val apply: source:string -> target:string -> mapper -> unit

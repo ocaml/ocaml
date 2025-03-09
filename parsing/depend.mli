@@ -28,9 +28,10 @@ val make_leaf : string -> map_tree
 val make_node : bound_map -> map_tree
 val weaken_map : String.Set.t -> map_tree -> map_tree
 
+(** Collect free module identifiers in the a.s.t. *)
 val free_structure_names : String.Set.t ref
 
-(** dependencies found by preprocessing tools *)
+(** Dependencies found by preprocessing tools. *)
 val pp_deps : string list ref
 
 val open_module : bound_map -> Longident.t -> bound_map

@@ -38,26 +38,27 @@ let run_command cmdline = ignore(command cmdline)
    between 70000 and 80000 for macOS).
 *)
 
-let build_diversion lst =
+let build_response_file lst =
   let (responsefile, oc) = Filename.open_temp_file "camlresp" "" in
   List.iter (fun f -> Printf.fprintf oc "%s\n" f) lst;
   close_out oc;
   at_exit (fun () -> Misc.remove_file responsefile);
   "@" ^ responsefile
 
-let quote_files lst =
+let quote_files ~response_files lst =
   let lst = List.filter (fun f -> f <> "") lst in
   let quoted = List.map Filename.quote lst in
   let s = String.concat " " quoted in
-  if String.length s >= 65536
-  || (String.length s >= 4096 && Sys.os_type = "Win32")
-  then build_diversion quoted
+  if response_files &&
+  (String.length s >= 65536
+  || (String.length s >= 4096 && Sys.os_type = "Win32"))
+  then build_response_file quoted
   else s
 
-let quote_prefixed pr lst =
+let quote_prefixed ~response_files pr lst =
   let lst = List.filter (fun f -> f <> "") lst in
   let lst = List.map (fun f -> pr ^ f) lst in
-  quote_files lst
+  quote_files ~response_files lst
 
 let quote_optfile = function
   | None -> ""
@@ -99,12 +100,11 @@ let compile_file ?output ?(opt="") ?stable_name name =
          (match !Clflags.c_compiler with
           | Some cc -> cc
           | None ->
-              (* #7678: ocamlopt only calls the C compiler to process .c files
-                 from the command line, and the behaviour between
-                 ocamlc/ocamlopt should be identical. *)
-              (String.concat " " [Config.c_compiler;
-                                  Config.ocamlc_cflags;
-                                  Config.ocamlc_cppflags]))
+              let (cflags, cppflags) =
+                  if !Clflags.native_code
+                  then (Config.native_cflags, Config.native_cppflags)
+                  else (Config.bytecode_cflags, Config.bytecode_cppflags) in
+              (String.concat " " [Config.c_compiler; cflags; cppflags]))
          debug_prefix_map
          (match output with
           | None -> ""
@@ -112,9 +112,10 @@ let compile_file ?output ?(opt="") ?stable_name name =
          opt
          (if !Clflags.debug && Config.ccomp_type <> "msvc" then "-g" else "")
          (String.concat " " (List.rev !Clflags.all_ccopts))
-         (quote_prefixed "-I"
+         (quote_prefixed ~response_files:true "-I"
             (List.map (Misc.expand_directory Config.standard_library)
-               (List.rev !Clflags.include_dirs)))
+               (List.rev (  !Clflags.hidden_include_dirs
+                          @ !Clflags.include_dirs))))
          (Clflags.std_include_flag "-I")
          (Filename.quote name)
          (* cl tediously includes the name of the C file as the first thing it
@@ -137,15 +138,14 @@ let create_archive archive file_list =
     match Config.ccomp_type with
       "msvc" ->
         command(Printf.sprintf "link /lib /nologo /out:%s %s"
-                               quoted_archive (quote_files file_list))
+                               quoted_archive
+                               (quote_files ~response_files:true file_list))
     | _ ->
         assert(String.length Config.ar > 0);
-        let r1 =
-          command(Printf.sprintf "%s rc %s %s"
-                  Config.ar quoted_archive (quote_files file_list)) in
-        if r1 <> 0 || String.length Config.ranlib = 0
-        then r1
-        else command(Config.ranlib ^ " " ^ quoted_archive)
+        command(Printf.sprintf "%s rc %s %s"
+                Config.ar quoted_archive
+                (quote_files ~response_files:Config.ar_supports_response_files
+                  file_list))
 
 let expand_libname cclibs =
   cclibs |> List.map (fun cclib ->
@@ -184,8 +184,9 @@ let call_linker mode output_name files extra =
         Printf.sprintf "%s%s %s %s %s"
           Config.native_pack_linker
           (Filename.quote output_name)
-          (quote_prefixed l_prefix (Load_path.get_paths ()))
-          (quote_files (remove_Wl files))
+          (quote_prefixed ~response_files:true
+            l_prefix (Load_path.get_path_list ()))
+          (quote_files ~response_files:true (remove_Wl files))
           extra
       else
         Printf.sprintf "%s -o %s %s %s %s %s %s"
@@ -198,16 +199,11 @@ let call_linker mode output_name files extra =
           )
           (Filename.quote output_name)
           ""  (*(Clflags.std_include_flag "-I")*)
-          (quote_prefixed "-L" (Load_path.get_paths ()))
+          (quote_prefixed ~response_files:true "-L"
+             (Load_path.get_path_list ()))
           (String.concat " " (List.rev !Clflags.all_ccopts))
-          (quote_files files)
+          (quote_files ~response_files:true files)
           extra
     in
     command cmd
   )
-
-let linker_is_flexlink =
-  (* Config.mkexe, Config.mkdll and Config.mkmaindll are all flexlink
-     invocations for the native Windows ports and for Cygwin, if shared library
-     support is enabled. *)
-  Sys.win32 || Config.supports_shared_libraries && Sys.cygwin

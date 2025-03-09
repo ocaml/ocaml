@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module rec A: sig val x: int end = struct let x = B.x end
@@ -13,23 +13,23 @@ Line 2, characters 27-49:
                                ^^^^^^^^^^^^^^^^^^^^^^
 Error: Cannot safely evaluate the definition of the following cycle
        of recursively-defined modules: B -> E -> D -> C -> B.
-       There are no safe modules in this cycle (see manual section 8.2).
+       There are no safe modules in this cycle (see manual section 12.2).
 Line 2, characters 10-20:
 2 | and B:sig val x: int end = struct let x = E.y end
               ^^^^^^^^^^
-  Module B defines an unsafe value, x .
+  Module "B" defines an unsafe value, "x" .
 Line 5, characters 10-20:
 5 | and E:sig val x: int val y:int end = struct let x = D.x let y = 0 end
               ^^^^^^^^^^
-  Module E defines an unsafe value, x .
+  Module "E" defines an unsafe value, "x" .
 Line 4, characters 10-20:
 4 | and D:sig val x: int end = struct let x = C.x end
               ^^^^^^^^^^
-  Module D defines an unsafe value, x .
+  Module "D" defines an unsafe value, "x" .
 Line 3, characters 10-20:
 3 | and C:sig val x: int end = struct let x = B.x end
               ^^^^^^^^^^
-  Module C defines an unsafe value, x .
+  Module "C" defines an unsafe value, "x" .
 |}]
 
 type t = ..
@@ -42,15 +42,15 @@ Line 2, characters 36-64:
                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Cannot safely evaluate the definition of the following cycle
        of recursively-defined modules: A -> B -> A.
-       There are no safe modules in this cycle (see manual section 8.2).
+       There are no safe modules in this cycle (see manual section 12.2).
 Line 2, characters 28-29:
 2 | module rec A: sig type t += A end = struct type t += A = B.A end
                                 ^
-  Module A defines an unsafe extension constructor, A .
+  Module "A" defines an unsafe extension constructor, "A" .
 Line 3, characters 20-21:
 3 | and B:sig type t += A end = struct type t += A = A.A end
                         ^
-  Module B defines an unsafe extension constructor, A .
+  Module "B" defines an unsafe extension constructor, "A" .
 |}]
 
 
@@ -70,15 +70,15 @@ Lines 4-7, characters 6-3:
 7 | end
 Error: Cannot safely evaluate the definition of the following cycle
        of recursively-defined modules: A -> B -> A.
-       There are no safe modules in this cycle (see manual section 8.2).
+       There are no safe modules in this cycle (see manual section 12.2).
 Line 2, characters 2-41:
 2 |   module F: functor(X:sig end) -> sig end
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  Module A defines an unsafe functor, F .
+  Module "A" defines an unsafe functor, "F" .
 Line 8, characters 11-26:
 8 | and B: sig val value: unit end = struct let value = A.f () end
                ^^^^^^^^^^^^^^^
-  Module B defines an unsafe value, value .
+  Module "B" defines an unsafe value, "value" .
 |}]
 
 
@@ -100,15 +100,15 @@ Lines 5-8, characters 8-5:
 8 |   end
 Error: Cannot safely evaluate the definition of the following cycle
        of recursively-defined modules: A -> B -> A.
-       There are no safe modules in this cycle (see manual section 8.2).
+       There are no safe modules in this cycle (see manual section 12.2).
 Line 3, characters 4-17:
 3 |     module M: X.t
         ^^^^^^^^^^^^^
-  Module A defines an unsafe module, M .
+  Module "A" defines an unsafe module, "M" .
 Line 9, characters 13-28:
 9 |   and B: sig val value: unit end = struct let value  = A.f () end
                  ^^^^^^^^^^^^^^^
-  Module B defines an unsafe value, value .
+  Module "B" defines an unsafe value, "value" .
 |}]
 
 

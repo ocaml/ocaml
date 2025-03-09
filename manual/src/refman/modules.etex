@@ -22,13 +22,13 @@ for the specifications expressed in module types.
 module-expr:
           module-path
         | 'struct' [ module-items ] 'end'
-        | 'functor' '(' module-name ':' module-type ')' '->' module-expr
+        | 'functor' {{ '(' module-name ':' module-type ')' }} '->' module-expr
         | module-expr '(' module-expr ')'
         | '(' module-expr ')'
         | '(' module-expr ':' module-type ')'
 ;
 module-items:
-        {';;'} ( definition || expr ) { {';;'} ( definition || ';;' expr) } {';;'}
+        { ';;' } ( definition || expr ) { { ';;' } ( definition || ';;' expr) } { ';;' }
 ;
 %\end{syntax} \begin{syntax}
 definition:
@@ -228,10 +228,20 @@ resulting modules as results. No restrictions are placed on the type of the
 functor argument; in particular, a functor may take another functor as
 argument (``higher-order'' functor).
 
+When the result module expression is itself a functor,
+\begin{center}
+@'functor' '(' name_1 ':' module-type_1 ')' '->' \ldots '->'
+ 'functor' '(' name_n ':' module-type_n ')' '->' module-expr@
+\end{center}
+one may use the abbreviated form
+\begin{center}
+@'functor' '(' name_1 ':' module-type_1 ')' \ldots
+           '(' name_n ':' module-type_n ')' '->' module-expr@
+\end{center}
+
 \subsubsection*{sss:mexpr-functor-app}{Functor application}
 
 The expression @module-expr_1 '(' module-expr_2 ')'@ evaluates
 @module-expr_1@ to a functor and @module-expr_2@ to a module, and
 applies the former to the latter. The type of @module-expr_2@ must
 match the type expected for the arguments of the functor @module-expr_1@.
-

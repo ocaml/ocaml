@@ -17,23 +17,27 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#include <io.h>
+#endif
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
 #include <caml/osdeps.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
-CAMLprim value unix_chmod(value path, value perm)
+CAMLprim value caml_unix_chmod(value path, value vperm)
 {
-  CAMLparam2(path, perm);
+  CAMLparam2(path, vperm);
   char_os * p;
   int ret;
+  int perm = Int_val(vperm);
   caml_unix_check_path(path, "chmod");
   p = caml_stat_strdup_to_os(String_val(path));
   caml_enter_blocking_section();
-  ret = chmod_os(p, Int_val(perm));
+  ret = chmod_os(p, perm);
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("chmod", path);
+  if (ret == -1) caml_uerror("chmod", path);
   CAMLreturn(Val_unit);
 }

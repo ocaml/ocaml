@@ -1,0 +1,10 @@
+ml_perform_stack_walk
+caml_c_call
+Mylib.baz
+Driver.entry
+caml_program
+ml_perform_stack_walk
+ml_do_no_alloc
+Mylib.bob
+Driver.entry
+caml_program

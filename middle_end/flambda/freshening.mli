@@ -62,6 +62,13 @@ val add_variables
   -> (Variable.t * 'a) list
   -> (Variable.t * 'a) list * t
 
+(** Like [add_variables'], but passes through the other components of the
+    input list unchanged. *)
+val add_variables3
+   : t
+  -> (Variable.t * 'a * 'b) list
+  -> (Variable.t * 'a * 'b) list * t
+
 (** Like [add_variable], but for mutable variables. *)
 val add_mutable_variable : t -> Mutable_variable.t -> Mutable_variable.t * t
 

@@ -160,9 +160,9 @@ module Win32 : SYSDEPS = struct
     else
       None
 
+  external temp_dir_name: unit -> string = "caml_sys_temp_dir_name"
+  let temp_dir_name = temp_dir_name ()
 
-  let temp_dir_name =
-    try Sys.getenv "TEMP" with Not_found -> "."
   let quote s =
     let l = String.length s in
     let b = Buffer.create (l + 20) in
@@ -219,10 +219,17 @@ Quoting commands for execution by cmd.exe is difficult.
       s;
     Buffer.contents b
   let quote_cmd_filename f =
-    if String.contains f '\"' || String.contains f '%' then
+    (* In cmd.exe, forward slashes in the program path (argument 0) are
+       interpreted as introducing a flag. *)
+    let f =
+      if String.contains f '/' then
+        String.map (function '/' -> '\\' | c -> c) f
+      else f
+    in
+    if String.exists (function '\"' | '%' -> true | _ -> false) f then
       failwith ("Filename.quote_command: bad file name " ^ f)
     else if String.contains f ' ' then
-      "\"" ^ f ^ "\""
+      String.concat "" ["\""; f; "\""]
     else
       f
   (* Redirections in cmd.exe: see https://ss64.com/nt/syntax-redirection.html
@@ -293,8 +300,9 @@ let concat dirname filename =
   else dirname ^ dir_sep ^ filename
 
 let chop_suffix name suff =
-  let n = String.length name - String.length suff in
-  if n < 0 then invalid_arg "Filename.chop_suffix" else String.sub name 0 n
+  if check_suffix name suff
+  then String.sub name 0 (String.length name - String.length suff)
+  else invalid_arg "Filename.chop_suffix"
 
 let extension_len name =
   let rec check i0 i =
@@ -325,35 +333,49 @@ let remove_extension name =
 external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
 external close_desc: int -> unit = "caml_sys_close"
 
-let prng = lazy(Random.State.make_self_init ())
+let prng_key =
+  Domain.DLS.new_key Random.State.make_self_init
 
 let temp_file_name temp_dir prefix suffix =
-  let rnd = (Random.State.bits (Lazy.force prng)) land 0xFFFFFF in
+  let random_state = Domain.DLS.get prng_key in
+  let rnd = (Random.State.bits random_state) land 0xFFFFFF in
   concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
 
+let current_temp_dir_name =
+  Domain.DLS.new_key ~split_from_parent:Fun.id (fun () -> temp_dir_name)
 
-let current_temp_dir_name = ref temp_dir_name
+let set_temp_dir_name s = Domain.DLS.set current_temp_dir_name s
+let get_temp_dir_name () = Domain.DLS.get current_temp_dir_name
 
-let set_temp_dir_name s = current_temp_dir_name := s
-let get_temp_dir_name () = !current_temp_dir_name
-
-let temp_file ?(temp_dir = !current_temp_dir_name) prefix suffix =
+let temp_file ?(temp_dir = Domain.DLS.get current_temp_dir_name) prefix suffix =
   let rec try_name counter =
     let name = temp_file_name temp_dir prefix suffix in
     try
       close_desc(open_desc name [Open_wronly; Open_creat; Open_excl] 0o600);
       name
     with Sys_error _ as e ->
-      if counter >= 1000 then raise e else try_name (counter + 1)
+      if counter >= 20 then raise e else try_name (counter + 1)
   in try_name 0
 
 let open_temp_file ?(mode = [Open_text]) ?(perms = 0o600)
-                   ?(temp_dir = !current_temp_dir_name) prefix suffix =
+    ?(temp_dir = Domain.DLS.get current_temp_dir_name)
+    prefix suffix =
   let rec try_name counter =
     let name = temp_file_name temp_dir prefix suffix in
     try
       (name,
        open_out_gen (Open_wronly::Open_creat::Open_excl::mode) perms name)
     with Sys_error _ as e ->
-      if counter >= 1000 then raise e else try_name (counter + 1)
+      if counter >= 20 then raise e else try_name (counter + 1)
+  in try_name 0
+
+let temp_dir ?(temp_dir = Domain.DLS.get current_temp_dir_name)
+    ?(perms = 0o700) prefix suffix =
+  let rec try_name counter =
+    let name = temp_file_name temp_dir prefix suffix in
+    try
+      Sys.mkdir name perms;
+      name
+    with Sys_error _ as e ->
+      if counter >= 20 then raise e else try_name (counter + 1)
   in try_name 0

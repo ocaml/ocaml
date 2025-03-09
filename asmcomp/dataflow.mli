@@ -28,6 +28,7 @@ end
 module Backward(D: DOMAIN) : sig
 
   val analyze: ?exnhandler: (D.t -> D.t) ->
+               ?exnescape: D.t ->
                transfer: (Mach.instruction -> next: D.t -> exn: D.t -> D.t) ->
                Mach.instruction ->
                D.t * (int -> D.t)
@@ -80,6 +81,10 @@ module Backward(D: DOMAIN) : sig
      the beginning of the handler and removes the register
      [Proc.loc_exn_bucket] that carries the exception value.  If not
      specified, [exnhandler] defaults to the identity function.
+
+     The optional [exnescape] argument deals with unhandled exceptions.
+     It is the abstract state corresponding to exiting the function on an
+     unhandled exception.  It defaults to [D.bot].
   *)
 
 end

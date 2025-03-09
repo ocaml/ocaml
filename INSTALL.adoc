@@ -2,11 +2,34 @@
 
 == Prerequisites
 
-* A C Compiler is required.
-  The GNU C Compiler (`gcc`) is recommended as the bytecode interpreter takes
-  advantage of GCC-specific features to enhance performance. gcc is the standard
-  compiler under Linux and many other systems.
-  However `clang` - used in Mac OS, BSDs and others - also works fine.
+* A C compiler is required.
+
+  ** For GNU/Linux +
+   The GNU C Compiler (`gcc`) is recommended as the bytecode interpreter takes
+   advantage of GCC-specific features to enhance performance. GCC is the standard
+   compiler under Linux and many other systems.
+
+  ** For BSDs +
+   `clang` is the default C compiler on BSDs - also works fine.
+
+  ** For macOS +
+   `clang` is the default C compiler under macOS. If macOS complains
+   no C compiler was installed while OCaml is building, please run
+   command `xcode-select --install` to install command-line tools and
+   required libraries and header files.
+
+  ** For other Unix-like systems +
+   It is recommended to use `gcc` or `clang` instead of the C compiler
+   provided by the vendor of the system.
+
+  ** For Windows +
+   To produce native Windows executables from OCaml sources, you need to use
+   the MSVC or MinGW-w64 ports of OCaml, described in file
+   https://github.com/ocaml/ocaml/blob/trunk/README.win32.adoc[README.win32.adoc]. +
+   For a more Unix-like experience, you can use WSL, the
+   https://aka.ms/wsl[Windows Subsystem for Linux], or the
+   https://www.cygwin.com/[Cygwin environment]. You will need the
+   GCC compiler (package `gcc-core` or `gcc`).
 
 * GNU `make`, as well as POSIX-compatible `awk` and `sed` are required.
 
@@ -15,28 +38,34 @@
 * If you do not have write access to `/tmp`, you should set the environment
   variable `TMPDIR` to the name of some other temporary directory.
 
+* The zstd library is used for compression of marshaled data. The option
+  `--without-zstd` may be passed to `configure` in order to disable it.
+
 == Prerequisites (special cases)
 
 * Under Cygwin, the `gcc-core` package is required. `flexdll` is also necessary
   for shared library support.
+
+* Binutils including `ar` and `strip` are required if your distribution
+  does not already provide them with the C compiler.
 
 == Configuration
 
 From the top directory, do:
 
         ./configure
-+
+
 This generates the three configuration files `Makefile.config`,
 `runtime/caml/m.h` and `runtime/caml/s.h`.
-+
+
 The `configure` script accepts options that can be discovered by running:
 
         ./configure --help
-+
+
 Some options or variables like LDLIBS may not be taken into account
 by the OCaml build system at the moment. Please report an issue if you
 discover such a variable or option and this causes troubles to you.
-+
+
 Examples:
 
 * Standard installation in `/usr/{bin,lib,man}` instead of `/usr/local`:
@@ -94,7 +123,7 @@ To be sure everything works well, you can run the test suite
 
 You can now install the OCaml system. This will create the following commands
    (in the binary directory selected during autoconfiguration):
-+
+
 [width="70%",frame="topbot",cols="25%,75%"]
 |===============================================================================
 | `ocamlc`     | the batch bytecode compiler
@@ -111,7 +140,7 @@ You can now install the OCaml system. This will create the following commands
 | `ocamlprof`  | the execution count profiler
 | `ocamlcp`    | the bytecode compiler in profiling mode
 |===============================================================================
-+
+
 From the top directory, become superuser and do:
 
         make install
@@ -140,7 +169,7 @@ and data segment size (type `limit` under csh or `ulimit -a` under bash). Make
 sure the limit on the stack size is at least 4M.
 
 Try recompiling the runtime system with optimizations turned off (change
-`OC_CFLAGS` in `runtime/Makefile`). The runtime system
+`OC_CFLAGS` in `Makefile.build_config`). The runtime system
 contains some complex, atypical pieces of C code which can uncover bugs in
 optimizing compilers.  Alternatively, try another C compiler (e.g. `gcc` instead
 of the vendor-supplied `cc`).
@@ -161,10 +190,6 @@ and sanity checks that could help you pinpoint the problem.
   the C locale (`export LC_ALL=C`) before compiling if you have strange errors
   while compiling OCaml.
 
-* On HP 9000/700 machines under HP/UX 9, some versions of `cc` are unable to
-  compile correctly the runtime system (wrong code is generated for `(x - y)`
-  where `x` is a pointer and `y` an integer). Fix: use `gcc`.
-
 * In the unlikely case that a platform does not offer all C99 float operations
   that the runtime needs, a configuration error will result.  Users
   can work around this problem by calling `configure` with the flag
@@ -173,3 +198,59 @@ and sanity checks that could help you pinpoint the problem.
   requirements for mathematical accuracy, numerical precision, and proper
   handling of mathematical corner cases and error conditions may need to
   consider running their code on a platform with better C99 support.
+
+== (experimental) Building a cross compiler
+
+A cross compiler is a compiler that runs on some machine, named the _host_, but
+generates code for a different machine, named the _target_. To build a cross
+compiler you first need to have a non-cross compiler of the same version
+installed in your `$PATH`. You can install that standard non-cross compiler by
+any means, for instance using `opam` or compiling it manually from source. Note
+though that the version of the non-cross compiler must match the version of the
+cross compiler since the cross compiler will be compiled by the non-cross
+compiler: the cross compiler will combine code compiled from source with the
+non-cross runtime (the build of the cross compiler will build only the runtime
+for the target machine).
+
+To start the build of the cross compiler, call `configure` with the `target`
+triplet, possibly setting where the library will be installed on the target by
+setting the `TARGET_LIBDIR` variable. For instance, with the GCC MinGW cross
+compiler installed, one may use:
+
+....
+./configure --prefix=$PWD/cross --target=x86_64-w64-mingw32 TARGET_LIBDIR='C:\somedir' ...
+make crossopt -j
+make installcross
+....
+
+Notes:
+
+* It is advisable to choose a `prefix` that will not end up in installing the
+  cross compiler in your `$PATH`: `ocamlopt` should always invoke the standard
+  non-cross compiler, not the cross one. To call the cross compiler, you will
+  just use its full path or add temporarily its installation directory to your
+  `$PATH`.
+* The cross compiler to Windows needs `flexdll` to link the binaries. A simple
+  way to get it is to use the `flexdll` submodule (`git submodule update --init`
+  if needed) and let the `crossopt` target bootstrap `flexdll`.
+
+=== Using the cross compiler
+
+If you have built a cross compiler to a Unix target, you can simply run as
+usual:
+
+....
+cross/bin/ocamlopt.opt -o test test.ml
+....
+
+If you have built a Unix-to-Windows cross compiler, you must first make sure
+that `ocamlopt` can find the `flexlink` executable in `$PATH` when it needs to
+link. Boostrapping `flexdll` builds a `flexlink.exe` (note the `.exe`!), so you
+can:
+
+....
+ln -s flexlink.exe cross/bin/flexlink
+(export PATH="$PWD/cross/bin:$PATH"; ocamlopt.opt.exe -o test.exe test.ml)
+....
+
+or any other possibility to make sure `ocamlopt` can invoke `flexlink`.

@@ -74,15 +74,14 @@ external compare : 'a -> 'a -> int = "%compare"
 let min x y = if x <= y then x else y
 let max x y = if x >= y then x else y
 
+external phys_equal : 'a -> 'a -> bool = "%eq"
 external ( == ) : 'a -> 'a -> bool = "%eq"
 external ( != ) : 'a -> 'a -> bool = "%noteq"
 
 (* Boolean operations *)
 
 external not : bool -> bool = "%boolnot"
-external ( & ) : bool -> bool -> bool = "%sequand"
 external ( && ) : bool -> bool -> bool = "%sequand"
-external ( or ) : bool -> bool -> bool = "%sequor"
 external ( || ) : bool -> bool -> bool = "%sequor"
 
 (* Integer operations *)
@@ -183,7 +182,7 @@ let infinity =
 let neg_infinity =
   float_of_bits 0xFF_F0_00_00_00_00_00_00L
 let nan =
-  float_of_bits 0x7F_F0_00_00_00_00_00_01L
+  float_of_bits 0x7F_F8_00_00_00_00_00_01L
 let max_float =
   float_of_bits 0x7F_EF_FF_FF_FF_FF_FF_FFL
 let min_float =
@@ -270,7 +269,7 @@ let string_of_int n =
 external int_of_string : string -> int = "caml_int_of_string"
 
 let int_of_string_opt s =
-  (* TODO: provide this directly as a non-raising primitive. *)
+  (* Trashes current backtrace *)
   try Some (int_of_string s)
   with Failure _ -> None
 
@@ -291,16 +290,18 @@ let string_of_float f = valid_float_lexem (format_float "%.12g" f)
 external float_of_string : string -> float = "caml_float_of_string"
 
 let float_of_string_opt s =
-  (* TODO: provide this directly as a non-raising primitive. *)
+  (* Trashes current backtrace *)
   try Some (float_of_string s)
   with Failure _ -> None
 
 (* List operations -- more in module List *)
 
-let rec ( @ ) l1 l2 =
+let[@tail_mod_cons] rec ( @ ) l1 l2 =
   match l1 with
-    [] -> l2
-  | hd :: tl -> hd :: (tl @ l2)
+  | [] -> l2
+  | h1 :: [] -> h1 :: l2
+  | h1 :: h2 :: [] -> h1 :: h2 :: l2
+  | h1 :: h2 :: h3 :: tl -> h1 :: h2 :: h3 :: (tl @ l2)
 
 (* I/O operations *)
 
@@ -549,21 +550,31 @@ let ( ^^ ) (Format (fmt1, str1)) (Format (fmt2, str2)) =
 
 external sys_exit : int -> 'a = "caml_sys_exit"
 
-let exit_function = CamlinternalAtomic.make flush_all
+(* for at_exit *)
+type 'a atomic_t
+external atomic_make : 'a -> 'a atomic_t = "%makemutable"
+external atomic_get : 'a atomic_t -> 'a = "%atomic_load"
+external atomic_compare_and_set : 'a atomic_t -> 'a -> 'a -> bool
+  = "%atomic_cas"
+
+let exit_function = atomic_make flush_all
 
 let rec at_exit f =
-  let module Atomic = CamlinternalAtomic in
   (* MPR#7253, MPR#7796: make sure "f" is executed only once *)
-  let f_yet_to_run = Atomic.make true in
-  let old_exit = Atomic.get exit_function in
+  let f_yet_to_run = atomic_make true in
+  let old_exit = atomic_get exit_function in
   let new_exit () =
-    if Atomic.compare_and_set f_yet_to_run true false then f () ;
+    if atomic_compare_and_set f_yet_to_run true false then f () ;
     old_exit ()
   in
-  let success = Atomic.compare_and_set exit_function old_exit new_exit in
+  let success = atomic_compare_and_set exit_function old_exit new_exit in
   if not success then at_exit f
 
-let do_at_exit () = (CamlinternalAtomic.get exit_function) ()
+let do_domain_local_at_exit = ref (fun () -> ())
+
+let do_at_exit () =
+  (!do_domain_local_at_exit) ();
+  (atomic_get exit_function) ()
 
 let exit retcode =
   do_at_exit ();
@@ -571,64 +582,68 @@ let exit retcode =
 
 let _ = register_named_value "Pervasives.do_at_exit" do_at_exit
 
-external major : unit -> unit = "caml_gc_major"
-external naked_pointers_checked : unit -> bool
-  = "caml_sys_const_naked_pointers_checked"
-let () = if naked_pointers_checked () then at_exit major
-
 (*MODULE_ALIASES*)
-module Arg          = Arg
-module Array        = Array
-module ArrayLabels  = ArrayLabels
-module Atomic       = Atomic
-module Bigarray     = Bigarray
-module Bool         = Bool
-module Buffer       = Buffer
-module Bytes        = Bytes
-module BytesLabels  = BytesLabels
-module Callback     = Callback
-module Char         = Char
-module Complex      = Complex
-module Digest       = Digest
-module Either       = Either
-module Ephemeron    = Ephemeron
-module Filename     = Filename
-module Float        = Float
-module Format       = Format
-module Fun          = Fun
-module Gc           = Gc
-module Genlex       = Genlex
-module Hashtbl      = Hashtbl
-module Int          = Int
-module Int32        = Int32
-module Int64        = Int64
-module Lazy         = Lazy
-module Lexing       = Lexing
-module List         = List
-module ListLabels   = ListLabels
-module Map          = Map
-module Marshal      = Marshal
-module MoreLabels   = MoreLabels
-module Nativeint    = Nativeint
-module Obj          = Obj
-module Oo           = Oo
-module Option       = Option
-module Parsing      = Parsing
-module Pervasives   = Pervasives
-module Printexc     = Printexc
-module Printf       = Printf
-module Queue        = Queue
-module Random       = Random
-module Result       = Result
-module Scanf        = Scanf
-module Seq          = Seq
-module Set          = Set
-module Stack        = Stack
-module StdLabels    = StdLabels
-module Stream       = Stream
-module String       = String
-module StringLabels = StringLabels
-module Sys          = Sys
-module Uchar        = Uchar
-module Unit         = Unit
-module Weak         = Weak
+module Arg            = Arg
+module Array          = Array
+module ArrayLabels    = ArrayLabels
+module Atomic         = Atomic
+module Bigarray       = Bigarray
+module Bool           = Bool
+module Buffer         = Buffer
+module Bytes          = Bytes
+module BytesLabels    = BytesLabels
+module Callback       = Callback
+module Char           = Char
+module Complex        = Complex
+module Condition      = Condition
+module Digest         = Digest
+module Domain         = Domain
+module Dynarray       = Dynarray
+module Pqueue         = Pqueue
+module Effect         = Effect
+module Either         = Either
+module Ephemeron      = Ephemeron
+module Filename       = Filename
+module Float          = Float
+module Format         = Format
+module Fun            = Fun
+module Gc             = Gc
+module Hashtbl        = Hashtbl
+module Iarray         = Iarray
+module In_channel     = In_channel
+module Int            = Int
+module Int32          = Int32
+module Int64          = Int64
+module Lazy           = Lazy
+module Lexing         = Lexing
+module List           = List
+module ListLabels     = ListLabels
+module Map            = Map
+module Marshal        = Marshal
+module MoreLabels     = MoreLabels
+module Mutex          = Mutex
+module Nativeint      = Nativeint
+module Obj            = Obj
+module Oo             = Oo
+module Option         = Option
+module Out_channel    = Out_channel
+module Pair           = Pair
+module Parsing        = Parsing
+module Printexc       = Printexc
+module Printf         = Printf
+module Queue          = Queue
+module Random         = Random
+module Result         = Result
+module Scanf          = Scanf
+module Semaphore      = Semaphore
+module Seq            = Seq
+module Set            = Set
+module Stack          = Stack
+module StdLabels      = StdLabels
+module String         = String
+module StringLabels   = StringLabels
+module Sys            = Sys
+module Type           = Type
+module Uchar          = Uchar
+module Unit           = Unit
+module Weak           = Weak

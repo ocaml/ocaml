@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let check_contents (h: (string, int) Hashtbl.t)
                    (expected: (string * int) list) =

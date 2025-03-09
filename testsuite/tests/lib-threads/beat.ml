@@ -1,10 +1,16 @@
 (* TEST
-
-* hassysthreads
-include systhreads
-** bytecode
-** native
-
+ {
+   include systhreads;
+   hassysthreads;
+ }{
+   reason = "off-by-one error on MacOS+Clang (https://github.com/ocaml-multicore/ocaml-multicore/issues/408)";
+   skip;
+   {
+     bytecode;
+   }{
+     native;
+   }
+ }
 *)
 
 (* Test Thread.delay and its scheduling *)

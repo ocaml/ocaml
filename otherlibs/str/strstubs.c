@@ -37,7 +37,7 @@ union backtrack_point {
 #define Clear_tag(p) ((value *) ((intnat)(p) & ~1))
 #define Tag_is_set(p) ((intnat)(p) & 1)
 
-#define BACKTRACK_STACK_BLOCK_SIZE 500
+#define BACKTRACK_STACK_BLOCK_SIZE 200
 
 struct backtrack_stack {
   struct backtrack_stack * previous;
@@ -89,10 +89,7 @@ struct re_group {
 /* Record positions reached during matching; used to check progress
    in repeated matching of a regexp. */
 #define NUM_REGISTERS 64
-static unsigned char * re_register[NUM_REGISTERS];
-
-/* The initial backtracking stack */
-static struct backtrack_stack initial_stack = { NULL, };
+typedef unsigned char * progress_registers[NUM_REGISTERS];
 
 /* Free a chained list of backtracking stacks */
 static void free_backtrack_stack(struct backtrack_stack * stack)
@@ -110,7 +107,7 @@ static void free_backtrack_stack(struct backtrack_stack * stack)
 /* Determine if a character is a word constituent */
 /* PR#4874: word constituent = letter, digit, underscore. */
 
-static unsigned char re_word_letters[32] = {
+static const unsigned char re_word_letters[32] = {
   0x00, 0x00, 0x00, 0x00,       /* 0x00-0x1F: none */
   0x00, 0x00, 0xFF, 0x03,       /* 0x20-0x3F: digits 0-9 */
   0xFE, 0xFF, 0xFF, 0x87,       /* 0x40-0x5F: A to Z, _ */
@@ -127,16 +124,15 @@ static unsigned char re_word_letters[32] = {
    Beginning of group #N is at 2N, end is at 2N+1.
    Take position = -1 when group wasn't matched. */
 
-static value re_alloc_groups(value re, unsigned char * starttxt,
+static value re_alloc_groups(value re, const unsigned char * starttxt,
                              struct re_group * groups)
 {
   value res;
   int n = Numgroups(re);
-  int i;
-  struct re_group * group;
+  const struct re_group * group;
 
   res = caml_alloc(n * 2, 0);
-  for (i = 0; i < n; i++) {
+  for (int i = 0; i < n; i++) {
     group = &(groups[i]);
     if (group->start == NULL || group->end == NULL) {
       Field(res, i * 2) = Val_int(-1);
@@ -153,24 +149,33 @@ static value re_alloc_groups(value re, unsigned char * starttxt,
    Return Caml array of matched groups on success, 0 on failure. */
 
 static value re_match(value re,
-                      unsigned char * starttxt,
+                      const unsigned char * starttxt,
                       register unsigned char * txt,
-                      register unsigned char * endtxt,
+                      register const unsigned char * endtxt,
                       int accept_partial_match)
 {
-  register value * pc;
-  intnat instr;
-  struct backtrack_stack * stack;
-  union backtrack_point * sp;
+  /* Fields of [re] */
   value cpool;
   value normtable;
+  int numgroups;
+  /* Currently-executing instruction */
+  register volatile value * pc;
+  intnat instr;
   unsigned char c;
+  /* Backtracking */
+  struct backtrack_stack initial_stack;
+  struct backtrack_stack * stack;
+  union backtrack_point * sp;
   union backtrack_point back;
+  /* Checking for progress */
+  progress_registers re_register;
+  /* Recording matched groups */
   struct re_group default_groups[DEFAULT_NUM_GROUPS];
   struct re_group * groups;
-  int numgroups = Numgroups(re);
+  /* Final matching info */
   value result;
 
+  numgroups = Numgroups(re);
   if (numgroups <= DEFAULT_NUM_GROUPS)
     groups = default_groups;
   else
@@ -186,6 +191,7 @@ static value re_match(value re,
   }
 
   pc = &Field(Prog(re), 0);
+  initial_stack.previous = NULL;
   stack = &initial_stack;
   sp = stack->point;
   cpool = Cpool(re);
@@ -206,7 +212,7 @@ static value re_match(value re,
       txt++;
       break;
     case STRING: {
-      unsigned char * s =
+      const unsigned char * s =
         (unsigned char *) String_val(Field(cpool, Arg(instr)));
       while ((c = *s++) != 0) {
         if (txt == endtxt) goto prefix_match;
@@ -216,7 +222,7 @@ static value re_match(value re,
       break;
     }
     case STRINGNORM: {
-      unsigned char * s =
+      const unsigned char * s =
         (unsigned char *) String_val(Field(cpool, Arg(instr)));
       while ((c = *s++) != 0) {
         if (txt == endtxt) goto prefix_match;
@@ -274,9 +280,8 @@ static value re_match(value re,
     case REFGROUP: {
       int group_no = Arg(instr);
       struct re_group * group = &(groups[group_no]);
-      unsigned char * s;
       if (group->start == NULL || group->end == NULL) goto backtrack;
-      for (s = group->start; s < group->end; s++) {
+      for (unsigned char *s = group->start; s < group->end; s++) {
         if (txt == endtxt) goto prefix_match;
         if (*s != *txt) goto backtrack;
         txt++;
@@ -418,10 +423,9 @@ CAMLprim value re_partial_match(value re, value str, value pos)
 
 CAMLprim value re_search_forward(value re, value str, value startpos)
 {
-  unsigned char * starttxt = &Byte_u(str, 0);
+  const unsigned char * starttxt = &Byte_u(str, 0);
   unsigned char * txt = &Byte_u(str, Long_val(startpos));
   unsigned char * endtxt = &Byte_u(str, caml_string_length(str));
-  unsigned char * startchars;
   value res;
 
   if (txt < starttxt || txt > endtxt)
@@ -434,7 +438,7 @@ CAMLprim value re_search_forward(value re, value str, value startpos)
     } while (txt <= endtxt);
     return Atom(0);
   } else {
-    startchars =
+    const unsigned char * startchars =
       (unsigned char *) String_val(Field(Cpool(re), Startchars(re)));
     do {
       while (txt < endtxt && startchars[*txt] == 0) txt++;
@@ -450,8 +454,7 @@ CAMLprim value re_search_backward(value re, value str, value startpos)
 {
   unsigned char * starttxt = &Byte_u(str, 0);
   unsigned char * txt = &Byte_u(str, Long_val(startpos));
-  unsigned char * endtxt = &Byte_u(str, caml_string_length(str));
-  unsigned char * startchars;
+  const unsigned char * endtxt = &Byte_u(str, caml_string_length(str));
   value res;
 
   if (txt < starttxt || txt > endtxt)
@@ -464,7 +467,7 @@ CAMLprim value re_search_backward(value re, value str, value startpos)
     } while (txt >= starttxt);
     return Atom(0);
   } else {
-    startchars =
+    const unsigned char * startchars =
       (unsigned char *) String_val(Field(Cpool(re), Startchars(re)));
     do {
       while (txt > starttxt && startchars[*txt] == 0) txt--;

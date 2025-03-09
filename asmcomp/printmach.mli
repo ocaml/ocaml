@@ -27,5 +27,5 @@ val instr: formatter -> Mach.instruction -> unit
 val fundecl: formatter -> Mach.fundecl -> unit
 val phase: string -> formatter -> Mach.fundecl -> unit
 val interferences: formatter -> unit -> unit
-val intervals: formatter -> unit -> unit
+val intervals: formatter -> Interval.result -> unit
 val preferences: formatter -> unit -> unit

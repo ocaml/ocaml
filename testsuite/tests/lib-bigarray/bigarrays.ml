@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 open Bigarray
 open Printf
@@ -244,6 +243,21 @@ let tests () =
     done;
     test 16 true !return
   end;
+  test 17 true
+    (test_setget float16
+                 [0.0, 0.0;
+                  -0.5, -0.5;
+                  1.0, 1.0;
+                  infinity, infinity;
+                  neg_infinity, neg_infinity;
+                  Float.min_float, 0.0;
+                  Float.max_float, infinity;
+                  65504.0, 65504.0;
+                  -65504.0, -65504.0;
+                  65519.0, 65504.0;
+                  -65519.0, -65504.0;
+                  65520.0, infinity;
+                  -65520.0, neg_infinity]);
 
   testing_function "set/get (specialized)";
   let a = Array1.create int c_layout 3 in
@@ -1053,6 +1067,12 @@ let tests () =
   let ba = Array0.init int fortran_layout 10 in
   test 2 ba (Array0.of_value int fortran_layout 10);
 
+  let ba = Bigarray.(Genarray.init float64 c_layout [||] (fun _ -> 5.)) in
+  test 3 5. (Bigarray.Genarray.get ba [||]);
+
+  let ba = Bigarray.(Genarray.init float64 fortran_layout [||] (fun _ -> 5.)) in
+  test 4 5. (Bigarray.Genarray.get ba [||]);
+
 (* Kind size *)
   testing_function "kind_size_in_bytes";
   let arr1 = Array1.create Float32 c_layout 1 in
@@ -1144,7 +1164,7 @@ let tests () =
   test_structured_io 13 (make_array2 complex32 c_layout 0 100 100 makecomplex);
   test_structured_io 14 (make_array3 complex64 fortran_layout 1 10 20 30
                                      makecomplex);
-
+  test_structured_io 15 (from_list float16 [0.0; 0.25; -4.0; 3.141592654]);
   ()
   [@@inline never]
 

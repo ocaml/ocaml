@@ -47,11 +47,6 @@ end) : sig
         (* Same as [check], but raise [Not_available] if no CRC was previously
              associated with [name]. *)
 
-  val set: t -> Module_name.t -> Digest.t -> filepath -> unit
-        (* [set tbl name crc source] forcefully associates [name] with
-           [crc] in [tbl], even if [name] already had a different CRC
-           associated with [name] in [tbl]. *)
-
   val source: t -> Module_name.t -> filepath
         (* [source tbl name] returns the file name associated with [name]
            if the latter has an associated CRC in [tbl].

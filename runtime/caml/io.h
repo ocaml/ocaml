@@ -20,11 +20,20 @@
 
 #ifdef CAML_INTERNALS
 
+#include "camlatomic.h"
 #include "misc.h"
 #include "mlvalues.h"
 
-#ifndef IO_BUFFER_SIZE
-#define IO_BUFFER_SIZE 65536
+#ifndef _MSC_VER
+#include "platform.h"
+#else
+/* We avoid including platform.h (which is really only necessary here to declare
+   caml_plat_mutex) because that would end up pulling in pthread.h but we want
+   to hide it on the MSVC port as it is not the native way to handle threads.
+   So we inline here just the implementation of caml_plat_mutex on that port,
+   this should be kept in sync */
+#include <stdint.h>
+typedef intptr_t caml_plat_mutex;
 #endif
 
 #if defined(_WIN32)
@@ -40,18 +49,23 @@ struct channel {
   char * end;                   /* Physical end of the buffer */
   char * curr;                  /* Current position in the buffer */
   char * max;                   /* Logical end of the buffer (for input) */
-  void * mutex;                 /* Placeholder for mutex (for systhreads) */
+  caml_plat_mutex mutex;        /* Mutex protecting buffer */
   struct channel * next, * prev;/* Double chaining of channels (flush_all) */
-  int refcount;                 /* Number of custom blocks owning the channel */
+  uintnat refcount;             /* Number of custom blocks owning the channel */
   int flags;                    /* Bitfield */
-  char buff[IO_BUFFER_SIZE];    /* The buffer itself */
+  char * buff;                  /* The buffer */
   char * name;                  /* Optional name (to report fd leaks) */
 };
 
 enum {
   CHANNEL_FLAG_FROM_SOCKET = 1,  /* For Windows */
-  CHANNEL_FLAG_MANAGED_BY_GC = 4,  /* Free and close using GC finalization */
-  CHANNEL_TEXT_MODE = 8,           /* "Text mode" for Windows and Cygwin */
+  CHANNEL_FLAG_MANAGED_BY_GC = 4,  /* Free and close using GC finalization. */
+  /* Note: For backwards-compatibility, channels without the flag
+     CHANNEL_FLAG_MANAGED_BY_GC can be used inside single-threaded
+     programs without locking. As a consequence, using such a channel
+     from an asynchronous callback can result in deadlocks. */
+  CHANNEL_TEXT_MODE = 8, /* "Text mode" for Windows and Cygwin */
+  CHANNEL_FLAG_UNBUFFERED = 16     /* Unbuffered (for output channels only) */
 };
 
 /* For an output channel:
@@ -62,9 +76,11 @@ enum {
 
 /* Creating and closing channels from C */
 
-CAMLextern struct channel * caml_open_descriptor_in (int);
-CAMLextern struct channel * caml_open_descriptor_out (int);
 CAMLextern void caml_close_channel (struct channel *);
+CAMLalloc(caml_close_channel, 1) CAMLreturns_nonnull()
+CAMLextern struct channel * caml_open_descriptor_in (int);
+CAMLalloc(caml_close_channel, 1) CAMLreturns_nonnull()
+CAMLextern struct channel * caml_open_descriptor_out (int);
 CAMLextern file_offset caml_channel_size (struct channel *);
 CAMLextern void caml_seek_in (struct channel *, file_offset);
 CAMLextern void caml_seek_out (struct channel *, file_offset);
@@ -79,10 +95,11 @@ CAMLextern int caml_channel_binary_mode (struct channel *);
 
 CAMLextern int caml_flush_partial (struct channel *);
 CAMLextern void caml_flush (struct channel *);
+CAMLextern void caml_flush_if_unbuffered (struct channel *);
 CAMLextern void caml_putch(struct channel *, int);
 CAMLextern void caml_putword (struct channel *, uint32_t);
-CAMLextern int caml_putblock (struct channel *, char *, intnat);
-CAMLextern void caml_really_putblock (struct channel *, char *, intnat);
+CAMLextern int caml_putblock (struct channel *, const char *, intnat);
+CAMLextern void caml_really_putblock (struct channel *, const char *, intnat);
 
 CAMLextern unsigned char caml_refill (struct channel *);
 CAMLextern unsigned char caml_getch(struct channel *);
@@ -96,19 +113,17 @@ CAMLextern intnat caml_really_getblock (struct channel *, char *, intnat);
 
 /* The locking machinery */
 
-CAMLextern void (*caml_channel_mutex_free) (struct channel *);
-CAMLextern void (*caml_channel_mutex_lock) (struct channel *);
-CAMLextern void (*caml_channel_mutex_unlock) (struct channel *);
-CAMLextern void (*caml_channel_mutex_unlock_exn) (void);
+CAMLextern void caml_channel_lock(struct channel *);
+CAMLextern void caml_channel_unlock(struct channel *);
+
+/* Lock and Unlock are compatibility aliases for OCaml<5.2.
+   Remove whenever 5.2 is old enough. (See #12792.) */
+#define Lock(channel) caml_channel_lock(channel)
+#define Unlock(channel) caml_channel_unlock(channel)
+
+CAMLextern void caml_channel_cleanup_on_raise(void);
 
 CAMLextern struct channel * caml_all_opened_channels;
-
-#define Lock(channel) \
-  if (caml_channel_mutex_lock != NULL) (*caml_channel_mutex_lock)(channel)
-#define Unlock(channel) \
-  if (caml_channel_mutex_unlock != NULL) (*caml_channel_mutex_unlock)(channel)
-#define Unlock_exn() \
-  if (caml_channel_mutex_unlock_exn != NULL) (*caml_channel_mutex_unlock_exn)()
 
 /* Conversion between file_offset and int64_t */
 
@@ -118,6 +133,8 @@ CAMLextern struct channel * caml_all_opened_channels;
 /* Primitives required by the Unix library */
 CAMLextern value caml_ml_open_descriptor_in(value fd);
 CAMLextern value caml_ml_open_descriptor_out(value fd);
+CAMLextern value caml_ml_open_descriptor_in_with_flags(int fd, int flags);
+CAMLextern value caml_ml_open_descriptor_out_with_flags(int fd, int flags);
 
 #endif /* CAML_INTERNALS */
 

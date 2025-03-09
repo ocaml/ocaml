@@ -172,7 +172,7 @@ phrase:
 ;
 fundecl:
     LPAREN FUNCTION fun_name LPAREN params RPAREN sequence RPAREN
-      { List.iter (fun (id, ty) -> unbind_ident id) $5;
+      { List.iter (fun (id, _ty) -> unbind_ident id) $5;
         {fun_name = $3; fun_args = $5; fun_body = $7;
          fun_codegen_options =
            if Config.flambda then [
@@ -180,6 +180,7 @@ fundecl:
              No_CSE;
            ]
            else [ Reduce_code_size ];
+         fun_poll = Lambda.Default_poll;
          fun_dbg = debuginfo ()} }
 ;
 fun_name:
@@ -255,19 +256,27 @@ expr:
                 { unbind_ident $5; Ctrywith($3, $5, $6, debuginfo ()) }
   | LPAREN VAL expr expr RPAREN
       { let open Asttypes in
-        Cop(Cload (Word_val, Mutable), [access_array $3 $4 Arch.size_addr],
+        Cop(Cload {memory_chunk=Word_val;
+                   mutability=Mutable;
+                   is_atomic=false}, [access_array $3 $4 Arch.size_addr],
           debuginfo ()) }
   | LPAREN ADDRAREF expr expr RPAREN
       { let open Asttypes in
-        Cop(Cload (Word_val, Mutable), [access_array $3 $4 Arch.size_addr],
+        Cop(Cload {memory_chunk=Word_val;
+                   mutability=Mutable;
+                   is_atomic=false}, [access_array $3 $4 Arch.size_addr],
           Debuginfo.none) }
   | LPAREN INTAREF expr expr RPAREN
       { let open Asttypes in
-        Cop(Cload (Word_int, Mutable), [access_array $3 $4 Arch.size_int],
+        Cop(Cload {memory_chunk=Word_int;
+                   mutability=Mutable;
+                   is_atomic=false}, [access_array $3 $4 Arch.size_int],
           Debuginfo.none) }
   | LPAREN FLOATAREF expr expr RPAREN
       { let open Asttypes in
-        Cop(Cload (Double, Mutable), [access_array $3 $4 Arch.size_float],
+        Cop(Cload {memory_chunk=Double;
+                   mutability=Mutable;
+                   is_atomic=false}, [access_array $3 $4 Arch.size_float],
           Debuginfo.none) }
   | LPAREN ADDRASET expr expr expr RPAREN
       { let open Lambda in
@@ -323,7 +332,9 @@ chunk:
   | VAL                         { Word_val }
 ;
 unaryop:
-    LOAD chunk                  { Cload ($2, Asttypes.Mutable) }
+    LOAD chunk                  { Cload {memory_chunk=$2;
+                                         mutability=Asttypes.Mutable;
+                                         is_atomic=false} }
   | FLOATOFINT                  { Cfloatofint }
   | INTOFFLOAT                  { Cintoffloat }
   | RAISE                       { Craise $1 }

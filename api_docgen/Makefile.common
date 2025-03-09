@@ -12,11 +12,10 @@
 #*   special exception on linking described in the file LICENSE.          *
 #*                                                                        *
 #**************************************************************************
-ROOTDIR = ..
 DOCGEN= $(ROOTDIR)/api_docgen
 
--include $(ROOTDIR)/stdlib/StdlibModules
 include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/stdlib/StdlibModules
 include $(ROOTDIR)/Makefile.best_binaries
 include $(DOCGEN)/Makefile.docfiles
 
@@ -24,13 +23,12 @@ DOC_COMPILERLIBS_DIRS= $(addprefix $(ROOTDIR)/,\
   parsing utils typing bytecomp driver file_formats lambda)
 
 DOC_STDLIB_DIRS = $(addprefix $(ROOTDIR)/, stdlib \
-  otherlibs/str otherlibs/$(UNIXLIB) otherlibs/dynlink \
-  otherlibs/systhreads)
+  $(addprefix otherlibs/,$(ALL_OTHERLIBS)))
 
 .PHONY: all
 all: html pdf man
 
-DIRS = $(addprefix build/,libref compilerlibref man latex texi \
+DIRS = build/ $(addprefix build/,libref compilerlibref man latex texi \
   html html/libref html/compilerlibref)
 
 $(DIRS):
@@ -43,14 +41,13 @@ html:
 build/latex/alldoc.pdf: build/latex/stdlib_input.tex \
   build/latex/compilerlibs_input.tex | build/latex/ifocamldoc.tex
 
-$(DOCGEN)/build/Compiler_libs.mld: $(DOCGEN)/Compiler_libs.pre.mld
-	cp $< $@ && echo "{!modules:$(compilerlibref_C)}" >> $@
+build/Compiler_libs.mld: $(DOCGEN)/Compiler_libs.pre.mld | build/
+	$(V_GEN)cp $< $@ && echo "{!modules:$(compilerlibref_C)}" >> $@
 
 build/latex/ifocamldoc.tex: $(ROOTDIR)/Makefile.config | build/latex
 
 build/latex/alldoc.tex:$(DOCGEN)/alldoc.tex | build/latex
-	cp $< $@
+	$(V_GEN)cp $< $@
 
-$(compilerlibref_TEXT:%=build/%.mld) $(libref_TEXT:%=build/%.mld): \
-build/%.mld:$(DOCGEN)/%.mld
-	cp $< $@
+build/%.mld: $(DOCGEN)/%.mld | build/
+	$(V_GEN)cp $< $@

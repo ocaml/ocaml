@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let is_even x = (x mod 2 = 0)
 
@@ -62,6 +61,29 @@ let () =
 
   assert (List.filteri (fun i _ -> i < 2) (List.rev l) = [9; 8]);
 
+  let hello = ['H';'e';'l';'l';'o'] in
+  let world = ['W';'o';'r';'l';'d';'!'] in
+  let hello_world = hello @ [' '] @ world in
+  assert (List.take 5 hello_world = hello);
+  assert (List.take 3 [1; 2; 3; 4; 5] = [1; 2; 3]);
+  assert (List.take 3 [1; 2] = [1; 2]);
+  assert (List.take 3 [] = []);
+  assert ((try List.take (-1) [1; 2] with Invalid_argument _ -> [999]) = [999]);
+  assert (List.take 0 [1; 2] = []);
+  assert (List.drop 6 hello_world = world);
+  assert (List.drop 3 [1; 2; 3; 4; 5] = [4; 5]);
+  assert (List.drop 3 [1; 2] = []);
+  assert (List.drop 3 [] = []);
+  assert ((try List.drop (-1) [1; 2] with Invalid_argument _ -> [999]) = [999]);
+  assert (List.drop 0 [1; 2] = [1; 2]);
+  assert (List.take_while (fun x -> x < 3) [1; 2; 3; 4; 1; 2; 3; 4]
+          = [1; 2]);
+  assert (List.take_while (fun x -> x < 9) [1; 2; 3] = [1; 2; 3]);
+  assert (List.take_while (fun x -> x < 0) [1; 2; 3] = []);
+  assert (List.drop_while (fun x -> x < 3) [1; 2; 3; 4; 5; 1; 2; 3]
+          = [3; 4; 5; 1; 2; 3]);
+  assert (List.drop_while (fun x -> x < 9) [1; 2; 3] = []);
+  assert (List.drop_while (fun x -> x < 0) [1; 2; 3] = [1; 2; 3]);
   assert (List.partition is_even [1; 2; 3; 4; 5]
           = ([2; 4], [1; 3; 5]));
   assert (List.partition_map string_of_even_or_int [1; 2; 3; 4; 5]
@@ -82,6 +104,10 @@ let () =
   assert (List.compare_length_with [1] 0 > 0);
   assert (List.compare_length_with ['1'] 1 = 0);
   assert (List.compare_length_with ['1'] 2 < 0);
+
+  assert (List.is_empty []);
+  assert (not (List.is_empty [1]));
+
   assert (List.filter_map string_of_even_opt l = ["0";"2";"4";"6";"8"]);
   assert (List.concat_map (fun i -> [i; i+1]) [1; 5] = [1; 2; 5; 6]);
   assert (
@@ -92,6 +118,28 @@ let () =
   assert (
     let f a b = a + b, string_of_int b in
     List.fold_left_map f 0 l = (45, sl));
+
+  (* [find_index] *)
+  assert (List.find_index (fun x -> x=1) [] = None);
+  let xs = [1;2;3;4;5] in
+  assert (List.find_index (fun x -> x=1) xs = Some 0);
+  assert (List.find_index (fun x -> x=3) xs = Some 2);
+  assert (List.find_index (fun x -> x=5) xs = Some 4);
+  assert (List.find_index (fun x -> x=6) xs = None);
+
+  (* [find_mapi] *)
+  assert (List.find_mapi
+    (fun i x -> if x+i=3 then Some(i, x) else None) [] = None);
+  let xs = [3;3;3;42;42] in
+  assert (List.find_mapi
+    (fun i x -> if x+i=3 then Some(i, x) else None) xs = Some (0, 3));
+  assert (List.find_mapi
+    (fun i x -> if x+i=4 then Some(i, x) else None) xs = Some (1, 3));
+  assert (List.find_mapi
+    (fun i x -> if x+i=5 then Some(i, x) else None) xs = Some (2, 3));
+  assert (List.find_mapi
+    (fun i x -> if x+i=7 then Some(i, x) else None) xs = None);
+
   ()
 ;;
 

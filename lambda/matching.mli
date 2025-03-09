@@ -28,6 +28,10 @@ val for_trywith:
         scopes:scopes -> Location.t ->
         lambda -> (pattern * lambda) list ->
         lambda
+val for_handler:
+        scopes:scopes -> Location.t ->
+        lambda -> lambda -> lambda -> (pattern * lambda) list ->
+        lambda
 val for_let:
         scopes:scopes -> Location.t ->
         lambda -> pattern -> lambda ->
@@ -41,6 +45,22 @@ val for_tupled_function:
         scopes:scopes -> Location.t ->
         Ident.t list -> (pattern list * lambda) list -> partial ->
         lambda
+
+(** [for_optional_arg_default pat body ~default_arg ~param] is:
+
+   {[
+     let $pat =
+       match $param with
+       | Some x -> x
+       | None -> $default_arg
+     in
+     $body
+   ]}
+*)
+val for_optional_arg_default:
+  scopes:scopes -> Location.t ->
+  pattern -> default_arg:lambda -> param:Ident.t -> lambda ->
+  lambda
 
 exception Cannot_flatten
 

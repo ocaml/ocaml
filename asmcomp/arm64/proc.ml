@@ -1,3 +1,4 @@
+# 2 "asmcomp/arm64/proc.ml"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -22,10 +23,6 @@ open Cmm
 open Reg
 open Arch
 open Mach
-
-(* Instruction selection *)
-
-let word_addressed = false
 
 (* Registers available for register allocation *)
 
@@ -107,6 +104,8 @@ let stack_slot slot ty =
 
 (* Calling conventions *)
 
+let size_domainstate_args = 64 * size_int
+
 let loc_int last_int make_stack int ofs =
   if !int <= last_int then begin
     let l = phys_reg !int in
@@ -138,11 +137,11 @@ let loc_int32 last_int make_stack int ofs =
   end
 
 let calling_conventions
-    first_int last_int first_float last_float make_stack arg =
+    first_int last_int first_float last_float make_stack first_stack arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
-  let ofs = ref 0 in
+  let ofs = ref first_stack in
   for i = 0 to Array.length arg - 1 do
     match arg.(i) with
     | Val | Int | Addr ->
@@ -150,31 +149,40 @@ let calling_conventions
     | Float ->
         loc.(i) <- loc_float last_float make_stack float ofs
   done;
-  (loc, Misc.align !ofs 16)  (* keep stack 16-aligned *)
+  (loc, Misc.align (max 0 !ofs) 16)  (* keep stack 16-aligned *)
 
-let incoming ofs = Incoming ofs
-let outgoing ofs = Outgoing ofs
+let incoming ofs =
+  if ofs >= 0
+  then Incoming ofs
+  else Domainstate (ofs + size_domainstate_args)
+let outgoing ofs =
+  if ofs >= 0
+  then Outgoing ofs
+  else Domainstate (ofs + size_domainstate_args)
 let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
 (* OCaml calling convention:
      first integer args in r0...r15
      first float args in d0...d15
-     remaining args on stack.
+     remaining args in domain state area, then on stack.
    Return values in r0...r15 or d0...d15. *)
 
-let max_arguments_for_tailcalls = 16
+let max_arguments_for_tailcalls = 16 (* in regs *) + 64 (* in domain state *)
+
 let last_int_register = if macosx then 7 else 15
 
 let loc_arguments arg =
-  calling_conventions 0 last_int_register 100 115 outgoing arg
+  calling_conventions 0 last_int_register 100 115
+                      outgoing (- size_domainstate_args) arg
 let loc_parameters arg =
   let (loc, _) =
-    calling_conventions 0 last_int_register 100 115 incoming arg
+    calling_conventions 0 last_int_register 100 115
+                        incoming (- size_domainstate_args) arg
   in
   loc
 let loc_results res =
   let (loc, _) =
-    calling_conventions 0 last_int_register 100 115 not_supported res
+    calling_conventions 0 last_int_register 100 115 not_supported 0 res
   in
   loc
 
@@ -208,7 +216,7 @@ let loc_external_arguments ty_args =
   external_calling_conventions 0 7 100 107 outgoing ty_args
 
 let loc_external_results res =
-  let (loc, _) = calling_conventions 0 1 100 100 not_supported res in loc
+  let (loc, _) = calling_conventions 0 1 100 100 not_supported 0 res in loc
 
 let loc_exn_bucket = phys_reg 0
 
@@ -237,29 +245,27 @@ let dwarf_register_numbers ~reg_class =
 
 let stack_ptr_dwarf_register_number = 31
 
-(* Volatile registers: none *)
-
-let regs_are_volatile _rs = false
-
 (* Registers destroyed by operations *)
 
-let destroyed_at_c_call =
-  (* x19-x28, d8-d15 preserved *)
+let destroyed_at_c_noalloc_call =
+  (* x20-x28, d8-d15 preserved *)
   Array.of_list (List.map phys_reg
-    [0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;
+    [0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;
      100;101;102;103;104;105;106;107;
      116;117;118;119;120;121;122;123;
      124;125;126;127;128;129;130;131])
 
 let destroyed_at_oper = function
-  | Iop(Icall_ind | Icall_imm _) | Iop(Iextcall { alloc = true; }) ->
+  | Iop(Icall_ind | Icall_imm _) ->
       all_phys_regs
-  | Iop(Iextcall { alloc = false; }) ->
-      destroyed_at_c_call
-  | Iop(Ialloc _) ->
+  | Iop(Iextcall {alloc; stack_ofs; }) ->
+      assert (stack_ofs >= 0);
+      if alloc || stack_ofs > 0 then all_phys_regs
+      else destroyed_at_c_noalloc_call
+  | Iop(Ialloc _) | Iop(Ipoll _) ->
       [| reg_x8 |]
   | Iop( Iintoffloat | Ifloatofint
-       | Iload(Single, _, _) | Istore(Single, _, _)) ->
+       | Iload{memory_chunk=Single; _} | Istore(Single, _, _)) ->
       [| reg_d7 |]            (* d7 / s7 destroyed *)
   | _ -> [||]
 
@@ -271,24 +277,15 @@ let destroyed_at_reloadretaddr = [| |]
 
 let safe_register_pressure = function
   | Iextcall _ -> 7
-  | Ialloc _ -> 22
+  | Ialloc _ | Ipoll _ -> 22
   | _ -> 23
 
 let max_register_pressure = function
   | Iextcall _ -> [| 7; 8 |]  (* 7 integer callee-saves, 8 FP callee-saves *)
-  | Ialloc _ -> [| 22; 32 |]
+  | Ialloc _ | Ipoll _ -> [| 22; 32 |]
   | Iintoffloat | Ifloatofint
-  | Iload(Single, _, _) | Istore(Single, _, _) -> [| 23; 31 |]
+  | Iload{memory_chunk=Single; _} | Istore(Single, _, _) -> [| 23; 31 |]
   | _ -> [| 23; 32 |]
-
-(* Layout of the stack *)
-let frame_required fd =
-  fd.fun_contains_calls
-    || fd.fun_num_stack_slots.(0) > 0
-    || fd.fun_num_stack_slots.(1) > 0
-
-let prologue_required fd =
-  frame_required fd
 
 (* Calling the assembler *)
 

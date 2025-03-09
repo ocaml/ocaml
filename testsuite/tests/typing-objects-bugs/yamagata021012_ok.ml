@@ -1,8 +1,8 @@
 (* TEST
-flags = " -w -a "
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-*** check-ocamlc.byte-output
+ flags = " -w -a ";
+ setup-ocamlc.byte-build-env;
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)
 
 (* The module begins *)
@@ -114,10 +114,10 @@ let get_buf s i =
 let set_buf s i u =
   let n = UChar.uint_code u in
   begin
-    s.[i] <- Char.chr (n lsr 24);
-    s.[i + 1] <- Char.chr (n lsr 16 lor 0xff);
-    s.[i + 2] <- Char.chr (n lsr 8 lor 0xff);
-    s.[i + 3] <- Char.chr (n lor 0xff);
+    Bytes.set s i (Char.chr (n lsr 24));
+    Bytes.set s (i + 1) (Char.chr (n lsr 16 lor 0xff));
+    Bytes.set s (i + 2) (Char.chr (n lsr 8 lor 0xff));
+    Bytes.set s (i + 3) (Char.chr (n lor 0xff));
   end
 
 let init_buf buf pos init =
@@ -129,7 +129,7 @@ let init_buf buf pos init =
   set_buf buf (pos + (init#len - 1) lsl 2) (cur#get)
 
 let make_buf init =
-  let s = String.create (init#len lsl 2) in
+  let s = Bytes.create (init#len lsl 2) in
   init_buf s 0 init; s
 
 class text_raw buf =
@@ -170,12 +170,12 @@ class string init = string_raw (make_buf init)
 let of_string s =
   let buf = Bytes.make (4 * String.length s) '\000' in
   for i = 0 to String.length s - 1 do
-    buf.[4 * i] <- s.[i]
+    Bytes.set buf (4 * i) s.[i]
   done;
   new text_raw buf
 
 let make len u =
-  let s = String.create (4 * len) in
+  let s = Bytes.create (4 * len) in
   for i = 0 to len - 1 do set_buf s (4 * i) u done;
   new string_raw s
 

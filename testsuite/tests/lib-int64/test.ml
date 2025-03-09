@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let test_consts () =
   assert (Int64.zero = 0L);

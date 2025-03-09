@@ -15,7 +15,7 @@
 #*                                                                        *
 #**************************************************************************
 
-# This file must be self-contained.
+# This file should be included after Makefile.common
 
 # This file lists all standard library modules. It is used by:
 # 1. stdlib/Makefile when building stdlib.cma
@@ -33,31 +33,98 @@
 
 # Basenames of the source files for the standard library (i.e. unprefixed and
 # with lowercase first letters). These must be listed in dependency order.
-STDLIB_MODULE_BASENAMES=\
-  camlinternalFormatBasics camlinternalAtomic \
-  stdlib pervasives seq option either result bool char uchar \
-  sys list int bytes string unit marshal obj array float int32 int64 nativeint \
-  lexing parsing set map stack queue camlinternalLazy lazy stream buffer \
-  camlinternalFormat printf arg atomic \
-  printexc fun gc digest random hashtbl weak \
-  format scanf callback camlinternalOO oo camlinternalMod genlex ephemeron \
-  filename complex arrayLabels listLabels bytesLabels stringLabels moreLabels \
-  stdLabels bigarray
+STDLIB_MODULE_BASENAMES = \
+  camlinternalFormatBasics \
+  stdlib \
+  either \
+  sys \
+  obj \
+  type \
+  atomic \
+  camlinternalLazy \
+  lazy \
+  seq \
+  option \
+  pair \
+  result \
+  bool \
+  char \
+  uchar \
+  list \
+  int \
+  array \
+  iarray \
+  bytes \
+  string \
+  unit \
+  marshal \
+  float \
+  int32 \
+  int64 \
+  nativeint \
+  lexing \
+  parsing \
+  set \
+  map \
+  stack \
+  queue \
+  buffer \
+  mutex \
+  condition \
+  semaphore \
+  domain \
+  camlinternalFormat \
+  printf \
+  arg \
+  printexc \
+  fun \
+  gc \
+  in_channel \
+  out_channel \
+  digest \
+  bigarray \
+  random \
+  hashtbl \
+  weak \
+  format \
+  scanf \
+  callback \
+  camlinternalOO \
+  oo \
+  camlinternalMod \
+  dynarray \
+  pqueue \
+  ephemeron \
+  filename \
+  complex \
+  arrayLabels \
+  listLabels \
+  bytesLabels \
+  stringLabels \
+  moreLabels \
+  stdLabels \
+  effect
 
-STDLIB_PREFIXED_MODULES=\
+STDLIB_PREFIXED_MODULES = \
   $(filter-out stdlib camlinternal%, $(STDLIB_MODULE_BASENAMES))
 
-define add_stdlib_prefix_first
-$(shell echo $1 | cut -c1 | tr '[:lower:]' '[:upper:]')
-endef
+# $(STDLIB_MODULES) applies the PREFIX_MODULE macro to each item in
+# $(STDLIB_MODULE_BASENAMES). For the names which require prefixing, this is
+# done using CAPITALIZE. CAPITALIZE is a recursive macro taking the name to
+# transform and a list of transformations to apply to the beginning of the name,
+# thus $(call CAPITALIZE, string, ... r R s S t T ...) expands to String.
+CAPITALIZE = \
+  $(strip $(if $(firstword $(2)), \
+    $(call CAPITALIZE, $(patsubst $(word 1, $(2))%, $(word 2, $(2))%, $(1)), \
+      $(wordlist 3, $(words $(2)), $(2))), \
+    $(1)))
 
-# add stdlib__ as prefix to a module except for internal modules
-# and the stdlib module itself
-define add_stdlib_prefix
-  $(or $(filter-out $(STDLIB_PREFIXED_MODULES), $1), \
-    stdlib__$(call add_stdlib_prefix_first,$1)$(shell echo $1 | cut -c2-))
-endef
+PREFIX_MODULE = \
+  $(if $(filter stdlib camlinternal%, $(1)), \
+    $(1), \
+    stdlib__$(call CAPITALIZE, $(1), \
+                         a A b B c C d D e E f F g G h H i I j J k K l L m M \
+                         n N o O p P q Q r R s S t T u U v V w W x X y Y z Z))
 
-STDLIB_MODULES:=\
-  $(foreach module, $(STDLIB_MODULE_BASENAMES), \
-    $(call add_stdlib_prefix,$(module)))
+STDLIB_MODULES = $(strip \
+  $(foreach name, $(STDLIB_MODULE_BASENAMES), $(call PREFIX_MODULE, $(name))))

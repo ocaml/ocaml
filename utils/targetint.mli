@@ -83,7 +83,8 @@ val pred : t -> t
    [Targetint.pred x] is [Targetint.sub x Targetint.one]. *)
 
 val abs : t -> t
-(** Return the absolute value of its argument. *)
+(** [abs x] is the absolute value of [x]. On [min_int] this
+   is [min_int] itself and thus remains negative. *)
 
 val size : int
 (** The size in bits of a target native integer. *)

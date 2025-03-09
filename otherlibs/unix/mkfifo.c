@@ -19,23 +19,24 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifdef HAS_MKFIFO
 
-CAMLprim value unix_mkfifo(value path, value mode)
+CAMLprim value caml_unix_mkfifo(value path, value vmode)
 {
-  CAMLparam2(path, mode);
+  CAMLparam2(path, vmode);
   char * p;
   int ret;
+  int mode = Int_val(vmode);
   caml_unix_check_path(path, "mkfifo");
   p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
-  ret = mkfifo(p, Int_val(mode));
+  ret = mkfifo(p, mode);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
-    uerror("mkfifo", path);
+    caml_uerror("mkfifo", path);
   CAMLreturn(Val_unit);
 }
 
@@ -46,25 +47,26 @@ CAMLprim value unix_mkfifo(value path, value mode)
 
 #ifdef S_IFIFO
 
-CAMLprim value unix_mkfifo(value path, value mode)
+CAMLprim value caml_unix_mkfifo(value path, value vmode)
 {
-  CAMLparam2(path, mode);
+  CAMLparam2(path, vmode);
   char * p;
   int ret;
+  int mode = Int_val(vmode);
   caml_unix_check_path(path, "mkfifo");
   p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
-  ret = mknod(p, (Int_val(mode) & 07777) | S_IFIFO, 0);
+  ret = mknod(p, (mode & 07777) | S_IFIFO, 0);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
-    uerror("mkfifo", path);
+    caml_uerror("mkfifo", path);
   CAMLreturn(Val_unit);
 }
 
 #else
 
-CAMLprim value unix_mkfifo(value path, value mode)
+CAMLprim value caml_unix_mkfifo(value path, value mode)
 {
   caml_invalid_argument("mkfifo not implemented");
 }

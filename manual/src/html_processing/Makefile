@@ -1,3 +1,6 @@
+ROOTDIR = ../../..
+include $(ROOTDIR)/Makefile.config_if_required
+
 DUNE_CMD := $(if $(wildcard dune/dune.exe),dune/dune.exe,dune)
 DUNE ?= $(DUNE_CMD)
 
@@ -8,9 +11,11 @@ else
     DBG=quiet
 endif
 
+VERSION := $(OCAML_VERSION_MAJOR).$(OCAML_VERSION_MINOR)
+
 WEBDIR = ../webman
-WEBDIRMAN = $(WEBDIR)/manual
-WEBDIRAPI = $(WEBDIR)/api
+WEBDIRMAN = $(WEBDIR)/$(VERSION)
+WEBDIRAPI = $(WEBDIRMAN)/api
 WEBDIRCOMP = $(WEBDIRAPI)/compilerlibref
 
 # The "all" target generates the Web Manual in the directories
@@ -26,7 +31,7 @@ $(WEBDIR)/%:
 $(WEBDIRMAN)/manual.css: scss/_common.scss scss/manual.scss | $(WEBDIRMAN)
 	sass scss/manual.scss > $(WEBDIRMAN)/manual.css
 
-$(WEBDIRAPI)/style.css: scss/_common.scss scss/style.scss | $(WEBDIRAPI)
+$(WEBDIRAPI)/style.css: scss/_common.scss scss/style.scss | $(WEBDIRAPI) $(WEBDIRCOMP)
 	sass scss/style.scss > $(WEBDIRAPI)/style.css
 	cp $(WEBDIRAPI)/style.css $(WEBDIRCOMP)/style.css
 
@@ -50,29 +55,27 @@ $(WEBDIRCOMP)/%.js: js/%.js | $(WEBDIRCOMP)
 
 js: $(JS_FILES)
 
+CURL = curl -s
 # download images for local use
-SEARCH := search_icon.svg
-$(WEBDIRAPI)/search_icon.svg: | $(WEBDIRAPI)
-	curl "https://ocaml.org/img/search.svg" > $(WEBDIRAPI)/$(SEARCH)
 
 $(WEBDIRCOMP)/%: $(WEBDIRAPI)/% | $(WEBDIRCOMP)
 	cp $< $@
 
-$(WEBDIRMAIN)/%: $(WEBDIRAPI/% | $(WEBDIRAPI)
+$(WEBDIRMAN)/%: $(WEBDIRAPI)/% | $(WEBDIRMAN)
 	cp $< $@
 
 LOGO := colour-logo.svg
 $(WEBDIRAPI)/colour-logo.svg: | $(WEBDIRAPI) $(WEBDIRMAN) $(WEBDIRCOMP)
-	curl "https://raw.githubusercontent.com/ocaml/ocaml-logo/master/Colour/SVG/colour-logo.svg" > $(WEBDIRAPI)/$(LOGO)
+	$(CURL) "https://raw.githubusercontent.com/ocaml/ocaml-logo/master/Colour/SVG/colour-logo.svg" > $(WEBDIRAPI)/$(LOGO)
 
 ICON := favicon.ico
 $(WEBDIRAPI)/favicon.ico: | $(WEBDIRAPI) $(WEBDIRMAN) $(WEBDIRCOMP)
-	curl "https://raw.githubusercontent.com/ocaml/ocaml-logo/master/Colour/Favicon/32x32.ico" > $(WEBDIRAPI)/$(ICON)
+	$(CURL) "https://raw.githubusercontent.com/ocaml/ocaml-logo/master/Colour/Favicon/32x32.ico" > $(WEBDIRAPI)/$(ICON)
 
 IMG_FILES0 := colour-logo.svg
-IMG_FILES := $(addprefix $(WEBDIRAPI)/, $(IMG_FILES0)) $(addprefix $(WEBDIRCOMP)/, $(IMG_FILES0)) $(addprefix $(WEBDIRMAN)/, $(IMG_FILES0)) 
+IMG_FILES := $(addprefix $(WEBDIRAPI)/, $(IMG_FILES0)) $(addprefix $(WEBDIRCOMP)/, $(IMG_FILES0)) $(addprefix $(WEBDIRMAN)/, $(IMG_FILES0))
 
-img: $(WEBDIRAPI)/search_icon.svg $(WEBDIRAPI)/favicon.ico $(WEBDIRCOMP)/search_icon.svg $(WEBDIRCOMP)/favicon.ico $(IMG_FILES)
+img: $(WEBDIRAPI)/favicon.ico $(WEBDIRCOMP)/favicon.ico $(IMG_FILES)
 
 clean:
 	rm -rf $(WEBDIR) src/.merlin _build
@@ -81,17 +84,21 @@ clean:
 distclean:: clean
 
 distclean::
+	rm -f src/common.ml
+
+distclean::
 	rm -rf .sass-cache
 
 # We need Dune and Lambda Soup; Markup.ml and Uutf are dependencies
-DUNE_TAG = 2.6.2
-LAMBDASOUP_TAG = 0.7.1
-MARKUP_TAG = 0.8.2
-UUTF_TAG = v1.0.2
-RE_TAG = 1.9.0
+DUNE_TAG = 3.4.0
+LAMBDASOUP_TAG = 500
+MARKUP_TAG = 1.0.3
+UUTF_TAG = v1.0.3
+RE_TAG = 1.10.4
+CAMLP_STREAMS_TAG = v5.0.1
 
 # Duniverse rules - set-up dune and the dependencies in-tree for CI
-duniverse: dune/dune.exe re markup.ml uutf lambdasoup
+duniverse: dune/dune.exe re markup.ml uutf lambdasoup camlp-streams
 
 dune/dune.exe: dune
 	cd dune; ocaml bootstrap.ml
@@ -108,12 +115,13 @@ distclean::
 re:
 	git clone https://github.com/ocaml/ocaml-re.git -n -o upstream
 	cd ocaml-re; $(GIT_CHECKOUT) $(RE_TAG)
+	sed -i.bak -e '/(libraries seq)/d' ocaml-re/lib/dune
 
 distclean::
 	rm -rf ocaml-re
 
 lambdasoup:
-	git clone https://github.com/aantron/lambdasoup.git -n -o upstream
+	git clone https://github.com/dra27/lambdasoup.git -n -o dra27
 	cd lambdasoup; $(GIT_CHECKOUT) $(LAMBDASOUP_TAG)
 
 distclean::
@@ -137,5 +145,12 @@ uutf:
 
 distclean::
 	rm -rf uutf
+
+camlp-streams:
+	git clone https://github.com/ocaml/camlp-streams.git -n -o upstream
+	cd camlp-streams; $(GIT_CHECKOUT) $(CAMLP_STREAMS_TAG)
+
+distclean::
+	rm -rf camlp-streams
 
 .PHONY: css js img duniverse

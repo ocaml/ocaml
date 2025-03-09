@@ -17,7 +17,7 @@
 
    This module implements buffers that automatically expand
    as necessary.  It provides accumulative concatenation of strings
-   in quasi-linear time (instead of quadratic time when strings are
+   in linear time (instead of quadratic time when strings are
    concatenated pairwise). For example:
 
 {[
@@ -28,6 +28,18 @@
 
 ]}
 
+*)
+
+(** {b Unsynchronized accesses} *)
+
+[@@@alert unsynchronized_access
+    "Unsynchronized accesses to buffers are a programming error."
+]
+
+ (**
+    Unsynchronized accesses to a buffer may lead to an invalid buffer state.
+    Thus, concurrent accesses to a buffer must be synchronized (for instance
+    with a {!Mutex.t}).
 *)
 
 type t
@@ -98,7 +110,7 @@ val truncate : t -> int -> unit
 (** [truncate b len] truncates the length of [b] to [len]
   Note: the internal byte sequence is not shortened.
   @raise Invalid_argument if [len < 0] or [len > length b].
-  @since 4.05.0 *)
+  @since 4.05 *)
 
 (** {1 Appending} *)
 
@@ -113,21 +125,21 @@ val add_utf_8_uchar : t -> Uchar.t -> unit
 (** [add_utf_8_uchar b u] appends the {{:https://tools.ietf.org/html/rfc3629}
     UTF-8} encoding of [u] at the end of buffer [b].
 
-    @since 4.06.0 *)
+    @since 4.06 *)
 
 val add_utf_16le_uchar : t -> Uchar.t -> unit
 (** [add_utf_16le_uchar b u] appends the
     {{:https://tools.ietf.org/html/rfc2781}UTF-16LE} encoding of [u]
     at the end of buffer [b].
 
-    @since 4.06.0 *)
+    @since 4.06 *)
 
 val add_utf_16be_uchar : t -> Uchar.t -> unit
 (** [add_utf_16be_uchar b u] appends the
     {{:https://tools.ietf.org/html/rfc2781}UTF-16BE} encoding of [u]
     at the end of buffer [b].
 
-    @since 4.06.0 *)
+    @since 4.06 *)
 
 val add_string : t -> string -> unit
 (** [add_string b s] appends the string [s] at the end of buffer [b]. *)
@@ -155,18 +167,16 @@ val add_subbytes : t -> bytes -> int -> int -> unit
 val add_substitute : t -> (string -> string) -> string -> unit
 (** [add_substitute b f s] appends the string pattern [s] at the end
    of buffer [b] with substitution.
-   The substitution process looks for variables into
-   the pattern and substitutes each variable name by its value, as
+   The substitution process looks for variable references in
+   the pattern and substitutes each variable reference with its value, as
    obtained by applying the mapping [f] to the variable name. Inside the
-   string pattern, a variable name immediately follows a non-escaped
-   [$] character and is one of the following:
+   string pattern, a variable reference is a non-escaped [$] immediately
+   followed by a variable name, which is one of the following:
    - a non empty sequence of alphanumeric or [_] characters,
    - an arbitrary sequence of characters enclosed by a pair of
    matching parentheses or curly brackets.
    An escaped [$] character is a [$] that immediately follows a backslash
-   character; it then stands for a plain [$].
-   @raise Not_found if the closing character of a parenthesized variable
-   cannot be found. *)
+   character; the two characters together stand for a plain [$]. *)
 
 val add_buffer : t -> t -> unit
 (** [add_buffer b1 b2] appends the current contents of buffer [b2]
@@ -186,12 +196,14 @@ val add_channel : t -> in_channel -> int -> unit
 
 val to_seq : t -> char Seq.t
 (** Iterate on the buffer, in increasing order.
-    Modification of the buffer during iteration is undefined behavior.
+
+    The behavior is not specified if the buffer is modified during iteration.
     @since 4.07 *)
 
 val to_seqi : t -> (int * char) Seq.t
 (** Iterate on the buffer, in increasing order, yielding indices along chars.
-    Modification of the buffer during iteration is undefined behavior.
+
+    The behavior is not specified if the buffer is modified during iteration.
     @since 4.07 *)
 
 val add_seq : t -> char Seq.t -> unit

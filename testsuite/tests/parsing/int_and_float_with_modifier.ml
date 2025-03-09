@@ -1,9 +1,9 @@
-(* TEST
-   flags = "-dparsetree"
-   ocamlc_byte_exit_status = "2"
-   * setup-ocamlc.byte-build-env
-   ** ocamlc.byte
-   *** check-ocamlc.byte-output
+(* TEST_BELOW
+Filler_text_added_
+to_preserve_locations_while_tran
+slating_from_old_syntax__Filler_
+text_added_to_pre
+serve_locations_while_translati
 *)
 
 let int_with_custom_modifier =
@@ -20,3 +20,11 @@ let hex_with_modifier    = 0x32g
 
 let float_without_modifer = 1.2e3
 let float_with_modifer    = 1.2g
+
+(* TEST
+ flags = "-dparsetree";
+ ocamlc_byte_exit_status = "2";
+ setup-ocamlc.byte-build-env;
+ ocamlc.byte;
+ check-ocamlc.byte-output;
+*)

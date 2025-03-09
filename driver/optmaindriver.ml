@@ -75,7 +75,7 @@ let main argv ppf =
       | None ->
           Compenv.fatal "Please specify at most one of -pack, -a, -shared, -c, \
                          -output-obj";
-      | Some ((P.Parsing | P.Typing | P.Scheduling | P.Emit) as p) ->
+      | Some ((P.Parsing | P.Typing | P.Lambda | P.Scheduling | P.Emit) as p) ->
         assert (P.is_compilation_pass p);
         Printf.ksprintf Compenv.fatal
           "Options -i and -stop-after (%s) \
@@ -136,5 +136,6 @@ let main argv ppf =
     Location.report_exception ppf x;
     2
   | () ->
-    Profile.print Format.std_formatter !Clflags.profile_columns;
-    0
+      Compmisc.with_ppf_dump ~file_prefix:"profile"
+        (fun ppf -> Profile.print ppf !Clflags.profile_columns);
+      0

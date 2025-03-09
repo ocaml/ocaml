@@ -65,47 +65,33 @@ let implies relation from to_ =
       relation
 
 let transitive_closure state =
-  let union s1 s2 =
-    match s1, s2 with
-    | Top, _ | _, Top -> Top
-    | Implication s1, Implication s2 ->
-      Implication (Variable.Pair.Set.union s1 s2)
+  (* Depth-first search for all implications for one argument.
+     Arguments are moved from candidate to frontier, assuming
+     they are newly added to the result. *)
+  let rec loop candidate frontier result =
+    match (candidate, frontier) with
+    | ([], []) -> Implication result
+    | ([], frontier::fs) ->
+      (* Obtain fresh candidate for the frontier argument. *)
+      (match Variable.Pair.Map.find frontier state with
+       | exception Not_found -> loop [] fs result
+       | Top -> Top
+       | Implication candidate ->
+         loop (Variable.Pair.Set.elements candidate) fs result)
+    | (candidate::cs, frontier) ->
+      let result' = Variable.Pair.Set.add candidate result in
+      if result' != result then
+        (* Result change means candidate becomes part of frontier. *)
+        loop cs (candidate :: frontier) result'
+      else
+        loop cs frontier result
   in
-  let equal s1 s2 =
-    match s1, s2 with
-    | Top, Implication _ | Implication _, Top -> false
-    | Top, Top -> true
-    | Implication s1, Implication s2 -> Variable.Pair.Set.equal s1 s2
-  in
-  let update arg state =
-    let original_set =
-      try Variable.Pair.Map.find arg state with
-      | Not_found -> Implication Variable.Pair.Set.empty
-    in
-    match original_set with
-    | Top -> state
-    | Implication arguments ->
-        let set =
-          Variable.Pair.Set.fold
-            (fun orig acc->
-               let set =
-                 try Variable.Pair.Map.find orig state with
-                 | Not_found -> Implication Variable.Pair.Set.empty in
-               union set acc)
-            arguments original_set
-        in
-        Variable.Pair.Map.add arg set state
-  in
-  let once state =
-    Variable.Pair.Map.fold (fun arg _ state -> update arg state) state state
-  in
-  let rec fp state =
-    let state' = once state in
-    if Variable.Pair.Map.equal equal state state'
-    then state
-    else fp state'
-  in
-  fp state
+    Variable.Pair.Map.map
+      (fun set ->
+         match set with
+         | Top -> Top
+         | Implication set -> loop [] (Variable.Pair.Set.elements set) set)
+      state
 
 (* CR-soon pchambart: to move to Flambda_utils and document
    mshinwell: I think this calculation is basically the same as
@@ -138,7 +124,7 @@ let function_variable_alias
   in
   let fun_var_bindings = ref Variable.Map.empty in
   Variable.Map.iter (fun _ ( function_decl : Flambda.function_declaration ) ->
-      Flambda_iterators.iter_all_toplevel_immutable_let_and_let_rec_bindings
+      Flambda_iterators.iter_all_toplevel_immutable_let_bindings
         ~f:(fun var named ->
            (* CR-soon mshinwell: consider having the body passed to this
               function and using fv calculation instead of used_variables.

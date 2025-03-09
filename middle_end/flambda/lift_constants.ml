@@ -20,7 +20,6 @@ open! Int_replace_polymorphic_compare
 (* CR-someday mshinwell: move to Flambda_utils *)
 let rec tail_variable : Flambda.t -> Variable.t option = function
   | Var v -> Some v
-  | Let_rec (_, e)
   | Let_mutable { body = e }
   | Let { body = e; _ } -> tail_variable e
   | _ -> None
@@ -89,7 +88,7 @@ let assign_symbols_and_collect_constant_definitions
       | Project_closure ({ closure_id } as project_closure) ->
         assign_existing_symbol (closure_symbol ~backend  closure_id);
         record_definition (AA.Project_closure project_closure)
-      | Prim (Pfield index, [block], _) ->
+      | Prim (Pfield (index, _, _), [block], _) ->
         record_definition (AA.Field (block, index))
       | Prim (Pfield _, _, _) ->
         Misc.fatal_errorf "[Pfield] with the wrong number of arguments"
@@ -113,7 +112,7 @@ let assign_symbols_and_collect_constant_definitions
     end
   in
   let assign_symbol_program expr =
-    Flambda_iterators.iter_all_immutable_let_and_let_rec_bindings expr
+    Flambda_iterators.iter_all_immutable_let_bindings expr
       ~f:assign_symbol
   in
   Flambda_iterators.iter_exprs_at_toplevel_of_program program
@@ -997,7 +996,7 @@ let lift_constants (program : Flambda.program) ~backend =
     constant_definitions
   in
   let effect_tbl =
-    Symbol.Tbl.map effect_tbl (fun (effect, dep) -> rewrite_expr effect, dep)
+    Symbol.Tbl.map effect_tbl (fun (eff, dep) -> rewrite_expr eff, dep)
   in
   let initialize_symbol_tbl =
     Symbol.Tbl.map initialize_symbol_tbl (fun (tag, fields, dep) ->

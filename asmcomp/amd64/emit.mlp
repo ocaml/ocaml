@@ -1,4 +1,3 @@
-# 2 "asmcomp/amd64/emit.mlp"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -63,30 +62,40 @@ let cfi_endproc () =
 let cfi_adjust_cfa_offset n =
   if Config.asm_cfi_supported then D.cfi_adjust_cfa_offset n
 
+let cfi_remember_state () =
+  if Config.asm_cfi_supported then D.cfi_remember_state ()
+
+let cfi_restore_state () =
+  if Config.asm_cfi_supported then D.cfi_restore_state ()
+
+let cfi_def_cfa_register reg =
+  if Config.asm_cfi_supported then D.cfi_def_cfa_register reg
+
 let emit_debug_info dbg =
   emit_debug_info_gen dbg D.file D.loc
 
 let fp = Config.with_frame_pointers
 
+let stack_threshold_size = Config.stack_threshold * 8 (* bytes *)
+
 let frame_size env =                     (* includes return address *)
-  if env.f.fun_frame_required then begin
-    let sz =
-      (env.stack_offset
-       + 8 * (env.f.fun_num_stack_slots.(0) + env.f.fun_num_stack_slots.(1))
-       + 8
-       + (if fp then 8 else 0))
-    in Misc.align sz 16
-  end else
+  if env.f.fun_frame_required then
+    env.stack_offset
+    + 8 * (env.f.fun_num_stack_slots.(0) + env.f.fun_num_stack_slots.(1))
+    + 8
+    + (if fp then 8 else 0)
+  else
     env.stack_offset + 8
 
 let slot_offset env loc cl =
   match loc with
-  | Incoming n -> (frame_size env) + n
+  | Incoming n -> frame_size env + n
   | Local n ->
       if cl = 0
       then env.stack_offset + n * 8
       else env.stack_offset + (env.f.fun_num_stack_slots.(0) + n) * 8
   | Outgoing n -> n
+  | Domainstate _ -> assert false  (* not a stack slot *)
 
 (* Symbols *)
 
@@ -171,14 +180,18 @@ let emit_Llabel env fallthrough lbl =
 
 (* Output a pseudo-register *)
 
+let x86_data_type_for_stack_slot = function
+  | Float -> REAL8
+  | _ -> QWORD
+
 let reg env = function
   | { loc = Reg.Reg r } -> register_name r
-  | { loc = Stack s; typ = Float } as r ->
+  | { loc = Stack(Domainstate n); typ = ty } ->
+      let ofs = n + Domainstate.(idx_of_field Domain_extra_params) * 8 in
+      mem64 (x86_data_type_for_stack_slot ty) ofs R14
+  | { loc = Stack s; typ = ty } as r ->
       let ofs = slot_offset env s (register_class r) in
-      mem64 REAL8 ofs RSP
-  | { loc = Stack s } as r ->
-      let ofs = slot_offset env s (register_class r) in
-      mem64 QWORD ofs RSP
+      mem64 (x86_data_type_for_stack_slot ty) ofs RSP
   | { loc = Unknown } ->
       assert false
 
@@ -188,6 +201,7 @@ let reg64 = function
 
 let arg env i n = reg env i.arg.(n)
 let res env i n = reg env i.res.(n)
+
 (* Output a reference to the lower 8, 16 or 32 bits of a register *)
 
 let reg_low_8_name  = Array.map (fun r -> Reg8L r) int_reg_name
@@ -447,7 +461,6 @@ let emit_instr env fallthrough i =
   match i.desc with
   | Lend -> ()
   | Lprologue ->
-    assert (env.f.fun_prologue_required);
     if fp then begin
       I.push rbp;
       cfi_adjust_cfa_offset 8;
@@ -519,24 +532,30 @@ let emit_instr env fallthrough i =
           end
         end
       end
-  | Lop(Iextcall { func; alloc; }) ->
+  | Lop(Iextcall { func; alloc; stack_ofs }) ->
       add_used_symbol func;
-      if alloc then begin
+      if stack_ofs > 0 then begin
+        I.mov rsp r13;
+        I.lea (mem64 QWORD stack_ofs RSP) r12;
+        load_symbol_addr func rax;
+        emit_call "caml_c_call_stack_args";
+        record_frame env i.live (Dbg_other i.dbg);
+      end else if alloc then begin
         load_symbol_addr func rax;
         emit_call "caml_c_call";
         record_frame env i.live (Dbg_other i.dbg);
-        if system <> S_win64 then begin
-          (* TODO: investigate why such a diff.
-             This comes from:
-            http://caml.inria.fr/cgi-bin/viewvc.cgi?view=revision&revision=12664
-
-             If we do the same for Win64, we probably need to change
-             amd64nt.asm accordingly.
-          *)
-          I.mov (domain_field Domainstate.Domain_young_ptr) r15
-        end
       end else begin
-        emit_call func
+        I.mov rsp rbx;
+        cfi_remember_state ();
+        cfi_def_cfa_register "rbx";
+        (* NB: gdb has asserts on contiguous stacks that mean it
+           will not unwind through this unless we were to tag this
+           calling frame with cfi_signal_frame in its definition. *)
+        I.mov (domain_field Domainstate.Domain_c_stack) rsp;
+
+        emit_call func;
+        I.mov rbx rsp;
+        cfi_restore_state ();
       end
   | Lop(Istackoffset n) ->
       if n < 0
@@ -546,27 +565,28 @@ let emit_instr env fallthrough i =
       if n <> 0
       then cfi_adjust_cfa_offset n;
       env.stack_offset <- env.stack_offset + n
-  | Lop(Iload(chunk, addr, _mut)) ->
+  | Lop(Iload { memory_chunk; addressing_mode; _ }) ->
       let dest = res i 0 in
-      begin match chunk with
+      begin match memory_chunk with
       | Word_int | Word_val ->
-          I.mov (addressing addr QWORD i 0) dest
+          I.mov (addressing addressing_mode QWORD i 0) dest
       | Byte_unsigned ->
-          I.movzx (addressing addr BYTE i 0) dest
+          I.movzx (addressing addressing_mode BYTE i 0) dest
       | Byte_signed ->
-          I.movsx (addressing addr BYTE i 0) dest
+          I.movsx (addressing addressing_mode BYTE i 0) dest
       | Sixteen_unsigned ->
-          I.movzx (addressing addr WORD i 0) dest
+          I.movzx (addressing addressing_mode WORD i 0) dest
       | Sixteen_signed ->
-          I.movsx (addressing addr WORD i 0) dest;
+          I.movsx (addressing addressing_mode WORD i 0) dest;
       | Thirtytwo_unsigned ->
-          I.mov (addressing addr DWORD i 0) (res32 i 0)
+          I.mov (addressing addressing_mode DWORD i 0) (res32 i 0)
       | Thirtytwo_signed ->
-          I.movsxd (addressing addr DWORD i 0) dest
+          I.movsxd (addressing addressing_mode DWORD i 0) dest
       | Single ->
-          I.cvtss2sd (addressing addr REAL4 i 0) dest
+          I.xorpd dest dest; (* avoid partial register stall *)
+          I.cvtss2sd (addressing addressing_mode REAL4 i 0) dest
       | Double ->
-          I.movsd (addressing addr REAL8 i 0) dest
+          I.movsd (addressing addressing_mode REAL8 i 0) dest
       end
   | Lop(Istore(chunk, addr, _)) ->
       begin match chunk with
@@ -614,6 +634,27 @@ let emit_instr env fallthrough i =
         def_label label;
         I.lea (mem64 NONE 8 R15) (res i 0)
       end
+  | Lop(Ipoll { return_label }) ->
+      I.cmp (domain_field Domainstate.Domain_young_limit) r15;
+      let gc_call_label = new_label () in
+      let lbl_after_poll = match return_label with
+                  | None -> new_label()
+                  | Some(lbl) -> lbl in
+      let lbl_frame =
+        record_frame_label env i.live (Dbg_alloc [])
+      in
+      begin match return_label with
+      | None -> I.jbe (label gc_call_label)
+      | Some return_label -> I.ja (label return_label)
+      end;
+      env.call_gc_sites <-
+        { gc_lbl = gc_call_label;
+          gc_return_lbl = lbl_after_poll;
+          gc_frame_lbl = lbl_frame; } :: env.call_gc_sites;
+      begin match return_label with
+      | None -> def_label lbl_after_poll
+      | Some _ -> I.jmp (label gc_call_label)
+      end
   | Lop(Iintop(Icomp cmp)) ->
       I.cmp (arg i 1) (arg i 0);
       I.set (cond cmp) al;
@@ -650,6 +691,12 @@ let emit_instr env fallthrough i =
   | Lop(Iintop_imm(op, n)) ->
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (int n) (res i 0)
+  | Lop(Icompf cmp) ->
+      let cond, need_swap = float_cond_and_need_swap cmp in
+      let a0, a1 = if need_swap then arg i 1, arg i 0 else arg i 0, arg i 1 in
+      I.cmpsd cond a1 a0;
+      I.movd a0 (res i 0);
+      I.neg (res i 0)
   | Lop(Inegf) ->
       I.xorpd (mem64_rip OWORD (emit_symbol "caml_negf_mask")) (res i 0)
   | Lop(Iabsf) ->
@@ -657,6 +704,7 @@ let emit_instr env fallthrough i =
   | Lop(Iaddf | Isubf | Imulf | Idivf as floatop) ->
       instr_for_floatop floatop (arg i 1) (res i 0)
   | Lop(Ifloatofint) ->
+      I.xorpd (res i 0) (res i 0); (* avoid partial register stall *)
       I.cvtsi2sd  (arg i 0)  (res i 0)
   | Lop(Iintoffloat) ->
       I.cvttsd2si (arg i 0) (res i 0)
@@ -691,6 +739,11 @@ let emit_instr env fallthrough i =
       I.movsxd (arg32 i 0) (res i 0)
   | Lop(Ispecific(Izextend32)) ->
       I.mov (arg32 i 0) (res32 i 0)
+  | Lop (Idls_get) ->
+      I.mov (domain_field Domainstate.Domain_dls_root) (res i 0)
+  | Lop (Ireturn_addr) ->
+      let offset = frame_size env - 8 in
+      I.mov (mem64 QWORD offset RSP) (res i 0)
   | Lreloadretaddr ->
       ()
   | Lreturn ->
@@ -763,7 +816,8 @@ let emit_instr env fallthrough i =
 
       begin match system with
       | S_mingw64 | S_cygwin -> D.section [".rdata"] (Some "dr") []
-      | S_macosx | S_win64 -> () (* with LLVM/OS X and MASM, use the text segment *)
+      | S_macosx | S_win64 -> ()
+        (* with LLVM/OS X and MASM, use the text segment *)
       | _ -> D.section [".rodata"] None []
       end;
       D.align 4;
@@ -774,7 +828,10 @@ let emit_instr env fallthrough i =
       done;
       emit_named_text_section env.f.fun_name
   | Lentertrap ->
-      ()
+      if fp then begin
+        let delta = frame_size env - 16 (* retaddr + rbp *) in
+        I.lea (mem64 NONE delta RSP) rbp
+      end;
   | Ladjust_trap_depth { delta_traps; } ->
       (* each trap occupies 16 bytes on the stack *)
       let delta = 16 * delta_traps in
@@ -790,12 +847,12 @@ let emit_instr env fallthrough i =
       load_label_addr lbl_handler r11;
       I.push r11;
       cfi_adjust_cfa_offset 8;
-      I.push (domain_field Domainstate.Domain_exception_pointer);
+      I.push (domain_field Domainstate.Domain_exn_handler);
       cfi_adjust_cfa_offset 8;
-      I.mov rsp (domain_field Domainstate.Domain_exception_pointer);
+      I.mov rsp (domain_field Domainstate.Domain_exn_handler);
       env.stack_offset <- env.stack_offset + 16;
   | Lpoptrap ->
-      I.pop (domain_field Domainstate.Domain_exception_pointer);
+      I.pop (domain_field Domainstate.Domain_exn_handler);
       cfi_adjust_cfa_offset (-8);
       I.add (int 8) rsp;
       cfi_adjust_cfa_offset (-8);
@@ -803,15 +860,14 @@ let emit_instr env fallthrough i =
   | Lraise k ->
       begin match k with
       | Lambda.Raise_regular ->
-          I.mov (int 0) (domain_field Domainstate.Domain_backtrace_pos);
           emit_call "caml_raise_exn";
           record_frame env Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_reraise ->
-          emit_call "caml_raise_exn";
+          emit_call "caml_reraise_exn";
           record_frame env Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_notrace ->
-          I.mov (domain_field Domainstate.Domain_exception_pointer) rsp;
-          I.pop (domain_field Domainstate.Domain_exception_pointer);
+          I.mov (domain_field Domainstate.Domain_exn_handler) rsp;
+          I.pop (domain_field Domainstate.Domain_exn_handler);
           I.pop r11;
           I.jmp r11
       end
@@ -824,6 +880,7 @@ let rec emit_all env fallthrough i =
       emit_all env (Linear.has_fallthrough i.desc) i.next
 
 let all_functions = ref []
+
 
 (* Emission of a function declaration *)
 
@@ -843,9 +900,41 @@ let fundecl fundecl =
   D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
+  if !Clflags.runtime_variant = "d" then
+    emit_call "caml_assert_stack_invariants";
+  let max_frame_size =
+    frame_size env + fundecl.fun_extra_stack_used in
+  let handle_overflow =
+    if fundecl.fun_contains_nontail_calls
+    || max_frame_size >= stack_threshold_size then begin
+      let overflow = new_label () and ret = new_label () in
+      let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
+      I.lea (mem64 NONE (-(max_frame_size + threshold_offset)) RSP) r10;
+      I.cmp (domain_field Domainstate.Domain_current_stack) r10;
+      I.jb (label overflow);
+      def_label ret;
+      Some (overflow, ret)
+    end else None
+  in
   emit_all env true fundecl.fun_body;
   List.iter emit_call_gc env.call_gc_sites;
   emit_call_bound_errors env;
+  begin match handle_overflow with
+  | None -> ()
+  | Some (overflow,ret) -> begin
+      def_label overflow;
+      (* Pass the desired frame size on the stack, since all of the
+        argument-passing registers may be in use.
+        Also serves to align the stack properly before the call *)
+      I.push (int (Config.stack_threshold + max_frame_size / 8));
+      cfi_adjust_cfa_offset 8;
+        (* measured in words *)
+      emit_call "caml_call_realloc_stack";
+      I.pop r10; (* ignored *)
+      cfi_adjust_cfa_offset (-8);
+      I.jmp (label ret)
+    end
+  end;
   if fundecl.fun_frame_required then begin
     let n = (frame_size env) - 8 - (if fp then 8 else 0) in
     if n <> 0
@@ -854,14 +943,12 @@ let fundecl fundecl =
     end;
   end;
   cfi_endproc ();
-  begin match system with
-  | S_gnu | S_linux ->
+  if Config.asm_size_type_directives then begin
       D.type_ (emit_symbol fundecl.fun_name) "@function";
       D.size (emit_symbol fundecl.fun_name)
         (ConstSub (
             ConstThis,
             ConstLabel (emit_symbol fundecl.fun_name)))
-  | _ -> ()
   end
 
 (* Emission of data *)
@@ -902,6 +989,10 @@ let begin_assembly() =
     D.extrn "caml_alloc3" NEAR;
     D.extrn "caml_ml_array_bound_error" NEAR;
     D.extrn "caml_raise_exn" NEAR;
+    D.extrn "caml_call_realloc_stack" NEAR;
+    D.extrn "caml_reraise_exn" NEAR;
+    D.extrn "caml_c_call_stack_args" NEAR;
+    D.extrn "caml_assert_stack_invariants" NEAR;
   end;
 
 
@@ -987,12 +1078,13 @@ let end_assembly() =
       efa_string = (fun s -> D.bytes (s ^ "\000"))
     };
 
-  if system = S_linux then begin
+  if Config.asm_size_type_directives then begin
     let frametable = emit_symbol (Compilenv.make_symbol (Some "frametable")) in
+    D.type_ frametable "@object";
     D.size frametable (ConstSub (ConstThis, ConstLabel frametable))
   end;
 
-  if system = S_linux then
+  if Config.with_nonexecstack_note then
     (* Mark stack as non-executable, PR#4564 *)
     D.section [".note.GNU-stack"] (Some "") [ "%progbits" ];
 

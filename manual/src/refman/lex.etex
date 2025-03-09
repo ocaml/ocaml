@@ -1,5 +1,12 @@
 \section{s:lexical-conventions}{Lexical conventions}
 %HEVEA\cutname{lex.html}
+
+\subsubsection*{sss:lex:text-encoding}{Source file encoding}
+
+OCaml source files are expected to be valid UTF-8 encoded Unicode text.
+The interpretation of source files which are not UTF-8 encoded is unspecified.
+Such source files may be rejected in the future.
+
 \subsubsection*{sss:lex:blanks}{Blanks}
 
 The following characters are considered as blanks: space,
@@ -30,22 +37,28 @@ let f = function
 \subsubsection*{sss:lex:identifiers}{Identifiers}
 
 \begin{syntax}
-ident: ( letter || "_" ) { letter || "0" \ldots "9" || "_" || "'" } ;
-capitalized-ident: ("A" \ldots "Z") { letter || "0" \ldots "9" || "_" || "'" } ;
+ident: (letter || "_") { letter || "0"\ldots"9" || "_" || "'" } ;
+capitalized-ident: uppercase-letter { letter || "0"\ldots"9" || "_" || "'" } ;
 lowercase-ident:
-   ("a" \ldots "z" || "_") { letter || "0" \ldots "9" || "_" || "'" } ;
-letter: "A" \ldots "Z" || "a" \ldots "z"
+   (lowercase-letter || "_") { letter || "0"\ldots"9" || "_" || "'" } ;
+letter: uppercase-letter || lowercase-letter ;
+lowercase-letter:
+"a"\ldots"z"  || 'U+00DF' \ldots 'U+00F6' || 'U+00F8' \dots 'U+00FF' || 'U+0153' || 'U+0161' || 'U+017E'  ;
+uppercase-letter:
+  "A"\ldots"Z" || 'U+00C0' \ldots 'U+00D6' || 'U+00D8' \ldots 'U+00DE' \\
+  || 'U+0152' || 'U+0160' || 'U+017D' || 'U+0178' || 'U+1E9E'
+ ;
 \end{syntax}
 
 Identifiers are sequences of letters, digits, "_" (the underscore
 character), and "'" (the single quote), starting with a
 letter or an underscore.
-Letters contain at least the 52 lowercase and uppercase
-letters from the ASCII set. The current implementation
-also recognizes as letters some characters from the ISO
-8859-1 set (characters 192--214 and 216--222 as uppercase letters;
-characters 223--246 and 248--255 as lowercase letters). This
-feature is deprecated and should be avoided for future compatibility.
+Letters contain the 52 lowercase and uppercase letters from the ASCII set,
+letters "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ" from
+the Latin-1 Supplement block, letters "ŠšŽžŒœŸ" from the Latin Extended-A block
+and upper case ẞ ("U+189E"). Any byte sequence which is equivalent to one of
+these Unicode characters under NFC\footnote{Normalization Form C} is supported
+too.
 
 All characters in an identifier are
 meaningful. The current implementation accepts identifiers up to
@@ -61,10 +74,10 @@ purpose.
 \begin{syntax}
 integer-literal:
           ["-"] ("0"\ldots"9") { "0"\ldots"9" || "_" }
-        | ["-"] ("0x"||"0X") ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
-                            { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
-        | ["-"] ("0o"||"0O") ("0"\ldots"7") { "0"\ldots"7"||"_" }
-        | ["-"] ("0b"||"0B") ("0"\ldots"1") { "0"\ldots"1"||"_" }
+        | ["-"] ("0x" || "0X") ("0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f")
+                            { "0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f" || "_" }
+        | ["-"] ("0o" || "0O") ("0"\ldots"7") { "0"\ldots"7" || "_" }
+        | ["-"] ("0b" || "0B") ("0"\ldots"1") { "0"\ldots"1" || "_" }
 ;
 int32-literal: integer-literal 'l'
 ;
@@ -102,13 +115,13 @@ let counter64bit = ref 0L;;
 
 \begin{syntax}
 float-literal:
-          ["-"] ("0"\ldots"9") { "0"\ldots"9"||"_" } ["." { "0"\ldots"9"||"_" }]
-          [("e"||"E") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
-        | ["-"] ("0x"||"0X")
-          ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
-          { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" } \\
-          ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }]
-          [("p"||"P") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
+          ["-"] ("0"\ldots"9") { "0"\ldots"9" || "_" } ["." { "0"\ldots"9" || "_" }]
+          [("e" || "E") ["+" || "-"] ("0"\ldots"9") { "0"\ldots"9" || "_" }]
+        | ["-"] ("0x" || "0X")
+          ("0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f")
+          { "0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f" || "_" } \\
+          ["." { "0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f" || "_" }]
+          [("p" || "P") ["+" || "-"] ("0"\ldots"9") { "0"\ldots"9" || "_" }]
 \end{syntax}
 
 Floating-point decimal literals consist in an integer part, a
@@ -149,10 +162,10 @@ char-literal:
         | "'" escape-sequence "'"
 ;
 escape-sequence:
-          "\" ( "\" || '"' || "'" || "n" || "t" || "b" || "r" || space )
+          "\" ("\" || '"' || "'" || "n" || "t" || "b" || "r" || space)
         | "\" ("0"\ldots"9") ("0"\ldots"9") ("0"\ldots"9")
-        | "\x" ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
-               ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
+        | "\x" ("0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f")
+               ("0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f")
         | "\o" ("0"\ldots"3") ("0"\ldots"7") ("0"\ldots"7")
 \end{syntax}
 
@@ -183,15 +196,16 @@ let copyright = '\xA9';;
 \begin{syntax}
 string-literal:
           '"' { string-character } '"'
-       |  '{' quoted-string-id '|'  { any-char } '|' quoted-string-id '}'
+       |  '{' quoted-string-id '|' { newline | any-char } '|' quoted-string-id '}'
 ;
 quoted-string-id:
-     { 'a'...'z' || '_' }
+     { lowercase-letter || '_' }
 ;
 string-character:
           regular-string-char
         | escape-sequence
-        | "\u{" {{ "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f" }} "}"
+        | "\u{" {{ "0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f" }} "}"
+        | newline
         | '\' newline { space || tab }
 \end{syntax}
 
@@ -211,6 +225,10 @@ let greeting = "Hello, World!\n"
 let superscript_plus = "\u{207A}";;
 \end{caml_example}
 
+A newline sequence is a line feed optionally preceded by a carriage
+return. Since OCaml 5.2, a newline sequence occurring in a string
+literal is normalized into a single line feed character.
+
 To allow splitting long string literals across lines, the sequence
 "\\"\var{newline}~\var{spaces-or-tabs} (a backslash at the end of a line
 followed by any number of spaces and horizontal tabulations at the
@@ -225,16 +243,31 @@ let longstr =
   he world.";;
 \end{caml_example}
 
+Escaped newlines provide more convenient behavior than non-escaped
+newlines, as the indentation is not considered part of the string
+literal.
+
+\begin{caml_example}{toplevel}
+let contains_unexpected_spaces =
+  "This multiline literal
+   contains three consecutive spaces."
+
+let no_unexpected_spaces =
+  "This multiline literal \n\
+   uses a single space between all words.";;
+\end{caml_example}
+
 Quoted string literals provide an alternative lexical syntax for
-string literals. They are useful to represent strings of arbitrary content
-without escaping. Quoted strings are delimited by a matching pair
-of @'{' quoted-string-id '|'@ and @'|' quoted-string-id '}'@ with
-the same @quoted-string-id@ on both sides. Quoted strings do not interpret
-any character in a special way but requires that the
-sequence @'|' quoted-string-id '}'@ does not occur in the string itself.
-The identifier @quoted-string-id@ is a (possibly empty) sequence of
-lowercase letters and underscores that can be freely chosen to avoid
-such issue.
+string literals. They are useful to represent strings of arbitrary
+content without escaping. Quoted strings are delimited by a matching
+pair of @'{' quoted-string-id '|'@ and @'|' quoted-string-id '}'@ with
+the same @quoted-string-id@ on both sides. Quoted strings do not
+interpret any character in a special way\footnote{Except for the
+  normalization of newline sequences into a single line feed mentioned
+  earlier.} but requires that the sequence @'|' quoted-string-id '}'@
+does not occur in the string itself.  The identifier
+@quoted-string-id@ is a (possibly empty) sequence of lowercase letters
+and underscores that can be freely chosen to avoid such issue.
 
 \begin{caml_example}{toplevel}
 let quoted_greeting = {|"Hello, World!"|}
@@ -274,7 +307,7 @@ there are really 3 tokens, with optional blanks between them.
 
 \begin{syntax}
 infix-symbol:
-        ( core-operator-char || '%' || '<' ) { operator-char }
+        (core-operator-char || '%' || '<') { operator-char }
       | "#" {{ operator-char }}
 ;
 prefix-symbol:
@@ -348,7 +381,7 @@ longest first token.
 
 \begin{syntax}
 linenum-directive:
-     '#' {{"0" \ldots "9"}} '"' { string-character } '"'
+     '#' {{ "0"\ldots"9" }} '"' { string-character } '"'
 \end{syntax}
 
 Preprocessors that generate OCaml source code can insert line number

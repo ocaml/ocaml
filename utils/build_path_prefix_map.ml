@@ -17,7 +17,7 @@ type path = string
 type path_prefix = string
 type error_message = string
 
-let errorf fmt = Printf.kprintf (fun err -> Error err) fmt
+let errorf fmt = Printf.ksprintf (fun err -> Error err) fmt
 
 let encode_prefix str =
   let buf = Buffer.create (String.length str) in
@@ -95,25 +95,24 @@ let decode_map str =
   | exception (Shortcut err) -> Error err
   | map -> Ok map
 
-let rewrite_opt prefix_map path =
-  let is_prefix = function
-    | None -> false
-    | Some { target = _; source } ->
-      String.length source <= String.length path
-      && String.equal source (String.sub path 0 (String.length source))
-  in
-  match
-    List.find is_prefix
-      (* read key/value pairs from right to left, as the spec demands *)
-      (List.rev prefix_map)
-  with
-  | exception Not_found -> None
+let make_target path : pair option -> path option = function
   | None -> None
-  | Some { source; target } ->
+  | Some { target; source } ->
+    let is_prefix =
+      String.length source <= String.length path
+        && String.equal source (String.sub path 0 (String.length source)) in
+    if is_prefix then
       Some (target ^ (String.sub path (String.length source)
                        (String.length path - String.length source)))
+    else None
+
+let rewrite_first prefix_map path =
+  List.find_map (make_target path) (List.rev prefix_map)
+
+let rewrite_all prefix_map path =
+  List.filter_map (make_target path) (List.rev prefix_map)
 
 let rewrite prefix_map path =
-  match rewrite_opt prefix_map path with
+  match rewrite_first prefix_map path with
   | None -> path
   | Some path -> path

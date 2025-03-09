@@ -1,0 +1,110 @@
+(lldb) target create "XXXX"
+Current executable set to 'XXXX' (aarch64).
+(lldb) command source -s 0 'XXXX'
+Executing commands in 'XXXX'.
+(lldb) settings set stop-disassembly-display never
+(lldb) command script import ./lldb_test.py
+(lldb) create caml_start_program
+Breakpoint created for regex caml_start_program.
+(lldb) create caml_program
+Breakpoint created for regex caml_program.
+(lldb) create camlMeander\$c_to_ocaml*
+Breakpoint created for regex camlMeander\$c_to_ocaml*.
+(lldb) create ocaml_to_c
+Breakpoint created for regex ocaml_to_c.
+(lldb) run
+Process XXXX launched: 'XXXX' (aarch64)
+Process XXXX stopped
+* thread #1, name = 'XXXX', stop reason = breakpoint 1.1
+    frame #0: 0x00000000000000 meander`caml_start_program
+(lldb) backtrace
+frame 0: meander`caml_start_program
+frame 1: meander`caml_startup_common
+frame 2: meander`caml_startup_common
+frame 3: meander`caml_startup_exn
+frame 4: meander`caml_startup
+frame 5: meander`caml_main
+frame 6: meander`main
+frame 7: libc.so.6`__libc_start_call_main
+frame 8: libc.so.6`__libc_start_main_impl
+frame 9: meander`_start
+(lldb) continue
+Process XXXX resuming
+Process XXXX stopped
+* thread #1, name = 'XXXX', stop reason = breakpoint 2.1
+    frame #0: 0x00000000000000 meander`caml_program
+(lldb) backtrace
+frame 0: meander`caml_program
+frame 1: meander`caml_start_program
+frame 2: meander`caml_startup_common
+frame 3: meander`caml_startup_common
+frame 4: meander`caml_startup_exn
+frame 5: meander`caml_startup
+frame 6: meander`caml_main
+frame 7: meander`main
+frame 8: libc.so.6`__libc_start_call_main
+frame 9: libc.so.6`__libc_start_main_impl
+frame 10: meander`_start
+(lldb) continue
+Process XXXX resuming
+Process XXXX stopped
+* thread #1, name = 'XXXX', stop reason = breakpoint 4.1
+    frame #0: 0x00000000000000 meander`ocaml_to_c(unit=1) at meander_c.c:XX
+   1   	#include <caml/mlvalues.h>
+   2   	#include <caml/callback.h>
+   3   	
+-> 4   	value ocaml_to_c (value unit) {
+    	                              ^
+   5   	    caml_callback(*caml_named_value
+   6   	                  ("c_to_ocaml"), Val_unit);
+   7   	    return Val_int(0);
+(lldb) backtrace
+frame 0: meander`ocaml_to_c
+frame 1: meander`caml_c_call
+frame 2: meander`camlMeander$omain
+frame 3: meander`camlMeander$entry
+frame 4: meander`caml_program
+frame 5: meander`caml_start_program
+frame 6: meander`caml_startup_common
+frame 7: meander`caml_startup_common
+frame 8: meander`caml_startup_exn
+frame 9: meander`caml_startup
+frame 10: meander`caml_main
+frame 11: meander`main
+frame 12: libc.so.6`__libc_start_call_main
+frame 13: libc.so.6`__libc_start_main_impl
+frame 14: meander`_start
+(lldb) continue
+This version of LLDB has no plugin for the language "assembler". Inspection of frame variables will be limited.
+Process XXXX resuming
+Process XXXX stopped
+* thread #1, name = 'XXXX', stop reason = breakpoint 3.1
+    frame #0: 0x00000000000000 meander`camlStd_exit.code_end at meander.ml:5
+   2   	         : unit -> int = "ocaml_to_c"
+   3   	exception E1
+   4   	exception E2
+-> 5   	let c_to_ocaml () = raise E1
+   6   	let _ = Callback.register
+   7   	          "c_to_ocaml" c_to_ocaml
+   8   	let omain () =
+(lldb) backtrace
+frame 0: meander`camlStd_exit.code_end
+frame 1: meander`caml_start_program
+frame 2: meander`caml_callback_exn
+frame 3: meander`caml_callback
+frame 4: meander`ocaml_to_c
+frame 5: meander`caml_c_call
+frame 6: meander`camlMeander$omain
+frame 7: meander`camlMeander$entry
+frame 8: meander`caml_program
+frame 9: meander`caml_start_program
+frame 10: meander`caml_startup_common
+frame 11: meander`caml_startup_common
+frame 12: meander`caml_startup_exn
+frame 13: meander`caml_startup
+frame 14: meander`caml_main
+frame 15: meander`main
+frame 16: libc.so.6`__libc_start_call_main
+frame 17: libc.so.6`__libc_start_main_impl
+frame 18: meander`_start
+(lldb) quit

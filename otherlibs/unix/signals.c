@@ -23,44 +23,36 @@
 #include <caml/memory.h>
 #include <caml/mlvalues.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
-
-#ifndef NSIG
-#define NSIG 64
-#endif
+#include "caml/unixsupport.h"
 
 #ifdef POSIX_SIGNALS
 
 static void decode_sigset(value vset, sigset_t * set)
 {
   sigemptyset(set);
-  while (vset != Val_int(0)) {
+  for (/*nothing*/; vset != Val_emptylist; vset = Field(vset, 1)) {
     int sig = caml_convert_signal_number(Int_val(Field(vset, 0)));
     sigaddset(set, sig);
-    vset = Field(vset, 1);
   }
 }
 
 static value encode_sigset(sigset_t * set)
 {
-  value res = Val_int(0);
-  int i;
-
-  Begin_root(res)
-    for (i = 1; i < NSIG; i++)
-      if (sigismember(set, i) > 0) {
-        value newcons = caml_alloc_small(2, 0);
-        Field(newcons, 0) = Val_int(caml_rev_convert_signal_number(i));
-        Field(newcons, 1) = res;
-        res = newcons;
-      }
-  End_roots();
-  return res;
+  CAMLparam0();
+  CAMLlocal1(res);
+  for (int i = 1; i < NSIG; i++)
+    if (sigismember(set, i) > 0) {
+      value newcons = caml_alloc_2(Tag_cons,
+        Val_int(caml_rev_convert_signal_number(i)),
+        res);
+      res = newcons;
+    }
+  CAMLreturn(res);
 }
 
-static int sigprocmask_cmd[3] = { SIG_SETMASK, SIG_BLOCK, SIG_UNBLOCK };
+static const int sigprocmask_cmd[3] = { SIG_SETMASK, SIG_BLOCK, SIG_UNBLOCK };
 
-CAMLprim value unix_sigprocmask(value vaction, value vset)
+CAMLprim value caml_unix_sigprocmask(value vaction, value vset)
 {
   int how;
   sigset_t set, oldset;
@@ -69,26 +61,31 @@ CAMLprim value unix_sigprocmask(value vaction, value vset)
   how = sigprocmask_cmd[Int_val(vaction)];
   decode_sigset(vset, &set);
   caml_enter_blocking_section();
-  retcode = caml_sigmask_hook(how, &set, &oldset);
+  retcode = pthread_sigmask(how, &set, &oldset);
   caml_leave_blocking_section();
   /* Run any handlers for just-unmasked pending signals */
   caml_process_pending_actions();
-  if (retcode != 0) unix_error(retcode, "sigprocmask", Nothing);
+  if (retcode != 0) caml_unix_error(retcode, "sigprocmask", Nothing);
   return encode_sigset(&oldset);
 }
 
-CAMLprim value unix_sigpending(value unit)
+CAMLprim value caml_unix_sigpending(value unit)
 {
   sigset_t pending;
-  int i;
-  if (sigpending(&pending) == -1) uerror("sigpending", Nothing);
-  for (i = 1; i < NSIG; i++)
-    if(caml_pending_signals[i])
-      sigaddset(&pending, i);
+  uintnat curr;
+  if (sigpending(&pending) == -1) caml_uerror("sigpending", Nothing);
+  for (int i = 0; i < NSIG_WORDS; i++) {
+    curr = atomic_load(&caml_pending_signals[i]);
+    if (curr == 0) continue;
+    for (int j = 0; j < BITS_PER_WORD; j++) {
+      if (curr & ((uintnat)1 << j))
+      sigaddset(&pending, i * BITS_PER_WORD + j + 1);
+    }
+  }
   return encode_sigset(&pending);
 }
 
-CAMLprim value unix_sigsuspend(value vset)
+CAMLprim value caml_unix_sigsuspend(value vset)
 {
   sigset_t set;
   int retcode;
@@ -96,19 +93,35 @@ CAMLprim value unix_sigsuspend(value vset)
   caml_enter_blocking_section();
   retcode = sigsuspend(&set);
   caml_leave_blocking_section();
-  if (retcode == -1 && errno != EINTR) uerror("sigsuspend", Nothing);
+  if (retcode == -1 && errno != EINTR) caml_uerror("sigsuspend", Nothing);
   return Val_unit;
+}
+
+CAMLprim value caml_unix_sigwait(value sigs)
+{
+  sigset_t set;
+  int retcode, signo;
+
+  decode_sigset(sigs, &set);
+  caml_enter_blocking_section();
+  retcode = sigwait(&set, &signo);
+  caml_leave_blocking_section();
+  if (retcode != 0) caml_unix_error(retcode, "sigwait", Nothing);
+  return Val_int(caml_rev_convert_signal_number(signo));
 }
 
 #else
 
-CAMLprim value unix_sigprocmask(value vaction, value vset)
+CAMLprim value caml_unix_sigprocmask(value vaction, value vset)
 { caml_invalid_argument("Unix.sigprocmask not available"); }
 
-CAMLprim value unix_sigpending(value unit)
+CAMLprim value caml_unix_sigpending(value unit)
 { caml_invalid_argument("Unix.sigpending not available"); }
 
-CAMLprim value unix_sigsuspend(value vset)
+CAMLprim value caml_unix_sigsuspend(value vset)
 { caml_invalid_argument("Unix.sigsuspend not available"); }
+
+CAMLprim value caml_unix_sigwait(value vset)
+{ caml_invalid_argument("Unix.sigwait not available"); }
 
 #endif

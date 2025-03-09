@@ -24,8 +24,8 @@ class-type:
   |   class-body-type
 ;
 class-body-type:
-      'object' ['(' typexpr ')'] {class-field-spec} 'end'
-   |  ['[' typexpr {',' typexpr} ']'] classtype-path
+      'object' ['(' typexpr ')'] { class-field-spec } 'end'
+   |  ['[' typexpr { ',' typexpr } ']'] classtype-path
    |  'let' 'open' module-path 'in' class-body-type
 ;
 %\end{syntax} \begin{syntax}
@@ -60,7 +60,7 @@ type @class-type@.
 \subsubsection*{sss:clty:body}{Class body type}
 
 The class type expression
-@'object' ['(' typexpr ')'] {class-field-spec} 'end'@
+@'object' ['(' typexpr ')'] { class-field-spec } 'end'@
 is the type of a class body. It specifies its instance variables and
 methods. In this type, @typexpr@ is matched against the self type, therefore
 providing a name for the self type.
@@ -169,12 +169,12 @@ specifications expressed in class types.
 \begin{syntax}
 class-expr:
       class-path
-   |  '[' typexpr {',' typexpr} ']' class-path
+   |  '[' typexpr { ',' typexpr } ']' class-path
    |  '(' class-expr ')'
    |  '(' class-expr ':' class-type ')'
-   |  class-expr {{argument}}
-   |  'fun' {{parameter}} '->' class-expr
-   |  'let' ['rec'] let-binding {'and' let-binding} 'in' class-expr
+   |  class-expr {{ argument }}
+   |  'fun' {{ parameter }} '->' class-expr
+   |  'let' ['rec'] let-binding { 'and' let-binding } 'in' class-expr
    |  'object' class-body 'end'
    |  'let' 'open' module-path 'in' class-expr
 ;
@@ -188,8 +188,8 @@ class-field:
    |  'val!' ['mutable'] inst-var-name [':' typexpr] '=' expr
    |  'val' ['mutable'] 'virtual' inst-var-name ':' typexpr
    |  'val' 'virtual' 'mutable' inst-var-name ':' typexpr
-   |  'method' ['private'] method-name {parameter} [':' typexpr] '=' expr
-   |  'method!' ['private'] method-name {parameter} [':' typexpr] '=' expr
+   |  'method' ['private'] method-name { parameter } [':' typexpr] '=' expr
+   |  'method!' ['private'] method-name { parameter } [':' typexpr] '=' expr
    |  'method' ['private'] method-name ':' poly-typexpr '=' expr
    |  'method!' ['private'] method-name ':' poly-typexpr '=' expr
    |  'method' ['private'] 'virtual' method-name ':' poly-typexpr
@@ -368,7 +368,7 @@ used polymorphically in programs (even for the same object). The
 explicit declaration may be done in one of three ways: (1) by giving an
 explicit polymorphic type in the method definition, immediately after
 the method name, {\em i.e.}
-@'method' ['private'] method-name ':' {{"'" ident}} '.' typexpr '='
+@'method' ['private'] method-name ':' {{ "'" ident }} '.' typexpr '='
 expr@; (2) by a forward declaration of the explicit polymorphic type
 through a virtual method definition; (3) by importing such a
 declaration through inheritance and/or constraining the type of {\em
@@ -448,7 +448,7 @@ class-definition:
 ;
 class-binding:
           ['virtual'] ['[' type-parameters ']'] class-name
-          {parameter} [':' class-type] \\ '=' class-expr
+          { parameter } [':' class-type] \\ '=' class-expr
 ;
 type-parameters:
           "'" ident { "," "'" ident }

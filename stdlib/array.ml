@@ -23,8 +23,8 @@ external get: 'a array -> int -> 'a = "%array_safe_get"
 external set: 'a array -> int -> 'a -> unit = "%array_safe_set"
 external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"
 external unsafe_set: 'a array -> int -> 'a -> unit = "%array_unsafe_set"
-external make: int -> 'a -> 'a array = "caml_make_vect"
-external create: int -> 'a -> 'a array = "caml_make_vect"
+external make: int -> 'a -> 'a array = "caml_array_make"
+external create: int -> 'a -> 'a array = "caml_array_make"
 external unsafe_sub : 'a array -> int -> int -> 'a array = "caml_array_sub"
 external append_prim : 'a array -> 'a array -> 'a array = "caml_array_append"
 external concat : 'a array list -> 'a array = "caml_array_concat"
@@ -32,8 +32,7 @@ external unsafe_blit :
   'a array -> int -> 'a array -> int -> int -> unit = "caml_array_blit"
 external unsafe_fill :
   'a array -> int -> int -> 'a -> unit = "caml_array_fill"
-external create_float: int -> float array = "caml_make_float_vect"
-let make_float = create_float
+external create_float: int -> float array = "caml_array_create_float"
 
 module Floatarray = struct
   external create : int -> floatarray = "caml_floatarray_create"
@@ -48,7 +47,8 @@ end
 let init l f =
   if l = 0 then [||] else
   if l < 0 then invalid_arg "Array.init"
-  (* See #6575. We could also check for maximum array size, but this depends
+  (* See #6575. We must not evaluate [f 0] when [l <= 0].
+     We could also check for maximum array size, but this depends
      on whether we create a float array or a regular one... *)
   else
    let res = create l (f 0) in
@@ -58,13 +58,31 @@ let init l f =
    res
 
 let make_matrix sx sy init =
+  (* We raise even if [sx = 0 && sy < 0]: *)
+  if sy < 0 then invalid_arg "Array.make_matrix";
   let res = create sx [||] in
-  for x = 0 to pred sx do
-    unsafe_set res x (create sy init)
-  done;
+  if sy > 0 then begin
+    for x = 0 to pred sx do
+      unsafe_set res x (create sy init)
+    done;
+  end;
   res
 
-let create_matrix = make_matrix
+let init_matrix sx sy f =
+  (* We raise even if [sx = 0 && sy < 0]: *)
+  if sy < 0 then invalid_arg "Array.init_matrix";
+  let res = create sx [||] in
+  (* We must not evaluate [f x 0] when [sy <= 0]: *)
+  if sy > 0 then begin
+    for x = 0 to pred sx do
+      let row = create sy (f x 0) in
+      for y = 1 to pred sy do
+        unsafe_set row y (f x y)
+      done;
+      unsafe_set res x row
+    done;
+  end;
+  res
 
 let copy a =
   let l = length a in if l = 0 then [||] else unsafe_sub a 0 l
@@ -109,6 +127,16 @@ let map f a =
     done;
     r
   end
+
+let map_inplace f a =
+  for i = 0 to length a - 1 do
+    unsafe_set a i (f (unsafe_get a i))
+  done
+
+let mapi_inplace f a =
+  for i = 0 to length a - 1 do
+    unsafe_set a i (f i (unsafe_get a i))
+  done
 
 let map2 f a b =
   let la = length a in
@@ -248,12 +276,31 @@ let find_opt p a =
   in
   loop 0
 
+let find_index p a =
+  let n = length a in
+  let rec loop i =
+    if i = n then None
+    else if p (unsafe_get a i) then Some i
+    else loop (succ i) in
+  loop 0
+
 let find_map f a =
   let n = length a in
   let rec loop i =
     if i = n then None
     else
       match f (unsafe_get a i) with
+      | None -> loop (succ i)
+      | Some _ as r -> r
+  in
+  loop 0
+
+let find_mapi f a =
+  let n = length a in
+  let rec loop i =
+    if i = n then None
+    else
+      match f i (unsafe_get a i) with
       | None -> loop (succ i)
       | Some _ as r -> r
   in
@@ -391,6 +438,22 @@ let stable_sort cmp a =
 
 
 let fast_sort = stable_sort
+
+let shuffle_contract_violation i j =
+  let int = string_of_int in
+  invalid_arg
+    ("Array.shuffle: 'rand " ^ int (i + 1) ^
+     "' returned " ^ int j ^
+     ", out of expected range [0; " ^ int i ^ "]")
+
+let shuffle ~rand a = (* Fisher-Yates *)
+  for i = length a - 1 downto 1 do
+    let j = rand (i + 1) in
+    if not (0 <= j && j <= i) then shuffle_contract_violation i j;
+    let v = unsafe_get a i in
+    unsafe_set a i (unsafe_get a j);
+    unsafe_set a j v
+  done
 
 (** {1 Iterators} *)
 

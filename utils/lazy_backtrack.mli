@@ -20,6 +20,7 @@ type log
 val force : ('a -> 'b) -> ('a,'b) t -> 'b
 val create : 'a -> ('a,'b) t
 val get_arg : ('a,'b) t -> 'a option
+val get_contents : ('a,'b) t -> ('a,'b) Either.t
 val create_forced : 'b -> ('a, 'b) t
 val create_failed : exn -> ('a, 'b) t
 

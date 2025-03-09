@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 type 'a r = { a : 'a; b : 'a; }
 type 'a ty = Int : int ty | Float : float ty;;

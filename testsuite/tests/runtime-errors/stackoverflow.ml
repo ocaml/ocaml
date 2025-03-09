@@ -1,26 +1,13 @@
 (* TEST
-
-flags = "-w -a"
-
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-*** run
-**** check-program-output
-
-* libwin32unix
-** setup-ocamlopt.byte-build-env
-*** ocamlopt.byte
-**** run
-***** check-program-output
-
-* libunix
-** script
-script = "sh ${test_source_directory}/has-stackoverflow-detection.sh"
-*** setup-ocamlopt.byte-build-env
-**** ocamlopt.byte
-***** run
-****** check-program-output
-
+ flags = "-w -a";
+ ocamlrunparam += "l=100000";
+ no-tsan; (* TSan does not support call stacks bigger than 64k frames *)
+ {
+   bytecode;
+ }
+ {
+   native;
+ }
 *)
 
 let rec f x =
@@ -34,12 +21,14 @@ let rec f x =
       raise Stack_overflow
 
 let _ =
+ let p = Sys.opaque_identity (ref 42) in
  begin
   try
     ignore(f 0)
   with Stack_overflow ->
     print_string "Stack overflow caught"; print_newline()
  end ;
+ for i = 1 to 1000 do ignore (Sys.opaque_identity (ref 1_000_000)) done;
  (* GPR#1289 *)
  Printexc.record_backtrace true;
  begin
@@ -47,4 +36,5 @@ let _ =
     ignore(f 0)
   with Stack_overflow ->
     print_string "second Stack overflow caught"; print_newline()
- end
+ end;
+ print_string "!p = "; print_int !p; print_newline ()

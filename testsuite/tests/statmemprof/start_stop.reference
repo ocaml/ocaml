@@ -1,0 +1,11 @@
+Null test.
+Stop without starting fails with "Gc.Memprof.stop: no profile running."
+Start without stopping fails with "Gc.Memprof.start: already started."
+Discard without stopping fails with "Gc.Memprof.discard: profile not stopped."
+Second discard fails with "Gc.Memprof.discard: profile already discarded."
+Double profile.
+Double profile with single discard.
+Double profile, discarding both.
+Double profile, discarding both at end.
+Double profile, discarding in reverse order.
+Discarding old profile while sampling.

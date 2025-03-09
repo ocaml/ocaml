@@ -1,0 +1,96 @@
+\documentclass[11pt]{article} 
+\usepackage[latin1]{inputenc} 
+\usepackage[T1]{fontenc} 
+\usepackage{textcomp}
+\usepackage{fullpage} 
+\usepackage{url} 
+\usepackage{ocamldoc}
+\begin{document}
+\tableofcontents
+\section{Module {\tt{Functions}}}
+\label{Functions}\index{Functions@\verb`Functions`}
+\begin{ocamldocdescription}
+
+\end{ocamldocdescription}
+
+
+\ocamldocvspace{0.5cm}
+
+
+
+\label{Functions.f1}\begin{ocamldoccode}
+val f1 : int -> y:int -> int
+\end{ocamldoccode}
+\index{f1@\verb`f1`}
+
+
+
+
+\label{Functions.f2}\begin{ocamldoccode}
+val f2 : string -> y:int -> int option -> int
+\end{ocamldoccode}
+\index{f2@\verb`f2`}
+\begin{ocamldocdescription}
+There's no way to refer to the third arg in documentation.
+
+
+\end{ocamldocdescription}
+
+
+
+
+\label{Functions.f3}\begin{ocamldoccode}
+val f3 : int -> int -> int -> int
+\end{ocamldoccode}
+\index{f3@\verb`f3`}
+\begin{ocamldocdescription}
+
+\end{ocamldocdescription}
+
+
+
+
+\label{Functions.f4}\begin{ocamldoccode}
+val f4 : ?x:int -> ?y:int -> ?z:int -> unit -> int
+\end{ocamldoccode}
+\index{f4@\verb`f4`}
+\begin{ocamldocdescription}
+This output is a bit weird: we should probably refer
+ to the third argument as {\tt{z}}, its label, rather than
+ {\tt{blah}}, its internally-bound pattern.
+
+
+\end{ocamldocdescription}
+
+
+
+
+\begin{ocamldoccode}
+{\tt{class m : }}\end{ocamldoccode}
+\label{class:Functions.m}\index{m@\verb`m`}
+
+\begin{ocamldocobjectend}
+
+
+\label{method:Functions.m.no-underscoreargs}\begin{ocamldoccode}
+method no_args : unit
+\end{ocamldoccode}
+\index{no-underscoreargs@\verb`no_args`}
+\begin{ocamldocdescription}
+
+\end{ocamldocdescription}
+
+
+\label{method:Functions.m.a-underscorefew-underscoreargs}\begin{ocamldoccode}
+method a_few_args : int -> int -> int -> int
+\end{ocamldoccode}
+\index{a-underscorefew-underscoreargs@\verb`a_few_args`}
+\begin{ocamldocdescription}
+
+\end{ocamldocdescription}
+\end{ocamldocobjectend}
+
+
+
+
+\end{document}

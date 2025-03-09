@@ -1,11 +1,10 @@
-(* TEST
-*)
+(* TEST *)
 
 (* Hashtable operations, using maps as a reference *)
 
 open Printf
 
-module Test(H: Hashtbl.S) (M: Map.S with type key = H.key) = struct
+module Test(H: Hashtbl.SeededS) (M: Map.S with type key = H.key) = struct
 
   let incl_mh m h =
     try
@@ -85,31 +84,31 @@ module SS = struct
   type t = string
   let compare (x:t) (y:t) = Stdlib.compare x y
   let equal (x:t) (y:t) = x=y
-  let hash = Hashtbl.hash
+  let seeded_hash = Hashtbl.seeded_hash
 end
 module SI = struct
   type t = int
   let compare (x:t) (y:t) = Stdlib.compare x y
   let equal (x:t) (y:t) = x=y
-  let hash = Hashtbl.hash
+  let seeded_hash = Hashtbl.seeded_hash
 end
 module SSP = struct
   type t = string*string
   let compare (x:t) (y:t) = Stdlib.compare x y
   let equal (x:t) (y:t) = x=y
-  let hash = Hashtbl.hash
+  let seeded_hash = Hashtbl.seeded_hash
 end
 module SSL = struct
   type t = string list
   let compare (x:t) (y:t) = Stdlib.compare x y
   let equal (x:t) (y:t) = x=y
-  let hash = Hashtbl.hash
+  let seeded_hash = Hashtbl.seeded_hash
 end
 module SSA = struct
   type t = string array
   let compare (x:t) (y:t) = Stdlib.compare x y
   let equal (x:t) (y:t) = x=y
-  let hash = Hashtbl.hash
+  let seeded_hash = Hashtbl.seeded_hash
 end
 
 module MS = Map.Make(SS)
@@ -121,11 +120,11 @@ module MSA = Map.Make(SSA)
 
 (* Generic hash wrapped as a functorial hash *)
 
-module HofM (M: Map.S) : Hashtbl.S with type key = M.key =
+module HofM (M: Map.S) : Hashtbl.SeededS with type key = M.key =
   struct
     type key = M.key
     type 'a t = (key, 'a) Hashtbl.t
-    let create s = Hashtbl.create s
+    let create ?random:bool s = Hashtbl.create s
     let clear = Hashtbl.clear
     let reset = Hashtbl.reset
     let copy = Hashtbl.copy
@@ -156,29 +155,26 @@ module HSL = HofM(MSL)
 
 (* Specific functorial hashes *)
 
-module HS2 = Hashtbl.Make(SS)
-module HI2 = Hashtbl.Make(SI)
+module HS2 = Hashtbl.MakeSeeded(SS)
+module HS3 = Hashtbl.MakeSeeded(String)
+module HI2 = Hashtbl.MakeSeeded(SI)
 
 (* Specific weak functorial hashes *)
-module WS = Ephemeron.K1.Make(SS)
-module WSP1 = Ephemeron.K1.Make(SSP)
-module WSP2 = Ephemeron.K2.Make(SS)(SS)
-module WSL = Ephemeron.K1.Make(SSL)
-module WSA = Ephemeron.Kn.Make(SS)
+module WS = Ephemeron.K1.MakeSeeded(SS)
+module WSP1 = Ephemeron.K1.MakeSeeded(SSP)
+module WSP2 = Ephemeron.K2.MakeSeeded(SS)(SS)
+module WSL = Ephemeron.K1.MakeSeeded(SSL)
+module WSA = Ephemeron.Kn.MakeSeeded(SS)
 
 (* Instantiating the test *)
 
 module TS1 = Test(HS1)(MS)
 module TS2 = Test(HS2)(MS)
+module TS3 = Test(HS3)(MS)
 module TI1 = Test(HI1)(MI)
 module TI2 = Test(HI2)(MI)
 module TSP = Test(HSP)(MSP)
 module TSL = Test(HSL)(MSL)
-module TWS  = Test(WS)(MS)
-module TWSP1 = Test(WSP1)(MSP)
-module TWSP2 = Test(WSP2)(MSP)
-module TWSL = Test(WSL)(MSL)
-module TWSA = Test(WSA)(MSA)
 
 (* Data set: strings from a file, associated with their line number *)
 
@@ -251,23 +247,12 @@ let _ =
   TS1.test d;
   printf "-- Strings, functorial interface\n%!";
   TS2.test d;
+  printf "-- Strings, functorial(String) interface\n%!";
+  TS3.test d;
   printf "-- Pairs of strings\n%!";
   TSP.test (pair_data d);
   printf "-- Lists of strings\n%!";
-  TSL.test (list_data d);
-  (* weak *)
-  let d =
-    try file_data "../../LICENSE" with Sys_error _ -> string_data in
-  printf "-- Weak K1 -- Strings, functorial interface\n%!";
-  TWS.test d;
-  printf "-- Weak K1 -- Pairs of strings\n%!";
-  TWSP1.test (pair_data d);
-  printf "-- Weak K2 -- Pairs of strings\n%!";
-  TWSP2.test (pair_data d);
-  printf "-- Weak K1 -- Lists of strings\n%!";
-  TWSL.test (list_data d);
-  printf "-- Weak Kn -- Arrays of strings\n%!";
-  TWSA.test (Array.map (fun (l,i) -> (Array.of_list l,i)) (list_data d))
+  TSL.test (list_data d)
 
 
 let () =

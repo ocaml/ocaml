@@ -167,7 +167,20 @@ let trim s =
   else
     empty
 
-let escaped s =
+let unsafe_escape s =
+  (* We perform two passes on the input sequence, one to compute the
+     result size and one to write the result.
+
+     #11508, #11509: This logic would be incorrect in presence of
+     concurrent modification to the input, making the use of
+     [unsafe_set] below memory-unsafe.
+
+     Precondition: This function may be safely called on:
+     - an immutable byte sequence
+     - a uniquely-owned byte sequence (the function takes ownership)
+
+     In either case we return a uniquely-owned byte sequence.
+  *)
   let n = ref 0 in
   for i = 0 to length s - 1 do
     n := !n +
@@ -176,7 +189,8 @@ let escaped s =
        | ' ' .. '~' -> 1
        | _ -> 4)
   done;
-  if !n = length s then copy s else begin
+  if !n = length s then s
+  else begin
     let s' = create !n in
     n := 0;
     for i = 0 to length s - 1 do
@@ -206,6 +220,12 @@ let escaped s =
     done;
     s'
   end
+
+let escaped b =
+  let b = copy b in
+  (* We copy our input to obtain a uniquely-owned byte sequence [b]
+     to satisfy [unsafe_escape]'s precondition *)
+  unsafe_escape b
 
 let map f s =
   let l = length s in
@@ -385,14 +405,6 @@ let split_on_char sep s =
   done;
   sub s 0 !j :: !r
 
-(* Deprecated functions implemented via other deprecated functions *)
-[@@@ocaml.warning "-3"]
-let uppercase s = map Char.uppercase s
-let lowercase s = map Char.lowercase s
-
-let capitalize s = apply1 Char.uppercase s
-let uncapitalize s = apply1 Char.lowercase s
-
 (** {1 Iterators} *)
 
 let to_seq s =
@@ -436,10 +448,16 @@ let of_seq i =
 
 (* The get_ functions are all duplicated in string.ml *)
 
+external unsafe_get_uint8 : bytes -> int -> int = "%bytes_unsafe_get"
+external unsafe_get_uint16_ne : bytes -> int -> int = "%caml_bytes_get16u"
 external get_uint8 : bytes -> int -> int = "%bytes_safe_get"
 external get_uint16_ne : bytes -> int -> int = "%caml_bytes_get16"
 external get_int32_ne : bytes -> int -> int32 = "%caml_bytes_get32"
 external get_int64_ne : bytes -> int -> int64 = "%caml_bytes_get64"
+
+external unsafe_set_uint8 : bytes -> int -> int -> unit = "%bytes_unsafe_set"
+external unsafe_set_uint16_ne : bytes -> int -> int -> unit
+                              = "%caml_bytes_set16u"
 external set_int8 : bytes -> int -> int -> unit = "%bytes_safe_set"
 external set_int16_ne : bytes -> int -> int -> unit = "%caml_bytes_set16"
 external set_int32_ne : bytes -> int -> int32 -> unit = "%caml_bytes_set32"
@@ -447,6 +465,16 @@ external set_int64_ne : bytes -> int -> int64 -> unit = "%caml_bytes_set64"
 external swap16 : int -> int = "%bswap16"
 external swap32 : int32 -> int32 = "%bswap_int32"
 external swap64 : int64 -> int64 = "%bswap_int64"
+
+let unsafe_get_uint16_le b i =
+  if Sys.big_endian
+  then swap16 (unsafe_get_uint16_ne b i)
+  else unsafe_get_uint16_ne b i
+
+let unsafe_get_uint16_be b i =
+  if Sys.big_endian
+  then unsafe_get_uint16_ne b i
+  else swap16 (unsafe_get_uint16_ne b i)
 
 let get_int8 b i =
   ((get_uint8 b i) lsl (Sys.int_size - 8)) asr (Sys.int_size - 8)
@@ -484,6 +512,16 @@ let get_int64_be b i =
   if not Sys.big_endian then swap64 (get_int64_ne b i)
   else get_int64_ne b i
 
+let unsafe_set_uint16_le b i x =
+  if Sys.big_endian
+  then unsafe_set_uint16_ne b i (swap16 x)
+  else unsafe_set_uint16_ne b i x
+
+let unsafe_set_uint16_be b i x =
+  if Sys.big_endian
+  then unsafe_set_uint16_ne b i x else
+  unsafe_set_uint16_ne b i (swap16 x)
+
 let set_int16_le b i x =
   if Sys.big_endian then set_int16_ne b i (swap16 x)
   else set_int16_ne b i x
@@ -512,3 +550,299 @@ let set_uint8 = set_int8
 let set_uint16_ne = set_int16_ne
 let set_uint16_be = set_int16_be
 let set_uint16_le = set_int16_le
+
+(* UTF codecs and validations *)
+
+let dec_invalid = Uchar.utf_decode_invalid
+let[@inline] dec_ret n u = Uchar.utf_decode n (Uchar.unsafe_of_int u)
+
+(* In case of decoding error, if we error on the first byte, we
+   consume the byte, otherwise we consume the [n] bytes preceding
+   the erroring byte.
+
+   This means that if a client uses decodes without caring about
+   validity it naturally replace bogus data with Uchar.rep according
+   to the WHATWG Encoding standard. Other schemes are possible by
+   consulting the number of used bytes on invalid decodes. For more
+   details see https://hsivonen.fi/broken-utf-8/
+
+   For this reason in [get_utf_8_uchar] we gradually check the next
+   byte is available rather than doing it immediately after the
+   first byte. Contrast with [is_valid_utf_8]. *)
+
+(* UTF-8 *)
+
+let[@inline] not_in_x80_to_xBF b = b lsr 6 <> 0b10
+let[@inline] not_in_xA0_to_xBF b = b lsr 5 <> 0b101
+let[@inline] not_in_x80_to_x9F b = b lsr 5 <> 0b100
+let[@inline] not_in_x90_to_xBF b = b < 0x90 || 0xBF < b
+let[@inline] not_in_x80_to_x8F b = b lsr 4 <> 0x8
+
+let[@inline] utf_8_uchar_2 b0 b1 =
+  ((b0 land 0x1F) lsl 6) lor
+  ((b1 land 0x3F))
+
+let[@inline] utf_8_uchar_3 b0 b1 b2 =
+  ((b0 land 0x0F) lsl 12) lor
+  ((b1 land 0x3F) lsl 6) lor
+  ((b2 land 0x3F))
+
+let[@inline] utf_8_uchar_4 b0 b1 b2 b3 =
+  ((b0 land 0x07) lsl 18) lor
+  ((b1 land 0x3F) lsl 12) lor
+  ((b2 land 0x3F) lsl 6) lor
+  ((b3 land 0x3F))
+
+let get_utf_8_uchar b i =
+  let b0 = get_uint8 b i in (* raises if [i] is not a valid index. *)
+  let get = unsafe_get_uint8 in
+  let max = length b - 1 in
+  match Char.unsafe_chr b0 with (* See The Unicode Standard, Table 3.7 *)
+  | '\x00' .. '\x7F' -> dec_ret 1 b0
+  | '\xC2' .. '\xDF' ->
+      let i = i + 1 in if i > max then dec_invalid 1 else
+      let b1 = get b i in if not_in_x80_to_xBF b1 then dec_invalid 1 else
+      dec_ret 2 (utf_8_uchar_2 b0 b1)
+  | '\xE0' ->
+      let i = i + 1 in if i > max then dec_invalid 1 else
+      let b1 = get b i in if not_in_xA0_to_xBF b1 then dec_invalid 1 else
+      let i = i + 1 in if i > max then dec_invalid 2 else
+      let b2 = get b i in if not_in_x80_to_xBF b2 then dec_invalid 2 else
+      dec_ret 3 (utf_8_uchar_3 b0 b1 b2)
+  | '\xE1' .. '\xEC' | '\xEE' .. '\xEF' ->
+      let i = i + 1 in if i > max then dec_invalid 1 else
+      let b1 = get b i in if not_in_x80_to_xBF b1 then dec_invalid 1 else
+      let i = i + 1 in if i > max then dec_invalid 2 else
+      let b2 = get b i in if not_in_x80_to_xBF b2 then dec_invalid 2 else
+      dec_ret 3 (utf_8_uchar_3 b0 b1 b2)
+  | '\xED' ->
+      let i = i + 1 in if i > max then dec_invalid 1 else
+      let b1 = get b i in if not_in_x80_to_x9F b1 then dec_invalid 1 else
+      let i = i + 1 in if i > max then dec_invalid 2 else
+      let b2 = get b i in if not_in_x80_to_xBF b2 then dec_invalid 2 else
+      dec_ret 3 (utf_8_uchar_3 b0 b1 b2)
+  | '\xF0' ->
+      let i = i + 1 in if i > max then dec_invalid 1 else
+      let b1 = get b i in if not_in_x90_to_xBF b1 then dec_invalid 1 else
+      let i = i + 1 in if i > max then dec_invalid 2 else
+      let b2 = get b i in if not_in_x80_to_xBF b2 then dec_invalid 2 else
+      let i = i + 1 in if i > max then dec_invalid 3 else
+      let b3 = get b i in if not_in_x80_to_xBF b3 then dec_invalid 3 else
+      dec_ret 4 (utf_8_uchar_4 b0 b1 b2 b3)
+  | '\xF1' .. '\xF3' ->
+      let i = i + 1 in if i > max then dec_invalid 1 else
+      let b1 = get b i in if not_in_x80_to_xBF b1 then dec_invalid 1 else
+      let i = i + 1 in if i > max then dec_invalid 2 else
+      let b2 = get b i in if not_in_x80_to_xBF b2 then dec_invalid 2 else
+      let i = i + 1 in if i > max then dec_invalid 3 else
+      let b3 = get b i in if not_in_x80_to_xBF b3 then dec_invalid 3 else
+      dec_ret 4 (utf_8_uchar_4 b0 b1 b2 b3)
+  | '\xF4' ->
+      let i = i + 1 in if i > max then dec_invalid 1 else
+      let b1 = get b i in if not_in_x80_to_x8F b1 then dec_invalid 1 else
+      let i = i + 1 in if i > max then dec_invalid 2 else
+      let b2 = get b i in if not_in_x80_to_xBF b2 then dec_invalid 2 else
+      let i = i + 1 in if i > max then dec_invalid 3 else
+      let b3 = get b i in if not_in_x80_to_xBF b3 then dec_invalid 3 else
+      dec_ret 4 (utf_8_uchar_4 b0 b1 b2 b3)
+  | _ -> dec_invalid 1
+
+let set_utf_8_uchar b i u =
+  let set = unsafe_set_uint8 in
+  let max = length b - 1 in
+  match Uchar.to_int u with
+  | u when u < 0 -> assert false
+  | u when u <= 0x007F ->
+      set_uint8 b i u;
+      1
+  | u when u <= 0x07FF ->
+      let last = i + 1 in
+      if last > max then 0 else
+      (set_uint8 b i (0xC0 lor (u lsr 6));
+       set b last (0x80 lor (u land 0x3F));
+       2)
+  | u when u <= 0xFFFF ->
+      let last = i + 2 in
+      if last > max then 0 else
+      (set_uint8 b i (0xE0 lor (u lsr 12));
+       set b (i + 1) (0x80 lor ((u lsr 6) land 0x3F));
+       set b last (0x80 lor (u land 0x3F));
+       3)
+  | u when u <= 0x10FFFF ->
+      let last = i + 3 in
+      if last > max then 0 else
+      (set_uint8 b i (0xF0 lor (u lsr 18));
+       set b (i + 1) (0x80 lor ((u lsr 12) land 0x3F));
+       set b (i + 2) (0x80 lor ((u lsr 6) land 0x3F));
+       set b last (0x80 lor (u land 0x3F));
+       4)
+  | _ -> assert false
+
+let is_valid_utf_8 b =
+  let rec loop max b i =
+    if i > max then true else
+    let get = unsafe_get_uint8 in
+    match Char.unsafe_chr (get b i) with
+    | '\x00' .. '\x7F' -> loop max b (i + 1)
+    | '\xC2' .. '\xDF' ->
+        let last = i + 1 in
+        if last > max
+        || not_in_x80_to_xBF (get b last)
+        then false
+        else loop max b (last + 1)
+    | '\xE0' ->
+        let last = i + 2 in
+        if last > max
+        || not_in_xA0_to_xBF (get b (i + 1))
+        || not_in_x80_to_xBF (get b last)
+        then false
+        else loop max b (last + 1)
+    | '\xE1' .. '\xEC' | '\xEE' .. '\xEF' ->
+        let last = i + 2 in
+        if last > max
+        || not_in_x80_to_xBF (get b (i + 1))
+        || not_in_x80_to_xBF (get b last)
+        then false
+        else loop max b (last + 1)
+    | '\xED' ->
+        let last = i + 2 in
+        if last > max
+        || not_in_x80_to_x9F (get b (i + 1))
+        || not_in_x80_to_xBF (get b last)
+        then false
+        else loop max b (last + 1)
+    | '\xF0' ->
+        let last = i + 3 in
+        if last > max
+        || not_in_x90_to_xBF (get b (i + 1))
+        || not_in_x80_to_xBF (get b (i + 2))
+        || not_in_x80_to_xBF (get b last)
+        then false
+        else loop max b (last + 1)
+    | '\xF1' .. '\xF3' ->
+        let last = i + 3 in
+        if last > max
+        || not_in_x80_to_xBF (get b (i + 1))
+        || not_in_x80_to_xBF (get b (i + 2))
+        || not_in_x80_to_xBF (get b last)
+        then false
+        else loop max b (last + 1)
+    | '\xF4' ->
+        let last = i + 3 in
+        if last > max
+        || not_in_x80_to_x8F (get b (i + 1))
+        || not_in_x80_to_xBF (get b (i + 2))
+        || not_in_x80_to_xBF (get b last)
+        then false
+        else loop max b (last + 1)
+    | _ -> false
+  in
+  loop (length b - 1) b 0
+
+(* UTF-16BE *)
+
+let get_utf_16be_uchar b i =
+  let get = unsafe_get_uint16_be in
+  let max = length b - 1 in
+  if i < 0 || i > max then invalid_arg "index out of bounds" else
+  if i = max then dec_invalid 1 else
+  match get b i with
+  | u when u < 0xD800 || u > 0xDFFF -> dec_ret 2 u
+  | u when u > 0xDBFF -> dec_invalid 2
+  | hi -> (* combine [hi] with a low surrogate *)
+      let last = i + 3 in
+      if last > max then dec_invalid (max - i + 1) else
+      match get b (i + 2) with
+      | u when u < 0xDC00 || u > 0xDFFF -> dec_invalid 2 (* retry here *)
+      | lo ->
+          let u = (((hi land 0x3FF) lsl 10) lor (lo land 0x3FF)) + 0x10000 in
+          dec_ret 4 u
+
+let set_utf_16be_uchar b i u =
+  let set = unsafe_set_uint16_be in
+  let max = length b - 1 in
+  if i < 0 || i > max then invalid_arg "index out of bounds" else
+  match Uchar.to_int u with
+  | u when u < 0 -> assert false
+  | u when u <= 0xFFFF ->
+      let last = i + 1 in
+      if last > max then 0 else (set b i u; 2)
+  | u when u <= 0x10FFFF ->
+      let last = i + 3 in
+      if last > max then 0 else
+      let u' = u - 0x10000 in
+      let hi = (0xD800 lor (u' lsr 10)) in
+      let lo = (0xDC00 lor (u' land 0x3FF)) in
+      set b i hi; set b (i + 2) lo; 4
+  | _ -> assert false
+
+let is_valid_utf_16be b =
+  let rec loop max b i =
+    let get = unsafe_get_uint16_be in
+    if i > max then true else
+    if i = max then false else
+    match get b i with
+    | u when u < 0xD800 || u > 0xDFFF -> loop max b (i + 2)
+    | u when u > 0xDBFF -> false
+    | _hi ->
+        let last = i + 3 in
+        if last > max then false else
+        match get b (i + 2) with
+        | u when u < 0xDC00 || u > 0xDFFF -> false
+        | _lo -> loop max b (i + 4)
+  in
+  loop (length b - 1) b 0
+
+(* UTF-16LE *)
+
+let get_utf_16le_uchar b i =
+  let get = unsafe_get_uint16_le in
+  let max = length b - 1 in
+  if i < 0 || i > max then invalid_arg "index out of bounds" else
+  if i = max then dec_invalid 1 else
+  match get b i with
+  | u when u < 0xD800 || u > 0xDFFF -> dec_ret 2 u
+  | u when u > 0xDBFF -> dec_invalid 2
+  | hi -> (* combine [hi] with a low surrogate *)
+      let last = i + 3 in
+      if last > max then dec_invalid (max - i + 1) else
+      match get b (i + 2) with
+      | u when u < 0xDC00 || u > 0xDFFF -> dec_invalid 2 (* retry here *)
+      | lo ->
+          let u = (((hi land 0x3FF) lsl 10) lor (lo land 0x3FF)) + 0x10000 in
+          dec_ret 4 u
+
+let set_utf_16le_uchar b i u =
+  let set = unsafe_set_uint16_le in
+  let max = length b - 1 in
+  if i < 0 || i > max then invalid_arg "index out of bounds" else
+  match Uchar.to_int u with
+  | u when u < 0 -> assert false
+  | u when u <= 0xFFFF ->
+      let last = i + 1 in
+      if last > max then 0 else (set b i u; 2)
+  | u when u <= 0x10FFFF ->
+      let last = i + 3 in
+      if last > max then 0 else
+      let u' = u - 0x10000 in
+      let hi = (0xD800 lor (u' lsr 10)) in
+      let lo = (0xDC00 lor (u' land 0x3FF)) in
+      set b i hi; set b (i + 2) lo; 4
+  | _ -> assert false
+
+let is_valid_utf_16le b =
+  let rec loop max b i =
+    let get = unsafe_get_uint16_le in
+    if i > max then true else
+    if i = max then false else
+    match get b i with
+    | u when u < 0xD800 || u > 0xDFFF -> loop max b (i + 2)
+    | u when u > 0xDBFF -> false
+    | _hi ->
+        let last = i + 3 in
+        if last > max then false else
+        match get b (i + 2) with
+        | u when u < 0xDC00 || u > 0xDFFF -> false
+        | _lo -> loop max b (i + 4)
+  in
+  loop (length b - 1) b 0

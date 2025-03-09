@@ -20,6 +20,7 @@
 open Tsl_parser
 
 let comment_start_pos = ref []
+let has_comments = ref false
 
 let lexer_error message =
   failwith (Printf.sprintf "Tsl lexer: %s" message)
@@ -28,18 +29,38 @@ let lexer_error message =
 let newline = ('\013'* '\010')
 let blank = [' ' '\009' '\012']
 let identchar = ['A'-'Z' 'a'-'z' '_' '.' '-' '\'' '0'-'9']
+let num = ['0'-'9']
 
-rule token = parse
+rule is_test = parse
+  | blank * { is_test lexbuf }
+  | newline { Lexing.new_line lexbuf; is_test lexbuf }
+  | "/*" blank* "TEST" { true }
+  | "/*" blank* "TEST_BELOW" { true }
+  | "(*" blank* "TEST" { true }
+  | "(*" blank* "TEST_BELOW" { true }
+  | _ { false }
+  | eof { false }
+
+and token = parse
   | blank * { token lexbuf }
   | newline { Lexing.new_line lexbuf; token lexbuf }
-  | "/*" blank* "TEST" { TSL_BEGIN_C_STYLE }
-  | "/*" blank* "TEST_BELOW" _ * "/*" blank* "TEST" { TSL_BEGIN_C_STYLE }
+  | "/*" blank* "TEST" { TSL_BEGIN_C_STYLE `Above }
+  | "/*" blank* "TEST_BELOW" _ * "/*" blank* "TEST" {
+      let s = Lexing.lexeme lexbuf in
+      String.iter (fun c -> if c = '\n' then Lexing.new_line lexbuf) s;
+      TSL_BEGIN_C_STYLE `Below
+    }
   | "*/" { TSL_END_C_STYLE }
-  | "(*" blank* "TEST" { TSL_BEGIN_OCAML_STYLE }
-  | "(*" blank* "TEST_BELOW" _ * "(*" blank* "TEST" { TSL_BEGIN_OCAML_STYLE }
+  | "(*" blank* "TEST" { TSL_BEGIN_OCAML_STYLE `Above }
+  | "(*" blank* "TEST_BELOW" _ * "(*" blank* "TEST" {
+      let s = Lexing.lexeme lexbuf in
+      String.iter (fun c -> if c = '\n' then Lexing.new_line lexbuf) s;
+      TSL_BEGIN_OCAML_STYLE `Below
+    }
   | "*)" { TSL_END_OCAML_STYLE }
   | "," { COMMA }
   | '*'+ { TEST_DEPTH (String.length (Lexing.lexeme lexbuf)) }
+  | "*" (num+ as n) { TEST_DEPTH (int_of_string n)}
   | "+=" { PLUSEQUAL }
   | "=" { EQUAL }
   | identchar *
@@ -47,12 +68,17 @@ rule token = parse
       match s with
         | "include" -> INCLUDE
         | "set" -> SET
+        | "unset" -> UNSET
         | "with" -> WITH
         | _ -> IDENTIFIER s
     }
+  | "{" { LEFT_BRACE }
+  | "}" { RIGHT_BRACE }
+  | ";" { SEMI }
   | "(*"
     {
       comment_start_pos := [Lexing.lexeme_start_p lexbuf];
+      has_comments := true;
       comment lexbuf
     }
   | '"'
@@ -86,6 +112,7 @@ and string acc = parse
     { let space =
         match blank with None -> "" | Some blank -> String.make 1 blank
       in
+      Lexing.new_line lexbuf;
       string (acc ^ space) lexbuf }
   | '\\'
     {string (acc ^ "\\") lexbuf}
@@ -112,6 +139,11 @@ and comment = parse
       let message = Printf.sprintf "%s:%d:%d: unterminated comment"
         file line column in
       lexer_error message
+    }
+  | newline
+    {
+      Lexing.new_line lexbuf;
+      comment lexbuf
     }
   | _
     {

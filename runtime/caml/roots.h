@@ -19,28 +19,30 @@
 #ifdef CAML_INTERNALS
 
 #include "misc.h"
-#include "memory.h"
+#include "domain.h"
 
-typedef void (*scanning_action) (value, value *);
+typedef enum {
+  SCANNING_ONLY_YOUNG_VALUES = 1, // action is a no-op outside the minor heap
+} scanning_action_flags;
 
-void caml_oldify_local_roots (void);
-void caml_darken_all_roots_start (void);
-intnat caml_darken_all_roots_slice (intnat);
-void caml_do_roots (scanning_action, int);
-extern uintnat caml_incremental_roots_count;
-#ifndef NATIVE_CODE
-CAMLextern void caml_do_local_roots_byt (scanning_action, value *, value *,
-                                         struct caml__roots_block *);
-#define caml_do_local_roots caml_do_local_roots_byt
-#else
-CAMLextern void caml_do_local_roots_nat (
-                     scanning_action f, char * c_bottom_of_stack,
-                     uintnat last_retaddr, value * v_gc_regs,
-                     struct caml__roots_block * gc_local_roots);
-#define caml_do_local_roots caml_do_local_roots_nat
+typedef void (*scanning_action) (void*, value, volatile value *);
+typedef void (*scan_roots_hook) (scanning_action, scanning_action_flags,
+                                 void*, caml_domain_state*);
+
+#ifndef __cplusplus
+CAMLextern _Atomic scan_roots_hook caml_scan_roots_hook;
 #endif
 
-CAMLextern void (*caml_scan_roots_hook) (scanning_action);
+CAMLextern void caml_do_roots (
+  scanning_action f, scanning_action_flags,
+  void* data, caml_domain_state* d, int do_final_val);
+
+CAMLextern void caml_do_local_roots(
+  scanning_action f, scanning_action_flags,
+  void* data,
+  struct caml__roots_block* local_roots,
+  struct stack_info *current_stack,
+  value * v_gc_regs);
 
 #endif /* CAML_INTERNALS */
 

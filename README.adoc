@@ -1,5 +1,18 @@
+[CAUTION]
+====
+The developer team released OCaml 5.0.0 in December 2022. OCaml 5.x features a
+full rewrite of its runtime system for shared-memory parallel programming using
+domains and native support for concurrent programming using effect handlers.
+
+Owing to the large number of changes, especially to the garbage collector,
+OCaml 4.14 (the final release in the OCaml 4.x series, originally released in
+March 2022) remains supported for the time being. Maintainers of existing
+codebases are strongly encouraged to evaluate OCaml 5.x and to report any
+performance degradations on our issue tracker.
+====
+
 |=====
-| Branch `trunk` | Branch `4.12` | Branch `4.11` | Branch `4.10`
+| Branch `trunk` | Branch `5.3` | Branch `5.2` | Branch `5.1` | Branch `4.14`
 
 | image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=trunk["Github CI Build Status (trunk branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
@@ -7,17 +20,21 @@
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3AHygiene"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=trunk&svg=true["AppVeyor Build Status (trunk branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://github.com/ocaml/ocaml/workflows/main/badge.svg?branch=4.12["Github CI Build Status (4.12 branch)",
-     link="https://github.com/ocaml/ocaml/actions?query=workflow%3Amain"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.12&svg=true["AppVeyor Build Status (4.12 branch)",
+| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.3["Github CI Build Status (5.3 branch)",
+     link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=5.3&svg=true["AppVeyor Build Status (5.3 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.11["TravisCI Build Status (4.11 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.11&svg=true["AppVeyor Build Status (4.11 branch)",
+| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.2["Github CI Build Status (5.2 branch)",
+     link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=5.2&svg=true["AppVeyor Build Status (5.2 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.10["TravisCI Build Status (4.10 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.10&svg=true["AppVeyor Build Status (4.10 branch)",
+| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.1["Github CI Build Status (5.1 branch)",
+     link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=5.1&svg=true["AppVeyor Build Status (5.1 branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=4.14["Github CI Build Status (4.14 branch)",
+     link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.14&svg=true["AppVeyor Build Status (4.14 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
 |=====
 
@@ -46,12 +63,9 @@ compiler currently runs on the following platforms:
 |====
 |                |  Tier 1 (actively maintained)   | Tier 2 (maintained when possible)
 
-| x86 64 bits    | Linux, macOS, Windows, FreeBSD  |  NetBSD, OpenBSD
-| x86 32 bits    | Linux, Windows                  |  FreeBSD, NetBSD, OpenBSD
-| ARM 64 bits    | Linux, macOS                    |  FreeBSD
-| ARM 32 bits    | Linux                           |  FreeBSD, NetBSD, OpenBSD
-| Power 64 bits  | Linux                           |
-| Power 32 bits  | Linux                           |
+| x86 64 bits    | Linux, macOS, Windows, FreeBSD  |  NetBSD, OpenBSD, OmniOS (Solaris)
+| ARM 64 bits    | Linux, macOS                    |  FreeBSD, OpenBSD, NetBSD
+| Power 64 bits  | Linux (little-endian, ABIv2)    |  Linux (big-endian, ABIv2)
 | RISC-V 64 bits | Linux                           |
 | IBM Z (s390x)  | Linux                           |
 |====
@@ -59,18 +73,21 @@ compiler currently runs on the following platforms:
 Other operating systems for the processors above have not been tested, but
 the compiler may work under other operating systems with little work.
 
+❗ From OCaml 5.0 onwards, native compilation is available only on 64-bit
+systems.  Native compilation on 32-bit systems is no longer available, nor
+are there plans to bring it back.
 
 == Copyright
 
 All files marked "Copyright INRIA" in this distribution are
-Copyright (C) 1996-2021 Institut National de Recherche en Informatique et
+Copyright (C) 1996-2023 Institut National de Recherche en Informatique et
 en Automatique (INRIA) and distributed under the conditions stated in
 file LICENSE.
 
 == Installation
 
 See the file link:INSTALL.adoc[] for installation instructions on
-machines running Unix, Linux, macOS and Cygwin.  For native Microsoft
+machines running Unix, Linux, macOS, WSL and Cygwin.  For native Microsoft
 Windows, see link:README.win32.adoc[].
 
 == Documentation
@@ -78,13 +95,21 @@ Windows, see link:README.win32.adoc[].
 The OCaml manual is distributed in HTML, PDF, and Emacs
 Info files.  It is available at
 
-https://ocaml.org/releases/latest/manual.html
+https://ocaml.org/manual/latest/
 
 == Availability
 
 The complete OCaml distribution can be accessed at
 
 https://ocaml.org/docs/install.html
+
+== Releases
+
+More information about when and how new releases of OCaml are published is
+available at link:release-info/introduction.md[], see also
+link:release-info/calendar.md[] for a prospective calendar for future OCaml
+versions. For past versions, link:release-info/News[] contains a short
+description of major changes in previous versions.
 
 == Keeping in Touch with the Caml Community
 
@@ -101,17 +126,13 @@ You can subscribe and access list archives via the Web interface at
 
 https://sympa.inria.fr/sympa/subscribe/caml-list
 
-An alternative archive of the mailing list is also available at
-
-https://inbox.ocaml.org/
-
 There also exist other mailing lists, chat channels, and various other forums
 around the internet for getting in touch with the OCaml and ML family language
 community. These can be accessed at
 
 https://ocaml.org/community/
 
-In particular, the IRC channel `#ocaml` on https://freenode.net/[Freenode] has a
+In particular, the IRC channel `#ocaml` on https://libera.chat/[Libera] has a
 long history and welcomes questions.
 
 == Bug Reports and User Feedback
@@ -123,19 +144,26 @@ To be effective, bug reports should include a complete program (preferably
 small) that exhibits the unexpected behavior, and the configuration you are
 using (machine type, etc).
 
+== Contributing
+
 For information on contributing to OCaml, see link:HACKING.adoc[] and
 link:CONTRIBUTING.md[].
 
 == Separately maintained components
 
 Some libraries and tools which used to be part of the OCaml distribution are
-now maintained separately. Please use the issue trackers at their respective
-new homes:
+now maintained separately and distributed as OPAM packages.
+Please use the issue trackers at their respective new homes:
 
-- https://github.com/ocaml/graphics/issues[The Graphics library] (removed in OCaml 4.09)
-- https://github.com/ocaml/num/issues[The Num library] (removed in OCaml 4.06)
-- https://github.com/ocaml/ocamlbuild/issues[The OCamlbuild tool] (removed in OCaml 4.03)
-- https://github.com/camlp4/camlp4/issues[The camlp4 tool] (removed in OCaml 4.02)
-- https://github.com/garrigue/labltk/issues[The LablTk library] (removed in OCaml 4.02)
-- https://github.com/ocaml/dbm/issues[The CamlDBM library] (removed in OCaml 4.00)
-- https://github.com/xavierleroy/ocamltopwin/issues[The OCamlWinTop Windows toplevel] (removed in OCaml 4.00)
+|====
+| Library           |  Removed since    |  OPAM package
+
+| https://github.com/ocaml/camlp-streams/issues[The Stream and Genlex standard library modules] | OCaml 5.0 | `camlp-streams`
+| https://github.com/ocaml/graphics/issues[The Graphics library] | OCaml 4.09 | `graphics`
+| https://github.com/ocaml/num/issues[The Num library] | OCaml 4.06 | `num`
+| https://github.com/ocaml/ocamlbuild/issues[The OCamlbuild tool] | OCaml 4.03 | `ocamlbuild`
+| https://github.com/camlp4/camlp4/issues[The camlp4 tool] | OCaml 4.02 | `camlp4`
+| https://github.com/garrigue/labltk/issues[The LablTk library] | OCaml 4.02 | `labltk`
+| https://github.com/ocaml/dbm/issues[The CamlDBM library] | OCaml 4.00 | `dbm`
+| https://github.com/xavierleroy/ocamltopwin/issues[The OCamlWinTop Windows toplevel] | OCaml 4.00 | none
+|=====

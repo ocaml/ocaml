@@ -1,3 +1,4 @@
+# 2 "asmcomp/arm64/arch.ml"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -42,12 +43,13 @@ type cmm_label = int
   (* Do not introduce a dependency to Cmm *)
 
 type specific_operation =
-  | Ifar_alloc of { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
-  | Ifar_intop_checkbound
-  | Ifar_intop_imm_checkbound of { bound : int; }
+  | Ipoll_far of { return_label: cmm_label option }
+  | Ialloc_far of { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
+  | Icheckbound_far
+  | Icheckbound_imm_far of { bound : int; }
   | Ishiftarith of arith_operation * int
   | Ishiftcheckbound of { shift : int; }
-  | Ifar_shiftcheckbound of { shift : int; }
+  | Ishiftcheckbound_far of { shift : int; }
   | Imuladd       (* multiply and add *)
   | Imulsub       (* multiply and subtract *)
   | Inegmulf      (* floating-point negate and multiply *)
@@ -72,7 +74,7 @@ let size_addr = 8
 let size_int = 8
 let size_float = 8
 
-let allow_unaligned_access = false
+let allow_unaligned_access = true
 
 (* Behavior of division *)
 
@@ -86,10 +88,6 @@ let offset_addressing addr delta =
   match addr with
   | Iindexed n -> Iindexed(n + delta)
   | Ibased(s, n) -> Ibased(s, n + delta)
-
-let num_args_addressing = function
-  | Iindexed _ -> 1
-  | Ibased _ -> 0
 
 (* Printing operations and addressing modes *)
 
@@ -105,11 +103,13 @@ let print_addressing printreg addr ppf arg =
 
 let print_specific_operation printreg op ppf arg =
   match op with
-  | Ifar_alloc { bytes; } ->
+  | Ipoll_far _ ->
+    fprintf ppf "(far) poll"
+  | Ialloc_far { bytes; } ->
     fprintf ppf "(far) alloc %i" bytes
-  | Ifar_intop_checkbound ->
+  | Icheckbound_far ->
     fprintf ppf "%a (far) check > %a" printreg arg.(0) printreg arg.(1)
-  | Ifar_intop_imm_checkbound { bound; } ->
+  | Icheckbound_imm_far { bound; } ->
     fprintf ppf "%a (far) check > %i" printreg arg.(0) bound
   | Ishiftarith(op, shift) ->
       let op_name = function
@@ -124,7 +124,7 @@ let print_specific_operation printreg op ppf arg =
   | Ishiftcheckbound { shift; } ->
       fprintf ppf "check %a >> %i > %a" printreg arg.(0) shift
         printreg arg.(1)
-  | Ifar_shiftcheckbound { shift; } ->
+  | Ishiftcheckbound_far { shift; } ->
       fprintf ppf
         "(far) check %a >> %i > %a" printreg arg.(0) shift printreg arg.(1)
   | Imuladd ->
@@ -245,19 +245,19 @@ let is_logical_immediate x =
 (* Specific operations that are pure *)
 
 let operation_is_pure = function
-  | Ifar_alloc _
-  | Ifar_intop_checkbound
-  | Ifar_intop_imm_checkbound _
+  | Ialloc_far _
+  | Icheckbound_far
+  | Icheckbound_imm_far _
   | Ishiftcheckbound _
-  | Ifar_shiftcheckbound _ -> false
+  | Ishiftcheckbound_far _ -> false
   | _ -> true
 
 (* Specific operations that can raise *)
 
 let operation_can_raise = function
-  | Ifar_alloc _
-  | Ifar_intop_checkbound
-  | Ifar_intop_imm_checkbound _
+  | Ialloc_far _
+  | Icheckbound_far
+  | Icheckbound_imm_far _
   | Ishiftcheckbound _
-  | Ifar_shiftcheckbound _ -> true
+  | Ishiftcheckbound_far _ -> true
   | _ -> false

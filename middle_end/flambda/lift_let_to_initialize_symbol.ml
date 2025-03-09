@@ -28,7 +28,6 @@ let should_copy (named:Flambda.named) =
 
 type extracted =
   | Expr of Variable.t * Flambda.t
-  | Exprs of Variable.t list * Flambda.t
   | Block of Variable.t * Tag.t * Variable.t list
 
 type accumulated = {
@@ -40,26 +39,12 @@ type accumulated = {
 let rec accumulate ~substitution ~copied_lets ~extracted_lets
       (expr : Flambda.t) =
   match expr with
-  | Let { var; body = Var var'; _ } | Let_rec ([var, _], Var var')
+  | Let { var; body = Var var'; _ }
     when Variable.equal var var' ->
     { copied_lets; extracted_lets;
       terminator = Flambda_utils.toplevel_substitution substitution expr;
     }
-  (* If the pattern is what lifting let_rec generates, prevent it from being
-     lifted again. *)
-  | Let_rec (defs,
-             Let { var; body = Var var';
-                   defining_expr = Prim (Pmakeblock _, fields, _); })
-    when
-      Variable.equal var var'
-      && List.for_all (fun field ->
-          List.exists (fun (def_var, _) -> Variable.equal def_var field) defs)
-      fields ->
-    { copied_lets; extracted_lets;
-      terminator = Flambda_utils.toplevel_substitution substitution expr;
-    }
-  | Let { var; defining_expr = Expr (Var alias); body; _ }
-  | Let_rec ([var, Expr (Var alias)], body) ->
+  | Let { var; defining_expr = Expr (Var alias); body; _ } ->
     let alias =
       match Variable.Map.find alias substitution with
       | exception Not_found -> alias
@@ -71,7 +56,6 @@ let rec accumulate ~substitution ~copied_lets ~extracted_lets
       ~extracted_lets
       body
   | Let { var; defining_expr = named; body; _ }
-  | Let_rec ([var, named], body)
     when should_copy named ->
       accumulate body
         ~substitution
@@ -96,42 +80,6 @@ let rec accumulate ~substitution ~copied_lets ~extracted_lets
             (Flambda.create_let renamed named (Var renamed))
         in
         Expr (var, expr)
-    in
-    accumulate body
-      ~substitution
-      ~copied_lets
-      ~extracted_lets:(extracted::extracted_lets)
-  | Let_rec ([var, named], body) ->
-    let renamed = Variable.rename var in
-    let def_substitution = Variable.Map.add var renamed substitution in
-    let expr =
-      Flambda_utils.toplevel_substitution def_substitution
-        (Let_rec ([renamed, named], Var renamed))
-    in
-    let extracted = Expr (var, expr) in
-    accumulate body
-      ~substitution
-      ~copied_lets
-      ~extracted_lets:(extracted::extracted_lets)
-  | Let_rec (defs, body) ->
-    let renamed_defs, def_substitution =
-      List.fold_right (fun (var, def) (acc, substitution) ->
-          let new_var = Variable.rename var in
-          (new_var, def) :: acc,
-          Variable.Map.add var new_var substitution)
-        defs ([], substitution)
-    in
-    let extracted =
-      let expr =
-        let name = Internal_variable_names.lifted_let_rec_block in
-        Flambda_utils.toplevel_substitution def_substitution
-          (Let_rec (renamed_defs,
-                    Flambda_utils.name_expr ~name
-                      (Prim (Pmakeblock (0, Immutable, None),
-                             List.map fst renamed_defs,
-                             Debuginfo.none))))
-      in
-      Exprs (List.map fst defs, expr)
     in
     accumulate body
       ~substitution
@@ -174,11 +122,7 @@ let rebuild (used_variables:Variable.Set.t) (accumulated:accumulated) =
     List.map (fun decl ->
         match decl with
         | Block (var, _, _) | Expr (var, _) ->
-          Symbol.of_variable (Variable.rename var), decl
-        | Exprs _ ->
-          let name = Internal_variable_names.lifted_let_rec_block in
-          let var = Variable.create name in
-          Symbol.of_variable var, decl)
+          Symbol.of_variable (Variable.rename var), decl)
       accumulated.extracted_lets
   in
   let extracted_definitions =
@@ -198,15 +142,7 @@ let rebuild (used_variables:Variable.Set.t) (accumulated:accumulated) =
         | Block (var, _tag, _fields) ->
           Variable.Map.add var (symbol, []) map
         | Expr (var, _expr) ->
-          Variable.Map.add var (symbol, [0]) map
-        | Exprs (vars, _expr) ->
-          let map, _ =
-            List.fold_left (fun (map, field) var ->
-                Variable.Map.add var (symbol, [field; 0]) map,
-                field + 1)
-              (map, 0) vars
-          in
-          map)
+          Variable.Map.add var (symbol, [0]) map)
       Variable.Map.empty accumulated_extracted_lets
   in
   let extracted =
@@ -224,12 +160,6 @@ let rebuild (used_variables:Variable.Set.t) (accumulated:accumulated) =
                [expr])
           else
             Effect expr
-        | Exprs (_vars, decl) ->
-          let expr =
-            rebuild_expr ~extracted_definitions ~copied_definitions
-              ~substitute:true decl
-          in
-          Initialisation (symbol, Tag.create_exn 0, [expr])
         | Block (_var, tag, fields) ->
           let fields =
             List.map (fun var ->
@@ -264,8 +194,8 @@ let add_extracted introduced program =
       match extracted with
       | Initialisation (symbol, tag, def) ->
         Flambda.Initialize_symbol (symbol, tag, def, program)
-      | Effect effect ->
-        Flambda.Effect (effect, program))
+      | Effect eff ->
+        Flambda.Effect (eff, program))
     introduced program
 
 let rec split_program (program : Flambda.program_body) : Flambda.program_body =

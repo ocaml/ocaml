@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type 'p pair = 'a * 'b constraint 'p = < left:'a; right:'b>
@@ -25,9 +25,12 @@ let foo :
 Line 4, characters 11-12:
 4 | = fun x -> x
                ^
-Error: This expression has type
-         < m : 'left 'right. < left : 'left; right : 'right > pair >
+Error: The value "x" has type
+         "< m : 'left 'right. < left : 'left; right : 'right > pair >"
        but an expression was expected of type
-         < m : 'left 'right. < left : 'left; right : 'right > pair >
-       Types for method m are incompatible
+         "< m : 'left 'right. < left : 'left; right : 'right > pair >"
+       The method "m" has type
+       "'left 'right. < left : 'left; right : 'right > pair",
+       but the expected method type was
+       "'left 'right. < left : 'left; right : 'right > pair"
 |}]

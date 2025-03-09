@@ -34,13 +34,18 @@ type primitive =
   | Pread_symbol of string
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag * block_shape
-  | Pfield of int
+  | Pfield of int * immediate_or_pointer * mutable_flag
   | Pfield_computed
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Psetfield_computed of immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
   | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
+  (* Context switches *)
+  | Prunstack
+  | Pperform
+  | Presume
+  | Preperform
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)
@@ -114,8 +119,14 @@ type primitive =
   | Pbbswap of boxed_integer
   (* Integer to external pointer *)
   | Pint_as_pointer
+  (* Atomic operations *)
+  | Patomic_load
   (* Inhibition of optimisation *)
   | Popaque
+  (* Fetch domain-local state *)
+  | Pdls_get
+  (* Poll for runtime actions *)
+  | Ppoll
 
 and integer_comparison = Lambda.integer_comparison =
     Ceq | Cne | Clt | Cgt | Cle | Cge
@@ -136,7 +147,7 @@ and boxed_integer = Primitive.boxed_integer =
 
 and bigarray_kind = Lambda.bigarray_kind =
     Pbigarray_unknown
-  | Pbigarray_float32 | Pbigarray_float64
+  | Pbigarray_float16 | Pbigarray_float32 | Pbigarray_float64
   | Pbigarray_sint8 | Pbigarray_uint8
   | Pbigarray_sint16 | Pbigarray_uint16
   | Pbigarray_int32 | Pbigarray_int64

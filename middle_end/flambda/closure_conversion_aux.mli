@@ -40,9 +40,6 @@ module Env : sig
 
   val add_global : t -> int -> Symbol.t -> t
   val find_global : t -> int -> Symbol.t
-
-  val at_toplevel : t -> bool
-  val not_at_toplevel : t -> t
 end
 
 (** Used to represent information about a set of function declarations
@@ -72,6 +69,7 @@ module Function_decls : sig
     val is_a_functor : t -> bool
     val stub : t -> bool
     val loc : t -> Lambda.scoped_location
+    val poll_attribute : t -> Lambda.poll_attribute
 
     (* Like [all_free_idents], but for just one function. *)
     val free_idents : t -> Ident.Set.t

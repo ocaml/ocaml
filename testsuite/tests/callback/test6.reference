@@ -1,0 +1,12 @@
+[Caml] Call caml_to_c
+[C] Enter caml_to_c
+[C] Call c_to_caml
+[Caml] Enter c_to_caml
+[Caml] c_to_caml: raise exception
+[Caml] Caught exception
+[C] Enter caml_to_c
+[C] Call c_to_caml
+[Caml] Enter c_to_caml
+[Caml] c_to_caml: raise exception
+[Caml] Caught exceception again
+[Caml] Done

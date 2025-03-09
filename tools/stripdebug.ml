@@ -13,45 +13,79 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Copy a bytecode executable, removing debugging information
-   and #! header from the copy.
-   Usage: stripdebug <source file> <dest file>
+(* Copy a bytecode executable, removing debugging information and possibly
+   dynlink information and #! header from the copy.
 *)
 
-open Printf
 open Misc
+
+let remove_header = ref false
+let remove_DBUG = ref true
+let remove_CRCS = ref false
+
+let remove_section (s : Bytesections.Name.t) =
+  match s with
+  | DBUG -> !remove_DBUG
+  | CRCS -> !remove_CRCS
+  | RNTM -> !remove_header
+  | _ -> false
 
 let stripdebug infile outfile =
   let ic = open_in_bin infile in
-  Bytesections.read_toc ic;
-  let toc = Bytesections.toc() in
-  let pos_first_section = Bytesections.pos_first_section ic in
+  let toc = Bytesections.read_toc ic in
   let oc =
     open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o777
                  outfile in
-  (* Skip the #! header, going straight to the first section. *)
-  seek_in ic pos_first_section;
-  (* Copy each section except DBUG *)
-  Bytesections.init_record oc;
+  if not !remove_header then begin
+    (* Copy header up to first section *)
+    seek_in ic 0;
+    let header_length = Bytesections.pos_first_section toc in
+    copy_file_chunk ic oc header_length
+  end;
+  (* Copy each section except DBUG and CRCS *)
+  let toc_writer = Bytesections.init_record oc in
   List.iter
-    (fun (name, len) ->
-      if name = "DBUG" then begin
-        seek_in ic (in_channel_length ic + len)
-      end else begin
-        copy_file_chunk ic oc len;
-        Bytesections.record oc name
-      end)
-    toc;
+    (fun {Bytesections.name; pos; len} ->
+       if not (remove_section name) then begin
+         seek_in ic pos;
+         copy_file_chunk ic oc len;
+         Bytesections.record toc_writer name
+       end
+    )
+    (Bytesections.all toc);
   (* Rewrite the toc and trailer *)
-  Bytesections.write_toc_and_trailer oc;
+  Bytesections.write_toc_and_trailer toc_writer;
   (* Done *)
   close_in ic;
   close_out oc
 
-let _ =
-  if Array.length Sys.argv = 3
-  then stripdebug Sys.argv.(1) Sys.argv.(2)
-  else begin
-    eprintf "Usage: stripdebug <source file> <destination file>\n";
-    exit 2
-  end
+let options = [
+  "-remove-header", Arg.Set remove_header,
+     "remove the header that calls ocamlrun automatically";
+  "-keep-header", Arg.Clear remove_header,
+     "preserve the header that calls ocamlrun automatically (default)";
+  "-remove-debug", Arg.Set remove_DBUG,
+     "remove all debugging information (default)";
+  "-keep-debug", Arg.Clear remove_DBUG,
+     "preserve all debugging information";
+  "-remove-dynlink", Arg.Set remove_CRCS,
+     "remove the data needed for dynamic code loading";
+  "-keep-dynlink", Arg.Clear remove_CRCS,
+     "preserve the data needed for dynamic code loading (default)";
+  "-all", Arg.Unit (fun () -> remove_header := true; remove_DBUG := true;
+                              remove_CRCS := true),
+     "remove header, debugging info, and dynamic code loading info"
+]
+
+let usage =
+"Usage: stripdebug [options] <input file> <output file>\n\
+Options are:"
+
+let main() =
+  let anon = ref [] in
+  Arg.parse options (fun x -> anon := x :: !anon) usage;
+  match !anon with
+  | [output; input] -> stripdebug input output
+  | _ -> Arg.usage options usage; exit 2
+
+let _ = main()

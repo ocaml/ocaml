@@ -76,7 +76,7 @@ MENHIRBASICFLAGS := \
 MENHIRFLAGS := \
   $(MENHIRBASICFLAGS) \
   --infer \
-  --ocamlc "$(CAMLC) $(COMPFLAGS)" \
+  --ocamlc "$(call CONVERT_PATH, $(CAMLC)) $(OC_COMMON_COMPFLAGS) $(INCLUDES)" \
   --fixed-exception \
   --table \
   --strategy simplified \
@@ -105,12 +105,12 @@ promote-menhir: parsing/parser.mly
 # an incompatible version of menhirLib, which would fail at
 # compile-time.
 
+boot/menhir:
+	@$(MKDIR) $@
+
 .PHONY: import-menhirLib
-import-menhirLib:
-	@ mkdir -p boot/menhir
-	@ cp \
-           $(addprefix `$(MENHIR) --suggest-menhirLib`/menhirLib.,ml mli) \
-           boot/menhir
+import-menhirLib: | boot/menhir
+	@cp $(addprefix $(shell $(MENHIR) --suggest-menhirLib)/menhirLib.,ml mli) $|
 
 
 ## demote-menhir
@@ -159,12 +159,13 @@ clean-menhir: partialclean-menhir
 
 ## depend-menhir
 
+# The following rule depends on the OCAMLDEP_CMD variable defined in
+# Makefile.common, so it can only be invoked from the main (root) Makefile
+
 .PHONY: depend-menhir
 depend-menhir:
-	$(MENHIR) --depend --ocamldep "$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES)" \
-          parsing/parser.mly > .depend.menhir
-# this rule depends on the variables CAMLDEP, DEPFLAGS, DEPINCLUDES
-# defined in Makefile, so it can only be invoked from the main Makefile
+	$(MENHIR) --depend --ocamldep "$(OCAMLDEP_CMD)" \
+	  parsing/parser.mly > .depend.menhir
 
 include .depend.menhir
 

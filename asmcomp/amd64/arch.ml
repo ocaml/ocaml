@@ -1,3 +1,4 @@
+# 2 "asmcomp/amd64/arch.ml"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -76,13 +77,6 @@ let offset_addressing addr delta =
   | Iscaled(scale, n) -> Iscaled(scale, n + delta)
   | Iindexed2scaled(scale, n) -> Iindexed2scaled(scale, n + delta)
 
-let num_args_addressing = function
-    Ibased _ -> 0
-  | Iindexed _ -> 1
-  | Iindexed2 _ -> 2
-  | Iscaled _ -> 1
-  | Iindexed2scaled _ -> 2
-
 (* Printing operations and addressing modes *)
 
 let print_addressing printreg addr ppf arg =
@@ -151,3 +145,21 @@ let operation_is_pure = function
 (* Specific operations that can raise *)
 
 let operation_can_raise _ = false
+
+open X86_ast
+
+(* Certain float conditions aren't represented directly in the opcode for
+   float comparison, so we have to swap the arguments. The swap information
+   is also needed downstream because one of the arguments is clobbered. *)
+let float_cond_and_need_swap cond =
+  match (cond : Lambda.float_comparison) with
+  | CFeq  -> EQf,  false
+  | CFneq -> NEQf, false
+  | CFlt  -> LTf,  false
+  | CFnlt -> NLTf, false
+  | CFgt  -> LTf,  true
+  | CFngt -> NLTf, true
+  | CFle  -> LEf,  false
+  | CFnle -> NLEf, false
+  | CFge  -> LEf,  true
+  | CFnge -> NLEf, true

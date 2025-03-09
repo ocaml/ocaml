@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 (* See https://github.com/ocaml/ocaml/issues/9460
    This test comes from Richard Jones

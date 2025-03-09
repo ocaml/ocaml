@@ -14,9 +14,9 @@
 /**************************************************************************/
 
 #include <caml/mlvalues.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
-CAMLprim value unix_getppid(value unit)
+CAMLprim value caml_unix_getppid(value unit)
 {
   return Val_int(getppid());
 }

@@ -17,12 +17,12 @@
 
 (** The minimal class type of documentation generators. *)
 class type doc_generator =
-  object method generate : Odoc_module.t_module list -> unit end;;
+  object method generate : Odoc_module.t_module list -> unit end
 
 (** The module type of minimal generators. *)
 module type Base = sig
     class generator : doc_generator
-  end;;
+  end
 
 module Base_generator : Base
 
@@ -41,6 +41,5 @@ type generator =
   | Man of (module Odoc_man.Man_generator)
   | Dot of (module Odoc_dot.Dot_generator)
   | Base of (module Base)
-;;
 
 val get_minimal_generator : generator -> doc_generator

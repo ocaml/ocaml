@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module M = struct
@@ -30,7 +30,7 @@ module F(X : sig type t end) = struct
   type t = X.t
 end;;
 [%%expect{|
-module F : functor (X : sig type t end) -> sig type t = X.t end
+module F : (X : sig type t end) -> sig type t = X.t end
 |}]
 
 module type Accepted2 = sig
@@ -49,18 +49,18 @@ end;;
 Line 2, characters 14-22:
 2 |   module M := Funct(M)
                   ^^^^^^^^
-Error: Unbound module Funct
-Hint: Did you mean Fun?
+Error: Unbound module "Funct"
+Hint:    Did you mean "Fun"?
 |}]
 
 module type Reject2 = sig
   module M := F(N)
 end;;
 [%%expect{|
-Line 2, characters 14-18:
+Line 2, characters 16-17:
 2 |   module M := F(N)
-                  ^^^^
-Error: Unbound module N
+                    ^
+Error: Unbound module "N"
 |}]
 
 module type Reject3 = sig
@@ -70,7 +70,7 @@ end;;
 Line 2, characters 12-13:
 2 |   type t := u
                 ^
-Error: Unbound type constructor u
+Error: Unbound type constructor "u"
 |}]
 
 module type RejectRec = sig
@@ -80,7 +80,7 @@ end;;
 Line 2, characters 22-23:
 2 |   type t := [ `Foo of t | `Nil ]
                           ^
-Error: Unbound type constructor t
+Error: Unbound type constructor "t"
 |}]
 
 module type AcceptAnd = sig
@@ -99,7 +99,7 @@ end;;
 Line 3, characters 11-12:
 3 |   and u := t * int
                ^
-Error: Unbound type constructor t
+Error: Unbound type constructor "t"
 |}]
 
 type ('a, 'b) foo = Foo

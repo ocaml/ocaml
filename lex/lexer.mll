@@ -21,11 +21,6 @@ open Parser
 
 (* Auxiliaries for the lexical analyzer *)
 
-let brace_depth = ref 0
-and comment_depth = ref 0
-
-let in_pattern () = !brace_depth = 0 && !comment_depth = 0
-
 exception Lexical_error of string * string * int * int
 
 let string_buff = Buffer.create 256
@@ -51,16 +46,15 @@ let raise_lexical_error lexbuf msg =
                         p.Lexing.pos_fname,
                         p.Lexing.pos_lnum,
                         p.Lexing.pos_cnum - p.Lexing.pos_bol + 1))
-;;
 
-let handle_lexical_error fn lexbuf =
+let handle_lexical_error fn arg lexbuf =
   let p = Lexing.lexeme_start_p lexbuf in
   let line = p.Lexing.pos_lnum
   and column = p.Lexing.pos_cnum - p.Lexing.pos_bol + 1
   and file = p.Lexing.pos_fname
   in
   try
-    fn lexbuf
+    fn arg lexbuf
   with Lexical_error (msg, "", 0, 0) ->
     raise(Lexical_error(msg, file, line, column))
 
@@ -103,7 +97,6 @@ let incr_loc lexbuf delta =
     Lexing.pos_lnum = pos.Lexing.pos_lnum + 1;
     Lexing.pos_bol = pos.Lexing.pos_cnum - delta;
   }
-;;
 
 let update_loc lexbuf opt_file line =
   let pos = lexbuf.Lexing.lex_curr_p in
@@ -116,8 +109,8 @@ let update_loc lexbuf opt_file line =
     Lexing.pos_lnum = line;
     Lexing.pos_bol = pos.Lexing.pos_cnum;
   }
-;;
 
+type string_context = Pattern | Action | Comment
 }
 
 let identstart =
@@ -132,6 +125,15 @@ let ident = identstart identbody*
 let extattrident = ident ('.' ident)*
 let blank = [' ' '\009' '\012']
 
+let uppercase = ['A'-'Z']
+let ocaml_identstart = lowercase | uppercase
+let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
+let utf8 = ['\192'-'\255'] ['\128'-'\191']*
+let identstart_ext = ocaml_identstart | utf8
+let identchar_ext = identchar | utf8
+let ocaml_ident = identstart_ext identchar_ext*
+
+
 rule main = parse
     [' ' '\013' '\009' '\012' ] +
     { main lexbuf }
@@ -140,13 +142,12 @@ rule main = parse
       main lexbuf }
   | "#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
     ('\"' ([^ '\010' '\013' '\"']* as name) '\"')?
-    [^ '\010' '\013']* '\010'
+    [^ '\010' '\013']* '\013'* '\010'
     { update_loc lexbuf name (int_of_string num);
       main lexbuf
     }
   | "(*"
-    { comment_depth := 1;
-      handle_lexical_error comment lexbuf;
+    { handle_lexical_error comment 0 lexbuf;
       main lexbuf }
   | '_' { Tunderscore }
   | ident
@@ -162,7 +163,7 @@ rule main = parse
       | s -> Tident s }
   | '"'
     { reset_string_buffer();
-      handle_lexical_error string lexbuf;
+      handle_lexical_error string Pattern lexbuf;
       Tstring(get_stored_string()) }
 (* note: ''' is a valid character literal (by contrast with the compiler) *)
   | "'" [^ '\\'] "'"
@@ -191,8 +192,7 @@ rule main = parse
       let n1 = p.Lexing.pos_cnum
       and l1 = p.Lexing.pos_lnum
       and s1 = p.Lexing.pos_bol in
-      brace_depth := 1;
-      let n2 = handle_lexical_error action lexbuf in
+      let n2 = handle_lexical_error action [] lexbuf in
       Taction({loc_file = f; start_pos = n1; end_pos = n2;
                start_line = l1; start_col = n1 - s1}) }
   | '='  { Tequal }
@@ -215,59 +215,59 @@ rule main = parse
 
 
 (* String parsing comes from the compiler lexer *)
-and string = parse
+and string in_pattern = parse
     '"'
     { () }
   | '\\' ('\013'* '\010') ([' ' '\009'] * as spaces)
     { incr_loc lexbuf (String.length spaces);
-      string lexbuf }
+      string in_pattern lexbuf }
   | '\\' (backslash_escapes as c)
     { store_string_char(char_for_backslash c);
-      string lexbuf }
+      string in_pattern lexbuf }
   | '\\' (['0'-'9'] as c) (['0'-'9'] as d) (['0'-'9']  as u)
     { let v = decimal_code c d u in
-      if in_pattern () then
+      if in_pattern = Pattern then
         if v > 255 then
           raise_lexical_error lexbuf
             (Printf.sprintf
               "illegal backslash escape in string: '\\%c%c%c'" c d u)
         else
           store_string_char (Char.chr v);
-      string lexbuf }
+      string in_pattern lexbuf }
   | '\\' 'o' (['0'-'3'] as c) (['0'-'7'] as d) (['0'-'7'] as u)
     { store_string_char (char_for_octal_code c d u);
-      string lexbuf }
+      string in_pattern lexbuf }
   | '\\' 'x' (['0'-'9' 'a'-'f' 'A'-'F'] as d) (['0'-'9' 'a'-'f' 'A'-'F'] as u)
     { store_string_char (char_for_hexadecimal_code d u) ;
-      string lexbuf }
+      string in_pattern lexbuf }
   | '\\' 'u' '{' (['0'-'9' 'a'-'f' 'A'-'F'] + as s) '}'
     { let v = hexadecimal_code s in
-      if in_pattern () then
+      if in_pattern = Pattern then
         if not (Uchar.is_valid v) then
           raise_lexical_error lexbuf
             (Printf.sprintf
               "illegal uchar escape in string: '\\u{%s}'" s)
         else
           store_string_uchar (Uchar.unsafe_of_int v);
-      string lexbuf }
+      string in_pattern lexbuf }
   | '\\' (_ as c)
-    {if in_pattern () then
-       warning lexbuf
-        (Printf.sprintf "illegal backslash escape in string: '\\%c'" c) ;
+    { if in_pattern = Pattern then
+        warning lexbuf
+          (Printf.sprintf "illegal backslash escape in string: '\\%c'" c) ;
       store_string_char '\\' ;
       store_string_char c ;
-      string lexbuf }
+      string in_pattern lexbuf }
   | eof
     { raise(Lexical_error("unterminated string", "", 0, 0)) }
   | '\013'* '\010' as s
-    { if !comment_depth = 0 then
+    { if in_pattern <> Comment then
         warning lexbuf (Printf.sprintf "unescaped newline in string") ;
       store_string_chars s;
       incr_loc lexbuf 0;
-      string lexbuf }
+      string in_pattern lexbuf }
   | _ as c
     { store_string_char c;
-      string lexbuf }
+      string in_pattern lexbuf }
 
 and quoted_string delim = parse
   | '\013'* '\010'
@@ -287,64 +287,65 @@ and quoted_string delim = parse
    in order not to be confused by what is inside them.
 *)
 
-and comment = parse
-    "(*"
-    { incr comment_depth; comment lexbuf }
-  | "*)"
-    { decr comment_depth;
-      if !comment_depth = 0 then () else comment lexbuf }
+and comment depth = parse
+    "(*" { comment (depth + 1) lexbuf }
+  | "*)" { if depth > 0 then comment (depth - 1) lexbuf }
   | '"'
     { reset_string_buffer();
-      string lexbuf;
+      string Comment lexbuf;
       reset_string_buffer();
-      comment lexbuf }
+      comment depth lexbuf }
   | '{' ('%' '%'? extattrident blank*)? (lowercase* as delim) "|"
     { quoted_string delim lexbuf;
-      comment lexbuf }
+      comment depth lexbuf }
   | "'"
     { skip_char lexbuf ;
-      comment lexbuf }
+      comment depth lexbuf }
   | eof
     { raise(Lexical_error("unterminated comment", "", 0, 0)) }
   | '\010'
     { incr_loc lexbuf 0;
-      comment lexbuf }
-  | ident
-    { comment lexbuf }
+      comment depth lexbuf }
+  | ocaml_ident
+    { comment depth lexbuf }
   | _
-    { comment lexbuf }
+    { comment depth lexbuf }
 
-and action = parse
-    '{'
-    { incr brace_depth;
-      action lexbuf }
+and action stk = parse
+  | '(' { action ('(' :: stk) lexbuf }
+  | '{' { action ('{' :: stk) lexbuf }
+  | ')'
+    { match stk with
+      | '(' :: stk' -> action stk' lexbuf
+      | _ -> raise_lexical_error lexbuf "Unmatched ) in action" }
   | '}'
-    { decr brace_depth;
-      if !brace_depth = 0 then Lexing.lexeme_start lexbuf else action lexbuf }
+    { match stk with
+      | [] -> Lexing.lexeme_start lexbuf
+      | '{' :: stk' -> action stk' lexbuf
+      | _ -> raise_lexical_error lexbuf "Unmatched } in action" }
   | '"'
     { reset_string_buffer();
-      handle_lexical_error string lexbuf;
+      handle_lexical_error string Action lexbuf;
       reset_string_buffer();
-      action lexbuf }
+      action stk lexbuf }
   | '{' ('%' '%'? extattrident blank*)? (lowercase* as delim) "|"
     { quoted_string delim lexbuf;
-      action lexbuf }
+      action stk lexbuf }
   | "'"
     { skip_char lexbuf ;
-      action lexbuf }
+      action stk lexbuf }
   | "(*"
-    { comment_depth := 1;
-      comment lexbuf;
-      action lexbuf }
+    { comment 0 lexbuf;
+      action stk lexbuf }
   | eof
     { raise (Lexical_error("unterminated action", "", 0, 0)) }
   | '\010'
     { incr_loc lexbuf 0;
-      action lexbuf }
-  | ident
-    { action lexbuf }
+      action stk lexbuf }
+  | ocaml_ident
+    { action stk lexbuf }
   | _
-    { action lexbuf }
+    { action stk lexbuf }
 
 and skip_char = parse
   | '\\'? ('\013'* '\010') "'"

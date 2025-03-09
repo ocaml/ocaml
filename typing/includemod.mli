@@ -18,18 +18,6 @@
 open Typedtree
 open Types
 
-(** Type describing which arguments of an inclusion to consider as used
-    for the usage warnings. [Mark_both] is the default. *)
-type mark =
-  | Mark_both
-      (** Mark definitions used from both arguments *)
-  | Mark_positive
-      (** Mark definitions used from the positive (first) argument *)
-  | Mark_negative
-      (** Mark definitions used from the negative (second) argument *)
-  | Mark_neither
-      (** Do not mark definitions used from either argument *)
-
 module Error: sig
 
   type ('elt,'explanation) diff = {
@@ -43,9 +31,13 @@ module Error: sig
     | Anonymous
     | Named of Path.t
     | Unit
+    | Empty_struct
+     (** For backward compatibility's sake, an empty struct can be implicitly
+         converted to an unit module. *)
 
   type core_sigitem_symptom =
-    | Value_descriptions of Types.value_description core_diff
+    | Value_descriptions of
+        (Types.value_description, Includecore.value_mismatch) diff
     | Type_declarations of
         (Types.type_declaration, Includecore.type_mismatch) diff
     | Extension_constructors of
@@ -92,6 +84,8 @@ module Error: sig
     missings: Types.signature_item list;
     incompatibles: (Ident.t * sigitem_symptom) list;
     oks: (int * Typedtree.module_coercion) list;
+    leftovers: ((Types.signature_item as 'it) * 'it * int) list
+    (** signature items that could not be compared due to type divergence *)
   }
   and sigitem_symptom =
     | Core of core_sigitem_symptom
@@ -146,11 +140,18 @@ val is_runtime_component: Types.signature_item -> bool
 (* Typechecking *)
 
 val modtypes:
-  loc:Location.t -> Env.t -> mark:mark ->
+  loc:Location.t -> Env.t -> mark:bool ->
   module_type -> module_type -> module_coercion
 
+val modtypes_consistency:
+  loc:Location.t -> Env.t -> module_type -> module_type -> unit
+
+val modtypes_with_shape:
+  shape:Shape.t -> loc:Location.t -> Env.t -> mark:bool ->
+  module_type -> module_type -> module_coercion * Shape.t
+
 val strengthened_module_decl:
-  loc:Location.t -> aliasable:bool -> Env.t -> mark:mark ->
+  loc:Location.t -> aliasable:bool -> Env.t -> mark:bool ->
   module_declaration -> Path.t -> module_declaration -> module_coercion
 
 val check_modtype_inclusion :
@@ -163,15 +164,17 @@ val check_modtype_inclusion :
 val check_modtype_equiv:
   loc:Location.t -> Env.t -> Ident.t -> module_type -> module_type -> unit
 
-val signatures: Env.t -> mark:mark ->
-  signature -> signature -> module_coercion
+val signatures: Env.t -> mark:bool -> signature -> signature -> module_coercion
+
+(** Check an implementation against an interface *)
+val check_implementation: Env.t -> signature -> signature -> unit
 
 val compunit:
-      Env.t -> mark:mark -> string -> signature ->
-      string -> signature -> module_coercion
+      Env.t -> mark:bool -> string -> signature ->
+      string -> signature -> Shape.t -> module_coercion * Shape.t
 
 val type_declarations:
-  loc:Location.t -> Env.t -> mark:mark ->
+  loc:Location.t -> Env.t -> mark:bool ->
   Ident.t -> type_declaration -> type_declaration -> unit
 
 val print_coercion: Format.formatter -> module_coercion -> unit
@@ -205,33 +208,47 @@ type pos =
   | Body of functor_parameter
 
 exception Error of explanation
+
+type application_name =
+  | Anonymous_functor (** [(functor (_:sig end) -> struct end)(Int)] *)
+  | Full_application_path of Longident.t (** [F(G(X).P)(Y)] *)
+  | Named_leftmost_functor of Longident.t (** [F(struct end)...(...)] *)
+
 exception Apply_error of {
     loc : Location.t ;
     env : Env.t ;
-    lid_app : Longident.t option ;
+    app_name : application_name ;
     mty_f : module_type ;
     args : (Error.functor_arg_descr * Types.module_type)  list ;
   }
 
-val expand_module_alias: Env.t -> Path.t -> Types.module_type
+val expand_module_alias: strengthen:bool -> Env.t -> Path.t -> Types.module_type
 
 module Functor_inclusion_diff: sig
+  module Defs: sig
+    type left = Types.functor_parameter
+    type right = left
+    type eq = Typedtree.module_coercion
+    type diff = (Types.functor_parameter, unit) Error.functor_param_symptom
+    type state
+  end
   val diff: Env.t ->
-           Types.functor_parameter list * Types.module_type ->
-           Types.functor_parameter list * Types.module_type ->
-           (Types.functor_parameter, Types.functor_parameter,
-            Typedtree.module_coercion,
-            (Types.functor_parameter, 'c) Error.functor_param_symptom)
-           Diffing.patch
+    Types.functor_parameter list * Types.module_type ->
+    Types.functor_parameter list * Types.module_type ->
+    Diffing.Define(Defs).patch
 end
 
 module Functor_app_diff: sig
+  module Defs: sig
+    type left = Error.functor_arg_descr * Types.module_type
+    type right = Types.functor_parameter
+    type eq = Typedtree.module_coercion
+    type diff = (Error.functor_arg_descr, unit) Error.functor_param_symptom
+    type state
+  end
   val diff:
     Env.t ->
     f:Types.module_type ->
     args:(Error.functor_arg_descr * Types.module_type) list ->
-    (Error.functor_arg_descr * Types.module_type,
-     Types.functor_parameter, Typedtree.module_coercion,
-     (Error.functor_arg_descr, 'a) Error.functor_param_symptom)
-      Diffing.patch
+    Diffing.Define(Defs).patch
 end

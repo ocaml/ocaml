@@ -22,23 +22,34 @@ open Typedtree
 open Lambda
 
 let scrape_ty env ty =
-  let ty = Ctype.expand_head_opt env (Ctype.correct_levels ty) in
-  match ty.desc with
-  | Tconstr (p, _, _) ->
-      begin match Env.find_type p env with
-      | {type_kind = ( Type_variant (_, Variant_unboxed)
-                     | Type_record (_, Record_unboxed _) ); _} ->
-        begin match Typedecl.get_unboxed_type_representation env ty with
-        | None -> ty
-        | Some ty2 -> ty2
-        end
-      | _ -> ty
-      | exception Not_found -> ty
+  match get_desc ty with
+  | Tconstr _ ->
+      let ty = Ctype.expand_head_opt env ty in
+      begin match get_desc ty with
+      | Tconstr (p, _, _) ->
+          begin match Env.find_type p env with
+          | {type_kind = ( Type_variant (_, Variant_unboxed)
+          | Type_record (_, Record_unboxed _) ); _} -> begin
+              match Typedecl_unboxed.get_unboxed_type_representation env ty with
+              | None -> ty
+              | Some ty2 -> ty2
+          end
+          | _ -> ty
+          | exception Not_found -> ty
+          end
+      | _ ->
+          ty
       end
   | _ -> ty
 
 let scrape env ty =
-  (scrape_ty env ty).desc
+  get_desc (scrape_ty env ty)
+
+let scrape_poly env ty =
+  let ty = scrape_ty env ty in
+  match get_desc ty with
+  | Tpoly (ty, _) -> get_desc ty
+  | d -> d
 
 let is_function_type env ty =
   match scrape env ty with
@@ -50,12 +61,18 @@ let is_base_type env ty base_ty_path =
   | Tconstr(p, _, _) -> Path.same p base_ty_path
   | _ -> false
 
+let is_immediate = function
+  | Type_immediacy.Unknown -> false
+  | Type_immediacy.Always -> true
+  | Type_immediacy.Always_on_64bits ->
+      (* In bytecode, we don't know at compile time whether we are
+         targeting 32 or 64 bits. *)
+      !Clflags.native_code && Sys.word_size = 64
+
 let maybe_pointer_type env ty =
   let ty = scrape_ty env ty in
-  if Ctype.maybe_pointer_type env ty then
-    Pointer
-  else
-    Immediate
+  if is_immediate (Ctype.immediacy env ty) then Immediate
+  else Pointer
 
 let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
 
@@ -66,25 +83,26 @@ type classification =
   | Addr  (* anything except a float or a lazy *)
   | Any
 
-let classify env ty =
+let classify env ty : classification =
   let ty = scrape_ty env ty in
   if maybe_pointer_type env ty = Immediate then Int
-  else match ty.desc with
+  else match get_desc ty with
   | Tvar _ | Tunivar _ ->
       Any
   | Tconstr (p, _args, _abbrev) ->
-      if Path.same p Predef.path_float then Float
-      else if Path.same p Predef.path_lazy_t then Lazy
-      else if Path.same p Predef.path_string
-           || Path.same p Predef.path_bytes
-           || Path.same p Predef.path_array
-           || Path.same p Predef.path_nativeint
-           || Path.same p Predef.path_int32
-           || Path.same p Predef.path_int64 then Addr
-      else begin
+      begin match Predef.find_type_constr p with
+      | Some `Float -> Float
+      | Some `Lazy_t -> Lazy
+      | Some (`Int | `Char) -> Int
+      | Some (`String | `Bytes
+             | `Int32 | `Int64 | `Nativeint
+             | `Extension_constructor | `Continuation
+             | `Array | `Floatarray | `Iarray)
+        -> Addr
+      | Some #Predef.data_type_constr | None ->
         try
           match (Env.find_type p env).type_kind with
-          | Type_abstract ->
+          | Type_abstract _ ->
               Any
           | Type_record _ | Type_variant _ | Type_open ->
               Addr
@@ -100,17 +118,16 @@ let classify env ty =
       assert false
 
 let array_type_kind env ty =
-  match scrape env ty with
-  | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
-    when Path.same p Predef.path_array ->
+  match scrape_poly env ty with
+  | Tconstr(p, [elt_ty], _)
+    when Path.same p Predef.path_array || Path.same p Predef.path_iarray ->
       begin match classify env elt_ty with
       | Any -> if Config.flat_float_array then Pgenarray else Paddrarray
       | Float -> if Config.flat_float_array then Pfloatarray else Paddrarray
       | Addr | Lazy -> Paddrarray
       | Int -> Pintarray
       end
-  | Tconstr(p, [], _) | Tpoly({desc = Tconstr(p, [], _)}, _)
-    when Path.same p Predef.path_floatarray ->
+  | Tconstr(p, [], _) when Path.same p Predef.path_floatarray ->
       Pfloatarray
   | _ ->
       (* This can happen with e.g. Obj.field *)
@@ -129,7 +146,8 @@ let bigarray_decode_type env ty tbl dfl =
       dfl
 
 let kind_table =
-  ["float32_elt", Pbigarray_float32;
+  ["float16_elt", Pbigarray_float16;
+   "float32_elt", Pbigarray_float32;
    "float64_elt", Pbigarray_float64;
    "int8_signed_elt", Pbigarray_sint8;
    "int8_unsigned_elt", Pbigarray_uint8;
@@ -156,26 +174,21 @@ let bigarray_type_kind_and_layout env typ =
       (Pbigarray_unknown, Pbigarray_unknown_layout)
 
 let value_kind env ty =
-  match scrape env ty with
-  | Tconstr(p, _, _) when Path.same p Predef.path_int ->
-      Pintval
-  | Tconstr(p, _, _) when Path.same p Predef.path_char ->
-      Pintval
-  | Tconstr(p, _, _) when Path.same p Predef.path_float ->
-      Pfloatval
-  | Tconstr(p, _, _) when Path.same p Predef.path_int32 ->
-      Pboxedintval Pint32
-  | Tconstr(p, _, _) when Path.same p Predef.path_int64 ->
-      Pboxedintval Pint64
-  | Tconstr(p, _, _) when Path.same p Predef.path_nativeint ->
-      Pboxedintval Pnativeint
-  | _ ->
-      Pgenval
-
-let function_return_value_kind env ty =
-  match is_function_type env ty with
-  | Some (_lhs, rhs) -> value_kind env rhs
-  | None -> Pgenval
+  let ty = scrape_ty env ty in
+  if is_immediate (Ctype.immediacy env ty) then Pintval
+  else begin
+    match get_desc ty with
+    | Tconstr(p, _, _) when Path.same p Predef.path_float ->
+        Pfloatval
+    | Tconstr(p, _, _) when Path.same p Predef.path_int32 ->
+        Pboxedintval Pint32
+    | Tconstr(p, _, _) when Path.same p Predef.path_int64 ->
+        Pboxedintval Pint64
+    | Tconstr(p, _, _) when Path.same p Predef.path_nativeint ->
+        Pboxedintval Pnativeint
+    | _ ->
+        Pgenval
+  end
 
 (** Whether a forward block is needed for a lazy thunk on a value, i.e.
     if the value can be represented as a float/forward/lazy *)

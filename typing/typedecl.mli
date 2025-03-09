@@ -16,23 +16,21 @@
 (* Typing of type definitions and primitive definitions *)
 
 open Types
-open Format
-
 val transl_type_decl:
     Env.t -> Asttypes.rec_flag -> Parsetree.type_declaration list ->
-    Typedtree.type_declaration list * Env.t
+    Typedtree.type_declaration list * Env.t * Shape.t list
 
 val transl_exception:
     Env.t -> Parsetree.extension_constructor ->
-    Typedtree.extension_constructor * Env.t
+    Typedtree.extension_constructor * Env.t * Shape.t
 
 val transl_type_exception:
     Env.t ->
-    Parsetree.type_exception -> Typedtree.type_exception * Env.t
+    Parsetree.type_exception -> Typedtree.type_exception * Env.t * Shape.t
 
 val transl_type_extension:
     bool -> Env.t -> Location.t -> Parsetree.type_extension ->
-    Typedtree.type_extension * Env.t
+    Typedtree.type_extension * Env.t * Shape.t list
 
 val transl_value_decl:
     Env.t -> Location.t ->
@@ -46,6 +44,9 @@ val transl_with_constraint:
     outer_env:Env.t -> Parsetree.type_declaration ->
     Typedtree.type_declaration
 
+val transl_package_constraint:
+  loc:Location.t -> Env.t -> type_expr -> Types.type_declaration
+
 val abstract_type_decl: injective:bool -> int -> type_declaration
 val approx_type_decl:
     Parsetree.type_declaration list ->
@@ -58,36 +59,38 @@ val check_coherence:
 (* for fixed types *)
 val is_fixed_type : Parsetree.type_declaration -> bool
 
-(* for typeopt.ml *)
-val get_unboxed_type_representation: Env.t -> type_expr -> type_expr option
-
 type native_repr_kind = Unboxed | Untagged
+
+type reaching_type_path = reaching_type_step list
+and reaching_type_step =
+  | Expands_to of type_expr * type_expr
+  | Contains of type_expr * type_expr
 
 type error =
     Repeated_parameter
   | Duplicate_constructor of string
   | Too_many_constructors
   | Duplicate_label of string
-  | Recursive_abbrev of string
-  | Cycle_in_def of string * type_expr
-  | Definition_mismatch of type_expr * Includecore.type_mismatch option
-  | Constraint_failed of Env.t * Errortrace.unification Errortrace.t
-  | Inconsistent_constraint of Env.t * Errortrace.unification Errortrace.t
-  | Type_clash of Env.t * Errortrace.unification Errortrace.t
+  | Recursive_abbrev of string * Env.t * reaching_type_path
+  | Cycle_in_def of string * Env.t * reaching_type_path
+  | Definition_mismatch of type_expr * Env.t * Includecore.type_mismatch option
+  | Constraint_failed of Env.t * Errortrace.unification_error
+  | Inconsistent_constraint of Env.t * Errortrace.unification_error
+  | Type_clash of Env.t * Errortrace.unification_error
   | Non_regular of {
       definition: Path.t;
       used_as: type_expr;
       defined_as: type_expr;
-      expansions: (type_expr * type_expr) list;
+      reaching_path: reaching_type_path;
     }
   | Null_arity_external
   | Missing_native_external
   | Unbound_type_var of type_expr * type_declaration
   | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
-  | Extension_mismatch of Path.t * Includecore.type_mismatch
+  | Extension_mismatch of Path.t * Env.t * Includecore.type_mismatch
   | Rebind_wrong_type of
-      Longident.t * Env.t * Errortrace.unification Errortrace.t
+      Longident.t * Env.t * Errortrace.unification_error
   | Rebind_mismatch of Longident.t * Path.t * Path.t
   | Rebind_private of Longident.t
   | Variance of Typedecl_variance.error
@@ -106,4 +109,5 @@ type error =
 
 exception Error of Location.t * error
 
-val report_error: formatter -> error -> unit
+val report_error: error Format_doc.format_printer
+val report_error_doc: error Format_doc.printer

@@ -24,6 +24,9 @@ type source_file =
 (** The include_dirs in the OCaml compiler. *)
 val include_dirs : string list ref
 
+(** The hidden_include_dirs in the OCaml compiler. *)
+val hidden_include_dirs : string list ref
+
 (** The merge options to be used. *)
 val merge_options : Odoc_types.merge_option list ref
 

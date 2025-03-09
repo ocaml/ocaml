@@ -28,6 +28,7 @@ type t =
   | Obj
   | Backend_specific of Ocaml_backends.t * backend_specific
   | Text (* used by ocamldoc for text only documentation *)
+  | Other of string
 
 let string_of_backend_specific = function
   | Object -> "object"
@@ -38,7 +39,7 @@ let string_of_filetype = function
   | Implementation -> "implementation"
   | Interface -> "interface"
   | C -> "C source file"
-  | C_minus_minus -> "C minus minus source file"
+  | C_minus_minus -> "C minus minus source"
   | Lexer -> "lexer"
   | Grammar -> "grammar"
   | Binary_interface -> "binary interface"
@@ -47,6 +48,7 @@ let string_of_filetype = function
     ((Ocaml_backends.string_of_backend backend) ^ " " ^
       (string_of_backend_specific filetype))
   | Text -> "text"
+  | Other s -> Printf.sprintf "unknown (%s)" s
 
 let extension_of_filetype = function
   | Implementation -> "ml"
@@ -67,6 +69,7 @@ let extension_of_filetype = function
       | (Ocaml_backends.Bytecode, Program) -> "byte"
     end
   | Text -> "txt"
+  | Other s -> s
 
 let filetype_of_extension = function
   | "ml" -> Implementation
@@ -85,7 +88,7 @@ let filetype_of_extension = function
   | "cma" -> Backend_specific (Ocaml_backends.Bytecode, Library)
   | "byte" -> Backend_specific (Ocaml_backends.Bytecode, Program)
   | "txt" -> Text
-  | _ as e -> Printf.eprintf "Unknown file extension %s\n%!" e; exit 2
+  | e -> Other e
 
 let split_filename name =
   let l = String.length name in

@@ -1,0 +1,73 @@
+# Run the multicoretests testsuite if PR is labelled with run-multicoretests
+name: Run multicoretests testsuite
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+# Restrict the GITHUB_TOKEN
+permissions: {}
+
+# See build.yml
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  multicoretests:
+    if: contains(github.event.pull_request.labels.*.name, 'run-multicoretests')
+    runs-on: 'ubuntu-latest'
+    strategy:
+      matrix:
+        include:
+          - profile: dev
+            ocamlrunparam: b
+          - profile: debug-runtime
+            ocamlrunparam: b,s=4096
+    steps:
+      - name: Checkout OCaml
+        uses: actions/checkout@v4
+        with:
+          path: ocaml
+          persist-credentials: false
+      - name: Configure, build and install OCaml
+        run: |
+          bash -xe ocaml/tools/ci/actions/multicoretests.sh ocaml
+      - name: Checkout multicoretests
+        uses: actions/checkout@v4
+        with:
+          repository: ocaml-multicore/multicoretests
+          ref: 0.6
+          path: multicoretests
+          persist-credentials: false
+      - name: Checkout QCheck
+        uses: actions/checkout@v4
+        with:
+          repository: c-cube/qcheck
+          ref: v0.23
+          path: multicoretests/qcheck
+          persist-credentials: false
+      - name: Checkout dune
+        uses: actions/checkout@v4
+        with:
+          repository: ocaml/dune
+          ref: 3.16.0
+          path: dune
+          persist-credentials: false
+      - name: Build and install dune
+        run: |
+          bash -xe ocaml/tools/ci/actions/multicoretests.sh dune
+      - name: Show the configuration
+        run: |
+          bash ocaml/tools/ci/actions/multicoretests.sh show_config
+      - name: Build the test suite
+        env:
+          DUNE_PROFILE: ${{ matrix.profile }}
+          OCAMLRUNPARAM: ${{ matrix.ocamlrunparam }}
+        run: |
+          bash -xe ocaml/tools/ci/actions/multicoretests.sh build
+      - name: Run the multicore test suite
+        env:
+          DUNE_PROFILE: ${{ matrix.profile }}
+          OCAMLRUNPARAM: ${{ matrix.ocamlrunparam }}
+        run: |
+          bash -xe ocaml/tools/ci/actions/multicoretests.sh testsuite

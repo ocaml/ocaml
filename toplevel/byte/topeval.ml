@@ -44,10 +44,16 @@ let implementation_label = ""
 module EvalBase = struct
 
   let eval_ident id =
-    if Ident.persistent id || Ident.global id then begin
+    if Ident.global id then begin
+      let name = Ident.name id in
+      let global =
+        if Ident.persistent id
+        then Symtable.Global.Glob_compunit (Cmo_format.Compunit name)
+        else Symtable.Global.Glob_predef (Cmo_format.Predef_exn name)
+      in
       try
-        Symtable.get_global_value id
-      with Symtable.Error (Undefined_global name) ->
+        Symtable.get_global_value global
+      with Symtable.Error (Undefined_global _) ->
         raise (Undefined_global name)
     end else begin
       let name = Translmod.toplevel_name id in
@@ -69,15 +75,13 @@ let load_lambda ppf lam =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
   if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
-  let (init_code, fun_code) = Bytegen.compile_phrase slam in
+  let instrs, can_free = Bytegen.compile_phrase slam in
   if !Clflags.dump_instr then
-    fprintf ppf "%a%a@."
-    Printinstr.instrlist init_code
-    Printinstr.instrlist fun_code;
+    fprintf ppf "%a@."
+    Printinstr.instrlist instrs;
   let (code, reloc, events) =
-    Emitcode.to_memory init_code fun_code
+    Emitcode.to_memory instrs
   in
-  let can_free = (fun_code = []) in
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code reloc;
   Symtable.check_global_initialized reloc;
@@ -86,14 +90,18 @@ let load_lambda ppf lam =
   let bytecode, closure = Meta.reify_bytecode code [| events |] None in
   match
     may_trace := true;
-    Fun.protect
-      ~finally:(fun () -> may_trace := false;
-                          if can_free then Meta.release_bytecode bytecode)
-      closure
+    closure ()
   with
-  | retval -> Result retval
+  | retval ->
+    may_trace := false;
+    if can_free then Meta.release_bytecode bytecode;
+
+    Result retval
   | exception x ->
+    may_trace := false;
     record_backtrace ();
+    if can_free then Meta.release_bytecode bytecode;
+
     toplevel_value_bindings := initial_bindings; (* PR#6211 *)
     Symtable.restore_state initial_symtable;
     Exception x
@@ -101,7 +109,7 @@ let load_lambda ppf lam =
 (* Print the outcome of an evaluation *)
 
 let pr_item =
-  Printtyp.print_items
+  Out_type.print_items
     (fun env -> function
       | Sig_value(id, {val_kind = Val_reg; val_type}, _) ->
           Some (outval_of_value env (getvalue (Translmod.toplevel_name id))
@@ -115,12 +123,7 @@ let execute_phrase print_outcome ppf phr =
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
-      Typecore.reset_delayed_checks ();
-      let (str, sg, sn, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
-      if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
-      let sg' = Typemod.Signature_names.simplify newenv sn sg in
-      ignore (Includemod.signatures ~mark:Mark_positive oldenv sg sg');
-      Typecore.force_delayed_checks ();
+      let (str, sg', newenv) = typecheck_phrase ppf oldenv sstr in
       let lam = Translmod.transl_toplevel_definition str in
       Warnings.check_fatal ();
       begin try
@@ -132,23 +135,17 @@ let execute_phrase print_outcome ppf phr =
               if print_outcome then
                 Printtyp.wrap_printing_env ~error:false oldenv (fun () ->
                   match str.str_items with
-                  | [ { str_desc =
-                          (Tstr_eval (exp, _)
-                          |Tstr_value
-                              (Asttypes.Nonrecursive,
-                               [{vb_pat = {pat_desc=Tpat_any};
-                                 vb_expr = exp}
-                               ]
-                              )
-                          )
-                      }
-                    ] ->
-                      let outv = outval_of_value newenv v exp.exp_type in
-                      let ty = Printtyp.tree_of_type_scheme exp.exp_type in
-                      Ophr_eval (outv, ty)
-
                   | [] -> Ophr_signature []
-                  | _ -> Ophr_signature (pr_item oldenv sg'))
+                  | _ ->
+                      match find_eval_phrase str with
+                      | Some (exp, _, _) ->
+                        let outv = outval_of_value newenv v exp.exp_type in
+                        let ty =
+                          Out_type.prepare_for_printing [exp.exp_type];
+                          Out_type.tree_of_typexp Type_scheme exp.exp_type
+                        in
+                        Ophr_eval (outv, ty)
+                      | None -> Ophr_signature (pr_item oldenv sg'))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;
@@ -158,12 +155,18 @@ let execute_phrase print_outcome ppf phr =
               in
               Ophr_exception (exn, outv)
         in
-        !print_out_phrase ppf out_phr;
+        begin match out_phr with
+        | Ophr_signature [] -> ()
+        | _ ->
+            Location.separate_new_message ppf;
+            !print_out_phrase ppf out_phr;
+        end;
         if Printexc.backtrace_status ()
         then begin
           match !backtrace with
             | None -> ()
             | Some b ->
+                Location.separate_new_message ppf;
                 pp_print_string ppf b;
                 pp_print_flush ppf ();
                 backtrace := None;
@@ -176,38 +179,7 @@ let execute_phrase print_outcome ppf phr =
         toplevel_env := oldenv; raise x
       end
   | Ptop_dir {pdir_name = {Location.txt = dir_name}; pdir_arg } ->
-      begin match Topcommon.get_directive dir_name with
-      | None ->
-          fprintf ppf "Unknown directive `%s'." dir_name;
-          let directives = Topcommon.all_directive_names () in
-          Misc.did_you_mean ppf
-            (fun () -> Misc.spellcheck directives dir_name);
-          fprintf ppf "@.";
-          false
-      | Some d ->
-          match d, pdir_arg with
-          | Directive_none f, None -> f (); true
-          | Directive_string f, Some {pdira_desc = Pdir_string s} -> f s; true
-          | Directive_int f, Some {pdira_desc = Pdir_int (n,None) } ->
-             begin match Int_literal_converter.int n with
-             | n -> f n; true
-             | exception _ ->
-               fprintf ppf "Integer literal exceeds the range of \
-                            representable integers for directive `%s'.@."
-                       dir_name;
-               false
-             end
-          | Directive_int _, Some {pdira_desc = Pdir_int (_, Some _)} ->
-              fprintf ppf "Wrong integer literal for directive `%s'.@."
-                dir_name;
-              false
-          | Directive_ident f, Some {pdira_desc = Pdir_ident lid} -> f lid; true
-          | Directive_bool f, Some {pdira_desc = Pdir_bool b} -> f b; true
-          | _ ->
-              fprintf ppf "Wrong type of argument for directive `%s'.@."
-                dir_name;
-              false
-      end
+      try_run_directive ppf dir_name pdir_arg
 
 let execute_phrase print_outcome ppf phr =
   try execute_phrase print_outcome ppf phr
@@ -240,12 +212,12 @@ let check_consistency ppf filename cu =
 let load_compunit ic filename ppf compunit =
   check_consistency ppf filename compunit;
   seek_in ic compunit.cu_pos;
-  let code_size = compunit.cu_codesize + 8 in
-  let code = LongString.create code_size in
-  LongString.input_bytes_into code ic compunit.cu_codesize;
-  LongString.set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
-  LongString.blit_string "\000\000\000\001\000\000\000" 0
-                     code (compunit.cu_codesize + 1) 7;
+  let code =
+    Bigarray.Array1.create Bigarray.Char Bigarray.c_layout compunit.cu_codesize
+  in
+  match In_channel.really_input_bigarray ic code 0 compunit.cu_codesize with
+    | None -> raise End_of_file
+    | Some () -> ();
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code compunit.cu_reloc;
   Symtable.update_global_table();
@@ -289,16 +261,19 @@ and really_load_file recursive ppf name filename ic =
       let cu : compilation_unit = input_value ic in
       if recursive then
         List.iter
-          (function
-            | (Reloc_getglobal id, _)
-              when not (Symtable.is_global_defined id) ->
-                let file = Ident.name id ^ ".cmo" in
-                begin match Load_path.find_uncap file with
+          (fun (reloc, _) -> match reloc with
+            | Reloc_getcompunit cu
+              when not (Symtable.is_global_defined
+                (Symtable.Global.Glob_compunit cu)) ->
+                let file = (Symtable.Compunit.name cu) ^ ".cmo" in
+                begin match Load_path.find_normalized file with
                 | exception Not_found -> ()
                 | file ->
                     if not (load_file recursive ppf file) then raise Load_failed
                 end
-            | _ -> ()
+            | Reloc_getcompunit _
+            | Reloc_literal _ | Reloc_getpredef _ | Reloc_setcompunit _
+            | Reloc_primitive _ -> ()
           )
           cu.cu_reloc;
       load_compunit ic filename ppf cu;

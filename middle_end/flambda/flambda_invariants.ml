@@ -29,8 +29,6 @@ type flambda_kind =
 *)
 (* CR-someday pchambart: for sum types, we should probably add an exhaustive
    pattern in ignores functions to be reminded if a type change *)
-let already_added_bound_variable_to_env (_ : Variable.t) = ()
-let will_traverse_named_expression_later (_ : Flambda.named) = ()
 let ignore_variable (_ : Variable.t) = ()
 let ignore_call_kind (_ : Flambda.call_kind) = ()
 let ignore_debuginfo (_ : Debuginfo.t) = ()
@@ -133,7 +131,7 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       var_env, mut_var_env, Symbol.Set.add sym sym_env
   in
   let add_binding_occurrences env vars =
-    List.fold_left (fun env var -> add_binding_occurrence env var) env vars
+    List.fold_left (fun env (var, _) -> add_binding_occurrence env var) env vars
   in
   let check_variable_is_bound (var_env, _, _) var =
     if not (Variable.Set.mem var var_env) then raise (Unbound_variable var)
@@ -160,17 +158,6 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       ignore_value_kind contents_kind;
       check_variable_is_bound env var;
       loop (add_mutable_binding_occurrence env mut_var) body
-    | Let_rec (defs, body) ->
-      let env =
-        List.fold_left (fun env (var, def) ->
-            will_traverse_named_expression_later def;
-            add_binding_occurrence env var)
-          env defs
-      in
-      List.iter (fun (var, def) ->
-        already_added_bound_variable_to_env var;
-        loop_named env def) defs;
-      loop env body
     | For { bound_var; from_value; to_value; direction; body; } ->
       ignore_direction_flag direction;
       check_variable_is_bound env from_value;

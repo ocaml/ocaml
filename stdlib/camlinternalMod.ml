@@ -69,9 +69,9 @@ let rec update_mod_field modu i shape n =
   | Value _ ->
      () (* the value is already there *)
   | Class ->
-     assert (Obj.tag n = 0 && Obj.size n = 4);
+     assert (Obj.tag n = 0 && Obj.size n = 3);
      let cl = Obj.field modu i in
-     for j = 0 to 3 do
+     for j = 0 to 2 do
        Obj.set_field cl j (Obj.field n j)
      done
   | Module comps ->

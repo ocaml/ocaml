@@ -83,25 +83,9 @@ let remove_duplicates (type a) compare (li : a list) =
 let rec string_of_longident li =
   match li with
   | Longident.Lident s -> s
-  | Longident.Ldot(li, s) -> string_of_longident li ^ "." ^ s
+  | Longident.Ldot(li, s) -> string_of_longident li.txt ^ "." ^ s.txt
   | Longident.Lapply(l1, l2) ->
-      string_of_longident l1 ^ "(" ^ string_of_longident l2 ^ ")"
-
-let get_fields type_expr =
-  let (fields, _) = Ctype.flatten_fields (Ctype.object_fields type_expr) in
-  List.fold_left
-    (fun acc -> fun (label, field_kind, typ) ->
-      match field_kind with
-        Types.Fabsent ->
-          acc
-      | _ ->
-          if label = "*dummy method*" then
-            acc
-          else
-            acc @ [label, typ]
-    )
-    []
-    fields
+      string_of_longident l1.txt ^ "(" ^ string_of_longident l2.txt ^ ")"
 
 let rec string_of_text t =
   let rec iter t_ele =
@@ -213,6 +197,19 @@ let string_of_return_opt return_opt =
     None -> ""
   | Some s -> Odoc_messages.returns^" "^(string_of_text s)^"\n"
 
+let string_of_alert_list l =
+  List.concat_map
+    (fun al ->
+      let payload =
+        match al.Odoc_types.alert_payload with
+        | Some p -> [ " "; p ]
+        | None -> []
+      in
+      Odoc_messages.alert :: " " :: al.Odoc_types.alert_name
+      :: (payload @ [ "\n" ]))
+    l
+  |> String.concat ""
+
 let string_of_info i =
   let module M = Odoc_types in
   (match i.M.i_deprecated with
@@ -227,7 +224,8 @@ let string_of_info i =
   (string_of_version_opt i.M.i_version)^
   (string_of_since_opt i.M.i_since)^
   (string_of_raised_exceptions i.M.i_raised_exceptions)^
-  (string_of_return_opt i.M.i_return_value)
+  (string_of_return_opt i.M.i_return_value)^
+  (string_of_alert_list i.M.i_alerts)
 
 let apply_opt f v_opt =
   match v_opt with
@@ -492,22 +490,27 @@ let is_optional = Btype.is_optional
 let label_name = Btype.label_name
 
 let remove_option typ =
-  let rec iter t =
+  let open Types in
+  let rec trim t =
     match t with
-    | Types.Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty.Types.desc
-    | Types.Tconstr _
-    | Types.Tvar _
-    | Types.Tunivar _
-    | Types.Tpoly _
-    | Types.Tarrow _
-    | Types.Ttuple _
-    | Types.Tobject _
-    | Types.Tfield _
-    | Types.Tnil
-    | Types.Tvariant _
-    | Types.Tpackage _ -> t
-    | Types.Tlink t2 -> iter t2.Types.desc
-    | Types.Tsubst _ -> assert false
+    | Tconstr(path, [ty], _)
+      when Path.same path Predef.path_option -> get_desc ty
+    | Tconstr _
+    | Tvar _
+    | Tunivar _
+    | Tpoly _
+    | Tarrow _
+    | Ttuple _
+    | Tobject _
+    | Tfield _
+    | Tnil
+    | Tvariant _
+    | Tpackage _ -> t
+    | Tlink t2 -> trim (get_desc t2)
+    | Tsubst _ -> assert false
   in
-  Types.Private_type_expr.create (iter typ.Types.desc)
-    ~level:typ.Types.level ~scope:typ.Types.scope ~id:typ.Types.id
+  Transient_expr.type_expr
+    (Transient_expr.create (trim (get_desc typ))
+       ~level:(get_level typ)
+       ~scope:(get_scope typ)
+       ~id:(get_id typ))

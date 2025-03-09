@@ -97,6 +97,19 @@ There are five steps to renaming a primitive:
 It is desirable for bootstraps to be easily repeatable, so you should commit
 changes after step 4.
 
+To remove a primitive:
+
+1. Start with a working build of the compiler eg `./configure && make world`
+
+2. Remove uses of the primitive, but not the primitive itself. Then ensure the system still works:
+
+        make coreall
+
+3. Then, and only then, remove the primitive, and run:
+
+        make coreall
+        make bootstrap
+
 = Bootstrap test script
 
 A script is provided (and used on Inria's continuous

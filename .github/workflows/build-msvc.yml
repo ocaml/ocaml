@@ -1,0 +1,144 @@
+name: Build with MSVC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - '4.**'
+      - '5.**'
+      - 'trunk'
+  pull_request:
+
+# env:
+  # Fully print commands executed by Make
+  # MAKEFLAGS: V=1
+
+jobs:
+  build:
+    permissions: {}
+
+    runs-on: windows-latest
+
+    timeout-minutes: 60
+
+    name: ${{ matrix.cc == 'cl' && 'MSVC' || 'clang-cl' }} ${{ matrix.x86_64 && '64 bits' || '32 bits' }}
+
+    strategy:
+      matrix:
+        x86_64: [true, false]
+        cc: [cl, clang-cl]
+        exclude:
+          - cc: clang-cl
+            x86_64: false
+
+    steps:
+      - name: Save pristine PATH
+        run: |
+          echo "PRISTINE_PATH=${env:Path}" >> "${env:GITHUB_ENV}"
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.x86_64 && 'x64' || 'x86' }}
+
+      - name: Fetch OCaml
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Restore Cygwin cache
+        uses: actions/cache/restore@v4
+        env:
+          PATH: ${{ env.PRISTINE_PATH }}
+        with:
+          path: |
+            C:\cygwin-packages
+          key: cygwin-packages
+
+      - name: Install Cygwin
+        uses: cygwin/cygwin-install-action@v3
+        with:
+          packages: make,bash,mingw64-x86_64-gcc-core
+          install-dir: 'D:\cygwin'
+
+      - name: Save Cygwin cache
+        uses: actions/cache/save@v4
+        env:
+          PATH: ${{ env.PRISTINE_PATH }}
+        with:
+          path: |
+            C:\cygwin-packages
+          key: cygwin-packages
+
+      - name: Compute a key to cache configure results
+        shell: bash
+        env:
+          HOST: ${{ matrix.x86_64 && 'x86_64-pc-windows' || 'i686-pc-windows' }}
+          CC: ${{ matrix.cc }}
+        run: >-
+          echo "AUTOCONF_CACHE_KEY=$HOST-$CC-$({ cat configure; uname; } | sha1sum | cut -c 1-7)" >> $GITHUB_ENV
+
+      - name: Restore Autoconf cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            config.cache
+          key: ${{ env.AUTOCONF_CACHE_KEY }}
+
+      - name: Build OCaml
+        shell: bash
+        env:
+          HOST: ${{ matrix.x86_64 && 'x86_64-pc-windows' || 'i686-pc-windows' }}
+          CC: ${{ matrix.cc }}
+        run: >-
+          eval $(tools/msvs-promote-path) ;
+          if ! ./configure --cache-file=config.cache --host=$HOST CC=$CC
+          --prefix "$PROGRAMFILES/Бактріан🐫"; then
+          rm -rf config.cache ;
+          failed=0 ;
+          ./configure --cache-file=config.cache --host=$HOST CC=$CC
+          --prefix "$PROGRAMFILES/Бактріан🐫"
+          || failed=$?;
+          if ((failed)) ; then cat config.log ; exit $failed ; fi ;
+          fi ;
+          make -j || failed=$? ;
+          if ((failed)) ; then make -j1 V=1 ; exit $failed ; fi ;
+          runtime/ocamlrun ocamlc -config ;
+        # Don't add indentation or comments, it breaks Bash on
+        # Windows when the yaml text block scalar is processed as a
+        # single line.
+
+      - name: Save Autoconf cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            config.cache
+          key: ${{ env.AUTOCONF_CACHE_KEY }}
+
+      - name: Assemble backend with MinGW GASM and compare
+        shell: bash
+        run: >-
+          x86_64-w64-mingw32-gcc -c -I./runtime  -I ./flexdll -D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=1 -DCAMLDLLIMPORT= -DIN_CAML_RUNTIME -DNATIVE_CODE -DTARGET_amd64 -DMODEL_default -DSYS_mingw64 -o runtime/amd64.o runtime/amd64.S ;
+          dumpbin /disasm:nobytes runtime/amd64nt.obj > runtime/amd64nt.dump ;
+          awk -f tools/ci/actions/canonicalize-dumpbin.awk runtime/amd64nt.dump runtime/amd64nt.dump > runtime/amd64nt.canonical ;
+          dumpbin /disasm:nobytes runtime/amd64.o > runtime/amd64.dump ;
+          awk -f tools/ci/actions/canonicalize-dumpbin.awk runtime/amd64.dump runtime/amd64.dump > runtime/amd64.canonical ;
+          git diff --no-index -- runtime/amd64*.canonical ;
+          wc -l runtime/amd64*.dump runtime/amd64*.canonical ;
+        # ^ The final wc is there to make sure that the canonical files are
+        # reasonable cleaned-up versions of the raw dumpbins and not simply
+        # empty
+        if: matrix.x86_64
+
+      - name: Run the test suite
+        shell: bash
+        run: >-
+          eval $(tools/msvs-promote-path) ;
+          make -j tests ;
+
+      - name: Install the compiler
+        shell: bash
+        run: make install

@@ -13,25 +13,35 @@
 /**************************************************************************/
 
 /* Runtime support for afl-fuzz */
+
+#define CAML_INTERNALS
+
+#include <string.h>
 #include "caml/config.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
 
 /* Values used by the instrumentation logic (see cmmgen.ml) */
-static unsigned char afl_area_initial[1 << 16];
-unsigned char* caml_afl_area_ptr = afl_area_initial;
+
+#define INITIAL_AFL_AREA_SIZE (1 << 16)
+unsigned char * caml_afl_area_ptr = NULL;
 uintnat caml_afl_prev_loc;
 
 #if !defined(HAS_SYS_SHM_H) || !defined(HAS_SHMAT)
 
-#include "caml/mlvalues.h"
-
-CAMLprim value caml_reset_afl_instrumentation(value full)
+CAMLexport value caml_setup_afl(value unit)
 {
+  /* AFL is not supported, but we still need to allocate space for the bitmap
+       (the instrumented OCaml code will write into it). */
+  if (caml_afl_area_ptr == NULL) {
+    caml_afl_area_ptr = caml_stat_alloc(INITIAL_AFL_AREA_SIZE);
+    memset(caml_afl_area_ptr, 0, INITIAL_AFL_AREA_SIZE);
+  }
   return Val_unit;
 }
 
-CAMLexport value caml_setup_afl(value unit)
+CAMLprim value caml_reset_afl_instrumentation(value full)
 {
-  /* AFL is not supported */
   return Val_unit;
 }
 
@@ -45,9 +55,8 @@ CAMLexport value caml_setup_afl(value unit)
 #include <stdio.h>
 #include <string.h>
 
-#define CAML_INTERNALS
+#include "caml/domain.h"
 #include "caml/misc.h"
-#include "caml/mlvalues.h"
 #include "caml/osdeps.h"
 
 static int afl_initialised = 0;
@@ -66,7 +75,7 @@ static void afl_write(uint32_t msg)
     caml_fatal_error("writing to afl-fuzz");
 }
 
-static uint32_t afl_read()
+static uint32_t afl_read(void)
 {
   uint32_t msg;
   if (read(FORKSRV_FD_READ, &msg, 4) != 4)
@@ -76,7 +85,7 @@ static uint32_t afl_read()
 
 CAMLexport value caml_setup_afl(value unit)
 {
-  char* shm_id_str;
+  const char* shm_id_str;
   char* shm_id_end;
   long int shm_id;
   uint32_t startup_msg = 0;
@@ -86,7 +95,11 @@ CAMLexport value caml_setup_afl(value unit)
 
   shm_id_str = caml_secure_getenv("__AFL_SHM_ID");
   if (shm_id_str == NULL) {
-    /* Not running under afl-fuzz, continue as normal */
+    /* Not running under afl-fuzz.  Allocate space for the bitmap
+       (the instrumented OCaml code will write into it),
+       and continue as normal. */
+    caml_afl_area_ptr = caml_stat_alloc(INITIAL_AFL_AREA_SIZE);
+    memset(caml_afl_area_ptr, 0, INITIAL_AFL_AREA_SIZE);
     return Val_unit;
   }
 
@@ -113,17 +126,22 @@ CAMLexport value caml_setup_afl(value unit)
   }
   afl_read();
 
+  /* ensure that another module has not already spawned a domain */
+  if (caml_domain_is_multicore())
+    caml_fatal_error("afl-fuzz: cannot fork with multiple domains running");
+
   while (1) {
     int child_pid = fork();
     if (child_pid < 0) caml_fatal_error("afl-fuzz: could not fork");
     else if (child_pid == 0) {
+      caml_atfork_hook();
       /* Run the program */
       close(FORKSRV_FD_READ);
       close(FORKSRV_FD_WRITE);
       return Val_unit;
     }
 
-    /* As long as the child keeps raising SIGSTOP, we re-use the same process */
+    /* As long as the child keeps raising SIGSTOP, we reuse the same process */
     while (1) {
       int status;
       uint32_t was_killed;
@@ -158,8 +176,8 @@ CAMLexport value caml_setup_afl(value unit)
 
 CAMLprim value caml_reset_afl_instrumentation(value full)
 {
-  if (full != Val_int(0)) {
-    memset(caml_afl_area_ptr, 0, sizeof(afl_area_initial));
+  if (full == Val_true && caml_afl_area_ptr != NULL) {
+    memset(caml_afl_area_ptr, 0, INITIAL_AFL_AREA_SIZE);
   }
   caml_afl_prev_loc = 0;
   return Val_unit;

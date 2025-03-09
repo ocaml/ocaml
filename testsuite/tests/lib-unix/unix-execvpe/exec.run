@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if test -z "$program"; then echo "Define the program env var" 1&>2; exit 2; fi
+if test -z "$program"; then echo "Define the program env var" 1>&2; exit 2; fi
 
 output=$program.output
 exec > ${output} 2>&1

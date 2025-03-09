@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 class type foo_t =
@@ -87,6 +87,33 @@ Error: Signature mismatch:
        The classes do not have the same number of type parameters
 |}]
 
+module Confusing: sig
+  class ['x, 'y] c: object end
+end = struct
+  class ['y, 'x] c  = object method private id (x : 'y) = x + 1 end
+end
+;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   class ['y, 'x] c  = object method private id (x : 'y) = x + 1 end
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           class ['a, 'x] c :
+             object constraint 'a = int method private id : 'a -> int end
+         end
+       is not included in
+         sig class ['x, 'y] c : object  end end
+       Class declarations do not match:
+         class ['a, 'x] c :
+           object constraint 'a = int method private id : 'a -> int end
+       does not match
+         class ['x, 'y] c : object  end
+       The 1st type parameter has type "int" but is expected to have type "'x"
+|}]
+
 module M: sig
   class ['a] c: object constraint 'a = int end
 end = struct
@@ -107,7 +134,30 @@ Error: Signature mismatch:
          class ['a] c : object  end
        does not match
          class ['a] c : object constraint 'a = int end
-       A type parameter has type 'a but is expected to have type int
+       The 1st type parameter has type "'a" but is expected to have type "int"
+|}]
+
+module M: sig
+  class ['a, 'b] c: object constraint 'b = int end
+end = struct
+  class ['a, 'b] c = object end
+end
+;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   class ['a, 'b] c = object end
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig class ['a, 'b] c : object  end end
+       is not included in
+         sig class ['a, 'b] c : object constraint 'b = int end end
+       Class declarations do not match:
+         class ['a, 'b] c : object  end
+       does not match
+         class ['a, 'b] c : object constraint 'b = int end
+       The 2nd type parameter has type "'b" but is expected to have type "int"
 |}]
 
 module M: sig
@@ -130,7 +180,30 @@ Error: Signature mismatch:
          class c : float -> object  end
        does not match
          class c : int -> object  end
-       A parameter has type float but is expected to have type int
+       The 1st parameter has type "float" but is expected to have type "int"
+|}]
+
+module M: sig
+  class c : int -> int -> object end
+end = struct
+  class c (_ : int) (x : float) = object end
+end
+;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   class c (_ : int) (x : float) = object end
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig class c : int -> float -> object  end end
+       is not included in
+         sig class c : int -> int -> object  end end
+       Class declarations do not match:
+         class c : int -> float -> object  end
+       does not match
+         class c : int -> int -> object  end
+       The 2nd parameter has type "float" but is expected to have type "int"
 |}]
 
 class virtual foo: foo_t =
@@ -146,7 +219,8 @@ Lines 2-5, characters 4-7:
 3 |         method foo = "foo"
 4 |         method private virtual cast: int
 5 |     end
-Error: The class type object method foo : string end
+Error: The class type
+         object method private virtual cast : int method foo : string end
        is not matched by the class type foo_t
        The virtual method cast cannot be hidden
 |}]

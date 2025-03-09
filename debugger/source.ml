@@ -40,7 +40,7 @@ let source_of_module pos mdle =
         else
           acc)
       Debugger_config.load_path_for
-      (Load_path.get_paths ()) in
+      (Load_path.get_path_list ()) in
   let fname = pos.Lexing.pos_fname in
   if fname = "" then
     let innermost_module =
@@ -52,7 +52,7 @@ let source_of_module pos mdle =
       function
         | [] -> raise Not_found
         | ext :: exts ->
-          try find_in_path_uncap path (innermost_module ^ ext)
+          try find_in_path_normalized path (innermost_module ^ ext)
           with Not_found -> loop exts
     in loop source_extensions
   else if Filename.is_relative fname then

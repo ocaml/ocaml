@@ -1,37 +1,36 @@
 (* TEST
-   modules = "minor_no_postpone_stub.c"
+ modules = "minor_no_postpone_stub.c";
 *)
 
-open Gc.Memprof
+module MP = Gc.Memprof
 
-let notify_minor ref_ok ref_done =
-  { null_tracker with
+let profile ref_ok ref_done =
+  MP.start ~callstack_size:0 ~sampling_rate:1.
+   { MP.null_tracker with
     alloc_minor = (fun _ ->
       assert !ref_ok;
       ref_done := true;
       None);
-  }
+    }
 
 let () =
   let callback_ok = ref true in
   let callback_done = ref false in
-  start ~callstack_size:0 ~sampling_rate:1.
-    (notify_minor callback_ok callback_done);
+  let _:MP.t = profile callback_ok callback_done in
   ignore (Sys.opaque_identity (ref 0));
   assert(!callback_done);
   callback_ok := false;
-  stop ()
+  MP.stop ()
 
 external alloc_stub : unit -> unit ref = "alloc_stub"
 
 let () =
   let callback_ok = ref false in
   let callback_done = ref false in
-  start ~callstack_size:0 ~sampling_rate:1.
-    (notify_minor callback_ok callback_done);
+  let _:MP.t = profile callback_ok callback_done in
   ignore (Sys.opaque_identity (alloc_stub ()));
   assert(not !callback_done);
   callback_ok := true;
   ignore (Sys.opaque_identity (ref ()));
   assert(!callback_done);
-  stop ()
+  MP.stop ()

@@ -17,25 +17,37 @@
 
 /* A table of all code fragments (main program and dynlinked modules) */
 
-#include <string.h>
-#include <stddef.h>
 #include "caml/codefrag.h"
-#include "caml/misc.h"
+#include "caml/lf_skiplist.h"
 #include "caml/md5.h"
 #include "caml/memory.h"
-#include "caml/skiplist.h"
+#include "caml/misc.h"
+#include <stdatomic.h>
+#include <stddef.h>
+#include <string.h>
 
-static struct skiplist code_fragments_by_pc = SKIPLIST_STATIC_INITIALIZER;
+struct code_fragment_garbage {
+  struct code_fragment *cf;
+  struct code_fragment_garbage *next;
+};
 
-static struct skiplist code_fragments_by_num = SKIPLIST_STATIC_INITIALIZER;
+static struct code_fragment_garbage *_Atomic garbage_head = NULL;
 
-static int code_fragments_counter = 0;
+static struct lf_skiplist code_fragments_by_pc;
 
-int caml_register_code_fragment(char * start, char * end,
+static struct lf_skiplist code_fragments_by_num;
+
+static int _Atomic code_fragments_counter = 1;
+
+void caml_init_codefrag(void) {
+  caml_lf_skiplist_init(&code_fragments_by_pc);
+  caml_lf_skiplist_init(&code_fragments_by_num);
+}
+
+int caml_register_code_fragment(char *start, char *end,
                                 enum digest_status digest_kind,
-                                unsigned char * opt_digest)
-{
-  struct code_fragment * cf = caml_stat_alloc(sizeof(struct code_fragment));
+                                unsigned char *opt_digest) {
+  struct code_fragment *cf = caml_stat_alloc(sizeof(struct code_fragment));
 
   cf->code_start = start;
   cf->code_end = end;
@@ -43,6 +55,7 @@ int caml_register_code_fragment(char * start, char * end,
   case DIGEST_LATER:
     break;
   case DIGEST_NOW:
+    /* no one knows of this code fragment yet, no need to take its lock */
     caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
     digest_kind = DIGEST_PROVIDED;
     break;
@@ -53,63 +66,124 @@ int caml_register_code_fragment(char * start, char * end,
     break;
   }
   cf->digest_status = digest_kind;
-  cf->fragnum = code_fragments_counter++;
-  caml_skiplist_insert(&code_fragments_by_pc,
-                       (uintnat) start, (uintnat) cf);
-  caml_skiplist_insert(&code_fragments_by_num,
-                       (uintnat) cf->fragnum, (uintnat) cf);
+  cf->fragnum = atomic_fetch_add_explicit
+                  (&code_fragments_counter, 1, memory_order_relaxed);
+  caml_plat_mutex_init(&cf->mutex);
+  caml_lf_skiplist_insert(&code_fragments_by_pc, (uintnat)start, (uintnat)cf);
+  caml_lf_skiplist_insert(&code_fragments_by_num, (uintnat)cf->fragnum,
+                          (uintnat)cf);
   return cf->fragnum;
 }
 
-void caml_remove_code_fragment(struct code_fragment * cf)
-{
-  caml_skiplist_remove(&code_fragments_by_pc, (uintnat) cf->code_start);
-  caml_skiplist_remove(&code_fragments_by_num, cf->fragnum);
+static void caml_free_code_fragment(struct code_fragment *cf) {
+  caml_plat_mutex_free(&cf->mutex);
   caml_stat_free(cf);
 }
 
-struct code_fragment * caml_find_code_fragment_by_pc(char *pc)
-{
-  struct code_fragment * cf;
+void caml_remove_code_fragment(struct code_fragment *cf) {
+  struct code_fragment_garbage *cf_cell;
+
+  caml_lf_skiplist_remove(&code_fragments_by_pc, (uintnat)cf->code_start);
+
+  /* This is conditional on remove returning success because it's possible
+    for [caml_remove_code_fragment] to be called concurrently and we need
+    to ensure that only one code_fragment is put on to the garbage list */
+  if (caml_lf_skiplist_remove(&code_fragments_by_num, cf->fragnum)) {
+    cf_cell = (struct code_fragment_garbage *)caml_stat_alloc(
+        sizeof(struct code_fragment_garbage));
+
+    cf_cell->cf = cf;
+
+    do {
+      cf_cell->next = atomic_load_acquire(&garbage_head);
+    } while (!atomic_compare_exchange_strong(&garbage_head, &cf_cell->next,
+                                             cf_cell));
+  }
+}
+
+struct code_fragment *caml_find_code_fragment_by_pc(char *pc) {
+  struct code_fragment *cf;
   uintnat key, data;
 
-  if (caml_skiplist_find_below(&code_fragments_by_pc,
-                               (uintnat) pc, &key, &data)) {
-    cf = (struct code_fragment *) data;
+  if (caml_lf_skiplist_find_below(&code_fragments_by_pc, (uintnat)pc, &key,
+                                  &data)) {
+    cf = (struct code_fragment *)data;
     CAMLassert(cf->code_start <= pc);
-    if (pc < cf->code_end) return cf;
+    if (pc < cf->code_end)
+      return cf;
   }
   return NULL;
 }
 
-struct code_fragment * caml_find_code_fragment_by_num(int fragnum)
-{
+struct code_fragment *caml_find_code_fragment_by_num(int fragnum) {
   uintnat data;
-  if (caml_skiplist_find(&code_fragments_by_num, fragnum, &data)) {
-    return (struct code_fragment *) data;
+  if (caml_lf_skiplist_find(&code_fragments_by_num, fragnum, &data)) {
+    return (struct code_fragment *)data;
   } else {
     return NULL;
   }
 }
 
-unsigned char * caml_digest_of_code_fragment(struct code_fragment * cf)
-{
-  if (cf->digest_status == DIGEST_IGNORE)
-    return NULL;
-  if (cf->digest_status == DIGEST_LATER) {
-    caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
-    cf->digest_status = DIGEST_PROVIDED;
+unsigned char *caml_digest_of_code_fragment(struct code_fragment *cf) {
+  unsigned char *digest;
+
+  /* Note: this approach is a bit heavy-handed as we take a lock in
+     all cases. It would be possible to take a lock only in the
+     DIGEST_LATER case, which occurs at most once per fragment, by
+     using double-checked locking -- see #11791.
+
+     Note: we use [caml_plat_lock_blocking] despite holding the domain
+     lock because this is called by intern.c and extern.c, both of
+     which share state between threads of the same domain. The
+     critical section must therefore remain short and not allocate
+     (nor cause other potential STW).
+  */
+  caml_plat_lock_blocking(&cf->mutex);
+  {
+    if (cf->digest_status == DIGEST_IGNORE) {
+      digest = NULL;
+    } else if (cf->digest_status == DIGEST_LATER) {
+      caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
+      cf->digest_status = DIGEST_PROVIDED;
+      digest = cf->digest;
+    } else {
+      digest = cf->digest;
+    }
   }
-  return cf->digest;
+  caml_plat_unlock(&cf->mutex);
+
+  return digest;
 }
 
 struct code_fragment *
-   caml_find_code_fragment_by_digest(unsigned char digest[16])
-{
-  FOREACH_SKIPLIST_ELEMENT(e, &code_fragments_by_pc, {
-    struct code_fragment * cf = (struct code_fragment *) e->data;
-    unsigned char * d = caml_digest_of_code_fragment(cf);
-    if (d != NULL && memcmp(digest, d, 16) == 0) return cf;
+caml_find_code_fragment_by_digest(unsigned char digest[16]) {
+  FOREACH_LF_SKIPLIST_ELEMENT(e, &code_fragments_by_pc, {
+    struct code_fragment *cf = (struct code_fragment *)e->data;
+    const unsigned char *d = caml_digest_of_code_fragment(cf);
+    if (d != NULL && memcmp(digest, d, 16) == 0)
+      return cf;
   })
   return NULL;
+}
+
+/* This is only ever called from a stw by one domain */
+void caml_code_fragment_cleanup_from_stw_single (void)
+{
+  struct code_fragment_garbage *curr;
+
+  caml_lf_skiplist_free_garbage(&code_fragments_by_pc);
+  caml_lf_skiplist_free_garbage(&code_fragments_by_num);
+
+  curr = atomic_load_acquire(&garbage_head);
+
+  while (curr != NULL) {
+    struct code_fragment_garbage *next = curr->next;
+
+    caml_free_code_fragment(curr->cf);
+    caml_stat_free(curr);
+
+    curr = next;
+  }
+
+  atomic_store_release(&garbage_head, NULL);
 }

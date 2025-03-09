@@ -1,0 +1,15 @@
+settings set stop-disassembly-display never
+command script import ./lldb_test.py
+create caml_start_program
+create caml_program
+create camlMeander\$c_to_ocaml*
+create ocaml_to_c
+run
+backtrace
+continue
+backtrace
+continue
+backtrace
+continue
+backtrace
+quit

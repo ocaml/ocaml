@@ -1,0 +1,40 @@
+val _ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿŠšŽžŒœŸ :
+  string = "ok"
+type t = Æsop | Âcre | Ça | Élégant | Öst | Œuvre
+val été : string = "summer"
+val ça : string = "that"
+val straße : string = "street"
+val øre : string = "ear"
+val f : t -> int = <fun>
+val l : string list = ["summer"; "that"; "street"; "ear"]
+val s : string = "ok"
+Line 3, characters 0-47:
+3 | module Élégant (* NFD encoded *) = struct end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Multiple definition of the module name Élégant.
+       Names must be unique in a given structure or signature.
+val x : string = "x"
+Line 1, characters 9-14:
+1 | let ko = {Là|x|Là};;
+             ^^^^^
+Error: Là cannot be used as a quoted string delimiter,
+       it must contain only lowercase letters.
+Line 2, characters 10-20:
+2 | let x = {%âcre.name été|x|été};;
+              ^^^^^^^^^^
+Error: Uninterpreted extension 'âcre.name'.
+Line 1, characters 10-19:
+1 | let x = {%Âcre.sub été|x|été};;
+              ^^^^^^^^^
+Error: Uninterpreted extension 'Âcre.sub'.
+Line 2, characters 10-17:
+2 | let x = {%âcre.m|x|};;
+              ^^^^^^^
+Error: Uninterpreted extension 'âcre.m'.
+Line 2, characters 4-10:
+2 | let%À.ça x = ();;
+        ^^^^^^
+Error: Uninterpreted extension 'À.ça'.
+val x : unit = ()
+val y : unit = ()
+

@@ -12,20 +12,37 @@
 #*   special exception on linking described in the file LICENSE.          *
 #*                                                                        *
 #**************************************************************************
+# Used by included Makefiles
 ROOTDIR = ..
--include $(ROOTDIR)/Makefile.build_config
-
-ifeq ($(DOCUMENTATION_TOOL),odoc)
-  include odoc/Makefile
-else
-  include ocamldoc/Makefile
-endif
+-include ../Makefile.build_config
 
 odoc-%:
-	$(MAKE) -C odoc $* ROOTDIR=../..
+	$(MAKE) -C odoc $*
 
 ocamldoc-%:
-	$(MAKE) -C ocamldoc $* ROOTDIR=../..
+	$(MAKE) -C ocamldoc $*
+
+ifeq ($(DOCUMENTATION_TOOL),odoc)
+man: odoc-man
+latex: odoc-latex
+html: odoc-html
+	@echo "documentation is in ./api_docgen/odoc/build/html/"
+all: html latex man
+install: odoc-install
+else
+man: ocamldoc-man
+latex: ocamldoc-latex
+html: ocamldoc-html
+	@echo "documentation is in ./api_docgen/ocamldoc/build/html/"
+texi: ocamldoc-texi
+pdf: ocamldoc-pdf
+all: html pdf man latex texi
+install: ocamldoc-install
+endif
 
 clean:
 	rm -rf build odoc/build ocamldoc/build
+
+distclean: clean
+
+.PHONY: html latex man clean distclean install texi pdf

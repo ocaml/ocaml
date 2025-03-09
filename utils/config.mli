@@ -47,27 +47,38 @@ val c_has_debug_prefix_map : bool
 val as_has_debug_prefix_map : bool
 (** Whether the assembler supports --debug-prefix-map *)
 
-val ocamlc_cflags : string
+val bytecode_cflags : string
 (** The flags ocamlc should pass to the C compiler *)
 
-val ocamlc_cppflags : string
+val bytecode_cppflags : string
 (** The flags ocamlc should pass to the C preprocessor *)
 
-val ocamlopt_cflags : string
-  [@@ocaml.deprecated "Use ocamlc_cflags instead."]
-(** @deprecated {!ocamlc_cflags} should be used instead.
-    The flags ocamlopt should pass to the C compiler *)
+val native_cflags : string
+(** The flags ocamlopt should pass to the C compiler *)
 
-val ocamlopt_cppflags : string
-  [@@ocaml.deprecated "Use ocamlc_cppflags instead."]
-(** @deprecated {!ocamlc_cppflags} should be used instead.
-    The flags ocamlopt should pass to the C preprocessor *)
+val native_cppflags : string
+(** The flags ocamlopt should pass to the C preprocessor *)
 
 val bytecomp_c_libraries: string
 (** The C libraries to link with custom runtimes *)
 
 val native_c_libraries: string
 (** The C libraries to link with native-code programs *)
+
+val compression_c_libraries: string
+(** The C libraries needed with -lcomprmarsh (should appear before
+    {!native_c_libraries} in a call to the C compiler)
+
+    @since 5.4 *)
+
+val native_ldflags : string
+(* Flags to pass to the system linker *)
+
+val with_nonexecstack_note : bool
+(** Whether an explicit ".note.GNU-stack" section is to be added to indicate
+    the stack should not be executable
+
+    @since 5.4 *)
 
 val native_pack_linker: string
 (** The linker to use for packaging (ocamlopt -pack) and for partial
@@ -81,9 +92,6 @@ val mkexe: string
 
 val mkmaindll: string
 (** The linker command line to build main programs as dlls. *)
-
-val ranlib: string
-(** Command to randomize a library, or "" if not needed *)
 
 val default_rpath: string
 (** Option to add a directory to be searched for libraries at runtime
@@ -153,6 +161,11 @@ val stack_safety_margin: int
     intermediate computations of some instructions, or the event
     handler. *)
 
+val native_compiler: bool
+(** Whether the native compiler is available or not
+
+    @since 5.1 *)
+
 val architecture: string
 (** Name of processor type for the native-code compiler *)
 
@@ -162,12 +175,23 @@ val model: string
 val system: string
 (** Name of operating system for the native-code compiler *)
 
+val target_os_type: string
+(** Operating system targetted by the native-code compiler. One of
+-  ["Unix"] (for all Unix versions, including Linux and macOS),
+-  ["Win32"] (for MS-Windows, OCaml compiled with MSVC++ or MinGW-w64),
+-  ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin). *)
+
 val asm: string
 (** The assembler (and flags) to use for assembling
     ocamlopt-generated code. *)
 
 val asm_cfi_supported: bool
 (** Whether assembler understands CFI directives *)
+
+val asm_size_type_directives: bool
+(** Whether the [.size] and [.type] assembler directives can be used
+
+    @since 5.4 *)
 
 val with_frame_pointers : bool
 (** Whether assembler should maintain frame pointers *)
@@ -187,7 +211,7 @@ val ext_dll: string
 val ext_exe: string
 (** Extension for executable programs, e.g. [.exe] under Windows.
 
-    @since 4.12.0 *)
+    @since 4.12 *)
 
 val default_executable_name: string
 (** Name of executable produced by linking if none is given with -o,
@@ -214,28 +238,22 @@ val with_flambda_invariants : bool
 val with_cmm_invariants : bool
 (** Whether the invariants checks for Cmm are enabled *)
 
-val profinfo : bool
-(** Whether the compiler was configured for profiling *)
+val with_codegen_invariants : bool
+(** Whether the invariant checks for native code generation are enabled. *)
 
-val profinfo_width : int
-(** How many bits are to be used in values' headers for profiling
-    information *)
-
-val safe_string: bool
-(** Whether the compiler was configured with -force-safe-string;
-    in that case, the -unsafe-string compile-time option is unavailable
-
-    @since 4.05.0 *)
-
-val default_safe_string: bool
-(** Whether the compiler was configured to use the -safe-string
-    or -unsafe-string compile-time option by default.
-
-    @since 4.06.0 *)
+val reserved_header_bits : int
+(** How many bits of a block's header are reserved *)
 
 val flat_float_array : bool
 (** Whether the compiler and runtime automagically flatten float
     arrays *)
+
+val align_double : bool
+(** Whether the compiler and runtime need to align double values.
+    If [false], a [floatarray] value can be cast to a C array of doubles. *)
+
+val align_int64 : bool
+(** Whether the compiler and runtime need to align int64 values *)
 
 val function_sections : bool
 (** Whether the compiler was configured to generate
@@ -244,14 +262,29 @@ val function_sections : bool
 val windows_unicode: bool
 (** Whether Windows Unicode runtime is enabled *)
 
+val naked_pointers : bool
+(** Whether the runtime supports naked pointers
+
+    @since 4.14 *)
+
 val supports_shared_libraries: bool
 (** Whether shared libraries are supported
 
-    @since 4.08.0 *)
+    @since 4.08 *)
+
+val native_dynlink: bool
+(** Whether native shared libraries are supported
+
+    @since 5.1 *)
 
 val afl_instrument : bool
 (** Whether afl-fuzz instrumentation is generated by default *)
 
+val ar_supports_response_files: bool
+(** Whether ar supports @FILE arguments. *)
+
+val tsan : bool
+(** Whether ThreadSanitizer instrumentation is enabled *)
 
 (** Access to configuration values *)
 val print_config : out_channel -> unit

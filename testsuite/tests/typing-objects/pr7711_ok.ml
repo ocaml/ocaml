@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type 'a r = <w: int -> int; .. > as 'a;;

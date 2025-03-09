@@ -65,7 +65,6 @@ and ulambda =
       * ulambda * ulambda
   | Uphantom_let of Backend_var.With_provenance.t
       * uphantom_defining_expr option * ulambda
-  | Uletrec of (Backend_var.With_provenance.t * ulambda) list * ulambda
   | Uprim of Clambda_primitives.primitive * ulambda list * Debuginfo.t
   | Uswitch of ulambda * ulambda_switch * Debuginfo.t
   | Ustringswitch of ulambda * (string * ulambda) list * ulambda option
@@ -93,6 +92,7 @@ and ufunction = {
   body   : ulambda;
   dbg    : Debuginfo.t;
   env    : Backend_var.t option;
+  poll   : poll_attribute;
 }
 
 and ulambda_switch =
@@ -108,7 +108,8 @@ type function_description =
     fun_arity: int;                     (* Number of arguments *)
     mutable fun_closed: bool;           (* True if environment not used *)
     mutable fun_inline: (Backend_var.With_provenance.t list * ulambda) option;
-    mutable fun_float_const_prop: bool  (* Can propagate FP consts *)
+    mutable fun_float_const_prop: bool; (* Can propagate FP consts *)
+    fun_poll: poll_attribute;           (* Behaviour for polls *)
   }
 
 (* Approximation of values *)

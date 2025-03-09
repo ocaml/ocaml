@@ -120,18 +120,6 @@ let usage speclist errmsg =
 
 let current = ref 0
 
-let bool_of_string_opt x =
-  try Some (bool_of_string x)
-  with Invalid_argument _ -> None
-
-let int_of_string_opt x =
-  try Some (int_of_string x)
-  with Failure _ -> None
-
-let float_of_string_opt x =
-  try Some (float_of_string x)
-  with Failure _ -> None
-
 let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
                                       errmsg =
   let initpos = !current in
@@ -165,7 +153,7 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
   while !current < (Array.length !argv) do
     begin try
       let s = !argv.(!current) in
-      if String.length s >= 1 && s.[0] = '-' then begin
+      if String.starts_with ~prefix:"-" s then begin
         let action, follow =
           try assoc3 s !speclist, None
           with Not_found ->

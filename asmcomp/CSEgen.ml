@@ -226,19 +226,29 @@ method class_of_operation op =
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
   | Iextcall _ | Iopaque -> assert false       (* treated specially *)
   | Istackoffset _ -> Op_other
-  | Iload(_,_,mut) -> Op_load mut
+  | Iload { mutability; is_atomic } ->
+      (* #12173: disable CSE for atomic loads.
+         #12825: atomic loads cannot be treated as Op_other
+           because they update our view / the frontier of the
+           non-atomic locations, so past non-atomic (mutable) loads
+           may be not be valid anymore.
+         We conservatively tread them as non-initializing stores.
+      *)
+      if is_atomic then Op_store true
+      else Op_load mutability
   | Istore(_,_,asg) -> Op_store asg
-  | Ialloc _ -> assert false                   (* treated specially *)
+  | Ialloc _ | Ipoll _ -> assert false     (* treated specially *)
   | Iintop(Icheckbound) -> Op_checkbound
   | Iintop _ -> Op_pure
   | Iintop_imm(Icheckbound, _) -> Op_checkbound
   | Iintop_imm(_, _) -> Op_pure
-  | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
+  | Icompf _ | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat -> Op_pure
   | Ispecific _ -> Op_other
+  | Idls_get -> Op_load Mutable
+  | Ireturn_addr -> Op_load Immutable
 
 (* Operations that are so cheap that it isn't worth factoring them. *)
-
 method is_cheap_operation op =
   match op with
   | Iconst_int _ -> true
@@ -280,14 +290,14 @@ method private cse n i =
   | Iop Iopaque ->
       (* Assume arbitrary side effects from Iopaque *)
       {i with next = self#cse empty_numbering i.next}
-  | Iop (Ialloc _) ->
+  | Iop (Ialloc _) | Iop (Ipoll _) ->
       (* For allocations, we must avoid extending the live range of a
          pseudoregister across the allocation if this pseudoreg
          is a derived heap pointer (a pointer into the heap that does
          not point to the beginning of a Caml block).  PR#6484 is an
          example of this situation.  Such pseudoregs have type [Addr].
          Pseudoregs with types other than [Addr] can be kept.
-         Moreover, allocation can trigger the asynchronous execution
+         Moreover, allocations and polls can trigger the asynchronous execution
          of arbitrary Caml code (finalizer, signal handler, context
          switch), which can contain non-initializing stores.
          Hence, all equations over mutable loads must be removed. *)
@@ -304,8 +314,7 @@ method private cse n i =
               (* This operation was computed earlier. *)
               (* Are there registers that hold the results computed earlier? *)
               begin match find_regs_containing n1 vres with
-              | Some res when (not (self#is_cheap_operation op))
-                           && (not (Proc.regs_are_volatile res)) ->
+              | Some res when (not (self#is_cheap_operation op)) ->
                   (* We can replace res <- op args with r <- move res,
                      provided res are stable (non-volatile) registers.
                      If the operation is very cheap to compute, e.g.

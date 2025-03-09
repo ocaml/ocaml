@@ -12,9 +12,10 @@
 #*   special exception on linking described in the file LICENSE.          *
 #*                                                                        *
 #**************************************************************************
-include $(ROOTDIR)/api_docgen/Makefile.common
-include $(ROOTDIR)/ocamldoc/Makefile.best_ocamldoc
-vpath %.mli $(ROOTDIR)/stdlib $(DOC_COMPILERLIBS_DIRS)  $(DOC_STDLIB_DIRS)
+# Used by included Makefiles
+ROOTDIR = ../..
+include ../Makefile.common
+vpath %.mli ../../stdlib $(DOC_COMPILERLIBS_DIRS)  $(DOC_STDLIB_DIRS)
 
 
 man: build/man/Stdlib.3o
@@ -36,56 +37,56 @@ ALL_MAN= $(ALL_DOC:%=build/man/%.3o)
 ALL_LATEX= $(ALL_DOC:%=build/latex/%.tex)
 
 build/latex/ifocamldoc.tex: | build/latex
-	printf '\\newif\ifocamldoc\ocamldoctrue\n' > $@
+	$(V_GEN)printf '\\newif\\ifocamldoc\\ocamldoctrue\n' > $@
 
 $(libref:%=build/libref/%.odoc): build/libref/%.odoc: %.mli | build/libref
-	$(OCAMLDOC_RUN) -nostdlib -hide Stdlib -lib Stdlib \
+	$(V_OCAMLDOC)$(OCAMLDOC_RUN) -nostdlib -hide Stdlib -lib Stdlib \
 	-pp \
-"$(AWK) -v ocamldoc=true -f $(ROOTDIR)/stdlib/expand_module_aliases.awk" \
-	$(DOC_STDLIB_INCLUDES) $< -dump  $@
+"$(AWK) -v ocamldoc=true -f ../../stdlib/expand_module_aliases.awk" \
+	$(DOC_STDLIB_INCLUDES) -hide-warnings $< -dump  $@
 
 $(compilerlibref:%=build/compilerlibref/%.odoc):\
 build/compilerlibref/%.odoc: %.mli | build/compilerlibref
-	$(OCAMLDOC_RUN) -nostdlib -hide Stdlib \
-	$(DOC_ALL_INCLUDES) $< -dump  $@
+	$(V_OCAMLDOC)$(OCAMLDOC_RUN) -nostdlib -hide Stdlib \
+	$(DOC_ALL_INCLUDES) -hide-warnings $< -dump  $@
 
 $(compilerlibref_TEXT:%=build/compilerlibref/%.odoc):\
-build/compilerlibref/%.odoc: $(DOCGEN)/build/%.mld | build/compilerlibref
-	$(OCAMLDOC_RUN) $(DOC_ALL_INCLUDES) -text $< -dump  $@
+build/compilerlibref/%.odoc: build/%.mld | build/compilerlibref
+	$(V_OCAMLDOC)$(OCAMLDOC_RUN)  -hide-warnings $(DOC_ALL_INCLUDES) -text $< -dump  $@
 
 $(libref_TEXT:%=build/libref/%.odoc):\
-build/libref/%.odoc: $(DOCGEN)/%.mld | build/libref
-	$(OCAMLDOC_RUN) $(DOC_STDLIB_INCLUDES) -text $< -dump  $@
+build/libref/%.odoc: build/%.mld | build/libref
+	$(V_OCAMLDOC)$(OCAMLDOC_RUN) -hide-warnings $(DOC_STDLIB_INCLUDES) -text $< -dump  $@
 
 ALL_COMPILED_DOC=$(ALL_DOC:%=build/%.odoc)
 build/man/Stdlib.3o: $(ALL_COMPILED_DOC) | build/man
-	$(OCAMLDOC_RUN) -man -d build/man -man-mini \
+	$(V_OCAMLDOC)$(OCAMLDOC_RUN) -man -d build/man -man-mini \
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_COMPILED_DOC))
 
 HTML_OPTIONS= -charset="utf8" -colorize-code -nonavbar
 
 build/html/libref/Stdlib.html: $(ALL_LIBREF:%=build/%.odoc) | build/html/libref
-	$(OCAMLDOC_RUN) -html -d build/html/libref \
+	$(V_OCAMLDOC)$(OCAMLDOC_RUN) -html -d build/html/libref \
 	$(HTML_OPTIONS) \
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_LIBREF:%=build/%.odoc))
 
 build/html/compilerlibref/Compiler_libs.html: \
   $(ALL_COMPILERLIBREF:%=build/%.odoc) | build/html/compilerlibref
-	$(OCAMLDOC_RUN) -html -d build/html/compilerlibref \
+	$(V_OCAMLDOC)$(OCAMLDOC_RUN) -html -d build/html/compilerlibref \
 	-nostdlib -hide Stdlib -t "OCaml compiler library" \
 	$(HTML_OPTIONS) \
-	-intro $(DOCGEN)/build/Compiler_libs.mld \
+	-intro build/Compiler_libs.mld \
 	$(addprefix -load , $(ALL_COMPILERLIBREF:%=build/%.odoc))
 
 build/texi/stdlib.texi: $(ALL_COMPILED_DOC) | build/texi
-	$(OCAMLDOC_RUN) -texi -o $@ \
+	$(V_OCAMLDOC)$(OCAMLDOC_RUN) -texi -o $@ \
 	-nostdlib -hide Stdlib -lib Stdlib -t "OCaml library" \
 	$(addprefix -load , $(ALL_COMPILED_DOC))
 
 build/latex/Stdlib.tex: $(ALL_COMPILED_DOC) | build/latex
-	$(OCAMLDOC_RUN) -latex -o build/latex/all.tex \
+	$(V_OCAMLDOC)$(OCAMLDOC_RUN) -latex -o build/latex/all.tex \
 	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-sepfiles \
 	-latextitle "1,subsection*" \
@@ -100,27 +101,26 @@ build/latex/Stdlib.tex: $(ALL_COMPILED_DOC) | build/latex
 build/latex/alldoc.pdf: build/latex/Stdlib.tex build/latex/alldoc.tex \
   | build/latex
 	cd build/latex && \
-          TEXINPUTS=$${TEXINPUTS}:$(ROOTDIR)/ocamldoc pdflatex alldoc
+          TEXINPUTS=$${TEXINPUTS}:../../ocamldoc pdflatex alldoc
 	cd build/latex && \
-	  TEXINPUTS=$${TEXINPUTS}:$(ROOTDIR)/ocamldoc pdflatex alldoc
+	  TEXINPUTS=$${TEXINPUTS}:../../ocamldoc pdflatex alldoc
 
 stdlib_INPUT=$(foreach module,\
 $(filter-out stdlib.mli camlinternal%,$(stdlib_UNPREFIXED)),\
 \\input{$(call capitalize,$(module)).tex}\
 )
 build/latex/stdlib_input.tex: | build/latex
-	echo $(stdlib_INPUT) > $@
+	$(V_GEN)echo $(stdlib_INPUT) > $@
 
 compilerlibs_INPUT=$(foreach module,\
 $(filter-out camlinternal%,$(compilerlibref)),\
 \\input{$(call capitalize,$(module)).tex})
 build/latex/compilerlibs_input.tex: | build/latex
-	echo $(compilerlibs_INPUT) > $@
+	$(V_GEN)echo $(compilerlibs_INPUT) > $@
 
-INSTALL_MANODIR=$(INSTALL_MANDIR)/man3
-.PHONY:install
+.PHONY: install
 install:
-	$(MKDIR) "$(INSTALL_MANODIR)"
+	$(MKDIR) "$(INSTALL_LIBRARIES_MAN_DIR)"
 	if test -d build/man; then \
-	  $(INSTALL_DATA) build/man/*.3o "$(INSTALL_MANODIR)"; \
-	else : ; fi
+	  $(INSTALL_DATA) build/man/*.3o "$(INSTALL_LIBRARIES_MAN_DIR)"; \
+	fi

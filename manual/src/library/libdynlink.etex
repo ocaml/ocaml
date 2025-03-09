@@ -14,7 +14,8 @@ might be useful to hide ".cmx" files when building native plugins so
 that they remain independent of the implementation of modules in the
 main program.
 
-Programs that use the "dynlink" library simply need to link
+Programs that use the "dynlink" library simply need to include
+the dynlink library directory with "-I +dynlink" and link
 "dynlink.cma" or "dynlink.cmxa" with their object files and other libraries.
 
 \textbf{Note:} in order to insure that the dynamically-loaded modules have

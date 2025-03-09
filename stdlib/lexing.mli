@@ -175,7 +175,7 @@ val new_line : lexbuf -> unit
     of a new line.  You can call this function in the semantic action
     of the rule that matches the end-of-line character.  The function
     does nothing when position tracking is disabled.
-    @since 3.11.0
+    @since 3.11
 *)
 
 (** {1 Miscellaneous functions} *)
@@ -186,8 +186,6 @@ val flush_input : lexbuf -> unit
     refill. *)
 
 (**/**)
-
-(** {1  } *)
 
 (** The following definitions are used by the generated scanners only.
    They are not intended to be used directly by user programs. *)

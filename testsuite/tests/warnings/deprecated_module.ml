@@ -1,8 +1,8 @@
-(* TEST
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
 
-flags = "-w +A"
 
-* bytecode
+
 
 *)
 
@@ -15,3 +15,8 @@ end
 
 let _ = M.x
 include M
+
+(* TEST
+ flags = "-w +A";
+ bytecode;
+*)

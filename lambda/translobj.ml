@@ -84,11 +84,11 @@ let reset_labels () =
 let int n = Lconst (Const_base (Const_int n))
 
 let prim_makearray =
-  Primitive.simple ~name:"caml_make_vect" ~arity:2 ~alloc:true
+  Primitive.simple ~name:"caml_array_make" ~arity:2 ~alloc:true
 
 (* Also use it for required globals *)
 let transl_label_init_general f =
-  let expr, size = f () in
+  let expr = f () in
   let expr =
     Hashtbl.fold
       (fun c id expr -> Llet(Alias, Pgenval, id, Lconst c, expr))
@@ -101,7 +101,7 @@ let transl_label_init_general f =
   in
   Env.reset_required_globals ();*)
   reset_labels ();
-  expr, size
+  expr
 
 let transl_label_init_flambda f =
   assert(Config.flambda);
@@ -110,7 +110,7 @@ let transl_label_init_flambda f =
   (* Calling f (usually Translmod.transl_struct) requires the
      method_cache variable to be initialised to be able to generate
      method accesses. *)
-  let expr, size = f () in
+  let expr = f () in
   let expr =
     if !method_count = 0 then expr
     else
@@ -120,12 +120,13 @@ let transl_label_init_flambda f =
                Loc_unknown),
         expr)
   in
-  transl_label_init_general (fun () -> expr, size)
+  transl_label_init_general (fun () -> expr)
 
 let transl_store_label_init glob size f arg =
   assert(not Config.flambda);
   assert(!Clflags.native_code);
-  method_cache := Lprim(Pfield size,
+  method_cache := Lprim(Pfield (size, Pointer, Mutable),
+                        (* XXX KC: conservative *)
                         [Lprim(Pgetglobal glob, [], Loc_unknown)],
                         Loc_unknown);
   let expr = f arg in
@@ -141,8 +142,7 @@ let transl_store_label_init glob size f arg =
            Loc_unknown),
      expr))
   in
-  let lam, size = transl_label_init_general (fun () -> (expr, size)) in
-  size, lam
+  size, transl_label_init_general (fun () -> expr)
 
 let transl_label_init f =
   if !Clflags.native_code then
@@ -161,7 +161,7 @@ let oo_add_class id =
   classes := id :: !classes;
   (!top_env, !cache_required)
 
-let oo_wrap env req f x =
+let oo_wrap_gen env req f x =
   if !wrapping then
     if !cache_required then f x else
       Misc.protect_refs [Misc.R (cache_required, true)] (fun () ->
@@ -173,7 +173,7 @@ let oo_wrap env req f x =
          cache_required := req;
          classes := [];
          method_ids := Ident.Set.empty;
-         let lambda = f x in
+         let lambda, other = f x in
          let lambda =
            List.fold_left
              (fun lambda id ->
@@ -184,8 +184,12 @@ let oo_wrap env req f x =
                      lambda))
              lambda !classes
          in
-         lambda
+         lambda, other
       )
+
+let oo_wrap env req f x =
+  let lam, () = oo_wrap_gen env req (fun x -> f x, ()) x in
+  lam
 
 let reset () =
   Hashtbl.clear consts;

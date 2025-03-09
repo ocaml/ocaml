@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 [@@@ocaml.warning "@A"]
 [@@@ocaml.alert "++all"]
@@ -30,6 +29,10 @@ module rec B : sig type t end = struct type t = T.deprecated end
 
 module type T = sig type t = T.deprecated end
 [@@ocaml.alert "-deprecated"]
+
+(* Warning 27 is unused function parameter. *)
+let f _ = function[@ocaml.warning "-27"]
+  | x -> ()
 
 (* Signature items *)
 

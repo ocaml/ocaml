@@ -68,7 +68,6 @@ let description_of_toplevel_node (expr : Flambda.t) =
   | Proved_unreachable -> "unreachable"
   | Let { var; _ } -> Format.asprintf "let %a" Variable.print var
   | Let_mutable _ -> "let_mutable"
-  | Let_rec _ -> "letrec"
   | If_then_else _ -> "if"
   | Switch _ -> "switch"
   | String_switch _ -> "stringswitch"
@@ -110,9 +109,6 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
       && Lambda.equal_value_kind ck1 ck2
       && same b1 b2
   | Let_mutable _, _ | _, Let_mutable _ -> false
-  | Let_rec (bl1, a1), Let_rec (bl2, a2) ->
-    Misc.Stdlib.List.equal samebinding bl1 bl2 && same a1 a2
-  | Let_rec _, _ | _, Let_rec _ -> false
   | Switch (a1, s1), Switch (a2, s2) ->
     Variable.equal a1 a2 && sameswitch s1 s2
   | Switch _, _ | _, Switch _ -> false
@@ -127,7 +123,10 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   | Static_raise _, _ | _, Static_raise _ -> false
   | Static_catch (s1, v1, a1, b1), Static_catch (s2, v2, a2, b2) ->
     Static_exception.equal s1 s2
-      && Misc.Stdlib.List.equal Variable.equal v1 v2
+      && Misc.Stdlib.List.equal
+        (fun (v1, k1) (v2, k2) -> Variable.equal v1 v2
+                                  && Lambda.equal_value_kind k1 k2)
+        v1 v2
       && same a1 a2
       && same b1 b2
   | Static_catch _, _ | _, Static_catch _ -> false
@@ -221,9 +220,6 @@ and same_move_within_set_of_closures (m1 : Flambda.move_within_set_of_closures)
     && Closure_id.equal m1.start_from m2.start_from
     && Closure_id.equal m1.move_to m2.move_to
 
-and samebinding (v1, n1) (v2, n2) =
-  Variable.equal v1 v2 && same_named n1 n2
-
 and sameswitch (fs1 : Flambda.switch) (fs2 : Flambda.switch) =
   let samecase (n1, a1) (n2, a2) = n1 = n2 && same a1 a2 in
   Numbers.Int.Set.equal fs1.numconsts fs2.numconsts
@@ -275,7 +271,7 @@ let toplevel_substitution sb tree =
       let args = List.map sb args in
       Static_raise (static_exn, args)
     | Static_catch _ | Try_with _ | While _
-    | Let _ | Let_rec _ | Proved_unreachable -> flam
+    | Let _ | Proved_unreachable -> flam
   in
   let aux_named (named : Flambda.named) : Flambda.named =
     match named with
@@ -328,7 +324,7 @@ let toplevel_substitution_named sb named =
   | _ -> assert false
 
 let make_closure_declaration
-      ~is_classic_mode ~id ~body ~params ~stub : Flambda.t =
+      ~is_classic_mode ~id ~body ~params : Flambda.t =
   let free_variables = Flambda.free_variables body in
   let param_set = Parameter.Set.vars params in
   if not (Variable.Set.subset param_set free_variables) then begin
@@ -347,12 +343,15 @@ let make_closure_declaration
   let subst_param param = Parameter.map_var subst param in
   let function_declaration =
     Flambda.create_function_declaration ~params:(List.map subst_param params)
-      ~body ~stub ~dbg:Debuginfo.none ~inline:Default_inline
+      ~body ~stub:true ~dbg:Debuginfo.none ~inline:Default_inline
       ~specialise:Default_specialise ~is_a_functor:false
       ~closure_origin:(Closure_origin.create (Closure_id.wrap id))
+      ~poll:Default_poll
   in
-  assert (Variable.Set.equal (Variable.Set.map subst free_variables)
+  begin
+    assert (Variable.Set.equal (Variable.Set.map subst free_variables)
     function_declaration.free_variables);
+  end;
   let free_vars =
     Variable.Map.fold (fun id id' fv' ->
         let spec_to : Flambda.specialised_to =
@@ -543,7 +542,7 @@ let substitute_read_symbol_field_for_variables
           Expr (
             Flambda.create_let block (make_named t)
               (Flambda.create_let field
-                 (Prim (Pfield h, [block], Debuginfo.none))
+                 (Prim (Pfield (h, Pointer, Mutable), [block], Debuginfo.none))
                  (Var field)))
     in
     Flambda.create_let fresh_var (make_named path) expr
@@ -633,35 +632,6 @@ let substitute_read_symbol_field_for_variables
         (Let_mutable { let_mutable with initial_value = fresh })
     | Let_mutable _ ->
       expr
-    | Let_rec (defs, body) ->
-      let free_variables_of_defs =
-        List.fold_left (fun set (_, named) ->
-            Variable.Set.union set (Flambda.free_variables_named named))
-          Variable.Set.empty defs
-      in
-      let to_substitute =
-        Variable.Set.filter
-          (fun v -> Variable.Map.mem v substitution)
-          free_variables_of_defs
-      in
-      if Variable.Set.is_empty to_substitute then
-        expr
-      else begin
-        let bindings =
-          Variable.Map.of_set (fun var -> Variable.rename var) to_substitute
-        in
-        let defs =
-          List.map (fun (var, named) ->
-              var, substitute_named bindings named)
-            defs
-        in
-        let expr =
-          Flambda.Let_rec (defs, body)
-        in
-        Variable.Map.fold (fun to_substitute fresh expr ->
-            bind to_substitute fresh expr)
-          bindings expr
-      end
     | If_then_else (cond, ifso, ifnot)
         when Variable.Map.mem cond substitution ->
       let fresh = Variable.rename cond in
@@ -902,7 +872,7 @@ let projection_to_named (projection : Projection.t) : Flambda.named =
   | Project_closure project_closure -> Project_closure project_closure
   | Move_within_set_of_closures move -> Move_within_set_of_closures move
   | Field (field_index, var) ->
-    Prim (Pfield field_index, [var], Debuginfo.none)
+    Prim (Pfield (field_index, Pointer, Mutable), [var], Debuginfo.none)
 
 type specialised_to_same_as =
   | Not_specialised

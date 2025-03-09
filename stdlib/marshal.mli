@@ -56,6 +56,7 @@ type extern_flags =
     No_sharing                          (** Don't preserve sharing *)
   | Closures                            (** Send function closures *)
   | Compat_32                           (** Ensure 32-bit compatibility *)
+
 (** The flags to the [Marshal.to_*] functions below. *)
 
 val to_channel : out_channel -> 'a -> extern_flags list -> unit
@@ -97,19 +98,19 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
    corresponding closure will create a new reference, different from
    the global one.
 
-
    If [flags] contains [Marshal.Compat_32], marshaling fails when
-   it encounters an integer value outside the range [[-2{^30}, 2{^30}-1]]
+   it encounters an integer value outside the range [-2]{^[30]}, [2]{^[30]}[-1]
    of integers that are representable on a 32-bit platform.  This
    ensures that marshaled data generated on a 64-bit platform can be
    safely read back on a 32-bit platform.  If [flags] does not
    contain [Marshal.Compat_32], integer values outside the
-   range [[-2{^30}, 2{^30}-1]] are marshaled, and can be read back on
+   range [-2]{^[30]}, [2]{^[30]}[-1] are marshaled, and can be read back on
    a 64-bit platform, but will cause an error at un-marshaling time
    when read back on a 32-bit platform.  The [Mashal.Compat_32] flag
    only matters when marshaling is performed on a 64-bit platform;
    it has no effect if marshaling is performed on a 32-bit platform.
    @raise Failure if [chan] is not in binary mode.
+
  *)
 
 external to_bytes :
@@ -118,7 +119,7 @@ external to_bytes :
    the representation of [v].
    The [flags] argument has the same meaning as for
    {!Marshal.to_channel}.
-   @since 4.02.0 *)
+   @since 4.02 *)
 
 external to_string :
   'a -> extern_flags list -> string = "caml_output_value_to_string"
@@ -151,7 +152,7 @@ val from_bytes : bytes -> int -> 'a
    representation is not read from a channel, but taken from
    the byte sequence [buff], starting at position [ofs].
    The byte sequence is not mutated.
-   @since 4.02.0 *)
+   @since 4.02 *)
 
 val from_string : string -> int -> 'a
 (** Same as [from_bytes] but take a string as argument instead of a
@@ -184,3 +185,12 @@ val data_size : bytes -> int -> int
 
 val total_size : bytes -> int -> int
 (** See {!Marshal.header_size}.*)
+
+(** {1:marshal_concurrency Marshal and domain safety}
+
+    Care must be taken when marshaling a mutable value that may be modified by
+    a different domain. Mutating a value that is being marshaled (i.e., turned
+    into a sequence of bytes) is a programming error and might result in
+    surprising values (when unmarshaling) due to tearing, since marshaling
+    involves byte-per-byte copy.
+*)

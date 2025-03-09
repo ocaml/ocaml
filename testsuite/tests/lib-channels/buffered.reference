@@ -1,0 +1,10 @@
+stdout 1
+stderr 1
+stderr 2
+stdout 2
+false
+stderr 3
+stdout 3
+stdout 4
+true
+stderr 4

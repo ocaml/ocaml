@@ -14,9 +14,9 @@
 /**************************************************************************/
 
 #include <caml/mlvalues.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
-CAMLprim value unix_getegid(value unit)
+CAMLprim value caml_unix_getegid(value unit)
 {
   return Val_int(getegid());
 }

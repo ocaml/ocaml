@@ -1,4 +1,3 @@
-#2 "otherlibs/dynlink/dynlink_platform_intf.ml"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -18,8 +17,6 @@
 
 (** Interface for platform-specific dynlink providers.
     Note that this file needs to be a valid .mli file. *)
-
-[@@@ocaml.warning "+a-4-30-40-41-42"]
 
 module type S = sig
   type handle
@@ -48,7 +45,7 @@ module type S = sig
   val fold_initial_units
      : init:'a
     -> f:('a
-      -> comp_unit:string
+      -> compunit:string
       -> interface:Digest.t option
       -> implementation:(Digest.t option * Dynlink_types.implem_state) option
       -> defined_symbols:string list
@@ -61,7 +58,7 @@ module type S = sig
     -> handle * (Unit_header.t list)
 
   val run_shared_startup : handle -> unit
-  val run : handle -> unit_header:Unit_header.t -> priv:bool -> unit
+  val run : Mutex.t -> handle -> unit_header:Unit_header.t -> priv:bool -> unit
 
   val unsafe_get_global_value : bytecode_or_asm_symbol:string -> Obj.t option
 

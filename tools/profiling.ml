@@ -18,8 +18,8 @@
 
 type profiling_counters = (string * (string * int array)) list
 
-let counters = ref ([] : profiling_counters);;
-let incr a i = a.(i) <- a.(i) + 1;;
+let counters = ref ([] : profiling_counters)
+let incr a i = a.(i) <- a.(i) + 1
 
 exception Bad_profile
 

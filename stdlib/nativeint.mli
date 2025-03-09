@@ -69,7 +69,7 @@ val unsigned_div : nativeint -> nativeint -> nativeint
 (** Same as {!div}, except that arguments and result are interpreted as {e
     unsigned} native integers.
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 external rem : nativeint -> nativeint -> nativeint = "%nativeint_mod"
 (** Integer remainder.  If [y] is not zero, the result
@@ -83,7 +83,7 @@ val unsigned_rem : nativeint -> nativeint -> nativeint
 (** Same as {!rem}, except that arguments and result are interpreted as {e
     unsigned} native integers.
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 val succ : nativeint -> nativeint
 (** Successor.
@@ -94,7 +94,8 @@ val pred : nativeint -> nativeint
    [Nativeint.pred x] is [Nativeint.sub x Nativeint.one]. *)
 
 val abs : nativeint -> nativeint
-(** Return the absolute value of its argument. *)
+(** [abs x] is the absolute value of [x]. On [min_int] this
+   is [min_int] itself and thus remains negative. *)
 
 val size : int
 (** The size in bits of a native integer.  This is equal to [32]
@@ -157,16 +158,16 @@ val unsigned_to_int : nativeint -> int option
     Returns [None] if the unsigned value of the argument cannot fit into an
     [int].
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 external of_float : float -> nativeint
   = "caml_nativeint_of_float" "caml_nativeint_of_float_unboxed"
   [@@unboxed] [@@noalloc]
 (** Convert the given floating-point number to a native integer,
    discarding the fractional part (truncate towards 0).
-   The result of the conversion is undefined if, after truncation,
-   the number is outside the range
-   \[{!Nativeint.min_int}, {!Nativeint.max_int}\]. *)
+   If the truncated floating-point number is outside the range
+   \[{!Nativeint.min_int}, {!Nativeint.max_int}\], no exception is raised,
+   and an unspecified, platform-dependent integer is returned. *)
 
 external to_float : nativeint -> float
   = "caml_nativeint_to_float" "caml_nativeint_to_float_unboxed"
@@ -219,31 +220,32 @@ val unsigned_compare: t -> t -> int
 (** Same as {!compare}, except that arguments are interpreted as {e unsigned}
     native integers.
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 val equal: t -> t -> bool
 (** The equal function for native ints.
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val min: t -> t -> t
 (** Return the smaller of the two arguments.
-    @since 4.13.0
+    @since 4.13
 *)
 
 val max: t -> t -> t
 (** Return the greater of the two arguments.
-    @since 4.13.0
+    @since 4.13
  *)
 
+val seeded_hash : int -> t -> int
+(** A seeded hash function for native ints, with the same output value as
+    {!Hashtbl.seeded_hash}. This function allows this module to be passed as
+    argument to the functor {!Hashtbl.MakeSeeded}.
 
-(**/**)
+    @since 5.1 *)
 
-(** {1 Deprecated functions} *)
+val hash : t -> int
+(** An unseeded hash function for native ints, with the same output value as
+    {!Hashtbl.hash}. This function allows this module to be passed as argument
+    to the functor {!Hashtbl.Make}.
 
-external format : string -> nativeint -> string = "caml_nativeint_format"
-(** [Nativeint.format fmt n] return the string representation of the
-   native integer [n] in the format specified by [fmt].
-   [fmt] is a [Printf]-style format consisting of exactly
-   one [%d], [%i], [%u], [%x], [%X] or [%o] conversion specification.
-   This function is deprecated; use {!Printf.sprintf} with a [%nx] format
-   instead. *)
+    @since 5.1 *)

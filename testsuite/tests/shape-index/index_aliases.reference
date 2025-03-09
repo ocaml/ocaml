@@ -1,0 +1,66 @@
+Indexed shapes:
+Missing uid : t (File "index_aliases.ml", line 52, characters 9-10)
+Resolved: Index_aliases.26 :
+  FArg (File "index_aliases.ml", line 49, characters 5-9)
+Resolved: Index_aliases.25 :
+  Arg (File "index_aliases.ml", line 48, characters 19-22)
+Approximated: Index_aliases.22 :
+  X.F (File "index_aliases.ml", line 48, characters 14-17)
+Missing uid : Z.s (File "index_aliases.ml", line 45, characters 8-11)
+Alias: Index_aliases.23 -> Approximated: Index_aliases.22  :
+  Y (File "index_aliases.ml", line 42, characters 11-12)
+Approximated: Index_aliases.22 :
+  X.M (File "index_aliases.ml", line 41, characters 11-14)
+Resolved: Index_aliases.17 :
+  x (File "index_aliases.ml", line 40, characters 16-17)
+Resolved: Index_aliases.16 :
+  S (File "index_aliases.ml", line 38, characters 8-9)
+Alias: Index_aliases.10 -> Alias: Index_aliases.2 -> Resolved: Index_aliases.1
+                             :
+  G (File "index_aliases.ml", line 29, characters 8-9)
+Alias: Index_aliases.2 -> Resolved: Index_aliases.1  :
+  B (File "index_aliases.ml", line 28, characters 11-12)
+Resolved: Index_aliases.7 :
+  C (File "index_aliases.ml", line 26, characters 11-12)
+Alias: Index_aliases.2 -> Resolved: Index_aliases.1  :
+  B (File "index_aliases.ml", line 25, characters 14-15)
+Resolved: Index_aliases.5 :
+  F (File "index_aliases.ml", line 25, characters 12-13)
+Resolved: Index_aliases.1 :
+  A (File "index_aliases.ml", line 23, characters 14-15)
+Alias: Index_aliases.6 -> Resolved: Index_aliases.5  :
+  F' (File "index_aliases.ml", line 23, characters 11-13)
+Resolved: Index_aliases.5 :
+  F (File "index_aliases.ml", line 22, characters 12-13)
+Resolved: Index_aliases.4 :
+  X (File "index_aliases.ml", line 21, characters 32-33)
+Resolved: Index_aliases.1 :
+  A (File "index_aliases.ml", line 19, characters 11-12)
+
+Uid of decls:
+Index_aliases.0: t (File "index_aliases.ml", line 18, characters 23-24)
+Index_aliases.1: A (File "index_aliases.ml", line 18, characters 7-8)
+Index_aliases.2: B (File "index_aliases.ml", line 19, characters 7-8)
+Index_aliases.3: t (File "index_aliases.ml", line 21, characters 23-24)
+Index_aliases.5: F (File "index_aliases.ml", line 21, characters 7-8)
+Index_aliases.6: F' (File "index_aliases.ml", line 22, characters 7-9)
+Index_aliases.7: C (File "index_aliases.ml", line 23, characters 7-8)
+Index_aliases.8: C' (File "index_aliases.ml", line 25, characters 7-9)
+Index_aliases.9: D (File "index_aliases.ml", line 26, characters 7-8)
+Index_aliases.10: G (File "index_aliases.ml", line 28, characters 7-8)
+Index_aliases.11: s (File "index_aliases.ml", line 32, characters 21-22)
+Index_aliases.12: M (File "index_aliases.ml", line 32, characters 9-10)
+Index_aliases.14: t (File "index_aliases.ml", line 33, characters 48-49)
+Index_aliases.15: F (File "index_aliases.ml", line 33, characters 9-10)
+Index_aliases.16: S (File "index_aliases.ml", line 31, characters 12-13)
+Index_aliases.17: x (File "index_aliases.ml", line 35, characters 4-5)
+Index_aliases.18: s (File "index_aliases.ml", line 36, characters 26-27)
+Index_aliases.19: M (File "index_aliases.ml", line 36, characters 11-12)
+Index_aliases.20: t (File "index_aliases.ml", line 37, characters 41-42)
+Index_aliases.21: F (File "index_aliases.ml", line 37, characters 11-12)
+Index_aliases.22: X (File "index_aliases.ml", line 40, characters 7-8)
+Index_aliases.23: Y (File "index_aliases.ml", line 41, characters 7-8)
+Index_aliases.24: Z (File "index_aliases.ml", line 42, characters 7-8)
+Index_aliases.25: Arg (File "index_aliases.ml", line 47, characters 7-10)
+Index_aliases.26: FArg (File "index_aliases.ml", line 48, characters 7-11)
+Index_aliases.27: u (File "index_aliases.ml", line 52, characters 5-6)

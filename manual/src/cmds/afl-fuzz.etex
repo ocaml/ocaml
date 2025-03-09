@@ -68,6 +68,9 @@ Next, we run the program under afl-fuzz:
 mkdir input
 echo asdf > input/testcase
 mkdir output
-afl-fuzz -i input -o output ./readline
+afl-fuzz -m none -i input -o output ./readline
 \end{verbatim}
 By inspecting instrumentation output, the fuzzer finds the crashing input quickly.
+
+Note: To fuzz-test an OCaml program with afl-fuzz, passing the option {\tt -m none}
+is required to disable afl-fuzz's default 50MB virtual memory limit.

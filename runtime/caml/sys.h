@@ -20,32 +20,18 @@
 
 #include "misc.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+CAMLextern char * caml_strerror(int errnum, char * buf, size_t buflen);
 
 #define NO_ARG Val_int(0)
 
-CAMLnoreturn_start
-CAMLextern void caml_sys_error (value)
-CAMLnoreturn_end;
+CAMLnoret CAMLextern void caml_sys_error (value);
 
-CAMLnoreturn_start
-CAMLextern void caml_sys_io_error (value)
-CAMLnoreturn_end;
+CAMLnoret CAMLextern void caml_sys_io_error (value);
 
 CAMLextern double caml_sys_time_unboxed(value);
-CAMLextern void caml_sys_init (char_os * exe_name, char_os ** argv);
+CAMLextern void caml_sys_init (const char_os * exe_name, char_os ** argv);
 
-CAMLnoreturn_start
-CAMLextern void caml_do_exit (int)
-CAMLnoreturn_end;
-
-extern char_os * caml_exe_name;
-
-#ifdef __cplusplus
-}
-#endif
+CAMLnoret CAMLextern void caml_do_exit (int);
 
 #endif /* CAML_INTERNALS */
 

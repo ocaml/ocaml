@@ -6,7 +6,7 @@ dot-ext:
    | dot-operator-char { operator-char }
 ;
 dot-operator-char:
-  '!' ||  '?' || core-operator-char || '%' || ':'
+  '!' || '?' || core-operator-char || '%' || ':'
 ;
 expr:
           ...
@@ -45,9 +45,9 @@ let open Dict in dict.%{"two"};;
 \begin{syntax}
 expr:
           ...
-        | expr '.' [module-path '.'] dot-ext '(' expr {{';' expr }} ')' [ '<-' expr ]
-        | expr '.' [module-path '.'] dot-ext '[' expr {{';' expr }} ']' [ '<-' expr ]
-        | expr '.' [module-path '.'] dot-ext '{' expr {{';' expr }} '}' [ '<-' expr ]
+        | expr '.' [module-path '.'] dot-ext '(' expr {{ ';' expr }} ')' [ '<-' expr ]
+        | expr '.' [module-path '.'] dot-ext '[' expr {{ ';' expr }} ']' [ '<-' expr ]
+        | expr '.' [module-path '.'] dot-ext '{' expr {{ ';' expr }} '}' [ '<-' expr ]
 ;
 operator-name:
           ...

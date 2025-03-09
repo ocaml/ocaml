@@ -1,5 +1,6 @@
 (* TEST
-   * expect *)
+ expect;
+*)
 
 module type Vector_space = sig
   type t
@@ -45,7 +46,7 @@ end;;
 Line 3, characters 21-22:
 3 |     Linear_map.scale s x
                          ^
-Error: This expression has type (module Scalar with type t = s)
+Error: The value "s" has type "(module Scalar with type t = s)"
        but an expression was expected of type
-         (module Vector_space with type scalar = 'a and type t = 'b)
+         "(module Vector_space with type scalar = 'a and type t = 'b)"
 |}];;

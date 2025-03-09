@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type i = <m : 'c. 'c -> 'c >
@@ -17,13 +17,13 @@ let f (type a b) (y : (a, b) j t) : a -> b =
 Line 2, characters 6-7:
 2 |   let A = y in fun x -> x;;
           ^
-Error: This pattern matches values of type i t
-       but a pattern was expected which matches values of type (a, b) j t
-       Type i = < m : 'c. 'c -> 'c > is not compatible with type
-         (a, b) j = < m : a -> b >
-       The method m has type 'c. 'c -> 'c, but the expected method type was
-       a -> b
-       The universal variable 'c would escape its scope
+Error: This pattern matches values of type "i t"
+       but a pattern was expected which matches values of type "(a, b) j t"
+       Type "i" = "< m : 'c. 'c -> 'c >" is not compatible with type
+         "(a, b) j" = "< m : a -> b >"
+       The method "m" has type "'c. 'c -> 'c", but the expected method type was
+       "a -> b"
+       The universal variable "'c" would escape its scope
 |}]
 
 let g (type a b) (y : (a,b) j t option) =
@@ -55,8 +55,8 @@ Line 6, characters 2-20:
 6 |   let None = y in () ;;
       ^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Some A
+  Here is an example of a case that is not matched: "Some A"
+
 val g : M.j t option -> unit = <fun>
 |}]
 
@@ -82,8 +82,8 @@ Line 9, characters 2-20:
 9 |   let None = y in () ;;
       ^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Some A
+  Here is an example of a case that is not matched: "Some A"
+
 val g : M.j t option -> unit = <fun>
 |}]
 
@@ -108,26 +108,8 @@ Line 9, characters 2-20:
 9 |   let None = y in () ;;
       ^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Some A
-val g : 'a M.j t option -> unit = <fun>
-|}, Principal{|
-module M :
-  sig
-    type 'a d
-    type i = < m : 'c. 'c -> 'c d >
-    type 'a j = < m : 'c. 'c -> 'a >
-  end
-type _ t = A : M.i t
-File "_none_", line 1:
-Warning 18 [not-principal]: typing this pattern requires considering $0 and 'c M.d as equal.
-But the knowledge of these types is not principal.
-Line 9, characters 2-20:
-9 |   let None = y in () ;;
-      ^^^^^^^^^^^^^^^^^^
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Some A
+  Here is an example of a case that is not matched: "Some A"
+
 val g : 'a M.j t option -> unit = <fun>
 |}]
 
@@ -187,5 +169,5 @@ Line 7, characters 33-34:
 7 | let f (y : M.j t) = match y with _ -> .;;
                                      ^
 Error: This match case could not be refuted.
-       Here is an example of a value that would reach it: A
+       Here is an example of a value that would reach it: "A"
 |}]

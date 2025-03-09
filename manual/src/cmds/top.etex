@@ -1,21 +1,22 @@
 \chapter{The toplevel system or REPL (ocaml)} \label{c:camllight}
 %HEVEA\cutname{toplevel.html}
 
-This chapter describes the toplevel system for OCaml, that permits
+This chapter describes "ocaml", the toplevel system for OCaml, that permits
 interactive use of the OCaml system
 through a read-eval-print loop (REPL). In this mode, the system repeatedly
 reads OCaml phrases from the input, then typechecks, compile and
 evaluate them, then prints the inferred type and result value, if
-any. The system prints a "#" (sharp) prompt before reading each
-phrase.
+any. End-of-file on standard input terminates "ocaml".
 
-Input to the toplevel can span several lines. It is terminated by @";;"@ (a
-double-semicolon). The toplevel input consists in one or several
+Input to the toplevel can span several lines. It begins after the "#"
+(sharp) prompt printed by the system and is terminated by @";;"@ (a
+double-semicolon) followed by optional white space and comments and an
+end of line. The toplevel input consists in one or several
 toplevel phrases, with the following syntax:
 
 \begin{syntax}
 toplevel-input:
-          {{ definition }} ';;'
+          { definition } ';;'
         | expr ';;'
         | '#' ident [ directive-argument ] ';;'
 ;
@@ -26,10 +27,10 @@ directive-argument:
         | 'true' || 'false'
 \end{syntax}
 
-A phrase can consist of a definition, like those found in
+A phrase can consist of a sequence of definitions, like those found in
 implementations of compilation units or in @'struct' \ldots 'end'@
-module expressions. The definition can bind value names, type names,
-an exception, a module name, or a module type name. The toplevel
+module expressions. The definitions can bind value names, type names,
+exceptions, module names, or module type names. The toplevel
 system performs the bindings, then prints the types and values (if
 any) for the names thus defined.
 
@@ -60,18 +61,29 @@ are printed on standard output, errors on standard error. End-of-file
 on standard input terminates "ocaml" (see also the "#quit" directive
 in section~\ref{s:toplevel-directives}).
 
-On start-up (before the first phrase is read), if the file
-".ocamlinit" exists in the current directory,
-its contents are read as a sequence of OCaml phrases
-and executed as per the "#use" directive
-described in section~\ref{s:toplevel-directives}.
+On start-up (before the first phrase is read), the contents of initialization
+file are read as a sequence of OCaml phrases and executed as per the "#use"
+directive described in section~\ref{s:toplevel-directives}.
 The evaluation outcode for each phrase are not displayed.
-If the current directory does not contain an ".ocamlinit" file,
-the file "XDG_CONFIG_HOME/ocaml/init.ml" is looked up according
-to the XDG base directory specification and used instead (on Windows
-this is skipped). If that file doesn't exist then an [.ocamlinit] file
-in the users' home directory (determined via environment variable "HOME") is
-used if existing.
+
+The initialization file is the first found of:
+\begin{enumerate}
+  \item ".ocamlinit" in the current directory;
+  \item "XDG_CONFIG_HOME/ocaml/init.ml", if "XDG_CONFIG_HOME" is an absolute
+    path;
+  \item otherwise, on Unix, "HOME/ocaml/init.ml" or, on Windows,
+    "ocaml\\init.ml" under "LocalAppData"
+    (e.g. "C:\\Users\\Bactrian\\AppData\\Local\\ocaml\\init.ml");
+  \item "ocaml/init.ml" under any of the absolute paths in "XDG_CONFIG_DIRS".
+    Paths in "XDG_CONFIG_DIRS" are colon-delimited on Unix, and
+    semicolon-delimited on Windows;
+  \item if "XDG_CONFIG_DIRS" contained no absolute paths,
+    "/usr/xdg/ocaml/init.ml" on Unix or, "ocaml\\init.ml" under any of
+    "LocalAppData" (e.g. "C:\\Users\\Bactrian\\AppData\\Local"),
+    "RoamingAppData" (e.g. "C:\\Users\\Bactrian\\AppData\\Roaming"), or
+    "ProgramData" (e.g. "C:\\ProgramData") on Windows;
+  \item "HOME/.ocamlinit", if "HOME" is non-empty;
+\end{enumerate}
 
 The toplevel system does not perform line editing, but it can
 easily be used in conjunction with an external line editor such as
@@ -135,8 +147,8 @@ attempts to underline visually the location of the error. It
 consults the "TERM" variable to determines the type of output terminal
 and look up its capabilities in the terminal database.
 
-\item["XDG_CONFIG_HOME", "HOME"]
-".ocamlinit" lookup procedure (see above).
+\item["XDG_CONFIG_HOME", "HOME", "XDG_CONFIG_DIRS"]
+Initialization file lookup procedure (see above).
 \end{options}
 \end{unix}
 
@@ -285,6 +297,9 @@ directories:
 
 \item[Compiler options]
   \begin{options}
+  \item["#debug "\var{bool}";;"]
+    Turn on/off the insertion of debugging events. Default is "true".
+
   \item["#labels "\var{bool}";;"]
     Ignore labels in function types if argument is "false", or switch back
     to default behaviour (commuting style) if argument is "true".

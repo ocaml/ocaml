@@ -1,0 +1,377 @@
+.\"**************************************************************************
+.\"*                                                                        *
+.\"*                                 OCaml                                  *
+.\"*                                                                        *
+.\"*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *
+.\"*                                                                        *
+.\"*   Copyright 1996 Institut National de Recherche en Informatique et     *
+.\"*     en Automatique.                                                    *
+.\"*                                                                        *
+.\"*   All rights reserved.  This file is distributed under the terms of    *
+.\"*   the GNU Lesser General Public License version 2.1, with the          *
+.\"*   special exception on linking described in the file LICENSE.          *
+.\"*                                                                        *
+.\"**************************************************************************
+.\"
+.TH OCAML 1
+
+.SH NAME
+ocaml \- The OCaml interactive toplevel
+
+.SH SYNOPSIS
+.B ocaml
+[
+.I options
+]
+[
+.I object-files
+]
+[
+.I script-file
+]
+.SH DESCRIPTION
+
+The
+.BR ocaml (1)
+command is the toplevel system for OCaml,
+that permits interactive use of the OCaml system through a
+read-eval-print loop. In this mode, the system repeatedly reads OCaml
+phrases from standard input, then typechecks, compiles and evaluates
+them, then prints the inferred type and result value, if any.
+End-of-file on standard input terminates
+.BR ocaml (1).
+
+Input to the toplevel can span several lines. It begins after the #
+(sharp) prompt printed by the system and is terminated by ;; (a
+double-semicolon) followed by optional white space and an end of line.
+The toplevel input consists in one or several toplevel phrases.
+
+If one or more
+.I object-files
+(ending in .cmo or .cma) are given on the command line, they are
+loaded silently before starting the toplevel.
+
+If a
+.I script-file
+is given, phrases are read silently from the file, errors printed on
+standard error.
+.BR ocaml (1)
+exits after the execution of the last phrase.
+
+.SH OPTIONS
+
+The following command-line options are recognized by
+.BR ocaml (1).
+.TP
+.B \-absname
+Show absolute filenames in error messages.
+.TP
+.B \-no-absname
+Do not try to show absolute filenames in error messages.
+.TP
+.BI \-I " directory"
+Add the given directory to the list of directories searched for
+source and compiled files. By default, the current directory is
+searched first, then the standard library directory. Directories added
+with
+.B \-I
+are searched after the current directory, in the order in which they
+were given on the command line, but before the standard library
+directory.
+.IP
+If the given directory starts with
+.BR + ,
+it is taken relative to the
+standard library directory. For instance,
+.B \-I\ +compiler-libs
+adds the subdirectory
+.B compiler-libs
+of the standard library to the search path.
+.IP
+Directories can also be added to the search path once the toplevel
+is running with the
+.B #directory
+directive.
+.TP
+.BI \-init " file"
+Load the given file instead of the default initialization file.
+See the "Initialization file" section below.
+.TP
+.B \-labels
+Labels are not ignored in types, labels may be used in applications,
+and labelled parameters can be given in any order.  This is the default.
+.TP
+.B \-no\-app\-funct
+Deactivates the applicative behaviour of functors. With this option,
+each functor application generates new types in its result and
+applying the same functor twice to the same argument yields two
+incompatible structures.
+.TP
+.B \-noassert
+Do not compile assertion checks.  Note that the special form
+.B assert\ false
+is always compiled because it is typed specially.
+.TP
+.B \-noinit
+Do not load any initialization file.
+See the "Initialization file" section below.
+.TP
+.B \-nolabels
+Ignore non-optional labels in types. Labels cannot be used in
+applications, and parameter order becomes strict.
+.TP
+.B \-noprompt
+Do not display any prompt when waiting for input.
+.TP
+.B \-nopromptcont
+Do not display the secondary prompt when waiting for continuation lines in
+multi-line inputs.  This should be used e.g. when running
+.BR ocaml (1)
+in an
+.BR emacs (1)
+window.
+.TP
+.B \-nostdlib
+Do not include the standard library directory in the list of
+directories searched for source and compiled files.
+.TP
+.BI \-open " module"
+Opens the given module before starting the toplevel. If several
+.B \-open
+options are given, they are processed in order, just as if
+the statements open! module1;; ... open! moduleN;; were input.
+.TP
+.BI \-ppx " command"
+After parsing, pipe the abstract syntax tree through the preprocessor
+.IR command .
+The module
+.BR Ast_mapper (3)
+implements the external interface of a preprocessor.
+.TP
+.B \-principal
+Check information path during type-checking, to make sure that all
+types are derived in a principal way.  When using labelled arguments
+and/or polymorphic methods, this flag is required to ensure future
+versions of the compiler will be able to infer types correctly, even
+if internal algorithms change.
+All programs accepted in
+.B \-principal
+mode are also accepted in the
+default mode with equivalent types, but different binary signatures,
+and this may slow down type checking; yet it is a good idea to
+use it once before publishing source code.
+.TP
+.B \-no\-principal
+Do not check principality of type inference.
+This is the default.
+.TP
+.B \-rectypes
+Allow arbitrary recursive types during type-checking.  By default,
+only recursive types where the recursion goes through an object type
+are supported.
+.TP
+.B \-no\-rectypes
+Do no allow arbitrary recursive types during type-checking.
+This is the default.
+.TP
+.B \-safe\-string
+Enforce the separation between types
+.BR string " and " bytes ,
+thereby making strings read-only. This is the default.
+.TP
+.B \-safer\-matching
+Do not use type information to optimize pattern-matching.
+This allows to detect match failures even if a pattern-matching was
+wrongly assumed to be exhaustive. This only impacts GADT and
+polymorphic variant compilation.
+.TP
+.B \-short\-paths
+When a type is visible under several module-paths, use the shortest
+one when printing the type's name in inferred interfaces and error and
+warning messages.
+.TP
+.B \-stdin
+Read the standard input as a script file rather than starting an
+interactive session.
+.TP
+.B \-strict\-sequence
+Force the left-hand part of each sequence to have type unit.
+.TP
+.B \-no\-strict\-sequence
+Left-hand part of a sequence need not have type unit.
+This is the default.
+.TP
+.B \-unboxed\-types
+When a type is unboxable (i.e. a record with a single argument or a
+concrete datatype with a single constructor of one argument) it will
+be unboxed unless annotated with
+.BR [@@ocaml.boxed] .
+.TP
+.B \-no-unboxed\-types
+When a type is unboxable  it will be boxed unless annotated with
+.BR [@@ocaml.unboxed] .
+This is the default.
+.TP
+.B \-unsafe
+Turn bound checking off on array and string accesses (the
+.BR v.(i) " and " s.[i]
+constructs). Programs compiled with
+.B \-unsafe
+are therefore slightly faster, but unsafe: anything can happen if the program
+accesses an array or string outside of its bounds.
+.TP
+.B \-unsafe\-string
+Identify the types
+.BR string " and " bytes ,
+thereby making strings writable.
+This is intended for compatibility with old source code and should not
+be used with new software.
+.TP
+.B \-version
+Print version string and exit.
+.TP
+.B \-vnum
+Print short version number and exit.
+.TP
+.B \-no\-version
+Do not print the version banner at startup.
+.TP
+.BI \-w " warning\-list"
+Enable or disable warnings according to the argument
+.IR warning-list .
+See
+.BR ocamlc (1)
+for the syntax of the
+.I warning\-list
+argument.
+.TP
+.BI \-warn\-error " warning\-list"
+Mark as fatal the warnings described by the argument
+.IR warning\-list .
+Note that a warning is not triggered (and does not trigger an error) if
+it is disabled by the
+.B \-w
+option.  See
+.BR ocamlc (1)
+for the syntax of the
+.I warning\-list
+argument.
+.TP
+.BI \-color " mode"
+Enable or disable colors in compiler messages (especially warnings and errors).
+The following modes are supported:
+
+.B auto
+use heuristics to enable colors only if the output supports them (an
+ANSI-compatible tty terminal);
+
+.B always
+enable colors unconditionally;
+
+.B never
+disable color output.
+
+The environment variable "OCAML_COLOR" is considered if \-color is not
+provided. Its values are auto/always/never as above.
+
+If \-color is not provided, "OCAML_COLOR" is not set and the environment
+variable "NO_COLOR" is set, then color output is disabled. Otherwise,
+the default setting is
+.B auto,
+and the current heuristic
+checks that the "TERM" environment variable exists and is
+not empty or "dumb", and that isatty(stderr) holds.
+
+.TP
+.BI \-error\-style " mode"
+Control the way error messages and warnings are printed.
+The following modes are supported:
+
+.B short
+only print the error and its location;
+
+.B contextual
+like "short", but also display the source code snippet corresponding
+to the location of the error.
+
+The default setting is
+.B contextual.
+
+The environment variable "OCAML_ERROR_STYLE" is considered if
+\-error\-style is not provided. Its values are short/contextual as
+above.
+
+.TP
+.B \-warn\-help
+Show the description of all available warning numbers.
+.TP
+.BI \- " file"
+Use
+.I file
+as a script file name, even when it starts with a hyphen (-).
+.TP
+.BR \-help " or " \-\-help
+Display a short usage summary and exit.
+
+.SH INITIALIZATION FILE
+
+When
+.BR ocaml (1)
+is invoked, it will read phrases from an initialization file before
+giving control to the user. The file read is the first found of:
+.IP 1.
+\fB.ocamlinit\fP in the current directory;
+.IP 2.
+\fBXDG_CONFIG_HOME/ocaml/init.ml\fP, if \fBXDG_CONFIG_HOME\fP is an absolute
+path;
+.IP 3.
+otherwise, on Unix, \fBHOME/ocaml/init.ml\fP or, on Windows,
+\fBocaml\\init.ml\fP under \fBLocalAppData\fP
+(e.g. \fBC:\\Users\\Bactrian\\AppData\\Local\\ocaml\\init.ml\fP);
+.IP 4.
+\fBocaml/init.ml\fP under any of the absolute paths in \fBXDG_CONFIG_DIRS\fP.
+Paths in \fBXDG_CONFIG_DIRS\fP are colon-delimited on Unix, and
+semicolon-delimited on Windows;
+.IP 5.
+if \fBXDG_CONFIG_DIRS\fP contained no absolute paths,
+\fB/usr/xdg/ocaml/init.ml\fP on Unix or, \fBocaml\\init.ml\fP under any of
+\fBLocalAppData\fP (e.g. \fBC:\\Users\\Bactrian\\AppData\\Local\fP),
+\fBRoamingAppData\fP (e.g. \fBC:\\Users\\Bactrian\\AppData\\Roaming\fP), or
+\fBProgramData\fP (e.g. \fBC:\\ProgramData\fP) on Windows;
+.IP 6.
+\fBHOME/.ocamlinit\fP, if \fBHOME\fP is non-empty;
+
+You can specify a different initialization file
+by using the
+.BI \-init " file"
+option, and disable initialization files by using the
+.B \-noinit
+option.
+
+Note that you can also use the
+.B #use
+directive to read phrases from a file.
+
+.SH ENVIRONMENT VARIABLES
+.TP
+.B OCAMLTOP_UTF_8
+When printing string values, non-ascii bytes (>0x7E) are printed as
+decimal escape sequence if
+.B OCAMLTOP_UTF_8
+is set to false. Otherwise they are printed unescaped.
+.TP
+.B TERM
+When printing error messages, the toplevel system
+attempts to underline visually the location of the error. It
+consults the TERM variable to determines the type of output terminal
+and look up its capabilities in the terminal database.
+.TP
+.B XDG_CONFIG_HOME HOME XDG_CONFIG_DIRS
+See
+.B INITIALIZATION FILE
+above.
+.SH SEE ALSO
+.BR ocamlc "(1), " ocamlopt "(1), " ocamlrun (1).
+.br
+.IR The\ OCaml\ user's\ manual ,
+chapter "The toplevel system".

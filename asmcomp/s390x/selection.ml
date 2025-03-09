@@ -1,3 +1,4 @@
+# 2 "asmcomp/s390x/selection.ml"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -114,4 +115,5 @@ method! insert_op_debug env op dbg rs rd =
 
 end
 
-let fundecl f = (new selector)#emit_fundecl f
+let fundecl ~future_funcnames f =
+  (new selector)#emit_fundecl ~future_funcnames f

@@ -13,7 +13,7 @@ definition:
 ;
 module-type:
           ...
-        | 'functor' '()' '->' module-type
+        | ['functor'] '()' '->' module-type
 ;
 specification:
           ...

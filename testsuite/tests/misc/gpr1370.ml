@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 type t = A|B|C|D
 type s =

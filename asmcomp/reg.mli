@@ -42,6 +42,29 @@ and stack_location =
     Local of int
   | Incoming of int
   | Outgoing of int
+  | Domainstate of int
+
+(* The [stack_location] describes the location of pseudo-registers
+   that reside in memory.
+ - [Local] is a local variable or spilled register residing in the stack frame
+   of the current function
+ - [Incoming] is a function parameter that was passed on the stack.
+   This is the callee's view: the location is just above the callee's
+   stack frame, in the caller's stack frame.
+ - [Outgoing] is a function call argument that is passed on the stack.
+   This is the caller's view: the location is at the bottom of the
+   caller's stack frame.
+ - [Domainstate] is a function call argument that is passed not on stack
+   but in the [extra_params] section of the domain state
+   (see file [../runtime/caml/domain_state.*]).  Unlike arguments passed
+   on stack, arguments passed via the domain state are compatible with
+   tail calls.  However, domain state locations are shared between
+   all functions that run in a given domain, hence they are not preserved
+   by function calls or thread context switches.  The caller stores
+   arguments in the domain state immediately before the call, and the
+   first thing the callee does is copy them to registers or [Local]
+   stack locations.  Neither GC nor thread context switches can occur
+   between these two times. *)
 
 val dummy: t
 val create: Cmm.machtype_component -> t

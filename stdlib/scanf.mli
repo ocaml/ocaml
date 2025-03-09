@@ -81,6 +81,19 @@
     facility is fully type-checked at compile time.
 *)
 
+(** {b Unsynchronized accesses} *)
+
+[@@@alert unsynchronized_access
+    "Unsynchronized accesses to Scanning.in_channel are a programming error."
+]
+
+ (**
+      Unsynchronized accesses to a {!Scanning.in_channel} may lead to an
+      invalid {!Scanning.in_channel} state. Thus, concurrent accesses
+      to {!Scanning.in_channel}s must be synchronized (for instance with
+      a {!Mutex.t}).
+*)
+
 (** {1 Formatted input channel} *)
 
 module Scanning : sig
@@ -92,7 +105,9 @@ type in_channel
    A Scanf.Scanning.in_channel value is also called a {i formatted input
    channel} or equivalently a {i scanning buffer}.
    The type {!Scanning.scanbuf} below is an alias for [Scanning.in_channel].
-   @since 3.12.0
+   Note that a [Scanning.in_channel] is not concurrency-safe: concurrent use
+   may produce arbitrary values or exceptions.
+   @since 3.12
 *)
 
 type scanbuf = in_channel
@@ -117,12 +132,12 @@ val stdin : in_channel
     part of the input; thus, the scanning specifications must properly skip
     this additional newline character (for instance, simply add a ['\n'] as
     the last character of the format string).
-    @since 3.12.0
+    @since 3.12
 *)
 
 type file_name = string
 (** A convenient alias to designate a file name.
-    @since 4.00.0
+    @since 4.00
 *)
 
 val open_in : file_name -> in_channel
@@ -134,19 +149,19 @@ val open_in : file_name -> in_channel
     characters in large chunks; in contrast, [from_channel] below returns
     formatted input channels that must read one character at a time, leading
     to a much slower scanning rate.
-    @since 3.12.0
+    @since 3.12
 *)
 
 val open_in_bin : file_name -> in_channel
 (** [Scanning.open_in_bin fname] returns a {!Scanning.in_channel} formatted
     input channel for bufferized reading in binary mode from file [fname].
-    @since 3.12.0
+    @since 3.12
 *)
 
 val close_in : in_channel -> unit
 (** Closes the {!Stdlib.in_channel} associated with the given
   {!Scanning.in_channel} formatted input channel.
-  @since 3.12.0
+  @since 3.12
 *)
 
 val from_file : file_name -> in_channel
@@ -192,13 +207,7 @@ val beginning_of_input : in_channel -> bool
 val name_of_input : in_channel -> string
 (** [Scanning.name_of_input ic] returns the name of the character source
     for the given {!Scanning.in_channel} formatted input channel.
-    @since 3.09.0
-*)
-
-val stdib : in_channel
-  [@@ocaml.deprecated "Use Scanf.Scanning.stdin instead."]
-(** A deprecated alias for {!Scanning.stdin}, the scanning buffer reading from
-    {!Stdlib.stdin}.
+    @since 3.09
 *)
 
 end
@@ -226,8 +235,11 @@ type ('a, 'b, 'c, 'd) scanner =
     [f]. For instance, if [read_elem] is an input function for values of type
     [t], then [bscanf ic "%r;" read_elem f] reads a value [v] of type [t]
     followed by a [';'] character, and returns [f v].
-    @since 3.10.0
+    @since 3.10
 *)
+
+type ('a, 'b, 'c, 'd) scanner_opt =
+     ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd option, 'd) format6 -> 'c
 
 exception Scan_failure of string
 (** When the input can not be read according to the format string
@@ -246,12 +258,17 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     gives the result of the [bscanf] call.
 
     For instance, if [f] is the function [fun s i -> i + 1], then
-    [Scanf.sscanf "x= 1" "%s = %i" f] returns [2].
+    [Scanf.sscanf "x = 1" "%s = %i" f] returns [2].
 
     Arguments [r1] to [rN] are user-defined input functions that read the
     argument corresponding to the [%r] conversions specified in the format
     string.
 *)
+
+val bscanf_opt : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner_opt
+(** Same as {!Scanf.bscanf}, but returns [None] in case of scanning failure.
+
+    @since 5.0 *)
 
 (** {1 Format string description} *)
 
@@ -302,7 +319,8 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     - [x] or [X]: reads an unsigned hexadecimal integer ([[0-9a-fA-F]+]).
     - [o]: reads an unsigned octal integer ([[0-7]+]).
     - [s]: reads a string argument that spreads as much as possible, until the
-      following bounding condition holds: {ul
+      following bounding condition holds:
+      {ul
       {- a whitespace has been found (see {!Scanf.space}),}
       {- a scanning indication (see scanning {!Scanf.indication}) has been
          encountered,}
@@ -469,10 +487,20 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
 val sscanf : string -> ('a, 'b, 'c, 'd) scanner
 (** Same as {!Scanf.bscanf}, but reads from the given string. *)
 
+val sscanf_opt : string -> ('a, 'b, 'c, 'd) scanner_opt
+(** Same as {!Scanf.sscanf}, but returns [None] in case of scanning failure.
+
+    @since 5.0 *)
+
 val scanf : ('a, 'b, 'c, 'd) scanner
 (** Same as {!Scanf.bscanf}, but reads from the predefined formatted input
     channel {!Scanf.Scanning.stdin} that is connected to {!Stdlib.stdin}.
 *)
+
+val scanf_opt : ('a, 'b, 'c, 'd) scanner_opt
+(** Same as {!Scanf.scanf}, but returns [None] in case of scanning failure.
+
+    @since 5.0 *)
 
 val kscanf :
   Scanning.in_channel -> (Scanning.in_channel -> exn -> 'd) ->
@@ -488,7 +516,7 @@ val ksscanf :
   string -> (Scanning.in_channel -> exn -> 'd) ->
     ('a, 'b, 'c, 'd) scanner
 (** Same as {!Scanf.kscanf} but reads from the given string.
-    @since 4.02.0 *)
+    @since 4.02 *)
 
 (** {1 Reading format strings from input} *)
 
@@ -500,14 +528,14 @@ val bscanf_format :
     applies [f] to the resulting format string value.
     @raise Scan_failure if the format string value read does not have the
     same type as [fmt].
-    @since 3.09.0
+    @since 3.09
 *)
 
 val sscanf_format :
   string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
     (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g
 (** Same as {!Scanf.bscanf_format}, but reads from the given string.
-    @since 3.09.0
+    @since 3.09
 *)
 
 val format_from_string :
@@ -517,7 +545,7 @@ val format_from_string :
     according to the given format string [fmt].
     @raise Scan_failure if [s], considered as a format string, does not
     have the same type as [fmt].
-    @since 3.10.0
+    @since 3.10
 *)
 
 val unescaped : string -> string
@@ -532,28 +560,5 @@ val unescaped : string -> string
     @raise Scan_failure if [s] is not properly escaped (i.e. [s] has invalid
     escape sequences or special characters that are not properly escaped).
     For instance, [Scanf.unescaped "\""] will fail.
-    @since 4.00.0
+    @since 4.00
 *)
-
-(** {1 Deprecated} *)
-
-val fscanf : Stdlib.in_channel -> ('a, 'b, 'c, 'd) scanner
-  [@@ocaml.deprecated "Use Scanning.from_channel then Scanf.bscanf."]
-(** @deprecated [Scanf.fscanf] is error prone and deprecated since 4.03.0.
-
-    This function violates the following invariant of the {!Scanf} module:
-    To preserve scanning semantics, all scanning functions defined in {!Scanf}
-    must read from a user defined {!Scanning.in_channel} formatted input
-    channel.
-
-    If you need to read from a {!Stdlib.in_channel} input channel
-    [ic], simply define a {!Scanning.in_channel} formatted input channel as in
-    [let ib = Scanning.from_channel ic],
-    then use [Scanf.bscanf ib] as usual.
-*)
-
-val kfscanf :
-  Stdlib.in_channel -> (Scanning.in_channel -> exn -> 'd) ->
-    ('a, 'b, 'c, 'd) scanner
-  [@@ocaml.deprecated "Use Scanning.from_channel then Scanf.kscanf."]
-(** @deprecated [Scanf.kfscanf] is error prone and deprecated since 4.03.0. *)

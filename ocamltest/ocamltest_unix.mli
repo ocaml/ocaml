@@ -18,3 +18,4 @@
 val has_symlink : unit -> bool
 val symlink : ?to_dir:bool -> string -> string -> unit
 val chmod : string -> int -> unit
+val gettimeofday : unit -> float

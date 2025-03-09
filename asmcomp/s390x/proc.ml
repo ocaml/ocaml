@@ -1,3 +1,4 @@
+# 2 "asmcomp/s390x/proc.ml"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -22,10 +23,6 @@ open Cmm
 open Reg
 open Arch
 open Mach
-
-(* Instruction selection *)
-
-let word_addressed = false
 
 (* Registers available for register allocation *)
 
@@ -96,6 +93,8 @@ let stack_slot slot ty =
 
 (* Calling conventions *)
 
+let size_domainstate_args = 64 * size_int
+
 let calling_conventions
     first_int last_int first_float last_float make_stack stack_ofs arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
@@ -121,31 +120,36 @@ let calling_conventions
           ofs := !ofs + size_float
         end
   done;
-  (loc, Misc.align !ofs 16)
-  (* Keep stack 16-aligned. *)
+  (loc, Misc.align (max 0 !ofs) 16) (* Keep stack 16-aligned. *)
 
-let incoming ofs = Incoming ofs
-let outgoing ofs = Outgoing ofs
+let incoming ofs =
+  if ofs >= 0
+  then Incoming ofs
+  else Domainstate (ofs + size_domainstate_args)
+let outgoing ofs =
+  if ofs >= 0
+  then Outgoing ofs
+  else Domainstate (ofs + size_domainstate_args)
 let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
-let max_arguments_for_tailcalls = 5
+let max_arguments_for_tailcalls = 8 (* in regs *) + 64 (* in domain state *)
 
 let loc_arguments arg =
-  calling_conventions 0 4 100 103 outgoing 0 arg
+  calling_conventions 0 7 100 103 outgoing (- size_domainstate_args) arg
 let loc_parameters arg =
-  let (loc, _ofs) = calling_conventions 0 4 100 103 incoming 0 arg in loc
+  let (loc, _ofs) =
+    calling_conventions 0 7 100 103 incoming (- size_domainstate_args) arg
+  in loc
 let loc_results res =
-  let (loc, _ofs) = calling_conventions 0 4 100 103 not_supported 0 res in loc
+  let (loc, _ofs) = calling_conventions 0 7 100 103 not_supported 0 res in loc
 
 (*   C calling conventions under SVR4:
      use GPR 2-6 and FPR 0,2,4,6 just like ML calling conventions.
-     Using a float register does not affect the int registers.
-     Always reserve 160 bytes at bottom of stack, plus whatever is needed
-     to hold the overflow arguments. *)
+     Using a float register does not affect the int registers. *)
 
 let loc_external_arguments ty_args =
   let arg = Cmm.machtype_of_exttype_list ty_args in
-  let (loc, ofs) = calling_conventions 0 4 100 103 outgoing 160 arg in
+  let (loc, ofs) = calling_conventions 0 4 100 103 outgoing 0 arg in
   (Array.map (fun reg -> [|reg|]) loc, ofs)
 
 (* Results are in GPR 2 and FPR 0 *)
@@ -176,15 +180,12 @@ let dwarf_register_numbers ~reg_class =
 
 let stack_ptr_dwarf_register_number = 15
 
-(* Volatile registers: none *)
-
-let regs_are_volatile _rs = false
-
 (* Registers destroyed by operations *)
+(* Mark r12 destroyed by C calls so that it can be used for preserving SP *)
 
 let destroyed_at_c_call =
   Array.of_list(List.map phys_reg
-    [0; 1; 2; 3; 4;
+    [0; 1; 2; 3; 4; 8;
      100; 101; 102; 103; 104; 105; 106; 107])
 
 let destroyed_at_oper = function
@@ -208,16 +209,6 @@ let safe_register_pressure = function
 let max_register_pressure = function
     Iextcall _ -> [| 4; 7 |]
   | _ -> [| 9; 15 |]
-
-(* Layout of the stack *)
-
-let frame_required fd =
-  fd.fun_contains_calls
-    || fd.fun_num_stack_slots.(0) > 0
-    || fd.fun_num_stack_slots.(1) > 0
-
-let prologue_required fd =
-  frame_required fd
 
 (* Calling the assembler *)
 

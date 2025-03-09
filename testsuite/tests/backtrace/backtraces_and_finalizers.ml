@@ -1,7 +1,7 @@
 (* TEST
-   flags = "-g -inline 0"
-   ocamlrunparam += ",b=1"
-   * native
+ flags = "-g -inline 0";
+ ocamlrunparam += ",b=1";
+ native;
 *)
 
 let finaliser _ = try raise Exit with _ -> ()

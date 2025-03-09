@@ -23,7 +23,9 @@ val parent_dir_name : string
    (e.g. [..] in Unix). *)
 
 val dir_sep : string
-(** The directory separator (e.g. [/] in Unix). @since 3.11.2 *)
+(** The directory separator (e.g. [/] in Unix).
+
+    @since 3.11.2 *)
 
 val concat : string -> string -> string
 (** [concat dir file] returns a file name that designates file
@@ -51,9 +53,8 @@ val check_suffix : string -> string -> bool
 
 val chop_suffix : string -> string -> string
 (** [chop_suffix name suff] removes the suffix [suff] from
-   the filename [name]. The behavior is undefined if [name] does not
-   end with the suffix [suff]. [chop_suffix_opt] is thus recommended
-   instead.
+    the filename [name].
+    @raise Invalid_argument if [name] does not end with the suffix [suff].
 *)
 
 val chop_suffix_opt: suffix:string -> string -> string option
@@ -122,7 +123,7 @@ val null : string
 (** [null] is ["/dev/null"] on POSIX and ["NUL"] on Windows. It represents a
     file on the OS that discards all writes and returns end of file on reads.
 
-    @since 4.10.0 *)
+    @since 4.10 *)
 
 val temp_file : ?temp_dir: string -> string -> string -> string
 (** [temp_file prefix suffix] returns the name of a
@@ -154,35 +155,52 @@ val open_temp_file :
    writable only by the file owner, [0o600]).
 
    @raise Sys_error if the file could not be opened.
-   @before 4.03.0 no ?perms optional argument
+   @before 4.03 no ?perms optional argument
    @before 3.11.2 no ?temp_dir optional argument
+*)
+
+val temp_dir : ?temp_dir: string -> ?perms:int  -> string -> string -> string
+(** [temp_dir prefix suffix] creates and returns the name of a fresh
+   temporary directory with permissions [perms] (defaults to 0o700)
+   inside [temp_dir].  The base name of the temporary directory is
+   formed by concatenating [prefix], then a suitably chosen integer
+   number, then [suffix].  The optional argument [temp_dir] indicates
+   the temporary directory to use, defaulting to the current result of
+   {!Filename.get_temp_dir_name}.  The temporary directory is created
+   empty, with permissions [0o700] (readable, writable, and searchable
+   only by the file owner).  The directory is guaranteed to be
+   different from any other directory that existed when [temp_dir] was
+   called.
+
+   If temp_dir does not exist, this function does not create it.  Instead,
+   it raises Sys_error.
+
+   @raise Sys_error if the directory could not be created.
+   @since 5.1
 *)
 
 val get_temp_dir_name : unit -> string
 (** The name of the temporary directory:
     Under Unix, the value of the [TMPDIR] environment variable, or "/tmp"
     if the variable is not set.
-    Under Windows, the value of the [TEMP] environment variable, or "."
-    if the variable is not set.
+
+    Under Windows, the value returned by [GetTempPath2] (if available)
+    or [GetTempPath].
+
     The temporary directory can be changed with {!Filename.set_temp_dir_name}.
-    @since 4.00.0
+
+    Under Windows, before OCaml 5.4, it would return the value of the
+    [TEMP] environment variable, or "." if the variable was not set.
+
+    @since 4.00
 *)
 
 val set_temp_dir_name : string -> unit
 (** Change the temporary directory returned by {!Filename.get_temp_dir_name}
     and used by {!Filename.temp_file} and {!Filename.open_temp_file}.
-    @since 4.00.0
-*)
-
-val temp_dir_name : string
-  [@@ocaml.deprecated "Use Filename.get_temp_dir_name instead"]
-(** The name of the initial temporary directory:
-    Under Unix, the value of the [TMPDIR] environment variable, or "/tmp"
-    if the variable is not set.
-    Under Windows, the value of the [TEMP] environment variable, or "."
-    if the variable is not set.
-    @deprecated You should use {!Filename.get_temp_dir_name} instead.
-    @since 3.09.1
+    The temporary directory is a domain-local value which is inherited
+    by child domains.
+    @since 4.00
 *)
 
 val quote : string -> string
@@ -222,5 +240,5 @@ val quote_command :
     Under Win32, additional quoting is performed as required by the
     [cmd.exe] shell that is called by {!Sys.command}.
     @raise Failure if the command cannot be escaped on the current platform.
-    @since 4.10.0
+    @since 4.10
 *)

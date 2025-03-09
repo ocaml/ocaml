@@ -35,6 +35,8 @@ let for_primitive (prim : Clambda_primitives.primitive) =
       No_effects, No_coeffects
   | Pccall _ -> Arbitrary_effects, Has_coeffects
   | Praise _ -> Arbitrary_effects, No_coeffects
+  | Prunstack | Pperform | Presume | Preperform ->
+      Arbitrary_effects, Has_coeffects
   | Pnot
   | Pnegint
   | Paddint
@@ -71,8 +73,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Pdivfloat
   | Pfloatcomp _ -> No_effects, No_coeffects
   | Pstringlength | Pbyteslength
-  | Parraylength _ ->
-      No_effects, Has_coeffects  (* That old chestnut: [Obj.truncate]. *)
+  | Parraylength _ -> No_effects, No_coeffects
   | Pisint
   | Pisout
   | Pbintofint _
@@ -115,6 +116,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Psetfield _
   | Psetfield_computed _
   | Psetfloatfield _
+  | Patomic_load
   | Parraysetu _
   | Parraysets _
   | Pbytessetu
@@ -128,10 +130,13 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Pbswap16
   | Pbbswap _ -> No_effects, No_coeffects
   | Pint_as_pointer -> No_effects, No_coeffects
-  | Popaque -> Arbitrary_effects, Has_coeffects
+  | Popaque | Ppoll -> Arbitrary_effects, Has_coeffects
   | Psequand
   | Psequor ->
       (* Removed by [Closure_conversion] in the flambda pipeline. *)
+      No_effects, No_coeffects
+  | Pdls_get ->
+      (* only read *)
       No_effects, No_coeffects
 
 type return_type =

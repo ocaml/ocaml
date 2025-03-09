@@ -1,6 +1,6 @@
 (* TEST
-   * expect
-   flags = "-nopervasives" (* can't pass -nostdlib because of objects. *)
+ flags = "-nopervasives"; (* can't pass -nostdlib because of objects. *)
+ expect;
 *)
 
 (* Signatures *)
@@ -100,11 +100,15 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included type t/146 by t/163
-       Line 2, characters 2-11:
-         Type t/146 came from this include
-       Line 3, characters 2-24:
-         The value ignore has no valid type if t/146 is shadowed
+Error: Illegal shadowing of included type "t/2" by "t".
+Line 2, characters 2-11:
+2 |   include S
+      ^^^^^^^^^
+  Type "t/2" came from this include.
+Line 3, characters 2-24:
+3 |   val ignore : t -> unit
+      ^^^^^^^^^^^^^^^^^^^^^^
+  The value "ignore" has no valid type if "t/2" is shadowed.
 |}]
 
 module type Module = sig
@@ -140,11 +144,15 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included module M/236 by M/253
-       Line 2, characters 2-11:
-         Module M/236 came from this include
-       Line 3, characters 2-26:
-         The value ignore has no valid type if M/236 is shadowed
+Error: Illegal shadowing of included module "M/2" by "M".
+Line 2, characters 2-11:
+2 |   include S
+      ^^^^^^^^^
+  Module "M/2" came from this include.
+Line 3, characters 2-26:
+3 |   val ignore : M.t -> unit
+      ^^^^^^^^^^^^^^^^^^^^^^^^
+  The value "ignore" has no valid type if "M/2" is shadowed.
 |}]
 
 
@@ -181,11 +189,15 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included module type T/322 by T/339
-       Line 2, characters 2-11:
-         Module type T/322 came from this include
-       Line 3, characters 2-39:
-         The module F has no valid type if T/322 is shadowed
+Error: Illegal shadowing of included module type "T/2" by "T".
+Line 2, characters 2-11:
+2 |   include S
+      ^^^^^^^^^
+  Module type "T/2" came from this include.
+Line 3, characters 2-39:
+3 |   module F : functor (_ : T) -> sig end
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  The module "F" has no valid type if "T/2" is shadowed.
 |}]
 
 module type Extension = sig
@@ -198,11 +210,15 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included type ext/357 by ext/374
-       Line 2, characters 2-11:
-         Type ext/357 came from this include
-       Line 3, characters 14-16:
-         The extension constructor C2 has no valid type if ext/357 is shadowed
+Error: Illegal shadowing of included type "ext/2" by "ext".
+Line 2, characters 2-11:
+2 |   include S
+      ^^^^^^^^^
+  Type "ext/2" came from this include.
+Line 3, characters 14-16:
+3 |   type ext += C2
+                  ^^
+  The extension constructor "C2" has no valid type if "ext/2" is shadowed.
 |}]
 
 module type Class = sig
@@ -304,7 +320,7 @@ module NN :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -329,7 +345,7 @@ module Type :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -352,7 +368,7 @@ module Module :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -370,12 +386,12 @@ end
 [%%expect{|
 module Module_type :
   sig
-    module type U = sig end
+    module type U = N.T
     type t = N.t
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -398,7 +414,7 @@ module Exception :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -421,7 +437,7 @@ module Extension :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -444,7 +460,7 @@ module Class :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
@@ -467,11 +483,38 @@ module Class_type :
     val unit : unit
     external e : unit -> unit = "%identity"
     module M = N.M
-    module type T = sig end
+    module type T = N.T
     exception E
     type ext = N.ext = ..
     type ext += C
     class c : object  end
     class type ct = object  end
   end
+|}]
+
+(** Test rare interaction between shadowing and generalized open in error messages *)
+module M = struct
+  include struct
+    type t = A
+    let x = A
+  end
+  open struct type t end
+  open struct type t end
+  type t
+end
+[%%expect {|
+Line 8, characters 2-8:
+8 |   type t
+      ^^^^^^
+Error: Illegal shadowing of included type "t/4" by "t".
+Lines 2-5, characters 2-5:
+2 | ..include struct
+3 |     type t = A
+4 |     let x = A
+5 |   end
+  Type "t/4" came from this include.
+Line 4, characters 8-9:
+4 |     let x = A
+            ^
+  The value "x" has no valid type if "t/4" is shadowed.
 |}]

@@ -15,9 +15,6 @@
 #*                                                                        *
 #**************************************************************************
 
-# stop early if we are not on a development version
-grep -Fq '+dev' VERSION || exit 0
-
 # We try to warn if the user edits parsing/parser.mly but forgets to
 # rebuild the generated parser. Our heuristic is to use the file
 # modification timestamp, but just testing
@@ -38,7 +35,7 @@ if test $? != 0
 then MTIME=""
 elif stat --version 2>/dev/null | grep -Fq 'coreutils'
 then MTIME="stat --format %Y"
-elif stat 2>&1 | grep -Fq 'busybox'
+elif stat 2>&1 | grep -Fiq 'busybox'
 then MTIME="stat -c %Y"
 else MTIME="stat -f %m" # BSD stat?
 fi

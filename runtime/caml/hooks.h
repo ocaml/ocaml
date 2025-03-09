@@ -19,24 +19,17 @@
 #include "misc.h"
 #include "memory.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef CAML_INTERNALS
 
 #ifdef NATIVE_CODE
 
 /* executed just before calling the entry point of a dynamically
-   loaded native code module. */
+   loaded native code module.
+   This hook is not modified after other domains are spawned. */
 CAMLextern void (*caml_natdynlink_hook)(void* handle, const char* unit);
 
 #endif /* NATIVE_CODE */
 
 #endif /* CAML_INTERNALS */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* CAML_HOOKS_H */

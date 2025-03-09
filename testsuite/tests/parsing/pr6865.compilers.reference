@@ -9,7 +9,9 @@
             pattern (pr6865.ml[9,153+8]..[9,153+9])
               Ppat_var "x" (pr6865.ml[9,153+8]..[9,153+9])
             expression (pr6865.ml[9,153+12]..[9,153+14])
-              Pexp_constant PConst_int (42,None)
+              Pexp_constant
+              constant (pr6865.ml[9,153+12]..[9,153+14])
+                PConst_int (42,None)
         ]
     ]
   structure_item (pr6865.ml[10,168+0]..[10,168+25]) ghost

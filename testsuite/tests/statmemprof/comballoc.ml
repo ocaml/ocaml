@@ -1,25 +1,35 @@
 (* TEST
-   flags = "-g"
-   * bytecode
-     reference = "${test_source_directory}/comballoc.byte.reference"
-   * native
-     reference = "${test_source_directory}/comballoc.opt.reference"
+ flags = "-g";
+ {
+   reference = "${test_source_directory}/comballoc.byte.reference";
+   bytecode;
+ }{
+   reference = "${test_source_directory}/comballoc.opt.reference";
+   native;
+ }
 *)
 
-open Gc.Memprof
+(* Tests that combined allocations are counted correctly by statmemprof *)
 
-let f4 n = (n,n,n,n)
+module MP = Gc.Memprof
 
-let[@inline never] f n =
-  (n, (n, n, f4 n))
+(* A single 5-word allocation - header plus 4 content words *)
+
+let[@inline never] f5 n = (n,n,n,n)
+
+(* A combined 12-word allocation: 5 words, 4 words, and 3 words *)
+
+let[@inline never] f12 n =
+  (n, (n, n, f5 n))
 
 let test sampling_rate =
-  let allocs = Array.make 257 0 in
-  let deallocs = Array.make 257 0 in
-  let promotes = Array.make 257 0 in
-  let callstacks = Array.make 257 None in
-  start ~callstack_size:10  ~sampling_rate
-    { null_tracker with
+  let allocs = Array.make 257 0 in   (* block size -> allocated samples *)
+  let deallocs = Array.make 257 0 in (* block size -> minor-dealloc samples *)
+  let promotes = Array.make 257 0 in (* block size -> promoted samples *)
+  let callstacks = Array.make 257 None in (* block size -> callstack option *)
+  let _:MP.t  = MP.start ~callstack_size:10  ~sampling_rate
+    { MP.null_tracker with
+      (* checks all allocations with a given block size have the same callstack *)
       alloc_minor = (fun info ->
         allocs.(info.size) <- allocs.(info.size) + info.n_samples;
         begin match callstacks.(info.size) with
@@ -32,15 +42,17 @@ let test sampling_rate =
       promote = (fun (sz,n) ->
         promotes.(sz) <- promotes.(sz) + n;
         None);
-    };
+    } in
   let iter = 100_000 in
   let arr = Array.make iter (0,0,0,0) in
   for i = 0 to Array.length arr - 1 do
-    let (_, (_, _, x)) = Sys.opaque_identity f i in
+    (* extract the 5-word alloc from a 12-word comballoc *)
+    let (_, (_, _, x)) = Sys.opaque_identity f12 i in
     arr.(i) <- x;
   done;
   Gc.minor ();
-  stop ();
+  MP.stop ();
+  (* use arr, so it's still alive here and is not collected *)
   ignore (Sys.opaque_identity arr);
   for i = 0 to 256 do
     assert (deallocs.(i) + promotes.(i) = allocs.(i));
@@ -66,24 +78,26 @@ let test sampling_rate =
   done
 
 let () =
-  List.iter test [0.42; 0.01; 0.83]
+  test 0.42;
+  test 0.01;
+  test 0.83
 
 
 let no_callback_after_stop trigger =
   let stopped = ref false in
   let cnt = ref 0 in
-  start ~callstack_size:0 ~sampling_rate:1.
-    { null_tracker with
+  let _:MP.t = MP.start ~callstack_size:0 ~sampling_rate:1.
+    { MP.null_tracker with
       alloc_minor = (fun info ->
         assert(not !stopped);
         incr cnt;
         if !cnt > trigger then begin
-          stop ();
+          MP.stop ();
           stopped := true
         end;
         None);
-    };
-  for i = 0 to 1000 do ignore (Sys.opaque_identity f i) done;
+    } in
+  for i = 0 to 1000 do ignore (Sys.opaque_identity f12 i) done;
   assert !stopped
 
 let () =

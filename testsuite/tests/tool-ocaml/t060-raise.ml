@@ -1,10 +1,10 @@
 (* TEST
-include tool-ocaml-lib
-flags = "-w -a"
-ocaml_script_as_argument = "true"
-ocaml_exit_status = "2"
-* setup-ocaml-build-env
-** ocaml
+ include tool-ocaml-lib;
+ flags = "-w -a";
+ ocaml_script_as_argument = "true";
+ ocaml_exit_status = "2";
+ setup-ocaml-build-env;
+ ocaml;
 *)
 
 open Lib;;

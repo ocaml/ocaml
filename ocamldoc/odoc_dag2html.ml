@@ -19,29 +19,27 @@ type 'a dag = { mutable dag : 'a node array }
 and 'a node =
   { mutable pare : idag list; valu : 'a; mutable chil : idag list }
 and idag = int
-;;
 
-external int_of_idag : idag -> int = "%identity";;
-external idag_of_int : int -> idag = "%identity";;
+external int_of_idag : idag -> int = "%identity"
+external idag_of_int : int -> idag = "%identity"
 
 type 'a table = { table : 'a data array array }
 and 'a data = { mutable elem : 'a elem; mutable span : span_id }
 and 'a elem = Elem of 'a | Ghost of ghost_id | Nothing
 and span_id
 and ghost_id
-;;
 
-external span_id_of_int : int -> span_id = "%identity";;
-external ghost_id_of_int : int -> ghost_id = "%identity";;
+external span_id_of_int : int -> span_id = "%identity"
+external ghost_id_of_int : int -> ghost_id = "%identity"
 
-let new_span_id = let i = ref 0 in fun () -> incr i; span_id_of_int !i;;
+let new_span_id = let i = ref 0 in fun () -> incr i; span_id_of_int !i
 
-let new_ghost_id = let i = ref 0 in fun () -> incr i; ghost_id_of_int !i;;
+let new_ghost_id = let i = ref 0 in fun () -> incr i; ghost_id_of_int !i
 
 (** creating the html table structure *)
 
-type align = LeftA | CenterA | RightA;;
-type table_data = TDstring of string | TDhr of align;;
+type align = LeftA | CenterA | RightA
+type table_data = TDstring of string | TDhr of align
 
 let html_table_struct indi_txt phony d t =
   let phony =
@@ -297,7 +295,6 @@ let html_table_struct indi_txt phony d t =
     loop [] 0
   in
   Array.of_list (List.rev hts)
-;;
 
 (** transforming dag into table *)
 
@@ -309,7 +306,6 @@ let ancestors d =
       if n.pare = [] then idag_of_int i :: loop (i + 1) else loop (i + 1)
   in
   loop 0
-;;
 
 let get_children d parents =
   (* XXXX merge_children used to be declared as a recursive function,
@@ -330,7 +326,6 @@ let get_children d parents =
       el children
   in
   merge_children [] parents
-;;
 
 let rec get_block t i j =
   if j = Array.length t.table.(i) then None
@@ -349,10 +344,13 @@ let rec get_block t i j =
           Some (list, mpc, span)
       | _ -> assert false
     else Some ([x.elem, 1], 1, x.span)
-;;
 
 let group_by_common_children d list =
-  let module O = struct type t = idag;; let compare (x:t) y = compare x y;; end
+  let module O =
+    struct
+      type t = idag
+      let compare (x:t) y = compare x y
+     end
   in
   let module S = Set.Make (O)
   in
@@ -386,9 +384,8 @@ let group_by_common_children d list =
        let span = new_span_id () in
        List.fold_right (fun n a -> {elem = Elem n; span = span} :: a) nl a)
     nlcsl []
-;;
 
-let copy_data d = {elem = d.elem; span = d.span};;
+let copy_data d = {elem = d.elem; span = d.span}
 
 let insert_columns t nb j =
   let t1 = Array.make (Array.length t.table) [| |] in
@@ -410,11 +407,9 @@ let insert_columns t nb j =
     loop 0
   done;
   {table = t1}
-;;
 
 let rec gcd a b =
   if a < b then gcd b a else if b = 0 then a else gcd b (a mod b)
-;;
 
 let treat_new_row d t =
   let i = Array.length t.table - 1 in
@@ -498,14 +493,12 @@ let treat_new_row d t =
     | None -> t, []
   in
   loop t i 0
-;;
 
 let down_it t i k =
   t.table.(Array.length t.table - 1).(k) <- t.table.(i).(k);
   for r = i to Array.length t.table - 2 do
     t.table.(r).(k) <- {elem = Ghost (new_ghost_id ()); span = new_span_id ()}
   done
-;;
 
 (* equilibrate:
    in the last line, for all elem A, make fall all As, which are located at
@@ -540,7 +533,6 @@ let equilibrate t =
       | _ -> loop (j + 1)
   in
   loop 0
-;;
 
 (* group_elem:
    transform all x y into x x
@@ -555,7 +547,6 @@ let group_elem t =
       | _ -> ()
     done
   done
-;;
 
 (* group_ghost:
                  x  x       x  x           |a |a      |a |a
@@ -584,7 +575,6 @@ let group_ghost t =
       | _ -> ()
     done
   done
-;;
 
 (* group_children:
    transform all A A into A A
@@ -599,7 +589,6 @@ let group_children t =
         line.(j).span <- line.(j - 1).span
     done
   done
-;;
 
 (* group_span_by_common_children:
    in the last line, transform all
@@ -608,7 +597,11 @@ let group_children t =
    if A and B have common children *)
 
 let group_span_by_common_children d t =
-  let module O = struct type t = idag;; let compare (x:t) y = compare x y;; end
+  let module O =
+    struct
+      type t = idag
+      let compare (x:t) y = compare x y
+    end
   in
   let module S = Set.Make (O)
   in
@@ -630,7 +623,6 @@ let group_span_by_common_children d t =
       | _ -> loop (j + 1) S.empty
   in
   loop 0 S.empty
-;;
 
 let find_same_parents t i j1 j2 j3 j4 =
   let rec loop i j1 j2 j3 j4 =
@@ -677,7 +669,6 @@ let find_same_parents t i j1 j2 j3 j4 =
         loop (i - 1) j1 j2 j3 j4
   in
   loop i j1 j2 j3 j4
-;;
 
 let find_linked_children t i j1 j2 j3 j4 =
   let rec loop i j1 j2 j3 j4 =
@@ -722,7 +713,6 @@ let find_linked_children t i j1 j2 j3 j4 =
       loop (i + 1) j1 j2 j3 j4
   in
   loop i j1 j2 j3 j4
-;;
 
 let mirror_block t i1 i2 j1 j2 =
   for i = i1 to i2 do
@@ -735,7 +725,6 @@ let mirror_block t i1 i2 j1 j2 =
     in
     loop j1 j2
   done
-;;
 
 let exch_blocks t i1 i2 j1 j2 j3 j4 =
   for i = i1 to i2 do
@@ -744,7 +733,6 @@ let exch_blocks t i1 i2 j1 j2 j3 j4 =
     for j = j1 to j2 do line.(j4 - j2 + j) <- saved.(j) done;
     for j = j3 to j4 do line.(j1 - j3 + j) <- saved.(j) done
   done
-;;
 
 let find_block_with_parents t i jj1 jj2 jj3 jj4 =
   let rec loop ii jj1 jj2 jj3 jj4 =
@@ -763,7 +751,6 @@ let find_block_with_parents t i jj1 jj2 jj3 jj4 =
     else ii, jj1, jj2, jj3, jj4
   in
   loop i jj1 jj2 jj3 jj4
-;;
 
 let push_to_right t i j1 j2 =
   let line = t.(i) in
@@ -805,7 +792,6 @@ let push_to_right t i j1 j2 =
       else j - 1
   in
   loop (j1 + 1)
-;;
 
 let push_to_left t i j1 j2 =
   let line = t.(i) in
@@ -847,7 +833,6 @@ let push_to_left t i j1 j2 =
       else j + 1
   in
   loop (j2 - 1)
-;;
 
 let fill_gap t i j1 j2 =
   let t1 =
@@ -876,7 +861,6 @@ let fill_gap t i j1 j2 =
     in
     loop y j2; Some ({table = t1}, true)
   else None
-;;
 
 let treat_gaps t =
   let i = Array.length t.table - 1 in
@@ -900,7 +884,6 @@ let treat_gaps t =
       | _ -> loop t (j + 1)
   in
   if Array.length t.table.(i) = 1 then t else loop t 2
-;;
 
 let group_span_last_row t =
   let row = t.table.(Array.length t.table - 1) in
@@ -917,7 +900,6 @@ let group_span_last_row t =
       end
   in
   loop 1
-;;
 
 let has_phony_children phony d t =
   let line = t.table.(Array.length t.table - 1) in
@@ -929,7 +911,6 @@ let has_phony_children phony d t =
       | _ -> loop (j + 1)
   in
   loop 0
-;;
 
 let tablify phony no_optim no_group d =
   let a = ancestors d in
@@ -956,7 +937,6 @@ let tablify phony no_optim no_group d =
       loop t
   in
   loop t
-;;
 
 let fall t =
   for i = 1 to Array.length t.table - 1 do
@@ -1022,7 +1002,6 @@ let fall t =
     in
     loop 0
   done
-;;
 
 let fall2_cool_right t i1 i2 _i3 j1 j2 =
   let span = t.table.(i2 - 1).(j1).span in
@@ -1047,7 +1026,6 @@ let fall2_cool_right t i1 i2 _i3 j1 j2 =
       begin t.table.(i2 - 1).(j).span <- span; loop (j + 1) end
   in
   loop j1
-;;
 
 let fall2_cool_left t i1 i2 _i3 j1 j2 =
   let span = t.table.(i2 - 1).(j2).span in
@@ -1072,7 +1050,6 @@ let fall2_cool_left t i1 i2 _i3 j1 j2 =
       begin t.table.(i2 - 1).(j).span <- span; loop (j - 1) end
   in
   loop j2
-;;
 
 let do_fall2_right t i1 i2 j1 j2 =
   let i3 =
@@ -1107,7 +1084,6 @@ let do_fall2_right t i1 i2 j1 j2 =
     else t
   in
   fall2_cool_right t i1 i2 i3 j1 j2; t
-;;
 
 let do_fall2_left t i1 i2 j1 j2 =
   let i3 =
@@ -1142,7 +1118,6 @@ let do_fall2_left t i1 i2 j1 j2 =
     else t
   in
   fall2_cool_left t i1 i2 i3 j1 j2; t
-;;
 
 let do_shorten_too_long t i1 j1 j2 =
   for i = i1 to Array.length t.table - 2 do
@@ -1201,7 +1176,6 @@ let try_fall2_right t i j =
       if not separated1 || not separated2 then None
       else Some (do_fall2_right t i1 (i + 1) j j2)
   | _ -> None
-;;
 
 let try_fall2_left t i j =
   match t.table.(i).(j).elem with
@@ -1250,7 +1224,6 @@ let try_fall2_left t i j =
       if not separated1 || not separated2 then None
       else Some (do_fall2_left t i1 (i + 1) j1 j)
   | _ -> None
-;;
 
 let try_shorten_too_long t i j =
   match t.table.(i).(j).elem with
@@ -1311,7 +1284,6 @@ let try_shorten_too_long t i j =
       else if i2 < Array.length t.table then None
       else Some (do_shorten_too_long t i j j2)
   | _ -> None
-;;
 
 let fall2_right t =
   let rec loop_i i t =
@@ -1327,7 +1299,6 @@ let fall2_right t =
       loop_j (Array.length t.table.(i) - 2) t
   in
   loop_i (Array.length t.table - 1) t
-;;
 
 let fall2_left t =
   let rec loop_i i t =
@@ -1343,7 +1314,6 @@ let fall2_left t =
       loop_j 1 t
   in
   loop_i (Array.length t.table - 1) t
-;;
 
 let shorten_too_long t =
   let rec loop_i i t =
@@ -1359,7 +1329,6 @@ let shorten_too_long t =
       loop_j 1 t
   in
   loop_i (Array.length t.table - 1) t
-;;
 
 (* top_adjust:
    deletes all empty rows that might have appeared on top of the table
@@ -1387,7 +1356,6 @@ let top_adjust t =
       {table = Array.sub t.table 0 (Array.length t.table - di)}
     end
   else t
-;;
 
 (* bottom_adjust:
    deletes all empty rows that might have appeared on bottom of the table
@@ -1410,7 +1378,6 @@ let bottom_adjust t =
   if last_i < Array.length t.table - 1 then
     {table = Array.sub t.table 0 (last_i + 1)}
   else t
-;;
 
 (* invert *)
 
@@ -1423,7 +1390,6 @@ let invert_dag d =
        chil = List.map (fun x -> x) n.pare}
   done;
   d
-;;
 
 let invert_table t =
   let t' = {table = Array.copy t.table} in
@@ -1440,7 +1406,6 @@ let invert_table t =
       done
   done;
   t'
-;;
 
 (* main *)
 
@@ -1453,13 +1418,12 @@ let table_of_dag phony no_optim invert no_group d =
   let t = fall2_left t in
   let t = shorten_too_long t in
   let t = top_adjust t in let t = bottom_adjust t in t
-;;
 
 
 (* input dag *)
 
-let phony _ = false;;
-let indi_txt n = n.valu;;
+let phony _ = false
+let indi_txt n = n.valu
 
 let string_table border hts =
   let buf = Buffer.create 30 in
@@ -1497,18 +1461,16 @@ let string_table border hts =
   done;
   Printf.bprintf buf "</table></center>\n";
   Buffer.contents buf
-;;
 
-let invert = ref false;;
-let border = ref 0;;
-let no_optim = ref false;;
-let no_group = ref false;;
+let invert = ref false
+let border = ref 0
+let no_optim = ref false
+let no_group = ref false
 
 let html_of_dag d =
   let t = table_of_dag phony !no_optim !invert !no_group d in
   let hts = html_table_struct indi_txt phony d t in
   string_table !border hts
-;;
 
 
 (********************************* Max's code **********************************)

@@ -80,13 +80,14 @@ let boxed_integer_mark name = function
   | Pint64 -> Printf.sprintf "Int64.%s" name
 
 let print_boxed_integer name ppf bi =
-  fprintf ppf "%s" (boxed_integer_mark name bi);;
+  fprintf ppf "%s" (boxed_integer_mark name bi)
 
 let print_bigarray name unsafe kind ppf layout =
   fprintf ppf "Bigarray.%s[%s,%s]"
     (if unsafe then "unsafe_"^ name else name)
     (match kind with
      | Pbigarray_unknown -> "generic"
+     | Pbigarray_float16 -> "float16"
      | Pbigarray_float32 -> "float32"
      | Pbigarray_float64 -> "float64"
      | Pbigarray_sint8 -> "sint8"
@@ -112,7 +113,6 @@ let record_rep ppf r =
   | Record_unboxed true -> fprintf ppf "inlined(unboxed)"
   | Record_float -> fprintf ppf "float"
   | Record_extension path -> fprintf ppf "ext(%a)" Printtyp.path path
-;;
 
 let block_shape ppf shape = match shape with
   | None | Some [] -> ()
@@ -156,7 +156,14 @@ let primitive ppf = function
       fprintf ppf "makeblock %i%a" tag block_shape shape
   | Pmakeblock(tag, Mutable, shape) ->
       fprintf ppf "makemutable %i%a" tag block_shape shape
-  | Pfield n -> fprintf ppf "field %i" n
+  | Pfield(n, ptr, mut) ->
+      let instr =
+        match ptr, mut with
+        | Immediate, _ -> "field_int "
+        | Pointer, Mutable -> "field_mut "
+        | Pointer, Immutable -> "field_imm "
+      in
+      fprintf ppf "%s%i" instr n
   | Pfield_computed -> fprintf ppf "field_computed"
   | Psetfield(n, ptr, init) ->
       let instr =
@@ -194,6 +201,10 @@ let primitive ppf = function
       in
       fprintf ppf "setfloatfield%s %i" init n
   | Pduprecord (rep, size) -> fprintf ppf "duprecord %a %i" record_rep rep size
+  | Prunstack -> fprintf ppf "runstack"
+  | Pperform -> fprintf ppf "perform"
+  | Presume -> fprintf ppf "resume"
+  | Preperform -> fprintf ppf "reperform"
   | Pccall p -> fprintf ppf "%s" p.prim_name
   | Praise k -> fprintf ppf "%s" (Lambda.raise_kind k)
   | Psequand -> fprintf ppf "&&"
@@ -266,14 +277,14 @@ let primitive ppf = function
   | Paddbint bi -> print_boxed_integer "add" ppf bi
   | Psubbint bi -> print_boxed_integer "sub" ppf bi
   | Pmulbint bi -> print_boxed_integer "mul" ppf bi
-  | Pdivbint { size = bi; is_safe = Safe } ->
-      print_boxed_integer "div" ppf bi
-  | Pdivbint { size = bi; is_safe = Unsafe } ->
-      print_boxed_integer "div_unsafe" ppf bi
-  | Pmodbint { size = bi; is_safe = Safe } ->
-      print_boxed_integer "mod" ppf bi
-  | Pmodbint { size = bi; is_safe = Unsafe } ->
-      print_boxed_integer "mod_unsafe" ppf bi
+  | Pdivbint { size; is_safe = Safe } ->
+      print_boxed_integer "div" ppf size
+  | Pdivbint { size; is_safe = Unsafe } ->
+      print_boxed_integer "div_unsafe" ppf size
+  | Pmodbint { size; is_safe = Safe } ->
+      print_boxed_integer "mod" ppf size
+  | Pmodbint { size; is_safe = Unsafe } ->
+      print_boxed_integer "mod_unsafe" ppf size
   | Pandbint bi -> print_boxed_integer "and" ppf bi
   | Porbint bi -> print_boxed_integer "or" ppf bi
   | Pxorbint bi -> print_boxed_integer "xor" ppf bi
@@ -339,7 +350,10 @@ let primitive ppf = function
   | Pbswap16 -> fprintf ppf "bswap16"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
+  | Patomic_load -> fprintf ppf "atomic_load"
   | Popaque -> fprintf ppf "opaque"
+  | Pdls_get -> fprintf ppf "dls_get"
+  | Ppoll -> fprintf ppf "poll"
 
 let name_of_primitive = function
   | Pbytes_of_string -> "Pbytes_of_string"
@@ -442,29 +456,42 @@ let name_of_primitive = function
   | Pbswap16 -> "Pbswap16"
   | Pbbswap _ -> "Pbbswap"
   | Pint_as_pointer -> "Pint_as_pointer"
+  | Patomic_load -> "Patomic_load"
   | Popaque -> "Popaque"
+  | Prunstack -> "Prunstack"
+  | Presume -> "Presume"
+  | Pperform -> "Pperform"
+  | Preperform -> "Preperform"
+  | Pdls_get -> "Pdls_get"
+  | Ppoll -> "Ppoll"
 
-let function_attribute ppf { inline; specialise; local; is_a_functor; stub } =
-  if is_a_functor then
+let function_attribute ppf t =
+  if t.is_a_functor then
     fprintf ppf "is_a_functor@ ";
-  if stub then
+  if t.stub then
     fprintf ppf "stub@ ";
-  begin match inline with
+  begin match t.inline with
   | Default_inline -> ()
   | Always_inline -> fprintf ppf "always_inline@ "
   | Hint_inline -> fprintf ppf "hint_inline@ "
   | Never_inline -> fprintf ppf "never_inline@ "
   | Unroll i -> fprintf ppf "unroll(%i)@ " i
   end;
-  begin match specialise with
+  begin match t.specialise with
   | Default_specialise -> ()
   | Always_specialise -> fprintf ppf "always_specialise@ "
   | Never_specialise -> fprintf ppf "never_specialise@ "
   end;
-  begin match local with
+  begin match t.local with
   | Default_local -> ()
   | Always_local -> fprintf ppf "always_local@ "
   | Never_local -> fprintf ppf "never_local@ "
+  end;
+  if t.tmc_candidate then
+    fprintf ppf "tail_mod_cons@ ";
+  begin match t.poll with
+  | Default_poll -> ()
+  | Error_poll -> fprintf ppf "error_poll@ "
   end
 
 let apply_tailcall_attribute ppf = function
@@ -500,24 +527,8 @@ let rec lam ppf = function
         apply_tailcall_attribute ap.ap_tailcall
         apply_inlined_attribute ap.ap_inlined
         apply_specialised_attribute ap.ap_specialised
-  | Lfunction{kind; params; return; body; attr} ->
-      let pr_params ppf params =
-        match kind with
-        | Curried ->
-            List.iter (fun (param, k) ->
-                fprintf ppf "@ %a%a" Ident.print param value_kind k) params
-        | Tupled ->
-            fprintf ppf " (";
-            let first = ref true in
-            List.iter
-              (fun (param, k) ->
-                if !first then first := false else fprintf ppf ",@ ";
-                Ident.print ppf param;
-                value_kind ppf k)
-              params;
-            fprintf ppf ")" in
-      fprintf ppf "@[<2>(function%a@ %a%a%a)@]" pr_params params
-        function_attribute attr return_kind return lam body
+  | Lfunction lfun ->
+      lfunction ppf lfun
   | Llet(_, k, id, arg, body)
   | Lmutlet(k, id, arg, body) as l ->
       let let_kind = begin function
@@ -544,9 +555,9 @@ let rec lam ppf = function
       let bindings ppf id_arg_list =
         let spc = ref false in
         List.iter
-          (fun (id, l) ->
+          (fun { id; def } ->
             if !spc then fprintf ppf "@ " else spc := true;
-            fprintf ppf "@[<2>%a@ %a@]" Ident.print id lam l)
+            fprintf ppf "@[<2>%a@ %a@]" Ident.print id lfunction def)
           id_arg_list in
       fprintf ppf
         "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
@@ -636,8 +647,6 @@ let rec lam ppf = function
        | Lev_after _  -> "after"
        | Lev_function -> "funct-body"
        | Lev_pseudo -> "pseudo"
-       | Lev_module_definition ident ->
-         Format.asprintf "module-defn(%a)" Ident.print ident
       in
       (* -dno-locations also hides the placement of debug events;
          this is good for the readability of the resulting output (usually
@@ -665,6 +674,26 @@ and sequence ppf = function
       fprintf ppf "%a@ %a" sequence l1 sequence l2
   | l ->
       lam ppf l
+
+and lfunction ppf {kind; params; return; body; attr} =
+  let pr_params ppf params =
+    match kind with
+    | Curried ->
+        List.iter (fun (param, k) ->
+            fprintf ppf "@ %a%a" Ident.print param value_kind k) params
+    | Tupled ->
+        fprintf ppf " (";
+        let first = ref true in
+        List.iter
+          (fun (param, k) ->
+             if !first then first := false else fprintf ppf ",@ ";
+             Ident.print ppf param;
+             value_kind ppf k)
+          params;
+            fprintf ppf ")" in
+  fprintf ppf "@[<2>(function%a@ %a%a%a)@]" pr_params params
+    function_attribute attr return_kind return lam body
+
 
 let structured_constant = struct_const
 

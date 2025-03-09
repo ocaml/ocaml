@@ -15,59 +15,88 @@
 
 #define CAML_INTERNALS
 
-#if _MSC_VER >= 1400 && _MSC_VER < 1700
-/* Microsoft introduced a regression in Visual Studio 2005 (technically it's
-   not present in the Windows Server 2003 SDK which has a pre-release version)
-   and the abort function ceased to be declared __declspec(noreturn). This was
-   fixed in Visual Studio 2012. Trick stdlib.h into not defining abort (this
-   means exit and _exit are not defined either, but they aren't required). */
-#define _CRT_TERMINATE_DEFINED
-__declspec(noreturn) void __cdecl abort(void);
-#endif
-
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include "caml/config.h"
+#include "caml/fail.h"
 #include "caml/misc.h"
 #include "caml/memory.h"
 #include "caml/osdeps.h"
-#include "caml/version.h"
+#include "caml/domain.h"
+#include "caml/startup.h"
+#include "caml/startup_aux.h"
 
-caml_timing_hook caml_major_slice_begin_hook = NULL;
-caml_timing_hook caml_major_slice_end_hook = NULL;
-caml_timing_hook caml_minor_gc_begin_hook = NULL;
-caml_timing_hook caml_minor_gc_end_hook = NULL;
-caml_timing_hook caml_finalise_begin_hook = NULL;
-caml_timing_hook caml_finalise_end_hook = NULL;
+_Atomic caml_timing_hook caml_major_slice_begin_hook = (caml_timing_hook)NULL;
+_Atomic caml_timing_hook caml_major_slice_end_hook = (caml_timing_hook)NULL;
+_Atomic caml_timing_hook caml_minor_gc_begin_hook = (caml_timing_hook)NULL;
+_Atomic caml_timing_hook caml_minor_gc_end_hook = (caml_timing_hook)NULL;
+_Atomic caml_timing_hook caml_finalise_begin_hook = (caml_timing_hook)NULL;
+_Atomic caml_timing_hook caml_finalise_end_hook = (caml_timing_hook)NULL;
 
 #ifdef DEBUG
-
-void caml_failed_assert (char * expr, char_os * file_os, int line)
-{
+void caml_print_loc(const char_os *file_os, int line) {
   char* file = caml_stat_strdup_of_os(file_os);
-  fprintf (stderr, "file %s; line %d ### Assertion failed: %s\n",
-           file, line, expr);
-  fflush (stderr);
+  fprintf(stderr, "[%02d] file %s; line %d ### ",
+          (Caml_state_opt != NULL) ? Caml_state_opt->id : -1, file, line);
   caml_stat_free(file);
-  abort();
 }
 
-void caml_set_fields (value v, uintnat start, uintnat filler)
+void caml_failed_assert (const char * expr, const char_os * file_os, int line)
 {
-  mlsize_t i;
-  for (i = start; i < Wosize_val (v); i++){
-    Field (v, i) = (value) filler;
+  caml_print_loc(file_os, line);
+  fprintf(stderr, "Assertion failed: %s\n", expr);
+  fflush(stderr);
+  caml_abort();
+}
+
+CAMLnoret void caml_debug_abort(const char_os * file_os, int line) {
+  caml_print_loc(file_os, line);
+  fprintf(stderr, "Abort\n");
+  fflush(stderr);
+  caml_abort();
+}
+#endif
+
+#if defined(DEBUG)
+static CAMLthread_local int noalloc_level = 0;
+int caml_noalloc_begin(void)
+{
+  return noalloc_level++;
+}
+void caml_noalloc_end(int* noalloc)
+{
+  int curr = --noalloc_level;
+  CAMLassert(*noalloc == curr);
+}
+void caml_alloc_point_here(void)
+{
+  CAMLassert(noalloc_level == 0);
+}
+#endif /* DEBUG */
+
+#define GC_LOG_LENGTH 512
+
+atomic_uintnat caml_verb_gc = 0;
+
+void caml_gc_log (const char *msg, ...)
+{
+  if ((atomic_load_relaxed(&caml_verb_gc) & CAML_GC_MSG_DEBUG) != 0) {
+    char fmtbuf[GC_LOG_LENGTH];
+    va_list args;
+    va_start (args, msg);
+    snprintf(fmtbuf, GC_LOG_LENGTH, "[%02d] %s\n",
+             (Caml_state_opt != NULL) ? Caml_state_opt->id : -1, msg);
+    vfprintf(stderr, fmtbuf, args);
+    va_end (args);
+    fflush(stderr);
   }
 }
 
-#endif /* DEBUG */
-
-uintnat caml_verb_gc = 0;
-
-void caml_gc_message (int level, char *msg, ...)
+void caml_gc_message (int level, const char *msg, ...)
 {
-  if ((caml_verb_gc & level) != 0){
+  if ((atomic_load_relaxed(&caml_verb_gc) & level) != 0){
     va_list ap;
     va_start(ap, msg);
     vfprintf (stderr, msg, ap);
@@ -76,37 +105,71 @@ void caml_gc_message (int level, char *msg, ...)
   }
 }
 
-void (*caml_fatal_error_hook) (char *msg, va_list args) = NULL;
+_Atomic fatal_error_hook caml_fatal_error_hook = (fatal_error_hook)NULL;
 
-CAMLexport void caml_fatal_error (char *msg, ...)
+CAMLexport void caml_fatal_error (const char *msg, ...)
 {
   va_list ap;
+  fatal_error_hook hook;
   va_start(ap, msg);
-  if(caml_fatal_error_hook != NULL) {
-    caml_fatal_error_hook(msg, ap);
+  hook = atomic_load(&caml_fatal_error_hook);
+  if (hook != NULL) {
+    (*hook)(msg, ap);
   } else {
     fprintf (stderr, "Fatal error: ");
     vfprintf (stderr, msg, ap);
     fprintf (stderr, "\n");
   }
   va_end(ap);
+  /* We could use [caml_abort()] instead of [abort()], but misc.h
+     documents that we call [abort()] so we kept this version
+     for compatibility. */
   abort();
 }
 
-void caml_ext_table_init(struct ext_table * tbl, int init_capa)
+CAMLexport void caml_fatal_error_arg (const char *fmt, const char *arg)
 {
-  tbl->size = 0;
-  tbl->capacity = init_capa;
-  tbl->contents = caml_stat_alloc(sizeof(void *) * init_capa);
+  fprintf (stderr, fmt, arg);
+  exit(2);
 }
 
-int caml_ext_table_add(struct ext_table * tbl, caml_stat_block data)
+CAMLexport void caml_fatal_error_arg2 (const char *fmt1, const char *arg1,
+                                       const char *fmt2, const char *arg2)
+{
+  fprintf (stderr, fmt1, arg1);
+  fprintf (stderr, fmt2, arg2);
+  exit(2);
+}
+
+#ifdef ARCH_SIXTYFOUR
+#define MAX_EXT_TABLE_CAPACITY INT_MAX
+#else
+#define MAX_EXT_TABLE_CAPACITY ((asize_t) (-1) / sizeof(void *))
+#endif
+
+void caml_ext_table_init(struct ext_table * tbl, int init_capa)
+{
+  CAMLassert (init_capa <= MAX_EXT_TABLE_CAPACITY);
+  tbl->size = 0;
+  tbl->capacity = init_capa;
+  tbl->contents = caml_stat_alloc(sizeof(void *) * (asize_t) init_capa);
+}
+
+int caml_ext_table_add_noexc(struct ext_table * tbl, caml_stat_block data)
 {
   int res;
   if (tbl->size >= tbl->capacity) {
-    tbl->capacity *= 2;
-    tbl->contents =
-      caml_stat_resize(tbl->contents, sizeof(void *) * tbl->capacity);
+    if (tbl->capacity == MAX_EXT_TABLE_CAPACITY) return -1; /* overflow */
+    int new_capacity =
+      tbl->capacity <= MAX_EXT_TABLE_CAPACITY / 2
+      ? tbl->capacity * 2
+      : MAX_EXT_TABLE_CAPACITY;
+    void ** new_contents =
+      caml_stat_resize_noexc(tbl->contents,
+                             sizeof(void *) * (asize_t) new_capacity);
+    if (new_contents == NULL) return -1;
+    tbl->capacity = new_capacity;
+    tbl->contents = new_contents;
   }
   res = tbl->size;
   tbl->contents[res] = data;
@@ -114,10 +177,16 @@ int caml_ext_table_add(struct ext_table * tbl, caml_stat_block data)
   return res;
 }
 
+int caml_ext_table_add(struct ext_table * tbl, caml_stat_block data)
+{
+  int res = caml_ext_table_add_noexc(tbl, data);
+  if (res == -1) caml_raise_out_of_memory();
+  return res;
+}
+
 void caml_ext_table_remove(struct ext_table * tbl, caml_stat_block data)
 {
-  int i;
-  for (i = 0; i < tbl->size; i++) {
+  for (int i = 0; i < tbl->size; i++) {
     if (tbl->contents[i] == data) {
       caml_stat_free(tbl->contents[i]);
       memmove(&tbl->contents[i], &tbl->contents[i + 1],
@@ -129,9 +198,8 @@ void caml_ext_table_remove(struct ext_table * tbl, caml_stat_block data)
 
 void caml_ext_table_clear(struct ext_table * tbl, int free_entries)
 {
-  int i;
   if (free_entries) {
-    for (i = 0; i < tbl->size; i++) caml_stat_free(tbl->contents[i]);
+    for (int i = 0; i < tbl->size; i++) caml_stat_free(tbl->contents[i]);
   }
   tbl->size = 0;
 }
@@ -144,7 +212,8 @@ void caml_ext_table_free(struct ext_table * tbl, int free_entries)
 
 /* Integer arithmetic with overflow detection */
 
-#if ! (__GNUC__ >= 5 || Caml_has_builtin(__builtin_mul_overflow))
+#if ! (__has_builtin(__builtin_mul_overflow) || \
+       defined(__GNUC__) && __GNUC__ >= 5)
 CAMLexport int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 {
 #define HALF_SIZE (sizeof(uintnat) * 4)
@@ -192,7 +261,7 @@ CAMLexport int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 uintnat caml_runtime_warnings = 0;
 static int caml_runtime_warnings_first = 1;
 
-int caml_runtime_warnings_active(void)
+CAMLextern int caml_runtime_warnings_active(void)
 {
   if (!caml_runtime_warnings) return 0;
   if (caml_runtime_warnings_first) {
@@ -218,3 +287,20 @@ int caml_float_array_alloc_warning_active(void)
   }
   return 1;
 }
+
+void caml_bad_caml_state(void)
+{
+  caml_fatal_error("no domain lock held");
+}
+
+#ifdef WITH_THREAD_SANITIZER
+/* This hardcodes a number of suppressions of TSan reports about runtime
+   functions (see #11040). Unlike the CAMLno_tsan qualifier which
+   un-instruments function, this simply silences reports when the call stack
+   contains a frame matching one of the lines starting with "race:". */
+const char * __tsan_default_suppressions(void) {
+  return "deadlock:caml_plat_lock_blocking\n" /* Avoids deadlock inversion
+                                                 messages */
+         "deadlock:pthread_mutex_lock\n"; /* idem */
+}
+#endif /* WITH_THREAD_SANITIZER */

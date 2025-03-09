@@ -155,7 +155,7 @@ module Processed_what_to_specialise = struct
        needs a "new inner var" and a "new outer var".  However if there
        is already a lifted projection being introduced around the set
        of closures (corresponding to another new specialised argument),
-       we should re-use its "new outer var" to avoid duplication of
+       we should reuse its "new outer var" to avoid duplication of
        projection definitions.  Likewise if the definition is just
        [Existing_inner_free_var], in which case we can use the
        corresponding existing outer free variable. *)
@@ -537,6 +537,7 @@ module Make (T : S) = struct
         ~specialise:Default_specialise
         ~is_a_functor:false
         ~closure_origin:function_decl.closure_origin
+        ~poll:Default_poll (* don't propagate attribute to wrappers *)
     in
     new_fun_var, new_function_decl, rewritten_existing_specialised_args,
       benefit
@@ -625,6 +626,7 @@ module Make (T : S) = struct
           ~specialise:function_decl.specialise
           ~is_a_functor:function_decl.is_a_functor
           ~closure_origin
+          ~poll:function_decl.poll
       in
       let funs, direct_call_surrogates =
         if for_one_function.make_direct_call_surrogates then

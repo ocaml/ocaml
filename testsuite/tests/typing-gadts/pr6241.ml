@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type (_, _) t =
@@ -25,10 +25,10 @@ Lines 8-9, characters 52-13:
 8 | ....................................................function
 9 |    | B s -> s
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-A
+  Here is an example of a case that is not matched: "A"
+
 module M :
-  functor (A : sig module type T end) (B : sig module type T end) ->
+  (A : sig module type T end) (B : sig module type T end) ->
     sig val f : ((module A.T), (module B.T)) t -> string end
 module A : sig module type T = sig end end
 module N : sig val f : ((module A.T), (module A.T)) t -> string end

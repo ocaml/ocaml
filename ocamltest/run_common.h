@@ -30,7 +30,7 @@ static void defaultLogger(void *where, const char *format, va_list ap)
   vfprintf(stderr, format, ap);
 }
 
-static void mylog(Logger *logger, void *loggerData, char *fmt, ...)
+static void mylog(Logger *logger, void *loggerData, const char *fmt, ...)
 {
   va_list ap;
   va_start(ap, fmt);

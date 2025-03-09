@@ -46,20 +46,6 @@ let escaped = function
       bytes_unsafe_set s 3 (unsafe_chr (48 + n mod 10));
       unsafe_to_string s
 
-let lowercase = function
-  | 'A' .. 'Z'
-  | '\192' .. '\214'
-  | '\216' .. '\222' as c ->
-    unsafe_chr(code c + 32)
-  | c -> c
-
-let uppercase = function
-  | 'a' .. 'z'
-  | '\224' .. '\246'
-  | '\248' .. '\254' as c ->
-    unsafe_chr(code c - 32)
-  | c -> c
-
 let lowercase_ascii = function
   | 'A' .. 'Z' as c -> unsafe_chr(code c + 32)
   | c -> c
@@ -72,3 +58,65 @@ type t = char
 
 let compare c1 c2 = code c1 - code c2
 let equal (c1: t) (c2: t) = compare c1 c2 = 0
+
+external seeded_hash_param :
+  int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
+let seeded_hash seed x = seeded_hash_param 10 100 seed x
+let hash x = seeded_hash_param 10 100 0 x
+
+module Ascii = struct
+
+  (* Characters *)
+
+  let min = '\x00'
+  let max = '\x7F'
+
+  (* Predicates *)
+
+  let is_valid = function '\x00' .. '\x7F' -> true | _ -> false
+  let is_upper = function 'A' .. 'Z' -> true | _ -> false
+  let is_lower = function 'a' .. 'z' -> true | _ -> false
+  let is_letter = function 'A' .. 'Z' | 'a' .. 'z' -> true | _ -> false
+  let is_alphanum = function
+    | '0' .. '9' | 'A' .. 'Z' | 'a' .. 'z' -> true | _ -> false
+
+  let is_white = function ' ' | '\t' .. '\r'  -> true | _ -> false
+  let is_blank = function ' ' | '\t' -> true | _ -> false
+  let is_graphic = function '!' .. '~' -> true | _ -> false
+  let is_print = function ' ' .. '~' -> true | _ -> false
+  let is_control = function '\x00' .. '\x1F' | '\x7F' -> true | _ -> false
+
+  (* Decimal digits *)
+
+  let is_digit = function '0' .. '9' -> true | _ -> false
+  let digit_to_int = function
+    | '0' .. '9' as c -> code c - 0x30
+    | c -> invalid_arg (escaped c ^ ": not a decimal digit")
+
+  let digit_of_int n = unsafe_chr (0x30 + abs (n mod 10))
+
+  (* Hexadecimal digits *)
+
+  let is_hex_digit = function
+    | '0' .. '9' | 'A' .. 'F' | 'a' .. 'f' -> true
+    | _ -> false
+
+  let hex_digit_to_int = function
+    | '0' .. '9' as c -> code c - 0x30
+    | 'A' .. 'F' as c -> 10 + code c - 0x41
+    | 'a' .. 'f' as c -> 10 + code c - 0x61
+    | c -> invalid_arg (escaped c ^ ": not a hexadecimal digit")
+
+  let lower_hex_digit_of_int n =
+    let d = abs (n mod 16) in
+    unsafe_chr (if d < 10 then 0x30 + d else 0x57 + d)
+
+  let upper_hex_digit_of_int n =
+    let d = abs (n mod 16) in
+    unsafe_chr (if d < 10 then 0x30 + d else 0x37 + d)
+
+  (* Casing transforms *)
+
+  let lowercase = lowercase_ascii
+  let uppercase = uppercase_ascii
+end

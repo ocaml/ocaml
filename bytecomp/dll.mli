@@ -66,6 +66,6 @@ val init_compile: bool -> unit
    the running program (CAML_LD_LIBRARY_PATH + directories in executable +
    contents of ld.conf file).  Take note of the DLLs that were opened
    when starting the running program. *)
-val init_toplevel: string -> unit
+val init_toplevel: string list -> unit
 
 val reset: unit -> unit

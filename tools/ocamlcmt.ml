@@ -19,6 +19,14 @@ let print_info_arg = ref false
 let target_filename = ref None
 let save_cmt_info = ref false
 
+let print_version () =
+  Format.printf "ocamlcmt, version %s@." Sys.ocaml_version;
+  exit 0
+
+let print_version_num () =
+  Format.printf "%s@." Sys.ocaml_version;
+  exit 0
+
 let arg_list = Arg.align [
   "-o", Arg.String (fun s -> target_filename := Some s),
     "<file> Dump to file <file> (or stdout if -)";
@@ -29,6 +37,10 @@ let arg_list = Arg.align [
   "-src", Arg.Set gen_ml,
     " Convert .cmt or .cmti back to source code (without comments)";
   "-info", Arg.Set print_info_arg, " : print information on the file";
+  "-version", Arg.Unit print_version,
+              "     Print version and exit";
+  "-vnum", Arg.Unit print_version_num,
+           "        Print version number and exit";
   "-args", Arg.Expand Arg.read_arg,
     "<file> Read additional newline separated command line arguments \n\
     \      from <file>";
@@ -41,7 +53,9 @@ let arg_list = Arg.align [
   ]
 
 let arg_usage =
-  "ocamlcmt [OPTIONS] FILE.cmt : read FILE.cmt and print related information"
+  "Read FILE.cmt and print related information\n\
+   Usage: ocamlcmt [options] FILE.cmt\n\
+   Options are:"
 
 let dummy_crc = String.make 32 '-'
 
@@ -69,7 +83,10 @@ let print_info cmt =
     Printf.fprintf oc "sourcefile: %s\n" name;
   end;
   Printf.fprintf oc "build directory: %s\n" cmt.cmt_builddir;
-  List.iter (Printf.fprintf oc "load path: %s\n%!") cmt.cmt_loadpath;
+  List.iter (Printf.fprintf oc "load path (visible): %s\n%!")
+    cmt.cmt_loadpath.visible;
+  List.iter (Printf.fprintf oc "load path (hidden): %s\n%!")
+    cmt.cmt_loadpath.hidden;
   begin
     match cmt.cmt_source_digest with
       None -> ()
@@ -149,7 +166,8 @@ let record_cmt_info cmt =
                                     Annot.Idef (location_file value)))
   in
   let open Cmt_format in
-  List.iter (fun dir -> record_info "include" dir) cmt.cmt_loadpath;
+  List.iter (fun dir -> record_info "include" dir) cmt.cmt_loadpath.visible;
+  List.iter (fun dir -> record_info "include" dir) cmt.cmt_loadpath.hidden;
   record_info "chdir" cmt.cmt_builddir;
   (match cmt.cmt_sourcefile with
     None -> () | Some file -> record_info "source" file)
@@ -174,7 +192,8 @@ let main () =
           | Some _ as x -> x
         in
         Envaux.reset_cache ();
-        List.iter Load_path.add_dir cmt.cmt_loadpath;
+        List.iter (Load_path.add_dir ~hidden:false) cmt.cmt_loadpath.visible;
+        List.iter (Load_path.add_dir ~hidden:true) cmt.cmt_loadpath.hidden;
         Cmt2annot.gen_annot target_filename
           ~sourcefile:cmt.cmt_sourcefile
           ~use_summaries:cmt.cmt_use_summaries
@@ -189,8 +208,7 @@ let main () =
     end
   ) arg_usage
 
-
-let () =
+let main () =
   try
     main ()
   with x ->
@@ -198,3 +216,5 @@ let () =
     Location.report_exception Format.err_formatter x;
     Format.fprintf Format.err_formatter "@.";
     exit 2
+
+let _ = main ()

@@ -1,0 +1,5 @@
+test1
+test2: installed 2nd
+test2: installed 1st
+test3: child.finalise
+test3: child.finalise_last

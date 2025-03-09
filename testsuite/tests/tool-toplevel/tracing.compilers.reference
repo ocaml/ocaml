@@ -1,4 +1,4 @@
-- : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a = <fun>
+- : ('acc -> 'a -> 'acc) -> 'acc -> 'a list -> 'acc = <fun>
 List.fold_left is now traced.
 - : int = 0
 List.fold_left <-- <fun>

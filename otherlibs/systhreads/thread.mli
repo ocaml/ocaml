@@ -23,15 +23,19 @@ type t
 val create : ('a -> 'b) -> 'a -> t
 (** [Thread.create funct arg] creates a new thread of control,
    in which the function application [funct arg]
-   is executed concurrently with the other threads of the program.
+   is executed concurrently with the other threads of the domain.
    The application of [Thread.create]
    returns the handle of the newly created thread.
    The new thread terminates when the application [funct arg]
-   returns, either normally or by raising an uncaught exception.
-   In the latter case, the exception is printed on standard error,
+   returns, either normally or by raising the {!Thread.Exit} exception
+   or by raising any other uncaught exception.
+   In the last case, the uncaught exception is printed on standard error,
    but not propagated back to the parent thread. Similarly, the
    result of the application [funct arg] is discarded and not
-   directly accessible to the parent thread. *)
+   directly accessible to the parent thread.
+
+   See also {!Domain.spawn} if you want parallel execution instead.
+   *)
 
 val self : unit -> t
 (** Return the handle for the thread currently executing. *)
@@ -41,15 +45,42 @@ val id : t -> int
    is an integer that identifies uniquely the thread.
    It can be used to build data structures indexed by threads. *)
 
-val exit : unit -> unit
-(** Terminate prematurely the currently executing thread. *)
+val set_current_thread_name : string -> unit
+(** Set the thread's name. This should be called from within the thread
+    function. Setting thread name is available on most systems.
 
-val kill : t -> unit
-  [@@ocaml.deprecated "Not implemented, do not use"]
-(** This function was supposed to terminate prematurely the thread
-    whose handle is given.  It is not currently implemented due to
-    problems with cleanup handlers on many POSIX 1003.1c implementations.
-    It always raises the [Invalid_argument] exception. *)
+    This does nothing if the functionality is not implemented but will
+    print a warning on the standard error if enabled.
+
+    Likewise, a warning is printed if the operation fails.
+
+    @since 5.4 *)
+
+exception Exit
+(** Exception raised by user code to initiate termination of the
+    current thread.
+    In a thread created by {!Thread.create} [funct] [arg], if the
+    {!Thread.Exit} exception reaches the top of the application
+    [funct arg], it has the effect of terminating the current thread
+    silently.  In other contexts, there is no implicit handling of the
+    {!Thread.Exit} exception. *)
+
+val exit : unit -> unit
+[@@ocaml.deprecated "Use 'raise Thread.Exit' instead."]
+(** Raise the {!Thread.Exit} exception.
+    In a thread created by {!Thread.create}, this will cause the thread
+    to terminate prematurely, unless the thread function handles the
+    exception itself.  {!Fun.protect} finalizers and catch-all
+    exception handlers will be executed.
+
+    To make it clear that an exception is raised and will trigger
+    finalizers and catch-all exception handlers, it is recommended
+    to write [raise Thread.Exit] instead of [Thread.exit ()].
+
+    @before 5.0 A different implementation was used, not based on raising
+        an exception, and not running finalizers and catch-all handlers.
+        The previous implementation had a different behavior when called
+        outside of a thread created by {!Thread.create}. *)
 
 (** {1 Suspending threads} *)
 
@@ -75,20 +106,12 @@ val yield : unit -> unit
     a more general and more standard-conformant manner.  It is recommended
     to use {!Unix} functions directly. *)
 
-val wait_read : Unix.file_descr -> unit
-  [@@ocaml.deprecated "This function no longer does anything"]
-(** This function does nothing in the current implementation of the threading
-    library and can be removed from all user programs. *)
-
-val wait_write : Unix.file_descr -> unit
-  [@@ocaml.deprecated "This function no longer does anything"]
-(** This function does nothing in the current implementation of the threading
-    library and can be removed from all user programs. *)
-
 val wait_timed_read : Unix.file_descr -> float -> bool
+[@@ocaml.deprecated "Use Unix.select instead."]
 (** See {!Thread.wait_timed_write}.*)
 
 val wait_timed_write : Unix.file_descr -> float -> bool
+[@@ocaml.deprecated "Use Unix.select instead."]
 (** Suspend the execution of the calling thread until at least
    one character or EOF is available for reading ([wait_timed_read]) or
    one character can be written without blocking ([wait_timed_write])
@@ -103,6 +126,7 @@ val select :
   Unix.file_descr list -> Unix.file_descr list ->
   Unix.file_descr list -> float ->
     Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
+[@@ocaml.deprecated "Use Unix.select instead."]
 (** Same function as {!Unix.select}.
    Suspend the execution of the calling thread until input/output
    becomes possible on the given Unix file descriptors.
@@ -110,6 +134,7 @@ val select :
    {!Unix.select}. *)
 
 val wait_pid : int -> int * Unix.process_status
+[@@ocaml.deprecated "Use Unix.waitpid instead."]
 (** Same function as {!Unix.waitpid}.
    [wait_pid p] suspends the execution of the calling thread
    until the process specified by the process identifier [p]
@@ -127,7 +152,8 @@ val wait_pid : int -> int * Unix.process_status
   under Unix, but not under Win32, nor by the VM thread library. *)
 
 val sigmask : Unix.sigprocmask_command -> int list -> int list
-(** [sigmask cmd sigs] changes the set of blocked signals for the
+(** Same function as {!Unix.sigprocmask}.
+   [sigmask cmd sigs] changes the set of blocked signals for the
    calling thread.
    If [cmd] is [SIG_SETMASK], blocked signals are set to those in
    the list [sigs].
@@ -137,11 +163,24 @@ val sigmask : Unix.sigprocmask_command -> int list -> int list
    from the set of blocked signals.
    [sigmask] returns the set of previously blocked signals for the thread. *)
 
-
 val wait_signal : int list -> int
-(** [wait_signal sigs] suspends the execution of the calling thread
+(** Same function as {!Unix.sigwait}.
+   [wait_signal sigs] suspends the execution of the calling thread
    until the process receives one of the signals specified in the
    list [sigs].  It then returns the number of the signal received.
    Signal handlers attached to the signals in [sigs] will not
    be invoked.  The signals [sigs] are expected to be blocked before
    calling [wait_signal]. *)
+
+(** {1 Uncaught exceptions} *)
+
+val default_uncaught_exception_handler : exn -> unit
+(** [Thread.default_uncaught_exception_handler] will print the thread's id,
+    exception and backtrace (if available). *)
+
+val set_uncaught_exception_handler : (exn -> unit) -> unit
+(** [Thread.set_uncaught_exception_handler fn] registers [fn] as the handler
+    for uncaught exceptions.
+
+    If the newly set uncaught exception handler raise an exception,
+    {!default_uncaught_exception_handler} will be called. *)

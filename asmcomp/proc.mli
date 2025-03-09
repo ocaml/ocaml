@@ -15,9 +15,6 @@
 
 (* Processor descriptions *)
 
-(* Instruction selection *)
-val word_addressed: bool
-
 (* Registers available for register allocation *)
 val num_register_classes: int
 val register_class: Reg.t -> int
@@ -54,15 +51,6 @@ val max_register_pressure: Mach.operation -> int array
 val destroyed_at_oper: Mach.instruction_desc -> Reg.t array
 val destroyed_at_raise: Reg.t array
 val destroyed_at_reloadretaddr : Reg.t array
-
-(* Volatile registers: those that change value when read *)
-val regs_are_volatile: Reg.t array -> bool
-
-(* Info for laying out the stack frame *)
-val frame_required : Mach.fundecl -> bool
-
-(* Function prologues *)
-val prologue_required : Mach.fundecl -> bool
 
 (** For a given register class, the DWARF register numbering for that class.
     Given an allocated register with location [Reg n] and class [reg_class], the

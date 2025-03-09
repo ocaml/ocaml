@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 type t =
 | A of string * float

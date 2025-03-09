@@ -244,19 +244,6 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
     let id, env_body = Env.add_fresh_mutable_ident env mut_var in
     let def = subst_var env var in
     Ulet (Mutable, contents_kind, VP.create id, def, to_clambda t env_body body)
-  | Let_rec (defs, body) ->
-    let env, defs =
-      List.fold_right (fun (var, def) (env, defs) ->
-          let id, env = Env.add_fresh_ident env var in
-          env, (id, var, def) :: defs)
-        defs (env, [])
-    in
-    let defs =
-      List.map (fun (id, var, def) ->
-          VP.create id, to_clambda_named t env var def)
-        defs
-    in
-    Uletrec (defs, to_clambda t env body)
   | Apply { func; args; kind = Direct direct_func; dbg = dbg } ->
     (* The closure _parameter_ of the function is added by cmmgen.
        At the call site, for a direct call, the closure argument must be
@@ -317,9 +304,9 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
       List.map (subst_var env) args)
   | Static_catch (static_exn, vars, body, handler) ->
     let env_handler, ids =
-      List.fold_right (fun var (env, ids) ->
+      List.fold_right (fun (var, kind) (env, ids) ->
           let id, env = Env.add_fresh_ident env var in
-          env, (VP.create id, Lambda.Pgenval) :: ids)
+          env, (VP.create id, kind) :: ids)
         vars (env, [])
     in
     Ucatch (Static_exception.to_int static_exn, ids,
@@ -369,7 +356,8 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
         Flambda.print_named named
     end
   | Read_symbol_field (symbol, field) ->
-    Uprim (Pfield field, [to_clambda_symbol env symbol], Debuginfo.none)
+    Uprim (Pfield (field, Pointer, Mutable),
+           [to_clambda_symbol env symbol], Debuginfo.none)
   | Set_of_closures set_of_closures ->
     to_clambda_set_of_closures t env set_of_closures
   | Project_closure { set_of_closures; closure_id } ->
@@ -394,12 +382,13 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
     let fun_offset = get_fun_offset t closure_id in
     let var_offset = get_fv_offset t var in
     let pos = var_offset - fun_offset in
-    Uprim (Pfield pos,
+    Uprim (Pfield (pos, Pointer, Mutable),
       [check_field t (check_closure t ulam (Expr (Var closure)))
          pos (Some named)],
       Debuginfo.none)
-  | Prim (Pfield index, [block], dbg) ->
-    Uprim (Pfield index, [check_field t (subst_var env block) index None], dbg)
+  | Prim (Pfield (index, ptr, mut), [block], dbg) ->
+    Uprim (Pfield (index, ptr, mut),
+           [check_field t (subst_var env block) index None], dbg)
   | Prim (Psetfield (index, maybe_ptr, init), [block; new_value], dbg) ->
     Uprim (Psetfield (index, maybe_ptr, init), [
         check_field t (subst_var env block) index None;
@@ -512,7 +501,8 @@ and to_clambda_set_of_closures t env
         in
         let pos = var_offset - fun_offset in
         Env.add_subst env id
-          (Uprim (Pfield pos, [Clambda.Uvar env_var], Debuginfo.none))
+          (Uprim (Pfield (pos, Pointer, Mutable),
+                  [Clambda.Uvar env_var], Debuginfo.none))
       in
       let env = Variable.Map.fold add_env_free_variable free_vars env in
       (* Add the Clambda expressions for all functions defined in the current
@@ -545,6 +535,7 @@ and to_clambda_set_of_closures t env
       body = to_clambda t env_body function_decl.body;
       dbg = function_decl.dbg;
       env = Some env_var;
+      poll = function_decl.poll;
     }
   in
   let funs = List.map to_clambda_function all_functions in
@@ -590,6 +581,7 @@ and to_clambda_closed_set_of_closures t env symbol
       body;
       dbg = function_decl.dbg;
       env = None;
+      poll = function_decl.poll;
     }
   in
   let ufunct = List.map to_clambda_function functions in

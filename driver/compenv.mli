@@ -15,8 +15,6 @@
 
 exception Exit_with_status of int
 
-val module_of_filename : string -> string -> string
-
 val output_prefix : string -> string
 val extract_output : string option -> string
 val default_output : string option -> string
@@ -45,13 +43,6 @@ type readenv_position =
   Before_args | Before_compile of filename | Before_link
 
 val readenv : Format.formatter -> readenv_position -> unit
-
-(* [is_unit_name name] returns true only if [name] can be used as a
-   correct module name *)
-val is_unit_name : string -> bool
-(* [check_unit_name ppf filename name] prints a warning in [filename]
-   on [ppf] if [name] should not be used as a module name. *)
-val check_unit_name : string -> string -> unit
 
 (* Deferred actions of the compiler, while parsing arguments *)
 

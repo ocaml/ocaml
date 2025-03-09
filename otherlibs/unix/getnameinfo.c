@@ -19,21 +19,21 @@
 #include <caml/fail.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #if defined(HAS_SOCKETS) && defined(HAS_IPV6)
 
-#include "socketaddr.h"
+#include "caml/socketaddr.h"
 #ifndef _WIN32
 #include <sys/types.h>
 #include <netdb.h>
 #endif
 
-static int getnameinfo_flag_table[] = {
+static const int getnameinfo_flag_table[] = {
   NI_NOFQDN, NI_NUMERICHOST, NI_NAMEREQD, NI_NUMERICSERV, NI_DGRAM
 };
 
-CAMLprim value unix_getnameinfo(value vaddr, value vopts)
+CAMLprim value caml_unix_getnameinfo(value vaddr, value vopts)
 {
   CAMLparam0();
   CAMLlocal3(vhost, vserv, vres);
@@ -43,7 +43,7 @@ CAMLprim value unix_getnameinfo(value vaddr, value vopts)
   char serv[1024];
   int opts, retcode;
 
-  get_sockaddr(vaddr, &addr, &addr_len);
+  caml_unix_get_sockaddr(vaddr, &addr, &addr_len);
   opts = caml_convert_flag_list(vopts, getnameinfo_flag_table);
   caml_enter_blocking_section();
   retcode =
@@ -62,7 +62,7 @@ CAMLprim value unix_getnameinfo(value vaddr, value vopts)
 
 #else
 
-CAMLprim value unix_getnameinfo(value vaddr, value vopts)
+CAMLprim value caml_unix_getnameinfo(value vaddr, value vopts)
 { caml_invalid_argument("getnameinfo not implemented"); }
 
 #endif

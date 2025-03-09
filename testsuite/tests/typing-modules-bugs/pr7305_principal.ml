@@ -1,8 +1,8 @@
 (* TEST
-flags = " -principal -w +18+19 -warn-error +A "
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-*** check-ocamlc.byte-output
+ flags = " -principal -w +18+19 -warn-error +A ";
+ setup-ocamlc.byte-build-env;
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)
 
 type c1 = < c1: c1 >

@@ -1,15 +1,16 @@
 (* TEST
-   * setup-ocamlc.byte-build-env
-   ** ocamlc.byte
-      flags = "-dlambda -dno-unique-ids"
-   *** flat-float-array
-   **** check-ocamlc.byte-output
-        compiler_reference =
-          "${test_source_directory}/array_spec.compilers.flat.reference"
-   *** no-flat-float-array
-   **** check-ocamlc.byte-output
-       compiler_reference =
-         "${test_source_directory}/array_spec.compilers.no-flat.reference"
+ setup-ocamlc.byte-build-env;
+ flags = "-dlambda -dno-unique-ids";
+ ocamlc.byte;
+ {
+   flat-float-array;
+   compiler_reference = "${test_source_directory}/array_spec.compilers.flat.reference";
+   check-ocamlc.byte-output;
+ }{
+   no-flat-float-array;
+   compiler_reference = "${test_source_directory}/array_spec.compilers.no-flat.reference";
+   check-ocamlc.byte-output;
+ }
 *)
 
 external len : 'a array -> int = "%array_length"

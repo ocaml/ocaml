@@ -49,18 +49,26 @@ type operation =
   | Itailcall_imm of { func : string; }
   | Iextcall of { func : string;
                   ty_res : Cmm.machtype; ty_args : Cmm.exttype list;
-                  alloc : bool; }
+                  alloc : bool;
+                  stack_ofs : int; }
   | Istackoffset of int
-  | Iload of Cmm.memory_chunk * Arch.addressing_mode * Asttypes.mutable_flag
+  | Iload of { memory_chunk : Cmm.memory_chunk;
+               addressing_mode : Arch.addressing_mode;
+               mutability : Asttypes.mutable_flag;
+               is_atomic : bool }
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
                                  (* false = initialization, true = assignment *)
   | Ialloc of { bytes : int; dbginfo : Debuginfo.alloc_dbginfo; }
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int
+  | Icompf of float_comparison
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Iopaque
   | Ispecific of Arch.specific_operation
+  | Ipoll of { return_label: Cmm.label option }
+  | Idls_get
+  | Ireturn_addr (** Retrieve the return address from the stack frame *)
 
 type instruction =
   { desc: instruction_desc;
@@ -88,8 +96,8 @@ type fundecl =
     fun_body: instruction;
     fun_codegen_options : Cmm.codegen_option list;
     fun_dbg : Debuginfo.t;
+    fun_poll: Lambda.poll_attribute;
     fun_num_stack_slots: int array;
-    fun_contains_calls: bool;
   }
 
 val dummy_instr: instruction

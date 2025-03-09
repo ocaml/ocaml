@@ -1,32 +1,30 @@
 (* TEST
-
-readonly_files = "myecho.ml"
-
-* setup-ocamlc.byte-build-env
-program = "${test_build_directory}/quotecommand.byte"
-** ocamlc.byte
-program = "${test_build_directory}/myecho.exe"
-all_modules = "myecho.ml"
-*** ocamlc.byte
-program = "${test_build_directory}/quotecommand.byte"
-all_modules= "quotecommand.ml"
-**** check-ocamlc.byte-output
-***** run
-****** check-program-output
-
-* setup-ocamlopt.byte-build-env
-program = "${test_build_directory}/quotecommand.opt"
-** ocamlopt.byte
-program = "${test_build_directory}/myecho.exe"
-all_modules = "myecho.ml"
-*** ocamlopt.byte
-include unix
-program = "${test_build_directory}/quotecommand.opt"
-all_modules= "quotecommand.ml"
-**** check-ocamlopt.byte-output
-***** run
-****** check-program-output
-
+ readonly_files = "myecho.ml";
+ {
+   program = "${test_build_directory}/quotecommand.byte";
+   setup-ocamlc.byte-build-env;
+   program = "${test_build_directory}/myecho.exe";
+   all_modules = "myecho.ml";
+   ocamlc.byte;
+   program = "${test_build_directory}/quotecommand.byte";
+   all_modules = "quotecommand.ml";
+   ocamlc.byte;
+   check-ocamlc.byte-output;
+   run;
+   check-program-output;
+ }{
+   program = "${test_build_directory}/quotecommand.opt";
+   setup-ocamlopt.byte-build-env;
+   program = "${test_build_directory}/myecho.exe";
+   all_modules = "myecho.ml";
+   ocamlopt.byte;
+   program = "${test_build_directory}/quotecommand.opt";
+   all_modules = "quotecommand.ml";
+   ocamlopt.byte;
+   check-ocamlopt.byte-output;
+   run;
+   check-program-output;
+ }
 *)
 
 open Printf
@@ -55,16 +53,17 @@ let cat_file f =
 let myecho =
   Filename.concat Filename.current_dir_name "my echo.exe"
 
-let run ?stdin ?stdout ?stderr args =
+let run prog ?stdin ?stdout ?stderr args =
   flush Stdlib.stdout;
   let rc =
-   Sys.command (Filename.quote_command myecho ?stdin ?stdout ?stderr args) in
+   Sys.command (Filename.quote_command prog ?stdin ?stdout ?stderr args) in
   if rc > 0 then begin
-    printf "!!! my echo failed\n";
+    printf "!!! %s failed\n" prog;
     exit 2
   end
 
 let _ =
+  let run = run myecho in
   copy_file "myecho.exe" "my echo.exe";
   printf "-------- Spaces\n";
   run ["Lorem ipsum dolor"; "sit amet,"; "consectetur adipiscing elit,"];
@@ -102,3 +101,7 @@ let _ =
                "in voluptate"; "-out"; "velit esse cillum"; "-err"; "dolore"];
   cat_file "my file.tmp"; Sys.remove "my file.tmp";
   Sys.remove "my echo.exe"
+
+let _ =
+  printf "-------- Forward slashes in program position\n";
+  run "./myecho.exe" ["alea iacta est"]

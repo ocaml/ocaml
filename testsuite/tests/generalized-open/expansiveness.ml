@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module Fn = struct
@@ -65,7 +65,7 @@ module Square(X : sig val x : int end) = struct
 end
 ;;
 [%%expect{|
-module Square : functor (X : sig val x : int end) -> sig val result : int end
+module Square : (X : sig val x : int end) -> sig val result : int end
 |}]
 
 let k =

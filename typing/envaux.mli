@@ -14,8 +14,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Format
-
 (* Convert environment summaries to environments *)
 
 val env_from_summary : Env.summary -> Subst.t -> Env.t
@@ -33,4 +31,5 @@ type error =
 
 exception Error of error
 
-val report_error: formatter -> error -> unit
+val report_error: error Format_doc.format_printer
+val report_error_doc: error Format_doc.printer

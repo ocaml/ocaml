@@ -1,5 +1,5 @@
 (* TEST
-  * ocamldoc with latex
+ ocamldoc with latex;
 *)
 
 (** Test for level 0 headings

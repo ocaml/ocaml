@@ -1,0 +1,8 @@
+File "lib2_client.ml", line 19, characters 11-36:
+19 | module _ = F (struct type t = T end)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This functor has type
+       (T : sig type t end) ->
+         sig type t = Lib1_client__X.t val f : T.t -> unit end
+       The parameter cannot be eliminated in the result type.
+       Please bind the argument to a module identifier.

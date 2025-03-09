@@ -18,6 +18,10 @@
 
 #include "mlvalues.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* [caml_record_backtraces] controls backtrace recording.
  * This function can be called at runtime by user-code, or during
  * initialization if backtraces were requested.
@@ -26,6 +30,10 @@
  * allocation.
  */
 CAMLextern void caml_record_backtraces(int);
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef CAML_INTERNALS
 
@@ -96,9 +104,10 @@ CAMLextern void caml_record_backtraces(int);
  * raise and re-raise are distinguished by:
  * - passing reraise = 1 to [caml_stash_backtrace] (see below) in the bytecode
  *   interpreter;
- * - directly resetting [Caml_state->backtrace_pos] to 0 in native
-     runtimes for raise.
+ * - directly resetting [Caml_state->backtrace_pos] to 0 in native runtimes for
+ *   raise.
  */
+
 
 #ifndef NATIVE_CODE
 
@@ -112,6 +121,21 @@ extern void caml_stash_backtrace(value exn, value * sp, int reraise);
 
 CAMLextern void caml_load_main_debug_info(void);
 #endif
+
+/* Obtain up to [max_slots] of the callstack of the current domain,
+ * including parent fibers. The callstack is written into [*buffer_p],
+ * current size [*alloc_size_p], which should be reallocated (on the C
+ * heap) if required. Returns the number of slots obtained.
+ *
+ * If [alloc_idx] is non-negative, then the backtrace is of an
+ * allocation point and may therefore include an initial entry of the
+ * allocation point itself.
+ */
+
+extern size_t caml_get_callstack(size_t max_slots,
+                                 backtrace_slot **buffer_p,
+                                 size_t *alloc_size_p,
+                                 ptrdiff_t alloc_idx);
 
 
 /* Default (C-level) printer for backtraces.  It is called if an

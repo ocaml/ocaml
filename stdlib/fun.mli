@@ -26,6 +26,12 @@ val const : 'a -> (_ -> 'a)
 (** [const c] is a function that always returns the value [c]. For any
     argument [x], [(const c) x] is [c]. *)
 
+val compose : ('b -> 'c) -> ('a -> 'b) -> 'a -> 'c
+(** [compose f g] is a function composition of applying [g] then [f].
+    For any arguments [f], [g], and [x], [compose f g x] is [f (g x)].
+
+    @since 5.2 *)
+
 val flip : ('a -> 'b -> 'c) -> ('b -> 'a -> 'c)
 (** [flip f] reverses the argument order of the binary function
     [f]. For any arguments [x] and [y], [(flip f) x y] is [f y x]. *)

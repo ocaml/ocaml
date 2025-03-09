@@ -158,6 +158,11 @@ let add_variables t defs =
       let id', t = add_variable t id in
       (id', data) :: defs, t) defs ([], t)
 
+let add_variables3 t defs =
+  List.fold_right (fun (id, data1, data2) (defs, t) ->
+      let id', t = add_variable t id in
+      (id', data1, data2) :: defs, t) defs ([], t)
+
 let add_variables' t ids =
   List.fold_right (fun id (ids, t) ->
       let id', t = add_variable t id in
@@ -326,6 +331,7 @@ module Project_var = struct
             ~inline:func_decl.inline ~specialise:func_decl.specialise
             ~is_a_functor:func_decl.is_a_functor
             ~closure_origin:func_decl.closure_origin
+            ~poll:func_decl.poll
         in
         function_decl, subst
       in

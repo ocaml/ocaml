@@ -17,8 +17,8 @@
 
 open Asttypes
 open Typedtree
-open Types
-open Format
+open Data_types
+open Format_doc
 
 let is_cons = function
 | {cstr_name = "::"} -> true
@@ -52,10 +52,10 @@ let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
     | [] ->
   match v.pat_desc with
   | Tpat_any -> fprintf ppf "_"
-  | Tpat_var (x,_) -> fprintf ppf "%s" (Ident.name x)
+  | Tpat_var (x,_,_) -> fprintf ppf "%s" (Ident.name x)
   | Tpat_constant c -> fprintf ppf "%s" (pretty_const c)
   | Tpat_tuple vs ->
-      fprintf ppf "@[(%a)@]" (pretty_vals ",") vs
+      fprintf ppf "@[(%a)@]" (pretty_list pretty_labeled_val ",") vs
   | Tpat_construct (_, cstr, [], _) ->
       fprintf ppf "%s" cstr.cstr_name
   | Tpat_construct (_, cstr, [w], None) ->
@@ -84,7 +84,7 @@ let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
             | (_,_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
             | _ -> true) lvs in
       begin match filtered_lvs with
-      | [] -> fprintf ppf "_"
+      | [] -> fprintf ppf "{ _ }"
       | (_, lbl, _) :: q ->
           let elision_mark ppf =
             (* we assume that there is no label repetitions here *)
@@ -94,12 +94,12 @@ let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
           fprintf ppf "@[{%a%t}@]"
             pretty_lvals filtered_lvs elision_mark
       end
-  | Tpat_array vs ->
+  | Tpat_array (_, vs) ->
       fprintf ppf "@[[| %a |]@]" (pretty_vals " ;") vs
   | Tpat_lazy v ->
       fprintf ppf "@[<2>lazy@ %a@]" pretty_arg v
-  | Tpat_alias (v, x,_) ->
-      fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.print x
+  | Tpat_alias (v, x,_,_,_) ->
+      fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.doc_print x
   | Tpat_value v ->
       fprintf ppf "%a" pretty_val (v :> pattern)
   | Tpat_exception v ->
@@ -130,11 +130,22 @@ and pretty_or : type k . _ -> k general_pattern -> _ = fun ppf v ->
       fprintf ppf "%a|@,%a" pretty_or v pretty_or w
   | _ -> pretty_val ppf v
 
-and pretty_vals sep ppf = function
-  | [] -> ()
-  | [v] -> pretty_val ppf v
-  | v::vs ->
-      fprintf ppf "%a%s@ %a" pretty_val v sep (pretty_vals sep) vs
+and pretty_list : type k . (_ -> k -> _) -> _ -> _ -> k list -> _ =
+  fun print_val sep ppf ->
+    function
+    | [] -> ()
+    | [v] -> print_val ppf v
+    | v::vs ->
+        fprintf ppf "%a%s@ %a" print_val v sep (pretty_list print_val sep) vs
+
+and pretty_vals sep = pretty_list pretty_val sep
+
+and pretty_labeled_val ppf (l, p) =
+  begin match l with
+  | Some s -> fprintf ppf "~%s:" s
+  | None -> ()
+  end;
+  pretty_val ppf p
 
 and pretty_lvals ppf = function
   | [] -> ()
@@ -145,25 +156,29 @@ and pretty_lvals ppf = function
         lbl.lbl_name pretty_val v pretty_lvals rest
 
 let top_pretty ppf v =
-  fprintf ppf "@[%a@]@?" pretty_val v
+  fprintf ppf "@[%a@]" pretty_val v
 
-let pretty_pat p =
-  top_pretty Format.str_formatter p ;
-  prerr_string (Format.flush_str_formatter ())
+let pretty_pat ppf p =
+  top_pretty ppf p ;
+  pp_print_flush ppf ()
 
 type 'k matrix = 'k general_pattern list list
 
-let pretty_line fmt =
+let pretty_line ppf line =
+  fprintf ppf "@[";
   List.iter (fun p ->
-    Format.fprintf fmt " <";
-    top_pretty fmt p;
-    Format.fprintf fmt ">";
-  )
+      fprintf ppf "<%a>@ "
+        pretty_val p
+    ) line;
+  fprintf ppf "@]"
 
-let pretty_matrix fmt (pss : 'k matrix) =
-  Format.fprintf fmt "begin matrix\n" ;
-  List.iter (fun ps ->
-    pretty_line fmt ps ;
-    Format.fprintf fmt "\n"
-  ) pss;
-  Format.fprintf fmt "end matrix\n%!"
+let pretty_matrix ppf (pss : 'k matrix) =
+  fprintf ppf "@[<v 2>  %a@]"
+    (pp_print_list ~pp_sep:pp_print_cut pretty_line)
+    pss
+
+module Compat = struct
+  let pretty_pat ppf x = compat pretty_pat ppf x
+  let pretty_line ppf x = compat pretty_line ppf x
+  let pretty_matrix ppf x = compat pretty_matrix ppf x
+end

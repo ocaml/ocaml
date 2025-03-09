@@ -1,12 +1,12 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module type S = sig type t [@@immediate] end;;
 module F (M : S) : S = M;;
 [%%expect{|
 module type S = sig type t [@@immediate] end
-module F : functor (M : S) -> S
+module F : (M : S) -> S
 |}];;
 
 (* VALID DECLARATIONS *)
@@ -52,6 +52,12 @@ module FM_valid = F (struct type t = int end);;
 [%%expect{|
 module M_valid : S
 module FM_valid : S
+|}];;
+
+(* Valid for empty types *)
+module Empty_valid : S = struct type t = | end;;
+[%%expect{|
+module Empty_valid : S
 |}];;
 
 (* Practical usage over modules *)
@@ -110,7 +116,7 @@ Line 2, characters 2-31:
 2 |   type t = string [@@immediate]
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Types marked with the immediate attribute must be non-pointer types
-       like int or bool.
+       like "int" or "bool".
 |}];;
 
 (* Not guaranteed that t is immediate, so this is an invalid declaration *)
@@ -123,7 +129,7 @@ Line 3, characters 2-26:
 3 |   type s = t [@@immediate]
       ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Types marked with the immediate attribute must be non-pointer types
-       like int or bool.
+       like "int" or "bool".
 |}];;
 
 (* Can't ascribe to an immediate type signature with a non-immediate type *)
@@ -173,5 +179,5 @@ Line 2, characters 2-26:
 2 |   type t = s [@@immediate]
       ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Types marked with the immediate attribute must be non-pointer types
-       like int or bool.
+       like "int" or "bool".
 |}];;

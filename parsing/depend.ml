@@ -49,10 +49,8 @@ let rec lookup_free p m =
 let rec lookup_map lid m =
   match lid with
     Lident s    -> String.Map.find s m
-  | Ldot (l, s) -> String.Map.find s (get_map (lookup_map l m))
+  | Ldot (l, s) -> String.Map.find s.txt (get_map (lookup_map l.txt m))
   | Lapply _    -> raise Not_found
-
-(* Collect free module identifiers in the a.s.t. *)
 
 let free_structure_names = ref String.Set.empty
 
@@ -67,8 +65,8 @@ let rec add_path bv ?(p=[]) = function
       (*String.Set.iter (fun s -> Printf.eprintf "%s " s) free;
         prerr_endline "";*)
       add_names free
-  | Ldot(l, s) -> add_path bv ~p:(s::p) l
-  | Lapply(l1, l2) -> add_path bv l1; add_path bv l2
+  | Ldot(l, s) -> add_path bv ~p:(s.txt::p) l.txt
+  | Lapply(l1, l2) -> add_path bv l1.txt; add_path bv l2.txt
 
 let open_module bv lid =
   match lookup_map lid bv with
@@ -80,7 +78,7 @@ let open_module bv lid =
 
 let add_parent bv lid =
   match lid.txt with
-    Ldot(l, _s) -> add_path bv l
+    Ldot(l, _s) -> add_path bv l.txt
   | _ -> ()
 
 let add = add_parent
@@ -100,7 +98,7 @@ let rec add_type bv ty =
     Ptyp_any -> ()
   | Ptyp_var _ -> ()
   | Ptyp_arrow(_, t1, t2) -> add_type bv t1; add_type bv t2
-  | Ptyp_tuple tl -> List.iter (add_type bv) tl
+  | Ptyp_tuple tl -> List.iter (fun (_, t) -> add_type bv t) tl
   | Ptyp_constr(c, tl) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_object (fl, _) ->
       List.iter
@@ -117,11 +115,14 @@ let rec add_type bv ty =
         fl
   | Ptyp_poly(_, t) -> add_type bv t
   | Ptyp_package pt -> add_package_type bv pt
+  | Ptyp_open (mod_ident, t) ->
+    let bv = open_module bv mod_ident.txt in
+    add_type bv t
   | Ptyp_extension e -> handle_extension e
 
-and add_package_type bv (lid, l) =
-  add bv lid;
-  List.iter (add_type bv) (List.map (fun (_, e) -> e) l)
+and add_package_type bv ptyp =
+  add bv ptyp.ppt_path;
+  List.iter (fun (_, ty) -> add_type bv ty) ptyp.ppt_cstrs
 
 let add_opt add_fn bv = function
     None -> ()
@@ -151,7 +152,7 @@ let add_type_declaration bv td =
 
 let add_extension_constructor bv ext =
   match ext.pext_kind with
-    Pext_decl(args, rty) ->
+    Pext_decl(_, args, rty) ->
       add_constructor_arguments bv args;
       Option.iter (add_type bv) rty
   | Pext_rebind lid -> add bv lid
@@ -172,7 +173,7 @@ let rec add_pattern bv pat =
   | Ppat_alias(p, _) -> add_pattern bv p
   | Ppat_interval _
   | Ppat_constant _ -> ()
-  | Ppat_tuple pl -> List.iter (add_pattern bv) pl
+  | Ppat_tuple (pl, _) -> List.iter (fun (_, p) -> add_pattern bv p) pl
   | Ppat_construct(c, opt) ->
       add bv c;
       add_opt
@@ -190,6 +191,7 @@ let rec add_pattern bv pat =
       Option.iter
         (fun name -> pattern_bv := String.Map.add name bound !pattern_bv) id.txt
   | Ppat_open ( m, p) -> let bv = open_module bv m.txt in add_pattern bv p
+  | Ppat_effect(p1, p2) -> add_pattern bv p1; add_pattern bv p2
   | Ppat_exception p -> add_pattern bv p
   | Ppat_extension e -> handle_extension e
 
@@ -204,15 +206,15 @@ let rec add_expr bv exp =
   | Pexp_constant _ -> ()
   | Pexp_let(rf, pel, e) ->
       let bv = add_bindings rf bv pel in add_expr bv e
-  | Pexp_fun (_, opte, p, e) ->
-      add_opt add_expr bv opte; add_expr (add_pattern bv p) e
-  | Pexp_function pel ->
-      add_cases bv pel
+  | Pexp_function (params, constraint_, body) ->
+      let bv = List.fold_left add_function_param bv params in
+      add_opt add_constraint bv constraint_;
+      add_function_body bv body
   | Pexp_apply(e, el) ->
       add_expr bv e; List.iter (fun (_,e) -> add_expr bv e) el
   | Pexp_match(e, pel) -> add_expr bv e; add_cases bv pel
   | Pexp_try(e, pel) -> add_expr bv e; add_cases bv pel
-  | Pexp_tuple el -> List.iter (add_expr bv) el
+  | Pexp_tuple el -> List.iter (fun (_, e) -> add_expr bv e) el
   | Pexp_construct(c, opte) -> add bv c; add_opt add_expr bv opte
   | Pexp_variant(_, opte) -> add_opt add_expr bv opte
   | Pexp_record(lblel, opte) ->
@@ -253,7 +255,8 @@ let rec add_expr bv exp =
   | Pexp_object { pcstr_self = pat; pcstr_fields = fieldl } ->
       let bv = add_pattern bv pat in List.iter (add_class_field bv) fieldl
   | Pexp_newtype (_, e) -> add_expr bv e
-  | Pexp_pack m -> add_module_expr bv m
+  | Pexp_pack (m, opty) ->
+      add_module_expr bv m; add_opt add_package_type bv opty
   | Pexp_open (o, e) ->
       let bv = open_declaration bv o in
       add_expr bv e
@@ -271,6 +274,28 @@ let rec add_expr bv exp =
   | Pexp_extension e -> handle_extension e
   | Pexp_unreachable -> ()
 
+and add_function_param bv param =
+  match param.pparam_desc with
+  | Pparam_val (_, opte, pat) ->
+      add_opt add_expr bv opte;
+      add_pattern bv pat
+  | Pparam_newtype _ -> bv
+
+and add_function_body bv body =
+  match body with
+  | Pfunction_body e ->
+      add_expr bv e
+  | Pfunction_cases (cases, _, _) ->
+      add_cases bv cases
+
+and add_constraint bv constraint_ =
+  match constraint_ with
+  | Pconstraint ty ->
+      add_type bv ty
+  | Pcoerce (ty1, ty2) ->
+      add_opt add_type bv ty1;
+      add_type bv ty2
+
 and add_cases bv cases =
   List.iter (add_case bv) cases
 
@@ -282,7 +307,18 @@ and add_case bv {pc_lhs; pc_guard; pc_rhs} =
 and add_bindings recf bv pel =
   let bv' = List.fold_left (fun bv x -> add_pattern bv x.pvb_pat) bv pel in
   let bv = if recf = Recursive then bv' else bv in
-  List.iter (fun x -> add_expr bv x.pvb_expr) pel;
+  let add_constraint = function
+    | Pvc_constraint {locally_abstract_univars=_; typ} ->
+        add_type bv typ
+    | Pvc_coercion { ground; coercion } ->
+        Option.iter (add_type bv) ground;
+        add_type bv coercion
+  in
+  let add_one_binding { pvb_pat= _ ; pvb_loc= _ ; pvb_constraint; pvb_expr } =
+    add_expr bv pvb_expr;
+    Option.iter add_constraint pvb_constraint
+  in
+  List.iter add_one_binding pel;
   bv'
 
 and add_binding_op bv bv' pbop =
@@ -436,8 +472,11 @@ and add_module_expr bv modl =
           | Some name -> String.Map.add name bound bv
       in
       add_module_expr bv modl
-  | Pmod_apply(mod1, mod2) ->
-      add_module_expr bv mod1; add_module_expr bv mod2
+  | Pmod_apply (mod1, mod2) ->
+      add_module_expr bv mod1;
+      add_module_expr bv mod2
+  | Pmod_apply_unit mod1 ->
+      add_module_expr bv mod1
   | Pmod_constraint(modl, mty) ->
       add_module_expr bv modl; add_modtype bv mty
   | Pmod_unpack(e) ->

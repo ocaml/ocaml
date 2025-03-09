@@ -1,11 +1,11 @@
-(* TEST
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
 
-flags = "-w +A-67"
 
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-compile_only = "true"
-*** check-ocamlc.byte-output
+
+
+
+
 
 *)
 
@@ -39,3 +39,11 @@ let () =
   (* M is unused, but no warning was emitted before 4.10. *)
   let module M = struct end in
   ()
+
+(* TEST
+ flags = "-w +A-67";
+ setup-ocamlc.byte-build-env;
+ compile_only = "true";
+ ocamlc.byte;
+ check-ocamlc.byte-output;
+*)

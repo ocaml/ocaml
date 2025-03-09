@@ -19,23 +19,22 @@ ROOTDIR=../..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-CAMLC := $(BEST_OCAMLC) -nostdlib -I $(ROOTDIR)/stdlib
-CAMLOPT := $(BEST_OCAMLOPT) -nostdlib -I $(ROOTDIR)/stdlib
+CAMLC := $(BEST_OCAMLC) $(STDLIBFLAGS)
+CAMLOPT := $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 
 ifneq "$(CCOMPTYPE)" "msvc"
 OC_CFLAGS += -g
 endif
 
-OC_CFLAGS += $(SHAREDLIB_CFLAGS) $(EXTRACFLAGS)
-OC_CPPFLAGS += -I$(ROOTDIR)/runtime $(EXTRACPPFLAGS)
+OC_CFLAGS += $(SHAREDLIB_CFLAGS)
 
 # Compilation options
 COMPFLAGS=-absname -w +a-4-9-41-42-44-45-48 -warn-error +A -bin-annot -g \
-          -safe-string -strict-sequence -strict-formats $(EXTRACAMLFLAGS)
+          -strict-sequence -strict-formats $(EXTRACAMLFLAGS)
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
 endif
-MKLIB=$(OCAMLRUN) $(ROOTDIR)/tools/ocamlmklib
+MKLIB=$(OCAMLRUN) $(ROOTDIR)/tools/ocamlmklib$(EXE)
 
 # Variables that must be defined by individual libraries:
 # LIBNAME
@@ -43,9 +42,7 @@ MKLIB=$(OCAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 
 # Variables that can be defined by individual libraries,
 # but have sensible default values:
-COBJS ?=
-EXTRACFLAGS ?=
-EXTRACPPFLAGS ?=
+C_SOURCES ?=
 EXTRACAMLFLAGS ?=
 LINKOPTS ?=
 LDOPTS ?=
@@ -54,71 +51,94 @@ CMIFILES ?= $(CAMLOBJS:.cmo=.cmi)
 CAMLOBJS_NAT ?= $(CAMLOBJS:.cmo=.cmx)
 CLIBNAME ?= $(LIBNAME)
 
-ifeq "$(COBJS)" ""
+ifeq "$(C_SOURCES)" ""
 STUBSLIB=
 else
-STUBSLIB=lib$(CLIBNAME).$(A)
+COBJS_BYTECODE = $(C_SOURCES:.c=.b.$(O))
+COBJS_NATIVE = $(C_SOURCES:.c=.n.$(O))
+COBJS = $(COBJS_BYTECODE) $(COBJS_NATIVE)
+
+CLIBNAME_BYTECODE=$(CLIBNAME)byt
+CLIBNAME_NATIVE=$(CLIBNAME)nat
+STUBSLIB_BYTECODE=lib$(CLIBNAME_BYTECODE).$(A)
+STUBSLIB_NATIVE=lib$(CLIBNAME_NATIVE).$(A)
 endif
 
 .PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
-all: $(STUBSLIB) $(LIBNAME).cma $(CMIFILES)
+all: $(STUBSLIB_BYTECODE) $(LIBNAME).cma $(CMIFILES)
 
-allopt: $(STUBSLIB) $(LIBNAME).cmxa $(LIBNAME).$(CMXS) $(CMIFILES)
+allopt: $(STUBSLIB_NATIVE) $(LIBNAME).cmxa $(LIBNAME).$(CMXS) $(CMIFILES)
 opt.opt: allopt
 
 $(LIBNAME).cma: $(CAMLOBJS)
 ifeq "$(COBJS)" ""
-	$(CAMLC) -o $@ -a -linkall $(CAMLOBJS) $(LINKOPTS)
+	$(V_LINKC)$(CAMLC) -o $@ -a -linkall $(CAMLOBJS) $(LINKOPTS)
 else
-	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlc '$(CAMLC)' -linkall \
-	         $(CAMLOBJS) $(LINKOPTS)
+	$(V_OCAMLMKLIB)$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME_BYTECODE) -ocamlc '$(CAMLC)' \
+                -linkall $(CAMLOBJS) $(LINKOPTS)
 endif
 
 $(LIBNAME).cmxa: $(CAMLOBJS_NAT)
 ifeq "$(COBJS)" ""
-	$(CAMLOPT) -o $@ -a -linkall $(CAMLOBJS_NAT) $(LINKOPTS)
+	$(V_OCAMLOPT)$(CAMLOPT) -o $@ -a -linkall $(CAMLOBJS_NAT) $(LINKOPTS)
 else
-	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlopt '$(CAMLOPT)' -linkall \
-	         $(CAMLOBJS_NAT) $(LINKOPTS)
+	$(V_OCAMLMKLIB)$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME_NATIVE) -ocamlopt '$(CAMLOPT)' \
+                -linkall $(CAMLOBJS_NAT) $(LINKOPTS)
 endif
 
-$(LIBNAME).cmxs: $(LIBNAME).cmxa $(STUBSLIB)
-	$(CAMLOPT_CMD) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa
+$(LIBNAME).cmxs: $(LIBNAME).cmxa $(STUBSLIB_NATIVE)
+	$(V_OCAMLOPT)$(CAMLOPT) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa
 
-lib$(CLIBNAME).$(A): $(COBJS)
-	$(MKLIB_CMD) -oc $(CLIBNAME) $(COBJS) $(LDOPTS)
+lib$(CLIBNAME_BYTECODE).$(A): $(COBJS)
+	$(V_OCAMLMKLIB)$(MKLIB) -oc $(CLIBNAME_BYTECODE) $(COBJS_BYTECODE) $(LDOPTS)
+
+lib$(CLIBNAME_NATIVE).$(A): $(COBJS)
+	$(V_OCAMLMKLIB)$(MKLIB) -oc $(CLIBNAME_NATIVE) $(COBJS_NATIVE) $(LDOPTS)
+
+INSTALL_LIBDIR_LIBNAME = $(INSTALL_LIBDIR)/$(LIBNAME)
 
 install::
-	if test -f dll$(CLIBNAME)$(EXT_DLL); then \
+	if test -f dll$(CLIBNAME_BYTECODE)$(EXT_DLL); then \
 	  $(INSTALL_PROG) \
-	    dll$(CLIBNAME)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
+	    dll$(CLIBNAME_BYTECODE)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
 	fi
-ifneq "$(STUBSLIB)" ""
-	$(INSTALL_DATA) $(STUBSLIB) "$(INSTALL_LIBDIR)/"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) lib$(CLIBNAME).$(A)
+ifneq "$(STUBSLIB_BYTECODE)" ""
+	$(INSTALL_DATA) $(STUBSLIB_BYTECODE) "$(INSTALL_LIBDIR)/"
 endif
-
+# If installing over a previous OCaml version, ensure the library is removed
+# from the previous installation.
+	rm -f $(addprefix "$(INSTALL_LIBDIR)"/, \
+          $(LIBNAME).cma $(CMIFILES) \
+          $(CMIFILES:.cmi=.mli) $(CMIFILES:.cmi=.cmti) \
+          $(CAMLOBJS_NAT) $(LIBNAME).cmxa $(LIBNAME).cmxs $(LIBNAME).$(A))
+	$(MKDIR) "$(INSTALL_LIBDIR_LIBNAME)"
 	$(INSTALL_DATA) \
-	  $(LIBNAME).cma $(CMIFILES) \
-	  "$(INSTALL_LIBDIR)/"
+	  $(LIBNAME).cma $(CMIFILES) META \
+	  "$(INSTALL_LIBDIR_LIBNAME)/"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  $(CMIFILES:.cmi=.mli) \
           $(CMIFILES:.cmi=.cmti) \
-	  "$(INSTALL_LIBDIR)/"
+	  "$(INSTALL_LIBDIR_LIBNAME)/"
 endif
 	if test -n "$(HEADERS)"; then \
-	  $(INSTALL_DATA) $(HEADERS) "$(INSTALL_LIBDIR)/caml/"; \
+	  $(INSTALL_DATA) $(HEADERS) "$(INSTALL_INCDIR)/"; \
 	fi
 
 installopt:
 	$(INSTALL_DATA) \
 	   $(CAMLOBJS_NAT) $(LIBNAME).cmxa $(LIBNAME).$(A) \
-	   "$(INSTALL_LIBDIR)/"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) $(LIBNAME).a
+	   "$(INSTALL_LIBDIR_LIBNAME)/"
 	if test -f $(LIBNAME).cmxs; then \
-	  $(INSTALL_PROG) $(LIBNAME).cmxs "$(INSTALL_LIBDIR)"; \
+	  $(INSTALL_PROG) $(LIBNAME).cmxs "$(INSTALL_LIBDIR_LIBNAME)"; \
 	fi
+	if test -f dll$(CLIBNAME_NATIVE)$(EXT_DLL); then \
+	  $(INSTALL_PROG) \
+	    dll$(CLIBNAME_NATIVE)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
+	fi
+ifneq "$(STUBSLIB_NATIVE)" ""
+	$(INSTALL_DATA) $(STUBSLIB_NATIVE) "$(INSTALL_LIBDIR)/"
+endif
 
 partialclean:
 	rm -f *.cm*
@@ -127,20 +147,34 @@ clean:: partialclean
 	rm -f *.dll *.so *.a *.lib *.o *.obj
 	rm -rf $(DEPDIR)
 
+.PHONY: distclean
+distclean:: clean
+	rm -f META
+
 %.cmi: %.mli
-	$(CAMLC) -c $(COMPFLAGS) $<
+	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) $<
 
 %.cmo: %.ml
-	$(CAMLC) -c $(COMPFLAGS) $<
+	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) $<
 
 %.cmx: %.ml
-	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
+	$(V_OCAMLOPT)$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
+
+%.b.$(O): %.c $(REQUIRED_HEADERS)
+	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ -c $<
+
+%.n.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
+
+%.n.$(O): %.c $(REQUIRED_HEADERS)
+	$(V_CC)$(CC) $(OC_CFLAGS) $(CFLAGS) \
+	  $(OC_CPPFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ -c $<
 
 ifeq "$(COMPUTE_DEPS)" "true"
-ifneq "$(COBJS)" ""
-include $(addprefix $(DEPDIR)/, $(COBJS:.$(O)=.$(D)))
+ifneq "$(COBJS_BYTECODE)" ""
+include $(addprefix $(DEPDIR)/, $(COBJS_BYTECODE:.b.$(O)=.$(D)))
 endif
 endif
 
 $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
-	$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@
+	$(V_CCDEPS)$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@

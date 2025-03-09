@@ -154,10 +154,12 @@ let module_of_longident id =
 let convert_module mdle =
   match mdle with
   | Some m ->
-      (* Strip .ml extension if any, and capitalize *)
-      String.capitalize_ascii(if Filename.check_suffix m ".ml"
-                              then Filename.chop_suffix m ".ml"
-                              else m)
+     (* Strip .ml extension if any, beware that mdle might be a module path *)
+     let stripped =
+       if Filename.check_suffix m ".ml" then Filename.chop_suffix m ".ml"
+       else m
+     in
+     Unit_info.modulize stripped
   | None ->
       try (get_current_event ()).ev_ev.ev_module
       with Not_found -> error "Not in a module."
@@ -205,7 +207,7 @@ let line_loop ppf line_buffer =
               !previous_line
           in
             previous_line := "";
-            if interprete_line ppf line then
+            if interprete_line ppf line && !interactif then
               previous_line := line
       done
     with
@@ -262,7 +264,8 @@ let instr_dir ppf lexbuf =
   let new_directory = argument_list_eol argument lexbuf in
     if new_directory = [] then begin
       if yes_or_no "Reinitialize directory list" then begin
-        Load_path.init !default_load_path;
+        Load_path.init ~auto_include:Compmisc.auto_include
+          ~visible:!default_load_path ~hidden:[];
         Envaux.reset_cache ();
         Hashtbl.clear Debugger_config.load_path_for;
         flush_buffer_list ()
@@ -278,7 +281,8 @@ let instr_dir ppf lexbuf =
           List.iter (function x -> add_path (expand_path x)) new_directory'
     end;
     let print_dirs ppf l = List.iter (function x -> fprintf ppf "@ %s" x) l in
-    fprintf ppf "@[<2>Directories: %a@]@." print_dirs (Load_path.get_paths ());
+    fprintf ppf "@[<2>Directories: %a@]@." print_dirs
+      (Load_path.get_path_list ());
     Hashtbl.iter
       (fun mdl dirs ->
          fprintf ppf "@[<2>Source directories for %s: %a@]@." mdl print_dirs
@@ -623,7 +627,7 @@ let instr_break ppf lexbuf =
         in
         begin try
           let (v, ty) = Eval.expression !selected_event env expr in
-          match (Ctype.repr ty).desc with
+          match get_desc ty with
           | Tarrow _ ->
               add_breakpoint_after_pc (Remote_value.closure_code v)
           | _ ->
@@ -1092,14 +1096,14 @@ Argument N means do this N times (or till program stops for another reason)." };
      (* Breakpoints *)
      { instr_name = "break"; instr_prio = false;
        instr_action = instr_break; instr_repeat = false; instr_help =
-"Set breakpoint.\
-\nSyntax: break\
-\n        break function-name\
-\n        break @ [module] linenum\
-\n        break @ [module] linenum columnnum\
-\n        break @ [module] # characternum\
-\n        break frag:pc\
-\n        break pc" };
+{|Set breakpoint.
+Syntax: break
+        break function-name
+        break @ [module] linenum
+        break @ [module] linenum columnnum
+        break @ [module] # characternum
+        break frag:pc
+        break pc|} };
      { instr_name = "delete"; instr_prio = false;
        instr_action = instr_delete; instr_repeat = false; instr_help =
 "delete some breakpoints.\n\

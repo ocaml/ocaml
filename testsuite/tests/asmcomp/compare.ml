@@ -1,5 +1,5 @@
 (* TEST
-   * native
+ native;
 *)
 let[@inline never] float () = print_string "hello\n"; 42.
 let[@inline never] f () = compare (float ()) 0.5;;

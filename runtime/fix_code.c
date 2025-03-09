@@ -19,7 +19,7 @@
 
 #include "caml/config.h"
 
-#ifdef HAS_UNISTD
+#ifndef _WIN32
 #include <unistd.h>
 #else
 #include <io.h>
@@ -69,9 +69,8 @@ void caml_load_code(int fd, asize_t len)
 
 void caml_fixup_endianness(code_t code, asize_t len)
 {
-  code_t p;
   len /= sizeof(opcode_t);
-  for (p = code; p < code + len; p++) {
+  for (code_t p = code; p < code + len; p++) {
     Reverse_32(p, p);
   }
 }
@@ -82,17 +81,22 @@ void caml_fixup_endianness(code_t code, asize_t len)
 
 #ifdef THREADED_CODE
 
-char ** caml_instr_table;
-char * caml_instr_base;
+static const char * const * caml_instr_table;
+static const char * caml_instr_base;
+
+void caml_init_thread_code(const void * const * instr_table,
+                           const void * instr_base)
+{
+  caml_instr_table = (const char * const *) instr_table;
+  caml_instr_base = (const char *) instr_base;
+}
 
 static int* opcode_nargs = NULL;
 int* caml_init_opcode_nargs(void)
 {
   if( opcode_nargs == NULL ){
     int* l = (int*)caml_stat_alloc(sizeof(int) * FIRST_UNIMPLEMENTED_OP);
-    int i;
-
-    for (i = 0; i < FIRST_UNIMPLEMENTED_OP; i++) {
+    for (int i = 0; i < FIRST_UNIMPLEMENTED_OP; i++) {
       l [i] = 0;
     }
     /* Instructions with one operand */
@@ -106,7 +110,8 @@ int* caml_init_opcode_nargs(void)
       l[BRANCH] = l[BRANCHIF] = l[BRANCHIFNOT] = l[PUSHTRAP] =
       l[C_CALL1] = l[C_CALL2] = l[C_CALL3] = l[C_CALL4] = l[C_CALL5] =
       l[CONSTINT] = l[PUSHCONSTINT] = l[OFFSETINT] =
-      l[OFFSETREF] = l[OFFSETCLOSURE] = l[PUSHOFFSETCLOSURE] = 1;
+      l[OFFSETREF] = l[OFFSETCLOSURE] = l[PUSHOFFSETCLOSURE] =
+      l[RESUMETERM] = l[REPERFORMTERM] = 1;
 
     /* Instructions with two operands */
     l[APPTERM] = l[CLOSURE] = l[PUSHGETGLOBALFIELD] =
@@ -122,7 +127,7 @@ int* caml_init_opcode_nargs(void)
 void caml_thread_code (code_t code, asize_t len)
 {
   code_t p;
-  int* l = caml_init_opcode_nargs();
+  const int* l = caml_init_opcode_nargs();
   len /= sizeof(opcode_t);
   for (p = code; p < code + len; /*nothing*/) {
     opcode_t instr = *p;
@@ -152,7 +157,7 @@ void caml_thread_code (code_t code, asize_t len)
 
 #else
 
-int* caml_init_opcode_nargs()
+int* caml_init_opcode_nargs(void)
 {
   return NULL;
 }
