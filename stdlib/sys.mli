@@ -424,12 +424,12 @@ val enable_float_array_alloc_warning: int option -> unit
     warning  is enabled with a backtrace of size [s].
     @raise Invalid_argument if called with [Some s] and [s < 0]
 
-    @since 4.14.0 *)
+    @since 5.2 *)
 
 val float_array_alloc_warning_enabled: unit -> int option
 (** Return whether the float array allocation warning is currently enabled.
 
-    @since 4.14.0 *)
+    @since 5.2 *)
 
 (** {1 Optimization} *)
 
