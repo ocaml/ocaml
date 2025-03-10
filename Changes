@@ -21,12 +21,6 @@ Working version
 
 ### Runtime system:
 
-- #10236 Add a runtime warning when allocating a float array, which prints
-  a backtrace of the current callstack.
-  It can be controled through `Sys.enable_float_array_alloc`, or
-  `OCALMRUNPARAM=F=n`, where `n` gives the backtrace size to print.
-  (Nicolas Chataing, review by Nicolás Ojeda Bär and Alain Frisch)
-
 - #13819: Fix field initialisation bug in runtime events subsystem.
   (Nick Barnes, review by Gabriel Scherer).
 
@@ -115,6 +109,13 @@ Working version
 - #13827: Avoid re-marking ephemerons with trivial data.
   (Stephen Dolan, review by Nick Barnes and Josh Berdine, benchmarking by
    Nicolás Ojeda Bär)
+
+- #10236 Add a runtime warning when allocating a float array, which prints
+  a backtrace of the current callstack.
+  It can be controled through `Sys.enable_float_array_alloc`, or
+  `OCALMRUNPARAM=F=n`, where `n` gives the backtrace size to print.
+  (Nicolas Chataing, review by Nicolás Ojeda Bär, Alain Frisch
+   and Gabriel Scherer)
 
 ### Code generation and optimizations:
 
