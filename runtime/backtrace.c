@@ -402,5 +402,4 @@ void caml_print_current_callstack(int max_frames)
   caml_print_backtrace_buffer(slot, callstack_len);
 
   caml_stat_free(slot);
-  caml_stat_free(&callstack);
 }
