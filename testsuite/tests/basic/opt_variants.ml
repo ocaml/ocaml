@@ -9,6 +9,10 @@ let () =
   assert(int_of_string_opt "42" = Some 42);
   assert(int_of_string_opt (String.make 100 '9') = None);
 
+  assert(Int.of_string_opt "foo" = None);
+  assert(Int.of_string_opt "42" = Some 42);
+  assert(Int.of_string_opt (String.make 100 '9') = None);
+
   assert(Nativeint.of_string_opt "foo" = None);
   assert(Nativeint.of_string_opt "42" = Some 42n);
   assert(Nativeint.of_string_opt (String.make 100 '9') = None);

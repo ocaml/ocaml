@@ -128,11 +128,10 @@ external of_float : float -> int = "%intoffloat"
     unspecified if the argument is [nan] or falls outside the range of
     representable integers. *)
 
-(*
-val of_string : string -> int option
-(** [of_string s] is [Some s] if [s] can be parsed to an integer
+external of_string : string -> int = "caml_int_of_string"
+(** Convert the given string to an integer
     in the range representable by the type [int] (note that this
-    depends on {!Sys.int_size}) and [None] otherwise.
+    depends on {!Sys.int_size}).
 
     The string may start with an optional ['-'] or ['+'] sign, and may
     be followed by an optional prefix that specifies the base in which
@@ -147,8 +146,14 @@ val of_string : string -> int option
     modulo 2{^[Sys.int_size]} like arithmetic operations do.
 
     The ['_'] (underscore) character can appear anywhere between two
-    digits of the number. *)
-*)
+    digits of the number.
+
+    @since 5.4 *)
+
+val of_string_opt : string -> int option
+(** Same as [of_string], but return [None] instead of raising.
+
+    @since 5.4 *)
 
 val to_string : int -> string
 (** [to_string x] is the written representation of [x] in decimal. *)

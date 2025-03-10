@@ -51,8 +51,16 @@ let test_float_conv () =
 
 let test_string_conv () =
   assert (Int64.to_string 50L = "50");
-(*  assert (Int64.of_string "50" = Some 50);
-  assert (Int64.of_string "" = None); *)
+
+(* Convert strings to ints *)
+  assert (Int64.of_string "50" = 50L);
+  assert (Int64.of_string "50_000" = 50000L);
+  assert (Int64.of_string "0x00" = 0L);
+  assert (Int64.of_string "0x11" = 17L);
+  assert (Int64.of_string "0u11" = 11L);
+  assert (Int64.of_string "0b1110111" = 119L);
+  assert (Int64.of_string "0b1_110_111" = 119L);
+  assert (Int64.of_string "0O10" = 8L);
   ()
 
 let test_min_max () =
