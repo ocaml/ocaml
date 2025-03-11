@@ -385,7 +385,7 @@ Working version
    and Florian Angeletti)
 
 - #13848: Add all paths components to the cmt files indexes
-  (Ulysse Gérard, review by ...)
+  (Ulysse Gérard, review by Florian Angeletti)
 
 ### Build system:
 
