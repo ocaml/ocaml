@@ -1023,9 +1023,8 @@ module Aliases = struct
   let rec mark_loops_rec visited ty =
     let px = proxy ty in
     if List.memq px visited && aliasable ty then add_proxy px else
-      let tty = Transient_expr.repr ty in
       let visited = px :: visited in
-      match tty.desc with
+      match printer_get_desc ty with
       | Tvariant _ | Tobject _ ->
           if List.memq px !visited_objects then add_proxy px else begin
             if should_visit_object ty then
@@ -1125,7 +1124,7 @@ let rec tree_of_typexp mode ty =
 
   let pr_typ () =
     let tty = Transient_expr.repr ty in
-    match tty.desc with
+    match printer_get_desc ty with
     | Tvar _ ->
         let non_gen = is_non_gen mode ty in
         let name_gen = Variable_names.new_var_name ~non_gen ty in
@@ -2045,8 +2044,8 @@ let trees_of_type_expansion mode Errortrace.{ty = t; expanded = t'} =
   if same_path t t'
   then begin Aliases.add_delayed (proxy t); Same (tree_of_typexp mode t) end
   else begin
-    Aliases.mark_loops t';
     let t' = if proxy t == proxy t' then unalias t' else t' in
+    Aliases.mark_loops t';
     (* beware order matter due to side effect,
        e.g. when printing object types *)
     let first = tree_of_typexp mode t in
