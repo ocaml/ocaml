@@ -533,7 +533,9 @@ val fast_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
  *)
 
 val sort_uniq : cmp:('a -> 'a -> int) -> 'a list -> 'a list
-(** Same as {!sort}, but also remove duplicates.
+(** Same as {!sort}, but also remove nonfirst duplicates (that is,
+    in case of multiple elements comparing equal, keep only the
+    first).
     @since 4.02 (4.03 in ListLabels)
  *)
 
