@@ -1081,11 +1081,14 @@ type u = < a : 'a > as 'a
 type ('a1, 'b1) ty1 = 'a1 -> unit constraint 'a1 = [> `V1 of ('a1, 'b1) ty2 as 'b1]
 and  ('a2, 'b2) ty2 = 'b2 -> unit constraint 'b2 = [> `V2 of ('a2, 'b2) ty1 as 'a2];;
 [%%expect {|
-Line 1, characters 6-9:
-1 | type ('a1, 'b1) ty1 = 'a1 -> unit constraint 'a1 = [> `V1 of ('a1, 'b1) ty2 as 'b1]
+Line 2, characters 6-9:
+2 | and  ('a2, 'b2) ty2 = 'b2 -> unit constraint 'b2 = [> `V2 of ('a2, 'b2) ty1 as 'a2];;
           ^^^
 Error: Constraints are not satisfied in this type.
-       Type "'b1" should be an instance of "('a, [> `V2 of 'a ]) ty2"
+       Type "([> `V1 of 'a ], 'a) ty1" should be an instance of
+         "([> `V1 of ([> `V2 of ([> `V1 of 'c ], 'c) ty1 ] as 'b) -> unit ],
+          'b -> unit)
+         ty1"
 |}];;
 
 (* PR#8359: expanding may change original in Ctype.unify2 *)
@@ -1613,7 +1616,8 @@ val just : 'a option -> 'a = <fun>
 Line 3, characters 44-64:
 3 | let f x = let l = [Some x; (None : _ u)] in (just(List.hd l))#id;;
                                                 ^^^^^^^^^^^^^^^^^^^^
-Warning 18 [not-principal]: this use of a polymorphic method is not principal.
+Warning 18 [not-principal]: this use of a polymorphic method is not
+  principal.
 
 val f : c -> 'a -> 'a = <fun>
 |}];;
@@ -2201,9 +2205,13 @@ let f (x : u) = (x : v)
 Line 1, characters 17-18:
 1 | let f (x : u) = (x : v)
                      ^
-Error: The value "x" has type "u" but an expression was expected of type "v"
-       The method "m" has type "'a s list * < m : 'b > as 'b",
-       but the expected method type was "'a. 'a s list * < m : 'a. 'c > as 'c"
+Error: The value "x" has type
+         "u" = "< m : 'a. 'a s list * (< m : 'a s list * 'b > as 'b) >"
+       but an expression was expected of type "v" = "< m : 'a. 'a s list * v >"
+       Type "< m : 'a s list * 'b > as 'b" is not compatible with type
+         "v" = "< m : 'a. 'a s list * v >"
+       The method "m" has type "'a s list * < m : 'c > as 'c",
+       but the expected method type was "'a. 'a s list * v"
        The universal variable "'a" would escape its scope
 |}]
 
