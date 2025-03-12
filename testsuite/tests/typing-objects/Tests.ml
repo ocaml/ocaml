@@ -667,8 +667,6 @@ class c : unit -> object method m : c end
 (new c ())#m;;
 [%%expect{|
 - : < m : 'a > as 'a = <obj>
-|}, Principal{|
-- : c = <obj>
 |}];;
 module M = struct class c () = object method m = new c () end end;;
 [%%expect{|
@@ -677,8 +675,6 @@ module M : sig class c : unit -> object method m : c end end
 (new M.c ())#m;;
 [%%expect{|
 - : < m : 'a > as 'a = <obj>
-|}, Principal{|
-- : M.c = <obj>
 |}];;
 
 type uu = A of int | B of (<leq: 'a> as 'a);;
