@@ -858,8 +858,12 @@ let deep_occur_list t0 tyl =
   | Occur -> true
 
 let get_folded_desc ~keep_Tvar ty =
-  match get_expand ty with
-    Some (path, args) when
-    not (keep_Tvar && is_Tvar ty || List.exists (deep_occur ty) args) ->
-      Tconstr (path, args, ref Mnil)
-  | _ -> get_desc ty
+  let desc = get_desc ty in
+  match desc with
+  | Tsubst _ -> desc
+  | Tvar _ when keep_Tvar -> desc
+  | _ ->
+      match get_expand ty with
+      | Some (path, args) when not (List.exists (deep_occur ty) args) ->
+          Tconstr (path, args, ref Mnil)
+      | _ -> desc

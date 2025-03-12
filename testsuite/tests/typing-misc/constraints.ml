@@ -262,14 +262,12 @@ end
 module type S = sig type !'a s type !'a t = 'b constraint 'a = 'b s end
 |}]
 
-(* This still causes a stack overflow *)
-(*
 module rec M : S =
 struct
   type !'a s = 'a M.t
   type !'a t = 'b constraint 'a = 'b s
 end
-*)
+[%%expect]
 
 type 'a t = T
   constraint 'a = int
