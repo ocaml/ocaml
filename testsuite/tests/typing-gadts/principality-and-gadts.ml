@@ -390,7 +390,7 @@ let foo x =
 Line 3, characters 4-33:
 3 |   | { x = (x : N.t); eq = Refl3 } -> x
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type "M.t foo"
+Error: This pattern matches values of type "N.t foo"
        but a pattern was expected which matches values of type "'a"
        This instance of "M.t" is ambiguous:
        it would escape the scope of its equation
@@ -404,7 +404,7 @@ Warning 18 [not-principal]: typing this pattern requires considering
 Line 3, characters 4-33:
 3 |   | { x = (x : N.t); eq = Refl3 } -> x
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type "M.t foo"
+Error: This pattern matches values of type "N.t foo"
        but a pattern was expected which matches values of type "'a"
        This instance of "M.t" is ambiguous:
        it would escape the scope of its equation

@@ -107,7 +107,7 @@ let test = function
 type 'a cstr = X of 'a constraint 'a = 'b M.p
 type x = int M.p cstr
 type ab = A of x | B of x
-val test : ab -> int M.p cstr list = <fun>
+val test : ab -> x list = <fun>
 |}]
 
 (** Need to reify even when we do not unify *)

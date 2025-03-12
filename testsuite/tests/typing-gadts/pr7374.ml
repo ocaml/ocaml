@@ -36,16 +36,12 @@ Line 11, characters 16-20:
                      ^^^^
 Error: The constructor "Refl" has type "(a, a) eq"
        but an expression was expected of type "(a, t) eq"
-<<<<<<< HEAD
        Type "a" is not compatible with type
-         "t" = "([ `Rec of 'a X.t ] as 'a) X/2.t"
+         "t" = "([ `Rec of 'a X/2.t ] as 'a) X/2.t"
        Line 8, characters 2-14:
          Definition of module "X"
        Line 7, characters 12-13:
          Definition of module "X/2"
-=======
-       Type "a" is not compatible with type "t" = "([ `Rec of 'a X.t ] as 'a) X.t"
->>>>>>> 2faec0da2d (Expand type in place, keeping original abbreviation)
 |}]
 
 (* Trigger the unsoundness if Fix were definable *)

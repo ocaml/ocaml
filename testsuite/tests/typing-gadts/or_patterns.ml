@@ -82,8 +82,8 @@ Line 3, characters 22-29:
 3 |   | IntLit, (IntLit | BoolLit) -> ()
                           ^^^^^^^
 Error: This pattern matches values of type "bool t"
-       but a pattern was expected which matches values of type "int t"
-       Type "bool" is not compatible with type "int"
+       but a pattern was expected which matches values of type "a t"
+       Type "bool" is not compatible with type "a" = "int"
 |}]
 
 let trivial_merged_annotated_under_tuple2 (type a) (tt : a t * a t) =
@@ -166,14 +166,6 @@ Line 4, characters 13-17:
                  ^^^^
 Error: This pattern matches values of type "bool"
        but a pattern was expected which matches values of type "a" = "bool"
-       This instance of "bool" is ambiguous:
-       it would escape the scope of its equation
-|}, Principal{|
-Line 4, characters 13-17:
-4 |   | BoolLit, true -> ()
-                 ^^^^
-Error: This pattern matches values of type "bool"
-       but a pattern was expected which matches values of type "bool"
        This instance of "bool" is ambiguous:
        it would escape the scope of its equation
 |}]

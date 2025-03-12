@@ -59,37 +59,33 @@ module Annot :
     type 'a t = 'a
       constraint 'a = < per_entry : 'a7; per_field : 'a0; per_group : 'a1 >
     type 'a per_field = 'b
-      constraint 'a = < per_entry : 'c; per_field : 'b; per_group : 'd > t
+      constraint 'a = < per_entry : 'c; per_field : 'b; per_group : 'd >
     type 'a per_group = 'b
-      constraint 'a = < per_entry : 'c; per_field : 'd; per_group : 'b > t
+      constraint 'a = < per_entry : 'c; per_field : 'd; per_group : 'b >
     type 'a per_entry = 'b
-      constraint 'a = < per_entry : 'b; per_field : 'c; per_group : 'd > t
+      constraint 'a = < per_entry : 'b; per_field : 'c; per_group : 'd >
   end
 module rec Entry :
   sig
     type ('a, 's) t' =
         Field :
-          < per_entry : 'b; per_field : 'c; per_group : 'd > Annot.t Field.t ->
-          (< per_entry : 'b; per_field : 'c; per_group : 'd > Annot.t Annot.t,
-           < per_entry : 'b; per_field : 'c; per_group : 'd > Annot.t
-           Annot.per_field)
+          < per_entry : 'b; per_field : 'c; per_group : 'd > Field.t ->
+          (< per_entry : 'b; per_field : 'c; per_group : 'd > Annot.t,
+           < per_entry : 'b; per_field : 'c; per_group : 'd > Annot.per_field)
           t'
       | Group :
-          < per_entry : 'e; per_field : 'f; per_group : 'g > Annot.t Group.t ->
-          (< per_entry : 'e; per_field : 'f; per_group : 'g > Annot.t Annot.t,
-           < per_entry : 'e; per_field : 'f; per_group : 'g > Annot.t
-           Annot.per_group)
+          < per_entry : 'e; per_field : 'f; per_group : 'g > Group.t ->
+          (< per_entry : 'e; per_field : 'f; per_group : 'g > Annot.t,
+           < per_entry : 'e; per_field : 'f; per_group : 'g > Annot.per_group)
           t'
     type 'a t =
         E : {
-          t :
-            (< per_entry : 'b; per_field : 'c; per_group : 'd > Annot.t, 's)
-            t';
+          t : (< per_entry : 'b; per_field : 'c; per_group : 'd >, 's) t';
           per_entry :
-            < per_entry : 'b; per_field : 'c; per_group : 'd > Annot.t
+            < per_entry : 'b; per_field : 'c; per_group : 'd >
             Annot.per_entry;
           specific : 's;
-        } -> < per_entry : 'b; per_field : 'c; per_group : 'd > Annot.t t
+        } -> < per_entry : 'b; per_field : 'c; per_group : 'd > t
   end
 and Field : sig type _ t = F : { i : int; } -> 'a t end
 and Group : sig type 'a t = { i : int; optional : bool; } end

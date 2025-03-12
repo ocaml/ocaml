@@ -223,7 +223,7 @@ Line 2, characters 18-44:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
   Here is an example of a case that is not matched: "`A (Some _)"
 
-val f : [< `A of 'a option ] -> unit = <fun>
+val f : 'a option a -> unit = <fun>
 |}]
 
 let f (x : [> `A] a) = match x with `A `B -> ();;
@@ -234,5 +234,5 @@ Line 1, characters 23-47:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
   Here is an example of a case that is not matched: "`A `A"
 
-val f : [< `A of [< `A | `B > `A ] ] -> unit = <fun>
+val f : [< `A | `B > `A ] a -> unit = <fun>
 |}]
