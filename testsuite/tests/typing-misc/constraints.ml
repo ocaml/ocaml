@@ -35,23 +35,11 @@ Error: This recursive type is not regular.
 |}];;
 type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
-Line 1, characters 0-47:
-1 | type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This recursive type is not regular.
-       The type constructor "t" is defined as
-         type "'a t"
-       but it is used as
-         "'a t t".
-       All uses need to match the definition for the recursive type to be regular.
+type 'a t = [ `A of 'a t ] constraint 'a = [ `A of 'a ]
 |}];;
 type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
-Line 1, characters 5-7:
-1 | type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
-         ^^
-Error: Constraints are not satisfied in this type.
-       Type "'a" should be an instance of "'b t"
+type 'a t = [ `A of 'a t ] constraint 'a = [ `A of 'a ]
 |}];;
 type 'a t = [`A of 'a] as 'a;;
 [%%expect{|
@@ -90,11 +78,13 @@ module type PR6505 = sig
 end
 ;; (* fails *)
 [%%expect{|
-Line 3, characters 6-8:
-3 |   and 'o abs constraint 'o = 'o is_an_object
-          ^^
-Error: Constraints are not satisfied in this type.
-       Type "'o" should be an instance of "< .. > is_an_object"
+module type PR6505 =
+  sig
+    type 'o is_an_object = 'o constraint 'o = < .. >
+    and 'a abs constraint 'a = < .. >
+    val abs : (< .. > as 'a) is_an_object -> 'a abs
+    val unabs : (< .. > as 'a) abs -> 'a
+  end
 |}];;
 
 module PR6505a_old = struct
@@ -267,7 +257,33 @@ struct
   type !'a s = 'a M.t
   type !'a t = 'b constraint 'a = 'b s
 end
-[%%expect]
+[%%expect{|
+Lines 2-5, characters 0-3:
+2 | struct
+3 |   type !'a s = 'a M.t
+4 |   type !'a t = 'b constraint 'a = 'b s
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type 'a s = 'a M.t constraint 'a = 'b M.s
+           type 'a t = 'b M/2.s M/2.s M.s
+             constraint 'a = 'b M/2.s M/2.s M.s s
+         end
+       is not included in
+         S
+       Type declarations do not match:
+         type 'a t = 'b M/2.s constraint 'a = 'b M/2.s M/2.s
+       is not included in
+         type 'a t = 'b M/2.s M/2.s constraint 'a = 'b M/2.s M/2.s M/2.s
+       The type "'a M/2.s s" = "'a M/2.s M/2.s" is not equal to the type
+         "'b M/2.s M/2.s s" = "'b M/2.s M/2.s M/2.s"
+       Type "'c" is not equal to type "'d M/2.s"
+       File "_none_", line 1:
+         Definition of module "M"
+       Lines 1-5, characters 0-3:
+         Definition of module "M/2"
+|}]
 
 type 'a t = T
   constraint 'a = int
