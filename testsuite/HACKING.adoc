@@ -11,7 +11,8 @@ a specific sub-directory.
 == Writing new tests
 
 There are many kind of tests already, so the easiest way to start is
-to extend or copy an existing test.
+to extend or copy an existing test. To learn how to write new tests
+using ocamltest, read [OCAMLTEST.org](../ocamltest/OCAMLTEST.org).
 
 Note: in april 2023, the test scripting language has changed: the
 org-mode-based syntax was replaced by at C-like syntax. ocamltest
