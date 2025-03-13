@@ -484,6 +484,9 @@ Working version
   type annotations.
   (Chris Casinghino, review by Florian Angeletti and Gabriel Scherer)
 
+- #13867: Fix bug with some recursive bindings of lazy values.
+  (Guillaume Bury and Vincent Laviron)
+
 - #13875, #13878: Add dedicated constructor for mutable variable access in
   Cmm to prevent bugs linked to incorrect handling of coeffects.
   (Vincent Laviron, review by Gabriel Scherer)
