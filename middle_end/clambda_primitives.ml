@@ -30,10 +30,13 @@ type memory_access_size =
   | Thirty_two
   | Sixty_four
 
+type lazy_block_tag = Lambda.lazy_block_tag
+
 type primitive =
   | Pread_symbol of string
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag * block_shape
+  | Pmakelazyblock of lazy_block_tag
   | Pfield of int * immediate_or_pointer * mutable_flag
   | Pfield_computed
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment

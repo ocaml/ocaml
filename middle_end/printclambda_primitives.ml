@@ -61,6 +61,10 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
       fprintf ppf "makeblock %i%a" tag Printlambda.block_shape shape
   | Pmakeblock(tag, Mutable, shape) ->
       fprintf ppf "makemutable %i%a" tag Printlambda.block_shape shape
+  | Pmakelazyblock Lazy_tag ->
+      fprintf ppf "makelazyblock"
+  | Pmakelazyblock Forward_tag ->
+      fprintf ppf "makeforwardblock"
   | Pfield(n, ptr, mut) ->
       let instr =
         match ptr, mut with

@@ -156,6 +156,10 @@ let primitive ppf = function
       fprintf ppf "makeblock %i%a" tag block_shape shape
   | Pmakeblock(tag, Mutable, shape) ->
       fprintf ppf "makemutable %i%a" tag block_shape shape
+  | Pmakelazyblock Lazy_tag ->
+      fprintf ppf "makelazyblock"
+  | Pmakelazyblock Forward_tag ->
+      fprintf ppf "makeforwardblock"
   | Pfield(n, ptr, mut) ->
       let instr =
         match ptr, mut with
@@ -362,6 +366,7 @@ let name_of_primitive = function
   | Pgetglobal _ -> "Pgetglobal"
   | Psetglobal _ -> "Psetglobal"
   | Pmakeblock _ -> "Pmakeblock"
+  | Pmakelazyblock _ -> "Pmakelazyblock"
   | Pfield _ -> "Pfield"
   | Pfield_computed -> "Pfield_computed"
   | Psetfield _ -> "Psetfield"

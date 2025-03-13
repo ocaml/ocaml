@@ -21,7 +21,7 @@ type coeffects = No_coeffects | Has_coeffects
 
 let for_primitive (prim : Clambda_primitives.primitive) =
   match prim with
-  | Pmakeblock _
+  | Pmakeblock _ | Pmakelazyblock _
   | Pmakearray (_, Mutable) -> Only_generative_effects, No_coeffects
   | Pmakearray (_, Immutable) -> No_effects, No_coeffects
   | Pduparray (_, Immutable) ->

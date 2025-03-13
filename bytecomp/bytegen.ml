@@ -145,7 +145,7 @@ let preserve_tailcall_for_prim = function
   | Prunstack | Pperform | Presume | Preperform | Ppoll ->
       true
   | Pbytes_to_string | Pbytes_of_string | Pignore | Pgetglobal _ | Psetglobal _
-  | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
+  | Pmakeblock _ | Pmakelazyblock _ | Pfield _ | Pfield_computed | Psetfield _
   | Psetfield_computed _ | Pfloatfield _ | Psetfloatfield _ | Pduprecord _
   | Pccall _ | Praise _ | Pnot | Pnegint | Paddint | Psubint | Pmulint
   | Pdivint _ | Pmodint _ | Pandint | Porint | Pxorint | Plslint | Plsrint
@@ -501,6 +501,7 @@ let comp_primitive stack_info p sz args =
   | Pmakearray _ | Pduparray _
   | Pfloatcomp _
   | Pmakeblock _
+  | Pmakelazyblock _
   | Pfloatfield _
     ->
       fatal_error "Bytegen.comp_primitive"
@@ -769,6 +770,15 @@ let rec comp_expr stack_info env exp sz cont =
       let cont = add_pseudo_event loc !compunit_name cont in
       comp_args stack_info env args sz
         (Kmakeblock(List.length args, tag) :: cont)
+  | Lprim(Pmakelazyblock tag, [arg], loc) ->
+      let tag =
+        match tag with
+        | Lazy_tag -> Config.lazy_tag
+        | Forward_tag -> Obj.forward_tag
+      in
+      let cont = add_pseudo_event loc !compunit_name cont in
+      comp_args stack_info env [arg] sz
+        (Kmakeblock(1, tag) :: cont)
   | Lprim(Pfloatfield n, args, loc) ->
       let cont = add_pseudo_event loc !compunit_name cont in
       comp_args stack_info env args sz (Kgetfloatfield n :: cont)

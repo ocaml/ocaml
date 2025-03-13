@@ -827,6 +827,7 @@ let lambda_primitive_needs_event_after = function
   | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint | Pisout
   | Patomic_load
   | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque | Pdls_get
+  | Pmakelazyblock _
       -> false
 
 (* Determine if a primitive should be surrounded by an "after" debug event *)

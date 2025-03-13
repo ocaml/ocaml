@@ -590,7 +590,7 @@ let rec transl env e =
          | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _
          | Pasrbint _ | Pbintcomp (_, _) | Pstring_load _ | Pbytes_load _
          | Pbytes_set _ | Pbigstring_load _ | Pbigstring_set _
-         | Pbbswap _ | Ppoll ), _)
+         | Pbbswap _ | Ppoll | Pmakelazyblock _ ), _)
         ->
           fatal_error "Cmmgen.transl:prim"
       end
@@ -829,6 +829,13 @@ and transl_prim_1 env p arg dbg =
     Popaque ->
       opaque (transl env arg) dbg
   (* Heap operations *)
+  | Pmakelazyblock tag ->
+      let tag =
+        match tag with
+        | Lazy_tag -> Config.lazy_tag
+        | Forward_tag -> Obj.forward_tag
+      in
+      make_alloc dbg tag [transl env arg]
   | Pfield(n, imm_or_pointer, mut) ->
       get_field env imm_or_pointer mut (transl env arg) n dbg
   | Pfloatfield n ->
@@ -1096,6 +1103,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Parraysets _ | Pbintofint _ | Pintofbint _ | Pcvtbint (_, _)
   | Pnegbint _ | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
   | Pbigarraydim _ | Pbytes_set _ | Pbigstring_set _ | Pbbswap _ | Ppoll
+  | Pmakelazyblock _
     ->
       fatal_errorf "Cmmgen.transl_prim_2: %a"
         Printclambda_primitives.primitive p
@@ -1170,6 +1178,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
   | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _
   | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _ | Ppoll
+  | Pmakelazyblock _
     ->
       fatal_errorf "Cmmgen.transl_prim_3: %a"
         Printclambda_primitives.primitive p
@@ -1203,6 +1212,7 @@ and transl_prim_4 env p arg1 arg2 arg3 arg4 dbg =
   | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
   | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _
   | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _ | Ppoll
+  | Pmakelazyblock _
     ->
       fatal_errorf "Cmmgen.transl_prim_3: %a"
         Printclambda_primitives.primitive p

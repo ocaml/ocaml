@@ -525,23 +525,10 @@ and transl_exp0 ~in_new_scope ~scopes e =
         (* A constant expr (of type <> float if [Config.flat_float_array] is
            true) gets compiled as itself. *)
          transl_exp ~scopes e
-      | `Float_that_cannot_be_shortcut ->
-          (* We don't need to wrap with Popaque: this forward
-             block will never be shortcutted since it points to a float
-             and Config.flat_float_array is true. *)
-          Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
-                [transl_exp ~scopes e], of_location ~scopes e.exp_loc)
+      | `Float_that_cannot_be_shortcut
       | `Identifier `Forward_value ->
-         (* CR-someday mshinwell: Consider adding a new primitive
-            that expresses the construction of forward_tag blocks.
-            We need to use [Popaque] here to prevent unsound
-            optimisation in Flambda, but the concept of a mutable
-            block doesn't really match what is going on here.  This
-            value may subsequently turn into an immediate... *)
-         Lprim (Popaque,
-                [Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
-                       [transl_exp ~scopes e],
-                       of_location ~scopes e.exp_loc)],
+         Lprim (Pmakelazyblock Forward_tag,
+                [transl_exp ~scopes e],
                 of_location ~scopes e.exp_loc)
       | `Identifier `Other ->
          transl_exp ~scopes e
@@ -557,7 +544,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
                             ~attr:function_attribute_disallowing_arity_fusion
                             ~loc:(of_location ~scopes e.exp_loc)
                             ~body:(transl_exp ~scopes e) in
-          Lprim(Pmakeblock(Config.lazy_tag, Mutable, None), [fn],
+          Lprim(Pmakelazyblock Lazy_tag, [fn],
                 of_location ~scopes e.exp_loc)
       end
   | Texp_object (cs, meths) ->

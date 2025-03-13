@@ -882,6 +882,13 @@ let rec choice ctx t =
     | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _
     | Pbintcomp _
 
+    (* Lazy blocks should never contain a recursive call directly:
+       either it's a closure (Lazy_tag), or a variable (Forward_tag).
+       The case 'let foo = recursive_call in lazy foo' could be translated to
+       use tmc in the cases where 'foo' might be of type lazy or float, but
+       given the fragility of such a transformation we choose not to. *)
+    | Pmakelazyblock _
+
     (* more common cases... *)
     | Pbigarrayref _ | Pbigarrayset _
     | Pbigarraydim _

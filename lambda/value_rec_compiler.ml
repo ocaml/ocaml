@@ -219,6 +219,8 @@ let compute_static_size lam =
            Note that flat float arrays/records use Pmakearray, so we don't need
            to check the tag here. *)
         Block (Regular_block (List.length args))
+    | Pmakelazyblock _ ->
+        Block (Regular_block 1)
     | Pmakearray (kind, _) ->
         let size = List.length args in
         begin match kind with

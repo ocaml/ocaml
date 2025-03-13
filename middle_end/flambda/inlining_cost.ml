@@ -22,6 +22,7 @@ open! Int_replace_polymorphic_compare
 let prim_size (prim : Clambda_primitives.primitive) args =
   match prim with
   | Pmakeblock _ -> 5 + List.length args
+  | Pmakelazyblock _ -> 6
   | Pfield _ -> 1
   | Psetfield (_, isptr, init) ->
     begin match init with
@@ -269,7 +270,8 @@ module Benefit = struct
   let remove_code_helper_named b (named : Flambda.named) =
     match named with
     | Set_of_closures _
-    | Prim ((Pmakearray _ | Pmakeblock _ | Pduprecord _), _, _) ->
+    | Prim ((Pmakearray _ | Pmakeblock _
+            | Pmakelazyblock _ | Pduprecord _), _, _) ->
       b := remove_alloc !b
       (* CR-soon pchambart: should we consider that boxed integer and float
          operations are allocations ? *)

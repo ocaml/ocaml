@@ -26,6 +26,8 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   match prim with
   | Pmakeblock (tag, mutability, shape) ->
       Pmakeblock (tag, mutability, shape)
+  | Pmakelazyblock tag ->
+      Pmakelazyblock tag
   | Pfield (field, imm_or_pointer, mutability) ->
       Pfield (field, imm_or_pointer, mutability)
   | Pfield_computed -> Pfield_computed

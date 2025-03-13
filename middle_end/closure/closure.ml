@@ -108,6 +108,7 @@ let prim_size prim args =
   match prim with
   | Pread_symbol _ -> 1
   | Pmakeblock _ -> 5 + List.length args
+  | Pmakelazyblock _ -> 6
   | Pfield _ -> 1
   | Psetfield(_f, isptr, init) ->
     begin match init with
