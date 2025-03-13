@@ -19,4 +19,3 @@ let[@inline never][@local never] run () =
   check ()
 
 let () = run ()
-
