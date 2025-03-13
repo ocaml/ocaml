@@ -3221,6 +3221,12 @@ let rec unify uenv t1 t2 =
   try
     type_changed := true;
     begin match (get_desc t1, get_desc t2) with
+    (* Using deep_occur here causes non-termination
+       in pr9314.ml and constraints.ml
+      (Tvar _, Tconstr _) when deep_occur t1 t2 ->
+        unify2 uenv t1 t2
+    | (Tconstr _, Tvar _) when deep_occur t2 t1 ->
+        unify2 uenv t1 t2 *)
       (Tvar _, Tconstr (_, _::_, _)) ->
         unify2 uenv t1 t2
     | (Tconstr (_, _::_, _), Tvar _) ->
