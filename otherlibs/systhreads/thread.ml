@@ -35,9 +35,10 @@ let[@inline never] check_memprof_cb () = ref ()
 
 let default_uncaught_exception_handler = thread_uncaught_exception
 
-let uncaught_exception_handler = ref default_uncaught_exception_handler
+let uncaught_exception_handler = ref (fun exn _bt -> default_uncaught_exception_handler exn)
 
-let set_uncaught_exception_handler fn = uncaught_exception_handler := fn
+let set_uncaught_exception_handler fn = uncaught_exception_handler := (fun exn _bt -> fn exn)
+let set_extended_uncaught_exception_handler fn = uncaught_exception_handler := fn
 
 exception Exit
 
@@ -54,7 +55,7 @@ let create fn arg =
         let raw_backtrace = Printexc.get_raw_backtrace () in
         flush stdout; flush stderr;
         try
-          !uncaught_exception_handler exn
+          !uncaught_exception_handler exn raw_backtrace
         with
         | Exit -> ()
         | exn' ->
