@@ -38,7 +38,7 @@ let default_uncaught_exception_handler = thread_uncaught_exception
 let uncaught_exception_handler = ref (fun exn _bt -> default_uncaught_exception_handler exn)
 
 let set_uncaught_exception_handler fn = uncaught_exception_handler := (fun exn _bt -> fn exn)
-let set_extended_uncaught_exception_handler fn = uncaught_exception_handler := fn
+let set_uncaught_exception_handler_with_backtrace fn = uncaught_exception_handler := fn
 
 exception Exit
 

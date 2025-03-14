@@ -185,8 +185,8 @@ val set_uncaught_exception_handler : (exn -> unit) -> unit
     If the newly set uncaught exception handler raise an exception,
     {!default_uncaught_exception_handler} will be called. *)
 
-val set_extended_uncaught_exception_handler: (exn -> Printexc.raw_backtrace -> unit) -> unit
-(** [Thread.set_extended_uncaught_exception_handler f] registers [f]
+val set_uncaught_exception_handler_with_backtrace : (exn -> Printexc.raw_backtrace -> unit) -> unit
+(** [Thread.set_uncaught_exception_handler_with_backtrace f] registers [f]
     as the handler called when a thread fails from an uncaught exception.
     Unlike {!set_uncaught_exception_handler} it is passed the exception and the backtrace.
     @since 5.4 *)
