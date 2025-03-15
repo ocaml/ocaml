@@ -150,7 +150,7 @@ let format_backtrace_slot pos slot =
       if l.is_raise then
         (* compiler-inserted re-raise, skipped *) None
       else
-        Some (sprintf "%s unknown location" (info false))
+        Some (sprintf "%s unknown location -- did you use ocamlrun/ocamlc -g ?" (info false))
   | Known_location l ->
       let lines =
         if l.start_lnum = l.end_lnum then

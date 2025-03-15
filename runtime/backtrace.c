@@ -87,7 +87,7 @@ static void print_location(const struct caml_loc_info * li, int index)
     inlined = "";
   }
   if (! li->loc_valid) {
-    fprintf(stderr, "%s unknown location%s\n", info, inlined);
+    fprintf(stderr, "%s unknown location%s -- did you use ocamlrun/ocamlc -g ?\n", info, inlined);
   } else if (li->loc_start_lnum == li->loc_end_lnum) {
     fprintf(stderr, "%s %s in file \"%s\"%s, line %d, characters %d-%d\n",
             info, li->loc_defname, li->loc_filename, inlined,
