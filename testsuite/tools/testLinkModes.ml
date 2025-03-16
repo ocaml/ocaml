@@ -284,8 +284,7 @@ let test_runs usr_bin_sh test_program_path test_program
       {argv0_not_ocaml = false; argv0_resolved = test_program_relative}
     ]
   in
-  let test_with_outcome
-        (({argv0; prefix_path_with_cwd; _} as test), properties) =
+  let test_with_outcome (({argv0; _} as test), properties) =
     let {argv0_not_ocaml; argv0_resolved} = properties in
     let outcome =
       (* If strategy has been specified, this program is going to be executed as
@@ -301,22 +300,13 @@ let test_runs usr_bin_sh test_program_path test_program
             Success {executable_name = test_program_path;
                      argv0 = test_program_path}
         | Tendered {header = Header_exe; _} ->
-            if argv0_not_ocaml then
-              if Harness.no_caml_executable_name then
-                (* stdlib/header.c will fail to find ocamlrun because
-                   caml_executable_name isn't implemented so will either fail to
-                   find the executable or will identify that it is not a
-                   bytecode executable. Somewhat confusingly, it exits with
-                   code 2 *)
-                Fail 2
-              else
-                (* stdlib/header.c will find ocamlrun (because it effectively
-                   uses caml_executable_name) but fails to hand off the bytecode
-                   image, which causes ocamlrun to exit with code 127 *)
-                Fail 127
-            else if Sys.win32 then
-              (* stdlib/header.c correctly preserves argv[0] for Windows *)
-              Success {executable_name = test_program_path; argv0}
+            if argv0_not_ocaml
+               && Harness.no_caml_executable_name then
+              (* stdlib/header.c will fail to find ocamlrun because
+                 caml_executable_name isn't implemented so will either fail to
+                 find the executable or will identify that it is not a bytecode
+                 executable. Somewhat confusingly, it exits with code 2 *)
+              Fail 2
             else if Harness.no_caml_executable_name
                     && config.has_relative_libdir <> None then
               (* Without caml_executable_name, ocamlrun will be forced to
@@ -324,12 +314,11 @@ let test_runs usr_bin_sh test_program_path test_program
                  which will fail. *)
               Fail 134
             else
-              (* stdlib/header.c correctly preserves argv[0] *)
               let executable_name =
-                if Harness.no_caml_executable_name || prefix_path_with_cwd then
+                if Harness.no_caml_executable_name then
                   argv0_resolved
                 else
-                  argv0
+                  test_program_path
               in
               Success {executable_name; argv0}
         | Custom ->

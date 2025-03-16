@@ -31,10 +31,6 @@ let run config env =
   let bindir = Environment.bindir env in
   Format.printf "\nTesting bytecode binaries in %a\n"
                 (Environment.pp_path env) bindir;
-  let ocamlrun = Environment.ocamlrun env in
-  let exec_magic =
-    Environment.run_process env ocamlrun ["-M"]
-  in
   let test_binary failed binary =
     if String.starts_with ~prefix:"ocaml" binary
        || String.starts_with ~prefix:"flexlink" binary then
@@ -161,32 +157,9 @@ let run config env =
                    be likely distinct from the behaviour of any of the
                    distribution's tools when called with -M. *)
                 let without_exe = Filename.remove_extension binary in
-                let (this_exit_code, _) as this =
-                  let fails = not (String.contains without_exe '.') in
+                let _exit_code, _output =
                   Environment.run_process
-                    ~fails env program ~argv0:without_exe ["-M"]
-                in
-                if this_exit_code = 0 then
-                  if this = exec_magic then
-                    let (that_exit_code, _) as that =
-                      Environment.run_process
-                        ~fails:true env program ~argv0:binary ["-M"]
-                    in
-                    if this = that then
-                      Harness.fail_because
-                        "Neither %s nor %s seem to load the bytecode image"
-                        without_exe binary
-                    else if that_exit_code = 0 then
-                      Harness.fail_because
-                        "%s is not expected to return with exit code 0"
-                        binary
-                    else if not (String.contains without_exe '.') then
-                      Harness.fail_because
-                        "%s is not expected to return the exec magic number!"
-                        without_exe
-                    else () (* Expected outcome was the exec magic number *)
-                  else () (* Expected outcome is a zero exit code *)
-                else () (* Expected outcome is a non-zero exit code *)
+                    ~fails:true env program ~argv0:without_exe ["-M"] in ()
               end;
               failed
           | _ ->
