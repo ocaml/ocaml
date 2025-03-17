@@ -2120,3 +2120,17 @@ Error: Modules do not match: (Arg : empty) -> sig end is not included in
      This module should not be a functor, a structure was expected.
      Hint: Did you forget to apply the functor?
 |}]
+
+module F(X:a): sig module F:empty -> empty end = struct module F = X end
+[%%expect {|
+Line 1, characters 49-72:
+1 | module F(X:a): sig module F:empty -> empty end = struct module F = X end
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig module F : a end
+       is not included in
+         sig module F : empty -> empty end
+       In module "F":
+       Modules do not match: a is not included in empty -> empty
+|}]

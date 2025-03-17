@@ -773,17 +773,12 @@ let core_module_type_symptom (x:Err.core_module_type_symptom)  =
 
 (* Construct a linearized error message from the error tree *)
 
-let functor_expected ~before ~ctx got =
+let functor_expected ~before ~ctx =
   let main =
-    match got.Err.res with
-    | Mty_ident _ ->
-        Fmt.dprintf
-          "@[This module should not have an abstract@ module@ type,@ \
-           a@ functor@ was expected.@]"
-    | Mty_signature _ | _ ->
-        Fmt.dprintf
-          "@[This module should not be@ a@ structure,@ \
-           a@ functor@ was expected.@]"
+    (* The abstract module type case is detected by {!Includemod} *)
+    Fmt.dprintf
+      "@[This module should not be@ a@ structure,@ \
+       a@ functor@ was expected.@]"
   in
   dwith_context ctx main :: before
 
@@ -856,7 +851,7 @@ and module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx = function
 
 and functor_params ~expansion_token ~env ~before ~ctx diff =
   match diff.got.params, diff.expected.params with
-  | [], _ -> functor_expected ~before ~ctx diff.got
+  | [], _ -> functor_expected ~before ~ctx
   | _, [] -> unexpected_functor ~env ~before ~ctx diff
   | _ :: _, _ :: _ ->
       compare_functor_params ~expansion_token ~env ~before ~ctx diff
