@@ -150,8 +150,8 @@ Working version
 
 ### Standard library:
 
-- #13870: Add `Thread.set_extended_uncaught_exception_handler` for backtrace-aware
-  error handling in threads.
+- #13870: Add `Thread.set_extended_uncaught_exception_handler`
+  for backtrace-aware error handling in threads.
   (Simon Cruanes, review by Stefan Muenzel)
 
 - #13836: Add [Float.]Array.{equal,compare}.
