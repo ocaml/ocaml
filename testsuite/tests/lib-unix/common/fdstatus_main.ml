@@ -3,8 +3,8 @@ external delete_on_close : string -> unit = "caml_win32_delete_on_close"
 
 let () =
   if Sys.win32 then
-    (* Ensure the ancestor process has definitely terminated (and therefore
-       closed its handles to tmp.txt) *)
+    (* Ensure both ancestor processes have definitely terminated (and therefore
+       closed their handles to tmp.txt) *)
     let wait_until file =
       if Sys.file_exists file then
         let fd = Unix.openfile file [O_RDWR] 0o600 in
@@ -12,7 +12,7 @@ let () =
         Unix.close fd;
         Sys.remove file
     in
-    wait_until "lock.txt"
+    List.iter wait_until ["lock1.txt"; "lock2.txt"]
 
 let () =
   (* Windows virus scanning can easily get in the way here on slower VMs. When

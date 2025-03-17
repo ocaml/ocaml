@@ -1,6 +1,6 @@
 (* TEST
  include unix;
- readonly_files = "fdstatus_aux.c fdstatus_main.ml";
+ readonly_files = "fdstatus_aux.c fdstatus_main.ml cloexec_leap.ml";
  hasunix;
 
  {
@@ -8,6 +8,9 @@
    setup-ocamlc.byte-build-env;
    program = "${test_build_directory}/fdstatus.exe";
    all_modules = "fdstatus_aux.c fdstatus_main.ml";
+   ocamlc.byte;
+   program = "${test_build_directory}/cloexec_leap.exe";
+   all_modules = "cloexec_leap.ml";
    ocamlc.byte;
    program = "${test_build_directory}/cloexec.byte";
    all_modules = "fdstatus_aux.c cloexec.ml";
@@ -29,6 +32,9 @@
    program = "${test_build_directory}/fdstatus.exe";
    all_modules = "fdstatus_aux.c fdstatus_main.ml";
    ocamlopt.byte;
+   program = "${test_build_directory}/cloexec_leap.exe";
+   all_modules = "cloexec_leap.ml";
+   ocamlopt.byte;
    program = "${test_build_directory}/cloexec.opt";
    all_modules = "fdstatus_aux.c cloexec.ml";
    ocamlopt.byte;
@@ -49,7 +55,7 @@
 external fd_of_file_descr : Unix.file_descr -> int = "caml_fd_of_filedescr"
 let string_of_fd fd = Int.to_string (fd_of_file_descr fd)
 
-let status_checker = "fdstatus.exe"
+let status_checker = "cloexec_leap.exe"
 
 let _ =
   let f0 =
@@ -86,18 +92,19 @@ let _ =
          seen on slower machines, where the test begins running before this
          call has happened, and which results in tmp.txt still being locked when
          fdstatus_main.ml tries to delete it, leading to a "Permission denied"
-         exception. To prevent this, lock.txt is created and locked for writing
-         by this process. If the checker then sees that lock.txt exists, it
-         attempts to acquire a write lock on it, which will succeed only after
-         this process has completely exited and its lock has been automatically
-         released via process termination.
+         exception. To prevent this, lock1.txt is created and locked for writing
+         by this process, and then lock2.txt similarly by cloexec_leap.ml. If
+         the checker then sees that these exist, it attempts to acquire write
+         locks on them, which will succeed only after these processes have both
+         completely exited and their locks have been automatically released via
+         process termination.
          This dance is strictly done on native on Windows only, because execv
          hanging on to open files in this way with a Unix kernel is a very
          serious misimplementation of execv! *)
       if Sys.win32 then
         let lock =
-          Unix.(openfile "lock.txt" [O_WRONLY; O_CREAT;
-                                     O_TRUNC; O_CLOEXEC] 0o600) in
+          Unix.(openfile "lock1.txt" [O_WRONLY; O_CREAT;
+                                      O_TRUNC; O_CLOEXEC] 0o600) in
         Unix.lockf lock Unix.F_LOCK 0 in
     Unix.execv
       (Filename.concat Filename.current_dir_name status_checker)

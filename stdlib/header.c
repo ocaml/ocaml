@@ -102,13 +102,17 @@ static int exec_file(wchar_t *file, wchar_t *cmdline)
        underlying OCaml program with us! */
     SetConsoleCtrlHandler(ctrl_handler, TRUE);
 
-    stinfo.cb = sizeof(stinfo);
-    stinfo.lpReserved = NULL;
-    stinfo.lpDesktop = NULL;
-    stinfo.lpTitle = NULL;
-    stinfo.dwFlags = 0;
-    stinfo.cbReserved2 = 0;
-    stinfo.lpReserved2 = NULL;
+    /* Rather than creating a fresh STARTUPINFO structure, simply pass on the
+       one which was used to launch the header. This is morally correct, but
+       also has a technical benefit - the documentation for STARTUPINFO states
+       that cbReserved2 and lpReserved2 must be 0 and NULL respectively, but
+       this is a lie! cbReserved2 is intended to describe the length of the
+       buffer pointed to be lpReserved2, and this facility was added to
+       Windows NT to allow the CRT to pass both the information about inherited
+       handles when one CRT application execs or spawns another. The cloexec.ml
+       test exercises this. By using GetStartupInfo, we simply pass through any
+       existing values. */
+    GetStartupInfo(&stinfo);
     if (CreateProcess(truename, cmdline, NULL, NULL, TRUE, 0, NULL, NULL,
                       &stinfo, &procinfo)) {
       free(truename);
