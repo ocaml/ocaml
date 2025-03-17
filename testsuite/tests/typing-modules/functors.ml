@@ -2134,3 +2134,17 @@ Error: Signature mismatch:
        In module "F":
        Modules do not match: a is not included in empty -> empty
 |}]
+
+(** Incorrect hint: the compatibility check consider that [X.T] can not be equal
+    to [x] but this is false. However, anyone using abstract module types can
+    handle a slightly wrong hint. *)
+module F(G: functor(X:sig module type T module I:T end) -> X.T): x = G
+[%%expect {|
+Line 1, characters 69-70:
+1 | module F(G: functor(X:sig module type T module I:T end) -> X.T): x = G
+                                                                         ^
+Error: Signature mismatch:
+       This module should not be a functor, a structure was expected.
+       Moreover, the type of the functor body is incompatible with the
+       expected module type.
+|}]
