@@ -778,11 +778,12 @@ let functor_expected ~before ~ctx got =
     match got.Err.res with
     | Mty_ident _ ->
         Fmt.dprintf
-          "@[This module should not be an abstract@ module@ type,@ \
-           a@ functor was expected.@]"
+          "@[This module should not have an abstract@ module@ type,@ \
+           a@ functor@ was expected.@]"
     | Mty_signature _ | _ ->
         Fmt.dprintf
-          "@[This module should not be structure,@ a functor was expected.@]"
+          "@[This module should not be@ a@ structure,@ \
+           a@ functor@ was expected.@]"
   in
   dwith_context ctx main :: before
 
@@ -792,11 +793,11 @@ let unexpected_functor ~env ~before ~ctx diff =
     match diff.expected.res with
     | Mty_ident _ ->
         Fmt.dprintf
-          "@[This module should not be a functor,@ @ an@ abstract@ module@ \
-           type@ was@ expected.@]"
+          "@[This module should not be a functor,@ a@ module with an@ \
+           abstract@ module@ type@ was@ expected.@]"
     | Mty_signature _ | _ ->
         Fmt.dprintf
-          "@[This module should not be a functor,@ a@ signature was expected.@]"
+          "@[This module should not be a functor,@ a@ structure was expected.@]"
   in
   let main =
     match Includemod.modtypes_consistency ~loc:Location.none env rmty

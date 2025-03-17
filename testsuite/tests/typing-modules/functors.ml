@@ -1255,7 +1255,7 @@ Error: This application of the functor "F" is ill-typed.
             F : (X : sig type witness module type t module M : t end) -> X.t
           is not included in
             $T6 = sig type witness module type t module M : t end
-          This module should not be a functor, a signature was expected.
+          This module should not be a functor, a structure was expected.
           Moreover, the type of the functor body is incompatible with the
           expected module type.
 |}]
@@ -2056,8 +2056,8 @@ Line 1, characters 24-25:
 1 | module F(X:a -> a): a = X
                             ^
 Error: Signature mismatch:
-       This module should not be a functor,  an abstract module type was
-       expected.
+       This module should not be a functor, a module with an abstract module
+       type was expected.
        Hint: Did you forget to apply the functor?
 |}]
 
@@ -2067,7 +2067,7 @@ Line 1, characters 28-29:
 1 | module F(X:a -> a): empty = X
                                 ^
 Error: Signature mismatch:
-       This module should not be a functor, a signature was expected.
+       This module should not be a functor, a structure was expected.
        Moreover, the type of the functor body is incompatible with the
        expected module type.
 |}]
@@ -2081,7 +2081,7 @@ Line 2, characters 18-25:
 2 | module M: empty = F_empty
                       ^^^^^^^
 Error: Signature mismatch:
-       This module should not be a functor, a signature was expected.
+       This module should not be a functor, a structure was expected.
        Hint: Did you forget to apply the functor?
 |}]
 
@@ -2091,7 +2091,7 @@ Line 1, characters 14-21:
 1 | module M: x = F_empty
                   ^^^^^^^
 Error: Signature mismatch:
-       This module should not be a functor, a signature was expected.
+       This module should not be a functor, a structure was expected.
        Moreover, the type of the functor body is incompatible with the
        expected module type.
 |}]
@@ -2107,7 +2107,7 @@ Line 3, characters 11-19:
 3 | module A = F(Empty)
                ^^^^^^^^
 Error: Modules do not match: sig end is not included in empty -> empty
-     This module should not be structure, a functor was expected.
+     This module should not be a structure, a functor was expected.
 |}]
 
 module B = G(F_empty)
@@ -2117,6 +2117,6 @@ Line 1, characters 11-21:
                ^^^^^^^^^^
 Error: Modules do not match: (Arg : empty) -> sig end is not included in
        empty
-     This module should not be a functor, a signature was expected.
+     This module should not be a functor, a structure was expected.
      Hint: Did you forget to apply the functor?
 |}]
