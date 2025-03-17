@@ -6941,17 +6941,20 @@ let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
       loc_end = cnum_offset ~+1 arg_end;
       loc_ghost = false }
   in
-  let hint_semicolon = if returns_unit then [
-      msg ~loc:tail_loc "@{<hint>Hint@}: Did you forget a ';'?";
-    ] else [] in
-  let sub = hint_semicolon @ [
-    msg ~loc:extra_arg_loc "This extra argument is not expected.";
-  ] in
-  errorf ~loc:app_loc ~sub
+  errorf ~loc:app_loc
     "@[<v>@[<2>%a@ %a@]\
      @ It is applied to too many arguments@]"
     (report_this_texp_has_type (Some "function")) funct
     Printtyp.type_expr func_ty
+    ~sub:(
+      let semicolon =
+        if returns_unit then
+          [msg ~loc:tail_loc "@{<hint>Hint@}: Did you forget a ';'?"]
+        else []
+      in
+      semicolon @
+      [msg ~loc:extra_arg_loc "This extra argument is not expected."]
+    )
 
 let msg = Fmt.doc_printf
 
@@ -7213,20 +7216,20 @@ let report_error ~loc env = function
                    it has type"
          (Style.as_inline_code @@ Printtyp.type_expansion Type) ty_exp
      in
-     let sub =
-       if not b then [] else
-         [ Location.msg "This simple coercion was not fully general";
-           Location.msg
-             "@{<hint>Hint@}: Consider using a fully explicit coercion@ \
-              of the form: %a"
-             Style.inline_code "(foo : ty1 :> ty2)"
-         ]
-     in
-      Location.errorf ~sub ~loc "%t" (fun ppf ->
+      Location.errorf ~loc "%t" (fun ppf ->
         Errortrace_report.unification ppf env err
           intro
           (Fmt.Doc.msg "but is here used with type")
         )
+         ~sub:(
+           if not b then [] else
+             [ Location.msg "This simple coercion was not fully general";
+               Location.msg
+                 "@{<hint>Hint@}: Consider using a fully explicit coercion@ \
+                  of the form: %a"
+                 Style.inline_code "(foo : ty1 :> ty2)"
+             ]
+         )
   | Not_a_function (ty, explanation) ->
       Location.errorf ~loc
         "This expression should not be a function,@ \

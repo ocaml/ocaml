@@ -930,14 +930,7 @@ let report_error_doc loc env = function
       Location.errorf ~loc "The present constructor %a has a conjunctive type"
         Style.inline_code l
   | Present_has_no_type l ->
-      let sub =
-        [Location.msg
-          "@{<hint>Hint@}: Either add %a in the upper bound,@ \
-           or@ remove@ it@ from the lower bound."
-          (Style.as_inline_code pp_tag) l
-        ]
-      in
-      Location.errorf ~loc ~sub
+      Location.errorf ~loc
         "The constructor %a is missing from the upper bound@ \
          (between %a@ and %a)@ of this polymorphic variant@ \
          but is present in@ its lower bound (after %a)."
@@ -945,6 +938,12 @@ let report_error_doc loc env = function
         Style.inline_code "<"
         Style.inline_code ">"
         Style.inline_code ">"
+        ~sub:[
+          Location.msg
+            "@{<hint>Hint@}: Either add %a in the upper bound,@ \
+             or@ remove@ it@ from the lower bound."
+            (Style.as_inline_code pp_tag) l
+        ]
   | Constructor_mismatch (ty, ty') ->
       wrap_printing_env ~error:true env (fun ()  ->
         Out_type.prepare_for_printing [ty; ty'];
