@@ -34,12 +34,16 @@ external join : t -> unit = "caml_thread_join"
 let[@inline never] check_memprof_cb () = ref ()
 
 let default_uncaught_exception_handler = thread_uncaught_exception
-let default_uncaught_exception_handler_with_backtrace exn _bt = thread_uncaught_exception exn
+let default_uncaught_exception_handler_with_backtrace exn _bt =
+  thread_uncaught_exception exn
 
-let uncaught_exception_handler = ref default_uncaught_exception_handler_with_backtrace
+let uncaught_exception_handler =
+  ref default_uncaught_exception_handler_with_backtrace
 
-let set_uncaught_exception_handler fn = uncaught_exception_handler := (fun exn _bt -> fn exn)
-let set_uncaught_exception_handler_with_backtrace fn = uncaught_exception_handler := fn
+let set_uncaught_exception_handler fn =
+  uncaught_exception_handler := (fun exn _bt -> fn exn)
+let set_uncaught_exception_handler_with_backtrace fn =
+  uncaught_exception_handler := fn
 
 exception Exit
 
