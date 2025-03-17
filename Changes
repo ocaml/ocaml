@@ -3198,7 +3198,6 @@ OCaml 5.0.0 (15 December 2022)
   bytecode interpreter.
   (David Allsopp and Xavier Leroy, report by Samuel Hym, review by Xavier Leroy
   and Gabriel Scherer)
->>>>>>> ocaml/trunk
 
 ### Code generation and optimizations:
 
