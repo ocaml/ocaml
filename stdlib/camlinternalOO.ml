@@ -609,4 +609,5 @@ type stats =
 
 let stats () =
   { classes = Atomic.get table_count;
-    methods = Atomic.get method_count; inst_vars = Atomic.get inst_var_count; }
+    methods = Atomic.get method_count;
+    inst_vars = Atomic.get inst_var_count; }
