@@ -774,6 +774,22 @@ let bind_params { backend; mutable_vars; _ } loc fdesc params args funct body =
   in
   aux V.Map.empty params args body
 
+let bind_args_right_to_left env args fn =
+  let rec aux prev_args_rev next_args fn =
+    match next_args with
+    | [] -> fn (List.rev prev_args_rev)
+    | arg :: next_args ->
+        if is_substituable ~mutable_vars:env.mutable_vars arg
+        then aux (arg :: prev_args_rev) next_args fn
+        else
+          let id = V.create_local "arg" in
+          let fn args =
+            Ulet(Immutable, Pgenval, VP.create id, arg, fn args)
+          in
+          aux (Uvar id :: prev_args_rev) next_args fn
+  in
+  aux [] args fn
+
 let warning_if_forced_inline ~loc ~attribute warning =
   if attribute = Always_inline then
     Location.prerr_warning (Debuginfo.Scoped_location.to_location loc)
@@ -793,26 +809,14 @@ let direct_apply env fundesc ufunct uargs ~loc ~attribute =
      else if not fundesc.fun_closed &&
                is_substituable ~mutable_vars:env.mutable_vars ufunct then
        Udirect_apply(fundesc.fun_label, uargs @ [ufunct], dbg)
-     else begin
-       let args = List.map (fun arg ->
-         if is_substituable ~mutable_vars:env.mutable_vars arg then
-           None, arg
-         else
-           let id = V.create_local "arg" in
-           Some (VP.create id, arg), Uvar id) uargs in
-       let app_args = List.map snd args in
-       List.fold_left (fun app (binding,_) ->
-           match binding with
-           | None -> app
-           | Some (v, e) -> Ulet(Immutable, Pgenval, v, e, app))
-         (if fundesc.fun_closed then
+     else
+       bind_args_right_to_left env uargs (fun app_args ->
+          if fundesc.fun_closed then
             Usequence (ufunct, Udirect_apply (fundesc.fun_label, app_args, dbg))
           else
             let clos = V.create_local "clos" in
             Ulet(Immutable, Pgenval, VP.create clos, ufunct,
                  Udirect_apply(fundesc.fun_label, app_args @ [Uvar clos], dbg)))
-         args
-       end
   | Some(params, body), _  ->
      bind_params env loc fundesc params uargs ufunct body
 
@@ -1005,7 +1009,9 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
       | ((ufunct, _), uargs) ->
           let dbg = Debuginfo.from_location loc in
           warning_if_forced_inline ~loc ~attribute "Unknown function";
-          (Ugeneric_apply(ufunct, uargs, dbg), Value_unknown)
+          (bind_args_right_to_left env uargs (fun uargs ->
+              Ugeneric_apply(ufunct, uargs, dbg)),
+           Value_unknown)
       end
   | Lsend(kind, met, obj, args, loc) ->
       let (umet, _) = close env met in
