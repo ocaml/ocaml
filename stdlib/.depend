@@ -163,6 +163,7 @@ camlinternalOO.cmo : \
     stdlib__Map.cmi \
     stdlib__List.cmi \
     stdlib__Char.cmi \
+    stdlib__Atomic.cmi \
     stdlib__Array.cmi \
     camlinternalOO.cmi
 camlinternalOO.cmx : \
@@ -172,6 +173,7 @@ camlinternalOO.cmx : \
     stdlib__Map.cmx \
     stdlib__List.cmx \
     stdlib__Char.cmx \
+    stdlib__Atomic.cmx \
     stdlib__Array.cmx \
     camlinternalOO.cmi
 camlinternalOO.cmi : \
