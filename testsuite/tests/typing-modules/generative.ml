@@ -101,9 +101,9 @@ module Z = functor (_: sig end) (_:sig end) (_: sig end) -> struct end;;
 module GZ : functor (X: sig end) () (Z: sig end) -> sig end
           = functor (X: sig end) () (Z: sig end) -> struct end;;
 [%%expect{|
-module X : (X : sig end) (Y : sig end) (Z : sig end) -> sig end
-module Y : (X : sig end) (Y : sig end) (Z : sig end) -> sig end
-module Z : sig end -> sig end -> sig end -> sig end
+module X : (X : sig end) (Y : sig end) -> (Z : sig end) -> sig end
+module Y : (X : sig end) (Y : sig end) -> (Z : sig end) -> sig end
+module Z : sig end => sig end => sig end -> sig end
 module GZ : (X : sig end) () (Z : sig end) -> sig end
 |}];;
 

@@ -54,5 +54,5 @@ module type LongFunctor1 = (X : A) () (_ : B) () -> C -> D -> sig end
 |}]
 module type LongFunctor2 = functor (_ : A) () (_ : B) () -> C -> D -> sig end
 [%%expect {|
-module type LongFunctor2 = A -> () (_ : B) () -> C -> D -> sig end
+module type LongFunctor2 = A => () (_ : B) () -> C -> D -> sig end
 |}]

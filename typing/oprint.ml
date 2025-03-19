@@ -569,18 +569,14 @@ let rec print_out_module_type ppf mty =
   print_out_functor ppf mty
 
 and print_out_functor_parameters ppf l =
-  let last_was_pure = ref false in
   let print_nonanon_arg ppf = function
     | None ->
-        if !last_was_pure then (fprintf ppf "@ =>"; last_was_pure := false);
         fprintf ppf "()"
     | Some (false, param, mty) ->
-        if !last_was_pure then (fprintf ppf "@ =>"; last_was_pure := false);
-        fprintf ppf "(%s : %a)"
+        fprintf ppf "(%s : %a)@ ->"
           (Option.value param ~default:"_")
           print_out_module_type mty
     | Some (true, param, mty) ->
-        if not !last_was_pure then (fprintf ppf "@ ->"; last_was_pure := true);
         fprintf ppf "(%s : %a)"
           (Option.value param ~default:"_")
           print_out_module_type mty
@@ -593,18 +589,17 @@ and print_out_functor_parameters ppf l =
           print_simple_out_module_type mty_arg
           arr
           print_args l
-    | hd :: _ as non_anonymous_functor ->
-        last_was_pure := begin match hd with
-          | None -> false
-          | Some (p, _, _) -> p
-        end;
+    | _ :: _ as non_anonymous_functor ->
         let args, anons = split_anon_functor_arguments non_anonymous_functor in
-        let pp_arrow ppf () =
-          fprintf ppf "%s" (if !last_was_pure then "=>" else "->")
+        let rec pp_arrow ppf = function
+          | [] -> assert false
+          | [None] -> fprintf ppf "@ ->"
+          | [Some (p, _, _)] -> if p then fprintf ppf "@ =>"
+          | _ :: tl -> pp_arrow ppf tl
         in
-        fprintf ppf "@[%a@]@ %a@ %a"
+        fprintf ppf "@[%a@]%a@ %a"
           (pp_print_list ~pp_sep:pp_print_space print_nonanon_arg) args
-          pp_arrow  ()
+          pp_arrow args
           print_args anons
   in
   print_args ppf l

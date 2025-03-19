@@ -95,6 +95,7 @@ type token =
   | FALSE
   | EXTERNAL
   | EXCEPTION
+  | EQUALGREATER
   | EQUAL
   | EOL
   | EOF

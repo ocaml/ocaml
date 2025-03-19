@@ -790,7 +790,7 @@ Error: Signature mismatch:
        is not included in
          (X : $T1) (Y : $T2) (Z : $T3) -> ...
        1. Module types $S1 and $T1 match
-       2. Module types $S2 and $T2 match
+       2. The functor was expected to be generative at this position
        3. An argument appears to be missing with module type
               $T3 = (A : sig type za end) (B : sig type zb end) -> sig end
 |}]
@@ -1290,8 +1290,8 @@ module Add_one :
   sig type witness module M = Add_one'.M module type t = Add_one'.t end
 module Add_three :
   sig
-    module M : arg -> arg -> arg -> sig type arg = A.arg end
-    module type t = arg -> arg -> arg -> sig type arg = A.arg end
+    module M : arg => arg => arg -> sig type arg = A.arg end
+    module type t = arg => arg => arg -> sig type arg = A.arg end
     type witness
   end
 |}]
@@ -1382,7 +1382,7 @@ Error: Signature mismatch:
                     module type t =
                       (Y : sig type y end) (Z : sig type z end) -> sig end
                   end)
-               -> X.t
+             -> X.t
          end
        In module "F":
        Modules do not match:
@@ -1434,18 +1434,21 @@ Error: Signature mismatch:
                     module type t = T -> T -> T
                     module M : t
                   end)
-               -> X.T -> X.T -> X.T
+               => X.T => X.T -> X.T
          end
        In module "F":
        Modules do not match:
-         (Wrong : $S1) (X : $S2) X.T X.T -> ...
+         (Wrong : $S1) (X : $S2) -> ...
        is not included in
-         (X : $T2) X.T X.T -> ...
-       1. An extra argument is provided of module type
-              $S1 = sig type wrong end
-       2. Module types $S2 and $T2 match
-       3. Module types X.T and X.T match
-       4. Module types X.T and X.T match
+         (X : $T1) X.T X.T -> ...
+       1. Module types do not match:
+            $S1 = sig type wrong end
+          does not include
+            $T1 =
+            sig module type T module type t = T -> T -> T module M : t end
+          The type "wrong" is required but not provided
+       2. The functor was expected to be generative at this position
+       3. An argument appears to be missing with module type X.T
 |}]
 
 
@@ -1481,19 +1484,19 @@ Error: Signature mismatch:
        Modules do not match:
          sig
            module F :
-             sig type wrong end ->
+             sig type wrong end =>
                (X : sig module type T end) (Res : X.T) (Res : X.T)
                (Res : X.T) -> X.T
          end
        is not included in
          sig
            module F :
-             sig end ->
+             sig end =>
                (X : sig
                       module type T
                       module type inner = sig module type t module M : t end
                       module F :
-                        (X : inner) -> (T -> T -> T) ->
+                        (X : inner) => (T -> T -> T) ->
                           sig module type res = X.t end
                       module Y :
                         sig
@@ -1847,7 +1850,7 @@ module R = With_expansion(struct
 [%%expect {|
 module With_expansion :
   (A : sig module type t module M : t end) (B : sig module type t = A.t end)
-    -> B.t
+  -> B.t
 Lines 5-11, characters 11-6:
  5 | ...........With_expansion(struct
  6 |     module M()() = struct end

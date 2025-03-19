@@ -107,7 +107,7 @@ Ptop_def
     structure_item (//toplevel//[4,17+0]..[4,17+50])
       Pstr_modtype "F" (//toplevel//[4,17+12]..[4,17+13])
         module_type (//toplevel//[4,17+24]..[4,17+50])
-          Pmty_functor false "A" (//toplevel//[4,17+25]..[4,17+26])
+          Pmty_functor true "A" (//toplevel//[4,17+25]..[4,17+26])
           module_type (//toplevel//[4,17+29]..[4,17+30])
             Pmty_ident "S" (//toplevel//[4,17+29]..[4,17+30])
           module_type (//toplevel//[4,17+32]..[4,17+50])
@@ -126,7 +126,7 @@ Ptop_def
       Pstr_module
       "F" (//toplevel//[2,1+7]..[2,1+8])
         module_expr (//toplevel//[2,1+19]..[2,1+48])
-          Pmod_functor false "A" (//toplevel//[2,1+20]..[2,1+21])
+          Pmod_functor true "A" (//toplevel//[2,1+20]..[2,1+21])
           module_type (//toplevel//[2,1+24]..[2,1+25])
             Pmty_ident "S" (//toplevel//[2,1+24]..[2,1+25])
           module_expr (//toplevel//[2,1+27]..[2,1+48])

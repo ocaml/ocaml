@@ -1561,21 +1561,26 @@ and structure_item ctxt f x =
   | Pstr_typext te -> type_extension ctxt f te
   | Pstr_exception ed -> exception_declaration ctxt f ed
   | Pstr_module x ->
+      let rec use_rec_module = function
+        | {pmod_desc = Pmod_functor(Named (false, _, _), _)} -> true
+        | {pmod_desc = Pmod_functor(_, me)} -> use_rec_module me
+        | _ -> false
+      in
       let rec module_helper = function
         | {pmod_desc=Pmod_functor(arg_opt,me'); pmod_attributes = []} ->
             begin match arg_opt with
-            | Unit -> pp f "()"
-            | Named (_, s, mt) ->
+            | Unit -> pp f "()"; module_helper me'
+            | Named (p, s, mt) ->
               pp f "(%s:%a)" (Option.value s.txt ~default:"_")
-                (module_type ctxt) mt
-            end;
-            module_helper me'
+                (module_type ctxt) mt;
+              if p then module_helper me' else me'
+            end
         | me -> me
       in
       pp f "@[<hov2>module %s%a@]%a"
         (Option.value x.pmb_name.txt ~default:"_")
         (fun f me ->
-           let me = module_helper me in
+           let me = if use_rec_module me then module_helper me else me in
            match me with
            | {pmod_desc=
                 Pmod_constraint
