@@ -68,7 +68,9 @@ typedef enum {
     EV_FORK_PARENT,
     EV_FORK_CHILD,
     EV_DOMAIN_SPAWN,
-    EV_DOMAIN_TERMINATE
+    EV_DOMAIN_TERMINATE,
+
+    CAML_EV_LIFECYCLE_MAX
 } ev_lifecycle;
 
 typedef enum {
@@ -120,7 +122,9 @@ typedef enum {
     EV_COMPACT_EVACUATE,
     EV_COMPACT_FORWARD,
     EV_COMPACT_RELEASE,
-    EV_EMPTY_MINOR
+    EV_EMPTY_MINOR,
+
+    CAML_EV_RUNTIME_PHASE_MAX
 } ev_runtime_phase;
 
 typedef enum {
@@ -153,7 +157,9 @@ typedef enum {
     EV_C_MAJOR_WORK_COUNTER,
     EV_C_MAJOR_ALLOC_COUNTER,
     EV_C_MAJOR_SLICE_TARGET,
-    EV_C_MAJOR_SLICE_BUDGET
+    EV_C_MAJOR_SLICE_BUDGET,
+
+    CAML_EV_RUNTIME_COUNTER_MAX
 } ev_runtime_counter;
 
 typedef enum {
