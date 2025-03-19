@@ -830,12 +830,7 @@ and transl_prim_1 env p arg dbg =
       opaque (transl env arg) dbg
   (* Heap operations *)
   | Pmakelazyblock tag ->
-      let tag =
-        match tag with
-        | Lazy_tag -> Config.lazy_tag
-        | Forward_tag -> Obj.forward_tag
-      in
-      make_alloc dbg tag [transl env arg]
+      make_alloc dbg (Lambda.tag_of_lazy_tag tag) [transl env arg]
   | Pfield(n, imm_or_pointer, mut) ->
       get_field env imm_or_pointer mut (transl env arg) n dbg
   | Pfloatfield n ->

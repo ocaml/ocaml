@@ -43,6 +43,10 @@ type lazy_block_tag =
   | Lazy_tag
   | Forward_tag
 
+let tag_of_lazy_tag = function
+  | Lazy_tag -> Config.lazy_tag
+  | Forward_tag -> Obj.forward_tag
+
 type primitive =
   | Pbytes_to_string
   | Pbytes_of_string

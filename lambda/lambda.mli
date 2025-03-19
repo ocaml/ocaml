@@ -502,6 +502,8 @@ val max_arity : unit -> int
       This is unlimited ([max_int]) for bytecode, but limited
       (currently to 126) for native code. *)
 
+val tag_of_lazy_tag : lazy_block_tag -> int
+
 (***********************)
 (* For static failures *)
 (***********************)

@@ -771,14 +771,9 @@ let rec comp_expr stack_info env exp sz cont =
       comp_args stack_info env args sz
         (Kmakeblock(List.length args, tag) :: cont)
   | Lprim(Pmakelazyblock tag, [arg], loc) ->
-      let tag =
-        match tag with
-        | Lazy_tag -> Config.lazy_tag
-        | Forward_tag -> Obj.forward_tag
-      in
       let cont = add_pseudo_event loc !compunit_name cont in
       comp_args stack_info env [arg] sz
-        (Kmakeblock(1, tag) :: cont)
+        (Kmakeblock(1, Lambda.tag_of_lazy_tag tag) :: cont)
   | Lprim(Pfloatfield n, args, loc) ->
       let cont = add_pseudo_event loc !compunit_name cont in
       comp_args stack_info env args sz (Kgetfloatfield n :: cont)
