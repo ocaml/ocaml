@@ -608,5 +608,5 @@ type stats =
   { classes: int; methods: int; inst_vars: int; }
 
 let stats () =
-  { classes = (Atomic.get table_count);
-    methods = (Atomic.get method_count); inst_vars = (Atomic.get inst_var_count); }
+  { classes = Atomic.get table_count;
+    methods = Atomic.get method_count; inst_vars = Atomic.get inst_var_count; }
