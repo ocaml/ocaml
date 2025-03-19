@@ -87,6 +87,36 @@ let () =
   let a = A.of_list [1; 2; 3] in
   assert (A.fold_right List.cons a [] = [1; 2; 3]);;
 
+(* exists2 *)
+let () =
+  let a = A.of_list [1; 2; 3] in
+  assert (A.exists2 (=) a a);
+  assert (not (A.exists2 (=) (A.of_list []) (A.of_list [])));
+  assert (A.exists2 (=) a (A.of_list [1; 4; 3]));
+  assert (match A.exists2 (=) a (A.of_list [1; 2]) with
+    | exception (Invalid_argument _) -> true
+    | _ -> false
+  );
+  assert (match A.exists2 (=) (A.of_list [1; 2]) a with
+    | exception (Invalid_argument _) -> true
+    | _ -> false
+  );;
+
+(* for_all2 *)
+let () =
+  let a = A.of_list [1; 2; 3] in
+  assert (A.for_all2 (=) a a);
+  assert (A.for_all2 (=) (A.of_list []) (A.of_list []));
+  assert (not (A.for_all2 (=) a (A.of_list [1; 4; 3])));
+  assert (match A.for_all2 (=) a (A.of_list [1; 2]) with
+    | exception (Invalid_argument _) -> true
+    | _ -> false
+  );
+  assert (match A.for_all2 (=) (A.of_list [1; 2]) a with
+    | exception (Invalid_argument _) -> true
+    | _ -> false
+  );;
+
 (** {1:adding Adding elements} *)
 
 (** add_last was tested above *)

@@ -150,6 +150,9 @@ Working version
 
 ### Standard library:
 
+- #13885: Add Dynarray.{exists2, for_all2}.
+  (T. Kinsart, review by Daniel Bünzli, Gabriel Scherer, and Nicolás Ojeda Bär)
+
 - #13836: Add [Float.]Array.{equal,compare}.
   (Daniel Bünzli, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
