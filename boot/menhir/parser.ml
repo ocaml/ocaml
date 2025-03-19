@@ -2,7 +2,7 @@
 (* This generated code requires the following version of MenhirLib: *)
 
 let () =
-  MenhirLib.StaticVersion.require_20240715
+  MenhirLib.StaticVersion.require_20231231
 
 module MenhirBasics = struct
   
@@ -21221,7 +21221,7 @@ module Tables = struct
           let _startpos = _startpos__1_ in
           (
 # 1406 "parsing/parser.mly"
-      ( _startpos, Named (x, mty) )
+      ( _startpos, Named (false, x, mty) )
 # 21226 "parsing/parser.ml"
            : (Lexing.position * Parsetree.functor_parameter))
         in
@@ -34578,7 +34578,7 @@ module Tables = struct
           let _1 =
             let _1 = 
 # 1751 "parsing/parser.mly"
-        ( Pmty_functor(Named (mknoloc None, _1), _3) )
+        ( Pmty_functor(Named (false, mknoloc None, _1), _3) )
 # 34583 "parsing/parser.ml"
              in
             let _endpos__1_ = _endpos__3_ in

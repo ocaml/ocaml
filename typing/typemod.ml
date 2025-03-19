@@ -281,7 +281,7 @@ let iterator_with_env super env =
       let env_before = !env in
       begin match param with
       | Unit -> ()
-      | Named (param, mty_arg) ->
+      | Named (_, param, mty_arg) ->
         self.Btype.it_module_type self mty_arg;
         match param with
         | None -> ()
@@ -301,7 +301,7 @@ let retype_applicative_functor_type ~loc env funct arg =
   let mty_arg = (Env.find_module arg env).md_type in
   let mty_param =
     match Env.scrape_alias env mty_functor with
-    | Mty_functor (Named (_, mty_param), _) -> mty_param
+    | Mty_functor (Named (_, _, mty_param), _) -> mty_param
     | _ -> assert false (* could trigger due to MPR#7611 *)
   in
   Includemod.check_modtype_inclusion ~loc env mty_arg arg mty_param
@@ -789,17 +789,17 @@ let rec approx_modtype env smty =
       let (param, newenv) =
         match param with
         | Unit -> Types.Unit, env
-        | Named (param, sarg) ->
+        | Named (is_pure, param, sarg) ->
           let arg = approx_modtype env sarg in
           match param.txt with
-          | None -> Types.Named (None, arg), env
+          | None -> Types.Named (is_pure, None, arg), env
           | Some name ->
             let rarg = Mtype.scrape_for_functor_arg env arg in
             let scope = Ctype.create_scope () in
             let (id, newenv) =
               Env.enter_module ~scope ~arg:true name Mp_present rarg env
             in
-            Types.Named (Some id, arg), newenv
+            Types.Named (is_pure, Some id, arg), newenv
       in
       let res = approx_modtype newenv sres in
       Mty_functor(param, res)
@@ -1291,7 +1291,7 @@ and transl_modtype_aux env smty =
       let t_arg, ty_arg, newenv =
         match sarg_opt with
         | Unit -> Unit, Types.Unit, env
-        | Named (param, sarg) ->
+        | Named (is_pure, param, sarg) ->
           let arg = transl_modtype_functor_arg env sarg in
           let (id, newenv) =
             match param.txt with
@@ -1311,7 +1311,9 @@ and transl_modtype_aux env smty =
               in
               Some id, newenv
           in
-          Named (id, param, arg), Types.Named (id, arg.mty_type), newenv
+          (Named (is_pure, id, param, arg),
+           Types.Named (is_pure, id, arg.mty_type),
+           newenv)
       in
       let res = transl_modtype newenv sres in
       mkmty (Tmty_functor (t_arg, res))
@@ -1827,8 +1829,8 @@ let rec nongen_modtype env = function
       let env =
         match arg_opt with
         | Unit
-        | Named (None, _) -> env
-        | Named (Some id, param) ->
+        | Named (_, None, _) -> env
+        | Named (_, Some id, param) ->
             Env.add_module ~arg:true id Mp_present param env
       in
       nongen_modtype env body
@@ -2147,6 +2149,7 @@ let not_principal msg = Warnings.Not_principal (Format_doc.Doc.msg msg)
 type funct_body =
   | Gen
   | App
+  | Pure
 
 let rec type_module ?(alias=false) ~strengthen ~funct_body anchor env smod =
   Builtin_attributes.warning_scope smod.pmod_attributes
@@ -2212,7 +2215,7 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
         match arg_opt with
         | Unit ->
           Unit, Types.Unit, env, Shape.for_unnamed_functor_param, Gen
-        | Named (param, smty) ->
+        | Named (is_pure, param, smty) ->
           let mty = transl_modtype_functor_arg env smty in
           let scope = Ctype.create_scope () in
           let (id, newenv, var) =
@@ -2234,8 +2237,10 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
               in
               Some id, newenv, id
           in
-          Named (id, param, mty), Types.Named (id, mty.mty_type), newenv,
-          var, App
+          let funct_body = if is_pure then Pure else App in
+          (Named (is_pure, id, param, mty),
+           Types.Named (is_pure, id, mty.mty_type), newenv,
+           var, funct_body)
       in
       let body, body_shape =
         type_module ~strengthen:true ~funct_body None newenv sbody
@@ -2363,7 +2368,7 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
         mod_attributes = app_view.attributes;
         mod_loc = funct.mod_loc },
       Shape.app funct_shape ~arg:Shape.dummy_mod
-  | Mty_functor (Named (param, mty_param), mty_res) as mty_functor ->
+  | Mty_functor (Named (_is_pure, param, mty_param), mty_res) as mty_functor ->
       let apply_error () =
         let args = List.map simplify_app_summary args in
         let mty_f = md_f.mod_type in

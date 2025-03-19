@@ -1696,7 +1696,7 @@ module Analyser =
              match param2, param with
              | Parsetree.Unit, Typedtree.Unit ->
                Location.none, "*", Module_type_struct [], None
-             | Parsetree.Named (_, pmty), Typedtree.Named (ident, _, mty) ->
+             | Parsetree.Named (_, _, pmty), Typedtree.Named (p, ident, _, mty) ->
                let loc =  pmty.Parsetree.pmty_loc in
                let mp_name = Option.fold ~none:"*" ~some:Name.from_ident ident in
                let mp_kind =
@@ -1704,7 +1704,7 @@ module Analyser =
                    mty.mty_type
                in
                let mp_type = Odoc_env.subst_module_type env mty.mty_type in
-               loc, mp_name, mp_kind, Some mp_type
+               loc, mp_name, mp_kind, Some (p, mp_type)
              | _, _ -> assert false
            in
            let loc_start = loc.Location.loc_start.Lexing.pos_cnum in

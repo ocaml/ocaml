@@ -60,8 +60,8 @@ module Context = struct
         Fmt.fprintf ppf " :@ %a" context_mty cxt
   and argname = function
     | Types.Unit -> ""
-    | Types.Named (None, _) -> "_"
-    | Types.Named (Some id, _) -> Ident.name id
+    | Types.Named (_, None, _) -> "_"
+    | Types.Named (_, Some id, _) -> Ident.name id
 
   let alt_pp ppf cxt =
     if cxt = [] then () else
@@ -166,7 +166,7 @@ module Runtime_coercion = struct
             find env (Context.Module id :: ctx) q md.md_type
         | _ -> raise Not_found
         end
-    | Mty_functor(Named (_,mt) as arg,_), InArg :: q ->
+    | Mty_functor(Named (_,_,mt) as arg,_), InArg :: q ->
         find env (Context.Arg arg :: ctx) q mt
     | Mty_functor(arg, mt), InBody :: q ->
         find env (Context.Body arg :: ctx) q mt
@@ -353,7 +353,7 @@ module With_shorthand = struct
 
   let functor_param (ua : _ named) = match ua.item with
     | Types.Unit -> Unit
-    | Types.Named (from, mty) ->
+    | Types.Named (_, from, mty) ->
         Named (from, modtype { ua with item = mty })
 
   (** Printing of arguments with shorthands *)
@@ -424,8 +424,8 @@ module Functor_suberror = struct
   open Err
 
   let param_id x = match x.With_shorthand.item with
-    | Types.Named (Some _ as x,_) -> x
-    | Types.(Unit | Named(None,_)) -> None
+    | Types.Named (_, (Some _ as x),_) -> x
+    | Types.(Unit | Named(_, None,_)) -> None
 
 
 (** Print a list of functor parameters with style while adjusting the printing
@@ -580,7 +580,7 @@ module Functor_suberror = struct
       let _arg, mty = g.With_shorthand.item in
       let e = match e.With_shorthand.item with
         | Types.Unit -> Fmt.dprintf "()"
-        | Types.Named(_, mty) -> dmodtype mty
+        | Types.Named(_, _, mty) -> dmodtype mty
       in
       Fmt.dprintf
         "Modules do not match:@ @[%t@]@;<1 -2>\

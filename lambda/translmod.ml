@@ -460,10 +460,10 @@ let merge_functors ~scopes mexp coercion root_path =
       let path, param =
         match param with
         | Unit -> None, Ident.create_local "*"
-        | Named (None, _, _) ->
+        | Named (_, None, _, _) ->
           let id = Ident.create_local "_" in
           functor_path path id, id
-        | Named (Some id, _, _) -> functor_path path id, id
+        | Named (_, Some id, _, _) -> functor_path path id, id
       in
       let inline_attribute =
         merge_inline_attributes inline_attribute inline_attribute' loc

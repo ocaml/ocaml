@@ -713,8 +713,8 @@ and module_type i ppf x =
   | Pmty_functor (Unit, mt2) ->
       line i ppf "Pmty_functor ()\n";
       module_type i ppf mt2;
-  | Pmty_functor (Named (s, mt1), mt2) ->
-      line i ppf "Pmty_functor %a\n" fmt_str_opt_loc s;
+  | Pmty_functor (Named (is_pure, s, mt1), mt2) ->
+      line i ppf "Pmty_functor %b %a\n" is_pure fmt_str_opt_loc s;
       module_type i ppf mt1;
       module_type i ppf mt2;
   | Pmty_with (mt, l) ->
@@ -831,8 +831,8 @@ and module_expr i ppf x =
   | Pmod_functor (Unit, me) ->
       line i ppf "Pmod_functor ()\n";
       module_expr i ppf me;
-  | Pmod_functor (Named (s, mt), me) ->
-      line i ppf "Pmod_functor %a\n" fmt_str_opt_loc s;
+  | Pmod_functor (Named (is_pure, s, mt), me) ->
+      line i ppf "Pmod_functor %b %a\n" is_pure fmt_str_opt_loc s;
       module_type i ppf mt;
       module_expr i ppf me;
   | Pmod_apply (me1, me2) ->

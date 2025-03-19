@@ -1281,14 +1281,15 @@ and module_type ctxt f x =
     match x.pmty_desc with
     | Pmty_functor (Unit, mt2) ->
         pp f "@[<hov2>() ->@ %a@]" (module_type ctxt) mt2
-    | Pmty_functor (Named (s, mt1), mt2) ->
+    | Pmty_functor (Named (is_pure, s, mt1), mt2) ->
+        let arr = if is_pure then "=>" else "->" in
         begin match s.txt with
         | None ->
-            pp f "@[<hov2>%a@ ->@ %a@]"
-              (module_type1 ctxt) mt1 (module_type ctxt) mt2
+            pp f "@[<hov2>%a@ %s@ %a@]"
+              (module_type1 ctxt) mt1 arr (module_type ctxt) mt2
         | Some name ->
-            pp f "@[<hov2>(%s@ :@ %a)@ ->@ %a@]" name
-              (module_type ctxt) mt1 (module_type ctxt) mt2
+            pp f "@[<hov2>(%s@ :@ %a)@ %s@ %a@]" name
+              (module_type ctxt) mt1 arr (module_type ctxt) mt2
         end
     | Pmty_with (mt, []) -> module_type ctxt f mt
     | Pmty_with (mt, l) ->
@@ -1455,10 +1456,11 @@ and module_expr ctxt f x =
         pp f "%a" value_longident_loc li;
     | Pmod_functor (Unit, me) ->
         pp f "functor ()@;->@;%a" (module_expr ctxt) me
-    | Pmod_functor (Named (s, mt), me) ->
-        pp f "functor@ (%s@ :@ %a)@;->@;%a"
+    | Pmod_functor (Named (is_pure, s, mt), me) ->
+        let arr = if is_pure then "=>" else "->" in
+        pp f "functor@ (%s@ :@ %a)@;%s@;%a"
           (Option.value s.txt ~default:"_")
-          (module_type ctxt) mt (module_expr ctxt) me
+          (module_type ctxt) mt arr (module_expr ctxt) me
     | Pmod_apply (me1, me2) ->
         pp f "(%a)(%a)" (module_expr ctxt) me1 (module_expr ctxt) me2
         (* Cf: #7200 *)
@@ -1563,7 +1565,7 @@ and structure_item ctxt f x =
         | {pmod_desc=Pmod_functor(arg_opt,me'); pmod_attributes = []} ->
             begin match arg_opt with
             | Unit -> pp f "()"
-            | Named (s, mt) ->
+            | Named (_, s, mt) ->
               pp f "(%s:%a)" (Option.value s.txt ~default:"_")
                 (module_type ctxt) mt
             end;

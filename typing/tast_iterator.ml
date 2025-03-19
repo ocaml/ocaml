@@ -437,7 +437,7 @@ let class_description sub x =
 
 let functor_parameter sub = function
   | Unit -> ()
-  | Named (_, s, mtype) -> iter_loc sub s; sub.module_type sub mtype
+  | Named (_, _, s, mtype) -> iter_loc sub s; sub.module_type sub mtype
 
 let module_type sub {mty_loc; mty_desc; mty_env; mty_attributes; _} =
   sub.location sub mty_loc;
