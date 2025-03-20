@@ -73,7 +73,7 @@ Error: This application of the functor "F" is ill-typed.
        These arguments:
          Y
        do not match these parameters:
-         (X : x) (Y : y) -> ...
+         (X : x) (Y : y) => ...
        1. An argument appears to be missing with module type x
        2. Module Y matches the expected module type y
 |}]
@@ -87,7 +87,7 @@ Error: This application of the functor "F" is ill-typed.
        These arguments:
          X W
        do not match these parameters:
-         (X : x) (Y : y) -> ...
+         (X : x) (Y : y) => ...
        1. Module X matches the expected module type x
        2. Modules do not match:
             W : sig type w = W.w end
@@ -790,7 +790,7 @@ Error: Signature mismatch:
        is not included in
          (X : $T1) (Y : $T2) (Z : $T3) -> ...
        1. Module types $S1 and $T1 match
-       2. The functor was expected to be generative at this position
+       2. The functor was expected to be pure at this position
        3. An argument appears to be missing with module type
               $T3 = (A : sig type za end) (B : sig type zb end) -> sig end
 |}]
@@ -1447,7 +1447,7 @@ Error: Signature mismatch:
             $T1 =
             sig module type T module type t = T -> T -> T module M : t end
           The type "wrong" is required but not provided
-       2. The functor was expected to be generative at this position
+       2. The functor was expected to be pure at this position
        3. An argument appears to be missing with module type X.T
 |}]
 

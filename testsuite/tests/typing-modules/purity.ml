@@ -44,8 +44,8 @@ Error: Signature mismatch:
        is not included in
          sig module F : PureF end
        In module "F":
-       Modules do not match: (T : T) -> ... is not included in (T : T) -> ...
-       The functor was expected to be generative at this position
+       Modules do not match: (T : T) -> ... is not included in (T : T) => ...
+       The functor was expected to be pure at this position
 |}]
 
 module M (_ : T) = struct end
