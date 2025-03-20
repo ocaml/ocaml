@@ -106,7 +106,7 @@ val f : (?x:int -> unit -> int) -> int = <fun>
 Line 1, characters 46-47:
 1 | let f g = ignore (g : ?x:int -> unit -> int); g ();;
                                                   ^
-Warning 19 [non-principal-labels]: eliminated optional argument without principality.
+Warning 19 [non-principal-labels]: eliminated omittable argument without principality.
 
 val f : (?x:int -> unit -> int) -> int = <fun>
 |}];;
