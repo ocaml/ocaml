@@ -46,6 +46,10 @@ type hiding_error =
       user_loc: Location.t;
     }
 
+type functor_content =
+    | TypeGen
+    | Impure
+
 type error =
     Cannot_apply of module_type
   | Not_included of Includemod.explanation
@@ -65,7 +69,7 @@ type error =
       { vars : type_expr list; item : value_description; mty : module_type }
   | Implementation_is_required of string
   | Interface_not_compiled of string
-  | Not_allowed_in_functor_body
+  | Not_allowed_in_functor_body of functor_content
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr
@@ -2290,7 +2294,9 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
             raise (Error(smod.pmod_loc, env, Not_a_packed_module exp.exp_type))
       in
       if funct_body <> Gen && Mtype.contains_type env mty then
-        raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body));
+        raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body TypeGen));
+      if funct_body = Pure && not (Typecore.is_nonexpansive ~pure:true exp) then
+        raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body Impure));
       { mod_desc = Tmod_unpack(exp, mty);
         mod_type = mty;
         mod_env = env;
@@ -2361,14 +2367,16 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
             raise (Error (app_view.f_loc, env, Apply_generative));
       end;
       if funct_body <> Gen && Mtype.contains_type env funct.mod_type then
-        raise (Error (apply_loc, env, Not_allowed_in_functor_body));
+        raise (Error (apply_loc, env, Not_allowed_in_functor_body TypeGen));
+      if funct_body = Pure then
+        raise (Error (apply_loc, env, Not_allowed_in_functor_body Impure));
       { mod_desc = Tmod_apply_unit funct;
         mod_type = mty_res;
         mod_env = env;
         mod_attributes = app_view.attributes;
         mod_loc = funct.mod_loc },
       Shape.app funct_shape ~arg:Shape.dummy_mod
-  | Mty_functor (Named (_is_pure, param, mty_param), mty_res) as mty_functor ->
+  | Mty_functor (Named (is_pure, param, mty_param), mty_res) as mty_functor ->
       let apply_error () =
         let args = List.map simplify_app_summary args in
         let mty_f = md_f.mod_type in
@@ -2429,6 +2437,8 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
       in
       check_well_formed_module env apply_loc
         "the signature of this functor application" mty_appl;
+      if funct_body = Pure && not is_pure then
+        raise (Error (apply_loc, env, Not_allowed_in_functor_body Impure));
       { mod_desc = Tmod_apply(funct, arg, coercion);
         mod_type = mty_appl;
         mod_env = env;
@@ -2523,6 +2533,9 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
           Builtin_attributes.warning_scope attrs
             (fun () -> Typecore.type_expression env sexpr)
         in
+        if funct_body = Pure && not (Typecore.is_nonexpansive ~pure:true expr)
+        then raise
+              (Error (sexpr.pexp_loc, env, Not_allowed_in_functor_body Impure));
         Tstr_eval (expr, attrs), [], shape_map, env
     | Pstr_value(rec_flag, sdefs) ->
         let (defs, newenv) =
@@ -2531,6 +2544,11 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
           | Recursive -> Typecore.annotate_recursive_bindings env defs
           | Nonrecursive -> defs
         in
+        if funct_body = Pure then
+          List.iter (fun d ->
+            if not (Typecore.is_nonexpansive ~pure:true d.vb_expr)
+            then raise (Error (d.vb_loc, env,
+                               Not_allowed_in_functor_body Impure))) defs;
         (* Note: Env.find_value does not trigger the value_used event. Values
            will be marked as being used during the signature inclusion test. *)
         let items, shape_map =
@@ -2581,6 +2599,13 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
         let (tyext, newenv, shapes) =
           Typedecl.transl_type_extension true env loc styext
         in
+        if funct_body = Pure then
+          List.iter (fun d ->
+            match d.ext_kind with
+            | Text_decl _ ->
+              raise (Error (styext.ptyext_loc, env,
+                            Not_allowed_in_functor_body Impure))
+            | Text_rebind _ -> ()) tyext.tyext_constructors;
         let constructors = tyext.tyext_constructors in
         let shape_map = List.fold_left2 (fun shape_map ext shape ->
             Signature_names.check_typext names ext.ext_loc ext.ext_id;
@@ -2598,6 +2623,12 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
         let constructor = ext.tyexn_constructor in
         Signature_names.check_typext names constructor.ext_loc
           constructor.ext_id;
+        if funct_body = Pure then begin
+          match constructor.ext_kind with
+          | Text_decl _ ->
+            raise (Error (loc, env, Not_allowed_in_functor_body Impure))
+          | Text_rebind _ -> ()
+        end;
         Tstr_exception ext,
         [Sig_typext(constructor.ext_id,
                     constructor.ext_type,
@@ -2761,6 +2792,8 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
         Tstr_open od, sg, shape_map, newenv
     | Pstr_class cl ->
         let (classes, new_env) = Typeclass.class_declarations env cl in
+        if funct_body = Pure then
+          raise (Error (loc, env, Not_allowed_in_functor_body Impure));
         let shape_map = List.fold_left (fun acc cls ->
             let open Typeclass in
             let loc = cls.cls_id_loc.Location.loc in
@@ -3385,10 +3418,14 @@ let report_error ~loc _env = function
       Location.errorf ~loc
         "@[Could not find the .cmi file for interface@ %a.@]"
         Location.Doc.quoted_filename intf_name
-  | Not_allowed_in_functor_body ->
+  | Not_allowed_in_functor_body TypeGen ->
       Location.errorf ~loc
         "@[This expression creates fresh types.@ %s@]"
         "It is not allowed inside applicative functors."
+  | Not_allowed_in_functor_body Impure ->
+      Location.errorf ~loc
+        "@[This expression is not garanted to be pure.@ %s@]"
+        "It is not allowed inside pure applicative functors."
   | Not_a_packed_module ty ->
       Location.errorf ~loc
         "This expression is not a packed module. It has type@ %a"

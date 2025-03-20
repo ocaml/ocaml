@@ -69,7 +69,7 @@ val mk_expected:
   type_expr ->
   type_expected
 
-val is_nonexpansive: Typedtree.expression -> bool
+val is_nonexpansive: ?pure:bool -> Typedtree.expression -> bool
 
 module Datatype_kind : sig
   type t = Record | Variant
