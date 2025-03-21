@@ -2152,8 +2152,15 @@ let not_principal msg = Warnings.Not_principal (Format_doc.Doc.msg msg)
 
 type funct_body =
   | Gen
-  | App
+  | App of bool ref
   | Pure
+
+let check_purity loc env funct_body pure =
+  match funct_body with
+  | App p when !p -> p := pure ()
+  | Pure when not (pure ()) ->
+    raise (Error (loc, env, Not_allowed_in_functor_body Impure))
+  | _ -> ()
 
 let rec type_module ?(alias=false) ~strengthen ~funct_body anchor env smod =
   Builtin_attributes.warning_scope smod.pmod_attributes
@@ -2215,10 +2222,10 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
       wrap_constraint_with_shape env false md
         (Mty_signature sg') shape Tmodtype_implicit
   | Pmod_functor(arg_opt, sbody) ->
-      let t_arg, ty_arg, newenv, funct_shape_param, funct_body =
+      let f_t_arg, newenv, funct_shape_param, funct_body =
         match arg_opt with
         | Unit ->
-          Unit, Types.Unit, env, Shape.for_unnamed_functor_param, Gen
+          (fun () -> Unit, Types.Unit), env, Shape.for_unnamed_functor_param, Gen
         | Named (is_pure, param, smty) ->
           let mty = transl_modtype_functor_arg env smty in
           let scope = Ctype.create_scope () in
@@ -2241,14 +2248,18 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
               in
               Some id, newenv, id
           in
-          let funct_body = if is_pure then Pure else App in
-          (Named (is_pure, id, param, mty),
-           Types.Named (is_pure, id, mty.mty_type), newenv,
-           var, funct_body)
+          let pure = ref true in
+          let funct_body = if is_pure then Pure else App pure in
+          let f_t_arg () =
+            (Named (!pure, id, param, mty),
+             Types.Named (!pure, id, mty.mty_type))
+          in
+          (f_t_arg, newenv, var, funct_body)
       in
       let body, body_shape =
         type_module ~strengthen:true ~funct_body None newenv sbody
       in
+      let t_arg, ty_arg = f_t_arg () in
       { mod_desc = Tmod_functor(t_arg, body);
         mod_type = Mty_functor(ty_arg, body.mod_type);
         mod_env = env;
@@ -2295,8 +2306,8 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
       in
       if funct_body <> Gen && Mtype.contains_type env mty then
         raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body TypeGen));
-      if funct_body = Pure && not (Typecore.is_nonexpansive ~pure:true exp) then
-        raise (Error (smod.pmod_loc, env, Not_allowed_in_functor_body Impure));
+      check_purity smod.pmod_loc env funct_body
+        (fun () -> Typecore.is_nonexpansive ~pure:true exp);
       { mod_desc = Tmod_unpack(exp, mty);
         mod_type = mty;
         mod_env = env;
@@ -2368,8 +2379,7 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
       end;
       if funct_body <> Gen && Mtype.contains_type env funct.mod_type then
         raise (Error (apply_loc, env, Not_allowed_in_functor_body TypeGen));
-      if funct_body = Pure then
-        raise (Error (apply_loc, env, Not_allowed_in_functor_body Impure));
+      check_purity apply_loc env funct_body (fun () -> false);
       { mod_desc = Tmod_apply_unit funct;
         mod_type = mty_res;
         mod_env = env;
@@ -2437,8 +2447,8 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
       in
       check_well_formed_module env apply_loc
         "the signature of this functor application" mty_appl;
-      if funct_body = Pure && not is_pure then
-        raise (Error (apply_loc, env, Not_allowed_in_functor_body Impure));
+      if not is_pure then
+        check_purity apply_loc env funct_body (fun () -> false);
       { mod_desc = Tmod_apply(funct, arg, coercion);
         mod_type = mty_appl;
         mod_env = env;
@@ -2533,9 +2543,8 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
           Builtin_attributes.warning_scope attrs
             (fun () -> Typecore.type_expression env sexpr)
         in
-        if funct_body = Pure && not (Typecore.is_nonexpansive ~pure:true expr)
-        then raise
-              (Error (sexpr.pexp_loc, env, Not_allowed_in_functor_body Impure));
+        check_purity sexpr.pexp_loc env funct_body
+          (fun () -> Typecore.is_nonexpansive ~pure:true expr);
         Tstr_eval (expr, attrs), [], shape_map, env
     | Pstr_value(rec_flag, sdefs) ->
         let (defs, newenv) =
@@ -2544,11 +2553,17 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
           | Recursive -> Typecore.annotate_recursive_bindings env defs
           | Nonrecursive -> defs
         in
-        if funct_body = Pure then
-          List.iter (fun d ->
-            if not (Typecore.is_nonexpansive ~pure:true d.vb_expr)
-            then raise (Error (d.vb_loc, env,
-                               Not_allowed_in_functor_body Impure))) defs;
+        begin match funct_body with
+          | Pure ->
+            List.iter (fun d ->
+              if not (Typecore.is_nonexpansive ~pure:true d.vb_expr)
+              then raise (Error (d.vb_loc, env,
+                                Not_allowed_in_functor_body Impure))) defs
+          | App p when !p ->
+              p := List.for_all
+                  (fun d -> Typecore.is_nonexpansive ~pure:true d.vb_expr) defs
+          | _ -> ()
+        end;
         (* Note: Env.find_value does not trigger the value_used event. Values
            will be marked as being used during the signature inclusion test. *)
         let items, shape_map =
@@ -2599,13 +2614,21 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
         let (tyext, newenv, shapes) =
           Typedecl.transl_type_extension true env loc styext
         in
-        if funct_body = Pure then
-          List.iter (fun d ->
-            match d.ext_kind with
-            | Text_decl _ ->
-              raise (Error (styext.ptyext_loc, env,
-                            Not_allowed_in_functor_body Impure))
-            | Text_rebind _ -> ()) tyext.tyext_constructors;
+        begin match funct_body with
+          | Pure ->
+            List.iter (fun d ->
+              match d.ext_kind with
+              | Text_decl _ ->
+                raise (Error (styext.ptyext_loc, env,
+                              Not_allowed_in_functor_body Impure))
+              | Text_rebind _ -> ()) tyext.tyext_constructors
+          | App p when !p ->
+            p := List.for_all
+                (fun d ->
+                  match d.ext_kind with Text_rebind _ -> true | _ -> false)
+                tyext.tyext_constructors
+          | _ -> ()
+        end;
         let constructors = tyext.tyext_constructors in
         let shape_map = List.fold_left2 (fun shape_map ext shape ->
             Signature_names.check_typext names ext.ext_loc ext.ext_id;
@@ -2623,12 +2646,10 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
         let constructor = ext.tyexn_constructor in
         Signature_names.check_typext names constructor.ext_loc
           constructor.ext_id;
-        if funct_body = Pure then begin
-          match constructor.ext_kind with
-          | Text_decl _ ->
-            raise (Error (loc, env, Not_allowed_in_functor_body Impure))
-          | Text_rebind _ -> ()
-        end;
+        check_purity loc env funct_body
+          (fun () -> begin match constructor.ext_kind with
+              Text_rebind _ -> true
+            | _ -> false end);
         Tstr_exception ext,
         [Sig_typext(constructor.ext_id,
                     constructor.ext_type,
@@ -2792,8 +2813,7 @@ and type_structure ?(toplevel = false) ~funct_body anchor env sstr =
         Tstr_open od, sg, shape_map, newenv
     | Pstr_class cl ->
         let (classes, new_env) = Typeclass.class_declarations env cl in
-        if funct_body = Pure then
-          raise (Error (loc, env, Not_allowed_in_functor_body Impure));
+        check_purity loc env funct_body (fun () -> false);
         let shape_map = List.fold_left (fun acc cls ->
             let open Typeclass in
             let loc = cls.cls_id_loc.Location.loc in

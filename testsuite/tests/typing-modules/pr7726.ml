@@ -41,7 +41,7 @@ module F3(X:T) = struct type t = Z | S of X.t end;;
 module T3 = Fix(F3);;
 let x : T3.Fixed.t = S Z;;
 [%%expect{|
-module F3 : (X : T) -> sig type t = Z | S of X.t end
+module F3 : (X : T) => sig type t = Z | S of X.t end
 module T3 : sig module rec Fixed : sig type t = F3(Fixed).t end end
 val x : T3.Fixed.t = F3(T3.Fixed).S F3(T3.Fixed).Z
 |}]
@@ -56,15 +56,15 @@ module Id (X : T) = X;;
 [%%expect{|
 module M :
   sig
-    module F : (X : T) -> T
+    module F : (X : T) => T
     module rec Fixed : sig type t = F(Fixed).t end
   end
 module type S =
   sig
-    module F : (X : T) -> T
+    module F : (X : T) => T
     module rec Fixed : sig type t = F(Fixed).t end
   end
-module Id : (X : T) -> sig type t = X.t end
+module Id : (X : T) => sig type t = X.t end
 |}]
 
 module type Bad = S with module F = Id;;
@@ -120,7 +120,7 @@ module Foo (F : T -> T) = struct
 module M = Foo(Id);;
 M.f 5;;
 [%%expect{|
-module Foo : (F : T -> T) -> sig val f : Fix(F).Fixed.t -> Fix(F).Fixed.t end
+module Foo : (F : T -> T) => sig val f : Fix(F).Fixed.t -> Fix(F).Fixed.t end
 module M : sig val f : Fix(Id).Fixed.t -> Fix(Id).Fixed.t end
 Line 1:
 Error: In the signature of Fix(Id):
@@ -153,7 +153,7 @@ module Fix2 :
   (F : T -> T) ->
     sig
       module rec Fixed : sig type t = F(Fixed).t end
-      module R : (X : sig end) -> sig type t = Fixed.t end
+      module R : (X : sig end) => sig type t = Fixed.t end
     end
 Line 5, characters 11-19:
 5 | let f (x : Fix2(Id).R(M).t) = x;;

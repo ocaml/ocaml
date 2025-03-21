@@ -27,5 +27,5 @@ Line 2, characters 16-39:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
   Here is an example of a case that is not matched: "Eq"
 
-module F : (T : sig type _ t end) -> sig val f : ('a, 'a T.t) eq -> int end
+module F : (T : sig type _ t end) => sig val f : ('a, 'a T.t) eq -> int end
 |}];;

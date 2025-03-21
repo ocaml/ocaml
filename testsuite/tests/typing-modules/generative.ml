@@ -15,7 +15,7 @@ module type S = sig val x : int end
 val v : (module S) = <module>
 module F : () -> S
 module G : (X : sig end) -> S
-module H : (X : sig end) -> S
+module H : (X : sig end) => S
 |}];;
 
 (* With type *)
@@ -67,13 +67,13 @@ Error: This is a generative functor. It can only be applied to "()"
 module F1 (X : sig end) = struct end;;
 module F2 : () -> sig end = F1;; (* fail *)
 [%%expect{|
-module F1 : (X : sig end) -> sig end
+module F1 : (X : sig end) => sig end
 Line 2, characters 28-30:
 2 | module F2 : () -> sig end = F1;; (* fail *)
                                 ^^
 Error: Signature mismatch:
        Modules do not match:
-         (X : sig end) -> ...
+         (X : sig end) => ...
        is not included in
          () -> ...
        The functor was expected to be generative at this position
@@ -101,9 +101,9 @@ module Z = functor (_: sig end) (_:sig end) (_: sig end) -> struct end;;
 module GZ : functor (X: sig end) () (Z: sig end) -> sig end
           = functor (X: sig end) () (Z: sig end) -> struct end;;
 [%%expect{|
-module X : (X : sig end) (Y : sig end) -> (Z : sig end) -> sig end
-module Y : (X : sig end) (Y : sig end) -> (Z : sig end) -> sig end
-module Z : sig end => sig end => sig end -> sig end
+module X : (X : sig end) (Y : sig end) (Z : sig end) => sig end
+module Y : (X : sig end) (Y : sig end) (Z : sig end) => sig end
+module Z : sig end => sig end => sig end => sig end
 module GZ : (X : sig end) () (Z : sig end) -> sig end
 |}];;
 

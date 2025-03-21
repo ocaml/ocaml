@@ -40,6 +40,6 @@ end;;
 [%%expect{|
 type bar = { bar : 'a. ([< `A ] as 'a) -> 'a; }
 module Bar :
-  (X : sig type bar2 = bar = { bar : 'a. ([< `A ] as 'a) -> 'a; } end) ->
+  (X : sig type bar2 = bar = { bar : 'a. ([< `A ] as 'a) -> 'a; } end) =>
     sig val f : X.bar2 -> ([< `A ] as 'a) -> 'a end
 |}]

@@ -21,7 +21,7 @@ Warning 8 [partial-match]: this pattern-matching is not exhaustive.
   Here is an example of a case that is not matched: "(One, Two)"
 
 module Add :
-  (T : sig type two end) ->
+  (T : sig type two end) =>
     sig
       type _ t = One : [ `One ] t | Two : T.two t
       val add : 'a t * 'a t -> string

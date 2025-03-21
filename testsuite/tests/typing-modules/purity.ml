@@ -24,7 +24,7 @@ end = struct
 end
 
 [%%expect{|
-module PuretoImpure : (F : PureF) -> sig module F : ImpureF end
+module PuretoImpure : (F : PureF) => sig module F : ImpureF end
 |}]
 
 module ImpureToPure_Fail (F : ImpureF) : sig
@@ -49,17 +49,17 @@ Error: Signature mismatch:
 |}]
 
 module M (_ : T) = struct end
-module Mimpure = functor (_ : T) -> struct end
+module Mimpure = functor (_ : T) -> struct exception E end
 module Mpure = functor (_ : T) => struct end
-module M4 = functor (_ : T) (_ : T) -> struct end
+module M4 = functor (_ : T) (_ : T) -> struct exception E end
 module M5 = functor (_ : T) (_ : T) => struct end
 module M6 = functor [@pure] (_ : T) (_ : T) -> struct end
 
 [%%expect{|
-module M : T -> sig end
-module Mimpure : T -> sig end
+module M : T => sig end
+module Mimpure : T -> sig exception E end
 module Mpure : T => sig end
-module M4 : T => T -> sig end
+module M4 : T => T -> sig exception E end
 module M5 : T => T => sig end
 module M6 : T => T => sig end
 |}]
@@ -190,4 +190,13 @@ Lines 2-3, characters 2-5:
 3 |   end
 Error: This expression is not garanted to be pure.
        It is not allowed inside pure applicative functors.
+|}]
+
+(* Test if purity check works *)
+
+module ShouldBePure (T : sig type t end) = struct
+end
+
+[%%expect{|
+module ShouldBePure : (T : sig type t end) => sig end
 |}]

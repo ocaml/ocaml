@@ -19,7 +19,7 @@ module Falias (X : S) = X
 {
  "Falias"[module] -> Abs<.4>(X, X<.3>);
  }
-module Falias : (X : S) -> sig type t = X.t val x : t end
+module Falias : (X : S) => sig type t = X.t val x : t end
 |}]
 
 module Finclude (X : S) = struct
@@ -34,7 +34,7 @@ end
            "x"[value] -> X<.5> . "x"[value];
            });
  }
-module Finclude : (X : S) -> sig type t = X.t val x : t end
+module Finclude : (X : S) => sig type t = X.t val x : t end
 |}]
 
 module Fredef (X : S) = struct
@@ -48,7 +48,7 @@ end
                                   "x"[value] -> <.9>;
                                   });
  }
-module Fredef : (X : S) -> sig type t = X.t val x : X.t end
+module Fredef : (X : S) => sig type t = X.t val x : X.t end
 |}]
 
 module Fignore (_ : S) = struct
@@ -67,7 +67,7 @@ end
         "x"[value] -> <.13>;
         });
  }
-module Fignore : S -> sig type t = Fresh val x : t end
+module Fignore : S => sig type t = Fresh val x : t end
 |}]
 
 module Arg : S = struct

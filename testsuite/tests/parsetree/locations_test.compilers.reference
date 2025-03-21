@@ -138,7 +138,7 @@ Ptop_def
               []
   ]
 
-module F : (A : S) (B : S) -> sig end
+module F : (A : S) (B : S) => sig end
 Ptop_def
   [
     structure_item (//toplevel//[4,18+0]..[4,18+31])
