@@ -75,6 +75,8 @@ from being garbage-collected \\
 \begin{tabular}{lll}
 "Complex" & p.~\stdpageref{Complex} & complex numbers \\
 "Float" & p.~\stdpageref{Float} & floating-point numbers \\
+"Int8" & p.~\stdpageref{Int8} & operations on 8-bit integers \\
+"Int16" & p.~\stdpageref{Int16} & operations on 16-bit integers \\
 "Int32" & p.~\stdpageref{Int32} & operations on 32-bit integers \\
 "Int64" & p.~\stdpageref{Int64} & operations on 64-bit integers \\
 "Nativeint" & p.~\stdpageref{Nativeint} & operations on platform-native
@@ -152,6 +154,8 @@ representation of values \\
 \stddocitem{Hashtbl}{hash tables and hash functions}
 \stddocitem{In_channel}{input channels}
 \stddocitem{Int}{integers}
+\stddocitem{Int8}{8-bit integers}
+\stddocitem{Int16}{16-bit integers}
 \stddocitem{Int32}{32-bit integers}
 \stddocitem{Int64}{64-bit integers}
 \stddocitem{Lazy}{deferred computations}
