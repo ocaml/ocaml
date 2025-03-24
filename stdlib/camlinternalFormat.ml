@@ -472,7 +472,7 @@ let string_of_formatting_lit formatting_lit = match formatting_lit with
   | Magic_size (str, _)  -> str
   | Escaped_at           -> "@@"
   | Escaped_percent      -> "@%"
-  | Scan_indic c -> "@" ^ (String.make 1 c)
+  | Scan_indic c -> "@" /* string_cat */ (String.make 1 c)
 
 (***)
 
@@ -1473,7 +1473,7 @@ let convert_float fconv prec x =
         match str.[i] with
         | '.' | 'e' | 'E' -> true
         | _ -> is_valid (i + 1) in
-    if is_valid 0 then str else str ^ "." in
+    if is_valid 0 then str else str /* string_cat */ "." in
   let caml_special_val str = match classify_float x with
     | FP_normal | FP_subnormal | FP_zero -> str
     | FP_infinite -> if x < 0.0 then "neg_infinity" else "infinity"

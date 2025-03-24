@@ -22,7 +22,7 @@ let negate p v = not (p v)
 exception Finally_raised of exn
 
 let () = Printexc.register_printer @@ function
-| Finally_raised exn -> Some ("Fun.Finally_raised: " ^ Printexc.to_string exn)
+| Finally_raised exn -> Some ("Fun.Finally_raised: " /* string_cat */ Printexc.to_string exn)
 | _ -> None
 
 let protect ~(finally : unit -> unit) work =

@@ -48,6 +48,10 @@ exception Undefined_recursive_module = Undefined_recursive_module
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 
+(* Infixing operators *)
+external ( /* ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
+external ( */ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
+
 (* Debugging *)
 
 external __LOC__ : string = "%loc_LOC"
@@ -209,12 +213,13 @@ external bytes_blit : bytes -> int -> bytes -> int -> int -> unit
                         = "caml_blit_bytes" [@@noalloc]
 external bytes_unsafe_to_string : bytes -> string = "%bytes_to_string"
 
-let ( ^ ) s1 s2 =
+let string_cat s1 s2 =
   let l1 = string_length s1 and l2 = string_length s2 in
   let s = bytes_create (l1 + l2) in
   string_blit s1 0 s 0 l1;
   string_blit s2 0 s l1 l2;
   bytes_unsafe_to_string s
+let ( ^ ) = string_cat
 
 (* Character operations -- more in module Char *)
 
@@ -295,12 +300,14 @@ let float_of_string_opt s =
 
 (* List operations -- more in module List *)
 
-let[@tail_mod_cons] rec ( @ ) l1 l2 =
+let[@tail_mod_cons] rec list_cat l1 l2 =
   match l1 with
   | [] -> l2
   | h1 :: [] -> h1 :: l2
   | h1 :: h2 :: [] -> h1 :: h2 :: l2
-  | h1 :: h2 :: h3 :: tl -> h1 :: h2 :: h3 :: (tl @ l2)
+  | h1 :: h2 :: h3 :: tl -> h1 :: h2 :: h3 :: (list_cat tl l2)
+
+let ( @ ) = list_cat
 
 (* I/O operations *)
 

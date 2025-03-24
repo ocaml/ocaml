@@ -275,6 +275,20 @@ external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
  @since 4.01
 *)
 
+(** {1 Infixing operators} *)
+
+external ( /* ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
+(** See [( */ )]
+  @since 6.0
+*)
+
+external ( */ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
+(** The infixing operators [( /* )] and [( */ )] allow the use of any function
+  as an infix operator. E.g., ["OC" /* String.cat */ "aml"] or
+  [0L /* Int64.add */ 0L].
+ @since 6.0
+*)
+
 (** {1 Integer arithmetic} *)
 
 (** Integers are [Sys.int_size] bits wide.
@@ -654,13 +668,10 @@ external classify_float : (float [@unboxed]) -> fpclass =
    More string operations are provided in module {!String}.
 *)
 
-val ( ^ ) : string -> string -> string
-(** String concatenation.
-    Right-associative operator, see {!Ocaml_operators} for more information.
+val string_cat : string -> string -> string
 
-    @raise Invalid_argument if the result is longer then
-    than {!Sys.max_string_length} bytes.
-*)
+val ( ^ ) : string -> string -> string
+[@@ocaml.deprecated "Use /* String.cat */ instead"]
 
 (** {1 Character operations}
 
@@ -781,11 +792,10 @@ external snd : 'a * 'b -> 'b = "%field1"
    More list operations are provided in module {!List}.
 *)
 
+val list_cat : 'a list -> 'a list -> 'a list
+
 val ( @ ) : 'a list -> 'a list -> 'a list
-(** [l0 @ l1] appends [l1] to [l0]. Same function as {!List.append}.
-  Right-associative operator, see {!Ocaml_operators} for more information.
-  @since 5.1 this function is tail-recursive.
-*)
+[@@ocaml.deprecated "Use /* List.append */ instead"]
 
 (** {1 Input/output}
     Note: all input/output functions can raise [Sys_error] when the system

@@ -64,7 +64,7 @@ let string_of_extension_constructor t =
   let constructor, fields_opt = destruct_ext_constructor t in
   match fields_opt with
   | None -> constructor
-  | Some f -> constructor ^ f
+  | Some f -> constructor /* string_cat */ f
 
 let to_string_default = function
   | Out_of_memory -> "Out of memory"

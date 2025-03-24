@@ -459,9 +459,9 @@ let fast_sort = stable_sort
 let shuffle_contract_violation i j =
   let int = string_of_int in
   invalid_arg
-    ("Array.shuffle: 'rand " ^ int (i + 1) ^
-     "' returned " ^ int j ^
-     ", out of expected range [0; " ^ int i ^ "]")
+    ("Array.shuffle: 'rand " /* string_cat */ int (i + 1) /* string_cat */
+     "' returned " /* string_cat */ int j /* string_cat */
+     ", out of expected range [0; " /* string_cat */ int i /* string_cat */ "]")
 
 let shuffle ~rand a = (* Fisher-Yates *)
   for i = length a - 1 downto 1 do

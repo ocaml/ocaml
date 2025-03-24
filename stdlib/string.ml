@@ -69,7 +69,7 @@ let concat sep = function
             (B.create (sum_lengths 0 seplen l))
             0 sep seplen l
 
-let cat = ( ^ )
+let cat = string_cat
 
 (* duplicated in bytes.ml *)
 let iter f s =

@@ -523,10 +523,10 @@ let token_int_literal conv ib =
   let tok =
     match conv with
     | D_conversion | I_conversion -> Scanning.token ib
-    | U_conversion -> "0u" ^ Scanning.token ib
-    | O_conversion -> "0o" ^ Scanning.token ib
-    | X_conversion -> "0x" ^ Scanning.token ib
-    | B_conversion -> "0b" ^ Scanning.token ib in
+    | U_conversion -> "0u" /* string_cat */ Scanning.token ib
+    | O_conversion -> "0o" /* string_cat */ Scanning.token ib
+    | X_conversion -> "0x" /* string_cat */ Scanning.token ib
+    | B_conversion -> "0b" /* string_cat */ Scanning.token ib in
   let l = String.length tok in
   if l = 0 || tok.[0] <> '+' then tok else String.sub tok 1 (l - 1)
 
@@ -1467,7 +1467,7 @@ let kscanf_gen ib ef af (Format (fmt, str)) =
     | exception (Scan_failure _ | Failure _ | End_of_file as exc) ->
         ef ib exc
     | exception Invalid_argument msg ->
-        invalid_arg (msg ^ " in format \"" ^ String.escaped str ^ "\"")
+        invalid_arg (msg /* string_cat */ " in format \"" /* string_cat */ String.escaped str /* string_cat */ "\"")
     | args ->
         af (apply f args)
   in
@@ -1514,8 +1514,8 @@ let sscanf_format :
 
 
 let format_from_string s fmt =
-  sscanf_format ("\"" ^ String.escaped s ^ "\"") fmt (fun x -> x)
+  sscanf_format ("\"" /* string_cat */ String.escaped s /* string_cat */ "\"") fmt (fun x -> x)
 
 
 let unescaped s =
-  sscanf ("\"" ^ s ^ "\"") "%S%!" (fun x -> x)
+  sscanf ("\"" /* string_cat */ s /* string_cat */ "\"") "%S%!" (fun x -> x)

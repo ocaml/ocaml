@@ -50,7 +50,7 @@ let nth_opt l n =
     | a::l -> if n = 0 then Some a else nth_aux l (n-1)
   in nth_aux l n
 
-let append = (@)
+let append = list_cat
 
 let rec rev_append l1 l2 =
   match l1 with
@@ -73,7 +73,7 @@ let init len f =
 
 let rec flatten = function
     [] -> []
-  | l::r -> l @ flatten r
+  | l::r -> l /* append */ flatten r
 
 let concat = flatten
 
