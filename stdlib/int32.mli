@@ -58,25 +58,29 @@ external mul : int32 -> int32 -> int32 = "%int32_mul"
 external div : int32 -> int32 -> int32 = "%int32_div"
 (** Integer division. This division rounds the real quotient of
    its arguments towards zero, as specified for {!Stdlib.(/)}.
-   @raise Division_by_zero if the second
-   argument is zero.  *)
+
+   @raise Division_by_zero if the second argument is zero. *)
 
 val unsigned_div : int32 -> int32 -> int32
 (** Same as {!div}, except that arguments and result are interpreted as {e
     unsigned} 32-bit integers.
 
+    @raise Division_by_zero if the second argument is zero.
     @since 4.08 *)
 
 external rem : int32 -> int32 -> int32 = "%int32_mod"
 (** Integer remainder.  If [y] is not zero, the result
    of [Int32.rem x y] satisfies the following property:
    [x = Int32.add (Int32.mul (Int32.div x y) y) (Int32.rem x y)].
-   If [y = 0], [Int32.rem x y] raises [Division_by_zero]. *)
+   If [y = 0], [Int32.rem x y] raises [Division_by_zero].
+
+   @raise Division_by_zero if y is zero. *)
 
 val unsigned_rem : int32 -> int32 -> int32
 (** Same as {!rem}, except that arguments and result are interpreted as {e
     unsigned} 32-bit integers.
 
+    @raise Division_by_zero if the second argument is zero.
     @since 4.08 *)
 
 val succ : int32 -> int32
@@ -94,7 +98,6 @@ val max_int : int32
 
 val min_int : int32
 (** The smallest representable 32-bit integer, -2{^31}. *)
-
 
 external logand : int32 -> int32 -> int32 = "%int32_and"
 (** Bitwise logical and. *)
@@ -177,7 +180,6 @@ external of_string : string -> int32 = "caml_int32_of_string"
 val of_string_opt: string -> int32 option
 (** Same as [of_string], but return [None] instead of raising.
     @since 4.05 *)
-
 
 val to_string : int32 -> string
 (** Return the string representation of its argument, in signed decimal. *)

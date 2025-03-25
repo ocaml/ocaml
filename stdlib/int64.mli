@@ -56,27 +56,31 @@ external mul : int64 -> int64 -> int64 = "%int64_mul"
 (** Multiplication. *)
 
 external div : int64 -> int64 -> int64 = "%int64_div"
-(** Integer division.
-   @raise Division_by_zero if the second
-   argument is zero.  This division rounds the real quotient of
-   its arguments towards zero, as specified for {!Stdlib.(/)}. *)
+(** Integer division. This division rounds the real quotient of
+   its arguments towards zero, as specified for {!Stdlib.(/)}.
+
+   @raise Division_by_zero if the second argument is zero. *)
 
 val unsigned_div : int64 -> int64 -> int64
 (** Same as {!div}, except that arguments and result are interpreted as {e
     unsigned} 64-bit integers.
 
+    @raise Division_by_zero if the second argument is zero.
     @since 4.08 *)
 
 external rem : int64 -> int64 -> int64 = "%int64_mod"
 (** Integer remainder.  If [y] is not zero, the result
    of [Int64.rem x y] satisfies the following property:
    [x = Int64.add (Int64.mul (Int64.div x y) y) (Int64.rem x y)].
-   If [y = 0], [Int64.rem x y] raises [Division_by_zero]. *)
+   If [y = 0], [Int64.rem x y] raises [Division_by_zero].
+
+   @raise Division_by_zero if y is zero. *)
 
 val unsigned_rem : int64 -> int64 -> int64
 (** Same as {!rem}, except that arguments and result are interpreted as {e
     unsigned} 64-bit integers.
 
+    @raise Division_by_zero if the second argument is zero.
     @since 4.08 *)
 
 val succ : int64 -> int64
