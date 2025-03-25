@@ -860,10 +860,14 @@ let deep_occur_list t0 tyl =
 
 let get_folded_desc ~keep_Tvar ty =
   let desc = get_desc ty in
+  (* Need to first check for Tsubst, as its presence indicates an already
+     copied node, meaning that we should ignore the abbreviation *)
   match desc with
   | Tsubst _ -> desc
   | Tvar _ when keep_Tvar -> desc
   | _ ->
+      (* Only re-instate an abbreviation if there is no risk to hide
+         something *)
       match get_expand ty with
       | Some (path, args) when not (List.exists (deep_occur ty) args) ->
           Tconstr (path, args, ref Mnil)
