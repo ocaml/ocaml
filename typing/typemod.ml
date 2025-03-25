@@ -2048,22 +2048,22 @@ and package_constraints env loc mty constrs =
     | Mty_ident p -> raise(Error(loc, env, Cannot_scrape_package_type p))
   end
 
-let modtype_of_package env loc p fl =
+let modtype_of_package env loc pack =
   (* We call Ctype.duplicate_type to ensure that the types being added to the
      module type are at generic_level. *)
   let mty =
-    package_constraints env loc (Mty_ident p)
-      (List.map (fun (n, t) -> n, Ctype.duplicate_type t) fl)
+    package_constraints env loc (Mty_ident pack.pack_path)
+      (List.map (fun (n, t) -> n, Ctype.duplicate_type t) pack.pack_cstrs)
   in
   Subst.modtype Keep Subst.identity mty
 
-let package_subtype env p1 fl1 p2 fl2 =
-  let mkmty p fl =
+let package_subtype env pack1 pack2 =
+  let mkmty pack =
     let fl =
-      List.filter (fun (_n,t) -> Ctype.closed_type_expr t) fl in
-    modtype_of_package env Location.none p fl
+      List.filter (fun (_n,t) -> Ctype.closed_type_expr t) pack.pack_cstrs in
+    modtype_of_package env Location.none {pack with pack_cstrs = fl}
   in
-  match mkmty p1 fl1, mkmty p2 fl2 with
+  match mkmty pack1, mkmty pack2 with
   | exception Error(_, _, Cannot_scrape_package_type r) ->
       Result.Error (Errortrace.Package_cannot_scrape r)
   | mty1, mty2 ->
@@ -2265,14 +2265,15 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
       in
       let mty =
         match get_desc (Ctype.expand_head env exp.exp_type) with
-          Tpackage (p, fl) ->
-            check_package_closed ~loc:smod.pmod_loc ~env ~typ:exp.exp_type fl;
+          Tpackage pack ->
+            check_package_closed ~loc:smod.pmod_loc ~env ~typ:exp.exp_type
+              pack.pack_cstrs;
             if !Clflags.principal &&
               not (Typecore.generalizable (Btype.generic_level-1) exp.exp_type)
             then
               Location.prerr_warning smod.pmod_loc
                 (not_principal "this module unpacking");
-            modtype_of_package env smod.pmod_loc p fl
+            modtype_of_package env smod.pmod_loc pack
         | Tvar _ ->
             raise (Typecore.Error
                      (smod.pmod_loc, env, Typecore.Cannot_infer_signature))
@@ -2948,7 +2949,7 @@ let lookup_type_in_sig sg =
     | Ldot({ txt = m; _ }, { txt = name; _ }) -> Pdot(module_path m, name)
     | Lapply _ -> assert false
 
-let type_package env m p fl =
+let type_package env m pack =
   (* Same as Pexp_letmodule *)
   let modl, scope =
     Typetexp.TyVarEnv.with_local_scope begin fun () ->
@@ -2961,7 +2962,7 @@ let type_package env m p fl =
     end
   in
   let fl', env =
-    match fl with
+    match pack.pack_cstrs with
     | [] -> [], env
     | fl ->
       let type_path, env =
@@ -3001,8 +3002,8 @@ let type_package env m p fl =
       fl', env
   in
   let mty =
-    if fl = [] then (Mty_ident p)
-    else modtype_of_package env modl.mod_loc p fl'
+    if pack.pack_cstrs = [] then (Mty_ident pack.pack_path)
+    else modtype_of_package env modl.mod_loc {pack with pack_cstrs = fl'}
   in
   List.iter
     (fun (n, ty) ->
@@ -3012,7 +3013,7 @@ let type_package env m p fl =
         raise (Error(modl.mod_loc, env, Scoping_pack (lid,ty))))
     fl';
   let modl = wrap_constraint_package env true modl mty Tmodtype_implicit in
-  modl, fl'
+  modl, {pack with pack_cstrs = fl'}
 
 (* Fill in the forward declarations *)
 

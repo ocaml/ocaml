@@ -502,10 +502,10 @@ and core_type_desc =
   | Ttyp_call_pos
 
 and package_type = {
-  pack_path : Path.t;
-  pack_fields : (Longident.t loc * core_type) list;
-  pack_type : Types.module_type;
-  pack_txt : Longident.t loc;
+  tpt_path : Path.t;
+  tpt_cstrs : (Longident.t loc * core_type) list;
+  tpt_type : Types.module_type;
+  tpt_txt : Longident.t loc;
 }
 
 and row_field = {

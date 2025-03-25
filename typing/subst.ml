@@ -275,9 +275,12 @@ let rec typexp copy_scope s ty =
          | Type_function { params; body } ->
             Tlink (apply_type_function params args body)
          end
-      | Tpackage(p, fl) ->
-          Tpackage(modtype_path s p,
-                    List.map (fun (n, ty) -> (n, typexp copy_scope s ty)) fl)
+      | Tpackage {pack_path; pack_cstrs} ->
+          Tpackage {
+            pack_path = modtype_path s pack_path;
+            pack_cstrs =
+              List.map (fun (n, ty) -> (n, typexp copy_scope s ty)) pack_cstrs;
+          }
       | Tobject (t1, name) ->
           let t1' = typexp copy_scope s t1 in
           let name' =

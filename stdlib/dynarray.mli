@@ -327,6 +327,22 @@ val for_all : ('a -> bool) -> 'a t -> bool
     [for_all f a] is [f x0 && f x1 && f x2].
 *)
 
+val exists2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
+(** Same as {!exists}, but for a two-argument predicate.
+
+   @raise Invalid_argument if the two arrays have different lengths.
+
+   @since 5.4
+*)
+
+val for_all2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
+(** Same as {!for_all}, but for a two-argument predicate.
+
+   @raise Invalid_argument if the two arrays have different lengths.
+
+   @since 5.4
+*)
+
 val mem : 'a -> 'a t -> bool
 (** [mem a set] is true if and only if [a] is structurally equal
     to an element of [set] (i.e. there is an [x] in [set] such that

@@ -30,7 +30,7 @@
 *.exe.manifest
 .DS_Store
 *.out
-*.out.dSYM
+*.dSYM/
 *.swp
 _ocamltest
 _ocamltestd

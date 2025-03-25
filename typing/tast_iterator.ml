@@ -399,9 +399,9 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
   | Texp_src_pos -> ()
 
 
-let package_type sub {pack_fields; pack_txt; _} =
-  List.iter (fun (lid, p) -> iter_loc_lid sub lid; sub.typ sub p) pack_fields;
-  iter_loc_lid sub pack_txt
+let package_type sub {tpt_cstrs; tpt_txt; _} =
+  List.iter (fun (lid, p) -> iter_loc_lid sub lid; sub.typ sub p) tpt_cstrs;
+  iter_loc_lid sub tpt_txt
 
 let binding_op sub {bop_loc; bop_op_name; bop_exp; _} =
   sub.location sub bop_loc;

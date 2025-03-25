@@ -235,8 +235,8 @@ let iter_on_occurrences
       (match ctyp_desc with
       | Ttyp_constr (path, lid, _ctyps) ->
           f ~namespace:Type ctyp_env path lid
-      | Ttyp_package {pack_path; pack_txt} ->
-          f ~namespace:Module_type ctyp_env pack_path pack_txt
+      | Ttyp_package {tpt_path; tpt_txt} ->
+          f ~namespace:Module_type ctyp_env tpt_path tpt_txt
       | Ttyp_class (path, lid, _typs) ->
           (* Deprecated syntax to extend a polymorphic variant *)
           f ~namespace:Type ctyp_env path lid

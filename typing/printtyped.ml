@@ -217,7 +217,7 @@ let rec core_type i ppf x =
       line i ppf "Ttyp_poly%a\n"
         (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x)) sl;
       core_type i ppf ct;
-  | Ttyp_package { pack_path = s; pack_fields = l } ->
+  | Ttyp_package { tpt_path = s; tpt_cstrs = l } ->
       line i ppf "Ttyp_package %a\n" fmt_path s;
       list i package_with ppf l;
   | Ttyp_open (path, _mod_ident, t) ->

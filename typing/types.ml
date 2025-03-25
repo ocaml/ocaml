@@ -44,7 +44,11 @@ and type_desc =
   | Tvariant of row_desc
   | Tunivar of string option
   | Tpoly of type_expr * type_expr list
-  | Tpackage of Path.t * (string list * type_expr) list
+  | Tpackage of package
+
+and package =
+    { pack_path : Path.t;
+      pack_cstrs : (string list * type_expr) list }
 
 and arg_label =
   | Nolabel

@@ -329,8 +329,8 @@ let fold_type_expr f init ty =
   | Tpoly (ty, tyl)     ->
     let result = f init ty in
     List.fold_left f result tyl
-  | Tpackage (_, fl)  ->
-    List.fold_left (fun result (_n, ty) -> f result ty) init fl
+  | Tpackage pack ->
+    List.fold_left (fun result (_n, ty) -> f result ty) init pack.pack_cstrs
 
 let iter_type_expr f ty =
   fold_type_expr (fun () v -> f v) () ty
@@ -476,7 +476,7 @@ let type_iterators mark =
     match get_desc ty with
       Tconstr (p, _, _)
     | Tobject (_, {contents=Some (p, _)})
-    | Tpackage (p, _) ->
+    | Tpackage {pack_path = p} ->
         it.it_path p
     | Tvariant row ->
         Option.iter (fun (p,_) -> it.it_path p) (row_name row)
@@ -530,7 +530,9 @@ let rec copy_type_desc ?(keep_names=false) f = function
   | Tpoly (ty, tyl)     ->
       let tyl = List.map f tyl in
       Tpoly (f ty, tyl)
-  | Tpackage (p, fl)  -> Tpackage (p, List.map (fun (n, ty) -> (n, f ty)) fl)
+  | Tpackage pack       ->
+      Tpackage {pack with
+        pack_cstrs = List.map (fun (n, ty) -> (n, f ty)) pack.pack_cstrs}
 
 (* TODO: rename to [module Copy_scope] *)
 module For_copy : sig

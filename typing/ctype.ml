@@ -777,9 +777,9 @@ let rec copy_spine copy_scope ty =
           Tpoly (copy_rec ty', tvl)
       | Ttuple tyl ->
           Ttuple (List.map (fun (lbl, ty) -> (lbl, copy_rec ty)) tyl)
-      | Tpackage (path, fl) ->
-          let fl = List.map (fun (n, ty) -> n, copy_rec ty) fl in
-          Tpackage (path, fl)
+      | Tpackage {pack_path; pack_cstrs} ->
+          let fl = List.map (fun (n, ty) -> n, copy_rec ty) pack_cstrs in
+          Tpackage {pack_path; pack_cstrs = fl}
       | Tconstr (path, tyl, _) ->
           Tconstr (path, List.map copy_rec tyl, ref Mnil)
       | _ -> assert false
@@ -827,11 +827,12 @@ let rec check_scope_escape mark env level ty =
         | exception Cannot_expand ->
             raise_escape_exn (Constructor p)
         end
-    | Tpackage (p, fl) when level < Path.scope p ->
+    | Tpackage ({pack_path = p} as pack) when level < Path.scope p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise_escape_exn (Module_type p);
         check_scope_escape mark env level
-          (newty2 ~level:orig_level (Tpackage (p', fl)))
+          (newty2 ~level:orig_level
+            (Tpackage {pack with pack_path = p'}))
     | _ ->
         iter_type_expr (check_scope_escape mark env level) ty
     end;
@@ -903,10 +904,10 @@ let rec update_level env level expand ty =
           set_level ();
           iter_type_expr (update_level env level expand) ty
         end
-    | Tpackage (p, fl) when level < Path.scope p ->
+    | Tpackage ({pack_path = p} as pack) when level < Path.scope p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise_escape_exn (Module_type p);
-        set_type_desc ty (Tpackage (p', fl));
+        set_type_desc ty (Tpackage {pack with pack_path = p'});
         update_level env level expand ty
     | Tobject (_, ({contents=Some(p, _tl)} as nm))
       when level < Path.scope p ->
@@ -986,8 +987,8 @@ let rec lower_contravariant env var_level visited contra ty =
             | ty -> lower_rec contra ty
             | exception Cannot_expand -> not_expanded ()
           else not_expanded ()
-    | Tpackage (_, fl) ->
-        List.iter (fun (_n, ty) -> lower_rec true ty) fl
+    | Tpackage p ->
+        List.iter (fun (_n, ty) -> lower_rec true ty) p.pack_cstrs
     | Tarrow (_, t1, t2, _) ->
         lower_rec true t1;
         lower_rec contra t2
@@ -2625,7 +2626,7 @@ let eq_package_path env p1 p2 =
   Path.same (normalize_package_path env p1) (normalize_package_path env p2)
 
 let nondep_type' = ref (fun _ _ _ -> assert false)
-let package_subtype = ref (fun _ _ _ _ _ -> assert false)
+let package_subtype = ref (fun _ _ _ -> assert false)
 
 exception Nondep_cannot_erase of Ident.t
 
@@ -2634,9 +2635,9 @@ let nondep_instance env level id ty =
   if level = generic_level then duplicate_type ty else
   with_level ~level (fun () -> instance ty)
 
-(* Find the type paths nl1 in the module type mty2, and add them to the
+(* Find the type paths nl1 in the module type pack2, and add them to the
    list (nl2, tl2). raise Not_found if impossible *)
-let complete_type_list ?(allow_absent=false) env fl1 lv2 mty2 fl2 =
+let complete_type_list ?(allow_absent=false) env fl1 lv2 pack2 =
   (* This is morally WRONG: we're adding a (dummy) module without a scope in the
      environment. However no operation which cares about levels/scopes is going
      to happen while this module exists.
@@ -2648,7 +2649,7 @@ let complete_type_list ?(allow_absent=false) env fl1 lv2 mty2 fl2 =
      It'd be nice if we avoided creating such temporary dummy modules and broken
      environments though. *)
   let id2 = Ident.create_local "Pkg" in
-  let env' = Env.add_module id2 Mp_present mty2 env in
+  let env' = Env.add_module id2 Mp_present (Mty_ident pack2.pack_path) env in
   let rec complete fl1 fl2 =
     match fl1, fl2 with
       [], _ -> fl2
@@ -2676,19 +2677,19 @@ let complete_type_list ?(allow_absent=false) env fl1 lv2 mty2 fl2 =
         | exception Not_found when allow_absent->
             complete nl fl2
   in
-  match complete fl1 fl2 with
+  match complete fl1 pack2.pack_cstrs with
   | res -> res
   | exception Exit -> raise Not_found
 
 (* raise Not_found rather than Unify if the module types are incompatible *)
-let unify_package env unify_list lv1 p1 fl1 lv2 p2 fl2 =
-  let ntl2 = complete_type_list env fl1 lv2 (Mty_ident p2) fl2
-  and ntl1 = complete_type_list env fl2 lv1 (Mty_ident p1) fl1 in
+let compare_package env unify_list lv1 pack1 lv2 pack2 =
+  let ntl2 = complete_type_list env pack1.pack_cstrs lv2 pack2
+  and ntl1 = complete_type_list env pack2.pack_cstrs lv1 pack1 in
   unify_list (List.map snd ntl1) (List.map snd ntl2);
-  if eq_package_path env p1 p2 then Ok ()
+  if eq_package_path env pack1.pack_path pack2.pack_path then Ok ()
   else Result.bind
-      (!package_subtype env p1 fl1 p2 fl2)
-      (fun () -> !package_subtype env p2 fl2 p1 fl1)
+      (!package_subtype env pack1 pack2)
+      (fun () -> !package_subtype env pack2 pack1)
 
 (* force unification in Reither when one side has a non-conjunctive type *)
 (* Code smell: this could also be put in unification_environment.
@@ -2975,21 +2976,8 @@ and unify3 uenv t1 t1' t2 t2' =
       | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
           enter_poly_for Unify (get_env uenv) t1 tl1 t2 tl2
             (unify uenv)
-      | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
-          begin match
-            unify_package (get_env uenv) (unify_list uenv)
-              (get_level t1) p1 fl1 (get_level t2) p2 fl2
-          with
-          | Ok () -> ()
-          | Error fm_err ->
-              if not (in_pattern_mode uenv) then
-                raise_for Unify (Errortrace.First_class_module fm_err);
-              List.iter (fun (_n, ty) -> reify uenv ty) (fl1 @ fl2);
-          | exception Not_found ->
-            if not (in_pattern_mode uenv) then raise_unexplained_for Unify;
-            List.iter (fun (_n, ty) -> reify uenv ty) (fl1 @ fl2);
-            (* if !generate_equations then List.iter2 (mcomp !env) tl1 tl2 *)
-          end
+      | (Tpackage pack1, Tpackage pack2) ->
+          unify_package uenv (get_level t1) pack1 (get_level t2) pack2
       | (Tnil,  Tconstr _ ) ->
           raise_for Unify (Obj (Abstract_row Second))
       | (Tconstr _,  Tnil ) ->
@@ -3026,6 +3014,22 @@ and unify_labeled_list env labeled_tl1 labeled_tl2 =
         raise_unexplained_for Unify;
       unify env ty1 ty2)
     labeled_tl1 labeled_tl2
+
+and unify_package uenv lvl1 pack1 lvl2 pack2 =
+  match
+    compare_package (get_env uenv) (unify_list uenv) lvl1 pack1 lvl2 pack2
+  with
+  | Ok () -> ()
+  | Error fm_err ->
+      if not (in_pattern_mode uenv) then
+        raise_for Unify (Errortrace.First_class_module fm_err);
+      List.iter (fun (_n, ty) -> reify uenv ty)
+        (pack1.pack_cstrs @ pack2.pack_cstrs);
+  | exception Not_found ->
+    if not (in_pattern_mode uenv) then raise_unexplained_for Unify;
+    List.iter (fun (_n, ty) -> reify uenv ty)
+        (pack1.pack_cstrs @ pack2.pack_cstrs);
+    (* if !generate_equations then List.iter2 (mcomp !env) tl1 tl2 *)
 
 (* Build a fresh row variable for unification *)
 and make_rowvar level use1 rest1 use2 rest2  =
@@ -3849,15 +3853,9 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
                 when Path.same p1 p2 ->
               moregen_list inst_nongen type_pairs env tl1 tl2
-          | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
-              begin match
-                unify_package env (moregen_list inst_nongen type_pairs env)
-                  (get_level t1') p1 fl1 (get_level t2') p2 fl2
-              with
-              | Ok () -> ()
-              | Error fme -> raise_for Moregen (First_class_module fme)
-              | exception Not_found -> raise_unexplained_for Moregen
-              end
+          | (Tpackage pack1, Tpackage pack2) ->
+              moregen_package inst_nongen type_pairs env (get_level t1') pack1
+                (get_level t2') pack2
           | (Tnil,  Tconstr _ ) -> raise_for Moregen (Obj (Abstract_row Second))
           | (Tconstr _,  Tnil ) -> raise_for Moregen (Obj (Abstract_row First))
           | (Tvariant row1, Tvariant row2) ->
@@ -3898,6 +3896,15 @@ and moregen_labeled_list inst_nongen type_pairs env labeled_tl1
         raise_unexplained_for Moregen;
       moregen inst_nongen type_pairs env ty1 ty2)
     labeled_tl1 labeled_tl2
+
+and moregen_package inst_nongen type_pairs env lvl1 pack1 lvl2 pack2 =
+  match
+    compare_package env (moregen_list inst_nongen type_pairs env)
+      lvl1 pack1 lvl2 pack2
+  with
+  | Ok () -> ()
+  | Error fme -> raise_for Moregen (First_class_module fme)
+  | exception Not_found -> raise_unexplained_for Moregen
 
 and moregen_fields inst_nongen type_pairs env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1
@@ -4222,15 +4229,9 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
                 when Path.same p1 p2 ->
               eqtype_list_same_length rename type_pairs subst env tl1 tl2
-          | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
-              begin match
-                unify_package env (eqtype_list rename type_pairs subst env)
-                  (get_level t1') p1 fl1 (get_level t2') p2 fl2
-              with
-              | Ok () -> ()
-              | Error fme -> raise_for Equality (First_class_module fme)
-              | exception Not_found -> raise_unexplained_for Equality
-              end
+          | (Tpackage pack1, Tpackage pack2) ->
+              eqtype_package rename type_pairs subst env
+                (get_level t1') pack1 (get_level t2') pack2
           | (Tnil,  Tconstr _ ) ->
               raise_for Equality (Obj (Abstract_row Second))
           | (Tconstr _,  Tnil ) ->
@@ -4274,6 +4275,15 @@ and eqtype_labeled_list rename type_pairs subst env labeled_tl1 labeled_tl2 =
         raise_unexplained_for Equality;
       eqtype rename type_pairs subst env ty1 ty2)
     labeled_tl1 labeled_tl2
+
+and eqtype_package rename type_pairs subst env lvl1 pack1 lvl2 pack2 =
+  match
+    compare_package env (eqtype_list rename type_pairs subst env)
+      lvl1 pack1 lvl2 pack2
+  with
+  | Ok () -> ()
+  | Error fme -> raise_for Equality (First_class_module fme)
+  | exception Not_found -> raise_unexplained_for Equality
 
 and eqtype_fields rename type_pairs subst env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1 in
@@ -5048,31 +5058,9 @@ let rec subtype_rec env trace t1 t2 cstrs =
         with Escape _ ->
           (trace, t1, t2, !univar_pairs)::cstrs
         end
-    | (Tpackage (p1, fl1), Tpackage (p2, fl2)) ->
-        begin try
-          let ntl1 =
-            complete_type_list env fl2 (get_level t1) (Mty_ident p1) fl1
-          and ntl2 =
-            complete_type_list env fl1 (get_level t2) (Mty_ident p2) fl2
-              ~allow_absent:true in
-          let cstrs' =
-            List.map
-              (fun (n2,t2) -> (trace, List.assoc n2 ntl1, t2, !univar_pairs))
-              ntl2
-          in
-          if eq_package_path env p1 p2 then cstrs' @ cstrs
-          else begin
-            (* need to check module subtyping *)
-            let snap = Btype.snapshot () in
-            match List.iter (fun (_, t1, t2, _) -> unify env t1 t2) cstrs' with
-            | () when Result.is_ok (!package_subtype env p1 fl1 p2 fl2) ->
-              Btype.backtrack snap; cstrs' @ cstrs
-            | () | exception Unify _ ->
-              Btype.backtrack snap; raise Not_found
-          end
-        with Not_found ->
-          (trace, t1, t2, !univar_pairs)::cstrs
-        end
+    | (Tpackage pack1, Tpackage pack2) ->
+        subtype_package env trace (get_level t1) pack1
+          (get_level t2) pack2 cstrs
     | (_, _) ->
         (trace, t1, t2, !univar_pairs)::cstrs
   end
@@ -5090,6 +5078,31 @@ and subtype_labeled_list env trace labeled_tl1 labeled_tl2 cstrs =
         ty1 ty2
         cstrs)
     cstrs labeled_tl1 labeled_tl2
+
+and subtype_package env trace lvl1 pack1 lvl2 pack2 cstrs =
+  try
+    let ntl1 = complete_type_list env pack2.pack_cstrs lvl1 pack1
+    and ntl2 =
+      complete_type_list env pack1.pack_cstrs lvl2 pack2
+        ~allow_absent:true in
+    let cstrs' =
+      List.map
+        (fun (n2,t2) -> (trace, List.assoc n2 ntl1, t2, !univar_pairs))
+        ntl2
+    in
+    if eq_package_path env pack1.pack_path pack2.pack_path then cstrs' @ cstrs
+    else begin
+      (* need to check module subtyping *)
+      let snap = Btype.snapshot () in
+      match List.iter (fun (_, t1, t2, _) -> unify env t1 t2) cstrs' with
+      | () when Result.is_ok (!package_subtype env pack1 pack2) ->
+        Btype.backtrack snap; cstrs' @ cstrs
+      | () | exception Unify _ ->
+        Btype.backtrack snap; raise Not_found
+    end
+  with Not_found ->
+    (trace, newty (Tpackage pack1), newty (Tpackage pack2), !univar_pairs)
+      ::cstrs
 
 and subtype_fields env trace ty1 ty2 cstrs =
   (* Assume that either rest1 or rest2 is not Tvar *)
@@ -5478,13 +5491,16 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
                *)
             with Cannot_expand -> raise exn
           end
-      | Tpackage(p, fl) when Path.exists_free ids p ->
-          let p' = normalize_package_path env p in
+      | Tpackage pack when Path.exists_free ids pack.pack_path ->
+          let p' = normalize_package_path env pack.pack_path in
           begin match Path.find_free_opt ids p' with
           | Some id -> raise (Nondep_cannot_erase id)
           | None ->
             let nondep_field_rec (n, ty) = (n, nondep_type_rec env ids ty) in
-            Tpackage (p', List.map nondep_field_rec fl)
+            Tpackage {
+              pack_path = p';
+              pack_cstrs = List.map nondep_field_rec pack.pack_cstrs
+            }
           end
       | Tobject (t1, name) ->
           Tobject (nondep_type_rec env ids t1,

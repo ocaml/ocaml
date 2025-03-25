@@ -52,8 +52,7 @@ val type_open_:
         Env.t -> Location.t -> Longident.t Asttypes.loc -> Path.t * Env.t
         *)
 val modtype_of_package:
-        Env.t -> Location.t ->
-        Path.t -> (string list * type_expr) list -> module_type
+        Env.t -> Location.t -> package -> module_type
 
 val path_of_module : Typedtree.module_expr -> Path.t option
 

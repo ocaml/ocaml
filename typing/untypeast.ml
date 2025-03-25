@@ -603,10 +603,10 @@ let binding_op sub bop pat =
   {pbop_op; pbop_pat; pbop_exp; pbop_loc}
 
 let package_type sub pack =
-  { ppt_path = map_loc sub pack.pack_txt;
-    ppt_cstrs = List.map (fun (s, ct) -> (s, sub.typ sub ct)) pack.pack_fields;
+  { ppt_path = map_loc sub pack.tpt_txt;
+    ppt_cstrs = List.map (fun (s, ct) -> (s, sub.typ sub ct)) pack.tpt_cstrs;
     ppt_attrs = [];
-    ppt_loc = sub.location sub pack.pack_txt.loc }
+    ppt_loc = sub.location sub pack.tpt_txt.loc }
 
 let module_type_declaration sub mtd =
   let loc = sub.location sub mtd.mtd_loc in

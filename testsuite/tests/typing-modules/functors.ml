@@ -14,8 +14,8 @@ module type z = sig type z end
 module type w = sig type w end
 
 module type empty = sig end
-
 module Empty = struct end
+
 module X: x = struct type x end
 module Y: y = struct type y end
 module Z: z = struct type z end
@@ -1255,9 +1255,9 @@ Error: This application of the functor "F" is ill-typed.
             F : (X : sig type witness module type t module M : t end) -> X.t
           is not included in
             $T6 = sig type witness module type t module M : t end
-          Modules do not match: (X : $S1) -> ... is not included in  -> ...
-          An extra argument is provided of module type
-              $S1 = sig type witness module type t module M : t end
+          This module should not be a functor, a structure was expected.
+          Moreover, the type of the functor body is incompatible with the
+          expected module type.
 |}]
 
 (** Divergent arities *)
@@ -2047,4 +2047,104 @@ Error: The functor application "Set.Make(Set)(A)" is ill-typed.
           The value "compare" is required but not provided
           File "set.mli", line 55, characters 4-31: Expected declaration
        2. The following extra argument is provided A : sig type a = A.a end
+|}]
+
+
+module F(X:a -> a): a = X
+[%%expect {|
+Line 1, characters 24-25:
+1 | module F(X:a -> a): a = X
+                            ^
+Error: Signature mismatch:
+       This module should not be a functor, a module with an abstract module
+       type was expected.
+       Hint: Did you forget to apply the functor?
+|}]
+
+module F(X:a -> a): empty = X
+[%%expect {|
+Line 1, characters 28-29:
+1 | module F(X:a -> a): empty = X
+                                ^
+Error: Signature mismatch:
+       This module should not be a functor, a structure was expected.
+       Moreover, the type of the functor body is incompatible with the
+       expected module type.
+|}]
+
+
+module F_empty(_:empty) = Empty
+module M: empty = F_empty
+[%%expect {|
+module F_empty : empty -> sig end
+Line 2, characters 18-25:
+2 | module M: empty = F_empty
+                      ^^^^^^^
+Error: Signature mismatch:
+       This module should not be a functor, a structure was expected.
+       Hint: Did you forget to apply the functor?
+|}]
+
+module M: x = F_empty
+[%%expect {|
+Line 1, characters 14-21:
+1 | module M: x = F_empty
+                  ^^^^^^^
+Error: Signature mismatch:
+       This module should not be a functor, a structure was expected.
+       Moreover, the type of the functor body is incompatible with the
+       expected module type.
+|}]
+
+
+module F(X:empty -> empty) = Empty
+module G(X:empty) = Empty
+module A = F(Empty)
+[%%expect {|
+module F : (X : empty -> empty) -> sig end
+module G : (X : empty) -> sig end
+Line 3, characters 11-19:
+3 | module A = F(Empty)
+               ^^^^^^^^
+Error: Modules do not match: sig end is not included in empty -> empty
+     This module should not be a structure, a functor was expected.
+|}]
+
+module B = G(F_empty)
+[%%expect {|
+Line 1, characters 11-21:
+1 | module B = G(F_empty)
+               ^^^^^^^^^^
+Error: Modules do not match: (Arg : empty) -> sig end is not included in
+       empty
+     This module should not be a functor, a structure was expected.
+     Hint: Did you forget to apply the functor?
+|}]
+
+module F(X:a): sig module F:empty -> empty end = struct module F = X end
+[%%expect {|
+Line 1, characters 49-72:
+1 | module F(X:a): sig module F:empty -> empty end = struct module F = X end
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig module F : a end
+       is not included in
+         sig module F : empty -> empty end
+       In module "F":
+       Modules do not match: a is not included in empty -> empty
+|}]
+
+(** Incorrect hint: the compatibility check consider that [X.T] can not be equal
+    to [x] but this is false. However, anyone using abstract module types can
+    handle a slightly wrong hint. *)
+module F(G: functor(X:sig module type T module I:T end) -> X.T): x = G
+[%%expect {|
+Line 1, characters 69-70:
+1 | module F(G: functor(X:sig module type T module I:T end) -> X.T): x = G
+                                                                         ^
+Error: Signature mismatch:
+       This module should not be a functor, a structure was expected.
+       Moreover, the type of the functor body is incompatible with the
+       expected module type.
 |}]

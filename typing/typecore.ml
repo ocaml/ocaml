@@ -4714,9 +4714,9 @@ and type_expect_
         let t = Ast_helper.Typ.package ~loc:ptyp.ppt_loc ptyp in
         let pty, exp_extra = type_constraint env t in
         begin match get_desc (instance pty) with
-          | Tpackage (p, fl) ->
-            let (modl, fl') = !type_package env m p fl in
-            let ty = newty (Tpackage (p, fl')) in
+          | Tpackage pack ->
+            let (modl, pack') = !type_package env m pack in
+            let ty = newty (Tpackage pack') in
             unify_exp_types m.pmod_loc env (instance pty) ty;
             rue {
               exp_desc = Texp_pack modl;
@@ -4728,9 +4728,9 @@ and type_expect_
             fatal_error "[type_expect] Package not translated to a package"
         end
       | None ->
-        let (p, fl) =
+        let pack =
           match get_desc (Ctype.expand_head env (instance ty_expected)) with
-            Tpackage (p, fl) ->
+            Tpackage pack ->
               if !Clflags.principal &&
                 get_level (Ctype.expand_head env
                             (protect_expansion env ty_expected))
@@ -4738,17 +4738,17 @@ and type_expect_
               then
                 Location.prerr_warning loc
                   (not_principal "this module packing");
-              (p, fl)
+              pack
           | Tvar _ ->
               raise (Error (loc, env, Cannot_infer_signature))
           | _ ->
               raise (Error (loc, env, Not_a_packed_module ty_expected))
           in
-          let (modl, fl') = !type_package env m p fl in
+          let (modl, pack') = !type_package env m pack in
           rue {
             exp_desc = Texp_pack modl;
             exp_loc = loc; exp_extra = [];
-            exp_type = newty (Tpackage (p, fl'));
+            exp_type = newty (Tpackage pack');
             exp_attributes = sexp.pexp_attributes;
             exp_env = env }
       end

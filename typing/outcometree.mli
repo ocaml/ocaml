@@ -87,7 +87,7 @@ type out_type =
   | Otyp_var of bool * string
   | Otyp_variant of out_variant * bool * (string list) option
   | Otyp_poly of string list * out_type
-  | Otyp_module of out_ident * (string * out_type) list
+  | Otyp_module of out_package
   | Otyp_attribute of out_type * out_attribute
 
 and out_label = {
@@ -100,6 +100,11 @@ and out_constructor = {
   ocstr_name: string;
   ocstr_args: out_type list;
   ocstr_return_type: out_type option;
+}
+
+and out_package = {
+  opack_path: out_ident;
+  opack_cstrs: (string * out_type) list;
 }
 
 and out_variant =

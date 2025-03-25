@@ -150,6 +150,9 @@ Working version
 
 ### Standard library:
 
+- #13885: Add Dynarray.{exists2, for_all2}.
+  (T. Kinsart, review by Daniel Bünzli, Gabriel Scherer, and Nicolás Ojeda Bär)
+
 - #13836: Add [Float.]Array.{equal,compare}.
   (Daniel Bünzli, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
@@ -181,7 +184,7 @@ Working version
   (Daniel Bünzli, review by Nicolás Ojeda Bär and David Allsopp)
 
 - #13729: Add Seq.filteri
-  (Tima Kinsart, review by Nicolás Ojeda Bär and Daniel Bünzli)
+  (T. Kinsart, review by Nicolás Ojeda Bär and Daniel Bünzli)
 
 - #13721: Add Result.retract
   (Daniel Bünzli, review by Gabriel Scherer, Nicolás Ojeda Bär and
@@ -335,6 +338,11 @@ Working version
   references another recursive module type.
   (Stefan Muenzel, review by Florian Angeletti and Gabriel Scherer)
 
+- #13702, #13865: Specialized error messages for functors appearing in contexts
+  where non-functors were expected `module A: sig ... end = Set.Make`
+  (and the reverse)
+  (Florian Angeletti, report by Jeremy Yallop, review by Gabriel Scherer)
+
 - #13788, #13813: Keep the module context in spellchecking hints.
   `Fun.protact` now prompts `Did you mean "Fun.protect?"` rather than
   `Did you mean "protect?"`.
@@ -411,6 +419,10 @@ Working version
 
 - #13848: Add all paths components to the cmt files indexes
   (Ulysse Gérard, review by Florian Angeletti)
+
+- #13856: Add a new indirection in types AST called `package` that stores the
+  content of a `Tpackage` node
+  (Samuel Vivien, review by Florian Angeletti)
 
 ### Build system:
 
@@ -645,8 +657,9 @@ OCaml 5.3.0 (8 January 2025)
   (Xavier Leroy, report by Jan Midtgaard, analysis by Stephen Dolan,
    review by Miod Vallat)
 
-- #13407: Add Runtime_events.EV_EMPTY_MINOR
-  (Thomas Leonard)
+- #13407: Add Runtime_events.EV_EMPTY_MINOR.
+  (Thomas Leonard, review by KC Sivaramakrishnan, Sadiq Jaffer and
+  Gabriel Scherer)
 
 - #13522: Confirm runtime events ring is still active after callback.
   (KC Sivaramakrishnan, review by Sadiq Jaffer and Miod Vallat)
@@ -2186,7 +2199,7 @@ OCaml 5.1.0 (14 September 2023)
   `Seq.find_mapi`, `Seq.find_index`, `Array.find_mapi`, `Array.find_index`,
   `Float.Array.find_opt`, `Float.Array.find_index`, `Float.Array.find_map`,
   `Float.Array.find_mapi`.
-  (Tima Kinsart, review by Daniel Bünzli and Nicolás Ojeda Bär)
+  (T. Kinsart, review by Daniel Bünzli and Nicolás Ojeda Bär)
 
 - #11410: Add Set.to_list, Map.to_list, Map.of_list,
   `Map.add_to_list: key -> 'a -> 'a list t -> 'a list t`.

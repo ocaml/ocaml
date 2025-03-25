@@ -773,6 +773,41 @@ let core_module_type_symptom (x:Err.core_module_type_symptom)  =
 
 (* Construct a linearized error message from the error tree *)
 
+let functor_expected ~before ~ctx =
+  let main =
+    (* The abstract module type case is detected by {!Includemod} *)
+    Fmt.dprintf
+      "@[This module should not be@ a@ structure,@ \
+       a@ functor@ was expected.@]"
+  in
+  dwith_context ctx main :: before
+
+let unexpected_functor ~env ~before ~ctx diff =
+  let rmty = diff.got.res in
+  let intro =
+    match diff.expected.res with
+    | Mty_ident _ ->
+        Fmt.dprintf
+          "@[This module should not be a functor,@ a@ module with an@ \
+           abstract@ module@ type@ was@ expected.@]"
+    | Mty_signature _ | _ ->
+        Fmt.dprintf
+          "@[This module should not be a functor,@ a@ structure was expected.@]"
+  in
+  let main =
+    match Includemod.modtypes_consistency ~loc:Location.none env rmty
+            diff.expected.res with
+    | _ ->
+        Fmt.dprintf
+          "%t@ @{<hint>Hint@}: Did you forget to apply the functor?"
+          intro
+    | exception _ ->
+        Fmt.dprintf "%t@ @[Moreover,@ the type of the functor@ body@ is@ \
+                     incompatible@ with@ the@ expected@ module type.@]"
+          intro
+  in
+  dwith_context ctx main :: before
+
 let rec module_type ~expansion_token ~eqmode ~env ~before ~ctx diff =
   match diff.symptom with
   | Invalid_module_alias _ (* the difference is non-informative here *)
@@ -814,8 +849,18 @@ and module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx = function
       in
       dwith_context ctx printer :: before
 
-and functor_params ~expansion_token ~env ~before ~ctx {got;expected;_} =
-  let d = Functor_suberror.Inclusion.patch env got expected in
+and functor_params ~expansion_token ~env ~before ~ctx diff =
+  match diff.got.params, diff.expected.params with
+  | [], _ -> functor_expected ~before ~ctx
+  | _, [] -> unexpected_functor ~env ~before ~ctx diff
+  | _ :: _, _ :: _ ->
+      compare_functor_params ~expansion_token ~env ~before ~ctx diff
+
+and compare_functor_params ~expansion_token ~env ~before ~ctx {got;expected;_} =
+  let d = Functor_suberror.Inclusion.patch env
+      (got.params, got.res)
+      (expected.params, expected.res)
+  in
   let actual = Functor_suberror.Inclusion.got d in
   let expected = Functor_suberror.expected d in
   let main =

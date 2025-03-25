@@ -134,7 +134,7 @@ type type_desc =
       where 'a1 ... 'an are names given to types in tyl
       and occurrences of those types in ty. *)
 
-  | Tpackage of Path.t * (string list * type_expr) list
+  | Tpackage of package
   (** Type of a first-class module (a.k.a package). *)
 
 (** This is used in the Typedtree. It is distinct from
@@ -145,6 +145,11 @@ and arg_label =
   | Labelled of string (** [label:T -> ...] *)
   | Optional of string (** [?label:T -> ...] *)
   | Position of string (** [?label:[%call_pos] -> ...] *)
+
+(** [package] corresponds to the type of a first-class module *)
+and package =
+  { pack_path : Path.t;
+    pack_cstrs : (string list * type_expr) list }
 
 and fixed_explanation =
   | Univar of type_expr (** The row type was bound to an univar *)

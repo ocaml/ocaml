@@ -409,6 +409,11 @@ module Error = struct
   let[@inline never] empty_dynarray f =
     Printf.ksprintf invalid_arg
       "Dynarray.%s: empty array" f
+
+  let[@inline never] different_lengths f ~length1 ~length2 =
+    Printf.ksprintf invalid_arg
+      "Dynarray.%s: array length mismatch: %d <> %d"
+      f length1 length2
 end
 
 (* Detecting iterator invalidation.
@@ -960,6 +965,44 @@ let for_all p a =
   in
   let res = loop p arr dummy 0 length in
   check_same_length "for_all" a ~length;
+  res
+
+let exists2 p a1 a2 =
+  let Pack {arr = arr1; length = length1; dummy = dummy1} = a1 in
+  let Pack {arr = arr2; length = length2; dummy = dummy2} = a2 in
+  check_valid_length length1 arr1;
+  check_valid_length length2 arr2;
+  if length1 <> length2 then
+    Error.different_lengths "exists2" ~length1 ~length2;
+  let rec loop p arr1 dummy1 arr2 dummy2 i length =
+    if i = length then false
+    else
+      p (unsafe_get arr1 ~dummy:dummy1 ~i ~length)
+        (unsafe_get arr2 ~dummy:dummy2 ~i ~length)
+      || loop p arr1 dummy1 arr2 dummy2 (i + 1) length
+  in
+  let res = loop p arr1 dummy1 arr2 dummy2 0 length1 in
+  check_same_length "exists2" a1 ~length:length1;
+  check_same_length "exists2" a2 ~length:length2;
+  res
+
+let for_all2 p a1 a2 =
+  let Pack {arr = arr1; length = length1; dummy = dummy1} = a1 in
+  let Pack {arr = arr2; length = length2; dummy = dummy2} = a2 in
+  check_valid_length length1 arr1;
+  check_valid_length length2 arr2;
+  if length1 <> length2 then
+    Error.different_lengths "for_all2" ~length1 ~length2;
+  let rec loop p arr1 dummy1 arr2 dummy2 i length =
+    if i = length then true
+    else
+      p (unsafe_get arr1 ~dummy:dummy1 ~i ~length)
+        (unsafe_get arr2 ~dummy:dummy2 ~i ~length)
+      && loop p arr1 dummy1 arr2 dummy2 (i + 1) length
+  in
+  let res = loop p arr1 dummy1 arr2 dummy2 0 length1 in
+  check_same_length "for_all2" a1 ~length:length1;
+  check_same_length "for_all2" a2 ~length:length2;
   res
 
 let filter f a =
