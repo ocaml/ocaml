@@ -422,3 +422,44 @@ Error: In this "with" constraint, the new definition of "M.N"
          type t = M.r
        The type "X.t" is not equal to the type "M.r" = "M.N.s"
 |}]
+
+
+(** Aliases and substitutions **)
+
+(* Non destructive type and module type substitutions inside an alias should
+   preserve the alias signature. By contrast, destructive type and module type
+   substitutions force inlining and lose the alias information (could be fixed
+   with transparent ascription) *)
+
+type base = A | B
+module X = struct
+  type t = base = A | B
+  module type T = sig end
+end
+
+module type S = sig module Y = X end
+module type S1  = S with type Y.t = base
+module type S2  = S with module type Y.T = sig end
+[%%expect {|
+type base = A | B
+module X : sig type t = base = A | B module type T = sig end end
+module type S = sig module Y = X end
+module type S1 = sig module Y = X end
+module type S2 = sig module Y = X end
+|}]
+module type S1' = S with type Y.t := base
+[%%expect {|
+Line 1, characters 18-41:
+1 | module type S1' = S with type Y.t := base
+                      ^^^^^^^^^^^^^^^^^^^^^^^
+Error: This deep destructive "with" substitution inside of "Y" would
+       loose the aliasing to "X" .
+|}]
+module type S2' = S with module type Y.T := sig end
+[%%expect {|
+Line 1, characters 18-51:
+1 | module type S2' = S with module type Y.T := sig end
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This deep destructive "with" substitution inside of "Y" would
+       loose the aliasing to "X" .
+|}]
