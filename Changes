@@ -150,6 +150,10 @@ Working version
 
 ### Standard library:
 
+- #13894: Export Int.{of_string, of_string_opt} and explcitly document functions
+  that raise exceptions in Int32 and Int64 modules.
+  (Tim McGilchrist, review by ???)
+
 - #13885: Add Dynarray.{exists2, for_all2}.
   (T. Kinsart, review by Daniel Bünzli, Gabriel Scherer, and Nicolás Ojeda Bär)
 
