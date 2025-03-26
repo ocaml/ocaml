@@ -611,8 +611,9 @@ module Array : sig
       @since 5.4 *)
 
   val compare : (float -> float -> int) -> t -> t -> int
-  (** [compare cmp a b] orders [a] and [b] in lexicographic order
-      using [cmp] to compare elements.
+  (** [compare cmp a b] compares [a] and [b] according to the shortlex order,
+      that is, shorter arrays are smaller and equal-sized arrays are compared
+      in lexicographic order using [cmp] to compare elements.
 
       @since 5.4 *)
 
@@ -993,8 +994,9 @@ module ArrayLabels : sig
       @since 5.4 *)
 
   val compare : cmp:(float -> float -> int) -> t -> t -> int
-  (** [compare cmp a b] orders [a] and [b] in lexicographic order
-      using [cmp] to compare elements.
+  (** [compare cmp a b] compares [a] and [b] according to the shortlex order,
+      that is, shorter arrays are smaller and equal-sized arrays are compared
+      in lexicographic order using [cmp] to compare elements.
 
       @since 5.4 *)
 

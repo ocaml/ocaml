@@ -406,10 +406,9 @@ val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 *)
 
 val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
-(** Provided the function [cmp] defines a preorder on elements,
-    [compare cmp a b] compares first [a] and [b] by their length,
-    and then, if equal, by their elements according to
-    the lexicographic preorder.
+(** [compare cmp a b] compares [a] and [b] according to the shortlex order,
+    that is, shorter arrays are smaller and equal-sized arrays are compared
+    in lexicographic order using [cmp] to compare elements.
 
     For more details on comparison functions, see {!Array.sort}.
 
