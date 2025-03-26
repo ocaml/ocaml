@@ -50,7 +50,8 @@ The following command-line options are recognized by "ocamlrun".
 \begin{options}
 
 \item["-b"]
-When the program aborts due to an uncaught exception, print a detailed
+When the program aborts due to an uncaught exception (or
+\stdmoduleref{Printexc} functions are called), print a detailed
 ``back trace'' of the execution, showing where the exception was
 raised and which function calls were outstanding at this point.  The
 back trace is printed only if the bytecode executable contains
