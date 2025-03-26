@@ -364,6 +364,10 @@ Working version
 - #13818: better delimited hints in error message
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #13876: When stack traces are printed in code compiled or run without the
+  -g option, the stack trace suggests adding that option
+  (Zachary Vance)
+
 ### Internal/compiler-libs changes:
 
 - #13314: Comment the code of Translclass
