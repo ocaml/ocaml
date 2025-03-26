@@ -1,4 +1,5 @@
 (* TEST
+ multicore;
  no-tsan; (* TSan detects the intentional data race *)
  {
    bytecode;

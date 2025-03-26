@@ -298,6 +298,10 @@ Working version
   odoc behaviour).
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #13906: Add support for a `multicore` tag in ocamltest and use it for
+  tests that fail on mono-core systems.
+  (Stéphane Glondu)
+
 ### Manual and documentation:
 
 - #13694: Fix name for caml_hash_variant in the C interface.

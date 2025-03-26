@@ -102,6 +102,13 @@ let hasstr = make
     "str library available"
     "str library not available")
 
+let multicore = make
+  ~name:"multicore"
+  ~description:"Pass if running on multicore"
+  (Actions_helpers.pass_or_skip (Domain.recommended_domain_count () >= 2)
+    "running on multicore"
+    "not running on multicore")
+
 let windows_OS = "Windows_NT"
 
 let get_OS () = Sys.safe_getenv "OS"
@@ -392,6 +399,7 @@ let _ =
     hasunix;
     hassysthreads;
     hasstr;
+    multicore;
     libunix;
     libwin32unix;
     windows;
