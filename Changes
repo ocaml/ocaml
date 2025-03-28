@@ -559,6 +559,10 @@ OCaml 5.3.0 (8 January 2025)
 
 ### Runtime system:
 
+* #13359: Only explicitly annotated symbols are exported from the OCaml runtime.
+  Additionally, C primitives can be built with -fvisibilty=hidden.  The use of
+  CAMLprim is now required in this case.
+
 - #13419: Fix memory bugs in runtime events system.
   (B. Szilvasy and Nick Barnes, review by Miod Vallat, Nick Barnes,
    Tim McGilchrist, and Gabriel Scherer)

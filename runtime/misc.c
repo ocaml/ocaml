@@ -272,6 +272,7 @@ CAMLextern int caml_runtime_warnings_active(void)
   return 1;
 }
 
+CAMLexport
 void caml_bad_caml_state(void)
 {
   caml_fatal_error("no domain lock held");

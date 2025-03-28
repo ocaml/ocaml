@@ -85,7 +85,7 @@ Caml_inline void restore_stack_parent(caml_domain_state* domain_state,
 
 static opcode_t callback_code[] = { STOP };
 
-void caml_init_callbacks(void)
+CAMLexport void caml_init_callbacks(void)
 {
   caml_register_code_fragment((char *) callback_code,
                               (char *) callback_code + sizeof(callback_code),

@@ -182,7 +182,8 @@ static void runtime_events_teardown_from_stw_single(int remove_file) {
     atomic_store_release(&runtime_events_enabled, 0);
 }
 
-void caml_runtime_events_post_fork(void) {
+CAMLexport void
+caml_runtime_events_post_fork(void) {
   /* We are here in the child process after a call to fork (which can only
      happen when there is a single domain) and no mutator code that can spawn a
      new domain can have run yet. Let's be double sure. */
@@ -205,7 +206,8 @@ void caml_runtime_events_post_fork(void) {
    if runtime events are not enabled. This is used in the consumer to
    read the ring buffers of the current process. Always returns a
    freshly-allocated string. */
-char_os* caml_runtime_events_current_location(void) {
+CAMLexport char_os*
+caml_runtime_events_current_location(void) {
   if( atomic_load_acquire(&runtime_events_enabled) ) {
     return caml_stat_strdup_noexc_os(current_ring_loc);
   } else {
@@ -215,7 +217,8 @@ char_os* caml_runtime_events_current_location(void) {
 
 /* Write a lifecycle event and then trigger a stop the world to tear down the
   ring buffers */
-void caml_runtime_events_destroy(void) {
+CAMLexport void
+caml_runtime_events_destroy(void) {
   if (atomic_load_acquire(&runtime_events_enabled)) {
     write_to_ring(
       EV_RUNTIME, (ev_message_type){.runtime=EV_LIFECYCLE}, EV_RING_STOP, 0,
@@ -633,7 +636,7 @@ void caml_ev_counter(ev_runtime_counter counter, uint64_t val) {
   }
 }
 
-void caml_ev_lifecycle(ev_lifecycle lifecycle, int64_t data) {
+CAMLexport void caml_ev_lifecycle(ev_lifecycle lifecycle, int64_t data) {
   if ( ring_is_active() ) {
     write_to_ring(EV_RUNTIME, (ev_message_type){.runtime=EV_LIFECYCLE},
                   lifecycle, 1, (uint64_t *)&data, 0);
