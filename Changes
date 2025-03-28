@@ -300,7 +300,7 @@ Working version
 
 - #13906: Add support for a `multicore` tag in ocamltest and use it for
   tests that fail on mono-core systems.
-  (Stéphane Glondu)
+  (Stéphane Glondu, review by Nicolás Ojeda Bär)
 
 ### Manual and documentation:
 
