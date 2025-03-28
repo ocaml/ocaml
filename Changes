@@ -514,6 +514,10 @@ Working version
   definitions
   (Clement Blaudeau, review by Florian Angeletti)
 
+* #13874, #13882: Make evaluation order consistent for applications when using
+  the non-flambda native compiler
+  (Vincent Laviron, report by Jean-Marie Madiot, review by Gabriel Scherer)
+
 OCaml 5.3.0 (8 January 2025)
 ----------------------------
 
