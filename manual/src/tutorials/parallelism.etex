@@ -63,7 +63,7 @@ number is given below.
 (* fib.ml *)
 let n = try int_of_string Sys.argv.(1) with _ -> 1
 
-let rec fib n = if n < 2 then 1 else fib (n - 1) + fib (n - 2)
+let rec fib n = if n < 2 then n else fib (n - 1) + fib (n - 2)
 
 let main () =
   let r = fib n in
@@ -77,7 +77,7 @@ The program can be compiled and benchmarked as follows:
 \begin{verbatim}
 $ ocamlopt -o fib.exe fib.ml
 $ ./fib.exe 42
-fib(42) = 433494437
+fib(42) = 267914296
 $ hyperfine './fib.exe 42' # Benchmarking
 Benchmark 1: ./fib.exe 42
   Time (mean ± sd):     1.193 s ±  0.006 s    [User: 1.186 s, System: 0.003 s]
@@ -94,7 +94,7 @@ computes the $n$th Fibonacci number twice in parallel.
 (* fib_twice.ml *)
 let n = int_of_string Sys.argv.(1)
 
-let rec fib n = if n < 2 then 1 else fib (n - 1) + fib (n - 2)
+let rec fib n = if n < 2 then n else fib (n - 1) + fib (n - 2)
 
 let main () =
   let d1 = Domain.spawn (fun _ -> fib n) in
@@ -115,8 +115,8 @@ computation runs to completion.
 \begin{verbatim}
 $ ocamlopt -o fib_twice.exe fib_twice.ml
 $ ./fib_twice.exe 42
-fib(42) = 433494437
-fib(42) = 433494437
+fib(42) = 267914296
+fib(42) = 267914296
 $ hyperfine './fib_twice.exe 42'
 Benchmark 1: ./fib_twice.exe 42
   Time (mean ± sd):     1.249 s ±  0.025 s    [User: 2.451 s, System: 0.012 s]
@@ -137,7 +137,7 @@ by spawning domains for each one will not work as it spawns too many domains.
 let n = try int_of_string Sys.argv.(1) with _ -> 1
 
 let rec fib n =
-  if n < 2 then 1 else begin
+  if n < 2 then n else begin
     let d1 = Domain.spawn (fun _ -> fib (n - 1)) in
     let d2 = Domain.spawn (fun _ -> fib (n - 2)) in
     Domain.join d1 + Domain.join d2
@@ -184,7 +184,7 @@ of the Fibonacci program follows:
 let num_domains = int_of_string Sys.argv.(1)
 let n = int_of_string Sys.argv.(2)
 
-let rec fib n = if n < 2 then 1 else fib (n - 1) + fib (n - 2)
+let rec fib n = if n < 2 then n else fib (n - 1) + fib (n - 2)
 
 module T = Domainslib.Task
 
@@ -232,7 +232,7 @@ programs that use libraries installed through
 \begin{verbatim}
 $ ocamlfind ocamlopt -package domainslib -linkpkg -o fib_par2.exe fib_par2.ml
 $ ./fib_par2.exe 1 42
-fib(42) = 433494437
+fib(42) = 267914296
 $ hyperfine './fib.exe 42' './fib_par2.exe 2 42' \
             './fib_par2.exe 4 42' './fib_par2.exe 8 42'
 Benchmark 1: ./fib.exe 42
