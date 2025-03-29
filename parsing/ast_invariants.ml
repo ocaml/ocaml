@@ -34,6 +34,8 @@ let module_type_substitution_missing_rhs loc =
   err loc "Module type substitution with no right hand side"
 let function_without_value_parameters loc =
   err loc "Function without any value parameters"
+let invalid_struct_item loc =
+  err loc "This kind of structure item is not allowed in this context."
 
 let simple_longident id =
   let rec is_simple = function
@@ -109,6 +111,10 @@ let iterator =
               | { pparam_desc = Pparam_val _ } -> false)
             params
         then function_without_value_parameters loc
+    | Pexp_struct_item ({pstr_desc = Pstr_open _ |
+                                     Pstr_exception _ |
+                                     Pstr_module _}, _) -> ()
+    | Pexp_struct_item ({pstr_loc = loc}, _) -> invalid_struct_item loc
     | _ -> ()
   in
   let extension_constructor self ec =
