@@ -462,6 +462,19 @@ stdlib__Int.cmx : int.ml \
     stdlib.cmx \
     stdlib__Int.cmi
 stdlib__Int.cmi : int.mli
+stdlib__Int16.cmo : int16.ml \
+    stdlib__Sys.cmi \
+    stdlib__String.cmi \
+    stdlib.cmi \
+    stdlib__Int.cmi \
+    stdlib__Int16.cmi
+stdlib__Int16.cmx : int16.ml \
+    stdlib__Sys.cmx \
+    stdlib__String.cmx \
+    stdlib.cmx \
+    stdlib__Int.cmx \
+    stdlib__Int16.cmi
+stdlib__Int16.cmi : int16.mli
 stdlib__Int32.cmo : int32.ml \
     stdlib__Sys.cmi \
     stdlib.cmi \
@@ -478,6 +491,19 @@ stdlib__Int64.cmx : int64.ml \
     stdlib.cmx \
     stdlib__Int64.cmi
 stdlib__Int64.cmi : int64.mli
+stdlib__Int8.cmo : int8.ml \
+    stdlib__Sys.cmi \
+    stdlib__String.cmi \
+    stdlib.cmi \
+    stdlib__Int.cmi \
+    stdlib__Int8.cmi
+stdlib__Int8.cmx : int8.ml \
+    stdlib__Sys.cmx \
+    stdlib__String.cmx \
+    stdlib.cmx \
+    stdlib__Int.cmx \
+    stdlib__Int8.cmi
+stdlib__Int8.cmi : int8.mli
 stdlib__Lazy.cmo : lazy.ml \
     stdlib__Obj.cmi \
     camlinternalLazy.cmi \

@@ -150,6 +150,9 @@ Working version
 
 ### Standard library:
 
+- #13890: Add the Stdlib.{Int8, Int16} modules.
+  (T. Kinsart, review by Jeremy Yallop and Tim McGilchrist)
+
 - #13885: Add Dynarray.{exists2, for_all2}.
   (T. Kinsart, review by Daniel Bünzli, Gabriel Scherer, and Nicolás Ojeda Bär)
 
