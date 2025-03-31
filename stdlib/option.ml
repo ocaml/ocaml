@@ -22,6 +22,10 @@ let get = function Some v -> v | None -> invalid_arg "option is None"
 let bind o f = match o with None -> None | Some v -> f v
 let join = function Some o -> o | None -> None
 let map f o = match o with None -> None | Some v -> Some (f v)
+let product o0 o1 = match o0, o1 with
+| None, _ | _, None -> None
+| Some v0, Some v1 -> Some (v0, v1)
+
 let fold ~none ~some = function Some v -> some v | None -> none
 let iter f = function Some v -> f v | None -> ()
 let is_none = function None -> true | Some _ -> false
@@ -41,3 +45,10 @@ let compare cmp o0 o1 = match o0, o1 with
 let to_result ~none = function None -> Error none | Some v -> Ok v
 let to_list = function None -> [] | Some v -> [v]
 let to_seq = function None -> Seq.empty | Some v -> Seq.return v
+
+module Syntax = struct
+  let ( let* ) = bind
+  let ( and* ) = product
+  let ( let+ ) o f = map f o
+  let ( and+ ) = product
+end

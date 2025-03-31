@@ -47,6 +47,12 @@ val join : 'a option option -> 'a option
 val map : ('a -> 'b) -> 'a option -> 'b option
 (** [map f o] is [None] if [o] is [None] and [Some (f v)] if [o] is [Some v]. *)
 
+val product : 'a option -> 'b option -> ('a * 'b) option
+(** [product o0 o1] is [Some (v0, v1)] if [o0] is [Some v0] and [o1] is [Some
+    v1] and [None] otherwise.
+
+    @since 5.5 *)
+
 val fold : none:'a -> some:('b -> 'a) -> 'b option -> 'a
 (** [fold ~none ~some o] is [none] if [o] is [None] and [some v] if [o] is
     [Some v]. *)
@@ -82,3 +88,23 @@ val to_list : 'a option -> 'a list
 val to_seq : 'a option -> 'a Seq.t
 (** [to_seq o] is [o] as a sequence. [None] is the empty sequence and
     [Some v] is the singleton sequence containing [v]. *)
+
+(** {1:syntax Syntax} *)
+
+(** Binding operators. See manual section 12.23 for details.
+
+    @since 5.5 *)
+module Syntax : sig
+
+  val ( let* ) : 'a option -> ('a -> 'b option) -> 'b option
+  (** [( let* )] is {!Option.bind}. *)
+
+  val ( and* ) : 'a option -> 'b option -> ('a * 'b) option
+  (** [( and* )] is {!Option.product}. *)
+
+  val ( let+ ) : 'a option -> ('a -> 'b) -> 'b option
+  (** [( let+ )] is {!Option.map}. *)
+
+  val ( and+ ) : 'a option -> 'b option -> ('a * 'b) option
+  (** [( and+ )] is {!Option.product}. *)
+end
