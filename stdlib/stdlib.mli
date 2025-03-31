@@ -119,7 +119,9 @@ exception Undefined_recursive_module of (string * int * int)
 (** {1 Comparisons} *)
 
 external ( = ) : 'a -> 'a -> bool = "%equal"
-(** Alias of {!Repr.equal} *)
+(** Alias of {!Repr.equal}
+    Left-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( <> ) : 'a -> 'a -> bool = "%notequal"
 (** Negation of {!Repr.equal}.
@@ -163,8 +165,8 @@ val max : 'a -> 'a -> 'a
 (** Alias of {!Repr.max}. *)
 
 external ( == ) : 'a -> 'a -> bool = "%eq"
-(** Operator alias to {!Repr.phys_equal}.
-   Left-associative operator,  see {!Ocaml_operators} for more information.
+(** Alias of {!Repr.phys_equal}.
+    Left-associative operator,  see {!Ocaml_operators} for more information.
 *)
 
 external ( != ) : 'a -> 'a -> bool = "%noteq"

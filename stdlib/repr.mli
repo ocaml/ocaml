@@ -36,8 +36,7 @@ external equal : 'a -> 'a -> bool = "%equal"
     if and only if their current contents are structurally equal,
     even if the two mutable objects are not the same physical object.
     Equality between functional values raises [Invalid_argument].
-    Equality between cyclic data structures may not terminate.
-    Left-associative operator, see {!Ocaml_operators} for more information. *)
+    Equality between cyclic data structures may not terminate. *)
 
 external compare : 'a -> 'a -> int = "%compare"
 (** [compare x y] returns [0] if [x] is equal to [y],
