@@ -3,6 +3,9 @@
 #define POOL_HEADER_WSIZE 4
 #define SIZECLASS_MAX 128
 #define NUM_SIZECLASSES 32
+
+/* The largest size for this size class.
+   (A gap is left after smaller objects) */
 static const unsigned int wsize_sizeclass[NUM_SIZECLASSES] =
 { /*  0:*/ 1, 2, 3, 4, 5,
   /*  5:*/ 6, 7, 8, 10, 12,
@@ -11,6 +14,9 @@ static const unsigned int wsize_sizeclass[NUM_SIZECLASSES] =
   /* 20:*/ 42, 47, 53, 59, 65,
   /* 25:*/ 73, 81, 89, 99, 108,
   /* 30:*/ 118, 128 };
+
+/* The number of padding words to use, at the beginning of a pool
+   of this sizeclass, to reach exactly POOL_WSIZE words. */
 static const unsigned char wastage_sizeclass[NUM_SIZECLASSES] =
 { /*  0:*/ 0, 0, 0, 0, 2,
   /*  5:*/ 0, 4, 4, 2, 0,
@@ -19,6 +25,8 @@ static const unsigned char wastage_sizeclass[NUM_SIZECLASSES] =
   /* 20:*/ 18, 3, 11, 21, 62,
   /* 25:*/ 4, 42, 87, 33, 96,
   /* 30:*/ 80, 124 };
+
+/* Map from (positive) object sizes to size classes. */
 static const unsigned char sizeclass_wsize[SIZECLASS_MAX + 1] =
 { /*  0:*/ 255, 0, 1, 2, 3,
   /*  5:*/ 4, 5, 6, 7, 8,

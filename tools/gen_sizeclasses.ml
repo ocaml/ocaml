@@ -93,10 +93,20 @@ let _ =
   printf "#define POOL_HEADER_WSIZE %d\n" header_size;
   printf "#define SIZECLASS_MAX %d\n" max_slot;
   printf "#define NUM_SIZECLASSES %d\n" (List.length sizes);
-  printf "static const unsigned int \
-wsize_sizeclass[NUM_SIZECLASSES] =@[<2>{ %a };@]\n" print_list sizes;
-  printf "static const unsigned char \
-wastage_sizeclass[NUM_SIZECLASSES] =@[<2>{ %a };@]\n" print_list wastage;
-  printf "static const unsigned char \
-sizeclass_wsize[SIZECLASS_MAX + 1] =@[<2>{ %a };@]\n"
+  printf {|
+/* The largest size for this size class.
+   (A gap is left after smaller objects) */
+static const unsigned int wsize_sizeclass[NUM_SIZECLASSES] =@[<2>{ %a };@]
+|}
+    print_list sizes;
+  printf {|
+/* The number of padding words to use, at the beginning of a pool
+   of this sizeclass, to reach exactly POOL_WSIZE words. */
+static const unsigned char wastage_sizeclass[NUM_SIZECLASSES] =@[<2>{ %a };@]
+|}
+    print_list wastage;
+  printf {|
+/* Map from (positive) object sizes to size classes. */
+static const unsigned char sizeclass_wsize[SIZECLASS_MAX + 1] =@[<2>{ %a };@]
+|}
     print_list (255 :: size_slots 1);
