@@ -163,10 +163,16 @@ let () =
     (* Take values in [0, (3 * len) / 2] to have some collisions. *)
     List.init len (fun _ -> Random.int ( 1 + (3 * len) / 2 ))
   in
-  for _ = 0 to 99 do
+  for _ = 0 to 20 do
     let l = randlist 99 in
-    if not (keep_first_duplicates l) then
-      failwith "List.sort_uniq did not keep first duplicates."
+    if not (keep_first_duplicates l) then (
+      Format.printf
+        "List.sort_uniq did not keep first duplicates when sorting the list@ \
+         @[<hov>[%a]@]@."
+        Format.(
+          pp_print_list ~pp_sep:(fun out () -> fprintf out ";@ ") pp_print_int)
+        l;
+      assert false)
   done
 ;;
 

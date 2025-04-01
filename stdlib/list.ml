@@ -444,7 +444,7 @@ let fast_sort = stable_sort
    entries to the resulting list. Impossible now that Obj.truncate has
    been removed. *)
 
-(** sorting + removing nonfirst duplicates *)
+(** sorting + removing non-first duplicates *)
 
 let sort_uniq cmp l =
   let rec rev_merge l1 l2 accu =
