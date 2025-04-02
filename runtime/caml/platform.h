@@ -27,6 +27,7 @@
 #include "config.h"
 #include "mlvalues.h"
 #include "sys.h"
+#include "camlatomic.h"
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
