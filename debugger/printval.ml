@@ -72,6 +72,8 @@ module Printer = Genprintval.Make(Debugcom.Remote_value)(EvalPath)
 
 let install_printer = Printer.install_printer
 
+let install_generic_printer' = Printer.install_generic_printer'
+
 let remove_printer = Printer.remove_printer
 
 let max_printer_depth = ref 20

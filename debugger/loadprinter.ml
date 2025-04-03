@@ -117,8 +117,14 @@ let eval_value_path env path =
           let print_function ppf remote_val =
             print_with_fallback ppf (Obj.obj v ppf) remote_val in
           Printval.install_printer path ty_arg print_function
-      | Topprinters.Generic _ ->
-          raise (Error (`Wrong_type lid))
+      | Topprinters.Generic { ty_path ; arity } ->
+          let rec build v = function
+            | 0 -> Genprintval.Zero (fun ppf remote_val ->
+                print_with_fallback ppf (Obj.obj v ppf) remote_val)
+            | n ->
+                Genprintval.Succ
+                  (fun fn -> build ((Obj.obj v : _ -> Obj.t) fn) (n - 1)) in
+          Printval.install_generic_printer' path ty_path (build v arity)
 
 let remove_printer lid =
   match Topprinters.find_printer Env.empty lid with

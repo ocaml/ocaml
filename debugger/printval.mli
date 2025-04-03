@@ -30,5 +30,9 @@ val find_named_value : int -> Debugcom.Remote_value.t * Types.type_expr
 
 val install_printer :
   Path.t -> Types.type_expr ->
-    (formatter -> Debugcom.Remote_value.t -> unit) -> unit
+  (formatter -> Debugcom.Remote_value.t -> unit) -> unit
+val install_generic_printer' :
+  Path.t -> Path.t ->
+  (formatter -> Debugcom.Remote_value.t -> unit,
+   formatter -> Debugcom.Remote_value.t -> unit) Genprintval.gen_printer -> unit
 val remove_printer : Path.t -> unit
