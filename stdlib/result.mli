@@ -50,6 +50,12 @@ val get_error : ('a, 'e) result -> 'e
 
     @raise Invalid_argument if [r] is [Ok _]. *)
 
+val error_to_failure : ('a, string) result -> 'a
+(** [error_to_failure r] is [v] if [r] is [Ok v] and raises [Failure e]
+    if [r] is [Error e].
+
+    @since 5.4 *)
+
 val bind : ('a, 'e) result -> ('a -> ('b, 'e) result) -> ('b, 'e) result
 (** [bind r f] is [f v] if [r] is [Ok v] and [r] if [r] is [Error _]. *)
 

@@ -26,6 +26,13 @@ let test_get_ok_error () =
   assert_raise_invalid_argument Result.get_error (Ok 2);
   ()
 
+let test_error_to_failure () =
+  assert (Result.error_to_failure (Ok 3) = 3);
+  (match Result.error_to_failure (Error "ha") with
+   exception Failure "ha" [@warning "-52"] -> ();
+   | _ -> assert false);
+  ()
+
 let test_bind () =
   assert (Result.bind (Ok 3) (fun x -> Ok (succ x)) = Ok 4);
   assert (Result.bind (Ok 3) (fun x -> Error (strf "hu%d!" x)) = Error "hu3!");
@@ -147,6 +154,7 @@ let tests () =
   test_ok_error ();
   test_value ();
   test_get_ok_error ();
+  test_error_to_failure ();
   test_bind ();
   test_join ();
   test_maps ();
