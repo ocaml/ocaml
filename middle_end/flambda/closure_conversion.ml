@@ -110,6 +110,7 @@ let rec declare_const t (const : Lambda.structured_constant)
     : Flambda.constant_defining_value_block_field * Internal_variable_names.t =
   match const with
   | Const_base (Const_int c) -> (Const (Int c), Names.const_int)
+  | Const_base (Const_uchar u) -> (Const (Int(Uchar.to_int u)), Names.const_int)
   | Const_base (Const_char c) -> (Const (Char c), Names.const_char)
   | Const_base (Const_string (s, _, _)) ->
     let const, name =

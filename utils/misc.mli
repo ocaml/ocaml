@@ -810,13 +810,18 @@ end
 
 (** {1 Minimal support for Unicode characters in identifiers} *)
 
+module Uchar_more: sig
+   val string: Uchar.t -> string
+   val pp: Format.formatter -> Uchar.t -> unit
+end
+
+
 (** Characters allowed in identifiers are, currently:
       - ASCII letters A-Z a-z
       - Latin-1 letters (U+00C0 - U+00FF except U+00D7 and U+00F7)
       - Character sequences which normalize to the above character under NFC
       - digits 0-9, underscore, single quote
 *)
-
 module Utf8_lexeme: sig
   type t = string
 

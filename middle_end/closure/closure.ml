@@ -907,6 +907,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
       let rec transl = function
         | Const_base(Const_int n) -> Uconst_int n
         | Const_base(Const_char c) -> Uconst_int (Char.code c)
+        | Const_base(Const_uchar c) -> Uconst_int (Uchar.to_int c)
         | Const_block (tag, fields) ->
             str (Uconst_block (tag, List.map transl fields))
         | Const_float_array sl ->

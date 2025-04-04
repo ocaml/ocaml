@@ -354,6 +354,8 @@ let value_longident_loc = with_loc value_longident
 let constant_desc f = function
   | Pconst_char i ->
       pp f "%C"  i
+  | Pconst_uchar u ->
+      Misc.Uchar_more.pp f u
   | Pconst_string (i, _, None) ->
       pp f "%S" i
   | Pconst_string (i, _, Some delim) ->

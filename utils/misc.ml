@@ -272,6 +272,18 @@ let repeated_label l =
 
 (** {1 Minimal support for Unicode characters in identifiers} *)
 
+
+module Uchar_more = struct
+
+  let string u =
+    let b = Buffer.create 10 in
+    Buffer.add_utf_8_uchar b u;
+    Buffer.contents b
+
+  let pp ppf u = Format.fprintf ppf "'%s'" (string u)
+
+end
+
 module Utf8_lexeme = struct
 
   type t = string

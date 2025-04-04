@@ -122,6 +122,7 @@ let rec extract_letop_patterns n pat =
 
 let constant = function
   | Const_char c -> Const.char c
+  | Const_uchar u -> Const.uchar u
   | Const_string (s,loc,d) -> Const.string ?quotation_delimiter:d ~loc s
   | Const_int i -> Const.integer (Int.to_string i)
   | Const_int32 i -> Const.integer ~suffix:'l' (Int32.to_string i)

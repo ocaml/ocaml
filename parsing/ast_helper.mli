@@ -46,6 +46,7 @@ val with_default_loc: loc -> (unit -> 'a) -> 'a
 module Const : sig
   val mk : ?loc:loc -> constant_desc -> constant
   val char : ?loc:loc -> char -> constant
+  val uchar: ?loc:loc -> Uchar.t -> constant
   val string :
     ?quotation_delimiter:string -> ?loc:Location.t -> string -> constant
   val integer : ?loc:loc -> ?suffix:char -> string -> constant

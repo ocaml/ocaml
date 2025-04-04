@@ -284,6 +284,7 @@ let case lhs rhs =
 let type_constant = function
     Const_int _ -> instance Predef.type_int
   | Const_char _ -> instance Predef.type_char
+  | Const_uchar _ -> instance Predef.type_uchar
   | Const_string _ -> instance Predef.type_string
   | Const_float _ -> instance Predef.type_float
   | Const_int32 _ -> instance Predef.type_int32
@@ -315,6 +316,7 @@ let constant_desc
      end
   | Pconst_integer (i,Some c) -> Error (Unknown_literal (i, c))
   | Pconst_char c -> Ok (Const_char c)
+  | Pconst_uchar u -> Ok (Const_uchar u)
   | Pconst_string (s,loc,d) -> Ok (Const_string (s,loc,d))
   | Pconst_float (f,None)-> Ok (Const_float f)
   | Pconst_float (f,Some c) -> Error (Unknown_literal (f, c))

@@ -102,6 +102,7 @@ let fmt_constant i f x =
   match x.pconst_desc with
   | Pconst_integer (j,m) -> line i f "PConst_int (%s,%a)\n" j fmt_char_option m
   | Pconst_char c -> line i f "PConst_char %02x\n" (Char.code c)
+  | Pconst_uchar c -> line i f "PConst_char U+%04x\n" (Uchar.to_int c)
   | Pconst_string (s, strloc, None) ->
       line i f "PConst_string(%S,%a,None)\n" s fmt_location strloc
   | Pconst_string (s, strloc, Some delim) ->
