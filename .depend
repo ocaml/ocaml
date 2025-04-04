@@ -62,16 +62,6 @@ utils/config.cmo : \
 utils/config.cmx : \
     utils/config.cmi
 utils/config.cmi :
-utils/config_boot.cmo : \
-    utils/config_boot.cmi
-utils/config_boot.cmx : \
-    utils/config_boot.cmi
-utils/config_boot.cmi :
-utils/config_main.cmo : \
-    utils/config_main.cmi
-utils/config_main.cmx : \
-    utils/config_main.cmi
-utils/config_main.cmi :
 utils/consistbl.cmo : \
     utils/misc.cmi \
     utils/consistbl.cmi
@@ -221,6 +211,16 @@ utils/warnings.cmx : \
     utils/warnings.cmi
 utils/warnings.cmi : \
     utils/format_doc.cmi
+utils/config/config_boot.cmo : \
+    utils/config/config_boot.cmi
+utils/config/config_boot.cmx : \
+    utils/config/config_boot.cmi
+utils/config/config_boot.cmi :
+utils/config/config_main.cmo : \
+    utils/config/config_main.cmi
+utils/config/config_main.cmx : \
+    utils/config/config_main.cmi
+utils/config/config_main.cmi :
 parsing/ast_helper.cmo : \
     parsing/syntaxerr.cmi \
     parsing/parsetree.cmi \

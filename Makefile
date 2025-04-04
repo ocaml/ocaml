@@ -414,12 +414,12 @@ partialclean::
 	cd toplevel/byte ; rm -f $(TOPLEVEL_SHARED_ARTEFACTS)
 	cd toplevel/native ; rm -f $(TOPLEVEL_SHARED_ARTEFACTS)
 
-ALL_CONFIG_CMO = utils/config_main.cmo utils/config_boot.cmo
+ALL_CONFIG_CMO = utils/config/config_main.cmo utils/config/config_boot.cmo
 
-utils/config_%.mli: utils/config.mli
+utils/config/config_%.mli: utils/config.mli | utils/config
 	cp $^ $@
 
-beforedepend:: utils/config_main.mli utils/config_boot.mli
+beforedepend:: utils/config/config_main.mli utils/config/config_boot.mli
 
 $(addprefix compilerlibs/ocamlcommon., cma cmxa): \
   OC_COMMON_LINKFLAGS += -linkall
@@ -476,12 +476,15 @@ partialclean::
 # The configuration file
 
 utils/config.ml: \
-  utils/config_$(if $(filter true,$(IN_COREBOOT_CYCLE)),boot,main).ml
+  utils/config/config_$(if $(filter true,$(IN_COREBOOT_CYCLE)),boot,main).ml
 	$(V_GEN)cp $< $@
-utils/config_boot.ml: utils/config.fixed.ml utils/config.common.ml
+utils/config:
+	$(MKDIR) $@
+utils/config/config_boot.ml: \
+  utils/config.fixed.ml utils/config.common.ml | utils/config
 	$(V_GEN)cat $^ > $@
-
-utils/config_main.ml: utils/config.generated.ml utils/config.common.ml
+utils/config/config_main.ml: \
+  utils/config.generated.ml utils/config.common.ml | utils/config
 	$(V_GEN)cat $^ > $@
 
 ADDITIONAL_CONFIGURE_ARGS ?=
@@ -502,13 +505,13 @@ configure: tools/autogen configure.ac aclocal.m4 build-aux/ocaml_version.m4
 .PHONY: partialclean
 partialclean::
 	rm -f utils/config.ml \
-	      utils/config_main.ml utils/config_main.mli \
-	      utils/config_boot.ml utils/config_boot.mli \
+	      utils/config/config_main.ml utils/config/config_main.mli \
+	      utils/config/config_boot.ml utils/config/config_boot.mli \
         utils/domainstate.ml utils/domainstate.mli
 
 .PHONY: beforedepend
 beforedepend:: \
-  utils/config.ml utils/config_boot.ml utils/config_main.ml \
+  utils/config.ml utils/config/config_boot.ml utils/config/config_main.ml \
   utils/domainstate.ml utils/domainstate.mli
 
 ocamllex_PROGRAMS = $(addprefix lex/,ocamllex ocamllex.opt)
@@ -2651,8 +2654,8 @@ endif
 	$(V_OCAMLOPT)$(COMPILE_NATIVE_MODULE) -c $<
 
 partialclean::
-	for d in utils parsing typing bytecomp asmcomp middle_end file_formats \
-           lambda middle_end/closure middle_end/flambda \
+	for d in utils utils/config parsing typing bytecomp asmcomp middle_end \
+           file_formats lambda middle_end/closure middle_end/flambda \
            middle_end/flambda/base_types \
            driver toplevel toplevel/byte toplevel/native tools debugger; do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.s $$d/*.asm \
@@ -2713,10 +2716,11 @@ $(foreach file, asmcomp/emit.ml $(ARCH_SPECIFIC),\
   $(eval $(call MV_FILE,$(file).depend,$(file))))
 
 DEP_DIRS = \
-  utils parsing typing bytecomp asmcomp middle_end lambda file_formats \
-  middle_end/closure middle_end/flambda middle_end/flambda/base_types driver \
-  toplevel toplevel/byte toplevel/native lex tools debugger ocamldoc ocamltest \
-  testsuite/lib testsuite/tools otherlibs/dynlink
+  utils utils/config parsing typing bytecomp asmcomp middle_end lambda \
+  file_formats middle_end/closure middle_end/flambda \
+  middle_end/flambda/base_types driver toplevel toplevel/byte toplevel/native \
+  lex tools debugger ocamldoc ocamltest testsuite/lib testsuite/tools \
+  otherlibs/dynlink
 
 DEP_FILES = $(addsuffix .depend, $(DEP_DIRS))
 
@@ -2747,6 +2751,7 @@ endif
 	$(MAKE) -C testsuite distclean
 	rm -f tools/eventlog_metadata tools/*.bak
 	rm -f utils/config.common.ml utils/config.generated.ml
+	rm -rf utils/config
 	rm -f compilerlibs/META
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/$(HEADER_NAME) \
 	      boot/flexdll_*.o boot/flexdll_*.obj \

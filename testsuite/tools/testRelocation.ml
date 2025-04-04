@@ -178,8 +178,7 @@ let libdir_rules config file =
       else if List.mem ext [".cma"; ".cmo"; ".cmt"; ".cmti"] then
         let stdlib = (* via Config.standard_library *)
           config.has_relative_libdir = None
-          && List.mem basename ["config.cmt"; "config_main.cmt";
-                                "ocamlcommon.cma"] in
+          && (basename = "config.cmt" || basename = "ocamlcommon.cma") in
         (* The compiler's artefacts are all compiled with -g *)
         (~stdlib, ~ocaml_debug:true, ~c_debug:false, ~s:false)
       else if ext = ".cmxs" then

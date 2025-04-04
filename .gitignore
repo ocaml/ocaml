@@ -321,12 +321,12 @@ META
 /toplevel/native/trace.mli
 /toplevel/native/topmain.mli
 
-/utils/config_boot.ml
-/utils/config_boot.mli
+/utils/config/config_boot.ml
+/utils/config/config_boot.mli
+/utils/config/config_main.ml
+/utils/config/config_main.mli
 /utils/config.common.ml
 /utils/config.generated.ml
-/utils/config_main.ml
-/utils/config_main.mli
 /utils/config.ml
 /utils/domainstate.ml
 /utils/domainstate.mli
