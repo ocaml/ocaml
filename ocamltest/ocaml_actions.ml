@@ -707,7 +707,7 @@ let run_codegen log env =
     if exit_status=0
     then begin
       let finalise =
-        if Ocamltest_config.ccomptype="msvc"
+        if Ocamltest_config.ccomp_type="msvc"
         then finalise_codegen_msvc
         else finalise_codegen_cc
       in
@@ -729,7 +729,7 @@ let run_cc log env =
   let what = Printf.sprintf "Running C compiler to build %s" program in
   Printf.fprintf log "%s\n%!" what;
   let output_exe =
-    if Ocamltest_config.ccomptype="msvc" then "/Fe" else "-o "
+    if Ocamltest_config.ccomp_type="msvc" then "/Fe" else "-o "
   in
   let commandline =
   [

@@ -164,7 +164,7 @@ AC_SUBST([mkexe_exp])
 AC_SUBST([mkexedebugflag])
 AC_SUBST([mkexe_via_cc_ldflags])
 AC_SUBST([mkexe_via_cc_extra_cmd])
-AC_SUBST([ccomptype])
+AC_SUBST([ccomp_type])
 AC_SUBST([toolchain])
 AC_SUBST([common_cflags])
 AC_SUBST([oc_cflags])
@@ -352,13 +352,13 @@ If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
 AS_CASE([$target],
   [*-pc-windows],
     [AS_IF([test -z "$CC"], [CC=cl])
-    ccomptype=msvc
+    ccomp_type=msvc
     S=asm
     SO=dll
     outputexe=-Fe
     outputobj=-Fo
     syslib='$(1).lib'],
-  [ccomptype=cc
+  [ccomp_type=cc
   S=s
   SO=so
   outputexe='-o '
@@ -1614,7 +1614,7 @@ native_cflags=''
 oc_native_cflags=''
 oc_native_cppflags="-DNATIVE_CODE\
  -DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
-AS_CASE([$ccomptype],
+AS_CASE([$ccomp_type],
   [msvc],
     [runtime_asm_objects=${arch}nt.${OBJEXT}],
   [runtime_asm_objects=${arch}.${OBJEXT}])
@@ -2727,7 +2727,7 @@ AS_IF([test x"$with_afl" = "xyes"],
 # Enable debugging support
 # TODO: add a --disable-debug-info configure option that disables debugging
 # info for both C and OCaml
-AS_IF([test "$ccomptype" != "msvc"],
+AS_IF([test "$ccomp_type" != "msvc"],
   [internal_cflags="-g $internal_cflags"])
 
 oc_cflags="$common_cflags $internal_cflags"
@@ -2880,7 +2880,7 @@ ${mkdll_ldflags}"
     [mkexe_via_cc_ldflags="${mkexe_via_cc_ldflags}${oc_exe_ldflags} "])
   mkexe_via_cc_ldflags="${mkexe_via_cc_ldflags}\$(OC_LDFLAGS) \$(LDFLAGS)"
   # cl requires linker flags after the objects.
-  AS_IF([test "$ccomptype" = 'msvc'],
+  AS_IF([test "$ccomp_type" = 'msvc'],
     [mkexe_via_cc_ldflags=\
 "/nologo \$(OUTPUTEXE)\$(1) \$(2) $mkexe_via_cc_ldflags"],
     [mkexe_via_cc_ldflags=\

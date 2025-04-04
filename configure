@@ -892,7 +892,7 @@ tsan
 oc_cflags
 common_cflags
 toolchain
-ccomptype
+ccomp_type
 mkexe_via_cc_extra_cmd
 mkexe_via_cc_ldflags
 mkexedebugflag
@@ -3829,14 +3829,14 @@ case $target in #(
 then :
   CC=cl
 fi
-    ccomptype=msvc
+    ccomp_type=msvc
     S=asm
     SO=dll
     outputexe=-Fe
     outputobj=-Fo
     syslib='$(1).lib' ;; #(
   *) :
-    ccomptype=cc
+    ccomp_type=cc
   S=s
   SO=so
   outputexe='-o '
@@ -18581,7 +18581,7 @@ native_cflags=''
 oc_native_cflags=''
 oc_native_cppflags="-DNATIVE_CODE\
  -DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
-case $ccomptype in #(
+case $ccomp_type in #(
   msvc) :
     runtime_asm_objects=${arch}nt.${OBJEXT} ;; #(
   *) :
@@ -23457,7 +23457,7 @@ fi
 # Enable debugging support
 # TODO: add a --disable-debug-info configure option that disables debugging
 # info for both C and OCaml
-if test "$ccomptype" != "msvc"
+if test "$ccomp_type" != "msvc"
 then :
   internal_cflags="-g $internal_cflags"
 fi
@@ -23807,7 +23807,7 @@ then :
 fi
   mkexe_via_cc_ldflags="${mkexe_via_cc_ldflags}\$(OC_LDFLAGS) \$(LDFLAGS)"
   # cl requires linker flags after the objects.
-  if test "$ccomptype" = 'msvc'
+  if test "$ccomp_type" = 'msvc'
 then :
   mkexe_via_cc_ldflags=\
 "/nologo \$(OUTPUTEXE)\$(1) \$(2) $mkexe_via_cc_ldflags"

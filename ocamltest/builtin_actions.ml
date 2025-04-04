@@ -130,7 +130,7 @@ let not_windows = make
 let not_msvc = make
   ~name:"not-msvc"
   ~description:"Pass if not using MSVC / clang-cl"
-  (Actions_helpers.pass_or_skip (Ocamltest_config.ccomptype <> "msvc")
+  (Actions_helpers.pass_or_skip (Ocamltest_config.ccomp_type <> "msvc")
     "not using MSVC / clang-cl"
     "using MSVC / clang-cl")
 

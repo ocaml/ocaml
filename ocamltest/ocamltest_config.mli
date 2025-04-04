@@ -36,7 +36,7 @@ val cc : string
 val cflags : string
 (** Flags to pass to the C compiler *)
 
-val ccomptype : string
+val ccomp_type : string
 (** Type of C compiler (msvc, cc, etc.) *)
 
 val target_os_type : string
