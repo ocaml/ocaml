@@ -150,6 +150,10 @@ Working version
 
 ### Standard library:
 
+- #13720: Add Result.{get_ok',error_to_failure}
+ (Daniel Bünzli, review by wikku, Gabriel Scherer, Nicolás Ojeda Bär,
+  Vincent Laviron and hirrolot)
+
 - #13696: Add Result.product and Result.Syntax.
   (Daniel Bünzli, review by Gabriel Scherer, Nicolás Ojeda Bär)
 
