@@ -16,15 +16,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@alert unstable
-    "The Domain interface may change in incompatible ways in the future."
-]
-
 (** Domains.
 
     See 'Parallel programming' chapter in the manual.
 
     @since 5.0 *)
+
+[@@@alert unstable
+    "The Domain interface may change in incompatible ways in the future."
+]
 
 type !'a t
 (** A domain of type ['a t] runs independently, eventually producing a
