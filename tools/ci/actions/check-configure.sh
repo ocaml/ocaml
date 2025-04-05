@@ -34,7 +34,7 @@ if [[ $WANT != "$HAVE" ]]; then
   exit 1
 fi
 
-if [[ $1 = 'pull_request' ]]; then
+if [[ $2 = 'pull_request' ]]; then
   ALL_COMMITS_MUST_PASS=1
 else
   ALL_COMMITS_MUST_PASS=0
