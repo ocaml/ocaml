@@ -150,6 +150,9 @@ Working version
 
 ### Standard library:
 
+- #13937: Add Option.value_or
+ (T. Kinsart, review by ???)
+
 - #13720: Add Result.{get_ok',error_to_failure}
  (Daniel Bünzli, review by wikku, Gabriel Scherer, Nicolás Ojeda Bär,
   Vincent Laviron and hirrolot)

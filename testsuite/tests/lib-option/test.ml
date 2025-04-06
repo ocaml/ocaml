@@ -15,6 +15,11 @@ let test_value () =
   assert (Option.value (Some 3) ~default:5 = 3);
   ()
 
+let test_value_or () =
+  assert (Option.value_or None ~f:(fun () -> 5) = 5);
+  assert (Option.value_or (Some 3) ~f:(fun () -> failwith "bomb") = 3);
+  ()
+
 let test_get () =
   assert_raise_invalid_argument Option.get None;
   assert (Option.get (Some 2) = 2);

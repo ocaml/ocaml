@@ -33,6 +33,11 @@ val some : 'a -> 'a option
 val value : 'a option -> default:'a -> 'a
 (** [value o ~default] is [v] if [o] is [Some v] and [default] otherwise. *)
 
+val value_or : 'a option -> f:(unit -> 'a) -> 'a
+(** [value_or o ~f] is [v] if [o] is [Some v] and [f ()] otherwise.
+
+    @since 5.4 *)
+
 val get : 'a option -> 'a
 (** [get o] is [v] if [o] is [Some v] and raise otherwise.
 
