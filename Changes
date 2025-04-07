@@ -104,6 +104,10 @@ Working version
   is a break hint at the end.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #13938: Tweak compilation of recursive values to preserve unicity of
+  mutable structures
+  (Vincent Laviron, review by Gabriel Scherer)
+
 OCaml 5.4.0
 ---------------
 
