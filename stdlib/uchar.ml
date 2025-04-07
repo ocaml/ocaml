@@ -20,41 +20,46 @@ let err_no_succ = "U+10FFFF has no successor"
 let err_not_sv i = format_int "%X" i ^ " is not a Unicode scalar value"
 let err_not_latin1 u = "U+" ^ format_int "%04X" u ^ " is not a latin1 character"
 
-type t = int
+type t = uchar
+external unsafe_of_int : int -> t = "%identity"
+external to_int : t -> int = "%identity"
 
-let min = 0x0000
-let max = 0x10FFFF
-let lo_bound = 0xD7FF
-let hi_bound = 0xE000
+let min = unsafe_of_int 0x0000
+let max = unsafe_of_int 0x10FFFF
+let lo_bound = unsafe_of_int 0xD7FF
+let hi_bound = unsafe_of_int 0xE000
 
-let bom = 0xFEFF
-let rep = 0xFFFD
+let bom = unsafe_of_int 0xFEFF
+let rep = unsafe_of_int 0xFFFD
 
 let succ u =
   if u = lo_bound then hi_bound else
   if u = max then invalid_arg err_no_succ else
-  u + 1
+  unsafe_of_int (to_int u + 1)
 
 let pred u =
   if u = hi_bound then lo_bound else
   if u = min then invalid_arg err_no_pred else
-  u - 1
+  unsafe_of_int (to_int u - 1)
 
-let is_valid i = (min <= i && i <= lo_bound) || (hi_bound <= i && i <= max)
-let of_int i = if is_valid i then i else invalid_arg (err_not_sv i)
-external unsafe_of_int : int -> t = "%identity"
-external to_int : t -> int = "%identity"
+let is_valid i =
+  let i = unsafe_of_int i in
+  (min <= i && i <= lo_bound) || (hi_bound <= i && i <= max)
+let of_int i =
+  if is_valid i then unsafe_of_int i
+  else invalid_arg (err_not_sv i)
 
-let is_char u = u < 256
-let of_char c = Char.code c
+let is_char u = to_int u < 256
+let of_char c = unsafe_of_int (Char.code c)
 let to_char u =
+  let u = to_int u in
   if u > 255 then invalid_arg (err_not_latin1 u) else
   Char.unsafe_chr u
 
-let unsafe_to_char = Char.unsafe_chr
+let unsafe_to_char x = Char.unsafe_chr (to_int x)
 
-let equal : int -> int -> bool = ( = )
-let compare : int -> int -> int = Stdlib.compare
+let equal : t -> t -> bool = ( = )
+let compare : t -> t -> int = Stdlib.compare
 
 external seeded_hash_param :
   int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
@@ -78,7 +83,7 @@ let[@inline] utf_decode_is_valid d = (d lsr valid_bit) = 1
 let[@inline] utf_decode_length d = (d lsr decode_bits) land 0b111
 let[@inline] utf_decode_uchar d = unsafe_of_int (d land 0xFFFFFF)
 let[@inline] utf_decode n u = ((8 lor n) lsl decode_bits) lor (to_int u)
-let[@inline] utf_decode_invalid n = (n lsl decode_bits) lor rep
+let[@inline] utf_decode_invalid n = (n lsl decode_bits) lor to_int rep
 
 let utf_8_decode_length_of_byte = function
   | '\x00' .. '\x7F' -> 1
