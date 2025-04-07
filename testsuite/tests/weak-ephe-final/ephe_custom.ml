@@ -4,7 +4,7 @@ let w = Weak.create 1
 
 let major_obj () =
   let n = Sys.opaque_identity 42 in
-  let v = Int64.of_int n in
+  let v = Sys.opaque_identity (Int64.of_int n) in
   Gc.minor ();
   v
 
