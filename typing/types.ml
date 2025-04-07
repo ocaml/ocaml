@@ -50,6 +50,13 @@ and package =
     { pack_path : Path.t;
       pack_cstrs : (string list * type_expr) list }
 
+and arg_label =
+  | Nolabel
+  | Labelled of string
+  | Optional of string
+  | Position of string
+
+
 and row_desc =
     { row_fields: (label * row_field) list;
       row_more: type_expr;
@@ -910,3 +917,8 @@ let undo_compress (changes, _old) =
             Transient_expr.set_desc ty desc; r := !next
         | _ -> ())
         log
+
+let string_of_label : arg_label -> string = function
+  | Nolabel -> ""
+  | Labelled s -> s
+  | Optional s | Position s -> "?"^s

@@ -224,7 +224,7 @@ let iter_on_occurrences
       | Texp_send _
       | Texp_letmodule _ | Texp_letexception _ | Texp_assert _ | Texp_lazy _
       | Texp_object _ | Texp_pack _ | Texp_letop _ | Texp_unreachable
-      | Texp_open _ -> ());
+      | Texp_open _ | Texp_src_pos -> ());
       default_iterator.expr sub e);
 
   (* Remark: some types get iterated over twice due to how constraints are
@@ -243,7 +243,7 @@ let iter_on_occurrences
       |  Ttyp_open (path, lid, _ct) ->
           f ~namespace:Module ctyp_env path lid
       | Ttyp_any | Ttyp_var _ | Ttyp_arrow _ | Ttyp_tuple _ | Ttyp_object _
-      | Ttyp_alias _ | Ttyp_variant _ | Ttyp_poly _ -> ());
+      | Ttyp_alias _ | Ttyp_variant _ | Ttyp_poly _ | Ttyp_call_pos -> ());
       default_iterator.typ sub ct);
 
   pat =

@@ -2321,14 +2321,17 @@ let compatible_paths p1 p2 =
 
 (* Two labels are considered compatible under certain conditions.
   - they are the same
-  - in classic mode, only optional labels are relavant
+  - in classic mode, only optional and position labels are relavant
   - in pattern mode, we act as if we were in classic mode. If not, interactions
     with GADTs from files compiled in classic mode would be unsound.
 *)
 let compatible_labels ~in_pattern_mode l1 l2 =
   l1 = l2
   || (!Clflags.classic || in_pattern_mode)
-      && not (is_optional l1 || is_optional l2)
+     && (match l1, l2 with
+         | (Nolabel | Labelled _), (Nolabel | Labelled _) -> true
+         | (Optional _ | Position _), _
+         | _, (Optional _ | Position _) -> false)
 
 let eq_labels error_mode ~in_pattern_mode l1 l2 =
   if not (compatible_labels ~in_pattern_mode l1 l2) then
@@ -3422,7 +3425,8 @@ let filter_arrow env t l =
       link_type t t';
       (t1, t2)
   | Tarrow(l', t1, t2, _) ->
-      if l = l' || !Clflags.classic && l = Nolabel && not (is_optional l')
+      if l = l' || !Clflags.classic && l = Nolabel
+         && compatible_labels ~in_pattern_mode:true l l'
       then (t1, t2)
       else raise (Filter_arrow_failed
                     (Label_mismatch

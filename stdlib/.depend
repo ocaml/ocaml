@@ -830,6 +830,13 @@ stdlib__Sys.cmo : sys.ml \
 stdlib__Sys.cmx : sys.ml \
     stdlib__Sys.cmi
 stdlib__Sys.cmi : sys.mli
+stdlib__Textloc.cmo : textloc.ml \
+    stdlib__Obj.cmi \
+    stdlib__Textloc.cmi
+stdlib__Textloc.cmx : textloc.ml \
+    stdlib__Obj.cmx \
+    stdlib__Textloc.cmi
+stdlib__Textloc.cmi : textloc.mli
 stdlib__Type.cmo : type.ml \
     stdlib__Obj.cmi \
     stdlib__Type.cmi

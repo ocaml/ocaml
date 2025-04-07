@@ -416,10 +416,11 @@ module Pp = struct
     incr cluster_counter;
     fprintf ppf "cluster_%d" !cluster_counter
 
-  let exponent_of_label ppf = function
-    | Asttypes.Nolabel -> ()
-    | Asttypes.Labelled s -> fprintf ppf "<SUP>%s</SUP>" s
-    | Asttypes.Optional s -> fprintf ppf "<SUP>?%s</SUP>" s
+  let exponent_of_label ppf : Types.arg_label -> _ = function
+    | Nolabel -> ()
+    | Labelled s -> fprintf ppf "<SUP>%s</SUP>" s
+    | Optional s -> fprintf ppf "<SUP>?%s</SUP>" s
+    | Position s -> fprintf ppf "<SUP>?%s:[%%call_pos]</SUP>" s
 
   let pretty_var ppf name =
     let name = Option.value ~default:"_" name in

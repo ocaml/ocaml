@@ -399,6 +399,17 @@ let value_binding sub vb =
   in
   Vb.mk ~loc ~attrs ?value_constraint pat (sub.expr sub vb.vb_expr)
 
+let label : Types.arg_label -> Asttypes.arg_label = function
+  (* There is no Position label in the Parsetree, since we parse [%call_pos]
+     arguments as Optional. The correctness of this translation depends on
+     also re-inserting the constraint pattern (P : [%call_pos]) to the generated
+     tree. *)
+  | Labelled l -> Labelled l
+  | Optional l | Position l -> Optional l
+  | Nolabel -> Nolabel
+
+let call_pos_extension = Location.mknoloc "call_pos_extension", PStr []
+
 let expression sub exp =
   let loc = sub.location sub exp.exp_loc in
   let attrs = sub.attributes sub exp.exp_attributes in
@@ -449,7 +460,8 @@ let expression sub exp =
                    fp.fp_newtypes
                in
                let pparam_desc =
-                 Pparam_val (fp.fp_arg_label, default_arg, pat)
+                 let parg_label = label fp.fp_arg_label in
+                 Pparam_val (parg_label, default_arg, pat)
                in
                { pparam_desc; pparam_loc = fp.fp_loc } :: newtypes)
             params
@@ -457,10 +469,15 @@ let expression sub exp =
         Pexp_function (params, constraint_, body)
     | Texp_apply (exp, list) ->
         Pexp_apply (sub.expr sub exp,
-          List.fold_right (fun (label, arg) list ->
-              match arg with
-              | Omitted () -> list
-              | Arg exp -> (label, sub.expr sub exp) :: list
+          List.fold_right (fun (arg_label, arg) list ->
+              match arg_label, arg with
+              | _, Omitted () -> list
+              | Position _, Arg { exp_desc = Texp_src_pos; _ } ->
+                  (* [Texp_src_pos] does not exist in the parsetree and can only
+                     originate from an omitted [Position] argument, so that is
+                     what we reconstruct here. *)
+                  list
+              | _, Arg exp -> (label arg_label, sub.expr sub exp) :: list
           ) list [])
     | Texp_match (exp, cases, eff_cases, _) ->
       let merged_cases = List.map (sub.case sub) cases
@@ -570,6 +587,10 @@ let expression sub exp =
                              ])
     | Texp_open (od, exp) ->
         Pexp_open (sub.open_declaration sub od, sub.expr sub exp)
+   | Texp_src_pos ->
+       (* This has no equivalent in the untyped parse tree. Untyping a
+          well-typed typed tree should not end up here. *)
+       assert false
   in
   List.fold_right (exp_extra sub) exp.exp_extra
     (Exp.mk ~loc ~attrs desc)
@@ -748,10 +769,13 @@ let class_expr sub cexpr =
           List.map (sub.typ sub) tyl)
     | Tcl_structure clstr -> Pcl_structure (sub.class_structure sub clstr)
 
-    | Tcl_fun (label, pat, _pv, cl, _partial) ->
-        Pcl_fun (label, None, sub.pat sub pat, sub.class_expr sub cl)
+    | Tcl_fun (arg_label, pat, _pv, cl, _partial) ->
+        Pcl_fun (label arg_label, None, sub.pat sub pat, sub.class_expr sub cl)
 
     | Tcl_apply (cl, args) ->
+        let args =
+          List.map (fun (arg_label, expo) -> label arg_label, expo) args
+        in
         Pcl_apply (sub.class_expr sub cl,
           List.fold_right (fun (label, expo) list ->
               match expo with
@@ -782,8 +806,8 @@ let class_type sub ct =
       Tcty_signature csg -> Pcty_signature (sub.class_signature sub csg)
     | Tcty_constr (_path, lid, list) ->
         Pcty_constr (map_loc sub lid, List.map (sub.typ sub) list)
-    | Tcty_arrow (label, ct, cl) ->
-        Pcty_arrow (label, sub.typ sub ct, sub.class_type sub cl)
+    | Tcty_arrow (arg_label, ct, cl) ->
+        Pcty_arrow (label arg_label, sub.typ sub ct, sub.class_type sub cl)
     | Tcty_open (od, e) ->
         Pcty_open (sub.open_description sub od, sub.class_type sub e)
   in
@@ -816,8 +840,8 @@ let core_type sub ct =
   let desc = match ct.ctyp_desc with
       Ttyp_any -> Ptyp_any
     | Ttyp_var s -> Ptyp_var s
-    | Ttyp_arrow (label, ct1, ct2) ->
-        Ptyp_arrow (label, sub.typ sub ct1, sub.typ sub ct2)
+    | Ttyp_arrow (arg_label, ct1, ct2) ->
+        Ptyp_arrow (label arg_label, sub.typ sub ct1, sub.typ sub ct2)
     | Ttyp_tuple list ->
         Ptyp_tuple (List.map (fun (l, typ) -> l, sub.typ sub typ) list)
     | Ttyp_constr (_path, lid, list) ->
@@ -837,6 +861,8 @@ let core_type sub ct =
         Ptyp_poly (list, sub.typ sub ct)
     | Ttyp_package pack -> Ptyp_package (sub.package_type sub pack)
     | Ttyp_open (_path, mod_ident, t) -> Ptyp_open (mod_ident, sub.typ sub t)
+    | Ttyp_call_pos ->
+        Ptyp_extension call_pos_extension
   in
   Typ.mk ~loc ~attrs desc
 

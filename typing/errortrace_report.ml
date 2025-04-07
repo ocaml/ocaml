@@ -272,29 +272,41 @@ let explain_incompatible_fields name (diff: Types.type_expr Errortrace.diff) =
 
 
 let explain_label_mismatch ~got ~expected =
-  let quoted_label ppf l = Style.inline_code ppf (Asttypes.string_of_label l) in
+  let quoted_label ppf l = Style.inline_code ppf (Types.string_of_label l) in
+  let call_pos ppf () = Style.inline_code ppf "[%call_pos]" in
   match got, expected with
-  | Asttypes.Nolabel, Asttypes.(Labelled _ | Optional _ )  ->
+  | Types.Nolabel, Types.(Labelled _ | Optional _ | Position _)  ->
       doc_printf "@,@[A label@ %a@ was expected@]"
         quoted_label expected
-  | Asttypes.(Labelled _|Optional _), Asttypes.Nolabel  ->
+  | Types.(Labelled _ | Optional _ | Position _), Types.Nolabel  ->
       doc_printf
         "@,@[The first argument is labeled@ %a,@ \
          but an unlabeled argument was expected@]"
         quoted_label got
- | Asttypes.Labelled g, Asttypes.Optional e when g = e ->
+ | Types.Labelled g, Types.Optional e when g = e ->
       doc_printf
         "@,@[The label@ %a@ was expected to be optional@]"
         quoted_label got
-  | Asttypes.Optional g, Asttypes.Labelled e when g = e ->
+  | Types.Optional g, Types.Labelled e when g = e ->
       doc_printf
         "@,@[The label@ %a@ was expected to not be optional@]"
         quoted_label got
-  | Asttypes.(Labelled _ | Optional _), Asttypes.(Labelled _ | Optional _) ->
+  | Types.Labelled g, Types.Position e when g = e ->
+      doc_printf
+        "@,@[The label@ %a@ was expected to be of type %a@ (source position)@]"
+        quoted_label got
+        call_pos ()
+  | Types.Position g, Types.Labelled e when g = e ->
+      doc_printf
+        "@,@[The label@ %a@ was not expected to be of type %a@]"
+        quoted_label got
+        call_pos ()
+  | Types.(Labelled _ | Optional _ | Position _),
+    Types.(Labelled _ | Optional _ | Position _) ->
       doc_printf "@,@[Labels %a@ and@ %a do not match@]"
         quoted_label got
         quoted_label expected
-  | Asttypes.Nolabel, Asttypes.Nolabel ->
+  | Types.Nolabel, Types.Nolabel ->
       (* Two empty labels cannot be mismatched*)
       assert false
 

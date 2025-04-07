@@ -842,7 +842,6 @@ typing/errortrace_report.cmo : \
     typing/ctype.cmi \
     utils/clflags.cmi \
     typing/btype.cmi \
-    parsing/asttypes.cmi \
     typing/errortrace_report.cmi
 typing/errortrace_report.cmx : \
     typing/types.cmx \
@@ -858,7 +857,6 @@ typing/errortrace_report.cmx : \
     typing/ctype.cmx \
     utils/clflags.cmx \
     typing/btype.cmx \
-    parsing/asttypes.cmx \
     typing/errortrace_report.cmi
 typing/errortrace_report.cmi : \
     typing/path.cmi \
@@ -874,7 +872,6 @@ typing/gprinttyp.cmo : \
     typing/ident.cmi \
     utils/format_doc.cmi \
     utils/clflags.cmi \
-    parsing/asttypes.cmi \
     typing/gprinttyp.cmi
 typing/gprinttyp.cmx : \
     utils/warnings.cmx \
@@ -884,7 +881,6 @@ typing/gprinttyp.cmx : \
     typing/ident.cmx \
     utils/format_doc.cmx \
     utils/clflags.cmx \
-    parsing/asttypes.cmx \
     typing/gprinttyp.cmi
 typing/gprinttyp.cmi : \
     utils/warnings.cmi \
@@ -1456,7 +1452,6 @@ typing/rawprinttyp.cmo : \
     typing/path.cmi \
     parsing/longident.cmi \
     utils/format_doc.cmi \
-    parsing/asttypes.cmi \
     typing/rawprinttyp.cmi
 typing/rawprinttyp.cmx : \
     typing/types.cmx \
@@ -1464,7 +1459,6 @@ typing/rawprinttyp.cmx : \
     typing/path.cmx \
     parsing/longident.cmx \
     utils/format_doc.cmx \
-    parsing/asttypes.cmx \
     typing/rawprinttyp.cmi
 typing/rawprinttyp.cmi : \
     typing/types.cmi
@@ -2261,6 +2255,7 @@ typing/typetexp.cmi : \
     typing/env.cmi \
     parsing/asttypes.cmi
 typing/untypeast.cmo : \
+    typing/types.cmi \
     typing/typedtree.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
@@ -2271,6 +2266,7 @@ typing/untypeast.cmo : \
     parsing/ast_helper.cmi \
     typing/untypeast.cmi
 typing/untypeast.cmx : \
+    typing/types.cmx \
     typing/typedtree.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
@@ -7556,7 +7552,6 @@ toplevel/topprinters.cmo : \
     typing/path.cmi \
     typing/ident.cmi \
     typing/ctype.cmi \
-    parsing/asttypes.cmi \
     toplevel/topprinters.cmi
 toplevel/topprinters.cmx : \
     typing/types.cmx \
@@ -7564,7 +7559,6 @@ toplevel/topprinters.cmx : \
     typing/path.cmx \
     typing/ident.cmx \
     typing/ctype.cmx \
-    parsing/asttypes.cmx \
     toplevel/topprinters.cmi
 toplevel/topprinters.cmi : \
     typing/types.cmi
@@ -7687,7 +7681,6 @@ toplevel/byte/trace.cmo : \
     bytecomp/meta.cmi \
     parsing/longident.cmi \
     typing/ctype.cmi \
-    parsing/asttypes.cmi \
     toplevel/byte/trace.cmi
 toplevel/byte/trace.cmx : \
     typing/types.cmx \
@@ -7700,7 +7693,6 @@ toplevel/byte/trace.cmx : \
     bytecomp/meta.cmx \
     parsing/longident.cmx \
     typing/ctype.cmx \
-    parsing/asttypes.cmx \
     toplevel/byte/trace.cmi
 toplevel/byte/trace.cmi : \
     typing/types.cmi \
@@ -9400,8 +9392,7 @@ ocamldoc/odoc_info.cmi : \
     ocamldoc/odoc_extension.cmi \
     ocamldoc/odoc_exception.cmi \
     ocamldoc/odoc_class.cmi \
-    parsing/location.cmi \
-    parsing/asttypes.cmi
+    parsing/location.cmi
 ocamldoc/odoc_latex.cmo : \
     otherlibs/str/str.cmi \
     ocamldoc/odoc_to_text.cmi \
@@ -9531,8 +9522,7 @@ ocamldoc/odoc_misc.cmx : \
 ocamldoc/odoc_misc.cmi : \
     typing/types.cmi \
     ocamldoc/odoc_types.cmi \
-    parsing/longident.cmi \
-    parsing/asttypes.cmi
+    parsing/longident.cmi
 ocamldoc/odoc_module.cmo : \
     typing/types.cmi \
     ocamldoc/odoc_value.cmi \
@@ -9694,6 +9684,7 @@ ocamldoc/odoc_see_lexer.cmi : \
     ocamldoc/odoc_parser.cmi
 ocamldoc/odoc_sig.cmo : \
     parsing/unit_info.cmi \
+    typing/typetexp.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
     parsing/parsetree.cmi \
@@ -9719,6 +9710,7 @@ ocamldoc/odoc_sig.cmo : \
     ocamldoc/odoc_sig.cmi
 ocamldoc/odoc_sig.cmx : \
     parsing/unit_info.cmx \
+    typing/typetexp.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
     parsing/parsetree.cmi \
@@ -9910,7 +9902,6 @@ ocamldoc/odoc_value.cmo : \
     ocamldoc/odoc_parameter.cmi \
     ocamldoc/odoc_name.cmi \
     ocamldoc/odoc_misc.cmi \
-    parsing/asttypes.cmi \
     ocamldoc/odoc_value.cmi
 ocamldoc/odoc_value.cmx : \
     typing/types.cmx \
@@ -9918,7 +9909,6 @@ ocamldoc/odoc_value.cmx : \
     ocamldoc/odoc_parameter.cmx \
     ocamldoc/odoc_name.cmx \
     ocamldoc/odoc_misc.cmx \
-    parsing/asttypes.cmx \
     ocamldoc/odoc_value.cmi
 ocamldoc/odoc_value.cmi : \
     typing/types.cmi \
