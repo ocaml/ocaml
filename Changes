@@ -153,6 +153,9 @@ Working version
 
 ### Standard library:
 
+* #13862: Make List.sort_uniq keep the first occurrences of duplicates.
+  (Benoît Jubin, review by Nicolás Ojeda Bär, Gabriel Scherer)
+
 - #13720: Add Result.{get_ok',error_to_failure}
  (Daniel Bünzli, review by wikku, Gabriel Scherer, Nicolás Ojeda Bär,
   Vincent Laviron and hirrolot)
