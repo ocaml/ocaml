@@ -318,6 +318,10 @@ Working version
   tests that fail on mono-core systems.
   (Stéphane Glondu, review by Nicolás Ojeda Bär)
 
+- #13945, #13946, #13948: Actually "generalized polymorphic #install_printer"
+  in the debugger
+  (Pierre Boutillier)
+
 ### Manual and documentation:
 
 - #13694: Fix name for caml_hash_variant in the C interface.

@@ -2,4 +2,5 @@ File printer.cmo loaded
 Loading program... done.
 Breakpoint: 1
 18   <|b|>for _i = 0 to x do
+_d: (int, Printer.t) Printer.v list = [D<0, Printer.A>; D<42, Printer.B>]
 x: int = S S O
