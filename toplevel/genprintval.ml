@@ -53,11 +53,6 @@ module type S =
     type t
     val install_printer :
           Path.t -> Types.type_expr -> (formatter -> t -> unit) -> unit
-    val install_generic_printer :
-           Path.t -> Path.t ->
-           (int -> (int -> t -> Outcometree.out_value,
-                    t -> Outcometree.out_value) gen_printer) ->
-           unit
     val install_generic_printer' :
            Path.t -> Path.t ->
            (formatter -> t -> unit,
@@ -175,9 +170,6 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       let print_val ppf obj = user_printer path fn ppf obj in
       let printer obj = Oval_printer (fun ppf -> print_val ppf obj) in
       printers := (path, Simple (ty, printer)) :: !printers
-
-    let install_generic_printer function_path constr_path fn =
-      printers := (function_path, Generic (constr_path, fn))  :: !printers
 
     let install_generic_printer' function_path ty_path fn =
       let rec build gp depth =

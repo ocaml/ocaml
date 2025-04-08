@@ -121,10 +121,6 @@ type ('a, 'b) gen_printer =
 
 val install_printer :
   Path.t -> Types.type_expr -> (formatter -> Obj.t -> unit) -> unit
-val install_generic_printer :
-  Path.t -> Path.t ->
-  (int -> (int -> Obj.t -> Outcometree.out_value,
-           Obj.t -> Outcometree.out_value) gen_printer) -> unit
 val install_generic_printer' :
   Path.t -> Path.t -> (formatter -> Obj.t -> unit,
                        formatter -> Obj.t -> unit) gen_printer -> unit

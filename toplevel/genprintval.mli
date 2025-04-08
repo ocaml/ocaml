@@ -48,11 +48,6 @@ module type S =
     type t
     val install_printer :
           Path.t -> Types.type_expr -> (formatter -> t -> unit) -> unit
-    val install_generic_printer :
-          Path.t -> Path.t ->
-          (int -> (int -> t -> Outcometree.out_value,
-                   t -> Outcometree.out_value) gen_printer) ->
-          unit
     val install_generic_printer' :
            Path.t -> Path.t ->
            (formatter -> t -> unit,

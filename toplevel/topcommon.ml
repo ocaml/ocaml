@@ -160,7 +160,6 @@ module MakeEvalPrinter (E: EVAL_BASE) = struct
     | Succ of ('a -> ('a, 'b) gen_printer)
 
   let install_printer = Printer.install_printer
-  let install_generic_printer = Printer.install_generic_printer
   let install_generic_printer' = Printer.install_generic_printer'
   let remove_printer = Printer.remove_printer
 
