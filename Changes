@@ -252,6 +252,11 @@ Working version
 - #13932: Add List.singleton and Seq.singleton
   (David Allsopp, tariffs applied by Nicolás Ojeda Bär and Gabriel Scherer)
 
+- #13943, #????? Format: make `@<n>` a primitive formatting instruction,
+  improving its interaction with `%a` and `%t` specifiers (for instance with
+  Format.(asprint "foo@ @<1000>%a" pp_print_string "bar")
+  (Florian Angeletti, report by Gaëtan Gilbert, review by ???????)
+
 ### Other libraries:
 
 * #13376: Allow Dynlink.loadfile_private to load bytecode libraries with

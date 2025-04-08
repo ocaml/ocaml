@@ -76,7 +76,7 @@ module Doc = struct
     | Flush {newline=false} -> Format.pp_print_flush ppf ()
     | Newline -> Format.pp_force_newline ppf ()
     | If_newline -> Format.pp_print_if_newline ppf ()
-    | With_size _ ->  ()
+    | With_size n -> Format.pp_with_size ppf n
     | Deprecated pr -> pr ppf
 
   let rec interpret ppf = function
@@ -341,6 +341,7 @@ let formatter d = d
 (** {1 Primitive functions }*)
 
 let pp_print_string ppf s = ppf := Doc.string s !ppf
+let pp_with_size ppf w = ppf := Doc.with_size w !ppf
 
 let pp_print_as ppf size s =
   ppf := !ppf |> Doc.with_size size |> Doc.string s
@@ -411,7 +412,7 @@ module Driver = struct
     | FFlush                    -> pp_print_flush ppf ()
     | Force_newline             -> pp_force_newline ppf ()
     | Flush_newline             -> pp_print_newline ppf ()
-    | Magic_size (_, _)         -> ()
+    | Magic_size (_, n)         -> pp_with_size ppf n
     | Escaped_at                -> pp_print_char ppf '@'
     | Escaped_percent           -> pp_print_char ppf '%'
     | Scan_indic c              -> pp_print_char ppf '@'; pp_print_char ppf c
@@ -435,14 +436,6 @@ module Driver = struct
   (* Used as a continuation of CamlinternalFormat.make_printf. *)
   let rec output_acc ppf (acc: _ CamlinternalFormat.acc) =
     match acc with
-    | Acc_string_literal (Acc_formatting_lit (p, Magic_size (_, size)), s)
-    | Acc_data_string (Acc_formatting_lit (p, Magic_size (_, size)), s) ->
-        output_acc ppf p;
-        pp_print_as ppf size s;
-    | Acc_char_literal (Acc_formatting_lit (p, Magic_size (_, size)), c)
-    | Acc_data_char (Acc_formatting_lit (p, Magic_size (_, size)), c) ->
-        output_acc ppf p;
-        pp_print_as ppf size (String.make 1 c);
     | Acc_formatting_lit (p, f) ->
         output_acc ppf p;
         output_formatting_lit ppf f;
