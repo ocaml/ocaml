@@ -52,9 +52,9 @@ fi
 
 # $1 - commit to checkout files from
 CheckTree () {
-  RET=0
+  local RET=0
   COMMIT="$1"
-  git checkout -qB return
+  git branch -qf 'return'
   git checkout -q "$COMMIT"
   mv configure configure.ref
   tools/autogen
@@ -66,7 +66,7 @@ CheckTree () {
       "$COMMIT: \e[${COLOR}mconfigure.ac doesn't generate configure\e[0m"
   fi
   mv configure.ref configure
-  git checkout -q return
+  git checkout -q 'return'
   return $RET
 }
 
