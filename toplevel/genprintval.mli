@@ -41,7 +41,7 @@ module type EVALPATH =
 
 type 't gen_printer =
   | Zero : (formatter -> 't -> unit) -> 't gen_printer
-  | Succ : ((formatter -> 't -> unit) -> 't gen_printer) -> 't gen_printer
+  | Succ : ((formatter -> 'a -> unit) -> 't gen_printer) -> 't gen_printer
 
 module type S =
   sig

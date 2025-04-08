@@ -157,7 +157,7 @@ module MakeEvalPrinter (E: EVAL_BASE) = struct
 
   type 't gen_printer = 't Genprintval.gen_printer =
     | Zero : (formatter -> 't -> unit) -> 't gen_printer
-    | Succ : ((formatter -> 't -> unit) -> 't gen_printer) -> 't gen_printer
+    | Succ : ((formatter -> 'a -> unit) -> 't gen_printer) -> 't gen_printer
 
   let install_printer = Printer.install_printer
   let install_generic_printer = Printer.install_generic_printer

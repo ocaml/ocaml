@@ -117,7 +117,7 @@ module MakeEvalPrinter (_ : EVAL_BASE) : sig
 
   type 't gen_printer =
     | Zero : (formatter -> 't -> unit) -> 't gen_printer
-    | Succ : ((formatter -> 't -> unit) -> 't gen_printer) -> 't gen_printer
+    | Succ : ((formatter -> 'a -> unit) -> 't gen_printer) -> 't gen_printer
 
   val install_printer :
     Path.t -> Types.type_expr -> (formatter -> Printer.t -> unit) -> unit

@@ -46,7 +46,7 @@ module type EVALPATH =
 
 type 't gen_printer =
   | Zero : (formatter -> 't -> unit) -> 't gen_printer
-  | Succ : ((formatter -> 't -> unit) -> 't gen_printer) -> 't gen_printer
+  | Succ : ((formatter -> 'a -> unit) -> 't gen_printer) -> 't gen_printer
 
 module type S =
   sig
@@ -70,7 +70,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
     type internal_gen_printer =
       | IZero : (t -> Outcometree.out_value) -> internal_gen_printer
       | ISucc :
-          ((int -> t -> Outcometree.out_value) -> internal_gen_printer) ->
+          ((int -> 'a -> Outcometree.out_value) -> internal_gen_printer) ->
           internal_gen_printer
 
     module ObjTbl = Hashtbl.Make(struct
