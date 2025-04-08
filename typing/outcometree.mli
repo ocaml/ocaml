@@ -41,6 +41,7 @@ type out_attribute =
 type out_value =
   | Oval_array of out_value list * Asttypes.mutable_flag
   | Oval_char of char
+  | Oval_uchar of uchar
   | Oval_constr of out_ident * out_value list
   | Oval_ellipsis
   | Oval_float of float
