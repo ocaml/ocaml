@@ -115,15 +115,14 @@ val load_file: formatter -> string -> bool
 val print_value: Env.t -> Obj.t -> formatter -> Types.type_expr -> unit
 val print_untyped_exception: formatter -> Obj.t -> unit
 
-type ('a, 'b) gen_printer =
-  | Zero of 'b
-  | Succ of ('a -> ('a, 'b) gen_printer)
+type 't gen_printer =
+  | Zero : (formatter -> 't -> unit) -> 't gen_printer
+  | Succ : ((formatter -> 't -> unit) -> 't gen_printer) -> 't gen_printer
 
 val install_printer :
   Path.t -> Types.type_expr -> (formatter -> Obj.t -> unit) -> unit
 val install_generic_printer :
-  Path.t -> Path.t -> (formatter -> Obj.t -> unit,
-                       formatter -> Obj.t -> unit) gen_printer -> unit
+  Path.t -> Path.t -> Obj.t gen_printer -> unit
 val remove_printer : Path.t -> unit
 
 val max_printer_depth: int ref

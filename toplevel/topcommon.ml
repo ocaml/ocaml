@@ -155,9 +155,9 @@ module MakeEvalPrinter (E: EVAL_BASE) = struct
           print_string b;
           backtrace := None
 
-  type ('a, 'b) gen_printer = ('a, 'b) Genprintval.gen_printer =
-    | Zero of 'b
-    | Succ of ('a -> ('a, 'b) gen_printer)
+  type 't gen_printer = 't Genprintval.gen_printer =
+    | Zero : (formatter -> 't -> unit) -> 't gen_printer
+    | Succ : ((formatter -> 't -> unit) -> 't gen_printer) -> 't gen_printer
 
   let install_printer = Printer.install_printer
   let install_generic_printer = Printer.install_generic_printer

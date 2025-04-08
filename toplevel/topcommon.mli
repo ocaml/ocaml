@@ -115,15 +115,14 @@ module MakeEvalPrinter (_ : EVAL_BASE) : sig
   val outval_of_value:
     Env.t -> Printer.t -> Types.type_expr -> Outcometree.out_value
 
-  type ('a, 'b) gen_printer =
-    | Zero of 'b
-    | Succ of ('a -> ('a, 'b) gen_printer)
+  type 't gen_printer =
+    | Zero : (formatter -> 't -> unit) -> 't gen_printer
+    | Succ : ((formatter -> 't -> unit) -> 't gen_printer) -> 't gen_printer
 
   val install_printer :
     Path.t -> Types.type_expr -> (formatter -> Printer.t -> unit) -> unit
   val install_generic_printer :
-    Path.t -> Path.t -> (formatter -> Printer.t -> unit,
-                         formatter -> Printer.t -> unit) gen_printer -> unit
+    Path.t -> Path.t -> Printer.t gen_printer -> unit
   val remove_printer : Path.t -> unit
 
 end

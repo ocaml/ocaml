@@ -44,9 +44,9 @@ module type EVALPATH =
     val same_value: valu -> valu -> bool
   end
 
-type ('a, 'b) gen_printer =
-  | Zero of 'b
-  | Succ of ('a -> ('a, 'b) gen_printer)
+type 't gen_printer =
+  | Zero : (formatter -> 't -> unit) -> 't gen_printer
+  | Succ : ((formatter -> 't -> unit) -> 't gen_printer) -> 't gen_printer
 
 module type S =
   sig
@@ -54,10 +54,7 @@ module type S =
     val install_printer :
           Path.t -> Types.type_expr -> (formatter -> t -> unit) -> unit
     val install_generic_printer :
-           Path.t -> Path.t ->
-           (formatter -> t -> unit,
-            formatter -> t -> unit) gen_printer ->
-           unit
+           Path.t -> Path.t -> t gen_printer -> unit
     val remove_printer : Path.t -> unit
     val outval_of_untyped_exception : t -> Outcometree.out_value
     val outval_of_value :
@@ -69,6 +66,12 @@ module type S =
 module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     type t = O.t
+
+    type internal_gen_printer =
+      | IZero : (t -> Outcometree.out_value) -> internal_gen_printer
+      | ISucc :
+          ((int -> t -> Outcometree.out_value) -> internal_gen_printer) ->
+          internal_gen_printer
 
     module ObjTbl = Hashtbl.Make(struct
         type t = O.t
@@ -126,8 +129,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     type printer =
       | Simple of Types.type_expr * (O.t -> Outcometree.out_value)
-      | Generic of Path.t * (int -> (int -> O.t -> Outcometree.out_value,
-                                     O.t -> Outcometree.out_value) gen_printer)
+      | Generic of Path.t * (int -> internal_gen_printer)
 
     let printers = ref ([
       ( Pident(Ident.create_local "print_int"),
@@ -178,13 +180,13 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             let out_printer obj =
               let printer ppf = user_printer function_path fn ppf obj in
               Oval_printer printer in
-            Zero out_printer
+            IZero out_printer
         | Succ fn ->
             let print_val fn_arg =
               let print_arg ppf o =
                 !Oprint.out_value ppf (fn_arg (depth+1) o) in
               build (fn print_arg) depth in
-            Succ print_val in
+            ISucc print_val in
       printers := (function_path, Generic (ty_path, build fn)) :: !printers
 
     let remove_printer path =
@@ -677,9 +679,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     and apply_generic_printer path printer args =
       match (printer, args) with
-      | (Zero fn, []) ->
+      | (IZero fn, []) ->
           (fun (obj : O.t)-> try fn obj with exn -> out_exn path exn)
-      | (Succ fn, arg :: args) ->
+      | (ISucc fn, arg :: args) ->
           let printer =
             fn (fun depth obj -> tree_of_val depth (O.repr obj) arg) in
           apply_generic_printer path printer args

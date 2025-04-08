@@ -39,9 +39,9 @@ module type EVALPATH =
     val same_value: valu -> valu -> bool
   end
 
-type ('a, 'b) gen_printer =
-  | Zero of 'b
-  | Succ of ('a -> ('a, 'b) gen_printer)
+type 't gen_printer =
+  | Zero : (formatter -> 't -> unit) -> 't gen_printer
+  | Succ : ((formatter -> 't -> unit) -> 't gen_printer) -> 't gen_printer
 
 module type S =
   sig
@@ -49,10 +49,7 @@ module type S =
     val install_printer :
           Path.t -> Types.type_expr -> (formatter -> t -> unit) -> unit
     val install_generic_printer :
-           Path.t -> Path.t ->
-           (formatter -> t -> unit,
-            formatter -> t -> unit) gen_printer ->
-           unit
+           Path.t -> Path.t -> t gen_printer -> unit
     (** [install_generic_printer function_path constructor_path printer]
         function_path is used to remove the printer. *)
 
