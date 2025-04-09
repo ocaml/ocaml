@@ -685,7 +685,9 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       let ty = cty.ctyp_type in
       let ty_list = TyVarEnv.check_poly_univars env styp.ptyp_loc new_univars in
       let ty_list = List.filter (fun v -> deep_occur v ty) ty_list in
-      let ty' = Btype.newgenty (Tpoly(ty, ty_list)) in
+      let ty' =
+        Btype.newgenty (Tpoly {poly_body = ty; poly_univars = ty_list})
+      in
       unify_var env (newvar()) ty';
       ctyp (Ttyp_poly (vars, cty)) ty'
   | Ptyp_package ptyp ->
@@ -843,7 +845,8 @@ let transl_simple_type_univars env styp =
   end in
   make_fixed_univars typ.ctyp_type;
     { typ with ctyp_type =
-        instance (Btype.newgenty (Tpoly (typ.ctyp_type, univs))) }
+        instance (Btype.newgenty
+            (Tpoly {poly_body = typ.ctyp_type; poly_univars = univs})) }
 
 let transl_simple_type_delayed env styp =
   TyVarEnv.reset_locals ();

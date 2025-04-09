@@ -152,7 +152,7 @@ let rec immediate_subtypes : type_expr -> type_expr list = fun ty ->
       immediate_subtypes_object_row [] ty
   | Tlink _ | Tsubst _ -> assert false (* impossible due to Ctype.repr *)
   | Tvar _ | Tunivar _ -> []
-  | Tpoly (pty, _) -> [pty]
+  | Tpoly {poly_body = pty} -> [pty]
   | Tconstr (_path, tys, _) -> tys
 
 and immediate_subtypes_object_row acc ty = match get_desc ty with
@@ -441,8 +441,8 @@ let check_type
        variable cannot be extracted by constraints (this would be
        a scope violation), so they could be ignored if they occur
        under a separating type constructor. *)
-    | (Tpoly(pty,_)       , m      ) ->
-        check_type hyps pty m
+    | (Tpoly {poly_body}  , m      ) ->
+        check_type hyps poly_body m
     | (Tunivar(_)         , _      ) -> empty
     (* Type constructor case. *)
     | (Tconstr(path,tys,_), m      ) ->

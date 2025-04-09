@@ -722,9 +722,9 @@ module Digraph = struct
         end
     | Types.Tunivar name ->
         mk "%a<SUP>∀</SUP>" Pp.pretty_var name
-    | Types.Tpoly (t, tl) ->
-        let dg = mk "∀" |> std_edge t in
-        List.fold_left (poly_edge ~color params id) dg tl
+    | Types.Tpoly tpoly ->
+        let dg = mk "∀" |> std_edge tpoly.poly_body in
+        List.fold_left (poly_edge ~color params id) dg tpoly.poly_univars
     | Types.Tvariant row ->
         let Row {fields; more; name; fixed; closed} = Types.row_repr row in
         let closed = if closed then "<SUP>closed</SUP>" else "" in

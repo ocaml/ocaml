@@ -127,12 +127,12 @@ type type_desc =
 
   | Tunivar of string option
   (** Occurrence of a type variable introduced by a
-      forall quantifier / [Tpoly]. *)
+      forall quantifier / [tpoly]. *)
 
-  | Tpoly of type_expr * type_expr list
-  (** [Tpoly (ty,tyl)] ==> ['a1... 'an. ty],
-      where 'a1 ... 'an are names given to types in tyl
-      and occurrences of those types in ty. *)
+  | Tpoly of tpoly
+  (** [Tpoly {poly_body; poly_univars}] ==> ['a1... 'an. poly_body],
+      where 'a1 ... 'an are names given to types in poly_univars
+      and occurrences of those types in poly_body. *)
 
   | Tpackage of package
   (** Type of a first-class module (a.k.a package). *)
@@ -141,6 +141,11 @@ type type_desc =
 and package =
   { pack_path : Path.t;
     pack_cstrs : (string list * type_expr) list }
+
+and tpoly = { poly_body : type_expr; poly_univars : type_expr list }
+  (** [{poly_body; poly_univars}] ==> ['a1... 'an. poly_body],
+      where 'a1 ... 'an are names given to types in poly_univars
+      and occurrences of those types in poly_body. *)
 
 and fixed_explanation =
   | Univar of type_expr (** The row type was bound to an univar *)

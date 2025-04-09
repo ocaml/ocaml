@@ -241,7 +241,10 @@ let transl_labels env univars closed lbls =
     List.map
       (fun ld ->
          let ty = ld.ld_type.ctyp_type in
-         let ty = match get_desc ty with Tpoly(t,[]) -> t | _ -> ty in
+         let ty = match get_desc ty with
+             Tpoly {poly_body = t; poly_univars = []} -> t
+           | _ -> ty
+         in
          {Types.ld_id = ld.ld_id;
           ld_mutable = ld.ld_mutable;
           ld_type = ty;
@@ -549,8 +552,8 @@ let rec check_constraints_rec env loc visited ty =
           raise (Error(loc, Constraint_failed (env, err)))
       end;
       List.iter (check_constraints_rec env loc visited) args
-  | Tpoly (ty, tl) ->
-      let _, ty = Ctype.instance_poly ~fixed:false tl ty in
+  | Tpoly tpoly ->
+      let _, ty = Ctype.instance_poly ~fixed:false tpoly in
       check_constraints_rec env loc visited ty
   | _ ->
       Btype.iter_type_expr (check_constraints_rec env loc visited) ty
@@ -972,9 +975,9 @@ let check_regularity ~abs_env env loc path decl to_check =
             with Not_found -> ()
           end;
           List.iter (check_subtype cpath args prev_exp trace ty) args'
-      | Tpoly (ty, tl) ->
+      | Tpoly tpoly ->
           let (_, ty) =
-            Ctype.instance_poly ~keep_names:true ~fixed:false tl ty in
+            Ctype.instance_poly ~keep_names:true ~fixed:false tpoly in
           check_regular cpath args prev_exp trace ty
       | _ ->
           Btype.iter_type_expr

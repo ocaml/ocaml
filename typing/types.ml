@@ -43,12 +43,14 @@ and type_desc =
   | Tsubst of type_expr * type_expr option
   | Tvariant of row_desc
   | Tunivar of string option
-  | Tpoly of type_expr * type_expr list
+  | Tpoly of tpoly
   | Tpackage of package
 
 and package =
     { pack_path : Path.t;
       pack_cstrs : (string list * type_expr) list }
+
+and tpoly = { poly_body : type_expr; poly_univars : type_expr list }
 
 and row_desc =
     { row_fields: (label * row_field) list;

@@ -452,6 +452,10 @@ Working version
 - #13848: Add all paths components to the cmt files indexes
   (Ulysse Gérard, review by Florian Angeletti)
 
+- #13851: Add a new indirection in types AST called `tpoly` that stores the
+  content of a `Tpoly` node
+  (Samuel Vivien, review by Florian Angeletti, Ulysse Gérard, Jacques Garrigue)
+
 - #13856: Add a new indirection in types AST called `package` that stores the
   content of a `Tpackage` node
   (Samuel Vivien, review by Florian Angeletti)
