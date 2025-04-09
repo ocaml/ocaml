@@ -48,12 +48,12 @@ module type S =
     type t
     val install_printer :
           Path.t -> Types.type_expr -> (formatter -> t -> unit) -> unit
-    val install_generic_printer' :
+    val install_generic_printer :
            Path.t -> Path.t ->
            (formatter -> t -> unit,
             formatter -> t -> unit) gen_printer ->
            unit
-    (** [install_generic_printer' function_path constructor_path printer]
+    (** [install_generic_printer function_path constructor_path printer]
         function_path is used to remove the printer. *)
 
     val remove_printer : Path.t -> unit

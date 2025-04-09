@@ -201,7 +201,7 @@ let install_printer_by_kind path kind =
        | n ->
           Succ
             (fun fn -> build ((Obj.obj v : _ -> Obj.t) fn) (n - 1)) in
-     install_generic_printer' path ty_path (build v arity)
+     install_generic_printer path ty_path (build v arity)
 
 let remove_installed_printer path =
   match remove_printer path with
