@@ -688,7 +688,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       | (Zero fn, []) ->
           (fun (obj : O.t)-> try fn obj with exn -> out_exn path exn)
       | (Succ fn, arg :: args) ->
-          let printer = fn (fun depth obj -> tree_of_val depth obj arg) in
+          let printer =
+            fn (fun depth obj -> tree_of_val depth (O.repr obj) arg) in
           apply_generic_printer path printer args
       | _ ->
           (fun _obj ->
