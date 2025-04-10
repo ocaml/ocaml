@@ -450,7 +450,7 @@ let in_pervasives p =
 
 let is_datatype decl=
   match decl.type_kind with
-    Type_record _ | Type_variant _ | Type_open -> true
+    Type_record _ | Type_variant _ | Type_open | Type_nominal _ -> true
   | Type_abstract _ -> false
 
 
@@ -676,6 +676,7 @@ let closed_type_decl decl =
     | Type_record(r, _rep) ->
         List.iter (fun l -> closed_type mark l.ld_type) r
     | Type_open -> ()
+    | Type_nominal _ -> ()
     end;
     begin match decl.type_manifest with
       None    -> ()
@@ -1386,7 +1387,7 @@ let map_kind f = function
           (fun l ->
              {l with ld_type = f l.ld_type}
           ) fl, rr)
-
+  | Type_nominal name -> Type_nominal name
 
 let instance_declaration decl =
   For_copy.with_scope (fun copy_scope ->
@@ -2541,6 +2542,9 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
           mcomp_list type_pairs env tl1 tl2;
           mcomp_variant_description type_pairs env v1 v2
       | Type_open, Type_open ->
+          mcomp_list type_pairs env tl1 tl2
+            (* thus, exn and eff are incompatible *)
+      | Type_nominal n1, Type_nominal n2 when n1 = n2 ->
           mcomp_list type_pairs env tl1 tl2
       | Type_abstract _, Type_abstract _ -> ()
       | Type_abstract _, _ when not (non_aliasable p1 decl)-> ()

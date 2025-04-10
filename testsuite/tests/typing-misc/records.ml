@@ -73,8 +73,7 @@ type foo = { mutable y : int; }
 Line 2, characters 17-18:
 2 | let f (r: int) = r.y <- 3;;
                      ^
-Error: This expression has type "int" but an expression was expected of type
-         "foo"
+Error: This expression has type "int" which is not a record type.
 |}];;
 
 let f (r: int) =
@@ -84,8 +83,7 @@ let f (r: int) =
 Line 3, characters 4-20:
 3 |   | { contents = 3 } -> ()
         ^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type "int ref"
-       but a pattern was expected which matches values of type "int"
+Error: This pattern should not be a record, the expected type is "int"
 |}];;
 
 

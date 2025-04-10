@@ -401,8 +401,7 @@ end;;
 Line 5, characters 6-9:
 5 |       Foo -> 5
           ^^^
-Error: This pattern matches values of type "'a t"
-       but a pattern was expected which matches values of type "int"
+Error: This pattern should not be a constructor, the expected type is "int"
 |}];;
 
 type _ t = Int : int t ;;

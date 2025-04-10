@@ -127,6 +127,29 @@ let ident_of_type_constr : type_constr -> Ident.t = function
   | `Iarray -> ident_iarray
   | `Atomic_loc -> ident_atomic_loc
 
+(* names used for Type_nominal *)
+let name_of_type_constr = function
+  | `Int -> "int"
+  | `Char -> "char"
+  | `String
+  | `Bytes -> "string"
+        (* string and bytes share the name to be compatible *)
+  | `Float -> "float"
+  | `Bool -> "bool"
+  | `Unit -> "unit"
+  | `Exn -> "exn"
+  | `Eff -> "eff"
+  | `Continuation -> "continuation"
+  | `Array -> "array"
+  | `List -> "list"
+  | `Option -> "option"
+  | `Nativeint -> "nativeint"
+  | `Int32 -> "int32"
+  | `Int64 -> "int64"
+  | `Lazy_t -> "lazy_t"
+  | `Extension_constructor -> "extension_constructor"
+  | `Floatarray -> "floatarray"
+
 let path_int = Pident ident_int
 and path_char = Pident ident_char
 and path_bytes = Pident ident_bytes
@@ -227,10 +250,11 @@ and ident_none = ident_create "None"
 and ident_some = ident_create "Some"
 
 let decl_of_type_constr tconstr =
+  let name = name_of_type_constr tconstr in
   let type_uid = Uid.of_predef_id (ident_of_type_constr tconstr) in
   let decl0
       ?(immediate = Type_immediacy.Unknown)
-      ?(kind = Type_abstract Definition)
+      ?(kind = Type_nominal name)
       ()
     =
     {type_params = [];
@@ -252,7 +276,7 @@ let decl_of_type_constr tconstr =
   let decl1
       ~variance
       ?(separability = Separability.Ind)
-      ?(kind = fun _ -> Type_abstract Definition)
+      ?(kind = fun _ -> Type_nominal name)
       ()
     =
     let param = newgenvar () in
@@ -266,7 +290,7 @@ let decl_of_type_constr tconstr =
   let decl2
       ~variance:(var1, var2)
       ?separability:((sep1, sep2) = (Separability.Ind, Separability.Ind))
-      ?(kind = fun _ _ -> Type_abstract Definition)
+      ?(kind = fun _ _ -> Type_nominal name)
       ()
     =
     let param1, param2 = newgenvar (), newgenvar () in
