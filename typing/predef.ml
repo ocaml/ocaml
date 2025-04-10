@@ -149,6 +149,8 @@ let name_of_type_constr = function
   | `Lazy_t -> "lazy_t"
   | `Extension_constructor -> "extension_constructor"
   | `Floatarray -> "floatarray"
+  | `Iarray -> "iarray"
+  | `Atomic_loc -> "atomic_loc"
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char

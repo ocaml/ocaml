@@ -326,7 +326,8 @@ let compute_variance_decl env ~check decl (required, _ as rloc) =
   in
   let abstract = Btype.type_kind_is_abstract decl in
   match decl with
-  | {type_kind = Type_abstract _ | Type_open; type_manifest = None} ->
+  | {type_kind = Type_abstract _ | Type_open | Type_nominal _;
+     type_manifest = None} ->
     List.map
       (fun (c, n, i) -> make (not n) (not c) (not abstract || i))
       required
