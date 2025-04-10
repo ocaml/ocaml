@@ -7520,3 +7520,8 @@ type t = String.( t )
 
 (* Utf8 identifier *)
 let là = function ça -> ça
+
+let x = match 'é' with
+  | 'é' | 'œ' -> 'ᠫ'
+  | '𐂶' ->  'e'
+  | _ -> 'U+0504'
