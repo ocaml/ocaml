@@ -459,7 +459,7 @@ and module_type_constraint =
 
 and functor_parameter =
   | Unit
-  | Named of Ident.t option * string option loc * module_type
+  | Named of bool * Ident.t option * string option loc * module_type
 
 and module_expr_desc =
     Tmod_ident of Path.t * Longident.t loc

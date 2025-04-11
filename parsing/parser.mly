@@ -660,10 +660,31 @@ let mkfunction params body_constraint body =
       | Some newtypes ->
           mkghost_newtype_function_body newtypes body_constraint body_exp
 
-let mk_functor_typ args mty =
+
+let mk_farg_pure = function
+  | (loc, Unit) -> (loc, Unit)
+  | (loc, Named (_, id, mty)) -> (loc, Named (true, id, mty))
+
+let contains_pure attrs =
+  List.exists (fun attr -> attr.attr_name.txt = "pure") attrs
+
+let update_purity_of_args pure args =
+  match List.map mk_farg_pure args with
+  | (loc, Named (_, id, mty)) :: tl ->
+      (loc, Named (pure, id, mty)) :: tl
+  | args -> args
+
+let mk_functor_typ pure args mty =
+  let args = update_purity_of_args pure args in
   List.fold_left (fun acc (startpos, arg) ->
       mkmty ~loc:(startpos, mty.pmty_loc.loc_end) (Pmty_functor (arg, acc)))
     mty args
+
+let mk_functor pure args me =
+  let args = update_purity_of_args pure args in
+  List.fold_left (fun acc (startpos, arg) ->
+      mkmod ~loc:(startpos, me.pmod_loc.loc_end) (Pmod_functor (arg, acc)))
+    me args
 
 (* Alternatively, we could keep the generic module type in the Parsetree
    and extract the package type during type-checking. In that case,
@@ -755,6 +776,7 @@ let mk_directive ~loc name arg =
 %token END                    "end"
 %token EOF                    ""
 %token EQUAL                  "="
+%token EQUALGREATER           "=>"
 %token EXCEPTION              "exception"
 %token EXTERNAL               "external"
 %token FALSE                  "false"
@@ -903,7 +925,7 @@ The precedences must be listed from low to high.
 %right    OR BARBAR                     /* expr (e || e || e) */
 %right    AMPERSAND AMPERAMPER          /* expr (e && e && e) */
 %nonassoc below_EQUAL
-%left     INFIXOP0 EQUAL LESS GREATER   /* expr (e OP e OP e) */
+%left     INFIXOP0 EQUAL LESS GREATER EQUALGREATER /* expr (e OP e OP e) */
 %right    INFIXOP1                      /* expr (e OP e OP e) */
 %nonassoc below_LBRACKETAT
 %nonassoc LBRACKETAT
@@ -1392,7 +1414,7 @@ functor_arg:
       { $startpos, Unit }
   | (* An argument accompanied with an explicit type. *)
     LPAREN x = mkrhs(module_name) COLON mty = module_type RPAREN
-      { $startpos, Named (x, mty) }
+      { $startpos, Named (false, x, mty) }
 ;
 
 module_name:
@@ -1403,6 +1425,12 @@ module_name:
     UNDERSCORE
       { None }
 ;
+
+%inline farrow:
+  | MINUSGREATER
+      { false }
+  | EQUALGREATER
+      { true }
 
 (* -------------------------------------------------------------------------- *)
 
@@ -1420,12 +1448,9 @@ module_expr:
       { unclosed "struct" $loc($1) "end" $loc($4) }
   | SIG error
       { expecting $loc($1) "struct" }
-  | FUNCTOR attrs = attributes args = functor_args MINUSGREATER me = module_expr
-      { wrap_mod_attrs ~loc:$sloc attrs (
-          List.fold_left (fun acc (startpos, arg) ->
-            mkmod ~loc:(startpos, $endpos) (Pmod_functor (arg, acc))
-          ) me args
-        ) }
+  | FUNCTOR attrs = attributes args = functor_args p = farrow me = module_expr
+      { wrap_mod_attrs ~loc:$sloc attrs
+          (mk_functor (p || contains_pure attrs) args me) }
   | me = paren_module_expr
       { me }
   | me = module_expr attr = attribute
@@ -1575,7 +1600,7 @@ structure_item:
 ;
 
 (* The body (right-hand side) of a module binding. *)
-module_binding_body:
+module_binding_body_inner:
     EQUAL me = module_expr
       { me }
   | COLON error
@@ -1583,10 +1608,13 @@ module_binding_body:
   | mkmod(
       COLON mty = module_type EQUAL me = module_expr
         { Pmod_constraint(me, mty) }
-    | arg_and_pos = functor_arg body = module_binding_body
-        { let (_, arg) = arg_and_pos in
-          Pmod_functor(arg, body) }
   ) { $1 }
+;
+module_binding_body:
+  | args_and_pos = functor_args body = module_binding_body_inner
+      { mk_functor false args_and_pos body }
+  | mb = module_binding_body_inner
+      { mb }
 ;
 
 (* A group of recursive module bindings. *)
@@ -1717,13 +1745,14 @@ module_type:
   | STRUCT error
       { expecting $loc($1) "sig" }
   | FUNCTOR attrs = attributes args = functor_args
-    MINUSGREATER mty = module_type
+    p = farrow mty = module_type
       %prec below_WITH
-      { wrap_mty_attrs ~loc:$sloc attrs (mk_functor_typ args mty) }
+      { let pure = p || contains_pure attrs in
+        wrap_mty_attrs ~loc:$sloc attrs (mk_functor_typ pure args mty) }
   | args = functor_args
-    MINUSGREATER mty = module_type
+    p = farrow mty = module_type
       %prec below_WITH
-      { mk_functor_typ args mty }
+      { mk_functor_typ p args mty }
   | MODULE TYPE OF attributes module_expr %prec below_LBRACKETAT
       { mkmty ~loc:$sloc ~attrs:$4 (Pmty_typeof $5) }
   | LPAREN module_type RPAREN
@@ -1735,9 +1764,9 @@ module_type:
   | mkmty(
       mkrhs(mty_longident)
         { Pmty_ident $1 }
-    | module_type MINUSGREATER module_type
+    | module_type p = farrow module_type
         %prec below_WITH
-        { Pmty_functor(Named (mknoloc None, $1), $3) }
+        { Pmty_functor(Named (p, mknoloc None, $1), $3) }
     | module_type WITH separated_nonempty_llist(AND, with_constraint)
         { Pmty_with($1, $3) }
 /*  | LPAREN MODULE mkrhs(mod_longident) RPAREN
@@ -1826,16 +1855,16 @@ signature_item:
 
 (* The body (right-hand side) of a module declaration. *)
 module_declaration_body:
+  | args_and_pos = functor_args body = module_declaration_body_inner
+      { mk_functor_typ false args_and_pos body }
+  | md = module_declaration_body_inner
+      { md }
+;
+module_declaration_body_inner:
     COLON mty = module_type
       { mty }
   | EQUAL error
       { expecting $loc($1) ":" }
-  | mkmty(
-      arg_and_pos = functor_arg body = module_declaration_body
-        { let (_, arg) = arg_and_pos in
-          Pmty_functor(arg, body) }
-    )
-    { $1 }
 ;
 
 (* A module alias declaration (in a signature). *)
@@ -4018,6 +4047,7 @@ operator:
   | STAR           {"*"}
   | PERCENT        {"%"}
   | EQUAL          {"="}
+  | EQUALGREATER  {"=>"}
   | LESS           {"<"}
   | GREATER        {">"}
   | OR            {"or"}

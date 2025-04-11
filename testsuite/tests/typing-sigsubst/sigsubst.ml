@@ -317,7 +317,7 @@ module type S3 = sig
   and M2 : sig type t end
 end with type M2.t := int
 [%%expect {|
-module Id : (X : sig type t end) -> sig type t = X.t end
+module Id : (X : sig type t end) => sig type t = X.t end
 Lines 2-5, characters 17-25:
 2 | .................sig
 3 |   module rec M : sig type t = A of Id(M2).t end

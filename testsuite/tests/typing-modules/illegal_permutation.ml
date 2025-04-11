@@ -513,11 +513,11 @@ Error: Signature mismatch:
                                                    val two : int
                                                    val one : int
                                                  end)
-                                            -> sig end
+                                          -> sig end
                                       end
                                   end
                               end)
-                           -> sig end
+                         -> sig end
                      end
                  end
              end
@@ -543,11 +543,11 @@ Error: Signature mismatch:
                                                    val one : int
                                                    val two : int
                                                  end)
-                                            -> sig end
+                                          -> sig end
                                       end
                                   end
                               end)
-                           -> sig end
+                         -> sig end
                      end
                  end
              end
@@ -572,11 +572,11 @@ Error: Signature mismatch:
                                                  val two : int
                                                  val one : int
                                                end)
-                                          -> sig end
+                                        -> sig end
                                     end
                                 end
                             end)
-                         -> sig end
+                       -> sig end
                    end
                end
            end
@@ -600,11 +600,11 @@ Error: Signature mismatch:
                                                  val one : int
                                                  val two : int
                                                end)
-                                          -> sig end
+                                        -> sig end
                                     end
                                 end
                             end)
-                         -> sig end
+                       -> sig end
                    end
                end
            end

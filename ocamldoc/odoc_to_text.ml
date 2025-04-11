@@ -445,8 +445,8 @@ class virtual to_text =
               (List.map
                  (fun (p, desc_opt) ->
                    begin match p.mp_type with None -> [Raw ""]
-                   | Some mty ->
-                       [Code (p.mp_name^" : ")] @
+                   | Some (pure, mty) ->
+                       [Code (p.mp_name^" :" ^ string_of_bool pure ^ " ")] @
                        (self#text_of_module_type mty)
                    end @
                    (match desc_opt with

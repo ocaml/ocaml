@@ -24,7 +24,7 @@ end = struct end
 {
  "Make"[module] -> Abs<.3>(I, {});
  }
-module Make : (I : sig end) -> sig end
+module Make : (I : sig end) => sig end
 |}]
 
 module type Make = functor (I : sig end) ->

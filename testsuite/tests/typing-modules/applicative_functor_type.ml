@@ -32,7 +32,7 @@ Error: Modules do not match:
 module F(X : sig type t = M.t val equal : unit end)
   = struct type t end
 [%%expect{|
-module F : (X : sig type t = M.t val equal : unit end) -> sig type t end
+module F : (X : sig type t = M.t val equal : unit end) => sig type t end
 |} ]
 
 type t = F(M).t

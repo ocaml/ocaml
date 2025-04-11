@@ -10,7 +10,7 @@ Line 1, characters 11-17:
                ^^^^^^
 Warning 60 [unused-module]: unused module "Unused".
 
-module Foo : (Unused : sig end) -> sig end
+module Foo : (Unused : sig end) => sig end
 |}]
 
 module type S = functor (Unused : sig end) -> sig end;;

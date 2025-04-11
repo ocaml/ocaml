@@ -91,7 +91,7 @@ module M :
     module N :
       sig
         module A : sig module B : sig type t = X end end
-        module F : (X : sig type t end) -> sig type t = A of X.t end
+        module F : (X : sig type t end) => sig type t = A of X.t end
       end
   end
 |}]

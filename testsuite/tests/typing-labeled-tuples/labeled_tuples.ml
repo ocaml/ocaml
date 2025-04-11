@@ -402,7 +402,7 @@ module Stringable :
         val to_string : t -> string
       end
     module Make :
-      (M : Has_unwrap) ->
+      (M : Has_unwrap) =>
         sig
           val unwrap : M.t -> x:int * string
           val to_string : M.t -> string

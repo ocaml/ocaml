@@ -673,7 +673,7 @@ let class_type_declaration sub = class_infos sub.class_type sub
 let functor_parameter sub : functor_parameter -> Parsetree.functor_parameter =
   function
   | Unit -> Unit
-  | Named (_, name, mtype) -> Named (name, sub.module_type sub mtype)
+  | Named (b, _, name, mtype) -> Named (b, name, sub.module_type sub mtype)
 
 let module_type (sub : mapper) mty =
   let loc = sub.location sub mty.mty_loc in

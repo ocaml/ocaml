@@ -538,7 +538,7 @@
       module_expr (shortcut_ext_attr.ml[65,1364+16]..[67,1409+22])
         attribute "foo"
           []
-        Pmod_functor "M" (shortcut_ext_attr.ml[65,1364+17]..[65,1364+18])
+        Pmod_functor false "M" (shortcut_ext_attr.ml[65,1364+17]..[65,1364+18])
         module_type (shortcut_ext_attr.ml[65,1364+21]..[65,1364+22])
           Pmty_ident "S" (shortcut_ext_attr.ml[65,1364+21]..[65,1364+22])
         module_expr (shortcut_ext_attr.ml[66,1391+4]..[67,1409+22])
@@ -559,11 +559,11 @@
       module_type (shortcut_ext_attr.ml[71,1478+16]..[73,1535+19])
         attribute "foo"
           []
-        Pmty_functor "M" (shortcut_ext_attr.ml[71,1478+17]..[71,1478+18])
+        Pmty_functor false "M" (shortcut_ext_attr.ml[71,1478+17]..[71,1478+18])
         module_type (shortcut_ext_attr.ml[71,1478+19]..[71,1478+20])
           Pmty_ident "S" (shortcut_ext_attr.ml[71,1478+19]..[71,1478+20])
         module_type (shortcut_ext_attr.ml[72,1503+4]..[73,1535+19])
-          Pmty_functor "_" (_none_[0,0+-1]..[0,0+-1]) ghost
+          Pmty_functor false "_" (_none_[0,0+-1]..[0,0+-1]) ghost
           module_type (shortcut_ext_attr.ml[72,1503+5]..[72,1503+27])
             attribute "foo"
               []

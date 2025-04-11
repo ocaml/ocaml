@@ -635,7 +635,8 @@ and functor_param ~core ~direction ~loc env subst param1 param2 =
   match param1, param2 with
   | Unit, Unit ->
       Ok Tcoerce_none, env, subst
-  | Named (name1, arg1), Named (name2, arg2) ->
+  | Named (b1, name1, arg1), Named (b2, name2, arg2)
+    when b1 || not b2 ->
       let arg2' = Subst.modtype Keep subst arg2 in
       let cc_arg =
         match
@@ -1140,7 +1141,7 @@ module Functor_inclusion_diff = struct
   module Diff = Diffing.Define(Defs)
 
   let param_name = function
-      | Named(x,_) -> x
+      | Named(_,x,_) -> x
       | Unit -> None
 
   let weight: Diff.change -> _ = function
@@ -1188,13 +1189,13 @@ module Functor_inclusion_diff = struct
 
   let rec update (d:Diff.change) st =
     match d with
-    | Insert (Unit | Named (None,_))
-    | Delete (Unit | Named (None,_))
+    | Insert (Unit | Named (_,None,_))
+    | Delete (Unit | Named (_,None,_))
     | Keep (Unit,_,_)
     | Keep (_,Unit,_) ->
         (* No named abstract parameters: we keep the same environment *)
         st, [||]
-    | Insert (Named (Some id, arg)) | Delete (Named (Some id, arg)) ->
+    | Insert (Named (_, Some id, arg)) | Delete (Named (_, Some id, arg)) ->
         (* one named parameter to bind *)
         st |> bind id arg |> expand_params
     | Change (delete, insert, _) ->
@@ -1202,7 +1203,7 @@ module Functor_inclusion_diff = struct
            to the environment without equating them. *)
         let st, _expansion = update (Diffing.Delete delete) st in
         update (Diffing.Insert insert) st
-    | Keep (Named (name1, _), Named (name2, arg2), _) ->
+    | Keep (Named (_, name1, _), Named (_, name2, arg2), _) ->
         let arg = Subst.modtype Keep st.subst arg2 in
         let env, subst =
           equate_one_functor_param st.subst st.env arg name1 name2
@@ -1265,22 +1266,22 @@ module Functor_app_diff = struct
   let update (d: Diff.change) (st:Defs.state) =
     let open Error in
     match d with
-    | Insert (Unit|Named(None,_))
+    | Insert (Unit|Named(_,None,_))
     | Delete _ (* delete is a concrete argument, not an abstract parameter*)
     | Keep ((Unit,_),_,_) (* Keep(Unit,_) implies Keep(Unit,Unit) *)
-    | Keep (_,(Unit|Named(None,_)),_)
-    | Change (_,(Unit|Named (None,_)), _ ) ->
+    | Keep (_,(Unit|Named(_,None,_)),_)
+    | Change (_,(Unit|Named (_,None,_)), _ ) ->
         (* no abstract parameters to add, nor any equations *)
         st, [||]
-    | Insert(Named(Some param, param_ty))
-    | Change(_, Named(Some param, param_ty), _ ) ->
+    | Insert(Named(_,Some param, param_ty))
+    | Change(_, Named(_,Some param, param_ty), _ ) ->
         (* Change is Delete + Insert: we add the Inserted parameter to the
            environment to track equalities with external components that the
            parameter might add. *)
         let mty = Subst.modtype Keep st.subst param_ty in
         let env = Env.add_module ~arg:true param Mp_present mty st.env in
         I.expand_params { st with env }
-    | Keep ((Named arg,  _mty) , Named (Some param, _param), _) ->
+    | Keep ((Named arg,  _mty) , Named (_, Some param, _param), _) ->
         let res =
           Option.map (fun res ->
               let scope = Ctype.create_scope () in
@@ -1292,7 +1293,7 @@ module Functor_app_diff = struct
         let subst = Subst.add_module param arg st.subst in
         I.expand_params { st with subst; res }
     | Keep (((Anonymous|Empty_struct), mty),
-            Named (Some param, _param), _) ->
+            Named (_, Some param, _param), _) ->
         let mty' = Subst.modtype Keep st.subst mty in
         let env = Env.add_module ~arg:true param Mp_present mty' st.env in
         let res = Option.map (Mtype.nondep_supertype env [param]) st.res in
@@ -1308,7 +1309,7 @@ module Functor_app_diff = struct
             | (Unit|Empty_struct), Unit -> Ok Tcoerce_none
             | Unit, Named _ | (Anonymous | Named _), Unit ->
                 Result.Error (Error.Incompatible_params(arg,param))
-            | ( Anonymous | Named _ | Empty_struct ), Named (_, param) ->
+            | ( Anonymous | Named _ | Empty_struct ), Named (_, _, param) ->
                let direction=Directionality.unknown ~mark:false in
                 match
                   modtypes

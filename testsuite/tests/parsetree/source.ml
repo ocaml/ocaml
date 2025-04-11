@@ -4816,6 +4816,14 @@ module F2 : functor () -> sig end = F1;; (* fail *)
 module F3 () = struct end;;
 module F4 : functor (X : sig end) -> sig end = F3;; (* fail *)
 
+(* Test for reparsing pure functors *)
+module P1 (X : sig end) = functor (Y : sig end) => struct end;;
+module P2 = functor (X : sig end) (Y : sig end) => struct end;;
+module P3 (X : sig end) () = struct end;;
+module P4 = functor (X : sig end) () (Y : sig end) => struct end;;
+module P5 = functor (X : sig end) (Y : sig end) -> functor (Z : sig end) =>
+  struct end;;
+
 (* tests for shortened functor notation () *)
 module X (X: sig end) (Y: sig end) = functor (Z: sig end) -> struct end;;
 module Y = functor (X: sig end) (Y:sig end) -> functor (Z: sig end) ->

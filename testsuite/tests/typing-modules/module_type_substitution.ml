@@ -286,7 +286,7 @@ end
 module X :
   sig
     module type s = sig type t end
-    module Y : (Z : s) -> sig module type Ys = sig end end
+    module Y : (Z : s) => sig module type Ys = sig end end
   end
 module type fcm_path =
   sig

@@ -119,7 +119,7 @@ Error: Multiple definition of the extension constructor name "Foo".
 module F(X : sig end) = struct let x = 3 end;;
 F.x;; (* fail *)
 [%%expect{|
-module F : (X : sig end) -> sig val x : int end
+module F : (X : sig end) => sig val x : int end
 Line 2, characters 0-1:
 2 | F.x;; (* fail *)
     ^

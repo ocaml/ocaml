@@ -510,7 +510,7 @@ module Ignore = Force(Choose)
 module type T = sig type t end
 module Int : sig type t = int end
 module type S = sig module Choice : T val r : Choice.t list ref ref end
-module Force : (X : () -> S) -> sig end
+module Force : (X : () -> S) => sig end
 module Choose : () -> sig module Choice : T val r : '_weak1 list ref ref end
 Line 17, characters 16-29:
 17 | module Ignore = Force(Choose)

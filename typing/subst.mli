@@ -165,7 +165,7 @@ module Lazy : sig
 
   and functor_parameter =
     | Unit
-    | Named of Ident.t option * modtype
+    | Named of bool * Ident.t option * modtype
 
 
   val of_module_decl : Types.module_declaration -> module_decl

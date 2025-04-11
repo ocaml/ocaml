@@ -44,17 +44,17 @@ let rec strengthen_lazy ~aliasable env mty p =
   match scrape_lazy env mty with
     MtyL_signature sg ->
       MtyL_signature(strengthen_lazy_sig ~aliasable env sg p)
-  | MtyL_functor(Named (Some param, arg), res)
+  | MtyL_functor(Named (b, Some param, arg), res)
     when !Clflags.applicative_functors ->
       let env =
         Env.add_module_lazy ~update_summary:false param Mp_present arg env
       in
-      MtyL_functor(Named (Some param, arg),
+      MtyL_functor(Named (b, Some param, arg),
         strengthen_lazy ~aliasable:false env res (Papply(p, Pident param)))
-  | MtyL_functor(Named (None, arg), res)
+  | MtyL_functor(Named (b, None, arg), res)
     when !Clflags.applicative_functors ->
       let param = Ident.create_scoped ~scope:(Path.scope p) "Arg" in
-      MtyL_functor(Named (Some param, arg),
+      MtyL_functor(Named (b, Some param, arg),
         strengthen_lazy ~aliasable:false env res (Papply(p, Pident param)))
   | mty ->
       mty
@@ -208,7 +208,7 @@ let rec nondep_mty_with_presence env va ids pres mty =
       pres, mty
   | Mty_functor(Unit, res) ->
       pres, Mty_functor(Unit, nondep_mty env va ids res)
-  | Mty_functor(Named (param, arg), res) ->
+  | Mty_functor(Named (b, param, arg), res) ->
       let var_inv =
         match va with Co -> Contra | Contra -> Co | Strict -> Strict in
       let res_env =
@@ -217,7 +217,7 @@ let rec nondep_mty_with_presence env va ids pres mty =
         | Some param -> Env.add_module ~arg:true param Mp_present arg env
       in
       let mty =
-        Mty_functor(Named (param, nondep_mty env var_inv ids arg),
+        Mty_functor(Named (b, param, nondep_mty env var_inv ids arg),
                     nondep_mty res_env va ids res)
       in
       pres, mty

@@ -1281,14 +1281,15 @@ and module_type ctxt f x =
     match x.pmty_desc with
     | Pmty_functor (Unit, mt2) ->
         pp f "@[<hov2>() ->@ %a@]" (module_type ctxt) mt2
-    | Pmty_functor (Named (s, mt1), mt2) ->
+    | Pmty_functor (Named (is_pure, s, mt1), mt2) ->
+        let arr = if is_pure then "=>" else "->" in
         begin match s.txt with
         | None ->
-            pp f "@[<hov2>%a@ ->@ %a@]"
-              (module_type1 ctxt) mt1 (module_type ctxt) mt2
+            pp f "@[<hov2>%a@ %s@ %a@]"
+              (module_type1 ctxt) mt1 arr (module_type ctxt) mt2
         | Some name ->
-            pp f "@[<hov2>(%s@ :@ %a)@ ->@ %a@]" name
-              (module_type ctxt) mt1 (module_type ctxt) mt2
+            pp f "@[<hov2>(%s@ :@ %a)@ %s@ %a@]" name
+              (module_type ctxt) mt1 arr (module_type ctxt) mt2
         end
     | Pmty_with (mt, []) -> module_type ctxt f mt
     | Pmty_with (mt, l) ->
@@ -1455,10 +1456,11 @@ and module_expr ctxt f x =
         pp f "%a" value_longident_loc li;
     | Pmod_functor (Unit, me) ->
         pp f "functor ()@;->@;%a" (module_expr ctxt) me
-    | Pmod_functor (Named (s, mt), me) ->
-        pp f "functor@ (%s@ :@ %a)@;->@;%a"
+    | Pmod_functor (Named (is_pure, s, mt), me) ->
+        let arr = if is_pure then "=>" else "->" in
+        pp f "functor@ (%s@ :@ %a)@;%s@;%a"
           (Option.value s.txt ~default:"_")
-          (module_type ctxt) mt (module_expr ctxt) me
+          (module_type ctxt) mt arr (module_expr ctxt) me
     | Pmod_apply (me1, me2) ->
         pp f "(%a)(%a)" (module_expr ctxt) me1 (module_expr ctxt) me2
         (* Cf: #7200 *)
@@ -1559,21 +1561,26 @@ and structure_item ctxt f x =
   | Pstr_typext te -> type_extension ctxt f te
   | Pstr_exception ed -> exception_declaration ctxt f ed
   | Pstr_module x ->
+      let rec use_rec_module = function
+        | {pmod_desc = Pmod_functor(Named (false, _, _), _)} -> true
+        | {pmod_desc = Pmod_functor(_, me)} -> use_rec_module me
+        | _ -> false
+      in
       let rec module_helper = function
         | {pmod_desc=Pmod_functor(arg_opt,me'); pmod_attributes = []} ->
             begin match arg_opt with
-            | Unit -> pp f "()"
-            | Named (s, mt) ->
+            | Unit -> pp f "()"; module_helper me'
+            | Named (p, s, mt) ->
               pp f "(%s:%a)" (Option.value s.txt ~default:"_")
-                (module_type ctxt) mt
-            end;
-            module_helper me'
+                (module_type ctxt) mt;
+              if p then module_helper me' else me'
+            end
         | me -> me
       in
       pp f "@[<hov2>module %s%a@]%a"
         (Option.value x.pmb_name.txt ~default:"_")
         (fun f me ->
-           let me = module_helper me in
+           let me = if use_rec_module me then module_helper me else me in
            match me with
            | {pmod_desc=
                 Pmod_constraint

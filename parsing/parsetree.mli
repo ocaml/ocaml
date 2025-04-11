@@ -902,8 +902,8 @@ and module_type_desc =
 
 and functor_parameter =
   | Unit  (** [()] *)
-  | Named of string option loc * module_type
-      (** [Named(name, MT)] represents:
+  | Named of bool * string option loc * module_type
+      (** [Named(is_pure, name, MT)] represents:
             - [(X : MT)] when [name] is [Some X],
             - [(_ : MT)] when [name] is [None] *)
 
