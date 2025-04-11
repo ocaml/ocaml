@@ -538,7 +538,7 @@ val sort_uniq : ('a -> 'a -> int) -> 'a list -> 'a list
 
     @since 4.02 (4.03 in ListLabels)
 
-    @before 5.4 the element kept was not necessarily the first
+    @before 5.4 the element kept was not necessarily the first one.
  *)
 
 val merge : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
