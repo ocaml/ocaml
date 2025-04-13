@@ -490,6 +490,9 @@ Working version
 
 ### Bug fixes:
 
+- #13957: Allow 'effect' as attribute id.
+  (Pieter Goetschalckx, review by Nicolás Ojeda Bär)
+
 - #13691 #13895: Make four globals underlying Gc.control atomic to avoid C data
   races against them.
   (Jan Midtgaard, review by Miod Vallat, Sadiq Jaffer and Antonin Décimo)

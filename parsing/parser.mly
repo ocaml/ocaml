@@ -4229,6 +4229,7 @@ single_attr_id:
   | DO { "do" }
   | DONE { "done" }
   | DOWNTO { "downto" }
+  | EFFECT { "effect" }
   | ELSE { "else" }
   | END { "end" }
   | EXCEPTION { "exception" }
