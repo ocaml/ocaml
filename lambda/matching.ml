@@ -1766,7 +1766,7 @@ let get_expr_args_constr ~scopes head (arg, _mut) rem =
       if pos > last_pos then
         argl
       else
-        (Lprim (Pfield pos, [ arg ], loc), binding_kind) :: make_args (pos + 1)
+        (Lprim (Pfield (pos, Immutable), [ arg ], loc), binding_kind) :: make_args (pos + 1)
     in
     make_args first_pos
   in
@@ -1794,7 +1794,7 @@ let get_expr_args_variant_constant = drop_expr_arg
 
 let get_expr_args_variant_nonconst ~scopes head (arg, _mut) rem =
   let loc = head_loc ~scopes head in
-  (Lprim (Pfield 1, [ arg ], loc), Alias) :: rem
+  (Lprim (Pfield (1, Immutable), [ arg ], loc), Alias) :: rem
 
 let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
   let rec divide = function
@@ -1910,7 +1910,7 @@ let inline_lazy_force_cond arg loc =
                 ( Pintcomp Ceq,
                   [ tag_var; Lconst (Const_base (Const_int Obj.forward_tag)) ],
                   loc ),
-              Lprim (Pfield 0, [ varg ], loc),
+              Lprim (Pfield (0, Mutable), [ varg ], loc),
               Lifthenelse
                 (* if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
                 ( Lprim
@@ -1947,7 +1947,7 @@ let inline_lazy_force_switch arg loc =
                 sw_numblocks = 256;
                 (* PR#6033 - tag ranges from 0 to 255 *)
                 sw_blocks =
-                  [ (Obj.forward_tag, Lprim (Pfield 0, [ varg ], loc));
+                  [ (Obj.forward_tag, Lprim (Pfield (0, Mutable), [ varg ], loc));
                     ( Obj.lazy_tag,
                       Lapply
                         { ap_tailcall = Default_tailcall;
@@ -2009,7 +2009,7 @@ let get_expr_args_tuple ~scopes head (arg, _mut) rem =
     if pos >= arity then
       rem
     else
-      (Lprim (Pfield pos, [ arg ], loc), Alias) :: make_args (pos + 1)
+      (Lprim (Pfield (pos, Immutable), [ arg ], loc), Alias) :: make_args (pos + 1)
   in
   make_args 0
 
@@ -2053,10 +2053,10 @@ let get_expr_args_record ~scopes head (arg, _mut) rem =
         match lbl.lbl_repres with
         | Record_regular
         | Record_inlined _ ->
-            Lprim (Pfield lbl.lbl_pos, [ arg ], loc)
+            Lprim (Pfield (lbl.lbl_pos, lbl.lbl_mut), [ arg ], loc)
         | Record_unboxed _ -> arg
         | Record_float -> Lprim (Pfloatfield lbl.lbl_pos, [ arg ], loc)
-        | Record_extension _ -> Lprim (Pfield (lbl.lbl_pos + 1), [ arg ], loc)
+        | Record_extension _ -> Lprim (Pfield (lbl.lbl_pos + 1, lbl.lbl_mut), [ arg ], loc)
       in
       let str =
         match lbl.lbl_mut with
@@ -2802,7 +2802,7 @@ let combine_constructor loc arg pat_env cstr partial ctx def
                       (Lprim (Pintcomp Ceq, [ Lvar tag; ext ], loc), act, rem))
                   nonconsts default
               in
-              Llet (Alias, Pgenval, tag, Lprim (Pfield 0, [ arg ], loc), tests)
+              Llet (Alias, Pgenval, tag, Lprim (Pfield (0, Immutable), [ arg ], loc), tests)
         in
         List.fold_right
           (fun (path, act) rem ->
@@ -2897,7 +2897,7 @@ let call_switcher_variant_constr loc fail arg int_lambda_list =
     ( Alias,
       Pgenval,
       v,
-      Lprim (Pfield 0, [ arg ], loc),
+      Lprim (Pfield (0, Immutable), [ arg ], loc),
       call_switcher loc fail (Lvar v) min_int max_int int_lambda_list )
 
 let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)

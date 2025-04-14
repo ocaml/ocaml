@@ -48,7 +48,7 @@ type primitive =
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag * block_shape
-  | Pfield of int
+  | Pfield of int * mutable_flag
   | Pfield_computed
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Psetfield_computed of immediate_or_pointer * initialization_or_assignment
@@ -658,7 +658,7 @@ let rec transl_address loc = function
       then Lprim(Pgetglobal id, [], loc)
       else Lvar id
   | Env.Adot(addr, pos) ->
-      Lprim(Pfield pos, [transl_address loc addr], loc)
+      Lprim(Pfield (pos, Mutable), [transl_address loc addr], loc)
 
 let transl_path find loc env path =
   match find path env with

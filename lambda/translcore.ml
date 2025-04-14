@@ -373,14 +373,14 @@ and transl_exp0 ~in_new_scope ~scopes e =
       let targ = transl_exp ~scopes arg in
       begin match lbl.lbl_repres with
           Record_regular | Record_inlined _ ->
-          Lprim (Pfield lbl.lbl_pos, [targ],
+          Lprim (Pfield (lbl.lbl_pos, lbl.lbl_mut), [targ],
                  of_location ~scopes e.exp_loc)
         | Record_unboxed _ -> targ
         | Record_float ->
           Lprim (Pfloatfield lbl.lbl_pos, [targ],
                  of_location ~scopes e.exp_loc)
         | Record_extension _ ->
-          Lprim (Pfield (lbl.lbl_pos + 1), [targ],
+          Lprim (Pfield (lbl.lbl_pos + 1, lbl.lbl_mut), [targ],
                  of_location ~scopes e.exp_loc)
       end
   | Texp_setfield(arg, _, lbl, newval) ->
@@ -489,7 +489,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
       Lapply{
         ap_loc=loc;
         ap_func=
-          Lprim(Pfield 0, [transl_class_path loc e.exp_env cl], loc);
+          Lprim(Pfield (0, Mutable), [transl_class_path loc e.exp_env cl], loc);
         ap_args=[lambda_unit];
         ap_tailcall=Default_tailcall;
         ap_inlined=Default_inline;
@@ -622,7 +622,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
           let body, _ =
             List.fold_left (fun (body, pos) id ->
               Llet(Alias, Pgenval, id,
-                   Lprim(Pfield pos, [Lvar oid],
+                   Lprim(Pfield (pos, Mutable), [Lvar oid],
                          of_location ~scopes od.open_loc), body),
               pos + 1
             ) (transl_exp ~scopes e, 0)
@@ -944,15 +944,16 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
     let init_id = Ident.create_local "init" in
     let lv =
       Array.mapi
-        (fun i (_, definition) ->
+        (fun i (lbl, definition) ->
            match definition with
            | Kept typ ->
                let field_kind = value_kind env typ in
                let access =
+                 (* TODO: latest ocaml use mut flags in Kept *)
                  match repres with
-                   Record_regular | Record_inlined _ -> Pfield i
+                   Record_regular | Record_inlined _ -> Pfield (i, lbl.lbl_mut)
                  | Record_unboxed _ -> assert false
-                 | Record_extension _ -> Pfield (i + 1)
+                 | Record_extension _ -> Pfield ((i + 1), lbl.lbl_mut)
                  | Record_float -> Pfloatfield i in
                Lprim(access, [Lvar init_id],
                      of_location ~scopes loc),
