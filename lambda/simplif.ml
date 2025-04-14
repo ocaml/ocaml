@@ -888,6 +888,122 @@ let simplify_local_functions lam =
   else
     rewrite lam
 
+
+(* Reuse immutable blocks with the same tag as the variable
+   in the context. *)
+
+module Int = Numbers.Int
+
+type reuse_ctx = {
+  known_tag_of_var: int Ident.Map.t;
+  known_var_with_tag: Ident.t list Int.Map.t;
+}
+
+let empty_reuse_ctx =
+  { known_tag_of_var = Ident.Map.empty;
+    known_var_with_tag = Int.Map.empty; }
+
+let reuse_ctx_add ctx var tag =
+  { known_tag_of_var = 
+      Ident.Map.add var tag ctx.known_tag_of_var
+  ; known_var_with_tag = 
+      Int.Map.add tag 
+        (var :: Option.value ~default:[] (Int.Map.find_opt tag ctx.known_var_with_tag))
+        ctx.known_var_with_tag }
+
+let reuse_immutable_block lam =
+  let rec reuse lam ~ctx =
+    match lam with
+    | Lvar _ | Lmutvar _ | Lconst _ -> lam
+    | Lapply ap ->
+        Lapply{ap with ap_func = reuse ap.ap_func ~ctx;
+                        ap_args = List.map (reuse ~ctx) ap.ap_args }
+    | Lfunction{kind; params; return; body = l; attr; loc} ->
+      lfunction ~kind ~params ~return ~body:(reuse l ~ctx) ~attr ~loc
+    | Llet (str, kind, v, l1, l2) ->
+      Llet (str, kind, v, reuse l1 ~ctx, reuse l2 ~ctx)
+    | Lmutlet (kind, v, l1, l2) ->
+      Lmutlet (kind, v, reuse l1 ~ctx, reuse l2 ~ctx)
+    | Lletrec (bindings, body) ->
+      Lletrec (List.map (fun (id, l) -> (id, reuse l ~ctx)) bindings,
+        reuse body ~ctx)
+    (*
+      reuse block of the form of
+        (makeblock id ... (field 0 v, field 1 v, ..., field n v)) 
+          where n >= 0
+                v is a variable with a known tag to be the same as id
+      if args is [], then we just choose the last variable with the same id in the ctx
+    *)
+    | Lprim (Pmakeblock (id, Immutable, _shape), [], _loc) ->
+      begin match Int.Map.find_opt id ctx.known_var_with_tag with
+        | Some (hd :: _) -> Lvar hd
+        | _ -> lam
+      end
+    | Lprim (Pmakeblock (id, Immutable, _shape), 
+             (Lprim ((Pfield (0, Immutable)), [Lvar v], _loc)) :: xs, _loc2) ->
+      begin match Ident.Map.find_opt v ctx.known_tag_of_var with
+        | Some tag when tag = id ->
+          let arg_cond (flag, i) arg =
+            match arg with
+            | Lprim ((Pfield (i', Immutable)), [Lvar v'], _loc) when v = v' && i = i' -> 
+              (flag, i + 1)
+            | _ -> (false, i + 1)
+          in
+          let (args_satified, _) = List.fold_left arg_cond (true, 1) xs in
+          if args_satified then Lvar v else lam
+        | _ -> lam
+      end
+    | Lprim (prim, args, loc) ->
+      Lprim (prim, List.map (reuse ~ctx) args, loc)
+    | Lswitch (Lvar v, sw, loc) ->
+      (* TODO: handle the case scrutinee is not a var *)
+      let update_ctx tag = reuse_ctx_add ctx v tag in
+      let new_consts = List.map (fun (n, e) -> (n, reuse e ~ctx)) sw.sw_consts
+      and new_blocks = List.map (fun (n, e) -> (n, reuse e ~ctx:(update_ctx n))) sw.sw_blocks
+      and new_fail = Option.map (reuse ~ctx) sw.sw_failaction in
+      Lswitch
+        (Lvar v,
+          {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
+                   sw_failaction = new_fail},
+          loc)
+    | Lswitch(l, sw, loc) ->
+      let new_l = reuse l ~ctx
+      and new_consts = List.map (fun (n, e) -> (n, reuse e ~ctx)) sw.sw_consts
+      and new_blocks = List.map (fun (n, e) -> (n, reuse e ~ctx)) sw.sw_blocks
+      and new_fail = Option.map (reuse ~ctx) sw.sw_failaction in
+      Lswitch
+        (new_l,
+          {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
+                   sw_failaction = new_fail},
+          loc)
+    | Lstringswitch (l, sw, d, loc) ->
+      Lstringswitch (reuse l ~ctx,List.map (fun (s,l) -> s, reuse l ~ctx) sw,
+       Option.map (reuse ~ctx) d,loc)
+    | Lstaticraise (i, args) -> 
+      Lstaticraise (i, List.map (reuse ~ctx) args)
+    | Lstaticcatch (l1, (i, vars), l2) -> 
+      Lstaticcatch (reuse l1 ~ctx, (i, vars), reuse l2 ~ctx)
+    | Ltrywith (l1, id, l2) -> 
+      Ltrywith (reuse l1 ~ctx, id, reuse l2 ~ctx)
+    | Lifthenelse (c, t, f) -> 
+      Lifthenelse (reuse c ~ctx, reuse t ~ctx, reuse f ~ctx)
+    | Lsequence (l1, l2) -> 
+      Lsequence (reuse l1 ~ctx, reuse l2 ~ctx)
+    | Lwhile (c, body) -> 
+      Lwhile (reuse c ~ctx, reuse body ~ctx)
+    | Lfor (v, low, high, dir, body) -> 
+      Lfor (v, reuse low ~ctx, reuse high ~ctx, dir, reuse body ~ctx)
+    | Lassign (v, l) -> 
+      Lassign (v, reuse l ~ctx)
+    | Lsend (k, m, o, ll, loc) ->
+      Lsend (k, reuse m ~ctx, reuse o ~ctx,
+        List.map (reuse ~ctx) ll, loc)
+    | Levent (l, ev) -> 
+      Levent (reuse l ~ctx, ev)
+    | Lifused (v, l) -> 
+      Lifused (v, reuse l ~ctx)
+  in reuse lam ~ctx:empty_reuse_ctx
+
 (* The entry point:
    simplification
    + rewriting of tail-modulo-cons calls
@@ -902,6 +1018,7 @@ let simplify_lambda lam =
        )
     |> simplify_exits
     |> simplify_lets
+    |> reuse_immutable_block
     |> Tmc.rewrite
   in
   if !Clflags.annotations
