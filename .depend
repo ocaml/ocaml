@@ -1710,7 +1710,6 @@ typing/typecore.cmo : \
     typing/typetexp.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
-    typing/typedecl.cmi \
     typing/subst.cmi \
     typing/shape.cmi \
     typing/printtyp.cmi \
@@ -1723,7 +1722,6 @@ typing/typecore.cmo : \
     parsing/parsetree.cmi \
     typing/parmatch.cmi \
     typing/out_type.cmi \
-    typing/mtype.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
@@ -1748,7 +1746,6 @@ typing/typecore.cmx : \
     typing/typetexp.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
-    typing/typedecl.cmx \
     typing/subst.cmx \
     typing/shape.cmx \
     typing/printtyp.cmx \
@@ -1761,7 +1758,6 @@ typing/typecore.cmx : \
     parsing/parsetree.cmi \
     typing/parmatch.cmx \
     typing/out_type.cmx \
-    typing/mtype.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
