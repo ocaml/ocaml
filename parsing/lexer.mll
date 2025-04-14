@@ -274,10 +274,7 @@ let char_for_octal_code lexbuf i =
 let char_for_hexadecimal_code lexbuf i =
   Char.chr (num_value lexbuf ~base:16 ~first:i ~last:(i+1))
 
-let uchar_for_uchar_escape lexbuf =
-  let len = Lexing.lexeme_end lexbuf - Lexing.lexeme_start lexbuf in
-  let first = 3 (* skip opening \u{ *) in
-  let last = len - 2 (* skip closing } *) in
+let uchar_for_uchar_escape ~first ~last lexbuf =
   let digit_count = last - first + 1 in
   match digit_count > 6 with
   | true ->
@@ -288,6 +285,12 @@ let uchar_for_uchar_escape lexbuf =
       if Uchar.is_valid cp then Uchar.unsafe_of_int cp else
       illegal_escape lexbuf
         (Printf.sprintf "%X is not a Unicode scalar value" cp)
+
+let uchar_for_string_uchar_escape lexbuf =
+  let len = Lexing.lexeme_end lexbuf - Lexing.lexeme_start lexbuf in
+  let first = 3 (* skip opening \u{ *) in
+  let last = len - 2 (* skip closing } *) in
+  uchar_for_uchar_escape ~first ~last lexbuf
 
 let validate_encoding lexbuf raw_name =
   match Utf8_lexeme.normalize raw_name with
@@ -598,6 +601,26 @@ rule token = parse
         CHAR '\n' }
   | "\'" ([^ '\\' '\'' '\010' '\013'] as c) "\'"
       { CHAR c }
+  | "\'" ([^ '\\' '\'' '\010' '\013'] as c) "\'"
+      { CHAR c }
+  | "\'" (utf8 as s) "\'"
+      {
+      let d = String.get_utf_8_uchar s 0 in
+      let l = Uchar.utf_decode_length d in
+      if l < String.length s || not (Uchar.utf_decode_is_valid d) then
+        error lexbuf (Invalid_literal s)
+      else
+        let u = Uchar.utf_decode_uchar d in
+        UCHAR u
+      }
+  | "\'U+" ['0'-'9' 'a'-'f' 'A'-'F']['0'-'9' 'a'-'f' 'A'-'F']
+           ['0'-'9' 'a'-'f' 'A'-'F']['0'-'9' 'a'-'f' 'A'-'F'] "\'"
+      { UCHAR (uchar_for_uchar_escape lexbuf ~first:3 ~last:6) }
+  | "\'U+" ['0'-'9' 'a'-'f' 'A'-'F']['0'-'9' 'a'-'f' 'A'-'F']
+           ['0'-'9' 'a'-'f' 'A'-'F']['0'-'9' 'a'-'f' 'A'-'F']
+           ['0'-'9' 'a'-'f' 'A'-'F']['0'-'9' 'a'-'f' 'A'-'F'] "\'"
+      { UCHAR (uchar_for_uchar_escape lexbuf ~first:3 ~last:8) }
+
   | "\'\\" (['\\' '\'' '\"' 'n' 't' 'b' 'r' ' '] as c) "\'"
       { CHAR (char_for_backslash c) }
   | "\'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "\'"
@@ -858,7 +881,7 @@ and string = parse
       { store_escaped_char lexbuf (char_for_hexadecimal_code lexbuf 2);
          string lexbuf }
   | '\\' 'u' '{' hex_digit+ '}'
-        { store_escaped_uchar lexbuf (uchar_for_uchar_escape lexbuf);
+        { store_escaped_uchar lexbuf (uchar_for_string_uchar_escape lexbuf);
           string lexbuf }
   | '\\' _
       { if not (in_comment ()) then begin

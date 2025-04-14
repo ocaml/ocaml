@@ -9,6 +9,7 @@ type token =
   | VAL
   | UNDERSCORE
   | UIDENT of (string)
+  | UCHAR of (Uchar.t)
   | TYPE
   | TRY
   | TRUE

@@ -117,7 +117,7 @@ module C = struct
     let desc =
       match pconst_desc with
       | Pconst_integer _
-      | Pconst_char _
+      | Pconst_char _ | Pconst_uchar _
       | Pconst_float _ ->
           pconst_desc
       | Pconst_string (s, loc, quotation_delimiter) ->

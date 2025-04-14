@@ -1394,6 +1394,7 @@ let can_group discr pat =
   | Any, Any
   | Constant (Const_int _), Constant (Const_int _)
   | Constant (Const_char _), Constant (Const_char _)
+  | Constant (Const_uchar _), Constant (Const_uchar _)
   | Constant (Const_string _), Constant (Const_string _)
   | Constant (Const_float _), Constant (Const_float _)
   | Constant (Const_int32 _), Constant (Const_int32 _)
@@ -1419,7 +1420,8 @@ let can_group discr pat =
   | ( _,
       ( Any
       | Constant
-          ( Const_int _ | Const_char _ | Const_string _ | Const_float _
+          ( Const_int _ | Const_char _ | Const_uchar _
+          | Const_string _ | Const_float _
           | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
       | Construct _ | Tuple _ | Record _ | Array _ | Variant _ | Lazy ) ) ->
       false
@@ -3118,6 +3120,15 @@ let combine_constant loc arg cst partial ctx def
             const_lambda_list
         in
         call_switcher loc fail arg ~low:0 ~high:255 int_lambda_list
+    | Const_uchar _ ->
+        let int_lambda_list =
+          List.map
+            (function
+              | Const_uchar c, l -> (Uchar.to_int c, l)
+              | _ -> assert false)
+            const_lambda_list
+        in
+        call_switcher loc fail arg ~low:0 ~high:Uchar.(to_int max) int_lambda_list
     | Const_string _ ->
         (* Note as the bytecode compiler may resort to dichotomic search,
    the clauses of stringswitch  are sorted with duplicates removed.

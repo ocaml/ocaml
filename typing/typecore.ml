@@ -284,6 +284,7 @@ let case lhs rhs =
 let type_constant = function
     Const_int _ -> instance Predef.type_int
   | Const_char _ -> instance Predef.type_char
+  | Const_uchar _ -> instance Predef.type_uchar
   | Const_string _ -> instance Predef.type_string
   | Const_float _ -> instance Predef.type_float
   | Const_int32 _ -> instance Predef.type_int32
@@ -315,6 +316,7 @@ let constant_desc
      end
   | Pconst_integer (i,Some c) -> Error (Unknown_literal (i, c))
   | Pconst_char c -> Ok (Const_char c)
+  | Pconst_uchar u -> Ok (Const_uchar u)
   | Pconst_string (s,loc,d) -> Ok (Const_string (s,loc,d))
   | Pconst_float (f,None)-> Ok (Const_float f)
   | Pconst_float (f,Some c) -> Error (Unknown_literal (f, c))
@@ -358,6 +360,11 @@ let is_floatarray_type env ty =
 let is_iarray_type env ty =
   match get_desc (expand_head env ty) with
   | Tconstr(path, [_], _) -> Path.same path Predef.path_iarray
+  | _ -> false
+
+let is_uchar_type env ty =
+  match get_desc (expand_head env ty) with
+  | Tconstr(path, [], _) -> Path.same path Predef.path_uchar
   | _ -> false
 
 let protect_expansion env ty =
@@ -420,6 +427,14 @@ let disambiguate_array_literal ~loc env expected_ty =
   else
     { ty_elt = None; mut = Mutable }
 
+let disambiguate_uchar_literal ~loc env expected_ty =
+  if not (is_uchar_type env expected_ty) then None
+  else begin
+     if not (is_principal expected_ty) then
+      Location.prerr_warning loc
+        (not_principal "this type-based character literal disambiguation");
+    Some (instance Predef.type_uchar)
+  end
 (* Typing of patterns *)
 
 (* Simplified patterns for effect continuations *)
@@ -1126,6 +1141,20 @@ let solve_Ppat_array loc env expected_ty =
       let ty_elt = newgenvar() in
       unify_pat_types_penv loc env (array_type ty_elt) expected_ty;
       ty_elt, mut
+
+let disambiguated_constant_or_raise loc env expected_ty cst =
+  match disambiguate_uchar_literal ~loc env (instance expected_ty) with
+  | Some ty -> begin
+      ty,
+      match cst.pconst_desc with
+      | Pconst_char c -> Const_uchar (Uchar.of_char c)
+      | Pconst_uchar u -> Const_uchar u
+      | _ -> constant_or_raise env loc cst
+    end
+  | None ->
+    let cst = constant_or_raise env loc cst in
+    let ty = type_constant cst in
+    ty, cst
 
 let solve_Ppat_lazy loc env expected_ty =
   let nv = newgenvar () in
@@ -1894,11 +1923,13 @@ and type_pat_aux
             pat_attributes = sp.ppat_attributes;
             pat_env = !!penv }
   | Ppat_constant cst ->
-      let cst = constant_or_raise !!penv loc cst in
+      let ty, cst =
+        disambiguated_constant_or_raise loc !!penv expected_ty cst
+      in
       rvp @@ solve_expected {
         pat_desc = Tpat_constant cst;
         pat_loc = loc; pat_extra=[];
-        pat_type = type_constant cst;
+        pat_type = ty;
         pat_attributes = sp.ppat_attributes;
         pat_env = !!penv }
   | Ppat_interval (c1, c2) ->
@@ -2570,6 +2601,7 @@ let rec check_counter_example_pat
       end
   | Tpat_alias (p, _, _, _, _) -> check_rec ~info p expected_ty k
   | Tpat_constant cst ->
+      (* Disambiguation is unnecessary for constants in the untyped AST*)
       let cst = constant_or_raise !!penv loc (Untypeast.constant cst) in
       k @@ solve_expected (mp (Tpat_constant cst) ~pat_type:(type_constant cst))
   | Tpat_tuple tpl ->
@@ -3794,11 +3826,11 @@ and type_expect_
         exp_env = env }
   )
   | Pexp_constant cst ->
-      let cst = constant_or_raise env loc cst in
+      let ty, cst = disambiguated_constant_or_raise loc env ty_expected cst in
       rue {
         exp_desc = Texp_constant cst;
         exp_loc = loc; exp_extra = [];
-        exp_type = type_constant cst;
+        exp_type = ty;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_let(Nonrecursive,

@@ -738,6 +738,7 @@ let mk_directive ~loc name arg =
 %token BARRBRACKET            "|]"
 %token BEGIN                  "begin"
 %token <char> CHAR            "'a'" (* just an example *)
+%token <Uchar.t> UCHAR        "'字'" (* just an example *)
 %token CLASS                  "class"
 %token COLON                  ":"
 %token COLONCOLON             "::"
@@ -920,7 +921,7 @@ The precedences must be listed from low to high.
 %nonassoc below_DOT
 %nonassoc DOT DOTOP
 /* Finally, the first tokens of simple_expr are above everything else. */
-%nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT OBJECT
+%nonassoc BACKQUOTE BANG BEGIN UCHAR CHAR FALSE FLOAT INT OBJECT
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
           NEW PREFIXOP STRING TRUE UIDENT
           LBRACKETPERCENT QUOTED_STRING_EXPR
@@ -3957,6 +3958,7 @@ constant:
   | INT          { let (n, m) = $1 in
                    mkconst ~loc:$sloc (Pconst_integer (n, m)) }
   | CHAR         { mkconst ~loc:$sloc (Pconst_char $1) }
+  | UCHAR        { mkconst ~loc:$sloc (Pconst_uchar $1) }
   | STRING       { let (s, strloc, d) = $1 in
                    mkconst ~loc:$sloc (Pconst_string (s,strloc,d)) }
   | FLOAT        { let (f, m) = $1 in

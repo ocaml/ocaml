@@ -20,6 +20,7 @@ open Types
 type abstract_type_constr = [
   | `Int
   | `Char
+  | `Uchar
   | `String
   | `Bytes
   | `Float
@@ -50,6 +51,7 @@ val find_type_constr : Path.t -> type_constr option
 
 val type_int: type_expr
 val type_char: type_expr
+val type_uchar: type_expr
 val type_string: type_expr
 val type_bytes: type_expr
 val type_float: type_expr
@@ -71,6 +73,7 @@ val type_floatarray:type_expr
 
 val path_int: Path.t
 val path_char: Path.t
+val path_uchar: Path.t
 val path_string: Path.t
 val path_bytes: Path.t
 val path_float: Path.t

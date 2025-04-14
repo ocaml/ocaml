@@ -17,7 +17,7 @@
 
     @since 4.03 *)
 
-type t
+type t = uchar
 [@@immediate]
 (** The type for Unicode characters.
 

@@ -145,6 +145,7 @@ let all_coherent column =
     | Constant c1, Constant c2 -> begin
         match c1, c2 with
         | Const_char _, Const_char _
+        | Const_uchar _, Const_uchar _
         | Const_int _, Const_int _
         | Const_int32 _, Const_int32 _
         | Const_int64 _, Const_int64 _
@@ -152,6 +153,7 @@ let all_coherent column =
         | Const_float _, Const_float _
         | Const_string _, Const_string _ -> true
         | ( Const_char _
+          | Const_uchar _
           | Const_int _
           | Const_int32 _
           | Const_int64 _
@@ -265,6 +267,7 @@ let const_compare x y =
       String.compare s1 s2
   | (Const_int _
     |Const_char _
+    |Const_uchar _
     |Const_string (_, _, _)
     |Const_float _
     |Const_int32 _
@@ -2098,7 +2101,7 @@ let inactive ~partial pat =
         | Tpat_constant c -> begin
             match c with
             | Const_string _
-            | Const_int _ | Const_char _ | Const_float _
+            | Const_int _ | Const_char _ | Const_float _ | Const_uchar _
             | Const_int32 _ | Const_int64 _ | Const_nativeint _ -> true
           end
         | Tpat_tuple ps ->

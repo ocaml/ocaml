@@ -23,6 +23,7 @@
 type constant =
     Const_int of int
   | Const_char of char
+  | Const_uchar of Uchar.t
   | Const_string of string * Location.t * string option
   | Const_float of string
   | Const_int32 of int32
