@@ -640,6 +640,9 @@ OCaml 5.4.0
   (Ulysse Gérard, Leo White, review by Antonin Décimo, Gabriel Scherer,
    Samuel Vivien, Florian Angeletti and Jacques Garrigue)
 
+- #13712: Introduce a new kind `Type_nominal` to give names to abstract types.
+  (Takafumi Saikawa, Jacques Garrigue, review by ??)
+
 - #13744: Refactor in `collect_apply_args`
   (Samuel Vivien, review by Florian Angeletti and Gabriel Scherer)
 

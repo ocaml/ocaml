@@ -2,7 +2,7 @@
  expect;
 *)
 
-(* nominal type PR; #????? *)
+(* nominal type PR; #13712 *)
 (* nominal types with different names are provably different *)
 
 type t = external "t";;
@@ -13,6 +13,20 @@ let _ : (t, u) Type.eq -> _ = function _ -> .;;
 type t = external "t"
 type u = external "u"
 - : (t, u) Type.eq -> 'a = <fun>
+|}]
+
+(* those with the same name are provably equal *)
+
+type t' = external "t";;
+
+let _ : (t, t') Type.eq -> _ = function _ -> .;;
+[%%expect {|
+type t' = external "t"
+Line 3, characters 40-41:
+3 | let _ : (t, t') Type.eq -> _ = function _ -> .;;
+                                            ^
+Error: This match case could not be refuted.
+       Here is an example of a value that would reach it: "Equal"
 |}]
 
 (* primitive abstract types are nominal each with its own name;
@@ -28,34 +42,53 @@ let _ : (string, bytes) Type.eq -> _ = function _ -> .;;
 |}]
 
 
-(* (* these tests are to be enabled in a planned future PR
-      that will remove Ctype.in_current_module *)
-(* equalities involving abstract types cannot be refuted *)
+(* equalities involving unnamed abstract types cannot be refuted *)
 
 type v;;
 type w;;
 
 let _ : (v, t) Type.eq -> _ = function _ -> .;;
 [%%expect {|
-should be an error
+type v
+type w
+Line 4, characters 39-40:
+4 | let _ : (v, t) Type.eq -> _ = function _ -> .;;
+                                           ^
+Error: This match case could not be refuted.
+       Here is an example of a value that would reach it: "Equal"
 |}]
 let _ : (t, v) Type.eq -> _ = function _ -> .;;
 [%%expect {|
-should be an error
+Line 1, characters 39-40:
+1 | let _ : (t, v) Type.eq -> _ = function _ -> .;;
+                                           ^
+Error: This match case could not be refuted.
+       Here is an example of a value that would reach it: "Equal"
 |}]
 let _ : (v, int) Type.eq -> _ = function _ -> .;;
 [%%expect {|
-should be an error
+Line 1, characters 41-42:
+1 | let _ : (v, int) Type.eq -> _ = function _ -> .;;
+                                             ^
+Error: This match case could not be refuted.
+       Here is an example of a value that would reach it: "Equal"
 |}]
 let _ : (int, v) Type.eq -> _ = function _ -> .;;
 [%%expect {|
-should be an error
+Line 1, characters 41-42:
+1 | let _ : (int, v) Type.eq -> _ = function _ -> .;;
+                                             ^
+Error: This match case could not be refuted.
+       Here is an example of a value that would reach it: "Equal"
 |}]
 let _ : (v, w) Type.eq -> _ = function _ -> .;;
 [%%expect {|
-should be an error
+Line 1, characters 39-40:
+1 | let _ : (v, w) Type.eq -> _ = function _ -> .;;
+                                           ^
+Error: This match case could not be refuted.
+       Here is an example of a value that would reach it: "Equal"
 |}]
-*)
 
 
 (* nominal types remain nominal seen from outside a module *)

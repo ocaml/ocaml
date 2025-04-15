@@ -170,6 +170,7 @@ and method_privacy =
      type 'a t = A of (('a -> unit) -> unit) : pos
      type +'a p = ..  : may_pos + inj
      type 'a t = A    : inj
+     type 'a t = external "t" : may_pos + may_neg + inj
  *)
 
 module Variance = struct

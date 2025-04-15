@@ -104,8 +104,8 @@ let x = (true:int)
 Line 1, characters 9-13:
 1 | let x = (true:int)
              ^^^^
-Error: The constructor "true" has type "bool"
-       but an expression was expected of type "int"
+Error: This expression should not be a boolean literal, the expected type is
+       "int"
 |}]
 
 module M = struct type \#true = true end
