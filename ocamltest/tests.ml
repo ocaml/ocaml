@@ -66,7 +66,7 @@ let run_actions log testenv actions =
         Printf.fprintf log "\nRunning action %d/%d (%s)\n%!"
           action_number total (Actions.name action);
         let (result, env') = Actions.run log env action in
-        Printf.fprintf log "Action %d/%d (%s) %s\n%!"
+        Printf.fprintf log "Action %d/%d (%s) => %s\n%!"
           action_number total (Actions.name action)
           (Result.string_of_result result);
         if Result.is_pass result
