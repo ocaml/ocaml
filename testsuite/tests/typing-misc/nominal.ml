@@ -1,4 +1,5 @@
 (* TEST
+ flags = "-i-variance";
  expect;
 *)
 
@@ -136,4 +137,139 @@ Line 1, characters 43-44:
                                                ^
 Error: This match case could not be refuted.
        Here is an example of a value that would reach it: "Equal"
+|}]
+
+
+(* tests for module inclusion *)
+
+module M : sig
+  type t = external "foo"
+end = struct
+  type t = external "foo"
+end;;
+
+[%%expect{|
+module M : sig type t = external "foo" end
+|}]
+
+module M : sig
+  type t
+end = struct
+  type t = external "foo"
+end;;
+
+[%%expect{|
+module M : sig type t end
+|}]
+
+module M : sig
+  type t = external "foo"
+end = struct
+  type t
+end;;
+
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t end
+       is not included in
+         sig type t = external "foo" end
+       Type declarations do not match:
+         type t
+       is not included in
+         type t = external "foo"
+       The first is abstract, but the second is nominal "foo".
+|}]
+
+module M : sig
+  type t = external "foo"
+end = struct
+  type t = external "bar"
+end;;
+
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = external "bar"
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = external "bar" end
+       is not included in
+         sig type t = external "foo" end
+       Type declarations do not match:
+         type t = external "bar"
+       is not included in
+         type t = external "foo"
+       The first is nominal "bar", but the second is nominal "foo".
+|}]
+
+
+(* tests for variance and injectivity: all parameters are injective *)
+
+type ('a, !'b, +'c, -'d, !+'e, !-'f) t = external "foo";;
+type ('a, !'b, +'c, -'d, !+'e, !-'f) t2 = ('a, 'b, 'c, 'd, 'e, 'f) t;;
+type 'a t3 = external "bar";;
+type !'a t4 = 'a t3;;
+
+[%%expect{|
+type (!'a, !'b, +!'c, -!'d, +!'e, -!'f) t = external "foo"
+type (!'a, !'b, +!'c, -!'d, +!'e, -!'f) t2 = ('a, 'b, 'c, 'd, 'e, 'f) t
+type !'a t3 = external "bar"
+type !'a t4 = 'a t3
+|}]
+
+type +'a t5 = 'a t3;;
+
+[%%expect{|
+Line 1, characters 0-19:
+1 | type +'a t5 = 'a t3;;
+    ^^^^^^^^^^^^^^^^^^^
+Error: In this definition, expected parameter variances are not satisfied.
+       The 1st type parameter was expected to be covariant,
+       but it is injective invariant.
+|}]
+
+type -'a t6 = 'a t3;;
+
+[%%expect{|
+Line 1, characters 0-19:
+1 | type -'a t6 = 'a t3;;
+    ^^^^^^^^^^^^^^^^^^^
+Error: In this definition, expected parameter variances are not satisfied.
+       The 1st type parameter was expected to be contravariant,
+       but it is injective invariant.
+|}]
+
+
+(* check for injectivity propagation through recursive modules *)
+
+module rec M1 : sig
+  type 'a t = external "foo"
+end = struct
+  type 'a t = external "foo"
+end
+
+and M2 : sig
+  type !'b t
+end = struct
+  type 'b t = 'b M1.t
+end;;
+
+[%%expect{|
+module rec M1 : sig type !'a t = external "foo" end
+and M2 : sig type !'b t end
+|}]
+
+
+(* empty name is allowed *)
+
+type t = external "";;
+
+[%%expect{|
+type t = external ""
 |}]
