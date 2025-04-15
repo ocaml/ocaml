@@ -266,10 +266,20 @@ and M2 : sig type !'b t end
 |}]
 
 
-(* empty name is allowed *)
+(* weird names are allowed *)
 
 type t = external "";;
 
 [%%expect{|
 type t = external ""
+|}]
+
+type t = external "\003";;
+[%%expect{|
+type t = external "\003"
+|}]
+
+type t = external {a|\\\|a};;
+[%%expect{|
+type t = external "\\\\\\"
 |}]
