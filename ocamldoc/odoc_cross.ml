@@ -1067,7 +1067,7 @@ and assoc_comments_type module_list t =
         (fun rf -> rf.rf_text <- ao (assoc_comments_info parent module_list) rf.rf_text)
         fl
   | Type_open -> ()
-  | Type_nominal _ -> ()
+  | Type_external _ -> ()
   );
   t
 

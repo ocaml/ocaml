@@ -362,7 +362,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                       lbl_list rep
                 | {type_kind = Type_open} ->
                     tree_of_extension path ty_list depth obj
-                | {type_kind = Type_nominal _} ->
+                | {type_kind = Type_external _} ->
                     Oval_stuff "<external>"
             end
           | Tvariant row ->

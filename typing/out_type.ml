@@ -1332,7 +1332,7 @@ let prepare_decl id decl =
   | Type_record(l, _rep) ->
       List.iter (fun l -> prepare_type l.ld_type) l
   | Type_open -> ()
-  | Type_nominal _ -> ()
+  | Type_external _ -> ()
   end;
   ty_manifest, params
 
@@ -1355,7 +1355,7 @@ let tree_of_type_decl id decl =
           List.exists (fun cd -> cd.cd_res <> None) tll
       | Type_open ->
           decl.type_manifest = None
-      | Type_nominal _ ->
+      | Type_external _ ->
           assert (decl.type_manifest = None); true
     in
     let vari =
@@ -1413,9 +1413,9 @@ let tree_of_type_decl id decl =
         tree_of_manifest Otyp_open,
         decl.type_private,
         false
-    | Type_nominal name ->
+    | Type_external name ->
         assert (decl.type_private = Public);
-        (Otyp_nominal name, Public, false)
+        (Otyp_external name, Public, false)
   in
     { otype_name = name;
       otype_params = args;

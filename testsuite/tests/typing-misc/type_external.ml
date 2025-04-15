@@ -3,8 +3,8 @@
  expect;
 *)
 
-(* nominal type PR; #13712 *)
-(* nominal types with different names are provably different *)
+(* external type PR; #13712 *)
+(* external types with different names are provably different *)
 
 type t = external "t";;
 type u = external "u";;
@@ -30,7 +30,7 @@ Error: This match case could not be refuted.
        Here is an example of a value that would reach it: "Equal"
 |}]
 
-(* primitive abstract types are nominal each with its own name;
+(* primitive abstract types are external each with its own name;
    e.g., int is named "int" *)
 let _ : (int, char) Type.eq -> _ = function _ -> .;;
 [%%expect {|
@@ -92,7 +92,7 @@ Error: This match case could not be refuted.
 |}]
 
 
-(* nominal types remain nominal seen from outside a module *)
+(* external types remain external seen from outside a module *)
 
 module M = struct
   type t
@@ -182,7 +182,7 @@ Error: Signature mismatch:
          type t
        is not included in
          type t = external "foo"
-       The first is abstract, but the second is nominal "foo".
+       The first is abstract, but the second is external "foo".
 |}]
 
 module M : sig
@@ -205,7 +205,7 @@ Error: Signature mismatch:
          type t = external "bar"
        is not included in
          type t = external "foo"
-       The first is nominal "bar", but the second is nominal "foo".
+       The first is external "bar", but the second is external "foo".
 |}]
 
 

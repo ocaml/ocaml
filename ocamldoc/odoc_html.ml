@@ -1760,7 +1760,7 @@ class html =
         | Some _, Type_open -> "\n<pre>"
         | Some _, Type_variant _
         | Some _, Type_record _ -> "\n<pre>"
-        | _, Type_nominal _ -> "\n<pre>"
+        | _, Type_external _ -> "\n<pre>"
         );
       bp b "<span id=\"%s\">" (Naming.type_target t);
       bs b ((self#keyword "type")^" ");
@@ -1867,7 +1867,7 @@ class html =
       | Type_open ->
           bs b "= ..";
           bs b "</pre>"
-      | Type_nominal name ->
+      | Type_external name ->
           bs b (Printf.sprintf "= external %S" (self#escape name));
           bs b "</pre>"
       );

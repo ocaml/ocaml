@@ -148,7 +148,7 @@ let add_type_declaration bv td =
     | Ptype_record lbls ->
         List.iter (fun pld -> add_type bv pld.pld_type) lbls
     | Ptype_open -> ()
-    | Ptype_nominal _ -> ()
+    | Ptype_external _ -> ()
   in
   add_tkind td.ptype_kind
 

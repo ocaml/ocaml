@@ -245,7 +245,7 @@ let string_of_type t =
      P.sprintf "= %s{\n%s\n}\n" (if priv then "private " else "")
        (string_of_record l)
 
-  | M.Type_nominal name ->
+  | M.Type_external name ->
       P.sprintf "= external %S" name
  in
  P.sprintf "type %s %s %s%s%s" parameters_str (Name.simple t.M.ty_name)

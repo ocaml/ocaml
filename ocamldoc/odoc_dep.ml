@@ -160,7 +160,7 @@ let type_deps t =
   | T.Type_record rl ->
       List.iter (fun r -> ty r.T.rf_type) rl
   | T.Type_open -> ()
-  | T.Type_nominal _ -> ()
+  | T.Type_external _ -> ()
   );
 
   (match t.T.ty_manifest with

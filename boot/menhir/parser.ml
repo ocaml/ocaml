@@ -36063,7 +36063,7 @@ module Tables = struct
            in
           (
 # 3356 "parsing/parser.mly"
-      ( (Ptype_nominal name, Public, None) )
+      ( (Ptype_external name, Public, None) )
 # 36068 "parsing/parser.ml"
            : (Parsetree.type_kind * Asttypes.private_flag * Parsetree.core_type option))
         in

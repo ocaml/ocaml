@@ -568,7 +568,7 @@ and ('lbl, 'cstr) type_kind =
   | Type_record of 'lbl list  * record_representation
   | Type_variant of 'cstr list * variant_representation
   | Type_open
-  | Type_nominal of string
+  | Type_external of string
 
 and type_origin =
     Definition

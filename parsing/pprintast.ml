@@ -1753,7 +1753,7 @@ and type_declaration ctxt f x =
         pp f "%t%t@;%a" intro priv (record_declaration ctxt) l
     | Ptype_open ->
         pp f "%t%t@;.." intro priv
-    | Ptype_nominal name ->
+    | Ptype_external name ->
         pp f " =@ external %a" constant_string name
   in
   let constraints f =

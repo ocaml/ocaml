@@ -3353,7 +3353,7 @@ nonempty_type_kind:
     LBRACE ls = label_declarations RBRACE
       { (Ptype_record ls, priv, oty) }
   | EXTERNAL name = raw_string
-      { (Ptype_nominal name, Public, None) }
+      { (Ptype_external name, Public, None) }
 ;
 %inline type_synonym:
   ioption(terminated(core_type, EQUAL))

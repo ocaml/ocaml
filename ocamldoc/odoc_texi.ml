@@ -712,7 +712,7 @@ class texi =
                      l ) )
                @  [ Raw " }" ]
            | Type_open -> [ Raw " = .." ; Newline ]
-           | Type_nominal name ->
+           | Type_external name ->
                [ Raw (Printf.sprintf " = external %S" (self#escape name));
                  Newline ]
           ) ) ;

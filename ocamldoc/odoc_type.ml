@@ -46,7 +46,7 @@ type type_kind =
   | Type_record of record_field list
                    (** fields *)
   | Type_open
-  | Type_nominal of string
+  | Type_external of string
 
 type object_field = {
   of_name : string ;

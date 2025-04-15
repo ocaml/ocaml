@@ -127,7 +127,7 @@ let ident_of_type_constr : type_constr -> Ident.t = function
   | `Iarray -> ident_iarray
   | `Atomic_loc -> ident_atomic_loc
 
-(* names used for Type_nominal *)
+(* names used for Type_external *)
 let name_of_type_constr = function
   | `Int -> "int"
   | `Char -> "char"
@@ -255,7 +255,7 @@ let decl_of_type_constr tconstr =
   let type_uid = Uid.of_predef_id (ident_of_type_constr tconstr) in
   let decl0
       ?(immediate = Type_immediacy.Unknown)
-      ?(kind = Type_nominal name)
+      ?(kind = Type_external name)
       ()
     =
     {type_params = [];
@@ -277,7 +277,7 @@ let decl_of_type_constr tconstr =
   let decl1
       ~variance
       ?(separability = Separability.Ind)
-      ?(kind = fun _ -> Type_nominal name)
+      ?(kind = fun _ -> Type_external name)
       ()
     =
     let param = newgenvar () in
@@ -291,7 +291,7 @@ let decl_of_type_constr tconstr =
   let decl2
       ~variance:(var1, var2)
       ?separability:((sep1, sep2) = (Separability.Ind, Separability.Ind))
-      ?(kind = fun _ _ -> Type_nominal name)
+      ?(kind = fun _ _ -> Type_external name)
       ()
     =
     let param1, param2 = newgenvar (), newgenvar () in
