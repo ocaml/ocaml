@@ -131,6 +131,11 @@ type pp_scan_elem = {
    Each stack element describes a pretty-printing box. *)
 type pp_format_elem = { box_type : box_type; width : int }
 
+type stream_state =
+  | Newline
+  | Next_size of int
+  | Normal
+
 (* The formatter definition.
    Each formatter value is a pretty-printer instance with all its
    machinery. *)
@@ -155,7 +160,7 @@ type formatter = {
   (* Current value of indentation. *)
   mutable pp_current_indent : int;
   (* True when the line has been broken by the pretty-printer. *)
-  mutable pp_is_new_line : bool;
+  mutable pp_stream_state : stream_state;
   (* Total width of tokens already printed. *)
   mutable pp_left_total : int;
   (* Total width of tokens ever put in queue. *)
@@ -190,6 +195,18 @@ type formatter = {
   pp_queue : pp_queue;
 }
 
+let is_newline s =
+  match s.pp_stream_state with
+  | Newline -> true
+  | Normal | Next_size _ -> false
+
+let set_stream_state state s = state.pp_stream_state <- s
+let reset_next_size state = match state.pp_stream_state with
+  | Next_size _ -> set_stream_state state Normal
+  | Newline | Normal -> ()
+let with_next_size state f s = match state.pp_stream_state with
+  | Next_size n -> set_stream_state state Normal; n
+  | Newline | Normal -> f state s
 
 (* The formatter specific tag handling functions. *)
 type formatter_stag_functions = {
@@ -264,13 +281,13 @@ and pp_output_indent state n = state.pp_out_indent n
 let format_pp_text state size text =
   state.pp_space_left <- state.pp_space_left - size;
   pp_output_string state text;
-  state.pp_is_new_line <- false
+  set_stream_state state Normal
 
 (* Format a slice *)
 let format_pp_substring state size ~pos ~len source =
   state.pp_space_left <- state.pp_space_left - size;
   pp_output_substring state ~pos ~len source;
-  state.pp_is_new_line <- false
+  set_stream_state state Normal
 
 (* Format a string by its length, if not empty *)
 let format_string state s =
@@ -280,7 +297,7 @@ let format_string state s =
 let break_new_line state (before, offset, after) width =
   format_string state before;
   pp_output_newline state;
-  state.pp_is_new_line <- true;
+  set_stream_state state Newline;
   let indent = state.pp_margin - width + offset in
   (* Don't indent more than pp_max_indent. *)
   let real_indent = Int.min state.pp_max_indent indent in
@@ -409,7 +426,7 @@ let format_pp_token state size = function
         else break_same_line state fits
       | Pp_box ->
         (* Have the line just been broken here ? *)
-        if state.pp_is_new_line then break_same_line state fits else
+        if is_newline state then break_same_line state fits else
         if size + pp_string_width state before > state.pp_space_left
           then break_new_line state breaks width else
         (* break the line here leads to new indentation ? *)
@@ -472,7 +489,7 @@ let enqueue_substring_as ~pos ~len state size source =
   enqueue_advance state { size; token; length = Size.to_int size }
 
 let enqueue_string state s =
-  let size = pp_string_width state s in
+  let size = with_next_size state pp_string_width s in
   enqueue_string_as state (Size.of_int size) s
 
 
@@ -532,6 +549,7 @@ let scan_push state b token =
    the user may set the depth bound pp_max_boxes
    any text nested deeper is printed as the ellipsis string. *)
 let pp_open_box_gen state indent br_ty =
+  reset_next_size state;
   state.pp_curr_depth <- state.pp_curr_depth + 1;
   if state.pp_curr_depth < state.pp_max_boxes then
     let size = Size.of_int (- state.pp_right_total) in
@@ -546,6 +564,7 @@ let pp_open_sys_box state = pp_open_box_gen state 0 Pp_hovbox
 
 (* Close a box, setting sizes of its sub boxes. *)
 let pp_close_box state () =
+  reset_next_size state;
   if state.pp_curr_depth > 1 then
   begin
     if state.pp_curr_depth < state.pp_max_boxes then
@@ -647,20 +666,21 @@ let pp_print_as_size state size s =
   if state.pp_curr_depth < state.pp_max_boxes
   then enqueue_string_as state size s
 
-
 let pp_print_as state isize s =
   pp_print_as_size state (Size.of_int isize) s
 
-
 let pp_print_string state s =
-  pp_print_as state (pp_string_width state s) s
+  pp_print_as state (with_next_size state pp_string_width s) s
+
+let pp_with_size state n =
+  set_stream_state state (Next_size n)
 
 let pp_print_substring_as ~pos ~len state size s =
   if state.pp_curr_depth < state.pp_max_boxes
   then enqueue_substring_as ~pos ~len state (Size.of_int size) s
 
 let pp_print_substring ~pos ~len state s =
-  let width = pp_substring_width state ~pos ~len s in
+  let width = with_next_size state (pp_substring_width ~pos ~len) s in
   pp_print_substring_as ~pos ~len state width s
 
 let pp_print_bytes state s =
@@ -753,6 +773,7 @@ and pp_print_cut state () = pp_print_break state 0 0
 
 (* Tabulation boxes. *)
 let pp_open_tbox state () =
+  reset_next_size state;
   state.pp_curr_depth <- state.pp_curr_depth + 1;
   if state.pp_curr_depth < state.pp_max_boxes then
     let size = Size.zero in
@@ -762,6 +783,7 @@ let pp_open_tbox state () =
 
 (* Close a tabulation box. *)
 let pp_close_tbox state () =
+  reset_next_size state;
   if state.pp_curr_depth > 1 then
   begin
    if state.pp_curr_depth < state.pp_max_boxes then
@@ -773,6 +795,7 @@ let pp_close_tbox state () =
 
 (* Print a tabulation break. *)
 let pp_print_tbreak state width offset =
+  reset_next_size state;
   if state.pp_curr_depth < state.pp_max_boxes then
     let size = Size.of_int (- state.pp_right_total) in
     let elem = { size; token = Pp_tbreak (width, offset); length = width } in
@@ -782,6 +805,7 @@ let pp_print_tbreak state width offset =
 let pp_print_tab state () = pp_print_tbreak state 0 0
 
 let pp_set_tab state () =
+  reset_next_size state;
   if state.pp_curr_depth < state.pp_max_boxes then
     let elem = { size = Size.zero; token = Pp_stab; length = 0 } in
     enqueue_advance state elem
@@ -1007,7 +1031,7 @@ let pp_make_formatter f g h i j =
     pp_max_indent = pp_margin - pp_min_space_left;
     pp_space_left = pp_margin;
     pp_current_indent = 0;
-    pp_is_new_line = true;
+    pp_stream_state = Newline;
     pp_left_total = 1;
     pp_right_total = 1;
     pp_curr_depth = 1;
@@ -1234,6 +1258,7 @@ and open_stag v = pp_open_stag (DLS.get std_formatter_key) v
 and close_stag v = pp_close_stag (DLS.get std_formatter_key) v
 and print_as v w = pp_print_as (DLS.get std_formatter_key) v w
 and print_string v = pp_print_string (DLS.get std_formatter_key) v
+and with_size n = pp_with_size (DLS.get std_formatter_key) n
 and print_substring ~pos ~len v =
   pp_print_substring  ~pos ~len (DLS.get std_formatter_key) v
 and print_substring_as ~pos ~len as_len v =
@@ -1439,7 +1464,7 @@ let output_formatting_lit ppf fmting_lit = match fmting_lit with
   | FFlush                    -> pp_print_flush ppf ()
   | Force_newline             -> pp_force_newline ppf ()
   | Flush_newline             -> pp_print_newline ppf ()
-  | Magic_size (_, _)         -> ()
+  | Magic_size (_, n)         -> pp_with_size ppf n
   | Escaped_at                -> pp_print_char ppf '@'
   | Escaped_percent           -> pp_print_char ppf '%'
   | Scan_indic c              -> pp_print_char ppf '@'; pp_print_char ppf c
@@ -1449,14 +1474,6 @@ let output_formatting_lit ppf fmting_lit = match fmting_lit with
 (* Differ from Printf.output_acc by the interpretation of formatting. *)
 (* Used as a continuation of CamlinternalFormat.make_printf. *)
 let rec output_acc ppf acc = match acc with
-  | Acc_string_literal (Acc_formatting_lit (p, Magic_size (_, size)), s)
-  | Acc_data_string (Acc_formatting_lit (p, Magic_size (_, size)), s) ->
-    output_acc ppf p;
-    pp_print_as_size ppf (Size.of_int size) s;
-  | Acc_char_literal (Acc_formatting_lit (p, Magic_size (_, size)), c)
-  | Acc_data_char (Acc_formatting_lit (p, Magic_size (_, size)), c) ->
-    output_acc ppf p;
-    pp_print_as_size ppf (Size.of_int size) (String.make 1 c);
   | Acc_formatting_lit (p, f) ->
     output_acc ppf p;
     output_formatting_lit ppf f;
@@ -1481,17 +1498,6 @@ let rec output_acc ppf acc = match acc with
 (* Differ from Printf.bufput_acc by the interpretation of formatting. *)
 (* Used as a continuation of CamlinternalFormat.make_printf. *)
 let rec strput_acc ppf acc = match acc with
-  | Acc_string_literal (Acc_formatting_lit (p, Magic_size (_, size)), s)
-  | Acc_data_string (Acc_formatting_lit (p, Magic_size (_, size)), s) ->
-    strput_acc ppf p;
-    pp_print_as_size ppf (Size.of_int size) s;
-  | Acc_char_literal (Acc_formatting_lit (p, Magic_size (_, size)), c)
-  | Acc_data_char (Acc_formatting_lit (p, Magic_size (_, size)), c) ->
-    strput_acc ppf p;
-    pp_print_as_size ppf (Size.of_int size) (String.make 1 c);
-  | Acc_delay (Acc_formatting_lit (p, Magic_size (_, size)), f) ->
-    strput_acc ppf p;
-    pp_print_as_size ppf (Size.of_int size) (f ());
   | Acc_formatting_lit (p, f) ->
     strput_acc ppf p;
     output_formatting_lit ppf f;

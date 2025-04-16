@@ -236,6 +236,11 @@ val pp_print_string : formatter -> string -> unit
 val print_string : string -> unit
 (** [pp_print_string ppf s] prints [s] in the current pretty-printing box. *)
 
+val pp_with_size : formatter -> int -> unit
+val with_size: int -> unit
+(** [pp_with_size ppf w] sets the width of the next element to be printed to
+    [w]. *)
+
 val pp_print_substring : pos:int -> len:int -> formatter -> string -> unit
 val print_substring : pos:int -> len:int -> string -> unit
 (** [pp_print_substring ~pos ~len ppf s] prints the substring of [s] that starts

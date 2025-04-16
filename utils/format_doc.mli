@@ -216,6 +216,7 @@ val pp_print_bytes: bytes printer
 val pp_print_as: formatter -> int -> string -> unit
 val pp_print_substring_as:
   pos:int -> len:int -> formatter -> int -> string -> unit
+val pp_with_size: formatter -> int -> unit
 
 (** {3 Primitive type printers }*)
 
