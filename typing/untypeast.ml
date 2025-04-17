@@ -40,6 +40,7 @@ type mapper = {
   constructor_declaration: mapper -> T.constructor_declaration
                            -> constructor_declaration;
   expr: mapper -> T.expression -> expression;
+  expr_poly: mapper -> T.expr_poly -> expr_poly;
   extension_constructor: mapper -> T.extension_constructor
                          -> extension_constructor;
   include_declaration: mapper -> T.include_declaration -> include_declaration;
@@ -372,7 +373,6 @@ let exp_extra sub (extra, loc, attrs) sexp =
                      sub.typ sub cty2)
     | Texp_constraint cty ->
         Pexp_constraint (sexp, sub.typ sub cty)
-    | Texp_poly cto -> Pexp_poly (sexp, Option.map (sub.typ sub) cto)
     | Texp_newtype s -> Pexp_newtype (mkloc s loc, sexp)
   in
   Exp.mk ~loc ~attrs desc
@@ -426,7 +426,7 @@ let expression sub exp =
                       (Pcoerce (Option.map (sub.typ sub) ty1, sub.typ sub ty2))
                 | Some (Texp_constraint ty) ->
                     Some (Pconstraint (sub.typ sub ty))
-                | Some (Texp_poly _ | Texp_newtype _) | None -> None
+                | Some (Texp_newtype _) | None -> None
               in
               Pfunction_cases (cases, loc, attributes), constraint_
         in
@@ -573,6 +573,13 @@ let expression sub exp =
   in
   List.fold_right (exp_extra sub) exp.exp_extra
     (Exp.mk ~loc ~attrs desc)
+
+let expr_poly sub ep =
+  {
+    pep_expr = sub.expr sub ep.ep_expr;
+    pep_typ = Option.map (sub.typ sub) ep.ep_typ;
+    pep_loc = ep.ep_loc;
+  }
 
 let binding_op sub bop pat =
   let pbop_op = bop.bop_op_name in
@@ -907,8 +914,7 @@ let class_field sub cf =
     | Tcf_method (lab, priv, Tcfk_virtual cty) ->
         Pcf_method (lab, priv, Cfk_virtual (sub.typ sub cty))
     | Tcf_method (lab, priv, Tcfk_concrete (o, exp)) ->
-        let exp = remove_fun_self exp in
-        Pcf_method (lab, priv, Cfk_concrete (o, sub.expr sub exp))
+        Pcf_method (lab, priv, Cfk_concrete (o, sub.expr_poly sub exp))
     | Tcf_initializer exp ->
         let exp = remove_fun_self exp in
         Pcf_initializer (sub.expr sub exp)
@@ -948,6 +954,7 @@ let default_mapper =
     value_description = value_description;
     pat = pattern;
     expr = expression;
+    expr_poly;
     module_declaration = module_declaration;
     module_substitution = module_substitution;
     module_type_declaration = module_type_declaration;

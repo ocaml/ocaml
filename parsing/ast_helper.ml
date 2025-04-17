@@ -221,7 +221,6 @@ module Exp = struct
   let letexception ?loc ?attrs a b = mk ?loc ?attrs (Pexp_letexception (a, b))
   let assert_ ?loc ?attrs a = mk ?loc ?attrs (Pexp_assert a)
   let lazy_ ?loc ?attrs a = mk ?loc ?attrs (Pexp_lazy a)
-  let poly ?loc ?attrs a b = mk ?loc ?attrs (Pexp_poly (a, b))
   let object_ ?loc ?attrs a = mk ?loc ?attrs (Pexp_object a)
   let newtype ?loc ?attrs a b = mk ?loc ?attrs (Pexp_newtype (a, b))
   let pack ?loc ?attrs a b = mk ?loc ?attrs (Pexp_pack (a, b))
@@ -244,6 +243,13 @@ module Exp = struct
       pbop_pat = pat;
       pbop_exp = exp;
       pbop_loc = loc;
+    }
+
+  let poly ?(loc = !default_loc) e p =
+    {
+      pep_expr = e;
+      pep_typ = p;
+      pep_loc = loc;
     }
 end
 

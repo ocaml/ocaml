@@ -19,6 +19,8 @@ open Lexing
 open Location
 open Typedtree
 
+type 'a printer = int -> formatter -> 'a -> unit
+
 let fmt_position f l =
   if l.pos_lnum = -1
   then fprintf f "%s[%d]" l.pos_fname l.pos_cnum
@@ -336,10 +338,6 @@ and expression_extra i ppf (extra, loc, attrs) =
       attributes i ppf attrs;
       option i core_type ppf cto1;
       core_type i ppf cto2;
-  | Texp_poly cto ->
-      line i ppf "Texp_poly\n";
-      attributes i ppf attrs;
-      option i core_type ppf cto;
   | Texp_newtype s ->
       line i ppf "Texp_newtype \"%s\"\n" s;
       attributes i ppf attrs;
@@ -475,6 +473,12 @@ and expression i ppf x =
       module_expr i ppf o.open_expr;
       attributes i ppf o.open_attributes;
       expression i ppf e;
+
+and expr_poly i ppf x =
+  line i ppf "expr_poly %a\n" fmt_location x.ep_loc;
+  let i = i + 1 in
+  option i core_type ppf x.ep_typ;
+  expression i ppf x.ep_expr
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_ident x.val_id fmt_location
@@ -693,10 +697,10 @@ and class_field i ppf x =
       option (i+1) string ppf so;
   | Tcf_val (s, mf, _, k, _) ->
       line i ppf "Tcf_val \"%s\" %a\n" s.txt fmt_mutable_flag mf;
-      class_field_kind (i+1) ppf k
+      class_field_kind expression (i+1) ppf k
   | Tcf_method (s, pf, k) ->
       line i ppf "Tcf_method \"%s\" %a\n" s.txt fmt_private_flag pf;
-      class_field_kind (i+1) ppf k
+      class_field_kind expr_poly (i+1) ppf k
   | Tcf_constraint (ct1, ct2) ->
       line i ppf "Tcf_constraint\n";
       core_type (i+1) ppf ct1;
@@ -707,10 +711,12 @@ and class_field i ppf x =
   | Tcf_attribute a ->
       attribute i ppf "Tcf_attribute" a
 
-and class_field_kind i ppf = function
+and class_field_kind
+  : type e. e printer -> e class_field_kind printer =
+  fun pp_expr i ppf -> function
   | Tcfk_concrete (o, e) ->
       line i ppf "Concrete %a\n" fmt_override_flag o;
-      expression i ppf e
+      pp_expr i ppf e
   | Tcfk_virtual t ->
       line i ppf "Virtual\n";
       core_type i ppf t

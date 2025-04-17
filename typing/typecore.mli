@@ -134,6 +134,9 @@ val type_approx:
 val type_argument:
         Env.t -> Parsetree.expression ->
         type_expr -> type_expr -> Typedtree.expression
+val poly_expect:
+        Env.t -> Parsetree.expr_poly -> Parsetree.pattern -> Types.type_expr ->
+        type_expr -> Typedtree.expr_poly
 
 val option_some: Env.t -> Typedtree.expression -> Typedtree.expression
 val option_none: Env.t -> type_expr -> Location.t -> Typedtree.expression

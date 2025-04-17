@@ -39,6 +39,7 @@ and binary_part =
   | Partial_structure of structure
   | Partial_structure_item of structure_item
   | Partial_expression of expression
+  | Partial_expr_poly of expr_poly
   | Partial_pattern : 'k pattern_category * 'k general_pattern -> binary_part
   | Partial_class_expr of class_expr
   | Partial_signature of signature
@@ -73,6 +74,7 @@ let iter_on_parts (it : Tast_iterator.iterator) = function
   | Partial_structure s -> it.structure it s
   | Partial_structure_item s -> it.structure_item it s
   | Partial_expression e -> it.expr it e
+  | Partial_expr_poly ep -> it.expr_poly it ep
   | Partial_pattern (_category, p) -> it.pat it p
   | Partial_class_expr ce -> it.class_expr it ce
   | Partial_signature s -> it.signature it s
@@ -124,6 +126,7 @@ let clear_part = function
   | Partial_structure_item s ->
       Partial_structure_item (cenv.structure_item cenv s)
   | Partial_expression e -> Partial_expression (cenv.expr cenv e)
+  | Partial_expr_poly ep -> Partial_expr_poly (cenv.expr_poly cenv ep)
   | Partial_pattern (category, p) -> Partial_pattern (category, cenv.pat cenv p)
   | Partial_class_expr ce -> Partial_class_expr (cenv.class_expr cenv ce)
   | Partial_signature s -> Partial_signature (cenv.signature cenv s)

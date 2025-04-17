@@ -167,6 +167,7 @@ let binary_part iter x =
   | Partial_structure x -> iter.structure iter x
   | Partial_structure_item x -> iter.structure_item iter x
   | Partial_expression x -> iter.expr iter x
+  | Partial_expr_poly x -> iter.expr_poly iter x
   | Partial_pattern (_, x) -> iter.pat iter x
   | Partial_class_expr x -> iter.class_expr iter x
   | Partial_signature x -> iter.signature iter x

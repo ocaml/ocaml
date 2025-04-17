@@ -421,12 +421,6 @@ and expression_desc =
            Note: [assert false] is treated in a special way by the
            type-checker. *)
   | Pexp_lazy of expression  (** [lazy E] *)
-  | Pexp_poly of expression * core_type option
-      (** Used for method bodies.
-
-           Can only be used as the expression under
-           {{!class_field_kind.Cfk_concrete}[Cfk_concrete]} for methods (not
-           values). *)
   | Pexp_object of class_structure  (** [object ... end] *)
   | Pexp_newtype of string loc * expression  (** [fun (type t) -> E] *)
   | Pexp_pack of module_expr * package_type option
@@ -440,6 +434,17 @@ and expression_desc =
             - [let* P0 = E00 and* P1 = E01 in E1] *)
   | Pexp_extension of extension  (** [[%id]] *)
   | Pexp_unreachable  (** [.] *)
+
+and expr_poly =
+  {
+    pep_expr : expression;
+    pep_typ : core_type option;
+    pep_loc : Location.t;
+  }
+(** Used for method bodies.
+    Can only be used as the expression under
+    {{!class_field_kind.Cfk_concrete}[Cfk_concrete]} for methods (not
+    values). *)
 
 and case =
     {
@@ -848,7 +853,7 @@ and class_field_desc =
                    when [flag] is {{!Asttypes.override_flag.Override}[Override]}
                     and [s] is [Some x]
   *)
-  | Pcf_val of (label loc * mutable_flag * class_field_kind)
+  | Pcf_val of (label loc * mutable_flag * expression class_field_kind)
       (** [Pcf_val(x,flag, kind)] represents:
             - [val x = E]
        when [flag] is {{!Asttypes.mutable_flag.Immutable}[Immutable]}
@@ -863,9 +868,9 @@ and class_field_desc =
        when [flag] is {{!Asttypes.mutable_flag.Mutable}[Mutable]}
         and [kind] is {{!class_field_kind.Cfk_virtual}[Cfk_virtual(T)]}
   *)
-  | Pcf_method of (label loc * private_flag * class_field_kind)
+  | Pcf_method of (label loc * private_flag * expr_poly class_field_kind)
       (** - [method x = E]
-                        ([E] can be a {{!expression_desc.Pexp_poly}[Pexp_poly]})
+                        ([E] is a {{!expr_poly}[expr_poly]})
             - [method virtual x: T]
                         ([T] can be a {{!core_type_desc.Ptyp_poly}[Ptyp_poly]})
   *)
@@ -874,9 +879,9 @@ and class_field_desc =
   | Pcf_attribute of attribute  (** [[\@\@\@id]] *)
   | Pcf_extension of extension  (** [[%%id]] *)
 
-and class_field_kind =
+and 'a class_field_kind =
   | Cfk_virtual of core_type
-  | Cfk_concrete of override_flag * expression
+  | Cfk_concrete of override_flag * 'a
 
 and class_declaration = class_expr class_infos
 

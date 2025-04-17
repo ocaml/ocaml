@@ -38,6 +38,7 @@ val transl_extension_constructor: scopes:scopes ->
   extension_constructor -> lambda
 
 val transl_scoped_exp : scopes:scopes -> expression -> lambda
+val transl_scoped_exp_poly : scopes:scopes -> expr_poly -> lambda
 
 type error =
     Free_super_var

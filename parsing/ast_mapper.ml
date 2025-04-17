@@ -50,6 +50,7 @@ type mapper = {
                            -> constructor_declaration;
   directive_argument: mapper -> directive_argument -> directive_argument;
   expr: mapper -> expression -> expression;
+  expr_poly: mapper -> expr_poly -> expr_poly;
   extension: mapper -> extension -> extension;
   extension_constructor: mapper -> extension_constructor
                          -> extension_constructor;
@@ -521,8 +522,6 @@ module E = struct
           (sub.expr sub e)
     | Pexp_assert e -> assert_ ~loc ~attrs (sub.expr sub e)
     | Pexp_lazy e -> lazy_ ~loc ~attrs (sub.expr sub e)
-    | Pexp_poly (e, t) ->
-        poly ~loc ~attrs (sub.expr sub e) (map_opt (sub.typ sub) t)
     | Pexp_object cls -> object_ ~loc ~attrs (sub.class_structure sub cls)
     | Pexp_newtype (s, e) ->
         newtype ~loc ~attrs (map_loc sub s) (sub.expr sub e)
@@ -544,6 +543,10 @@ module E = struct
     let exp = sub.expr sub pbop_exp in
     let loc = sub.location sub pbop_loc in
     binding_op op pat exp loc
+
+  let map_expr_poly sub ep =
+    Exp.poly ~loc:(sub.location sub ep.pep_loc)
+      (sub.expr sub ep.pep_expr) (map_opt (sub.typ sub) ep.pep_typ)
 
 end
 
@@ -616,8 +619,8 @@ module CE = struct
     | Pcl_open (o, ce) ->
         open_ ~loc ~attrs (sub.open_description sub o) (sub.class_expr sub ce)
 
-  let map_kind sub = function
-    | Cfk_concrete (o, e) -> Cfk_concrete (o, sub.expr sub e)
+  let map_kind sub sub_e = function
+    | Cfk_concrete (o, e) -> Cfk_concrete (o, sub_e sub e)
     | Cfk_virtual t -> Cfk_virtual (sub.typ sub t)
 
   let map_field sub {pcf_desc = desc; pcf_loc = loc; pcf_attributes = attrs} =
@@ -628,9 +631,10 @@ module CE = struct
     | Pcf_inherit (o, ce, s) ->
         inherit_ ~loc ~attrs o (sub.class_expr sub ce)
           (map_opt (map_loc sub) s)
-    | Pcf_val (s, m, k) -> val_ ~loc ~attrs (map_loc sub s) m (map_kind sub k)
+    | Pcf_val (s, m, k) ->
+        val_ ~loc ~attrs (map_loc sub s) m (map_kind sub sub.expr k)
     | Pcf_method (s, p, k) ->
-        method_ ~loc ~attrs (map_loc sub s) p (map_kind sub k)
+        method_ ~loc ~attrs (map_loc sub s) p (map_kind sub sub.expr_poly k)
     | Pcf_constraint (t1, t2) ->
         constraint_ ~loc ~attrs (sub.typ sub t1) (sub.typ sub t2)
     | Pcf_initializer e -> initializer_ ~loc ~attrs (sub.expr sub e)
@@ -700,6 +704,7 @@ let default_mapper =
 
     pat = P.map;
     expr = E.map;
+    expr_poly = E.map_expr_poly;
     binding_op = E.map_binding_op;
 
     module_declaration =

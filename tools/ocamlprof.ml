@@ -291,8 +291,6 @@ and rw_exp iflag sexp =
 
   | Pexp_lazy (expr) -> rewrite_exp iflag expr
 
-  | Pexp_poly (sexp, _) -> rewrite_exp iflag sexp
-
   | Pexp_object cl ->
       List.iter (rewrite_class_field iflag) cl.pcstr_fields
 
@@ -345,9 +343,9 @@ and rewrite_class_field iflag cf =
   | Pcf_val (_, _, Cfk_concrete (_, sexp))  -> rewrite_exp iflag sexp
   | Pcf_method (_, _,
        Cfk_concrete (_,
-        ({pexp_desc = (Pexp_function _)} as sexp))) ->
+        {pep_expr = {pexp_desc = (Pexp_function _)} as sexp; _})) ->
       rewrite_exp iflag sexp
-  | Pcf_method (_, _, Cfk_concrete(_, sexp)) ->
+  | Pcf_method (_, _, Cfk_concrete(_, {pep_expr = sexp; _})) ->
       let loc = cf.pcf_loc in
       if !instr_fun && not loc.loc_ghost then insert_profile rw_exp sexp
       else rewrite_exp iflag sexp

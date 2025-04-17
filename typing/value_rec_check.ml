@@ -983,9 +983,9 @@ and class_field : Typedtree.class_field -> term_judg =
     | Tcf_inherit (_, ce, _super, _inh_vars, _inh_meths) ->
       class_expr ce << Dereference
     | Tcf_val (_lab, _mut, _, cfk, _) ->
-      class_field_kind cfk
+      class_field_kind expression cfk
     | Tcf_method (_, _, cfk) ->
-      class_field_kind cfk
+      class_field_kind (fun e -> expression e.ep_expr) cfk
     | Tcf_constraint _ ->
       empty
     | Tcf_initializer e ->
@@ -993,12 +993,13 @@ and class_field : Typedtree.class_field -> term_judg =
     | Tcf_attribute _ ->
       empty
 
-and class_field_kind : Typedtree.class_field_kind -> term_judg =
-  fun cfk -> match cfk with
+and class_field_kind
+  : type e. (e -> term_judg) -> e Typedtree.class_field_kind -> term_judg =
+  fun expr_judg cfk -> match cfk with
     | Tcfk_virtual _ ->
       empty
     | Tcfk_concrete (_, e) ->
-      expression e << Dereference
+      expr_judg e << Dereference
 
 and modexp : Typedtree.module_expr -> term_judg =
   fun mexp -> match mexp.mod_desc with

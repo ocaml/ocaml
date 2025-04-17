@@ -265,12 +265,14 @@ let type_constraint val_env sty sty' loc =
   end;
   (cty, cty')
 
-let make_method loc cl_num expr =
+let self_pat loc cl_num =
   let open Ast_helper in
   let mkid s = mkloc s loc in
-  let pat =
-    Pat.alias ~loc (Pat.var ~loc (mkid "self-*")) (mkid ("self-" ^ cl_num))
-  in
+  Pat.alias ~loc (Pat.var ~loc (mkid "self-*")) (mkid ("self-" ^ cl_num))
+
+let make_method loc cl_num expr =
+  let open Ast_helper in
+  let pat = self_pat loc cl_num in
   Exp.function_ ~loc:expr.pexp_loc
     [ { pparam_desc = Pparam_val (Nolabel, None, pat);
         pparam_loc = pat.ppat_loc;
@@ -540,7 +542,8 @@ type intermediate_class_field =
       { label : string loc;
         priv : private_flag;
         override : override_flag;
-        sdefinition : Parsetree.expression;
+        self_pat : Parsetree.pattern;
+        sdefinition : Parsetree.expr_poly;
         warning_state : Warnings.state;
         loc : Location.t;
         attributes : attribute list; }
@@ -747,16 +750,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
                raise(Error(loc, val_env, No_overriding("method", label.txt)))
              end
            end;
-           let expr =
-             match expr.pexp_desc with
-             | Pexp_poly _ -> expr
-             | _ -> Ast_helper.Exp.poly ~loc:expr.pexp_loc expr None
-           in
-           let sbody, sty =
-             match expr.pexp_desc with
-             | Pexp_poly (sbody, sty) -> sbody, sty
-             | _ -> assert false
-           in
+           let sbody = expr.pep_expr and sty = expr.pep_typ in
            let ty =
              match sty with
              | None -> Ctype.newvar ()
@@ -784,11 +778,11 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
                raise(Error(loc, val_env,
                            Field_type_mismatch ("method", label.txt, err)))
            end;
-           let sdefinition = make_method self_loc cl_num expr in
            let warning_state = Warnings.backup () in
            let field =
              Concrete_method
-               { label; priv; override; sdefinition;
+               { label; priv; override; self_pat = self_pat self_loc cl_num;
+                 sdefinition = expr;
                  warning_state; loc; attributes }
            in
            let rev_fields = field :: rev_fields in
@@ -902,19 +896,16 @@ and class_field_second_pass cl_num sign met_env field =
       let kind = Tcfk_virtual cty in
       let desc = Tcf_method(label, priv, kind) in
       met_env, mkcf desc loc attributes
-  | Concrete_method { label; priv; override;
+  | Concrete_method { label; priv; override; self_pat;
                       sdefinition; warning_state; loc; attributes } ->
       Warnings.with_state warning_state
         (fun () ->
            let ty = Btype.method_type label.txt sign in
            let self_type = sign.Types.csig_self in
-           let meth_type =
-             mk_expected
-               (Btype.newgenty (Tarrow(Nolabel, self_type, ty, commu_ok)))
-           in
            let texp =
              Ctype.with_raised_nongen_level
-               (fun () -> type_expect met_env sdefinition meth_type) in
+               (fun () -> poly_expect met_env sdefinition self_pat self_type ty)
+           in
            let kind = Tcfk_concrete (override, texp) in
            let desc = Tcf_method(label, priv, kind) in
            met_env, mkcf desc loc attributes)

@@ -37,6 +37,7 @@ type mapper =
     class_type_field: mapper -> class_type_field -> class_type_field;
     env: mapper -> Env.t -> Env.t;
     expr: mapper -> expression -> expression;
+    expr_poly: mapper -> expr_poly -> expr_poly;
     extension_constructor: mapper -> extension_constructor ->
       extension_constructor;
     location: mapper -> Location.t -> Location.t;
@@ -345,7 +346,6 @@ let extra sub = function
   | Texp_coerce (cty1, cty2) ->
     Texp_coerce (Option.map (sub.typ sub) cty1, sub.typ sub cty2)
   | Texp_newtype _ as d -> d
-  | Texp_poly cto -> Texp_poly (Option.map (sub.typ sub) cto)
 
 let function_body sub body =
   match body with
@@ -515,6 +515,14 @@ let expr sub x =
   let exp_attributes = sub.attributes sub x.exp_attributes in
   {x with exp_loc; exp_extra; exp_desc; exp_env; exp_attributes}
 
+let expr_poly sub x =
+  {
+    ep_loc = sub.location sub x.ep_loc;
+    ep_expr = sub.expr sub x.ep_expr;
+    ep_env = sub.env sub x.ep_env;
+    ep_param = function_param sub x.ep_param;
+    ep_typ = Option.map (sub.typ sub) x.ep_typ;
+  }
 
 let package_type sub x =
   let tpt_txt = map_loc_lid sub x.tpt_txt in
@@ -832,9 +840,9 @@ let object_field sub x =
   let of_attributes = sub.attributes sub x.of_attributes in
   {of_loc; of_desc; of_attributes}
 
-let class_field_kind sub = function
+let class_field_kind sub sub_e = function
   | Tcfk_virtual ct -> Tcfk_virtual (sub.typ sub ct)
-  | Tcfk_concrete (ovf, e) -> Tcfk_concrete (ovf, sub.expr sub e)
+  | Tcfk_concrete (ovf, e) -> Tcfk_concrete (ovf, sub_e sub e)
 
 let class_field sub x =
   let cf_loc = sub.location sub x.cf_loc in
@@ -848,9 +856,9 @@ let class_field sub x =
           sub.typ sub cty'
         )
     | Tcf_val (s, mf, id, k, b) ->
-        Tcf_val (map_loc sub s, mf, id, class_field_kind sub k, b)
+        Tcf_val (map_loc sub s, mf, id, class_field_kind sub sub.expr k, b)
     | Tcf_method (s, priv, k) ->
-        Tcf_method (map_loc sub s, priv, class_field_kind sub k)
+        Tcf_method (map_loc sub s, priv, class_field_kind sub sub.expr_poly k)
     | Tcf_initializer exp ->
         Tcf_initializer (sub.expr sub exp)
     | Tcf_attribute attr ->
@@ -899,6 +907,7 @@ let default =
     class_type_field;
     env;
     expr;
+    expr_poly;
     extension_constructor;
     location;
     module_binding;

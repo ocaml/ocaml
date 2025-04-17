@@ -258,6 +258,10 @@ let re node =
   Cmt_format.add_saved_type (Cmt_format.Partial_expression node);
   node
 
+let rpe node =
+  Cmt_format.add_saved_type (Cmt_format.Partial_expr_poly node);
+  node
+
 let rp node =
   Cmt_format.add_saved_type (Cmt_format.Partial_pattern (Value, node));
   node
@@ -4625,48 +4629,6 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
-  | Pexp_poly(sbody, sty) ->
-      let ty, cty =
-        with_local_level_generalize_structure_if_principal
-          begin fun () ->
-            match sty with None -> protect_expansion env ty_expected, None
-            | Some sty ->
-                let sty = Ast_helper.Typ.force_poly sty in
-                let cty = Typetexp.transl_simple_type env ~closed:false sty in
-                cty.ctyp_type, Some cty
-          end
-      in
-      if sty <> None then
-        with_explanation (fun () ->
-          unify_exp_types loc env (instance ty) (instance ty_expected));
-      let exp =
-        match get_desc (expand_head env ty) with
-          Tpoly (ty', []) ->
-            let exp = type_expect env sbody (mk_expected ty') in
-            { exp with exp_type = instance ty }
-        | Tpoly (ty', tl) ->
-            (* One more level to generalize locally *)
-            let (exp, vars) =
-              with_local_level_generalize begin fun () ->
-                let vars, ty'' =
-                  with_local_level_generalize_structure_if_principal
-                    (fun () -> instance_poly ~fixed:true tl ty')
-                in
-                let exp = type_expect env sbody (mk_expected ty'') in
-                (exp, vars)
-              end
-            in
-            check_univars env "method" exp ty_expected vars;
-            { exp with exp_type = instance ty }
-        | Tvar _ ->
-            let exp = type_exp env sbody in
-            let exp = {exp with exp_type = newty (Tpoly (exp.exp_type, []))} in
-            unify_exp ~sexp env exp ty;
-            exp
-        | _ -> assert false
-      in
-      re { exp with exp_extra =
-             (Texp_poly cty, loc, sexp.pexp_attributes) :: exp.exp_extra }
   | Pexp_newtype(name, sbody) ->
       let body, ety = type_newtype env name (fun env ->
         let expr = type_exp env sbody in
@@ -6714,6 +6676,107 @@ and type_send env loc explanation e met =
         Tmeth_name met, ty
   in
   (obj,meth,typ)
+
+let poly_expect_expr env sexp ty_expected_explained =
+  let {pep_expr = sbody; pep_typ = sty; pep_loc = loc} = sexp in
+  let { ty = ty_expected; explanation } = ty_expected_explained in
+  let ty, cty =
+    with_local_level_generalize_structure_if_principal
+      begin fun () ->
+        match sty with None -> protect_expansion env ty_expected, None
+        | Some sty ->
+            let sty = Ast_helper.Typ.force_poly sty in
+            let cty = Typetexp.transl_simple_type env ~closed:false sty in
+            cty.ctyp_type, Some cty
+      end
+  in
+  if sty <> None then
+    with_explanation explanation (fun () ->
+      unify_exp_types loc env (instance ty) (instance ty_expected));
+  let exp =
+    match get_desc (expand_head env ty) with
+      Tpoly (ty', []) ->
+        let exp = type_expect env sbody (mk_expected ty') in
+        { exp with exp_type = instance ty }
+    | Tpoly (ty', tl) ->
+        (* One more level to generalize locally *)
+        let (exp, vars) =
+          with_local_level_generalize begin fun () ->
+            let vars, ty'' =
+              with_local_level_generalize_structure_if_principal
+                (fun () -> instance_poly ~fixed:true tl ty')
+            in
+            let exp = type_expect env sbody (mk_expected ty'') in
+            (exp, vars)
+          end
+        in
+        check_univars env "method" exp ty_expected vars;
+        { exp with exp_type = instance ty }
+    | Tvar _ ->
+        let exp = type_exp env sbody in
+        let exp = {exp with exp_type = newty (Tpoly (exp.exp_type, []))} in
+        unify_exp ~sexp:sbody env exp ty;
+        exp
+    | _ ->
+      Format.printf "%a\n" Rawprinttyp.type_expr ty;
+      assert false
+  in
+  (exp, cty)
+
+let poly_expect_ env sexp pat ty_arg ty_expected_explained =
+  let (exp, cty, pat), partial =
+    (* Check everything else in the scope of the parameter. *)
+    map_half_typed_cases Value env ty_arg (Ctype.newvar ()) pat.ppat_loc
+      ~check_if_total:true
+      (* We don't make use of [case_data] here so we pass unit. *)
+      [ { pattern = pat; has_guard = false; needs_refute = false }, () ]
+      ~type_body:begin
+        fun () pat ~when_env:_ ~ext_env ~cont:_ ~ty_expected:_ ~ty_infer:_
+          ~contains_gadt:_ ->
+          let exp, cty =
+            poly_expect_expr ext_env sexp ty_expected_explained
+          in
+          (exp, cty, pat)
+      end
+    |> function
+      (* The result must be a singleton because we passed a singleton
+        list above. *)
+      | [ result ], partial -> result, partial
+      | ([] | _ :: _ :: _), _ -> assert false
+  in
+  let fp_kind, fp_param =
+        let param = name_pattern "param" [ pat ] in
+        Tparam_pat pat, param
+  in
+  let param =
+    { fp_kind;
+      fp_arg_label = Nolabel;
+      fp_param;
+      fp_partial = partial;
+      fp_newtypes = [];
+      fp_loc = sexp.pep_loc;
+    }
+  in
+  rpe {
+    ep_expr = exp;
+    ep_typ = cty;
+    ep_env = env;
+    ep_param = param;
+    ep_loc = sexp.pep_loc;
+  }
+
+
+let poly_expect env sexp pat ty_arg ty_expected =
+  let previous_saved_types = Cmt_format.get_saved_types () in
+  let exp =
+    Builtin_attributes.warning_scope []
+      (fun () ->
+         poly_expect_ env sexp pat ty_arg (mk_expected ty_expected)
+      )
+  in
+  Cmt_format.set_saved_types
+    (Cmt_format.Partial_expr_poly exp :: previous_saved_types);
+  exp
 
 (* Typing of toplevel bindings *)
 

@@ -2093,24 +2093,28 @@ method_:
   | override_flag attributes private_flag mkrhs(label) strict_binding
       { let e = $5 in
         let loc = Location.(e.pexp_loc.loc_start, e.pexp_loc.loc_end) in
+        let expr_poly = {pep_expr = e; pep_loc = ghost_loc loc; pep_typ = None}
+        in
         ($4, $3,
-        Cfk_concrete ($1, ghexp ~loc (Pexp_poly (e, None)))), $2 }
+        Cfk_concrete ($1, expr_poly)), $2 }
   | override_flag attributes private_flag mkrhs(label)
     COLON poly_type EQUAL seq_expr
-      { let poly_exp =
-          let loc = ($startpos($6), $endpos($8)) in
-          ghexp ~loc (Pexp_poly($8, Some $6)) in
+      { let poly_exp = {
+          pep_expr = $8; pep_loc = ghost_loc ($startpos($6), $endpos($8));
+          pep_typ = Some $6;
+        } in
         ($4, $3, Cfk_concrete ($1, poly_exp)), $2 }
   | override_flag attributes private_flag mkrhs(label) COLON TYPE lident_list
     DOT core_type EQUAL seq_expr
-      { let poly_exp_loc = ($startpos($7), $endpos($11)) in
+      { let pep_loc = ghost_loc ($startpos($7), $endpos($11)) in
         let poly_exp =
           let exp, poly =
-            (* it seems odd to use the global ~loc here while poly_exp_loc
+            (* it seems odd to use the global ~loc here while pep_loc
                is tighter, but this is what ocamlyacc does;
                TODO improve parser.mly *)
             wrap_type_annotation ~loc:$sloc $7 $9 $11 in
-          ghexp ~loc:poly_exp_loc (Pexp_poly(exp, Some poly)) in
+          { pep_expr = exp; pep_loc; pep_typ = Some poly }
+        in
         ($4, $3,
         Cfk_concrete ($1, poly_exp)), $2 }
 ;

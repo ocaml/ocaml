@@ -131,29 +131,6 @@ let rec cut n l =
   match l with [] -> failwith "Translcore.cut"
   | a::l -> let (l1,l2) = cut (n-1) l in (a::l1,l2)
 
-(* [fuse_method_arity] is what ensures that a n-ary method is compiled as a
-   (n+1)-ary function, where the first parameter is self. It fuses together the
-   self and method parameters.
-
-   Input:  fun self -> fun method_param_1 ... method_param_n -> body
-   Output: fun self method_param_1 ... method_param_n -> body
-
-   It detects whether the AST is a method by the presence of [Texp_poly] on the
-   inner function. This is only ever added to methods.
-*)
-let fuse_method_arity parent_params parent_body =
-  match parent_body with
-  | Tfunction_body
-      { exp_desc = Texp_function (method_params, method_body);
-        exp_extra;
-      }
-      when
-        List.exists
-          (function (Texp_poly _, _, _) -> true | _ -> false)
-          exp_extra
-    -> parent_params @ method_params, method_body
-  | _ -> parent_params, parent_body
-
 (* Translation of expressions *)
 
 let rec iter_exn_names f pat =
@@ -900,7 +877,6 @@ and transl_function ~scopes e params body =
   let ((kind, params, return), body) =
     event_function ~scopes e
       (function repr ->
-         let params, body = fuse_method_arity params body in
          transl_function_without_attributes ~scopes e.exp_loc repr params body)
   in
   let attr = function_attribute_disallowing_arity_fusion in
@@ -915,7 +891,7 @@ and transl_function ~scopes e params body =
       (fun attrs (extra_exp, _, extra_attrs) ->
          match extra_exp with
          | Texp_newtype _ -> extra_attrs @ attrs
-         | (Texp_constraint _ | Texp_coerce _ | Texp_poly _) -> attrs)
+         | (Texp_constraint _ | Texp_coerce _) -> attrs)
       e.exp_attributes e.exp_extra
   in
   Translattribute.add_function_attributes lam e.exp_loc attrs
@@ -1300,6 +1276,15 @@ and transl_letop ~scopes loc env let_ ands param case partial =
   }
 
 (* Wrapper for class compilation *)
+
+let transl_scoped_exp_poly ~scopes ep =
+  let params, body = match ep.ep_expr.exp_desc with
+    | Texp_function (params, body) ->
+      (ep.ep_param :: params, body)
+    | _ -> [ep.ep_param], Tfunction_body ep.ep_expr
+  in
+  Translobj.oo_wrap ep.ep_env true
+      (transl_function ~scopes ep.ep_expr params) body
 
 (*
 let transl_exp = transl_exp_wrap
