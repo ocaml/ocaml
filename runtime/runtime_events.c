@@ -595,7 +595,7 @@ static void write_to_ring(ev_category category, ev_message_type type,
   ring_ptr[ring_tail_offset++] = RUNTIME_EVENTS_HEADER(
                                   length_with_header_ts,
                                   category == EV_RUNTIME,
-                                  (type.runtime | type.user),
+                                  (category == EV_RUNTIME ? type.runtime : type.user),
                                   event_id);
 
   ring_ptr[ring_tail_offset++] = timestamp;
