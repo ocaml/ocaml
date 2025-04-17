@@ -1019,7 +1019,7 @@ let rec generalize_class_type gen =
       generalize_class_type gen cty
 
 (* used for quantified_expression *)
-let generic_free_variables t = 
+let generic_free_variables t =
   let fvars = free_variables t in
   List.filter (fun v -> get_level v = generic_level) fvars
 
