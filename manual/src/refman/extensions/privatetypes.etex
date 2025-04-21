@@ -53,9 +53,9 @@ because client of the "M" module must use the "b" function to construct
 
 \begin{caml_example*}{verbatim}[error]
 (* this function compiles because it only uses pattern-matching *)
-let test = function
-  | M.A -> "A"
-  | M.B _ -> "B"
+let to_string = function
+  | M.A -> "M.A"
+  | M.B _ -> "M.B"
 
 (* this one does not because it constructs a type *)
 let make_b = M.B (-1)
