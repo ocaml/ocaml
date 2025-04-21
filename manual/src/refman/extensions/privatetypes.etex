@@ -61,6 +61,11 @@ let to_string = function
 let make_b = M.B (-1)
 \end{caml_example*}
 
+Note that if the type is marked as private \emph{in the implementation},
+constructing a type is no longer possible within the implementation. It can
+be usefull when types are created externally (C extension) or used as
+marker in a GADT.
+
 With respect to the variance of their parameters, private types are
 handled like abstract types. That is, if a private type has
 parameters, their variance is the one explicitly given by prefixing
