@@ -74,18 +74,18 @@ Error: Uninterpreted extension 'ext'.
 
 let rec f x = ( (), () : _ -> _ -> _ )
 [%%expect{|
-Line 3, characters 14-38:
+Line 3, characters 16-22:
 3 | let rec f x = ( (), () : _ -> _ -> _ )
-                  ^^^^^^^^^^^^^^^^^^^^^^^^
+                    ^^^^^^
 Error: This expression has type "'a * 'b"
        but an expression was expected of type "'c -> 'd -> 'e"
 |}]
 
 let rec g x = ( ((), ()) : _ -> _ :> _ )
 [%%expect{|
-Line 1, characters 14-40:
+Line 1, characters 16-24:
 1 | let rec g x = ( ((), ()) : _ -> _ :> _ )
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+                    ^^^^^^^^
 Error: This expression has type "'a * 'b"
        but an expression was expected of type "'c -> 'd"
 |}]

@@ -3227,95 +3227,137 @@ let rec approx_type env sty =
       approx_type env sty
   | _ -> newvar ()
 
-let type_pattern_approx env spat =
+let type_pattern_approx env spat ty_expected =
   match spat.ppat_desc with
-  | Ppat_constraint (_, sty) -> approx_type env sty
-  | _ -> newvar ()
+  | Ppat_constraint (_, sty) ->
+      let inferred_ty = approx_type env sty in
+      begin try unify_pat_types spat.ppat_loc env inferred_ty ty_expected
+        with Unify trace ->
+        raise(Error(spat.ppat_loc, env, Pattern_type_clash(trace, None)))
+      end;
+  | _ -> ()
 
-let type_approx_fun env label default spat ret_ty =
-  let ty = type_pattern_approx env spat in
-  let ty =
-    match label, default with
-    | (Nolabel | Labelled _), _ -> ty
-    | Optional _, None ->
-       unify_pat_types spat.ppat_loc env ty (type_option (newvar ()));
-       ty
-    | Optional _, Some _ ->
-       type_option ty
+let type_approx_fun_one_param
+  env label default spato ty_expected ~first ~in_function =
+  let ty_arg, ty_ret =
+    try filter_arrow env ty_expected label
+    with Filter_arrow_failed err ->
+      let loc_fun, ty_fun = in_function in
+      let err =
+        error_of_filter_arrow_failure ~explanation:None ty_fun err ~first
+      in
+      raise (Error(loc_fun, env, err))
   in
-  newty (Tarrow (label, ty, ret_ty, commu_ok))
+  let () =
+    match spato with
+    | None -> ()
+    | Some spat ->
+        let ty_arg =
+        match label, default with
+        | (Nolabel | Labelled _), _ -> ty_arg
+        | Optional _, None ->
+          unify_pat_types spat.ppat_loc env ty_arg (type_option (newvar ()));
+          ty_arg
+        | Optional _, Some _ ->
+          let var = newvar () in
+          unify_pat_types spat.ppat_loc env ty_arg (type_option var);
+          var
+        in
+        type_pattern_approx env spat ty_arg;
+  in
+  ty_ret
 
-let type_approx_constraint env ty constraint_ ~loc =
+let type_approx_constraint env constraint_ ~loc ty_expected =
   match constraint_ with
   | Pconstraint constrain ->
       let ty_constrain = approx_type env constrain in
-      begin try unify env ty ty_constrain with Unify err ->
+      begin try unify env ty_constrain ty_expected with Unify err ->
         raise (Error (loc, env, Expr_type_clash (err, None, None)))
       end;
       ty_constrain
-  | Pcoerce (constrain, coerce) ->
-      let approx_ty_opt = function
-        | None -> newvar ()
-        | Some sty -> approx_type env sty
-      in
-      let ty_constrain = approx_ty_opt constrain
-      and ty_coerce = approx_type env coerce in
-      begin try unify env ty ty_constrain with Unify err ->
+  | Pcoerce (_constrain, coerce) ->
+      let ty_coerce = approx_type env coerce in
+      begin try unify env ty_coerce ty_expected with Unify err ->
         raise (Error (loc, env, Expr_type_clash (err, None, None)))
       end;
-      ty_coerce
+      ty_expected
 
-let type_approx_constraint_opt env ty constraint_ ~loc =
+let type_approx_constraint_opt env constraint_ ~loc ty_expected =
   match constraint_ with
-  | None -> ty
-  | Some constraint_ -> type_approx_constraint env ty constraint_ ~loc
+  | None -> ty_expected
+  | Some constraint_ -> type_approx_constraint env constraint_ ~loc ty_expected
 
-let rec type_approx env sexp =
+let rec type_approx env sexp ty_expected =
   let loc = sexp.pexp_loc in
   match sexp.pexp_desc with
-    Pexp_let (_, _, e) -> type_approx env e
+    Pexp_let (_, _, e) -> type_approx env e ty_expected
   | Pexp_function (params, c, body) ->
-      type_approx_function env params c body ~loc
-  | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e
-  | Pexp_try (e, _) -> type_approx env e
-  | Pexp_tuple l ->
-    let labeled_tys = List.map (fun (label, _) -> label, newvar ()) l in
-    newty (Ttuple labeled_tys)
-  | Pexp_ifthenelse (_,e,_) -> type_approx env e
-  | Pexp_sequence (_,e) -> type_approx env e
+      type_approx_function env params c body ty_expected ~loc
+  | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e ty_expected
+  | Pexp_try (e, _) -> type_approx env e ty_expected
+  | Pexp_tuple l -> type_tuple_approx env sexp.pexp_loc ty_expected l
+  | Pexp_ifthenelse (_,e,_) -> type_approx env e ty_expected
+  | Pexp_sequence (_,e) -> type_approx env e ty_expected
   | Pexp_constraint (e, sty) ->
-      let ty = type_approx env e in
-      type_approx_constraint env ty (Pconstraint sty) ~loc
-  | Pexp_coerce (e, sty1, sty2) ->
-      let ty = type_approx env e in
-      type_approx_constraint env ty (Pcoerce (sty1, sty2)) ~loc
+      let ty_expected =
+        type_approx_constraint env (Pconstraint sty) ~loc ty_expected
+      in
+      type_approx env e ty_expected
+  | Pexp_coerce (_, sty1, sty2) ->
+      ignore @@
+      type_approx_constraint env (Pcoerce (sty1, sty2)) ~loc ty_expected
   | Pexp_pack (_, Some ptyp) ->
-      let ty = newvar () in
       let sty = Ast_helper.Typ.package ~loc ptyp in
-      type_approx_constraint env ty (Pconstraint sty) ~loc
-  | _ -> newvar ()
+      ignore @@
+      type_approx_constraint env (Pconstraint sty) ~loc ty_expected
+  | _ -> ()
 
-and type_approx_function env params c body ~loc =
-  (* We can approximate types up to the first newtype parameter, whereupon
-     we give up.
-  *)
-  match params with
-  | { pparam_desc = Pparam_val (label, default, pat) } :: params ->
-      type_approx_fun env label default pat
-        (type_approx_function env params c body ~loc)
-  | { pparam_desc = Pparam_newtype _ } :: _ ->
-      newvar ()
-  | [] ->
-    let body_ty =
-      match body with
-      | Pfunction_body body ->
-          type_approx env body
-      | Pfunction_cases ({pc_rhs = e} :: _, _, _) ->
-          newty (Tarrow (Nolabel, newvar (), type_approx env e, commu_ok))
-      | Pfunction_cases ([], _, _) ->
-          newvar ()
-    in
-    type_approx_constraint_opt env body_ty c ~loc
+and type_tuple_approx (env: Env.t) loc ty_expected l =
+  let labeled_tys = List.map (fun (label, _) -> label, newvar ()) l in
+  let ty = newty (Ttuple labeled_tys) in
+  begin try unify env ty ty_expected with Unify err ->
+    raise(Error(loc, env, Expr_type_clash (err, None, None)))
+  end;
+  List.iter2
+    (fun (_, e) (_, ty) -> type_approx env e ty)
+    l labeled_tys
+
+and type_approx_function =
+  let rec loop env params c body ty_expected ~in_function ~first =
+    let loc_function, _ = in_function in
+    let loc = loc_rest_of_function ~first ~loc_function params body in
+    (* We can approximate types up to the first newtype parameter, whereupon
+      we give up.
+    *)
+    match params with
+    | { pparam_desc = Pparam_val (label, default, pat) } :: params ->
+        let ty_res =
+          type_approx_fun_one_param env label default (Some pat) ty_expected
+            ~first ~in_function
+        in
+        loop env params c body ty_res ~in_function ~first:false
+    | { pparam_desc = Pparam_newtype _ } :: _ -> ()
+    | [] ->
+        (* In the [Pconstraint] case, we override the [ty_expected] that
+          gets passed to the approximating of the rest of the type.
+        *)
+        let ty_expected =
+          type_approx_constraint_opt env c ty_expected ~loc
+        in
+        match body with
+        | Pfunction_body body ->
+            type_approx env body ty_expected
+        | Pfunction_cases ({pc_rhs = e} :: _, _, _) ->
+            let ty_res =
+              type_approx_fun_one_param env Nolabel None None ty_expected
+                ~in_function ~first
+            in
+            type_approx env e ty_res
+        | Pfunction_cases ([], _, _) ->  ()
+  in
+  fun env params c body ~loc ty_expected : unit ->
+    loop env params c body ty_expected
+      ~in_function:(loc, ty_expected) ~first:true
 
 (* Check that all univars are safe in a type. Both exp.exp_type and
    ty_expected should already be generalized. *)
@@ -6394,7 +6436,7 @@ and type_let ?check ?check_strict
                   | _ -> pat
                 in
                 let bound_expr = vb_exp_constraint binding in
-                unify_pat env pat (type_approx env bound_expr))
+                type_approx env bound_expr pat.pat_type)
               pat_list spat_sexp_list;
           (* Polymorphic variant processing *)
           List.iter
