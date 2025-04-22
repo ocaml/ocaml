@@ -3192,6 +3192,21 @@ let check_recursive_class_bindings env ids exprs =
          raise(Error(expr.cl_loc, env, Illegal_class_expr)))
     exprs
 
+(* The "rest of the function" extends from the start of the first parameter
+   to the end of the overall function. The parser does not construct such
+   a location so we forge one for type errors.
+*)
+let loc_rest_of_function
+    ~(loc_function : Location.t) ~first params_suffix body : Location.t
+  =
+  match params_suffix, body with
+  | { pparam_loc } :: _, _ ->
+      if first then loc_function else
+        let loc_start = pparam_loc.loc_start in
+        { loc_start; loc_end = loc_function.loc_end; loc_ghost = true }
+  | [], Pfunction_body pexp -> pexp.pexp_loc
+  | [], Pfunction_cases (_, loc_cases, _) -> loc_cases
+
 (* Approximate the type of an expression, for better recursion *)
 
 let rec approx_type env sty =
@@ -5135,14 +5150,7 @@ and type_function
      a location so we forge one for type errors.
   *)
   let loc : Location.t =
-    match params_suffix, body with
-    | param :: _, _ ->
-        { loc_start = param.pparam_loc.loc_start;
-          loc_end = loc_function.loc_end;
-          loc_ghost = true;
-        }
-    | [], Pfunction_body pexp -> pexp.pexp_loc
-    | [], Pfunction_cases (_, loc_cases, _) -> loc_cases
+    loc_rest_of_function ~loc_function ~first params_suffix body
   in
   match params_suffix with
   | { pparam_desc = Pparam_newtype newtype; pparam_loc = _ } :: rest ->
