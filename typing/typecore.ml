@@ -217,6 +217,18 @@ let not_principal fmt =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
+let error_of_filter_arrow_failure ~explanation ~first ty_fun
+  : filter_arrow_failure -> _ = function
+  | Unification_error unif_err ->
+      Expr_type_clash(unif_err, explanation, None)
+  | Label_mismatch { got; expected; expected_type} ->
+      Abstract_wrong_label { got; expected; expected_type; explanation }
+  | Not_a_function -> begin
+      if first
+      then Not_a_function(ty_fun, explanation)
+      else Too_many_arguments(ty_fun, explanation)
+    end
+
 (* Forward declaration, to be filled in by Typemod.type_module *)
 
 let type_module =
@@ -5078,16 +5090,9 @@ and split_function_ty env ty_expected ~arg_label ~first ~in_function =
     let ty_arg, ty_res =
       try filter_arrow env (instance ty_expected) arg_label
       with Filter_arrow_failed err ->
-        let err = match err with
-        | Unification_error unif_err ->
-            Expr_type_clash (unif_err, explanation, None)
-        | Label_mismatch { got; expected; expected_type } ->
-            Abstract_wrong_label { got; expected; expected_type; explanation }
-        | Not_a_function ->
-            if first
-            then Not_a_function (ty_fun, explanation)
-            else Too_many_arguments (ty_fun, explanation)
-        in
+      let err =
+        error_of_filter_arrow_failure ~explanation ty_fun err ~first
+      in
         raise (Error(loc, env, err))
     in
     let ty_arg =
