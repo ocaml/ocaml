@@ -435,11 +435,11 @@ and expression_desc =
   | Pexp_extension of extension  (** [[%id]] *)
   | Pexp_unreachable  (** [.] *)
 
-and expr_poly =
+and method_body =
   {
-    pep_expr : expression;
-    pep_typ : core_type option;
-    pep_loc : Location.t;
+    pmeth_expr : expression;
+    pmeth_typ : core_type option;
+    pmeth_loc : Location.t;
   }
 (** Used for method bodies.
     Can only be used as the expression under
@@ -868,9 +868,9 @@ and class_field_desc =
        when [flag] is {{!Asttypes.mutable_flag.Mutable}[Mutable]}
         and [kind] is {{!class_field_kind.Cfk_virtual}[Cfk_virtual(T)]}
   *)
-  | Pcf_method of (label loc * private_flag * expr_poly class_field_kind)
+  | Pcf_method of (label loc * private_flag * method_body class_field_kind)
       (** - [method x = E]
-                        ([E] is a {{!expr_poly}[expr_poly]})
+                        ([E] is a {{!method_body}[method_body]})
             - [method virtual x: T]
                         ([T] can be a {{!core_type_desc.Ptyp_poly}[Ptyp_poly]})
   *)

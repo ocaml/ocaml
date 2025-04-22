@@ -1277,14 +1277,14 @@ and transl_letop ~scopes loc env let_ ands param case partial =
 
 (* Wrapper for class compilation *)
 
-let transl_scoped_exp_poly ~scopes ep =
-  let params, body = match ep.ep_expr.exp_desc with
+let transl_scoped_method_body ~scopes ep =
+  let params, body = match ep.meth_expr.exp_desc with
     | Texp_function (params, body) ->
-      (ep.ep_param :: params, body)
-    | _ -> [ep.ep_param], Tfunction_body ep.ep_expr
+      (ep.meth_param :: params, body)
+    | _ -> [ep.meth_param], Tfunction_body ep.meth_expr
   in
-  Translobj.oo_wrap ep.ep_env true
-      (transl_function ~scopes ep.ep_expr params) body
+  Translobj.oo_wrap ep.meth_env true
+      (transl_function ~scopes ep.meth_expr params) body
 
 (*
 let transl_exp = transl_exp_wrap

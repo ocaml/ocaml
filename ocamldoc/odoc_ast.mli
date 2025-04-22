@@ -83,7 +83,7 @@ module Typedtree_search :
       (** This function returns the [Types.expression] of the method whose name is given, in a given class structure.
          @raise Not_found if the class method could not be found.*)
       val search_method_expression :
-          Typedtree.class_structure -> string -> Typedtree.expr_poly
+          Typedtree.class_structure -> string -> Typedtree.method_body
     end
 
 (** The module which performs the analysis of a typed tree.

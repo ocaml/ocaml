@@ -474,11 +474,11 @@ and expression i ppf x =
       attributes i ppf o.open_attributes;
       expression i ppf e;
 
-and expr_poly i ppf x =
-  line i ppf "expr_poly %a\n" fmt_location x.ep_loc;
+and method_body i ppf x =
+  line i ppf "method_body %a\n" fmt_location x.meth_loc;
   let i = i + 1 in
-  option i core_type ppf x.ep_typ;
-  expression i ppf x.ep_expr
+  option i core_type ppf x.meth_typ;
+  expression i ppf x.meth_expr
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_ident x.val_id fmt_location
@@ -700,7 +700,7 @@ and class_field i ppf x =
       class_field_kind expression (i+1) ppf k
   | Tcf_method (s, pf, k) ->
       line i ppf "Tcf_method \"%s\" %a\n" s.txt fmt_private_flag pf;
-      class_field_kind expr_poly (i+1) ppf k
+      class_field_kind method_body (i+1) ppf k
   | Tcf_constraint (ct1, ct2) ->
       line i ppf "Tcf_constraint\n";
       core_type (i+1) ppf ct1;

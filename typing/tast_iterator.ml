@@ -33,9 +33,9 @@ type iterator =
     class_type_field: iterator -> class_type_field -> unit;
     env: iterator -> Env.t -> unit;
     expr: iterator -> expression -> unit;
-    expr_poly: iterator -> expr_poly -> unit;
     extension_constructor: iterator -> extension_constructor -> unit;
     location: iterator -> Location.t -> unit;
+    method_body: iterator -> method_body -> unit;
     module_binding: iterator -> module_binding -> unit;
     module_coercion: iterator -> module_coercion -> unit;
     module_declaration: iterator -> module_declaration -> unit;
@@ -397,12 +397,12 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
       sub.open_declaration sub od;
       sub.expr sub e
 
-let expr_poly sub ep =
-  sub.location sub ep.ep_loc;
-  function_param sub ep.ep_param;
-  sub.expr sub ep.ep_expr;
-  sub.env sub ep.ep_env;
-  Option.iter (sub.typ sub) ep.ep_typ
+let method_body sub ep =
+  sub.location sub ep.meth_loc;
+  function_param sub ep.meth_param;
+  sub.expr sub ep.meth_expr;
+  sub.env sub ep.meth_env;
+  Option.iter (sub.typ sub) ep.meth_typ
 
 
 let package_type sub {tpt_cstrs; tpt_txt; _} =
@@ -650,7 +650,9 @@ let class_field sub {cf_loc; cf_desc; cf_attributes; _} =
       sub.typ sub cty1;
       sub.typ sub cty2
   | Tcf_val (s, _, _, k, _) -> iter_loc sub s; class_field_kind sub sub.expr k
-  | Tcf_method (s, _, k) -> iter_loc sub s;class_field_kind sub sub.expr_poly k
+  | Tcf_method (s, _, k) ->
+      iter_loc sub s;
+      class_field_kind sub sub.method_body k
   | Tcf_initializer exp -> sub.expr sub exp
   | Tcf_attribute attr -> sub.attribute sub attr
 
@@ -689,9 +691,9 @@ let default_iterator =
     class_type_field;
     env;
     expr;
-    expr_poly;
     extension_constructor;
     location;
+    method_body;
     module_binding;
     module_coercion;
     module_declaration;

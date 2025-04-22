@@ -343,9 +343,9 @@ and rewrite_class_field iflag cf =
   | Pcf_val (_, _, Cfk_concrete (_, sexp))  -> rewrite_exp iflag sexp
   | Pcf_method (_, _,
        Cfk_concrete (_,
-        {pep_expr = {pexp_desc = (Pexp_function _)} as sexp; _})) ->
+        {pmeth_expr = {pexp_desc = (Pexp_function _)} as sexp; _})) ->
       rewrite_exp iflag sexp
-  | Pcf_method (_, _, Cfk_concrete(_, {pep_expr = sexp; _})) ->
+  | Pcf_method (_, _, Cfk_concrete(_, {pmeth_expr = sexp; _})) ->
       let loc = cf.pcf_loc in
       if !instr_fun && not loc.loc_ghost then insert_profile rw_exp sexp
       else rewrite_exp iflag sexp

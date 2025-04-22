@@ -543,7 +543,7 @@ type intermediate_class_field =
         priv : private_flag;
         override : override_flag;
         self_pat : Parsetree.pattern;
-        sdefinition : Parsetree.expr_poly;
+        sdefinition : Parsetree.method_body;
         warning_state : Warnings.state;
         loc : Location.t;
         attributes : attribute list; }
@@ -750,7 +750,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
                raise(Error(loc, val_env, No_overriding("method", label.txt)))
              end
            end;
-           let sbody = expr.pep_expr and sty = expr.pep_typ in
+           let sbody = expr.pmeth_expr and sty = expr.pmeth_typ in
            let ty =
              match sty with
              | None -> Ctype.newvar ()
@@ -902,11 +902,12 @@ and class_field_second_pass cl_num sign met_env field =
         (fun () ->
            let ty = Btype.method_type label.txt sign in
            let self_type = sign.Types.csig_self in
-           let texp =
+           let mbody =
              Ctype.with_raised_nongen_level
-               (fun () -> poly_expect met_env sdefinition self_pat self_type ty)
+               (fun () ->
+                  method_body_expect met_env sdefinition self_pat self_type ty)
            in
-           let kind = Tcfk_concrete (override, texp) in
+           let kind = Tcfk_concrete (override, mbody) in
            let desc = Tcf_method(label, priv, kind) in
            met_env, mkcf desc loc attributes)
   | Constraint { cty1; cty2; loc; attributes } ->

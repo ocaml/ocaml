@@ -201,7 +201,7 @@ module Exp:
 
     val case: pattern -> ?guard:expression -> expression -> case
     val binding_op: str -> pattern -> expression -> loc -> binding_op
-    val poly: ?loc:loc -> expression -> core_type option -> expr_poly
+    val method_body: ?loc:loc -> expression -> core_type option -> method_body
   end
 
 (** Value declarations *)
@@ -453,7 +453,7 @@ module Cf:
     val val_: ?loc:loc -> ?attrs:attrs -> str -> mutable_flag ->
       expression class_field_kind -> class_field
     val method_: ?loc:loc -> ?attrs:attrs -> str -> private_flag ->
-      expr_poly class_field_kind -> class_field
+      method_body class_field_kind -> class_field
     val constraint_: ?loc:loc -> ?attrs:attrs -> core_type -> core_type ->
       class_field
     val initializer_: ?loc:loc -> ?attrs:attrs -> expression -> class_field

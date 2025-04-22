@@ -42,13 +42,13 @@ type iterator = {
   constructor_declaration: iterator -> constructor_declaration -> unit;
   directive_argument: iterator -> directive_argument -> unit;
   expr: iterator -> expression -> unit;
-  expr_poly: iterator -> expr_poly -> unit;
   extension: iterator -> extension -> unit;
   extension_constructor: iterator -> extension_constructor -> unit;
   include_declaration: iterator -> include_declaration -> unit;
   include_description: iterator -> include_description -> unit;
   label_declaration: iterator -> label_declaration -> unit;
   location: iterator -> Location.t -> unit;
+  method_body: iterator -> method_body -> unit;
   module_binding: iterator -> module_binding -> unit;
   module_declaration: iterator -> module_declaration -> unit;
   module_substitution: iterator -> module_substitution -> unit;
@@ -482,10 +482,10 @@ module E = struct
     sub.expr sub pbop_exp;
     sub.location sub pbop_loc
 
-  let iter_expr_poly sub ep =
-    sub.expr sub ep.pep_expr;
-    iter_opt (sub.typ sub) ep.pep_typ;
-    sub.location sub ep.pep_loc;
+  let iter_method_body sub ep =
+    sub.expr sub ep.pmeth_expr;
+    iter_opt (sub.typ sub) ep.pmeth_typ;
+    sub.location sub ep.pmeth_loc;
 
 end
 
@@ -565,7 +565,7 @@ module CE = struct
     | Pcf_inherit (_o, ce, _s) -> sub.class_expr sub ce
     | Pcf_val (s, _m, k) -> iter_loc sub s; iter_kind sub sub.expr k
     | Pcf_method (s, _p, k) ->
-        iter_loc sub s; iter_kind sub sub.expr_poly k
+        iter_loc sub s; iter_kind sub sub.method_body k
     | Pcf_constraint (t1, t2) ->
         sub.typ sub t1; sub.typ sub t2
     | Pcf_initializer e -> sub.expr sub e
@@ -630,7 +630,7 @@ let default_iterator =
 
     pat = P.iter;
     expr = E.iter;
-    expr_poly = E.iter_expr_poly;
+    method_body = E.iter_method_body;
     binding_op = E.iter_binding_op;
 
     module_declaration =

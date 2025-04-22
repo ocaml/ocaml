@@ -424,7 +424,7 @@ module Analyser =
 
     (** Analysis of a method expression to get the method parameters. *)
     let tt_analyse_method_expression env comment_opt pexp =
-      match pexp.Typedtree.ep_expr.exp_desc with
+      match pexp.Typedtree.meth_expr.exp_desc with
          Typedtree.Texp_function (params, body) ->
           tt_analyse_function_parameters env comment_opt params body
       | _ ->
@@ -561,7 +561,7 @@ module Analyser =
               try Typedtree_search.search_method_expression tt_cls label
             with Not_found -> raise (Failure (Odoc_messages.method_not_found_in_typedtree complete_name))
           in
-          let real_type = exp.ep_expr.exp_type in
+          let real_type = exp.meth_expr.exp_type in
           let code =
             if !Odoc_global.keep_code then
                 Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum

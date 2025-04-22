@@ -40,7 +40,7 @@ type mapper = {
   constructor_declaration: mapper -> T.constructor_declaration
                            -> constructor_declaration;
   expr: mapper -> T.expression -> expression;
-  expr_poly: mapper -> T.expr_poly -> expr_poly;
+  method_body: mapper -> T.method_body -> method_body;
   extension_constructor: mapper -> T.extension_constructor
                          -> extension_constructor;
   include_declaration: mapper -> T.include_declaration -> include_declaration;
@@ -574,11 +574,11 @@ let expression sub exp =
   List.fold_right (exp_extra sub) exp.exp_extra
     (Exp.mk ~loc ~attrs desc)
 
-let expr_poly sub ep =
+let method_body sub ep =
   {
-    pep_expr = sub.expr sub ep.ep_expr;
-    pep_typ = Option.map (sub.typ sub) ep.ep_typ;
-    pep_loc = ep.ep_loc;
+    pmeth_expr = sub.expr sub ep.meth_expr;
+    pmeth_typ = Option.map (sub.typ sub) ep.meth_typ;
+    pmeth_loc = ep.meth_loc;
   }
 
 let binding_op sub bop pat =
@@ -914,7 +914,7 @@ let class_field sub cf =
     | Tcf_method (lab, priv, Tcfk_virtual cty) ->
         Pcf_method (lab, priv, Cfk_virtual (sub.typ sub cty))
     | Tcf_method (lab, priv, Tcfk_concrete (o, exp)) ->
-        Pcf_method (lab, priv, Cfk_concrete (o, sub.expr_poly sub exp))
+        Pcf_method (lab, priv, Cfk_concrete (o, sub.method_body sub exp))
     | Tcf_initializer exp ->
         let exp = remove_fun_self exp in
         Pcf_initializer (sub.expr sub exp)
@@ -954,7 +954,7 @@ let default_mapper =
     value_description = value_description;
     pat = pattern;
     expr = expression;
-    expr_poly;
+    method_body;
     module_declaration = module_declaration;
     module_substitution = module_substitution;
     module_type_declaration = module_type_declaration;

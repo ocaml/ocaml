@@ -45,13 +45,13 @@ type iterator = {
   constructor_declaration: iterator -> constructor_declaration -> unit;
   directive_argument: iterator -> directive_argument -> unit;
   expr: iterator -> expression -> unit;
-  expr_poly: iterator -> expr_poly -> unit;
   extension: iterator -> extension -> unit;
   extension_constructor: iterator -> extension_constructor -> unit;
   include_declaration: iterator -> include_declaration -> unit;
   include_description: iterator -> include_description -> unit;
   label_declaration: iterator -> label_declaration -> unit;
   location: iterator -> Location.t -> unit;
+  method_body: iterator -> method_body -> unit;
   module_binding: iterator -> module_binding -> unit;
   module_declaration: iterator -> module_declaration -> unit;
   module_substitution: iterator -> module_substitution -> unit;

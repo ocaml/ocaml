@@ -50,7 +50,6 @@ type mapper = {
                            -> constructor_declaration;
   directive_argument: mapper -> directive_argument -> directive_argument;
   expr: mapper -> expression -> expression;
-  expr_poly: mapper -> expr_poly -> expr_poly;
   extension: mapper -> extension -> extension;
   extension_constructor: mapper -> extension_constructor
                          -> extension_constructor;
@@ -58,6 +57,7 @@ type mapper = {
   include_description: mapper -> include_description -> include_description;
   label_declaration: mapper -> label_declaration -> label_declaration;
   location: mapper -> Location.t -> Location.t;
+  method_body: mapper -> method_body -> method_body;
   module_binding: mapper -> module_binding -> module_binding;
   module_declaration: mapper -> module_declaration -> module_declaration;
   module_substitution: mapper -> module_substitution -> module_substitution;
@@ -544,9 +544,9 @@ module E = struct
     let loc = sub.location sub pbop_loc in
     binding_op op pat exp loc
 
-  let map_expr_poly sub ep =
-    Exp.poly ~loc:(sub.location sub ep.pep_loc)
-      (sub.expr sub ep.pep_expr) (map_opt (sub.typ sub) ep.pep_typ)
+  let map_method_body sub ep =
+    Exp.method_body ~loc:(sub.location sub ep.pmeth_loc)
+      (sub.expr sub ep.pmeth_expr) (map_opt (sub.typ sub) ep.pmeth_typ)
 
 end
 
@@ -634,7 +634,7 @@ module CE = struct
     | Pcf_val (s, m, k) ->
         val_ ~loc ~attrs (map_loc sub s) m (map_kind sub sub.expr k)
     | Pcf_method (s, p, k) ->
-        method_ ~loc ~attrs (map_loc sub s) p (map_kind sub sub.expr_poly k)
+        method_ ~loc ~attrs (map_loc sub s) p (map_kind sub sub.method_body k)
     | Pcf_constraint (t1, t2) ->
         constraint_ ~loc ~attrs (sub.typ sub t1) (sub.typ sub t2)
     | Pcf_initializer e -> initializer_ ~loc ~attrs (sub.expr sub e)
@@ -704,7 +704,7 @@ let default_mapper =
 
     pat = P.map;
     expr = E.map;
-    expr_poly = E.map_expr_poly;
+    method_body = E.map_method_body;
     binding_op = E.map_binding_op;
 
     module_declaration =

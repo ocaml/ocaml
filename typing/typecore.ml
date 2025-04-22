@@ -258,8 +258,8 @@ let re node =
   Cmt_format.add_saved_type (Cmt_format.Partial_expression node);
   node
 
-let rpe node =
-  Cmt_format.add_saved_type (Cmt_format.Partial_expr_poly node);
+let rmb node =
+  Cmt_format.add_saved_type (Cmt_format.Partial_method_body node);
   node
 
 let rp node =
@@ -6677,8 +6677,8 @@ and type_send env loc explanation e met =
   in
   (obj,meth,typ)
 
-let poly_expect_expr env sexp ty_expected_explained =
-  let {pep_expr = sbody; pep_typ = sty; pep_loc = loc} = sexp in
+let poly_expr_expect_ env sexp ty_expected_explained =
+  let {pmeth_expr = sbody; pmeth_typ = sty; pmeth_loc = loc} = sexp in
   let { ty = ty_expected; explanation } = ty_expected_explained in
   let ty, cty =
     with_local_level_generalize_structure_if_principal
@@ -6723,7 +6723,7 @@ let poly_expect_expr env sexp ty_expected_explained =
   in
   (exp, cty)
 
-let poly_expect_ env sexp pat ty_arg ty_expected_explained =
+let method_body_expect_ env sexp pat ty_arg ty_expected_explained =
   let (exp, cty, pat), partial =
     (* Check everything else in the scope of the parameter. *)
     map_half_typed_cases Value env ty_arg (Ctype.newvar ()) pat.ppat_loc
@@ -6734,7 +6734,7 @@ let poly_expect_ env sexp pat ty_arg ty_expected_explained =
         fun () pat ~when_env:_ ~ext_env ~cont:_ ~ty_expected:_ ~ty_infer:_
           ~contains_gadt:_ ->
           let exp, cty =
-            poly_expect_expr ext_env sexp ty_expected_explained
+            poly_expr_expect_ ext_env sexp ty_expected_explained
           in
           (exp, cty, pat)
       end
@@ -6754,29 +6754,29 @@ let poly_expect_ env sexp pat ty_arg ty_expected_explained =
       fp_param;
       fp_partial = partial;
       fp_newtypes = [];
-      fp_loc = sexp.pep_loc;
+      fp_loc = sexp.pmeth_loc;
     }
   in
-  rpe {
-    ep_expr = exp;
-    ep_typ = cty;
-    ep_env = env;
-    ep_param = param;
-    ep_loc = sexp.pep_loc;
+  rmb {
+    meth_expr = exp;
+    meth_typ = cty;
+    meth_env = env;
+    meth_param = param;
+    meth_loc = sexp.pmeth_loc;
   }
 
 
-let poly_expect env sexp pat ty_arg ty_expected =
+let method_body_expect env sexp pat ty_arg ty_expected =
   let previous_saved_types = Cmt_format.get_saved_types () in
-  let exp =
+  let method_body =
     Builtin_attributes.warning_scope []
       (fun () ->
-         poly_expect_ env sexp pat ty_arg (mk_expected ty_expected)
+         method_body_expect_ env sexp pat ty_arg (mk_expected ty_expected)
       )
   in
   Cmt_format.set_saved_types
-    (Cmt_format.Partial_expr_poly exp :: previous_saved_types);
-  exp
+    (Cmt_format.Partial_method_body method_body :: previous_saved_types);
+  method_body
 
 (* Typing of toplevel bindings *)
 

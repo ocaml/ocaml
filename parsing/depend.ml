@@ -273,9 +273,9 @@ let rec add_expr bv exp =
   | Pexp_extension e -> handle_extension e
   | Pexp_unreachable -> ()
 
-and add_expr_poly bv ep =
-  add_expr bv ep.pep_expr;
-  add_opt add_type bv ep.pep_typ
+and add_method_body bv ep =
+  add_expr bv ep.pmeth_expr;
+  add_opt add_type bv ep.pmeth_typ
 
 and add_function_param bv param =
   match param.pparam_desc with
@@ -624,7 +624,7 @@ and add_class_field bv pcf =
   match pcf.pcf_desc with
     Pcf_inherit(_, ce, _) -> add_class_expr bv ce
   | Pcf_val(_, _, Cfk_concrete (_, e)) -> add_expr bv e
-  | Pcf_method(_, _, Cfk_concrete (_, e)) -> add_expr_poly bv e
+  | Pcf_method(_, _, Cfk_concrete (_, e)) -> add_method_body bv e
   | Pcf_val(_, _, Cfk_virtual ty)
   | Pcf_method(_, _, Cfk_virtual ty) -> add_type bv ty
   | Pcf_constraint(ty1, ty2) -> add_type bv ty1; add_type bv ty2

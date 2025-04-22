@@ -403,11 +403,11 @@ and expression i ppf x =
   | Pexp_unreachable ->
       line i ppf "Pexp_unreachable"
 
-and expr_poly i ppf ep =
-    line i ppf "expr_poly %a\n" fmt_location ep.pep_loc;
+and method_body i ppf ep =
+    line i ppf "method_body %a\n" fmt_location ep.pmeth_loc;
     let i = i+1 in
-    expression i ppf ep.pep_expr;
-    option i core_type ppf ep.pep_typ;
+    expression i ppf ep.pmeth_expr;
+    option i core_type ppf ep.pmeth_typ;
 
 and function_param i ppf { pparam_desc = desc; pparam_loc = loc } =
   match desc with
@@ -671,7 +671,7 @@ and class_field i ppf x =
   | Pcf_method (s, pf, k) ->
       line i ppf "Pcf_method %a\n" fmt_private_flag pf;
       line (i+1) ppf "%a\n" fmt_string_loc s;
-      class_field_kind expr_poly (i+1) ppf k
+      class_field_kind method_body (i+1) ppf k
   | Pcf_constraint (ct1, ct2) ->
       line i ppf "Pcf_constraint\n";
       core_type (i+1) ppf ct1;

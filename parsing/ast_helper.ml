@@ -245,11 +245,11 @@ module Exp = struct
       pbop_loc = loc;
     }
 
-  let poly ?(loc = !default_loc) e p =
+  let method_body ?(loc = !default_loc) e p =
     {
-      pep_expr = e;
-      pep_typ = p;
-      pep_loc = loc;
+      pmeth_expr = e;
+      pmeth_typ = p;
+      pmeth_loc = loc;
     }
 end
 

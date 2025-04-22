@@ -1202,10 +1202,10 @@ and class_field ctxt f x =
         (override ovf)
         private_flag pf
         (fun f -> function
-           | {pep_expr = e; pep_typ = Some ct; _} ->
+           | {pmeth_expr = e; pmeth_typ = Some ct; _} ->
                pp f "%a :@;%a=@;%a"
                  ident_of_name s.txt (core_type ctxt) ct (expression ctxt) e
-           | {pep_expr = e; pep_typ = None; _} ->
+           | {pmeth_expr = e; pmeth_typ = None; _} ->
                bind e) e
         (item_attributes ctxt) x.pcf_attributes
   | Pcf_constraint (ct1, ct2) ->

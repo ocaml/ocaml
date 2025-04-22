@@ -985,7 +985,7 @@ and class_field : Typedtree.class_field -> term_judg =
     | Tcf_val (_lab, _mut, _, cfk, _) ->
       class_field_kind expression cfk
     | Tcf_method (_, _, cfk) ->
-      class_field_kind (fun e -> expression e.ep_expr) cfk
+      class_field_kind (fun e -> expression e.meth_expr) cfk
     | Tcf_constraint _ ->
       empty
     | Tcf_initializer e ->

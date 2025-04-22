@@ -37,10 +37,10 @@ type mapper =
     class_type_field: mapper -> class_type_field -> class_type_field;
     env: mapper -> Env.t -> Env.t;
     expr: mapper -> expression -> expression;
-    expr_poly: mapper -> expr_poly -> expr_poly;
     extension_constructor: mapper -> extension_constructor ->
       extension_constructor;
     location: mapper -> Location.t -> Location.t;
+    method_body: mapper -> method_body -> method_body;
     module_binding: mapper -> module_binding -> module_binding;
     module_coercion: mapper -> module_coercion -> module_coercion;
     module_declaration: mapper -> module_declaration -> module_declaration;
@@ -515,13 +515,13 @@ let expr sub x =
   let exp_attributes = sub.attributes sub x.exp_attributes in
   {x with exp_loc; exp_extra; exp_desc; exp_env; exp_attributes}
 
-let expr_poly sub x =
+let method_body sub x =
   {
-    ep_loc = sub.location sub x.ep_loc;
-    ep_expr = sub.expr sub x.ep_expr;
-    ep_env = sub.env sub x.ep_env;
-    ep_param = function_param sub x.ep_param;
-    ep_typ = Option.map (sub.typ sub) x.ep_typ;
+    meth_loc = sub.location sub x.meth_loc;
+    meth_expr = sub.expr sub x.meth_expr;
+    meth_env = sub.env sub x.meth_env;
+    meth_param = function_param sub x.meth_param;
+    meth_typ = Option.map (sub.typ sub) x.meth_typ;
   }
 
 let package_type sub x =
@@ -858,7 +858,7 @@ let class_field sub x =
     | Tcf_val (s, mf, id, k, b) ->
         Tcf_val (map_loc sub s, mf, id, class_field_kind sub sub.expr k, b)
     | Tcf_method (s, priv, k) ->
-        Tcf_method (map_loc sub s, priv, class_field_kind sub sub.expr_poly k)
+        Tcf_method (map_loc sub s, priv, class_field_kind sub sub.method_body k)
     | Tcf_initializer exp ->
         Tcf_initializer (sub.expr sub exp)
     | Tcf_attribute attr ->
@@ -907,9 +907,9 @@ let default =
     class_type_field;
     env;
     expr;
-    expr_poly;
     extension_constructor;
     location;
+    method_body;
     module_binding;
     module_coercion;
     module_declaration;

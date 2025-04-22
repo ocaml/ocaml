@@ -299,12 +299,12 @@ and expression_desc =
   | Texp_open of open_declaration * expression
         (** let open[!] M in e *)
 
-and expr_poly =
-  { ep_expr : expression;
-    ep_param : function_param; (* self argument *)
-    ep_env : Env.t;
-    ep_typ : core_type option;
-    ep_loc : Location.t;
+and method_body =
+  { meth_expr : expression;
+    meth_param : function_param; (* self argument *)
+    meth_env : Env.t;
+    meth_typ : core_type option;
+    meth_loc : Location.t;
   }
   (** Used for method bodies. *)
 
@@ -443,7 +443,7 @@ and class_field_desc =
     (* Inherited instance variables and concrete methods *)
   | Tcf_val of
       string loc * mutable_flag * Ident.t * expression class_field_kind * bool
-  | Tcf_method of string loc * private_flag * expr_poly class_field_kind
+  | Tcf_method of string loc * private_flag * method_body class_field_kind
   | Tcf_constraint of core_type * core_type
   | Tcf_initializer of expression
   | Tcf_attribute of attribute
