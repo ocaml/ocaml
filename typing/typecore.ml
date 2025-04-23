@@ -3239,6 +3239,8 @@ let type_pattern_approx env spat ty_expected =
 
 let type_approx_fun_one_param
   env label default spato ty_expected ~first ~in_function =
+  (* [spato] is [None] when approximating a [Pfunction_cases],
+     the parameter is implicit in that case. *)
   let ty_arg, ty_ret =
     try filter_arrow env ty_expected label
     with Filter_arrow_failed err ->
