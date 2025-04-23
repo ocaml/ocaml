@@ -36,3 +36,21 @@ and opt_ok_g ?(foo : M.t option) ?(bar : M.t = M.A) () = opt_ok_f ()
 val opt_ok_f : unit -> 'a = <fun>
 val opt_ok_g : ?foo:M.t -> ?bar:M.t -> unit -> 'a = <fun>
 |}]
+
+module M : sig
+  type t = private int
+  val x : t
+end = struct
+  type t = int
+  let x = 0
+end
+
+let rec f () : M.t :> int = (M.x : M.t)
+[%%expect{|
+module M : sig type t = private int val x : t end
+Line 9, characters 28-39:
+9 | let rec f () : M.t :> int = (M.x : M.t)
+                                ^^^^^^^^^^^
+Error: This expression has type "M.t" but an expression was expected of type
+         "int"
+|}]
