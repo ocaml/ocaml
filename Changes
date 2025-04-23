@@ -531,6 +531,9 @@ OCaml 5.4.0
 - #13971 Keep generalized structure from patterns when typing `let`
   (Leo White, review by Samuel Vivien and Florian Angeletti)
 
+- #13980 Refactor `type-approx` and improve some errors' locations.
+  (Leo White, Ulysse Gérard, review by Samuel Vivien and Florian Angeletti)
+
 ### Build system:
 
 - #13431: Simplify github action responsible for flagging PRs with
