@@ -3296,7 +3296,9 @@ let rec type_approx env sexp ty_expected =
   match sexp.pexp_desc with
     Pexp_let (_, _, e) -> type_approx env e ty_expected
   | Pexp_function (params, c, body) ->
-      type_approx_function env params c body ty_expected ~loc
+      let in_function = loc, ty_expected in
+      let first = true in
+      type_approx_function env params c body ty_expected ~in_function ~first
   | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e ty_expected
   | Pexp_try (e, _) -> type_approx env e ty_expected
   | Pexp_tuple l -> type_tuple_approx env sexp.pexp_loc ty_expected l
@@ -3326,42 +3328,37 @@ and type_tuple_approx (env: Env.t) loc ty_expected l =
     (fun (_, e) (_, ty) -> type_approx env e ty)
     l labeled_tys
 
-and type_approx_function =
-  let rec loop env params c body ty_expected ~in_function ~first =
-    let loc_function, _ = in_function in
-    let loc = loc_rest_of_function ~first ~loc_function params body in
-    (* We can approximate types up to the first newtype parameter, whereupon
-      we give up.
-    *)
-    match params with
-    | { pparam_desc = Pparam_val (label, default, pat) } :: params ->
-        let ty_res =
-          type_approx_fun_one_param env label default (Some pat) ty_expected
-            ~first ~in_function
-        in
-        loop env params c body ty_res ~in_function ~first:false
-    | { pparam_desc = Pparam_newtype _ } :: _ -> ()
-    | [] ->
-        (* In the [Pconstraint] case, we override the [ty_expected] that
-          gets passed to the approximating of the rest of the type.
-        *)
-        let ty_expected =
-          type_approx_constraint_opt env c ty_expected ~loc
-        in
-        match body with
-        | Pfunction_body body ->
-            type_approx env body ty_expected
-        | Pfunction_cases ({pc_rhs = e} :: _, _, _) ->
-            let ty_res =
-              type_approx_fun_one_param env Nolabel None None ty_expected
-                ~in_function ~first
-            in
-            type_approx env e ty_res
-        | Pfunction_cases ([], _, _) ->  ()
-  in
-  fun env params c body ~loc ty_expected : unit ->
-    loop env params c body ty_expected
-      ~in_function:(loc, ty_expected) ~first:true
+and type_approx_function env params c body ty_expected ~in_function ~first =
+  let loc_function, _ = in_function in
+  let loc = loc_rest_of_function ~first ~loc_function params body in
+  (* We can approximate types up to the first newtype parameter, whereupon
+    we give up.
+  *)
+  match params with
+  | { pparam_desc = Pparam_val (label, default, pat) } :: params ->
+      let ty_res =
+        type_approx_fun_one_param env label default (Some pat) ty_expected
+          ~first ~in_function
+      in
+      type_approx_function env params c body ty_res ~in_function ~first:false
+  | { pparam_desc = Pparam_newtype _ } :: _ -> ()
+  | [] ->
+      (* In the [Pconstraint] case, we override the [ty_expected] that
+        gets passed to the approximating of the rest of the type.
+      *)
+      let ty_expected =
+        type_approx_constraint_opt env c ty_expected ~loc
+      in
+      match body with
+      | Pfunction_body body ->
+          type_approx env body ty_expected
+      | Pfunction_cases ({pc_rhs = e} :: _, _, _) ->
+          let ty_res =
+            type_approx_fun_one_param env Nolabel None None ty_expected
+              ~in_function ~first
+          in
+          type_approx env e ty_res
+      | Pfunction_cases ([], _, _) ->  ()
 
 (* Check that all univars are safe in a type. Both exp.exp_type and
    ty_expected should already be generalized. *)
