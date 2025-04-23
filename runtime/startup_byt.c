@@ -467,6 +467,10 @@ CAMLexport void caml_main(char_os **argv)
   struct caml_params* params = (struct caml_params*)caml_params;
   uintnat trace_level = 0, backtrace_enabled = 0, event_trace = 0;
 
+#ifdef _MSC_VER
+  caml_install_invalid_parameter_handler();
+#endif
+
   /* Parse OCAMLRUNPARAM - for -custom, -output-obj, etc. this will take
      caml_executable_ocamlrunparam into account, but for tendered bytecode
      images (or for explicit invocation as ocamlrun ./foo.byte) the ORUN section
@@ -478,20 +482,13 @@ CAMLexport void caml_main(char_os **argv)
   if (!caml_startup_aux(/* pooling */ caml_params->cleanup_on_exit))
     return;
 
-  caml_init_codefrag();
-
-  caml_init_locale();
-#ifdef _MSC_VER
-  caml_install_invalid_parameter_handler();
-#endif
-  caml_init_custom_operations();
-  caml_init_os_params();
-  caml_ext_table_init(&caml_shared_libs_path, 8);
-
   /* Determine position of bytecode file */
   pos = 0;
 
   argv0 = proc_self_exe = caml_executable_name();
+
+  /* caml_shared_libs_path is used by parse_command_line */
+  caml_ext_table_init(&caml_shared_libs_path, 8);
 
   char_os *str_fd = NULL;
   /* -custom executables do not inspect __OCAML_EXEC_FD */
@@ -679,6 +676,12 @@ CAMLexport void caml_main(char_os **argv)
   if (image_standard_library_default != NULL)
     caml_standard_library_default = image_standard_library_default;
 
+  caml_init_codefrag();
+
+  caml_init_locale();
+  caml_init_custom_operations();
+  caml_init_os_params();
+
   /* Initialize the abstract machine */
   caml_init_gc ();
 
@@ -757,6 +760,10 @@ CAMLexport value caml_startup_code_exn(
   char_os * exe_name, * proc_self_exe;
   value res;
 
+#ifdef _MSC_VER
+  caml_install_invalid_parameter_handler();
+#endif
+
   /* Determine options */
   caml_parse_ocamlrunparam();
 
@@ -768,9 +775,6 @@ CAMLexport value caml_startup_code_exn(
   caml_init_codefrag();
 
   caml_init_locale();
-#ifdef _MSC_VER
-  caml_install_invalid_parameter_handler();
-#endif
   caml_init_custom_operations();
   caml_init_os_params();
   caml_ext_table_init(&caml_shared_libs_path, 8);
