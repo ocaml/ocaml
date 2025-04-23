@@ -3358,7 +3358,10 @@ and type_approx_function env params c body ty_expected ~in_function ~first =
               ~in_function ~first
           in
           type_approx env e ty_res
-      | Pfunction_cases ([], _, _) ->  ()
+      | Pfunction_cases ([], _, _) ->
+          (* This case is in fact not reachable. Doing nothing would be the
+             correct thing to do if it were to be reachable in the future. *)
+          ()
 
 (* Check that all univars are safe in a type. Both exp.exp_type and
    ty_expected should already be generalized. *)
