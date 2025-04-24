@@ -44,10 +44,7 @@ let rec f (x : (module T with type t = int)) =
 
 [%%expect{|
 module type T = sig type t end
-Line 4, characters 44-55:
-4 |        let (module LocalModule) = x in (3 : LocalModule.t)
-                                                ^^^^^^^^^^^
-Error: Unbound module "LocalModule"
+val f : (module T with type t = int) -> int = <fun>
 |}]
 
 type t = C : 'a -> t
@@ -57,8 +54,9 @@ let rec f x =
 
 [%%expect{|
 type t = C : 'a -> t
-Line 4, characters 37-38:
+Line 4, characters 22-23:
 4 |        let C (type a) v  = x in (v : a)
-                                         ^
-Error: Unbound type constructor "a"
+                          ^
+Error: Existential types introduced in a constructor pattern
+       must be bound by a type constraint on the argument.
 |}]
