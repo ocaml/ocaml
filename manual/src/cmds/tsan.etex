@@ -145,7 +145,7 @@ the time of writing, this number is 4. Data races involving a forgotten access
 will not be detected. Lastly, the
 \href{https://github.com/google/sanitizers/wiki/ThreadSanitizerAlgorithm}{documentation
 of TSan} states that there is a tiny probability to miss a race if two threads
-access the same location at the same time. TSan may overlook data races only 
+access the same location at the same time. TSan may overlook data races only
 in these three specific cases.
 
 For data races between two memory accesses made from OCaml code, TSan does not
@@ -156,12 +156,20 @@ of false positive becomes less clear, as it involves two memory models -- OCaml
 and C11.
 However, TSan should behave mostly as one would expect: non-atomic reads and
 writes in C will race with non-atomic reads and writes in OCaml, and C atomics
-will not race with OCaml atomics. There is one theoretical possibility of false
-positive: if a \texttt{value} is initialized from C without using
-\texttt{caml_initialize} (which is allowed under the condition that the GC does
-not run between the allocation and the write, see Chapter~\ref{c:intf-c}) and a
-conflicting access is made later by another thread. This does not constitute a
-data race, but TSan may report it as such.
+will not race with OCaml atomics. However, there are two possibilities of false
+positives.
+
+The first possible false positive is if a \texttt{value} is initialized from C
+without using \texttt{caml_initialize} (which is allowed under the condition
+that the GC does not run between the allocation and the write, see
+Chapter~\ref{c:intf-c}) and a conflicting access is made later by another
+thread. This does not constitute a data race, but TSan may report it as such.
+
+The second possible case of false positive is when a mutable field or a
+\texttt{ref} is mutated by OCaml code and concurrently scanned by the garbage
+collector as part of major heap marking. This is a spurious report as it can
+safely be ignored, but for technical reasons related to the difficulties of
+mixing two memory models, TSan may report it as a data race.
 
 \section{s:tsan-runtime-flags}{Runtime options}
 
