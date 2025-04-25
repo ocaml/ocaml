@@ -3334,7 +3334,7 @@ and type_approx_function env params c body ty_expected ~in_function ~first =
   let loc_function, _ = in_function in
   let loc = loc_rest_of_function ~first ~loc_function params body in
   (* We can approximate types up to the first newtype parameter, whereupon
-    we give up.
+     we give up.
   *)
   match params with
   | { pparam_desc = Pparam_val (label, default, pat) } :: params ->
@@ -3346,7 +3346,7 @@ and type_approx_function env params c body ty_expected ~in_function ~first =
   | { pparam_desc = Pparam_newtype _ } :: _ -> ()
   | [] ->
       (* In the [Pconstraint] case, we override the [ty_expected] that
-        gets passed to the approximating of the rest of the type.
+         gets passed to the approximating of the rest of the type.
       *)
       let ty_expected =
         type_approx_constraint_opt env c ty_expected ~loc
