@@ -32,6 +32,10 @@ Working version
   (Nicolás Ojeda Bär, review by Daniel Bünzli, Gabriel Scherer and David
   Allsopp)
 
+- #13995: Add Option.blend.
+  (Kate Deplaix, review by Daniel Bünzli, Gabriel Scherer,
+   Nicolás Ojeda Bär, Florian Angeletti and Josh Berdine)
+
 ### Type system:
 
 - #13781: Set scope of internal type nodes during abbreviation expansion

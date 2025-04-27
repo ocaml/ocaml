@@ -31,6 +31,11 @@ let iter f = function Some v -> f v | None -> ()
 let is_none = function None -> true | Some _ -> false
 let is_some = function None -> false | Some _ -> true
 
+let blend f o1 o2 = match o1, o2 with
+  | None, None -> None
+  | (Some _ as x), None | None, (Some _ as x) -> x
+  | Some v1, Some v2 -> Some (f v1 v2)
+
 let equal eq o0 o1 = match o0, o1 with
 | Some v0, Some v1 -> eq v0 v1
 | None, None -> true

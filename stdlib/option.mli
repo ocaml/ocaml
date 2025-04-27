@@ -60,6 +60,12 @@ val fold : none:'a -> some:('b -> 'a) -> 'b option -> 'a
 val iter : ('a -> unit) -> 'a option -> unit
 (** [iter f o] is [f v] if [o] is [Some v] and [()] otherwise. *)
 
+val blend : ('a -> 'a -> 'a) -> 'a option -> 'a option -> 'a option
+(** [blend f o1 o2] is [o1] if [o2] is [None], [o2] if [o1] is [None],
+    and [Some (f v1 v2)] if [o1] is [Some v1] and [o2] is [Some v2].
+
+    @since 5.5 *)
+
 (** {1:preds Predicates and comparisons} *)
 
 val is_none : 'a option -> bool
