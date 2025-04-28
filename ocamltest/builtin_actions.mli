@@ -28,6 +28,9 @@ val libwin32unix : Actions.t
 val windows : Actions.t
 val not_windows : Actions.t
 
+val cygwin : Actions.t
+val not_cygwin : Actions.t
+
 val bsd : Actions.t
 val not_bsd : Actions.t
 

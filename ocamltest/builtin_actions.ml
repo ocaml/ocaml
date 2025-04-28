@@ -127,6 +127,20 @@ let not_windows = make
     "not running on Windows"
     "running on Windows")
 
+let cygwin = make
+  ~name:"Cygwin"
+  ~description:"Pass if running on Cygwin"
+  (Actions_helpers.pass_or_skip Sys.cygwin
+    "running on Cygwin"
+    "not running on Cygwin")
+
+let not_cygwin = make
+  ~name:"not-cygwin"
+  ~description:"Pass if not running on Cygwin"
+  (Actions_helpers.pass_or_skip (not Sys.cygwin)
+    "not running on Cygwin"
+    "running on Cygwin")
+
 let not_msvc = make
   ~name:"not-msvc"
   ~description:"Pass if not using MSVC / clang-cl"
@@ -404,6 +418,8 @@ let _ =
     libwin32unix;
     windows;
     not_windows;
+    cygwin;
+    not_cygwin;
     not_msvc;
     target_windows;
     not_target_windows;
