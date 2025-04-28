@@ -1,4 +1,5 @@
 (* TEST
+ not-cygwin;
  include unix;
  include runtime_events;
  hasunix;
@@ -14,6 +15,9 @@
  * - doesn't double-free when it fails to attach to [None]
  * - does manage to attach to this process if we provide the right PID
  *)
+
+(* [make_unreadable] doesn't work on Cygwin with noacl as the
+   read permission cannot be removed. *)
 
 let create_and_free ?(pid) () =
   try
