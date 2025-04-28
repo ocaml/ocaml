@@ -163,8 +163,8 @@ and core_type_desc =
            - As the {!core_type} of a
            {{!class_type_field_desc.Pctf_method}[Pctf_method]} node.
 
-           - As the {!core_type} of a {{!expression_desc.Pexp_poly}[Pexp_poly]}
-           node.
+           - As the {{!method_body.pmeth_typ}[pmeth_typ]} field of a
+           {!method_body}.
 
            - As the {{!label_declaration.pld_type}[pld_type]} field of a
            {!label_declaration}.
