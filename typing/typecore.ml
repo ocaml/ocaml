@@ -3189,11 +3189,14 @@ let rec approx_type env sty =
   | Ptyp_tuple args ->
       newty (Ttuple (List.map (fun (l, t) -> l, approx_type env t) args))
   | Ptyp_constr (lid, ctl) ->
-      let path, decl = Env.lookup_type ~use:false ~loc:lid.loc lid.txt env in
-      if List.length ctl <> decl.type_arity then newvar ()
-      else begin
-        let tyl = List.map (approx_type env) ctl in
-        newconstr path tyl
+      begin match Env.lookup_type ~use:false ~loc:lid.loc lid.txt env with
+      | (path, decl) ->
+        if List.length ctl <> decl.type_arity then newvar ()
+        else begin
+          let tyl = List.map (approx_type env) ctl in
+          newconstr path tyl
+        end
+      | exception Env.Error(Lookup_error(_, _, _)) -> newvar ()
       end
   | Ptyp_poly (_, sty) ->
       approx_type env sty

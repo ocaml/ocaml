@@ -36,3 +36,27 @@ and opt_ok_g ?(foo : M.t option) ?(bar : M.t = M.A) () = opt_ok_f ()
 val opt_ok_f : unit -> 'a = <fun>
 val opt_ok_g : ?foo:M.t -> ?bar:M.t -> unit -> 'a = <fun>
 |}]
+
+module type T = sig type t end
+
+let rec f (x : (module T with type t = int)) =
+       let (module LocalModule) = x in (3 : LocalModule.t)
+
+[%%expect{|
+module type T = sig type t end
+val f : (module T with type t = int) -> int = <fun>
+|}]
+
+type t = C : 'a -> t
+
+let rec f x =
+       let C (type a) v  = x in (v : a)
+
+[%%expect{|
+type t = C : 'a -> t
+Line 4, characters 22-23:
+4 |        let C (type a) v  = x in (v : a)
+                          ^
+Error: Existential types introduced in a constructor pattern
+       must be bound by a type constraint on the argument.
+|}]
