@@ -233,3 +233,39 @@ jobs:
       - name: Run the testsuite
         run: |
           su ocaml -c "bash -xe tools/ci/actions/runner.sh test"
+
+  cygwin:
+    runs-on: windows-latest
+    if: contains(github.event.pull_request.labels.*.name, 'run-cygwin-tests')
+    defaults:
+      run:
+        shell: bash -eo pipefail -o igncr {0}
+    steps:
+      - name: Install Cygwin
+        uses: cygwin/cygwin-install-action@v3
+        with:
+          packages: make,gcc-core
+          install-dir: 'D:\cygwin'
+      - name: Save Cygwin cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            C:\cygwin-packages
+          key: cygwin-packages
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: true
+      - name: Configure tree
+        run: |
+          set -x
+          MAKE_ARG=-j tools/ci/actions/runner.sh configure
+      - name: Build
+        run: |
+          set -x
+          MAKE_ARG=-j tools/ci/actions/runner.sh build
+      - name: Run the testsuite
+        run: |
+          SHOW_TIMINGS=1 tools/ci/actions/runner.sh test_sequential
