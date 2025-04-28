@@ -258,10 +258,6 @@ let re node =
   Cmt_format.add_saved_type (Cmt_format.Partial_expression node);
   node
 
-let rmb node =
-  Cmt_format.add_saved_type (Cmt_format.Partial_method_body node);
-  node
-
 let rp node =
   Cmt_format.add_saved_type (Cmt_format.Partial_pattern (Value, node));
   node
@@ -6757,7 +6753,7 @@ let method_body_expect_ env sexp pat ty_arg ty_expected_explained =
       fp_loc = sexp.pmeth_loc;
     }
   in
-  rmb {
+  {
     meth_expr = exp;
     meth_typ = cty;
     meth_env = env;
@@ -6767,16 +6763,10 @@ let method_body_expect_ env sexp pat ty_arg ty_expected_explained =
 
 
 let method_body_expect env sexp pat ty_arg ty_expected =
-  let previous_saved_types = Cmt_format.get_saved_types () in
-  let method_body =
-    Builtin_attributes.warning_scope []
-      (fun () ->
-         method_body_expect_ env sexp pat ty_arg (mk_expected ty_expected)
-      )
-  in
-  Cmt_format.set_saved_types
-    (Cmt_format.Partial_method_body method_body :: previous_saved_types);
-  method_body
+  Builtin_attributes.warning_scope []
+    (fun () ->
+        method_body_expect_ env sexp pat ty_arg (mk_expected ty_expected)
+    )
 
 (* Typing of toplevel bindings *)
 
