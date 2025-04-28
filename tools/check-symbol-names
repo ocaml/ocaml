@@ -23,6 +23,8 @@ nm -A -P "$@" | LC_ALL=C awk '
 $2 ~ /^(\.refptr\.)?(__emutls_v\.)?(_?caml[_A-Z])/ { next }
 # ignore re_foo
 $2 ~ /^(\.refptr\.)?(_?re_)/ { next }
+# ignore "extern char **environ"
+$2 ~ /^(\.refptr\.)?(environ)/ { next }
 # ignore symbols pulled in by SHGetKnownFolderPath
 $2 ~ /^\.refptr\.FOLDERID_[a-zA-Z]+/ { next }
 # ignore local and undefined symbols
