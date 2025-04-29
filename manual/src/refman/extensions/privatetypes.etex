@@ -63,8 +63,7 @@ let make_b = M.B (-1)
 
 Note that if the type is marked as private \emph{in the implementation},
 constructing a type is no longer possible within the implementation. It can
-be useful when types are created externally (C extension) or used as
-marker in a GADT.
+be useful when types are created externally from a C extension for instance.
 
 With respect to the variance of their parameters, private types are
 handled like abstract types. That is, if a private type has
