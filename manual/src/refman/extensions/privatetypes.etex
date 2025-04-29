@@ -48,8 +48,8 @@ end
 \end{caml_example*}
 Here, the @"private"@ declaration ensures that in any value of type
 "M.t", the argument to the "B" constructor is always a positive integer,
-because client of the "M" module must use the "b" function to construct
-"B" value.
+because users of the "M" module can only use the "b" function to construct
+"B" values.
 
 \begin{caml_example*}{verbatim}[error]
 (* this function compiles because it only uses pattern-matching *)
@@ -57,12 +57,13 @@ let to_string = function
   | M.A -> "M.A"
   | M.B _ -> "M.B"
 
-(* this one does not because it constructs a type *)
+(* this one does not because it tries to construct a new value using
+   a private constructor *)
 let make_b = M.B (-1)
 \end{caml_example*}
 
 Note that if the type is marked as private \emph{in the implementation},
-constructing a type is no longer possible within the implementation. It can
+constructing a value is no longer possible within the implementation. It can
 be useful when types are created externally from a C extension for instance.
 
 With respect to the variance of their parameters, private types are
