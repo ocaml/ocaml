@@ -122,7 +122,7 @@ type t =
    do NOT reuse one of the holes.
 *)
 
-type alert = {kind:string; message:string; def:loc; use:loc}
+type alert = {kind:string; message:string; sublocs : (loc * string) list }
 
 let number = function
   | Comment_start -> 1
@@ -755,7 +755,6 @@ let letter_alert tokens =
   match consecutive_letters with
   | [] -> None
   | example :: _  ->
-      let nowhere = ghost_loc_in_file "_none_" in
       let spelling_hint ppf =
         let max_seq_len =
           List.fold_left (fun l x -> Int.max l (List.length x))
@@ -782,7 +781,7 @@ let letter_alert tokens =
       in
       Some {
         kind="ocaml_deprecated_cli";
-        use=nowhere; def=nowhere;
+        sublocs = [];
         message
       }
 
@@ -1307,13 +1306,7 @@ let report_alert (alert : alert) =
              testsuite
        *)
       let sub_locs =
-        if not alert.def.loc_ghost && not alert.use.loc_ghost then
-          [
-            alert.def, msg "Definition";
-            alert.use, msg "Expected signature";
-          ]
-        else
-          []
+        List.map (fun (loc, name) -> loc, msg "%s" name) alert.sublocs
       in
       `Active
         {

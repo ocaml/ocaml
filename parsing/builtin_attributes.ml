@@ -244,12 +244,19 @@ let check_alerts loc attrs s =
     (fun kind message -> Location.alert loc ~kind (cat s message))
     (alerts_of_attrs attrs)
 
+let sublocs_of_def_use ~(def : Location.t) ~(use : Location.t) =
+  if not def.loc_ghost && not use.loc_ghost then
+    [ def, "Definition"; use, "Expected signature" ]
+  else
+    []
+
 let check_alerts_inclusion ~def ~use loc attrs1 attrs2 s =
   let m2 = alerts_of_attrs attrs2 in
   Misc.Stdlib.String.Map.iter
     (fun kind msg ->
        if not (Misc.Stdlib.String.Map.mem kind m2) then
-         Location.alert ~def ~use ~kind loc (cat s msg)
+         Location.alert ~sublocs:(sublocs_of_def_use ~def ~use)
+           ~kind loc (cat s msg)
     )
     (alerts_of_attrs attrs1)
 
@@ -271,7 +278,7 @@ let check_deprecated_mutable_inclusion ~def ~use loc attrs1 attrs2 s =
   with
   | None, _ | Some _, Some _ -> ()
   | Some txt, None ->
-      Location.deprecated ~def ~use loc
+      Location.deprecated ~sublocs:(sublocs_of_def_use ~def ~use) loc
         (Printf.sprintf "mutating field %s" (cat s txt))
 
 let rec attrs_of_sig = function

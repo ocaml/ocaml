@@ -123,7 +123,7 @@ type t =
   | Degraded_to_partial_match               (* 74 *)
   | Unnecessarily_partial_tuple_pattern     (* 75 *)
 
-type alert = {kind:string; message:string; def:loc; use:loc}
+type alert = {kind:string; message:string; sublocs : (loc * string) list}
 
 val parse_options : bool -> string -> alert option
 

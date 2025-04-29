@@ -946,11 +946,11 @@ let print_alert loc ppf w =
 
 let prerr_alert loc w = print_alert loc !formatter_for_warnings w
 
-let alert ?(def = none) ?(use = none) ~kind loc message =
-  prerr_alert loc {Warnings.kind; message; def; use}
+let alert ?(sublocs = []) ~kind loc message =
+  prerr_alert loc {Warnings.kind; message; sublocs }
 
-let deprecated ?def ?use loc message =
-  alert ?def ?use ~kind:"deprecated" loc message
+let deprecated ?sublocs loc message =
+  alert ?sublocs ~kind:"deprecated" loc message
 
 module Style = Misc.Style
 
@@ -968,7 +968,7 @@ let auto_include_alert lib =
       Style.inline_code "_tags"
       Style.inline_code ("-package " ^ lib) in
   let alert =
-    {Warnings.kind="ocaml_deprecated_auto_include"; use=none; def=none;
+    {Warnings.kind="ocaml_deprecated_auto_include"; sublocs = [];
      message = Format.asprintf "@[@\n%a@]" Format.pp_print_text message}
   in
   prerr_alert none alert
@@ -984,7 +984,7 @@ let deprecated_script_alert program =
       Style.inline_code (program ^ " ./script-file")
   in
   let alert =
-    {Warnings.kind="ocaml_deprecated_cli"; use=none; def=none;
+    {Warnings.kind="ocaml_deprecated_cli"; sublocs = [];
      message = Format.asprintf "@[@\n%a@]" Format.pp_print_text message}
   in
   prerr_alert none alert

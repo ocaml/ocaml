@@ -333,10 +333,10 @@ val prerr_alert: t -> Warnings.alert -> unit
 (** Same as [print_alert], but uses [!formatter_for_warnings] as output
    formatter. *)
 
-val deprecated: ?def:t -> ?use:t -> t -> string -> unit
+val deprecated: ?sublocs:(t * string) list -> t -> string -> unit
 (** Prints a deprecation alert. *)
 
-val alert: ?def:t -> ?use:t -> kind:string -> t -> string -> unit
+val alert: ?sublocs:(t * string) list -> kind:string -> t -> string -> unit
 (** Prints an arbitrary alert. *)
 
 val auto_include_alert: string -> unit
