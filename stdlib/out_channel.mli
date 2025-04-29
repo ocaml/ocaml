@@ -16,8 +16,9 @@
 (** Output channels.
 
     This module provides functions for working with output channels.
-    For example, you can use this module to print to the terminal or
-    write to a file.
+    For example, you can use this module to write to a file or 
+    print to the terminal
+    
 
     See {{!examples} the example section} below.
 
@@ -196,7 +197,7 @@ val isatty : t -> bool
     @since 5.1 *)
 
 (** {1:examples Examples}
-    Printing to the screen:
+    Printing to the terminal:
     {[
       Out_channel.output_string Out_channel.stdout "hello, world"
     ]}
