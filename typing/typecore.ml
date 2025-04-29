@@ -3062,6 +3062,7 @@ let rec is_nonexpansive exp =
         fields
       && is_nonexpansive_opt extended_expression
   | Texp_field(exp, _, _) -> is_nonexpansive exp
+  | Texp_field_getter _ -> true
   | Texp_ifthenelse(_cond, ifso, ifnot) ->
       is_nonexpansive ifso && is_nonexpansive_opt ifnot
   | Texp_sequence (_e1, e2) -> is_nonexpansive e2  (* PR#4354 *)
@@ -3384,7 +3385,7 @@ let check_partial_application ~statement exp =
             match exp_desc with
             | Texp_ident _ | Texp_constant _ | Texp_tuple _
             | Texp_construct _ | Texp_variant _ | Texp_record _
-            | Texp_field _ | Texp_setfield _ | Texp_array _
+            | Texp_field _ | Texp_field_getter _ | Texp_setfield _ | Texp_array _
             | Texp_while _ | Texp_for _ | Texp_instvar _
             | Texp_setinstvar _ | Texp_override _ | Texp_assert _
             | Texp_lazy _ | Texp_object _ | Texp_pack _ | Texp_unreachable
@@ -4268,6 +4269,17 @@ and type_expect_
         exp_desc = Texp_field(record, lid, label);
         exp_loc = loc; exp_extra = [];
         exp_type = ty_arg;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env }
+  | Pexp_field_getter(lid) ->
+      let label =
+        type_label_getter env Env.Projection lid ty_expected ~loc
+      in
+      let (_, ty_arg, ty_res) = instance_label ~fixed:false label in
+      rue {
+        exp_desc = Texp_field_getter(lid, label);
+        exp_loc = loc; exp_extra = [];
+        exp_type = newty (Tarrow (Nolabel, ty_res, ty_arg, commu_ok));
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_setfield(srecord, lid, snewval) ->
@@ -5317,6 +5329,28 @@ and type_function
      *)
     exp_type, [], body, [], No_gadt
 
+and type_label ?ty_exp ?expected_type env usage lid =
+  let labels = Env.lookup_all_labels ~loc:lid.loc usage lid.txt env in
+  let f = Label.disambiguate usage lid env expected_type in
+  match ty_exp with
+  | None -> f labels (* No disambiguation error *)
+  | Some ty_exp ->
+  wrap_disambiguate "This expression has" (mk_expected ty_exp) f labels
+
+and type_label_getter env usage lid expression_type ~loc =
+  let expected_type, ty_exp =
+    match get_desc (protect_expansion env expression_type) with
+    | Tarrow (Nolabel, ty_exp, _, _) ->
+      (match extract_concrete_record env ty_exp with
+      | Record_type(p0, p, _) ->
+          Some(p0, p, is_principal ty_exp), Some ty_exp
+      | Maybe_a_record_type -> None, Some ty_exp
+      | Not_a_record_type ->
+          let error = Expr_not_a_record_type ty_exp in
+          raise (Error (loc, env, error)))
+    | _ -> None, None
+  in
+  type_label env usage lid ?expected_type ?ty_exp
 
 and type_label_access env srecord usage lid =
   let record =
@@ -5333,11 +5367,7 @@ and type_label_access env srecord usage lid =
         let error = Expr_not_a_record_type ty_exp in
         raise (Error (record.exp_loc, env, error))
   in
-  let labels = Env.lookup_all_labels ~loc:lid.loc usage lid.txt env in
-  let label =
-    wrap_disambiguate "This expression has" (mk_expected ty_exp)
-      (Label.disambiguate usage lid env expected_type) labels in
-  (record, label, expected_type)
+  (record, type_label env usage lid ~ty_exp ?expected_type, expected_type)
 
 (* Typing format strings for printing or reading.
    These formats are used by functions in modules Printf, Format, and Scanf.

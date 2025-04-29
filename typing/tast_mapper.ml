@@ -412,6 +412,8 @@ let expr sub x =
         }
     | Texp_field (exp, lid, ld) ->
         Texp_field (sub.expr sub exp, map_loc_lid sub lid, ld)
+    | Texp_field_getter (lid, ld) ->
+        Texp_field_getter (map_loc_lid sub lid, ld)
     | Texp_setfield (exp1, lid, ld, exp2) ->
         Texp_setfield (
           sub.expr sub exp1,

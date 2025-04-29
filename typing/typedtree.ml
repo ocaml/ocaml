@@ -120,6 +120,7 @@ and expression_desc =
       extended_expression : expression option;
     }
   | Texp_field of expression * Longident.t loc * label_description
+  | Texp_field_getter of Longident.t loc * label_description
   | Texp_setfield of
       expression * Longident.t loc * label_description * expression
   | Texp_array of mutable_flag * expression list

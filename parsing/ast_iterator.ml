@@ -428,6 +428,8 @@ module E = struct
         iter_opt (sub.expr sub) eo
     | Pexp_field (e, lid) ->
         sub.expr sub e; iter_loc_lid sub lid
+    | Pexp_field_getter lid ->
+        iter_loc_lid sub lid
     | Pexp_setfield (e1, lid, e2) ->
         sub.expr sub e1; iter_loc_lid sub lid;
         sub.expr sub e2

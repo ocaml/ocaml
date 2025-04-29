@@ -485,6 +485,8 @@ module E = struct
           (map_opt (sub.expr sub) eo)
     | Pexp_field (e, lid) ->
         field ~loc ~attrs (sub.expr sub e) (map_loc_lid sub lid)
+    | Pexp_field_getter lid ->
+        field_getter ~loc ~attrs (map_loc_lid sub lid)
     | Pexp_setfield (e1, lid, e2) ->
         setfield ~loc ~attrs (sub.expr sub e1) (map_loc_lid sub lid)
           (sub.expr sub e2)

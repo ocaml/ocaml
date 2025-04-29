@@ -267,6 +267,7 @@ and expression_desc =
                 extended_expression = Some E0 }
         *)
   | Texp_field of expression * Longident.t loc * Data_types.label_description
+  | Texp_field_getter of Longident.t loc * Data_types.label_description
   | Texp_setfield of
       expression * Longident.t loc * Data_types.label_description * expression
   | Texp_array of mutable_flag * expression list

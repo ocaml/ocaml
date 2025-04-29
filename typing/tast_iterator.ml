@@ -345,6 +345,8 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
         | _, Overridden (lid, exp) -> iter_loc_lid sub lid; sub.expr sub exp)
         fields;
       Option.iter (sub.expr sub) extended_expression;
+  | Texp_field_getter (lid, _) ->
+      iter_loc_lid sub lid;
   | Texp_field (exp, lid, _) ->
       iter_loc_lid sub lid;
       sub.expr sub exp

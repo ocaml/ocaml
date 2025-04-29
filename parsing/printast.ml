@@ -316,6 +316,9 @@ and expression i ppf x =
       line i ppf "Pexp_field\n";
       expression i ppf e;
       longident_loc i ppf li;
+  | Pexp_field_getter li ->
+      line i ppf "Pexp_field_getter\n";
+      longident_loc i ppf li;
   | Pexp_setfield (e1, li, e2) ->
       line i ppf "Pexp_setfield\n";
       expression i ppf e1;

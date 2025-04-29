@@ -161,6 +161,7 @@ module Exp:
     val record: ?loc:loc -> ?attrs:attrs -> (lid * expression) list
                 -> expression option -> expression
     val field: ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression
+    val field_getter: ?loc:loc -> ?attrs:attrs -> lid -> expression
     val setfield: ?loc:loc -> ?attrs:attrs -> expression -> lid -> expression
                   -> expression
     val array: ?loc:loc -> ?attrs:attrs -> expression list -> expression

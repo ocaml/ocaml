@@ -178,6 +178,19 @@ let is_omitted = function
   | Arg _ -> false
   | Omitted () -> true
 
+let field_accessor (e : expression) targ (lbl  : Data_types.label_description) ~scopes =
+  match lbl.lbl_repres with
+  Record_regular | Record_inlined _ ->
+  Lprim (Pfield (lbl.lbl_pos, maybe_pointer e, lbl.lbl_mut), [targ],
+         of_location ~scopes e.exp_loc)
+| Record_unboxed _ -> targ
+| Record_float ->
+  Lprim (Pfloatfield lbl.lbl_pos, [targ],
+         of_location ~scopes e.exp_loc)
+| Record_extension _ ->
+  Lprim (Pfield (lbl.lbl_pos + 1, maybe_pointer e, lbl.lbl_mut), [targ],
+         of_location ~scopes e.exp_loc)
+
 let rec transl_exp ~scopes e =
   transl_exp1 ~scopes ~in_new_scope:false e
 
@@ -332,18 +345,17 @@ and transl_exp0 ~in_new_scope ~scopes e =
         fields representation extended_expression
   | Texp_field(arg, _, lbl) ->
       let targ = transl_exp ~scopes arg in
-      begin match lbl.lbl_repres with
-          Record_regular | Record_inlined _ ->
-          Lprim (Pfield (lbl.lbl_pos, maybe_pointer e, lbl.lbl_mut), [targ],
-                 of_location ~scopes e.exp_loc)
-        | Record_unboxed _ -> targ
-        | Record_float ->
-          Lprim (Pfloatfield lbl.lbl_pos, [targ],
-                 of_location ~scopes e.exp_loc)
-        | Record_extension _ ->
-          Lprim (Pfield (lbl.lbl_pos + 1, maybe_pointer e, lbl.lbl_mut), [targ],
-                 of_location ~scopes e.exp_loc)
-      end
+      field_accessor e ~scopes targ lbl
+  | Texp_field_getter (_, lbl) ->
+      let ident = Ident.create_local "x" in
+      lfunction
+        ~kind:Curried
+        ~params:[ident, Pgenval]
+        ~return:Pgenval
+        ~body:(field_accessor e ~scopes (Lvar ident) lbl)
+        ~attr:{default_function_attribute with inline = Always_inline}
+        ~loc:(of_location ~scopes e.exp_loc)
+
   | Texp_setfield(arg, _, lbl, newval) ->
       let access =
         match lbl.lbl_repres with

@@ -397,6 +397,9 @@ and expression i ppf x =
       line i ppf "Texp_field\n";
       expression i ppf e;
       longident i ppf li;
+  | Texp_field_getter (li, _) ->
+      line i ppf "Texp_field_getter\n";
+      longident i ppf li;
   | Texp_setfield (e1, li, _, e2) ->
       line i ppf "Texp_setfield\n";
       expression i ppf e1;

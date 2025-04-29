@@ -7520,3 +7520,5 @@ type t = String.( t )
 
 (* Utf8 identifier *)
 let là = function ça -> ça
+
+let _ = (.x)

@@ -211,6 +211,8 @@ let classify_expression : Typedtree.expression -> sd =
         classify_module_expression env mexp
     | Texp_function _ ->
         Static
+    | Texp_field_getter _ ->
+        Static (* Syntactic sugar for a function *)
     | Texp_lazy e ->
       (* The code below was copied (in part) from translcore.ml *)
       begin match Typeopt.classify_lazy_argument e with
@@ -788,6 +790,7 @@ let rec expression : Typedtree.expression -> term_judg =
       join [
         expression e1 << Dereference
       ]
+    | Texp_field_getter _ -> empty
     | Texp_field (e, _, _) ->
       (*
         G |- e: m[Dereference]

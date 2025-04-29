@@ -2575,6 +2575,8 @@ simple_expr:
       { Pexp_override [] }
   | simple_expr DOT mkrhs(label_longident)
       { Pexp_field($1, $3) }
+  | LPAREN DOT field=mkrhs(label_longident) RPAREN
+      { Pexp_field_getter field }
   | od=open_dot_declaration DOT LPAREN seq_expr RPAREN
       { Pexp_open(od, $4) }
   | od=open_dot_declaration DOT LBRACELESS object_expr_content GREATERRBRACE

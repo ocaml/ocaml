@@ -510,6 +510,8 @@ let expression sub exp =
         Pexp_record (list, Option.map (sub.expr sub) extended_expression)
     | Texp_field (exp, lid, _label) ->
         Pexp_field (sub.expr sub exp, map_loc sub lid)
+    | Texp_field_getter (lid, _label) ->
+        Pexp_field_getter (map_loc sub lid)
     | Texp_setfield (exp1, lid, _label, exp2) ->
         Pexp_setfield (sub.expr sub exp1, map_loc sub lid,
           sub.expr sub exp2)
