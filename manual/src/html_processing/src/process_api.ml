@@ -129,6 +129,31 @@ let make_toc ~version ~search file config title body =
                            (manual_page_url ^ "/index.html")))
 
 
+let add_anchor node node' =
+  let anchor = create_element ~class_:"anchor" ~attributes:["href", "#" ^ R.attribute "id" node'] "a" in
+  add_class "anchored" node;
+  prepend_child node anchor
+
+let add_anchors_to_items body =
+  iter (fun node ->
+      let rec loop = function
+        | tag :: tags ->
+            begin match node $? Printf.sprintf "span[id^=%S]" tag with
+            | Some node' ->
+                add_anchor node node'
+            | None ->
+                loop tags
+            end
+        | [] -> ()
+      in
+      loop [ "VAL"; "TYPE"; "MODULE"; "EXCEPTION"; "EXTENSION"; "METHOD"; "ATT" ]
+    ) (body $$ "pre")
+
+let add_anchors_to_headings body =
+  List.iter (fun kind ->
+      iter (fun node -> add_anchor node node) (body $$ Printf.sprintf "%s[id]" kind)
+    ) [ "h2"; "h3"; "h4"; "h5"; "h6" ]
+
 let process ?(search=true) ~version config file out =
 
   dbg "Processing %s..." file;
@@ -143,6 +168,12 @@ let process ?(search=true) ~version config file out =
   (* Delete previous/up/next links *)
   body $? "div.navbar"
   |> Option.iter delete;
+
+  (* Add anchors to each API item *)
+  add_anchors_to_items body;
+
+  (* Add anchors to headings *)
+  add_anchors_to_headings body;
 
   (* Add left sidebar with TOC *)
   let title = soup $ "title" |> R.leaf_text in
