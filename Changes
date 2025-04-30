@@ -30,6 +30,11 @@ Working version
   attribute.
   (Clement Blaudeau, review by Gabriel Scherer)
 
+- #14002: Add anchors to items and headings of the web version of the API
+  documentation for easier linking.
+  (Nicolás Ojeda Bär, report by Louis Roché, review by Gabriel Scherer and
+  Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 ### Internal/compiler-libs changes:
