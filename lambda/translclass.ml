@@ -592,10 +592,10 @@ let rec build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl =
             | Tcf_constraint _
               ->
                 (inh_init, cl_init, methods, values)
-            | Tcf_method (name, _, Tcfk_concrete (_, exp)) ->
+            | Tcf_method (name, _, Tcfk_concrete (_, pexp)) ->
                 let scopes = enter_method_definition ~scopes name.txt in
                 let met_code =
-                  msubst true (transl_scoped_exp ~scopes exp) in
+                  msubst true (transl_scoped_method_body ~scopes pexp) in
                 let met_code =
                   if !Clflags.native_code && List.length met_code = 1 then
                     (* Force correct naming of method for profiles *)

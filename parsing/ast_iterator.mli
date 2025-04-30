@@ -51,6 +51,7 @@ type iterator = {
   include_description: iterator -> include_description -> unit;
   label_declaration: iterator -> label_declaration -> unit;
   location: iterator -> Location.t -> unit;
+  method_body: iterator -> method_body -> unit;
   module_binding: iterator -> module_binding -> unit;
   module_declaration: iterator -> module_declaration -> unit;
   module_substitution: iterator -> module_substitution -> unit;

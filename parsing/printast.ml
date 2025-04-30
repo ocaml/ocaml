@@ -19,6 +19,8 @@ open Lexing
 open Location
 open Parsetree
 
+type 'a printer = int -> formatter -> 'a -> unit
+
 let fmt_position with_name f l =
   let fname = if with_name then l.pos_fname else "" in
   if l.pos_lnum = -1
@@ -376,10 +378,6 @@ and expression i ppf x =
   | Pexp_lazy (e) ->
       line i ppf "Pexp_lazy\n";
       expression i ppf e;
-  | Pexp_poly (e, cto) ->
-      line i ppf "Pexp_poly\n";
-      expression i ppf e;
-      option i core_type ppf cto;
   | Pexp_object s ->
       line i ppf "Pexp_object\n";
       class_structure i ppf s
@@ -404,6 +402,12 @@ and expression i ppf x =
       payload i ppf arg
   | Pexp_unreachable ->
       line i ppf "Pexp_unreachable"
+
+and method_body i ppf ep =
+    line i ppf "method_body %a\n" fmt_location ep.pmeth_loc;
+    let i = i+1 in
+    expression i ppf ep.pmeth_expr;
+    option i core_type ppf ep.pmeth_typ;
 
 and function_param i ppf { pparam_desc = desc; pparam_loc = loc } =
   match desc with
@@ -663,11 +667,11 @@ and class_field i ppf x =
   | Pcf_val (s, mf, k) ->
       line i ppf "Pcf_val %a\n" fmt_mutable_flag mf;
       line (i+1) ppf "%a\n" fmt_string_loc s;
-      class_field_kind (i+1) ppf k
+      class_field_kind expression (i+1) ppf k
   | Pcf_method (s, pf, k) ->
       line i ppf "Pcf_method %a\n" fmt_private_flag pf;
       line (i+1) ppf "%a\n" fmt_string_loc s;
-      class_field_kind (i+1) ppf k
+      class_field_kind method_body (i+1) ppf k
   | Pcf_constraint (ct1, ct2) ->
       line i ppf "Pcf_constraint\n";
       core_type (i+1) ppf ct1;
@@ -681,10 +685,12 @@ and class_field i ppf x =
       line i ppf "Pcf_extension \"%s\"\n" s.txt;
       payload i ppf arg
 
-and class_field_kind i ppf = function
+and class_field_kind
+  : type e. e printer -> e class_field_kind printer =
+  fun pp_expr i ppf -> function
   | Cfk_concrete (o, e) ->
       line i ppf "Concrete %a\n" fmt_override_flag o;
-      expression i ppf e
+      pp_expr i ppf e
   | Cfk_virtual t ->
       line i ppf "Virtual\n";
       core_type i ppf t

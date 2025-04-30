@@ -751,8 +751,6 @@ and eq_expression_desc :
         && (eq_expression (a2, b2))
   | (Pexp_assert a0, Pexp_assert b0) -> eq_expression (a0, b0)
   | (Pexp_lazy a0, Pexp_lazy b0) -> eq_expression (a0, b0)
-  | (Pexp_poly (a0, a1), Pexp_poly (b0, b1)) ->
-      (eq_expression (a0, b0)) && (eq_option eq_core_type (a1, b1))
   | (Pexp_object a0, Pexp_object b0) -> eq_class_structure (a0, b0)
   | (Pexp_newtype (a0, a1), Pexp_newtype (b0, b1)) ->
       (eq_string (a0, b0)) && (eq_expression (a1, b1))

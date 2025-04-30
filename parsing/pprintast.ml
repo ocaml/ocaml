@@ -954,13 +954,6 @@ and expression ctxt f x =
         pp f "@[<hov2>assert@ %a@]" (simple_expr ctxt) e
     | Pexp_lazy (e) ->
         pp f "@[<hov2>lazy@ %a@]" (simple_expr ctxt) e
-    (* Pexp_poly: impossible but we should print it anyway, rather than
-       assert false *)
-    | Pexp_poly (e, None) ->
-        pp f "@[<hov2>!poly!@ %a@]" (simple_expr ctxt) e
-    | Pexp_poly (e, Some ct) ->
-        pp f "@[<hov2>(!poly!@ %a@ : %a)@]"
-          (simple_expr ctxt) e (core_type ctxt) ct
     | Pexp_open (o, e) ->
         pp f "@[<2>let open%s %a in@;%a@]"
           (override o.popen_override) (module_expr ctxt) o.popen_expr
@@ -1209,12 +1202,11 @@ and class_field ctxt f x =
         (override ovf)
         private_flag pf
         (fun f -> function
-           | {pexp_desc=Pexp_poly (e, Some ct); pexp_attributes=[]; _} ->
+           | {pmeth_expr = e; pmeth_typ = Some ct; _} ->
                pp f "%a :@;%a=@;%a"
                  ident_of_name s.txt (core_type ctxt) ct (expression ctxt) e
-           | {pexp_desc=Pexp_poly (e, None); pexp_attributes=[]; _} ->
-               bind e
-           | _ -> bind e) e
+           | {pmeth_expr = e; pmeth_typ = None; _} ->
+               bind e) e
         (item_attributes ctxt) x.pcf_attributes
   | Pcf_constraint (ct1, ct2) ->
       pp f "@[<2>constraint %a =@;%a@]%a"

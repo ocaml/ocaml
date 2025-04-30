@@ -35,6 +35,7 @@ type iterator =
     expr: iterator -> expression -> unit;
     extension_constructor: iterator -> extension_constructor -> unit;
     location: iterator -> Location.t -> unit;
+    method_body: iterator -> method_body -> unit;
     module_binding: iterator -> module_binding -> unit;
     module_coercion: iterator -> module_coercion -> unit;
     module_declaration: iterator -> module_declaration -> unit;
@@ -283,7 +284,6 @@ let extra sub = function
     Option.iter (sub.typ sub) cty1;
     sub.typ sub cty2
   | Texp_newtype _ -> ()
-  | Texp_poly cto -> Option.iter (sub.typ sub) cto
 
 let function_param sub fp =
   sub.location sub fp.fp_loc;
@@ -396,6 +396,13 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
   | Texp_open (od, e) ->
       sub.open_declaration sub od;
       sub.expr sub e
+
+let method_body sub ep =
+  sub.location sub ep.meth_loc;
+  function_param sub ep.meth_param;
+  sub.expr sub ep.meth_expr;
+  sub.env sub ep.meth_env;
+  Option.iter (sub.typ sub) ep.meth_typ
 
 
 let package_type sub {tpt_cstrs; tpt_txt; _} =
@@ -630,9 +637,9 @@ let object_field sub {of_loc; of_desc; of_attributes; _} =
   | OTtag (s, ct) -> iter_loc sub s; sub.typ sub ct
   | OTinherit ct -> sub.typ sub ct
 
-let class_field_kind sub = function
+let class_field_kind sub sub_e = function
   | Tcfk_virtual ct -> sub.typ sub ct
-  | Tcfk_concrete (_, e) -> sub.expr sub e
+  | Tcfk_concrete (_, e) -> sub_e sub e
 
 let class_field sub {cf_loc; cf_desc; cf_attributes; _} =
   sub.location sub cf_loc;
@@ -642,8 +649,10 @@ let class_field sub {cf_loc; cf_desc; cf_attributes; _} =
   | Tcf_constraint (cty1, cty2) ->
       sub.typ sub cty1;
       sub.typ sub cty2
-  | Tcf_val (s, _, _, k, _) -> iter_loc sub s; class_field_kind sub k
-  | Tcf_method (s, _, k) -> iter_loc sub s;class_field_kind sub k
+  | Tcf_val (s, _, _, k, _) -> iter_loc sub s; class_field_kind sub sub.expr k
+  | Tcf_method (s, _, k) ->
+      iter_loc sub s;
+      class_field_kind sub sub.method_body k
   | Tcf_initializer exp -> sub.expr sub exp
   | Tcf_attribute attr -> sub.attribute sub attr
 
@@ -684,6 +693,7 @@ let default_iterator =
     expr;
     extension_constructor;
     location;
+    method_body;
     module_binding;
     module_coercion;
     module_declaration;

@@ -423,19 +423,10 @@ module Analyser =
       |  _ -> Odoc_messages.object_end
 
     (** Analysis of a method expression to get the method parameters. *)
-    let tt_analyse_method_expression env current_method_name comment_opt exp =
-      match exp.Typedtree.exp_desc with
+    let tt_analyse_method_expression env comment_opt pexp =
+      match pexp.Typedtree.meth_expr.exp_desc with
          Typedtree.Texp_function (params, body) ->
-          let params =
-            tt_analyse_function_parameters env comment_opt params body
-          in
-          begin match params with
-          | _self :: rest -> rest
-          | [] ->
-            (* it is not a function since there are no parameters *)
-            (* we can't get here normally *)
-            raise (Failure (Odoc_messages.bad_tree^" "^(Odoc_messages.method_without_param current_method_name)))
-          end
+          tt_analyse_function_parameters env comment_opt params body
       | _ ->
           (* no more parameter *)
           []
@@ -570,14 +561,7 @@ module Analyser =
               try Typedtree_search.search_method_expression tt_cls label
             with Not_found -> raise (Failure (Odoc_messages.method_not_found_in_typedtree complete_name))
           in
-          let real_type =
-            match get_desc exp.exp_type with
-              Tarrow (_, _, t,_) ->
-                t
-            |  _ ->
-                (* ?!? : not an arrow type ! return the original type *)
-                exp.Typedtree.exp_type
-          in
+          let real_type = exp.meth_expr.exp_type in
           let code =
             if !Odoc_global.keep_code then
                 Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum
@@ -591,7 +575,7 @@ module Analyser =
                 val_info = info_opt ;
                 val_type = Odoc_env.subst_type env real_type ;
                 val_recursive = false ;
-                val_parameters = tt_analyse_method_expression env complete_name info_opt exp ;
+                val_parameters = tt_analyse_method_expression env info_opt exp ;
                 val_code = code ;
                 val_loc = { loc_impl = Some loc ; loc_inter = None } ;
               } ;

@@ -48,6 +48,7 @@ type iterator = {
   include_description: iterator -> include_description -> unit;
   label_declaration: iterator -> label_declaration -> unit;
   location: iterator -> Location.t -> unit;
+  method_body: iterator -> method_body -> unit;
   module_binding: iterator -> module_binding -> unit;
   module_declaration: iterator -> module_declaration -> unit;
   module_substitution: iterator -> module_substitution -> unit;
@@ -461,8 +462,6 @@ module E = struct
         sub.expr sub e
     | Pexp_assert e -> sub.expr sub e
     | Pexp_lazy e -> sub.expr sub e
-    | Pexp_poly (e, t) ->
-        sub.expr sub e; iter_opt (sub.typ sub) t
     | Pexp_object cls -> sub.class_structure sub cls
     | Pexp_newtype (_s, e) -> sub.expr sub e
     | Pexp_pack (me, optyp) ->
@@ -482,6 +481,11 @@ module E = struct
     sub.pat sub pbop_pat;
     sub.expr sub pbop_exp;
     sub.location sub pbop_loc
+
+  let iter_method_body sub ep =
+    sub.expr sub ep.pmeth_expr;
+    iter_opt (sub.typ sub) ep.pmeth_typ;
+    sub.location sub ep.pmeth_loc;
 
 end
 
@@ -550,8 +554,8 @@ module CE = struct
     | Pcl_open (o, e) ->
         sub.open_description sub o; sub.class_expr sub e
 
-  let iter_kind sub = function
-    | Cfk_concrete (_o, e) -> sub.expr sub e
+  let iter_kind sub sub_expr = function
+    | Cfk_concrete (_o, e) -> sub_expr sub e
     | Cfk_virtual t -> sub.typ sub t
 
   let iter_field sub {pcf_desc = desc; pcf_loc = loc; pcf_attributes = attrs} =
@@ -559,9 +563,9 @@ module CE = struct
     sub.attributes sub attrs;
     match desc with
     | Pcf_inherit (_o, ce, _s) -> sub.class_expr sub ce
-    | Pcf_val (s, _m, k) -> iter_loc sub s; iter_kind sub k
+    | Pcf_val (s, _m, k) -> iter_loc sub s; iter_kind sub sub.expr k
     | Pcf_method (s, _p, k) ->
-        iter_loc sub s; iter_kind sub k
+        iter_loc sub s; iter_kind sub sub.method_body k
     | Pcf_constraint (t1, t2) ->
         sub.typ sub t1; sub.typ sub t2
     | Pcf_initializer e -> sub.expr sub e
@@ -626,6 +630,7 @@ let default_iterator =
 
     pat = P.iter;
     expr = E.iter;
+    method_body = E.iter_method_body;
     binding_op = E.iter_binding_op;
 
     module_declaration =

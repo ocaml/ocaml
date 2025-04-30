@@ -39,6 +39,7 @@ type iterator =
     expr: iterator -> expression -> unit;
     extension_constructor: iterator -> extension_constructor -> unit;
     location: iterator -> Location.t -> unit;
+    method_body: iterator -> method_body -> unit;
     module_binding: iterator -> module_binding -> unit;
     module_coercion: iterator -> module_coercion -> unit;
     module_declaration: iterator -> module_declaration -> unit;

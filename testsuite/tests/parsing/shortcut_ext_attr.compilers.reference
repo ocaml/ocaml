@@ -409,8 +409,7 @@
                       Pcf_method Public
                         "x" (shortcut_ext_attr.ml[42,939+17]..[42,939+18])
                         Concrete Fresh
-                        expression (shortcut_ext_attr.ml[42,939+21]..[42,939+22]) ghost
-                          Pexp_poly
+                        method_body (shortcut_ext_attr.ml[42,939+21]..[42,939+22]) ghost
                           expression (shortcut_ext_attr.ml[42,939+21]..[42,939+22])
                             Pexp_constant
                             constant (shortcut_ext_attr.ml[42,939+21]..[42,939+22])
@@ -431,8 +430,7 @@
                       Pcf_method Private
                         "x" (shortcut_ext_attr.ml[44,993+26]..[44,993+27])
                         Concrete Override
-                        expression (shortcut_ext_attr.ml[44,993+30]..[44,993+31]) ghost
-                          Pexp_poly
+                        method_body (shortcut_ext_attr.ml[44,993+30]..[44,993+31]) ghost
                           expression (shortcut_ext_attr.ml[44,993+30]..[44,993+31])
                             Pexp_constant
                             constant (shortcut_ext_attr.ml[44,993+30]..[44,993+31])

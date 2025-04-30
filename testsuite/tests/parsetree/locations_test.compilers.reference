@@ -290,8 +290,7 @@ Ptop_def
                   Pcf_method Public
                     "x" (//toplevel//[3,16+9]..[3,16+10])
                     Concrete Fresh
-                    expression (//toplevel//[3,16+18]..[4,46+14]) ghost
-                      Pexp_poly
+                    method_body (//toplevel//[3,16+18]..[4,46+14]) ghost
                       expression (//toplevel//[3,16+9]..[4,46+14])
                         Pexp_newtype "a"
                         expression (//toplevel//[3,16+9]..[4,46+14])
@@ -550,8 +549,7 @@ Ptop_def
                   Pcf_method Public
                     "x" (//toplevel//[3,9+29]..[3,9+30])
                     Concrete Fresh
-                    expression (//toplevel//[3,9+31]..[3,9+46]) ghost
-                      Pexp_poly
+                    method_body (//toplevel//[3,9+31]..[3,9+46]) ghost
                       expression (//toplevel//[3,9+31]..[3,9+46]) ghost
                         Pexp_function
                         [
@@ -1246,8 +1244,7 @@ Ptop_def
                   Pcf_method Public
                     "f" (//toplevel//[3,56+22]..[3,56+23])
                     Concrete Fresh
-                    expression (//toplevel//[3,56+26]..[3,56+27]) ghost
-                      Pexp_poly
+                    method_body (//toplevel//[3,56+26]..[3,56+27]) ghost
                       expression (//toplevel//[3,56+26]..[3,56+27])
                         Pexp_constant
                         constant (//toplevel//[3,56+26]..[3,56+27])
@@ -1278,8 +1275,7 @@ Ptop_def
                     Pcf_method Public
                       "f" (//toplevel//[1,0+22]..[1,0+23])
                       Concrete Fresh
-                      expression (//toplevel//[1,0+26]..[1,0+27]) ghost
-                        Pexp_poly
+                      method_body (//toplevel//[1,0+26]..[1,0+27]) ghost
                         expression (//toplevel//[1,0+26]..[1,0+27])
                           Pexp_constant
                           constant (//toplevel//[1,0+26]..[1,0+27])
@@ -1311,8 +1307,7 @@ Ptop_def
                       Pcf_method Public
                         "f" (//toplevel//[1,0+27]..[1,0+28])
                         Concrete Fresh
-                        expression (//toplevel//[1,0+31]..[1,0+32]) ghost
-                          Pexp_poly
+                        method_body (//toplevel//[1,0+31]..[1,0+32]) ghost
                           expression (//toplevel//[1,0+31]..[1,0+32])
                             Pexp_constant
                             constant (//toplevel//[1,0+31]..[1,0+32])
@@ -1346,8 +1341,7 @@ Ptop_def
                         Pcf_method Public
                           "f" (//toplevel//[1,0+27]..[1,0+28])
                           Concrete Fresh
-                          expression (//toplevel//[1,0+31]..[1,0+32]) ghost
-                            Pexp_poly
+                          method_body (//toplevel//[1,0+31]..[1,0+32]) ghost
                             expression (//toplevel//[1,0+31]..[1,0+32])
                               Pexp_constant
                               constant (//toplevel//[1,0+31]..[1,0+32])
@@ -1409,8 +1403,7 @@ Ptop_def
                       Pcf_method Public
                         "f" (//toplevel//[3,20+16]..[3,20+17])
                         Concrete Fresh
-                        expression (//toplevel//[3,20+20]..[3,20+21]) ghost
-                          Pexp_poly
+                        method_body (//toplevel//[3,20+20]..[3,20+21]) ghost
                           expression (//toplevel//[3,20+20]..[3,20+21])
                             Pexp_constant
                             constant (//toplevel//[3,20+20]..[3,20+21])
@@ -1431,8 +1424,7 @@ Ptop_def
                         Pcf_method Public
                           "f" (//toplevel//[4,46+16]..[4,46+17])
                           Concrete Fresh
-                          expression (//toplevel//[4,46+20]..[4,46+21]) ghost
-                            Pexp_poly
+                          method_body (//toplevel//[4,46+20]..[4,46+21]) ghost
                             expression (//toplevel//[4,46+20]..[4,46+21])
                               Pexp_constant
                               constant (//toplevel//[4,46+20]..[4,46+21])

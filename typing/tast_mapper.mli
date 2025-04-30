@@ -39,6 +39,7 @@ type mapper =
     extension_constructor: mapper -> extension_constructor ->
       extension_constructor;
     location: mapper -> Location.t -> Location.t;
+    method_body: mapper -> method_body -> method_body;
     module_binding: mapper -> module_binding -> module_binding;
     module_coercion: mapper -> module_coercion -> module_coercion;
     module_declaration: mapper -> module_declaration -> module_declaration;

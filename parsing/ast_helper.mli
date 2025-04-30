@@ -188,8 +188,6 @@ module Exp:
       -> expression
     val assert_: ?loc:loc -> ?attrs:attrs -> expression -> expression
     val lazy_: ?loc:loc -> ?attrs:attrs -> expression -> expression
-    val poly: ?loc:loc -> ?attrs:attrs -> expression -> core_type option
-              -> expression
     val object_: ?loc:loc -> ?attrs:attrs -> class_structure -> expression
     val newtype: ?loc:loc -> ?attrs:attrs -> str -> expression -> expression
     val pack: ?loc:loc -> ?attrs:attrs -> module_expr -> package_type option
@@ -203,6 +201,7 @@ module Exp:
 
     val case: pattern -> ?guard:expression -> expression -> case
     val binding_op: str -> pattern -> expression -> loc -> binding_op
+    val method_body: ?loc:loc -> expression -> core_type option -> method_body
   end
 
 (** Value declarations *)
@@ -452,9 +451,9 @@ module Cf:
     val inherit_: ?loc:loc -> ?attrs:attrs -> override_flag -> class_expr ->
       str option -> class_field
     val val_: ?loc:loc -> ?attrs:attrs -> str -> mutable_flag ->
-      class_field_kind -> class_field
+      expression class_field_kind -> class_field
     val method_: ?loc:loc -> ?attrs:attrs -> str -> private_flag ->
-      class_field_kind -> class_field
+      method_body class_field_kind -> class_field
     val constraint_: ?loc:loc -> ?attrs:attrs -> core_type -> core_type ->
       class_field
     val initializer_: ?loc:loc -> ?attrs:attrs -> expression -> class_field
@@ -462,8 +461,8 @@ module Cf:
     val attribute: ?loc:loc -> attribute -> class_field
     val text: text -> class_field list
 
-    val virtual_: core_type -> class_field_kind
-    val concrete: override_flag -> expression -> class_field_kind
+    val virtual_: core_type -> 'a class_field_kind
+    val concrete: override_flag -> 'a -> 'a class_field_kind
 
   end
 

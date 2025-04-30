@@ -40,6 +40,7 @@ type mapper =
     extension_constructor: mapper -> extension_constructor ->
       extension_constructor;
     location: mapper -> Location.t -> Location.t;
+    method_body: mapper -> method_body -> method_body;
     module_binding: mapper -> module_binding -> module_binding;
     module_coercion: mapper -> module_coercion -> module_coercion;
     module_declaration: mapper -> module_declaration -> module_declaration;
@@ -345,7 +346,6 @@ let extra sub = function
   | Texp_coerce (cty1, cty2) ->
     Texp_coerce (Option.map (sub.typ sub) cty1, sub.typ sub cty2)
   | Texp_newtype _ as d -> d
-  | Texp_poly cto -> Texp_poly (Option.map (sub.typ sub) cto)
 
 let function_body sub body =
   match body with
@@ -515,6 +515,14 @@ let expr sub x =
   let exp_attributes = sub.attributes sub x.exp_attributes in
   {x with exp_loc; exp_extra; exp_desc; exp_env; exp_attributes}
 
+let method_body sub x =
+  {
+    meth_loc = sub.location sub x.meth_loc;
+    meth_expr = sub.expr sub x.meth_expr;
+    meth_env = sub.env sub x.meth_env;
+    meth_param = function_param sub x.meth_param;
+    meth_typ = Option.map (sub.typ sub) x.meth_typ;
+  }
 
 let package_type sub x =
   let tpt_txt = map_loc_lid sub x.tpt_txt in
@@ -832,9 +840,9 @@ let object_field sub x =
   let of_attributes = sub.attributes sub x.of_attributes in
   {of_loc; of_desc; of_attributes}
 
-let class_field_kind sub = function
+let class_field_kind sub sub_e = function
   | Tcfk_virtual ct -> Tcfk_virtual (sub.typ sub ct)
-  | Tcfk_concrete (ovf, e) -> Tcfk_concrete (ovf, sub.expr sub e)
+  | Tcfk_concrete (ovf, e) -> Tcfk_concrete (ovf, sub_e sub e)
 
 let class_field sub x =
   let cf_loc = sub.location sub x.cf_loc in
@@ -848,9 +856,9 @@ let class_field sub x =
           sub.typ sub cty'
         )
     | Tcf_val (s, mf, id, k, b) ->
-        Tcf_val (map_loc sub s, mf, id, class_field_kind sub k, b)
+        Tcf_val (map_loc sub s, mf, id, class_field_kind sub sub.expr k, b)
     | Tcf_method (s, priv, k) ->
-        Tcf_method (map_loc sub s, priv, class_field_kind sub k)
+        Tcf_method (map_loc sub s, priv, class_field_kind sub sub.method_body k)
     | Tcf_initializer exp ->
         Tcf_initializer (sub.expr sub exp)
     | Tcf_attribute attr ->
@@ -901,6 +909,7 @@ let default =
     expr;
     extension_constructor;
     location;
+    method_body;
     module_binding;
     module_coercion;
     module_declaration;
