@@ -269,7 +269,7 @@ val extract_concrete_typedecl:
 
 val get_new_abstract_name : Env.t -> string -> string
 
-val unify: Env.t -> type_expr -> type_expr -> unit
+val unify: loc:Location.t -> Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val unify_gadt:
     Pattern_env.t -> pat:type_expr -> expected:type_expr -> Btype.TypePairs.t
@@ -280,7 +280,7 @@ val unify_gadt:
            Type variables in [ty1] are always assumed to be non-leaking
            (safely reifiable); if [penv.in_counterexample = true]
            then both [ty1] and [ty2] are assumed to be non-leaking. *)
-val unify_var: Env.t -> type_expr -> type_expr -> unit
+val unify_var: loc:Location.t -> Env.t -> type_expr -> type_expr -> unit
         (* Same as [unify], but allow free univars when first type
            is a variable. *)
 val filter_arrow: Env.t -> type_expr -> arg_label -> type_expr * type_expr
@@ -292,9 +292,9 @@ val filter_method: Env.t -> string -> type_expr -> type_expr
 val occur_in: Env.t -> type_expr -> type_expr -> bool
 val deep_occur: type_expr -> type_expr -> bool
 val deep_occur_list: type_expr -> type_expr list -> bool
-val moregeneral: Env.t -> bool -> type_expr -> type_expr -> unit
+val moregeneral: ?loc:Location.t -> Env.t -> bool -> type_expr -> type_expr -> unit
         (* Check if the first type scheme is more general than the second. *)
-val is_moregeneral: Env.t -> bool -> type_expr -> type_expr -> bool
+val is_moregeneral: ?loc:Location.t -> Env.t -> bool -> type_expr -> type_expr -> bool
 val rigidify: type_expr -> type_expr list
         (* "Rigidify" a type and return its type variable *)
 val all_distinct_vars: Env.t -> type_expr list -> bool
@@ -351,11 +351,11 @@ type class_match_failure =
 val match_class_types:
     ?trace:bool -> Env.t -> class_type -> class_type -> class_match_failure list
         (* Check if the first class type is more general than the second. *)
-val equal: Env.t -> bool -> type_expr list -> type_expr list -> unit
+val equal: ?loc:Location.t -> Env.t -> bool -> type_expr list -> type_expr list -> unit
         (* [equal env [x1...xn] tau [y1...yn] sigma]
            checks whether the parameterized types
            [/\x1.../\xn.tau] and [/\y1.../\yn.sigma] are equivalent. *)
-val is_equal : Env.t -> bool -> type_expr list -> type_expr list -> bool
+val is_equal : ?loc:Location.t -> Env.t -> bool -> type_expr list -> type_expr list -> bool
 val equal_private :
         Env.t -> type_expr list -> type_expr ->
         type_expr list -> type_expr -> unit
@@ -370,7 +370,7 @@ val match_class_declarations:
 
 val enlarge_type: Env.t -> type_expr -> type_expr * bool
         (* Make a type larger, flag is true if some pruning had to be done *)
-val subtype: Env.t -> type_expr -> type_expr -> unit -> unit
+val subtype: ?loc:Location.t -> Env.t -> type_expr -> type_expr -> unit -> unit
         (* [subtype env t1 t2] checks that [t1] is a subtype of [t2].
            It accumulates the constraints the type variables must
            enforce and returns a function that enforces this

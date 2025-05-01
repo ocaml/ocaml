@@ -423,3 +423,5 @@ let has_boxed attrs = has_attribute "boxed" attrs
 let has_remove_aliases attrs = has_attribute "remove_aliases" attrs
 
 let has_atomic attrs = has_attribute "atomic" attrs
+
+let has_deprecated_repr attrs = has_attribute "deprecated_repr" attrs

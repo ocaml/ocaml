@@ -3128,7 +3128,7 @@ let type_package env m pack =
   in
   List.iter
     (fun (n, ty) ->
-      try Ctype.unify env ty (Ctype.newvar ())
+      try Ctype.unify ~loc:modl.mod_loc env ty (Ctype.newvar ())
       with Ctype.Unify _ ->
         let lid = Longident.unflatten n |> Option.get in
         raise (Error(modl.mod_loc, env, Scoping_pack (lid,ty))))

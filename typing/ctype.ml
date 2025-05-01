@@ -3379,18 +3379,19 @@ let unify_var uenv t1 t2 =
 let _ = unify_var' := unify_var
 
 (* the final versions of unification functions *)
-let unify_var env ty1 ty2 =
+let unify_var ~loc:_ env ty1 ty2 =
   unify_var (Expression {env; in_subst = false}) ty1 ty2
 
 let unify_pairs env ty1 ty2 pairs =
   with_univar_pairs pairs (fun () ->
     unify (Expression {env; in_subst = false}) ty1 ty2)
 
-let unify env ty1 ty2 =
+let unify ~loc:_ env ty1 ty2 =
   unify_pairs env ty1 ty2 []
 
 (* Lower the level of a type to the current level *)
-let enforce_current_level env ty = unify_var env (newvar ()) ty
+let enforce_current_level env ty =
+  unify_var ~loc:Location.none env (newvar ()) ty
 
 
 (**** Special cases of unification ****)
@@ -3584,7 +3585,7 @@ let add_dummy_method env ~scope sign =
   let _, ty, row =
     filter_method_row env dummy_method Private sign.csig_self_row
   in
-  unify env ty (new_scoped_ty scope (Ttuple []));
+  unify ~loc:Location.none env ty (new_scoped_ty scope (Ttuple []));
   sign.csig_self_row <- row
 
 type add_method_failure =
@@ -3617,7 +3618,7 @@ let add_method env label priv virt ty sign =
           | Concrete -> Concrete
           | Virtual -> virt
         in
-        match unify env ty ty' with
+        match unify ~loc:Location.none env ty ty' with
         | () -> priv, virt
         | exception Unify trace ->
             raise (Add_method_failed (Type_mismatch trace))
@@ -3630,7 +3631,7 @@ let add_method env label priv virt ty sign =
           | exception Filter_method_row_failed ->
               raise (Add_method_failed Unexpected_method)
         in
-        match unify env ty ty' with
+        match unify ~loc:Location.none env ty ty' with
         | () ->
             sign.csig_self_row <- row;
             priv, virt
@@ -3666,7 +3667,7 @@ let add_instance_variable ~strict env label mut virt ty sign =
         in
         if strict then begin
           check_mutability mut mut';
-          match unify env ty ty' with
+          match unify ~loc:Location.none env ty ty' with
           | () -> ()
           | exception Unify trace ->
               raise (Add_instance_variable_failed (Type_mismatch trace))
@@ -3687,7 +3688,7 @@ exception Inherit_class_signature_failed of inherit_class_signature_failure
 let unify_self_types env sign1 sign2 =
   let self_type1 = sign1.csig_self in
   let self_type2 = sign2.csig_self in
-  match unify env self_type1 self_type2 with
+  match unify ~loc:Location.none env self_type1 self_type2 with
   | () -> ()
   | exception Unify err -> begin
       match err.trace with
@@ -4079,7 +4080,7 @@ let moregen inst_nongen type_pairs env patt subj =
    Usually, the subject is given by the user, and the pattern
    is unimportant.  So, no need to propagate abbreviations.
 *)
-let moregeneral env inst_nongen pat_sch subj_sch =
+let moregeneral ?loc:(_ = Location.none) env inst_nongen pat_sch subj_sch =
   (* Moregen splits the generic level into two finer levels:
      [generic_level] and [subject_level = generic_level - 1].
      In order to properly detect and print weak variables when
@@ -4112,8 +4113,8 @@ let moregeneral env inst_nongen pat_sch subj_sch =
     | Error trace -> raise (Moregen (expand_to_moregen_error env trace))
   end
 
-let is_moregeneral env inst_nongen pat_sch subj_sch =
-  match moregeneral env inst_nongen pat_sch subj_sch with
+let is_moregeneral ?loc env inst_nongen pat_sch subj_sch =
+  match moregeneral ?loc env inst_nongen pat_sch subj_sch with
   | () -> true
   | exception Moregen _ -> false
 
@@ -4161,7 +4162,7 @@ let matches ~expand_error_trace env ty ty' =
   let snap = snapshot () in
   let vars = rigidify ty in
   cleanup_abbrev ();
-  match unify env ty ty' with
+  match unify ~loc:Location.none env ty ty' with
   | () ->
       if not (all_distinct_vars env vars) then begin
         backtrack snap;
@@ -4433,7 +4434,7 @@ let eqtype rename type_pairs subst env t1 t2 =
   eqtype_list_same_length rename type_pairs subst env [t1] [t2]
 
 (* Two modes: with or without renaming of variables *)
-let equal env rename tyl1 tyl2 =
+let equal ?loc:(_ = Location.none) env rename tyl1 tyl2 =
   if List.length tyl1 <> List.length tyl2 then
     raise_unexplained_for Equality;
   if List.for_all2 eq_type tyl1 tyl2 then () else
@@ -4442,8 +4443,8 @@ let equal env rename tyl1 tyl2 =
   with Equality_trace trace ->
     raise (Equality (expand_to_equality_error env trace !subst))
 
-let is_equal env rename tyl1 tyl2 =
-  match equal env rename tyl1 tyl2 with
+let is_equal ?loc env rename tyl1 tyl2 =
+  match equal ?loc env rename tyl1 tyl2 with
   | () -> true
   | exception Equality _ -> false
 
@@ -4848,7 +4849,8 @@ let rec build_subtype env (visited : transient_expr list)
           let nm =
             if c > Equiv || deep_occur ty ty1' then None else Some(p,tl1) in
           set_type_desc t'' (Tobject (ty1', ref nm));
-          (try unify_var env ty t with Unify _ -> assert false);
+          (try unify_var env ~loc:Location.none ty t
+           with Unify _ -> assert false);
           ( t'', Changed)
       | _ -> raise Not_found
       with Not_found ->
@@ -5109,7 +5111,8 @@ and subtype_package env trace lvl1 pack1 lvl2 pack2 cstrs =
     else begin
       (* need to check module subtyping *)
       let snap = Btype.snapshot () in
-      match List.iter (fun (_, t1, t2, _) -> unify env t1 t2) cstrs' with
+      match List.iter (fun (_, t1, t2, _) ->
+                unify ~loc:Location.none env t1 t2) cstrs' with
       | () when Result.is_ok (!package_subtype env pack1 pack2) ->
         Btype.backtrack snap; cstrs' @ cstrs
       | () | exception Unify _ ->
@@ -5222,7 +5225,7 @@ and subtype_row env trace row1 row2 cstrs =
   | _ ->
       raise Exit
 
-let subtype env ty1 ty2 =
+let subtype ?loc:_ env ty1 ty2 =
   TypePairs.clear subtypes;
   with_univar_pairs [] (fun () ->
     (* Build constraint set. *)
@@ -5719,7 +5722,7 @@ let rec collapse_conj env visited ty =
         (fun (_l,fi) ->
           match row_field_repr fi with
             Reither (_c, t1::(_::_ as tl), _m) ->
-              List.iter (unify env t1) tl
+              List.iter (unify ~loc:Location.none env t1) tl
           | _ ->
               ())
         (row_fields row);

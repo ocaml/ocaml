@@ -249,7 +249,7 @@ let inherit_class_type ~strict loc env sign1 cty2 =
   inherit_class_signature ~strict loc env sign1 sign2
 
 let unify_delayed_method_type loc env label ty expected_ty=
-  match Ctype.unify env ty expected_ty with
+  match Ctype.unify ~loc env ty expected_ty with
   | () -> ()
   | exception Ctype.Unify trace ->
       raise(Error(loc, env, Field_type_mismatch ("method", label, trace)))
@@ -260,7 +260,7 @@ let type_constraint val_env sty sty' loc =
   let cty' = transl_simple_type val_env ~closed:false sty' in
   let ty' = cty'.ctyp_type in
   begin
-    try Ctype.unify val_env ty ty' with Ctype.Unify err ->
+    try Ctype.unify ~loc val_env ty ty' with Ctype.Unify err ->
         raise(Error(loc, val_env, Unconsistent_constraint err));
   end;
   (cty, cty')
@@ -354,7 +354,7 @@ and class_signature virt env pcsig self_scope loc =
   let self_cty = transl_simple_type env ~closed:false sty in
   let self_type = self_cty.ctyp_type in
   begin try
-    Ctype.unify env self_type sign.csig_self
+    Ctype.unify ~loc:sty.ptyp_loc env self_type sign.csig_self
   with Ctype.Unify _ ->
     raise(Error(sty.ptyp_loc, env, Pattern_type_clash self_type))
   end;
@@ -404,7 +404,7 @@ and class_type_aux env virt self_scope scty =
           let cty' = transl_simple_type env ~closed:false sty in
           let ty' = cty'.ctyp_type in
           begin
-           try Ctype.unify env ty' ty with Ctype.Unify err ->
+           try Ctype.unify ~loc:sty.ptyp_loc env ty' ty with Ctype.Unify err ->
                   raise(Error(sty.ptyp_loc, env, Parameter_mismatch err))
             end;
             cty'
@@ -773,7 +773,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
                match get_desc ty with
                | Tvar _ ->
                    let ty' = Ctype.newvar () in
-                   Ctype.unify val_env (Ctype.newty (Tpoly (ty', []))) ty;
+                   Ctype.unify ~loc val_env (Ctype.newty (Tpoly (ty', []))) ty;
                    type_approx val_env sbody ty'
                | Tpoly (ty1, tl) ->
                    let _, ty1' = Ctype.instance_poly ~fixed:false tl ty1 in
@@ -989,8 +989,10 @@ and class_structure cl_num virt self_scope final val_env met_env loc
   in
 
   (* Check that the binder has a correct type *)
-  begin try Ctype.unify val_env self_pat.pat_type sign.csig_self with
-    Ctype.Unify _ ->
+  begin
+    try
+      Ctype.unify ~loc:spat.ppat_loc val_env self_pat.pat_type sign.csig_self
+    with Ctype.Unify _ ->
       raise(Error(spat.ppat_loc, val_env,
         Pattern_type_clash self_pat.pat_type))
   end;
@@ -1084,8 +1086,9 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
       List.iter2
         (fun cty' ty ->
           let ty' = cty'.ctyp_type in
-           try Ctype.unify val_env ty' ty with Ctype.Unify err ->
-             raise(Error(cty'.ctyp_loc, val_env, Parameter_mismatch err)))
+          try Ctype.unify ~loc:cty'.ctyp_loc val_env ty' ty
+          with Ctype.Unify err ->
+            raise(Error(cty'.ctyp_loc, val_env, Parameter_mismatch err)))
         tyl params;
       (* Check for unexpected virtual methods *)
       check_virtual_clty scl.pcl_loc val_env virt Class clty';
@@ -1573,16 +1576,16 @@ let class_infos define_class kind
   let constr = Ctype.newconstr (Path.Pident obj_id) obj_params in
   begin
     let row = Btype.self_type_row obj_type in
-    Ctype.unify env row (Ctype.newty Tnil);
+    Ctype.unify ~loc:Location.none env row (Ctype.newty Tnil);
     begin try
-      List.iter2 (Ctype.unify env) obj_params obj_params'
+      List.iter2 (Ctype.unify ~loc:cl.pci_loc env) obj_params obj_params'
     with Ctype.Unify _ ->
       raise(Error(cl.pci_loc, env,
             Bad_parameters (obj_id, obj_params, obj_params')))
     end;
     let ty = Btype.self_type obj_type in
     begin try
-      Ctype.unify env ty constr
+      Ctype.unify ~loc:cl.pci_loc env ty constr
     with Ctype.Unify _ ->
       raise(Error(cl.pci_loc, env,
         Abbrev_type_clash (constr, ty, Ctype.expand_head env constr)))
@@ -1596,13 +1599,13 @@ let class_infos define_class kind
     let (cl_params', cl_type) = Ctype.instance_class params typ in
     let ty = Btype.self_type cl_type in
     begin try
-      List.iter2 (Ctype.unify env) cl_params cl_params'
+      List.iter2 (Ctype.unify ~loc:cl.pci_loc env) cl_params cl_params'
     with Ctype.Unify _ ->
       raise(Error(cl.pci_loc, env,
             Bad_class_type_parameters (ty_id, cl_params, cl_params')))
     end;
     begin try
-      Ctype.unify env ty cl_ty
+      Ctype.unify ~loc:cl.pci_loc env ty cl_ty
     with Ctype.Unify _ ->
       let ty_expanded = Ctype.object_fields ty in
       raise(Error(cl.pci_loc, env, Abbrev_type_clash (ty, ty_expanded, cl_ty)))
@@ -1611,7 +1614,7 @@ let class_infos define_class kind
 
   (* Type of the class constructor *)
   begin try
-    Ctype.unify env
+    Ctype.unify ~loc:cl.pci_loc env
       (constructor_type constr obj_type)
       (Ctype.instance constr_type)
   with Ctype.Unify err ->
@@ -1810,7 +1813,8 @@ let check_coercions env { id; id_loc; clty; ty_id; cltydef; obj_id; obj_abbr;
             and obj_params, obj_ty =
               Ctype.instance_parameterized_type obj_abbr.type_params obj_ab
             in
-            List.iter2 (Ctype.unify env) cl_params obj_params;
+            List.iter2 (Ctype.unify ~loc:Location.none env)
+              cl_params obj_params;
             cl_ty, obj_ty
         | _ -> assert false
       in

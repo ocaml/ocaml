@@ -330,7 +330,7 @@ end = struct
         if flavor = Unification || is_in_scope name then
           let v = new_global_var () in
           let snap = Btype.snapshot () in
-          if try unify env v ty; true
+          if try unify ~loc env v ty; true
             with
                 Unify err when is_in_scope name ->
                   raise (Error(loc, env, Type_mismatch err))
@@ -352,7 +352,7 @@ end = struct
     fun () ->
       List.iter
         (function (loc, t1, t2) ->
-          try unify env t1 t2 with Unify err ->
+          try unify ~loc env t1 t2 with Unify err ->
             raise (Error(loc, env, Type_mismatch err)))
         !r
 end
@@ -495,7 +495,8 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       in
       List.iter2
         (fun (sty, cty) ty' ->
-           try unify_param env ty' cty.ctyp_type with Unify err ->
+           try unify_param ~loc:sty.ptyp_loc env ty' cty.ctyp_type
+           with Unify err ->
              let err = Errortrace.swap_unification_error err in
              raise (Error(sty.ptyp_loc, env, Type_mismatch err))
         )
@@ -520,7 +521,8 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       let (params, body) = instance_parameterized_type decl.type_params body in
       List.iter2
         (fun (sty, cty) ty' ->
-           try unify_var env ty' cty.ctyp_type with Unify err ->
+           try unify_var ~loc:sty.ptyp_loc env ty' cty.ctyp_type
+           with Unify err ->
              let err = Errortrace.swap_unification_error err in
              raise (Error(sty.ptyp_loc, env, Type_mismatch err))
         )
@@ -542,9 +544,11 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
           check_tyvar_name env alias.loc alias.txt;
           let t = TyVarEnv.lookup_local ~row_context alias.txt in
           let ty = transl_type env ~policy ~aliased:true ~row_context st in
-          begin try unify_var env t ty.ctyp_type with Unify err ->
-            let err = Errortrace.swap_unification_error err in
-            raise(Error(alias.loc, env, Alias_type_mismatch err))
+          begin
+            try unify_var ~loc:alias.loc env t ty.ctyp_type
+            with Unify err ->
+              let err = Errortrace.swap_unification_error err in
+              raise(Error(alias.loc, env, Alias_type_mismatch err))
           end;
           ty
         with Not_found ->
@@ -554,9 +558,11 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
               (* Use the whole location, which is used by [Type_mismatch]. *)
               TyVarEnv.remember_used ~check:alias.loc alias.txt t styp.ptyp_loc;
               let ty = transl_type env ~policy ~row_context st in
-              begin try unify_var env t ty.ctyp_type with Unify err ->
-                let err = Errortrace.swap_unification_error err in
-                raise(Error(alias.loc, env, Alias_type_mismatch err))
+              begin
+                try unify_var ~loc:alias.loc env t ty.ctyp_type
+                with Unify err ->
+                  let err = Errortrace.swap_unification_error err in
+                  raise(Error(alias.loc, env, Alias_type_mismatch err))
               end;
               (t, ty)
             end
@@ -585,7 +591,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
           if l <> l' then raise(Error(styp.ptyp_loc, env, Variant_tags(l, l')));
           let ty = mkfield l f and ty' = mkfield l f' in
           if is_equal env false [ty] [ty'] then () else
-          try unify env ty ty'
+          try unify ~loc env ty ty'
           with Unify _trace ->
             raise(Error(loc, env, Constructor_mismatch (ty,ty')))
         with Not_found ->
@@ -686,7 +692,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       let ty_list = TyVarEnv.check_poly_univars env styp.ptyp_loc new_univars in
       let ty_list = List.filter (fun v -> deep_occur v ty) ty_list in
       let ty' = Btype.newgenty (Tpoly(ty, ty_list)) in
-      unify_var env (newvar()) ty';
+      unify_var ~loc:Location.none env (newvar()) ty';
       ctyp (Ttyp_poly (vars, cty)) ty'
   | Ptyp_package ptyp ->
       let path, mty, ptys = transl_package env ~policy ~row_context ptyp in
@@ -716,7 +722,7 @@ and transl_fields env ~policy ~row_context o fields =
     try
       let ty' = Hashtbl.find hfields l in
       if is_equal env false [ty] [ty'] then () else
-        try unify env ty ty'
+        try unify ~loc env ty ty'
         with Unify _trace ->
           raise(Error(loc, env, Method_mismatch (l, ty, ty')))
     with Not_found ->

@@ -62,7 +62,7 @@ let match_simple_printer_type env ty ~is_old_style =
   match
     Ctype.with_local_level_generalize begin fun () ->
       let ty_arg = Ctype.newvar() in
-      Ctype.unify env
+      Ctype.unify ~loc:Location.none env
         (make_printer_type ty_arg)
         (Ctype.instance ty);
       ty_arg
@@ -115,7 +115,7 @@ let match_generic_printer_type env ty =
           let ty_expected =
             List.fold_right type_arrow
               printer_args_ty (printer_type_new ty_target) in
-          Ctype.unify env
+          Ctype.unify ~loc:Location.none env
             ty_expected
             (Ctype.instance ty);
           args

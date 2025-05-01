@@ -1415,6 +1415,8 @@ let find_type_expansion path env =
   | Some body when decl.type_private = Public
               || not (Btype.type_kind_is_abstract decl)
               || Btype.has_constr_row body ->
+     (* if Builtin_attributes.has_deprecated_repr decl.type_attributes
+      * then raise Not_found; *)
       (decl.type_params, body, decl.type_expansion_scope)
   (* The manifest type of Private abstract data types without
      private row are still considered unknown to the type system.

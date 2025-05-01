@@ -99,7 +99,9 @@ let value_descriptions ~loc env name
     loc
     vd1.val_attributes vd2.val_attributes
     name;
-  match Ctype.moregeneral env true vd1.val_type vd2.val_type with
+  match
+    Ctype.moregeneral ~loc:vd2.val_loc env true vd1.val_type vd2.val_type
+  with
   | exception Ctype.Moregen err -> raise (Dont_match (Type err))
   | () -> value_descriptions_consistency env vd1 vd2
 
