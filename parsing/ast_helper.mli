@@ -328,6 +328,7 @@ module Str:
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> structure_item
     val attribute: ?loc:loc -> attribute -> structure_item
     val text: text -> structure_item list
+    val attributes: structure_item_desc -> attributes * structure_item_desc
   end
 
 (** Module declarations *)

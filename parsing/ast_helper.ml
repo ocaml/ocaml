@@ -324,6 +324,22 @@ module Str = struct
     List.map
       (fun ds -> attribute ~loc:(docstring_loc ds) (text_attr ds))
       f_txt
+  let attributes = function
+    | Pstr_eval (a, attrs) -> attrs, Pstr_eval (a, [])
+    | Pstr_primitive prim -> prim.pval_attributes, Pstr_primitive {prim with pval_attributes = []}
+    | Pstr_typext te -> te.ptyext_attributes, Pstr_typext {te with ptyext_attributes = []}
+    | Pstr_exception te -> te.ptyexn_attributes, Pstr_exception {te with ptyexn_attributes = []}
+    | Pstr_module mb -> mb.pmb_attributes, Pstr_module {mb with pmb_attributes = []}
+    | Pstr_modtype mtd -> mtd.pmtd_attributes, Pstr_modtype {mtd with pmtd_attributes = []}
+    | Pstr_open od -> od.popen_attributes, Pstr_open {od with popen_attributes = []}
+    | Pstr_include id -> id.pincl_attributes, Pstr_include {id with pincl_attributes = []}
+    | Pstr_extension (ext, attrs) -> attrs, Pstr_extension (ext, [])
+    | Pstr_value _
+    | Pstr_type _
+    | Pstr_recmodule _
+    | Pstr_class _
+    | Pstr_class_type _
+    | Pstr_attribute _ as desc -> [], desc
 end
 
 module Cl = struct
