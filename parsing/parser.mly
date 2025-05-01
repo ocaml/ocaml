@@ -2450,20 +2450,18 @@ fun_expr:
   | or_function(fun_expr) { $1 }
 ;
 %inline fun_expr_attrs:
-  | LET MODULE ext_attributes mkrhs(module_name) module_binding_body IN seq_expr
-      { let loc = make_loc ($startpos($2), $endpos($5)) in
-        let si = Str.module_ ~loc (Mb.mk ~loc:(make_loc $loc($4)) $4 $5) in
-        Pexp_struct_item (si, $7), $3 }
-  | LET EXCEPTION ext_attributes let_exception_declaration IN seq_expr
-      { let loc = make_loc ($startpos($2), $endpos($4)) in
-        let si =
-          Str.exception_ ~loc (Te.mk_exception ~loc:(make_loc $loc($4)) $4) in
-        Pexp_struct_item (si, $6), $3 }
-  | LET OPEN override_flag ext_attributes module_expr IN seq_expr
-      { let open_loc = make_loc ($startpos($2), $endpos($5)) in
-        let si =
-          Str.open_ ~loc:open_loc (Opn.mk $5 ~override:$3 ~loc:open_loc) in
-        Pexp_struct_item(si, $7), $4 }
+  | LET module_binding IN seq_expr
+      { let desc, ext = pstr_module $2 in
+        let attrs, desc = Str.attributes desc in
+        Pexp_struct_item(mkstr ~loc:$loc($2) desc, $4), (ext, attrs) }
+  | LET sig_exception_declaration IN seq_expr
+      { let desc, ext = pstr_exception $2 in
+        let attrs, desc = Str.attributes desc in
+        Pexp_struct_item(mkstr ~loc:$loc($2) desc, $4), (ext, attrs) }
+  | LET open_declaration IN seq_expr
+      { let desc, ext = pstr_open $2 in
+        let attrs, desc = Str.attributes desc in
+        Pexp_struct_item(mkstr ~loc:$loc($2) desc, $4), (ext, attrs) }
   /* Cf #5939: we used to accept (fun p when e0 -> e) */
   | FUN ext_attributes fun_params preceded(COLON, atomic_type)?
       MINUSGREATER fun_body
@@ -3464,11 +3462,6 @@ sig_exception_declaration:
       Te.mk_exception ~attrs ~loc
         (Te.decl id ~vars ~args ?res ~attrs:(attrs1 @ attrs2) ~loc ~docs)
       , ext }
-;
-%inline let_exception_declaration:
-    mkrhs(constr_ident) generalized_constructor_arguments attributes
-      { let vars, args, res = $2 in
-        Te.decl $1 ~vars ~args ?res ~attrs:$3 ~loc:(make_loc $sloc) }
 ;
 generalized_constructor_arguments:
     /*empty*/                     { ([],Pcstr_tuple [],None) }
