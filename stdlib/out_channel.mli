@@ -16,9 +16,8 @@
 (** Output channels.
 
     This module provides functions for working with output channels.
-    For example, you can use this module to write to a file or 
-    print to the terminal
-    
+    For example, you can use this module to write to a file or
+    print to the terminal.
 
     See {{!examples} the example section} below.
 
