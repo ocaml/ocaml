@@ -101,6 +101,9 @@ let () =
   object%foo[@foo] end ;
   begin%foo[@foo] 3 end ;
   new%foo[@foo] x ;
+  (let module M = N [@@foo] in ());
+  (let exception E [@@foo] in ());
+  (let open M [@@foo] in ());
 
   match%foo[@foo] () with
   (* Pattern expressions *)
