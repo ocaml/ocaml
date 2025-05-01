@@ -70,8 +70,18 @@ let pstr_exception (te, ext) =
   (Pstr_exception te, ext)
 let pstr_include (body, ext) =
   (Pstr_include body, ext)
+let pstr_module (body, ext) =
+  (Pstr_module body, ext)
 let pstr_recmodule (ext, bindings) =
   (Pstr_recmodule bindings, ext)
+let pstr_modtype (body, ext) =
+  (Pstr_modtype body, ext)
+let pstr_open (body, ext) =
+  (Pstr_open body, ext)
+let pstr_class (ext, body) =
+  (Pstr_class body, ext)
+let pstr_class_type (ext, body) =
+  (Pstr_class_type body, ext)
 
 let psig_typext (te, ext) =
   (Psig_typext te, ext)
@@ -1532,17 +1542,17 @@ structure_item:
     | str_exception_declaration
         { pstr_exception $1 }
     | module_binding
-        { $1 }
+        { pstr_module $1 }
     | rec_module_bindings
         { pstr_recmodule $1 }
     | module_type_declaration
-        { let (body, ext) = $1 in (Pstr_modtype body, ext) }
+        { pstr_modtype $1 }
     | open_declaration
-        { let (body, ext) = $1 in (Pstr_open body, ext) }
+        { pstr_open $1 }
     | class_declarations
-        { let (ext, l) = $1 in (Pstr_class l, ext) }
+        { pstr_class $1 }
     | class_type_declarations
-        { let (ext, l) = $1 in (Pstr_class_type l, ext) }
+        { pstr_class_type $1 }
     | include_statement(module_expr)
         { pstr_include $1 }
     )
@@ -1560,7 +1570,7 @@ structure_item:
       let loc = make_loc $sloc in
       let attrs = attrs1 @ attrs2 in
       let body = Mb.mk name body ~attrs ~loc ~docs in
-      Pstr_module body, ext }
+      body, ext }
 ;
 
 (* The body (right-hand side) of a module binding. *)
