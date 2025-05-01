@@ -1539,24 +1539,32 @@ structure_item:
         { pstr_type $1 }
     | str_type_extension
         { pstr_typext $1 }
-    | str_exception_declaration
+    | str_exception_rebind
         { pstr_exception $1 }
-    | module_binding
-        { pstr_module $1 }
     | rec_module_bindings
         { pstr_recmodule $1 }
     | module_type_declaration
         { pstr_modtype $1 }
-    | open_declaration
-        { pstr_open $1 }
     | class_declarations
         { pstr_class $1 }
     | class_type_declarations
         { pstr_class_type $1 }
     | include_statement(module_expr)
         { pstr_include $1 }
+    | local_structure_item
+        { $1 }
     )
     { $1 }
+;
+
+(* Local structure items (= can appear in let expressions) *)
+local_structure_item:
+    module_binding
+      { pstr_module $1 }
+  | sig_exception_declaration
+      { pstr_exception $1 }
+  | open_declaration
+      { pstr_open $1 }
 ;
 
 (* A single module binding. *)
@@ -2450,16 +2458,8 @@ fun_expr:
   | or_function(fun_expr) { $1 }
 ;
 %inline fun_expr_attrs:
-  | LET module_binding IN seq_expr
-      { let desc, ext = pstr_module $2 in
-        let attrs, desc = Str.attributes desc in
-        Pexp_struct_item(mkstr ~loc:$loc($2) desc, $4), (ext, attrs) }
-  | LET sig_exception_declaration IN seq_expr
-      { let desc, ext = pstr_exception $2 in
-        let attrs, desc = Str.attributes desc in
-        Pexp_struct_item(mkstr ~loc:$loc($2) desc, $4), (ext, attrs) }
-  | LET open_declaration IN seq_expr
-      { let desc, ext = pstr_open $2 in
+  | LET local_structure_item IN seq_expr
+      { let desc, ext = $2 in
         let attrs, desc = Str.attributes desc in
         Pexp_struct_item(mkstr ~loc:$loc($2) desc, $4), (ext, attrs) }
   /* Cf #5939: we used to accept (fun p when e0 -> e) */
@@ -3431,10 +3431,8 @@ generic_constructor_declaration(opening):
       Type.constructor cid ~vars ~args ?res ~attrs ~loc ~info
     }
 ;
-str_exception_declaration:
-  sig_exception_declaration
-    { $1 }
-| EXCEPTION
+str_exception_rebind:
+  EXCEPTION
   ext = ext
   attrs1 = attributes
   id = mkrhs(constr_ident)
