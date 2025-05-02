@@ -1524,10 +1524,7 @@ structure_item:
     let_bindings(ext)
       { val_of_let_bindings ~loc:$sloc $1 }
   | mkstr(
-      item_extension post_item_attributes
-        { let docs = symbol_docs $sloc in
-          Pstr_extension ($1, add_docs_attrs docs $2) }
-    | floating_attribute
+      floating_attribute
         { Pstr_attribute $1 }
     )
   | wrap_mkstr_ext(
@@ -1541,20 +1538,36 @@ structure_item:
         { pstr_typext $1 }
     | str_exception_declaration
         { pstr_exception $1 }
-    | module_binding
-        { pstr_module $1 }
     | rec_module_bindings
         { pstr_recmodule $1 }
     | module_type_declaration
         { pstr_modtype $1 }
-    | open_declaration
-        { pstr_open $1 }
     | class_declarations
         { pstr_class $1 }
     | class_type_declarations
         { pstr_class_type $1 }
     | include_statement(module_expr)
         { pstr_include $1 }
+    )
+    { $1 }
+  | local_structure_item
+    { $1 }
+;
+
+(* A local structure item (= can appear in let expressions) *)
+local_structure_item:
+  | mkstr(
+      item_extension post_item_attributes
+        { let docs = symbol_docs $sloc in
+          Pstr_extension ($1, add_docs_attrs docs $2) }
+    )
+  | wrap_mkstr_ext(
+      sig_exception_declaration
+        { pstr_exception $1 }
+    | module_binding
+        { pstr_module $1 }
+    | open_declaration
+        { pstr_open $1 }
     )
     { $1 }
 ;
@@ -2450,11 +2463,7 @@ fun_expr:
   | or_function(fun_expr) { $1 }
 ;
 %inline fun_expr_attrs:
-  | LET ext_attributes wrap_mkstr_ext(module_binding { pstr_module $1 }) IN seq_expr
-      { Pexp_struct_item($3, $5), $2 }
-  | LET ext_attributes wrap_mkstr_ext(sig_exception_declaration { pstr_exception $1 }) IN seq_expr
-      { Pexp_struct_item($3, $5), $2 }
-  | LET ext_attributes wrap_mkstr_ext(open_declaration { pstr_open $1 }) IN seq_expr
+  | LET ext_attributes local_structure_item IN seq_expr
       { Pexp_struct_item($3, $5), $2 }
   /* Cf #5939: we used to accept (fun p when e0 -> e) */
   | FUN ext_attributes fun_params preceded(COLON, atomic_type)?
@@ -3426,9 +3435,7 @@ generic_constructor_declaration(opening):
     }
 ;
 str_exception_declaration:
-  sig_exception_declaration
-    { $1 }
-| EXCEPTION
+  EXCEPTION
   ext = ext
   attrs1 = attributes
   id = mkrhs(constr_ident)
