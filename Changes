@@ -5,6 +5,14 @@ Working version
 
 ### Language features:
 
+* #14009: infix extension points and attributes appearing in local
+  modules/exceptions/opens are attached to the AST node of the corresponding
+  structure item (similar to their global counterparts) and no longer to the
+  enclosing `let` expression.  Extension points and attributes that are to be
+  attached to the enclosing `let` expression are to be written next to the `let`
+  keyword: `let%foo[@bar] module M = ... in ...`.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
 ### Runtime system:
 
 ### Code generation and optimizations:
