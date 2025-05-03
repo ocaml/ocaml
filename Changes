@@ -70,6 +70,9 @@ OCaml 5.4.0
   (Ryan Tjoa and Chris Casinghino, review by Gabriel Scherer, Chris Casinghino,
   and Leo White)
 
+- #13645: Allow to use (ty :> int) for any immediate type ty.
+  (Christophe Raffalli, review by ...)
+
 ### Runtime system:
 
 - #13819: Fix field initialisation bug in runtime events subsystem.
