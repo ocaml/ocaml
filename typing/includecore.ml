@@ -892,8 +892,14 @@ let private_object env fields1 params1 fields2 params2 =
     | () -> None
   end
 
-let type_manifest env ty1 params1 ty2 params2 priv2 kind2 =
-  let ty1' = Ctype.expand_head env ty1 and ty2' = Ctype.expand_head env ty2 in
+let type_manifest ~loc env ty1 params1 ty2 params2 priv2 kind2 =
+  let ty1' =
+    Ctype.expand_head ~through_deprecated_repr:false
+      env ty1
+  and ty2' =
+    Ctype.expand_head  ~through_deprecated_repr:false
+      env ty2
+  in
   match get_desc ty1', get_desc ty2' with
   | Tvariant row1, Tvariant row2
     when is_absrow env (row_more row2) -> begin
@@ -927,9 +933,9 @@ let type_manifest env ty1 params1 ty2 params2 priv2 kind2 =
       in
       match
         if is_private_abbrev_2 then
-          Ctype.equal_private env params1 ty1 params2 ty2
+          Ctype.equal_private ~loc env params1 ty1 params2 ty2
         else
-          Ctype.equal env true (params1 @ [ty1]) (params2 @ [ty2])
+          Ctype.equal ~loc env true (params1 @ [ty1]) (params2 @ [ty2])
       with
       | exception Ctype.Equality err -> Some (Manifest err)
       | () -> None
@@ -964,7 +970,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           | () -> None
         end
     | (Some ty1, Some ty2) ->
-         type_manifest env ty1 decl1.type_params ty2 decl2.type_params
+         type_manifest ~loc env ty1 decl1.type_params ty2 decl2.type_params
            decl2.type_private decl2.type_kind
     | (None, Some ty2) ->
         let ty1 =

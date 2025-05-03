@@ -2781,7 +2781,7 @@ let is_prim ~name funct =
 
 (* List labels in a function type, and whether return type is a variable *)
 let rec list_labels_aux env visited ls ty_fun =
-  let ty = expand_head env ty_fun in
+  let ty = expand_head ~through_deprecated_repr:false env ty_fun in
   if TypeSet.mem ty visited then
     List.rev ls, false
   else match get_desc ty with
@@ -3455,7 +3455,10 @@ let check_statement exp =
 let check_partial_application ~statement exp =
   let check_statement () = if statement then check_statement exp in
   let doit () =
-    let ty = get_desc (expand_head exp.exp_env exp.exp_type) in
+    let ty =
+      get_desc
+        (expand_head ~through_deprecated_repr:false exp.exp_env exp.exp_type)
+    in
     match ty with
     | Tarrow _ ->
         let rec check {exp_desc; exp_loc; exp_extra; _} =
@@ -3494,7 +3497,10 @@ let check_partial_application ~statement exp =
     | _ ->
         check_statement ()
   in
-  let ty = get_desc (expand_head exp.exp_env exp.exp_type) in
+  let ty =
+    get_desc
+      (expand_head ~through_deprecated_repr:false exp.exp_env exp.exp_type)
+  in
   match ty with
   | Tvar _ ->
       (* The type of [exp] is not known. Delay the check until after
@@ -4019,7 +4025,7 @@ and type_expect_
       assert (sargs <> []);
       let outer_level = get_current_level () in
       let rec lower_args seen ty_fun =
-        let ty = expand_head env ty_fun in
+        let ty = expand_head ~through_deprecated_repr:false env ty_fun in
         if TypeSet.mem ty seen then () else
           match get_desc ty with
             Tarrow (_l, ty_arg, ty_fun, _com) ->
@@ -5681,7 +5687,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
   let may_coerce =
     if not (is_inferred sarg) then None else
     let work () =
-      let te = expand_head env ty_expected' in
+      let te = expand_head ~through_deprecated_repr:false env ty_expected' in
       match get_desc te with
         Tarrow(Nolabel,_,ty_res0,_) ->
           Some (no_labels ty_res0, get_level te)

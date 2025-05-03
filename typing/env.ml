@@ -1406,6 +1406,8 @@ let find_module path env =
 let find_module_lazy path env =
   find_module_lazy ~alias:false path env
 
+let current_loc = ref Location.none
+
 (* Find the manifest type associated to a type when appropriate:
    - the type should be public or should have a private row,
    - the type should have an associated manifest type. *)
@@ -1415,9 +1417,15 @@ let find_type_expansion path env =
   | Some body when decl.type_private = Public
               || not (Btype.type_kind_is_abstract decl)
               || Btype.has_constr_row body ->
-     (* if Builtin_attributes.has_deprecated_repr decl.type_attributes
-      * then raise Not_found; *)
-      (decl.type_params, body, decl.type_expansion_scope)
+     if Builtin_attributes.has_deprecated_repr decl.type_attributes
+      && not (Location.is_none !current_loc)
+     then
+       Location.deprecated !current_loc
+         (if Location.is_none !current_loc
+          then Printexc.raw_backtrace_to_string (Printexc.get_callstack 100)
+          else "implicitly converting between a type and its deprecated \
+                representation");
+     (decl.type_params, body, decl.type_expansion_scope)
   (* The manifest type of Private abstract data types without
      private row are still considered unknown to the type system.
      Hence, this case is caught by the following clause that also handles

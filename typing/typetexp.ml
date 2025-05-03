@@ -590,7 +590,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
           (* Check for tag conflicts *)
           if l <> l' then raise(Error(styp.ptyp_loc, env, Variant_tags(l, l')));
           let ty = mkfield l f and ty' = mkfield l f' in
-          if is_equal env false [ty] [ty'] then () else
+          if is_equal ~loc env false [ty] [ty'] then () else
           try unify ~loc env ty ty'
           with Unify _trace ->
             raise(Error(loc, env, Constructor_mismatch (ty,ty')))

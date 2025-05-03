@@ -24,6 +24,11 @@ open Errortrace
 
 open Local_store
 
+let with_env_loc ?loc f =
+  match loc with
+  | None -> f ()
+  | Some loc -> Misc.protect_refs [ R (Env.current_loc, loc) ] f
+
 (*
    General notes
    =============
@@ -793,7 +798,7 @@ let copy_spine ty =
   For_copy.with_scope (fun copy_scope -> copy_spine copy_scope ty)
 
 let forward_try_expand_safe = (* Forward declaration *)
-  ref (fun _env _ty -> assert false)
+  ref (fun ?through_deprecated_repr:_ _env _ty -> assert false)
 
 (*
    Lower the levels of a type (assume [level] is not
@@ -983,7 +988,9 @@ let rec lower_contravariant env var_level visited contra ty =
                   else lower_rec contra t)
               variance tyl in
           if maybe_expand then (* we expand cautiously to avoid missing cmis *)
-            match !forward_try_expand_safe env ty with
+            match !forward_try_expand_safe
+                    ~through_deprecated_repr:false env ty
+            with
             | ty -> lower_rec contra ty
             | exception Cannot_expand -> not_expanded ()
           else not_expanded ()
@@ -1696,18 +1703,31 @@ let safe_abbrev env ty =
       cleanup_abbrev ();
       false
 
+let is_path_of_type_constr_with_deprecated_repr env path =
+  match Env.find_type path env with
+  | { type_manifest = Some body; _ } as decl
+       when decl.type_private = Public
+            || not (Btype.type_kind_is_abstract decl)
+            || Btype.has_constr_row body ->
+     Builtin_attributes.has_deprecated_repr decl.type_attributes
+  | exception Not_found | _ -> false
+
 (* Expand the head of a type once.
    Raise Cannot_expand if the type cannot be expanded.
    May raise Escape, if a recursion was hidden in the type. *)
-let try_expand_once env ty =
+let try_expand_once ?(through_deprecated_repr = true) env ty =
   match get_desc ty with
-    Tconstr _ -> expand_abbrev env ty
+  | Tconstr (path, _, _) ->
+     if through_deprecated_repr
+        || not (is_path_of_type_constr_with_deprecated_repr env path)
+     then expand_abbrev env ty
+     else raise Cannot_expand
   | _ -> raise Cannot_expand
 
 (* This one only raises Cannot_expand *)
-let try_expand_safe env ty =
+let try_expand_safe ?through_deprecated_repr env ty =
   let snap = Btype.snapshot () in
-  try try_expand_once env ty
+  try try_expand_once ?through_deprecated_repr env ty
   with Escape _ ->
     Btype.backtrack snap; cleanup_abbrev (); raise Cannot_expand
 
@@ -1719,16 +1739,16 @@ let rec try_expand_head
   with Cannot_expand -> ty'
 
 (* Unsafe full expansion, may raise [Unify [Escape _]]. *)
-let expand_head_unif env ty =
+let expand_head_unif ?through_deprecated_repr env ty =
   try
-    try_expand_head try_expand_once env ty
+    try_expand_head (try_expand_once ?through_deprecated_repr) env ty
   with
   | Cannot_expand -> ty
   | Escape e -> raise_for Unify (Escape e)
 
 (* Safe version of expand_head, never fails *)
-let expand_head env ty =
-  try try_expand_head try_expand_safe env ty
+let expand_head ?through_deprecated_repr env ty =
+  try try_expand_head (try_expand_safe ?through_deprecated_repr) env ty
   with Cannot_expand -> ty
 
 let _ = forward_try_expand_safe := try_expand_safe
@@ -1806,7 +1826,8 @@ let expand_head_opt env ty =
 let full_expand ~may_forget_scope env ty =
   let ty =
     if may_forget_scope then
-      try expand_head_unif env ty with Unify_trace _ ->
+      try expand_head_unif ~through_deprecated_repr:true env ty
+      with Unify_trace _ ->
         (* #10277: forget scopes when printing trace *)
         with_level ~level:(get_level ty) begin fun () ->
           (* The same as [expand_head], except in the failing case we return the
@@ -2707,6 +2728,15 @@ let compare_package env unify_list lv1 pack1 lv2 pack2 =
       (!package_subtype env pack1 pack2)
       (fun () -> !package_subtype env pack2 pack1)
 
+let expand_delaying_deprecated_repr expand env ty1 ty2 =
+  let ty1' = expand ?through_deprecated_repr:(Some false) env ty1 in
+  let ty2' = expand ?through_deprecated_repr:(Some false) env ty2 in
+  match get_desc ty1', get_desc ty2' with
+  | Tconstr (p1, _, _), Tconstr (p2, _, _) when Path.same p1 p2 -> ty1', ty2'
+  | _ ->
+     expand ?through_deprecated_repr:(Some true) env ty1',
+     expand ?through_deprecated_repr:(Some true) env ty2'
+
 (* force unification in Reither when one side has a non-conjunctive type *)
 (* Code smell: this could also be put in unification_environment.
    Only modified by expand_head_rigid, but the corresponding unification
@@ -2833,10 +2863,10 @@ and unify2_expand uenv t1 t1' t2 t2' =
   (* Second step: expansion of abbreviations *)
   (* Expansion may change the representative of the types. *)
   let env = get_env uenv in
-  ignore (expand_head_unif env t1');
-  ignore (expand_head_unif env t2');
-  let t1' = expand_head_unif env t1' in
-  let t2' = expand_head_unif env t2' in
+  ignore (expand_delaying_deprecated_repr expand_head_unif env t1' t2');
+  let t1', t2' =
+    expand_delaying_deprecated_repr expand_head_unif env t1' t2'
+  in
   let lv = Int.min (get_level t1') (get_level t2') in
   let scope = Int.max (get_scope t1') (get_scope t2') in
   update_level_for Unify env lv t2;
@@ -2998,7 +3028,8 @@ and unify3 uenv t1 t1' t2 t2' =
           raise_for Unify (Obj (Abstract_row Second))
       | (Tconstr _,  Tnil ) ->
           raise_for Unify (Obj (Abstract_row First))
-      | (_, _) -> raise_unexplained_for Unify
+      | (_, _) ->
+          raise_unexplained_for Unify
       end;
       (* XXX Commentaires + changer "create_recursion"
          ||| Comments + change "create_recursion" *)
@@ -3006,7 +3037,9 @@ and unify3 uenv t1 t1' t2 t2' =
         match get_desc t2 with
           Tconstr (p, tl, abbrev) ->
             forget_abbrev abbrev p;
-            let t2'' = expand_head_unif (get_env uenv) t2 in
+            let t2'' =
+              expand_head_unif ~through_deprecated_repr:true (get_env uenv) t2
+            in
             if not (closed_parameterized_type tl t2'') then
               link_type t2 t2'
         | _ ->
@@ -3379,15 +3412,17 @@ let unify_var uenv t1 t2 =
 let _ = unify_var' := unify_var
 
 (* the final versions of unification functions *)
-let unify_var ~loc:_ env ty1 ty2 =
-  unify_var (Expression {env; in_subst = false}) ty1 ty2
+let unify_var ~loc env ty1 ty2 =
+  with_env_loc ~loc (fun () ->
+      unify_var (Expression {env; in_subst = false}) ty1 ty2)
 
 let unify_pairs env ty1 ty2 pairs =
   with_univar_pairs pairs (fun () ->
     unify (Expression {env; in_subst = false}) ty1 ty2)
 
-let unify ~loc:_ env ty1 ty2 =
-  unify_pairs env ty1 ty2 []
+let unify ~loc env ty1 ty2 =
+  with_env_loc ~loc (fun () ->
+      unify_pairs env ty1 ty2 [])
 
 (* Lower the level of a type to the current level *)
 let enforce_current_level env ty =
@@ -3398,7 +3433,7 @@ let enforce_current_level env ty =
 
 let expand_head_trace env t =
   let reset_tracing = check_trace_gadt_instances env in
-  let t = expand_head_unif env t in
+  let t = expand_head_unif ~through_deprecated_repr:true env t in
   reset_trace_gadt_instances reset_tracing;
   t
 
@@ -3849,8 +3884,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
         ()
     | _ ->
-        let t1' = expand_head env t1 in
-        let t2' = expand_head env t2 in
+        let t1', t2' = expand_delaying_deprecated_repr expand_head env t1 t2 in
         (* Expansion may have changed the representative of the types... *)
         if eq_type t1' t2' then () else
         if not (TypePairs.mem type_pairs (t1', t2')) then begin
@@ -4080,7 +4114,8 @@ let moregen inst_nongen type_pairs env patt subj =
    Usually, the subject is given by the user, and the pattern
    is unimportant.  So, no need to propagate abbreviations.
 *)
-let moregeneral ?loc:(_ = Location.none) env inst_nongen pat_sch subj_sch =
+let moregeneral ?loc env inst_nongen pat_sch subj_sch =
+  with_env_loc ?loc (fun () ->
   (* Moregen splits the generic level into two finer levels:
      [generic_level] and [subject_level = generic_level - 1].
      In order to properly detect and print weak variables when
@@ -4111,7 +4146,7 @@ let moregeneral ?loc:(_ = Location.none) env inst_nongen pat_sch subj_sch =
     end with
     | Ok () -> ()
     | Error trace -> raise (Moregen (expand_to_moregen_error env trace))
-  end
+  end)
 
 let is_moregeneral ?loc env inst_nongen pat_sch subj_sch =
   match moregeneral ?loc env inst_nongen pat_sch subj_sch with
@@ -4187,10 +4222,10 @@ let does_match env ty ty' =
                  (*  Equivalence between parameterized types  *)
                  (*********************************************)
 
-let expand_head_rigid env ty =
+let expand_head_rigid ?through_deprecated_repr env ty =
   let old = !rigid_variants in
   rigid_variants := true;
-  let ty' = expand_head env ty in
+  let ty' = expand_head ?through_deprecated_repr env ty in
   rigid_variants := old; ty'
 
 let eqtype_subst type_pairs subst t1 t2 =
@@ -4227,8 +4262,9 @@ let rec eqtype rename type_pairs subst env t1 t2 =
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
         ()
     | _ ->
-        let t1' = expand_head_rigid env t1 in
-        let t2' = expand_head_rigid env t2 in
+        let t1', t2' =
+          expand_delaying_deprecated_repr expand_head_rigid env t1 t2
+        in
         (* Expansion may have changed the representative of the types... *)
         if check_phys_eq t1' t2' then () else
         if not (TypePairs.mem type_pairs (t1', t2')) then begin
@@ -4434,26 +4470,27 @@ let eqtype rename type_pairs subst env t1 t2 =
   eqtype_list_same_length rename type_pairs subst env [t1] [t2]
 
 (* Two modes: with or without renaming of variables *)
-let equal ?loc:(_ = Location.none) env rename tyl1 tyl2 =
+let equal ?loc env rename tyl1 tyl2 =
+  with_env_loc ?loc (fun () ->
   if List.length tyl1 <> List.length tyl2 then
     raise_unexplained_for Equality;
   if List.for_all2 eq_type tyl1 tyl2 then () else
   let subst = ref [] in
   try eqtype_list_same_length rename (TypePairs.create 11) subst env tyl1 tyl2
   with Equality_trace trace ->
-    raise (Equality (expand_to_equality_error env trace !subst))
+    raise (Equality (expand_to_equality_error env trace !subst)))
 
 let is_equal ?loc env rename tyl1 tyl2 =
   match equal ?loc env rename tyl1 tyl2 with
   | () -> true
   | exception Equality _ -> false
 
-let rec equal_private env params1 ty1 params2 ty2 =
-  match equal env true (params1 @ [ty1]) (params2 @ [ty2]) with
+let rec equal_private ?loc env params1 ty1 params2 ty2 =
+  match equal ?loc env true (params1 @ [ty1]) (params2 @ [ty2]) with
   | () -> ()
   | exception (Equality _ as err) ->
       match try_expand_safe_opt env (expand_head env ty1) with
-      | ty1' -> equal_private env params1 ty1' params2 ty2
+      | ty1' -> equal_private ?loc env params1 ty1' params2 ty2
       | exception Cannot_expand -> raise err
 
                           (*************************)
@@ -5225,7 +5262,8 @@ and subtype_row env trace row1 row2 cstrs =
   | _ ->
       raise Exit
 
-let subtype ?loc:_ env ty1 ty2 =
+let subtype ?loc env ty1 ty2 =
+  with_env_loc ?loc (fun () ->
   TypePairs.clear subtypes;
   with_univar_pairs [] (fun () ->
     (* Build constraint set. *)
@@ -5242,7 +5280,7 @@ let subtype ?loc:_ env ty1 ty2 =
              ~env
              ~trace:trace0
              ~unification_trace:(List.tl trace))
-        (List.rev cstrs))
+        (List.rev cstrs)))
 
                               (*******************)
                               (*  Miscellaneous  *)

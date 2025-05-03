@@ -234,7 +234,7 @@ val try_expand_once_opt: Env.t -> type_expr -> type_expr
 val try_expand_safe_opt: Env.t -> type_expr -> type_expr
 
 val expand_head_once: Env.t -> type_expr -> type_expr
-val expand_head: Env.t -> type_expr -> type_expr
+val expand_head: ?through_deprecated_repr:bool -> Env.t -> type_expr -> type_expr
 val expand_head_opt: Env.t -> type_expr -> type_expr
 (** The compiler's own version of [expand_head] necessary for type-based
     optimisations. *)
@@ -357,7 +357,7 @@ val equal: ?loc:Location.t -> Env.t -> bool -> type_expr list -> type_expr list 
            [/\x1.../\xn.tau] and [/\y1.../\yn.sigma] are equivalent. *)
 val is_equal : ?loc:Location.t -> Env.t -> bool -> type_expr list -> type_expr list -> bool
 val equal_private :
-        Env.t -> type_expr list -> type_expr ->
+        ?loc:Location.t -> Env.t -> type_expr list -> type_expr ->
         type_expr list -> type_expr -> unit
 (* [equal_private env t1 params1 t2 params2] checks that [t1::params1]
    equals [t2::params2] but it is allowed to expand [t1] if it is a
