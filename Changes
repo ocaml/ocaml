@@ -37,6 +37,10 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #13120, ????, improved error message for heuristic expression coercion
+   `(x:>typ)`
+   (Florian Angeletti, report by Samuel Vivien, review by ????)
+
 ### Internal/compiler-libs changes:
 
 - #13839, #14008: Reimplement `let open`, `let module` and `let exception` in
