@@ -148,6 +148,11 @@ external of_int : int -> nativeint = "%nativeint_of_int"
 (** Convert the given integer (type [int]) to a native integer
    (type [nativeint]). *)
 
+val unsigned_of_int : int -> nativeint
+(** Same as {!of_int}, but interprets the argument as an {e unsigned} integer.
+
+    @since 4.08 *)
+
 external to_int : nativeint -> int = "%nativeint_to_int"
 (** Convert the given native integer (type [nativeint]) to an
    integer (type [int]).  The high-order bit is lost during
