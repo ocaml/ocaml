@@ -7,6 +7,8 @@ Working version
 
 ### Runtime system:
 
+- #14015: Fix memory corruption when an exception is raised during demarshaling.
+
 ### Code generation and optimizations:
 
 ### Standard library:
