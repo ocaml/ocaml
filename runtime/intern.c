@@ -935,7 +935,7 @@ CAMLprim value caml_input_value_to_outside_heap(value vchan)
 CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
 {
   CAMLparam1 (str);
-  CAMLlocal1 (obj);
+  value obj;
   struct marshal_header h;
   struct caml_intern_state* s = init_intern_state ();
 
