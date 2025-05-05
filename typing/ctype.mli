@@ -194,13 +194,14 @@ type existential_treatment =
   | Make_existentials_abstract of Pattern_env.t
 
 val instance_constructor:
+  scope:int ->
   existential_treatment ->
   Data_types.constructor_description ->
   type_expr list * type_expr * type_expr list
 (* Same, for a constructor. Also returns existentials. *)
 
 val instance_parameterized_type:
-        ?keep_names:bool ->
+        ?keep_names:bool -> ?scope:int ->
         type_expr list -> type_expr -> type_expr list * type_expr
 val instance_declaration: type_declaration -> type_declaration
 val generic_instance_declaration: type_declaration -> type_declaration

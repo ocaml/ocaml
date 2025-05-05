@@ -282,14 +282,6 @@ let rcp node =
   Cmt_format.add_saved_type (Cmt_format.Partial_pattern (Computation, node));
   node
 
-
-(* Context for inline record arguments; see [type_ident] *)
-
-type recarg =
-  | Allowed
-  | Required
-  | Rejected
-
 let mk_expected ?explanation ty = { ty; explanation; }
 
 let case lhs rhs =
@@ -828,7 +820,8 @@ and build_as_type_aux (env : Env.t) p =
       if keep then p.pat_type else
       let tyl = List.map (build_as_type env) pl in
       let ty_args, ty_res, _ =
-        instance_constructor Keep_existentials_flexible cstr
+        instance_constructor ~scope:Ident.lowest_scope
+          Keep_existentials_flexible cstr
       in
       List.iter2 (fun (p,ty) -> unify_pat env {p with pat_type = ty})
         (List.combine pl tyl) ty_args;
@@ -1065,11 +1058,13 @@ let solve_Ppat_construct tps (penv : Pattern_env.t) loc constr no_existentials
   let ty_args, equated_types, existential_ctyp =
     with_local_level_generalize_structure begin fun () ->
       let expected_ty = instance expected_ty in
+      let equations_scope = penv.Pattern_env.equations_scope in
       let ty_args, ty_res, equated_types, existential_ctyp =
         match existential_styp with
           None ->
             let ty_args, ty_res, _ =
-              instance_constructor (Make_existentials_abstract penv) constr
+              instance_constructor ~scope:equations_scope
+                (Make_existentials_abstract penv) constr
             in
             ty_args, ty_res, unify_res ty_res expected_ty, None
         | Some (name_list, sty) ->
@@ -1082,7 +1077,8 @@ let solve_Ppat_construct tps (penv : Pattern_env.t) loc constr no_existentials
                 Keep_existentials_flexible
             in
             let ty_args, ty_res, ty_ex =
-              instance_constructor existential_treatment constr
+              instance_constructor ~scope:equations_scope
+                existential_treatment constr
             in
             let equated_types = lazy (unify_res ty_res expected_ty) in
             let ty_args, existential_ctyp =
@@ -1092,7 +1088,7 @@ let solve_Ppat_construct tps (penv : Pattern_env.t) loc constr no_existentials
             ty_args, ty_res, Lazy.force equated_types, existential_ctyp
       in
       if constr.cstr_existentials <> [] then
-        lower_variables_only !!penv penv.Pattern_env.equations_scope ty_res;
+        lower_variables_only !!penv equations_scope ty_res;
       (ty_args, equated_types, existential_ctyp)
     end
   in
@@ -2040,23 +2036,6 @@ and type_pat_aux
           existential_styp expected_ty
       in
 
-      let rec check_non_escaping p =
-        match p.ppat_desc with
-        | Ppat_or (p1, p2) ->
-            check_non_escaping p1;
-            check_non_escaping p2
-        | Ppat_alias (p, _) ->
-            check_non_escaping p
-        | Ppat_constraint _ ->
-            raise (Error (p.ppat_loc, !!penv, Inlined_record_escape))
-        | _ ->
-            ()
-      in
-      if constr.cstr_inlined <> None then begin
-        List.iter check_non_escaping sargs;
-        Option.iter (fun (_, sarg) -> check_non_escaping sarg) sarg
-      end;
-
       let args = List.map2 (type_pat tps Value) sargs ty_args in
       rvp { pat_desc=Tpat_construct(lid, constr, args, existential_ctyp);
             pat_loc = loc; pat_extra=[];
@@ -2157,6 +2136,29 @@ and type_pat_aux
       List.iter (fun { pv_type; pv_loc; _ } ->
         check_scope_escape pv_loc env2 outer_lev pv_type
       ) p2_variables;
+      begin
+      (* Now that we checked against escapes of bound variables,
+         lower the scopes back to [equations_scope]. *)
+        let equations_scope = penv.equations_scope in
+        assert (equations_scope >= 0 && equations_scope < 1 lsl 27);
+        let rec lower_scope mark ty =
+          if get_level ty >= outer_lev
+          && try_mark_node mark ty
+          then begin
+            if get_scope ty > equations_scope then
+              set_scope ty equations_scope;
+            iter_type_expr (lower_scope mark) ty
+          end
+        in
+        let lower_pat pat =
+          with_type_mark (fun mark -> lower_scope mark pat.pat_type)
+        in
+        let open Tast_iterator in
+        let it = { default_iterator with pat = (fun it pat ->
+          lower_pat pat;
+          default_iterator.pat it pat) } in
+        List.iter (it.pat it) [p1; p2]
+      end;
       let alpha_env =
         enter_orpat_variables loc !!penv p1_variables p2_variables in
       (* Propagate the outcome of checking the or-pattern back to
@@ -3713,6 +3715,9 @@ let with_explanation explanation f =
 let may_lower_contravariant env exp =
   if maybe_expansive exp then lower_contravariant env exp.exp_type
 
+let lower_exp_type env loc ty =
+  unify_exp_types loc env ty (newvar ())
+
 (* value binding elaboration *)
 
 let vb_exp_constraint {pvb_expr=expr; pvb_pat=pat; pvb_constraint=ct; _ } =
@@ -3775,9 +3780,9 @@ type 'ret constraint_arg =
     (** Whether the thing being constrained is a [Val_self] ident. *)
   }
 
-let rec type_exp ?recarg env sexp =
+let rec type_exp env sexp =
   (* We now delegate everything to type_expect *)
-  type_expect ?recarg env sexp (mk_expected (newvar ()))
+  type_expect env sexp (mk_expected (newvar ()))
 
 (* Typing of an expression with an expected type.
    This provide better error messages, and allows controlled
@@ -3786,21 +3791,19 @@ let rec type_exp ?recarg env sexp =
    at [generic_level] (but its variables no higher than [!current_level]).
  *)
 
-and type_expect ?recarg env sexp ty_expected_explained =
+and type_expect env sexp ty_expected_explained =
   let previous_saved_types = Cmt_format.get_saved_types () in
   let exp =
     Builtin_attributes.warning_scope sexp.pexp_attributes
       (fun () ->
-         type_expect_ ?recarg env sexp ty_expected_explained
+         type_expect_ env sexp ty_expected_explained
       )
   in
   Cmt_format.set_saved_types
     (Cmt_format.Partial_expression exp :: previous_saved_types);
   exp
 
-and type_expect_
-    ?(recarg=Rejected)
-    env sexp ty_expected_explained =
+and type_expect_ env sexp ty_expected_explained =
   let { ty = ty_expected; explanation } = ty_expected_explained in
   let loc = sexp.pexp_loc in
   (* Record the expression type before unifying it with the expected type *)
@@ -3813,7 +3816,7 @@ and type_expect_
   in
   match sexp.pexp_desc with
   | Pexp_ident lid ->
-      let path, desc = type_ident env ~recarg lid in
+      let path, desc = type_ident env lid in
       let exp_desc =
         match desc.val_kind with
         | Val_ivar (_, cl_num) ->
@@ -4197,7 +4200,7 @@ and type_expect_
         | Some sexp ->
             let exp =
               with_local_level_generalize_structure_if_principal
-                (fun () -> type_exp ~recarg env sexp)
+                (fun () -> type_exp env sexp)
             in
             Some exp
       in
@@ -4223,15 +4226,27 @@ and type_expect_
               let error = Expr_not_a_record_type exp.exp_type in
               raise (Error (exp.exp_loc, env, error))
         in
+        (* In record update expressions [{r with ...}],
+           [r] may have an inline record type with a restricted scope.
+           We must propagate this restricted scope if we build a new
+           return type below. *)
+        let ty_record_scope = match opt_exp with
+          | None -> Ident.lowest_scope
+          | Some exp -> get_scope exp.exp_type
+        in
         match expected_opath, opt_exp_opath with
-        | None, None -> newvar (), None
+        | None, None ->
+            let ty = new_scoped_ty ty_record_scope (Tvar None) in
+            ty, None
         | Some _, None -> ty_expected, expected_opath
         | Some(_, _, true), Some _ -> ty_expected, expected_opath
         | (None | Some (_, _, false)), Some (_, p', _) ->
             let decl = Env.find_type p' env in
             let ty =
-              with_local_level_generalize_structure
-                (fun () -> newconstr p' (instance_list decl.type_params))
+              with_local_level_generalize_structure (fun () ->
+                let args = instance_list decl.type_params in
+                new_scoped_ty ty_record_scope (Tconstr (p', args, ref Mnil))
+              )
             in
             ty, opt_exp_opath
       in
@@ -5032,23 +5047,8 @@ and type_newtype
   end
   ~before_generalize:(fun (_,ety) -> enforce_current_level env ety)
 
-and type_ident env ?(recarg=Rejected) lid =
-  let (path, desc) = Env.lookup_value ~loc:lid.loc lid.txt env in
-  let is_recarg =
-    match get_desc desc.val_type with
-    | Tconstr(p, _, _) -> Path.is_constructor_typath p
-    | _ -> false
-  in
-  begin match is_recarg, recarg, get_desc desc.val_type with
-  | _, Allowed, _
-  | true, Required, _
-  | false, Rejected, _ -> ()
-  | true, Rejected, _
-  | false, Required, (Tvar _ | Tconstr _) ->
-      raise (Error (lid.loc, env, Inlined_record_escape))
-  | false, Required, _  -> () (* will fail later *)
-  end;
-  path, desc
+and type_ident env lid =
+  Env.lookup_value ~loc:lid.loc lid.txt env
 
 and type_binding_op_ident env s =
   let loc = s.loc in
@@ -5324,7 +5324,7 @@ and type_function
 and type_label_access env srecord usage lid =
   let record =
     with_local_level_generalize_structure_if_principal
-      (fun () -> type_exp ~recarg:Allowed env srecord)
+      (fun () -> type_exp env srecord)
   in
   let ty_exp = record.exp_type in
   let expected_type =
@@ -5632,7 +5632,7 @@ and type_label_exp create env loc ty_expected
   if is_poly then check_univars env "field value" arg label.lbl_arg vars;
   (lid, label, {arg with exp_type = instance arg.exp_type})
 
-and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
+and type_argument ?explanation env sarg ty_expected' ty_expected =
   (* ty_expected' may be generic *)
   let no_labels ty =
     let ls, tvar = list_labels env ty in
@@ -5743,7 +5743,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
                      func let_var) }
       end
   | None ->
-      let texp = type_expect ?recarg env sarg
+      let texp = type_expect env sarg
         (mk_expected ?explanation ty_expected') in
       unify_exp ~sexp:sarg env texp ty_expected;
       texp
@@ -5872,62 +5872,58 @@ and type_construct env ~sexp lid sarg ty_expected_explained =
                 Constructor_arity_mismatch
                   (lid.txt, constr.cstr_arity, List.length sargs)));
   let separate = !Clflags.principal || Env.has_local_constraints env in
-  let ty_args, ty_res, texp =
-    with_local_level_generalize_structure_if separate begin fun () ->
-      let ty_args, ty_res, texp =
-        with_local_level_generalize_structure_if separate begin fun () ->
-          let (ty_args, ty_res, _) =
-            instance_constructor Keep_existentials_flexible constr
-          in
-          let texp =
-            re {
-            exp_desc = Texp_construct(lid, constr, []);
-            exp_loc = sexp.pexp_loc; exp_extra = [];
-            exp_type = ty_res;
-            exp_attributes = sexp.pexp_attributes;
-            exp_env = env } in
-          (ty_args, ty_res, texp)
-        end
-      in
-      with_explanation explanation (fun () ->
-        unify_exp ~sexp env {texp with exp_type = instance ty_res}
-          (instance ty_expected));
-      (ty_args, ty_res, texp)
-    end
-  in
-  let ty_args0, ty_res =
-    match instance_list (ty_res :: ty_args) with
-      t :: tl -> tl, t
-    | _ -> assert false
-  in
-  let texp = {texp with exp_type = ty_res} in
-  if not separate then unify_exp ~sexp env texp (instance ty_expected);
-  let recarg =
-    match constr.cstr_inlined with
-    | None -> Rejected
-    | Some _ ->
-      begin match sargs with
-      | [{pexp_desc =
-            Pexp_ident _ |
-            Pexp_record (_, (Some {pexp_desc = Pexp_ident _}| None))}] ->
-        Required
-      | _ ->
-        raise (Error(sexp.pexp_loc, env, Inlined_record_expected))
+  let check_inline_record_escape = constr.cstr_inlined <> None in
+  with_local_level_if ~post:ignore check_inline_record_escape begin fun () ->
+    let inline_record_scope =
+      if check_inline_record_escape then create_scope ()
+      else Ident.lowest_scope
+    in
+    let ty_args, ty_res, texp =
+      with_local_level_generalize_structure_if separate begin fun () ->
+        let ty_args, ty_res, texp =
+          with_local_level_generalize_structure_if separate begin fun () ->
+            let (ty_args, ty_res, _) =
+              instance_constructor ~scope:inline_record_scope
+                Keep_existentials_flexible constr
+            in
+            let texp =
+              re {
+              exp_desc = Texp_construct(lid, constr, []);
+              exp_loc = sexp.pexp_loc; exp_extra = [];
+              exp_type = ty_res;
+              exp_attributes = sexp.pexp_attributes;
+              exp_env = env } in
+            (ty_args, ty_res, texp)
+          end
+        in
+        with_explanation explanation (fun () ->
+          unify_exp ~sexp env {texp with exp_type = instance ty_res}
+            (instance ty_expected));
+        (ty_args, ty_res, texp)
       end
-  in
-  let args =
-    List.map2 (fun e (t,t0) -> type_argument ~recarg env e t t0) sargs
-      (List.combine ty_args ty_args0) in
-  if constr.cstr_private = Private then
-    begin match constr.cstr_tag with
-    | Cstr_extension _ ->
-        raise(Error(sexp.pexp_loc, env, Private_constructor (constr, ty_res)))
-    | Cstr_constant _ | Cstr_block _ | Cstr_unboxed ->
-        raise (Error(sexp.pexp_loc, env, Private_type ty_res));
-    end;
-  (* NOTE: shouldn't we call "re" on this final expression? -- AF *)
-  { texp with
-    exp_desc = Texp_construct(lid, constr, args) }
+    in
+    let ty_args0, ty_res =
+      match instance_list (ty_res :: ty_args) with
+        t :: tl -> tl, t
+      | _ -> assert false
+    in
+    let texp = {texp with exp_type = ty_res} in
+    if not separate then unify_exp ~sexp env texp (instance ty_expected);
+    let args =
+      List.map2 (fun e (t,t0) -> type_argument env e t t0) sargs
+        (List.combine ty_args ty_args0)
+    in
+    if constr.cstr_private = Private then
+      begin match constr.cstr_tag with
+      | Cstr_extension _ ->
+          raise(Error(sexp.pexp_loc, env, Private_constructor (constr, ty_res)))
+      | Cstr_constant _ | Cstr_block _ | Cstr_unboxed ->
+          raise (Error(sexp.pexp_loc, env, Private_type ty_res));
+      end;
+    (* NOTE: shouldn't we call "re" on this final expression? -- AF *)
+    { texp with
+      exp_desc = Texp_construct(lid, constr, args) }
+  end
 
 (* Typing of statements (expressions whose values are discarded) *)
 
@@ -6021,7 +6017,10 @@ and map_half_typed_cases
     | _ -> true
   in
   let outer_level = get_current_level () in
-  with_local_level_iter_if create_inner_level begin fun () ->
+  with_local_level_iter_if create_inner_level
+    (* Ensure that existential types do not escape *)
+    ~post:(lower_exp_type env loc)
+  begin fun () ->
   let lev = get_current_level () in
   let allow_modules =
     if may_contain_modules
@@ -6216,8 +6215,6 @@ and map_half_typed_cases
   end;
   (result, partial), [ty_res']
   end
-  (* Ensure that existential types do not escape *)
-  ~post:(fun ty_res' -> unify_exp_types loc env ty_res' (newvar ()))
 
 (* Typing of match cases *)
 and type_cases
@@ -7493,7 +7490,5 @@ let () =
 let check_partial ?lev a b c cases =
   check_partial ?lev a b c (List.map Parmatch.typed_case cases)
 
-(* drop ?recarg argument from the external API *)
-let type_expect env e ty = type_expect env e ty
-let type_exp env e = type_exp env e
+(* drop ?explanation argument from the external API *)
 let type_argument env e t1 t2 = type_argument env e t1 t2

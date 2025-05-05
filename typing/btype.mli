@@ -93,6 +93,8 @@ val dummy_method: label
 val type_kind_is_abstract: type_declaration -> bool
 val type_origin: type_declaration -> type_origin
 
+val is_inline_record_type: type_expr -> bool
+
 (**** polymorphic variants ****)
 
 val is_fixed: row_desc -> bool

@@ -1262,7 +1262,8 @@ let transl_extension_constructor ~scope env type_path type_params
         in
         let cdescr = Env.lookup_constructor ~loc:lid.loc usage lid.txt env in
         let (args, cstr_res, _ex) =
-          Ctype.instance_constructor Keep_existentials_flexible cdescr
+          Ctype.instance_constructor ~scope:Ident.lowest_scope
+            Keep_existentials_flexible cdescr
         in
         let res, ret_type =
           if cdescr.cstr_generalized then
