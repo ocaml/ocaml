@@ -862,7 +862,6 @@ value caml_input_val(struct channel *chan)
   char header[MAX_INTEXT_HEADER_SIZE];
   struct marshal_header h;
   char * block;
-  value res;
   struct caml_intern_state* s = init_intern_state ();
 
   if (! caml_channel_binary_mode(chan))
@@ -907,9 +906,10 @@ value caml_input_val(struct channel *chan)
   intern_init(s, block, block);
   intern_decompress_input(s, "input_value", &h);
   intern_alloc_storage(s, h.whsize, h.num_objects);
-  /* Fill it in */
-  intern_rec(s, "input_value", &res);
-  return intern_end(s, res);
+  /* Fill it in - obj must NOT be registered as a GC root */
+  value obj;
+  intern_rec(s, "input_value", &obj);
+  return intern_end(s, obj);
 }
 
 CAMLprim value caml_input_value(value vchan)
@@ -935,7 +935,6 @@ CAMLprim value caml_input_value_to_outside_heap(value vchan)
 CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
 {
   CAMLparam1 (str);
-  value obj;
   struct marshal_header h;
   struct caml_intern_state* s = init_intern_state ();
 
@@ -949,7 +948,8 @@ CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
   s->intern_src = &Byte_u(str, ofs + h.header_len); /* If a GC occurred */
   /* Decompress if needed */
   intern_decompress_input(s, "input_val_from_string", &h);
-  /* Fill it in */
+  /* Fill it in - obj must NOT be registered as a GC root */
+  value obj;
   intern_rec(s, "input_val_from_string", &obj);
   CAMLreturn (intern_end(s, obj));
 }
@@ -962,12 +962,12 @@ CAMLprim value caml_input_value_from_bytes(value str, value ofs)
 static value input_val_from_block(struct caml_intern_state* s,
                                   struct marshal_header * h)
 {
-  value obj;
   /* Decompress if needed */
   intern_decompress_input(s, "input_val_from_block", h);
   /* Allocate result */
   intern_alloc_storage(s, h->whsize, h->num_objects);
-  /* Fill it in */
+  /* Fill it in - obj must NOT be registered as a GC root */
+  value obj;
   intern_rec(s, "input_val_from_block", &obj);
   return (intern_end(s, obj));
 }
