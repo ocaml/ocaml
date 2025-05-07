@@ -16,7 +16,7 @@ type u = external "u"
 - : (t, u) Type.eq -> 'a = <fun>
 |}]
 
-(* those with the same name are provably equal *)
+(* those with the same name could be equal *)
 
 type t' = external "t";;
 
