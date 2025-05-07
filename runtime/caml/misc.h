@@ -212,6 +212,17 @@ CAMLdeprecated_typedef(addr, char *);
 #else
   #define fallthrough ((void) 0)
 #endif
+
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
+#if __has_c_attribute(gnu::nonstring)
+#define CAMLnonstring [[gnu::nonstring]]
+#endif
+#endif
+#if !defined(CAMLnonstring) && __has_attribute(nonstring)
+#define CAMLnonstring __attribute__ ((nonstring))
+#else
+#define CAMLnonstring
+#endif
 #endif /* CAML_INTERNALS */
 
 /* Function attributes to give hints to the C compiler about optimizations and
