@@ -308,6 +308,10 @@ Some attributes are understood by the compiler:
   "ocaml.remove_aliases" or "remove_aliases", defined on either a	"module type
 	of" signature expression or "with module" constraint instructs the typechecker
 	to drop module aliases in the resulting signature.
+ \item
+   "ocaml.atomic" or "atomic" on a record field definition, marks this
+   record field as atomic. See \ref{s:atomic-record-fields} for more
+   details.
 \end{itemize}
 
 \begin{caml_example*}{verbatim}

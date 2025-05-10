@@ -155,6 +155,9 @@ The field declaration @'mutable' field-name ':' poly-typexpr@
 behaves similarly; in addition, it allows physical modification of
 this field.
 Immutable fields are covariant, mutable fields are non-variant.
+Since OCaml 5.4, mutable fields may be marked "[\@atomic]" for
+concurrent access, see \ref{s:atomic-record-fields}.
+\\
 Both mutable and immutable fields may have explicitly polymorphic
 types.  The polymorphism of the contents is statically checked whenever
 a record value is created or modified.  Extracted values may have their

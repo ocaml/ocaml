@@ -785,6 +785,7 @@ init_shared_heap_failure:
 alloc_minor_tables_failure:
   caml_memprof_delete_domain(domain_state);
 init_memprof_failure:
+  caml_plat_unlock(&d->domain_lock);
   domain_self = NULL;
 
   atomic_fetch_add(&caml_num_domains_running, -1);

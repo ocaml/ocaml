@@ -182,6 +182,11 @@ val putenv : string -> string -> unit
    [name] is the name of the environment variable,
    and [value] its new associated value. *)
 
+val unsetenv : string -> unit
+(** [unsetenv name] removes the variable [name] from the process environment.
+
+    @since 5.5 *)
+
 
 (** {1 Process handling} *)
 

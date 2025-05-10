@@ -114,11 +114,10 @@ escaping issues.
 Some extension nodes are understood by the compiler itself:
 \begin{itemize}
   \item
-    ``ocaml.extension_constructor'' or ``extension_constructor''
-    take as payload a constructor from an extensible variant type
+    "ocaml.extension_constructor" or "extension_constructor"
+    extensions take as payload a constructor from an extensible variant type
     (see \ref{s:extensible-variants}) and return its extension
     constructor slot.
-\end{itemize}
 
 \begin{caml_example*}{verbatim}
 type t = ..
@@ -129,3 +128,9 @@ let y = [%extension_constructor Y]
 \begin{caml_example}{toplevel}
  x <> y;;
 \end{caml_example}
+
+  \item
+    "ocaml.atomic.loc" or "atomic.loc" extensions take as payload an
+    OCaml expression denoting an atomic location. See
+    \ref{s:atomic-record-fields} for more details.
+\end{itemize}

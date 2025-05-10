@@ -740,3 +740,52 @@ update the atomic reference at the same time. In this case, the "push" and
 allowing competing domains to make progress before retrying the failed
 operation. This lock-free stack implementation is called a 
 \href{https://en.wikipedia.org/wiki/Treiber_stack}{Treiber stack}.
+
+
+\subsection{s:atomic-record-fields}{Atomic record fields}
+
+The type "'a Atomic.t" is the atomic counterpart of the type of OCaml
+references, "'a ref". Since OCaml 5.4, we also support atomic record
+fields, which must be mutable, via the "[@atomic]" attribute.
+
+For example:
+\begin{caml_example*}{verbatim}
+type 'a refcounted = {
+  value : 'a;
+  mutable readers : int [@atomic];
+}
+\end{caml_example*}
+
+The field "readers" is atomic, so that reading and writing to this
+field are atomic operations similar to "Atomic.get" and
+"Atomic.set". It is possible to perform other atomic operations on
+this field by using a built-in extension node, "%atomic.loc": if
+"rc" is a value of type "foo refcounted", then "[%atomic.loc rc.readers]"
+is an expression of the built-in type "foo Atomic.Loc.t", which allows
+atomic operations defined in the the \stdmoduleref{Atomic}.Loc module
+of the standard library, mirroring the operations exposed for atomic
+references in the \stdmoduleref{Atomic} module:
+
+\begin{caml_example}{toplevel}
+let add_reader rc =
+  Atomic.Loc.fetch_and_add [%atomic.loc rc.readers] 1;;
+
+#show Atomic.Loc;;
+\end{caml_example}
+
+\paragraph{Limitation} Currently there is no analogue of
+"Atomic.make_contended" for atomic record fields. If false sharing is
+an issue for a specific record field, the best supported approach is
+to use a field of type "Atomic.t". We hope to implement support for
+on-demand padding of record fields in the future.
+
+\paragraph{Performance note} Internally "[%atomic.loc rc.readers]"
+is represented as a pair of the record value and a field
+offset. Whenever this expression is directly applied to an atomic
+primitive of the \stdmoduleref{Atomic}.Loc module, the compiler will
+optimize away the creation of the pair; it passes the value and the
+offset as separate parameters to an underlying runtime primitive. On
+the other hand, storing an atomic location in a data-structure or
+passing it to another, non-inlined function may allocate a pair. When
+in doubt, you can inspect the "-dcmm" intermediate representation of
+your code.
