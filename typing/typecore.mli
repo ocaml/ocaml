@@ -209,7 +209,6 @@ type error =
       ; expected_type : type_expr
       ; explanation   : type_forcing_context option
       }
-  | Scoping_let_module of string * type_expr
   | Not_a_polymorphic_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * Errortrace.unification_error
