@@ -3072,7 +3072,6 @@ let lookup_type_in_sig sg =
     | Lapply _ -> assert false
 
 let type_package env m pack =
-  (* Same as Pexp_letmodule *)
   let modl, scope =
     Typetexp.TyVarEnv.with_local_scope begin fun () ->
       (* type the module and create a scope in a raised level *)
