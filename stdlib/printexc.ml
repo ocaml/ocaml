@@ -380,3 +380,5 @@ external register_named_value : string -> 'a -> unit
 let () =
   register_named_value "Printexc.handle_uncaught_exception"
     handle_uncaught_exception
+
+external reraise : exn -> 'a = "%reraise"
