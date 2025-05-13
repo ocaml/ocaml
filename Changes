@@ -11,6 +11,8 @@ Working version
 
 ### Standard library:
 
+* #14030: Add Printexc.reraise (Raphaël Proust)
+
 ### Other libraries:
 
 ### Tools:
