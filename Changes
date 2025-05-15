@@ -7,6 +7,10 @@ Working version
 
 ### Runtime system:
 
+- #14035: Fix the alignment of _Atomic long long unsigned int fields
+  before GCC 11.1 on i686. Silence GCC note on newer versions.
+  (Antonin Décimo, review by Sadiq Jaffer)
+
 ### Code generation and optimizations:
 
 ### Standard library:

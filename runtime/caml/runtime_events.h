@@ -208,9 +208,10 @@ CAMLextern int caml_runtime_events_are_active(void);
 
 #ifdef CAML_INTERNALS
 
+/* Force alignment to prevent GCC note on i686. */
 struct runtime_events_buffer_header {
-  atomic_uint_fast64_t ring_head;
-  atomic_uint_fast64_t ring_tail;
+  CAMLalign(8) atomic_uint_fast64_t ring_head;
+  CAMLalign(8) atomic_uint_fast64_t ring_tail;
   uint64_t padding[8]; /* Padding so headers don't share cache lines. Eight
                           words guarantees that buffer headers don't share
                           cache lines, even for non-aligned allocations. */
