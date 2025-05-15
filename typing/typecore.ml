@@ -4961,8 +4961,11 @@ and type_coerce
           force ();
           begin try Ctype.unify env arg_type ty with Unify err ->
             let expanded = full_expand ~may_forget_scope:true env ty' in
+            let w =
+              b || Ctype.possibly_missed_private_subtyping env arg_type ty
+            in
             raise(Error(loc_arg, env,
-                        Coercion_failure ({ ty = ty'; expanded }, err, b)))
+                        Coercion_failure ({ ty = ty'; expanded }, err, w)))
           end
       end;
       (arg, ty', Texp_coerce (None, cty'))
@@ -7250,27 +7253,45 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "The instance variable %a is overridden several times"
         Style.inline_code v
-  | Coercion_failure (ty_exp, err, b) ->
+  | Coercion_failure(ty_exp, err, false) ->
+     (* Coercion that cannot succeed *)
      let intro =
        let ty_exp = Out_type.prepare_expansion ty_exp in
        doc_printf "This expression cannot be coerced to type@;<1 2>%a;@ \
                    it has type"
-         (Style.as_inline_code @@ Printtyp.type_expansion Type) ty_exp
+         (Printtyp.type_expansion Type) ty_exp
+     in
+     Location.errorf ~loc "%t" (fun ppf ->
+         Errortrace_report.unification ppf env err
+           intro
+           (Fmt.Doc.msg "but the coercion was expecting type")
+       )
+  | Coercion_failure (ty_exp, err, true) ->
+     (* Failure of the coercion heuristic *)
+     let[@manual.ref "s:using-coercions"] manual = [3; 12] in
+     let intro =
+       let ty_exp = Out_type.prepare_expansion ty_exp in
+       doc_printf
+         "This expression cannot be coerced to type@;<1 2>%a@ by@ the@ \
+          coercion@ heuristic. The expression has type"
+         (Printtyp.type_expansion Type) ty_exp
      in
       Location.errorf ~loc "%t" (fun ppf ->
         Errortrace_report.unification ppf env err
           intro
-          (Fmt.Doc.msg "but is here used with type")
+          (Fmt.Doc.msg "but the coercion heuristic was expecting type")
         )
-         ~sub:(
-           if not b then [] else
-             [ Location.msg "This simple coercion was not fully general";
-               Location.msg
-                 "@{<hint>Hint@}: Consider using a fully explicit coercion@ \
-                  of the form: %a"
-                 Style.inline_code "(foo : ty1 :> ty2)"
-             ]
-         )
+         ~sub:[
+           Location.msg
+             "@{<hint>Hint@}: Did you try using a full coercion@;<1 2>%a?@ \
+              @[If the types of %a contain type variables,@ the@ coercion@ \
+              uses@ a@ partial@ heuristic@ that@ may@ fail@ in@ presence@ of@ \
+              private@ types@, or@ complex@ object@ or@ polymorphic@ variant@ \
+              types@ %a.@]"
+             Style.inline_code "(foo : ty1 :> ty2)"
+             Style.inline_code "(foo :> ty2)"
+             Misc.print_see_manual manual
+         ]
   | Not_a_function (ty, explanation) ->
       Location.errorf ~loc
         "This expression should not be a function,@ \

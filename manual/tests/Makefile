@@ -27,6 +27,7 @@ check-cross-references: cross-reference-checker
 	  $(ROOTDIR)/driver/main_args.ml \
 	  $(ROOTDIR)/lambda/translmod.ml \
 	  $(ROOTDIR)/typing/typemod.ml \
+	  $(ROOTDIR)/typing/typecore.ml \
 	  $(ROOTDIR)/typing/typeclass.ml
 
 # check that all standard library modules are referenced by the

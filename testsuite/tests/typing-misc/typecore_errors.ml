@@ -374,9 +374,9 @@ let x = ([`B]:>[`A])
 Line 3, characters 9-13:
 3 | let x = ([`B]:>[`A])
              ^^^^
-Error: This expression cannot be coerced to type ""[ `A ]""; it has type
+Error: This expression cannot be coerced to type "[ `A ]"; it has type
          "[> `B ] list"
-       but is here used with type "[< `A ]"
+       but the coercion was expecting type "[< `A ]"
 |}]
 
 (** Unbound instance variable *)
@@ -461,4 +461,114 @@ Line 1, characters 8-19:
 1 | let f [%ocaml.error "Pattern error"] = ()
             ^^^^^^^^^^^
 Error: Pattern error
+|}]
+
+(** Coercion heuristic *)
+
+let ok1 = ((object method m = 0 end, Fun.id) :> < > * _ )
+[%%expect {|
+val ok1 : <  > * ('a -> 'a) = (<obj>, <fun>)
+|}]
+
+let legitimate_failure = ((object method m = 0 end, Fun.id) :> <n: int > * _)
+[%%expect {|
+Line 1, characters 26-59:
+1 | let legitimate_failure = ((object method m = 0 end, Fun.id) :> <n: int > * _)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression cannot be coerced to type "< n : int > * 'b";
+       it has type "< m : int > * ('a -> 'a)"
+       but the coercion was expecting type "< n : int; .. > * 'b"
+       The first object type has no method "n"
+|}]
+
+
+let simple = ( (object end, Fun.id) :> <m: int -> int > * _)
+[%%expect {|
+Line 1, characters 15-35:
+1 | let simple = ( (object end, Fun.id) :> <m: int -> int > * _)
+                   ^^^^^^^^^^^^^^^^^^^^
+Error: This expression cannot be coerced to type "< m : int -> int > * 'c";
+       it has type "<  > * ('a -> 'a)" but the coercion was expecting type
+         "< m : int -> int; .. > * 'b"
+       The first object type has no method "m"
+|}]
+
+type pos = private int
+let ok2 (x:pos) = (x :> int)
+[%%expect {|
+type pos = private int
+val ok2 : pos -> int = <fun>
+|}]
+
+
+let covariant (x:int) = ( (x, Fun.id) :> pos * _ )
+[%%expect {|
+Line 1, characters 26-37:
+1 | let covariant (x:int) = ( (x, Fun.id) :> pos * _ )
+                              ^^^^^^^^^^^
+Error: This expression cannot be coerced to type "pos * 'a"; it has type
+         "int * ('a -> 'a)"
+       but the coercion was expecting type "pos * 'b"
+       Type "int" is not compatible with type "pos"
+|}]
+
+let long (x:pos) = ( (x, Fun.id) :> int * _ )
+[%%expect {|
+Line 1, characters 21-32:
+1 | let long (x:pos) = ( (x, Fun.id) :> int * _ )
+                         ^^^^^^^^^^^
+Error: This expression cannot be coerced to type "int * 'c" by the coercion
+       heuristic. The expression has type "pos * ('a -> 'a)"
+       but the coercion heuristic was expecting type "int * 'b"
+       Type "pos" is not compatible with type "int"
+Hint: Did you try using a full coercion "(foo : ty1 :> ty2)"?
+If the types of "(foo :> ty2)" contain type variables, the coercion uses a
+partial heuristic that may fail in presence of private types or complex
+object or polymorphic variant types (see manual section 3.12).
+|}]
+
+let contravariant (x: int -> int) =
+  (x :> pos -> int),
+  ((x, Fun.id) :> ( (pos -> int) * _ ))
+[%%expect {|
+Line 3, characters 3-14:
+3 |   ((x, Fun.id) :> ( (pos -> int) * _ ))
+       ^^^^^^^^^^^
+Error: This expression cannot be coerced to type "(pos -> int) * 'c" by the
+       coercion heuristic. The expression has type "(int -> int) * ('a -> 'a)"
+       but the coercion heuristic was expecting type "(pos -> int) * 'b"
+       Type "int" is not compatible with type "pos"
+Hint: Did you try using a full coercion "(foo : ty1 :> ty2)"?
+If the types of "(foo :> ty2)" contain type variables, the coercion uses a
+partial heuristic that may fail in presence of private types or complex
+object or polymorphic variant types (see manual section 3.12).
+|}]
+
+let legitimate_contravariant (x: pos -> int) =
+  ((x, Fun.id) :> ( (int -> int) * _ ))
+[%%expect {|
+Line 2, characters 3-14:
+2 |   ((x, Fun.id) :> ( (int -> int) * _ ))
+       ^^^^^^^^^^^
+Error: This expression cannot be coerced to type "(int -> int) * 'c";
+       it has type "(pos -> int) * ('a -> 'a)"
+       but the coercion was expecting type "(int -> int) * 'b"
+       Type "pos" is not compatible with type "int"
+|}]
+
+type u = private < >
+let error3 (x:u) = ((x,Fun.id) :> < > * _)
+[%%expect {|
+type u = private <  >
+Line 2, characters 20-30:
+2 | let error3 (x:u) = ((x,Fun.id) :> < > * _)
+                        ^^^^^^^^^^
+Error: This expression cannot be coerced to type "<  > * 'a" by the coercion
+       heuristic. The expression has type "u * ('a -> 'a)"
+       but the coercion heuristic was expecting type "< .. > * 'b"
+       Type "u" is not compatible with type "< .. >"
+Hint: Did you try using a full coercion "(foo : ty1 :> ty2)"?
+If the types of "(foo :> ty2)" contain type variables, the coercion uses a
+partial heuristic that may fail in presence of private types or complex
+object or polymorphic variant types (see manual section 3.12).
 |}]

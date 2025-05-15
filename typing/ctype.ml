@@ -4943,6 +4943,34 @@ let enlarge_type env ty =
   let (ty', _) = build_subtype env [] [] true 4 ty in
   (ty', !warn)
 
+let possibly_missed_private_subtyping env arg_ty coerce_ty =
+  let rec find ~positive ~mark env prev ty =
+    prev || try_mark_node mark ty
+    && match get_desc (expand_head env ty) with
+    | Tconstr(p,tl,_) ->
+       begin match Env.find_type p env with
+       | exception Not_found -> false
+       | decl ->
+          positive && decl.type_private = Private
+          || List.fold_left2 (find_parameter ~positive ~mark env) false
+               decl.type_variance tl
+       end
+    | Tarrow(_,ty1,ty2,_) ->
+          find ~mark ~positive env false ty2
+       || find ~mark ~positive:(not positive) env false ty1
+    | _ -> fold_type_expr (find ~mark ~positive env) false ty
+  and find_parameter ~mark ~positive env acc v ty =
+    acc ||
+      match Types.Variance.(mem May_neg v, mem May_pos v) with
+      | false, false | true, true -> false
+      | false, true -> find  ~positive ~mark env false ty
+      | true, false -> find ~positive:(not positive) ~mark env false ty
+  in
+  let find ~positive env ty =
+    with_type_mark (fun mark -> find ~mark ~positive env false ty)
+  in
+  find ~positive:true env arg_ty || find env ~positive:false coerce_ty
+
 (**** Check whether a type is a subtype of another type. ****)
 
 (*

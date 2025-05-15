@@ -370,6 +370,12 @@ val match_class_declarations:
 
 val enlarge_type: Env.t -> type_expr -> type_expr * bool
         (* Make a type larger, flag is true if some pruning had to be done *)
+
+val possibly_missed_private_subtyping: Env.t -> type_expr -> type_expr -> bool
+(* Flag a type if a private type appears in a position with the same variance as
+   [pos] *)
+
+
 val subtype: Env.t -> type_expr -> type_expr -> unit -> unit
         (* [subtype env t1 t2] checks that [t1] is a subtype of [t2].
            It accumulates the constraints the type variables must
