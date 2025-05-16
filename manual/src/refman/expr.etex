@@ -62,14 +62,12 @@ expr:
   | 'fun' {{ parameter }} [ ':' typexpr ] '->' expr
   | 'try' expr 'with' pattern-matching
   | 'let' ['rec'] let-binding { 'and' let-binding } 'in' expr
-  | "let" "exception" constr-decl "in" expr
-  | 'let' 'module' module-name { '(' module-name ':' module-type ')' }
-    [ ':' module-type ] \\ '=' module-expr 'in' expr
+  | 'let' local-definition "in" expr
   | '(' expr ':>' typexpr ')'
   | '(' expr ':' typexpr ':>' typexpr ')'
   | 'assert' expr
   | 'lazy' expr
-  | local-open
+  | local-open-shorthand
   | object-expr
 ;
 %BEGIN LATEX
@@ -102,8 +100,7 @@ parameter:
   | '?' label-name ':' pattern
   | '?' label-name ':' '(' pattern [':' typexpr] ['=' expr] ')'
 ;
-local-open:
-  | "let" "open" module-path "in" expr
+local-open-shorthand:
   | module-path '.(' expr ')'
   | module-path '.[' expr ']'
   | module-path '.[|' expr '|]'
@@ -658,7 +655,7 @@ selected.
 let rec sum l =
   match l with
   | [] -> 0
-  | h :: t -> h + sum t;; 
+  | h :: t -> h + sum t;;
 \end{caml_example}
 
 If none of the patterns match the value of @expr@, the
@@ -1314,7 +1311,7 @@ this case, @expr@ is not evaluated at all.
 \begin{caml_example}{toplevel}
 let f a b c =
   assert (a <= b && b <= c);
-  (b -. a) /. (c -. b);; 
+  (b -. a) /. (c -. b);;
 \end{caml_example}
 
 As a special case, @"assert false"@ is reduced to
@@ -1397,5 +1394,68 @@ equivalent to @module-path'.([|' expr '|])'@.
 let vector = Random.[|int 255; int 255; int 255; int 255|];;
 \end{caml_example}
 
+\subsubsection*{sss:expr-struct-item}{Local structure items}
+\ikwd{let\@\texttt{type}}
+(Introduced in OCaml 5.5)
+
+Generalizing the case of @"let" "open"@, @"let" "module"@ and @"let"
+"exception"@, it is possible to introduce any structure item defined by
+@local-definition@ locally: the expression
+\begin{center}
+@"let" local-definition "in" expr@
+\end{center}
+introduces the structure item @local-definition@ during the evaluation of
+@expr@. This construction is equivalent to:
+\begin{center}
+@"let" "module" M = "struct" local-definition "let" body "=" expr "end" "in" M.body@
+\end{center}
+without the overhead of creating the actual module @M@ nor the binding @body@.
+
+A typical use-case is the introduction of local types:
+
+\begin{caml_example}{toplevel}
+let f x y =
+  let type t = {x: float; y: float} in
+  let norm p = p.x *. p.x +. p.y *. p.y in
+  norm {x; y}
+;;
+\end{caml_example}
+
+The scope of the local type is the inner expression, and the compiler checks
+that values created from this type do not escape this scope:
+
+\begin{caml_example}{toplevel}
+let f x y =
+  let type t = {x: float; y: float} in
+  let twice p = {x = p.x +. p.x; y = p.y +. p.y} in
+  twice {x; y}
+[@@expect error];;
+\end{caml_example}
+
+Extensible types (eg effects) can also be introduced in this way. The example
+below exhibits a function that uses a local effect to convert an iterator into a
+sequence (``inversion of control'').
+
+\begin{caml_example}{toplevel}
+let invert (type a) ~(iter : (a -> unit) -> unit) : a Seq.t =
+  let type _ Effect.t += Yield : a -> unit Effect.t in
+  let yield v = Effect.perform (Yield v) in
+  fun () -> match iter yield with
+  | () -> Seq.Nil
+  | effect Yield v, k -> Seq.Cons (v, Effect.Deep.continue k)
+;;
+\end{caml_example}
+
+In a different direction, one can use this construct to toggle a warning
+thoughout the inner expression:
+
+\begin{caml_example}{toplevel}
+let f () =
+  let [@@@warning "-unused-module"] in
+  let module C = struct end in
+  let module D = struct end in
+  ()
+;;
+\end{example}
 
 %% \newpage
