@@ -96,6 +96,22 @@ let psig_exception (te, ext) =
   (Psig_exception te, ext)
 let psig_include (body, ext) =
   (Psig_include body, ext)
+let psig_module (body, ext) =
+  (Psig_module body, ext)
+let psig_modsubst (body, ext) =
+  (Psig_modsubst body, ext)
+let psig_recmodule (ext, l) =
+  (Psig_recmodule l, ext)
+let psig_modtype (body, ext) =
+  (Psig_modtype body, ext)
+let psig_modtypesubst (body, ext) =
+  (Psig_modtypesubst body, ext)
+let psig_open (body, ext) =
+  (Psig_open body, ext)
+let psig_class (ext, l) =
+  (Psig_class l, ext)
+let psig_class_type (ext, l) =
+  (Psig_class_type l, ext)
 
 let mkctf ~loc ?attrs ?docs d =
   Ctf.mk ~loc:(make_loc loc) ?attrs ?docs d
@@ -1799,25 +1815,25 @@ signature_item:
     | sig_exception_declaration
         { psig_exception $1 }
     | module_declaration
-        { let (body, ext) = $1 in (Psig_module body, ext) }
+        { psig_module $1 }
     | module_alias
-        { let (body, ext) = $1 in (Psig_module body, ext) }
+        { psig_module $1 }
     | module_subst
-        { let (body, ext) = $1 in (Psig_modsubst body, ext) }
+        { psig_modsubst $1 }
     | rec_module_declarations
-        { let (ext, l) = $1 in (Psig_recmodule l, ext) }
+        { psig_recmodule $1 }
     | module_type_declaration
-        { let (body, ext) = $1 in (Psig_modtype body, ext) }
+        { psig_modtype $1 }
     | module_type_subst
-        { let (body, ext) = $1 in (Psig_modtypesubst body, ext) }
+        { psig_modtypesubst $1 }
     | open_description
-        { let (body, ext) = $1 in (Psig_open body, ext) }
+        { psig_open $1 }
     | include_statement(module_type)
         { psig_include $1 }
     | class_descriptions
-        { let (ext, l) = $1 in (Psig_class l, ext) }
+        { psig_class $1 }
     | class_type_declarations
-        { let (ext, l) = $1 in (Psig_class_type l, ext) }
+        { psig_class_type $1 }
     )
     { $1 }
 
