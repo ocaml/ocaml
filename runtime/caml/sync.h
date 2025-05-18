@@ -52,7 +52,8 @@ CAMLextern void caml_mutex_init(sync_mutex *mut);
 CAMLextern void caml_mutex_reinit(sync_mutex *mut);
 CAMLextern void caml_mutex_free(sync_mutex *mut);
 
-CAMLextern void caml_mutex_lock_non_blocking(sync_mutex mut);
+CAMLextern void caml_mutex_lock_while_yielding_the_runtime_system(
+  sync_mutex mut);
 CAMLextern void caml_mutex_unlock(sync_mutex mut);
 
 value caml_ml_mutex_lock(value wrapper);

@@ -704,7 +704,7 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     act = 2;
     break;
   }
-  caml_mutex_lock_non_blocking(&signal_install_mutex);
+  caml_mutex_lock_while_yielding_the_runtime_system(&signal_install_mutex);
   /* Note: no safepoint for calling signals in this critical section */
   oldact = caml_set_signal_action(sig, act);
   switch (oldact) {

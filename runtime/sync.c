@@ -93,7 +93,8 @@ CAMLexport void caml_mutex_free(sync_mutex *mut) {
     *mut = NULL;
 }
 
-CAMLexport void caml_mutex_lock_non_blocking(sync_mutex mut)
+CAMLexport void caml_mutex_lock_while_yielding_the_runtime_system(
+  sync_mutex mut)
 {
   if (Caml_state_opt == NULL) {
     /* If we do not own the domain lock,
