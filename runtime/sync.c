@@ -104,7 +104,8 @@ CAMLexport void caml_mutex_lock_while_yielding_the_runtime_system(
   else if (sync_mutex_trylock(mut) != MUTEX_PREVIOUSLY_UNLOCKED) {
     /* If we own the domain lock and would block on the mutex,
        release the domain lock before taking the lock. */
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_no_pending();
+    /* Note: we use [..._no_pending] to ensure that no exceptions are raised. */
     int retcode = sync_mutex_lock(mut);
     caml_leave_blocking_section();
     check_err("caml_mutex_lock", retcode);
