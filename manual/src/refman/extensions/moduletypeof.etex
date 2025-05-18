@@ -1,3 +1,10 @@
+\section{s:module-type-of}{Recovering the type of a module}
+%HEVEA\cutname{moduletypeof.html}
+\ikwd{module\@\texttt{module}}
+\ikwd{type\@\texttt{type}}
+\ikwd{of\@\texttt{of}}
+\ikwd{include\@\texttt{include}}
+
 (Introduced in OCaml 3.12)
 
 \begin{syntax}

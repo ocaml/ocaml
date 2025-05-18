@@ -1,3 +1,7 @@
+\section{s:private-types}{Private types}
+%HEVEA\cutname{privatetypes.html}
+\ikwd{private\@\texttt{private}}
+
 Private type declarations in module signatures, of the form
 "type t = private ...", enable libraries to
 reveal some, but not all aspects of the implementation of a type to

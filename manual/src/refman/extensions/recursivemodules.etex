@@ -1,3 +1,8 @@
+\section{s:recursive-modules}{Recursive modules}
+%HEVEA\cutname{recursivemodules.html}
+\ikwd{module\@\texttt{module}}
+\ikwd{and\@\texttt{and}}
+
 (Introduced in Objective Caml 3.07)
 
 % TODO: relaxed syntax

@@ -1,3 +1,8 @@
+\section{s:gadts}{Generalized algebraic datatypes}
+%HEVEA\cutname{gadts.html}
+\ikwd{type\@\texttt{type}}
+\ikwd{match\@\texttt{match}}
+
 Generalized algebraic datatypes, or GADTs, extend usual sum types in
 two ways: constraints on type parameters may change depending on the
 value constructor, and some type variables may be existentially

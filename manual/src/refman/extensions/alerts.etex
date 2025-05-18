@@ -1,3 +1,6 @@
+\section{s:alerts}{Alerts}
+%HEVEA\cutname{alerts.html}
+
 (Introduced in 4.08)
 
 Since OCaml 4.08, it is possible to mark components (such as value or

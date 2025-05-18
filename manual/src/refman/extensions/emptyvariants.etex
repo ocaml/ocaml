@@ -1,3 +1,7 @@
+\section{s:empty-variants}{Empty variant types}
+%HEVEA\cutname{emptyvariants.html}
+(Introduced in 4.07.0)
+
 \begin{syntax}
 type-representation:
           ...
