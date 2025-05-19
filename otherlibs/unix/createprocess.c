@@ -168,5 +168,5 @@ static int has_console(void)
 
 CAMLprim value caml_unix_terminate_process(value v_pid)
 {
-  return (Val_bool(TerminateProcess((HANDLE) Long_val(v_pid), 0)));
+  return (Val_bool(TerminateProcess((HANDLE) Long_val(v_pid), 137)));
 }
