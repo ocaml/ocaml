@@ -78,3 +78,64 @@ let map_val f x =
   if is_val x
   then from_val (f (force x))
   else lazy (f (force x))
+
+
+
+module Atomic_repeating = struct
+  (* we define these as primitives to avoid a dependency on Printexc *)
+  type raw_backtrace
+  external get_raw_backtrace:
+    unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
+  external raise_with_backtrace: exn -> raw_backtrace -> 'a
+    = "%raise_with_backtrace"
+
+  type 'a ops = {
+    make : unit -> 'a;
+    discard : 'a -> unit;
+  }
+
+  type 'a state =
+    | Thunk of 'a ops
+    | Forcing of 'a ops
+    | Val of 'a
+    | Failed of exn * raw_backtrace
+
+  type 'a t = 'a state Atomic.t
+
+  let from_val v = Atomic.make (Val v)
+  let from_fun ?(discard = ignore) f =
+    Atomic.make (Thunk { make = f; discard })
+
+  let finish ops =
+    match ops.make () with
+    | exception exn ->
+        let bt = get_raw_backtrace () in
+        Failed (exn, bt)
+    | v ->
+        Val v
+
+  let rec force th =
+    match Atomic.get th with
+    | Val v -> v
+    | Failed (exn, bt) ->
+      raise_with_backtrace exn bt
+    | (Thunk ops) as thunk ->
+      (* [compare_and_set] returns [false] when another domain has
+         set the thunk to [Forcing] or a finished state. *)
+      ignore (Atomic.compare_and_set th thunk (Forcing ops));
+      force th
+    | (Forcing ops) as forcing ->
+        let finished = finish ops in
+        (* [compare_and_set] returns [false] when another domain has
+           set the thunk to a finished state. In this case our
+           [finished] value is discarded. *)
+        if not (Atomic.compare_and_set th forcing finished)
+        then begin match finished with
+          | Val v ->
+              (* Ignore exceptions raised by discard: we already
+                 have a finished result to return. *)
+              (try ops.discard v with _ -> ())
+          | Thunk _ | Forcing _ | Failed _ -> ()
+        end;
+        force th
+end

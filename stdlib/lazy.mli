@@ -139,3 +139,150 @@ val force_val : 'a t -> 'a
 
     @raise Undefined (see {!Undefined}).
 *)
+
+module Atomic_repeating : sig
+  (** Atomic, repeating deferred computations.
+
+     This implementation is less optimized than [Lazy.t], but it can
+     be used in a concurrent setting.
+
+     OCaml domains do not provide a common abstraction to block on
+     another computation. Forcing an [Atomic_repeating.t] thunk does
+     not block when races happen, instead it may repeat the
+     computation of the result several times. We do guarantee that
+     calling {!force} on the same suspended computation will always
+     return the same value, even in presence of forcing races.
+
+     A typical use-case for atomic, repeating deferred computations is
+     optional library initialization code that is moderately
+     expensive, or acquires resources. The library author does not
+     want to do this work on startup, because it may not be needed,
+     but using ['a Lazy.t] is incorrect if the library may be used in
+     concurrent settings. ['a Lazy.Atomic_repeating.t] can be used, as
+     long as the fact that duplications are repeated is acceptable.
+
+     {b Warning}: ['a Lazy.t] contains a protection against recursively
+     forcing a thunk, it will raise {!Undefined}. On the other hand,
+     ['a Lazy.Atomic_repeating.t] will recursively repeat the computation,
+     which may loop.
+
+     See {{!examples} the examples} below.
+  *)
+
+  type 'a t
+  (* A value of type ['a Lazy.Atomic_repeating.t] is similar to a value
+     of type ['a Lazy.t], it represents a deferred computation, but it can
+     safely be used in concurrent settings.
+
+     If a calling domain attempts to {!force} a value that is already
+     being forced, the calling domain is not suspended. Instead, the
+     computation of the value will be repeated on the calling
+     domain. In other words, [Atomic_repeating.t] can duplicate
+     computations.
+
+     The implementation ensures that all call to {!force} return the
+     same value or raise the same exception: if a repeated terminates
+     on a result, its value or exception will be discarded.
+  *)
+
+  val from_val : 'a -> 'a t
+  (** [from_val v] is a deferred computation which is already
+      finished and whose result is the value [v]. *)
+
+  val from_fun : ?discard:('a -> unit) -> (unit -> 'a) -> 'a t
+  (** [from_fun ?discard f] is a deferred computation that will call
+      [f] when forced. Note that [f] may be called several times
+      in the case of concurrent races.
+
+      If [f] is called several times, one result will be stored as the
+      result of this computation, and the value of any other result
+      will be passed to the [discard] function -- a no-op by default.
+      Exceptions raised by [discard] are themselves discarded. *)
+
+  val force : 'a t -> 'a
+  (** [force x] forces the suspension [x]. If [x] has
+      already been forced, [Lazy.force x] returns the same value again without
+      recomputing it. If it raised an exception, the same exception is raised
+      again.
+
+      If there is a race between several calls to [force], the
+      computation may be repeated and some of the finished results
+      will be discarded. All forcing calls will return the same result. *)
+
+
+  (** {1:examples Examples}
+
+      A typical use-case is to initialize some library-local
+      state that is used by library functions.
+
+      {[
+        let config = Lazy.Atomic_repeating.from_fun (fun () ->
+          match Sys.getenv "MYLIB_CONFIG_PATH" with
+          | exception _ -> Config.default ()
+          | path -> Config.read_from_path path
+        )
+      ]}
+
+      The environment access and file read may be repeated several
+      times in the case of concurrent forcing, but the "first"
+      configuration to be computed will be returned by all callers.
+
+      {3:examples_discard Using the [?discard] parameter.}
+
+      The [?discard] argument is useful to release resources if
+      a repeated result is discarded.
+
+      {[
+        let log_file_and_channel =
+          let acquire () =
+            match Sys.getenv "MYLIB_LOG_PATH" with
+            | exception _ ->
+                let path, chan = Filename.open_temp_file "mylib" ".log" in
+                (`Temp path), chan
+            | path ->
+                let chan = Out_channel.open_bin path in
+                (`User path), chan
+          in
+          let discard (source, chan) =
+            Out_channel.close chan;
+            match source with
+            | `User _ -> ()
+            | `Temp path -> Sys.remove path
+          in
+          Lazy.Atomic_repeating.from_fun ~discard acquire
+      ]}
+
+      {3:examples_sync User synchronization}
+
+      Users of this module can add their own synchronization logic to
+      avoid repeated computations. For example, in an application
+      which uses threads and mutex:
+
+      {[
+        let entropy =
+          (* we use a mibibyte of random data from /dev/urandom *)
+          let init_mutex = Mutex.create () in
+          let result = ref None in
+          Lazy.Atomic_repeating.from_fun (fun () ->
+            Mutex.protect init_mutex (fun () ->
+              match !result with
+              | Some v -> v
+              | None ->
+                  let v =
+                    In_channel.with_open_bin "/dev/urandom" (fun chan ->
+                      In_channel.really_input_string chan (1024 * 1024)
+                    )
+                  in
+                  result := Some v;
+                  v
+            )
+          )
+      ]}
+
+      A program using this definition will open "/dev/urandom" at most
+      once. Note that the mutex is only taken on [force] calls that
+      happen while the initialization is not yet finished -- typically
+      the first call, or possibly several concurrent first calls. Once
+      initialization is finished, the value will be returned directly.
+ *)
+end
