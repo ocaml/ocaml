@@ -36,7 +36,7 @@ Working version
 
 * #14046: On Windows, processes killed with `Unix.kill` now exit with status
   code 137 instead of 0.
-  (Nicolás Ojeda Bär)
+  (Nicolás Ojeda Bär, review by Miod Vallat and Antonin Décimo)
 
 - #14020: Add Unix.unsetenv.
   (Nicolás Ojeda Bär, review by Antonin Décimo and David Allsopp)
