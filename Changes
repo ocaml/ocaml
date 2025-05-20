@@ -101,6 +101,10 @@ Working version
   is a break hint at the end.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #10570: Fix handling of caml_sys_argv when exposed directly as an
+  external
+  (Keryan Didier, review by Vincent Laviron and Gabriel Scherer)
+
 OCaml 5.4.0
 ---------------
 

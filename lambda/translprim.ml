@@ -931,9 +931,12 @@ let lambda_primitive_needs_event_after = function
 (* Determine if a primitive should be surrounded by an "after" debug event *)
 let primitive_needs_event_after = function
   | Primitive (prim,_) -> lambda_primitive_needs_event_after prim
-  | External _ | Sys_argv -> true
   | Comparison(comp, knd) ->
       lambda_primitive_needs_event_after (comparison_primitive comp knd)
+  (* C calls that may allocate or raise need an event.
+     We conservatively add an event to all C calls. *)
+  | External _ | Sys_argv -> true
+  (* Primitives that may call an arbitrary OCaml function need an event *)
   | Lazy_force | Send | Send_self | Send_cache
   | Apply | Revapply -> true
   | Raise _ | Raise_with_backtrace
