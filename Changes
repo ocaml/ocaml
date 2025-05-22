@@ -122,7 +122,8 @@ Working version
 
 - #14043: Lazy.Atomic_repeating.t: concurrency-safe lazy thunks that may
   repeat initialization computation on forcing races.
-  (Gabriel Scherer, review by KC Sivaramakrishnan and ??)
+  (Gabriel Scherer,
+   review by KC Sivaramakrishnan and Pierre Chambart and ??)
 
 - #14086: Add Domain.count.
   (Nicolás Ojeda Bär, review by David Allsopp, Gabriel Scherer, Daniel Bünzli

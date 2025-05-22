@@ -106,14 +106,6 @@ module Atomic_repeating = struct
   let from_fun ?(discard = ignore) f =
     Atomic.make (Thunk { make = f; discard })
 
-  let finish ops =
-    match ops.make () with
-    | exception exn ->
-        let bt = get_raw_backtrace () in
-        Failed (exn, bt)
-    | v ->
-        Val v
-
   let rec force th =
     match Atomic.get th with
     | Val v -> v
@@ -125,17 +117,25 @@ module Atomic_repeating = struct
       ignore (Atomic.compare_and_set th thunk (Forcing ops));
       force th
     | (Forcing ops) as forcing ->
-        let finished = finish ops in
-        (* [compare_and_set] returns [false] when another domain has
-           set the thunk to a finished state. In this case our
-           [finished] value is discarded. *)
-        if not (Atomic.compare_and_set th forcing finished)
-        then begin match finished with
-          | Val v ->
-              (* Ignore exceptions raised by discard: we already
-                 have a finished result to return. *)
-              (try ops.discard v with _ -> ())
-          | Thunk _ | Forcing _ | Failed _ -> ()
-        end;
-        force th
+        begin match ops.make () with
+        | exception exn ->
+            let bt = get_raw_backtrace () in
+            let failed = Failed (exn, bt) in
+            (* [compare_and_set] returns [false] when another domain
+               has set the thunk to a finished state. We re-raise our
+               exception in any case to avoid losing it. *)
+            ignore (Atomic.compare_and_set th forcing failed);
+            raise_with_backtrace exn bt
+        | v ->
+            (* [compare_and_set] returns [false] when another domain
+               has set the thunk to a finished state. In this case we
+               [discard] our value, and reuse the finished state. *)
+            if Atomic.compare_and_set th forcing (Val v)
+            then v
+            else begin
+              (* Exceptions from [discard] are propagated to the caller. *)
+              ops.discard v;
+              force th
+            end
+        end
 end

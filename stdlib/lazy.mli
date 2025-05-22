@@ -150,8 +150,9 @@ module Atomic_repeating : sig
      another computation. Forcing an [Atomic_repeating.t] thunk does
      not block when races happen, instead it may repeat the
      computation of the result several times. We do guarantee that
-     calling {!force} on the same suspended computation will always
-     return the same value, even in presence of forcing races.
+     if two calls to {!force} on the same suspended computation return
+     a value, then they return the same value, even in presence of
+     forcing races.
 
      A typical use-case for atomic, repeating deferred computations is
      optional library initialization code that is moderately
@@ -195,19 +196,23 @@ module Atomic_repeating : sig
       in the case of concurrent races.
 
       If [f] is called several times, one result will be stored as the
-      result of this computation, and the value of any other result
-      will be passed to the [discard] function -- a no-op by default.
-      Exceptions raised by [discard] are themselves discarded. *)
+      result of this computation. Other values computed concurrently
+      will be discarded, after being passed to the [discard] function
+      (a no-op by default). On the other hand, exceptions raised by
+      concurrent computations will be re-raised, as well as exceptions
+      raised by [discard].
+*)
 
   val force : 'a t -> 'a
-  (** [force x] forces the suspension [x]. If [x] has
-      already been forced, [Lazy.force x] returns the same value again without
-      recomputing it. If it raised an exception, the same exception is raised
-      again.
+  (** [force x] forces the suspension [x]. If [x] has already been
+      forced, [Lazy.force x] returns the same value again without
+      recomputing it. If it raised an exception, the same exception is
+      raised again.
 
       If there is a race between several calls to [force], the
-      computation may be repeated and some of the finished results
-      will be discarded. All forcing calls will return the same result. *)
+      computation may be repeated several times. If some of them fail
+      with an exception, they will re-raise it; but all those that
+      return a value will return the same value. *)
 
 
   (** {1:examples Examples}
