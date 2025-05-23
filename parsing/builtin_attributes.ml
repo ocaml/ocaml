@@ -285,6 +285,9 @@ let alerts_of_sig ~mark sg =
   if mark then mark_alerts_used a;
   alerts_of_attrs a
 
+let alerts_of_intf ~mark intf =
+  alerts_of_sig ~mark intf.pintf_signature
+
 let rec attrs_of_str = function
   | {pstr_desc = Pstr_attribute a} :: tl ->
       a :: attrs_of_str tl
@@ -295,6 +298,9 @@ let alerts_of_str ~mark str =
   let a = attrs_of_str str in
   if mark then mark_alerts_used a;
   alerts_of_attrs a
+
+let alerts_of_impl ~mark impl =
+  alerts_of_str ~mark impl.pimpl_structure
 
 let warn_payload loc txt msg =
   Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg))

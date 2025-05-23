@@ -128,6 +128,14 @@ Working version
 - #14024: Fix unterminated-string-initialization warnings from the C compiler.
   (Antonin Décimo, review by David Allsopp and Miod Vallat)
 
+* #12629, #12654: include source locations in implementations and interfaces.
+  This can break compiler-libs code as it introduces a distinction between
+  the types 'implementation' and 'structure', and between 'interface'
+  and 'signature'. We tried to offer support for both types in most modules,
+  so that the transition is easy, but it may be hard to support new code
+  and older versions without preprocessing.
+  (Malek Ben Romdhane and Gabriel Scherer, review by Florian Angeletti)
+
 ### Build system:
 
 - #13810: Support build of cross compilers to native freestanding targets

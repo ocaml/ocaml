@@ -187,8 +187,7 @@ module Ast = struct
     try
       let id =
         orig |> Unit_info.modname_from_source |> Ident.create_persistent in
-      let ast = Pparse.file ~tool_name:"lintapidiff" input
-          Parse.interface Pparse.Signature in
+      let ast = Pparse.parse_signature ~tool_name:"lintapidiff" input in
       Location.input_name := orig;
       add_items ~f (Path.Pident id) (init,IdMap.empty) ast
     with e ->

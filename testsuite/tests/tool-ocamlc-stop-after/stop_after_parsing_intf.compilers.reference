@@ -1,3 +1,4 @@
+interface (stop_after_parsing_intf.mli[12,306+0]..[21,527+0])
 [
   signature_item (stop_after_parsing_intf.mli[12,306+0]..[12,306+61])
     Psig_value

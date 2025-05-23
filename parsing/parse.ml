@@ -101,6 +101,9 @@ and pattern = wrap Parser.parse_pattern
 let module_type = wrap Parser.parse_module_type
 let module_expr = wrap Parser.parse_module_expr
 
+let structure lexbuf = (implementation lexbuf).pimpl_structure
+let signature lexbuf = (interface lexbuf).pintf_signature
+
 let longident = wrap Parser.parse_any_longident
 let val_ident = wrap Parser.parse_val_longident
 let constr_ident= wrap Parser.parse_constr_longident
