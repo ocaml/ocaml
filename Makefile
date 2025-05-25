@@ -1963,7 +1963,7 @@ expect_SOURCES = $(addprefix testsuite/tools/,expect.mli expect.ml)
 expect_LIBRARIES = $(addprefix compilerlibs/,\
   ocamlcommon ocamlbytecomp ocamltoplevel)
 
-testsuite/tools/expect$(EXE): OC_BYTECODE_LINKFLAGS += -linkall
+testsuite/tools/expect$(EXE): OC_BYTECODE_LINKFLAGS += -linkall -g
 
 codegen_SOURCES = $(addprefix testsuite/tools/,\
   parsecmmaux.mli parsecmmaux.ml \
