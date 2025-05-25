@@ -105,6 +105,16 @@ Working version
   recursive modules.
   (Shivam Acharya, review by Gabriel Scherer and Florian Angeletti)
 
+- ...: new warning "deprecated_repr". `type t = int [@@deprecated_repr]`
+  warns in places that wouldn't type if `t`'s definition changed to `type t`.
+  TODO:
+  - probably use a separate alert, not "deprecated". Or I guess a warning,
+    like deprecated-mutable.
+  - maybe should make an internal alert for the cases when no location is
+    provided, so it's easier to fix the compiler if a warning is missing
+  - the warnings should mention the type and repr that are deprecated
+  - need to add explanation to the manual, in particular the fact that 
+
 ### Internal/compiler-libs changes:
 
 - #13839, #14008: Reimplement `let open`, `let module` and `let exception` in
