@@ -41,7 +41,11 @@ let source_of_module pos mdle =
           acc)
       Debugger_config.load_path_for
       (Load_path.get_path_list ()) in
-  if pos_fname = "" then
+  try
+    if pos_fname <> "" && Filename.is_relative pos_fname then
+      find_in_path_rel path pos_fname
+    else raise Not_found
+  with Not_found ->
     let innermost_module =
       try
         let dot_index = String.rindex mdle '.' in
@@ -54,9 +58,6 @@ let source_of_module pos mdle =
           try find_in_path_normalized path (innermost_module ^ ext)
           with Not_found -> loop exts
     in loop source_extensions
-  else if Filename.is_relative pos_fname then
-    find_in_path_rel path pos_fname
-  else raise Not_found
 
 (*** Buffer cache ***)
 
