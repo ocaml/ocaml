@@ -57,7 +57,6 @@ let source_of_module pos mdle =
     in loop source_extensions
   else if Filename.is_relative fname then
     find_in_path_rel path fname
-  else if Sys.file_exists fname then fname
   else raise Not_found
 
 (*** Buffer cache ***)
