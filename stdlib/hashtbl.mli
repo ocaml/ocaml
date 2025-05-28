@@ -148,6 +148,9 @@ val remove : ('a, 'b) t -> 'a -> unit
 (** [Hashtbl.remove tbl x] removes the current binding of [x] in [tbl],
    restoring the previous binding if it exists.
    It does nothing if [x] is not bound in [tbl]. *)
+    
+val remove_mem : ('a, 'b) t -> 'a -> 'b option
+(** Same as {!remove} but returns the previous binding if any. *)
 
 val replace : ('a, 'b) t -> 'a -> 'b -> unit
 (** [Hashtbl.replace tbl key data] replaces the current binding of [key]
@@ -155,6 +158,9 @@ val replace : ('a, 'b) t -> 'a -> 'b -> unit
    a binding of [key] to [data] is added to [tbl].
    This is functionally equivalent to {!remove}[ tbl key]
    followed by {!add}[ tbl key data]. *)
+   
+val replace_mem : ('a, 'b) t -> 'a -> 'b -> 'b option
+(** Same as {!replace} but returns the previous binding if any. *)
 
 val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
 (** [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
@@ -380,12 +386,14 @@ module type S =
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
+    val remove_mem : 'a t -> key -> 'a option
     val find : 'a t -> key -> 'a
     val find_opt : 'a t -> key -> 'a option
     (** @since 4.05 *)
 
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
+    val replace_mem: 'a t -> key -> 'a -> 'a option
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t ->
@@ -458,11 +466,13 @@ module type SeededS =
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
+    val remove_mem : 'a t -> key -> 'a option
     val find : 'a t -> key -> 'a
     val find_opt : 'a t -> key -> 'a option (** @since 4.05 *)
 
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
+    val replace_mem: 'a t -> key -> 'a -> 'a option
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t ->

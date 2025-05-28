@@ -130,10 +130,12 @@ module HofM (M: Map.S) : Hashtbl.SeededS with type key = M.key =
     let copy = Hashtbl.copy
     let add = Hashtbl.add
     let remove = Hashtbl.remove
+    let remove_mem = Hashtbl.remove_mem
     let find = Hashtbl.find
     let find_opt = Hashtbl.find_opt
     let find_all = Hashtbl.find_all
     let replace = Hashtbl.replace
+    let replace_mem = Hashtbl.replace_mem
     let mem = Hashtbl.mem
     let iter = Hashtbl.iter
     let fold = Hashtbl.fold
@@ -272,3 +274,12 @@ let () =
   let l = List.sort compare l in
   List.iter (fun (k, v) -> Printf.printf "%i,%i\n" k v) l;
   Printf.printf "%i elements\n" (Hashtbl.length h)
+
+let () =
+  let h = Hashtbl.create 16 in
+  Hashtbl.add h 0 0;
+  assert (Hashtbl.replace_mem h 0 1 = Some 0);
+  assert (Hashtbl.remove_mem h 0 = Some 1);
+  assert (Hashtbl.remove_mem h 0 = None);
+  assert (Hashtbl.replace_mem h 0 1 = None);
+  assert (Hashtbl.remove_mem h 0 = Some 1)

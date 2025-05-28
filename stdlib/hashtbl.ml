@@ -297,10 +297,12 @@ module type S =
     val copy: 'a t -> 'a t
     val add: 'a t -> key -> 'a -> unit
     val remove: 'a t -> key -> unit
+    val remove_mem: 'a t -> key -> 'a option
     val find: 'a t -> key -> 'a
     val find_opt: 'a t -> key -> 'a option
     val find_all: 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
+    val replace_mem : 'a t -> key -> 'a -> 'a option
     val mem : 'a t -> key -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
@@ -325,10 +327,12 @@ module type SeededS =
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
+    val remove_mem : 'a t -> key -> 'a option
     val find : 'a t -> key -> 'a
     val find_opt: 'a t -> key -> 'a option
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
+    val replace_mem :'a t -> key -> 'a -> 'a option
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
@@ -365,20 +369,23 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
 
     let rec remove_bucket h i key prec = function
       | Empty ->
-          ()
-      | (Cons {key=k; next}) as c ->
+          None
+      | (Cons {key=k; data; next}) as c ->
           if H.equal k key
           then begin
             h.size <- h.size - 1;
-            match prec with
+            (match prec with
             | Empty -> h.data.(i) <- next
-            | Cons c -> c.next <- next
+            | Cons c -> c.next <- next);
+            Some data
           end
           else remove_bucket h i key c next
 
-    let remove h key =
+    let remove_mem h key =
       let i = key_index h key in
       remove_bucket h i key Empty h.data.(i)
+    
+    let remove h key = ignore (remove_mem h key)
 
     let rec find_rec key = function
       | Empty ->
@@ -432,20 +439,30 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
 
     let rec replace_bucket key data = function
       | Empty ->
-          true
+          None
       | Cons ({key=k; next} as slot) ->
           if H.equal k key
-          then (slot.key <- key; slot.data <- data; false)
+          then (
+            let old_data = slot.data in
+            slot.key <- key;
+            slot.data <- data;
+            Some old_data)
           else replace_bucket key data next
-
-    let replace h key data =
+          
+    let replace_mem h key data =
       let i = key_index h key in
       let l = h.data.(i) in
-      if replace_bucket key data l then begin
-        h.data.(i) <- Cons{key; data; next=l};
-        h.size <- h.size + 1;
-        if h.size > Array.length h.data lsl 1 then resize key_index h
-      end
+      match replace_bucket key data l with
+      | None ->
+          h.data.(i) <- Cons{key; data; next=l};
+          h.size <- h.size + 1;
+          if h.size > Array.length h.data lsl 1 then resize key_index h;
+          None
+      | (Some _) as p -> p
+
+    let replace h key data = ignore (replace_mem h key data)
+
+    (* Iterators *)
 
     let rec mem_in_bucket key = function
       | Empty ->
@@ -516,20 +533,23 @@ let add h key data =
 
 let rec remove_bucket h i key prec = function
   | Empty ->
-      ()
-  | (Cons {key=k; next}) as c ->
+      None
+  | (Cons {key=k; data; next}) as c ->
       if compare k key = 0
       then begin
         h.size <- h.size - 1;
-        match prec with
+        (match prec with
         | Empty -> h.data.(i) <- next
-        | Cons c -> c.next <- next
+        | Cons c -> c.next <- next);
+        Some data
       end
       else remove_bucket h i key c next
 
-let remove h key =
+let remove_mem h key =
   let i = key_index h key in
   remove_bucket h i key Empty h.data.(i)
+  
+let remove h key = ignore (remove_mem h key)
 
 let rec find_rec key = function
   | Empty ->
@@ -583,20 +603,28 @@ let find_all h key =
 
 let rec replace_bucket key data = function
   | Empty ->
-      true
+      None
   | Cons ({key=k; next} as slot) ->
       if compare k key = 0
-      then (slot.key <- key; slot.data <- data; false)
+      then (
+        let old_data = slot.data in
+        slot.key <- key;
+        slot.data <- data;
+        Some old_data)
       else replace_bucket key data next
 
-let replace h key data =
+let replace_mem h key data =
   let i = key_index h key in
   let l = h.data.(i) in
-  if replace_bucket key data l then begin
-    h.data.(i) <- Cons{key; data; next=l};
-    h.size <- h.size + 1;
-    if h.size > Array.length h.data lsl 1 then resize key_index h
-  end
+  match replace_bucket key data l with
+      | None ->
+          h.data.(i) <- Cons{key; data; next=l};
+          h.size <- h.size + 1;
+          if h.size > Array.length h.data lsl 1 then resize key_index h;
+          None
+      | (Some _) as p -> p
+  
+let replace h key data = ignore (replace_mem h key data)
 
 let rec mem_in_bucket key = function
   | Empty ->
