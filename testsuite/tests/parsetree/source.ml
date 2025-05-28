@@ -7528,3 +7528,26 @@ let là = function ça -> ça
 let () =
   (let module M = N in ());
   (let open M in ())
+
+(* PR #14040 *)
+
+let () =
+  let [%%foo] [@@bar] in
+  let [@@@attr] in
+  let external foo: unit -> unit = "foo" [@@unboxed] in
+  let type 'a t = int in
+  let type 'a s in
+  let type 'a u = {a: int} [@@bar] in
+  let type 'a v = A of int | B [@@bar] in
+  let type 'a w = .. in
+  let type 'b w += A in
+  let exception A of int [@@bar] in
+  let exception A : int -> exn in
+  let module rec A : S = M and B : T = P in
+  let class ['a] c = object method f = 12 end [@@bar] in
+  let class type%foo ct = object method f : int end in
+  let module type A = sig end in
+  let open B in
+  let module%foo M = P(A) [@@foo] in
+  let%e[@foo] x = 12 in
+  ()
