@@ -1447,7 +1447,7 @@ let invert (type a) ~(iter : (a -> unit) -> unit) : a Seq.t =
 \end{caml_example}
 
 In a different direction, one can use this construct to toggle a warning
-thoughout the inner expression:
+throughout the inner expression:
 
 \begin{caml_example}{toplevel}
 let f () =
