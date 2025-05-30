@@ -130,12 +130,12 @@ module HofM (M: Map.S) : Hashtbl.SeededS with type key = M.key =
     let copy = Hashtbl.copy
     let add = Hashtbl.add
     let remove = Hashtbl.remove
-    let remove_mem = Hashtbl.remove_mem
+    let find_and_remove = Hashtbl.find_and_remove
     let find = Hashtbl.find
     let find_opt = Hashtbl.find_opt
     let find_all = Hashtbl.find_all
     let replace = Hashtbl.replace
-    let replace_mem = Hashtbl.replace_mem
+    let find_and_replace = Hashtbl.find_and_replace
     let mem = Hashtbl.mem
     let iter = Hashtbl.iter
     let fold = Hashtbl.fold
@@ -278,15 +278,15 @@ let () =
 let () =
   let h = Hashtbl.create 16 in
   Hashtbl.add h 0 0;
-  assert (Hashtbl.replace_mem h 0 1 = Some 0);
-  assert (Hashtbl.remove_mem h 0 = Some 1);
-  assert (Hashtbl.remove_mem h 0 = None);
-  assert (Hashtbl.replace_mem h 0 1 = None);
-  assert (Hashtbl.remove_mem h 0 = Some 1);
+  assert (Hashtbl.find_and_replace h 0 1 = Some 0);
+  assert (Hashtbl.find_and_remove h 0 = Some 1);
+  assert (Hashtbl.find_and_remove h 0 = None);
+  assert (Hashtbl.find_and_replace h 0 1 = None);
+  assert (Hashtbl.find_and_remove h 0 = Some 1);
   Hashtbl.clear h;
   Hashtbl.add h 0 0;
   Hashtbl.add h 0 1;
-  assert (Hashtbl.replace_mem h 0 2 = Some 1);
-  assert (Hashtbl.remove_mem h 0 = Some 2);
-  assert (Hashtbl.remove_mem h 0 = Some 0);
-  assert (Hashtbl.remove_mem h 0 = None);
+  assert (Hashtbl.find_and_replace h 0 2 = Some 1);
+  assert (Hashtbl.find_and_remove h 0 = Some 2);
+  assert (Hashtbl.find_and_remove h 0 = Some 0);
+  assert (Hashtbl.find_and_remove h 0 = None);

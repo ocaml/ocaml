@@ -166,7 +166,7 @@ module Hashtbl : sig
      restoring the previous binding if it exists.
      It does nothing if [x] is not bound in [tbl]. *)
   
-  val remove_mem : ('a, 'b) t -> 'a -> 'b option
+  val find_and_remove : ('a, 'b) t -> 'a -> 'b option
   (** Same as {!remove} but returns the previous binding if any.
       @since 5.5 *)
 
@@ -177,7 +177,7 @@ module Hashtbl : sig
      This is functionally equivalent to {!remove}[ tbl key]
      followed by {!add}[ tbl key data]. *)
      
-  val replace_mem : ('a, 'b) t -> key:'a -> data:'b -> 'b option
+  val find_and_replace : ('a, 'b) t -> key:'a -> data:'b -> 'b option
   (** Same as {!replace} but returns the previous binding if any.
       @since 5.5 *)
 
@@ -405,7 +405,7 @@ module Hashtbl : sig
       val copy : 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
-      val remove_mem : 'a t -> key -> 'a option
+      val find_and_remove : 'a t -> key -> 'a option
       (** @since 5.5 *)
 
       val find : 'a t -> key -> 'a
@@ -414,7 +414,7 @@ module Hashtbl : sig
 
       val find_all : 'a t -> key -> 'a list
       val replace : 'a t -> key:key -> data:'a -> unit
-      val replace_mem : 'a t -> key:key -> data:'a -> 'a option
+      val find_and_replace : 'a t -> key:key -> data:'a -> 'a option
         (** @since 5.5 *)
 
       val mem : 'a t -> key -> bool
@@ -491,7 +491,7 @@ module Hashtbl : sig
       val copy : 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
-      val remove_mem : 'a t -> key -> 'a option
+      val find_and_remove : 'a t -> key -> 'a option
       (** @since 5.5 *)
 
       val find : 'a t -> key -> 'a
@@ -499,7 +499,7 @@ module Hashtbl : sig
 
       val find_all : 'a t -> key -> 'a list
       val replace : 'a t -> key:key -> data:'a -> unit
-      val replace_mem : 'a t -> key:key -> data:'a -> 'a option
+      val find_and_replace : 'a t -> key:key -> data:'a -> 'a option
       (** @since 5.5 *)
 
       val mem : 'a t -> key -> bool

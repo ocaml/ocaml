@@ -297,12 +297,12 @@ module type S =
     val copy: 'a t -> 'a t
     val add: 'a t -> key -> 'a -> unit
     val remove: 'a t -> key -> unit
-    val remove_mem: 'a t -> key -> 'a option
+    val find_and_remove: 'a t -> key -> 'a option
     val find: 'a t -> key -> 'a
     val find_opt: 'a t -> key -> 'a option
     val find_all: 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
-    val replace_mem : 'a t -> key -> 'a -> 'a option
+    val find_and_replace : 'a t -> key -> 'a -> 'a option
     val mem : 'a t -> key -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
@@ -327,12 +327,12 @@ module type SeededS =
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
-    val remove_mem : 'a t -> key -> 'a option
+    val find_and_remove : 'a t -> key -> 'a option
     val find : 'a t -> key -> 'a
     val find_opt: 'a t -> key -> 'a option
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
-    val replace_mem :'a t -> key -> 'a -> 'a option
+    val find_and_replace :'a t -> key -> 'a -> 'a option
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
@@ -381,11 +381,11 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
           end
           else remove_bucket h i key c next
 
-    let remove_mem h key =
+    let find_and_remove h key =
       let i = key_index h key in
       remove_bucket h i key Empty h.data.(i)
     
-    let remove h key = ignore (remove_mem h key)
+    let remove h key = ignore (find_and_remove h key)
 
     let rec find_rec key = function
       | Empty ->
@@ -447,7 +447,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
             slot.key <- key; slot.data <- data; Some old_data
           else replace_bucket key data next
           
-    let replace_mem h key data =
+    let find_and_replace h key data =
       let i = key_index h key in
       let l = h.data.(i) in
       let old_data = replace_bucket key data l in
@@ -460,7 +460,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
       end;
       old_data
       
-    let replace h key data = ignore (replace_mem h key data)
+    let replace h key data = ignore (find_and_replace h key data)
 
     (* Iterators *)
 
@@ -546,11 +546,11 @@ let rec remove_bucket h i key prec = function
       end
       else remove_bucket h i key c next
 
-let remove_mem h key =
+let find_and_remove h key =
   let i = key_index h key in
   remove_bucket h i key Empty h.data.(i)
   
-let remove h key = ignore (remove_mem h key)
+let remove h key = ignore (find_and_remove h key)
 
 let rec find_rec key = function
   | Empty ->
@@ -614,7 +614,7 @@ let rec replace_bucket key data = function
         Some old_data)
       else replace_bucket key data next
 
-let replace_mem h key data =
+let find_and_replace h key data =
   let i = key_index h key in
   let l = h.data.(i) in
   match replace_bucket key data l with
@@ -625,7 +625,7 @@ let replace_mem h key data =
           None
       | (Some _) as p -> p
   
-let replace h key data = ignore (replace_mem h key data)
+let replace h key data = ignore (find_and_replace h key data)
 
 let rec mem_in_bucket key = function
   | Empty ->
