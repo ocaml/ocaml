@@ -167,7 +167,8 @@ module Hashtbl : sig
      It does nothing if [x] is not bound in [tbl]. *)
   
   val remove_mem : ('a, 'b) t -> 'a -> 'b option
-  (** Same as {!remove} but returns the previous binding if any. *)
+  (** Same as {!remove} but returns the previous binding if any.
+      @since 5.5 *)
 
   val replace : ('a, 'b) t -> key:'a -> data:'b -> unit
   (** [Hashtbl.replace tbl ~key ~data] replaces the current binding of [key]
@@ -177,7 +178,8 @@ module Hashtbl : sig
      followed by {!add}[ tbl key data]. *)
      
   val replace_mem : ('a, 'b) t -> key:'a -> data:'b -> 'b option
-  (** Same as {!replace} but returns the previous binding if any. *)
+  (** Same as {!replace} but returns the previous binding if any.
+      @since 5.5 *)
 
   val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
   (** [Hashtbl.iter ~f tbl] applies [f] to all bindings in table [tbl].
@@ -404,6 +406,8 @@ module Hashtbl : sig
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
       val remove_mem : 'a t -> key -> 'a option
+      (** @since 5.5 *)
+
       val find : 'a t -> key -> 'a
       val find_opt : 'a t -> key -> 'a option
       (** @since 4.05 *)
@@ -411,6 +415,8 @@ module Hashtbl : sig
       val find_all : 'a t -> key -> 'a list
       val replace : 'a t -> key:key -> data:'a -> unit
       val replace_mem : 'a t -> key:key -> data:'a -> 'a option
+        (** @since 5.5 *)
+
       val mem : 'a t -> key -> bool
       val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
       val filter_map_inplace: f:(key:key -> data:'a -> 'a option) -> 'a t ->
@@ -486,12 +492,16 @@ module Hashtbl : sig
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
       val remove_mem : 'a t -> key -> 'a option
+      (** @since 5.5 *)
+
       val find : 'a t -> key -> 'a
       val find_opt : 'a t -> key -> 'a option (** @since 4.05 *)
 
       val find_all : 'a t -> key -> 'a list
       val replace : 'a t -> key:key -> data:'a -> unit
       val replace_mem : 'a t -> key:key -> data:'a -> 'a option
+      (** @since 5.5 *)
+
       val mem : 'a t -> key -> bool
       val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
       val filter_map_inplace: f:(key:key -> data:'a -> 'a option) -> 'a t ->

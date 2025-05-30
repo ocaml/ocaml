@@ -282,4 +282,11 @@ let () =
   assert (Hashtbl.remove_mem h 0 = Some 1);
   assert (Hashtbl.remove_mem h 0 = None);
   assert (Hashtbl.replace_mem h 0 1 = None);
-  assert (Hashtbl.remove_mem h 0 = Some 1)
+  assert (Hashtbl.remove_mem h 0 = Some 1);
+  Hashtbl.clear h;
+  Hashtbl.add h 0 0;
+  Hashtbl.add h 0 1;
+  assert (Hashtbl.replace_mem h 0 2 = Some 1);
+  assert (Hashtbl.remove_mem h 0 = Some 2);
+  assert (Hashtbl.remove_mem h 0 = Some 0);
+  assert (Hashtbl.remove_mem h 0 = None);
