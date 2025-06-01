@@ -422,3 +422,199 @@ Error: In this "with" constraint, the new definition of "M.N"
          type t = M.r
        The type "X.t" is not equal to the type "M.r" = "M.N.s"
 |}]
+
+(* Module constraints with non-aliasable paths
+
+   The first set of example use paths with functor applications to tests deep
+   substitutions and handling of prefixes. The tests for functor parameters and
+   recursive modules are bellow.
+*)
+
+(* Introduction of an invalid alias via a destructive module constraint should
+   fail *)
+module X = struct end
+module F (_:sig end) = struct module X = struct end end
+module type T = sig
+  module X0 : sig end
+  module X1 = X0
+end with module X0 := F(X)
+[%%expect{|
+module X : sig end
+module F : sig end -> sig module X : sig end end
+Line 1:
+Error: Module type declarations do not match:
+         module type T = sig module X1 = F(X) end
+       does not match
+         module type T = sig module X1 = F(X) end
+       At position "module type T = <here>"
+       Module types do not match:
+         sig module X1 = F(X) end
+       is not equal to
+         sig module X1 = F(X) end
+       At position "module type T = sig module X1 : <here> end"
+       Module "F(X)" cannot be aliased
+|}]
+
+(* Introduction of an invalid alias via a destructive module constraint should
+   fail, also when the alias is made on a submodule *)
+module X = struct end
+module F (_:sig end) = struct module X = struct end end
+module type T = sig
+  module X0 : sig module X : sig end end
+  module X1 = X0.X
+end with module X0 := F(X)
+[%%expect{|
+module X : sig end
+module F : sig end -> sig module X : sig end end
+Line 1:
+Error: Module type declarations do not match:
+         module type T = sig module X1 = F(X).X end
+       does not match
+         module type T = sig module X1 = F(X).X end
+       At position "module type T = <here>"
+       Module types do not match:
+         sig module X1 = F(X).X end
+       is not equal to
+         sig module X1 = F(X).X end
+       At position "module type T = sig module X1 : <here> end"
+       Module "F(X).X" cannot be aliased
+|}]
+
+(* Introduction of an invalid alias via a deep destructive module constraint
+   should fail when the enclosing module is aliased (it should also fail if the
+   alias is not invalid: any destruction on an aliased module is disallowed.) *)
+module X = struct end
+module F (_:sig end) = struct module X = struct end end
+module type T = sig
+  module X0 : sig module X : sig end end
+  module X1 = X0
+end with module X0.X := F(X)
+[%%expect{|
+module X : sig end
+module F : sig end -> sig module X : sig end end
+Lines 3-6, characters 16-28:
+3 | ................sig
+4 |   module X0 : sig module X : sig end end
+5 |   module X1 = X0
+6 | end with module X0.X := F(X)
+Error: This "with" constraint on "X0.X" changes "X0", which is aliased
+       in the constrained signature (as "X1").
+|}]
+
+(* Introduction of an invalid alias via a deep destructive module constraint
+   should fail, even when the alias is made on a submodule *)
+module X = struct end
+module F (_:sig end) = struct module X = struct end end
+module type T = sig
+  module X0 : sig module X : sig end end
+  module X1 = X0.X
+end with module X0.X := F(X)
+[%%expect{|
+module X : sig end
+module F : sig end -> sig module X : sig end end
+Line 1:
+Error: Module type declarations do not match:
+         module type T = sig module X0 : sig end module X1 = F(X) end
+       does not match
+         module type T = sig module X0 : sig end module X1 = F(X) end
+       At position "module type T = <here>"
+       Module types do not match:
+         sig module X0 : sig end module X1 = F(X) end
+       is not equal to
+         sig module X0 : sig end module X1 = F(X) end
+       At position "module type T = sig module X1 : <here> end"
+       Module "F(X)" cannot be aliased
+|}]
+
+(* Introduction of an invalid alias via a deep destructive module constraint
+   should fail for functor arguments *)
+module F (Y:sig end) = struct
+  module type T = sig
+    module X0 : sig end
+    module X1 = X0
+  end with module X0 := Y
+end
+[%%expect{|
+module F : (Y : sig end) -> sig module type T = sig module X1 = Y end end
+|}]
+
+(* Introduction of an invalid alias via a deep destructive module constraint
+   should fail for recursive modules (inside the recursive knot) *)
+module rec Xrec : sig end = struct
+  module type T = sig
+    module X0 : sig end
+    module X1 = X0
+  end with module X0 := Xrec
+end
+[%%expect{|
+module rec Xrec : sig end
+|}]
+
+(* Conversely, all those example should succeed for valid aliases (and not
+   destructive substitution inside an aliased module)*)
+module Valid = struct module X = struct end end
+module type T1 = sig
+  module X0 : sig end
+  module X1 = X0
+end with module X0 := Valid
+module type T2 = sig
+  module X0 : sig module X : sig end end
+  module X1 = X0.X
+end with module X0 := Valid
+module type T3 = sig
+  module X0 : sig module X : sig end end
+  module X1 = X0.X
+end with module X0.X := Valid
+[%%expect{|
+module Valid : sig module X : sig end end
+module type T1 = sig module X1 = Valid end
+module type T2 = sig module X1 = Valid.X end
+module type T3 = sig module X0 : sig end module X1 = Valid end
+|}]
+
+(* Invalid aliases should be caught early *)
+module X = struct end
+module F (_:sig end) = struct type t end
+module M = struct
+  module type Should_fail_here = (sig
+    module X0 : sig end
+    module X1 = X0
+  end)
+    with module X0 := F(X)
+
+  module Should_not_fail_here : sig type t = int end =
+  struct type t = bool end
+end
+[%%expect{|
+module X : sig end
+module F : sig end -> sig type t end
+Line 11, characters 2-26:
+11 |   struct type t = bool end
+       ^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = bool end
+       is not included in
+         sig type t = int end
+       Type declarations do not match:
+         type t = bool
+       is not included in
+         type t = int
+       The type "bool" is not equal to the type "int"
+|}]
+
+(* Invalid aliases should be caught early (bis) *)
+module X = struct end
+module F (_:sig end) = struct type t end
+module ShoudFail : sig end = struct
+  module type T = (sig
+    module X0 : sig end
+    module X1 = X0
+  end)
+    with module X0 := F(X)
+end
+[%%expect{|
+module X : sig end
+module F : sig end -> sig type t end
+module ShoudFail : sig end
+|}]
