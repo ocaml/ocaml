@@ -441,18 +441,13 @@ end with module X0 := F(X)
 [%%expect{|
 module X : sig end
 module F : sig end -> sig module X : sig end end
-Line 1:
-Error: Module type declarations do not match:
-         module type T = sig module X1 = F(X) end
-       does not match
-         module type T = sig module X1 = F(X) end
-       At position "module type T = <here>"
-       Module types do not match:
-         sig module X1 = F(X) end
-       is not equal to
-         sig module X1 = F(X) end
-       At position "module type T = sig module X1 : <here> end"
-       Module "F(X)" cannot be aliased
+Lines 3-6, characters 16-26:
+3 | ................sig
+4 |   module X0 : sig end
+5 |   module X1 = X0
+6 | end with module X0 := F(X)
+Error: In this "with" constraint, replacing "X0" by "F(X)" would
+       introduce an invalid alias (at "X1").
 |}]
 
 (* Introduction of an invalid alias via a destructive module constraint should
@@ -466,18 +461,13 @@ end with module X0 := F(X)
 [%%expect{|
 module X : sig end
 module F : sig end -> sig module X : sig end end
-Line 1:
-Error: Module type declarations do not match:
-         module type T = sig module X1 = F(X).X end
-       does not match
-         module type T = sig module X1 = F(X).X end
-       At position "module type T = <here>"
-       Module types do not match:
-         sig module X1 = F(X).X end
-       is not equal to
-         sig module X1 = F(X).X end
-       At position "module type T = sig module X1 : <here> end"
-       Module "F(X).X" cannot be aliased
+Lines 3-6, characters 16-26:
+3 | ................sig
+4 |   module X0 : sig module X : sig end end
+5 |   module X1 = X0.X
+6 | end with module X0 := F(X)
+Error: In this "with" constraint, replacing "X0.X" by "F(X)" would
+       introduce an invalid alias (at "X1").
 |}]
 
 (* Introduction of an invalid alias via a deep destructive module constraint
@@ -512,18 +502,13 @@ end with module X0.X := F(X)
 [%%expect{|
 module X : sig end
 module F : sig end -> sig module X : sig end end
-Line 1:
-Error: Module type declarations do not match:
-         module type T = sig module X0 : sig end module X1 = F(X) end
-       does not match
-         module type T = sig module X0 : sig end module X1 = F(X) end
-       At position "module type T = <here>"
-       Module types do not match:
-         sig module X0 : sig end module X1 = F(X) end
-       is not equal to
-         sig module X0 : sig end module X1 = F(X) end
-       At position "module type T = sig module X1 : <here> end"
-       Module "F(X)" cannot be aliased
+Lines 3-6, characters 16-28:
+3 | ................sig
+4 |   module X0 : sig module X : sig end end
+5 |   module X1 = X0.X
+6 | end with module X0.X := F(X)
+Error: In this "with" constraint, replacing "X0.X" by "F(X)" would
+       introduce an invalid alias (at "X1").
 |}]
 
 (* Introduction of an invalid alias via a deep destructive module constraint
@@ -535,7 +520,13 @@ module F (Y:sig end) = struct
   end with module X0 := Y
 end
 [%%expect{|
-module F : (Y : sig end) -> sig module type T = sig module X1 = Y end end
+Lines 2-5, characters 18-25:
+2 | ..................sig
+3 |     module X0 : sig end
+4 |     module X1 = X0
+5 |   end with module X0 := Y
+Error: In this "with" constraint, replacing "X0" by "Y" would
+       introduce an invalid alias (at "X1").
 |}]
 
 (* Introduction of an invalid alias via a deep destructive module constraint
@@ -547,7 +538,13 @@ module rec Xrec : sig end = struct
   end with module X0 := Xrec
 end
 [%%expect{|
-module rec Xrec : sig end
+Lines 2-5, characters 18-28:
+2 | ..................sig
+3 |     module X0 : sig end
+4 |     module X1 = X0
+5 |   end with module X0 := Xrec
+Error: In this "with" constraint, replacing "X0" by "Xrec" would
+       introduce an invalid alias (at "X1").
 |}]
 
 (* Conversely, all those example should succeed for valid aliases (and not
@@ -588,19 +585,14 @@ end
 [%%expect{|
 module X : sig end
 module F : sig end -> sig type t end
-Line 11, characters 2-26:
-11 |   struct type t = bool end
-       ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t = bool end
-       is not included in
-         sig type t = int end
-       Type declarations do not match:
-         type t = bool
-       is not included in
-         type t = int
-       The type "bool" is not equal to the type "int"
+Lines 4-8, characters 33-26:
+4 | .................................(sig
+5 |     module X0 : sig end
+6 |     module X1 = X0
+7 |   end)
+8 |     with module X0 := F(X)
+Error: In this "with" constraint, replacing "X0" by "F(X)" would
+       introduce an invalid alias (at "X1").
 |}]
 
 (* Invalid aliases should be caught early (bis) *)
@@ -616,5 +608,12 @@ end
 [%%expect{|
 module X : sig end
 module F : sig end -> sig type t end
-module ShoudFail : sig end
+Lines 4-8, characters 18-26:
+4 | ..................(sig
+5 |     module X0 : sig end
+6 |     module X1 = X0
+7 |   end)
+8 |     with module X0 := F(X)
+Error: In this "with" constraint, replacing "X0" by "F(X)" would
+       introduce an invalid alias (at "X1").
 |}]
