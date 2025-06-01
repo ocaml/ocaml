@@ -50,6 +50,17 @@ Working version
   fails. Similarly for anonymous functor calls (of the form `F(struct ... end))
   (Clement Blaudeau, review by Gabriel Scherer)
 
+* #14066: catch invalid aliases introduced by signature constraints during
+  merging rather than in subtyping:
+  ```ocaml
+    module X = struct end module F (_:sig end) = struct end
+    module type T = (sig module X0 : sig end module X1 = X0 end)
+      with module X0 := F(X)
+  ```
+  Before, it failed with a subtyping error. Now, it fails with a proper error,
+  explaining that `X1` would keep an invalid alias to `F(X)`
+  (Clement Blaudeau, review by ?)
+
 ### Other libraries:
 
 * #14046: On Windows, `Unix.kill pid Sys.sigkill` causes the receiving process
