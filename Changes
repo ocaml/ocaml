@@ -79,6 +79,11 @@ Working version
   in the debugger
   (Pierre Boutillier and Gabriel Scherer, review by Florian Angeletti)
 
+- #14063 : Debugger fallbacks to "looking for 'module_name'.ml in the
+  loadpath" when seeking source files. It improves hit rate for
+  sources of installed packages.
+  (Pierre Boutillier, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 * #13975: documented the `[@remove_aliases]` built-in attribute for signatures
