@@ -150,7 +150,7 @@ val remove : ('a, 'b) t -> 'a -> unit
    It does nothing if [x] is not bound in [tbl]. *)
     
 val find_and_remove : ('a, 'b) t -> 'a -> 'b option
-(** Same as {!remove} but returns the previous binding if any.
+(** Same as {!remove} but returns the previous binding, if any.
     @since 5.5 *)
 
 val replace : ('a, 'b) t -> 'a -> 'b -> unit
@@ -161,7 +161,7 @@ val replace : ('a, 'b) t -> 'a -> 'b -> unit
    followed by {!add}[ tbl key data]. *)
    
 val find_and_replace : ('a, 'b) t -> 'a -> 'b -> 'b option
-(** Same as {!replace} but returns the previous binding if any.
+(** Same as {!replace} but returns the previous binding, if any.
     @since 5.5 *)
 
 val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
