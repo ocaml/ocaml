@@ -374,9 +374,10 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
           if H.equal k key
           then begin
             h.size <- h.size - 1;
-            (match prec with
+            begin match prec with
             | Empty -> h.data.(i) <- next
-            | Cons c -> c.next <- next);
+            | Cons c -> c.next <- next
+            end;
             Some data
           end
           else remove_bucket h i key c next
@@ -608,22 +609,22 @@ let rec replace_bucket key data = function
   | Cons ({key=k; next} as slot) ->
       if compare k key = 0
       then (
-        let old_data = slot.data in
-        slot.key <- key;
-        slot.data <- data;
-        Some old_data)
+      let old_data = slot.data in
+      slot.key <- key; slot.data <- data; Some old_data)
       else replace_bucket key data next
 
 let find_and_replace h key data =
   let i = key_index h key in
   let l = h.data.(i) in
-  match replace_bucket key data l with
-      | None ->
-          h.data.(i) <- Cons{key; data; next=l};
-          h.size <- h.size + 1;
-          if h.size > Array.length h.data lsl 1 then resize key_index h;
-          None
-      | (Some _) as p -> p
+  let old_data = replace_bucket key data l in
+  begin match old_data with
+  | Some _ -> ()
+  | None ->
+      h.data.(i) <- Cons{key; data; next=l};
+      h.size <- h.size + 1;
+      if h.size > Array.length h.data lsl 1 then resize key_index h
+  end;
+  old_data
   
 let replace h key data = ignore (find_and_replace h key data)
 
