@@ -110,7 +110,7 @@ Lines 1-2, characters 24-53:
 1 | ........................sig module Id : sig end module Id2 = Id end
 2 |                         with module Id := T'.Term0.Id..........
 Error: In this "with" constraint, replacing "Id" by "T'.Term0.Id" would
-       introduce an invalid alias (at "Id2").
+       introduce an invalid alias at "Id2"
 |}]
 
 module Make3 (T' : S) = struct

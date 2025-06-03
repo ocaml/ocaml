@@ -719,7 +719,7 @@ Line 3, characters 16-46:
 3 | module type A = Alias with module N := F(List);;
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this "with" constraint, replacing "N" by "F(Stdlib.List)" would
-       introduce an invalid alias (at "M").
+       introduce an invalid alias at "M"
 |}];;
 
 (* Shinwell 2014-04-23 *)

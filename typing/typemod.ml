@@ -3480,9 +3480,8 @@ let report_error ~loc _env = function
         Style.inline_code (Ident.name id)
   | With_creates_invalid_aliases(id, path, invalid_path) ->
       Location.errorf ~loc
-        "@[<v>\
-         @[In this %a constraint, replacing %a by %a would @ \
-         introduce an invalid alias (at %a)@].@]"
+        "In this %a constraint,@ replacing %a@ by %a@ would @ \
+         introduce an invalid alias@ at %a"
         Style.inline_code "with"
         Style.inline_code (Path.name path)
         Style.inline_code (Path.name invalid_path)

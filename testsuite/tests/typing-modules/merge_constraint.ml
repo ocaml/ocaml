@@ -447,7 +447,7 @@ Lines 3-6, characters 16-26:
 5 |   module X1 = X0
 6 | end with module X0 := F(X)
 Error: In this "with" constraint, replacing "X0" by "F(X)" would
-       introduce an invalid alias (at "X1").
+       introduce an invalid alias at "X1"
 |}]
 
 (* Introduction of an invalid alias via a destructive module constraint should
@@ -467,7 +467,7 @@ Lines 3-6, characters 16-26:
 5 |   module X1 = X0.X
 6 | end with module X0 := F(X)
 Error: In this "with" constraint, replacing "X0.X" by "F(X)" would
-       introduce an invalid alias (at "X1").
+       introduce an invalid alias at "X1"
 |}]
 
 (* Introduction of an invalid alias via a deep destructive module constraint
@@ -508,7 +508,7 @@ Lines 3-6, characters 16-28:
 5 |   module X1 = X0.X
 6 | end with module X0.X := F(X)
 Error: In this "with" constraint, replacing "X0.X" by "F(X)" would
-       introduce an invalid alias (at "X1").
+       introduce an invalid alias at "X1"
 |}]
 
 (* Introduction of an invalid alias via a deep destructive module constraint
@@ -526,7 +526,7 @@ Lines 2-5, characters 18-25:
 4 |     module X1 = X0
 5 |   end with module X0 := Y
 Error: In this "with" constraint, replacing "X0" by "Y" would
-       introduce an invalid alias (at "X1").
+       introduce an invalid alias at "X1"
 |}]
 
 (* Introduction of an invalid alias via a deep destructive module constraint
@@ -544,7 +544,7 @@ Lines 2-5, characters 18-28:
 4 |     module X1 = X0
 5 |   end with module X0 := Xrec
 Error: In this "with" constraint, replacing "X0" by "Xrec" would
-       introduce an invalid alias (at "X1").
+       introduce an invalid alias at "X1"
 |}]
 
 (* Conversely, all those example should succeed for valid aliases (and not
@@ -592,7 +592,7 @@ Lines 4-8, characters 33-26:
 7 |   end)
 8 |     with module X0 := F(X)
 Error: In this "with" constraint, replacing "X0" by "F(X)" would
-       introduce an invalid alias (at "X1").
+       introduce an invalid alias at "X1"
 |}]
 
 (* Invalid aliases should be caught early (bis) *)
@@ -615,5 +615,5 @@ Lines 4-8, characters 18-26:
 7 |   end)
 8 |     with module X0 := F(X)
 Error: In this "with" constraint, replacing "X0" by "F(X)" would
-       introduce an invalid alias (at "X1").
+       introduce an invalid alias at "X1"
 |}]
