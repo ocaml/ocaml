@@ -165,7 +165,7 @@ module Hashtbl : sig
   (** [Hashtbl.remove tbl x] removes the current binding of [x] in [tbl],
      restoring the previous binding if it exists.
      It does nothing if [x] is not bound in [tbl]. *)
-  
+
   val find_and_remove : ('a, 'b) t -> 'a -> 'b option
   (** Same as {!remove} but returns the previous binding, if any.
       @since 5.5 *)
@@ -415,7 +415,7 @@ module Hashtbl : sig
       val find_all : 'a t -> key -> 'a list
       val replace : 'a t -> key:key -> data:'a -> unit
       val find_and_replace : 'a t -> key:key -> data:'a -> 'a option
-        (** @since 5.5 *)
+      (** @since 5.5 *)
 
       val mem : 'a t -> key -> bool
       val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
