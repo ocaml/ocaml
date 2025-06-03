@@ -239,6 +239,21 @@ let split_on_char sep s =
   done;
   sub s 0 !j :: !r
 
+(* duplicated in bytes.ml *)
+let cut_gen f sep s =
+  match f s sep with
+  | Some idx ->
+      let l = length s in
+      let sidx = idx + 1 in
+      Some (sub s 0 idx, sub s sidx (l - sidx))
+  | None -> None
+
+(* duplicated in bytes.ml *)
+let cut_on_char sep s = cut_gen index_opt sep s
+
+(* duplicated in bytes.ml *)
+let rcut_on_char sep s = cut_gen rindex_opt sep s
+
 type t = string
 
 let compare (x: t) (y: t) = Stdlib.compare x y

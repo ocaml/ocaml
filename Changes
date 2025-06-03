@@ -36,6 +36,9 @@ Working version
   (Kate Deplaix, review by Daniel Bünzli, Gabriel Scherer,
    Nicolás Ojeda Bär, Florian Angeletti and Josh Berdine)
 
+- #14068: Add cut_on_char and rcut_on_char to String/Bytes/StringLabels.
+  (Kate Deplaix, review by ???)
+
 ### Type system:
 
 - #13781: Set scope of internal type nodes during abbreviation expansion

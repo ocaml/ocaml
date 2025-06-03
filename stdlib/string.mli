@@ -207,6 +207,18 @@ val split_on_char : char -> string -> string list
 
     @since 4.04 (4.05 in StringLabels) *)
 
+val cut_on_char : char -> string -> (string * string) option
+(** [cut_on_char sep s] splits the string [s] at the first character [sep]
+    starting from left. Returns [None] if [sep] couldn't be found.
+
+    @since 5.5 *)
+
+val rcut_on_char : char -> string -> (string * string) option
+(** [rcut_on_char sep s] splits the string [s] at the first character [sep]
+    starting from right. Returns [None] if [sep] couldn't be found.
+
+    @since 5.5 *)
+
 (** {1:transforming Transforming} *)
 
 val map : (char -> char) -> string -> string

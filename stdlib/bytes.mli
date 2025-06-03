@@ -473,6 +473,18 @@ val split_on_char: char -> bytes -> bytes list
     @since 4.13
 *)
 
+val cut_on_char : char -> bytes -> (bytes * bytes) option
+(** [cut_on_char sep s] splits the byte sequence [s] at the first character [sep]
+    starting from left. Returns [None] if [sep] couldn't be found.
+
+    @since 5.5 *)
+
+val rcut_on_char : char -> bytes -> (bytes * bytes) option
+(** [rcut_on_char sep s] splits the bytes sequence [s] at the first character [sep]
+    starting from right. Returns [None] if [sep] couldn't be found.
+
+    @since 5.5 *)
+
 (** {1 Iterators} *)
 
 val to_seq : t -> char Seq.t
