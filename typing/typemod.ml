@@ -256,18 +256,18 @@ let rec iter_path_apply p ~f =
 let path_is_prefix ~strict =
   let rec list_is_prefix l ~prefix =
     match l, prefix with
-    | [], [] -> not strict
+    | [], [] -> (not strict)
     | _ :: _, [] -> true
-    | s1 :: t1, s2 :: t2 when (String.equal s1 s2) ->
-        list_is_prefix t1 ~prefix:t2
-    | _, _ -> false
+    | [], _ :: _ -> false
+    | s1 :: t1, s2 :: t2 ->
+       String.equal s1 s2 && list_is_prefix t1 ~prefix:t2
   in
   fun path ~prefix ->
     match Path.flatten path, Path.flatten prefix with
-    | `Ok (ident1, l1), `Ok (ident2, l2)
-      when Ident.same ident1 ident2 ->
-        list_is_prefix l1 ~prefix:l2
-    | _,_ -> false
+    | `Contains_apply, _ | _, `Contains_apply -> false
+    | `Ok (ident1, l1), `Ok (ident2, l2) ->
+       Ident.same ident1 ident2
+       && list_is_prefix l1 ~prefix:l2
 
 let iterator_with_env super env =
   let env = ref (lazy env) in
