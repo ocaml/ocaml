@@ -31,7 +31,7 @@ Working version
 - #13916: Add Option.product and Option.Syntax.
   (Nicolás Ojeda Bär, review by Daniel Bünzli, Gabriel Scherer and David
   Allsopp)
-  
+
 - #14060: Add Hashtbl.find_and_replace and Hashtbl.find_and_remove.
   (Sacha Ayoun, review by Nicolás Ojeda Bär)
 

@@ -159,7 +159,7 @@ val replace : ('a, 'b) t -> key:'a -> data:'b -> unit
    a binding of [key] to [data] is added to [tbl].
    This is functionally equivalent to {!remove}[ tbl key]
    followed by {!add}[ tbl key data]. *)
-   
+
 val find_and_replace : ('a, 'b) t -> key:'a -> data:'b -> 'b option
 (** Same as {!replace} but returns the previous binding, if any.
     @since 5.5 *)

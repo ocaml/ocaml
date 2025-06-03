@@ -385,7 +385,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
     let find_and_remove h key =
       let i = key_index h key in
       remove_bucket h i key Empty h.data.(i)
-    
+
     let remove h key = ignore (find_and_remove h key)
 
     let rec find_rec key = function
@@ -447,7 +447,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
             let old_data = slot.data in
             slot.key <- key; slot.data <- data; Some old_data
           else replace_bucket key data next
-          
+
     let find_and_replace h key data =
       let i = key_index h key in
       let l = h.data.(i) in
@@ -460,7 +460,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
           if h.size > Array.length h.data lsl 1 then resize key_index h
       end;
       old_data
-      
+
     let replace h key data = ignore (find_and_replace h key data)
 
     (* Iterators *)
@@ -550,7 +550,7 @@ let rec remove_bucket h i key prec = function
 let find_and_remove h key =
   let i = key_index h key in
   remove_bucket h i key Empty h.data.(i)
-  
+
 let remove h key = ignore (find_and_remove h key)
 
 let rec find_rec key = function
@@ -625,7 +625,7 @@ let find_and_replace h key data =
       if h.size > Array.length h.data lsl 1 then resize key_index h
   end;
   old_data
-  
+
 let replace h key data = ignore (find_and_replace h key data)
 
 let rec mem_in_bucket key = function
