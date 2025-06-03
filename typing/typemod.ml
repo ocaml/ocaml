@@ -317,13 +317,27 @@ let retype_applicative_functor_type ~loc env funct arg =
    - applicative functor types: F(M).t might not be well typed anymore
    - aliases: module A = M still makes sense but it doesn't mean the same thing
      anymore, so it's forbidden until it's clear what we should do with it.
-   This function would be called with M.N.t and N.t to check for these uses. *)
+   This function would be called with M.N.t and N.t to check for these uses.
+
+   The first argument [paths] must be non-empty.
+*)
 let check_usage_of_path_of_substituted_item paths ~loc ~lid env super =
+  match paths with
+  | []  -> assert false (* affected paths must be a non-empty list *)
+  | [_] -> super (* Shallow substitution, nothing to check *)
+  | _   ->
+      let last, rest = match List.rev paths with
+        | [] -> assert false
+        | last :: rest -> last, rest
+      in
+      (* The last item is the one that's removed. We don't need to check how
+            it's used since it's replaced by a more specific type/module. *)
+      assert (match last with Pident _ -> true | _ -> false);
     { super with
       Btype.it_signature_item = (fun self -> function
       | Sig_module (id, _, { md_type = Mty_alias aliased_path; _ }, _, _)
         when List.exists
-            (fun p -> path_is_prefix p ~prefix:aliased_path ~strict:true) paths
+            (fun p -> path_is_prefix p ~prefix:aliased_path ~strict:true) rest
         ->
          let e = With_changes_module_alias (lid.txt, id, aliased_path) in
          raise(Error(loc, Lazy.force !env, e))
@@ -333,7 +347,7 @@ let check_usage_of_path_of_substituted_item paths ~loc ~lid env super =
       Btype.it_path = (fun referenced_path ->
         iter_path_apply referenced_path ~f:(fun funct arg ->
           if List.exists
-               (fun path -> path_is_prefix path ~prefix:arg ~strict:true) paths
+               (fun path -> path_is_prefix path ~prefix:arg ~strict:true) rest
           then
             let env = Lazy.force !env in
             match retype_applicative_functor_type ~loc env funct arg with
@@ -351,23 +365,29 @@ let check_usage_of_path_of_substituted_item paths ~loc ~lid env super =
     application or recursive module). If it is the case, module aliases to [X]
     or any suffix [X.X'] would become invalid. This function checks that there
     are no module aliases to suffixes of the list of affected paths [paths]. The
-    [invalid_alias_path] argument is just used for the error message *)
-let check_invalid_aliases paths ~loc env super invalid_alias_path =
-  let would_become_invalid_path aliased_path =
-    List.exists
-      (fun p -> path_is_prefix aliased_path ~prefix:p ~strict:false) paths
-  in
-  { super with
-    Btype.it_signature_item = (fun self -> function
-        | Sig_module (id, _, {md_type = Mty_alias aliased_path}, _, _)
-          when would_become_invalid_path aliased_path ->
-            raise(Error(loc, Lazy.force !env,
-                        With_creates_invalid_aliases
-                          (id, aliased_path, invalid_alias_path)))
-        | sig_item ->
-            super.Btype.it_signature_item self sig_item
-      );
-  }
+    [invalid_alias] argument indicates if the test should be added to the
+    iterator. Its payload [invalid_alias_path] is just used for the error
+    message *)
+let check_invalid_aliases paths ~loc env invalid_alias super =
+  match invalid_alias with
+  | None -> super (* No possible introduction of invalid alias, so no extension
+                     of the iterator*)
+  | Some invalid_alias_path ->
+      let would_become_invalid_path aliased_path =
+        List.exists
+          (fun p -> path_is_prefix aliased_path ~prefix:p ~strict:false) paths
+      in
+      { super with
+        Btype.it_signature_item = (fun self -> function
+            | Sig_module (id, _, {md_type = Mty_alias aliased_path}, _, _)
+              when would_become_invalid_path aliased_path ->
+                raise(Error(loc, Lazy.force !env,
+                            With_creates_invalid_aliases
+                              (id, aliased_path, invalid_alias_path)))
+            | sig_item ->
+                super.Btype.it_signature_item self sig_item
+          );
+      }
 
 (** This function checks the effect of destructive substitutions and the
     introduction of invalid aliases *)
@@ -380,25 +400,12 @@ let check_usage_after_substitution env ~loc ~lid paths ?(invalid_alias=None) sg=
       with_type_mark begin fun mark ->
         let env, base_iterator =
           iterator_with_env (Btype.type_iterators mark) env in
-        let last, rest = match List.rev paths with
-          | [] -> assert false (* affected paths must be a non-empty list *)
-          | last :: rest -> last, rest
+        let iterator =
+          base_iterator
+          |> check_usage_of_path_of_substituted_item paths ~loc ~lid env
+          |> check_invalid_aliases paths ~loc env invalid_alias
         in
-        (* The last item is the one that's removed. We don't need to check how
-              it's used since it's replaced by a more specific type/module. *)
-        assert (match last with Pident _ -> true | _ -> false);
-        let iterator = match rest with
-          | [] -> base_iterator
-          | _ :: _ ->
-              check_usage_of_path_of_substituted_item rest ~loc ~lid env
-                base_iterator
-        in
-        let iterator' = match invalid_alias with
-          | None -> iterator
-          | Some invalid_alias_path ->
-              check_invalid_aliases paths ~loc env iterator invalid_alias_path
-        in
-        iterator.Btype.it_signature iterator' sg
+        iterator.Btype.it_signature iterator sg
       end
 
 (* After substitution one also needs to re-check the well-foundedness
