@@ -393,7 +393,8 @@ let check_invalid_aliases paths ~loc env invalid_alias super =
     introduction of invalid aliases *)
 let check_usage_after_substitution env ~loc ~lid paths ?(invalid_alias=None) sg=
   match paths, invalid_alias with
-  (* Shallow substitution without introduction of an invalid alias *)
+  (* Shallow substitution without introduction of an invalid alias : nothing to
+     check (so no traversal of the signature) *)
   | [_], None -> ()
   (* Deep substitution, or possible introduction of invalid alias *)
   | _, _ ->
