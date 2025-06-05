@@ -367,10 +367,11 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
       h.size <- h.size + 1;
       if h.size > Array.length h.data lsl 1 then resize key_index h
 
-    let rec remove_bucket h i key prec = function
+    let rec remove_bucket h i key prec bucket =
+      match bucket with
       | Empty ->
-          None
-      | (Cons {key=k; data; next}) as c ->
+          bucket
+      | Cons {key=k; next; _} ->
           if H.equal k key
           then begin
             h.size <- h.size - 1;
@@ -378,15 +379,20 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
             | Empty -> h.data.(i) <- next
             | Cons c -> c.next <- next
             end;
-            Some data
+            bucket
           end
-          else remove_bucket h i key c next
+          else remove_bucket h i key bucket next
 
     let find_and_remove h key =
       let i = key_index h key in
-      remove_bucket h i key Empty h.data.(i)
+      let bucket = remove_bucket h i key Empty h.data.(i) in
+      match bucket with
+      | Empty -> None
+      | Cons {data; _} -> Some data
 
-    let remove h key = ignore (find_and_remove h key)
+    let remove h key =
+      let i = key_index h key in
+      ignore (remove_bucket h i key Empty h.data.(i))
 
     let rec find_rec key = function
       | Empty ->
@@ -438,30 +444,39 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
           else find_in_bucket next in
       find_in_bucket h.data.(key_index h key)
 
-    let rec replace_bucket key data = function
-      | Empty ->
-          None
-      | Cons ({key=k; next} as slot) ->
-          if H.equal k key
-          then
-            let old_data = slot.data in
-            slot.key <- key; slot.data <- data; Some old_data
-          else replace_bucket key data next
+      let rec retrieve_bucket key bucket =
+        match bucket with
+        | Empty ->
+            bucket
+        | Cons {key=k; next} ->
+            if H.equal k key
+            then bucket
+            else retrieve_bucket key next
 
-    let find_and_replace h key data =
-      let i = key_index h key in
-      let l = h.data.(i) in
-      let old_data = replace_bucket key data l in
-      begin match old_data with
-      | Some _ -> ()
-      | None ->
+      let replace_in_bucket h key i l data bucket =
+        match bucket with
+        | Empty ->
           h.data.(i) <- Cons{key; data; next=l};
           h.size <- h.size + 1;
           if h.size > Array.length h.data lsl 1 then resize key_index h
-      end;
-      old_data
+        | Cons (_ as slot) -> slot.key <- key; slot.data <- data
 
-    let replace h key data = ignore (find_and_replace h key data)
+      let find_and_replace h key data =
+        let i = key_index h key in
+        let l = h.data.(i) in
+        let bucket = retrieve_bucket key l in
+        let old_data = match bucket with
+          | Cons {data; _} -> Some data
+          | Empty -> None
+        in
+        replace_in_bucket h key i l data bucket;
+        old_data
+
+      let replace h key data =
+        let i = key_index h key in
+        let l = h.data.(i) in
+        let bucket = retrieve_bucket key l in
+        replace_in_bucket h key i l data bucket
 
     (* Iterators *)
 
@@ -532,10 +547,11 @@ let add h key data =
   h.size <- h.size + 1;
   if h.size > Array.length h.data lsl 1 then resize key_index h
 
-let rec remove_bucket h i key prec = function
+let rec remove_bucket h i key prec bucket =
+  match bucket with
   | Empty ->
-      None
-  | (Cons {key=k; data; next}) as c ->
+      bucket
+  | Cons {key=k; next; _} ->
       if compare k key = 0
       then begin
         h.size <- h.size - 1;
@@ -543,15 +559,20 @@ let rec remove_bucket h i key prec = function
         | Empty -> h.data.(i) <- next
         | Cons c -> c.next <- next
         end;
-        Some data
+        bucket
       end
-      else remove_bucket h i key c next
+      else remove_bucket h i key bucket next
 
 let find_and_remove h key =
   let i = key_index h key in
-  remove_bucket h i key Empty h.data.(i)
+  let bucket = remove_bucket h i key Empty h.data.(i) in
+  match bucket with
+  | Empty -> None
+  | Cons {data; _} -> Some data
 
-let remove h key = ignore (find_and_remove h key)
+let remove h key =
+  let i = key_index h key in
+  ignore (remove_bucket h i key Empty h.data.(i))
 
 let rec find_rec key = function
   | Empty ->
@@ -603,30 +624,39 @@ let find_all h key =
       else find_in_bucket next in
   find_in_bucket h.data.(key_index h key)
 
-let rec replace_bucket key data = function
+let rec retrieve_bucket key bucket =
+  match bucket with
   | Empty ->
-      None
-  | Cons ({key=k; next} as slot) ->
+      bucket
+  | Cons {key=k; next} ->
       if compare k key = 0
-      then (
-      let old_data = slot.data in
-      slot.key <- key; slot.data <- data; Some old_data)
-      else replace_bucket key data next
+      then bucket
+      else retrieve_bucket key next
+
+let replace_in_bucket h key i l data bucket =
+  match bucket with
+  | Empty ->
+    h.data.(i) <- Cons{key; data; next=l};
+    h.size <- h.size + 1;
+    if h.size > Array.length h.data lsl 1 then resize key_index h
+  | Cons (_ as slot) -> slot.key <- key; slot.data <- data
 
 let find_and_replace h key data =
   let i = key_index h key in
   let l = h.data.(i) in
-  let old_data = replace_bucket key data l in
-  begin match old_data with
-  | Some _ -> ()
-  | None ->
-      h.data.(i) <- Cons{key; data; next=l};
-      h.size <- h.size + 1;
-      if h.size > Array.length h.data lsl 1 then resize key_index h
-  end;
+  let bucket = retrieve_bucket key l in
+  let old_data = match bucket with
+    | Cons {data; _} -> Some data
+    | Empty -> None
+  in
+  replace_in_bucket h key i l data bucket;
   old_data
 
-let replace h key data = ignore (find_and_replace h key data)
+let replace h key data =
+  let i = key_index h key in
+  let l = h.data.(i) in
+  let bucket = retrieve_bucket key l in
+  replace_in_bucket h key i l data bucket
 
 let rec mem_in_bucket key = function
   | Empty ->
