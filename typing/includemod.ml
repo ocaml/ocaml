@@ -190,8 +190,13 @@ module Directionality = struct
       pos:pos;
     }
 
-  let strictly_positive ~mark =
-    let mark_as_used = if mark then Mark_positive else Mark_neither in
+  let strictly_positive ~mark ~both =
+    let mark_as_used =
+      match mark, both with
+      | true, true -> Mark_both
+      | true, false -> Mark_positive
+      | false, _ -> Mark_neither
+    in
     { in_eq=false; pos=Strictly_positive; mark_as_used }
 
   let unknown ~mark =
@@ -1100,7 +1105,7 @@ let () =
 
 let compunit env ~mark impl_name impl_sig intf_name intf_sig unit_shape =
   let loc = Location.in_file impl_name in
-  let direction = Directionality.strictly_positive ~mark in
+  let direction = Directionality.strictly_positive ~mark ~both:false in
   match
     signatures ~core:core_inclusion ~direction ~loc env Subst.identity
       impl_sig intf_sig unit_shape
@@ -1326,9 +1331,9 @@ end
 
 (* Hide the context and substitution parameters to the outside world *)
 
-let modtypes_with_shape ~shape ~loc env ~mark mty1 mty2 =
+let modtypes_constraint ~shape ~loc env ~mark mty1 mty2 =
   (* modtypes with shape is used when typing module expressions in [Typemod] *)
-  let direction = Directionality.strictly_positive ~mark in
+  let direction = Directionality.strictly_positive ~mark ~both:true in
   match
     modtypes ~core:core_inclusion ~direction ~loc env Subst.identity
       mty1 mty2 shape
@@ -1368,7 +1373,9 @@ let signatures env ~mark sig1 sig2 =
   gen_signatures env ~direction sig1 sig2
 
 let check_implementation env impl intf =
-  let direction = Directionality.strictly_positive ~mark:true in
+  let direction =
+    Directionality.strictly_positive ~mark:true ~both:false
+  in
   ignore (gen_signatures env ~direction impl intf)
 
 let type_declarations ~loc env ~mark id decl1 decl2 =

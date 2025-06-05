@@ -14,6 +14,12 @@ Working version
   `let exception` and `let open`.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
+* #13712: Introduce a new kind `Type_external` and syntax
+  `type t = external "name"` to discriminate external types from other types
+  and each other.  This PR turns primitive types into external and removes the
+  past behavior of discriminating abstract types defined in the current module.
+  (Takafumi Saikawa, Jacques Garrigue, review by Richard Eisenberg)
+
 ### Runtime system:
 
 - #13574, #13594: Generational scanning of stack frames for ARM 64 bits, POWER,
@@ -146,6 +152,9 @@ Working version
   (Samuel Hym, review by Antonin Décimo and Romain Calascibetta)
 
 ### Bug fixes:
+
+- #14071: Fix exception name in Dynlink.Error printer.
+  (Etienne Millon, review by Nicolás Ojeda Bär)
 
 - #13853: Format breaks some line too early when there
   is a break hint at the end.
@@ -816,6 +825,11 @@ OCaml 5.4.0
 - #14025: fix data race between compaction and domain termination
   (Gabriel Scherer, review by Jan Midtgaard,
    report by Jan Midtgaard)
+- #13956 Fix a regression introduced in #13308 triggering wrong unused warnings.
+  (Ulysse Gérard, review by Florian Angeletti)
+
+- #14070: also point to label mismatches in error messages for labelled tuples
+  (Florian Angeletti, review by Gabriel Scherer)
 
 OCaml 5.3.0 (8 January 2025)
 ----------------------------

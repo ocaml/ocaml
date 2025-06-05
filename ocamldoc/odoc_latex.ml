@@ -620,6 +620,8 @@ class latex =
              | Type_variant _ -> "="^(if priv then " private" else "")
              | Type_record _ -> "= "^(if priv then "private " else "")
              | Type_open -> "= .."
+             | Type_external name ->
+                 Printf.sprintf "= external %S" (self#escape name)
             ) ;
           flush2 ()
         in
@@ -659,6 +661,7 @@ class latex =
           | Type_open ->
              (* FIXME ? *)
              []
+          | Type_external _ -> []
         in
         let defs2 = (CodePre s_type3) :: defs in
         (merge_codepre defs2) @

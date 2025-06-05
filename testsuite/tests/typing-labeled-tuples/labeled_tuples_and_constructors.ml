@@ -64,6 +64,7 @@ Line 1, characters 15-20:
                    ^^^^^
 Error: This expression has type "'a * 'b"
        but an expression was expected of type "x:int * int"
+       A label "x" was expected
 |}]
 
 let _ = f (Foo (5,~x:1))
@@ -73,6 +74,7 @@ Line 1, characters 15-23:
                    ^^^^^^^^
 Error: This expression has type "'a * x:'b"
        but an expression was expected of type "x:int * int"
+       A label "x" was expected
 |}]
 
 let _ = f (Foo (5,~y:1))
@@ -82,4 +84,5 @@ Line 1, characters 15-23:
                    ^^^^^^^^
 Error: This expression has type "'a * y:'b"
        but an expression was expected of type "x:int * int"
+       A label "x" was expected
 |}]

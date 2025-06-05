@@ -415,7 +415,8 @@ module Analyser =
           (0, Record.(doc parsetree) pos_end label_declaration_list)
       | Parsetree.Ptype_open ->
           (0, [])
-
+      | Parsetree.Ptype_external _ ->
+          (0, [])
 
     let manifest_structure env name_comment_list type_expr =
       match get_desc type_expr with
@@ -494,6 +495,8 @@ module Analyser =
       | Types.Type_open ->
           Odoc_type.Type_open
 
+      | Types.Type_external name ->
+          Odoc_type.Type_external name
 
     let get_cstr_args env pos_end =
       let tuple ct = Odoc_env.subst_type env ct.Typedtree.ctyp_type in

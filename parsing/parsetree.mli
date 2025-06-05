@@ -581,6 +581,7 @@ and type_kind =
   | Ptype_variant of constructor_declaration list
   | Ptype_record of label_declaration list  (** Invariant: non-empty list *)
   | Ptype_open
+  | Ptype_external of string
 
 and label_declaration =
     {

@@ -170,6 +170,7 @@ and method_privacy =
      type 'a t = A of (('a -> unit) -> unit) : pos
      type +'a p = ..  : may_pos + inj
      type 'a t = A    : inj
+     type 'a t = external "t" : may_pos + may_neg + inj
  *)
 
 module Variance = struct
@@ -273,6 +274,7 @@ and ('lbl, 'cstr) type_kind =
   | Type_record of 'lbl list * record_representation
   | Type_variant of 'cstr list * variant_representation
   | Type_open
+  | Type_external of string
 
 and type_origin =
     Definition

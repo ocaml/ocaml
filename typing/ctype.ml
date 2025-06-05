@@ -450,7 +450,7 @@ let in_pervasives p =
 
 let is_datatype decl=
   match decl.type_kind with
-    Type_record _ | Type_variant _ | Type_open -> true
+    Type_record _ | Type_variant _ | Type_open | Type_external _ -> true
   | Type_abstract _ -> false
 
 
@@ -676,6 +676,7 @@ let closed_type_decl decl =
     | Type_record(r, _rep) ->
         List.iter (fun l -> closed_type mark l.ld_type) r
     | Type_open -> ()
+    | Type_external _ -> ()
     end;
     begin match decl.type_manifest with
       None    -> ()
@@ -1386,7 +1387,7 @@ let map_kind f = function
           (fun l ->
              {l with ld_type = f l.ld_type}
           ) fl, rr)
-
+  | Type_external name -> Type_external name
 
 let instance_declaration decl =
   For_copy.with_scope (fun copy_scope ->
@@ -2316,26 +2317,15 @@ let find_expansion_scope env path =
   | { type_manifest = None ; _ } | exception Not_found -> generic_level
   | decl -> decl.type_expansion_scope
 
-let non_aliasable p decl =
-  (* in_pervasives p ||  (subsumed by in_current_module) *)
-  in_current_module p && not decl.type_is_newtype
-
 let is_instantiable env p =
   try
     let decl = Env.find_type p env in
     type_kind_is_abstract decl &&
     decl.type_private = Public &&
     decl.type_arity = 0 &&
-    decl.type_manifest = None &&
-    not (non_aliasable p decl)
+    decl.type_manifest = None
   with Not_found -> false
 
-
-let compatible_paths p1 p2 =
-  let open Predef in
-  Path.same p1 p2 ||
-  Path.same p1 path_bytes && Path.same p2 path_string ||
-  Path.same p1 path_string && Path.same p2 path_bytes
 
 (* Two labels are considered compatible under certain conditions.
   - they are the same
@@ -2419,8 +2409,7 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
             begin try
               let decl = Env.find_type p env in
-              if non_aliasable p decl || is_datatype decl then
-                raise Incompatible
+              if is_datatype decl then raise Incompatible
             with Not_found -> ()
             end
         (*
@@ -2522,7 +2511,7 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
   try
     let decl = Env.find_type p1 env in
     let decl' = Env.find_type p2 env in
-    if compatible_paths p1 p2 then begin
+    if Path.same p1 p2 then begin
       let inj =
         try List.map Variance.(mem Inj) (Env.find_type p1 env).type_variance
         with Not_found -> List.map (fun _ -> false) tl1
@@ -2530,9 +2519,7 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
       List.iter2
         (fun i (t1,t2) -> if i then mcomp type_pairs env t1 t2)
         inj (List.combine tl1 tl2)
-    end else if non_aliasable p1 decl && non_aliasable p2 decl' then
-      raise Incompatible
-    else
+    end else
       match decl.type_kind, decl'.type_kind with
       | Type_record (lst,r), Type_record (lst',r') when r = r' ->
           mcomp_list type_pairs env tl1 tl2;
@@ -2542,9 +2529,10 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
           mcomp_variant_description type_pairs env v1 v2
       | Type_open, Type_open ->
           mcomp_list type_pairs env tl1 tl2
-      | Type_abstract _, Type_abstract _ -> ()
-      | Type_abstract _, _ when not (non_aliasable p1 decl)-> ()
-      | _, Type_abstract _ when not (non_aliasable p2 decl') -> ()
+            (* thus, exn and eff are incompatible *)
+      | Type_external n1, Type_external n2 when n1 = n2 ->
+          mcomp_list type_pairs env tl1 tl2
+      | Type_abstract _, _ | _, Type_abstract _ -> ()
       | _ -> raise Incompatible
   with Not_found -> ()
 
@@ -3026,8 +3014,10 @@ and unify_labeled_list env labeled_tl1 labeled_tl2 =
     raise_unexplained_for Unify;
   List.iter2
     (fun (label1, ty1) (label2, ty2) ->
-      if not (Option.equal String.equal label1 label2) then
-        raise_unexplained_for Unify;
+      if not (Option.equal String.equal label1 label2) then begin
+        let diff = { Errortrace.got=label1; expected=label2} in
+        raise_for Unify (Errortrace.Tuple_label_mismatch diff)
+      end;
       unify env ty1 ty2)
     labeled_tl1 labeled_tl2
 

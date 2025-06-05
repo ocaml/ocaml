@@ -368,7 +368,7 @@ and print_simple_out_type ppf =
       print_out_type ppf ty;
       pp_print_char ppf ')';
       pp_close_box ppf ()
-  | Otyp_abstract | Otyp_open
+  | Otyp_abstract | Otyp_open | Otyp_external _
   | Otyp_sum _ | Otyp_manifest (_, _) -> ()
   | Otyp_record lbls -> print_record_decl ppf lbls
   | Otyp_module pack ->
@@ -752,6 +752,8 @@ and print_out_type_decl kwd ppf td =
   | Otyp_open ->
       fprintf ppf " =%a .."
         print_private td.otype_private
+  | Otyp_external name ->
+      fprintf ppf " =@ external %S" name
   | ty ->
       fprintf ppf " =%a@;<1 2>%a"
         print_private td.otype_private

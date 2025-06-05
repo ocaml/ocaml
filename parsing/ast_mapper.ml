@@ -209,6 +209,7 @@ module T = struct
         Ptype_variant (List.map (sub.constructor_declaration sub) l)
     | Ptype_record l -> Ptype_record (List.map (sub.label_declaration sub) l)
     | Ptype_open -> Ptype_open
+    | Ptype_external name -> Ptype_external name
 
   let map_constructor_arguments sub = function
     | Pcstr_tuple l -> Pcstr_tuple (List.map (sub.typ sub) l)

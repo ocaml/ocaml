@@ -634,7 +634,6 @@ typing/ctype.cmo : \
     typing/types.cmi \
     typing/type_immediacy.cmi \
     typing/subst.cmi \
-    typing/predef.cmi \
     typing/path.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
@@ -653,7 +652,6 @@ typing/ctype.cmx : \
     typing/types.cmx \
     typing/type_immediacy.cmx \
     typing/subst.cmx \
-    typing/predef.cmx \
     typing/path.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \

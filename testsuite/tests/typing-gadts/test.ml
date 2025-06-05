@@ -47,7 +47,7 @@ module Exp :
 
 module List =
   struct
-    type zero
+    type zero = Zero
     type _ t =
       | Nil : zero t
       | Cons : 'a * 'b t -> ('a * 'b) t
@@ -66,7 +66,7 @@ module List =
 [%%expect{|
 module List :
   sig
-    type zero
+    type zero = Zero
     type _ t = Nil : zero t | Cons : 'a * 'b t -> ('a * 'b) t
     val head : ('a * 'b) t -> 'a
     val tail : ('a * 'b) t -> 'b t
@@ -401,8 +401,7 @@ end;;
 Line 5, characters 6-9:
 5 |       Foo -> 5
           ^^^
-Error: This pattern matches values of type "'a t"
-       but a pattern was expected which matches values of type "int"
+Error: This pattern should not be a constructor, the expected type is "int"
 |}];;
 
 type _ t = Int : int t ;;

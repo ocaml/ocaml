@@ -1,7 +1,7 @@
 type t = ..
 type t += A
-- : extension_constructor = <abstr>
-- : extension_constructor = <abstr>
+- : extension_constructor = <external>
+- : extension_constructor = <external>
 module M : sig type extension_constructor = int end
 Line 2, characters 1-27:
 2 | ([%extension_constructor A] : extension_constructor);;
