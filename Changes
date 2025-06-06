@@ -113,6 +113,10 @@ Working version
   fail to load.
   (toastal)
 
+- #14077: Add missing `item-attribute` rule for `let-binding`s in documentation
+  for attributes.
+  (Shon Feder)
+
 ### Compiler user-interface and warnings:
 
 - #12628: Improved error message for unsafe values: print out the full path for
