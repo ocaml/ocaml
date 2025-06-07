@@ -1709,7 +1709,7 @@ let is_path_of_type_constr_with_deprecated_repr env path =
        when decl.type_private = Public
             || not (Btype.type_kind_is_abstract decl)
             || Btype.has_constr_row body ->
-     Builtin_attributes.has_deprecated_repr decl.type_attributes
+     Option.is_some (Builtin_attributes.has_deprecated_repr decl.type_attributes)
   | exception Not_found | _ -> false
 
 (* Expand the head of a type once.

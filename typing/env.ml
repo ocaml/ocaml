@@ -1417,14 +1417,17 @@ let find_type_expansion path env =
   | Some body when decl.type_private = Public
               || not (Btype.type_kind_is_abstract decl)
               || Btype.has_constr_row body ->
-     if Builtin_attributes.has_deprecated_repr decl.type_attributes
-      && not (Location.is_none !current_loc)
-     then
-       Location.deprecated !current_loc
-         (if Location.is_none !current_loc
-          then Printexc.raw_backtrace_to_string (Printexc.get_callstack 100)
-          else "implicitly converting between a type and its deprecated \
-                representation");
+     (match Builtin_attributes.has_deprecated_repr decl.type_attributes with
+      | Some (`Debug debug) when debug || not (Location.is_none !current_loc) ->
+         Location.deprecated !current_loc
+           ((if debug
+             then Printexc.raw_backtrace_to_string (Printexc.get_callstack 100)
+             else "")
+            ^ (if Location.is_none !current_loc
+               then ""
+               else "implicitly converting between a type and its deprecated \
+                     representation"));
+      | _ -> ());
      (decl.type_params, body, decl.type_expansion_scope)
   (* The manifest type of Private abstract data types without
      private row are still considered unknown to the type system.

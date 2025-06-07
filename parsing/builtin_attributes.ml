@@ -424,4 +424,17 @@ let has_remove_aliases attrs = has_attribute "remove_aliases" attrs
 
 let has_atomic attrs = has_attribute "atomic" attrs
 
-let has_deprecated_repr attrs = has_attribute "deprecated_repr" attrs
+let has_deprecated_repr attrs =
+  match select_attributes [ "deprecated_repr", Return ] attrs with
+  | [] -> None
+  | _ :: _ as l ->
+     Some (`Debug (List.exists (fun a ->
+                       match a.attr_payload with
+                       | PStr [{ pstr_desc =
+                                   Pstr_eval
+                                     ({ pexp_desc =
+                                          Pexp_ident
+                                            { txt = Lident "debug"; _ }
+                                      ; _ }, _); _ }] ->
+                          true
+                       | _ -> false) l))
