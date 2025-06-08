@@ -589,8 +589,8 @@ val f2 : id -> int * bool = <fun>
 Line 5, characters 24-28:
 5 | let f3 f = f#id 1, f#id true
                             ^^^^
-Error: The constructor "true" has type "bool"
-       but an expression was expected of type "int"
+Error: This expression should not be a boolean literal, the expected type is
+       "int"
 |}];;
 
 class c = object

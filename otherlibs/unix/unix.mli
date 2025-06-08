@@ -1160,7 +1160,9 @@ val kill : int -> Sys.signal -> unit
 (** [kill pid signal] sends signal number [signal] to the process
    with id [pid].
 
-   On Windows: only the {!Sys.sigkill} signal is emulated. *)
+   On Windows: only the {!Sys.sigkill} signal is emulated, causing the receiving
+   process to exit with code [ERROR_PROCESS_ABORTED] (1067). Before OCaml 5.5,
+   the receiving process exited with code 0. *)
 
 type sigprocmask_command =
     SIG_SETMASK

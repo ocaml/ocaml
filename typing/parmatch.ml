@@ -863,7 +863,7 @@ let pats_of_type env ty =
             ty env]
       | _ -> [omega]
       end
-  | Typedecl (_, _, {type_kind = Type_abstract _ | Type_open})
+  | Typedecl (_, _, {type_kind = Type_abstract _ | Type_open | Type_external _})
   | May_have_typedecl -> [omega]
 
 let get_variant_constructors env ty =

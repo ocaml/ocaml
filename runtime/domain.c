@@ -778,7 +778,9 @@ create_stack_cache_failure:
 reallocate_minor_heap_failure:
   caml_teardown_major_gc();
 init_major_gc_failure:
-  caml_teardown_shared_heap(d->state->shared_heap);
+  caml_orphan_shared_heap(d->state->shared_heap);
+  caml_free_shared_heap(d->state->shared_heap);
+  domain_state->shared_heap = NULL;
 init_shared_heap_failure:
   caml_free_minor_tables(domain_state->minor_tables);
   domain_state->minor_tables = NULL;
@@ -2042,6 +2044,12 @@ int caml_domain_is_terminating (void)
   return domain_terminating(domain_self);
 }
 
+static bool marking_and_sweeping_done(caml_domain_state *domain_state)
+{
+  return (domain_state->marking_done
+          && domain_state->sweeping_done);
+}
+
 void caml_domain_terminate(bool last)
 {
   caml_domain_state* domain_state = domain_self->state;
@@ -2072,14 +2080,28 @@ void caml_domain_terminate(bool last)
     caml_orphan_ephemerons(domain_state);
     caml_orphan_finalisers(domain_state);
 
+    /* Orphaning ephemerons and finalizers may create new marking or
+       sweeping work, so we may need to mark and/or sweep again. */
+
     /* No need to check for interrupts if we are the last domain running. */
     if (last) {
       CAML_EV_LIFECYCLE(EV_DOMAIN_TERMINATE, getpid());
       break;
     }
 
-    /* take the all_domains_lock to try and exit the STW participant set
-       without racing with a STW section being triggered */
+    /* If new marking or sweeping work appeared during orphaning,
+       run a new loop iteration. */
+    if (!marking_and_sweeping_done(domain_state))
+      continue;
+
+    /* Orphan the local shared heap.
+       This is only valid when [sweeping_done], and does
+       not create any new major GC work. */
+    caml_orphan_shared_heap(domain_state->shared_heap);
+    CAMLassert(marking_and_sweeping_done(domain_state));
+
+    /* Take the all_domains_lock to try and exit the STW participant set
+       without racing with a STW section being triggered. */
     caml_plat_lock_blocking(&all_domains_lock);
 
     /* The interaction of termination and major GC is quite subtle.
@@ -2089,23 +2111,19 @@ void caml_domain_terminate(bool last)
        require this domain to participate, which in turn could involve a major
        GC cycle. This would then require finish marking and sweeping again in
        order to decrement the globals [num_domains_to_mark] and
-       [num_domains_to_sweep] (see major_gc.c).
+       [num_domains_to_sweep] (see major_gc.c). We do this by running a new
+       loop iteration.
      */
-
-    if (!caml_incoming_interrupts_queued() &&
-        domain_state->marking_done &&
-        domain_state->sweeping_done) {
-
+    if (!caml_incoming_interrupts_queued()) {
       finished = 1;
       s->terminating = 0;
       s->running = 0;
 
-      /* Remove this domain from stw_domains */
+      /* Remove this domain from stw_domains. */
       remove_from_stw_domains(domain_self);
 
-      /* signal the interruptor condition variable
-       * because the backup thread may be waiting on it
-       */
+      /* Signal the interruptor condition variable
+         because the backup thread may be waiting on it. */
       caml_plat_lock_blocking(&s->lock);
       caml_plat_broadcast(&s->cond);
       caml_plat_unlock(&s->lock);
@@ -2118,19 +2136,22 @@ void caml_domain_terminate(bool last)
     caml_plat_unlock(&all_domains_lock);
   }
 
-  /* domain_state may be re-used by a fresh domain here (now that we
-   * have done remove_from_stw_domains and released the
-   * all_domains_lock). However, domain_create() won't touch it until
-   * it has claimed the domain_lock, so we hang onto that while we are
-   * tearing down the state. */
+  if (!last) caml_assert_shared_heap_is_empty(domain_state->shared_heap);
+
+  /* [domain_state] may be re-used by a fresh domain here, now that we
+     have done [remove_from_stw_domains] and released the
+     [all_domains_lock]. In particular, we cannot touch
+     [domain_self->interruptor] after here because it may be reused.
+
+     However, [domain_create()] won't touch the domain state until
+     it has claimed the [domain_lock], so we hang onto that while we are
+     tearing down the state. */
 
   /* Delete the domain state from statmemprof after any promotion
    * (etc) done by this domain: any remaining memprof state will be
    * handed over to surviving domains. */
   caml_memprof_delete_domain(domain_state);
 
-  /* We can not touch domain_self->interruptor after here
-     because it may be reused */
   caml_remove_generational_global_root(&domain_state->dls_root);
   caml_remove_generational_global_root(&domain_state->backtrace_last_exn);
   caml_stat_free(domain_state->final_info);
@@ -2139,21 +2160,33 @@ void caml_domain_terminate(bool last)
   caml_free_extern_state();
   caml_teardown_major_gc();
 
-  if (last)
+  /* At this point, we know that the shared heap has been orphaned,
+     except if [last], if we are the last domain. In that case we
+     finalise all unswept objects and orphan the shared heap now. */
+  if (last) {
+    /* First adopt all orphan pools, to avoid missing unswept objects. */
+    caml_adopt_all_orphan_heaps(domain_state->shared_heap);
+
+    /* Call all custom finalisers of unswept objects. */
     caml_finalise_heap();
 
-  caml_teardown_shared_heap(domain_state->shared_heap);
-  domain_state->shared_heap = 0;
+    /* Then orphan all pools again. */
+    caml_orphan_shared_heap(domain_state->shared_heap);
+  }
+  caml_assert_shared_heap_is_empty(domain_state->shared_heap);
+
+  caml_free_shared_heap(domain_state->shared_heap);
+  domain_state->shared_heap = NULL;
   caml_free_minor_tables(domain_state->minor_tables);
-  domain_state->minor_tables = 0;
+  domain_state->minor_tables = NULL;
 
-  caml_orphan_alloc_stats(domain_state);
-  /* Heap stats were orphaned by [caml_teardown_shared_heap] above.
-     At this point, the stats of the domain must be empty.
-
-     The sampled copy was also cleared by the minor collection(s)
-     performed above at [caml_empty_minor_heaps_once()], see the
-     termination-specific logic in [caml_collect_gc_stats_sample_stw].
+  /* At this point, the stats of the domain must be empty.
+     - heap stats were orphaned by [caml_orphan_shared_heap]
+     - alloc stats were orphaned by [caml_orphan_alloc_stats]
+     - the sampled copy in [sampled_gc_stats] was cleared by the minor
+       collection performed by [caml_empty_minor_heaps_once()], see
+       the termination-specific logic in
+       [caml_collect_gc_stats_sample_stw].
   */
 
   /* TODO: can this ever be NULL? can we remove this check? */

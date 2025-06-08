@@ -530,7 +530,7 @@ module Size = struct
     | Lop (Idls_get) -> 1
     | Lop (Ireturn_addr) -> 1
     | Lreloadretaddr -> 0
-    | Lreturn -> epilogue_size f
+    | Lreturn -> epilogue_size f + (if top_bits_ignore then 0 else 1)
     | Llabel _ -> 0
     | Lbranch _ -> 1
     | Lcondbranch (tst, _) ->
@@ -983,7 +983,13 @@ let emit_instr env i =
     | Lreloadretaddr ->
         ()
     | Lreturn ->
-        output_epilogue env (fun () -> `	ret\n`)
+        output_epilogue env begin fun () ->
+          if not top_bits_ignore then begin
+            (* mask the top 8 bits ourselves *)
+            `	and	x30, x30, #0x00FFFFFFFFFFFFFF\n`;
+          end;
+          `	ret\n`
+        end
     | Llabel lbl ->
         `{emit_label lbl}:\n`
     | Lbranch lbl ->

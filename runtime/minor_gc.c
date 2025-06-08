@@ -233,7 +233,7 @@ static int try_update_object_header(value v, volatile value *p, value result,
 
 /* oldify_one is a no-op outside the minor heap. */
 static scanning_action_flags oldify_scanning_flags =
-  SCANNING_ONLY_YOUNG_VALUES;
+  SCANNING_ONLY_YOUNG_VALUES | SCANNING_ONLY_RECENT_FRAMES;
 
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */

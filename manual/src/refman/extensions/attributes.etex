@@ -1,3 +1,7 @@
+\section{s:attributes}{Attributes}
+%HEVEA\cutname{attributes.html}
+\ikwd{when\@\texttt{when}}
+
 (Introduced in OCaml 4.02,
 infix notations for constructs other than expressions added in 4.03)
 

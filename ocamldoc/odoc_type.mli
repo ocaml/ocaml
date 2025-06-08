@@ -49,6 +49,7 @@ type type_kind =
   | Type_variant of variant_constructor list
   | Type_record of record_field list
   | Type_open
+  | Type_external of string
 (** The various kinds of type. *)
 
 type object_field = {

@@ -361,7 +361,8 @@ let transl_declaration env sdecl (id, uid) =
   | Some true ->
     let bad msg = raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute msg)) in
     match sdecl.ptype_kind with
-    | Ptype_abstract    -> bad "it is abstract"
+    | Ptype_abstract
+    | Ptype_external _   -> bad "it is abstract"
     | Ptype_open        -> bad "extensible variant types cannot be unboxed"
     | Ptype_record fields -> begin match fields with
         | [] -> bad "it has no fields"
@@ -402,6 +403,7 @@ let transl_declaration env sdecl (id, uid) =
   let (tkind, kind) =
     match sdecl.ptype_kind with
       | Ptype_abstract -> Ttype_abstract, Type_abstract Definition
+      | Ptype_external name -> Ttype_external name, Type_external name
       | Ptype_variant scstrs ->
         if List.exists (fun cstr -> cstr.pcd_res <> None) scstrs then begin
           match cstrs with
@@ -532,7 +534,7 @@ let transl_declaration env sdecl (id, uid) =
       match decl.typ_kind with
       | Ttype_variant cstrs -> Shape.str ~uid (shape_map_cstrs cstrs)
       | Ttype_record labels -> Shape.str ~uid (shape_map_labels labels)
-      | Ttype_abstract | Ttype_open -> Shape.leaf uid
+      | Ttype_abstract | Ttype_open | Ttype_external _ -> Shape.leaf uid
     in
     decl, typ_shape
   end
@@ -591,7 +593,8 @@ let check_constraints env sdecl (_, decl) =
   | Type_variant (l, _rep) ->
       let find_pl = function
           Ptype_variant pl -> pl
-        | Ptype_record _ | Ptype_abstract | Ptype_open -> assert false
+        | Ptype_record _ | Ptype_abstract | Ptype_open | Ptype_external _ ->
+            assert false
       in
       let pl = find_pl sdecl.ptype_kind in
       let pl_index =
@@ -624,11 +627,13 @@ let check_constraints env sdecl (_, decl) =
   | Type_record (l, _) ->
       let find_pl = function
           Ptype_record pl -> pl
-        | Ptype_variant _ | Ptype_abstract | Ptype_open -> assert false
+        | Ptype_variant _ | Ptype_abstract | Ptype_open | Ptype_external _ ->
+            assert false
       in
       let pl = find_pl sdecl.ptype_kind in
       check_constraints_labels env visited l pl
   | Type_open -> ()
+  | Type_external _ -> ()
   end;
   begin match decl.type_manifest with
   | None -> ()
@@ -1040,7 +1045,8 @@ let check_duplicates sdecl_list =
             with Not_found -> Hashtbl.add labels cname.txt sdecl.ptype_name.txt)
           fl
     | Ptype_abstract -> ()
-    | Ptype_open -> ())
+    | Ptype_open -> ()
+    | Ptype_external _ -> ())
     sdecl_list
 
 (* Force recursion to go through id for private types*)

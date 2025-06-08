@@ -60,6 +60,10 @@ let mkclass ~loc ?attrs d = Cl.mk ~loc:(make_loc loc) ?attrs d
 let mkcty ~loc ?attrs d = Cty.mk ~loc:(make_loc loc) ?attrs d
 let mkconst ~loc c = Const.mk ~loc:(make_loc loc) c
 
+let pstr_extension body attrs =
+  (Pstr_extension (body, attrs), None)
+let pstr_attribute body =
+  (Pstr_attribute body, None)
 let pstr_typext (te, ext) =
   (Pstr_typext te, ext)
 let pstr_primitive (vd, ext) =
@@ -70,9 +74,23 @@ let pstr_exception (te, ext) =
   (Pstr_exception te, ext)
 let pstr_include (body, ext) =
   (Pstr_include body, ext)
+let pstr_module (body, ext) =
+  (Pstr_module body, ext)
 let pstr_recmodule (ext, bindings) =
   (Pstr_recmodule bindings, ext)
+let pstr_modtype (body, ext) =
+  (Pstr_modtype body, ext)
+let pstr_open (body, ext) =
+  (Pstr_open body, ext)
+let pstr_class (ext, l) =
+  (Pstr_class l, ext)
+let pstr_class_type (ext, l) =
+  (Pstr_class_type l, ext)
 
+let psig_extension body attrs =
+  (Psig_extension (body, attrs), None)
+let psig_attribute body =
+  (Psig_attribute body, None)
 let psig_typext (te, ext) =
   (Psig_typext te, ext)
 let psig_value (vd, ext) =
@@ -86,6 +104,22 @@ let psig_exception (te, ext) =
   (Psig_exception te, ext)
 let psig_include (body, ext) =
   (Psig_include body, ext)
+let psig_module (body, ext) =
+  (Psig_module body, ext)
+let psig_modsubst (body, ext) =
+  (Psig_modsubst body, ext)
+let psig_recmodule (ext, l) =
+  (Psig_recmodule l, ext)
+let psig_modtype (body, ext) =
+  (Psig_modtype body, ext)
+let psig_modtypesubst (body, ext) =
+  (Psig_modtypesubst body, ext)
+let psig_open (body, ext) =
+  (Psig_open body, ext)
+let psig_class (ext, l) =
+  (Psig_class l, ext)
+let psig_class_type (ext, l) =
+  (Psig_class_type l, ext)
 
 let mkctf ~loc ?attrs ?docs d =
   Ctf.mk ~loc:(make_loc loc) ?attrs ?docs d
@@ -1007,10 +1041,6 @@ The precedences must be listed from low to high.
     { mkpat ~loc:$sloc $1 }
 %inline mktyp(symb): symb
     { mktyp ~loc:$sloc $1 }
-%inline mkstr(symb): symb
-    { mkstr ~loc:$sloc $1 }
-%inline mksig(symb): symb
-    { mksig ~loc:$sloc $1 }
 %inline mkmod(symb): symb
     { mkmod ~loc:$sloc $1 }
 %inline mkmty(symb): symb
@@ -1513,15 +1543,10 @@ structure:
 structure_item:
     let_bindings(ext)
       { val_of_let_bindings ~loc:$sloc $1 }
-  | mkstr(
-      item_extension post_item_attributes
-        { let docs = symbol_docs $sloc in
-          Pstr_extension ($1, add_docs_attrs docs $2) }
-    | floating_attribute
-        { Pstr_attribute $1 }
-    )
   | wrap_mkstr_ext(
-      primitive_declaration
+      floating_attribute
+        { pstr_attribute $1 }
+    | primitive_declaration
         { pstr_primitive $1 }
     | value_description
         { pstr_primitive $1 }
@@ -1531,20 +1556,33 @@ structure_item:
         { pstr_typext $1 }
     | str_exception_declaration
         { pstr_exception $1 }
-    | module_binding
-        { $1 }
     | rec_module_bindings
         { pstr_recmodule $1 }
     | module_type_declaration
-        { let (body, ext) = $1 in (Pstr_modtype body, ext) }
-    | open_declaration
-        { let (body, ext) = $1 in (Pstr_open body, ext) }
+        { pstr_modtype $1 }
     | class_declarations
-        { let (ext, l) = $1 in (Pstr_class l, ext) }
+        { pstr_class $1 }
     | class_type_declarations
-        { let (ext, l) = $1 in (Pstr_class_type l, ext) }
+        { pstr_class_type $1 }
     | include_statement(module_expr)
         { pstr_include $1 }
+    )
+    { $1 }
+  | local_structure_item
+    { $1 }
+;
+
+(* A local structure item (= can appear in let expressions) *)
+local_structure_item:
+  | wrap_mkstr_ext(
+      item_extension post_item_attributes
+        { pstr_extension $1 (add_docs_attrs (symbol_docs $sloc) $2) }
+    | sig_exception_declaration
+        { pstr_exception $1 }
+    | module_binding
+        { pstr_module $1 }
+    | open_declaration
+        { pstr_open $1 }
     )
     { $1 }
 ;
@@ -1560,7 +1598,7 @@ structure_item:
       let loc = make_loc $sloc in
       let attrs = attrs1 @ attrs2 in
       let body = Mb.mk name body ~attrs ~loc ~docs in
-      Pstr_module body, ext }
+      body, ext }
 ;
 
 (* The body (right-hand side) of a module binding. *)
@@ -1754,16 +1792,12 @@ signature:
 
 (* A signature item. *)
 signature_item:
-  | item_extension post_item_attributes
-      { let docs = symbol_docs $sloc in
-        mksig ~loc:$sloc (Psig_extension ($1, (add_docs_attrs docs $2))) }
-  | mksig(
-      floating_attribute
-        { Psig_attribute $1 }
-    )
-    { $1 }
   | wrap_mksig_ext(
-      value_description
+      item_extension post_item_attributes
+        { psig_extension $1 (add_docs_attrs (symbol_docs $sloc) $2) }
+    | floating_attribute
+        { psig_attribute $1 }
+    | value_description
         { psig_value $1 }
     | primitive_declaration
         { psig_value $1 }
@@ -1776,25 +1810,25 @@ signature_item:
     | sig_exception_declaration
         { psig_exception $1 }
     | module_declaration
-        { let (body, ext) = $1 in (Psig_module body, ext) }
+        { psig_module $1 }
     | module_alias
-        { let (body, ext) = $1 in (Psig_module body, ext) }
+        { psig_module $1 }
     | module_subst
-        { let (body, ext) = $1 in (Psig_modsubst body, ext) }
+        { psig_modsubst $1 }
     | rec_module_declarations
-        { let (ext, l) = $1 in (Psig_recmodule l, ext) }
+        { psig_recmodule $1 }
     | module_type_declaration
-        { let (body, ext) = $1 in (Psig_modtype body, ext) }
+        { psig_modtype $1 }
     | module_type_subst
-        { let (body, ext) = $1 in (Psig_modtypesubst body, ext) }
+        { psig_modtypesubst $1 }
     | open_description
-        { let (body, ext) = $1 in (Psig_open body, ext) }
+        { psig_open $1 }
     | include_statement(module_type)
         { psig_include $1 }
     | class_descriptions
-        { let (ext, l) = $1 in (Psig_class l, ext) }
+        { psig_class $1 }
     | class_type_declarations
-        { let (ext, l) = $1 in (Psig_class_type l, ext) }
+        { psig_class_type $1 }
     )
     { $1 }
 
@@ -2440,20 +2474,8 @@ fun_expr:
   | or_function(fun_expr) { $1 }
 ;
 %inline fun_expr_attrs:
-  | LET MODULE ext_attributes mkrhs(module_name) module_binding_body IN seq_expr
-      { let loc = make_loc ($startpos($2), $endpos($5)) in
-        let si = Str.module_ ~loc (Mb.mk ~loc:(make_loc $loc($4)) $4 $5) in
-        Pexp_struct_item (si, $7), $3 }
-  | LET EXCEPTION ext_attributes let_exception_declaration IN seq_expr
-      { let loc = make_loc ($startpos($2), $endpos($4)) in
-        let si =
-          Str.exception_ ~loc (Te.mk_exception ~loc:(make_loc $loc($4)) $4) in
-        Pexp_struct_item (si, $6), $3 }
-  | LET OPEN override_flag ext_attributes module_expr IN seq_expr
-      { let open_loc = make_loc ($startpos($2), $endpos($5)) in
-        let si =
-          Str.open_ ~loc:open_loc (Opn.mk $5 ~override:$3 ~loc:open_loc) in
-        Pexp_struct_item(si, $7), $4 }
+  | LET ext_attributes local_structure_item IN seq_expr
+      { Pexp_struct_item($3, $5), $2 }
   /* Cf #5939: we used to accept (fun p when e0 -> e) */
   | FUN ext_attributes fun_params preceded(COLON, atomic_type)?
       MINUSGREATER fun_body
@@ -3330,6 +3352,8 @@ nonempty_type_kind:
     priv = inline_private_flag
     LBRACE ls = label_declarations RBRACE
       { (Ptype_record ls, priv, oty) }
+  | EXTERNAL name = raw_string
+      { (Ptype_external name, Public, None) }
 ;
 %inline type_synonym:
   ioption(terminated(core_type, EQUAL))
@@ -3424,9 +3448,7 @@ generic_constructor_declaration(opening):
     }
 ;
 str_exception_declaration:
-  sig_exception_declaration
-    { $1 }
-| EXCEPTION
+  EXCEPTION
   ext = ext
   attrs1 = attributes
   id = mkrhs(constr_ident)
@@ -3454,11 +3476,6 @@ sig_exception_declaration:
       Te.mk_exception ~attrs ~loc
         (Te.decl id ~vars ~args ?res ~attrs:(attrs1 @ attrs2) ~loc ~docs)
       , ext }
-;
-%inline let_exception_declaration:
-    mkrhs(constr_ident) generalized_constructor_arguments attributes
-      { let vars, args, res = $2 in
-        Te.decl $1 ~vars ~args ?res ~attrs:$3 ~loc:(make_loc $sloc) }
 ;
 generalized_constructor_arguments:
     /*empty*/                     { ([],Pcstr_tuple [],None) }

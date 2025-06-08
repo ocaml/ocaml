@@ -41,6 +41,7 @@ class scanner =
         | Odoc_type.Type_variant l -> List.iter (self#scan_type_const t) l
         | Odoc_type.Type_record l -> List.iter (self#scan_type_recfield t) l
         | Odoc_type.Type_open -> ()
+        | Odoc_type.Type_external _ -> ()
 
     method scan_extension_constructor (_ : Odoc_extension.t_extension_constructor) = ()
     method scan_exception (_ : Odoc_exception.t_exception) = ()

@@ -37,3 +37,8 @@ type error = [
 val find_printer : Env.t -> Longident.t -> (Path.t * kind, error) result
 
 val report_error : Format.formatter -> error -> unit
+
+val install :
+  (Env.t -> Path.t -> Obj.t) -> Env.t -> Longident.t -> (unit, error) result
+
+val remove : Env.t -> Longident.t -> (unit, error) result

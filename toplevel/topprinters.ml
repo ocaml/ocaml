@@ -155,3 +155,37 @@ let find_printer env lid =
     match match_printer_type env desc.val_type with
     | None -> Error (`Wrong_type lid)
     | Some kind -> Ok (path, kind)
+
+let install_printer_by_kind eval_value_path env path kind =
+  let v = eval_value_path env path in
+  match kind with
+  | Old ty_arg ->
+    Genprintval.User_printer.install_simple path ty_arg
+      (fun _formatter repr -> Obj.obj v repr)
+  | Simple ty_arg ->
+    Genprintval.User_printer.install_simple path ty_arg
+      (fun formatter repr -> Obj.obj v formatter repr)
+  | Generic { ty_path; arity } ->
+     let rec build v = function
+       | 0 ->
+          Genprintval.User_printer.Zero
+            (fun formatter repr -> Obj.obj v formatter repr)
+       | n ->
+          Genprintval.User_printer.Succ
+            (fun fn -> build ((Obj.obj v : _ -> Obj.t) fn) (n - 1)) in
+     Genprintval.User_printer.install_generic_format
+       path ty_path (build v arity)
+
+let install eval_value_path env lid =
+  Result.map
+    (fun (path,kind) -> install_printer_by_kind eval_value_path env path kind)
+    (find_printer env lid)
+
+let remove env lid =
+  Result.bind
+    (find_printer env lid)
+    (fun (path, _kind) ->
+       try
+         Genprintval.User_printer.remove path;
+         Ok ()
+       with Not_found -> Error (`No_active_printer path))

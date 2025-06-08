@@ -1,5 +1,5 @@
 File "foo.ml", line 1, characters 14-18:
 1 | let x : int = true
                   ^^^^
-Error: The constructor true has type bool
-       but an expression was expected of type int
+Error: This expression should not be a boolean literal, the expected type is
+       int

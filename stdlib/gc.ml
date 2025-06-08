@@ -126,7 +126,14 @@ let[@inline never] create_alarm f =
 module Memprof =
   struct
     type t
-    type allocation_source = Normal | Marshal | Custom
+
+    type allocation_source = Normal | Marshal | Custom | Map_file
+    let string_of_allocation_source = function
+      | Normal -> "Normal"
+      | Marshal -> "Marshal"
+      | Custom -> "Custom"
+      | Map_file -> "Map_file"
+
     type allocation =
       { n_samples : int;
         size : int;

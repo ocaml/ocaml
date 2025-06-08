@@ -302,7 +302,20 @@ AC_CONFIG_COMMANDS_PRE(OCAML_QUOTED_STRING_ID)
 
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
+# Allow "ocaml" to be used as the last component of the target triplet in case
+# we are using a custom toolchain for a freestanding target. To do so, the
+# target triplet is temporarily rewritten to "<arch>-none" to compute the
+# canonical target
+save_target_alias="$target_alias"
+AS_CASE([$target_alias],
+  [*-*-ocaml],
+    [ac_save_IFS=$IFS
+    IFS='-'
+    set x $target_alias
+    target_alias="$2-none"
+    IFS=$ac_save_IFS])
 AC_CANONICAL_TARGET
+target_alias="$save_target_alias"
 
 # Override cross_compiling and ac_tool_prefix variables since the C toolchain is
 # used to generate target code when building a cross compiler
@@ -1169,7 +1182,9 @@ AS_CASE([$ocaml_cc_vendor,$target],
     [oc_ldflags='-brtl -bexpfull'
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
   [gcc-*,powerpc-*-linux*],
-    [oc_ldflags="-mbss-plt"])
+    [oc_ldflags="-mbss-plt"],
+  [*,*-*-none|*,*-*-elf*],
+    [ostype="None"])
 
 # How to build sak
 
@@ -1603,7 +1618,19 @@ AS_CASE([$target],
   [riscv64-*-linux*],
     [has_native_backend=yes; arch=riscv; model=riscv64; system=linux],
   [x86_64-*-gnu*],
-    [has_native_backend=yes; arch=amd64; system=gnu]
+    [has_native_backend=yes; arch=amd64; system=gnu],
+  [aarch64-*-none|arm64-*-none|aarch64-*-elf*|arm64-*-elf*],
+    [has_native_backend=yes; arch=arm64; system=none],
+  [powerpc64le*-*-none|powerpc64le*-*-elf*],
+    [has_native_backend=yes; arch=power; model=ppc64le; system=none],
+  [powerpc64*-*-none|powerpc64*-*-elf*],
+    [has_native_backend=yes; arch=power; model=ppc64; system=none],
+  [riscv64-*-none|riscv64-*-elf*],
+    [has_native_backend=yes; arch=riscv; model=riscv64; system=none],
+  [s390x*-*-none|s390x*-*-elf*],
+    [has_native_backend=yes; arch=s390x; model=z10; system=none],
+  [x86_64-*-none|x86_64-*-elf*],
+    [has_native_backend=yes; arch=amd64; system=none]
 )
 
 AS_CASE([$arch],

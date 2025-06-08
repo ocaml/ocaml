@@ -89,44 +89,21 @@ let eval_value_path env path =
 
 (* Install, remove a printer (as in toplevel/topdirs) *)
 
-(* Very close to Topdirs.install_printer_by_kind
-   except that we do fetch the (remote) values
-   {b and fallback if it fails} *)
- let install_printer lid =
-  match Topprinters.find_printer Env.empty lid with
+let install_printer lid =
+  let eval_value_path env path =
+    try
+      eval_value_path env path
+    with Symtable.Error(Symtable.Undefined_global global) ->
+      let s = Symtable.Global.name global in
+      raise (Error (`Unavailable_module(s, lid))) in
+  match Topprinters.install eval_value_path Env.empty lid with
   | Error error -> raise (Error (error :> error))
-  | Ok (path, kind) ->
-      let v =
-        try
-          eval_value_path Env.empty path
-        with Symtable.Error(Symtable.Undefined_global global) ->
-          let s = Symtable.Global.name global in
-          raise (Error (`Unavailable_module(s, lid))) in
-      match kind with
-      | Topprinters.Old ty_arg ->
-          Printval.install_printer path ty_arg
-            (fun _ppf -> (Obj.obj v : Obj.t -> unit))
-      | Topprinters.Simple ty_arg ->
-          Printval.install_printer path ty_arg
-            (Obj.obj v : Format.formatter -> Obj.t -> unit)
-      | Topprinters.Generic { ty_path ; arity } ->
-          let rec build v = function
-            | 0 ->
-                Genprintval.User_printer.Zero
-                  (Obj.obj v : Format.formatter -> Obj.t -> unit)
-            | n ->
-                Genprintval.User_printer.Succ
-                  (fun fn -> build ((Obj.obj v : _ -> Obj.t) fn) (n - 1)) in
-          Printval.install_printer_generic_format path ty_path (build v arity)
+  | Ok () -> ()
 
 let remove_printer lid =
-  match Topprinters.find_printer Env.empty lid with
+  match Topprinters.remove Env.empty lid with
   | Error error -> raise (Error (error :> error))
-  | Ok (path, _kind) ->
-      try
-        Printval.remove_printer path
-      with Not_found ->
-        raise(Error(`No_active_printer path))
+  | Ok () -> ()
 
 (* Error report *)
 

@@ -222,6 +222,7 @@ let type_kind sub = function
   | Ttype_variant list -> Ttype_variant (List.map (constructor_decl sub) list)
   | Ttype_record list -> Ttype_record (List.map (label_decl sub) list)
   | Ttype_open -> Ttype_open
+  | Ttype_external name -> Ttype_external name
 
 let type_declaration sub x =
   let typ_loc = sub.location sub x.typ_loc in

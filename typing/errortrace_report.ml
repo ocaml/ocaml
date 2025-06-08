@@ -271,16 +271,14 @@ let explain_incompatible_fields name (diff: Types.type_expr Errortrace.diff) =
     (Style.as_inline_code type_expr_with_reserved_names) diff.expected
 
 
-let explain_label_mismatch ~got ~expected =
+let explain_label_mismatch ~missing_label_msg  {Errortrace.got;expected} =
   let quoted_label ppf l = Style.inline_code ppf (Asttypes.string_of_label l) in
   match got, expected with
   | Asttypes.Nolabel, Asttypes.(Labelled _ | Optional _ )  ->
       doc_printf "@,@[A label@ %a@ was expected@]"
         quoted_label expected
   | Asttypes.(Labelled _|Optional _), Asttypes.Nolabel  ->
-      doc_printf
-        "@,@[The first argument is labeled@ %a,@ \
-         but an unlabeled argument was expected@]"
+      doc_printf missing_label_msg
         quoted_label got
  | Asttypes.Labelled g, Asttypes.Optional e when g = e ->
       doc_printf
@@ -328,7 +326,24 @@ let explanation (type variety) intro prev env
   | Errortrace.Incompatible_fields { name; diff} ->
     Some(explain_incompatible_fields name diff)
   | Errortrace.Function_label_mismatch diff ->
-    Some(explain_label_mismatch ~got:diff.got ~expected:diff.expected)
+    let missing_label_msg =
+      format_of_string
+        "@,@[The first argument is labeled@ %a,@ \
+         but an unlabeled argument was expected@]"
+    in
+    Some(explain_label_mismatch ~missing_label_msg diff)
+  | Errortrace.Tuple_label_mismatch diff ->
+    let ast_label = function
+      | None -> Asttypes.Nolabel
+      | Some x -> Asttypes.Labelled x
+    in
+    let diff = Errortrace.map_diff ast_label diff in
+    let missing_label_msg =
+      format_of_string
+        "@,@[The first tuple element is labeled@ %a,@ \
+         but an unlabeled element was expected@]"
+    in
+    Some(explain_label_mismatch ~missing_label_msg diff)
   | Errortrace.Variant v ->
     explain_variant v
   | Errortrace.Obj o ->

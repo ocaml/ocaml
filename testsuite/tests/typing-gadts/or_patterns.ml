@@ -182,8 +182,7 @@ let simple_merged_not_annotated_enough (type a) (t : a t) a =
 Line 4, characters 13-17:
 4 |   | BoolLit, true -> ()
                  ^^^^
-Error: This pattern matches values of type "bool"
-       but a pattern was expected which matches values of type "int"
+Error: This pattern should not be a boolean literal, the expected type is "int"
 |}]
 
 

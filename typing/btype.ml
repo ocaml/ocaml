@@ -170,7 +170,7 @@ let type_kind_is_abstract decl =
 let type_origin decl =
   match decl.type_kind with
   | Type_abstract origin -> origin
-  | Type_variant _ | Type_record _ | Type_open -> Definition
+  | Type_variant _ | Type_record _ | Type_open | Type_external _ -> Definition
 
 let dummy_method = "*dummy method*"
 
@@ -360,8 +360,8 @@ let iter_type_expr_kind f = function
         cstrs
   | Type_record(lbls, _) ->
       List.iter (fun d -> f d.ld_type) lbls
-  | Type_open ->
-      ()
+  | Type_open -> ()
+  | Type_external _ -> ()
 
                   (**********************************)
                   (*     Utilities for marking      *)

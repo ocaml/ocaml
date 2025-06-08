@@ -739,6 +739,7 @@ and type_kind =
   | Ttype_variant of constructor_declaration list
   | Ttype_record of label_declaration list
   | Ttype_open
+  | Ttype_external of string
 
 and label_declaration =
     {

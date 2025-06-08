@@ -474,7 +474,9 @@ module Memprof :
     type t
     (** the type of a profile *)
 
-    type allocation_source = Normal | Marshal | Custom
+    type allocation_source = Normal | Marshal | Custom | Map_file
+    val string_of_allocation_source : allocation_source -> string
+
     type allocation = private
       { n_samples : int;
         (** The number of samples in this block (>= 1). *)

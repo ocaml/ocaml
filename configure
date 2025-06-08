@@ -3690,6 +3690,21 @@ IFS=$ac_save_IFS
 case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
+# Allow "ocaml" to be used as the last component of the target triplet in case
+# we are using a custom toolchain for a freestanding target. To do so, the
+# target triplet is temporarily rewritten to "<arch>-none" to compute the
+# canonical target
+save_target_alias="$target_alias"
+case $target_alias in #(
+  *-*-ocaml) :
+    ac_save_IFS=$IFS
+    IFS='-'
+    set x $target_alias
+    target_alias="$2-none"
+    IFS=$ac_save_IFS ;; #(
+  *) :
+     ;;
+esac
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking target system type" >&5
 printf %s "checking target system type... " >&6; }
 if test ${ac_cv_target+y}
@@ -3730,6 +3745,7 @@ test -n "$target_alias" &&
   test "$program_prefix$program_suffix$program_transform_name" = \
     NONENONEs,x,x, &&
   program_prefix=${target_alias}-
+target_alias="$save_target_alias"
 
 # Override cross_compiling and ac_tool_prefix variables since the C toolchain is
 # used to generate target code when building a cross compiler
@@ -15770,6 +15786,8 @@ esac
  ;; #(
   gcc-*,powerpc-*-linux*) :
     oc_ldflags="-mbss-plt" ;; #(
+  *,*-*-none|*,*-*-elf*) :
+    ostype="None" ;; #(
   *) :
      ;;
 esac
@@ -18566,7 +18584,19 @@ fi ;; #(
   riscv64-*-linux*) :
     has_native_backend=yes; arch=riscv; model=riscv64; system=linux ;; #(
   x86_64-*-gnu*) :
-    has_native_backend=yes; arch=amd64; system=gnu
+    has_native_backend=yes; arch=amd64; system=gnu ;; #(
+  aarch64-*-none|arm64-*-none|aarch64-*-elf*|arm64-*-elf*) :
+    has_native_backend=yes; arch=arm64; system=none ;; #(
+  powerpc64le*-*-none|powerpc64le*-*-elf*) :
+    has_native_backend=yes; arch=power; model=ppc64le; system=none ;; #(
+  powerpc64*-*-none|powerpc64*-*-elf*) :
+    has_native_backend=yes; arch=power; model=ppc64; system=none ;; #(
+  riscv64-*-none|riscv64-*-elf*) :
+    has_native_backend=yes; arch=riscv; model=riscv64; system=none ;; #(
+  s390x*-*-none|s390x*-*-elf*) :
+    has_native_backend=yes; arch=s390x; model=z10; system=none ;; #(
+  x86_64-*-none|x86_64-*-elf*) :
+    has_native_backend=yes; arch=amd64; system=none
  ;; #(
   *) :
      ;;

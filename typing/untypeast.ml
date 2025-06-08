@@ -233,6 +233,7 @@ let type_kind sub tk = match tk with
   | Ttype_record list ->
       Ptype_record (List.map (sub.label_declaration sub) list)
   | Ttype_open -> Ptype_open
+  | Ttype_external name -> Ptype_external name
 
 let constructor_arguments sub = function
    | Cstr_tuple l -> Pcstr_tuple (List.map (sub.typ sub) l)

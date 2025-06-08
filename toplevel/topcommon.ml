@@ -159,19 +159,6 @@ module MakeEvalPrinter (E: EVAL_BASE) = struct
           print_string b;
           backtrace := None
 
-  module User_printer = Genprintval.User_printer
-
-  type ('a, 'b) gen_printer = ('a, 'b) User_printer.gen =
-    | Zero of 'b
-    | Succ of ('a -> ('a, 'b) gen_printer)
-
-  (* TODO: erase the glue below and use the new User_printer API
-     directly through the [User_printer] alias above. *)
-  let install_printer = User_printer.install_simple
-  let install_generic_printer = User_printer.install_generic_outcometree
-  let install_generic_printer' = User_printer.install_generic_format
-  let remove_printer = User_printer.remove
-
 end
 
 

@@ -82,6 +82,7 @@ type out_type =
   | Otyp_poly of string list * out_type
   | Otyp_module of out_package
   | Otyp_attribute of out_type * out_attribute
+  | Otyp_external of string
 
 and out_label = {
   olab_name: string;

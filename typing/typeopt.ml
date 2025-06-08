@@ -106,7 +106,7 @@ let classify env ty : classification =
       | Some #Predef.data_type_constr | None ->
         try
           match (Env.find_type p env).type_kind with
-          | Type_abstract _ ->
+          | Type_abstract _ | Type_external _ ->
               Any
           | Type_record _ | Type_variant _ | Type_open ->
               Addr

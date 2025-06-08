@@ -23,6 +23,7 @@
 
 typedef enum {
   SCANNING_ONLY_YOUNG_VALUES = 1, // action is a no-op outside the minor heap
+  SCANNING_ONLY_RECENT_FRAMES = 2, // generational scanning of stack frames
 } scanning_action_flags;
 
 typedef void (*scanning_action) (void*, value, volatile value *);

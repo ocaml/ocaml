@@ -201,7 +201,7 @@ Caml_inline void caml_tsan_debug_log_pc(const char* msg, uintnat pc)
 #endif
 }
 
-/* This function is called by `caml_raise_exn` or `caml_tsan_raise_notrace_exn`
+/* This function is called by `caml_raise_exn` or `caml_tsan_exit_on_raise_asm`
  from an OCaml stack.
  - [pc] is the program counter where `caml_raise_exn` would return, i.e. the
  next instruction after `caml_raise_exn` in the function that raised the
@@ -210,6 +210,10 @@ Caml_inline void caml_tsan_debug_log_pc(const char* msg, uintnat pc)
   [pc].
  - [trapsp] is the address of the next exception handler.
 
+ It can also be called by `caml_raise_exception` which is called from C.
+ In that case it discards the C stack and works on the OCaml stack underneath,
+ as if `caml_raise_exn` was raised directly from there.
+
  This function iterates over every function stack frame between [sp] and
  [trapsp], calling `__tsan_func_exit` for each function. */
 void caml_tsan_exit_on_raise(uintnat pc, char* sp, char* trapsp)
@@ -217,6 +221,12 @@ void caml_tsan_exit_on_raise(uintnat pc, char* sp, char* trapsp)
   caml_domain_state* domain_state = Caml_state;
   caml_frame_descrs* fds = caml_get_frame_descrs();
   uintnat next_pc = pc;
+
+#ifdef Mask_already_scanned
+  // If we come from [caml_raise_exception], the [pc] comes from an
+  // OCaml stack that may have been scanned by the GC.
+  next_pc = Mask_already_scanned(next_pc);
+#endif
 
   /* iterate on each frame  */
   while (1) {
@@ -302,6 +312,12 @@ void caml_tsan_exit_on_perform(uintnat pc, char* sp)
   caml_frame_descrs* fds = caml_get_frame_descrs();
   uintnat next_pc = pc;
 
+#ifdef Mask_already_scanned
+  // [caml_perform] may be a tail-call, in which case [pc] was the
+  // return address of the caller, which may have been scanned.
+  next_pc = Mask_already_scanned(next_pc);
+#endif
+
   /* iterate on each frame  */
   while (1) {
     frame_descr* descr = caml_next_frame_descriptor(fds, &next_pc, &sp, stack);
@@ -332,6 +348,12 @@ CAMLno_tsan void caml_tsan_entry_on_resume(uintnat pc, char* sp,
 {
   caml_frame_descrs* fds = caml_get_frame_descrs();
   uintnat next_pc = pc;
+
+#ifdef Mask_already_scanned
+  // the stack to resume may have been scanned by the GC after
+  // [caml_perform] suspended it, so it may be marked.
+  next_pc = Mask_already_scanned(next_pc);
+#endif
 
   caml_next_frame_descriptor(fds, &next_pc, &sp, (struct stack_info*)stack);
   if (next_pc == 0) {

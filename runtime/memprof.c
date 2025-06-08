@@ -17,6 +17,7 @@
 
 #include <math.h>
 #include <stdbool.h>
+#include <assert.h>
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/backtrace_prim.h"
@@ -447,6 +448,10 @@ typedef struct memprof_orphan_table_s memprof_orphan_table_s,
 /* the mask for a given callback index */
 #define CB_MASK(cb) (1 << ((cb) - 1))
 
+/* How many bits required for an allocation source */
+#define SRC_TYPE_BITS    2
+static_assert((1 << SRC_TYPE_BITS) >= CAML_MEMPROF_NUM_SOURCE_KINDS, "");
+
 /* Structure for each tracked allocation. Six words (with many spare
  * bits in the final word). */
 
@@ -474,7 +479,7 @@ struct entry_s {
 
   /* The source of the allocation: normal allocations, interning,
    * or custom_mem (CAML_MEMPROF_SRC_*). */
-  unsigned int source : 2;
+  unsigned int source : SRC_TYPE_BITS;
 
   /* Is `block` actually an offset? */
   bool offset : 1;

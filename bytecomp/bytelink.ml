@@ -289,11 +289,6 @@ let output_debug_info oc =
 
 (* Transform a file name into an absolute file name *)
 
-let make_absolute file =
-  if not (Filename.is_relative file) then file
-  else Location.rewrite_absolute_path
-         (Filename.concat (Sys.getcwd()) file)
-
 type launch_method =
 | Shebang_bin_sh of string
 | Shebang_runtime
@@ -388,6 +383,10 @@ let find_bin_sh () =
 let write_header outchan =
   let use_runtime, runtime =
     if String.length !Clflags.use_runtime > 0 then
+      (* Do not use BUILD_PATH_PREFIX_MAP mapping for this. *)
+      let make_absolute file =
+        if Filename.is_relative file then Filename.concat (Sys.getcwd()) file
+        else file in
       (true, make_absolute !Clflags.use_runtime)
     else
       (false, "ocamlrun" ^ !Clflags.runtime_variant)

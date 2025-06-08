@@ -1,3 +1,6 @@
+\section{s:extension-nodes}{Extension nodes}
+%HEVEA\cutname{extensionnodes.html}
+
 (Introduced in OCaml 4.02,
 infix notations for constructs other than expressions added in 4.03,
 infix notation (e1 ;\%ext e2) added in 4.04.

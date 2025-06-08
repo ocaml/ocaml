@@ -142,12 +142,14 @@ let add_type_declaration bv td =
     td.ptype_cstrs;
   add_opt add_type bv td.ptype_manifest;
   let add_tkind = function
-    Ptype_abstract -> ()
-  | Ptype_variant cstrs ->
-      List.iter (add_constructor_decl bv) cstrs
-  | Ptype_record lbls ->
-      List.iter (fun pld -> add_type bv pld.pld_type) lbls
-  | Ptype_open -> () in
+    | Ptype_abstract -> ()
+    | Ptype_variant cstrs ->
+        List.iter (add_constructor_decl bv) cstrs
+    | Ptype_record lbls ->
+        List.iter (fun pld -> add_type bv pld.pld_type) lbls
+    | Ptype_open -> ()
+    | Ptype_external _ -> ()
+  in
   add_tkind td.ptype_kind
 
 let add_extension_constructor bv ext =

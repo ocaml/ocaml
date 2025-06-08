@@ -670,6 +670,9 @@ class man =
       | Type_open ->
           bs b "= ..";
           bs b "\n"
+      | Type_external name ->
+          bs b (Printf.sprintf "= external %S" (self#escape name));
+          bs b "\n"
       );
       bs b "\n.sp\n";
       self#man_of_info b t.ty_info;

@@ -634,7 +634,6 @@ typing/ctype.cmo : \
     typing/types.cmi \
     typing/type_immediacy.cmi \
     typing/subst.cmi \
-    typing/predef.cmi \
     typing/path.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
@@ -653,7 +652,6 @@ typing/ctype.cmx : \
     typing/types.cmx \
     typing/type_immediacy.cmx \
     typing/subst.cmx \
-    typing/predef.cmx \
     typing/path.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
@@ -7557,6 +7555,7 @@ toplevel/topprinters.cmo : \
     typing/path.cmi \
     parsing/longident.cmi \
     typing/ident.cmi \
+    toplevel/genprintval.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
     typing/btype.cmi \
@@ -7569,6 +7568,7 @@ toplevel/topprinters.cmx : \
     typing/path.cmx \
     parsing/longident.cmx \
     typing/ident.cmx \
+    toplevel/genprintval.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
     typing/btype.cmx \
@@ -8538,14 +8538,12 @@ debugger/loadprinter.cmo : \
     parsing/unit_info.cmi \
     toplevel/topprinters.cmi \
     bytecomp/symtable.cmi \
-    debugger/printval.cmi \
     typing/printtyp.cmi \
     typing/path.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
     utils/load_path.cmi \
     typing/ident.cmi \
-    toplevel/genprintval.cmi \
     utils/format_doc.cmi \
     typing/env.cmi \
     otherlibs/dynlink/dynlink.cmi \
@@ -8555,14 +8553,12 @@ debugger/loadprinter.cmx : \
     parsing/unit_info.cmx \
     toplevel/topprinters.cmx \
     bytecomp/symtable.cmx \
-    debugger/printval.cmx \
     typing/printtyp.cmx \
     typing/path.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
     utils/load_path.cmx \
     typing/ident.cmx \
-    toplevel/genprintval.cmx \
     utils/format_doc.cmx \
     typing/env.cmx \
     otherlibs/dynlink/dynlink.cmx \
@@ -8686,9 +8682,7 @@ debugger/printval.cmx : \
     debugger/printval.cmi
 debugger/printval.cmi : \
     typing/types.cmi \
-    typing/path.cmi \
     debugger/parser_aux.cmi \
-    toplevel/genprintval.cmi \
     typing/env.cmi \
     debugger/debugcom.cmi
 debugger/program_loading.cmo : \

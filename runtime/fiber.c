@@ -263,9 +263,20 @@ Caml_inline void scan_stack_frames(
 next_chunk:
   if (sp == (char*)Stack_high(stack)) return;
   sp = First_frame(sp);
-  retaddr = Saved_return_address(sp);
+  retaddr = Saved_return_address_raw(sp);
 
   while(1) {
+#ifdef Already_scanned
+      if ((fflags & SCANNING_ONLY_RECENT_FRAMES) != 0) {
+        /* Stop here if the frame has been scanned during earlier GCs  */
+        if (Already_scanned(sp, retaddr)) break;
+        /* Mark frame as already scanned */
+        Mark_scanned(sp, retaddr);
+      } else {
+        /* Ignore mark and continue */
+        retaddr = Mask_already_scanned(retaddr);
+      }
+#endif
     d = caml_find_frame_descr(fds, retaddr);
     CAMLassert(d);
     if (!frame_return_to_C(d)) {
@@ -281,8 +292,7 @@ next_chunk:
       }
       /* Move to next frame */
       sp += frame_size(d);
-      retaddr = Saved_return_address(sp);
-      /* XXX KC: disabled already scanned optimization. */
+      retaddr = Saved_return_address_raw(sp);
     } else {
       /* This marks the top of an ML stack chunk. Move sp to the previous
        * stack chunk.  */

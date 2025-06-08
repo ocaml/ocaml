@@ -28,7 +28,9 @@
 
 enum { CAML_MEMPROF_SRC_NORMAL = 0,
        CAML_MEMPROF_SRC_MARSHAL = 1, /* interning */
-       CAML_MEMPROF_SRC_CUSTOM = 2 /* custom memory */ };
+       CAML_MEMPROF_SRC_CUSTOM = 2, /* custom memory */
+       CAML_MEMPROF_SRC_MAP_FILE = 3, /* mmapped file */
+       CAML_MEMPROF_NUM_SOURCE_KINDS};
 
 /* Respond to the allocation of any block. Does not call callbacks.
  * `block` is the allocated block, to be tracked by memprof if
@@ -39,8 +41,8 @@ enum { CAML_MEMPROF_SRC_NORMAL = 0,
  * but may not be for out-of-heap memory). `source` is one of the
  * `CAML_MEMPROF_SRC_* constants above. */
 
-void caml_memprof_sample_block(value block, size_t allocated_words,
-                               size_t sampled_words, int source);
+CAMLextern void caml_memprof_sample_block(value block, size_t allocated_words,
+                                          size_t sampled_words, int source);
 
 /* Sample a minor heap "Comballoc" (combined allocation). Called when
  * the memprof trigger is hit (before the allocation is actually

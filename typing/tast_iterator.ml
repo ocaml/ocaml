@@ -196,6 +196,7 @@ let type_kind sub = function
   | Ttype_variant list -> List.iter (constructor_decl sub) list
   | Ttype_record list -> List.iter (label_decl sub) list
   | Ttype_open -> ()
+  | Ttype_external _ -> ()
 
 let type_declaration sub x =
   sub.item_declaration sub (Type x);

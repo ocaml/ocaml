@@ -225,7 +225,9 @@ let with_local_level_gen ~begin_def ~structure ?before_generalize f =
         (* In structure mode, we do do not generalize type variables,
            so we need to lower their level, and move them to an outer pool.
            The goal of this mode is to allow unsharing inner nodes
-           without introducing polymorphism *)
+           without introducing polymorphism.
+           We do not check the scope here, as scope is only restricted for
+           GADT equations, and they do not contain type variables. *)
         if ty.level >= level then Transient_expr.set_level ty !current_level;
         add_to_pool ~level:ty.level ty
     | Tlink _ -> ()
@@ -448,7 +450,7 @@ let in_pervasives p =
 
 let is_datatype decl=
   match decl.type_kind with
-    Type_record _ | Type_variant _ | Type_open -> true
+    Type_record _ | Type_variant _ | Type_open | Type_external _ -> true
   | Type_abstract _ -> false
 
 
@@ -674,6 +676,7 @@ let closed_type_decl decl =
     | Type_record(r, _rep) ->
         List.iter (fun l -> closed_type mark l.ld_type) r
     | Type_open -> ()
+    | Type_external _ -> ()
     end;
     begin match decl.type_manifest with
       None    -> ()
@@ -845,12 +848,10 @@ let check_scope_escape env level ty =
     raise (Escape { e with context = Some ty })
   end
 
-let rec update_scope scope ty =
+let update_scope scope ty =
   if get_scope ty < scope then begin
     if get_level ty < scope then raise_scope_escape_exn ty;
     set_scope ty scope;
-    (* Only recurse in principal mode as this is not necessary for soundness *)
-    if !Clflags.principal then iter_type_expr (update_scope scope) ty
   end
 
 let update_scope_for tr_exn scope ty =
@@ -1146,8 +1147,8 @@ let abbreviations = ref (ref Mnil)
 
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
-let rec copy ?partial ?keep_names copy_scope ty =
-  let copy = copy ?partial ?keep_names copy_scope in
+let rec copy ?partial ?keep_names ?scope copy_scope ty =
+  let copy = copy ?partial ?keep_names ?scope copy_scope in
   match get_desc ty with
     Tsubst (ty, _) -> ty
   | desc ->
@@ -1165,7 +1166,12 @@ let rec copy ?partial ?keep_names copy_scope ty =
           else generic_level
     in
     if forget <> generic_level then newty2 ~level:forget (Tvar None) else
-    let t = newstub ~scope:(get_scope ty) in
+    let scope =
+      match scope with
+      | None -> get_scope ty
+      | Some scope -> Int.max scope (get_scope ty)
+    in
+    let t = newstub ~scope in
     For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
     let desc' =
       match desc with
@@ -1354,10 +1360,12 @@ let instance_constructor existential_treatment cstr =
     (ty_args, ty_res, ty_ex)
   )
 
-let instance_parameterized_type ?keep_names sch_args sch =
+let instance_parameterized_type ?keep_names ?scope sch_args sch =
   For_copy.with_scope (fun copy_scope ->
-    let ty_args = List.map (fun t -> copy ?keep_names copy_scope t) sch_args in
-    let ty = copy copy_scope sch in
+    (* Only raise scope in body, not in parameters *)
+    let ty_args =
+      List.map (fun t -> copy ?keep_names copy_scope t) sch_args in
+    let ty = copy ?scope copy_scope sch in
     (ty_args, ty)
   )
 
@@ -1379,7 +1387,7 @@ let map_kind f = function
           (fun l ->
              {l with ld_type = f l.ld_type}
           ) fl, rr)
-
+  | Type_external name -> Type_external name
 
 let instance_declaration decl =
   For_copy.with_scope (fun copy_scope ->
@@ -1529,7 +1537,7 @@ let instance_label ~fixed lbl =
 let unify_var' = (* Forward declaration *)
   ref (fun _env _ty1 _ty2 -> assert false)
 
-let subst env level priv abbrev oty params args body =
+let subst ~env ~level ?scope ~priv ~abbrev ?oty ~params ~args body =
   if List.length params <> List.length args then raise Cannot_subst;
   with_level ~level begin fun () ->
     let body0 = newvar () in          (* Stub *)
@@ -1545,7 +1553,7 @@ let subst env level priv abbrev oty params args body =
           | _ -> assert false
     in
     abbreviations := abbrev;
-    let (params', body') = instance_parameterized_type params body in
+    let (params', body') = instance_parameterized_type ?scope params body in
     abbreviations := ref Mnil;
     let uenv = Expression {env; in_subst = true} in
     try
@@ -1567,7 +1575,7 @@ let apply ?(use_current_level = false) env params body args =
   simple_abbrevs := Mnil;
   let level = if use_current_level then !current_level else generic_level in
   try
-    subst env level Public (ref Mnil) None params args body
+    subst ~env ~level ~priv:Public ~abbrev:(ref Mnil) ~params ~args body
   with
     Cannot_subst -> raise Cannot_apply
 
@@ -1627,7 +1635,9 @@ let expand_abbrev_gen kind find_type_expansion env ty =
         (* prerr_endline
            ("found a "^string_of_kind kind^" expansion for "^Path.name path);*)
         if level <> generic_level then update_level env level ty';
-        update_scope scope ty';
+        if not !Clflags.principal then update_scope scope ty'
+        (* In principal mode, force re-expansion if scope increased *)
+        else if get_scope ty' < scope then raise_scope_escape_exn ty;
         Some ty'
     with Escape _ ->
       (* in case of Escape, discard the stale expansion and re-expand *)
@@ -1643,19 +1653,23 @@ let expand_abbrev_gen kind find_type_expansion env ty =
           (* another way to expand is to normalize the path itself *)
           let path' = Env.normalize_type_path None env path in
           if Path.same path path' then raise Cannot_expand
-          else newty2 ~level (Tconstr (path', args, abbrev))
-      | (params, body, lv) ->
+          else newty3 ~level ~scope (Tconstr (path', args, abbrev))
+      | (params, body, expansion_scope) ->
           (* prerr_endline
              ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
+          let scope = Int.max expansion_scope (get_scope ty) in
           let ty' =
             try
-              subst env level kind abbrev (Some ty) params args body
+              (* Only enforce scope recursively in principal mode
+                 as this is not necessary for soundness *)
+              let scope = if !Clflags.principal then Some scope else None in
+              subst ~env ~level ?scope ~priv:kind ~abbrev ~oty:ty
+                ~params ~args body
             with Cannot_subst -> raise_escape_exn Constraint
           in
           (* For gadts, remember type as non exportable *)
           (* The ambiguous level registered for ty' should be the highest *)
           (* if !trace_gadt_instances then begin *)
-          let scope = Int.max lv (get_scope ty) in
           update_scope scope ty;
           update_scope scope ty';
           ty'
@@ -2303,26 +2317,15 @@ let find_expansion_scope env path =
   | { type_manifest = None ; _ } | exception Not_found -> generic_level
   | decl -> decl.type_expansion_scope
 
-let non_aliasable p decl =
-  (* in_pervasives p ||  (subsumed by in_current_module) *)
-  in_current_module p && not decl.type_is_newtype
-
 let is_instantiable env p =
   try
     let decl = Env.find_type p env in
     type_kind_is_abstract decl &&
     decl.type_private = Public &&
     decl.type_arity = 0 &&
-    decl.type_manifest = None &&
-    not (non_aliasable p decl)
+    decl.type_manifest = None
   with Not_found -> false
 
-
-let compatible_paths p1 p2 =
-  let open Predef in
-  Path.same p1 p2 ||
-  Path.same p1 path_bytes && Path.same p2 path_string ||
-  Path.same p1 path_string && Path.same p2 path_bytes
 
 (* Two labels are considered compatible under certain conditions.
   - they are the same
@@ -2406,8 +2409,7 @@ let rec mcomp type_pairs env t1 t2 =
         | (Tconstr (p, _, _), _) | (_, Tconstr (p, _, _)) ->
             begin try
               let decl = Env.find_type p env in
-              if non_aliasable p decl || is_datatype decl then
-                raise Incompatible
+              if is_datatype decl then raise Incompatible
             with Not_found -> ()
             end
         (*
@@ -2509,7 +2511,7 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
   try
     let decl = Env.find_type p1 env in
     let decl' = Env.find_type p2 env in
-    if compatible_paths p1 p2 then begin
+    if Path.same p1 p2 then begin
       let inj =
         try List.map Variance.(mem Inj) (Env.find_type p1 env).type_variance
         with Not_found -> List.map (fun _ -> false) tl1
@@ -2517,9 +2519,7 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
       List.iter2
         (fun i (t1,t2) -> if i then mcomp type_pairs env t1 t2)
         inj (List.combine tl1 tl2)
-    end else if non_aliasable p1 decl && non_aliasable p2 decl' then
-      raise Incompatible
-    else
+    end else
       match decl.type_kind, decl'.type_kind with
       | Type_record (lst,r), Type_record (lst',r') when r = r' ->
           mcomp_list type_pairs env tl1 tl2;
@@ -2529,9 +2529,10 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
           mcomp_variant_description type_pairs env v1 v2
       | Type_open, Type_open ->
           mcomp_list type_pairs env tl1 tl2
-      | Type_abstract _, Type_abstract _ -> ()
-      | Type_abstract _, _ when not (non_aliasable p1 decl)-> ()
-      | _, Type_abstract _ when not (non_aliasable p2 decl') -> ()
+            (* thus, exn and eff are incompatible *)
+      | Type_external n1, Type_external n2 when n1 = n2 ->
+          mcomp_list type_pairs env tl1 tl2
+      | Type_abstract _, _ | _, Type_abstract _ -> ()
       | _ -> raise Incompatible
   with Not_found -> ()
 
@@ -3013,8 +3014,10 @@ and unify_labeled_list env labeled_tl1 labeled_tl2 =
     raise_unexplained_for Unify;
   List.iter2
     (fun (label1, ty1) (label2, ty2) ->
-      if not (Option.equal String.equal label1 label2) then
-        raise_unexplained_for Unify;
+      if not (Option.equal String.equal label1 label2) then begin
+        let diff = { Errortrace.got=label1; expected=label2} in
+        raise_for Unify (Errortrace.Tuple_label_mismatch diff)
+      end;
       unify env ty1 ty2)
     labeled_tl1 labeled_tl2
 
@@ -4811,8 +4814,8 @@ let rec build_subtype env (visited : transient_expr list)
           let cl_abbr, body = find_cltype_for_path env p in
           let ty =
             try
-              subst env !current_level Public abbrev None
-                cl_abbr.type_params tl body
+              subst ~env ~level:!current_level ~priv:Public ~abbrev
+                ~params:cl_abbr.type_params ~args:tl body
             with Cannot_subst -> assert false in
           let ty1, tl1 =
             match get_desc ty with

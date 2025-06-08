@@ -177,6 +177,7 @@ module T = struct
         List.iter (sub.constructor_declaration sub) l
     | Ptype_record l -> List.iter (sub.label_declaration sub) l
     | Ptype_open -> ()
+    | Ptype_external _ -> ()
 
   let iter_constructor_arguments sub = function
     | Pcstr_tuple l -> List.iter (sub.typ sub) l

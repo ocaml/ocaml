@@ -111,7 +111,8 @@ let iterator =
               | { pparam_desc = Pparam_val _ } -> false)
             params
         then function_without_value_parameters loc
-    | Pexp_struct_item ({pstr_desc = Pstr_open _ |
+    | Pexp_struct_item ({pstr_desc = Pstr_extension _ |
+                                     Pstr_open _ |
                                      Pstr_exception _ |
                                      Pstr_module _}, _) -> ()
     | Pexp_struct_item ({pstr_loc = loc}, _) -> invalid_struct_item loc
