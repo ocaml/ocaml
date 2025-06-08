@@ -394,31 +394,19 @@ let x = Phantom.z
 module Phantom : sig type 'a t = int val z : 'a t end
 val x : 'a Phantom.t = 1
 |}]
+
 let __ (x : int Phantom.t) = ()
 [%%expect{|
-Line 1, characters 7-26:
-1 | let __ (x : int Phantom.t) = ()
-           ^^^^^^^^^^^^^^^^^^^
-Alert deprecated: implicitly converting between a type and its deprecated representation
+val __ : int Phantom.t -> unit = <fun>
+|}]
 
-val __ : int -> unit = <fun>
-|}] (* bug: this shouldn't warn *)
 let __ () = (assert false : float Phantom.t)
 [%%expect{|
-Line 1, characters 12-44:
-1 | let __ () = (assert false : float Phantom.t)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Alert deprecated: implicitly converting between a type and its deprecated representation
+val __ : unit -> float Phantom.t = <fun>
+|}]
 
-val __ : unit -> int = <fun>
-|}] (* bug: this shouldn't warn *)
 let __ (x : int Phantom.t) = (x : float Phantom.t)
 [%%expect{|
-Line 1, characters 7-26:
-1 | let __ (x : int Phantom.t) = (x : float Phantom.t)
-           ^^^^^^^^^^^^^^^^^^^
-Alert deprecated: implicitly converting between a type and its deprecated representation
-
 Line 1, characters 30-31:
 1 | let __ (x : int Phantom.t) = (x : float Phantom.t)
                                   ^
@@ -435,25 +423,9 @@ Line 1, characters 30-31:
 Error: The value "x" has type "int Phantom.t" = "int"
        but an expression was expected of type "float Phantom.t" = "int"
        Type "int" is not compatible with type "float"
-|}, Principal{|
-Line 1, characters 7-26:
-1 | let __ (x : int Phantom.t) = (x : float Phantom.t)
-           ^^^^^^^^^^^^^^^^^^^
-Alert deprecated: implicitly converting between a type and its deprecated representation
-
-Line 1, characters 30-31:
-1 | let __ (x : int Phantom.t) = (x : float Phantom.t)
-                                  ^
-Alert deprecated: implicitly converting between a type and its deprecated representation
-
-Line 1, characters 29-50:
-1 | let __ (x : int Phantom.t) = (x : float Phantom.t)
-                                 ^^^^^^^^^^^^^^^^^^^^^
-Alert deprecated: implicitly converting between a type and its deprecated representation
-
-val __ : int -> int = <fun>
-|}] (* bug: apart from the noise from the previous bugs, the divergence between principal
-       and non-principal is weird. *)
+|}] (* This type error is introduced by deprecated_repr, but it seems like an
+       unimportant corner case. Perhaps type aliases should be rejected if they
+       are annotated with @@deprecated_repr. *)
 
 (* When user code has type errors, we probably don't want to emit random deprecation
    warnings. *)

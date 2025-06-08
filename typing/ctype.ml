@@ -902,7 +902,9 @@ let rec update_level env level expand ty =
         in
         begin try
           if not needs_expand then raise Cannot_expand;
-          let ty' = !forward_try_expand_safe env ty in
+          let ty' =
+            !forward_try_expand_safe ~through_deprecated_repr:false env ty
+          in
           link_type ty ty';
           update_level env level expand ty'
         with Cannot_expand ->
