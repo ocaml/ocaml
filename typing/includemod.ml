@@ -928,13 +928,13 @@ and signature_components ~core ~direction ~loc old_env env subst
                 let elt1, elt2 = paired_uids in
                 match pos with
                 | Negative ->
-                    (Cmt_format.Declaration_to_declaration, elt2, elt1)
+                    (Uid.Deps.Declaration_to_declaration, elt2, elt1)
                 | Positive ->
-                    (Cmt_format.Declaration_to_declaration, elt1, elt2)
+                    (Uid.Deps.Declaration_to_declaration, elt1, elt2)
                 | Strictly_positive ->
-                    (Cmt_format. Definition_to_declaration, elt1, elt2)
+                    (Uid.Deps.Definition_to_declaration, elt1, elt2)
               in
-              Cmt_format.record_declaration_dependency paired_uids
+              Uid.Deps.record_declaration_dependency paired_uids
             end;
             let runtime_coercions =
               if present_at_runtime then [pos,x] else []

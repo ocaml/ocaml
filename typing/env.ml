@@ -1409,6 +1409,35 @@ let find_module path env =
 let find_module_lazy path env =
   find_module_lazy ~alias:false path env
 
+let find_uid namespace path env =
+  try
+    Option.some @@ match (namespace : Shape.Sig_component_kind.t) with
+      | Value ->
+        let path = normalize_value_path None env path in
+        let vd = find_value path env in
+        vd.val_uid
+      | Type | Extension_constructor | Constructor | Label ->
+        let path = normalize_type_path None env path in
+        let td = find_type path env in
+        td.type_uid
+      | Module ->
+        let path = normalize_module_path None env path in
+        let md = find_module path env in
+        md.md_uid
+      | Module_type ->
+        let path = normalize_modtype_path env path in
+        let mtd = find_modtype path env in
+        mtd.mtd_uid
+      | Class ->
+        let path = normalize_value_path None env path in
+        let cty = find_class path env in
+        cty.cty_uid
+      | Class_type ->
+        let path = normalize_type_path None env path in
+        let clty = find_cltype path env in
+        clty.clty_uid
+  with Not_found -> None
+
 (* Find the manifest type associated to a type when appropriate:
    - the type should be public or should have a private row,
    - the type should have an associated manifest type. *)

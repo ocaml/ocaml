@@ -20,8 +20,10 @@ open Shape
 type result =
   | Resolved of Uid.t
   | Resolved_alias of Uid.t * result
+  | Resolved_local_use of Uid.t
   | Unresolved of t
   | Approximated of Uid.t option
+  | Missing_uid of t
   | Internal_error_missing_uid
 
 let rec print_result fmt result =
@@ -31,12 +33,16 @@ let rec print_result fmt result =
   | Resolved_alias (uid, r) ->
       Format.fprintf fmt "@[Alias:@ %a@] ->@ %a"
         Uid.print uid print_result r
+  | Resolved_local_use uid ->
+      Format.fprintf fmt "@[Local opaque:@ %a@]" Uid.print uid
   | Unresolved shape ->
       Format.fprintf fmt "@[Unresolved:@ %a@]" print shape
   | Approximated (Some uid) ->
       Format.fprintf fmt "@[Approximated:@ %a@]" Uid.print uid
   | Approximated None ->
       Format.fprintf fmt "Approximated: No uid"
+  | Missing_uid shape ->
+      Format.fprintf fmt "Missing uid: %a" print shape
   | Internal_error_missing_uid ->
       Format.fprintf fmt "Missing uid"
 
@@ -61,6 +67,7 @@ end) = struct
     | NAlias of delayed_nf
     | NProj of nf * Item.t
     | NLeaf
+    | NPack of Ident.t
     | NComp_unit of string
     | NError of string
 
@@ -89,6 +96,48 @@ end) = struct
      bind [x] to [None] in the environment. [Some v] is used for
      actual substitutions, for example in [App(Abs(x, body), t)], when
      [v] is a thunk that will evaluate to the normal form of [t]. *)
+
+  (* [print_nf] is an (incomplete) printer for normal forms
+     useful for debugging purposes *)
+
+  let[@warning "-32"] print_nf fmt nf =
+    let print_uid_opt =
+      Format.pp_print_option (fun fmt -> Format.fprintf fmt "<%a>" Uid.print)
+    in
+    let rec aux fmt { uid; desc; _ }=
+      match desc with
+      | NComp_unit name -> Format.fprintf fmt "CU %s" name
+      | NLeaf ->
+          Format.fprintf fmt "<%a>" print_uid_opt uid
+      | NPack id ->
+          Format.fprintf fmt "<%a>" Ident.print id
+      | NVar var ->
+          Format.fprintf fmt "%a%a" Ident.print var print_uid_opt uid
+      | NProj (nf, item) ->
+        Format.fprintf fmt "(%a.%a)%a" aux nf Item.print item print_uid_opt uid
+      | NApp (nf1, nf2) ->
+          Format.fprintf fmt "@[%a(@,%a)%a@]" aux nf1 aux nf2
+            print_uid_opt uid
+      | NStruct map ->
+          let print_map fmt =
+            Item.Map.iter (fun item (Thunk (_, t)) ->
+                Format.fprintf fmt "@[<hv 2>%a ->@ %a;@]@,"
+                  Item.print item
+                  print t
+              )
+          in
+          if Item.Map.is_empty map then
+            Format.fprintf fmt "@[<hv>{%a}@]" print_uid_opt uid
+          else
+            Format.fprintf fmt "{@[<v>%a@,%a@]}" print_uid_opt uid print_map map
+      | NAlias (Thunk (_, t)) ->
+        Format.fprintf fmt "Alias@[(@[<v>%a@,<delayed:%a>@])@]"
+          print_uid_opt uid print t
+      | NError s ->
+          Format.fprintf fmt "Error %s" s
+      | NAbs _ -> ()
+    in
+    Format.fprintf fmt "@[%a@]@;" aux nf
 
   let approx_nf nf = { nf with approximated = true }
 
@@ -234,6 +283,7 @@ end) = struct
               reduce env res
           end
       | Leaf -> return NLeaf
+      | Pack id -> return (NPack id)
       | Struct m ->
           let mnf = Item.Map.map (delay_reduce env) m in
           return (NStruct mnf)
@@ -268,6 +318,7 @@ end) = struct
     | NProj (nf, item) ->
         Proj (read_back nf, item)
     | NLeaf -> Leaf
+    | NPack path -> Pack path
     | NComp_unit s -> Comp_unit s
     | NError s -> Error s
 
@@ -298,7 +349,7 @@ end) = struct
     | NAlias _ -> false
     | NComp_unit _ -> true
     | NError _ -> false
-    | NLeaf -> false
+    | NLeaf | NPack _ -> false
 
   let rec reduce_aliases_for_uid env (nf : nf) =
     match nf with
@@ -307,13 +358,7 @@ end) = struct
         Resolved_alias (uid, result)
     | { uid = Some uid; approximated = false; _ } -> Resolved uid
     | { uid; approximated = true } -> Approximated uid
-    | { uid = None; approximated = false; _ } ->
-      (* A missing Uid after a complete reduction means the Uid was first
-         missing in the shape which is a code error. Having the
-         [Missing_uid] reported will allow Merlin (or another tool working
-         with the index) to ask users to report the issue if it does happen.
-      *)
-      Internal_error_missing_uid
+    | { uid = None; approximated = false; _ } -> Missing_uid (read_back env nf)
 
   let reduce_for_uid global_env t =
     let fuel = ref Params.fuel in
@@ -339,4 +384,51 @@ module Local_reduce =
   end)
 
 let local_reduce = Local_reduce.reduce
-let local_reduce_for_uid = Local_reduce.reduce_for_uid
+
+module Ident_and_uid = Identifiable.Make (Identifiable.Pair (Ident) (Uid))
+
+let uid_memo : Uid.t Ident_and_uid.Tbl.t ref =
+  Local_store.s_table Ident_and_uid.Tbl.create 16
+
+let make_definition_uid ~current_unit parent_id decl_uid =
+  match Ident_and_uid.Tbl.find_opt !uid_memo (parent_id, decl_uid) with
+  | Some uid -> uid
+  | None ->
+    let uid = Uid.mk_local_opaque ~current_unit in
+    Uid.Deps.record_declaration_dependency
+      (Definition_to_declaration, uid, decl_uid);
+      Ident_and_uid.Tbl.add !uid_memo (parent_id, decl_uid) uid;
+    uid
+
+let rec stuck_on_var_or_pack (t : t) =
+  match t.desc with
+  | Var id | Pack id -> Some id
+  | App (t, _) | Proj (t, _) -> stuck_on_var_or_pack t
+  | Struct _ | Abs _ -> None
+  | Alias _ -> None
+  | Comp_unit _ -> None
+  | Error _ -> None
+  | Leaf -> None
+
+let local_reduce_for_uid env ~namespace path shape =
+  let rec aux = function
+  | Resolved_alias (uid, result) -> Resolved_alias (uid, aux result)
+  | Missing_uid t ->
+    (* A missing Uid after a complete reduction means either that we found an
+       occurrence of a locally-defined, opaque, item (which happens when using
+       items from functor arguments and first class modules) or that the Uid was
+       first missing in the shape which is a code error.  *)
+    begin match stuck_on_var_or_pack t with
+    | None -> Internal_error_missing_uid
+    | Some parent_id ->
+      begin match Env.find_uid namespace path env with
+        | Some uid ->
+            let current_unit = Env.get_current_unit () in
+            let uid = make_definition_uid ~current_unit parent_id uid in
+            Resolved_local_use uid
+        | None -> Internal_error_missing_uid
+      end
+    end
+  | otherwise -> otherwise
+  in
+  aux (Local_reduce.reduce_for_uid env shape )

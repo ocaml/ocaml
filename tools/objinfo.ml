@@ -149,7 +149,7 @@ let print_cmt_infos cmt =
     in
     Format.printf "@[<v>";
     Array.iter (fun (rk, u1, u2) ->
-      let rk = match rk with
+      let rk = match (rk : Shape.Uid.Deps.kind) with
         | Definition_to_declaration -> "<-"
         | Declaration_to_declaration -> "<->"
       in
@@ -158,6 +158,7 @@ let print_cmt_infos cmt =
         rk
         Shape.Uid.print u2) arr;
     Format.printf "@]";
+    Format.print_flush ()
   end;
   if !decls then begin
     printf "\nUid of decls:\n";

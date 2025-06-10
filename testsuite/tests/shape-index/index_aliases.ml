@@ -7,7 +7,7 @@ all_modules = "index_aliases.ml";
 ocamlc.byte;
 check-ocamlc.byte-output;
 
-program = "-quiet -index -decls index_aliases.cmt";
+program = "-quiet -index -uid-deps -decls index_aliases.cmt";
 output = "out_objinfo";
 ocamlobjinfo;
 
@@ -41,12 +41,13 @@ module X = (val x)
 module Y = X.M
 module Z = Y
 
-(* FIXME: this should be (Approx (No_uid)), not (Internal_error_no_uid) *)
+(* Since #14120 synthetic Uids are generated to represent the definitions of
+   items of first class modules so [Z.s] does appear in the index (same for
+   FArg.t) *)
 let _ = Z.s
 
 module Arg = struct end
 module FArg = X.F (Arg)
 open FArg
 
-(* FIXME: this should be (Approx (No_uid)), not (Internal_error_no_uid) *)
 type u = t

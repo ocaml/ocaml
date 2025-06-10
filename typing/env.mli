@@ -113,6 +113,9 @@ val find_module_address: Path.t -> t -> address
 val find_class_address: Path.t -> t -> address
 val find_constructor_address: Path.t -> t -> address
 
+(** Lookup an item in the environment and returns its Uid. *)
+val find_uid : Shape.Sig_component_kind.t -> Path.t -> t -> Uid.t option
+
 val shape_of_path:
   namespace:Shape.Sig_component_kind.t -> t -> Path.t -> Shape.t
 
