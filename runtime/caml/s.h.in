@@ -324,4 +324,6 @@
 
 #undef HAVE_LABELS_AS_VALUES
 
+#undef TSAN_FUNC_EXIT_SIGNATURE
+
 /* Define if the C compiler supports the labels as values extension. */

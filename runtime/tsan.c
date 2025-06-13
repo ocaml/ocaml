@@ -243,7 +243,7 @@ void caml_tsan_exit_on_raise(uintnat pc, char* sp, char* trapsp)
     }
 
     caml_tsan_debug_log_pc("forced__tsan_func_exit for", pc);
-    __tsan_func_exit(NULL);
+    caml_tsan_func_exit();
     pc = next_pc;
   }
 }
@@ -292,7 +292,7 @@ void caml_tsan_exit_on_raise_c(char* limit)
 #ifdef TSAN_DEBUG
     caml_tsan_debug_log_pc("forced__tsan_func_exit for", prev_pc);
 #endif
-    __tsan_func_exit(NULL);
+    caml_tsan_func_exit();
 
     if ((char*)sp >= limit) {
       break;
@@ -326,7 +326,7 @@ void caml_tsan_exit_on_perform(uintnat pc, char* sp)
     }
 
     caml_tsan_debug_log_pc("forced__tsan_func_exit for", pc);
-    __tsan_func_exit(NULL);
+    caml_tsan_func_exit();
 
     pc = next_pc;
   }
@@ -368,7 +368,7 @@ CAMLno_tsan void caml_tsan_entry_on_resume(uintnat pc, char* sp,
 
   caml_tsan_entry_on_resume(next_pc, sp, stack);
   caml_tsan_debug_log_pc("forced__tsan_func_entry for", pc);
-  __tsan_func_entry((void*)next_pc);
+  caml_tsan_func_entry((void*)next_pc);
 }
 
 #endif // NATIVE_CODE

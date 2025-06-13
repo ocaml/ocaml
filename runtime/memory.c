@@ -209,7 +209,7 @@ CAMLno_tsan /* We remove the ThreadSanitizer instrumentation of memory accesses
 CAMLexport CAMLweakdef void caml_modify (volatile value *fp, value val)
 {
 #if defined(WITH_THREAD_SANITIZER) && defined(NATIVE_CODE)
-  __tsan_func_entry(__builtin_return_address(0));
+  caml_tsan_func_entry(__builtin_return_address(0));
 #endif
 
   write_barrier((value)fp, 0, *fp, val);
@@ -222,8 +222,8 @@ CAMLexport CAMLweakdef void caml_modify (volatile value *fp, value val)
    * CAMLno_tsan. We signal it to ThreadSanitizer as a plain store (see
    * ocaml-multicore/ocaml-tsan/pull/22#issuecomment-1377439074 on Github).
    */
-  __tsan_write8((void *)fp);
-  __tsan_func_exit(NULL);
+  caml_tsan_write8((void *)fp);
+  caml_tsan_func_exit();
 #endif
 
   atomic_store_release(&Op_atomic_val((value)fp)[0], val);

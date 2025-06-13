@@ -796,6 +796,7 @@ build_os
 build_vendor
 build_cpu
 build
+TSAN_FUNC_EXIT_SIGNATURE
 ar_supports_response_files
 QS
 TARGET_LIBDIR
@@ -3506,6 +3507,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L037
 
 
  # TODO: rename this variable
+
 
 
 
@@ -19643,6 +19645,108 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
   LDFLAGS="$SAVED_LDFLAGS"
+
+  # We use tsan builtins which are internal functions and might not be backwards compatible.
+  # We explicitly check if the compiler uses the same declarations we expect
+
+  # Some tsan builtins like __tsan_func_exit have either of 2 signatures void(void) or void(void *) (PR #14082)
+  # We first do a single check for all builtins for which we expect only one signature
+  # Then check builtins for which we expect one of multiple signatures and set a #define according to which one is found
+
+  SAVED_LDFLAGS="$LDFLAGS"
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for ThreadSanitizer builtins" >&5
+printf %s "checking for ThreadSanitizer builtins... " >&6; }
+  LDFLAGS="$LDFLAGS -fsanitize=thread"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+      void AnnotateHappensBefore(const char *f, int l, void *addr);
+      void AnnotateHappensAfter (const char *f, int l, void *addr);
+      void __tsan_func_entry   (void *);
+      void __tsan_write8       (void *location);
+
+      int main(void) {
+        AnnotateHappensBefore(__FILE__, __LINE__, (void*)0);
+        AnnotateHappensAfter (__FILE__, __LINE__, (void*)0);
+        __tsan_func_entry   ((void*)0);
+        __tsan_write8       ((void*)0);
+        return 0;
+      }
+
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+else $as_nop
+   as_fn_error $? "libtsan provided uses unexpected builtins" "$LINENO" 5
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+  LDFLAGS="$SAVED_LDFLAGS"
+
+  SAVED_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$LDFLAGS -fsanitize=thread"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+      void __tsan_func_exit(void *);
+
+      int main(void) {
+        __tsan_func_exit((void*)0);
+        return 0;
+      }
+
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+   tsan_func_exit_signature=VOID_VOID_PTR;
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+  LDFLAGS="$SAVED_LDFLAGS"
+
+  SAVED_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$LDFLAGS -fsanitize=thread"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+      void __tsan_func_exit();
+
+      int main(void) {
+        __tsan_func_exit();
+        return 0;
+      }
+
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+   tsan_func_exit_signature=VOID_VOID;
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+  LDFLAGS="$SAVED_LDFLAGS"
+
+  # Define a C macro based on the detected __tsan_func_exit signature
+  case $tsan_func_exit_signature in #(
+  VOID_VOID_PTR) :
+
+printf "%s\n" "#define TSAN_FUNC_EXIT_SIGNATURE 1" >>confdefs.h
+ ;; #(
+  VOID_VOID) :
+
+printf "%s\n" "#define TSAN_FUNC_EXIT_SIGNATURE 2" >>confdefs.h
+ ;; #(
+  *) :
+    as_fn_error $? "libtsan provided uses unexpected type of builtin __tsan_func_exit" "$LINENO" 5 ;;
+esac
 
   case $ocaml_cc_vendor in #(
   gcc-[0123456789]-*|gcc-10-*|clang-*) :

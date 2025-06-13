@@ -93,9 +93,38 @@ CAMLextern void caml_tsan_exit_on_perform(uintnat pc, char* sp);
 CAMLextern void caml_tsan_entry_on_resume(uintnat pc, char* sp,
     struct stack_info const* stack);
 
+
+#if defined(WITH_THREAD_SANITIZER)
+
+// __tsan* functions are not to be used directly, but rather through the caml_tsan_* wrappers
+
+// __tsan_func_exit can have either of the 2 signatures (#14082)
+#if TSAN_FUNC_EXIT_SIGNATURE == 1 // void(void)
 extern void __tsan_func_exit(void*);
+#elif TSAN_FUNC_EXIT_SIGNATURE == 2 // void(void*)
+extern void __tsan_func_exit(void);
+#endif
+
 extern void __tsan_func_entry(void*);
 void __tsan_write8(void *location);
+
+Caml_inline void caml_tsan_func_exit(void) {
+  #if TSAN_FUNC_EXIT_SIGNATURE == 1 // void(void)
+    __tsan_func_exit(NULL);
+  #elif TSAN_FUNC_EXIT_SIGNATURE == 2 // void(void*)
+    __tsan_func_exit();
+  #endif
+}
+
+Caml_inline void caml_tsan_func_entry(void *retaddr) {
+  __tsan_func_entry(retaddr);
+}
+
+Caml_inline void caml_tsan_write8(void *location) {
+  __tsan_write8(location);
+}
+
+#endif /* WITH_THREAD_SANITIZER */
 
 #endif /* CAML_INTERNALS */
 
