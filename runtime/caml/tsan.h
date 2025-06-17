@@ -96,8 +96,6 @@ CAMLextern void caml_tsan_entry_on_resume(uintnat pc, char* sp,
 
 #if defined(WITH_THREAD_SANITIZER)
 
-// __tsan* functions are not to be used directly, but rather through the caml_tsan_* wrappers
-
 // __tsan_func_exit can have either of the 2 signatures (#14082)
 #if TSAN_FUNC_EXIT_SIGNATURE == 1 // void(void)
 extern void __tsan_func_exit(void*);

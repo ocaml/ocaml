@@ -2262,7 +2262,7 @@ OCaml 5.2.0 (13 May 2024)
   Adds checks in the configure step to check if the tsan internal builtins
   provided by the tsan library are the same as what we expect, introduces
   wrappers for `caml_tsan_*` wrappers for the `__tsan_*` functions we use.
-  (Hari Hara Naveen S, report by Hari Hara Naveen S, review by TBD) 
+  (Hari Hara Naveen S, report by Hari Hara Naveen S, review by TBD)
 
 - #10652, #12720: fix evaluation order in presence of optional arguments
   (Jacques Garrigue, report by Leo White, review by Vincent Laviron)

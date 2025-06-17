@@ -1981,12 +1981,17 @@ AS_IF([$tsan],
                    Try installing it on your system.])])
   LDFLAGS="$SAVED_LDFLAGS"
 
-  # We use tsan builtins which are internal functions and might not be backwards compatible.
+  # We use tsan builtins which are internal functions
+  # and might not be backwards compatible.
   # We explicitly check if the compiler uses the same declarations we expect
 
-  # Some tsan builtins like __tsan_func_exit have either of 2 signatures void(void) or void(void *) (PR #14082)
-  # We first do a single check for all builtins for which we expect only one signature
-  # Then check builtins for which we expect one of multiple signatures and set a #define according to which one is found
+  # Some tsan builtins like __tsan_func_exit have either of
+  # 2 signatures void(void) or void(void *) (PR #14082)
+  # We first do a single check for all builtins
+  # for which we expect only one signature
+
+  # Then check builtins for which we expect one of multiple signatures
+  # and set a preprocessor definition according to which one is found
 
   SAVED_LDFLAGS="$LDFLAGS"
   AC_MSG_CHECKING([for ThreadSanitizer builtins])
@@ -2057,7 +2062,8 @@ AS_IF([$tsan],
     [VOID_VOID],
       [AC_DEFINE([TSAN_FUNC_EXIT_SIGNATURE], [2],
                  [ThreadSanitizer exit function signature: void(void)])],
-    [AC_MSG_ERROR([libtsan provided uses unexpected type of builtin __tsan_func_exit])])
+    [AC_MSG_ERROR([libtsan provided uses
+                        unexpected type of builtin __tsan_func_exit])])
 
   AS_CASE([$ocaml_cc_vendor],
     [gcc-[[0123456789]]-*|gcc-10-*|clang-*],

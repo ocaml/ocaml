@@ -19646,12 +19646,17 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
   LDFLAGS="$SAVED_LDFLAGS"
 
-  # We use tsan builtins which are internal functions and might not be backwards compatible.
+  # We use tsan builtins which are internal functions
+  # and might not be backwards compatible.
   # We explicitly check if the compiler uses the same declarations we expect
 
-  # Some tsan builtins like __tsan_func_exit have either of 2 signatures void(void) or void(void *) (PR #14082)
-  # We first do a single check for all builtins for which we expect only one signature
-  # Then check builtins for which we expect one of multiple signatures and set a #define according to which one is found
+  # Some tsan builtins like __tsan_func_exit have either of
+  # 2 signatures void(void) or void(void *) (PR #14082)
+  # We first do a single check for all builtins
+  # for which we expect only one signature
+
+  # Then check builtins for which we expect one of multiple signatures
+  # and set a preprocessor definition according to which one is found
 
   SAVED_LDFLAGS="$LDFLAGS"
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for ThreadSanitizer builtins" >&5
@@ -19745,7 +19750,8 @@ printf "%s\n" "#define TSAN_FUNC_EXIT_SIGNATURE 1" >>confdefs.h
 printf "%s\n" "#define TSAN_FUNC_EXIT_SIGNATURE 2" >>confdefs.h
  ;; #(
   *) :
-    as_fn_error $? "libtsan provided uses unexpected type of builtin __tsan_func_exit" "$LINENO" 5 ;;
+    as_fn_error $? "libtsan provided uses
+                        unexpected type of builtin __tsan_func_exit" "$LINENO" 5 ;;
 esac
 
   case $ocaml_cc_vendor in #(
