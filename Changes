@@ -22,11 +22,21 @@ Working version
 
 ### Runtime system:
 
+- #14035: Fix the alignment of _Atomic long long unsigned int fields
+  before GCC 11.1 on i686. Silence GCC note on newer versions.
+  (Antonin Décimo, review by Sadiq Jaffer)
+
 - #13574, #13594: Generational scanning of stack frames for ARM 64 bits, POWER,
   and RISC-V.  This reduces minor GC work in the presence of deep call stacks.
   (Xavier Leroy, review by Miod Vallat, Gabriel Scherer and Olivier Nicole)
 
 ### Code generation and optimizations:
+
+- #13262, #14074: fix performance issue on Apple Silicon macOS by emitting
+  `stlr` instead of `dmb ishld; str`.
+  (KC Sivaramakrishnan, report by François Pottier, analysis by Frédéric Bour,
+  Xavier Leroy, Miod Vallat, Gabriel Scherer and Stephen Dolan, review by Miod
+  Vallat, Vincent Laviron and Xavier Leroy)
 
 ### Standard library:
 
@@ -62,6 +72,17 @@ Working version
   Before, it was succeeding with `module N : sig module type T end`, now it
   fails. Similarly for anonymous functor calls (of the form `F(struct ... end))
   (Clement Blaudeau, review by Gabriel Scherer)
+
+* #14066: catch invalid aliases introduced by signature constraints during
+  merging rather than in subtyping:
+  ```ocaml
+    module X = struct end module F (_:sig end) = struct end
+    module type T = (sig module X0 : sig end module X1 = X0 end)
+      with module X0 := F(X)
+  ```
+  Before, it failed with a subtyping error. Now, it fails with a proper error,
+  explaining that `X1` would keep an invalid alias to `F(X)`
+  (Clement Blaudeau, review by Florian Angeletti)
 
 ### Other libraries:
 
@@ -116,12 +137,20 @@ Working version
   fail to load.
   (toastal)
 
+- #14077: Add missing `item-attribute` rule for `let-binding`s in documentation
+  for attributes.
+  (Shon Feder)
+
 ### Compiler user-interface and warnings:
 
 - #12628: Improved error message for unsafe values: print out the full path for
   the value that is unsafe when they are detected during the compilation of
   recursive modules.
   (Shivam Acharya, review by Gabriel Scherer and Florian Angeletti)
+
+- #14076: error messages, add a short explanation for mismatched universal
+  variables.
+  (Florian Angeletti, review by Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
 

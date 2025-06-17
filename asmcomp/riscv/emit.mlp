@@ -354,7 +354,7 @@ let emit_instr env i =
       assert (not is_atomic);
       `	flw	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg i.arg.(0)})\n`;
       `	fcvt.d.s	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
-  | Lop(Iload { memory_chunk = Word_int | Word_val; addressing_mode = Iindexed ofs; is_atomic } ) ->
+  | Lop(Iload { memory_chunk = Sixtyfour | Word_int | Word_val; addressing_mode = Iindexed ofs; is_atomic } ) ->
       if is_atomic then `	fence	rw, rw\n`;
       `	ld	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg i.arg.(0)})\n`;
       if is_atomic then `	fence	r, rw\n`
@@ -368,7 +368,7 @@ let emit_instr env i =
         | Sixteen_signed -> "lh"
         | Thirtytwo_unsigned -> "lwu"
         | Thirtytwo_signed -> "lw"
-        | Word_int | Word_val | Single -> assert false
+        | Word_int | Word_val | Single | Sixtyfour -> assert false
         | Double -> "fld"
       in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg i.arg.(0)})\n`
@@ -389,6 +389,7 @@ let emit_instr env i =
         | Sixteen_unsigned | Sixteen_signed -> "sh"
         | Thirtytwo_unsigned | Thirtytwo_signed -> "sw"
         | Word_int | Word_val | Single -> assert false
+        | Sixtyfour -> "sd"
         | Double -> "fsd"
       in
       `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_int ofs}({emit_reg i.arg.(1)})\n`

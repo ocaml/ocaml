@@ -715,18 +715,11 @@ module rec Bad : A = Bad;;
 [%%expect{|
 module type Alias = sig module N : sig end module M = N end
 module F : (X : sig end) -> sig type t end
-Line 1:
-Error: Module type declarations do not match:
-         module type A = sig module M = F(List) end
-       does not match
-         module type A = sig module M = F(List) end
-       At position "module type A = <here>"
-       Module types do not match:
-         sig module M = F(List) end
-       is not equal to
-         sig module M = F(List) end
-       At position "module type A = sig module M : <here> end"
-       Module "F(List)" cannot be aliased
+Line 3, characters 16-46:
+3 | module type A = Alias with module N := F(List);;
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this "with" constraint, replacing "N" by "F(Stdlib.List)" would
+       introduce an invalid alias at "M"
 |}];;
 
 (* Shinwell 2014-04-23 *)

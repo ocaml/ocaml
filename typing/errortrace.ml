@@ -19,10 +19,16 @@ open Types
 open Format_doc
 
 type position = First | Second
+type order = Less | Equal | More
 
 let swap_position = function
   | First -> Second
   | Second -> First
+
+let swap_order = function
+  | Less -> More
+  | Equal -> Equal
+  | More -> Less
 
 let print_pos ppf = function
   | First -> fprintf ppf "first"
@@ -114,6 +120,7 @@ type ('a, 'variety) elt =
   | Incompatible_fields : { name:string; diff: type_expr diff } -> ('a, _) elt
       (* Could move [Incompatible_fields] into [obj] *)
   | First_class_module: first_class_module -> ('a,_) elt
+  | Univar_mismatch of { order:order; diff:type_expr diff }
   (* Unification & Moregen; included in Equality for simplicity *)
   | Rec_occur : type_expr * type_expr -> ('a, _) elt
 
@@ -131,6 +138,7 @@ let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
   | Variant _ | Obj _ | Function_label_mismatch _ | Tuple_label_mismatch _
   | Incompatible_fields _
   | Rec_occur (_, _) | First_class_module _  as x -> x
+  | Univar_mismatch _ as x -> x
 
 let map f t = List.map (map_elt f) t
 
@@ -147,6 +155,11 @@ let swap_elt (type variety) : ('a, variety) elt -> ('a, variety) elt = function
     Variant (Fixed_row(swap_position pos,k,f))
   | Variant (No_tags(pos,f)) ->
     Variant (No_tags(swap_position pos,f))
+  | Univar_mismatch d ->
+      Univar_mismatch {
+        order = swap_order d.order;
+        diff = swap_diff d.diff
+      }
   | x -> x
 
 let swap_trace e = List.map swap_elt e

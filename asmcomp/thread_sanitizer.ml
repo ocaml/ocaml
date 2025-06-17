@@ -34,6 +34,7 @@ let bit_size memory_chunk =
   | Byte_unsigned | Byte_signed -> 8
   | Sixteen_unsigned | Sixteen_signed -> 16
   | Thirtytwo_unsigned | Thirtytwo_signed -> 32
+  | Sixtyfour -> 64
   | Word_int | Word_val -> Sys.word_size
   | Single -> 32
   | Double -> 64
@@ -57,7 +58,7 @@ end
 
 let machtype_of_memory_chunk = function
   | Byte_unsigned | Byte_signed | Sixteen_unsigned | Sixteen_signed
-  | Thirtytwo_unsigned | Thirtytwo_signed | Word_int ->
+  | Thirtytwo_unsigned | Thirtytwo_signed | Word_int | Sixtyfour ->
     typ_int
   | Word_val -> typ_val
   | Single | Double -> typ_float

@@ -34,7 +34,7 @@ jobs:
 # We then upload the compiler tree as a build artifact to enable re-use in
 # subsequent jobs.
   build:
-    runs-on: 'ubuntu-24.04'
+    runs-on: ubuntu-latest
     outputs:
       manual_changed: ${{ steps.manual.outputs.manual_changed }}
     steps:
@@ -81,7 +81,7 @@ jobs:
   normal:
     name: ${{ matrix.name }}
     needs: [build, config]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:

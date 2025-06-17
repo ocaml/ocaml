@@ -57,6 +57,7 @@ type error =
   | With_makes_applicative_functor_ill_typed of
       Longident.t * Path.t * Includemod.explanation
   | With_changes_module_alias of Longident.t * Ident.t * Path.t
+  | With_creates_invalid_aliases of Ident.t * Path.t * Path.t
   | With_cannot_remove_constrained_type
   | With_package_manifest of Longident.t * type_expr
   | Repeated_name of Sig_component_kind.t * string
@@ -249,21 +250,24 @@ let rec iter_path_apply p ~f =
      f p1 p2 (* after recursing, so we know both paths are well typed *)
   | Pextra_ty _ -> assert false
 
-let path_is_strict_prefix =
-  let rec list_is_strict_prefix l ~prefix =
+(** Checks if a flat (without functor applications) path [path] admits [~prefix]
+    as a prefix, i.e. if [path = ~prefix::suffix]. The [~strict] flag indicates
+    if equal paths should be rejected *)
+let path_is_prefix ~strict =
+  let rec list_is_prefix l ~prefix =
     match l, prefix with
-    | [], [] -> false
+    | [], [] -> (not strict)
     | _ :: _, [] -> true
     | [], _ :: _ -> false
     | s1 :: t1, s2 :: t2 ->
-       String.equal s1 s2 && list_is_strict_prefix t1 ~prefix:t2
+       String.equal s1 s2 && list_is_prefix t1 ~prefix:t2
   in
   fun path ~prefix ->
     match Path.flatten path, Path.flatten prefix with
     | `Contains_apply, _ | _, `Contains_apply -> false
     | `Ok (ident1, l1), `Ok (ident2, l2) ->
        Ident.same ident1 ident2
-       && list_is_strict_prefix l1 ~prefix:l2
+       && list_is_prefix l1 ~prefix:l2
 
 let iterator_with_env super env =
   let env = ref (lazy env) in
@@ -313,14 +317,27 @@ let retype_applicative_functor_type ~loc env funct arg =
    - applicative functor types: F(M).t might not be well typed anymore
    - aliases: module A = M still makes sense but it doesn't mean the same thing
      anymore, so it's forbidden until it's clear what we should do with it.
-   This function would be called with M.N.t and N.t to check for these uses. *)
+   This function would be called with M.N.t and N.t to check for these uses.
+
+   The first argument [paths] must be non-empty.
+*)
 let check_usage_of_path_of_substituted_item paths ~loc ~lid env super =
+  match paths with
+  | []  -> assert false (* affected paths must be a non-empty list *)
+  | [_] -> super (* Shallow substitution, nothing to check *)
+  | _   ->
+      let last, rest = match List.rev paths with
+        | [] -> assert false
+        | last :: rest -> last, rest
+      in
+      (* The last item is the one that's removed. We don't need to check how
+            it's used since it's replaced by a more specific type/module. *)
+      assert (match last with Pident _ -> true | _ -> false);
     { super with
       Btype.it_signature_item = (fun self -> function
       | Sig_module (id, _, { md_type = Mty_alias aliased_path; _ }, _, _)
         when List.exists
-               (fun path -> path_is_strict_prefix path ~prefix:aliased_path)
-               paths
+            (fun p -> path_is_prefix p ~prefix:aliased_path ~strict:true) rest
         ->
          let e = With_changes_module_alias (lid.txt, id, aliased_path) in
          raise(Error(loc, Lazy.force !env, e))
@@ -330,8 +347,7 @@ let check_usage_of_path_of_substituted_item paths ~loc ~lid env super =
       Btype.it_path = (fun referenced_path ->
         iter_path_apply referenced_path ~f:(fun funct arg ->
           if List.exists
-               (fun path -> path_is_strict_prefix path ~prefix:arg)
-               paths
+               (fun path -> path_is_prefix path ~prefix:arg ~strict:true) rest
           then
             let env = Lazy.force !env in
             match retype_applicative_functor_type ~loc env funct arg with
@@ -344,28 +360,54 @@ let check_usage_of_path_of_substituted_item paths ~loc ~lid env super =
       );
     }
 
-let do_check_after_substitution env ~loc ~lid paths sg =
-  with_type_mark begin fun mark ->
-  let env, iterator = iterator_with_env (Btype.type_iterators mark) env in
-  let last, rest = match List.rev paths with
-    | [] -> assert false
-    | last :: rest -> last, rest
-  in
-  (* The last item is the one that's removed. We don't need to check how
-        it's used since it's replaced by a more specific type/module. *)
-  assert (match last with Pident _ -> true | _ -> false);
-  let iterator = match rest with
-    | [] -> iterator
-    | _ :: _ ->
-        check_usage_of_path_of_substituted_item rest ~loc ~lid env iterator
-  in
-  iterator.Btype.it_signature iterator sg
-  end
+(** When doing destructive module substitutions [with module X = P], the path
+    [P] can be non-aliasable (by containing a functor parameter, functor
+    application or recursive module). If it is the case, module aliases to [X]
+    or any suffix [X.X'] would become invalid. This function checks that there
+    are no module aliases to suffixes of the list of affected paths [paths]. The
+    [invalid_alias] argument indicates if the test should be added to the
+    iterator. Its payload [invalid_alias_path] is just used for the error
+    message *)
+let check_invalid_aliases paths ~loc env invalid_alias super =
+  match invalid_alias with
+  | None -> super (* No possible introduction of invalid alias, so no extension
+                     of the iterator*)
+  | Some invalid_alias_path ->
+      let would_become_invalid_path aliased_path =
+        List.exists
+          (fun p -> path_is_prefix aliased_path ~prefix:p ~strict:false) paths
+      in
+      { super with
+        Btype.it_signature_item = (fun self -> function
+            | Sig_module (id, _, {md_type = Mty_alias aliased_path}, _, _)
+              when would_become_invalid_path aliased_path ->
+                raise(Error(loc, Lazy.force !env,
+                            With_creates_invalid_aliases
+                              (id, aliased_path, invalid_alias_path)))
+            | sig_item ->
+                super.Btype.it_signature_item self sig_item
+          );
+      }
 
-let check_usage_after_substitution env ~loc ~lid paths sg =
-  match paths with
-  | [_] -> ()
-  | _ -> do_check_after_substitution env ~loc ~lid paths sg
+(** This function checks the effect of destructive substitutions and the
+    introduction of invalid aliases *)
+let check_usage_after_substitution env ~loc ~lid paths ?(invalid_alias=None) sg=
+  match paths, invalid_alias with
+  (* Shallow substitution without introduction of an invalid alias : nothing to
+     check (so no traversal of the signature) *)
+  | [_], None -> ()
+  (* Deep substitution, or possible introduction of invalid alias *)
+  | _, _ ->
+      with_type_mark begin fun mark ->
+        let env, base_iterator =
+          iterator_with_env (Btype.type_iterators mark) env in
+        let iterator =
+          base_iterator
+          |> check_usage_of_path_of_substituted_item paths ~loc ~lid env
+          |> check_invalid_aliases paths ~loc env invalid_alias
+        in
+        iterator.Btype.it_signature iterator sg
+      end
 
 (* After substitution one also needs to re-check the well-foundedness
    of type declarations in recursive modules *)
@@ -515,11 +557,13 @@ module Merge = struct
   (* After the item has been patched, post processing does the actual
      destructive substitution and checks wellformedness of the resulting
      signature *)
-  let post_process ~destructive loc lid env paths sg replace =
+  let post_process ~destructive loc lid env paths sg
+      ?(invalid_alias=None) replace =
     let sg =
       if destructive then
         (* Check that the substitution will not make the signature ill-formed *)
-        let () = check_usage_after_substitution ~loc ~lid env paths sg in
+        let () = check_usage_after_substitution ~loc ~lid env paths
+        ~invalid_alias sg in
         (* Actually remove the identifiers *)
         let sub = Subst.change_locs Subst.identity loc in
         let sub = List.fold_left replace sub paths in
@@ -699,13 +743,13 @@ module Merge = struct
   *)
   let merge_module ~destructive env loc sg lid
       (md': Types.module_declaration) path remove_aliases =
+    let aliasable = Env.is_aliasable path env in
     let patch item s sig_env sg_for_env ~ghosts =
       match item with
       | Sig_module(id, pres, md, rs, priv) when Ident.name id = s ->
           let sig_env = Env.add_signature sg_for_env sig_env in
           let real_path = Pident id in
           if destructive then
-            let aliasable = Env.is_aliasable path sig_env in
             (* Inclusion check with the strengthened definition *)
             let _ =
               Includemod.strengthened_module_decl ~loc ~mark:true
@@ -727,7 +771,9 @@ module Merge = struct
     in
     let real_path,paths,_,sg = merge ~patch ~destructive env sg loc lid in
     let replace s p = Subst.Unsafe.add_module_path p path s in
-    let sg = post_process ~destructive loc lid env paths sg replace in
+    let invalid_alias = if (not aliasable) then (Some path) else None in
+    let sg =
+      post_process ~destructive loc lid env paths sg replace ~invalid_alias in
     real_path, lid, sg
 
   (** Module type constraint [sg with module type lid = mty]
@@ -3439,6 +3485,14 @@ let report_error ~loc _env = function
         Style.inline_code "with"
         (Style.as_inline_code longident) lid
         Style.inline_code (Path.name path)
+        Style.inline_code (Ident.name id)
+  | With_creates_invalid_aliases(id, path, invalid_path) ->
+      Location.errorf ~loc
+        "In this %a constraint,@ replacing %a@ by %a@ would @ \
+         introduce an invalid alias@ at %a"
+        Style.inline_code "with"
+        Style.inline_code (Path.name path)
+        Style.inline_code (Path.name invalid_path)
         Style.inline_code (Ident.name id)
   | With_cannot_remove_constrained_type ->
       Location.errorf ~loc

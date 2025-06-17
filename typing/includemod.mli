@@ -59,7 +59,6 @@ module Error: sig
     | Mt_core of core_module_type_symptom
     | Signature of signature_symptom
     | Functor of functor_symptom
-    | Invalid_module_alias of Path.t
     | After_alias_expansion of module_type_diff
 
 
@@ -215,7 +214,6 @@ type symptom =
       Ident.t * class_declaration * class_declaration *
       Ctype.class_match_failure list
   | Unbound_module_path of Path.t
-  | Invalid_module_alias of Path.t
 
 type pos =
   | Module of Ident.t

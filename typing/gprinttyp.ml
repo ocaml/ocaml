@@ -667,6 +667,11 @@ module Digraph = struct
     snd @@ List.fold_left
       (labeled_edge params id0)
       (0,gh) l
+  and package_constraint params id0 gh (l, ty) =
+    let l = labelr "%a =" Pp.longident (Option.get @@ Longident.unflatten l) in
+    edge params id0 l ty gh
+  and package_constraints params id0 l gh =
+    List.fold_left (package_constraint params id0) gh l
   and node params color ~lvl id tynode desc dg =
     let add_tynode l = add_node l color ~lvl id tynode dg in
     let mk fmt = labelk (fun l -> add_tynode (Decoration.make l)) fmt in
@@ -743,14 +748,9 @@ module Digraph = struct
         in
         { elts; graph = add_subgraph (labelr "polyvar", fields) main }
     | Types.Tpackage {pack_path; pack_cstrs} ->
-        let types = List.map snd pack_cstrs in
-        let pp_cstrs ppf (l, _) =
-          Pp.longident ppf (Option.get @@ Longident.unflatten l)
-        in
-        mk "[mod %a with %a]"
+        mk "[mod %a]"
           pp_path pack_path
-          Pp.(list ~sep:semi pp_cstrs) pack_cstrs
-        |> numbered types
+        |> package_constraints params id pack_cstrs
   and variant params id0 (elts,main,fields) (name,rf)  =
     let id = Index.subnode ~name id0 in
     let fnode = Node id in

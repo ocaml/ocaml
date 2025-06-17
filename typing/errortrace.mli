@@ -18,9 +18,12 @@
 open Types
 
 type position = First | Second
+type order = Less | Equal | More
 
 val swap_position : position -> position
 val print_pos : position Format_doc.printer
+
+val swap_order: order -> order
 
 type expanded_type = { ty: type_expr; expanded: type_expr }
 
@@ -99,6 +102,7 @@ type ('a, 'variety) elt =
   | Tuple_label_mismatch of string option diff
   | Incompatible_fields : { name:string; diff: type_expr diff } -> ('a, _) elt
   | First_class_module: first_class_module -> ('a,_) elt
+  | Univar_mismatch of { order:order; diff:type_expr diff }
   (* Unification & Moregen; included in Equality for simplicity *)
   | Rec_occur : type_expr * type_expr -> ('a, _) elt
 

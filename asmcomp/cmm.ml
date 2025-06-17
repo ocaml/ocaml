@@ -142,6 +142,7 @@ type memory_chunk =
   | Sixteen_signed
   | Thirtytwo_unsigned
   | Thirtytwo_signed
+  | Sixtyfour
   | Word_int
   | Word_val
   | Single

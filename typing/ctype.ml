@@ -132,7 +132,12 @@ exception Cannot_apply
 
 exception Cannot_subst
 
-exception Cannot_unify_universal_variables
+exception Cannot_unify_universal_variables of {
+    order:Errortrace.order;
+    diff:type_expr Errortrace.diff
+  }
+let univar_mismatch ~order got expected =
+  Cannot_unify_universal_variables { order; diff = {got;expected} }
 
 exception Out_of_scope_universal_variable
 
@@ -1990,14 +1995,17 @@ let rec unify_univar t1 t2 = function
         ) cl
       in
       begin match find_univ t1 cl1, find_univ t2 cl2 with
-        Some {contents=Some t'2}, Some _ when eq_type t2 t'2 ->
-          ()
+        Some {contents=Some t'2}, Some _  ->
+          if not (eq_type t2 t'2) then
+            raise (univar_mismatch ~order:Equal t1 t2)
       | Some({contents=None} as r1), Some({contents=None} as r2) ->
           set_univar r1 t2; set_univar r2 t1
       | None, None ->
           unify_univar t1 t2 rem
-      | _ ->
-          raise Cannot_unify_universal_variables
+      | Some {contents=None}, Some {contents=Some _} ->
+          raise (univar_mismatch ~order:Equal t1 t2)
+      | Some _, None -> raise (univar_mismatch ~order:More t1 t2)
+      | None, Some _ -> raise (univar_mismatch ~order:Less t1 t2)
       end
   | [] ->
       raise Out_of_scope_universal_variable
@@ -2006,7 +2014,8 @@ let rec unify_univar t1 t2 = function
    [Cannot_unify_universal_variables] *)
 let unify_univar_for (type a) (tr_exn : a trace_exn) t1 t2 univar_pairs =
   try unify_univar t1 t2 univar_pairs with
-  | Cannot_unify_universal_variables -> raise_unexplained_for tr_exn
+  | Cannot_unify_universal_variables {order; diff} ->
+      raise_for tr_exn (Univar_mismatch {order; diff})
   | Out_of_scope_universal_variable ->
       (* Allow unscoped univars when checking for equality, since one
          might want to compare arbitrary subparts of types, ignoring scopes;
@@ -2434,7 +2443,7 @@ let rec mcomp type_pairs env t1 t2 =
              with Escape _ -> raise Incompatible)
         | (Tunivar _, Tunivar _) ->
             begin try unify_univar t1' t2' !univar_pairs with
-            | Cannot_unify_universal_variables -> raise Incompatible
+            | Cannot_unify_universal_variables _ -> raise Incompatible
             | Out_of_scope_universal_variable -> ()
             end
         | (_, _) ->

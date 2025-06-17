@@ -81,6 +81,7 @@ let chunk = function
   | Sixteen_signed -> "signed int16"
   | Thirtytwo_unsigned -> "unsigned int32"
   | Thirtytwo_signed -> "signed int32"
+  | Sixtyfour -> "int64"
   | Word_int -> "int"
   | Word_val -> "val"
   | Single -> "float32"

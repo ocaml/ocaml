@@ -38,7 +38,6 @@ type symptom =
       Ident.t * class_declaration * class_declaration *
       Ctype.class_match_failure list
   | Unbound_module_path of Path.t
-  | Invalid_module_alias of Path.t
 
 type pos =
   | Module of Ident.t
@@ -83,7 +82,6 @@ module Error = struct
     | Mt_core of core_module_type_symptom
     | Signature of signature_symptom
     | Functor of functor_symptom
-    | Invalid_module_alias of Path.t
     | After_alias_expansion of module_type_diff
 
 
@@ -516,11 +514,10 @@ let rec modtypes ~core ~direction ~loc env subst mty1 mty2 shape =
 and try_modtypes ~core ~direction ~loc env subst mty1 mty2 orig_shape =
   match mty1, mty2 with
   | (Mty_alias p1, Mty_alias p2) ->
-      if not (Env.is_aliasable p2 env) then
-        Error (Error.Invalid_module_alias p2)
-      else if not (equal_module_paths env p1 subst p2) then
-          Error Error.(Mt_core Incompatible_aliases)
-      else Ok (Tcoerce_none, orig_shape)
+      if (equal_module_paths env p1 subst p2) then
+          Ok (Tcoerce_none, orig_shape)
+      else
+        Error Error.(Mt_core Incompatible_aliases)
   | (Mty_alias p1, _) -> begin
       match
         Env.normalize_module_path (Some Location.none) env p1

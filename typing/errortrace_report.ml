@@ -369,6 +369,34 @@ let explanation (type variety) intro prev env
              {[ The type int occurs inside int list -> 'a |}
         *)
     end
+  | Univar_mismatch { diff; order} ->
+      let prev = match prev with
+        | Some (Errortrace.Incompatible_fields f) ->
+            explain_incompatible_fields f.name f.diff
+        | _ -> Fmt.Doc.empty
+      in
+      add_type_to_preparation diff.got;
+      add_type_to_preparation diff.expected;
+      let more = match order with
+        | Equal ->  Fmt.Doc.empty
+        | Less ->
+          Fmt.doc_printf
+            "@ The first type variable %a was introduced in@ an@ earlier@ \
+             universal@ quantification."
+              (Style.as_inline_code prepared_type_expr) diff.got
+        | More ->
+            Fmt.doc_printf
+              "@ The second type variable %a was introduced in@ an@ earlier@ \
+               universal@ quantification."
+              (Style.as_inline_code prepared_type_expr) diff.expected
+      in
+      Some (doc_printf
+              "%a@,@[The universal variables@ %a and@ %a@ are distinct.%a@]"
+              Fmt.pp_doc prev
+              (Style.as_inline_code prepared_type_expr) diff.got
+              (Style.as_inline_code prepared_type_expr) diff.expected
+              pp_doc more
+           )
 
 let mismatch intro env trace =
   Errortrace.explain trace (fun ~prev h -> explanation intro prev env h)

@@ -1162,7 +1162,52 @@ Error: The value "x" has type "< m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) >
        The method "m" has type "'c. 'c * ('b * < m : 'c. 'e >) as 'e",
        but the expected method type was
        "'c. 'c * ('c * < m : 'b. 'b * ('b * < m : 'c. 'f >) >) as 'f"
+       The universal variables "'b" and "'c" are distinct.
+       The first type variable "'b" was introduced in an earlier universal
+       quantification.
 |}];;
+
+let f (x: <x: 'a 'b 'c. 'a * 'b * 'b * 'c >) =
+  (x: <x: 'a 'b 'c. 'c * 'a * 'b * 'b>)
+[%%expect {|
+Line 2, characters 3-4:
+2 |   (x: <x: 'a 'b 'c. 'c * 'a * 'b * 'b>)
+       ^
+Error: The value "x" has type "< x : 'c 'a 'c0. 'c * 'a * 'a * 'c0 >"
+       but an expression was expected of type
+         "< x : 'a 'b 'c. 'c * 'a * 'b * 'b >"
+       The method "x" has type "'c 'a 'c0. 'c * 'a * 'a * 'c0",
+       but the expected method type was "'a 'b 'c. 'c * 'a * 'b * 'b"
+       The universal variables "'a" and "'b" are distinct.
+|}]
+
+let f (x: <x: 'a. <x: 'b. 'a * 'b > >) =
+      (x: <x: 'b. <x: 'a. 'a * 'b > >)
+[%%expect {|
+Line 2, characters 7-8:
+2 |       (x: <x: 'b. <x: 'a. 'a * 'b > >)
+           ^
+Error: The value "x" has type "< x : 'a. < x : 'b. 'a * 'b > >"
+       but an expression was expected of type "< x : 'b. < x : 'a. 'a * 'b > >"
+       The method "x" has type "'b. 'a * 'b", but the expected method type was
+       "'a0. 'a0 * 'b"
+       The universal variables "'a" and "'a0" are distinct.
+       The first type variable "'a" was introduced in an earlier universal
+       quantification.
+|}]
+
+let f (o: <x: 'a 'b. ('a * 'a) * 'b >) =
+      (o: <x: 'a 'b. ('a * 'a) * 'a >)
+[%%expect {|
+Line 2, characters 7-8:
+2 |       (o: <x: 'a 'b. ('a * 'a) * 'a >)
+           ^
+Error: The value "o" has type "< x : 'a 'b. ('a * 'a) * 'b >"
+       but an expression was expected of type "< x : 'a. ('a * 'a) * 'a >"
+       The method "x" has type "'a 'b. ('a * 'a) * 'b",
+       but the expected method type was "'a. ('a * 'a) * 'a"
+       The universal variables "'b" and "'a" are distinct.
+|}]
 
 module M
 : sig val f : (<m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>) -> unit end

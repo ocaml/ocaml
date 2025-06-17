@@ -484,13 +484,18 @@ module Size = struct
       and single = match memory_chunk with Single -> 2 | _ -> 1 in
       based + barrier + single
     | Lop (Istore (memory_chunk, addressing_mode, assignment)) ->
-      let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
-      and barrier =
-        match memory_chunk, assignment with
-        | (Word_int | Word_val), true -> 1
+      let based =
+        match addressing_mode with
+        | Iindexed _ -> 0
+        | Ibased _ -> 1
+      and pre_store =
+        match memory_chunk, assignment, macosx, addressing_mode with
+        | (Word_int | Word_val), true, true, Iindexed 0 -> 0
+        | (Word_int | Word_val), true, true, _ -> 1  (* Compute dest address *)
+        | (Word_int | Word_val), true, false, _ -> 1 (* Barrier instruction *)
         | _ -> 0
-      and single = match memory_chunk with Single -> 2 | _ -> 1 in
-      based + barrier + single
+      and store = match memory_chunk with Single -> 2 | _ -> 1 in
+      based + pre_store + store
     | Lop (Ialloc _) when f.fun_fast -> 5
     | Lop (Ispecific (Ialloc_far _)) when f.fun_fast -> 6
     | Lop (Ipoll {return_label=None}) -> 3
@@ -681,8 +686,22 @@ let name_for_float_comparison = function
   | CFge -> "ge"
   | CFnge -> "lt"
 
-(* Output the assembly code for an instruction *)
+(* Output a release store [stlr] of register [src] at address [base + addr].
+   Since [stlr] does not support addressing modes, we compute [base + addr]
+   explicitly. *)
+let emit_stlr src base addr =
+  assert macosx;
+  let dest_reg =
+    match addr with
+    | Iindexed 0 -> base
+    | Iindexed ofs ->
+        `	add	{emit_reg reg_tmp1}, {emit_reg base}, #{emit_int ofs}\n`;
+        reg_tmp1
+    | Ibased _ -> assert false (* Ibased is not emitted under macOS *)
+  in
+  `	stlr	{emit_reg src}, [{emit_reg dest_reg}]\n`
 
+(* Output the assembly code for an instruction *)
 let emit_instr env i =
     emit_debug_info i.dbg;
     match i.desc with
@@ -811,9 +830,10 @@ let emit_instr env i =
         | Single ->
             `	ldr	s7, {emit_addressing addressing_mode base}\n`;
             `	fcvt	{emit_reg dst}, s7\n`
-        | Word_int | Word_val ->
+        | Sixtyfour | Word_int | Word_val ->
             if is_atomic then begin
               assert (addressing_mode = Iindexed 0);
+              assert (not (memory_chunk = Sixtyfour));
               `	dmb	ishld\n`;
               `	ldar	{emit_reg dst}, [{emit_reg i.arg.(0)}]\n`
             end else
@@ -823,7 +843,7 @@ let emit_instr env i =
         end
     | Lop(Istore(size, addr, assignment)) ->
         (* NB: assignments other than Word_int and Word_val do not follow the
-        Multicore OCaml memory model and so do not emit a barrier *)
+           Multicore OCaml memory model and so do not emit a barrier *)
         let src = i.arg.(0) in
         let base =
           match addr with
@@ -842,10 +862,22 @@ let emit_instr env i =
         | Single ->
             `	fcvt	s7, {emit_reg src}\n`;
             `	str	s7, {emit_addressing addr base}\n`;
-        | Word_int | Word_val ->
-            (* memory model barrier for non-initializing store *)
-            if assignment then `	dmb	ishld\n`;
+        | Sixtyfour ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
+        | Word_int | Word_val ->
+            begin match assignment, macosx with
+            | true, true ->
+                (* Release store for assignments on macOS. See
+                   https://github.com/ocaml/ocaml/issues/13262. *)
+                emit_stlr src base addr
+            | true, false ->
+                (* Memory model barrier for assignments. *)
+                `	dmb	ishld\n`;
+                `	str	{emit_reg src}, {emit_addressing addr base}\n`
+            | _, _ ->
+                (* Initializing store *)
+                `	str	{emit_reg src}, {emit_addressing addr base}\n`
+            end
         | Double ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         end
