@@ -51,7 +51,9 @@ val compare: t -> t -> int
 (** The comparison function for characters, with the same specification as
     {!Stdlib.compare}.  Along with the type [t], this function [compare]
     allows the module [Char] to be passed as argument to the functors
-    {!Set.Make} and {!Map.Make}. *)
+    {!Set.Make} and {!Map.Make}.
+    The order used for comparison is the order of the underlying bytes,
+    that is, ASCII order extended to the range \[[0x00];[0xFF]\]. *)
 
 val equal: t -> t -> bool
 (** The equal function for chars.
