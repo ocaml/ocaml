@@ -890,11 +890,16 @@ OCaml 5.4.0
 - #14025: fix data race between compaction and domain termination
   (Gabriel Scherer, review by Jan Midtgaard,
    report by Jan Midtgaard)
+
 - #13956 Fix a regression introduced in #13308 triggering wrong unused warnings.
   (Ulysse Gérard, review by Florian Angeletti)
 
 - #14070: also point to label mismatches in error messages for labelled tuples
   (Florian Angeletti, review by Gabriel Scherer)
+
+- #14088, #14091: fix non-deterministic code generation in
+  matching.ml (backport of rescript-lang/rescript#7557)
+  (Christiano Calgano, review by Gabriel Scherer and Vincent Laviron)
 
 - #14105: Fix a loop in Pprintast that could result in a hang when printing
   constructor `(::)` in isolation.
