@@ -19,6 +19,7 @@
 
 /* The interface of this file is "caml/intext.h" */
 
+#include <stdbool.h>
 #include <string.h>
 #include <assert.h>
 
@@ -111,6 +112,10 @@ struct caml_extern_state {
 
   struct caml_output_block * extern_output_first;
   struct caml_output_block * extern_output_block;
+
+  /* extern_value sets this to true if the value written was 32-bit compatible.
+     Set regardless of COMPAT_32 (see caml_output_value_with_compat) */
+  bool compat_32;
 };
 
 static void init_extern_stack(struct caml_extern_state* s)
@@ -571,6 +576,7 @@ Caml_inline void extern_int(struct caml_extern_state* s, intnat n)
     writecode16(s, CODE_INT16, n);
 #ifdef ARCH_SIXTYFOUR
   } else if (n < -((intnat)1 << 30) || n >= ((intnat)1 << 30)) {
+      s->compat_32 = false;
       if (s->extern_flags & COMPAT_32)
         extern_failwith(s, "output_value: integer cannot be read back on "
                         "32-bit platform");
@@ -609,9 +615,12 @@ Caml_inline void extern_header(struct caml_extern_state* s,
   } else {
     header_t hd = Make_header(sz, tag, NOT_MARKABLE);
 #ifdef ARCH_SIXTYFOUR
-    if (sz > 0x3FFFFF && (s->extern_flags & COMPAT_32))
-      extern_failwith(s, "output_value: array cannot be read back on "
-                      "32-bit platform");
+    if (sz > 0x3FFFFF) {
+      s->compat_32 = false;
+      if (s->extern_flags & COMPAT_32)
+        extern_failwith(s, "output_value: array cannot be read back on "
+                        "32-bit platform");
+    }
     if (hd < (uintnat)1 << 32)
       writecode32(s, CODE_BLOCK32, hd);
     else
@@ -633,9 +642,12 @@ Caml_inline void extern_string(struct caml_extern_state *s,
     writecode8(s, CODE_STRING8, len);
   } else {
 #ifdef ARCH_SIXTYFOUR
-    if (len > 0xFFFFFB && (s->extern_flags & COMPAT_32))
-      extern_failwith(s, "output_value: string cannot be read back on "
-                      "32-bit platform");
+    if (len > 0xFFFFFB) {
+      s->compat_32 = false;
+      if (s->extern_flags & COMPAT_32)
+        extern_failwith(s, "output_value: string cannot be read back on "
+                        "32-bit platform");
+    }
     if (len < (uintnat)1 << 32)
       writecode32(s, CODE_STRING32, len);
     else
@@ -664,9 +676,12 @@ Caml_inline void extern_double_array(struct caml_extern_state* s,
     writecode8(s, CODE_DOUBLE_ARRAY8_NATIVE, nfloats);
   } else {
 #ifdef ARCH_SIXTYFOUR
-    if (nfloats > 0x1FFFFF && (s->extern_flags & COMPAT_32))
-      extern_failwith(s, "output_value: float array cannot be read back on "
-                      "32-bit platform");
+    if (nfloats > 0x1FFFFF) {
+      s->compat_32 = false;
+      if (s->extern_flags & COMPAT_32)
+        extern_failwith(s, "output_value: float array cannot be read back on "
+                        "32-bit platform");
+    }
     if (nfloats < (uintnat) 1 << 32)
       writecode32(s, CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
     else
@@ -927,6 +942,7 @@ static intnat extern_value(struct caml_extern_state* s, value v, value flags,
   intnat res_len;
   /* Parse flag list */
   s->extern_flags = caml_convert_flag_list(flags, extern_flag_values);
+  s->compat_32 = true;
   /* Turn compression off if Zlib missing or if called from
      caml_output_value_to_block */
 #ifdef HAS_ZSTD
@@ -950,14 +966,16 @@ static intnat extern_value(struct caml_extern_state* s, value v, value flags,
     res_len = extern_output_length(s);
     /* Check lengths if compat32 mode is requested */
 #ifdef ARCH_SIXTYFOUR
-    if (s->extern_flags & COMPAT_32
-        && (uncompressed_len >= (uintnat)1 << 32
-            || res_len >= (uintnat)1 << 32
-            || s->size_32 >= (uintnat)1 << 32
-            || s->size_64 >= (uintnat)1 << 32)) {
-      free_extern_output(s);
-      caml_failwith("output_value: object too big to be read back on "
-                    "32-bit platform");
+    if (uncompressed_len >= (uintnat)1 << 32
+           || res_len >= (uintnat)1 << 32
+           || s->size_32 >= (uintnat)1 << 32
+           || s->size_64 >= (uintnat)1 << 32) {
+      s->compat_32 = false;
+      if (s->extern_flags & COMPAT_32) {
+        free_extern_output(s);
+        caml_failwith("output_value: object too big to be read back on "
+                      "32-bit platform");
+      }
     }
 #endif
     /* Write the header in compressed format */
@@ -979,6 +997,7 @@ static intnat extern_value(struct caml_extern_state* s, value v, value flags,
       s->size_32 >= ((intnat)1 << 32) || s->size_64 >= ((intnat)1 << 32)) {
     /* The object is too big for the small header format.
        Fail if we are in compat32 mode, or use big header. */
+    s->compat_32 = false;
     if (s->extern_flags & COMPAT_32) {
       free_extern_output(s);
       caml_failwith("output_value: object too big to be read back on "
@@ -1037,6 +1056,13 @@ CAMLprim value caml_output_value(value vchan, value v, value flags)
   caml_flush_if_unbuffered(channel);
   caml_channel_unlock(channel);
   CAMLreturn (Val_unit);
+}
+
+CAMLprim value caml_output_value_with_compat(value vchan, value v, value flags)
+{
+  struct caml_extern_state* s = init_extern_state ();
+  caml_output_value(vchan, v, flags);
+  return Val_bool(s->compat_32);
 }
 
 CAMLprim value caml_output_value_to_bytes(value v, value flags)
@@ -1281,6 +1307,7 @@ CAMLprim value caml_obj_reachable_words(value v)
 
   s->obj_counter = 0;
   s->extern_flags = 0;
+  s->compat_32 = true;
   extern_init_position_table(s);
   sp = s->extern_stack;
   size = 0;
