@@ -86,7 +86,8 @@ val is_main_domain : unit -> bool
 (** [is_main_domain ()] returns true if called from the initial domain. *)
 
 val count : unit -> int
-(** The current number of domains.
+(** The number of domains that have been spawned (including the initial domain)
+    and have not yet terminated.
 
     @since 5.5 *)
 
