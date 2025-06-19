@@ -40,8 +40,8 @@ module Raw = struct
     = "caml_ml_domain_id" [@@noalloc]
   external cpu_relax : unit -> unit
     = "caml_ml_domain_cpu_relax"
-  external get_running_domain_count: unit -> int
-    = "caml_running_domain_count" [@@noalloc]
+  external get_domain_count: unit -> int
+    = "caml_domain_count" [@@noalloc]
   external get_recommended_domain_count: unit -> int
     = "caml_recommended_domain_count" [@@noalloc]
 end
@@ -300,5 +300,5 @@ let join { term_sync ; _ } =
   | Ok x -> x
   | Error ex -> raise ex
 
-let running_domain_count = Raw.get_running_domain_count
+let count = Raw.get_domain_count
 let recommended_domain_count = Raw.get_recommended_domain_count

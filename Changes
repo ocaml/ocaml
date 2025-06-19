@@ -46,7 +46,7 @@ Working version
   (Kate Deplaix, review by Daniel Bünzli, Gabriel Scherer,
    Nicolás Ojeda Bär, Florian Angeletti and Josh Berdine)
 
-- #14086: Add Domain.running_domain_count.
+- #14086: Add Domain.count.
   (Nicolás Ojeda Bär, review by David Allsopp and Gabriel Scherer)
 
 ### Type system:
