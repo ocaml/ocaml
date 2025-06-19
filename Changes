@@ -47,7 +47,8 @@ Working version
    Nicolás Ojeda Bär, Florian Angeletti and Josh Berdine)
 
 - #14086: Add Domain.count.
-  (Nicolás Ojeda Bär, review by David Allsopp and Gabriel Scherer)
+  (Nicolás Ojeda Bär, review by David Allsopp, Gabriel Scherer, Daniel Bünzli
+  and KC Sivaramakrishnan)
 
 ### Type system:
 
