@@ -97,9 +97,9 @@ CAMLextern void caml_tsan_entry_on_resume(uintnat pc, char* sp,
 #if defined(WITH_THREAD_SANITIZER)
 
 // __tsan_func_exit can have either of the 2 signatures (#14082)
-#if TSAN_FUNC_EXIT_SIGNATURE == 1 // void(void)
+#if defined(HAVE___TSAN_FUNC_EXIT_VOID_VOID_P)
 extern void __tsan_func_exit(void*);
-#elif TSAN_FUNC_EXIT_SIGNATURE == 2 // void(void*)
+#elif defined(HAVE___TSAN_FUNC_EXIT_VOID_VOID)
 extern void __tsan_func_exit(void);
 #endif
 
@@ -107,9 +107,9 @@ extern void __tsan_func_entry(void*);
 void __tsan_write8(void *location);
 
 Caml_inline void caml_tsan_func_exit(void) {
-  #if TSAN_FUNC_EXIT_SIGNATURE == 1 // void(void)
+#if defined(HAVE___TSAN_FUNC_EXIT_VOID_VOID_P)
     __tsan_func_exit(NULL);
-  #elif TSAN_FUNC_EXIT_SIGNATURE == 2 // void(void*)
+#elif defined(HAVE___TSAN_FUNC_EXIT_VOID_VOID)
     __tsan_func_exit();
   #endif
 }

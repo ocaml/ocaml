@@ -2258,11 +2258,12 @@ OCaml 5.2.0 (13 May 2024)
 
 ### Bug fixes:
 
-- #14065: Fix function signature mismatch of `__tsan_func_exit` in gcc15.
-  Adds checks in the configure step to check if the tsan internal builtins
-  provided by the tsan library are the same as what we expect, introduces
-  wrappers for `caml_tsan_*` wrappers for the `__tsan_*` functions we use.
-  (Hari Hara Naveen S, report by Hari Hara Naveen S, review by TBD)
+- #14065: Fix function signature mismatch of `__tsan_func_exit` with GCC 15.
+  Check in the configure step if the TSan provided internal builtins are the
+  same as what we expect, introduce `caml_tsan_*` wrappers for the `__tsan_*`
+  functions we use.
+  (Hari Hara Naveen S, report by Hari Hara Naveen S,
+  review by Gabriel Scherer, Antonin Décimo, Olivier Nicole)
 
 - #10652, #12720: fix evaluation order in presence of optional arguments
   (Jacques Garrigue, report by Leo White, review by Vincent Laviron)
