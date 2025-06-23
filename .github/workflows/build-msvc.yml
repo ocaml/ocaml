@@ -94,6 +94,7 @@ jobs:
 
     strategy:
       matrix: ${{ fromJSON(needs.config.outputs.matrix) }}
+      fail-fast: true
 
     steps:
       - name: Set git to use Unix line-endings for the testsuite
