@@ -567,7 +567,8 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
         simple_pattern ctxt f x
     | Ppat_construct ({txt=Lident("::");_}, Some ([],
         {ppat_desc = Ppat_tuple([None, pat1; None, pat2], Closed);_})) ->
-        pp f "%a::%a" (simple_pattern ctxt) pat1 (pattern1 ctxt) pat2 (*RA*)
+        (* Right associative*)
+        pp f "%a::%a" (simple_pattern ctxt) pat1 (pattern1 ctxt) pat2
     | Ppat_construct (li, po) ->
         (* FIXME The third field always false *)
         (match po with
