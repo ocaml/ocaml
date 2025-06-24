@@ -565,10 +565,8 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
         pp f "@[<2>`%a@;%a@]" ident_of_name l (simple_pattern ctxt) p
     | Ppat_construct (({txt=Lident("()"|"[]"|"true"|"false");_}), _) ->
         simple_pattern ctxt f x
-    | Ppat_construct (
-        {txt=Lident("::");_},
-        Some ([], {ppat_desc = Ppat_tuple([None, pat1; None, pat2], Closed);_}))
-      when x.ppat_attributes = [] ->
+    | Ppat_construct ({txt=Lident("::");_}, Some ([],
+        {ppat_desc = Ppat_tuple([None, pat1; None, pat2], Closed);_})) ->
         pp f "%a::%a" (simple_pattern ctxt) pat1 (pattern1 ctxt) pat2 (*RA*)
     | Ppat_construct (li, po) ->
         (* FIXME The third field always false *)
