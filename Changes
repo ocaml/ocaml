@@ -195,6 +195,10 @@ Working version
   macros to define OCaml integers.
   (Antonin Décimo, review by Nick Barnes)
 
+- #14105: Fix a loop in Pprintast that could result in a hang when printing
+  constructor `(::)` in isolation.
+  (Ulysse Gérard, review by Nicolás Ojeda Bär and Florian Angeletti)
+
 ### Build system:
 
 - #13810: Support build of cross compilers to native freestanding targets
