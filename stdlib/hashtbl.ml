@@ -453,13 +453,12 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
             then bucket
             else retrieve_bucket key next
 
-      let replace_in_bucket h key i l data bucket =
-        match bucket with
+      let replace_in_bucket h key i l data = function
         | Empty ->
           h.data.(i) <- Cons{key; data; next=l};
           h.size <- h.size + 1;
           if h.size > Array.length h.data lsl 1 then resize key_index h
-        | Cons (_ as slot) -> slot.key <- key; slot.data <- data
+        | Cons slot -> slot.key <- key; slot.data <- data
 
       let find_and_replace h key data =
         let i = key_index h key in
