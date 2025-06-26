@@ -29,6 +29,8 @@ INSTALL ?= @INSTALL@ -p
 INSTALL_DATA ?= @INSTALL_DATA@
 INSTALL_PROG ?= @INSTALL_PROGRAM@
 
+SRCDIR_ABS = @ocamlsrcdir@
+
 # Whether to build certain libraries and tools
 
 build_ocamldebug = @build_ocamldebug@

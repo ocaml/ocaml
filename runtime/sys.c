@@ -160,33 +160,23 @@ CAMLexport void caml_do_exit(int retcode)
         top_heap_words = caml_top_heap_words(Caml_state->shared_heap);
       }
 
-      CAML_GC_MESSAGE(STATS,
-          "allocated_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-          (intnat)allocated_words);
-      CAML_GC_MESSAGE(STATS,
-          "minor_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-          (intnat) minwords);
-      CAML_GC_MESSAGE(STATS,
-          "promoted_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-          (intnat) s.alloc_stats.promoted_words);
-      CAML_GC_MESSAGE(STATS,
-          "major_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-          (intnat) majwords);
-      CAML_GC_MESSAGE(STATS,
-          "minor_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-          (intnat) atomic_load(&caml_minor_collections_count));
-      CAML_GC_MESSAGE(STATS,
-          "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-          caml_major_cycles_completed);
-      CAML_GC_MESSAGE(STATS,
-          "forced_major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-          (intnat)s.alloc_stats.forced_major_collections);
-      CAML_GC_MESSAGE(STATS,
-          "heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-          heap_words);
-      CAML_GC_MESSAGE(STATS,
-          "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-          top_heap_words);
+      CAML_GC_MESSAGE(STATS, "allocated_words: %" CAML_PRIdNAT "\n",
+                      (intnat) allocated_words);
+      CAML_GC_MESSAGE(STATS, "minor_words: %" CAML_PRIdNAT "\n",
+                      (intnat) minwords);
+      CAML_GC_MESSAGE(STATS, "promoted_words: %" CAML_PRIdNAT "\n",
+                      (intnat) s.alloc_stats.promoted_words);
+      CAML_GC_MESSAGE(STATS, "major_words: %" CAML_PRIdNAT "\n",
+                      (intnat) majwords);
+      CAML_GC_MESSAGE(STATS, "minor_collections: %" CAML_PRIdNAT "\n",
+                      (intnat) atomic_load(&caml_minor_collections_count));
+      CAML_GC_MESSAGE(STATS, "major_collections: %" CAML_PRIdNAT "\n",
+                      caml_major_cycles_completed);
+      CAML_GC_MESSAGE(STATS, "forced_major_collections: %" CAML_PRIdNAT "\n",
+                      (intnat) s.alloc_stats.forced_major_collections);
+      CAML_GC_MESSAGE(STATS, "heap_words: %" CAML_PRIdNAT "\n", heap_words);
+      CAML_GC_MESSAGE(STATS, "top_heap_words: %" CAML_PRIdNAT "\n",
+                      top_heap_words);
     }
   }
 
@@ -262,12 +252,14 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   CAMLreturn(Val_long(fd));
 }
 
-CAMLprim value caml_sys_close(value fd_v)
+CAMLprim value caml_sys_close(value vfd)
 {
-  int fd = Int_val(fd_v);
+  int fd = Int_val(vfd);
+  int ret;
   caml_enter_blocking_section();
-  close(fd);
+  ret = close(fd);
   caml_leave_blocking_section();
+  if (ret == -1) caml_sys_error(NO_ARG);
   return Val_unit;
 }
 
@@ -349,7 +341,7 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
   caml_leave_blocking_section();
   caml_stat_free(p_new);
   caml_stat_free(p_old);
-  if (ret != 0)
+  if (ret == -1)
     caml_sys_error(NO_ARG);
   return Val_unit;
 }
@@ -365,7 +357,7 @@ CAMLprim value caml_sys_chdir(value dirname)
   ret = chdir_os(p);
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret != 0) caml_sys_error(dirname);
+  if (ret == -1) caml_sys_error(dirname);
   CAMLreturn(Val_unit);
 }
 
@@ -548,16 +540,19 @@ void caml_sys_init(const char_os * proc_self_exe,
 #ifdef HAS_SYSTEM
 CAMLprim value caml_sys_system_command(value command)
 {
-  CAMLparam1 (command);
+  CAMLparam1(command);
   int status, retcode;
   char_os *buf;
 
-  if (! caml_string_is_c_safe (command)) {
+  if (! caml_string_is_c_safe(command)) {
     errno = EINVAL;
     caml_sys_error(command);
   }
   buf = caml_stat_strdup_to_os(String_val(command));
   caml_enter_blocking_section ();
+#ifdef _WIN32
+  _flushall();
+#endif
   status = system_os(buf);
   caml_leave_blocking_section ();
   caml_stat_free(buf);
@@ -566,7 +561,7 @@ CAMLprim value caml_sys_system_command(value command)
     retcode = WEXITSTATUS(status);
   else
     retcode = 255;
-  CAMLreturn (Val_int(retcode));
+  CAMLreturn(Val_int(retcode));
 }
 #else
 CAMLprim value caml_sys_system_command(value command)

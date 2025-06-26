@@ -32,12 +32,6 @@ Working version
 
 ### Code generation and optimizations:
 
-- #13262, #14074: fix performance issue on Apple Silicon macOS by emitting
-  `stlr` instead of `dmb ishld; str`.
-  (KC Sivaramakrishnan, report by François Pottier, analysis by Frédéric Bour,
-  Xavier Leroy, Miod Vallat, Gabriel Scherer and Stephen Dolan, review by Miod
-  Vallat, Vincent Laviron and Xavier Leroy)
-
 ### Standard library:
 
 - #13728: Add Sys.runtime_executable containing the full path (if available) to
@@ -52,6 +46,17 @@ Working version
   (Kate Deplaix, review by Daniel Bünzli, Gabriel Scherer,
    Nicolás Ojeda Bär, Florian Angeletti and Josh Berdine)
 
+- #14086: Add Domain.count.
+  (Nicolás Ojeda Bär, review by David Allsopp, Gabriel Scherer, Daniel Bünzli
+  and KC Sivaramakrishnan)
+
+- #13920: add Option.{for_all, exists}
+  (Gabriel Scherer, review by Kate Deplaix, Nicolás Ojeda Bär, Richard Eisenberg
+  and Jeremy Yallop)
+
+- #12877: Dynarray.rev_iter, Dynarray.rev_iteri
+  (Gabriel Scherer, review by Léo Andrès, Jeremy Yallop and Nicolás Ojeda Bär)
+  
 - #14060: Add Hashtbl.find_and_replace and Hashtbl.find_and_remove.
   (Sacha Ayoun, review by Nicolás Ojeda Bär)
 
@@ -60,18 +65,6 @@ Working version
 - #13781: Set scope of internal type nodes during abbreviation expansion
   rather than recursing during unification.
   (Jacques Garrigue, review by Gabriel Scherer)
-
-* #13830: fail rather than silently create abstract module types when avoiding
-  (i.e. hiding) signature items, as in:
-  ```ocaml
-    module N = struct
-      open (struct type t = A | B end)
-      module type T = sig type u = t * int end
-    end
-  ```
-  Before, it was succeeding with `module N : sig module type T end`, now it
-  fails. Similarly for anonymous functor calls (of the form `F(struct ... end))
-  (Clement Blaudeau, review by Gabriel Scherer)
 
 * #14066: catch invalid aliases introduced by signature constraints during
   merging rather than in subtyping:
@@ -93,6 +86,14 @@ Working version
 - #14020: Add Unix.unsetenv.
   (Nicolás Ojeda Bär, review by Antonin Décimo and David Allsopp)
 
+- #13447: Symmetrize shared `Sys` and `Unix` functions. Apply fixes
+  of #12072, #12184, #12320, and #13166, from `Sys.rename` to
+  `Unix.rename`.  Make `caml_sys_close` raise on error, allowing
+  `Filename.temp_file` retries if close fails. Flush buffers when
+  calling `caml_sys_system_command` on Windows. Error with EINVAL
+  instead of ENOENT if the command string is not a valid C string.
+  (Antonin Décimo, review by Gabriel Scherer and Nicolás Ojeda Bär)
+
 ### Tools:
 
 - #12139: BUILD_PATH_PREFIX_MAP rewriting in debug-event locations.
@@ -108,6 +109,9 @@ Working version
 - #13962: Little ocamltest refactors. Fix error handling in C code,
   leaking file descriptors, code style.
   (Antonin Décimo, review by Gabriel Scherer)
+
+- #14059: Fix flaky TSan tests
+  (Fabrice Buoro and Olivier Nicole, review by Gabriel Scherer)
 
 - #13966, #13969: Enable "generalized polymorphic #install_printer"
   in the debugger
@@ -165,15 +169,18 @@ Working version
   handling deep constraints.
   (Clement Blaudeau, review by Florian Angeletti and Samuel Vivien)
 
-* #13972: Renamed the `-no-alias-deps` flag internal representation to
-  `no_alias_deps` instead of `transparent_modules`.
-  (Clement Blaudeau, review by Gabriel Scherer)
-
 - #13980 Refactor `type-approx` and improve some errors' locations.
   (Leo White, Ulysse Gérard, review by Samuel Vivien and Florian Angeletti)
 
 - #14024: Fix unterminated-string-initialization warnings from the C compiler.
   (Antonin Décimo, review by David Allsopp and Miod Vallat)
+
+- #14094: toplevel, simplify check on installed printer types
+  (Florian Angeletti, review by Gabriel Scherer)
+
+- #13656: Use C99 stdint.h/inttypes.h fixed-width integer types and
+  macros to define OCaml integers.
+  (Antonin Décimo, review by Nick Barnes)
 
 ### Build system:
 
@@ -444,7 +451,16 @@ OCaml 5.4.0
   (Gabriel Scherer, review by Damien Doligez and Guillaume Munch-Maccagnoni,
    report by Emilio Jesús Gallego Arias and Olivier Nicole)
 
+- #14057: Don't update memprof too early at the end of a minor GC.
+  (Nick Barnes, review by Damien Doligez).
+
 ### Code generation and optimizations:
+
+- #13262, #14074: fix performance issue on Apple Silicon macOS by emitting
+  `stlr` instead of `dmb ishld; str`.
+  (KC Sivaramakrishnan, report by François Pottier, analysis by Frédéric Bour,
+  Xavier Leroy, Miod Vallat, Gabriel Scherer and Stephen Dolan, review by Miod
+  Vallat, Vincent Laviron and Xavier Leroy)
 
 * #13050: Use '$' instead of '.' to separate module names in symbol names.
   This changes mangling of OCaml identifiers from
@@ -573,6 +589,20 @@ OCaml 5.4.0
 
 - #13732: Document that custom finalizers must not access the OCaml heap, etc.
   (Josh Berdine, review by Stephen Dolan and Guillaume Munch-Maccagnoni)
+
+### Type system
+
+* #13830: fail rather than silently create abstract module types when avoiding
+  (i.e. hiding) signature items, as in:
+  ```ocaml
+    module N = struct
+      open (struct type t = A | B end)
+      module type T = sig type u = t * int end
+    end
+  ```
+  Before, it was succeeding with `module N : sig module type T end`, now it
+  fails. Similarly for anonymous functor calls (of the form `F(struct ... end))
+  (Clement Blaudeau, review by Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
 
@@ -723,6 +753,10 @@ OCaml 5.4.0
 - #13971: Keep generalized structure from patterns when typing `let`
   (Leo White, review by Samuel Vivien and Florian Angeletti)
 
+* #13972: Renamed the `-no-alias-deps` flag internal representation to
+  `no_alias_deps` instead of `transparent_modules`.
+  (Clement Blaudeau, review by Gabriel Scherer)
+
 ### Build system:
 
 * #13526, #13789, #13804: Simplify the build of cross compilers
@@ -779,6 +813,10 @@ OCaml 5.4.0
   concurrent state updates to the backup thread status.
   (Gabriel Scherer, review by Jan Midtgaard and Miod Vallat,
    report by Jan Midtgaard)
+
+- #13896, #14098: ocamldoc, do not wrap module description in a paragraph tag
+  inside the table of modules
+  (Florian Angeletti, report by John Whitington, review by Gabriel Scherer)
 
 - #13703: wrong explanation for some polymorphic-variant subtyping errors
   (Gabriel Scherer, review by Jacques Garrigue,
@@ -858,6 +896,13 @@ OCaml 5.4.0
   (Ulysse Gérard, review by Florian Angeletti)
 
 - #14070: also point to label mismatches in error messages for labelled tuples
+  (Florian Angeletti, review by Gabriel Scherer)
+
+- #14105: Fix a loop in Pprintast that could result in a hang when printing
+  constructor `(::)` in isolation.
+  (Ulysse Gérard, review by Nicolás Ojeda Bär and Florian Angeletti)
+
+- #14108: toplevel, fix a typo in directive type mismatch
   (Florian Angeletti, review by Gabriel Scherer)
 
 OCaml 5.3.0 (8 January 2025)

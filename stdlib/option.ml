@@ -47,6 +47,14 @@ let compare cmp o0 o1 = match o0, o1 with
 | None, Some _ -> -1
 | Some _, None -> 1
 
+let for_all p = function
+  | None -> true
+  | Some v -> p v
+
+let exists p = function
+  | None -> false
+  | Some v -> p v
+
 let to_result ~none = function None -> Error none | Some v -> Ok v
 let to_list = function None -> [] | Some v -> [v]
 let to_seq = function None -> Seq.empty | Some v -> Seq.return v

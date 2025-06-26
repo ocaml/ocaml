@@ -63,17 +63,18 @@ function set_configuration {
 
   case "$1" in
     cygwin*)
-      args+=('--disable-dependency-generation');;
+      args+=('--disable-dependency-generation' '--enable-native-toplevel');;
     mingw32)
       args+=('--host=i686-w64-mingw32' '--disable-dependency-generation');;
     mingw64)
       args+=('--host=x86_64-w64-mingw32' '--disable-dependency-generation' \
-             '--disable-stdlib-manpages');;
+             '--disable-stdlib-manpages' '--enable-native-toplevel');;
     msvc32)
       args+=('--host=i686-pc-windows' '--disable-dependency-generation');;
     msvc64)
       # Explicitly test dependency generation on msvc64
-      args+=('--host=x86_64-pc-windows' '--enable-dependency-generation');;
+      args+=('--host=x86_64-pc-windows' '--enable-dependency-generation' \
+             '--enable-native-toplevel');;
   esac
 
   # Remove old configure cache if the configure script or the OS
@@ -169,6 +170,9 @@ case "$1" in
           make -C "$FULL_BUILD_PREFIX-$PORT/testsuite" SHOW_TIMINGS=1 all
     fi
     run "install $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" install
+    run "test $PORT in prefix" \
+      $MAKE -f Makefile.test -C "$FULL_BUILD_PREFIX-$PORT/testsuite/in_prefix" \
+            test-in-prefix
     if [[ $PORT = 'msvc64' ]] ; then
       run "$MAKE check_all_arches" \
            $MAKE -C "$FULL_BUILD_PREFIX-$PORT" check_all_arches

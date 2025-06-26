@@ -672,7 +672,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       let rec find = function
       | [] -> raise Not_found
       | (_name, User_printer.Simple (sch, printer)) :: remainder ->
-          if Ctype.is_moregeneral env false sch ty
+          if not (Ctype.contains_nongen_variables sch) &&
+             Ctype.is_moregeneral env sch ty
           then printer
           else find remainder
       | (_name, User_printer.Generic (path, fn)) :: remainder ->

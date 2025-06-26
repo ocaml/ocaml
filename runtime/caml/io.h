@@ -37,7 +37,7 @@ typedef intptr_t caml_plat_mutex;
 #endif
 
 #if defined(_WIN32)
-typedef __int64 file_offset;
+typedef int64_t file_offset;
 #else
 #include <sys/types.h>
 typedef off_t file_offset;

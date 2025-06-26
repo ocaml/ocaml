@@ -579,10 +579,9 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
         ref_end = foreign_major_ref->ptr;
       }
 
-      caml_gc_log("idx: %d, foreign_domain: %d, ref_size: %"
-        ARCH_INTNAT_PRINTF_FORMAT"d, refs_per_domain: %"
-        ARCH_INTNAT_PRINTF_FORMAT"d, ref_base: %p, ref_ptr: %p, ref_start: %p"
-        ", ref_end: %p",
+      caml_gc_log("idx: %d, foreign_domain: %d, ref_size: %" CAML_PRIdNAT ", "
+        "refs_per_domain: %" CAML_PRIdNAT ", ref_base: %p, ref_ptr: %p, "
+        "ref_start: %p, ref_end: %p",
         participating_idx, foreign_domain->id, major_ref_size, refs_per_domain,
         foreign_major_ref->base, foreign_major_ref->ptr, ref_start, ref_end);
 
@@ -637,7 +636,7 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
   promote_result result = oldify_mopup (&st, 1); /* ephemerons promoted here */
   CAML_EV_END(EV_MINOR_REMEMBERED_SET_PROMOTE);
   CAML_EV_END(EV_MINOR_REMEMBERED_SET);
-  caml_gc_log("promoted %d roots, %" ARCH_INTNAT_PRINTF_FORMAT "u bytes",
+  caml_gc_log("promoted %d roots, %" CAML_PRIuNAT " bytes",
               remembered_roots, st.live_bytes);
 
 #ifdef DEBUG
@@ -665,10 +664,6 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
   oldify_mopup (&st, 0);
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS_PROMOTE);
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS);
-
-  CAML_EV_BEGIN(EV_MINOR_MEMPROF_CLEAN);
-  caml_memprof_after_minor_gc(domain);
-  CAML_EV_END(EV_MINOR_MEMPROF_CLEAN);
 
   domain->young_ptr = domain->young_end;
   /* Trigger a GC poll when half of the minor heap is filled. At that point, a
@@ -870,6 +865,11 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
     ephe_clean_minor(domain);
     CAML_EV_END(EV_MINOR_EPHE_CLEAN);
   }
+
+  CAML_EV_BEGIN(EV_MINOR_MEMPROF_CLEAN);
+  CAML_GC_MESSAGE(MINOR, "Updating memprof.\n");
+  caml_memprof_after_minor_gc(domain);
+  CAML_EV_END(EV_MINOR_MEMPROF_CLEAN);
 
   CAML_EV_BEGIN(EV_MINOR_FINALIZED);
   caml_gc_log("finalizing dead minor custom blocks");
@@ -1078,7 +1078,7 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
     ((struct generic_table *) tbl, sizeof (value *),
      EV_C_REQUEST_MINOR_REALLOC_REF_TABLE,
      "ref_table threshold crossed\n",
-     "Growing ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+     "Growing ref_table to %" CAML_PRIdNAT "k bytes\n",
      "ref_table overflow");
 }
 
@@ -1088,7 +1088,7 @@ void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *tbl)
     ((struct generic_table *) tbl, sizeof (struct caml_ephe_ref_elt),
      EV_C_REQUEST_MINOR_REALLOC_EPHE_REF_TABLE,
      "ephe_ref_table threshold crossed\n",
-     "Growing ephe_ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+     "Growing ephe_ref_table to %" CAML_PRIdNAT "k bytes\n",
      "ephe_ref_table overflow");
 }
 
@@ -1098,6 +1098,6 @@ void caml_realloc_custom_table (struct caml_custom_table *tbl)
     ((struct generic_table *) tbl, sizeof (struct caml_custom_elt),
      EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE,
      "custom_table threshold crossed\n",
-     "Growing custom_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+     "Growing custom_table to %" CAML_PRIdNAT "k bytes\n",
      "custom_table overflow");
 }

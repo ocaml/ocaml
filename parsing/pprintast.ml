@@ -559,38 +559,27 @@ and pattern_or ctxt f x =
       pp f "@[<hov0>%a@]" (list ~sep:"@ | " (pattern1 ctxt)) orpats
 
 and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
-  let rec pattern_list_helper f = function
-    | {ppat_desc =
-         Ppat_construct
-           ({ txt = Lident("::") ;_},
-            Some ([], {ppat_desc = Ppat_tuple([None, pat1; None, pat2],
-                                              Closed);_}));
-       ppat_attributes = []}
-
-      ->
-        pp f "%a::%a" (simple_pattern ctxt) pat1 pattern_list_helper pat2 (*RA*)
-    | p -> pattern1 ctxt f p
-  in
   if x.ppat_attributes <> [] then pattern ctxt f x
   else match x.ppat_desc with
     | Ppat_variant (l, Some p) ->
         pp f "@[<2>`%a@;%a@]" ident_of_name l (simple_pattern ctxt) p
     | Ppat_construct (({txt=Lident("()"|"[]"|"true"|"false");_}), _) ->
         simple_pattern ctxt f x
-    | Ppat_construct (({txt;_} as li), po) ->
+    | Ppat_construct ({txt=Lident("::");_}, Some ([],
+        {ppat_desc = Ppat_tuple([None, pat1; None, pat2], Closed);_})) ->
+        (* Right associative*)
+        pp f "%a::%a" (simple_pattern ctxt) pat1 (pattern1 ctxt) pat2
+    | Ppat_construct (li, po) ->
         (* FIXME The third field always false *)
-        if txt = Lident "::" then
-          pp f "%a" pattern_list_helper x
-        else
-          (match po with
-           | Some ([], x) ->
-               (* [true] and [false] are handled above *)
-               pp f "%a@;%a"  value_longident_loc li (simple_pattern ctxt) x
-           | Some (vl, x) ->
-               pp f "%a@ (type %a)@;%a" value_longident_loc li
-                 (list ~sep:"@ " ident_of_name_loc) vl
-                 (simple_pattern ctxt) x
-           | None -> pp f "%a" value_longident_loc li)
+        (match po with
+          | Some ([], x) ->
+              (* [true] and [false] are handled above *)
+              pp f "%a@;%a"  value_longident_loc li (simple_pattern ctxt) x
+          | Some (vl, x) ->
+              pp f "%a@ (type %a)@;%a" value_longident_loc li
+                (list ~sep:"@ " ident_of_name_loc) vl
+                (simple_pattern ctxt) x
+          | None -> pp f "%a" value_longident_loc li)
     | _ -> simple_pattern ctxt f x
 
 and tuple_pattern_component ctxt (f:Format.formatter) (label, x) : unit =

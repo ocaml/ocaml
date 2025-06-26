@@ -207,6 +207,8 @@ module Stdlib : sig
     val print : Format.formatter -> t -> unit
 
     val for_all : (char -> bool) -> t -> bool
+
+    val to_utf_8_seq : t -> Uchar.t Seq.t
   end
 
   external compare : 'a -> 'a -> int = "%compare"

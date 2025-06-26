@@ -45,7 +45,19 @@ let print_generic (type a b) (pa : a printer) (pb : b printer) : (a, b) v printe
 
 #install_printer print_generic;;
 [D (0, A); D (42, B)];;
+(* Simple printer witn non_generic variable *)
 
+let pp_option_ref = Fun.id @@ fun ppf x ->
+    match !x with
+    | None -> Format.fprintf ppf "Nothing"
+    | Some _ -> Format.fprintf ppf "Something"
+;;
+#install_printer pp_option_ref;;
+ref (Some 0);;
+pp_option_ref;;
+let _ = (pp_option_ref: _ -> int option ref -> _);;
+ref (Some 0);;
+let x = ref None;;
 
 (* error cases *)
 #install_printer name_that_does_not_exist;;

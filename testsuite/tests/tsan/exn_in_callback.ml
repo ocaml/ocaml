@@ -17,7 +17,10 @@ external print_and_call_ocaml_h : unit -> unit = "print_and_call_ocaml_h"
 
 open Printf
 
+(* Synchronization barriers for reproducibility of the tests (see comment in
+   [exn_from_c.ml]). *)
 let wg = Waitgroup.create 2
+let wg' = Waitgroup.create 2
 let r = ref 0
 
 let [@inline never] race () =
@@ -25,37 +28,40 @@ let [@inline never] race () =
   Waitgroup.join wg
 
 let [@inline never] i () =
-  printf "Entering i\n%!";
-  printf "Throwing ExnB...\n%!";
+  eprintf "Entering i\n%!";
+  eprintf "Throwing ExnB...\n%!";
   ignore (raise ExnB);
-  printf "Leaving i\n%!"
+  eprintf "Leaving i\n%!"
 
 let [@inline never] h () =
-  printf "Entering h\n%!";
+  eprintf "Entering h\n%!";
   i ();
-  printf "Leaving h\n%!"
+  eprintf "Leaving h\n%!"
 
 let _ = Callback.register "ocaml_h" h
 
 let [@inline never] g () =
-  printf "Entering g\n%!";
-  printf "Calling C code\n%!";
+  eprintf "Entering g\n%!";
+  eprintf "Calling C code\n%!";
   print_and_call_ocaml_h ();
-  printf "Back from C code\n%!";
-  printf "Leaving g\n%!"
+  eprintf "Back from C code\n%!";
+  eprintf "Leaving g\n%!"
 
 let [@inline never] f () =
-  printf "Entering f\n%!";
+  eprintf "Entering f\n%!";
   (try g () with
   | ExnB ->
-    printf "Caught an ExnB\n%!";
-    Printexc.print_backtrace stdout;
+    eprintf "Caught an ExnB\n%!";
+    Printexc.print_backtrace stderr;
+    flush stderr;
     race ());
-  printf "Leaving f\n%!"
+  Waitgroup.join wg';
+  eprintf "Leaving f\n%!"
 
 let [@inline never] writer () =
   Waitgroup.join wg;
-  r := 1
+  r := 1;
+  Waitgroup.join wg'
 
 let () =
   Printexc.record_backtrace true;

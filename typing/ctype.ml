@@ -645,6 +645,10 @@ let free_variables_list ?env tyl =
     List.fold_left (fun acc ty -> free_vars ~init:acc ~add_one ?env mark ty)
       [] tyl)
 
+let contains_nongen_variables ?env ty =
+  let add_one ty _kind acc = acc || (get_level ty < generic_level) in
+  with_type_mark (fun mark -> free_vars ~init:false ~add_one ?env mark ty)
+
 let closed_type ?env mark ty =
   let add_one ty kind _acc = raise (Non_closed (ty, kind)) in
   free_vars ~init:() ~add_one ?env mark ty
@@ -3829,17 +3833,14 @@ let moregen_occur env level ty =
   occur_univar_for Moregen env ty;
   update_level_for Moregen env level ty
 
-let may_instantiate inst_nongen t1 =
-  let level = get_level t1 in
-  if inst_nongen then level <> subject_level
-                 else level =  generic_level
+let may_instantiate t1 = get_level t1 <> subject_level
 
-let rec moregen inst_nongen type_pairs env t1 t2 =
+let rec moregen type_pairs env t1 t2 =
   if eq_type t1 t2 then () else
 
   try
     match (get_desc t1, get_desc t2) with
-      (Tvar _, _) when may_instantiate inst_nongen t1 ->
+      (Tvar _, _) when may_instantiate t1 ->
         moregen_occur env (get_level t1) t2;
         update_scope_for Moregen (get_scope t1) t2;
         occur_for Moregen (Expression {env; in_subst = false}) t1 t2;
@@ -3854,38 +3855,37 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
         if not (TypePairs.mem type_pairs (t1', t2')) then begin
           TypePairs.add type_pairs (t1', t2');
           match (get_desc t1', get_desc t2') with
-            (Tvar _, _) when may_instantiate inst_nongen t1' ->
+            (Tvar _, _) when may_instantiate t1' ->
               moregen_occur env (get_level t1') t2;
               update_scope_for Moregen (get_scope t1') t2;
               link_type t1' t2
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) ->
               eq_labels Moregen ~in_pattern_mode:false l1 l2;
-              moregen inst_nongen type_pairs env t1 t2;
-              moregen inst_nongen type_pairs env u1 u2
+              moregen type_pairs env t1 t2;
+              moregen type_pairs env u1 u2
           | (Ttuple tl1, Ttuple tl2) ->
-              moregen_labeled_list inst_nongen type_pairs env tl1 tl2
+              moregen_labeled_list type_pairs env tl1 tl2
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
                 when Path.same p1 p2 ->
-              moregen_list inst_nongen type_pairs env tl1 tl2
+              moregen_list type_pairs env tl1 tl2
           | (Tpackage pack1, Tpackage pack2) ->
-              moregen_package inst_nongen type_pairs env (get_level t1') pack1
+              moregen_package type_pairs env (get_level t1') pack1
                 (get_level t2') pack2
           | (Tnil,  Tconstr _ ) -> raise_for Moregen (Obj (Abstract_row Second))
           | (Tconstr _,  Tnil ) -> raise_for Moregen (Obj (Abstract_row First))
           | (Tvariant row1, Tvariant row2) ->
-              moregen_row inst_nongen type_pairs env row1 row2
+              moregen_row type_pairs env row1 row2
           | (Tobject (fi1, _nm1), Tobject (fi2, _nm2)) ->
-              moregen_fields inst_nongen type_pairs env fi1 fi2
+              moregen_fields type_pairs env fi1 fi2
           | (Tfield _, Tfield _) ->           (* Actually unused *)
-              moregen_fields inst_nongen type_pairs env
-                t1' t2'
+              moregen_fields type_pairs env t1' t2'
           | (Tnil, Tnil) ->
               ()
           | (Tpoly (t1, []), Tpoly (t2, [])) ->
-              moregen inst_nongen type_pairs env t1 t2
+              moregen type_pairs env t1 t2
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
               enter_poly_for Moregen env t1 tl1 t2 tl2
-                (moregen inst_nongen type_pairs env)
+                (moregen type_pairs env)
           | (Tunivar _, Tunivar _) ->
               unify_univar_for Moregen t1' t2' !univar_pairs
           | (_, _) ->
@@ -3895,12 +3895,12 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
     raise_trace_for Moregen (Diff {got = t1; expected = t2} :: trace)
 
 
-and moregen_list inst_nongen type_pairs env tl1 tl2 =
+and moregen_list type_pairs env tl1 tl2 =
   if List.length tl1 <> List.length tl2 then
     raise_unexplained_for Moregen;
-  List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
+  List.iter2 (moregen type_pairs env) tl1 tl2
 
-and moregen_labeled_list inst_nongen type_pairs env labeled_tl1
+and moregen_labeled_list type_pairs env labeled_tl1
     labeled_tl2 =
   if 0 <> List.compare_lengths labeled_tl1 labeled_tl2 then
     raise_unexplained_for Moregen;
@@ -3908,19 +3908,19 @@ and moregen_labeled_list inst_nongen type_pairs env labeled_tl1
     (fun (label1, ty1) (label2, ty2) ->
       if not (Option.equal String.equal label1 label2) then
         raise_unexplained_for Moregen;
-      moregen inst_nongen type_pairs env ty1 ty2)
+      moregen type_pairs env ty1 ty2)
     labeled_tl1 labeled_tl2
 
-and moregen_package inst_nongen type_pairs env lvl1 pack1 lvl2 pack2 =
+and moregen_package type_pairs env lvl1 pack1 lvl2 pack2 =
   match
-    compare_package env (moregen_list inst_nongen type_pairs env)
+    compare_package env (moregen_list type_pairs env)
       lvl1 pack1 lvl2 pack2
   with
   | Ok () -> ()
   | Error fme -> raise_for Moregen (First_class_module fme)
   | exception Not_found -> raise_unexplained_for Moregen
 
-and moregen_fields inst_nongen type_pairs env ty1 ty2 =
+and moregen_fields type_pairs env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1
   and (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
@@ -3929,13 +3929,13 @@ and moregen_fields inst_nongen type_pairs env ty1 ty2 =
     | (n, _, _) :: _ -> raise_for Moregen (Obj (Missing_field (Second, n)))
     | [] -> ()
   end;
-  moregen inst_nongen type_pairs env rest1
+  moregen type_pairs env rest1
     (build_fields (get_level ty2) miss2 rest2);
   List.iter
     (fun (name, k1, t1, k2, t2) ->
        (* The below call should never throw [Public_method_to_private_method] *)
        moregen_kind k1 k2;
-       try moregen inst_nongen type_pairs env t1 t2 with Moregen_trace trace ->
+       try moregen type_pairs env t1 t2 with Moregen_trace trace ->
          raise_trace_for Moregen
            (incompatible_fields ~name ~got:t1 ~expected:t2 :: trace)
     )
@@ -3948,14 +3948,14 @@ and moregen_kind k1 k2 =
   | (Fpublic, Fprivate)              -> raise Public_method_to_private_method
   | (Fabsent, _) | (_, Fabsent)      -> assert false
 
-and moregen_row inst_nongen type_pairs env row1 row2 =
+and moregen_row type_pairs env row1 row2 =
   let Row {fields = row1_fields; more = rm1; closed = row1_closed} =
     row_repr row1 in
   let Row {fields = row2_fields; more = rm2; closed = row2_closed;
            fixed = row2_fixed} = row_repr row2 in
   if eq_type rm1 rm2 then () else
   let may_inst =
-    is_Tvar rm1 && may_instantiate inst_nongen rm1 || get_desc rm1 = Tnil in
+    is_Tvar rm1 && may_instantiate rm1 || get_desc rm1 = Tnil in
   let r1, r2, pairs = merge_row_fields row1_fields row2_fields in
   let r1, r2 =
     if row2_closed then
@@ -3989,7 +3989,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
       (* This [link_type] has to be undone if the rest of the function fails *)
       link_type rm1 ext
   | Tconstr _, Tconstr _ ->
-      moregen inst_nongen type_pairs env rm1 rm2
+      moregen type_pairs env rm1 rm2
   | _ -> raise_unexplained_for Moregen
   end;
   try
@@ -4000,7 +4000,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
          (* Both matching [Rpresent]s *)
          | Rpresent(Some t1), Rpresent(Some t2) -> begin
              try
-               moregen inst_nongen type_pairs env t1 t2
+               moregen type_pairs env t1 t2
              with Moregen_trace trace ->
                raise_trace_for Moregen
                  (Variant (Incompatible_types_for l) :: trace)
@@ -4015,11 +4015,11 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
                    rf_either [] ~use_ext_of:f2 ~no_arg:c2 ~matched:m2 in
                  link_row_field_ext ~inside:f1 f2';
                  if List.length tl1 = List.length tl2 then
-                   List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
+                   List.iter2 (moregen type_pairs env) tl1 tl2
                  else match tl2 with
                    | t2 :: _ ->
                      List.iter
-                       (fun t1 -> moregen inst_nongen type_pairs env t1 t2)
+                       (fun t1 -> moregen type_pairs env t1 t2)
                        tl1
                    | [] -> if tl1 <> [] then raise_unexplained_for Moregen
                end
@@ -4032,7 +4032,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
              try
                link_row_field_ext ~inside:f1 f2;
                List.iter
-                 (fun t1 -> moregen inst_nongen type_pairs env t1 t2)
+                 (fun t1 -> moregen type_pairs env t1 t2)
                  tl1
              with Moregen_trace trace ->
                raise_trace_for Moregen
@@ -4066,9 +4066,9 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
     set_type_desc rm1 md1; raise exn
 
 (* Must empty univar_pairs first *)
-let moregen inst_nongen type_pairs env patt subj =
+let moregen type_pairs env patt subj =
   with_univar_pairs [] (fun () ->
-    moregen inst_nongen type_pairs env patt subj)
+    moregen type_pairs env patt subj)
 
 (*
    Non-generic variable can be instantiated only if [inst_nongen] is
@@ -4078,7 +4078,7 @@ let moregen inst_nongen type_pairs env patt subj =
    Usually, the subject is given by the user, and the pattern
    is unimportant.  So, no need to propagate abbreviations.
 *)
-let moregeneral env inst_nongen pat_sch subj_sch =
+let moregeneral env pat_sch subj_sch =
   (* Moregen splits the generic level into two finer levels:
      [generic_level] and [subject_level = generic_level - 1].
      In order to properly detect and print weak variables when
@@ -4104,15 +4104,15 @@ let moregeneral env inst_nongen pat_sch subj_sch =
       let subj = duplicate_type subj_inst in
       (* Duplicate generic variables *)
       let patt = generic_instance pat_sch in
-      try Ok (moregen inst_nongen (TypePairs.create 13) env patt subj)
+      try Ok (moregen (TypePairs.create 13) env patt subj)
       with Moregen_trace trace -> Error trace
     end with
     | Ok () -> ()
     | Error trace -> raise (Moregen (expand_to_moregen_error env trace))
   end
 
-let is_moregeneral env inst_nongen pat_sch subj_sch =
-  match moregeneral env inst_nongen pat_sch subj_sch with
+let is_moregeneral env pat_sch subj_sch =
+  match moregeneral env pat_sch subj_sch with
   | () -> true
   | exception Moregen _ -> false
 
@@ -4543,7 +4543,7 @@ let rec moregen_clty ~arrow_index trace type_pairs env cty1 cty2 =
     | Cty_arrow (l1, ty1, cty1'), Cty_arrow (l2, ty2, cty2') when l1 = l2 ->
         let arrow_index = arrow_index + 1 in
         begin
-          try moregen true type_pairs env ty1 ty2 with Moregen_trace trace ->
+          try moregen type_pairs env ty1 ty2 with Moregen_trace trace ->
             raise (Failure [
                 CM_Parameter_mismatch
                   (arrow_index, env, expand_to_moregen_error env trace)])
@@ -4558,7 +4558,7 @@ let rec moregen_clty ~arrow_index trace type_pairs env cty1 cty2 =
                   all methods in sign2 are present in sign1. *)
                assert false
              | (_, _, ty') ->
-                 match moregen true type_pairs env ty' ty with
+                 match moregen type_pairs env ty' ty with
                  | () -> ()
                  | exception Moregen_trace trace ->
                      raise (Failure [
@@ -4576,7 +4576,7 @@ let rec moregen_clty ~arrow_index trace type_pairs env cty1 cty2 =
                   all instance variables in sign2 are present in sign1. *)
                assert false
              | (_, _, ty') ->
-                 match moregen true type_pairs env ty' ty with
+                 match moregen type_pairs env ty' ty with
                  | () -> ()
                  | exception Moregen_trace trace ->
                      raise (Failure [
@@ -4637,7 +4637,7 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
           let row2 = sign2.csig_self_row in
           TypePairs.add type_pairs (self1, self2);
           (* Always succeeds *)
-          moregen true type_pairs env row1 row2;
+          moregen type_pairs env row1 row2;
           (* May fail *)
           try moregen_clty trace type_pairs env patt subj; []
           with Failure res -> res

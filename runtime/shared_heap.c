@@ -1434,7 +1434,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
 
 struct mem_stats {
   /* unit is words */
-  uintnat alloced;
+  uintnat allocated;
   uintnat live;
   uintnat free;
   uintnat overhead;
@@ -1470,7 +1470,7 @@ static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
       p += wh;
     }
     CAMLassert(end == p);
-    s->alloced += POOL_WSIZE;
+    s->allocated += POOL_WSIZE;
   }
 }
 
@@ -1478,7 +1478,7 @@ static void verify_large(large_alloc* a, struct mem_stats* s) {
   for (; a; a = a->next) {
     header_t hd = *(header_t*)((char*)a + LARGE_ALLOC_HEADER_SZ);
     CAMLassert (!Has_status_hd(hd, caml_global_heap_state.GARBAGE));
-    s->alloced += Wsize_bsize(LARGE_ALLOC_HEADER_SZ) + Whsize_hd(hd);
+    s->allocated += Wsize_bsize(LARGE_ALLOC_HEADER_SZ) + Whsize_hd(hd);
     s->overhead += Wsize_bsize(LARGE_ALLOC_HEADER_SZ);
     s->live_blocks++;
   }
@@ -1499,29 +1499,25 @@ static void verify_swept (struct caml_heap_state* local) {
       verify_pool(p, i, &pool_stats);
     }
   }
-  caml_gc_log("Pooled memory: %" ARCH_INTNAT_PRINTF_FORMAT
-                "u alloced, %" ARCH_INTNAT_PRINTF_FORMAT
-                "u free, %" ARCH_INTNAT_PRINTF_FORMAT
-                "u fragmentation",
-              pool_stats.alloced, pool_stats.free, pool_stats.overhead);
+  caml_gc_log("Pooled memory: %" CAML_PRIuNAT " allocated, "
+              "%" CAML_PRIuNAT " free, %" CAML_PRIuNAT " fragmentation",
+              pool_stats.allocated, pool_stats.free, pool_stats.overhead);
 
   verify_large(local->swept_large, &large_stats);
   CAMLassert(local->unswept_large == NULL);
-  caml_gc_log("Large memory: %" ARCH_INTNAT_PRINTF_FORMAT
-                "u alloced, %" ARCH_INTNAT_PRINTF_FORMAT
-                "u free, %" ARCH_INTNAT_PRINTF_FORMAT
-                "u fragmentation",
-              large_stats.alloced, large_stats.free, large_stats.overhead);
+  caml_gc_log("Large memory: %" CAML_PRIuNAT " allocated, "
+              "%" CAML_PRIuNAT " free, %" CAML_PRIuNAT " fragmentation",
+              large_stats.allocated, large_stats.free, large_stats.overhead);
 
   /* Check stats are being computed correctly */
-  CAMLassert(local->stats.pool_words == pool_stats.alloced);
+  CAMLassert(local->stats.pool_words == pool_stats.allocated);
   CAMLassert(local->stats.pool_live_words == pool_stats.live);
   CAMLassert(local->stats.pool_live_blocks == pool_stats.live_blocks);
   CAMLassert(local->stats.pool_frag_words == pool_stats.overhead);
   CAMLassert(local->stats.pool_words -
          (local->stats.pool_live_words + local->stats.pool_frag_words)
          == pool_stats.free);
-  CAMLassert(local->stats.large_words == large_stats.alloced);
+  CAMLassert(local->stats.large_words == large_stats.allocated);
   CAMLassert(local->stats.large_blocks == large_stats.live_blocks);
 }
 

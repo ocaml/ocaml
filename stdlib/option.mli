@@ -66,6 +66,24 @@ val blend : ('a -> 'a -> 'a) -> 'a option -> 'a option -> 'a option
 
     @since 5.5 *)
 
+val for_all : ('a -> bool) -> 'a option -> bool
+(** [for_all p] behaves like {!List.for_all} [p]
+    on a list of zero or one element:
+    - [for_all p None] is [true],
+    - [for_all p (Some v)] is [p v].
+
+    @since 5.5
+*)
+
+val exists : ('a -> bool) -> 'a option -> bool
+(** [exists p] behaves like {!List.exists} [p]
+    on a list of zero or one element:
+    - [exists p None] is [false],
+    - [exists p (Some v)] is [p v].
+
+    @since 5.5
+*)
+
 (** {1:preds Predicates and comparisons} *)
 
 val is_none : 'a option -> bool

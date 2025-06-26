@@ -4,11 +4,10 @@ Entering h
 Entering i
 Throwing ExnA...
 Caught an ExnA
-Raised at Exn_reraise.i in file "exn_reraise.ml", line 28, characters 9-21
-Called from Exn_reraise.h in file "exn_reraise.ml", line 33, characters 6-10
-Called from Exn_reraise.g in file "exn_reraise.ml", line 39, characters 2-6
-Called from Exn_reraise.f in file "exn_reraise.ml", line 44, characters 7-11
-Leaving f
+Raised at Exn_reraise.i in file "exn_reraise.ml", line 31, characters 9-21
+Called from Exn_reraise.h in file "exn_reraise.ml", line 36, characters 6-10
+Called from Exn_reraise.g in file "exn_reraise.ml", line 42, characters 2-6
+Called from Exn_reraise.f in file "exn_reraise.ml", line 47, characters 7-11
 ==================
 WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
   Write of size 8 at <implemspecific> by thread T1 (mutexes: write M<implemspecific>):
@@ -49,4 +48,5 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
 
 SUMMARY: ThreadSanitizer: data race (<systemspecific>:<implemspecific>) in camlExn_reraise$writer_<implemspecific>
 ==================
+Leaving f
 ThreadSanitizer: reported 1 warnings

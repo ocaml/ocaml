@@ -374,30 +374,30 @@ let global_dummy = Dummy.fresh ()
    parameter helps us to avoid this assumption. *)
 
 module Error = struct
-  let[@inline never] index_out_of_bounds f ~i ~length =
+  let[@inline never] index_out_of_bounds fname ~i ~length =
     if length = 0 then
       Printf.ksprintf invalid_arg
         "Dynarray.%s: index %d out of bounds (empty dynarray)"
-        f i
+        fname i
     else
       Printf.ksprintf invalid_arg
         "Dynarray.%s: index %d out of bounds (0..%d)"
-        f i (length - 1)
+        fname i (length - 1)
 
-  let[@inline never] negative_length_requested f n =
+  let[@inline never] negative_length_requested fname n =
     Printf.ksprintf invalid_arg
       "Dynarray.%s: negative length %d requested"
-      f n
+      fname n
 
-  let[@inline never] negative_capacity_requested f n =
+  let[@inline never] negative_capacity_requested fname n =
     Printf.ksprintf invalid_arg
       "Dynarray.%s: negative capacity %d requested"
-      f n
+      fname n
 
-  let[@inline never] requested_length_out_of_bounds f requested_length =
+  let[@inline never] requested_length_out_of_bounds fname requested_length =
     Printf.ksprintf invalid_arg
       "Dynarray.%s: cannot grow to requested length %d (max_array_length is %d)"
-      f requested_length Sys.max_array_length
+      fname requested_length Sys.max_array_length
 
   (* When observing an invalid state ([missing_element],
      [invalid_length]), we do not give the name of the calling function
@@ -420,23 +420,23 @@ module Error = struct
       invalid_state_description
       length capacity
 
-  let[@inline never] length_change_during_iteration f ~expected ~observed =
+  let[@inline never] length_change_during_iteration fname ~expected ~observed =
     Printf.ksprintf invalid_arg
       "Dynarray.%s: a length change from %d to %d occurred during iteration"
-      f expected observed
+      fname expected observed
 
   (* When an [Empty] element is observed unexpectedly at index [i],
      it may be either an out-of-bounds access or an invalid-state situation
      depending on whether [i <= length]. *)
-  let[@inline never] unexpected_empty_element f ~i ~length =
+  let[@inline never] unexpected_empty_element fname ~i ~length =
     if i < length then
       missing_element ~i ~length
     else
-      index_out_of_bounds f ~i ~length
+      index_out_of_bounds fname ~i ~length
 
-  let[@inline never] empty_dynarray f =
+  let[@inline never] empty_dynarray fname =
     Printf.ksprintf invalid_arg
-      "Dynarray.%s: empty array" f
+      "Dynarray.%s: empty array" fname
 
   let[@inline never] different_lengths f ~length1 ~length2 =
     Printf.ksprintf invalid_arg
@@ -448,10 +448,10 @@ end
 
    See {!iter} below for a detailed usage example.
 *)
-let check_same_length f (Pack a) ~length =
+let check_same_length fname (Pack a) ~length =
   let length_a = a.length in
   if length <> length_a then
-    Error.length_change_during_iteration f
+    Error.length_change_during_iteration fname
       ~expected:length ~observed:length_a
 
 (** Careful unsafe access. *)
@@ -873,7 +873,7 @@ let append a b =
    each other and leave the length unchanged at the next check.
 *)
 
-let iter_ f k a =
+let iter_ fname f a =
   let Pack {arr; length; dummy} = a in
   (* [check_valid_length length arr] is used for memory safety, it
      guarantees that the backing array has capacity at least [length],
@@ -900,20 +900,36 @@ let iter_ f k a =
   *)
   check_valid_length length arr;
   for i = 0 to length - 1 do
-    k (unsafe_get arr ~dummy ~i ~length);
+    f (unsafe_get arr ~dummy ~i ~length);
   done;
-  check_same_length f a ~length
+  check_same_length fname a ~length
 
-let iter k a =
-  iter_ "iter" k a
+let iter f a =
+  iter_ "iter" f a
 
-let iteri k a =
+let iteri f a =
   let Pack {arr; length; dummy} = a in
   check_valid_length length arr;
   for i = 0 to length - 1 do
-    k i (unsafe_get arr ~dummy ~i ~length);
+    f i (unsafe_get arr ~dummy ~i ~length);
   done;
   check_same_length "iteri" a ~length
+
+let rev_iter f a =
+  let Pack {arr; length; dummy} = a in
+  check_valid_length length arr;
+  for i = length - 1 downto 0 do
+    f (unsafe_get arr ~dummy ~i ~length);
+  done;
+  check_same_length "rev_iter" a ~length
+
+let rev_iteri f a =
+  let Pack {arr; length; dummy} = a in
+  check_valid_length length arr;
+  for i = length - 1 downto 0 do
+    f i (unsafe_get arr ~dummy ~i ~length);
+  done;
+  check_same_length "rev_iteri" a ~length
 
 let map f a =
   let Pack {arr = arr_in; length; dummy} = a in

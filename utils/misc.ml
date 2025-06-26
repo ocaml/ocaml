@@ -253,6 +253,16 @@ module Stdlib = struct
       in
       loop 0
 
+    let rec to_utf_8_seq b i () =
+      if i >= Bytes.length b then
+        Seq.Nil
+      else
+        let next = Bytes.get_utf_8_uchar b i in
+        let u = Uchar.utf_decode_uchar next in
+        Seq.Cons(u, to_utf_8_seq b (i + Uchar.utf_decode_length next))
+
+    let to_utf_8_seq s = to_utf_8_seq (Bytes.unsafe_of_string s) 0
+
     let print ppf t =
       Format.pp_print_string ppf t
   end

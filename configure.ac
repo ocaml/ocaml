@@ -122,6 +122,7 @@ AC_SUBST([CMXS_MAGIC_NUMBER], [CMXS__MAGIC_NUMBER])
 AC_SUBST([CMT_MAGIC_NUMBER], [CMT__MAGIC_NUMBER])
 AC_SUBST([LINEAR_MAGIC_NUMBER], [LINEAR__MAGIC_NUMBER])
 AC_SUBST([CC])
+AC_SUBST([ocaml_cc_vendor])
 AC_SUBST([SAK_BUILD])
 AC_SUBST([SAK])
 AC_SUBST([encode_C_literal])
@@ -920,7 +921,8 @@ AS_CASE([$ocaml_cc_vendor],
   [msvc-*],
     [AS_CASE([$ocaml_cc_vendor],
       [msvc-*-clang-*],
-        [cc_warnings='-W4 -Wno-unused-parameter -Wno-sign-compare -Wundef'
+        [cc_warnings="-W4 -Wno-unused-parameter -Wno-sign-compare -Wundef \
+-Wno-cast-function-type-mismatch"
          warn_error_flag='-WX'],
       [cc_warnings='-W2'
        warn_error_flag='-WX -options:strict'])],
@@ -2647,6 +2649,11 @@ AS_CASE([$enable_ocamltest,OCAML__DEVELOPMENT_VERSION],
     ocamltest_target=ocamltest
     ocamltest_opt_target=ocamltest.opt
     ocamltest='ocamltest'
+    AS_IF([$native_compiler],
+      [optional_native_tools="$optional_native_tools \
+testsuite/tools/test_in_prefix.opt"],
+      [optional_bytecode_tools="$optional_bytecode_tools \
+testsuite/tools/test_in_prefix"])
     testsuite_tools='testsuite/tools/codegen testsuite/tools/expect'
     optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools"],
   [build_ocamltest=false

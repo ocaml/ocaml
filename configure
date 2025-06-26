@@ -933,6 +933,7 @@ DIFF_FLAGS
 encode_C_literal
 SAK
 SAK_BUILD
+ocaml_cc_vendor
 CC
 LINEAR_MAGIC_NUMBER
 CMT_MAGIC_NUMBER
@@ -3411,6 +3412,7 @@ CMXS_MAGIC_NUMBER=Caml1999D037
 CMT_MAGIC_NUMBER=Caml1999T037
 
 LINEAR_MAGIC_NUMBER=Caml1999L037
+
 
 
 
@@ -14819,7 +14821,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking C compiler vendor" >&5
 printf %s "checking C compiler vendor... " >&6; }
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #if defined(_MSC_VER)
@@ -15111,7 +15113,8 @@ case $ocaml_cc_vendor in #(
   msvc-*) :
     case $ocaml_cc_vendor in #(
   msvc-*-clang-*) :
-    cc_warnings='-W4 -Wno-unused-parameter -Wno-sign-compare -Wundef'
+    cc_warnings="-W4 -Wno-unused-parameter -Wno-sign-compare -Wundef \
+-Wno-cast-function-type-mismatch"
          warn_error_flag='-WX' ;; #(
   *) :
     cc_warnings='-W2'
@@ -23223,6 +23226,14 @@ case $enable_ocamltest,true in #(
     ocamltest_target=ocamltest
     ocamltest_opt_target=ocamltest.opt
     ocamltest='ocamltest'
+    if $native_compiler
+then :
+  optional_native_tools="$optional_native_tools \
+testsuite/tools/test_in_prefix.opt"
+else $as_nop
+  optional_bytecode_tools="$optional_bytecode_tools \
+testsuite/tools/test_in_prefix"
+fi
     testsuite_tools='testsuite/tools/codegen testsuite/tools/expect'
     optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools" ;; #(
   *) :

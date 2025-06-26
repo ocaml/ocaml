@@ -247,10 +247,26 @@ val clear : 'a t -> unit
 *)
 
 val iter : ('a -> unit) -> 'a t -> unit
-(** [iter f a] calls [f] on each element of [a]. *)
+(** [iter f a] calls [f] on each element of [a], from the element of
+    index [0] to the element of index [length a - 1]. *)
+
+val rev_iter : ('a -> unit) -> 'a t -> unit
+(** [rev_iter f a] calls [f] on each element of [a], from the element
+    of index [length a - 1] to the element of index [0].
+
+    @since 5.5
+*)
 
 val iteri : (int -> 'a -> unit) -> 'a t -> unit
-(** [iteri f a] calls [f i x] for each [x] at index [i] in [a]. *)
+(** [iteri f a] calls [f i x] for each [x] at index [i] in [a],
+    from the index [0] to the index [length a - 1]. *)
+
+val rev_iteri : (int -> 'a -> unit) -> 'a t -> unit
+(** [rev_iteri f a] calls [f i x] for each [x] at index [i] in [a],
+    from the index [length a - 1] down to the index [0].
+
+    @since 5.5
+*)
 
 val map : ('a -> 'b) -> 'a t -> 'b t
 (** [map f a] is a new array of elements of the form [f x]

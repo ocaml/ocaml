@@ -292,9 +292,9 @@ val filter_method: Env.t -> string -> type_expr -> type_expr
 val occur_in: Env.t -> type_expr -> type_expr -> bool
 val deep_occur: type_expr -> type_expr -> bool
 val deep_occur_list: type_expr -> type_expr list -> bool
-val moregeneral: Env.t -> bool -> type_expr -> type_expr -> unit
+val moregeneral: Env.t -> type_expr -> type_expr -> unit
         (* Check if the first type scheme is more general than the second. *)
-val is_moregeneral: Env.t -> bool -> type_expr -> type_expr -> bool
+val is_moregeneral: Env.t -> type_expr -> type_expr -> bool
 val rigidify: type_expr -> type_expr list
         (* "Rigidify" a type and return its type variable *)
 val all_distinct_vars: Env.t -> type_expr list -> bool
@@ -457,6 +457,7 @@ type closed_class_failure = {
 val free_variables: ?env:Env.t -> type_expr -> type_expr list
 val free_variables_list: ?env:Env.t -> type_expr list -> type_expr list
         (* If env present, then check for incomplete definitions too *)
+val contains_nongen_variables: ?env:Env.t -> type_expr -> bool
 val closed_type_expr: ?env:Env.t -> type_expr -> bool
 val closed_type_decl: type_declaration -> type_expr option
 val closed_extension_constructor: extension_constructor -> type_expr option

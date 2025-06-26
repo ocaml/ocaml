@@ -26,7 +26,7 @@
 #include "caml/unixsupport.h"
 #include <windows.h>
 
-static int truncate_handle(HANDLE fh, __int64 len)
+static int truncate_handle(HANDLE fh, int64_t len)
 {
   LARGE_INTEGER fp;
   fp.QuadPart = len;
@@ -38,7 +38,7 @@ static int truncate_handle(HANDLE fh, __int64 len)
   return 0;
 }
 
-static int ftruncate(HANDLE fh, __int64 len)
+static int ftruncate(HANDLE fh, int64_t len)
 {
   HANDLE dupfh, currproc;
   int ret;
@@ -54,7 +54,7 @@ static int ftruncate(HANDLE fh, __int64 len)
   return ret;
 }
 
-static int truncate(WCHAR * path, __int64 len)
+static int truncate(WCHAR * path, int64_t len)
 {
   HANDLE fh;
   int ret;
@@ -91,7 +91,7 @@ CAMLprim value caml_unix_truncate_64(value path, value vlen)
   CAMLparam2(path, vlen);
   WCHAR * p;
   int ret;
-  __int64 len = Int64_val(vlen);
+  int64_t len = Int64_val(vlen);
   caml_unix_check_path(path, "truncate");
   p = caml_stat_strdup_to_utf16(String_val(path));
   caml_enter_blocking_section();
@@ -119,7 +119,7 @@ CAMLprim value caml_unix_ftruncate_64(value fd, value vlen)
 {
   int ret;
   HANDLE h = Handle_val(fd);
-  __int64 len = Int64_val(vlen);
+  int64_t len = Int64_val(vlen);
   caml_enter_blocking_section();
   ret = ftruncate(h, len);
   caml_leave_blocking_section();

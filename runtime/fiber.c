@@ -75,9 +75,8 @@ void caml_change_max_stack_size (uintnat new_max_wsize)
 
   if (new_max_wsize < wsize) new_max_wsize = wsize;
   if (new_max_wsize != caml_max_stack_wsize){
-    caml_gc_log ("Changing stack limit to %"
-                 ARCH_INTNAT_PRINTF_FORMAT "uk bytes",
-                     new_max_wsize * sizeof (value) / 1024);
+    caml_gc_log ("Changing stack limit to %" CAML_PRIuNAT "k bytes",
+                 new_max_wsize * sizeof (value) / 1024);
   }
   caml_max_stack_wsize = new_max_wsize;
 }
@@ -228,8 +227,8 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
 
   if (!stack) caml_raise_out_of_memory();
 
-  fiber_debug_log ("Allocate stack=%p of %" ARCH_INTNAT_PRINTF_FORMAT
-                     "u words", stack, caml_fiber_wsz);
+  fiber_debug_log ("Allocate stack=%p of %" CAML_PRIuNAT "words",
+                   stack, caml_fiber_wsz);
 
   return Val_ptr(stack);
 }
@@ -474,12 +473,10 @@ int caml_try_realloc_stack(asize_t required_space)
   } while (wsize < stack_used + required_space);
 
   if (wsize > 4096 / sizeof(value)) {
-    caml_gc_log ("Growing stack to %"
-                 ARCH_INTNAT_PRINTF_FORMAT "uk bytes",
+    caml_gc_log ("Growing stack to %" CAML_PRIuNAT "k bytes",
                  (uintnat) wsize * sizeof(value) / 1024);
   } else {
-    caml_gc_log ("Growing stack to %"
-                 ARCH_INTNAT_PRINTF_FORMAT "u bytes",
+    caml_gc_log ("Growing stack to %" CAML_PRIuNAT " bytes",
                  (uintnat) wsize * sizeof(value));
   }
 

@@ -15,7 +15,17 @@ external print_and_raise : unit -> unit = "print_and_raise"
 
 open Printf
 
+(* We use two waitgroups (synchronizing barriers, not detectable by TSan). The
+   first barrier ensures that there is always a data race from TSan's point of
+   view, by delaying the synchronizing [Domain.join] until after both domains
+   have accessed the shared mutable field; and that these accesses always
+   happen in the same order (write first or read first).
+
+   The role of the second barrier is to always enforce the same order between
+   the TSan report and logging lines such as "Leaving f". Not enforcing that
+   order used to be a source of flakiness in the tests. *)
 let wg = Waitgroup.create 2
+let wg' = Waitgroup.create 2
 let r = ref 0
 
 let [@inline never] race () =
@@ -23,33 +33,36 @@ let [@inline never] race () =
   Waitgroup.join wg
 
 let [@inline never] i () =
-  printf "Entering i\n%!";
-  printf "Calling print_and_raise...\n%!";
+  eprintf "Entering i\n%!";
+  eprintf "Calling print_and_raise...\n%!";
   print_and_raise ();
-  printf "Leaving i\n%!"
+  eprintf "Leaving i\n%!"
 
 let [@inline never] h () =
-  printf "Entering h\n%!";
+  eprintf "Entering h\n%!";
   i ();
-  printf "Leaving h\n%!"
+  eprintf "Leaving h\n%!"
 
 let [@inline never] g () =
-  printf "Entering g\n%!";
+  eprintf "Entering g\n%!";
   h ();
-  printf "Leaving g\n%!"
+  eprintf "Leaving g\n%!"
 
 let [@inline never] f () =
-  printf "Entering f\n%!";
+  eprintf "Entering f\n%!";
   (try g ()
   with Failure msg ->
-    printf "Caught Failure \"%s\"\n%!" msg;
-    Printexc.print_backtrace stdout;
+    eprintf "Caught Failure \"%s\"\n%!" msg;
+    Printexc.print_backtrace stderr;
+    flush stderr;
     race ());
-  printf "Leaving f\n%!"
+  Waitgroup.join wg';
+  eprintf "Leaving f\n%!"
 
 let [@inline never] writer () =
   Waitgroup.join wg;
-  r := 1
+  r := 1;
+  Waitgroup.join wg'
 
 let () =
   Printexc.record_backtrace true;

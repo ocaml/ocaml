@@ -139,9 +139,9 @@ CAMLprim value caml_realloc_global(value size)
   actual_size = Wosize_val(old_global_data);
   if (requested_size >= actual_size) {
     requested_size = (requested_size + 0x100) & 0xFFFFFF00;
-    CAML_GC_MESSAGE(STACKSIZE, "Growing global data to %"
-                     ARCH_INTNAT_PRINTF_FORMAT "u entries\n",
-                     requested_size);
+    CAML_GC_MESSAGE(STACKSIZE,
+                    "Growing global data to %" CAML_PRIuNAT " entries\n",
+                    requested_size);
     new_global_data = caml_alloc_shr(requested_size, 0);
     for (mlsize_t i = 0; i < actual_size; i++)
       caml_initialize(&Field(new_global_data, i), Field(old_global_data, i));

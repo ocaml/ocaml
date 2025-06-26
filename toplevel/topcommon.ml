@@ -401,7 +401,7 @@ let try_run_directive ppf dir_name pdir_arg =
           | `String ->
               Format.fprintf ppf "a %a literal" inline_code "string"
           | `Int ->
-              Format.fprintf ppf "an %a literal" inline_code "string"
+              Format.fprintf ppf "an %a literal" inline_code "int"
           | `Ident ->
               Format.fprintf ppf "an identifier"
           | `Bool ->
