@@ -444,38 +444,38 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
           else find_in_bucket next in
       find_in_bucket h.data.(key_index h key)
 
-      let rec retrieve_bucket key bucket =
-        match bucket with
-        | Empty ->
-            bucket
-        | Cons {key=k; next} ->
-            if H.equal k key
-            then bucket
-            else retrieve_bucket key next
+    let rec retrieve_bucket key bucket =
+      match bucket with
+      | Empty ->
+          bucket
+      | Cons {key=k; next} ->
+          if H.equal k key
+          then bucket
+          else retrieve_bucket key next
 
-      let replace_in_bucket h key i l data = function
-        | Empty ->
-          h.data.(i) <- Cons{key; data; next=l};
-          h.size <- h.size + 1;
-          if h.size > Array.length h.data lsl 1 then resize key_index h
-        | Cons slot -> slot.key <- key; slot.data <- data
+    let replace_bucket h key i l data = function
+      | Empty ->
+        h.data.(i) <- Cons{key; data; next=l};
+        h.size <- h.size + 1;
+        if h.size > Array.length h.data lsl 1 then resize key_index h
+      | Cons slot -> slot.key <- key; slot.data <- data
 
-      let find_and_replace h key data =
-        let i = key_index h key in
-        let l = h.data.(i) in
-        let bucket = retrieve_bucket key l in
-        let old_data = match bucket with
-          | Cons {data; _} -> Some data
-          | Empty -> None
-        in
-        replace_in_bucket h key i l data bucket;
-        old_data
+    let find_and_replace h key data =
+      let i = key_index h key in
+      let l = h.data.(i) in
+      let bucket = retrieve_bucket key l in
+      let old_data = match bucket with
+        | Cons {data; _} -> Some data
+        | Empty -> None
+      in
+      replace_bucket h key i l data bucket;
+      old_data
 
-      let replace h key data =
-        let i = key_index h key in
-        let l = h.data.(i) in
-        let bucket = retrieve_bucket key l in
-        replace_in_bucket h key i l data bucket
+    let replace h key data =
+      let i = key_index h key in
+      let l = h.data.(i) in
+      let bucket = retrieve_bucket key l in
+      replace_bucket h key i l data bucket
 
     (* Iterators *)
 
@@ -632,7 +632,7 @@ let rec retrieve_bucket key bucket =
       then bucket
       else retrieve_bucket key next
 
-let replace_in_bucket h key i l data bucket =
+let replace_bucket h key i l data bucket =
   match bucket with
   | Empty ->
     h.data.(i) <- Cons{key; data; next=l};
@@ -648,14 +648,14 @@ let find_and_replace h key data =
     | Cons {data; _} -> Some data
     | Empty -> None
   in
-  replace_in_bucket h key i l data bucket;
+  replace_bucket h key i l data bucket;
   old_data
 
 let replace h key data =
   let i = key_index h key in
   let l = h.data.(i) in
   let bucket = retrieve_bucket key l in
-  replace_in_bucket h key i l data bucket
+  replace_bucket h key i l data bucket
 
 let rec mem_in_bucket key = function
   | Empty ->
