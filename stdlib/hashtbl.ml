@@ -458,7 +458,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
           h.data.(i) <- Cons{key; data; next=l};
           h.size <- h.size + 1;
           if h.size > Array.length h.data lsl 1 then resize key_index h
-        | Cons (_ as slot) -> slot.key <- key; slot.data <- data
+        | Cons slot -> slot.key <- key; slot.data <- data
 
       let find_and_replace h key data =
         let i = key_index h key in
