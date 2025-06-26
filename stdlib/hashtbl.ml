@@ -453,8 +453,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
             then bucket
             else retrieve_bucket key next
 
-      let replace_in_bucket h key i l data bucket =
-        match bucket with
+      let replace_in_bucket h key i l data = function
         | Empty ->
           h.data.(i) <- Cons{key; data; next=l};
           h.size <- h.size + 1;
