@@ -248,7 +248,7 @@ let classify_expression : Typedtree.expression -> sd =
     let add_value_binding env vb =
       match vb.vb_pat.pat_desc with
       | Tpat_var (id, _loc, _uid) ->
-          let size = classify_expression old_env vb.vb_expr in
+          let size = classify_expression old_env vb.vb_expr.qexp_expr in
           Ident.add id size env
       | _ ->
           (* Note: we don't try to compute any size for complex patterns *)
@@ -578,7 +578,7 @@ let rec expression : Typedtree.expression -> term_judg =
          G |- let <bindings> in body : m
       *)
       value_bindings rec_flag bindings >> expression body
-    | Texp_match (e, cases, eff_cases, _) ->
+    | Texp_match ({qexp_expr=e}, cases, eff_cases, _) ->
       (* TODO: update comment below for eff_cases
          (Gi; mi |- pi -> ei : m)^i
          G |- e : sum(mi)^i
@@ -1209,7 +1209,7 @@ and value_bindings : rec_flag -> Typedtree.value_binding list -> bind_judg =
         *)
           let binding_env {vb_pat; vb_expr; _} m =
             let m' = Mode.compose m (pattern vb_pat bound_env) in
-            remove_pat vb_pat (expression vb_expr m') in
+            remove_pat vb_pat (expression vb_expr.qexp_expr m') in
           list binding_env bindings mode
       | Recursive ->
         (*
@@ -1252,7 +1252,7 @@ and value_bindings : rec_flag -> Typedtree.value_binding list -> bind_judg =
         *)
           (* [binding_env] takes a binding (x_i = e_i)
              and computes (Gi, (mdef_ij)^j). *)
-          let binding_env {vb_pat = x_i; vb_expr = e_i; _} =
+          let binding_env {vb_pat = x_i; vb_expr = {qexp_expr = e_i}; _} =
             let mbody_i = pattern x_i bound_env in
             (* Gi, (x_j:mdef_ij)^j  *)
             let rhs_env_i = expression e_i (Mode.compose mode mbody_i) in

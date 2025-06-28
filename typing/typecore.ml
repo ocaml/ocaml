@@ -450,7 +450,9 @@ let type_continuation_pat env expected_ty sp =
       let desc =
         { val_type = expected_ty; val_kind = Val_reg;
           Types.val_loc = loc; val_attributes = [];
-          val_uid = Uid.mk ~current_unit:(Env.get_current_unit ()); }
+          val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
+          val_bound_type_vars = generic_free_variables expected_ty;
+        }
       in
         Some (id, desc)
   | Ppat_extension ext ->
@@ -2267,9 +2269,21 @@ let add_pattern_variables ?check ?check_as env pv =
          {val_type = pv_type; val_kind = Val_reg; Types.val_loc = pv_loc;
           val_attributes = pv_attributes;
           val_uid = pv_uid;
+          val_bound_type_vars = generic_free_variables pv_type;
          } env
     )
     pv env
+
+let update_pattern_variables env pvs =
+  List.fold_right begin fun {pv_id} env ->
+    let desc =
+      try Env.find_value (Path.Pident pv_id) env
+      with Not_found -> assert false
+    in
+    Env.update_value pv_id
+      {desc with val_bound_type_vars = generic_free_variables desc.val_type}
+      env
+  end pvs env
 
 let add_module_variables env module_variables =
   let module_variables_as_list =
@@ -2365,6 +2379,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
             ; val_attributes = pv_attributes
             ; val_loc = pv_loc
             ; val_uid
+            ; val_bound_type_vars = []
             }
             val_env
          in
@@ -2375,6 +2390,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
             ; val_attributes = pv_attributes
             ; val_loc = pv_loc
             ; val_uid
+            ; val_bound_type_vars = []
             }
             met_env
          in
@@ -3048,8 +3064,8 @@ let rec is_nonexpansive exp =
   | Texp_function _
   | Texp_array (_, []) -> true
   | Texp_let(_rec_flag, pat_exp_list, body) ->
-      List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list &&
-      is_nonexpansive body
+      List.for_all (fun vb -> is_nonexpansive vb.vb_expr.qexp_expr) pat_exp_list
+        && is_nonexpansive body
   | Texp_apply(e, (_,Omitted ())::el) ->
       is_nonexpansive e && List.for_all is_nonexpansive_arg (List.map snd el)
   | Texp_match(e, cases, _, _) ->
@@ -3062,7 +3078,7 @@ let rec is_nonexpansive exp =
           | Tpat_exception _ -> true
           | _ -> false } pat
       in
-      is_nonexpansive e &&
+      is_nonexpansive e.qexp_expr &&
       List.for_all
         (fun {c_lhs; c_guard; c_rhs} ->
            is_nonexpansive_opt c_guard && is_nonexpansive c_rhs
@@ -3142,7 +3158,8 @@ and is_nonexpansive_struct_item item =
   | Tstr_eval _ | Tstr_primitive _ | Tstr_type _
   | Tstr_modtype _ | Tstr_class_type _  -> true
   | Tstr_value (_, pat_exp_list) ->
-      List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list
+      List.for_all (fun vb -> is_nonexpansive vb.vb_expr.qexp_expr)
+        pat_exp_list
   | Tstr_module {mb_expr=m;_}
   | Tstr_open {open_expr=m;_}
   | Tstr_include {incl_mod=m;_} -> is_nonexpansive_mod m
@@ -3183,12 +3200,13 @@ let maybe_expansive e = not (is_nonexpansive e)
 let annotate_recursive_bindings env valbinds =
   let ids = let_bound_idents valbinds in
   List.map
-    (fun {vb_pat; vb_expr; vb_rec_kind = _; vb_attributes; vb_loc} ->
-       match (Value_rec_check.is_valid_recursive_expression ids vb_expr) with
+    (fun {vb_pat; vb_expr = ({qexp_expr} as vb_expr);
+          vb_rec_kind = _; vb_attributes; vb_loc} ->
+       match (Value_rec_check.is_valid_recursive_expression ids qexp_expr) with
        | None ->
-         raise(Error(vb_expr.exp_loc, env, Illegal_letrec_expr))
+         raise(Error(qexp_expr.exp_loc, env, Illegal_letrec_expr))
        | Some vb_rec_kind ->
-         { vb_pat; vb_expr; vb_rec_kind; vb_attributes; vb_loc})
+         { vb_pat; vb_expr; vb_rec_kind; vb_attributes; vb_loc })
     valbinds
 
 let check_recursive_class_bindings env ids exprs =
@@ -3721,6 +3739,10 @@ let with_explanation explanation f =
 let may_lower_contravariant env exp =
   if maybe_expansive exp then lower_contravariant env exp.exp_type
 
+(* build a quantified expression *)
+let qexp_of_exp e =
+  {qexp_expr = e; qexp_vars = generic_free_variables e.exp_type}
+
 (* value binding elaboration *)
 
 let vb_exp_constraint {pvb_expr=expr; pvb_pat=pat; pvb_constraint=ct; _ } =
@@ -3936,7 +3958,7 @@ and type_expect_
                     escape at the outer level to avoid losing generality of
                     types added to [new_env].
                  *)
-                let bound_exp = vb.vb_expr in
+                let bound_exp = vb.vb_expr.qexp_expr in
                 let bound_exp_type = Ctype.instance bound_exp.exp_type in
                 let loc = proper_exp_loc bound_exp in
                 let outer_var = newvar2 outer_level in
@@ -4097,7 +4119,7 @@ and type_expect_
           val_cases
       then check_partial_application ~statement:false arg;
       re {
-        exp_desc = Texp_match(arg, val_cases, eff_cases, partial);
+        exp_desc = Texp_match(qexp_of_exp arg, val_cases, eff_cases, partial);
         exp_loc = loc; exp_extra = [];
         exp_type = instance ty_expected;
         exp_attributes = sexp.pexp_attributes;
@@ -4455,6 +4477,7 @@ and type_expect_
                val_kind = Val_reg;
                val_loc = loc;
                val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
+               val_bound_type_vars = [];
               } env
               ~check:(fun s -> Warnings.Unused_for_index s)
         | _ ->
@@ -5733,6 +5756,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
             val_attributes = [];
             val_loc = Location.none;
             val_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
+            val_bound_type_vars = [];
           }
         in
         let exp_env = Env.add_value id desc env in
@@ -5775,7 +5799,8 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
       let let_pat, let_var = var_pair "arg" texp.exp_type in
       re { texp with exp_type = ty_fun; exp_desc =
            Texp_let (Nonrecursive,
-                     [{vb_pat=let_pat; vb_expr=texp; vb_attributes=[];
+                     [{vb_pat=let_pat; vb_expr=qexp_of_exp texp;
+                       vb_attributes=[];
                        vb_loc=Location.none; vb_rec_kind = Dynamic;
                       }],
                      func let_var) }
@@ -6299,7 +6324,7 @@ and type_cases
           c_lhs = pat;
           c_cont = cont;
           c_guard = guard;
-          c_rhs = {exp with exp_type = ty_infer}
+          c_rhs = {exp with exp_type = ty_infer};
         }
     end
     ~additional_checks_for_split_cases:(fun cases ->
@@ -6370,7 +6395,7 @@ and type_let ?check ?check_strict
   let attrs_list = List.map fst spatl in
   let is_recursive = (rec_flag = Recursive) in
 
-  let (pat_list, exp_list, new_env, mvs) =
+  let (pat_list, exp_list, new_env, mvs, pvs) =
     with_local_level_generalize begin fun () ->
       if existential_context = At_toplevel then Typetexp.TyVarEnv.reset ();
       let (pat_list, new_env, force, pvs, mvs) =
@@ -6466,9 +6491,9 @@ and type_let ?check ?check_strict
         )
         pat_list
         (List.map2 (fun (attrs, _) (e, _) -> attrs, e) spatl exp_list);
-      (pat_list, exp_list, new_env, mvs)
+      (pat_list, exp_list, new_env, mvs, pvs)
     end
-    ~before_generalize: begin fun (pat_list, exp_list, _, _) ->
+    ~before_generalize: begin fun (pat_list, exp_list, _, _, _) ->
       List.iter2 (fun (pat, _) (exp, vars) ->
         if maybe_expansive exp then begin
           lower_contravariant env pat.pat_type;
@@ -6486,7 +6511,7 @@ and type_let ?check ?check_strict
     List.map2
       (fun ((p, _), (e, _)) pvb ->
         (* vb_rec_kind will be computed later for recursive bindings *)
-        {vb_pat=p; vb_expr=e; vb_attributes=pvb.pvb_attributes;
+        {vb_pat=p; vb_expr=qexp_of_exp e; vb_attributes=pvb.pvb_attributes;
          vb_loc=pvb.pvb_loc; vb_rec_kind = Dynamic;
         })
       l spat_sexp_list
@@ -6500,8 +6525,10 @@ and type_let ?check ?check_strict
       l;
   List.iter (fun vb ->
       if pattern_needs_partial_application_check vb.vb_pat then
-        check_partial_application ~statement:false vb.vb_expr
+        check_partial_application ~statement:false
+          vb.vb_expr.qexp_expr
     ) l;
+  let new_env = update_pattern_variables new_env pvs in
   (* See Note [add_module_variables after checking expressions] *)
   let new_env = add_module_variables new_env mvs in
   (l, new_env)

@@ -274,7 +274,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
         let x, y = List.fold_left split_case ([], []) pat_expr_list in
         List.rev x, List.rev y
       in
-      transl_handler ~scopes e arg (Some (pat_expr_list, partial))
+      transl_handler ~scopes e arg.qexp_expr (Some (pat_expr_list, partial))
         exn_pat_expr_list eff_pat_expr_list
   | Texp_try(body, pat_expr_list, []) ->
       let id = Typecore.name_cases "exn" pat_expr_list in
@@ -941,7 +941,7 @@ and transl_let ~scopes ?(in_structure=false) rec_flag pat_expr_list =
           fun body -> body
       | {vb_pat=pat; vb_expr=expr; vb_rec_kind=_; vb_attributes=attr; vb_loc}
         :: rem ->
-          let lam = transl_bound_exp ~scopes ~in_structure pat expr in
+          let lam = transl_bound_exp ~scopes ~in_structure pat expr.qexp_expr in
           let lam = Translattribute.add_function_attributes lam vb_loc attr in
           let mk_body = transl rem in
           fun body ->
@@ -957,7 +957,8 @@ and transl_let ~scopes ?(in_structure=false) rec_flag pat_expr_list =
         pat_expr_list in
       let transl_case {vb_expr=expr; vb_attributes; vb_rec_kind = rkind;
                        vb_loc; vb_pat} id =
-        let def = transl_bound_exp ~scopes ~in_structure vb_pat expr in
+        let def =
+          transl_bound_exp ~scopes ~in_structure vb_pat expr.qexp_expr in
         let def =
           Translattribute.add_function_attributes def vb_loc vb_attributes
         in
@@ -1161,7 +1162,7 @@ and transl_match ~scopes e arg pat_expr_list partial =
        handler)
   in
   let classic =
-    match arg, exn_cases with
+    match arg.qexp_expr, exn_cases with
     | {exp_desc = Texp_tuple argl}, [] ->
       assert (static_handlers = []);
       Matching.for_multiple_match ~scopes e.exp_loc

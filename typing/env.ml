@@ -1935,6 +1935,21 @@ and store_value ?check id addr decl shape env =
     values = IdTbl.add id (Val_bound vda) env.values;
     summary = Env_value(env.summary, id, decl) }
 
+and update_value id decl env =
+  let vda =
+    match IdTbl.find_same id env.values with
+    | Val_bound x -> {x with vda_description = decl}
+    | Val_unbound _ -> invalid_arg "Env.update_value"
+  in
+  { env with
+    values = IdTbl.add id (Val_bound vda) (IdTbl.remove id env.values);
+    summary = update_summary_value id decl env.summary }
+
+and update_summary_value id decl = function
+  | Env_value (s, id', _d) when Ident.same id id' ->
+      Env_value (s, id, decl)
+  | s -> map_summary (update_summary_value id decl) s
+
 and store_constructor ~check type_decl type_id cstr_id cstr env =
   Builtin_attributes.warning_scope cstr.cstr_attributes (fun () ->
   if check && not type_decl.type_loc.Location.loc_ghost

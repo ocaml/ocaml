@@ -1,0 +1,650 @@
+File "test_quantification.ml", line 24, characters 7-8:
+24 |    let x = (None = None) in ()
+            ^
+Warning 26 [unused-var]: unused variable x.
+
+File "test_quantification.ml", line 68, characters 8-9:
+68 |     let x = ref [] in
+             ^
+Warning 26 [unused-var]: unused variable x.
+[
+  structure_item 
+    Tstr_eval
+    expression 
+      Texp_let Nonrec
+      [
+        <def>
+          pattern 
+            Tpat_var "x"
+          quantified 'a. 'a list
+            expression 
+              Texp_construct "[]"
+              []
+      ]
+      expression 
+        Texp_ident "x"
+  structure_item 
+    Tstr_eval
+    expression 
+      Texp_match
+      quantified 'a. 'a list
+        expression 
+          Texp_construct "[]"
+          []
+      [
+        <case>
+          pattern 
+            Tpat_value
+            pattern 
+              Tpat_var "x"
+          expression 
+            Texp_ident "x"
+      ]
+      []
+  structure_item 
+    Tstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Tpat_var "f"
+        quantified 'a 'b. 'b -> 'b * 'a list
+          expression 
+            Texp_function
+            [
+              Nolabel
+              Param_pat
+                pattern 
+                  Tpat_var "x"
+            ]
+            Tfunction_body
+              expression 
+                Texp_let Nonrec
+                [
+                  <def>
+                    pattern 
+                      Tpat_var "y"
+                    quantified 'a. 'b * 'a list
+                      expression 
+                        Texp_tuple
+                        [
+                          Label: None
+                            expression 
+                              Texp_ident "x"
+                          Label: None
+                            expression 
+                              Texp_construct "[]"
+                              []
+                        ]
+                ]
+                expression 
+                  Texp_ident "y"
+    ]
+  structure_item 
+    Tstr_class
+    [
+      class_declaration 
+        pci_virt = Concrete
+        pci_params =
+          []
+        pci_name = "c"
+        pci_expr =
+          class_expr 
+            Tcl_let Nonrec
+            [
+              <def>
+                pattern 
+                  Tpat_var "x"
+                quantified 'a. 'a list
+                  expression 
+                    Texp_construct "[]"
+                    []
+            ]
+            [
+              <def> "x"
+                expression 
+                  Texp_ident "x"
+            ]
+            class_expr 
+              Tcl_structure
+              class_structure
+                pattern 
+                  Tpat_alias "selfpat-*"
+                  pattern 
+                    Tpat_any
+                [
+                  class_field 
+                    Tcf_method "x" Private
+                      Concrete Fresh
+                      expression 
+                        Texp_function
+                        [
+                          Nolabel
+                          Param_pat
+                            pattern 
+                              Tpat_alias "self-1"
+                              pattern 
+                                Tpat_var "self-*"
+                        ]
+                        Tfunction_body
+                          expression 
+                            extra
+                              Texp_poly
+                              None
+                            Texp_instvar "x"
+                ]
+    ]
+  structure_item 
+    Tstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Tpat_var "let_poly_p0"
+        expression 
+          Texp_function
+          [
+            Nolabel
+            Param_pat
+              pattern 
+                Tpat_construct "()"
+                []
+                None
+          ]
+          Tfunction_body
+            expression 
+              Texp_let Nonrec
+              [
+                <def>
+                  pattern 
+                    Tpat_var "x"
+                  expression 
+                    Texp_apply
+                    expression 
+                      Texp_ident "Stdlib!.="
+                    [
+                      <arg>
+                        Nolabel
+                        expression 
+                          Texp_construct "None"
+                          []
+                      <arg>
+                        Nolabel
+                        expression 
+                          Texp_construct "None"
+                          []
+                    ]
+              ]
+              expression 
+                Texp_construct "()"
+                []
+    ]
+  structure_item 
+    Tstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Tpat_var "let_poly_p1"
+        expression 
+          Texp_function
+          [
+            Nolabel
+            Param_pat
+              pattern 
+                Tpat_construct "()"
+                []
+                None
+          ]
+          Tfunction_body
+            expression 
+              Texp_let Nonrec
+              [
+                <def>
+                  pattern 
+                    Tpat_var "f"
+                  quantified 'a. 'a -> 'a
+                    expression 
+                      Texp_function
+                      [
+                        Nolabel
+                        Param_pat
+                          pattern 
+                            Tpat_var "x"
+                      ]
+                      Tfunction_body
+                        expression 
+                          Texp_ident "x"
+              ]
+              expression 
+                Texp_let Nonrec
+                [
+                  <def>
+                    pattern 
+                      Tpat_var "_r"
+                    quantified 'a. 'a option
+                      expression 
+                        Texp_apply
+                        expression 
+                          Texp_ident "f"
+                        [
+                          <arg>
+                            Nolabel
+                            expression 
+                              Texp_construct "None"
+                              []
+                        ]
+                ]
+                expression 
+                  Texp_construct "()"
+                  []
+    ]
+  structure_item 
+    Tstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Tpat_var "let_poly_p2"
+        expression 
+          Texp_function
+          [
+            Nolabel
+            Param_pat
+              pattern 
+                Tpat_construct "()"
+                []
+                None
+          ]
+          Tfunction_body
+            expression 
+              Texp_let Nonrec
+              [
+                <def>
+                  pattern 
+                    Tpat_var "f"
+                  quantified 'a. 'a -> 'a
+                    expression 
+                      Texp_function
+                      [
+                        Nolabel
+                        Param_pat
+                          pattern 
+                            Tpat_var "x"
+                      ]
+                      Tfunction_body
+                        expression 
+                          Texp_ident "x"
+              ]
+              expression 
+                Texp_let Nonrec
+                [
+                  <def>
+                    pattern 
+                      Tpat_var "_r"
+                    expression 
+                      Texp_let Nonrec
+                      [
+                        <def>
+                          pattern 
+                            Tpat_var "_s"
+                          quantified 'a. 'a option
+                            expression 
+                              Texp_apply
+                              expression 
+                                Texp_ident "f"
+                              [
+                                <arg>
+                                  Nolabel
+                                  expression 
+                                    Texp_construct "None"
+                                    []
+                              ]
+                      ]
+                      expression 
+                        Texp_construct "()"
+                        []
+                ]
+                expression 
+                  Texp_construct "()"
+                  []
+    ]
+  structure_item 
+    Tstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Tpat_var "let_poly_v1"
+        quantified 'a. unit -> 'a list
+          expression 
+            Texp_function
+            [
+              Nolabel
+              Param_pat
+                pattern 
+                  Tpat_construct "()"
+                  []
+                  None
+            ]
+            Tfunction_body
+              expression 
+                Texp_construct "[]"
+                []
+    ]
+  structure_item 
+    Tstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Tpat_var "let_poly_v2"
+        quantified 'a. unit -> 'a list
+          expression 
+            Texp_function
+            [
+              Nolabel
+              Param_pat
+                pattern 
+                  Tpat_construct "()"
+                  []
+                  None
+            ]
+            Tfunction_body
+              expression 
+                Texp_let Nonrec
+                [
+                  <def>
+                    pattern 
+                      Tpat_var "y"
+                    quantified 'a. 'a list
+                      expression 
+                        Texp_construct "[]"
+                        []
+                ]
+                expression 
+                  Texp_ident "y"
+    ]
+  structure_item 
+    Tstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Tpat_var "let_poly_k1"
+        quantified 'a. unit -> 'a list ref
+          expression 
+            Texp_function
+            [
+              Nolabel
+              Param_pat
+                pattern 
+                  Tpat_construct "()"
+                  []
+                  None
+            ]
+            Tfunction_body
+              expression 
+                Texp_apply
+                expression 
+                  Texp_ident "Stdlib!.ref"
+                [
+                  <arg>
+                    Nolabel
+                    expression 
+                      Texp_construct "[]"
+                      []
+                ]
+    ]
+  structure_item 
+    Tstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Tpat_var "let_poly_k2"
+        expression 
+          Texp_function
+          [
+            Nolabel
+            Param_pat
+              pattern 
+                Tpat_construct "()"
+                []
+                None
+          ]
+          Tfunction_body
+            expression 
+              Texp_let Nonrec
+              [
+                <def>
+                  pattern 
+                    Tpat_var "_x"
+                  expression 
+                    Texp_apply
+                    expression 
+                      Texp_ident "Stdlib!.ref"
+                    [
+                      <arg>
+                        Nolabel
+                        expression 
+                          Texp_construct "[]"
+                          []
+                    ]
+              ]
+              expression 
+                Texp_construct "()"
+                []
+    ]
+  structure_item 
+    Tstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Tpat_var "let_poly_k3"
+        quantified 'a. unit -> 'a list
+          expression 
+            Texp_function
+            [
+              Nolabel
+              Param_pat
+                pattern 
+                  Tpat_construct "()"
+                  []
+                  None
+            ]
+            Tfunction_body
+              expression 
+                Texp_let Nonrec
+                [
+                  <def>
+                    pattern 
+                      Tpat_var "r"
+                    expression 
+                      Texp_apply
+                      expression 
+                        Texp_ident "Stdlib!.ref"
+                      [
+                        <arg>
+                          Nolabel
+                          expression 
+                            Texp_construct "[]"
+                            []
+                      ]
+                ]
+                expression 
+                  Texp_apply
+                  expression 
+                    Texp_ident "Stdlib!.!"
+                  [
+                    <arg>
+                      Nolabel
+                      expression 
+                        Texp_ident "r"
+                  ]
+    ]
+  structure_item 
+    Tstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Tpat_var "let_poly_k4"
+        quantified 'a. unit -> 'a list ref
+          expression 
+            Texp_function
+            [
+              Nolabel
+              Param_pat
+                pattern 
+                  Tpat_construct "()"
+                  []
+                  None
+            ]
+            Tfunction_body
+              expression 
+                Texp_let Nonrec
+                [
+                  <def>
+                    pattern 
+                      Tpat_var "f"
+                    quantified 'a. unit -> 'a list ref
+                      expression 
+                        Texp_function
+                        [
+                          Nolabel
+                          Param_pat
+                            pattern 
+                              Tpat_construct "()"
+                              []
+                              None
+                        ]
+                        Tfunction_body
+                          expression 
+                            Texp_apply
+                            expression 
+                              Texp_ident "Stdlib!.ref"
+                            [
+                              <arg>
+                                Nolabel
+                                expression 
+                                  Texp_construct "[]"
+                                  []
+                            ]
+                ]
+                expression 
+                  Texp_apply
+                  expression 
+                    Texp_ident "f"
+                  [
+                    <arg>
+                      Nolabel
+                      expression 
+                        Texp_construct "()"
+                        []
+                  ]
+    ]
+  structure_item 
+    Tstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Tpat_var "let_poly_k5"
+        quantified 'a. unit -> unit -> 'a list ref
+          expression 
+            Texp_function
+            [
+              Nolabel
+              Param_pat
+                pattern 
+                  Tpat_construct "()"
+                  []
+                  None
+            ]
+            Tfunction_body
+              expression 
+                Texp_let Nonrec
+                [
+                  <def>
+                    pattern 
+                      Tpat_var "g"
+                    quantified 'a. unit -> 'a list ref
+                      expression 
+                        Texp_let Nonrec
+                        [
+                          <def>
+                            pattern 
+                              Tpat_var "f"
+                            quantified 'a. unit -> 'a list ref
+                              expression 
+                                Texp_function
+                                [
+                                  Nolabel
+                                  Param_pat
+                                    pattern 
+                                      Tpat_construct "()"
+                                      []
+                                      None
+                                ]
+                                Tfunction_body
+                                  expression 
+                                    Texp_apply
+                                    expression 
+                                      Texp_ident "Stdlib!.ref"
+                                    [
+                                      <arg>
+                                        Nolabel
+                                        expression 
+                                          Texp_construct "[]"
+                                          []
+                                    ]
+                        ]
+                        expression 
+                          Texp_ident "f"
+                ]
+                expression 
+                  Texp_ident "g"
+    ]
+  structure_item 
+    Tstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Tpat_var "let_poly_k6"
+        quantified 'a. unit -> 'a list
+          expression 
+            Texp_function
+            [
+              Nolabel
+              Param_pat
+                pattern 
+                  Tpat_construct "()"
+                  []
+                  None
+            ]
+            Tfunction_body
+              expression 
+                Texp_let Nonrec
+                [
+                  <def>
+                    pattern 
+                      Tpat_var "r"
+                    quantified 'a. 'a list
+                      expression 
+                        Texp_let Nonrec
+                        [
+                          <def>
+                            pattern 
+                              Tpat_var "x"
+                            expression 
+                              Texp_apply
+                              expression 
+                                Texp_ident "Stdlib!.ref"
+                              [
+                                <arg>
+                                  Nolabel
+                                  expression 
+                                    Texp_construct "[]"
+                                    []
+                              ]
+                        ]
+                        expression 
+                          Texp_construct "[]"
+                          []
+                ]
+                expression 
+                  Texp_ident "r"
+    ]
+]
+

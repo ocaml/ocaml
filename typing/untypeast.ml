@@ -398,7 +398,7 @@ let value_binding sub vb =
       pat, Some constr
     | _ -> pat, None
   in
-  Vb.mk ~loc ~attrs ?value_constraint pat (sub.expr sub vb.vb_expr)
+  Vb.mk ~loc ~attrs ?value_constraint pat (sub.expr sub vb.vb_expr.qexp_expr)
 
 let expression sub exp =
   let loc = sub.location sub exp.exp_loc in
@@ -463,7 +463,7 @@ let expression sub exp =
               | Omitted () -> list
               | Arg exp -> (label, sub.expr sub exp) :: list
           ) list [])
-    | Texp_match (exp, cases, eff_cases, _) ->
+    | Texp_match ({qexp_expr=exp}, cases, eff_cases, _) ->
       let merged_cases = List.map (sub.case sub) cases
         @ List.map
           (fun c ->

@@ -309,6 +309,7 @@ val make_copy_of_types: t -> (t -> t)
 
 val add_value:
     ?check:(string -> Warnings.t) -> Ident.t -> value_description -> t -> t
+val update_value: Ident.t -> value_description -> t -> t
 val add_type:
   check:bool -> ?shape:Shape.t -> Ident.t -> type_declaration -> t -> t
 val add_extension:
