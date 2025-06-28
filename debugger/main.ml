@@ -73,7 +73,7 @@ let rec protect ppf restart loop =
         let b =
           if !current_duration = -1L then begin
             let msg = sprintf "Restart from time %Ld and try to get \
-                               closer of the problem" time in
+                               closer to the problem" time in
             stop_user_input ();
             if yes_or_no msg then
               (current_duration := init_duration; true)
@@ -87,9 +87,16 @@ let rec protect ppf restart loop =
             go_to time;
             current_duration := Int64.div !current_duration 10L;
             if !current_duration > 0L then
-              while true do
-                step !current_duration
-              done
+              let max_steps = 100 in
+              let step_count = ref 0 in
+              while !step_count < max_steps && !current_duration > 0L do
+                step !current_duration;
+                incr step_count
+              done;
+              current_duration := -1L;
+              stop_user_input ();
+              show_current_event ppf;
+              restart ppf
             else begin
               current_duration := -1L;
               stop_user_input ();
@@ -112,26 +119,39 @@ let execute_file_if_any () =
     try
       let base = ".ocamldebug" in
       let file =
-        if Sys.file_exists base then
-          base
-        else
-          Filename.concat (Sys.getenv "HOME") base in
-      let ch = open_in file in
-      fprintf Format.std_formatter "Executing file %s@." file;
-      while true do
-        let line = string_trim (input_line ch) in
-        if line <> ""  && line.[0] <> '#' then begin
-          Buffer.add_string buffer line;
-          Buffer.add_char buffer '\n'
-        end
-      done;
-    with _ -> ()
+        if Sys.file_exists base then base
+        else Filename.concat (Sys.getenv "HOME") base
+      in
+      let ch = 
+        try open_in file 
+        with Sys_error _ -> raise Exit
+      in
+      Fun.protect
+        ~finally:(fun () -> close_in ch)
+        (fun () ->
+          fprintf Format.std_formatter "Executing file %s@." file;
+          try
+            while true do
+              let line = string_trim (input_line ch) in
+              if line <> "" && line.[0] <> '#' then (
+                Buffer.add_string buffer line;
+                Buffer.add_char buffer '\n'
+              )
+            done
+          with End_of_file -> ())
+    with
+    | Exit -> ()  (* File tidak ditemukan *)
+    | Sys_error _ -> ()  (* Kesalahan sistem *)
   end;
   let len = Buffer.length buffer in
-  if len > 0 then
-    let commands = Buffer.sub buffer 0 (pred len) in
+  if len > 0 then (
+    let commands = 
+      if len >= 1 then Buffer.sub buffer 0 (len - 1)
+      else ""
+    in
     line_loop Format.std_formatter (Lexing.from_string commands);
     stop_user_input ()
+  )
 
 let toplevel_loop () =
   interactif := false;
