@@ -175,7 +175,7 @@ Working version
 - #14094: toplevel, simplify check on installed printer types
   (Florian Angeletti, review by Gabriel Scherer)
 
-- #13656: Use C99 stdint.h/inttypes.h fixed-width integer types and
+- #13656, #14114: Use C99 stdint.h/inttypes.h fixed-width integer types and
   macros to define OCaml integers.
   (Antonin Décimo, review by Nick Barnes)
 

@@ -84,19 +84,48 @@ installopt-default:
 	  stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx \
 	  "$(INSTALL_LIBDIR)"
 
-ifeq "$(UNIX_OR_WIN32)" "unix"
-HEADERPROGRAM = header
-else # Windows
-HEADERPROGRAM = headernt
+%-launch-info: %.info tmpheader.exe
+	@cat $^ > $@
+
+# The mingw-w64 and MSVC versions of tmpheader.exe are linked with special flags
+# to reduce their size (considerably). In particular, the entry point is
+# overridden, which prevents the linking of crt0.
+ifeq "$(TOOLCHAIN)" "mingw"
+# mingw-w64: optimise header.o for space and remove all unused sections during
+# linking.
+header.o: OC_CFLAGS += -Os
+ifeq "$(SYSTEM)" "mingw"
+  ENTRYPOINT = _wmainCRTStartup
+else
+  ENTRYPOINT = wmainCRTStartup
+endif
+# Certainly for GCC, -nostdlib automatically adds -nostartfiles (clang's
+# documentation is not explicit on this point, but it would be unusual for clang
+# and GCC to differ). --gc-sections removes unreferenced code and data sections.
+tmpheader.exe: OC_LDFLAGS += \
+  -nostdlib -nostartfiles -Wl,--gc-sections -Wl,-e,$(ENTRYPOINT)
+HEADERLIBS = -lkernel32
+else ifeq "$(TOOLCHAIN)" "msvc"
+# MSVC: Optimise header.obj for space. cl doesn't have an equivalent of
+# -nostdlib, however it also doesn't have default libraries in the same way as
+# GCC - the equivalent of crt0.o is linked because it provides the entry point
+# symbol, rather than by being explicitly added to the linking command line.
+# /GS- disables compilation of runtime security checks and /NOCOFFGRPINFO is an
+# undocumented linker flag which removes the debug directory from the PE+ image.
+header.obj: OC_CFLAGS += /GS- /Os
+tmpheader.exe: OC_LDFLAGS += /NOCOFFGRPINFO /subsystem:console
+HEADERLIBS = kernel32.lib
+else
+HEADERLIBS =
 endif
 
-%-launch-info: %.info tmpheader.exe
-	@cat $^ >> $@
-
 .INTERMEDIATE: tmpheader.exe
-tmpheader.exe: $(HEADERPROGRAM).$(O)
-	$(V_MKEXE)$(call MKEXE_VIA_CC,$@,$^)
+tmpheader.exe: header.$(O)
+	$(V_MKEXE)$(call MKEXE_VIA_CC,$@,$^ $(HEADERLIBS))
+# Do not strip the header produced by cl
+ifneq "$(TOOLCHAIN)" "msvc"
 	$(STRIP) $@
+endif
 
 stdlib.cma: $(OBJS)
 	$(V_LINKC)$(CAMLC) -a -o $@ $^
