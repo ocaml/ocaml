@@ -264,7 +264,6 @@ AC_SUBST([ocaml_libdir])
 AC_SUBST([TARGET_LIBDIR])
 AC_SUBST([QS])
 AC_SUBST([ar_supports_response_files])
-AC_SUBST([TSAN_FUNC_EXIT_SIGNATURE])
 
 ## Generated files
 
@@ -1995,7 +1994,6 @@ AS_IF([$tsan],
     [saved_LDFLAGS="$LDFLAGS"
     LDFLAGS="$LDFLAGS -fsanitize=thread $warn_error_flag"
     AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-
 void AnnotateHappensBefore(const char *f, int l, void *addr);
 void AnnotateHappensAfter (const char *f, int l, void *addr);
 void __tsan_func_entry   (void *);
@@ -2005,7 +2003,6 @@ void __tsan_write8       (void *location);
   AnnotateHappensAfter (__FILE__, __LINE__, (void*)0);
   __tsan_func_entry   ((void*)0);
   __tsan_write8       ((void*)0);
-
       ]])],
       [ocaml_cv_tsan_builtins=yes],
       [ocaml_cv_tsan_builtins=no])
@@ -2021,23 +2018,23 @@ void __tsan_write8       (void *location);
     # We need warning flags as using the wrong builtins is often a warning
     LDFLAGS="$LDFLAGS -fsanitize=thread $warn_error_flag"
     AC_LINK_IFELSE([AC_LANG_PROGRAM(
-        [[void __tsan_func_exit(void *);]],
-        [[__tsan_func_exit((void*)0);]])],
-      [ocaml_cv_func_which___tsan_func_exit=void_void_p],
+        [[void __tsan_func_exit(void);]],
+        [[__tsan_func_exit();]])],
+      [ocaml_cv_func_which___tsan_func_exit=void_void],
       # Else branch if the first program fails to link
       [AC_LINK_IFELSE([AC_LANG_PROGRAM(
-          [[void __tsan_func_exit(void);]],
-          [[__tsan_func_exit();]])],
-        [ocaml_cv_func_which___tsan_func_exit=void_void],
+          [[void __tsan_func_exit(void *);]],
+          [[__tsan_func_exit((void *)0);]])],
+        [ocaml_cv_func_which___tsan_func_exit=void_void_p],
         [ocaml_cv_func_which___tsan_func_exit=no])])
     LDFLAGS="$saved_LDFLAGS"])
 
   # Define a C macro based on the detected __tsan_func_exit signature
   AS_CASE([$ocaml_cv_func_which___tsan_func_exit],
     [void_void_p], [AC_DEFINE([HAVE___TSAN_FUNC_EXIT_VOID_VOID_P], [1],
-                    [ThreadSanitizer exit function signature: void (void*)])],
+                  [ThreadSanitizer exit function signature: void (*)(void*)])],
     [void_void], [AC_DEFINE([HAVE___TSAN_FUNC_EXIT_VOID_VOID], [1],
-                    [ThreadSanitizer exit function signature: void (void)])],
+                  [ThreadSanitizer exit function signature: void (*)(void)])],
     [AC_MSG_ERROR([libtsan uses an unexpected signature for __tsan_func_exit])])
 
   AS_CASE([$ocaml_cc_vendor],

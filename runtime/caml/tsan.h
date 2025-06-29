@@ -106,19 +106,19 @@ extern void __tsan_func_exit(void);
 extern void __tsan_func_entry(void*);
 void __tsan_write8(void *location);
 
-Caml_inline void caml_tsan_func_exit(void) {
+CAMLno_tsan Caml_inline void caml_tsan_func_exit(void) {
 #if defined(HAVE___TSAN_FUNC_EXIT_VOID_VOID_P)
-    __tsan_func_exit(NULL);
+  __tsan_func_exit(NULL);
 #elif defined(HAVE___TSAN_FUNC_EXIT_VOID_VOID)
-    __tsan_func_exit();
+  __tsan_func_exit();
   #endif
 }
 
-Caml_inline void caml_tsan_func_entry(void *retaddr) {
+CAMLno_tsan Caml_inline void caml_tsan_func_entry(void *retaddr) {
   __tsan_func_entry(retaddr);
 }
 
-Caml_inline void caml_tsan_write8(void *location) {
+CAMLno_tsan Caml_inline void caml_tsan_write8(void *location) {
   __tsan_write8(location);
 }
 

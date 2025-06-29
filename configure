@@ -796,7 +796,6 @@ build_os
 build_vendor
 build_cpu
 build
-TSAN_FUNC_EXIT_SIGNATURE
 ar_supports_response_files
 QS
 TARGET_LIBDIR
@@ -3507,7 +3506,6 @@ LINEAR_MAGIC_NUMBER=Caml1999L037
 
 
  # TODO: rename this variable
-
 
 
 
@@ -19666,7 +19664,6 @@ else $as_nop
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-
 void AnnotateHappensBefore(const char *f, int l, void *addr);
 void AnnotateHappensAfter (const char *f, int l, void *addr);
 void __tsan_func_entry   (void *);
@@ -19680,7 +19677,6 @@ main (void)
   AnnotateHappensAfter (__FILE__, __LINE__, (void*)0);
   __tsan_func_entry   ((void*)0);
   __tsan_write8       ((void*)0);
-
 
   ;
   return 0;
@@ -19716,22 +19712,6 @@ else $as_nop
     LDFLAGS="$LDFLAGS -fsanitize=thread $warn_error_flag"
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-void __tsan_func_exit(void *);
-int
-main (void)
-{
-__tsan_func_exit((void*)0);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ocaml_cv_func_which___tsan_func_exit=void_void_p
-else $as_nop
-  # Else branch if the first program fails to link
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
 void __tsan_func_exit(void);
 int
 main (void)
@@ -19744,6 +19724,22 @@ _ACEOF
 if ac_fn_c_try_link "$LINENO"
 then :
   ocaml_cv_func_which___tsan_func_exit=void_void
+else $as_nop
+  # Else branch if the first program fails to link
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+void __tsan_func_exit(void *);
+int
+main (void)
+{
+__tsan_func_exit((void *)0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ocaml_cv_func_which___tsan_func_exit=void_void_p
 else $as_nop
   ocaml_cv_func_which___tsan_func_exit=no
 fi
