@@ -56,7 +56,7 @@ Working version
 
 - #12877: Dynarray.rev_iter, Dynarray.rev_iteri
   (Gabriel Scherer, review by Léo Andrès, Jeremy Yallop and Nicolás Ojeda Bär)
-  
+
 - #14060: Add Hashtbl.find_and_replace and Hashtbl.find_and_remove.
   (Sacha Ayoun, review by Nicolás Ojeda Bär)
 
