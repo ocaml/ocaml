@@ -11,7 +11,7 @@ let () =
   Unix.set_nonblock wr;
   let buf = Bytes.make 1000 '!' in
   begin match
-    for i = 1 to 1000 do
+    for i = 1 to 10_000 do
       ignore (Unix.write wr buf 0 1000)
     done
   with
@@ -25,7 +25,7 @@ let () =
   output ch buf 0 1000;
   let alarm_handler _ =
     (* clear some space *)
-    Unix.read rd (Bytes.make 10_000 '?') 0 10_000 |> ignore;
+    Unix.read rd (Bytes.make 100_000 '?') 0 100_000 |> ignore;
     close_out ch
   in
   Sys.signal Sys.sigalrm (Signal_handle alarm_handler) |> ignore;
