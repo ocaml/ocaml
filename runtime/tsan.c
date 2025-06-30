@@ -467,3 +467,17 @@ CAMLno_tsan void __tsan_unaligned_volatile_write16(void *ptr)
 {
   __tsan_write16(ptr);
 }
+
+CAMLno_tsan void caml_tsan_func_exit_asm(void) {
+#if defined(HAVE___TSAN_FUNC_EXIT_VOID_VOID_P)
+  __tsan_func_exit(NULL);
+#elif defined(HAVE___TSAN_FUNC_EXIT_VOID_VOID)
+  __tsan_func_exit();
+  #endif
+}
+
+CAMLno_tsan void caml_tsan_func_entry_asm(void *retaddr) {
+  __tsan_func_entry(retaddr);
+}
+
+// caml_tsan_write8 is never used in .S files

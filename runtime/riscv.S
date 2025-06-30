@@ -301,13 +301,12 @@ name:
 /* Invoke __tsan_func_entry(return address in the caller) */
 .macro TSAN_ENTER_FUNCTION
         mv      a0, ra  /* arg1: return address in caller */
-        TSAN_C_CALL __tsan_func_entry
+        TSAN_C_CALL caml_tsan_func_entry_asm
 .endm
 
 /* Invoke __tsan_func_exit(0) */
 .macro TSAN_EXIT_FUNCTION
-        mv      a0, x0
-        TSAN_C_CALL __tsan_func_exit
+        TSAN_C_CALL caml_tsan_func_exit_asm
 .endm
 
 /* This is similar to SAVE_ALL_REGS, but only saving the caller-saved
@@ -607,7 +606,7 @@ FUNCTION(caml_start_program)
        on an OCaml stack, yet we are still on a C stack at this point. */
         mv      a0, ra
         ENTER_FUNCTION
-        call    PLT(__tsan_func_entry)
+        call    PLT(caml_tsan_func_entry_asm)
         LEAVE_FUNCTION
         ld      a0, 0(sp)
         addi    sp, sp, 16
@@ -731,9 +730,8 @@ L(return_result):
         addi    sp, sp, -16
         CFI_ADJUST(16)
         sd      a0, 0(sp)
-        mv      a0, x0
         ENTER_FUNCTION
-        call    PLT(__tsan_func_exit)
+        call    PLT(caml_tsan_func_exit_asm)
         LEAVE_FUNCTION
         ld      a0, 0(sp)
         addi    sp, sp, 16
@@ -893,7 +891,7 @@ FUNCTION(caml_callback_asm)
         sd      a2, 16(sp)
         sd      ra, 24(sp)
         mv      a0, ra
-        call    PLT(__tsan_func_entry)
+        call    PLT(caml_tsan_func_entry_asm)
         ld      ra, 24(sp)
         ld      a2, 16(sp)
         ld      a1, 8(sp)
@@ -920,7 +918,7 @@ FUNCTION(caml_callback2_asm)
         sd      a2, 16(sp)
         sd      ra, 24(sp)
         mv      a0, ra
-        call    PLT(__tsan_func_entry)
+        call    PLT(caml_tsan_func_entry_asm)
         ld      ra, 24(sp)
         ld      a2, 16(sp)
         ld      a1, 8(sp)
@@ -949,7 +947,7 @@ FUNCTION(caml_callback3_asm)
         sd      a2, 16(sp)
         sd      ra, 24(sp)
         mv      a0, ra
-        call    PLT(__tsan_func_entry)
+        call    PLT(caml_tsan_func_entry_asm)
         ld      ra, 24(sp)
         ld      a2, 16(sp)
         ld      a1, 8(sp)

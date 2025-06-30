@@ -69,13 +69,14 @@ let wrap_entry_exit expr =
   let call_entry =
     Cmm_helpers.return_unit dbg_none
       (Cop
-         ( Cextcall ("__tsan_func_entry", typ_void, [], false),
+         ( Cextcall ("caml_tsan_func_entry_asm", typ_void, [], false),
            [Creturn_addr],
            dbg_none ))
   in
   let call_exit =
     Cmm_helpers.return_unit dbg_none
-      (Cop (Cextcall ("__tsan_func_exit", typ_void, [], false), [], dbg_none))
+      (Cop (Cextcall ("caml_tsan_func_exit_asm", typ_void, [], false),
+            [], dbg_none))
   in
   (* [is_tail] is true when the expression is in tail position *)
   let rec insert_call_exit is_tail = function
