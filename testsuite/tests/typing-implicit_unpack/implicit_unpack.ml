@@ -336,6 +336,7 @@ module type MapT =
     val partition : (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val split : key -> 'a t -> 'a t * 'a option * 'a t
     val is_empty : 'a t -> bool
+    val is_singleton : 'a t -> bool
     val mem : key -> 'a t -> bool
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
     val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
@@ -392,6 +393,7 @@ module SSMap :
     val partition : (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val split : key -> 'a t -> 'a t * 'a option * 'a t
     val is_empty : 'a t -> bool
+    val is_singleton : 'a t -> bool
     val mem : key -> 'a t -> bool
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
     val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int

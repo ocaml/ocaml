@@ -955,6 +955,11 @@ module Map : sig
       val is_empty: 'a t -> bool
       (** Test whether a map is empty or not. *)
 
+      val is_singleton: 'a t -> bool
+      (** Test whether a map has exactly one element or not.
+
+          @since 5.5 *)
+
       val mem: key -> 'a t -> bool
       (** [mem x m] returns [true] if [m] contains a binding for [x],
           and [false] otherwise. *)
@@ -1266,6 +1271,11 @@ module Set : sig
 
       val is_empty: t -> bool
       (** Test whether a set is empty or not. *)
+
+      val is_singleton: t -> bool
+      (** Test whether a set has exactly one element or not.
+
+          @since 5.5 *)
 
       val mem: elt -> t -> bool
       (** [mem x s] tests whether [x] belongs to the set [s]. *)
