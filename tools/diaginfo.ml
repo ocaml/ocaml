@@ -391,7 +391,7 @@ module Annotated_adt = struct
 
   let lifetime_phases =
     let open Lifetime in
-    [ "preview", (fun x -> x.inception);
+    [ "preview", (fun x -> x.preview);
       "since", (fun x -> x.publication);
       "expanded", (fun x -> x.expansion);
       "deprecated", (fun x -> x.deprecation);
@@ -509,7 +509,7 @@ module Pp = struct
 
   let status ppf range =
     match Lifetime.stage range with
-    | Lifetime.Inception -> fprintf ppf "refined"
+    | Lifetime.Preview -> fprintf ppf "refined"
     | Lifetime.Publication -> fprintf ppf "created"
     | Lifetime.Expansion -> fprintf ppf "expanded"
     | Lifetime.Deprecation -> fprintf ppf "deprecated"
@@ -535,8 +535,8 @@ module Pp = struct
 
   let base_event ppf =
     function
-    | Inception r ->
-        fprintf ppf "Inception: %s>%s,%s" r.base_name r.new_name r.typ
+    | Preview r ->
+        fprintf ppf "Preview: %s>%s,%s" r.base_name r.new_name r.typ
     | Declaration -> fprintf ppf "Declaration"
     | Publication name -> fprintf ppf "Publication %s" name
     | Creation {name;typ} ->

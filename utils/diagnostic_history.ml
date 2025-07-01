@@ -18,14 +18,14 @@ let version ~major ~minor = { major; minor }
 
 module Lifetime = struct
   type t = {
-    inception: version option;
+    preview: version option;
     publication: version option;
     expansion: version option;
     deprecation: version option;
     deletion: version option;
   }
   type point =
-    | Inception
+    | Preview
     | Publication
     | Expansion
     | Deprecation
@@ -33,7 +33,7 @@ module Lifetime = struct
     | Future
 
   let next = function
-    | Inception -> Publication
+    | Preview -> Publication
     | Publication -> Expansion
     | Expansion -> Deprecation
     | Deprecation -> Deletion
@@ -41,15 +41,15 @@ module Lifetime = struct
     | Future -> Future
 
   let prev = function
-    | Inception -> Inception
-    | Publication -> Inception
+    | Preview -> Preview
+    | Publication -> Preview
     | Expansion -> Publication
     | Deprecation -> Expansion
     | Deletion -> Deprecation
     | Future -> Future
 
   let get r = function
-    | Inception -> r.inception
+    | Preview -> r.preview
     | Publication -> r.publication
     | Expansion -> r.expansion
     | Deprecation -> r.deprecation
@@ -64,7 +64,7 @@ module Lifetime = struct
     | Some x -> Some (p, x)
 
   let rec last_change r p =
-    if p = Inception then Inception
+    if p = Preview then Preview
     else match get r p with
       | None -> last_change r (prev p)
       | Some _ -> p
@@ -79,7 +79,7 @@ module Lifetime = struct
           else stage_after v (next p) r
 
   let stage_at v r =
-    match v, after r Inception with
+    match v, after r Preview with
     | Some _, None -> assert false
     | None, _ -> Publication
     | Some v, Some (p,v1) ->
@@ -89,15 +89,15 @@ module Lifetime = struct
   let stage r = last_change r Deletion
 
 
-  let make ?deprecation ?deletion ?expansion ?(published=true) inception =
-    let inception = Some inception in
-    let inception, publication =
-      if published then None, inception else inception, None
+  let make ?deprecation ?deletion ?expansion ?(published=true) preview =
+    let preview = Some preview in
+    let preview, publication =
+      if published then None, preview else preview, None
     in
-    { inception; publication; expansion; deprecation; deletion }
+    { preview; publication; expansion; deprecation; deletion }
 
   let at_version v lf =
-    match lf.inception, lf.publication with
+    match lf.preview, lf.publication with
     | None, None -> None
     | Some i, _ | _, Some i ->
       if i > v then None else
@@ -105,7 +105,7 @@ module Lifetime = struct
         Option.bind lfe (fun lfe -> if lfe > v then None else Some lfe)
       in
       Some {
-        inception = filter v lf.inception;
+        preview = filter v lf.preview;
         publication = filter v lf.publication;
         expansion = filter v lf.expansion;
         deprecation = filter v lf.deprecation;
@@ -127,7 +127,7 @@ type error =
 
 type base_event =
   | Declaration
-  | Inception of {base_name:string; new_name:string; typ:string}
+  | Preview of {base_name:string; new_name:string; typ:string}
   | Publication of string
   | Creation of {name:string; typ:string}
   | Make_required of string

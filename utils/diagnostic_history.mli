@@ -26,9 +26,9 @@ module Lifetime: sig
 
   (** Life cycle of fields and constructor in order *)
   type point =
-    | Inception
-     (** constructor only: derived constructor are incepted before being
-         published.*)
+    | Preview
+     (** constructor only: whenever possible new constructors are introduced
+         as preview before being published.*)
     | Publication
     | Expansion
       (** constructor only: argument expansion to a record *)
@@ -38,7 +38,7 @@ module Lifetime: sig
     | Future
 
   type t = {
-    inception: version option;
+    preview: version option;
     publication: version option;
     expansion: version option;
     deprecation: version option;
@@ -97,7 +97,7 @@ type error =
 (** Event in a diagnostic history *)
 type base_event =
   | Declaration
-  | Inception of {base_name:string; new_name:string; typ:string}
+  | Preview of {base_name:string; new_name:string; typ:string}
   | Publication of string
   | Creation of {name:string; typ:string}
   | Make_required of string
