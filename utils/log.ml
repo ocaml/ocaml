@@ -208,7 +208,7 @@ let set log (field: _ D.field) x =
       in
       match status with
       | Deletion | Future -> ()
-      | Inception | Publication | Expansion | Deprecation ->
+      | Preview | Publication | Expansion | Deprecation ->
           let r = device_redirection (D.field_name field) log.redirections in
           let out = Option.value ~default:output r in
           let ppf = Device.ppf log.settings out in

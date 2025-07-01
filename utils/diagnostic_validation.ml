@@ -116,7 +116,7 @@ and fields: type id.
             deprecated [k]  @^
             field  ~version ~optional:(is_optional kmd) k
               (R.dynamic_get r k)
-        | Inception | Publication | Expansion ->
+        | Preview | Publication | Expansion ->
             field  ~version ~optional:(is_optional kmd) k
               (R.dynamic_get r k)
       ) metadata
@@ -163,7 +163,7 @@ and value: type a. version:version -> a -> a typ -> report_paths =
           | None -> none
           | Some lmd ->
               begin match H.Lifetime.stage_at (Some version) lmd.status with
-              | Inception | Publication | Expansion -> value ~version arg ty
+              | Preview | Publication | Expansion -> value ~version arg ty
               | Future | Deletion -> invalid [name]
               | Deprecation -> deprecated [name] @^ value ~version arg ty
               end
