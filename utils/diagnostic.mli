@@ -22,8 +22,10 @@ type 'a diagnostic = 'a t
 type 'a update = 'a Diagnostic_history.update
 type version = Diagnostic_history.version
 
-type ('id,'a) field
-(** A field of type ['a] for the a ['id log]. *)
+type ('id,'a,_) field
+type ('id,'a) optional_field = ('id,'a,[`opt]) field
+(** A field of type ['a] for the a ['id log]. The [optional_field] name is only
+    used for documentation purpose. *)
 
 (** Embeded sum and record types *)
 type !'id sum
@@ -86,7 +88,9 @@ module type Record = sig
 
   (** type tag for the record *)
   type id
-  type nonrec 'a field = ('a,id) field
+  type ('a, 'opt) any_field = ('a,id,'opt) field
+  type 'a optional_field = ('a,[`opt]) any_field
+  type 'a field = ('a,[`req]) any_field
   include Def
     with type id := id
      and type definition = id record
@@ -95,13 +99,15 @@ module type Record = sig
   (** {1:record_field_definition Field definition } *)
 
   val new_field:
-    ?opt:bool -> ?desc:string -> vl update -> string -> 'a typ -> 'a field
-  (** [new_field ?opt ?desc u name typ] creates a new field named [name] for the
-      record at update [u] with an optional description [?desc]. The field is
-      optional if [opt] is [Some true] *)
+    ?desc:string -> vl update -> string -> 'a typ -> 'a field
+  (** [new_field ?desc u name typ] creates a new field named [name] for the
+      record at update [u] with an optional description [?desc]. *)
 
-  val new_field_opt: ?desc:string -> vl update  -> string -> 'a typ -> 'a field
-  (** [new_field_opt] is a short-hand for [new_field ~opt:true] *)
+  val new_field_opt:
+    ?desc:string -> vl update  -> string -> 'a typ -> 'a optional_field
+   (** [new_field_opt ?desc u name typ] creates a new optional field named
+       [name] for the record at update [u] with an optional description
+       [?desc]. *)
 
   (** {1:record_field_update Field update } *)
   val make_required: vl update -> 'a field -> unit
@@ -118,11 +124,11 @@ module type Record = sig
   (** [make vo fragments] construct a [definition] record. If [vo=Some v], the
       constructed record is compatible with the definition at version [v]. *)
 
-  val (^=): 'a field -> 'a -> record_fragment
+  val (^=): ('a,_) any_field -> 'a -> record_fragment
   (** [f ^= v] constructs a [record_fragment] for the field [f] with value
       [v]. *)
 
-  val (^=?): 'a field -> 'a option -> record_fragment
+  val (^=?): ('a,_) any_field -> 'a option -> record_fragment
   (** [ f ^=? Some v] is [f ^= v] while [ f ^=? None] is an empty record
       fragment. *)
 
@@ -192,14 +198,14 @@ module New_sum (Vl:Diagnostic_history.S):
 (** {2 Instrospection } *)
 
 val field_name: _ field -> string
-val field_type: ('ty,_) field -> 'ty typ
+val field_type: ('ty,_,_) field -> 'ty typ
 val version_range: _ field -> Diagnostic_history.Lifetime.t
 
 val record_scheme: 'a record typ -> 'a t
 val record_list_scheme: 'a record list typ -> 'a t
 
 type typed_val = V: 'a typ * 'a -> typed_val
-type 'id bound_field = F: ('ty,'id) field * 'ty -> 'id bound_field
+type 'id bound_field = F: ('ty,'id,_) field * 'ty -> 'id bound_field
 type any_typ = T: 'a typ -> any_typ
 type typed_record = R: 'a t * 'a record -> typed_record
 type label_metadata = {
@@ -213,11 +219,11 @@ type label_metadata = {
 module Record_introspection: sig
   val empty: unit -> 'id record
   val all_fields: 'id record -> 'id bound_field Seq.t
-  val get: 'r record -> ('ty,'r) field -> 'ty option
+  val get: 'r record -> ('ty,'r,_) field -> 'ty option
   val dynamic_get: 'r record -> string -> typed_val option
-  val set: 'r record -> version option -> field:('ty,'r) field -> 'ty -> unit
+  val set: 'r record -> version option -> field:('ty,'r,_) field -> 'ty -> unit
   val cons:
-    'r record -> version option -> field:('ty list, 'r) field -> 'ty -> unit
+    'r record -> version option -> field:('ty list, 'r, _) field -> 'ty -> unit
   val reset: 'r record -> unit
 end
 
@@ -234,7 +240,7 @@ val scheme_description: 'a t -> string
 
 val fields: string list -> 'a record -> (string * bool * typed_val) List.t
 val is_optional: label_metadata -> bool
-val field_info: 'id t -> (_,'id) field -> label_metadata option
+val field_info: 'id t -> (_,'id, _) field -> label_metadata option
 val field_dyninfo: _ t -> string -> label_metadata option
 
 (* {2:diagnostic_metadata Universal metadata field }*)
@@ -244,5 +250,5 @@ module Metadata_versions: sig
   val v1: id update
 end
 module Metadata: Record with type vl := Metadata_versions.id
-val universal_metafield: unit -> (Metadata.id record, 'id) field
+val universal_metafield: unit -> (Metadata.id record, 'id, 'any) field
 val metakey: string * label_metadata
