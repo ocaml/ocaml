@@ -309,6 +309,12 @@ module type S =
 
         @since 5.5 *)
 
+    val get_singleton: 'a t -> (key * 'a) option
+    (** If a map has exactly one binding [v] for [k], return [Some (k, v)],
+        otherwise return [None].
+
+        @since 5.5 *)
+
     val mem: key -> 'a t -> bool
     (** [mem x m] returns [true] if [m] contains a binding for [x],
         and [false] otherwise. *)
