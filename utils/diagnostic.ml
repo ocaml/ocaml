@@ -302,11 +302,11 @@ let register_constructor_expansion u old new_typ scheme =
   scheme.!(old.cname) <- { kmd with status; ltyp=T new_typ }
 
 
-let register_constructor_inception ~desc u old new_name new_typ scheme =
+let register_constructor_preview ~desc u old new_name new_typ scheme =
   let&? kmd = scheme.?(old.cname) in
   H.inconsistent_if_inactive u ~scheme:scheme.name old.cname kmd.status;
   H.register_event u scheme.name
-    (Inception {
+    (Preview {
         base_name=old.cname;
         new_name;
         typ = Format.asprintf "%a" pp_typ new_typ
@@ -319,7 +319,7 @@ let register_constructor_inception ~desc u old new_name new_typ scheme =
 let register_constructor_publication u name scheme =
   let&? kmd = scheme.?(name) in
   begin match H.Lifetime.stage kmd.status with
-  | Inception -> ()
+  | Preview -> ()
   | _ -> H.error u scheme.name (Invalid_publication name)
   end;
   H.register_event u scheme.name (Publication name);
@@ -356,7 +356,7 @@ module Record_construction = struct
   type 'a bfield = version option -> 'a bound_field option
   let field f x v =
     match H.Lifetime.stage_at v f.range with
-    | Inception | Publication | Expansion | Deprecation -> Some (F(f,x))
+    | Preview | Publication | Expansion | Deprecation -> Some (F(f,x))
     | Future | Deletion -> None
   let opt_field f x v = match x with
     | None -> None
@@ -488,7 +488,7 @@ module New_sum(Vl:H.S)(Info:Info with type vl:=Vl.id)() = struct
 
   let refine ?desc u old map new_name new_ty =
     let () =
-      register_constructor_inception ~desc u old new_name new_ty scheme
+      register_constructor_preview ~desc u old new_name new_ty scheme
     in
     let projection = Some(Proj {map;old;version=H.v u}) in
     { cname=new_name; typ=new_ty; projection }

@@ -269,7 +269,7 @@ val cval : s = C true
 let rx = version_range x
 [%%expect {|
 val rx : Diagnostic_history.Lifetime.t =
-  {Diagnostic_history.Lifetime.inception = None;
+  {Diagnostic_history.Lifetime.preview = None;
    publication = Some {Diagnostic_history.major = 1; minor = 0};
    expansion = None;
    deprecation = Some {Diagnostic_history.major = 1; minor = 1};
