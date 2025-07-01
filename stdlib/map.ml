@@ -57,7 +57,7 @@ module type S =
     val split: key -> 'a t -> 'a t * 'a option * 'a t
     val is_empty: 'a t -> bool
     val is_singleton: 'a t -> bool
-    val get_singleton: 'a t -> (key * 'a) option
+    val singleton_binding: 'a t -> (key * 'a) option
     val mem: key -> 'a t -> bool
     val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
     val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
@@ -128,7 +128,7 @@ module Make(Ord: OrderedType) = struct
       | Node{l=Empty; r=Empty} -> true
       | Empty | Node _ -> false
 
-    let get_singleton = function
+    let singleton_binding = function
       | Node{l=Empty; v; d; r=Empty} -> Some (v, d)
       | Empty | Node _ -> None
 

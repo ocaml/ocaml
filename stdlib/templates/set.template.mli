@@ -265,7 +265,7 @@ module type S =
 
         @since 5.5 *)
 
-    val get_singleton: t -> elt option
+    val singleton_elt: t -> elt option
     (** If a set has exactly one element [x], return [Some x],
         otherwise return [None].
 

@@ -980,7 +980,7 @@ module Map : sig
 
           @since 5.5 *)
 
-      val get_singleton: 'a t -> (key * 'a) option
+      val singleton_binding: 'a t -> (key * 'a) option
       (** If a map has exactly one binding [v] for [k], return [Some (k, v)],
           otherwise return [None].
 
@@ -1303,7 +1303,7 @@ module Set : sig
 
           @since 5.5 *)
 
-      val get_singleton: t -> elt option
+      val singleton_elt: t -> elt option
       (** If a set has exactly one element [x], return [Some x],
           otherwise return [None].
 
