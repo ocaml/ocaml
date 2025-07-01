@@ -13,6 +13,17 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** [ocamldiaginfo] provides a way to print metadata information about all
+    diagnostics printed by the compiler and REPL
+
+  - [ocamldiaginfo -history] prints the full history of diagnostics across all
+  versions
+  - [ocamldiaginfo -schema <name>] prints the schema of a diagnostic, by default
+  in an annotated ADT format or as a json schema with the [-schema-format json]
+  flag
+  - [ocamldiaginfo -list] prints all known schema
+*)
+
 open Diagnostic_history
 module V = Compiler_diagnostic.V
 
@@ -29,15 +40,14 @@ module Options = struct
   type schema_name = All | One of string
   let name = ref None
   let with_deps = ref true
-  let parse_name = function
-    | "*" -> name := (Some All)
-    | s -> name := Some (One s)
+  let parse_name s = name := Some (One s)
+  let list () = name := Some All
 
-  let format = ref None
+  let format = ref Adt
   let format_list = ["json"; "adt"]
   let parse_format = function
-    | "json" -> format := Some Json
-    | "adt" -> format := Some Adt
+    | "json" -> format := Json
+    | "adt" -> format := Adt
     | _ -> failf "Unknown schema format"
 
   let filename_template = ref None
@@ -67,6 +77,22 @@ module Options = struct
         | None -> failf "Invalid version format: %s" v
 
   let history = ref false
+let args =
+  Arg.align
+  [ "-schema-format", Arg.Symbol (format_list, parse_format),
+    "print the schema in <name> format";
+    "-schema", Arg.String parse_name, " print the schema <name>";
+    "-list", Arg.Unit list, " print all known schema";
+    "-history", Arg.Set history, " print log format history";
+    "-version", Arg.String (fun x -> version := Some x),
+    "<version> schema version";
+    "-o", Arg.String parse_file_template,
+    "<template> template name for output files";
+    "-template", Arg.String parse_template, "<template> output %a-template";
+    "-with-deps", Arg.Bool ( (:=) with_deps),
+    "<bool> include dependencies in the printed schema"
+  ]
+
 end
 
 module String_map = Misc.Stdlib.String.Map
@@ -444,23 +470,6 @@ module Annotated_adt = struct
         (Seq.map snd @@ Seq.map snd @@ String_map.to_seq defs)
  end
 
-let args =
-  let open Options in
-  Arg.align
-  [ "-schema-format", Arg.Symbol (format_list, parse_format),
-    "<name> print the schema <name> in <name> format";
-    "-schema", Arg.String parse_name,
-    "<name> print the schema <name>, if <name>=* print all known schema";
-    "-history", Arg.Set history, " print log format history";
-    "-version", Arg.String (fun x -> version := Some x),
-    "<version> schema version";
-    "-o", Arg.String parse_file_template,
-    "<template> template name for output files";
-    "-template", Arg.String parse_template, "<template> output %a-template";
-    "-with-deps", Arg.Bool ( (:=) with_deps),
-    "<bool> include dependencies in the printed schema"
-  ]
-
 let with_formatter name f =
   match !Options.filename_template with
   | None -> f Format.std_formatter
@@ -572,7 +581,7 @@ let history () =
     (Format.dprintf
       "@[<v 2>Metadata:@,%a@;<0 -2>\
       Config:@,%a@;<0 -2>\
-       Main:@,%a@]%!"
+       Main:@,%a@]@."
       Pp.history Diagnostic.Metadata_versions.history
       Pp.history Conf_diagnostic.Versions.history
       Pp.history V.history
@@ -599,15 +608,13 @@ let roots =
     scheme_name Toplevel_diagnostic.scheme;
   ]
 
-
 let pp_schema version schemas name =
-  match !Options.format, String_map.find_opt name schemas with
-  | _, None ->  Format.eprintf "Unknown schema name: %s@." name
-  | None, Some _ -> ()
-  | Some pr, Some (v, sch) ->
+  match String_map.find_opt name schemas with
+  | None ->  Format.eprintf "Unknown schema name: %s@." name
+  | Some (v, sch) ->
       let version = Option.value ~default:version v in
       let with_deps = !Options.with_deps in
-      let printer = match pr with
+      let printer = match !Options.format with
         | Options.Json -> JSchema.pp_type ~roots ~with_deps version
         | Options.Adt -> Annotated_adt.pp ~roots ~with_deps version
       in
@@ -618,7 +625,7 @@ let pp_schema version schemas name =
         )
 
 let () =
-  Arg.parse args ignore "print log information";
+  Arg.parse Options.args ignore "print log information";
   let version = Options.parse_version () in
   let schemas = schemas version in
   history ();
