@@ -29,8 +29,8 @@ type t = char
 (** An alias for the type of characters. *)
 
 external code : char -> int = "%identity"
-(** Return the integer code of the argument. The integer code coincides with
-    the ASCII encoding for character literals in the ASCII character set. *)
+(** [code c] is the byte corresponding to [c]. If [c] is an ASCII character
+    this corresponds to its encoding in ASCII or UTF-8. *)
 
 val chr : int -> char
 (** Return the character with the given integer code.
