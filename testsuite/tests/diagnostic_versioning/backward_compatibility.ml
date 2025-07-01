@@ -116,7 +116,9 @@ type r = { maybe : bool; possibly : bool; }
 module Inline_b :
   sig
     type id
-    type nonrec 'a field = ('a, id) Diagnostic.field
+    type ('a, 'opt) any_field = ('a, id, 'opt) Diagnostic.field
+    type 'a optional_field = ('a, [ `opt ]) any_field
+    type 'a field = ('a, [ `req ]) any_field
     type definition = id Diagnostic.record
     type t = id Diagnostic.diagnostic
     type raw_type = definition
@@ -126,18 +128,18 @@ module Inline_b :
     val delete : V.id Diagnostic.update -> 'a field -> 'a field
     val seal : V.id Diagnostic.update -> unit
     val new_field :
-      ?opt:bool ->
       ?desc:string ->
       V.id Diagnostic.update -> string -> 'a Diagnostic.typ -> 'a field
     val new_field_opt :
       ?desc:string ->
-      V.id Diagnostic.update -> string -> 'a Diagnostic.typ -> 'a field
+      V.id Diagnostic.update ->
+      string -> 'a Diagnostic.typ -> 'a optional_field
     val make_required : V.id Diagnostic.update -> 'a field -> unit
     type record_fragment
     val make :
       Diagnostic.version option -> record_fragment list -> definition
-    val ( ^= ) : 'a field -> 'a -> record_fragment
-    val ( ^=? ) : 'a field -> 'a option -> record_fragment
+    val ( ^= ) : ('a, 'b) any_field -> 'a -> record_fragment
+    val ( ^=? ) : ('a, 'b) any_field -> 'a option -> record_fragment
   end
 val ib_contents : unit Inline_b.field = <abstr>
 val maybe : bool Inline_b.field = <abstr>
@@ -204,7 +206,9 @@ let () = R.seal u2_0
 module R :
   sig
     type id
-    type nonrec 'a field = ('a, id) Diagnostic.field
+    type ('a, 'opt) any_field = ('a, id, 'opt) Diagnostic.field
+    type 'a optional_field = ('a, [ `opt ]) any_field
+    type 'a field = ('a, [ `req ]) any_field
     type definition = id Diagnostic.record
     type t = id Diagnostic.diagnostic
     type raw_type = definition
@@ -214,18 +218,18 @@ module R :
     val delete : V.id Diagnostic.update -> 'a field -> 'a field
     val seal : V.id Diagnostic.update -> unit
     val new_field :
-      ?opt:bool ->
       ?desc:string ->
       V.id Diagnostic.update -> string -> 'a Diagnostic.typ -> 'a field
     val new_field_opt :
       ?desc:string ->
-      V.id Diagnostic.update -> string -> 'a Diagnostic.typ -> 'a field
+      V.id Diagnostic.update ->
+      string -> 'a Diagnostic.typ -> 'a optional_field
     val make_required : V.id Diagnostic.update -> 'a field -> unit
     type record_fragment
     val make :
       Diagnostic.version option -> record_fragment list -> definition
-    val ( ^= ) : 'a field -> 'a -> record_fragment
-    val ( ^=? ) : 'a field -> 'a option -> record_fragment
+    val ( ^= ) : ('a, 'b) any_field -> 'a -> record_fragment
+    val ( ^=? ) : ('a, 'b) any_field -> 'a option -> record_fragment
   end
 val s : s R.field = <abstr>
 val x : int R.field = <abstr>

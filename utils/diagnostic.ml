@@ -41,14 +41,14 @@ type 'a typ =
       pull: (version option -> 'b -> 'a);
       default: 'a typ
     } -> 'b typ
-and ('a,'b) field = {
+and ('a,'b,'c) field = {
   label:string;
   typ:'a typ;
   opt:bool;
   id: 'a Type.Id.t;
   range:Diagnostic_history.Lifetime.t
 }
-and 'a bound_field = F: ('a,'b) field * 'a -> 'b bound_field
+and 'a bound_field = F: ('a,'b,'c) field * 'a -> 'b bound_field
 and 'id sum =
     Constr: { name:string; typ:'a typ; arg:'a; approx: 'id sum option }
       -> 'id sum
@@ -68,6 +68,7 @@ and 'a t = {
 }
 and 'a record = 'a bound_field Label_map.t ref
 
+type ('a,'b) optional_field = ('a,'b, [`opt]) field
 type 'a diagnostic = 'a t
 
 type typed_record = R: 'a t * 'a record -> typed_record
@@ -194,20 +195,22 @@ end
 
 module type Record = sig
   type id
-  type nonrec 'a field = ('a,id) field
+  type ('a,'opt) any_field = ('a,id,'opt) field
+  type 'a optional_field = ('a,[`opt]) any_field
+  type 'a field = ('a,[`req]) any_field
   include Def
     with type id := id
      and type definition = id record
      and type 'a label :='a field
-  val new_field:
-    ?opt:bool ->  ?desc:string -> vl update  -> string -> 'a typ -> 'a field
-  val new_field_opt: ?desc:string -> vl update  -> string -> 'a typ -> 'a field
+  val new_field:  ?desc:string -> vl update  -> string -> 'a typ -> 'a field
+  val new_field_opt:
+    ?desc:string -> vl update  -> string -> 'a typ -> 'a optional_field
   val make_required: vl update -> 'a field -> unit
   type record_fragment
   val make:
     Diagnostic_history.version option -> record_fragment list -> definition
-  val (^=): 'a field -> 'a -> record_fragment
-  val (^=?): 'a field -> 'a option -> record_fragment
+  val (^=): ('a,_) any_field -> 'a -> record_fragment
+  val (^=?): ('a,_) any_field -> 'a option -> record_fragment
 end
 
 type ('elt,'id) constructor =
@@ -384,14 +387,14 @@ module Record_introspection = struct
 
   let set:
     type ty s.
-      s record -> version option -> field:(ty,s) field -> ty -> unit
+      s record -> version option -> field:(ty,s,_) field -> ty -> unit
     = fun store v ~field:f x ->
         let name = f.label in
         Option.iter (fun field ->
         store := Label_map.add name field !store
         ) (field f x v)
 
-  let get (type a b) (st:b record) (field: (a,b) field): a option =
+  let get (type a b) (st:b record) (field: (a,b,_) field): a option =
     match Label_map.find_opt field.label (fields st) with
     | None -> None
     | Some (F(f,x)) ->
@@ -404,7 +407,7 @@ module Record_introspection = struct
     |> Option.map (fun (F(k,x)) -> V (k.typ,x))
 
   let cons: type ty s.
-    s record -> version option -> field:(ty list,s) field -> ty -> unit =
+    s record -> version option -> field:(ty list,s,_) field -> ty -> unit =
     fun store v ~field:f x ->
       let l = match get store f with
         | None -> [x]
@@ -421,7 +424,9 @@ end
 module New_record(Vl:H.S)(Info:Info with type vl:=Vl.id)() = struct
   include New_local_def ()
   type definition = id record
-  type nonrec 'a field = ('a,id) field
+  type ('a,'opt) any_field = ('a,id,'opt) field
+  type 'a optional_field = ('a,[`opt]) any_field
+  type 'a field = ('a,[`req]) any_field
   type raw_type = id record
   let scheme = {
     name = Info.name;
@@ -433,7 +438,8 @@ module New_record(Vl:H.S)(Info:Info with type vl:=Vl.id)() = struct
 
   let () = H.register_event Info.update Info.name Declaration
 
-  let new_field ?(opt=false) ?desc  (type t) u label (ty:t typ): t field =
+  let new_field_gen ?(opt=false) ?desc (type t) u label (ty:t typ) :
+    (t,_) any_field =
     register_label_metadata ~desc ~optional:opt u scheme label ty;
     {
       label;
@@ -442,7 +448,8 @@ module New_record(Vl:H.S)(Info:Info with type vl:=Vl.id)() = struct
       id = Type.Id.make ();
       range = H.(Lifetime.make @@ v u)
     }
-  let new_field_opt ?desc v name ty = new_field ~opt:true ?desc v name ty
+  let new_field ?desc v name ty = new_field_gen ~opt:false ?desc v name ty
+  let new_field_opt ?desc v name ty = new_field_gen ~opt:true ?desc v name ty
   let deprecate u f =
     deprecate_lbl u f.label scheme;
     let range = { f.range with deprecation = Some (H.v u) } in

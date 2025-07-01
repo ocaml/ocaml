@@ -21,7 +21,7 @@ type !'id log
 type 'id t = 'id log
  (** A log for the structured diagnostic with tag ['id]. *)
 
-type ('id,'a) field = ('id,'a) Diagnostic.field
+type ('id,'a, 'opt) field = ('id,'a, 'opt) Diagnostic.field
 (** A field of type ['a] for an ['id log]. *)
 
 (** Lower-level device for log *)
@@ -57,12 +57,12 @@ val tmp: 'a Diagnostic.t -> 'a log
 (** [set log f x] send the value [x] to the [log] at field [f] if the field is
     active at the log version. Streaming log will print the field directly,
     while other log will only print the field contents when flushed.*)
-val set: 'id log -> ('a,'id) field -> 'a -> unit
-val (.%[]<-): 'id log -> ('a,'id) field -> 'a -> unit
+val set: 'id log -> ('a,'id, _) field -> 'a -> unit
+val (.%[]<-): 'id log -> ('a,'id, _) field -> 'a -> unit
 
 (** [cons log f x] either prints directly the item [x] as a singleton list for
     streaming logs, or add the item to the current field otherwise. *)
-val cons: 'id log -> ('a list, 'id) field -> 'a -> unit
+val cons: 'id log -> ('a list, 'id, _) field -> 'a -> unit
 
 (** [flush log] pushes on the underlying device the stored contents on the
     [Device.t] devices, and ensure that the [Device.t] is flushed too. Detached
@@ -78,23 +78,24 @@ val close: 'id log -> unit
 
 (** [redirect log field device] attach [device] to the field. All subsequent
     printing on this field will be pushed on [device]. *)
-val redirect: 'id log -> ('a,'id) field -> Device.t -> unit
+val redirect: 'id log -> ('a,'id,_) field -> Device.t -> unit
 
 (** {1:log_sublog Sublog function } *)
 
 (** If [f] is a field for a record type [r], [detach parent f] creates a sublog
     for a record type [r] that shares its contents and redirections with the
     field [f] of the [parent] log. *)
-val detach: 'id log -> ('id2 Diagnostic.record, 'id) field -> 'id2 log
+val detach: 'id log -> ('id2 Diagnostic.record, 'id, _) field -> 'id2 log
 
 (** If [f] is a field for a list of record [r], [detach_item log f] creates a
     [r] sublog that shares its contents with a new item in the list stored in
     the field [f] in the parent [log]. *)
-val detach_item: 'id log -> ('id2 Diagnostic.record list, 'id) field -> 'id2 log
+val detach_item:
+  'id log -> ('id2 Diagnostic.record list, 'id, _) field -> 'id2 log
 
 (** {1:log_non_streaming Non-streaming log contents} *)
 
-val get: 'id log -> ('a,'id) field -> 'a option
+val get: 'id log -> ('a,'id, _) field -> 'a option
 val dynamic_get: 'id log -> string -> Diagnostic.typed_val option
 
 (** [replay source dest] transfer the contents of the [source] log (if any) to
@@ -103,24 +104,26 @@ val replay: source:'a log -> dest:'a log -> unit
 
 (** {1 Printing functions }*)
 
-val f : (string,'a) field -> 'a log -> ('b, Format.formatter, unit) format -> 'b
+val f :
+  (string,'a, _) field -> 'a log -> ('b, Format.formatter, unit) format -> 'b
   (** [fmt field log ppf] records the output of [ppf] as
       a string at field [field] in [log].
   *)
 
 val d :
-  (Format_doc.t,'a) field -> 'a log -> ('b, Format_doc.formatter, unit) format
+  (Format_doc.t,'a,_) field -> 'a log -> ('b, Format_doc.formatter, unit) format
   -> 'b
   (** [fmt field log ppf] records the formatted message at field [field] in
       [log]. *)
 
 val itemf :
-  (string list,'a) field -> 'a log -> ('b, Format.formatter, unit) format -> 'b
+  (string list,'a, _) field -> 'a log -> ('b, Format.formatter, unit) format ->
+  'b
 
 val itemd :
-  (Format_doc.t list,'a) field -> 'a log
+  (Format_doc.t list,'a,_) field -> 'a log
   -> ('b, Format_doc.formatter, unit) format -> 'b
 
 val log_if:
-  'id log -> (string, 'id) field -> bool ->
+  'id log -> (string, 'id, _) field -> bool ->
   (Format.formatter -> 'a -> unit) -> 'a -> unit
