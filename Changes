@@ -665,6 +665,10 @@ OCaml 5.4.0
 - #13818: better delimited hints in error message
   (Florian Angeletti, review by Gabriel Scherer)
 
+* #13911: Added an `Lost alias` error message for deep destructive substitutions
+  inside alias signatures
+  (Clement Blaudeau, review by ??)
+
 ### Internal/compiler-libs changes:
 
 - #13539, #13776: Use nanosleep instead of usleep or select, if available.
