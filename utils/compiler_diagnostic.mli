@@ -46,31 +46,31 @@ end
 (** Debugging output enabled with [-d...] flags (e.g [-dsource]) *)
 module Debug: sig
   include Record
-  val source: string field
-  val parsetree: string field
-  val typedtree: string field
-  val shape: string field
-  val instr: string field
-  val raw_lambda: string field
-  val lambda: string field
-  val flambda: string list field
-  val raw_flambda: string list field
-  val clambda: string list field
-  val raw_clambda: string list field
-  val cmm: string list field
-  val remove_free_vars_equal_to_args: string list field
-  val unbox_free_vars_of_closures: string list field
-  val unbox_closures:string list field
-  val unbox_specialised_args:string list  field
-  val mach: string list field
-  val linear: string list field
-  val cmm_invariant: string field
+  val source: string optional_field
+  val parsetree: string optional_field
+  val typedtree: string optional_field
+  val shape: string optional_field
+  val instr: string optional_field
+  val raw_lambda: string optional_field
+  val lambda: string optional_field
+  val flambda: string list optional_field
+  val raw_flambda: string list optional_field
+  val clambda: string list optional_field
+  val raw_clambda: string list optional_field
+  val cmm: string list optional_field
+  val remove_free_vars_equal_to_args: string list optional_field
+  val unbox_free_vars_of_closures: string list optional_field
+  val unbox_closures:string list optional_field
+  val unbox_specialised_args:string list  optional_field
+  val mach: string list optional_field
+  val linear: string list optional_field
+  val cmm_invariant: string optional_field
 end
 
 (** Error report record, the related fields are defined in {!Location} *)
 module Error: Record
 
 include Record
-val debug: Debug.id D.record field
+val debug: Debug.id D.record optional_field
 val doc: Format_doc.t Diagnostic.typ
 val ldoc: Format_doc.t list Diagnostic.typ

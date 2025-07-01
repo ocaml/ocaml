@@ -21,7 +21,7 @@ module D = Diagnostic
 module R = D.Record_introspection
 module V = Diagnostic_validation
 
-type ('id,'a) field = ('id,'a) Diagnostic.field
+type ('id,'a,'opt) field = ('id,'a,'opt) Diagnostic.field
 type version = Diagnostic_history.version = { major:int; minor:int }
 
 module Device = struct

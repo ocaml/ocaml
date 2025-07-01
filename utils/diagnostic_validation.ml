@@ -63,7 +63,7 @@ module Metadata = struct
   end
   let valid: Validity.raw_type field = new_field v1 "valid" Validity.raw_type
   let path = List String
-  let invalid_paths = new_field ~opt:true v1 "invalid_paths" (List path)
+  let invalid_paths = new_field_opt v1 "invalid_paths" (List path)
   let deprecated_paths = new_field_opt v1 "deprecated_paths" (List path)
   let () = seal v1
 end

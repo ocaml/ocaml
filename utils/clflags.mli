@@ -327,13 +327,13 @@ val create_log:
 
 (** dump content on log if the field was enabled *)
 val dump_on_log:
-  'id Log.t -> (string, 'id) Log.field ->
+  'id Log.t -> (string, 'id, [`opt]) Log.field ->
   (Format.formatter -> 'a -> unit) -> 'a -> unit
 
 (** dump content on log if the field was enabled *)
 val dump_item_on_log:
- 'id Log.t -> (string list,'id) Log.field -> ('b, Format.formatter, unit) format
- -> 'b
+  'id Log.t -> (string list,'id, [`opt]) Log.field
+  -> ('b, Format.formatter, unit) format -> 'b
 
 val show_config_and_exit : unit -> unit
   (** Display the values of all compiler configuration variables from module
