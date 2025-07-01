@@ -297,7 +297,7 @@ module Error_diagnostic: sig
     | Error: report Diagnostic.extension
     | Location: t Diagnostic.extension
     | Msg: Format_doc.t loc Diagnostic.extension
-  val warnings: report list Compiler_diagnostic.field
+  val warnings: report list Compiler_diagnostic.optional_field
   module Kind: Compiler_diagnostic.Sum
   module Msg: Compiler_diagnostic.Record
 end

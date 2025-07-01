@@ -15,10 +15,10 @@
 
 include Compiler_diagnostic.Record
 
-val output: Format_doc.doc field
-val backtrace: Format_doc.doc field
-val compiler: Compiler_diagnostic.id Diagnostic.record field
-val errors: Format_doc.doc list field
-val trace: Format_doc.doc list field
+val output: Format_doc.doc optional_field
+val backtrace: Format_doc.doc optional_field
+val compiler: Compiler_diagnostic.id Diagnostic.record optional_field
+val errors: Format_doc.doc list optional_field
+val trace: Format_doc.doc list optional_field
 
 val separate_new_message: id Log.t -> unit
