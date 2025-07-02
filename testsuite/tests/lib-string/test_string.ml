@@ -132,3 +132,84 @@ let () =
   test ~max_dist ["abc"] "a" [];
   test ~max_dist ["abc"; "ab"; "b"] "a" ["ab"; "b"];
   ()
+
+let () =
+  (* String.take *)
+  assert (String.take (-1) "" = "");
+  assert (String.take (-1) "a" = "");
+  assert (String.take (-1) "ab" = "");
+  assert (String.take 0 "" = "");
+  assert (String.take 0 "a" = "");
+  assert (String.take 0 "ab" = "");
+  assert (String.take 1 "" = "");
+  assert (String.take 1 "a" = "a");
+  assert (String.take 1 "ab" = "a");
+  assert (String.take 2 "" = "");
+  assert (String.take 2 "a" = "a");
+  assert (String.take 2 "ab" = "ab");
+  (* String.rtake *)
+  assert (String.rtake (-1) "" = "");
+  assert (String.rtake (-1) "a" = "");
+  assert (String.rtake (-1) "ab" = "");
+  assert (String.rtake 0 "" = "");
+  assert (String.rtake 0 "a" = "");
+  assert (String.rtake 0 "ab" = "");
+  assert (String.rtake 1 "" = "");
+  assert (String.rtake 1 "a" = "a");
+  assert (String.rtake 1 "ab" = "b");
+  assert (String.rtake 2 "" = "");
+  assert (String.rtake 2 "a" = "a");
+  assert (String.rtake 2 "ab" = "ab");
+  (* String.drop *)
+  assert (String.drop (-1) "" = "");
+  assert (String.drop (-1) "a" = "a");
+  assert (String.drop (-1) "ab" = "ab");
+  assert (String.drop 0 "" = "");
+  assert (String.drop 0 "a" = "a");
+  assert (String.drop 0 "ab" = "ab");
+  assert (String.drop 1 "" = "");
+  assert (String.drop 1 "a" = "");
+  assert (String.drop 1 "ab" = "b");
+  assert (String.drop 2 "" = "");
+  assert (String.drop 2 "a" = "");
+  assert (String.drop 2 "ab" = "");
+  (* String.rdrop *)
+  assert (String.rdrop (-1) "" = "");
+  assert (String.rdrop (-1) "a" = "a");
+  assert (String.rdrop (-1) "ab" = "ab");
+  assert (String.rdrop 0 "" = "");
+  assert (String.rdrop 0 "a" = "a");
+  assert (String.rdrop 0 "ab" = "ab");
+  assert (String.rdrop 1 "" = "");
+  assert (String.rdrop 1 "a" = "");;
+  assert (String.rdrop 1 "ab" = "a");
+  assert (String.rdrop 2 "" = "");
+  assert (String.rdrop 2 "a" = "");
+  assert (String.rdrop 2 "ab" = "");
+  (* String.span *)
+  assert (String.span (-1) "" = ("", ""));
+  assert (String.span (-1) "a" = ("", "a"));
+  assert (String.span (-1) "ab" = ("", "ab"));
+  assert (String.span 0 "" = ("", ""));
+  assert (String.span 0 "a" = ("", "a"));
+  assert (String.span 0 "ab" = ("", "ab"));
+  assert (String.span 1 "" = ("", ""));
+  assert (String.span 1 "a" = ("a", ""));
+  assert (String.span 1 "ab" = ("a", "b"));
+  assert (String.span 2 "" = ("", ""));
+  assert (String.span 2 "a" = ("a", ""));
+  assert (String.span 2 "ab" = ("ab", ""));
+  (* String.rspan *)
+  assert (String.rspan (-1) "" = ("", ""));
+  assert (String.rspan (-1) "a" = ("a", ""));
+  assert (String.rspan (-1) "ab" = ("ab", ""));
+  assert (String.rspan 0 "" = ("", ""));
+  assert (String.rspan 0 "a" = ("a", ""));
+  assert (String.rspan 0 "ab" = ("ab", ""));
+  assert (String.rspan 1 "" = ("", ""));
+  assert (String.rspan 1 "a" = ("", "a"));
+  assert (String.rspan 1 "ab" = ("a", "b"));
+  assert (String.rspan 2 "" = ("", ""));
+  assert (String.rspan 2 "a" = ("", "a"));
+  assert (String.rspan 2 "ab" = ("", "ab"));
+  ()

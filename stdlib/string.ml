@@ -227,6 +227,24 @@ let ends_with ~suffix s =
 external seeded_hash : int -> string -> int = "caml_string_hash" [@@noalloc]
 let hash x = seeded_hash 0 x
 
+(* Breaking with magnitudes *)
+
+let subrange ?(first = 0) ?last s =
+  let max = length s - 1 in
+  let first = if first < 0 then 0 else first in
+  let last = match last with None -> max | Some last -> last in
+  let last = if last > max then max else last in
+  if first > last then "" else sub s first (last - first + 1)
+
+let take n s = subrange ~last:(n - 1) s
+let drop n s = subrange ~first:n s
+let span n s = (take n s, drop n s)
+let rtake n s = subrange ~first:(length s - n) s
+let rdrop n s = subrange ~last:(length s - n - 1) s
+let rspan n s = (rdrop n s, rtake n s)
+
+(* Breaking with separators *)
+
 (* duplicated in bytes.ml *)
 let split_on_char sep s =
   let r = ref [] in
