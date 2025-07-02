@@ -83,6 +83,6 @@ let main() =
 
 let () =
   main ();
-  let rows = Profile.compute_rows !Clflags.profile_columns in
+  let rows = Profile.gather !Clflags.profile_columns in
   Profile.print Format.std_formatter rows;
   exit 0
