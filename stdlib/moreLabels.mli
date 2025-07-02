@@ -981,8 +981,8 @@ module Map : sig
           @since 5.5 *)
 
       val singleton_binding: 'a t -> (key * 'a) option
-      (** If a map has exactly one binding [v] for [k], return [Some (k, v)],
-          otherwise return [None].
+      (** [singleton_binding m] is [Some (k, v)] if [m] only binds [k] to [v]
+          and [None] otherwise.
 
           @since 5.5 *)
 
@@ -1304,8 +1304,8 @@ module Set : sig
           @since 5.5 *)
 
       val singleton_elt: t -> elt option
-      (** If a set has exactly one element [x], return [Some x],
-          otherwise return [None].
+      (** [singleton_elt s] is [Some x] if [s] has only the element [x]
+          and [None] otherwise.
 
           @since 5.5 *)
 

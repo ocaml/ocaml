@@ -310,8 +310,8 @@ module type S =
         @since 5.5 *)
 
     val singleton_binding: 'a t -> (key * 'a) option
-    (** If a map has exactly one binding [v] for [k], return [Some (k, v)],
-        otherwise return [None].
+    (** [singleton_binding m] is [Some (k, v)] if [m] only binds [k] to [v]
+        and [None] otherwise.
 
         @since 5.5 *)
 
