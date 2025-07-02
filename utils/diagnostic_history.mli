@@ -75,10 +75,12 @@ type 'id t
 (** Last version present in the history *)
 val current_version: 'a t -> version
 
-(** An ['id update] is a version registered in the history ['id History.t].*)
+(** An ['id update] is a version registered in the history ['id t]. It is used
+    as key for creating new record types, sum types or updating the contents of
+    those types.*)
 type 'a update
 val new_version: 'a t -> version -> 'a update
-(** [new_version h v] unconditionnally creates an update but register an error
+(** [new_version h v] unconditionnally creates an update but registers an error
     in the history if the version is not a valid new version. *)
 
 val v: 'a update -> version
@@ -122,7 +124,7 @@ val error: 'a update -> string -> error -> unit
 
 (** {2 Error }*)
 
-(** [breaking_change u diag_name] register an error if [u]* is not a major
+(** [breaking_change u diag_name] registers an error if [u]* is not a major
     update.*)
 val breaking_change: 'a update -> string -> unit
 
