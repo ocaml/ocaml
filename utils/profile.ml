@@ -188,11 +188,11 @@ let compute_other_category (E table : hierarchy) (total : Measure_diff.t) =
   ) table;
   !r
 
-type row = R of string * (float * display) list * row list
+type row_data = R of string * (float * display) list * row_data list
 
 module Profile_report = struct
   module D = Diagnostic
-  type _ D.extension += Profile: (string list * row list) D.extension
+  type _ D.extension += Profile: (string list * row_data list) D.extension
   let v1 = Compiler_diagnostic.v1
   include D.New_record(Compiler_diagnostic.V)(struct
       let name = "profile"
@@ -332,7 +332,7 @@ let display_rows ppf rows =
   in
   List.iter (loop ~indentation:"") rows
 
-let compute_rows columns =
+let gather columns =
   let initial_measure =
     match !initial_measure with
     | Some v -> v
@@ -355,7 +355,7 @@ let report columns log =
     List.find_map (fun (x,y) -> if y = l then Some x else None)
     column_mapping
   in
-  log.Log.%[profile] <- (List.filter_map name columns, compute_rows columns)
+  log.Log.%[profile] <- (List.filter_map name columns, gather columns)
 
 let () =
   let extension: type a.
