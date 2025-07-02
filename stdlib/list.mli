@@ -370,21 +370,22 @@ val filteri : (int -> 'a -> bool) -> 'a list -> 'a list
 
 val take : int -> 'a list -> 'a list
 (** [take n l] returns the prefix of [l] of length [n],
-    or a copy of [l] if [n > length l].
+    or a copy of [l] if [n > length l]. This is the empty
+    list if [n] is negative.
 
-    [n] must be nonnegative.
+    {b Warning.} In version 5.3 only, this function raises
+    [Invalid_argument] for negative [n] values.
 
-    @raise Invalid_argument if [n] is negative.
     @since 5.3
 *)
 
 val drop : int -> 'a list -> 'a list
 (** [drop n l] returns the suffix of [l] after [n] elements,
-    or [[]] if [n > length l].
+    or [[]] if [n > length l]. This is [l] if [n] is negative.
 
-    [n] must be nonnegative.
+    {b Warning.} In version 5.3 only, this function raises
+    [Invalid_argument] for negative [n] values.
 
-    @raise Invalid_argument if [n] is negative.
     @since 5.3
 *)
 

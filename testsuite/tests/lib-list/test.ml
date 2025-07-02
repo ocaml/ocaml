@@ -68,13 +68,13 @@ let () =
   assert (List.take 3 [1; 2; 3; 4; 5] = [1; 2; 3]);
   assert (List.take 3 [1; 2] = [1; 2]);
   assert (List.take 3 [] = []);
-  assert ((try List.take (-1) [1; 2] with Invalid_argument _ -> [999]) = [999]);
+  assert (List.take (-1) [1; 2] = []);
   assert (List.take 0 [1; 2] = []);
   assert (List.drop 6 hello_world = world);
   assert (List.drop 3 [1; 2; 3; 4; 5] = [4; 5]);
   assert (List.drop 3 [1; 2] = []);
   assert (List.drop 3 [] = []);
-  assert ((try List.drop (-1) [1; 2] with Invalid_argument _ -> [999]) = [999]);
+  assert (List.drop (-1) [1; 2] = [1; 2]);
   assert (List.drop 0 [1; 2] = [1; 2]);
   assert (List.take_while (fun x -> x < 3) [1; 2; 3; 4; 1; 2; 3; 4]
           = [1; 2]);

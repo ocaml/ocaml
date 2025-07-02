@@ -234,6 +234,9 @@ OCaml 5.4.0
 
 ### Standard library:
 
+* #14124: Do not raise Invalid_argument on negative List.{drop,take}.
+  (Daniel Bünzli, review by Gabriel Scherer, Nicolás Ojeda Bär)
+
 - #13696: Add Result.product and Result.Syntax:
   `let open Result.Syntax in let* x = ... in ...`
   (Daniel Bünzli, review by Gabriel Scherer, Nicolás Ojeda Bär)
