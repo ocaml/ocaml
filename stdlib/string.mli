@@ -192,6 +192,46 @@ val sub : string -> int -> int -> string
     @raise Invalid_argument if [pos] and [len] do not designate a valid
     substring of [s]. *)
 
+(** {1:breaking Breaking strings} *)
+
+(** {2:breaking_mag Breaking with magnitudes} *)
+
+val take_first : int -> string -> string
+(** [take n s] are the first [n] bytes of [s]. This is [s] if
+    [n >= length s] and [""] if [n <= 0].
+
+    @since 5.5 *)
+
+val take_last : int -> string -> string
+(** [rtake n s] are the last [n] bytes of [s].  This is [s] if
+    [n >= length s] and [""] if [n <= 0].
+
+    @since 5.5 *)
+
+val drop_first : int -> string -> string
+(** [drop n s] is [s] without the first [n] bytes of [s]. This is [""]
+    if [n >= length s] and [s] if [n <= 0].
+
+    @since 5.5 *)
+
+val drop_last : int -> string -> string
+(** [rdrop n s] is [s] without the last [n] bytes of [s]. This is [""]
+    if [n >= length s] and [s] if [n <= 0].
+
+    @since 5.5 *)
+
+val cut_first : int -> string -> string * string
+(** [cut_first n v] is [(take_first n v, drop_first n v)].
+
+    @since 5.5 *)
+
+val cut_last : int -> string -> string * string
+(** [cut_last n v] is [(drop_last n v, take_last n v)].
+
+    @since 5.5 *)
+
+(** {2:breaking_sep Breaking with separators} *)
+
 val split_on_char : char -> string -> string list
 (** [split_on_char sep s] is the list of all (possibly empty)
     substrings of [s] that are delimited by the character [sep].
