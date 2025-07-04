@@ -424,7 +424,8 @@ external frexp : float -> float * int = "caml_frexp_float"
     and the exponent of [f].  When [f] is zero, the
     significant [x] and the exponent [n] of [f] are equal to
     zero.  When [f] is non-zero, they are defined by
-    [f = x *. 2 ** n] and [0.5 <= x < 1.0]. *)
+    [f = x *. 2 ** n] and with [0.5 <= x < 1.0] for a positive [f]
+    and [-1.0 < x <= -0.5] for a negative [f]. *)
 
 external ldexp : (float [@unboxed]) -> (int [@untagged]) -> (float [@unboxed]) =
   "caml_ldexp_float" "caml_ldexp_float_unboxed" [@@noalloc]
