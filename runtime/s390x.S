@@ -312,12 +312,12 @@ caml_system__code_begin:
         TSAN_CLEANUP_AFTER_C_CALL;                     \
         SWITCH_C_TO_OCAML
 
-/* Invoke __tsan_func_entry(return address in the caller) */
+/* Invoke caml_tsan_func_entry_asm (return address in the caller) */
 #define TSAN_ENTER_FUNCTION                            \
         lgr     C_ARG_1, %r14; /* arg1: return address in caller */ \
         TSAN_C_CALL(caml_tsan_func_entry_asm)
 
-/* Invoke __tsan_func_exit(0) */
+/* Invoke caml_tsan_func_exit_asm */
 #define TSAN_EXIT_FUNCTION                             \
         TSAN_C_CALL(caml_tsan_func_exit_asm)
 

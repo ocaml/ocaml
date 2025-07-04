@@ -364,13 +364,13 @@ G(name):
         SWITCH_C_TO_OCAML
 .endm
 
-/* Invoke __tsan_func_entry(return address in the caller) */
+/* Invoke caml_tsan_func_entry_asm (return address in the caller) */
 .macro TSAN_ENTER_FUNCTION
         mov     x0, x30        /* arg1: return address in caller */
         TSAN_C_CALL G(caml_tsan_func_entry_asm)
 .endm
 
-/* Invoke __tsan_func_exit(0) */
+/* Invoke caml_tsan_func_exit_asm */
 .macro TSAN_EXIT_FUNCTION
         TSAN_C_CALL G(caml_tsan_func_exit_asm)
 .endm

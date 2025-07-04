@@ -1157,7 +1157,6 @@ FUNCTION caml_runstack
         mr      SP, 27 /* OCaml stack */
 #if defined(WITH_THREAD_SANITIZER)
     /* Signal to TSan that we exit caml_runstack (no registers to save here) */
-        li      3, 0
         SWITCH_OCAML_TO_C
         TSAN_SETUP_C_CALL 0
         Far_call(caml_tsan_func_exit_asm)

@@ -236,14 +236,14 @@ G(name):
 
 
 /* When ThreadSanitizer instrumentation is enabled, the code must call
-   the C functions __tsan_func_entry and __tsan_func_exit to signal
-   function entries and exits. They follow the x86_64 calling
-   convention of the platform. For efficiency reasons, we don't always
-   save all caller-saved registers before calling them, but only the
-   registers in use. */
+   the C functions caml_tsan_func_entry_asm and caml_tsan_func_exit_asm to
+   signal function entries and exits. They follow the x86_64 calling convention
+   of the platform. For efficiency reasons, we don't always save all
+   caller-saved registers before calling them, but only the registers in use.
+ */
 
-/* Calls __tsan_func_entry on the current return address. [offset] is the
-   distance from the current stack pointer to the saved return address, in
+/* Calls caml_tsan_func_entry_asm on the current return address. [offset] is
+   the distance from the current stack pointer to the saved return address, in
    bytes. May clobber all caller-saved registers. */
 #if defined(WITH_THREAD_SANITIZER)
 #define TSAN_ENTER_FUNCTION(offset)                             \
@@ -253,7 +253,7 @@ G(name):
         C_call  (GCALL(caml_tsan_func_entry_asm));              \
         SWITCH_C_TO_OCAML;
 
-/* Calls __tsan_func_exit. May clobber all caller-saved registers. */
+/* Calls caml_tsan_func_exit_asm. May clobber all caller-saved registers. */
 #define TSAN_EXIT_FUNCTION                                      \
         SWITCH_OCAML_TO_C;                                      \
         C_call  (GCALL(caml_tsan_func_exit_asm));               \
