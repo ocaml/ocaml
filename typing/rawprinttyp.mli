@@ -17,4 +17,10 @@
     type expressions. It is targetted at internal use when debbuging the
     compiler itself. *)
 
-val type_expr: Format.formatter -> Types.type_expr -> unit
+open Format
+open Types
+
+val type_expr: formatter -> type_expr -> unit
+val type_declaration: formatter -> type_declaration -> unit
+val signature: formatter -> signature -> unit
+val modtype: formatter -> module_type -> unit

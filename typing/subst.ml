@@ -152,8 +152,7 @@ let reset_for_saving () = new_id := -1
 
 let newpersty desc =
   decr new_id;
-  create_expr
-    desc ~level:generic_level ~scope:Btype.lowest_level ~id:!new_id
+  create_expr desc ~level:generic_level ~scope:Btype.lowest_level ~id:!new_id
 
 (* ensure that all occurrences of 'Tvar None' are physically shared *)
 let tvar_none = Tvar None
@@ -225,10 +224,9 @@ let apply_type_function params args body =
     in
     copy body)
 
-
 (* Similar to [Ctype.nondep_type_rec]. *)
 let rec typexp copy_scope s ty =
-  let desc = get_desc ty in
+  let desc = get_folded_desc ~keep_Tvar:false ty in
   match desc with
     Tvar _ | Tunivar _ ->
       if s.for_saving || get_id ty < 0 then
@@ -259,7 +257,7 @@ let rec typexp copy_scope s ty =
       else newgenstub ~scope:(get_scope ty)
     in
     For_copy.redirect_desc copy_scope ty (Tsubst (ty', None));
-    let desc =
+    let desc' =
       if has_fixed_row then
         match get_desc tm with (* PR#7348 *)
           Tconstr (Pdot(m,i), tl, _abbrev) ->
@@ -339,7 +337,7 @@ let rec typexp copy_scope s ty =
           Tlink (typexp copy_scope s t2)
       | _ -> copy_type_desc (typexp copy_scope s) desc
     in
-    Transient_expr.set_stub_desc ty' desc;
+    Transient_expr.set_stub_desc ty' desc';
     ty'
 
 (*

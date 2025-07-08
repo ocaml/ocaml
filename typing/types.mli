@@ -137,6 +137,11 @@ type type_desc =
   | Tpackage of package
   (** Type of a first-class module (a.k.a package). *)
 
+  | Texpand of type_expr * Path.t * type_expr list
+  (** [Texpand] is like [Tlink] but the result of an expansion;
+      [Path.t] and [type_expr list] remember the original declaration. *)
+
+>>>>>>> 744660c272 (Expand type in place, keeping original abbreviation)
 (** [package] corresponds to the type of a first-class module *)
 and package =
   { pack_path : Path.t;
@@ -246,6 +251,14 @@ val try_mark_node: type_mark -> type_expr -> bool
 
            Return false if it was already marked *)
 
+(** Handle kept abbreviations *)
+val get_expand: type_expr -> (Path.t * type_expr list) option
+val get_expand_scope: type_expr -> int
+  (* If [get_expand ty = Some (_, path, _)] then return the scope of [path]
+     otherwise [Ident.lowest_scope] *)
+val iter_expand: (Path.t -> type_expr list -> unit) -> type_expr -> unit
+val forget_expand: type_expr -> unit
+
 (** Transient [type_expr].
     Should only be used immediately after [Transient_expr.repr] *)
 type transient_expr = private
@@ -276,7 +289,8 @@ module Transient_expr : sig
   val try_mark_node: type_mark -> transient_expr -> bool
 end
 
-val create_expr: type_desc -> level: int -> scope: int -> id: int -> type_expr
+val create_expr:
+    type_desc -> level: int -> scope: int -> id: int -> type_expr
 
 (** Functions and definitions moved from Btype *)
 
@@ -702,9 +716,18 @@ val undo_compress: snapshot -> unit
     The old values are logged and reverted on backtracking.
  *)
 
+val link_expand: type_expr -> type_expr -> unit
+        (* Set the desc field of [t1] to [Texpand (t2, p)],
+           assuming that [t1] is [Tconstr (p, args, _)], and
+           logging the old values if there is an active snapshot.
+           To be used only when expanding a type abbreviation. *)
 val link_type: type_expr -> type_expr -> unit
         (* Set the desc field of [t1] to [Tlink t2], logging the old
-           value if there is an active snapshot *)
+           values if there is an active snapshot.
+           To be used during unification.
+           Must only be used if
+           - [t1] is [Tvar], or
+           - [t1] and [t2] have the same [type_desc] constructor. *)
 val set_type_desc: type_expr -> type_desc -> unit
         (* Set directly the desc field, without sharing *)
 val set_level: type_expr -> int -> unit

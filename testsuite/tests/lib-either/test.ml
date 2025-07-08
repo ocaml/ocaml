@@ -6,7 +6,8 @@ open Either;;
 
 [left 1; right true];;
 [%%expect {|
-- : (int, bool) Either.t list = [Left 1; Right true]
+- : (int, bool) Either.t list =
+[Stdlib__Either.Left 1; Stdlib__Either.Right true]
 |}];;
 
 List.map is_left [left 1; right true];;
@@ -46,18 +47,21 @@ Exception: Invalid_argument "Either.t is Left _".
 
 [map_left succ (Left 1); map_left succ (Right true)];;
 [%%expect {|
-- : (int, bool) Either.t list = [Left 2; Right true]
+- : (int, bool) Either.t list =
+[Stdlib__Either.Left 2; Stdlib__Either.Right true]
 |}];;
 
 [map_right succ (Left ()); map_right succ (Right 2)];;
 [%%expect {|
-- : (unit, int) Either.t list = [Left (); Right 3]
+- : (unit, int) Either.t list =
+[Stdlib__Either.Left (); Stdlib__Either.Right 3]
 |}];;
 
 [map ~left:succ ~right:not (Left 1);
  map ~left:succ ~right:not (Right true)];;
 [%%expect {|
-- : (int, bool) Either.t list = [Left 2; Right false]
+- : (int, bool) Either.t list =
+[Stdlib__Either.Left 2; Stdlib__Either.Right false]
 |}];;
 
 [fold ~left:succ ~right:int_of_string (Left 1);

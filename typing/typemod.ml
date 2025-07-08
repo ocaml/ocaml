@@ -2359,7 +2359,7 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
           (fun () -> Typecore.type_exp env sexp)
       in
       let mty =
-        match get_desc (Ctype.expand_head env exp.exp_type) with
+        match get_desc (Ctype.expand_head_nolink env exp.exp_type) with
           Tpackage pack ->
             check_package_closed ~loc:smod.pmod_loc ~env ~typ:exp.exp_type
               pack.pack_cstrs;

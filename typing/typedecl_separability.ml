@@ -150,10 +150,12 @@ let rec immediate_subtypes : type_expr -> type_expr list = fun ty ->
       (* these should only occur under Tobject and not at the toplevel,
          but "better safe than sorry" *)
       immediate_subtypes_object_row [] ty
-  | Tlink _ | Tsubst _ -> assert false (* impossible due to Ctype.repr *)
   | Tvar _ | Tunivar _ -> []
   | Tpoly (pty, _) -> [pty]
   | Tconstr (_path, tys, _) -> tys
+  | Tlink _  | Texpand _ -> assert false
+        (* impossible cases due to [get_desc] and [Transient_expr.repr] *)
+  | Tsubst _ -> assert false
 
 and immediate_subtypes_object_row acc ty = match get_desc ty with
   | Tnil -> acc
@@ -394,8 +396,9 @@ let check_type
     else
     let hyps = Hyps.add ty m hyps in
     match (get_desc ty, m) with
-    (* Impossible case due to the call to [Ctype.repr]. *)
-    | (Tlink _            , _      ) -> assert false
+    (* Impossible cases due to the call to [get_desc]. *)
+    | (Tlink _            , _      )
+    | (Texpand _          , _      ) -> assert false
     (* Impossible case (according to comment in [typing/types.mli]. *)
     | (Tsubst(_)          , _      ) -> assert false
     (* "Indifferent" case, the empty context is sufficient. *)
