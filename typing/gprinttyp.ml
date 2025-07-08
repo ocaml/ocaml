@@ -725,6 +725,8 @@ module Digraph = struct
           ~color ~id ~desc
     | Types.Tnil -> mk "[Nil]"
     | Types.Tlink t -> add_tynode Decoration.(make [Style Dash]) |> std_edge t
+    | Types.Texpand (t, _, _) ->
+        add_tynode Decoration.(make [Style Dash]) |> std_edge t
     | Types.Tsubst (t, o) ->
         let dg = add_tynode (labelr "[Subst]") |> std_edge t in
         begin match o with

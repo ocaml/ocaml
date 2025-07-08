@@ -10,7 +10,6 @@ type _ t = C : ((('a -> 'o) -> 'o) -> ('b -> 'o) -> 'o) t
 Line 3, characters 24-25:
 3 |  fun C k -> k (fun x -> x);;
                             ^
-Error: The value "x" has type "$0" but an expression was expected of type "$1" = "o"
-       Hint: "$0" and "$1" are type variables introduced in the equation
-         "a" = "$0 -> $1"
+Error: The value "x" has type "$0" but an expression was expected of type "o"
+       Hint: "$0" is a type variable introduced in the equation "a" = "$0 -> $1"
 |}];;

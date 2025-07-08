@@ -1068,12 +1068,12 @@ fun (x : 'a t as 'a) -> (x : 'b t);;
 type u = 'a t as 'a;;
 [%%expect {|
 type 'a t = < a : 'a >
-- : ('a t as 'a) -> 'a t = <fun>
-type u = 'a t as 'a
+- : (< a : 'a > as 'a) -> 'a t = <fun>
+type u = < a : 'a > as 'a
 |}, Principal{|
 type 'a t = < a : 'a >
-- : ('a t as 'a) -> ('b t as 'b) t = <fun>
-type u = 'a t as 'a
+- : (< a : 'a > as 'a) -> (< a : 'b > as 'b) t = <fun>
+type u = < a : 'a > as 'a
 |}];;
 
 
@@ -1081,11 +1081,11 @@ type u = 'a t as 'a
 type ('a1, 'b1) ty1 = 'a1 -> unit constraint 'a1 = [> `V1 of ('a1, 'b1) ty2 as 'b1]
 and  ('a2, 'b2) ty2 = 'b2 -> unit constraint 'b2 = [> `V2 of ('a2, 'b2) ty1 as 'a2];;
 [%%expect {|
-Line 1, characters 0-83:
+Line 1, characters 6-9:
 1 | type ('a1, 'b1) ty1 = 'a1 -> unit constraint 'a1 = [> `V1 of ('a1, 'b1) ty2 as 'b1]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of "ty1" contains a cycle:
-         "([> `V1 of 'a ] as 'b, 'a) ty2 as 'a" contains "'a"
+          ^^^
+Error: Constraints are not satisfied in this type.
+       Type "'b1" should be an instance of "('a, [> `V2 of 'a ]) ty2"
 |}];;
 
 (* PR#8359: expanding may change original in Ctype.unify2 *)
@@ -1132,10 +1132,21 @@ class type ['a] cb =
   end
 |}];;
 
+(* Should be OK *)
 type bt = 'b ca cb as 'b
 ;;
 [%%expect {|
-type bt = 'a ca cb as 'a
+Line 1, characters 0-24:
+1 | type bt = 'b ca cb as 'b
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The definition of "bt" contains a cycle:
+         "< a : < as_a : < as_a : 'b;
+                          b : < a : 'a; as_b : < a : 'a; as_b : 'c > as 'c > >
+                        as 'b;
+                 b : < a : 'a; as_b : 'c > >
+               as 'a;
+           as_b : 'c >" contains "'a",
+         "'a" = "'a"
 |}];;
 
 (* final classes, etc... *)
@@ -1595,6 +1606,15 @@ let f x = let l = [Some x; (None : _ u)] in (just(List.hd l))#id;;
 [%%expect {|
 type 'a u = c option
 val just : 'a option -> 'a = <fun>
+val f : c -> 'a -> 'a = <fun>
+|}, Principal{|
+type 'a u = c option
+val just : 'a option -> 'a = <fun>
+Line 3, characters 44-64:
+3 | let f x = let l = [Some x; (None : _ u)] in (just(List.hd l))#id;;
+                                                ^^^^^^^^^^^^^^^^^^^^
+Warning 18 [not-principal]: this use of a polymorphic method is not principal.
+
 val f : c -> 'a -> 'a = <fun>
 |}];;
 
@@ -2119,7 +2139,7 @@ val x : [ `Foo of 'a s ] = `Foo []
 |}]
 let x : [ `Foo of 'a t | `Foo of _ s ] = id (`Foo []);;
 [%%expect{|
-val x : [ `Foo of 'a list t ] = `Foo []
+val x : [ `Foo of 'a list ] = `Foo []
 |}]
 
 (* generalize spine of inherited methods too *)

@@ -488,10 +488,12 @@ let rec uniq = function
     [] -> true
   | a :: l -> not (List.memq (a : int) l) && uniq l
 
+let printer_get_desc ty = get_folded_desc ~keep_Tvar:true ty
+
 let rec normalize_type_path ?(cache=false) env p =
   try
     let (params, ty, _) = Env.find_type_expansion p env in
-    match get_desc ty with
+    match printer_get_desc ty with
       Tconstr (p1, tyl, _) ->
         if List.length params = List.length tyl
         && List.for_all2 eq_type params tyl
@@ -675,7 +677,7 @@ let nameable_row row =
    short-circuits the traversal of the [type_expr], so that it covers only the
    subterms that would be printed by the type printer. *)
 let printer_iter_type_expr f ty =
-  match get_desc ty with
+  match printer_get_desc ty with
   | Tconstr(p, tyl, _) ->
       let (_p', s) = best_type_path p in
       List.iter f (apply_subst s tyl)
@@ -1006,14 +1008,14 @@ module Aliases = struct
   let add_printed ty = add_printed_proxy (proxy ty)
 
   let aliasable ty =
-    match get_desc ty with
+    match printer_get_desc ty with
       Tvar _ | Tunivar _ | Tpoly _ -> false
     | Tconstr (p, _, _) ->
         not (is_nth (snd (best_type_path p)))
     | _ -> true
 
   let should_visit_object ty =
-    match get_desc ty with
+    match printer_get_desc ty with
     | Tvariant row -> not (static_row row)
     | Tobject _ -> opened_object ty
     | _ -> false
@@ -1108,7 +1110,7 @@ let print_labels = ref true
 let with_labels b f = Misc.protect_refs [R (print_labels,b)] f
 
 let alias_nongen_row mode px ty =
-    match get_desc ty with
+    match printer_get_desc ty with
     | Tvariant _ | Tobject _ ->
         if is_non_gen mode (Transient_expr.type_expr px) then
           Aliases.add_proxy px
@@ -1136,7 +1138,7 @@ let rec tree_of_typexp mode ty =
           if is_optional l then
             if tpoly_is_mono ty1 then
               let mono = tpoly_get_mono ty1 in
-              match get_desc mono with
+              match printer_get_desc mono with
               | Tconstr(path, [ty], _)
                 when Path.same path Predef.path_option ->
                   (* If we properly aliased the labeled argument, we
@@ -1215,7 +1217,7 @@ let rec tree_of_typexp mode ty =
     | Tsubst _ ->
         (* This case should only happen when debugging the compiler *)
         Otyp_stuff "<Tsubst>"
-    | Tlink _ ->
+    | Tlink _ | Texpand _ ->
         fatal_error "Out_type.tree_of_typexp"
     | Tpoly (ty, []) ->
         tree_of_typexp mode ty
@@ -1298,7 +1300,7 @@ and tree_of_typobject mode fi nm =
 and tree_of_typfields mode rest = function
   | [] ->
       let open_row =
-        match get_desc rest with
+        match printer_get_desc rest with
         | Tconstr (Pident p, _, _)
           when Btype.is_row_name (Ident.name p) ->
             Orow_open_anonymous
@@ -1442,7 +1444,7 @@ let prepare_decl id decl =
     | Some ty ->
         let ty =
           (* Special hack to hide row name *)
-          match get_desc ty with
+          match printer_get_desc ty with
             Tvariant row ->
               begin match row_name row with
                 Some (Pident id', _) when Ident.same id id' ->
@@ -2020,8 +2022,8 @@ let print_items showval env x =
 
 let same_path t t' =
   let open Types in
-  eq_type t t' ||
-  match get_desc t, get_desc t' with
+  eq_type t t' && get_expand t = None && get_expand t' = None ||
+  match printer_get_desc t, printer_get_desc t' with
     Tconstr(p,tl,_), Tconstr(p',tl',_) ->
       let (p1, s1) = best_type_path p and (p2, s2)  = best_type_path p' in
       begin match s1, s2 with
@@ -2032,8 +2034,8 @@ let same_path t t' =
           List.for_all2 eq_type tl tl'
       | _ -> false
       end
-  | _ ->
-      false
+  | Tconstr _, _ | _, Tconstr _ -> false
+  | _ -> true
 
 type 'a diff = Same of 'a | Diff of 'a * 'a
 
@@ -2066,7 +2068,7 @@ let pp_type_expansion ppf = function
 (* Hide variant name and var, to force printing the expanded type *)
 let hide_variant_name t =
   let open Types in
-  match get_desc t with
+  match printer_get_desc t with
   | Tvariant row ->
       let Row {fields; more; name; fixed; closed} = row_repr row in
       if name = None then t else

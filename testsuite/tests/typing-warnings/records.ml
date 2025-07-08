@@ -468,8 +468,8 @@ Warning 42 [disambiguated-name]: this use of "x" relies on type-directed
 Line 3, characters 45-46:
 3 |   let f r = ignore (r: foo); { r with x = 3; a = 4 }
                                                  ^
-Error: This record expression is expected to have type "M.foo"
-       There is no field "a" within type "M.foo"
+Error: This record expression is expected to have type "M/2.foo"
+       There is no field "a" within type "M/2.foo"
 |}]
 module F7 = struct
   open M

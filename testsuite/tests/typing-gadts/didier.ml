@@ -52,8 +52,7 @@ val f : 't -> 't ty -> bool = <fun>
 Line 4, characters 12-13:
 4 |   | Bool -> x
                 ^
-Error: The value "x" has type "t" = "bool" but an expression was expected of type
-         "bool"
+Error: The value "x" has type "bool" but an expression was expected of type "bool"
        This instance of "bool" is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -70,13 +69,13 @@ Line 4, characters 11-16:
 4 |   | Int -> x > 0
                ^^^^^
 Error: This expression has type "bool" but an expression was expected of type
-         "t" = "int"
+         "int"
 |}, Principal{|
 Line 4, characters 11-16:
 4 |   | Int -> x > 0
                ^^^^^
 Error: This expression has type "bool" but an expression was expected of type
-         "t" = "int"
+         "int"
        This instance of "int" is ambiguous:
        it would escape the scope of its equation
 |}];;

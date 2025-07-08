@@ -93,6 +93,7 @@ val is_Tvar: type_expr -> bool
 val is_Tunivar: type_expr -> bool
 val is_Tconstr: type_expr -> bool
 val dummy_method: label
+val get_constr_desc: type_expr -> type_desc
 val type_kind_is_abstract: type_declaration -> bool
 val type_origin: type_declaration -> type_origin
 
@@ -214,6 +215,12 @@ val copy_type_desc:
 val copy_row:
     (type_expr -> type_expr) ->
     bool -> row_desc -> bool -> type_expr -> row_desc
+
+val deep_occur: type_expr -> type_expr -> bool
+   (* [deep_occur t0 ty] return whether [t0] occurs in [ty].
+      Objects are also traversed. *)
+val deep_occur_list: type_expr -> type_expr list -> bool
+val get_folded_desc: keep_Tvar:bool -> type_expr -> type_desc
 
 module For_copy : sig
 

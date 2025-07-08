@@ -242,6 +242,7 @@ module Core_inclusion = struct
   let value_descriptions ~loc env ~direction subst id vd1 vd2 =
     if Directionality.mark_as_used direction then
       Env.mark_value_used vd1.val_uid;
+    let vd1 = Subst.value_description Subst.identity vd1 in
     let vd2 = Subst.value_description subst vd2 in
     try
       Ok (Includecore.value_descriptions ~loc env (Ident.name id) vd1 vd2)
@@ -254,6 +255,7 @@ module Core_inclusion = struct
     let mark = Directionality.mark_as_used direction in
     if mark then
       Env.mark_type_used decl1.type_uid;
+    let decl1 = Subst.type_declaration Subst.identity decl1 in
     let decl2 = Subst.type_declaration subst decl2 in
     match
       Includecore.type_declarations ~loc env ~mark
@@ -267,6 +269,7 @@ module Core_inclusion = struct
 
   let extension_constructors ~loc env ~direction subst id ext1 ext2 =
     let mark = Directionality.mark_as_used direction in
+    let ext1 = Subst.extension_constructor Subst.identity ext1 in
     let ext2 = Subst.extension_constructor subst ext2 in
     match Includecore.extension_constructors ~loc env ~mark id ext1 ext2 with
     | None -> Ok Tcoerce_none
@@ -276,6 +279,7 @@ module Core_inclusion = struct
   (* Inclusion between class declarations *)
 
   let class_type_declarations ~loc env ~direction:_ subst _id decl1 decl2 =
+    let decl1 = Subst.cltype_declaration Subst.identity decl1 in
     let decl2 = Subst.cltype_declaration subst decl2 in
     match Includeclass.class_type_declarations ~loc env decl1 decl2 with
       []     -> Ok Tcoerce_none
@@ -283,6 +287,7 @@ module Core_inclusion = struct
         Error Error.(Core(Class_type_declarations(diff decl1 decl2 reason)))
 
   let class_declarations ~loc:_ env ~direction:_ subst _id decl1 decl2 =
+    let decl1 = Subst.class_declaration Subst.identity decl1 in
     let decl2 = Subst.class_declaration subst decl2 in
     match Includeclass.class_declarations env decl1 decl2 with
       []     -> Ok Tcoerce_none
@@ -578,6 +583,9 @@ and try_modtypes ~core ~direction ~loc env subst mty1 mty2 orig_shape =
       end
   | (Mty_signature sig1, Mty_signature sig2) ->
       begin match
+        (*Format.eprintf "@[Inclusion of@ %a@ in@ %a@]@."
+          Printtyp.raw_signature sig1
+          Printtyp.raw_signature sig2;*)
         signatures ~core ~direction ~loc env subst sig1 sig2 orig_shape
       with
       | Ok _ as ok -> ok
