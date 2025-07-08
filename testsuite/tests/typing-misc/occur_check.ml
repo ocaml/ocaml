@@ -68,8 +68,7 @@ Error: This expression has type "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
          "'a Seq.t Seq.t Seq.t" = "unit -> 'a Seq.t Seq.t Seq.node"
        Type "'a Seq.t" = "unit -> 'a Seq.node" is not compatible with type
          "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
-  Hint: This function application is partial, maybe some arguments
-  are missing.
+Hint: This function application is partial, maybe some arguments are missing.
 |}];;
 
 let strange x = Seq.[cons x empty; cons empty x];;
@@ -82,6 +81,5 @@ Error: This expression has type "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
          "'a Seq.t Seq.t Seq.t" = "unit -> 'a Seq.t Seq.t Seq.node"
        Type "'a Seq.t" = "unit -> 'a Seq.node" is not compatible with type
          "'a Seq.t Seq.t" = "unit -> 'a Seq.t Seq.node"
-  Hint: This function application is partial, maybe some arguments
-  are missing.
+Hint: This function application is partial, maybe some arguments are missing.
 |}];;

@@ -194,13 +194,13 @@ let raw_type_kind ppf tk =
   match tk with
     Type_abstract _ -> fprintf ppf "Type_abstract"
   | Type_open -> fprintf ppf "Type_open"
-  | Type_external _ -> fprintf ppf "Type_external"
   | Type_record (lbl,_) ->
       fprintf ppf "@[<hov>Type_record@,%a@]"
         (raw_list raw_label_decl) lbl
   | Type_variant (csl,_) ->
       fprintf ppf "@[<hov>Type_variant@,%a@]"
         (raw_list raw_cstr_decl) csl
+  | Type_external s -> fprintf ppf "Type_external %s" s
 
 let raw_type_decl ppf td =
   fprintf ppf

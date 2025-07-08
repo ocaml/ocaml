@@ -85,6 +85,11 @@ let parse_empty_val = Parse.longident (Lexing.from_string "")
 [%%expect {|
 type parse_result = { flat : L.t; spec : L.t; any_is_correct : bool; }
 val test : (Lexing.lexbuf -> L.t) -> string -> parse_result = <fun>
+val parse_empty : L.t = Longident.Lident ""
+Exception: Syntaxerr.Error (Syntaxerr.Other Line 1, characters 0-0).
+|}, Principal{|
+type parse_result = { flat : L.t; spec : L.t; any_is_correct : bool; }
+val test : (Lexing.lexbuf -> L.t) -> string -> parse_result = <fun>
 val parse_empty : L.t = L.Lident ""
 Exception: Syntaxerr.Error (Syntaxerr.Other Line 1, characters 0-0).
 |}]

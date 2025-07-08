@@ -35,11 +35,11 @@ Error: This recursive type is not regular.
 |}];;
 type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
-type 'a t = [ `A of 'a t ] constraint 'a = [ `A of 'a ]
+type !'a t = [ `A of 'a t ] constraint 'a = [ `A of 'a ]
 |}];;
 type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
-type 'a t = [ `A of 'a t ] constraint 'a = [ `A of 'a ]
+type !'a t = [ `A of 'a t ] constraint 'a = [ `A of 'a ]
 |}];;
 type 'a t = [`A of 'a] as 'a;;
 [%%expect{|
@@ -80,7 +80,7 @@ end
 [%%expect{|
 module type PR6505 =
   sig
-    type 'o is_an_object = 'o constraint 'o = < .. >
+    type !'o is_an_object = 'o constraint 'o = < .. >
     and 'a abs constraint 'a = < .. >
     val abs : (< .. > as 'a) is_an_object -> 'a abs
     val unabs : (< .. > as 'a) abs -> 'a
@@ -109,8 +109,8 @@ let _ = lazy PR6505a.y#bang;; (* fails *)
 [%%expect{|
 module PR6505a :
   sig
-    type 'o is_an_object = 'o constraint 'o = < .. >
-    type ('a, 'b) abs = 'a constraint 'a = < .. > constraint 'b = 'a
+    type !'o is_an_object = 'o constraint 'o = < .. >
+    type (!'a, !'b) abs = 'a constraint 'a = < .. > constraint 'b = 'a
     val y : (<  >, <  >) abs
   end
 Line 6, characters 13-22:
@@ -142,8 +142,8 @@ let _ = lazy (match PR6505b.x with `Bar s -> s);; (* fails *)
 [%%expect{|
 module PR6505b :
   sig
-    type 'o is_an_object = 'o constraint 'o = [>  ]
-    type ('a, 'b) abs = 'a constraint 'a = [>  ] constraint 'b = 'a
+    type !'o is_an_object = 'o constraint 'o = [>  ]
+    type (!'a, !'b) abs = 'a constraint 'a = [>  ] constraint 'b = 'a
     val x : ([> `Foo of int ] as 'a, 'a) abs
   end
 Line 6, characters 13-47:
@@ -266,16 +266,16 @@ Lines 2-5, characters 0-3:
 Error: Signature mismatch:
        Modules do not match:
          sig
-           type 'a s = 'a M.t constraint 'a = 'b M.s
-           type 'a t = 'b M/2.s M/2.s M.s
+           type !'a s = 'a M.t constraint 'a = 'b M.s
+           type !'a t = 'b M/2.s M/2.s M.s
              constraint 'a = 'b M/2.s M/2.s M.s s
          end
        is not included in
          S
        Type declarations do not match:
-         type 'a t = 'b M/2.s constraint 'a = 'b M/2.s M/2.s
+         type !'a t = 'b M/2.s constraint 'a = 'b M/2.s M/2.s
        is not included in
-         type 'a t = 'b M/2.s M/2.s constraint 'a = 'b M/2.s M/2.s M/2.s
+         type !'a t = 'b M/2.s M/2.s constraint 'a = 'b M/2.s M/2.s M/2.s
        The type "'a M/2.s s" = "'a M/2.s M/2.s" is not equal to the type
          "'b M/2.s M/2.s s" = "'b M/2.s M/2.s M/2.s"
        Type "'c" is not equal to type "'d M/2.s"
@@ -327,12 +327,13 @@ Error: The class constraints are not consistent.
 type ('node,'self) extension = < node: 'node; self: 'self > as 'self
 type 'ext node = < > constraint 'ext = ('ext node, 'self) extension;;
 [%%expect{|
-type ('node, 'a) extension = 'a constraint 'a = < node : 'node; self : 'a >
-type 'a node = <  > constraint 'a = < node : 'a node; self : 'a >
+type (+!'node, !'a) extension = 'a
+  constraint 'a = < node : 'node; self : 'a >
+type !'a node = <  > constraint 'a = < node : 'a node; self : 'a >
 |}, Principal{|
 type (+!'node, !'a) extension = < node : 'node; self : 'b > as 'b
   constraint 'a = < node : 'node; self : 'a >
-type 'a node = <  > constraint 'a = < node : 'a node; self : 'a >
+type !'a node = <  > constraint 'a = < node : 'a node; self : 'a >
 |}]
 
 class type ['node] extension =
