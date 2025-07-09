@@ -199,7 +199,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
        it comes from. Attempt to omit the prefix if the type comes from
        a module that has been opened. *)
 
-    let tree_of_qualified lookup_all get_path env ty_path name =
+    let tree_of_qualified lookup_all get_type env ty ty_path name =
       (*First, we rewrite double underscore [__] into [.] whenever possible *)
       let ty_path = Out_type.rewrite_double_underscore_paths env ty_path in
       (* If [ty_path] is [M.N.t] and [name] is [Foo], we want to find
@@ -236,7 +236,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         | Error _ -> false
         | Ok cstrs ->
             List.exists (fun (cstr, _) ->
-              Path.same (get_path cstr) ty_path
+              Ctype.does_match env ty (get_type cstr)
             ) cstrs
       in
 
@@ -259,12 +259,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
     let tree_of_constr =
       tree_of_qualified
         (Env.lookup_all_constructors ~use:false ~loc:Location.none Env.Positive)
-        Data_types.cstr_res_type_path
+        Data_types.cstr_res_type
 
     and tree_of_label =
       tree_of_qualified
         (Env.lookup_all_labels ~use:false ~loc:Location.none Env.Construct)
-        Data_types.lbl_res_type_path
+        Data_types.lbl_res_type
 
     (* An abstract type *)
 
@@ -357,10 +357,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     tree_of_val depth obj
                       (instantiate_type env type_params ty_list body)
                 | {type_kind = Type_variant (constr_list,rep); type_params} ->
-                    tree_of_variant depth path type_params ty_list obj
+                    tree_of_variant depth path ty type_params ty_list obj
                       constr_list rep
                 | {type_kind = Type_record(lbl_list, rep); type_params} ->
-                    tree_of_record depth path type_params ty_list obj
+                    tree_of_record depth path ty type_params ty_list obj
                       lbl_list rep
                 | {type_kind = Type_open} ->
                     tree_of_extension path ty_list depth obj
@@ -479,7 +479,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             Oval_lazy v
           end
 
-      and tree_of_variant depth path type_params ty_list obj constr_list rep =
+      and tree_of_variant depth path ty type_params ty_list obj constr_list rep =
         let unbx = (rep = Variant_unboxed) in
         let tag =
           if unbx then Cstr_unboxed
@@ -504,20 +504,20 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           | Cstr_tuple l ->
               let ty_args =
                 instantiate_types env type_params ty_list l in
-              tree_of_constr_with_args (tree_of_constr env path)
+              tree_of_constr_with_args (tree_of_constr env ty path)
                 (Ident.name cd_id) false 0 depth obj
                 ty_args unbx
           | Cstr_record lbls ->
               let r =
                 tree_of_record_fields depth
-                  env path type_params ty_list
+                  env ty path type_params ty_list
                   lbls 0 obj unbx
               in
-              Oval_constr(tree_of_constr env path (Ident.name cd_id),
+              Oval_constr(tree_of_constr env ty path (Ident.name cd_id),
                           [ r ])
         end
 
-      and tree_of_record depth path type_params ty_list obj lbl_list rep =
+      and tree_of_record depth path ty type_params ty_list obj lbl_list rep =
         match check_depth depth obj ty with
         | Some x -> x
         | None ->
@@ -530,10 +530,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               match rep with Record_unboxed _ -> true | _ -> false
             in
             tree_of_record_fields depth
-              env path type_params ty_list
+              env ty path type_params ty_list
               lbl_list pos obj unbx
 
-      and tree_of_record_fields depth env path type_params ty_list
+      and tree_of_record_fields depth env ty path type_params ty_list
           lbl_list pos obj unboxed =
         let rec tree_of_fields pos = function
           | [] -> []
@@ -543,7 +543,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               (* PR#5722: print full module path only
                  for first record field *)
               let lid =
-                if pos = 0 then tree_of_label env path name
+                if pos = 0 then tree_of_label env ty path name
                 else tree_of_name name
               and v =
                 if unboxed then

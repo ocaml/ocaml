@@ -54,6 +54,7 @@ val may_equal_constr :
 
 (* Type constructor of the constructor's result type. *)
 val cstr_res_type_path : constructor_description -> Path.t
+val cstr_res_type : constructor_description -> type_expr
 
 (* Parameters of the type constructor *)
 val cstr_res_type_params : constructor_description -> type_expr list
@@ -76,3 +77,4 @@ type label_description =
 
 (* Type constructor of the label record type. *)
 val lbl_res_type_path : label_description -> Path.t
+val lbl_res_type : label_description -> type_expr
