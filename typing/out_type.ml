@@ -2036,13 +2036,40 @@ let same_path t t' =
   | Tconstr _, _ | _, Tconstr _ -> false
   | _ -> true
 
-type 'a diff = Same of 'a | Diff of 'a * 'a
+type expansion_diff =
+  { ty : out_type
+  ; expanded : out_type option
+  ; manifest : out_type option
+  }
 
 let trees_of_type_expansion mode Errortrace.{ty = t; expanded = t'} =
+  let manifest =
+    match get_expand t with
+    | None -> None
+    | Some (tconstr, params) ->
+        let should_use_manifest =
+          match printer_get_desc t with
+          | Tconstr (p, tl, _) ->
+              not(
+                (Path.same p tconstr)
+                && List.length tl = List.length params
+                && List.for_all2 eq_type tl params
+              )
+          | _ -> true
+        in
+        if not should_use_manifest then None
+        else
+        Some (Otyp_constr (tree_of_path (Some Type) tconstr, tree_of_typlist mode params))
+  in
   Aliases.reset ();
   Aliases.mark_loops t;
   if same_path t t'
-  then begin Aliases.add_delayed (proxy t); Same (tree_of_typexp mode t) end
+  then begin Aliases.add_delayed (proxy t);
+    { ty = tree_of_typexp mode t
+    ; expanded = None
+    ; manifest
+    }
+  end
   else begin
     let t' = if proxy t == proxy t' then unalias t' else t' in
     Aliases.mark_loops t';
@@ -2050,19 +2077,27 @@ let trees_of_type_expansion mode Errortrace.{ty = t; expanded = t'} =
        e.g. when printing object types *)
     let first = tree_of_typexp mode t in
     let second = tree_of_typexp mode t' in
-    if first = second then Same first
-    else Diff(first,second)
+    { ty = first
+    ; expanded = if first = second then None else Some second
+    ; manifest
+    }
   end
 
 let pp_type ppf t =
   Style.as_inline_code !Oprint.out_type ppf t
 
 let pp_type_expansion ppf = function
-  | Same t -> pp_type ppf t
-  | Diff(t,t') ->
+  | { ty; expanded = None; manifest = None } -> pp_type ppf ty
+  | { ty = second; expanded = None; manifest = Some first }
+  | { ty = first; expanded = Some second; manifest = None } ->
       fprintf ppf "@[<2>%a@ =@ %a@]"
-        pp_type t
-        pp_type t'
+        pp_type first
+        pp_type second
+  | { ty = second; expanded = Some third; manifest = Some first } ->
+      fprintf ppf "@[<2>%a@ =@ %a@ =@ %a@]"
+        pp_type first
+        pp_type second
+        pp_type third
 
 (* Hide variant name and var, to force printing the expanded type *)
 let hide_variant_name t =

@@ -114,11 +114,11 @@ val prepared_type_expr: type_expr printer
     {!Variable_names.reserve}), but should not have had its cycles marked. *)
 val type_expr_with_reserved_names: type_expr printer
 
-type 'a diff = Same of 'a | Diff of 'a * 'a
+type expansion_diff
 val trees_of_type_expansion:
-  type_or_scheme -> Errortrace.expanded_type -> out_type diff
+  type_or_scheme -> Errortrace.expanded_type -> expansion_diff
 val prepare_expansion: Errortrace.expanded_type -> Errortrace.expanded_type
-val pp_type_expansion: out_type diff printer
+val pp_type_expansion: expansion_diff printer
 val hide_variant_name: Types.type_expr -> Types.type_expr
 
 

@@ -123,7 +123,8 @@ Error: Type declarations do not match:
        is not included in
          type 'a t
        Their parameters differ
-       The type < x : int; .. > is not equal to the type 'a
+       The type < x : int; .. > t = < x : int; .. > is not equal to the type
+         'a
 type 'a t = private 'a constraint 'a = < x : int; .. >
 type t = [ `Closed ]
 type nonrec t = private [> t ]

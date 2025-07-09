@@ -278,7 +278,7 @@ Error: Signature mismatch:
          type !'a t = 'b M/2.s M/2.s constraint 'a = 'b M/2.s M/2.s M/2.s
        The type "'a M/2.s s" = "'a M/2.s M/2.s" is not equal to the type
          "'b M/2.s M/2.s s" = "'b M/2.s M/2.s M/2.s"
-       Type "'c" is not equal to type "'d M/2.s"
+       Type "'c" is not equal to type "'d M/2.s M/2.s M.s" = "'d M/2.s"
        File "_none_", line 1:
          Definition of module "M"
        Lines 1-5, characters 0-3:

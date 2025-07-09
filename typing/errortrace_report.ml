@@ -37,7 +37,7 @@ open Format_doc
 module Fmt = Format_doc
 module Style = Misc.Style
 
-type 'a diff = 'a Out_type.diff = Same of 'a | Diff of 'a * 'a
+type 'a diff = Same of 'a | Diff of 'a * 'a
 
 let trees_of_trace mode =
   List.map (Errortrace.map_diff (trees_of_type_expansion mode))
