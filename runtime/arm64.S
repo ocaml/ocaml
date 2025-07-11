@@ -71,9 +71,11 @@
 
 /* Globals and labels */
 #if defined(SYS_macosx)
+#define CAMLSEP(x,y) caml_##x##$##y
 #define G(sym) _##sym
 #define L(lbl) L##lbl
 #else
+#define CAMLSEP(x,y) caml_##x##.##y
 #define G(sym) sym
 #define L(lbl) .L##lbl
 #endif
@@ -104,13 +106,13 @@
 #endif
 
 #if defined(FUNCTION_SECTIONS)
-        TEXT_SECTION(caml_hot$code_begin)
-        .globl  G(caml_hot$code_begin)
-G(caml_hot$code_begin):
+        TEXT_SECTION(CAMLSEP(hot,code_begin))
+        .globl  G(CAMLSEP(hot,code_begin))
+G(CAMLSEP(hot,code_begin)):
 
-        TEXT_SECTION(caml_hot$code_end)
-        .globl  G(caml_hot$code_end)
-G(caml_hot$code_end):
+        TEXT_SECTION(CAMLSEP(hot,code_end))
+        .globl  G(CAMLSEP(hot,code_end))
+G(CAMLSEP(hot,code_end)):
 #endif
 
 #if defined(SYS_macosx)
@@ -1285,7 +1287,7 @@ G(caml_system__code_end):
 
 /* Frametable - GC roots for callback */
 /* Uses the same naming convention as ocamlopt generated modules. */
-OBJECT(caml_system$frametable)
+OBJECT(CAMLSEP(system,frametable))
         .quad   2               /* two descriptors */
         .quad   L(caml_retaddr) /* return address into callback */
         .short  -1              /* negative frame size => use callback link */
@@ -1295,6 +1297,6 @@ OBJECT(caml_system$frametable)
         .short  -1              /* negative frame size => use callback link */
         .short  0               /* no roots here */
         .align 3
-        END_OBJECT(caml_system$frametable)
+        END_OBJECT(CAMLSEP(system,frametable))
 
         NONEXECSTACK_NOTE

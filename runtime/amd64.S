@@ -23,6 +23,7 @@
 
 #if defined(SYS_macosx)
 
+#define CAMLSEP(x,y) caml_##x##$##y
 #define LBL(x) L##x
 #define G(r) _##r
 #define GREL(r) _##r@GOTPCREL
@@ -38,6 +39,7 @@ G(name):
 
 #elif defined(SYS_mingw64) || defined(SYS_cygwin)
 
+#define CAMLSEP(x,y) caml_##x##$##y
 #define LBL(x) .L##x
 #define G(r) r
 #undef  GREL
@@ -54,6 +56,7 @@ G(name):
 
 #else /* Unix-like operating systems using ELF binaries */
 
+#define CAMLSEP(x,y) caml_##x##.##y
 #define LBL(x) .L##x
 #define G(r) r
 #define GREL(r) r@GOTPCREL
@@ -404,13 +407,13 @@ G(name):
         .text
 
 #if defined(FUNCTION_SECTIONS)
-        TEXT_SECTION(caml_hot$code_begin)
-        .globl  G(caml_hot$code_begin)
-G(caml_hot$code_begin):
+        TEXT_SECTION(CAMLSEP(hot,code_begin))
+        .globl  G(CAMLSEP(hot,code_begin))
+G(CAMLSEP(hot,code_begin)):
 
-        TEXT_SECTION(caml_hot$code_end)
-        .globl  G(caml_hot$code_end)
-G(caml_hot$code_end):
+        TEXT_SECTION(CAMLSEP(hot,code_end))
+        .globl  G(CAMLSEP(hot,code_end))
+G(CAMLSEP(hot,code_end)):
 #endif
 
 /******************************************************************************/
@@ -1342,7 +1345,7 @@ G(caml_system__code_end):
 /* Frametable - GC roots for callback */
 /* Uses the same naming convention as ocamlopt generated modules. */
         .data
-OBJECT(caml_system$frametable)
+OBJECT(CAMLSEP(system,frametable))
         .quad   2           /* two descriptors */
         .quad   LBL(108)    /* return address into callback */
         .value  -1          /* negative frame size => use callback link */
@@ -1351,7 +1354,7 @@ OBJECT(caml_system$frametable)
         .quad   LBL(frame_runstack) /* return address into fiber_val_handler */
         .value  -1          /* negative frame size => use callback link */
         .value  0           /* no roots here */
-END_OBJECT(caml_system$frametable)
+END_OBJECT(CAMLSEP(system,frametable))
 
 #if defined(SYS_macosx)
         .literal16

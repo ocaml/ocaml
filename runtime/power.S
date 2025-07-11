@@ -77,13 +77,13 @@
 .endm
 
 #if defined(FUNCTION_SECTIONS)
-        TEXT_SECTION caml_hot$code_begin
-        .globl caml_hot$code_begin
-caml_hot$code_begin:
+        TEXT_SECTION caml_hot.code_begin
+        .globl caml_hot.code_begin
+caml_hot.code_begin:
 
-        TEXT_SECTION caml_hot$code_end
-        .globl caml_hot$code_end
-caml_hot$code_end:
+        TEXT_SECTION caml_hot.code_end
+        .globl caml_hot.code_end
+caml_hot.code_end:
 #endif
 
 .macro FUNCTION name
@@ -1190,7 +1190,7 @@ caml_system__code_end:
 /* Frametable - GC roots for callback */
 /* Uses the same naming convention as ocamlopt generated modules. */
         .section ".data"
-OBJECT caml_system$frametable
+OBJECT caml_system.frametable
         .quad   2               /* two descriptors */
         .quad   .Lcaml_retaddr + 4  /* return address into callback */
         .short  -1              /* negative frame size => use callback link */
@@ -1200,7 +1200,7 @@ OBJECT caml_system$frametable
         .short  -1              /* negative frame size => use callback link */
         .short  0               /* no roots here */
         .align 3
-ENDOBJECT caml_system$frametable
+ENDOBJECT caml_system.frametable
 
 /* TOC entries */
 
