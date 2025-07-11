@@ -146,7 +146,7 @@ module Pp = struct
       };
       assoc = {
         assoc_open = Format.dprintf "@[<hv 2>{@ ";
-        assoc_close = Format.dprintf "@;<0 -2>}@]";
+        assoc_close = Format.dprintf "@;<1 -2>}@]";
         open_with_label = Format.dprintf "@[<b 2>";
         label_sep = Format.dprintf "@ :@ ";
         sep = (fun ppf () -> Format.fprintf ppf ",@ ");

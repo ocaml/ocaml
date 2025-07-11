@@ -9,8 +9,8 @@
         {
           "description" : "Format box kind (h,v,hv, b, hov)",
           "oneOf" :
-            [{ "const" : "B"}, { "const" : "HoV"}, { "const" : "HV"},
-              { "const" : "V"}, { "const" : "H"}]
+            [{ "const" : "B" }, { "const" : "HoV" }, { "const" : "HV" },
+              { "const" : "V" }, { "const" : "H" }]
         },
       "compiler" :
         {
@@ -21,15 +21,15 @@
               "alerts" :
                 {
                   "type" : "array",
-                  "items" : { "$ref" : "#/$defs/error_report"}
+                  "items" : { "$ref" : "#/$defs/error_report" }
                 },
               "warnings" :
                 {
                   "type" : "array",
-                  "items" : { "$ref" : "#/$defs/error_report"}
+                  "items" : { "$ref" : "#/$defs/error_report" }
                 },
-              "error" : { "$ref" : "#/$defs/error_report"},
-              "debug" : { "$ref" : "#/$defs/debug"}
+              "error" : { "$ref" : "#/$defs/error_report" },
+              "debug" : { "$ref" : "#/$defs/debug" }
             },
           "required" : []
         },
@@ -43,37 +43,40 @@
                 {
                   "type" : "array",
                   "prefixItems" :
-                    [{ "type" : "array", "items" : { "type" : "string"}},
+                    [{ "type" : "array", "items" : { "type" : "string" } },
                       {
                         "type" : "array",
-                        "items" : { "$ref" : "#/$defs/profile"}
+                        "items" : { "$ref" : "#/$defs/profile" }
                       }]
                 },
-              "cmm_invariant" : { "type" : "string"},
-              "linear" : { "type" : "array", "items" : { "type" : "string"}},
-              "mach" : { "type" : "array", "items" : { "type" : "string"}},
+              "cmm_invariant" : { "type" : "string" },
+              "linear" :
+                { "type" : "array", "items" : { "type" : "string" } },
+              "mach" : { "type" : "array", "items" : { "type" : "string" } },
               "unbox_specialised_args" :
-                { "type" : "array", "items" : { "type" : "string"}},
+                { "type" : "array", "items" : { "type" : "string" } },
               "unbox_closures" :
-                { "type" : "array", "items" : { "type" : "string"}},
+                { "type" : "array", "items" : { "type" : "string" } },
               "unbox_free_vars_of_closures" :
-                { "type" : "array", "items" : { "type" : "string"}},
+                { "type" : "array", "items" : { "type" : "string" } },
               "remove_free_vars_equal_to_args" :
-                { "type" : "array", "items" : { "type" : "string"}},
-              "cmm" : { "type" : "array", "items" : { "type" : "string"}},
+                { "type" : "array", "items" : { "type" : "string" } },
+              "cmm" : { "type" : "array", "items" : { "type" : "string" } },
               "raw_clambda" :
-                { "type" : "array", "items" : { "type" : "string"}},
-              "clambda" : { "type" : "array", "items" : { "type" : "string"}},
+                { "type" : "array", "items" : { "type" : "string" } },
+              "clambda" :
+                { "type" : "array", "items" : { "type" : "string" } },
               "rawflambda" :
-                { "type" : "array", "items" : { "type" : "string"}},
-              "flambda" : { "type" : "array", "items" : { "type" : "string"}},
-              "rawlambda" : { "type" : "string"},
-              "lambda" : { "type" : "string"},
-              "instr" : { "type" : "string"},
-              "shape" : { "type" : "string"},
-              "typedtree" : { "type" : "string"},
-              "source" : { "type" : "string"},
-              "parsetree" : { "type" : "string"}
+                { "type" : "array", "items" : { "type" : "string" } },
+              "flambda" :
+                { "type" : "array", "items" : { "type" : "string" } },
+              "rawlambda" : { "type" : "string" },
+              "lambda" : { "type" : "string" },
+              "instr" : { "type" : "string" },
+              "shape" : { "type" : "string" },
+              "typedtree" : { "type" : "string" },
+              "source" : { "type" : "string" },
+              "parsetree" : { "type" : "string" }
             },
           "required" : []
         },
@@ -86,13 +89,13 @@
                  [{
                     "type" : "array",
                     "prefixItems" :
-                      [{ "const" : "Report_warning_as_error"},
-                        { "type" : "string"}]
+                      [{ "const" : "Report_warning_as_error" },
+                        { "type" : "string" }]
                   },
                    {
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "Report_warning_as_error"},
+                       [{ "const" : "Report_warning_as_error" },
                          {
                            "type" : "object",
                            "description" :
@@ -102,9 +105,9 @@
                                "contents" :
                                  {
                                    "type" : "array",
-                                   "prefixItems" : [{ "type" : "string"}]
+                                   "prefixItems" : [{ "type" : "string" }]
                                  },
-                               "next" : { "type" : "object"}
+                               "next" : { "type" : "object" }
                              },
                            "required" : ["contents"]
                          }]
@@ -115,12 +118,13 @@
                   [{
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "Report_warning"}, { "type" : "string"}]
+                       [{ "const" : "Report_warning" },
+                         { "type" : "string" }]
                    },
                     {
                       "type" : "array",
                       "prefixItems" :
-                        [{ "const" : "Report_warning"},
+                        [{ "const" : "Report_warning" },
                           {
                             "type" : "object",
                             "description" :
@@ -130,9 +134,9 @@
                                 "contents" :
                                   {
                                     "type" : "array",
-                                    "prefixItems" : [{ "type" : "string"}]
+                                    "prefixItems" : [{ "type" : "string" }]
                                   },
-                                "next" : { "type" : "object"}
+                                "next" : { "type" : "object" }
                               },
                             "required" : ["contents"]
                           }]
@@ -143,13 +147,13 @@
                   [{
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "Report_alert_as_error"},
-                         { "type" : "string"}]
+                       [{ "const" : "Report_alert_as_error" },
+                         { "type" : "string" }]
                    },
                     {
                       "type" : "array",
                       "prefixItems" :
-                        [{ "const" : "Report_alert_as_error"},
+                        [{ "const" : "Report_alert_as_error" },
                           {
                             "type" : "object",
                             "description" :
@@ -159,9 +163,9 @@
                                 "contents" :
                                   {
                                     "type" : "array",
-                                    "prefixItems" : [{ "type" : "string"}]
+                                    "prefixItems" : [{ "type" : "string" }]
                                   },
-                                "next" : { "type" : "object"}
+                                "next" : { "type" : "object" }
                               },
                             "required" : ["contents"]
                           }]
@@ -172,12 +176,12 @@
                   [{
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "Report_alert"}, { "type" : "string"}]
+                       [{ "const" : "Report_alert" }, { "type" : "string" }]
                    },
                     {
                       "type" : "array",
                       "prefixItems" :
-                        [{ "const" : "Report_alert"},
+                        [{ "const" : "Report_alert" },
                           {
                             "type" : "object",
                             "description" :
@@ -187,14 +191,14 @@
                                 "contents" :
                                   {
                                     "type" : "array",
-                                    "prefixItems" : [{ "type" : "string"}]
+                                    "prefixItems" : [{ "type" : "string" }]
                                   },
-                                "next" : { "type" : "object"}
+                                "next" : { "type" : "object" }
                               },
                             "required" : ["contents"]
                           }]
                     }]
-              }, { "const" : "Report_error"}]
+              }, { "const" : "Report_error" }]
         },
       "error_msg" :
         {
@@ -202,11 +206,11 @@
           "description" : "Error message bundled with an optional location",
           "properties" :
             {
-              "loc" : { "$ref" : "#/$defs/loc"},
+              "loc" : { "$ref" : "#/$defs/loc" },
               "msg" :
                 {
                   "type" : "array",
-                  "items" : { "$ref" : "#/$defs/structured_text"}
+                  "items" : { "$ref" : "#/$defs/structured_text" }
                 }
             },
           "required" : ["msg"]
@@ -220,15 +224,15 @@
               "footnote" :
                 {
                   "type" : "array",
-                  "items" : { "$ref" : "#/$defs/structured_text"}
+                  "items" : { "$ref" : "#/$defs/structured_text" }
                 },
               "sub" :
                 {
                   "type" : "array",
-                  "items" : { "$ref" : "#/$defs/error_msg"}
+                  "items" : { "$ref" : "#/$defs/error_msg" }
                 },
-              "main" : { "$ref" : "#/$defs/error_msg"},
-              "kind" : { "$ref" : "#/$defs/error_kind"}
+              "main" : { "$ref" : "#/$defs/error_msg" },
+              "kind" : { "$ref" : "#/$defs/error_kind" }
             },
           "required" : ["main", "kind"]
         },
@@ -236,22 +240,22 @@
         {
           "description" : "Format semantic tag",
           "oneOf" :
-            [{ "const" : "Preservation"}, { "const" : "Modification"},
-              { "const" : "Insertion"}, { "const" : "Deletion"},
-              { "const" : "Hint"}, { "const" : "Inline_code"},
-              { "const" : "Loc"}, { "const" : "Warning"},
-              { "const" : "Error"},
+            [{ "const" : "Preservation" }, { "const" : "Modification" },
+              { "const" : "Insertion" }, { "const" : "Deletion" },
+              { "const" : "Hint" }, { "const" : "Inline_code" },
+              { "const" : "Loc" }, { "const" : "Warning" },
+              { "const" : "Error" },
               {
                 "oneOf" :
                   [{
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "String_tag"}, { "type" : "string"}]
+                       [{ "const" : "String_tag" }, { "type" : "string" }]
                    },
                     {
                       "type" : "array",
                       "prefixItems" :
-                        [{ "const" : "String_tag"},
+                        [{ "const" : "String_tag" },
                           {
                             "type" : "object",
                             "description" :
@@ -261,9 +265,9 @@
                                 "contents" :
                                   {
                                     "type" : "array",
-                                    "prefixItems" : [{ "type" : "string"}]
+                                    "prefixItems" : [{ "type" : "string" }]
                                   },
-                                "next" : { "type" : "object"}
+                                "next" : { "type" : "object" }
                               },
                             "required" : ["contents"]
                           }]
@@ -274,13 +278,13 @@
                   [{
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "Unknown_format_tag"},
-                         { "type" : "string"}]
+                       [{ "const" : "Unknown_format_tag" },
+                         { "type" : "string" }]
                    },
                     {
                       "type" : "array",
                       "prefixItems" :
-                        [{ "const" : "Unknown_format_tag"},
+                        [{ "const" : "Unknown_format_tag" },
                           {
                             "type" : "object",
                             "description" :
@@ -290,9 +294,9 @@
                                 "contents" :
                                   {
                                     "type" : "array",
-                                    "prefixItems" : [{ "type" : "string"}]
+                                    "prefixItems" : [{ "type" : "string" }]
                                   },
-                                "next" : { "type" : "object"}
+                                "next" : { "type" : "object" }
                               },
                             "required" : ["contents"]
                           }]
@@ -309,11 +313,11 @@
                 {
                   "type" : "array",
                   "prefixItems" :
-                    [{ "type" : "integer"}, { "type" : "integer"}]
+                    [{ "type" : "integer" }, { "type" : "integer" }]
                 },
-              "stop_line" : { "type" : "integer"},
-              "start_line" : { "type" : "integer"},
-              "file" : { "type" : "string"}
+              "stop_line" : { "type" : "integer" },
+              "start_line" : { "type" : "integer" },
+              "file" : { "type" : "string" }
             },
           "required" : []
         },
@@ -327,21 +331,21 @@
                 {
                   "type" : "array",
                   "items" :
-                    { "type" : "array", "items" : { "type" : "string"}}
+                    { "type" : "array", "items" : { "type" : "string" } }
                 },
               "invalid_paths" :
                 {
                   "type" : "array",
                   "items" :
-                    { "type" : "array", "items" : { "type" : "string"}}
+                    { "type" : "array", "items" : { "type" : "string" } }
                 },
-              "valid" : { "$ref" : "#/$defs/validity"},
-              "downward_compatible" : { "type" : "boolean"},
+              "valid" : { "$ref" : "#/$defs/validity" },
+              "downward_compatible" : { "type" : "boolean" },
               "version" :
                 {
                   "type" : "array",
                   "prefixItems" :
-                    [{ "type" : "integer"}, { "type" : "integer"}]
+                    [{ "type" : "integer" }, { "type" : "integer" }]
                 }
             },
           "required" : ["valid", "downward_compatible", "version"]
@@ -354,9 +358,13 @@
           "properties" :
             {
               "children" :
-                { "type" : "array", "items" : { "$ref" : "#/$defs/profile"}},
-              "columns" : { "type" : "array", "items" : { "type" : "number"}},
-              "name" : { "type" : "string"}
+                {
+                  "type" : "array",
+                  "items" : { "$ref" : "#/$defs/profile" }
+                },
+              "columns" :
+                { "type" : "array", "items" : { "type" : "number" } },
+              "name" : { "type" : "string" }
             },
           "required" : ["name"]
         },
@@ -370,16 +378,16 @@
                  [{
                     "type" : "array",
                     "prefixItems" :
-                      [{ "const" : "Tbox"},
+                      [{ "const" : "Tbox" },
                         {
                           "type" : "array",
-                          "items" : { "$ref" : "#/$defs/structured_text"}
+                          "items" : { "$ref" : "#/$defs/structured_text" }
                         }]
                   },
                    {
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "Tbox"},
+                       [{ "const" : "Tbox" },
                          {
                            "type" : "object",
                            "description" :
@@ -399,7 +407,7 @@
                                           }
                                       }]
                                  },
-                               "next" : { "type" : "object"}
+                               "next" : { "type" : "object" }
                              },
                            "required" : ["contents"]
                          }]
@@ -410,16 +418,17 @@
                   [{
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "Tag"}, { "$ref" : "#/$defs/format_tag"},
+                       [{ "const" : "Tag" },
+                         { "$ref" : "#/$defs/format_tag" },
                          {
                            "type" : "array",
-                           "items" : { "$ref" : "#/$defs/structured_text"}
+                           "items" : { "$ref" : "#/$defs/structured_text" }
                          }]
                    },
                     {
                       "type" : "array",
                       "prefixItems" :
-                        [{ "const" : "Tag"},
+                        [{ "const" : "Tag" },
                           {
                             "type" : "object",
                             "description" :
@@ -430,7 +439,7 @@
                                   {
                                     "type" : "array",
                                     "prefixItems" :
-                                      [{ "$ref" : "#/$defs/format_tag"},
+                                      [{ "$ref" : "#/$defs/format_tag" },
                                         {
                                           "type" : "array",
                                           "items" :
@@ -440,7 +449,7 @@
                                             }
                                         }]
                                   },
-                                "next" : { "type" : "object"}
+                                "next" : { "type" : "object" }
                               },
                             "required" : ["contents"]
                           }]
@@ -451,17 +460,17 @@
                   [{
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "Box"}, { "$ref" : "#/$defs/box_type"},
-                         { "type" : "integer"},
+                       [{ "const" : "Box" }, { "$ref" : "#/$defs/box_type" },
+                         { "type" : "integer" },
                          {
                            "type" : "array",
-                           "items" : { "$ref" : "#/$defs/structured_text"}
+                           "items" : { "$ref" : "#/$defs/structured_text" }
                          }]
                    },
                     {
                       "type" : "array",
                       "prefixItems" :
-                        [{ "const" : "Box"},
+                        [{ "const" : "Box" },
                           {
                             "type" : "object",
                             "description" :
@@ -472,8 +481,8 @@
                                   {
                                     "type" : "array",
                                     "prefixItems" :
-                                      [{ "$ref" : "#/$defs/box_type"},
-                                        { "type" : "integer"},
+                                      [{ "$ref" : "#/$defs/box_type" },
+                                        { "type" : "integer" },
                                         {
                                           "type" : "array",
                                           "items" :
@@ -483,7 +492,7 @@
                                             }
                                         }]
                                   },
-                                "next" : { "type" : "object"}
+                                "next" : { "type" : "object" }
                               },
                             "required" : ["contents"]
                           }]
@@ -494,13 +503,13 @@
                   [{
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "With_size"}, { "type" : "integer"},
-                         { "type" : "string"}]
+                       [{ "const" : "With_size" }, { "type" : "integer" },
+                         { "type" : "string" }]
                    },
                     {
                       "type" : "array",
                       "prefixItems" :
-                        [{ "const" : "With_size"},
+                        [{ "const" : "With_size" },
                           {
                             "type" : "object",
                             "description" :
@@ -511,10 +520,10 @@
                                   {
                                     "type" : "array",
                                     "prefixItems" :
-                                      [{ "type" : "integer"},
-                                        { "type" : "string"}]
+                                      [{ "type" : "integer" },
+                                        { "type" : "string" }]
                                   },
-                                "next" : { "type" : "object"}
+                                "next" : { "type" : "object" }
                               },
                             "required" : ["contents"]
                           }]
@@ -525,12 +534,12 @@
                   [{
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "Deprecated"}, { "type" : "string"}]
+                       [{ "const" : "Deprecated" }, { "type" : "string" }]
                    },
                     {
                       "type" : "array",
                       "prefixItems" :
-                        [{ "const" : "Deprecated"},
+                        [{ "const" : "Deprecated" },
                           {
                             "type" : "object",
                             "description" :
@@ -540,25 +549,25 @@
                                 "contents" :
                                   {
                                     "type" : "array",
-                                    "prefixItems" : [{ "type" : "string"}]
+                                    "prefixItems" : [{ "type" : "string" }]
                                   },
-                                "next" : { "type" : "object"}
+                                "next" : { "type" : "object" }
                               },
                             "required" : ["contents"]
                           }]
                     }]
-              }, { "const" : "If_newline"}, { "const" : "Newline"},
+              }, { "const" : "If_newline" }, { "const" : "Newline" },
               {
                 "oneOf" :
                   [{
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "Flush"}, { "type" : "boolean"}]
+                       [{ "const" : "Flush" }, { "type" : "boolean" }]
                    },
                     {
                       "type" : "array",
                       "prefixItems" :
-                        [{ "const" : "Flush"},
+                        [{ "const" : "Flush" },
                           {
                             "type" : "object",
                             "description" :
@@ -568,9 +577,9 @@
                                 "contents" :
                                   {
                                     "type" : "array",
-                                    "prefixItems" : [{ "type" : "boolean"}]
+                                    "prefixItems" : [{ "type" : "boolean" }]
                                   },
-                                "next" : { "type" : "object"}
+                                "next" : { "type" : "object" }
                               },
                             "required" : ["contents"]
                           }]
@@ -581,24 +590,24 @@
                   [{
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "Break"},
+                       [{ "const" : "Break" },
                          {
                            "type" : "array",
                            "prefixItems" :
-                             [{ "type" : "string"}, { "type" : "integer"},
-                               { "type" : "string"}]
+                             [{ "type" : "string" }, { "type" : "integer" },
+                               { "type" : "string" }]
                          },
                          {
                            "type" : "array",
                            "prefixItems" :
-                             [{ "type" : "string"}, { "type" : "integer"},
-                               { "type" : "string"}]
+                             [{ "type" : "string" }, { "type" : "integer" },
+                               { "type" : "string" }]
                          }]
                    },
                     {
                       "type" : "array",
                       "prefixItems" :
-                        [{ "const" : "Break"},
+                        [{ "const" : "Break" },
                           {
                             "type" : "object",
                             "description" :
@@ -612,19 +621,19 @@
                                       [{
                                          "type" : "array",
                                          "prefixItems" :
-                                           [{ "type" : "string"},
-                                             { "type" : "integer"},
-                                             { "type" : "string"}]
+                                           [{ "type" : "string" },
+                                             { "type" : "integer" },
+                                             { "type" : "string" }]
                                        },
                                         {
                                           "type" : "array",
                                           "prefixItems" :
-                                            [{ "type" : "string"},
-                                              { "type" : "integer"},
-                                              { "type" : "string"}]
+                                            [{ "type" : "string" },
+                                              { "type" : "integer" },
+                                              { "type" : "string" }]
                                         }]
                                   },
-                                "next" : { "type" : "object"}
+                                "next" : { "type" : "object" }
                               },
                             "required" : ["contents"]
                           }]
@@ -635,13 +644,13 @@
                   [{
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "Simple_break"}, { "type" : "integer"},
-                         { "type" : "integer"}]
+                       [{ "const" : "Simple_break" }, { "type" : "integer" },
+                         { "type" : "integer" }]
                    },
                     {
                       "type" : "array",
                       "prefixItems" :
-                        [{ "const" : "Simple_break"},
+                        [{ "const" : "Simple_break" },
                           {
                             "type" : "object",
                             "description" :
@@ -652,27 +661,27 @@
                                   {
                                     "type" : "array",
                                     "prefixItems" :
-                                      [{ "type" : "integer"},
-                                        { "type" : "integer"}]
+                                      [{ "type" : "integer" },
+                                        { "type" : "integer" }]
                                   },
-                                "next" : { "type" : "object"}
+                                "next" : { "type" : "object" }
                               },
                             "required" : ["contents"]
                           }]
                     }]
-              }, { "const" : "Set_tab"},
+              }, { "const" : "Set_tab" },
               {
                 "oneOf" :
                   [{
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "Tab_break"}, { "type" : "integer"},
-                         { "type" : "integer"}]
+                       [{ "const" : "Tab_break" }, { "type" : "integer" },
+                         { "type" : "integer" }]
                    },
                     {
                       "type" : "array",
                       "prefixItems" :
-                        [{ "const" : "Tab_break"},
+                        [{ "const" : "Tab_break" },
                           {
                             "type" : "object",
                             "description" :
@@ -683,10 +692,10 @@
                                   {
                                     "type" : "array",
                                     "prefixItems" :
-                                      [{ "type" : "integer"},
-                                        { "type" : "integer"}]
+                                      [{ "type" : "integer" },
+                                        { "type" : "integer" }]
                                   },
-                                "next" : { "type" : "object"}
+                                "next" : { "type" : "object" }
                               },
                             "required" : ["contents"]
                           }]
@@ -697,12 +706,12 @@
                   [{
                      "type" : "array",
                      "prefixItems" :
-                       [{ "const" : "Text"}, { "type" : "string"}]
+                       [{ "const" : "Text" }, { "type" : "string" }]
                    },
                     {
                       "type" : "array",
                       "prefixItems" :
-                        [{ "const" : "Text"},
+                        [{ "const" : "Text" },
                           {
                             "type" : "object",
                             "description" :
@@ -712,9 +721,9 @@
                                 "contents" :
                                   {
                                     "type" : "array",
-                                    "prefixItems" : [{ "type" : "string"}]
+                                    "prefixItems" : [{ "type" : "string" }]
                                   },
-                                "next" : { "type" : "object"}
+                                "next" : { "type" : "object" }
                               },
                             "required" : ["contents"]
                           }]
@@ -726,11 +735,11 @@
           "description" :
             "Status of the current diagnostic: - Full: fully valid\n             - Deprecated: some of the contents is deprecated according to the current scheme\n             - Invalid: invalid data",
           "oneOf" :
-            [{ "const" : "Invalid"}, { "const" : "Deprecated"},
-              { "const" : "Full"}]
+            [{ "const" : "Invalid" }, { "const" : "Deprecated" },
+              { "const" : "Full" }]
         }
     },
-  "schema" : { "type" : "object"},
+  "schema" : { "type" : "object" },
   "type" : "object",
   "description" : "OCaml Toplevel diagnostic",
   "properties" :
@@ -747,7 +756,7 @@
           "items" :
             {
               "type" : "array",
-              "items" : { "$ref" : "#/$defs/structured_text"}
+              "items" : { "$ref" : "#/$defs/structured_text" }
             }
         },
       "errors" :
@@ -756,14 +765,20 @@
           "items" :
             {
               "type" : "array",
-              "items" : { "$ref" : "#/$defs/structured_text"}
+              "items" : { "$ref" : "#/$defs/structured_text" }
             }
         },
-      "compiler" : { "$ref" : "#/$defs/compiler"},
+      "compiler" : { "$ref" : "#/$defs/compiler" },
       "backtrace" :
-        { "type" : "array", "items" : { "$ref" : "#/$defs/structured_text"}},
+        {
+          "type" : "array",
+          "items" : { "$ref" : "#/$defs/structured_text" }
+        },
       "output" :
-        { "type" : "array", "items" : { "$ref" : "#/$defs/structured_text"}}
+        {
+          "type" : "array",
+          "items" : { "$ref" : "#/$defs/structured_text" }
+        }
     },
   "required" : ["metadata"]
 }
