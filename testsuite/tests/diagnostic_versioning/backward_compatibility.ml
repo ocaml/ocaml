@@ -319,7 +319,7 @@ let () = test json ~v:v1_0 A
 [%%expect {|
 {
   "metadata" :
-    { "version" : [1, 0], "downward_compatible" : false, "valid" : ["Full"]},
+    { "version" : [1, 0], "downward_compatible" : false, "valid" : ["Full"] },
   "s" : ["A"],
   "x" : 0,
   "y" : false
@@ -347,7 +347,7 @@ let () = test json ~v:v2_0 A
 [%%expect {|
 {
   "metadata" :
-    { "version" : [2, 0], "downward_compatible" : false, "valid" : ["Full"]},
+    { "version" : [2, 0], "downward_compatible" : false, "valid" : ["Full"] },
   "s" : ["A"],
   "y" : false,
   "z" : 2
@@ -358,7 +358,7 @@ let () = test json ~v:v1_0 bval
 [%%expect {|
 {
   "metadata" :
-    { "version" : [1, 0], "downward_compatible" : false, "valid" : ["Full"]},
+    { "version" : [1, 0], "downward_compatible" : false, "valid" : ["Full"] },
   "s" : ["B"],
   "x" : 0,
   "y" : false
@@ -374,7 +374,7 @@ let () = test json ~v:v1_1 bval
       "valid" : ["Deprecated"],
       "deprecated_paths" : [["x"]]
     },
-  "s" : ["B", { "content" : 0, "maybe" : true, "possibly" : false}],
+  "s" : ["B", { "content" : 0, "maybe" : true, "possibly" : false }],
   "x" : 0,
   "y" : false,
   "z" : 2
@@ -384,8 +384,8 @@ let () = test json ~v:v2_0 bval
 [%%expect {|
 {
   "metadata" :
-    { "version" : [2, 0], "downward_compatible" : false, "valid" : ["Full"]},
-  "s" : ["B", { "content" : 0, "maybe" : true, "possibly" : false}],
+    { "version" : [2, 0], "downward_compatible" : false, "valid" : ["Full"] },
+  "s" : ["B", { "content" : 0, "maybe" : true, "possibly" : false }],
   "y" : false,
   "z" : 2
 }
@@ -395,7 +395,7 @@ let () = test json ~v:v1_0 cval
 [%%expect {|
 {
   "metadata" :
-    { "version" : [1, 0], "downward_compatible" : false, "valid" : ["Full"]},
+    { "version" : [1, 0], "downward_compatible" : false, "valid" : ["Full"] },
   "s" : ["B"],
   "x" : 0,
   "y" : false
@@ -412,7 +412,7 @@ let () = test json ~v:v1_1 cval
       "valid" : ["Deprecated"],
       "deprecated_paths" : [["x"]]
     },
-  "s" : ["B", { "content" : 0, "maybe" : true, "possibly" : false}],
+  "s" : ["B", { "content" : 0, "maybe" : true, "possibly" : false }],
   "x" : 0,
   "y" : false,
   "z" : 2
@@ -425,7 +425,7 @@ let () = test json ~v:v1_2 cval
 [%%expect {|
 {
   "metadata" :
-    { "version" : [1, 2], "downward_compatible" : false, "valid" : ["Full"]},
+    { "version" : [1, 2], "downward_compatible" : false, "valid" : ["Full"] },
   "s" : ["C", true],
   "y" : false,
   "z" : 2
@@ -437,7 +437,7 @@ let () = test json ~v:v2_0 cval
 [%%expect {|
 {
   "metadata" :
-    { "version" : [2, 0], "downward_compatible" : false, "valid" : ["Full"]},
+    { "version" : [2, 0], "downward_compatible" : false, "valid" : ["Full"] },
   "s" : ["C", true],
   "y" : false,
   "z" : 2
@@ -448,7 +448,7 @@ let () = test json cval
 [%%expect{|
 {
   "metadata" :
-    { "version" : [2, 0], "downward_compatible" : true, "valid" : ["Full"]},
+    { "version" : [2, 0], "downward_compatible" : true, "valid" : ["Full"] },
   "s" :
     ["B",
       {

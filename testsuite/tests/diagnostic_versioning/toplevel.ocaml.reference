@@ -1,6 +1,6 @@
 {
   "metadata" :
-    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"]},
+    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"] },
   "output" :
     [["Box", ["V"], 0,
        [["Box", ["B"], 2,
@@ -17,7 +17,7 @@
 }
 {
   "metadata" :
-    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"]},
+    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"] },
   "errors" :
     [[["Tag", ["String_tag", "ralign"], [["Text", " Unknown directive "]]],
        ["Tag", ["Inline_code"], [["Text", "shw"]]], ["Text", "."],
@@ -30,7 +30,7 @@
 }
 {
   "metadata" :
-    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"]},
+    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"] },
   "output" :
     [["Box", ["B"], 0,
        [["Box", ["V"], 0,
@@ -44,7 +44,7 @@
 }
 {
   "metadata" :
-    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"]},
+    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"] },
   "compiler" :
     {
       "error" :
@@ -66,21 +66,25 @@
                         ["Tag", ["Inline_code"],
                           [["Box", ["B"], 0, [["Text", "int"]]]]]]]]]],
               "loc" :
-                { "start_line" : 2, "stop_line" : 2, "characters" : [12, 13]}
+                {
+                  "start_line" : 2,
+                  "stop_line" : 2,
+                  "characters" : [12, 13]
+                }
             }
         }
     }
 }
 {
   "metadata" :
-    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"]},
+    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"] },
   "trace" :
     [[["Tag", ["Inline_code"], [["Text", "List.map"]]],
        ["Text", " is now traced."]]]
 }
 {
   "metadata" :
-    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"]},
+    { "version" : [0, 1], "downward_compatible" : true, "valid" : ["Full"] },
   "output" :
     [["Box", ["V"], 0,
        [["Box", ["B"], 2,
