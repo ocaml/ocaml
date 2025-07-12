@@ -279,7 +279,8 @@ let rec typexp copy_scope s ty =
           Tpackage {
             pack_path = modtype_path s pack_path;
             pack_constraints =
-              List.map (fun (n, ty) -> (n, typexp copy_scope s ty)) pack_constraints;
+              List.map
+                (fun (n, ty) -> (n, typexp copy_scope s ty)) pack_constraints;
           }
       | Tobject (t1, name) ->
           let t1' = typexp copy_scope s t1 in

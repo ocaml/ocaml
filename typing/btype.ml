@@ -327,10 +327,11 @@ let fold_type_expr f init ty =
   | Tsubst _            -> assert false
   | Tunivar _           -> init
   | Tpoly (ty, tyl)     ->
-    let result = f init ty in
-    List.fold_left f result tyl
+      let result = f init ty in
+      List.fold_left f result tyl
   | Tpackage pack ->
-    List.fold_left (fun result (_n, ty) -> f result ty) init pack.pack_constraints
+      List.fold_left
+        (fun result (_n, ty) -> f result ty) init pack.pack_constraints
 
 let iter_type_expr f ty =
   fold_type_expr (fun () v -> f v) () ty
@@ -531,8 +532,9 @@ let rec copy_type_desc ?(keep_names=false) f = function
       let tyl = List.map f tyl in
       Tpoly (f ty, tyl)
   | Tpackage pack       ->
-      Tpackage {pack with
-        pack_constraints = List.map (fun (n, ty) -> (n, f ty)) pack.pack_constraints}
+      let pack_constraints =
+        List.map (fun (n, ty) -> (n, f ty)) pack.pack_constraints in
+      Tpackage {pack with pack_constraints }
 
 (* TODO: rename to [module Copy_scope] *)
 module For_copy : sig

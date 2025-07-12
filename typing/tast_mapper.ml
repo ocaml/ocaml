@@ -236,8 +236,8 @@ let type_declaration sub x =
   let typ_manifest = Option.map (sub.typ sub) x.typ_manifest in
   let typ_params = List.map (tuple2 (sub.typ sub) id) x.typ_params in
   let typ_attributes = sub.attributes sub x.typ_attributes in
-  {x with typ_loc; typ_name; typ_constraints; typ_kind; typ_manifest; typ_params;
-          typ_attributes}
+  {x with typ_loc; typ_name; typ_constraints; typ_kind; typ_manifest;
+          typ_params; typ_attributes}
 
 let type_declarations sub (rec_flag, list) =
   (rec_flag, List.map (sub.type_declaration sub) list)

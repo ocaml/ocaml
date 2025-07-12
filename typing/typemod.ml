@@ -2295,7 +2295,7 @@ let modtype_of_package env loc pack =
 let package_subtype env pack1 pack2 =
   let mkmty pack =
     let fl =
-      List.filter (fun (_n,t) -> Ctype.closed_type_expr t) pack.pack_constraints in
+      List.filter (fun (_,t) -> Ctype.closed_type_expr t) pack.pack_constraints in
     modtype_of_package env Location.none {pack with pack_constraints = fl}
   in
   match mkmty pack1, mkmty pack2 with
