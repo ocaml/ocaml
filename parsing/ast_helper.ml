@@ -145,7 +145,8 @@ module Typ = struct
       { field with pof_desc; }
     and loop_package_type ptyp =
       { ptyp with
-        ppt_constraints = List.map (fun (n,typ) -> (n,loop typ) ) ptyp.ppt_constraints }
+        ppt_constraints =
+          List.map (fun (n,typ) -> (n,loop typ) ) ptyp.ppt_constraints }
     in
     loop t
 

@@ -4963,58 +4963,58 @@ let subtype_error ~env ~trace ~unification_trace =
                     ~trace:(expand_subtype_trace env (List.rev trace))
                     ~unification_trace))
 
-let rec subtype_rec env trace t1 t2 cstrs =
-  if eq_type t1 t2 then cstrs else
+let rec subtype_rec env trace t1 t2 constraints =
+  if eq_type t1 t2 then constraints else
 
   if TypePairs.mem subtypes (t1, t2) then
-    cstrs
+    constraints
   else begin
     TypePairs.add subtypes (t1, t2);
     match (get_desc t1, get_desc t2) with
       (Tvar _, _) | (_, Tvar _) ->
-        (trace, t1, t2, !univar_pairs)::cstrs
+        (trace, t1, t2, !univar_pairs)::constraints
     | (Tarrow(l1, t1, u1, _), Tarrow(l2, t2, u2, _))
       when compatible_labels ~in_pattern_mode:false l1 l2 ->
-        let cstrs =
+        let constraints =
           subtype_rec
             env
             (Subtype.Diff {got = t2; expected = t1} :: trace)
             t2 t1
-            cstrs
+            constraints
         in
         subtype_rec
           env
           (Subtype.Diff {got = u1; expected = u2} :: trace)
           u1 u2
-          cstrs
+          constraints
     | (Ttuple tl1, Ttuple tl2) ->
-        subtype_labeled_list env trace tl1 tl2 cstrs
+        subtype_labeled_list env trace tl1 tl2 constraints
     | (Tconstr(p1, [], _), Tconstr(p2, [], _)) when Path.same p1 p2 ->
-        cstrs
+        constraints
     | (Tconstr(p1, _tl1, _abbrev1), _)
       when generic_abbrev env p1 && safe_abbrev env t1 ->
-        subtype_rec env trace (expand_abbrev env t1) t2 cstrs
+        subtype_rec env trace (expand_abbrev env t1) t2 constraints
     | (_, Tconstr(p2, _tl2, _abbrev2))
       when generic_abbrev env p2 && safe_abbrev env t2 ->
-        subtype_rec env trace t1 (expand_abbrev env t2) cstrs
+        subtype_rec env trace t1 (expand_abbrev env t2) constraints
     | (Tconstr(p1, tl1, _), Tconstr(p2, tl2, _)) when Path.same p1 p2 ->
         begin try
           let decl = Env.find_type p1 env in
           List.fold_left2
-            (fun cstrs v (t1, t2) ->
+            (fun constraints v (t1, t2) ->
               let (co, cn) = Variance.get_upper v in
               if co then
                 if cn then
                   (trace, newty2 ~level:(get_level t1) (Ttuple[None, t1]),
                    newty2 ~level:(get_level t2) (Ttuple[None, t2]),
                    !univar_pairs)
-                  :: cstrs
+                  :: constraints
                 else
                   subtype_rec
                     env
                     (Subtype.Diff {got = t1; expected = t2} :: trace)
                     t1 t2
-                    cstrs
+                    constraints
               else
                 if cn
                 then
@@ -5022,120 +5022,121 @@ let rec subtype_rec env trace t1 t2 cstrs =
                     env
                     (Subtype.Diff {got = t2; expected = t1} :: trace)
                     t2 t1
-                    cstrs
-                else cstrs)
-            cstrs decl.type_variance (List.combine tl1 tl2)
+                    constraints
+                else constraints)
+            constraints decl.type_variance (List.combine tl1 tl2)
         with Not_found ->
-          (trace, t1, t2, !univar_pairs)::cstrs
+          (trace, t1, t2, !univar_pairs)::constraints
         end
     | (Tconstr(p1, _, _), _)
       when generic_private_abbrev env p1 && safe_abbrev_opt env t1 ->
-        subtype_rec env trace (expand_abbrev_opt env t1) t2 cstrs
+        subtype_rec env trace (expand_abbrev_opt env t1) t2 constraints
 (*  | (_, Tconstr(p2, _, _)) when generic_private_abbrev false env p2 ->
-        subtype_rec env trace t1 (expand_abbrev_opt env t2) cstrs *)
+        subtype_rec env trace t1 (expand_abbrev_opt env t2) constraints *)
     | (Tobject (f1, _), Tobject (f2, _))
       when is_Tvar (object_row f1) && is_Tvar (object_row f2) ->
         (* Same row variable implies same object. *)
-        (trace, t1, t2, !univar_pairs)::cstrs
+        (trace, t1, t2, !univar_pairs)::constraints
     | (Tobject (f1, _), Tobject (f2, _)) ->
-        subtype_fields env trace f1 f2 cstrs
+        subtype_fields env trace f1 f2 constraints
     | (Tvariant row1, Tvariant row2) ->
         begin try
-          subtype_row env trace row1 row2 cstrs
+          subtype_row env trace row1 row2 constraints
         with Exit ->
-          (trace, t1, t2, !univar_pairs)::cstrs
+          (trace, t1, t2, !univar_pairs)::constraints
         end
     | (Tpoly (u1, []), Tpoly (u2, [])) ->
-        subtype_rec env trace u1 u2 cstrs
+        subtype_rec env trace u1 u2 constraints
     | (Tpoly (u1, tl1), Tpoly (u2, [])) ->
         let _, u1' = instance_poly ~fixed:false tl1 u1 in
-        subtype_rec env trace u1' u2 cstrs
+        subtype_rec env trace u1' u2 constraints
     | (Tpoly (u1, tl1), Tpoly (u2,tl2)) ->
         begin try
           enter_poly env u1 tl1 u2 tl2
-            (fun t1 t2 -> subtype_rec env trace t1 t2 cstrs)
+            (fun t1 t2 -> subtype_rec env trace t1 t2 constraints)
         with Escape _ ->
-          (trace, t1, t2, !univar_pairs)::cstrs
+          (trace, t1, t2, !univar_pairs)::constraints
         end
     | (Tpackage pack1, Tpackage pack2) ->
         subtype_package env trace (get_level t1) pack1
-          (get_level t2) pack2 cstrs
+          (get_level t2) pack2 constraints
     | (_, _) ->
-        (trace, t1, t2, !univar_pairs)::cstrs
+        (trace, t1, t2, !univar_pairs)::constraints
   end
 
-and subtype_labeled_list env trace labeled_tl1 labeled_tl2 cstrs =
+and subtype_labeled_list env trace labeled_tl1 labeled_tl2 constraints =
   if 0 <> List.compare_lengths labeled_tl1 labeled_tl2 then
     subtype_error ~env ~trace ~unification_trace:[];
   List.fold_left2
-    (fun cstrs (label1, ty1) (label2, ty2) ->
+    (fun constraints (label1, ty1) (label2, ty2) ->
       if not (Option.equal String.equal label1 label2) then
         subtype_error ~env ~trace ~unification_trace:[];
       subtype_rec
         env
         (Subtype.Diff { got = ty1; expected = ty2 } :: trace)
         ty1 ty2
-        cstrs)
-    cstrs labeled_tl1 labeled_tl2
+        constraints)
+    constraints labeled_tl1 labeled_tl2
 
-and subtype_package env trace lvl1 pack1 lvl2 pack2 cstrs =
+and subtype_package env trace lvl1 pack1 lvl2 pack2 constraints =
   try
     let ntl1 = complete_type_list env pack2.pack_constraints lvl1 pack1
     and ntl2 =
       complete_type_list env pack1.pack_constraints lvl2 pack2
         ~allow_absent:true in
-    let cstrs' =
+    let constraints' =
       List.map
         (fun (n2,t2) -> (trace, List.assoc n2 ntl1, t2, !univar_pairs))
         ntl2
     in
-    if eq_package_path env pack1.pack_path pack2.pack_path then cstrs' @ cstrs
+    if eq_package_path env pack1.pack_path pack2.pack_path
+    then constraints' @ constraints
     else begin
       (* need to check module subtyping *)
       let snap = Btype.snapshot () in
-      match List.iter (fun (_, t1, t2, _) -> unify env t1 t2) cstrs' with
+      match List.iter (fun (_, t1, t2, _) -> unify env t1 t2) constraints' with
       | () when Result.is_ok (!package_subtype env pack1 pack2) ->
-        Btype.backtrack snap; cstrs' @ cstrs
+        Btype.backtrack snap; constraints' @ constraints
       | () | exception Unify _ ->
         Btype.backtrack snap; raise Not_found
     end
   with Not_found ->
     (trace, newty (Tpackage pack1), newty (Tpackage pack2), !univar_pairs)
-      ::cstrs
+      ::constraints
 
-and subtype_fields env trace ty1 ty2 cstrs =
+and subtype_fields env trace ty1 ty2 constraints =
   (* Assume that either rest1 or rest2 is not Tvar *)
   let (fields1, rest1) = flatten_fields ty1 in
   let (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
-  let cstrs =
-    if get_desc rest2 = Tnil then cstrs else
+  let constraints =
+    if get_desc rest2 = Tnil then constraints else
     if miss1 = [] then
       subtype_rec
         env
         (Subtype.Diff {got = rest1; expected = rest2} :: trace)
         rest1 rest2
-        cstrs
+        constraints
     else
       (trace, build_fields (get_level ty1) miss1 rest1, rest2,
-       !univar_pairs) :: cstrs
+       !univar_pairs) :: constraints
   in
-  let cstrs =
-    if miss2 = [] then cstrs else
+  let constraints =
+    if miss2 = [] then constraints else
     (trace, rest1, build_fields (get_level ty2) miss2 (newvar ()),
-     !univar_pairs) :: cstrs
+     !univar_pairs) :: constraints
   in
   List.fold_left
-    (fun cstrs (_, _k1, t1, _k2, t2) ->
+    (fun constraints (_, _k1, t1, _k2, t2) ->
        (* These fields are always present *)
        subtype_rec
          env
          (Subtype.Diff {got = t1; expected = t2} :: trace)
          t1 t2
-         cstrs)
-    cstrs pairs
+         constraints)
+    constraints pairs
 
-and subtype_row env trace row1 row2 cstrs =
+and subtype_row env trace row1 row2 constraints =
   let Row {fields = row1_fields; more = more1; closed = row1_closed} =
     row_repr row1 in
   let Row {fields = row2_fields; more = more2; closed = row2_closed} =
@@ -5150,59 +5151,59 @@ and subtype_row env trace row1 row2 cstrs =
         env
         (Subtype.Diff {got = more1; expected = more2} :: trace)
         more1 more2
-        cstrs
+        constraints
   | (Tvar _|Tconstr _|Tnil), (Tvar _|Tconstr _|Tnil)
     when row1_closed && r1 = [] ->
       List.fold_left
-        (fun cstrs (l,f1,f2) ->
+        (fun constraints (l,f1,f2) ->
           match row_field_repr f1, row_field_repr f2 with
             (Rpresent None|Reither(true,_,_)), Rpresent None ->
-              cstrs
+              constraints
           | Rpresent(Some t1), Rpresent(Some t2) ->
               subtype_rec
                 env
                 (Subtype.Diff {got = t1; expected = t2} :: trace)
                 t1 t2
-                cstrs
+                constraints
           | Reither(false, t1::_, _), Rpresent(Some t2) ->
               subtype_rec
                 env
                 (Subtype.Diff {got = t1; expected = t2} :: trace)
                 t1 t2
-                cstrs
-          | Rabsent, _ -> cstrs
+                constraints
+          | Rabsent, _ -> constraints
           | Rpresent None, Rpresent (Some _)
           | Rpresent (Some _), Rpresent None ->
               subtype_error ~env ~trace
                 ~unification_trace:[Variant (Incompatible_types_for l)]
           | _ ->
               raise Exit)
-        cstrs pairs
+        constraints pairs
   | Tunivar _, Tunivar _
     when row1_closed = row2_closed && r1 = [] && r2 = [] ->
-      let cstrs =
+      let constraints =
         subtype_rec
           env
           (Subtype.Diff {got = more1; expected = more2} :: trace)
           more1 more2
-          cstrs
+          constraints
       in
       List.fold_left
-        (fun cstrs (_,f1,f2) ->
+        (fun constraints (_,f1,f2) ->
           match row_field_repr f1, row_field_repr f2 with
             Rpresent None, Rpresent None
           | Reither(true,[],_), Reither(true,[],_)
           | Rabsent, Rabsent ->
-              cstrs
+              constraints
           | Rpresent(Some t1), Rpresent(Some t2)
           | Reither(false,[t1],_), Reither(false,[t2],_) ->
               subtype_rec
                 env
                 (Subtype.Diff {got = t1; expected = t2} :: trace)
                 t1 t2
-                cstrs
+                constraints
           | _ -> raise Exit)
-        cstrs pairs
+        constraints pairs
   | _ ->
       raise Exit
 
@@ -5210,7 +5211,7 @@ let subtype env ty1 ty2 =
   TypePairs.clear subtypes;
   with_univar_pairs [] (fun () ->
     (* Build constraint set. *)
-    let cstrs =
+    let constraints =
       subtype_rec env [Subtype.Diff {got = ty1; expected = ty2}] ty1 ty2 []
     in
     TypePairs.clear subtypes;
@@ -5223,7 +5224,7 @@ let subtype env ty1 ty2 =
              ~env
              ~trace:trace0
              ~unification_trace:(List.tl trace))
-        (List.rev cstrs))
+        (List.rev constraints))
 
                               (*******************)
                               (*  Miscellaneous  *)

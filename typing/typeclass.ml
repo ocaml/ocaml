@@ -2103,24 +2103,24 @@ let report_error_doc env ppf =
       Errortrace_report.unification ppf env err
         (msg  "The type parameter")
         (msg "does not meet its constraint: it should be")
-  | Bad_parameters (id, params, cstrs) ->
-      Out_type.prepare_for_printing (params @ cstrs);
+  | Bad_parameters (id, params, constraints) ->
+      Out_type.prepare_for_printing (params @ constraints);
       fprintf ppf
         "@[The abbreviation %a@ is used with parameter(s)@ %a@ \
            which are incompatible with constraint(s)@ %a@]"
         (Style.as_inline_code Printtyp.ident) id
         pp_args params
-        pp_args cstrs
-  | Bad_class_type_parameters (id, params, cstrs) ->
+        pp_args constraints
+  | Bad_class_type_parameters (id, params, constraints) ->
       let pp_hash ppf id = fprintf ppf "#%a" Printtyp.ident id in
-      Out_type.prepare_for_printing (params @ cstrs);
+      Out_type.prepare_for_printing (params @ constraints);
       fprintf ppf
         "@[The class type %a@ is used with parameter(s)@ %a,@ \
            whereas the class type definition@ constrains@ \
            those parameters to be@ %a@]"
         (Style.as_inline_code pp_hash) id
        pp_args params
-       pp_args cstrs
+       pp_args constraints
   | Class_match_failure error ->
       Includeclass.report_error_doc Type ppf error
   | Unbound_val lab ->

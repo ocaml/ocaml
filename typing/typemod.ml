@@ -1539,11 +1539,11 @@ and transl_modtype_aux env smty =
       let remove_aliases =
         Builtin_attributes.has_remove_aliases smty.pmty_attributes
       in
-      let (rev_tcstrs, final_sg) =
+      let (rev_tconstraints, final_sg) =
         List.fold_left (transl_with ~loc:smty.pmty_loc env remove_aliases)
         ([],init_sg) constraints in
       let scope = Ctype.create_scope () in
-      mkmty (Tmty_with ( body, List.rev rev_tcstrs))
+      mkmty (Tmty_with ( body, List.rev rev_tconstraints))
         (Mtype.freshen ~scope (Mty_signature final_sg)) env loc
         smty.pmty_attributes
   | Pmty_typeof smod ->
@@ -1553,7 +1553,7 @@ and transl_modtype_aux env smty =
   | Pmty_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
-and transl_with ~loc env remove_aliases (rev_tcstrs, sg) constr =
+and transl_with ~loc env remove_aliases (rev_tconstraints, sg) constr =
   let destructive = Merge.is_destructive constr in
   let constr, (path, lid, sg) = match constr with
     | Pwith_type (l, decl)
@@ -1590,7 +1590,7 @@ and transl_with ~loc env remove_aliases (rev_tcstrs, sg) constr =
         (constr, Merge.merge_modtype ~destructive env loc sg l tmty.mty_type)
 
   in
-  ((path, lid, constr) :: rev_tcstrs, sg)
+  ((path, lid, constr) :: rev_tconstraints, sg)
 
 
 and transl_signature env sg =
