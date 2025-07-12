@@ -41,7 +41,7 @@ Ptop_def
         type_declaration "t" (//toplevel//[2,1+5]..[2,1+6]) (//toplevel//[2,1+0]..[2,1+28])
           ptype_params =
             []
-          ptype_cstrs =
+          ptype_constraints =
             []
           ptype_kind =
             Ptype_abstract
@@ -152,7 +152,7 @@ Ptop_def
                 type_declaration "t" (//toplevel//[4,18+26]..[4,18+27]) (//toplevel//[4,18+21]..[4,18+27])
                   ptype_params =
                     []
-                  ptype_cstrs =
+                  ptype_constraints =
                     []
                   ptype_kind =
                     Ptype_abstract
@@ -177,7 +177,7 @@ Ptop_def
               type_declaration "t" (//toplevel//[2,1+30]..[2,1+31]) (//toplevel//[2,1+25]..[2,1+37])
                 ptype_params =
                   []
-                ptype_cstrs =
+                ptype_constraints =
                   []
                 ptype_kind =
                   Ptype_abstract
@@ -204,7 +204,7 @@ Ptop_def
               type_declaration "t" (//toplevel//[2,1+30]..[2,1+31]) (//toplevel//[2,1+25]..[2,1+38])
                 ptype_params =
                   []
-                ptype_cstrs =
+                ptype_constraints =
                   []
                 ptype_kind =
                   Ptype_abstract

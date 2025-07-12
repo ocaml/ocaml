@@ -27,7 +27,7 @@
             core_type (hash_ambiguity.ml[9,169+5]..[9,169+7])
               Ptyp_var a
           ]
-        ptype_cstrs =
+        ptype_constraints =
           []
         ptype_kind =
           Ptype_abstract
@@ -53,7 +53,7 @@
             core_type (hash_ambiguity.ml[15,425+5]..[15,425+7])
               Ptyp_var a
           ]
-        ptype_cstrs =
+        ptype_constraints =
           []
         ptype_kind =
           Ptype_variant
@@ -84,7 +84,7 @@
             core_type (hash_ambiguity.ml[17,453+5]..[17,453+7])
               Ptyp_var a
           ]
-        ptype_cstrs =
+        ptype_constraints =
           []
         ptype_kind =
           Ptype_variant

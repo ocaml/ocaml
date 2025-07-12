@@ -65,7 +65,7 @@
           []
         ptype_params =
           []
-        ptype_cstrs =
+        ptype_constraints =
           []
         ptype_kind =
           Ptype_variant
@@ -110,7 +110,7 @@
                   []
                 ptype_params =
                   []
-                ptype_cstrs =
+                ptype_constraints =
                   []
                 ptype_kind =
                   Ptype_record
@@ -181,7 +181,7 @@
                   type_declaration "t" (attributes.ml[39,498+53]..[39,498+54]) (attributes.ml[39,498+48]..[39,498+61])
                     ptype_params =
                       []
-                    ptype_cstrs =
+                    ptype_constraints =
                       []
                     ptype_kind =
                       Ptype_abstract
@@ -212,7 +212,7 @@
               type_declaration "t" (attributes.ml[49,620+25]..[49,620+26]) (attributes.ml[49,620+20]..[49,620+26])
                 ptype_params =
                   []
-                ptype_cstrs =
+                ptype_constraints =
                   []
                 ptype_kind =
                   Ptype_abstract
@@ -250,7 +250,7 @@
               type_declaration "t" (attributes.ml[53,681+30]..[53,681+31]) (attributes.ml[53,681+25]..[53,681+37])
                 ptype_params =
                   []
-                ptype_cstrs =
+                ptype_constraints =
                   []
                 ptype_kind =
                   Ptype_abstract
