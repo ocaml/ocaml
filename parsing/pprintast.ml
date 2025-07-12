@@ -527,12 +527,12 @@ and package_type ctxt f ptyp =
   let aux f (s, ct) =
     pp f "type %a@ =@ %a" (with_loc type_longident) s (core_type ctxt) ct
   in
-  match ptyp.ppt_cstrs with
+  match ptyp.ppt_constraints with
   | [] -> with_loc type_longident f ptyp.ppt_path
   | _ ->
     pp f "%a@ with@ %a"
       (with_loc type_longident) ptyp.ppt_path
-      (list aux ~sep:"@ and@ ") ptyp.ppt_cstrs
+      (list aux ~sep:"@ and@ ") ptyp.ppt_constraints
 
 (********************pattern********************)
 (* be cautious when use [pattern], [pattern1] is preferred *)
@@ -1750,7 +1750,7 @@ and type_declaration ctxt f x =
       (fun (ct1,ct2,_) ->
          pp f "@[<hov2>@ constraint@ %a@ =@ %a@]"
            (core_type ctxt) ct1 (core_type ctxt) ct2)
-      x.ptype_cstrs
+      x.ptype_constraints
   in
   pp f "%t%t%t" manifest repr constraints
 

@@ -354,7 +354,7 @@ let transl_declaration env sdecl (id, uid) =
     (fun (sty, sty', loc) ->
       transl_simple_type env ~closed:false sty,
       transl_simple_type env ~closed:false sty', loc)
-    sdecl.ptype_cstrs
+    sdecl.ptype_constraints
   in
   let unboxed_attr = get_unboxed_from_attributes sdecl in
   begin match unboxed_attr with
@@ -1742,7 +1742,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
          constraints report an error on the constraint location
          rather than the parameter location. *)
       (cty, cty', loc)
-    ) sdecl.ptype_cstrs
+    ) sdecl.ptype_constraints
   in
   let no_row = not (is_fixed_type sdecl) in
   let (tman, man) =  match sdecl.ptype_manifest with

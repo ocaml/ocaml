@@ -777,7 +777,7 @@ and transl_fields env ~policy ~row_context o fields =
 
 and transl_package env ~policy ~row_context ptyp =
   let loc = ptyp.ppt_loc in
-  let l = sort_constraints_no_duplicates loc env ptyp.ppt_cstrs in
+  let l = sort_constraints_no_duplicates loc env ptyp.ppt_constraints in
   let mty = Ast_helper.Mty.mk ~loc (Pmty_ident ptyp.ppt_path) in
   let mty = TyVarEnv.with_local_scope (fun () -> !transl_modtype env mty) in
   let ptys =

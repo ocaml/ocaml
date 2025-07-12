@@ -145,14 +145,14 @@ module Typ = struct
       { field with pof_desc; }
     and loop_package_type ptyp =
       { ptyp with
-        ppt_cstrs = List.map (fun (n,typ) -> (n,loop typ) ) ptyp.ppt_cstrs }
+        ppt_constraints = List.map (fun (n,typ) -> (n,loop typ) ) ptyp.ppt_constraints }
     in
     loop t
 
   let package_type ?(loc = !default_loc) ?(attrs = []) p c =
     {ppt_loc = loc;
      ppt_path = p;
-     ppt_cstrs = c;
+     ppt_constraints = c;
      ppt_attrs = attrs}
 end
 
@@ -528,7 +528,7 @@ module Type = struct
   let mk ?(loc = !default_loc) ?(attrs = [])
         ?(docs = empty_docs) ?(text = [])
       ?(params = [])
-      ?(cstrs = [])
+      ?(constraints = [])
       ?(kind = Ptype_abstract)
       ?(priv = Public)
       ?manifest
@@ -536,7 +536,7 @@ module Type = struct
     {
      ptype_name = name;
      ptype_params = params;
-     ptype_cstrs = cstrs;
+     ptype_constraints = constraints;
      ptype_kind = kind;
      ptype_private = priv;
      ptype_manifest = manifest;

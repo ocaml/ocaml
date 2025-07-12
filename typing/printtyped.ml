@@ -510,7 +510,7 @@ and type_declaration i ppf x =
   let i = i+1 in
   line i ppf "ptype_params =\n";
   list (i+1) type_parameter ppf x.typ_params;
-  line i ppf "ptype_cstrs =\n";
+  line i ppf "ptype_constraints =\n";
   list (i+1) core_type_x_core_type_x_location ppf x.typ_constraints;
   line i ppf "ptype_kind =\n";
   type_kind (i+1) ppf x.typ_kind;

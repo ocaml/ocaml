@@ -155,7 +155,7 @@ module T = struct
     | Ptyp_extension x -> sub.extension sub x
 
   let iter_type_declaration sub
-      {ptype_name; ptype_params; ptype_cstrs;
+      {ptype_name; ptype_params; ptype_constraints;
        ptype_kind;
        ptype_private = _;
        ptype_manifest;
@@ -165,7 +165,7 @@ module T = struct
     List.iter (iter_fst (sub.typ sub)) ptype_params;
     List.iter
       (iter_tuple3 (sub.typ sub) (sub.typ sub) (sub.location sub))
-      ptype_cstrs;
+      ptype_constraints;
     sub.type_kind sub ptype_kind;
     iter_opt (sub.typ sub) ptype_manifest;
     sub.location sub ptype_loc;
@@ -220,10 +220,10 @@ module T = struct
     sub.location sub pext_loc;
     sub.attributes sub pext_attributes
 
-  let iter_package_type sub {ppt_path; ppt_cstrs; ppt_loc; ppt_attrs} =
+  let iter_package_type sub {ppt_path; ppt_constraints; ppt_loc; ppt_attrs} =
     sub.location sub ppt_loc;
     iter_loc_lid sub ppt_path;
-    List.iter (iter_tuple (iter_loc_lid sub) (sub.typ sub)) ppt_cstrs;
+    List.iter (iter_tuple (iter_loc_lid sub) (sub.typ sub)) ppt_constraints;
     sub.attributes sub ppt_attrs
 
 end

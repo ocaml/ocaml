@@ -196,7 +196,7 @@ let rec core_type i ppf x =
 and package_type i ppf ptyp =
   let i = i + 1 in
   line i ppf "package_type %a\n" fmt_longident_loc ptyp.ppt_path;
-  list i package_with ppf ptyp.ppt_cstrs;
+  list i package_with ppf ptyp.ppt_constraints;
   attributes i ppf ptyp.ppt_attrs
 
 and package_with i ppf (s, t) =
@@ -443,8 +443,8 @@ and type_declaration i ppf x =
   let i = i+1 in
   line i ppf "ptype_params =\n";
   list (i+1) type_parameter ppf x.ptype_params;
-  line i ppf "ptype_cstrs =\n";
-  list (i+1) core_type_x_core_type_x_location ppf x.ptype_cstrs;
+  line i ppf "ptype_constraints =\n";
+  list (i+1) core_type_x_core_type_x_location ppf x.ptype_constraints;
   line i ppf "ptype_kind =\n";
   type_kind (i+1) ppf x.ptype_kind;
   line i ppf "ptype_private = %a\n" fmt_private_flag x.ptype_private;

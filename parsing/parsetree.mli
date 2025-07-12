@@ -182,13 +182,13 @@ and core_type_desc =
 and package_type =
     {
      ppt_path: Longident.t loc;
-     ppt_cstrs: (Longident.t loc * core_type) list;
+     ppt_constraints: (Longident.t loc * core_type) list;
      ppt_loc: Location.t;
      ppt_attrs: attributes;
     }
 (** As {!package_type} typed values:
-         - [{ppt_path: S; ppt_cstrs: []}] represents [(module S)],
-         - [{ppt_path: S; ppt_cstrs: [(t1, T1) ; ... ; (tn, Tn)]}]
+         - [{ppt_path: S; ppt_constraints: []}] represents [(module S)],
+         - [{ppt_path: S; ppt_constraints: [(t1, T1) ; ... ; (tn, Tn)]}]
           represents [(module S with type t1 = T1 and ... and tn = Tn)].
        *)
 
@@ -542,7 +542,7 @@ and type_declaration =
      ptype_name: string loc;
      ptype_params: (core_type * (variance * injectivity)) list;
       (** [('a1,...'an) t] *)
-     ptype_cstrs: (core_type * core_type * Location.t) list;
+     ptype_constraints: (core_type * core_type * Location.t) list;
       (** [... constraint T1=T1'  ... constraint Tn=Tn'] *)
      ptype_kind: type_kind;
      ptype_private: private_flag;  (** for [= private ...] *)

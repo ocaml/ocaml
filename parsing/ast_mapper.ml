@@ -186,7 +186,7 @@ module T = struct
     | Ptyp_extension x -> extension ~loc ~attrs (sub.extension sub x)
 
   let map_type_declaration sub
-      {ptype_name; ptype_params; ptype_cstrs;
+      {ptype_name; ptype_params; ptype_constraints;
        ptype_kind;
        ptype_private;
        ptype_manifest;
@@ -197,9 +197,10 @@ module T = struct
     Type.mk ~loc ~attrs (map_loc sub ptype_name)
       ~params:(List.map (map_fst (sub.typ sub)) ptype_params)
       ~priv:ptype_private
-      ~cstrs:(List.map
-                (map_tuple3 (sub.typ sub) (sub.typ sub) (sub.location sub))
-                ptype_cstrs)
+      ~constraints:
+        (List.map
+           (map_tuple3 (sub.typ sub) (sub.typ sub) (sub.location sub))
+           ptype_constraints)
       ~kind:(sub.type_kind sub ptype_kind)
       ?manifest:(map_opt (sub.typ sub) ptype_manifest)
 
@@ -256,11 +257,11 @@ module T = struct
       (map_loc sub pext_name)
       (map_extension_constructor_kind sub pext_kind)
 
-  let map_package_type sub {ppt_loc; ppt_path; ppt_cstrs; ppt_attrs} =
+  let map_package_type sub {ppt_loc; ppt_path; ppt_constraints; ppt_attrs} =
     let loc = sub.location sub ppt_loc in
     let attrs = sub.attributes sub ppt_attrs in
     Typ.package_type ~loc ~attrs (map_loc_lid sub ppt_path)
-      (List.map (map_tuple (map_loc_lid sub) (sub.typ sub)) ppt_cstrs)
+      (List.map (map_tuple (map_loc_lid sub) (sub.typ sub)) ppt_constraints)
 
 end
 
