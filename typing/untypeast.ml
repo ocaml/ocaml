@@ -216,7 +216,7 @@ let type_declaration sub decl =
   let attrs = sub.attributes sub decl.typ_attributes in
   Type.mk ~loc ~attrs
     ~params:(List.map (type_parameter sub) decl.typ_params)
-    ~cstrs:(
+    ~constraints:(
       List.map
         (fun (ct1, ct2, loc) ->
            (sub.typ sub ct1, sub.typ sub ct2, sub.location sub loc))
