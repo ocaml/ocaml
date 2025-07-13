@@ -212,7 +212,7 @@ Working version
 
 - #14141: Rename cstrs to constraints when it refers to constraints to avoid
   confusing it with constructors.
-  (Stefan Muenzel, review by ???)
+  (Stefan Muenzel, review by Nicolás Ojeda Bär)
 
 ### Build system:
 
