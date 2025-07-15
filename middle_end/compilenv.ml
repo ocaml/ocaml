@@ -92,7 +92,7 @@ let current_unit =
 
 let linuxlike_mangling = match Config.system with
   | "macosx"
-  | "mingw" | "cygwin" | "win32" | "win64" -> false
+  | "mingw" | "mingw64" | "cygwin" | "win32" | "win64" -> false
   | _ -> true
 
 let symbol_separator = if linuxlike_mangling then '.' else '$'
