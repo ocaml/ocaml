@@ -280,9 +280,9 @@ let iter_on_occurrences
         pat_extra;
       default_iterator.pat sub pat);
 
-  binding_op = (fun sub ({bop_op_path; bop_op_name; bop_exp; _} as bop) ->
+  binding_op = (fun sub ({bop_op_path; bop_op_name; bop_expr; _} as bop) ->
     let lid = { bop_op_name with txt = Longident.Lident bop_op_name.txt } in
-    f ~namespace:Value bop_exp.exp_env bop_op_path lid;
+    f ~namespace:Value bop_expr.exp_env bop_op_path lid;
     default_iterator.binding_op sub bop);
 
   module_expr =
