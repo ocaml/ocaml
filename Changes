@@ -22,6 +22,10 @@ Working version
 
 ### Runtime system:
 
+- #14145: Make the finaliser processing in major slice independent of the
+  budget. Fixes live locks in phase transition.
+  (KC Sivaramakrishnan, review by )
+
 - #14035: Fix the alignment of _Atomic long long unsigned int fields
   before GCC 11.1 on i686. Silence GCC note on newer versions.
   (Antonin Décimo, review by Sadiq Jaffer)
