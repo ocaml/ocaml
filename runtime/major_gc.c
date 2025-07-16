@@ -1874,7 +1874,6 @@ mark_again:
   if (mode != Slice_opportunistic) {
     /* Finalisers */
     if (caml_gc_phase == Phase_mark_final &&
-        get_major_slice_work(mode) > 0 &&
         caml_final_update_first(domain_state)) {
       /* This domain has updated finalise first values */
       (void)caml_atomic_counter_decr(&num_domains_to_final_update_first);
@@ -1884,7 +1883,6 @@ mark_again:
     }
 
     if (caml_gc_phase == Phase_sweep_ephe &&
-        get_major_slice_work(mode) > 0 &&
         caml_final_update_last(domain_state)) {
       /* This domain has updated finalise last values */
       (void)caml_atomic_counter_decr(&num_domains_to_final_update_last);
