@@ -483,8 +483,8 @@ OCaml 5.4.0
   Xavier Leroy, Miod Vallat, Gabriel Scherer and Stephen Dolan, review by Miod
   Vallat, Vincent Laviron and Xavier Leroy)
 
-* #13050, #14104, #?????: Use '$' instead of '.' to separate module names
-  in symbol names on Apple and non-unix operating systems.
+* #13050, #14104, #14143: Use '$' instead of '.' to separate module names
+  in symbol names on macOS and Windows (including the Cygwin backend).
   This changes mangling of OCaml identifiers on those operating systems from
   `camlModule.name_NNN` to `camlModule$name_NNN`. Additionally it
   changes the encoding of special characters from $xx (two hex digits)
