@@ -92,6 +92,8 @@ Error: This pattern matches values of type "($'a M.p * a, $'a M.p * a) Type.eq"
        but a pattern was expected which matches values of type
          "($'a M.p * a, 'b M.p * int) Type.eq"
        The type constructor "$'a" would escape its scope
+       Hint: "$'a" is a type variable introduced by the equation
+         "$'a M.p" = "'_b M.p"
 |}]
 
 (** Counter-example side *)
@@ -130,4 +132,5 @@ Line 2, characters 52-53:
 Error: The value "x" has type "$0 M.t" but an expression was expected of type
          "b M.t"
        Type "$0" is not compatible with type "b"
+       Hint: "$0" is a type variable introduced by the equation "a M.t" = "$0 M.t"
 |}]

@@ -25,6 +25,7 @@ open Btype
 open Outcometree
 
 module String = Misc.Stdlib.String
+module Int = Misc.Stdlib.Int
 module Sig_component_kind = Shape.Sig_component_kind
 module Style = Misc.Style
 
@@ -708,13 +709,16 @@ let printer_iter_type_expr f ty =
 let quoted_ident ppf x =
   Style.as_inline_code !Oprint.out_ident ppf x
 
-module Internal_names : sig
+module Internal_names' : sig
 
   val reset : unit -> unit
 
   val add : Path.t -> unit
 
-  val print_explanations : Env.t -> Fmt.formatter -> unit
+  val print_explanations :
+    add_type_to_preparation: (type_expr -> unit) ->
+    tree_of_typexp: (type_or_scheme -> type_expr -> out_type) ->
+    Env.t -> Fmt.formatter -> unit
 
 end = struct
 
@@ -732,42 +736,105 @@ end = struct
         end
     | Pdot _ | Papply _ | Pextra_ty _ -> ()
 
-  let print_explanations env ppf =
+  let print_explanations ~add_type_to_preparation ~tree_of_typexp env ppf =
     let constrs =
       Ident.Set.fold
         (fun id acc ->
-          let p = Pident id in
-          match Env.find_type p env with
-          | exception Not_found -> acc
-          | decl ->
-              match type_origin decl with
-              | Existential constr ->
-                  let prev = String.Map.find_opt constr acc in
-                  let prev = Option.value ~default:[] prev in
-                  String.Map.add constr (tree_of_path None p :: prev) acc
-              | Definition | Rec_check_regularity | Approx_recmod -> acc)
+           let p = Pident id in
+           match Env.find_type p env with
+           | exception Not_found -> acc
+           | decl ->
+               match type_origin decl with
+               | Existential constr ->
+                   let prev = String.Map.find_opt constr acc in
+                   let prev = Option.value ~default:[] prev in
+                   String.Map.add constr (tree_of_path None p :: prev) acc
+               | Definition | Equation _ | Rec_check_regularity -> acc)
         !names String.Map.empty
     in
     String.Map.iter
       (fun constr out_idents ->
-        match out_idents with
-        | [] -> ()
-        | [out_ident] ->
-            fprintf ppf
-              "@ @[<2>@{<hint>Hint@}:@ %a@ is an existential type@ \
-               bound by the constructor@ %a.@]"
-              quoted_ident out_ident
-              Style.inline_code constr
-        | out_ident :: out_idents ->
-            fprintf ppf
-              "@ @[<2>@{<hint>Hint@}:@ %a@ and %a@ are existential types@ \
-               bound by the constructor@ %a.@]"
-              (Fmt.pp_print_list
-                 ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
-                 quoted_ident)
-              (List.rev out_idents)
-              quoted_ident out_ident
-              Style.inline_code constr)
+         match out_idents with
+         | [] -> ()
+         | [out_ident] ->
+             fprintf ppf
+               "@ @[<2>@{<hint>Hint@}:@ %a@ is an existential type@ \
+                bound by the constructor@ %a.@]"
+               quoted_ident out_ident
+               Style.inline_code constr
+         | out_ident :: out_idents ->
+             fprintf ppf
+               "@ @[<2>@{<hint>Hint@}:@ %a@ and %a@ are existential types@ \
+                bound by the constructor@ %a.@]"
+               (Fmt.pp_print_list
+                  ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
+                  quoted_ident)
+               (List.rev out_idents)
+               quoted_ident out_ident
+               Style.inline_code constr)
+      constrs
+    ;
+    let constrs =
+      Ident.Set.fold
+        (fun id acc ->
+           let p = Pident id in
+           match Env.find_type p env with
+           | exception Not_found -> acc
+           | decl ->
+               match type_origin decl with
+               | Equation (t1, t2) ->
+                   add_type_to_preparation t1;
+                   add_type_to_preparation t2;
+                   let t1, t2 =
+                     if get_id t1 < get_id t2 then t1, t2 else t2, t1
+                   in
+                   Int.Map.update
+                     (get_id t1)
+                     (fun prev ->
+                        let tprev, prev =
+                          match prev with
+                            None -> tree_of_typexp Type_scheme t1, Int.Map.empty
+                          | Some prev -> prev
+                        in
+                        let tid2 = get_id t2 in
+                        let r =
+                          Int.Map.update
+                            tid2
+                            (fun prev ->
+                               let tprev, lprev =
+                                 match prev with
+                                 | None ->
+                                     tree_of_typexp Type_scheme t2, []
+                                 | Some prev -> prev
+                               in
+                               Some (tprev, tree_of_path None p :: lprev)
+                            )
+                            prev
+                        in
+                        Some (tprev, r)
+                     )
+                     acc
+               | Existential _ | Definition | Rec_check_regularity -> acc)
+        !names Int.Map.empty
+    in
+    Int.Map.iter
+      (fun _constr (texp_constr, tids) ->
+         Int.Map.iter
+           (fun _tid (teq, out_idents) ->
+              (* The equation constr = teq introduces out_idents *)
+              fprintf ppf
+                "@ @[<2>@{<hint>Hint@}:@ %a@ %s@ \
+                 introduced by the equation@ %a = %a@]"
+                (Fmt.pp_print_list
+                   ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
+                   quoted_ident)
+                (List.rev out_idents)
+                (match out_idents with [ _ ] -> "is a type variable" | _ -> "are type variables")
+                (Style.as_inline_code !Oprint.out_type) texp_constr
+                (Style.as_inline_code !Oprint.out_type) teq
+           )
+           tids
+      )
       constrs
 
 end
@@ -1030,7 +1097,7 @@ let prepare_type ty =
 
 
 let reset_except_conflicts () =
-  Variable_names.reset_names (); Aliases.reset (); Internal_names.reset ()
+  Variable_names.reset_names (); Aliases.reset (); Internal_names'.reset ()
 
 let reset () =
   Ident_conflicts.reset ();
@@ -1139,7 +1206,7 @@ let rec tree_of_typexp mode ty =
         if is_nth s && not (tyl'=[])
         then tree_of_typexp mode (List.hd tyl')
         else begin
-          Internal_names.add p';
+          Internal_names'.add p';
           Otyp_constr (tree_of_best_type_path p p', tree_of_typlist mode tyl')
         end
     | Tvariant row ->
@@ -2061,3 +2128,9 @@ let tree_of_type_declaration ident td rs =
 
 let tree_of_class_type kind cty = tree_of_class_type kind [] cty
 let prepare_class_type cty = prepare_class_type [] cty
+
+module Internal_names = struct
+  include Internal_names'
+
+  let print_explanations = print_explanations ~add_type_to_preparation ~tree_of_typexp
+end
