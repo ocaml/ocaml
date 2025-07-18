@@ -210,6 +210,10 @@ Working version
 - #14148: Remove an unused field from package_type in typedtree
   (Samuel Vivien, review by Gabriel Scherer)
 
+- #14141: Rename cstrs to constraints when it refers to constraints to avoid
+  confusing it with constructors.
+  (Stefan Muenzel, review by ???)
+
 ### Build system:
 
 - #13810: Support build of cross compilers to native freestanding targets
