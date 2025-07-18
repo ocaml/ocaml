@@ -226,9 +226,9 @@ let rec core_type i ppf x =
       line i ppf "Ttyp_poly%a\n"
         (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x)) sl;
       core_type i ppf ct;
-  | Ttyp_package { tpt_path = s; tpt_cstrs = l } ->
-      line i ppf "Ttyp_package %a\n" fmt_path s;
-      list i package_with ppf l;
+  | Ttyp_package pack_ty ->
+      line i ppf "Ttyp_package\n";
+      package_type i ppf pack_ty
   | Ttyp_open (path, _mod_ident, t) ->
       line i ppf "Ttyp_open %a\n" fmt_path path;
       core_type i ppf t
@@ -236,6 +236,10 @@ let rec core_type i ppf x =
 and labeled_core_type i ppf (l, t) =
   tuple_component_label i ppf l;
   core_type i ppf t
+
+and package_type i ppf { tpt_path; tpt_cstrs } =
+  line i ppf "package_type %a\n" fmt_path tpt_path;
+  list (i+1) package_with ppf tpt_cstrs;
 
 and package_with i ppf (s, t) =
   line i ppf "with type %a\n" fmt_longident s;
@@ -457,9 +461,10 @@ and expression i ppf x =
   | Texp_object (s, _) ->
       line i ppf "Texp_object";
       class_structure i ppf s
-  | Texp_pack me ->
+  | Texp_pack (me, optyp) ->
       line i ppf "Texp_pack";
-      module_expr i ppf me
+      module_expr i ppf me;
+      option i package_type ppf optyp
   | Texp_letop {let_; ands; param = _; body; partial } ->
       line i ppf "Texp_letop%a"
         fmt_partiality partial;

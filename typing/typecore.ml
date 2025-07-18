@@ -3107,7 +3107,7 @@ let rec is_nonexpansive exp =
       Vars.fold (fun _ (mut,_,_) b -> decr count; b && mut = Immutable)
         vars true &&
       !count = 0
-  | Texp_pack mexp ->
+  | Texp_pack (mexp, _) ->
       is_nonexpansive_mod mexp
   (* Computations which raise exceptions are nonexpansive, since (raise e) is
      equivalent to (raise e; diverge), and a nonexpansive "diverge" can be
@@ -4704,9 +4704,13 @@ and type_expect_
             let (modl, pack') = !type_package env m pack in
             let ty = newty (Tpackage pack') in
             unify_exp_types m.pmod_loc env (instance pty) ty;
+            let annot = match exp_extra with
+              | Texp_constraint {ctyp_desc = Ttyp_package pack} -> Some pack
+              | _ -> None (* Should not happen but better be safe *)
+            in
             rue {
-              exp_desc = Texp_pack modl;
-              exp_loc = loc; exp_extra = [exp_extra, loc, []];
+              exp_desc = Texp_pack (modl, annot);
+              exp_loc = loc; exp_extra = [];
               exp_type = instance pty;
               exp_attributes = sexp.pexp_attributes;
               exp_env = env }
@@ -4732,7 +4736,7 @@ and type_expect_
           in
           let (modl, pack') = !type_package env m pack in
           rue {
-            exp_desc = Texp_pack modl;
+            exp_desc = Texp_pack (modl, None);
             exp_loc = loc; exp_extra = [];
             exp_type = newty (Tpackage pack');
             exp_attributes = sexp.pexp_attributes;

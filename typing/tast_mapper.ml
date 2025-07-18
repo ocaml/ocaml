@@ -485,8 +485,9 @@ let expr sub x =
         Texp_lazy (sub.expr sub exp)
     | Texp_object (cl, sl) ->
         Texp_object (sub.class_structure sub cl, sl)
-    | Texp_pack mexpr ->
-        Texp_pack (sub.module_expr sub mexpr)
+    | Texp_pack (mexpr, optyp) ->
+        Texp_pack (sub.module_expr sub mexpr,
+                   Option.map (sub.package_type sub) optyp)
     | Texp_letop {let_; ands; param; body; partial} ->
         Texp_letop{
           let_ = sub.binding_op sub let_;

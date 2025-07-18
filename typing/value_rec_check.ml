@@ -197,7 +197,7 @@ let classify_expression : Typedtree.expression -> sd =
 
     | Texp_array _ ->
         Static
-    | Texp_pack mexp ->
+    | Texp_pack (mexp, _) ->
         classify_module_expression env mexp
     | Texp_function _ ->
         Static
@@ -802,7 +802,7 @@ let rec expression : Typedtree.expression -> term_judg =
         Note: `assert e` is treated just as if `assert` was a function.
       *)
       expression e << Dereference
-    | Texp_pack mexp ->
+    | Texp_pack (mexp, _) ->
       (*
         G |- M: m
         ----------------
