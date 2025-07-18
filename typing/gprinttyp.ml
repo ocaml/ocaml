@@ -747,10 +747,10 @@ module Digraph = struct
             fields
         in
         { elts; graph = add_subgraph (labelr "polyvar", fields) main }
-    | Types.Tpackage {pack_path; pack_cstrs} ->
+    | Types.Tpackage {pack_path; pack_constraints} ->
         mk "[mod %a]"
           pp_path pack_path
-        |> package_constraints params id pack_cstrs
+        |> package_constraints params id pack_constraints
   and variant params id0 (elts,main,fields) (name,rf)  =
     let id = Index.subnode ~name id0 in
     let fnode = Node id in

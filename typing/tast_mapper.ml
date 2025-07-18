@@ -227,16 +227,16 @@ let type_kind sub = function
 let type_declaration sub x =
   let typ_loc = sub.location sub x.typ_loc in
   let typ_name = map_loc sub x.typ_name in
-  let typ_cstrs =
+  let typ_constraints =
     List.map
       (tuple3 (sub.typ sub) (sub.typ sub) (sub.location sub))
-      x.typ_cstrs
+      x.typ_constraints
   in
   let typ_kind = sub.type_kind sub x.typ_kind in
   let typ_manifest = Option.map (sub.typ sub) x.typ_manifest in
   let typ_params = List.map (tuple2 (sub.typ sub) id) x.typ_params in
   let typ_attributes = sub.attributes sub x.typ_attributes in
-  {x with typ_loc; typ_name; typ_cstrs; typ_kind; typ_manifest; typ_params;
+  {x with typ_loc; typ_name; typ_constraints; typ_kind; typ_manifest; typ_params;
           typ_attributes}
 
 let type_declarations sub (rec_flag, list) =
@@ -508,9 +508,9 @@ let expr sub x =
 
 let package_type sub x =
   let tpt_txt = map_loc_lid sub x.tpt_txt in
-  let tpt_cstrs = List.map
-    (tuple2 (map_loc_lid sub) (sub.typ sub)) x.tpt_cstrs in
-  {x with tpt_txt; tpt_cstrs}
+  let tpt_constraints = List.map
+    (tuple2 (map_loc_lid sub) (sub.typ sub)) x.tpt_constraints in
+  {x with tpt_txt; tpt_constraints}
 
 let binding_op sub x =
   let bop_loc = sub.location sub x.bop_loc in

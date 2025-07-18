@@ -48,7 +48,7 @@ and type_desc =
 
 and package =
     { pack_path : Path.t;
-      pack_cstrs : (string list * type_expr) list }
+      pack_constraints : (string list * type_expr) list }
 
 and row_desc =
     { row_fields: (label * row_field) list;

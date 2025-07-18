@@ -220,7 +220,7 @@ let type_declaration sub decl =
       List.map
         (fun (ct1, ct2, loc) ->
            (sub.typ sub ct1, sub.typ sub ct2, sub.location sub loc))
-        decl.typ_cstrs)
+        decl.typ_constraints)
     ~kind:(sub.type_kind sub decl.typ_kind)
     ~priv:decl.typ_private
     ?manifest:(Option.map (sub.typ sub) decl.typ_manifest)
@@ -585,7 +585,7 @@ let binding_op sub bop pat =
 
 let package_type sub pack =
   { ppt_path = map_loc sub pack.tpt_txt;
-    ppt_cstrs = List.map (fun (s, ct) -> (s, sub.typ sub ct)) pack.tpt_cstrs;
+    ppt_cstrs = List.map (fun (s, ct) -> (s, sub.typ sub ct)) pack.tpt_constraints;
     ppt_attrs = [];
     ppt_loc = sub.location sub pack.tpt_txt.loc }
 

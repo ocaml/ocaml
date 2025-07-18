@@ -492,7 +492,7 @@ and core_type_desc =
 
 and package_type = {
   tpt_path : Path.t;
-  tpt_cstrs : (Longident.t loc * core_type) list;
+  tpt_constraints : (Longident.t loc * core_type) list;
   tpt_txt : Longident.t loc;
 }
 
@@ -531,7 +531,7 @@ and type_declaration =
     typ_name: string loc;
     typ_params: (core_type * (variance * injectivity)) list;
     typ_type: Types.type_declaration;
-    typ_cstrs: (core_type * core_type * Location.t) list;
+    typ_constraints: (core_type * core_type * Location.t) list;
     typ_kind: type_kind;
     typ_private: private_flag;
     typ_manifest: core_type option;

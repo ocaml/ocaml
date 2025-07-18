@@ -226,7 +226,7 @@ let rec core_type i ppf x =
       line i ppf "Ttyp_poly%a\n"
         (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x)) sl;
       core_type i ppf ct;
-  | Ttyp_package { tpt_path = s; tpt_cstrs = l } ->
+  | Ttyp_package { tpt_path = s; tpt_constraints = l } ->
       line i ppf "Ttyp_package %a\n" fmt_path s;
       list i package_with ppf l;
   | Ttyp_open (path, _mod_ident, t) ->
@@ -511,7 +511,7 @@ and type_declaration i ppf x =
   line i ppf "ptype_params =\n";
   list (i+1) type_parameter ppf x.typ_params;
   line i ppf "ptype_cstrs =\n";
-  list (i+1) core_type_x_core_type_x_location ppf x.typ_cstrs;
+  list (i+1) core_type_x_core_type_x_location ppf x.typ_constraints;
   line i ppf "ptype_kind =\n";
   type_kind (i+1) ppf x.typ_kind;
   line i ppf "ptype_private = %a\n" fmt_private_flag x.typ_private;

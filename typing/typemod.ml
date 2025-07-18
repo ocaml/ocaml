@@ -2288,15 +2288,15 @@ let modtype_of_package env loc pack =
      module type are at generic_level. *)
   let mty =
     package_constraints env loc (Mty_ident pack.pack_path)
-      (List.map (fun (n, t) -> n, Ctype.duplicate_type t) pack.pack_cstrs)
+      (List.map (fun (n, t) -> n, Ctype.duplicate_type t) pack.pack_constraints)
   in
   Subst.modtype Keep Subst.identity mty
 
 let package_subtype env pack1 pack2 =
   let mkmty pack =
     let fl =
-      List.filter (fun (_n,t) -> Ctype.closed_type_expr t) pack.pack_cstrs in
-    modtype_of_package env Location.none {pack with pack_cstrs = fl}
+      List.filter (fun (_n,t) -> Ctype.closed_type_expr t) pack.pack_constraints in
+    modtype_of_package env Location.none {pack with pack_constraints = fl}
   in
   match mkmty pack1, mkmty pack2 with
   | exception Error(_, _, Cannot_scrape_package_type r) ->
@@ -2502,7 +2502,7 @@ and type_module_aux ~alias ~strengthen ~funct_body anchor env smod =
         match get_desc (Ctype.expand_head env exp.exp_type) with
           Tpackage pack ->
             check_package_closed ~loc:smod.pmod_loc ~env ~typ:exp.exp_type
-              pack.pack_cstrs;
+              pack.pack_constraints;
             if !Clflags.principal &&
               not (Typecore.generalizable (Btype.generic_level-1) exp.exp_type)
             then
@@ -3202,7 +3202,7 @@ let type_package env m pack =
     end
   in
   let fl', env =
-    match pack.pack_cstrs with
+    match pack.pack_constraints with
     | [] -> [], env
     | fl ->
       let type_path, env =
@@ -3242,8 +3242,8 @@ let type_package env m pack =
       fl', env
   in
   let mty =
-    if pack.pack_cstrs = [] then (Mty_ident pack.pack_path)
-    else modtype_of_package env modl.mod_loc {pack with pack_cstrs = fl'}
+    if pack.pack_constraints = [] then (Mty_ident pack.pack_path)
+    else modtype_of_package env modl.mod_loc {pack with pack_constraints = fl'}
   in
   List.iter
     (fun (n, ty) ->
@@ -3253,7 +3253,7 @@ let type_package env m pack =
         raise (Error(modl.mod_loc, env, Scoping_pack (lid,ty))))
     fl';
   let modl = wrap_constraint_package env true modl mty Tmodtype_implicit in
-  modl, {pack with pack_cstrs = fl'}
+  modl, {pack with pack_constraints = fl'}
 
 (* Fill in the forward declarations *)
 

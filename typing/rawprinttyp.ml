@@ -127,7 +127,7 @@ and raw_type_desc ppf = function
   | Tpackage pack ->
     fprintf ppf "@[<hov1>Tpackage(@,%a,@,%a)@]"
       path pack.pack_path
-      raw_lid_type_list pack.pack_cstrs
+      raw_lid_type_list pack.pack_constraints
 and raw_row_fixed ppf = function
 | None -> fprintf ppf "None"
 | Some Types.Fixed_private -> fprintf ppf "Some Fixed_private"

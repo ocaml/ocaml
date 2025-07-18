@@ -140,7 +140,7 @@ type type_desc =
 (** [package] corresponds to the type of a first-class module *)
 and package =
   { pack_path : Path.t;
-    pack_cstrs : (string list * type_expr) list }
+    pack_constraints : (string list * type_expr) list }
 
 (** See also documentation for [row_more], which enumerates how these
     constructors arise. *)

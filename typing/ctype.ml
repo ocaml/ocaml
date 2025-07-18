@@ -789,9 +789,9 @@ let rec copy_spine copy_scope ty =
           Tpoly (copy_rec ty', tvl)
       | Ttuple tyl ->
           Ttuple (List.map (fun (lbl, ty) -> (lbl, copy_rec ty)) tyl)
-      | Tpackage {pack_path; pack_cstrs} ->
-          let fl = List.map (fun (n, ty) -> n, copy_rec ty) pack_cstrs in
-          Tpackage {pack_path; pack_cstrs = fl}
+      | Tpackage {pack_path; pack_constraints} ->
+          let fl = List.map (fun (n, ty) -> n, copy_rec ty) pack_constraints in
+          Tpackage {pack_path; pack_constraints = fl}
       | Tconstr (path, tyl, _) ->
           Tconstr (path, List.map copy_rec tyl, ref Mnil)
       | _ -> assert false
@@ -982,7 +982,7 @@ let rec lower_contravariant env var_level visited contra ty =
             | exception Cannot_expand -> not_expanded ()
           else not_expanded ()
     | Tpackage p ->
-        List.iter (fun (_n, ty) -> lower_rec true ty) p.pack_cstrs
+        List.iter (fun (_n, ty) -> lower_rec true ty) p.pack_constraints
     | Tarrow (_, t1, t2, _) ->
         lower_rec true t1;
         lower_rec contra t2
@@ -2679,14 +2679,14 @@ let complete_type_list ?(allow_absent=false) env fl1 lv2 pack2 =
         | exception Not_found when allow_absent->
             complete nl fl2
   in
-  match complete fl1 pack2.pack_cstrs with
+  match complete fl1 pack2.pack_constraints with
   | res -> res
   | exception Exit -> raise Not_found
 
 (* raise Not_found rather than Unify if the module types are incompatible *)
 let compare_package env unify_list lv1 pack1 lv2 pack2 =
-  let ntl2 = complete_type_list env pack1.pack_cstrs lv2 pack2
-  and ntl1 = complete_type_list env pack2.pack_cstrs lv1 pack1 in
+  let ntl2 = complete_type_list env pack1.pack_constraints lv2 pack2
+  and ntl1 = complete_type_list env pack2.pack_constraints lv1 pack1 in
   unify_list (List.map snd ntl1) (List.map snd ntl2);
   if eq_package_path env pack1.pack_path pack2.pack_path then Ok ()
   else Result.bind
@@ -3028,11 +3028,11 @@ and unify_package uenv lvl1 pack1 lvl2 pack2 =
       if not (in_pattern_mode uenv) then
         raise_for Unify (Errortrace.First_class_module fm_err);
       List.iter (fun (_n, ty) -> reify uenv ty)
-        (pack1.pack_cstrs @ pack2.pack_cstrs);
+        (pack1.pack_constraints @ pack2.pack_constraints);
   | exception Not_found ->
     if not (in_pattern_mode uenv) then raise_unexplained_for Unify;
     List.iter (fun (_n, ty) -> reify uenv ty)
-        (pack1.pack_cstrs @ pack2.pack_cstrs);
+        (pack1.pack_constraints @ pack2.pack_constraints);
     (* if !generate_equations then List.iter2 (mcomp !env) tl1 tl2 *)
 
 (* Build a fresh row variable for unification *)
@@ -5080,9 +5080,9 @@ and subtype_labeled_list env trace labeled_tl1 labeled_tl2 cstrs =
 
 and subtype_package env trace lvl1 pack1 lvl2 pack2 cstrs =
   try
-    let ntl1 = complete_type_list env pack2.pack_cstrs lvl1 pack1
+    let ntl1 = complete_type_list env pack2.pack_constraints lvl1 pack1
     and ntl2 =
-      complete_type_list env pack1.pack_cstrs lvl2 pack2
+      complete_type_list env pack1.pack_constraints lvl2 pack2
         ~allow_absent:true in
     let cstrs' =
       List.map
@@ -5498,7 +5498,7 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
             let nondep_field_rec (n, ty) = (n, nondep_type_rec env ids ty) in
             Tpackage {
               pack_path = p';
-              pack_cstrs = List.map nondep_field_rec pack.pack_cstrs
+              pack_constraints = List.map nondep_field_rec pack.pack_constraints
             }
           end
       | Tobject (t1, name) ->
