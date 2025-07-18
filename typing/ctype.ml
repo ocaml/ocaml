@@ -3397,8 +3397,9 @@ and unify3 uenv t1 t1' t2 t2' =
                 if i then unify uenv t1 t2 else begin
                   let eqn =
                     match get_desc t1, get_desc t2 with
-                    | (Tvar _ | Tconstr (_, [], _)), (Tvar _ | Tconstr (_, [], _))
-                      -> t1', t2'
+                    | (Tvar _ | Tconstr (_, [], _))
+                    , (Tvar _ | Tconstr (_, [], _)) ->
+                      t1', t2'
                     | _ -> t1, t2
                   in
                   reify ~eqn uenv t1;

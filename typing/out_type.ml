@@ -774,9 +774,9 @@ end = struct
                Style.inline_code constr)
       constrs
     ;
-    let constrs =
+    let eqns, eqtys =
       Ident.Set.fold
-        (fun id acc ->
+        (fun id ((eqns, eqtys) as acc) ->
            let p = Pident id in
            match Env.find_type p env with
            | exception Not_found -> acc
@@ -785,43 +785,33 @@ end = struct
                | Equation (t1, t2) ->
                    add_type_to_preparation t1;
                    add_type_to_preparation t2;
+                   let add_ty t =
+                     Int.Map.update (get_id t) (function
+                         | Some _ as v -> v
+                         | None -> Some (tree_of_typexp Type_scheme t))
+                   in
+                   let eqtys = add_ty t1 (add_ty t2 eqtys) in
                    let t1, t2 =
                      if get_id t1 < get_id t2 then t1, t2 else t2, t1
                    in
                    Int.Map.update
                      (get_id t1)
-                     (fun prev ->
-                        let tprev, prev =
-                          match prev with
-                            None -> tree_of_typexp Type_scheme t1, Int.Map.empty
-                          | Some prev -> prev
-                        in
+                     (fun ps ->
+                        let ps = Option.value ~default:Int.Map.empty ps in
                         let tid2 = get_id t2 in
-                        let r =
-                          Int.Map.update
-                            tid2
-                            (fun prev ->
-                               let tprev, lprev =
-                                 match prev with
-                                 | None ->
-                                     tree_of_typexp Type_scheme t2, []
-                                 | Some prev -> prev
-                               in
-                               Some (tprev, tree_of_path None p :: lprev)
-                            )
-                            prev
-                        in
-                        Some (tprev, r)
+                        Some
+                          (Int.Map.add_to_list tid2 (tree_of_path None p) ps)
                      )
-                     acc
+                     eqns
+                 , eqtys
                | Existential _ | Definition | Rec_check_regularity -> acc)
-        !names Int.Map.empty
+        !names (Int.Map.empty, Int.Map.empty)
     in
     Int.Map.iter
-      (fun _constr (texp_constr, tids) ->
+      (fun lhsid rhs ->
          Int.Map.iter
-           (fun _tid (teq, out_idents) ->
-              (* The equation constr = teq introduces out_idents *)
+           (fun rhsid out_idents ->
+              (* The equation lhs = rhs introduces out_idents *)
               fprintf ppf
                 "@ @[<2>@{<hint>Hint@}:@ %a@ %s@ \
                  introduced by the equation@ %a = %a@]"
@@ -829,14 +819,17 @@ end = struct
                    ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
                    quoted_ident)
                 (List.rev out_idents)
-                (match out_idents with [ _ ] -> "is a type variable" | _ -> "are type variables")
-                (Style.as_inline_code !Oprint.out_type) texp_constr
-                (Style.as_inline_code !Oprint.out_type) teq
+                (match out_idents with
+                 | [ _ ] -> "is a type variable"
+                 | _ -> "are type variables")
+                (Style.as_inline_code !Oprint.out_type)
+                (Int.Map.find lhsid eqtys)
+                (Style.as_inline_code !Oprint.out_type)
+                (Int.Map.find rhsid eqtys)
            )
-           tids
+           rhs
       )
-      constrs
-
+      eqns
 end
 
 module Variable_names : sig
@@ -2132,5 +2125,6 @@ let prepare_class_type cty = prepare_class_type [] cty
 module Internal_names = struct
   include Internal_names'
 
-  let print_explanations = print_explanations ~add_type_to_preparation ~tree_of_typexp
+  let print_explanations =
+    print_explanations ~add_type_to_preparation ~tree_of_typexp
 end
