@@ -34,10 +34,12 @@
           riscv/emit.mlp
           s390x/emit.mlp)
  (action
-   (progn
-     (with-stdout-to contains-input-name
-       (bash "echo `grep '^ARCH=' %{conf} | cut -d'=' -f2`/emit.mlp"))
-     (with-stdout-to %{targets}
-       (progn
-         (bash "echo \\# 1 \\\"`cat contains-input-name`\\\"")
-         (bash "%{dep:../tools/cvt_emit.exe} < `cat contains-input-name`"))))))
+   (no-infer
+    (progn
+      (with-stdout-to contains-input-name
+        (bash "echo `grep '^ARCH=' %{conf} | cut -d'=' -f2`/emit.mlp"))
+      (with-stdout-to %{targets}
+        (progn
+          (bash "echo \\# 1 \\\"`cat contains-input-name`\\\"")
+          (bash "%{dep:../tools/cvt_emit.exe} < `cat contains-input-name`"))
+        )))))

@@ -3038,3 +3038,11 @@ config.status:
 # This is why this dependency is kept at the very end of this file
 
 $(ALL_CMX_FILES): ocamlopt$(EXE)
+
+# Allows dune to build without having to clean everything
+.PHONY: clean-for-dune
+clean-for-dune:
+	rm -f stdlib/stdlib.{a,cma,cmxa}
+	rm -f stdlib/std_exit.{o,cmo,cmx}
+	rm -f otherlibs/str/str.cma
+	rm -f otherlibs/unix/unix.cma

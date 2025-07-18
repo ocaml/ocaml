@@ -17,9 +17,11 @@
  (wrapped false)
  (modes byte)
  (flags (:standard -nostdlib -nolabels))
- (c_flags (-I %{project_root}/runtime))
  (libraries stdlib)
- (c_names
+ (foreign_stubs
+  (language c)
+  (flags -I %{project_root}/runtime)
+  (names
    accept access addrofstr alarm bind channels chdir chmod chown chroot close
    fsync closedir connect cst2constr cstringv dup dup2 envir errmsg execv execve
    execvp exit fchmod fchown fcntl fork ftruncate getaddrinfo getcwd getegid
@@ -30,7 +32,7 @@
    realpath rename rewinddir rmdir select sendrecv setgid setgroups setsid
    setuid shutdown signals sleep socket socketaddr socketpair sockopt stat
    strofaddr symlink termios time times truncate umask unixsupport unlink utimes
-   wait write))
+   wait write)))
 
 (rule
  (action (copy accept_unix.c accept.c))
