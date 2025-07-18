@@ -970,37 +970,72 @@ end = struct
     add_named_vars ty
 end
 
-module Aliases = struct
-  let visited_objects = ref ([] : transient_expr list)
-  let aliased = ref ([] : transient_expr list)
-  let delayed = ref ([] : transient_expr list)
-  let printed_aliases = ref ([] : transient_expr list)
+module Aliases : sig
+
+  val aliasable : type_expr -> bool
+
+  val mark_loops : type_expr -> unit
+
+  val add : type_expr -> unit
+  val add_proxy : transient_expr -> unit
+  val is_aliased_proxy : transient_expr -> bool
+
+  val add_printed : type_expr -> non_gen:bool -> unit
+  val add_printed_proxy : non_gen:bool -> transient_expr -> unit
+  val is_printed_proxy : transient_expr -> bool
+  val mark_as_printed : transient_expr -> unit
+
+  val add_visited_object_proxy : transient_expr -> unit
+  val is_visited_object_proxy : transient_expr -> bool
+
+  val add_delayed : transient_expr -> unit
+  val remove_delay : transient_expr -> unit
+  val is_delayed : transient_expr -> bool
+  val with_temporary_delay : (unit -> 'a) -> 'a
+
+  val reset : unit -> unit
+end = struct
+  let visited_objects = ref (TransientTypeSet.empty)
+  let aliased = ref (TransientTypeSet.empty)
+  let delayed = ref (TransientTypeSet.empty)
+  let printed_aliases = ref (TransientTypeSet.empty)
+
+  let with_temporary_delay f =
+    let old_delayed = !delayed in
+    let res = f () in
+    delayed := old_delayed;
+    res
 
 (* [printed_aliases] is a subset of [aliased] that records only those aliased
    types that have actually been printed; this allows us to avoid naming loops
    that the user will never see. *)
 
-  let is_delayed t = List.memq t !delayed
+  let is_delayed t = TransientTypeSet.mem t !delayed
+
+  let is_visited_object_proxy t = TransientTypeSet.mem t !visited_objects
 
   let remove_delay t =
     if is_delayed t then
-      delayed := List.filter ((!=) t) !delayed
+      delayed := TransientTypeSet.remove t !delayed
 
   let add_delayed t =
-    if not (is_delayed t) then delayed := t :: !delayed
+    if not (is_delayed t) then delayed := TransientTypeSet.add t !delayed
 
-  let is_aliased_proxy px = List.memq px !aliased
-  let is_printed_proxy px = List.memq px !printed_aliases
+  let is_aliased_proxy px = TransientTypeSet.mem px !aliased
+  let is_printed_proxy px = TransientTypeSet.mem px !printed_aliases
 
   let add_proxy px =
     if not (is_aliased_proxy px) then
-      aliased := px :: !aliased
+      aliased := TransientTypeSet.add px !aliased
 
   let add ty = add_proxy (proxy ty)
 
   let add_printed_proxy ~non_gen px =
     Variable_names.check_name_of_type ~non_gen px;
-    printed_aliases := px :: !printed_aliases
+    printed_aliases := TransientTypeSet.add px !printed_aliases
+
+  let add_visited_object_proxy px =
+    visited_objects := TransientTypeSet.add px !visited_objects
 
   let mark_as_printed px =
      if is_aliased_proxy px then (add_printed_proxy ~non_gen:false) px
@@ -1026,9 +1061,9 @@ module Aliases = struct
       let visited = px :: visited in
       match printer_get_desc ty with
       | Tvariant _ | Tobject _ ->
-          if List.memq px !visited_objects then add_proxy px else begin
+          if TransientTypeSet.mem px !visited_objects then add_proxy px else begin
             if should_visit_object ty then
-              visited_objects := px :: !visited_objects;
+              visited_objects := TransientTypeSet.add px !visited_objects;
             printer_iter_type_expr (mark_loops_rec visited) ty
           end
       | Tpoly(ty, tyl) ->
@@ -1053,7 +1088,10 @@ module Aliases = struct
     mark_loops_rec [] ty
 
   let reset () =
-    visited_objects := []; aliased := []; delayed := []; printed_aliases := []
+    visited_objects := TransientTypeSet.empty;
+    aliased := TransientTypeSet.empty;
+    delayed := TransientTypeSet.empty;
+    printed_aliases := TransientTypeSet.empty
 
 end
 
@@ -1223,15 +1261,16 @@ let rec tree_of_typexp mode ty =
           prerr_string "; " in *)
         if tyl = [] then tree_of_typexp mode ty else begin
           let tyl = List.map Transient_expr.repr tyl in
-          let old_delayed = !Aliases.delayed in
-          (* Make the names delayed, so that the real type is
-             printed once when used as proxy *)
-          List.iter Aliases.add_delayed tyl;
-          let tl = List.map Variable_names.(name_of_type new_name) tyl in
-          let tr = Otyp_poly (tl, tree_of_typexp mode ty) in
-          (* Forget names when we leave scope *)
-          Variable_names.remove_names tyl;
-          Aliases.delayed := old_delayed; tr
+          Aliases.with_temporary_delay (fun () ->
+              (* Make the names delayed, so that the real type is
+                 printed once when used as proxy *)
+              List.iter Aliases.add_delayed tyl;
+              let tl = List.map Variable_names.(name_of_type new_name) tyl in
+              let tr = Otyp_poly (tl, tree_of_typexp mode ty) in
+              (* Forget names when we leave scope *)
+              Variable_names.remove_names tyl;
+              tr
+            )
         end
     | Tunivar _ ->
         Otyp_var (false, Variable_names.(name_of_type new_name) tty)
@@ -1731,7 +1770,7 @@ let tree_of_method mode (lab, priv, virt, ty) =
 let rec prepare_class_type params = function
   | Cty_constr (_p, tyl, cty) ->
       let row = Btype.self_type_row cty in
-      if List.memq (proxy row) !Aliases.visited_objects
+      if Aliases.is_visited_object_proxy (proxy row)
       || not (List.for_all is_Tvar params)
       || deep_occur_list row tyl
       then prepare_class_type params cty
@@ -1739,8 +1778,8 @@ let rec prepare_class_type params = function
   | Cty_signature sign ->
       (* Self may have a name *)
       let px = proxy sign.csig_self_row in
-      if List.memq px !Aliases.visited_objects then Aliases.add_proxy px
-      else Aliases.(visited_objects := px :: !visited_objects);
+      if Aliases.is_visited_object_proxy px then Aliases.add_proxy px
+      else Aliases.add_visited_object_proxy px;
       Vars.iter (fun _ (_, _, ty) -> prepare_type ty) sign.csig_vars;
       Meths.iter prepare_method sign.csig_meths
   | Cty_arrow (_, ty, cty) ->
@@ -1751,7 +1790,7 @@ let rec tree_of_class_type mode params =
   function
   | Cty_constr (p', tyl, cty) ->
       let row = Btype.self_type_row cty in
-      if List.memq (proxy row) !Aliases.visited_objects
+      if Aliases.is_visited_object_proxy (proxy row)
       || not (List.for_all is_Tvar params)
       then
         tree_of_class_type mode params cty
