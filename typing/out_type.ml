@@ -832,35 +832,37 @@ end = struct
      which maps from types to types.  The lookup process is
      "type -> apply substitution -> find name".  The substitution is presumed to
      be one-shot. *)
-  let names = ref ([] : (transient_expr * string) list)
-  let name_subst = ref ([] : (transient_expr * transient_expr) list)
+  let names = ref (TransientTypeMap.empty : string TransientTypeMap.t)
+  let names_set = ref String.Set.empty
+  let name_subst = ref (TransientTypeMap.empty : (transient_expr TransientTypeMap.t))
   let name_counter = ref 0
-  let named_vars = ref ([] : string list)
-  let visited_for_named_vars = ref ([] : transient_expr list)
+  let named_vars = ref String.Set.empty
+  let visited_for_named_vars = ref TransientTypeSet.empty
 
   let weak_counter = ref 1
   let weak_var_map = ref TypeMap.empty
   let named_weak_vars = ref String.Set.empty
 
   let reset_names () =
-    names := [];
-    name_subst := [];
+    names := TransientTypeMap.empty;
+    names_set := String.Set.empty;
+    name_subst := TransientTypeMap.empty;
     name_counter := 0;
-    named_vars := [];
-    visited_for_named_vars := []
+    named_vars := String.Set.empty;
+    visited_for_named_vars := TransientTypeSet.empty
 
   let add_named_var tty =
     match tty.desc with
       Tvar (Some name) | Tunivar (Some name) ->
-        if List.mem name !named_vars then () else
-        named_vars := name :: !named_vars
+        if String.Set.mem name !named_vars then () else
+        named_vars := String.Set.add name !named_vars
     | _ -> ()
 
   let rec add_named_vars ty =
     let tty = Transient_expr.repr ty in
     let px = proxy ty in
-    if not (List.memq px !visited_for_named_vars) then begin
-      visited_for_named_vars := px :: !visited_for_named_vars;
+    if not (TransientTypeSet.mem px !visited_for_named_vars) then begin
+      visited_for_named_vars := TransientTypeSet.add px !visited_for_named_vars;
       match tty.desc with
       | Tvar _ | Tunivar _ ->
           add_named_var tty
@@ -869,19 +871,20 @@ end = struct
     end
 
   let substitute ty =
-    match List.assq ty !name_subst with
+    match TransientTypeMap.find ty !name_subst with
     | ty' -> ty'
     | exception Not_found -> ty
 
   let add_subst subst =
     name_subst :=
-      List.map (fun (t1,t2) -> Transient_expr.repr t1, Transient_expr.repr t2)
+      List.fold_left
+        (fun m (t1,t2) -> TypeMap.add t1 (Transient_expr.repr t2) m)
+        !name_subst
         subst
-      @ !name_subst
 
   let name_is_already_used name =
-    List.mem name !named_vars
-    || List.exists (fun (_, name') -> name = name') !names
+    String.Set.mem name !named_vars
+    || String.Set.mem name !names_set
     || String.Set.mem name !named_weak_vars
 
   let rec new_name () =
@@ -907,7 +910,7 @@ end = struct
     (* We've already been through repr at this stage, so t is our representative
        of the union-find class. *)
     let t = substitute t in
-    try List.assq t !names with Not_found ->
+    try TransientTypeMap.find t !names with Not_found ->
       try TransientTypeMap.find t !weak_var_map with Not_found ->
       let name =
         match t.desc with
@@ -916,9 +919,7 @@ end = struct
              * unification variable to that name. We want to keep the name, so
              * try adding a number until we find a name that's not taken. *)
             let available name =
-              List.for_all
-                (fun (_, name') -> name <> name')
-                !names
+              not (String.Set.mem name !names_set)
             in
             if available name then name
             else
@@ -930,25 +931,38 @@ end = struct
             name_generator ()
       in
       (* Exception for type declarations *)
-      if name <> "_" then names := (t, name) :: !names;
+      if name <> "_" then begin
+        names := TransientTypeMap.add t name !names;
+        names_set := String.Set.add name !names_set
+      end;
       name
 
   let check_name_of_type ~non_gen px =
     let name_gen = new_var_name ~non_gen (Transient_expr.type_expr px) in
     ignore(name_of_type name_gen px : string)
 
+  let remove_name t =
+    let t = substitute t in
+    match TransientTypeMap.find t !names with
+    | name ->
+        names_set := String.Set.remove name !names_set;
+        names := TransientTypeMap.remove t !names
+    | exception Not_found -> ()
+
   let remove_names tyl =
-    let tyl = List.map substitute tyl in
-    names := List.filter (fun (ty,_) -> not (List.memq ty tyl)) !names
+    List.iter remove_name tyl
 
   let with_local_names f =
     let old_names = !names in
+    let old_names_set = !names_set in
     let old_subst = !name_subst in
-    names      := [];
-    name_subst := [];
+    names      := TransientTypeMap.empty;
+    names_set  := String.Set.empty;
+    name_subst := TransientTypeMap.empty;
     try_finally
       ~always:(fun () ->
         names      := old_names;
+        names_set  := old_names_set;
         name_subst := old_subst)
       f
 
