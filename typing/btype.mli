@@ -20,8 +20,10 @@ open Types
 
 (**** Sets, maps and hashtables of types ****)
 
+module TransientTypeSet : Set.S with type elt = transient_expr
 module TypeSet : sig
   include Set.S with type elt = transient_expr
+                 and type t = TransientTypeSet.t
   val add: type_expr -> t -> t
   val mem: type_expr -> t -> bool
   val singleton: type_expr -> t
