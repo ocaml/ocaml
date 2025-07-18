@@ -507,10 +507,11 @@ let expr sub x =
 
 
 let package_type sub x =
+  let tpt_env = sub.env sub x.tpt_env in
   let tpt_txt = map_loc_lid sub x.tpt_txt in
   let tpt_cstrs = List.map
     (tuple2 (map_loc_lid sub) (sub.typ sub)) x.tpt_cstrs in
-  {x with tpt_txt; tpt_cstrs}
+  {x with tpt_env; tpt_txt; tpt_cstrs}
 
 let binding_op sub x =
   let bop_loc = sub.location sub x.bop_loc in

@@ -394,7 +394,8 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
       sub.structure_item sub si;
       sub.expr sub e
 
-let package_type sub {tpt_cstrs; tpt_txt; _} =
+let package_type sub {tpt_env; tpt_cstrs; tpt_txt; _} =
+  sub.env sub tpt_env;
   List.iter (fun (lid, p) -> iter_loc_lid sub lid; sub.typ sub p) tpt_cstrs;
   iter_loc_lid sub tpt_txt
 

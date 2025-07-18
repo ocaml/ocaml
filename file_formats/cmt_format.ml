@@ -236,16 +236,19 @@ let iter_on_occurrences
       (match ctyp_desc with
       | Ttyp_constr (path, lid, _ctyps) ->
           f ~namespace:Type ctyp_env path lid
-      | Ttyp_package {tpt_path; tpt_txt} ->
-          f ~namespace:Module_type ctyp_env tpt_path tpt_txt
       | Ttyp_class (path, lid, _typs) ->
           (* Deprecated syntax to extend a polymorphic variant *)
           f ~namespace:Type ctyp_env path lid
       |  Ttyp_open (path, lid, _ct) ->
           f ~namespace:Module ctyp_env path lid
       | Ttyp_any | Ttyp_var _ | Ttyp_arrow _ | Ttyp_tuple _ | Ttyp_object _
-      | Ttyp_alias _ | Ttyp_variant _ | Ttyp_poly _ -> ());
+      | Ttyp_alias _ | Ttyp_variant _ | Ttyp_poly _ | Ttyp_package _ -> ());
       default_iterator.typ sub ct);
+
+  package_type =
+    (fun sub pack ->
+      f ~namespace:Module_type pack.tpt_env pack.tpt_path pack.tpt_txt;
+      default_iterator.package_type sub pack);
 
   pat =
     (fun (type a) sub

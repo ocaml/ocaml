@@ -684,6 +684,7 @@ and core_type_desc =
   | Ttyp_open of Path.t * Longident.t loc * core_type
 
 and package_type = {
+  tpt_env : Env.t;
   tpt_path : Path.t;
   tpt_cstrs : (Longident.t loc * core_type) list;
   tpt_type : Types.module_type;
