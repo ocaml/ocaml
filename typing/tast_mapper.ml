@@ -485,8 +485,9 @@ let expr sub x =
         Texp_lazy (sub.expr sub exp)
     | Texp_object (cl, sl) ->
         Texp_object (sub.class_structure sub cl, sl)
-    | Texp_pack mexpr ->
-        Texp_pack (sub.module_expr sub mexpr)
+    | Texp_pack (mexpr, optyp) ->
+        Texp_pack (sub.module_expr sub mexpr,
+                   Option.map (sub.package_type sub) optyp)
     | Texp_letop {let_; ands; param; body; partial} ->
         Texp_letop{
           let_ = sub.binding_op sub let_;
@@ -507,10 +508,11 @@ let expr sub x =
 
 
 let package_type sub x =
+  let tpt_env = sub.env sub x.tpt_env in
   let tpt_txt = map_loc_lid sub x.tpt_txt in
   let tpt_cstrs = List.map
     (tuple2 (map_loc_lid sub) (sub.typ sub)) x.tpt_cstrs in
-  {x with tpt_txt; tpt_cstrs}
+  {x with tpt_env; tpt_txt; tpt_cstrs}
 
 let binding_op sub x =
   let bop_loc = sub.location sub x.bop_loc in

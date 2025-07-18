@@ -383,7 +383,9 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
   | Texp_assert (exp, _) -> sub.expr sub exp
   | Texp_lazy exp -> sub.expr sub exp
   | Texp_object (cl, _) -> sub.class_structure sub cl
-  | Texp_pack mexpr -> sub.module_expr sub mexpr
+  | Texp_pack (mexpr, optyp) ->
+    sub.module_expr sub mexpr;
+    Option.iter (sub.package_type sub) optyp
   | Texp_letop {let_ = l; ands; body; _} ->
       sub.binding_op sub l;
       List.iter (sub.binding_op sub) ands;
@@ -394,7 +396,8 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
       sub.structure_item sub si;
       sub.expr sub e
 
-let package_type sub {tpt_cstrs; tpt_txt; _} =
+let package_type sub {tpt_env; tpt_cstrs; tpt_txt; _} =
+  sub.env sub tpt_env;
   List.iter (fun (lid, p) -> iter_loc_lid sub lid; sub.typ sub p) tpt_cstrs;
   iter_loc_lid sub tpt_txt
 

@@ -166,3 +166,29 @@ Line 1, characters 29-49:
                                  ^^^^^^^^^^^^^^^^^^^^
 Error: The signature constrained by "with" has no component named "t2"
 |}]
+
+(* Test location of w10 *)
+let w10 ((module M) : (module T with type t = int)) =
+  (module M : T); 3;;
+
+[%%expect{|
+Line 2, characters 2-16:
+2 |   (module M : T); 3;;
+      ^^^^^^^^^^^^^^
+Warning 10 [non-unit-statement]: this expression should have type unit.
+
+val w10 : (module T with type t = int) -> int = <fun>
+|}]
+
+let w10bis ((module M) : (module T with type t = int)) =
+  ((module M) : (module T)); 3;;
+
+[%%expect{|
+Line 2, characters 2-27:
+2 |   ((module M) : (module T)); 3;;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 10 [non-unit-statement]: this expression should have type unit.
+
+val w10bis : (module T with type t = int) -> int = <fun>
+|}]
+

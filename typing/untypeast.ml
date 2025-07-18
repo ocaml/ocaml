@@ -553,8 +553,9 @@ let expression sub exp =
     | Texp_lazy exp -> Pexp_lazy (sub.expr sub exp)
     | Texp_object (cl, _) ->
         Pexp_object (sub.class_structure sub cl)
-    | Texp_pack (mexpr) ->
-        Pexp_pack (sub.module_expr sub mexpr, None)
+    | Texp_pack (mexpr, optyp) ->
+        Pexp_pack (sub.module_expr sub mexpr,
+                   Option.map (sub.package_type sub) optyp)
     | Texp_letop {let_; ands; body; _} ->
         let pat, and_pats =
           extract_letop_patterns (List.length ands) body.c_lhs

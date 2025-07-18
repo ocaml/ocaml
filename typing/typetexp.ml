@@ -696,6 +696,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
                          (Longident.flatten s.txt, cty.ctyp_type)) ptys})
       in
       ctyp (Ttyp_package {
+            tpt_env = env;
             tpt_path = path;
             tpt_cstrs = ptys;
             tpt_txt = ptyp.ppt_path;

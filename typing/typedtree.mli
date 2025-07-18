@@ -287,7 +287,7 @@ and expression_desc =
   | Texp_assert of expression * Location.t
   | Texp_lazy of expression
   | Texp_object of class_structure * string list
-  | Texp_pack of module_expr
+  | Texp_pack of module_expr * package_type option
   | Texp_letop of {
       let_ : binding_op;
       ands : binding_op list;
@@ -684,6 +684,7 @@ and core_type_desc =
   | Ttyp_open of Path.t * Longident.t loc * core_type
 
 and package_type = {
+  tpt_env : Env.t;
   tpt_path : Path.t;
   tpt_cstrs : (Longident.t loc * core_type) list;
   tpt_txt : Longident.t loc;

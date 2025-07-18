@@ -518,7 +518,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
                             (Lvar cpy) (Lvar id) expr, rem))
              modifs
              (Lvar cpy))
-  | Texp_pack modl ->
+  | Texp_pack (modl, _) ->
       !transl_module ~scopes Tcoerce_none None modl
   | Texp_assert ({exp_desc=Texp_construct(_, {cstr_name="false"}, _)}, loc) ->
       assert_failed loc ~scopes e
