@@ -1013,9 +1013,10 @@ end = struct
 
   let refresh_weak () =
     let refresh t name (m,s) =
-      if is_non_gen Type_scheme (Proxy.make t) then
+      let px = Proxy.make t in
+      if is_non_gen Type_scheme px then
         begin
-          TypeMap.add t name m,
+          TypeMap.add (Proxy.type_expr px) name m,
           String.Set.add name s
         end
       else m, s in
