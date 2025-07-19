@@ -942,6 +942,10 @@ end = struct
     if non_gen then new_weak_name ty ()
     else new_name ()
 
+  let new_var_name ~non_gen ty () =
+    let ty = Proxy.type_expr (Proxy.make ty) in
+    new_var_name ~non_gen ty ()
+
   let name_of_type name_generator (px : Proxy.t) =
     (* We've already been through repr at this stage, so t is our representative
        of the union-find class. *)
