@@ -842,6 +842,7 @@ module Variable_names : sig
   val new_var_name : non_gen:bool -> type_expr -> unit -> string
 
   val name_of_type : (unit -> string) -> transient_expr -> string
+  val name_of_type_proxy_TEMPORARY : (unit -> string) -> transient_expr -> string
   val check_name_of_type : non_gen:bool -> Proxy.t -> unit
 
 
@@ -963,6 +964,9 @@ end = struct
         names_set := String.Set.add name !names_set
       end;
       name
+
+  let name_of_type_proxy_TEMPORARY name_generator t =
+    name_of_type name_generator (Proxy.transient_expr_REMOVE (proxy (Transient_expr.type_expr t)))
 
   let check_name_of_type ~non_gen (px : Proxy.t) =
     let name_gen = new_var_name ~non_gen (Proxy.type_expr px) in
@@ -1208,7 +1212,7 @@ let rec tree_of_typexp mode ty =
     | Tvar _ ->
         let non_gen = is_non_gen mode ty in
         let name_gen = Variable_names.new_var_name ~non_gen ty in
-        Otyp_var (non_gen, Variable_names.name_of_type name_gen tty)
+        Otyp_var (non_gen, Variable_names.name_of_type_proxy_TEMPORARY name_gen tty)
     | Tarrow(l, ty1, ty2, _) ->
         let lab =
           if !print_labels || is_optional l then l else Nolabel
@@ -1308,7 +1312,7 @@ let rec tree_of_typexp mode ty =
               (* Make the names delayed, so that the real type is
                  printed once when used as proxy *)
               List.iter Aliases.add_delayed pxl;
-              let tl = List.map Variable_names.(name_of_type new_name) tyl in
+              let tl = List.map Variable_names.(name_of_type_proxy_TEMPORARY new_name) tyl in
               let tr = Otyp_poly (tl, tree_of_typexp mode ty) in
               (* Forget names when we leave scope *)
               Variable_names.remove_names tyl;
@@ -1316,7 +1320,7 @@ let rec tree_of_typexp mode ty =
             )
         end
     | Tunivar _ ->
-        Otyp_var (false, Variable_names.(name_of_type new_name) tty)
+        Otyp_var (false, Variable_names.(name_of_type_proxy_TEMPORARY new_name) tty)
     | Tpackage pack ->
         let pack = tree_of_package mode pack in
         Otyp_module pack
