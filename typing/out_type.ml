@@ -661,12 +661,13 @@ module Proxy : sig
 
   val make : type_expr -> t
 
-  val type_expr : t -> type_expr
-  val transient_expr_REMOVE : t -> transient_expr
-
   val desc : t -> type_desc
 
   val is_non_gen : type_or_scheme -> t -> bool
+
+  val id : t -> int
+
+  val refresh : t -> t
 
   module Set : Stdlib.Set.S with type elt = t
   module Map : Stdlib.Map.S with type key = t
@@ -685,18 +686,26 @@ end = struct
   let make ty = Transient_expr.repr (proxy ty)
 
   let type_expr = Transient_expr.type_expr
-  let transient_expr_REMOVE px = px
 
   let desc t = t.desc
+  let id t = t.id
+
+  let refresh t =
+    make (type_expr t)
 
   let is_non_gen mode t =
+    let result =
     match mode with
     | Type_scheme ->
         let ty = type_expr t in
         is_Tvar ty && get_level ty <> generic_level
     | Type        -> false
+    in
+    result
 
 end
+
+let _ = Proxy.id
 
 let proxy = Proxy.make
 
@@ -879,7 +888,7 @@ end = struct
   let visited_for_named_vars = ref Proxy.Set.empty
 
   let weak_counter = ref 1
-  let weak_var_map = ref (TypeMap.empty : string TypeMap.t)
+  let weak_var_map = ref (Proxy.Map.empty : string Proxy.Map.t)
   let named_weak_vars = ref String.Set.empty
 
   let reset_names () =
@@ -934,29 +943,26 @@ end = struct
     incr name_counter;
     if name_is_already_used name then new_name () else name
 
-  let rec new_weak_name ty () =
-    let px = Proxy.make ty in
-    let ty = Proxy.type_expr px in
+  let rec new_weak_name px () =
     let name = "weak" ^ Int.to_string !weak_counter in
     incr weak_counter;
-    if name_is_already_used name then new_weak_name ty ()
+    if name_is_already_used name then new_weak_name px ()
     else begin
-        named_weak_vars := String.Set.add name !named_weak_vars;
-        weak_var_map := TypeMap.add ty name !weak_var_map;
-        name
-      end
+      named_weak_vars := String.Set.add name !named_weak_vars;
+      weak_var_map := Proxy.Map.add px name !weak_var_map;
+      name
+    end
 
   let new_var_name ~non_gen px () =
-    let ty = Proxy.type_expr px in
-    if non_gen then new_weak_name ty ()
+    if non_gen then new_weak_name px ()
     else new_name ()
 
-  let name_of_type name_generator (px : Proxy.t) =
+  let name_of_type name_generator (px' : Proxy.t) =
     (* We've already been through repr at this stage, so t is our representative
        of the union-find class. *)
-    let px = substitute px in
+    let px = substitute px' in
     try Proxy.Map.find px !names with Not_found ->
-      try TransientTypeMap.find (Proxy.transient_expr_REMOVE px) !weak_var_map with Not_found ->
+      try Proxy.Map.find px !weak_var_map with Not_found ->
       let name =
         match Proxy.desc px with
           Tvar (Some name) | Tunivar (Some name) ->
@@ -1012,16 +1018,18 @@ end = struct
       f
 
   let refresh_weak () =
-    let refresh t name (m,s) =
-      let px = Proxy.make t in
+    let refresh px name (m,s) =
       if is_non_gen Type_scheme px then
         begin
-          TypeMap.add (Proxy.type_expr px) name m,
+          let px = Proxy.refresh px in
+          Proxy.Map.add px name m,
           String.Set.add name s
         end
-      else m, s in
+      else
+        m, s
+    in
     let m, s =
-      TypeMap.fold refresh !weak_var_map (TypeMap.empty ,String.Set.empty) in
+      Proxy.Map.fold refresh !weak_var_map (Proxy.Map.empty ,String.Set.empty) in
     named_weak_vars := s;
     weak_var_map := m
 
