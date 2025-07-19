@@ -355,7 +355,7 @@ and print_simple_out_type ppf =
         (print_object_fields row) fields
   | Otyp_stuff s -> pp_print_string ppf s
   | Otyp_var (non_gen, s) -> ty_var ~non_gen ppf s
-  | Otyp_variant (row_fields, closed, tags) ->
+  | Otyp_variant { fields = row_fields; closed; tags } ->
       let print_present ppf =
         function
           None | Some [] -> ()

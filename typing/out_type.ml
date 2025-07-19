@@ -1306,12 +1306,12 @@ let rec tree_of_typexp mode ty =
               if is_nth s then List.hd args else Otyp_constr (id, args) in
             let tags =
               if all_present then None else Some (List.map fst present) in
-            Otyp_variant (Ovar_typ out_variant, closed, tags)
+            Otyp_variant { fields = Ovar_typ out_variant; closed; tags }
         | _ ->
             let fields = List.map (tree_of_row_field mode) fields in
             let tags =
               if all_present then None else Some (List.map fst present) in
-            Otyp_variant (Ovar_fields fields, closed, tags)
+            Otyp_variant { fields = Ovar_fields fields; closed; tags }
         end
     | Tobject (fi, nm) ->
         tree_of_typobject mode fi !nm
