@@ -44,6 +44,9 @@
 # the lines involved in the conflict, which is arguably worse
 #/Changes                 merge=union
 
+# Files and directories excluded from git-generated tarballs.
+manual                   export-ignore
+
 # No header for text and META files (would be too obtrusive).
 *.md                     typo.missing-header
 README*                  typo.missing-header
