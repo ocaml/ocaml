@@ -929,6 +929,7 @@ end = struct
     if name_is_already_used name then new_name () else name
 
   let rec new_weak_name ty () =
+    let ty = Proxy.type_expr (Proxy.make ty) in
     let name = "weak" ^ Int.to_string !weak_counter in
     incr weak_counter;
     if name_is_already_used name then new_weak_name ty ()
