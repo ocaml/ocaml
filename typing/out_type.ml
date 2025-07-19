@@ -657,8 +657,6 @@ module Proxy : sig
 
   val make : type_expr -> t
 
-  val make_unnormalized_REMOVE : transient_expr -> t
-
   val type_expr : t -> type_expr
   val transient_expr_REMOVE : t -> transient_expr
 
@@ -675,8 +673,6 @@ end = struct
   module Set = Stdlib.Set.Make(T)
 
   let make ty = Transient_expr.repr (proxy ty)
-
-  let make_unnormalized_REMOVE ty = ty
 
   let type_expr = Transient_expr.type_expr
   let transient_expr_REMOVE px = px
@@ -1034,7 +1030,6 @@ module Aliases : sig
   val is_visited_object_proxy : Proxy.t -> bool
 
   val add_delayed : Proxy.t -> unit
-  val add_delayed_transient_REMOVE : transient_expr -> unit
   val remove_delay : Proxy.t -> unit
   val is_delayed : Proxy.t -> bool
   val with_temporary_delay : (unit -> 'a) -> 'a
@@ -1066,9 +1061,6 @@ end = struct
 
   let add_delayed t =
     if not (is_delayed t) then delayed := Proxy.Set.add t !delayed
-
-  let add_delayed_transient_REMOVE t =
-    add_delayed (Proxy.make_unnormalized_REMOVE t)
 
   let is_aliased_proxy px = Proxy.Set.mem px !aliased
   let is_printed_proxy px = Proxy.Set.mem px !printed_aliases
@@ -1310,11 +1302,12 @@ let rec tree_of_typexp mode ty =
           List.iter (fun (_, name) -> prerr_string (name ^ " ")) !names;
           prerr_string "; " in *)
         if tyl = [] then tree_of_typexp mode ty else begin
+          let pxl = List.map Proxy.make tyl in
           let tyl = List.map Transient_expr.repr tyl in
           Aliases.with_temporary_delay (fun () ->
               (* Make the names delayed, so that the real type is
                  printed once when used as proxy *)
-              List.iter Aliases.add_delayed_transient_REMOVE tyl;
+              List.iter Aliases.add_delayed pxl;
               let tl = List.map Variable_names.(name_of_type new_name) tyl in
               let tr = Otyp_poly (tl, tree_of_typexp mode ty) in
               (* Forget names when we leave scope *)
