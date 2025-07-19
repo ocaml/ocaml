@@ -906,7 +906,10 @@ end = struct
   let add_subst subst =
     name_subst :=
       List.fold_left
-        (fun m (t1,t2) -> TypeMap.add t1 (Transient_expr.repr t2) m)
+        (fun m (t1,t2) ->
+           let t1 = Transient_expr.type_expr (Proxy.transient_expr_REMOVE (Proxy.make t1)) in
+           let t2 = Proxy.transient_expr_REMOVE (Proxy.make t2) in
+           TypeMap.add t1 t2 m)
         !name_subst
         subst
 
