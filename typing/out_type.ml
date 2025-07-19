@@ -851,7 +851,7 @@ module Variable_names : sig
   val add_subst : (type_expr * type_expr) list -> unit
 
   val new_name : unit -> string
-  val new_var_name : non_gen:bool -> type_expr -> unit -> string
+  val new_var_name : non_gen:bool -> Proxy.t -> unit -> string
 
   val name_of_type : (unit -> string) -> Proxy.t -> string
   val check_name_of_type : non_gen:bool -> Proxy.t -> unit
@@ -946,13 +946,10 @@ end = struct
         name
       end
 
-  let new_var_name ~non_gen ty () =
+  let new_var_name ~non_gen px () =
+    let ty = Proxy.type_expr px in
     if non_gen then new_weak_name ty ()
     else new_name ()
-
-  let new_var_name ~non_gen ty () =
-    let ty = Proxy.type_expr (Proxy.make ty) in
-    new_var_name ~non_gen ty ()
 
   let name_of_type name_generator (px : Proxy.t) =
     (* We've already been through repr at this stage, so t is our representative
@@ -986,7 +983,7 @@ end = struct
       name
 
   let check_name_of_type ~non_gen (px : Proxy.t) =
-    let name_gen = new_var_name ~non_gen (Proxy.type_expr px) in
+    let name_gen = new_var_name ~non_gen px in
     ignore(name_of_type name_gen px)
 
   let remove_name (px : Proxy.t) =
@@ -1219,7 +1216,7 @@ let rec tree_of_typexp mode ty =
   let px = proxy ty in
   if Aliases.is_printed_proxy px && not (Aliases.is_delayed px) then
    let non_gen = is_non_gen mode px in
-   let name = Variable_names.(name_of_type (new_var_name ~non_gen ty))
+   let name = Variable_names.(name_of_type (new_var_name ~non_gen px))
                 px in
    Otyp_var (non_gen, name) else
 
@@ -1228,7 +1225,7 @@ let rec tree_of_typexp mode ty =
     match printer_get_desc ty with
     | Tvar _ ->
         let non_gen = is_non_gen mode px in
-        let name_gen = Variable_names.new_var_name ~non_gen ty in
+        let name_gen = Variable_names.new_var_name ~non_gen px in
         Otyp_var (non_gen, Variable_names.name_of_type name_gen (Proxy.make ty))
     | Tarrow(l, ty1, ty2, _) ->
         let lab =
@@ -1348,7 +1345,7 @@ let rec tree_of_typexp mode ty =
     Aliases.add_printed_proxy ~non_gen px;
     (* add_printed_proxy chose a name, thus the name generator
        doesn't matter.*)
-    let alias = Variable_names.(name_of_type (new_var_name ~non_gen ty)) px in
+    let alias = Variable_names.(name_of_type (new_var_name ~non_gen px)) px in
     Otyp_alias {non_gen;  aliased = pr_typ (); alias } end
   else pr_typ ()
 
