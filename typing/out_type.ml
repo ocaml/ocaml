@@ -1029,7 +1029,8 @@ end = struct
         m, s
     in
     let m, s =
-      Proxy.Map.fold refresh !weak_var_map (Proxy.Map.empty ,String.Set.empty) in
+      Proxy.Map.fold refresh !weak_var_map
+        (Proxy.Map.empty ,String.Set.empty) in
     named_weak_vars := s;
     weak_var_map := m
 
