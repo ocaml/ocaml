@@ -44,10 +44,13 @@
 # the lines involved in the conflict, which is arguably worse
 #/Changes                 merge=union
 
+testsuite/Makefile       export-subst
+
 # Files and directories excluded from git-generated tarballs.
 .github                  export-ignore
 manual                   export-ignore
 release-info             export-ignore
+testsuite/tests          export-ignore
 tools/ci                 export-ignore
 .gitattributes           export-ignore
 .gitignore               export-ignore
