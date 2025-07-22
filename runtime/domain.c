@@ -252,17 +252,20 @@ CAMLexport atomic_uintnat caml_num_domains_running = 0;
      in the process of spawning.
    - [parked_domains, caml_params->max_domains) are the 'stopped' domains,
      which are currently unused by the runtime.
+   - [peak_parked_domains] is the peak value of [parked_domains]:
+     domains at this position and later have always been stopped.
  */
 static struct {
   int active_domains;
   int parked_domains;
+  int peak_parked_domains;
   dom_internal** domains;
 } stw_domains = {
   0,
   0,
+  0,
   NULL
 };
-
 
 static void check_domain_limit(int idx) {
   CAMLassert(0 <= idx && idx <= caml_params->max_domains);
@@ -307,6 +310,8 @@ static void check_stw_domains(void) {
   check_domain_limit(stw_domains.parked_domains);
   CAMLassert(stw_domains.active_domains
              <= stw_domains.parked_domains);
+  CAMLassert(stw_domains.parked_domains
+             <= stw_domains.peak_parked_domains);
 #ifdef DEBUG
   /* Check here the invariants for early-exit in
      [caml_interrupt_all_signal_safe], because the latter must be
@@ -351,6 +356,8 @@ static dom_internal* park_next_stopped_domain(void) {
 
   dom_internal *dom = stw_domains.domains[stw_domains.parked_domains];
   stw_domains.parked_domains++;
+  if (stw_domains.parked_domains > stw_domains.peak_parked_domains)
+    stw_domains.peak_parked_domains = stw_domains.parked_domains;
   check_stw_domains();
   return dom;
 }
@@ -469,7 +476,7 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
 /* Note [minor heap layout]:
 
 - The 'minor heaps reservation' is a contiguous address space of size
-    [caml_minor_heap_max_wsz * caml_params->max_domains]
+    [minor_heaps_reservation_num_domains * caml_minor_heap_max_wsz]
   reserved by [caml_init_domains]. Its boundaries are
     [caml_minor_heaps_start]
   and
@@ -517,6 +524,9 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
 
 /* Size of the virtual memory reservation for the minor heap, per domain. */
 uintnat caml_minor_heap_max_wsz;
+
+/* Number of domains with a reserved minor heap. */
+static uintnat minor_heaps_reservation_num_domains = 0;
 
 /* The boundaries of the reserved address space for all minor heaps. */
 CAMLexport uintnat caml_minor_heaps_start;
@@ -652,16 +662,50 @@ int caml_reallocate_minor_heap_arena(asize_t wsize)
 
 /* Minor heaps reservation: initialization and resizing */
 
-static void reserve_minor_heaps_reservation_from_stw_single(void) {
+struct reservation_params {
+  uintnat new_minor_wsz;
+  uintnat ensure_num_domains;
+};
+
+static void reserve_minor_heaps_reservation_from_stw_single(
+  struct reservation_params* p)
+{
   void* heaps_base;
   uintnat minor_heaps_reservation_bsize;
   uintnat minor_heap_max_bsz;
 
+  /* new_minor_wsz is page-aligned by caml_norm_minor_heap_size. */
+  caml_minor_heap_max_wsz = caml_norm_minor_heap_size(p->new_minor_wsz);
   CAMLassert (caml_mem_round_up_pages(Bsize_wsize(caml_minor_heap_max_wsz))
           == Bsize_wsize(caml_minor_heap_max_wsz));
 
+  if (p->ensure_num_domains > caml_params->max_domains)
+      p->ensure_num_domains = caml_params->max_domains;
+
+  if (minor_heaps_reservation_num_domains < p->ensure_num_domains) {
+
+    /* 1, 8, 16, 32...
+       Start at 1 which remains the most common cases.
+       Jump straight to 8 to avoid several resizes in a row
+       for small domain counts.
+     */
+    int new_num_domains = 1;
+    while (new_num_domains < p->ensure_num_domains) {
+      if (new_num_domains < 8) {
+        new_num_domains = 8;
+      } else {
+        new_num_domains *= 2;
+      }
+    }
+    if (new_num_domains > caml_params->max_domains)
+      new_num_domains = caml_params->max_domains;
+
+    minor_heaps_reservation_num_domains = new_num_domains;
+  }
+
   minor_heap_max_bsz = (uintnat)Bsize_wsize(caml_minor_heap_max_wsz);
-  minor_heaps_reservation_bsize = minor_heap_max_bsz * caml_params->max_domains;
+  minor_heaps_reservation_bsize =
+    minor_heap_max_bsz * minor_heaps_reservation_num_domains;
 
   /* reserve memory space for minor heaps */
   heaps_base = caml_mem_map(minor_heaps_reservation_bsize, 1/* reserve_only */);
@@ -672,11 +716,15 @@ static void reserve_minor_heaps_reservation_from_stw_single(void) {
   caml_minor_heaps_end =
     (uintnat) heaps_base + minor_heaps_reservation_bsize;
 
-  caml_gc_log("new minor heaps reservation from %p to %p",
+  caml_gc_log("new minor heaps reservation from %p to %p"
+              " (%" CAML_PRIuSZT " domains"
+              " * %" CAML_PRIuSZT "KB heap reservations)",
               (value*)caml_minor_heaps_start,
-              (value*)caml_minor_heaps_end);
+              (value*)caml_minor_heaps_end,
+              minor_heaps_reservation_num_domains,
+              minor_heap_max_bsz / 1024);
 
-  for (int i = 0; i < caml_params->max_domains; i++) {
+  for (int i = 0; i < minor_heaps_reservation_num_domains; i++) {
     struct dom_internal* dom = &all_domains[i];
 
     uintnat domain_minor_heap_reservation =
@@ -697,7 +745,7 @@ static void unreserve_minor_heaps_reservation_from_stw_single(void) {
 
   caml_gc_log("unreserve_minor_heaps_reservation");
 
-  for (int i = 0; i < caml_params->max_domains; i++) {
+  for (int i = 0; i < minor_heaps_reservation_num_domains; i++) {
     struct dom_internal* dom = &all_domains[i];
 
     CAMLassert(
@@ -719,24 +767,22 @@ static void unreserve_minor_heaps_reservation_from_stw_single(void) {
   }
 
   size = caml_minor_heaps_end - caml_minor_heaps_start;
-  CAMLassert (Bsize_wsize(caml_minor_heap_max_wsz) * caml_params->max_domains
+  CAMLassert (Bsize_wsize(caml_minor_heap_max_wsz)
+              * minor_heaps_reservation_num_domains
               == size);
   caml_mem_unmap((void *) caml_minor_heaps_start, size);
 }
 
 static
-void domain_resize_heaps_reservation_from_stw_single(uintnat new_minor_wsz)
+void domain_resize_heaps_reservation_from_stw_single(
+  struct reservation_params* params)
 {
   CAML_EV_BEGIN(EV_DOMAIN_RESIZE_HEAP_RESERVATION);
   caml_gc_log("stw_resize_minor_heaps_reservation: unreserve");
-
   unreserve_minor_heaps_reservation_from_stw_single();
-  /* new_minor_wsz is page-aligned because caml_norm_minor_heap_size has
-     been called to normalize it earlier.
-  */
-  caml_minor_heap_max_wsz = new_minor_wsz;
+
   caml_gc_log("stw_resize_minor_heaps_reservation: reserve");
-  reserve_minor_heaps_reservation_from_stw_single();
+  reserve_minor_heaps_reservation_from_stw_single(params);
   /* The call to [reserve_minor_heaps_reservation_from_stw_single] makes a new
      reservation, and it also updates the reservation boundaries of each
      domain by mutating its [minor_heap_reservation_start{,_end}] variables.
@@ -751,7 +797,7 @@ void domain_resize_heaps_reservation_from_stw_single(uintnat new_minor_wsz)
 
 static void
 stw_resize_minor_heaps_reservation(caml_domain_state* domain,
-                                  void* minor_wsz_data,
+                                  void* reservation_params,
                                   int participating_count,
                                   caml_domain_state** participating) {
   caml_gc_log("stw_resize_minor_heaps_reservation: "
@@ -766,8 +812,7 @@ stw_resize_minor_heaps_reservation(caml_domain_state* domain,
   free_minor_heap_arena();
 
   Caml_global_barrier_if_final(participating_count) {
-    uintnat new_minor_wsz = (uintnat) minor_wsz_data;
-    domain_resize_heaps_reservation_from_stw_single(new_minor_wsz);
+    domain_resize_heaps_reservation_from_stw_single(reservation_params);
   }
 
   caml_gc_log("stw_resize_minor_heaps_reservation: allocate_minor_heap_arena");
@@ -784,9 +829,26 @@ void caml_update_minor_heap_max(uintnat requested_wsz) {
   caml_gc_log("Changing heap_max_wsz from %" CAML_PRIuNAT
               " to %" CAML_PRIuNAT ".",
               caml_minor_heap_max_wsz, requested_wsz);
+  struct reservation_params params = {
+    .new_minor_wsz = requested_wsz,
+    .ensure_num_domains = 1
+  };
   while (requested_wsz > caml_minor_heap_max_wsz) {
     caml_try_run_on_all_domains(
-      &stw_resize_minor_heaps_reservation, (void*)requested_wsz, 0);
+      &stw_resize_minor_heaps_reservation, &params, 0);
+  }
+  check_minor_heap();
+}
+
+static void ensure_minor_heaps_reservation(uintnat ensure_num_domains) {
+  CAMLassert(ensure_num_domains <= caml_params->max_domains);
+  struct reservation_params params = {
+    .new_minor_wsz = caml_minor_heap_max_wsz,
+    .ensure_num_domains = ensure_num_domains
+  };
+  while (minor_heaps_reservation_num_domains < ensure_num_domains) {
+    caml_try_run_on_all_domains(
+      &stw_resize_minor_heaps_reservation, &params, 0);
   }
   check_minor_heap();
 }
@@ -1096,7 +1158,11 @@ void caml_init_domains(uintnat max_domains, uintnat minor_heap_wsz)
   if (stw_domains.domains == NULL)
     caml_fatal_error("Failed to allocate stw_domains.domains");
 
-  reserve_minor_heaps_reservation_from_stw_single();
+  struct reservation_params reservation_params = {
+    .new_minor_wsz = minor_heap_wsz,
+    .ensure_num_domains = 1
+  };
+  reserve_minor_heaps_reservation_from_stw_single(&reservation_params);
   /* stw_single: mutators and domains have not started yet. */
 
   for (int i = 0; i < max_domains; i++) {
@@ -1443,7 +1509,6 @@ static void* domain_thread_func(void* v)
       running code with its domain lock held.
 */
 
-
 CAMLprim value caml_domain_spawn(value callback, value term_sync)
 {
   CAMLparam2 (callback, term_sync);
@@ -1460,9 +1525,35 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
     caml_fatal_error("ocamldebug does not support spawning multiple domains");
 #endif
 
+  caml_plat_lock_blocking(&all_domains_lock);
   dom_internal *newdom = park_next_stopped_domain();
+  int peak_parked_domains = stw_domains.peak_parked_domains;
+  caml_plat_unlock(&all_domains_lock);
+
   if (newdom == NULL) {
     caml_failwith("Maximum number of domains reached.");
+  }
+
+  // Ensure that there is a minor heap reservation for this domain.
+  if (newdom->minor_heap_reservation_start == 0
+      && newdom->minor_heap_reservation_end == 0)
+  {
+    /* Note: the domain structures are not necessarily in the same
+       order in [stw_domains] and in [all_domains], and [dom_idx] is
+       relative to [stw_domains] while heap reservation happens in
+       [all_domains] order. Domains start in the same order in both
+       arrays, and then their position changes when they are parked,
+       activated or stopped.
+
+       We use [peak_parked_domains] for our reservation request; all
+       domains that have ever been parked or activated
+       (including [newdom]) are placed before this limit in both
+       [stw_domains] and [all_domains]. This guarantees that all
+       domains with a previous reservation will still have one, and
+       that [newdom] will have one.
+     */
+    ensure_minor_heaps_reservation(peak_parked_domains);
+    CAMLassert(newdom->minor_heap_reservation_end != 0);
   }
 
   p.newdom = newdom;
