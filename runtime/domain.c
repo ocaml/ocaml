@@ -800,10 +800,10 @@ static uintnat fresh_domain_unique_id(void) {
 }
 
 /* must be run on the domain's thread */
-static void domain_create(uintnat initial_minor_heap_wsize,
+static void domain_create(dom_internal *d,
+                          uintnat initial_minor_heap_wsize,
                           caml_domain_state *parent)
 {
-  dom_internal* d = 0;
   caml_domain_state* domain_state;
   struct interruptor* s;
   uintnat stack_wsize = caml_get_init_stack_wsize();
@@ -839,11 +839,6 @@ static void domain_create(uintnat initial_minor_heap_wsize,
       break;
     }
   }
-
-  d = park_next_stopped_domain();
-
-  if (d == NULL)
-    goto domain_parking_failure;
 
   s = &d->interruptor;
   CAMLassert(!s->running);
@@ -1032,10 +1027,7 @@ init_memprof_failure:
   domain_self = NULL;
 
   atomic_fetch_add(&caml_num_domains_running, -1);
-
 domain_state_init_failure:
-  stop_parked_domain(d);
-domain_parking_failure:
 
 domain_init_complete:
   caml_gc_log("domain init complete");
@@ -1109,7 +1101,9 @@ void caml_init_domains(uintnat max_domains, uintnat minor_heap_wsz)
     dom->domain_canceled = false;
   }
 
-  domain_create(minor_heap_wsz, NULL);
+  dom_internal *first_dom = park_next_stopped_domain();
+  CAMLassert(first_dom != NULL);
+  domain_create(first_dom, minor_heap_wsz, NULL);
   if (!domain_self) caml_fatal_error("Failed to create main domain");
   CAMLassert (domain_self->state->unique_id == 0);
 
@@ -1161,7 +1155,7 @@ struct domain_startup_params {
   enum domain_status status; /* in+out:
                                 parent and child synchronize on this value. */
   struct domain_ml_values* ml_values; /* in */
-  dom_internal* newdom; /* out */
+  dom_internal* newdom; /* in */
   uintnat unique_id; /* out */
 };
 
@@ -1346,12 +1340,12 @@ static void* domain_thread_func(void* v)
   }
 #endif
 
-  domain_create(caml_params->init_minor_heap_wsz, p->parent->state);
+  domain_create(
+    p->newdom, caml_params->init_minor_heap_wsz, p->parent->state);
+  /* this domain is now part of the STW participant set */
+
   if (domain_self)
     domain_self->tid = pthread_self();
-
-  /* this domain is now part of the STW participant set */
-  p->newdom = domain_self;
 
   /* handshake with the parent domain */
   caml_plat_lock_blocking(&p->parent->interruptor.lock);
@@ -1446,6 +1440,13 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   if (caml_debugger_in_use)
     caml_fatal_error("ocamldebug does not support spawning multiple domains");
 #endif
+
+  dom_internal *newdom = park_next_stopped_domain();
+  if (newdom == NULL) {
+    caml_failwith("Maximum number of domains reached.");
+  }
+
+  p.newdom = newdom;
   p.parent = domain_self;
   p.status = Dom_starting;
 
@@ -1481,6 +1482,7 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
     /* failed */
     pthread_join(th, 0);
     free_domain_ml_values(p.ml_values);
+    stop_parked_domain(newdom);
     caml_failwith("failed to allocate domain");
   }
   /* When domain 0 first spawns a domain, the backup thread is not active, we
