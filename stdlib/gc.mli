@@ -91,11 +91,12 @@ type stat =
     (** Maximum size reached by the major heap, in words. *)
 
     stack_size: int;
-    (** Current size of the stack, in words.
-        This metric is currently not available in OCaml 5: the field value is
-        always [0].
-        @since 3.12 *)
-
+    (** Current size of all allocated stacks (live, suspended or parked in the
+        stack cache), in bytes.
+        @since 3.12
+        @since 5.0 not implemented
+        @since 5.5 repurposed to count the size of all stacks
+    *)
     forced_major_collections: int;
     (** Number of forced full major collections completed since the program
         was started.
