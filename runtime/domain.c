@@ -523,8 +523,8 @@ CAMLexport uintnat caml_minor_heaps_start;
 CAMLexport uintnat caml_minor_heaps_end;
 
 Caml_inline void check_minor_heap(void) {
+  #ifdef DEBUG
   caml_domain_state* domain_state = Caml_state;
-  CAMLassert(domain_state->young_ptr == domain_state->young_end);
 
   caml_gc_log(
       "young_start: %p,"
@@ -537,6 +537,20 @@ Caml_inline void check_minor_heap(void) {
       (value*)domain_self->minor_heap_reservation_start,
       (value*)domain_self->minor_heap_reservation_end,
       domain_state->minor_heap_wsz);
+  #endif
+
+  CAMLassert(
+    /* initialized minor heap reservation */
+    caml_minor_heaps_start
+    <= domain_self->minor_heap_reservation_start
+    &&
+    domain_self->minor_heap_reservation_start
+    + Bsize_wsize(caml_minor_heap_max_wsz)
+    == domain_self->minor_heap_reservation_end
+    &&
+    domain_self->minor_heap_reservation_end
+    <= caml_minor_heaps_end
+  );
   CAMLassert(
     (/* uninitialized minor heap arena */
       domain_state->young_start == NULL
@@ -545,8 +559,13 @@ Caml_inline void check_minor_heap(void) {
     (/* initialized minor heap arena */
       domain_state->young_start
       == (value*)domain_self->minor_heap_reservation_start
+      &&
+      (value*)(domain_self->minor_heap_reservation_start
+               + Bsize_wsize(domain_state->minor_heap_wsz))
+      == domain_state->young_end
       && domain_state->young_end
-         <= (value*)domain_self->minor_heap_reservation_end));
+      <= (value*)domain_self->minor_heap_reservation_end));
+  CAMLassert(domain_state->young_ptr == domain_state->young_end);
 }
 
 
