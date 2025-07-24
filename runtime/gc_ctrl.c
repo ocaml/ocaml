@@ -84,7 +84,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   Store_field (res, 13, Val_long (compactions));
   Store_field (res, 14, Val_long (
     s.heap_stats.pool_max_words + s.heap_stats.large_max_words));
-  Store_field (res, 15, Val_long (live_stacks_memory()));
+  Store_field (res, 15, Val_long (caml_live_stacks_memory()));
   Store_field (res, 16, Val_long (s.alloc_stats.forced_major_collections));
   CAMLreturn (res);
 }

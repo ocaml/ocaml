@@ -55,7 +55,7 @@ static_assert(sizeof(struct stack_info) == Stack_ctx_words * sizeof(value), "");
 static _Atomic int64_t fiber_id = 0;
 static atomic_uintnat live_stack_counter = 0;
 
-uintnat live_stacks_memory (void) {
+uintnat caml_live_stacks_memory (void) {
   return atomic_load(&live_stack_counter);
 }
 
