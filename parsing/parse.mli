@@ -20,8 +20,8 @@
 
 *)
 
-val implementation : Lexing.lexbuf -> Parsetree.implementation
-val interface : Lexing.lexbuf -> Parsetree.interface
+val implementation' : Lexing.lexbuf -> Parsetree.implementation
+val interface' : Lexing.lexbuf -> Parsetree.interface
 val structure : Lexing.lexbuf -> Parsetree.structure
 val signature : Lexing.lexbuf -> Parsetree.signature
 val toplevel_phrase : Lexing.lexbuf -> Parsetree.toplevel_phrase
@@ -31,6 +31,12 @@ val expression : Lexing.lexbuf -> Parsetree.expression
 val pattern : Lexing.lexbuf -> Parsetree.pattern
 val module_type : Lexing.lexbuf -> Parsetree.module_type
 val module_expr : Lexing.lexbuf -> Parsetree.module_expr
+
+(** compatibility alias for {!structure} *)
+val implementation : Lexing.lexbuf -> Parsetree.structure
+
+(** compatibility alias for {!signature} *)
+val interface : Lexing.lexbuf -> Parsetree.signature
 
 (** The functions below can be used to parse Longident safely. *)
 

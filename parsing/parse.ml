@@ -91,8 +91,8 @@ let wrap (parser : 'a parser) lexbuf : 'a =
    In either case, the parser will not attempt to read one token past
    the syntax error. *)
 
-let implementation = wrap Parser.implementation
-and interface = wrap Parser.interface
+let implementation' = wrap Parser.implementation
+and interface' = wrap Parser.interface
 and toplevel_phrase = wrap Parser.toplevel_phrase
 and use_file = wrap Parser.use_file
 and core_type = wrap Parser.parse_core_type
@@ -101,8 +101,12 @@ and pattern = wrap Parser.parse_pattern
 let module_type = wrap Parser.parse_module_type
 let module_expr = wrap Parser.parse_module_expr
 
-let structure lexbuf = (implementation lexbuf).pimpl_structure
-let signature lexbuf = (interface lexbuf).pintf_signature
+let structure lexbuf = (implementation' lexbuf).pimpl_structure
+let signature lexbuf = (interface' lexbuf).pintf_signature
+
+(* compatibility aliases *)
+let implementation = structure
+let interface = signature
 
 let longident = wrap Parser.parse_any_longident
 let val_ident = wrap Parser.parse_val_longident

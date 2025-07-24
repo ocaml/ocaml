@@ -280,8 +280,8 @@ let parse_signature ~tool_name sourcefile =
 
 let parse_implementation ~tool_name sourcefile =
   parse_file ~tool_name Ast_invariants.implementation
-    Parse.implementation Implementation sourcefile
+    Parse.implementation' Implementation sourcefile
 
 let parse_interface ~tool_name sourcefile =
   parse_file ~tool_name Ast_invariants.interface
-    Parse.interface Interface sourcefile
+    Parse.interface' Interface sourcefile
