@@ -144,7 +144,7 @@ Caml_inline int stack_cache_bucket (mlsize_t wosize) {
   int bucket=0;
 
   while (bucket < NUM_STACK_SIZE_CLASSES) {
-    if (wosize == size_bucket_wsz)
+    if (wosize <= size_bucket_wsz)
       return bucket;
     ++bucket;
     size_bucket_wsz += size_bucket_wsz;
@@ -213,6 +213,9 @@ caml_alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff,
                        int64_t id)
 {
   int cache_bucket = stack_cache_bucket (wosize);
+  if (cache_bucket != -1) {
+    wosize = caml_fiber_wsz << cache_bucket;
+  }
   return alloc_size_class_stack_noexc(wosize, cache_bucket, hval, hexn, heff,
                                       id);
 }
