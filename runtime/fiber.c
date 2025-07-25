@@ -153,21 +153,6 @@ Caml_inline int stack_cache_bucket (mlsize_t wosize) {
   return -1;
 }
 
-Caml_inline mlsize_t grow_size_in_cache_bucket (mlsize_t wosize) {
-  mlsize_t size_bucket_wsz = caml_fiber_wsz;
-  int bucket=0;
-
-  while (bucket < NUM_STACK_SIZE_CLASSES) {
-    if (wosize == size_bucket_wsz)
-      return (2 * wosize);
-    else if (wosize <= size_bucket_wsz)
-      return size_bucket_wsz;
-    ++bucket;
-    size_bucket_wsz += size_bucket_wsz;
-  }
-  return (2*wosize);
-}
-
 static struct stack_info*
 alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket, value hval,
                              value hexn, value heff, int64_t id)
@@ -483,7 +468,8 @@ int caml_try_realloc_stack(asize_t required_space)
   wsize = Stack_high(old_stack) - Stack_base(old_stack);
   uintnat max_stack_wsize = caml_max_stack_wsize;
   if (wsize >= max_stack_wsize) return 0;
-  wsize = grow_size_in_cache_bucket(wsize);
+  // zero alignment bit
+  wsize = 2 * (wsize & (~1));
   while (wsize < stack_used + required_space) {
     if (wsize >= max_stack_wsize) return 0;
     wsize *= 2;
