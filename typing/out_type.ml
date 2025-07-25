@@ -736,20 +736,26 @@ end = struct
     | Pdot _ | Papply _ | Pextra_ty _ -> ()
 
   let print_explanations ~add_type_to_preparation ~tree_of_typexp env ppf =
-    let constrs =
+    let fold_type_origin f acc =
       Ident.Set.fold
         (fun id acc ->
            let p = Pident id in
            match Env.find_type p env with
            | exception Not_found -> acc
            | decl ->
-               match type_origin decl with
-               | Existential constr ->
-                   let prev = String.Map.find_opt constr acc in
-                   let prev = Option.value ~default:[] prev in
-                   String.Map.add constr (tree_of_path None p :: prev) acc
-               | Definition | Equation _ | Rec_check_regularity -> acc)
-        !names String.Map.empty
+               f p (type_origin decl) acc
+        ) !names acc
+    in
+    let constrs =
+      fold_type_origin
+        (fun p origin acc ->
+           match origin with
+           | Existential constr ->
+               let prev = String.Map.find_opt constr acc in
+               let prev = Option.value ~default:[] prev in
+               String.Map.add constr (tree_of_path None p :: prev) acc
+           | Definition | Equation _ | Rec_check_regularity -> acc)
+        String.Map.empty
     in
     String.Map.iter
       (fun constr out_idents ->
@@ -774,29 +780,25 @@ end = struct
       constrs
     ;
     let eqns =
-      Ident.Set.fold
-        (fun id eqns ->
-           let p = Pident id in
-           match Env.find_type p env with
-           | exception Not_found -> eqns
-           | decl ->
-               match type_origin decl with
-               | Equation (t1, t2) ->
-                   add_type_to_preparation t1;
-                   add_type_to_preparation t2;
-                   let t1, t2 =
-                     if get_id t1 < get_id t2 then t1, t2 else t2, t1
-                   in
-                   TypeMap.update
-                     t1
-                     (fun ps ->
-                        let ps = Option.value ~default:TypeMap.empty ps in
-                        Some
-                          (TypeMap.add_to_list t2 (tree_of_path None p) ps)
-                     )
-                     eqns
-               | Existential _ | Definition | Rec_check_regularity -> eqns)
-        !names TypeMap.empty
+      fold_type_origin
+        (fun p origin acc ->
+           match origin with
+           | Equation (t1, t2) ->
+               add_type_to_preparation t1;
+               add_type_to_preparation t2;
+               let t1, t2 =
+                 if get_id t1 < get_id t2 then t1, t2 else t2, t1
+               in
+               TypeMap.update
+                 t1
+                 (fun ps ->
+                    let ps = Option.value ~default:TypeMap.empty ps in
+                    Some
+                      (TypeMap.add_to_list t2 (tree_of_path None p) ps)
+                 )
+                 acc
+           | Existential _ | Definition | Rec_check_regularity -> acc)
+        TypeMap.empty
     in
     TypeMap.iter
       (fun lhsty rhs ->
