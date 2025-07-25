@@ -467,13 +467,11 @@ int caml_try_realloc_stack(asize_t required_space)
   stack_used = Stack_high(old_stack) - (value*)old_stack->sp;
   wsize = Stack_high(old_stack) - Stack_base(old_stack);
   uintnat max_stack_wsize = caml_max_stack_wsize;
-  if (wsize >= max_stack_wsize) return 0;
-  // zero alignment bit
-  wsize = 2 * (wsize & (~1));
-  while (wsize < stack_used + required_space) {
+  wsize = wsize & (~1); // zero alignment bit
+  do {
     if (wsize >= max_stack_wsize) return 0;
     wsize *= 2;
-  }
+  } while (wsize < stack_used + required_space);
 
   if (wsize > 4096 / sizeof(value)) {
     caml_gc_log ("Growing stack to %" CAML_PRIuNAT "k bytes",
