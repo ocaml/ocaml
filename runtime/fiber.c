@@ -86,6 +86,12 @@ void caml_change_max_stack_size (uintnat new_max_wsize)
   caml_max_stack_wsize = new_max_wsize;
 }
 
+
+uintnat caml_current_stack_size(void) {
+  struct stack_info *current_stack = Caml_state->current_stack;
+  return (Stack_high(current_stack) - (value*)current_stack->sp);
+}
+
 #define NUM_STACK_SIZE_CLASSES 5
 
 struct stack_info** caml_alloc_stack_cache (void)

@@ -91,16 +91,20 @@ type stat =
     (** Maximum size reached by the major heap, in words. *)
 
     stack_size: int;
-    (** Current size of all allocated stacks (live, suspended or parked in the
-        stack cache), in bytes.
+    (** Current size of the current OCaml stack, in words.
         @since 3.12
         @since 5.0 not implemented
-        @since 5.5 repurposed to count the size of all stacks
+        @since 5.5 restored for the current stack
     *)
     forced_major_collections: int;
     (** Number of forced full major collections completed since the program
         was started.
         @since 4.12 *)
+
+    live_stacks_bytes: int;
+    (** Total size of live stacks in bytes.
+        @since 5.5
+    *)
 }
 (** The memory management counters are returned in a [stat] record. These
    counters give values for the whole program.

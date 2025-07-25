@@ -62,7 +62,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   mincoll = atomic_load(&caml_minor_collections_count);
   compactions = atomic_load(&caml_compactions_count);
 
-  res = caml_alloc_tuple (17);
+  res = caml_alloc_tuple (18);
   Store_field (res, 0, caml_copy_double ((double)s.alloc_stats.minor_words));
   Store_field (res, 1, caml_copy_double ((double)s.alloc_stats.promoted_words));
   Store_field (res, 2, caml_copy_double ((double)s.alloc_stats.major_words));
@@ -84,8 +84,9 @@ CAMLprim value caml_gc_quick_stat(value v)
   Store_field (res, 13, Val_long (compactions));
   Store_field (res, 14, Val_long (
     s.heap_stats.pool_max_words + s.heap_stats.large_max_words));
-  Store_field (res, 15, Val_long (caml_live_stacks_memory()));
+  Store_field (res, 15, Val_long (caml_current_stack_size()));
   Store_field (res, 16, Val_long (s.alloc_stats.forced_major_collections));
+  Store_field (res, 17, Val_long (caml_live_stacks_memory()));
   CAMLreturn (res);
 }
 

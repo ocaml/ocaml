@@ -2,16 +2,16 @@
  bytecode;
 *)
 let memory_stat ()  = Gc.quick_stat ()
-let stack_size x = x.Gc.stack_size
+let stack_size x = x.Gc.live_stacks_bytes
 
 let start = ref (memory_stat())
 
-let pp_memory ppf {Gc.stack_size; _ } =
-  let stack_size = stack_size - !start.Gc.stack_size in
-  if stack_size mod 8 = 0 then
-    Format.fprintf ppf "%d" (stack_size/8)
+let pp_memory ppf {Gc.live_stacks_bytes; _ } =
+  let live_stack_bytes = live_stacks_bytes - !start.Gc.live_stacks_bytes in
+  if live_stack_bytes mod 8 = 0 then
+    Format.fprintf ppf "%d" (live_stack_bytes/8)
   else
-    Format.fprintf ppf "%dB" stack_size
+    Format.fprintf ppf "%dB" live_stack_bytes
 type _ Effect.t += Unit: unit Effect.t
 let rec use_stack stack_use d =
   if d = 0 then (Effect.perform Unit; 0.)
