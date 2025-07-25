@@ -25,7 +25,6 @@ open Btype
 open Outcometree
 
 module String = Misc.Stdlib.String
-module Int = Misc.Stdlib.Int
 module Sig_component_kind = Shape.Sig_component_kind
 module Style = Misc.Style
 
@@ -774,44 +773,41 @@ end = struct
                Style.inline_code constr)
       constrs
     ;
-    let eqns, eqtys =
+    let eqns =
       Ident.Set.fold
-        (fun id ((eqns, eqtys) as acc) ->
+        (fun id eqns ->
            let p = Pident id in
            match Env.find_type p env with
-           | exception Not_found -> acc
+           | exception Not_found -> eqns
            | decl ->
                match type_origin decl with
                | Equation (t1, t2) ->
                    add_type_to_preparation t1;
                    add_type_to_preparation t2;
-                   let add_ty t =
-                     Int.Map.update (get_id t) (function
-                         | Some _ as v -> v
-                         | None -> Some (tree_of_typexp Type_scheme t))
-                   in
-                   let eqtys = add_ty t1 (add_ty t2 eqtys) in
                    let t1, t2 =
                      if get_id t1 < get_id t2 then t1, t2 else t2, t1
                    in
-                   Int.Map.update
-                     (get_id t1)
+                   TypeMap.update
+                     t1
                      (fun ps ->
-                        let ps = Option.value ~default:Int.Map.empty ps in
-                        let tid2 = get_id t2 in
+                        let ps = Option.value ~default:TypeMap.empty ps in
                         Some
-                          (Int.Map.add_to_list tid2 (tree_of_path None p) ps)
+                          (TypeMap.add_to_list t2 (tree_of_path None p) ps)
                      )
                      eqns
-                 , eqtys
-               | Existential _ | Definition | Rec_check_regularity -> acc)
-        !names (Int.Map.empty, Int.Map.empty)
+               | Existential _ | Definition | Rec_check_regularity -> eqns)
+        !names TypeMap.empty
     in
-    Int.Map.iter
-      (fun lhsid rhs ->
-         Int.Map.iter
-           (fun rhsid out_idents ->
+    TypeMap.iter
+      (fun lhsty rhs ->
+         TypeMap.iter
+           (fun rhsty out_idents ->
               (* The equation lhs = rhs introduces out_idents *)
+              let tree_of_transient tr =
+                tree_of_typexp Type_scheme (Transient_expr.type_expr tr)
+              in
+              let rhseq = tree_of_transient rhsty in
+              let lhseq = tree_of_transient lhsty in
               fprintf ppf
                 "@ @[<2>@{<hint>Hint@}:@ %a@ %s@ \
                  introduced by the equation@ %a = %a@]"
@@ -823,9 +819,9 @@ end = struct
                  | [ _ ] -> "is a type variable"
                  | _ -> "are type variables")
                 (Style.as_inline_code !Oprint.out_type)
-                (Int.Map.find lhsid eqtys)
+                lhseq
                 (Style.as_inline_code !Oprint.out_type)
-                (Int.Map.find rhsid eqtys)
+                rhseq
            )
            rhs
       )

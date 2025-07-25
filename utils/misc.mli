@@ -197,13 +197,6 @@ module Stdlib : sig
     val all_somes : 'a option array -> 'a array option
   end
 
-(** {2 Extensions to the Int module} *)
-  module Int : sig
-    include module type of Int
-    module Set : Set.S with type elt = int
-    module Map : Map.S with type key = int
-  end
-
 (** {2 Extensions to the String module} *)
   module String : sig
     include module type of String

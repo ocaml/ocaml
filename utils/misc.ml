@@ -237,12 +237,6 @@ module Stdlib = struct
       | Exit -> None
   end
 
-  module Int = struct
-    include Int
-    module Set = Set.Make(Int)
-    module Map = Map.Make(Int)
-  end
-
   module String = struct
     include String
     module Set = Set.Make(String)
