@@ -62,7 +62,7 @@ Working version
    and Stephen Dolan)
 
 - #14060: Add Hashtbl.find_and_replace and Hashtbl.find_and_remove.
-  (Sacha Ayoun, review by Nicolás Ojeda Bär)
+  (Sacha-Élie Ayoun, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
 ### Type system:
 
