@@ -30,17 +30,19 @@ Error: This class type is recursive. This use of the class type "Foo.c"
        are not allowed.
 |}]
 
-module rec Foo : sig class type c = object method x : int end end = Foo
-and Bar : sig class type c = Foo.c end = Bar
-and Baz : sig class type c = Bar.c end = Baz
+module S = struct
+  module rec Foo : sig class type c = object method x : int end end = Foo
+  and Bar : sig class type c = Foo.c end = Bar
+  and Baz : sig class type c = Bar.c end = Baz
 
-let foo (x : Foo.c) = x#x
-let bar (x : Bar.c) = x#x
-let baz (x : Baz.c) = x#x;;
+  let foo (x : Foo.c) = x#x
+  let bar (x : Bar.c) = x#x
+  let baz (x : Baz.c) = x#x
+end;;
 [%%expect{|
-Line 2, characters 29-32:
-2 | and Bar : sig class type c = Foo.c end = Bar
-                                 ^^^
+Line 3, characters 31-34:
+3 |   and Bar : sig class type c = Foo.c end = Bar
+                                   ^^^
 Error: This class type is recursive. This use of the class type "Foo.c"
        from the recursive module "Foo" within the definition of
        the class type "c" in the recursive module "Bar"

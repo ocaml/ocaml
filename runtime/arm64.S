@@ -71,9 +71,11 @@
 
 /* Globals and labels */
 #if defined(SYS_macosx)
+#define CAMLSEP(x,y) caml_##x##$##y
 #define G(sym) _##sym
 #define L(lbl) L##lbl
 #else
+#define CAMLSEP(x,y) caml_##x##.##y
 #define G(sym) sym
 #define L(lbl) .L##lbl
 #endif
@@ -104,13 +106,13 @@
 #endif
 
 #if defined(FUNCTION_SECTIONS)
-        TEXT_SECTION(caml_hot$code_begin)
-        .globl  G(caml_hot$code_begin)
-G(caml_hot$code_begin):
+        TEXT_SECTION(CAMLSEP(hot,code_begin))
+        .globl  G(CAMLSEP(hot,code_begin))
+G(CAMLSEP(hot,code_begin)):
 
-        TEXT_SECTION(caml_hot$code_end)
-        .globl  G(caml_hot$code_end)
-G(caml_hot$code_end):
+        TEXT_SECTION(CAMLSEP(hot,code_end))
+        .globl  G(CAMLSEP(hot,code_end))
+G(CAMLSEP(hot,code_end)):
 #endif
 
 #if defined(SYS_macosx)
@@ -364,16 +366,15 @@ G(name):
         SWITCH_C_TO_OCAML
 .endm
 
-/* Invoke __tsan_func_entry(return address in the caller) */
+/* Invoke caml_tsan_func_entry_asm (return address in the caller) */
 .macro TSAN_ENTER_FUNCTION
         mov     x0, x30        /* arg1: return address in caller */
-        TSAN_C_CALL G(__tsan_func_entry)
+        TSAN_C_CALL G(caml_tsan_func_entry_asm)
 .endm
 
-/* Invoke __tsan_func_exit(0) */
+/* Invoke caml_tsan_func_exit_asm */
 .macro TSAN_EXIT_FUNCTION
-        mov     x0, xzr
-        TSAN_C_CALL G(__tsan_func_exit)
+        TSAN_C_CALL G(caml_tsan_func_exit_asm)
 .endm
 
 /* This is similar to SAVE_ALL_REGS, but only saving the caller-saved
@@ -680,7 +681,7 @@ FUNCTION(caml_start_program)
        OCaml stack, and we are still on a C stack at this point. */
         mov     x0, x30        /* arg1: return address in caller */
         TSAN_SETUP_C_CALL
-        bl      G(__tsan_func_entry)
+        bl      G(caml_tsan_func_entry_asm)
         TSAN_CLEANUP_AFTER_C_CALL
         ldr     x0, [sp], 16
         CFI_ADJUST(-16)
@@ -782,9 +783,8 @@ L(return_result):
        OCaml stack, and we are back to a C stack at this point. */
         str     x0, [sp, -16]!
         CFI_ADJUST(16)
-        mov     x0, xzr
         TSAN_SETUP_C_CALL
-        bl      G(__tsan_func_exit)
+        bl      G(caml_tsan_func_exit_asm)
         TSAN_CLEANUP_AFTER_C_CALL
         ldr     x0, [sp], 16
         CFI_ADJUST(-16)
@@ -930,7 +930,7 @@ FUNCTION(caml_callback_asm)
         stp     x2, x30, [sp, -16]!
         CFI_ADJUST(16)
         mov     x0, x30 /* return address */
-        bl      G(__tsan_func_entry)
+        bl      G(caml_tsan_func_entry_asm)
         ldp     x2, x30, [sp], 16
         CFI_ADJUST(-16)
         ldp     x0, x1, [sp], 16
@@ -955,7 +955,7 @@ FUNCTION(caml_callback2_asm)
         stp     x2, x30, [sp, -16]!
         CFI_ADJUST(16)
         mov     x0, x30 /* return address */
-        bl      G(__tsan_func_entry)
+        bl      G(caml_tsan_func_entry_asm)
         ldp     x2, x30, [sp], 16
         CFI_ADJUST(-16)
         ldp     x0, x1, [sp], 16
@@ -981,7 +981,7 @@ FUNCTION(caml_callback3_asm)
         stp     x2, x30, [sp, -16]!
         CFI_ADJUST(16)
         mov     x0, x30 /* return address */
-        bl      G(__tsan_func_entry)
+        bl      G(caml_tsan_func_entry_asm)
         ldp     x2, x30, [sp], 16
         CFI_ADJUST(-16)
         ldp     x0, x1, [sp], 16
@@ -1287,7 +1287,7 @@ G(caml_system__code_end):
 
 /* Frametable - GC roots for callback */
 /* Uses the same naming convention as ocamlopt generated modules. */
-OBJECT(caml_system$frametable)
+OBJECT(CAMLSEP(system,frametable))
         .quad   2               /* two descriptors */
         .quad   L(caml_retaddr) /* return address into callback */
         .short  -1              /* negative frame size => use callback link */
@@ -1297,6 +1297,6 @@ OBJECT(caml_system$frametable)
         .short  -1              /* negative frame size => use callback link */
         .short  0               /* no roots here */
         .align 3
-        END_OBJECT(caml_system$frametable)
+        END_OBJECT(CAMLSEP(system,frametable))
 
         NONEXECSTACK_NOTE

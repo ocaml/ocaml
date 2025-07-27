@@ -16,6 +16,7 @@
 (* Infrastructure to support user-defined printers in toplevels and debugger *)
 
 let type_arrow ta tb =
+  let ta = Ctype.newmono ta in
   Ctype.newty (Tarrow (Asttypes.Nolabel, ta, tb, Types.commu_var ()))
 
 let type_formatter () =
@@ -88,7 +89,11 @@ let extract_last_arrow env ty =
   in extract None ty
 
 let extract_target_type env ty =
-  Option.map fst (extract_last_arrow env ty)
+  match extract_last_arrow env ty with
+  | None -> None
+  | Some ty ->
+    let ty = fst ty in
+    Btype.tpoly_get_mono_opt ty
 
 let extract_target_parameters env ty =
   match extract_target_type env ty with

@@ -54,7 +54,7 @@ Caml_inline int caml_check_gc_interrupt(caml_domain_state * dom_st)
   (CAMLunlikely(caml_check_gc_interrupt(dom_st)))
 
 asize_t caml_norm_minor_heap_size (intnat);
-int caml_reallocate_minor_heap(asize_t);
+int caml_reallocate_minor_heap_arena(asize_t);
 void caml_update_minor_heap_max(uintnat minor_heap_wsz);
 
 /* is there a STW interrupt queued that needs servicing */

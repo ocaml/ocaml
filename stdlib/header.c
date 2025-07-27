@@ -13,34 +13,98 @@
 /*                                                                        */
 /**************************************************************************/
 
-#define CAML_INTERNALS
+/* The launcher for bytecode executables (if #! is not available) */
 
-/* The launcher for bytecode executables (if #! is not working) */
+/* C11's _Noreturn is deprecated in C23 in favour of attributes */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
+  #define NORETURN [[noreturn]]
+#else
+  #define NORETURN _Noreturn
+#endif
+
+#ifdef _WIN32
+
+#define STRICT
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#if WINDOWS_UNICODE
+#define CP CP_UTF8
+#else
+#define CP CP_ACP
+#endif
+
+/* mingw-w64 has a limits.h which defines PATH_MAX as an alias for MAX_PATH */
+#if !defined(PATH_MAX)
+#define PATH_MAX MAX_PATH
+#endif
+
+#define SEEK_END FILE_END
+
+#define lseek(h, offset, origin) SetFilePointer((h), (offset), NULL, (origin))
+
+typedef HANDLE file_descriptor;
+
+static int read(HANDLE h, LPVOID buffer, DWORD buffer_size)
+{
+  DWORD nread = 0;
+  ReadFile(h, buffer, buffer_size, &nread, NULL);
+  return nread;
+}
+
+static BOOL WINAPI ctrl_handler(DWORD event)
+{
+  if (event == CTRL_C_EVENT || event == CTRL_BREAK_EVENT)
+    return TRUE;                /* pretend we've handled them */
+  else
+    return FALSE;
+}
+
+static void write_error(const wchar_t *wstr, HANDLE hOut)
+{
+  DWORD consoleMode, numwritten, len;
+  char str[MAX_PATH];
+
+  if (GetConsoleMode(hOut, &consoleMode) != 0) {
+    /* The output stream is a Console */
+    WriteConsole(hOut, wstr, lstrlen(wstr), &numwritten, NULL);
+  } else { /* The output stream is redirected */
+    len =
+      WideCharToMultiByte(CP, 0, wstr, lstrlen(wstr), str, sizeof(str),
+                          NULL, NULL);
+    WriteFile(hOut, str, len, &numwritten, NULL);
+  }
+}
+
+NORETURN static void exit_with_error(const wchar_t *wstr1,
+                                     const wchar_t *wstr2,
+                                     const wchar_t *wstr3)
+{
+  HANDLE hOut = GetStdHandle(STD_ERROR_HANDLE);
+  if (wstr1) write_error(wstr1, hOut);
+  if (wstr2) write_error(wstr2, hOut);
+  if (wstr3) write_error(wstr3, hOut);
+  write_error(L"\r\n", hOut);
+  ExitProcess(2);
+}
+
+#else
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "caml/s.h"
-#ifndef _WIN32
 #include <unistd.h>
-#endif
 #include <fcntl.h>
+#include <limits.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "caml/mlvalues.h"
-#include "caml/exec.h"
 
-#ifndef MAXPATHLEN
-#define MAXPATHLEN 1024
+/* O_BINARY is defined in Gnulib, but is not POSIX */
+#ifndef O_BINARY
+#define O_BINARY 0
 #endif
 
-#ifndef S_ISREG
-#define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
-#endif
-
-#ifndef SEEK_END
-#define SEEK_END 2
-#endif
+typedef int file_descriptor;
 
 #ifndef __CYGWIN__
 
@@ -48,7 +112,7 @@
 
 static char * searchpath(char * name)
 {
-  static char fullname[MAXPATHLEN + 1];
+  static char fullname[PATH_MAX + 1];
   char * path;
   struct stat st;
 
@@ -60,11 +124,11 @@ static char * searchpath(char * name)
   while(1) {
     char * p;
     for (p = fullname; *path != 0 && *path != ':'; p++, path++)
-      if (p < fullname + MAXPATHLEN) *p = *path;
-    if (p != fullname && p < fullname + MAXPATHLEN)
+      if (p < fullname + PATH_MAX) *p = *path;
+    if (p != fullname && p < fullname + PATH_MAX)
       *p++ = '/';
     for (char *q = name; *q != 0; p++, q++)
-      if (p < fullname + MAXPATHLEN) *p = *q;
+      if (p < fullname + PATH_MAX) *p = *q;
     *p = 0;
     if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) break;
     if (*path == 0) return name;
@@ -123,26 +187,42 @@ static char * searchpath(char * name)
 
 #endif
 
-static unsigned long read_size(char * ptr)
+NORETURN static void exit_with_error(const char *str1,
+                                     const char *str2,
+                                     const char *str3)
 {
-  unsigned char * p = (unsigned char *) ptr;
-  return ((unsigned long) p[0] << 24) + ((unsigned long) p[1] << 16) +
-         ((unsigned long) p[2] << 8) + p[3];
+  if (str1) fputs(str1, stderr);
+  if (str2) fputs(str2, stderr);
+  if (str3) fputs(str3, stderr);
+  fputs("\n", stderr);
+  exit(2);
 }
 
-static char * read_runtime_path(int fd)
+#endif /* defined(_WIN32) */
+
+#define CAML_INTERNALS
+#include "caml/exec.h"
+
+static uint32_t read_size(const char *ptr)
+{
+  const unsigned char *p = (const unsigned char *)ptr;
+  return ((uint32_t) p[0] << 24) | ((uint32_t) p[1] << 16) |
+         ((uint32_t) p[2] << 8) | p[3];
+}
+
+static char * read_runtime_path(file_descriptor fd)
 {
   char buffer[TRAILER_SIZE];
-  static char runtime_path[MAXPATHLEN];
+  static char runtime_path[PATH_MAX];
   int num_sections;
   uint32_t path_size;
   long ofs;
 
-  lseek(fd, (long) -TRAILER_SIZE, SEEK_END);
+  if (lseek(fd, -TRAILER_SIZE, SEEK_END) == -1) return NULL;
   if (read(fd, buffer, TRAILER_SIZE) < TRAILER_SIZE) return NULL;
   num_sections = read_size(buffer);
   ofs = TRAILER_SIZE + num_sections * 8;
-  lseek(fd, -ofs, SEEK_END);
+  if (lseek(fd, -ofs, SEEK_END) == -1) return NULL;
   path_size = 0;
   for (int i = 0; i < num_sections; i++) {
     if (read(fd, buffer, 8) < 8) return NULL;
@@ -154,37 +234,80 @@ static char * read_runtime_path(int fd)
       ofs += read_size(buffer + 4);
   }
   if (path_size == 0) return NULL;
-  if (path_size >= MAXPATHLEN) return NULL;
-  lseek(fd, -ofs, SEEK_END);
+  if (path_size >= PATH_MAX) return NULL;
+  if (lseek(fd, -ofs, SEEK_END) == -1) return NULL;
   if (read(fd, runtime_path, path_size) != path_size) return NULL;
   return runtime_path;
 }
 
-static void errwrite(const char * msg)
+#ifdef _WIN32
+
+NORETURN void __cdecl wmainCRTStartup(void)
 {
-  fputs(msg, stderr);
+  wchar_t truename[MAX_PATH];
+  char *runtime_path;
+  wchar_t wruntime_path[MAX_PATH];
+  HANDLE h;
+  STARTUPINFO stinfo;
+  PROCESS_INFORMATION procinfo;
+  DWORD retcode;
+
+  if (GetModuleFileName(NULL, truename, sizeof(truename)/sizeof(wchar_t)) == 0)
+    exit_with_error(L"Out of memory", NULL, NULL);
+
+  h = CreateFile(truename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                 NULL, OPEN_EXISTING, 0, NULL);
+  if (h == INVALID_HANDLE_VALUE ||
+      (runtime_path = read_runtime_path(h)) == NULL ||
+      !MultiByteToWideChar(CP, 0, runtime_path, -1, wruntime_path,
+                           sizeof(wruntime_path)/sizeof(wchar_t)))
+    exit_with_error(NULL, truename,
+                    L" not found or is not a bytecode executable file");
+  CloseHandle(h);
+  if (SearchPath(NULL, wruntime_path, L".exe", sizeof(truename)/sizeof(wchar_t),
+                 truename, NULL)) {
+    /* Need to ignore ctrl-C and ctrl-break, otherwise we'll die and take
+       the underlying OCaml program with us! */
+    SetConsoleCtrlHandler(ctrl_handler, TRUE);
+
+    stinfo.cb = sizeof(stinfo);
+    stinfo.lpReserved = NULL;
+    stinfo.lpDesktop = NULL;
+    stinfo.lpTitle = NULL;
+    stinfo.dwFlags = 0;
+    stinfo.cbReserved2 = 0;
+    stinfo.lpReserved2 = NULL;
+    if (CreateProcess(truename, GetCommandLine(), NULL, NULL, TRUE, 0,
+                      NULL, NULL, &stinfo, &procinfo)) {
+      CloseHandle(procinfo.hThread);
+      WaitForSingleObject(procinfo.hProcess, INFINITE);
+      GetExitCodeProcess(procinfo.hProcess, &retcode);
+      CloseHandle(procinfo.hProcess);
+      ExitProcess(retcode);
+    }
+  }
+
+  exit_with_error(L"Cannot exec ", wruntime_path, NULL);
 }
 
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
+#else
 
-int main(int argc, char ** argv)
+int main(int argc, char *argv[])
 {
-  char * truename, * runtime_path;
+  char *truename, *runtime_path;
   int fd;
 
   truename = searchpath(argv[0]);
   fd = open(truename, O_RDONLY | O_BINARY);
-  if (fd == -1 || (runtime_path = read_runtime_path(fd)) == NULL) {
-    errwrite(truename);
-    errwrite(" not found or is not a bytecode executable file\n");
-    return 2;
-  }
+  if (fd == -1 || (runtime_path = read_runtime_path(fd)) == NULL)
+    exit_with_error(NULL, truename,
+                    " not found or is not a bytecode executable file");
+  close(fd);
+
   argv[0] = truename;
-  execv(runtime_path, argv);
-  errwrite("Cannot exec ");
-  errwrite(runtime_path);
-  errwrite("\n");
-  return 2;
+  execvp(runtime_path, argv);
+
+  exit_with_error("Cannot exec ", runtime_path, NULL);
 }
+
+#endif /* defined(_WIN32) */

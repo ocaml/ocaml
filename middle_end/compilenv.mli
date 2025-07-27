@@ -56,6 +56,10 @@ val current_unit_symbol: unit -> Symbol.t
 val symbol_separator: char
         (* Return the module separator used when building symbol names. *)
 
+val escape_prefix: string
+        (* Return the escape prefix for hexadecimal escape sequences
+           in symbol names. *)
+
 val make_symbol: ?unitname:string -> string option -> string
         (* [make_symbol ~unitname:u None] returns the asm symbol that
            corresponds to the compilation unit [u] (default: the current unit).

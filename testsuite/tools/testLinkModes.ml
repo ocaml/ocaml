@@ -302,7 +302,7 @@ let test_runs usr_bin_sh test_program_path test_program
         | Tendered {header = Header_exe; _} ->
             if argv0_not_ocaml then
               if Sys.win32 then
-                (* stdlib/headernt.c will find ocamlrun (because it effectively
+                (* stdlib/header.c will find ocamlrun (because it effectively
                    uses caml_executable_name) but fails to hand off the bytecode
                    image, which causes ocamlrun to exit with code 127 *)
                 Fail 127
@@ -313,10 +313,10 @@ let test_runs usr_bin_sh test_program_path test_program
                    executable. Somewhat confusingly, it exits with code 2 *)
                 Fail 2
             else if Sys.win32 then
-              (* stdlib/headernt.c correctly preserves argv[0] *)
+              (* stdlib/header.c correctly preserves argv[0] for Windows *)
               Success {executable_name = test_program_path; argv0}
             else
-              (* stdlib/header.c does not preserve argv[0] *)
+              (* stdlib/header.c does not preserve argv[0] for Unix *)
               Success {executable_name = argv0_resolved;
                        argv0 = argv0_resolved}
         | Custom ->

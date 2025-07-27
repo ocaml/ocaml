@@ -551,7 +551,7 @@ $(foreach PROGRAM, $(C_PROGRAMS),\
 # OCaml programs that are compiled in both bytecode and native code
 
 OCAML_PROGRAMS = ocamlc ocamlopt lex/ocamllex $(TOOLS_NAT_PROGRAMS) \
-  ocamldoc/ocamldoc ocamltest/ocamltest
+  ocamldoc/ocamldoc ocamltest/ocamltest testsuite/tools/test_in_prefix
 
 $(foreach PROGRAM, $(OCAML_PROGRAMS),\
   $(eval $(call OCAML_PROGRAM,$(PROGRAM))))
@@ -565,7 +565,8 @@ $(foreach PROGRAM, $(OCAML_PROGRAMS),\
 OCAML_BYTECODE_PROGRAMS = expunge \
   $(TOOLS_BYT_PROGRAMS) \
   $(addprefix tools/, cvt_emit make_opcodes ocamltex) \
-  $(OPTIONAL_BYTECODE_TOOLS)
+  debugger/ocamldebug \
+  testsuite/tools/codegen testsuite/tools/expect
 
 $(foreach PROGRAM, $(OCAML_BYTECODE_PROGRAMS),\
   $(eval $(call OCAML_BYTECODE_PROGRAM,$(PROGRAM))))
@@ -573,7 +574,7 @@ $(foreach PROGRAM, $(OCAML_BYTECODE_PROGRAMS),\
 # OCaml programs that are compiled only in native code
 
 OCAML_NATIVE_PROGRAMS = \
-  ocamlnat tools/lintapidiff.opt tools/sync_dynlink.opt $(OPTIONAL_NATIVE_TOOLS)
+  ocamlnat tools/lintapidiff.opt tools/sync_dynlink.opt
 
 $(foreach PROGRAM, $(OCAML_NATIVE_PROGRAMS),\
   $(eval $(call OCAML_NATIVE_PROGRAM,$(PROGRAM))))
@@ -603,7 +604,9 @@ $(COMPILERLIBS:=.cma): \
 
 compilerlibs/ocamlcommon.cma: $(ALL_CONFIG_CMO)
 
-OCAML_LIBRARIES = $(COMPILERLIBS) $(OPTIONAL_LIBRARIES)
+OCAML_LIBRARIES = \
+  $(COMPILERLIBS) \
+  ocamldoc/odoc_info otherlibs/dynlink/dynlink testsuite/lib/testing
 
 $(foreach LIBRARY, $(OCAML_LIBRARIES),\
   $(eval $(call OCAML_LIBRARY,$(LIBRARY))))
@@ -1864,8 +1867,6 @@ ocamldoc.opt: ocamldoc/ocamldoc.opt$(EXE) ocamlopt ocamlyacc ocamllex
 
 # OCamltest
 
-ifeq "$(build_ocamltest)" "true"
-
 # Libraries ocamltest depends on
 
 ocamltest_LIBRARIES = \
@@ -2008,9 +2009,9 @@ testsuite/tools/test_in_prefi%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 
 ocamltest/ocamltest$(EXE): OC_BYTECODE_LINKFLAGS += -custom -g
 
-ocamltest.opt: ocamltest/ocamltest.opt$(EXE) \
-  testsuite/lib/testing.cmxa $(asmgen_OBJECT) testsuite/tools/codegen$(EXE) \
-  ocamlopt ocamlyacc ocamllex
+ocamltest/ocamltest$(EXE): ocamlc ocamlyacc ocamllex
+
+ocamltest/ocamltest.opt$(EXE): ocamlopt ocamlyacc ocamllex
 
 # ocamltest does _not_ want to have access to the Unix interface by default,
 # to ensure functions and types are only used via Ocamltest_stdlib.Unix
@@ -2028,6 +2029,14 @@ ocamltest/ocamltest$(EXE) ocamltest/ocamltest.opt$(EXE): \
 # -opaque to prevent errors compiling the other modules of ocamltest.
 ocamltest/ocamltest_unix.%: \
   OC_COMMON_COMPFLAGS += -opaque
+ifeq "$(build_ocamltest)" "true"
+ocamltest: ocamltest/ocamltest$(EXE) \
+  testsuite/lib/lib.cmo testsuite/lib/testing.cma testsuite/tools/expect$(EXE) \
+  ocamlc ocamlyacc ocamllex
+
+ocamltest.opt: ocamltest/ocamltest.opt$(EXE) \
+  testsuite/lib/testing.cmxa $(asmgen_OBJECT) testsuite/tools/codegen$(EXE) \
+  ocamlopt ocamlyacc ocamllex
 else # ifeq "$(build_ocamltest)" "true"
 ocamltest_TARGETS = ocamltest ocamltest.opt
 .PHONY: $(ocamltest_TARGETS)
@@ -2055,6 +2064,11 @@ partialclean::
         testsuite/tools/test_in_prefix.opt.exe
 	rm -f testsuite/tools/lexcmm.ml
 	rm -f $(addprefix testsuite/tools/parsecmm., ml mli output)
+
+ocamltest/ocamltest_config.ml ocamltest/ocamltest_unix.ml: config.status
+	./$< $@
+
+beforedepend:: ocamltest/ocamltest_config.ml ocamltest/ocamltest_unix.ml
 
 # Documentation
 
@@ -2086,7 +2100,7 @@ partialclean::
 .PHONY: ocamltest-manual
 ocamltest-manual: ocamltest/ocamltest.html
 
-ocamltest/ocamltest.html: ocamltest/ocamltest.org
+ocamltest/ocamltest.html: ocamltest/OCAMLTEST.org
 	pandoc -s --toc -N -f org -t html -o $@ $<
 
 # The extra libraries

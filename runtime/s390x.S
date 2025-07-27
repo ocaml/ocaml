@@ -48,13 +48,13 @@
 #endif
 
 #if defined(FUNCTION_SECTIONS)
-        TEXT_SECTION(caml_hot$code_begin)
-        .globl caml_hot$code_begin
-caml_hot$code_begin:
+        TEXT_SECTION(caml_hot.code_begin)
+        .globl caml_hot.code_begin
+caml_hot.code_begin:
 
-        TEXT_SECTION(caml_hot$code_end)
-        .globl caml_hot$code_end
-caml_hot$code_end:
+        TEXT_SECTION(caml_hot.code_end)
+        .globl caml_hot.code_end
+caml_hot.code_end:
 #endif
 
 #define FUNCTION(name) \
@@ -312,15 +312,14 @@ caml_system__code_begin:
         TSAN_CLEANUP_AFTER_C_CALL;                     \
         SWITCH_C_TO_OCAML
 
-/* Invoke __tsan_func_entry(return address in the caller) */
+/* Invoke caml_tsan_func_entry_asm (return address in the caller) */
 #define TSAN_ENTER_FUNCTION                            \
         lgr     C_ARG_1, %r14; /* arg1: return address in caller */ \
-        TSAN_C_CALL(__tsan_func_entry)
+        TSAN_C_CALL(caml_tsan_func_entry_asm)
 
-/* Invoke __tsan_func_exit(0) */
+/* Invoke caml_tsan_func_exit_asm */
 #define TSAN_EXIT_FUNCTION                             \
-        lgfi    C_ARG_1, 0;                            \
-        TSAN_C_CALL(__tsan_func_exit)
+        TSAN_C_CALL(caml_tsan_func_exit_asm)
 
 /* This is similar to SAVE_ALL_REGS, but only saving the caller-saved
    registers. */
@@ -594,7 +593,7 @@ CFI_STARTPROC
        OCaml stack, yet we are still on a C stack at this point. */
         lgr     C_ARG_1, %r14
         TSAN_SETUP_C_CALL
-        brasl   %r14, GCALL(__tsan_func_entry)
+        brasl   %r14, GCALL(caml_tsan_func_entry_asm)
         TSAN_CLEANUP_AFTER_C_CALL
         lg      C_ARG_1, 0(%r15)
         la      %r15, 8(%r15)
@@ -691,9 +690,8 @@ LBL(return_result):  /* restore GC regs */
         lay     %r15, -8(%r15)
         CFI_ADJUST(8)
         stg     C_ARG_1, 0(%r15)
-        lgfi    C_ARG_1, 0
         TSAN_SETUP_C_CALL
-        brasl   %r14, GCALL(__tsan_func_exit)
+        brasl   %r14, GCALL(caml_tsan_func_exit_asm)
         TSAN_CLEANUP_AFTER_C_CALL
         lg      C_ARG_1, 0(%r15)
         la      %r15, 8(%r15)
@@ -844,7 +842,7 @@ CFI_STARTPROC
         stg     C_ARG_3, (RESERVED_STACK+16)(%r15)
         stg     %r14, (RESERVED_STACK+24)(%r15)
         lgr     C_ARG_1, %r14
-        brasl   %r14, GCALL(__tsan_func_entry)
+        brasl   %r14, GCALL(caml_tsan_func_entry_asm)
         lg      %r14, (RESERVED_STACK+24)(%r15)
         lg      C_ARG_3, (RESERVED_STACK+16)(%r15)
         lg      C_ARG_2, (RESERVED_STACK+8)(%r15)
@@ -873,7 +871,7 @@ CFI_STARTPROC
         stg     C_ARG_3, (RESERVED_STACK+16)(%r15)
         stg     %r14, (RESERVED_STACK+24)(%r15)
         lgr     C_ARG_1, %r14
-        brasl   %r14, GCALL(__tsan_func_entry)
+        brasl   %r14, GCALL(caml_tsan_func_entry_asm)
         lg      %r14, (RESERVED_STACK+24)(%r15)
         lg      C_ARG_3, (RESERVED_STACK+16)(%r15)
         lg      C_ARG_2, (RESERVED_STACK+8)(%r15)
@@ -904,7 +902,7 @@ CFI_STARTPROC
         stg     C_ARG_3, (RESERVED_STACK+16)(%r15)
         stg     %r14, (RESERVED_STACK+24)(%r15)
         lgr     C_ARG_1, %r14
-        brasl   %r14, GCALL(__tsan_func_entry)
+        brasl   %r14, GCALL(caml_tsan_func_entry_asm)
         lg      %r14, (RESERVED_STACK+24)(%r15)
         lg      C_ARG_3, (RESERVED_STACK+16)(%r15)
         lg      C_ARG_2, (RESERVED_STACK+8)(%r15)
@@ -1206,7 +1204,7 @@ caml_system__code_end:
 /* Frametable - GC roots for callback */
 /* Uses the same naming convention as ocamlopt generated modules. */
         .section ".data"
-OBJECT(caml_system$frametable)
+OBJECT(caml_system.frametable)
         .quad   2               /* two descriptors */
         .quad   LBL(caml_retaddr)  /* return address into callback */
         .short  -1              /* negative size count => use callback link */
@@ -1216,6 +1214,6 @@ OBJECT(caml_system$frametable)
         .short  -1              /* negative size count => use callback link */
         .short  0               /* no roots here */
         .align  8
-ENDOBJECT(caml_system$frametable)
+ENDOBJECT(caml_system.frametable)
 
         NONEXECSTACK_NOTE

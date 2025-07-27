@@ -9,8 +9,8 @@ Executing commands in 'XXXX'.
 Breakpoint created for regex caml_start_program.
 (lldb) create caml_program
 Breakpoint created for regex caml_program.
-(lldb) create camlMeander\$c_to_ocaml*
-Breakpoint created for regex camlMeander\$c_to_ocaml*.
+(lldb) create camlMeander[.$]c_to_ocaml*
+Breakpoint created for regex camlMeander[.$]c_to_ocaml*.
 (lldb) create ocaml_to_c
 Breakpoint created for regex ocaml_to_c.
 (lldb) run

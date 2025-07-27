@@ -176,11 +176,11 @@ let subst_type env t =
           let new_p =
             Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
           set_type_desc t (Tconstr (new_p, l, a))
-      | Tpackage {pack_path = p; pack_cstrs} ->
+      | Tpackage {pack_path = p; pack_constraints} ->
           let new_p =
             Odoc_name.to_path
               (full_module_type_name env (Odoc_name.from_path p)) in
-          set_type_desc t (Tpackage {pack_path = new_p; pack_cstrs})
+          set_type_desc t (Tpackage {pack_path = new_p; pack_constraints})
       | Tobject (_, ({contents=Some(p,tyl)} as r)) ->
           let new_p =
             Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in

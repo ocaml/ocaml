@@ -122,7 +122,7 @@ let rec add_type bv ty =
 
 and add_package_type bv ptyp =
   add bv ptyp.ppt_path;
-  List.iter (fun (_, ty) -> add_type bv ty) ptyp.ppt_cstrs
+  List.iter (fun (_, ty) -> add_type bv ty) ptyp.ppt_constraints
 
 let add_opt add_fn bv = function
     None -> ()
@@ -139,7 +139,7 @@ let add_constructor_decl bv pcd =
 let add_type_declaration bv td =
   List.iter
     (fun (ty1, ty2, _) -> add_type bv ty1; add_type bv ty2)
-    td.ptype_cstrs;
+    td.ptype_constraints;
   add_opt add_type bv td.ptype_manifest;
   let add_tkind = function
     | Ptype_abstract -> ()
@@ -189,7 +189,8 @@ let rec add_pattern bv pat =
   | Ppat_variant(_, op) -> add_opt add_pattern bv op
   | Ppat_type li -> add bv li
   | Ppat_lazy p -> add_pattern bv p
-  | Ppat_unpack id ->
+  | Ppat_unpack (id, ptyp) ->
+      add_opt add_package_type bv ptyp;
       Option.iter
         (fun name -> pattern_bv := String.Map.add name bound !pattern_bv) id.txt
   | Ppat_open ( m, p) -> let bv = open_module bv m.txt in add_pattern bv p

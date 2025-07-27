@@ -57,6 +57,10 @@ Working version
 - #12877: Dynarray.rev_iter, Dynarray.rev_iteri
   (Gabriel Scherer, review by Léo Andrès, Jeremy Yallop and Nicolás Ojeda Bär)
 
+- #14118: Add {Set,Map}.S.is_singleton
+  (Kate Deplaix, review by Daniel Bünzli, Vincent Laviron, Nicolás Ojeda Bär
+   and Stephen Dolan)
+
 - #14060: Add Hashtbl.find_and_replace and Hashtbl.find_and_remove.
   (Sacha Ayoun, review by Nicolás Ojeda Bär)
 
@@ -76,6 +80,21 @@ Working version
   Before, it failed with a subtyping error. Now, it fails with a proper error,
   explaining that `X1` would keep an invalid alias to `F(X)`
   (Clement Blaudeau, review by Florian Angeletti)
+
+* #14100: Do not ignore type-constraints and module-constraints when building
+  the approximated signature of recursive modules. Ignoring those constraints
+  resulted in incorrect (wrong set of fields, wrong shadowing between fields)
+  approximated signatures, failing to typecheck, as in:
+  ```ocaml
+  module X0 : sig type t end
+  module rec X : ((sig module A : sig end end) with module A := X0)
+  and Y : sig type t = X.A.t end (* Unbound type constructor X.A.t *)
+  ```
+  Now, type and module constraints are properly merged during approximation ,
+  reusing the infrastructure for normal merging of constraints, but disabling
+  any wellformedness check.
+  (Clement Blaudeau and Ryan Tjoa, review by Florian Angeletti)
+
 
 ### Other libraries:
 
@@ -156,6 +175,14 @@ Working version
   variables.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #14146: add an error message for external declaration with
+  a non-syntactic arity
+  ```
+   external fail: (int -> int as 'a) -> 'a = "%identity"
+  ```
+  rather than failing with an internal error.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #13839, #14008: Reimplement `let open`, `let module` and `let exception` in
@@ -163,11 +190,12 @@ Working version
   (Nicolás Ojeda Bär, review by Gabriel Scherer, Samuel Vivien, Ulysse Gérard
   and Vincent Laviron)
 
-- #13911: Refactor the merging of signature constraints, by splitting the
-  monolithic merge function into separate, specialized functions (for merging
-  types, modules and module types) - sharing only the recursive part for
-  handling deep constraints.
-  (Clement Blaudeau, review by Florian Angeletti and Samuel Vivien)
+- #13911, #14117, #14127: Refactor the merging of signature constraints, by
+  splitting the monolithic merge function into separate, specialized functions
+  (for merging types, modules and module types) - sharing only the recursive
+  part for handling deep constraints.
+  (Clement Blaudeau, review by Florian Angeletti and Samuel Vivien, fix by Ryan
+  Tjoa)
 
 - #13980 Refactor `type-approx` and improve some errors' locations.
   (Leo White, Ulysse Gérard, review by Samuel Vivien and Florian Angeletti)
@@ -178,9 +206,24 @@ Working version
 - #14094: toplevel, simplify check on installed printer types
   (Florian Angeletti, review by Gabriel Scherer)
 
-- #13656: Use C99 stdint.h/inttypes.h fixed-width integer types and
+- #13656, #14114: Use C99 stdint.h/inttypes.h fixed-width integer types and
   macros to define OCaml integers.
   (Antonin Décimo, review by Nick Barnes)
+
+- #14148: Remove an unused field from package_type in typedtree
+  (Samuel Vivien, review by Gabriel Scherer)
+
+- #14141: Rename cstrs to constraints when it refers to constraints to avoid
+  confusing it with constructors.
+  (Stefan Muenzel, review by Nicolás Ojeda Bär)
+
+- #14149: Distinguish `(module M : S)` from `(module M) : (module S)` in
+  patterns.
+  (Samuel Vivien, review by Gabriel Scherer)
+
+- #14161: refactor the STW-participants machinery to add an intermediate
+  category of 'parked' domain structures.
+  (Gabriel Scherer, review by Sivaramakrishnan)
 
 ### Build system:
 
@@ -199,6 +242,11 @@ Working version
 - #10570: Fix handling of caml_sys_argv when exposed directly as an
   external
   (Keryan Didier, review by Vincent Laviron and Gabriel Scherer)
+
+- #14155: Audit unexecuted phrases in compiler expect tests and
+  fix all occurences
+  (Stefan Muenzel, review by Gabriel Scherer)
+
 
 OCaml 5.4.0
 ---------------
@@ -230,7 +278,14 @@ OCaml 5.4.0
   (Clément Allain and Gabriel Scherer, review by KC Sivaramakrishnan,
    Basile Clément and Olivier Nicole)
 
+- #13806 Enable the use of function parameters with polymorphic types.
+  (Ulysse Gérard, Leo White, review by Florian Angeletti, Samuel Vivien, Gabriel
+  Scherer and Jacques Garrigue)
+
 ### Standard library:
+
+* #14124: Do not raise Invalid_argument on negative List.{drop,take}.
+  (Daniel Bünzli, review by Gabriel Scherer, Nicolás Ojeda Bär)
 
 - #13696: Add Result.product and Result.Syntax:
   `let open Result.Syntax in let* x = ... in ...`
@@ -387,6 +442,9 @@ OCaml 5.4.0
   between Unix/Windows).
   (David Allsopp, review by Nick Barnes, Antonin Décimo and Miod Vallat)
 
+- #13616: Change free list representation in shared heap
+  (Sadiq Jaffer, review by Damien Doligez)
+
 - #13352: Concurrency refactors and cleanups.
   (Antonin Décimo, review by Gabriel Scherer, David Allsopp, and Miod Vallat)
 
@@ -462,12 +520,12 @@ OCaml 5.4.0
   Xavier Leroy, Miod Vallat, Gabriel Scherer and Stephen Dolan, review by Miod
   Vallat, Vincent Laviron and Xavier Leroy)
 
-* #13050: Use '$' instead of '.' to separate module names in symbol names.
-  This changes mangling of OCaml identifiers from
+* #13050, #14104, #14143: Use '$' instead of '.' to separate module names
+  in symbol names on macOS and Windows (including the Cygwin backend).
+  This changes mangling of OCaml identifiers on those operating systems from
   `camlModule.name_NNN` to `camlModule$name_NNN`. Additionally it
   changes the encoding of special characters from $xx (two hex digits)
   to $$xx (two dollar signs followed by two hex digits).
-  Mangled names are now consistent across all platforms.
   (Tim McGilchrist, with contributions from Xavier Leroy,
    reviewed by Xavier Leroy, Miod Vallat, Gabriel Scherer,
    Nick Barnes and Hugo Heuzard)
@@ -892,17 +950,34 @@ OCaml 5.4.0
 - #14025: fix data race between compaction and domain termination
   (Gabriel Scherer, review by Jan Midtgaard,
    report by Jan Midtgaard)
+
 - #13956 Fix a regression introduced in #13308 triggering wrong unused warnings.
   (Ulysse Gérard, review by Florian Angeletti)
 
 - #14070: also point to label mismatches in error messages for labelled tuples
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #14088, #14091: fix non-deterministic code generation in
+  matching.ml (backport of rescript-lang/rescript#7557)
+  (Christiano Calgano, review by Gabriel Scherer and Vincent Laviron)
+
 - #14105: Fix a loop in Pprintast that could result in a hang when printing
   constructor `(::)` in isolation.
   (Ulysse Gérard, review by Nicolás Ojeda Bär and Florian Angeletti)
 
 - #14108: toplevel, fix a typo in directive type mismatch
+  (Florian Angeletti, review by Gabriel Scherer)
+
+- #13586, #14093: Fix closing an out_channel during flush
+  (Stephen Dolan, report by Jan Midtgaard, investigation by Nick Roberts,
+   review by Antonin Décimo and Miod Vallat)
+
+- #14101, #14139: define atomic helper types inside `caml/misc.h` to improve
+  header compatibility with C++
+  (Florian Angeletti, report by Kate Deplaix, review by Gabriel Scherer)
+
+- #14135: Fix a rare internal typechecker error when combining recursive
+  modules, polymorphic fields or methods, and constrained type parameters.
   (Florian Angeletti, review by Gabriel Scherer)
 
 OCaml 5.3.0 (8 January 2025)
@@ -2299,6 +2374,13 @@ OCaml 5.2.0 (13 May 2024)
   (Antonin Décimo, review by Miod Vallat and Sébastien Hinderer)
 
 ### Bug fixes:
+
+- #14065: Fix function signature mismatch of `__tsan_func_exit` with GCC 15.
+  Check in the configure step if the TSan provided internal builtins are the
+  same as what we expect, introduce `caml_tsan_*` wrappers for the `__tsan_*`
+  functions we use.
+  (Hari Hara Naveen S, report by Hari Hara Naveen S,
+  review by Gabriel Scherer, Antonin Décimo, Olivier Nicole)
 
 - #10652, #12720: fix evaluation order in presence of optional arguments
   (Jacques Garrigue, report by Leo White, review by Vincent Laviron)

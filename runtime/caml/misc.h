@@ -77,6 +77,17 @@
 /* Basic types and constants */
 
 typedef size_t asize_t;
+#ifdef __cplusplus
+extern "C++" {
+#include <atomic>
+typedef std::atomic<uintnat> atomic_uintnat;
+typedef std::atomic<intnat> atomic_intnat;
+}
+#else
+#include <stdatomic.h>
+typedef _Atomic uintnat atomic_uintnat;
+typedef _Atomic intnat atomic_intnat;
+#endif
 
 #ifndef NULL
 #define NULL 0
@@ -619,7 +630,7 @@ CAMLextern int caml_read_directory(char_os * dirname,
 
 /* runtime message flags. Settable with v= in OCAMLRUNPARAM */
 
-extern _Atomic uintnat caml_verb_gc;
+extern atomic_uintnat caml_verb_gc;
 
 /* Bits which may be set in caml_verb_gc. The quotations are from the
  * OCaml manual. */

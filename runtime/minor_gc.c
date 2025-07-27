@@ -133,7 +133,7 @@ void caml_set_minor_heap_size (asize_t wsize)
     caml_minor_collection();
   }
 
-  if(caml_reallocate_minor_heap(wsize) < 0) {
+  if(caml_reallocate_minor_heap_arena(wsize) < 0) {
     caml_fatal_error("Fatal error: No memory for minor heap");
   }
 
@@ -867,7 +867,7 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
   }
 
   CAML_EV_BEGIN(EV_MINOR_MEMPROF_CLEAN);
-  CAML_GC_MESSAGE(MINOR, "Updating memprof.\n");
+  caml_gc_log("updating memprof");
   caml_memprof_after_minor_gc(domain);
   CAML_EV_END(EV_MINOR_MEMPROF_CLEAN);
 

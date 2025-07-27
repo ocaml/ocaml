@@ -64,13 +64,13 @@
 #endif
 
 #if defined(FUNCTION_SECTIONS)
-        TEXT_SECTION(caml_hot$code_begin)
-        .globl caml_hot$code_begin
-caml_hot$code_begin:
+        TEXT_SECTION(caml_hot.code_begin)
+        .globl caml_hot.code_begin
+caml_hot.code_begin:
 
-        TEXT_SECTION(caml_hot$code_end)
-        .globl caml_hot$code_end
-caml_hot$code_end:
+        TEXT_SECTION(caml_hot.code_end)
+        .globl caml_hot.code_end
+caml_hot.code_end:
 #endif
 
 /* Globals and labels */
@@ -298,16 +298,15 @@ name:
         SWITCH_C_TO_OCAML
 .endm
 
-/* Invoke __tsan_func_entry(return address in the caller) */
+/* Invoke caml_tsan_func_entry_asm (return address in the caller) */
 .macro TSAN_ENTER_FUNCTION
         mv      a0, ra  /* arg1: return address in caller */
-        TSAN_C_CALL __tsan_func_entry
+        TSAN_C_CALL caml_tsan_func_entry_asm
 .endm
 
-/* Invoke __tsan_func_exit(0) */
+/* Invoke caml_tsan_func_exit_asm */
 .macro TSAN_EXIT_FUNCTION
-        mv      a0, x0
-        TSAN_C_CALL __tsan_func_exit
+        TSAN_C_CALL caml_tsan_func_exit_asm
 .endm
 
 /* This is similar to SAVE_ALL_REGS, but only saving the caller-saved
@@ -607,7 +606,7 @@ FUNCTION(caml_start_program)
        on an OCaml stack, yet we are still on a C stack at this point. */
         mv      a0, ra
         ENTER_FUNCTION
-        call    PLT(__tsan_func_entry)
+        call    PLT(caml_tsan_func_entry_asm)
         LEAVE_FUNCTION
         ld      a0, 0(sp)
         addi    sp, sp, 16
@@ -731,9 +730,8 @@ L(return_result):
         addi    sp, sp, -16
         CFI_ADJUST(16)
         sd      a0, 0(sp)
-        mv      a0, x0
         ENTER_FUNCTION
-        call    PLT(__tsan_func_exit)
+        call    PLT(caml_tsan_func_exit_asm)
         LEAVE_FUNCTION
         ld      a0, 0(sp)
         addi    sp, sp, 16
@@ -893,7 +891,7 @@ FUNCTION(caml_callback_asm)
         sd      a2, 16(sp)
         sd      ra, 24(sp)
         mv      a0, ra
-        call    PLT(__tsan_func_entry)
+        call    PLT(caml_tsan_func_entry_asm)
         ld      ra, 24(sp)
         ld      a2, 16(sp)
         ld      a1, 8(sp)
@@ -920,7 +918,7 @@ FUNCTION(caml_callback2_asm)
         sd      a2, 16(sp)
         sd      ra, 24(sp)
         mv      a0, ra
-        call    PLT(__tsan_func_entry)
+        call    PLT(caml_tsan_func_entry_asm)
         ld      ra, 24(sp)
         ld      a2, 16(sp)
         ld      a1, 8(sp)
@@ -949,7 +947,7 @@ FUNCTION(caml_callback3_asm)
         sd      a2, 16(sp)
         sd      ra, 24(sp)
         mv      a0, ra
-        call    PLT(__tsan_func_entry)
+        call    PLT(caml_tsan_func_entry_asm)
         ld      ra, 24(sp)
         ld      a2, 16(sp)
         ld      a1, 8(sp)
@@ -1246,7 +1244,7 @@ caml_system__code_end:
 
 /* Frametable - GC roots for callback */
 /* Uses the same naming convention as ocamlopt generated modules. */
-OBJECT(caml_system$frametable)
+OBJECT(caml_system.frametable)
         .quad   2                 /* two descriptors */
         .quad   L(caml_retaddr)   /* return address into callback */
         .short  -1                /* negative frame size => use callback link */
@@ -1256,6 +1254,6 @@ OBJECT(caml_system$frametable)
         .short  -1                /* negative frame size => use callback link */
         .short  0                 /* no roots */
         .align  3
-END_OBJECT(caml_system$frametable)
+END_OBJECT(caml_system.frametable)
 
         NONEXECSTACK_NOTE

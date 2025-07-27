@@ -952,7 +952,6 @@ and transl_let ~scopes ?(in_structure=false) rec_flag pat_expr_list =
         List.map
           (fun {vb_pat=pat} -> match pat.pat_desc with
               Tpat_var (id,_,_) -> id
-            | Tpat_alias ({pat_desc=Tpat_any}, id,_,_,_) -> id
             | _ -> assert false)
         pat_expr_list in
       let transl_case {vb_expr=expr; vb_attributes; vb_rec_kind = rkind;

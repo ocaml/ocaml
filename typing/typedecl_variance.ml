@@ -105,7 +105,8 @@ let compute_variance env visited vari ty =
     | Tvar _ | Tnil | Tlink _ | Tunivar _ -> ()
     | Tpackage pack ->
         let v = Variance.(compose vari full) in
-        List.iter (fun (_, ty) -> compute_variance_rec v ty) pack.pack_cstrs
+        List.iter
+          (fun (_, ty) -> compute_variance_rec v ty) pack.pack_constraints
   in
   compute_variance_rec vari ty
 

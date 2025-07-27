@@ -142,7 +142,7 @@ let reloc_pat ~loc x =
 let reloc_exp ~loc x =
   { x with pexp_loc = make_loc loc;
            pexp_loc_stack = push_loc x.pexp_loc x.pexp_loc_stack }
-let _reloc_typ ~loc x =
+let reloc_typ ~loc x =
   { x with ptyp_loc = make_loc loc;
            ptyp_loc_stack = push_loc x.ptyp_loc x.ptyp_loc_stack }
 
@@ -700,7 +700,7 @@ let package_type_of_module_type pmty =
         let loc = ptyp.ptype_loc in
         if ptyp.ptype_params <> [] then
           err loc Syntaxerr.Parameterized_types;
-        if ptyp.ptype_cstrs <> [] then
+        if ptyp.ptype_constraints <> [] then
           err loc Syntaxerr.Constrained_types;
         if ptyp.ptype_private <> Public then
           err loc Syntaxerr.Private_types;
@@ -2000,7 +2000,7 @@ class_fun_binding:
   | mkclass(
       COLON class_type EQUAL class_expr
         { Pcl_constraint($4, $2) }
-    | labeled_simple_pattern class_fun_binding
+    | simple_param_pattern class_fun_binding
       { let (l,o,p) = $1 in Pcl_fun(l, o, p, $2) }
     ) { $1 }
 ;
@@ -2055,8 +2055,8 @@ class_simple_expr:
 
 class_fun_def:
   mkclass(
-    labeled_simple_pattern MINUSGREATER e = class_expr
-  | labeled_simple_pattern e = class_fun_def
+    simple_param_pattern MINUSGREATER e = class_expr
+  | simple_param_pattern e = class_fun_def
       { let (l,o,p) = $1 in Pcl_fun(l, o, p, e) }
   ) { $1 }
 ;
@@ -2122,7 +2122,7 @@ method_:
     no_override_flag
     attrs = attributes
     private_ = virtual_with_private_flag
-    label = mkrhs(label) COLON ty = poly_type
+    label = mkrhs(label) COLON ty = possibly_poly_type
       { (label, private_, Cfk_virtual ty), attrs }
   | override_flag attributes private_flag mkrhs(label) strict_binding
       { let e = $5 in
@@ -2130,7 +2130,7 @@ method_:
         ($4, $3,
         Cfk_concrete ($1, ghexp ~loc (Pexp_poly (e, None)))), $2 }
   | override_flag attributes private_flag mkrhs(label)
-    COLON poly_type EQUAL seq_expr
+    COLON possibly_poly_type EQUAL seq_expr
       { let poly_exp =
           let loc = ($startpos($6), $endpos($8)) in
           ghexp ~loc (Pexp_poly($8, Some $6)) in
@@ -2211,7 +2211,8 @@ class_sig_field:
   | VAL attributes value_type post_item_attributes
       { let docs = symbol_docs $sloc in
         mkctf ~loc:$sloc (Pctf_val $3) ~attrs:($2@$4) ~docs }
-  | METHOD attributes private_virtual_flags mkrhs(label) COLON poly_type
+  | METHOD attributes private_virtual_flags mkrhs(label)
+    COLON possibly_poly_type
     post_item_attributes
       { let (p, v) = $3 in
         let docs = symbol_docs $sloc in
@@ -2366,7 +2367,7 @@ fun_seq_expr:
 seq_expr:
   | or_function(fun_seq_expr) { $1 }
 ;
-labeled_simple_pattern:
+simple_param_pattern:
     QUESTION LPAREN label_let_pattern opt_default RPAREN
       { (Optional (fst $3), $4, snd $3) }
   | QUESTION label_var
@@ -2383,6 +2384,10 @@ labeled_simple_pattern:
       { (Labelled $1, None, $2) }
   | simple_pattern
       { (Nolabel, None, $1) }
+  | LABEL LPAREN poly_pattern RPAREN
+      { (Labelled $1, None, $3) }
+  | LPAREN poly_pattern RPAREN
+      { (Nolabel, None, $2) }
 ;
 
 pattern_var:
@@ -2399,7 +2404,7 @@ pattern_var:
 label_let_pattern:
     x = label_var
       { x }
-  | x = label_var COLON cty = core_type
+  | x = label_var COLON cty = possibly_poly_type
       { let lab, pat = x in
         lab,
         mkpat ~loc:$sloc (Ppat_constraint (pat, cty)) }
@@ -2411,8 +2416,16 @@ label_let_pattern:
 let_pattern:
     pattern
       { $1 }
-  | mkpat(pattern COLON core_type
+  | mkpat(pattern COLON possibly_poly_type
       { Ppat_constraint($1, $3) })
+      { $1 }
+;
+%inline poly_pattern:
+    mkpat(
+      pat = pattern
+      COLON
+      cty = poly_type
+        { Ppat_constraint(pat, cty) })
       { $1 }
 ;
 
@@ -2838,7 +2851,7 @@ fun_param_as_list:
           (fun x -> { pparam_loc = loc; pparam_desc = Pparam_newtype x })
           ty_params
       }
-  | labeled_simple_pattern
+  | simple_param_pattern
       { let a, b, c = $1 in
         [ { pparam_loc = make_loc $sloc; pparam_desc = Pparam_val (a, b, c) } ]
       }
@@ -3060,12 +3073,11 @@ simple_pattern_not_ident:
       { reloc_pat ~loc:$sloc $2 }
   | simple_delimited_pattern
       { $1 }
-  | LPAREN MODULE ext_attributes mkrhs(module_name) RPAREN
-      { mkpat_attrs ~loc:$sloc (Ppat_unpack $4) $3 }
-  | LPAREN MODULE ext_attributes mkrhs(module_name) COLON package_type RPAREN
-      { mkpat_attrs ~loc:$sloc
-          (Ppat_constraint(mkpat ~loc:$loc($4) (Ppat_unpack $4), $6))
-          $3 }
+  | LPAREN MODULE ext_attrs = ext_attributes name = mkrhs(module_name) RPAREN
+      { mkpat_attrs ~loc:$sloc (Ppat_unpack (name, None)) ext_attrs }
+  | LPAREN MODULE ext_attrs = ext_attributes name = mkrhs(module_name) COLON
+    ptyp = package_type_ RPAREN
+      { mkpat_attrs ~loc:$sloc (Ppat_unpack (name, Some ptyp)) ext_attrs }
   | mkpat(simple_pattern_not_ident_)
       { $1 }
 ;
@@ -3300,7 +3312,7 @@ generic_type_declaration(flag, kind):
   params = type_parameters
   id = mkrhs(LIDENT)
   kind_priv_manifest = kind
-  cstrs = constraints
+  constraints = constraints
   attrs2 = post_item_attributes
     {
       let (kind, priv, manifest) = kind_priv_manifest in
@@ -3308,7 +3320,7 @@ generic_type_declaration(flag, kind):
       let attrs = attrs1 @ attrs2 in
       let loc = make_loc $sloc in
       (flag, ext),
-      Type.mk id ~params ~cstrs ~kind ~priv ?manifest ~attrs ~loc ~docs
+      Type.mk id ~params ~constraints ~kind ~priv ?manifest ~attrs ~loc ~docs
     }
 ;
 %inline generic_and_type_declaration(kind):
@@ -3317,7 +3329,7 @@ generic_type_declaration(flag, kind):
   params = type_parameters
   id = mkrhs(LIDENT)
   kind_priv_manifest = kind
-  cstrs = constraints
+  constraints = constraints
   attrs2 = post_item_attributes
     {
       let (kind, priv, manifest) = kind_priv_manifest in
@@ -3325,7 +3337,8 @@ generic_type_declaration(flag, kind):
       let attrs = attrs1 @ attrs2 in
       let loc = make_loc $sloc in
       let text = symbol_text $symbolstartpos in
-      Type.mk id ~params ~cstrs ~kind ~priv ?manifest ~attrs ~loc ~docs ~text
+      Type.mk
+        id ~params ~constraints ~kind ~priv ?manifest ~attrs ~loc ~docs ~text
     }
 ;
 %inline constraints:
@@ -3578,7 +3591,7 @@ with_constraint:
           ($3,
            (Type.mk lident
               ~params:$2
-              ~cstrs:$6
+              ~constraints:$6
               ~manifest:$5
               ~priv:$4
               ~loc:(make_loc $sloc))) }
@@ -3628,6 +3641,10 @@ possibly_poly(X):
     { $1 }
 ;
 %inline poly_type:
+  mktyp(poly(core_type))
+    { $1 }
+;
+%inline possibly_poly_type:
   possibly_poly(core_type)
     { $1 }
 ;
@@ -3683,7 +3700,7 @@ function_type:
       { ty }
   | mktyp(
       label = arg_label
-      domain = extra_rhs(tuple_type)
+      domain = extra_rhs(param_type)
       MINUSGREATER
       codomain = function_type
         { Ptyp_arrow(label, domain, codomain) }
@@ -3725,6 +3742,12 @@ function_type:
       { Labelled label }
   | /* empty */
       { Nolabel }
+;
+%inline param_type:
+  | LPAREN poly_type RPAREN
+    { reloc_typ ~loc:$sloc $2 }
+  | ty = tuple_type
+    { ty }
 ;
 (* Tuple types include:
    - atomic types (see below);

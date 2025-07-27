@@ -26,20 +26,21 @@ Error: Type "a" is not a subtype of "b"
 
 (* Variance and subtyping *)
 
-type (_, +_) eq = Refl : ('a, 'a) eq
+module S = struct
+  type (_, +_) eq = Refl : ('a, 'a) eq
 
-let magic : 'a 'b. 'a -> 'b =
-  fun (type a) (type b) (x : a) ->
+  let magic : 'a 'b. 'a -> 'b =
+    fun (type a) (type b) (x : a) ->
     let bad_proof (type a) =
       (Refl : (< m : a>, <m : a>) eq :> (<m : a>, < >) eq) in
     let downcast : type a. (a, < >) eq -> < > -> a =
       fun (type a) (Refl : (a, < >) eq) (s : < >) -> (s :> a) in
     (downcast bad_proof ((object method m = x end) :> < >)) # m
-;;
+end;;
 [%%expect{|
-Line 1, characters 18-36:
-1 | type (_, +_) eq = Refl : ('a, 'a) eq
-                      ^^^^^^^^^^^^^^^^^^
+Line 2, characters 20-38:
+2 |   type (_, +_) eq = Refl : ('a, 'a) eq
+                        ^^^^^^^^^^^^^^^^^^
 Error: In this GADT constructor definition, the variance of the 2nd parameter
        cannot be checked, because the type variable "'a" appears
        in other parameters.

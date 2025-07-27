@@ -1047,11 +1047,13 @@ let rec tree_of_typexp mode ty =
         in
         let t1 =
           if is_optional l then
-            match get_desc ty1 with
-            | Tconstr(path, [ty], _)
-              when Path.same path Predef.path_option ->
-                tree_of_typexp mode ty
-            | _ -> Otyp_stuff "<hidden>"
+            if tpoly_is_mono ty1 then
+              match get_desc (tpoly_get_mono ty1) with
+              | Tconstr(path, [ty], _)
+                when Path.same path Predef.path_option ->
+                  tree_of_typexp mode ty
+              | _ -> Otyp_stuff "<hidden>"
+            else Otyp_stuff "<hidden>"
           else tree_of_typexp mode ty1 in
         Otyp_arrow (lab, t1, tree_of_typexp mode ty2)
     | Ttuple tyl ->
@@ -1200,12 +1202,12 @@ and tree_of_typfields mode rest = function
       let (fields, rest) = tree_of_typfields mode rest l in
       (field :: fields, rest)
 
-and tree_of_package mode {pack_path; pack_cstrs} =
+and tree_of_package mode {pack_path; pack_constraints} =
   { opack_path = tree_of_path (Some Module_type) pack_path;
-    opack_cstrs =
+    opack_constraints =
       List.map
         (fun (li, ty) -> (String.concat "." li, tree_of_typexp mode ty))
-        pack_cstrs }
+        pack_constraints }
 
 let typexp mode ppf ty =
   !Oprint.out_type ppf (tree_of_typexp mode ty)
@@ -1423,7 +1425,7 @@ let tree_of_type_decl id decl =
       otype_private = priv;
       otype_immediate = Type_immediacy.of_attributes decl.type_attributes;
       otype_unboxed = unboxed;
-      otype_cstrs = constraints }
+      otype_constraints = constraints }
 
 let add_type_decl_to_preparation id decl =
    ignore @@ prepare_decl id decl

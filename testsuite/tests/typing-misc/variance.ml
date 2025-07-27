@@ -131,19 +131,21 @@ Error: In this definition, expected parameter variances are not satisfied.
        but it is invariant.
 |}]
 
-module Make_covariant(M: sig type 'a t end): sig
-  type 'a i = 'a
-  type +'a t = 'a i M.t
-end = struct
-  type 'a i = 'a
-  type +'a t = 'a i M.t
-end
+module S = struct
+  module Make_covariant(M: sig type 'a t end): sig
+    type 'a i = 'a
+    type +'a t = 'a i M.t
+  end = struct
+    type 'a i = 'a
+    type +'a t = 'a i M.t
+  end
 
-module Positive_ref = Make_covariant(struct type 'a t = 'a ref end)
+  module Positive_ref = Make_covariant(struct type 'a t = 'a ref end)
+end;;
 [%%expect {|
-Line 6, characters 2-23:
-6 |   type +'a t = 'a i M.t
-      ^^^^^^^^^^^^^^^^^^^^^
+Line 7, characters 4-25:
+7 |     type +'a t = 'a i M.t
+        ^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, expected parameter variances are not satisfied.
        The 1st type parameter was expected to be covariant,
        but it is invariant.

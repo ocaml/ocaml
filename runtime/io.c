@@ -247,11 +247,19 @@ CAMLexport int caml_channel_binary_mode(struct channel *channel)
    end of the flush, or false if some data remains in the buffer.
  */
 
-CAMLexport int caml_flush_partial(struct channel *channel)
+static bool flush_partial(struct channel *channel, bool exn_if_closed)
 {
   int towrite, written;
  again:
   check_pending(channel);
+  if (channel->fd == -1) {
+    if (exn_if_closed) {
+      errno = EBADF;
+      caml_sys_io_error(NO_ARG);
+    } else {
+      return true;
+    }
+  }
 
   towrite = channel->curr - channel->buff;
   CAMLassert (towrite >= 0);
@@ -275,6 +283,11 @@ CAMLexport int caml_flush_partial(struct channel *channel)
     channel->curr -= written;
   }
   return (channel->curr == channel->buff);
+}
+
+CAMLexport int caml_flush_partial(struct channel *channel)
+{
+  return flush_partial(channel, true);
 }
 
 /* Flush completely the buffer. */
@@ -825,8 +838,7 @@ CAMLprim value caml_ml_flush(value vchannel)
   struct channel * channel = Channel(vchannel);
 
   caml_channel_lock(channel);
-  if (channel->fd != -1)
-    caml_flush(channel);
+  while (! flush_partial(channel, false)) continue;
   caml_channel_unlock(channel);
   CAMLreturn (Val_unit);
 }

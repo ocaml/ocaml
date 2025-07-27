@@ -383,7 +383,7 @@ and print_package ppf pack =
       let sep = if !first then (first := false; "with") else "and" in
       fprintf ppf " %s type %s = %a" sep s print_out_type t
     )
-    pack.opack_cstrs
+    pack.opack_constraints
 and print_record_decl ppf lbls =
   fprintf ppf "{%a@;<1 -2>}"
     (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
@@ -696,7 +696,7 @@ and print_out_type_decl kwd ppf td =
       (fun (ty1, ty2) ->
          fprintf ppf "@ @[<2>constraint %a =@ %a@]" !out_type ty1
            !out_type ty2)
-      td.otype_cstrs
+      td.otype_constraints
   in
   let type_defined ppf =
     match td.otype_params with

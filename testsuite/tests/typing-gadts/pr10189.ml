@@ -171,3 +171,36 @@ Line 7, characters 33-34:
 Error: This match case could not be refuted.
        Here is an example of a value that would reach it: "A"
 |}]
+
+module rec M: sig
+  type x
+  type 'a t = A constraint 'a = <x: 'a. 'a -> x >
+end = struct
+  type x
+  type 'a t = A constraint 'a = <x:'a. 'a -> 'a >
+end
+[%%expect {|
+Lines 4-7, characters 6-3:
+4 | ......struct
+5 |   type x
+6 |   type 'a t = A constraint 'a = <x:'a. 'a -> 'a >
+7 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type x = M.x
+           type 'b t = 'b M.t = A constraint 'b = < x : 'a. 'a -> 'a >
+         end
+       is not included in
+         sig type x type 'b t = A constraint 'b = < x : 'a. 'a -> x > end
+       Type declarations do not match:
+         type 'b t = 'b M.t = A constraint 'b = < x : 'a. 'a -> 'a >
+       is not included in
+         type 'b t = A constraint 'b = < x : 'a. 'a -> x >
+       Their parameters differ
+       The type "< x : 'a. 'a -> 'a >" is not equal to the type
+         "< x : 'a. 'a -> x >"
+       Type "'a" is not equal to type "x" = "M.x"
+       The method "x" has type "'a. 'a -> 'a", but the expected method type was
+       "'a. 'a -> x"
+|}]

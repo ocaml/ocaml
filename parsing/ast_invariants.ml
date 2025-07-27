@@ -60,7 +60,7 @@ let iterator =
     match ty.ptyp_desc with
     | Ptyp_tuple ([] | [_]) -> invalid_tuple loc
     | Ptyp_package ptyp ->
-      List.iter (fun (id, _) -> simple_longident id) ptyp.ppt_cstrs
+      List.iter (fun (id, _) -> simple_longident id) ptyp.ppt_constraints
     | Ptyp_poly([],_) -> empty_poly_binder loc
     | _ -> ()
   in

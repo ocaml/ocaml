@@ -101,10 +101,10 @@ program is executed with `-vnum`.
 
 Additionally, for native Windows, executables are additionally called with `-M`
 as an argument, both with and without the `.exe`. This exercises a known bug in
-the hand-off between the executable launcher (`stdlib/headernt.c`) and
-`ocamlrun` where, for example, `ocamlc.byte` when resolved in `PATH` just runs
-as though it were `ocamlrun`. The test works on the basis that `-M` is only a
-valid argument for `ocamlrun` (returning the magic number).
+the hand-off between the executable launcher (`stdlib/header.c`) and `ocamlrun`
+where, for example, `ocamlc.byte` when resolved in `PATH` just runs as though it
+were `ocamlrun`. The test works on the basis that `-M` is only a valid argument
+for `ocamlrun` (returning the magic number).
 
 Exercises:
 - Bytecode executable header and logic in `ocamlc` for computing the "shebang"

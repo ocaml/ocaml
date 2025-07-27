@@ -83,7 +83,7 @@ let string_of_symbol prefix s =
     String.iter
       (fun c ->
        if is_special_char c then
-         Printf.bprintf b "$$%02x" (Char.code c)
+         Printf.bprintf b "%s%02x" Compilenv.escape_prefix (Char.code c)
        else
          Buffer.add_char b c
       )

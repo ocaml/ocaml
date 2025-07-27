@@ -71,7 +71,8 @@ type type_desc =
       [Tarrow (Labelled "l", e1, e2, c)] ==> [l:e1  -> e2]
       [Tarrow (Optional "l", e1, e2, c)] ==> [?l:e1 -> e2]
 
-      See [commutable] for the last argument. *)
+      See [commutable] for the last argument.
+      The argument type must be a [Tpoly] node. *)
 
   | Ttuple of (string option * type_expr) list
   (** [Ttuple [None, t1; ...; None, tn]] ==> [t1 * ... * tn]
@@ -140,7 +141,7 @@ type type_desc =
 (** [package] corresponds to the type of a first-class module *)
 and package =
   { pack_path : Path.t;
-    pack_cstrs : (string list * type_expr) list }
+    pack_constraints : (string list * type_expr) list }
 
 (** See also documentation for [row_more], which enumerates how these
     constructors arise. *)

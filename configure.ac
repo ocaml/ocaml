@@ -83,6 +83,7 @@ ocamltest_libunix=None
 ocamltest_unix_impl="dummy"
 unix_library=""
 unix_directory=""
+diff_supports_color=false
 
 # Information about the package
 
@@ -273,7 +274,6 @@ AC_CONFIG_FILES([Makefile.config])
 AC_CONFIG_FILES([stdlib/sys.ml])
 AC_CONFIG_FILES([manual/src/version.tex])
 AC_CONFIG_FILES([manual/src/html_processing/src/common.ml])
-AC_CONFIG_FILES([ocamltest/ocamltest_config.ml])
 AC_CONFIG_FILES([otherlibs/dynlink/dynlink_config.ml])
 AC_CONFIG_FILES([utils/config.common.ml])
 AC_CONFIG_FILES([utils/config.generated.ml])
@@ -832,12 +832,16 @@ otherlibraries="dynlink runtime_events"
 otherlibs="runtime_events"
 optional_libraries="$optional_libraries otherlibs/dynlink/dynlink"
 lib_dynlink=true
-dldir=otherlibs/dynlink
-AC_CONFIG_LINKS([
-  $dldir/dynlink_cmo_format.mli:file_formats/cmo_format.mli
-  $dldir/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli
-  $dldir/dynlink_platform_intf.mli:$dldir/dynlink_platform_intf.ml
-])
+dnl dldir needs to be expanded by autoconf, not by configure, if it were instead
+dnl put in $dldir, this would end up in config.status, except that the value
+dnl would be missing.
+m4_define([dldir], [otherlibs/dynlink])
+AC_CONFIG_LINKS(
+  dldir[/dynlink_cmo_format.mli:file_formats/cmo_format.mli]
+  dldir[/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli]
+  dldir[/dynlink_platform_intf.mli:]dldir[/dynlink_platform_intf.ml]
+)
+m4_undefine([dldir])
 lib_runtime_events=true
 AS_IF([test x"$enable_unix_lib" != "xno"],
   [enable_unix_lib=yes
@@ -921,14 +925,19 @@ AS_CASE([$ocaml_cc_vendor],
   [msvc-*],
     [AS_CASE([$ocaml_cc_vendor],
       [msvc-*-clang-*],
-        [cc_warnings="-W4 -Wno-unused-parameter -Wno-sign-compare -Wundef \
--Wno-cast-function-type-mismatch"
+        [cc_warnings='-W4 -Wno-unused-parameter -Wno-sign-compare -Wundef'
          warn_error_flag='-WX'],
       [cc_warnings='-W2'
        warn_error_flag='-WX -options:strict'])],
   [warn_error_flag='-Werror'
   cc_warnings="-Wall -Wint-conversion -Wstrict-prototypes \
 -Wold-style-definition -Wundef"])
+
+AS_CASE([$ocaml_cc_vendor],
+  [msvc-*-clang-*],
+    [AX_CHECK_COMPILE_FLAG([-Wno-cast-function-type-mismatch],
+      [cc_warnings="$cc_warnings -Wno-cast-function-type-mismatch"], [],
+      [$warn_error_flag])])
 
 # Use -Wold-style-declaration if supported
 AX_CHECK_COMPILE_FLAG([-Wold-style-declaration],
@@ -1007,9 +1016,13 @@ AS_CASE([$ocaml_cc_vendor],
   [common_cflags="-O"])
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
+# Enable 64-bit time_t in time.h
 AS_CASE([$target],
   [i686-w64-mingw32*],
-    [internal_cflags="$internal_cflags -mfpmath=sse -msse2"])
+    [internal_cflags="$internal_cflags -mfpmath=sse -msse2"
+    # This instructs _mingw.h to adopt the switch in Visual Studio 8 (2005) to
+    # make time_t a 64-bit value.
+    internal_cppflags="$internal_cppflags -D__MINGW_USE_VC2005_COMPAT"])
 
 # Use 64-bit file offset if possible
 # See also AC_SYS_LARGEFILE
@@ -1982,6 +1995,63 @@ AS_IF([$tsan],
                    Try installing it on your system.])])
   LDFLAGS="$SAVED_LDFLAGS"
 
+# We use tsan builtins which are internal functions and might not be
+# backwards compatible. We explicitly check if the compiler uses the
+# same declarations we expect.
+# Some tsan builtins like __tsan_func_exit() have either of two
+# signatures, void (void) or void (void *) (PR #14082).
+# We first do a single check for all builtins for which we expect
+# only one signature, then we check builtins for which we expect one
+# of multiple signatures and set a preprocessor definition according
+# to which one is found.
+  AC_CACHE_CHECK([for ThreadSanitizer builtins],
+    [ocaml_cv_tsan_builtins],
+    [saved_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LDFLAGS -fsanitize=thread $warn_error_flag"
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+void AnnotateHappensBefore(const char *f, int l, void *addr);
+void AnnotateHappensAfter (const char *f, int l, void *addr);
+void __tsan_func_entry   (void *);
+void __tsan_write8       (void *location);
+      ]],[[
+  AnnotateHappensBefore(__FILE__, __LINE__, (void*)0);
+  AnnotateHappensAfter (__FILE__, __LINE__, (void*)0);
+  __tsan_func_entry   ((void*)0);
+  __tsan_write8       ((void*)0);
+      ]])],
+      [ocaml_cv_tsan_builtins=yes],
+      [ocaml_cv_tsan_builtins=no])
+    LDFLAGS="$saved_LDFLAGS"])
+
+  AS_IF([test "$ocaml_cv_tsan_builtins" = no],
+    [AC_MSG_ERROR([libtsan doesn't provide the expected builtins])])
+
+  AC_CACHE_CHECK([how many arguments __tsan_func_exit() takes],
+    [ocaml_cv_func_which___tsan_func_exit],
+    [saved_LDFLAGS="$LDFLAGS"
+
+    # We need warning flags as using the wrong builtins is often a warning
+    LDFLAGS="$LDFLAGS -fsanitize=thread $warn_error_flag"
+    AC_LINK_IFELSE([AC_LANG_PROGRAM(
+        [[void __tsan_func_exit(void);]],
+        [[__tsan_func_exit();]])],
+      [ocaml_cv_func_which___tsan_func_exit=void_void],
+      # Else branch if the first program fails to link
+      [AC_LINK_IFELSE([AC_LANG_PROGRAM(
+          [[void __tsan_func_exit(void *);]],
+          [[__tsan_func_exit((void *)0);]])],
+        [ocaml_cv_func_which___tsan_func_exit=void_void_p],
+        [ocaml_cv_func_which___tsan_func_exit=no])])
+    LDFLAGS="$saved_LDFLAGS"])
+
+  # Define a C macro based on the detected __tsan_func_exit signature
+  AS_CASE([$ocaml_cv_func_which___tsan_func_exit],
+    [void_void_p], [AC_DEFINE([HAVE___TSAN_FUNC_EXIT_VOID_VOID_P], [1],
+                  [ThreadSanitizer exit function signature: void (*)(void*)])],
+    [void_void], [AC_DEFINE([HAVE___TSAN_FUNC_EXIT_VOID_VOID], [1],
+                  [ThreadSanitizer exit function signature: void (*)(void)])],
+    [AC_MSG_ERROR([libtsan uses an unexpected signature for __tsan_func_exit])])
+
   AS_CASE([$ocaml_cc_vendor],
     [gcc-[[0123456789]]-*|gcc-10-*|clang-*],
       [],
@@ -2659,9 +2729,16 @@ testsuite/tools/test_in_prefix"])
   [build_ocamltest=false
   ocamltest=''])
 
+# config.status needs the values of ocamltest_unix_mod and unix_or_win32
+# for creating symlinks
+AC_CONFIG_COMMANDS([links], [], [
+  ocamltest_unix_mod='$ocamltest_unix_mod'
+  unix_or_win32='$unix_or_win32'])
+
+ocamltest_unix_mod="ocamltest/ocamltest_unix_${ocamltest_unix_impl}.ml"
 AS_IF([$build_ocamltest],
   [optional_libraries="$optional_libraries testsuite/lib/testing"
-  ocamltest_unix_mod="ocamltest/ocamltest_unix_${ocamltest_unix_impl}.ml"
+  AC_CONFIG_FILES([ocamltest/ocamltest_config.ml])
   AC_CONFIG_LINKS([
     ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}
   ])

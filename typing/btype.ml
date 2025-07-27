@@ -155,6 +155,7 @@ let newty2 ~level desc =
   newty3 ~level ~scope:Ident.lowest_scope desc
 
 let newgenty desc      = newty2 ~level:generic_level desc
+let newgenmono desc    = newgenty (Tpoly(desc, []))
 let newgenvar ?name () = newgenty (Tvar name)
 let newgenstub ~scope  = newty3 ~level:generic_level ~scope (Tvar None)
 
@@ -163,6 +164,7 @@ let newgenstub ~scope  = newty3 ~level:generic_level ~scope (Tvar None)
 let is_Tvar ty = match get_desc ty with Tvar _ -> true | _ -> false
 let is_Tunivar ty = match get_desc ty with Tunivar _ -> true | _ -> false
 let is_Tconstr ty = match get_desc ty with Tconstr _ -> true | _ -> false
+let is_Tpoly ty = match get_desc ty with Tpoly _ -> true | _ -> false
 let is_poly_Tpoly ty =
   match get_desc ty with Tpoly (_, _ :: _) -> true | _ -> false
 let type_kind_is_abstract decl =
@@ -173,6 +175,33 @@ let type_origin decl =
   | Type_variant _ | Type_record _ | Type_open | Type_external _ -> Definition
 
 let dummy_method = "*dummy method*"
+
+                  (********************************)
+                  (*  Utilities for poly types    *)
+                  (********************************)
+
+let tpoly_is_mono ty =
+  match get_desc ty with
+  | Tpoly(_, []) -> true
+  | Tpoly(_, _ :: _) -> false
+  | _ -> assert false
+
+let tpoly_get_poly ty =
+  match get_desc ty with
+  | Tpoly(ty, vars) -> (ty, vars)
+  | _ -> assert false
+
+let tpoly_get_mono ty =
+  match get_desc ty with
+  | Tpoly(ty, []) -> ty
+  | _ -> assert false
+
+let tpoly_get_mono_opt ty =
+  match get_desc ty with
+  | Tpoly(ty, []) -> Some ty
+  | Tpoly _ -> None
+  | _ -> assert false
+
 
 (**** Representative of a type ****)
 
@@ -327,10 +356,11 @@ let fold_type_expr f init ty =
   | Tsubst _            -> assert false
   | Tunivar _           -> init
   | Tpoly (ty, tyl)     ->
-    let result = f init ty in
-    List.fold_left f result tyl
+      let result = f init ty in
+      List.fold_left f result tyl
   | Tpackage pack ->
-    List.fold_left (fun result (_n, ty) -> f result ty) init pack.pack_cstrs
+      List.fold_left
+        (fun result (_n, ty) -> f result ty) init pack.pack_constraints
 
 let iter_type_expr f ty =
   fold_type_expr (fun () v -> f v) () ty
@@ -531,8 +561,9 @@ let rec copy_type_desc ?(keep_names=false) f = function
       let tyl = List.map f tyl in
       Tpoly (f ty, tyl)
   | Tpackage pack       ->
-      Tpackage {pack with
-        pack_cstrs = List.map (fun (n, ty) -> (n, f ty)) pack.pack_cstrs}
+      let pack_constraints =
+        List.map (fun (n, ty) -> (n, f ty)) pack.pack_constraints in
+      Tpackage {pack with pack_constraints }
 
 (* TODO: rename to [module Copy_scope] *)
 module For_copy : sig

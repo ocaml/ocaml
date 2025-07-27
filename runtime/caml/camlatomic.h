@@ -25,24 +25,13 @@
  */
 
 #ifdef __cplusplus
-
 extern "C++" {
-#include <atomic>
-typedef std::atomic<uintnat> atomic_uintnat;
-typedef std::atomic<intnat> atomic_intnat;
 using std::memory_order_relaxed;
 using std::memory_order_acquire;
 using std::memory_order_release;
 using std::memory_order_acq_rel;
 using std::memory_order_seq_cst;
 }
-
-#else
-
-#include <stdatomic.h>
-typedef _Atomic uintnat atomic_uintnat;
-typedef _Atomic intnat atomic_intnat;
-
 #endif
 
 #ifdef CAML_INTERNALS

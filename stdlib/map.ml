@@ -56,6 +56,7 @@ module type S =
     val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val split: key -> 'a t -> 'a t * 'a option * 'a t
     val is_empty: 'a t -> bool
+    val is_singleton: 'a t -> bool
     val mem: key -> 'a t -> bool
     val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
     val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
@@ -121,6 +122,10 @@ module Make(Ord: OrderedType) = struct
     let empty = Empty
 
     let is_empty = function Empty -> true | _ -> false
+
+    let is_singleton = function
+      | Node{l=Empty; r=Empty} -> true
+      | Empty | Node _ -> false
 
     let rec add x data = function
         Empty ->

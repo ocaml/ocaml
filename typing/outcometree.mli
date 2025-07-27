@@ -99,7 +99,7 @@ and out_constructor = {
 
 and out_package = {
   opack_path: out_ident;
-  opack_cstrs: (string * out_type) list;
+  opack_constraints: (string * out_type) list;
 }
 
 and out_variant =
@@ -141,7 +141,7 @@ and out_type_decl =
     otype_private: Asttypes.private_flag;
     otype_immediate: Type_immediacy.t;
     otype_unboxed: bool;
-    otype_cstrs: (out_type * out_type) list }
+    otype_constraints: (out_type * out_type) list }
 and out_extension_constructor =
   { oext_name: string;
     oext_type_name: string;

@@ -77,6 +77,8 @@ val newty2: level:int -> type_desc -> type_expr
 
 val newgenty: type_desc -> type_expr
         (* Create a generic type *)
+val newgenmono: type_expr -> type_expr
+        (* Create a new generic type wrapped inside a [Tpoly(x,[])] *)
 val newgenvar: ?name:string -> unit -> type_expr
         (* Return a fresh generic variable *)
 val newgenstub: scope:int -> type_expr
@@ -88,10 +90,23 @@ val newgenstub: scope:int -> type_expr
 val is_Tvar: type_expr -> bool
 val is_Tunivar: type_expr -> bool
 val is_Tconstr: type_expr -> bool
-val is_poly_Tpoly: type_expr -> bool
 val dummy_method: label
 val type_kind_is_abstract: type_declaration -> bool
 val type_origin: type_declaration -> type_origin
+
+(**** Utilities for poly types ****)
+
+val is_Tpoly: type_expr -> bool
+
+(* This function is used for polymorphic records where we don't have the
+   invariant that the type of record fields are Tpoly *)
+val is_poly_Tpoly: type_expr -> bool
+
+(* These four functions can only be called on [Tpoly] nodes. *)
+val tpoly_is_mono : type_expr -> bool
+val tpoly_get_mono : type_expr -> type_expr
+val tpoly_get_poly : type_expr -> type_expr * type_expr list
+val tpoly_get_mono_opt : type_expr -> type_expr option
 
 (**** polymorphic variants ****)
 

@@ -517,7 +517,7 @@
       type_declaration "t" (shortcut_ext_attr.ml[60,1295+5]..[60,1295+6]) (shortcut_ext_attr.ml[60,1295+0]..[61,1304+22])
         ptype_params =
           []
-        ptype_cstrs =
+        ptype_constraints =
           []
         ptype_kind =
           Ptype_abstract
@@ -611,7 +611,7 @@
               []
             ptype_params =
               []
-            ptype_cstrs =
+            ptype_constraints =
               []
             ptype_kind =
               Ptype_abstract
@@ -626,7 +626,7 @@
               []
             ptype_params =
               []
-            ptype_cstrs =
+            ptype_constraints =
               []
             ptype_kind =
               Ptype_abstract
@@ -838,7 +838,7 @@
                       []
                     ptype_params =
                       []
-                    ptype_cstrs =
+                    ptype_constraints =
                       []
                     ptype_kind =
                       Ptype_abstract
@@ -853,7 +853,7 @@
                       []
                     ptype_params =
                       []
-                    ptype_cstrs =
+                    ptype_constraints =
                       []
                     ptype_kind =
                       Ptype_abstract
