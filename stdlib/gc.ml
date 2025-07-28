@@ -32,7 +32,7 @@ type stat = {
   top_heap_words : int;
   stack_size : int;
   forced_major_collections: int;
-  live_stacks_bytes: int;
+  live_stacks_words: int;
 }
 
 type control = {

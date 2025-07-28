@@ -101,8 +101,8 @@ type stat =
         was started.
         @since 4.12 *)
 
-    live_stacks_bytes: int;
-    (** Total size of live stacks in bytes.
+    live_stacks_words: int;
+    (** Total size of live stacks in words.
         @since 5.5
     *)
 }
