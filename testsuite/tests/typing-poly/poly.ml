@@ -648,7 +648,7 @@ val app : int * bool = (1, true)
 Line 9, characters 0-25:
 9 | type 'a foo = 'a foo list
     ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation "foo" is cyclic:
+Error: The definition of "foo" contains a cycle:
          "'a foo" = "'a foo list",
          "'a foo list" contains "'a foo"
 |}];;
@@ -955,7 +955,7 @@ type t = u and u = t;;
 Line 1, characters 0-10:
 1 | type t = u and u = t;;
     ^^^^^^^^^^
-Error: The type abbreviation "t" is cyclic:
+Error: The definition of "t" contains a cycle:
          "t" = "u",
          "u" = "t"
 |}];;
@@ -1136,17 +1136,7 @@ class type ['a] cb =
 type bt = 'b ca cb as 'b
 ;;
 [%%expect {|
-Line 1, characters 0-24:
-1 | type bt = 'b ca cb as 'b
-    ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of "bt" contains a cycle:
-         "< a : < as_a : < as_a : 'b;
-                          b : < a : 'a; as_b : < a : 'a; as_b : 'c > as 'c > >
-                        as 'b;
-                 b : < a : 'a; as_b : 'c > >
-               as 'a;
-           as_b : 'c >" contains "'a",
-         "'a" = "'a"
+type bt = < a : 'a ca; as_b : ('a ca, 'a) b > as 'a
 |}];;
 
 (* final classes, etc... *)

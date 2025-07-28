@@ -8,12 +8,6 @@ type 'a t = [`A of 'a t t] as 'a;; (* fails *)
 Line 1, characters 0-32:
 1 | type 'a t = [`A of 'a t t] as 'a;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation "t" is cyclic:
-         "[ `A of 'a ] as 'a" contains "'a"
-|}, Principal{|
-Line 1, characters 0-32:
-1 | type 'a t = [`A of 'a t t] as 'a;; (* fails *)
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This recursive type is not regular.
        The type constructor "t" is defined as
          type "'b t"
@@ -52,7 +46,7 @@ type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;; (* fails *)
 Line 1, characters 42-51:
 1 | type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;; (* fails *)
                                               ^^^^^^^^^
-Error: The type abbreviation "t" is cyclic:
+Error: The definition of "t" contains a cycle:
          "t" = "u",
          "u" = "t"
 |}];;
@@ -162,12 +156,8 @@ type 'a t = 'b  constraint 'a = 'b t;;
 Line 1, characters 0-36:
 1 | type 'a t = 'b  constraint 'a = 'b t;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This recursive type is not regular.
-       The type constructor "t" is defined as
-         type "'b t t"
-       but it is used as
-         "'b t".
-       All uses need to match the definition for the recursive type to be regular.
+Error: The definition of "t" contains a cycle:
+         the 1st type parameter of "t" is "'a t"
 |}]
 
 type 'a t = 'b constraint 'a = ('b * 'b) t;;
@@ -176,7 +166,7 @@ Line 1, characters 0-42:
 1 | type 'a t = 'b constraint 'a = ('b * 'b) t;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of "t" contains a cycle:
-         "'a * 'a" contains "'a * 'a"
+         the 1st type parameter of "t" is "('a * 'a) t"
 |}]
 
 type 'a t = 'a * 'b constraint _ * 'a = 'b t;;
@@ -192,12 +182,8 @@ type 'a t = 'a * 'b constraint 'a = 'b t;;
 Line 1, characters 0-40:
 1 | type 'a t = 'a * 'b constraint 'a = 'b t;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This recursive type is not regular.
-       The type constructor "t" is defined as
-         type "'b t t"
-       but it is used as
-         "'b t".
-       All uses need to match the definition for the recursive type to be regular.
+Error: The definition of "t" contains a cycle:
+         the 1st type parameter of "t" is "'a t"
 |}]
 
 type 'a t = <a : 'a; b : 'b> constraint 'a = 'b t;;
@@ -205,12 +191,8 @@ type 'a t = <a : 'a; b : 'b> constraint 'a = 'b t;;
 Line 1, characters 0-49:
 1 | type 'a t = <a : 'a; b : 'b> constraint 'a = 'b t;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This recursive type is not regular.
-       The type constructor "t" is defined as
-         type "'b t t"
-       but it is used as
-         "'b t".
-       All uses need to match the definition for the recursive type to be regular.
+Error: The definition of "t" contains a cycle:
+         the 1st type parameter of "t" is "'a t"
 |}]
 
 type 'a t = <a : 'a; b : 'b> constraint <a : 'a; ..> = 'b t;;
@@ -227,12 +209,8 @@ module rec M : sig type 'a t = 'b constraint 'a = 'b t end = M;;
 Line 1, characters 19-54:
 1 | module rec M : sig type 'a t = 'b constraint 'a = 'b t end = M;;
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This recursive type is not regular.
-       The type constructor "t" is defined as
-         type "'b t t"
-       but it is used as
-         "'b t".
-       All uses need to match the definition for the recursive type to be regular.
+Error: The definition of "t" contains a cycle:
+         the 1st type parameter of "t" is "'a t"
 |}]
 module rec M : sig type 'a t = 'b constraint 'a = ('b * 'b) t end = M;;
 [%%expect{|
@@ -240,7 +218,7 @@ Line 1, characters 19-61:
 1 | module rec M : sig type 'a t = 'b constraint 'a = ('b * 'b) t end = M;;
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of "t" contains a cycle:
-         "'a * 'a" contains "'a * 'a"
+         the 1st type parameter of "t" is "('a * 'a) t"
 |}]
 
 module type S =
@@ -365,7 +343,7 @@ type !'a t = 'b constraint 'a = < x : 'b >
 Line 2, characters 0-20:
 2 | type u = < x : u > t
     ^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation "u" is cyclic:
+Error: The definition of "u" contains a cycle:
          "u" = "< x : u > t",
          "< x : u > t" = "u"
 |}]
@@ -423,7 +401,7 @@ type 'a t constraint 'a = 'b * 'c
 Line 2, characters 0-21:
 2 | type cycle = cycle id
     ^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation "cycle" is cyclic:
+Error: The definition of "cycle" contains a cycle:
          "cycle" = "cycle id",
          "cycle id" = "cycle"
 |}]
