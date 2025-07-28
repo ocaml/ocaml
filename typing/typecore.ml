@@ -3158,8 +3158,12 @@ and is_nonexpansive_struct_item item =
   | Tstr_value (_, pat_exp_list) ->
       List.for_all (fun vb -> is_nonexpansive vb.vb_expr) pat_exp_list
   | Tstr_module {mb_expr=m;_}
-  | Tstr_open {open_expr=m;_}
-  | Tstr_include {incl_mod=m;_} -> is_nonexpansive_mod m
+  | Tstr_open {open_expr=m;_} -> is_nonexpansive_mod m
+  | Tstr_include {incl_mod=m;incl_kind=k;_} ->
+    begin match k with
+    | Tincl_structure -> is_nonexpansive_mod m
+    | Tincl_functor _ | Tincl_gen_functor _ -> false
+    end
   | Tstr_recmodule id_mod_list ->
       List.for_all (fun {mb_expr=m;_} -> is_nonexpansive_mod m)
         id_mod_list
