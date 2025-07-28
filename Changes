@@ -35,6 +35,10 @@ Working version
   Added the function [Gc.Memprof.is_sampling].
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
 
+- #14168: restore the stack size statistic in `Gc.stat` and adds a new
+  `live_stacks_words` field tracking the total size in words of live stacks.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 ### Standard library:
