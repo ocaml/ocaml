@@ -2488,7 +2488,7 @@ fun_expr:
 ;
 %inline fun_expr_attrs:
   | LET ext_attributes local_structure_item IN seq_expr
-      { Pexp_struct_item($3, $5), $2 }
+      { Pexp_letitem($3, $5), $2 }
   /* Cf #5939: we used to accept (fun p when e0 -> e) */
   | FUN ext_attributes fun_params preceded(COLON, atomic_type)?
       MINUSGREATER fun_body
@@ -2617,10 +2617,10 @@ simple_expr:
   | simple_expr DOT mkrhs(label_longident)
       { Pexp_field($1, $3) }
   | od=open_dot_declaration DOT LPAREN seq_expr RPAREN
-      { Pexp_struct_item(Str.open_ od, $4) }
+      { Pexp_letitem(Str.open_ od, $4) }
   | od=open_dot_declaration DOT LBRACELESS object_expr_content GREATERRBRACE
       { (* TODO: review the location of Pexp_override *)
-        Pexp_struct_item(Str.open_ od, mkexp ~loc:$sloc (Pexp_override $4)) }
+        Pexp_letitem(Str.open_ od, mkexp ~loc:$sloc (Pexp_override $4)) }
   | mod_longident DOT LBRACELESS object_expr_content error
       { unclosed "{<" $loc($3) ">}" $loc($5) }
   | simple_expr HASH mkrhs(label)
@@ -2630,7 +2630,7 @@ simple_expr:
   | extension
       { Pexp_extension $1 }
   | od=open_dot_declaration DOT mkrhs(LPAREN RPAREN {Lident "()"})
-      { Pexp_struct_item(Str.open_ od,
+      { Pexp_letitem(Str.open_ od,
                          mkexp ~loc:($loc($3)) (Pexp_construct($3, None))) }
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" $loc($3) ")" $loc($5) }
@@ -2641,7 +2641,7 @@ simple_expr:
       { unclosed "{" $loc($1) "}" $loc($3) }
   | od=open_dot_declaration DOT LBRACE record_expr_content RBRACE
       { let (exten, fields) = $4 in
-        Pexp_struct_item(Str.open_ od,
+        Pexp_letitem(Str.open_ od,
                          mkexp ~loc:($startpos($3), $endpos)
                            (Pexp_record(fields, exten))) }
   | mod_longident DOT LBRACE record_expr_content error
@@ -2653,11 +2653,11 @@ simple_expr:
   | LBRACKETBAR BARRBRACKET
       { Pexp_array [] }
   | od=open_dot_declaration DOT LBRACKETBAR expr_semi_list BARRBRACKET
-      { Pexp_struct_item(Str.open_ od,
+      { Pexp_letitem(Str.open_ od,
                          mkexp ~loc:($startpos($3), $endpos) (Pexp_array($4))) }
   | od=open_dot_declaration DOT LBRACKETBAR BARRBRACKET
       { (* TODO: review the location of Pexp_array *)
-        Pexp_struct_item(Str.open_ od,
+        Pexp_letitem(Str.open_ od,
                          mkexp ~loc:($startpos($3), $endpos) (Pexp_array [])) }
   | mod_longident DOT
     LBRACKETBAR expr_semi_list error
@@ -2671,9 +2671,9 @@ simple_expr:
           (* TODO: review the location of list_exp *)
           let tail_exp, _tail_loc = mktailexp $loc($5) $4 in
           mkexp ~loc:($startpos($3), $endpos) tail_exp in
-        Pexp_struct_item(Str.open_ od, list_exp) }
+        Pexp_letitem(Str.open_ od, list_exp) }
   | od=open_dot_declaration DOT mkrhs(LBRACKET RBRACKET {Lident "[]"})
-      { Pexp_struct_item(Str.open_ od,
+      { Pexp_letitem(Str.open_ od,
                          mkexp ~loc:$loc($3) (Pexp_construct($3, None))) }
   | mod_longident DOT
     LBRACKET expr_semi_list error
@@ -2683,7 +2683,7 @@ simple_expr:
       { let modexp =
           mkexp_attrs ~loc:($startpos($3), $endpos)
             (Pexp_pack ($6, Some ptyp)) $5 in
-        Pexp_struct_item(Str.open_ od, modexp) }
+        Pexp_letitem(Str.open_ od, modexp) }
   | mod_longident DOT
     LPAREN MODULE ext_attributes module_expr COLON error
       { unclosed "(" $loc($3) ")" $loc($8) }

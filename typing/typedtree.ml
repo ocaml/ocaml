@@ -148,7 +148,7 @@ and expression_desc =
     }
   | Texp_unreachable
   | Texp_extension_constructor of Longident.t loc * Path.t
-  | Texp_struct_item of structure_item * expression
+  | Texp_letitem of structure_item * expression
 
 and meth =
   | Tmeth_name of string

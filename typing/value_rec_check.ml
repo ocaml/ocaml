@@ -155,7 +155,7 @@ let classify_expression : Typedtree.expression -> sd =
 
     (* non-binding cases *)
     | Texp_sequence (_, e)
-    | Texp_struct_item (_, e) ->
+    | Texp_letitem (_, e) ->
         classify_expression env e
 
     | Texp_construct (_, {cstr_tag = Cstr_unboxed}, [e]) ->
@@ -921,7 +921,7 @@ let rec expression : Typedtree.expression -> term_judg =
       empty
     | Texp_extension_constructor (_lid, pth) ->
       path pth << Dereference
-    | Texp_struct_item (si, e) ->
+    | Texp_letitem (si, e) ->
       structure_item si >> expression e
 
 (* Function bodies.

@@ -2780,7 +2780,7 @@ let rec final_subexpression exp =
   | Texp_try (e, _, _)
   | Texp_ifthenelse (_, e, _)
   | Texp_match (_, {c_rhs=e} :: _, _, _)
-  | Texp_struct_item (_, e)
+  | Texp_letitem (_, e)
     -> final_subexpression e
   | _ -> exp
 
@@ -3135,7 +3135,7 @@ let rec is_nonexpansive exp =
                          ("%raise" | "%reraise" | "%raise_notrace")}}) },
       [Nolabel, Arg e]) ->
      is_nonexpansive e
-  | Texp_struct_item (si, e) ->
+  | Texp_letitem (si, e) ->
       is_nonexpansive_struct_item si && is_nonexpansive e
   | Texp_array (_, _ :: _)
   | Texp_apply _
@@ -3458,7 +3458,7 @@ let check_statement exp =
         match exp_desc with
         | Texp_let (_, _, e)
         | Texp_sequence (_, e)
-        | Texp_struct_item (_, e) ->
+        | Texp_letitem (_, e) ->
             loop e
         | _ ->
             let loc =
@@ -3524,7 +3524,7 @@ let check_partial_application ~statement exp =
             | Texp_ifthenelse (_, e1, Some e2) ->
                 check e1; check e2
             | Texp_let (_, _, e) | Texp_sequence (_, e)
-            | Texp_struct_item (_, e) ->
+            | Texp_letitem (_, e) ->
                 check e
             | Texp_apply _ | Texp_send _ | Texp_new _ | Texp_letop _ ->
                 Location.prerr_warning exp_loc
@@ -4970,7 +4970,7 @@ and type_expect_
            exp_attributes = sexp.pexp_attributes;
            exp_env = env }
 
-  | Pexp_struct_item (si, e) ->
+  | Pexp_letitem (si, e) ->
       let tv = newvar () in
       let (_, si, exp) =
         with_local_level_generalize begin fun () ->
@@ -4984,7 +4984,7 @@ and type_expect_
         end
       in
       re {
-        exp_desc = Texp_struct_item (si, exp);
+        exp_desc = Texp_letitem (si, exp);
         exp_type = exp.exp_type;
         exp_loc = loc;
         exp_extra = [];

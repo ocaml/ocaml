@@ -499,8 +499,8 @@ let expr sub x =
         Texp_unreachable
     | Texp_extension_constructor (lid, path) ->
         Texp_extension_constructor (map_loc_lid sub lid, path)
-    | Texp_struct_item (si, e) ->
-        Texp_struct_item (sub.structure_item sub si, sub.expr sub e)
+    | Texp_letitem (si, e) ->
+        Texp_letitem (sub.structure_item sub si, sub.expr sub e)
   in
   let exp_attributes = sub.attributes sub x.exp_attributes in
   {x with exp_loc; exp_extra; exp_desc; exp_env; exp_attributes}

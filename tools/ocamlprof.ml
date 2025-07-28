@@ -297,7 +297,7 @@ and rw_exp iflag sexp =
       rewrite_exp iflag body
   | Pexp_extension _ -> ()
   | Pexp_unreachable -> ()
-  | Pexp_struct_item (si, exp) ->
+  | Pexp_letitem (si, exp) ->
       rewrite_str_item iflag si;
       rewrite_exp iflag exp
 

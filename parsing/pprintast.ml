@@ -808,7 +808,7 @@ and expression ctxt f x =
         paren true (expression reset_ctxt) f x
     | Pexp_ifthenelse _ | Pexp_sequence _ when ctxt.ifthenelse ->
         paren true (expression reset_ctxt) f x
-    | Pexp_let _ | Pexp_letop _ | Pexp_struct_item _
+    | Pexp_let _ | Pexp_letop _ | Pexp_letitem _
         when ctxt.semi ->
         paren true (expression reset_ctxt) f x
     | Pexp_newtype (lid, e) ->
@@ -952,7 +952,7 @@ and expression ctxt f x =
           (expression ctxt) body
     | Pexp_extension e -> extension ctxt f e
     | Pexp_unreachable -> pp f "."
-    | Pexp_struct_item (si, e) ->
+    | Pexp_letitem (si, e) ->
         pp f "@[<hov2>let@ %a@ in@ %a@]"
           (structure_item reset_ctxt) si (expression ctxt) e
     | _ -> expression1 ctxt f x

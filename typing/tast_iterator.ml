@@ -390,7 +390,7 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
       sub.case sub body
   | Texp_unreachable -> ()
   | Texp_extension_constructor (lid, _) -> iter_loc_lid sub lid
-  | Texp_struct_item (si, e) ->
+  | Texp_letitem (si, e) ->
       sub.structure_item sub si;
       sub.expr sub e
 

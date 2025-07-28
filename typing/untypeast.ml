@@ -571,8 +571,8 @@ let expression sub exp =
                         PStr [ Str.eval ~loc
                                  (Exp.construct ~loc (map_loc sub lid) None)
                              ])
-    | Texp_struct_item (si, exp) ->
-        Pexp_struct_item (sub.structure_item sub si, sub.expr sub exp)
+    | Texp_letitem (si, exp) ->
+        Pexp_letitem (sub.structure_item sub si, sub.expr sub exp)
   in
   List.fold_right (exp_extra sub) exp.exp_extra
     (Exp.mk ~loc ~attrs desc)

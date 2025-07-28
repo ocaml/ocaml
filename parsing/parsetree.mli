@@ -410,7 +410,7 @@ and expression_desc =
   | Pexp_setinstvar of label loc * expression  (** [x <- 2] *)
   | Pexp_override of (label loc * expression) list
       (** [{< x1 = E1; ...; xn = En >}] *)
-  | Pexp_struct_item of structure_item * expression
+  | Pexp_letitem of structure_item * expression
       (** [let SI in E] *)
   | Pexp_assert of expression
       (** [assert E].

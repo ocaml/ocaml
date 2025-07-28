@@ -475,8 +475,8 @@ and expression i ppf x =
       line i ppf "Texp_unreachable"
   | Texp_extension_constructor (li, _) ->
       line i ppf "Texp_extension_constructor %a" fmt_longident li
-  | Texp_struct_item (si, e) ->
-      line i ppf "Texp_struct_item\n";
+  | Texp_letitem (si, e) ->
+      line i ppf "Texp_letitem\n";
       structure_item i ppf si;
       expression i ppf e;
 

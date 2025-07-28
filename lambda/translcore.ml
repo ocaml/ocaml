@@ -573,7 +573,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
         (transl_letop ~scopes e.exp_loc e.exp_env let_ ands param body partial)
   | Texp_unreachable ->
       raise (Error (e.exp_loc, Unreachable_reached))
-  | Texp_struct_item (si, e) ->
+  | Texp_letitem (si, e) ->
       !transl_struct_item ~scopes [] None si (fun _ -> transl_exp ~scopes e)
 
 and pure_module m =

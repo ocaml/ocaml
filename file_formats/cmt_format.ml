@@ -225,7 +225,7 @@ let iter_on_occurrences
       | Texp_send _
       | Texp_assert _ | Texp_lazy _
       | Texp_object _ | Texp_pack _ | Texp_letop _ | Texp_unreachable
-      | Texp_struct_item _ -> ());
+      | Texp_letitem _ -> ());
       default_iterator.expr sub e);
 
   (* Remark: some types get iterated over twice due to how constraints are

@@ -393,8 +393,8 @@ and expression i ppf x =
       payload i ppf arg
   | Pexp_unreachable ->
       line i ppf "Pexp_unreachable"
-  | Pexp_struct_item (si, e) ->
-      line i ppf "Pexp_struct_item\n";
+  | Pexp_letitem (si, e) ->
+      line i ppf "Pexp_letitem\n";
       structure_item i ppf si;
       expression i ppf e
 

@@ -36,7 +36,7 @@
                 expression (shortcut_ext_attr.ml[12,222+2]..[30,721+31])
                   Pexp_sequence
                   expression (shortcut_ext_attr.ml[12,222+2]..[12,222+36])
-                    Pexp_struct_item
+                    Pexp_letitem
                     structure_item (shortcut_ext_attr.ml[12,222+7]..[12,222+29])
                       Pstr_extension "foo"
                       [
@@ -54,7 +54,7 @@
                   expression (shortcut_ext_attr.ml[13,261+2]..[30,721+31])
                     Pexp_sequence
                     expression (shortcut_ext_attr.ml[13,261+2]..[13,261+30])
-                      Pexp_struct_item
+                      Pexp_letitem
                       structure_item (shortcut_ext_attr.ml[13,261+7]..[13,261+23])
                         Pstr_extension "foo"
                         [
