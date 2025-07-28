@@ -813,7 +813,7 @@ let check_abbrev env sdecl (id, decl) =
      end
 
      (* well-founded *)
-     Module M = Fix(functor (M:T) -> struct type t = < x : M.t > end)
+     module M = Fix(functor (M:T) -> struct type t = < x : M.t > end)
 
      (* ill-founded *)
      module M = Fix(functor (M:T) -> struct type t = int * M.t end);;
