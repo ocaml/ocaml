@@ -121,7 +121,8 @@ let extract_sig_open env loc mty =
 
 (* Extract the signature of a functor's body, using the provided [sig_acc]
    signature to fill in names from its parameter *)
-let extract_sig_functor_open funct_body env loc mty sig_acc =
+let extract_sig_functor_open funct_body env loc mty ~parent_shape ~functor_shape
+    sig_acc =
   let sig_acc = List.rev sig_acc in
   match Env.scrape_alias env mty with
   | Mty_functor (Named (param, mty_param),mty_result) as mty_func ->
@@ -177,7 +178,8 @@ let extract_sig_functor_open funct_body env loc mty sig_acc =
             raise(Error(loc, env, Cannot_eliminate_dependency
                                     (Functor_included, mty_func)))
       in
-      (sg, incl_kind)
+      let shape = Shape.app functor_shape ~arg:(Shape.str parent_shape) in
+      (sg, incl_kind, shape)
   | Mty_functor (Unit,_) as mty ->
       raise(Error(loc, env, Signature_parameter_expected mty))
   | Mty_alias path -> raise(Error(loc, env, Cannot_scrape_alias path))
@@ -3160,23 +3162,25 @@ and type_str_item ~names ~toplevel ~funct_body anchor env shape_map
         let smodl = sincl.pincl_mod in
         let sloc = sincl.pincl_loc in
         let modl, modl_shape =
-          (* CR onicole: Check this *)
           Builtin_attributes.warning_scope sincl.pincl_attributes
             (fun () -> type_module ~strengthen:true ~funct_body None env smodl)
         in
-        let sg, incl_kind =
+        let sg, incl_kind, shape =
           match sincl.pincl_kind with
           | `Include_functor ->
                extract_sig_functor_open funct_body env smodl.pmod_loc
-                 modl.mod_type sig_acc
+                 modl.mod_type ~parent_shape:shape_map ~functor_shape:modl_shape
+                 sig_acc
           | `Include ->
-              extract_sig_open env smodl.pmod_loc modl.mod_type, Tincl_structure
+              extract_sig_open env smodl.pmod_loc modl.mod_type,
+              Tincl_structure,
+              modl_shape
         in
         let scope = Ctype.create_scope () in
         (* Rename all identifiers bound by this signature to avoid clashes *)
         let sg, shape, new_env =
-          Env.enter_signature_and_shape ~scope ~parent_shape:shape_map
-            modl_shape sg env
+          Env.enter_signature_and_shape ~scope ~parent_shape:shape_map shape sg
+            env
         in
         Signature_group.iter (Signature_names.check_sig_item names loc) sg;
         let incl =
