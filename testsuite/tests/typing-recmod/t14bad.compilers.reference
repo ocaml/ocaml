@@ -1,6 +1,5 @@
-File "t14bad.ml", line 23, characters 2-43:
-23 |   module rec U : T with type D.t = U'.t = U
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of U.D.t contains a cycle:
-         U'.t = U'.t,
+File "t14bad.ml", line 24, characters 2-35:
+24 |   and U' : S with type t = U'.t = U
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The type abbreviation U'.t is cyclic:
          U'.t = U'.t

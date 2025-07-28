@@ -2016,7 +2016,11 @@ let approx_type_decl sdecl_list =
 (* Check the well-formedness conditions on type abbreviations defined
    within recursive modules. *)
 
-let check_recmod_typedecl ~abs_env env loc recmod_ids path decl =
+(* [abs_env] is an abstract environment without physical cycles.
+  It is used as a printing environment in the case of cycles.
+  [env] is the main typing environment, which may contain cycles. *)
+let check_recmod_typedecl
+    ~abs_env env loc recmod_ids path decl =
   (* recmod_ids is the list of recursively-defined module idents.
      (path, decl) is the type declaration to be checked. *)
   let to_check path = Path.exists_free recmod_ids path in

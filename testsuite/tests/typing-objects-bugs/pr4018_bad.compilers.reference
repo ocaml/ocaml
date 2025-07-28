@@ -24,19 +24,15 @@ Error: This type entity = < destroy_subject : id subject; entity_id : id >
            .. >
          as 'd
        Type
-         (< add_observer : < notify : 'e -> id -> unit > -> unit;
-            notify_observers : id -> unit >
-          as 'e, id)
-         observer =
-           < notify : < add_observer : 'f -> unit;
-                        notify_observers : id -> unit > ->
-                      id -> unit as 'g >
-           as 'f = < notify : 'g >
+         < notify : < add_observer : 'e -> unit;
+                      notify_observers : id -> unit > ->
+                    id -> unit as 'f >
+         as 'e = < notify : 'f >
        is not compatible with type
-         < add_entity : (< destroy_subject : < add_observer : 'h -> 'b; .. >;
+         < add_entity : (< destroy_subject : < add_observer : 'g -> 'b; .. >;
                            .. >
                          as 'a) ->
                         'b;
            notify : 'a -> id -> unit >
-         as 'h
+         as 'g
        The first object type has no method add_entity
