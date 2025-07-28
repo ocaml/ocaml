@@ -200,7 +200,8 @@ alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket, value hval,
       (uintnat)stack + sizeof(struct stack_info) + sizeof(value) * wosize, 16);
     stack->handler = hand;
     atomic_fetch_add(&live_stack_counter,
-      Stack_high(stack) + sizeof(struct stack_handler) - (value*)stack);
+                     (value*)(stack->handler+1) - (value*)stack);
+
   }
 
   hand->handle_value = hval;
@@ -576,7 +577,7 @@ void caml_free_stack (struct stack_info* stack)
 #endif
   } else {
     atomic_fetch_sub(&live_stack_counter,
-      Stack_high(stack) + sizeof(struct stack_handler) - (value*)stack);
+                     (value*)(stack->handler+1) - (value*)stack);
 #ifdef DEBUG
     memset(stack, 0x42, (char*)stack->handler - (char*)stack);
 #endif

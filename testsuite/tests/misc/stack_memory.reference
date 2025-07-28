@@ -1,45 +1,45 @@
-Stack memory increase: 104
-Stack memory increase: 274
-Stack memory increase: 406
-Stack memory increase: 670
-Stack memory increase: 1198
-Stack memory increase: 2254
-Stack memory increase: 4366
-Stack memory increase: 8590
-Stack memory increase: 17038
-Stack memory increase: 33934
-Stack memory increase: 67726
-Stack memory increase: 135310
-ephemeral use of stack memory: 0 -> 135310 -> 104
-Stack memory increase: 274
-Stack memory increase: 406
-Stack memory increase: 670
-Stack memory increase: 1198
-Stack memory increase: 2254
-Stack memory increase: 4366
-Stack memory increase: 8590
-Stack memory increase: 17038
-Stack memory increase: 33934
-Stack memory increase: 67726
-Stack memory increase: 135310
-ephemeral use of stack memory: 104 -> 135310 -> 104
-memory added to cache stack: 104 -> 104
-memory added to cache stack: 104 -> 208
-memory added to cache stack: 208 -> 312
-memory added to cache stack: 312 -> 416
-memory added to cache stack: 416 -> 520
-memory added to cache stack: 520 -> 624
-memory added to cache stack: 624 -> 728
-memory added to cache stack: 728 -> 832
-memory added to cache stack: 832 -> 936
-memory added to cache stack: 936 -> 1040
-check that cached stacks are never released: 1040 -> 1040
-check that cached stacks are never released: 1040 -> 1040
-check that cached stacks are never released: 1040 -> 1040
-check that cached stacks are never released: 1040 -> 1040
-check that cached stacks are never released: 1040 -> 1040
-check that cached stacks are never released: 1040 -> 1040
-check that cached stacks are never released: 1040 -> 1040
-check that cached stacks are never released: 1040 -> 1040
-check that cached stacks are never released: 1040 -> 1040
-check that cached stacks are never released: 1040 -> 1040
+Stack memory increase: 76
+Stack memory increase: 218
+Stack memory increase: 350
+Stack memory increase: 614
+Stack memory increase: 1142
+Stack memory increase: 2198
+Stack memory increase: 4310
+Stack memory increase: 8534
+Stack memory increase: 16982
+Stack memory increase: 33878
+Stack memory increase: 67670
+Stack memory increase: 135254
+ephemeral use of stack memory: 0 -> 135254 -> 76
+Stack memory increase: 218
+Stack memory increase: 350
+Stack memory increase: 614
+Stack memory increase: 1142
+Stack memory increase: 2198
+Stack memory increase: 4310
+Stack memory increase: 8534
+Stack memory increase: 16982
+Stack memory increase: 33878
+Stack memory increase: 67670
+Stack memory increase: 135254
+ephemeral use of stack memory: 76 -> 135254 -> 76
+memory added to cache stack: 76 -> 76
+memory added to cache stack: 76 -> 152
+memory added to cache stack: 152 -> 228
+memory added to cache stack: 228 -> 304
+memory added to cache stack: 304 -> 380
+memory added to cache stack: 380 -> 456
+memory added to cache stack: 456 -> 532
+memory added to cache stack: 532 -> 608
+memory added to cache stack: 608 -> 684
+memory added to cache stack: 684 -> 760
+check that cached stacks are never released: 760 -> 760
+check that cached stacks are never released: 760 -> 760
+check that cached stacks are never released: 760 -> 760
+check that cached stacks are never released: 760 -> 760
+check that cached stacks are never released: 760 -> 760
+check that cached stacks are never released: 760 -> 760
+check that cached stacks are never released: 760 -> 760
+check that cached stacks are never released: 760 -> 760
+check that cached stacks are never released: 760 -> 760
+check that cached stacks are never released: 760 -> 760
