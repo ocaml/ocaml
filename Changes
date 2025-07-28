@@ -46,6 +46,12 @@ Working version
 - #14553: Add Array.fold_{left,right}2
   (Clément Pottier, review by Nicolás Ojeda Bär and Vincent Laviron)
 
+### Type System:
+
+* #?????: Reimplement wellfoundedness checks based on the definition of
+  wellfoundedness in the typechecker comments.
+  (Stefan Muenzel, review by ??????)
+
 ### Other libraries:
 
 ### Tools:
