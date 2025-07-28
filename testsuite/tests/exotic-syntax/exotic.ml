@@ -175,4 +175,3 @@ let () =
   let [@@@warning "-unused-var"] in
   let v = (42, 12) in
   assert (f v == v)
-  
