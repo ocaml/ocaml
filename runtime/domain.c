@@ -286,7 +286,7 @@ static void check_stw_domains(void) {
 #endif
 }
 
-static int find_stw_domain(int start, int end, dom_internal *dom) {
+static int find_stw_domain_noexc(int start, int end, dom_internal *dom) {
   check_domain_limit(start);
   check_domain_limit(end);
   for (int i = start; i < end; i++)
@@ -294,17 +294,21 @@ static int find_stw_domain(int start, int end, dom_internal *dom) {
     if (stw_domains.domains[i] == dom)
       return i;
   }
-  caml_fatal_error("find_stw_domain");
+  return (-1);
 }
 static int find_active_domain(dom_internal *dom) {
   int start = 0;
   int end = stw_domains.active_domains;
-  return find_stw_domain(start, end, dom);
+  int idx = find_stw_domain_noexc(start, end, dom);
+  if (idx < 0) caml_fatal_error("find_active_domain");
+  return idx;
 }
 static int find_parked_domain(dom_internal *dom) {
   int start = stw_domains.active_domains;
   int end = stw_domains.parked_domains;
-  return find_stw_domain(start, end, dom);
+  int idx = find_stw_domain_noexc(start, end, dom);
+  if (idx < 0) caml_fatal_error("find_parked_domain");
+  return idx;
 }
 
 static void swap_stw_domains(int idx1, int idx2) {
