@@ -172,7 +172,7 @@ let parse_arguments argv =
   List.iter
     (fun r -> r := List.rev !r)
     [ bytecode_objs; native_objs; caml_libs; caml_opts;
-      c_libs; c_objs; c_opts; ld_opts; rpath ];
+      c_libs; c_objs; c_opts; ld_opts; rpath; c_Lopts ];
 (* Put -L options in front of -l options in -cclib to mimic -ccopt behavior *)
   c_libs := !c_Lopts @ !c_libs;
 

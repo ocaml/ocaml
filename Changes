@@ -252,6 +252,8 @@ Working version
   fix all occurences
   (Stefan Muenzel, review by Gabriel Scherer)
 
+- #14172 : Fix ocamlmklib ordering of -L options
+  (Alexandre Douard, )
 
 OCaml 5.4.0
 ---------------
