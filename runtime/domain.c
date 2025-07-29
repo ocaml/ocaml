@@ -829,11 +829,11 @@ void caml_update_minor_heap_max(uintnat requested_wsz) {
   caml_gc_log("Changing heap_max_wsz from %" CAML_PRIuNAT
               " to %" CAML_PRIuNAT ".",
               caml_minor_heap_max_wsz, requested_wsz);
-  struct reservation_params params = {
-    .new_minor_wsz = requested_wsz,
-    .ensure_num_domains = 1
-  };
   while (requested_wsz > caml_minor_heap_max_wsz) {
+    struct reservation_params params = {
+      .new_minor_wsz = requested_wsz,
+      .ensure_num_domains = 1
+    };
     caml_try_run_on_all_domains(
       &stw_resize_minor_heaps_reservation, &params, 0);
   }
@@ -842,11 +842,14 @@ void caml_update_minor_heap_max(uintnat requested_wsz) {
 
 static void ensure_minor_heaps_reservation(uintnat ensure_num_domains) {
   CAMLassert(ensure_num_domains <= caml_params->max_domains);
-  struct reservation_params params = {
-    .new_minor_wsz = caml_minor_heap_max_wsz,
-    .ensure_num_domains = ensure_num_domains
-  };
   while (minor_heaps_reservation_num_domains < ensure_num_domains) {
+    /* Note: the read to [caml_minor_heap_max_wsz] below should not be
+       hoisted out of the loop, as the value could be updated by
+       a concurrent STW section. */
+    struct reservation_params params = {
+      .new_minor_wsz = caml_minor_heap_max_wsz,
+      .ensure_num_domains = ensure_num_domains
+    };
     caml_try_run_on_all_domains(
       &stw_resize_minor_heaps_reservation, &params, 0);
   }
