@@ -102,9 +102,12 @@ type stat =
         @since 4.12 *)
 
     live_stacks_words: int;
-    (** Total size of live stacks in words.
+    (** Total space allocated outside of the OCaml heap for stack fragments.
+        This includes stack metadata and stack fragments stored inside the stack
+        fragment cache.
         @since 5.5
     *)
+
 }
 (** The memory management counters are returned in a [stat] record. These
    counters give values for the whole program.
