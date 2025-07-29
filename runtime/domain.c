@@ -267,24 +267,6 @@ static struct {
 static void check_domain_limit(int idx) {
   CAMLassert(0 <= idx && idx <= caml_params->max_domains);
 }
-static void check_stw_domains(void) {
-  check_domain_limit(stw_domains.active_domains);
-  check_domain_limit(stw_domains.parked_domains);
-  CAMLassert(stw_domains.active_domains
-             <= stw_domains.parked_domains);
-#ifdef DEBUG
-  /* Check here the invariant for early-exit in
-     [caml_interrupt_all_signal_safe], because the latter must be
-     async-signal-safe and one cannot CAMLassert inside it. */
-  bool prev_has_interrupt_word = true;
-  for (int i = 0; i < caml_params->max_domains; i++) {
-    bool has_interrupt_word = all_domains[i].interruptor.interrupt_word != NULL;
-    if (i < stw_domains.active_domains) CAMLassert(has_interrupt_word);
-    if (!prev_has_interrupt_word) CAMLassert(!has_interrupt_word);
-    prev_has_interrupt_word = has_interrupt_word;
-  }
-#endif
-}
 
 static int find_stw_domain_noexc(int start, int end, dom_internal *dom) {
   check_domain_limit(start);
@@ -317,6 +299,46 @@ static void swap_stw_domains(int idx1, int idx2) {
   dom_internal *dom2 = stw_domains.domains[idx2];
   stw_domains.domains[idx1] = dom2;
   stw_domains.domains[idx2] = dom1;
+}
+
+/* One needs to hold [all_domains_lock] to call this debug function. */
+static void check_stw_domains(void) {
+  check_domain_limit(stw_domains.active_domains);
+  check_domain_limit(stw_domains.parked_domains);
+  CAMLassert(stw_domains.active_domains
+             <= stw_domains.parked_domains);
+#ifdef DEBUG
+  /* Check here the invariants for early-exit in
+     [caml_interrupt_all_signal_safe], because the latter must be
+     async-signal-safe and one cannot CAMLassert inside it. */
+
+  int active_domains = stw_domains.active_domains;
+
+  /* Invariant 1: the active domains have a non-null interrupt word. */
+  for (int i = 0; i < active_domains; i++) {
+    dom_internal *dom = stw_domains.domains[i];
+    bool has_interrupt_word = dom->interruptor.interrupt_word != NULL;
+    CAMLassert(has_interrupt_word);
+  }
+
+  /* Invariant 2: active domains are placed before the first
+     NULL-interrupt word in [all_domains] order. */
+  bool after_first_null = false;
+  for (int i = 0; i < caml_params->max_domains; i++) {
+    dom_internal *dom = &all_domains[i];
+    bool has_interrupt_word = dom->interruptor.interrupt_word != NULL;
+    if (!has_interrupt_word) after_first_null = true;
+    /* We already know from checking Invariant 1 that active domains
+       have a non-NULL interrupt word, so we only need to check
+       domains with a non-NULL interrupt word after the first NULL.
+       Typically there are none, so the check is fast. */
+    if (has_interrupt_word && after_first_null) {
+      bool is_active_domain =
+        (find_stw_domain_noexc(0, active_domains, dom) >= 0);
+      CAMLassert(!is_active_domain);
+    }
+  }
+#endif
 }
 
 
