@@ -523,7 +523,7 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
 */
 
 /* Size of the virtual memory reservation for the minor heap, per domain. */
-uintnat caml_minor_heap_max_wsz;
+uintnat caml_minor_heap_max_wsz = 0;
 
 /* Number of domains with a reserved minor heap. */
 static uintnat minor_heaps_reservation_num_domains = 0;

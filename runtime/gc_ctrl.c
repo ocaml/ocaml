@@ -330,9 +330,6 @@ CAMLprim value caml_get_minor_free (value v)
 
 void caml_init_gc (void)
 {
-  caml_minor_heap_max_wsz =
-    caml_norm_minor_heap_size(caml_params->init_minor_heap_wsz);
-
   caml_max_stack_wsize = caml_params->init_max_stack_wsz;
   caml_fiber_wsz = (Stack_threshold * 2) / sizeof(value);
   atomic_store_relaxed(&caml_percent_free,
