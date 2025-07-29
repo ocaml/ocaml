@@ -674,13 +674,19 @@ static void reserve_minor_heaps_reservation_from_stw_single(
   uintnat minor_heaps_reservation_bsize;
   uintnat minor_heap_max_bsz;
 
-  /* new_minor_wsz is page-aligned by caml_norm_minor_heap_size. */
-  caml_minor_heap_max_wsz = caml_norm_minor_heap_size(p->new_minor_wsz);
-  CAMLassert (caml_mem_round_up_pages(Bsize_wsize(caml_minor_heap_max_wsz))
-          == Bsize_wsize(caml_minor_heap_max_wsz));
+  /* normalize input parameters */
 
   if (p->ensure_num_domains > caml_params->max_domains)
       p->ensure_num_domains = caml_params->max_domains;
+
+  p->new_minor_wsz = caml_norm_minor_heap_size(p->new_minor_wsz);
+  CAMLassert (caml_mem_round_up_pages(Bsize_wsize(p->new_minor_wsz))
+              == Bsize_wsize(p->new_minor_wsz));
+
+  /* Update runtime state if necessary */
+  if (p->new_minor_wsz > caml_minor_heap_max_wsz) {
+    caml_minor_heap_max_wsz = p->new_minor_wsz;
+  }
 
   if (minor_heaps_reservation_num_domains < p->ensure_num_domains) {
 
