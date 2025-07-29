@@ -2,6 +2,9 @@
  expect;
 *)
 
+(* This test is intended to check for the exponential behaviour in type-checking encountered in #11150
+ * In that case, this test took 3h12m. Currently it should take around 100ms to complete.
+ *)
 type ('t1, 't2, 't3, 't4, 't5) t1 = [
   | `C1_1 of 't1 * 't2 * 't3 * 't4 * 't5
   | `C1_2 of 't1 * 't2 * 't3 * 't4 * 't5
