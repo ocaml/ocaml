@@ -236,6 +236,8 @@ Working version
   fix all occurences
   (Stefan Muenzel, review by Gabriel Scherer)
 
+- #14169: runtime, fix cache miss within the stack fragments cache
+  (Florian Angeletti, review by Gabriel Scherer)
 
 OCaml 5.4.0
 ---------------
