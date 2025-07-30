@@ -279,6 +279,10 @@ Working version
   uses of libraries bundled with the compiler (unix,re,threads,dynlink)
   (Florian Angeletti, report by Ali Caglayan, review by Gabriel Scherer)
 
+- #14213: Fix shadow-stack-related crashes with TSan
+  (Olivier Nicole, report by Nathan Taylor, review by Gabriel Scherer and
+   Stefan Muenzel)
+
 - #13658, #14181: Fix handling of recursive function types that can result
   in an unbounded number of labeled or optional arguments.
   (Stefan Muenzel, report by Samuel Vivien, review by Florian Angeletti)

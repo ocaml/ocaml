@@ -258,7 +258,6 @@ void caml_tsan_exit_on_raise_c(char* limit)
 {
   unw_context_t uc;
   unw_cursor_t cursor;
-  unw_word_t sp;
 #ifdef TSAN_DEBUG
   unw_word_t prev_pc;
 #endif
@@ -271,12 +270,23 @@ void caml_tsan_exit_on_raise_c(char* limit)
   if (ret != 0)
     caml_fatal_error("unw_init_local failed with code %d", ret);
 
-  while (1) {
+  unw_word_t initial_sp;
+  ret = unw_get_reg(&cursor, UNW_REG_SP, &initial_sp);
+  if (ret != 0)
+    caml_fatal_error("unw_get_reg SP failed with code %d", ret);
+
+  /* Unwind each call in the stack fragment between `initial_sp` and `limit`. */
+  for(unw_word_t sp = initial_sp; initial_sp <= sp && (char*)sp < limit; ) {
+
 #ifdef TSAN_DEBUG
     if (unw_get_reg(&cursor, UNW_REG_IP, &prev_pc) < 0) {
       caml_fatal_error("unw_get_reg IP failed with code %d", ret);
     }
+
+    caml_tsan_debug_log_pc("forced__tsan_func_exit for", prev_pc);
 #endif
+    /* Still on the C stack, pop on the TSan shadow stack. */
+    caml_tsan_func_exit();
 
     ret = unw_step(&cursor);
     if (ret < 0) {
@@ -289,14 +299,6 @@ void caml_tsan_exit_on_raise_c(char* limit)
     ret = unw_get_reg(&cursor, UNW_REG_SP, &sp);
     if (ret != 0)
       caml_fatal_error("unw_get_reg SP failed with code %d", ret);
-#ifdef TSAN_DEBUG
-    caml_tsan_debug_log_pc("forced__tsan_func_exit for", prev_pc);
-#endif
-    caml_tsan_func_exit();
-
-    if ((char*)sp >= limit) {
-      break;
-    }
   }
 }
 
