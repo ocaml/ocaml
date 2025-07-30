@@ -1562,20 +1562,17 @@ void caml_mark_roots_stw (int participant_count,
     caml_gc_phase = Phase_sweep_and_mark_main;
     atomic_store_relaxed(&global_roots_status, WAITING);
 
-  /* Ephemerons: verify that the ephemerons orphaned in the last cycle all have
-     status UNMARKED in this cycle.
-
-     Note that ephemerons are not orphaned in [Phase_sweep_main]. When
-     orphaned, ephemerons and their data are marked. Any unadopted ephemerons
-     must come from last cycle. Due to the GC cycling, the marked ephemerons
-     must have status [UNMARKED] now. */
-#ifdef DEBUG
-  orph_ephe_list_verify_status (caml_global_heap_state.UNMARKED);
-#endif
-
     /* Adopt orphaned work from domains that were spawned and terminated in the
        previous cycle. There must be no orphaned work remaining when this phase
-       change takes place because orphaned work contains roots. */
+       change takes place because orphaned work contains roots.
+
+       [adopt_orphaned_work] also verifies that the ephemerons to be adopted
+       all have status [UNMARKED] in this cycle.
+
+       Note that ephemerons are not orphaned in [Phase_sweep_main]. When
+       orphaned, ephemerons and their data are [MARKED]. Any unadopted
+       ephemerons must come from last cycle. Due to the GC cycling, the
+       [MARKED] ephemerons must have status [UNMARKED] now. */
     adopt_orphaned_work (caml_global_heap_state.UNMARKED);
   }
 
