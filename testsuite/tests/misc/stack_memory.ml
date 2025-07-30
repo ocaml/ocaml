@@ -49,7 +49,7 @@ let () = Gc.full_major ()
 let () = start := memory_stat ()
 let _ = ephemeral_fiber 10_000
 let _ = ephemeral_fiber 10_000
-let a = Array.init 10 (fun _ -> capture_fiber 0)
+let a = Array.init 10 (fun _ -> capture_fiber 50)
 
 let () = Array.iter (function None -> () | Some k ->
     let before = memory_stat () in
