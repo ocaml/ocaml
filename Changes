@@ -35,6 +35,12 @@ Working version
   Added the function [Gc.Memprof.is_sampling].
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
 
+- #14153, #14162: reserve minor-heap memory space gradually, first for only 1
+  domain, then 8, 16, 32, etc. This avoids space-reservation issues on some
+  systems when using large minor heaps.
+  (Gabriel Scherer, review by KC Sivaramakrishnan,
+   report by Guillaume Melquiond)
+
 ### Code generation and optimizations:
 
 ### Standard library:

@@ -118,6 +118,11 @@ then this will run all the tests in those three directories.
   with `KEEP_TEST_DIR_ON_SUCCESS=1` to inspect the test output. By default
   `OCAMLTESTDIR` is `_ocamltest`.
 
+`USE_RUNTIME=d`::
+  Set `USE_RUNTIME` to `d` to use the debug runtime while running the
+  tests, and `i` to use the instrumented runtime. (You can also use
+  `V=1` to force the debug runtime to also perform heap verification.)
+
 == Dimensioning the tests
 
 By default, tests should run well on small virtual machines (2 cores,
