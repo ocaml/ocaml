@@ -641,6 +641,10 @@ let tree_of_type_path p =
   let p'' = if (s = Id) then p' else p in
   tree_of_best_type_path p p''
 
+(* When printing a type scheme, we print weak names.  When printing a plain
+   type, we do not.  This type controls that behavior *)
+type type_or_scheme = Type | Type_scheme
+
 (* Print a type expression *)
 
 (* We use proxies to find shared parts of type expressions/name variables.
@@ -661,6 +665,8 @@ module Proxy : sig
   val transient_expr_REMOVE : t -> transient_expr
 
   val desc : t -> type_desc
+
+  val is_non_gen : type_or_scheme -> t -> bool
 
   module Set : Stdlib.Set.S with type elt = t
   module Map : Stdlib.Map.S with type key = t
@@ -683,18 +689,18 @@ end = struct
 
   let desc t = t.desc
 
+  let is_non_gen mode t =
+    match mode with
+    | Type_scheme ->
+        let ty = type_expr t in
+        is_Tvar ty && get_level ty <> generic_level
+    | Type        -> false
+
 end
 
 let proxy = Proxy.make
 
-(* When printing a type scheme, we print weak names.  When printing a plain
-   type, we do not.  This type controls that behavior *)
-type type_or_scheme = Type | Type_scheme
-
-let is_non_gen mode ty =
-  match mode with
-  | Type_scheme -> is_Tvar ty && get_level ty <> generic_level
-  | Type        -> false
+let is_non_gen = Proxy.is_non_gen
 
 let nameable_row row =
   row_name row <> None &&
@@ -873,7 +879,7 @@ end = struct
   let visited_for_named_vars = ref Proxy.Set.empty
 
   let weak_counter = ref 1
-  let weak_var_map = ref TypeMap.empty
+  let weak_var_map = ref (TypeMap.empty : string TypeMap.t)
   let named_weak_vars = ref String.Set.empty
 
   let reset_names () =
@@ -929,7 +935,8 @@ end = struct
     if name_is_already_used name then new_name () else name
 
   let rec new_weak_name ty () =
-    let ty = Proxy.type_expr (Proxy.make ty) in
+    let px = Proxy.make ty in
+    let ty = Proxy.type_expr px in
     let name = "weak" ^ Int.to_string !weak_counter in
     incr weak_counter;
     if name_is_already_used name then new_weak_name ty ()
@@ -1009,7 +1016,7 @@ end = struct
 
   let refresh_weak () =
     let refresh t name (m,s) =
-      if is_non_gen Type_scheme t then
+      if is_non_gen Type_scheme (Proxy.make t) then
         begin
           TypeMap.add t name m,
           String.Set.add name s
@@ -1204,14 +1211,14 @@ let with_labels b f = Misc.protect_refs [R (print_labels,b)] f
 let alias_nongen_row mode (px : Proxy.t) ty =
     match printer_get_desc ty with
     | Tvariant _ | Tobject _ ->
-        if is_non_gen mode (Proxy.type_expr px) then
+        if is_non_gen mode px then
           Aliases.add_proxy px
     | _ -> ()
 
 let rec tree_of_typexp mode ty =
   let px = proxy ty in
   if Aliases.is_printed_proxy px && not (Aliases.is_delayed px) then
-   let non_gen = is_non_gen mode (Proxy.type_expr px) in
+   let non_gen = is_non_gen mode px in
    let name = Variable_names.(name_of_type (new_var_name ~non_gen ty))
                 px in
    Otyp_var (non_gen, name) else
@@ -1220,7 +1227,7 @@ let rec tree_of_typexp mode ty =
     let tty = Transient_expr.repr ty in
     match printer_get_desc ty with
     | Tvar _ ->
-        let non_gen = is_non_gen mode ty in
+        let non_gen = is_non_gen mode px in
         let name_gen = Variable_names.new_var_name ~non_gen ty in
         Otyp_var (non_gen, Variable_names.name_of_type name_gen (Proxy.make ty))
     | Tarrow(l, ty1, ty2, _) ->
@@ -1337,7 +1344,7 @@ let rec tree_of_typexp mode ty =
   Aliases.remove_delay px;
   alias_nongen_row mode px ty;
   if Aliases.(is_aliased_proxy px && aliasable ty) then begin
-    let non_gen = is_non_gen mode (Proxy.type_expr px) in
+    let non_gen = is_non_gen mode px in
     Aliases.add_printed_proxy ~non_gen px;
     (* add_printed_proxy chose a name, thus the name generator
        doesn't matter.*)
