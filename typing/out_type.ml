@@ -652,7 +652,38 @@ let tree_of_type_path p =
    we maintain the invariant that the row variable uniquely identifies the type.
    This, however, means, we can no longer distinguish between the row variable
    and the type containing the row variable. *)
-let proxy ty = Transient_expr.repr (proxy ty)
+module Proxy : sig
+  type t
+
+  val make : type_expr -> t
+
+  val make_unnormalized_REMOVE : transient_expr -> t
+
+  val type_expr : t -> type_expr
+  val transient_expr_REMOVE : t -> transient_expr
+
+  module Set : Stdlib.Set.S with type elt = t
+
+end = struct
+  module T = struct
+    type t = transient_expr
+
+    let compare = TransientTypeOps.compare
+  end
+  include T
+
+  module Set = Stdlib.Set.Make(T)
+
+  let make ty = Transient_expr.repr (proxy ty)
+
+  let make_unnormalized_REMOVE ty = ty
+
+  let type_expr = Transient_expr.type_expr
+  let transient_expr_REMOVE px = px
+
+end
+
+let proxy = Proxy.make
 
 (* When printing a type scheme, we print weak names.  When printing a plain
    type, we do not.  This type controls that behavior *)
@@ -815,7 +846,7 @@ module Variable_names : sig
   val new_var_name : non_gen:bool -> type_expr -> unit -> string
 
   val name_of_type : (unit -> string) -> transient_expr -> string
-  val check_name_of_type : non_gen:bool -> transient_expr -> unit
+  val check_name_of_type : non_gen:bool -> Proxy.t -> unit
 
 
   val reserve: type_expr -> unit
@@ -837,7 +868,7 @@ end = struct
   let name_subst = ref (TransientTypeMap.empty : (transient_expr TransientTypeMap.t))
   let name_counter = ref 0
   let named_vars = ref String.Set.empty
-  let visited_for_named_vars = ref TransientTypeSet.empty
+  let visited_for_named_vars = ref Proxy.Set.empty
 
   let weak_counter = ref 1
   let weak_var_map = ref TypeMap.empty
@@ -849,7 +880,7 @@ end = struct
     name_subst := TransientTypeMap.empty;
     name_counter := 0;
     named_vars := String.Set.empty;
-    visited_for_named_vars := TransientTypeSet.empty
+    visited_for_named_vars := Proxy.Set.empty
 
   let add_named_var tty =
     match tty.desc with
@@ -861,8 +892,8 @@ end = struct
   let rec add_named_vars ty =
     let tty = Transient_expr.repr ty in
     let px = proxy ty in
-    if not (TransientTypeSet.mem px !visited_for_named_vars) then begin
-      visited_for_named_vars := TransientTypeSet.add px !visited_for_named_vars;
+    if not (Proxy.Set.mem px !visited_for_named_vars) then begin
+      visited_for_named_vars := Proxy.Set.add px !visited_for_named_vars;
       match tty.desc with
       | Tvar _ | Tunivar _ ->
           add_named_var tty
@@ -937,9 +968,9 @@ end = struct
       end;
       name
 
-  let check_name_of_type ~non_gen px =
-    let name_gen = new_var_name ~non_gen (Transient_expr.type_expr px) in
-    ignore(name_of_type name_gen px : string)
+  let check_name_of_type ~non_gen (px : Proxy.t) =
+    let name_gen = new_var_name ~non_gen (Proxy.type_expr px) in
+    ignore(name_of_type name_gen (Proxy.transient_expr_REMOVE px))
 
   let remove_name t =
     let t = substitute t in
@@ -991,28 +1022,29 @@ module Aliases : sig
   val mark_loops : type_expr -> unit
 
   val add : type_expr -> unit
-  val add_proxy : transient_expr -> unit
-  val is_aliased_proxy : transient_expr -> bool
+  val add_proxy : Proxy.t -> unit
+  val is_aliased_proxy : Proxy.t -> bool
 
   val add_printed : type_expr -> non_gen:bool -> unit
-  val add_printed_proxy : non_gen:bool -> transient_expr -> unit
-  val is_printed_proxy : transient_expr -> bool
-  val mark_as_printed : transient_expr -> unit
+  val add_printed_proxy : non_gen:bool -> Proxy.t -> unit
+  val is_printed_proxy : Proxy.t -> bool
+  val mark_as_printed : Proxy.t -> unit
 
-  val add_visited_object_proxy : transient_expr -> unit
-  val is_visited_object_proxy : transient_expr -> bool
+  val add_visited_object_proxy : Proxy.t -> unit
+  val is_visited_object_proxy : Proxy.t -> bool
 
-  val add_delayed : transient_expr -> unit
-  val remove_delay : transient_expr -> unit
-  val is_delayed : transient_expr -> bool
+  val add_delayed : Proxy.t -> unit
+  val add_delayed_transient_REMOVE : transient_expr -> unit
+  val remove_delay : Proxy.t -> unit
+  val is_delayed : Proxy.t -> bool
   val with_temporary_delay : (unit -> 'a) -> 'a
 
   val reset : unit -> unit
 end = struct
-  let visited_objects = ref (TransientTypeSet.empty)
-  let aliased = ref (TransientTypeSet.empty)
-  let delayed = ref (TransientTypeSet.empty)
-  let printed_aliases = ref (TransientTypeSet.empty)
+  let visited_objects = ref (Proxy.Set.empty)
+  let aliased = ref (Proxy.Set.empty)
+  let delayed = ref (Proxy.Set.empty)
+  let printed_aliases = ref (Proxy.Set.empty)
 
   let with_temporary_delay f =
     let old_delayed = !delayed in
@@ -1024,32 +1056,35 @@ end = struct
    types that have actually been printed; this allows us to avoid naming loops
    that the user will never see. *)
 
-  let is_delayed t = TransientTypeSet.mem t !delayed
+  let is_delayed t = Proxy.Set.mem t !delayed
 
-  let is_visited_object_proxy t = TransientTypeSet.mem t !visited_objects
+  let is_visited_object_proxy t = Proxy.Set.mem t !visited_objects
 
   let remove_delay t =
     if is_delayed t then
-      delayed := TransientTypeSet.remove t !delayed
+      delayed := Proxy.Set.remove t !delayed
 
   let add_delayed t =
-    if not (is_delayed t) then delayed := TransientTypeSet.add t !delayed
+    if not (is_delayed t) then delayed := Proxy.Set.add t !delayed
 
-  let is_aliased_proxy px = TransientTypeSet.mem px !aliased
-  let is_printed_proxy px = TransientTypeSet.mem px !printed_aliases
+  let add_delayed_transient_REMOVE t =
+    add_delayed (Proxy.make_unnormalized_REMOVE t)
+
+  let is_aliased_proxy px = Proxy.Set.mem px !aliased
+  let is_printed_proxy px = Proxy.Set.mem px !printed_aliases
 
   let add_proxy px =
     if not (is_aliased_proxy px) then
-      aliased := TransientTypeSet.add px !aliased
+      aliased := Proxy.Set.add px !aliased
 
   let add ty = add_proxy (proxy ty)
 
-  let add_printed_proxy ~non_gen px =
+  let add_printed_proxy ~non_gen (px : Proxy.t) =
     Variable_names.check_name_of_type ~non_gen px;
-    printed_aliases := TransientTypeSet.add px !printed_aliases
+    printed_aliases := Proxy.Set.add px !printed_aliases
 
   let add_visited_object_proxy px =
-    visited_objects := TransientTypeSet.add px !visited_objects
+    visited_objects := Proxy.Set.add px !visited_objects
 
   let mark_as_printed px =
      if is_aliased_proxy px then (add_printed_proxy ~non_gen:false) px
@@ -1075,9 +1110,9 @@ end = struct
       let visited = px :: visited in
       match printer_get_desc ty with
       | Tvariant _ | Tobject _ ->
-          if TransientTypeSet.mem px !visited_objects then add_proxy px else begin
+          if Proxy.Set.mem px !visited_objects then add_proxy px else begin
             if should_visit_object ty then
-              visited_objects := TransientTypeSet.add px !visited_objects;
+              visited_objects := Proxy.Set.add px !visited_objects;
             printer_iter_type_expr (mark_loops_rec visited) ty
           end
       | Tpoly(ty, tyl) ->
@@ -1102,10 +1137,10 @@ end = struct
     mark_loops_rec [] ty
 
   let reset () =
-    visited_objects := TransientTypeSet.empty;
-    aliased := TransientTypeSet.empty;
-    delayed := TransientTypeSet.empty;
-    printed_aliases := TransientTypeSet.empty
+    visited_objects := Proxy.Set.empty;
+    aliased := Proxy.Set.empty;
+    delayed := Proxy.Set.empty;
+    printed_aliases := Proxy.Set.empty
 
 end
 
@@ -1160,18 +1195,19 @@ let wrap_env ?(keep_short_paths = false) fenv ftree arg =
 let print_labels = ref true
 let with_labels b f = Misc.protect_refs [R (print_labels,b)] f
 
-let alias_nongen_row mode px ty =
+let alias_nongen_row mode (px : Proxy.t) ty =
     match printer_get_desc ty with
     | Tvariant _ | Tobject _ ->
-        if is_non_gen mode (Transient_expr.type_expr px) then
+        if is_non_gen mode (Proxy.type_expr px) then
           Aliases.add_proxy px
     | _ -> ()
 
 let rec tree_of_typexp mode ty =
   let px = proxy ty in
   if Aliases.is_printed_proxy px && not (Aliases.is_delayed px) then
-   let non_gen = is_non_gen mode (Transient_expr.type_expr px) in
-   let name = Variable_names.(name_of_type (new_var_name ~non_gen ty)) px in
+   let non_gen = is_non_gen mode (Proxy.type_expr px) in
+   let name = Variable_names.(name_of_type (new_var_name ~non_gen ty))
+                (Proxy.transient_expr_REMOVE px) in
    Otyp_var (non_gen, name) else
 
   let pr_typ () =
@@ -1278,7 +1314,7 @@ let rec tree_of_typexp mode ty =
           Aliases.with_temporary_delay (fun () ->
               (* Make the names delayed, so that the real type is
                  printed once when used as proxy *)
-              List.iter Aliases.add_delayed tyl;
+              List.iter Aliases.add_delayed_transient_REMOVE tyl;
               let tl = List.map Variable_names.(name_of_type new_name) tyl in
               let tr = Otyp_poly (tl, tree_of_typexp mode ty) in
               (* Forget names when we leave scope *)
@@ -1295,11 +1331,11 @@ let rec tree_of_typexp mode ty =
   Aliases.remove_delay px;
   alias_nongen_row mode px ty;
   if Aliases.(is_aliased_proxy px && aliasable ty) then begin
-    let non_gen = is_non_gen mode (Transient_expr.type_expr px) in
+    let non_gen = is_non_gen mode (Proxy.type_expr px) in
     Aliases.add_printed_proxy ~non_gen px;
     (* add_printed_proxy chose a name, thus the name generator
        doesn't matter.*)
-    let alias = Variable_names.(name_of_type (new_var_name ~non_gen ty)) px in
+    let alias = Variable_names.(name_of_type (new_var_name ~non_gen ty)) (Proxy.transient_expr_REMOVE px) in
     Otyp_alias {non_gen;  aliased = pr_typ (); alias } end
   else pr_typ ()
 
@@ -1816,7 +1852,7 @@ let rec tree_of_class_type mode params =
       let self_ty =
         if Aliases.is_aliased_proxy px then
           Some
-            (Otyp_var (false, Variable_names.(name_of_type new_name) px))
+            (Otyp_var (false, Variable_names.(name_of_type new_name) (Proxy.transient_expr_REMOVE px)))
         else None
       in
       let csil = [] in
