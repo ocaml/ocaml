@@ -4,6 +4,12 @@
 
 (* Testing coercion across labels *)
 
+let ~x, ~y = ((1, 2) :> x:int * y:int)
+[%%expect{|
+val x : int = 1
+val y : int = 2
+|}]
+
 let coerce_tuple x = ((x : int * string :> x:int * y:string) :> foo:int * string)
 [%%expect{|
 val coerce_tuple : int * string -> foo:int * string = <fun>
