@@ -673,15 +673,10 @@ module Proxy : sig
   module Map : Stdlib.Map.S with type key = t
 
 end = struct
-  module T = struct
-    type t = transient_expr
+  type t = transient_expr
 
-    let compare = TransientTypeOps.compare
-  end
-  include T
-
-  module Set = Stdlib.Set.Make(T)
-  module Map = Stdlib.Map.Make(T)
+  module Set = TransientTypeSet
+  module Map = TransientTypeMap
 
   let make ty = Transient_expr.repr (proxy ty)
 
@@ -925,13 +920,13 @@ end = struct
 
   let add_subst subst =
     name_subst :=
-      List.fold_left
-        (fun m (t1,t2) ->
+      List.fold_right
+        (fun (t1,t2) m ->
            let t1 = Proxy.make t1 in
            let t2 = Proxy.make t2 in
            Proxy.Map.add t1 t2 m)
-        !name_subst
         subst
+        !name_subst
 
   let name_is_already_used name =
     String.Set.mem name !named_vars
