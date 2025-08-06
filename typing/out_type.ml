@@ -799,6 +799,7 @@ end = struct
         eqns []
     in
     existentials @ from_eqns
+    |> List.map (fun (ids, r) -> List.sort Path.compare ids, r)
 end
 
 module Variable_names : sig

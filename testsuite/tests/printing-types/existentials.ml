@@ -17,7 +17,7 @@ Line 6, characters 13-14:
                  ^
 Error: The value "a" has type "$a * $b * $c * $d * $e * $f"
        but an expression was expected of type "int"
-       Hint: "$f", "$e", "$d", "$c", "$b" and "$a" are existential types
+       Hint: "$a", "$b", "$c", "$d", "$e" and "$f" are existential types
          bound by the constructor "Foo".
 |}]
 
@@ -95,18 +95,18 @@ Error: The value "x" has type
          ($a5 * $b5 * $c5 * $d5 * $e5 * $f5) *
          ($a6 * $b6 * $c6 * $d6 * $e6 * $f6)"
        but an expression was expected of type "int"
-       Hint: "$f", "$e", "$d", "$c", "$b" and "$a" are existential types
+       Hint: "$a", "$b", "$c", "$d", "$e" and "$f" are existential types
          bound by the constructor "Foo1".
-       Hint: "$f1", "$e1", "$d1", "$c1", "$b1" and "$a1" are existential types
+       Hint: "$a1", "$b1", "$c1", "$d1", "$e1" and "$f1" are existential types
          bound by the constructor "Foo2".
-       Hint: "$f2", "$e2", "$d2", "$c2", "$b2" and "$a2" are existential types
+       Hint: "$a2", "$b2", "$c2", "$d2", "$e2" and "$f2" are existential types
          bound by the constructor "Foo3".
-       Hint: "$f3", "$e3", "$d3", "$c3", "$b3" and "$a3" are existential types
+       Hint: "$a3", "$b3", "$c3", "$d3", "$e3" and "$f3" are existential types
          bound by the constructor "Foo4".
-       Hint: "$f4", "$e4", "$d4", "$c4", "$b4" and "$a4" are existential types
+       Hint: "$a4", "$b4", "$c4", "$d4", "$e4" and "$f4" are existential types
          bound by the constructor "Foo5".
-       Hint: "$f5", "$e5", "$d5", "$c5", "$b5" and "$a5" are existential types
+       Hint: "$a5", "$b5", "$c5", "$d5", "$e5" and "$f5" are existential types
          bound by the constructor "Foo6".
-       Hint: "$f6", "$e6", "$d6", "$c6", "$b6" and "$a6" are existential types
+       Hint: "$a6", "$b6", "$c6", "$d6", "$e6" and "$f6" are existential types
          bound by the constructor "Foo7".
 |}]
