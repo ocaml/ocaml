@@ -766,6 +766,7 @@ end = struct
                (idents, Existential { constructor }) :: acc)
         constrs
         []
+      |> List.rev
     in
     let eqns =
       fold_type_origin
@@ -793,11 +794,9 @@ end = struct
                 (List.rev out_idents, Equation { lhs = lhsty; rhs = rhsty })
                 :: acc
              )
-             rhs
-             acc
+             rhs acc
         )
-        eqns
-        []
+        eqns []
     in
     existentials @ from_eqns
 end
