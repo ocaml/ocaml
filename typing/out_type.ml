@@ -705,19 +705,17 @@ let printer_iter_type_expr f ty =
   | _ ->
       Btype.iter_type_expr f ty
 
-let quoted_ident ppf x =
-  Style.as_inline_code !Oprint.out_ident ppf x
-
-module Internal_names' : sig
+module Internal_names : sig
 
   val reset : unit -> unit
 
   val add : Path.t -> unit
 
-  val print_explanations :
-    add_type_to_preparation: (type_expr -> unit) ->
-    tree_of_typexp: (type_or_scheme -> type_expr -> out_type) ->
-    Env.t -> Fmt.formatter -> unit
+  type explanation =
+    | Existential of { constructor : string }
+    | Equation of { lhs : type_expr; rhs : type_expr }
+
+  val explain : Env.t -> (Path.t list * explanation) list
 
 end = struct
 
@@ -735,7 +733,11 @@ end = struct
         end
     | Pdot _ | Papply _ | Pextra_ty _ -> ()
 
-  let print_explanations ~add_type_to_preparation ~tree_of_typexp env ppf =
+  type explanation =
+    | Existential of { constructor : string }
+    | Equation of { lhs : type_expr; rhs : type_expr }
+
+  let explain env =
     let fold_type_origin f acc =
       Ident.Set.fold
         (fun id acc ->
@@ -751,41 +753,25 @@ end = struct
         (fun p origin acc ->
            match origin with
            | Existential constr ->
-               let prev = String.Map.find_opt constr acc in
-               let prev = Option.value ~default:[] prev in
-               String.Map.add constr (tree_of_path None p :: prev) acc
+               String.Map.add_to_list constr p acc
            | Definition | Equation _ | Rec_check_regularity -> acc)
         String.Map.empty
     in
-    String.Map.iter
-      (fun constr out_idents ->
-         match out_idents with
-         | [] -> ()
-         | [out_ident] ->
-             fprintf ppf
-               "@ @[<2>@{<hint>Hint@}:@ %a@ is an existential type@ \
-                bound by the constructor@ %a.@]"
-               quoted_ident out_ident
-               Style.inline_code constr
-         | out_ident :: out_idents ->
-             fprintf ppf
-               "@ @[<2>@{<hint>Hint@}:@ %a@ and %a@ are existential types@ \
-                bound by the constructor@ %a.@]"
-               (Fmt.pp_print_list
-                  ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
-                  quoted_ident)
-               (List.rev out_idents)
-               quoted_ident out_ident
-               Style.inline_code constr)
-      constrs
-    ;
+    let existentials =
+      String.Map.fold
+        (fun constructor out_idents acc ->
+           match out_idents with
+           | [] -> acc
+           | idents ->
+               (idents, Existential { constructor }) :: acc)
+        constrs
+        []
+    in
     let eqns =
       fold_type_origin
         (fun p origin acc ->
            match origin with
            | Equation (t1, t2) ->
-               add_type_to_preparation t1;
-               add_type_to_preparation t2;
                let t1, t2 =
                  if get_id t1 < get_id t2 then t1, t2 else t2, t1
                in
@@ -793,41 +779,27 @@ end = struct
                  t1
                  (fun ps ->
                     let ps = Option.value ~default:TypeMap.empty ps in
-                    Some
-                      (TypeMap.add_to_list t2 (tree_of_path None p) ps)
+                    Some (TypeMap.add_to_list t2 p ps)
                  )
                  acc
            | Existential _ | Definition | Rec_check_regularity -> acc)
         TypeMap.empty
     in
-    TypeMap.iter
-      (fun lhsty rhs ->
-         TypeMap.iter
-           (fun rhsty out_idents ->
-              (* The equation lhs = rhs introduces out_idents *)
-              let tree_of_transient tr =
-                tree_of_typexp Type_scheme (Transient_expr.type_expr tr)
-              in
-              let rhseq = tree_of_transient rhsty in
-              let lhseq = tree_of_transient lhsty in
-              fprintf ppf
-                "@ @[<2>@{<hint>Hint@}:@ %a@ %s@ \
-                 introduced by the equation@ %a = %a@]"
-                (Fmt.pp_print_list
-                   ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
-                   quoted_ident)
-                (List.rev out_idents)
-                (match out_idents with
-                 | [ _ ] -> "is a type variable"
-                 | _ -> "are type variables")
-                (Style.as_inline_code !Oprint.out_type)
-                lhseq
-                (Style.as_inline_code !Oprint.out_type)
-                rhseq
-           )
-           rhs
-      )
-      eqns
+    let from_eqns =
+      TypeMap.fold
+        (fun lhsty rhs acc ->
+           TypeMap.fold
+             (fun rhsty out_idents acc ->
+                (List.rev out_idents, Equation { lhs = lhsty; rhs = rhsty })
+                :: acc
+             )
+             rhs
+             acc
+        )
+        eqns
+        []
+    in
+    existentials @ from_eqns
 end
 
 module Variable_names : sig
@@ -1088,7 +1060,7 @@ let prepare_type ty =
 
 
 let reset_except_conflicts () =
-  Variable_names.reset_names (); Aliases.reset (); Internal_names'.reset ()
+  Variable_names.reset_names (); Aliases.reset (); Internal_names.reset ()
 
 let reset () =
   Ident_conflicts.reset ();
@@ -1197,7 +1169,7 @@ let rec tree_of_typexp mode ty =
         if is_nth s && not (tyl'=[])
         then tree_of_typexp mode (List.hd tyl')
         else begin
-          Internal_names'.add p';
+          Internal_names.add p';
           Otyp_constr (tree_of_best_type_path p p', tree_of_typlist mode tyl')
         end
     | Tvariant row ->
@@ -2119,10 +2091,3 @@ let tree_of_type_declaration ident td rs =
 
 let tree_of_class_type kind cty = tree_of_class_type kind [] cty
 let prepare_class_type cty = prepare_class_type [] cty
-
-module Internal_names = struct
-  include Internal_names'
-
-  let print_explanations =
-    print_explanations ~add_type_to_preparation ~tree_of_typexp
-end

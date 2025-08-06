@@ -1073,10 +1073,10 @@ Error: The value "x" has type "t" = "< foo : int; .. as $0 >"
        but an expression was expected of type "< foo : int >"
        Type "$0" = "< bar : int; .. as $1 >" is not compatible with type "<  >"
        The second object type has no method "bar"
-       Hint: "$0" is a type variable introduced by the equation
-         "t" = "< foo : int; .. as $0 >"
        Hint: "$1" is a type variable introduced by the equation
          "$0" = "< bar : int; .. as $1 >"
+       Hint: "$0" is a type variable introduced by the equation
+         "t" = "< foo : int; .. as $0 >"
 |}];;
 
 let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
@@ -1092,10 +1092,10 @@ Error: The value "x" has type "t" = "< foo : int; .. as $0 >"
        Type "$0" = "< bar : int; .. as $1 >" is not compatible with type
          "< bar : int >"
        The first object type has an abstract row, it cannot be closed
-       Hint: "$0" is a type variable introduced by the equation
-         "t" = "< foo : int; .. as $0 >"
        Hint: "$1" is a type variable introduced by the equation
          "$0" = "< bar : int; .. as $1 >"
+       Hint: "$0" is a type variable introduced by the equation
+         "t" = "< foo : int; .. as $0 >"
 |}];;
 
 let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =

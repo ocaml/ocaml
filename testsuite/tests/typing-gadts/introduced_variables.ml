@@ -129,6 +129,6 @@ Error: The value "e" has type "($s, $2, $1, $0) Entry.t.E"
        but an expression was expected of type "($s, 'a, 'b, 'c) Entry.t.E"
        The type constructor "$2" would escape its scope
        Hint: "$s" is an existential type bound by the constructor "E".
-       Hint: "$0", "$1", "$2" are type variables introduced by the equation
+       Hint: "$0", "$1" and "$2" are type variables introduced by the equation
          "a" = "< per_entry : $0; per_field : $1; per_group : $2 >"
 |}]

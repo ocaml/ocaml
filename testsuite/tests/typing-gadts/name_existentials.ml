@@ -150,7 +150,8 @@ Line 3, characters 54-72:
                                                           ^^^^^^^^^^^^^^^^^^
 Error: This expression has type "b" = "$0" but an expression was expected of type
          "$1"
-       Hint: "$0", "$1" are type variables introduced by the equation "a" = "$0 * $1"
+       Hint: "$0" and "$1" are type variables introduced by the equation
+         "a" = "$0 * $1"
 |}]
 
 type _ th =

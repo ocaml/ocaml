@@ -249,7 +249,12 @@ end
 module Internal_names: sig
   val add: Path.t -> unit
   val reset: unit -> unit
-  val print_explanations: Env.t -> formatter -> unit
+
+  type explanation =
+    | Existential of { constructor : string }
+    | Equation of { lhs : type_expr; rhs : type_expr }
+
+  val explain : Env.t -> (Path.t list * explanation) list
 end
 
 (** Reset all contexts *)
