@@ -480,7 +480,7 @@ let run config env =
     if not (Sys.file_exists dir) then
       Sys.mkdir dir 0o775
     else if not (Sys.is_directory dir) then begin
-      Sys.rmdir dir;
+      Sys.remove dir;
       Sys.mkdir dir 0o775
     end
   in
