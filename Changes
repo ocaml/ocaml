@@ -41,6 +41,10 @@ Working version
 
 ### Code generation and optimizations:
 
+- #8643: Add a command-line option --no-inter-tail-calls to disable interprocedural
+  tail calls.  This may improve stack traces when using a sampling profiler.
+  (Adam Dingle)
+
 ### Standard library:
 
 - #13728: Add Sys.runtime_executable containing the full path (if available) to

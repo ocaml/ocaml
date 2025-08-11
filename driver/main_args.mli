@@ -204,6 +204,7 @@ module type Optcommon_options = sig
   val _o3 : unit -> unit
   val _insn_sched : unit -> unit
   val _no_insn_sched : unit -> unit
+  val _no_inter_tail_calls : unit -> unit
   val _linscan : unit -> unit
   val _no_float_const_prop : unit -> unit
 

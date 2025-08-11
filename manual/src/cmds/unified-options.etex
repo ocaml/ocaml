@@ -351,6 +351,12 @@ option cause larger and larger functions to become candidate for
 inlining, but can result in a serious increase in code size.
 }%nat
 
+\nat{%
+\item["-no-inter-tail-calls"]
+Do not perform tail calls between distinct functions.  This may produce
+better stack traces when profiling at the expense of reduced performance.
+}%nat
+
 \notop{%
 \item["-intf" \var{filename}]
 Compile the file \var{filename} as an interface file, even if its

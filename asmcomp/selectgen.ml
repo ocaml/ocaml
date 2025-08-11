@@ -16,6 +16,7 @@
 (* Selection of pseudo-instructions, assignment of pseudo-registers,
    sequentialization. *)
 
+open Clflags
 open Cmm
 open Reg
 open Mach
@@ -1018,7 +1019,7 @@ method emit_tail (env:environment) exp =
               let r1 = self#emit_tuple env new_args in
               let rarg = Array.sub r1 1 (Array.length r1 - 1) in
               let (loc_arg, stack_ofs) = Proc.loc_arguments (Reg.typv rarg) in
-              if stack_ofs = 0 then begin
+              if !inter_tail_calls && stack_ofs = 0 then begin
                 let call = Iop (Itailcall_ind) in
                 self#insert_moves env rarg loc_arg;
                 self#insert_debug env call dbg
@@ -1035,7 +1036,7 @@ method emit_tail (env:environment) exp =
           | Icall_imm { func; } ->
               let r1 = self#emit_tuple env new_args in
               let (loc_arg, stack_ofs) = Proc.loc_arguments (Reg.typv r1) in
-              if stack_ofs = 0 then begin
+              if !inter_tail_calls && stack_ofs = 0 then begin
                 let call = Iop (Itailcall_imm { func; }) in
                 self#insert_moves env r1 loc_arg;
                 self#insert_debug env call dbg loc_arg [||];

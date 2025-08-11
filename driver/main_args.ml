@@ -270,6 +270,10 @@ let mk_no_insn_sched f =
   Printf.sprintf " Do not run the instruction scheduling pass%s"
     (if not Clflags.insn_sched_default then " (default)" else "")
 
+let mk_no_inter_tail_calls f =
+  "-no-inter-tail-calls", Arg.Unit f,
+  " Do not perform tail calls between distinct functions"
+
 let mk_keep_docs f =
   "-keep-docs", Arg.Unit f, " Keep documentation strings in .cmi files"
 
@@ -977,6 +981,7 @@ module type Optcommon_options = sig
   val _o3 : unit -> unit
   val _insn_sched : unit -> unit
   val _no_insn_sched : unit -> unit
+  val _no_inter_tail_calls : unit -> unit
   val _linscan : unit -> unit
   val _no_float_const_prop : unit -> unit
 
@@ -1316,6 +1321,7 @@ struct
     mk_noautolink_opt F._noautolink;
     mk_nodynlink F._nodynlink;
     mk_no_insn_sched F._no_insn_sched;
+    mk_no_inter_tail_calls F._no_inter_tail_calls;
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
     mk_nocwd F._nocwd;
@@ -1449,6 +1455,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_alias_deps F._alias_deps;
     mk_no_alias_deps F._no_alias_deps;
     mk_linscan F._linscan;
+    mk_no_inter_tail_calls F._no_inter_tail_calls;
     mk_app_funct F._app_funct;
     mk_no_app_funct F._no_app_funct;
     mk_no_float_const_prop F._no_float_const_prop;
@@ -1772,6 +1779,7 @@ module Default = struct
     let _inlining_report () = inlining_report := true
     let _insn_sched = set insn_sched
     let _no_insn_sched = clear insn_sched
+    let _no_inter_tail_calls = clear inter_tail_calls
     let _linscan = set use_linscan
     let _no_float_const_prop = clear float_const_prop
     let _no_unbox_free_vars_of_closures = clear unbox_free_vars_of_closures

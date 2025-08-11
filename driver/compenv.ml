@@ -377,6 +377,7 @@ let read_one_param ppf position name v =
       set "linscan" [ use_linscan ] v
   | "insn-sched" -> set "insn-sched" [ insn_sched ] v
   | "no-insn-sched" -> clear "insn-sched" [ insn_sched ] v
+  | "no-inter-tail-calls" -> clear "inter-tail-calls" [ inter_tail_calls] v
 
   (* color output *)
   | "color" ->
