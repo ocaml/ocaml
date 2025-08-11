@@ -43,8 +43,8 @@ Working version
 
 ### Standard library:
 
-- #14185: List.split_with
-  (Jeremy Yallop, review by ?)
+- #14185: List.split_map
+  (Jeremy Yallop, review by Daniel Bünzli and Nicolás Ojeda Bär)
 
 - #13728: Add Sys.runtime_executable containing the full path (if available) to
   the currently executing runtime.
