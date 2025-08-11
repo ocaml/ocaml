@@ -43,6 +43,9 @@ Working version
 
 ### Standard library:
 
+- #14185: List.split_with
+  (Jeremy Yallop, review by ?)
+
 - #13728: Add Sys.runtime_executable containing the full path (if available) to
   the currently executing runtime.
   (David Allsopp, review by Nicolás Ojeda Bär and Daniel Bünzli)

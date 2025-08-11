@@ -491,6 +491,21 @@ val split : ('a * 'b) list -> 'a list * 'b list
    Not tail-recursive.
  *)
 
+val split_with : f:('c -> 'a * 'b) -> 'c list -> 'a list * 'b list
+(** [split_with ~f l] returns a returns a pair of lists [(l1, l2)] such that,
+    for each element [x] of the input list [l], if [f x] is [(y1, y2)] then
+    [y] is in [l1] and [y2] is in [l2].
+
+    The output elements are included in [l1] and [l2] in the same
+    relative order as the corresponding input elements in [l].
+
+    In particular, [split_with Fun.id l] is equivalent to [split l].
+
+    @since 5.5
+
+    Not tail-recursive.
+*)
+
 val combine : 'a list -> 'b list -> ('a * 'b) list
 (** Transform a pair of lists into a list of pairs:
    [combine [a1; ...; an] [b1; ...; bn]] is
