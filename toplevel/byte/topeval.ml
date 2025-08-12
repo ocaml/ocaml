@@ -69,6 +69,16 @@ include Topcommon.MakeEvalPrinter(EvalBase)
 
 (* Load in-core and execute a lambda term *)
 
+module Meta = struct
+  type closure = unit -> Obj.t
+  type bytecode
+  external reify_bytecode :
+    (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+    Instruct.debug_event list array -> string option ->      bytecode * closure
+      = "caml_reify_bytecode"
+  external release_bytecode : bytecode -> unit = "caml_static_release_bytecode"
+end
+
 let may_trace = ref false (* Global lock on tracing *)
 
 let load_lambda ppf lam =

@@ -53,12 +53,15 @@ let set_code_pointer cls ptr =
 
 (* Call a traced function (use old code pointer, but new closure as
    environment so that recursive calls are also traced).
-   It is necessary to wrap Meta.invoke_traced_function in an ML function
+   It is necessary to wrap caml_invoke_traced_function in an ML function
    so that the RETURN at the end of the ML wrapper takes us to the
    code of the function. *)
 
+external caml_invoke_traced_function:
+  Obj.raw_data -> Obj.t -> Obj.t -> Obj.t = "caml_invoke_traced_function"
+
 let invoke_traced_function codeptr env arg =
-  Meta.invoke_traced_function codeptr env arg
+  caml_invoke_traced_function codeptr env arg
 
 let print_label ppf l =
   if l <> Asttypes.Nolabel then fprintf ppf "%s:"

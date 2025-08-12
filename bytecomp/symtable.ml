@@ -326,12 +326,15 @@ let data_global_map () =
 
 (* Functions for toplevel use *)
 
+external global_data : unit -> Obj.t array = "caml_get_global_data"
+external realloc_global_data : int -> unit = "caml_realloc_global"
+
 (* Update the in-core table of globals *)
 
 let update_global_table () =
   let ng = !global_table.cnt in
-  if ng > Array.length(Meta.global_data()) then Meta.realloc_global_data ng;
-  let glob = Meta.global_data() in
+  if ng > Array.length(global_data()) then realloc_global_data ng;
+  let glob = global_data() in
   List.iter
     (fun (slot, cst) -> glob.(slot) <- cst)
     !literal_table;
@@ -361,9 +364,9 @@ let init_toplevel () =
 let get_global_position = slot_for_getglobal
 
 let get_global_value global =
-  (Meta.global_data()).(slot_for_getglobal global)
+  (global_data()).(slot_for_getglobal global)
 let assign_global_value global v =
-  (Meta.global_data()).(slot_for_getglobal global) <- v
+  (global_data()).(slot_for_getglobal global) <- v
 
 (* Check that all compilation units referenced in the given patch list
    have already been initialized *)

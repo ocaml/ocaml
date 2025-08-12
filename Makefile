@@ -188,7 +188,6 @@ comp_SOURCES = \
   file_formats/cmo_format.mli \
   file_formats/cmx_format.mli \
   file_formats/cmxs_format.mli \
-  bytecomp/meta.mli bytecomp/meta.ml \
   bytecomp/opcodes.mli bytecomp/opcodes.ml \
   bytecomp/bytesections.mli bytecomp/bytesections.ml \
   bytecomp/dll.mli bytecomp/dll.ml \
