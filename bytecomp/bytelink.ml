@@ -228,10 +228,11 @@ let link_compunit accu output_fun currpos_fun inchan file_name compunit =
     debug_info := (currpos_fun(), debug_event_list, debug_dirs) :: !debug_info
   end;
   output_fun code_block;
-  let fold_primitive needs_stdlib name =
+  let fold_primitive (needs_stdlib, uses_dynlink) name =
     if !Clflags.link_everything then
       Symtable.require_primitive name;
-    (needs_stdlib || name = "%standard_library_default")
+    (needs_stdlib || name = "%standard_library_default",
+     uses_dynlink || name = "caml_reify_bytecode")
   in
   List.fold_left fold_primitive accu compunit.cu_primitives
 
@@ -265,7 +266,7 @@ let link_file output_fun currpos_fun accu = function
       link_archive accu output_fun currpos_fun file_name units
 
 let link_files output_fun currpos_fun =
-  List.fold_left (link_file output_fun currpos_fun) false
+  List.fold_left (link_file output_fun currpos_fun) (false, false)
 
 (* Output the debugging information *)
 (* Format is:
@@ -577,7 +578,10 @@ let link_bytecode ?final_name tolink exec_name standalone =
        let output_fun buf =
          Out_channel.output_bigarray outchan buf 0 (Bigarray.Array1.dim buf)
        and currpos_fun () = pos_out outchan - start_code in
-       let needs_stdlib =
+       (* link_files returns true if any module refers to caml_reify_bytecode,
+          which is used solely by the toplevel and dynlink libraries and is used
+          to control whether we included the CRCS section. *)
+       let needs_stdlib, uses_dynlink =
          link_files output_fun currpos_fun tolink
        in
        if check_dlls then Dll.close_all_dlls();
@@ -634,8 +638,10 @@ let link_bytecode ?final_name tolink exec_name standalone =
        Symtable.output_global_map outchan;
        Bytesections.record toc_writer SYMB;
        (* CRCs for modules *)
-       output_value outchan (extract_crc_interfaces());
-       Bytesections.record toc_writer CRCS;
+       if uses_dynlink then begin
+         output_value outchan (extract_crc_interfaces());
+         Bytesections.record toc_writer CRCS
+       end;
        (* Debug info *)
        if !Clflags.debug then begin
          output_debug_info outchan;
@@ -782,7 +788,7 @@ static int caml_code[] = {
          output_code_string outchan code;
          currpos := !currpos + (Bigarray.Array1.dim code)
        and currpos_fun () = !currpos in
-       ignore (link_files output_fun currpos_fun tolink);
+       let _, uses_dynlink = link_files output_fun currpos_fun tolink in
        (* The final STOP instruction *)
        Printf.fprintf outchan "\n0x%x};\n" Opcodes.opSTOP;
        (* The table of global data *)
@@ -795,17 +801,19 @@ static char caml_data[] = {
 };
 |};
        (* The sections *)
-       let sections : (string * Obj.t) array =
-         [| Bytesections.Name.to_string SYMB,
-            Symtable.data_global_map();
-            Bytesections.Name.to_string CRCS,
-            Obj.repr(extract_crc_interfaces()) |]
+       let sections : (string * Obj.t) list =
+         (Bytesections.Name.to_string SYMB, Symtable.data_global_map()) ::
+         if uses_dynlink then
+           [ Bytesections.Name.to_string CRCS,
+             Obj.repr(extract_crc_interfaces()) ]
+         else
+           []
        in
        output_string outchan {|
 static char caml_sections[] = {
 |};
        output_data_string outchan
-         (Marshal.to_string sections []);
+         (Marshal.to_string (Array.of_list sections) []);
        output_string outchan {|
 };
 
