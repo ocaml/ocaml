@@ -109,26 +109,6 @@ let use_silently ppf input =
 
 let load_file = load_file false
 
-(* Execute a script.  If [name] is "", read the script from stdin. *)
-
-let run_script ppf name args =
-  Clflags.debug := true;
-  override_sys_argv args;
-  let filename = filename_of_input name in
-  Compmisc.init_path ~dir:(Filename.dirname filename) ();
-                   (* Note: would use [Filename.abspath] here, if we had it. *)
-  Sys.interactive := false;
-  run_hooks After_setup;
-  let explicit_name =
-    match name with
-    | File name as filename  -> (
-    (* Prevent use_silently from searching in the path. *)
-    if name <> "" && Filename.is_implicit name
-    then File (Filename.concat Filename.current_dir_name name)
-    else filename)
-    | (Stdin | String _) as x -> x
-  in
-  use_silently ppf explicit_name
 
 (* Toplevel initialization. Performed here instead of at the
    beginning of loop() so that user code linked in with ocamlmktop
@@ -270,6 +250,28 @@ let load_ocamlinit ppf =
       match find_ocamlinit () with
       | None -> ()
       | Some file -> ignore (use_silently ppf (File file))
+
+(* Execute a script.  If [name] is "", read the script from stdin. *)
+
+let run_script ppf name args =
+  Clflags.debug := true;
+  override_sys_argv args;
+  let filename = filename_of_input name in
+  Compmisc.init_path ~dir:(Filename.dirname filename) ();
+                   (* Note: would use [Filename.abspath] here, if we had it. *)
+  Sys.interactive := false;
+  run_hooks After_setup;
+  let explicit_name =
+    match name with
+    | File name as filename  -> (
+    (* Prevent use_silently from searching in the path. *)
+    if name <> "" && Filename.is_implicit name
+    then File (Filename.concat Filename.current_dir_name name)
+    else filename)
+    | (Stdin | String _) as x -> x
+  in
+  load_ocamlinit ppf;
+  use_silently ppf explicit_name
 
 (* The interactive loop *)
 
