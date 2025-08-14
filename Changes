@@ -250,6 +250,9 @@ Working version
 
 - #14190: bugfix;`ocaml -init init.ml -e "my code"` now works properly.
 
+- #14190: introduce `ocaml -yesinit` to enable taking init files into account
+  when running scripts.
+
 ### Internal/compiler-libs changes:
 
 - #13839, #14008: Reimplement `let open`, `let module` and `let exception` in

@@ -141,6 +141,7 @@ module type Toplevel_options = sig
   include Core_options
   val _init : string -> unit
   val _noinit : unit -> unit
+  val _yesinit : unit -> unit
   val _no_version : unit -> unit
   val _prompt : unit -> unit
   val _noprompt : unit -> unit

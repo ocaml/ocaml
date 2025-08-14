@@ -116,6 +116,10 @@ is always compiled because it is typed specially.
 Do not load any initialization file.
 See the "Initialization file" section below.
 .TP
+.B \-yesinit
+Load initialization files even for scripts.
+See the "Initialization file" section below.
+.TP
 .B \-nolabels
 Ignore non-optional labels in types. Labels cannot be used in
 applications, and parameter order becomes strict.
@@ -317,8 +321,11 @@ Display a short usage summary and exit.
 
 When
 .BR ocaml (1)
-is invoked, it will read phrases from an initialization file before
-giving control to the user. The file read is the first found of:
+is invoked as a toplevel, it will read phrases from an initialization file
+before giving control to the user. This is disabled by default when running a
+script.
+
+The file read is the first found of:
 .IP 1.
 \fB.ocamlinit\fP in the current directory;
 .IP 2.
@@ -346,7 +353,8 @@ by using the
 .BI \-init " file"
 option, and disable initialization files by using the
 .B \-noinit
-option.
+option. You can enable initialization files even when running script with
+.B \-yesinit
 
 Note that you can also use the
 .B #use

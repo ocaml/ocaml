@@ -485,6 +485,10 @@ let mk_thread f =
   "-thread", Arg.Unit f,
   " (deprecated) same as -I +threads"
 
+let mk_yesinit f =
+  "-yesinit", Arg.Unit f,
+  " Enable loading init file even for scripts"
+
 let mk_dtimings f =
   "-dtimings", Arg.Unit f, " Print timings information for each pass"
 
@@ -914,6 +918,7 @@ module type Toplevel_options = sig
   include Core_options
   val _init : string -> unit
   val _noinit : unit -> unit
+  val _yesinit : unit -> unit
   val _no_version : unit -> unit
   val _prompt : unit -> unit
   val _noprompt : unit -> unit
@@ -1190,6 +1195,7 @@ struct
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
     mk_noinit F._noinit;
+    mk_yesinit F._yesinit;
     mk_nolabels F._nolabels;
     mk_prompt F._prompt;
     mk_noprompt F._noprompt;
@@ -1454,6 +1460,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_no_float_const_prop F._no_float_const_prop;
     mk_noassert F._noassert;
     mk_noinit F._noinit;
+    mk_yesinit F._yesinit;
     mk_nolabels F._nolabels;
     mk_prompt F._prompt;
     mk_noprompt F._noprompt;
@@ -1881,6 +1888,7 @@ module Default = struct
     let _init s = init_file := (Some s)
     let _no_version = set noversion
     let _noinit = set noinit
+    let _yesinit = set yesinit
     let _prompt = clear noprompt
     let _noprompt = set noprompt
     let _nopromptcont = set nopromptcont
