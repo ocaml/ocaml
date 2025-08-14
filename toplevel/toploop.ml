@@ -240,16 +240,17 @@ let find_ocamlinit () =
                  check_xdg_config_dirs;
                  check_home]
 
-let load_ocamlinit ppf =
+let load_ocamlinit ~is_script ppf =
   if !Clflags.noinit then ()
   else match !Clflags.init_file with
   | Some f ->
     if Sys.file_exists f then ignore (use_silently ppf (File f) )
     else fprintf ppf "Init file not found: \"%s\".@." f
-  | None ->
+  | None when not is_script ->
       match find_ocamlinit () with
       | None -> ()
       | Some file -> ignore (use_silently ppf (File file))
+  | None -> ()
 
 (* Execute a script.  If [name] is "", read the script from stdin. *)
 
@@ -270,7 +271,7 @@ let run_script ppf name args =
     else filename)
     | (Stdin | String _) as x -> x
   in
-  load_ocamlinit ppf;
+  load_ocamlinit ~is_script:true ppf;
   use_silently ppf explicit_name
 
 (* The interactive loop *)
@@ -398,7 +399,7 @@ let loop ppf =
   Location.input_phrase_buffer := Some phrase_buffer;
   Sys.catch_break true;
   run_hooks After_setup;
-  load_ocamlinit ppf;
+  load_ocamlinit ~is_script:false ppf;
   while true do
     let snap = ref (Btype.snapshot ()) in
     try
