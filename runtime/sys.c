@@ -136,6 +136,11 @@ CAMLexport void caml_do_exit(int retcode)
   caml_domain_state* domain_state = Caml_state;
   struct gc_stats s;
 
+  /* Empty the minor heap one last time so that the final minor allocations are
+     accounted for both in the GC stats below and in the runtime_events
+     counters emitted by the collection. */
+  caml_minor_collection();
+
   if ((atomic_load_relaxed(&caml_verb_gc) & CAML_GC_MSG_STATS) != 0) {
     caml_compute_gc_stats(&s);
     {
