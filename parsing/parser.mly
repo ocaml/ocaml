@@ -1494,7 +1494,7 @@ paren_module_expr:
 
 (* The various ways of annotating a core language expression that
    produces a first-class module that we wish to unpack. *)
-%inline expr_colon_package_type:
+expr_colon_package_type:
     e = expr
       { e }
   | e = expr COLON ty = package_type
