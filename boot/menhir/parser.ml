@@ -39169,7 +39169,7 @@ module Tables = struct
             let _loc = (_startpos, _endpos) in
             
 # 1501 "parsing/parser.mly"
-      ( ghexp ~loc:_loc (Pexp_constraint (e, ty)) )
+      ( mkexp ~loc:_loc (Pexp_constraint (e, ty)) )
 # 39174 "parsing/parser.ml"
             
           in
@@ -39369,7 +39369,7 @@ module Tables = struct
             let _loc = (_startpos, _endpos) in
             
 # 1501 "parsing/parser.mly"
-      ( ghexp ~loc:_loc (Pexp_constraint (e, ty)) )
+      ( mkexp ~loc:_loc (Pexp_constraint (e, ty)) )
 # 39374 "parsing/parser.ml"
             
           in
@@ -39532,7 +39532,7 @@ module Tables = struct
             let _loc = (_startpos, _endpos) in
             
 # 1503 "parsing/parser.mly"
-      ( ghexp ~loc:_loc (Pexp_coerce (e, Some ty1, ty2)) )
+      ( mkexp ~loc:_loc (Pexp_coerce (e, Some ty1, ty2)) )
 # 39537 "parsing/parser.ml"
             
           in
@@ -39768,7 +39768,7 @@ module Tables = struct
             let _loc = (_startpos, _endpos) in
             
 # 1503 "parsing/parser.mly"
-      ( ghexp ~loc:_loc (Pexp_coerce (e, Some ty1, ty2)) )
+      ( mkexp ~loc:_loc (Pexp_coerce (e, Some ty1, ty2)) )
 # 39773 "parsing/parser.ml"
             
           in
@@ -39895,7 +39895,7 @@ module Tables = struct
             let _loc = (_startpos, _endpos) in
             
 # 1505 "parsing/parser.mly"
-      ( ghexp ~loc:_loc (Pexp_coerce (e, None, ty2)) )
+      ( mkexp ~loc:_loc (Pexp_coerce (e, None, ty2)) )
 # 39900 "parsing/parser.ml"
             
           in
@@ -40095,7 +40095,7 @@ module Tables = struct
             let _loc = (_startpos, _endpos) in
             
 # 1505 "parsing/parser.mly"
-      ( ghexp ~loc:_loc (Pexp_coerce (e, None, ty2)) )
+      ( mkexp ~loc:_loc (Pexp_coerce (e, None, ty2)) )
 # 40100 "parsing/parser.ml"
             
           in
