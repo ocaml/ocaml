@@ -240,6 +240,9 @@ Working version
   category of 'parked' domain structures.
   (Gabriel Scherer, review by Sivaramakrishnan)
 
+- #14198 Constraints on module unpacking are not ghost
+  (Thomas Refis, review by Nicolás Ojeda Bär)
+
 ### Build system:
 
 - #13810: Support build of cross compilers to native freestanding targets
