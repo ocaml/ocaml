@@ -1065,8 +1065,9 @@ let type_declarations ?(equality = false) ~loc env ~mark name
          else if opn || constrained ty then (co1 = co2 && cn1 = cn2)
          else true) &&
         let (p1,n1,j1) = get_lower v1 and (p2,n2,j2) = get_lower v2 in
-        (* for private types, the lower bound can be inferred, and
-           the internal one may be wrong in the result of functors *)
+        (* Only check the lower bound for abstract types.
+           For private types, the lower bound can be inferred, and
+           the internal one may be wrong in the result of functors. *)
         imp abstr (imp (abstr && p2) p1 && imp n2 n1 && imp j2 j1))
       decl2.type_params (List.combine decl1.type_variance decl2.type_variance)
   then None else Some Variance
