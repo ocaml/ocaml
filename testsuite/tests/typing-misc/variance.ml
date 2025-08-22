@@ -162,7 +162,7 @@ module M : sig
 end = struct
   type 'a t = string
   type foo = private int
-  type bar = private int  
+  type bar = private int
   let foo = "foo"
 end;;
 [%%expect{|
