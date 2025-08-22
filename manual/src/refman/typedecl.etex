@@ -201,8 +201,10 @@ original type constructor.
 The type variables appearing as type parameters can optionally be prefixed by
 "+", "-", "+-", or "-+" to indicate that the type constructor has a specific
 variance with respect this parameter.
-A parameter with "+" is covariant, "-" contravariant,
-and "+-" (or "-+") bivariant.
+A parameter prefixed with "+" is covariant,
+one prefixed with "-" is contravariant.
+A parameter can be both covariant and contravariant,
+also known as bivariant, with either a "+-" or "-+" prefix.
 This variance information is used to decide subtyping relations when
 checking the validity of @":>"@ coercions
 (see section \ref{ss:expr-coercions}).

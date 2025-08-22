@@ -278,6 +278,11 @@ just redirect the standard output of the compiler to a ".mli" file,
 and edit that file to remove all declarations of unexported names.
 }%notop
 
+\item["-i-variance"]
+Cause the compiler to print the computed variance of type parameters for
+every type declaration.  Without this option, variance is printed only for
+private types or types without a manifest (e.g., abstract types).
+
 \item["-I" \var{directory}]
 Add the given directory to the list of directories searched for
 \nat{compiled interface files (".cmi"), compiled object code files (".cmx"),
