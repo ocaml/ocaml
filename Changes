@@ -1012,6 +1012,10 @@ OCaml 5.4.0
 - #14196, #14197: ocamlprof: do not instrument unreachable clauses
   (Gabriel Scherer, review by Nicolás Ojeda Bär, report by Ali Caglayan)
 
+- #14200, # : bad variance check with private aliases
+  (Jacques Garrigue, report by Stephen Dolan, review by ?)
+
+
 OCaml 5.3.0 (8 January 2025)
 ----------------------------
 
