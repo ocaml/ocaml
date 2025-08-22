@@ -1068,7 +1068,7 @@ let type_declarations ?(equality = false) ~loc env ~mark name
         (* Only check the lower bound for abstract types.
            For private types, the lower bound can be inferred, and
            the internal one may be wrong in the result of functors. *)
-        imp abstr (imp (abstr && p2) p1 && imp n2 n1 && imp j2 j1))
+        imp abstr (imp p2 p1 && imp n2 n1 && imp j2 j1))
       decl2.type_params (List.combine decl1.type_variance decl2.type_variance)
   then None else Some Variance
 
