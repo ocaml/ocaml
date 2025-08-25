@@ -3276,7 +3276,7 @@ let gen_annot target annots =
     annots
 
 let type_implementation target initial_env ast =
-  let sourcefile = Unit_info.original_source_file target in
+  let sourcefile = Unit_info.source_file target in
   let save_cmt target annots initial_env cmi shape =
     Cmt_format.save_cmt (Unit_info.cmt target)
       annots initial_env cmi shape;
