@@ -736,11 +736,15 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
 
 static void ephe_clean_minor (caml_domain_state* domain)
 {
+  /* Limits of *this* minor heap, not other domains.
+     (See the ephemeron logic in [oldify_mopup]). */
+  value young_start = (value)Caml_state->young_start;
+  value young_end = (value)Caml_state->young_end;
   struct caml_ephe_ref_table table =
     domain->minor_tables->ephe_ref;
   for (struct caml_ephe_ref_elt* re = table.base; re < table.ptr; re++) {
     value v = re->locked;
-    if (v == Val_unit)
+    if (v == Val_unit || !(young_start <= v && v < young_end))
       continue;
     /* This runs after the barrier: any promotion has completed,
        so we don't need to get_header_val / spin_on_header */
