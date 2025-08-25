@@ -876,7 +876,11 @@ and functor_symptom ~expansion_token ~env ~before ~ctx = function
       module_type ~expansion_token ~eqmode:false ~env ~before ~ctx res
   | Params d -> functor_params ~expansion_token ~env ~before ~ctx d
 
-and signature ~expansion_token ~env:_ ~before ~ctx sgs =
+and signature
+    : type a.
+      expansion_token:_ -> env:_ -> before:_ -> ctx:_ -> a signature_symptom
+      -> _ =
+    fun ~expansion_token ~env:_ ~before ~ctx sgs ->
   Printtyp.wrap_printing_env ~error:true sgs.env (fun () ->
       match sgs.missings, sgs.incompatibles with
       | _ :: _ as missings, _ ->
@@ -988,6 +992,8 @@ let all env = function
   | In_Module_type_substitution (id,diff) ->
       module_type_subst ~env id diff
   | In_Signature diff ->
+      signature ~expansion_token:true ~before:[] ~env ~ctx:[] diff
+  | In_Include_functor diff ->
       signature ~expansion_token:true ~before:[] ~env ~ctx:[] diff
   | In_Expansion cmts ->
       match core_module_type_symptom cmts with

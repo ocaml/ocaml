@@ -80,6 +80,7 @@ let find_eval_phrase str =
 (* The current typing environment for the toplevel *)
 
 let toplevel_env = ref Env.empty
+let toplevel_sig = ref []
 
 let backtrace = ref None
 
@@ -204,10 +205,10 @@ let preprocess_phrase ppf phr =
   if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
   phr
 
-let typecheck_phrase ppf oldenv sstr =
+let typecheck_phrase ppf oldenv oldsig sstr =
   Typecore.reset_delayed_checks ();
   let (str, sg, sn, shape, newenv) =
-    Typemod.type_toplevel_phrase oldenv sstr
+    Typemod.type_toplevel_phrase oldenv oldsig sstr
   in
   if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
   let sg' = Typemod.Signature_names.simplify newenv sn sg in
@@ -299,7 +300,8 @@ let update_search_path_from_env () =
   Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
 
 let initialize_toplevel_env () =
-  toplevel_env := Compmisc.initial_env()
+  toplevel_env := Compmisc.initial_env();
+  toplevel_sig := []
 
 external caml_sys_modify_argv : string array -> unit =
   "caml_sys_modify_argv"

@@ -145,10 +145,21 @@ let module_substitution sub x =
   let ms_attributes = sub.attributes sub x.ms_attributes in
   {x with ms_loc; ms_name; ms_txt; ms_attributes}
 
-let include_infos sub f x =
+let include_kind sub = function
+  | Tincl_structure -> Tincl_structure
+  | Tincl_functor ccs ->
+      Tincl_functor
+        (List.map (fun (nm, cc) -> (nm, sub.module_coercion sub cc)) ccs)
+  | Tincl_gen_functor ccs ->
+      Tincl_gen_functor
+        (List.map (fun (nm, cc) -> (nm, sub.module_coercion sub cc)) ccs)
+
+let include_infos sub ~(modl : 'a -> 'a) x =
   let incl_loc = sub.location sub x.incl_loc in
   let incl_attributes = sub.attributes sub x.incl_attributes in
-  {x with incl_loc; incl_attributes; incl_mod = f x.incl_mod}
+  let incl_mod = modl x.incl_mod in
+  let incl_kind = include_kind sub x.incl_kind in
+  { x with incl_loc; incl_attributes; incl_mod; incl_kind }
 
 let class_type_declaration sub x =
   class_infos sub (sub.class_type sub) x
@@ -184,7 +195,7 @@ let structure_item sub {str_loc; str_desc; str_env} =
           (List.map (tuple3
             id (map_loc sub) (sub.class_type_declaration sub)) list)
     | Tstr_include incl ->
-        Tstr_include (include_infos sub (sub.module_expr sub) incl)
+        Tstr_include (include_infos sub ~modl:(sub.module_expr sub) incl)
     | Tstr_open od -> Tstr_open (sub.open_declaration sub od)
     | Tstr_attribute attr -> Tstr_attribute (sub.attribute sub attr)
   in
@@ -550,7 +561,7 @@ let signature_item sub x =
    | Tsig_modtypesubst x ->
         Tsig_modtypesubst (sub.module_type_declaration sub x)
    | Tsig_include incl ->
-        Tsig_include (include_infos sub (sub.module_type sub) incl)
+        Tsig_include (include_infos sub ~modl:(sub.module_type sub) incl)
     | Tsig_class list ->
         Tsig_class (List.map (sub.class_description sub) list)
     | Tsig_class_type list ->

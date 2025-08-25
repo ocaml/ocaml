@@ -41,6 +41,8 @@ val update_search_path_from_env : unit -> unit
 
 val toplevel_env : Env.t ref
         (* Typing environment for the toplevel *)
+val toplevel_sig : Types.signature ref
+        (* Current toplevel signature *)
 val initialize_toplevel_env : unit -> unit
         (* Initialize the typing environment for the toplevel *)
 
@@ -50,10 +52,11 @@ val preprocess_phrase :
    preprocessors. Return the updated phrase. *)
 
 val typecheck_phrase :
-  formatter -> Env.t -> Parsetree.structure ->
+  formatter -> Env.t -> Types.signature -> Parsetree.structure ->
   Typedtree.structure * Types.signature * Env.t
 (* Type-check the current toplevel phrase (not a directive)
-   in the current typing environment, return an updated typing environment. *)
+   in the current typing environment and given the current toplevel signature,
+   return an updated typing environment. *)
 
 val record_backtrace : unit -> unit
 

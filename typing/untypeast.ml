@@ -652,14 +652,20 @@ let module_substitution sub ms =
     (map_loc sub ms.ms_name)
     (map_loc sub ms.ms_txt)
 
-let include_infos f sub incl =
+let include_infos f sub ~kind incl =
   let loc = sub.location sub incl.incl_loc in
   let attrs = sub.attributes sub incl.incl_attributes in
-  Incl.mk ~loc ~attrs
-    (f sub incl.incl_mod)
+  Incl.mk ~loc ~attrs kind (f sub incl.incl_mod)
 
-let include_declaration sub = include_infos sub.module_expr sub
-let include_description sub = include_infos sub.module_type sub
+let include_declaration sub incl =
+  let kind =
+    match incl.incl_kind with
+    | Tincl_structure -> `Include
+    | Tincl_functor _ | Tincl_gen_functor _ -> `Include_functor
+  in
+  include_infos sub.module_expr sub ~kind incl
+
+let include_description sub = include_infos sub.module_type sub ~kind:()
 
 let class_infos f sub ci =
   let loc = sub.location sub ci.ci_loc in

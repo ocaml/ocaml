@@ -922,6 +922,8 @@ The precedences must be listed from low to high.
 %left     BAR                           /* pattern (p|p|p) */
 %nonassoc below_COMMA
 %left     COMMA                         /* expr/labeled_tuple (e,e,e) */
+%nonassoc below_FUNCTOR                 /* include M */
+%nonassoc FUNCTOR                       /* include functor M */
 %right    MINUSGREATER                  /* function_type (t -> t -> t) */
 %right    OR BARBAR                     /* expr (e || e || e) */
 %right    AMPERSAND AMPERAMPER          /* expr (e && e && e) */
@@ -1564,7 +1566,7 @@ structure_item:
         { pstr_class $1 }
     | class_type_declarations
         { pstr_class_type $1 }
-    | include_statement(module_expr)
+    | include_module_expr_statement
         { pstr_include $1 }
     )
     { $1 }
@@ -1660,19 +1662,38 @@ module_binding_body:
 
 (* Shared material between structures and signatures. *)
 
-(* An [include] statement can appear in a structure or in a signature,
-   which is why this definition is parameterized. *)
-%inline include_statement(thing):
-  INCLUDE
+include_or_include_functor:
+  | INCLUDE %prec below_FUNCTOR
+      { `Include }
+  | INCLUDE FUNCTOR
+      { `Include_functor }
+;
+
+%inline include_module_expr_statement:
+  kind = include_or_include_functor
   ext = ext
   attrs1 = attributes
-  thing = thing
+  mexpr = module_expr
   attrs2 = post_item_attributes
   {
     let attrs = attrs1 @ attrs2 in
     let loc = make_loc $sloc in
     let docs = symbol_docs $sloc in
-    Incl.mk thing ~attrs ~loc ~docs, ext
+    Incl.mk kind mexpr ~attrs ~loc ~docs, ext
+  }
+;
+
+%inline include_module_type_statement:
+  INCLUDE
+  ext = ext
+  attrs1 = attributes
+  mtype = module_type
+  attrs2 = post_item_attributes
+  {
+    let attrs = attrs1 @ attrs2 in
+    let loc = make_loc $sloc in
+    let docs = symbol_docs $sloc in
+    Incl.mk () mtype ~attrs ~loc ~docs, ext
   }
 ;
 
@@ -1823,7 +1844,7 @@ signature_item:
         { psig_modtypesubst $1 }
     | open_description
         { psig_open $1 }
-    | include_statement(module_type)
+    | include_module_type_statement
         { psig_include $1 }
     | class_descriptions
         { psig_class $1 }

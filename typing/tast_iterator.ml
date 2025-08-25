@@ -129,10 +129,20 @@ let module_substitution sub ms =
   iter_loc sub ms_name;
   iter_loc_lid sub ms_txt
 
-let include_infos sub f {incl_loc; incl_mod; incl_attributes; _} =
+let include_kind sub = function
+  | Tincl_structure -> ()
+  | Tincl_functor ccs ->
+      List.iter (fun (_, cc) -> sub.module_coercion sub cc) ccs
+  | Tincl_gen_functor ccs ->
+      List.iter (fun (_, cc) -> sub.module_coercion sub cc) ccs
+
+let include_infos sub ~(modl : 'a -> unit)
+    ({incl_loc; incl_mod; incl_attributes; incl_kind; incl_type = _} :
+      'a include_infos) =
   sub.location sub incl_loc;
   sub.attributes sub incl_attributes;
-  f incl_mod
+  modl incl_mod;
+  include_kind sub incl_kind
 
 let class_type_declaration sub x =
   sub.item_declaration sub (Class_type x);
@@ -160,7 +170,7 @@ let structure_item sub {str_loc; str_desc; str_env; _} =
   | Tstr_class_type list ->
       List.iter (fun (_, s, cltd) ->
         iter_loc sub s; sub.class_type_declaration sub cltd) list
-  | Tstr_include incl -> include_infos sub (sub.module_expr sub) incl
+  | Tstr_include incl -> include_infos sub ~modl:(sub.module_expr sub) incl
   | Tstr_open od -> sub.open_declaration sub od
   | Tstr_attribute attr -> sub.attribute sub attr
 
@@ -422,7 +432,7 @@ let signature_item sub {sig_loc; sig_desc; sig_env; _} =
   | Tsig_recmodule list -> List.iter (sub.module_declaration sub) list
   | Tsig_modtype x -> sub.module_type_declaration sub x
   | Tsig_modtypesubst x -> sub.module_type_declaration sub x
-  | Tsig_include incl -> include_infos sub (sub.module_type sub) incl
+  | Tsig_include incl -> include_infos sub ~modl:(sub.module_type sub) incl
   | Tsig_class list -> List.iter (sub.class_description sub) list
   | Tsig_class_type list -> List.iter (sub.class_type_declaration sub) list
   | Tsig_open od -> sub.open_description sub od
