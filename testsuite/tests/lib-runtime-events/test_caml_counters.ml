@@ -27,4 +27,6 @@ let () =
     assert(received EV_C_MAJOR_HEAP_LARGE_BLOCKS);
     (* Finally the minor heap counters *)
     assert(received EV_C_MINOR_ALLOCATED);
-    assert(received EV_C_MINOR_PROMOTED)
+    assert(received EV_C_MINOR_ALLOCATED_WORDS);
+    assert(received EV_C_MINOR_PROMOTED);
+    assert(received EV_C_MINOR_PROMOTED_WORDS)

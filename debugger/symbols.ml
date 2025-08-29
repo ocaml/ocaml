@@ -54,6 +54,16 @@ let relocate_event orig ev =
     Event_parent repr -> repr := ev.ev_pos
   | _                 -> ()
 
+let maybe_invert_build_path_prefix_map abs_e =
+  let best_existing_dir =
+    List.find_map
+      (fun path ->
+        if Sys.file_exists path && Sys.is_directory path
+        then Some path
+        else None)
+      (Misc.invert_build_path_prefix_map abs_e) in
+  Option.value ~default:abs_e best_existing_dir
+
 let read_symbols' bytecode_file =
   let ic = open_in_bin bytecode_file in
   let toc =
@@ -83,7 +93,10 @@ let read_symbols' bytecode_file =
     let evll = partition_modules evl in
     eventlists := evll @ !eventlists;
     dirs :=
-      List.fold_left (fun s e -> String.Set.add e s) !dirs (input_value ic)
+      List.fold_left
+        (fun s abs_e ->
+          String.Set.add (maybe_invert_build_path_prefix_map abs_e) s)
+        !dirs (input_value ic)
   done;
   begin try
     ignore (Bytesections.seek_section toc ic Bytesections.Name.CODE)

@@ -130,9 +130,7 @@ void caml_set_minor_heap_size (asize_t wsize)
 
   if (domain_state->young_ptr != domain_state->young_end) {
     CAML_EV_COUNTER (EV_C_FORCE_MINOR_SET_MINOR_HEAP_SIZE, 1);
-    // Don't call caml_minor_collection, since that can run the
-    // caml_domain_external_interrupt_hook, which can allocate.
-    caml_empty_minor_heaps_once();
+    caml_minor_collection();
   }
   CAMLassert (domain_state->young_ptr == domain_state->young_end);
 
@@ -708,8 +706,12 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
   call_timing_hook(&caml_minor_gc_end_hook);
   CAML_EV_COUNTER(EV_C_MINOR_PROMOTED,
                   Bsize_wsize(domain->allocated_words - prev_alloc_words));
+  CAML_EV_COUNTER(EV_C_MINOR_PROMOTED_WORDS,
+                  domain->allocated_words - prev_alloc_words);
 
   CAML_EV_COUNTER(EV_C_MINOR_ALLOCATED, minor_allocated_bytes);
+  CAML_EV_COUNTER(EV_C_MINOR_ALLOCATED_WORDS,
+                  Whsize_wosize(minor_allocated_bytes));
 
   CAML_EV_END(EV_MINOR);
   if (minor_allocated_bytes == 0)

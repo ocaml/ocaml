@@ -39,6 +39,15 @@ Working version
   `live_stacks_words` field tracking the total size in words of live stacks.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #14189: Add runtime counters EV_C_MINOR_PROMOTED_WORDS and
+  EV_C_MINOR_ALLOCATED_WORDS. EV_C_MINOR_PROMOTED_WORDS reports words promoted
+  by minor GC and EV_C_MINOR_ALLOCATED_WORDS reports words allocated by minor
+  GC. Both have equivalent bytes counters. Also updated the documentation for
+  EV_C_MINOR_PROMOTED and EV_C_MINOR_ALLOCATED to qualify scope of the values
+  reported as being per-domain.
+  (Tim McGilchrist, review by Nick Barnes, Sadiq Jaffer and
+  Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 ### Standard library:
@@ -127,8 +136,9 @@ Working version
 
 ### Tools:
 
-- #12139: BUILD_PATH_PREFIX_MAP rewriting in debug-event locations.
-  (Richard L. Ford, review by Gabriel Scherer)
+- #14055: Invert BUILD_PATH_PREFIX_MAP in directories loaded at startup
+  by the debugger.
+  (Pierre Boutillier, review by Gabriel Scherer and Daniel Bünzli)
 
 * #13638: ocamlmklib exits with code 4 if passed an unrecognised option, as it
   does with an unrecognised file.
@@ -243,6 +253,9 @@ Working version
   category of 'parked' domain structures.
   (Gabriel Scherer, review by Sivaramakrishnan)
 
+- #14198 Constraints on module unpacking are not ghost
+  (Thomas Refis, review by Nicolás Ojeda Bär)
+
 ### Build system:
 
 - #13810: Support build of cross compilers to native freestanding targets
@@ -264,9 +277,6 @@ Working version
 - #14155: Audit unexecuted phrases in compiler expect tests and
   fix all occurences
   (Stefan Muenzel, review by Gabriel Scherer)
-
-- #14169: runtime, fix cache miss within the stack fragments cache
-  (Florian Angeletti, review by Gabriel Scherer)
 
 - #14163, #14176: add a filename location to the deprecation alert for implicit
   uses of libraries bundled with the compiler (unix,re,threads,dynlink)
@@ -1011,6 +1021,16 @@ OCaml 5.4.0
 - #14135: Fix a rare internal typechecker error when combining recursive
   modules, polymorphic fields or methods, and constrained type parameters.
   (Florian Angeletti, review by Gabriel Scherer)
+
+- #14169: runtime, fix cache miss within the stack fragments cache
+  (Florian Angeletti, review by Gabriel Scherer)
+
+- #14196, #14197: ocamlprof: do not instrument unreachable clauses
+  (Gabriel Scherer, review by Nicolás Ojeda Bär, report by Ali Caglayan)
+
+- #14200, #14202 : bad variance check with private aliases
+  (Jacques Garrigue, report and review by Stephen Dolan)
+
 
 OCaml 5.3.0 (8 January 2025)
 ----------------------------

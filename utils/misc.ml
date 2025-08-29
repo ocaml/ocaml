@@ -1138,6 +1138,14 @@ let get_build_path_prefix_map =
     end;
     !map_cache
 
+let invert_build_path_prefix_map path =
+  match get_build_path_prefix_map () with
+  | None -> [path]
+  | Some prefix_map ->
+    match Build_path_prefix_map.invert_all prefix_map path with
+    | [] -> [path]
+    | matches -> matches
+
 let debug_prefix_map_flags () =
   if not Config.as_has_debug_prefix_map then
     []

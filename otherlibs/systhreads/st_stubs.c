@@ -1021,7 +1021,7 @@ CAMLprim value caml_set_current_thread_name(value name)
   pthread_setname_np(String_val(name));
 #  elif defined(__NetBSD__)
   char buf[1024];
-  int ret = pthread_setname_np(pthread_self(), "%s", String_val(name));
+  int ret = pthread_setname_np(pthread_self(), "%s", (void *)String_val(name));
   if (ret != 0)
     caml_set_current_thread_name_warning(caml_strerror(ret, buf, sizeof(buf)));
 #  else
