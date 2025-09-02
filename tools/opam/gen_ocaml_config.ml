@@ -81,7 +81,18 @@ let () =
       fun name -> Filename.concat dir name
   in
   let libdir =
-    let exit_code = Sys.command (binary "ocamlc" ^ " -where > where") in
+    let exit_code =
+      let ocamlc = binary "ocamlc" in
+      let ocamlc =
+        if Sys.os_type = "Win32" then
+          if String.contains ocamlc ' ' then
+            "\"" ^ ocamlc ^ "\""
+          else
+            ocamlc
+        else
+          Filename.quote ocamlc
+      in
+      Sys.command (ocamlc ^ " -where > where") in
     if exit_code = 0 then
       (* Must be opened in text mode for Windows *)
       let ic = open_in "where" in
@@ -106,8 +117,29 @@ let () =
       let separator = if Sys.os_type = "Win32" then ";" else ":" in
       let ic = open_in ld_conf in
       let rec input_lines acc =
-        try input_lines (input_line ic::acc)
-        with End_of_file -> close_in ic; List.rev acc
+        try
+          let line = input_line ic in
+          let line =
+            if line = Filename.current_dir_name then
+              libdir
+            else if line = Filename.parent_dir_name then
+              Filename.concat libdir line
+            else
+              Scanf.sscanf line "%[.]%1[/\\]" (fun prefix separator ->
+                if separator <> "" then
+                  if prefix = Filename.current_dir_name then
+                    let line = String.sub line 2 (String.length line - 2) in
+                    Filename.concat libdir line
+                  else if prefix = Filename.parent_dir_name then
+                    Filename.concat libdir line
+                  else
+                    line
+                else
+                  line)
+          in
+          input_lines (line::acc)
+        with End_of_file ->
+          close_in ic; List.rev acc
       in
       String.concat separator (input_lines [])
     else
