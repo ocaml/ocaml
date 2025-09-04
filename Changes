@@ -974,6 +974,10 @@ OCaml 5.4.0
   definitions
   (Clement Blaudeau, review by Florian Angeletti)
 
+- #13541, #13777: Using C++11 `thread_local` causes name-mangling
+  issues when linking with flexlink on Cygwin.
+  (Antonin Décimo and David Allsopp, report by Kate Deplaix)
+
 * #13874, #13882: Make evaluation order consistent for applications when using
   the non-flambda native compiler
   (Vincent Laviron, report by Jean-Marie Madiot, review by Gabriel Scherer)
