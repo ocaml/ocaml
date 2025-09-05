@@ -200,10 +200,10 @@ Some attributes are understood by the compiler:
 \item
  "ocaml.warning" or "warning", with a string literal payload.
  This can be used as floating attributes in a
- signature/structure/object/object type.  The string is parsed and has
+ signature / structure / object type.  The string is parsed and has
  the same effect as the "-w" command-line option, in the scope between
  the attribute and the end of the current
- signature/structure/object/object type.  The attribute can also be
+ signature / structure / object type.  The attribute can also be
  attached to any kind of syntactic item which support attributes
  (such as an expression, or a type expression)
  in which case its scope is limited to that item.
@@ -259,7 +259,7 @@ Some attributes are understood by the compiler:
   application to check that the call is inlined by the compiler. If the call
   is not inlined, a warning (55) is emitted.
 \item
-  "ocaml.noalloc", "ocaml.unboxed"and "ocaml.untagged" or
+  "ocaml.noalloc", "ocaml.unboxed" and "ocaml.untagged" or
   "noalloc", "unboxed" and "untagged" can be used on external
   definitions to obtain finer control over the C-to-OCaml interface. See
   \ref{s:C-cheaper-call} for more details.
