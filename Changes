@@ -974,12 +974,6 @@ OCaml 5.4.0
   definitions
   (Clement Blaudeau, review by Florian Angeletti)
 
-- #13541, #13777: Cygwin doesn't allow accessing thread-local variables from
-  DLLs. This causes name-mangling issues when linking. Use an intermediate
-  function to access the caml state. Fix C++ incompatibilities in public
-  headers.
-  (Antonin Décimo, report by Kate Deplaix)
-
 * #13874, #13882: Make evaluation order consistent for applications when using
   the non-flambda native compiler
   (Vincent Laviron, report by Jean-Marie Madiot, review by Gabriel Scherer)

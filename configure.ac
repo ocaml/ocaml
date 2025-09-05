@@ -1391,7 +1391,7 @@ AS_IF([! $cc_supports_atomic],
 # macOS and MinGW-w64 have problems with thread local storage accessed from DLLs
 
 AS_CASE([$target],
-  [*-apple-darwin*|*-w64-mingw32*|*-pc-windows|*-pc-cygwin], [],
+  [*-apple-darwin*|*-w64-mingw32*|*-pc-windows], [],
   [AC_DEFINE([HAS_FULL_THREAD_VARIABLES], [1])]
 )
 
