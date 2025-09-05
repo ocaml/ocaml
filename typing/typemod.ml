@@ -3271,7 +3271,7 @@ let () =
 let gen_annot target annots =
   let annot = Unit_info.annot target in
   Cmt2annot.gen_annot (Some (Unit_info.Artifact.filename annot))
-    ~sourcefile:(Unit_info.Artifact.source_file annot)
+    ~sourcefile:(Unit_info.Artifact.original_source_file annot)
     ~use_summaries:false
     annots
 

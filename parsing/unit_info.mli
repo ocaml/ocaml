@@ -117,8 +117,17 @@ module Artifact: sig
     - the input source file if it exists
 *)
 
-   (** [source_file a] is the source file of [a] if it exists. *)
-   val source_file: t -> filename option
+   (** [original_source_file a] is the original source file of [a] if it exists.
+       See [Unit_info.original_source_file] for a description of the distinction
+       of "original" vs "raw" source file
+    *)
+   val original_source_file: t -> filename option
+
+   (** [raw_source_file a] is the raw source file of [a] if it exists. See
+       [Unit_info.raw_source_file] for a description of the distinction of
+       "original" vs "raw" source file
+    *)
+   val raw_source_file: t -> filename option
 
   (** [prefix a] is the filename prefix of the compilation artifact. *)
    val prefix: t ->  file_prefix

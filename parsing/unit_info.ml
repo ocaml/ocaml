@@ -90,18 +90,20 @@ let set_original_source_file_name x original_source_file =
 module Artifact = struct
   type t =
    {
-     source_file: filename option;
+     original_source_file: filename option;
+     raw_source_file: filename option;
      filename: filename;
      modname: modname;
    }
-  let source_file x = x.source_file
+  let original_source_file x = x.original_source_file
+  let raw_source_file x = x.raw_source_file
   let filename x = x.filename
   let modname x = x.modname
   let prefix x = Filename.remove_extension (filename x)
 
   let from_filename filename =
     let modname = lax_modname_from_source filename in
-    { modname; filename; source_file = None }
+    { modname; filename; original_source_file = None; raw_source_file = None }
 
 end
 
@@ -109,7 +111,8 @@ let mk_artifact ext u =
   {
     Artifact.filename = u.prefix ^ ext;
     modname = u.modname;
-    source_file = Some u.original_source_file;
+    original_source_file = Some u.original_source_file;
+    raw_source_file = Some u.raw_source_file;
   }
 
 let companion_artifact ext x =
@@ -143,7 +146,8 @@ let find_normalized_cmi f =
   {
     Artifact.filename;
     modname = modname f;
-    source_file = Some f.original_source_file
+    original_source_file = Some f.original_source_file;
+    raw_source_file = Some f.raw_source_file;
   }
 
 let report_error = function

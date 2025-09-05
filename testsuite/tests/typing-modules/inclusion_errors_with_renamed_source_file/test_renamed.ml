@@ -12,13 +12,19 @@
  script = "${program} foo.ml foo.pp.ml";
  script;
 
+ (* Now delete foo.ml. In a real-world scenario, the original source file may
+    no longer exist (for example, due to dune sandboxing). *)
+ script = "rm foo.ml";
+ script;
+
  (* Compile the .mli file. *)
  module = "foo.mli";
  ocamlc.byte;
 
- (* Feed the compiler the serialzed AST. *)
+ (* Feed the compiler the serialzed AST. We also pass -bin-annot and to verify that .cmt
+    generation works as expected when the original source file no longer exists. *)
  module = "-impl foo.pp.ml";
- flags = "-cmi-file foo.cmi";
+ flags = "-cmi-file foo.cmi -bin-annot";
  ocamlc_byte_exit_status = "2";
  ocamlc.byte;
  check-ocamlc.byte-output;
