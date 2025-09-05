@@ -298,6 +298,9 @@ Working version
   result in uninitialized memory seen by Weak.get on another domain.
   (Damien Doligez, review by Gabriel Scherer)
 
+- #????? : ocamltest fails to link test program with -custom in some cases
+  (Damien Doligez, review by xxx)
+
 OCaml 5.4.0
 ---------------
 
