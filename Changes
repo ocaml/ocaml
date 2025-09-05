@@ -194,6 +194,10 @@ Working version
   for attributes.
   (Shon Feder)
 
+- #14228: Trim leading spaces from first lines of LaTeX `ocamldoccode`
+  environments.
+  (Yukai Chou)
+
 ### Compiler user-interface and warnings:
 
 - #12628: Improved error message for unsafe values: print out the full path for
