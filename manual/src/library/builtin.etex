@@ -10,7 +10,7 @@ consequence, they can only be referred by their short names.
 %\vspace{0.1cm}
 
 \begin{ocamldoccode}
- type int
+type int
 \end{ocamldoccode}
 \index{int@\verb`int`}
 \begin{ocamldocdescription}
@@ -18,7 +18,7 @@ consequence, they can only be referred by their short names.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
- type char
+type char
 \end{ocamldoccode}
 \index{char@\verb`char`}
 \begin{ocamldocdescription}
@@ -26,7 +26,7 @@ consequence, they can only be referred by their short names.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
- type bytes
+type bytes
 \end{ocamldoccode}
 \index{bytes@\verb`bytes`}
 \begin{ocamldocdescription}
@@ -34,7 +34,7 @@ consequence, they can only be referred by their short names.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
- type string
+type string
 \end{ocamldoccode}
 \index{string@\verb`string`}
 \begin{ocamldocdescription}
@@ -42,7 +42,7 @@ consequence, they can only be referred by their short names.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
- type float
+type float
 \end{ocamldoccode}
 \index{float@\verb`float`}
 \begin{ocamldocdescription}
@@ -50,7 +50,7 @@ consequence, they can only be referred by their short names.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
- type bool = false | true
+type bool = false | true
 \end{ocamldoccode}
 \index{bool@\verb`bool`}
 \begin{ocamldocdescription}
@@ -58,7 +58,7 @@ consequence, they can only be referred by their short names.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
- type unit = ()
+type unit = ()
 \end{ocamldoccode}
 \index{unit@\verb`unit`}
 \begin{ocamldocdescription}
@@ -66,7 +66,7 @@ consequence, they can only be referred by their short names.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
- type exn
+type exn
 \end{ocamldoccode}
 \index{exn@\verb`exn`}
 \begin{ocamldocdescription}
@@ -74,7 +74,7 @@ consequence, they can only be referred by their short names.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
- type 'a array
+type 'a array
 \end{ocamldoccode}
 \index{array@\verb`array`}
 \begin{ocamldocdescription}
@@ -82,7 +82,7 @@ consequence, they can only be referred by their short names.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
- type 'a list = [] | :: of 'a * 'a list
+type 'a list = [] | :: of 'a * 'a list
 \end{ocamldoccode}
 \index{list@\verb`list`}
 \begin{ocamldocdescription}
