@@ -204,6 +204,13 @@ val filter_map : f:('a -> 'b option) -> 'a list -> 'b list
     @since 4.08
  *)
 
+val filter_mapi : f:(int -> 'a -> 'b option) -> 'a list -> 'b list
+(** Same as {!filter_map}, but the function is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+   @since 5.5
+ *)
+
 val concat_map : f:('a -> 'b list) -> 'a list -> 'b list
 (** [concat_map ~f l] gives the same result as
     {!concat}[ (]{!map}[ f l)]. Tail-recursive.
