@@ -93,6 +93,9 @@ Working version
 - #14060: Add Hashtbl.find_and_replace and Hashtbl.find_and_remove.
   (Sacha-Élie Ayoun, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
+- #14227: Add List.filter_mapi.
+  (Émile Trotignon, review by Nicolás Ojeda Bär)
+
 ### Type system:
 
 - #13781: Set scope of internal type nodes during abbreviation expansion
