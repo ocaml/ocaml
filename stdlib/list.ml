@@ -283,6 +283,16 @@ let[@tail_mod_cons] rec filter_map f = function
       | None -> filter_map f l
       | Some v -> v :: filter_map f l
 
+let[@tail_mod_cons] rec filter_mapi f i = function
+  | [] -> []
+  | x :: l ->
+      let i' = i + 1 in
+      match f i x with
+      | None -> filter_mapi f i' l
+      | Some v -> v :: filter_mapi f i' l
+
+let filter_mapi f l = filter_mapi f 0 l
+
 let[@tail_mod_cons] rec concat_map f = function
   | [] -> []
   | x::xs -> prepend_concat_map (f x) f xs
