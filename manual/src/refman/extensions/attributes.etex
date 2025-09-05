@@ -198,7 +198,7 @@ and[@bar] y = 3 in x + y           === (let x = 2 [@@foo] and y = 3 [@@bar] in x
 Some attributes are understood by the compiler:
 \begin{itemize}
 \item
- ``ocaml.warning'' or ``warning'', with a string literal payload.
+ "ocaml.warning" or "warning", with a string literal payload.
  This can be used as floating attributes in a
  signature/structure/object/object type.  The string is parsed and has
  the same effect as the "-w" command-line option, in the scope between
@@ -209,71 +209,71 @@ Some attributes are understood by the compiler:
  in which case its scope is limited to that item.
  Note that it is not well-defined which scope is used for a specific
  warning.  This is implementation dependent and can change between versions.
- Some warnings are even completely outside the control of ``ocaml.warning''
+ Some warnings are even completely outside the control of "ocaml.warning"
  (for instance, warnings 1, 2, 14, 29 and 50).
 
 \item
- ``ocaml.warnerror'' or ``warnerror'', with a string literal payload.
- Same as ``ocaml.warning'', for the "-warn-error" command-line option.
+ "ocaml.warnerror" or "warnerror", with a string literal payload.
+ Same as "ocaml.warning", for the "-warn-error" command-line option.
 
 \item
- ``ocaml.alert'' or ``alert'': see section~\ref{s:alerts}.
+ "ocaml.alert" or "alert": see section~\ref{s:alerts}.
 
 \item
-  ``ocaml.deprecated'' or ``deprecated'': alias for the
-  ``deprecated'' alert, see section~\ref{s:alerts}.
+  "ocaml.deprecated" or "deprecated": alias for the
+  "deprecated" alert, see section~\ref{s:alerts}.
 \item
-  ``ocaml.deprecated_mutable'' or ``deprecated_mutable''.
+  "ocaml.deprecated_mutable" or "deprecated_mutable".
   Can be applied to a mutable record label.  If the label is later
-  used to modify the field (with ``expr.l <- expr''), the ``deprecated'' alert
+  used to modify the field (with "expr.l <- expr"), the "deprecated" alert
   will be triggered.  If the payload of the attribute is a string literal,
   the alert message includes this text.
 \item
-  ``ocaml.ppwarning'' or ``ppwarning'', in any context, with
+  "ocaml.ppwarning" or "ppwarning", in any context, with
   a string literal payload.  The text is reported as warning (22)
   by the compiler (currently, the warning location is the location
   of the string payload).  This is mostly useful for preprocessors which
   need to communicate warnings to the user.  This could also be used
   to mark explicitly some code location for further inspection.
 \item
-  ``ocaml.warn_on_literal_pattern'' or ``warn_on_literal_pattern'' annotate
+  "ocaml.warn_on_literal_pattern" or "warn_on_literal_pattern" annotate
   constructors in type definition. A warning (52) is then emitted when this
   constructor is pattern matched with a constant literal as argument. This
   attribute denotes constructors whose argument is purely informative and
   may change in the future. Therefore, pattern matching on this argument
   with a constant literal is unreliable. For instance, all built-in exception
-  constructors are marked as ``warn_on_literal_pattern''.
+  constructors are marked as "warn_on_literal_pattern".
   Note that, due to an implementation limitation, this warning (52) is only
   triggered for single argument constructor.
 \item
-  ``ocaml.tailcall'' or ``tailcall'' can be applied to function
+  "ocaml.tailcall" or "tailcall" can be applied to function
   application in order to check that the call is tailcall optimized.
   If it it not the case, a warning (51) is emitted.
 \item
-  ``ocaml.inline'' or ``inline'' take either ``never'', ``always''
+  "ocaml.inline" or "inline" take either "never", "always"
   or nothing as payload on a function or functor definition. If no payload
-  is provided, the default value is ``always''. This payload controls when
+  is provided, the default value is "always". This payload controls when
   applications of the annotated functions should be inlined.
 \item
-  ``ocaml.inlined'' or ``inlined'' can be applied to any function or functor
+  "ocaml.inlined" or "inlined" can be applied to any function or functor
   application to check that the call is inlined by the compiler. If the call
   is not inlined, a warning (55) is emitted.
 \item
-  ``ocaml.noalloc'', ``ocaml.unboxed''and ``ocaml.untagged'' or
-  ``noalloc'', ``unboxed'' and ``untagged'' can be used on external
+  "ocaml.noalloc", "ocaml.unboxed"and "ocaml.untagged" or
+  "noalloc", "unboxed" and "untagged" can be used on external
   definitions to obtain finer control over the C-to-OCaml interface. See
   \ref{s:C-cheaper-call} for more details.
 \item
-  ``ocaml.immediate'' or ``immediate'' applied on an abstract type mark the type as
-  having a non-pointer implementation (e.g. ``int'', ``bool'', ``char'' or
+  "ocaml.immediate" or "immediate" applied on an abstract type mark the type as
+  having a non-pointer implementation (e.g. "int", "bool", "char" or
   enumerated types). Mutation of these immediate types does not activate the
   garbage collector's write barrier, which can significantly boost performance in
   programs relying heavily on mutable state.
 \item
-  ``ocaml.immediate64'' or ``immediate64'' applied on an abstract type mark the
+  "ocaml.immediate64" or "immediate64" applied on an abstract type mark the
   type as having a non-pointer implementation on 64 bit platforms. No assumption
   is made on other platforms. In order to produce a type with the
-  ``immediate64`` attribute, one must use ``Sys.Immediate64.Make`` functor.
+  "immediate64" attribute, one must use "Sys.Immediate64.Make" functor.
 \item
   "ocaml.unboxed" or "unboxed" can be used on a type definition if the
   type is a single-field record or a concrete type with a single
@@ -304,7 +304,7 @@ Some attributes are understood by the compiler:
    55 is emitted) and "maybe" lets the optimization apply when
    possible (this is the default behavior when the attribute is not
    specified).  The optimization is implicitly disabled when using the
-   bytecode compiler in debug mode (-g), and for functions marked with
+   bytecode compiler in debug mode ("-g"), and for functions marked with
    an "ocaml.inline always" or "ocaml.unrolled" attribute which
    supersede "ocaml.local".
  \item
