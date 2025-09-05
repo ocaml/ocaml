@@ -208,6 +208,7 @@ val filter_mapi : (int -> 'a -> 'b option) -> 'a list -> 'b list
 (** Same as {!filter_map}, but the function is applied to the index of
    the element as first argument (counting from 0), and the element
    itself as second argument.
+   @since 5.5
  *)
 
 val concat_map : ('a -> 'b list) -> 'a list -> 'b list
