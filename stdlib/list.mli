@@ -204,7 +204,7 @@ val filter_map : ('a -> 'b option) -> 'a list -> 'b list
     @since 4.08
  *)
 
-val filter_mapi : (int ->'a -> 'b option) -> 'a list -> 'b list
+val filter_mapi : (int -> 'a -> 'b option) -> 'a list -> 'b list
 (** Same as {!filter_map}, but the function is applied to the index of
    the element as first argument (counting from 0), and the element
    itself as second argument.
