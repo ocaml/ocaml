@@ -94,7 +94,7 @@ Working version
   (Sacha-Élie Ayoun, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
 - #14227: Add List.filter_mapi.
-  (Émile Trotignon, review by Nicolás Ojeda Bär)
+  (Émile Trotignon, review by Nicolás Ojeda Bär and Jan Midtgaard)
 
 ### Type system:
 
