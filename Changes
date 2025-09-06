@@ -196,7 +196,7 @@ Working version
 
 - #14228: Trim leading spaces from first lines of LaTeX `ocamldoccode`
   environments.
-  (Yukai Chou)
+  (Yukai Chou, review by Nicolás Ojeda Bär)
 
 ### Compiler user-interface and warnings:
 
