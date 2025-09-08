@@ -22,13 +22,15 @@ type error = Invalid_encoding of string
 exception Error of error
 
 type t = {
-  source_file: filename;
+  original_source_file: filename;
+  raw_source_file: filename;
   prefix: file_prefix;
   modname: modname;
   kind: intf_or_impl;
 }
 
-let source_file (x: t) = x.source_file
+let original_source_file (x: t) = x.original_source_file
+let raw_source_file (x: t) = x.raw_source_file
 let modname (x: t) = x.modname
 let kind (x: t) = x.kind
 let prefix (x: t) = x.prefix
@@ -65,17 +67,25 @@ let is_unit_name name = Misc.Utf8_lexeme.is_valid_identifier name
 
 let check_unit_name file =
   if not (is_unit_name (modname file)) then
-    Location.prerr_warning (Location.in_file (source_file file))
+    Location.prerr_warning (Location.in_file (original_source_file file))
       (Warnings.Bad_module_name (modname file))
 
 let make ?(check_modname=true) ~source_file kind prefix =
   let modname = strict_modname_from_source prefix in
-  let p = { modname; prefix; source_file; kind } in
+  let p =
+    {
+      modname;
+      prefix;
+      original_source_file = source_file;
+      raw_source_file = source_file;
+      kind
+    }
+  in
   if check_modname then check_unit_name p;
   p
 
-let set_source_file_name x source_file =
-  { x with source_file }
+let set_original_source_file_name x original_source_file =
+  { x with original_source_file }
 
 module Artifact = struct
   type t =
@@ -99,7 +109,7 @@ let mk_artifact ext u =
   {
     Artifact.filename = u.prefix ^ ext;
     modname = u.modname;
-    source_file = Some u.source_file;
+    source_file = Some u.original_source_file;
   }
 
 let companion_artifact ext x =
@@ -122,7 +132,7 @@ let companion_cmi f =
 
 let mli_from_artifact f = Artifact.prefix f ^ !Config.interface_suffix
 let mli_from_source u =
-   let prefix = Filename.remove_extension (source_file u) in
+   let prefix = Filename.remove_extension (original_source_file u) in
    prefix  ^ !Config.interface_suffix
 
 let is_cmi f = Filename.check_suffix (Artifact.filename f) ".cmi"
@@ -130,7 +140,11 @@ let is_cmi f = Filename.check_suffix (Artifact.filename f) ".cmi"
 let find_normalized_cmi f =
   let filename = modname f ^ ".cmi" in
   let filename = Load_path.find_normalized filename in
-  { Artifact.filename; modname = modname f; source_file = Some f.source_file  }
+  {
+    Artifact.filename;
+    modname = modname f;
+    source_file = Some f.original_source_file
+  }
 
 let report_error = function
   | Invalid_encoding name ->

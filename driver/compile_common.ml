@@ -42,7 +42,7 @@ module Parse_result = struct
 
   let of_pparse_ast_result ~info ({ ast; source_file } : _ Pparse.ast_result) =
     let new_target =
-      Unit_info.set_source_file_name info.target source_file
+      Unit_info.set_original_source_file_name info.target source_file
     in
     { ast; info = { info with target = new_target } }
 
@@ -54,7 +54,7 @@ end
 let parse_intf i =
   Pparse.parse_interface
     ~tool_name:i.tool_name
-    (Unit_info.source_file i.target)
+    (Unit_info.original_source_file i.target)
   |> Parse_result.of_pparse_ast_result ~info:i
   |> Parse_result.map_ast
        ~f:(print_if i.ppf_dump Clflags.dump_parsetree Printast.interface)
@@ -74,7 +74,7 @@ let typecheck_intf info ast =
     Printtyp.wrap_printing_env ~error:false info.env (fun () ->
         Format.(fprintf std_formatter) "%a@."
           (Printtyp.printed_signature
-             (Unit_info.source_file info.target))
+             (Unit_info.original_source_file info.target))
           sg);
   ignore (Includemod.signatures info.env ~mark:true sg sg);
   Typecore.force_delayed_checks ();
@@ -90,7 +90,7 @@ let emit_signature info alerts tsg =
   Typemod.save_signature info.target tsg info.env sg
 
 let interface info =
-  Profile.record_call (Unit_info.source_file info.target) @@ fun () ->
+  Profile.record_call (Unit_info.raw_source_file info.target) @@ fun () ->
   let { ast; info } : _ Parse_result.t = parse_intf info in
   if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
     let alerts, tsg = typecheck_intf info ast in
@@ -105,7 +105,7 @@ let interface info =
 let parse_impl i =
   Pparse.parse_implementation
     ~tool_name:i.tool_name
-    (Unit_info.source_file i.target)
+    (Unit_info.original_source_file i.target)
   |> Parse_result.of_pparse_ast_result ~info:i
   |> Parse_result.map_ast
        ~f:(print_if i.ppf_dump Clflags.dump_parsetree Printast.implementation)
@@ -122,7 +122,7 @@ let typecheck_impl i parsetree =
     (fun fmt {Typedtree.shape; _} -> Shape.print fmt shape)
 
 let implementation info ~backend =
-  Profile.record_call (Unit_info.source_file info.target) @@ fun () ->
+  Profile.record_call (Unit_info.raw_source_file info.target) @@ fun () ->
   let exceptionally () =
     let sufs =
       if info.native then Unit_info.[ cmx; obj ]
