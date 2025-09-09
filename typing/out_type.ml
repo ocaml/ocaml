@@ -1542,8 +1542,12 @@ let prepared_tree_of_extension_constructor
   let ty_params = filter_params ext.ext_type_params in
   let type_param =
     function
-    | Otyp_var (_, id) -> id
-    | _ -> "?"
+    | Otyp_var (_ot_non_gen, ot_name) ->
+        {ot_non_gen=false; ot_name; ot_variance=(NoVariance,NoInjectivity)}
+        (* NB: ot_non_gen=false to preserve the original semantics; however,
+           simply using the given ot_non_gen does not break testsuite either *)
+    | _ ->
+        {ot_non_gen=false; ot_name="?"; ot_variance=NoVariance,NoInjectivity}
   in
   let param_scope f =
     match ext.ext_ret_type with
