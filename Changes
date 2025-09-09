@@ -212,6 +212,10 @@ Working version
   universal variables and universal quantifications.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #14126: Document the `-i-variance` option and `+-`, `-+` variance indicators
+  in the reference manual.
+  (Takafumi Saikawa, review by Florian Angeletti)
+
 - #14146: add an error message for external declaration with
   a non-syntactic arity
   ```
