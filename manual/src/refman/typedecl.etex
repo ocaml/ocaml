@@ -45,8 +45,8 @@ ext-variance:
 variance:
           '+'
         | '-'
-	| '+-'
-	| '-+'
+        | '+-'
+        | '-+'
 ;
 injectivity: '!'
 ;
