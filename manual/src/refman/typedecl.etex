@@ -200,7 +200,7 @@ original type constructor.
 
 The type variables appearing as type parameters can optionally be prefixed by
 "+", "-", "+-", or "-+" to indicate that the type constructor has a specific
-variance with respect this parameter.
+variance with respect to this parameter.
 A parameter prefixed with "+" is covariant,
 one prefixed with "-" is contravariant.
 A parameter can be both covariant and contravariant,
