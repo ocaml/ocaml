@@ -1715,7 +1715,8 @@ let rec tree_of_class_type mode params =
 
 let tree_of_class_param param variance =
   let ot_variance =
-    if is_Tvar param then Asttypes.(NoVariance, NoInjectivity) else variance in
+    if not !Clflags.print_variance && is_Tvar param
+    then Asttypes.(NoVariance, NoInjectivity) else variance in
   match tree_of_typexp Type_scheme param with
     Otyp_var (ot_non_gen, ot_name) -> {ot_non_gen; ot_name; ot_variance}
   | _ -> {ot_non_gen=false; ot_name="?"; ot_variance}

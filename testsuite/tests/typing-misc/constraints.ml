@@ -336,7 +336,7 @@ class type ['node] extension =
 type 'ext node = < >
   constraint 'ext = 'ext node #extension ;;
 [%%expect{|
-class type ['node] extension =
+class type [+!'node] extension =
   object ('a) method clone : 'a method node : 'node end
 type 'a node = <  > constraint 'a = < clone : 'a; node : 'a node; .. >
 |}]
