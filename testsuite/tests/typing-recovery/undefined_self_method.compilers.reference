@@ -1,0 +1,10 @@
+File "undefined_self_method.ml", line 1:
+Error: Multiple errors were encountered
+File "undefined_self_method.ml", line 12, characters 17-21:
+12 |     method foo = self # bar
+                      ^^^^
+  This expression has no method bar
+File "undefined_self_method.ml", line 23, characters 15-17:
+23 | let t : bool = 10
+                    ^^
+  The constant 10 has type int but an expression was expected of type bool

@@ -1,0 +1,11 @@
+File "unrefuted_pattern.ml", line 1:
+Error: Multiple errors were encountered
+File "unrefuted_pattern.ml", line 33, characters 5-6:
+33 |    | _ -> .   (* error *)
+          ^
+  This match case could not be refuted.
+  Here is an example of a value that would reach it: (Tint, Tvar Zero)
+File "unrefuted_pattern.ml", line 36, characters 17-18:
+36 | let u : string = x
+                      ^
+  The value x has type int but an expression was expected of type string

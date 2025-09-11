@@ -56,3 +56,28 @@ implementation uses forward declarations, implemented with references
 to functions that are filled later on. An example can be seen in
 link:typecore.ml[Typecore.type_module], which is filled in
 link:typemod.ml[Typemod].
+
+Typing Recovery::
+The recovery support is divided into two modules,
+link:typing_recovery.ml[Typing_recovery] and
+link:typing_recovery_state.ml[Typing_recovery_state], that interact
+during type checking (these two modules are therefore widely used in
+`Type..` modules). link:typing_recovery.ml[Typing_recovery] describes
+the mechanisms for logging (and raising) errors, as well as the tools
+for ultimately catching the logged errors (at the end of type
+checking).
+
+Which errors are recoverable?::
+All _user-facing_ errors. To ensure that an _user-facing_ error
+is logged, we wrap it in a private constructor extension and
+locally specialize the `log_and_raise` and `log_or_raise` functions.
+
+When does it make sense to recover?:::
+**There are no clear rules**: the current recovery points are
+inherited from Merlin and were chosen through trial and error; any new
+recovery points should be discussed with the Merlin maintainers.
+There are a lot of tests in
+link:../testsuite/tests/typing-recovery/[typing-recovery]
+directory. Adding new features to the type checker may change the
+recovery cases so it makes sense to add tests (using the
+`-typing-recovery` flag) for `Typecore` or `Typemod` errors.

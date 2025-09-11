@@ -1,0 +1,12 @@
+File "inside_mli.mli", line 1:
+Error: Multiple errors were encountered
+File "inside_mli.mli", line 1, characters 15-27:
+1 | val f : int -> float result
+                   ^^^^^^^^^^^^
+  The type constructor result expects 2 argument(s),
+  but is here applied to 1 argument(s)
+File "inside_mli.mli", line 2, characters 16-35:
+2 | val g : unit -> (int, float) option
+                    ^^^^^^^^^^^^^^^^^^^
+  The type constructor option expects 1 argument(s),
+  but is here applied to 2 argument(s)

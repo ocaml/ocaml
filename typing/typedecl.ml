@@ -88,13 +88,27 @@ type error =
 
 open Typedtree
 
-exception Error of Location.t * error
+module Error : sig
+  type exn += private In_context of Location.t * error
+
+  val log_or_raise : Location.t -> error -> unit
+  val log_and_raise : Location.t -> error -> 'a
+end = struct
+  type exn += In_context of Location.t * error
+
+  let log_and_raise loc err =
+    Typing_recovery.log_and_raise (In_context (loc, err))
+
+  let log_or_raise loc err =
+    Typing_recovery.log_or_raise (In_context (loc, err))
+end
 
 let get_unboxed_from_attributes sdecl =
   let unboxed = Builtin_attributes.has_unboxed sdecl.ptype_attributes in
   let boxed = Builtin_attributes.has_boxed sdecl.ptype_attributes in
   match boxed, unboxed with
-  | true, true -> raise (Error(sdecl.ptype_loc, Boxed_and_unboxed))
+  | true, true ->
+      Error.log_and_raise sdecl.ptype_loc Boxed_and_unboxed
   | true, false -> Some false
   | false, true -> Some true
   | false, false -> None
@@ -117,7 +131,8 @@ let enter_type ?abstract_abbrevs rec_flag env sdecl (id, uid) =
         begin match sdecl.ptype_kind with
         | Ptype_variant scds ->
             List.iter (fun cd ->
-              if cd.pcd_res <> None then raise (Error(cd.pcd_loc, Nonrec_gadt)))
+                if cd.pcd_res <> None then
+                  Error.log_and_raise cd.pcd_loc Nonrec_gadt)
               scds
         | _ -> ()
         end;
@@ -201,13 +216,13 @@ let set_private_row env loc p decl =
           (* the syntax hinted at the existence of a row variable,
              but there is in fact no row variable to make private, e.g.
              [ type t = private [< `A > `A] ] *)
-          raise (Error(loc, Invalid_private_row_declaration tm))
+          Error.log_and_raise loc (Invalid_private_row_declaration tm)
         else more
     | Tobject (ty, _) ->
         let r = snd (Ctype.flatten_fields ty) in
         if not (Btype.is_Tvar r) then
           (* a syntactically open object was closed by a constraint *)
-          raise (Error(loc, Invalid_private_row_declaration tm));
+          Error.log_and_raise loc (Invalid_private_row_declaration tm);
         r
     | _ -> assert false
   in
@@ -220,7 +235,7 @@ let make_params env params =
     try
       (transl_type_param env sty, v)
     with Already_bound ->
-      raise(Error(sty.ptyp_loc, Repeated_parameter))
+      Error.log_and_raise sty.ptyp_loc Repeated_parameter
   in
     List.map make_param params
 
@@ -230,7 +245,7 @@ let transl_labels env univars closed lbls =
   List.iter
     (fun {pld_name = {txt=name; loc}} ->
        if String.Set.mem name !all_labels then
-         raise(Error(loc, Duplicate_label name));
+         Error.log_and_raise loc (Duplicate_label name);
        all_labels := String.Set.add name !all_labels)
     lbls;
   let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
@@ -242,7 +257,7 @@ let transl_labels env univars closed lbls =
          let is_atomic = Builtin_attributes.has_atomic attrs in
          let is_mutable = match mut with Mutable -> true | Immutable -> false in
          if is_atomic && not is_mutable then
-           raise (Error (loc, Atomic_field_must_be_mutable name.txt));
+           Error.log_and_raise loc (Atomic_field_must_be_mutable name.txt);
          {ld_id = Ident.create_local name.txt;
           ld_name = name;
           ld_uid = Uid.mk ~current_unit:(Env.get_current_unit ());
@@ -316,9 +331,8 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
                    ~got:ret_type
                    ~expected:(Ctype.newconstr type_path type_params)]
               in
-              raise (Error(sret_type.ptyp_loc,
-                           Constraint_failed(
-                           env, Errortrace.unification_error ~trace)))
+              Error.log_and_raise sret_type.ptyp_loc
+                (Constraint_failed (env, Errortrace.unification_error ~trace))
           end;
           (targs, tret_type, args, ret_type, univar_list)
         end
@@ -369,7 +383,9 @@ let transl_declaration env sdecl (id, uid) =
   begin match unboxed_attr with
   | (None | Some false) -> ()
   | Some true ->
-    let bad msg = raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute msg)) in
+    let bad msg =
+      Error.log_and_raise sdecl.ptype_loc
+        (Bad_unboxed_attribute msg) in
     match sdecl.ptype_kind with
     | Ptype_abstract
     | Ptype_external _   -> bad "it is abstract"
@@ -424,14 +440,15 @@ let transl_declaration env sdecl (id, uid) =
         let all_constrs = ref String.Set.empty in
         List.iter
           (fun {pcd_name = {txt = name}} ->
-            if String.Set.mem name !all_constrs then
-              raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
+             if String.Set.mem name !all_constrs then
+               Error.log_and_raise sdecl.ptype_loc
+                 (Duplicate_constructor name);
             all_constrs := String.Set.add name !all_constrs)
           scstrs;
         if List.length
             (List.filter (fun cd -> cd.pcd_args <> Pcstr_tuple []) scstrs)
            > (Config.max_tag + 1) then
-          raise(Error(sdecl.ptype_loc, Too_many_constructors));
+          Error.log_and_raise sdecl.ptype_loc Too_many_constructors;
         let make_cstr scstr =
           let name = Ident.create_local scstr.pcd_name.txt in
           let targs, tret_type, args, ret_type =
@@ -514,7 +531,7 @@ let transl_declaration env sdecl (id, uid) =
         let ty = cty.ctyp_type in
         let ty' = cty'.ctyp_type in
         try Ctype.unify env ty ty' with Ctype.Unify err ->
-          raise(Error(loc, Inconsistent_constraint (env, err))))
+          Error.log_and_raise loc (Inconsistent_constraint (env, err)))
       constraints;
   (* Add abstract row *)
     if is_fixed_type sdecl then begin
@@ -561,7 +578,8 @@ let rec check_constraints_rec env loc visited ty =
       let decl =
         try Env.find_type path env
         with Not_found ->
-          raise (Error(loc, Unavailable_type_constructor path)) in
+          Error.log_and_raise loc (Unavailable_type_constructor path)
+      in
       let ty' = Ctype.newconstr path (Ctype.instance_list decl.type_params) in
       begin
         (* We don't expand the error trace because that produces types that
@@ -570,7 +588,7 @@ let rec check_constraints_rec env loc visited ty =
            twice.  This is generally true for constraint errors. *)
         try Ctype.matches ~expand_error_trace:false env ty ty'
         with Ctype.Matches_failure (env, err) ->
-          raise (Error(loc, Constraint_failed (env, err)))
+          Error.log_and_raise loc (Constraint_failed (env, err))
       end;
       List.iter (check_constraints_rec env loc visited) args
   | Tfunctor (_, us, pack, ty) ->
@@ -698,11 +716,12 @@ let check_coherence env loc dpath decl =
               end
             in
             if err <> None then
-              raise(Error(loc, Definition_mismatch (ty, env, err)))
+              Error.log_and_raise loc (Definition_mismatch (ty, env, err))
           with Not_found ->
-            raise(Error(loc, Unavailable_type_constructor path))
+            Error.log_and_raise loc (Unavailable_type_constructor path)
           end
-      | _ -> raise(Error(loc, Definition_mismatch (ty, env, None)))
+      | _ ->
+          Error.log_and_raise loc (Definition_mismatch (ty, env, None))
       end
   | _ -> ()
 
@@ -955,7 +974,7 @@ let is_reachable
       if rec_abbrev
       then Recursive_abbrev (Path.name path, abs_env, reaching_path)
       else Cycle_in_def (Path.name path, abs_env, reaching_path)
-    in raise (Error (loc, err))
+    in Error.log_and_raise loc err
   in
   let rec unguarded ~trace ty' =
     if TypeSet.mem ty' !visited
@@ -1088,13 +1107,13 @@ let check_regularity ~abs_env env loc path decl to_check =
       | Tconstr(path', args', _) ->
           if Path.same path path' then begin
             if not (Ctype.is_equal abs_env false args args') then
-              raise (Error(loc,
-                     Non_regular {
-                       definition=path;
-                       used_as=ty;
-                       defined_as=Ctype.newconstr path args;
-                       reaching_path=List.rev trace;
-                     }))
+              Error.log_and_raise loc
+                (Non_regular {
+                    definition=path;
+                    used_as=ty;
+                    defined_as=Ctype.newconstr path args;
+                    reaching_path=List.rev trace;
+                  })
           end
           (* Attempt to expand a type abbreviation if:
               1- [to_check path'] holds
@@ -1111,7 +1130,8 @@ let check_regularity ~abs_env env loc path decl to_check =
               begin
                 try List.iter2 (Ctype.unify abs_env) args' params
                 with Ctype.Unify err ->
-                  raise (Error(loc, Constraint_failed (abs_env, err)));
+                  Error.log_and_raise loc
+                    (Constraint_failed (abs_env, err));
               end;
               check_regular args
                 (path' :: prev_exp) (Expands_to (ty,body) :: trace)
@@ -1223,7 +1243,7 @@ let update_type temp_env env id loc =
         let params = List.map (fun _ -> Ctype.newvar ()) decl.type_params in
         try Ctype.unify env (Ctype.newconstr path params) ty
         with Ctype.Unify err ->
-          raise (Error(loc, Type_clash (env, err)))
+          Error.log_and_raise loc (Type_clash (env, err))
       end
 
 let add_types_to_env decls shapes env =
@@ -1356,8 +1376,11 @@ let transl_type_decl env rec_flag sdecl_list =
       let decl = tdecl.typ_type in
        match Ctype.closed_type_decl decl with
          Some var ->
-           let params = param_types tdecl.typ_params in
-           raise(Error(sdecl.ptype_loc, Unbound_type_var{ var; params; decl}))
+           (* do not report spurious error in a recovered contexts *)
+           if not (Typing_recovery.erroneous_type_check var) then
+             let params = param_types tdecl.typ_params in
+             Error.log_and_raise sdecl.ptype_loc
+               (Unbound_type_var{ var; params; decl})
        | None   -> ())
     sdecl_list tdecls;
   (* Check that constraints are enforced *)
@@ -1372,11 +1395,11 @@ let transl_type_decl env rec_flag sdecl_list =
       |> Typedecl_separability.update_decls env
     with
     | Typedecl_variance.Error (loc, err) ->
-        raise (Error (loc, Variance err))
+        Error.log_and_raise loc (Variance err)
     | Typedecl_immediacy.Error (loc, err) ->
-        raise (Error (loc, Immediacy err))
+        Error.log_and_raise loc (Immediacy err)
     | Typedecl_separability.Error (loc, err) ->
-        raise (Error (loc, Separability err))
+        Error.log_and_raise loc (Separability err)
   in
   (* Compute the final environment with variance and immediacy *)
   let final_env = add_types_to_env decls shapes env in
@@ -1426,8 +1449,8 @@ let transl_extension_constructor ~scope env type_path type_params
           try
             Ctype.unify env cstr_res res
           with Ctype.Unify err ->
-            raise (Error(lid.loc,
-                     Rebind_wrong_type(lid.txt, env, err)))
+            Error.log_and_raise lid.loc
+              (Rebind_wrong_type(lid.txt, env, err))
         end;
         (* Remove "_" names from parameters used in the constructor *)
         if not cdescr.cstr_generalized then begin
@@ -1454,13 +1477,13 @@ let transl_extension_constructor ~scope env type_path type_params
           :: type_params
         in
         if not (Ctype.is_equal env true cstr_types ext_types) then
-          raise (Error(lid.loc,
-                   Rebind_mismatch(lid.txt, cstr_res_type_path, type_path)));
+          Error.log_and_raise lid.loc
+            (Rebind_mismatch(lid.txt, cstr_res_type_path, type_path));
         (* Disallow rebinding private constructors to non-private *)
         begin
           match cdescr.cstr_private, priv with
             Private, Public ->
-              raise (Error(lid.loc, Rebind_private lid.txt))
+              Error.log_and_raise lid.loc (Rebind_private lid.txt)
           | _ -> ()
         end;
         let path =
@@ -1546,13 +1569,14 @@ let transl_type_extension extend env loc styext =
                 styext.ptyext_constructors
             with
             | {pext_loc} ->
-                raise (Error(pext_loc, Cannot_extend_private_type type_path))
+                Error.log_and_raise pext_loc
+                  (Cannot_extend_private_type type_path)
             | exception Not_found -> ()
           end
         | _ -> ()
       end
     | _ ->
-        raise (Error(loc, Not_extensible_type type_path))
+        Error.log_and_raise loc (Not_extensible_type type_path)
   end;
   let type_variance =
     List.map (fun v ->
@@ -1572,7 +1596,8 @@ let transl_type_extension extend env loc styext =
   in
   begin match err with
   | None -> ()
-  | Some err -> raise (Error(loc, Extension_mismatch (type_path, env, err)))
+  | Some err ->
+      Error.log_and_raise loc (Extension_mismatch (type_path, env, err))
   end;
   let ttype_params, _type_params, constructors =
     (* Note: it would be incorrect to call [create_scope] *after*
@@ -1603,7 +1628,7 @@ let transl_type_extension extend env loc styext =
        try Typedecl_variance.check_variance_extension
              env type_decl ext (type_variance, loc)
        with Typedecl_variance.Error (loc, err) ->
-         raise (Error (loc, Variance err)))
+         Error.log_and_raise loc (Variance err))
     constructors;
   (* Add extension constructors to the environment *)
   let newenv =
@@ -1673,7 +1698,7 @@ let get_native_repr_attribute attrs ~global_repr =
   | None, Some _, None -> Native_repr_attr_present Untagged
   | Some { Location.loc }, _, _
   | _, Some { Location.loc }, _ ->
-    raise (Error (loc, Multiple_native_repr_attributes))
+      Error.log_and_raise loc Multiple_native_repr_attributes
 
 let native_repr_of_type env kind ty =
   match kind, get_desc (Ctype.expand_head_opt env ty) with
@@ -1699,11 +1724,12 @@ let error_if_has_deep_native_repr_attributes core_type =
     { default_iterator with typ = fun iterator core_type ->
       begin
         match
-          get_native_repr_attribute core_type.ptyp_attributes ~global_repr:None
+          get_native_repr_attribute core_type.ptyp_attributes
+            ~global_repr:None
         with
         | Native_repr_attr_present kind ->
-           raise (Error (core_type.ptyp_loc,
-                         Deep_unbox_or_untag_attribute kind))
+            Error.log_and_raise core_type.ptyp_loc
+              (Deep_unbox_or_untag_attribute kind)
         | Native_repr_attr_absent -> ()
       end;
       default_iterator.typ iterator core_type }
@@ -1718,7 +1744,8 @@ let make_native_repr env core_type ty ~global_repr =
   | Native_repr_attr_present kind ->
     begin match native_repr_of_type env kind ty with
     | None ->
-      raise (Error (core_type.ptyp_loc, Cannot_unbox_or_untag_type kind))
+        Error.log_and_raise core_type.ptyp_loc
+          (Cannot_unbox_or_untag_type kind)
     | Some repr -> repr
     end
 
@@ -1727,7 +1754,8 @@ let rec parse_native_repr_attributes env core_type ty ~global_repr =
     get_native_repr_attribute core_type.ptyp_attributes ~global_repr:None
   with
   | Ptyp_arrow _, Tarrow _, Native_repr_attr_present kind  ->
-    raise (Error (core_type.ptyp_loc, Cannot_unbox_or_untag_type kind))
+      Error.log_and_raise (core_type.ptyp_loc)
+        (Cannot_unbox_or_untag_type kind)
   | Ptyp_arrow (_, ct1, ct2), Tarrow (_, t1, t2, _), _ ->
     let t1, _ = Btype.tpoly_get_poly t1 in
     let repr_arg = make_native_repr env ct1 t1 ~global_repr in
@@ -1736,12 +1764,13 @@ let rec parse_native_repr_attributes env core_type ty ~global_repr =
     in
     (repr_arg :: repr_args, repr_res)
   | Ptyp_functor _, Tfunctor _, _ ->
-    raise (Error (core_type.ptyp_loc, Type_cannot_be_external ty))
+      Error.log_and_raise core_type.ptyp_loc (Type_cannot_be_external ty)
   | (Ptyp_poly (_, t) | Ptyp_alias (t, _)), _, _ ->
      parse_native_repr_attributes env t ty ~global_repr
   | Ptyp_arrow _, _, _ | Ptyp_functor _, _, _ -> assert false
   | _, Tarrow _, _ | _, Tfunctor _, _ ->
-      raise (Error (core_type.ptyp_loc, External_with_non_syntactic_arity))
+      Error.log_and_raise (core_type.ptyp_loc)
+        External_with_non_syntactic_arity
   | _ -> ([], make_native_repr env core_type ty ~global_repr)
 
 
@@ -1823,11 +1852,11 @@ let transl_prim_desc env loc primdesc =
       in
       if prim.prim_arity = 0 &&
          (prim.prim_name = "" || prim.prim_name.[0] <> '%') then
-        raise(Error(pprim_type.ptyp_loc, Null_arity_external));
+        Error.log_and_raise pprim_type.ptyp_loc Null_arity_external;
       if !Clflags.native_code
       && prim.prim_arity > 5
       && prim.prim_native_name = ""
-      then raise(Error(pprim_type.ptyp_loc, Missing_native_external));
+      then Error.log_and_raise pprim_type.ptyp_loc Missing_native_external;
       check_unboxable env loc ty;
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
         val_attributes = primdesc.pprim_attributes;
@@ -1867,7 +1896,8 @@ let transl_prim_desc env loc primdesc =
            with
            | () -> Some cty, { v with val_type = cty.ctyp_type; val_loc = loc }
            | exception (Ctype.Matches_failure (env, err)) ->
-             raise(Error(cty.ctyp_loc, Primitive_type_mismatch (env, err)))
+               Error.log_and_raise cty.ctyp_loc
+                 (Primitive_type_mismatch (env, err))
        in
        let (id, newenv) =
          Env.enter_value primdesc.pprim_name.txt v env
@@ -1885,8 +1915,8 @@ let transl_prim_desc env loc primdesc =
        in
        desc, newenv
      | Val_reg | Val_ivar _ | Val_self _ | Val_anc _ as val_kind ->
-       raise(Error(pprim_ident.loc,
-                   Primitive_alias_does_not_refer_to_primitive val_kind)))
+         Error.log_and_raise pprim_ident.loc
+           (Primitive_alias_does_not_refer_to_primitive val_kind))
 
 let transl_prim_desc env loc primdesc =
   Builtin_attributes.warning_scope primdesc.pprim_attributes
@@ -1946,7 +1976,8 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     List.iter2 (fun (cty, _) tparam ->
       try Ctype.unify_var env cty.ctyp_type tparam
       with Ctype.Unify err ->
-        raise(Error(cty.ctyp_loc, Inconsistent_constraint (env, err)))
+        Error.log_and_raise cty.ctyp_loc
+          (Inconsistent_constraint (env, err))
     ) tparams sig_decl.type_params;
   List.iter (fun (cty, cty', loc) ->
     (* Note: constraints must also be enforced in [sig_env] because
@@ -1954,7 +1985,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
        that have now be unified in [sig_env]. *)
     try Ctype.unify env cty.ctyp_type cty'.ctyp_type
     with Ctype.Unify err ->
-      raise(Error(loc, Inconsistent_constraint (env, err)))
+      Error.log_and_raise loc (Inconsistent_constraint (env, err))
   ) constraints;
   let sig_decl_abstract = Btype.type_kind_is_abstract sig_decl in
   let priv =
@@ -1990,9 +2021,11 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   in
   Option.iter (fun p -> set_private_row env sdecl.ptype_loc p new_sig_decl)
     fixed_row_path;
-  begin match Ctype.closed_type_decl new_sig_decl with None -> ()
-  | Some var ->
-      raise(Error(loc, Unbound_type_var{ var; params; decl=new_sig_decl}))
+    begin match Ctype.closed_type_decl new_sig_decl with
+      | None -> ()
+      | Some var ->
+          Error.log_and_raise loc
+            (Unbound_type_var {var; params; decl = new_sig_decl})
   end;
   let new_sig_decl = name_recursion sdecl id new_sig_decl in
   let new_type_variance =
@@ -2000,14 +2033,14 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     try
       Typedecl_variance.compute_decl env ~check:(Some id) new_sig_decl required
     with Typedecl_variance.Error (loc, err) ->
-      raise (Error (loc, Variance err)) in
+      Error.log_and_raise loc (Variance err) in
   let new_type_immediate =
     (* Typedecl_immediacy.compute_decl never raises *)
     Typedecl_immediacy.compute_decl env new_sig_decl in
   let new_type_separability =
     try Typedecl_separability.compute_decl env new_sig_decl
     with Typedecl_separability.Error (loc, err) ->
-      raise (Error (loc, Separability err)) in
+      Error.log_and_raise loc (Separability err) in
   let new_sig_decl =
     (* we intentionally write this without a fragile { decl with ... }
        to ensure that people adding new fields to type declarations
@@ -2585,7 +2618,7 @@ let report_error ~loc = function
 let () =
   Location.register_error_of_exn
     (function
-      | Error (loc, err) -> Some (report_error ~loc err)
+      | Error.In_context (loc, err) -> Some (report_error ~loc err)
       | _ ->
         None
     )

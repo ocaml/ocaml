@@ -1,0 +1,20 @@
+File "too_many_arguments.ml", line 1:
+Error: Multiple errors were encountered
+File "too_many_arguments.ml", line 11, characters 8-15:
+11 | let y = f 10 11
+             ^^^^^^^
+  The function f has type 'a -> int
+  It is applied to too many arguments
+File "too_many_arguments.ml", line 11, characters 13-15:
+11 | let y = f 10 11
+                  ^^
+  This extra argument is not expected.
+File "too_many_arguments.ml", line 12, characters 18-30:
+12 | let f: _ -> int = fun x y -> 0
+                       ^^^^^^^^^^^^
+  This function expects too many arguments, it should have type 'a -> int
+This expression has type 'a -> int but an expression was expected of type int
+File "too_many_arguments.ml", line 15, characters 17-19:
+15 | let t : string = 10
+                      ^^
+  The constant 10 has type int but an expression was expected of type string

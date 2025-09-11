@@ -1,0 +1,14 @@
+File "private_ctor.ml", line 1:
+Error: Multiple errors were encountered
+File "private_ctor.ml", line 15, characters 12-13:
+15 | let x = (A, B)
+                 ^
+  Cannot use private constructor B to create values of type t
+File "private_ctor.ml", line 20, characters 10-11:
+20 |   let a = B in
+               ^
+  Cannot use private constructor B to create values of type t
+File "private_ctor.ml", line 24, characters 14-16:
+24 | let t : int = ""
+                   ^^
+  This constant has type string but an expression was expected of type int

@@ -1,0 +1,19 @@
+File "letop_andop_type_clash.ml", line 1:
+Error: Multiple errors were encountered
+File "letop_andop_type_clash.ml", line 16, characters 4-8:
+16 |     let+ x = 1 and+ y = 11 in x + y
+         ^^^^
+  The operator let+ has type int but it was expected to have type
+    'a -> ('b * 'c -> 'd) -> 'e
+File "letop_andop_type_clash.ml", line 16, characters 15-19:
+16 |     let+ x = 1 and+ y = 11 in x + y
+                    ^^^^
+  The operator and+ has type bool -> bool but it was expected to have type
+    bool -> 'a -> 'b
+  Type bool is not compatible with type 'a -> 'b
+File "letop_andop_type_clash.ml", line 24, characters 15-19:
+24 |     let+ x = 1 and+ y = 11 in x + y
+                    ^^^^
+  The operator and+ has type bool -> bool but it was expected to have type
+    bool -> 'a -> 'b
+  Type bool is not compatible with type 'a -> 'b

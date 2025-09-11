@@ -190,7 +190,7 @@ type error =
       Datatype_kind.t * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string
   | Not_an_object of type_expr * type_forcing_context option
-  | Undefined_method of type_expr * string * string list option
+  | Undefined_method of Typedtree.expression * string * string list option
   | Undefined_self_method of string * string list
   | Virtual_class of Longident.t
   | Private_type of type_expr
@@ -256,7 +256,13 @@ type error =
   | Cannot_unify_tfunctor_to_tarrow of Errortrace.unification_error
   | Cannot_omit_tfunctor_argument of Ident.Unscoped.t * type_expr
 
-exception Error of Location.t * Env.t * error
+module Error : sig
+  type exn += private In_context of Location.t * Env.t * error
+
+  val log_or_raise : Location.t -> Env.t -> error -> unit
+  val log_and_raise : Location.t -> Env.t -> error -> 'a
+end
+
 exception Error_forward of Location.error
 
 val report_error: loc:Location.t -> Env.t -> error -> Location.error
@@ -296,3 +302,7 @@ val annotate_recursive_bindings :
   Env.t -> Typedtree.value_binding list -> Typedtree.value_binding list
 val check_recursive_class_bindings :
   Env.t -> Ident.t list -> Typedtree.class_expr list -> unit
+
+(** Checks whether an exception is potentially recoverable (exposed to the
+    user). *)
+val is_recoverable : exn -> bool

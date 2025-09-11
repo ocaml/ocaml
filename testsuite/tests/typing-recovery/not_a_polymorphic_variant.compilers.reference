@@ -1,0 +1,18 @@
+File "not_a_polymorphic_variant.ml", line 1:
+Error: Multiple errors were encountered
+File "not_a_polymorphic_variant.ml", line 12, characters 18-19:
+12 | let f = function #t -> assert false
+                       ^
+  The type t is not a variant type
+File "not_a_polymorphic_variant.ml", line 15, characters 7-8:
+15 |     | #t -> 10
+            ^
+  The type t is not a variant type
+File "not_a_polymorphic_variant.ml", line 23, characters 9-10:
+23 |       | #t -> 10
+              ^
+  The type t is not a variant type
+File "not_a_polymorphic_variant.ml", line 31, characters 17-18:
+31 | let t : string = u
+                      ^
+  The value u has type int but an expression was expected of type string

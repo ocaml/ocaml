@@ -672,12 +672,23 @@ type error =
   | Illegal_value_name of Location.t * string
   | Lookup_error of Location.t * t * lookup_error
 
-exception Error of error
+module Error : sig
+  type exn += private In_context of error
 
-let error err = raise (Error err)
+  val log_or_raise : error -> unit
+  val log_and_raise : error -> 'a
+end = struct
+  type exn += In_context of error
+
+  let log_and_raise err =
+    Typing_recovery.log_and_raise (In_context err)
+
+  let log_or_raise err =
+    Typing_recovery.log_or_raise (In_context err)
+end
 
 let lookup_error loc env err =
-  error (Lookup_error(loc, env, err))
+  Error.log_and_raise (Lookup_error(loc, env, err))
 
 let same_type_declarations e1 e2 =
   e1.types == e2.types &&
@@ -1398,10 +1409,11 @@ and expand_module_path ~lax env path =
 let normalize_module_path oloc env path =
   try normalize_module_path ~lax:(oloc = None) env path
   with Not_found ->
-    match oloc with None -> assert false
-    | Some loc ->
-        error (Missing_module(loc, path,
-                              normalize_module_path ~lax:true env path))
+  match oloc with
+  | None -> assert false
+  | Some loc ->
+      Error.log_and_raise
+        (Missing_module(loc, path, normalize_module_path ~lax:true env path))
 
 let rec normalize_path_prefix oloc env path =
   match path with
@@ -1811,7 +1823,7 @@ let check_value_name name loc =
        (Utf8_lexeme.starts_like_a_valid_identifier name) then
     for i = 1 to String.length name - 1 do
       if name.[i] = '#' then
-        error (Illegal_value_name(loc, name))
+        Error.log_or_raise (Illegal_value_name(loc, name))
     done
 
 let store_value ?check id addr decl shape env =
@@ -3343,8 +3355,14 @@ let lookup_cltype ?(use=true) ~loc lid env =
   lookup_cltype ~errors:true ~use ~loc lid env
 
 let lookup_all_constructors ?(use=true) ~loc usage lid env =
-  match lookup_all_constructors ~errors:true ~use ~loc usage lid env with
-  | exception Error(Lookup_error(loc', env', err)) ->
+  match
+    (* We don't want errors to be logged here, as the caller will process them
+       (and log them if they see fit). *)
+    Typing_recovery.uncatch_errors (fun () ->
+      lookup_all_constructors ~errors:true ~use ~loc usage lid env
+    )
+  with
+  | exception Error.In_context (Lookup_error(loc', env', err)) ->
       (Error(loc', env', err) : _ result)
   | cstrs -> Ok cstrs
 
@@ -3355,8 +3373,14 @@ let lookup_all_constructors_from_type ?(use=true) ~loc usage ty_path env =
   lookup_all_constructors_from_type ~use ~loc usage ty_path env
 
 let lookup_all_labels ?(use=true) ~loc usage lid env =
-  match lookup_all_labels ~errors:true ~use ~loc usage lid env with
-  | exception Error(Lookup_error(loc', env', err)) ->
+  match
+    (* We don't want errors to be logged here, as the caller will process them
+       (and log them if they see fit). *)
+    Typing_recovery.uncatch_errors (fun () ->
+      lookup_all_labels ~errors:true ~use ~loc usage lid env
+    )
+  with
+  | exception Error.In_context (Lookup_error(loc', env', err)) ->
       (Error(loc', env', err) : _ result)
   | lbls -> Ok lbls
 
@@ -3886,7 +3910,7 @@ let report_error_doc = function
 let () =
   Location.register_error_of_exn
     (function
-      | Error err ->  Some (report_error_doc err)
+      | Error.In_context err ->  Some (report_error_doc err)
       | _ ->
           None
     )

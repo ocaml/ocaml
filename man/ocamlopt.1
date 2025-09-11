@@ -689,6 +689,10 @@ When a type is unboxable  it will be boxed unless annotated with
 .BR [@@ocaml.unboxed] .
 This is the default.
 .TP
+.B \-typing\-recovery
+Experimental: let the compiler progress past the first type error,
+in order to try to report multiple errors type errors at the same time.
+.TP
 .B \-unsafe
 Turn bound checking off for array and string accesses (the
 .BR v.(i) " and " s.[i]

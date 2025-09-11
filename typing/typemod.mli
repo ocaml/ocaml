@@ -42,7 +42,7 @@ val type_implementation:
   Unit_info.t -> Env.t -> Parsetree.structure ->
   Typedtree.implementation
 val type_interface:
-        Env.t -> Parsetree.signature -> Typedtree.signature
+   Unit_info.t -> Env.t -> Parsetree.signature -> Typedtree.signature
 val check_nongen_signature:
         Env.t -> Types.signature -> unit
         (*
@@ -136,7 +136,7 @@ type error =
   | Cannot_alias of Path.t
   | Val_in_structure
 
-exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
+exception Errors of Location.t * Typing_recovery.Error_set.t
 
 val report_error: Env.t -> loc:Location.t -> error -> Location.error

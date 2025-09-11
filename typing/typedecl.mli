@@ -134,6 +134,11 @@ type error =
   | Primitive_alias_does_not_refer_to_primitive of value_kind
   | Primitive_type_mismatch of Env.t * Errortrace.unification_error
 
-exception Error of Location.t * error
+module Error : sig
+    type exn += private In_context of Location.t * error
+
+  val log_or_raise : Location.t -> error -> unit
+  val log_and_raise : Location.t -> error -> 'a
+end
 
 val report_error: loc:Location.t -> error -> Location.report

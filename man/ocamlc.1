@@ -793,6 +793,10 @@ Force the left-hand part of each sequence to have type unit.
 Left-hand part of a sequence need not have type unit.
 This is the default.
 .TP
+.B \-typing\-recovery
+Experimental: let the compiler progress past the first type error,
+in order to try to report multiple errors type errors at the same time.
+.TP
 .B \-unboxed\-types
 When a type is unboxable (i.e. a record with a single argument or a
 concrete datatype with a single constructor of one argument) it will

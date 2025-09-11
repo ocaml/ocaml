@@ -1,0 +1,23 @@
+File "virtual_class.ml", line 32, characters 21-34:
+32 |   (b # foo) (a # foo "Hello World")
+                          ^^^^^^^^^^^^^
+Warning 20 [ignored-extra-argument]: this argument will not be used by the function.
+
+File "virtual_class.ml", line 1:
+Error: Multiple errors were encountered
+File "virtual_class.ml", line 26, characters 8-13:
+26 | let f = new t
+             ^^^^^
+  Cannot instantiate the virtual class t
+File "virtual_class.ml", line 27, characters 8-13:
+27 | let g = new k
+             ^^^^^
+  Cannot instantiate the virtual class k
+File "virtual_class.ml", line 30, characters 10-15:
+30 |   let a = new t in
+               ^^^^^
+  Cannot instantiate the virtual class t
+File "virtual_class.ml", line 36, characters 14-16:
+36 | let t: bool = 10
+                   ^^
+  The constant 10 has type int but an expression was expected of type bool

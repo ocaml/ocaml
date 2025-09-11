@@ -1,0 +1,34 @@
+File "optional_poly_param.ml", line 16, characters 18-20:
+16 |   let x = fst (a ~id ())
+                       ^^
+Warning 20 [ignored-extra-argument]: this argument will not be used by the function.
+
+File "optional_poly_param.ml", line 16, characters 21-23:
+16 |   let x = fst (a ~id ())
+                          ^^
+Warning 20 [ignored-extra-argument]: this argument will not be used by the function.
+
+File "optional_poly_param.ml", line 17, characters 14-16:
+17 |   and y = (b ~id ()) in
+                   ^^
+Warning 20 [ignored-extra-argument]: this argument will not be used by the function.
+
+File "optional_poly_param.ml", line 17, characters 17-19:
+17 |   and y = (b ~id ()) in
+                      ^^
+Warning 20 [ignored-extra-argument]: this argument will not be used by the function.
+
+File "optional_poly_param.ml", line 1:
+Error: Multiple errors were encountered
+File "optional_poly_param.ml", line 12, characters 8-25:
+12 | let a ?(id : 'a. 'a -> 'a) () = id 3, id "three"
+             ^^^^^^^^^^^^^^^^^
+  The optional parameter id cannot have a polymorphic type.
+File "optional_poly_param.ml", line 13, characters 8-27:
+13 | let b ?(id : 'a. int -> int) () = id 3
+             ^^^^^^^^^^^^^^^^^^^
+  The optional parameter id cannot have a polymorphic type.
+File "optional_poly_param.ml", line 20, characters 17-18:
+20 | let t : string = r
+                      ^
+  The value r has type int but an expression was expected of type string

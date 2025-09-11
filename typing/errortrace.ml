@@ -144,6 +144,11 @@ type ('a, 'variety) t = ('a, 'variety) elt list
 type 'variety trace = (type_expr,     'variety) t
 type 'variety error = (expanded_type, 'variety) t
 
+let map_desc f { ty; expanded } =
+  let ty = f ty in
+  let expanded = f expanded in
+  { ty; expanded }
+
 let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
   | Diff x -> Diff (map_diff f x)
   | Escape {kind = Equation x; context} ->
@@ -157,6 +162,8 @@ let map_elt (type variety) f : ('a, variety) elt -> ('b, variety) elt = function
   | Univar _  as x -> x
 
 let map f t = List.map (map_elt f) t
+
+let map_types f = map (map_desc f)
 
 let incompatible_fields ~name ~got ~expected =
   Incompatible_fields { name; diff={got; expected} }
@@ -241,4 +248,11 @@ module Subtype = struct
     | Diff x -> Diff (map_diff f x)
 
   let map f t = List.map (map_elt f) t
+
+  let map_desc f { ty; expanded } =
+    let ty = f ty in
+    let expanded = f expanded in
+    { ty; expanded }
+
+  let map_types f = map (map_desc f)
 end

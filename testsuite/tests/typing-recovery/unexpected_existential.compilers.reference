@@ -1,0 +1,70 @@
+File "unexpected_existential.ml", line 1:
+Error: Multiple errors were encountered
+File "unexpected_existential.ml", line 12, characters 4-9:
+12 | let Any x = Any ()
+         ^^^^^
+  Existential types are not allowed in toplevel bindings,
+  but the constructor Any introduces existential types.
+File "unexpected_existential.ml", line 15, characters 6-11:
+15 |   let Any x = Any () and () = () in
+           ^^^^^
+  Existential types are not allowed in grouped (let ... and ...) bindings,
+  but the constructor Any introduces existential types.
+File "unexpected_existential.ml", line 19, characters 10-15:
+19 |   let rec Any x = Any () in
+               ^^^^^
+  Only variables are allowed as left-hand side of let rec
+File "unexpected_existential.ml", line 23, characters 18-23:
+23 |   let[@attribute] Any x = Any () in
+                       ^^^^^
+  Existential types are not allowed in presence of attributes,
+  but the constructor Any introduces existential types.
+File "unexpected_existential.ml", line 26, characters 8-15:
+26 | class c (Any x) = object end
+             ^^^^^^^
+  Existential types are not allowed in class arguments,
+  but the constructor Any introduces existential types.
+File "unexpected_existential.ml", line 29, characters 16-23:
+29 | class d = object(Any x) end
+                     ^^^^^^^
+  Existential types are not allowed in self patterns,
+  but the constructor Any introduces existential types.
+File "unexpected_existential.ml", line 31, characters 14-20:
+31 | class e = let Any _x = () in object end
+                   ^^^^^^
+  Existential types are not allowed in bindings inside class definition,
+  but the constructor Any introduces existential types.
+File "unexpected_existential.ml", line 34, characters 6-11:
+34 |   let Any x = Any ()
+           ^^^^^
+  Existential types are not allowed in toplevel bindings,
+  but the constructor Any introduces existential types.
+File "unexpected_existential.ml", line 37, characters 8-13:
+37 |     let Any x = Any () and () = () in
+             ^^^^^
+  Existential types are not allowed in grouped (let ... and ...) bindings,
+  but the constructor Any introduces existential types.
+File "unexpected_existential.ml", line 41, characters 12-17:
+41 |     let rec Any x = Any () in
+                 ^^^^^
+  Only variables are allowed as left-hand side of let rec
+File "unexpected_existential.ml", line 45, characters 20-25:
+45 |     let[@attribute] Any x = Any () in
+                         ^^^^^
+  Existential types are not allowed in presence of attributes,
+  but the constructor Any introduces existential types.
+File "unexpected_existential.ml", line 48, characters 10-17:
+48 |   class c (Any x) = object end
+               ^^^^^^^
+  Existential types are not allowed in class arguments,
+  but the constructor Any introduces existential types.
+File "unexpected_existential.ml", line 51, characters 18-25:
+51 |   class d = object(Any x) end
+                       ^^^^^^^
+  Existential types are not allowed in self patterns,
+  but the constructor Any introduces existential types.
+File "unexpected_existential.ml", line 53, characters 16-22:
+53 |   class e = let Any _x = () in object end
+                     ^^^^^^
+  Existential types are not allowed in bindings inside class definition,
+  but the constructor Any introduces existential types.

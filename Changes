@@ -808,6 +808,12 @@ OCaml 5.5.0
   ```
   (Malo Monin, Florian Angeletti, review by Gabriel Scherer)
 
+- #14241: Introduction of a typing recovery mechanism to collect more
+  than one typing error, facilitating integration with editors that
+  need to report more than one error.
+  (Xavier Van de Woestyne, Ulysse Gerard, Thomas Refis and Frédéric
+  Bour, review by Florian Angeletti and Thomas Refis)
+
 ### Internal/compiler-libs changes:
 
 - #13839, #14008: Reimplement `let open`, `let module` and `let exception` in

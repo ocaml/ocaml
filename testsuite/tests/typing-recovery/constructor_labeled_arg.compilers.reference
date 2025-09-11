@@ -1,0 +1,16 @@
+File "constructor_labeled_arg.ml", line 1:
+Error: Multiple errors were encountered
+File "constructor_labeled_arg.ml", line 11, characters 8-23:
+11 | let x = Pair (~x: 5, 2)
+             ^^^^^^^^^^^^^^^
+  Constructors cannot have labeled arguments.
+  Consider using an inline record instead.
+File "constructor_labeled_arg.ml", line 14, characters 2-16:
+14 | | Pair (~x:5, 2) -> true
+       ^^^^^^^^^^^^^^
+  Constructors cannot have labeled arguments.
+  Consider using an inline record instead.
+File "constructor_labeled_arg.ml", line 21, characters 14-15:
+21 | let t : int = r
+                   ^
+  The value r has type bool but an expression was expected of type int

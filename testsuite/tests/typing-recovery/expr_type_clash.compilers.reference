@@ -1,0 +1,14 @@
+File "expr_type_clash.ml", line 1:
+Error: Multiple errors were encountered
+File "expr_type_clash.ml", line 12, characters 10-17:
+12 | let _ = f "hello"
+               ^^^^^^^
+  This constant has type string but an expression was expected of type int
+File "expr_type_clash.ml", line 16, characters 3-4:
+16 |   (1 : string)
+        ^
+  The constant 1 has type int but an expression was expected of type string
+File "expr_type_clash.ml", line 21, characters 12-15:
+21 |   let y = g 123 in
+                 ^^^
+  The constant 123 has type int but an expression was expected of type string

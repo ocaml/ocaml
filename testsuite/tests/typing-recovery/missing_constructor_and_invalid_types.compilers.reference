@@ -1,0 +1,24 @@
+File "missing_constructor_and_invalid_types.ml", line 1:
+Error: Multiple errors were encountered
+File "missing_constructor_and_invalid_types.ml", line 12, characters 7-8:
+12 | let f (C : t) : int = ()
+            ^
+  This variant pattern is expected to have type t
+  There is no constructor C within type t
+File "missing_constructor_and_invalid_types.ml", line 12, characters 22-24:
+12 | let f (C : t) : int = ()
+                           ^^
+  This expression should not be a unit literal, the expected type is int
+File "missing_constructor_and_invalid_types.ml", line 18, characters 4-5:
+18 |   | C -> 'a'
+         ^
+  This variant pattern is expected to have type t
+  There is no constructor C within type t
+File "missing_constructor_and_invalid_types.ml", line 17, characters 9-10:
+17 |   | B -> 3
+              ^
+  The constant 3 has type int but an expression was expected of type unit
+File "missing_constructor_and_invalid_types.ml", line 18, characters 9-12:
+18 |   | C -> 'a'
+              ^^^
+  The constant 'a' has type char but an expression was expected of type unit

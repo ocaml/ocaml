@@ -1,0 +1,21 @@
+File "abstract_wrong_label.ml", line 1:
+Error: Multiple errors were encountered
+File "abstract_wrong_label.ml", line 11, characters 25-35:
+11 | let (f : x:int -> int) = fun y -> y
+                              ^^^^^^^^^^
+  This function should have type x:int -> int
+  but its first argument is unlabeled instead of being labeled ~x
+File "abstract_wrong_label.ml", line 14, characters 25-36:
+14 |   let (f : int -> int) = fun ~y -> y in
+                              ^^^^^^^^^^^
+  This function should have type int -> int
+  but its first argument is labeled ~y instead of being unlabeled
+File "abstract_wrong_label.ml", line 20, characters 39-41:
+20 |     method foo (f : int -> int) = f ~x:10
+                                            ^^
+  The function applied to this argument has type int -> int
+This argument cannot be applied with label ~x
+File "abstract_wrong_label.ml", line 24, characters 17-19:
+24 | let t : string = 10
+                      ^^
+  The constant 10 has type int but an expression was expected of type string

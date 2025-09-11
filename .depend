@@ -732,6 +732,7 @@ typing/datarepr.cmi : \
 typing/env.cmo : \
     utils/warnings.cmi \
     parsing/unit_info.cmi \
+    typing/typing_recovery.cmi \
     typing/types.cmi \
     typing/subst.cmi \
     typing/shape.cmi \
@@ -758,6 +759,7 @@ typing/env.cmo : \
 typing/env.cmx : \
     utils/warnings.cmx \
     parsing/unit_info.cmx \
+    typing/typing_recovery.cmx \
     typing/types.cmx \
     typing/subst.cmx \
     typing/shape.cmx \
@@ -1312,6 +1314,7 @@ typing/patterns.cmi : \
 typing/persistent_env.cmo : \
     utils/warnings.cmi \
     parsing/unit_info.cmi \
+    typing/typing_recovery.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
@@ -1324,6 +1327,7 @@ typing/persistent_env.cmo : \
 typing/persistent_env.cmx : \
     utils/warnings.cmx \
     parsing/unit_info.cmx \
+    typing/typing_recovery.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
@@ -1667,6 +1671,7 @@ typing/type_immediacy.cmi : \
     parsing/parsetree.cmi
 typing/typeclass.cmo : \
     utils/warnings.cmi \
+    typing/typing_recovery.cmi \
     typing/typetexp.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
@@ -1699,6 +1704,7 @@ typing/typeclass.cmo : \
     typing/typeclass.cmi
 typing/typeclass.cmx : \
     utils/warnings.cmx \
+    typing/typing_recovery.cmx \
     typing/typetexp.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
@@ -1745,6 +1751,8 @@ typing/typecore.cmo : \
     utils/warnings.cmi \
     typing/value_rec_check.cmi \
     typing/untypeast.cmi \
+    typing/typing_recovery_state.cmi \
+    typing/typing_recovery.cmi \
     typing/typetexp.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
@@ -1781,6 +1789,8 @@ typing/typecore.cmx : \
     utils/warnings.cmx \
     typing/value_rec_check.cmx \
     typing/untypeast.cmx \
+    typing/typing_recovery_state.cmx \
+    typing/typing_recovery.cmx \
     typing/typetexp.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
@@ -1828,6 +1838,7 @@ typing/typecore.cmi : \
     parsing/asttypes.cmi
 typing/typedecl.cmo : \
     utils/warnings.cmi \
+    typing/typing_recovery.cmi \
     typing/typetexp.cmi \
     typing/types.cmi \
     typing/typeopt.cmi \
@@ -1870,6 +1881,7 @@ typing/typedecl.cmo : \
     typing/typedecl.cmi
 typing/typedecl.cmx : \
     utils/warnings.cmx \
+    typing/typing_recovery.cmx \
     typing/typetexp.cmx \
     typing/types.cmx \
     typing/typeopt.cmx \
@@ -1966,6 +1978,7 @@ typing/typedecl_properties.cmi : \
     typing/ident.cmi \
     typing/env.cmi
 typing/typedecl_separability.cmo : \
+    typing/typing_recovery.cmi \
     typing/types.cmi \
     typing/typedecl_properties.cmi \
     utils/misc.cmi \
@@ -1974,9 +1987,11 @@ typing/typedecl_separability.cmo : \
     typing/env.cmi \
     typing/ctype.cmi \
     utils/config.cmi \
+    utils/clflags.cmi \
     typing/btype.cmi \
     typing/typedecl_separability.cmi
 typing/typedecl_separability.cmx : \
+    typing/typing_recovery.cmx \
     typing/types.cmx \
     typing/typedecl_properties.cmx \
     utils/misc.cmx \
@@ -1985,6 +2000,7 @@ typing/typedecl_separability.cmx : \
     typing/env.cmx \
     typing/ctype.cmx \
     utils/config.cmx \
+    utils/clflags.cmx \
     typing/btype.cmx \
     typing/typedecl_separability.cmi
 typing/typedecl_separability.cmi : \
@@ -2085,6 +2101,8 @@ typing/typedtree.cmi : \
 typing/typemod.cmo : \
     utils/warnings.cmi \
     parsing/unit_info.cmi \
+    typing/typing_recovery_state.cmi \
+    typing/typing_recovery.cmi \
     typing/typetexp.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
@@ -2097,6 +2115,7 @@ typing/typemod.cmo : \
     typing/shape_reduce.cmi \
     typing/shape.cmi \
     typing/printtyp.cmi \
+    typing/persistent_env.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     parsing/parse.cmi \
@@ -2124,6 +2143,8 @@ typing/typemod.cmo : \
 typing/typemod.cmx : \
     utils/warnings.cmx \
     parsing/unit_info.cmx \
+    typing/typing_recovery_state.cmx \
+    typing/typing_recovery.cmx \
     typing/typetexp.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
@@ -2136,6 +2157,7 @@ typing/typemod.cmx : \
     typing/shape_reduce.cmx \
     typing/shape.cmx \
     typing/printtyp.cmx \
+    typing/persistent_env.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
     parsing/parse.cmx \
@@ -2162,6 +2184,7 @@ typing/typemod.cmx : \
     typing/typemod.cmi
 typing/typemod.cmi : \
     parsing/unit_info.cmi \
+    typing/typing_recovery.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/typedecl.cmi \
@@ -2245,6 +2268,8 @@ typing/types.cmi : \
     parsing/asttypes.cmi
 typing/typetexp.cmo : \
     utils/warnings.cmi \
+    typing/typing_recovery_state.cmi \
+    typing/typing_recovery.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/printtyp.cmi \
@@ -2264,6 +2289,7 @@ typing/typetexp.cmo : \
     typing/errortrace.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
+    utils/clflags.cmi \
     parsing/builtin_attributes.cmi \
     typing/btype.cmi \
     parsing/asttypes.cmi \
@@ -2271,6 +2297,8 @@ typing/typetexp.cmo : \
     typing/typetexp.cmi
 typing/typetexp.cmx : \
     utils/warnings.cmx \
+    typing/typing_recovery_state.cmx \
+    typing/typing_recovery.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
     typing/printtyp.cmx \
@@ -2290,6 +2318,7 @@ typing/typetexp.cmx : \
     typing/errortrace.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
+    utils/clflags.cmx \
     parsing/builtin_attributes.cmx \
     typing/btype.cmx \
     parsing/asttypes.cmx \
@@ -2305,6 +2334,47 @@ typing/typetexp.cmi : \
     typing/errortrace.cmi \
     typing/env.cmi \
     parsing/asttypes.cmi
+typing/typing_recovery.cmo : \
+    typing/types.cmi \
+    utils/misc.cmi \
+    parsing/location.cmi \
+    typing/typing_recovery.cmi
+typing/typing_recovery.cmx : \
+    typing/types.cmx \
+    utils/misc.cmx \
+    parsing/location.cmx \
+    typing/typing_recovery.cmi
+typing/typing_recovery.cmi : \
+    typing/types.cmi \
+    parsing/location.cmi
+typing/typing_recovery_state.cmo : \
+    typing/typing_recovery.cmi \
+    typing/typedtree.cmi \
+    otherlibs/str/str.cmi \
+    typing/path.cmi \
+    parsing/parsetree.cmi \
+    parsing/location.cmi \
+    typing/ident.cmi \
+    file_formats/cmt_format.cmi \
+    utils/clflags.cmi \
+    parsing/ast_helper.cmi \
+    typing/typing_recovery_state.cmi
+typing/typing_recovery_state.cmx : \
+    typing/typing_recovery.cmx \
+    typing/typedtree.cmx \
+    otherlibs/str/str.cmx \
+    typing/path.cmx \
+    parsing/parsetree.cmi \
+    parsing/location.cmx \
+    typing/ident.cmx \
+    file_formats/cmt_format.cmx \
+    utils/clflags.cmx \
+    parsing/ast_helper.cmx \
+    typing/typing_recovery_state.cmi
+typing/typing_recovery_state.cmi : \
+    typing/typedtree.cmi \
+    parsing/parsetree.cmi \
+    file_formats/cmt_format.cmi
 typing/untypeast.cmo : \
     typing/typedtree.cmi \
     typing/path.cmi \

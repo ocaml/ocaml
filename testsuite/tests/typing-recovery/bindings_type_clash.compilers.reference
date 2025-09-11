@@ -1,0 +1,12 @@
+File "bindings_type_clash.ml", line 1:
+Error: Multiple errors were encountered
+File "bindings_type_clash.ml", lines 19-21, characters 9-14:
+19 | .........x = 1
+20 |     and+ y = 2
+21 |     and+ z = 3...
+  These bindings have type (int * int) * int
+  but bindings were expected of type bool
+File "bindings_type_clash.ml", lines 31-32, characters 9-14:
+31 | .........x = 1
+32 |     and+ y = 2
+  These bindings have type int * int but bindings were expected of type int
