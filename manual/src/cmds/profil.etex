@@ -162,7 +162,7 @@ Time profiling is typically performed by sampling the CPU call graph at frequent
 \item Hardware Last Branch Record (LBR).
 \end{itemize}
 
-Frame pointer based call graphs use a convention where a register called the frame pointer holds the address for the beginning of the stack frame, and the previous values for the frame pointer are stored at a known offset from the current frame pointer. Using this information the call graph for the current function can be calculated purely based on the current stack, a process called unwinding. On x86_64 the register used for storing the frame pointer is \$rbp, while ARM64 uses the register x29. OCaml 5 introduced non-contiguous stacks as part of the implementation of effects, see \href{https://dl.acm.org/doi/10.1145/3453483.3454039}{Retrofitting effect handlers onto OCaml} (Section 5.5). Due to this implementation detail, frame pointers work better with the copying nature of perf.
+Frame pointer based call graphs use a convention where a register called the frame pointer holds the address for the beginning of the stack frame, and the previous values for the frame pointer are stored at a known offset from the current frame pointer. Using this information the call graph for the current function can be calculated purely based on the current stack, a process called unwinding. On AMD64 the register used for storing the frame pointer is \$rbp, while ARM64 uses the register \$x29. OCaml 5 introduced non-contiguous stacks as part of the implementation of effects, see \href{https://dl.acm.org/doi/10.1145/3453483.3454039}{Retrofitting effect handlers onto OCaml} (Section 5.5). Due to this implementation detail, frame pointers work better with the copying nature of perf.
 
 DWARF based call graphs use the DWARF CFI information to perform unwinding. However this interacts poorly with the copying nature of perf, often leading to truncated call graphs where not enough of the stack has been copied by \texttt{perf}. It also produces larger trace files that are more costly to capture and process. Finally it requires including CFI debugging information in your program resulting in slightly larger binaries.
 
@@ -186,7 +186,7 @@ To enable frame pointers, configure the compiler with \texttt{--enable-frame-poi
         opam switch create <YOUR-SWITCH-NAME-HERE> ocaml-option-fp
 \end{verbatim}
 
-Frame pointer support for OCaml is available on x86_64 architecture for Linux starting with OCaml 4.12 and on macOS from OCaml 5.3. ARM64 architecture is supported on Linux and macOS from OCaml 5.4, while other Tier-1 architectures (POWER, RISC-V, and s390x) are currently unsupported.
+Frame pointer support for OCaml is available on AMD64 architecture for Linux starting with OCaml 4.12 and on macOS from OCaml 5.3. ARM64 architecture is supported on Linux and macOS from OCaml 5.4, while other Tier-1 architectures (POWER, RISC-V, and s390x) are currently unsupported.
 
 \subsection{s:ocamlprof-profiling-perf}{Profiling an Execution}
 
@@ -199,7 +199,9 @@ The \texttt{-F 99} option sets \texttt{perf} to sample at 99Hz, reducing excessi
 
 The \texttt{perf record} command works by copying a segment of the call stack at each sample and recording this data into a \texttt{perf.data} file. These samples can then be processed after recording using \texttt{perf report} to reconstruct the profiled program’s call stack at every sample.
 
-\texttt{perf} uses the symbols present in an OCaml executable, so it helps to understand OCaml's name mangling scheme to map names to OCaml source locations. OCaml 5.4 onwards uses a name mangling scheme of \texttt{caml<MODULE_NAME>\$<FUNCTION_NAME>_<NNN>}, where \texttt{NNN} is a randomly generated number. In OCaml 5.3 the separator is a dot \texttt{caml<MODULE_NAME>.<FUNCTION_NAME>_<NNN>}, and before OCaml 5.1 the separator is double underscores. All formats are supported by \texttt{perf}.
+\texttt{perf} uses the symbols present in an OCaml executable, so it helps to understand OCaml's name mangling scheme to map names to OCaml source locations.
+
+OCaml 5.3 onwards uses a mangling scheme of "caml<MODULE_NAME>.<FUNCTION_NAME>_<NNN>" on Linux, where \texttt{NNN} is a randomly generated number. For macOS and the Windows MSVC port (restored in OCaml 5.3), the scheme uses \texttt{\$} as the separator. Before OCaml 5.1.1 the scheme used two underscores as the separator, e.g., "caml<MODULE_NAME>__<FUNCTION_NAME>_<NNN>". All formats are supported by Linux \texttt{perf}.
 
 Consider the following program:
 
@@ -219,9 +221,9 @@ let main () =
 let _ = main ()
 \end{caml_example*}
 
-This program produces the names \texttt{camlFib\$main_274} for the \texttt{main} function and \texttt{camlFib\$fib_271} for the \texttt{fib} function in the \texttt{Compute} module.
+This program produces the names \texttt{camlFib.main_274} for the \texttt{main} function and \texttt{camlFib.fib_271} for the \texttt{fib} function in the \texttt{Compute} module.
 
-\subsection{s:ocamlprof-printing}{Displaying profiling information}
+\subsection{s:ocamlprof-printing-perf}{Displaying profiling information}
 
 The \texttt{perf report} command summarises data in the \texttt{perf.data} file.
 The basic \texttt{perf report} command is:
@@ -258,10 +260,10 @@ The \texttt{perf} report for this might resemble the following.
 \begin{verbatim}
 Samples: 809  of event 'cycles', Event count (approx.): 24701952617
   Overhead  Command     Shared Object      Symbol
--  100.00%  tak-fp.exe  tak-fp.exe         [.] Tak\$tak_402
-     Tak\$tak_402
-     Tak\$tak_402
-   + Tak\$tak_402
+-  100.00%  tak-fp.exe  tak-fp.exe         [.] Tak.tak_402
+     Tak.tak_402
+     Tak.tak_402
+   + Tak.tak_402
      0.00%  tak-fp.exe  [kernel.kallsyms]  [k] 0xffffb9a5ff79d854
      0.00%  perf-exec   [kernel.kallsyms]  [k] 0xffffb9a5ff719c34
 \end{verbatim}
@@ -272,33 +274,33 @@ For a more interesting program implementing a Sudoku solver using Norvig's Backt
 Samples: 7K of event 'cycles:P', Event count (approx.): 141874642467
   Overhead  Command          Shared Object      Symbol
 -   35.90%  sudoku_norvig.e  sudoku_norvig.exe  [.] Sudoku_norvig._pow_747
-   - 35.29% Sudoku_norvig$_pow_747
-      + 17.70% Sudoku_norvig$eliminate_value_760
-      + 15.74% Sudoku_norvig$_pow_747
-      + 1.03% Sudoku_norvig$fun_1435
-     0.61% Sudoku_norvig$eliminate_value_760
--   12.99%  sudoku_norvig.e  sudoku_norvig.exe  [.] BatList$findnext_1543
-   - 12.00% BatList$findnext_1543
-      - 11.71% BatList$find_all_1539
-         + 8.07% Sudoku_norvig$fun_1421
-         + 2.73% Sudoku_norvig$eliminate_948
-         + 0.90% Sudoku_norvig$assign_949
--   10.63%  sudoku_norvig.e  sudoku_norvig.exe  [.] Sudoku_norvig$eliminate_value_760
-   + 8.29% Sudoku_norvig$eliminate_value_760
-   + 1.93% Sudoku_norvig$_pow_747
+   - 35.29% Sudoku_norvig._pow_747
+      + 17.70% Sudoku_norvig.eliminate_value_760
+      + 15.74% Sudoku_norvig._pow_747
+      + 1.03% Sudoku_norvig.fun_1435
+     0.61% Sudoku_norvig.eliminate_value_760
+-   12.99%  sudoku_norvig.e  sudoku_norvig.exe  [.] BatList.findnext_1543
+   - 12.00% BatList.findnext_1543
+      - 11.71% BatList.find_all_1539
+         + 8.07% Sudoku_norvig.fun_1421
+         + 2.73% Sudoku_norvig.eliminate_948
+         + 0.90% Sudoku_norvig.assign_949
+-   10.63%  sudoku_norvig.e  sudoku_norvig.exe  [.] Sudoku_norvig.eliminate_value_760
+   + 8.29% Sudoku_norvig.eliminate_value_760
+   + 1.93% Sudoku_norvig._pow_747
 +    9.50%  sudoku_norvig.e  [kernel.kallsyms]  [k] asm_exc_nmi
-+    7.24%  sudoku_norvig.e  sudoku_norvig.exe  [.] Sudoku_norvig$fun_1435
++    7.24%  sudoku_norvig.e  sudoku_norvig.exe  [.] Sudoku_norvig.fun_1435
 +    5.06%  sudoku_norvig.e  sudoku_norvig.exe  [.] caml_modify
-+    3.10%  sudoku_norvig.e  sudoku_norvig.exe  [.] Sudoku_norvig$fun_1360
-+    2.11%  sudoku_norvig.e  sudoku_norvig.exe  [.] Sudoku_norvig$eliminate_948
-+    2.00%  sudoku_norvig.e  sudoku_norvig.exe  [.] Stdlib.List$iter_366
-+    1.54%  sudoku_norvig.e  sudoku_norvig.exe  [.] Sudoku_norvig$fun_1421
++    3.10%  sudoku_norvig.e  sudoku_norvig.exe  [.] Sudoku_norvig.fun_1360
++    2.11%  sudoku_norvig.e  sudoku_norvig.exe  [.] Sudoku_norvig.eliminate_948
++    2.00%  sudoku_norvig.e  sudoku_norvig.exe  [.] Stdlib.List.iter_366
++    1.54%  sudoku_norvig.e  sudoku_norvig.exe  [.] Sudoku_norvig.fun_1421
 +    1.47%  sudoku_norvig.e  sudoku_norvig.exe  [.] caml_apply2
-+    1.42%  sudoku_norvig.e  sudoku_norvig.exe  [.] BatList$find_all_1539
-+    1.20%  sudoku_norvig.e  sudoku_norvig.exe  [.] Sudoku_norvig$fun_1366
-+    1.09%  sudoku_norvig.e  sudoku_norvig.exe  [.] Stdlib.List$fold_left_380
++    1.42%  sudoku_norvig.e  sudoku_norvig.exe  [.] BatList.find_all_1539
++    1.20%  sudoku_norvig.e  sudoku_norvig.exe  [.] Sudoku_norvig.fun_1366
++    1.09%  sudoku_norvig.e  sudoku_norvig.exe  [.] Stdlib.List.fold_left_380
 \end{verbatim}
-Note this implementation clearly has some optimsation possible in `_pow_747` a recursive Power of 2 function, and parts of the OCaml runtime `caml_modify` are present.
+Note this implementation clearly has some optimsation possible in "_pow_747" a recursive Power of 2 function, and parts of the OCaml runtime "caml_modify" are present.
 
 Profiling data can also be visualised as Flame Graphs, which highlight the most frequent code paths in stack traces. The original scripts scripts \texttt{stackcollapse-perf.pl} and \texttt{flamegraph.pl} can be found at Brendan Gregg's \href{https://www.brendangregg.com/flamegraphs.html}{Flame Graphs} web page and work as follows:
 
@@ -341,16 +343,16 @@ The same prerequisites hold for Time profiling with macOS Instruments as for Lin
 The basic \texttt{xctrace} command for time profiling is:
 
 \begin{verbatim}
-$ xcrun xctrace record --output . --template "Time Profiler" \
+xcrun xctrace record --output . --template "Time Profiler" \
   --target-stdout - --launch -- PROGRAM
 \end{verbatim}
 
-The \texttt{--template "Time Profiler"} selects pre-defined template for time profiling which will create a trace file with extension `.trace` that can be opened with Instruments. Use the \texttt{--output} to select a name for the trace file, by default xctrace will create a new file each run rather than overwriting the existing file.
+The \texttt{--template "Time Profiler"} selects pre-defined template for time profiling which will create a trace file with extension ".trace" that can be opened with Instruments. Use the \texttt{--output} to select a name for the trace file, by default xctrace will create a new file each run rather than overwriting the existing file.
 
 The resulting file can be opened with Instruments to view the profile, and it maybe be possible to generate Flame Graphs using \href{https://github.com/jonhoo/inferno}{inferno} or the scripts from \href{https://github.com/brendangregg/FlameGraph}{https://github.com/brendangregg/FlameGraph}.
 
 \lparagraph{p:ocamlprof-instruments}{Note}
-Sometimes Instruments requires adding entitlements to an OCaml binary before it is able to profile it. This typically shows as a failure to launch the process or as a permission error. To work around this issue run the following command, replacing 'PROGRAM' with the program to trace.
+Sometimes Instruments requires adding entitlements to an OCaml binary before it is able to profile it. This typically shows as a failure to launch the process or as a permission error. To work around this issue run the following command, replacing "PROGRAM" with the program to trace.
 
 \begin{verbatim}
 $ codesign -s - -v -f --entitlements =(echo -n
@@ -365,7 +367,7 @@ $ codesign -s - -v -f --entitlements =(echo -n
  </plist>') PROGRAM
 \end{verbatim}
 
-For more details on entitlements and codesigning consult Apple's documentation.
+For more details on entitlements and codesign consult Apple's documentation.
 
 \section{s:ocamlprof-glossary}{Glossary}
 

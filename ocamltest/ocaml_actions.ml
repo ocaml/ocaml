@@ -187,7 +187,9 @@ let get_program_file backend env =
 
 let is_c_file (_filename, filetype) = filetype=Ocaml_filetypes.C
 
-let cmas_need_dynamic_loading directories libraries =
+type need = Dynamic_loading | Custom_runtime
+
+let cmas_need what directories libraries =
   let loads_c_code library =
     match Misc.find_in_path directories library with
     | exception Not_found ->
@@ -202,7 +204,12 @@ let cmas_need_dynamic_loading directories libraries =
           seek_in ic toc_pos;
           let toc = (input_value ic : Cmo_format.library) in
           close_in ic;
-          if toc.Cmo_format.lib_dllibs <> [] then Some (Ok ()) else None
+          let found =
+            match what with
+            | Dynamic_loading -> toc.Cmo_format.lib_dllibs <> []
+            | Custom_runtime -> toc.Cmo_format.lib_custom
+          in
+          if found then Some (Ok ()) else None
         else
           raise End_of_file
       with End_of_file
@@ -240,23 +247,22 @@ let compile_program (compiler : Ocaml_compilers.compiler) log env =
   in
   let output = if compile_only then "" else "-o " ^ program_file in
   let libraries = libraries compiler#target env in
-  let cmas_need_dynamic_loading =
-    if not Config.supports_shared_libraries &&
-       compiler#target = Ocaml_backends.Bytecode then
-      cmas_need_dynamic_loading (directories env) libraries
+  let cmas_need_custom_runtime =
+    if compiler#target = Ocaml_backends.Bytecode then
+      cmas_need Custom_runtime (directories env) libraries
     else
       None
   in
-  match cmas_need_dynamic_loading with
+  match cmas_need_custom_runtime with
     | Some (Error reason) ->
         (Result.fail_with_reason reason, env)
     | _ ->
-      let bytecode_links_c_code = (cmas_need_dynamic_loading = Some (Ok ())) in
+      let lib_needs_custom = (cmas_need_custom_runtime = Some (Ok ())) in
       let commandline =
       [
         compiler#name;
         Ocaml_flags.runtime_flags env compiler#target
-                                  (has_c_file || bytecode_links_c_code);
+                                  (has_c_file || lib_needs_custom);
         c_headers_flags;
         Ocaml_flags.stdlib;
         directory_flags env;
@@ -983,7 +989,7 @@ let run_test_program_in_toplevel (toplevel : Ocaml_toplevels.toplevel) log env =
   let toplevel_supports_dynamic_loading =
     Config.supports_shared_libraries || backend <> Ocaml_backends.Bytecode
   in
-  match cmas_need_dynamic_loading (directories env) libraries with
+  match cmas_need Dynamic_loading (directories env) libraries with
     | Some (Error reason) ->
       (Result.fail_with_reason reason, env)
     | Some (Ok ()) when not toplevel_supports_dynamic_loading ->

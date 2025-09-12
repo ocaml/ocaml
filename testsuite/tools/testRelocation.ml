@@ -62,8 +62,8 @@ let bindir_rules config file =
         (* The runtime binaries all contain OCAML_STDLIB_DIR and everything
            except flexlink and ocamllex link with the Config module, either
            directly or via ocamlcommon *)
-        not (List.mem basename ["flexlink.byte"; "flexlink.opt";
-                                "ocamllex.byte"; "ocamllex.opt";
+        not (List.mem basename ["flexlink.byte"; "flexlink.opt"; "flexlink";
+                                "ocamllex.byte"; "ocamllex.opt"; "ocamllex";
                                 "ocamlyacc"])
       in
       let linker_embeds_stdlib_location =

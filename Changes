@@ -30,6 +30,9 @@ Working version
   to reduce latent-garbage delay and therefore improve GC performance.
   (Stephen Dolan and Nick Barnes, review by KC Sivaramakrishnan)
 
+- #14123: Fix integer-overflow problems in heap compaction.
+  (Nick Barnes, review by Antonin Décimo).
+
 - #14035: Fix the alignment of _Atomic long long unsigned int fields
   before GCC 11.1 on i686. Silence GCC note on newer versions.
   (Antonin Décimo, review by Sadiq Jaffer)
@@ -197,6 +200,10 @@ Working version
   for attributes.
   (Shon Feder)
 
+- #14228: Trim leading spaces from first lines of LaTeX `ocamldoccode`
+  environments.
+  (Yukai Chou, review by Nicolás Ojeda Bär)
+
 ### Compiler user-interface and warnings:
 
 - #12628: Improved error message for unsafe values: print out the full path for
@@ -207,6 +214,10 @@ Working version
 - #14076, 14111: error messages, add a short explanation for mismatched
   universal variables and universal quantifications.
   (Florian Angeletti, review by Gabriel Scherer)
+
+- #14126: Document the `-i-variance` option and `+-`, `-+` variance indicators
+  in the reference manual.
+  (Takafumi Saikawa, review by Florian Angeletti)
 
 - #14146: add an error message for external declaration with
   a non-syntactic arity
@@ -220,6 +231,13 @@ Working version
   e.g. `< foo : int; .. as $0>` when $0 is introduced by a GADT constructor
   (Stefan Muenzel, review by Jacques Garrigue and Florian Angeletti)
 
+- #14225: do not raise unused-constructor warning on private
+  constructor in type implementations, for example
+  `type safe = private Safe`, which are typically used to
+  create new fresh/generative types (here `safe`) to be used
+  as GADT indices.
+  (Gabriel Scherer, review by Nicolás Ojeda Bär and Florian Angeletti,
+   report by Kate Deplaix)
 
 
 ### Internal/compiler-libs changes:
@@ -300,6 +318,9 @@ Working version
 - #14061, #14209: fix a memory-ordering bug in Weak.set that could
   result in uninitialized memory seen by Weak.get on another domain.
   (Damien Doligez, review by Gabriel Scherer)
+
+- #14230 : ocamltest fails to link test program with -custom in some cases
+  (Damien Doligez, review by David Allsopp)
 
 OCaml 5.4.0
 ---------------
@@ -714,6 +735,10 @@ OCaml 5.4.0
   fails. Similarly for anonymous functor calls (of the form `F(struct ... end))
   (Clement Blaudeau, review by Gabriel Scherer)
 
+- #13747: Document support for native debugging with GDB and LLDB.
+   (Tim McGilchrist, review by Daniel Bünzli, Samuel Hym, Olivier Nicole
+   and Antonin Décimo)
+
 ### Compiler user-interface and warnings:
 
 - #13817: align spellchecking hints with the possibly misspelled identifier/
@@ -781,7 +806,7 @@ OCaml 5.4.0
 - #13748: Add a .editorconfig file for basic editor auto-configuration.
   (Antonin Décimo, review by Gabriel Scherer and David Allsopp)
 
-- #13302: Store locations of longidents components
+- #13302, #14236: Store locations of longidents components
   (Ulysse Gérard and Jules Aguillon, review by Jules Aguillon
    and Florian Angeletti)
 
@@ -976,6 +1001,10 @@ OCaml 5.4.0
 - #13172, #13829: Fix a missing check of illegal recursive module-type
   definitions
   (Clement Blaudeau, review by Florian Angeletti)
+
+- #13541, #13777: Using C++11 `thread_local` causes name-mangling
+  issues when linking with flexlink on Cygwin.
+  (Antonin Décimo and David Allsopp, report by Kate Deplaix)
 
 * #13874, #13882: Make evaluation order consistent for applications when using
   the non-flambda native compiler

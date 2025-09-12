@@ -4,6 +4,9 @@
 #define SIZECLASS_MAX 128
 #define NUM_SIZECLASSES 32
 
+typedef unsigned char sizeclass;
+static_assert(NUM_SIZECLASSES < (1 << (CHAR_BIT * sizeof(sizeclass))), "");
+
 /* The largest size for this size class.
    (A gap is left after smaller objects) */
 static const unsigned int wsize_sizeclass[NUM_SIZECLASSES] =
@@ -27,7 +30,7 @@ static const unsigned char wastage_sizeclass[NUM_SIZECLASSES] =
   /* 30:*/ 80, 124 };
 
 /* Map from (positive) object sizes to size classes. */
-static const unsigned char sizeclass_wsize[SIZECLASS_MAX + 1] =
+static const sizeclass sizeclass_wsize[SIZECLASS_MAX + 1] =
 { /*  0:*/ 255, 0, 1, 2, 3,
   /*  5:*/ 4, 5, 6, 7, 8,
   /* 10:*/ 8, 9, 9, 10, 10,

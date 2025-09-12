@@ -2,15 +2,15 @@
 %HEVEA\cutname{attributes.html}
 \ikwd{when\@\texttt{when}}
 
-(Introduced in OCaml 4.02,
-infix notations for constructs other than expressions added in 4.03)
+(Introduced in OCaml 4.02, infix notations for constructs other than
+expressions added in 4.03)
 
 Attributes are ``decorations'' of the syntax tree which are mostly
-ignored by the type-checker but can be used by external tools.  An
-attribute is made of an identifier and a payload, which can be a
-structure, a type expression (prefixed with ":"), a signature
-(prefixed with ":") or a pattern (prefixed with "?") optionally
-followed by a "when" clause:
+ignored by the type-checker but can be used by external tools.
+An attribute is made of an identifier and a payload, which can be a
+structure, a type expression (prefixed with ":"), a signature (prefixed
+with ":") or a pattern (prefixed with "?")  optionally followed by a
+"when" clause:
 
 
 \begin{syntax}
@@ -57,8 +57,8 @@ class-type: ...
 ;
 \end{syntax}
 
-This form of attributes can also be inserted after the @'`'tag-name@
-in polymorphic variant type expressions (@tag-spec-first@, @tag-spec@,
+This form of attributes can also be inserted after the @'`'tag-name@ in
+polymorphic variant type expressions (@tag-spec-first@, @tag-spec@,
 @tag-spec-full@) or after the @method-name@ in @method-type@.
 
 The same syntactic form is also used to attach attributes to labels and
@@ -147,9 +147,9 @@ class-field: ...
 ;
 \end{syntax}
 
-A third form of attributes appears as stand-alone structure or
-signature items in the module or class sub-languages.  They are not
-attached to any specific node in the syntax tree:
+A third form of attributes appears as stand-alone structure or signature
+items in the module or class sub-languages.  They are not attached to
+any specific node in the syntax tree:
 
 \begin{syntax}
 floating-attribute:
@@ -174,7 +174,8 @@ cannot be attached to these floating attributes in @class-field-spec@
 and @class-field@.)
 
 
-It is also possible to specify attributes using an infix syntax. For instance:
+It is also possible to specify attributes using an infix syntax. For
+instance:
 
 \begin{verbatim}
 let[@foo] x = 2 in x + 1          === (let x = 2 [@@foo] in x + 1)
@@ -198,127 +199,126 @@ and[@bar] y = 3 in x + y           === (let x = 2 [@@foo] and y = 3 [@@bar] in x
 Some attributes are understood by the compiler:
 \begin{itemize}
 \item
- ``ocaml.warning'' or ``warning'', with a string literal payload.
- This can be used as floating attributes in a
- signature/structure/object/object type.  The string is parsed and has
- the same effect as the "-w" command-line option, in the scope between
- the attribute and the end of the current
- signature/structure/object/object type.  The attribute can also be
- attached to any kind of syntactic item which support attributes
- (such as an expression, or a type expression)
- in which case its scope is limited to that item.
- Note that it is not well-defined which scope is used for a specific
- warning.  This is implementation dependent and can change between versions.
- Some warnings are even completely outside the control of ``ocaml.warning''
- (for instance, warnings 1, 2, 14, 29 and 50).
-
+  "ocaml.warning" or "warning", with a string literal payload.
+  This can be used as floating attributes in a signature / structure /
+  object type.  The string is parsed and has the same effect as the "-w"
+  command-line option, in the scope between the attribute and the end of
+  the current signature / structure / object type.  The attribute can
+  also be attached to any kind of syntactic item which support
+  attributes (such as an expression, or a type expression) in which case
+  its scope is limited to that item.
+  Note that it is not well-defined which scope is used for a specific
+  warning.  This is implementation dependent and can change between
+  versions.  Some warnings are even completely outside the control of
+  "ocaml.warning" (for instance, warnings 1, 2, 14, 29 and 50).
 \item
- ``ocaml.warnerror'' or ``warnerror'', with a string literal payload.
- Same as ``ocaml.warning'', for the "-warn-error" command-line option.
-
+  "ocaml.warnerror" or "warnerror", with a string literal payload.  Same
+  as "ocaml.warning", for the "-warn-error" command-line option.
 \item
- ``ocaml.alert'' or ``alert'': see section~\ref{s:alerts}.
-
+  "ocaml.alert" or "alert": see section~\ref{s:alerts}.
 \item
-  ``ocaml.deprecated'' or ``deprecated'': alias for the
-  ``deprecated'' alert, see section~\ref{s:alerts}.
+  "ocaml.deprecated" or "deprecated": alias for the "deprecated" alert,
+  see section~\ref{s:alerts}.
 \item
-  ``ocaml.deprecated_mutable'' or ``deprecated_mutable''.
-  Can be applied to a mutable record label.  If the label is later
-  used to modify the field (with ``expr.l <- expr''), the ``deprecated'' alert
-  will be triggered.  If the payload of the attribute is a string literal,
-  the alert message includes this text.
+  "ocaml.deprecated_mutable" or "deprecated_mutable".
+  Can be applied to a mutable record label.  If the label is later used
+  to modify the field (with "expr.l <- expr"), the "deprecated" alert
+  will be triggered.  If the payload of the attribute is a string
+  literal, the alert message includes this text.
 \item
-  ``ocaml.ppwarning'' or ``ppwarning'', in any context, with
-  a string literal payload.  The text is reported as warning (22)
-  by the compiler (currently, the warning location is the location
-  of the string payload).  This is mostly useful for preprocessors which
-  need to communicate warnings to the user.  This could also be used
-  to mark explicitly some code location for further inspection.
+  "ocaml.ppwarning" or "ppwarning", in any context, with a string
+  literal payload.  The text is reported as warning (22) by the compiler
+  (currently, the warning location is the location of the string
+  payload).  This is mostly useful for preprocessors which need to
+  communicate warnings to the user.  This could also be used to mark
+  explicitly some code location for further inspection.
 \item
-  ``ocaml.warn_on_literal_pattern'' or ``warn_on_literal_pattern'' annotate
-  constructors in type definition. A warning (52) is then emitted when this
-  constructor is pattern matched with a constant literal as argument. This
-  attribute denotes constructors whose argument is purely informative and
-  may change in the future. Therefore, pattern matching on this argument
-  with a constant literal is unreliable. For instance, all built-in exception
-  constructors are marked as ``warn_on_literal_pattern''.
-  Note that, due to an implementation limitation, this warning (52) is only
-  triggered for single argument constructor.
+  "ocaml.warn_on_literal_pattern" or "warn_on_literal_pattern" annotate
+  constructors in type definition.  A warning (52) is then emitted when
+  this constructor is pattern matched with a constant literal as
+  argument.  This attribute denotes constructors whose argument is
+  purely informative and may change in the future.  Therefore, pattern
+  matching on this argument with a constant literal is unreliable.
+  For instance, all built-in exception constructors are marked as
+  "warn_on_literal_pattern".
+  Note that, due to an implementation limitation, this warning (52) is
+  only triggered for single argument constructor.
 \item
-  ``ocaml.tailcall'' or ``tailcall'' can be applied to function
-  application in order to check that the call is tailcall optimized.
-  If it it not the case, a warning (51) is emitted.
+  "ocaml.tailcall" or "tailcall" can be applied to function application
+  in order to check that the call is tailcall optimized.  If it it not
+  the case, a warning (51) is emitted.
 \item
-  ``ocaml.inline'' or ``inline'' take either ``never'', ``always''
-  or nothing as payload on a function or functor definition. If no payload
-  is provided, the default value is ``always''. This payload controls when
+  "ocaml.inline" or "inline" take either "never", "always" or nothing as
+  payload on a function or functor definition.  If no payload is
+  provided, the default value is "always".  This payload controls when
   applications of the annotated functions should be inlined.
 \item
-  ``ocaml.inlined'' or ``inlined'' can be applied to any function or functor
-  application to check that the call is inlined by the compiler. If the call
-  is not inlined, a warning (55) is emitted.
+  "ocaml.inlined" or "inlined" can be applied to any function or functor
+  application to check that the call is inlined by the compiler.  If the
+  call is not inlined, a warning (55) is emitted.
 \item
-  ``ocaml.noalloc'', ``ocaml.unboxed''and ``ocaml.untagged'' or
-  ``noalloc'', ``unboxed'' and ``untagged'' can be used on external
-  definitions to obtain finer control over the C-to-OCaml interface. See
+  "ocaml.noalloc", "ocaml.unboxed" and "ocaml.untagged" or "noalloc",
+  "unboxed" and "untagged" can be used on external definitions to obtain
+  finer control over the C-to-OCaml interface. See
   \ref{s:C-cheaper-call} for more details.
 \item
-  ``ocaml.immediate'' or ``immediate'' applied on an abstract type mark the type as
-  having a non-pointer implementation (e.g. ``int'', ``bool'', ``char'' or
-  enumerated types). Mutation of these immediate types does not activate the
-  garbage collector's write barrier, which can significantly boost performance in
-  programs relying heavily on mutable state.
+  "ocaml.immediate" or "immediate" applied on an abstract type mark the
+  type as having a non-pointer implementation (e.g. "int", "bool",
+  "char" or enumerated types).  Mutation of these immediate types does
+  not activate the garbage collector's write barrier, which can
+  significantly boost performance in programs relying heavily on mutable
+  state.
 \item
-  ``ocaml.immediate64'' or ``immediate64'' applied on an abstract type mark the
-  type as having a non-pointer implementation on 64 bit platforms. No assumption
-  is made on other platforms. In order to produce a type with the
-  ``immediate64`` attribute, one must use ``Sys.Immediate64.Make`` functor.
+  "ocaml.immediate64" or "immediate64" applied on an abstract type mark
+  the type as having a non-pointer implementation on 64 bit
+  platforms. No assumption is made on other platforms.  In order to
+  produce a type with the "immediate64" attribute, one must use
+  "Sys.Immediate64.Make" functor.
 \item
   "ocaml.unboxed" or "unboxed" can be used on a type definition if the
   type is a single-field record or a concrete type with a single
-  constructor that has a single argument. It tells the compiler to
+  constructor that has a single argument.  It tells the compiler to
   optimize the representation of the type by removing the block that
-  represents the record or the constructor (i.e. a value of this type
-  is physically equal to its argument). In the case of GADTs, an
+  represents the record or the constructor (i.e. a value of this type is
+  physically equal to its argument).  In the case of GADTs, an
   additional restriction applies: the argument must not be an
-  existential variable, represented by an existential type variable,
-  or an abstract type constructor applied to an existential type
-  variable.
+  existential variable, represented by an existential type variable, or
+  an abstract type constructor applied to an existential type variable.
 \item
-   "ocaml.boxed" or "boxed" can be used on type definitions to mean
-   the opposite of "ocaml.unboxed": keep the unoptimized
-   representation of the type. When there is no annotation, the
-   default is currently "boxed" but it may change in the future.
- \item
-   "ocaml.local" or "local" take either "never", "always", "maybe" or
-   nothing as payload on a function definition.  If no payload is
-   provided, the default is "always".  The attribute controls an
-   optimization which consists in compiling a function into a static
-   continuation.  Contrary to inlining, this optimization does not
-   duplicate the function's body.  This is possible when all
-   references to the function are full applications, all sharing the
-   same continuation (for instance, the returned value of several
-   branches of a pattern matching). "never" disables the optimization,
-   "always" asserts that the optimization applies (otherwise a warning
-   55 is emitted) and "maybe" lets the optimization apply when
-   possible (this is the default behavior when the attribute is not
-   specified).  The optimization is implicitly disabled when using the
-   bytecode compiler in debug mode (-g), and for functions marked with
-   an "ocaml.inline always" or "ocaml.unrolled" attribute which
-   supersede "ocaml.local".
- \item
-  "ocaml.poll" or "poll" with an "error" payload on a function definition emits
-  an error whenever the compiler inserts a runtime polling point in the body of
-  the annotated function.
+  "ocaml.boxed" or "boxed" can be used on type definitions to mean the
+  opposite of "ocaml.unboxed": keep the unoptimized representation of
+  the type.  When there is no annotation, the default is currently
+  "boxed" but it may change in the future.
 \item
-  "ocaml.remove_aliases" or "remove_aliases", defined on either a	"module type
-	of" signature expression or "with module" constraint instructs the typechecker
-	to drop module aliases in the resulting signature.
- \item
-   "ocaml.atomic" or "atomic" on a record field definition, marks this
-   record field as atomic. See \ref{s:atomic-record-fields} for more
-   details.
+  "ocaml.local" or "local" take either "never", "always", "maybe" or
+  nothing as payload on a function definition.  If no payload is
+  provided, the default is "always".  The attribute controls an
+  optimization which consists in compiling a function into a static
+  continuation.  Contrary to inlining, this optimization does not
+  duplicate the function's body.  This is possible when all references
+  to the function are full applications, all sharing the same
+  continuation (for instance, the returned value of several branches of
+  a pattern matching). "never" disables the optimization, "always"
+  asserts that the optimization applies (otherwise a warning 55 is
+  emitted) and "maybe" lets the optimization apply when possible (this
+  is the default behavior when the attribute is not specified).
+  The optimization is implicitly disabled when using the bytecode
+  compiler in debug mode ("-g"), and for functions marked with an
+  "ocaml.inline always" or "ocaml.unrolled" attribute which supersede
+  "ocaml.local".
+\item
+  "ocaml.poll" or "poll" with an "error" payload on a function
+  definition emits an error whenever the compiler inserts a runtime
+  polling point in the body of the annotated function.
+\item
+  "ocaml.remove_aliases" or "remove_aliases", defined on either a
+  "module type of" signature expression or "with module" constraint
+  instructs the typechecker to drop module aliases in the resulting
+  signature.
+\item
+  "ocaml.atomic" or "atomic" on a record field definition, marks this
+  record field as atomic. See \ref{s:atomic-record-fields} for more
+  details.
 \end{itemize}
 
 \begin{caml_example*}{verbatim}

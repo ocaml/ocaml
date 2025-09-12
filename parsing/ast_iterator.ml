@@ -89,19 +89,19 @@ let iter_opt f = function None -> () | Some x -> f x
 
 let iter_loc sub {loc; txt = _} = sub.location sub loc
 
-let rec iter_loc_lid sub lid =
+let rec iter_lid sub lid =
   let open Longident in
   match lid with
   | Lident _ -> ()
   | Ldot (lid, id) ->
-    iter_loc sub lid; iter_loc_lid sub lid.txt; iter_loc sub id
+    iter_loc sub lid; iter_lid sub lid.txt; iter_loc sub id
   | Lapply (lid, lid') ->
-    iter_loc sub lid; iter_loc_lid sub lid.txt;
-    iter_loc sub lid'; iter_loc_lid sub lid'.txt
+    iter_loc sub lid; iter_lid sub lid.txt;
+    iter_loc sub lid'; iter_lid sub lid'.txt
 
 let iter_loc_lid sub {loc; txt} =
   iter_loc sub {loc; txt};
-  iter_loc_lid sub txt
+  iter_lid sub txt
 
 module T = struct
   (* Type expressions for the core language *)
@@ -749,7 +749,10 @@ let default_iterator =
 
     directive_argument =
       (fun this a ->
-         this.location this a.pdira_loc
+         this.location this a.pdira_loc;
+         match a.pdira_desc with
+         | Pdir_ident lid -> iter_lid this lid
+         | Pdir_int _ | Pdir_string _ | Pdir_bool _ -> ()
       );
 
     toplevel_directive =

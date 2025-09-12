@@ -94,6 +94,9 @@ let _ =
   printf "#define SIZECLASS_MAX %d\n" max_slot;
   printf "#define NUM_SIZECLASSES %d\n" (List.length sizes);
   printf {|
+typedef unsigned char sizeclass;
+static_assert(NUM_SIZECLASSES < (1 << (CHAR_BIT * sizeof(sizeclass))), "");
+
 /* The largest size for this size class.
    (A gap is left after smaller objects) */
 static const unsigned int wsize_sizeclass[NUM_SIZECLASSES] =@[<2>{ %a };@]
@@ -107,6 +110,6 @@ static const unsigned char wastage_sizeclass[NUM_SIZECLASSES] =@[<2>{ %a };@]
     print_list wastage;
   printf {|
 /* Map from (positive) object sizes to size classes. */
-static const unsigned char sizeclass_wsize[SIZECLASS_MAX + 1] =@[<2>{ %a };@]
+static const sizeclass sizeclass_wsize[SIZECLASS_MAX + 1] =@[<2>{ %a };@]
 |}
     print_list (255 :: size_slots 1);

@@ -489,6 +489,8 @@ HEADER_NAME = runtime-launch-info
 ifeq "$(UNIX_OR_WIN32)" "win32"
 # Ensure that no command can create Cygwin symbolic links by ensuring that
 # symlink(2) will fail if native NTFS symlinks aren't available.
+CYGWIN ?=
+MSYS ?=
 export CYGWIN := $(strip \
   $(filter-out winsymlinks winsymlinks:%, $(CYGWIN)) winsymlinks:nativestrict)
 export MSYS := $(strip \

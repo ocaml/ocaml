@@ -127,6 +127,22 @@ end
 module Used_private_constructor : sig type t val nothing : t -> unit end
 |}]
 
+(* We do not want a warning here, to support the use-case of private
+   constructor *definitions* for type-level indices in GADT:
+
+   {[
+      type a = private A
+      type b = private B
+      type _ t = KA : a t | KB : b t
+   ]}
+
+   Our expectation is that private constructors in type
+   definitions/implementations (not declarations/signatures) are
+   typically used to make their types fresh type-level indices and
+   never used directly -- they are un-constructible, so there is
+   little point in tracking their usage in the rest of the program and
+   complaining that they are never constructed.
+*)
 module Unused_private_constructor : sig
   type t
 end = struct
@@ -134,14 +150,24 @@ end = struct
 end
 ;;
 [%%expect {|
-Line 4, characters 19-20:
-4 |   type t = private T
-                       ^
-Warning 37 [unused-constructor]: unused constructor "T".
-
 module Unused_private_constructor : sig type t end
 |}]
 
+(* Same as {!Unused_private_constructor} above,
+   we do not want a warning that T is unused here. *)
+module Hidden_private_constructor : sig
+end = struct
+  type t = private T
+  type _ gadt = K : t gadt
+  let () = ignore K
+end
+;;
+[%%expect {|
+module Hidden_private_constructor : sig end
+|}]
+
+(* We do not want a warning here: the type is defined as private
+   (presumably for type-level indices) and then re-exported. *)
 module Exported_private_constructor : sig
   type t = private T
 end = struct
@@ -150,6 +176,25 @@ end
 ;;
 [%%expect {|
 module Exported_private_constructor : sig type t = private T end
+|}]
+
+(* We want a warning here: the constructor is not defined as private
+   (so we expect some usage), never constructed inside the module, and
+   not constructible outside. *)
+module Exported_constructor_made_private : sig
+  type t = private T
+end = struct
+  type t = T
+end
+;;
+[%%expect {|
+Line 4, characters 11-12:
+4 |   type t = T
+               ^
+Warning 37 [unused-constructor]: constructor "T" is never used to build values.
+  Its type is exported as a private type.
+
+module Exported_constructor_made_private : sig type t = private T end
 |}]
 
 module Used_exception : sig
@@ -321,11 +366,6 @@ end = struct
 end
 ;;
 [%%expect {|
-Line 5, characters 20-31:
-5 |   type t += private Private_ext
-                        ^^^^^^^^^^^
-Warning 38 [unused-extension]: unused extension constructor "Private_ext"
-
 module Unused_private_extension : sig type t end
 |}]
 

@@ -93,20 +93,20 @@ let map_opt f = function None -> None | Some x -> Some (f x)
 
 let map_loc sub {loc; txt} = {loc = sub.location sub loc; txt}
 
-let rec map_loc_lid sub lid =
+let rec map_lid sub lid =
   let open Longident in
   match lid with
   | Lident id -> Lident id
   | Ldot (lid, id) ->
-      let lid = { lid with txt = map_loc_lid sub lid.txt } in
+      let lid = { lid with txt = map_lid sub lid.txt } in
       Ldot (map_loc sub lid, map_loc sub id)
   | Lapply (lid, lid') ->
-    let lid = { lid with txt = map_loc_lid sub lid.txt } in
-    let lid' = { lid' with txt = map_loc_lid sub lid'.txt } in
+    let lid = { lid with txt = map_lid sub lid.txt } in
+    let lid' = { lid' with txt = map_lid sub lid'.txt } in
     Lapply(map_loc sub lid, map_loc sub lid')
 
 let map_loc_lid sub {loc; txt} =
-  let txt = map_loc_lid sub txt in
+  let txt = map_lid sub txt in
   map_loc sub {loc; txt}
 
 module C = struct
@@ -842,7 +842,10 @@ let default_mapper =
 
     directive_argument =
       (fun this a ->
-         { pdira_desc= a.pdira_desc
+         { pdira_desc= begin match a.pdira_desc with
+               | Pdir_ident lid -> Pdir_ident (map_lid this lid)
+               | Pdir_int _ | Pdir_bool _ | Pdir_string _ as x -> x
+             end
          ; pdira_loc= this.location this a.pdira_loc} );
 
     toplevel_directive =
