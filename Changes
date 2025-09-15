@@ -35,6 +35,10 @@ Working version
   (Nicolás Ojeda Bär, report by Louis Roché, review by Gabriel Scherer and
   Florian Angeletti)
 
+- #14248: Added documentation about the way `Domain.join` triggers a
+  `Thread.join` on the domain's systhreads.
+  (Raphaël Proust, review by Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 ### Internal/compiler-libs changes:
