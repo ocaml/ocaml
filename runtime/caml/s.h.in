@@ -110,9 +110,12 @@
 
 #undef HAS_PRCTL
 
-#undef HAS_PTHREAD_SETNAME_NP
+/* Define to 1 if you have the 'pthread_cancel' function. */
+#undef HAVE_PTHREAD_CANCEL
 
-#undef HAS_PTHREAD_SET_NAME_NP
+#undef HAVE_PTHREAD_SETNAME_NP
+
+#undef HAVE_PTHREAD_SET_NAME_NP
 
 #undef HAS_SETTHREADDESCRIPTION
 
@@ -322,9 +325,8 @@
 
 /* 3. Language extensions. */
 
+/* Define if the C compiler supports the labels as values extension. */
 #undef HAVE_LABELS_AS_VALUES
 
 #undef HAVE___TSAN_FUNC_EXIT_VOID_VOID_P
 #undef HAVE___TSAN_FUNC_EXIT_VOID_VOID
-
-/* Define if the C compiler supports the labels as values extension. */

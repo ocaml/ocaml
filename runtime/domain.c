@@ -2337,7 +2337,9 @@ static void stw_terminate_domain(caml_domain_state *domain, void *data,
       /* If this STW request is handled by the backup thread, the
          domain thread is currently running C code. */
       domain_self->domain_canceled = true;
+#ifdef HAVE_PTHREAD_CANCEL
       (void)pthread_cancel(domain_self->tid);
+#endif
       /* We are intentionally not waiting for the thread to terminate here,
          and not decrementing the number of running domains either, since
          we don't know the state of the various locks and condition

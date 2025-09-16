@@ -124,8 +124,10 @@ if "%PORT%" equ "mingw32" (
   set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% i686-w64-mingw32-gcc cygcheck
 )
 if "%PORT%" equ "mingw64" (
-  set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% mingw64-x86_64-gcc-core
-  set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% x86_64-w64-mingw32-gcc
+  rem mingw64-x86_64-runtime does not need explicitly installing, but it's
+  rem useful to have the version reported.
+  set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% mingw64-x86_64-gcc-core mingw64-x86_64-runtime
+  set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% x86_64-w64-mingw32-gcc cygcheck
 )
 if "%PORT%" equ "cygwin32" (
   set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% cygwin32-gcc-core flexdll

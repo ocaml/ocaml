@@ -28,7 +28,7 @@ jobs:
         # context variable.
         if: failure()
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 50
           persist-credentials: false

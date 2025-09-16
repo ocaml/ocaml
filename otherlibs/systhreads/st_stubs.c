@@ -50,7 +50,7 @@ SetThreadDescription(HANDLE hThread, PCWSTR lpThreadDescription);
 
 #elif defined(HAS_PRCTL)
 #  include <sys/prctl.h>
-#elif defined(HAS_PTHREAD_SETNAME_NP) || defined(HAS_PTHREAD_SET_NAME_NP)
+#elif defined(HAVE_PTHREAD_SETNAME_NP) || defined(HAVE_PTHREAD_SET_NAME_NP)
 #  include <pthread.h>
 
 #  if defined(HAS_PTHREAD_NP_H)
@@ -1002,7 +1002,7 @@ CAMLprim value caml_set_current_thread_name(value name)
     caml_set_current_thread_name_warning("SetThreadDescription failed!");
 #  endif
 
-#  if defined(HAS_PTHREAD_SETNAME_NP)
+#  if defined(HAVE_PTHREAD_SETNAME_NP)
   // We are using both methods.
   // See: https://github.com/ocaml/ocaml/pull/13504#discussion_r1786358928
   char buf[1024];
@@ -1017,7 +1017,7 @@ CAMLprim value caml_set_current_thread_name(value name)
   if (ret == -1)
     caml_set_current_thread_name_warning(
       caml_strerror(errno, buf, sizeof(buf)));
-#elif defined(HAS_PTHREAD_SETNAME_NP)
+#elif defined(HAVE_PTHREAD_SETNAME_NP)
 #  if defined(__APPLE__)
   // Darwin implementation does not return any error code.
   pthread_setname_np(String_val(name));
@@ -1034,7 +1034,7 @@ CAMLprim value caml_set_current_thread_name(value name)
   if (ret != 0)
     caml_set_current_thread_name_warning(caml_strerror(ret, buf, sizeof(buf)));
 #  endif
-#elif defined(HAS_PTHREAD_SET_NAME_NP)
+#elif defined(HAVE_PTHREAD_SET_NAME_NP)
   // pthread_set_name_np seems to be the no-error alternative.
   pthread_set_name_np(pthread_self(), String_val(name));
 #else

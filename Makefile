@@ -1008,12 +1008,15 @@ partialclean::
 TOPFLAGS ?=
 OC_TOPFLAGS = $(STDLIBFLAGS) -I toplevel -noinit $(TOPINCLUDES) $(TOPFLAGS)
 
-RUN_OCAML = $(RLWRAP) $(OCAMLRUN) ./ocaml$(EXE) $(OC_TOPFLAGS)
+# Use runtime/ocamlrun rather than boot/ocamlrun since boot/ocamlrun is compiled
+# without shared library support on Windows (when bootstrapping flexdll)
+RUN_OCAML = $(RLWRAP) $(NEW_OCAMLRUN) ./ocaml$(EXE) $(OC_TOPFLAGS)
 RUN_OCAMLNAT = $(RLWRAP) ./ocamlnat$(EXE) $(OC_TOPFLAGS)
 
-# Note: Beware that, since these rules begin with a coldstart, both
-# boot/ocamlrun and runtime/ocamlrun will be the same when the toplevel
-# is run.
+# Note: Beware that, since these rules begin with a coldstart, boot/ocamlc must
+# produce code capable of being executed using runtime/ocamlrun (i.e. there are
+# circumstances where it may be necessary to bootstrap first, but if you're
+# doing work which needs it, you probably know that already).
 .PHONY: runtop
 runtop: coldstart
 	$(MAKE) ocamlc

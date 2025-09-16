@@ -152,7 +152,7 @@ case "$1" in
     run_testsuite=true
     if [[ -n $APPVEYOR_PULL_REQUEST_NUMBER ]]; then
       API_URL="https://api.github.com/repos/$APPVEYOR_REPO_NAME/issues/$APPVEYOR_PULL_REQUEST_NUMBER"
-      if curl --silent "$API_URL/labels" | grep -q "no-testsuite"; then
+      if curl --silent "$API_URL/labels" | grep -q 'CI: Skip testsuite'; then
         run_testsuite=false
       fi
     fi

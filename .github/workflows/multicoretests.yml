@@ -25,7 +25,7 @@ jobs:
             ocamlrunparam: b,s=4096
     steps:
       - name: Checkout OCaml
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: ocaml
           persist-credentials: false
@@ -33,21 +33,21 @@ jobs:
         run: |
           bash -xe ocaml/tools/ci/actions/multicoretests.sh ocaml
       - name: Checkout multicoretests
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ocaml-multicore/multicoretests
           ref: 0.9
           path: multicoretests
           persist-credentials: false
       - name: Checkout QCheck
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: c-cube/qcheck
           ref: v0.26
           path: multicoretests/qcheck
           persist-credentials: false
       - name: Checkout dune
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ocaml/dune
           ref: 3.18.2

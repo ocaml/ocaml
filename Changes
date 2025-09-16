@@ -59,6 +59,10 @@ Working version
   (Tim McGilchrist, review by Nick Barnes, Sadiq Jaffer and
   Gabriel Scherer)
 
+- #14238: Fix certain variadic macros in misc.h which could trigger C warnings
+  under certain conditions.
+  (Antonin Décimo, review by Nicolás Ojeda Bär)
+
 ### Code generation and optimizations:
 
 ### Standard library:

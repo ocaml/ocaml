@@ -22977,6 +22977,30 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
 
+# pthread_cancel isn't implemented on Android Bionic libc
+ac_fn_c_check_func "$LINENO" "pthread_cancel" "ac_cv_func_pthread_cancel"
+if test "x$ac_cv_func_pthread_cancel" = xyes
+then :
+  printf "%s\n" "#define HAVE_PTHREAD_CANCEL 1" >>confdefs.h
+
+fi
+
+
+
+  for ac_func in pthread_setname_np pthread_set_name_np
+do :
+  as_ac_var=`printf "%s\n" "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+if eval test \"x\$"$as_ac_var"\" = x"yes"
+then :
+  cat >>confdefs.h <<_ACEOF
+#define `printf "%s\n" "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+ break
+fi
+
+done
+
 ## prctl
 
   for ac_func in prctl
@@ -22986,34 +23010,6 @@ if test "x$ac_cv_func_prctl" = xyes
 then :
   printf "%s\n" "#define HAVE_PRCTL 1" >>confdefs.h
  printf "%s\n" "#define HAS_PRCTL 1" >>confdefs.h
-
-fi
-
-done
-
-## pthread_setname_np
-
-  for ac_func in pthread_setname_np
-do :
-  ac_fn_c_check_func "$LINENO" "pthread_setname_np" "ac_cv_func_pthread_setname_np"
-if test "x$ac_cv_func_pthread_setname_np" = xyes
-then :
-  printf "%s\n" "#define HAVE_PTHREAD_SETNAME_NP 1" >>confdefs.h
- printf "%s\n" "#define HAS_PTHREAD_SETNAME_NP 1" >>confdefs.h
-
-fi
-
-done
-
-## pthread_set_name_np
-
-  for ac_func in pthread_set_name_np
-do :
-  ac_fn_c_check_func "$LINENO" "pthread_set_name_np" "ac_cv_func_pthread_set_name_np"
-if test "x$ac_cv_func_pthread_set_name_np" = xyes
-then :
-  printf "%s\n" "#define HAVE_PTHREAD_SET_NAME_NP 1" >>confdefs.h
- printf "%s\n" "#define HAS_PTHREAD_SET_NAME_NP 1" >>confdefs.h
 
 fi
 

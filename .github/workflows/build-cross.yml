@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  res: 0
+  failed: 0
   TESTDIR: >-
     C:\Бактріан🐫
   STR_UTF8: >-
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout OCaml
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
       - name: Configure, build and install OCaml
@@ -50,8 +50,11 @@ jobs:
           set -x
           ./configure --disable-warn-error --disable-ocamldoc \
               --disable-ocamltest --disable-stdlib-manpages \
-              --disable-dependency-generation --prefix="$PREFIX" || res=$?
-          if ! [ "$res" = 0 ]; then cat config.log; exit "$res"; fi
+              --disable-dependency-generation --prefix="$PREFIX" || failed=$?
+          if ((failed)) ; then set +x
+            echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
+            cat config.log ; echo '::endgroup::' ; exit $failed
+          fi
           make -j
           make install
           cd "$HOME"
@@ -80,7 +83,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y gcc-mingw-w64-x86-64
       - name: Checkout OCaml
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: true
           persist-credentials: false
@@ -88,8 +91,11 @@ jobs:
         run: |
           set -x
           ./configure --prefix="$HOME/cross" --target=x86_64-w64-mingw32 \
-              TARGET_LIBDIR="$TESTDIR" || res=$?
-          if ! [ "$res" = 0 ]; then cat config.log; exit "$res"; fi
+              TARGET_LIBDIR="$TESTDIR" || failed=$?
+          if ((failed)) ; then set +x
+            echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
+            cat config.log ; echo '::endgroup::' ; exit $failed
+          fi
           # The OOM-killer may be triggered if the number of parallel
           # jobs isn't limited.
           make crossopt -j$(nproc)
@@ -151,7 +157,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y gcc-aarch64-linux-gnu qemu-user
       - name: Checkout OCaml
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: true
           persist-credentials: false
@@ -159,8 +165,11 @@ jobs:
         run: |
           set -x
           ./configure --prefix="$HOME/cross" --target=aarch64-linux-gnu \
-              || res=$?
-          if ! [ "$res" = 0 ]; then cat config.log; exit "$res"; fi
+              || failed=$?
+          if ((failed)) ; then set +x
+            echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
+            cat config.log ; echo '::endgroup::' ; exit $failed
+          fi
           make crossopt -j
           make installcross
       - name: Show opt.opt configuration
@@ -191,6 +200,10 @@ jobs:
   cross-android:
     runs-on: ubuntu-latest
     needs: non-cross
+    env:
+      # https://developer.android.com/ndk/downloads#lts-downloads
+      NDK: r27d # Latest LTS Version
+      API_LEVEL: 21
     steps:
       - name: Download Artifact
         uses: actions/download-artifact@v4
@@ -208,46 +221,48 @@ jobs:
         with:
           path: |
             /home/runner/android
-          key: android-ndk
+          key: android-ndk-${{ env.NDK }}
       - name: Download the Android NDK
         run: |
           set -x
           mkdir -p "$HOME/android"
           cd "$HOME/android"
-          wget --no-verbose https://dl.google.com/android/repository/android-ndk-r27b-linux.zip
-          unzip android-ndk-r27b-linux.zip
-          rm android-ndk-r27b-linux.zip
+          wget --no-verbose "https://dl.google.com/android/repository/android-ndk-$NDK-linux.zip"
+          unzip android-ndk-$NDK-linux.zip
+          rm android-ndk-$NDK-linux.zip
         if: steps.cache.outputs.cache-hit != 'true'
       - name: Save the Android NDK to cache
         uses: actions/cache/save@v4
         with:
           path: |
             /home/runner/android
-          key: android-ndk
+          key: android-ndk-${{ env.NDK }}
         if: steps.cache.outputs.cache-hit != 'true'
       - name: Checkout OCaml
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
       - name: Configure, build and install Linux-to-Android OCaml
         env:
-          TARGET: x86_64-linux-android21
-          TOOLDIR: android-ndk-r27b/toolchains/llvm/prebuilt/linux-x86_64/bin
+          TARGET: x86_64-linux-android${{ env.API_LEVEL }}
+          TOOLDIR: android-ndk-${{ env.NDK }}/toolchains/llvm/prebuilt/linux-x86_64/bin
         run: |
           DIR="$HOME/android/$TOOLDIR"
           set -x
-          # Hack around the fact that pthread_cancel isn't available on Android
-          # So the result program should _not_ be run with cleanup on exit
-          # (so no `c=1` in `OCAMLRUNPARAM`)
+          # `pthread_cancel` isn't available on Android, so the result
+          # program should _not_ be run with cleanup on exit (so no
+          # `c=1` in `OCAMLRUNPARAM`)
           ./configure --prefix="$HOME/cross" --target=$TARGET \
               TARGET_LIBDIR="/dummy/directory" \
               CC="$DIR/clang --target=$TARGET" \
-              CPPFLAGS='-Dpthread_cancel=assert' \
               AR="$DIR/llvm-ar" \
               PARTIALLD="$DIR/ld -r" \
               RANLIB="$DIR/llvm-ranlib" \
-              STRIP="$DIR/llvm-strip" || res=$?
-          if ! [ "$res" = 0 ]; then cat config.log; exit "$res"; fi
+              STRIP="$DIR/llvm-strip" || failed=$?
+          if ((failed)) ; then set +x
+            echo ; echo "::group::config.log content ($(wc -l config.log) lines)"
+            cat config.log ; echo '::endgroup::' ; exit $failed
+          fi
           make crossopt -j
           make installcross
       - name: Show opt.opt configuration
@@ -265,7 +280,7 @@ jobs:
       - name: Run example
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 21
+          api-level: ${{ env.API_LEVEL }}
           arch: x86_64
           disable-animations: true
           script: |

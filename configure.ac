@@ -2047,9 +2047,9 @@ void __tsan_write8       (void *location);
   # Define a C macro based on the detected __tsan_func_exit signature
   AS_CASE([$ocaml_cv_func_which___tsan_func_exit],
     [void_void_p], [AC_DEFINE([HAVE___TSAN_FUNC_EXIT_VOID_VOID_P], [1],
-                  [ThreadSanitizer exit function signature: void (*)(void*)])],
+                  [ThreadSanitizer exit function signature: void (void*)])],
     [void_void], [AC_DEFINE([HAVE___TSAN_FUNC_EXIT_VOID_VOID], [1],
-                  [ThreadSanitizer exit function signature: void (*)(void)])],
+                  [ThreadSanitizer exit function signature: void (void)])],
     [AC_MSG_ERROR([libtsan uses an unexpected signature for __tsan_func_exit])])
 
   AS_CASE([$ocaml_cc_vendor],
@@ -2611,20 +2611,15 @@ AC_LINK_IFELSE(
     AC_DEFINE([HAS_BSD_GETAFFINITY_NP], [1])],
     [AC_MSG_RESULT([pthread_getaffinity_np not found])])])
 
+# pthread_cancel isn't implemented on Android Bionic libc
+AC_CHECK_FUNCS([pthread_cancel])
+
+AC_CHECK_FUNCS([pthread_setname_np pthread_set_name_np], [break])
+
 ## prctl
 AC_CHECK_FUNCS(
   [prctl],
   [AC_DEFINE([HAS_PRCTL], [1])])
-
-## pthread_setname_np
-AC_CHECK_FUNCS(
-  [pthread_setname_np],
-  [AC_DEFINE([HAS_PTHREAD_SETNAME_NP], [1])])
-
-## pthread_set_name_np
-AC_CHECK_FUNCS(
-  [pthread_set_name_np],
-  [AC_DEFINE([HAS_PTHREAD_SET_NAME_NP], [1])])
 
 ## SetThreadDescription
 AC_CHECK_FUNCS(
