@@ -101,7 +101,8 @@ Working version
   (Sacha-Élie Ayoun, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
 - #14227: Add List.filter_mapi.
-  (Émile Trotignon, review by Nicolás Ojeda Bär, Jan Midtgaard and Damien Doligez)
+  (Émile Trotignon, review by Nicolás Ojeda Bär, Jan Midtgaard and
+   Damien Doligez)
 
 ### Type system:
 
