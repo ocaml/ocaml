@@ -221,7 +221,7 @@ static void ephe_modify (value e, mlsize_t offset, value val)
   volatile value *fp = &Field(e, offset);
 
 #if defined(WITH_THREAD_SANITIZER) && defined(NATIVE_CODE)
-  caml_tsan_func_entry(__builtin_return_address(0));
+  __tsan_func_entry(__builtin_return_address(0));
 #endif
 
   ephe_write_barrier(e, offset, val);
@@ -230,8 +230,8 @@ static void ephe_modify (value e, mlsize_t offset, value val)
   atomic_thread_fence(memory_order_acquire);
 
 #if defined(WITH_THREAD_SANITIZER) && defined(NATIVE_CODE)
-  caml_tsan_write8((void *)fp);
-  caml_tsan_func_exit();
+  __tsan_write8((void *)fp);
+  __tsan_func_exit(NULL);
 #endif
 
   atomic_store_release(&Op_atomic_val((value)fp)[0], val);
