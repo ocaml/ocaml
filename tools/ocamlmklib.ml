@@ -239,12 +239,12 @@ let make_set l =
 let make_rpath flag =
   if !rpath = [] || flag = ""
   then ""
-  else flag ^ String.concat ":" (make_set !rpath)
+  else Filename.quote (flag ^ String.concat ":" (make_set !rpath))
 
 let make_rpath_ccopt flag =
   if !rpath = [] || flag = ""
   then ""
-  else "-ccopt " ^ flag ^ String.concat ":" (make_set !rpath)
+  else "-ccopt " ^ Filename.quote (flag ^ String.concat ":" (make_set !rpath))
 
 let prefix_list pref l =
   List.map (fun s -> pref ^ s) l
@@ -272,15 +272,7 @@ let flexdll_dirs =
     let expand = Misc.expand_directory Config.standard_library in
     List.map expand Config.flexdll_dirs
   in
-  let f dir =
-    let dir =
-      if String.contains dir ' ' then
-        "\"" ^ dir ^ "\""
-      else
-        dir
-    in
-      "-L" ^ dir
-  in
+  let f dir = "-L" ^ dir in
   List.map f dirs
 
 let build_libs () =
@@ -290,53 +282,53 @@ let build_libs () =
           (Printf.sprintf "%s %s -o %s %s %s %s %s %s %s"
              Config.mkdll
              (if !debug then "-g" else "")
-             (prepostfix "dll" !output_c Config.ext_dll)
-             (String.concat " " !c_objs)
-             (String.concat " " !c_opts)
-             (String.concat " " !ld_opts)
+             (Filename.quote (prepostfix "dll" !output_c Config.ext_dll))
+             (String.concat " " (List.map Filename.quote !c_objs))
+             (String.concat " " (List.map Filename.quote !c_opts))
+             (String.concat " " (List.map Filename.quote !ld_opts))
              (make_rpath Config.mksharedlibrpath)
-             (String.concat " " !c_libs)
-             (String.concat " " flexdll_dirs)
+             (String.concat " " (List.map Filename.quote !c_libs))
+             (String.concat " " (List.map Filename.quote flexdll_dirs))
           )
       in
       if retcode <> 0 then if !failsafe then dynlink := false else exit 2
     end;
     safe_remove (prepostfix "lib" !output_c Config.ext_lib);
     scommand
-      (mklib (prepostfix "lib" !output_c Config.ext_lib)
-             (String.concat " " !c_objs) "");
+      (mklib (Filename.quote (prepostfix "lib" !output_c Config.ext_lib))
+             (String.concat " " (List.map Filename.quote !c_objs)) "");
   end;
   if !bytecode_objs <> [] then
     scommand
-      (sprintf "%s -a %s %s %s -o %s.cma %s %s -dllib -l%s -cclib -l%s \
+      (sprintf "%s -a %s %s %s -o %s %s %s -dllib %s -cclib %s \
                    %s %s %s %s"
                   (transl_path !ocamlc)
                   (if !debug then "-g" else "")
                   (if !dynlink then "" else "-custom")
-                  (String.concat " " !ocamlc_opts)
-                  !output
-                  (String.concat " " !caml_opts)
-                  (String.concat " " !bytecode_objs)
-                  (Filename.basename !output_c)
-                  (Filename.basename !output_c)
-                  (String.concat " " (prefix_list "-ccopt " !c_opts))
+                  (String.concat " " (List.map Filename.quote !ocamlc_opts))
+                  (Filename.quote (!output^".cma"))
+                  (String.concat " " (List.map Filename.quote !caml_opts))
+                  (String.concat " " (List.map Filename.quote !bytecode_objs))
+                  (Filename.quote ("-l"^Filename.basename !output_c))
+                  (Filename.quote ("-l"^Filename.basename !output_c))
+                  (String.concat " " (prefix_list "-ccopt " (List.map Filename.quote !c_opts)))
                   (make_rpath_ccopt Config.default_rpath)
-                  (String.concat " " (prefix_list "-cclib " !c_libs))
-                  (String.concat " " !caml_libs));
+                  (String.concat " " (prefix_list "-cclib " (List.map Filename.quote !c_libs)))
+                  (String.concat " " (List.map Filename.quote !caml_libs)));
   if !native_objs <> [] then
     scommand
-      (sprintf "%s -a %s %s -o %s.cmxa %s %s -cclib -l%s %s %s %s %s"
+      (sprintf "%s -a %s %s -o %s %s %s -cclib %s %s %s %s %s"
                   (transl_path !ocamlopt)
                   (if !debug then "-g" else "")
-                  (String.concat " " !ocamlopt_opts)
-                  !output
-                  (String.concat " " !caml_opts)
-                  (String.concat " " !native_objs)
-                  (Filename.basename !output_c)
-                  (String.concat " " (prefix_list "-ccopt " !c_opts))
+                  (String.concat " " (List.map Filename.quote !ocamlopt_opts))
+                  (Filename.quote (!output^".cmxa"))
+                  (String.concat " " (List.map Filename.quote !caml_opts))
+                  (String.concat " " (List.map Filename.quote !native_objs))
+                  (Filename.quote ("-l"^Filename.basename !output_c))
+                  (String.concat " " (prefix_list "-ccopt " (List.map Filename.quote !c_opts)))
                   (make_rpath_ccopt Config.default_rpath)
-                  (String.concat " " (prefix_list "-cclib " !c_libs))
-                  (String.concat " " !caml_libs))
+                  (String.concat " " (prefix_list "-cclib " (List.map Filename.quote !c_libs)))
+                  (String.concat " " (List.map Filename.quote !caml_libs)))
 
 let main () =
   try

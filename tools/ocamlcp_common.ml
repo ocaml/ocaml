@@ -109,7 +109,7 @@ module Make(T: OCAMLCP) = struct
     begin match !Clflags.keyword_edition with
     | None -> ()
     | Some k ->
-       rev_profargs := ("-keywords " ^ k) :: !rev_profargs
+       rev_profargs := (Filename.quote k) :: "-keywords" :: !rev_profargs
     end;
     let status =
       let profiling_object =
