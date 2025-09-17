@@ -4,40 +4,40 @@ cmm:
 (data
  int 3063
  "camlCmm.5":
- addr "camlCmm.standard_atomic_get_271"
+ addr "camlCmm.standard_atomic_get_274"
  int 72057594037927941)
 (data
  int 4087
  "camlCmm.4":
  addr "caml_curry3"
  int 216172782113783815
- addr "camlCmm.standard_atomic_cas_296")
-(data int 3063 "camlCmm.3": addr "camlCmm.get_304" int 72057594037927941)
+ addr "camlCmm.standard_atomic_cas_299")
+(data int 3063 "camlCmm.3": addr "camlCmm.get_307" int 72057594037927941)
 (data
  int 4087
  "camlCmm.2":
  addr "caml_curry2"
  int 144115188075855879
- addr "camlCmm.set_307")
+ addr "camlCmm.set_310")
 (data
  int 4087
  "camlCmm.1":
  addr "caml_curry3"
  int 216172782113783815
- addr "camlCmm.cas_311")
+ addr "camlCmm.cas_314")
 (data int 5888 global "camlCmm" "camlCmm": int 1 int 1 int 1 int 1 int 1)
 (data global "camlCmm.gc_roots" "camlCmm.gc_roots": addr "camlCmm" int 0)
-(function camlCmm.standard_atomic_get_271 (r: val) (load_mut_atomic val r))
+(function camlCmm.standard_atomic_get_274 (r: val) (load_mut_atomic val r))
 
-(function camlCmm.standard_atomic_cas_296 (r: val oldv: val newv: val)
+(function camlCmm.standard_atomic_cas_299 (r: val oldv: val newv: val)
  (extcall "caml_atomic_cas_field" r 1 oldv newv int,int,int,int->val))
 
-(function camlCmm.get_304 (r: val) (load_mut_atomic val (+a r 8)))
+(function camlCmm.get_307 (r: val) (load_mut_atomic val (+a r 8)))
 
-(function camlCmm.set_307 (r: val v: val)
+(function camlCmm.set_310 (r: val v: val)
  (extcall "caml_atomic_exchange_field" r 3 v int,int,int->unit) 1)
 
-(function camlCmm.cas_311 (r: val oldv: val newv: val)
+(function camlCmm.cas_314 (r: val oldv: val newv: val)
  (extcall "caml_atomic_cas_field" r 3 oldv newv int,int,int,int->val))
 
 (function camlCmm.entry ()

@@ -288,6 +288,9 @@ CAMLnoret CAMLextern void caml_raise_unhandled_effect (value effect);
 
 value caml_make_unhandled_effect_exn (value effect);
 
+CAMLextern uintnat caml_live_stacks_memory(void);
+CAMLextern uintnat caml_current_stack_size(void);
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_FIBER_H */

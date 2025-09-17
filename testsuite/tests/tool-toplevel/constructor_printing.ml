@@ -99,3 +99,32 @@ let x = let module FB = F(B) in FB.A X
 [%%expect {|
 val x : M.N.F(M.N.A.B).t = M.N.F(M.N.A.B).A X
 |}]
+
+module X__A = struct type t = A type r = { f: int } end
+module X__B = struct type t = B end
+
+module X = struct
+  module A = X__A
+  module B = X__B
+end
+
+let x = X__A.A, X__B.B, { X__A.f = 0 }
+[%%expect {|
+module X__A : sig type t = A type r = { f : int; } end
+module X__B : sig type t = B end
+module X : sig module A = X__A module B = X__B end
+val x : X.A.t * X.B.t * X.A.r = (X.A.A, X.B.B, {X.A.f = 0})
+|}]
+
+open X
+let y = x
+
+[%%expect{|
+val y : X.A.t * X.B.t * X.A.r = (A.A, B.B, {A.f = 0})
+|}]
+
+open A
+let z = x
+[%%expect{|
+val z : X.A.t * X.B.t * X.A.r = (A, B.B, {f = 0})
+|}]

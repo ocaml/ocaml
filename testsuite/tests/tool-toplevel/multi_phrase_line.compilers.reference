@@ -21,8 +21,8 @@ Error: Syntax error
 Line 2, characters 16-20:
 2 | 11;; let x = 12+true;; 13;; (* Type error in second phrase. *)
                     ^^^^
-Error: The constructor true has type bool
-       but an expression was expected of type int
+Error: This expression should not be a boolean literal, the expected type is
+       int
 #   Line 2, characters 0-22:
 2 | match 14 with 15 -> ();; 16;; 17;; (* Warning + run-time error in 1st phrase. *)
     ^^^^^^^^^^^^^^^^^^^^^^

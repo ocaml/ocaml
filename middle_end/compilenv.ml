@@ -90,7 +90,13 @@ let current_unit =
     ui_export_info = default_ui_export_info;
     ui_for_pack = None }
 
-let symbol_separator = '$'
+let linuxlike_mangling = match Config.system with
+  | "macosx"
+  | "mingw" | "mingw64" | "cygwin" | "win32" | "win64" -> false
+  | _ -> true
+
+let symbol_separator = if linuxlike_mangling then '.' else '$'
+let escape_prefix = if linuxlike_mangling then "$" else "$$"
 
 let concat_symbol unitname id =
   Printf.sprintf "%s%c%s" unitname symbol_separator id

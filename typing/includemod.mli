@@ -59,7 +59,6 @@ module Error: sig
     | Mt_core of core_module_type_symptom
     | Signature of signature_symptom
     | Functor of functor_symptom
-    | Invalid_module_alias of Path.t
     | After_alias_expansion of module_type_diff
 
 
@@ -83,6 +82,7 @@ module Error: sig
 
   and signature_symptom = {
     env: Env.t;
+    subst: Subst.t;
     missings: Types.signature_item list;
     incompatibles: (Ident.t * sigitem_symptom) list;
     oks: (int * Typedtree.module_coercion) list;
@@ -148,7 +148,21 @@ val modtypes:
 val modtypes_consistency:
   loc:Location.t -> Env.t -> module_type -> module_type -> unit
 
-val modtypes_with_shape:
+(** [modtypes_constraint ~shape ~loc env ~mark exp_modtype constraint_modtype]
+    checks that [exp_modtype] is a subtype of [constraint_modtype], and returns
+    the module coercion and the shape of the constrained module.
+
+    It also marks as used paired items in positive position in [exp_modtype],
+    and also paired items in negative position in [constraint_modtype].
+
+    This marking in negative position allows to raise an [unused item] warning
+    whenever an item in a functor parameter in [constraint_modtype] does not
+    exist in [exp_modtypes]. This behaviour differs from the one in
+    {!check_implementation} and {!compunit} which assumes that is not
+    appropriate to raise warning about the interface file while typechecking the
+    implementation file.
+*)
+val modtypes_constraint:
   shape:Shape.t -> loc:Location.t -> Env.t -> mark:bool ->
   module_type -> module_type -> module_coercion * Shape.t
 
@@ -201,7 +215,6 @@ type symptom =
       Ident.t * class_declaration * class_declaration *
       Ctype.class_match_failure list
   | Unbound_module_path of Path.t
-  | Invalid_module_alias of Path.t
 
 type pos =
   | Module of Ident.t
@@ -234,7 +247,8 @@ module Functor_inclusion_diff: sig
     type diff = (Types.functor_parameter, unit) Error.functor_param_symptom
     type state
   end
-  val diff: Env.t ->
+  type inclusion_env = { i_env:Env.t; i_subst:Subst.t }
+  val diff: inclusion_env ->
     Types.functor_parameter list * Types.module_type ->
     Types.functor_parameter list * Types.module_type ->
     Diffing.Define(Defs).patch

@@ -184,45 +184,15 @@ let _ = add_directive "mod_use" (Directive_string (with_error_fmt dir_mod_use))
 
 (* Install, remove a printer *)
 
-let install_printer_by_kind path kind =
-  let v = eval_value_path !toplevel_env path in
-  match kind with
-  | Topprinters.Old ty_arg ->
-    install_printer path ty_arg
-      (fun _formatter repr -> Obj.obj v (Obj.obj repr))
-  | Topprinters.Simple ty_arg ->
-    install_printer path ty_arg
-      (fun formatter repr -> Obj.obj v formatter (Obj.obj repr))
-  | Topprinters.Generic { ty_path; arity } ->
-     let rec build v = function
-       | 0 ->
-          Zero
-            (fun formatter repr -> Obj.obj v formatter (Obj.obj repr))
-       | n ->
-          Succ
-            (fun fn -> build ((Obj.obj v : _ -> Obj.t) fn) (n - 1)) in
-     install_generic_printer' path ty_path (build v arity)
-
-let remove_installed_printer path =
-  match remove_printer path with
-  | () -> Ok ()
-  | exception Not_found -> Error (`No_active_printer path)
-
 let dir_install_printer ppf lid =
-  match Topprinters.find_printer !toplevel_env lid with
-  | Error error ->
-    Topprinters.report_error ppf error
-  | Ok (path, kind) ->
-    install_printer_by_kind path kind
+  match Topprinters.install eval_value_path !toplevel_env lid with
+  | Error error -> Topprinters.report_error ppf error
+  | Ok () -> ()
 
 let dir_remove_printer ppf lid =
-  match Topprinters.find_printer !toplevel_env lid with
-  | Error error ->
-    Topprinters.report_error ppf error
-  | Ok (path, _kind) ->
-    match remove_installed_printer path with
-    | Ok () -> ()
-    | Error error -> Topprinters.report_error ppf error
+  match Topprinters.remove !toplevel_env lid with
+  | Error error -> Topprinters.report_error ppf error
+  | Ok () -> ()
 
 let _ = add_directive "install_printer"
     (Directive_ident (with_error_fmt dir_install_printer))

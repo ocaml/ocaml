@@ -77,6 +77,17 @@
 /* Basic types and constants */
 
 typedef size_t asize_t;
+#ifdef __cplusplus
+extern "C++" {
+#include <atomic>
+typedef std::atomic<uintnat> atomic_uintnat;
+typedef std::atomic<intnat> atomic_intnat;
+}
+#else
+#include <stdatomic.h>
+typedef _Atomic uintnat atomic_uintnat;
+typedef _Atomic intnat atomic_intnat;
+#endif
 
 #ifndef NULL
 #define NULL 0
@@ -155,7 +166,9 @@ CAMLdeprecated_typedef(addr, char *);
 #endif
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L || \
-    defined(__cplusplus)
+    defined(__cplusplus) && !defined(__CYGWIN__)
+    /* #14220: flexlink does not support C++11 's thread_local,
+       so prefer _Thread_local on Cygwin systems. */
 #define CAMLthread_local thread_local
 #else
 #define CAMLthread_local _Thread_local
@@ -232,17 +245,17 @@ CAMLdeprecated_typedef(addr, char *);
 /* [CAMLrealloc(n)] indicates that the function is [realloc]-like, and implies
    that the [n]-th argument number equals the number of available bytes at the
    returned pointer. */
-#define CAMLrealloc(alloc_size_N,...)                           \
+#define CAMLrealloc(alloc_size_N)                                       \
   __attribute__ ((warn_unused_result,alloc_size(alloc_size_N)))
 
 /* [CAMLalloc(dealloc, p)] indicates that the function allocates a resource,
    which must be deallocated by passing it as the [p]-th argument of the
    function [dealloc]. */
 #if defined(__GNUC__) && !defined(__llvm__)
-#define CAMLalloc(deallocator,ptr_index,...)                            \
+#define CAMLalloc(deallocator,ptr_index)                                \
   __attribute__ ((malloc,malloc(deallocator,ptr_index),warn_unused_result))
 #else
-#define CAMLalloc(deallocator,ptr_index,...)    \
+#define CAMLalloc(deallocator,ptr_index)      \
   __attribute__ ((malloc,warn_unused_result))
 #endif
 
@@ -250,15 +263,15 @@ CAMLdeprecated_typedef(addr, char *);
    implies that it allocates a memory block whose size is set by the function's
    [n]-th argument, and which must be deallocated by passing it as the [p]-th
    argument of the function [dealloc]. */
-#define CAMLmalloc(deallocator,ptr_index,alloc_size_N,...)      \
-  CAMLalloc(deallocator,ptr_index)                              \
+#define CAMLmalloc(deallocator,ptr_index,alloc_size_N)  \
+  CAMLalloc(deallocator,ptr_index)                      \
     __attribute__ ((alloc_size(alloc_size_N)))
 
 /* [CAMLcalloc(dealloc, p, n, m)] indicates that the function is [calloc]-like,
    and implies that it allocates a memory block whose size is set by the product
    of the function's [n]-th and [m]-th arguments, and which must be deallocated
    by passing it as the [p]-th argument of the function [dealloc]. */
-#define CAMLcalloc(deallocator,ptr_index,alloc_size_N,alloc_size_M,...) \
+#define CAMLcalloc(deallocator,ptr_index,alloc_size_N,alloc_size_M)     \
   CAMLalloc(deallocator,ptr_index)                                      \
     __attribute__ ((alloc_size(alloc_size_N,alloc_size_M)))
 
@@ -267,17 +280,17 @@ CAMLdeprecated_typedef(addr, char *);
    is set by the function's [n]-th argument, aligned on a boundary given by the
    function's [a]-th argument, and which must be deallocated by passing it as
    the [p]-th argument of the function [dealloc]. */
-#define CAMLaligned_alloc(deallocator,ptr_index,alloc_size_N,alloc_align_,...) \
+#define CAMLaligned_alloc(deallocator,ptr_index,alloc_size_N,alloc_align_) \
   CAMLmalloc(deallocator,ptr_index,alloc_size_N)                        \
     __attribute__ ((alloc_align(alloc_align_)))
 
 #else
 #define CAMLreturns_nonnull()
-#define CAMLrealloc(...)
-#define CAMLalloc(...)
-#define CAMLmalloc(...)
-#define CAMLcalloc(...)
-#define CAMLaligned_alloc(...)
+#define CAMLrealloc(asN)
+#define CAMLalloc(d,pi)
+#define CAMLmalloc(d,pi,asN)
+#define CAMLcalloc(d,pi,asN,asM)
+#define CAMLaligned_alloc(d,pi,asN,aa)
 #endif
 
 /* GC timing hooks. These can be assigned by the user. These hooks
@@ -619,7 +632,7 @@ CAMLextern int caml_read_directory(char_os * dirname,
 
 /* runtime message flags. Settable with v= in OCAMLRUNPARAM */
 
-extern _Atomic uintnat caml_verb_gc;
+extern atomic_uintnat caml_verb_gc;
 
 /* Bits which may be set in caml_verb_gc. The quotations are from the
  * OCaml manual. */

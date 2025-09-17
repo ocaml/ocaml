@@ -2,9 +2,9 @@
 /*                                                                        */
 /*                                 OCaml                                  */
 /*                                                                        */
-/*   Contributed by Tracy Camp, PolyServe Inc., <campt@polyserve.com>     */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
 /*                                                                        */
-/*   Copyright 2002 Institut National de Recherche en Informatique et     */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */
 /*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */
@@ -14,30 +14,27 @@
 /**************************************************************************/
 
 #define CAML_INTERNALS
-
-#include <stdio.h>
 #include <caml/mlvalues.h>
-#include <caml/osdeps.h>
 #include <caml/memory.h>
+#include <caml/signals.h>
+#include <caml/osdeps.h>
 #include "caml/unixsupport.h"
 
-CAMLprim value caml_unix_rename(value path1, value path2)
+CAMLprim value caml_unix_rename(value oldname, value newname)
 {
-  wchar_t * wpath1, * wpath2;
-  BOOL ok;
-
-  caml_unix_check_path(path1, "rename");
-  caml_unix_check_path(path2, "rename");
-  wpath1 = caml_stat_strdup_to_utf16(String_val(path1));
-  wpath2 = caml_stat_strdup_to_utf16(String_val(path2));
-  ok = MoveFileEx(wpath1, wpath2,
-                  MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
-                  MOVEFILE_COPY_ALLOWED);
-  caml_stat_free(wpath1);
-  caml_stat_free(wpath2);
-  if (! ok) {
-    caml_win32_maperr(GetLastError());
-    caml_uerror("rename", path1);
-  }
+  char_os * p_old;
+  char_os * p_new;
+  int ret;
+  caml_unix_check_path(oldname, "rename");
+  caml_unix_check_path(newname, "rename");
+  p_old = caml_stat_strdup_to_os(String_val(oldname));
+  p_new = caml_stat_strdup_to_os(String_val(newname));
+  caml_enter_blocking_section();
+  ret = rename_os(p_old, p_new);
+  caml_leave_blocking_section();
+  caml_stat_free(p_new);
+  caml_stat_free(p_old);
+  if (ret == -1)
+    caml_uerror("rename", oldname);
   return Val_unit;
 }

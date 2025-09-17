@@ -304,6 +304,11 @@ module type S =
     val is_empty: 'a t -> bool
     (** Test whether a map is empty or not. *)
 
+    val is_singleton: 'a t -> bool
+    (** Test whether a map has exactly one element or not.
+
+        @since 5.5 *)
+
     val mem: key -> 'a t -> bool
     (** [mem x m] returns [true] if [m] contains a binding for [x],
         and [false] otherwise. *)

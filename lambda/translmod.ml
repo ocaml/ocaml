@@ -34,8 +34,13 @@ type unsafe_component =
   | Unsafe_typext
 
 type unsafe_info =
-  | Unsafe of { reason:unsafe_component; loc:Location.t; subid:Ident.t }
+  | Unsafe of {
+      reason:unsafe_component;
+      loc:Location.t;
+      path: Path.t
+    }
   | Unnamed
+
 type error =
   Circular_dependency of (Ident.t * unsafe_info) list
 | Conflicting_inline_attributes
@@ -230,22 +235,23 @@ let undefined_location loc =
 exception Initialization_failure of unsafe_info
 
 let init_shape id modl =
-  let rec init_shape_mod subid loc env mty =
+  let rec init_shape_mod path loc env mty =
     match Mtype.scrape env mty with
       Mty_ident _
     | Mty_alias _ ->
-        raise (Initialization_failure
-                (Unsafe {reason=Unsafe_module_binding;loc;subid}))
+        let info = Unsafe {reason=Unsafe_module_binding;loc; path} in
+        raise (Initialization_failure info)
     | Mty_signature sg ->
-        Const_block(0, [Const_block(0, init_shape_struct env sg)])
+        Const_block(0, [Const_block(0, init_shape_struct path env sg)])
     | Mty_functor _ ->
         (* can we do better? *)
-        raise (Initialization_failure
-                (Unsafe {reason=Unsafe_functor;loc;subid}))
-  and init_shape_struct env sg =
+        let info = Unsafe {reason=Unsafe_functor;loc; path} in
+        raise (Initialization_failure info)
+  and init_shape_struct path env sg =
     match sg with
       [] -> []
     | Sig_value(subid, {val_kind=Val_reg; val_type=ty; val_loc=loc},_) :: rem ->
+        let new_path = Pdot(path, Ident.name subid) in
         let init_v =
           match get_desc (Ctype.expand_head env ty) with
             Tarrow(_,_,_,_) ->
@@ -253,38 +259,43 @@ let init_shape id modl =
           | Tconstr(p, _, _) when Path.same p Predef.path_lazy_t ->
               const_int 1 (* camlinternalMod.Lazy *)
           | _ ->
-              let not_a_function =
-                Unsafe {reason=Unsafe_non_function; loc; subid }
-              in
-              raise (Initialization_failure not_a_function) in
-        init_v :: init_shape_struct env rem
+              let info =
+                Unsafe {reason=Unsafe_non_function; loc; path=new_path} in
+              raise (Initialization_failure info)
+        in
+        init_v :: init_shape_struct new_path env rem
     | Sig_value(_, {val_kind=Val_prim _}, _) :: rem ->
-        init_shape_struct env rem
+        init_shape_struct path env rem
     | Sig_value _ :: _rem ->
         assert false
     | Sig_type(id, tdecl, _, _) :: rem ->
-        init_shape_struct (Env.add_type ~check:false id tdecl env) rem
+        init_shape_struct path (Env.add_type ~check:false id tdecl env) rem
     | Sig_typext (subid, {ext_loc=loc},_,_) :: _ ->
-        raise (Initialization_failure (Unsafe {reason=Unsafe_typext;loc;subid}))
+        let new_path = Pdot(path, Ident.name subid) in
+        let info = Unsafe {reason=Unsafe_typext; loc; path=new_path} in
+        raise (Initialization_failure info)
     | Sig_module(id, Mp_present, md, _, _) :: rem ->
-        init_shape_mod id md.md_loc env md.md_type ::
-        init_shape_struct (Env.add_module_declaration ~check:false
+        init_shape_mod (
+          Pdot(path, Ident.name id)) md.md_loc env md.md_type ::
+        init_shape_struct path (Env.add_module_declaration ~check:false
                              id Mp_present md env) rem
     | Sig_module(id, Mp_absent, md, _, _) :: rem ->
         init_shape_struct
-          (Env.add_module_declaration ~check:false
+          path (Env.add_module_declaration ~check:false
                              id Mp_absent md env) rem
     | Sig_modtype(id, minfo, _) :: rem ->
-        init_shape_struct (Env.add_modtype id minfo env) rem
+        init_shape_struct path (Env.add_modtype id minfo env) rem
     | Sig_class _ :: rem ->
         const_int 2 (* camlinternalMod.Class *)
-        :: init_shape_struct env rem
+        :: init_shape_struct path env rem
     | Sig_class_type _ :: rem ->
-        init_shape_struct env rem
+        init_shape_struct path env rem
   in
   try
     Ok(undefined_location modl.mod_loc,
-       Lconst(init_shape_mod id modl.mod_loc modl.mod_env modl.mod_type))
+      Lconst(
+        init_shape_mod (Path.Pident id) modl.mod_loc modl.mod_env modl.mod_type)
+      )
   with Initialization_failure reason -> Result.Error(reason)
 
 (* Reorder bindings to honor dependencies.  *)
@@ -1648,24 +1659,44 @@ let print_cycle ppf cycle =
     (pp_print_list ~pp_sep print_ident) cycle
     pp_sep ()
     (Ident.name @@ fst @@ List.hd cycle)
-(* we repeat the first element to make the cycle more apparent *)
+
+let rec collect_components = function
+  | Pident id -> [Ident.name id]
+  | Pdot (p, s) -> collect_components p @ [s]
+  | Papply (p, _) -> collect_components p
+  | Pextra_ty (p, _) -> collect_components p
+
+let get_relative_path top_module path =
+  let comps = collect_components path in
+  let comps =
+    match comps with
+    | h :: (_ :: _ as t) when h = top_module -> t
+    | _ -> comps
+  in
+  String.concat "." comps
+
 
 let explanation_submsg (id, unsafe_info) =
   match unsafe_info with
   | Unnamed -> assert false (* can't be part of a cycle. *)
-  | Unsafe {reason;loc;subid} ->
+  | Unsafe {reason; loc; path} ->
       let print fmt =
-        let printer = doc_printf fmt
-            Style.inline_code (Ident.name id)
-            Style.inline_code (Ident.name subid) in
+        let printer =
+          let top_module = Ident.name id in
+          let guilty = get_relative_path top_module path in
+          doc_printf fmt
+            Style.inline_code top_module
+            Style.inline_code guilty in
         Location.mkloc printer loc in
       match reason with
       | Unsafe_module_binding ->
           print "Module %a defines an unsafe module, %a ."
-      | Unsafe_functor -> print "Module %a defines an unsafe functor, %a ."
+      | Unsafe_functor ->
+          print "Module %a defines an unsafe functor, %a ."
       | Unsafe_typext ->
           print "Module %a defines an unsafe extension constructor, %a ."
-      | Unsafe_non_function -> print "Module %a defines an unsafe value, %a ."
+      | Unsafe_non_function ->
+          print "Module %a defines an unsafe value, %a ."
 
 let report_error loc = function
   | Circular_dependency cycle ->

@@ -184,7 +184,7 @@ let load_mnemonic = function
   | Sixteen_signed -> "lha"
   | Thirtytwo_unsigned -> "lwz"
   | Thirtytwo_signed -> "lwa"
-  | Word_int | Word_val -> "ld"
+  | Word_int | Word_val | Sixtyfour -> "ld"
   | Single -> "lfs"
   | Double -> "lfd"
 
@@ -192,7 +192,7 @@ let store_mnemonic = function
   | Byte_unsigned | Byte_signed -> "stb"
   | Sixteen_unsigned | Sixteen_signed -> "sth"
   | Thirtytwo_unsigned | Thirtytwo_signed -> "stw"
-  | Word_int | Word_val -> "std"
+  | Word_int | Word_val | Sixtyfour -> "std"
   | Single -> "stfs"
   | Double -> "stfd"
 

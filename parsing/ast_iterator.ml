@@ -89,19 +89,19 @@ let iter_opt f = function None -> () | Some x -> f x
 
 let iter_loc sub {loc; txt = _} = sub.location sub loc
 
-let rec iter_loc_lid sub lid =
+let rec iter_lid sub lid =
   let open Longident in
   match lid with
   | Lident _ -> ()
   | Ldot (lid, id) ->
-    iter_loc sub lid; iter_loc_lid sub lid.txt; iter_loc sub id
+    iter_loc sub lid; iter_lid sub lid.txt; iter_loc sub id
   | Lapply (lid, lid') ->
-    iter_loc sub lid; iter_loc_lid sub lid.txt;
-    iter_loc sub lid'; iter_loc_lid sub lid'.txt
+    iter_loc sub lid; iter_lid sub lid.txt;
+    iter_loc sub lid'; iter_lid sub lid'.txt
 
 let iter_loc_lid sub {loc; txt} =
   iter_loc sub {loc; txt};
-  iter_loc_lid sub txt
+  iter_lid sub txt
 
 module T = struct
   (* Type expressions for the core language *)
@@ -155,7 +155,7 @@ module T = struct
     | Ptyp_extension x -> sub.extension sub x
 
   let iter_type_declaration sub
-      {ptype_name; ptype_params; ptype_cstrs;
+      {ptype_name; ptype_params; ptype_constraints;
        ptype_kind;
        ptype_private = _;
        ptype_manifest;
@@ -165,7 +165,7 @@ module T = struct
     List.iter (iter_fst (sub.typ sub)) ptype_params;
     List.iter
       (iter_tuple3 (sub.typ sub) (sub.typ sub) (sub.location sub))
-      ptype_cstrs;
+      ptype_constraints;
     sub.type_kind sub ptype_kind;
     iter_opt (sub.typ sub) ptype_manifest;
     sub.location sub ptype_loc;
@@ -177,6 +177,7 @@ module T = struct
         List.iter (sub.constructor_declaration sub) l
     | Ptype_record l -> List.iter (sub.label_declaration sub) l
     | Ptype_open -> ()
+    | Ptype_external _ -> ()
 
   let iter_constructor_arguments sub = function
     | Pcstr_tuple l -> List.iter (sub.typ sub) l
@@ -219,10 +220,10 @@ module T = struct
     sub.location sub pext_loc;
     sub.attributes sub pext_attributes
 
-  let iter_package_type sub {ppt_path; ppt_cstrs; ppt_loc; ppt_attrs} =
+  let iter_package_type sub {ppt_path; ppt_constraints; ppt_loc; ppt_attrs} =
     sub.location sub ppt_loc;
     iter_loc_lid sub ppt_path;
-    List.iter (iter_tuple (iter_loc_lid sub) (sub.typ sub)) ppt_cstrs;
+    List.iter (iter_tuple (iter_loc_lid sub) (sub.typ sub)) ppt_constraints;
     sub.attributes sub ppt_attrs
 
 end
@@ -508,7 +509,9 @@ module P = struct
         sub.pat sub p; sub.typ sub t
     | Ppat_type s -> iter_loc_lid sub s
     | Ppat_lazy p -> sub.pat sub p
-    | Ppat_unpack s -> iter_loc sub s
+    | Ppat_unpack (s, ptyp) ->
+        iter_loc sub s;
+        iter_opt (sub.package_type sub) ptyp
     | Ppat_effect (p1,p2) -> sub.pat sub p1; sub.pat sub p2
     | Ppat_exception p -> sub.pat sub p
     | Ppat_extension x -> sub.extension sub x
@@ -746,7 +749,10 @@ let default_iterator =
 
     directive_argument =
       (fun this a ->
-         this.location this a.pdira_loc
+         this.location this a.pdira_loc;
+         match a.pdira_desc with
+         | Pdir_ident lid -> iter_lid this lid
+         | Pdir_int _ | Pdir_string _ | Pdir_bool _ -> ()
       );
 
     toplevel_directive =

@@ -43,4 +43,6 @@ let () =
   Unix.putenv "FOO2" "BAR2";
   print "Sys.getenv FOO" (Sys.getenv_opt "FOO");
   print "Unix.environment FOO" (find_env "FOO");
+  print "Sys.getenv FOO2" (Sys.getenv_opt "FOO2");
+  Unix.unsetenv "FOO2";
   print "Sys.getenv FOO2" (Sys.getenv_opt "FOO2")

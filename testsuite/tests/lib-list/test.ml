@@ -8,6 +8,12 @@ let string_of_even_opt x =
   else
     None
 
+let string_of_add_even_opt i x =
+  if is_even ( i + x) then
+    Some (string_of_int (i + x))
+  else
+    None
+
 let string_of_even_or_int x =
   if is_even x then
     Either.Left (string_of_int x)
@@ -68,13 +74,13 @@ let () =
   assert (List.take 3 [1; 2; 3; 4; 5] = [1; 2; 3]);
   assert (List.take 3 [1; 2] = [1; 2]);
   assert (List.take 3 [] = []);
-  assert ((try List.take (-1) [1; 2] with Invalid_argument _ -> [999]) = [999]);
+  assert (List.take (-1) [1; 2] = []);
   assert (List.take 0 [1; 2] = []);
   assert (List.drop 6 hello_world = world);
   assert (List.drop 3 [1; 2; 3; 4; 5] = [4; 5]);
   assert (List.drop 3 [1; 2] = []);
   assert (List.drop 3 [] = []);
-  assert ((try List.drop (-1) [1; 2] with Invalid_argument _ -> [999]) = [999]);
+  assert (List.drop (-1) [1; 2] = [1; 2]);
   assert (List.drop 0 [1; 2] = [1; 2]);
   assert (List.take_while (fun x -> x < 3) [1; 2; 3; 4; 1; 2; 3; 4]
           = [1; 2]);
@@ -109,6 +115,9 @@ let () =
   assert (not (List.is_empty [1]));
 
   assert (List.filter_map string_of_even_opt l = ["0";"2";"4";"6";"8"]);
+  assert
+    ( List.filter_mapi string_of_add_even_opt l
+    = ["0";"2";"4";"6";"8";"10";"12";"14";"16";"18"]);
   assert (List.concat_map (fun i -> [i; i+1]) [1; 5] = [1; 2; 5; 6]);
   assert (
     let count = ref 0 in

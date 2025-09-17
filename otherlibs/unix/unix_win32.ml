@@ -203,6 +203,7 @@ let unsafe_environment = environment
 external getenv: string -> string = "caml_sys_getenv"
 external unsafe_getenv: string -> string = "caml_sys_unsafe_getenv"
 external putenv: string -> string -> unit = "caml_unix_putenv"
+external unsetenv: string -> unit = "caml_unix_unsetenv"
 
 type process_status =
     WEXITED of int

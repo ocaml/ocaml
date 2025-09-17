@@ -46,12 +46,11 @@
 
 #include <stddef.h>
 #include <limits.h>
+#include <inttypes.h>
 
 #if defined(HAS_LOCALE_H) || defined(HAS_XLOCALE_H)
 #define HAS_LOCALE
 #endif
-
-#include <stdint.h>
 
 /* Disable the mingw-w64 *printf shims */
 #if defined(CAML_INTERNALS) && defined(__MINGW32__)
@@ -66,73 +65,66 @@
   #define __USE_MINGW_ANSI_STDIO 0
 #endif
 
-#if defined(__MINGW32__)
+#if defined(__MINGW32__) && !__USE_MINGW_ANSI_STDIO && !defined(_UCRT)
 #define ARCH_SIZET_PRINTF_FORMAT "I"
 #else
 #define ARCH_SIZET_PRINTF_FORMAT "z"
 #endif
 
+#define CAML_PRIdSZT ARCH_SIZET_PRINTF_FORMAT "d"
+#define CAML_PRIiSZT ARCH_SIZET_PRINTF_FORMAT "i"
+#define CAML_PRIoSZT ARCH_SIZET_PRINTF_FORMAT "o"
+#define CAML_PRIuSZT ARCH_SIZET_PRINTF_FORMAT "u"
+#define CAML_PRIxSZT ARCH_SIZET_PRINTF_FORMAT "x"
+#define CAML_PRIXSZT ARCH_SIZET_PRINTF_FORMAT "X"
+
 /* Types for 32-bit integers, 64-bit integers, and
    native integers (as wide as a pointer type) */
 
-#ifndef ARCH_INT32_TYPE
+#define ARCH_INT32_TYPE int32_t
+#define ARCH_UINT32_TYPE uint32_t
+
 #if SIZEOF_INT == 4
-#define ARCH_INT32_TYPE int
-#define ARCH_UINT32_TYPE unsigned int
 #define ARCH_INT32_PRINTF_FORMAT ""
 #elif SIZEOF_LONG == 4
-#define ARCH_INT32_TYPE long
-#define ARCH_UINT32_TYPE unsigned long
 #define ARCH_INT32_PRINTF_FORMAT "l"
 #elif SIZEOF_SHORT == 4
-#define ARCH_INT32_TYPE short
-#define ARCH_UINT32_TYPE unsigned short
 #define ARCH_INT32_PRINTF_FORMAT ""
-#else
-#error "No 32-bit integer type available"
-#endif
 #endif
 
+#define ARCH_INT64_TYPE int64_t
+#define ARCH_UINT64_TYPE uint64_t
+
 #if defined(__MINGW32__) && !__USE_MINGW_ANSI_STDIO && !defined(_UCRT)
-  #define ARCH_INT64_TYPE long long
-  #define ARCH_UINT64_TYPE unsigned long long
-  #define ARCH_INT64_PRINTF_FORMAT "I64"
+#define ARCH_INT64_PRINTF_FORMAT "I64"
 #elif defined(_MSC_VER)
-  #define ARCH_INT64_TYPE __int64
-  #define ARCH_UINT64_TYPE unsigned __int64
-  #define ARCH_INT64_PRINTF_FORMAT "I64"
-#else
-  #if SIZEOF_LONG == 8
-    #define ARCH_INT64_TYPE long
-    #define ARCH_UINT64_TYPE unsigned long
-    #define ARCH_INT64_PRINTF_FORMAT "l"
-  #elif SIZEOF_LONGLONG == 8
-    #define ARCH_INT64_TYPE long long
-    #define ARCH_UINT64_TYPE unsigned long long
-    #define ARCH_INT64_PRINTF_FORMAT "ll"
-  #else
-    #error "No 64-bit integer type available"
-  #endif
+#define ARCH_INT64_PRINTF_FORMAT "I64"
+#elif SIZEOF_LONGLONG == 8
+#define ARCH_INT64_PRINTF_FORMAT "ll"
+#elif SIZEOF_LONG == 8
+#define ARCH_INT64_PRINTF_FORMAT "l"
 #endif
+
+typedef intptr_t intnat;
+typedef uintptr_t uintnat;
 
 #if SIZEOF_PTR == SIZEOF_LONG
 /* Standard models: ILP32 or I32LP64 */
-typedef long intnat;
-typedef unsigned long uintnat;
 #define ARCH_INTNAT_PRINTF_FORMAT "l"
 #elif SIZEOF_PTR == SIZEOF_INT
 /* Hypothetical IP32L64 model */
-typedef int intnat;
-typedef unsigned int uintnat;
 #define ARCH_INTNAT_PRINTF_FORMAT ""
 #elif SIZEOF_PTR == 8
 /* Win64 model: IL32P64 */
-typedef int64_t intnat;
-typedef uint64_t uintnat;
 #define ARCH_INTNAT_PRINTF_FORMAT ARCH_INT64_PRINTF_FORMAT
-#else
-#error "No integer type available to represent pointers"
 #endif
+
+#define CAML_PRIdNAT PRIdPTR
+#define CAML_PRIiNAT PRIiPTR
+#define CAML_PRIoNAT PRIoPTR
+#define CAML_PRIuNAT PRIuPTR
+#define CAML_PRIxNAT PRIxPTR
+#define CAML_PRIXNAT PRIXPTR
 
 #define CAML_INTNAT_MIN INTPTR_MIN
 #define CAML_INTNAT_MAX INTPTR_MAX

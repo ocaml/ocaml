@@ -50,12 +50,13 @@ let main argv ppf =
     if !Clflags.plugin then
       Compenv.fatal "-plugin is only supported up to OCaml 4.08.0";
     begin try
-      Compenv.process_deferred_actions
-        (ppf,
-         Optcompile.implementation ~backend,
-         Optcompile.interface,
-         ".cmx",
-         ".cmxa");
+      Compenv.process_deferred_actions {
+        log = ppf;
+        compile_implementation = Optcompile.implementation ~backend;
+        compile_interface = Optcompile.interface;
+        ocaml_mod_ext = ".cmx";
+        ocaml_lib_ext = ".cmxa";
+      }
     with Arg.Bad msg ->
       begin
         prerr_endline msg;

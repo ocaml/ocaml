@@ -94,6 +94,8 @@ val new_global_var: ?name:string -> unit -> type_expr
            (as type variables ['a] in type constraints). *)
 val newobj: type_expr -> type_expr
 val newconstr: Path.t -> type_expr list -> type_expr
+val newmono : type_expr -> type_expr
+        (* Create a new, monomorphic type *)
 val none: type_expr
         (* A dummy type expression *)
 
@@ -200,7 +202,7 @@ val instance_constructor:
 (* Same, for a constructor. Also returns existentials. *)
 
 val instance_parameterized_type:
-        ?keep_names:bool ->
+        ?keep_names:bool -> ?scope:int ->
         type_expr list -> type_expr -> type_expr list * type_expr
 val instance_declaration: type_declaration -> type_declaration
 val generic_instance_declaration: type_declaration -> type_declaration
@@ -209,10 +211,16 @@ val instance_class:
         type_expr list -> class_type -> type_expr list * class_type
 
 val instance_poly:
-        ?keep_names:bool -> fixed:bool ->
-        type_expr list -> type_expr -> type_expr list * type_expr
+        ?keep_names:bool ->
+        type_expr list -> type_expr -> type_expr
         (* Take an instance of a type scheme containing free univars *)
-val polyfy: Env.t -> type_expr -> type_expr list -> type_expr * bool
+val instance_poly_fixed:
+        ?keep_names:bool ->
+        type_expr list -> type_expr -> type_expr list * type_expr
+        (* Take an instance of a type scheme containing free univars for
+           checking that an expression matches this scheme. *)
+
+val polyfy: Env.t -> type_expr -> type_expr list -> type_expr * type_expr list
 
 val instance_label:
   fixed:bool ->
@@ -283,18 +291,28 @@ val unify_gadt:
 val unify_var: Env.t -> type_expr -> type_expr -> unit
         (* Same as [unify], but allow free univars when first type
            is a variable. *)
-val filter_arrow: Env.t -> type_expr -> arg_label -> type_expr * type_expr
-        (* A special case of unification with [l:'a -> 'b].  Raises
-           [Filter_arrow_failed] instead of [Unify]. *)
+
+type filtered_arrow =
+  { ty_param : type_expr;
+    ty_ret : type_expr;
+  }
+
+val filter_arrow: Env.t -> type_expr -> arg_label -> param_hole:bool ->
+        filtered_arrow
+        (* A special case of unification with [l:'a -> 'b]. If [param_hole] is
+           true then ['a] might be initialized with a [Tvar _] hole to be filled
+           later by a [Tpoly _].
+           Raises [Filter_arrow_failed] instead of [Unify]. *)
+val is_really_poly : Env.t -> type_expr -> bool
 val filter_method: Env.t -> string -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}).  Raises
            [Filter_method_failed] instead of [Unify]. *)
 val occur_in: Env.t -> type_expr -> type_expr -> bool
 val deep_occur: type_expr -> type_expr -> bool
 val deep_occur_list: type_expr -> type_expr list -> bool
-val moregeneral: Env.t -> bool -> type_expr -> type_expr -> unit
+val moregeneral: Env.t -> type_expr -> type_expr -> unit
         (* Check if the first type scheme is more general than the second. *)
-val is_moregeneral: Env.t -> bool -> type_expr -> type_expr -> bool
+val is_moregeneral: Env.t -> type_expr -> type_expr -> bool
 val rigidify: type_expr -> type_expr list
         (* "Rigidify" a type and return its type variable *)
 val all_distinct_vars: Env.t -> type_expr list -> bool
@@ -457,6 +475,7 @@ type closed_class_failure = {
 val free_variables: ?env:Env.t -> type_expr -> type_expr list
 val free_variables_list: ?env:Env.t -> type_expr list -> type_expr list
         (* If env present, then check for incomplete definitions too *)
+val contains_nongen_variables: ?env:Env.t -> type_expr -> bool
 val closed_type_expr: ?env:Env.t -> type_expr -> bool
 val closed_type_decl: type_declaration -> type_expr option
 val closed_extension_constructor: extension_constructor -> type_expr option

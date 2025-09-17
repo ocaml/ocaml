@@ -17,6 +17,7 @@
 
 #include <math.h>
 #include <stdbool.h>
+#include <assert.h>
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/backtrace_prim.h"
@@ -447,6 +448,10 @@ typedef struct memprof_orphan_table_s memprof_orphan_table_s,
 /* the mask for a given callback index */
 #define CB_MASK(cb) (1 << ((cb) - 1))
 
+/* How many bits required for an allocation source */
+#define SRC_TYPE_BITS    2
+static_assert((1 << SRC_TYPE_BITS) >= CAML_MEMPROF_NUM_SOURCE_KINDS, "");
+
 /* Structure for each tracked allocation. Six words (with many spare
  * bits in the final word). */
 
@@ -474,7 +479,7 @@ struct entry_s {
 
   /* The source of the allocation: normal allocations, interning,
    * or custom_mem (CAML_MEMPROF_SRC_*). */
-  unsigned int source : 2;
+  unsigned int source : SRC_TYPE_BITS;
 
   /* Is `block` actually an offset? */
   bool offset : 1;
@@ -2211,7 +2216,7 @@ CAMLexport void caml_memprof_enter_thread(memprof_thread_t thread)
 CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
 {
   CAMLparam3(lv, szv, tracker);
-  CAMLlocal1(one_log1m_lambda_v);
+  CAMLlocal2(one_log1m_lambda_v, config);
 
   double lambda = Double_val(lv);
   intnat sz = Long_val(szv);
@@ -2219,19 +2224,6 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
   /* Checks that [lambda] is within range (and not NaN). */
   if (sz < 0 || !(lambda >= 0.0 && lambda <= 1.0))
     caml_invalid_argument("Gc.Memprof.start");
-
-  memprof_domain_t domain = Caml_state->memprof;
-  CAMLassert(domain);
-  CAMLassert(domain->current);
-
-  if (Sampling(thread_config(domain->current))) {
-    caml_failwith("Gc.Memprof.start: already started.");
-  }
-
-  /* Orphan any surviving tracking entries from a previous profile. */
-  if (!orphans_create(domain)) {
-    caml_raise_out_of_memory();
-  }
 
   double one_log1m_lambda = lambda == 1.0 ? 0.0 : 1.0/caml_log1p(-lambda);
   /* Buggy implementations of caml_log1p could produce a
@@ -2246,7 +2238,7 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
 
   one_log1m_lambda_v = caml_copy_double(one_log1m_lambda);
 
-  value config = caml_alloc_shr(CONFIG_FIELDS, 0);
+  config = caml_alloc_shr(CONFIG_FIELDS, 0);
   caml_initialize(&Field(config, CONFIG_FIELD_STATUS),
                   Val_int(CONFIG_STATUS_SAMPLING));
   caml_initialize(&Field(config, CONFIG_FIELD_LAMBDA), lv);
@@ -2257,6 +2249,20 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
     caml_initialize(&Field(config, i), Field(tracker,
                                              i - CONFIG_FIELD_FIRST_CALLBACK));
   }
+
+  /* Final attempt to run allocation callbacks in this thread. */
+  (void) caml_get_value_or_raise(caml_memprof_run_callbacks_res());
+
+  memprof_domain_t domain = Caml_state->memprof;
+  CAMLassert(domain);
+  CAMLassert(domain->current);
+
+  /* Orphan any surviving tracking entries from a previous profile.
+     There should be no allocations after this. */
+  if (!orphans_create(domain)) {
+    caml_raise_out_of_memory();
+  }
+
   CAMLassert(domain->entries.size == 0);
 
   /* Set config pointers of the domain and all its threads */
@@ -2279,25 +2285,25 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
   CAMLreturn(config);
 }
 
+CAMLprim value caml_memprof_is_sampling(value unit)
+{
+  memprof_domain_t domain = Caml_state->memprof;
+  CAMLassert(domain);
+  CAMLassert(domain->current);
+  return Val_bool(Sampling(thread_config(domain->current)));
+}
+
 CAMLprim value caml_memprof_stop(value unit)
 {
+  /* Final attempt to run allocation callbacks in this thread. */
+  (void) caml_get_value_or_raise(caml_memprof_run_callbacks_res());
+
   memprof_domain_t domain = Caml_state->memprof;
   CAMLassert(domain);
   memprof_thread_t thread = domain->current;
   CAMLassert(thread);
-
-  /* Final attempt to run allocation callbacks; don't use
-   * caml_memprof_run_callbacks_res as we only really need allocation
-   * callbacks now. */
-  if (!thread->suspended) {
-    update_suspended(domain, true);
-    caml_result res = entries_run_callbacks_res(thread, &thread->entries);
-    update_suspended(domain, false);
-    (void) caml_get_value_or_raise(res);
-  }
-
   value config = thread_config(thread);
-  if (config == CONFIG_NONE || Status(config) != CONFIG_STATUS_SAMPLING) {
+  if (!Sampling(config)) {
     caml_failwith("Gc.Memprof.stop: no profile running.");
   }
   Set_status(config, CONFIG_STATUS_STOPPED);

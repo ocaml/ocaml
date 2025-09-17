@@ -20,8 +20,8 @@
 #include "mlvalues.h"
 #include "camlatomic.h"
 
-typedef signed char caml_ba_int8;
-typedef unsigned char caml_ba_uint8;
+typedef int8_t caml_ba_int8;
+typedef uint8_t caml_ba_uint8;
 typedef int16_t caml_ba_int16;
 typedef uint16_t caml_ba_uint16;
 

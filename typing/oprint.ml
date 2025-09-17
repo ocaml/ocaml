@@ -339,8 +339,9 @@ and print_simple_out_type ppf =
       print_typargs ppf tyl;
       print_ident ppf id;
       pp_close_box ppf ()
-  | Otyp_object {fields; open_row} ->
-      fprintf ppf "@[<2>< %a >@]" (print_fields open_row) fields
+  | Otyp_object { fields; row} ->
+      fprintf ppf "@[<2>< %a >@]"
+        (print_object_fields row) fields
   | Otyp_stuff s -> pp_print_string ppf s
   | Otyp_var (non_gen, s) -> ty_var ~non_gen ppf s
   | Otyp_variant (row_fields, closed, tags) ->
@@ -368,7 +369,7 @@ and print_simple_out_type ppf =
       print_out_type ppf ty;
       pp_print_char ppf ')';
       pp_close_box ppf ()
-  | Otyp_abstract | Otyp_open
+  | Otyp_abstract | Otyp_open | Otyp_external _
   | Otyp_sum _ | Otyp_manifest (_, _) -> ()
   | Otyp_record lbls -> print_record_decl ppf lbls
   | Otyp_module pack ->
@@ -383,20 +384,25 @@ and print_package ppf pack =
       let sep = if !first then (first := false; "with") else "and" in
       fprintf ppf " %s type %s = %a" sep s print_out_type t
     )
-    pack.opack_cstrs
+    pack.opack_constraints
 and print_record_decl ppf lbls =
   fprintf ppf "{%a@;<1 -2>}"
     (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
-and print_fields open_row ppf =
+and print_object_fields row ppf =
   function
     [] ->
-      if open_row then fprintf ppf "..";
+      begin match row with
+      | Orow_closed -> ()
+      | Orow_open_anonymous -> fprintf ppf ".."
+      | Orow_open ty -> fprintf ppf ".. as %a" print_out_type ty
+      end
   | [s, t] ->
       fprintf ppf "%a : %a" print_lident s print_out_type t;
-      if open_row then fprintf ppf ";@ ";
-      print_fields open_row ppf []
+      if row <> Orow_closed then fprintf ppf ";@ ";
+      print_object_fields row ppf []
   | (s, t) :: l ->
-      fprintf ppf "%s : %a;@ %a" s print_out_type t (print_fields open_row) l
+      fprintf ppf "%s : %a;@ %a"
+        s print_out_type t (print_object_fields row) l
 and print_row_field ppf (l, opt_amp, tyl) =
   let pr_of ppf =
     if opt_amp then fprintf ppf " of@ &@ "
@@ -696,7 +702,7 @@ and print_out_type_decl kwd ppf td =
       (fun (ty1, ty2) ->
          fprintf ppf "@ @[<2>constraint %a =@ %a@]" !out_type ty1
            !out_type ty2)
-      td.otype_cstrs
+      td.otype_constraints
   in
   let type_defined ppf =
     match td.otype_params with
@@ -752,6 +758,8 @@ and print_out_type_decl kwd ppf td =
   | Otyp_open ->
       fprintf ppf " =%a .."
         print_private td.otype_private
+  | Otyp_external name ->
+      fprintf ppf " =@ external %S" name
   | ty ->
       fprintf ppf " =%a@;<1 2>%a"
         print_private td.otype_private

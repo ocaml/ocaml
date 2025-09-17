@@ -22,6 +22,8 @@ open Format
 
 let macosx = (Config.system = "macosx")
 
+let top_bits_ignore = (Config.system = "linux")
+
 (* Machine-specific command-line options *)
 
 let command_line_options = []

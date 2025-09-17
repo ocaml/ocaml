@@ -47,7 +47,7 @@ module Exp :
 
 module List =
   struct
-    type zero
+    type zero = Zero
     type _ t =
       | Nil : zero t
       | Cons : 'a * 'b t -> ('a * 'b) t
@@ -66,7 +66,7 @@ module List =
 [%%expect{|
 module List :
   sig
-    type zero
+    type zero = Zero
     type _ t = Nil : zero t | Cons : 'a * 'b t -> ('a * 'b) t
     val head : ('a * 'b) t -> 'a
     val tail : ('a * 'b) t -> 'b t
@@ -401,8 +401,7 @@ end;;
 Line 5, characters 6-9:
 5 |       Foo -> 5
           ^^^
-Error: This pattern matches values of type "'a t"
-       but a pattern was expected which matches values of type "int"
+Error: This pattern should not be a constructor, the expected type is "int"
 |}];;
 
 type _ t = Int : int t ;;
@@ -807,11 +806,13 @@ Lines 1-2, characters 4-15:
 1 | ....f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 2 |   fun Eq o -> o..............
 Error: This definition has type
-         "'c 'd. ('d, 'd) eq -> ([< `A of 'd | `B ] as 'c) -> 'c"
+         "'c 'b. ('b, 'b) eq -> ([< `A of 'b | `B ] as 'c) -> 'c"
        which is less general than
-         "'e 'f 'a 'b.
+         "'d 'e 'a 'b.
            ('a, 'b) eq ->
-           ([< `A of 'a | `B ] as 'f) -> ([< `A of 'b | `B ] as 'e)"
+           ([< `A of 'a | `B ] as 'e) -> ([< `A of 'b | `B ] as 'd)"
+       The universal type variable "'b" in the first type matches multiple
+       distinct variables in the second type.
 |}];;
 
 let f : type a b. (a,b) eq -> [`A of a | `B] -> [`A of b | `B] =
@@ -1068,9 +1069,9 @@ type _ int_bar = IB_constr : < bar : int; .. > int_bar
 Line 10, characters 3-4:
 10 |   (x:<foo:int>)
         ^
-Error: The value "x" has type "t" = "< foo : int; .. >"
+Error: The value "x" has type "t" = "< foo : int; .. as $0 >"
        but an expression was expected of type "< foo : int >"
-       Type "$0" = "< bar : int; .. >" is not compatible with type "<  >"
+       Type "$0" = "< bar : int; .. as $1 >" is not compatible with type "<  >"
        The second object type has no method "bar"
 |}];;
 
@@ -1082,9 +1083,10 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
 Line 3, characters 3-4:
 3 |   (x:<foo:int;bar:int>)
        ^
-Error: The value "x" has type "t" = "< foo : int; .. >"
+Error: The value "x" has type "t" = "< foo : int; .. as $0 >"
        but an expression was expected of type "< bar : int; foo : int >"
-       Type "$0" = "< bar : int; .. >" is not compatible with type "< bar : int >"
+       Type "$0" = "< bar : int; .. as $1 >" is not compatible with type
+         "< bar : int >"
        The first object type has an abstract row, it cannot be closed
 |}];;
 
@@ -1096,14 +1098,14 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
 Line 3, characters 2-26:
 3 |   (x:<foo:int;bar:int;..>)
       ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "< bar : int; foo : int; .. >"
+Error: This expression has type "< bar : int; foo : int; .. as $1 >"
        but an expression was expected of type "'a"
        The type constructor "$1" would escape its scope
 |}, Principal{|
 Line 3, characters 2-26:
 3 |   (x:<foo:int;bar:int;..>)
       ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "< bar : int; foo : int; .. >"
+Error: This expression has type "< bar : int; foo : int; .. as $1 >"
        but an expression was expected of type "'a"
        This instance of "$1" is ambiguous:
        it would escape the scope of its equation

@@ -132,8 +132,9 @@ void caml_set_minor_heap_size (asize_t wsize)
     CAML_EV_COUNTER (EV_C_FORCE_MINOR_SET_MINOR_HEAP_SIZE, 1);
     caml_minor_collection();
   }
+  CAMLassert (domain_state->young_ptr == domain_state->young_end);
 
-  if(caml_reallocate_minor_heap(wsize) < 0) {
+  if(caml_reallocate_minor_heap_arena(wsize) < 0) {
     caml_fatal_error("Fatal error: No memory for minor heap");
   }
 
@@ -233,7 +234,7 @@ static int try_update_object_header(value v, volatile value *p, value result,
 
 /* oldify_one is a no-op outside the minor heap. */
 static scanning_action_flags oldify_scanning_flags =
-  SCANNING_ONLY_YOUNG_VALUES;
+  SCANNING_ONLY_YOUNG_VALUES | SCANNING_ONLY_RECENT_FRAMES;
 
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
@@ -289,7 +290,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
     {
       /* Conflict - fix up what we allocated on the major heap */
       *Hp_val(result) = Make_header(1, No_scan_tag,
-                                    caml_global_heap_state.MARKED);
+                                    caml_allocation_status());
       #ifdef DEBUG
       Field(result, 0) = Val_long(1);
       Field(result, 1) = Val_long(1);
@@ -315,7 +316,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
     } else {
       /* Conflict - fix up what we allocated on the major heap */
       *Hp_val(result) = Make_header(sz, No_scan_tag,
-                                    caml_global_heap_state.MARKED);
+                                    caml_allocation_status());
       #ifdef DEBUG
       {
         for (int c = 0; c < sz; c++) {
@@ -336,7 +337,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
     if( !try_update_object_header(v, p, result, 0) ) {
       /* Conflict */
       *Hp_val(result) = Make_header(sz, No_scan_tag,
-                                    caml_global_heap_state.MARKED);
+                                    caml_allocation_status());
       #ifdef DEBUG
       for(mlsize_t i = 0; i < sz; i++) {
         Field(result, i) = Val_long(1);
@@ -368,7 +369,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
         goto tail_call;
       } else {
         *Hp_val(result) = Make_header(1, No_scan_tag,
-                                      caml_global_heap_state.MARKED);
+                                      caml_allocation_status());
         #ifdef DEBUG
         Field(result, 0) = Val_long(1);
         #endif
@@ -579,10 +580,9 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
         ref_end = foreign_major_ref->ptr;
       }
 
-      caml_gc_log("idx: %d, foreign_domain: %d, ref_size: %"
-        ARCH_INTNAT_PRINTF_FORMAT"d, refs_per_domain: %"
-        ARCH_INTNAT_PRINTF_FORMAT"d, ref_base: %p, ref_ptr: %p, ref_start: %p"
-        ", ref_end: %p",
+      caml_gc_log("idx: %d, foreign_domain: %d, ref_size: %" CAML_PRIdNAT ", "
+        "refs_per_domain: %" CAML_PRIdNAT ", ref_base: %p, ref_ptr: %p, "
+        "ref_start: %p, ref_end: %p",
         participating_idx, foreign_domain->id, major_ref_size, refs_per_domain,
         foreign_major_ref->base, foreign_major_ref->ptr, ref_start, ref_end);
 
@@ -637,7 +637,7 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
   promote_result result = oldify_mopup (&st, 1); /* ephemerons promoted here */
   CAML_EV_END(EV_MINOR_REMEMBERED_SET_PROMOTE);
   CAML_EV_END(EV_MINOR_REMEMBERED_SET);
-  caml_gc_log("promoted %d roots, %" ARCH_INTNAT_PRINTF_FORMAT "u bytes",
+  caml_gc_log("promoted %d roots, %" CAML_PRIuNAT " bytes",
               remembered_roots, st.live_bytes);
 
 #ifdef DEBUG
@@ -665,10 +665,6 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
   oldify_mopup (&st, 0);
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS_PROMOTE);
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS);
-
-  CAML_EV_BEGIN(EV_MINOR_MEMPROF_CLEAN);
-  caml_memprof_after_minor_gc(domain);
-  CAML_EV_END(EV_MINOR_MEMPROF_CLEAN);
 
   domain->young_ptr = domain->young_end;
   /* Trigger a GC poll when half of the minor heap is filled. At that point, a
@@ -710,8 +706,12 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
   call_timing_hook(&caml_minor_gc_end_hook);
   CAML_EV_COUNTER(EV_C_MINOR_PROMOTED,
                   Bsize_wsize(domain->allocated_words - prev_alloc_words));
+  CAML_EV_COUNTER(EV_C_MINOR_PROMOTED_WORDS,
+                  domain->allocated_words - prev_alloc_words);
 
   CAML_EV_COUNTER(EV_C_MINOR_ALLOCATED, minor_allocated_bytes);
+  CAML_EV_COUNTER(EV_C_MINOR_ALLOCATED_WORDS,
+                  Whsize_wosize(minor_allocated_bytes));
 
   CAML_EV_END(EV_MINOR);
   if (minor_allocated_bytes == 0)
@@ -837,8 +837,19 @@ int caml_do_opportunistic_major_slice
 
 /* Make sure the minor heap is empty by performing a minor collection
    if needed.
+
+   This function also samples [caml_gc_mark_phase_requested] to see whether
+   [caml_mark_roots_stw] should be called. To guarantee that all domains
+   agree on whether the roots should be marked, this variable is sampled
+   only once, instead of having domains check it individually.
 */
-void caml_empty_minor_heap_setup(caml_domain_state* domain_unused) {
+void caml_empty_minor_heap_setup(caml_domain_state* domain_unused,
+                                 void *mark_requested_p) {
+  /* Check whether the mark phase has been requested */
+  *(uintnat*)mark_requested_p =
+    atomic_load_relaxed(&caml_gc_mark_phase_requested)
+    ? atomic_exchange(&caml_gc_mark_phase_requested, 0)
+    : 0;
   /* Increment the total number of minor collections done in the program */
   nonatomic_increment_counter (&caml_minor_collections_count);
   caml_plat_barrier_reset(&minor_gc_end_barrier);
@@ -847,7 +858,7 @@ void caml_empty_minor_heap_setup(caml_domain_state* domain_unused) {
 /* must be called within a STW section */
 static void
 caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
-                                         void* unused,
+                                         void* mark_requested_p,
                                          int participating_count,
                                          caml_domain_state** participating)
 {
@@ -855,6 +866,9 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
   uintnat* initial_young_ptr = (uintnat*)domain->young_ptr;
   CAMLassert(caml_domain_is_in_stw());
 #endif
+
+  /* mark_requested_p must be read before minor GC barrier */
+  uintnat mark_requested = *(uintnat*)mark_requested_p;
 
   if( participating[0] == domain ) {
     nonatomic_increment_counter(&caml_minor_cycles_started);
@@ -870,6 +884,15 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
     ephe_clean_minor(domain);
     CAML_EV_END(EV_MINOR_EPHE_CLEAN);
   }
+
+  CAML_EV_BEGIN(EV_MINOR_MEMPROF_CLEAN);
+  caml_gc_log("updating memprof");
+  caml_memprof_after_minor_gc(domain);
+  CAML_EV_END(EV_MINOR_MEMPROF_CLEAN);
+
+  /* while the minor heap is empty, allow the major GC to mark roots */
+  if (mark_requested)
+    caml_mark_roots_stw(participating_count, participating);
 
   CAML_EV_BEGIN(EV_MINOR_FINALIZED);
   caml_gc_log("finalizing dead minor custom blocks");
@@ -894,13 +917,15 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
 
   CAML_EV_END(EV_MINOR_CLEAR);
   caml_gc_log("finished stw empty_minor_heap");
+  CAMLassert(domain->young_ptr == domain->young_end);
 }
 
-static void caml_stw_empty_minor_heap (caml_domain_state* domain, void* unused,
+static void caml_stw_empty_minor_heap (caml_domain_state* domain,
+                                       void* mark_requested_p,
                                        int participating_count,
                                        caml_domain_state** participating)
 {
-  caml_stw_empty_minor_heap_no_major_slice(domain, unused,
+  caml_stw_empty_minor_heap_no_major_slice(domain, mark_requested_p,
                                            participating_count, participating);
 }
 
@@ -911,13 +936,15 @@ void caml_empty_minor_heap_no_major_slice_from_stw(
   int participating_count,
   caml_domain_state** participating)
 {
+
+  static uintnat mark_requested; /* Written by only one domain */
   Caml_global_barrier_if_final(participating_count) {
-    caml_empty_minor_heap_setup(domain);
+    caml_empty_minor_heap_setup(domain, &mark_requested);
   }
 
   /* if we are entering from within a major GC STW section then
      we do not schedule another major collection slice */
-  caml_stw_empty_minor_heap_no_major_slice(domain, (void*)0,
+  caml_stw_empty_minor_heap_no_major_slice(domain, &mark_requested,
                                            participating_count, participating);
 }
 
@@ -929,9 +956,11 @@ int caml_try_empty_minor_heap_on_all_domains (void)
   #endif
 
   caml_gc_log("requesting stw empty_minor_heap");
+  uintnat mark_requested = 0;
   return caml_try_run_on_all_domains_with_spin_work(
     1, /* synchronous */
-    &caml_stw_empty_minor_heap, 0, /* stw handler */
+    &caml_stw_empty_minor_heap, /* stw handler */
+    &mark_requested,
     &caml_empty_minor_heap_setup, /* leader setup */
     &caml_do_opportunistic_major_slice, 0 /* enter spin work */);
     /* leaves when done by default*/
@@ -1078,7 +1107,7 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
     ((struct generic_table *) tbl, sizeof (value *),
      EV_C_REQUEST_MINOR_REALLOC_REF_TABLE,
      "ref_table threshold crossed\n",
-     "Growing ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+     "Growing ref_table to %" CAML_PRIdNAT "k bytes\n",
      "ref_table overflow");
 }
 
@@ -1088,7 +1117,7 @@ void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *tbl)
     ((struct generic_table *) tbl, sizeof (struct caml_ephe_ref_elt),
      EV_C_REQUEST_MINOR_REALLOC_EPHE_REF_TABLE,
      "ephe_ref_table threshold crossed\n",
-     "Growing ephe_ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+     "Growing ephe_ref_table to %" CAML_PRIdNAT "k bytes\n",
      "ephe_ref_table overflow");
 }
 
@@ -1098,6 +1127,6 @@ void caml_realloc_custom_table (struct caml_custom_table *tbl)
     ((struct generic_table *) tbl, sizeof (struct caml_custom_elt),
      EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE,
      "custom_table threshold crossed\n",
-     "Growing custom_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+     "Growing custom_table to %" CAML_PRIdNAT "k bytes\n",
      "custom_table overflow");
 }

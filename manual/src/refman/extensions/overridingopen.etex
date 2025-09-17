@@ -1,3 +1,7 @@
+\section{s:explicit-overriding-open}{Overriding in open statements}
+%HEVEA\cutname{overridingopen.html}
+\ikwd{open.\@\texttt{open\char33}}
+
 (Introduced in OCaml 4.01)
 
 \begin{syntax}

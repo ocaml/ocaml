@@ -50,9 +50,9 @@ val f : (module S with type t = int) -> int = <fun>
 
 let f (module M : S with type t = 'a) = M.x;; (* Error *)
 [%%expect{|
-Line 1, characters 14-15:
+Line 1, characters 6-37:
 1 | let f (module M : S with type t = 'a) = M.x;; (* Error *)
-                  ^
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type of this packed module contains variables:
        "(module S with type t = 'a)"
 |}];;
@@ -336,6 +336,7 @@ module type MapT =
     val partition : (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val split : key -> 'a t -> 'a t * 'a option * 'a t
     val is_empty : 'a t -> bool
+    val is_singleton : 'a t -> bool
     val mem : key -> 'a t -> bool
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
     val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
@@ -392,6 +393,7 @@ module SSMap :
     val partition : (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val split : key -> 'a t -> 'a t * 'a option * 'a t
     val is_empty : 'a t -> bool
+    val is_singleton : 'a t -> bool
     val mem : key -> 'a t -> bool
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
     val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int

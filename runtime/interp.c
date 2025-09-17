@@ -363,7 +363,7 @@ value caml_bytecode_interpreter(code_t prog, asize_t prog_size,
     caml_bcodcount++;
     if (caml_icount-- == 0) caml_stop_here ();
     if (caml_params->trace_level>1)
-      printf("\n##%" ARCH_INTNAT_PRINTF_FORMAT "d\n", caml_bcodcount);
+      printf("\n##%" CAML_PRIdNAT "\n", caml_bcodcount);
     if (caml_params->trace_level>0) caml_disasm_instr(pc);
     if (caml_params->event_trace>0) caml_event_trace(pc);
     if (caml_params->trace_level>1) {
@@ -1417,9 +1417,7 @@ do_resume: {
 #ifdef _MSC_VER
       CAMLunreachable();
 #else
-      caml_fatal_error("bad opcode (%"
-                           ARCH_INTNAT_PRINTF_FORMAT "x)",
-                           (intnat) *(pc-1));
+      caml_fatal_error("bad opcode (%" CAML_PRIxNAT ")", (intnat) *(pc-1));
 #endif
     }
   }

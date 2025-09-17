@@ -83,6 +83,7 @@ ocamltest_libunix=None
 ocamltest_unix_impl="dummy"
 unix_library=""
 unix_directory=""
+diff_supports_color=false
 
 # Information about the package
 
@@ -122,6 +123,7 @@ AC_SUBST([CMXS_MAGIC_NUMBER], [CMXS__MAGIC_NUMBER])
 AC_SUBST([CMT_MAGIC_NUMBER], [CMT__MAGIC_NUMBER])
 AC_SUBST([LINEAR_MAGIC_NUMBER], [LINEAR__MAGIC_NUMBER])
 AC_SUBST([CC])
+AC_SUBST([ocaml_cc_vendor])
 AC_SUBST([SAK_BUILD])
 AC_SUBST([SAK])
 AC_SUBST([encode_C_literal])
@@ -272,7 +274,6 @@ AC_CONFIG_FILES([Makefile.config])
 AC_CONFIG_FILES([stdlib/sys.ml])
 AC_CONFIG_FILES([manual/src/version.tex])
 AC_CONFIG_FILES([manual/src/html_processing/src/common.ml])
-AC_CONFIG_FILES([ocamltest/ocamltest_config.ml])
 AC_CONFIG_FILES([otherlibs/dynlink/dynlink_config.ml])
 AC_CONFIG_FILES([utils/config.common.ml])
 AC_CONFIG_FILES([utils/config.generated.ml])
@@ -302,7 +303,20 @@ AC_CONFIG_COMMANDS_PRE(OCAML_QUOTED_STRING_ID)
 
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
+# Allow "ocaml" to be used as the last component of the target triplet in case
+# we are using a custom toolchain for a freestanding target. To do so, the
+# target triplet is temporarily rewritten to "<arch>-none" to compute the
+# canonical target
+save_target_alias="$target_alias"
+AS_CASE([$target_alias],
+  [*-*-ocaml],
+    [ac_save_IFS=$IFS
+    IFS='-'
+    set x $target_alias
+    target_alias="$2-none"
+    IFS=$ac_save_IFS])
 AC_CANONICAL_TARGET
+target_alias="$save_target_alias"
 
 # Override cross_compiling and ac_tool_prefix variables since the C toolchain is
 # used to generate target code when building a cross compiler
@@ -818,12 +832,16 @@ otherlibraries="dynlink runtime_events"
 otherlibs="runtime_events"
 optional_libraries="$optional_libraries otherlibs/dynlink/dynlink"
 lib_dynlink=true
-dldir=otherlibs/dynlink
-AC_CONFIG_LINKS([
-  $dldir/dynlink_cmo_format.mli:file_formats/cmo_format.mli
-  $dldir/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli
-  $dldir/dynlink_platform_intf.mli:$dldir/dynlink_platform_intf.ml
-])
+dnl dldir needs to be expanded by autoconf, not by configure, if it were instead
+dnl put in $dldir, this would end up in config.status, except that the value
+dnl would be missing.
+m4_define([dldir], [otherlibs/dynlink])
+AC_CONFIG_LINKS(
+  dldir[/dynlink_cmo_format.mli:file_formats/cmo_format.mli]
+  dldir[/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli]
+  dldir[/dynlink_platform_intf.mli:]dldir[/dynlink_platform_intf.ml]
+)
+m4_undefine([dldir])
 lib_runtime_events=true
 AS_IF([test x"$enable_unix_lib" != "xno"],
   [enable_unix_lib=yes
@@ -915,6 +933,12 @@ AS_CASE([$ocaml_cc_vendor],
   cc_warnings="-Wall -Wint-conversion -Wstrict-prototypes \
 -Wold-style-definition -Wundef"])
 
+AS_CASE([$ocaml_cc_vendor],
+  [msvc-*-clang-*],
+    [AX_CHECK_COMPILE_FLAG([-Wno-cast-function-type-mismatch],
+      [cc_warnings="$cc_warnings -Wno-cast-function-type-mismatch"], [],
+      [$warn_error_flag])])
+
 # Use -Wold-style-declaration if supported
 AX_CHECK_COMPILE_FLAG([-Wold-style-declaration],
   [cc_warnings="$cc_warnings -Wold-style-declaration"], [],
@@ -992,9 +1016,13 @@ AS_CASE([$ocaml_cc_vendor],
   [common_cflags="-O"])
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
+# Enable 64-bit time_t in time.h
 AS_CASE([$target],
   [i686-w64-mingw32*],
-    [internal_cflags="$internal_cflags -mfpmath=sse -msse2"])
+    [internal_cflags="$internal_cflags -mfpmath=sse -msse2"
+    # This instructs _mingw.h to adopt the switch in Visual Studio 8 (2005) to
+    # make time_t a 64-bit value.
+    internal_cppflags="$internal_cppflags -D__MINGW_USE_VC2005_COMPAT"])
 
 # Use 64-bit file offset if possible
 # See also AC_SYS_LARGEFILE
@@ -1169,7 +1197,9 @@ AS_CASE([$ocaml_cc_vendor,$target],
     [oc_ldflags='-brtl -bexpfull'
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
   [gcc-*,powerpc-*-linux*],
-    [oc_ldflags="-mbss-plt"])
+    [oc_ldflags="-mbss-plt"],
+  [*,*-*-none|*,*-*-elf*],
+    [ostype="None"])
 
 # How to build sak
 
@@ -1603,7 +1633,19 @@ AS_CASE([$target],
   [riscv64-*-linux*],
     [has_native_backend=yes; arch=riscv; model=riscv64; system=linux],
   [x86_64-*-gnu*],
-    [has_native_backend=yes; arch=amd64; system=gnu]
+    [has_native_backend=yes; arch=amd64; system=gnu],
+  [aarch64-*-none|arm64-*-none|aarch64-*-elf*|arm64-*-elf*],
+    [has_native_backend=yes; arch=arm64; system=none],
+  [powerpc64le*-*-none|powerpc64le*-*-elf*],
+    [has_native_backend=yes; arch=power; model=ppc64le; system=none],
+  [powerpc64*-*-none|powerpc64*-*-elf*],
+    [has_native_backend=yes; arch=power; model=ppc64; system=none],
+  [riscv64-*-none|riscv64-*-elf*],
+    [has_native_backend=yes; arch=riscv; model=riscv64; system=none],
+  [s390x*-*-none|s390x*-*-elf*],
+    [has_native_backend=yes; arch=s390x; model=z10; system=none],
+  [x86_64-*-none|x86_64-*-elf*],
+    [has_native_backend=yes; arch=amd64; system=none]
 )
 
 AS_CASE([$arch],
@@ -1952,6 +1994,63 @@ AS_IF([$tsan],
     [AC_MSG_ERROR([libtsan is necessary for TSan but cannot be found.
                    Try installing it on your system.])])
   LDFLAGS="$SAVED_LDFLAGS"
+
+# We use tsan builtins which are internal functions and might not be
+# backwards compatible. We explicitly check if the compiler uses the
+# same declarations we expect.
+# Some tsan builtins like __tsan_func_exit() have either of two
+# signatures, void (void) or void (void *) (PR #14082).
+# We first do a single check for all builtins for which we expect
+# only one signature, then we check builtins for which we expect one
+# of multiple signatures and set a preprocessor definition according
+# to which one is found.
+  AC_CACHE_CHECK([for ThreadSanitizer builtins],
+    [ocaml_cv_tsan_builtins],
+    [saved_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LDFLAGS -fsanitize=thread $warn_error_flag"
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+void AnnotateHappensBefore(const char *f, int l, void *addr);
+void AnnotateHappensAfter (const char *f, int l, void *addr);
+void __tsan_func_entry   (void *);
+void __tsan_write8       (void *location);
+      ]],[[
+  AnnotateHappensBefore(__FILE__, __LINE__, (void*)0);
+  AnnotateHappensAfter (__FILE__, __LINE__, (void*)0);
+  __tsan_func_entry   ((void*)0);
+  __tsan_write8       ((void*)0);
+      ]])],
+      [ocaml_cv_tsan_builtins=yes],
+      [ocaml_cv_tsan_builtins=no])
+    LDFLAGS="$saved_LDFLAGS"])
+
+  AS_IF([test "$ocaml_cv_tsan_builtins" = no],
+    [AC_MSG_ERROR([libtsan doesn't provide the expected builtins])])
+
+  AC_CACHE_CHECK([how many arguments __tsan_func_exit() takes],
+    [ocaml_cv_func_which___tsan_func_exit],
+    [saved_LDFLAGS="$LDFLAGS"
+
+    # We need warning flags as using the wrong builtins is often a warning
+    LDFLAGS="$LDFLAGS -fsanitize=thread $warn_error_flag"
+    AC_LINK_IFELSE([AC_LANG_PROGRAM(
+        [[void __tsan_func_exit(void);]],
+        [[__tsan_func_exit();]])],
+      [ocaml_cv_func_which___tsan_func_exit=void_void],
+      # Else branch if the first program fails to link
+      [AC_LINK_IFELSE([AC_LANG_PROGRAM(
+          [[void __tsan_func_exit(void *);]],
+          [[__tsan_func_exit((void *)0);]])],
+        [ocaml_cv_func_which___tsan_func_exit=void_void_p],
+        [ocaml_cv_func_which___tsan_func_exit=no])])
+    LDFLAGS="$saved_LDFLAGS"])
+
+  # Define a C macro based on the detected __tsan_func_exit signature
+  AS_CASE([$ocaml_cv_func_which___tsan_func_exit],
+    [void_void_p], [AC_DEFINE([HAVE___TSAN_FUNC_EXIT_VOID_VOID_P], [1],
+                  [ThreadSanitizer exit function signature: void (void*)])],
+    [void_void], [AC_DEFINE([HAVE___TSAN_FUNC_EXIT_VOID_VOID], [1],
+                  [ThreadSanitizer exit function signature: void (void)])],
+    [AC_MSG_ERROR([libtsan uses an unexpected signature for __tsan_func_exit])])
 
   AS_CASE([$ocaml_cc_vendor],
     [gcc-[[0123456789]]-*|gcc-10-*|clang-*],
@@ -2512,20 +2611,15 @@ AC_LINK_IFELSE(
     AC_DEFINE([HAS_BSD_GETAFFINITY_NP], [1])],
     [AC_MSG_RESULT([pthread_getaffinity_np not found])])])
 
+# pthread_cancel isn't implemented on Android Bionic libc
+AC_CHECK_FUNCS([pthread_cancel])
+
+AC_CHECK_FUNCS([pthread_setname_np pthread_set_name_np], [break])
+
 ## prctl
 AC_CHECK_FUNCS(
   [prctl],
   [AC_DEFINE([HAS_PRCTL], [1])])
-
-## pthread_setname_np
-AC_CHECK_FUNCS(
-  [pthread_setname_np],
-  [AC_DEFINE([HAS_PTHREAD_SETNAME_NP], [1])])
-
-## pthread_set_name_np
-AC_CHECK_FUNCS(
-  [pthread_set_name_np],
-  [AC_DEFINE([HAS_PTHREAD_SET_NAME_NP], [1])])
 
 ## SetThreadDescription
 AC_CHECK_FUNCS(
@@ -2620,14 +2714,26 @@ AS_CASE([$enable_ocamltest,OCAML__DEVELOPMENT_VERSION],
     ocamltest_target=ocamltest
     ocamltest_opt_target=ocamltest.opt
     ocamltest='ocamltest'
+    AS_IF([$native_compiler],
+      [optional_native_tools="$optional_native_tools \
+testsuite/tools/test_in_prefix.opt"],
+      [optional_bytecode_tools="$optional_bytecode_tools \
+testsuite/tools/test_in_prefix"])
     testsuite_tools='testsuite/tools/codegen testsuite/tools/expect'
     optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools"],
   [build_ocamltest=false
   ocamltest=''])
 
+# config.status needs the values of ocamltest_unix_mod and unix_or_win32
+# for creating symlinks
+AC_CONFIG_COMMANDS([links], [], [
+  ocamltest_unix_mod='$ocamltest_unix_mod'
+  unix_or_win32='$unix_or_win32'])
+
+ocamltest_unix_mod="ocamltest/ocamltest_unix_${ocamltest_unix_impl}.ml"
 AS_IF([$build_ocamltest],
   [optional_libraries="$optional_libraries testsuite/lib/testing"
-  ocamltest_unix_mod="ocamltest/ocamltest_unix_${ocamltest_unix_impl}.ml"
+  AC_CONFIG_FILES([ocamltest/ocamltest_config.ml])
   AC_CONFIG_LINKS([
     ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}
   ])

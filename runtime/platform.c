@@ -417,15 +417,12 @@ void* caml_mem_map(uintnat size, int reserve_only)
   void* mem = caml_plat_mem_map(size, reserve_only);
 
   if (mem == 0) {
-    CAML_GC_MESSAGE(ADDRSPACE,
-                    "mmap %" ARCH_INTNAT_PRINTF_FORMAT "d bytes failed",
-                    size);
+    CAML_GC_MESSAGE(ADDRSPACE, "mmap %" CAML_PRIdNAT " bytes failed", size);
     return 0;
   }
 
-  CAML_GC_MESSAGE(ADDRSPACE,
-                  "mmap %" ARCH_INTNAT_PRINTF_FORMAT "d"
-                  " bytes at %p for heaps\n", size, mem);
+  CAML_GC_MESSAGE(ADDRSPACE, "mmap %" CAML_PRIdNAT " bytes at %p for heaps\n",
+                  size, mem);
 
 #ifdef DEBUG
   caml_lf_skiplist_insert(&mmap_blocks, (uintnat)mem, size);
@@ -437,9 +434,8 @@ void* caml_mem_map(uintnat size, int reserve_only)
 void* caml_mem_commit(void* mem, uintnat size)
 {
   CAMLassert(Is_page_aligned(size));
-  CAML_GC_MESSAGE(ADDRSPACE,
-                  "commit %" ARCH_INTNAT_PRINTF_FORMAT "d"
-                  " bytes at %p for heaps\n", size, mem);
+  CAML_GC_MESSAGE(ADDRSPACE, "commit %" CAML_PRIdNAT " bytes at %p for heaps\n",
+                  size, mem);
   return caml_plat_mem_commit(mem, size);
 }
 
@@ -447,8 +443,8 @@ void caml_mem_decommit(void* mem, uintnat size)
 {
   if (size) {
     CAML_GC_MESSAGE(ADDRSPACE,
-                    "decommit %" ARCH_INTNAT_PRINTF_FORMAT "d"
-                    " bytes at %p for heaps\n", size, mem);
+                    "decommit %" CAML_PRIdNAT " bytes at %p for heaps\n",
+                    size, mem);
     caml_plat_mem_decommit(mem, size);
   }
 }
@@ -460,9 +456,8 @@ void caml_mem_unmap(void* mem, uintnat size)
   CAMLassert(caml_lf_skiplist_find(&mmap_blocks, (uintnat)mem, &data) != 0);
   CAMLassert(data == size);
 #endif
-  CAML_GC_MESSAGE(ADDRSPACE,
-                  "munmap %" ARCH_INTNAT_PRINTF_FORMAT "d"
-                  " bytes at %p for heaps\n", size, mem);
+  CAML_GC_MESSAGE(ADDRSPACE, "munmap %" CAML_PRIdNAT " bytes at %p for heaps\n",
+                  size, mem);
   caml_plat_mem_unmap(mem, size);
 #ifdef DEBUG
   caml_lf_skiplist_remove(&mmap_blocks, (uintnat)mem);

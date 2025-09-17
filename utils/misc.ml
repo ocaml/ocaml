@@ -253,6 +253,16 @@ module Stdlib = struct
       in
       loop 0
 
+    let rec to_utf_8_seq b i () =
+      if i >= Bytes.length b then
+        Seq.Nil
+      else
+        let next = Bytes.get_utf_8_uchar b i in
+        let u = Uchar.utf_decode_uchar next in
+        Seq.Cons(u, to_utf_8_seq b (i + Uchar.utf_decode_length next))
+
+    let to_utf_8_seq s = to_utf_8_seq (Bytes.unsafe_of_string s) 0
+
     let print ppf t =
       Format.pp_print_string ppf t
   end
@@ -1127,6 +1137,14 @@ let get_build_path_prefix_map =
           | Ok map -> map_cache := Some map
     end;
     !map_cache
+
+let invert_build_path_prefix_map path =
+  match get_build_path_prefix_map () with
+  | None -> [path]
+  | Some prefix_map ->
+    match Build_path_prefix_map.invert_all prefix_map path with
+    | [] -> [path]
+    | matches -> matches
 
 let debug_prefix_map_flags () =
   if not Config.as_has_debug_prefix_map then

@@ -1532,7 +1532,7 @@ let simplify_constant_defining_value
       in
       r, constant_defining_value, A.value_block tag (Array.of_list fields)
     | Set_of_closures set_of_closures ->
-      if Variable.Map.cardinal set_of_closures.free_vars <> 0 then begin
+      if not (Variable.Map.is_empty set_of_closures.free_vars) then begin
         Misc.fatal_errorf "Set of closures bound by [Let_symbol] is not \
                            closed: %a"
           Flambda.print_set_of_closures set_of_closures

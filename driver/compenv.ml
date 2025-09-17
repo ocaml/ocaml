@@ -629,12 +629,28 @@ type deferred_action =
 let c_object_of_filename name =
   Filename.chop_suffix (Filename.basename name) ".c" ^ Config.ext_obj
 
-let process_action
-    (ppf, implementation, interface, ocaml_mod_ext, ocaml_lib_ext) action =
+type action_context = {
+  log : Format.formatter;
+  compile_implementation:
+    start_from:Clflags.Compiler_pass.t ->
+    source_file:string -> output_prefix:string -> unit;
+  compile_interface:
+    source_file:string -> output_prefix:string -> unit;
+  ocaml_mod_ext: string;
+  ocaml_lib_ext: string;
+}
+
+let process_action ctx action =
+  let { log = ppf;
+        compile_implementation;
+        compile_interface;
+        ocaml_mod_ext;
+        ocaml_lib_ext;
+      } = ctx in
   let impl ~start_from name =
     readenv ppf (Before_compile name);
     let opref = output_prefix name in
-    implementation ~start_from ~source_file:name ~output_prefix:opref;
+    compile_implementation ~start_from ~source_file:name ~output_prefix:opref;
     objfiles := (opref ^ ocaml_mod_ext) :: !objfiles
   in
   match action with
@@ -643,7 +659,7 @@ let process_action
   | ProcessInterface name ->
       readenv ppf (Before_compile name);
       let opref = output_prefix name in
-      interface ~source_file:name ~output_prefix:opref;
+      compile_interface ~source_file:name ~output_prefix:opref;
       if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
   | ProcessCFile name ->
       readenv ppf (Before_compile name);

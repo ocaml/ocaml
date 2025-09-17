@@ -230,11 +230,11 @@ let pp_clear_queue state =
 
 (* Pp_infinity: large value for default tokens size.
 
-   Pp_infinity is documented as being greater than 1e10; to avoid
+   Pp_infinity is documented as being greater than 1e9; to avoid
    confusion about the word 'greater', we choose pp_infinity greater
-   than 1e10 + 1; for correct handling of tests in the algorithm,
-   pp_infinity must be even one more than 1e10 + 1; let's stand on the
-   safe side by choosing 1.e10+10.
+   than 1e9 + 1; for correct handling of tests in the algorithm,
+   pp_infinity must be even one more than 1e9 + 1; let's stand on the
+   safe side by choosing 1e9 + 10.
 
    Pp_infinity could probably be 1073741823 that is 2^30 - 1, that is
    the minimal upper bound for integers; now that max_int is defined,
@@ -244,7 +244,7 @@ let pp_clear_queue state =
    must carefully double-check all the integer arithmetic operations
    that involve pp_infinity, since any overflow would wreck havoc the
    pretty-printing algorithm's invariants. Given that this arithmetic
-   correctness check is difficult and error prone and given that 1e10
+   correctness check is difficult and error prone and given that 1e9
    + 1 is in practice large enough, there is no need to attempt to set
    pp_infinity to the theoretically maximum limit. It is not worth the
    burden ! *)
@@ -486,7 +486,7 @@ let initialize_scan_stack stack =
   Stack.push { left_total = -1; queue_elem } stack
 
 (* Setting the size of boxes on scan stack:
-   if ty = true then size of break is set else size of box is set;
+   if [break_hint = true] then size of break is set else size of box is set;
    in each case pp_scan_stack is popped.
 
    Note:
@@ -494,7 +494,7 @@ let initialize_scan_stack stack =
    empty.
    Pattern matching on token in scan stack is also exhaustive,
    since scan_push is used on breaks and opening of boxes. *)
-let set_size state ty =
+let set_size state ~break_hint =
   match Stack.top_opt state.pp_scan_stack with
   | None -> () (* scan_stack is never empty. *)
   | Some { left_total; queue_elem } ->
@@ -505,12 +505,12 @@ let set_size state ty =
     else
       match queue_elem.token with
       | Pp_break _ | Pp_tbreak (_, _) ->
-        if ty then begin
+        if break_hint then begin
           queue_elem.size <- Size.of_int (state.pp_right_total + size);
           Stack.pop_opt state.pp_scan_stack |> ignore
         end
       | Pp_begin (_, _) ->
-        if not ty then begin
+        if not break_hint then begin
           queue_elem.size <- Size.of_int (state.pp_right_total + size);
           Stack.pop_opt state.pp_scan_stack |> ignore
         end
@@ -519,11 +519,18 @@ let set_size state ty =
         () (* scan_push is only used for breaks and boxes. *)
 
 
+(* Enter a break hint in the pretty-printer queue, taking care of increasing the
+   rightward position *after* we update the pending break *)
+let pp_enqueue_break state token =
+  Queue.add token state.pp_queue;
+  set_size state ~break_hint:true;
+  state.pp_right_total <- state.pp_right_total + token.length
+
 (* Push a token on pretty-printer scanning stack.
    If b is true set_size is called. *)
-let scan_push state b token =
-  pp_enqueue state token;
-  if b then set_size state true;
+let scan_push state ~break_hint token =
+  if break_hint then pp_enqueue_break state token
+  else pp_enqueue state token;
   let elem = { left_total = state.pp_right_total; queue_elem = token } in
   Stack.push elem state.pp_scan_stack
 
@@ -536,7 +543,7 @@ let pp_open_box_gen state indent br_ty =
   if state.pp_curr_depth < state.pp_max_boxes then
     let size = Size.of_int (- state.pp_right_total) in
     let elem = { size; token = Pp_begin (indent, br_ty); length = 0 } in
-    scan_push state false elem else
+    scan_push state ~break_hint:false elem else
   if state.pp_curr_depth = state.pp_max_boxes
   then enqueue_string state state.pp_ellipsis
 
@@ -551,7 +558,7 @@ let pp_close_box state () =
     if state.pp_curr_depth < state.pp_max_boxes then
     begin
       pp_enqueue state { size = Size.zero; token = Pp_end; length = 0 };
-      set_size state true; set_size state false
+      set_size state ~break_hint:true; set_size state ~break_hint:false
     end;
     state.pp_curr_depth <- state.pp_curr_depth - 1;
   end
@@ -731,7 +738,7 @@ let pp_print_custom_break state ~fits ~breaks =
       + pp_string_width state after
     in
     let elem = { size; token; length } in
-    scan_push state true elem
+    scan_push state ~break_hint:true elem
 
 (* Printing break hints:
    A break hint indicates where a box may be broken.
@@ -776,7 +783,7 @@ let pp_print_tbreak state width offset =
   if state.pp_curr_depth < state.pp_max_boxes then
     let size = Size.of_int (- state.pp_right_total) in
     let elem = { size; token = Pp_tbreak (width, offset); length = width } in
-    scan_push state true elem
+    scan_push state ~break_hint:true elem
 
 
 let pp_print_tab state () = pp_print_tbreak state 0 0

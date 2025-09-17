@@ -276,6 +276,8 @@ META
 /testsuite/tools/parsecmm.ml
 /testsuite/tools/parsecmm.mli
 /testsuite/tools/parsecmm.output
+/testsuite/tools/test_in_prefix
+/testsuite/tools/test_in_prefix.opt
 
 /tools/ocamldep
 /tools/ocamldep.opt

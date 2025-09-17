@@ -200,6 +200,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
        a module that has been opened. *)
 
     let tree_of_qualified lookup_all get_path env ty_path name =
+      (*First, we rewrite double underscore [__] into [.] whenever possible *)
+      let ty_path = Out_type.rewrite_double_underscore_paths env ty_path in
       (* If [ty_path] is [M.N.t] and [name] is [Foo], we want to find
          a short name for [M.N.Foo] in the current typing environment.
          Our strategy is to try [Foo], [N.Foo] and [M.N.Foo] in
@@ -362,6 +364,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                       lbl_list rep
                 | {type_kind = Type_open} ->
                     tree_of_extension path ty_list depth obj
+                | {type_kind = Type_external _} ->
+                    Oval_stuff "<external>"
             end
           | Tvariant row ->
               tree_of_polyvariant depth obj row
@@ -670,7 +674,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       let rec find = function
       | [] -> raise Not_found
       | (_name, User_printer.Simple (sch, printer)) :: remainder ->
-          if Ctype.is_moregeneral env false sch ty
+          if not (Ctype.contains_nongen_variables sch) &&
+             Ctype.is_moregeneral env sch ty
           then printer
           else find remainder
       | (_name, User_printer.Generic (path, fn)) :: remainder ->

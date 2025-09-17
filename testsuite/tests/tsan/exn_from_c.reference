@@ -5,11 +5,10 @@ Entering i
 Calling print_and_raise...
 Hello from print_and_raise
 Caught Failure "test"
-Raised by primitive operation at Exn_from_c.i in file "exn_from_c.ml", line 28, characters 2-20
-Called from Exn_from_c.h in file "exn_from_c.ml", line 33, characters 2-6
-Called from Exn_from_c.g in file "exn_from_c.ml", line 38, characters 2-6
-Called from Exn_from_c.f in file "exn_from_c.ml", line 43, characters 7-11
-Leaving f
+Raised by primitive operation at Exn_from_c.i in file "exn_from_c.ml", line 38, characters 2-20
+Called from Exn_from_c.h in file "exn_from_c.ml", line 43, characters 2-6
+Called from Exn_from_c.g in file "exn_from_c.ml", line 48, characters 2-6
+Called from Exn_from_c.f in file "exn_from_c.ml", line 53, characters 7-11
 ==================
 WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
   Write of size 8 at <implemspecific> by thread T1 (mutexes: write M<implemspecific>):
@@ -50,4 +49,5 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
 
 SUMMARY: ThreadSanitizer: data race (<systemspecific>:<implemspecific>) in camlExn_from_c$writer_<implemspecific>
 ==================
+Leaving f
 ThreadSanitizer: reported 1 warnings

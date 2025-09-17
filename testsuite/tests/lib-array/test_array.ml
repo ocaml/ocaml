@@ -20,12 +20,10 @@ a;;
 [|None; None; Some 42; Some 0; Some 42; None; None; None|]
 |}]
 let _ = Array.fill a 3 6 None;;
-a;;
 [%%expect{|
 Exception: Invalid_argument "Array.fill".
 |}]
 let _ = Array.fill a (-1) 2 None;;
-a;;
 [%%expect{|
 Exception: Invalid_argument "Array.fill".
 |}]

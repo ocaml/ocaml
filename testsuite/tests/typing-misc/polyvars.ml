@@ -119,11 +119,18 @@ val f : 'a -> [< `Foo ] -> 'a = <fun>
 
 (* PR#6124 *)
 let f : ([`A | `B ] as 'a) -> [> 'a] -> unit = fun x (y : [> 'a]) -> ();;
-let f (x : [`A | `B] as 'a) (y : [> 'a]) = ();;
 [%%expect{|
 Line 1, characters 61-63:
 1 | let f : ([`A | `B ] as 'a) -> [> 'a] -> unit = fun x (y : [> 'a]) -> ();;
                                                                  ^^
+Error:    The type "'a" does not expand to a polymorphic variant type
+Hint: Did you mean "`a"?
+|}]
+let f (x : [`A | `B] as 'a) (y : [> 'a]) = ();;
+[%%expect{|
+Line 1, characters 36-38:
+1 | let f (x : [`A | `B] as 'a) (y : [> 'a]) = ();;
+                                        ^^
 Error:    The type "'a" does not expand to a polymorphic variant type
 Hint: Did you mean "`a"?
 |}]

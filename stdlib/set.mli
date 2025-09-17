@@ -260,6 +260,11 @@ module type S =
     val is_empty: t -> bool
     (** Test whether a set is empty or not. *)
 
+    val is_singleton: t -> bool
+    (** Test whether a set has exactly one element or not.
+
+        @since 5.5 *)
+
     val mem: elt -> t -> bool
     (** [mem x s] tests whether [x] belongs to the set [s]. *)
 

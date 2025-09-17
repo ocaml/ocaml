@@ -283,6 +283,16 @@ let[@tail_mod_cons] rec filter_map f = function
       | None -> filter_map f l
       | Some v -> v :: filter_map f l
 
+let[@tail_mod_cons] rec filter_mapi f i = function
+  | [] -> []
+  | x :: l ->
+      let i' = i + 1 in
+      match f i x with
+      | None -> filter_mapi f i' l
+      | Some v -> v :: filter_mapi f i' l
+
+let filter_mapi f l = filter_mapi f 0 l
+
 let[@tail_mod_cons] rec concat_map f = function
   | [] -> []
   | x::xs -> prepend_concat_map (f x) f xs
@@ -297,16 +307,14 @@ let take n l =
     | 0, _ | _, [] -> []
     | n, x::l -> x::aux (n - 1) l
   in
-  if n < 0 then invalid_arg "List.take";
-  aux n l
+  if n <= 0 then [] else aux n l
 
 let drop n l =
   let rec aux i = function
     | _x::l when i < n -> aux (i + 1) l
     | rest -> rest
   in
-  if n < 0 then invalid_arg "List.drop";
-  aux 0 l
+  if n <= 0 then l else aux 0 l
 
 let take_while p l =
   let[@tail_mod_cons] rec aux = function
@@ -348,6 +356,12 @@ let rec split = function
     [] -> ([], [])
   | (x,y)::l ->
       let (rx, ry) = split l in (x::rx, y::ry)
+
+let rec split_map f = function
+    [] -> ([], [])
+  | z::l ->
+      let (x,y) = f z in
+      let (rx, ry) = split_map f l in (x::rx, y::ry)
 
 let rec combine l1 l2 =
   match (l1, l2) with

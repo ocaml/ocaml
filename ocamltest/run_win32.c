@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <sys/types.h>
+#include <stdbool.h>
 
 #include "caml/memory.h"
 #include "caml/osdeps.h"
@@ -179,7 +180,7 @@ static LPVOID prepare_environment(WCHAR **localenv)
   /* Copy process_env to env only if the given names are not in localenv */
   while (*p != L'\0') {
     wchar_t *pos_eq = wcschr(p, L'=');
-    int copy = 1;
+    bool copy = true;
     l = wcslen(p) + 1; /* also count terminating '\0' */
     /* Temporarily change the = to \0 for wcscmp */
     *pos_eq = L'\0';
@@ -187,7 +188,7 @@ static LPVOID prepare_environment(WCHAR **localenv)
       wchar_t *pos_eq2 = wcschr(*q, L'=');
       /* Compare this name in localenv with the current one in processenv */
       if (pos_eq2) *pos_eq2 = L'\0';
-      if (!wcscmp(*q, p)) copy = 0;
+      if (wcscmp(*q, p) == 0) copy = false;
       if (pos_eq2) *pos_eq2 = L'=';
     }
     *pos_eq = L'=';
@@ -259,15 +260,17 @@ if ( (condition) ) \
 
 static WCHAR *translate_finename(WCHAR *filename)
 {
-  if (!wcscmp(filename, L"/dev/null")) return L"NUL"; else return filename;
+  if (wcscmp(filename, L"/dev/null") == 0) return L"NUL"; else return filename;
 }
 
 int run_command(const command_settings *settings)
 {
   BOOL process_created = FALSE;
-  int stdin_redirected = 0, stdout_redirected = 0, stderr_redirected = 0;
-  int combined = 0; /* 1 if stdout and stderr are redirected to the same file */
-  int wait_again = 0;
+  bool stdin_redirected = false, stdout_redirected = false,
+      stderr_redirected = false;
+  bool combined = false; /* true if stdout and stderr are redirected to the same
+                          * file */
+  bool wait_again = false;
   WCHAR *program = NULL;
   WCHAR *commandline = NULL;
 
@@ -307,7 +310,7 @@ int run_command(const command_settings *settings)
     checkerr( (startup_info.hStdInput == INVALID_HANDLE_VALUE),
       "Could not redirect standard input",
       stdin_filename);
-    stdin_redirected = 1;
+    stdin_redirected = true;
   } else startup_info.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
 
   if (is_defined(settings->stdout_filename))
@@ -319,7 +322,7 @@ int run_command(const command_settings *settings)
     checkerr( (startup_info.hStdOutput == INVALID_HANDLE_VALUE),
       "Could not redirect standard output",
       stdout_filename);
-    stdout_redirected = 1;
+    stdout_redirected = true;
   } else startup_info.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 
   if (is_defined(settings->stderr_filename))
@@ -329,8 +332,8 @@ int run_command(const command_settings *settings)
       if (wcscmp(settings->stdout_filename, settings->stderr_filename) == 0)
       {
         startup_info.hStdError = startup_info.hStdOutput;
-        stderr_redirected = 1;
-        combined = 1;
+        stderr_redirected = true;
+        combined = true;
       }
     }
 
@@ -344,7 +347,7 @@ int run_command(const command_settings *settings)
       checkerr( (startup_info.hStdError == INVALID_HANDLE_VALUE),
         "Could not redirect standard error",
         stderr_filename);
-      stderr_redirected = 1;
+      stderr_redirected = true;
     }
   } else startup_info.hStdError = GetStdHandle(STD_ERROR_HANDLE);
 
@@ -406,7 +409,7 @@ int run_command(const command_settings *settings)
     checkerr( (! TerminateJobObject(hJob, 0)),
       "TerminateJob failed", NULL);
     status = -1;
-    wait_again = 1;
+    wait_again = true;
   } else {
     error_with_location(__FILE__, __LINE__, settings,
       "GetQueuedCompletionStatus failed\n");

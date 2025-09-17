@@ -49,13 +49,15 @@ val parse_intf : info -> Parsetree.signature
 
 val typecheck_intf :
   info -> Parsetree.signature -> Misc.alerts * Typedtree.signature
-(** [typecheck_intf info parsetree] typechecks an interface and returns
-    the typedtree of the associated signature.
+(** [typecheck_intf info parsetree] typechecks an interface and returns the
+    typedtree of the associated signature, together with the alerts appearing at
+    the top of the signature (before any other non-attribute item).
 *)
 
 val emit_signature : info -> Misc.alerts -> Typedtree.signature -> unit
-(** [emit_signature info parsetree typedtree] emits the [.cmi] file
-    containing the given signature.
+(** [emit_signature info alerts typedtree] emits the [.cmi] file containing the
+    given signature and compilation unit alerts (as returned eg by
+    [typecheck_intf] above).
 *)
 
 val interface : info -> unit

@@ -76,6 +76,7 @@ type error =
   | Nonrec_gadt
   | Invalid_private_row_declaration of type_expr
   | Atomic_field_must_be_mutable of string
+  | External_with_non_syntactic_arity
 
 open Typedtree
 
@@ -349,11 +350,11 @@ let transl_declaration env sdecl (id, uid) =
   TyVarEnv.reset();
   let tparams = make_params env sdecl.ptype_params in
   let params = List.map (fun (cty, _) -> cty.ctyp_type) tparams in
-  let cstrs = List.map
+  let constraints = List.map
     (fun (sty, sty', loc) ->
       transl_simple_type env ~closed:false sty,
       transl_simple_type env ~closed:false sty', loc)
-    sdecl.ptype_cstrs
+    sdecl.ptype_constraints
   in
   let unboxed_attr = get_unboxed_from_attributes sdecl in
   begin match unboxed_attr with
@@ -361,7 +362,8 @@ let transl_declaration env sdecl (id, uid) =
   | Some true ->
     let bad msg = raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute msg)) in
     match sdecl.ptype_kind with
-    | Ptype_abstract    -> bad "it is abstract"
+    | Ptype_abstract
+    | Ptype_external _   -> bad "it is abstract"
     | Ptype_open        -> bad "extensible variant types cannot be unboxed"
     | Ptype_record fields -> begin match fields with
         | [] -> bad "it has no fields"
@@ -402,9 +404,10 @@ let transl_declaration env sdecl (id, uid) =
   let (tkind, kind) =
     match sdecl.ptype_kind with
       | Ptype_abstract -> Ttype_abstract, Type_abstract Definition
+      | Ptype_external name -> Ttype_external name, Type_external name
       | Ptype_variant scstrs ->
         if List.exists (fun cstr -> cstr.pcd_res <> None) scstrs then begin
-          match cstrs with
+          match constraints with
             [] -> ()
           | (_,_,loc)::_ ->
               Location.prerr_warning loc Warnings.Constraint_on_gadt
@@ -503,7 +506,7 @@ let transl_declaration env sdecl (id, uid) =
         let ty' = cty'.ctyp_type in
         try Ctype.unify env ty ty' with Ctype.Unify err ->
           raise(Error(loc, Inconsistent_constraint (env, err))))
-      cstrs;
+      constraints;
   (* Add abstract row *)
     if is_fixed_type sdecl then begin
       let p, _ =
@@ -519,7 +522,7 @@ let transl_declaration env sdecl (id, uid) =
         typ_name = sdecl.ptype_name;
         typ_params = tparams;
         typ_type = decl;
-        typ_cstrs = cstrs;
+        typ_constraints = constraints;
         typ_loc = sdecl.ptype_loc;
         typ_manifest = tman;
         typ_kind = tkind;
@@ -532,7 +535,7 @@ let transl_declaration env sdecl (id, uid) =
       match decl.typ_kind with
       | Ttype_variant cstrs -> Shape.str ~uid (shape_map_cstrs cstrs)
       | Ttype_record labels -> Shape.str ~uid (shape_map_labels labels)
-      | Ttype_abstract | Ttype_open -> Shape.leaf uid
+      | Ttype_abstract | Ttype_open | Ttype_external _ -> Shape.leaf uid
     in
     decl, typ_shape
   end
@@ -563,7 +566,7 @@ let rec check_constraints_rec env loc visited ty =
       end;
       List.iter (check_constraints_rec env loc visited) args
   | Tpoly (ty, tl) ->
-      let _, ty = Ctype.instance_poly ~fixed:false tl ty in
+      let ty = Ctype.instance_poly tl ty in
       check_constraints_rec env loc visited ty
   | _ ->
       Btype.iter_type_expr (check_constraints_rec env loc visited) ty
@@ -591,7 +594,8 @@ let check_constraints env sdecl (_, decl) =
   | Type_variant (l, _rep) ->
       let find_pl = function
           Ptype_variant pl -> pl
-        | Ptype_record _ | Ptype_abstract | Ptype_open -> assert false
+        | Ptype_record _ | Ptype_abstract | Ptype_open | Ptype_external _ ->
+            assert false
       in
       let pl = find_pl sdecl.ptype_kind in
       let pl_index =
@@ -624,11 +628,13 @@ let check_constraints env sdecl (_, decl) =
   | Type_record (l, _) ->
       let find_pl = function
           Ptype_record pl -> pl
-        | Ptype_variant _ | Ptype_abstract | Ptype_open -> assert false
+        | Ptype_variant _ | Ptype_abstract | Ptype_open | Ptype_external _ ->
+            assert false
       in
       let pl = find_pl sdecl.ptype_kind in
       check_constraints_labels env visited l pl
   | Type_open -> ()
+  | Type_external _ -> ()
   end;
   begin match decl.type_manifest with
   | None -> ()
@@ -986,8 +992,7 @@ let check_regularity ~abs_env env loc path decl to_check =
           end;
           List.iter (check_subtype cpath args prev_exp trace ty) args'
       | Tpoly (ty, tl) ->
-          let (_, ty) =
-            Ctype.instance_poly ~keep_names:true ~fixed:false tl ty in
+          let ty = Ctype.instance_poly ~keep_names:true tl ty in
           check_regular cpath args prev_exp trace ty
       | _ ->
           Btype.iter_type_expr
@@ -1040,7 +1045,8 @@ let check_duplicates sdecl_list =
             with Not_found -> Hashtbl.add labels cname.txt sdecl.ptype_name.txt)
           fl
     | Ptype_abstract -> ()
-    | Ptype_open -> ())
+    | Ptype_open -> ()
+    | Ptype_external _ -> ())
     sdecl_list
 
 (* Force recursion to go through id for private types*)
@@ -1606,6 +1612,7 @@ let rec parse_native_repr_attributes env core_type ty ~global_repr =
   | Ptyp_arrow _, Tarrow _, Native_repr_attr_present kind  ->
     raise (Error (core_type.ptyp_loc, Cannot_unbox_or_untag_type kind))
   | Ptyp_arrow (_, ct1, ct2), Tarrow (_, t1, t2, _), _ ->
+    let t1, _ = Btype.tpoly_get_poly t1 in
     let repr_arg = make_native_repr env ct1 t1 ~global_repr in
     let repr_args, repr_res =
       parse_native_repr_attributes env ct2 t2 ~global_repr
@@ -1613,12 +1620,14 @@ let rec parse_native_repr_attributes env core_type ty ~global_repr =
     (repr_arg :: repr_args, repr_res)
   | (Ptyp_poly (_, t) | Ptyp_alias (t, _)), _, _ ->
      parse_native_repr_attributes env t ty ~global_repr
-  | Ptyp_arrow _, _, _ | _, Tarrow _, _ -> assert false
+  | Ptyp_arrow _, _, _ -> assert false
+  | _, Tarrow _, _ ->
+      raise (Error (core_type.ptyp_loc, External_with_non_syntactic_arity))
   | _ -> ([], make_native_repr env core_type ty ~global_repr)
 
 
 let check_unboxable env loc ty =
-  let check_type acc ty : Path.Set.t =
+  let rec check_type acc ty : Path.Set.t =
     let ty = Ctype.expand_head_opt env ty in
     try match get_desc ty with
       | Tconstr (p, _, _) ->
@@ -1626,6 +1635,7 @@ let check_unboxable env loc ty =
         if tydecl.type_unboxed_default then
           Path.Set.add p acc
         else acc
+      | Tpoly (ty, []) -> check_type acc ty
       | _ -> acc
     with Not_found -> acc
   in
@@ -1733,7 +1743,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
          constraints report an error on the constraint location
          rather than the parameter location. *)
       (cty, cty', loc)
-    ) sdecl.ptype_cstrs
+    ) sdecl.ptype_constraints
   in
   let no_row = not (is_fixed_type sdecl) in
   let (tman, man) =  match sdecl.ptype_manifest with
@@ -1842,7 +1852,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     typ_name = sdecl.ptype_name;
     typ_params = tparams;
     typ_type = new_sig_decl;
-    typ_cstrs = constraints;
+    typ_constraints = constraints;
     typ_loc = loc;
     typ_manifest = Some tman;
     typ_kind = Ttype_abstract;
@@ -2348,6 +2358,11 @@ let report_error ~loc = function
       Location.errorf ~loc
         "@[The label %a must be mutable to be declared atomic.@]"
         Style.inline_code name
+  | External_with_non_syntactic_arity ->
+      Location.errorf ~loc
+        "This external declaration has a non-syntactic arity,@ \
+         its arity is greater than its syntatic arity."
+
 
 let () =
   Location.register_error_of_exn

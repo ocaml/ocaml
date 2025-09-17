@@ -91,15 +91,23 @@ type stat =
     (** Maximum size reached by the major heap, in words. *)
 
     stack_size: int;
-    (** Current size of the stack, in words.
-        This metric is currently not available in OCaml 5: the field value is
-        always [0].
-        @since 3.12 *)
-
+    (** Current size of the current OCaml stack, in words.
+        @since 3.12
+        @since 5.0 not implemented
+        @since 5.5 restored for the current stack
+    *)
     forced_major_collections: int;
     (** Number of forced full major collections completed since the program
         was started.
         @since 4.12 *)
+
+    live_stacks_words: int;
+    (** Total space allocated outside of the OCaml heap for stack fragments.
+        This includes stack metadata and stack fragments stored inside the stack
+        fragment cache.
+        @since 5.5
+    *)
+
 }
 (** The memory management counters are returned in a [stat] record. These
    counters give values for the whole program.
@@ -474,7 +482,9 @@ module Memprof :
     type t
     (** the type of a profile *)
 
-    type allocation_source = Normal | Marshal | Custom
+    type allocation_source = Normal | Marshal | Custom | Map_file
+    val string_of_allocation_source : allocation_source -> string
+
     type allocation = private
       { n_samples : int;
         (** The number of samples in this block (>= 1). *)
@@ -520,8 +530,7 @@ module Memprof :
       ?callstack_size:int ->
       ('minor, 'major) tracker ->
       t
-    (** Start a profile with the given parameters. Raises an exception
-       if a profile is already sampling in the current domain.
+    (** Start a profile with the given parameters.
 
        Sampling begins immediately. The parameter [sampling_rate] is
        the sampling rate in samples per word (including headers).
@@ -548,10 +557,11 @@ module Memprof :
        have evolved between the allocation and the call to the
        callback.
 
-       If a new thread or domain is created when the current domain is
-       sampling for a profile, the child thread or domain joins that
-       profile (using the same [sampling_rate], [callstack_size], and
-       [tracker] callbacks).
+       All the threads belonging to a domain share the same profile
+       (using the same [sampling_rate], [callstack_size], and
+       [tracker] callbacks). In addition, if a new domain is spawned
+       by the current domain while sampling for a profile, then the
+       child domain likewise shares that profile with its parent.
 
        An allocation callback is always run by the thread which
        allocated the block. If the thread exits or the profile is
@@ -564,7 +574,17 @@ module Memprof :
        by a different domain.
 
        Different domains may sample for different profiles
-       simultaneously.  *)
+       simultaneously.
+
+       If a profile is already sampling in the current domain, then
+       calling [start] replaces it with a new profile in this domain.
+       If the old profile was sampling in other domains, it continues
+       doing so. *)
+
+    val is_sampling : unit -> bool
+    (** Returns whether a profile is sampling in the current domain,
+        if any. Returns [None] if the current domain is not
+        sampling. *)
 
     val stop : unit -> unit
     (** Stop sampling for the current profile. Fails if no profile is

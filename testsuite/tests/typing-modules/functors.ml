@@ -2148,3 +2148,107 @@ Error: Signature mismatch:
        Moreover, the type of the functor body is incompatible with the
        expected module type.
 |}]
+
+(** Keeping equations *)
+
+module M: sig
+  type t
+  module Inner: sig type t end
+  module F(X:sig val f: t val g: Inner.t val h:float end):sig end
+end = struct
+  type t
+  module Inner= struct type t end
+  module F(X:sig val f: t val g: Inner.t val h:int end)= struct end
+end
+[%%expect {|
+Lines 7-11, characters 6-3:
+ 7 | ......struct
+ 8 |   type t
+ 9 |   module Inner= struct type t end
+10 |   module F(X:sig val f: t val g: Inner.t val h:int end)= struct end
+11 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type t
+           module Inner : sig type t end
+           module F :
+             (X : sig val f : t val g : Inner.t val h : int end) -> sig end
+         end
+       is not included in
+         sig
+           type t
+           module Inner : sig type t end
+           module F :
+             (X : sig val f : t val g : Inner.t val h : float end) -> sig end
+         end
+       In module "F":
+       Modules do not match:
+         (X : $S1) -> ...
+       is not included in
+         (X : $T1) -> ...
+       Module types do not match:
+         $S1 = sig val f : t val g : Inner.t val h : int end
+       does not include
+         $T1 = sig val f : t val g : Inner.t val h : float end
+       Values do not match: val h : float is not included in val h : int
+       The type "float" is not compatible with the type "int"
+|}]
+
+module M: sig
+  type t
+  module Inner: sig type t end
+  module F
+      (A:a)
+      (X:sig val f: t val h:int end)
+      (A:a)
+      (Y:sig val f: Inner.t val h:int end)
+
+ :sig end
+end = struct
+  type t
+  module Inner= struct type t end
+  module F
+      (X:sig val f: t val h:int end)
+      (A:a)
+      (Y:sig val f: Inner.t val h:int end)
+  = struct end
+end
+[%%expect {|
+Lines 11-19, characters 6-3:
+11 | ......struct
+12 |   type t
+13 |   module Inner= struct type t end
+14 |   module F
+15 |       (X:sig val f: t val h:int end)
+16 |       (A:a)
+17 |       (Y:sig val f: Inner.t val h:int end)
+18 |   = struct end
+19 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type t
+           module Inner : sig type t end
+           module F :
+             (X : sig val f : t val h : int end) (A : a)
+             (Y : sig val f : Inner.t val h : int end) -> sig end
+         end
+       is not included in
+         sig
+           type t
+           module Inner : sig type t end
+           module F :
+             (A : a) (X : sig val f : t val h : int end) (A : a)
+             (Y : sig val f : Inner.t val h : int end) -> sig end
+         end
+       In module "F":
+       Modules do not match:
+         (X : $S2) (A : a) (Y : $S4) -> ...
+       is not included in
+         (A : a) (X : $T2) (A : a) (Y : $T4) -> ...
+       1. An argument appears to be missing with module type a
+       2. Module types $S2 and $T2 match
+       3. Module types a and a match
+       4. Module types $S4 and $T4 match
+|}]

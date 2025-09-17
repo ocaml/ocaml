@@ -551,7 +551,7 @@ $(foreach PROGRAM, $(C_PROGRAMS),\
 # OCaml programs that are compiled in both bytecode and native code
 
 OCAML_PROGRAMS = ocamlc ocamlopt lex/ocamllex $(TOOLS_NAT_PROGRAMS) \
-  ocamldoc/ocamldoc ocamltest/ocamltest
+  ocamldoc/ocamldoc ocamltest/ocamltest testsuite/tools/test_in_prefix
 
 $(foreach PROGRAM, $(OCAML_PROGRAMS),\
   $(eval $(call OCAML_PROGRAM,$(PROGRAM))))
@@ -565,7 +565,8 @@ $(foreach PROGRAM, $(OCAML_PROGRAMS),\
 OCAML_BYTECODE_PROGRAMS = expunge \
   $(TOOLS_BYT_PROGRAMS) \
   $(addprefix tools/, cvt_emit make_opcodes ocamltex) \
-  $(OPTIONAL_BYTECODE_TOOLS)
+  debugger/ocamldebug \
+  testsuite/tools/codegen testsuite/tools/expect
 
 $(foreach PROGRAM, $(OCAML_BYTECODE_PROGRAMS),\
   $(eval $(call OCAML_BYTECODE_PROGRAM,$(PROGRAM))))
@@ -573,7 +574,7 @@ $(foreach PROGRAM, $(OCAML_BYTECODE_PROGRAMS),\
 # OCaml programs that are compiled only in native code
 
 OCAML_NATIVE_PROGRAMS = \
-  ocamlnat tools/lintapidiff.opt tools/sync_dynlink.opt $(OPTIONAL_NATIVE_TOOLS)
+  ocamlnat tools/lintapidiff.opt tools/sync_dynlink.opt
 
 $(foreach PROGRAM, $(OCAML_NATIVE_PROGRAMS),\
   $(eval $(call OCAML_NATIVE_PROGRAM,$(PROGRAM))))
@@ -603,7 +604,9 @@ $(COMPILERLIBS:=.cma): \
 
 compilerlibs/ocamlcommon.cma: $(ALL_CONFIG_CMO)
 
-OCAML_LIBRARIES = $(COMPILERLIBS) $(OPTIONAL_LIBRARIES)
+OCAML_LIBRARIES = \
+  $(COMPILERLIBS) \
+  ocamldoc/odoc_info otherlibs/dynlink/dynlink testsuite/lib/testing
 
 $(foreach LIBRARY, $(OCAML_LIBRARIES),\
   $(eval $(call OCAML_LIBRARY,$(LIBRARY))))
@@ -957,7 +960,7 @@ ocamlc_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 
 ocamlc_SOURCES = driver/main.mli driver/main.ml
 
-ocamlc$(EXE): OC_BYTECODE_LINKFLAGS += -compat-32 -g
+ocamlc_BYTECODE_LINKFLAGS = -compat-32 -g
 
 partialclean::
 	rm -f ocamlc ocamlc.exe ocamlc.opt ocamlc.opt.exe
@@ -968,7 +971,7 @@ ocamlopt_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamloptcomp)
 
 ocamlopt_SOURCES = driver/optmain.mli driver/optmain.ml
 
-ocamlopt$(EXE): OC_BYTECODE_LINKFLAGS += -g
+ocamlopt_BYTECODE_LINKFLAGS = -g
 
 partialclean::
 	rm -f ocamlopt ocamlopt.exe ocamlopt.opt ocamlopt.opt.exe
@@ -1005,12 +1008,15 @@ partialclean::
 TOPFLAGS ?=
 OC_TOPFLAGS = $(STDLIBFLAGS) -I toplevel -noinit $(TOPINCLUDES) $(TOPFLAGS)
 
-RUN_OCAML = $(RLWRAP) $(OCAMLRUN) ./ocaml$(EXE) $(OC_TOPFLAGS)
+# Use runtime/ocamlrun rather than boot/ocamlrun since boot/ocamlrun is compiled
+# without shared library support on Windows (when bootstrapping flexdll)
+RUN_OCAML = $(RLWRAP) $(NEW_OCAMLRUN) ./ocaml$(EXE) $(OC_TOPFLAGS)
 RUN_OCAMLNAT = $(RLWRAP) ./ocamlnat$(EXE) $(OC_TOPFLAGS)
 
-# Note: Beware that, since these rules begin with a coldstart, both
-# boot/ocamlrun and runtime/ocamlrun will be the same when the toplevel
-# is run.
+# Note: Beware that, since these rules begin with a coldstart, boot/ocamlc must
+# produce code capable of being executed using runtime/ocamlrun (i.e. there are
+# circumstances where it may be necessary to bootstrap first, but if you're
+# doing work which needs it, you probably know that already).
 .PHONY: runtop
 runtop: coldstart
 	$(MAKE) ocamlc
@@ -1694,7 +1700,7 @@ ocamllex: ocamlyacc
 ocamllex.opt: ocamlopt
 	$(MAKE) lex-allopt
 
-lex/ocamllex$(EXE): OC_BYTECODE_LINKFLAGS += -compat-32
+ocamllex_BYTECODE_LINKFLAGS = -compat-32
 
 partialclean::
 	rm -f lex/*.cm* lex/*.o lex/*.obj \
@@ -1864,8 +1870,6 @@ ocamldoc.opt: ocamldoc/ocamldoc.opt$(EXE) ocamlopt ocamlyacc ocamllex
 
 # OCamltest
 
-ifeq "$(build_ocamltest)" "true"
-
 # Libraries ocamltest depends on
 
 ocamltest_LIBRARIES = \
@@ -1963,7 +1967,7 @@ expect_SOURCES = $(addprefix testsuite/tools/,expect.mli expect.ml)
 expect_LIBRARIES = $(addprefix compilerlibs/,\
   ocamlcommon ocamlbytecomp ocamltoplevel)
 
-testsuite/tools/expect$(EXE): OC_BYTECODE_LINKFLAGS += -linkall
+expect_BYTECODE_LINKFLAGS += -linkall
 
 codegen_SOURCES = $(addprefix testsuite/tools/,\
   parsecmmaux.mli parsecmmaux.ml \
@@ -1984,11 +1988,33 @@ $(asmgen_OBJECT): $(asmgen_SOURCE)
 	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) -o $@ $< || $(ASPP_ERROR)
 endif
 
-ocamltest/ocamltest$(EXE): OC_BYTECODE_LINKFLAGS += -custom -g
+test_in_prefix_SOURCES = $(addprefix testsuite/tools/,\
+  toolchain.mli toolchain.ml \
+  harness.mli harness.ml \
+  environment.mli environment.ml \
+  cmdline.mli cmdline.ml \
+  testBytecodeBinaries.mli testBytecodeBinaries.ml \
+  testDynlink.mli testDynlink.ml \
+  testLinkModes.mli testLinkModes.ml \
+  testRelocation.mli testRelocation.ml \
+  testToplevel.mli testToplevel.ml \
+  test_ld_conf.mli test_ld_conf.ml \
+  test_in_prefix.mli test_in_prefix.ml)
+test_in_prefix_LIBRARIES = \
+  otherlibs/unix/unix compilerlibs/ocamlcommon compilerlibs/ocamlbytecomp
 
-ocamltest.opt: ocamltest/ocamltest.opt$(EXE) \
-  testsuite/lib/testing.cmxa $(asmgen_OBJECT) testsuite/tools/codegen$(EXE) \
-  ocamlopt ocamlyacc ocamllex
+# test_in_prefix% would only match test_in_prefix.opt, hence the missing 'x'!
+testsuite/tools/test_in_prefi%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
+
+test_in_prefix_BYTECODE_LINKFLAGS += -custom
+
+testsuite/tools/test_in_prefi%: CAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
+
+ocamltest_BYTECODE_LINKFLAGS = -custom -g
+
+ocamltest/ocamltest$(EXE): ocamlc ocamlyacc ocamllex
+
+ocamltest/ocamltest.opt$(EXE): ocamlopt ocamlyacc ocamllex
 
 # ocamltest does _not_ want to have access to the Unix interface by default,
 # to ensure functions and types are only used via Ocamltest_stdlib.Unix
@@ -2006,6 +2032,14 @@ ocamltest/ocamltest$(EXE) ocamltest/ocamltest.opt$(EXE): \
 # -opaque to prevent errors compiling the other modules of ocamltest.
 ocamltest/ocamltest_unix.%: \
   OC_COMMON_COMPFLAGS += -opaque
+ifeq "$(build_ocamltest)" "true"
+ocamltest: ocamltest/ocamltest$(EXE) \
+  testsuite/lib/lib.cmo testsuite/lib/testing.cma testsuite/tools/expect$(EXE) \
+  ocamlc ocamlyacc ocamllex
+
+ocamltest.opt: ocamltest/ocamltest.opt$(EXE) \
+  testsuite/lib/testing.cmxa $(asmgen_OBJECT) testsuite/tools/codegen$(EXE) \
+  ocamlopt ocamlyacc ocamllex
 else # ifeq "$(build_ocamltest)" "true"
 ocamltest_TARGETS = ocamltest ocamltest.opt
 .PHONY: $(ocamltest_TARGETS)
@@ -2028,8 +2062,16 @@ partialclean::
 	rm -f $(addprefix testsuite/tools/*.,cm* o obj a lib)
 	rm -f testsuite/tools/codegen testsuite/tools/codegen.exe
 	rm -f testsuite/tools/expect testsuite/tools/expect.exe
+	rm -f testsuite/tools/test_in_prefix testsuite/tools/test_in_prefix.exe
+	rm -f testsuite/tools/test_in_prefix.opt \
+        testsuite/tools/test_in_prefix.opt.exe
 	rm -f testsuite/tools/lexcmm.ml
 	rm -f $(addprefix testsuite/tools/parsecmm., ml mli output)
+
+ocamltest/ocamltest_config.ml ocamltest/ocamltest_unix.ml: config.status
+	./$< $@
+
+beforedepend:: ocamltest/ocamltest_config.ml ocamltest/ocamltest_unix.ml
 
 # Documentation
 
@@ -2061,7 +2103,7 @@ partialclean::
 .PHONY: ocamltest-manual
 ocamltest-manual: ocamltest/ocamltest.html
 
-ocamltest/ocamltest.html: ocamltest/ocamltest.org
+ocamltest/ocamltest.html: ocamltest/OCAMLTEST.org
 	pandoc -s --toc -N -f org -t html -o $@ $<
 
 # The extra libraries
@@ -2294,7 +2336,7 @@ partialclean::
 ocamldep_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 ocamldep_SOURCES = tools/ocamldep.mli tools/ocamldep.ml
 
-tools/ocamldep$(EXE): OC_BYTECODE_LINKFLAGS += -compat-32
+ocamldep_BYTECODE_LINKFLAGS = -compat-32
 
 # The profiler
 
@@ -2491,7 +2533,7 @@ ocamlnat_LIBRARIES = \
 
 ocamlnat_SOURCES = $(ocaml_SOURCES)
 
-ocamlnat$(EXE): OC_NATIVE_LINKFLAGS += -linkall -I toplevel/native
+ocamlnat_NATIVE_LINKFLAGS = -linkall -I toplevel/native
 
 COMPILE_NATIVE_MODULE = \
   $(CAMLOPT) $(OC_COMMON_COMPFLAGS) -I $(@D) $(INCLUDES) \

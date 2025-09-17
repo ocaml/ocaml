@@ -761,7 +761,8 @@ CAMLprim value caml_uniform_array_fill(
       *fp = val;
       if (Is_block(old)) {
         if (Is_young(old)) continue;
-        caml_darken(Caml_state, old, NULL);
+        if (caml_marking_started())
+          caml_darken(Caml_state, old, NULL);
       }
       if (is_val_young_block)
         Ref_table_add(&Caml_state->minor_tables->major_ref, fp);

@@ -276,6 +276,20 @@ let () =
 
 (** {1:iteration Iteration} *)
 
+(** iter, rev_iter *)
+
+let () =
+  let a = A.of_list [1; 2; 3] in
+  let seen = ref [] in
+  A.iter (fun i -> seen := i :: !seen) a;
+  assert (!seen = [3; 2; 1])
+
+let () =
+  let a = A.of_list [1; 2; 3] in
+  let seen = ref [] in
+  A.rev_iter (fun i -> seen := i :: !seen) a;
+  assert (!seen = [1; 2; 3])
+
 (** map *)
 
 let () =

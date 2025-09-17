@@ -55,6 +55,9 @@ val add_path: string list -> unit
 (* Remove the given directories from the search path for DLLs *)
 val remove_path: string list -> unit
 
+(* Return the current search path for DLLs *)
+val search_path: unit -> string list
+
 (* Initialization for separate compilation.
    Initialize the DLL search path to the directories given in the
    environment variable CAML_LD_LIBRARY_PATH, plus contents of ld.conf file

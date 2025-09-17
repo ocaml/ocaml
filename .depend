@@ -1040,6 +1040,7 @@ typing/includemod.cmx : \
 typing/includemod.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/subst.cmi \
     typing/shape.cmi \
     typing/path.cmi \
     parsing/longident.cmi \
@@ -1052,6 +1053,7 @@ typing/includemod.cmi : \
 typing/includemod_errorprinter.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/subst.cmi \
     typing/printtyp.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
@@ -1071,6 +1073,7 @@ typing/includemod_errorprinter.cmo : \
 typing/includemod_errorprinter.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
+    typing/subst.cmx \
     typing/printtyp.cmx \
     typing/primitive.cmx \
     typing/path.cmx \
@@ -4794,6 +4797,7 @@ lambda/translmod.cmx : \
 lambda/translmod.cmi : \
     typing/typedtree.cmi \
     typing/primitive.cmi \
+    typing/path.cmi \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi
@@ -7556,6 +7560,7 @@ toplevel/topprinters.cmo : \
     typing/path.cmi \
     parsing/longident.cmi \
     typing/ident.cmi \
+    toplevel/genprintval.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
     typing/btype.cmi \
@@ -7568,6 +7573,7 @@ toplevel/topprinters.cmx : \
     typing/path.cmx \
     parsing/longident.cmx \
     typing/ident.cmx \
+    toplevel/genprintval.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
     typing/btype.cmx \
@@ -8003,16 +8009,6 @@ tools/dumpobj.cmx : \
     bytecomp/bytesections.cmx \
     tools/dumpobj.cmi
 tools/dumpobj.cmi :
-tools/eqparsetree.cmo : \
-    parsing/parsetree.cmi \
-    parsing/longident.cmi \
-    parsing/location.cmi \
-    parsing/asttypes.cmi
-tools/eqparsetree.cmx : \
-    parsing/parsetree.cmi \
-    parsing/longident.cmx \
-    parsing/location.cmx \
-    parsing/asttypes.cmx
 tools/gen_sizeclasses.cmo :
 tools/gen_sizeclasses.cmx :
 tools/lintapidiff.cmo : \
@@ -8547,14 +8543,12 @@ debugger/loadprinter.cmo : \
     parsing/unit_info.cmi \
     toplevel/topprinters.cmi \
     bytecomp/symtable.cmi \
-    debugger/printval.cmi \
     typing/printtyp.cmi \
     typing/path.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
     utils/load_path.cmi \
     typing/ident.cmi \
-    toplevel/genprintval.cmi \
     utils/format_doc.cmi \
     typing/env.cmi \
     otherlibs/dynlink/dynlink.cmi \
@@ -8564,14 +8558,12 @@ debugger/loadprinter.cmx : \
     parsing/unit_info.cmx \
     toplevel/topprinters.cmx \
     bytecomp/symtable.cmx \
-    debugger/printval.cmx \
     typing/printtyp.cmx \
     typing/path.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
     utils/load_path.cmx \
     typing/ident.cmx \
-    toplevel/genprintval.cmx \
     utils/format_doc.cmx \
     typing/env.cmx \
     otherlibs/dynlink/dynlink.cmx \
@@ -8695,9 +8687,7 @@ debugger/printval.cmx : \
     debugger/printval.cmi
 debugger/printval.cmi : \
     typing/types.cmi \
-    typing/path.cmi \
     debugger/parser_aux.cmi \
-    toplevel/genprintval.cmi \
     typing/env.cmi \
     debugger/debugcom.cmi
 debugger/program_loading.cmo : \
@@ -10512,6 +10502,14 @@ testsuite/lib/testing.cmo : \
 testsuite/lib/testing.cmx : \
     testsuite/lib/testing.cmi
 testsuite/lib/testing.cmi :
+testsuite/tools/cmdline.cmo : \
+    testsuite/tools/harness.cmi \
+    testsuite/tools/cmdline.cmi
+testsuite/tools/cmdline.cmx : \
+    testsuite/tools/harness.cmx \
+    testsuite/tools/cmdline.cmi
+testsuite/tools/cmdline.cmi : \
+    testsuite/tools/harness.cmi
 testsuite/tools/codegen_main.cmo : \
     utils/profile.cmi \
     testsuite/tools/parsecmmaux.cmi \
@@ -10535,6 +10533,28 @@ testsuite/tools/codegen_main.cmx : \
     asmcomp/asmgen.cmx \
     testsuite/tools/codegen_main.cmi
 testsuite/tools/codegen_main.cmi :
+testsuite/tools/environment.cmo : \
+    otherlibs/unix/unix.cmi \
+    utils/misc.cmi \
+    testsuite/tools/harness.cmi \
+    utils/config.cmi \
+    utils/compression.cmi \
+    file_formats/cmt_format.cmi \
+    file_formats/cmo_format.cmi \
+    bytecomp/bytesections.cmi \
+    testsuite/tools/environment.cmi
+testsuite/tools/environment.cmx : \
+    otherlibs/unix/unix.cmx \
+    utils/misc.cmx \
+    testsuite/tools/harness.cmx \
+    utils/config.cmx \
+    utils/compression.cmx \
+    file_formats/cmt_format.cmx \
+    file_formats/cmo_format.cmi \
+    bytecomp/bytesections.cmx \
+    testsuite/tools/environment.cmi
+testsuite/tools/environment.cmi : \
+    testsuite/tools/harness.cmi
 testsuite/tools/expect.cmo : \
     utils/warnings.cmi \
     toplevel/toploop.cmi \
@@ -10573,6 +10593,15 @@ testsuite/tools/expect.cmx : \
     testsuite/tools/expect.cmi
 testsuite/tools/expect.cmi : \
     parsing/location.cmi
+testsuite/tools/harness.cmo : \
+    otherlibs/unix/unix.cmi \
+    utils/config.cmi \
+    testsuite/tools/harness.cmi
+testsuite/tools/harness.cmx : \
+    otherlibs/unix/unix.cmx \
+    utils/config.cmx \
+    testsuite/tools/harness.cmi
+testsuite/tools/harness.cmi :
 testsuite/tools/lexcmm.cmo : \
     testsuite/tools/parsecmm.cmi \
     utils/misc.cmi \
@@ -10632,6 +10661,140 @@ testsuite/tools/parsecmmaux.cmi : \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
     middle_end/backend_var.cmi
+testsuite/tools/testBytecodeBinaries.cmo : \
+    otherlibs/unix/unix.cmi \
+    testsuite/tools/harness.cmi \
+    testsuite/tools/environment.cmi \
+    utils/config.cmi \
+    testsuite/tools/testBytecodeBinaries.cmi
+testsuite/tools/testBytecodeBinaries.cmx : \
+    otherlibs/unix/unix.cmx \
+    testsuite/tools/harness.cmx \
+    testsuite/tools/environment.cmx \
+    utils/config.cmx \
+    testsuite/tools/testBytecodeBinaries.cmi
+testsuite/tools/testBytecodeBinaries.cmi : \
+    testsuite/tools/harness.cmi \
+    testsuite/tools/environment.cmi
+testsuite/tools/testDynlink.cmo : \
+    testsuite/tools/harness.cmi \
+    testsuite/tools/environment.cmi \
+    utils/config.cmi \
+    testsuite/tools/testDynlink.cmi
+testsuite/tools/testDynlink.cmx : \
+    testsuite/tools/harness.cmx \
+    testsuite/tools/environment.cmx \
+    utils/config.cmx \
+    testsuite/tools/testDynlink.cmi
+testsuite/tools/testDynlink.cmi : \
+    testsuite/tools/harness.cmi \
+    testsuite/tools/environment.cmi
+testsuite/tools/testLinkModes.cmo : \
+    testsuite/tools/toolchain.cmi \
+    testsuite/tools/harness.cmi \
+    testsuite/tools/environment.cmi \
+    utils/config.cmi \
+    utils/ccomp.cmi \
+    testsuite/tools/testLinkModes.cmi
+testsuite/tools/testLinkModes.cmx : \
+    testsuite/tools/toolchain.cmx \
+    testsuite/tools/harness.cmx \
+    testsuite/tools/environment.cmx \
+    utils/config.cmx \
+    utils/ccomp.cmx \
+    testsuite/tools/testLinkModes.cmi
+testsuite/tools/testLinkModes.cmi : \
+    testsuite/tools/harness.cmi \
+    testsuite/tools/environment.cmi
+testsuite/tools/testRelocation.cmo : \
+    otherlibs/unix/unix.cmi \
+    testsuite/tools/toolchain.cmi \
+    utils/misc.cmi \
+    testsuite/tools/harness.cmi \
+    testsuite/tools/environment.cmi \
+    utils/config.cmi \
+    testsuite/tools/testRelocation.cmi
+testsuite/tools/testRelocation.cmx : \
+    otherlibs/unix/unix.cmx \
+    testsuite/tools/toolchain.cmx \
+    utils/misc.cmx \
+    testsuite/tools/harness.cmx \
+    testsuite/tools/environment.cmx \
+    utils/config.cmx \
+    testsuite/tools/testRelocation.cmi
+testsuite/tools/testRelocation.cmi : \
+    testsuite/tools/harness.cmi \
+    testsuite/tools/environment.cmi
+testsuite/tools/testToplevel.cmo : \
+    testsuite/tools/harness.cmi \
+    testsuite/tools/environment.cmi \
+    utils/config.cmi \
+    testsuite/tools/testToplevel.cmi
+testsuite/tools/testToplevel.cmx : \
+    testsuite/tools/harness.cmx \
+    testsuite/tools/environment.cmx \
+    utils/config.cmx \
+    testsuite/tools/testToplevel.cmi
+testsuite/tools/testToplevel.cmi : \
+    testsuite/tools/harness.cmi \
+    testsuite/tools/environment.cmi
+testsuite/tools/test_in_prefix.cmo : \
+    otherlibs/unix/unix.cmi \
+    testsuite/tools/toolchain.cmi \
+    testsuite/tools/test_ld_conf.cmi \
+    testsuite/tools/testToplevel.cmi \
+    testsuite/tools/testRelocation.cmi \
+    testsuite/tools/testLinkModes.cmi \
+    testsuite/tools/testDynlink.cmi \
+    testsuite/tools/testBytecodeBinaries.cmi \
+    utils/misc.cmi \
+    testsuite/tools/harness.cmi \
+    testsuite/tools/environment.cmi \
+    utils/config.cmi \
+    driver/compmisc.cmi \
+    testsuite/tools/cmdline.cmi \
+    utils/clflags.cmi \
+    bytecomp/bytelink.cmi \
+    testsuite/tools/test_in_prefix.cmi
+testsuite/tools/test_in_prefix.cmx : \
+    otherlibs/unix/unix.cmx \
+    testsuite/tools/toolchain.cmx \
+    testsuite/tools/test_ld_conf.cmx \
+    testsuite/tools/testToplevel.cmx \
+    testsuite/tools/testRelocation.cmx \
+    testsuite/tools/testLinkModes.cmx \
+    testsuite/tools/testDynlink.cmx \
+    testsuite/tools/testBytecodeBinaries.cmx \
+    utils/misc.cmx \
+    testsuite/tools/harness.cmx \
+    testsuite/tools/environment.cmx \
+    utils/config.cmx \
+    driver/compmisc.cmx \
+    testsuite/tools/cmdline.cmx \
+    utils/clflags.cmx \
+    bytecomp/bytelink.cmx \
+    testsuite/tools/test_in_prefix.cmi
+testsuite/tools/test_in_prefix.cmi :
+testsuite/tools/test_ld_conf.cmo : \
+    testsuite/tools/harness.cmi \
+    testsuite/tools/environment.cmi \
+    utils/config.cmi \
+    testsuite/tools/test_ld_conf.cmi
+testsuite/tools/test_ld_conf.cmx : \
+    testsuite/tools/harness.cmx \
+    testsuite/tools/environment.cmx \
+    utils/config.cmx \
+    testsuite/tools/test_ld_conf.cmi
+testsuite/tools/test_ld_conf.cmi : \
+    testsuite/tools/harness.cmi \
+    testsuite/tools/environment.cmi
+testsuite/tools/toolchain.cmo : \
+    utils/config.cmi \
+    testsuite/tools/toolchain.cmi
+testsuite/tools/toolchain.cmx : \
+    utils/config.cmx \
+    testsuite/tools/toolchain.cmi
+testsuite/tools/toolchain.cmi :
 otherlibs/dynlink/byte/dynlink.cmo : \
     otherlibs/dynlink/dynlink_types.cmi \
     otherlibs/dynlink/byte/dynlink_symtable.cmi \

@@ -16,6 +16,8 @@
 module Style = Misc.Style
 module Fmt = Format_doc
 module Printtyp = Printtyp.Doc
+type inclusion_env = Includemod.Functor_inclusion_diff.inclusion_env =
+  { i_env:Env.t; i_subst:Subst.t }
 
 module Context = struct
   type pos =
@@ -607,7 +609,7 @@ module Functor_suberror = struct
       Fmt.pp_open_tbox ()
       Diffing.prefix (pos, Diffing.classify diff)
       Fmt.pp_set_tab ()
-      (Printtyp.wrap_printing_env env ~error:true
+      (Printtyp.wrap_printing_env env.i_env ~error:true
          (fun () -> sub ~expansion_token env diff)
       )
      Fmt.pp_close_tbox ()
@@ -615,7 +617,7 @@ module Functor_suberror = struct
   let onlycase sub ~expansion_token env (_, diff) =
     Location.msg "%a@[<hv 2>%t@]"
       Fmt.pp_print_tab ()
-      (Printtyp.wrap_printing_env env ~error:true
+      (Printtyp.wrap_printing_env env.i_env ~error:true
          (fun () -> sub ~expansion_token env diff)
       )
 
@@ -810,7 +812,6 @@ let unexpected_functor ~env ~before ~ctx diff =
 
 let rec module_type ~expansion_token ~eqmode ~env ~before ~ctx diff =
   match diff.symptom with
-  | Invalid_module_alias _ (* the difference is non-informative here *)
   | After_alias_expansion _ (* we print only the expanded module types *) ->
       module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx
         diff.symptom
@@ -842,17 +843,11 @@ and module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx = function
   | Functor f -> functor_symptom ~expansion_token ~env ~before ~ctx f
   | After_alias_expansion diff ->
       module_type ~eqmode ~expansion_token ~env ~before ~ctx diff
-  | Invalid_module_alias path ->
-      let printer =
-        Fmt.dprintf "Module %a cannot be aliased"
-          (Style.as_inline_code Printtyp.path) path
-      in
-      dwith_context ctx printer :: before
 
 and functor_params ~expansion_token ~env ~before ~ctx diff =
   match diff.got.params, diff.expected.params with
   | [], _ -> functor_expected ~before ~ctx
-  | _, [] -> unexpected_functor ~env ~before ~ctx diff
+  | _, [] -> unexpected_functor ~env:env.i_env ~before ~ctx diff
   | _ :: _, _ :: _ ->
       compare_functor_params ~expansion_token ~env ~before ~ctx diff
 
@@ -894,12 +889,14 @@ and signature ~expansion_token ~env:_ ~before ~ctx sgs =
             :: before
           else
             before
-      | [], a :: _ -> sigitem ~expansion_token ~env:sgs.env ~before ~ctx a
+      | [], a :: _ ->
+          let env = {i_env=sgs.env; i_subst=sgs.subst } in
+          sigitem ~expansion_token ~env ~before ~ctx a
       | [], [] -> assert false
     )
 and sigitem ~expansion_token ~env ~before ~ctx (name,s) = match s with
   | Core c ->
-      dwith_context ctx (core env name c) :: before
+      dwith_context ctx (core env.i_env name c) :: before
   | Module_type diff ->
       module_type ~expansion_token ~eqmode:false ~env ~before
         ~ctx:(Context.Module name :: ctx) diff
@@ -931,7 +928,8 @@ and module_type_decl ~expansion_token ~env ~before ~ctx id diff =
       | None -> assert false
       | Some mty ->
           with_context (Modtype id::ctx)
-            (Runtime_coercion.illegal_permutation Context.alt_pp env) (mty,c)
+            (Runtime_coercion.illegal_permutation Context.alt_pp env.i_env)
+            (mty,c)
           :: before
       end
 
@@ -978,17 +976,17 @@ let module_type_subst ~env id diff =
         ~ctx:[Modtype id] mts.less_than
   | Illegal_permutation c ->
       let mty = diff.got in
-      let main =
-        with_context [Modtype id]
-          (Runtime_coercion.illegal_permutation Context.alt_pp env) (mty,c) in
-      [main]
+      [with_context [Modtype id]
+         (Runtime_coercion.illegal_permutation Context.alt_pp env.i_env)
+         (mty,c)
+      ]
 
 let all env = function
   | In_Compilation_unit diff ->
       let first = Location.msg "%a" interface_mismatch diff in
       signature ~expansion_token:true ~env ~before:[first] ~ctx:[] diff.symptom
   | In_Type_declaration (id,reason) ->
-      [Location.msg "%t" (core env id reason)]
+      [Location.msg "%t" (core env.i_env id reason)]
   | In_Module_type diff ->
       module_type ~expansion_token:true ~eqmode:false ~before:[] ~env ~ctx:[]
         diff
@@ -1005,7 +1003,7 @@ let all env = function
 
 let err_msgs ppf (env, err) =
   Printtyp.wrap_printing_env ~error:true env
-    (fun () -> (coalesce @@ all env err)  ppf)
+    (fun () -> (coalesce @@ all {i_env=env; i_subst=Subst.identity} err) ppf)
 
 let report_error_doc err =
   Location.errorf
@@ -1024,7 +1022,8 @@ let report_apply_error_doc ~loc env (app_name, mty_f, args) =
   | [ _, Change (g, e,  Err.Mismatch mty_diff) ] ->
       let more () =
         subcase_list @@
-        module_type_symptom ~eqmode:false ~expansion_token:true ~env ~before:[]
+        module_type_symptom ~eqmode:false ~expansion_token:true
+          ~env:{i_env=env; i_subst=Subst.identity} ~before:[]
           ~ctx:[] mty_diff.symptom
       in
       Location.errorf ~loc ~footnote "%t"
@@ -1064,6 +1063,7 @@ let report_apply_error_doc ~loc env (app_name, mty_f, args) =
         let actual = Functor_suberror.App.got d in
         let expected = Functor_suberror.expected d in
         let sub =
+          let env = {i_env=env; i_subst=Subst.identity} in
           List.rev @@
           Functor_suberror.params functor_app_diff env ~expansion_token:true d
         in

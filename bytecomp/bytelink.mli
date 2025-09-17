@@ -30,6 +30,27 @@ val linkdeps_unit :
 
 val extract_crc_interfaces: unit -> crcs
 
+(** Ways of starting a bytecode executable *)
+type launch_method =
+| Shebang_bin_sh of string (** Use a shell script *)
+| Shebang_runtime          (** Invoke the runtime directly *)
+| Executable               (** Use the executable stub *)
+
+(** runtime-launch-info files *)
+type runtime_launch_info = {
+  buffer : string;          (** Content of the file *)
+  bindir : string;          (** Directory containing runtime executables *)
+  launcher : launch_method; (** Default launch method (this is never
+                                {!Shebang_runtime}) *)
+  executable_offset : int   (** Offset in the buffer field at which the
+                                executable stub data begins *)
+}
+
+val read_runtime_launch_info : string -> runtime_launch_info
+(** [read_runtime_launch_info file] loads the {!runtime_launch_info} from [file]
+
+    @raise Error if the file cannot be parsed *)
+
 type error =
   | File_not_found of filepath
   | Not_an_object_file of filepath

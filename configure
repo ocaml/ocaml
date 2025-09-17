@@ -933,6 +933,7 @@ DIFF_FLAGS
 encode_C_literal
 SAK
 SAK_BUILD
+ocaml_cc_vendor
 CC
 LINEAR_MAGIC_NUMBER
 CMT_MAGIC_NUMBER
@@ -3352,6 +3353,7 @@ ocamltest_libunix=None
 ocamltest_unix_impl="dummy"
 unix_library=""
 unix_directory=""
+diff_supports_color=false
 
 # Information about the package
 
@@ -3411,6 +3413,7 @@ CMXS_MAGIC_NUMBER=Caml1999D037
 CMT_MAGIC_NUMBER=Caml1999T037
 
 LINEAR_MAGIC_NUMBER=Caml1999L037
+
 
 
 
@@ -3568,8 +3571,6 @@ ac_config_files="$ac_config_files manual/src/version.tex"
 
 ac_config_files="$ac_config_files manual/src/html_processing/src/common.ml"
 
-ac_config_files="$ac_config_files ocamltest/ocamltest_config.ml"
-
 ac_config_files="$ac_config_files otherlibs/dynlink/dynlink_config.ml"
 
 ac_config_files="$ac_config_files utils/config.common.ml"
@@ -3690,6 +3691,21 @@ IFS=$ac_save_IFS
 case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
+# Allow "ocaml" to be used as the last component of the target triplet in case
+# we are using a custom toolchain for a freestanding target. To do so, the
+# target triplet is temporarily rewritten to "<arch>-none" to compute the
+# canonical target
+save_target_alias="$target_alias"
+case $target_alias in #(
+  *-*-ocaml) :
+    ac_save_IFS=$IFS
+    IFS='-'
+    set x $target_alias
+    target_alias="$2-none"
+    IFS=$ac_save_IFS ;; #(
+  *) :
+     ;;
+esac
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking target system type" >&5
 printf %s "checking target system type... " >&6; }
 if test ${ac_cv_target+y}
@@ -3730,6 +3746,7 @@ test -n "$target_alias" &&
   test "$program_prefix$program_suffix$program_transform_name" = \
     NONENONEs,x,x, &&
   program_prefix=${target_alias}-
+target_alias="$save_target_alias"
 
 # Override cross_compiling and ac_tool_prefix variables since the C toolchain is
 # used to generate target code when building a cross compiler
@@ -14803,7 +14820,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking C compiler vendor" >&5
 printf %s "checking C compiler vendor... " >&6; }
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #if defined(_MSC_VER)
@@ -14986,8 +15003,9 @@ otherlibraries="dynlink runtime_events"
 otherlibs="runtime_events"
 optional_libraries="$optional_libraries otherlibs/dynlink/dynlink"
 lib_dynlink=true
-dldir=otherlibs/dynlink
-ac_config_links="$ac_config_links $dldir/dynlink_cmo_format.mli:file_formats/cmo_format.mli $dldir/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli $dldir/dynlink_platform_intf.mli:$dldir/dynlink_platform_intf.ml"
+
+ac_config_links="$ac_config_links otherlibs/dynlink/dynlink_cmo_format.mli:file_formats/cmo_format.mli otherlibs/dynlink/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli otherlibs/dynlink/dynlink_platform_intf.mli:otherlibs/dynlink/dynlink_platform_intf.ml"
+
 
 lib_runtime_events=true
 if test x"$enable_unix_lib" != "xno"
@@ -15105,6 +15123,52 @@ esac ;; #(
     warn_error_flag='-Werror'
   cc_warnings="-Wall -Wint-conversion -Wstrict-prototypes \
 -Wold-style-definition -Wundef" ;;
+esac
+
+case $ocaml_cc_vendor in #(
+  msvc-*-clang-*) :
+    as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_-Wno-cast-function-type-mismatch" | $as_tr_sh`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts -Wno-cast-function-type-mismatch" >&5
+printf %s "checking whether the C compiler accepts -Wno-cast-function-type-mismatch... " >&6; }
+if eval test \${$as_CACHEVAR+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS $warn_error_flag -Wno-cast-function-type-mismatch"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  eval "$as_CACHEVAR=yes"
+else $as_nop
+  eval "$as_CACHEVAR=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+  CFLAGS=$ax_check_save_flags
+fi
+eval ac_res=\$$as_CACHEVAR
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+if eval test \"x\$"$as_CACHEVAR"\" = x"yes"
+then :
+  cc_warnings="$cc_warnings -Wno-cast-function-type-mismatch"
+else $as_nop
+  :
+fi
+ ;; #(
+  *) :
+     ;;
 esac
 
 # Use -Wold-style-declaration if supported
@@ -15304,9 +15368,13 @@ fi
 esac
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
+# Enable 64-bit time_t in time.h
 case $target in #(
   i686-w64-mingw32*) :
-    internal_cflags="$internal_cflags -mfpmath=sse -msse2" ;; #(
+    internal_cflags="$internal_cflags -mfpmath=sse -msse2"
+    # This instructs _mingw.h to adopt the switch in Visual Studio 8 (2005) to
+    # make time_t a 64-bit value.
+    internal_cppflags="$internal_cppflags -D__MINGW_USE_VC2005_COMPAT" ;; #(
   *) :
      ;;
 esac
@@ -15770,6 +15838,8 @@ esac
  ;; #(
   gcc-*,powerpc-*-linux*) :
     oc_ldflags="-mbss-plt" ;; #(
+  *,*-*-none|*,*-*-elf*) :
+    ostype="None" ;; #(
   *) :
      ;;
 esac
@@ -18566,7 +18636,19 @@ fi ;; #(
   riscv64-*-linux*) :
     has_native_backend=yes; arch=riscv; model=riscv64; system=linux ;; #(
   x86_64-*-gnu*) :
-    has_native_backend=yes; arch=amd64; system=gnu
+    has_native_backend=yes; arch=amd64; system=gnu ;; #(
+  aarch64-*-none|arm64-*-none|aarch64-*-elf*|arm64-*-elf*) :
+    has_native_backend=yes; arch=arm64; system=none ;; #(
+  powerpc64le*-*-none|powerpc64le*-*-elf*) :
+    has_native_backend=yes; arch=power; model=ppc64le; system=none ;; #(
+  powerpc64*-*-none|powerpc64*-*-elf*) :
+    has_native_backend=yes; arch=power; model=ppc64; system=none ;; #(
+  riscv64-*-none|riscv64-*-elf*) :
+    has_native_backend=yes; arch=riscv; model=riscv64; system=none ;; #(
+  s390x*-*-none|s390x*-*-elf*) :
+    has_native_backend=yes; arch=s390x; model=z10; system=none ;; #(
+  x86_64-*-none|x86_64-*-elf*) :
+    has_native_backend=yes; arch=amd64; system=none
  ;; #(
   *) :
      ;;
@@ -19613,6 +19695,129 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
   LDFLAGS="$SAVED_LDFLAGS"
+
+# We use tsan builtins which are internal functions and might not be
+# backwards compatible. We explicitly check if the compiler uses the
+# same declarations we expect.
+# Some tsan builtins like __tsan_func_exit() have either of two
+# signatures, void (void) or void (void *) (PR #14082).
+# We first do a single check for all builtins for which we expect
+# only one signature, then we check builtins for which we expect one
+# of multiple signatures and set a preprocessor definition according
+# to which one is found.
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for ThreadSanitizer builtins" >&5
+printf %s "checking for ThreadSanitizer builtins... " >&6; }
+if test ${ocaml_cv_tsan_builtins+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  saved_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LDFLAGS -fsanitize=thread $warn_error_flag"
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+void AnnotateHappensBefore(const char *f, int l, void *addr);
+void AnnotateHappensAfter (const char *f, int l, void *addr);
+void __tsan_func_entry   (void *);
+void __tsan_write8       (void *location);
+
+int
+main (void)
+{
+
+  AnnotateHappensBefore(__FILE__, __LINE__, (void*)0);
+  AnnotateHappensAfter (__FILE__, __LINE__, (void*)0);
+  __tsan_func_entry   ((void*)0);
+  __tsan_write8       ((void*)0);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ocaml_cv_tsan_builtins=yes
+else $as_nop
+  ocaml_cv_tsan_builtins=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+    LDFLAGS="$saved_LDFLAGS"
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ocaml_cv_tsan_builtins" >&5
+printf "%s\n" "$ocaml_cv_tsan_builtins" >&6; }
+
+  if test "$ocaml_cv_tsan_builtins" = no
+then :
+  as_fn_error $? "libtsan doesn't provide the expected builtins" "$LINENO" 5
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking how many arguments __tsan_func_exit() takes" >&5
+printf %s "checking how many arguments __tsan_func_exit() takes... " >&6; }
+if test ${ocaml_cv_func_which___tsan_func_exit+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  saved_LDFLAGS="$LDFLAGS"
+
+    # We need warning flags as using the wrong builtins is often a warning
+    LDFLAGS="$LDFLAGS -fsanitize=thread $warn_error_flag"
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+void __tsan_func_exit(void);
+int
+main (void)
+{
+__tsan_func_exit();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ocaml_cv_func_which___tsan_func_exit=void_void
+else $as_nop
+  # Else branch if the first program fails to link
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+void __tsan_func_exit(void *);
+int
+main (void)
+{
+__tsan_func_exit((void *)0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ocaml_cv_func_which___tsan_func_exit=void_void_p
+else $as_nop
+  ocaml_cv_func_which___tsan_func_exit=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+    LDFLAGS="$saved_LDFLAGS"
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ocaml_cv_func_which___tsan_func_exit" >&5
+printf "%s\n" "$ocaml_cv_func_which___tsan_func_exit" >&6; }
+
+  # Define a C macro based on the detected __tsan_func_exit signature
+  case $ocaml_cv_func_which___tsan_func_exit in #(
+  void_void_p) :
+
+printf "%s\n" "#define HAVE___TSAN_FUNC_EXIT_VOID_VOID_P 1" >>confdefs.h
+ ;; #(
+  void_void) :
+
+printf "%s\n" "#define HAVE___TSAN_FUNC_EXIT_VOID_VOID 1" >>confdefs.h
+ ;; #(
+  *) :
+    as_fn_error $? "libtsan uses an unexpected signature for __tsan_func_exit" "$LINENO" 5 ;;
+esac
 
   case $ocaml_cc_vendor in #(
   gcc-[0123456789]-*|gcc-10-*|clang-*) :
@@ -22772,6 +22977,30 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
 
+# pthread_cancel isn't implemented on Android Bionic libc
+ac_fn_c_check_func "$LINENO" "pthread_cancel" "ac_cv_func_pthread_cancel"
+if test "x$ac_cv_func_pthread_cancel" = xyes
+then :
+  printf "%s\n" "#define HAVE_PTHREAD_CANCEL 1" >>confdefs.h
+
+fi
+
+
+
+  for ac_func in pthread_setname_np pthread_set_name_np
+do :
+  as_ac_var=`printf "%s\n" "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+if eval test \"x\$"$as_ac_var"\" = x"yes"
+then :
+  cat >>confdefs.h <<_ACEOF
+#define `printf "%s\n" "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+ break
+fi
+
+done
+
 ## prctl
 
   for ac_func in prctl
@@ -22781,34 +23010,6 @@ if test "x$ac_cv_func_prctl" = xyes
 then :
   printf "%s\n" "#define HAVE_PRCTL 1" >>confdefs.h
  printf "%s\n" "#define HAS_PRCTL 1" >>confdefs.h
-
-fi
-
-done
-
-## pthread_setname_np
-
-  for ac_func in pthread_setname_np
-do :
-  ac_fn_c_check_func "$LINENO" "pthread_setname_np" "ac_cv_func_pthread_setname_np"
-if test "x$ac_cv_func_pthread_setname_np" = xyes
-then :
-  printf "%s\n" "#define HAVE_PTHREAD_SETNAME_NP 1" >>confdefs.h
- printf "%s\n" "#define HAS_PTHREAD_SETNAME_NP 1" >>confdefs.h
-
-fi
-
-done
-
-## pthread_set_name_np
-
-  for ac_func in pthread_set_name_np
-do :
-  ac_fn_c_check_func "$LINENO" "pthread_set_name_np" "ac_cv_func_pthread_set_name_np"
-if test "x$ac_cv_func_pthread_set_name_np" = xyes
-then :
-  printf "%s\n" "#define HAVE_PTHREAD_SET_NAME_NP 1" >>confdefs.h
- printf "%s\n" "#define HAS_PTHREAD_SET_NAME_NP 1" >>confdefs.h
 
 fi
 
@@ -23193,6 +23394,14 @@ case $enable_ocamltest,true in #(
     ocamltest_target=ocamltest
     ocamltest_opt_target=ocamltest.opt
     ocamltest='ocamltest'
+    if $native_compiler
+then :
+  optional_native_tools="$optional_native_tools \
+testsuite/tools/test_in_prefix.opt"
+else $as_nop
+  optional_bytecode_tools="$optional_bytecode_tools \
+testsuite/tools/test_in_prefix"
+fi
     testsuite_tools='testsuite/tools/codegen testsuite/tools/expect'
     optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools" ;; #(
   *) :
@@ -23200,10 +23409,17 @@ case $enable_ocamltest,true in #(
   ocamltest='' ;;
 esac
 
+# config.status needs the values of ocamltest_unix_mod and unix_or_win32
+# for creating symlinks
+ac_config_commands="$ac_config_commands links"
+
+
+ocamltest_unix_mod="ocamltest/ocamltest_unix_${ocamltest_unix_impl}.ml"
 if $build_ocamltest
 then :
   optional_libraries="$optional_libraries testsuite/lib/testing"
-  ocamltest_unix_mod="ocamltest/ocamltest_unix_${ocamltest_unix_impl}.ml"
+  ac_config_files="$ac_config_files ocamltest/ocamltest_config.ml"
+
   ac_config_links="$ac_config_links ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}"
 
   for ac_prog in patdiff diff
@@ -24702,6 +24918,9 @@ fi
   ocaml_bindir='$(echo "$ocaml_bindir" | sed -e "s/'/'\"'\"'/g")'
   TARGET_BINDIR='$(echo "$TARGET_BINDIR" | sed -e "s/'/'\"'\"'/g")'
 
+  ocamltest_unix_mod='$ocamltest_unix_mod'
+  unix_or_win32='$unix_or_win32'
+
 _ACEOF
 
 cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
@@ -24715,7 +24934,6 @@ do
     "stdlib/sys.ml") CONFIG_FILES="$CONFIG_FILES stdlib/sys.ml" ;;
     "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
     "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
-    "ocamltest/ocamltest_config.ml") CONFIG_FILES="$CONFIG_FILES ocamltest/ocamltest_config.ml" ;;
     "otherlibs/dynlink/dynlink_config.ml") CONFIG_FILES="$CONFIG_FILES otherlibs/dynlink/dynlink_config.ml" ;;
     "utils/config.common.ml") CONFIG_FILES="$CONFIG_FILES utils/config.common.ml" ;;
     "utils/config.generated.ml") CONFIG_FILES="$CONFIG_FILES utils/config.generated.ml" ;;
@@ -24730,14 +24948,16 @@ do
     "native-symlinks") CONFIG_COMMANDS="$CONFIG_COMMANDS native-symlinks" ;;
     "ocamldoc/META") CONFIG_FILES="$CONFIG_FILES ocamldoc/META" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
-    "$dldir/dynlink_cmo_format.mli") CONFIG_LINKS="$CONFIG_LINKS $dldir/dynlink_cmo_format.mli:file_formats/cmo_format.mli" ;;
-    "$dldir/dynlink_cmxs_format.mli") CONFIG_LINKS="$CONFIG_LINKS $dldir/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli" ;;
-    "$dldir/dynlink_platform_intf.mli") CONFIG_LINKS="$CONFIG_LINKS $dldir/dynlink_platform_intf.mli:$dldir/dynlink_platform_intf.ml" ;;
+    "otherlibs/dynlink/dynlink_cmo_format.mli") CONFIG_LINKS="$CONFIG_LINKS otherlibs/dynlink/dynlink_cmo_format.mli:file_formats/cmo_format.mli" ;;
+    "otherlibs/dynlink/dynlink_cmxs_format.mli") CONFIG_LINKS="$CONFIG_LINKS otherlibs/dynlink/dynlink_cmxs_format.mli:file_formats/cmxs_format.mli" ;;
+    "otherlibs/dynlink/dynlink_platform_intf.mli") CONFIG_LINKS="$CONFIG_LINKS otherlibs/dynlink/dynlink_platform_intf.mli:otherlibs/dynlink/dynlink_platform_intf.ml" ;;
     "otherlibs/unix/META") CONFIG_FILES="$CONFIG_FILES otherlibs/unix/META" ;;
     "otherlibs/unix/unix.ml") CONFIG_LINKS="$CONFIG_LINKS otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml" ;;
     "otherlibs/str/META") CONFIG_FILES="$CONFIG_FILES otherlibs/str/META" ;;
     "shebang") CONFIG_COMMANDS="$CONFIG_COMMANDS shebang" ;;
     "otherlibs/systhreads/META") CONFIG_FILES="$CONFIG_FILES otherlibs/systhreads/META" ;;
+    "links") CONFIG_COMMANDS="$CONFIG_COMMANDS links" ;;
+    "ocamltest/ocamltest_config.ml") CONFIG_FILES="$CONFIG_FILES ocamltest/ocamltest_config.ml" ;;
     "ocamltest/ocamltest_unix.ml") CONFIG_LINKS="$CONFIG_LINKS ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

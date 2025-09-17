@@ -34,6 +34,7 @@ let bit_size memory_chunk =
   | Byte_unsigned | Byte_signed -> 8
   | Sixteen_unsigned | Sixteen_signed -> 16
   | Thirtytwo_unsigned | Thirtytwo_signed -> 32
+  | Sixtyfour -> 64
   | Word_int | Word_val -> Sys.word_size
   | Single -> 32
   | Double -> 64
@@ -57,7 +58,7 @@ end
 
 let machtype_of_memory_chunk = function
   | Byte_unsigned | Byte_signed | Sixteen_unsigned | Sixteen_signed
-  | Thirtytwo_unsigned | Thirtytwo_signed | Word_int ->
+  | Thirtytwo_unsigned | Thirtytwo_signed | Word_int | Sixtyfour ->
     typ_int
   | Word_val -> typ_val
   | Single | Double -> typ_float
@@ -68,13 +69,14 @@ let wrap_entry_exit expr =
   let call_entry =
     Cmm_helpers.return_unit dbg_none
       (Cop
-         ( Cextcall ("__tsan_func_entry", typ_void, [], false),
+         ( Cextcall ("caml_tsan_func_entry_asm", typ_void, [], false),
            [Creturn_addr],
            dbg_none ))
   in
   let call_exit =
     Cmm_helpers.return_unit dbg_none
-      (Cop (Cextcall ("__tsan_func_exit", typ_void, [], false), [], dbg_none))
+      (Cop (Cextcall ("caml_tsan_func_exit_asm", typ_void, [], false),
+            [], dbg_none))
   in
   (* [is_tail] is true when the expression is in tail position *)
   let rec insert_call_exit is_tail = function

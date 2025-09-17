@@ -1,3 +1,6 @@
+\section{s:labeled-tuples}{Labeled tuples}
+%HEVEA\cutname{labeledtuples.html}
+
 (Introduced in OCaml 5.4)
 
 \begin{syntax}

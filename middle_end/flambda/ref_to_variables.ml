@@ -106,7 +106,7 @@ let eliminate_ref_of_expr flam =
         not (Variable.Set.mem v variables_not_used_as_local_reference))
       (variables_containing_ref flam)
   in
-  if Variable.Map.cardinal convertible_variables = 0 then flam
+  if Variable.Map.is_empty convertible_variables then flam
   else
     let convertible_variables =
       Variable.Map.mapi (fun v size ->

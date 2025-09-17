@@ -196,6 +196,7 @@ let type_kind sub = function
   | Ttype_variant list -> List.iter (constructor_decl sub) list
   | Ttype_record list -> List.iter (label_decl sub) list
   | Ttype_open -> ()
+  | Ttype_external _ -> ()
 
 let type_declaration sub x =
   sub.item_declaration sub (Type x);
@@ -207,7 +208,7 @@ let type_declaration sub x =
       sub.typ sub c1;
       sub.typ sub c2;
       sub.location sub loc)
-    x.typ_cstrs;
+    x.typ_constraints;
   sub.type_kind sub x.typ_kind;
   Option.iter (sub.typ sub) x.typ_manifest;
   List.iter (fun (c, _) -> sub.typ sub c) x.typ_params
@@ -244,7 +245,7 @@ let pat_extra sub (e, loc, attrs) =
   sub.attributes sub attrs;
   match e with
   | Tpat_type (_, lid) -> iter_loc_lid sub lid
-  | Tpat_unpack -> ()
+  | Tpat_unpack pty -> Option.iter (sub.package_type sub) pty
   | Tpat_open (_, lid, env) -> iter_loc_lid sub lid; sub.env sub env
   | Tpat_constraint ct -> sub.typ sub ct
 
@@ -393,8 +394,9 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
       sub.structure_item sub si;
       sub.expr sub e
 
-let package_type sub {tpt_cstrs; tpt_txt; _} =
-  List.iter (fun (lid, p) -> iter_loc_lid sub lid; sub.typ sub p) tpt_cstrs;
+let package_type sub {tpt_constraints; tpt_txt; _} =
+  List.iter
+    (fun (lid, p) -> iter_loc_lid sub lid; sub.typ sub p) tpt_constraints;
   iter_loc_lid sub tpt_txt
 
 let binding_op sub {bop_loc; bop_op_name; bop_exp; _} =

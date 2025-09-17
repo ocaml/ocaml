@@ -23,6 +23,7 @@ type backend_type =
 
 external get_config: unit -> string * int * bool = "caml_sys_get_config"
 external get_executable_name : unit -> string = "caml_sys_executable_name"
+external get_proc_self_exe : unit -> string option = "caml_sys_proc_self_exe"
 external argv : string array = "%sys_argv"
 external big_endian : unit -> bool = "%big_endian"
 external word_size : unit -> int = "%word_size"
@@ -34,6 +35,10 @@ external cygwin : unit -> bool = "%ostype_cygwin"
 external get_backend_type : unit -> backend_type = "%backend_type"
 
 let executable_name = get_executable_name()
+let runtime_executable =
+  match get_proc_self_exe () with
+  | None -> executable_name
+  | Some proc_self_exe -> proc_self_exe
 let (os_type, _, _) = get_config()
 let backend_type = get_backend_type ()
 let big_endian = big_endian ()

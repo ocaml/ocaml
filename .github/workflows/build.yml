@@ -34,12 +34,12 @@ jobs:
 # We then upload the compiler tree as a build artifact to enable re-use in
 # subsequent jobs.
   build:
-    runs-on: 'ubuntu-24.04'
+    runs-on: ubuntu-latest
     outputs:
       manual_changed: ${{ steps.manual.outputs.manual_changed }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
       - name: Check for manual changes
@@ -81,7 +81,7 @@ jobs:
   normal:
     name: ${{ matrix.name }}
     needs: [build, config]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
@@ -92,6 +92,7 @@ jobs:
             name: extra (debug)
           - id: debug-s4096
             name: extra (debug-s4096)
+      fail-fast: true
     steps:
       - name: Download Artifact
         uses: actions/download-artifact@v4
@@ -134,6 +135,10 @@ jobs:
         if: matrix.id == 'normal'
         run: |
          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh install
+      - name: Test in prefix
+        if: matrix.id == 'normal'
+        run: |
+         MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test-in-prefix
       - name: Build the manual
         if: matrix.id == 'normal' && needs.build.outputs.manual_changed == 'true'
         run: |
@@ -159,9 +164,12 @@ jobs:
             let jobs = [
               {name: 'linux-O0', os: 'ubuntu-latest',
                config_arg: "CFLAGS='-O0'"},
-              {name: 'linux-arm64', os: 'ubuntu-24.04-arm'},
-              {name: 'macos-x86_64', os: 'macos-13'},
-              {name: 'macos-arm64', os: 'macos-15'}];
+              {name: 'linux-arm64', os: 'ubuntu-24.04-arm',
+               'test-in-prefix': true},
+              {name: 'macos-x86_64', os: 'macos-13',
+               'test-in-prefix': true},
+              {name: 'macos-arm64', os: 'macos-15',
+               'test-in-prefix': true}];
             // # If this is a pull request, see if the PR has the
             // # 'CI: Full matrix' label. This is done using an API request,
             // # rather than from context.payload.pull_request.labels, since we
@@ -177,9 +185,10 @@ jobs:
                 // # Add "static" and "minimal" jobs
                 jobs = jobs.concat([
                   {name: 'static', os: 'ubuntu-latest',
-                   config_arg: '--disable-shared'},
+                   config_arg: '--disable-native-toplevel --disable-shared',
+                   'test-in-prefix': true},
                   {name: 'minimal', os: 'ubuntu-latest',
-                   config_arg: '--disable-native-compiler --disable-shared --disable-debug-runtime --disable-instrumented-runtime --disable-systhreads --disable-str-lib --disable-unix-lib --disable-ocamldoc'}]);
+                   config_arg: '--disable-native-toplevel --disable-native-compiler --disable-shared --disable-debug-runtime --disable-instrumented-runtime --disable-systhreads --disable-str-lib --disable-unix-lib --disable-ocamldoc'}]);
               }
             }
             return jobs;
@@ -204,9 +213,10 @@ jobs:
     strategy:
       matrix:
         include: ${{ fromJSON(needs.config.outputs.jobs) }}
+      fail-fast: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
       - name: macOS Dependencies
@@ -240,12 +250,20 @@ jobs:
           for dir in $PARALLEL_TESTS; do \
            bash -cxe "SHOW_TIMINGS=1 tools/ci/actions/runner.sh test_prefix $dir"; \
           done
+      - name: Install
+        if: ${{ matrix.test-in-prefix }}
+        run: |
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh install
+      - name: Test in prefix
+        if: ${{ matrix.test-in-prefix }}
+        run: |
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test-in-prefix
 
   i386:
     runs-on: ubuntu-latest
     needs: config
     container:
-      image: debian:12
+      image: debian:13
       options: --platform linux/i386 --user root
     steps:
       - name: OS Dependencies
@@ -259,7 +277,7 @@ jobs:
       - name: configure tree
         run: |
           chown -R ocaml:ocaml .
-          MAKE_ARG=-j su ocaml -c "bash -xe tools/ci/actions/runner.sh configure"
+          MAKE_ARG=-j CONFIG_ARG='--disable-native-toplevel' su ocaml -c "bash -xe tools/ci/actions/runner.sh configure"
       - name: Build
         run: |
           MAKE_ARG=-j su ocaml -c "bash -xe tools/ci/actions/runner.sh build"
@@ -267,3 +285,9 @@ jobs:
         if: ${{ needs.config.outputs.skip-testsuite != 'true' }}
         run: |
           su ocaml -c "bash -xe tools/ci/actions/runner.sh test"
+      - name: Install
+        run: |
+          su ocaml -c "bash -xe tools/ci/actions/runner.sh install"
+      - name: Test in prefix
+        run: |
+          su ocaml -c "bash -xe tools/ci/actions/runner.sh test-in-prefix"

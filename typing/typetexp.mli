@@ -93,6 +93,7 @@ type error =
   | Opened_object of Path.t option
   | Not_an_object of type_expr
   | Repeated_tuple_label of string
+  | Polymorphic_optional_param of string
 
 exception Error of Location.t * Env.t * error
 
@@ -104,4 +105,4 @@ val transl_modtype: (* from Typemod *)
 val check_package_with_type_constraints: (* from Typemod *)
     (Location.t -> Env.t -> Types.module_type ->
      (Longident.t Asttypes.loc * Typedtree.core_type) list ->
-     Types.module_type) ref
+     unit) ref

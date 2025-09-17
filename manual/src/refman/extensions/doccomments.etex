@@ -1,3 +1,6 @@
+\section{s:doc-comments}{Documentation comments}
+%HEVEA\cutname{doccomments.html}
+
 (Introduced in OCaml 4.03)
 
 Comments which start with "**" are treated specially by the

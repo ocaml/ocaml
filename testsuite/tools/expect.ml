@@ -241,22 +241,29 @@ let eval_expect_file _fname ~file_contents =
     in
     (* For formatting purposes *)
     Buffer.add_char buf '\n';
-    let _ : bool =
-      List.fold_left phrases ~init:true ~f:(fun acc phrase ->
-        acc &&
-        let snap = Btype.snapshot () in
-        try
-          exec_phrase ppf phrase
-        with exn ->
-          let bt = Printexc.get_raw_backtrace () in
-          begin try Location.report_exception ppf exn
-          with _ ->
-            Format.fprintf ppf "Uncaught exception: %s\n%s\n"
-              (Printexc.to_string exn)
-              (Printexc.raw_backtrace_to_string bt)
-          end;
-          Btype.backtrack snap;
-          false
+    let skipped_phrases =
+      List.fold_left phrases ~init:None ~f:(fun acc phrase ->
+          match (phrase : Parsetree.toplevel_phrase) with
+          | Ptop_def [] -> acc
+          | _ ->
+          match acc with
+          | Some i -> Some (i + 1)
+          | None ->
+              let snap = Btype.snapshot () in
+              try
+                if exec_phrase ppf phrase
+                then acc
+                else Some 0
+              with exn ->
+                let bt = Printexc.get_raw_backtrace () in
+                begin try Location.report_exception ppf exn
+                with _ ->
+                  Format.fprintf ppf "Uncaught exception: %s\n%s\n"
+                    (Printexc.to_string exn)
+                    (Printexc.raw_backtrace_to_string bt)
+                end;
+                Btype.backtrack snap;
+                Some 0
       )
     in
     Format.pp_print_flush ppf ();
@@ -264,6 +271,13 @@ let eval_expect_file _fname ~file_contents =
     if len > 0 && Buffer.nth buf (len - 1) <> '\n' then
       (* For formatting purposes *)
       Buffer.add_char buf '\n';
+    begin match skipped_phrases with
+    | None | Some 0 -> ()
+    | Some i ->
+        Format.fprintf ppf
+          "Unexecuted phrases: %i phrases did not execute due to an error\n" i
+    end;
+    Format.pp_print_flush ppf ();
     let s = Buffer.contents buf in
     Buffer.clear buf;
     Misc.delete_eol_spaces s

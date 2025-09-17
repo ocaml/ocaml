@@ -275,11 +275,12 @@ let rec typexp copy_scope s ty =
          | Type_function { params; body } ->
             Tlink (apply_type_function params args body)
          end
-      | Tpackage {pack_path; pack_cstrs} ->
+      | Tpackage {pack_path; pack_constraints} ->
           Tpackage {
             pack_path = modtype_path s pack_path;
-            pack_cstrs =
-              List.map (fun (n, ty) -> (n, typexp copy_scope s ty)) pack_cstrs;
+            pack_constraints =
+              List.map
+                (fun (n, ty) -> (n, typexp copy_scope s ty)) pack_constraints;
           }
       | Tobject (t1, name) ->
           let t1' = typexp copy_scope s t1 in
@@ -388,6 +389,7 @@ let type_declaration' copy_scope s decl =
       | Type_record(lbls, rep) ->
           Type_record (List.map (label_declaration copy_scope s) lbls, rep)
       | Type_open -> Type_open
+      | Type_external name -> Type_external name
       end;
     type_manifest =
       begin

@@ -106,7 +106,7 @@
                 type_declaration "t" (extensions.ml[13,251+37]..[13,251+38]) (extensions.ml[13,251+32]..[13,251+42])
                   ptype_params =
                     []
-                  ptype_cstrs =
+                  ptype_constraints =
                     []
                   ptype_kind =
                     Ptype_abstract
@@ -271,7 +271,7 @@
                     type_declaration "t" (extensions.ml[23,534+31]..[23,534+32]) (extensions.ml[23,534+26]..[23,534+36])
                       ptype_params =
                         []
-                      ptype_cstrs =
+                      ptype_constraints =
                         []
                       ptype_kind =
                         Ptype_abstract
@@ -310,7 +310,7 @@
                 type_declaration "t" (extensions.ml[25,606+16]..[25,606+17]) (extensions.ml[25,606+11]..[25,606+21])
                   ptype_params =
                     []
-                  ptype_cstrs =
+                  ptype_constraints =
                     []
                   ptype_kind =
                     Ptype_abstract

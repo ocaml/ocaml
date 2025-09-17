@@ -21,7 +21,8 @@ s/tid=[[:digit:]]+/tid=<implemspecific>/
 
 /#[0-9]+/ {
   s/(#[0-9]+) ([^ ]*) [^ ]*(\(discriminator [0-9]+\))? \(([^ ]*)\)/\1 \2 <implemspecific> (\4)/
-  s/(caml[a-zA-Z_0-9]+\$[a-zA-Z_0-9]+)_[[:digit:]]+/\1_<implemspecific>/
+  s/(caml[a-zA-Z_0-9]+)[$.]([a-zA-Z_0-9]+)_[[:digit:]]+/\1$\2_<implemspecific>/
+  s/(caml[a-zA-Z_0-9]+)[$.]([a-zA-Z_0-9]+)/\1$\2/
   s/\((.+)+0x[[:xdigit:]]+\)/(<implemspecific>)/
   s/ \(BuildId: [[:xdigit:]]+\)//
 }
@@ -31,7 +32,7 @@ s/ M[0-9]+/ M<implemspecific>/
 /SUMMARY/ {
   s/data race \(.*\/.+\+0x[[:xdigit:]]+\) in /data race (<systemspecific>:<implemspecific>) in /
   s/data race .+:.+ in /data race (<systemspecific>:<implemspecific>) in /
-  s/(caml[a-zA-Z_0-9]+\$[a-zA-Z_0-9]+)_[[:digit:]]+(\+0x[[:xdigit:]]+)?/\1_<implemspecific>/
+  s/(caml[a-zA-Z_0-9]+)[$.]([a-zA-Z_0-9]+)_[[:digit:]]+(\+0x[[:xdigit:]]+)?/\1$\2_<implemspecific>/
 }'
 
 # To ignore differences in compiler function inlining, kill backtrace after

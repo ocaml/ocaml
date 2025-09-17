@@ -254,6 +254,12 @@ void caml_request_major_slice (int global)
   }else{
     Caml_state->requested_major_slice = 1;
   }
+  if (atomic_load_relaxed(&caml_gc_mark_phase_requested)) {
+    /* Beginning the mark phase requires emptying the minor heap, so
+     * that there are no pointers from minor to major. */
+    Caml_state->requested_minor_gc = 1;
+  }
+
   caml_interrupt_self();
 }
 

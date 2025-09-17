@@ -41,7 +41,7 @@ Ptop_def
         type_declaration "t" (//toplevel//[2,1+5]..[2,1+6]) (//toplevel//[2,1+0]..[2,1+28])
           ptype_params =
             []
-          ptype_cstrs =
+          ptype_constraints =
             []
           ptype_kind =
             Ptype_abstract
@@ -152,7 +152,7 @@ Ptop_def
                 type_declaration "t" (//toplevel//[4,18+26]..[4,18+27]) (//toplevel//[4,18+21]..[4,18+27])
                   ptype_params =
                     []
-                  ptype_cstrs =
+                  ptype_constraints =
                     []
                   ptype_kind =
                     Ptype_abstract
@@ -177,7 +177,7 @@ Ptop_def
               type_declaration "t" (//toplevel//[2,1+30]..[2,1+31]) (//toplevel//[2,1+25]..[2,1+37])
                 ptype_params =
                   []
-                ptype_cstrs =
+                ptype_constraints =
                   []
                 ptype_kind =
                   Ptype_abstract
@@ -204,7 +204,7 @@ Ptop_def
               type_declaration "t" (//toplevel//[2,1+30]..[2,1+31]) (//toplevel//[2,1+25]..[2,1+38])
                 ptype_params =
                   []
-                ptype_cstrs =
+                ptype_constraints =
                   []
                 ptype_kind =
                   Ptype_abstract
@@ -1139,11 +1139,8 @@ Ptop_def
               [
                 <case>
                   pattern (//toplevel//[4,28+17]..[4,28+31])
-                    Ppat_constraint
-                    pattern (//toplevel//[4,28+25]..[4,28+26])
-                      Ppat_unpack "M" (//toplevel//[4,28+25]..[4,28+26])
-                    core_type (//toplevel//[4,28+29]..[4,28+30])
-                      Ptyp_package
+                    Ppat_unpack "M" (//toplevel//[4,28+25]..[4,28+26])
+                    Some
                         package_type "S" (//toplevel//[4,28+29]..[4,28+30])
                         []
                   expression (//toplevel//[4,28+35]..[4,28+37])

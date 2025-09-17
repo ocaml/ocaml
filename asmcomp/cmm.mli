@@ -132,11 +132,12 @@ type memory_chunk =
   | Sixteen_signed
   | Thirtytwo_unsigned
   | Thirtytwo_signed
-  | Word_int                           (* integer or pointer outside heap *)
-  | Word_val                           (* pointer inside heap or encoded int *)
+  | Sixtyfour          (* 64-bit integer whose accesses do not follow OCaml
+                          relaxed memory model *)
+  | Word_int           (* Integer or pointer outside heap *)
+  | Word_val           (* Pointer inside heap or encoded int *)
   | Single
-  | Double                             (* word-aligned 64-bit float
-                                          see PR#10433 *)
+  | Double             (* Word-aligned 64-bit float. See PR#10433. *)
 
 and operation =
     Capply of machtype

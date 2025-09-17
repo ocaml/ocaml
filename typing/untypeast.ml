@@ -216,11 +216,11 @@ let type_declaration sub decl =
   let attrs = sub.attributes sub decl.typ_attributes in
   Type.mk ~loc ~attrs
     ~params:(List.map (type_parameter sub) decl.typ_params)
-    ~cstrs:(
+    ~constraints:(
       List.map
         (fun (ct1, ct2, loc) ->
            (sub.typ sub ct1, sub.typ sub ct2, sub.location sub loc))
-        decl.typ_cstrs)
+        decl.typ_constraints)
     ~kind:(sub.type_kind sub decl.typ_kind)
     ~priv:decl.typ_private
     ?manifest:(Option.map (sub.typ sub) decl.typ_manifest)
@@ -233,6 +233,7 @@ let type_kind sub tk = match tk with
   | Ttype_record list ->
       Ptype_record (List.map (sub.label_declaration sub) list)
   | Ttype_open -> Ptype_open
+  | Ttype_external name -> Ptype_external name
 
 let constructor_arguments sub = function
    | Cstr_tuple l -> Pcstr_tuple (List.map (sub.typ sub) l)
@@ -286,11 +287,12 @@ let pattern : type k . _ -> k T.general_pattern -> _ = fun sub pat ->
   let attrs = sub.attributes sub pat.pat_attributes in
   let desc =
   match pat with
-      { pat_extra=[Tpat_unpack, loc, _attrs]; pat_desc = Tpat_any; _ } ->
-        Ppat_unpack { txt = None; loc  }
-    | { pat_extra=[Tpat_unpack, _, _attrs];
+      { pat_extra=[Tpat_unpack pty, loc, _attrs]; pat_desc = Tpat_any; _ } ->
+        Ppat_unpack({ txt = None; loc  }, Option.map (sub.package_type sub) pty)
+    | { pat_extra=[Tpat_unpack pty, _, _attrs];
         pat_desc = Tpat_var (_,name, _); _ } ->
-        Ppat_unpack { name with txt = Some name.txt }
+        Ppat_unpack ({ name with txt = Some name.txt },
+          Option.map (sub.package_type sub) pty)
     | { pat_extra=[Tpat_type (_path, lid), _, _attrs]; _ } ->
         Ppat_type (map_loc sub lid)
     | { pat_extra= (Tpat_constraint ct, _, _attrs) :: rem; _ } ->
@@ -303,7 +305,7 @@ let pattern : type k . _ -> k T.general_pattern -> _ = fun sub pat ->
         begin
           match (Ident.name id).[0] with
             'A'..'Z' ->
-              Ppat_unpack { name with txt = Some name.txt}
+              Ppat_unpack ({ name with txt = Some name.txt}, None)
           | _ ->
               Ppat_var name
         end
@@ -584,7 +586,8 @@ let binding_op sub bop pat =
 
 let package_type sub pack =
   { ppt_path = map_loc sub pack.tpt_txt;
-    ppt_cstrs = List.map (fun (s, ct) -> (s, sub.typ sub ct)) pack.tpt_cstrs;
+    ppt_constraints =
+      List.map (fun (s, ct) -> (s, sub.typ sub ct)) pack.tpt_constraints;
     ppt_attrs = [];
     ppt_loc = sub.location sub pack.tpt_txt.loc }
 

@@ -93,20 +93,20 @@ let map_opt f = function None -> None | Some x -> Some (f x)
 
 let map_loc sub {loc; txt} = {loc = sub.location sub loc; txt}
 
-let rec map_loc_lid sub lid =
+let rec map_lid sub lid =
   let open Longident in
   match lid with
   | Lident id -> Lident id
   | Ldot (lid, id) ->
-      let lid = { lid with txt = map_loc_lid sub lid.txt } in
+      let lid = { lid with txt = map_lid sub lid.txt } in
       Ldot (map_loc sub lid, map_loc sub id)
   | Lapply (lid, lid') ->
-    let lid = { lid with txt = map_loc_lid sub lid.txt } in
-    let lid' = { lid' with txt = map_loc_lid sub lid'.txt } in
+    let lid = { lid with txt = map_lid sub lid.txt } in
+    let lid' = { lid' with txt = map_lid sub lid'.txt } in
     Lapply(map_loc sub lid, map_loc sub lid')
 
 let map_loc_lid sub {loc; txt} =
-  let txt = map_loc_lid sub txt in
+  let txt = map_lid sub txt in
   map_loc sub {loc; txt}
 
 module C = struct
@@ -186,7 +186,7 @@ module T = struct
     | Ptyp_extension x -> extension ~loc ~attrs (sub.extension sub x)
 
   let map_type_declaration sub
-      {ptype_name; ptype_params; ptype_cstrs;
+      {ptype_name; ptype_params; ptype_constraints;
        ptype_kind;
        ptype_private;
        ptype_manifest;
@@ -197,9 +197,10 @@ module T = struct
     Type.mk ~loc ~attrs (map_loc sub ptype_name)
       ~params:(List.map (map_fst (sub.typ sub)) ptype_params)
       ~priv:ptype_private
-      ~cstrs:(List.map
-                (map_tuple3 (sub.typ sub) (sub.typ sub) (sub.location sub))
-                ptype_cstrs)
+      ~constraints:
+        (List.map
+           (map_tuple3 (sub.typ sub) (sub.typ sub) (sub.location sub))
+           ptype_constraints)
       ~kind:(sub.type_kind sub ptype_kind)
       ?manifest:(map_opt (sub.typ sub) ptype_manifest)
 
@@ -209,6 +210,7 @@ module T = struct
         Ptype_variant (List.map (sub.constructor_declaration sub) l)
     | Ptype_record l -> Ptype_record (List.map (sub.label_declaration sub) l)
     | Ptype_open -> Ptype_open
+    | Ptype_external name -> Ptype_external name
 
   let map_constructor_arguments sub = function
     | Pcstr_tuple l -> Pcstr_tuple (List.map (sub.typ sub) l)
@@ -255,11 +257,11 @@ module T = struct
       (map_loc sub pext_name)
       (map_extension_constructor_kind sub pext_kind)
 
-  let map_package_type sub {ppt_loc; ppt_path; ppt_cstrs; ppt_attrs} =
+  let map_package_type sub {ppt_loc; ppt_path; ppt_constraints; ppt_attrs} =
     let loc = sub.location sub ppt_loc in
     let attrs = sub.attributes sub ppt_attrs in
     Typ.package_type ~loc ~attrs (map_loc_lid sub ppt_path)
-      (List.map (map_tuple (map_loc_lid sub) (sub.typ sub)) ppt_cstrs)
+      (List.map (map_tuple (map_loc_lid sub) (sub.typ sub)) ppt_constraints)
 
 end
 
@@ -571,7 +573,8 @@ module P = struct
         constraint_ ~loc ~attrs (sub.pat sub p) (sub.typ sub t)
     | Ppat_type s -> type_ ~loc ~attrs (map_loc_lid sub s)
     | Ppat_lazy p -> lazy_ ~loc ~attrs (sub.pat sub p)
-    | Ppat_unpack s -> unpack ~loc ~attrs (map_loc sub s)
+    | Ppat_unpack (s, ptyp) ->
+        unpack ~loc ~attrs (map_loc sub s) (map_opt (sub.package_type sub) ptyp)
     | Ppat_open (lid,p) ->
         open_ ~loc ~attrs (map_loc_lid sub lid) (sub.pat sub p)
     | Ppat_exception p -> exception_ ~loc ~attrs (sub.pat sub p)
@@ -839,7 +842,10 @@ let default_mapper =
 
     directive_argument =
       (fun this a ->
-         { pdira_desc= a.pdira_desc
+         { pdira_desc= begin match a.pdira_desc with
+               | Pdir_ident lid -> Pdir_ident (map_lid this lid)
+               | Pdir_int _ | Pdir_bool _ | Pdir_string _ as x -> x
+             end
          ; pdira_loc= this.location this a.pdira_loc} );
 
     toplevel_directive =

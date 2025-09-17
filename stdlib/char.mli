@@ -29,7 +29,8 @@ type t = char
 (** An alias for the type of characters. *)
 
 external code : char -> int = "%identity"
-(** Return the integer code of the argument. *)
+(** [code c] is the byte corresponding to [c]. If [c] is an ASCII character
+    this corresponds to its encoding in ASCII or UTF-8. *)
 
 val chr : int -> char
 (** Return the character with the given integer code.
@@ -51,7 +52,7 @@ val compare: t -> t -> int
 (** The comparison function for characters, with the same specification as
     {!Stdlib.compare}.  Along with the type [t], this function [compare]
     allows the module [Char] to be passed as argument to the functors
-    {!Set.Make} and {!Map.Make}. *)
+    {!Set.Make} and {!Map.Make}. The order is compatible with {!Char.code}. *)
 
 val equal: t -> t -> bool
 (** The equal function for chars.

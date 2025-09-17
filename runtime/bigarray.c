@@ -30,24 +30,19 @@
 #include "caml/signals.h"
 #include "caml/camlatomic.h"
 
-#define int8 caml_ba_int8
-#define uint8 caml_ba_uint8
-#define int16 caml_ba_int16
-#define uint16 caml_ba_uint16
-
 /* Half-precision floating point numbers */
 
 #if defined(__GNUC__) && defined(__aarch64__)
 
 union float16_bits { uint16_t i; _Float16 f; };
 
-Caml_inline float caml_float16_to_float(uint16 d)
+Caml_inline float caml_float16_to_float(uint16_t d)
 {
   union float16_bits u;
   u.i = d; return u.f;
 }
 
-Caml_inline uint16 caml_float_to_float16(float d)
+Caml_inline uint16_t caml_float_to_float16(float d)
 {
   union float16_bits u;
   u.f = d; return u.i;
@@ -57,10 +52,10 @@ Caml_inline uint16 caml_float_to_float16(float d)
 
 #include <immintrin.h>
 
-Caml_inline float caml_float16_to_float(uint16 d)
+Caml_inline float caml_float16_to_float(uint16_t d)
 { return _cvtsh_ss(d); }
 
-Caml_inline uint16 caml_float_to_float16(float d)
+Caml_inline uint16_t caml_float_to_float16(float d)
 { return _cvtss_sh(d, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)); }
 
 #else
@@ -74,7 +69,7 @@ union float_bits {
  * half_to_float_fast5
  * https://gist.github.com/rygorous/2144712
  */
-static float caml_float16_to_float(uint16 d)
+static float caml_float16_to_float(uint16_t d)
 {
   static const union float_bits magic = { (254 - 15) << 23 };
   static const union float_bits was_infnan = { (127 + 16) << 23 };
@@ -93,7 +88,7 @@ static float caml_float16_to_float(uint16 d)
  * float_to_half_fast3_rtne
  * https://gist.github.com/rygorous/2156668
  */
-static uint16 caml_float_to_float16(float d)
+static uint16_t caml_float_to_float16(float d)
 {
   static const union float_bits f32infty = { 255 << 23 };
   static const union float_bits f16max = { (127 + 16) << 23 };
@@ -102,7 +97,7 @@ static uint16 caml_float_to_float16(float d)
   static const uint32_t sign_mask = 0x80000000u;
 
   union float_bits f;
-  uint16 o = 0;
+  uint16_t o = 0;
   uint32_t sign;
 
   f.f = d;
@@ -149,7 +144,7 @@ static uint16 caml_float_to_float16(float d)
 
 CAMLexport double caml_double_of_float16(intnat x)
 {
-  return (double) caml_float16_to_float((uint16) x);
+  return (double) caml_float16_to_float((uint16_t) x);
 }
 
 CAMLexport intnat caml_float16_of_double(double x)
@@ -157,7 +152,7 @@ CAMLexport intnat caml_float16_of_double(double x)
   return (intnat) caml_float_to_float16((float) x);
 }
 
-Caml_inline uint32_t caml_hash_mix_float16(uint32_t hash, uint16 d)
+Caml_inline uint32_t caml_hash_mix_float16(uint32_t hash, uint16_t d)
 {
   /* Normalize NaNs */
   if ((d & 0x7c00) == 0x7c00 && (d & 0x03ff) != 0) {
@@ -356,7 +351,7 @@ CAMLexport int caml_ba_compare(value v1, value v2)
 
   switch ((enum caml_ba_kind)(b1->flags & CAML_BA_KIND_MASK)) {
   case CAML_BA_FLOAT16:
-    DO_GENERIC_UNORDERED_COMPARISON(uint16, float, caml_float16_to_float);
+    DO_GENERIC_UNORDERED_COMPARISON(uint16_t, float, caml_float16_to_float);
   case CAML_BA_COMPLEX32:
     num_elts *= 2; fallthrough;
   case CAML_BA_FLOAT32:
@@ -366,15 +361,14 @@ CAMLexport int caml_ba_compare(value v1, value v2)
   case CAML_BA_FLOAT64:
     DO_FLOAT_COMPARISON(double);
   case CAML_BA_CHAR:
-    DO_INTEGER_COMPARISON(caml_ba_uint8);
-  case CAML_BA_SINT8:
-    DO_INTEGER_COMPARISON(caml_ba_int8);
   case CAML_BA_UINT8:
-    DO_INTEGER_COMPARISON(caml_ba_uint8);
-  case CAML_BA_SINT16:
-    DO_INTEGER_COMPARISON(caml_ba_int16);
+    DO_INTEGER_COMPARISON(uint8_t);
+  case CAML_BA_SINT8:
+    DO_INTEGER_COMPARISON(int8_t);
   case CAML_BA_UINT16:
-    DO_INTEGER_COMPARISON(caml_ba_uint16);
+    DO_INTEGER_COMPARISON(uint16_t);
+  case CAML_BA_SINT16:
+    DO_INTEGER_COMPARISON(int16_t);
   case CAML_BA_INT32:
     DO_INTEGER_COMPARISON(int32_t);
   case CAML_BA_INT64:
@@ -404,7 +398,7 @@ CAMLexport intnat caml_ba_hash(value v)
   case CAML_BA_CHAR:
   case CAML_BA_SINT8:
   case CAML_BA_UINT8: {
-    caml_ba_uint8 * p = b->data;
+    uint8_t * p = b->data;
     if (num_elts > 256) num_elts = 256;
     for (intnat n = 0; n + 4 <= num_elts; n += 4, p += 4) {
       w = p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
@@ -421,7 +415,7 @@ CAMLexport intnat caml_ba_hash(value v)
   }
   case CAML_BA_SINT16:
   case CAML_BA_UINT16: {
-    caml_ba_uint16 * p = b->data;
+    uint16_t * p = b->data;
     if (num_elts > 128) num_elts = 128;
     for (intnat n = 0; n + 2 <= num_elts; n += 2, p += 2) {
       w = p[0] | (p[1] << 16);
@@ -455,7 +449,7 @@ CAMLexport intnat caml_ba_hash(value v)
   }
   case CAML_BA_FLOAT16:
   {
-    uint16 * p = b->data;
+    uint16_t * p = b->data;
     if (num_elts > 128) num_elts = 128;
     for (intnat n = 0; n < num_elts; n++, p++) h = caml_hash_mix_float16(h, *p);
     break;
@@ -725,19 +719,19 @@ value caml_ba_get_N(value vb, volatile value * vind, int nind)
   switch ((enum caml_ba_kind)((b->flags) & CAML_BA_KIND_MASK)) {
   case CAML_BA_FLOAT16:
     return caml_copy_double(
-      (double) caml_float16_to_float(((uint16 *) b->data)[offset]));
+      (double) caml_float16_to_float(((uint16_t *) b->data)[offset]));
   case CAML_BA_FLOAT32:
     return caml_copy_double((double) ((float *) b->data)[offset]);
   case CAML_BA_FLOAT64:
     return caml_copy_double(((double *) b->data)[offset]);
   case CAML_BA_SINT8:
-    return Val_int(((int8 *) b->data)[offset]);
+    return Val_int(((int8_t *) b->data)[offset]);
   case CAML_BA_UINT8:
-    return Val_int(((uint8 *) b->data)[offset]);
+    return Val_int(((uint8_t *) b->data)[offset]);
   case CAML_BA_SINT16:
-    return Val_int(((int16 *) b->data)[offset]);
+    return Val_int(((int16_t *) b->data)[offset]);
   case CAML_BA_UINT16:
-    return Val_int(((uint16 *) b->data)[offset]);
+    return Val_int(((uint16_t *) b->data)[offset]);
   case CAML_BA_INT32:
     return caml_copy_int32(((int32_t *) b->data)[offset]);
   case CAML_BA_INT64:
@@ -867,7 +861,7 @@ static value caml_ba_set_aux(value vb, volatile value * vind,
   /* Perform write */
   switch ((enum caml_ba_kind)(b->flags & CAML_BA_KIND_MASK)) {
   case CAML_BA_FLOAT16:
-    ((uint16 *) b->data)[offset] =
+    ((uint16_t *) b->data)[offset] =
       caml_float_to_float16(Double_val(newval)); break;
   case CAML_BA_FLOAT32:
     ((float *) b->data)[offset] = Double_val(newval); break;
@@ -876,10 +870,10 @@ static value caml_ba_set_aux(value vb, volatile value * vind,
   case CAML_BA_CHAR:
   case CAML_BA_SINT8:
   case CAML_BA_UINT8:
-    ((int8 *) b->data)[offset] = Int_val(newval); break;
+    ((int8_t *) b->data)[offset] = Int_val(newval); break;
   case CAML_BA_SINT16:
   case CAML_BA_UINT16:
-    ((int16 *) b->data)[offset] = Int_val(newval); break;
+    ((int16_t *) b->data)[offset] = Int_val(newval); break;
   case CAML_BA_INT32:
     ((int32_t *) b->data)[offset] = Int32_val(newval); break;
   case CAML_BA_INT64:
@@ -1291,8 +1285,8 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
 
   switch ((enum caml_ba_kind)(b->flags & CAML_BA_KIND_MASK)) {
   case CAML_BA_FLOAT16: {
-    uint16 init = caml_float_to_float16(Double_val(vinit));
-    FILL_SCALAR_LOOP(uint16 *);
+    uint16_t init = caml_float_to_float16(Double_val(vinit));
+    FILL_SCALAR_LOOP(uint16_t *);
     break;
   }
   case CAML_BA_FLOAT32: {
@@ -1315,7 +1309,7 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
   case CAML_BA_SINT16:
   case CAML_BA_UINT16: {
     int init = Int_val(vinit);
-    FILL_SCALAR_LOOP(int16 *);
+    FILL_SCALAR_LOOP(int16_t *);
     break;
   }
   case CAML_BA_INT32: {

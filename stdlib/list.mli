@@ -204,6 +204,13 @@ val filter_map : ('a -> 'b option) -> 'a list -> 'b list
     @since 4.08
  *)
 
+val filter_mapi : (int -> 'a -> 'b option) -> 'a list -> 'b list
+(** Same as {!filter_map}, but the function is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+   @since 5.5
+ *)
+
 val concat_map : ('a -> 'b list) -> 'a list -> 'b list
 (** [concat_map f l] gives the same result as
     {!concat}[ (]{!map}[ f l)]. Tail-recursive.
@@ -370,21 +377,22 @@ val filteri : (int -> 'a -> bool) -> 'a list -> 'a list
 
 val take : int -> 'a list -> 'a list
 (** [take n l] returns the prefix of [l] of length [n],
-    or a copy of [l] if [n > length l].
+    or a copy of [l] if [n > length l]. This is the empty
+    list if [n] is negative.
 
-    [n] must be nonnegative.
+    {b Warning.} In version 5.3 only, this function raises
+    [Invalid_argument] for negative [n] values.
 
-    @raise Invalid_argument if [n] is negative.
     @since 5.3
 *)
 
 val drop : int -> 'a list -> 'a list
 (** [drop n l] returns the suffix of [l] after [n] elements,
-    or [[]] if [n > length l].
+    or [[]] if [n > length l]. This is [l] if [n] is negative.
 
-    [n] must be nonnegative.
+    {b Warning.} In version 5.3 only, this function raises
+    [Invalid_argument] for negative [n] values.
 
-    @raise Invalid_argument if [n] is negative.
     @since 5.3
 *)
 
@@ -488,6 +496,15 @@ val split : ('a * 'b) list -> 'a list * 'b list
 (** Transform a list of pairs into a pair of lists:
    [split [(a1,b1); ...; (an,bn)]] is [([a1; ...; an], [b1; ...; bn])].
    Not tail-recursive.
+ *)
+
+val split_map : ('c -> 'a * 'b) -> 'c list -> 'a list * 'b list
+(** [split_map f l] is equivalent to [split (map f l)] but avoids
+    allocating intermediate lists.
+
+    @since 5.5
+
+    Not tail-recursive.
  *)
 
 val combine : 'a list -> 'b list -> ('a * 'b) list

@@ -51,7 +51,7 @@ and pat_extra =
   | Tpat_constraint of core_type
   | Tpat_type of Path.t * Longident.t loc
   | Tpat_open of Path.t * Longident.t loc * Env.t
-  | Tpat_unpack
+  | Tpat_unpack of package_type option
 
 and 'k pattern_desc =
   (* value patterns *)
@@ -492,8 +492,8 @@ and core_type_desc =
 
 and package_type = {
   tpt_path : Path.t;
-  tpt_cstrs : (Longident.t loc * core_type) list;
-  tpt_type : Types.module_type;
+  tpt_constraints : (Longident.t loc * core_type) list;
+  tpt_type : package;
   tpt_txt : Longident.t loc;
 }
 
@@ -532,7 +532,7 @@ and type_declaration =
     typ_name: string loc;
     typ_params: (core_type * (variance * injectivity)) list;
     typ_type: Types.type_declaration;
-    typ_cstrs: (core_type * core_type * Location.t) list;
+    typ_constraints: (core_type * core_type * Location.t) list;
     typ_kind: type_kind;
     typ_private: private_flag;
     typ_manifest: core_type option;
@@ -545,6 +545,7 @@ and type_kind =
   | Ttype_variant of constructor_declaration list
   | Ttype_record of label_declaration list
   | Ttype_open
+  | Ttype_external of string
 
 and label_declaration =
     {

@@ -24,21 +24,23 @@
 #include <process.h>
 #include <stdio.h>
 
-CAMLprim value caml_unix_system(value cmd)
+CAMLprim value caml_unix_system(value command)
 {
-  int ret;
-  value st;
+  CAMLparam1(command);
+  CAMLlocal1(st);
+  int status;
   wchar_t *buf;
 
-  caml_unix_check_path(cmd, "system");
-  buf = caml_stat_strdup_to_utf16 (String_val (cmd));
+  if (! caml_string_is_c_safe (command))
+    caml_unix_error(EINVAL, "system", Nothing);
+  buf = caml_stat_strdup_to_utf16(String_val(command));
   caml_enter_blocking_section();
   _flushall();
-  ret = _wsystem(buf);
+  status = _wsystem(buf);
   caml_leave_blocking_section();
   caml_stat_free(buf);
-  if (ret == -1) caml_uerror("system", Nothing);
+  if (status == -1) caml_uerror("system", Nothing);
   st = caml_alloc_small(1, 0); /* Tag 0: Exited */
-  Field(st, 0) = Val_int(ret);
-  return st;
+  Field(st, 0) = Val_int(status);
+  CAMLreturn(st);
 }

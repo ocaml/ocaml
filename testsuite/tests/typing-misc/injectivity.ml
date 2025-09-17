@@ -180,10 +180,6 @@ type !'a t = private 'b constraint 'a = < b : 'b >
 |}]
 
 type !'a t = private 'b constraint 'a = < b : 'b; c : 'c > (* KO *)
-module M : sig type !'a t constraint 'a = < b : 'b; c : 'c > end =
-  struct type nonrec 'a t = 'a t end
-let inj_t : type a b. (<b:_; c:a> M.t, <b:_; c:b> M.t) eq -> (a, b) eq =
-  fun Refl -> Refl
 [%%expect{|
 Line 1, characters 0-58:
 1 | type !'a t = private 'b constraint 'a = < b : 'b; c : 'c > (* KO *)
@@ -191,6 +187,29 @@ Line 1, characters 0-58:
 Error: In this definition, expected parameter variances are not satisfied.
        The 1st type parameter was expected to be injective invariant,
        but it is unrestricted.
+|}]
+module S = struct
+  module M : sig type !'a t constraint 'a = < b : 'b; c : 'c > end =
+  struct type nonrec 'a t = 'a t end
+  let inj_t : type a b. (<b:_; c:a> M.t, <b:_; c:b> M.t) eq -> (a, b) eq =
+    fun Refl -> Refl
+end;;
+[%%expect{|
+Line 3, characters 2-36:
+3 |   struct type nonrec 'a t = 'a t end
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type nonrec !'a t = 'a t constraint 'a = < b : 'b > end
+       is not included in
+         sig type !'a t constraint 'a = < b : 'b; c : 'c > end
+       Type declarations do not match:
+         type !'a t = 'a t/3 constraint 'a = < b : 'b >
+       is not included in
+         type !'a t constraint 'a = < b : 'b; c : 'c >
+       Their parameters differ
+       The type "< b : 'a >" is not equal to the type "< b : 'b; c : 'c >"
+       The first object type has no method "c"
 |}]
 
 (* Injective bivariance in a signature is respected in its structures *)
@@ -218,16 +237,18 @@ Error: Signature mismatch:
 |}]
 
 (* One cannot assume that abstract types are not injective *)
-module F(X : sig type 'a t end) = struct
-  type 'a u = unit constraint 'a = 'b X.t
-  type _ x = G : 'a -> 'a u x
-end
-module M = F(struct type 'a t = 'a end)
-let M.G (x : bool) = M.G 3
+module S = struct
+  module F(X : sig type 'a t end) = struct
+    type 'a u = unit constraint 'a = 'b X.t
+    type _ x = G : 'a -> 'a u x
+  end
+  module M = F(struct type 'a t = 'a end)
+  let M.G (x : bool) = M.G 3
+end;;
 [%%expect{|
-Line 3, characters 2-29:
-3 |   type _ x = G : 'a -> 'a u x
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 4, characters 4-31:
+4 |     type _ x = G : 'a -> 'a u x
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the GADT constructor
          "G : 'a X.t -> 'a X.t u x"
        the type variable "'a" cannot be deduced from the type parameters.
@@ -438,28 +459,23 @@ val coerce : ('a, 'b) eql -> 'a -> 'b = <fun>
    accepted when defined as follows:
 *)
 
-module rec R : sig type !'a t = [ `A of 'a S.t] end = R
-       and S : sig type !'a t = 'a R.t end = S ;;
+module B = struct
+  module rec R : sig type !'a t = [ `A of 'a S.t] end = R
+  and S : sig type !'a t = 'a R.t end = S
+
+  (* The parameter of R.t is never used, so we can build an equality witness
+     for any instantiation: *)
+
+  let x_eq_y : (int R.t, string R.t) eql = Refl
+  let boom = let module U = Uninj(R) in print_endline (coerce (U.uninj x_eq_y) 0)
+end
 [%%expect{|
-Line 1, characters 19-47:
-1 | module rec R : sig type !'a t = [ `A of 'a S.t] end = R
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 2, characters 21-49:
+2 |   module rec R : sig type !'a t = [ `A of 'a S.t] end = R
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, expected parameter variances are not satisfied.
        The 1st type parameter was expected to be injective invariant,
        but it is invariant.
-|}]
-
-(* The parameter of R.t is never used, so we can build an equality witness
-   for any instantiation: *)
-
-let x_eq_y : (int R.t, string R.t) eql = Refl
-let boom = let module U = Uninj(R) in print_endline (coerce (U.uninj x_eq_y) 0)
-;;
-[%%expect{|
-Line 1, characters 18-19:
-1 | let x_eq_y : (int R.t, string R.t) eql = Refl
-                      ^
-Error: Unbound module "R"
 |}]
 
 (* #10028 by Stephen Dolan *)
@@ -475,43 +491,47 @@ module rec A : sig type !_ t = Foo : 'a -> 'a A.s t type +!'a s = T of 'a end
 |}]
 
 (* #12878 *)
-module Priv1 :
-sig
-  type !'a t = private [`T of 'a t]
-  val eql : (int t, string t) eql
-end =
-struct
-  type 'a t = [`T of 'a t]
-  let eql = Refl
-end
+module S = struct
+  module Priv1 :
+  sig
+    type !'a t = private [`T of 'a t]
+    val eql : (int t, string t) eql
+  end =
+  struct
+    type 'a t = [`T of 'a t]
+    let eql = Refl
+  end
 
-let boom_1 = let module U = Uninj (Priv1) in print_endline (coerce (U.uninj Priv1.eql) 0)
+  let boom_1 = let module U = Uninj (Priv1) in print_endline (coerce (U.uninj Priv1.eql) 0)
+end
 ;;
 [%%expect{|
-Line 3, characters 2-35:
-3 |   type !'a t = private [`T of 'a t]
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 4, characters 4-37:
+4 |     type !'a t = private [`T of 'a t]
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, expected parameter variances are not satisfied.
        The 1st type parameter was expected to be injective invariant,
        but it is invariant.
 |}]
 
-module Priv2 :
-sig
-  type !'a t = private <m:'a t>
-  val eql : (int t, string t) eql
-end =
-struct
-  type 'a t = <m:'a t>
-  let eql = Refl
-end
+module S = struct
+  module Priv2 :
+  sig
+    type !'a t = private <m:'a t>
+    val eql : (int t, string t) eql
+  end =
+  struct
+    type 'a t = <m:'a t>
+    let eql = Refl
+  end
 
-let boom_2 = let module U = Uninj (Priv2) in print_endline (coerce (U.uninj Priv2.eql) 0)
+  let boom_2 = let module U = Uninj (Priv2) in print_endline (coerce (U.uninj Priv2.eql) 0)
+end
 ;;
 [%%expect{|
-Line 3, characters 2-31:
-3 |   type !'a t = private <m:'a t>
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 4, characters 4-33:
+4 |     type !'a t = private <m:'a t>
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, expected parameter variances are not satisfied.
        The 1st type parameter was expected to be injective invariant,
        but it is invariant.

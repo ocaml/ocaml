@@ -127,7 +127,7 @@ val to_seq : ('a, 'e) result -> 'a Seq.t
 
 (** {1:syntax Syntax} *)
 
-(** Binding operators.
+(** Binding operators. See manual section 12.23 for details.
 
     @since 5.4 *)
 module Syntax : sig

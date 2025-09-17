@@ -484,13 +484,15 @@ CAMLexport void caml_main(char_os **argv)
   exe_name = argv[0];
   fd = caml_attempt_open(&exe_name, &trail, 0);
 
+  proc_self_exe = caml_executable_name();
+
   /* Little grasshopper wonders why we do that at all, since
      "The current executable is ocamlrun itself, it's never a bytecode
      program".  Little grasshopper "ocamlc -custom" in mind should keep.
      With -custom, we have an executable that is ocamlrun itself
      concatenated with the bytecode.  So, if the attempt with argv[0]
      failed, it is worth trying again with executable_name. */
-  if (fd < 0 && (proc_self_exe = caml_executable_name()) != NULL) {
+  if (fd < 0 && proc_self_exe != NULL) {
     exe_name = proc_self_exe;
     fd = caml_attempt_open(&exe_name, &trail, 0);
   }
@@ -562,7 +564,7 @@ CAMLexport void caml_main(char_os **argv)
   caml_close_channel(chan); /* this also closes fd */
   caml_stat_free(trail.section);
   /* Initialize system libraries */
-  caml_sys_init(exe_name, argv + pos);
+  caml_sys_init(proc_self_exe, exe_name, argv + pos);
   /* Load debugging info, if b>=2 */
   caml_load_main_debug_info();
   /* ensure all globals are in major heap */
@@ -596,7 +598,7 @@ CAMLexport value caml_startup_code_exn(
            int pooling,
            char_os **argv)
 {
-  char_os * exe_name;
+  char_os * exe_name, * proc_self_exe;
   value res;
 
   /* Determine options */
@@ -623,8 +625,11 @@ CAMLexport value caml_startup_code_exn(
   /* runtime_events has to be brought up after the gc */
   CAML_RUNTIME_EVENTS_INIT();
 
-  exe_name = caml_executable_name();
-  if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
+  proc_self_exe = caml_executable_name();
+  if (proc_self_exe == NULL)
+    exe_name = caml_search_exe_in_path(argv[0]);
+  else
+    exe_name = proc_self_exe;
 
   Caml_state->external_raise = NULL;
   /* Setup signal handling */
@@ -647,7 +652,7 @@ CAMLexport value caml_startup_code_exn(
   caml_modify_generational_global_root
     (&caml_global_data, caml_input_value_from_block(data, data_size));
   /* Initialize system libraries */
-  caml_sys_init(exe_name, argv);
+  caml_sys_init(proc_self_exe, exe_name, argv);
   /* Load debugging info, if b>=2 */
   caml_load_main_debug_info();
   /* ensure all globals are in major heap */

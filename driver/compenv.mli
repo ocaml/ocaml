@@ -61,16 +61,19 @@ val anonymous : string -> unit
 val impl : string -> unit
 val intf : string -> unit
 
-val process_deferred_actions :
-  Format.formatter *
-  (start_from:Clflags.Compiler_pass.t ->
-   source_file:string -> output_prefix:string -> unit) *
-  (* compile implementation *)
-  (source_file:string -> output_prefix:string -> unit) *
-  (* compile interface *)
-  string * (* ocaml module extension *)
-  string -> (* ocaml library extension *)
-  unit
+type action_context = {
+  log : Format.formatter;
+  compile_implementation:
+    start_from:Clflags.Compiler_pass.t ->
+    source_file:string -> output_prefix:string -> unit;
+  compile_interface:
+    source_file:string -> output_prefix:string -> unit;
+  ocaml_mod_ext: string; (* ".cmo" or ".cmx" *)
+  ocaml_lib_ext: string; (* ".cma" or ".cmxa" *)
+}
+
+val process_deferred_actions : action_context -> unit
+
 (* [parse_arguments ?current argv anon_arg program] will parse the arguments,
  using the arguments provided in [Clflags.arg_spec].
 *)

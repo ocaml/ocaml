@@ -950,9 +950,9 @@ let bigarray_word_kind : Lambda.bigarray_kind -> memory_chunk = function
   | Pbigarray_sint16 -> Sixteen_signed
   | Pbigarray_uint16 -> Sixteen_unsigned
   | Pbigarray_int32 -> Thirtytwo_signed
-  | Pbigarray_int64 -> Word_int
-  | Pbigarray_caml_int -> Word_int
-  | Pbigarray_native_int -> Word_int
+  | Pbigarray_int64 -> Sixtyfour
+  | Pbigarray_caml_int -> Sixtyfour
+  | Pbigarray_native_int -> Sixtyfour
   | Pbigarray_complex32 -> Single
   | Pbigarray_complex64 -> Double
 
@@ -1196,7 +1196,7 @@ let unaligned_set_32 ptr idx newval dbg =
 
 let unaligned_load_64 ptr idx dbg =
   if Arch.allow_unaligned_access
-  then Cop(mk_load_mut Word_int, [add_int ptr idx dbg], dbg)
+  then Cop(mk_load_mut Sixtyfour, [add_int ptr idx dbg], dbg)
   else
     let cconst_int i = Cconst_int (i, dbg) in
     let v1 = Cop(mk_load_mut Byte_unsigned, [add_int ptr idx dbg], dbg) in
@@ -1234,7 +1234,7 @@ let unaligned_load_64 ptr idx dbg =
 
 let unaligned_set_64 ptr idx newval dbg =
   if Arch.allow_unaligned_access
-  then Cop(Cstore (Word_int, Assignment), [add_int ptr idx dbg; newval], dbg)
+  then Cop(Cstore (Sixtyfour, Assignment), [add_int ptr idx dbg; newval], dbg)
   else
     let cconst_int i = Cconst_int (i, dbg) in
     let v1 =

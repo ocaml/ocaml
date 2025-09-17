@@ -48,6 +48,7 @@ type type_kind =
   | Kind_record
   | Kind_variant
   | Kind_open
+  | Kind_external of string
 
 type kind_mismatch = type_kind * type_kind
 

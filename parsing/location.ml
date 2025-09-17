@@ -971,7 +971,7 @@ let auto_include_alert lib =
     {Warnings.kind="ocaml_deprecated_auto_include"; use=none; def=none;
      message = Format.asprintf "@[@\n%a@]" Format.pp_print_text message}
   in
-  prerr_alert none alert
+  prerr_alert (in_file !input_name) alert
 
 let deprecated_script_alert program =
   let message = Fmt.asprintf "\

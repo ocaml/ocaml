@@ -286,6 +286,8 @@ module Type :
       | Type_record of record_field list
                    (** fields *)
       | Type_open (** Type is open *)
+      | Type_external of string
+                   (** Type is external, e.g. [type t = external "t"] *)
 
     type object_field = Odoc_type.object_field = {
       of_name : string ;

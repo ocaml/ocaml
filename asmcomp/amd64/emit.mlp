@@ -568,7 +568,7 @@ let emit_instr env fallthrough i =
   | Lop(Iload { memory_chunk; addressing_mode; _ }) ->
       let dest = res i 0 in
       begin match memory_chunk with
-      | Word_int | Word_val ->
+      | Word_int | Word_val | Sixtyfour ->
           I.mov (addressing addressing_mode QWORD i 0) dest
       | Byte_unsigned ->
           I.movzx (addressing addressing_mode BYTE i 0) dest
@@ -590,7 +590,7 @@ let emit_instr env fallthrough i =
       end
   | Lop(Istore(chunk, addr, _)) ->
       begin match chunk with
-      | Word_int | Word_val ->
+      | Word_int | Word_val | Sixtyfour ->
           I.mov (arg i 0) (addressing addr QWORD i 1)
       | Byte_unsigned | Byte_signed ->
           I.mov (arg8 i 0) (addressing addr BYTE i 1)

@@ -206,6 +206,7 @@ Line 1, characters 21-27:
                          ^^^^^^
 Error: This expression has type "x:'a * y:'b"
        but an expression was expected of type "yx" = "y:int * x:int"
+       Labels "x" and "y" do not match
 |}]
 
 let swap (pt : xy) : yx = pt
@@ -215,6 +216,7 @@ Line 1, characters 26-28:
                               ^^
 Error: The value "pt" has type "xy" = "x:int * y:int"
        but an expression was expected of type "yx" = "y:int * x:int"
+       Labels "x" and "y" do not match
 |}]
 
 let swap : xy -> yx = Fun.id
@@ -225,6 +227,7 @@ Line 1, characters 22-28:
 Error: The value "Fun.id" has type "xy -> xy"
        but an expression was expected of type "xy -> yx"
        Type "xy" = "x:int * y:int" is not compatible with type "yx" = "y:int * x:int"
+       Labels "x" and "y" do not match
 |}]
 
 let swap : xy -> yx = xy_id
@@ -235,6 +238,7 @@ Line 1, characters 22-27:
 Error: The value "xy_id" has type "(y:int * x:int) -> xy"
        but an expression was expected of type "xy -> yx"
        Type "y:int * x:int" is not compatible with type "xy" = "x:int * y:int"
+       Labels "y" and "x" do not match
 |}]
 
 let swap : xy -> yx = yx_id
@@ -245,6 +249,7 @@ Line 1, characters 22-27:
 Error: The value "yx_id" has type "yx -> yx"
        but an expression was expected of type "xy -> yx"
        Type "yx" = "y:int * x:int" is not compatible with type "xy" = "x:int * y:int"
+       Labels "y" and "x" do not match
 |}]
 
 (* Reordering and partial matches *)
@@ -536,6 +541,7 @@ Line 4, characters 21-27:
                          ^^^^^^
 Error: This pattern matches values of type "y:'a * x:'b"
        but a pattern was expected which matches values of type "x:int * y:int"
+       Labels "y" and "x" do not match
 |}]
 
 let f = function ~x, ~y -> x + y
@@ -549,6 +555,7 @@ Line 4, characters 34-35:
                                       ^
 Error: The value "z" has type "y:int * x:int"
        but an expression was expected of type "x:int * y:int"
+       Labels "y" and "x" do not match
 |}]
 
 (* More re-ordering stress tests *)

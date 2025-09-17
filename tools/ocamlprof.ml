@@ -154,6 +154,11 @@ let case { pc_rhs; pc_guard } = { rhs = pc_rhs; guard = pc_guard }
 let rec rewrite_patexp_list iflag l =
   rewrite_exp_list iflag (List.map (fun x -> x.pvb_expr) l)
 
+and rewrite_case_body iflag rhs =
+  match rhs.pexp_desc with
+  | Pexp_unreachable -> ()
+  | _ -> rewrite_exp iflag rhs
+
 and rewrite_cases iflag l =
   List.iter
     (fun pc ->
@@ -161,7 +166,7 @@ and rewrite_cases iflag l =
       | None -> ()
       | Some g -> rewrite_exp iflag g
       end;
-      rewrite_exp iflag pc.pc_rhs
+      rewrite_case_body iflag pc.pc_rhs
     )
     l
 
@@ -313,11 +318,17 @@ and rewrite_annotate_exp_list l =
     (function
      | {guard=Some scond; rhs=sbody} ->
          insert_profile rw_exp scond;
-         insert_profile rw_exp sbody;
+         rewrite_annotate_rhs sbody
      | {rhs={pexp_desc = Pexp_constraint(sbody, _)}} (* let f x : t = e *)
-        -> insert_profile rw_exp sbody
-     | {rhs=sexp} -> insert_profile rw_exp sexp)
+        -> rewrite_annotate_rhs sbody
+     | {rhs=sexp} -> rewrite_annotate_rhs sexp
+    )
     l
+
+and rewrite_annotate_rhs rhs =
+  match rhs.pexp_desc with
+  | Pexp_unreachable -> ()
+  | _ -> insert_profile rw_exp rhs
 
 and rewrite_function iflag = function
   | [{guard=None;

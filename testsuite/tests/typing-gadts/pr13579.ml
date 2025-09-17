@@ -119,12 +119,14 @@ type 'a u = U : 'b M.t -> 'b M.t u;;
 module M : sig type _ t val wrap : 'a -> 'a t val unwrap : 'a t -> 'a end
 type 'a u = U : 'b M.t -> 'b M.t u
 |}]
-let f : type a b. a M.t u -> b M.t = fun (U x) -> x;;
-let g x = M.unwrap (f (U (M.wrap x)));;
+module S = struct
+  let f : type a b. a M.t u -> b M.t = fun (U x) -> x
+  let g x = M.unwrap (f (U (M.wrap x)))
+end;;
 [%%expect{|
-Line 1, characters 50-51:
-1 | let f : type a b. a M.t u -> b M.t = fun (U x) -> x;;
-                                                      ^
+Line 2, characters 52-53:
+2 |   let f : type a b. a M.t u -> b M.t = fun (U x) -> x
+                                                        ^
 Error: The value "x" has type "$0 M.t" but an expression was expected of type
          "b M.t"
        Type "$0" is not compatible with type "b"

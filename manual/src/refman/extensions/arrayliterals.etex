@@ -1,3 +1,6 @@
+\section{s:array-literals}{Type-directed disambiguation of array literals}
+%HEVEA\cutname{arrayliterals.html}
+
 (Introduced in OCaml 5.4)
 
 Since OCaml 5.4, array literal syntax @"[|" e1 ';' e2 ';' ... ';' eN "|]"@ can

@@ -60,8 +60,7 @@
    
 <table class="indextable module-list">
 <tr><td class="module"><a href="Paragraph.html">Paragraph</a></td><td><div class="info">
-<p>This file tests the generation of paragraph within module comments.</p>
-
+This file tests the generation of paragraph within module comments.
 </div>
 </td></tr>
 </table></p>

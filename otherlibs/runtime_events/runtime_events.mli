@@ -72,13 +72,14 @@ Triggering of a minor collection during memprof young sampling.
 *)
 | EV_C_MINOR_PROMOTED
 (**
-Total words promoted from the minor heap to the major in the last minor
-collection.
+Total {b bytes} promoted from the minor heap of this Domain to the major heap
+in the last minor collection.
 @since 5.0
 *)
 | EV_C_MINOR_ALLOCATED
 (**
-Total {b bytes} allocated in the minor heap in the last minor collection.
+Total {b bytes} allocated in the minor heap of this Domain in the
+last minor collection.
 @since 5.0
 *)
 | EV_C_REQUEST_MAJOR_ALLOC_SHR
@@ -108,16 +109,16 @@ Triggering of a minor collection due to custom table reallocation.
 *)
 | EV_C_MAJOR_HEAP_POOL_WORDS
 (**
-Total words in a Domain's major heap pools. This is the sum of unallocated and
-live words in each pool.
+Total {b words} in a Domain's major heap pools. This is the sum of
+unallocated and live words in each pool.
 @since 5.1 *)
 | EV_C_MAJOR_HEAP_POOL_LIVE_WORDS
 (**
-Current live words in a Domain's major heap pools.
+Current live {b words} in a Domain's major heap pools.
 @since 5.1 *)
 | EV_C_MAJOR_HEAP_LARGE_WORDS
 (**
-Total words of a Domain's major heap large allocations.
+Total {b words} of a Domain's major heap large allocations.
 A large allocation is an allocation larger than the largest sized pool.
 @since 5.1 *)
 | EV_C_MAJOR_HEAP_POOL_FRAG_WORDS
@@ -136,18 +137,18 @@ Live blocks of a Domain's major heap large allocations.
 @since 5.1 *)
 | EV_C_MAJOR_HEAP_WORDS
 (**
-Major heap size in words of a Domain.
+Major heap size in {b words} of a Domain.
 @since 5.3 *)
 | EV_C_MAJOR_ALLOCATED_WORDS
 (**
-Allocations to the major heap of this Domain in words, since the last major
+Allocations to the major heap of this Domain in {b words}, since the last major
 slice.
 @since 5.3
 *)
 | EV_C_MAJOR_ALLOCATED_WORK
 (**
 The amount of major GC 'work' needing to be done as a result of allocations to
-the major heap of this Domain in words, since the last major slice.
+the major heap of this Domain in {b words}, since the last major slice.
 @since 5.3
 *)
 | EV_C_MAJOR_DEPENDENT_WORK
@@ -173,8 +174,8 @@ began.
 *)
 | EV_C_MAJOR_ALLOC_COUNTER
 (**
-The global words of major GC allocations done by all domains since the program
-began.
+The global {b words} of major GC allocations done by all domains since the
+program began.
 @since 5.3
 *)
 | EV_C_MAJOR_SLICE_TARGET
@@ -187,6 +188,18 @@ end of the major slice (see EV_C_MAJOR_SLICE_COUNTER).
 (**
 The budget in 'work' that a domain has to do during the major slice.
 @since 5.3
+ *)
+| EV_C_MINOR_ALLOCATED_WORDS
+(**
+Total {b words} allocated in the minor heap of this Domain in the
+last minor collection.
+@since 5.4
+*)
+| EV_C_MINOR_PROMOTED_WORDS
+(**
+Total {b words} promoted from the minor heap of this Domain to the major heap
+in the last minor collection.
+@since 5.4
 *)
 
 (** The type for span events emitted by the runtime. *)

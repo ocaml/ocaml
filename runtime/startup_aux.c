@@ -213,8 +213,9 @@ CAMLexport void caml_shutdown(void)
   shutdown_happened = 1;
 }
 
-void caml_init_exe_name(const char_os* exe_name)
+void caml_init_exe_name(const char_os* proc_self_exe, const char_os* exe_name)
 {
+  params.proc_self_exe = proc_self_exe;
   params.exe_name = exe_name;
 }
 

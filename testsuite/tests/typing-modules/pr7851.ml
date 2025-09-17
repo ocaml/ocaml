@@ -21,29 +21,25 @@ module M : sig type x type y type t = E of x type u = t = E of y end
 module type S = sig type x type y type t = E of x type u = t = E of y end
 |}]
 
-module rec M1 : S with type x = int and type y = bool = M1;;
+module S = struct
+  module rec M1 : S with type x = int and type y = bool = M1
+
+  let bool_of_int x =
+    let (E y : M1.u) = (E x : M1.t) in
+    y
+
+      bool_of_int 3
+end
 [%%expect{|
-Line 1, characters 0-58:
-1 | module rec M1 : S with type x = int and type y = bool = M1;;
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 2, characters 2-60:
+2 |   module rec M1 : S with type x = int and type y = bool = M1
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type "M1.t"
        Constructors do not match:
          "E of M1.x"
        is not the same as:
          "E of M1.y"
        The type "M1.x" = "int" is not equal to the type "M1.y" = "bool"
-|}]
-
-let bool_of_int x =
-  let (E y : M1.u) = (E x : M1.t) in
-  y;;
-
-bool_of_int 3;;
-[%%expect{|
-Line 2, characters 28-30:
-2 |   let (E y : M1.u) = (E x : M1.t) in
-                                ^^
-Error: Unbound module "M1"
 |}]
 
 (* Also check the original version *)
@@ -70,14 +66,17 @@ module M :
 module type S =
   sig type x and y type t = E of (x, x) eq type u = t = E of (x, y) eq end
 |}]
-module rec M1 : S with type x = int and type y = bool = M1;;
-let (E eq : M1.u) = (E Eq : M1.t);;
-let cast : type a b. (a,b) eq -> a -> b = fun Eq x -> x;;
-cast eq 3;;
+
+module S = struct
+  module rec M1 : S with type x = int and type y = bool = M1
+  let (E eq : M1.u) = (E Eq : M1.t)
+  let cast : type a b. (a,b) eq -> a -> b = fun Eq x -> x
+      cast eq 3
+end
 [%%expect{|
-Line 1, characters 0-58:
-1 | module rec M1 : S with type x = int and type y = bool = M1;;
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 2, characters 2-60:
+2 |   module rec M1 : S with type x = int and type y = bool = M1
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type "M1.t"
        Constructors do not match:
          "E of (M1.x, M1.x) eq"

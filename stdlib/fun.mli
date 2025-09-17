@@ -21,7 +21,7 @@
 
 (** {1:combinators Combinators} *)
 
-external id : 'a -> 'a = "%identity"
+val id : 'a -> 'a
 (** [id] is the identity function. For any argument [x], [id x] is [x]. *)
 
 val const : 'a -> (_ -> 'a)

@@ -20,6 +20,7 @@
 #include "caml/custom.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
+#include "caml/memprof.h"
 
 /* Allocation of bigarrays for memory-mapped files.
    This is the OS-independent part of [mmap.c]. */
@@ -60,7 +61,7 @@ static struct custom_operations caml_ba_mapped_ops = {
 CAMLexport value
 caml_unix_mapped_alloc(int flags, int num_dims, void * data, intnat * dim)
 {
-  uintnat asize;
+  uintnat asize, mem_words;
   value res;
   struct caml_ba_array * b;
   intnat dimcopy[CAML_BA_MAX_NUM_DIMS];
@@ -77,5 +78,8 @@ caml_unix_mapped_alloc(int flags, int num_dims, void * data, intnat * dim)
   b->flags = flags | CAML_BA_MAPPED_FILE;
   b->proxy = NULL;
   for (int i = 0; i < num_dims; i++) b->dim[i] = dimcopy[i];
+  mem_words = (caml_ba_byte_size(b) + sizeof(value) - 1) / sizeof(value);
+  caml_memprof_sample_block(
+    res, mem_words, mem_words, CAML_MEMPROF_SRC_MAP_FILE);
   return res;
 }

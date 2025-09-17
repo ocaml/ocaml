@@ -527,12 +527,12 @@ and package_type ctxt f ptyp =
   let aux f (s, ct) =
     pp f "type %a@ =@ %a" (with_loc type_longident) s (core_type ctxt) ct
   in
-  match ptyp.ppt_cstrs with
+  match ptyp.ppt_constraints with
   | [] -> with_loc type_longident f ptyp.ppt_path
   | _ ->
     pp f "%a@ with@ %a"
       (with_loc type_longident) ptyp.ppt_path
-      (list aux ~sep:"@ and@ ") ptyp.ppt_cstrs
+      (list aux ~sep:"@ and@ ") ptyp.ppt_constraints
 
 (********************pattern********************)
 (* be cautious when use [pattern], [pattern1] is preferred *)
@@ -559,38 +559,27 @@ and pattern_or ctxt f x =
       pp f "@[<hov0>%a@]" (list ~sep:"@ | " (pattern1 ctxt)) orpats
 
 and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
-  let rec pattern_list_helper f = function
-    | {ppat_desc =
-         Ppat_construct
-           ({ txt = Lident("::") ;_},
-            Some ([], {ppat_desc = Ppat_tuple([None, pat1; None, pat2],
-                                              Closed);_}));
-       ppat_attributes = []}
-
-      ->
-        pp f "%a::%a" (simple_pattern ctxt) pat1 pattern_list_helper pat2 (*RA*)
-    | p -> pattern1 ctxt f p
-  in
   if x.ppat_attributes <> [] then pattern ctxt f x
   else match x.ppat_desc with
     | Ppat_variant (l, Some p) ->
         pp f "@[<2>`%a@;%a@]" ident_of_name l (simple_pattern ctxt) p
     | Ppat_construct (({txt=Lident("()"|"[]"|"true"|"false");_}), _) ->
         simple_pattern ctxt f x
-    | Ppat_construct (({txt;_} as li), po) ->
+    | Ppat_construct ({txt=Lident("::");_}, Some ([],
+        {ppat_desc = Ppat_tuple([None, pat1; None, pat2], Closed);_})) ->
+        (* Right associative*)
+        pp f "%a::%a" (simple_pattern ctxt) pat1 (pattern1 ctxt) pat2
+    | Ppat_construct (li, po) ->
         (* FIXME The third field always false *)
-        if txt = Lident "::" then
-          pp f "%a" pattern_list_helper x
-        else
-          (match po with
-           | Some ([], x) ->
-               (* [true] and [false] are handled above *)
-               pp f "%a@;%a"  value_longident_loc li (simple_pattern ctxt) x
-           | Some (vl, x) ->
-               pp f "%a@ (type %a)@;%a" value_longident_loc li
-                 (list ~sep:"@ " ident_of_name_loc) vl
-                 (simple_pattern ctxt) x
-           | None -> pp f "%a" value_longident_loc li)
+        (match po with
+          | Some ([], x) ->
+              (* [true] and [false] are handled above *)
+              pp f "%a@;%a"  value_longident_loc li (simple_pattern ctxt) x
+          | Some (vl, x) ->
+              pp f "%a@ (type %a)@;%a" value_longident_loc li
+                (list ~sep:"@ " ident_of_name_loc) vl
+                (simple_pattern ctxt) x
+          | None -> pp f "%a" value_longident_loc li)
     | _ -> simple_pattern ctxt f x
 
 and tuple_pattern_component ctxt (f:Format.formatter) (label, x) : unit =
@@ -625,10 +614,12 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
     | Ppat_var ({txt = txt;_}) -> ident_of_name f txt
     | Ppat_array l ->
         pp f "@[<2>[|%a|]@]"  (list (pattern1 ctxt) ~sep:";") l
-    | Ppat_unpack { txt = None } ->
-        pp f "(module@ _)@ "
-    | Ppat_unpack { txt = Some s } ->
+    | Ppat_unpack ({ txt; }, None) ->
+        let s = Option.value txt ~default:"_" in
         pp f "(module@ %s)@ " s
+    | Ppat_unpack ({ txt; }, Some ptyp) ->
+        let s = Option.value txt ~default:"_" in
+        pp f "@[<2>(module@ %s :@ %a)@]" s (package_type ctxt) ptyp
     | Ppat_type li ->
         pp f "#%a" (with_loc type_longident) li
     | Ppat_record (l, closed) ->
@@ -1751,14 +1742,17 @@ and type_declaration ctxt f x =
     | Ptype_abstract -> ()
     | Ptype_record l ->
         pp f "%t%t@;%a" intro priv (record_declaration ctxt) l
-    | Ptype_open -> pp f "%t%t@;.." intro priv
+    | Ptype_open ->
+        pp f "%t%t@;.." intro priv
+    | Ptype_external name ->
+        pp f " =@ external %a" constant_string name
   in
   let constraints f =
     List.iter
       (fun (ct1,ct2,_) ->
          pp f "@[<hov2>@ constraint@ %a@ =@ %a@]"
            (core_type ctxt) ct1 (core_type ctxt) ct2)
-      x.ptype_cstrs
+      x.ptype_constraints
   in
   pp f "%t%t%t" manifest repr constraints
 

@@ -44,6 +44,8 @@ AC_DEFUN([OCAML_CC_VENDOR], [
   AC_REQUIRE([AC_PROG_CC])
   AC_REQUIRE([AC_PROG_CPP])
   AC_MSG_CHECKING([C compiler vendor])
+  dnl The outputs here must be kept in sync with the comment in utils/config.mli
+  dnl for c_compiler_vendor
   AC_PREPROC_IFELSE(
     [AC_LANG_SOURCE([
 #if defined(_MSC_VER)

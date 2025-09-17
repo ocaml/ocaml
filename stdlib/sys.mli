@@ -32,6 +32,16 @@ val executable_name : string
     on the platform and whether the program was compiled to bytecode or a native
     executable. *)
 
+val runtime_executable : string
+(** The name of the file containing the runtime currently running. For
+    native code, this is always {!executable_name}, but in bytecode it may be
+    ocamlrun, for example. This name may be absolute or relative to the current
+    directory, depending on the platform (Linux, Windows and macOS should all
+    return absolute paths).
+
+    @since 5.5
+*)
+
 external file_exists : string -> bool = "caml_sys_file_exists"
 (** Test if a file with the given name exists. *)
 

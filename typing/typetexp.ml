@@ -46,6 +46,7 @@ type error =
   | Opened_object of Path.t option
   | Not_an_object of type_expr
   | Repeated_tuple_label of string
+  | Polymorphic_optional_param of string
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -453,15 +454,24 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
     in
     ctyp (Ttyp_var name) ty
   | Ptyp_arrow(l, st1, st2) ->
-    let cty1 = transl_type env ~policy ~row_context st1 in
-    let cty2 = transl_type env ~policy ~row_context st2 in
-    let ty1 = cty1.ctyp_type in
-    let ty1 =
-      if Btype.is_optional l
-      then newty (Tconstr(Predef.path_option,[ty1], ref Mnil))
-      else ty1 in
-    let ty = newty (Tarrow(l, ty1, cty2.ctyp_type, commu_ok)) in
-    ctyp (Ttyp_arrow (l, cty1, cty2)) ty
+    let arg_cty = transl_type env ~policy ~row_context st1 in
+    let ret_cty = transl_type env ~policy ~row_context st2 in
+    let arg_ty = arg_cty.ctyp_type in
+    let arg_ty =
+      if Btype.is_Tpoly arg_ty then arg_ty else newmono arg_ty
+    in
+    let arg_ty =
+      match l with
+      | Nolabel | Labelled _ -> arg_ty
+      | Optional l -> begin
+          if not (Btype.tpoly_is_mono arg_ty) then
+            raise (Error (st1.ptyp_loc, env, Polymorphic_optional_param l));
+          newmono
+            (newconstr Predef.path_option [Btype.tpoly_get_mono arg_ty])
+        end
+    in
+    let ty = newty (Tarrow(l, arg_ty, ret_cty.ctyp_type, commu_ok)) in
+    ctyp (Ttyp_arrow (l, arg_cty, ret_cty)) ty
   | Ptyp_tuple stl ->
     assert (List.length stl >= 2);
     Option.iter (fun l -> raise (Error (loc, env, Repeated_tuple_label l)))
@@ -689,16 +699,18 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       unify_var env (newvar()) ty';
       ctyp (Ttyp_poly (vars, cty)) ty'
   | Ptyp_package ptyp ->
-      let path, mty, ptys = transl_package env ~policy ~row_context ptyp in
-      let ty = newty (Tpackage {
-          pack_path = path;
-          pack_cstrs = List.map (fun (s, cty) ->
-                         (Longident.flatten s.txt, cty.ctyp_type)) ptys})
+      let path, ptys = transl_package env ~policy ~row_context ptyp in
+      let pack = {
+        pack_path = path;
+        pack_constraints = List.map (fun (s, cty) ->
+                         (Longident.flatten s.txt, cty.ctyp_type)) ptys
+      } in
+      let ty = newty (Tpackage pack)
       in
       ctyp (Ttyp_package {
             tpt_path = path;
-            tpt_type = mty;
-            tpt_cstrs = ptys;
+            tpt_type = pack;
+            tpt_constraints = ptys;
             tpt_txt = ptyp.ppt_path;
            }) ty
   | Ptyp_open (mod_ident, t) ->
@@ -778,19 +790,16 @@ and transl_fields env ~policy ~row_context o fields =
 
 and transl_package env ~policy ~row_context ptyp =
   let loc = ptyp.ppt_loc in
-  let l = sort_constraints_no_duplicates loc env ptyp.ppt_cstrs in
+  let l = sort_constraints_no_duplicates loc env ptyp.ppt_constraints in
   let mty = Ast_helper.Mty.mk ~loc (Pmty_ident ptyp.ppt_path) in
   let mty = TyVarEnv.with_local_scope (fun () -> !transl_modtype env mty) in
   let ptys =
     List.map (fun (s, pty) -> s, transl_type env ~policy ~row_context pty) l
   in
-  let mty =
-    if ptys <> [] then
-      !check_package_with_type_constraints loc env mty.mty_type ptys
-    else mty.mty_type
-  in
+  if ptys <> [] then
+    !check_package_with_type_constraints loc env mty.mty_type ptys;
   let path = !transl_modtype_longident loc env ptyp.ppt_path.txt in
-  path, mty, ptys
+  path, ptys
 
 (* Make the rows "fixed" in this type, to make universal check easier *)
 let rec make_fixed_univars mark ty =
@@ -1009,6 +1018,9 @@ let report_error_doc loc env = function
         pp_type ty
   | Repeated_tuple_label l ->
       Location.errorf ~loc "@[This tuple type has two labels named %a@]"
+        Style.inline_code l
+  | Polymorphic_optional_param l ->
+      Location.errorf ~loc "@[Optional parameter %a cannot be polymorphic@]"
         Style.inline_code l
 
 let () =

@@ -38,7 +38,6 @@ type symptom =
       Ident.t * class_declaration * class_declaration *
       Ctype.class_match_failure list
   | Unbound_module_path of Path.t
-  | Invalid_module_alias of Path.t
 
 type pos =
   | Module of Ident.t
@@ -83,7 +82,6 @@ module Error = struct
     | Mt_core of core_module_type_symptom
     | Signature of signature_symptom
     | Functor of functor_symptom
-    | Invalid_module_alias of Path.t
     | After_alias_expansion of module_type_diff
 
 
@@ -106,6 +104,7 @@ module Error = struct
 
   and signature_symptom = {
     env: Env.t;
+    subst: Subst.t;
     missings: signature_item list;
     incompatibles: (Ident.t * sigitem_symptom) list;
     oks: (int * module_coercion) list;
@@ -190,8 +189,13 @@ module Directionality = struct
       pos:pos;
     }
 
-  let strictly_positive ~mark =
-    let mark_as_used = if mark then Mark_positive else Mark_neither in
+  let strictly_positive ~mark ~both =
+    let mark_as_used =
+      match mark, both with
+      | true, true -> Mark_both
+      | true, false -> Mark_positive
+      | false, _ -> Mark_neither
+    in
     { in_eq=false; pos=Strictly_positive; mark_as_used }
 
   let unknown ~mark =
@@ -511,11 +515,10 @@ let rec modtypes ~core ~direction ~loc env subst mty1 mty2 shape =
 and try_modtypes ~core ~direction ~loc env subst mty1 mty2 orig_shape =
   match mty1, mty2 with
   | (Mty_alias p1, Mty_alias p2) ->
-      if not (Env.is_aliasable p2 env) then
-        Error (Error.Invalid_module_alias p2)
-      else if not (equal_module_paths env p1 subst p2) then
-          Error Error.(Mt_core Incompatible_aliases)
-      else Ok (Tcoerce_none, orig_shape)
+      if (equal_module_paths env p1 subst p2) then
+          Ok (Tcoerce_none, orig_shape)
+      else
+        Error Error.(Mt_core Incompatible_aliases)
   | (Mty_alias p1, _) -> begin
       match
         Env.normalize_module_path (Some Location.none) env p1
@@ -754,6 +757,7 @@ and signatures ~core ~direction ~loc env subst sig1 sig2 mod_shape =
             | missings, incompatibles, runtime_coercions, leftovers ->
                 Error {
                   Error.env=new_env;
+                  subst;
                   missings;
                   incompatibles;
                   oks=runtime_coercions;
@@ -1100,7 +1104,7 @@ let () =
 
 let compunit env ~mark impl_name impl_sig intf_name intf_sig unit_shape =
   let loc = Location.in_file impl_name in
-  let direction = Directionality.strictly_positive ~mark in
+  let direction = Directionality.strictly_positive ~mark ~both:false in
   match
     signatures ~core:core_inclusion ~direction ~loc env Subst.identity
       impl_sig intf_sig unit_shape
@@ -1201,7 +1205,8 @@ module Functor_inclusion_diff = struct
         in
         expand_params { st with env; subst }
 
-  let diff env (l1,res1) (l2,_) =
+  type inclusion_env = { i_env:Env.t; i_subst:Subst.t }
+  let diff {i_env=env; i_subst=subst} (l1,res1) (l2,_) =
     let module Compute = Diff.Left_variadic(struct
         let test st mty1 mty2 =
           let loc = Location.none in
@@ -1218,7 +1223,7 @@ module Functor_inclusion_diff = struct
     let param1 = Array.of_list l1 in
     let param2 = Array.of_list l2 in
     let state =
-      { env; subst = Subst.identity; res = keep_expansible_param res1}
+      { env; subst; res = keep_expansible_param res1}
     in
     Compute.diff state param1 param2
 
@@ -1326,9 +1331,9 @@ end
 
 (* Hide the context and substitution parameters to the outside world *)
 
-let modtypes_with_shape ~shape ~loc env ~mark mty1 mty2 =
+let modtypes_constraint ~shape ~loc env ~mark mty1 mty2 =
   (* modtypes with shape is used when typing module expressions in [Typemod] *)
-  let direction = Directionality.strictly_positive ~mark in
+  let direction = Directionality.strictly_positive ~mark ~both:true in
   match
     modtypes ~core:core_inclusion ~direction ~loc env Subst.identity
       mty1 mty2 shape
@@ -1368,7 +1373,9 @@ let signatures env ~mark sig1 sig2 =
   gen_signatures env ~direction sig1 sig2
 
 let check_implementation env impl intf =
-  let direction = Directionality.strictly_positive ~mark:true in
+  let direction =
+    Directionality.strictly_positive ~mark:true ~both:false
+  in
   ignore (gen_signatures env ~direction impl intf)
 
 let type_declarations ~loc env ~mark id decl1 decl2 =

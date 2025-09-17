@@ -118,7 +118,7 @@ void caml_disasm_instr(code_t pc)
 void
 caml_trace_value_file (value v, code_t prog, asize_t proglen, FILE * f)
 {
-  fprintf (f, "%#" ARCH_INTNAT_PRINTF_FORMAT "x", v);
+  fprintf (f, "%#" CAML_PRIxNAT, v);
   if (!v)
     return;
   if (prog && v % sizeof (int) == 0
@@ -126,7 +126,7 @@ caml_trace_value_file (value v, code_t prog, asize_t proglen, FILE * f)
            && (code_t) v < (code_t) ((char *) prog + proglen))
     fprintf (f, "=code@%ld", (long) ((code_t) v - prog));
   else if (Is_long (v))
-    fprintf (f, "=long%" ARCH_INTNAT_PRINTF_FORMAT "d", Long_val (v));
+    fprintf (f, "=long%" CAML_PRIdNAT, Long_val (v));
   else if (Stack_base(Caml_state->current_stack) <= (value*)v &&
            (value*)v < Stack_high(Caml_state->current_stack))
     fprintf (f, "=stack_%ld",
@@ -177,7 +177,7 @@ caml_trace_value_file (value v, code_t prog, asize_t proglen, FILE * f)
         };
         if (i > 0)
           putc (' ', f);
-        fprintf (f, "%#" ARCH_INTNAT_PRINTF_FORMAT "x", Field (v, i));
+        fprintf (f, "%#" CAML_PRIxNAT, Field (v, i));
       };
       if (s > 0)
         putc (')', f);
@@ -193,7 +193,7 @@ caml_trace_accu_sp_file (value accu, value * sp, code_t prog, asize_t proglen,
   value *p;
   fprintf (f, "accu=");
   caml_trace_value_file (accu, prog, proglen, f);
-  fprintf (f, "\n sp=%#" ARCH_INTNAT_PRINTF_FORMAT "x @%ld:",
+  fprintf (f, "\n sp=%#" CAML_PRIxNAT " @%ld:",
            (intnat) sp, (long) (Stack_high(Caml_state->current_stack) - sp));
   for (p = sp, i = 0;
        i < 12 + (1 << caml_params->trace_level) &&

@@ -104,7 +104,7 @@ void caml_plat_mem_unmap(void *, uintnat);
    (from <errno.h>).  Return 0 if no POSIX error code matches. */
 CAMLextern int caml_posixerr_of_win32err(unsigned int win32err);
 
-extern int caml_win32_rename(const wchar_t *, const wchar_t *);
+CAMLextern int caml_win32_rename(const wchar_t *, const wchar_t *);
 CAMLextern int caml_win32_unlink(const wchar_t *);
 
 extern void caml_probe_win32_version(void);

@@ -90,6 +90,7 @@ type atomic_op =
 type prim =
   | Primitive of Lambda.primitive * int
   | External of Primitive.description
+  | Sys_argv
   | Comparison of comparison * comparison_kind
   | Raise of Lambda.raise_kind
   | Raise_with_backtrace
@@ -371,7 +372,7 @@ let primitives_table =
     "%bswap_native", Primitive ((Pbbswap(Pnativeint)), 1);
     "%int_as_pointer", Primitive (Pint_as_pointer, 1);
     "%opaque", Primitive (Popaque, 1);
-    "%sys_argv", External prim_sys_argv;
+    "%sys_argv", Sys_argv;
     "%send", Send;
     "%sendself", Send_self;
     "%sendcache", Send_cache;
@@ -764,8 +765,8 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   match prim, args with
   | Primitive (prim, arity), args when arity = List.length args ->
       Lprim(prim, args, loc)
-  | External prim, args when prim = prim_sys_argv ->
-      Lprim(Pccall prim, Lconst (const_int 0) :: args, loc)
+  | Sys_argv, [] ->
+      Lprim(Pccall prim_sys_argv, [Lconst (const_int 0)], loc)
   | External prim, args ->
       Lprim(Pccall prim, args, loc)
   | Comparison(comp, knd), ([_;_] as args) ->
@@ -838,7 +839,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   | Atomic (op, kind), args ->
       lambda_of_atomic prim_name loc op kind args
   | (Raise _ | Raise_with_backtrace
-    | Lazy_force | Loc _ | Primitive _ | Comparison _
+    | Lazy_force | Loc _ | Primitive _ | Sys_argv | Comparison _
     | Send | Send_self | Send_cache | Frame_pointers | Identity
     | Apply | Revapply
     ), _ ->
@@ -850,6 +851,7 @@ let check_primitive_arity loc p =
     match prim with
     | Primitive (_,arity) -> arity = p.prim_arity
     | External _ -> true
+    | Sys_argv -> p.prim_arity = 0
     | Comparison _ -> p.prim_arity = 2
     | Raise _ -> p.prim_arity = 1
     | Raise_with_backtrace -> p.prim_arity = 2
@@ -929,9 +931,12 @@ let lambda_primitive_needs_event_after = function
 (* Determine if a primitive should be surrounded by an "after" debug event *)
 let primitive_needs_event_after = function
   | Primitive (prim,_) -> lambda_primitive_needs_event_after prim
-  | External _ -> true
   | Comparison(comp, knd) ->
       lambda_primitive_needs_event_after (comparison_primitive comp knd)
+  (* C calls that may allocate or raise need an event.
+     We conservatively add an event to all C calls. *)
+  | External _ | Sys_argv -> true
+  (* Primitives that may call an arbitrary OCaml function need an event *)
   | Lazy_force | Send | Send_self | Send_cache
   | Apply | Revapply -> true
   | Raise _ | Raise_with_backtrace

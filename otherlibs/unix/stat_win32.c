@@ -72,10 +72,10 @@ static const int file_kind_table[] = {
    when the same file is accessed either from Windows or from Linux.
  */
 
-static double stat_timestamp(__time64_t tm)
+static double stat_timestamp(time_t tm)
 {
   /* Split the timestamp into seconds and remaining 100ns units */
-  __int64 sec = tm / (NSEC_PER_SEC / 100);  /* 10^7 */
+  int64_t sec = tm / (NSEC_PER_SEC / 100);  /* 10^7 */
   int n100sec = tm % (NSEC_PER_SEC / 100);
   /* The conversion of sec to FP is exact for the foreseeable future.
      (It starts rounding when sec > 2^53, i.e. in 285 million years.) */
@@ -91,7 +91,7 @@ static double stat_timestamp(__time64_t tm)
   return t;
 }
 
-static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
+static value stat_aux(int use_64, int64_t st_ino, struct _stat64 *buf)
 {
   CAMLparam0 ();
   CAMLlocal1 (v);
@@ -162,7 +162,7 @@ Caml_inline ULONGLONG convert_time(FILETIME time)
 }
 
 /* path allocated outside the OCaml heap */
-static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, __int64* st_ino, struct _stat64* res)
+static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, int64_t* st_ino, struct _stat64* res)
 {
   BY_HANDLE_FILE_INFORMATION info;
   wchar_t* ptr;
@@ -170,7 +170,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
   unsigned short mode;
   int is_symlink = 0;
   ULONGLONG stamp;
-  __time64_t mtime = 0;
+  time_t mtime = 0;
 
   if (!path) {
     h = fstat;
@@ -269,8 +269,8 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
         res->st_size = 0;
       }
       else {
-        res->st_size = ((__int64)(info.nFileSizeHigh)) << 32 |
-                       ((__int64)info.nFileSizeLow);
+        res->st_size = ((int64_t)(info.nFileSizeHigh)) << 32 |
+                       ((int64_t)info.nFileSizeLow);
       }
     }
 
@@ -296,7 +296,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
      */
     res->st_nlink = info.nNumberOfLinks;
     res->st_dev = info.dwVolumeSerialNumber;
-    *st_ino = ((__int64)(info.nFileIndexHigh)) << 32 | ((__int64)info.nFileIndexLow);
+    *st_ino = ((int64_t)(info.nFileIndexHigh)) << 32 | ((int64_t)info.nFileIndexLow);
   }
 
   if (do_lstat && is_symlink) {
@@ -326,7 +326,7 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
   return 1;
 }
 
-static int do_stat(int do_lstat, int use_64, const char* opath, HANDLE fstat, __int64* st_ino, struct _stat64* res)
+static int do_stat(int do_lstat, int use_64, const char* opath, HANDLE fstat, int64_t* st_ino, struct _stat64* res)
 {
   wchar_t* wpath;
   int ret;
@@ -340,7 +340,7 @@ CAMLprim value caml_unix_stat(value path)
 {
   CAMLparam1(path);
   struct _stat64 buf;
-  __int64 st_ino;
+  int64_t st_ino;
 
   caml_unix_check_path(path, "stat");
   if (!do_stat(0, 0, String_val(path), NULL, &st_ino, &buf)) {
@@ -353,7 +353,7 @@ CAMLprim value caml_unix_stat_64(value path)
 {
   CAMLparam1(path);
   struct _stat64 buf;
-  __int64 st_ino;
+  int64_t st_ino;
 
   caml_unix_check_path(path, "stat");
   if (!do_stat(0, 1, String_val(path), NULL, &st_ino, &buf)) {
@@ -366,7 +366,7 @@ CAMLprim value caml_unix_lstat(value path)
 {
   CAMLparam1(path);
   struct _stat64 buf;
-  __int64 st_ino;
+  int64_t st_ino;
 
   caml_unix_check_path(path, "lstat");
   if (!do_stat(1, 0, String_val(path), NULL, &st_ino, &buf)) {
@@ -379,7 +379,7 @@ CAMLprim value caml_unix_lstat_64(value path)
 {
   CAMLparam1(path);
   struct _stat64 buf;
-  __int64 st_ino;
+  int64_t st_ino;
 
   caml_unix_check_path(path, "lstat");
   if (!do_stat(1, 1, String_val(path), NULL, &st_ino, &buf)) {
@@ -391,7 +391,7 @@ CAMLprim value caml_unix_lstat_64(value path)
 static value do_fstat(value handle, int use_64)
 {
   struct _stat64 buf;
-  __int64 st_ino;
+  int64_t st_ino;
   HANDLE h;
   DWORD ft;
 

@@ -1,3 +1,6 @@
+\section{s:letrecvalues}{Recursive definitions of values}
+%HEVEA\cutname{letrecvalues.html}
+
 (Introduced in Objective Caml 1.00)
 
 As mentioned in section~\ref{sss:expr-localdef}, the @'let' 'rec'@ binding

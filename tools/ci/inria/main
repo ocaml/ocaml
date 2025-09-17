@@ -286,6 +286,16 @@ if test "$flambda" = "true"; then
   confoptions="$confoptions --enable-flambda --enable-flambda-invariants"
 fi
 
+case $NODE_NAME in
+  *-32|ocaml-ppc-64-be)
+    # Native compilation not supported
+    ;;
+  *)
+    # Include ocamlnat (for the in-prefix tests) unless explicitly disabled:
+    # a later --disable-native-toplevel will take precedence if present.
+    confoptions="--enable-native-toplevel $confoptions";;
+esac
+
 eval ./configure "$CCOMP" $build $host --prefix='$instdir' $confoptions
 
 grep -q '^NATIVE_COMPILER=false' Makefile.config && make_native=false
@@ -311,6 +321,12 @@ if $make_native && $check_make_alldepend; then
 fi
 
 $make --warn-undefined-variables install
+case $confoptions in
+  *--disable-unix-lib*) ;;         # test-in-prefix needs Unix lib
+  *)
+    $make -f Makefile.test -C testsuite/in_prefix test-in-prefix
+    ;;
+esac
 rm -rf "$instdir"
 
 cd testsuite

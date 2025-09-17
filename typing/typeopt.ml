@@ -22,6 +22,11 @@ open Typedtree
 open Lambda
 
 let scrape_ty env ty =
+  let ty =
+    match get_desc ty with
+    | Tpoly(ty, _) -> ty
+    | _ -> ty
+  in
   match get_desc ty with
   | Tconstr _ ->
       let ty = Ctype.expand_head_opt env ty in
@@ -106,7 +111,7 @@ let classify env ty : classification =
       | Some #Predef.data_type_constr | None ->
         try
           match (Env.find_type p env).type_kind with
-          | Type_abstract _ ->
+          | Type_abstract _ | Type_external _ ->
               Any
           | Type_record _ | Type_variant _ | Type_open ->
               Addr
