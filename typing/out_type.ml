@@ -1535,15 +1535,40 @@ let extension_constructor_args_and_ret_type_subtree ext_args ext_ret_type =
   let args = tree_of_constructor_arguments ext_args in
   (args, ret)
 
+(* TODO: eliminate duplications of this code in this file *)
+(* TODO: move to somewhere (typedecl_variance?) *)
+(* TODO: Typedecl_variance.surface_variance should be integrated *)
+(* TODO: Types.variance should expose its poset structure better *)
+let decode_variance v =
+  let open Variance in let open Asttypes in
+  if not !Clflags.print_variance then (NoVariance, NoInjectivity) else
+  (match mem May_pos v, mem May_neg v with
+  | false, false -> Bivariant
+  | true, false -> Covariant
+  | false, true -> Contravariant
+  | true, true -> NoVariance),
+  (if mem Inj v then Injective else NoInjectivity)
+
 let prepared_tree_of_extension_constructor
-   id ext es
+   ~env id ext es
   =
   let ty_name = Path.name ext.ext_type_path in
   let ty_params = filter_params ext.ext_type_params in
-  let type_param =
+  let ty_variances =
+    let ovariances =
+        Option.bind env (fun env ->
+          try Some (Env.find_type ext.ext_type_path env).type_variance
+          with Not_found -> None)
+    in
+    Option.fold
+      ~none:(List.map (fun _ -> NoVariance, NoInjectivity) ty_params)
+      ~some:(List.map decode_variance)
+      ovariances
+  in
+  let type_param ot_variance =
     function
     | Otyp_var (_ot_non_gen, ot_name) ->
-        {ot_non_gen=false; ot_name; ot_variance=(NoVariance,NoInjectivity)}
+        {ot_non_gen=false; ot_name; ot_variance}
         (* NB: ot_non_gen=false to preserve the original semantics; however,
            simply using the given ot_non_gen does not break testsuite either *)
     | _ ->
@@ -1562,7 +1587,8 @@ let prepared_tree_of_extension_constructor
     param_scope
       (fun () ->
          List.iter (Aliases.add_printed ~non_gen:false) ty_params;
-         List.map (fun ty -> type_param (tree_of_typexp Type ty)) ty_params
+         List.map2 (fun v ty -> type_param v (tree_of_typexp Type ty))
+          ty_variances ty_params
       )
   in
   let name = Ident.name id in
@@ -1587,14 +1613,14 @@ let prepared_tree_of_extension_constructor
   in
     Osig_typext (ext, es)
 
-let tree_of_extension_constructor id ext es =
+let tree_of_extension_constructor ?env id ext es =
   reset_except_conflicts ();
   add_extension_constructor_to_preparation ext;
-  prepared_tree_of_extension_constructor id ext es
+  prepared_tree_of_extension_constructor ~env id ext es
 
-let prepared_extension_constructor id ppf ext =
+let prepared_extension_constructor ?env id ppf ext =
   !Oprint.out_sig_item ppf
-    (prepared_tree_of_extension_constructor id ext Text_first)
+    (prepared_tree_of_extension_constructor ~env id ext Text_first)
 
 (* Print a value declaration *)
 
@@ -1912,7 +1938,7 @@ and tree_of_signature_rec env' sg =
 
 and trees_of_recursive_sigitem_group env
     (syntactic_group: Signature_group.rec_group) =
-  let display (x:Signature_group.sig_item) = x.src, tree_of_sigitem x.src in
+  let display (x:Signature_group.sig_item) = x.src, tree_of_sigitem env x.src in
   let env = Env.add_signature syntactic_group.pre_ghosts env in
   match syntactic_group.group with
   | Not_rec x -> add_sigitem env x, [display x]
@@ -1921,13 +1947,13 @@ and trees_of_recursive_sigitem_group env
       List.fold_left add_sigitem env items,
       with_hidden_items ids (fun () -> List.map display items)
 
-and tree_of_sigitem = function
+and tree_of_sigitem env = function
   | Sig_value(id, decl, _) ->
       tree_of_value_description id decl
   | Sig_type(id, decl, rs, _) ->
       tree_of_type_declaration id decl rs
   | Sig_typext(id, ext, es, _) ->
-      tree_of_extension_constructor id ext es
+      tree_of_extension_constructor ~env id ext es
   | Sig_module(id, _, md, rs, _) ->
       let ellipsis =
         List.exists (function
