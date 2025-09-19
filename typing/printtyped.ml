@@ -149,6 +149,8 @@ let option i f ppf x =
       line i ppf "Some\n";
       f (i+1) ppf x
 
+let with_loc pp ppf x = pp ppf x.txt
+
 let longident i ppf li = line i ppf "%a\n" fmt_longident li
 let string i ppf s = line i ppf "\"%s\"\n" s
 let arg_label i ppf = function
@@ -159,6 +161,14 @@ let arg_label i ppf = function
 let tuple_component_label i ppf = function
   | None -> line i ppf "Label: None\n"
   | Some s -> line i ppf "Label: Some \"%s\"\n" s
+
+let tuple_field i ppf fld =
+  line i ppf "tuple_field\n";
+  let i = i + 1 in
+  match fld with
+  | Ttf_label { label; index } ->
+    line i ppf "Ttf_label index=%d\n" index;
+    with_loc (string i) ppf label
 
 let typevars ppf vs =
   List.iter (fun x -> fprintf ppf " %a" Pprintast.tyvar x.txt) vs
@@ -394,6 +404,10 @@ and expression i ppf x =
   | Texp_tuple (l) ->
       line i ppf "Texp_tuple\n";
       list i labeled_expression ppf l;
+  | Texp_tuple_proj (e, fld) ->
+      line i ppf "Texp_tuple_proj\n";
+      expression i ppf e;
+      tuple_field i ppf fld
   | Texp_construct (li, _, eo) ->
       line i ppf "Texp_construct %a\n" fmt_longident li;
       list i expression ppf eo;

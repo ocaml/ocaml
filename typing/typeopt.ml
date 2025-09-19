@@ -248,6 +248,7 @@ let classify_lazy_argument e =
     | Texp_pack _ (* commutative modules would be ok *)
     | Texp_field _ (* [v.x] for immutable fields would be ok *)
     | Texp_atomic_loc _ (* [%atomic.loc c.x] would be ok *)
+    | Texp_tuple_proj _ (* [c.~l] would be ok *)
     | Texp_object _ (* commutative objects would be ok *)
     | Texp_struct_item _ (* [let <structure item> in c] would be ok *)
       -> false

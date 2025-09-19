@@ -357,6 +357,12 @@ and transl_exp0 ~in_new_scope ~scopes e =
           Lprim (Pfield (lbl.lbl_pos + 1, maybe_pointer e, lbl.lbl_mut), [targ],
                  of_location ~scopes e.exp_loc)
       end
+  | Texp_tuple_proj (arg, fld) ->
+      let targ = transl_exp ~scopes arg in
+      (match fld with
+      | Ttf_label { label = _; index } ->
+          Lprim (Pfield (index, Pointer, Immutable), [targ],
+                         of_location ~scopes e.exp_loc))
   | Texp_setfield (arg, _, ({ lbl_atomic = Atomic; _ } as lbl), newval) ->
       let prim =
         Primitive.simple
