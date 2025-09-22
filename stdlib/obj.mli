@@ -23,6 +23,23 @@ type t
 type raw_data = nativeint  (* @since 4.12 *)
 
 external repr : 'a -> t = "%identity"
+  (**
+     Internally, [repr] is just the identity function.
+     Using it has the effect of giving any value the abstract type [t].
+     One use is to keep values of different types in a single list
+     (perhaps to prevent them from being garbage collected).
+
+     On versions of OCaml without the flat-float-array optimisation (which
+     is enabled by default), an equivalent of [repr] can be made like this:
+     {[ type t = Any : 'a -> t [\@\@unboxed] ]}
+     However, with flat-float-array the type definition will be rejected
+     because it's not safe, and neither is [repr].
+     For example, this will likely segfault:
+     {[ [| Obj.repr 0.; Obj.repr false |] ]}
+
+     Removing the [[\@\@unboxed]] annotation produces a version that works
+     everywhere, but requires an allocation. *)
+
 external obj : t -> 'a = "%identity"
 external magic : 'a -> 'b = "%identity"
 val is_block : t -> bool
