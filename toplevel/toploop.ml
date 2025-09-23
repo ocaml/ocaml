@@ -384,7 +384,9 @@ let loop ppf =
   Clflags.debug := true;
   Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
-    fprintf ppf "OCaml version %s%s%s@.Enter %a for help.@.@."
+    (* semgrep: for sanity-checking, have a marker when we load the REPL to
+     * indicate that we are running our fork. *)
+    fprintf ppf "OCaml (Semgrep) version %s%s%s@.Enter %a for help.@.@."
       Config.version
       (if Topeval.implementation_label = "" then "" else " - ")
       Topeval.implementation_label
