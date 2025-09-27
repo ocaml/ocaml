@@ -935,6 +935,17 @@ manipulates heap-allocated blocks.
 
 \subsection{ss:c-simple-gc-harmony}{Simple interface}
 
+In general, any variable in C code that references a heap-allocated OCaml value
+must be known to the runtime when the GC runs, as all references to any objects
+moved by the GC need to be updated. Listed below are simple rules to achieve
+this. In some cases, the rules dictate registration of variables that may not be
+technically needed (eg because the referenced OCaml value is an immediate, or
+because the GC is guaranteed not to be invoked during the lifetime of the
+variable). However, trying to optimize root registration is a common source of
+safety bugs, so it is strongly recommended to follow the rules below in most
+cases. The implementation of the root registration mechanism is efficient and
+will not typically result in any performance penalty.
+
 All the macros described in this section are declared in the
 "<caml/memory.h>" header file.
 
