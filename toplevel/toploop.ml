@@ -246,7 +246,7 @@ let load_ocamlinit ~is_script ppf =
   | Some f ->
     if Sys.file_exists f then ignore (use_silently ppf (File f) )
     else fprintf ppf "Init file not found: \"%s\".@." f
-  | None when not is_script || !Clflags.yesinit ->
+  | None when not is_script ->
       begin match find_ocamlinit () with
       | None -> ()
       | Some file -> ignore (use_silently ppf (File file))
