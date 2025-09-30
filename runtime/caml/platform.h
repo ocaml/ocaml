@@ -66,46 +66,31 @@ Caml_inline void cpu_relax(void) {
 }
 
 
-/* Warning: blocking functions.
+/* Runtime mutexes and conditional variables.
 
-   Blocking functions are for use in the runtime outside of the
-   mutator, or when the domain lock is not held.
+   The functions below are for use within the runtime system, outside
+   of mutator code. Within critical sections for
+   [caml_plat_lock_blocking], it is incorrect to use the runtime
+   (allocating, releasing the domain lock, running a STW section,
+   raising an exception, etc.).
 
-   In order to use them inside the mutator and while holding the
-   domain lock, one must make sure that the wait is very short, and
-   that no deadlock can arise from the interaction with the domain
-   locks and the stop-the-world sections.
+   In particular, those mutex are higher-ranked than the domain lock,
+   it is invalid to take the domain lock while they are held.
 
-   In particular one must not call [caml_plat_lock_blocking] on a
-   mutex while the domain lock is held:
-    - if any critical section of the mutex crosses an allocation, a
-      blocking section releasing the domain lock, or any other
-      potential STW section, nor
-    - if the same lock is acquired at any point using [Mutex.lock] or
-      [caml_plat_lock_non_blocking] on the same domain (circular
-      deadlock with the domain lock).
+   Threads blocked on a mutex will not react to STW interruptions, so
+   this should only be used for very short critical sections.
 
-   Hence, as a general rule, prefer [caml_plat_lock_non_blocking] to
-   lock a mutex when inside the mutator and holding the domain lock.
-   The domain lock must be held in order to call
-   [caml_plat_lock_non_blocking].
+   Mutator code that needs to take a lock and use the runtime within
+   its critical section should use the lower-ranked, non-blocking
+   mutator mutexes from caml/sync.h.
 
-   It is possible to combine calls to [caml_plat_lock_non_blocking] on
-   a mutex from the mutator holding the domain lock with calls to
-   [caml_plat_lock_blocking] on another mutator that has released
-   their domain lock, but not with calls to [caml_plat_lock_blocking]
-   from a STW section or a custom block finaliser.
-
-   These functions never raise exceptions; errors are fatal. Thus, for
-   usages where bugs are susceptible to be introduced by users, the
-   functions from caml/sync.h should be used instead.
+   These functions never raise exceptions; errors are fatal.
 */
 
 typedef pthread_mutex_t caml_plat_mutex;
 #define CAML_PLAT_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 CAMLextern void caml_plat_mutex_init(caml_plat_mutex*);
 Caml_inline void caml_plat_lock_blocking(caml_plat_mutex*);
-Caml_inline void caml_plat_lock_non_blocking(caml_plat_mutex*);
 Caml_inline int caml_plat_try_lock(caml_plat_mutex*);
 void caml_plat_assert_locked(caml_plat_mutex*);
 void caml_plat_assert_all_locks_unlocked(void);
@@ -119,6 +104,7 @@ void caml_plat_wait(caml_plat_cond*, caml_plat_mutex*); /* blocking */
 void caml_plat_broadcast(caml_plat_cond*);
 void caml_plat_signal(caml_plat_cond*);
 void caml_plat_cond_free(caml_plat_cond*);
+
 
 /* Futexes
 
@@ -470,20 +456,12 @@ Caml_inline int caml_plat_try_lock(caml_plat_mutex* m)
   }
 }
 
-CAMLextern void caml_plat_lock_non_blocking_actual(caml_plat_mutex* m);
-
-Caml_inline void caml_plat_lock_non_blocking(caml_plat_mutex* m)
-{
-  if (!caml_plat_try_lock(m)) {
-    caml_plat_lock_non_blocking_actual(m);
-  }
-}
-
 Caml_inline void caml_plat_unlock(caml_plat_mutex* m)
 {
   DEBUG_UNLOCK(m);
   check_err("unlock", pthread_mutex_unlock(m));
 }
+
 
 extern intnat caml_plat_pagesize;
 extern intnat caml_plat_mmap_alignment;

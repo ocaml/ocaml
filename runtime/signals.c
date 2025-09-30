@@ -31,6 +31,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
+#include "caml/sync.h"
 #include "caml/roots.h"
 #include "caml/signals.h"
 #include "caml/sys.h"
@@ -709,7 +710,7 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     act = 2;
     break;
   }
-  caml_plat_lock_non_blocking(&signal_install_mutex);
+  caml_mutex_lock_while_yielding_the_runtime_system(&signal_install_mutex);
   /* Note: no safepoint for calling signals in this critical section */
   oldact = caml_set_signal_action(sig, act);
   switch (oldact) {
@@ -733,10 +734,10 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
     }
     caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
   }
-  caml_plat_unlock(&signal_install_mutex);
+  caml_mutex_unlock(&signal_install_mutex);
   caml_get_value_or_raise(caml_process_pending_signals_res());
   CAMLreturn (res);
  err:
-  caml_plat_unlock(&signal_install_mutex);
+  caml_mutex_unlock(&signal_install_mutex);
   caml_sys_error(NO_ARG);
 }

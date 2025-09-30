@@ -509,7 +509,7 @@ static void caml_thread_reinitialize(void)
   for (struct channel *chan = caml_all_opened_channels;
        chan != NULL;
        chan = chan->next) {
-    caml_plat_mutex_reinit(&chan->mutex);
+    caml_mutex_reinit(&chan->mutex);
   }
 }
 

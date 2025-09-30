@@ -40,6 +40,7 @@
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
 #include "caml/platform.h"
+#include "caml/sync.h"
 #include "caml/signals.h"
 #include "caml/sys.h"
 #include "caml/bigarray.h"
@@ -86,13 +87,13 @@ static CAMLthread_local struct channel* last_channel_locked = NULL;
 
 CAMLexport void caml_channel_lock(struct channel *chan)
 {
-  caml_plat_lock_non_blocking(&chan->mutex);
+  caml_mutex_lock_while_yielding_the_runtime_system(chan->mutex);
   last_channel_locked = chan;
 }
 
 CAMLexport void caml_channel_unlock(struct channel *chan)
 {
-  caml_plat_unlock(&chan->mutex);
+  caml_mutex_unlock(chan->mutex);
   last_channel_locked = NULL;
 }
 
@@ -182,7 +183,7 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   caml_leave_blocking_section();
   channel->curr = channel->max = channel->buff;
   channel->end = channel->buff + IO_BUFFER_SIZE;
-  caml_plat_mutex_init(&channel->mutex);
+  caml_mutex_init(&channel->mutex);
   channel->refcount = 0;
   channel->prev = NULL;
   channel->next = NULL;
@@ -204,7 +205,7 @@ CAMLexport void caml_close_channel(struct channel *channel)
 {
   CAMLassert((channel->flags & CHANNEL_FLAG_MANAGED_BY_GC) == 0);
   close(channel->fd);
-  caml_plat_mutex_free(&channel->mutex);
+  caml_mutex_free(&channel->mutex);
   caml_stat_free(channel->name);
   caml_stat_free(channel->buff);
   caml_stat_free(channel);
@@ -583,7 +584,7 @@ void caml_finalize_channel(value vchan)
   }
   unlink_channel(chan);
   caml_plat_unlock (&caml_all_opened_channels_mutex);
-  caml_plat_mutex_free(&chan->mutex);
+  caml_mutex_free(&chan->mutex);
   caml_stat_free(chan->name);
   if (chan->fd != -1) caml_stat_free(chan->buff);
   caml_stat_free(chan);
