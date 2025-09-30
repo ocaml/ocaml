@@ -109,6 +109,32 @@ let use_silently ppf input =
 
 let load_file = load_file false
 
+(* Execute a script.  If [name] is "", read the script from stdin. *)
+
+let run_script ppf name args =
+  Clflags.debug := true;
+  override_sys_argv args;
+  let filename = filename_of_input name in
+  Compmisc.init_path ~dir:(Filename.dirname filename) ();
+                   (* Note: would use [Filename.abspath] here, if we had it. *)
+  Sys.interactive := false;
+  run_hooks After_setup;
+  let explicit_name =
+    match name with
+    | File name as filename  -> (
+    (* Prevent use_silently from searching in the path. *)
+    if name <> "" && Filename.is_implicit name
+    then File (Filename.concat Filename.current_dir_name name)
+    else filename)
+    | (Stdin | String _) as x -> x
+  in
+  begin match !Clflags.init_file with
+  | Some f ->
+      if Sys.file_exists f then ignore (use_silently ppf (File f) )
+      else fprintf ppf "Init file not found: \"%s\".@." f
+  | None -> ()
+  end ;
+  use_silently ppf explicit_name
 
 (* Toplevel initialization. Performed here instead of at the
    beginning of loop() so that user code linked in with ocamlmktop
@@ -240,40 +266,16 @@ let find_ocamlinit () =
                  check_xdg_config_dirs;
                  check_home]
 
-let load_ocamlinit ~is_script ppf =
+let load_ocamlinit ppf =
   if !Clflags.noinit then ()
   else match !Clflags.init_file with
   | Some f ->
     if Sys.file_exists f then ignore (use_silently ppf (File f) )
     else fprintf ppf "Init file not found: \"%s\".@." f
-  | None when not is_script ->
-      begin match find_ocamlinit () with
+  | None ->
+      match find_ocamlinit () with
       | None -> ()
       | Some file -> ignore (use_silently ppf (File file))
-      end
-  | None -> ()
-
-(* Execute a script.  If [name] is "", read the script from stdin. *)
-
-let run_script ppf name args =
-  Clflags.debug := true;
-  override_sys_argv args;
-  let filename = filename_of_input name in
-  Compmisc.init_path ~dir:(Filename.dirname filename) ();
-                   (* Note: would use [Filename.abspath] here, if we had it. *)
-  Sys.interactive := false;
-  run_hooks After_setup;
-  let explicit_name =
-    match name with
-    | File name as filename  -> (
-    (* Prevent use_silently from searching in the path. *)
-    if name <> "" && Filename.is_implicit name
-    then File (Filename.concat Filename.current_dir_name name)
-    else filename)
-    | (Stdin | String _) as x -> x
-  in
-  load_ocamlinit ~is_script:true ppf;
-  use_silently ppf explicit_name
 
 (* The interactive loop *)
 
@@ -400,7 +402,7 @@ let loop ppf =
   Location.input_phrase_buffer := Some phrase_buffer;
   Sys.catch_break true;
   run_hooks After_setup;
-  load_ocamlinit ~is_script:false ppf;
+  load_ocamlinit ppf;
   while true do
     let snap = ref (Btype.snapshot ()) in
     try
