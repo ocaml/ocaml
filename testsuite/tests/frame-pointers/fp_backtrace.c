@@ -105,9 +105,8 @@ static void print_symbol(const char* symbol, const regmatch_t* match)
   fflush(stdout);
 }
 
-void fp_backtrace(value argv0)
+void fp_backtrace(CAMLunused value argv0)
 {
-  const char* execname = String_val(argv0);
   const char* symbol = NULL;
 
   for (struct frame_info *fi = __builtin_frame_address(0), *next = NULL;
