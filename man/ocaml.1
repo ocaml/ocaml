@@ -318,8 +318,8 @@ Display a short usage summary and exit.
 When
 .BR ocaml (1)
 is invoked as a toplevel, it will read phrases from an initialization file
-before giving control to the user. This is disabled by default when running a
-script.
+before giving control to the user. This does not happen when running a
+script, or when using -e.
 
 The file read is the first found of:
 .IP 1.
