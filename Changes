@@ -248,7 +248,8 @@ Working version
   (Gabriel Scherer, review by Nicolás Ojeda Bär and Florian Angeletti,
    report by Kate Deplaix)
 
-- #14190: bugfix;`ocaml -init init.ml -e "my code"` now works properly.
+- #14190: `ocaml -e` now also processes `-init` (previously it was ignored).
+  (Emile Trotignon, review by David Allsopp and ???)
 
 ### Internal/compiler-libs changes:
 
