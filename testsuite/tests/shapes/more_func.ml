@@ -74,8 +74,8 @@ module Id : (X : sig end) -> sig end
 {
  "Struct"[module] ->
    {<.16>
-    "L"[module] -> Alias(<.15>
-                         CU Stdlib . "List"[module]);
+    "L"[module] -> Static_alias(<.15>
+                                CU Stdlib . "List"[module]);
     };
  }
 module Struct : sig module L = List end
@@ -90,9 +90,10 @@ module Proj = Struct.L
  }
 module App : sig end
 {
- "Proj"[module] -> Alias(<.18>
-                         Alias(<.15>
-                               CU Stdlib . "List"[module]));
+ "Proj"[module] ->
+   Static_alias(<.18>
+                Static_alias(<.15>
+                             CU Stdlib . "List"[module]));
  }
 module Proj = Struct.L
 |}]
@@ -114,8 +115,8 @@ module F : (X : sig end) -> sig module M : sig end end
  }
 module N : sig module M : sig end end
 {
- "O"[module] -> Alias(<.23>
-                      {<.19>});
+ "O"[module] -> Static_alias(<.23>
+                             {<.19>});
  }
 module O = N.M
 |}]

@@ -125,7 +125,8 @@ type out_module_type =
   | Omty_functor of (string option * out_module_type) option * out_module_type
   | Omty_ident of out_ident
   | Omty_signature of out_sig_item list
-  | Omty_alias of out_ident
+  | Omty_static_alias of out_ident
+  | Omty_transparent of out_ident
 and out_sig_item =
   | Osig_class of
       bool * string * out_type_param list * out_class_type *

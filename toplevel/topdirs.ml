@@ -219,13 +219,13 @@ let trim_signature = function
       Mty_signature
         (List.map
            (function
-               Sig_module (id, pres, md, rs, priv) ->
+               Sig_module (id, md, rs, priv) ->
                  let attribute =
                    Ast_helper.Attr.mk
                      (Location.mknoloc "...")
                      (Parsetree.PStr [])
                  in
-                 Sig_module (id, pres, {md with md_attributes =
+                 Sig_module (id, {md with md_attributes =
                                           attribute :: md.md_attributes},
                              rs, priv)
              (*| Sig_modtype (id, Modtype_manifest mty) ->
@@ -414,17 +414,20 @@ let () =
        in
        let rec accum_aliases path md acc =
          let def rs =
-           Sig_module (id, Mp_present,
+           Sig_module (id,
                        {md with md_type = trim_signature md.md_type},
                        rs, Exported) in
          match md.md_type with
-         | Mty_alias new_path ->
+         | Mty_static_alias new_path ->
              let md = Env.find_module new_path env in
              accum_aliases new_path md
                (if secretly_the_same_path env path new_path
                 then acc
                 else def Trec_not :: acc)
-         | Mty_ident _ | Mty_signature _ | Mty_functor _ ->
+         | Mty_ident _
+         | Mty_signature _
+         | Mty_functor _
+         | Mty_transparent _ ->
              List.rev (def (is_rec_module id md) :: acc)
        in
        accum_aliases path md []
@@ -448,7 +451,10 @@ let () =
                (if secretly_the_same_path env path new_path
                 then acc
                 else def :: acc)
-         | None | Some (Mty_alias _ | Mty_signature _ | Mty_functor _) ->
+         | None | Some (Mty_static_alias _
+                        | Mty_transparent _
+                        | Mty_signature _
+                        | Mty_functor _) ->
              List.rev (def :: acc)
        in
        accum_defs path mtd []

@@ -2269,6 +2269,7 @@ typing/untypeast.cmo : \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
+    parsing/builtin_attributes.cmi \
     parsing/asttypes.cmi \
     parsing/ast_helper.cmi \
     typing/untypeast.cmi
@@ -2279,6 +2280,7 @@ typing/untypeast.cmx : \
     parsing/longident.cmx \
     parsing/location.cmx \
     typing/ident.cmx \
+    parsing/builtin_attributes.cmx \
     parsing/asttypes.cmx \
     parsing/ast_helper.cmx \
     typing/untypeast.cmi

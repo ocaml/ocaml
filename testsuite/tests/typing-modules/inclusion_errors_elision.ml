@@ -41,7 +41,7 @@ Error: Signature mismatch:
            and h = B.h
          end
        is not included in
-         (module A)
+         (module A) [@static_alias]
 |}]
 
 module A = struct
@@ -89,5 +89,5 @@ Error: Signature mismatch:
            and h = C.h
          end
        is not included in
-         (module A)
+         (module A) [@static_alias]
 |}]

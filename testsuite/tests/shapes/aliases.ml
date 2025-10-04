@@ -13,10 +13,10 @@ module B = A
  }
 module A : sig type t end
 {
- "B"[module] -> Alias(<.2>
-                      {<.1>
-                       "t"[type] -> <.0>;
-                       });
+ "B"[module] -> Static_alias(<.2>
+                             {<.1>
+                              "t"[type] -> <.0>;
+                              });
  }
 module B = A
 |}]
@@ -38,8 +38,8 @@ module F' = F
  }
 module F : (X : sig type t end) -> sig type t = X.t end
 {
- "F'"[module] -> Alias(<.7>
-                       Abs<.6>(X, X<.5>));
+ "F'"[module] -> Static_alias(<.7>
+                              Abs<.6>(X, X<.5>));
  }
 module F' = F
 |}]
@@ -59,10 +59,10 @@ module C = F(B)
 
 [%%expect{|
 {
- "C"[module] -> Alias(<.9>
-                      {<.1>
-                       "t"[type] -> <.0>;
-                       });
+ "C"[module] -> Static_alias(<.9>
+                             {<.1>
+                              "t"[type] -> <.0>;
+                              });
  }
 module C : sig type t = B.t end
 |}]
@@ -71,11 +71,12 @@ module D = C
 
 [%%expect{|
 {
- "D"[module] -> Alias(<.10>
-                      Alias(<.9>
-                            {<.1>
-                             "t"[type] -> <.0>;
-                             }));
+ "D"[module] ->
+   Static_alias(<.10>
+                Static_alias(<.9>
+                             {<.1>
+                              "t"[type] -> <.0>;
+                              }));
  }
 module D = C
 |}]
@@ -118,10 +119,10 @@ module M : sig type t val x : int end
  }
 module N : sig type t end
 {
- "O"[module] -> Alias(<.20>
-                      {<.19>
-                       "t"[type] -> <.15>;
-                       });
+ "O"[module] -> Static_alias(<.20>
+                             {<.19>
+                              "t"[type] -> <.15>;
+                              });
  }
 module O = N
 |}]

@@ -7,7 +7,7 @@ module X = struct end
 [%%expect{|
 [
   structure_item
-    Tstr_module (Present)
+    Tstr_module
     X/281
       module_expr
         Tmod_structure
@@ -21,7 +21,7 @@ module X = struct end [@foo]
 [%%expect{|
 [
   structure_item
-    Tstr_module (Present)
+    Tstr_module
     X/282
       module_expr
         attribute "foo"
@@ -37,7 +37,7 @@ module Y = X
 [%%expect{|
 [
   structure_item
-    Tstr_module (Absent)
+    Tstr_module
     Y/283
       module_expr
         Tmod_ident "X/282"
@@ -55,10 +55,10 @@ module type T = sig module Y = X end
         Tmty_signature
         [
           signature_item
-            Tsig_module (Absent)
+            Tsig_module
             Y/284
               module_type
-                Tmty_alias "X/282"
+                Tmty_static_alias "X/282"
         ]
 ]
 

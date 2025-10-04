@@ -124,7 +124,8 @@ and desc =
   | Abs of var * t
   | App of t * t
   | Struct of t Item.Map.t
-  | Alias of t
+  | Static_alias of t
+  | Transparent of t
   | Leaf
   | Proj of t * Item.t
   | Comp_unit of string
@@ -143,7 +144,8 @@ val var : Uid.t -> Ident.t -> t
 val abs : ?uid:Uid.t -> var -> t -> t
 val app : ?uid:Uid.t -> t -> arg:t -> t
 val str : ?uid:Uid.t -> t Item.Map.t -> t
-val alias : ?uid:Uid.t -> t -> t
+val static_alias : ?uid:Uid.t -> t -> t
+val transparent : ?uid:Uid.t -> t -> t
 val proj : ?uid:Uid.t -> t -> Item.t -> t
 val leaf : Uid.t -> t
 

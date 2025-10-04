@@ -116,11 +116,6 @@ let fmt_partiality f x =
   | Total -> ()
   | Partial -> fprintf f " (Partial)"
 
-let fmt_presence f x =
-  match x with
-  | Types.Mp_present -> fprintf f "(Present)"
-  | Types.Mp_absent -> fprintf f "(Absent)"
-
 let line i f s (*...*) =
   fprintf f "%s" (String.make (2*i) ' ');
   fprintf f s (*...*)
@@ -737,7 +732,8 @@ and module_type i ppf x =
   let i = i+1 in
   match x.mty_desc with
   | Tmty_ident (li,_) -> line i ppf "Tmty_ident %a\n" fmt_path li;
-  | Tmty_alias (li,_) -> line i ppf "Tmty_alias %a\n" fmt_path li;
+  | Tmty_static_alias (li,_) -> line i ppf "Tmty_static_alias %a\n" fmt_path li;
+  | Tmty_transparent (li,_) -> line i ppf "Tmty_transparent %a\n" fmt_path li;
   | Tmty_signature (s) ->
       line i ppf "Tmty_signature\n";
       signature i ppf s;
@@ -778,7 +774,7 @@ and signature_item i ppf x =
       line i ppf "Tsig_exception\n";
       type_exception i ppf ext
   | Tsig_module md ->
-      line i ppf "Tsig_module %a\n" fmt_presence md.md_presence;
+      line i ppf "Tsig_module\n";
       module_declaration i ppf md
   | Tsig_modsubst ms ->
       line i ppf "Tsig_modsubst \"%a\" = %a\n"
@@ -902,7 +898,7 @@ and structure_item i ppf x =
       line i ppf "Tstr_exception\n";
       type_exception i ppf ext;
   | Tstr_module x ->
-      line i ppf "Tstr_module %a\n" fmt_presence x.mb_presence;
+      line i ppf "Tstr_module\n";
       module_binding i ppf x
   | Tstr_recmodule bindings ->
       line i ppf "Tstr_recmodule\n";

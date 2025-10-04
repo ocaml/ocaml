@@ -58,7 +58,8 @@ end) = struct
     | NApp of nf * nf
     | NAbs of local_env * var * t * delayed_nf
     | NStruct of delayed_nf Item.Map.t
-    | NAlias of delayed_nf
+    | NStatic_alias of delayed_nf
+    | NTransparent of delayed_nf
     | NProj of nf * Item.t
     | NLeaf
     | NComp_unit of string
@@ -162,7 +163,10 @@ end) = struct
     let delay_reduce env t = Thunk (env.local_env, t) in
     let return desc = { uid = t.uid; desc; approximated = t.approximated } in
     let rec force_aliases nf = match nf.desc with
-      | NAlias delayed_nf ->
+      | NStatic_alias delayed_nf ->
+          let nf = force env delayed_nf in
+          force_aliases nf
+      | NTransparent delayed_nf ->
           let nf = force env delayed_nf in
           force_aliases nf
       | _ -> nf
@@ -237,7 +241,8 @@ end) = struct
       | Struct m ->
           let mnf = Item.Map.map (delay_reduce env) m in
           return (NStruct mnf)
-      | Alias t -> return (NAlias (delay_reduce env t))
+      | Static_alias t -> return (NStatic_alias (delay_reduce env t))
+      | Transparent t -> return (NTransparent (delay_reduce env t))
       | Error s -> approx_nf (return (NError s))
 
   and read_back env (nf : nf) : t =
@@ -264,7 +269,8 @@ end) = struct
         Abs(x, read_back_force nf)
     | NStruct nstr ->
         Struct (Item.Map.map read_back_force nstr)
-    | NAlias nf -> Alias (read_back_force nf)
+    | NStatic_alias nf -> Static_alias (read_back_force nf)
+    | NTransparent nf -> Transparent (read_back_force nf)
     | NProj (nf, item) ->
         Proj (read_back nf, item)
     | NLeaf -> Leaf
@@ -295,14 +301,18 @@ end) = struct
         false
     | NApp (nf, _) | NProj (nf, _) -> is_stuck_on_comp_unit nf
     | NStruct _ | NAbs _ -> false
-    | NAlias _ -> false
+    | NStatic_alias _ -> false
+    | NTransparent _ -> false
     | NComp_unit _ -> true
     | NError _ -> false
     | NLeaf -> false
 
   let rec reduce_aliases_for_uid env (nf : nf) =
     match nf with
-    | { uid = Some uid; desc = NAlias dnf; approximated = false; _ } ->
+    | { uid = Some uid; desc = NStatic_alias dnf; approximated = false; _ } ->
+        let result = reduce_aliases_for_uid env (force env dnf) in
+        Resolved_alias (uid, result)
+    | { uid = Some uid; desc = NTransparent dnf; approximated = false; _ } ->
         let result = reduce_aliases_for_uid env (force env dnf) in
         Resolved_alias (uid, result)
     | { uid = Some uid; approximated = false; _ } -> Resolved uid

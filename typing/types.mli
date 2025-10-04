@@ -669,15 +669,12 @@ type module_type =
     Mty_ident of Path.t
   | Mty_signature of signature
   | Mty_functor of functor_parameter * module_type
-  | Mty_alias of Path.t
+  | Mty_transparent of Path.t
+  | Mty_static_alias of Path.t
 
 and functor_parameter =
   | Unit
   | Named of Ident.t option * module_type
-
-and module_presence =
-  | Mp_present
-  | Mp_absent
 
 and signature = signature_item list
 
@@ -685,8 +682,7 @@ and signature_item =
     Sig_value of Ident.t * value_description * visibility
   | Sig_type of Ident.t * type_declaration * rec_status * visibility
   | Sig_typext of Ident.t * extension_constructor * ext_status * visibility
-  | Sig_module of
-      Ident.t * module_presence * module_declaration * rec_status * visibility
+  | Sig_module of Ident.t * module_declaration * rec_status * visibility
   | Sig_modtype of Ident.t * modtype_declaration * visibility
   | Sig_class of Ident.t * class_declaration * rec_status * visibility
   | Sig_class_type of Ident.t * class_type_declaration * rec_status * visibility
@@ -726,6 +722,17 @@ val item_visibility : signature_item -> visibility
 val bound_value_identifiers: signature -> Ident.t list
 
 val signature_item_id : signature_item -> Ident.t
+
+(** Indicates if a module declaration or a module type is *absent* or
+    *present*. Only static aliases are absent, all other module types are
+    present *)
+val md_is_present : module_declaration -> bool
+
+val md_is_absent : module_declaration -> bool
+
+val mty_is_present : module_type -> bool
+
+val mty_is_absent : module_type -> bool
 
 (**** Utilities for backtracking ****)
 

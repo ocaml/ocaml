@@ -324,7 +324,6 @@ and module_binding =
      mb_id: Ident.t option;
      mb_name: string option loc;
      mb_uid: Uid.t;
-     mb_presence: module_presence;
      mb_expr: module_expr;
      mb_attributes: attribute list;
      mb_loc: Location.t;
@@ -361,7 +360,8 @@ and module_type_desc =
   | Tmty_functor of functor_parameter * module_type
   | Tmty_with of module_type * (Path.t * Longident.t loc * with_constraint) list
   | Tmty_typeof of module_expr
-  | Tmty_alias of Path.t * Longident.t loc
+  | Tmty_static_alias of Path.t * Longident.t loc
+  | Tmty_transparent of Path.t * Longident.t loc
 
 (* Keep primitive type information for type-based lambda-code specialization *)
 and primitive_coercion =
@@ -405,7 +405,6 @@ and module_declaration =
      md_id: Ident.t option;
      md_name: string option loc;
      md_uid: Uid.t;
-     md_presence: module_presence;
      md_type: module_type;
      md_attributes: attribute list;
      md_loc: Location.t;
@@ -906,3 +905,9 @@ let split_pattern pat =
 let map_apply_arg f = function
   | Arg arg -> Arg (f arg)
   | Omitted _ as arg -> arg
+
+
+let module_binding_is_present mb =
+  match mb with
+  | {mb_expr = {mod_type = Mty_static_alias _ }} -> false
+  | _ -> true

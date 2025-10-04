@@ -348,7 +348,7 @@ let item_ident_name = function
         else Field_typext
       in
       (id, d.ext_loc, field_desc kind id)
-  | Sig_module(id, _, d, _, _) -> (id, d.md_loc, field_desc Field_module id)
+  | Sig_module(id, d, _, _) -> (id, d.md_loc, field_desc Field_module id)
   | Sig_modtype(id, d, _) -> (id, d.mtd_loc, field_desc Field_modtype id)
   | Sig_class(id, d, _, _) -> (id, d.cty_loc, field_desc Field_class id)
   | Sig_class_type(id, d, _, _) ->
@@ -357,12 +357,12 @@ let item_ident_name = function
 let is_runtime_component = function
   | Sig_value(_,{val_kind = Val_prim _}, _)
   | Sig_type(_,_,_,_)
-  | Sig_module(_,Mp_absent,_,_,_)
+  | Sig_module(_,{md_type=(Mty_static_alias _)},_,_)
   | Sig_modtype(_,_,_)
   | Sig_class_type(_,_,_,_) -> false
   | Sig_value(_,_,_)
   | Sig_typext(_,_,_,_)
-  | Sig_module(_,Mp_present,_,_,_)
+  | Sig_module(_,_,_,_)
   | Sig_class(_,_,_,_) -> true
 
 (* Print a coercion *)
@@ -431,7 +431,12 @@ let retrieve_functor_params env mty =
         | Some mty -> retrieve_functor_params before env mty
         | None -> { Error.params = List.rev before; res }
         end
-    | Mty_alias p as res ->
+    | Mty_static_alias p as res ->
+        begin match expand_module_alias ~strengthen:false env p with
+        | Ok mty ->  retrieve_functor_params before env mty
+        | Error _ -> { Error.params = List.rev before; res }
+        end
+    | Mty_transparent p as res ->
         begin match expand_module_alias ~strengthen:false env p with
         | Ok mty ->  retrieve_functor_params before env mty
         | Error _ -> { Error.params = List.rev before; res }
@@ -514,28 +519,38 @@ let rec modtypes ~core ~direction ~loc env subst mty1 mty2 shape =
 
 and try_modtypes ~core ~direction ~loc env subst mty1 mty2 orig_shape =
   match mty1, mty2 with
-  | (Mty_alias p1, Mty_alias p2) ->
-      if (equal_module_paths env p1 subst p2) then
-          Ok (Tcoerce_none, orig_shape)
-      else
-        Error Error.(Mt_core Incompatible_aliases)
-  | (Mty_alias p1, _) -> begin
-      match
-        Env.normalize_module_path (Some Location.none) env p1
-      with
-      | exception Env.Error (Env.Missing_module (_, _, path)) ->
-          Error Error.(Mt_core(Unbound_module_path path))
-      | p1 ->
-          begin match expand_module_alias ~strengthen:false env p1 with
-          | Error e -> Error (Error.Mt_core e)
-          | Ok mty1 ->
-              match strengthened_modtypes ~core ~direction ~loc ~aliasable:true
-                      env subst mty1 p1 mty2 orig_shape
-              with
-              | Ok _ as x -> x
-              | Error reason -> Error (Error.After_alias_expansion reason)
-          end
+  (* Equivalent aliases *)
+  | Mty_transparent p1, Mty_transparent p2
+  | Mty_static_alias p1, Mty_static_alias p2
+    when (equal_module_paths env p1 subst p2) ->
+     Ok (Tcoerce_none, orig_shape)
+
+  (* Dynamic aliases are subtype of static ones *)
+  | Mty_transparent p1, Mty_static_alias p2
+    when (equal_module_paths env p1 subst p2) ->
+     Ok (Tcoerce_none, orig_shape)
+
+  (* Aliases [module X = P1] can be downgraded to the (strengthened) signature
+     of [P1], dropping the aliasing information *)
+  | Mty_static_alias p1, _
+  | Mty_transparent p1, _ -> begin
+      begin match expand_module_alias ~strengthen:false env p1 with
+      | Error e -> Error (Error.Mt_core e)
+      | Ok mty1 ->
+         match strengthened_modtypes ~core ~direction ~loc ~aliasable:true
+                 env subst mty1 p1 mty2 orig_shape
+         with
+         | Ok _ as x -> x
+         | Error reason -> begin
+             match mty2 with
+             | Mty_static_alias _ | Mty_transparent _ ->
+                Error Error.(Mt_core Incompatible_aliases)
+             | _ ->
+                Error (Error.After_alias_expansion reason)
+           end
+      end
     end
+
   | (Mty_ident p1, Mty_ident p2) ->
       let p1 = Env.normalize_modtype_path env p1 in
       let p2 = Env.normalize_modtype_path env (Subst.modtype_path subst p2) in
@@ -629,7 +644,9 @@ and try_modtypes ~core ~direction ~loc env subst mty1 mty2 orig_shape =
      Error.functor_params
        (retrieve_functor_params env mty1)
        (retrieve_functor_params env mty2)
-  | _, Mty_alias _ ->
+  | _, Mty_static_alias _ ->
+      Error (Error.Mt_core Error.Not_an_alias)
+  | _, Mty_transparent _ ->
       Error (Error.Mt_core Error.Not_an_alias)
 
 (* Functor parameters *)
@@ -659,14 +676,14 @@ and equate_one_functor_param subst env arg2' name1 name2  =
   (* two matching abstract parameters: we add one identifier to the
      environment and record the equality between the two identifiers
      in the substitution *)
-      Env.add_module id1 Mp_present arg2' env,
+      Env.add_module id1 arg2' env,
       Subst.add_module id2 (Path.Pident id1) subst
   | None, Some id2 ->
       let id1 = Ident.rename id2 in
-      Env.add_module id1 Mp_present arg2' env,
+      Env.add_module id1 arg2' env,
       Subst.add_module id2 (Path.Pident id1) subst
   | Some id1, None ->
-      Env.add_module id1 Mp_present arg2' env, subst
+      Env.add_module id1 arg2' env, subst
   | None, None ->
       env, subst
 
@@ -698,7 +715,7 @@ and signatures ~core ~direction ~loc env subst sig1 sig2 mod_shape =
   let (id_pos_list,_) =
     List.fold_left
       (fun (l,pos) -> function
-          Sig_module (id, Mp_present, _, _, _) ->
+          Sig_module (id, md, _, _) when (Types.md_is_present md) ->
             ((id,pos,Tcoerce_none)::l , pos+1)
         | item -> (l, if is_runtime_component item then pos+1 else pos))
       ([], 0) sig1 in
@@ -844,7 +861,7 @@ and signature_components ~core ~direction ~loc old_env env subst
               Shape.Map.add_extcons_proj shape_map id1 orig_shape
             in
             id1, item, (ext1.ext_uid, ext2.ext_uid), shape_map, true
-        | Sig_module(id1, pres1, mty1, _, _), Sig_module(_, pres2, mty2, _, _)
+        | Sig_module(id1, mty1, _, _), Sig_module(_, mty2, _, _)
           -> begin
               let orig_shape =
                 Shape.(proj orig_shape (Item.module_ id1))
@@ -867,12 +884,11 @@ and signature_components ~core ~direction ~loc old_env env subst
                     Shape.Map.add_module shape_map id1 orig_shape
               in
               let present_at_runtime, item =
-                match pres1, pres2, mty1.md_type with
-                | Mp_present, Mp_present, _ -> true, item
-                | _, Mp_absent, _ -> false, item
-                | Mp_absent, Mp_present, Mty_alias p1 ->
-                    true, Result.map (fun i -> Tcoerce_alias (env, p1, i)) item
-                | Mp_absent, Mp_present, _ -> assert false
+                match mty1.md_type, mty2.md_type with
+                | _, Mty_static_alias _ -> false, item
+                | Mty_static_alias p1, _ ->
+                   true, Result.map (fun i -> Tcoerce_alias (env, p1, i)) item
+                | _,_ -> true, item
               in
               let item = mark_error_as_unrecoverable item in
               let paired_uids = (mty1.md_uid, mty2.md_uid) in
@@ -1157,7 +1173,9 @@ module Functor_inclusion_diff = struct
 
 
   let keep_expansible_param = function
-    | Mty_ident _ | Mty_alias _ as mty -> Some mty
+    | Mty_ident _
+    | Mty_static_alias _
+    | Mty_transparent _ as mty -> Some mty
     | Mty_signature _ | Mty_functor _ -> None
 
   let lookup_expansion { env ; res ; _ } = match res with
@@ -1179,7 +1197,7 @@ module Functor_inclusion_diff = struct
      contain useful abbreviations, but without adding any equations  *)
   let bind id arg state =
     let arg' = Subst.modtype Keep state.subst arg in
-    let env = Env.add_module id Mp_present arg' state.env in
+    let env = Env.add_module id arg' state.env in
     { state with env }
 
   let rec update (d:Diff.change) st =
@@ -1275,7 +1293,7 @@ module Functor_app_diff = struct
            environment to track equalities with external components that the
            parameter might add. *)
         let mty = Subst.modtype Keep st.subst param_ty in
-        let env = Env.add_module ~noalias:true param Mp_present mty st.env in
+        let env = Env.add_module ~noalias:true param mty st.env in
         I.expand_params { st with env }
     | Keep ((Named arg,  _mty) , Named (Some param, _param), _) ->
         let res =
@@ -1291,7 +1309,7 @@ module Functor_app_diff = struct
     | Keep (((Anonymous|Empty_struct), mty),
             Named (Some param, _param), _) ->
         let mty' = Subst.modtype Keep st.subst mty in
-        let env = Env.add_module ~noalias:true param Mp_present mty' st.env in
+        let env = Env.add_module ~noalias:true param mty' st.env in
         let res = Option.map (Mtype.nondep_supertype env [param]) st.res in
         I.expand_params { st with env; res}
 

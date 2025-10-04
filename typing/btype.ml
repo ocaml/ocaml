@@ -437,7 +437,7 @@ let type_iterators_without_type_expr =
       Sig_value (_, vd, _)          -> it.it_value_description it vd
     | Sig_type (_, td, _, _)        -> it.it_type_declaration it td
     | Sig_typext (_, td, _, _)      -> it.it_extension_constructor it td
-    | Sig_module (_, _, md, _, _)   -> it.it_module_declaration it md
+    | Sig_module (_, md, _, _)      -> it.it_module_declaration it md
     | Sig_modtype (_, mtd, _)       -> it.it_modtype_declaration it mtd
     | Sig_class (_, cd, _, _)       -> it.it_class_declaration it cd
     | Sig_class_type (_, ctd, _, _) -> it.it_class_type_declaration it ctd
@@ -470,7 +470,8 @@ let type_iterators_without_type_expr =
     | Named (_, mt) -> it.it_module_type it mt
   and it_module_type it = function
       Mty_ident p
-    | Mty_alias p -> it.it_path p
+    | Mty_static_alias p -> it.it_path p
+    | Mty_transparent p -> it.it_path p
     | Mty_signature sg -> it.it_signature it sg
     | Mty_functor (p, mt) ->
         it.it_functor_param it p;

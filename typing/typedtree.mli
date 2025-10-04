@@ -505,7 +505,6 @@ and module_binding =
      mb_id: Ident.t option; (** [None] for [module _ = struct ... end] *)
      mb_name: string option loc;
      mb_uid: Uid.t;
-     mb_presence: Types.module_presence;
      mb_expr: module_expr;
      mb_attributes: attributes;
      mb_loc: Location.t;
@@ -554,7 +553,8 @@ and module_type_desc =
   | Tmty_functor of functor_parameter * module_type
   | Tmty_with of module_type * (Path.t * Longident.t loc * with_constraint) list
   | Tmty_typeof of module_expr
-  | Tmty_alias of Path.t * Longident.t loc
+  | Tmty_static_alias of Path.t * Longident.t loc
+  | Tmty_transparent of Path.t * Longident.t loc
 
 and primitive_coercion =
   {
@@ -597,7 +597,6 @@ and module_declaration =
      md_id: Ident.t option;
      md_name: string option loc;
      md_uid: Uid.t;
-     md_presence: Types.module_presence;
      md_type: module_type;
      md_attributes: attributes;
      md_loc: Location.t;
@@ -942,3 +941,7 @@ val split_pattern:
 
 val map_apply_arg:
   ('a -> ' b) -> ('a, 'omitted) arg_or_omitted ->  ('b, 'omitted) arg_or_omitted
+
+(* Indicates if a module as been inferred as present (i.e. anything but a static
+   alias)*)
+val module_binding_is_present : module_binding -> bool

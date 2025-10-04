@@ -34,7 +34,7 @@ type summary =
   | Env_value of summary * Ident.t * value_description
   | Env_type of summary * Ident.t * type_declaration
   | Env_extension of summary * Ident.t * extension_constructor
-  | Env_module of summary * Ident.t * module_presence * module_declaration
+  | Env_module of summary * Ident.t * module_declaration
   | Env_modtype of summary * Ident.t * modtype_declaration
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
@@ -315,13 +315,13 @@ val add_extension:
   check:bool -> ?shape:Shape.t -> rebind:bool -> Ident.t ->
   extension_constructor -> t -> t
 val add_module: ?noalias:bool -> ?shape:Shape.t ->
-  Ident.t -> module_presence -> module_type -> t -> t
+  Ident.t -> module_type -> t -> t
 val add_module_lazy: update_summary:bool ->
-  Ident.t -> module_presence -> Subst.Lazy.modtype -> t -> t
+  Ident.t -> Subst.Lazy.modtype -> t -> t
 val add_module_declaration: ?noalias:bool -> ?shape:Shape.t -> check:bool ->
-  Ident.t -> module_presence -> module_declaration -> t -> t
+  Ident.t -> module_declaration -> t -> t
 val add_module_declaration_lazy: update_summary:bool ->
-  Ident.t -> module_presence -> Subst.Lazy.module_decl -> t -> t
+  Ident.t -> Subst.Lazy.module_decl -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_modtype_lazy: update_summary:bool ->
    Ident.t -> Subst.Lazy.modtype_declaration -> t -> t
@@ -375,10 +375,9 @@ val enter_extension:
   scope:int -> rebind:bool -> string ->
   extension_constructor -> t -> Ident.t * t
 val enter_module:
-  scope:int -> ?noalias:bool -> string -> module_presence ->
-  module_type -> t -> Ident.t * t
+  scope:int -> ?noalias:bool -> string -> module_type -> t -> Ident.t * t
 val enter_module_declaration:
-  scope:int -> ?noalias:bool -> ?shape:Shape.t -> string -> module_presence ->
+  scope:int -> ?noalias:bool -> ?shape:Shape.t -> string ->
   module_declaration -> t -> Ident.t * t
 val enter_modtype:
   scope:int -> string -> modtype_declaration -> t -> Ident.t * t

@@ -305,7 +305,9 @@ let iter_on_occurrences
           f ~namespace:Module_type mty_env path lid
       | Tmty_with (_mty, l) ->
           List.iter (with_constraint ~env:mty_env) l
-      | Tmty_alias (path, lid) ->
+      | Tmty_static_alias (path, lid) ->
+          f ~namespace:Module mty_env path lid
+      | Tmty_transparent (path, lid) ->
           f ~namespace:Module mty_env path lid
       | Tmty_signature _ | Tmty_functor _ | Tmty_typeof _ -> ());
       default_iterator.module_type sub mty);

@@ -152,7 +152,8 @@ and desc =
   | Abs of var * t
   | App of t * t
   | Struct of t Item.Map.t
-  | Alias of t
+  | Static_alias of t
+  | Transparent of t
   | Leaf
   | Proj of t * Item.t
   | Comp_unit of string
@@ -212,8 +213,12 @@ let print fmt t =
           Format.fprintf fmt "@[<hv>{%a}@]" print_uid_opt uid
         else
           Format.fprintf fmt "{@[<v>%a@,%a@]}" print_uid_opt uid print_map map
-    | Alias t ->
-        Format.fprintf fmt "Alias@[(@[<v>%a@,%a@])@]" print_uid_opt uid aux t
+    | Static_alias t ->
+        Format.fprintf fmt "Static_alias@[(@[<v>%a@,%a@])@]"
+          print_uid_opt uid aux t
+    | Transparent t ->
+        Format.fprintf fmt "Transparent@[(@[<v>%a@,%a@])@]"
+          print_uid_opt uid aux t
     | Error s ->
         Format.fprintf fmt "Error %s" s
   in
@@ -223,7 +228,8 @@ let print fmt t =
     Format.fprintf fmt "@[%a@]@;" aux t
 
 let rec strip_head_aliases = function
-  | { desc = Alias t; _ } -> strip_head_aliases t
+  | { desc = Static_alias t; _ } -> strip_head_aliases t
+  | { desc = Transparent t; _ } -> strip_head_aliases t
   | t -> t
 
 let fresh_var ?(name="shape-var") uid =
@@ -241,8 +247,11 @@ let abs ?uid var body =
 let str ?uid map =
   { uid; desc = Struct map; approximated = false }
 
-let alias ?uid t =
-  { uid; desc = Alias t; approximated = false}
+let static_alias ?uid t =
+  { uid; desc = Static_alias t; approximated = false}
+
+let transparent ?uid t =
+  { uid; desc = Transparent t; approximated = false}
 
 let leaf uid =
   { uid = Some uid; desc = Leaf; approximated = false }

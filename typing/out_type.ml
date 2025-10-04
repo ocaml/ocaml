@@ -357,7 +357,7 @@ let find_double_underscore s =
 
 let rec module_path_is_an_alias_of env path ~alias_of =
   match Env.find_module path env with
-  | { md_type = Mty_alias path'; _ } ->
+  | { md_type = Mty_static_alias path'; _ } ->
     Path.same path' alias_of ||
     module_path_is_an_alias_of env path' ~alias_of
   | _ -> false
@@ -1832,7 +1832,7 @@ let ident_sigitem = function
   | Types.Sig_type(ident,_,_,_) ->  {hide=true;ident}
   | Types.Sig_class(ident,_,_,_)
   | Types.Sig_class_type (ident,_,_,_)
-  | Types.Sig_module(ident,_, _,_,_)
+  | Types.Sig_module(ident,_,_,_)
   | Types.Sig_value (ident,_,_)
   | Types.Sig_modtype (ident,_,_)
   | Types.Sig_typext (ident,_,_,_)   ->  {hide=false; ident }
@@ -1871,8 +1871,10 @@ let rec tree_of_modtype ?(ellipsis=false) = function
       in
       let res = wrap_env env (tree_of_modtype ~ellipsis) ty_res in
       Omty_functor (param, res)
-  | Mty_alias p ->
-      Omty_alias (tree_of_path (Some Module) p)
+  | Mty_static_alias p ->
+      Omty_static_alias (tree_of_path (Some Module) p)
+  | Mty_transparent p ->
+      Omty_transparent (tree_of_path (Some Module) p)
 
 and tree_of_functor_parameter = function
   | Unit ->
@@ -1883,7 +1885,7 @@ and tree_of_functor_parameter = function
         | None -> None, fun env -> env
         | Some id ->
             Some (Ident.name id),
-            Env.add_module ~noalias:true id Mp_present ty_arg
+            Env.add_module ~noalias:true id ty_arg
       in
       Some (name, tree_of_modtype ~ellipsis:false ty_arg), env
 
@@ -1923,7 +1925,7 @@ and tree_of_sigitem = function
       tree_of_type_declaration id decl rs
   | Sig_typext(id, ext, es, _) ->
       tree_of_extension_constructor id ext es
-  | Sig_module(id, _, md, rs, _) ->
+  | Sig_module(id, md, rs, _) ->
       let ellipsis =
         List.exists (function
           | Parsetree.{attr_name = {txt="..."}; attr_payload = PStr []} -> true

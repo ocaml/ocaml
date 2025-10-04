@@ -238,7 +238,8 @@ let init_shape id modl =
   let rec init_shape_mod path loc env mty =
     match Mtype.scrape env mty with
       Mty_ident _
-    | Mty_alias _ ->
+    | Mty_transparent _
+    | Mty_static_alias _ ->
         let info = Unsafe {reason=Unsafe_module_binding;loc; path} in
         raise (Initialization_failure info)
     | Mty_signature sg ->
@@ -274,15 +275,14 @@ let init_shape id modl =
         let new_path = Pdot(path, Ident.name subid) in
         let info = Unsafe {reason=Unsafe_typext; loc; path=new_path} in
         raise (Initialization_failure info)
-    | Sig_module(id, Mp_present, md, _, _) :: rem ->
+    | Sig_module(id, md, _, _) :: rem when (Types.md_is_absent md) ->
+        init_shape_struct
+          path (Env.add_module_declaration ~check:false id md env) rem
+    | Sig_module(id, md, _, _) :: rem ->
         init_shape_mod (
           Pdot(path, Ident.name id)) md.md_loc env md.md_type ::
         init_shape_struct path (Env.add_module_declaration ~check:false
-                             id Mp_present md env) rem
-    | Sig_module(id, Mp_absent, md, _, _) :: rem ->
-        init_shape_struct
-          path (Env.add_module_declaration ~check:false
-                             id Mp_absent md env) rem
+                             id md env) rem
     | Sig_modtype(id, minfo, _) :: rem ->
         init_shape_struct path (Env.add_modtype id minfo env) rem
     | Sig_class _ :: rem ->
@@ -646,7 +646,9 @@ and transl_struct_item ~scopes fields rootpath item next =
              item.str_env
              path
              ext.tyexn_constructor, body)
-  | Tstr_module ({mb_presence=Mp_present} as mb) ->
+  | Tstr_module {mb_expr={mod_type}} when (Types.mty_is_absent mod_type) ->
+      next fields
+  | Tstr_module mb ->
       let id = mb.mb_id in
       (* Translate module first *)
       let subscopes = match id with
@@ -669,8 +671,6 @@ and transl_struct_item ~scopes fields rootpath item next =
       | Some id ->
           Llet(pure_module mb.mb_expr, Pgenval, id, module_body, body)
       end
-  | Tstr_module ({mb_presence=Mp_absent}) ->
-      next fields
   | Tstr_recmodule bindings ->
       let ext_fields =
         List.rev_append (List.filter_map (fun mb -> mb.mb_id) bindings)
@@ -836,10 +836,11 @@ let rec defined_idents = function
       List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
       @ defined_idents rem
     | Tstr_exception ext -> ext.tyexn_constructor.ext_id :: defined_idents rem
-    | Tstr_module {mb_id = Some id; mb_presence=Mp_present} ->
+    | Tstr_module {mb_id = None} -> defined_idents rem
+    | Tstr_module {mb_expr={mod_type}} when (Types.mty_is_absent mod_type) ->
+        defined_idents rem
+    | Tstr_module {mb_id = Some id} ->
       id :: defined_idents rem
-    | Tstr_module ({mb_id = None}
-                  |{mb_presence=Mp_absent}) -> defined_idents rem
     | Tstr_recmodule decls ->
       List.filter_map (fun mb -> mb.mb_id) decls @ defined_idents rem
     | Tstr_modtype _ -> defined_idents rem
@@ -880,11 +881,9 @@ let rec more_idents = function
                             | Tmod_structure str }} ->
         all_idents str.str_items @ more_idents rem
     | Tstr_include _ -> more_idents rem
+    | Tstr_module { mb_expr={mod_desc = Tmod_structure str}}
     | Tstr_module
-        {mb_presence=Mp_present; mb_expr={mod_desc = Tmod_structure str}}
-    | Tstr_module
-        {mb_presence=Mp_present;
-         mb_expr={mod_desc=
+        { mb_expr={mod_desc=
            Tmod_constraint ({mod_desc = Tmod_structure str}, _, _, _)}} ->
         all_idents str.str_items @ more_idents rem
     | Tstr_module _ -> more_idents rem
@@ -929,20 +928,20 @@ and all_idents = function
     | Tstr_include incl ->
       bound_value_identifiers incl.incl_type @ all_idents rem
 
+    | Tstr_module {mb_id = None} -> all_idents rem
+    | Tstr_module {mb_expr = {mod_type}} when (Types.mty_is_absent mod_type) ->
+        all_idents rem
     | Tstr_module
         { mb_id = Some id;
-          mb_presence=Mp_present;
           mb_expr={mod_desc = Tmod_structure str} }
     | Tstr_module
         { mb_id = Some id;
-          mb_presence = Mp_present;
           mb_expr =
             {mod_desc =
                Tmod_constraint ({mod_desc = Tmod_structure str}, _, _, _)}} ->
         id :: all_idents str.str_items @ all_idents rem
-    | Tstr_module {mb_id = Some id;mb_presence=Mp_present} ->
+    | Tstr_module {mb_id = Some id} ->
         id :: all_idents rem
-    | Tstr_module ({mb_id = None} | {mb_presence=Mp_absent}) -> all_idents rem
     | Tstr_attribute _ -> all_idents rem
 
 
@@ -1031,8 +1030,11 @@ let transl_store_structure ~scopes glob map prims aliases str =
                            store_ident loc id),
                       transl_store ~scopes rootpath
                         (add_ident false id subst) cont rem)
+        | Tstr_module ({ mb_expr = { mod_type }})
+          when Types.mty_is_absent mod_type ->
+            transl_store ~scopes rootpath subst cont rem
         | Tstr_module
-            {mb_id=None; mb_name; mb_presence=Mp_present; mb_expr=modl;
+            {mb_id=None; mb_name; mb_expr=modl;
              mb_loc=loc; mb_attributes} ->
             let lam =
               Translattribute.add_inline_attribute
@@ -1044,7 +1046,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
                     of_location ~scopes mb_name.loc),
               transl_store ~scopes rootpath subst cont rem
             )
-        | Tstr_module{mb_id=Some id;mb_loc=loc;mb_presence=Mp_present;
+        | Tstr_module{mb_id = Some id; mb_loc=loc;
                       mb_expr={mod_desc = Tmod_structure str}} ->
             let loc = of_location ~scopes loc in
             let lam =
@@ -1066,7 +1068,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
                                                   (add_ident true id subst)
                                                   cont rem)))
         | Tstr_module{
-            mb_id=Some id;mb_loc=loc;mb_presence=Mp_present;
+            mb_id = Some id; mb_loc = loc;
             mb_expr= {
               mod_desc = Tmod_constraint (
                   {mod_desc = Tmod_structure str}, _, _,
@@ -1094,7 +1096,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
                                                   (add_ident true id subst)
                                                   cont rem)))
         | Tstr_module
-            {mb_id=Some id; mb_presence=Mp_present; mb_expr=modl;
+            {mb_id = Some id; mb_expr = modl;
              mb_loc=loc; mb_attributes} ->
             let lam =
               Translattribute.add_inline_attribute
@@ -1114,8 +1116,6 @@ let transl_store_structure ~scopes glob map prims aliases str =
                            transl_store ~scopes rootpath
                              (add_ident true id subst)
                              cont rem))
-        | Tstr_module ({mb_presence=Mp_absent}) ->
-            transl_store ~scopes rootpath subst cont rem
         | Tstr_recmodule bindings ->
             let ids = List.filter_map (fun mb -> mb.mb_id) bindings in
             compile_recmodule ~scopes
@@ -1473,9 +1473,11 @@ let transl_toplevel_item ~scopes item =
       toploop_setvalue ext.tyexn_constructor.ext_id
         (transl_extension_constructor ~scopes
            item.str_env None ext.tyexn_constructor)
-  | Tstr_module {mb_id=None; mb_presence=Mp_present; mb_expr=modl} ->
+  | Tstr_module ({mb_expr={mod_type}}) when Types.mty_is_absent mod_type ->
+      lambda_unit
+  | Tstr_module {mb_id=None; mb_expr=modl} ->
       transl_module ~scopes Tcoerce_none None modl
-  | Tstr_module {mb_id=Some id; mb_presence=Mp_present; mb_expr=modl} ->
+  | Tstr_module {mb_id=Some id; mb_expr=modl} ->
       (* we need to use the unique name for the module because of issues
          with "open" (PR#8133) *)
       set_toplevel_unique_name id;
@@ -1544,8 +1546,6 @@ let transl_toplevel_item ~scopes item =
                transl_module ~scopes Tcoerce_none None od.open_expr,
                set_idents 0 ids)
       end
-  | Tstr_module ({mb_presence=Mp_absent}) ->
-      lambda_unit
   | Tstr_modtype _
   | Tstr_type _
   | Tstr_class_type _

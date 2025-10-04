@@ -140,7 +140,8 @@ module Lazy : sig
     | MtyL_ident of Path.t
     | MtyL_signature of signature
     | MtyL_functor of functor_parameter * modtype
-    | MtyL_alias of Path.t
+    | MtyL_static_alias of Path.t
+    | MtyL_transparent of Path.t
 
   and modtype_declaration =
     {
@@ -156,8 +157,7 @@ module Lazy : sig
       SigL_value of Ident.t * value_description * visibility
     | SigL_type of Ident.t * type_declaration * rec_status * visibility
     | SigL_typext of Ident.t * extension_constructor * ext_status * visibility
-    | SigL_module of
-        Ident.t * module_presence * module_decl * rec_status * visibility
+    | SigL_module of Ident.t * module_decl * rec_status * visibility
     | SigL_modtype of Ident.t * modtype_declaration * visibility
     | SigL_class of Ident.t * class_declaration * rec_status * visibility
     | SigL_class_type of Ident.t * class_type_declaration *

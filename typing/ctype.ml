@@ -2658,7 +2658,7 @@ let complete_type_list ?(allow_absent=false) env fl1 lv2 pack2 =
      It'd be nice if we avoided creating such temporary dummy modules and broken
      environments though. *)
   let id2 = Ident.create_local "Pkg" in
-  let env' = Env.add_module id2 Mp_present (Mty_ident pack2.pack_path) env in
+  let env' = Env.add_module id2 (Mty_ident pack2.pack_path) env in
   let rec complete fl1 fl2 =
     match fl1, fl2 with
       [], _ -> fl2

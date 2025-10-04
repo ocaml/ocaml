@@ -29,12 +29,12 @@ module N = M
 [%%expect{|
 {
  "N"[module] ->
-   Alias(<.3>
-         {<.2>
-          "t"[type] -> {<.0>
-                        "A"[constructor] -> {<.1>};
-                        };
-          });
+   Static_alias(<.3>
+                {<.2>
+                 "t"[type] -> {<.0>
+                               "A"[constructor] -> {<.1>};
+                               };
+                 });
  }
 module N = M
 |}]
@@ -63,12 +63,12 @@ module N' = M'
 [%%expect{|
 {
  "N'"[module] ->
-   Alias(<.7>
-         {<.6>
-          "t"[type] -> {<.4>
-                        "A"[constructor] -> {<.5>};
-                        };
-          });
+   Static_alias(<.7>
+                {<.6>
+                 "t"[type] -> {<.4>
+                               "A"[constructor] -> {<.5>};
+                               };
+                 });
  }
 module N' = M'
 |}]
@@ -101,19 +101,19 @@ include Test
                                };
                  };
  }
-module M = Test.M
+module M = Test.M [@@dynamic_alias]
 |}]
 
 module N = M
 [%%expect{|
 {
  "N"[module] ->
-   Alias(<.12>
-         {<.10>
-          "t"[type] -> {<.8>
-                        "A"[constructor] -> {<.9>};
-                        };
-          });
+   Static_alias(<.12>
+                {<.10>
+                 "t"[type] -> {<.8>
+                               "A"[constructor] -> {<.9>};
+                               };
+                 });
  }
 module N = M
 |}]

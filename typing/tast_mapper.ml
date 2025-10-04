@@ -574,7 +574,9 @@ let module_type sub x =
   let mty_desc =
     match x.mty_desc with
     | Tmty_ident (path, lid) -> Tmty_ident (path, map_loc_lid sub lid)
-    | Tmty_alias (path, lid) -> Tmty_alias (path, map_loc_lid sub lid)
+    | Tmty_static_alias (path, lid) ->
+        Tmty_static_alias (path, map_loc_lid sub lid)
+    | Tmty_transparent (path, lid) -> Tmty_transparent (path, map_loc sub lid)
     | Tmty_signature sg -> Tmty_signature (sub.signature sub sg)
     | Tmty_functor (arg, mtype2) ->
         Tmty_functor (functor_parameter sub arg, sub.module_type sub mtype2)

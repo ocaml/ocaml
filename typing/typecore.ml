@@ -2293,17 +2293,12 @@ let add_module_variables env module_variables =
                   (mkloc (Longident.Lident mv_name.txt)
                     mv_name.loc)))
       in
-      let pres =
-        match modl.mod_type with
-        | Mty_alias _ -> Mp_absent
-        | _ -> Mp_present
-      in
       let md =
         { md_type = modl.mod_type; md_attributes = [];
           md_loc = mv_name.loc;
           md_uid = mv_uid; }
       in
-      Env.add_module_declaration ~shape:md_shape ~check:true mv_id pres md env
+      Env.add_module_declaration ~shape:md_shape ~check:true mv_id md env
     end
   ) env module_variables_as_list
 

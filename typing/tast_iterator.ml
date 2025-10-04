@@ -442,7 +442,8 @@ let module_type sub {mty_loc; mty_desc; mty_env; mty_attributes; _} =
   sub.env sub mty_env;
   match mty_desc with
   | Tmty_ident (_, lid) -> iter_loc_lid sub lid
-  | Tmty_alias (_, lid) -> iter_loc_lid sub lid
+  | Tmty_static_alias (_, lid) -> iter_loc_lid sub lid
+  | Tmty_transparent (_, lid) -> iter_loc_lid sub lid
   | Tmty_signature sg -> sub.signature sub sg
   | Tmty_functor (arg, mtype2) ->
       functor_parameter sub arg;

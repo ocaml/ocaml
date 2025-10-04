@@ -680,19 +680,24 @@ let functor_parameter sub : functor_parameter -> Parsetree.functor_parameter =
   | Named (_, name, mtype) -> Named (name, sub.module_type sub mtype)
 
 let module_type (sub : mapper) mty =
+  let open Builtin_attributes in
   let loc = sub.location sub mty.mty_loc in
   let attrs = sub.attributes sub mty.mty_attributes in
-  let desc = match mty.mty_desc with
-      Tmty_ident (_path, lid) -> Pmty_ident (map_loc sub lid)
-    | Tmty_alias (_path, lid) -> Pmty_alias (map_loc sub lid)
-    | Tmty_signature sg -> Pmty_signature (sub.signature sub sg)
+  let attrs, desc = match mty.mty_desc with
+      Tmty_ident (_path, lid) -> attrs, Pmty_ident (map_loc sub lid)
+    | Tmty_static_alias (_path, lid) ->
+       (add_static_alias attrs loc), Pmty_alias (map_loc sub lid)
+    | Tmty_transparent (_path, lid) ->
+       (add_dynamic_alias attrs loc), Pmty_alias (map_loc sub lid)
+    | Tmty_signature sg -> attrs, Pmty_signature (sub.signature sub sg)
     | Tmty_functor (arg, mtype2) ->
-        Pmty_functor (functor_parameter sub arg, sub.module_type sub mtype2)
+       attrs,
+       Pmty_functor (functor_parameter sub arg, sub.module_type sub mtype2)
     | Tmty_with (mtype, list) ->
-        Pmty_with (sub.module_type sub mtype,
+        attrs, Pmty_with (sub.module_type sub mtype,
           List.map (sub.with_constraint sub) list)
     | Tmty_typeof mexpr ->
-        Pmty_typeof (sub.module_expr sub mexpr)
+        attrs, Pmty_typeof (sub.module_expr sub mexpr)
   in
   Mty.mk ~loc ~attrs desc
 

@@ -24,6 +24,15 @@ Working version
   past behavior of discriminating abstract types defined in the current module.
   (Takafumi Saikawa, Jacques Garrigue, review by Richard Eisenberg)
 
+* #14064: Split of the module aliasing feature into two: static and dynamic
+  aliases. Static aliases are always "absent" (no field in the compiled
+  structure), while dynamic aliases are always "present". Both are accessible
+  via attributes (`[@@static_alias]`, `[@@dynamic_alias]`). When the typechecker
+  was inferring a module alias with the internal `Mp_present` flag, it infers a
+  dynamic alias instead. No change is made to the behavior of the
+  `--no-alias-deps` flag.
+  (Clement Blaudeau, review by ?)
+
 ### Runtime system:
 
 - #13580: Introduce sweep-only phase at start of major GC cycle,
