@@ -47,7 +47,7 @@ external compare : 'a -> 'a -> int = "%compare"
     defined above,  with one difference on the treatment of the float value
     {!Stdlib.nan}.  Namely, the comparison predicates treat [nan]
     as different from any other float value, including itself;
-    while [repr] treats [nan] as equal to itself and less than any
+    while [compare] treats [nan] as equal to itself and less than any
     other float value.  This treatment of [nan] ensures that [compare]
     defines a total ordering relation.
 
