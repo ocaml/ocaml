@@ -1539,15 +1539,19 @@ let extension_constructor_args_and_ret_type_subtree ext_args ext_ret_type =
 (* TODO: move to somewhere (typedecl_variance?) *)
 (* TODO: Typedecl_variance.surface_variance should be integrated *)
 (* TODO: Types.variance should expose its poset structure better *)
-let decode_variance v =
+let decode_variance
+    ?(var_flag=(!Clflags.print_variance))
+    ?(inj_flag=(!Clflags.print_variance)) vi =
   let open Variance in let open Asttypes in
-  if not !Clflags.print_variance then (NoVariance, NoInjectivity) else
-  (match mem May_pos v, mem May_neg v with
+  let v = if not var_flag then NoVariance else
+  match mem May_pos vi, mem May_neg vi with
   | false, false -> Bivariant
   | true, false -> Covariant
   | false, true -> Contravariant
-  | true, true -> NoVariance),
-  (if mem Inj v then Injective else NoInjectivity)
+  | true, true -> NoVariance in
+  let i = if not inj_flag then NoInjectivity else
+  if mem Inj vi then Injective else NoInjectivity in
+  (v, i)
 
 let prepared_tree_of_extension_constructor
    ~env id ext es
@@ -1744,23 +1748,11 @@ let rec tree_of_class_type mode params =
 
 
 let tree_of_class_param param variance =
-  let ot_variance =
-    if not !Clflags.print_variance && is_Tvar param
-    then Asttypes.(NoVariance, NoInjectivity) else variance in
+  let ot_variance = decode_variance variance
+      ~var_flag:(!Clflags.print_variance || not (is_Tvar param)) in
   match tree_of_typexp Type_scheme param with
     Otyp_var (ot_non_gen, ot_name) -> {ot_non_gen; ot_name; ot_variance}
   | _ -> {ot_non_gen=false; ot_name="?"; ot_variance}
-
-let class_variance =
-  let open Variance in let open Asttypes in
-  List.map (fun v ->
-    let inj = !Clflags.print_variance && Variance.mem Inj v in
-    (match mem May_pos v, mem May_neg v with
-    | false, false -> Bivariant
-    | true, false -> Covariant
-    | false, true -> Contravariant
-    | true, true -> NoVariance),
-    (if inj then Injective else NoInjectivity))
 
 let tree_of_class_declaration id cl rs =
   let params = filter_params cl.cty_params in
@@ -1778,7 +1770,7 @@ let tree_of_class_declaration id cl rs =
   let vir_flag = cl.cty_new = None in
   Osig_class
     (vir_flag, Ident.name id,
-     List.map2 tree_of_class_param params (class_variance cl.cty_variance),
+     List.map2 tree_of_class_param params cl.cty_variance,
      tree_of_class_type Type_scheme params cl.cty_type,
      tree_of_rec rs)
 
@@ -1805,7 +1797,7 @@ let tree_of_cltype_declaration id cl rs =
   in
   Osig_class_type
     (has_virtual_vars || has_virtual_meths, Ident.name id,
-     List.map2 tree_of_class_param params (class_variance cl.clty_variance),
+     List.map2 tree_of_class_param params cl.clty_variance,
      tree_of_class_type Type_scheme params cl.clty_type,
      tree_of_rec rs)
 
