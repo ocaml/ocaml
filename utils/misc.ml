@@ -964,7 +964,7 @@ let edit_distance a b cutoff =
   let la, lb = String.length a, String.length b in
   let cutoff =
     (* using max_int for cutoff would cause overflows in (i + cutoff + 1);
-       we bring it back to the (max la lb) worstcase *)
+       we bring it back to the (max la lb) worst case *)
     Int.min (Int.max la lb) cutoff in
   if abs (la - lb) > cutoff then None
   else begin
