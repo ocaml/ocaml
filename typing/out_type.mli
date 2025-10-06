@@ -41,7 +41,7 @@ open Outcometree
 
 val wrap_printing_env: error:bool -> Env.t -> (unit -> 'a) -> 'a
 (** Call the function using the environment for type path shortening
-    This affects all the printing and tree cration functions functions below
+    This affects all the printing and tree creation functions below
     Also, if [~error:true], then disable the loading of cmis *)
 
 
