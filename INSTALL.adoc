@@ -245,7 +245,7 @@ cross/bin/ocamlopt.opt -o test test.ml
 
 If you have built a Unix-to-Windows cross compiler, you must first make sure
 that `ocamlopt` can find the `flexlink` executable in `$PATH` when it needs to
-link. Boostrapping `flexdll` builds a `flexlink.exe` (note the `.exe`!), so you
+link. Bootstrapping `flexdll` builds a `flexlink.exe` (note the `.exe`!), so you
 can:
 
 ....
