@@ -931,7 +931,7 @@ val get_formatter_out_functions : unit -> formatter_out_functions
 
 val utf_8_scalar_width: string -> pos:int -> len:int -> int
 (** [utf_8_scalar_width s ~pos ~len] is the number of unicode scalar values in
-    the substring [String.sub s pos len]. Invalid byte sequences are implictly
+    the substring [String.sub s pos len]. Invalid byte sequences are implicitly
     replaced by [U+FFFD] since this yields a better width approximation for
     other ascii-based encoding scheme like ISO-8859-15. This is the default
     [out_width] function since OCaml 5.4.
