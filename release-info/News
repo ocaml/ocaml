@@ -9,7 +9,7 @@ branch. Some of the highlights in OCaml 5.2.0 are:
 - Thread sanitizer support
 - New Dynarray module
 - New -H flag for hidden include directories
-- Project-wide occurence metadata support for developer tools
+- Project-wide occurrence metadata support for developer tools
 - Raw identifiers
 - Local open in type expressions
 
