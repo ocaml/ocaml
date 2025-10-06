@@ -2333,7 +2333,7 @@ let is_instantiable env p =
 
 (* Two labels are considered compatible under certain conditions.
   - they are the same
-  - in classic mode, only optional labels are relavant
+  - in classic mode, only optional labels are relevant
   - in pattern mode, we act as if we were in classic mode. If not, interactions
     with GADTs from files compiled in classic mode would be unsound.
 *)
@@ -2366,7 +2366,7 @@ let rec expands_to_datatype env ty =
    witness could exist or not. Typically, this is the case for
    abstract types, which could be equal to anything, depending on
    their actual definition. As a result [mcomp] overapproximates
-   compatibilty, i.e. when it says that two types are incompatible, we
+   compatibility, i.e. when it says that two types are incompatible, we
    are sure that there exists no equality witness, but if it does not
    say so, there is no guarantee that such a witness could exist.
  *)
