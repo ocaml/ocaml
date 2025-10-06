@@ -92,7 +92,7 @@ head pointer is advanced and the oldest events are overwritten by new ones.
 The ring buffer implementation used in runtime events can be written by at most
 one producer at a time but can be read simultaneously by multiple consumers
 without coordination from the producer. There is a unique ring buffer for every
-running domain and, on domain termination, ring buffers may be re-used for newly
+running domain and, on domain termination, ring buffers may be reused for newly
 spawned domains. Ring buffers are only allocated (including for the main
 domain) when runtime events are enabled. The ring buffers themselves are stored
 in a memory-mapped file with the processes identifier as the name and the
