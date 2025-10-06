@@ -152,7 +152,7 @@ val companion_cmi: Artifact.t -> Artifact.t
 (** {1:ml_mli_cmi_interaction Mli and cmi derived from implementation files } *)
 
 (** The compilation of module implementation changes in presence of mli and cmi
-    files, the function belows help to handle this. *)
+    files, the function below help to handle this. *)
 
 (** [mli_from_source u] is the interface source filename associated to the unit
     [u]. The actual suffix depends on {!Config.interface_suffix}.
