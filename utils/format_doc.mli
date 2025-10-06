@@ -172,7 +172,7 @@ val compat: 'a printer -> 'a format_printer
 val compat1: ('p1 -> 'a printer) -> ('p1 -> 'a format_printer)
 val compat2: ('p1 -> 'p2 -> 'a printer) -> ('p1 -> 'p2 -> 'a format_printer)
 
-(** If necessary, embbed a {!Format} printer inside a formatting instruction
+(** If necessary, embed a {!Format} printer inside a formatting instruction
     stream. This breaks every guarantees provided by {!Format_doc}. *)
 val deprecated_printer: (Format.formatter -> unit) -> formatter -> unit
 val deprecated: 'a format_printer -> 'a printer
