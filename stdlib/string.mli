@@ -413,7 +413,7 @@ val edit_distance : ?limit:int -> t -> t -> int
     {{:https://unicode.org/glossary/#normalization_form_c}NFC} gives
     better results.
 
-    {b Note.} This implements the simpler Optimal String Alignement (OSA)
+    {b Note.} This implements the simpler Optimal String Alignment (OSA)
     distance, not the Damerau-Levenshtein distance. With this function
     ["ca"] and ["abc"] have a distance of 3 not 2.
 
