@@ -48,7 +48,7 @@ possible to allow these tests to proceed:
 - Environment variables `CAML_LD_LIBRARY_PATH` and `OCAMLLIB` are manipulated to
   allow the compiler to operate
 - Bytecode executables which will no longer be able to find `ocamlrun` are
-  explictly passed to `ocamlrun`. The harness always verifies that this step is
+  explicitly passed to `ocamlrun`. The harness always verifies that this step is
   required by first executing the binary and ensuring that it fails and then
   passing it directly to `ocamlrun`.
 
