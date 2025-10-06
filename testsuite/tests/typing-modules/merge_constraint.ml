@@ -427,7 +427,7 @@ Error: In this "with" constraint, the new definition of "M.N"
 
    The first set of example use paths with functor applications to tests deep
    substitutions and handling of prefixes. The tests for functor parameters and
-   recursive modules are bellow.
+   recursive modules are below.
 *)
 
 (* Introduction of an invalid alias via a destructive module constraint should
