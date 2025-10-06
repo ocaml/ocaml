@@ -1443,7 +1443,7 @@ let int_comp_caml cmp arg1 arg2 dbg =
 
 type switch_arg = Tagged of expression | Untagged of expression
 
-(** This function takes a switch on immedate values,
+(** This function takes a switch on immediate values,
     for example:
       int 0: 1
       int 1: 3
