@@ -410,7 +410,7 @@ Try to propagate the new compiler to external open source tools
 See https://github.com/compiler-explorer/compiler-explorer/pull/6735
 and https://github.com/compiler-explorer/infra/pull/1359 as examples.
 
-This should be expanded, once we have more experince with the process
+This should be expanded, once we have more experience with the process
 
 # Appendix
 
