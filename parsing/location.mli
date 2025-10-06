@@ -254,7 +254,7 @@ type report_printer = {
     Format.formatter -> Format_doc.t -> unit;
 }
 (** A printer for [report]s, defined using open-recursion.
-    The goal is to make it easy to define new printers by re-using code from
+    The goal is to make it easy to define new printers by reusing code from
     existing ones.
 *)
 
