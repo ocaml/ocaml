@@ -3706,7 +3706,7 @@ function_type:
         { Ptyp_arrow(label, domain, codomain) }
     )
     { $1 }
-  (* The next two cases are for labled tuples - see comment on [tuple_type]
+  (* The next two cases are for labeled tuples - see comment on [tuple_type]
      below.
 
      The first case is present just to resolve a shift/reduce conflict in a
@@ -3759,7 +3759,7 @@ function_type:
    label is not parsed as a proper_tuple_type, but rather as a case of
    function_type above.  This resolves ambiguities around [x:t1 * t2 -> t3]
    which must continue to parse as a function with one labeled argument even in
-   the presence of labled tuples.
+   the presence of labeled tuples.
 *)
 tuple_type:
   | ty = atomic_type
