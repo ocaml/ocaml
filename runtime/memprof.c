@@ -1202,7 +1202,7 @@ static void rand_init(memprof_domain_t domain)
  * * lambda].  We could use a more involved algorithm, but this should
  * be good enough since, in the typical use case, [lambda] << 0.01 and
  * therefore the generation of the binomial variable is amortized by
- * the initialialization of the corresponding block.
+ * the initialization of the corresponding block.
  *
  * If needed, we could use algorithm BTRS from the paper:
  *  Hormann, Wolfgang. "The generation of binomial random variates."
