@@ -115,7 +115,7 @@ val pp_path:
     the following transformations:
 
      - ["$bindir"] or ["$libdir"] if [path] is exactly [~bindir_suffix] or
-       [~libdir_suffix] (this captures passing those two variabes to the test
+       [~libdir_suffix] (this captures passing those two variables to the test
        programs)
      - if [path] begins with [~prefix] then the text is replaced with
        ["$prefix"] (which can create ["$prefix.new/"], etc.). Additionally, if
