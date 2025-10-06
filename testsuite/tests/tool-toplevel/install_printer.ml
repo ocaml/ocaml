@@ -45,7 +45,7 @@ let print_generic (type a b) (pa : a printer) (pb : b printer) : (a, b) v printe
 
 #install_printer print_generic;;
 [D (0, A); D (42, B)];;
-(* Simple printer witn non_generic variable *)
+(* Simple printer with non_generic variable *)
 
 let pp_option_ref = Fun.id @@ fun ppf x ->
     match !x with
