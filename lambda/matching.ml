@@ -2759,7 +2759,7 @@ let reintroduce_fail sw =
             i_max := i;
             c_max := c
           ) else if c = !c_max then (
-           (* Pick the miminal [i] which has maximal [c], and not just
+           (* Pick the minimal [i] which has maximal [c], and not just
               the first [i], as the Hashtbl iteration order is not
               deterministic: see #14088. *)
             i_max := min i !i_max;
