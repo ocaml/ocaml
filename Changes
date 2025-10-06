@@ -317,7 +317,7 @@ Working version
   (Keryan Didier, review by Vincent Laviron and Gabriel Scherer)
 
 - #14155: Audit unexecuted phrases in compiler expect tests and
-  fix all occurences
+  fix all occurrences
   (Stefan Muenzel, review by Gabriel Scherer)
 
 - #14163, #14176: add a filename location to the deprecation alert for implicit
@@ -684,7 +684,7 @@ OCaml 5.4.0
 - #13921: Set cloexec correctly on CRT file descriptors created by the Unix
   library on Windows. The inheritance on the underlying Win32 handles was
   correctly set, but the book-keeping for the CRT was leaking the value of
-  non-inherited handles which combined with re-use of HANDLE values within
+  non-inherited handles which combined with reuse of HANDLE values within
   processes could appear to make a CRT file descriptor "re-open".
   (David Allsopp, review by Nicolás Ojeda Bär)
 
@@ -809,7 +809,7 @@ OCaml 5.4.0
   (Samuel Vivien, review by Florian Angeletti and Gabriel Scherer)
 
 - #13814, 13898: Add an `unused-type-declaration` warning when using
-  a `t as 'a` with no other occurences of `'a`
+  a `t as 'a` with no other occurrences of `'a`
   (Samuel Vivien, review by Florian Angeletti, Kate Deplaix)
 
 - #13818: better delimited hints in error message
@@ -888,7 +888,7 @@ OCaml 5.4.0
   content of a `Tpackage` node
   (Samuel Vivien, review by Florian Angeletti)
 
-- #13866: Modified occurence check that prevents recursive types for it to see
+- #13866: Modified occurrence check that prevents recursive types for it to see
   the checked type as a graph rather than a tree
   (Samuel Vivien, report by Didier Remy, review by Florian Angeletti
    and Jacques Garrigue)
@@ -1198,7 +1198,7 @@ OCaml 5.3.0 (8 January 2025)
   (Antonin Décimo, review by David Allsopp)
 
 - #10696: Introduce __has_attribute and __has_c_attributes in
-  <caml/misc.h> to test the support of specific atributes in C
+  <caml/misc.h> to test the support of specific attributes in C
   code. Introduce fallthrough as a wrapper around the fallthrough
   attribute.
   (Antonin Décimo, review by Nicolás Ojeda Bär, Xavier Leroy, and
