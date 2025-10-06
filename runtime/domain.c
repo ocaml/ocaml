@@ -2249,7 +2249,7 @@ void caml_domain_terminate(bool last)
 
   if (!last) caml_assert_shared_heap_is_empty(domain_state->shared_heap);
 
-  /* [domain_state] may be re-used by a fresh domain here, now that we
+  /* [domain_state] may be reused by a fresh domain here, now that we
      have done [stop_active_domain] and released the
      [all_domains_lock]. In particular, we cannot touch
      [domain_self->interruptor] after here because it may be reused.
