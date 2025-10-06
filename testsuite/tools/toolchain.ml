@@ -48,7 +48,7 @@ let asmrun_assembled_with_cc =
 
 let assembler_embeds_build_path =
   if is_clang_assembler && Config.system = "macosx" then
-    (* Xcode 16 targetting macOS 15 or later uses DWARF v5 and embeds build
+    (* Xcode 16 targeting macOS 15 or later uses DWARF v5 and embeds build
        paths by default, cf. https://developer.apple.com/documentation/xcode-release-notes/xcode-16-release-notes *)
     match String.split_on_char '-' Config.c_compiler_vendor,
           String.split_on_char '-' Config.target with
