@@ -41,12 +41,12 @@ module X = (val x)
 module Y = X.M
 module Z = Y
 
-(* FIXME: this sould be (Approx (No_uid)), not (Internal_error_no_uid) *)
+(* FIXME: this should be (Approx (No_uid)), not (Internal_error_no_uid) *)
 let _ = Z.s
 
 module Arg = struct end
 module FArg = X.F (Arg)
 open FArg
 
-(* FIXME: this sould be (Approx (No_uid)), not (Internal_error_no_uid) *)
+(* FIXME: this should be (Approx (No_uid)), not (Internal_error_no_uid) *)
 type u = t
