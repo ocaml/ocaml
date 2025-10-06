@@ -14,7 +14,7 @@
 
 # Recipes to build a cross compiler (_not_ cross-compiling the compiler), aka
 # generating code that will run on `target`, assuming that a non-cross OCaml
-# compiler (so targetting our build machine) of the same version is available in
+# compiler (so targeting our build machine) of the same version is available in
 # $PATH
 
 # As the cross compiler will be linked with the _build_ version of
