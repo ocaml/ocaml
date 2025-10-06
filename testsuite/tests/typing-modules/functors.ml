@@ -1761,7 +1761,7 @@ module F
      end) =
 struct end
 
-(** The definition of `F` and its application belows disagree on
+(** The definition of `F` and its application below disagree on
     the arity of `t`, we should not equate the two types *)
 
 include
@@ -1895,7 +1895,7 @@ Error: This application of the functor "With_expansion" is ill-typed.
 |}]
 
 
-(** The definition of `H` and its application belows still disagree on
+(** The definition of `H` and its application below still disagree on
     the arity of `t`. However, they agree on the type constructor s.
     Currently, we don't add an equality X.s = G($1).s, but we may want
     to do so in the future. *)
