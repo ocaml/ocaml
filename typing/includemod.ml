@@ -153,8 +153,8 @@ module Directionality = struct
     | Strictly_positive
       (** Strictly positive positions are notable for tools since they are the
           the case where we match a implementation definition with an interface
-          declaration. Oherwise in the positive case we are matching
-          declatations inside functor arguments at even level of nesting.*)
+          declaration. Otherwise in the positive case we are matching
+          declarations inside functor arguments at even level of nesting.*)
     | Positive
     | Negative
 
