@@ -2361,7 +2361,7 @@ let report_error ~loc = function
   | External_with_non_syntactic_arity ->
       Location.errorf ~loc
         "This external declaration has a non-syntactic arity,@ \
-         its arity is greater than its syntatic arity."
+         its arity is greater than its syntactic arity."
 
 
 let () =
