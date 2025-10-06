@@ -199,7 +199,7 @@ end = struct
           Hashtbl.replace id_map.tbl id last;
           Main last
 
-  (** Generate color from the node id to keep the color stable inbetween
+  (** Generate color from the node id to keep the color stable in between
       different calls to the typechecker on the same input. *)
   let colorize_id params id =
     if not params.colorize then None
