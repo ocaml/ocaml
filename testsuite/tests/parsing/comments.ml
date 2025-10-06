@@ -21,7 +21,7 @@ let three =
   3;;
 
 
-let four = (* We are inserting quoted litteral here {p|*)|p}, {œ|(*|œ} *) 4;;
+let four = (* We are inserting quoted literal here {p|*)|p}, {œ|(*|œ} *) 4;;
 
 let set = (** [x < min({x'|x'∊l})] *) 5;;
 
@@ -46,7 +46,7 @@ let three =
   3;;
 
 
-let four = (* We are inserting quoted litteral here {p|*)|p}, {œ|(*|œ} *) 4;;
+let four = (* We are inserting quoted literal here {p|*)|p}, {œ|(*|œ} *) 4;;
 
 let set = (** [x < min({x'|x'∊l})] *) 5;;
 
