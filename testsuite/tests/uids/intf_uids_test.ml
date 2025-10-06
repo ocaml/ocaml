@@ -17,6 +17,6 @@ check-program-output;
 *)
 
 (* This test illustrates the fact that uids are tagged to indicate if they
-  originate from an interface of an implementation: it prints the delcarations
+  originate from an interface of an implementation: it prints the declarations
   written in the cmt file for the interface and then for the implementation.
   These should not overlap.  *)
