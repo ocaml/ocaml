@@ -682,7 +682,7 @@ triggered by setting a label on the pull request. See below:
 - `run-crosscompiler-tests`: build various cross-compilers and test them;
 - `run-thread-sanitizer`: build the distribution with the Thread
   Sanitizer (TSAN), and run the whole testsuite instrumented with TSAN;
-- `run-multicoretests`: run an extensive testsuite convering multicore
+- `run-multicoretests`: run an extensive testsuite covering multicore
   features.
 
 ==== INRIA's Continuous Integration (CI)
