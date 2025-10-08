@@ -132,11 +132,7 @@ let run_script ppf name args =
     else filename)
     | (Stdin | String _) as x -> x
   in
-  begin match !Clflags.init_file with
-  | Some f ->
-      load_explicit_ocamlinit ppf f
-  | None -> ()
-  end ;
+  Option.iter (load_explicit_ocamlinit ppf) !Clflags.init_file;
   use_silently ppf explicit_name
 
 (* Toplevel initialization. Performed here instead of at the
