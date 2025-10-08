@@ -249,7 +249,7 @@ Working version
    report by Kate Deplaix)
 
 - #14190: `ocaml -e` now also processes `-init` (previously it was ignored).
-  (Emile Trotignon, review by David Allsopp and ???)
+  (Emile Trotignon, review by David Allsopp and @ygrek)
 
 ### Internal/compiler-libs changes:
 
