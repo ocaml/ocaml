@@ -1,6 +1,6 @@
 Fatal error: exception Stdlib.Exit
-Raised by primitive operation at unknown location
-Called from unknown location
+Raised by primitive operation at unknown location -- did you use ocamlrun/ocamlc -g ?
+Called from unknown location -- did you use ocamlrun/ocamlc -g ?
 (Cannot print locations:
  bytecode executable program file cannot be opened;
  -- too many open files. Try running with OCAMLRUNPARAM=b=2)

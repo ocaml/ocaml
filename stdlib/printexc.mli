@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Facilities for printing exceptions and inspecting current call stack. *)
+(** Facilities for printing exceptions and inspecting current call stack.
+
+Note that the facilities in this module rely on recording the call stack
+which must be explicitly enabled. See {!record_backtrace}.
+*)
 
 type t = exn = ..
 (** The type of exception values. *)
@@ -70,10 +74,12 @@ val get_backtrace: unit -> string
 *)
 
 val record_backtrace: bool -> unit
-(** [Printexc.record_backtrace b] turns recording of exception backtraces
-    on (if [b = true]) or off (if [b = false]).  Initially, backtraces
-    are not recorded, unless the [b] flag is given to the program
-    through the [OCAMLRUNPARAM] variable.
+(** [Printexc.record_backtrace b] turns on (if [b = true]) or off recording
+    of exception backtraces in the current domain.
+    Initially, backtraces are not recorded, unless the [b] flag is given to
+    the program through the [OCAMLRUNPARAM] variable.
+    Useful debugging information requires the [-g] flag to be passed
+    to [ocamlc] or [ocamlopt].
     @since 3.11
 *)
 

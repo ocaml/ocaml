@@ -824,6 +824,10 @@ OCaml 5.4.0 (9 October 2025)
 - #13818: better delimited hints in error message
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #13876: When stack traces are printed in code compiled or run without the
+  -g option, the stack trace suggests adding that option
+  (Zachary Vance)
+
 ### Internal/compiler-libs changes:
 
 - #13539, #13776: Use nanosleep instead of usleep or select, if available.
