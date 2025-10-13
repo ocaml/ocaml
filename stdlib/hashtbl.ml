@@ -46,13 +46,15 @@ let flip_ongoing_traversal h =
 
 (* To pick random seeds if requested *)
 
-(* The runtime stores the initial value of "R" in caml_runtime_randomized. We
-   choose to copy this initial value here and then keep then in sync in order to
-   avoid adding a C call to every call to Hashtbl.create. *)
-external randomized : unit -> bool = "caml_runtime_is_randomized" [@@noalloc]
+(* The runtime stores the initial value of "R" in
+   caml_runtime_hashtbl_randomized. We choose to copy this initial value here
+   and then keep then in sync in order to avoid adding a C call to every call to
+   Hashtbl.create. *)
+external randomized : unit -> bool =
+  "caml_runtime_hashtbl_is_randomized" [@@noalloc]
 let randomized = Atomic.make (randomized ())
 
-external randomize : unit -> unit = "caml_runtime_randomize" [@@noalloc]
+external randomize : unit -> unit = "caml_runtime_hashtbl_randomize" [@@noalloc]
 let randomize () =
   Atomic.set randomized true;
   (* Update the runtime's value so that the result from Sys.runtime_parameters

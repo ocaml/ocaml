@@ -113,7 +113,7 @@ void caml_parse_ocamlrunparam(void)
       case 'p': scanmult (opt, &params.parser_trace); break;
       case 'R':
         scanmult (opt, &val);
-        caml_runtime_randomized = !!val;
+        caml_runtime_hashtbl_randomized = !!val;
         break;
       case 's': scanmult (opt, &params.init_minor_heap_wsz); break;
       case 't': scanmult (opt, &params.trace_level); break;
@@ -140,6 +140,7 @@ void caml_parse_ocamlrunparam(void)
                      "The maximum value is %d.", Max_domains_max);
   }
 }
+
 
 /* The number of outstanding calls to caml_startup */
 static int startup_count = 0;
