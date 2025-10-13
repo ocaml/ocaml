@@ -34,7 +34,6 @@
 #include "caml/startup_aux.h"
 #include "caml/prims.h"
 #include "caml/signals.h"
-#include "caml/platform.h"
 
 #ifdef _WIN32
 extern void caml_win32_unregister_overflow_detection (void);
