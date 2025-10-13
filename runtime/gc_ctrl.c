@@ -372,17 +372,17 @@ CAMLprim value caml_runtime_variant (value unit)
 #endif
 }
 
-atomic_bool caml_runtime_randomized = false;
+atomic_bool caml_runtime_hashtbl_randomized = false;
 
-CAMLprim value caml_runtime_randomize(value vunit)
+CAMLprim value caml_runtime_hashtbl_randomize(value vunit)
 {
-  caml_runtime_randomized = true;
+  caml_runtime_hashtbl_randomized = true;
   return Val_unit;
 }
 
-CAMLprim value caml_runtime_is_randomized(value vunit)
+CAMLprim value caml_runtime_hashtbl_is_randomized(value vunit)
 {
-  return Val_bool(caml_runtime_randomized);
+  return Val_bool(caml_runtime_hashtbl_randomized);
 }
 
 CAMLprim value caml_runtime_parameters (value unit)
@@ -403,7 +403,7 @@ CAMLprim value caml_runtime_parameters (value unit)
        /* n */ caml_custom_minor_max_bsz,
        /* o */ caml_percent_free,
        /* p */ Caml_state->parser_trace,
-       /* R */ caml_runtime_randomized,
+       /* R */ caml_runtime_hashtbl_randomized,
        /* s */ Caml_state->minor_heap_wsz,
        /* t */ caml_params->trace_level,
        /* v */ caml_verb_gc,
