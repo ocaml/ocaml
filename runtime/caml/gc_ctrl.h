@@ -18,8 +18,6 @@
 
 #ifdef CAML_INTERNALS
 
-#include <stdbool.h>
-
 #include "misc.h"
 
 CAMLextern atomic_uintnat caml_max_stack_wsize;
