@@ -193,8 +193,12 @@ module type S = sig
         of [s] starting at index [ofs] and containing [len] bytes. *)
 
   val channel : in_channel -> int -> t
-    (** Read characters from the channel and return their digest.
-        See {!Digest.channel} for the full specification. *)
+    (** If [len] is nonnegative, [channel ic len] reads [len]
+        characters from channel [ic] and returns their digest, or raises
+        [End_of_file] if end-of-file is reached before [len] characters
+        are read.  If [len] is negative, [channel ic len] reads
+        all characters from [ic] until end-of-file is reached and return
+        their digest. *)
 
   val file : string -> t
     (** Return the digest of the file whose name is given. *)
