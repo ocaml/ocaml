@@ -29,6 +29,8 @@
 type t = string [@@ocaml.deprecated "Use the specific algorithm (BLAKE128.t, BLAKE256.t, BLAKE512.t, or MD5.t). If you need OCaml < 5.2 support, please use the opam package 'digest' for compatibility. This type will be removed in OCaml 5.7."]
 (** The type of digests: 16-byte strings. *)
 
+[@@@alert "-deprecated"] (* Need to be able to mention them ! *)
+
 val compare : t -> t -> int
 [@@ocaml.deprecated "Use the specific algorithm (BLAKE128.compare, BLAKE256.compare, BLAKE512.compare, or MD5.compare). If you need OCaml < 5.2 support, please use the opam package 'digest' for compatibility. This binding will be removed in OCaml 5.7."]
 (** The comparison function for 16-byte digests, with the same
@@ -101,6 +103,8 @@ val from_hex : string -> t
 [@@ocaml.deprecated "Use the specific algorithm (BLAKE128.of_hex, BLAKE256.of_hex, BLAKE512.of_hex, or MD5.of_hex). If you need OCaml < 5.2 support, please use the opam package 'digest' for compatibility. This binding will be removed in OCaml 5.7."]
 (** Same function as {!Digest.of_hex}.
     @since 4.00 *)
+
+[@@@alert "+deprecated"] (* Need to be able to mention them ! *)
 
 (** {1 Generic interface} *)
 
