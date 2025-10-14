@@ -196,11 +196,11 @@ let test hex s =
   let ctx = init() in
   update ctx s 0 (String.length s);
   let res = finish ctx in
-  let exp = Digest.string s in
-  let ok = res = exp && Digest.to_hex exp = hex in
+  let exp = Digest.MD5.string s in
+  let ok = res = exp && Digest.MD5.to_hex exp = hex in
   if not ok then
     Printf.printf "Failure for %S : %S %S %S %S\n" s res exp
-                  (Digest.to_hex exp) hex;
+                  (Digest.MD5.to_hex exp) hex;
   ok
 
 let time msg iter fn =
@@ -236,5 +236,5 @@ let _ =
         update ctx s 0 (String.length s);
         ignore (finish ctx));
     time "C implementation" num_iter
-      (fun () -> ignore (Digest.string s))
+      (fun () -> ignore (Digest.MD5.string s))
   end

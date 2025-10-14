@@ -1406,7 +1406,9 @@ test (test54 ())
 
 (* Creating digests for files. *)
 let add_digest_ib ob ib =
-  let digest s = String.uppercase_ascii (Digest.to_hex (Digest.string s)) in
+  let digest s =
+    String.uppercase_ascii (Digest.MD5.to_hex (Digest.MD5.string s))
+  in
   let scan_line ib f = Scanf.bscanf ib "%[^\n\r]\n" f in
   let output_line_digest s =
     Buffer.add_string ob s;
