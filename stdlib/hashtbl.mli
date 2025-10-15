@@ -95,12 +95,13 @@ val create : ?random: (* thwart tools/sync_stdlib_docs *) bool ->
    different orders at different runs of the program.
 
    If no [~random] parameter is given, hash tables are created
-   in non-random mode by default.  This default can be changed
-   either programmatically by calling {!randomize} or by
-   setting the [R] flag in the [OCAMLRUNPARAM] environment variable.
+   in random mode by default.  This default can be changed by
+   setting the [R=0] flag in the [OCAMLRUNPARAM] environment variable.
 
    @before 4.00 the [~random] parameter was not present and all
-   hash tables were created in non-randomized mode. *)
+    hash tables were created in non-randomized mode.
+
+   @before 5.5 the default was to create deterministic hash tables. *)
 
 val clear : ('a, 'b) t -> unit
 (** Empty a hash table. Use [reset] instead of [clear] to shrink the

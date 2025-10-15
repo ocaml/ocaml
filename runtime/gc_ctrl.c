@@ -372,7 +372,7 @@ CAMLprim value caml_runtime_variant (value unit)
 #endif
 }
 
-atomic_bool caml_runtime_hashtbl_randomized = false;
+atomic_bool caml_runtime_hashtbl_randomized = true;
 
 CAMLprim value caml_runtime_hashtbl_randomize(value vunit)
 {
