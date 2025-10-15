@@ -2215,6 +2215,7 @@ typing/typetexp.cmo : \
     parsing/parsetree.cmi \
     typing/out_type.cmi \
     typing/oprint.cmi \
+    utils/numbers.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
@@ -2239,6 +2240,7 @@ typing/typetexp.cmx : \
     parsing/parsetree.cmi \
     typing/out_type.cmx \
     typing/oprint.cmx \
+    utils/numbers.cmx \
     utils/misc.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
