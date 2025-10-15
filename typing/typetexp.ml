@@ -586,6 +586,8 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       let mkfield l f =
         newty (Tvariant (create_row ~fields:[l,f] ~more:(newvar())
                            ~closed:true ~fixed:None ~name:None)) in
+      (* Using a reference to a map rather than a hash table gives us
+         a canonical order when iterating. *)
       let module HMap = Numbers.Int.Map in
       let hfields = ref HMap.empty in
       let add_typed_field loc l f =
@@ -724,6 +726,8 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
 and transl_fields env ~policy ~row_context o fields =
+  (* Using a reference to a map rather than a hash table gives us
+     a canonical order when iterating. *)
   let module HMap = Misc.Stdlib.String.Map in
   let hfields = ref HMap.empty in
   let add_typed_field loc l ty =
