@@ -586,7 +586,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       let mkfield l f =
         newty (Tvariant (create_row ~fields:[l,f] ~more:(newvar())
                            ~closed:true ~fixed:None ~name:None)) in
-      let hfields = Hashtbl.create 17 in
+      let hfields = Hashtbl.create ~random:false 17 in
       let add_typed_field loc l f =
         let h = Btype.hash_variant l in
         try
@@ -723,7 +723,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
 and transl_fields env ~policy ~row_context o fields =
-  let hfields = Hashtbl.create 17 in
+  let hfields = Hashtbl.create ~random:false 17 in
   let add_typed_field loc l ty =
     try
       let ty' = Hashtbl.find hfields l in
