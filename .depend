@@ -1015,7 +1015,6 @@ typing/includemod.cmo : \
     typing/env.cmi \
     utils/diffing.cmi \
     typing/ctype.cmi \
-    file_formats/cmt_format.cmi \
     parsing/builtin_attributes.cmi \
     typing/btype.cmi \
     typing/includemod.cmi
@@ -1039,7 +1038,6 @@ typing/includemod.cmx : \
     typing/env.cmx \
     utils/diffing.cmx \
     typing/ctype.cmx \
-    file_formats/cmt_format.cmx \
     parsing/builtin_attributes.cmx \
     typing/btype.cmx \
     typing/includemod.cmi
@@ -1506,17 +1504,20 @@ typing/shape.cmi : \
 typing/shape_reduce.cmo : \
     typing/shape.cmi \
     utils/local_store.cmi \
+    utils/identifiable.cmi \
     typing/ident.cmi \
     typing/env.cmi \
     typing/shape_reduce.cmi
 typing/shape_reduce.cmx : \
     typing/shape.cmx \
     utils/local_store.cmx \
+    utils/identifiable.cmx \
     typing/ident.cmx \
     typing/env.cmx \
     typing/shape_reduce.cmi
 typing/shape_reduce.cmi : \
     typing/shape.cmi \
+    typing/path.cmi \
     typing/env.cmi
 typing/signature_group.cmo : \
     typing/types.cmi \
