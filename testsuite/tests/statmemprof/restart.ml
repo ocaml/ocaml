@@ -1,4 +1,13 @@
-(* TEST *)
+(* TEST
+ no-tsan; (* (Probably spurious) TSan alarm on this test, see
+              https://github.com/ocaml/ocaml/issues/14300 *)
+ {
+   bytecode;
+ }
+ {
+   native;
+ }
+*)
 
 module M = Gc.Memprof
 
