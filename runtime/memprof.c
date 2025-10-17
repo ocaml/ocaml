@@ -1939,7 +1939,7 @@ Caml_inline bool sampling(memprof_domain_t domain)
 
   if (thread && !thread->suspended) {
     value config = thread_config(thread);
-    return Sampling(config) && !Min_lambda(config);
+    return Sampling(config);
   }
   return false;
 }
