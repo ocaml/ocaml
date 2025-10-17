@@ -537,11 +537,14 @@ FUNCTION caml_c_call_stack_args
         std     ALLOC_PTR, Caml_state(young_ptr)
         std     TRAP_PTR, Caml_state(exn_handler)
    /* Reserve STACK_ARG_BYTES bytes on the C stack */
+#if defined(WITH_THREAD_SANITIZER)
+        mr      TMP, SP
+#endif
         subfc   SP, STACK_ARG_BYTES, SP
 #if defined(WITH_THREAD_SANITIZER)
    /* Create a proper stack frame for unwinding */
         addi    SP, SP, -RESERVED_STACK
-        std     C_CALL_TMP, 0(SP)
+        std     TMP, 0(SP)
 #endif
    /* Copy from OCaml SP + [32...32+STACK_ARG_BYTES)
            to C SP + [32...32+STACK_ARG_BYTES) */
