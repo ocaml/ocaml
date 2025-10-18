@@ -666,14 +666,6 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS_PROMOTE);
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS);
 
-  domain->young_ptr = domain->young_end;
-  /* Trigger a GC poll when half of the minor heap is filled. At that point, a
-   * major slice is scheduled. */
-  domain->young_trigger = domain->young_start
-    + (domain->young_end - domain->young_start) / 2;
-  caml_memprof_set_trigger(domain);
-  caml_reset_young_limit(domain);
-
   domain->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
   domain->stat_promoted_words += domain->allocated_words - prev_alloc_words;
 
@@ -732,6 +724,17 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
     CAML_EV_END(EV_MINOR_LEAVE_BARRIER);
   }
   return result;
+}
+
+static void update_young_pointers (caml_domain_state* domain)
+{
+  domain->young_ptr = domain->young_end;
+  /* Trigger a GC poll when half of the minor heap is filled. At that point, a
+   * major slice is scheduled. */
+  domain->young_trigger = domain->young_start
+    + (domain->young_end - domain->young_start) / 2;
+  caml_memprof_set_trigger(domain);
+  caml_reset_young_limit(domain);
 }
 
 static void ephe_clean_minor (caml_domain_state* domain)
@@ -877,6 +880,8 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
   caml_gc_log("running stw empty_minor_heap_promote");
   promote_result prom =
     caml_empty_minor_heap_promote(domain, participating_count, participating);
+
+  update_young_pointers(domain);
 
   if (prom.locked_ephemerons) {
     CAML_EV_BEGIN(EV_MINOR_EPHE_CLEAN);
