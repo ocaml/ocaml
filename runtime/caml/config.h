@@ -65,7 +65,7 @@
   #define __USE_MINGW_ANSI_STDIO 0
 #endif
 
-#if defined(__MINGW32__) && !__USE_MINGW_ANSI_STDIO && !defined(_UCRT)
+#if defined(__MINGW32__)
 #define ARCH_SIZET_PRINTF_FORMAT "I"
 #else
 #define ARCH_SIZET_PRINTF_FORMAT "z"
