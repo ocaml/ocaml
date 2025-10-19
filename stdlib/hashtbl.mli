@@ -99,7 +99,7 @@ val create : ?random: (* thwart tools/sync_stdlib_docs *) bool ->
    setting the [R=0] flag in the [OCAMLRUNPARAM] environment variable.
 
    @before 4.00 the [~random] parameter was not present and all
-    hash tables were created in non-randomized mode.
+   hash tables were created in non-randomized mode.
 
    @before 5.5 the default was to create deterministic hash tables. *)
 
