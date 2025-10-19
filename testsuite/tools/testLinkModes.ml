@@ -557,7 +557,7 @@ let compile_test usr_bin_sh config env test test_program description =
           test_program_path
       in
       let with_unix = (Config.supports_shared_libraries || not tendered) in
-      let is_randomized = false in
+      let is_randomized = true in
       let verbose = Environment.verbose env in
       write_test_program ~verbose ~is_randomized ~with_unix description;
       let options =
