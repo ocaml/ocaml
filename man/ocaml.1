@@ -69,6 +69,11 @@ Show absolute filenames in error messages.
 .B \-no-absname
 Do not try to show absolute filenames in error messages.
 .TP
+.B \-i-variance
+Cause the compiler to print the computed variance of type parameters for
+every type declaration.  Without this option, variance is printed only for
+private types or types without a manifest (e.g., abstract types).
+.TP
 .BI \-I " directory"
 Add the given directory to the list of directories searched for
 source and compiled files. By default, the current directory is
