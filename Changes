@@ -299,9 +299,9 @@ Working version
 - #14094: toplevel, simplify check on installed printer types
   (Florian Angeletti, review by Gabriel Scherer)
 
-- #13656, #14114: Use C99 stdint.h/inttypes.h fixed-width integer types and
-  macros to define OCaml integers.
-  (Antonin Décimo, review by Nick Barnes)
+- #13656, #14114, #14308: Use C99 stdint.h/inttypes.h fixed-width
+  integer types and macros to define OCaml integers.
+  (Antonin Décimo, review by Nick Barnes and David Allsopp)
 
 - #14148: Remove an unused field from package_type in typedtree
   (Samuel Vivien, review by Gabriel Scherer)
