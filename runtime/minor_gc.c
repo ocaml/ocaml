@@ -726,7 +726,7 @@ caml_empty_minor_heap_promote(caml_domain_state* domain,
   return result;
 }
 
-static void update_young_pointers (caml_domain_state* domain)
+void caml_reset_young_pointers (caml_domain_state* domain)
 {
   domain->young_ptr = domain->young_end;
   /* Trigger a GC poll when half of the minor heap is filled. At that point, a
@@ -881,7 +881,7 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
   promote_result prom =
     caml_empty_minor_heap_promote(domain, participating_count, participating);
 
-  update_young_pointers(domain);
+  caml_reset_young_pointers(domain);
 
   if (prom.locked_ephemerons) {
     CAML_EV_BEGIN(EV_MINOR_EPHE_CLEAN);
