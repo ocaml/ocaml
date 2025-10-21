@@ -216,6 +216,12 @@ val asm_size_type_directives: bool
 
     @since 5.4 *)
 
+val asm_dwarf_version : int
+(** The DWARF Version emitted by {!asm} or [0] if if this is unknown or the
+    assembler does not emit DWARF information.
+
+    @since 5.5 *)
+
 val with_frame_pointers : bool
 (** Whether assembler should maintain frame pointers *)
 

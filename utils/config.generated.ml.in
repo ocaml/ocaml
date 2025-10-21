@@ -81,6 +81,7 @@ let target_os_type = {@QS@|@target_os_type@|@QS@}
 let asm = {@QS@|@AS@|@QS@}
 let asm_cfi_supported = @asm_cfi_supported@
 let asm_size_type_directives = @asm_size_type_directives@
+let asm_dwarf_version = @asm_dwarf_version@
 let with_frame_pointers = @frame_pointers@
 let reserved_header_bits = @reserved_header_bits@
 
