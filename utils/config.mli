@@ -216,9 +216,10 @@ val asm_size_type_directives: bool
 
     @since 5.4 *)
 
-val asm_dwarf_version : int
-(** The DWARF Version emitted by {!asm} or [0] if if this is unknown or the
-    assembler does not emit DWARF information.
+val asm_dwarf_version : int option
+(** The DWARF Version emitted by the {!asm} command. At present this is only
+    implemented for the clang internal assembler, all other assemblers have
+    [None].
 
     @since 5.5 *)
 

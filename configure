@@ -19467,12 +19467,12 @@ case $ocaml_cc_vendor in #(
   clang-*) :
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking DWARF version of $AS" >&5
 printf %s "checking DWARF version of $AS... " >&6; }
-    asm_dwarf_version="$( $AS -### -g -c -x c /dev/null -o /dev/null 2>&1 | sed -ne "s/.*dwarf-version=\([0-9]*\).*/\1/p")"
+    asm_dwarf_version="$( $AS -### -g -c -x c /dev/null -o /dev/null 2>&1 | sed -ne "s/.*dwarf-version=\([0-9]*\).*/Some \1/p")"
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $asm_dwarf_version" >&5
 printf "%s\n" "$asm_dwarf_version" >&6; }
-    test -n "$asm_dwarf_version" || asm_dwarf_version=0 ;; #(
+    test -n "$asm_dwarf_version" || asm_dwarf_version='None' ;; #(
   *) :
-    asm_dwarf_version=0 ;;
+    asm_dwarf_version='None' ;;
 esac
 
 # Utilities

@@ -50,7 +50,7 @@ let assembler_embeds_build_path =
   (* The clang internal assembler only embeds build paths when called by
      ocamlopt if clang is emitting DWARF v5 by default. *)
   if is_clang_assembler then
-    Config.asm_dwarf_version > 4
+    Option.exists (fun version -> version > 4) Config.asm_dwarf_version
   else
     (* The clang internal assembler does not embed build paths when called by
        ocamlopt and neither does the GNU assembler on Windows. *)

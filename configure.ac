@@ -1814,10 +1814,10 @@ AS_CASE([$ocaml_cc_vendor],
     [AC_MSG_CHECKING([DWARF version of $AS])
     m4_normalize([asm_dwarf_version="$(\
       $AS -### -g -c -x c /dev/null -o /dev/null 2>&1
-        | sed -ne "s/.*dwarf-version=\([0-9]*\).*/\1/p")"])
+        | sed -ne "s/.*dwarf-version=\([0-9]*\).*/Some \1/p")"])
     AC_MSG_RESULT([$asm_dwarf_version])
-    test -n "$asm_dwarf_version" || asm_dwarf_version=0],
-  [asm_dwarf_version=0])
+    test -n "$asm_dwarf_version" || asm_dwarf_version='None'],
+  [asm_dwarf_version='None'])
 
 # Utilities
 AC_CHECK_PROG([rlwrap],[rlwrap],[rlwrap])
