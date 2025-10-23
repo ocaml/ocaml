@@ -395,6 +395,10 @@ Working version
    always strip typing environment in cmt files
    (Florian Angeletti, review by David Allsopp)
 
+- #?????: enable -i-variance also for classes and extension constructors,
+  and add description of -i-variance in manpages
+  (Takafumi Saikawa, review by ??)
+
 ### Internal/compiler-libs changes:
 
 - #13839, #14008: Reimplement `let open`, `let module` and `let exception` in
