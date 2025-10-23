@@ -1288,6 +1288,24 @@ let filter_params tyl =
       [] tyl
   in List.rev params
 
+(* When printing the variance of a type parameter,
+   we need to translate the computed variance ([Variance.t])
+   back into the corresponding syntactic node ([Asttypes.variance]).
+   [Typedecl_variance.transl_variance] is half inverse to this operation. *)
+let untransl_variance
+    ?(var_flag=(!Clflags.print_variance))
+    ?(inj_flag=(!Clflags.print_variance)) vi =
+  let open Variance in let open Asttypes in
+  let v = if not var_flag then NoVariance else
+  match mem May_pos vi, mem May_neg vi with
+  | false, false -> Bivariant
+  | true, false -> Covariant
+  | false, true -> Contravariant
+  | true, true -> NoVariance in
+  let i = if not inj_flag then NoInjectivity else
+  if mem Inj vi then Injective else NoInjectivity in
+  (v, i)
+
 let prepare_type_constructor_arguments = function
   | Cstr_tuple l -> List.iter prepare_type l
   | Cstr_record l -> List.iter (fun l -> prepare_type l.ld_type) l
@@ -1410,23 +1428,18 @@ let tree_of_type_decl id decl =
       List.map2
         (fun ty v ->
           let is_var = is_Tvar ty in
-          if !Clflags.print_variance || abstr || not is_var then
-            let inj =
-              !Clflags.print_variance && Variance.mem Inj v ||
-              type_kind_is_abstract decl && Variance.mem Inj v &&
-              match decl.type_manifest with
-              | None -> true
-              | Some ty -> (* only abstract or private row types *)
-                  decl.type_private = Private &&
-                  Btype.is_constr_row ~allow_ident:true (Btype.row_of_type ty)
-            and (co, cn) = Variance.get_upper v in
-            (match co, cn with
-            | false, false -> Bivariant
-            | true, false -> Covariant
-            | false, true -> Contravariant
-            | true, true -> NoVariance),
-            (if inj then Injective else NoInjectivity)
-          else (NoVariance, NoInjectivity))
+          let var_flag = !Clflags.print_variance || abstr || not is_var in
+          let inj_flag =
+            !Clflags.print_variance ||
+            (abstr || not is_var) &&
+            type_kind_is_abstract decl &&
+            match decl.type_manifest with
+            | None -> true
+            | Some ty -> (* only abstract or private row types *)
+                decl.type_private = Private &&
+                Btype.is_constr_row ~allow_ident:true (Btype.row_of_type ty)
+          in
+          untransl_variance ~var_flag ~inj_flag v)
         decl.type_params decl.type_variance
     in
     (Ident.name id,
@@ -1535,24 +1548,6 @@ let extension_constructor_args_and_ret_type_subtree ext_args ext_ret_type =
   let args = tree_of_constructor_arguments ext_args in
   (args, ret)
 
-(* TODO: eliminate duplications of this code in this file *)
-(* TODO: move to somewhere (typedecl_variance?) *)
-(* TODO: Typedecl_variance.surface_variance should be integrated *)
-(* TODO: Types.variance should expose its poset structure better *)
-let decode_variance
-    ?(var_flag=(!Clflags.print_variance))
-    ?(inj_flag=(!Clflags.print_variance)) vi =
-  let open Variance in let open Asttypes in
-  let v = if not var_flag then NoVariance else
-  match mem May_pos vi, mem May_neg vi with
-  | false, false -> Bivariant
-  | true, false -> Covariant
-  | false, true -> Contravariant
-  | true, true -> NoVariance in
-  let i = if not inj_flag then NoInjectivity else
-  if mem Inj vi then Injective else NoInjectivity in
-  (v, i)
-
 let prepared_tree_of_extension_constructor
    ~env id ext es
   =
@@ -1566,7 +1561,7 @@ let prepared_tree_of_extension_constructor
     in
     Option.fold
       ~none:(List.map (fun _ -> NoVariance, NoInjectivity) ty_params)
-      ~some:(List.map decode_variance)
+      ~some:(List.map untransl_variance)
       ovariances
   in
   let type_param ot_variance =
@@ -1748,7 +1743,7 @@ let rec tree_of_class_type mode params =
 
 
 let tree_of_class_param param variance =
-  let ot_variance = decode_variance variance
+  let ot_variance = untransl_variance variance
       ~var_flag:(!Clflags.print_variance || not (is_Tvar param)) in
   match tree_of_typexp Type_scheme param with
     Otyp_var (ot_non_gen, ot_name) -> {ot_non_gen; ot_name; ot_variance}
