@@ -39,6 +39,7 @@
 #include "caml/startup.h"
 #include "caml/fail.h"
 #include "caml/callback.h"
+#include <string.h>
 
 atomic_uintnat caml_max_stack_wsize;
 uintnat caml_fiber_wsz;
@@ -48,6 +49,7 @@ extern _Atomic uintnat caml_custom_major_ratio; /* see custom.c */
 extern _Atomic uintnat caml_custom_minor_ratio; /* see custom.c */
 extern _Atomic uintnat caml_custom_minor_max_bsz; /* see custom.c */
 extern uintnat caml_minor_heap_max_wsz; /* see domain.c */
+extern uintnat caml_mark_stack_prune_factor; /* see major_gc.c */
 
 CAMLprim value caml_gc_quick_stat(value v)
 {
@@ -372,15 +374,18 @@ CAMLprim value caml_runtime_variant (value unit)
 #endif
 }
 
+static char *format_gc_tweaks(void);
 CAMLprim value caml_runtime_parameters (value unit)
 {
 #define F_Z CAML_PRIuNAT
 #define F_S CAML_PRIuSZT
 
   CAMLassert (unit == Val_unit);
-  return caml_alloc_sprintf
+  char *tweaks = format_gc_tweaks();
+  char *no_tweaks = "";
+  value res = caml_alloc_sprintf
       ("b=%d,c=%"F_Z",e=%"F_Z",l=%"F_Z",M=%"F_Z",m=%"F_Z",n=%"F_Z","
-       "o=%"F_Z",p=%d,s=%"F_S",t=%"F_Z",v=%"F_Z",V=%"F_Z",W=%"F_Z"",
+       "o=%"F_Z",p=%d,s=%"F_S",t=%"F_Z",v=%"F_Z",V=%"F_Z",W=%"F_Z"%s",
        /* b */ (int) Caml_state->backtrace_active,
        /* c */ caml_params->cleanup_on_exit,
        /* e */ caml_params->runtime_events_log_wsize,
@@ -395,11 +400,17 @@ CAMLprim value caml_runtime_parameters (value unit)
        /* t */ caml_params->trace_level,
        /* v */ caml_verb_gc,
        /* V */ caml_params->verify_heap,
-       /* W */ caml_runtime_warnings
+       /* W */ caml_runtime_warnings,
+       /* X */ tweaks ? tweaks : no_tweaks
        );
+  if (tweaks) {
+    free(tweaks);
+  }
+  return res;
 #undef F_Z
 #undef F_S
 }
+
 
 /* Control runtime warnings */
 
@@ -492,4 +503,124 @@ CAMLprim value caml_ml_gc_ramp_down(value work) {
     "GC ramp-down; resumed words: %" CAML_PRIuNAT "\n", resumed_words);
   caml_gc_ramp_down(resumed_words);
   return Val_unit;
+}
+
+struct gc_tweak {
+  const char* name;
+  uintnat* ptr;
+  uintnat initial_value;
+};
+static struct gc_tweak gc_tweaks[] = {
+  { "mark_stack_prune_factor", &caml_mark_stack_prune_factor, 0 }
+};
+enum {N_GC_TWEAKS = sizeof(gc_tweaks)/sizeof(gc_tweaks[0])};
+
+void caml_init_gc_tweaks(void)
+{
+  for (int i = 0; i < N_GC_TWEAKS; i++) {
+    gc_tweaks[i].initial_value = *gc_tweaks[i].ptr;
+  }
+}
+
+void caml_print_gc_tweaks(void)
+{
+  for (int i = 0; i < N_GC_TWEAKS; i++) {
+    fprintf(stderr, "%s (initial value %" CAML_PRIuNAT ")\n",
+        gc_tweaks[i].name,
+        gc_tweaks[i].initial_value);
+  }
+}
+
+uintnat* caml_lookup_gc_tweak(const char* name, uintnat len)
+{
+  for (int i = 0; i < N_GC_TWEAKS; i++) {
+    if (strlen(gc_tweaks[i].name) == len &&
+        memcmp(gc_tweaks[i].name, name, len) == 0) {
+      return gc_tweaks[i].ptr;
+    }
+  }
+  return NULL;
+}
+
+CAMLprim value caml_gc_tweak_get(value name)
+{
+  CAMLparam1(name);
+  uintnat* p = caml_lookup_gc_tweak(String_val(name),
+                                    caml_string_length(name));
+  if (p == NULL)
+    caml_invalid_argument("Gc.Tweak: parameter not found");
+  CAMLreturn (Val_long((long)*p));
+}
+
+CAMLprim value caml_gc_tweak_set(value name, value v)
+{
+  CAMLparam2(name, v);
+  uintnat* p = caml_lookup_gc_tweak(String_val(name),
+                                    caml_string_length(name));
+  if (p == NULL)
+    caml_invalid_argument("Gc.Tweak: parameter not found");
+  *p = (uintnat)Long_val(v);
+  CAMLreturn (Val_unit);
+}
+
+CAMLprim value caml_gc_tweak_list_active(value unit)
+{
+  CAMLparam1(unit);
+  CAMLlocal3(list, name, pair);
+  for (int i = N_GC_TWEAKS - 1; i >= 0; i--) {
+    if (*gc_tweaks[i].ptr != gc_tweaks[i].initial_value) {
+      name = caml_copy_string(gc_tweaks[i].name);
+      pair = caml_alloc_2(0, name, Val_long((long)*gc_tweaks[i].ptr));
+      list = caml_alloc_2(0, pair, list);
+    }
+  }
+  CAMLreturn(list);
+}
+
+
+/* Return the OCAMLRUNPARAMS form of any GC tweaks. Returns NULL if
+ * none are set, or if we can't allocate. */
+static char *format_gc_tweaks(void)
+{
+  size_t len = 0;
+  for (size_t i = 0; i < N_GC_TWEAKS; i++) {
+    uintnat val = *gc_tweaks[i].ptr;
+    if (val != gc_tweaks[i].initial_value) {
+      len += (2 /* ',X' */
+              + strlen(gc_tweaks[i].name)+1 /* 'tweak_name=' */);
+      do { /* Count digits. We're not in any great hurry. */
+        val /= 10;
+        ++ len;
+      } while(val);
+    }
+  }
+  if (!len) { /* no gc_tweaks */
+    return NULL;
+  }
+  ++ len; /* trailing NUL */
+  char *buf = malloc(len);
+  if (!buf) {
+    goto fail_alloc;
+  }
+  char *p = buf;
+
+  for (size_t i = 0; i < N_GC_TWEAKS; i++) {
+    uintnat val = *gc_tweaks[i].ptr;
+    if (val != gc_tweaks[i].initial_value) {
+      int item_len = snprintf(p, len, ",X%s=%"CAML_PRIuNAT,
+                              gc_tweaks[i].name, val);
+      if (item_len >= len) {
+         /* surprise truncation: could be a race; just stop trying. */
+        goto fail_truncate;
+      }
+      p += item_len;
+      len -= item_len;
+    }
+  }
+  return buf;
+
+fail_truncate:
+  free(buf);
+fail_alloc:
+  return NULL;
 }

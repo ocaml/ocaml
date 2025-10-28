@@ -44,6 +44,10 @@
 /* Default speed setting for the major GC. */
 _Atomic uintnat caml_percent_free = Percent_free_def;
 
+/* The mark stack will be pruned if it grows bigger than
+   1/caml_mark_stack_prune_factor of the domain's major heap size */
+uintnat caml_mark_stack_prune_factor = 32;
+
 /* This variable is only written with the world stopped, so it need not be
    atomic */
 uintnat caml_major_cycles_completed = 0;
@@ -1144,12 +1148,13 @@ static void realloc_mark_stack (struct mark_stack* stk)
   uintnat mark_stack_large_bsize = 0;
   uintnat mark_stack_bsize = stk->size * sizeof(mark_entry);
   uintnat local_heap_bsize = caml_heap_size(Caml_state->shared_heap);
+  uintnat factor = caml_mark_stack_prune_factor;
 
   /* When the mark stack might not increase, we count the large mark entries
      to adjust our allocation. This is needed because large mark stack entries
      will not compress and because we are using a domain local heap bound we
      need to fit large blocks into the local mark stack. See PR#11284 */
-  if (mark_stack_bsize >= local_heap_bsize / 32) {
+  if (factor > 0 && mark_stack_bsize >= local_heap_bsize / factor) {
     for (uintnat i = 0; i < stk->count; ++i) {
       mark_entry* me = &stk->stack[i];
       if (me->end - me->start > BITS_PER_WORD)
@@ -1157,7 +1162,8 @@ static void realloc_mark_stack (struct mark_stack* stk)
     }
   }
 
-  if (mark_stack_bsize - mark_stack_large_bsize < local_heap_bsize / 32) {
+  if (factor == 0 ||
+      mark_stack_bsize - mark_stack_large_bsize < local_heap_bsize / factor) {
     uintnat target_bsize = (mark_stack_bsize - mark_stack_large_bsize) * 2
                               + mark_stack_large_bsize;
     caml_gc_log ("Growing mark stack to %" CAML_PRIuNAT "k bytes"

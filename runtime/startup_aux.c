@@ -23,6 +23,7 @@
 /* See caml_startup_aux */
 #include <pthread.h>
 #endif
+#include <string.h>
 #include "caml/backtrace.h"
 #include "caml/memory.h"
 #include "caml/callback.h"
@@ -37,6 +38,7 @@
 #include "caml/startup_aux.h"
 #include "caml/prims.h"
 #include "caml/signals.h"
+#include "caml/gc_ctrl.h"
 
 #ifdef _WIN32
 extern void caml_win32_unregister_overflow_detection (void);
@@ -96,6 +98,7 @@ void caml_parse_ocamlrunparam(void)
 {
   init_startup_params();
   uintnat val;
+  caml_init_gc_tweaks();
 
   char_os *opt = caml_secure_getenv (T("OCAMLRUNPARAM"));
   if (opt == NULL) opt = caml_secure_getenv (T("CAMLRUNPARAM"));
@@ -122,6 +125,31 @@ void caml_parse_ocamlrunparam(void)
         break;
       case 'V': scanmult (opt, &params.verify_heap); break;
       case 'W': scanmult (opt, &caml_runtime_warnings); break;
+      case 'X': {
+        char_os *name = opt;
+        while (*opt != '\0') {
+          if (*opt == '=') {
+            if (opt - name == strlen("help") &&
+                memcmp(name, "help", opt - name) == 0) {
+              fprintf(stderr, "Known GC tweaks:\n");
+              caml_print_gc_tweaks();
+            } else {
+              uintnat* p = caml_lookup_gc_tweak(name, opt - name);
+              if (p == NULL) {
+                fprintf(stderr, "Ignored unknown GC tweak '%.*s'. "
+                        "Use 'Xhelp=1' to list known tweaks\n",
+                        (int)(opt - name), name);
+              } else {
+                scanmult(opt, p);
+              }
+            }
+            break;
+          } else {
+            opt++;
+          }
+        }
+        break;
+      }
       case ',': continue;
       }
       while (*opt != '\0'){

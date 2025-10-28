@@ -197,3 +197,10 @@ external ramp_up : (unit -> 'a) -> 'a * suspended_collection_work
 
 external ramp_down : suspended_collection_work -> unit
   = "caml_ml_gc_ramp_down"
+
+module Tweak = struct
+  external set : string -> int -> unit = "caml_gc_tweak_set"
+  external get : string -> int = "caml_gc_tweak_get"
+  external list_active : unit -> (string * int) list =
+    "caml_gc_tweak_list_active"
+end

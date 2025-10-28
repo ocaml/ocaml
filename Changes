@@ -129,6 +129,10 @@ Working version
   (Antonin Décimo, review by Samuel Hym, Gabriel Scherer, Miod Vallat,
   B. Szilvasy, and Nicolás Ojeda Bär)
 
+- #14367: Gc.Tweak mechanism to allow named GC parameters
+  (Stephen Dolan and Nick Barnes, review by Gabriel Scherer, David Allsopp and
+  Antonin Décimo)
+
 - #14461: Fix racy socketpair on Windows. Address-in-use errors would sometimes
   occur when concurrent threads or processes were trying to create socketpairs.
   (Jessie Grosen, review by Antonin Décimo and Nicolás Ojeda Bär)

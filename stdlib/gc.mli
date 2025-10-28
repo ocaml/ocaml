@@ -656,3 +656,25 @@ external ramp_down : suspended_collection_work -> unit
   = "caml_ml_gc_ramp_down"
 (** Notify the GC about some amount of collection work that was
     suspended during a ramp-up phase, to be resumed now. *)
+
+(** GC Tweaks are unstable and undocumented configurable GC parameters,
+    primarily intended for use by GC developers.
+
+    As well as using Gc.Tweak.set "foo" 42, they can also be configured in
+    OCAMLRUNPARAM, using the following syntax:
+
+        OCAMLRUNPARAM='Xfoo=42'
+    *)
+module Tweak : sig
+  (** Change a parameter.
+      Raises Invalid_argument if no such parameter exists *)
+  val set : string -> int -> unit
+
+  (** Retrieve a parameter value.
+      Raises Invalid_argument if no such parameter exists *)
+  val get : string -> int
+
+  (** Returns the list of parameters and their values that currently
+      have non-default values *)
+  val list_active : unit -> (string * int) list
+end
