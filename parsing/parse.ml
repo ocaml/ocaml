@@ -143,6 +143,12 @@ let prepare_error err =
          is reserved for the local type %a."
         (Style.as_inline_code Pprintast.Doc.tyvar) var
         Style.inline_code var
+  | Constructor_in_scope (loc, name) ->
+      Location.errorf ~loc
+        "In this scoped type, the constructor %a \
+         is reserved for the polymorphic type variable %a."
+        Style.inline_code name
+        (Style.as_inline_code Pprintast.Doc.tyvar) name
   | Other loc ->
       Location.errorf ~loc "Syntax error"
   | Ill_formed_ast (loc, s) ->

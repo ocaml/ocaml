@@ -963,11 +963,17 @@ and value_constraint i ppf x =
   let pp_sep ppf () = Format.fprintf ppf "@ "; in
   let pp_newtypes = Format.pp_print_list fmt_string_loc ~pp_sep in
   match x with
-  | Pvc_constraint { locally_abstract_univars = []; typ } ->
+  | Pvc_constraint { locally_abstract_univars = []; univars = []; typ } ->
       core_type i ppf typ
-  | Pvc_constraint { locally_abstract_univars=newtypes; typ} ->
+  | Pvc_constraint { locally_abstract_univars = newtypes; univars = []; typ} ->
       line i ppf "<type> %a.\n" pp_newtypes newtypes;
       core_type i ppf  typ
+  | Pvc_constraint { locally_abstract_univars = []; univars; typ } ->
+      line i ppf "%a.\n" typevars univars;
+      core_type i ppf typ
+  | Pvc_constraint
+      { locally_abstract_univars = _ :: _; univars = _ :: _; typ = _ } ->
+      assert false
   | Pvc_coercion { ground; coercion} ->
       line i ppf "<coercion>\n";
       option i core_type ppf ground;

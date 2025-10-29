@@ -390,16 +390,7 @@ let value_binding sub vb =
   let loc = sub.location sub vb.vb_loc in
   let attrs = sub.attributes sub vb.vb_attributes in
   let pat = sub.pat sub vb.vb_pat in
-  let pat, value_constraint =
-    match pat.ppat_desc with
-    | Ppat_constraint (pat, ({ ptyp_desc = Ptyp_poly _; _ } as cty)) ->
-      let constr =
-        Pvc_constraint { locally_abstract_univars = []; typ = cty }
-      in
-      pat, Some constr
-    | _ -> pat, None
-  in
-  Vb.mk ~loc ~attrs ?value_constraint pat (sub.expr sub vb.vb_expr)
+  Vb.mk ~loc ~attrs pat (sub.expr sub vb.vb_expr)
 
 let expression sub exp =
   let loc = sub.location sub exp.exp_loc in

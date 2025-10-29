@@ -787,13 +787,16 @@ let default_mapper =
     value_binding =
       (fun this {pvb_pat; pvb_expr; pvb_constraint; pvb_attributes; pvb_loc} ->
          let map_ct (ct:Parsetree.value_constraint) = match ct with
-           | Pvc_constraint {locally_abstract_univars=vars; typ} ->
-               Pvc_constraint
-                 { locally_abstract_univars =
-                     List.map (map_loc map_string this) vars;
-                   typ = this.typ this typ
-                 }
-           | Pvc_coercion { ground; coercion } ->
+           | Pvc_constraint {locally_abstract_univars; univars; typ} ->
+              Pvc_constraint
+                {
+                  locally_abstract_univars =
+                    List.map (map_loc map_string this)
+                      locally_abstract_univars;
+                  univars = List.map (map_loc map_string this) univars;
+                  typ = this.typ this typ;
+                }
+          | Pvc_coercion { ground; coercion } ->
                Pvc_coercion {
                  ground = Option.map (this.typ this) ground;
                  coercion = this.typ this coercion

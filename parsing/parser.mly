@@ -2719,26 +2719,54 @@ let_binding_body_no_punning:
       { let v = $1 in (* PR#7344 *)
         let t =
           match $2 with
-            Pconstraint t ->
-             Pvc_constraint { locally_abstract_univars = []; typ=t }
-          | Pcoerce (ground, coercion) -> Pvc_coercion { ground; coercion}
+          | Pconstraint t ->
+              Pvc_constraint
+                {
+                  locally_abstract_univars = [];
+                  univars = [];
+                  typ = t
+                }
+          | Pcoerce (ground, coercion) ->
+              Pvc_coercion { ground; coercion }
         in
         (v, $4, Some t)
         }
-  | let_ident COLON poly(core_type) EQUAL seq_expr
+  | let_ident COLON typevar_list DOT core_type EQUAL seq_expr
     {
-      let t = ghtyp ~loc:($loc($3)) $3 in
-      ($1, $5, Some (Pvc_constraint { locally_abstract_univars = []; typ=t }))
+      let constraint' =
+        Pvc_constraint
+          {
+            locally_abstract_univars = [];
+            univars = $3;
+            typ = $5;
+          }
+      in
+      ($1, $7, Some constraint')
     }
   | let_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
     { let constraint' =
-        Pvc_constraint { locally_abstract_univars=$4; typ = $6}
+        Pvc_constraint
+          {
+            locally_abstract_univars = $4;
+            univars = [];
+            typ = $6
+          }
       in
       ($1, $8, Some constraint') }
   | pattern_no_exn EQUAL seq_expr
       { ($1, $3, None) }
   | simple_pattern_not_ident COLON core_type EQUAL seq_expr
-      { ($1, $5, Some(Pvc_constraint { locally_abstract_univars=[]; typ=$3 })) }
+      {
+        let constraint' =
+          Pvc_constraint
+            {
+              locally_abstract_univars = [];
+              univars = [];
+              typ = $3
+            }
+        in
+        ($1, $5, Some constraint')
+      }
 ;
 let_binding_body:
   | let_binding_body_no_punning

@@ -28,6 +28,7 @@ type error =
   | Not_expecting of Location.t * string
   | Applicative_path of Location.t
   | Variable_in_scope of Location.t * string
+  | Constructor_in_scope of Location.t * string
   | Other of Location.t
   | Ill_formed_ast of Location.t * string
   | Invalid_package_type of Location.t * invalid_package_type
@@ -40,6 +41,7 @@ let location_of_error = function
   | Unclosed(l,_,_,_)
   | Applicative_path l
   | Variable_in_scope(l,_)
+  | Constructor_in_scope (l, _)
   | Other l
   | Not_expecting (l, _)
   | Ill_formed_ast (l, _)

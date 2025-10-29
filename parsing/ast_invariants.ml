@@ -36,6 +36,10 @@ let function_without_value_parameters loc =
   err loc "Function without any value parameters"
 let invalid_struct_item loc =
   err loc "This kind of structure item is not allowed in this context."
+let mixed_univars loc =
+  err loc
+    "Let-bindings constraints cannot mix locally abstract variables and \
+     polymorphic type variables"
 
 let simple_longident id =
   let rec is_simple = function
@@ -203,6 +207,18 @@ let iterator =
     super.attribute { self with attribute = super.attribute } attr;
     Builtin_attributes.(register_attr Invariant_check attr.attr_name)
   in
+  let value_binding self vb =
+    super.value_binding self vb;
+    let loc = vb.pvb_loc in
+    match vb.pvb_constraint with
+    | Some (Pvc_constraint
+        { locally_abstract_univars = _ :: _; univars = _ :: _; typ = _ }) ->
+        (* The parser cannot parse [let x : type a. 'b. a -> 'b = ...].
+           As a result, we do not permit the mixing of locally abstract and
+           polymorphic type variables within value binding constraints. *)
+        mixed_univars loc
+    | Some (Pvc_constraint _ | Pvc_coercion _) | None -> ()
+  in
   { super with
     type_declaration
   ; typ
@@ -219,6 +235,7 @@ let iterator =
   ; row_field
   ; object_field
   ; attribute
+  ; value_binding
   }
 
 let structure st = iterator.structure iterator st

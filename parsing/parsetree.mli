@@ -1086,15 +1086,17 @@ and structure_item_desc =
 and value_constraint =
   | Pvc_constraint of {
       locally_abstract_univars:string loc list;
+      univars:string loc list;
       typ:core_type;
     }
   | Pvc_coercion of {ground:core_type option; coercion:core_type }
   (**
-     - [Pvc_constraint { locally_abstract_univars=[]; typ}]
+     - [Pvc_constraint { locally_abstract_univars=[]; univars=[]; typ}]
          is a simple type constraint on a value binding: [ let x : typ]
-     - More generally, in [Pvc_constraint { locally_abstract_univars; typ}]
+     - More generally, in [Pvc_constraint { locally_abstract_univars; univars; typ}]
        [locally_abstract_univars] is the list of locally abstract type
-       variables in [ let x: type a ... . typ ]
+       variables and [univars] is a list of polymorphic type variables in
+       [ let x: type a ... . 'a ... . typ ]
      - [Pvc_coercion { ground=None; coercion }] represents [let x :> typ]
      - [Pvc_coercion { ground=Some g; coercion }] represents [let x : g :> typ]
   *)

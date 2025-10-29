@@ -56,6 +56,32 @@ module Attr = struct
       attr_loc = loc }
 end
 
+(** Row fields *)
+module Rf = struct
+  let mk ?(loc = !default_loc) ?(attrs = []) desc = {
+    prf_desc = desc;
+    prf_loc = loc;
+    prf_attributes = attrs;
+  }
+  let tag ?loc ?attrs label const tys =
+    mk ?loc ?attrs (Rtag (label, const, tys))
+  let inherit_?loc ?attrs ty =
+    mk ?loc ?attrs (Rinherit ty)
+end
+
+(** Object fields *)
+module Of = struct
+  let mk ?(loc = !default_loc) ?(attrs=[]) desc = {
+    pof_desc = desc;
+    pof_loc = loc;
+    pof_attributes = attrs;
+  }
+  let tag ?loc ?attrs label ty =
+    mk ?loc ?attrs (Otag (label, ty))
+  let inherit_ ?loc ?attrs ty =
+    mk ?loc ?attrs (Oinherit ty)
+end
+
 module Typ = struct
   let mk ?(loc = !default_loc) ?(attrs = []) d =
     {ptyp_desc = d;
@@ -79,82 +105,142 @@ module Typ = struct
   let extension ?loc ?attrs a = mk ?loc ?attrs (Ptyp_extension a)
   let open_ ?loc ?attrs mod_ident t = mk ?loc ?attrs (Ptyp_open (mod_ident, t))
 
-  let force_poly t =
-    match t.ptyp_desc with
-    | Ptyp_poly _ -> t
-    | _ -> poly ~loc:t.ptyp_loc [] t (* -> ghost? *)
-
-  let varify_constructors var_names t =
-    let check_variable vl loc v =
-      if List.mem v vl then
-        raise Syntaxerr.(Error(Variable_in_scope(loc,v))) in
-    let var_names = List.map (fun v -> v.txt) var_names in
-    let rec loop t =
-      let desc =
-        match t.ptyp_desc with
-        | Ptyp_any -> Ptyp_any
-        | Ptyp_var x ->
-            check_variable var_names t.ptyp_loc x;
-            Ptyp_var x
-        | Ptyp_arrow (label,core_type,core_type') ->
-            Ptyp_arrow(label, loop core_type, loop core_type')
-        | Ptyp_tuple lst ->
-            Ptyp_tuple (List.map (fun (l, t) -> l, loop t) lst)
-        | Ptyp_constr( { txt = Longident.Lident s }, [])
-          when List.mem s var_names ->
-            Ptyp_var s
-        | Ptyp_constr(longident, lst) ->
-            Ptyp_constr(longident, List.map loop lst)
-        | Ptyp_object (lst, o) ->
-            Ptyp_object (List.map loop_object_field lst, o)
-        | Ptyp_class (longident, lst) ->
-            Ptyp_class (longident, List.map loop lst)
-        | Ptyp_alias(core_type, alias) ->
-            check_variable var_names alias.loc alias.txt;
-            Ptyp_alias(loop core_type, alias)
-        | Ptyp_variant(row_field_list, flag, lbl_lst_option) ->
-            Ptyp_variant(List.map loop_row_field row_field_list,
-                         flag, lbl_lst_option)
-        | Ptyp_poly(string_lst, core_type) ->
-          List.iter (fun v ->
-            check_variable var_names t.ptyp_loc v.txt) string_lst;
-            Ptyp_poly(string_lst, loop core_type)
-        | Ptyp_package ptyp ->
-            Ptyp_package (loop_package_type ptyp)
-        | Ptyp_open (mod_ident, core_type) ->
-            Ptyp_open (mod_ident, loop core_type)
-        | Ptyp_extension (s, arg) ->
-            Ptyp_extension (s, arg)
-      in
-      {t with ptyp_desc = desc}
-    and loop_row_field field =
-      let prf_desc = match field.prf_desc with
-        | Rtag(label,flag,lst) ->
-            Rtag(label,flag,List.map loop lst)
-        | Rinherit t ->
-            Rinherit (loop t)
-      in
-      { field with prf_desc; }
-    and loop_object_field field =
-      let pof_desc = match field.pof_desc with
-        | Otag(label, t) ->
-            Otag(label, loop t)
-        | Oinherit t ->
-            Oinherit (loop t)
-      in
-      { field with pof_desc; }
-    and loop_package_type ptyp =
-      { ptyp with
-        ppt_constraints =
-          List.map (fun (n,typ) -> (n,loop typ) ) ptyp.ppt_constraints }
-    in
-    loop t
-
   let package_type ?(loc = !default_loc) ?(attrs = []) p c =
     {ppt_loc = loc;
      ppt_path = p;
      ppt_constraints = c;
      ppt_attrs = attrs}
+
+  let force_poly t =
+    match t.ptyp_desc with
+    | Ptyp_poly _ -> t
+    | _ -> poly ~loc:t.ptyp_loc [] t (* -> ghost? *)
+
+  type mapper =
+    {
+      core_type : mapper -> core_type -> core_type;
+      row_field : mapper -> row_field -> row_field;
+      object_field : mapper -> object_field -> object_field;
+      package_type : mapper -> package_type -> package_type;
+    }
+
+  let default_mapper =
+    let core_type sub {ptyp_loc = loc; ptyp_attributes = attrs; ptyp_desc} =
+      match ptyp_desc with
+      | Ptyp_any -> any ~loc ~attrs ()
+      | Ptyp_var x -> var ~loc ~attrs x
+      | Ptyp_arrow (lab, t1, t2) ->
+          arrow ~loc ~attrs lab (sub.core_type sub t1) (sub.core_type sub t2)
+      | Ptyp_tuple ts ->
+          tuple ~loc ~attrs (List.map (fun (lab, t) -> lab, sub.core_type sub t) ts)
+      | Ptyp_constr (lid, ts) ->
+          constr ~loc ~attrs lid (List.map (sub.core_type sub) ts)
+      | Ptyp_object (ofs, closed_flag) ->
+          object_ ~loc ~attrs (List.map (sub.object_field sub) ofs) closed_flag
+      | Ptyp_class (lid, ts) ->
+          class_ ~loc ~attrs lid (List.map (sub.core_type sub) ts)
+      | Ptyp_alias (t, x) ->
+          alias ~loc ~attrs (sub.core_type sub t) x
+      | Ptyp_variant (rfs, closed_flag, labs_opt) ->
+          variant ~loc ~attrs
+            (List.map (sub.row_field sub) rfs)
+            closed_flag
+            labs_opt
+      | Ptyp_poly (xs, t) ->
+          poly ~loc ~attrs xs (sub.core_type sub t)
+      | Ptyp_package pkg_type ->
+          package ~loc ~attrs (sub.package_type sub pkg_type)
+      | Ptyp_open (mod_ident, t) ->
+          open_ ~loc ~attrs mod_ident (sub.core_type sub t)
+      | Ptyp_extension payload ->
+          extension ~loc ~attrs payload
+    in
+    let row_field sub {prf_loc = loc; prf_attributes = attrs; prf_desc} =
+      match prf_desc with
+      | Rtag (lab, flag, ts) ->
+          Rf.tag  ~loc ~attrs lab flag (List.map (sub.core_type sub) ts)
+      | Rinherit t ->
+          Rf.inherit_ ~loc ~attrs (sub.core_type sub t)
+    in
+    let object_field sub {pof_loc = loc; pof_attributes = attrs; pof_desc} =
+      match pof_desc with
+      | Otag (lab, t) ->
+          Of.tag ~loc ~attrs lab (sub.core_type sub t)
+      | Oinherit t ->
+          Of.inherit_ ~loc ~attrs (sub.core_type sub t)
+    in
+    let package_type
+        sub
+        {ppt_loc = loc; ppt_attrs = attrs; ppt_constraints; ppt_path}
+    =
+      package_type
+        ~loc
+        ~attrs
+        ppt_path
+        (List.map (fun (lid, t) -> lid, sub.core_type sub t) ppt_constraints)
+    in
+    {
+      core_type;
+      row_field;
+      object_field;
+      package_type
+    }
+
+  let varify_constructors var_names t =
+    let var_names = List.map (fun v -> v.txt) var_names in
+    let check_variable ~loc v =
+      if List.mem v var_names then
+        raise Syntaxerr.(Error (Variable_in_scope (loc,v))) in
+    let super = default_mapper in
+    let core_type self t =
+      let t = super.core_type self t in
+      match t.ptyp_desc with
+      | Ptyp_constr( { txt = Longident.Lident s; loc = _ }, [])
+        when List.mem s var_names ->
+          { t with ptyp_desc = Ptyp_var s }
+      | Ptyp_var x ->
+          check_variable ~loc:t.ptyp_loc x;
+          t
+      | Ptyp_alias (_, x) ->
+          check_variable ~loc:t.ptyp_loc x.txt;
+          t
+      | Ptyp_poly (xs, _) ->
+          List.iter
+            (fun x -> check_variable ~loc:t.ptyp_loc x.txt)
+            xs;
+          t
+      | Ptyp_any | Ptyp_arrow _ | Ptyp_tuple _ | Ptyp_constr _
+      | Ptyp_object _ | Ptyp_class _ | Ptyp_variant _ | Ptyp_package _
+      | Ptyp_open _ | Ptyp_extension _ -> t
+    in
+    let mapper = { super with core_type } in
+    mapper.core_type mapper t
+
+  let constructorify_variables var_names t =
+    let var_names = List.map (fun v -> v.txt) var_names in
+    let check_variable ~loc v =
+      if List.mem v var_names then
+        raise Syntaxerr.(Error (Constructor_in_scope (loc,v)))
+    in
+    let super = default_mapper in
+    let core_type self t =
+      let t = super.core_type self t in
+      match t.ptyp_desc with
+      | Ptyp_var x when List.mem x var_names ->
+          { t with ptyp_desc = Ptyp_constr ({ txt = Longident.Lident x; loc = t.ptyp_loc }, []) }
+      | Ptyp_constr ( { txt = Longident.Lident x; loc = _ }, _ ) ->
+          check_variable ~loc:t.ptyp_loc x;
+          t
+      | Ptyp_var _
+      | Ptyp_alias _
+      | Ptyp_poly _
+      | Ptyp_any | Ptyp_arrow _ | Ptyp_tuple _ | Ptyp_constr _
+      | Ptyp_object _ | Ptyp_class _ | Ptyp_variant _ | Ptyp_package _
+      | Ptyp_open _ | Ptyp_extension _ -> t
+    in
+    let mapper = { super with core_type } in
+    mapper.core_type mapper t
+
 end
 
 module Pat = struct
@@ -634,28 +720,3 @@ module Cstr = struct
     }
 end
 
-(** Row fields *)
-module Rf = struct
-  let mk ?(loc = !default_loc) ?(attrs = []) desc = {
-    prf_desc = desc;
-    prf_loc = loc;
-    prf_attributes = attrs;
-  }
-  let tag ?loc ?attrs label const tys =
-    mk ?loc ?attrs (Rtag (label, const, tys))
-  let inherit_?loc ty =
-    mk ?loc (Rinherit ty)
-end
-
-(** Object fields *)
-module Of = struct
-  let mk ?(loc = !default_loc) ?(attrs=[]) desc = {
-    pof_desc = desc;
-    pof_loc = loc;
-    pof_attributes = attrs;
-  }
-  let tag ?loc ?attrs label ty =
-    mk ?loc ?attrs (Otag (label, ty))
-  let inherit_ ?loc ty =
-    mk ?loc (Oinherit ty)
-end

@@ -302,7 +302,7 @@ and add_bindings recf bv pel =
   let bv' = List.fold_left (fun bv x -> add_pattern bv x.pvb_pat) bv pel in
   let bv = if recf = Recursive then bv' else bv in
   let add_constraint = function
-    | Pvc_constraint {locally_abstract_univars=_; typ} ->
+    | Pvc_constraint {locally_abstract_univars = _; univars = _; typ} ->
         add_type bv typ
     | Pvc_coercion { ground; coercion } ->
         Option.iter (add_type bv) ground;

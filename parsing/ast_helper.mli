@@ -99,6 +99,14 @@ module Typ :
         @since 4.05
      *)
 
+    val constructorify_variables : str list -> core_type -> core_type
+    (** [constructorify_variables univars te] returns a variant of [te]
+        for which any of type variables ['a] is replaced by the nullary
+        constructor [a] of the same name, if ['a] appears in [univars].
+        Raise [Syntaxerr.Constructor_in_scope] if any constructors inside
+        [te] appear in [univars].
+     *)
+
     val package_type: ?loc:loc -> ?attrs:attrs -> lid -> (lid * core_type) list
       -> package_type
     (** @since 5.4 *)
@@ -490,7 +498,7 @@ module Rf:
     val mk: ?loc:loc -> ?attrs:attrs -> row_field_desc -> row_field
     val tag: ?loc:loc -> ?attrs:attrs ->
       label with_loc -> bool -> core_type list -> row_field
-    val inherit_: ?loc:loc -> core_type -> row_field
+    val inherit_: ?loc:loc -> ?attrs:attrs -> core_type -> row_field
   end
 
 (** Object fields *)
@@ -500,5 +508,5 @@ module Of:
       object_field_desc -> object_field
     val tag: ?loc:loc -> ?attrs:attrs ->
       label with_loc -> core_type -> object_field
-    val inherit_: ?loc:loc -> core_type -> object_field
+    val inherit_: ?loc:loc -> ?attrs:attrs -> core_type -> object_field
   end

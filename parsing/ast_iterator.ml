@@ -697,14 +697,15 @@ let default_iterator =
          this.attributes this pincl_attributes
       );
 
-
     value_binding =
       (fun this {pvb_pat; pvb_expr; pvb_attributes; pvb_loc; pvb_constraint} ->
          this.pat this pvb_pat;
          this.expr this pvb_expr;
          Option.iter (function
-             | Parsetree.Pvc_constraint {locally_abstract_univars=vars; typ} ->
-                 List.iter (iter_loc iter_string this) vars;
+             | Parsetree.Pvc_constraint
+                 {locally_abstract_univars; univars; typ} ->
+                 List.iter (iter_loc iter_string this) locally_abstract_univars;
+                 List.iter (iter_loc iter_string this) univars;
                  this.typ this typ
              | Pvc_coercion { ground; coercion } ->
                  Option.iter (this.typ this) ground;

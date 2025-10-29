@@ -1488,14 +1488,24 @@ and binding ?(is_method=false) ctxt f
       | _ -> pp f "=@;%a" (expression ctxt) x
   in
   match ct with
-  | Some (Pvc_constraint { locally_abstract_univars = []; typ }) ->
-      pp f "%a@;:@;%a@;=@;%a"
-        (simple_pattern ctxt) p (core_type ctxt) typ (expression ctxt) x
-  | Some (Pvc_constraint { locally_abstract_univars = vars; typ }) ->
-      pp f "%a@;: type@;%a.@;%a@;=@;%a"
-        (simple_pattern ctxt) p (list ident_of_name ~sep:"@;")
+  | Some (Pvc_constraint { locally_abstract_univars = []; univars = []; typ })
+    ->
+      pp f "%a@;:@;%a@;=@;%a" (simple_pattern ctxt) p (core_type ctxt) typ
+        (expression ctxt) x
+  | Some (Pvc_constraint { locally_abstract_univars = vars; univars = []; typ })
+    ->
+      pp f "%a@;: type@;%a.@;%a@;=@;%a" (simple_pattern ctxt) p
+        (list ident_of_name ~sep:"@;")
         (List.map (fun x -> x.txt) vars)
         (core_type ctxt) typ (expression ctxt) x
+  | Some (Pvc_constraint { locally_abstract_univars = []; univars; typ }) ->
+      pp f "%a@;: %a.@;%a@;=@;%a" (simple_pattern ctxt) p
+        (list tyvar_loc ~sep:"@;") univars (core_type ctxt) typ
+        (expression ctxt) x
+  | Some
+      (Pvc_constraint
+        { locally_abstract_univars = _ :: _; univars = _ :: _; typ = _ }) ->
+      assert false
   | Some (Pvc_coercion {ground=None; coercion }) ->
       pp f "%a@;:>@;%a@;=@;%a"
         (simple_pattern ctxt) p (core_type ctxt) coercion (expression ctxt) x
