@@ -229,8 +229,8 @@ let undefined_location loc =
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
   Lconst(Const_block(0,
                      [Const_immstring fname;
-                      const_int line;
-                      const_int char]))
+                      Const_int line;
+                      Const_int char]))
 
 exception Initialization_failure of unsafe_info
 
@@ -255,9 +255,9 @@ let init_shape id modl =
         let init_v =
           match get_desc (Ctype.expand_head env ty) with
             Tarrow(_,_,_,_) ->
-              const_int 0 (* camlinternalMod.Function *)
+              Const_int 0 (* camlinternalMod.Function *)
           | Tconstr(p, _, _) when Path.same p Predef.path_lazy_t ->
-              const_int 1 (* camlinternalMod.Lazy *)
+              Const_int 1 (* camlinternalMod.Lazy *)
           | _ ->
               let info =
                 Unsafe {reason=Unsafe_non_function; loc; path=new_path} in
@@ -286,7 +286,7 @@ let init_shape id modl =
     | Sig_modtype(id, minfo, _) :: rem ->
         init_shape_struct path (Env.add_modtype id minfo env) rem
     | Sig_class _ :: rem ->
-        const_int 2 (* camlinternalMod.Class *)
+        Const_int 2 (* camlinternalMod.Class *)
         :: init_shape_struct path env rem
     | Sig_class_type _ :: rem ->
         init_shape_struct path env rem
@@ -1566,7 +1566,7 @@ let transl_toplevel_definition str =
 (* Compile the initialization code for a packed library *)
 
 let get_component = function
-    None -> Lconst const_unit
+    None -> lambda_unit
   | Some id -> Lprim(Pgetglobal id, [], Loc_unknown)
 
 let transl_package_flambda component_names coercion =

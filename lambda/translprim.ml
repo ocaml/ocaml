@@ -717,7 +717,7 @@ let lambda_of_atomic prim_name loc op (kind : atomic_kind) args =
            [Lprim(caml_atomic_exchange_field, [ref; 0; v])]
       *)
       let ref_arg, rest = split args in
-      let args = ref_arg :: Lconst (Lambda.const_int 0) :: rest in
+      let args = ref_arg :: Lambda.const_int 0 :: rest in
       Lprim (prim, args, loc)
   | Field ->
       (* the primitive application
@@ -766,7 +766,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   | Primitive (prim, arity), args when arity = List.length args ->
       Lprim(prim, args, loc)
   | Sys_argv, [] ->
-      Lprim(Pccall prim_sys_argv, [Lconst (const_int 0)], loc)
+      Lprim(Pccall prim_sys_argv, [const_int 0], loc)
   | External prim, args ->
       Lprim(Pccall prim, args, loc)
   | Comparison(comp, knd), ([_;_] as args) ->
@@ -821,7 +821,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
       let frame_pointers =
         if !Clflags.native_code && Config.with_frame_pointers then 1 else 0
       in
-      Lconst (const_int frame_pointers)
+      const_int frame_pointers
   | Identity, [arg] -> arg
   | Apply, [func; arg]
   | Revapply, [arg; func] ->

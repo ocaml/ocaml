@@ -180,6 +180,8 @@ let rec add_pop n cont =
 
 (* Add the constant "unit" in front of a continuation *)
 
+let const_unit = Const_int 0
+
 let add_const_unit = function
     (Kacc _ | Kconst _ | Kgetglobal _ | Kpush_retaddr _) :: _ as cont -> cont
   | cont -> Kconst const_unit :: cont
@@ -1014,7 +1016,7 @@ and comp_expr_list_assign stack_info env exprl sz pos cont = match exprl with
 
 and comp_binary_test stack_info env cond ifso ifnot sz cont =
   let cont_cond =
-    if ifnot = Lconst const_unit then begin
+    if ifnot = lambda_unit then begin
       let (lbl_end, cont1) = label_code cont in
       Kstrictbranchifnot lbl_end :: comp_expr stack_info env ifso sz cont1
     end else

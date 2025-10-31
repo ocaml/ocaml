@@ -761,7 +761,7 @@ let compile_indirect newval =
 let compile_alloc size =
   let alloc prim size =
     Lprim (Pccall prim,
-           [Lconst (Lambda.const_int size)],
+           [Lambda.const_int size],
            no_loc)
   in
   (* if you add new allocation primitives below,
