@@ -407,6 +407,9 @@ Working version
   (Gabriel Scherer, review by Stephen Dolan and Nick Barnes,
    report by Olivier Nicole)
 
+- #14332: Fix missing TSan instrumentation in subexpressions
+  (Vincent Laviron, review by Gabriel Scherer and Olivier Nicole)
+
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
 
