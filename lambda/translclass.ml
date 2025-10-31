@@ -237,6 +237,9 @@ let lsequence l1 l2 =
 let lfield v i = Lprim(Pfield (i, Pointer, Mutable),
                        [Lvar v], Loc_unknown)
 
+let lfield_atomic v i =
+  Lprim(Patomic_load, [Lvar v; const_int i], Loc_unknown)
+
 let transl_label l = share (Const_immstring l)
 
 let transl_meth_list lst =
@@ -1208,8 +1211,15 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
                    ~loc:Loc_unknown
                    ~body:(def_ids cla cl_init), lam)
   and lset cached i lam =
-    Lprim(Psetfield(i, Pointer, Assignment),
-          [Lvar cached; lam], Loc_unknown)
+    let prim =
+      Primitive.simple
+        ~name:"caml_atomic_exchange_field" ~arity:3 ~alloc:false
+    in
+    Lprim (
+      Pignore,
+      [Lprim (Pccall prim, [Lvar cached; const_int i; lam], Loc_unknown)],
+      Loc_unknown
+    )
   in
   let ldirect () =
     ltable cla
@@ -1239,7 +1249,7 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
          so that the program's behaviour does not change between runs *)
       lupdate_cache
     else
-      Lifthenelse(lfield cached 0, lambda_unit, lupdate_cache) in
+      Lifthenelse(lfield_atomic cached 0, lambda_unit, lupdate_cache) in
   let lcache (lam, rkind) =
     let lam = Lsequence (lcheck_cache, lam) in
     let lam =
@@ -1258,14 +1268,14 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
   lcache (
   make_envs (
   if ids = []
-  then mkappl (lfield cached 0, [lenvs]), Dynamic
+  then mkappl (lfield_atomic cached 0, [lenvs]), Dynamic
   else
     Lprim(Pmakeblock(0, Immutable, None),
         (if concrete then
-          [mkappl (lfield cached 0, [lenvs]);
-           lfield cached 1;
+          [mkappl (lfield_atomic cached 0, [lenvs]);
+           lfield_atomic cached 1;
            lenvs]
-        else [lambda_unit; lfield cached 0; lenvs]),
+        else [lambda_unit; lfield_atomic cached 0; lenvs]),
         Loc_unknown
        ),
     Static)))

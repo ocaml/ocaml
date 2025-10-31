@@ -331,7 +331,7 @@ let make_class pub_meths class_init =
   init_class table;
   (env_init (Obj.repr 0), class_init, Obj.repr 0)
 
-type init_table = { mutable env_init: t; mutable class_init: table -> t }
+type init_table = { mutable env_init: t [@atomic]; mutable class_init: table -> t [@atomic] }
 [@@warning "-unused-field"]
 
 let make_class_store pub_meths class_init init_table =
@@ -401,7 +401,7 @@ external get_public_method : obj -> tag -> closure
 
 type tables =
   | Empty
-  | Cons of {key : closure; mutable data: tables; mutable next: tables}
+  | Cons of {key : closure; mutable data: tables [@atomic]; mutable next: tables [@atomic]}
 
 let set_data tables v = match tables with
   | Empty -> assert false
