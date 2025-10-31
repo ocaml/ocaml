@@ -174,7 +174,7 @@ let instrument body =
       let loc_exp = Cvar (VP.var loc_id) in
       Clet
         ( loc_id,
-          loc,
+          aux loc,
           Csequence
             ( Cmm_helpers.return_unit dbg_none
                 (Cop
@@ -195,7 +195,7 @@ let instrument body =
               ret_typ,
               [],
               false ),
-          [loc; TSan_memory_order.seq_cst],
+          [aux loc; TSan_memory_order.seq_cst],
           dbginfo )
     | Cop
         (Cload { memory_chunk = _; mutability = Mutable; is_atomic = _ }, _, _)
