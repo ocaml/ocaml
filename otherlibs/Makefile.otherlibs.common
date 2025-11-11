@@ -108,7 +108,8 @@ lib$(CLIBNAME_BYTECODE).$(A): $(COBJS)
 	$(V_OCAMLMKLIB)$(MKLIB) -oc $(CLIBNAME_BYTECODE) $(COBJS_BYTECODE) $(LDOPTS)
 
 lib$(CLIBNAME_NATIVE).$(A): $(COBJS)
-	$(V_OCAMLMKLIB)$(MKLIB) -oc $(CLIBNAME_NATIVE) $(COBJS_NATIVE) $(LDOPTS)
+	$(V_OCAMLMKLIB)$(MKLIB) \
+	  -custom -oc $(CLIBNAME_NATIVE) $(COBJS_NATIVE) $(LDOPTS)
 
 install::
 ifneq "$(STUBSLIB_BYTECODE)" ""
@@ -138,9 +139,6 @@ installopt:
 	   $(CAMLOBJS_NAT) $(LIBNAME).cmxa $(LIBNAME).$(A), lib, $(LIBNAME))
 ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
 	$(call INSTALL_ITEMS, $(LIBNAME).cmxs, libexec, $(LIBNAME))
-ifeq "$(SUFFIXING)" "false"
-	$(call INSTALL_ITEMS, dll$(CLIBNAME_NATIVE)$(EXT_DLL), stublibs)
-endif
 endif
 ifneq "$(STUBSLIB_NATIVE)" ""
 	$(call INSTALL_ITEMS, $(STUBSLIB_NATIVE), lib)
