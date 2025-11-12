@@ -14,16 +14,17 @@
 
 (* For as long it remains not totally impractical to do so, this script is
    written in OCaml 3.07. Its purpose is to generate an opam .config file
-   for the ocaml-system package. It defines one package variable path, which is
-   the directory containing the compiler binaries (e.g. /usr/bin). It also uses
-   opam's file-depends mechanism adding the checksum for the ocamlc binary,
-   which causes the ocaml-system to be reconsidered if the user changes the
-   system compiler (e.g. by running brew upgrade). For legacy support, it also
-   captures the checksum of graphics.cmi, which is used by the graphics package
-   for old compilers to manually add the graphics library if it isn't compiled
-   by default. The purpose of this is to ensure that an opam switch recompiles
-   for example if the user switches from the Debian ocaml-nox to the full ocaml
-   package. *)
+   for the ocaml-system package. It defines package variable path, which is the
+   directory containing the compiler binaries (e.g. /usr/bin) and
+   compiler-version containing the exact version string reported by the
+   compiler. It also uses opam's file-depends mechanism adding the checksum for
+   the ocamlc binary, which causes the ocaml-system to be reconsidered if the
+   user changes the system compiler (e.g. by running brew upgrade). For legacy
+   support, it also captures the checksum of graphics.cmi, which is used by the
+   graphics package for old compilers to manually add the graphics library if it
+   isn't compiled by default. The purpose of this is to ensure that an opam
+   switch recompiles for example if the user switches from the Debian ocaml-nox
+   to the full ocaml package. *)
 
 (* The script must be invoked using the interpreter, for example:
       ocaml gen_ocaml-system_config.ml 5.4.0 ocaml-system
@@ -45,7 +46,14 @@ let ocamlc =
 
 (* Check that Sys.ocaml_version is as expected *)
 let () =
-  if Sys.ocaml_version <> expected_ocaml_version then begin
+  let ocaml_version =
+    (* Strip off official pre-release information *)
+    if String.contains Sys.ocaml_version '+' then
+      Sys.ocaml_version
+    else
+      Scanf.sscanf Sys.ocaml_version "%[^~]" (fun x -> x)
+  in
+  if ocaml_version <> expected_ocaml_version then begin
     Printf.eprintf
       "ERROR: The compiler found at %s has version %s,\n\
        and this package requires %s.\n\
@@ -86,9 +94,14 @@ let () =
     else
       String.make 32 '0'
   in
+  let path = Filename.dirname ocamlc in
   let oc = open_out package_config_file in
+  (* Quoted strings need OCaml 4.02; "\ " needs OCaml 3.09! *)
   Printf.fprintf oc "opam-version: \"2.0\"\n\
                      file-depends: [ [ %S %S ] [ %S %S ] ]\n\
-                     variables { path: %S }\n"
-    ocamlc ocamlc_digest graphics graphics_digest (Filename.dirname ocamlc);
+                     variables {\n  \
+                       path: %S\n  \
+                       compiler-version: %S\n\
+                     }\n"
+    ocamlc ocamlc_digest graphics graphics_digest path Sys.ocaml_version;
   close_out oc
