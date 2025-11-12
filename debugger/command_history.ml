@@ -76,6 +76,9 @@ let completion_callback = ref (None : completion_callback option)
 type hints_callback = string -> string option
 let hints_callback = ref (None : hints_callback option)
 
+(* Hints cache - avoid recomputing on every keystroke *)
+let hints_cache : (string, string option) Hashtbl.t = Hashtbl.create 32
+
 (* Terminal state *)
 let saved_termios = ref None
 
@@ -190,7 +193,18 @@ let display_line () =
     if show_prompt then
       match !hints_callback with
       | Some f ->
-          (match f !current_line_buffer with
+          (* Use cache to avoid recomputing hints *)
+          let hint_opt =
+            try Hashtbl.find hints_cache !current_line_buffer
+            with Not_found ->
+              let h = f !current_line_buffer in
+              (* Limit cache size to avoid unbounded growth *)
+              if Hashtbl.length hints_cache > 64 then
+                Hashtbl.clear hints_cache;
+              Hashtbl.add hints_cache !current_line_buffer h;
+              h
+          in
+          (match hint_opt with
            | Some hint when hint <> "" ->
                printf "\027[90m%s\027[0m" hint; (* Gray color *)
                String.length hint
