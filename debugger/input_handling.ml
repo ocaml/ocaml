@@ -93,15 +93,17 @@ let user_channel = ref std_io
 type char_callback = char -> bool
 let char_mode_callback : char_callback option ref = ref None
 
+(* Static buffer for character input - reused to avoid allocation per keystroke *)
+let char_input_buffer = Bytes.create 1
+
 (* Controller for character-mode input *)
 let char_mode_controller iochan =
-  let buf = Bytes.create 1 in
-  let n = input iochan.io_in buf 0 1 in
+  let n = input iochan.io_in char_input_buffer 0 1 in
   let c =
     if n = 0 then
       '\004'  (* EOF - send Ctrl+D to trigger proper EOF handling *)
     else
-      Bytes.get buf 0
+      Bytes.get char_input_buffer 0
   in
   match !char_mode_callback with
   | None ->
