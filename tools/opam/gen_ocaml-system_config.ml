@@ -1,3 +1,17 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                        Louis Gesbert, OCamlPro                         *)
+(*                                                                        *)
+(*   Copyright 2017 OCamlPro SAS                                          *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
 let () =
   let exe = ".exe" in
   let ocamlc =
@@ -8,7 +22,12 @@ let () =
       else
         (s, "") in
     base ^ "c" ^ suffix in
-  let required_version = Sys.argv.(1) in
+  let required_version =
+    if Sys.argv.(1) = "" then
+      Sys.ocaml_version
+    else
+      Sys.argv.(1)
+  in
   let package_name = Sys.argv.(2) in
   if Sys.ocaml_version <> required_version then begin
     Printf.eprintf
