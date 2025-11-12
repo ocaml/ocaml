@@ -227,7 +227,7 @@ let ends_with ~suffix s =
 external seeded_hash : int -> string -> int = "caml_string_hash" [@@noalloc]
 let hash x = seeded_hash 0 x
 
-(* Breaking with magnitudes *)
+(* Splitting with magnitudes *)
 
 let subrange ?(first = 0) ?last s =
   let max = length s - 1 in
@@ -243,7 +243,7 @@ let take_last n s = subrange ~first:(length s - n) s
 let drop_last n s = subrange ~last:(length s - n - 1) s
 let cut_last n s = (drop_last n s, take_last n s)
 
-(* Breaking with separators *)
+(* Splitting with separators *)
 
 (* duplicated in bytes.ml *)
 let split_on_char sep s =

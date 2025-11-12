@@ -192,30 +192,30 @@ val sub : string -> int -> int -> string
     @raise Invalid_argument if [pos] and [len] do not designate a valid
     substring of [s]. *)
 
-(** {1:breaking Breaking strings} *)
+(** {1:splitting Splitting strings} *)
 
-(** {2:breaking_mag Breaking with magnitudes} *)
+(** {2:splitting_mag Splitting with magnitudes} *)
 
 val take_first : int -> string -> string
-(** [take n s] are the first [n] bytes of [s]. This is [s] if
+(** [take_first n s] are the first [n] bytes of [s]. This is [s] if
     [n >= length s] and [""] if [n <= 0].
 
     @since 5.5 *)
 
 val take_last : int -> string -> string
-(** [rtake n s] are the last [n] bytes of [s].  This is [s] if
+(** [take_last n s] are the last [n] bytes of [s].  This is [s] if
     [n >= length s] and [""] if [n <= 0].
 
     @since 5.5 *)
 
 val drop_first : int -> string -> string
-(** [drop n s] is [s] without the first [n] bytes of [s]. This is [""]
+(** [drop_first n s] is [s] without the first [n] bytes of [s]. This is [""]
     if [n >= length s] and [s] if [n <= 0].
 
     @since 5.5 *)
 
 val drop_last : int -> string -> string
-(** [rdrop n s] is [s] without the last [n] bytes of [s]. This is [""]
+(** [drop_last n s] is [s] without the last [n] bytes of [s]. This is [""]
     if [n >= length s] and [s] if [n <= 0].
 
     @since 5.5 *)
@@ -230,7 +230,7 @@ val cut_last : int -> string -> string * string
 
     @since 5.5 *)
 
-(** {2:breaking_sep Breaking with separators} *)
+(** {2:splitting_sep Splitting with separators} *)
 
 val split_on_char : char -> string -> string list
 (** [split_on_char sep s] is the list of all (possibly empty)
