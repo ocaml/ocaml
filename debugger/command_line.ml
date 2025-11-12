@@ -654,11 +654,11 @@ let instr_break ppf lexbuf =
              in
              match column with
              | None ->
-                 event_at_pos module_name (fst (pos_of_line buffer line))
+                 event_at_pos_inclusive module_name (fst (pos_of_line buffer line))
              | Some col ->
-                 event_near_pos module_name (point_of_coord buffer line col)
+                 event_near_pos_inclusive module_name (point_of_coord buffer line col)
            with
-           | Not_found -> (* event_at_pos / event_near pos *)
+           | Not_found -> (* event_at_pos_inclusive / event_near_pos_inclusive *)
                eprintf "Can\'t find any event there.@.";
                raise Toplevel
            | Out_of_range -> (* pos_of_line / point_of_coord *)
@@ -667,7 +667,7 @@ let instr_break ppf lexbuf =
     | BA_pos2 (mdle, position) ->             (* break @ [MODULE] # POSITION *)
         try
           new_breakpoint
-            (event_near_pos (convert_module (module_of_longident mdle))
+            (event_near_pos_inclusive (convert_module (module_of_longident mdle))
                             position)
         with
         | Not_found ->

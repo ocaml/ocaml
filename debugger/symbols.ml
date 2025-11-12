@@ -239,6 +239,57 @@ let event_near_pos md char =
     if pos < 0 then raise Not_found;
     { ev_frag; ev_ev = ev.(pos) }
 
+(* Check if an event is a valid breakpoint target *)
+(* Function entry pseudo-events are valid, other pseudo-events are not *)
+let is_valid_breakpoint_event ev =
+  match ev.ev_kind, ev.ev_info with
+  | Event_pseudo, Event_function -> true   (* Function entry - VALID *)
+  | Event_pseudo, _ -> false               (* Other pseudo - skip *)
+  | _, _ -> true                           (* All non-pseudo - VALID *)
+
+(* Return first valid event (including function entry pseudo-events) at or after position *)
+(* Raise [Not_found] if module is unknown or no valid event is found. *)
+let event_at_pos_inclusive md char =
+  let ev_frag, evl = Hashtbl.find all_events_by_module md in
+  let ev = Array.of_list evl in
+  let rec find_valid_event pos =
+    if pos >= Array.length ev then
+      raise Not_found
+    else if is_valid_breakpoint_event ev.(pos) then
+      { ev_frag; ev_ev = ev.(pos) }
+    else
+      find_valid_event (pos + 1)
+  in
+  try
+    let pos = find_event ev char in
+    find_valid_event pos
+  with Not_found ->
+    raise Not_found
+
+(* Return valid event (including function entry pseudo-events) closest to position *)
+(* Raise [Not_found] if module is unknown or no valid event is found. *)
+let event_near_pos_inclusive md char =
+  let ev_frag, evl = Hashtbl.find all_events_by_module md in
+  (* Filter to only valid breakpoint events *)
+  let valid_events = evl
+    |> List.filter is_valid_breakpoint_event
+    |> Array.of_list
+  in
+  if Array.length valid_events = 0 then
+    raise Not_found;
+  try
+    let pos = find_event valid_events char in
+    (* Desired event is either valid_events.(pos) or valid_events.(pos - 1),
+       whichever is closest *)
+    if pos > 0 && char - (Events.get_pos valid_events.(pos - 1)).Lexing.pos_cnum
+                  <= (Events.get_pos valid_events.(pos)).Lexing.pos_cnum - char
+    then { ev_frag; ev_ev = valid_events.(pos - 1) }
+    else { ev_frag; ev_ev = valid_events.(pos) }
+  with Not_found ->
+    let pos = Array.length valid_events - 1 in
+    if pos < 0 then raise Not_found;
+    { ev_frag; ev_ev = valid_events.(pos) }
+
 (* Flip "event" bit on all instructions *)
 let set_all_events frag =
   Hashtbl.iter

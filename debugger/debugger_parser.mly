@@ -249,6 +249,7 @@ break_argument_eol :
                                                          pos = $1} }
   | INTEGER COLON integer_eol                   { BA_pc {frag = to_int $1;
                                                          pos = $3} }
+  | module_path COLON integer_eol               { BA_pos1 (Some $1, $3, None) }
   | expression end_of_line                      { BA_function $1 }
   | AT opt_longident INTEGER opt_integer_eol    { BA_pos1 ($2, (to_int $3), $4)}
   | AT opt_longident HASH integer_eol           { BA_pos2 ($2, $4) }

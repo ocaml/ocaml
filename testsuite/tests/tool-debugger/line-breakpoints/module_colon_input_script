@@ -1,0 +1,4 @@
+break Test_module_colon_syntax:15
+run
+print n
+quit

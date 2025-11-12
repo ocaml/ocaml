@@ -1,0 +1,4 @@
+Loading program... done.
+Breakpoint: 1
+16   <|b|>let rec loop acc n =                   (* Line 16 - nested function *)
+n: int = 5

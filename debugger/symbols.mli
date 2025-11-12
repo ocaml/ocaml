@@ -67,5 +67,13 @@ val event_at_pos : string -> int -> code_event
 (* --- Raise `Not_found' if no such event. *)
 val event_near_pos : string -> int -> code_event
 
+(* First event (including function entry pseudo-events) after the given position. *)
+(* --- Raise `Not_found' if no such event. *)
+val event_at_pos_inclusive : string -> int -> code_event
+
+(* Closest event (including function entry pseudo-events) from given position. *)
+(* --- Raise `Not_found' if no such event. *)
+val event_near_pos_inclusive : string -> int -> code_event
+
 (* Recompute the current event *)
 val update_current_event : unit -> unit
