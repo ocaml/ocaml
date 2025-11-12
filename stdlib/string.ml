@@ -229,10 +229,10 @@ let hash x = seeded_hash 0 x
 
 (* Splitting with magnitudes *)
 
-let subrange ?(first = 0) ?last s =
+let[@inline] subrange ?(first = 0) ?(last = max_int) s =
+  (* assert (Sys.max_string_length - 1 < max_int) *)
   let max = length s - 1 in
   let first = if first < 0 then 0 else first in
-  let last = match last with None -> max | Some last -> last in
   let last = if last > max then max else last in
   if first > last then "" else sub s first (last - first + 1)
 

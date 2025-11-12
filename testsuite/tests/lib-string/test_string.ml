@@ -134,6 +134,10 @@ let () =
   ()
 
 let () =
+  (* Some functions of the string module assume this holds *)
+  assert (Sys.max_string_length - 1 < max_int)
+
+let () =
   (* Test breaking with magnitudes *)
   (* String.take_first *)
   assert (String.take_first (-1) "" = "");
