@@ -196,6 +196,7 @@ let line_loop ppf line_buffer =
   resume_user_input ();
   let previous_line = ref "" in
   let completed_line = ref None in
+  let pending_completions : string list option ref = ref None in
   let skip_repeat_once = ref false in
     try
       while true do
@@ -203,7 +204,7 @@ let line_loop ppf line_buffer =
           History.add_current_time ();
 
         (* Try line editing if on TTY and enabled *)
-        let read_from_editor () =
+        let rec read_from_editor () =
           let prompt = if !Parameters.prompt then !current_prompt else "" in
           if !interactif && Command_history.start_line prompt then begin
             (* Line editing active - set up character callback *)
@@ -225,9 +226,10 @@ let line_loop ppf line_buffer =
                   completed_line := None;
                   Input_handling.set_char_mode_callback None;
                   false  (* Exit main loop cleanly; signal already delivered *)
-              | Command_history.ShowCompletions _ ->
-                  (* Tab completion not implemented yet - ignore for now *)
-                  true
+              | Command_history.ShowCompletions choices ->
+                  pending_completions := Some choices;
+                  Input_handling.set_char_mode_callback None;
+                  false
               | Command_history.EndOfFile ->
                   Input_handling.set_char_mode_callback None;
                   raise Exit  (* EOF *)
@@ -239,10 +241,16 @@ let line_loop ppf line_buffer =
               ~finally:(fun () -> Input_handling.set_char_mode_callback None)
               (fun () -> Input_handling.main_loop ());
 
-            (* Get the completed line *)
-            (match !completed_line with
-             | Some line -> string_trim line
-             | None -> ""  (* Shouldn't happen *))
+            match !pending_completions with
+            | Some choices ->
+                pending_completions := None;
+                Command_history.show_completion_choices choices;
+                read_from_editor ()
+            | None ->
+                (* Get the completed line *)
+                (match !completed_line with
+                 | Some line -> string_trim line
+                 | None -> ""  (* Shouldn't happen *))
          end else begin
            (* Line editing not active, use original lexer path *)
            string_trim (line line_buffer)
@@ -1311,6 +1319,79 @@ It can be either :\n\
        info_help = "list breakpoints." };
      { info_name = "events";
        info_action = info_events ppf;
-       info_help = "list events in MODULE (default is current module)." }]
+       info_help = "list events in MODULE (default is current module)." }];
+
+  (* Setup command history completion callback *)
+  Command_history.set_completion_callback (Some (fun line cursor_pos ->
+    let prefix = String.sub line 0 (min cursor_pos (String.length line)) in
+    let trimmed = string_trim prefix in
+
+    (* Split into words *)
+    let words =
+      let rec split acc start i =
+        if i >= String.length trimmed then
+          if start < i then (String.sub trimmed start (i - start)) :: acc
+          else acc
+        else if trimmed.[i] = ' ' || trimmed.[i] = '\t' then
+          let new_acc =
+            if start < i then (String.sub trimmed start (i - start)) :: acc
+            else acc
+          in
+          split new_acc (i + 1) (i + 1)
+        else
+          split acc start (i + 1)
+      in
+      List.rev (split [] 0 0)
+    in
+
+    try
+      match words with
+      | [] ->
+          List.map (fun i -> i.instr_name) !instruction_list
+      | [x] ->
+          (match all_matching_instructions x with
+           | [ {instr_name = ("set" | "show" as cmd)} ] when x = cmd ->
+               List.map (fun v -> v.var_name) !variable_list
+           | [ {instr_name = "info"} ] when x = "info" ->
+               List.map (fun i -> i.info_name) !info_list
+           | [ {instr_name = "help"} ] when x = "help" ->
+               List.map (fun i -> i.instr_name) !instruction_list
+           | matches ->
+               List.map (fun i -> i.instr_name) matches)
+      | x :: rest ->
+          (match all_matching_instructions x with
+           | [ {instr_name = ("set" | "show")} ] ->
+               let ident = List.hd (List.rev rest) in
+               List.map (fun v -> v.var_name) (matching_variables ident)
+           | [ {instr_name = "info"} ] ->
+               let ident = List.hd (List.rev rest) in
+               List.map (fun i -> i.info_name) (matching_infos ident)
+           | _ -> [])
+    with _ ->
+      []
+  ));
+
+  (* Setup hints callback *)
+  Command_history.set_hints_callback (Some (fun line ->
+    let trimmed = string_trim line in
+    if trimmed = "" then None
+    else
+      let lexbuf = Lexing.from_string trimmed in
+      try
+        match identifier_or_eol Lexer.lexeme lexbuf with
+        | Some x ->
+            (match matching_instructions x with
+             | [i] when x = i.instr_name ->
+                 if i.instr_help = "--unused--" then None
+                 else
+                   let help_lines = String.split_on_char '\n' i.instr_help in
+                   (match help_lines with
+                    | first :: _ when first <> "" ->
+                        Some (" -- " ^ first)
+                    | _ -> None)
+             | _ -> None)
+        | None -> None
+      with _ -> None
+  ))
 
 let _ = init std_formatter

@@ -68,3 +68,22 @@ val add_to_history : string -> unit
 
 val set_max_history_size : int -> unit
 (** Set maximum history size. *)
+
+(** {1 Completion and hints} *)
+
+type completion_callback = string -> int -> string list
+(** Completion callback: takes current line and cursor position,
+    returns list of possible completions. *)
+
+type hints_callback = string -> string option
+(** Hints callback: takes current line, returns optional hint text
+    to display in gray after the cursor. *)
+
+val set_completion_callback : completion_callback option -> unit
+(** Set the completion callback for Tab completion. *)
+
+val set_hints_callback : hints_callback option -> unit
+(** Set the hints callback for inline suggestions. *)
+
+val show_completion_choices : string list -> unit
+(** Display completion choices to the user. *)

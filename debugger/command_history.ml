@@ -67,6 +67,14 @@ type escape_state =
 
 let escape_parser_state = ref Normal
 
+(* Completion state *)
+type completion_callback = string -> int -> string list
+let completion_callback = ref (None : completion_callback option)
+
+(* Hints callback *)
+type hints_callback = string -> string option
+let hints_callback = ref (None : hints_callback option)
+
 (* Terminal state *)
 let saved_termios = ref None
 
@@ -125,15 +133,31 @@ let save_history () = ()
 let display_line () =
   printf "%s%s" clear_line move_cursor_to_start;
 
-  (* Show prompt *)
-  if !current_prompt_str <> "" then
+  (* Only show prompt and hints if prompt is not empty *)
+  let show_prompt = !current_prompt_str <> "" in
+  if show_prompt then
     printf "%s" !current_prompt_str;
 
   printf "%s" !current_line_buffer;
 
-  (* Move cursor to correct position *)
+  (* Show hint if available and track its length *)
+  let hint_len =
+    if show_prompt then
+      match !hints_callback with
+      | Some f ->
+          (match f !current_line_buffer with
+           | Some hint when hint <> "" ->
+               printf "\027[90m%s\027[0m" hint; (* Gray color *)
+               String.length hint
+           | _ -> 0)
+      | None -> 0
+    else
+      0
+  in
+
+  (* Move cursor to correct position, accounting for hint text *)
   let line_len = String.length !current_line_buffer in
-  let chars_after_cursor = line_len - !cursor_pos in
+  let chars_after_cursor = (line_len - !cursor_pos) + hint_len in
   if chars_after_cursor > 0 then
     printf "%s" (move_cursor_left chars_after_cursor);
   flush Stdlib.stdout
@@ -230,6 +254,55 @@ let add_to_history line =
 let set_max_history_size size =
   max_history_size := max 0 size;
   trim_history_to_max ()
+
+(* Handle tab completion *)
+let handle_completion () =
+  match !completion_callback with
+  | None -> None
+  | Some f ->
+      let completions = f !current_line_buffer !cursor_pos in
+      match completions with
+      | [] -> None
+      | [single] ->
+          (* Single completion - replace the current word *)
+          let rec find_word_start pos =
+            if pos = 0 then 0
+            else
+              let c = !current_line_buffer.[pos - 1] in
+              if c = ' ' || c = '\t' then pos
+              else find_word_start (pos - 1)
+          in
+          let word_start = find_word_start !cursor_pos in
+          let prefix = String.sub !current_line_buffer 0 word_start in
+          let suffix = String.sub !current_line_buffer !cursor_pos
+                         (String.length !current_line_buffer - !cursor_pos) in
+          current_line_buffer := prefix ^ single ^ suffix;
+          cursor_pos := word_start + String.length single;
+          display_line ();
+          None
+      | multiple ->
+          Some multiple
+
+let show_completion_choices choices =
+  (* Temporarily restore terminal to canonical mode for clean output *)
+  let was_active = !line_editing_active in
+  if was_active then begin
+    line_editing_active := false;
+    restore_terminal ()
+  end;
+
+  (* Print completions *)
+  printf "\n";
+  List.iter (fun c -> printf "%s  " c) choices;
+  printf "\n";
+  flush Stdlib.stdout
+
+(* Set callbacks *)
+let set_completion_callback callback =
+  completion_callback := callback
+
+let set_hints_callback callback =
+  hints_callback := callback
 
 (* Start line editing for a new line *)
 let start_line prompt =
@@ -366,6 +439,11 @@ let process_char c =
           | '\027' -> (* ESC *)
               escape_parser_state := EscapeReceived;
               NeedMore
+
+          | '\t' -> (* Tab *)
+              (match handle_completion () with
+               | None -> NeedMore
+               | Some choices -> ShowCompletions choices)
 
           | '\127' | '\008' -> (* Backspace/Delete *)
               delete_char_before ();
