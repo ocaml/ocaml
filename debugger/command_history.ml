@@ -37,6 +37,7 @@ let history_file = ref ""
 (* History storage - most recent first *)
 let history = ref ([] : string list)
 let history_position = ref 0
+let saved_line = ref ""  (* Saved line when entering history *)
 
 let trim_history_to_max () =
   let limit = max 0 !max_history_size in
@@ -120,13 +121,55 @@ let init () =
   (* Check if stdin is a TTY *)
   is_a_tty := (try isatty stdin with _ -> false);
 
-  (* Set history file path *)
-  history_file := begin
-    try
-      Filename.concat (Sys.getenv "HOME") ".ocamldebug_history"
-    with Not_found ->
-      ".ocamldebug_history"
-  end;
+  (* Set history file path following XDG Base Directory specification,
+     consistent with .ocamlinit lookup (using XDG_CONFIG_HOME).
+     For loading, check existing files; for saving, use preferred XDG location. *)
+  let find_history_file () =
+    let history_filename = "ocamldebug_history" in
+    let getenv var = match Sys.getenv_opt var with Some "" -> None | v -> v in
+    let is_absolute = Fun.negate Filename.is_relative in
+    let home_dir () = getenv "HOME" in
+
+    (* Build XDG config path *)
+    let xdg_path () =
+      match getenv "XDG_CONFIG_HOME" with
+      | Some dir when is_absolute dir ->
+          Some (Filename.concat (Filename.concat dir "ocaml") history_filename)
+      | _ ->
+          Option.map (fun home ->
+            Filename.concat
+              (Filename.concat (Filename.concat home ".config") "ocaml")
+              history_filename
+          ) (home_dir ())
+    in
+
+    (* Build legacy path *)
+    let legacy_path () =
+      Option.map (fun home ->
+        Filename.concat home (".ocamldebug_history")
+      ) (home_dir ())
+    in
+
+    (* For loading: find first existing file *)
+    let find_existing () =
+      List.find_map (fun path_opt ->
+        match path_opt with
+        | Some path when Sys.file_exists path -> Some path
+        | _ -> None
+      ) [xdg_path (); legacy_path (); Some ".ocamldebug_history"]
+    in
+
+    (* Use existing file if found, otherwise use preferred XDG location *)
+    match find_existing () with
+    | Some path -> path
+    | None ->
+        (* No existing file; use XDG location for new history *)
+        match xdg_path () with
+        | Some path -> path
+        | None -> ".ocamldebug_history"
+  in
+
+  history_file := find_history_file ();
 
   (* Set max history size from Debugger_config if available *)
   (try
@@ -149,6 +192,19 @@ let init () =
 (* Save history to file *)
 let save_history () =
   try
+    (* Ensure parent directory exists *)
+    let dir = Filename.dirname !history_file in
+    (try
+       (* Create directory with parents if needed *)
+       let rec mkdir_p path =
+         if not (Sys.file_exists path) then begin
+           mkdir_p (Filename.dirname path);
+           try Unix.mkdir path 0o755 with Unix.Unix_error (Unix.EEXIST, _, _) -> ()
+         end
+       in
+       mkdir_p dir
+     with _ -> ());
+
     let oc = open_out !history_file in
     try
       (* Save in reverse order (oldest first) for easier loading *)
@@ -206,6 +262,9 @@ let display_line () =
 (* Handle history navigation *)
 let history_prev () =
   if !history_position < List.length !history then begin
+    (* Save current line when first entering history *)
+    if !history_position = 0 then
+      saved_line := !current_line_buffer;
     let cmd = List.nth !history !history_position in
     history_position := !history_position + 1;
     current_line_buffer := cmd;
@@ -218,8 +277,9 @@ let history_next () =
   if !history_position > 0 then begin
     history_position := !history_position - 1;
     if !history_position = 0 then begin
-      current_line_buffer := "";
-      cursor_pos := 0
+      (* Restore saved line when returning to bottom *)
+      current_line_buffer := !saved_line;
+      cursor_pos := String.length !saved_line
     end else begin
       let cmd = List.nth !history (!history_position - 1) in
       current_line_buffer := cmd;
@@ -360,6 +420,7 @@ let start_line prompt =
     cursor_pos := 0;
     current_prompt_str := prompt;
     history_position := 0;
+    saved_line := "";
     escape_parser_state := Normal;
 
     (* Setup terminal - returns false if failed *)
