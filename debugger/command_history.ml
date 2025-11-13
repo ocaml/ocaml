@@ -317,10 +317,18 @@ let handle_completion () =
               if c = ' ' || c = '\t' then pos
               else find_word_start (pos - 1)
           in
+          let rec find_word_end pos =
+            if pos >= String.length !current_line_buffer then pos
+            else
+              let c = !current_line_buffer.[pos] in
+              if c = ' ' || c = '\t' then pos
+              else find_word_end (pos + 1)
+          in
           let word_start = find_word_start !cursor_pos in
+          let word_end = find_word_end !cursor_pos in
           let prefix = String.sub !current_line_buffer 0 word_start in
-          let suffix = String.sub !current_line_buffer !cursor_pos
-                         (String.length !current_line_buffer - !cursor_pos) in
+          let suffix = String.sub !current_line_buffer word_end
+                         (String.length !current_line_buffer - word_end) in
           current_line_buffer := prefix ^ single ^ suffix;
           cursor_pos := word_start + String.length single;
           display_line ();

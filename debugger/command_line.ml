@@ -1322,10 +1322,10 @@ It can be either :\n\
   (* Setup command history completion callback *)
   Command_history.set_completion_callback (Some (fun line cursor_pos ->
     let prefix = String.sub line 0 (min cursor_pos (String.length line)) in
-    let trimmed = string_trim prefix in
 
-    (* Split into words *)
+    (* Split into words, preserving trailing whitespace indication *)
     let words =
+      let trimmed = string_trim prefix in
       let rec split acc start i =
         if i >= String.length trimmed then
           if start < i then (String.sub trimmed start (i - start)) :: acc
@@ -1339,7 +1339,13 @@ It can be either :\n\
         else
           split acc start (i + 1)
       in
-      List.rev (split [] 0 0)
+      let tokens = List.rev (split [] 0 0) in
+      (* If prefix ends with whitespace, we're starting a new word *)
+      if prefix <> "" && (prefix.[String.length prefix - 1] = ' ' ||
+                          prefix.[String.length prefix - 1] = '\t') then
+        tokens @ [""]
+      else
+        tokens
     in
 
     try
