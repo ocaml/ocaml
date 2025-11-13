@@ -154,13 +154,20 @@ let generate_opcodes entries =
       current_line := target_line
     end;
 
-    (* Advance PC to next entry if not last *)
+    (* Emit copy to add this row to the line table *)
+    emit (Line_number_opcode.Standard
+      (Line_number_opcode.DW_LNS_copy, None));
+    current_basic_block := false;
+
+    (* For next entry, set its address explicitly.
+       Since we use symbolic Code_address labels rather than numeric offsets,
+       we cannot calculate PC deltas at compile time. Instead, emit
+       DW_LNE_set_address for each entry (except the first). *)
     let is_last = i = List.length sorted_entries - 1 in
     if not is_last then begin
-      (* Would need actual address delta - for now just emit copy *)
-      emit (Line_number_opcode.Standard
-        (Line_number_opcode.DW_LNS_copy, None));
-      current_basic_block := false
+      let next_entry = List.nth sorted_entries (i + 1) in
+      emit (Line_number_opcode.Extended
+        (Line_number_opcode.DW_LNE_set_address next_entry.address))
     end
   ) sorted_entries;
 

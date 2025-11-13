@@ -14,6 +14,12 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+(** Type DIE offsets for referencing standard types *)
+type type_offsets = {
+  ocaml_value : int;  (* Generic OCaml value type *)
+  ocaml_int : int;    (* OCaml integer type *)
+}
+
 type t = {
   (* Compilation unit info *)
   producer : string;
@@ -23,6 +29,9 @@ type t = {
   (* DIE tree *)
   mutable dies : Proto_die.t list;
   mutable cu_die : Proto_die.t option;
+
+  (* Type DIE offsets *)
+  mutable type_offsets : type_offsets option;
 
   (* Tables *)
   location_lists : Location_list_table.t;
@@ -39,6 +48,7 @@ let create ~producer ~comp_dir ~language () =
     language;
     dies = [];
     cu_die = None;
+    type_offsets = None;
     location_lists = Location_list_table.create ();
     range_lists = Range_list_table.create ();
     line_number_table = line_table;
@@ -98,6 +108,15 @@ let location_list_table t = t.location_lists
 
 let range_list_table t = t.range_lists
 
+let get_type_offsets t =
+  match t.type_offsets with
+  | Some offsets -> offsets
+  | None ->
+      (* If types haven't been added yet, return default offsets.
+         This shouldn't happen in normal usage since add_standard_types
+         is called during initialization. *)
+      { ocaml_value = 0x19; ocaml_int = 0x20 }
+
 (* Type DIE creation *)
 
 (** Create a base type DIE (e.g., int, float, value) *)
@@ -110,15 +129,28 @@ let create_base_type ~name ~byte_size ~encoding =
 
 (** Initialize standard OCaml types and add them to the world.
     Returns offsets for each type so they can be referenced. *)
-type type_offsets = {
-  ocaml_value : int;  (* Generic OCaml value type *)
-  ocaml_int : int;    (* OCaml integer type *)
-}
-
 let add_standard_types t =
-  (* We need to calculate DIE offsets. Types should be added first.
-     For now, we'll use placeholder offsets. In a real implementation,
-     we'd need to calculate actual offsets after emission. *)
+  (* Calculate DIE offsets based on CU structure.
+     CU header: 4 (length) + 2 (version) + 4 (abbrev_offset) + 1 (address_size) = 11 bytes
+     CU DIE: 1 (abbrev) + 4 (name:strp) + 4 (producer:strp) + 4 (comp_dir:strp) + 1 (language:data1) = 14 bytes
+     First child DIE starts at offset: 11 + 14 = 25 (0x19)
+
+     Base type DIE structure:
+     - Abbrev code: 1 byte
+     - DW_AT_name (DW_FORM_strp): 4 bytes
+     - DW_AT_byte_size (DW_FORM_data1): 1 byte
+     - DW_AT_encoding (DW_FORM_data1): 1 byte
+     Total: 7 bytes per base type DIE *)
+
+  let cu_header_size = 11 in
+  let cu_die_size = 14 in
+  let base_type_die_size = 7 in
+
+  (* First type DIE (value) starts after CU header and CU DIE *)
+  let value_offset = cu_header_size + cu_die_size in
+
+  (* Second type DIE (int) starts after first type DIE *)
+  let int_offset = value_offset + base_type_die_size in
 
   (* OCaml value: 8-byte pointer to any OCaml value *)
   let value_die = create_base_type
@@ -136,8 +168,10 @@ let add_standard_types t =
   in
   add_die t int_die;
 
-  (* Return placeholder offsets - these will be resolved during emission *)
-  { ocaml_value = 0; ocaml_int = 0 }
+  (* Store and return calculated offsets *)
+  let offsets = { ocaml_value = value_offset; ocaml_int = int_offset } in
+  t.type_offsets <- Some offsets;
+  offsets
 
 (* Section emission - simplified versions *)
 

@@ -3630,6 +3630,7 @@ asmcomp/emit.cmo : \
     asmcomp/emitaux.cmi \
     asmcomp/debug/dwarf/dwarf_flags/dwarf_flags.cmi \
     utils/domainstate.cmi \
+    lambda/debuginfo.cmi \
     utils/config.cmi \
     middle_end/compilenv.cmi \
     asmcomp/debug/dwarf/dwarf_low/code_address.cmi \
@@ -3656,6 +3657,7 @@ asmcomp/emit.cmx : \
     asmcomp/emitaux.cmx \
     asmcomp/debug/dwarf/dwarf_flags/dwarf_flags.cmx \
     utils/domainstate.cmx \
+    lambda/debuginfo.cmx \
     utils/config.cmx \
     middle_end/compilenv.cmx \
     asmcomp/debug/dwarf/dwarf_low/code_address.cmx \

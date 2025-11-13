@@ -60,8 +60,9 @@ let emit_dwarf_line_number dbg =
       if line > 0 && (line <> !last_dwarf_line || file_name <> !last_dwarf_file) then begin
         let lbl = new_label () in
         `{emit_label lbl}:\n`;
+        (* Local labels should not be mangled - use the raw label string *)
         let label_str = label_prefix ^ string_of_int lbl in
-        let address = Code_address.from_label (Emitaux.string_of_symbol label_str) in
+        let address = Code_address.from_label label_str in
         Emitaux.Dwarf_helpers.add_line_number
           ~address
           ~file:file_name

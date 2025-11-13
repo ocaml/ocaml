@@ -71,13 +71,12 @@ let add_variable t ~name ~(location : Variable_location.location) ~is_parameter 
       (* Convert location to DWARF expression bytes *)
       let location_expr = Variable_location.location_to_expression location.kind in
 
-      (* Create variable DIE with type reference.
-         For now, all parameters reference the generic "value" type.
-         The "value" type DIE is at offset 0x19 in the compilation unit.
-         TODO: Calculate this offset dynamically based on CU DIE size. *)
+      (* Create variable DIE with type reference to the "value" type.
+         Get the actual offset from the stored type offsets. *)
+      let type_offsets = Dwarf_world.get_type_offsets t.world in
       let var_die = Proto_die.create_variable
         ~name
-        ~type_ref:0x19  (* Reference to "value" type *)
+        ~type_ref:type_offsets.ocaml_value
         ~location:location_expr
         ~is_parameter
         ()

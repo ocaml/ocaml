@@ -52,15 +52,11 @@ let register_name r =
   else Regf (float_reg_name.(r - 100))
 
 (* DWARF line number tracking *)
-let _last_dwarf_line = ref (-1)
-let _last_dwarf_file = ref ""
-let _dwarf_instr_count = ref 0
+let last_dwarf_line = ref (-1)
+let last_dwarf_file = ref ""
+let dwarf_instr_count = ref 0
 
-let emit_dwarf_line_number _dbg =
-  (* DWARF line number emission will be integrated in future phases *)
-  (* For now, this is a placeholder *)
-  ()
-  (*
+let emit_dwarf_line_number dbg =
   if Dwarf_flags.is_dwarf_enabled () then
     match List.rev dbg with
     | [] -> ()
@@ -74,8 +70,9 @@ let emit_dwarf_line_number _dbg =
           | _ -> ".L" ^ Int.to_string lbl
         in
         D.label lbl_str;
+        (* Local labels should not be mangled *)
         let address = Code_address.from_label lbl_str in
-        (* Emitaux.Dwarf_helpers *).add_line_number
+        Emitaux.Dwarf_helpers.add_line_number
           ~address
           ~file:file_name
           ~line
@@ -84,7 +81,6 @@ let emit_dwarf_line_number _dbg =
         last_dwarf_file := file_name;
         incr dwarf_instr_count
       end
-  *)
 
 (* DWARF variable location tracking helpers *)
 
@@ -1017,9 +1013,10 @@ let fundecl fundecl =
   cfi_endproc ();
   (* Track function for DWARF debugging information *)
   if Dwarf_flags.is_dwarf_enabled () then begin
-    let start_label = emit_symbol fundecl.fun_name in
+    let start_label = string_of_symbol symbol_prefix fundecl.fun_name in
     let start_addr = Code_address.from_label start_label in
-    let end_label = emit_symbol (fundecl.fun_name ^ "_end") in
+    let end_label_name = fundecl.fun_name ^ "_end" in
+    let end_label = string_of_symbol symbol_prefix end_label_name in
     D.label end_label;
     let end_addr = Code_address.from_label end_label in
     Emitaux.Dwarf_helpers.add_function

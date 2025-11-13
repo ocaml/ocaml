@@ -75,6 +75,9 @@ type type_offsets = {
 (** Add standard OCaml type DIEs to the world and return their offsets *)
 val add_standard_types : t -> type_offsets
 
+(** Get the stored type offsets (must call add_standard_types first) *)
+val get_type_offsets : t -> type_offsets
+
 (** Emit all DWARF sections to a buffer *)
 type relocation = {
   offset : int;
