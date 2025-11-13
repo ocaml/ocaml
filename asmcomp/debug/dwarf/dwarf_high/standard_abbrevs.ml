@@ -39,9 +39,9 @@ let standard_table : standard_entry list = [
     tag = DW_TAG_compile_unit;
     has_children = true;
     attributes = [
-      (DW_AT_name, DW_FORM_strp);
-      (DW_AT_producer, DW_FORM_strp);
-      (DW_AT_comp_dir, DW_FORM_strp);
+      (DW_AT_name, DW_FORM_string);      (* DWARF 5: inline string *)
+      (DW_AT_producer, DW_FORM_string);
+      (DW_AT_comp_dir, DW_FORM_string);
       (DW_AT_language, DW_FORM_data1);
     ];
   };
@@ -52,7 +52,7 @@ let standard_table : standard_entry list = [
     tag = DW_TAG_subprogram;
     has_children = false;
     attributes = [
-      (DW_AT_name, DW_FORM_strp);
+      (DW_AT_name, DW_FORM_string);      (* DWARF 5: inline string *)
       (DW_AT_low_pc, DW_FORM_addr);
       (DW_AT_high_pc, DW_FORM_addr);
       (DW_AT_external, DW_FORM_flag_present);
@@ -65,7 +65,7 @@ let standard_table : standard_entry list = [
     tag = DW_TAG_subprogram;
     has_children = true;
     attributes = [
-      (DW_AT_name, DW_FORM_strp);
+      (DW_AT_name, DW_FORM_string);      (* DWARF 5: inline string *)
       (DW_AT_low_pc, DW_FORM_addr);
       (DW_AT_high_pc, DW_FORM_addr);
       (DW_AT_external, DW_FORM_flag_present);
@@ -78,7 +78,7 @@ let standard_table : standard_entry list = [
     tag = DW_TAG_formal_parameter;
     has_children = false;
     attributes = [
-      (DW_AT_name, DW_FORM_strp);
+      (DW_AT_name, DW_FORM_string);      (* DWARF 5: inline string *)
       (DW_AT_location, DW_FORM_exprloc);
     ];
   };
@@ -89,7 +89,7 @@ let standard_table : standard_entry list = [
     tag = DW_TAG_formal_parameter;
     has_children = false;
     attributes = [
-      (DW_AT_name, DW_FORM_strp);
+      (DW_AT_name, DW_FORM_string);      (* DWARF 5: inline string *)
       (DW_AT_type, DW_FORM_ref4);
       (DW_AT_location, DW_FORM_exprloc);
     ];
@@ -101,7 +101,7 @@ let standard_table : standard_entry list = [
     tag = DW_TAG_base_type;
     has_children = false;
     attributes = [
-      (DW_AT_name, DW_FORM_strp);
+      (DW_AT_name, DW_FORM_string);      (* DWARF 5: inline string *)
       (DW_AT_byte_size, DW_FORM_data1);
       (DW_AT_encoding, DW_FORM_data1);
     ];
@@ -124,7 +124,7 @@ let standard_table : standard_entry list = [
     tag = DW_TAG_subprogram;
     has_children = true;
     attributes = [
-      (DW_AT_name, DW_FORM_strp);
+      (DW_AT_name, DW_FORM_string);      (* DWARF 5: inline string *)
       (DW_AT_type, DW_FORM_ref4);
       (DW_AT_low_pc, DW_FORM_addr);
       (DW_AT_high_pc, DW_FORM_addr);
