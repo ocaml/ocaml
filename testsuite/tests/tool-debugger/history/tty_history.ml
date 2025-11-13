@@ -11,6 +11,7 @@
    }{
      program = "tty_driver.exe";
      all_modules = "tty_driver.ml tty_stubs.c";
+     cclib = "-lutil";
      ocamlc.byte;
    }{
      script = "./tty_driver.exe '${ocaml_srcdir}/runtime/ocamlrun ${ocaml_srcdir}/debugger/ocamldebug' ${test_build_directory}/tty_history.byte > tty_history.output";

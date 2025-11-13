@@ -6,7 +6,11 @@
 #include <caml/fail.h>
 
 #if defined(__APPLE__) || defined(__linux__) || defined(__unix__)
+#ifdef __linux__
+#include <pty.h>
+#else
 #include <util.h>
+#endif
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
