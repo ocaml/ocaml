@@ -136,13 +136,9 @@ let init () =
   (* Load history from file *)
   if Sys.file_exists !history_file then begin
     try
-      let ic = open_in !history_file in
-      try
-        history := In_channel.fold_lines (fun acc line -> line :: acc) [] ic;
-        close_in ic
-      with e ->
-        close_in ic;
-        raise e
+      history := In_channel.with_open_text !history_file (fun ic ->
+        In_channel.fold_lines (fun acc line -> String.trim line :: acc) [] ic
+      )
     with _ -> ()
   end;
   trim_history_to_max ();
