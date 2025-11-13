@@ -138,14 +138,7 @@ let init () =
     try
       let ic = open_in !history_file in
       try
-        let rec load_lines acc =
-          try
-            let line = input_line ic in
-            load_lines (line :: acc)
-          with End_of_file ->
-            acc  (* Don't reverse - file has oldest first, :: builds newest first *)
-        in
-        history := load_lines [];
+        history := In_channel.fold_lines (fun acc line -> line :: acc) [] ic;
         close_in ic
       with e ->
         close_in ic;
