@@ -60,7 +60,7 @@ let with_name t name =
   add_attribute t {
     attr = DW_AT_name;
     value = String name;
-    form = DW_FORM_strp;
+    form = DW_FORM_string;  (* DWARF 5: inline strings *)
   }
 
 let with_type t type_offset =
