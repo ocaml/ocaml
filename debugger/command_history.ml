@@ -43,14 +43,7 @@ let trim_history_to_max () =
   if limit = 0 then
     history := []
   else if List.length !history > limit then
-    let rec take n lst acc =
-      if n = 0 then List.rev acc
-      else
-        match lst with
-        | [] -> List.rev acc
-        | x :: xs -> take (n - 1) xs (x :: acc)
-    in
-    history := take limit !history []
+    history := List.take limit !history
 
 (* Current line editing state *)
 let current_line_buffer = ref ""
