@@ -246,6 +246,11 @@ let line_loop ppf line_buffer =
              | None -> ""  (* Shouldn't happen *))
          end else begin
            (* Line editing not active, use original lexer path *)
+           (* Print prompt if needed before reading line *)
+           if !interactif && !Parameters.prompt then begin
+             print_string !current_prompt;
+             flush Stdlib.stdout
+           end;
            string_trim (line line_buffer)
          end
         in
