@@ -1365,13 +1365,25 @@ It can be either :\n\
       | x :: rest ->
           (match all_matching_instructions x with
            | [ {instr_name = ("set" | "show")} ] ->
-               let ident = List.hd (List.rev rest) in
+               let ident =
+                 match List.rev rest with
+                 | "" :: _ | [] -> ""
+                 | last :: _ -> last
+               in
                List.map (fun v -> v.var_name) (matching_variables ident)
            | [ {instr_name = "info"} ] ->
-               let ident = List.hd (List.rev rest) in
+               let ident =
+                 match List.rev rest with
+                 | "" :: _ | [] -> ""
+                 | last :: _ -> last
+               in
                List.map (fun i -> i.info_name) (matching_infos ident)
            | [ {instr_name = "help"} ] ->
-               let ident = List.hd (List.rev rest) in
+               let ident =
+                 match List.rev rest with
+                 | "" :: _ | [] -> ""
+                 | last :: _ -> last
+               in
                List.map (fun i -> i.instr_name) (matching_instructions ident)
            | _ -> [])
     with _ ->
