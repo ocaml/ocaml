@@ -1,0 +1,1862 @@
+Running tests from 'tests/afl-instrumentation' ...
+ ... testing 'afl-fuzz-test.ml' => skipped
+ ... testing 'afl-showmap-test.ml' => skipped
+Running tests from 'tests/arch-power' ...
+ ... testing 'exn_raise.ml' => skipped
+Running tests from 'tests/array-functions' ...
+ ... testing 'test.ml' => passed
+ ... testing 'test_iarray.ml' => passed
+Running tests from 'tests/asmcomp' ...
+ ... testing '0001-test.ml' => passed
+ ... testing 'bind_tuples.ml' => passed
+ ... testing 'compare.ml' => passed
+ ... testing 'evaluation_order.ml' => passed
+ ... testing 'func_sections.ml' => skipped
+ ... testing 'issue13875.ml' => passed
+ ... testing 'lift_mutable_let_flambda.ml' => skipped
+ ... testing 'optargs.ml' => passed
+ ... testing 'poll_attr_both.ml' => passed
+ ... testing 'poll_attr_inserted.ml' => passed
+ ... testing 'poll_attr_prologue.ml' => passed
+ ... testing 'poll_attr_user.ml' => passed
+ ... testing 'polling_insertion.ml' => passed
+ ... testing 'prevent_fma.ml' => passed
+ ... testing 'register_typing.ml' => passed
+ ... testing 'register_typing_switch.ml' => passed
+ ... testing 'regression_value_kinds.ml' => passed
+ ... testing 'select_addr.ml' => passed
+ ... testing 'static_catch_unboxing.ml' => passed
+ ... testing 'staticalloc.ml' => passed
+ ... testing 'try_checkbound.ml' => passed
+ ... testing 'unrolling_flambda.ml' => skipped
+ ... testing 'unrolling_flambda2.ml' => skipped
+Running tests from 'tests/asmcomp/dwarf' ...
+ ... testing 'array_list.ml' => passed
+ ... testing 'basic_compile.ml' => passed
+ ... testing 'closures.ml' => passed
+ ... testing 'exceptions.ml' => passed
+ ... testing 'function_names.ml' => passed
+ ... testing 'local_variables.ml' => passed
+ ... testing 'modules.ml' => passed
+ ... testing 'mutual_recursion.ml' => passed
+ ... testing 'nested_types.ml' => passed
+ ... testing 'polymorphism.ml' => passed
+ ... testing 'primitive_types.ml' => passed
+ ... testing 'record_types.ml' => passed
+ ... testing 'refs_options.ml' => passed
+ ... testing 'test_basic.ml' => passed
+ ... testing 'test_debug.ml' => passed
+ ... testing 'test_simple.ml' => passed
+ ... testing 'test_types.ml' => passed
+ ... testing 'variant_types.ml' => passed
+Running tests from 'tests/asmgen' ...
+ ... testing 'arith.cmm' => passed
+ ... testing 'catch-float.cmm' => passed
+ ... testing 'catch-multiple.cmm' => passed
+ ... testing 'catch-rec-deadhandler.cmm' => passed
+ ... testing 'catch-rec.cmm' => passed
+ ... testing 'catch-try-float.cmm' => passed
+ ... testing 'catch-try.cmm' => passed
+ ... testing 'checkbound.cmm' => passed
+ ... testing 'even-odd-spill-float.cmm' => passed
+ ... testing 'even-odd-spill.cmm' => passed
+ ... testing 'even-odd.cmm' => passed
+ ... testing 'fib.cmm' => passed
+ ... testing 'immediates.cmm' => passed
+ ... testing 'integr.cmm' => skipped
+ ... testing 'invariants.cmm' => passed
+ ... testing 'pgcd.cmm' => passed
+ ... testing 'quicksort.cmm' => passed
+ ... testing 'quicksort2.cmm' => passed
+ ... testing 'soli.cmm' => passed
+ ... testing 'tagged-fib.cmm' => passed
+ ... testing 'tagged-integr.cmm' => passed
+ ... testing 'tagged-quicksort.cmm' => passed
+ ... testing 'tagged-tak.cmm' => passed
+ ... testing 'tak.cmm' => passed
+Running tests from 'tests/ast-invariants' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/atomic-locs' ...
+ ... testing 'cmm.ml' => skipped
+ ... testing 'record_fields.ml' => passed
+Running tests from 'tests/backtrace' ...
+ ... testing 'backtrace.ml' => passed
+ ... testing 'backtrace2.ml' => passed
+ ... testing 'backtrace3.ml' => passed
+ ... testing 'backtrace_bounds_exn.ml' => passed
+ ... testing 'backtrace_c_exn.ml' => passed
+ ... testing 'backtrace_deprecated.ml' => passed
+ ... testing 'backtrace_dynlink.ml' => passed
+ ... testing 'backtrace_effects.ml' => passed
+ ... testing 'backtrace_effects_nested.ml' => passed
+ ... testing 'backtrace_or_exception.ml' => passed
+ ... testing 'backtrace_slots.ml' => passed
+ ... testing 'backtrace_systhreads.ml' => passed
+ ... testing 'backtraces_and_finalizers.ml' => passed
+ ... testing 'callstack.ml' => passed
+ ... testing 'event_after_prim.ml' => passed
+ ... testing 'inline_test.ml' => passed
+ ... testing 'inline_traversal_test.ml' => passed
+ ... testing 'lazy.ml' => passed
+ ... testing 'methods.ml' => passed
+ ... testing 'names.ml' => passed
+ ... testing 'pr2195.ml' => passed
+ ... testing 'pr6920_why_at.ml' => passed
+ ... testing 'pr6920_why_swallow.ml' => passed
+ ... testing 'print_location.ml' => passed
+ ... testing 'raw_backtrace.ml' => passed
+Running tests from 'tests/badly-ordered-deps' ...
+ ... testing 'coccinelle.ml' => passed
+ ... testing 'main.ml' => passed
+Running tests from 'tests/basic' ...
+ ... testing 'arrays.ml' => passed
+ ... testing 'bigints.ml' => passed
+ ... testing 'boxedints.ml' => passed
+ ... testing 'constprop.ml.c' => passed
+ ... testing 'divint.ml' => passed
+ ... testing 'equality.ml' => passed
+ ... testing 'eval_order_1.ml' => passed
+ ... testing 'eval_order_2.ml' => passed
+ ... testing 'eval_order_3.ml' => passed
+ ... testing 'eval_order_4.ml' => passed
+ ... testing 'eval_order_6.ml' => passed
+ ... testing 'eval_order_7.ml' => passed
+ ... testing 'eval_order_8.ml' => passed
+ ... testing 'eval_order_9.ml' => passed
+ ... testing 'eval_order_pr10283.ml' => passed
+ ... testing 'float.ml' => passed
+ ... testing 'float_physical_equality.ml' => passed
+ ... testing 'includestruct.ml' => passed
+ ... testing 'localexn.ml' => passed
+ ... testing 'localfunction.ml' => passed
+ ... testing 'maps.ml' => passed
+ ... testing 'min_int.ml' => passed
+ ... testing 'objects.ml' => passed
+ ... testing 'opt_variants.ml' => passed
+ ... testing 'patmatch.ml' => passed
+ ... testing 'patmatch_for_multiple.ml' => passed
+ ... testing 'patmatch_incoherence.ml' => passed
+ ... testing 'patmatch_split_no_or.ml' => passed
+ ... testing 'pr7253.ml' => passed
+ ... testing 'pr7533.ml' => passed
+ ... testing 'pr7657.ml' => passed
+ ... testing 'recvalues.ml' => passed
+ ... testing 'sets.ml' => passed
+ ... testing 'stringmatch.ml' => passed
+ ... testing 'switch_opts.ml' => passed
+ ... testing 'tailcalls.ml' => passed
+ ... testing 'trigraph.ml' => passed
+ ... testing 'tuple_match.ml' => passed
+ ... testing 'unit_naming.ml' => passed
+ ... testing 'zero_divided_by_n.ml' => passed
+Running tests from 'tests/basic-float' ...
+ ... testing 'float_compare.ml' => passed
+ ... testing 'float_literals.ml' => passed
+ ... testing 'tfloat_hex.ml' => passed
+ ... testing 'tfloat_record.ml' => passed
+ ... testing 'zero_sized_float_arrays.ml' => passed
+Running tests from 'tests/basic-io' ...
+ ... testing 'wc.ml' => passed
+Running tests from 'tests/basic-io-2' ...
+ ... testing 'io.ml' => passed
+Running tests from 'tests/basic-manyargs' ...
+ ... testing 'manyargs.ml' => passed
+Running tests from 'tests/basic-modules' ...
+ ... testing 'anonymous.ml' => passed
+ ... testing 'main.ml' => passed
+ ... testing 'pr11186.ml' => passed
+ ... testing 'recursive_module_evaluation_errors.ml' => passed
+ ... testing 'recursive_module_init.ml' => passed
+Running tests from 'tests/basic-more' ...
+ ... testing 'bounds.ml' => passed
+ ... testing 'div_by_zero.ml' => passed
+ ... testing 'function_in_ref.ml' => passed
+ ... testing 'if_in_if.ml' => passed
+ ... testing 'labels_evaluation_order.ml' => passed
+ ... testing 'morematch.ml' => passed
+ ... testing 'opaque_prim.ml' => passed
+ ... testing 'pr10294.ml' => passed
+ ... testing 'pr10338.ml' => passed
+ ... testing 'pr1271.ml' => passed
+ ... testing 'pr2719.ml' => passed
+ ... testing 'pr6216.ml' => passed
+ ... testing 'pr7683.ml' => passed
+ ... testing 'record_evaluation_order.ml' => passed
+ ... testing 'robustmatch.ml' => passed
+ ... testing 'safer_matching.ml' => passed
+ ... testing 'sequential_and_or.ml' => passed
+ ... testing 'structural_constants.ml' => passed
+ ... testing 'tbuffer.ml' => passed
+ ... testing 'top_level_patterns.ml' => passed
+ ... testing 'tprintf.ml' => passed
+Running tests from 'tests/basic-multdef' ...
+ ... testing 'usemultdef.ml' => passed
+Running tests from 'tests/basic-private' ...
+ ... testing 'tlength.ml' => passed
+Running tests from 'tests/c-api' ...
+ ... testing 'aligned_alloc.ml' => passed
+ ... testing 'alloc_async.ml' => passed
+ ... testing 'c_noreturn.ml' => passed
+ ... testing 'external.ml' => passed
+ ... testing 'test_c_thread_has_lock.ml' => passed
+ ... testing 'test_c_thread_has_lock_systhread.ml' => passed
+Running tests from 'tests/callback' ...
+ ... testing 'callback_effects_domains_gc.ml' => passed
+ ... testing 'callback_effects_gc.ml' => passed
+ ... testing 'minor_named.ml' => passed
+ ... testing 'nested_fiber.ml' => passed
+ ... testing 'signals_alloc.ml' => passed
+ ... testing 'stack_overflow.ml' => passed
+ ... testing 'test1.ml' => passed
+ ... testing 'test2.ml' => passed
+ ... testing 'test3.ml' => passed
+ ... testing 'test4.ml' => passed
+ ... testing 'test5.ml' => passed
+ ... testing 'test6.ml' => passed
+ ... testing 'test7.ml' => passed
+ ... testing 'test_finaliser_gc.ml' => passed
+ ... testing 'test_gc_alarm.ml' => passed
+ ... testing 'test_signalhandler.ml' => passed
+Running tests from 'tests/compaction' ...
+ ... testing 'test_compact_full.ml' => passed
+ ... testing 'test_compact_manydomains.ml' => passed
+ ... testing 'test_freelist_free.ml' => passed
+Running tests from 'tests/compiler-libs' ...
+ ... testing 'test_longident.ml' => passed
+ ... testing 'test_untypeast.ml' => passed
+Running tests from 'tests/cxx-api' ...
+ ... testing 'all_includes.ml' => passed
+Running tests from 'tests/effect-syntax' ...
+ ... testing 'coroutines.ml' => passed
+ ... testing 'error_messages.ml' => passed
+ ... testing 'iterators.ml' => passed
+ ... testing 'resume_exn.ml' => passed
+ ... testing 'shallow2deep.ml' => passed
+ ... testing 'test1.ml' => passed
+ ... testing 'test10.ml' => passed
+ ... testing 'test11.ml' => passed
+ ... testing 'test2.ml' => passed
+ ... testing 'test3.ml' => passed
+ ... testing 'test4.ml' => passed
+ ... testing 'test5.ml' => passed
+ ... testing 'test6.ml' => passed
+ ... testing 'tutorial.ml' => passed
+ ... testing 'when_test.ml' => passed
+Running tests from 'tests/effects' ...
+ ... testing 'backtrace.ml' => passed
+ ... testing 'cmphash.ml' => passed
+ ... testing 'evenodd.ml' => passed
+ ... testing 'issue479.ml' => passed
+ ... testing 'manylive.ml' => passed
+ ... testing 'marshal.ml' => passed
+ ... testing 'overflow.ml' => passed
+ ... testing 'partial.ml' => passed
+ ... testing 'reperform.ml' => passed
+ ... testing 'sched.ml' => passed
+ ... testing 'shallow_state.ml' => passed
+ ... testing 'shallow_state_io.ml' => passed
+ ... testing 'test1.ml' => passed
+ ... testing 'test10.ml' => passed
+ ... testing 'test11.ml' => passed
+ ... testing 'test2.ml' => passed
+ ... testing 'test3.ml' => passed
+ ... testing 'test4.ml' => passed
+ ... testing 'test5.ml' => passed
+ ... testing 'test6.ml' => passed
+ ... testing 'test_lazy.ml' => passed
+ ... testing 'unhandled_effects.ml' => passed
+ ... testing 'unhandled_unlinked.ml' => passed
+ ... testing 'used_cont.ml' => passed
+Running tests from 'tests/embedded' ...
+ ... testing 'cmcaml.ml' => passed
+Running tests from 'tests/ephe-c-api' ...
+ ... testing 'test.ml' => skipped
+Running tests from 'tests/exotic-syntax' ...
+ ... testing 'exotic.ml' => passed
+Running tests from 'tests/extension-constructor' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/flambda' ...
+ ... testing 'afl_lazy.ml' => skipped
+ ... testing 'approx_meet.ml' => passed
+ ... testing 'gpr2239.ml' => passed
+ ... testing 'gpr998.ml' => passed
+ ... testing 'specialise.ml' => skipped
+Running tests from 'tests/float-unboxing' ...
+ ... testing 'bug13448.ml' => passed
+ ... testing 'bug13448bis.ml' => passed
+ ... testing 'float_subst_boxed_number.ml' => passed
+ ... testing 'unbox_under_assign.ml' => passed
+Running tests from 'tests/fma' ...
+ ... testing 'fma.ml' => passed
+Running tests from 'tests/formats-transition' ...
+ ... testing 'deprecated_unsigned_printers.ml' => passed
+ ... testing 'ignored_scan_counters.ml' => passed
+ ... testing 'legacy_incompatible_flags.ml' => passed
+ ... testing 'legacy_unfinished_modifiers.ml' => passed
+Running tests from 'tests/formatting' ...
+ ... testing 'errors_batch.ml' => passed
+ ... testing 'margins.ml' => passed
+ ... testing 'test_locations.ml' => passed
+Running tests from 'tests/frame-pointers' ...
+ ... testing 'c_call.ml' => skipped
+ ... testing 'effects.ml' => skipped
+ ... testing 'exception_handler.ml' => skipped
+ ... testing 'exceptions.ml' => skipped
+ ... testing 'qsort.ml' => skipped
+ ... testing 'reperform.ml' => skipped
+ ... testing 'stack_realloc.ml' => skipped
+ ... testing 'stack_realloc2.ml' => skipped
+Running tests from 'tests/functors' ...
+ ... testing 'functors.ml' => passed
+Running tests from 'tests/gc-roots' ...
+ ... testing 'globroots.ml' => passed
+ ... testing 'globroots_parallel.ml' => passed
+ ... testing 'globroots_parallel_spawn_burn.ml' => passed
+ ... testing 'globroots_sequential.ml' => passed
+Running tests from 'tests/generalized-open' ...
+ ... testing 'accepted_batch.ml' => passed
+ ... testing 'accepted_expect.ml' => passed
+ ... testing 'clambda_optim.ml' => passed
+ ... testing 'expansiveness.ml' => passed
+ ... testing 'funct_body.ml' => passed
+ ... testing 'gpr1506.ml' => passed
+ ... testing 'pr10048.ml' => passed
+ ... testing 'shadowing.ml' => passed
+Running tests from 'tests/generated-parse-errors' ...
+ ... testing 'errors.ml' => passed
+Running tests from 'tests/hidden_includes' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/int64-unboxing' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lazy' ...
+ ... testing 'lazy1.ml' => passed
+ ... testing 'lazy10.ml' => passed
+ ... testing 'lazy2.ml' => passed
+ ... testing 'lazy3.ml' => passed
+ ... testing 'lazy4.ml' => passed
+ ... testing 'lazy5.ml' => passed
+ ... testing 'lazy6.ml' => passed
+ ... testing 'lazy7.ml' => passed
+ ... testing 'lazy8.ml' => passed
+ ... testing 'lazy9.ml' => passed
+ ... testing 'minor_major_force.ml' => passed
+Running tests from 'tests/let-syntax' ...
+ ... testing 'let_syntax.ml' => passed
+Running tests from 'tests/letrec-check' ...
+ ... testing 'basic.ml' => passed
+ ... testing 'extension_constructor.ml' => passed
+ ... testing 'flat_float_array.ml' => passed
+ ... testing 'float_unboxing.ml' => passed
+ ... testing 'labels.ml' => passed
+ ... testing 'lazy_.ml' => passed
+ ... testing 'modules.ml' => passed
+ ... testing 'no_flat_float_array.ml' => skipped
+ ... testing 'objects.ml' => passed
+ ... testing 'partial_application.ml' => passed
+ ... testing 'pr7215.ml' => passed
+ ... testing 'pr7231.ml' => passed
+ ... testing 'pr7706.ml' => passed
+ ... testing 'records.ml' => passed
+ ... testing 'unboxed.ml' => passed
+Running tests from 'tests/letrec-compilation' ...
+ ... testing 'backreferences.ml' => passed
+ ... testing 'class_1.ml' => passed
+ ... testing 'class_2.ml' => passed
+ ... testing 'evaluation_order_1.ml' => passed
+ ... testing 'evaluation_order_2.ml' => passed
+ ... testing 'evaluation_order_3.ml' => passed
+ ... testing 'float_block_1.ml' => passed
+ ... testing 'generic_array.ml' => passed
+ ... testing 'labels.ml' => passed
+ ... testing 'lazy_.ml' => passed
+ ... testing 'lists.ml' => passed
+ ... testing 'mixing_value_closures_1.ml' => passed
+ ... testing 'mixing_value_closures_2.ml' => passed
+ ... testing 'mutual_functions.ml' => passed
+ ... testing 'nested.ml' => passed
+ ... testing 'nested2.ml' => passed
+ ... testing 'pr12153_miscompilation_of_recursive_atoms.ml' => passed
+ ... testing 'pr4989.ml' => passed
+ ... testing 'pr8681.ml' => passed
+ ... testing 'record_with.ml' => passed
+ ... testing 'ref.ml' => passed
+Running tests from 'tests/lexing' ...
+ ... testing 'comments.ml' => passed
+ ... testing 'escape.ml' => passed
+ ... testing 'newlines.ml' => passed
+ ... testing 'reject_bad_encoding.ml' => passed
+ ... testing 'uchar_esc.ml' => passed
+Running tests from 'tests/lf_skiplist' ...
+ ... testing 'test.ml' => passed
+ ... testing 'test_parallel.ml' => passed
+Running tests from 'tests/lib-arg' ...
+ ... testing 'test_rest_all.ml' => passed
+ ... testing 'testarg.ml' => passed
+ ... testing 'testerror.ml' => passed
+Running tests from 'tests/lib-array' ...
+ ... testing 'test_array.ml' => passed
+ ... testing 'test_iarray.ml' => passed
+Running tests from 'tests/lib-atomic' ...
+ ... testing 'test_atomic.ml' => passed
+Running tests from 'tests/lib-bigarray' ...
+ ... testing 'bigarrays.ml' => passed
+ ... testing 'change_layout.ml' => passed
+ ... testing 'fftba.ml' => passed
+ ... testing 'pr5115.ml' => passed
+ ... testing 'specialized.ml' => passed
+ ... testing 'weak_bigarray.ml' => passed
+Running tests from 'tests/lib-bigarray-2' ...
+ ... testing 'bigarrcml.ml' => passed
+ ... testing 'bigarrfml.ml'Apple clang version 17.0.0 (clang-1700.4.4.1)
+ => skipped
+Running tests from 'tests/lib-bigarray-file' ...
+ ... testing 'mapfile.ml' => passed
+Running tests from 'tests/lib-bool' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-buffer' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-bytes' ...
+ ... testing 'binary.ml' => passed
+ ... testing 'test_bytes.ml' => passed
+Running tests from 'tests/lib-bytes-utf' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-channels' ...
+ ... testing 'bigarrays.ml' => passed
+ ... testing 'buffered.ml' => passed
+ ... testing 'close_during_flush.ml' => passed
+ ... testing 'close_in.ml' => passed
+ ... testing 'close_out.ml' => passed
+ ... testing 'in_channel_length.ml' => passed
+ ... testing 'input_all.ml' => passed
+ ... testing 'input_lines.ml' => passed
+ ... testing 'refcounting.ml' => passed
+ ... testing 'seek_in.ml' => passed
+Running tests from 'tests/lib-char' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-digest' ...
+ ... testing 'blake2b_self_test.ml' => passed
+ ... testing 'digests.ml' => passed
+ ... testing 'md5.ml' => passed
+Running tests from 'tests/lib-domain' ...
+ ... testing 'DLS_thread_safety.ml' => passed
+Running tests from 'tests/lib-dynarray' ...
+ ... testing 'heap_sort.ml' => passed
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-dynlink-bytecode' ...
+ ... testing 'main.ml' => passed
+Running tests from 'tests/lib-dynlink-csharp' ...
+ ... testing 'main.ml' => skipped
+Running tests from 'tests/lib-dynlink-domains' ...
+ ... testing 'main.ml' => passed
+Running tests from 'tests/lib-dynlink-init-info' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-dynlink-initializers' ...
+ ... testing 'test10_main.ml' => passed
+ ... testing 'test1_main.ml' => passed
+ ... testing 'test2_main.ml' => passed
+ ... testing 'test3_main.ml' => passed
+ ... testing 'test5_main.ml' => passed
+ ... testing 'test6_main.ml' => passed
+ ... testing 'test7_main.ml' => passed
+ ... testing 'test8_main.ml' => passed
+ ... testing 'test9_main.ml' => passed
+Running tests from 'tests/lib-dynlink-native' ...
+ ... testing 'main.ml' => passed
+Running tests from 'tests/lib-dynlink-packed' ...
+ ... testing 'loader.ml' => passed
+Running tests from 'tests/lib-dynlink-pr4229' ...
+ ... testing 'main.ml' => passed
+Running tests from 'tests/lib-dynlink-pr4839' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-dynlink-pr6950' ...
+ ... testing 'loader.ml' => passed
+Running tests from 'tests/lib-dynlink-pr9209' ...
+ ... testing 'dyn.ml' => passed
+Running tests from 'tests/lib-dynlink-private' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-either' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-filename' ...
+ ... testing 'extension.ml' => passed
+ ... testing 'null.ml' => passed
+ ... testing 'quotecommand.ml' => passed
+ ... testing 'suffix.ml' => passed
+ ... testing 'temp.ml' => passed
+Running tests from 'tests/lib-float' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-floatarray' ...
+ ... testing 'floatarray.ml' => passed
+Running tests from 'tests/lib-format' ...
+ ... testing 'breaks.ml' => passed
+ ... testing 'domains.ml' => passed
+ ... testing 'format_text.ml' => passed
+ ... testing 'mc_pr586_par.ml' => passed
+ ... testing 'mc_pr586_par2.ml' => passed
+ ... testing 'pp_print_custom_break.ml' => passed
+ ... testing 'pr6824.ml' => passed
+ ... testing 'print_array.ml' => passed
+ ... testing 'print_if_newline.ml' => passed
+ ... testing 'print_seq.ml' => passed
+ ... testing 'tformat.ml' => passed
+ ... testing 'unicode.ml' => passed
+Running tests from 'tests/lib-fun' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-hashtbl' ...
+ ... testing 'compatibility.ml' => passed
+ ... testing 'hfun.ml' => passed
+ ... testing 'htbl.ml' => passed
+Running tests from 'tests/lib-int' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-int64' ...
+ ... testing 'issue9460.ml' => passed
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-internalformat' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-lazy' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-list' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-marshal' ...
+ ... testing 'compressed.ml' => passed
+ ... testing 'intern_final.ml' => passed
+ ... testing 'intext.ml' => passed
+ ... testing 'intext_par.ml' => passed
+ ... testing 'marshal_bigarray.ml' => passed
+Running tests from 'tests/lib-obj' ...
+ ... testing 'new_obj.ml' => passed
+ ... testing 'reachable_words.ml' => passed
+ ... testing 'reachable_words_bug.ml' => passed
+ ... testing 'with_tag.ml' => passed
+Running tests from 'tests/lib-option' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-pair' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-pqueue' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-printf' ...
+ ... testing 'pr6534.ml' => passed
+ ... testing 'pr6938.ml' => passed
+ ... testing 'tprintf.ml' => passed
+Running tests from 'tests/lib-queue' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-random' ...
+ ... testing 'chi2.ml' => passed
+ ... testing 'compat_32_64.ml' => passed
+ ... testing 'defaultinit.ml' => passed
+ ... testing 'parallel.ml' => passed
+ ... testing 'selfinit.ml' => passed
+ ... testing 'testvectors.ml' => passed
+Running tests from 'tests/lib-result' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-runtime-events' ...
+ ... testing 'test.ml' => passed
+ ... testing 'test_caml.ml' => passed
+ ... testing 'test_caml_counters.ml' => passed
+ ... testing 'test_caml_exception.ml' => passed
+ ... testing 'test_caml_parallel.ml' => passed
+ ... testing 'test_caml_reentry.ml' => passed
+ ... testing 'test_caml_runparams.ml' => passed
+ ... testing 'test_caml_slot_reuse.ml' => passed
+ ... testing 'test_caml_stubs_gc.ml' => passed
+ ... testing 'test_compact.ml' => passed
+ ... testing 'test_corrupted.ml' => passed
+ ... testing 'test_create_cursor_failures.ml' => passed
+ ... testing 'test_dropped_events.ml' => passed
+ ... testing 'test_env_start.ml' => passed
+ ... testing 'test_external.ml' => passed
+ ... testing 'test_external_preserve.ml' => passed
+ ... testing 'test_fork.ml' => passed
+ ... testing 'test_instrumented.ml' => passed
+ ... testing 'test_timestamp_monotonic.ml' => passed
+ ... testing 'test_user_event.ml' => passed
+ ... testing 'test_user_event_signal.ml' => passed
+ ... testing 'test_user_event_unknown.ml' => passed
+Running tests from 'tests/lib-scanf' ...
+ ... testing 'tscanf.ml' => passed
+Running tests from 'tests/lib-scanf-2' ...
+ ... testing 'tscanf2_master.ml' => passed
+Running tests from 'tests/lib-seq' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-set' ...
+ ... testing 'testmap.ml' => passed
+ ... testing 'testset.ml' => passed
+Running tests from 'tests/lib-stack' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-stdlabels' ...
+ ... testing 'test_stdlabels.ml' => passed
+Running tests from 'tests/lib-str' ...
+ ... testing 'parallel.ml' => passed
+ ... testing 't01.ml' => passed
+Running tests from 'tests/lib-string' ...
+ ... testing 'binary.ml' => passed
+ ... testing 'test_string.ml' => passed
+Running tests from 'tests/lib-sync' ...
+ ... testing 'prodcons.ml' => passed
+ ... testing 'trylock.ml' => passed
+ ... testing 'trylock2.ml' => passed
+Running tests from 'tests/lib-sys' ...
+ ... testing 'immediate64.ml' => passed
+ ... testing 'opaque.ml' => passed
+ ... testing 'rename.ml' => passed
+ ... testing 'signal.ml' => passed
+Running tests from 'tests/lib-systhreads' ...
+ ... testing 'boundscheck.ml' => passed
+ ... testing 'eintr.ml' => passed
+ ... testing 'multicore_lifecycle.ml' => passed
+ ... testing 'test_c_thread_register.ml' => passed
+ ... testing 'testfork.ml' => passed
+ ... testing 'testfork2.ml' => passed
+ ... testing 'testpreempt.ml' => passed
+ ... testing 'testyield.ml' => passed
+ ... testing 'threadsigmask.ml' => passed
+Running tests from 'tests/lib-threads' ...
+ ... testing 'backtrace_threads.ml' => passed
+ ... testing 'bank.ml' => passed
+ ... testing 'beat.ml' => passed
+ ... testing 'bufchan.ml' => passed
+ ... testing 'close.ml' => passed
+ ... testing 'delayintr.ml' => passed
+ ... testing 'fileio.ml' => passed
+ ... testing 'mutex_errors.ml' => passed
+ ... testing 'pr4466.ml' => passed
+ ... testing 'pr5325.ml' => passed
+ ... testing 'pr7638.ml' => passed
+ ... testing 'pr8857.ml' => passed
+ ... testing 'prodcons.ml' => passed
+ ... testing 'prodcons2.ml' => passed
+ ... testing 'sieve.ml' => passed
+ ... testing 'signal.ml' => passed
+ ... testing 'sockets.ml' => passed
+ ... testing 'swapchan.ml' => passed
+ ... testing 'tls.ml' => passed
+ ... testing 'torture.ml' => passed
+ ... testing 'uncaught_exception_handler.ml' => passed
+Running tests from 'tests/lib-uchar' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-unix/common' ...
+ ... testing 'append.ml' => passed
+ ... testing 'bigarrays.ml' => passed
+ ... testing 'channel_of.ml' => passed
+ ... testing 'cloexec.ml' => passed
+ ... testing 'dup.ml' => passed
+ ... testing 'dup2.ml' => passed
+ ... testing 'fork_cleanup.ml' => passed
+ ... testing 'fork_cleanup_systhreads.ml' => passed
+ ... testing 'getaddrinfo.ml' => passed
+ ... testing 'gethostbyaddr.ml' => passed
+ ... testing 'multicore_fork_domain_alone.ml' => passed
+ ... testing 'multicore_fork_domain_alone2.ml' => passed
+ ... testing 'pipe_eof.ml' => passed
+ ... testing 'process_pid.ml' => passed
+ ... testing 'redirections.ml' => passed
+ ... testing 'rename.ml' => passed
+ ... testing 'sigwait.ml' => passed
+ ... testing 'test_unix_cmdline.ml' => passed
+ ... testing 'test_unixlabels.ml' => passed
+ ... testing 'truncate.ml' => passed
+ ... testing 'uexit.ml' => passed
+ ... testing 'utimes.ml' => passed
+ ... testing 'wait_nohang.ml' => passed
+Running tests from 'tests/lib-unix/isatty' ...
+ ... testing 'isatty_std.ml' => passed
+ ... testing 'isatty_tty.ml' => skipped
+Running tests from 'tests/lib-unix/kill' ...
+ ... testing 'unix_kill.ml' => passed
+Running tests from 'tests/lib-unix/realpath' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/lib-unix/unix-execvpe' ...
+ ... testing 'exec.ml' => passed
+Running tests from 'tests/lib-unix/unix-sockaddr' ...
+ ... testing 'sockaddr_c.ml' => passed
+ ... testing 'sockaddr_cxx.ml' => passed
+Running tests from 'tests/lib-unix/unix-socket' ...
+ ... testing 'recvfrom_linux.ml' => skipped
+ ... testing 'recvfrom_unix.ml' => passed
+Running tests from 'tests/lib-unix/win-channel-of' ...
+ ... testing 'parallel_channel_of.ml' => skipped
+Running tests from 'tests/lib-unix/win-createprocess' ...
+ ... testing 'test.ml' => skipped
+Running tests from 'tests/lib-unix/win-env' ...
+ ... testing 'test_env.ml' => skipped
+Running tests from 'tests/lib-unix/win-socketpair' ...
+ ... testing 'test.ml' => skipped
+Running tests from 'tests/lib-unix/win-stat' ...
+ ... testing 'test.ml' => skipped
+Running tests from 'tests/lib-unix/win-symlink' ...
+ ... testing 'parallel_symlink.ml' => skipped
+ ... testing 'test.ml' => skipped
+Running tests from 'tests/link-test' ...
+ ... testing 'empty.ml' => passed
+ ... testing 'test.ml' => passed
+Running tests from 'tests/load_path' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/local-functions' ...
+ ... testing 'non_local.ml' => passed
+ ... testing 'tupled.ml' => passed
+ ... testing 'tupled2.ml' => passed
+Running tests from 'tests/locale' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/manual-intf-c' ...
+ ... testing 'prog.ml' => skipped
+Running tests from 'tests/match-exception' ...
+ ... testing 'allocation.ml' => passed
+ ... testing 'exception_propagation.ml' => passed
+ ... testing 'identifier_sharing.ml' => passed
+ ... testing 'match_failure.ml' => passed
+ ... testing 'nested_handlers.ml' => passed
+ ... testing 'raise_from_success_continuation.ml' => passed
+ ... testing 'streams.ml' => passed
+ ... testing 'tail_calls.ml' => passed
+Running tests from 'tests/match-exception-warnings' ...
+ ... testing 'exhaustiveness_warnings.ml' => passed
+ ... testing 'no_mixing_under_guard.ml' => passed
+ ... testing 'no_value_clauses.ml' => passed
+ ... testing 'placement.ml' => passed
+ ... testing 'pr7083.ml' => passed
+ ... testing 'reachability.ml' => passed
+Running tests from 'tests/match-side-effects' ...
+ ... testing 'check_partial.ml' => passed
+ ... testing 'partiality.ml' => passed
+ ... testing 'pr13152.ml' => passed
+ ... testing 'test_contexts_code.ml' => passed
+ ... testing 'test_contexts_results.ml' => passed
+Running tests from 'tests/memory-model' ...
+ ... testing 'forbidden.ml' => passed
+ ... testing 'publish.ml' => passed
+Running tests from 'tests/messages' ...
+ ... testing 'highlight_tabs.ml' => passed
+ ... testing 'precise_locations.ml' => passed
+ ... testing 'spellcheck.ml' => passed
+Running tests from 'tests/misc' ...
+ ... testing 'bdd.ml' => passed
+ ... testing 'boyer.ml' => passed
+ ... testing 'darkening_work.ml' => passed
+ ... testing 'exotic.ml' => passed
+ ... testing 'fib.ml' => passed
+ ... testing 'gc_mark_stack_overflow.ml' => passed
+ ... testing 'gcwords.ml' => passed
+ ... testing 'gpr1370.ml' => passed
+ ... testing 'hamming.ml' => passed
+ ... testing 'nucleic.ml' => passed
+ ... testing 'pr7168.ml' => passed
+ ... testing 'sieve.ml' => passed
+ ... testing 'sorts.ml' => passed
+ ... testing 'takc.ml' => passed
+ ... testing 'taku.ml' => passed
+Running tests from 'tests/misc-kb' ...
+ ... testing 'kbmain.ml' => passed
+Running tests from 'tests/misc-unsafe' ...
+ ... testing 'almabench.ml' => passed
+ ... testing 'fft.ml' => passed
+ ... testing 'quicksort.ml' => passed
+ ... testing 'soli.ml' => passed
+Running tests from 'tests/native-debugger' ...
+ ... testing 'linux-gdb-amd64.ml' => skipped
+ ... testing 'linux-gdb-arm64.ml' => skipped
+ ... testing 'linux-gdb-riscv.ml' => skipped
+ ... testing 'linux-lldb-amd64.ml' => skipped
+ ... testing 'linux-lldb-arm64.ml' => skipped
+ ... testing 'macos-lldb-amd64.ml' => skipped
+ ... testing 'macos-lldb-arm64.ml' => passed
+Running tests from 'tests/no-alias-deps' ...
+ ... testing 'aliases.ml' => passed
+ ... testing 'gpr2235.ml' => passed
+Running tests from 'tests/opaque' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/output-complete-obj' ...
+ ... testing 'github9344.ml' => passed
+ ... testing 'test.ml' => passed
+ ... testing 'test2.ml' => passed
+Running tests from 'tests/parallel' ...
+ ... testing 'atomics.ml' => passed
+ ... testing 'backup_thread.ml' => passed
+ ... testing 'backup_thread_pipe.ml' => passed
+ ... testing 'catch_break.ml' => passed
+ ... testing 'churn.ml' => passed
+ ... testing 'constpromote.ml' => passed
+ ... testing 'deadcont.ml' => passed
+ ... testing 'domain_dls.ml' => passed
+ ... testing 'domain_dls2.ml' => passed
+ ... testing 'domain_id.ml' => passed
+ ... testing 'domain_parallel_spawn_burn.ml' => passed
+ ... testing 'domain_parallel_spawn_burn_gc_set.ml' => passed
+ ... testing 'domain_serial_spawn_burn.ml' => passed
+ ... testing 'fib_threads.ml' => passed
+ ... testing 'join.ml' => passed
+ ... testing 'major_gc_wait_backup.ml' => passed
+ ... testing 'max_domains1.ml' => passed
+ ... testing 'max_domains2.ml' => passed
+ ... testing 'mctest.ml' => passed
+ ... testing 'multicore_systhreads.ml' => passed
+ ... testing 'pingpong.ml' => passed
+ ... testing 'poll.ml' => passed
+ ... testing 'prodcons_domains.ml' => passed
+ ... testing 'recommended_domain_count.ml' => passed
+ ... testing 'recommended_domain_count_unix.ml' => passed
+ ... testing 'tak.ml' => passed
+ ... testing 'test_c_thread_register.ml' => passed
+ ... testing 'test_issue_11094.ml' => passed
+Running tests from 'tests/parse-errors' ...
+ ... testing 'bigarray_index_labels.ml' => passed
+ ... testing 'escape_error.ml' => passed
+ ... testing 'expecting.ml' => passed
+ ... testing 'mismatch_struct_sig.ml' => passed
+ ... testing 'pr7847.ml' => passed
+ ... testing 'singleton_labeled_tuple_type.ml' => passed
+ ... testing 'unclosed_class_signature.mli' => passed
+ ... testing 'unclosed_class_simpl_expr1.ml' => passed
+ ... testing 'unclosed_class_simpl_expr2.ml' => passed
+ ... testing 'unclosed_class_simpl_expr3.ml' => passed
+ ... testing 'unclosed_object.ml' => passed
+ ... testing 'unclosed_paren_module_expr1.ml' => passed
+ ... testing 'unclosed_paren_module_expr2.ml' => passed
+ ... testing 'unclosed_paren_module_expr3.ml' => passed
+ ... testing 'unclosed_paren_module_expr4.ml' => passed
+ ... testing 'unclosed_paren_module_expr5.ml' => passed
+ ... testing 'unclosed_paren_module_type.mli' => passed
+ ... testing 'unclosed_sig.mli' => passed
+ ... testing 'unclosed_simple_expr.ml' => passed
+ ... testing 'unclosed_simple_pattern.ml' => passed
+ ... testing 'unclosed_struct.ml' => passed
+Running tests from 'tests/parsetree' ...
+ ... testing 'locations_test.ml' => passed
+ ... testing 'test.ml' => passed
+Running tests from 'tests/parsing' ...
+ ... testing 'anonymous_class_parameter.ml' => passed
+ ... testing 'arrow_ambiguity.ml' => passed
+ ... testing 'assert_location.ml' => passed
+ ... testing 'attributes.ml' => passed
+ ... testing 'broken_invariants.ml' => passed
+ ... testing 'change_start_loc.ml' => passed
+ ... testing 'comments.ml' => passed
+ ... testing 'constructor_declarations.ml' => passed
+ ... testing 'docstrings.ml' => passed
+ ... testing 'extended_indexoperators.ml' => passed
+ ... testing 'extension_operators.ml' => passed
+ ... testing 'extensions.ml' => passed
+ ... testing 'hash_ambiguity.ml' => passed
+ ... testing 'int_and_float_with_modifier.ml' => passed
+ ... testing 'latin9.ml' => passed
+ ... testing 'multi_indices.ml' => passed
+ ... testing 'pr10468.ml' => passed
+ ... testing 'pr6604.ml' => passed
+ ... testing 'pr6604_2.ml' => passed
+ ... testing 'pr6604_3.ml' => passed
+ ... testing 'pr6865.ml' => passed
+ ... testing 'pr7165.ml' => passed
+ ... testing 'prefix_op.ml' => passed
+ ... testing 'quotedextensions.ml' => passed
+ ... testing 'rawidents.ml' => passed
+ ... testing 'reloc.ml' => passed
+ ... testing 'shortcut_ext_attr.ml' => passed
+Running tests from 'tests/ppx-attributes' ...
+ ... testing 'inline.ml' => passed
+ ... testing 'warning.ml' => passed
+Running tests from 'tests/ppx-contexts' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/prim-bigstring' ...
+ ... testing 'bigstring_access.ml' => passed
+ ... testing 'string_access.ml' => passed
+Running tests from 'tests/prim-bswap' ...
+ ... testing 'bswap.ml' => passed
+Running tests from 'tests/prim-revapply' ...
+ ... testing 'apply.ml' => passed
+ ... testing 'revapply.ml' => passed
+Running tests from 'tests/printing-types' ...
+ ... testing 'disambiguation.ml' => passed
+ ... testing 'existentials.ml' => passed
+ ... testing 'pr248.ml' => passed
+Running tests from 'tests/raise-counts' ...
+ ... testing 'main.ml' => passed
+Running tests from 'tests/regression/gpr1623' ...
+ ... testing 'gpr1623.ml' => passed
+Running tests from 'tests/regression/missing_set_of_closures' ...
+ ... testing 'missing_set_of_closures.ml' => passed
+Running tests from 'tests/regression/pr10611' ...
+ ... testing 'pr10611.ml' => passed
+Running tests from 'tests/regression/pr11865' ...
+ ... testing 'mkroot.ml' => passed
+Running tests from 'tests/regression/pr11887' ...
+ ... testing 'pr11887.ml' => passed
+Running tests from 'tests/regression/pr1580' ...
+ ... testing 'pr1580.ml' => passed
+Running tests from 'tests/regression/pr3612' ...
+ ... testing 'pr3612.ml' => passed
+Running tests from 'tests/regression/pr5233' ...
+ ... testing 'pr5233.ml' => passed
+Running tests from 'tests/regression/pr5757' ...
+ ... testing 'pr5757.ml' => passed
+Running tests from 'tests/regression/pr6024' ...
+ ... testing 'pr6024.ml' => passed
+Running tests from 'tests/regression/pr7042' ...
+ ... testing 'pr7042.ml' => passed
+Running tests from 'tests/regression/pr7426' ...
+ ... testing 'pr7426.ml' => passed
+Running tests from 'tests/regression/pr7718' ...
+ ... testing 'pr7718.ml' => passed
+Running tests from 'tests/regression/pr7798' ...
+ ... testing 'pr7798.ml' => passed
+Running tests from 'tests/regression/pr7920' ...
+ ... testing 'pr7920.ml' => passed
+Running tests from 'tests/regression/pr8769' ...
+ ... testing 'pr8769.ml' => passed
+Running tests from 'tests/regression/pr9028' ...
+ ... testing 'pr9028.ml' => passed
+Running tests from 'tests/regression/pr9292' ...
+ ... testing 'pr9292.ml' => passed
+Running tests from 'tests/regression/pr9326' ...
+ ... testing 'gc_set.ml' => passed
+Running tests from 'tests/regression/pr9443' ...
+ ... testing 'pr9443.ml' => passed
+Running tests from 'tests/regression/pr9853' ...
+ ... testing 'compaction_corner_case.ml' => passed
+Running tests from 'tests/reproducibility' ...
+ ... testing 'cmis_on_file_system.ml' => passed
+Running tests from 'tests/required-external' ...
+ ... testing 'main.ml' => passed
+Running tests from 'tests/runtime-C-exceptions' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/runtime-errors' ...
+ ... testing 'stackoverflow.ml' => passed
+ ... testing 'syserror.ml' => passed
+Running tests from 'tests/runtime-objects' ...
+ ... testing 'Tests.ml' => passed
+ ... testing 'toplevel_lets.ml' => passed
+Running tests from 'tests/self-contained-toplevel' ...
+ ... testing 'main.ml' => passed
+Running tests from 'tests/shadow_include' ...
+ ... testing 'artificial.ml' => passed
+ ... testing 'cannot_shadow_error.ml' => passed
+ ... testing 'ghosts.ml' => passed
+ ... testing 'shadow_all.ml' => passed
+Running tests from 'tests/shape-index' ...
+ ... testing 'index.ml' => passed
+ ... testing 'index_aliases.ml' => passed
+ ... testing 'index_bindingops.ml' => passed
+ ... testing 'index_constrs.ml' => passed
+ ... testing 'index_constrs_records.ml' => passed
+ ... testing 'index_functor.ml' => passed
+ ... testing 'index_labels.ml' => passed
+ ... testing 'index_modules.ml' => passed
+ ... testing 'index_objects.ml' => passed
+ ... testing 'index_types.ml' => passed
+ ... testing 'index_vb.ml' => passed
+Running tests from 'tests/shapes' ...
+ ... testing 'aliases.ml' => passed
+ ... testing 'comp_units.ml' => passed
+ ... testing 'functors.ml' => passed
+ ... testing 'incl_md_typeof.ml' => passed
+ ... testing 'more_func.ml' => passed
+ ... testing 'nested_types.ml' => passed
+ ... testing 'open_arg.ml' => passed
+ ... testing 'open_struct.ml' => passed
+ ... testing 'recmodules.ml' => passed
+ ... testing 'rotor_example.ml' => passed
+ ... testing 'shape_size_blowup.ml' => passed
+ ... testing 'simple.ml' => passed
+ ... testing 'typeof_include.ml' => passed
+Running tests from 'tests/statmemprof' ...
+ ... testing 'alloc_counts.ml' => passed
+ ... testing 'arrays_in_major.ml' => passed
+ ... testing 'arrays_in_minor.ml' => passed
+ ... testing 'bigarray.ml' => passed
+ ... testing 'blocking_in_callback.ml' => passed
+ ... testing 'callstacks.ml' => passed
+ ... testing 'comballoc.ml' => passed
+ ... testing 'custom.ml' => passed
+ ... testing 'discard_in_callback.ml' => passed
+ ... testing 'exception_callback.ml' => passed
+ ... testing 'exception_callback_minor.ml' => passed
+ ... testing 'exception_comballoc.ml' => passed
+ ... testing 'intern.ml' => passed
+ ... testing 'lists_in_minor.ml' => passed
+ ... testing 'minor_heap_edge.ml' => passed
+ ... testing 'minor_no_postpone.ml' => passed
+ ... testing 'moved_while_blocking.ml' => passed
+ ... testing 'restart.ml' => passed
+ ... testing 'start_stop.ml' => passed
+ ... testing 'stop_start_in_callback.ml' => passed
+ ... testing 'thread_exit_in_callback.ml' => passed
+ ... testing 'user_data_regression.ml' => passed
+Running tests from 'tests/syntactic-arity' ...
+ ... testing 'alloc.ml' => passed
+ ... testing 'max_arity.ml' => passed
+ ... testing 'measure_arity.ml' => passed
+ ... testing 'measure_runtime_arity.ml' => passed
+ ... testing 'syntactic_arity.ml' => passed
+ ... testing 'warnings.ml' => passed
+Running tests from 'tests/tmc' ...
+ ... testing 'ambiguities.ml' => passed
+ ... testing 'other_features.ml' => passed
+ ... testing 'partial_application.ml' => passed
+ ... testing 'readable_output.ml' => passed
+ ... testing 'semantic.ml' => passed
+ ... testing 'shortcut.ml' => passed
+ ... testing 'stack_space.ml' => passed
+ ... testing 'try_with.ml' => passed
+ ... testing 'tupled_function.ml' => passed
+ ... testing 'tupled_function_calls.ml' => passed
+ ... testing 'usage_warnings.ml' => passed
+Running tests from 'tests/tool-caml-tex' ...
+ ... testing 'ellipses.ml' => passed
+ ... testing 'redirections.ml' => passed
+Running tests from 'tests/tool-command-line' ...
+ ... testing 'test-no-input-file.ml' => passed
+ ... testing 'test-o-one-c-file.ml' => passed
+ ... testing 'test-o-several-files.ml' => passed
+ ... testing 'test-unknown-file.ml' => passed
+Running tests from 'tests/tool-debugger/basic' ...
+ ... testing 'debuggee.ml' => passed
+Running tests from 'tests/tool-debugger/dynlink' ...
+ ... testing 'host.ml' => passed
+Running tests from 'tests/tool-debugger/find-artifacts' ...
+ ... testing 'debuggee.ml' => passed
+Running tests from 'tests/tool-debugger/module_named_main' ...
+ ... testing 'main.ml' => passed
+Running tests from 'tests/tool-debugger/no_debug_event' ...
+ ... testing 'noev.ml' => passed
+Running tests from 'tests/tool-debugger/printer' ...
+ ... testing 'debuggee.ml' => passed
+Running tests from 'tests/tool-dumpobj' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/tool-expect-test' ...
+ ... testing 'clean_typer.ml' => passed
+Running tests from 'tests/tool-lexyacc' ...
+ ... testing 'calc.ml' => passed
+ ... testing 'chars.mll' => passed
+ ... testing 'csets.mll' => passed
+ ... testing 'mpr7760.mll' => passed
+ ... testing 'parsecheck.mly' => passed
+Running tests from 'tests/tool-ocaml' ...
+ ... testing 'directive_failure.ml' => passed
+ ... testing 'gpr12887.ml' => passed
+ ... testing 't000.ml' => passed
+ ... testing 't010-const0.ml' => passed
+ ... testing 't010-const1.ml' => passed
+ ... testing 't010-const2.ml' => passed
+ ... testing 't010-const3.ml' => passed
+ ... testing 't011-constint.ml' => passed
+ ... testing 't020.ml' => passed
+ ... testing 't021-pushconst1.ml' => passed
+ ... testing 't021-pushconst2.ml' => passed
+ ... testing 't021-pushconst3.ml' => passed
+ ... testing 't022-pushconstint.ml' => passed
+ ... testing 't040-makeblock1.ml' => passed
+ ... testing 't040-makeblock2.ml' => passed
+ ... testing 't040-makeblock3.ml' => passed
+ ... testing 't041-makeblock.ml' => passed
+ ... testing 't050-getglobal.ml' => passed
+ ... testing 't050-pushgetglobal.ml' => passed
+ ... testing 't051-getglobalfield.ml' => passed
+ ... testing 't051-pushgetglobalfield.ml' => passed
+ ... testing 't060-raise.ml' => passed
+ ... testing 't070-branch.ml' => passed
+ ... testing 't070-branchif.ml' => passed
+ ... testing 't070-branchifnot.ml' => passed
+ ... testing 't071-boolnot.ml' => passed
+ ... testing 't080-eq.ml' => passed
+ ... testing 't080-geint.ml' => passed
+ ... testing 't080-gtint.ml' => passed
+ ... testing 't080-leint.ml' => passed
+ ... testing 't080-ltint.ml' => passed
+ ... testing 't080-neq.ml' => passed
+ ... testing 't090-acc0.ml' => passed
+ ... testing 't090-acc1.ml' => passed
+ ... testing 't090-acc2.ml' => passed
+ ... testing 't090-acc3.ml' => passed
+ ... testing 't090-acc4.ml' => passed
+ ... testing 't090-acc5.ml' => passed
+ ... testing 't090-acc6.ml' => passed
+ ... testing 't090-acc7.ml' => passed
+ ... testing 't091-acc.ml' => passed
+ ... testing 't092-pushacc.ml' => passed
+ ... testing 't092-pushacc0.ml' => passed
+ ... testing 't092-pushacc1.ml' => passed
+ ... testing 't092-pushacc2.ml' => passed
+ ... testing 't092-pushacc3.ml' => passed
+ ... testing 't092-pushacc4.ml' => passed
+ ... testing 't092-pushacc5.ml' => passed
+ ... testing 't092-pushacc6.ml' => passed
+ ... testing 't092-pushacc7.ml' => passed
+ ... testing 't093-pushacc.ml' => passed
+ ... testing 't100-pushtrap.ml' => passed
+ ... testing 't101-poptrap.ml' => passed
+ ... testing 't110-addint.ml' => passed
+ ... testing 't110-andint.ml' => passed
+ ... testing 't110-asrint-1.ml' => passed
+ ... testing 't110-asrint-2.ml' => passed
+ ... testing 't110-divint-1.ml' => passed
+ ... testing 't110-divint-2.ml' => passed
+ ... testing 't110-divint-3.ml' => passed
+ ... testing 't110-lslint.ml' => passed
+ ... testing 't110-lsrint.ml' => passed
+ ... testing 't110-modint-1.ml' => passed
+ ... testing 't110-modint-2.ml' => passed
+ ... testing 't110-mulint.ml' => passed
+ ... testing 't110-negint.ml' => passed
+ ... testing 't110-offsetint.ml' => passed
+ ... testing 't110-orint.ml' => passed
+ ... testing 't110-subint.ml' => passed
+ ... testing 't110-xorint.ml' => passed
+ ... testing 't120-getstringchar.ml' => passed
+ ... testing 't121-setstringchar.ml' => passed
+ ... testing 't130-getvectitem.ml' => passed
+ ... testing 't130-vectlength.ml' => passed
+ ... testing 't131-setvectitem.ml' => passed
+ ... testing 't140-switch-1.ml' => passed
+ ... testing 't140-switch-2.ml' => passed
+ ... testing 't140-switch-3.ml' => passed
+ ... testing 't140-switch-4.ml' => passed
+ ... testing 't141-switch-5.ml' => passed
+ ... testing 't141-switch-6.ml' => passed
+ ... testing 't141-switch-7.ml' => passed
+ ... testing 't142-switch-8.ml' => passed
+ ... testing 't142-switch-9.ml' => passed
+ ... testing 't142-switch-A.ml' => passed
+ ... testing 't150-push-1.ml' => passed
+ ... testing 't150-push-2.ml' => passed
+ ... testing 't160-closure.ml' => passed
+ ... testing 't161-apply1.ml' => passed
+ ... testing 't162-return.ml' => passed
+ ... testing 't163.ml' => passed
+ ... testing 't164-apply2.ml' => passed
+ ... testing 't164-apply3.ml' => passed
+ ... testing 't165-apply.ml' => passed
+ ... testing 't170-envacc2.ml' => passed
+ ... testing 't170-envacc3.ml' => passed
+ ... testing 't170-envacc4.ml' => passed
+ ... testing 't171-envacc.ml' => passed
+ ... testing 't172-pushenvacc1.ml' => passed
+ ... testing 't172-pushenvacc2.ml' => passed
+ ... testing 't172-pushenvacc3.ml' => passed
+ ... testing 't172-pushenvacc4.ml' => passed
+ ... testing 't173-pushenvacc.ml' => passed
+ ... testing 't180-appterm1.ml' => passed
+ ... testing 't180-appterm2.ml' => passed
+ ... testing 't180-appterm3.ml' => passed
+ ... testing 't181-appterm.ml' => passed
+ ... testing 't190-makefloatblock-1.ml' => passed
+ ... testing 't190-makefloatblock-2.ml' => passed
+ ... testing 't190-makefloatblock-3.ml' => passed
+ ... testing 't191-vectlength.ml' => passed
+ ... testing 't192-getfloatfield-1.ml' => passed
+ ... testing 't192-getfloatfield-2.ml' => passed
+ ... testing 't193-setfloatfield-1.ml' => passed
+ ... testing 't193-setfloatfield-2.ml' => passed
+ ... testing 't200-getfield0.ml' => passed
+ ... testing 't200-getfield1.ml' => passed
+ ... testing 't200-getfield2.ml' => passed
+ ... testing 't200-getfield3.ml' => passed
+ ... testing 't201-getfield.ml' => passed
+ ... testing 't210-setfield0.ml' => passed
+ ... testing 't210-setfield1.ml' => passed
+ ... testing 't210-setfield2.ml' => passed
+ ... testing 't210-setfield3.ml' => passed
+ ... testing 't211-setfield.ml' => passed
+ ... testing 't220-assign.ml' => passed
+ ... testing 't230-check_signals.ml' => passed
+ ... testing 't240-c_call1.ml' => passed
+ ... testing 't240-c_call2.ml' => passed
+ ... testing 't240-c_call3.ml' => passed
+ ... testing 't240-c_call4.ml' => passed
+ ... testing 't240-c_call5.ml' => passed
+ ... testing 't250-closurerec-1.ml' => passed
+ ... testing 't250-closurerec-2.ml' => passed
+ ... testing 't251-pushoffsetclosure0.ml' => passed
+ ... testing 't251-pushoffsetclosure2.ml' => passed
+ ... testing 't251-pushoffsetclosurem2.ml' => passed
+ ... testing 't252-pushoffsetclosure.ml' => passed
+ ... testing 't253-offsetclosure0.ml' => passed
+ ... testing 't253-offsetclosure2.ml' => passed
+ ... testing 't253-offsetclosurem2.ml' => passed
+ ... testing 't254-offsetclosure.ml' => passed
+ ... testing 't260-offsetref.ml' => passed
+ ... testing 't270-push_retaddr.ml' => passed
+ ... testing 't300-getmethod.ml' => passed
+ ... testing 't301-object.ml' => passed
+ ... testing 't310-alloc-1.ml' => passed
+ ... testing 't310-alloc-2.ml' => passed
+ ... testing 't320-gc-1.ml' => passed
+ ... testing 't320-gc-2.ml' => passed
+ ... testing 't320-gc-3.ml' => passed
+ ... testing 't330-compact-1.ml' => passed
+ ... testing 't330-compact-2.ml' => passed
+ ... testing 't330-compact-3.ml' => passed
+ ... testing 't330-compact-4.ml' => passed
+ ... testing 't340-weak.ml' => passed
+ ... testing 't350-heapcheck.ml' => passed
+ ... testing 't360-stacks-1.ml' => passed
+ ... testing 't360-stacks-2.ml' => passed
+Running tests from 'tests/tool-ocaml-annot' ...
+ ... testing 'failure.ml' => passed
+ ... testing 'success.ml' => passed
+ ... testing 'typeonly.ml' => passed
+Running tests from 'tests/tool-ocamlc-compat32' ...
+ ... testing 'compat32.ml' => passed
+Running tests from 'tests/tool-ocamlc-error-cleanup' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/tool-ocamlc-locations' ...
+ ... testing 'marshalled.ml' => passed
+ ... testing 'test.ml' => passed
+Running tests from 'tests/tool-ocamlc-open' ...
+ ... testing 'tool-ocamlc-open-error.ml' => passed
+ ... testing 'tool-ocamlc-open.ml' => passed
+Running tests from 'tests/tool-ocamlc-stop-after' ...
+ ... testing 'stop_after_lambda.ml' => passed
+ ... testing 'stop_after_parsing_impl.ml' => passed
+ ... testing 'stop_after_parsing_intf.mli' => passed
+ ... testing 'stop_after_scheduling.ml' => passed
+ ... testing 'stop_after_typing_impl.ml' => passed
+Running tests from 'tests/tool-ocamldep-modalias' ...
+ ... testing 'main.ml' => passed
+Running tests from 'tests/tool-ocamldep-shadowing' ...
+ ... testing 'a.ml' => passed
+Running tests from 'tests/tool-ocamldoc' ...
+ ... testing 'Alert_toplevel.mli' => passed
+ ... testing 'Alert_toplevel2.mli' => passed
+ ... testing 'Alerts.mli' => passed
+ ... testing 'Alerts_impl.ml' => passed
+ ... testing 'Documentation_tags.mli' => passed
+ ... testing 'Entities.ml' => passed
+ ... testing 'Extensible_variant.ml' => passed
+ ... testing 'Functions.ml' => passed
+ ... testing 'Include_module_type_of.mli' => passed
+ ... testing 'Inline_records.mli' => passed
+ ... testing 'Inline_records_bis.ml' => passed
+ ... testing 'Item_ids.mli' => passed
+ ... testing 'Latin9.ml' => passed
+ ... testing 'Level_0.mli' => passed
+ ... testing 'Linebreaks.mli' => passed
+ ... testing 'Loop.ml' => passed
+ ... testing 'Module_whitespace.ml' => passed
+ ... testing 'No_preamble.mli' => passed
+ ... testing 'Paragraph.mli' => passed
+ ... testing 'Short_description.txt' => passed
+ ... testing 'Test.mli' => passed
+ ... testing 'Variants.mli' => passed
+ ... testing 'latex_ref.mli' => passed
+ ... testing 't01.ml' => passed
+ ... testing 't02.ml' => passed
+ ... testing 't03.ml' => passed
+ ... testing 't04.ml' => passed
+ ... testing 't05.ml' => passed
+Running tests from 'tests/tool-ocamldoc-open' ...
+ ... testing 'main.ml' => passed
+Running tests from 'tests/tool-ocamlobjinfo' ...
+ ... testing 'question.ml' => passed
+Running tests from 'tests/tool-ocamlopt-save-ir' ...
+ ... testing 'check_for_pack.ml' => passed
+ ... testing 'save_ir_after_scheduling.ml' => passed
+ ... testing 'save_ir_after_typing.ml' => passed
+ ... testing 'start_from_emit.ml' => passed
+Running tests from 'tests/tool-ocamlopt-stop-after' ...
+ ... testing 'stop_after_lambda.ml' => passed
+ ... testing 'stop_after_scheduling.ml' => passed
+Running tests from 'tests/tool-ocamltest' ...
+ ... testing 'norm1.ml' => passed
+ ... testing 'norm2.ml' => passed
+ ... testing 'norm3.ml' => passed
+ ... testing 'norm4.ml' => passed
+Running tests from 'tests/tool-ocamltest-var-expansion' ...
+ ... testing 'subst1.ml' => passed
+ ... testing 'subst2.ml' => passed
+Running tests from 'tests/tool-toplevel' ...
+ ... testing 'constructor_printing.ml' => passed
+ ... testing 'error_highlighting.ml' => passed
+ ... testing 'exotic_lists.ml' => passed
+ ... testing 'install_printer.ml' => passed
+ ... testing 'mod_use.ml' => passed
+ ... testing 'multi_phrase_line.ml' => passed
+ ... testing 'pr6468.ml' => passed
+ ... testing 'pr7060.ml' => passed
+ ... testing 'pr7751.ml' => passed
+ ... testing 'pr9701.ml' => passed
+ ... testing 'printval.ml' => passed
+ ... testing 'redefinition_hints.ml' => passed
+ ... testing 'show.ml' => passed
+ ... testing 'show_short_paths.ml' => passed
+ ... testing 'strings.ml' => passed
+ ... testing 'topeval.ml' => passed
+ ... testing 'tracing.ml' => passed
+ ... testing 'uncaught_exceptions.ml' => passed
+ ... testing 'use_command.ml' => passed
+Running tests from 'tests/tool-toplevel/known-bugs' ...
+ ... testing 'broken_rec_in_show.ml' => passed
+Running tests from 'tests/tool-toplevel-invocation' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/translprim' ...
+ ... testing 'array_spec.ml' => passed
+ ... testing 'comparison_optim.ml' => passed
+ ... testing 'comparison_table.ml' => passed
+ ... testing 'locs.ml' => passed
+ ... testing 'module_coercion.ml' => passed
+ ... testing 'ref_spec.ml' => passed
+ ... testing 'sendcache.ml' => passed
+Running tests from 'tests/tsan' ...
+ ... testing 'array_elt.ml' => skipped
+ ... testing 'exn_from_c.ml' => skipped
+ ... testing 'exn_from_c_stack_args.ml' => skipped
+ ... testing 'exn_in_callback.ml' => skipped
+ ... testing 'exn_reraise.ml' => skipped
+ ... testing 'handlers_at_tail.ml' => skipped
+ ... testing 'norace_atomics.ml' => skipped
+ ... testing 'perform.ml' => skipped
+ ... testing 'raise_through_handler.ml' => skipped
+ ... testing 'record_field.ml' => skipped
+ ... testing 'reperform.ml' => skipped
+ ... testing 'unhandled.ml' => skipped
+Running tests from 'tests/typedtree' ...
+ ... testing 'module_presence.ml' => passed
+Running tests from 'tests/typeopt' ...
+ ... testing 'nested_unboxed.ml' => passed
+Running tests from 'tests/typing-core-bugs' ...
+ ... testing 'const_int_hint.ml' => passed
+ ... testing 'missing_rec_hint.ml' => passed
+ ... testing 'repeated_did_you_mean.ml' => passed
+ ... testing 'type_expected_explanation.ml' => passed
+ ... testing 'unit_fun_hints.ml' => passed
+Running tests from 'tests/typing-deprecated' ...
+ ... testing 'alerts.ml' => passed
+ ... testing 'deprecated.ml' => passed
+Running tests from 'tests/typing-extension-constructor' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/typing-extensions' ...
+ ... testing 'cast.ml' => passed
+ ... testing 'disambiguation.ml' => passed
+ ... testing 'extensions.ml' => passed
+ ... testing 'floatarray.ml' => passed
+ ... testing 'iarray.ml' => passed
+ ... testing 'msg.ml' => passed
+ ... testing 'open_types.ml' => passed
+Running tests from 'tests/typing-external' ...
+ ... testing 'non_syntactic_arity.ml' => passed
+ ... testing 'pr11392.ml' => passed
+Running tests from 'tests/typing-fstclassmod' ...
+ ... testing 'aliases.ml' => passed
+ ... testing 'fstclassmod.ml' => passed
+ ... testing 'nondep_instance.ml' => passed
+ ... testing 'scope_escape.ml' => passed
+Running tests from 'tests/typing-gadts' ...
+ ... testing 'ambiguity.ml' => passed
+ ... testing 'ambivalent_apply.ml' => passed
+ ... testing 'didier.ml' => passed
+ ... testing 'dynamic_frisch.ml' => passed
+ ... testing 'existential_as_pattern.ml' => passed
+ ... testing 'gadthead.ml' => passed
+ ... testing 'name_existentials.ml' => passed
+ ... testing 'nested_equations.ml' => passed
+ ... testing 'omega07.ml' => passed
+ ... testing 'optional_args.ml' => passed
+ ... testing 'or_patterns.ml' => passed
+ ... testing 'packed-module-recasting.ml' => passed
+ ... testing 'pr10189.ml' => passed
+ ... testing 'pr10271.ml' => passed
+ ... testing 'pr10348.ml' => passed
+ ... testing 'pr10735.ml' => passed
+ ... testing 'pr10907.ml' => passed
+ ... testing 'pr11888.ml' => passed
+ ... testing 'pr13579.ml' => passed
+ ... testing 'pr5332.ml' => passed
+ ... testing 'pr5689.ml' => passed
+ ... testing 'pr5785.ml' => passed
+ ... testing 'pr5848.ml' => passed
+ ... testing 'pr5906.ml' => passed
+ ... testing 'pr5948.ml' => passed
+ ... testing 'pr5981.ml' => passed
+ ... testing 'pr5985.ml' => passed
+ ... testing 'pr5989.ml' => passed
+ ... testing 'pr5997.ml' => passed
+ ... testing 'pr6158.ml' => passed
+ ... testing 'pr6163.ml' => passed
+ ... testing 'pr6174.ml' => passed
+ ... testing 'pr6241.ml' => passed
+ ... testing 'pr6690.ml' => passed
+ ... testing 'pr6817.ml' => passed
+ ... testing 'pr6934.ml' => passed
+ ... testing 'pr6980.ml' => passed
+ ... testing 'pr6993_bad.ml' => passed
+ ... testing 'pr7016.ml' => passed
+ ... testing 'pr7160.ml' => passed
+ ... testing 'pr7214.ml' => passed
+ ... testing 'pr7222.ml' => passed
+ ... testing 'pr7230.ml' => passed
+ ... testing 'pr7234.ml' => passed
+ ... testing 'pr7260.ml' => passed
+ ... testing 'pr7269.ml' => passed
+ ... testing 'pr7298.ml' => passed
+ ... testing 'pr7374.ml' => passed
+ ... testing 'pr7378.ml' => passed
+ ... testing 'pr7381.ml' => passed
+ ... testing 'pr7390.ml' => passed
+ ... testing 'pr7391.ml' => passed
+ ... testing 'pr7397.ml' => passed
+ ... testing 'pr7421.ml' => passed
+ ... testing 'pr7432.ml' => passed
+ ... testing 'pr7520.ml' => passed
+ ... testing 'pr7618.ml' => passed
+ ... testing 'pr7747.ml' => passed
+ ... testing 'pr7902.ml' => passed
+ ... testing 'pr9019.ml' => passed
+ ... testing 'pr9759.ml' => passed
+ ... testing 'pr9799.ml' => passed
+ ... testing 'principality-and-gadts.ml' => passed
+ ... testing 'return_type.ml' => passed
+ ... testing 'syntactic-arity.ml' => passed
+ ... testing 'term-conv.ml' => passed
+ ... testing 'test.ml' => passed
+ ... testing 'unexpected_existentials.ml' => passed
+ ... testing 'unify_mb.ml' => passed
+ ... testing 'variables_in_mcomp.ml' => passed
+ ... testing 'yallop_bugs.ml' => passed
+Running tests from 'tests/typing-immediate' ...
+ ... testing 'immediate.ml' => passed
+Running tests from 'tests/typing-implicit_unpack' ...
+ ... testing 'implicit_unpack.ml' => passed
+Running tests from 'tests/typing-kind' ...
+ ... testing 'kind_mismatch.ml' => passed
+Running tests from 'tests/typing-labeled-tuples' ...
+ ... testing 'labeled_tuple_patterns.ml' => passed
+ ... testing 'labeled_tuples.ml' => passed
+ ... testing 'labeled_tuples_and_constructors.ml' => passed
+ ... testing 'labeled_tuples_dsource.ml' => passed
+Running tests from 'tests/typing-labels' ...
+ ... testing 'mixin.ml' => passed
+ ... testing 'mixin2.ml' => passed
+ ... testing 'mixin3.ml' => passed
+ ... testing 'pr13658.ml' => passed
+Running tests from 'tests/typing-misc' ...
+ ... testing 'apply_non_function.ml' => passed
+ ... testing 'automatic_generalize.ml' => passed
+ ... testing 'build_as_type.ml' => passed
+ ... testing 'coerce_principal.ml' => passed
+ ... testing 'constraints.ml' => passed
+ ... testing 'deep.ml' => passed
+ ... testing 'disambiguate_principality.ml' => passed
+ ... testing 'distant_errors.ml' => passed
+ ... testing 'empty_variant.ml' => passed
+ ... testing 'enrich_typedecl.ml' => passed
+ ... testing 'exotic_unifications.ml' => passed
+ ... testing 'exp_denom.ml' => passed
+ ... testing 'external_arity.ml' => passed
+ ... testing 'filter_params.ml' => passed
+ ... testing 'gpr2277.ml' => passed
+ ... testing 'includeclass_errors.ml' => passed
+ ... testing 'injectivity.ml' => passed
+ ... testing 'inside_out.ml' => passed
+ ... testing 'is_expansive.ml' => passed
+ ... testing 'labels.ml' => passed
+ ... testing 'let_rec_approx.ml' => passed
+ ... testing 'magic_is_a_value.ml' => passed
+ ... testing 'normalize_type.ml' => passed
+ ... testing 'occur_check.ml' => passed
+ ... testing 'open.ml' => passed
+ ... testing 'optbinders.ml' => passed
+ ... testing 'pat_type_sharing.ml' => passed
+ ... testing 'pattern_open.ml' => passed
+ ... testing 'polyvars.ml' => passed
+ ... testing 'pr6416.ml' => passed
+ ... testing 'pr6634.ml' => passed
+ ... testing 'pr6939-flat-float-array.ml' => passed
+ ... testing 'pr6939-no-flat-float-array.ml' => skipped
+ ... testing 'pr7103.ml' => passed
+ ... testing 'pr7228.ml' => passed
+ ... testing 'pr7668_bad.ml' => passed
+ ... testing 'pr7712.ml' => passed
+ ... testing 'pr7937.ml' => passed
+ ... testing 'pr8548.ml' => passed
+ ... testing 'pr8548_split.ml' => passed
+ ... testing 'printing.ml' => passed
+ ... testing 'records.ml' => passed
+ ... testing 'scope_escape.ml' => passed
+ ... testing 'type_external.ml' => passed
+ ... testing 'typecore_empty_polyvariant_error.ml' => passed
+ ... testing 'typecore_errors.ml' => passed
+ ... testing 'typecore_nolabel_errors.ml' => passed
+ ... testing 'typetexp_errors.ml' => passed
+ ... testing 'unbound_type_variables.ml' => passed
+ ... testing 'unique_names_in_unification.ml' => passed
+ ... testing 'variance.ml' => passed
+ ... testing 'variant.ml' => passed
+ ... testing 'wellfounded.ml' => passed
+ ... testing 'wellfounded11150.ml' => passed
+ ... testing 'wrong_kind.ml' => passed
+Running tests from 'tests/typing-misc-bugs' ...
+ ... testing 'core_array_reduced_ok.ml' => passed
+ ... testing 'gadt_declaration_check.ml' => passed
+ ... testing 'pr6303_bad.ml' => passed
+ ... testing 'pr6946_bad.ml' => passed
+Running tests from 'tests/typing-missing-cmi' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/typing-missing-cmi-2' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/typing-missing-cmi-3' ...
+ ... testing 'user.ml' => passed
+Running tests from 'tests/typing-modules' ...
+ ... testing 'Test.ml' => passed
+ ... testing 'aliases.ml' => passed
+ ... testing 'anonymous.ml' => passed
+ ... testing 'applicative_functor_type.ml' => passed
+ ... testing 'extension_constructors_errors_test.ml' => passed
+ ... testing 'firstclass.ml' => passed
+ ... testing 'functors.ml' => passed
+ ... testing 'generative.ml' => passed
+ ... testing 'illegal_permutation.ml' => passed
+ ... testing 'inclusion_errors.ml' => passed
+ ... testing 'inclusion_errors_elision.ml' => passed
+ ... testing 'merge_constraint.ml' => passed
+ ... testing 'mixmod5.ml' => passed
+ ... testing 'module_type_substitution.ml' => passed
+ ... testing 'nondep.ml' => passed
+ ... testing 'nondep_private_abbrev.ml' => passed
+ ... testing 'nongen.ml' => passed
+ ... testing 'normalize_path.ml' => passed
+ ... testing 'package_constraint.ml' => passed
+ ... testing 'packed_module_levels.ml' => passed
+ ... testing 'pr10298.ml' => passed
+ ... testing 'pr10399.ml' => passed
+ ... testing 'pr13185.ml' => passed
+ ... testing 'pr5911.ml' => passed
+ ... testing 'pr6394.ml' => passed
+ ... testing 'pr6633.ml' => passed
+ ... testing 'pr7207.ml' => passed
+ ... testing 'pr7348.ml' => passed
+ ... testing 'pr7726.ml' => passed
+ ... testing 'pr7787.ml' => passed
+ ... testing 'pr7818.ml' => passed
+ ... testing 'pr7851.ml' => passed
+ ... testing 'pr8810.ml' => passed
+ ... testing 'pr9384.ml' => passed
+ ... testing 'pr9695.ml' => passed
+ ... testing 'printing.ml' => passed
+ ... testing 'private.ml' => passed
+ ... testing 'records_errors_test.ml' => passed
+ ... testing 'recursive.ml' => passed
+ ... testing 'struct_include_optimisation.ml' => passed
+ ... testing 'unroll_private_abbrev.ml' => passed
+ ... testing 'variants_errors_test.ml' => passed
+ ... testing 'with_ghosts.ml' => passed
+Running tests from 'tests/typing-modules/pr13099' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/typing-modules-bugs' ...
+ ... testing 'gatien_baron_20131019_ok.ml' => passed
+ ... testing 'pr10661_ok.ml' => passed
+ ... testing 'pr10693_bad.ml' => passed
+ ... testing 'pr5164_ok.ml' => passed
+ ... testing 'pr51_ok.ml' => passed
+ ... testing 'pr5663_ok.ml' => passed
+ ... testing 'pr5914_ok.ml' => passed
+ ... testing 'pr6240_ok.ml' => passed
+ ... testing 'pr6293_bad.ml' => passed
+ ... testing 'pr6427_bad.ml' => passed
+ ... testing 'pr6485_ok.ml' => passed
+ ... testing 'pr6513_ok.ml' => passed
+ ... testing 'pr6572_ok.ml' => passed
+ ... testing 'pr6651_ok.ml' => passed
+ ... testing 'pr6752_bad.ml' => passed
+ ... testing 'pr6752_ok.ml' => passed
+ ... testing 'pr6899_first_bad.ml' => passed
+ ... testing 'pr6899_ok.ml' => passed
+ ... testing 'pr6899_second_bad.ml' => passed
+ ... testing 'pr6944_ok.ml' => passed
+ ... testing 'pr6954_ok.ml' => passed
+ ... testing 'pr6981_ok.ml' => passed
+ ... testing 'pr6982_ok.ml' => passed
+ ... testing 'pr6985_extended.ml' => passed
+ ... testing 'pr6985_ok.ml' => passed
+ ... testing 'pr6992_bad.ml' => passed
+ ... testing 'pr7036_ok.ml' => passed
+ ... testing 'pr7082_ok.ml' => passed
+ ... testing 'pr7112_bad.ml' => passed
+ ... testing 'pr7112_ok.ml' => passed
+ ... testing 'pr7152_ok.ml' => passed
+ ... testing 'pr7182_ok.ml' => passed
+ ... testing 'pr7305_principal.ml' => passed
+ ... testing 'pr7321_ok.ml' => passed
+ ... testing 'pr7414_2_bad.ml' => passed
+ ... testing 'pr7414_bad.ml' => passed
+ ... testing 'pr7519_ok.ml' => passed
+ ... testing 'pr7601_ok.ml' => passed
+ ... testing 'pr7601a_ok.ml' => passed
+ ... testing 'pr9695_bad.ml' => passed
+Running tests from 'tests/typing-multifile' ...
+ ... testing 'pr6372.ml' => passed
+ ... testing 'pr7325.ml' => passed
+ ... testing 'pr7563.ml' => passed
+ ... testing 'pr9218.ml' => passed
+Running tests from 'tests/typing-objects' ...
+ ... testing 'Exemples.ml' => passed
+ ... testing 'Tests.ml' => passed
+ ... testing 'abstract_rows.ml' => passed
+ ... testing 'class_2.ml' => passed
+ ... testing 'dummy.ml' => passed
+ ... testing 'errors.ml' => passed
+ ... testing 'field_kind.ml' => passed
+ ... testing 'nongen.ml' => passed
+ ... testing 'open_in_classes.ml' => passed
+ ... testing 'pr11569.ml' => passed
+ ... testing 'pr13495.ml' => passed
+ ... testing 'pr5545.ml' => passed
+ ... testing 'pr5619_bad.ml' => passed
+ ... testing 'pr5858.ml' => passed
+ ... testing 'pr6123_bad.ml' => passed
+ ... testing 'pr6383.ml' => passed
+ ... testing 'pr6907_bad.ml' => passed
+ ... testing 'pr7711_ok.ml' => passed
+ ... testing 'self_cannot_be_closed.ml' => passed
+ ... testing 'self_cannot_escape_pr7865.ml' => passed
+ ... testing 'unbound-type-var.ml' => passed
+Running tests from 'tests/typing-objects-bugs' ...
+ ... testing 'pr3968_bad.ml' => passed
+ ... testing 'pr4018_bad.ml' => passed
+ ... testing 'pr4435_bad.ml' => passed
+ ... testing 'pr4766_ok.ml' => passed
+ ... testing 'pr4824_ok.ml' => passed
+ ... testing 'pr4824a_bad.ml' => passed
+ ... testing 'pr5156_ok.ml' => passed
+ ... testing 'pr7284_bad.ml' => passed
+ ... testing 'pr7293_ok.ml' => passed
+ ... testing 'woodyatt_ok.ml' => passed
+ ... testing 'yamagata021012_ok.ml' => passed
+Running tests from 'tests/typing-ocamlc-i' ...
+ ... testing 'pervasives_leitmotiv.ml' => passed
+ ... testing 'pr4791.ml' => passed
+ ... testing 'pr6323.ml' => passed
+ ... testing 'pr7402.ml' => passed
+ ... testing 'pr7620_bad.ml' => passed
+Running tests from 'tests/typing-poly' ...
+ ... testing 'error_messages.ml' => passed
+ ... testing 'poly.ml' => passed
+ ... testing 'poly_params.ml' => passed
+ ... testing 'pr11544.ml' => passed
+ ... testing 'pr7636.ml' => passed
+ ... testing 'pr9603.ml' => passed
+Running tests from 'tests/typing-poly-bugs' ...
+ ... testing 'pr5322_ok.ml' => passed
+ ... testing 'pr5673_ok.ml' => passed
+ ... testing 'pr6922_ok.ml' => passed
+Running tests from 'tests/typing-polyvariants-bugs' ...
+ ... testing 'pr10664.ml' => passed
+ ... testing 'pr10664a.ml' => passed
+ ... testing 'pr4775_ok.ml' => passed
+ ... testing 'pr4933_ok.ml' => passed
+ ... testing 'pr5057_ok.ml' => passed
+ ... testing 'pr5057a_bad.ml' => passed
+ ... testing 'pr7199_ok.ml' => passed
+ ... testing 'pr7817_bad.ml' => passed
+ ... testing 'pr7824.ml' => passed
+ ... testing 'pr8575.ml' => passed
+ ... testing 'privrowsabate_ok.ml' => passed
+Running tests from 'tests/typing-polyvariants-bugs-2' ...
+ ... testing 'pr3918c.ml' => passed
+Running tests from 'tests/typing-private' ...
+ ... testing 'invalid_private_row.ml' => passed
+ ... testing 'private.ml' => passed
+Running tests from 'tests/typing-private-bugs' ...
+ ... testing 'pr5026_bad.ml' => passed
+ ... testing 'pr5469_ok.ml' => passed
+Running tests from 'tests/typing-recmod' ...
+ ... testing 'gpr1626.ml' => passed
+ ... testing 'inconsistent_constraints.ml' => passed
+ ... testing 'inconsistent_types.ml' => passed
+ ... testing 'pr13514.ml' => passed
+ ... testing 'pr6491.ml' => passed
+ ... testing 'pr9494.ml' => passed
+ ... testing 'regression_destructive_subst.ml' => passed
+ ... testing 't01bad.ml' => passed
+ ... testing 't02bad.ml' => passed
+ ... testing 't03ok.ml' => passed
+ ... testing 't04bad.ml' => passed
+ ... testing 't05bad.ml' => passed
+ ... testing 't06ok.ml' => passed
+ ... testing 't07bad.ml' => passed
+ ... testing 't08bad.ml' => passed
+ ... testing 't09bad.ml' => passed
+ ... testing 't10ok.ml' => passed
+ ... testing 't11bad.ml' => passed
+ ... testing 't12bad.ml' => passed
+ ... testing 't13ok.ml' => passed
+ ... testing 't14bad.ml' => passed
+ ... testing 't15bad.ml' => passed
+ ... testing 't16ok.ml' => passed
+ ... testing 't17ok.ml' => passed
+ ... testing 't18ok.ml' => passed
+ ... testing 't20ok.ml' => passed
+ ... testing 't21ok.ml' => passed
+ ... testing 't22ok.ml' => passed
+Running tests from 'tests/typing-recordarg' ...
+ ... testing 'recordarg.ml' => passed
+Running tests from 'tests/typing-rectypes-bugs' ...
+ ... testing 'pr5343_bad.ml' => passed
+ ... testing 'pr6174_bad.ml' => passed
+ ... testing 'pr6870_bad.ml' => passed
+Running tests from 'tests/typing-safe-linking' ...
+ ... testing 'b_bad.ml' => passed
+Running tests from 'tests/typing-shadowing-of-pervasives-submodules' ...
+ ... testing 'redefine_largefile.ml' => passed
+ ... testing 'redefine_largefile_top.ml' => passed
+Running tests from 'tests/typing-short-paths' ...
+ ... testing 'cycles.ml' => passed
+ ... testing 'errors.ml' => passed
+ ... testing 'gpr1223.ml' => passed
+ ... testing 'pr5918.ml' => passed
+ ... testing 'pr6836.ml' => passed
+ ... testing 'pr7543.ml' => passed
+ ... testing 'short-paths.ml' => passed
+Running tests from 'tests/typing-signatures' ...
+ ... testing 'els.ml' => passed
+ ... testing 'nondep_regression.ml' => passed
+ ... testing 'pr6371.ml' => passed
+ ... testing 'pr6672.ml' => passed
+ ... testing 'regression_tsubst_error.ml' => passed
+Running tests from 'tests/typing-sigsubst' ...
+ ... testing 'sig_local_aliases.ml' => passed
+ ... testing 'sig_local_aliases_syntax_errors.ml' => passed
+ ... testing 'sigsubst.ml' => passed
+ ... testing 'test_locations.ml' => passed
+Running tests from 'tests/typing-typeparam' ...
+ ... testing 'newtype.ml' => passed
+Running tests from 'tests/typing-unboxed' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/typing-unboxed-types' ...
+ ... testing 'test.ml' => passed
+ ... testing 'test_flat.ml' => passed
+ ... testing 'test_no_flat.ml' => skipped
+Running tests from 'tests/typing-unicode' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/typing-warnings' ...
+ ... testing 'ambiguous_guarded_disjunction.ml' => passed
+ ... testing 'application.ml' => passed
+ ... testing 'coercions.ml' => passed
+ ... testing 'disable_warnings_classes.ml' => passed
+ ... testing 'exhaustiveness.ml' => passed
+ ... testing 'fragile_matching.ml' => passed
+ ... testing 'never_returns.ml' => passed
+ ... testing 'open_warnings.ml' => passed
+ ... testing 'pr5892.ml' => passed
+ ... testing 'pr6587.ml' => passed
+ ... testing 'pr6872.ml' => passed
+ ... testing 'pr7085.ml' => passed
+ ... testing 'pr7115.ml' => passed
+ ... testing 'pr7261.ml' => passed
+ ... testing 'pr7297.ml' => passed
+ ... testing 'pr7553.ml' => passed
+ ... testing 'pr9244.ml' => passed
+ ... testing 'records.ml' => passed
+ ... testing 'unused_functor_parameter.ml' => passed
+ ... testing 'unused_rec.ml' => passed
+ ... testing 'unused_recmodule.ml' => passed
+ ... testing 'unused_types.ml' => passed
+ ... testing 'warning16.ml' => passed
+Running tests from 'tests/uid-deps' ...
+ ... testing 'link_intf_impl.ml' => passed
+Running tests from 'tests/uids' ...
+ ... testing 'intf_uids_test.ml' => passed
+Running tests from 'tests/unboxed-primitive-args' ...
+ ... testing 'test.ml' => passed
+Running tests from 'tests/unicode' ...
+ ... testing '見.ml' => passed
+Running tests from 'tests/unwind' ...
+ ... testing 'driver.ml' => passed
+Running tests from 'tests/utils' ...
+ ... testing 'edit_distance.ml' => passed
+ ... testing 'find_first_mono.ml' => passed
+ ... testing 'magic_number.ml' => passed
+ ... testing 'overflow_detection.ml' => passed
+ ... testing 'test_strongly_connected_components.ml' => passed
+Running tests from 'tests/warnings' ...
+ ... testing 'deprecated_module.ml' => passed
+ ... testing 'deprecated_module_assigment.ml' => passed
+ ... testing 'deprecated_module_use.ml' => passed
+ ... testing 'deprecated_mutable.ml' => passed
+ ... testing 'deprecated_warning_specs.ml' => passed
+ ... testing 'mnemonics.mll' => passed
+ ... testing 'w01.ml' => passed
+ ... testing 'w03.ml' => passed
+ ... testing 'w04.ml' => passed
+ ... testing 'w04_failure.ml' => passed
+ ... testing 'w06.ml' => passed
+ ... testing 'w26_alias.ml' => passed
+ ... testing 'w32.ml' => passed
+ ... testing 'w32b.ml' => passed
+ ... testing 'w33.ml' => passed
+ ... testing 'w44.ml' => passed
+ ... testing 'w45.ml' => passed
+ ... testing 'w47_inline.ml' => passed
+ ... testing 'w47_ppwarning.ml' => passed
+ ... testing 'w50.ml' => passed
+ ... testing 'w51.ml' => passed
+ ... testing 'w51_bis.ml' => passed
+ ... testing 'w52.ml' => passed
+ ... testing 'w53.ml' => passed
+ ... testing 'w53_across_cmi.ml' => passed
+ ... testing 'w53_flags.ml' => passed
+ ... testing 'w53_marshalled.ml' => passed
+ ... testing 'w54.ml' => passed
+ ... testing 'w55.ml' => passed
+ ... testing 'w58.ml' => passed
+ ... testing 'w59.ml' => passed
+ ... testing 'w60.ml' => passed
+ ... testing 'w74.ml' => passed
+Running tests from 'tests/weak-ephe-final' ...
+ ... testing 'ephe_custom.ml' => passed
+ ... testing 'ephe_infix.ml' => passed
+ ... testing 'ephetest.ml' => passed
+ ... testing 'ephetest2.ml' => passed
+ ... testing 'ephetest3.ml' => passed
+ ... testing 'ephetest_par.ml' => passed
+ ... testing 'finaliser.ml' => passed
+ ... testing 'finaliser2.ml' => passed
+ ... testing 'finaliser_handover.ml' => passed
+ ... testing 'pr12001.ml' => passed
+ ... testing 'weak_array_par.ml' => passed
+ ... testing 'weaklifetime.ml' => passed
+ ... testing 'weaklifetime2.ml' => passed
+ ... testing 'weaktest.ml' => passed
+ ... testing 'weaktest_par_load.ml' => passed
+Running tests from 'tests/win-unicode' ...
+ ... testing 'mltest.ml' => skipped
+
+
+List of skipped tests:
+    tests/afl-instrumentation
+    tests/arch-power
+    tests/asmcomp/func_sections.ml
+    tests/asmcomp/lift_mutable_let_flambda.ml
+    tests/asmcomp/unrolling_flambda.ml
+    tests/asmcomp/unrolling_flambda2.ml
+    tests/asmgen/integr.cmm
+    tests/atomic-locs/cmm.ml
+    tests/ephe-c-api
+    tests/flambda/afl_lazy.ml
+    tests/flambda/specialise.ml
+    tests/frame-pointers
+    tests/letrec-check/no_flat_float_array.ml
+    tests/lib-bigarray-2/bigarrfml.ml
+    tests/lib-dynlink-csharp
+    tests/lib-unix/isatty/isatty_tty.ml
+    tests/lib-unix/unix-socket/recvfrom_linux.ml
+    tests/lib-unix/win-channel-of
+    tests/lib-unix/win-createprocess
+    tests/lib-unix/win-env
+    tests/lib-unix/win-socketpair
+    tests/lib-unix/win-stat
+    tests/lib-unix/win-symlink
+    tests/manual-intf-c
+    tests/native-debugger/linux-gdb-amd64.ml
+    tests/native-debugger/linux-gdb-arm64.ml
+    tests/native-debugger/linux-gdb-riscv.ml
+    tests/native-debugger/linux-lldb-amd64.ml
+    tests/native-debugger/linux-lldb-arm64.ml
+    tests/native-debugger/macos-lldb-amd64.ml
+    tests/tsan
+    tests/typing-misc/pr6939-no-flat-float-array.ml
+    tests/typing-unboxed-types/test_no_flat.ml
+    tests/win-unicode
+
+Summary:
+  1492 tests passed
+    54 tests skipped
+     0 tests failed
+     0 tests not started (parent test skipped or failed)
+     0 unexpected errors
+  1546 tests considered

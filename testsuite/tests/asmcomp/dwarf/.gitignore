@@ -1,0 +1,16 @@
+# Compiled test binaries
+test_basic
+test_simple
+test_debug
+test_types
+*.o
+*.cm*
+*.a
+*.so
+
+# Assembly output
+*.s
+
+# Test outputs
+*.dwarf
+*.dSYM/

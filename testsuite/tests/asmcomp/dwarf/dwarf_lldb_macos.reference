@@ -1,0 +1,11 @@
+Breakpoint 1: where = simple`camlSimple__calculate_274, address = 0x00000000000000
+[  1] simple.ml
+1	let calculate x y =
+2	  let sum = x + y in
+3	  let product = x * y in
+4	  Printf.printf "sum=%d product=%d\n" sum product;
+5	  product
+6
+7	let () =
+8	  let result = calculate 10 20 in
+9	  Printf.printf "result=%d\n" result

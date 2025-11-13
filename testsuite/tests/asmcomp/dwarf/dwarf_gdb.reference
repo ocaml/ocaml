@@ -1,0 +1,14 @@
+Breakpoint 1 at 0x00000000000000: file simple.ml, line XXX.
+Current source file is simple.ml
+Compilation directory is
+Contains 9 lines.
+Source language is unknown.
+1	let calculate x y =
+2	  let sum = x + y in
+3	  let product = x * y in
+4	  Printf.printf "sum=%d product=%d\n" sum product;
+5	  product
+6
+7	let () =
+8	  let result = calculate 10 20 in
+9	  Printf.printf "result=%d\n" result
