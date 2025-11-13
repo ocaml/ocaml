@@ -52,8 +52,10 @@ val files : t -> string list
 (** Get the compilation directory *)
 val set_comp_dir : t -> string -> unit
 
-(** Emit the .debug_line section *)
-val emit : t -> bytes
+(** Emit the .debug_line section with address relocations.
+    Returns (bytes, relocations) where relocations point to label addresses
+    that need to be resolved by the assembler/linker. *)
+val emit : t -> bytes * (int * string) list  (* (offset, label) pairs *)
 
 (** Pretty-printer *)
 val print : Format.formatter -> t -> unit

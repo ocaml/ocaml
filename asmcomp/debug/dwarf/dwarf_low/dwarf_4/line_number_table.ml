@@ -97,8 +97,21 @@ let generate_opcodes entries =
         (Line_number_opcode.DW_LNE_set_address first.address))
   end;
 
-  (* Generate opcodes for each entry *)
-  List.iteri (fun i entry ->
+  (* Generate opcodes for each entry.
+     To avoid O(n²) behavior, iterate with explicit tracking of next entry
+     instead of using List.length and List.nth in the loop. *)
+  let rec process_entries entries =
+    match entries with
+    | [] -> ()
+    | [entry] ->
+        (* Last entry *)
+        process_entry entry None
+    | entry :: (next :: _ as rest) ->
+        (* Not last entry - next one is available *)
+        process_entry entry (Some next);
+        process_entries rest
+
+  and process_entry entry next_opt =
     let file_idx = get_file_index entry.position.file in
     let target_line = entry.position.line in
     let target_column = entry.position.column in
@@ -163,13 +176,13 @@ let generate_opcodes entries =
        Since we use symbolic Code_address labels rather than numeric offsets,
        we cannot calculate PC deltas at compile time. Instead, emit
        DW_LNE_set_address for each entry (except the first). *)
-    let is_last = i = List.length sorted_entries - 1 in
-    if not is_last then begin
-      let next_entry = List.nth sorted_entries (i + 1) in
-      emit (Line_number_opcode.Extended
-        (Line_number_opcode.DW_LNE_set_address next_entry.address))
-    end
-  ) sorted_entries;
+    match next_opt with
+    | Some next_entry ->
+        emit (Line_number_opcode.Extended
+          (Line_number_opcode.DW_LNE_set_address next_entry.address))
+    | None -> ()
+  in
+  process_entries sorted_entries;
 
   (* End sequence *)
   emit (Line_number_opcode.Extended Line_number_opcode.DW_LNE_end_sequence);
@@ -220,15 +233,36 @@ let emit_header buf t =
 
 let emit t =
   let buf = Buffer.create 4096 in
+  let relocations = ref [] in
 
   (* Generate opcodes *)
   let opcodes = generate_opcodes t.entries in
 
-  (* Encode all opcodes first to calculate total length *)
+  (* Encode all opcodes, tracking relocations for label-based addresses *)
   let program_buf = Buffer.create 2048 in
   List.iter (fun opcode ->
+    (* Record current offset before encoding *)
+    let base_offset = Buffer.length program_buf in
+
+    (* Encode the opcode *)
     let opcode_bytes = Line_number_opcode.encode opcode in
-    Buffer.add_bytes program_buf opcode_bytes
+    Buffer.add_bytes program_buf opcode_bytes;
+
+    (* Check if this was a DW_LNE_set_address with a label *)
+    match opcode with
+    | Line_number_opcode.Extended (Line_number_opcode.DW_LNE_set_address addr) ->
+        begin match Code_address.absolute addr with
+        | Some _ -> () (* Absolute address, no relocation needed *)
+        | None ->
+            (* Label-based address: record relocation
+               The address bytes start at: base_offset + 1 (extended prefix) +
+               uleb128 length (always 9 for set_address, encoded as 1 byte) +
+               1 (opcode byte) = base_offset + 3 *)
+            let addr_offset = base_offset + 3 in
+            let label = Code_address.to_string addr in
+            relocations := (addr_offset, label) :: !relocations
+        end
+    | _ -> ()
   ) opcodes;
   let program_bytes = Buffer.contents program_buf in
 
@@ -252,7 +286,12 @@ let emit t =
   Buffer.add_string buf header_bytes;
   Buffer.add_string buf program_bytes;
 
-  Bytes.of_string (Buffer.contents buf)
+  (* Adjust relocation offsets to account for unit_length (4 bytes) *)
+  let adjusted_relocs = List.map (fun (off, label) ->
+    (off + 4 + header_size, label)
+  ) (List.rev !relocations) in
+
+  (Bytes.of_string (Buffer.contents buf), adjusted_relocs)
 
 let print ppf t =
   Format.fprintf ppf "Line number table:@\n";

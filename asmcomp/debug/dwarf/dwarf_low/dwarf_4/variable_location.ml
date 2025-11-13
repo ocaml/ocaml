@@ -53,12 +53,14 @@ let add_location var loc =
   { var with locations = loc :: var.locations }
 
 let is_address_in_scope addr scope =
-  (* Simplified: would need proper address comparison *)
+  (* Check if an address falls within a scope's range.
+     For label-based addresses that we can't compare numerically,
+     conservatively assume they're visible (return true). *)
   match Code_address.absolute addr,
         Code_address.absolute scope.start_address,
         Code_address.absolute scope.end_address with
   | Some a, Some s, Some e -> a >= s && a < e
-  | _ -> false  (* Label-based addresses - assume visible *)
+  | _ -> true  (* Label-based addresses - conservatively assume visible *)
 
 let location_at_address var addr =
   let rec find_location = function
@@ -112,13 +114,20 @@ let location_to_expression kind =
       Buffer.add_bytes buf value_bytes
 
   | Expression ops ->
-      (* Encode list of DWARF operators *)
+      (* Encode list of DWARF operators.
+         Only a minimal subset is currently supported. *)
       List.iter (fun op ->
         let op_byte = match op with
           | Dwarf_operator.DW_OP_plus -> '\x22'
           | Dwarf_operator.DW_OP_minus -> '\x1c'
           | Dwarf_operator.DW_OP_deref -> '\x06'
-          | _ -> '\x03' (* DW_OP_addr - placeholder *)
+          | _ ->
+              (* Fail loudly on unsupported operators instead of emitting
+                 a placeholder that would produce nonsense DWARF. *)
+              failwith (Printf.sprintf
+                "Unsupported DWARF operator in location expression: %s. \
+                 Only DW_OP_plus, DW_OP_minus, and DW_OP_deref are currently supported."
+                (Dwarf_operator.to_string op))
         in
         Buffer.add_char buf op_byte
       ) ops

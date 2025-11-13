@@ -31,6 +31,7 @@ let create ~source_file ~compilation_dir ~producer () =
   let world = Dwarf_world.create
     ~producer
     ~comp_dir:compilation_dir
+    ~source_file
     ~language:Dwarf_language.ocaml
     ()
   in
