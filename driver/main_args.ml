@@ -1820,8 +1820,15 @@ module Default = struct
     let _dump_into_file = set dump_into_file
     let _dump_dir s = dump_dir := Some s
     let _for_pack s = for_package := (Some s)
-    let _g = set debug
-    let _no_g = clear debug
+    let _g () =
+      set debug ();
+      (* Enable Basic DWARF debugging by default when -g is used *)
+      if !gdwarf_fidelity = None then
+        gdwarf_fidelity := Some Enhanced
+    let _no_g () =
+      clear debug ();
+      (* Disable DWARF when debugging is disabled *)
+      gdwarf_fidelity := None
     let _i = set print_types
     let _impl = Compenv.impl
     let _intf = Compenv.intf

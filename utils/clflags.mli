@@ -82,6 +82,39 @@ val print_types : bool ref
 val make_archive : bool ref
 val debug : bool ref
 val debug_full : bool ref
+
+(* DWARF types *)
+type dwarf_fidelity =
+  | Upstream_compatible
+  | Enhanced
+
+type dwarf_fission =
+  | Fission_none
+  | Fission_split
+
+(* DWARF control flags *)
+val gdwarf_fidelity : dwarf_fidelity option ref
+val dwarf_inlined_frames : bool ref
+val dwarf_may_alter_codegen : bool ref
+val dwarf_max_function_complexity : int option ref
+val dwarf_compression : string ref
+val dwarf_fission : dwarf_fission ref
+val emit_dwarf_for_startup : bool ref
+
+(* DWARF configuration limits *)
+val gdwarf_config_shape_reduce_depth : int ref
+val gdwarf_config_shape_eval_depth : int ref
+val gdwarf_config_max_cms_files_per_unit : int ref
+val gdwarf_config_max_cms_files_per_variable : int ref
+val gdwarf_config_max_type_to_shape_depth : int ref
+val gdwarf_config_max_shape_reduce_steps_per_variable : int ref
+val gdwarf_config_max_evaluation_steps_per_variable : int ref
+val gdwarf_config_shape_reduce_fuel : int ref
+
+(* DWARF debug output flags *)
+val ddwarf_types : bool ref
+val ddwarf_metrics : bool ref
+
 val unsafe : bool ref
 val use_linscan : bool ref
 val link_everything : bool ref

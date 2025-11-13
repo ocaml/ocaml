@@ -334,3 +334,10 @@ META
 /yacc/ocamlyacc
 /yacc/version.h
 /yacc/.gdb_history
+
+# DWARF implementation documentation (keep on disk, don't commit)
+DWARF_*.md
+SESSION_CONTEXT.md
+PR_DESCRIPTION.md
+OCAML_DWARF_BLOG_POST.md
+docs/dev/dwarf-*.md

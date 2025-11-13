@@ -51,6 +51,77 @@ let register_name r =
   if r < 100 then Reg64 (int_reg_name.(r))
   else Regf (float_reg_name.(r - 100))
 
+(* DWARF line number tracking *)
+let _last_dwarf_line = ref (-1)
+let _last_dwarf_file = ref ""
+let _dwarf_instr_count = ref 0
+
+let emit_dwarf_line_number _dbg =
+  (* DWARF line number emission will be integrated in future phases *)
+  (* For now, this is a placeholder *)
+  ()
+  (*
+  if Dwarf_flags.is_dwarf_enabled () then
+    match List.rev dbg with
+    | [] -> ()
+    | { Debuginfo.dinfo_line = line;
+        dinfo_char_start = col;
+        dinfo_file = file_name; } :: _ ->
+      if line > 0 && (line <> !last_dwarf_line || file_name <> !last_dwarf_file) then begin
+        let lbl = new_label () in
+        let lbl_str = match system with
+          | S_macosx | S_win64 -> "L" ^ Int.to_string lbl
+          | _ -> ".L" ^ Int.to_string lbl
+        in
+        D.label lbl_str;
+        let address = Code_address.from_label lbl_str in
+        (* Emitaux.Dwarf_helpers *).add_line_number
+          ~address
+          ~file:file_name
+          ~line
+          ~column:col;
+        last_dwarf_line := line;
+        last_dwarf_file := file_name;
+        incr dwarf_instr_count
+      end
+  *)
+
+(* DWARF variable location tracking helpers *)
+
+(* Convert a Reg.location to a Variable_location.location_kind *)
+let reg_location_to_dwarf_kind reg_loc =
+  match reg_loc with
+  | Reg r ->
+      (* Physical register *)
+      Variable_location.Register r
+  | Stack (Local ofs) ->
+      (* Local stack slot - relative to frame pointer *)
+      Variable_location.Frame_offset (ofs * 8)
+  | Stack (Incoming ofs) ->
+      (* Incoming parameter on stack *)
+      Variable_location.Stack_offset (ofs * 8)
+  | Stack (Outgoing ofs) ->
+      (* Outgoing call argument *)
+      Variable_location.Stack_offset (ofs * 8)
+  | Stack (Domainstate _ofs) ->
+      (* Domain state location - treat as optimized away for now *)
+      Variable_location.Optimized_away
+  | Unknown ->
+      (* Not yet allocated or optimized out *)
+      Variable_location.Optimized_away
+
+(* Track a parameter's location in DWARF *)
+let emit_dwarf_parameter ~name ~reg ~start_addr ~end_addr =
+  if Dwarf_flags.is_dwarf_enabled () && name <> "" then
+    let location_kind = reg_location_to_dwarf_kind reg.Reg.loc in
+    let scope = { Variable_location.start_address = start_addr;
+                  end_address = end_addr } in
+    let location = { Variable_location.scope; kind = location_kind } in
+    Emitaux.Dwarf_helpers.add_variable
+      ~name
+      ~location
+      ~is_parameter:true
+
 (* CFI directives *)
 
 let cfi_startproc () =
@@ -458,6 +529,7 @@ let emit_instr env fallthrough i =
   let arg = arg env in
   let res = res env in
   emit_debug_info i.dbg;
+  emit_dwarf_line_number i.dbg;
   match i.desc with
   | Lend -> ()
   | Lprologue ->
@@ -943,6 +1015,37 @@ let fundecl fundecl =
     end;
   end;
   cfi_endproc ();
+  (* Track function for DWARF debugging information *)
+  if Dwarf_flags.is_dwarf_enabled () then begin
+    let start_label = emit_symbol fundecl.fun_name in
+    let start_addr = Code_address.from_label start_label in
+    let end_label = emit_symbol (fundecl.fun_name ^ "_end") in
+    D.label end_label;
+    let end_addr = Code_address.from_label end_label in
+    Emitaux.Dwarf_helpers.add_function
+      ~name:fundecl.fun_name
+      ~start_address:start_addr
+      ~end_address:end_addr;
+    (* Track function parameters *)
+    (* Note: At the Mach level, parameter names from source are not preserved.
+       We track parameter locations using position-based names (param0, param1, etc.)
+       This allows debuggers to inspect parameter values even without source names. *)
+    let idx = ref 0 in
+    Reg.Set.iter (fun param_reg ->
+      let param_name = Reg.name param_reg in
+      let param_name = if param_name = "" then
+        Printf.sprintf "param%d" !idx
+      else
+        param_name
+      in
+      emit_dwarf_parameter
+        ~name:param_name
+        ~reg:param_reg
+        ~start_addr
+        ~end_addr;
+      incr idx
+    ) env.f.fun_args
+  end;
   if Config.asm_size_type_directives then begin
       D.type_ (emit_symbol fundecl.fun_name) "@function";
       D.size (emit_symbol fundecl.fun_name)
@@ -980,6 +1083,14 @@ let begin_assembly() =
   reset_imp_table();
   float_constants := [];
   all_functions := [];
+  (* Initialize DWARF generation if enabled *)
+  if Dwarf_flags.is_dwarf_enabled () then begin
+    let unit_name = Compilenv.current_unit_name () in
+    let source_file = unit_name ^ ".ml" in
+    let compilation_dir = Sys.getcwd () in
+    let producer = "OCaml " ^ Sys.ocaml_version in
+    Emitaux.Dwarf_helpers.init ~source_file ~compilation_dir ~producer
+  end;
   if system = S_win64 then begin
     D.extrn "caml_call_gc" NEAR;
     D.extrn "caml_c_call" NEAR;
@@ -1109,4 +1220,8 @@ let end_assembly() =
     else
       None
   in
-  X86_proc.generate_code asm
+  X86_proc.generate_code asm;
+  (* Emit DWARF debugging sections if enabled *)
+  if Dwarf_flags.is_dwarf_enabled () && !Emitaux.create_asm_file then begin
+    Emitaux.Dwarf_helpers.emit_dwarf !Emitaux.output_channel
+  end

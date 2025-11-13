@@ -1,0 +1,75 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2013--2023 Jane Street Group LLC                           *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
+(** DWARF attribute value forms.
+
+    Forms specify how an attribute value is encoded in the DWARF data.
+    Each form defines the size and representation of the value.
+
+    See DWARF 4 specification section 7.5.4. *)
+
+type t =
+  | DW_FORM_addr           (** Machine address *)
+  | DW_FORM_block2         (** Variable-length block (2-byte length) *)
+  | DW_FORM_block4         (** Variable-length block (4-byte length) *)
+  | DW_FORM_data2          (** 2-byte constant *)
+  | DW_FORM_data4          (** 4-byte constant *)
+  | DW_FORM_data8          (** 8-byte constant *)
+  | DW_FORM_string         (** Null-terminated string *)
+  | DW_FORM_block          (** Variable-length block (ULEB128 length) *)
+  | DW_FORM_block1         (** Variable-length block (1-byte length) *)
+  | DW_FORM_data1          (** 1-byte constant *)
+  | DW_FORM_flag           (** Boolean flag *)
+  | DW_FORM_sdata          (** Signed LEB128 constant *)
+  | DW_FORM_strp           (** String pointer into .debug_str *)
+  | DW_FORM_udata          (** Unsigned LEB128 constant *)
+  | DW_FORM_ref_addr       (** Reference to DIE (absolute offset) *)
+  | DW_FORM_ref1           (** Reference to DIE (1-byte offset) *)
+  | DW_FORM_ref2           (** Reference to DIE (2-byte offset) *)
+  | DW_FORM_ref4           (** Reference to DIE (4-byte offset) *)
+  | DW_FORM_ref8           (** Reference to DIE (8-byte offset) *)
+  | DW_FORM_ref_udata      (** Reference to DIE (ULEB128 offset) *)
+  | DW_FORM_indirect       (** Indirect form (form specified in data) *)
+  | DW_FORM_sec_offset     (** Section offset *)
+  | DW_FORM_exprloc        (** DWARF expression/location (ULEB128 length) *)
+  | DW_FORM_flag_present   (** Boolean flag (presence = true) *)
+  | DW_FORM_ref_sig8       (** Reference by 8-byte signature *)
+  (* DWARF 5 forms *)
+  | DW_FORM_strx           (** String index *)
+  | DW_FORM_addrx          (** Address index *)
+  | DW_FORM_ref_sup4       (** Supplementary reference (4-byte) *)
+  | DW_FORM_strp_sup       (** Supplementary string pointer *)
+  | DW_FORM_data16         (** 16-byte constant *)
+  | DW_FORM_line_strp      (** String pointer into .debug_line_str *)
+  | DW_FORM_implicit_const (** Implicit constant (in abbrev) *)
+  | DW_FORM_loclistx       (** Location list index *)
+  | DW_FORM_rnglistx       (** Range list index *)
+  | DW_FORM_ref_sup8       (** Supplementary reference (8-byte) *)
+  | DW_FORM_strx1          (** String index (1-byte) *)
+  | DW_FORM_strx2          (** String index (2-byte) *)
+  | DW_FORM_strx3          (** String index (3-byte) *)
+  | DW_FORM_strx4          (** String index (4-byte) *)
+  | DW_FORM_addrx1         (** Address index (1-byte) *)
+  | DW_FORM_addrx2         (** Address index (2-byte) *)
+  | DW_FORM_addrx3         (** Address index (3-byte) *)
+  | DW_FORM_addrx4         (** Address index (4-byte) *)
+
+(** Convert a form to its numeric code *)
+val to_code : t -> int
+
+(** Convert a form to a human-readable string *)
+val to_string : t -> string
+
+(** Pretty-printer for forms *)
+val print : Format.formatter -> t -> unit

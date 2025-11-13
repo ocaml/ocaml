@@ -20,6 +20,7 @@ val emit_string: string -> unit
 val emit_int: int -> unit
 val emit_nativeint: nativeint -> unit
 val emit_int32: int32 -> unit
+val string_of_symbol: string -> string
 val emit_symbol: string -> unit
 val emit_printf: ('a, out_channel, unit) format -> 'a
 val emit_char: char -> unit
@@ -107,3 +108,13 @@ val mk_env : Linear.fundecl -> Emitenv.per_function_env
 
 (* Output .text section directive, or named .text.caml.<name> if enabled. *)
 val emit_named_text_section : string -> char -> unit
+
+(* DWARF debugging information helpers *)
+module Dwarf_helpers : sig
+  val init : source_file:string -> compilation_dir:string -> producer:string -> unit
+  val add_function : name:string -> start_address:Code_address.t -> end_address:Code_address.t -> unit
+  val add_line_number : address:Code_address.t -> file:string -> line:int -> column:int -> unit
+  val add_variable : name:string -> location:Variable_location.location -> is_parameter:bool -> unit
+  val emit_dwarf : out_channel -> unit
+  val reset : unit -> unit
+end

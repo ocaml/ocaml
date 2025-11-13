@@ -55,6 +55,39 @@ and print_variance = ref false          (* -i-variance *)
 and make_archive = ref false            (* -a *)
 and debug = ref false                   (* -g *)
 and debug_full = ref false              (* For full DWARF support *)
+
+(* DWARF types *)
+type dwarf_fidelity =
+  | Upstream_compatible  (* -gupstream-dwarf *)
+  | Enhanced             (* -gno-upstream-dwarf, default *)
+
+type dwarf_fission =
+  | Fission_none         (* No fission *)
+  | Fission_split        (* Split debug info into separate file *)
+
+(* DWARF control flags *)
+let gdwarf_fidelity = ref None  (* Set to Some Enhanced when -g is used *)
+and dwarf_inlined_frames = ref true     (* -gdwarf-inlined-frames *)
+and dwarf_may_alter_codegen = ref false (* -gdwarf-may-alter-codegen *)
+and dwarf_max_function_complexity = ref None (* -gdwarf-max-function-complexity *)
+and dwarf_compression = ref "none"      (* -gdwarf-compression *)
+and dwarf_fission = ref Fission_none    (* -gdwarf-fission *)
+and emit_dwarf_for_startup = ref false  (* -gstartup *)
+
+(* DWARF configuration limits *)
+and gdwarf_config_shape_reduce_depth = ref 10
+and gdwarf_config_shape_eval_depth = ref 10
+and gdwarf_config_max_cms_files_per_unit = ref 100
+and gdwarf_config_max_cms_files_per_variable = ref 10
+and gdwarf_config_max_type_to_shape_depth = ref 20
+and gdwarf_config_max_shape_reduce_steps_per_variable = ref 1000
+and gdwarf_config_max_evaluation_steps_per_variable = ref 1000
+and gdwarf_config_shape_reduce_fuel = ref 100000
+
+(* DWARF debug output flags *)
+and ddwarf_types = ref false            (* -ddwarf-types *)
+and ddwarf_metrics = ref false          (* -ddwarf-metrics *)
+
 and unsafe = ref false                  (* -unsafe *)
 and use_linscan = ref false             (* -linscan *)
 and link_everything = ref false         (* -linkall *)

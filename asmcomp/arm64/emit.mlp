@@ -45,6 +45,69 @@ let label_prefix =
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
 
+(* DWARF line number tracking *)
+let last_dwarf_line = ref (-1)
+let last_dwarf_file = ref ""
+let dwarf_instr_count = ref 0
+
+let emit_dwarf_line_number dbg =
+  if Dwarf_flags.is_dwarf_enabled () then
+    match List.rev dbg with
+    | [] -> ()
+    | { Debuginfo.dinfo_line = line;
+        dinfo_char_start = col;
+        dinfo_file = file_name; } :: _ ->
+      if line > 0 && (line <> !last_dwarf_line || file_name <> !last_dwarf_file) then begin
+        let lbl = new_label () in
+        `{emit_label lbl}:\n`;
+        let label_str = label_prefix ^ string_of_int lbl in
+        let address = Code_address.from_label (Emitaux.string_of_symbol label_str) in
+        Emitaux.Dwarf_helpers.add_line_number
+          ~address
+          ~file:file_name
+          ~line
+          ~column:col;
+        last_dwarf_line := line;
+        last_dwarf_file := file_name;
+        incr dwarf_instr_count
+      end
+
+(* DWARF variable location tracking helpers *)
+
+(* Convert a Reg.location to a Variable_location.location_kind *)
+let reg_location_to_dwarf_kind reg_loc =
+  match reg_loc with
+  | Reg r ->
+      (* Physical register *)
+      Variable_location.Register r
+  | Stack (Local ofs) ->
+      (* Local stack slot - relative to frame pointer *)
+      Variable_location.Frame_offset (ofs * 8)
+  | Stack (Incoming ofs) ->
+      (* Incoming parameter on stack *)
+      Variable_location.Stack_offset (ofs * 8)
+  | Stack (Outgoing ofs) ->
+      (* Outgoing call argument *)
+      Variable_location.Stack_offset (ofs * 8)
+  | Stack (Domainstate _ofs) ->
+      (* Domain state location - treat as optimized away for now *)
+      Variable_location.Optimized_away
+  | Unknown ->
+      (* Not yet allocated or optimized out *)
+      Variable_location.Optimized_away
+
+(* Track a parameter's location in DWARF *)
+let emit_dwarf_parameter ~name ~reg ~start_addr ~end_addr =
+  if Dwarf_flags.is_dwarf_enabled () && name <> "" then
+    let location_kind = reg_location_to_dwarf_kind reg.Reg.loc in
+    let scope = { Variable_location.start_address = start_addr;
+                  end_address = end_addr } in
+    let location = { Variable_location.scope; kind = location_kind } in
+    Emitaux.Dwarf_helpers.add_variable
+      ~name
+      ~location
+      ~is_parameter:true
+
 (* Object types *)
 
 let emit_label_type lbl ty =
@@ -704,6 +767,7 @@ let emit_stlr src base addr =
 (* Output the assembly code for an instruction *)
 let emit_instr env i =
     emit_debug_info i.dbg;
+    emit_dwarf_line_number i.dbg;
     match i.desc with
     | Lend -> ()
     | Lprologue ->
@@ -1209,6 +1273,36 @@ let fundecl fundecl =
   assert (List.length env.bound_error_sites = num_check_bound);
 
   cfi_endproc();
+  (* Track function for DWARF debugging information *)
+  if Dwarf_flags.is_dwarf_enabled () then begin
+    let start_addr = Code_address.from_label (Emitaux.string_of_symbol fundecl.fun_name) in
+    let end_label = fundecl.fun_name ^ "_end" in
+    `{emit_symbol end_label}:\n`;
+    let end_addr = Code_address.from_label (Emitaux.string_of_symbol end_label) in
+    Emitaux.Dwarf_helpers.add_function
+      ~name:fundecl.fun_name
+      ~start_address:start_addr
+      ~end_address:end_addr;
+    (* Track function parameters *)
+    (* Note: At the Mach level, parameter names from source are not preserved.
+       We track parameter locations using position-based names (param0, param1, etc.)
+       This allows debuggers to inspect parameter values even without source names. *)
+    let idx = ref 0 in
+    Reg.Set.iter (fun param_reg ->
+      let param_name = Reg.name param_reg in
+      let param_name = if param_name = "" then
+        Printf.sprintf "param%d" !idx
+      else
+        param_name
+      in
+      emit_dwarf_parameter
+        ~name:param_name
+        ~reg:param_reg
+        ~start_addr
+        ~end_addr;
+      incr idx
+    ) env.f.fun_args
+  end;
   emit_type_directive fundecl.fun_name "%function";
   emit_size_directive fundecl.fun_name;
   emit_literals env
@@ -1246,6 +1340,14 @@ let data l =
 
 let begin_assembly() =
   reset_debug_info();
+  (* Initialize DWARF generation if enabled *)
+  if Dwarf_flags.is_dwarf_enabled () then begin
+    let unit_name = Compilenv.current_unit_name () in
+    let source_file = unit_name ^ ".ml" in
+    let compilation_dir = Sys.getcwd () in
+    let producer = "OCaml " ^ Sys.ocaml_version in
+    Emitaux.Dwarf_helpers.init ~source_file ~compilation_dir ~producer
+  end;
   `	.file	\"\"\n`;  (* PR#7037 *)
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
@@ -1299,4 +1401,8 @@ let end_assembly () =
       efa_string = (fun s -> emit_string_directive "	.asciz	" s) };
   emit_type_directive lbl "%object";
   emit_size_directive lbl;
-  emit_nonexecstack_note ()
+  emit_nonexecstack_note ();
+  (* Emit DWARF debugging sections if enabled *)
+  if Dwarf_flags.is_dwarf_enabled () && !Emitaux.create_asm_file then begin
+    Emitaux.Dwarf_helpers.emit_dwarf !Emitaux.output_channel
+  end

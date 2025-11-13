@@ -34,7 +34,11 @@ CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) $(STDLIBFLAGS) -I otherlibs/dynlink
 ARCHES=amd64 arm64 power s390x riscv
 VPATH = utils parsing typing bytecomp file_formats lambda middle_end \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types \
-  asmcomp driver toplevel tools runtime \
+  asmcomp \
+  asmcomp/debug/dwarf/dwarf_low asmcomp/debug/dwarf/dwarf_low/dwarf_4 \
+  asmcomp/debug/dwarf/dwarf_high asmcomp/debug/dwarf/dwarf_flags \
+  asmcomp/debug/dwarf/dwarf_ocaml \
+  driver toplevel tools runtime \
   $(addprefix otherlibs/, $(ALL_OTHERLIBS))
 INCLUDES = $(addprefix -I ,$(VPATH))
 
@@ -267,6 +271,31 @@ asmcomp_SOURCES = \
   asmcomp/schedgen.mli asmcomp/schedgen.ml \
   asmcomp/scheduling.mli asmcomp/scheduling.ml \
   asmcomp/branch_relaxation.mli asmcomp/branch_relaxation.ml \
+  asmcomp/debug/dwarf/dwarf_low/leb128.mli asmcomp/debug/dwarf/dwarf_low/leb128.ml \
+  asmcomp/debug/dwarf/dwarf_low/code_address.mli asmcomp/debug/dwarf/dwarf_low/code_address.ml \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_value.mli asmcomp/debug/dwarf/dwarf_low/dwarf_value.ml \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_form.mli asmcomp/debug/dwarf/dwarf_low/dwarf_form.ml \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_tag.mli asmcomp/debug/dwarf/dwarf_low/dwarf_tag.ml \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_attributes.mli asmcomp/debug/dwarf/dwarf_low/dwarf_attributes.ml \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_language.mli asmcomp/debug/dwarf/dwarf_low/dwarf_language.ml \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_encoding.mli asmcomp/debug/dwarf/dwarf_low/dwarf_encoding.ml \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_operator.mli asmcomp/debug/dwarf/dwarf_low/dwarf_operator.ml \
+  asmcomp/debug/dwarf/dwarf_low/address_class.mli asmcomp/debug/dwarf/dwarf_low/address_class.ml \
+  asmcomp/debug/dwarf/dwarf_low/address_range.mli asmcomp/debug/dwarf/dwarf_low/address_range.ml \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_4/variable_location.mli asmcomp/debug/dwarf/dwarf_low/dwarf_4/variable_location.ml \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_4/location_list_entry.mli asmcomp/debug/dwarf/dwarf_low/dwarf_4/location_list_entry.ml \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_4/location_list_table.mli asmcomp/debug/dwarf/dwarf_low/dwarf_4/location_list_table.ml \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_4/range_list_entry.mli asmcomp/debug/dwarf/dwarf_low/dwarf_4/range_list_entry.ml \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_4/range_list_table.mli asmcomp/debug/dwarf/dwarf_low/dwarf_4/range_list_table.ml \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_4/line_number_opcode.mli asmcomp/debug/dwarf/dwarf_low/dwarf_4/line_number_opcode.ml \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_4/line_number_table.mli asmcomp/debug/dwarf/dwarf_low/dwarf_4/line_number_table.ml \
+  asmcomp/debug/dwarf/dwarf_flags/dwarf_flags.mli asmcomp/debug/dwarf/dwarf_flags/dwarf_flags.ml \
+  asmcomp/debug/dwarf/dwarf_high/proto_die.mli asmcomp/debug/dwarf/dwarf_high/proto_die.ml \
+  asmcomp/debug/dwarf/dwarf_high/operator_builder.mli asmcomp/debug/dwarf/dwarf_high/operator_builder.ml \
+  asmcomp/debug/dwarf/dwarf_high/assign_abbrevs.mli asmcomp/debug/dwarf/dwarf_high/assign_abbrevs.ml \
+  asmcomp/debug/dwarf/dwarf_high/standard_abbrevs.mli asmcomp/debug/dwarf/dwarf_high/standard_abbrevs.ml \
+  asmcomp/debug/dwarf/dwarf_high/dwarf_world.mli asmcomp/debug/dwarf/dwarf_high/dwarf_world.ml \
+  asmcomp/debug/dwarf/dwarf_ocaml/dwarf.mli asmcomp/debug/dwarf/dwarf_ocaml/dwarf.ml \
   asmcomp/emitaux.mli asmcomp/emitaux.ml \
   asmcomp/emit.mli asmcomp/emit.ml \
   asmcomp/asmgen.mli asmcomp/asmgen.ml \

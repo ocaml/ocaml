@@ -26,6 +26,11 @@
 (copy_files# bytecomp/*.ml{,i})
 (copy_files# driver/*.ml{,i})
 (copy_files# asmcomp/*.ml{,i})
+(copy_files# asmcomp/debug/dwarf/dwarf_flags/*.ml{,i})
+(copy_files# asmcomp/debug/dwarf/dwarf_low/*.ml{,i})
+(copy_files# asmcomp/debug/dwarf/dwarf_low/dwarf_4/*.ml{,i})
+(copy_files# asmcomp/debug/dwarf/dwarf_high/*.ml{,i})
+(copy_files# asmcomp/debug/dwarf/dwarf_ocaml/*.ml{,i})
 (copy_files# file_formats/*.ml{,i})
 (copy_files# lambda/*.ml{,i})
 (copy_files# middle_end/*.ml{,i})
@@ -164,6 +169,27 @@
    schedgen scheduling selectgen selection spill split
    strmatch thread_sanitizer x86_ast x86_dsl x86_gas x86_masm x86_proc
    stackframegen stackframe
+
+   ;; asmcomp/debug/dwarf/dwarf_flags/
+   dwarf_flags
+
+   ;; asmcomp/debug/dwarf/dwarf_low/
+   leb128
+   dwarf_tag dwarf_language dwarf_operator
+   dwarf_attributes dwarf_encoding dwarf_form dwarf_value
+   address_class code_address address_range
+
+   ;; asmcomp/debug/dwarf/dwarf_low/dwarf_4/
+   location_list_entry location_list_table
+   range_list_entry range_list_table
+   line_number_opcode line_number_table
+   variable_location
+
+   ;; asmcomp/debug/dwarf/dwarf_high/
+   proto_die operator_builder assign_abbrevs dwarf_world
+
+   ;; asmcomp/debug/dwarf/dwarf_ocaml/
+   dwarf
 
    ;; file_formats/
    linear_format

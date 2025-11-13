@@ -37,20 +37,25 @@ let emit_int32 n = emit_printf "0x%lx" n
 
 let macosx = Config.system = "macosx"
 
-let emit_symbol s =
-  if macosx then output_char !output_channel '_';
+let string_of_symbol s =
+  let buf = Buffer.create (String.length s + 10) in
+  if macosx then Buffer.add_char buf '_';
   for i = 0 to String.length s - 1 do
     let c = s.[i] in
     match c with
       'A'..'Z' | 'a'..'z' | '0'..'9' | '_' ->
-        output_char !output_channel c
+        Buffer.add_char buf c
     | _ ->
       if c = Compilenv.symbol_separator then
-        output_char !output_channel c
+        Buffer.add_char buf c
       else
-        Printf.fprintf !output_channel "%s%02x" Compilenv.escape_prefix
+        Printf.bprintf buf "%s%02x" Compilenv.escape_prefix
           (Char.code c)
-  done
+  done;
+  Buffer.contents buf
+
+let emit_symbol s =
+  output_string !output_channel (string_of_symbol s)
 
 let emit_string_literal s =
   let last_was_escape = ref false in
@@ -523,3 +528,185 @@ let emit_named_text_section func_name prefix_char =
   end
   else
     emit_string "\t.text\n"
+
+(* DWARF debugging information support *)
+
+module Dwarf_helpers = struct
+  let dwarf_state = ref None
+
+  let init ~source_file ~compilation_dir ~producer =
+    if Dwarf_flags.is_dwarf_enabled () then begin
+      let state = Dwarf.create ~source_file ~compilation_dir ~producer () in
+      dwarf_state := Some state
+    end
+
+  let add_function ~name ~start_address ~end_address =
+    match !dwarf_state with
+    | None -> ()
+    | Some state ->
+        Dwarf.add_function state ~name ~start_address ~end_address
+
+  let add_line_number ~address ~file ~line ~column =
+    match !dwarf_state with
+    | None -> ()
+    | Some state ->
+        Dwarf.add_line_number state ~address ~file ~line ~column
+
+  let add_variable ~name ~location ~is_parameter =
+    match !dwarf_state with
+    | None -> ()
+    | Some state ->
+        Dwarf.add_variable state ~name ~location ~is_parameter
+
+  let emit_section_bytes oc bytes =
+    (* Emit bytes as .byte directives, 16 bytes per line *)
+    let len = Bytes.length bytes in
+    let rec emit_chunk offset =
+      if offset < len then begin
+        output_string oc "\t.byte ";
+        let chunk_end = min (offset + 16) len in
+        for i = offset to chunk_end - 1 do
+          if i > offset then output_string oc ",";
+          Printf.fprintf oc "0x%02x" (Char.code (Bytes.get bytes i))
+        done;
+        output_string oc "\n";
+        emit_chunk chunk_end
+      end
+    in
+    emit_chunk 0
+
+  (* Combined relocation type for unified processing *)
+  type combined_relocation =
+    | Addr_reloc of Dwarf_world.relocation
+    | Str_reloc of Dwarf_world.str_relocation
+
+  let emit_section_bytes_with_both_relocs oc bytes addr_relocs str_relocs =
+    (* Combine and sort all relocations by offset *)
+    let combined =
+      List.map (fun (r : Dwarf_world.relocation) -> (r.Dwarf_world.offset, Addr_reloc r)) addr_relocs @
+      List.map (fun (r : Dwarf_world.str_relocation) -> (r.Dwarf_world.offset, Str_reloc r)) str_relocs
+    in
+    let sorted = List.sort (fun (o1, _) (o2, _) -> compare o1 o2) combined in
+
+    let len = Bytes.length bytes in
+    let rec emit_from offset relocs_remaining =
+      match relocs_remaining with
+      | [] ->
+          (* No more relocations - emit remaining bytes *)
+          if offset < len then begin
+            let rec emit_chunk off =
+              if off < len then begin
+                output_string oc "\t.byte ";
+                let chunk_end = min (off + 16) len in
+                for i = off to chunk_end - 1 do
+                  if i > off then output_string oc ",";
+                  Printf.fprintf oc "0x%02x" (Char.code (Bytes.get bytes i))
+                done;
+                output_string oc "\n";
+                emit_chunk chunk_end
+              end
+            in
+            emit_chunk offset
+          end
+      | (reloc_offset, reloc) :: rest ->
+          (* Emit bytes up to relocation *)
+          if offset < reloc_offset then begin
+            let rec emit_chunk off =
+              if off < reloc_offset then begin
+                output_string oc "\t.byte ";
+                let chunk_end = min (off + 16) reloc_offset in
+                for i = off to chunk_end - 1 do
+                  if i > off then output_string oc ",";
+                  Printf.fprintf oc "0x%02x" (Char.code (Bytes.get bytes i))
+                done;
+                output_string oc "\n";
+                emit_chunk chunk_end
+              end
+            in
+            emit_chunk offset
+          end;
+          (* Emit relocation based on type *)
+          (match reloc with
+           | Addr_reloc r ->
+               (* Labels coming from [Code_address] are already escaped (and
+                  prefixed with the Mach-O underscore when appropriate)
+                  because they were created via [string_of_symbol].  Emit them
+                  verbatim so that DWARF relocations reference the exact
+                  symbols defined in the text section.  Re-escaping or
+                  prepending another underscore would produce identifiers that
+                  the assembler/linker cannot resolve. *)
+               let symbol = r.Dwarf_world.label in
+               Printf.fprintf oc "\t.quad %s\n" symbol;
+               emit_from (reloc_offset + 8) rest
+           | Str_reloc r ->
+               (* Emit string table offset as a direct numeric value.
+                  DWARF string table offsets (DW_FORM_strp) are simple
+                  offsets from the start of .debug_str, not addresses. *)
+               let str_offset = r.Dwarf_world.str_offset in
+               Printf.fprintf oc "\t.long %d\n" str_offset;
+               emit_from (reloc_offset + 4) rest)
+    in
+    emit_from 0 sorted
+
+  let emit_dwarf oc =
+    match !dwarf_state with
+    | None -> ()
+    | Some state ->
+        let sections = Dwarf.emit state in
+        (* Emit DWARF sections to assembly output *)
+        output_string oc "\n\t# DWARF debugging information\n";
+        if Config.system = "macosx" then begin
+          (* macOS Mach-O format with __DWARF segment *)
+          output_string oc "\t.section __DWARF,__debug_info,regular,debug\n";
+          emit_section_bytes_with_both_relocs oc sections.debug_info sections.debug_info_relocs sections.debug_str_relocs;
+          output_string oc "\t.section __DWARF,__debug_abbrev,regular,debug\n";
+          emit_section_bytes oc sections.debug_abbrev;
+          output_string oc "\t.section __DWARF,__debug_str,regular,debug\n";
+          output_string oc "Ldebug_str_start:\n";
+          emit_section_bytes oc sections.debug_str;
+          (* Optional sections *)
+          (match sections.debug_line with
+           | Some bytes ->
+               output_string oc "\t.section __DWARF,__debug_line,regular,debug\n";
+               emit_section_bytes oc bytes
+           | None -> ());
+          (match sections.debug_loc with
+           | Some bytes ->
+               output_string oc "\t.section __DWARF,__debug_loc,regular,debug\n";
+               emit_section_bytes oc bytes
+           | None -> ());
+          (match sections.debug_ranges with
+           | Some bytes ->
+               output_string oc "\t.section __DWARF,__debug_ranges,regular,debug\n";
+               emit_section_bytes oc bytes
+           | None -> ())
+        end else begin
+          (* Linux ELF format with .debug_* sections *)
+          output_string oc "\t.section .debug_info,\"\",@progbits\n";
+          emit_section_bytes_with_both_relocs oc sections.debug_info sections.debug_info_relocs sections.debug_str_relocs;
+          output_string oc "\t.section .debug_abbrev,\"\",@progbits\n";
+          emit_section_bytes oc sections.debug_abbrev;
+          output_string oc "\t.section .debug_str,\"MS\",@progbits,1\n";
+          emit_section_bytes oc sections.debug_str;
+          (* Optional sections *)
+          (match sections.debug_line with
+           | Some bytes ->
+               output_string oc "\t.section .debug_line,\"\",@progbits\n";
+               emit_section_bytes oc bytes
+           | None -> ());
+          (match sections.debug_loc with
+           | Some bytes ->
+               output_string oc "\t.section .debug_loc,\"\",@progbits\n";
+               emit_section_bytes oc bytes
+           | None -> ());
+          (match sections.debug_ranges with
+           | Some bytes ->
+               output_string oc "\t.section .debug_ranges,\"\",@progbits\n";
+               emit_section_bytes oc bytes
+           | None -> ())
+        end;
+        output_string oc "\n"
+
+  let reset () =
+    dwarf_state := None
+end

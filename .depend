@@ -3119,6 +3119,9 @@ asmcomp/emitaux.cmo : \
     parsing/location.cmi \
     utils/format_doc.cmi \
     asmcomp/emitenv.cmi \
+    asmcomp/debug/dwarf/dwarf_high/dwarf_world.cmi \
+    asmcomp/debug/dwarf/dwarf_flags/dwarf_flags.cmi \
+    asmcomp/debug/dwarf/dwarf_ocaml/dwarf.cmi \
     lambda/debuginfo.cmi \
     utils/config.cmi \
     middle_end/compilenv.cmi \
@@ -3130,6 +3133,9 @@ asmcomp/emitaux.cmx : \
     parsing/location.cmx \
     utils/format_doc.cmx \
     asmcomp/emitenv.cmi \
+    asmcomp/debug/dwarf/dwarf_high/dwarf_world.cmx \
+    asmcomp/debug/dwarf/dwarf_flags/dwarf_flags.cmx \
+    asmcomp/debug/dwarf/dwarf_ocaml/dwarf.cmx \
     lambda/debuginfo.cmx \
     utils/config.cmx \
     middle_end/compilenv.cmx \
@@ -3138,10 +3144,12 @@ asmcomp/emitaux.cmx : \
     asmcomp/arch.cmx \
     asmcomp/emitaux.cmi
 asmcomp/emitaux.cmi : \
+    asmcomp/debug/dwarf/dwarf_low/dwarf_4/variable_location.cmi \
     asmcomp/linear.cmi \
     utils/format_doc.cmi \
     asmcomp/emitenv.cmi \
-    lambda/debuginfo.cmi
+    lambda/debuginfo.cmi \
+    asmcomp/debug/dwarf/dwarf_low/code_address.cmi
 asmcomp/emitenv.cmi : \
     asmcomp/linear.cmi
 asmcomp/interf.cmo : \
@@ -3610,6 +3618,7 @@ asmcomp/emit.cmo : \
     asmcomp/x86_gas.cmi \
     asmcomp/x86_dsl.cmi \
     asmcomp/x86_ast.cmi \
+    asmcomp/debug/dwarf/dwarf_low/dwarf_4/variable_location.cmi \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
     utils/numbers.cmi \
@@ -3619,9 +3628,11 @@ asmcomp/emit.cmo : \
     lambda/lambda.cmi \
     asmcomp/emitenv.cmi \
     asmcomp/emitaux.cmi \
+    asmcomp/debug/dwarf/dwarf_flags/dwarf_flags.cmi \
     utils/domainstate.cmi \
     utils/config.cmi \
     middle_end/compilenv.cmi \
+    asmcomp/debug/dwarf/dwarf_low/code_address.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     asmcomp/branch_relaxation.cmi \
@@ -3633,6 +3644,7 @@ asmcomp/emit.cmx : \
     asmcomp/x86_gas.cmx \
     asmcomp/x86_dsl.cmx \
     asmcomp/x86_ast.cmi \
+    asmcomp/debug/dwarf/dwarf_low/dwarf_4/variable_location.cmx \
     asmcomp/reg.cmx \
     asmcomp/proc.cmx \
     utils/numbers.cmx \
@@ -3642,9 +3654,11 @@ asmcomp/emit.cmx : \
     lambda/lambda.cmx \
     asmcomp/emitenv.cmi \
     asmcomp/emitaux.cmx \
+    asmcomp/debug/dwarf/dwarf_flags/dwarf_flags.cmx \
     utils/domainstate.cmx \
     utils/config.cmx \
     middle_end/compilenv.cmx \
+    asmcomp/debug/dwarf/dwarf_low/code_address.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     asmcomp/branch_relaxation.cmx \
@@ -3743,6 +3757,7 @@ asmcomp/arch.cmx : \
 asmcomp/arch.cmi : \
     lambda/debuginfo.cmi
 asmcomp/emit.cmo : \
+    asmcomp/debug/dwarf/dwarf_low/dwarf_4/variable_location.cmi \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
     utils/misc.cmi \
@@ -3751,15 +3766,19 @@ asmcomp/emit.cmo : \
     lambda/lambda.cmi \
     asmcomp/emitenv.cmi \
     asmcomp/emitaux.cmi \
+    asmcomp/debug/dwarf/dwarf_flags/dwarf_flags.cmi \
     utils/domainstate.cmi \
+    lambda/debuginfo.cmi \
     utils/config.cmi \
     middle_end/compilenv.cmi \
+    asmcomp/debug/dwarf/dwarf_low/code_address.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     asmcomp/branch_relaxation.cmi \
     asmcomp/arch.cmi \
     asmcomp/emit.cmi
 asmcomp/emit.cmx : \
+    asmcomp/debug/dwarf/dwarf_low/dwarf_4/variable_location.cmx \
     asmcomp/reg.cmx \
     asmcomp/proc.cmx \
     utils/misc.cmx \
@@ -3768,9 +3787,12 @@ asmcomp/emit.cmx : \
     lambda/lambda.cmx \
     asmcomp/emitenv.cmi \
     asmcomp/emitaux.cmx \
+    asmcomp/debug/dwarf/dwarf_flags/dwarf_flags.cmx \
     utils/domainstate.cmx \
+    lambda/debuginfo.cmx \
     utils/config.cmx \
     middle_end/compilenv.cmx \
+    asmcomp/debug/dwarf/dwarf_low/code_address.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     asmcomp/branch_relaxation.cmx \
