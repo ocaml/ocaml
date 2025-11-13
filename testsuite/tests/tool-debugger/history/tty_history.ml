@@ -9,7 +9,7 @@
      flags = " -g ";
      ocamlc.byte;
    }{
-     script = "sh ${test_source_directory}/build_tty_driver.sh";
+     script = "sh ${test_source_directory}/build_tty_driver.sh ${ocamlc}";
    }{
      script = "./tty_driver.exe '${ocaml_srcdir}/runtime/ocamlrun ${ocaml_srcdir}/debugger/ocamldebug' ${test_build_directory}/tty_history.byte > tty_history.output";
    }{
