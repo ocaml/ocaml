@@ -1370,6 +1370,9 @@ It can be either :\n\
            | [ {instr_name = "info"} ] ->
                let ident = List.hd (List.rev rest) in
                List.map (fun i -> i.info_name) (matching_infos ident)
+           | [ {instr_name = "help"} ] ->
+               let ident = List.hd (List.rev rest) in
+               List.map (fun i -> i.instr_name) (matching_instructions ident)
            | _ -> [])
     with _ ->
       []
