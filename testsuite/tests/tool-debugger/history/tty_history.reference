@@ -1,0 +1,4 @@
+history exit_code=0 runs=2 time_lines=2
+sigtstp exit_code=0 prompt_seen=True
+completion exit_code=0 ok=true
+sigquit exit_signal=3 quit_message=True

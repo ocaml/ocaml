@@ -40,6 +40,24 @@ programs: object files and bytecode executable files are bigger and
 take longer to produce, but the executable files run at
 exactly the same speed as if they had been compiled without
 .BR \-g .
+.SH INTERACTIVE LINE EDITING
+When standard input is a terminal and prompts are enabled, \fBocamldebug\fP
+provides shell\-style line editing: cursor movement with the arrow keys,
+\fBCtrl\-A/E\fP for line boundaries, \fBCtrl\-K\fP to erase to the end of the line,
+TAB completion for commands/variables/info topics, and inline hints showing the
+first line of a command's help text.  History navigation is available across
+sessions and honors the runtime \fBhistory\fP parameter.
+.PP
+The editor runs in raw mode and therefore handles terminal signals itself.
+\fBCtrl\-Z\fP still suspends the debugger and \fBCtrl\-\\\fP still triggers SIGQUIT;
+ocamldebug restores the tty before re\-emitting those signals so job control
+behaves as on the classic line reader.  For consistent cursor positioning,
+limit interactive input to ASCII (multi\-byte UTF\-8 is accepted but counted in
+bytes).
+.PP
+Line editing automatically falls back to the legacy single\-line reader in
+machine\-driven configurations such as \fB\-emacs\fP, \fB\-machine\-readable\fP or
+when prompts are disabled (\fB\-no\-prompt\fP).
 
 .SH OPTIONS
 A summary of options are included below.

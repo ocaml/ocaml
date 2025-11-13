@@ -1,0 +1,5 @@
+set history 50
+goto 25
+print n
+run
+quit

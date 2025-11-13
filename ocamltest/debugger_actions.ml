@@ -60,11 +60,17 @@ let debug debugger_type log env =
         "-x " ^ (Environments.safe_lookup
                    Debugger_variables.debugger_script env);
         program ]
-    | Bytecode -> [
-        Ocaml_commands.ocamlrun_ocamldebug;
-        Debugger_flags.ocamldebug_default_flags;
-        program
-      ]
+    | Bytecode ->
+        let extra_flags =
+          match Environments.lookup Debugger_variables.debugger_flags env with
+          | None -> ""
+          | Some flags -> flags ^ " "
+        in
+        [
+          Ocaml_commands.ocamlrun_ocamldebug;
+          Debugger_flags.ocamldebug_default_flags ^ extra_flags;
+          program
+        ]
   in
   let systemenv =
     match debugger_type with

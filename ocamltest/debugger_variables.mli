@@ -16,4 +16,6 @@
 
 (* The variables are listed in alphabetical order *)
 
+val debugger_flags : Variables.t
+
 val debugger_script : Variables.t

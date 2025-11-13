@@ -15,7 +15,11 @@
 let debugger_script = Variables.make ("debugger_script",
   "Where the debugger should read its commands")
 
+let debugger_flags = Variables.make ("debugger_flags",
+  "Additional flags to pass to the debugger")
+
 let _ = List.iter Variables.register_variable
   [
     debugger_script;
+    debugger_flags;
   ]

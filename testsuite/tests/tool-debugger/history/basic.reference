@@ -1,0 +1,5 @@
+Loading program... done.
+17   else n * factorial (n - 1)<|a|>
+n: int = 5
+120
+Program exit.
