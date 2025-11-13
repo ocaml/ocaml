@@ -639,14 +639,32 @@ module Dwarf_helpers = struct
                Printf.fprintf oc "\t.quad %s\n" symbol;
                emit_from (reloc_offset + 8) rest
            | Str_reloc r ->
-               (* Emit string table offset as a direct numeric value.
-                  DWARF string table offsets (DW_FORM_strp) are simple
-                  offsets from the start of .debug_str, not addresses. *)
-               let str_offset = r.Dwarf_world.str_offset in
-               Printf.fprintf oc "\t.long %d\n" str_offset;
+               (* Emit string table reference as label-relative offset.
+                  This allows the linker to properly adjust offsets when
+                  merging .debug_str sections from multiple compilation units.
+                  The expression (label - Ldebug_str_start) gives the offset
+                  of the string within this CU's .debug_str, which the linker
+                  will automatically adjust when merging sections. *)
+               let str_label = r.Dwarf_world.str_label in
+               Printf.fprintf oc "\t.long %s - Ldebug_str_start\n" str_label;
                emit_from (reloc_offset + 4) rest)
     in
     emit_from 0 sorted
+
+  let emit_debug_str_with_labels oc bytes labels =
+    (* Emit the .debug_str section with labels before each string.
+       The bytes contain raw string data (null-terminated strings concatenated).
+       The labels list contains (label, string) pairs in order. *)
+    output_string oc "Ldebug_str_start:\n";
+    let offset = ref 0 in
+    List.iter (fun (label, str) ->
+      Printf.fprintf oc "%s:\n" label;
+      (* Emit the string bytes *)
+      let len = String.length str + 1 in  (* +1 for null terminator *)
+      let str_bytes = Bytes.sub bytes !offset len in
+      emit_section_bytes oc str_bytes;
+      offset := !offset + len
+    ) labels
 
   let emit_dwarf oc =
     match !dwarf_state with
@@ -662,8 +680,7 @@ module Dwarf_helpers = struct
           output_string oc "\t.section __DWARF,__debug_abbrev,regular,debug\n";
           emit_section_bytes oc sections.debug_abbrev;
           output_string oc "\t.section __DWARF,__debug_str,regular,debug\n";
-          output_string oc "Ldebug_str_start:\n";
-          emit_section_bytes oc sections.debug_str;
+          emit_debug_str_with_labels oc sections.debug_str sections.debug_str_labels;
           (* Optional sections *)
           (match sections.debug_line with
            | Some bytes ->
@@ -687,7 +704,7 @@ module Dwarf_helpers = struct
           output_string oc "\t.section .debug_abbrev,\"\",@progbits\n";
           emit_section_bytes oc sections.debug_abbrev;
           output_string oc "\t.section .debug_str,\"MS\",@progbits,1\n";
-          emit_section_bytes oc sections.debug_str;
+          emit_debug_str_with_labels oc sections.debug_str sections.debug_str_labels;
           (* Optional sections *)
           (match sections.debug_line with
            | Some bytes ->

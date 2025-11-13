@@ -86,7 +86,7 @@ type relocation = {
 
 type str_relocation = {
   offset : int;  (* Offset in .debug_info where relocation is needed *)
-  str_offset : int;  (* Offset within .debug_str section *)
+  str_label : string;  (* Label for the string in .debug_str section *)
 }
 
 type section_data = {
@@ -95,6 +95,7 @@ type section_data = {
   debug_str_relocs : str_relocation list;
   debug_abbrev : bytes;
   debug_str : bytes;
+  debug_str_labels : (string * string) list;  (* (label, string) pairs for emission *)
   debug_line : bytes option;
   debug_loc : bytes option;
   debug_ranges : bytes option;

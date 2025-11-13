@@ -182,7 +182,7 @@ type relocation = {
 
 type str_relocation = {
   offset : int;  (* Offset in .debug_info where relocation is needed *)
-  str_offset : int;  (* Offset within .debug_str section *)
+  str_label : string;  (* Label for the string in .debug_str section *)
 }
 
 type section_data = {
@@ -191,6 +191,7 @@ type section_data = {
   debug_str_relocs : str_relocation list;  (* String table relocations *)
   debug_abbrev : bytes;
   debug_str : bytes;
+  debug_str_labels : (string * string) list;  (* (label, string) pairs for emission *)
   debug_line : bytes option;
   debug_loc : bytes option;
   debug_ranges : bytes option;
@@ -209,19 +210,26 @@ let rec collect_strings die acc =
     collect_strings child acc
   ) acc (Proto_die.children die)
 
-(* Build string table and return (bytes, offset_map) *)
+(* Build string table and return (bytes, label_map, label_to_string_map)
+   The bytes contain the raw string data (no labels).
+   The label_map maps strings to label names.
+   The label_to_string_map maps label names to strings for emission. *)
 let build_string_table strings =
   (* Remove duplicates and sort for determinism *)
   let unique_strings = List.sort_uniq String.compare strings in
   let buf = Buffer.create 1024 in
-  let offsets = ref [] in
+  let label_map = ref [] in
+  let label_to_string = ref [] in
+  let label_counter = ref 0 in
   List.iter (fun s ->
-    let offset = Buffer.length buf in
-    offsets := (s, offset) :: !offsets;
+    let label = Printf.sprintf "Lstr_%d" !label_counter in
+    label_map := (s, label) :: !label_map;
+    label_to_string := (label, s) :: !label_to_string;
+    incr label_counter;
     Buffer.add_string buf s;
     Buffer.add_char buf '\000'  (* Null terminator *)
   ) unique_strings;
-  (Bytes.of_string (Buffer.contents buf), List.rev !offsets)
+  (Bytes.of_string (Buffer.contents buf), List.rev !label_map, List.rev !label_to_string)
 
 (* emit_debug_str is no longer needed - string table is built in emit() *)
 
@@ -267,14 +275,14 @@ let write_attribute_value buf (value : Dwarf_value.t) (form : Dwarf_form.t) str_
       Buffer.add_string buf s;
       Buffer.add_char buf '\000'
   | DW_FORM_strp, String s ->
-      (* Look up string offset in string table for relocation *)
-      let str_offset = match List.assoc_opt s str_offsets with
-        | Some off -> off
-        | None -> 0
+      (* Look up string label in string table for relocation *)
+      let str_label = match List.assoc_opt s str_offsets with
+        | Some label -> label
+        | None -> "Lstr_0"  (* Fallback to first string *)
       in
       (* Record relocation for this string table reference *)
       let offset = Buffer.length buf in
-      str_relocs := { offset; str_offset } :: !str_relocs;
+      str_relocs := { offset; str_label } :: !str_relocs;
       (* Write placeholder zeros - will be replaced by relocation *)
       for _ = 0 to 3 do
         Buffer.add_char buf '\000'
@@ -424,11 +432,11 @@ let emit t =
   let cu = compilation_unit t in
   let cu_with_children = Proto_die.add_children cu (all_dies t) in
   let strings = collect_strings cu_with_children [] in
-  let str_bytes, str_offsets = build_string_table strings in
+  let str_bytes, str_label_map, label_to_string = build_string_table strings in
 
-  (* Emit debug_info using the same string offsets *)
+  (* Emit debug_info using the string label map *)
   let debug_info_bytes, debug_info_relocs, debug_str_relocs =
-    emit_debug_info_with_str_offsets t str_offsets in
+    emit_debug_info_with_str_offsets t str_label_map in
 
   {
     debug_info = debug_info_bytes;
@@ -436,6 +444,7 @@ let emit t =
     debug_str_relocs = debug_str_relocs;
     debug_abbrev = emit_debug_abbrev t;
     debug_str = str_bytes;
+    debug_str_labels = label_to_string;
     debug_line = line_bytes;
     debug_loc =
       if Location_list_table.is_empty t.location_lists then None
