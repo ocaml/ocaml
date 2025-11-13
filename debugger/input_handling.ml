@@ -89,6 +89,29 @@ let current_prompt = ref ""
 (* Where the user input come from. *)
 let user_channel = ref std_io
 
+(* Character-mode callback support *)
+type char_callback = char -> bool
+let char_mode_callback : char_callback option ref = ref None
+
+(* Controller for character-mode input *)
+let char_mode_controller iochan =
+  let buf = Bytes.create 1 in
+  let n = input iochan.io_in buf 0 1 in
+  let c =
+    if n = 0 then
+      '\004'  (* EOF - send Ctrl+D to trigger proper EOF handling *)
+    else
+      Bytes.get buf 0
+  in
+  match !char_mode_callback with
+  | None ->
+      (* Shouldn't happen, but fallback to normal behavior *)
+      exit_main_loop ()
+  | Some callback ->
+      let should_continue = callback c in
+      if not should_continue then
+        exit_main_loop ()
+
 let read_user_input buffer length =
   main_loop ();
   input !user_channel.io_in buffer 0 length
@@ -100,9 +123,29 @@ let stop_user_input () =
 (* Resume reading user input. *)
 let resume_user_input () =
   if not (List.mem_assoc !user_channel.io_fd !active_files) then begin
-    if !interactif && !Parameters.prompt then begin
+    if !interactif && !Parameters.prompt && !char_mode_callback = None then begin
+      (* Only print prompt in line mode, not char mode *)
       print_string !current_prompt;
       flush Stdlib.stdout
       end;
-    add_file !user_channel exit_main_loop
+    (* Choose controller based on mode *)
+    let controller =
+      match !char_mode_callback with
+      | None -> exit_main_loop  (* Line mode *)
+      | Some _ -> char_mode_controller  (* Character mode *)
+    in
+    add_file !user_channel controller
     end
+
+(* Set character-mode callback *)
+let set_char_mode_callback callback =
+  char_mode_callback := callback;
+  (* If already active, update the controller *)
+  if List.mem_assoc !user_channel.io_fd !active_files then begin
+    let controller =
+      match callback with
+      | None -> exit_main_loop
+      | Some _ -> char_mode_controller
+    in
+    change_controller !user_channel controller
+  end

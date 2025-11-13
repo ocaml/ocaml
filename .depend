@@ -8295,6 +8295,13 @@ debugger/checkpoints.cmx : \
 debugger/checkpoints.cmi : \
     debugger/primitives.cmi \
     debugger/debugcom.cmi
+debugger/command_history.cmo : \
+    otherlibs/unix/unix.cmi \
+    debugger/command_history.cmi
+debugger/command_history.cmx : \
+    otherlibs/unix/unix.cmx \
+    debugger/command_history.cmi
+debugger/command_history.cmi :
 debugger/command_line.cmo : \
     debugger/unix_tools.cmi \
     otherlibs/unix/unix.cmi \
@@ -8592,6 +8599,7 @@ debugger/main.cmo : \
     utils/config.cmi \
     driver/compmisc.cmi \
     debugger/command_line.cmi \
+    debugger/command_history.cmi \
     file_formats/cmi_format.cmi \
     utils/clflags.cmi \
     debugger/checkpoints.cmi \
@@ -8615,6 +8623,7 @@ debugger/main.cmx : \
     utils/config.cmx \
     driver/compmisc.cmx \
     debugger/command_line.cmx \
+    debugger/command_history.cmx \
     file_formats/cmi_format.cmx \
     utils/clflags.cmx \
     debugger/checkpoints.cmx \

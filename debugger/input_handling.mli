@@ -59,3 +59,10 @@ val stop_user_input : unit -> unit
 
 (* Resume reading user input. *)
 val resume_user_input : unit -> unit
+
+(* Character-mode callback support *)
+type char_callback = char -> bool
+
+(* Set character-mode callback for reading one character at a time.
+   Callback returns true to continue reading, false to exit main loop. *)
+val set_char_mode_callback : char_callback option -> unit

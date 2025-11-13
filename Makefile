@@ -2179,6 +2179,7 @@ ocamldebug_DEBUGGER_SOURCES = $(addprefix debugger/,\
   parameters.mli parameters.ml \
   debugger_lexer.mli debugger_lexer.mll \
   input_handling.mli input_handling.ml \
+  command_history.mli command_history.ml \
   question.mli question.ml \
   debugcom.mli debugcom.ml \
   exec.mli exec.ml \

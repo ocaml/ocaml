@@ -226,6 +226,18 @@ let main () =
     Load_path.init ~auto_include:Compmisc.auto_include
       ~visible:!default_load_path ~hidden:[];
     Clflags.recursive_types := true;    (* Allow recursive types. *)
+
+    (* Initialize command history *)
+    Command_history.init ();
+    (* Disable line editing in emacs and machine-readable modes *)
+    if !emacs || !machine_readable then
+      Command_history.set_enabled false;
+    (* Register history save on exit *)
+    at_exit (fun () ->
+      if Command_history.is_tty () then
+        Command_history.save_history ()
+    );
+
     toplevel_loop ();                   (* Toplevel. *)
     kill_program ();
     exit 0
