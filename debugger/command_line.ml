@@ -1274,7 +1274,7 @@ It can be either:\n\
        var_action =
          (function lexbuf ->
            let argument = integer_eol Lexer.lexeme lexbuf in
-           if argument < 1 then print_endline "Must be at least 1"
+           if argument < 0 then print_endline "Must be at least 0"
            else begin
              history_size := argument;
              Command_history.set_max_history_size argument
