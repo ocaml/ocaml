@@ -1,0 +1,6 @@
+settings set target.disable-aslr false
+settings set stop-disassembly-display never
+breakpoint set --file breakpoint.ml --line 5
+run
+breakpoint list
+quit
