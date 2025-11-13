@@ -343,18 +343,15 @@ let handle_completion () =
           Some multiple
 
 let show_completion_choices choices =
-  (* Temporarily restore terminal to canonical mode for clean output *)
-  let was_active = !line_editing_active in
-  if was_active then begin
-    line_editing_active := false;
-    restore_terminal ()
-  end;
-
-  (* Print completions *)
+  (* Print completions without leaving raw mode - keeps editor active *)
   printf "\n";
   List.iter (fun c -> printf "%s  " c) choices;
   printf "\n";
-  flush Stdlib.stdout
+  flush Stdlib.stdout;
+
+  (* Redisplay the current line - terminal is still in raw mode *)
+  if !line_editing_active then
+    display_line ()
 
 (* Set callbacks *)
 let set_completion_callback callback =

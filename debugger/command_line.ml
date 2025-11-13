@@ -196,7 +196,6 @@ let line_loop ppf line_buffer =
   resume_user_input ();
   let previous_line = ref "" in
   let completed_line = ref None in
-  let pending_completions : string list option ref = ref None in
   let skip_repeat_once = ref false in
     try
       while true do
@@ -204,7 +203,7 @@ let line_loop ppf line_buffer =
           History.add_current_time ();
 
         (* Try line editing if on TTY and enabled *)
-        let rec read_from_editor () =
+        let read_from_editor () =
           let prompt = if !Parameters.prompt then !current_prompt else "" in
           if !interactif && Command_history.start_line prompt then begin
             (* Line editing active - set up character callback *)
@@ -227,9 +226,9 @@ let line_loop ppf line_buffer =
                   Input_handling.set_char_mode_callback None;
                   false  (* Exit main loop cleanly; signal already delivered *)
               | Command_history.ShowCompletions choices ->
-                  pending_completions := Some choices;
-                  Input_handling.set_char_mode_callback None;
-                  false
+                  (* Show completions without exiting - keeps user's input intact *)
+                  Command_history.show_completion_choices choices;
+                  true  (* Continue reading characters *)
               | Command_history.EndOfFile ->
                   Input_handling.set_char_mode_callback None;
                   raise Exit  (* EOF *)
@@ -241,16 +240,10 @@ let line_loop ppf line_buffer =
               ~finally:(fun () -> Input_handling.set_char_mode_callback None)
               (fun () -> Input_handling.main_loop ());
 
-            match !pending_completions with
-            | Some choices ->
-                pending_completions := None;
-                Command_history.show_completion_choices choices;
-                read_from_editor ()
-            | None ->
-                (* Get the completed line *)
-                (match !completed_line with
-                 | Some line -> string_trim line
-                 | None -> ""  (* Shouldn't happen *))
+            (* Get the completed line *)
+            (match !completed_line with
+             | Some line -> string_trim line
+             | None -> ""  (* Shouldn't happen *))
          end else begin
            (* Line editing not active, use original lexer path *)
            string_trim (line line_buffer)
