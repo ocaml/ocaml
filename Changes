@@ -24,7 +24,7 @@ Working version
   past behavior of discriminating abstract types defined in the current module.
   (Takafumi Saikawa, Jacques Garrigue, review by Richard Eisenberg)
 
-- #13806 Enable the use of function parameters with polymorphic types.
+- #13806: Enable the use of function parameters with polymorphic types.
   (Ulysse Gérard, Leo White, review by Florian Angeletti, Samuel Vivien, Gabriel
   Scherer and Jacques Garrigue)
 
