@@ -81,6 +81,20 @@ let clear_line = "\027[2K"
 let move_cursor_to_start = "\r"
 let move_cursor_left n = sprintf "\027[%dD" n
 
+(* Helper functions *)
+let is_whitespace c = c = ' ' || c = '\t'
+
+let split_buffer_at pos =
+  let buf = !current_line_buffer in
+  let len = String.length buf in
+  (String.sub buf 0 pos, String.sub buf pos (len - pos))
+
+let rec mkdir_p path =
+  if not (Sys.file_exists path) then begin
+    mkdir_p (Filename.dirname path);
+    try Unix.mkdir path 0o755 with Unix.Unix_error (Unix.EEXIST, _, _) -> ()
+  end
+
 (* Initialize terminal in raw mode for line editing *)
 let setup_terminal () =
   if !is_a_tty && Sys.os_type = "Unix" then begin
@@ -159,14 +173,21 @@ let init () =
       ) [xdg_path (); legacy_path (); Some ".ocamldebug_history"]
     in
 
-    (* Use existing file if found, otherwise use preferred XDG location *)
+    (* Use existing file if found, otherwise use preferred absolute location *)
     match find_existing () with
     | Some path -> path
     | None ->
-        (* No existing file; use XDG location for new history *)
+        (* No existing file; prefer XDG, then legacy, avoid relative paths *)
         match xdg_path () with
         | Some path -> path
-        | None -> ".ocamldebug_history"
+        | None ->
+            (* XDG unavailable (no HOME or not absolute); try legacy *)
+            match legacy_path () with
+            | Some path -> path
+            | None ->
+                (* No HOME available; disable persistence by using non-existent path
+                   that won't accidentally create files in working directory *)
+                "/dev/null/ocamldebug_history"
   in
 
   history_file := find_history_file ();
@@ -194,16 +215,7 @@ let save_history () =
   try
     (* Ensure parent directory exists *)
     let dir = Filename.dirname !history_file in
-    (try
-       (* Create directory with parents if needed *)
-       let rec mkdir_p path =
-         if not (Sys.file_exists path) then begin
-           mkdir_p (Filename.dirname path);
-           try Unix.mkdir path 0o755 with Unix.Unix_error (Unix.EEXIST, _, _) -> ()
-         end
-       in
-       mkdir_p dir
-     with _ -> ());
+    (try mkdir_p dir with _ -> ());
 
     let oc = open_out !history_file in
     try
@@ -291,28 +303,28 @@ let history_next () =
 
 (* Insert character at cursor position *)
 let insert_char c =
-  let len = String.length !current_line_buffer in
-  let before = String.sub !current_line_buffer 0 !cursor_pos in
-  let after = String.sub !current_line_buffer !cursor_pos (len - !cursor_pos) in
-  current_line_buffer := before ^ (String.make 1 c) ^ after;
+  let before, after = split_buffer_at !cursor_pos in
+  current_line_buffer := before ^ String.make 1 c ^ after;
   cursor_pos := !cursor_pos + 1
 
 (* Delete character before cursor *)
 let delete_char_before () =
   if !cursor_pos > 0 then begin
-    let len = String.length !current_line_buffer in
-    let before = String.sub !current_line_buffer 0 (!cursor_pos - 1) in
-    let after = String.sub !current_line_buffer !cursor_pos (len - !cursor_pos) in
+    let buf = !current_line_buffer in
+    let len = String.length buf in
+    let before = String.sub buf 0 (!cursor_pos - 1) in
+    let after = String.sub buf !cursor_pos (len - !cursor_pos) in
     current_line_buffer := before ^ after;
     cursor_pos := !cursor_pos - 1
   end
 
 (* Delete character at cursor *)
 let delete_char_at () =
-  let len = String.length !current_line_buffer in
+  let buf = !current_line_buffer in
+  let len = String.length buf in
   if !cursor_pos < len then begin
-    let before = String.sub !current_line_buffer 0 !cursor_pos in
-    let after = String.sub !current_line_buffer (!cursor_pos + 1) (len - !cursor_pos - 1) in
+    let before = String.sub buf 0 !cursor_pos in
+    let after = String.sub buf (!cursor_pos + 1) (len - !cursor_pos - 1) in
     current_line_buffer := before ^ after
   end
 
@@ -366,25 +378,22 @@ let handle_completion () =
       | [] -> None
       | [single] ->
           (* Single completion - replace the current word *)
+          let buf = !current_line_buffer in
+          let buf_len = String.length buf in
           let rec find_word_start pos =
             if pos = 0 then 0
-            else
-              let c = !current_line_buffer.[pos - 1] in
-              if c = ' ' || c = '\t' then pos
-              else find_word_start (pos - 1)
+            else if is_whitespace buf.[pos - 1] then pos
+            else find_word_start (pos - 1)
           in
           let rec find_word_end pos =
-            if pos >= String.length !current_line_buffer then pos
-            else
-              let c = !current_line_buffer.[pos] in
-              if c = ' ' || c = '\t' then pos
-              else find_word_end (pos + 1)
+            if pos >= buf_len then pos
+            else if is_whitespace buf.[pos] then pos
+            else find_word_end (pos + 1)
           in
           let word_start = find_word_start !cursor_pos in
           let word_end = find_word_end !cursor_pos in
-          let prefix = String.sub !current_line_buffer 0 word_start in
-          let suffix = String.sub !current_line_buffer word_end
-                         (String.length !current_line_buffer - word_end) in
+          let prefix = String.sub buf 0 word_start in
+          let suffix = String.sub buf word_end (buf_len - word_end) in
           current_line_buffer := prefix ^ single ^ suffix;
           cursor_pos := word_start + String.length single;
           display_line ();

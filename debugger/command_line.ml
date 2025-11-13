@@ -1323,6 +1323,14 @@ It can be either :\n\
   Command_history.set_completion_callback (Some (fun line cursor_pos ->
     let prefix = String.sub line 0 (min cursor_pos (String.length line)) in
 
+    (* Helper functions *)
+    let is_whitespace c = c = ' ' || c = '\t' in
+    let trailing_token rest =
+      match List.rev rest with
+      | "" :: _ | [] -> ""
+      | hd :: _ -> hd
+    in
+
     (* Split into words, preserving trailing whitespace indication *)
     let words =
       let trimmed = string_trim prefix in
@@ -1330,7 +1338,7 @@ It can be either :\n\
         if i >= String.length trimmed then
           if start < i then (String.sub trimmed start (i - start)) :: acc
           else acc
-        else if trimmed.[i] = ' ' || trimmed.[i] = '\t' then
+        else if is_whitespace trimmed.[i] then
           let new_acc =
             if start < i then (String.sub trimmed start (i - start)) :: acc
             else acc
@@ -1341,8 +1349,8 @@ It can be either :\n\
       in
       let tokens = List.rev (split [] 0 0) in
       (* If prefix ends with whitespace, we're starting a new word *)
-      if prefix <> "" && (prefix.[String.length prefix - 1] = ' ' ||
-                          prefix.[String.length prefix - 1] = '\t') then
+      let len = String.length prefix in
+      if len > 0 && is_whitespace prefix.[len - 1] then
         tokens @ [""]
       else
         tokens
@@ -1363,27 +1371,13 @@ It can be either :\n\
            | matches ->
                List.map (fun i -> i.instr_name) matches)
       | x :: rest ->
+          let ident = trailing_token rest in
           (match all_matching_instructions x with
            | [ {instr_name = ("set" | "show")} ] ->
-               let ident =
-                 match List.rev rest with
-                 | "" :: _ | [] -> ""
-                 | last :: _ -> last
-               in
                List.map (fun v -> v.var_name) (matching_variables ident)
            | [ {instr_name = "info"} ] ->
-               let ident =
-                 match List.rev rest with
-                 | "" :: _ | [] -> ""
-                 | last :: _ -> last
-               in
                List.map (fun i -> i.info_name) (matching_infos ident)
            | [ {instr_name = "help"} ] ->
-               let ident =
-                 match List.rev rest with
-                 | "" :: _ | [] -> ""
-                 | last :: _ -> last
-               in
                List.map (fun i -> i.instr_name) (matching_instructions ident)
            | _ -> [])
     with _ ->
