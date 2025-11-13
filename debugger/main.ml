@@ -229,8 +229,8 @@ let main () =
 
     (* Initialize command history *)
     Command_history.init ();
-    (* Disable line editing in emacs and machine-readable modes *)
-    if !emacs || !machine_readable then
+    (* Disable line editing in emacs, machine-readable, or no-prompt modes *)
+    if !emacs || !machine_readable || not !Parameters.prompt then
       Command_history.set_enabled false;
     (* Register history save on exit *)
     at_exit (fun () ->
