@@ -46,7 +46,7 @@ val restore_terminal : unit -> unit
 (** Restore terminal to original state. *)
 
 val save_history : unit -> unit
-(** Save command history to file (stub for now). *)
+(** Save command history to ~/.ocamldebug_history file. *)
 
 (** {1 Line editing} *)
 

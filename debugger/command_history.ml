@@ -32,6 +32,7 @@ type line_result =
 let enabled = ref true
 let is_a_tty = ref false
 let max_history_size = ref 100
+let history_file = ref ""
 
 (* History storage - most recent first *)
 let history = ref ([] : string list)
@@ -123,11 +124,55 @@ let init () =
   (* Check if stdin is a TTY *)
   is_a_tty := (try isatty stdin with _ -> false);
 
+  (* Set history file path *)
+  history_file := begin
+    try
+      Filename.concat (Sys.getenv "HOME") ".ocamldebug_history"
+    with Not_found ->
+      ".ocamldebug_history"
+  end;
+
+  (* Set max history size from Debugger_config if available *)
+  (try
+     max_history_size := !Debugger_config.history_size
+   with _ -> ());
+
+  (* Load history from file *)
+  if Sys.file_exists !history_file then begin
+    try
+      let ic = open_in !history_file in
+      try
+        let rec load_lines acc =
+          try
+            let line = input_line ic in
+            load_lines (line :: acc)
+          with End_of_file ->
+            acc  (* Don't reverse - file has oldest first, :: builds newest first *)
+        in
+        history := load_lines [];
+        close_in ic
+      with e ->
+        close_in ic;
+        raise e
+    with _ -> ()
+  end;
+  trim_history_to_max ();
+
   (* Register cleanup on exit *)
   at_exit (fun () -> restore_terminal ())
 
-(* Save history (stub - will be implemented in history persistence feature) *)
-let save_history () = ()
+(* Save history to file *)
+let save_history () =
+  try
+    let oc = open_out !history_file in
+    try
+      (* Save in reverse order (oldest first) for easier loading *)
+      List.iter (fprintf oc "%s\n") (List.rev !history);
+      close_out oc
+    with e ->
+      close_out oc;
+      raise e
+  with _ -> ()
 
 (* Display current line with prompt *)
 let display_line () =
