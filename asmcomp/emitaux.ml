@@ -683,8 +683,17 @@ module Dwarf_helpers = struct
           emit_section_bytes_with_both_relocs oc sections.debug_info sections.debug_info_relocs sections.debug_str_relocs;
           output_string oc "\t.section __DWARF,__debug_abbrev,regular,debug\n";
           emit_section_bytes oc sections.debug_abbrev;
-          output_string oc "\t.section __DWARF,__debug_str,regular,debug\n";
-          emit_debug_str_with_labels oc sections.debug_str sections.debug_str_labels;
+          (* Emit .debug_str only if non-empty (DWARF 5 with DW_FORM_string doesn't need it) *)
+          (if Bytes.length sections.debug_str > 0 then begin
+            output_string oc "\t.section __DWARF,__debug_str,regular,debug\n";
+            emit_debug_str_with_labels oc sections.debug_str sections.debug_str_labels
+          end);
+          (* DWARF 5: .debug_str_offsets section *)
+          (match sections.debug_str_offsets with
+           | Some (bytes, str_relocs) ->
+               output_string oc "\t.section __DWARF,__debug_str_offsets,regular,debug\n";
+               emit_section_bytes_with_both_relocs oc bytes [] str_relocs
+           | None -> ());
           (* Optional sections *)
           (match sections.debug_line with
            | Some (bytes, relocs) ->
@@ -707,8 +716,17 @@ module Dwarf_helpers = struct
           emit_section_bytes_with_both_relocs oc sections.debug_info sections.debug_info_relocs sections.debug_str_relocs;
           output_string oc "\t.section .debug_abbrev,\"\",@progbits\n";
           emit_section_bytes oc sections.debug_abbrev;
-          output_string oc "\t.section .debug_str,\"MS\",@progbits,1\n";
-          emit_debug_str_with_labels oc sections.debug_str sections.debug_str_labels;
+          (* Emit .debug_str only if non-empty (DWARF 5 with DW_FORM_string doesn't need it) *)
+          (if Bytes.length sections.debug_str > 0 then begin
+            output_string oc "\t.section .debug_str,\"MS\",@progbits,1\n";
+            emit_debug_str_with_labels oc sections.debug_str sections.debug_str_labels
+          end);
+          (* DWARF 5: .debug_str_offsets section *)
+          (match sections.debug_str_offsets with
+           | Some (bytes, str_relocs) ->
+               output_string oc "\t.section .debug_str_offsets,\"\",@progbits\n";
+               emit_section_bytes_with_both_relocs oc bytes [] str_relocs
+           | None -> ());
           (* Optional sections *)
           (match sections.debug_line with
            | Some (bytes, relocs) ->
