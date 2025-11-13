@@ -47,3 +47,24 @@ val restore_terminal : unit -> unit
 
 val save_history : unit -> unit
 (** Save command history to file (stub for now). *)
+
+(** {1 Line editing} *)
+
+val start_line : string -> bool
+(** Start line editing with the given prompt.
+    Returns true if line editing is active, false if fallback to lexer. *)
+
+val process_char : char -> line_result
+(** Process a single character during line editing.
+    Returns the result of processing (NeedMore, LineComplete, etc.). *)
+
+val current_line : unit -> string
+(** Get the current line being edited. *)
+
+(** {1 History management} *)
+
+val add_to_history : string -> unit
+(** Add a command to the history (automatically removes duplicates). *)
+
+val set_max_history_size : int -> unit
+(** Set maximum history size. *)

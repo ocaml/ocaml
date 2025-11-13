@@ -195,24 +195,87 @@ let interprete_line ppf line =
 let line_loop ppf line_buffer =
   resume_user_input ();
   let previous_line = ref "" in
+  let completed_line = ref None in
+  let skip_repeat_once = ref false in
     try
       while true do
         if !loaded then
           History.add_current_time ();
-        let new_line = string_trim (line line_buffer) in
+
+        (* Try line editing if on TTY and enabled *)
+        let read_from_editor () =
+          let prompt = if !Parameters.prompt then !current_prompt else "" in
+          if !interactif && Command_history.start_line prompt then begin
+            (* Line editing active - set up character callback *)
+            completed_line := None;
+            let char_callback c =
+              match Command_history.process_char c with
+              | Command_history.NeedMore ->
+                  true  (* Continue reading characters *)
+              | Command_history.LineComplete line ->
+                  completed_line := Some line;
+                  Input_handling.set_char_mode_callback None;  (* Back to line mode *)
+                  false  (* Exit main_loop *)
+              | Command_history.LineCancelled ->
+                  completed_line := Some "";
+                  Input_handling.set_char_mode_callback None;
+                  raise Sys.Break  (* User cancelled *)
+              | Command_history.SignalRaised _ ->
+                  skip_repeat_once := true;
+                  completed_line := None;
+                  Input_handling.set_char_mode_callback None;
+                  false  (* Exit main loop cleanly; signal already delivered *)
+              | Command_history.ShowCompletions _ ->
+                  (* Tab completion not implemented yet - ignore for now *)
+                  true
+              | Command_history.EndOfFile ->
+                  Input_handling.set_char_mode_callback None;
+                  raise Exit  (* EOF *)
+            in
+            Input_handling.set_char_mode_callback (Some char_callback);
+
+            (* Enter main loop to process characters *)
+            Fun.protect
+              ~finally:(fun () -> Input_handling.set_char_mode_callback None)
+              (fun () -> Input_handling.main_loop ());
+
+            (* Get the completed line *)
+            (match !completed_line with
+             | Some line -> string_trim line
+             | None -> ""  (* Shouldn't happen *))
+         end else begin
+           (* Line editing not active, use original lexer path *)
+           string_trim (line line_buffer)
+         end
+        in
+        let new_line = read_from_editor () in
+
+        if !skip_repeat_once then begin
+          skip_repeat_once := false
+        end else begin
           let line =
-            if new_line <> "" then
+            if new_line <> "" then begin
+              (* Add non-empty commands to history *)
+              if !interactif && Command_history.is_tty () then
+                Command_history.add_to_history new_line;
               new_line
-            else
+            end else
               !previous_line
           in
             previous_line := "";
             if interprete_line ppf line && !interactif then
               previous_line := line
+        end
       done
     with
     | Exit ->
+        Input_handling.set_char_mode_callback None;
+        Command_history.restore_terminal ();
         ()
+    | Sys.Break as e ->
+        Input_handling.set_char_mode_callback None;
+        Command_history.restore_terminal ();
+        raise e
 (*    | Sys_error s ->
         error ("System error: " ^ s) *)
 
@@ -1202,7 +1265,15 @@ It can be either:\n\
        var_help =
 "name of the socket used by communications debugger-runtime." };
      { var_name = "history";
-       var_action = integer_variable false 0 "" history_size;
+       var_action =
+         (function lexbuf ->
+           let argument = integer_eol Lexer.lexeme lexbuf in
+           if argument < 1 then print_endline "Must be at least 1"
+           else begin
+             history_size := argument;
+             Command_history.set_max_history_size argument
+           end),
+         (function ppf -> fprintf ppf "%i@." !history_size);
        var_help =
 "history size." };
      { var_name = "print_depth";
