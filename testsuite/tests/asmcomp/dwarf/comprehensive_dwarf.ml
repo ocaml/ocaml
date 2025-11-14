@@ -1,5 +1,9 @@
 (* TEST
    native-compiler;
+   setup-ocamlopt.byte-build-env;
+   flags = "-g";
+   all_modules = "comprehensive_dwarf.ml";
+   ocamlopt.byte;
    script = "sh ${test_source_directory}/inspect_dwarf.sh comprehensive_dwarf ${ocamlopt} ${arch}";
    script;
    script = "sh ${test_source_directory}/validate_arch_registers.sh comprehensive_dwarf ${ocamlopt} ${arch}";

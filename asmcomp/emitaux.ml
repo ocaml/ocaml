@@ -677,11 +677,30 @@ module Dwarf_helpers = struct
                     from the start of the merged .debug_line section. *)
                  Printf.fprintf oc "\t.long %s - __debug_line_section_base\n" label
                end else begin
-                 (* Other platforms: Emit section-relative offset computed at assembly time.
-                    LIMITATION: This breaks multi-object linking because the offset
-                    is computed relative to this .o file's Ldebug_line_start, not the final
-                    merged section. Platforms need specific relocation support or weak symbols. *)
-                 Printf.fprintf oc "\t.long %s - Ldebug_line_start\n" label
+                 (* Other platforms: DWARF multi-object linking not yet supported.
+                    Assembly-time offset computation (label - Ldebug_line_start) breaks
+                    when linking multiple .o files because the offset is computed relative
+                    to each .o file's section start, not the merged section.
+
+                    To fix this for your platform:
+                    1. Implement weak symbol support (like Mach-O above)
+                    2. Add platform-specific relocation handling
+                    3. Or use single-file compilation (compile all modules together)
+
+                    For now, we FAIL to prevent generating silently broken DWARF. *)
+                 failwith (Printf.sprintf
+                   "DWARF multi-object linking not supported on platform '%s'.\n\
+                    The assembler/linker cannot emit correct section-relative offsets\n\
+                    for DW_AT_stmt_list in .debug_info when merging multiple .o files.\n\
+                    \n\
+                    Workarounds:\n\
+                    1. Compile with -g0 (disable DWARF)\n\
+                    2. Use single-file compilation (one ocamlopt invocation for all sources)\n\
+                    3. Use a supported platform (Linux/ELF or macOS/Mach-O)\n\
+                    \n\
+                    To implement support for %s:\n\
+                    - Add weak symbol or subtractor relocation support in emitaux.ml:669-690"
+                   Config.system Config.system)
                end;
                emit_from (reloc_offset + 4) rest
            | Str_reloc r ->
