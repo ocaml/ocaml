@@ -7,10 +7,11 @@ Executing commands in 'XXXX'.
 (lldb) breakpoint set --file breakpoint.ml --line XXX
 Breakpoint 1: where = breakpoint`camlBreakpoint.second_277 + 7, address = 0x00000000000000
 (lldb) run
+first
+second
+third
 Process XXXX launched: 'XXXX' ($ARCH)
-Process XXXX stopped
-* thread #1, name = 'XXXX', stop reason = signal SIGSEGV: invalid permissions for mapped object (fault address: 0x00000000000000)
-    frame #0: 0x00000000000000 ld-linux-x86-64.so.2`__tls_init_tp at dl-tls_init_tp.c:XX
+Process XXXX exited with status = 0 (0x00000000000000)
 (lldb) breakpoint list
 Current breakpoints:
 1: file = 'XXXX', line = 5, exact_match = 0, locations = 1, resolved = 1, hit count = 0

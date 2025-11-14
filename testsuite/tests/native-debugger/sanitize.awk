@@ -55,6 +55,9 @@
     gsub(/\[Thread debugging using libthread_db enabled\]/, "")
     gsub(/Using host libthread_db library.*/, "")
 
+    # GDB warning when ASLR cannot be disabled in sandboxed environments
+    gsub(/warning: Error disabling address space randomization.*/, "")
+
     # Replace line number when setting breakpoints in GDB.
     gsub(/line [0-9]+/, "line XXX")
 
