@@ -1,8 +1,14 @@
 Breakpoint 1 at 0x00000000000000: file simple.ml, line XXX.
+Breakpoint 1, camlSimple.calculate_274 (R=0x00000000000000, R=0x00000000000000) at simple.ml:2
+2	  let sum = x + y in
 Current source file is simple.ml
-Compilation directory is
+Compilation directory is /home/user/ocaml/testsuite/tests/asmcomp/dwarf/_ocamltest/tests/asmcomp/dwarf/dwarf_gdb/ocamlopt.byte
+Located in /home/user/ocaml/testsuite/tests/asmcomp/dwarf/simple.ml
 Contains 9 lines.
-Source language is unknown.
+Source language is fortran.
+Producer is OCaml 5.5.0+dev0-2025-04-28.
+Compiled with DWARF 5 debugging format.
+Does not include preprocessor macro info.
 1	let calculate x y =
 2	  let sum = x + y in
 3	  let product = x * y in
@@ -12,3 +18,6 @@ Source language is unknown.
 7	let () =
 8	  let result = calculate 10 20 in
 9	  Printf.printf "result=%d\n" result
+A debugging session is active.
+	Inferior 1 [process XXXX] will be killed.
+Quit anyway? (y or n) [answered Y;]

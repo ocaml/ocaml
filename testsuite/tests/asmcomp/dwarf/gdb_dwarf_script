@@ -1,4 +1,7 @@
-break camlSimple__calculate_274
+set disable-randomization off
+set debuginfod enabled off
+directory .
+break simple.ml:2
 run
 info source
 list

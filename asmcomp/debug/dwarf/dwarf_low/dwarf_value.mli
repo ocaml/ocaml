@@ -48,6 +48,7 @@ type t =
   | Reference of die_reference
   | Expr_loc of block  (** DWARF expression/location *)
   | Sec_offset of offset  (** Section offset *)
+  | Label_sec_offset of string  (** Symbolic section offset requiring relocation *)
 
 (** Pretty-printer for values *)
 val print : Format.formatter -> t -> unit

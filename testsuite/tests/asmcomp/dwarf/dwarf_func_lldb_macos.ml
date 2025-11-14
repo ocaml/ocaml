@@ -10,9 +10,9 @@
    flags = "-g";
    all_modules = "simple.ml";
    ocamlopt.byte;
-   debugger_script = "${test_source_directory}/lldb_dwarf_script";
+   debugger_script = "${test_source_directory}/lldb_func_script";
    lldb;
-   script = "sh ${test_source_directory}/../../native-debugger/sanitize.sh dwarf_lldb_macos";
+   script = "sh ${test_source_directory}/../../native-debugger/sanitize.sh dwarf_func_lldb_macos";
    script;
    check-program-output;
 *)

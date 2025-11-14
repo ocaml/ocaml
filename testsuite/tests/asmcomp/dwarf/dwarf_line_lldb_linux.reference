@@ -1,4 +1,19 @@
-Breakpoint 1: where = breakpoint`camlBreakpoint__second_277, address = 0x00000000000000
+(lldb) target create "XXXX"
+Current executable set to 'XXXX' ($ARCH).
+(lldb) command source -s 0 'XXXX'
+Executing commands in 'XXXX'.
+(lldb) settings set target.disable-aslr false
+(lldb) settings set stop-disassembly-display never
+(lldb) breakpoint set --file breakpoint.ml --line XXX
+Breakpoint 1: where = breakpoint`camlBreakpoint.second_277 + 7, address = 0x00000000000000
+(lldb) run
+first
+second
+third
+Process XXXX launched: 'XXXX' ($ARCH)
+Process XXXX exited with status = 0 (0x00000000000000)
+(lldb) breakpoint list
 Current breakpoints:
-1: name = 'breakpoint.ml', locations = 1, resolved = 1, hit count = 0
-  1.1: where = breakpoint`camlBreakpoint__second_277, address = 0x00000000000000, resolved, hit count = 0
+1: file = 'XXXX', line = 5, exact_match = 0, locations = 1, resolved = 1, hit count = 0
+  1.1: where = breakpoint`camlBreakpoint.second_277 + 7, address = 0x00000000000000, resolved, hit count = 0
+(lldb) quit

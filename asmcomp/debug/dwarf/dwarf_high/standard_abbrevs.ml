@@ -57,6 +57,7 @@ let standard_table : standard_entry list = [
       (DW_AT_low_pc, DW_FORM_addr);
       (DW_AT_high_pc, DW_FORM_addr);
       (DW_AT_external, DW_FORM_flag_present);
+      (DW_AT_decl_file, DW_FORM_data1);  (* Link to source file in line table *)
     ];
   };
 
@@ -70,6 +71,7 @@ let standard_table : standard_entry list = [
       (DW_AT_low_pc, DW_FORM_addr);
       (DW_AT_high_pc, DW_FORM_addr);
       (DW_AT_external, DW_FORM_flag_present);
+      (DW_AT_decl_file, DW_FORM_data1);  (* Link to source file in line table *)
     ];
   };
 
@@ -130,6 +132,7 @@ let standard_table : standard_entry list = [
       (DW_AT_low_pc, DW_FORM_addr);
       (DW_AT_high_pc, DW_FORM_addr);
       (DW_AT_external, DW_FORM_flag_present);
+      (DW_AT_decl_file, DW_FORM_data1);  (* Link to source file in line table *)
     ];
   };
 ]

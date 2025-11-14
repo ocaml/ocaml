@@ -39,6 +39,7 @@ type t =
   | Reference of die_reference
   | Expr_loc of block
   | Sec_offset of offset
+  | Label_sec_offset of string  (* For section offsets that need relocations *)
 
 let print ppf = function
   | Address addr ->
@@ -66,3 +67,5 @@ let print ppf = function
       Format.fprintf ppf "Expr_loc(%d bytes)" (Bytes.length bytes)
   | Sec_offset off ->
       Format.fprintf ppf "Sec_offset(%d)" off
+  | Label_sec_offset label ->
+      Format.fprintf ppf "Label_sec_offset(\"%s\")" label

@@ -1,7 +1,8 @@
 settings set target.disable-aslr false
 settings set stop-disassembly-display never
-breakpoint set --file simple.ml --line 2
+breakpoint set --name camlSimple.calculate_274
 run
 source info
 source list
+bt
 quit

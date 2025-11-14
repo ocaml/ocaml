@@ -1343,8 +1343,15 @@ let begin_assembly() =
   reset_debug_info();
   (* Initialize DWARF generation if enabled *)
   if Dwarf_flags.is_dwarf_enabled () then begin
-    let unit_name = Compilenv.current_unit_name () in
-    let source_file = unit_name ^ ".ml" in
+    (* Use the actual source filename from Location, not the module name
+       which may have different capitalization *)
+    let source_file =
+      if !Location.input_name = "" then
+        (* Fallback: construct from unit name *)
+        (Compilenv.current_unit_name ()) ^ ".ml"
+      else
+        !Location.input_name
+    in
     let compilation_dir = Sys.getcwd () in
     let producer = "OCaml " ^ Sys.ocaml_version in
     Emitaux.Dwarf_helpers.init ~source_file ~compilation_dir ~producer

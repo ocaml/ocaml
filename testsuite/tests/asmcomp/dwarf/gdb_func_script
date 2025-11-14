@@ -1,7 +1,9 @@
 set disable-randomization off
 set debuginfod enabled off
 directory .
-break breakpoint.ml:5
+break camlSimple.calculate_274
 run
-info breakpoints
+info source
+list simple.ml:1
+backtrace
 quit

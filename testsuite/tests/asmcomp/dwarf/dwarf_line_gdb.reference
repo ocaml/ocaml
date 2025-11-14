@@ -1,3 +1,12 @@
-Breakpoint 1 at 0x00000000000000: file breakpoint.ml, line XXX.
+Breakpoint 1 at 0x00000000000000: breakpoint.ml:5. (2 locations)
+first
+Breakpoint 1.2, camlBreakpoint.entry () at breakpoint.ml:5
+5	  print_endline "second"
 Num     Type           Disp Enb Address            What
-1       breakpoint     keep y   0x00000000000000 in camlBreakpoint__second_277 at breakpoint.ml:XXX
+1       breakpoint     keep y   <MULTIPLE>
+	breakpoint already hit 1 time
+1.1                         y   0x00000000000000 in camlBreakpoint.second_277 at breakpoint.ml:5
+1.2                         y   0x00000000000000 in camlBreakpoint.entry at breakpoint.ml:5
+A debugging session is active.
+	Inferior 1 [process XXXX] will be killed.
+Quit anyway? (y or n) [answered Y;]

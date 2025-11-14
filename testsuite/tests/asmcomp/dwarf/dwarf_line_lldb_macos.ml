@@ -1,6 +1,6 @@
 (* TEST
    native-compiler;
-   macosx;
+   macos;
    arch_amd64;
    script = "sh ${test_source_directory}/../../native-debugger/has_lldb.sh macos";
    script;

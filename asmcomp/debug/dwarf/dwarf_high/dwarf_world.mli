@@ -93,12 +93,14 @@ type str_relocation = {
 type section_data = {
   debug_info : bytes;
   debug_info_relocs : relocation list;
+  debug_info_sec_offset_relocs : relocation list;  (* Section offset relocations (4-byte) *)
   debug_str_relocs : str_relocation list;
   debug_abbrev : bytes;
   debug_str : bytes;
   debug_str_labels : (string * (string * int)) list;  (* (label, (string, offset)) for emission *)
   debug_str_offsets : (bytes * str_relocation list) option;  (* DWARF 5: string offsets with relocations *)
   debug_line : (bytes * relocation list) option;  (* line table with address relocations *)
+  line_table_label : string option;  (* Label for line table start *)
   debug_loc : bytes option;
   debug_ranges : bytes option;
 }

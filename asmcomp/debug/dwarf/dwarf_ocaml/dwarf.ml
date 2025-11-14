@@ -59,6 +59,8 @@ let add_function t ~name ~start_address ~end_address =
   let func_die = Proto_die.with_name func_die name in
   let func_die = Proto_die.with_pc_range func_die ~start:start_address ~end_:end_address in
   let func_die = Proto_die.with_external func_die true in
+  (* Link function to source file in line table (file index 1) *)
+  let func_die = Proto_die.with_decl_file func_die 1 in
 
   (* Store as current function (don't add to world yet - we'll add variables first) *)
   t.current_function <- Some func_die

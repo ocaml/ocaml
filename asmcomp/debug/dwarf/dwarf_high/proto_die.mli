@@ -94,6 +94,9 @@ val with_external : t -> bool -> t
 (** Helper: Add an artificial flag (compiler-generated) *)
 val with_artificial : t -> bool -> t
 
+(** Helper: Add a decl_file attribute (file index in line table) *)
+val with_decl_file : t -> int -> t
+
 (** Helper: Create a variable DIE *)
 val create_variable :
   name:string ->

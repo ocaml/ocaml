@@ -141,6 +141,13 @@ let with_artificial t is_artificial =
     form = DW_FORM_flag_present;
   }
 
+let with_decl_file t file_index =
+  add_attribute t {
+    attr = DW_AT_decl_file;
+    value = Constant (Int file_index);
+    form = DW_FORM_data1;
+  }
+
 (* High-level constructors *)
 
 let create_variable ~name ?type_ref ?location ?(is_parameter=false) ?(is_artificial=false) () =

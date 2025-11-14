@@ -1,11 +1,29 @@
-Breakpoint 1: where = simple`camlSimple__calculate_274, address = 0x00000000000000
-[  1] simple.ml
-1	let calculate x y =
-2	  let sum = x + y in
-3	  let product = x * y in
-4	  Printf.printf "sum=%d product=%d\n" sum product;
-5	  product
-6
-7	let () =
-8	  let result = calculate 10 20 in
-9	  Printf.printf "result=%d\n" result
+(lldb) target create "XXXX"
+Current executable set to 'XXXX' ($ARCH).
+(lldb) command source -s 0 'XXXX'
+Executing commands in 'XXXX'.
+(lldb) settings set target.disable-aslr false
+(lldb) settings set stop-disassembly-display never
+(lldb) breakpoint set --file simple.ml --line XXX
+Breakpoint 1: where = simple`camlSimple.code_begin + 14, address = 0x00000000000000
+(lldb) run
+This version of LLDB has no plugin for the language "fortran08". Inspection of frame variables will be limited.
+Process XXXX launched: 'XXXX' ($ARCH)
+Process XXXX stopped
+* thread #1, name = 'XXXX', stop reason = breakpoint 1.1
+    frame #0: 0x00000000000000 simple`camlSimple.code_begin at simple.ml:2:12
+   1   	let calculate x y =
+-> 2   	  let sum = x + y in
+    	           ^
+   3   	  let product = x * y in
+   4   	  Printf.printf "sum=%d product=%d\n" sum product;
+   5   	  product
+   6
+   7   	let () =
+(lldb) source info
+Lines found in module `simple
+[0x00000000000000-0x00000000000000): /home/user/ocaml/testsuite/tests/asmcomp/dwarf/_ocamltest/tests/asmcomp/dwarf/dwarf_lldb_linux/ocamlopt.byte/simple.ml:2:12
+(lldb) source list
+   8   	  let result = calculate 10 20 in
+   9   	  Printf.printf "result=%d\n" result
+(lldb) quit
