@@ -35,3 +35,13 @@ let set_mapper f =
 
 let to_dwarf_register backend_reg =
   !mapper backend_reg
+
+(** Frame pointer DWARF register number.
+    Set by architecture-specific initialization code. *)
+let frame_pointer_register : int ref = ref 6  (* Default to AMD64 rbp *)
+
+let set_frame_pointer_register reg =
+  frame_pointer_register := reg
+
+let get_frame_pointer_register () =
+  !frame_pointer_register

@@ -5,7 +5,7 @@ Current source file is simple.ml
 Compilation directory is /home/user/ocaml/testsuite/tests/asmcomp/dwarf/_ocamltest/tests/asmcomp/dwarf/dwarf_gdb/ocamlopt.byte
 Located in /home/user/ocaml/testsuite/tests/asmcomp/dwarf/simple.ml
 Contains 9 lines.
-Source language is fortran.
+Source language is unknown.
 Producer is OCaml 5.5.0+dev0-2025-04-28.
 Compiled with DWARF 5 debugging format.
 Does not include preprocessor macro info.

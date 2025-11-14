@@ -29,3 +29,10 @@ val to_dwarf_register : int -> int
     @param backend_reg OCaml backend register number
     @return Human-readable register name (e.g., "rax", "xmm0") *)
 val register_name : int -> string
+
+(** DWARF register number for the frame pointer (rbp on AMD64).
+
+    This is used to emit DW_AT_frame_base attributes in subprogram DIEs,
+    allowing DW_OP_fbreg expressions to work correctly for stack-based
+    parameters and local variables. *)
+val frame_pointer_dwarf_register : int

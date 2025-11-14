@@ -79,3 +79,6 @@ let register_name backend_reg =
       Printf.sprintf "d%d" float_index
     else
       Printf.sprintf "float_reg_%d" backend_reg
+
+(** DWARF register number for the frame pointer (x29 on ARM64) *)
+let frame_pointer_dwarf_register = 29

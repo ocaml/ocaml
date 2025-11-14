@@ -75,7 +75,11 @@ let encode_extended buf address_size ext_op =
       begin match Code_address.absolute addr with
       | Some abs_addr ->
           let bytes = Bytes.create address_size in
-          Bytes.set_int64_le bytes 0 abs_addr;
+          begin match address_size with
+          | 4 -> Bytes.set_int32_le bytes 0 (Int64.to_int32 abs_addr)
+          | 8 -> Bytes.set_int64_le bytes 0 abs_addr
+          | _ -> failwith (Printf.sprintf "Unsupported address size: %d" address_size)
+          end;
           Buffer.add_bytes buf bytes
       | None ->
           (* Label-based address - emit placeholder of correct size *)

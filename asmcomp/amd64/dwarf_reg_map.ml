@@ -88,3 +88,6 @@ let register_name backend_reg =
       Printf.sprintf "xmm%d" float_index
     else
       Printf.sprintf "float_reg_%d" backend_reg
+
+(** DWARF register number for the frame pointer (rbp on AMD64) *)
+let frame_pointer_dwarf_register = 6

@@ -79,6 +79,9 @@ val with_encoding : t -> Dwarf_encoding.t -> t
 (** Helper: Add a location attribute *)
 val with_location : t -> bytes -> t
 
+(** Helper: Add a frame base attribute *)
+val with_frame_base : t -> bytes -> t
+
 (** Helper: Add a low_pc and high_pc range *)
 val with_pc_range : t -> start:Code_address.t -> end_:Code_address.t -> t
 

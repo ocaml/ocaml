@@ -91,6 +91,13 @@ let with_location t loc =
     form = DW_FORM_exprloc;
   }
 
+let with_frame_base t frame_base_expr =
+  add_attribute t {
+    attr = DW_AT_frame_base;
+    value = Expr_loc frame_base_expr;
+    form = DW_FORM_exprloc;
+  }
+
 let with_pc_range t ~start ~end_ =
   (* Convert Code_address.t to appropriate Dwarf_value.t *)
   let addr_value addr =

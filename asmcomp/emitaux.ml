@@ -538,6 +538,9 @@ module Dwarf_helpers = struct
 
   let init ~source_file ~compilation_dir ~producer =
     if Dwarf_flags.is_dwarf_enabled () then begin
+      (* Initialize architecture-specific DWARF register number mapping *)
+      Arch_reg_mapping.set_mapper Dwarf_reg_map.to_dwarf_register;
+      Arch_reg_mapping.set_frame_pointer_register Dwarf_reg_map.frame_pointer_dwarf_register;
       let state = Dwarf.create ~source_file ~compilation_dir ~producer ~address_size:Arch.size_addr () in
       dwarf_state := Some state
     end
@@ -583,7 +586,7 @@ module Dwarf_helpers = struct
     | Sec_offset_reloc of Dwarf_world.relocation  (* 4-byte section offset *)
     | Str_reloc of Dwarf_world.str_relocation
 
-  let emit_section_bytes_with_both_relocs oc bytes addr_relocs sec_offset_relocs str_relocs =
+  let emit_section_bytes_with_both_relocs oc address_size bytes addr_relocs sec_offset_relocs str_relocs =
     (* Combine and sort all relocations by offset *)
     let combined =
       List.map (fun (r : Dwarf_world.relocation) -> (r.Dwarf_world.offset, Addr_reloc r)) addr_relocs @
@@ -640,17 +643,28 @@ module Dwarf_helpers = struct
                   prepending another underscore would produce identifiers that
                   the assembler/linker cannot resolve. *)
                let symbol = r.Dwarf_world.label in
-               Printf.fprintf oc "\t.quad %s\n" symbol;
-               emit_from (reloc_offset + 8) rest
+               (match address_size with
+                | 4 -> Printf.fprintf oc "\t.long %s\n" symbol
+                | 8 -> Printf.fprintf oc "\t.quad %s\n" symbol
+                | _ -> failwith (Printf.sprintf "Unsupported address size: %d" address_size));
+               emit_from (reloc_offset + address_size) rest
            | Sec_offset_reloc r ->
                (* Emit 4-byte section-relative offset for DW_AT_stmt_list.
-                  Each CU's line table has a unique label (e.g., Ldebug_line_cu_1).
-                  We emit the offset from the section start (Ldebug_line_start) to
-                  this CU's label, so each CU points to its own line table contribution
-                  even after linking multiple object files together. *)
+                  For multi-object linking to work, we need the linker to adjust
+                  these offsets when concatenating .debug_line sections. *)
                let label = r.Dwarf_world.label in
-               (* Emit offset: label - section_start *)
-               Printf.fprintf oc "\t.long %s - Ldebug_line_start\n" label;
+               if Config.system = "linux" || Config.system = "gnu" then begin
+                 (* ELF: Emit label without section_start subtraction.
+                    The assembler creates a relocation entry that the linker will
+                    convert to a section offset in the final binary. *)
+                 Printf.fprintf oc "\t.long %s\n" label
+               end else begin
+                 (* Mach-O/other: Emit section-relative offset computed at assembly time.
+                    LIMITATION: This breaks multi-object linking because the linker
+                    doesn't adjust these constants when concatenating .debug_line sections.
+                    Proper fix requires platform-specific section-relative relocations. *)
+                 Printf.fprintf oc "\t.long %s - Ldebug_line_start\n" label
+               end;
                emit_from (reloc_offset + 4) rest
            | Str_reloc r ->
                (* Emit string table offset as plain numeric value.
@@ -694,7 +708,7 @@ module Dwarf_helpers = struct
         if Config.system = "macosx" then begin
           (* macOS Mach-O format with __DWARF segment *)
           output_string oc "\t.section __DWARF,__debug_info,regular,debug\n";
-          emit_section_bytes_with_both_relocs oc sections.debug_info sections.debug_info_relocs sections.debug_info_sec_offset_relocs sections.debug_str_relocs;
+          emit_section_bytes_with_both_relocs oc Arch.size_addr sections.debug_info sections.debug_info_relocs sections.debug_info_sec_offset_relocs sections.debug_str_relocs;
           output_string oc "\t.section __DWARF,__debug_abbrev,regular,debug\n";
           emit_section_bytes oc sections.debug_abbrev;
           (* Emit .debug_str only if non-empty (DWARF 5 with DW_FORM_string doesn't need it) *)
@@ -706,7 +720,7 @@ module Dwarf_helpers = struct
           (match sections.debug_str_offsets with
            | Some (bytes, str_relocs) ->
                output_string oc "\t.section __DWARF,__debug_str_offsets,regular,debug\n";
-               emit_section_bytes_with_both_relocs oc bytes [] [] str_relocs
+               emit_section_bytes_with_both_relocs oc Arch.size_addr bytes [] [] str_relocs
            | None -> ());
           (* Optional sections *)
           (match sections.debug_line with
@@ -718,7 +732,7 @@ module Dwarf_helpers = struct
                (match sections.line_table_label with
                 | Some label -> Printf.fprintf oc "%s:\n" label
                 | None -> ());
-               emit_section_bytes_with_both_relocs oc bytes relocs [] []
+               emit_section_bytes_with_both_relocs oc Arch.size_addr bytes relocs [] []
            | None -> ());
           (match sections.debug_loc with
            | Some bytes ->
@@ -733,7 +747,7 @@ module Dwarf_helpers = struct
         end else begin
           (* Linux ELF format with .debug_* sections *)
           output_string oc "\t.section .debug_info,\"\",@progbits\n";
-          emit_section_bytes_with_both_relocs oc sections.debug_info sections.debug_info_relocs sections.debug_info_sec_offset_relocs sections.debug_str_relocs;
+          emit_section_bytes_with_both_relocs oc Arch.size_addr sections.debug_info sections.debug_info_relocs sections.debug_info_sec_offset_relocs sections.debug_str_relocs;
           output_string oc "\t.section .debug_abbrev,\"\",@progbits\n";
           emit_section_bytes oc sections.debug_abbrev;
           (* Emit .debug_str only if non-empty (DWARF 5 with DW_FORM_string doesn't need it) *)
@@ -745,7 +759,7 @@ module Dwarf_helpers = struct
           (match sections.debug_str_offsets with
            | Some (bytes, str_relocs) ->
                output_string oc "\t.section .debug_str_offsets,\"\",@progbits\n";
-               emit_section_bytes_with_both_relocs oc bytes [] [] str_relocs
+               emit_section_bytes_with_both_relocs oc Arch.size_addr bytes [] [] str_relocs
            | None -> ());
           (* Optional sections *)
           (match sections.debug_line with
@@ -757,7 +771,7 @@ module Dwarf_helpers = struct
                (match sections.line_table_label with
                 | Some label -> Printf.fprintf oc "%s:\n" label
                 | None -> ());
-               emit_section_bytes_with_both_relocs oc bytes relocs [] []
+               emit_section_bytes_with_both_relocs oc Arch.size_addr bytes relocs [] []
            | None -> ());
           (match sections.debug_loc with
            | Some bytes ->

@@ -42,7 +42,7 @@ let standard_table : standard_entry list = [
       (DW_AT_name, DW_FORM_string);      (* DWARF 5: inline string *)
       (DW_AT_producer, DW_FORM_string);
       (DW_AT_comp_dir, DW_FORM_string);
-      (DW_AT_language, DW_FORM_data1);
+      (DW_AT_language, DW_FORM_data2);   (* 2 bytes for vendor extensions like 0x8001 *)
       (DW_AT_stmt_list, DW_FORM_sec_offset);  (* Pointer to line number program *)
     ];
   };
@@ -56,7 +56,7 @@ let standard_table : standard_entry list = [
       (DW_AT_name, DW_FORM_string);      (* DWARF 5: inline string *)
       (DW_AT_producer, DW_FORM_string);
       (DW_AT_comp_dir, DW_FORM_string);
-      (DW_AT_language, DW_FORM_data1);
+      (DW_AT_language, DW_FORM_data2);   (* 2 bytes for vendor extensions like 0x8001 *)
     ];
   };
 
@@ -71,6 +71,7 @@ let standard_table : standard_entry list = [
       (DW_AT_high_pc, DW_FORM_addr);
       (DW_AT_external, DW_FORM_flag_present);
       (DW_AT_decl_file, DW_FORM_data1);  (* Link to source file in line table *)
+      (DW_AT_frame_base, DW_FORM_exprloc);  (* Frame base for DW_OP_fbreg *)
     ];
   };
 
@@ -85,6 +86,7 @@ let standard_table : standard_entry list = [
       (DW_AT_high_pc, DW_FORM_addr);
       (DW_AT_external, DW_FORM_flag_present);
       (DW_AT_decl_file, DW_FORM_data1);  (* Link to source file in line table *)
+      (DW_AT_frame_base, DW_FORM_exprloc);  (* Frame base for DW_OP_fbreg *)
     ];
   };
 
@@ -169,6 +171,7 @@ let standard_table : standard_entry list = [
       (DW_AT_high_pc, DW_FORM_addr);
       (DW_AT_external, DW_FORM_flag_present);
       (DW_AT_decl_file, DW_FORM_data1);  (* Link to source file in line table *)
+      (DW_AT_frame_base, DW_FORM_exprloc);  (* Frame base for DW_OP_fbreg *)
     ];
   };
 ]

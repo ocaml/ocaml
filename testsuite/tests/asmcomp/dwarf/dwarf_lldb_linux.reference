@@ -7,7 +7,7 @@ Executing commands in 'XXXX'.
 (lldb) breakpoint set --file simple.ml --line XXX
 Breakpoint 1: where = simple`camlSimple.code_begin + 14, address = 0x00000000000000
 (lldb) run
-This version of LLDB has no plugin for the language "fortran08". Inspection of frame variables will be limited.
+This version of LLDB has no plugin for the language "XXXX". Inspection of frame variables will be limited.
 Process XXXX launched: 'XXXX' ($ARCH)
 Process XXXX stopped
 * thread #1, name = 'XXXX', stop reason = breakpoint 1.1

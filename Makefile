@@ -297,6 +297,7 @@ asmcomp_SOURCES = \
   asmcomp/debug/dwarf/dwarf_high/standard_abbrevs.mli asmcomp/debug/dwarf/dwarf_high/standard_abbrevs.ml \
   asmcomp/debug/dwarf/dwarf_high/dwarf_world.mli asmcomp/debug/dwarf/dwarf_high/dwarf_world.ml \
   asmcomp/debug/dwarf/dwarf_ocaml/dwarf.mli asmcomp/debug/dwarf/dwarf_ocaml/dwarf.ml \
+  asmcomp/dwarf_reg_map.mli asmcomp/dwarf_reg_map.ml \
   asmcomp/emitaux.mli asmcomp/emitaux.ml \
   asmcomp/emit.mli asmcomp/emit.ml \
   asmcomp/asmgen.mli asmcomp/asmgen.ml \
