@@ -33,7 +33,7 @@ type standard_entry = {
 
 (** Standard abbreviation codes used by all OCaml compilation units *)
 let standard_table : standard_entry list = [
-  (* Code 1: Compilation Unit *)
+  (* Code 1: Compilation Unit with line number table *)
   {
     code = 1;
     tag = DW_TAG_compile_unit;
@@ -47,9 +47,22 @@ let standard_table : standard_entry list = [
     ];
   };
 
-  (* Code 2: Subprogram without children (no parameters) *)
+  (* Code 2: Compilation Unit without line number table *)
   {
     code = 2;
+    tag = DW_TAG_compile_unit;
+    has_children = true;
+    attributes = [
+      (DW_AT_name, DW_FORM_string);      (* DWARF 5: inline string *)
+      (DW_AT_producer, DW_FORM_string);
+      (DW_AT_comp_dir, DW_FORM_string);
+      (DW_AT_language, DW_FORM_data1);
+    ];
+  };
+
+  (* Code 3: Subprogram without children (no parameters) *)
+  {
+    code = 3;
     tag = DW_TAG_subprogram;
     has_children = false;
     attributes = [
@@ -61,9 +74,9 @@ let standard_table : standard_entry list = [
     ];
   };
 
-  (* Code 3: Subprogram with children (has parameters) *)
+  (* Code 4: Subprogram with children (has parameters) *)
   {
-    code = 3;
+    code = 4;
     tag = DW_TAG_subprogram;
     has_children = true;
     attributes = [
@@ -75,9 +88,9 @@ let standard_table : standard_entry list = [
     ];
   };
 
-  (* Code 4: Formal parameter *)
+  (* Code 5: Formal parameter *)
   {
-    code = 4;
+    code = 5;
     tag = DW_TAG_formal_parameter;
     has_children = false;
     attributes = [
@@ -86,9 +99,9 @@ let standard_table : standard_entry list = [
     ];
   };
 
-  (* Code 5: Formal parameter with type *)
+  (* Code 6: Formal parameter with type *)
   {
-    code = 5;
+    code = 6;
     tag = DW_TAG_formal_parameter;
     has_children = false;
     attributes = [
@@ -98,9 +111,32 @@ let standard_table : standard_entry list = [
     ];
   };
 
-  (* Code 6: Base type *)
+  (* Code 7: Local variable with type and location *)
   {
-    code = 6;
+    code = 7;
+    tag = DW_TAG_variable;
+    has_children = false;
+    attributes = [
+      (DW_AT_name, DW_FORM_string);      (* DWARF 5: inline string *)
+      (DW_AT_type, DW_FORM_ref4);
+      (DW_AT_location, DW_FORM_exprloc);
+    ];
+  };
+
+  (* Code 8: Local variable with location (no type) *)
+  {
+    code = 8;
+    tag = DW_TAG_variable;
+    has_children = false;
+    attributes = [
+      (DW_AT_name, DW_FORM_string);      (* DWARF 5: inline string *)
+      (DW_AT_location, DW_FORM_exprloc);
+    ];
+  };
+
+  (* Code 9: Base type *)
+  {
+    code = 9;
     tag = DW_TAG_base_type;
     has_children = false;
     attributes = [
@@ -110,9 +146,9 @@ let standard_table : standard_entry list = [
     ];
   };
 
-  (* Code 7: Pointer type *)
+  (* Code 10: Pointer type *)
   {
-    code = 7;
+    code = 10;
     tag = DW_TAG_pointer_type;
     has_children = false;
     attributes = [
@@ -121,9 +157,9 @@ let standard_table : standard_entry list = [
     ];
   };
 
-  (* Code 8: Subprogram with type (has return type) *)
+  (* Code 11: Subprogram with type (has return type) *)
   {
-    code = 8;
+    code = 11;
     tag = DW_TAG_subprogram;
     has_children = true;
     attributes = [

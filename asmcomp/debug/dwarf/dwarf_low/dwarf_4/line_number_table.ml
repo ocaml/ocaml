@@ -231,7 +231,7 @@ let emit_header buf t =
   (* Write the content *)
   Buffer.add_buffer buf content_buf
 
-let emit t =
+let emit address_size t =
   let buf = Buffer.create 4096 in
   let relocations = ref [] in
 
@@ -245,7 +245,7 @@ let emit t =
     let base_offset = Buffer.length program_buf in
 
     (* Encode the opcode *)
-    let opcode_bytes = Line_number_opcode.encode opcode in
+    let opcode_bytes = Line_number_opcode.encode address_size opcode in
     Buffer.add_bytes program_buf opcode_bytes;
 
     (* Check if this was a DW_LNE_set_address with a label *)
@@ -256,9 +256,10 @@ let emit t =
         | None ->
             (* Label-based address: record relocation
                The address bytes start at: base_offset + 1 (extended prefix) +
-               uleb128 length (always 9 for set_address, encoded as 1 byte) +
-               1 (opcode byte) = base_offset + 3 *)
-            let addr_offset = base_offset + 3 in
+               uleb128 length (1 + address_size bytes, typically encodes as 1 byte for address_size <= 127) +
+               1 (opcode byte) = base_offset + 3 for typical address sizes *)
+            let length_bytes = Leb128.encode_uleb128 (1 + address_size) in
+            let addr_offset = base_offset + 1 + Bytes.length length_bytes + 1 in
             let label = Code_address.to_string addr in
             relocations := (addr_offset, label) :: !relocations
         end

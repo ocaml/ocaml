@@ -538,7 +538,7 @@ module Dwarf_helpers = struct
 
   let init ~source_file ~compilation_dir ~producer =
     if Dwarf_flags.is_dwarf_enabled () then begin
-      let state = Dwarf.create ~source_file ~compilation_dir ~producer () in
+      let state = Dwarf.create ~source_file ~compilation_dir ~producer ~address_size:Arch.size_addr () in
       dwarf_state := Some state
     end
 
@@ -644,18 +644,13 @@ module Dwarf_helpers = struct
                emit_from (reloc_offset + 8) rest
            | Sec_offset_reloc r ->
                (* Emit 4-byte section-relative offset for DW_AT_stmt_list.
-                  In individual object files, each CU's line table starts at offset 0
-                  within its own .debug_line section. We emit a reference to the
-                  .debug_line section symbol, which creates a relocation. The linker
-                  will update this value when concatenating .debug_line sections from
-                  multiple object files. *)
-               let _label = r.Dwarf_world.label in  (* Label for future use if needed *)
-               if Config.system = "macosx" then
-                 (* macOS: Use __DWARF segment section name *)
-                 Printf.fprintf oc "\t.long __DWARF.__debug_line\n"
-               else
-                 (* Linux/ELF: Use standard section name *)
-                 Printf.fprintf oc "\t.long .debug_line\n";
+                  Each CU's line table has a unique label (e.g., Ldebug_line_cu_1).
+                  We emit the offset from the section start (Ldebug_line_start) to
+                  this CU's label, so each CU points to its own line table contribution
+                  even after linking multiple object files together. *)
+               let label = r.Dwarf_world.label in
+               (* Emit offset: label - section_start *)
+               Printf.fprintf oc "\t.long %s - Ldebug_line_start\n" label;
                emit_from (reloc_offset + 4) rest
            | Str_reloc r ->
                (* Emit string table offset as plain numeric value.

@@ -41,11 +41,14 @@ type t = {
 
   (* Label for this CU's line table contribution *)
   line_table_label : string;
+
+  (* Target address size in bytes (4 for 32-bit, 8 for 64-bit) *)
+  address_size : int;
 }
 
 let line_table_label_counter = ref 0
 
-let create ~producer ~comp_dir ~source_file ~language () =
+let create ~producer ~comp_dir ~source_file ~language ~address_size () =
   let line_table = Line_number_table.create () in
   Line_number_table.set_comp_dir line_table comp_dir;
   (* Generate unique label for this CU's line table *)
@@ -63,6 +66,7 @@ let create ~producer ~comp_dir ~source_file ~language () =
     range_lists = Range_list_table.create ();
     line_number_table = line_table;
     line_table_label;
+    address_size;
   }
 
 let create_cu_die t =
@@ -83,11 +87,15 @@ let create_cu_die t =
     value = Constant (Int (Dwarf_language.to_code t.language));
     form = DW_FORM_data1;
   } in
-  let cu = Proto_die.add_attribute cu {
-    attr = DW_AT_stmt_list;
-    value = Label_sec_offset t.line_table_label;  (* Reference to line table label *)
-    form = DW_FORM_sec_offset;
-  } in
+  (* Only add DW_AT_stmt_list if we have line number data *)
+  let files = Line_number_table.files t.line_number_table in
+  let cu = if List.length files > 0 then
+    Proto_die.add_attribute cu {
+      attr = DW_AT_stmt_list;
+      value = Label_sec_offset t.line_table_label;  (* Reference to line table label *)
+      form = DW_FORM_sec_offset;
+    }
+  else cu in
   Proto_die.set_has_children cu true
 
 let add_die t die =
@@ -292,19 +300,19 @@ let emit_debug_abbrev _t =
      offset 0 and find the same table structure. *)
   Standard_abbrevs.emit_standard_table ()
 
-let write_attribute_value buf (value : Dwarf_value.t) (form : Dwarf_form.t) str_indices str_offsets relocs sec_offset_relocs str_relocs =
+let write_attribute_value buf address_size (value : Dwarf_value.t) (form : Dwarf_form.t) str_indices str_offsets relocs sec_offset_relocs str_relocs =
   match form, value with
   | DW_FORM_addr, Address addr ->
-      (* 8-byte address for 64-bit systems *)
-      let bytes = Bytes.create 8 in
+      (* Address size from target architecture (4 for 32-bit, 8 for 64-bit) *)
+      let bytes = Bytes.create address_size in
       Bytes.set_int64_le bytes 0 addr;
       Buffer.add_bytes buf bytes
   | DW_FORM_addr, Label_address label ->
-      (* 8-byte address that needs relocation *)
+      (* Address that needs relocation - size from target architecture *)
       let offset = Buffer.length buf in
       relocs := { offset; label } :: !relocs;
       (* Write placeholder zeros - will be replaced by assembler *)
-      let bytes = Bytes.create 8 in
+      let bytes = Bytes.create address_size in
       Buffer.add_bytes buf bytes
   | DW_FORM_data1, Constant (Int n) ->
       Buffer.add_char buf (Char.chr (n land 0xff))
@@ -421,7 +429,7 @@ let build_abbrev_map cu_with_children =
   assign_codes cu_with_children;
   die_map
 
-let rec write_die buf die die_map str_indices str_offsets relocs_ref sec_offset_relocs_ref str_relocs_ref =
+let rec write_die buf address_size die die_map str_indices str_offsets relocs_ref sec_offset_relocs_ref str_relocs_ref =
   (* Look up abbreviation code for this DIE *)
   let abbrev_code =
     try Hashtbl.find die_map die
@@ -436,11 +444,11 @@ let rec write_die buf die die_map str_indices str_offsets relocs_ref sec_offset_
   Leb128.write_uleb128 buf abbrev_code;
   (* Write attribute values in the order they appear in the abbreviation *)
   List.iter (fun (attr : Proto_die.attribute) ->
-    write_attribute_value buf attr.value attr.form str_indices str_offsets relocs_ref sec_offset_relocs_ref str_relocs_ref
+    write_attribute_value buf address_size attr.value attr.form str_indices str_offsets relocs_ref sec_offset_relocs_ref str_relocs_ref
   ) (Proto_die.attributes die);
   (* Recursively write children *)
   List.iter (fun child ->
-    write_die buf child die_map str_indices str_offsets relocs_ref sec_offset_relocs_ref str_relocs_ref
+    write_die buf address_size child die_map str_indices str_offsets relocs_ref sec_offset_relocs_ref str_relocs_ref
   ) (Proto_die.children die);
   (* Write null DIE to terminate children list if this DIE has children *)
   if Proto_die.has_children die && List.length (Proto_die.children die) > 0 then
@@ -465,7 +473,7 @@ let emit_debug_info_with_str_indices t str_indices str_offsets =
   let die_buf = Buffer.create 2048 in
 
   (* Write CU DIE and all its children with proper abbrev codes *)
-  write_die die_buf cu_with_children die_map str_indices str_offsets relocs_ref sec_offset_relocs_ref str_relocs_ref;
+  write_die die_buf t.address_size cu_with_children die_map str_indices str_offsets relocs_ref sec_offset_relocs_ref str_relocs_ref;
 
   let die_bytes = Buffer.contents die_buf in
   let die_length = String.length die_bytes in
@@ -486,8 +494,8 @@ let emit_debug_info_with_str_indices t str_indices str_offsets =
   Buffer.add_string buf "\x05\x00"; (* Version 5 *)
   (* Unit type (1 byte) - DW_UT_compile = 0x01 *)
   Buffer.add_char buf '\x01';
-  (* Address size (1 byte) *)
-  Buffer.add_char buf '\x08'; (* 64-bit *)
+  (* Address size (1 byte) - from target architecture *)
+  Buffer.add_char buf (Char.chr t.address_size);
   (* Abbreviation table offset (4 bytes) - always 0 for first CU *)
   Buffer.add_string buf "\x00\x00\x00\x00";
 
@@ -506,7 +514,7 @@ let emit (t : t) : section_data =
     let files = Line_number_table.files t.line_number_table in
     if List.length files = 0 then None
     else
-      let bytes, reloc_pairs = Line_number_table.emit t.line_number_table in
+      let bytes, reloc_pairs = Line_number_table.emit t.address_size t.line_number_table in
       (* Convert (int * string) list to relocation list *)
       let relocs = List.map (fun (offset, label) -> { offset; label }) reloc_pairs in
       Some (bytes, relocs)

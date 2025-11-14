@@ -2,7 +2,7 @@
 Current executable set to 'XXXX' ($ARCH).
 (lldb) command source -s 0 'XXXX'
 Executing commands in 'XXXX'.
-(lldb) settings set target.disable-aslr false
+(lldb) settings set target.disable-aslr true
 (lldb) settings set stop-disassembly-display never
 (lldb) breakpoint set --file simple.ml --line XXX
 Breakpoint 1: where = simple`camlSimple.code_begin + 14, address = 0x00000000000000

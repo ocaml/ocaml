@@ -1,4 +1,4 @@
-settings set target.disable-aslr false
+settings set target.disable-aslr true
 settings set stop-disassembly-display never
 breakpoint set --name camlSimple.calculate_274
 run

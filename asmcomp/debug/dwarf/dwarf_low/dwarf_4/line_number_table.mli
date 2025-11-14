@@ -53,9 +53,10 @@ val files : t -> string list
 val set_comp_dir : t -> string -> unit
 
 (** Emit the .debug_line section with address relocations.
+    @param address_size Size of addresses in bytes (4 for 32-bit, 8 for 64-bit)
     Returns (bytes, relocations) where relocations point to label addresses
     that need to be resolved by the assembler/linker. *)
-val emit : t -> bytes * (int * string) list  (* (offset, label) pairs *)
+val emit : int -> t -> bytes * (int * string) list  (* (offset, label) pairs *)
 
 (** Pretty-printer *)
 val print : Format.formatter -> t -> unit

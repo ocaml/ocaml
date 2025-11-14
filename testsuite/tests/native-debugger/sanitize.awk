@@ -58,6 +58,10 @@
     # GDB warning when ASLR cannot be disabled in sandboxed environments
     gsub(/warning: Error disabling address space randomization.*/, "")
 
+    # LLDB warnings when ASLR cannot be disabled in sandboxed environments
+    gsub(/warning: failed to set.*disable-aslr.*/, "")
+    gsub(/error: failed to set.*disable-aslr.*/, "")
+
     # Replace line number when setting breakpoints in GDB.
     gsub(/line [0-9]+/, "line XXX")
 

@@ -28,6 +28,7 @@ val create :
   comp_dir:string ->
   source_file:string ->
   language:Dwarf_language.t ->
+  address_size:int ->
   unit ->
   t
 

@@ -71,8 +71,6 @@ let to_code = function
   | DW_LANG_UPC -> 0x0012
   | DW_LANG_D -> 0x0013
   | DW_LANG_Python -> 0x0014
-  (* OCaml uses a custom extension code *)
-  | DW_LANG_OCaml -> 0x0023
   | DW_LANG_C11 -> 0x001d
   | DW_LANG_Swift -> 0x001e
   | DW_LANG_Julia -> 0x001f
@@ -80,6 +78,8 @@ let to_code = function
   | DW_LANG_C_plus_plus_14 -> 0x0021
   | DW_LANG_Fortran03 -> 0x0022
   | DW_LANG_Fortran08 -> 0x0023
+  (* OCaml uses vendor extension range (>= 0x8000) to avoid conflicts *)
+  | DW_LANG_OCaml -> 0x8001
   | DW_LANG_RenderScript -> 0x0024
   | DW_LANG_BLISS -> 0x0025
   | DW_LANG_Rust -> 0x001c

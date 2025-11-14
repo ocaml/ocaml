@@ -24,7 +24,7 @@ let is_enabled () =
   (* Check if debugging is enabled and DWARF fidelity is set *)
   !Clflags.debug && Dwarf_flags.is_dwarf_enabled ()
 
-let create ~source_file ~compilation_dir ~producer () =
+let create ~source_file ~compilation_dir ~producer ~address_size () =
   if not (is_enabled ()) then
     Misc.fatal_error "DWARF generation requested but not enabled";
 
@@ -33,6 +33,7 @@ let create ~source_file ~compilation_dir ~producer () =
     ~comp_dir:compilation_dir
     ~source_file
     ~language:Dwarf_language.ocaml
+    ~address_size
     ()
   in
 

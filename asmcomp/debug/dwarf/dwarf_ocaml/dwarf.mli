@@ -27,11 +27,13 @@ type t
     - source_file: The original .ml source file
     - compilation_dir: The directory where compilation occurred
     - producer: Compiler version string
+    - address_size: Target architecture address size in bytes (4 for 32-bit, 8 for 64-bit)
 *)
 val create :
   source_file:string ->
   compilation_dir:string ->
   producer:string ->
+  address_size:int ->
   unit ->
   t
 

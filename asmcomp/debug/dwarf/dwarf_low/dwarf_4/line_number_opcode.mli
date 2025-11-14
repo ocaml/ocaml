@@ -57,8 +57,10 @@ type t =
 (** Get the byte code for a standard opcode *)
 val standard_opcode_to_code : standard_opcode -> int
 
-(** Encode an opcode to bytes *)
-val encode : t -> bytes
+(** Encode an opcode to bytes.
+    @param address_size Size of addresses in bytes (4 for 32-bit, 8 for 64-bit)
+    @param opcode The opcode to encode *)
+val encode : int -> t -> bytes
 
 (** Pretty-printer *)
 val print : Format.formatter -> t -> unit

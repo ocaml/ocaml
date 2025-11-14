@@ -1,4 +1,4 @@
-set disable-randomization off
+set disable-randomization on
 set debuginfod enabled off
 directory .
 break breakpoint.ml:5

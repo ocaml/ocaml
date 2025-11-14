@@ -60,7 +60,7 @@ let standard_opcode_to_code = function
   | DW_LNS_set_epilogue_begin -> 0x0b
   | DW_LNS_set_isa -> 0x0c
 
-let encode_extended buf ext_op =
+let encode_extended buf address_size ext_op =
   match ext_op with
   | DW_LNE_end_sequence ->
       (* Length: 1, Opcode: 0x01 - encoded as ULEB128 *)
@@ -68,18 +68,19 @@ let encode_extended buf ext_op =
       Buffer.add_bytes buf len_bytes;
       Buffer.add_char buf '\001'
   | DW_LNE_set_address addr ->
-      (* Length: 1 + address_size, Opcode: 0x02, Address: 8 bytes - length as ULEB128 *)
-      let len_bytes = Leb128.encode_uleb128 9 in
+      (* Length: 1 (opcode) + address_size (from target architecture) *)
+      let len_bytes = Leb128.encode_uleb128 (1 + address_size) in
       Buffer.add_bytes buf len_bytes;
       Buffer.add_char buf '\002'; (* DW_LNE_set_address *)
       begin match Code_address.absolute addr with
       | Some abs_addr ->
-          let bytes = Bytes.create 8 in
+          let bytes = Bytes.create address_size in
           Bytes.set_int64_le bytes 0 abs_addr;
           Buffer.add_bytes buf bytes
       | None ->
-          (* Label-based address - emit placeholder *)
-          Buffer.add_string buf "\x00\x00\x00\x00\x00\x00\x00\x00"
+          (* Label-based address - emit placeholder of correct size *)
+          let placeholder = Bytes.create address_size in
+          Buffer.add_bytes buf placeholder
       end
   | DW_LNE_define_file { name; dir_index; mtime; size } ->
       (* Calculate length first *)
@@ -109,7 +110,7 @@ let encode_extended buf ext_op =
       Buffer.add_char buf '\004'; (* DW_LNE_set_discriminator *)
       Buffer.add_bytes buf disc_bytes
 
-let encode opcode =
+let encode address_size opcode =
   let buf = Buffer.create 16 in
   (match opcode with
   | Standard (std_op, operand_opt) ->
@@ -127,7 +128,7 @@ let encode opcode =
       end
   | Extended ext_op ->
       Buffer.add_char buf '\000'; (* Extended opcode prefix *)
-      encode_extended buf ext_op
+      encode_extended buf address_size ext_op
   | Special opcode ->
       if opcode < 1 || opcode > 255 then
         invalid_arg "Special opcode out of range";
