@@ -3112,6 +3112,11 @@ asmcomp/deadcode.cmx : \
     asmcomp/deadcode.cmi
 asmcomp/deadcode.cmi : \
     asmcomp/mach.cmi
+asmcomp/dwarf_reg_map.cmo : \
+    asmcomp/dwarf_reg_map.cmi
+asmcomp/dwarf_reg_map.cmx : \
+    asmcomp/dwarf_reg_map.cmi
+asmcomp/dwarf_reg_map.cmi :
 asmcomp/emit.cmi : \
     asmcomp/linear.cmi \
     asmcomp/cmm.cmi
@@ -3624,6 +3629,7 @@ asmcomp/emit.cmo : \
     utils/numbers.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
+    parsing/location.cmi \
     asmcomp/linear.cmi \
     lambda/lambda.cmi \
     asmcomp/emitenv.cmi \
@@ -3651,6 +3657,7 @@ asmcomp/emit.cmx : \
     utils/numbers.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
+    parsing/location.cmx \
     asmcomp/linear.cmx \
     lambda/lambda.cmx \
     asmcomp/emitenv.cmi \
@@ -3764,6 +3771,7 @@ asmcomp/emit.cmo : \
     asmcomp/proc.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
+    parsing/location.cmi \
     asmcomp/linear.cmi \
     lambda/lambda.cmi \
     asmcomp/emitenv.cmi \
@@ -3785,6 +3793,7 @@ asmcomp/emit.cmx : \
     asmcomp/proc.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
+    parsing/location.cmx \
     asmcomp/linear.cmx \
     lambda/lambda.cmx \
     asmcomp/emitenv.cmi \

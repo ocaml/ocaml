@@ -28,6 +28,11 @@ let create ~source_file ~compilation_dir ~producer ~address_size () =
   if not (is_enabled ()) then
     Misc.fatal_error "DWARF generation requested but not enabled";
 
+  (* TODO: Initialize architecture-specific register mapping.
+     For now, Arch_reg_mapping uses a default identity mapping.
+     The proper mapping can be set later from architecture-specific init code:
+       Arch_reg_mapping.set_mapper Dwarf_reg_map.to_dwarf_register; *)
+
   let world = Dwarf_world.create
     ~producer
     ~comp_dir:compilation_dir

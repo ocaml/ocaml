@@ -81,13 +81,18 @@ let is_visible_at var addr =
 let location_to_expression kind =
   let buf = Buffer.create 32 in
   begin match kind with
-  | Register reg_num ->
+  | Register backend_reg_num ->
+      (* Convert backend register number to DWARF register number using
+         architecture-specific mapping. This is necessary because different
+         architectures use different register numbering schemes in their
+         backends, but must emit standard DWARF register numbers. *)
+      let dwarf_reg_num = Arch_reg_mapping.to_dwarf_register backend_reg_num in
       (* DW_OP_reg0 through DW_OP_reg31 *)
-      if reg_num >= 0 && reg_num <= 31 then
-        Buffer.add_char buf (Char.chr (0x50 + reg_num)) (* DW_OP_reg0 + N *)
+      if dwarf_reg_num >= 0 && dwarf_reg_num <= 31 then
+        Buffer.add_char buf (Char.chr (0x50 + dwarf_reg_num)) (* DW_OP_reg0 + N *)
       else begin
         Buffer.add_char buf '\x90'; (* DW_OP_regx *)
-        let reg_bytes = Leb128.encode_uleb128 reg_num in
+        let reg_bytes = Leb128.encode_uleb128 dwarf_reg_num in
         Buffer.add_bytes buf reg_bytes
       end
 

@@ -282,6 +282,7 @@ asmcomp_SOURCES = \
   asmcomp/debug/dwarf/dwarf_low/dwarf_operator.mli asmcomp/debug/dwarf/dwarf_low/dwarf_operator.ml \
   asmcomp/debug/dwarf/dwarf_low/address_class.mli asmcomp/debug/dwarf/dwarf_low/address_class.ml \
   asmcomp/debug/dwarf/dwarf_low/address_range.mli asmcomp/debug/dwarf/dwarf_low/address_range.ml \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_4/arch_reg_mapping.mli asmcomp/debug/dwarf/dwarf_low/dwarf_4/arch_reg_mapping.ml \
   asmcomp/debug/dwarf/dwarf_low/dwarf_4/variable_location.mli asmcomp/debug/dwarf/dwarf_low/dwarf_4/variable_location.ml \
   asmcomp/debug/dwarf/dwarf_low/dwarf_4/location_list_entry.mli asmcomp/debug/dwarf/dwarf_low/dwarf_4/location_list_entry.ml \
   asmcomp/debug/dwarf/dwarf_low/dwarf_4/location_list_table.mli asmcomp/debug/dwarf/dwarf_low/dwarf_4/location_list_table.ml \
