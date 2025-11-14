@@ -26,6 +26,19 @@
     gsub("(arm64)", "$ARCH")
     gsub("(riscv64)", "$ARCH")
 
+    # Replace thread names and numbers in LLDB output
+    gsub(/thread #[0-9]+, name = '[^']*'/, "thread #X, name = 'XXXX'")
+    gsub(/thread #[0-9]+/, "thread #X")
+
+    # Replace compilation directory paths
+    gsub(/Compilation directory is \/.*/, "Compilation directory is XXXX")
+
+    # Replace located in paths
+    gsub(/Located in \/.*/, "Located in XXXX")
+
+    # Replace LLDB fortran language warnings
+    gsub(/This version of LLDB has no plugin for the language "fortran[0-9]*". Inspection of frame variables will be limited./, "")
+
     # Replace offsets in disassembly output
     gsub(/\<\+[0-9]+\>/, "<+XX>")
 
@@ -44,6 +57,11 @@
 
     # Replace line number when setting breakpoints in GDB.
     gsub(/line [0-9]+/, "line XXX")
+
+    # Replace source language output from GDB info source
+    gsub(/Source language is [a-z0-9]+\./, "Source language is XXXX.")
+    gsub(/Producer is .*\./, "Producer is XXXX.")
+    gsub(/Compiled with DWARF [0-9]+ debugging format\./, "Compiled with DWARF X debugging format.")
 
     # Work around inconsistent name mangling
     gsub(/c_to_ocaml_[0-9]+/, "c_to_ocaml")
