@@ -73,11 +73,11 @@ STDLIB_MODULE_BASENAMES = \
   mutex \
   condition \
   semaphore \
-  domain \
   camlinternalFormat \
   printf \
   arg \
   printexc \
+  domain \
   fun \
   gc \
   in_channel \
