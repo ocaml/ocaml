@@ -314,12 +314,14 @@ let call_linker file_list startup_file output_name =
     else if !Clflags.output_c_object then Ccomp.Partial
     else Ccomp.Exe
   in
-  (* Warn about Mach-O DWARF multi-object limitation *)
-  if Config.system = "macosx" && !Clflags.debug && List.length file_list > 1 then begin
+  (* Warn about non-ELF platforms where multi-object DWARF may have issues *)
+  if !Clflags.debug && List.length file_list > 1 &&
+     not (Config.system = "linux" || Config.system = "gnu" || Config.system = "macosx") then begin
     Printf.eprintf
-      "Warning: macOS DWARF multi-object linking limitation detected.\n\
-       Line number information may be incorrect in debuggers.\n\
+      "Warning: DWARF multi-object linking on %s may have limitations.\n\
+       Section-relative relocations may not work correctly.\n\
        See DWARF_LIMITATIONS.md for details.\n%!"
+      Config.system
   end;
   let exitcode = Ccomp.call_linker mode output_name files ldflags in
   if not (exitcode = 0)

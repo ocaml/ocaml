@@ -659,22 +659,28 @@ module Dwarf_helpers = struct
            | Sec_offset_reloc r ->
                (* Emit 4-byte section-relative offset for DW_AT_stmt_list.
                   For multi-object linking to work, we need the linker to adjust
-                  these offsets when concatenating .debug_line sections. *)
-               let label = r.Dwarf_world.label in
-               if Config.system = "linux" || Config.system = "gnu" || Config.system = "macosx" then begin
-                 (* ELF and modern Mach-O: Emit label without section_start subtraction.
-                    The assembler creates a relocation entry that the linker will
-                    convert to a section offset in the final binary.
+                  these offsets when concatenating .debug_line sections.
 
-                    For Mach-O (macOS), modern versions of ld64 handle debug section
-                    relocations correctly during multi-object linking. If issues arise
-                    with older toolchains, we may need to fall back to assembly-time
-                    computation for specific macOS versions. *)
+                  CRITICAL: Only ELF linkers properly convert relocations in debug
+                  sections to section-relative offsets. Mach-O and other platforms
+                  use absolute relocations or assembly-time computation, both of
+                  which break multi-object linking. *)
+               let label = r.Dwarf_world.label in
+               if Config.system = "linux" || Config.system = "gnu" then begin
+                 (* ELF: Emit label relocation. The ELF linker will convert this to a
+                    section-relative offset in the merged .debug_line section. *)
                  Printf.fprintf oc "\t.long %s\n" label
+               end else if Config.system = "macosx" then begin
+                 (* Mach-O: Use subtractor relocation with weak section base symbol.
+                    This creates a pair of relocations (ARM64_RELOC_SUBTRACTOR +
+                    ARM64_RELOC_UNSIGNED) that the linker resolves to the offset
+                    from the start of the merged .debug_line section. *)
+                 Printf.fprintf oc "\t.long %s - __debug_line_section_base\n" label
                end else begin
                  (* Other platforms: Emit section-relative offset computed at assembly time.
-                    LIMITATION: This breaks multi-object linking because the linker
-                    doesn't adjust these constants when concatenating .debug_line sections. *)
+                    LIMITATION: This breaks multi-object linking because the offset
+                    is computed relative to this .o file's Ldebug_line_start, not the final
+                    merged section. Platforms need specific relocation support or weak symbols. *)
                  Printf.fprintf oc "\t.long %s - Ldebug_line_start\n" label
                end;
                emit_from (reloc_offset + 4) rest
@@ -738,7 +744,13 @@ module Dwarf_helpers = struct
           (match sections.debug_line with
            | Some (bytes, relocs) ->
                output_string oc "\t.section __DWARF,__debug_line,regular,debug\n";
-               (* Emit section start label for computing offsets *)
+               (* Emit weak global symbol at section start for multi-object linking.
+                  The linker will keep only one instance of this symbol (from the first .o),
+                  allowing DW_AT_stmt_list offsets to be computed correctly via
+                  subtractor relocations: .long label - __debug_line_section_base *)
+               output_string oc "\t.weak_definition __debug_line_section_base\n";
+               output_string oc "__debug_line_section_base:\n";
+               (* Emit local label for assembly-time computation (unused on Mach-O) *)
                output_string oc "Ldebug_line_start:\n";
                (* Emit label for this CU's line table if present *)
                (match sections.line_table_label with
