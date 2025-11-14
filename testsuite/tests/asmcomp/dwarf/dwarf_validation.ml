@@ -1,3 +1,12 @@
+(* TEST
+ flags = "-g";
+ setup-ocamlopt.byte-build-env;
+ ocamlopt_byte_exit_status = "0";
+ ocamlopt.byte;
+ script = "sh ${test_source_directory}/validate_dwarf_structures.sh dwarf_validation ${ocamlopt} ${arch}";
+ script;
+*)
+
 (* Test program for DWARF structure validation *)
 
 let rec factorial n =

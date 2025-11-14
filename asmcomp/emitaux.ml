@@ -541,6 +541,14 @@ module Dwarf_helpers = struct
       (* Initialize architecture-specific DWARF register number mapping *)
       Arch_reg_mapping.set_mapper Dwarf_reg_map.to_dwarf_register;
       Arch_reg_mapping.set_frame_pointer_register Dwarf_reg_map.frame_pointer_dwarf_register;
+
+      (* Warn if architecture doesn't have verified DWARF register mapping *)
+      let supported_archs = ["amd64"; "arm64"] in
+      if not (List.mem Config.architecture supported_archs) then
+        Printf.eprintf "Warning: DWARF support for architecture '%s' uses default register mapping.\n\
+                        Register numbers and frame pointer may be incorrect. Verified architectures: %s\n%!"
+          Config.architecture (String.concat ", " supported_archs);
+
       let state = Dwarf.create ~source_file ~compilation_dir ~producer ~address_size:Arch.size_addr () in
       dwarf_state := Some state
     end
@@ -653,16 +661,20 @@ module Dwarf_helpers = struct
                   For multi-object linking to work, we need the linker to adjust
                   these offsets when concatenating .debug_line sections. *)
                let label = r.Dwarf_world.label in
-               if Config.system = "linux" || Config.system = "gnu" then begin
-                 (* ELF: Emit label without section_start subtraction.
+               if Config.system = "linux" || Config.system = "gnu" || Config.system = "macosx" then begin
+                 (* ELF and modern Mach-O: Emit label without section_start subtraction.
                     The assembler creates a relocation entry that the linker will
-                    convert to a section offset in the final binary. *)
+                    convert to a section offset in the final binary.
+
+                    For Mach-O (macOS), modern versions of ld64 handle debug section
+                    relocations correctly during multi-object linking. If issues arise
+                    with older toolchains, we may need to fall back to assembly-time
+                    computation for specific macOS versions. *)
                  Printf.fprintf oc "\t.long %s\n" label
                end else begin
-                 (* Mach-O/other: Emit section-relative offset computed at assembly time.
+                 (* Other platforms: Emit section-relative offset computed at assembly time.
                     LIMITATION: This breaks multi-object linking because the linker
-                    doesn't adjust these constants when concatenating .debug_line sections.
-                    Proper fix requires platform-specific section-relative relocations. *)
+                    doesn't adjust these constants when concatenating .debug_line sections. *)
                  Printf.fprintf oc "\t.long %s - Ldebug_line_start\n" label
                end;
                emit_from (reloc_offset + 4) rest

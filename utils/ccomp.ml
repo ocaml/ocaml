@@ -174,6 +174,9 @@ let remove_Wl cclibs =
 
 let call_linker mode output_name files extra =
   Profile.record_call "c-linker" (fun () ->
+    (* Add -g to linker flags when debug info is enabled, so the linker
+       preserves DWARF sections in the output binary *)
+    let debug_flag = if !Clflags.debug then "-g" else "" in
     let cmd =
       if mode = Partial then
         let (l_prefix, files) =
@@ -189,7 +192,7 @@ let call_linker mode output_name files extra =
           (quote_files ~response_files:true (remove_Wl files))
           extra
       else
-        Printf.sprintf "%s -o %s %s %s %s %s %s"
+        Printf.sprintf "%s %s -o %s %s %s %s %s"
           (match !Clflags.c_compiler, mode with
           | Some cc, _ -> cc
           | None, Exe -> Config.mkexe
@@ -197,8 +200,8 @@ let call_linker mode output_name files extra =
           | None, MainDll -> Config.mkmaindll
           | None, Partial -> assert false
           )
+          debug_flag
           (Filename.quote output_name)
-          ""  (*(Clflags.std_include_flag "-I")*)
           (quote_prefixed ~response_files:true "-L"
              (Load_path.get_path_list ()))
           (String.concat " " (List.rev !Clflags.all_ccopts))
