@@ -243,6 +243,46 @@ let take_last n s = subrange ~first:(length s - n) s
 let drop_last n s = subrange ~last:(length s - n - 1) s
 let cut_last n s = (drop_last n s, take_last n s)
 
+(* Splitting with predicates *)
+
+let take_first_while sat s =
+  let len = length s and i = ref 0 in
+  while !i < len && sat (unsafe_get s !i) do incr i done;
+  if !i = len then s else sub s 0 !i
+
+let drop_first_while sat s =
+  let len = length s and i = ref 0 in
+  while !i < len && sat (unsafe_get s !i) do incr i done;
+  if !i = 0 then s else sub s !i (len - !i)
+
+let cut_first_while sat s =
+  let len = length s and i = ref 0 in
+  while !i < len && sat (unsafe_get s !i) do incr i done;
+  if !i = len then s, "" else
+  if !i = 0 then "", s else
+  sub s 0 !i, sub s !i (len - !i)
+
+let take_last_while sat s =
+  let len = length s in
+  let i = ref (len - 1) in
+  while !i >= 0 && sat (unsafe_get s !i) do decr i done;
+  if !i < 0 then s else sub s (!i + 1) (len - (!i + 1))
+
+let drop_last_while sat s =
+  let len = length s in
+  let i = ref (len - 1) in
+  while !i >= 0 && sat (unsafe_get s !i) do decr i done;
+  if !i < 0 then "" else sub s 0 (!i + 1)
+
+let cut_last_while sat s =
+  let len = length s in
+  let i = ref (len - 1) in
+  while !i >= 0 && sat (unsafe_get s !i) do decr i done;
+  if !i < 0 then "", s else
+  if !i = len - 1 then s, "" else
+  let j = !i + 1 in
+  sub s 0 j, sub s j (len - j)
+
 (* Splitting with separators *)
 
 (* duplicated in bytes.ml *)

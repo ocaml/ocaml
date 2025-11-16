@@ -138,7 +138,7 @@ let () =
   assert (Sys.max_string_length - 1 < max_int)
 
 let () =
-  (* Test breaking with magnitudes *)
+  (* Test splitting with magnitudes *)
   (* String.take_first *)
   assert (String.take_first (-1) "" = "");
   assert (String.take_first (-1) "a" = "");
@@ -217,4 +217,38 @@ let () =
   assert (String.cut_last 2 "" = ("", ""));
   assert (String.cut_last 2 "a" = ("", "a"));
   assert (String.cut_last 2 "ab" = ("", "ab"));
+  ()
+
+let () =
+  (* Test splitting with predicates *)
+  (* String.take_first_while *)
+  assert (String.take_first_while Char.Ascii.is_white "" = "");
+  assert (String.take_first_while Char.Ascii.is_white "  " = "  ");
+  assert (String.take_first_while Char.Ascii.is_white "abc" = "");
+  assert (String.take_first_while Char.Ascii.is_white "  abc" = "  ");
+  (* String.drop_first_while *)
+  assert (String.drop_first_while Char.Ascii.is_white "" = "");
+  assert (String.drop_first_while Char.Ascii.is_white "  " = "");
+  assert (String.drop_first_while Char.Ascii.is_white "abc" = "abc");
+  assert (String.drop_first_while Char.Ascii.is_white "  abc" = "abc");
+  (* String.cut_first_while *)
+  assert (String.cut_first_while Char.Ascii.is_white "" = ("", ""));
+  assert (String.cut_first_while Char.Ascii.is_white "  " = ("  ", ""));
+  assert (String.cut_first_while Char.Ascii.is_white "abc" = ("", "abc"));
+  assert (String.cut_first_while Char.Ascii.is_white "  abc" = ("  ", "abc"));
+  (* String.take_last_while *)
+  assert (String.take_last_while Char.Ascii.is_white "" = "");
+  assert (String.take_last_while Char.Ascii.is_white "  " = "  ");
+  assert (String.take_last_while Char.Ascii.is_white "abc" = "");
+  assert (String.take_last_while Char.Ascii.is_white "abc  " = "  ");
+  (* String.drop_last_while *)
+  assert (String.drop_last_while Char.Ascii.is_white "" = "");
+  assert (String.drop_last_while Char.Ascii.is_white "  " = "");
+  assert (String.drop_last_while Char.Ascii.is_white "abc" = "abc");
+  assert (String.drop_last_while Char.Ascii.is_white "abc  " = "abc");
+  (* String.cut_last_while *)
+  assert (String.cut_last_while Char.Ascii.is_white "" = ("", ""));
+  assert (String.cut_last_while Char.Ascii.is_white "  " = ("", "  "));
+  assert (String.cut_last_while Char.Ascii.is_white "abc" = ("abc", ""));
+  assert (String.cut_last_while Char.Ascii.is_white "abc  " = ("abc", "  "));
   ()

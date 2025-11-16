@@ -88,6 +88,9 @@ Working version
 
 ### Standard library:
 
+- #XXXXX: Add String.{drop,take,cut}_{first,last}_while
+  (Daniel Bünzli, review by ZZZZZ)
+
 - #14363: Preserve the backtrace at exceptional domain termination. Domain.join
   on an exceptionally terminated domain re-raises the exception with the
   backtrace.
@@ -99,7 +102,8 @@ Working version
   (Leonardo Santos, review by Florian Angeletti and Gabriel Scherer)
 
 - #14352: Add String.{drop,take,cut}_{first,last}.
-  (Daniel Bünzli, review by David Allsopp, Vincent Laviron)
+  (Daniel Bünzli, review by David Allsopp, Nicolás Ojeda Bär and
+  Vincent Laviron)
 
 - #14185: List.split_map
   (Jeremy Yallop, review by Daniel Bünzli, Nicolás Ojeda Bär and Damien Doligez)
