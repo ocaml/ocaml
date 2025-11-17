@@ -88,8 +88,8 @@ Working version
 
 ### Standard library:
 
-- #XXXXX: Add String.{drop,take,cut}_{first,last}_while
-  (Daniel Bünzli, review by ZZZZZ)
+- #14362: Add String.{drop,take,cut}_{first,last}_while
+  (Daniel Bünzli, review by Nicolás Ojeda Bär)
 
 - #14363: Preserve the backtrace at exceptional domain termination. Domain.join
   on an exceptionally terminated domain re-raises the exception with the

@@ -266,7 +266,9 @@ let take_last_while sat s =
   let len = length s in
   let i = ref (len - 1) in
   while !i >= 0 && sat (unsafe_get s !i) do decr i done;
-  if !i < 0 then s else sub s (!i + 1) (len - (!i + 1))
+  if !i < 0 then s else
+  let j = !i + 1 in
+  sub s j (len - j)
 
 let drop_last_while sat s =
   let len = length s in
