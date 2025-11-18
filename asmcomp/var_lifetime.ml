@@ -132,6 +132,15 @@ let finalize tracker =
   let final_label = new_label tracker in
   List.iter (fun ve -> ve.ve_end_label <- Some final_label) !(tracker.parameters);
 
+  (* Set end labels for all locals in all scopes (function end) *)
+  let rec set_end_labels scope =
+    List.iter (fun ve -> ve.ve_end_label <- Some final_label) !(scope.scope_vars);
+    match scope.scope_parent with
+    | Some parent -> set_end_labels parent
+    | None -> ()
+  in
+  set_end_labels !(tracker.current_scope);
+
   (* Convert parameters *)
   let parameters = List.map entry_to_var_info (List.rev !(tracker.parameters)) in
 
