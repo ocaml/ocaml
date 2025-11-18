@@ -72,10 +72,9 @@ val add_line_number :
   column:int ->
   unit
 
-(** Add a variable to the current function.
+(** Add a variable to the current function or lexical block.
 
-    Phase 5A: This adds a variable (parameter or local) to the most recently
-    added function. For now, this tracks initial location only.
+    Variables are added to the current scope (function or lexical block).
 
     Parameters:
     - t: DWARF state
@@ -88,6 +87,34 @@ val add_variable :
   name:string ->
   location:Variable_location.location ->
   is_parameter:bool ->
+  unit
+
+(** Begin a lexical block scope.
+
+    Creates a DW_TAG_lexical_block DIE and pushes it onto the scope stack.
+    Variables added after this will belong to the lexical block.
+
+    Parameters:
+    - t: DWARF state
+    - start_address: Block start label/address
+    - end_address: Block end label/address
+*)
+val add_lexical_block :
+  t ->
+  start_address:Code_address.t ->
+  end_address:Code_address.t ->
+  unit
+
+(** End the current lexical block scope.
+
+    Pops the current lexical block from the scope stack and attaches it
+    to its parent (function or enclosing lexical block).
+
+    Parameters:
+    - t: DWARF state
+*)
+val end_lexical_block :
+  t ->
   unit
 
 (** Emit all DWARF sections.
