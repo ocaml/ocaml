@@ -234,6 +234,14 @@ type control =
         [caml_alloc_custom_mem] (e.g. bigarrays).
         Default: 70000 bytes.
         @since 4.08 *)
+    small_heap_limit : int;
+    (** Minimum amount of allocations that must occur during the
+        sweeping phase of the major GC. If this limit is not reached,
+        the GC switches to small-heap mode and inserts an idle phase.
+        This is done to reduce the time overhead of the GC at program
+        start-up and for programs with small amounts of live data.
+        Default: same as [minor_heap_size].
+        @since 5.5.0 *)
   }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the

@@ -43,6 +43,7 @@
 
 /* Default speed setting for the major GC. */
 _Atomic uintnat caml_percent_free = Percent_free_def;
+_Atomic uintnat caml_small_heap_limit = Small_heap_limit_def;
 
 /* The mark stack will be pruned if it grows bigger than
    1/caml_mark_stack_prune_factor of the domain's major heap size */
@@ -701,6 +702,7 @@ static void adopt_orphaned_work (int expected_status)
 */
 static atomic_uintnat alloc_counter;
 static atomic_uintnat work_counter;
+static uintnat work_counter_at_sweep_start;
 
 static inline intnat max2 (intnat a, intnat b)
 {
@@ -1719,6 +1721,7 @@ static void cycle_major_heap_from_stw_single(
   caml_atomic_counter_init(&num_domains_to_mark, num_domains_in_stw);
 
   caml_gc_phase = Phase_sweep_main;
+  work_counter_at_sweep_start = atomic_load (&work_counter);
   atomic_store(&caml_gc_mark_phase_requested, 0);
   caml_atomic_counter_init(&ephe_cycle_info.num_domains_todo,
                            num_domains_in_stw);
@@ -1997,9 +2000,24 @@ static void major_collection_slice(intnat howmuch,
     /* We do not immediately trigger a minor GC, but instead wait for
      * the next one to happen normally. This gives some chance that
      * other domains will finish sweeping as well.
-     * TODO: consider further delaying marking, and sharing sweep
-     * work between domains. */
-    request_mark_phase();
+     * TODO: conider sharing sweep work between domains. */
+    uintnat wkcnt = atomic_load (&work_counter);
+    uintnat small_limit = atomic_load (&caml_small_heap_limit);
+    uintnat sweep_work_done = wkcnt - work_counter_at_sweep_start;
+    if (sweep_work_done >= small_limit){
+      request_mark_phase();
+    }else{
+      /* Idle phase: do nothing but commit to the work counter. */
+      uintnat i = small_limit - sweep_work_done;
+      intnat todo = diffmod (atomic_load (&alloc_counter), wkcnt);
+      if (todo < i){
+        commit_major_slice_work (todo);
+        /* Idle phase is not finished. */
+      }else{
+        commit_major_slice_work (i);
+        request_mark_phase ();
+      }
+    }
   }
 
 mark_again:

@@ -45,6 +45,7 @@ atomic_uintnat caml_max_stack_wsize;
 uintnat caml_fiber_wsz;
 
 extern _Atomic uintnat caml_percent_free; /* see major_gc.c */
+extern _Atomic uintnat caml_small_heap_limit; /* see major_gc.c */
 extern _Atomic uintnat caml_custom_major_ratio; /* see custom.c */
 extern _Atomic uintnat caml_custom_minor_ratio; /* see custom.c */
 extern _Atomic uintnat caml_custom_minor_max_bsz; /* see custom.c */
@@ -128,7 +129,7 @@ CAMLprim value caml_gc_get(value v)
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
-  res = caml_alloc_tuple (11);
+  res = caml_alloc_tuple (12);
   Store_field (res, 0, Val_long (Caml_state->minor_heap_wsz));          /* s */
   Store_field (res, 2,
     Val_long (atomic_load_relaxed(&caml_percent_free)));                /* o */
@@ -140,6 +141,8 @@ CAMLprim value caml_gc_get(value v)
     Val_long (atomic_load_relaxed(&caml_custom_minor_ratio)));          /* m */
   Store_field (res, 10,
     Val_long (atomic_load_relaxed(&caml_custom_minor_max_bsz)));        /* n */
+  Store_field (res, 11,
+    Val_long (atomic_load_relaxed(&caml_small_heap_limit)));            /* L */
   CAMLreturn (res);
 }
 
@@ -169,6 +172,7 @@ CAMLprim value caml_gc_set(value v)
   uintnat new_custom_maj = norm_custom_maj (Long_val (Field (v, 8)));
   uintnat new_custom_min = norm_custom_min (Long_val (Field (v, 9)));
   uintnat new_custom_sz = Long_val (Field (v, 10));
+  uintnat new_small_limit = Long_val (Field (v, 11));
 
   CAML_EV_BEGIN(EV_EXPLICIT_GC_SET);
 
@@ -199,6 +203,14 @@ CAMLprim value caml_gc_set(value v)
       CAML_GC_MESSAGE(PARAMS,
                       "New custom minor size limit: %" CAML_PRIuNAT "%%\n",
                       caml_custom_minor_max_bsz);
+    }
+  }
+  /* This field was added in 5.5.0 */
+  if (Wosize_val (v) >= 12){
+    if (new_small_limit != atomic_load_relaxed (&caml_small_heap_limit)){
+      atomic_store_relaxed (&caml_small_heap_limit, new_small_limit);
+      CAML_GC_MESSAGE(PARAMS, "New small heap limit: %" CAML_PRIuNAT "%%\n",
+                      caml_small_heap_limit);
     }
   }
 
@@ -336,12 +348,14 @@ void caml_init_gc (void)
   caml_minor_heap_max_wsz =
     caml_norm_minor_heap_size(caml_params->init_minor_heap_wsz);
 
+  caml_gc_log ("Initial stack limit: %" CAML_PRIuNAT "k bytes",
+               caml_params->init_max_stack_wsz / 1024 * sizeof (value));
   caml_max_stack_wsize = caml_params->init_max_stack_wsz;
   caml_fiber_wsz = (Stack_threshold * 2) / sizeof(value);
   atomic_store_relaxed(&caml_percent_free,
                        norm_pfree (caml_params->init_percent_free));
-  caml_gc_log ("Initial stack limit: %" CAML_PRIuNAT "k bytes",
-               caml_params->init_max_stack_wsz / 1024 * sizeof (value));
+  atomic_store_relaxed(&caml_small_heap_limit,
+                       norm_pfree (caml_params->init_small_heap_limit));
 
   atomic_store_relaxed(&caml_custom_major_ratio,
                        norm_custom_maj (caml_params->init_custom_major_ratio));
@@ -389,16 +403,16 @@ CAMLprim value caml_runtime_parameters (value unit)
        /* b */ (int) Caml_state->backtrace_active,
        /* c */ caml_params->cleanup_on_exit,
        /* e */ caml_params->runtime_events_log_wsize,
-       /* l */ caml_max_stack_wsize,
-       /* M */ caml_custom_major_ratio,
-       /* m */ caml_custom_minor_ratio,
-       /* n */ caml_custom_minor_max_bsz,
-       /* o */ caml_percent_free,
+       /* l */ atomic_load_relaxed (&caml_max_stack_wsize),
+       /* M */ atomic_load_relaxed (&caml_custom_major_ratio),
+       /* m */ atomic_load_relaxed (&caml_custom_minor_ratio),
+       /* n */ atomic_load_relaxed (&caml_custom_minor_max_bsz),
+       /* o */ atomic_load_relaxed (&caml_percent_free),
        /* p */ Caml_state->parser_trace,
        /* R */ /* missing */
        /* s */ Caml_state->minor_heap_wsz,
        /* t */ caml_params->trace_level,
-       /* v */ caml_verb_gc,
+       /* v */ atomic_load_relaxed (&caml_verb_gc),
        /* V */ caml_params->verify_heap,
        /* W */ caml_runtime_warnings,
        /* X */ tweaks ? tweaks : no_tweaks
