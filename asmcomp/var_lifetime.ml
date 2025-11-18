@@ -26,6 +26,7 @@ type var_entry = {
 type scope = {
   scope_vars: var_entry list ref;
   scope_parent: scope option;
+  scope_children: scope list ref;
 }
 
 (* Tracker state *)
@@ -45,6 +46,7 @@ let create ~fun_name =
   let root_scope = {
     scope_vars = ref [];
     scope_parent = None;
+    scope_children = ref [];
   } in
   {
     fun_name;
@@ -81,7 +83,10 @@ let enter_scope tracker =
   let new_scope = {
     scope_vars = ref [];
     scope_parent = Some parent;
+    scope_children = ref [];
   } in
+  (* Register as child of parent *)
+  parent.scope_children := new_scope :: !(parent.scope_children);
   tracker.current_scope := new_scope
 
 let exit_scope tracker =
@@ -120,42 +125,72 @@ let entry_to_var_info (entry : var_entry) : Var_tracking.var_info =
     is_parameter = entry.ve_is_param;
   }
 
-let rec collect_scope_vars scope acc =
-  let vars = List.map entry_to_var_info !(scope.scope_vars) in
-  let acc_with_vars = vars @ acc in
-  match scope.scope_parent with
-  | Some parent -> collect_scope_vars parent acc_with_vars
-  | None -> acc_with_vars
+let rec build_lexical_scope (scope : scope) : Var_tracking.lexical_scope =
+  (* Convert this scope's variables *)
+  let vars = List.map entry_to_var_info (List.rev !(scope.scope_vars)) in
+
+  (* Get scope bounds *)
+  let start_label, end_label =
+    match !(scope.scope_vars) with
+    | [] ->
+        (* No variables in this scope - use bounds from children or 0 *)
+        (match !(scope.scope_children) with
+         | [] -> (0, 0)
+         | child :: _ ->
+             (* Use first child's bounds *)
+             (match !(child.scope_vars) with
+              | [] -> (0, 0)
+              | first :: _ ->
+                  let start = match first.ve_start_label with Some l -> l | None -> 0 in
+                  let end_l = match first.ve_end_label with Some l -> l | None -> 0 in
+                  (start, end_l)))
+    | first :: _ ->
+        let start = match first.ve_start_label with Some l -> l | None -> 0 in
+        let end_l = match first.ve_end_label with Some l -> l | None -> 0 in
+        (start, end_l)
+  in
+
+  (* Recursively build nested scopes *)
+  let nested = List.map build_lexical_scope (List.rev !(scope.scope_children)) in
+
+  {
+    Var_tracking.scope_start = start_label;
+    scope_end = end_label;
+    scope_vars = vars;
+    nested_scopes = nested;
+  }
 
 let finalize tracker =
   (* Set end labels for parameters (function end) *)
   let final_label = new_label tracker in
   List.iter (fun ve -> ve.ve_end_label <- Some final_label) !(tracker.parameters);
 
-  (* Set end labels for all locals in all scopes (function end) *)
-  let rec set_end_labels scope =
-    List.iter (fun ve -> ve.ve_end_label <- Some final_label) !(scope.scope_vars);
-    match scope.scope_parent with
-    | Some parent -> set_end_labels parent
-    | None -> ()
+  (* Set end labels for any locals that don't have them set *)
+  let rec ensure_end_labels scope =
+    List.iter (fun ve ->
+      if ve.ve_end_label = None then
+        ve.ve_end_label <- Some final_label
+    ) !(scope.scope_vars);
+    (* Recursively set for children *)
+    List.iter ensure_end_labels !(scope.scope_children);
   in
-  set_end_labels !(tracker.current_scope);
+  let root_scope = !(tracker.current_scope) in
+  (* Walk up to find actual root *)
+  let rec find_root s =
+    match s.scope_parent with
+    | None -> s
+    | Some parent -> find_root parent
+  in
+  let root_scope = find_root root_scope in
+  ensure_end_labels root_scope;
 
   (* Convert parameters *)
   let parameters = List.map entry_to_var_info (List.rev !(tracker.parameters)) in
 
-  (* Build root scope with all collected variables *)
-  let scope = !(tracker.current_scope) in
-  let all_locals = collect_scope_vars scope [] in
-
-  let root_scope = {
-    Var_tracking.scope_start = 0;
-    scope_end = final_label;
-    scope_vars = all_locals;
-    nested_scopes = []; (* TODO: Track nested scopes properly *)
-  } in
+  (* Build root scope with proper nesting *)
+  let root_scope_info = build_lexical_scope root_scope in
 
   {
     Var_tracking.parameters;
-    root_scope;
+    root_scope = root_scope_info;
   }
