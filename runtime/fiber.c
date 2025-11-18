@@ -588,6 +588,27 @@ struct stack_info* caml_alloc_main_stack (uintnat init_wsize)
   return stk;
 }
 
+atomic_uintnat caml_cache_stacks_per_class =
+#if defined(USE_MMAP_MAP_STACK)
+  1
+#else
+  128
+#endif
+  ;
+
+void caml_free_stack_memory(struct stack_info* stack) {
+  atomic_fetch_sub(&live_stack_counter,
+                   (value*)(stack->handler+1) - (value*)stack);
+#ifdef DEBUG
+  memset(stack, 0x42, (char*)stack->handler - (char*)stack);
+#endif
+#ifdef USE_MMAP_MAP_STACK
+  munmap(stack, stack->size);
+#else
+  caml_stat_free(stack);
+#endif
+}
+
 void caml_free_stack (struct stack_info* stack)
 {
   CAMLnoalloc;
@@ -596,24 +617,21 @@ void caml_free_stack (struct stack_info* stack)
   CAMLassert(stack->magic == 42);
   CAMLassert(cache != NULL);
   if (stack->cache_bucket != -1) {
-    stack->exception_ptr =
-      (void*)(cache[stack->cache_bucket]);
-    cache[stack->cache_bucket] = stack;
+    struct stack_info* top = (struct stack_info*)cache[stack->cache_bucket];
+    int64_t count = top ? top->id : 0;
+    if (count < caml_cache_stacks_per_class) {
+      stack->exception_ptr = (void *)top;
+      stack->id = count + 1;
+      cache[stack->cache_bucket] = stack;
 #ifdef DEBUG
     memset(Stack_base(stack), 0x42,
            (Stack_high(stack)-Stack_base(stack))*sizeof(value));
 #endif
+    } else {
+      caml_free_stack_memory(stack);
+    }
   } else {
-    atomic_fetch_sub(&live_stack_counter,
-                     (value*)(stack->handler+1) - (value*)stack);
-#ifdef DEBUG
-    memset(stack, 0x42, (char*)stack->handler - (char*)stack);
-#endif
-#ifdef USE_MMAP_MAP_STACK
-    munmap(stack, stack->size);
-#else
-    caml_stat_free(stack);
-#endif
+    caml_free_stack_memory(stack);
   }
 }
 
