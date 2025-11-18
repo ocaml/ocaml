@@ -23,11 +23,14 @@ else
     exit 1
 fi
 
-# Compile test program
-echo "Compiling ${TEST_NAME}.ml..."
-${COMPILER} -g -c ${TEST_NAME}.ml || { echo "ERROR: Compilation failed"; exit 1; }
-
-echo "✓ Compilation successful"
+# Check if object file exists (should be compiled by ocamltest framework)
+if [ ! -f "${TEST_NAME}.o" ]; then
+    echo "Compiling ${TEST_NAME}.ml..."
+    ${COMPILER} -g -c ${TEST_NAME}.ml || { echo "ERROR: Compilation failed"; exit 1; }
+    echo "✓ Compilation successful"
+else
+    echo "✓ Using pre-compiled ${TEST_NAME}.o from test framework"
+fi
 
 # Check object file has DWARF sections
 echo "Checking DWARF sections in object file..."

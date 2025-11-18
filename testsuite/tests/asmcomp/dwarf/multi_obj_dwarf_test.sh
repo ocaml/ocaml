@@ -18,15 +18,33 @@ else
     exit 1
 fi
 
+# Get compiler from command line argument or find it
+if [ -n "$1" ]; then
+    OCAMLOPT="$1"
+elif [ -x "../../ocamlopt.opt" ]; then
+    OCAMLOPT="../../ocamlopt.opt"
+elif [ -x "../../ocamlopt.byte" ]; then
+    OCAMLOPT="../../ocamlopt.byte"
+elif [ -x "../../../../ocamlopt.opt" ]; then
+    OCAMLOPT="../../../../ocamlopt.opt"
+elif [ -x "../../../../ocamlopt.byte" ]; then
+    OCAMLOPT="../../../../ocamlopt.byte"
+else
+    echo "ERROR: Cannot find ocamlopt compiler"
+    exit 1
+fi
+
+echo "Using compiler: $OCAMLOPT"
+
 # Compile each module separately with -g
 echo "Compiling multi_obj_a.ml..."
-${ocamlopt} -g -c multi_obj_a.ml || { echo "ERROR: Failed to compile multi_obj_a.ml"; exit 1; }
+$OCAMLOPT -g -c multi_obj_a.ml || { echo "ERROR: Failed to compile multi_obj_a.ml"; exit 1; }
 
 echo "Compiling multi_obj_b.ml..."
-${ocamlopt} -g -c multi_obj_b.ml || { echo "ERROR: Failed to compile multi_obj_b.ml"; exit 1; }
+$OCAMLOPT -g -c multi_obj_b.ml || { echo "ERROR: Failed to compile multi_obj_b.ml"; exit 1; }
 
 echo "Compiling and linking multi_obj_main.ml..."
-${ocamlopt} -g -o multi_obj_test multi_obj_a.cmx multi_obj_b.cmx multi_obj_main.ml || { echo "ERROR: Linking failed"; exit 1; }
+$OCAMLOPT -g -o multi_obj_test multi_obj_a.cmx multi_obj_b.cmx multi_obj_main.ml || { echo "ERROR: Linking failed"; exit 1; }
 
 echo "✓ Multi-object compilation and linking successful"
 

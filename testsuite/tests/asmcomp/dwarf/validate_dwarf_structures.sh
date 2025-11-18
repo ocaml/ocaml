@@ -14,10 +14,19 @@ echo "Compiler: $COMPILER"
 echo "Architecture: $ARCH"
 echo
 
-# Compile with debug info
-echo "Compiling with -g..."
-$COMPILER -g -o ${TESTFILE}.exe ${TESTFILE}.ml
-echo "✓ Compilation successful"
+# Check if binary exists from test framework, otherwise compile
+if [ -f "${TESTFILE}.opt" ]; then
+    echo "✓ Using pre-compiled ${TESTFILE}.opt from test framework"
+    BINARY="${TESTFILE}.opt"
+elif [ -f "${TESTFILE}.exe" ]; then
+    echo "✓ Using ${TESTFILE}.exe"
+    BINARY="${TESTFILE}.exe"
+else
+    echo "Compiling with -g..."
+    $COMPILER -g -o ${TESTFILE}.exe ${TESTFILE}.ml
+    echo "✓ Compilation successful"
+    BINARY="${TESTFILE}.exe"
+fi
 echo
 
 # Determine which tools are available
@@ -40,7 +49,7 @@ FAILURES=0
 echo "Test 1: DW_AT_language encoding..."
 case $DWARF_TOOL in
     dwarfdump|llvm-dwarfdump)
-        if $DWARF_TOOL ${TESTFILE}.exe 2>/dev/null | grep -q "DW_AT_language.*0x8001"; then
+        if $DWARF_TOOL ${BINARY} 2>/dev/null | grep -q "DW_AT_language.*0x8001"; then
             echo "✓ DW_AT_language correctly encodes OCaml (0x8001)"
         else
             echo "✗ FAILED: DW_AT_language not 0x8001 (may be truncated to 0x01)"
@@ -48,7 +57,7 @@ case $DWARF_TOOL in
         fi
         ;;
     readelf)
-        if readelf --debug-dump=info ${TESTFILE}.exe 2>/dev/null | grep -q "DW_AT_language.*: 32769"; then
+        if readelf --debug-dump=info ${BINARY} 2>/dev/null | grep -q "DW_AT_language.*: 32769"; then
             echo "✓ DW_AT_language correctly encodes OCaml (32769 = 0x8001)"
         else
             echo "✗ FAILED: DW_AT_language not 32769/0x8001"
@@ -61,7 +70,7 @@ esac
 echo "Test 2: DW_AT_frame_base in subprogram DIEs..."
 case $DWARF_TOOL in
     dwarfdump|llvm-dwarfdump)
-        if $DWARF_TOOL ${TESTFILE}.exe 2>/dev/null | grep -A20 "DW_TAG_subprogram" | grep -q "DW_AT_frame_base"; then
+        if $DWARF_TOOL ${BINARY} 2>/dev/null | grep -A20 "DW_TAG_subprogram" | grep -q "DW_AT_frame_base"; then
             echo "✓ DW_AT_frame_base present in subprogram DIEs"
         else
             echo "✗ FAILED: DW_AT_frame_base missing (DW_OP_fbreg will be undefined)"
@@ -69,7 +78,7 @@ case $DWARF_TOOL in
         fi
         ;;
     readelf)
-        if readelf --debug-dump=info ${TESTFILE}.exe 2>/dev/null | grep -A20 "DW_TAG_subprogram" | grep -q "DW_AT_frame_base"; then
+        if readelf --debug-dump=info ${BINARY} 2>/dev/null | grep -A20 "DW_TAG_subprogram" | grep -q "DW_AT_frame_base"; then
             echo "✓ DW_AT_frame_base present in subprogram DIEs"
         else
             echo "✗ FAILED: DW_AT_frame_base missing"
@@ -82,7 +91,7 @@ esac
 echo "Test 3: DW_TAG_variable entries..."
 case $DWARF_TOOL in
     dwarfdump|llvm-dwarfdump)
-        if $DWARF_TOOL ${TESTFILE}.exe 2>/dev/null | grep -q "DW_TAG_variable"; then
+        if $DWARF_TOOL ${BINARY} 2>/dev/null | grep -q "DW_TAG_variable"; then
             echo "✓ DW_TAG_variable entries present"
         else
             echo "✗ FAILED: No DW_TAG_variable entries found"
@@ -90,7 +99,7 @@ case $DWARF_TOOL in
         fi
         ;;
     readelf)
-        if readelf --debug-dump=info ${TESTFILE}.exe 2>/dev/null | grep -q "DW_TAG_variable"; then
+        if readelf --debug-dump=info ${BINARY} 2>/dev/null | grep -q "DW_TAG_variable"; then
             echo "✓ DW_TAG_variable entries present"
         else
             echo "✗ FAILED: No DW_TAG_variable entries found"
@@ -102,13 +111,13 @@ esac
 # Test 4: Verify address size in CU header matches architecture
 echo "Test 4: CU header address size..."
 EXPECTED_SIZE=8
-if [[ "$ARCH" == "i386" || "$ARCH" == "i686" || "$ARCH" == "armv7"* ]]; then
+if [ "$ARCH" = "i386" ] || [ "$ARCH" = "i686" ] || echo "$ARCH" | grep -q "^armv7"; then
     EXPECTED_SIZE=4
 fi
 
 case $DWARF_TOOL in
     dwarfdump|llvm-dwarfdump)
-        ACTUAL_SIZE=$($DWARF_TOOL ${TESTFILE}.exe 2>/dev/null | grep -m1 "address_size" | sed 's/.*address_size = 0x\([0-9a-f]*\).*/\1/' | xargs printf "%d")
+        ACTUAL_SIZE=$($DWARF_TOOL ${BINARY} 2>/dev/null | grep -m1 "address_size" | sed 's/.*address_size = 0x\([0-9a-f]*\).*/\1/' | xargs printf "%d")
         if [ "$ACTUAL_SIZE" = "$EXPECTED_SIZE" ]; then
             echo "✓ Address size correct ($EXPECTED_SIZE bytes for $ARCH)"
         else
@@ -118,7 +127,7 @@ case $DWARF_TOOL in
         ;;
     readelf)
         # readelf shows address size in CU header
-        ACTUAL_SIZE=$(readelf --debug-dump=info ${TESTFILE}.exe 2>/dev/null | grep -m1 "Address size" | awk '{print $3}')
+        ACTUAL_SIZE=$(readelf --debug-dump=info ${BINARY} 2>/dev/null | grep -m1 "Address size" | awk '{print $3}')
         if [ "$ACTUAL_SIZE" = "$EXPECTED_SIZE" ]; then
             echo "✓ Address size correct ($EXPECTED_SIZE bytes for $ARCH)"
         else
@@ -132,14 +141,14 @@ esac
 echo "Test 5: DW_AT_stmt_list in CU DIE..."
 case $DWARF_TOOL in
     dwarfdump|llvm-dwarfdump)
-        if $DWARF_TOOL ${TESTFILE}.exe 2>/dev/null | grep -m1 "DW_TAG_compile_unit" -A10 | grep -q "DW_AT_stmt_list"; then
+        if $DWARF_TOOL ${BINARY} 2>/dev/null | grep -m1 "DW_TAG_compile_unit" -A10 | grep -q "DW_AT_stmt_list"; then
             echo "✓ DW_AT_stmt_list present in CU DIE"
         else
             echo "⚠ WARNING: DW_AT_stmt_list not found (may be OK if no line data)"
         fi
         ;;
     readelf)
-        if readelf --debug-dump=info ${TESTFILE}.exe 2>/dev/null | grep -m1 "DW_TAG_compile_unit" -A10 | grep -q "DW_AT_stmt_list"; then
+        if readelf --debug-dump=info ${BINARY} 2>/dev/null | grep -m1 "DW_TAG_compile_unit" -A10 | grep -q "DW_AT_stmt_list"; then
             echo "✓ DW_AT_stmt_list present in CU DIE"
         else
             echo "⚠ WARNING: DW_AT_stmt_list not found"
@@ -151,7 +160,7 @@ esac
 echo "Test 6: Line number information..."
 case $DWARF_TOOL in
     dwarfdump|llvm-dwarfdump)
-        if $DWARF_TOOL ${TESTFILE}.exe 2>/dev/null | grep -q "debug_line"; then
+        if $DWARF_TOOL ${BINARY} 2>/dev/null | grep -q "debug_line"; then
             echo "✓ Line number information present"
         else
             echo "✗ FAILED: No line number information found"
@@ -159,7 +168,7 @@ case $DWARF_TOOL in
         fi
         ;;
     readelf)
-        if readelf --debug-dump=line ${TESTFILE}.exe 2>/dev/null | grep -q "File name"; then
+        if readelf --debug-dump=line ${BINARY} 2>/dev/null | grep -q "File name"; then
             echo "✓ Line number information present"
         else
             echo "✗ FAILED: No line number information found"

@@ -1023,15 +1023,19 @@ let fundecl fundecl =
       ~name:fundecl.fun_name
       ~start_address:start_addr
       ~end_address:end_addr;
-    (* Track function parameters *)
-    (* Note: At the Mach level, parameter names from source are not preserved.
-       We track parameter locations using position-based names (param0, param1, etc.)
-       This allows debuggers to inspect parameter values even without source names. *)
+    (* Track function parameters with their source-level names *)
     let idx = ref 0 in
     Reg.Set.iter (fun param_reg ->
-      let param_name = Reg.name param_reg in
+      (* Look up source-level parameter name from Variable_info table *)
+      let param_name = Variable_info.get_parameter_name
+        ~fun_name:fundecl.fun_name ~index:!idx in
       let param_name = if param_name = "" then
-        Printf.sprintf "param%d" !idx
+        (* Fallback: use register name or position-based name *)
+        let reg_name = Reg.name param_reg in
+        if reg_name = "" then
+          Printf.sprintf "param%d" !idx
+        else
+          reg_name
       else
         param_name
       in
@@ -1078,6 +1082,7 @@ let begin_assembly() =
   X86_proc.reset_asm_code ();
   reset_debug_info();                   (* PR#5603 *)
   reset_imp_table();
+  Variable_info.reset();                (* Reset variable name table *)
   float_constants := [];
   all_functions := [];
   (* Initialize DWARF generation if enabled *)

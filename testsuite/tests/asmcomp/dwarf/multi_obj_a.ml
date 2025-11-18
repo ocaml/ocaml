@@ -3,7 +3,7 @@
  setup-ocamlopt.byte-build-env;
  ocamlopt_byte_exit_status = "0";
  ocamlopt.byte;
- script = "sh ${test_source_directory}/multi_obj_link.sh";
+ script = "sh ${test_source_directory}/multi_obj_link.sh ${ocamlopt}";
  script;
 *)
 

@@ -165,7 +165,7 @@
    linear linearize linscan
    liveness mach
    polling printcmm printlinear printmach proc
-   reg reload reloadgen
+   reg reload reloadgen variable_info
    schedgen scheduling selectgen selection spill split
    strmatch thread_sanitizer x86_ast x86_dsl x86_gas x86_masm x86_proc
    stackframegen stackframe

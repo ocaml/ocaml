@@ -1139,6 +1139,9 @@ method private emit_tail_sequence env exp =
 
 method emit_fundecl ~future_funcnames f =
   current_function_name := f.Cmm.fun_name;
+  (* Record parameter names for DWARF debugging *)
+  let param_names = List.map (fun (id, _ty) -> Backend_var.With_provenance.name id) f.Cmm.fun_args in
+  Variable_info.record_function_parameters ~fun_name:f.Cmm.fun_name ~param_names;
   let rargs =
     List.map
       (fun (id, ty) -> let r = self#regs_for ty in name_regs id r; r)

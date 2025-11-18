@@ -22,9 +22,13 @@ else
     exit 1
 fi
 
-# Compile with -g
-echo "Compiling ${TEST_FILE}.ml..."
-${COMPILER} -g -c ${TEST_FILE}.ml || { echo "ERROR: Compilation failed"; exit 1; }
+# Check if object file exists (should be compiled by ocamltest framework)
+if [ ! -f "${TEST_FILE}.o" ]; then
+    echo "Compiling ${TEST_FILE}.ml..."
+    ${COMPILER} -g -c ${TEST_FILE}.ml || { echo "ERROR: Compilation failed"; exit 1; }
+else
+    echo "Using pre-compiled ${TEST_FILE}.o from test framework"
+fi
 
 # Extract DWARF info
 DWARF_INFO=$($DWARF_TOOL --debug-info ${TEST_FILE}.o 2>&1)

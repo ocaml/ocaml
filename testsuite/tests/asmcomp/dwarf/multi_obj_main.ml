@@ -1,7 +1,7 @@
 (* TEST
    native-compiler;
    readonly_files = "multi_obj_a.ml multi_obj_b.ml";
-   script = "sh ${test_source_directory}/multi_obj_dwarf_test.sh";
+   script = "sh ${test_source_directory}/multi_obj_dwarf_test.sh ${ocamlopt}";
    script;
 *)
 

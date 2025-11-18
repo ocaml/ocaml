@@ -3125,6 +3125,7 @@ asmcomp/emitaux.cmo : \
     utils/format_doc.cmi \
     asmcomp/emitenv.cmi \
     asmcomp/debug/dwarf/dwarf_high/dwarf_world.cmi \
+    asmcomp/dwarf_reg_map.cmi \
     asmcomp/debug/dwarf/dwarf_flags/dwarf_flags.cmi \
     asmcomp/debug/dwarf/dwarf_ocaml/dwarf.cmi \
     lambda/debuginfo.cmi \
@@ -3132,6 +3133,7 @@ asmcomp/emitaux.cmo : \
     middle_end/compilenv.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
+    asmcomp/debug/dwarf/dwarf_low/dwarf_4/arch_reg_mapping.cmi \
     asmcomp/arch.cmi \
     asmcomp/emitaux.cmi
 asmcomp/emitaux.cmx : \
@@ -3139,6 +3141,7 @@ asmcomp/emitaux.cmx : \
     utils/format_doc.cmx \
     asmcomp/emitenv.cmi \
     asmcomp/debug/dwarf/dwarf_high/dwarf_world.cmx \
+    asmcomp/dwarf_reg_map.cmx \
     asmcomp/debug/dwarf/dwarf_flags/dwarf_flags.cmx \
     asmcomp/debug/dwarf/dwarf_ocaml/dwarf.cmx \
     lambda/debuginfo.cmx \
@@ -3146,6 +3149,7 @@ asmcomp/emitaux.cmx : \
     middle_end/compilenv.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
+    asmcomp/debug/dwarf/dwarf_low/dwarf_4/arch_reg_mapping.cmx \
     asmcomp/arch.cmx \
     asmcomp/emitaux.cmi
 asmcomp/emitaux.cmi : \
@@ -3422,6 +3426,7 @@ asmcomp/schedgen.cmi : \
 asmcomp/scheduling.cmi : \
     asmcomp/linear.cmi
 asmcomp/selectgen.cmo : \
+    asmcomp/variable_info.cmi \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
     asmcomp/polling.cmi \
@@ -3436,6 +3441,7 @@ asmcomp/selectgen.cmo : \
     asmcomp/arch.cmi \
     asmcomp/selectgen.cmi
 asmcomp/selectgen.cmx : \
+    asmcomp/variable_info.cmx \
     asmcomp/reg.cmx \
     asmcomp/proc.cmx \
     asmcomp/polling.cmx \
@@ -3540,6 +3546,11 @@ asmcomp/thread_sanitizer.cmx : \
     asmcomp/thread_sanitizer.cmi
 asmcomp/thread_sanitizer.cmi : \
     asmcomp/cmm.cmi
+asmcomp/variable_info.cmo : \
+    asmcomp/variable_info.cmi
+asmcomp/variable_info.cmx : \
+    asmcomp/variable_info.cmi
+asmcomp/variable_info.cmi :
 asmcomp/x86_ast.cmi :
 asmcomp/x86_dsl.cmo : \
     asmcomp/x86_proc.cmi \
@@ -3624,6 +3635,7 @@ asmcomp/emit.cmo : \
     asmcomp/x86_dsl.cmi \
     asmcomp/x86_ast.cmi \
     asmcomp/debug/dwarf/dwarf_low/dwarf_4/variable_location.cmi \
+    asmcomp/variable_info.cmi \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
     utils/numbers.cmi \
@@ -3652,6 +3664,7 @@ asmcomp/emit.cmx : \
     asmcomp/x86_dsl.cmx \
     asmcomp/x86_ast.cmi \
     asmcomp/debug/dwarf/dwarf_low/dwarf_4/variable_location.cmx \
+    asmcomp/variable_info.cmx \
     asmcomp/reg.cmx \
     asmcomp/proc.cmx \
     utils/numbers.cmx \
