@@ -109,6 +109,56 @@ let emit_dwarf_parameter ~name ~reg ~start_addr ~end_addr =
       ~location
       ~is_parameter:true
 
+(* Track a local variable's location in DWARF *)
+let emit_dwarf_local_variable ~name ~reg ~start_addr ~end_addr =
+  if Dwarf_flags.is_dwarf_enabled () && name <> "" then
+    let location_kind = reg_location_to_dwarf_kind reg.Reg.loc in
+    let scope = { Variable_location.start_address = start_addr;
+                  end_address = end_addr } in
+    let location = { Variable_location.scope; kind = location_kind } in
+    Emitaux.Dwarf_helpers.add_variable
+      ~name
+      ~location
+      ~is_parameter:false
+
+(* Collect all registers with names from a Linear instruction sequence *)
+let rec collect_named_regs instr acc =
+  match instr.Linear.desc with
+  | Linear.Lend -> acc
+  | _ ->
+      let acc = Array.fold_left (fun acc reg ->
+        let name = Reg.name reg in
+        if name <> "" && name <> "R" then
+          Reg.Set.add reg acc
+        else
+          acc
+      ) acc instr.Linear.arg in
+      let acc = Array.fold_left (fun acc reg ->
+        let name = Reg.name reg in
+        if name <> "" && name <> "R" then
+          Reg.Set.add reg acc
+        else
+          acc
+      ) acc instr.Linear.res in
+      collect_named_regs instr.Linear.next acc
+
+(* Emit DWARF information for local variables in a function *)
+let emit_dwarf_locals ~fundecl ~start_addr ~end_addr =
+  if Dwarf_flags.is_dwarf_enabled () then
+    (* Collect all registers with names *)
+    let all_named = collect_named_regs fundecl.Linear.fun_body Reg.Set.empty in
+    (* Exclude parameters *)
+    let locals = Reg.Set.diff all_named fundecl.Linear.fun_args in
+    (* Emit each local variable *)
+    Reg.Set.iter (fun reg ->
+      let name = Reg.name reg in
+      emit_dwarf_local_variable
+        ~name
+        ~reg
+        ~start_addr
+        ~end_addr
+    ) locals
+
 (* Object types *)
 
 let emit_label_type lbl ty =
@@ -1302,7 +1352,9 @@ let fundecl fundecl =
         ~start_addr
         ~end_addr;
       incr idx
-    ) env.f.fun_args
+    ) env.f.fun_args;
+    (* Track local variables *)
+    emit_dwarf_locals ~fundecl ~start_addr ~end_addr
   end;
   emit_type_directive fundecl.fun_name "%function";
   emit_size_directive fundecl.fun_name;
