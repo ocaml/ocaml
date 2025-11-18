@@ -526,6 +526,7 @@ method regs_for tys = Reg.createv tys
 (* Buffering of instruction sequences *)
 
 val mutable instr_seq = dummy_instr
+val mutable var_tracker = None
 
 method insert_debug _env desc dbg arg res =
   instr_seq <- instr_cons_debug desc arg res dbg instr_seq
@@ -819,15 +820,28 @@ method private emit_sequence (env:environment) exp =
   (r, s)
 
 method private bind_let (env:environment) v r1 =
-  if all_regs_anonymous r1 then begin
-    name_regs v r1;
-    env_add v r1 env
-  end else begin
-    let rv = Reg.createv_like r1 in
-    name_regs v rv;
-    self#insert_moves env r1 rv;
-    env_add v rv env
-  end
+  let final_regs, new_env =
+    if all_regs_anonymous r1 then begin
+      name_regs v r1;
+      (r1, env_add v r1 env)
+    end else begin
+      let rv = Reg.createv_like r1 in
+      name_regs v rv;
+      self#insert_moves env r1 rv;
+      (rv, env_add v rv env)
+    end
+  in
+  (* Track variable for DWARF *)
+  (match var_tracker with
+   | Some tracker ->
+       (* Record the local variable with its register and type *)
+       if Array.length final_regs > 0 then
+         let reg = final_regs.(0) in
+         let name = VP.name v in
+         let typ = [| reg.Reg.typ |] in
+         Var_lifetime.add_local tracker ~name ~reg ~typ
+   | None -> ());
+  new_env
 
 method private bind_let_mut (env:environment) v k r1 =
   let rv = self#regs_for k in
@@ -1139,6 +1153,9 @@ method private emit_tail_sequence env exp =
 
 method emit_fundecl ~future_funcnames f =
   current_function_name := f.Cmm.fun_name;
+  (* Initialize variable tracking for DWARF *)
+  let tracker = Var_lifetime.create ~fun_name:f.Cmm.fun_name in
+  var_tracker <- Some tracker;
   (* Record parameter names for DWARF debugging *)
   let param_names = List.map (fun (id, _ty) -> Backend_var.With_provenance.name id) f.Cmm.fun_args in
   Variable_info.record_function_parameters ~fun_name:f.Cmm.fun_name ~param_names;
@@ -1146,6 +1163,12 @@ method emit_fundecl ~future_funcnames f =
     List.map
       (fun (id, ty) -> let r = self#regs_for ty in name_regs id r; r)
       f.Cmm.fun_args in
+  (* Track parameters *)
+  List.iter2 (fun (id, ty) r ->
+    let name = VP.name id in
+    if Array.length r > 0 then
+      Var_lifetime.add_parameter tracker ~name ~reg:r.(0) ~typ:ty
+  ) f.Cmm.fun_args rargs;
   let rarg = Array.concat rargs in
   let loc_arg = Proc.loc_parameters (Reg.typv rarg) in
   let env =
@@ -1166,6 +1189,9 @@ method emit_fundecl ~future_funcnames f =
       body
     in
   let body_with_prologue = self#extract_onto polled_body in
+  (* Finalize variable tracking *)
+  let fun_var_info = Var_lifetime.finalize tracker in
+  var_tracker <- None;
   { fun_name = f.Cmm.fun_name;
     fun_args = loc_arg;
     fun_body = body_with_prologue;
@@ -1173,8 +1199,7 @@ method emit_fundecl ~future_funcnames f =
     fun_dbg  = f.Cmm.fun_dbg;
     fun_poll = f.Cmm.fun_poll;
     fun_num_stack_slots = Array.make Proc.num_register_classes 0;
-    fun_var_info = Var_tracking.empty_function_info;
-        (* TODO: Populate with actual variable tracking *)
+    fun_var_info;
   }
 
 end

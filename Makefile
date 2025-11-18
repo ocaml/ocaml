@@ -237,6 +237,7 @@ asmcomp_SOURCES = \
   asmcomp/reg.mli asmcomp/reg.ml \
   asmcomp/variable_info.mli asmcomp/variable_info.ml \
   asmcomp/var_tracking.mli asmcomp/var_tracking.ml \
+  asmcomp/var_lifetime.mli asmcomp/var_lifetime.ml \
   asmcomp/mach.mli asmcomp/mach.ml \
   asmcomp/proc.mli asmcomp/proc.ml \
   asmcomp/strmatch.mli asmcomp/strmatch.ml \
