@@ -101,9 +101,9 @@ let _reg_location_to_dwarf_kind reg_loc =
 let emit_dwarf_from_var_info ~fundecl ~start_addr ~end_addr =
   if Dwarf_flags.is_dwarf_enabled () then
     let var_info = fundecl.Linear.fun_var_info in
-    (* Emit local variables from root scope *)
-    List.iter (fun (var : Var_tracking.var_info) ->
-      (* Use the first location if available *)
+
+    (* Helper to emit a single variable *)
+    let emit_variable (var : Var_tracking.var_info) =
       match var.locations with
       | [] -> () (* No location, skip *)
       | loc :: _ ->
@@ -124,7 +124,25 @@ let emit_dwarf_from_var_info ~fundecl ~start_addr ~end_addr =
             ~name:var.var_name
             ~location
             ~is_parameter:var.is_parameter
-    ) var_info.root_scope.scope_vars
+    in
+
+    (* Recursively emit a lexical scope and its nested scopes *)
+    let rec emit_scope (scope : Var_tracking.lexical_scope) =
+      (* Emit variables in this scope *)
+      List.iter emit_variable scope.scope_vars;
+      (* Recursively emit nested scopes *)
+      List.iter (fun nested ->
+        (* Create lexical block for nested scope *)
+        Emitaux.Dwarf_helpers.add_lexical_block
+          ~start_address:start_addr
+          ~end_address:end_addr;
+        emit_scope nested;
+        Emitaux.Dwarf_helpers.end_lexical_block ()
+      ) scope.nested_scopes
+    in
+
+    (* Emit the root scope (no need for lexical block, it's the function scope) *)
+    emit_scope var_info.root_scope
 
 (* Object types *)
 

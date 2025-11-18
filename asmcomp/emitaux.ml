@@ -571,6 +571,20 @@ module Dwarf_helpers = struct
     | Some state ->
         Dwarf.add_variable state ~name ~location ~is_parameter
 
+  let add_lexical_block ~start_address ~end_address =
+    match !dwarf_state with
+    | None -> ()
+    | Some state ->
+        Dwarf.add_lexical_block state ~start_address ~end_address
+  [@@warning "-32"] (* Used in emit.mlp after preprocessing *)
+
+  let end_lexical_block () =
+    match !dwarf_state with
+    | None -> ()
+    | Some state ->
+        Dwarf.end_lexical_block state
+  [@@warning "-32"] (* Used in emit.mlp after preprocessing *)
+
   let emit_section_bytes oc bytes =
     (* Emit bytes as .byte directives, 16 bytes per line *)
     let len = Bytes.length bytes in
