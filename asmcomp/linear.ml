@@ -57,7 +57,9 @@ type fundecl =
     fun_contains_nontail_calls: bool;
     fun_num_stack_slots: int array;
     fun_frame_required: bool;
-    fun_extra_stack_used: int
+    fun_extra_stack_used: int;
+    fun_var_info: Var_tracking.function_var_info;
+        (* Variable tracking for DWARF debug info *)
   }
 
 (* Invert a test *)

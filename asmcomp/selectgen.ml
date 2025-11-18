@@ -1173,6 +1173,8 @@ method emit_fundecl ~future_funcnames f =
     fun_dbg  = f.Cmm.fun_dbg;
     fun_poll = f.Cmm.fun_poll;
     fun_num_stack_slots = Array.make Proc.num_register_classes 0;
+    fun_var_info = Var_tracking.empty_function_info;
+        (* TODO: Populate with actual variable tracking *)
   }
 
 end

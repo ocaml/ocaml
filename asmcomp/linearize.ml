@@ -346,5 +346,7 @@ let fundecl f =
     fun_contains_nontail_calls = fa.contains_nontail_calls;
     fun_num_stack_slots = f.Mach.fun_num_stack_slots;
     fun_frame_required = fa.frame_required;
-    fun_extra_stack_used = fa.extra_stack_used
+    fun_extra_stack_used = fa.extra_stack_used;
+    fun_var_info = f.Mach.fun_var_info;
+        (* Copy variable tracking from Mach *)
   }

@@ -98,6 +98,8 @@ type fundecl =
     fun_dbg : Debuginfo.t;
     fun_poll: Lambda.poll_attribute;
     fun_num_stack_slots: int array;
+    fun_var_info: Var_tracking.function_var_info;
+        (* Variable tracking for DWARF debug info *)
   }
 
 val dummy_instr: instruction

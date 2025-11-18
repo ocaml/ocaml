@@ -236,6 +236,7 @@ asmcomp_SOURCES = \
   asmcomp/printcmm.mli asmcomp/printcmm.ml \
   asmcomp/reg.mli asmcomp/reg.ml \
   asmcomp/variable_info.mli asmcomp/variable_info.ml \
+  asmcomp/var_tracking.mli asmcomp/var_tracking.ml \
   asmcomp/mach.mli asmcomp/mach.ml \
   asmcomp/proc.mli asmcomp/proc.ml \
   asmcomp/strmatch.mli asmcomp/strmatch.ml \
