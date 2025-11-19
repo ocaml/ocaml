@@ -777,14 +777,6 @@ module Dwarf_helpers = struct
           (match sections.debug_line with
            | Some (bytes, relocs) ->
                output_string oc "\t.section __DWARF,__debug_line,regular,debug\n";
-               (* Emit weak global symbol at section start for multi-object linking.
-                  The linker will keep only one instance of this symbol (from the first .o),
-                  allowing DW_AT_stmt_list offsets to be computed correctly via
-                  subtractor relocations: .long label - __debug_line_section_base *)
-               output_string oc "\t.weak_definition __debug_line_section_base\n";
-               output_string oc "__debug_line_section_base:\n";
-               (* Emit local label for assembly-time computation (unused on Mach-O) *)
-               output_string oc "Ldebug_line_start:\n";
                (* Emit label for this CU's line table if present *)
                (match sections.line_table_label with
                 | Some label -> Printf.fprintf oc "%s:\n" label

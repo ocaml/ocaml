@@ -55,7 +55,7 @@ let create ~producer ~comp_dir ~source_file ~language ~address_size () =
   Line_number_table.set_comp_dir line_table comp_dir;
   (* Generate unique label for this CU's line table *)
   incr line_table_label_counter;
-  let line_table_label = Printf.sprintf "Ldebug_line_cu_%d" !line_table_label_counter in
+  let line_table_label = Printf.sprintf "debug_line_cu_%d" !line_table_label_counter in
   {
     producer;
     comp_dir;

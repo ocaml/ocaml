@@ -1675,8 +1675,8 @@ oc_native_cppflags="-DNATIVE_CODE\
  -DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
 AS_CASE([$ccomp_type],
   [msvc],
-    [runtime_asm_objects=${arch}nt.${OBJEXT}],
-  [runtime_asm_objects=${arch}.${OBJEXT}])
+    [runtime_asm_objects="${arch}nt.${OBJEXT} dwarf_support.${OBJEXT}"],
+  [runtime_asm_objects="${arch}.${OBJEXT} dwarf_support.${OBJEXT}"])
 
 AS_CASE([$enable_native_compiler,$has_native_backend],
   [no,*],
