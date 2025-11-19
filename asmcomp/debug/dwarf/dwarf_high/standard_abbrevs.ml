@@ -174,6 +174,74 @@ let standard_table : standard_entry list = [
       (DW_AT_frame_base, DW_FORM_exprloc);  (* Frame base for DW_OP_fbreg *)
     ];
   };
+
+  (* Code 12: Lexical block with address range (has children) *)
+  {
+    code = 12;
+    tag = DW_TAG_lexical_block;
+    has_children = true;
+    attributes = [
+      (DW_AT_low_pc, DW_FORM_addr);
+      (DW_AT_high_pc, DW_FORM_addr);
+    ];
+  };
+
+  (* Code 13: Lexical block with address range (no children) *)
+  {
+    code = 13;
+    tag = DW_TAG_lexical_block;
+    has_children = false;
+    attributes = [
+      (DW_AT_low_pc, DW_FORM_addr);
+      (DW_AT_high_pc, DW_FORM_addr);
+    ];
+  };
+
+  (* Code 14: Formal parameter with location list (no type) *)
+  {
+    code = 14;
+    tag = DW_TAG_formal_parameter;
+    has_children = false;
+    attributes = [
+      (DW_AT_name, DW_FORM_string);
+      (DW_AT_location, DW_FORM_sec_offset);  (* Location list *)
+    ];
+  };
+
+  (* Code 15: Formal parameter with type and location list *)
+  {
+    code = 15;
+    tag = DW_TAG_formal_parameter;
+    has_children = false;
+    attributes = [
+      (DW_AT_name, DW_FORM_string);
+      (DW_AT_type, DW_FORM_ref4);
+      (DW_AT_location, DW_FORM_sec_offset);  (* Location list *)
+    ];
+  };
+
+  (* Code 16: Local variable with type and location list *)
+  {
+    code = 16;
+    tag = DW_TAG_variable;
+    has_children = false;
+    attributes = [
+      (DW_AT_name, DW_FORM_string);
+      (DW_AT_type, DW_FORM_ref4);
+      (DW_AT_location, DW_FORM_sec_offset);  (* Location list *)
+    ];
+  };
+
+  (* Code 17: Local variable with location list (no type) *)
+  {
+    code = 17;
+    tag = DW_TAG_variable;
+    has_children = false;
+    attributes = [
+      (DW_AT_name, DW_FORM_string);
+      (DW_AT_location, DW_FORM_sec_offset);  (* Location list *)
+    ];
+  };
 ]
 
 (** Get the abbreviation code for a DIE based on its signature.

@@ -34,13 +34,11 @@ type tracker = {
   fun_name: string [@warning "-69"];
   parameters: var_entry list ref;
   current_scope: scope ref;
-  label_counter: int ref;
 }
 
-let new_label tracker =
-  let l = !(tracker.label_counter) in
-  tracker.label_counter := l + 1;
-  l
+(* Use real Cmm labels instead of synthetic counters *)
+let new_label () =
+  Cmm.new_label ()
 
 let create ~fun_name =
   let root_scope = {
@@ -52,7 +50,6 @@ let create ~fun_name =
     fun_name;
     parameters = ref [];
     current_scope = ref root_scope;
-    label_counter = ref 0;
   }
 
 let add_parameter tracker ~name ~reg ~typ =
@@ -72,7 +69,7 @@ let add_local tracker ~name ~reg ~typ =
     ve_reg = reg;
     ve_typ = typ;
     ve_is_param = false;
-    ve_start_label = Some (new_label tracker);
+    ve_start_label = Some (new_label ());
     ve_end_label = None; (* Will be set when scope exits *)
   } in
   let scope = !(tracker.current_scope) in
@@ -91,7 +88,7 @@ let enter_scope tracker =
 
 let exit_scope tracker =
   let scope = !(tracker.current_scope) in
-  let end_label = new_label tracker in
+  let end_label = new_label () in
   (* Set end labels for all variables in this scope *)
   List.iter (fun ve -> ve.ve_end_label <- Some end_label) !(scope.scope_vars);
   match scope.scope_parent with
@@ -162,7 +159,7 @@ let rec build_lexical_scope (scope : scope) : Var_tracking.lexical_scope =
 
 let finalize tracker =
   (* Set end labels for parameters (function end) *)
-  let final_label = new_label tracker in
+  let final_label = new_label () in
   List.iter (fun ve -> ve.ve_end_label <- Some final_label) !(tracker.parameters);
 
   (* Set end labels for any locals that don't have them set *)

@@ -104,26 +104,31 @@ let emit_dwarf_from_var_info ~fundecl ~start_addr ~end_addr =
 
     (* Helper to emit a single variable *)
     let emit_variable (var : Var_tracking.var_info) =
-      match var.locations with
-      | [] -> () (* No location, skip *)
-      | loc :: _ ->
-          let location_kind = match loc.location with
-            | Var_tracking.VL_Register n -> Variable_location.Register n
-            | Var_tracking.VL_Stack n -> Variable_location.Stack_offset n
-            | Var_tracking.VL_Optimized_away -> Variable_location.Optimized_away
-          in
-          let scope = {
-            Variable_location.start_address = start_addr;
-            end_address = end_addr;
-          } in
-          let location = {
-            Variable_location.scope;
-            kind = location_kind;
-          } in
-          Emitaux.Dwarf_helpers.add_variable
-            ~name:var.var_name
-            ~location
-            ~is_parameter:var.is_parameter
+      (* Convert ALL location ranges to Variable_location.location list *)
+      let locations = List.map (fun (loc_range : Var_tracking.location_range) ->
+        let location_kind = match loc_range.location with
+          | Var_tracking.VL_Register n -> Variable_location.Register n
+          | Var_tracking.VL_Stack n -> Variable_location.Stack_offset n
+          | Var_tracking.VL_Optimized_away -> Variable_location.Optimized_away
+        in
+        (* TODO: Convert labels to actual addresses. For now, use function bounds *)
+        let scope = {
+          Variable_location.start_address = start_addr;
+          end_address = end_addr;
+        } in
+        {
+          Variable_location.scope;
+          kind = location_kind;
+        }
+      ) var.locations in
+
+      (* Only emit if we have at least one location *)
+      if locations <> [] then
+        Emitaux.Dwarf_helpers.add_variable
+          ~name:var.var_name
+          ~locations
+          ~is_parameter:var.is_parameter
+          ~machtype:var.var_type
     in
 
     (* Recursively emit a lexical scope and its nested scopes *)
@@ -1323,26 +1328,31 @@ let fundecl fundecl =
     let var_info = fundecl.fun_var_info in
     (* Emit parameters *)
     List.iter (fun (var : Var_tracking.var_info) ->
-      match var.locations with
-      | [] -> ()
-      | loc :: _ ->
-          let location_kind = match loc.location with
-            | Var_tracking.VL_Register n -> Variable_location.Register n
-            | Var_tracking.VL_Stack n -> Variable_location.Stack_offset n
-            | Var_tracking.VL_Optimized_away -> Variable_location.Optimized_away
-          in
-          let scope = {
-            Variable_location.start_address = start_addr;
-            end_address = end_addr;
-          } in
-          let location = {
-            Variable_location.scope;
-            kind = location_kind;
-          } in
-          Emitaux.Dwarf_helpers.add_variable
-            ~name:var.var_name
-            ~location
-            ~is_parameter:true
+      (* Convert ALL location ranges to Variable_location.location list *)
+      let locations = List.map (fun (loc_range : Var_tracking.location_range) ->
+        let location_kind = match loc_range.location with
+          | Var_tracking.VL_Register n -> Variable_location.Register n
+          | Var_tracking.VL_Stack n -> Variable_location.Stack_offset n
+          | Var_tracking.VL_Optimized_away -> Variable_location.Optimized_away
+        in
+        (* TODO: Convert labels to actual addresses. For now, use function bounds *)
+        let scope = {
+          Variable_location.start_address = start_addr;
+          end_address = end_addr;
+        } in
+        {
+          Variable_location.scope;
+          kind = location_kind;
+        }
+      ) var.locations in
+
+      (* Only emit if we have at least one location *)
+      if locations <> [] then
+        Emitaux.Dwarf_helpers.add_variable
+          ~name:var.var_name
+          ~locations
+          ~is_parameter:true
+          ~machtype:var.var_type
     ) var_info.parameters;
     (* Emit local variables from root scope *)
     emit_dwarf_from_var_info ~fundecl ~start_addr ~end_addr

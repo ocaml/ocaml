@@ -91,6 +91,13 @@ let with_location t loc =
     form = DW_FORM_exprloc;
   }
 
+let with_location_list t offset =
+  add_attribute t {
+    attr = DW_AT_location;
+    value = Sec_offset offset;
+    form = DW_FORM_sec_offset;
+  }
+
 let with_frame_base t frame_base_expr =
   add_attribute t {
     attr = DW_AT_frame_base;

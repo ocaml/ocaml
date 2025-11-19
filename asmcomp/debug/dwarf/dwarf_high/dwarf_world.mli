@@ -72,6 +72,8 @@ val range_list_table : t -> Range_list_table.t
 type type_offsets = {
   ocaml_value : int;  (** Generic OCaml value type *)
   ocaml_int : int;    (** OCaml integer type *)
+  ocaml_float : int;  (** OCaml float type (unboxed double) *)
+  ocaml_addr : int;   (** OCaml address type (derived pointer) *)
 }
 
 (** Add standard OCaml type DIEs to the world and return their offsets *)

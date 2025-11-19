@@ -75,18 +75,22 @@ val add_line_number :
 (** Add a variable to the current function or lexical block.
 
     Variables are added to the current scope (function or lexical block).
+    If the variable has multiple locations (e.g., moves from register to stack),
+    a location list will be emitted. Otherwise, a single location is used.
 
     Parameters:
     - t: DWARF state
     - name: Variable name
-    - location: Variable location (register or stack)
+    - locations: List of variable locations over its lifetime
     - is_parameter: true if this is a function parameter, false for local
+    - machtype: OCaml machine type (Val, Int, Float, or Addr)
 *)
 val add_variable :
   t ->
   name:string ->
-  location:Variable_location.location ->
+  locations:Variable_location.location list ->
   is_parameter:bool ->
+  machtype:Cmm.machtype ->
   unit
 
 (** Begin a lexical block scope.

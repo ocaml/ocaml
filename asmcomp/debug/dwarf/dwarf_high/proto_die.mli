@@ -79,6 +79,9 @@ val with_encoding : t -> Dwarf_encoding.t -> t
 (** Helper: Add a location attribute *)
 val with_location : t -> bytes -> t
 
+(** Helper: Add a location list attribute (offset into .debug_loclists) *)
+val with_location_list : t -> int -> t
+
 (** Helper: Add a frame base attribute *)
 val with_frame_base : t -> bytes -> t
 

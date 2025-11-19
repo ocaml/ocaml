@@ -616,12 +616,34 @@ method emit_expr (env:environment) exp =
   | Clet(v, e1, e2) ->
       begin match self#emit_expr env e1 with
         None -> None
-      | Some r1 -> self#emit_expr (self#bind_let env v r1) e2
+      | Some r1 ->
+          (* Enter new lexical scope for this let binding *)
+          (match var_tracker with
+           | Some tracker -> Var_lifetime.enter_scope tracker
+           | None -> ());
+          let new_env = self#bind_let env v r1 in
+          let result = self#emit_expr new_env e2 in
+          (* Exit lexical scope *)
+          (match var_tracker with
+           | Some tracker -> Var_lifetime.exit_scope tracker
+           | None -> ());
+          result
       end
   | Clet_mut(v, k, e1, e2) ->
       begin match self#emit_expr env e1 with
         None -> None
-      | Some r1 -> self#emit_expr (self#bind_let_mut env v k r1) e2
+      | Some r1 ->
+          (* Enter new lexical scope for this mutable let binding *)
+          (match var_tracker with
+           | Some tracker -> Var_lifetime.enter_scope tracker
+           | None -> ());
+          let new_env = self#bind_let_mut env v k r1 in
+          let result = self#emit_expr new_env e2 in
+          (* Exit lexical scope *)
+          (match var_tracker with
+           | Some tracker -> Var_lifetime.exit_scope tracker
+           | None -> ());
+          result
       end
   | Cphantom_let (_var, _defining_expr, body) ->
       self#emit_expr env body
@@ -1013,12 +1035,32 @@ method emit_tail (env:environment) exp =
     Clet(v, e1, e2) ->
       begin match self#emit_expr env e1 with
         None -> ()
-      | Some r1 -> self#emit_tail (self#bind_let env v r1) e2
+      | Some r1 ->
+          (* Enter new lexical scope for this let binding *)
+          (match var_tracker with
+           | Some tracker -> Var_lifetime.enter_scope tracker
+           | None -> ());
+          let new_env = self#bind_let env v r1 in
+          self#emit_tail new_env e2;
+          (* Exit lexical scope *)
+          (match var_tracker with
+           | Some tracker -> Var_lifetime.exit_scope tracker
+           | None -> ())
       end
   | Clet_mut (v, k, e1, e2) ->
      begin match self#emit_expr env e1 with
        None -> ()
-     | Some r1 -> self#emit_tail (self#bind_let_mut env v k r1) e2
+     | Some r1 ->
+         (* Enter new lexical scope for this mutable let binding *)
+         (match var_tracker with
+          | Some tracker -> Var_lifetime.enter_scope tracker
+          | None -> ());
+         let new_env = self#bind_let_mut env v k r1 in
+         self#emit_tail new_env e2;
+         (* Exit lexical scope *)
+         (match var_tracker with
+          | Some tracker -> Var_lifetime.exit_scope tracker
+          | None -> ())
      end
   | Cphantom_let (_var, _defining_expr, body) ->
       self#emit_tail env body

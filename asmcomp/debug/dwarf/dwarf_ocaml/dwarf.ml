@@ -54,6 +54,7 @@ let create ~source_file ~compilation_dir ~producer ~address_size () =
 
   { source_file; world; current_function = None; scope_stack = [] }
 
+
 let finalize_current_function t =
   (* Add the current function (with all its variables) to the world *)
   match t.current_function with
@@ -138,7 +139,20 @@ let end_lexical_block t =
       (* Function_scope followed by more scopes - invalid state, ignore *)
       ()
 
-let add_variable t ~name ~(location : Variable_location.location) ~is_parameter =
+(* Map OCaml machtype to DWARF type offset *)
+let machtype_to_type_offset (machtype : Cmm.machtype) (type_offsets : Dwarf_world.type_offsets) : int =
+  (* Use the first component of the machtype array.
+     Most OCaml values have a single component. *)
+  if Array.length machtype = 0 then
+    type_offsets.ocaml_value  (* Default to generic value type *)
+  else
+    match machtype.(0) with
+    | Cmm.Val -> type_offsets.ocaml_value
+    | Cmm.Int -> type_offsets.ocaml_int
+    | Cmm.Float -> type_offsets.ocaml_float
+    | Cmm.Addr -> type_offsets.ocaml_addr
+
+let add_variable t ~name ~(locations : Variable_location.location list) ~is_parameter ~(machtype : Cmm.machtype) =
   match t.scope_stack with
   | [] ->
       (* No current scope - ignore variable *)
@@ -147,18 +161,56 @@ let add_variable t ~name ~(location : Variable_location.location) ~is_parameter 
       let parent_die = match current_scope with
         | Function_scope die | Lexical_block die -> die
       in
-      (* Convert location to DWARF expression bytes *)
-      let location_expr = Variable_location.location_to_expression location.kind in
 
-      (* Create variable DIE with type reference to the "value" type.
-         Get the actual offset from the stored type offsets. *)
+      (* Get appropriate type offset based on machtype *)
       let type_offsets = Dwarf_world.get_type_offsets t.world in
-      let var_die = Proto_die.create_variable
-        ~name
-        ~type_ref:type_offsets.ocaml_value
-        ~location:location_expr
-        ~is_parameter
-        ()
+      let type_ref = machtype_to_type_offset machtype type_offsets in
+
+      (* Create variable DIE with location or location list *)
+      let var_die =
+        if List.length locations <= 1 then begin
+          (* Single location or no location: use DW_FORM_exprloc *)
+          match locations with
+          | [] ->
+              (* No location - variable was optimized away *)
+              Proto_die.create_variable
+                ~name
+                ~type_ref
+                ~is_parameter
+                ()
+          | [loc] ->
+              let location_expr = Variable_location.location_to_expression loc.kind in
+              Proto_die.create_variable
+                ~name
+                ~type_ref
+                ~location:location_expr
+                ~is_parameter
+                ()
+          | _ -> assert false  (* unreachable *)
+        end else begin
+          (* Multiple locations: use location list with DW_FORM_sec_offset *)
+          let entries = List.map (fun (loc : Variable_location.location) ->
+            let start_addr = loc.scope.start_address in
+            let end_addr = loc.scope.end_address in
+            let location_bytes = Variable_location.location_to_expression loc.kind in
+            Location_list_entry.create
+              ~start_address:start_addr
+              ~end_address:end_addr
+              ~location:location_bytes
+          ) locations in
+
+          (* Add location list to world and get offset *)
+          let offset = Dwarf_world.add_location_list t.world entries in
+
+          (* Create variable with location list *)
+          let base_die = Proto_die.create_variable
+            ~name
+            ~type_ref
+            ~is_parameter
+            ()
+          in
+          Proto_die.with_location_list base_die offset
+        end
       in
 
       (* Add variable as child of current scope *)

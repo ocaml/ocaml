@@ -565,11 +565,11 @@ module Dwarf_helpers = struct
     | Some state ->
         Dwarf.add_line_number state ~address ~file ~line ~column
 
-  let add_variable ~name ~location ~is_parameter =
+  let add_variable ~name ~locations ~is_parameter ~machtype =
     match !dwarf_state with
     | None -> ()
     | Some state ->
-        Dwarf.add_variable state ~name ~location ~is_parameter
+        Dwarf.add_variable state ~name ~locations ~is_parameter ~machtype
 
   let add_lexical_block ~start_address ~end_address =
     match !dwarf_state with

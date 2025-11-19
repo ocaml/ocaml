@@ -114,7 +114,7 @@ module Dwarf_helpers : sig
   val init : source_file:string -> compilation_dir:string -> producer:string -> unit
   val add_function : name:string -> start_address:Code_address.t -> end_address:Code_address.t -> unit
   val add_line_number : address:Code_address.t -> file:string -> line:int -> column:int -> unit
-  val add_variable : name:string -> location:Variable_location.location -> is_parameter:bool -> unit
+  val add_variable : name:string -> locations:Variable_location.location list -> is_parameter:bool -> machtype:Cmm.machtype -> unit
   val add_lexical_block : start_address:Code_address.t -> end_address:Code_address.t -> unit
   val end_lexical_block : unit -> unit
   val emit_dwarf : out_channel -> unit

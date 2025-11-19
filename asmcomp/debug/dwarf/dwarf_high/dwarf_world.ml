@@ -18,6 +18,8 @@
 type type_offsets = {
   ocaml_value : int;  (* Generic OCaml value type *)
   ocaml_int : int;    (* OCaml integer type *)
+  ocaml_float : int;  (* OCaml float type (unboxed double) *)
+  ocaml_addr : int;   (* OCaml address type (derived pointer) *)
 }
 
 type t = {
@@ -139,7 +141,7 @@ let get_type_offsets t =
       (* If types haven't been added yet, return default offsets.
          This shouldn't happen in normal usage since add_standard_types
          is called during initialization. *)
-      { ocaml_value = 0x19; ocaml_int = 0x20 }
+      { ocaml_value = 0x19; ocaml_int = 0x20; ocaml_float = 0x27; ocaml_addr = 0x2e }
 
 (* Type DIE creation *)
 
@@ -205,6 +207,28 @@ let add_standard_types t =
   (* Second type DIE (int) starts after first type DIE *)
   let int_offset = value_offset + value_die_size in
 
+  (* Calculate int DIE size *)
+  let int_die_size =
+    1 +  (* abbrev code *)
+    (String.length "int" + 1) +  (* DW_AT_name *)
+    1 +  (* DW_AT_byte_size *)
+    1    (* DW_AT_encoding *)
+  in
+
+  (* Third type DIE (float) starts after int DIE *)
+  let float_offset = int_offset + int_die_size in
+
+  (* Calculate float DIE size *)
+  let float_die_size =
+    1 +  (* abbrev code *)
+    (String.length "float" + 1) +  (* DW_AT_name *)
+    1 +  (* DW_AT_byte_size *)
+    1    (* DW_AT_encoding *)
+  in
+
+  (* Fourth type DIE (addr) starts after float DIE *)
+  let addr_offset = float_offset + float_die_size in
+
   (* OCaml value: 8-byte pointer to any OCaml value *)
   let value_die = create_base_type
     ~name:"value"
@@ -221,8 +245,29 @@ let add_standard_types t =
   in
   add_die t int_die;
 
+  (* OCaml float: unboxed double-precision float *)
+  let float_die = create_base_type
+    ~name:"float"
+    ~byte_size:8
+    ~encoding:Dwarf_encoding.DW_ATE_float
+  in
+  add_die t float_die;
+
+  (* OCaml addr: derived pointer (into heap blocks) *)
+  let addr_die = create_base_type
+    ~name:"addr"
+    ~byte_size:8
+    ~encoding:Dwarf_encoding.DW_ATE_address
+  in
+  add_die t addr_die;
+
   (* Store and return calculated offsets *)
-  let offsets = { ocaml_value = value_offset; ocaml_int = int_offset } in
+  let offsets = {
+    ocaml_value = value_offset;
+    ocaml_int = int_offset;
+    ocaml_float = float_offset;
+    ocaml_addr = addr_offset;
+  } in
   t.type_offsets <- Some offsets;
   offsets
 
