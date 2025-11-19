@@ -191,3 +191,42 @@ let finalize tracker =
     Var_tracking.parameters;
     root_scope = root_scope_info;
   }
+
+(** Update location information after register allocation.
+
+    This function is called after register allocation has assigned
+    actual locations (registers or stack slots) to all registers.
+    It walks through the var_info structure and updates each
+    location_range with the actual location from reg.loc. *)
+let update_locations (info : Var_tracking.function_var_info)
+    : Var_tracking.function_var_info =
+
+  (* Update a single location_range with current register location *)
+  let update_range (var_reg : Reg.t) (range : Var_tracking.location_range)
+      : Var_tracking.location_range =
+    { range with
+      location = reg_to_location var_reg;
+    }
+  in
+
+  (* Update a single var_info *)
+  let update_var (var : Var_tracking.var_info) : Var_tracking.var_info =
+    { var with
+      locations = List.map (update_range var.var_reg) var.locations;
+    }
+  in
+
+  (* Recursively update a lexical scope *)
+  let rec update_scope (scope : Var_tracking.lexical_scope)
+      : Var_tracking.lexical_scope =
+    { scope with
+      scope_vars = List.map update_var scope.scope_vars;
+      nested_scopes = List.map update_scope scope.nested_scopes;
+    }
+  in
+
+  (* Update parameters and root scope *)
+  {
+    parameters = List.map update_var info.parameters;
+    root_scope = update_scope info.root_scope;
+  }

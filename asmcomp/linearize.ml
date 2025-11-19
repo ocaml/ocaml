@@ -332,14 +332,74 @@ let add_prologue first_insn prologue_required =
   else
     tailrec_entry_point_label, tailrec_entry_point
 
+(* Collect all unique labels from variable tracking information *)
+let collect_var_labels (var_info : Var_tracking.function_var_info) =
+  let labels = ref [] in
+
+  (* Helper to add label if not already in list *)
+  let add_label lbl =
+    (* Skip label 0 - it's a special marker for function entry, not a real label *)
+    if lbl <> 0 && not (List.mem lbl !labels) then
+      labels := lbl :: !labels
+  in
+
+  (* Collect from a single variable *)
+  let collect_from_var (var : Var_tracking.var_info) =
+    List.iter (fun (range : Var_tracking.location_range) ->
+      add_label range.start_label;
+      add_label range.end_label
+    ) var.locations
+  in
+
+  (* Collect from a lexical scope and its children *)
+  let rec collect_from_scope (scope : Var_tracking.lexical_scope) =
+    (* Scope boundaries *)
+    add_label scope.scope_start;
+    add_label scope.scope_end;
+    (* Variables in this scope *)
+    List.iter collect_from_var scope.scope_vars;
+    (* Nested scopes *)
+    List.iter collect_from_scope scope.nested_scopes
+  in
+
+  (* Collect from parameters *)
+  List.iter collect_from_var var_info.parameters;
+  (* Collect from root scope *)
+  collect_from_scope var_info.root_scope;
+
+  !labels
+
+(* Insert label instructions for DWARF variable tracking.
+   Inserts all labels at the end of the function, just before Lend.
+   This ensures they are defined in the assembly output so DWARF
+   references can be resolved by the linker. *)
+let insert_var_labels (var_info : Var_tracking.function_var_info) body =
+  let labels = collect_var_labels var_info in
+
+  (* Find the end of the instruction stream and insert labels before it *)
+  let rec insert_before_end instr =
+    match instr.desc with
+    | Lend ->
+        (* Insert all labels before Lend *)
+        List.fold_left (fun next lbl ->
+          cons_instr (Llabel lbl) next
+        ) instr labels
+    | _ ->
+        { instr with next = insert_before_end instr.next }
+  in
+
+  insert_before_end body
+
 let fundecl f =
   let fa = Stackframe.analyze f in
   let (fun_tailrec_entry_point_label, fun_body) =
     add_prologue (linear f.Mach.fun_body end_instr fa.frame_required)
                  fa.frame_required in
+  (* Insert DWARF variable tracking labels into the instruction stream *)
+  let fun_body_with_labels = insert_var_labels f.Mach.fun_var_info fun_body in
   { fun_name = f.Mach.fun_name;
     fun_args = Reg.set_of_array f.Mach.fun_args;
-    fun_body;
+    fun_body = fun_body_with_labels;
     fun_fast = not (List.mem Cmm.Reduce_code_size f.Mach.fun_codegen_options);
     fun_dbg  = f.Mach.fun_dbg;
     fun_tailrec_entry_point_label;

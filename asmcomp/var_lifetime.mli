@@ -47,3 +47,13 @@ val exit_scope : tracker -> unit
 
 (** Build the final function_var_info *)
 val finalize : tracker -> Var_tracking.function_var_info
+
+(** Update location information after register allocation.
+
+    This should be called after register allocation has completed,
+    when all Reg.t values have their actual locations assigned.
+    It walks through the function_var_info and updates each
+    location_range with the actual location from the register. *)
+val update_locations :
+  Var_tracking.function_var_info ->
+  Var_tracking.function_var_info

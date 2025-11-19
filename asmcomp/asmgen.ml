@@ -129,7 +129,11 @@ let rec regalloc ~ppf_dump round fd =
   dump_if ppf_dump dump_reload "After insertion of reloading code" newfd;
   if redo_regalloc then begin
     Reg.reinit(); Liveness.fundecl newfd; regalloc ~ppf_dump (round + 1) newfd
-  end else newfd
+  end else begin
+    (* Update variable location information now that registers are allocated *)
+    let updated_var_info = Var_lifetime.update_locations newfd.Mach.fun_var_info in
+    { newfd with Mach.fun_var_info = updated_var_info }
+  end
 
 let (++) x f = f x
 

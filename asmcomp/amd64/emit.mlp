@@ -120,10 +120,16 @@ let emit_dwarf_from_var_info ~fundecl ~start_addr ~end_addr =
           | Var_tracking.VL_Stack n -> Variable_location.Stack_offset n
           | Var_tracking.VL_Optimized_away -> Variable_location.Optimized_away
         in
-        (* TODO: Convert labels to actual addresses. For now, use function bounds *)
+        (* Convert labels to Code_address (inline label formatting) *)
+        let label_prefix = match system with
+          | S_macosx | S_win64 -> "L"
+          | _ -> ".L"
+        in
+        let start_label_str = label_prefix ^ Int.to_string loc_range.start_label in
+        let end_label_str = label_prefix ^ Int.to_string loc_range.end_label in
         let scope = {
-          Variable_location.start_address = start_addr;
-          end_address = end_addr;
+          Variable_location.start_address = Code_address.from_label start_label_str;
+          end_address = Code_address.from_label end_label_str;
         } in
         {
           Variable_location.scope;
@@ -1074,10 +1080,16 @@ let fundecl fundecl =
           | Var_tracking.VL_Stack n -> Variable_location.Stack_offset n
           | Var_tracking.VL_Optimized_away -> Variable_location.Optimized_away
         in
-        (* TODO: Convert labels to actual addresses. For now, use function bounds *)
+        (* Convert labels to Code_address (inline label formatting) *)
+        let label_prefix = match system with
+          | S_macosx | S_win64 -> "L"
+          | _ -> ".L"
+        in
+        let start_label_str = label_prefix ^ Int.to_string loc_range.start_label in
+        let end_label_str = label_prefix ^ Int.to_string loc_range.end_label in
         let scope = {
-          Variable_location.start_address = start_addr;
-          end_address = end_addr;
+          Variable_location.start_address = Code_address.from_label start_label_str;
+          end_address = Code_address.from_label end_label_str;
         } in
         {
           Variable_location.scope;
