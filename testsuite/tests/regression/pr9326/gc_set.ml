@@ -39,3 +39,4 @@ let _ =
   assert (g2.custom_minor_ratio = custom_minor_ratio);
   assert (g2.custom_minor_max_size = custom_minor_max_size);
   assert (g2.small_heap_limit = small_heap_limit);
+  ()

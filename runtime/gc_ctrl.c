@@ -207,10 +207,10 @@ CAMLprim value caml_gc_set(value v)
   }
   /* This field was added in 5.5.0 */
   if (Wosize_val (v) >= 12){
-    if (new_small_limit != atomic_load_relaxed (&caml_small_heap_limit)){
-      atomic_store_relaxed (&caml_small_heap_limit, new_small_limit);
+    if (new_small_limit != caml_small_heap_limit){
+      caml_small_heap_limit = new_small_limit;
       CAML_GC_MESSAGE(PARAMS, "New small heap limit: %" CAML_PRIuNAT "%%\n",
-                      caml_small_heap_limit);
+                      new_small_limit);
     }
   }
 
@@ -354,8 +354,7 @@ void caml_init_gc (void)
   caml_fiber_wsz = (Stack_threshold * 2) / sizeof(value);
   atomic_store_relaxed(&caml_percent_free,
                        norm_pfree (caml_params->init_percent_free));
-  atomic_store_relaxed(&caml_small_heap_limit,
-                       norm_pfree (caml_params->init_small_heap_limit));
+  caml_small_heap_limit = norm_pfree (caml_params->init_small_heap_limit);
 
   atomic_store_relaxed(&caml_custom_major_ratio,
                        norm_custom_maj (caml_params->init_custom_major_ratio));
@@ -412,7 +411,7 @@ CAMLprim value caml_runtime_parameters (value unit)
        /* R */ /* missing */
        /* s */ Caml_state->minor_heap_wsz,
        /* t */ caml_params->trace_level,
-       /* v */ atomic_load_relaxed (&caml_verb_gc),
+       /* v */ caml_verb_gc,
        /* V */ caml_params->verify_heap,
        /* W */ caml_runtime_warnings,
        /* X */ tweaks ? tweaks : no_tweaks
