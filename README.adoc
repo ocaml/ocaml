@@ -1,1 +1,14 @@
 This is a (hopefully) temporary fork of OCaml for building Semgrep. It may be archived or removed without notice. Do not depend on it.
+
+OCaml 5.3 is currently used to build Semgrep.  The changes we've applied to the 5.3.0 release commit, found on the `5.3.0-semgrep` branch, are, latest to oldest:
+
+[cols="1,1"]
+|===
+|Description and Commit |Upstream status  
+
+|Bugfix for GC root mishandling in memprof.c (d50385f)
+|TBR in 5.5
+
+|fix: hard code domain stack sizes to 8 MiB(3d8d8c)
+|TBA
+|===
