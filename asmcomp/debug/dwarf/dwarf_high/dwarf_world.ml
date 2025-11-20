@@ -298,47 +298,6 @@ type section_data = {
   debug_ranges : bytes option;
 }
 
-(* Collect all strings from DIEs that use DW_FORM_strp *)
-(* NOTE: Unused with DW_FORM_string, but kept for reference *)
-let rec _collect_strings die acc =
-  (* Collect strings from this DIE's attributes *)
-  let acc = List.fold_left (fun acc (attr : Proto_die.attribute) ->
-    match attr.value, attr.form with
-    | String s, DW_FORM_strp -> s :: acc
-    | _ -> acc
-  ) acc (Proto_die.attributes die) in
-  (* Recursively collect from children *)
-  List.fold_left (fun acc child ->
-    _collect_strings child acc
-  ) acc (Proto_die.children die)
-
-(* Build string table and return (bytes, offset_map, index_map, label_to_string_and_offset)
-   The bytes contain the raw string data (no labels).
-   The offset_map maps strings to their byte offsets in .debug_str.
-   The index_map maps strings to their index (for DWARF 5 DW_FORM_strx).
-   The label_to_string_and_offset maps labels to (string, offset) for emission. *)
-(* NOTE: Unused with DW_FORM_string, but kept for reference *)
-let _build_string_table strings =
-  (* Remove duplicates and sort for determinism *)
-  let unique_strings = List.sort_uniq String.compare strings in
-  let buf = Buffer.create 1024 in
-  let offset_map = ref [] in
-  let index_map = ref [] in  (* DWARF 5: string -> index mapping *)
-  let label_to_string_and_offset = ref [] in
-  let label_counter = ref 0 in
-  List.iteri (fun idx s ->
-    let offset = Buffer.length buf in
-    let label = Printf.sprintf "Lstr_%d" !label_counter in
-    offset_map := (s, offset) :: !offset_map;
-    index_map := (s, idx) :: !index_map;  (* DWARF 5: track index *)
-    label_to_string_and_offset := (label, (s, offset)) :: !label_to_string_and_offset;
-    incr label_counter;
-    Buffer.add_string buf s;
-    Buffer.add_char buf '\000'  (* Null terminator *)
-  ) unique_strings;
-  (Bytes.of_string (Buffer.contents buf), List.rev !offset_map, List.rev !index_map, List.rev !label_to_string_and_offset)
-
-(* emit_debug_str is no longer needed - string table is built in emit() *)
 
 let emit_debug_abbrev _t =
   (* Emit the standard abbreviation table.
