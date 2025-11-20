@@ -150,6 +150,8 @@ CAMLextern void caml_print_exception_backtrace(void);
 void caml_init_backtrace(void);
 CAMLextern void caml_init_debug_info(void);
 
+value caml_get_exception_raw_backtrace(value unit);
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_BACKTRACE_H */
