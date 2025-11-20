@@ -76,30 +76,6 @@ let emit_dwarf_line_number dbg =
         incr dwarf_instr_count
       end
 
-(* DWARF variable location tracking helpers *)
-
-(* Convert a Reg.location to a Variable_location.location_kind *)
-let _reg_location_to_dwarf_kind reg_loc =
-  match reg_loc with
-  | Reg r ->
-      (* Physical register *)
-      Variable_location.Register r
-  | Stack (Local ofs) ->
-      (* Local stack slot - relative to frame pointer *)
-      Variable_location.Frame_offset (ofs * 8)
-  | Stack (Incoming ofs) ->
-      (* Incoming parameter on stack *)
-      Variable_location.Stack_offset (ofs * 8)
-  | Stack (Outgoing ofs) ->
-      (* Outgoing call argument *)
-      Variable_location.Stack_offset (ofs * 8)
-  | Stack (Domainstate _ofs) ->
-      (* Domain state location - treat as optimized away for now *)
-      Variable_location.Optimized_away
-  | Unknown ->
-      (* Not yet allocated or optimized out *)
-      Variable_location.Optimized_away
-
 (* Emit DWARF information for local variables from fun_var_info *)
 let emit_dwarf_from_var_info ~fundecl ~start_addr ~end_addr =
   if Dwarf_flags.is_dwarf_enabled () then
