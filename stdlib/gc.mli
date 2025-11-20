@@ -136,12 +136,18 @@ type control =
         always [0]. *)
 
     space_overhead : int;
-    (** The major GC speed is computed from this parameter.
+    (** The major GC speed is computed from this parameter, along with
+        [small_heap_limit].
        This is the memory that will be "wasted" because the GC does not
        immediately collect unreachable blocks.  It is expressed as a
        percentage of the memory used for live data.
        The GC will work more (use more CPU time and collect
        blocks more eagerly) if [space_overhead] is smaller.
+       The amount of overhead space used by the GC is approximately:
+       - [(live data size) * space_overhead] when live data is greater than
+         [small_heap_limit]
+       - less than [small_heap_limit + (live data size) * space overhead]
+         when live data is smaller than [small_heap_limit]
        Default: 120. *)
 
     verbose : int;
@@ -234,14 +240,17 @@ type control =
         [caml_alloc_custom_mem] (e.g. bigarrays).
         Default: 70000 bytes.
         @since 4.08 *)
+
     small_heap_limit : int;
     (** Minimum amount of allocations that must occur during the
         sweeping phase of the major GC. If this limit is not reached,
-        the GC switches to small-heap mode and inserts an idle phase.
+        the GC inserts an idle phase.
         This is done to reduce the time overhead of the GC at program
         start-up and for programs with small amounts of live data.
+        This parameter is also an upper bound on the amount of overhead
+        added by the idle phase.
         Default: same as [minor_heap_size].
-        @since 5.5.0 *)
+        @since 5.5 *)
   }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the
