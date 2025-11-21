@@ -71,7 +71,11 @@ let read_symbols' bytecode_file =
       let toc = Bytesections.read_toc ic in
       ignore(Bytesections.seek_section toc ic Bytesections.Name.SYMB);
       toc
-    with Bytesections.Bad_magic_number | Not_found ->
+    with 
+      Bytesections.Bad_magic_number ->
+        prerr_string bytecode_file; prerr_endline " file has wrong magic number.";
+        raise Toplevel
+    | Not_found ->
       prerr_string bytecode_file; prerr_endline " is not a bytecode file.";
       raise Toplevel
   in
