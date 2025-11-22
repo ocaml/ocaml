@@ -68,14 +68,23 @@ let read_symbols' bytecode_file =
   let ic = open_in_bin bytecode_file in
   let toc =
     try
+      let open Misc.Magic_number in
+      let pos_trailer = in_channel_length ic - magic_length in
+      let _ = seek_in ic pos_trailer in
+      match read_current_info ~expected_kind:(Some Exec) ic with
+      | Error (Parse_error err) ->
+         prerr_string bytecode_file; prerr_string " load error: "; 
+         prerr_endline (explain_parse_error (Some Exec) err);
+         raise Toplevel
+      | Error (Unexpected_error err) ->
+         prerr_string bytecode_file; prerr_string " load error: "; 
+         prerr_endline (explain_unexpected_error err);
+         raise Toplevel
+      | Ok _ -> seek_in ic 0;
       let toc = Bytesections.read_toc ic in
       ignore(Bytesections.seek_section toc ic Bytesections.Name.SYMB);
       toc
-    with 
-      Bytesections.Bad_magic_number ->
-        prerr_string bytecode_file; prerr_endline " file has wrong magic number.";
-        raise Toplevel
-    | Not_found ->
+    with Bytesections.Bad_magic_number | Not_found ->
       prerr_string bytecode_file; prerr_endline " is not a bytecode file.";
       raise Toplevel
   in
