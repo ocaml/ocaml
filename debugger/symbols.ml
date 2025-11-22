@@ -80,7 +80,7 @@ let read_symbols' bytecode_file =
          prerr_string bytecode_file; prerr_string " load error: "; 
          prerr_endline (explain_unexpected_error err);
          raise Toplevel
-      | Ok _ -> seek_in ic 0;
+      | Ok _ -> ();
       let toc = Bytesections.read_toc ic in
       ignore(Bytesections.seek_section toc ic Bytesections.Name.SYMB);
       toc
