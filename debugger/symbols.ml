@@ -73,11 +73,11 @@ let read_symbols' bytecode_file =
       let () = seek_in ic pos_trailer in
       match read_current_info ~expected_kind:(Some Exec) ic with
       | Error (Parse_error err) ->
-         prerr_string bytecode_file; prerr_string " load error: "; 
+         prerr_string bytecode_file; prerr_string " load error: ";
          prerr_endline (explain_parse_error (Some Exec) err);
          raise Toplevel
       | Error (Unexpected_error err) ->
-         prerr_string bytecode_file; prerr_string " load error: "; 
+         prerr_string bytecode_file; prerr_string " load error: ";
          prerr_endline (explain_unexpected_error err);
          raise Toplevel
       | Ok _ -> ();
