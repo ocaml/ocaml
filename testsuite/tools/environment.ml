@@ -78,7 +78,10 @@ let dequote s =
   | chunk :: rest -> chunk :: loop rest
   | [] -> []
   in
-  String.concat "" (loop (String.split_on_char '\'' s))
+  if String.length s > 0 && s.[0] = '\'' then
+    String.concat "" (loop (String.split_on_char '\'' s))
+  else
+    s
 
 (* [classify_executable file] determines if [file] is :
    - Tendered bytecode with an executable header
