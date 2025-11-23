@@ -70,7 +70,7 @@ let read_symbols' bytecode_file =
     try
       let open Misc.Magic_number in
       let pos_trailer = in_channel_length ic - magic_length in
-      let _ = seek_in ic pos_trailer in
+      let () = seek_in ic pos_trailer in
       match read_current_info ~expected_kind:(Some Exec) ic with
       | Error (Parse_error err) ->
          prerr_string bytecode_file; prerr_string " load error: "; 
