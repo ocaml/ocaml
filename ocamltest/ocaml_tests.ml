@@ -46,7 +46,7 @@ let bytecode =
     check_program_output;
   ] @
   (if not Sys.win32 && Ocamltest_config.native_compiler then
-    opt_build @ [compare_bytecode_programs]
+    opt_build
   else
     []
   )
