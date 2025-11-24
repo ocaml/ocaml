@@ -257,14 +257,14 @@ val drop_last_while : (char -> bool) -> string -> string
     @since 5.5 *)
 
 val cut_first_while : (char -> bool) -> string -> string * string
-(** [cut_first_while sat s] is
-    [(take_first_while sat s, drop_first_while sat s)].
+(** [cut_first_while p s] is
+    [(take_first_while p s, drop_first_while p s)].
 
     @since 5.5 *)
 
 val cut_last_while : (char -> bool) -> string -> string * string
-(** [cut_last_while sat s] is
-    [(drop_last_while sat s, take_last_while sat s)].
+(** [cut_last_while p s] is
+    [(drop_last_while p s, take_last_while p s)].
 
     @since 5.5 *)
 
