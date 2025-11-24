@@ -2496,8 +2496,10 @@ and mcomp_row type_pairs env row1 row2 =
       Rpresent _ -> true
     | Rabsent | Reither _ -> false
   in
-  if row_closed row1 && List.exists cannot_erase r2
-  || row_closed row2 && List.exists cannot_erase r1 then raise Incompatible;
+  let row1_closed, row2_closed = row_closed row1, row_closed row2 in
+  if row1_closed && List.exists cannot_erase r2
+  || row2_closed && List.exists cannot_erase r1
+  || pairs = [] && row1_closed && row2_closed then raise Incompatible;
   List.iter
     (fun (_,f1,f2) ->
       match row_field_repr f1, row_field_repr f2 with
