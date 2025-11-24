@@ -1480,6 +1480,10 @@ OCaml 5.3.0 (8 January 2025)
   LLDB support for them.
   (Nick Barnes, review by Tim McGilchrist and Gabriel Scherer)
 
+- #14375: More accurate error message in the ocamldebug in case of incorrect or
+  missing magic number.
+  (Alex Asafov, review by Gabriel Scherer)
+
 ### Toplevel:
 
 - #12891: Improved styling for initial prompt
