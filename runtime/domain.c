@@ -1165,14 +1165,22 @@ static void domain_terminate(void);
 static value make_finished(caml_result result)
 {
   CAMLparam0();
-  CAMLlocal1(res);
-  res = caml_alloc_1(
-    (caml_result_is_exception(result) ?
-     1 /* Error */ :
-     0 /* Ok */),
-    result.data);
-  /* [Finished res] */
-  res = caml_alloc_1(0, res);
+  CAMLlocal2(res, bt);
+  if (caml_result_is_exception(result)) {
+    res = result.data; /* Ensure that [result.data] is rooted before subsequent allocaitons */
+    bt = caml_get_exception_raw_backtrace(Val_unit);
+
+    res = caml_alloc_2(0, res, bt);
+    /* res = (exn, bt) */
+    res = caml_alloc_1(1 /* error */, res);
+    /* res = Error (exn, bt) */
+    res = caml_alloc_1(0 /* Finished */, res);
+    /* res = Finished (Error (exn, bt)) */
+  } else {
+    res = caml_alloc_1(0 /* ok */, result.data);
+    /* res = Ok v */
+    res = caml_alloc_1(0 /* Finished (Ok v) */, res);
+  }
   CAMLreturn(res);
 }
 
