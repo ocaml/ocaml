@@ -80,12 +80,12 @@ static void init_startup_params(void)
   params.event_trace = 0;
 }
 
-static void scanmult (char_os *opt, uintnat *var)
+static void scanmult (char *opt, uintnat *var)
 {
-  char_os mult = ' ';
+  char mult = ' ';
   unsigned int val = 1;
-  sscanf_os (opt, T("=%u%c"), &val, &mult);
-  sscanf_os (opt, T("=0x%x%c"), &val, &mult);
+  sscanf (opt, "=%u%c", &val, &mult);
+  sscanf (opt, "=0x%x%c", &val, &mult);
   switch (mult) {
   case 'k':   *var = (uintnat) val * 1024; break;
   case 'M':   *var = (uintnat) val * (1024 * 1024); break;
@@ -100,8 +100,17 @@ void caml_parse_ocamlrunparam(void)
   uintnat val;
   caml_init_gc_tweaks();
 
-  char_os *opt = caml_secure_getenv (T("OCAMLRUNPARAM"));
-  if (opt == NULL) opt = caml_secure_getenv (T("CAMLRUNPARAM"));
+  char_os *opt_os = caml_secure_getenv (T("OCAMLRUNPARAM"));
+  if (opt_os == NULL) opt_os = caml_secure_getenv (T("CAMLRUNPARAM"));
+#ifdef _WIN32
+  char *tofree, *opt;
+  if (opt_os)
+    tofree = opt = caml_stat_strdup_noexc_of_utf16(opt_os);
+  else
+    tofree = opt = NULL;
+#else
+  char *opt = opt_os;
+#endif
 
   if (opt != NULL){
     while (*opt != '\0'){
@@ -126,7 +135,7 @@ void caml_parse_ocamlrunparam(void)
       case 'V': scanmult (opt, &params.verify_heap); break;
       case 'W': scanmult (opt, &caml_runtime_warnings); break;
       case 'X': {
-        char_os *name = opt;
+        char *name = opt;
         while (*opt != '\0') {
           if (*opt == '=') {
             if (opt - name == strlen("help") &&
@@ -157,6 +166,10 @@ void caml_parse_ocamlrunparam(void)
       }
     }
   }
+
+#ifdef _WIN32
+  caml_stat_free(tofree);
+#endif
 
   /* Validate */
   if (params.max_domains < 1) {
