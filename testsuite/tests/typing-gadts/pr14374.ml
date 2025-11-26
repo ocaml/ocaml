@@ -4,7 +4,7 @@
 
 type _ ty =
 | All : 'a ty
-| AandB : [< `A | `B] ty 
+| AandB : [< `A | `B] ty
 
 let test (c : [< `C ] ty) =
   match c with
