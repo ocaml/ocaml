@@ -88,6 +88,9 @@ Working version
 
 ### Standard library:
 
+- #14389: Add `Atomic.retry_compare_and_set`.
+  (Léo Andrès, review by ?)
+
 - #14362: Add String.{drop,take,cut}_{first,last}_while
   (Daniel Bünzli, review by Nicolás Ojeda Bär and David Allsopp)
 

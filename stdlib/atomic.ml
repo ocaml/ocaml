@@ -54,3 +54,9 @@ let incr t =
   Loc.incr [%atomic.loc t.contents]
 let decr t =
   Loc.decr [%atomic.loc t.contents]
+
+let rec retry_compare_and_set (f : 'a -> 'a) (v : 'a t) =
+  let old = get v in
+  let new_ = f old in
+  let success = compare_and_set v old new_ in
+  if not success then retry_compare_and_set f v

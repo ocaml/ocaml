@@ -58,6 +58,10 @@ val exchange : 'a t -> 'a -> 'a
     otherwise. *)
 val compare_and_set : 'a t -> 'a -> 'a -> bool
 
+(** [retry_compare_and_set f r] sets [r] to [f (get r)].
+    Note that [f] may be called many times. *)
+val retry_compare_and_set : ('a -> 'a) -> 'a t -> unit
+
 (** [fetch_and_add r n] atomically increments the value of [r] by [n],
     and returns the current value (before the increment). *)
 val fetch_and_add : int t -> int -> int
