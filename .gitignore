@@ -63,6 +63,10 @@ META
 /ocamlnat
 /_opam
 
+# Ignore Emacs' .dir-locals.el file, used to configure directory-specific
+# variables
+/.dir-locals.el
+
 # specific files and patterns in sub-directories
 
 /asmcomp/emit.ml
