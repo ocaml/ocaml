@@ -13,3 +13,13 @@ let test (c : [< `C ] ty) =
 type _ ty = All : 'a ty | AandB : [< `A | `B ] ty
 val test : [< `C ] ty -> int = <fun>
 |}]
+
+let _ = test AandB
+[%%expect{|
+Line 1, characters 13-18:
+1 | let _ = test AandB
+                 ^^^^^
+Error: The constructor "AandB" has type "[< `A | `B ] ty"
+       but an expression was expected of type "[< `C ] ty"
+       These two variant types have no intersection
+|}]
