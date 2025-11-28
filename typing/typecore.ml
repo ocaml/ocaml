@@ -4241,7 +4241,6 @@ and type_expect_
       let may_contain_modules =
         List.exists (fun pvb -> may_contain_modules pvb.pvb_pat) spat_sexp_list
       in
-      let outer_level = get_current_level () in
       let (pat_exp_list, body, _new_env) =
         (* If the patterns contain module unpacks, there is a possibility that
            the types of the let body or bound expressions mention types
@@ -4252,6 +4251,9 @@ and type_expect_
           let allow_modules =
             if may_contain_modules
             then
+              (* Create a fresh scope for all module variables introduced by
+                 unpacks. The scope ends at the end of the local
+                 [with_local_level_generalize_if may_contain_modules] region. *)
               let scope = create_scope () in
               Modules_allowed { scope }
             else Modules_rejected
@@ -4265,35 +4267,15 @@ and type_expect_
             | Recursive -> annotate_recursive_bindings env pat_exp_list
             | Nonrecursive -> pat_exp_list
           in
-          (* The "bound expressions" component of the scope escape check.
-
-             This kind of scope escape is relevant only for recursive
-             module definitions.
-          *)
-          if rec_flag = Recursive && may_contain_modules then begin
-            List.iter
-              (fun vb ->
-                 (* [type_let] already generalized bound expressions' types
-                    in-place. We first take an instance before checking scope
-                    escape at the outer level to avoid losing generality of
-                    types added to [new_env].
-                 *)
-                let bound_exp = vb.vb_expr in
-                let bound_exp_type = Ctype.instance bound_exp.exp_type in
-                let loc = proper_exp_loc bound_exp in
-                let outer_var = newvar2 outer_level in
-                (* Checking unification within an environment extended with the
-                   module bindings allows us to correctly accept more programs.
-                   This environment allows unification to identify more cases
-                   where a type introduced by the module is equal to a type
-                   introduced at an outer scope. *)
-                unify_exp_types loc new_env bound_exp_type outer_var)
-              pat_exp_list
-          end;
           (pat_exp_list, body, new_env)
         end
         ~before_generalize:(fun (_pat_exp_list, body, new_env) ->
-          (* The "body" component of the scope escape check. *)
+          (* Just before generalizing the local region, we link
+             the body's type to a fresh variable in the outer region.
+
+             This forces an eager scope check to occur, preventing
+             the body's type from mentioning any module variables
+             introduced by bindings in [pat_exp_list]. *)
           unify_exp ~sexp new_env body (newvar ()))
       in
       re {
@@ -6943,7 +6925,6 @@ and type_effect_cases
         end
 
 (* Typing of let bindings *)
-
 and type_let ?check ?check_strict
     existential_context env rec_flag spat_sexp_list allow_modules =
   let spatl =  List.map vb_pat_constraint spat_sexp_list in
