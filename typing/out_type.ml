@@ -1548,16 +1548,13 @@ let extension_constructor_args_and_ret_type_subtree ext_args ext_ret_type =
   let args = tree_of_constructor_arguments ext_args in
   (args, ret)
 
-let prepared_tree_of_extension_constructor
-   ~env id ext es
-  =
+let prepared_tree_of_extension_constructor id ext es =
   let ty_name = Path.name ext.ext_type_path in
   let ty_params = filter_params ext.ext_type_params in
   let ty_variances =
     let ovariances =
-        Option.bind env (fun env ->
-          try Some (Env.find_type ext.ext_type_path env).type_variance
-          with Not_found -> None)
+      try Some (Env.find_type ext.ext_type_path !printing_env).type_variance
+      with Not_found -> None
     in
     Option.fold
       ~none:(List.map (fun _ -> NoVariance, NoInjectivity) ty_params)
@@ -1612,14 +1609,14 @@ let prepared_tree_of_extension_constructor
   in
     Osig_typext (ext, es)
 
-let tree_of_extension_constructor ?env id ext es =
+let tree_of_extension_constructor id ext es =
   reset_except_conflicts ();
   add_extension_constructor_to_preparation ext;
-  prepared_tree_of_extension_constructor ~env id ext es
+  prepared_tree_of_extension_constructor id ext es
 
-let prepared_extension_constructor ?env id ppf ext =
+let prepared_extension_constructor id ppf ext =
   !Oprint.out_sig_item ppf
-    (prepared_tree_of_extension_constructor ~env id ext Text_first)
+    (prepared_tree_of_extension_constructor id ext Text_first)
 
 (* Print a value declaration *)
 
@@ -1925,7 +1922,7 @@ and tree_of_signature_rec env' sg =
 
 and trees_of_recursive_sigitem_group env
     (syntactic_group: Signature_group.rec_group) =
-  let display (x:Signature_group.sig_item) = x.src, tree_of_sigitem env x.src in
+  let display (x:Signature_group.sig_item) = x.src, tree_of_sigitem x.src in
   let env = Env.add_signature syntactic_group.pre_ghosts env in
   match syntactic_group.group with
   | Not_rec x -> add_sigitem env x, [display x]
@@ -1934,13 +1931,13 @@ and trees_of_recursive_sigitem_group env
       List.fold_left add_sigitem env items,
       with_hidden_items ids (fun () -> List.map display items)
 
-and tree_of_sigitem env = function
+and tree_of_sigitem = function
   | Sig_value(id, decl, _) ->
       tree_of_value_description id decl
   | Sig_type(id, decl, rs, _) ->
       tree_of_type_declaration id decl rs
   | Sig_typext(id, ext, es, _) ->
-      tree_of_extension_constructor ~env id ext es
+      tree_of_extension_constructor id ext es
   | Sig_module(id, _, md, rs, _) ->
       let ellipsis =
         List.exists (function

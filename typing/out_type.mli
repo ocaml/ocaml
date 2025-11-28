@@ -132,13 +132,13 @@ val add_constructor_to_preparation : constructor_declaration -> unit
 val prepared_constructor : constructor_declaration printer
 
 val tree_of_extension_constructor:
-    ?env:Env.t -> Ident.t -> extension_constructor -> ext_status -> out_sig_item
+    Ident.t -> extension_constructor -> ext_status -> out_sig_item
 val extension_constructor_args_and_ret_type_subtree:
   constructor_arguments -> type_expr option -> out_type list * out_type option
 val add_extension_constructor_to_preparation :
     extension_constructor -> unit
 val prepared_extension_constructor:
-    ?env:Env.t -> Ident.t -> extension_constructor printer
+    Ident.t -> extension_constructor printer
 
 
 (** {1 Declarations }*)
