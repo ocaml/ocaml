@@ -728,6 +728,9 @@ OCaml 5.5.0
   definition
   (Ulysse Gérard, review by Florian Angeletti and Gabriel Scherer)
 
+- #14394: Refactor `type_let` into `type_let_nonrec` and `type_let_rec`.
+  (Alistair O'Brien, review by ??)
+
 ### Build system:
 
 - #13705, #14444: Cache test results of custom Autoconf tests from aclocal.m4.
