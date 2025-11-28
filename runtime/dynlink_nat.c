@@ -83,8 +83,6 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
   char_os *p;
   int global_dup;
 
-  /* TODO: dlclose in case of error... */
-
   p = caml_stat_strdup_to_os(String_val(filename));
   global_dup = Int_val(global);
   caml_enter_blocking_section();
@@ -96,8 +94,10 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
     caml_failwith(caml_dlerror());
 
   sym = caml_dlsym(dlhandle, "caml_plugin_header");
-  if (NULL == sym)
+  if (NULL == sym) {
+    caml_dlclose(dlhandle);
     caml_failwith("not an OCaml plugin");
+  }
 
   handle = Val_handle(dlhandle);
   header = caml_input_value_from_block(sym, INT_MAX);
@@ -106,6 +106,13 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
   Field(res, 0) = handle;
   Field(res, 1) = header;
   CAMLreturn(res);
+}
+
+CAMLprim value caml_natdynlink_close(value handle)
+{
+  CAMLparam1(handle);
+  caml_dlclose(Handle_val(handle));
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_natdynlink_register(value handle_v, value symbols) {

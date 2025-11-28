@@ -36,6 +36,8 @@ module Native = struct
 
   external ndl_open : string -> bool -> handle * dynheader
     = "caml_natdynlink_open"
+  external ndl_close : handle -> unit
+    = "caml_natdynlink_close"
   external ndl_register : handle -> string array -> unit
     = "caml_natdynlink_register"
   external ndl_run : handle -> string -> unit = "caml_natdynlink_run"
@@ -111,7 +113,7 @@ module Native = struct
     | exception _ -> None
     | obj -> Some obj
 
-  let finish _handle = ()
+  let finish handle = ndl_close handle
 end
 
 include DC.Make (Native)
