@@ -40,13 +40,14 @@ let with_info ~native ~tool_name ~dump_ext unit_info k =
 module Parse_result = struct
   type 'a t = { ast : 'a; info : info }
 
-  let of_pparse_ast_result ~info ({ ast; source_file } : _ Pparse.ast_result) =
+  let update_unit_info ~info ast =
+    let source_file = !Location.input_name in
     let new_target =
-      Unit_info.set_original_source_file_name info.target source_file
+      Unit_info.update_human_source_file_name info.target source_file
     in
     { ast; info = { info with target = new_target } }
 
-  let map_ast { ast; info } ~f = { ast = f ast; info }
+  let map_ast { ast; info } ~f = { ast = f ast info; info }
 end
 
 (** Compile a .mli file *)
@@ -54,14 +55,14 @@ end
 let parse_intf i =
   Pparse.parse_interface
     ~tool_name:i.tool_name
-    (Unit_info.original_source_file i.target)
-  |> Parse_result.of_pparse_ast_result ~info:i
+    (Unit_info.human_source_file i.target)
+  |> Parse_result.update_unit_info ~info:i
   |> Parse_result.map_ast
-       ~f:(print_if i.ppf_dump Clflags.dump_parsetree Printast.interface)
+       ~f:(fun ast i -> print_if i.ppf_dump Clflags.dump_parsetree Printast.interface ast)
   |> Parse_result.map_ast
-       ~f:(print_if i.ppf_dump Clflags.dump_source Pprintast.signature)
+       ~f:(fun ast i -> print_if i.ppf_dump Clflags.dump_source Pprintast.signature ast)
 
-let typecheck_intf info ast =
+let typecheck_intf { Parse_result.ast; info } =
   Profile.(record_call typing) @@ fun () ->
   let tsg =
     ast
@@ -74,7 +75,7 @@ let typecheck_intf info ast =
     Printtyp.wrap_printing_env ~error:false info.env (fun () ->
         Format.(fprintf std_formatter) "%a@."
           (Printtyp.printed_signature
-             (Unit_info.original_source_file info.target))
+             (Unit_info.human_source_file info.target))
           sg);
   ignore (Includemod.signatures info.env ~mark:true sg sg);
   Typecore.force_delayed_checks ();
@@ -90,10 +91,10 @@ let emit_signature info alerts tsg =
   Typemod.save_signature info.target tsg info.env sg
 
 let interface info =
-  Profile.record_call (Unit_info.raw_source_file info.target) @@ fun () ->
-  let { ast; info } : _ Parse_result.t = parse_intf info in
+  Profile.record_call (Unit_info.input_source_file info.target) @@ fun () ->
+  let parse_result = parse_intf info in
   if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
-    let alerts, tsg = typecheck_intf info ast in
+    let alerts, tsg = typecheck_intf parse_result in
     if not !Clflags.print_types then begin
       emit_signature info alerts tsg
     end
@@ -105,14 +106,15 @@ let interface info =
 let parse_impl i =
   Pparse.parse_implementation
     ~tool_name:i.tool_name
-    (Unit_info.original_source_file i.target)
-  |> Parse_result.of_pparse_ast_result ~info:i
+    (Unit_info.human_source_file i.target)
+  |> Parse_result.update_unit_info ~info:i
   |> Parse_result.map_ast
-       ~f:(print_if i.ppf_dump Clflags.dump_parsetree Printast.implementation)
+       ~f:(fun ast i ->
+            print_if i.ppf_dump Clflags.dump_parsetree Printast.implementation ast)
   |> Parse_result.map_ast
-       ~f:(print_if i.ppf_dump Clflags.dump_source Pprintast.structure)
+       ~f:(fun ast i -> print_if i.ppf_dump Clflags.dump_source Pprintast.structure ast)
 
-let typecheck_impl i parsetree =
+let typecheck_impl { Parse_result.ast = parsetree; info = i } =
   parsetree
   |> Profile.(record typing)
     (Typemod.type_implementation i.target i.env)
@@ -122,7 +124,7 @@ let typecheck_impl i parsetree =
     (fun fmt {Typedtree.shape; _} -> Shape.print fmt shape)
 
 let implementation info ~backend =
-  Profile.record_call (Unit_info.raw_source_file info.target) @@ fun () ->
+  Profile.record_call (Unit_info.input_source_file info.target) @@ fun () ->
   let exceptionally () =
     let sufs =
       if info.native then Unit_info.[ cmx; obj ]
@@ -132,9 +134,9 @@ let implementation info ~backend =
       sufs;
   in
   Misc.try_finally ?always:None ~exceptionally (fun () ->
-    let { ast = parsed; info } : _ Parse_result.t = parse_impl info in
+    let parse_result = parse_impl info in
     if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
-      let typed = typecheck_impl info parsed in
+      let typed = typecheck_impl parse_result in
       if Clflags.(should_stop_after Compiler_pass.Typing) then () else begin
         backend info typed
       end;

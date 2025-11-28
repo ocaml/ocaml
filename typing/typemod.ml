@@ -3271,12 +3271,12 @@ let () =
 let gen_annot target annots =
   let annot = Unit_info.annot target in
   Cmt2annot.gen_annot (Some (Unit_info.Artifact.filename annot))
-    ~sourcefile:(Unit_info.Artifact.original_source_file annot)
+    ~sourcefile:(Unit_info.Artifact.human_source_file annot)
     ~use_summaries:false
     annots
 
 let type_implementation target initial_env ast =
-  let sourcefile = Unit_info.original_source_file target in
+  let sourcefile = Unit_info.human_source_file target in
   let save_cmt target annots initial_env cmi shape =
     Cmt_format.save_cmt (Unit_info.cmt target)
       annots initial_env cmi shape;

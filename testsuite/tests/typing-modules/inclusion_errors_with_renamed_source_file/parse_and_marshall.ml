@@ -7,6 +7,6 @@ let () =
   let input_name = Sys.argv.(1) in
   let output_name = Sys.argv.(2) in
   let ast =
-    (Pparse.parse_implementation ~tool_name:"parse_and_marshall" input_name).ast
+    Pparse.parse_implementation ~tool_name:"parse_and_marshall" input_name
   in
   Pparse.write_ast Pparse.Structure output_name ast
