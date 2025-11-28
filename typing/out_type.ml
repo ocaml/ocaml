@@ -1292,17 +1292,17 @@ let filter_params tyl =
    we need to translate the computed variance ([Variance.t])
    back into the corresponding syntactic node ([Asttypes.variance]).
    [Typedecl_variance.transl_variance] is half inverse to this operation. *)
-let untransl_variance
-    ?(var_flag=(!Clflags.print_variance))
-    ?(inj_flag=(!Clflags.print_variance)) vi =
+let syntactic_variance
+    ?(with_variance=(!Clflags.print_variance))
+    ?(with_injectivity=(!Clflags.print_variance)) vi =
   let open Variance in let open Asttypes in
-  let v = if not var_flag then NoVariance else
+  let v = if not with_variance then NoVariance else
   match mem May_pos vi, mem May_neg vi with
   | false, false -> Bivariant
   | true, false -> Covariant
   | false, true -> Contravariant
   | true, true -> NoVariance in
-  let i = if not inj_flag then NoInjectivity else
+  let i = if not with_injectivity then NoInjectivity else
   if mem Inj vi then Injective else NoInjectivity in
   (v, i)
 
@@ -1428,8 +1428,8 @@ let tree_of_type_decl id decl =
       List.map2
         (fun ty v ->
           let is_var = is_Tvar ty in
-          let var_flag = !Clflags.print_variance || abstr || not is_var in
-          let inj_flag =
+          let with_variance = !Clflags.print_variance || abstr || not is_var in
+          let with_injectivity =
             !Clflags.print_variance ||
             (abstr || not is_var) &&
             type_kind_is_abstract decl &&
@@ -1439,7 +1439,7 @@ let tree_of_type_decl id decl =
                 decl.type_private = Private &&
                 Btype.is_constr_row ~allow_ident:true (Btype.row_of_type ty)
           in
-          untransl_variance ~var_flag ~inj_flag v)
+          syntactic_variance ~with_variance ~with_injectivity v)
         decl.type_params decl.type_variance
     in
     (Ident.name id,
@@ -1561,7 +1561,7 @@ let prepared_tree_of_extension_constructor
     in
     Option.fold
       ~none:(List.map (fun _ -> NoVariance, NoInjectivity) ty_params)
-      ~some:(List.map untransl_variance)
+      ~some:(List.map syntactic_variance)
       ovariances
   in
   let type_param ot_variance =
@@ -1743,8 +1743,8 @@ let rec tree_of_class_type mode params =
 
 
 let tree_of_class_param param variance =
-  let ot_variance = untransl_variance variance
-      ~var_flag:(!Clflags.print_variance || not (is_Tvar param)) in
+  let ot_variance = syntactic_variance variance
+      ~with_variance:(!Clflags.print_variance || not (is_Tvar param)) in
   match tree_of_typexp Type_scheme param with
     Otyp_var (ot_non_gen, ot_name) -> {ot_non_gen; ot_name; ot_variance}
   | _ -> {ot_non_gen=false; ot_name="?"; ot_variance}
