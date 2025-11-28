@@ -1552,21 +1552,19 @@ let prepared_tree_of_extension_constructor id ext es =
   let ty_name = Path.name ext.ext_type_path in
   let ty_params = filter_params ext.ext_type_params in
   let ty_variances =
-    let ovariances =
-      try Some (Env.find_type ext.ext_type_path !printing_env).type_variance
-      with Not_found -> None
-    in
-    Option.fold
-      ~none:(List.map (fun _ -> NoVariance, NoInjectivity) ty_params)
-      ~some:(List.map syntactic_variance)
-      ovariances
+    try
+      let variances =
+        (Env.find_type ext.ext_type_path !printing_env).type_variance in
+      List.map syntactic_variance variances
+    with Not_found ->
+      List.map (fun _ -> NoVariance, NoInjectivity) ty_params
   in
   let type_param ot_variance =
     function
     | Otyp_var (_ot_non_gen, ot_name) ->
         {ot_non_gen=false; ot_name; ot_variance}
-        (* NB: ot_non_gen=false to preserve the original semantics; however,
-           simply using the given ot_non_gen does not break testsuite either *)
+        (* NB(#14315): simply using the given ot_non_gen here
+           does not break the testsuite *)
     | _ ->
         {ot_non_gen=false; ot_name="?"; ot_variance=NoVariance,NoInjectivity}
   in

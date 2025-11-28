@@ -366,6 +366,9 @@ Working version
   e.g. `< foo : int; .. as $0>` when $0 is introduced by a GADT constructor
   (Stefan Muenzel, review by Jacques Garrigue and Florian Angeletti)
 
+- #14190: `ocaml -e` now also processes `-init` (previously it was ignored).
+  (Emile Trotignon, review by David Allsopp and @ygrek)
+
 - #14225: do not raise unused-constructor warning on private
   constructor in type implementations, for example
   `type safe = private Safe`, which are typically used to
@@ -388,16 +391,14 @@ Working version
   hard-coded path.
   (David Allsopp, review by Damien Doligez and Samuel Hym)
 
-- #14190: `ocaml -e` now also processes `-init` (previously it was ignored).
-  (Emile Trotignon, review by David Allsopp and @ygrek)
+- #14315: enable -i-variance also for classes and extension constructors,
+  and add description of -i-variance in manpages
+  (Takafumi Saikawa, review by Florian Angeletti and Jacques Garrigue)
 
--  #14373: remove the OCAML_BINANNOT_WITHENV environment variable, and
+- #14373: remove the OCAML_BINANNOT_WITHENV environment variable, and
    always strip typing environment in cmt files
    (Florian Angeletti, review by David Allsopp)
 
-- #?????: enable -i-variance also for classes and extension constructors,
-  and add description of -i-variance in manpages
-  (Takafumi Saikawa, review by ??)
 
 ### Internal/compiler-libs changes:
 
