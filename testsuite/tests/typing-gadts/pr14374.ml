@@ -14,6 +14,7 @@ type _ ty = All : 'a ty | AandB : [< `A | `B ] ty
 val test : [< `C ] ty -> int = <fun>
 |}]
 
+(* error if empty polymorphic variants are not allowed *)
 let _ = test AandB
 [%%expect{|
 Line 1, characters 13-18:
