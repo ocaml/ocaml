@@ -82,6 +82,14 @@ type 'a array
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
+type 'a iarray
+\end{ocamldoccode}
+\index{iarray@\verb`iarray`}
+\begin{ocamldocdescription}
+  The type of immutable arrays whose elements have type "'a".
+\end{ocamldocdescription}
+
+\begin{ocamldoccode}
 type 'a list = [] | :: of 'a * 'a list
 \end{ocamldoccode}
 \index{list@\verb`list`}
