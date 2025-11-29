@@ -2,7 +2,17 @@
 
 set -euo pipefail
 
-ocamlopt=${ocamlopt_byte}
+ocamlsrcdir="$1"
+
+ocamlopt=(
+  "$ocamlopt_byte"
+  -nostdlib
+  -I "$ocamlsrcdir"/stdlib
+  -I "$ocamlsrcdir"/otherlibs/dynlink
+  -I "$ocamlsrcdir"/otherlibs/unix
+)
+
+ocamlopt="${ocamlopt[@]}"
 
 cat >lib.ml <<EOF
 let s = "Hello natdynlink!"
@@ -41,7 +51,7 @@ $ocamlopt -shared -o toto.cmxs toto.ml
 
 echo 'let x = 42' >>lib.ml
 $ocamlopt -c lib.ml
-$ocamlopt -o main.exe -I +unix -I +dynlink dynlink.cmxa unix.cmxa lib.cmx main.ml
+$ocamlopt -o main.exe dynlink.cmxa unix.cmxa lib.cmx main.ml
 
 # At this point, toto.cmxs no longer loads as the lib.cmi that has been recorded
 # in main.exe does not match the one used when building toto.cmxs
