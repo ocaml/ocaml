@@ -33,9 +33,12 @@ type global_map = {
 
 module Native = struct
   type ndl_handle
+  type initialized =
+    | Initialized
+    | Not_yet_initialized of string list
   type handle = {
     ndl_handle : ndl_handle;
-    mutable initialized : bool;
+    mutable initialized : initialized;
   }
 
   external ndl_open : string -> bool -> ndl_handle * dynheader
@@ -84,8 +87,16 @@ module Native = struct
       (ndl_getmap ())
 
   let run_shared_startup handle =
-    handle.initialized <- true;
-    ndl_run handle.ndl_handle "_shared_startup"
+    match handle.initialized with
+    | Initialized -> ()
+    | Not_yet_initialized syms ->
+        handle.initialized <- Initialized;
+        begin try
+          ndl_register handle.ndl_handle (Array.of_list syms);
+        with exn ->
+          raise (DT.Error (Cannot_open_dynamic_library exn))
+        end;
+        ndl_run handle.ndl_handle "_shared_startup"
 
   let run _lock handle ~unit_header ~priv:_ =
     List.iter (fun cu ->
@@ -101,7 +112,6 @@ module Native = struct
       try ndl_open filename (not priv)
       with exn -> raise (DT.Error (Cannot_open_dynamic_library exn))
     in
-    let handle = { ndl_handle; initialized = false } in
     if header.dynu_magic <> Config.cmxs_magic_number then begin
       ndl_close ndl_handle;
       raise (DT.Error (Not_a_bytecode_file filename))
@@ -110,12 +120,8 @@ module Native = struct
       "_shared_startup" ::
       List.concat_map Unit_header.defined_symbols header.dynu_units
     in
-    try
-      ndl_register handle.ndl_handle (Array.of_list syms);
-      handle, header.dynu_units
-    with exn ->
-      ndl_close ndl_handle;
-      raise (DT.Error (Cannot_open_dynamic_library exn))
+    let handle = { ndl_handle; initialized = Not_yet_initialized syms } in
+    handle, header.dynu_units
 
   let unsafe_get_global_value ~bytecode_or_asm_symbol =
     match ndl_loadsym bytecode_or_asm_symbol with
@@ -123,7 +129,9 @@ module Native = struct
     | obj -> Some obj
 
   let finish handle =
-    if not handle.initialized then ndl_close handle.ndl_handle
+    match handle.initialized with
+    | Initialized -> ()
+    | Not_yet_initialized _ -> ndl_close handle.ndl_handle
 end
 
 include DC.Make (Native)
