@@ -3,8 +3,8 @@
    native-compiler;
    output = "test.output";
    reference = "${test_source_directory}/test.reference";
-   program = "${test_source_directory}/test.sh";
-   arguments = "${ocamlsrcdir}";
+   program = "bash";
+   arguments = "${test_source_directory}/test.sh ${ocamlsrcdir}";
    run;
    check-program-output;
 *)
