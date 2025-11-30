@@ -199,6 +199,10 @@ Working version
   and socklen_param_type for socklen_t.
   (Antonin Décimo, review by Nicolás Ojeda Bär, David Allsopp and Samuel Hym)
 
+- #14391: unload native dynlinked objects when an error occurs and it is safe to
+  do so. (Fixes #14323)
+  (Nicolás Ojeda Bär, review by Vincent Laviron)
+
 ### Tools:
 
 - #14055: Invert BUILD_PATH_PREFIX_MAP in directories loaded at startup
