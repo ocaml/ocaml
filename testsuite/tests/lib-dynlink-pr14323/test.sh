@@ -5,7 +5,7 @@ set -euo pipefail
 ocamlsrcdir="$1"
 
 ocamlopt=(
-  "$ocamlopt_byte"
+  "$ocamlsrcdir"/ocamlopt.opt
   -nostdlib
   -I "$ocamlsrcdir"/stdlib
   -I "$ocamlsrcdir"/otherlibs/dynlink
