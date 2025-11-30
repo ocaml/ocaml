@@ -346,8 +346,7 @@ module Make (P : Dynlink_platform_intf.S) = struct
       with_lock (fun ({unsafe_allowed; _ } as global) ->
           global.state <- check filename units global.state
               ~unsafe_allowed
-              ~priv;
-          P.run_shared_startup handle;
+              ~priv
         );
       List.iter
         (fun unit_header ->

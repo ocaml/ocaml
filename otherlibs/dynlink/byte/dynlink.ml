@@ -103,8 +103,6 @@ module Bytecode = struct
       init
       !default_crcs
 
-  let run_shared_startup _ = ()
-
   let with_lock lock f =
     Mutex.lock lock;
     Fun.protect f

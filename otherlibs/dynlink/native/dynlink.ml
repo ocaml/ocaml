@@ -99,6 +99,7 @@ module Native = struct
         ndl_run handle.ndl_handle "_shared_startup"
 
   let run _lock handle ~unit_header ~priv:_ =
+    run_shared_startup handle;
     List.iter (fun cu ->
         try ndl_run handle.ndl_handle cu
         with exn ->
