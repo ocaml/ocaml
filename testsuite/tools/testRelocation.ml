@@ -160,9 +160,7 @@ let libdir_rules config file =
          ~ocaml_debug:has_ocaml_debug_info,
          ~c_debug:has_c_debug_info,
          ~s:contains_assembled_objects) =
-      if List.mem basename ["Makefile.config";
-                            "ld.conf";
-                            "runtime-launch-info"] then
+      if basename = "Makefile.config" || basename = "runtime-launch-info" then
         (* These files all embed the Standard Library location *)
         (~stdlib:true, ~ocaml_debug:false, ~c_debug:false, ~s:false)
       else if basename = "config.cmx" then

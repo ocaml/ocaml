@@ -69,16 +69,16 @@ let tests _config env =
         "/", "/", None;
         "//", "//", None;
         (* Current and Parent directory names *)
-        ".", ".", None;
-        "..", "..", None;
+        ".", libdir, None;
+        "..", libdir / "..", None;
         (* Current and Parent directory names with OS-default trailing separator
            (i.e. ./ and ../ on Unix and .\ and ..\ on Windows) *)
-        "." / "", "." / "", None;
-        ".." / "", ".." / "", None;
+        "." / "", libdir / "", None;
+        ".." / "", libdir / ".." / "", None;
         (* "stublibs" relative to the Current and Parent directory (using OS-
            default separator) *)
-        "." / "stublibs", "." / "stublibs", None;
-        ".." / "stublibs", ".." / "stublibs", None;
+        "." / "stublibs", libdir / "stublibs", None;
+        ".." / "stublibs", libdir / ".." / "stublibs", None;
         (* Other cases - implicit and absolute entries, and entries beginning
            with the Current and Parent directory names *)
         "stublibs", "stublibs", None;
@@ -88,15 +88,7 @@ let tests _config env =
         "/lib/ocaml", "/lib/ocaml", Some "/lib/ocaml\r";
       ] in
       let fold (main, main_outcome, main_outcome_cr) (line, outcome, cr) =
-        let cr = match cr with
-        | Some cr -> cr
-        | None ->
-            (* Windows opens ld.conf in text mode, so the \r are stripped *)
-            if Sys.win32 then
-              outcome
-            else
-              outcome ^ "\r"
-        in
+        let cr = Option.value ~default:outcome cr in
         line::main, outcome::main_outcome, cr::main_outcome_cr
       in
       List.fold_left fold ([], [], []) (List.rev data)
@@ -185,12 +177,12 @@ let tests _config env =
     let tests =
       (* As first, but with a CR at the end of each line *)
       let outcome =
-        (* Windows opens ld.conf in text mode, so the line with just \r is
-           read as an empty string and consequently stripped *)
+        (* Known issue: Windows strips out the blank entries in the search
+           path (somewhat counterintuitively!) *)
         if Sys.win32 then
           main_outcome_cr
         else
-          "\r" :: main_outcome_cr
+          "." :: main_outcome_cr
       in
       {base with description = "Base ld.conf with CRLF endings";
                  stdlib = List.map (Fun.flip (^) "\r") ("" :: main);
@@ -227,27 +219,28 @@ let tests _config env =
             stdlib = ["ld.conf"];
             outcome = outcome_caml_ld_library_path
                         @ if_ld_conf_found ["ld.conf"]} :: tests in
+    let ld_conf_outcome = if_ld_conf_found ["masked-stdlib"] in
     let tests =
-      (* An empty CAMLLIB should cause ld.conf in the Standard Library to be
-         ignored, but not CAML_LD_LIBRARY PATH *)
+      (* An empty CAMLLIB shouldn't hide ld.conf in the Standard Library *)
       {base with description = "Empty CAMLLIB";
                  caml_ld_library_path = Set ["env"];
                  camllib = Empty;
                  stdlib = ["masked-stdlib"];
-                 outcome = ["env"]} :: tests in
+                 outcome = "env" :: ld_conf_outcome} :: tests in
     let tests =
-      (* An empty OCAMLLIB should cause ld.conf in both the Standard Library and
-         CAMLLIB to be ignored, but not CAML_LD_LIBRARY_PATH *)
+      (* An empty OCAMLLIB shouldn't hide ld.conf in either the Standard Library
+         or CAMLLIB\ld.conf *)
       {description = "Empty OCAMLLIB";
        caml_ld_library_path = Set ["env"];
        ocamllib = Empty;
        camllib = Set ["masked-camllib"];
        stdlib = ["masked-stdlib"];
-       outcome = ["env"]} :: tests in
+       outcome = ["env"; "masked-camllib"] @ ld_conf_outcome} :: tests in
     tests
   in
   (* Batch 3: load priority, embedded NUL characters, EOL-at-EOF, etc. *)
   let tests =
+    let ld_conf_outcome = if_ld_conf_found ["libdir"] in
     let tests =
       (* OCAMLLIB should have priority over CAMLLIB and the Standard Library *)
       {description = "$OCAMLLIB/ld.conf";
@@ -255,19 +248,19 @@ let tests _config env =
        ocamllib = Set ["ocamllib\000"; "hidden"];
        camllib = Set ["camllib\000"; "hidden"];
        stdlib = ["libdir"];
-       outcome = ["env"; "ocamllib"]} :: tests in
+       outcome = ["env"; "ocamllib"; "camllib"] @ ld_conf_outcome} :: tests in
     let tests =
       (* CAMLLIB should have priority over the Standard Library *)
       {base with description = "$CAMLLIB/ld.conf";
                  caml_ld_library_path = Set ["env"];
                  camllib = Set ["camllib\000"; "hidden"];
                  stdlib = ["libdir"];
-                 outcome = ["env"; "camllib"]} :: tests in
+                 outcome = ["env"; "camllib"] @ ld_conf_outcome} :: tests in
     let tests =
       (* EOL-at-EOF should not add a blank entry to the search path *)
       {base with description = "EOF-at-EOF";
             stdlib = (if Sys.win32 then ["libdir\r\n"] else ["libdir\n"]);
-            outcome = if_ld_conf_found ["libdir"]} :: tests in
+            outcome = ld_conf_outcome} :: tests in
     tests
   in
   tests
@@ -359,91 +352,16 @@ let () =
       in
       if code = 0 then
         let lines =
-          (* Known issue: Sys.getenv processes blank environment variables
-             differently from _wgetenv which in the tests will cause it load
-             ld.conf files. The tests have been written to allow for this by
-             having the lines which are _not_ expected to appear on Unix be
-             prefixed with "masked-". *)
-          if Sys.win32 then
-            if ((test.camllib = Empty
-                   && not (Environment.is_renamed env))
-                || test.ocamllib = Empty) then
-              let unmask s = not (String.starts_with ~prefix:"masked-" s) in
-              let lines' = List.filter unmask lines in
-              (* If Windows behaviour has been harmonised, then the filtered
-                 list of lines would be the same as the unfiltered list. If this
-                 happens, insert an extra line to "poison" the test output to
-                 prevent this behaviour from being silently fixed. *)
-              if lines = lines' then
-                "poisoned"::lines
-              else
-                lines'
-            else
-              lines
-          else
-            lines
-        in
-        let lines =
-          (* Known issue: ocamlc opens ld.conf in text mode on Cygwin but
-             ocamlrun opens it in binary mode (the default). This means that
-             ocamlrun will return lines ending with \r, but ocamlc will both
-             strip the \r and ignore a line consisting of just \r (because that
-             appears blank in text mode). This is mitigated by ensuring that the
-             \r line is always first in the test, and then adding back the \r to
-             the output on Cygwin. This will clearly fail if the behaviour of
-             ocamlrun and ocamlc is harmonised. *)
-          match test.stdlib with
-          | "\r" :: _ when Sys.cygwin && lines <> [] ->
-              "\r" :: List.map (Fun.flip (^) "\r") (List.tl lines)
-          | _ ->
-              lines
-        in
-        let lines =
-          (* Known issue: Misc.split_path_contents ignores empty strings where
-             caml_decompose_path does not. Mitigate it by detecting the
-             environment setting and simulating the line. *)
-          if test.caml_ld_library_path = Set []
-             || test.caml_ld_library_path = Empty then
+          (* Known issues:
+             - Misc.split_path_contents ignores empty strings where
+               caml_decompose_path does not
+             - Sys.getenv can't return empty environment variables on Windows,
+               but _wgetenv can
+             - Windows strips out the blank entries in the search path
+               (somewhat counterintuitively!) *)
+          if not Sys.win32 && (test.caml_ld_library_path = Set []
+                               || test.caml_ld_library_path = Empty) then
             "." :: lines
-          else
-            lines
-        in
-        (* Known issue: Windows strips out the blank entries in the search path
-           (somewhat counterintuitively!) *)
-        let lines =
-          if not Sys.win32 then
-            lines
-          else
-            List.drop_while (String.equal ".") lines
-        in
-        let lines =
-          (* Known issue: Dll.ld_conf_contents preserves NUL characters in lines
-             where caml_parse_ld_conf terminates processing. This is mitigated
-             in the test by putting a single line "hidden" after the line with
-             an embedded NUL. *)
-          let includes_nulls =
-            let includes_nulls = function
-            | Unset | Empty -> false
-            | Set l -> List.exists (Fun.flip String.contains '\000') l
-            in
-            includes_nulls test.ocamllib || includes_nulls test.camllib
-          in
-          if includes_nulls then
-            let strip_null s =
-              match String.index s '\000' with
-              | index ->
-                  String.sub s 0 index
-              | exception Not_found ->
-                  s
-            in
-            let lines' = List.map strip_null lines in
-            if lines <> lines' then
-              List.filter ((<>) "hidden") lines'
-            else
-              (* As with empty environment variables above, if this behaviour
-                 appears to have been fixed, poison the output of the test so
-                 that doesn't happen silently. *)
-              "poisoned" :: lines
           else
             lines
         in

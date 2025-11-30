@@ -102,7 +102,7 @@ jobs:
       - name: Install Cygwin
         uses: cygwin/cygwin-install-action@v3
         with:
-          packages: make,${{ matrix.cc != 'gcc' && 'mingw64-x86_64-' || 'gcc-fortran,' }}gcc-core
+          packages: make,${{ matrix.cc != 'gcc' && 'mingw64-x86_64-' || 'gcc-g++,gcc-fortran,' }}gcc-core
           install-dir: 'D:\cygwin'
 
       - name: Save Cygwin cache

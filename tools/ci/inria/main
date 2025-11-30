@@ -167,6 +167,11 @@ init_submodule_winpthreads=false
 memory_model_tests="tests/memory-model/forbidden.ml \
 tests/memory-model/publish.ml"
 
+# Until https://github.com/ocaml/ocaml/issues/14348 is resolved
+# As it happens, the Cygwin worker has a C++ compiler, so it doesn't matter
+# that it runs it.
+export OCAMLTEST_SKIP_TESTS="tests/lib-unix/unix-sockaddr/sockaddr_cxx.ml"
+
 case "${OCAML_ARCH}" in
   bsd|solaris)
     make=gmake

@@ -170,7 +170,9 @@ DOMAIN_STATE(intnat, slice_target)
 DOMAIN_STATE(intnat, slice_budget)
 
 /* Accounting for sweeping work done while allocating. */
-DOMAIN_STATE(intnat, major_work_done_between_slices)
+DOMAIN_STATE(uintnat, sweep_work_done_between_slices)
+/* Accounting for marking work done in the write barrier. */
+DOMAIN_STATE(uintnat, mark_work_done_between_slices)
 
 DOMAIN_STATE(struct caml_extern_state*, extern_state)
 DOMAIN_STATE(struct caml_intern_state*, intern_state)

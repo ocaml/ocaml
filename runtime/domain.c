@@ -903,7 +903,8 @@ static void domain_create(uintnat initial_minor_heap_wsize,
   domain_state->dependent_size = 0;
   domain_state->dependent_allocated = 0;
 
-  domain_state->major_work_done_between_slices = 0;
+  domain_state->sweep_work_done_between_slices = 0;
+  domain_state->mark_work_done_between_slices = 0;
 
   /* the minor heap arena will be initialized by
      [allocate_minor_heap_arena] below. */
@@ -1258,7 +1259,9 @@ static void terminate_backup_thread(dom_internal *di)
   if (backup_thread_running(di)) {
     atomic_store_release(&di->backup_thread_msg, BT_TERMINATE);
     /* Wakeup backup thread if it is sleeping */
+    caml_plat_lock_blocking(&di->interruptor.lock);
     caml_plat_broadcast(&di->interruptor.cond);
+    caml_plat_unlock(&di->interruptor.lock);
     caml_plat_signal(&di->domain_cond);
   }
 }
@@ -1293,14 +1296,24 @@ CAMLexport _Atomic caml_timing_hook caml_domain_terminated_hook =
 static value make_finished(caml_result result)
 {
   CAMLparam0();
-  CAMLlocal1(res);
-  res = caml_alloc_1(
-    (caml_result_is_exception(result) ?
-     1 /* Error */ :
-     0 /* Ok */),
-    result.data);
-  /* [Finished res] */
-  res = caml_alloc_1(0, res);
+  CAMLlocal2(res, bt);
+  if (caml_result_is_exception(result)) {
+    res = result.data; /* Ensure that [result.data] is rooted before
+                          subsequent allocations */
+    /* res = exn */
+    bt = caml_get_exception_raw_backtrace(Val_unit);
+    res = caml_alloc_2(0, res, bt);
+    /* res = (exn, bt) */
+    res = caml_alloc_1(1 /* Error */, res);
+    /* res = Error (exn, bt) */
+    res = caml_alloc_1(0 /* Finished */, res);
+    /* res = Finished(Error(exn, bt)) */
+  } else {
+    res = caml_alloc_1(0 /* Ok */,result.data);
+    /* res = Ok v */
+    res = caml_alloc_1(0, res);
+    /* res = Finished(Ok v) */
+  }
   CAMLreturn(res);
 }
 

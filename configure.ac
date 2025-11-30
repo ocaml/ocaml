@@ -390,6 +390,17 @@ AS_IF([test -n "$csc"],
       AS_CASE([$host_cpu], [i*86], [CSCFLAGS="$CSCFLAGS /platform:x86"])],
     [AC_MSG_WARN([Mono is not yet supported - C sharp tests disabled])])])
 
+# Environment-specific set-up
+
+dnl The separator should be being treated differently for host/target for
+dnl cross-compilers, but the installation layout for cross-compilers is already
+dnl incorrect (for example, ld.conf is processed by _both_ the host and target
+dnl runtimes), so this is left as target-specific for now.
+AS_CASE([$target],
+  [*-w64-mingw32*|*-pc-windows],
+    [default_separator='\'],
+  [default_separator='/'])
+
 # Environment variables that are taken into account
 
 AC_ARG_VAR([AS], [which assembler to use])
@@ -580,6 +591,17 @@ AC_ARG_WITH([target-sh],
     [target_launch_method='exe'],
     [target_launch_method="$withval"])],
   [target_launch_method=''])
+
+AC_ARG_WITH([additional-stublibsdir],
+  [AS_HELP_STRING([--with-additional-stublibsdir],
+    [additional directory for searching for bytecode stub libraries])],
+  [AS_CASE([$withval],
+    [no],
+      [ocaml_additional_stublibs_dir=''],
+    [yes],
+      [ocaml_additional_stublibs_dir="..${default_separator}stublibs"],
+    [ocaml_additional_stublibs_dir="$withval"])],
+  [ocaml_additional_stublibs_dir=''])
 
 AC_ARG_ENABLE([reserved-header-bits],
   [AS_HELP_STRING([--enable-reserved-header-bits=BITS],
@@ -2184,15 +2206,6 @@ AS_CASE([$target],
 
 AS_IF([$sockets], [AC_DEFINE([HAS_SOCKETS], [1])])
 
-## socklen_t
-
-AS_CASE([$target],
-  [*-w64-mingw32*|*-pc-windows],
-    [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T], [1])], [],
-      [#include <ws2tcpip.h>])],
-  [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T], [1])], [],
-    [#include <sys/socket.h>])])
-
 AC_CHECK_FUNC([inet_aton], [AC_DEFINE([HAS_INET_ATON], [1])])
 
 ## Unix domain sockets support on Windows
@@ -2950,6 +2963,21 @@ AC_CONFIG_COMMANDS_PRE([
     [target_launch_method="$launch_method"])
   prefix="$saved_prefix"
   exec_prefix="$saved_exec_prefix"])
+
+# Create ld.conf
+AC_CONFIG_COMMANDS([runtime/ld.conf],
+  [rm -f runtime/ld.conf
+  test x"$ocaml_additional_stublibs_dir" = 'x' || \
+    echo "$ocaml_additional_stublibs_dir" > runtime/ld.conf
+  if $supports_shared_libraries; then
+    echo ".${default_separator}stublibs" >> runtime/ld.conf
+  fi
+  echo "." >> runtime/ld.conf],
+  [ocaml_additional_stublibs_dir=\
+'$(echo "$ocaml_additional_stublibs_dir" | sed -e "s/'/'\"'\"'/g")'
+  ocaml_libdir='$(echo "$ocaml_libdir" | sed -e "s/'/'\"'\"'/g")'
+  default_separator='$default_separator'
+  supports_shared_libraries='$supports_shared_libraries'])
 
 # Just before config.status is generated, determine the final values for MKEXE,
 # MKDLL, MKMAINDLL and MKEXE_VIA_CC. The final variables controlling these are:

@@ -21,6 +21,7 @@
 #include <stdbool.h>
 
 #include "caml/addrmap.h"
+#include "caml/camlatomic.h"
 #include "caml/config.h"
 #include "caml/codefrag.h"
 #include "caml/domain.h"
@@ -230,6 +231,24 @@ Caml_inline void prefetch_block(value v)
 }
 
 /*******************************************************************************
+ * Handling work counters
+ ******************************************************************************/
+
+static uintnat mark_work_done_between_slices(void)
+{
+  uintnat work = Caml_state->mark_work_done_between_slices;
+  Caml_state->mark_work_done_between_slices = 0;
+  return work;
+}
+
+static uintnat sweep_work_done_between_slices(void)
+{
+  uintnat work = Caml_state->sweep_work_done_between_slices;
+  Caml_state->sweep_work_done_between_slices = 0;
+  return work;
+}
+
+/*******************************************************************************
  * Ephemerons
  ******************************************************************************/
 
@@ -381,7 +400,6 @@ static intnat ephe_mark (intnat budget, uintnat for_cycle,
         }
       }
     }
-    budget -= Whsize_wosize(i);
 
     bool keep;
     if (data == caml_ephe_none || Is_long(data)) {
@@ -409,6 +427,7 @@ static intnat ephe_mark (intnat budget, uintnat for_cycle,
       *prev_linkp = todo;
     }
     marked++;
+    budget -= mark_work_done_between_slices();
   }
 
   caml_gc_log ("Mark Ephemeron: %s. Ephemeron cycle=%" CAML_PRIdNAT " "
@@ -436,7 +455,6 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
 
     if (is_unmarked(v)) {
       /* The whole array is dead, drop this ephemeron */
-      budget -= 1;
     } else {
       caml_ephe_clean(v);
       Ephe_link(v) = domain_state->ephe_info->live;
@@ -872,8 +890,10 @@ update_major_slice_work(intnat howmuch,
   new_work = max3 (alloc_work, dependent_work, extra_work);
   atomic_fetch_add (&alloc_counter, new_work);
 
-  atomic_fetch_add (&work_counter, dom_st->major_work_done_between_slices);
-  dom_st->major_work_done_between_slices = 0;
+  uintnat work_done_between_slices =
+    mark_work_done_between_slices() +
+    sweep_work_done_between_slices();
+  atomic_fetch_add (&work_counter, work_done_between_slices);
 
   /* If the work_counter is falling far behind the alloc_counter,
    * artificially catch up some of the difference. This is a band-aid
@@ -1344,7 +1364,7 @@ Caml_noinline static intnat do_some_marking(struct mark_stack* stk,
 
       if (Tag_hd(hd) == Cont_tag) {
         caml_darken_cont(block);
-        budget -= Wosize_hd(hd);
+        budget -= Whsize_hd(hd);
         continue;
       }
 
@@ -1495,6 +1515,7 @@ void caml_darken_cont(value cont)
                           Ptr_val(stk), 0);
         atomic_store_release(Hp_atomic_val(cont),
                              With_status_hd(hd, caml_global_heap_state.MARKED));
+        Caml_state->mark_work_done_between_slices += Whsize_hd(hd);
       }
     }
   }
@@ -1524,6 +1545,9 @@ void caml_darken(void* state, value v, volatile value* ignored) {
          With_status_hd(hd, caml_global_heap_state.MARKED));
       if (Tag_hd(hd) < No_scan_tag) {
         mark_stack_push_block(domain_state->mark_stack, v);
+        Caml_state->mark_work_done_between_slices += 1; /* just the header */
+      } else {
+        Caml_state->mark_work_done_between_slices += Whsize_hd(hd);
       }
     }
   }
@@ -1982,6 +2006,11 @@ mark_again:
            (budget = get_major_slice_work(mode)) > 0) {
       intnat left = mark(budget);
       intnat work_done = budget - left;
+      /* It is possible to call caml_darken directly during marking,
+         if we e.g. discover a continuation and mark its stack.
+         This work should count towards this slice */
+      work_done += mark_work_done_between_slices();
+
       mark_work += work_done;
       commit_major_slice_work(work_done);
     }

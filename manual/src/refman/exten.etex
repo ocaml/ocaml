@@ -34,4 +34,8 @@ that are implemented in OCaml, but not described in chapter \ref{c:refman}.
 \input{arrayliterals.tex}
 \input{labeledtuples.tex}
 
+\section{s:external-types}{External types}
+%HEVEA\cutname{externaltypes.html}
+\input{externaltypes.tex}
+
 %HEVEA\cutend

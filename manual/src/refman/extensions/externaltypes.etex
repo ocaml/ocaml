@@ -1,0 +1,57 @@
+(Introduced in OCaml 5.5)
+
+External types introduce types of values that are defined outside the
+OCaml language (they cannot be defined as standard datatype or formed
+by combining existing type constructors) because they are populated
+from the foreign function interface. For example, a type "gmp" of
+arbitrary-length integers implementing by binding the "Gmp" library
+from C could be defined as follows:
+
+\begin{caml_example*}{verbatim}
+module Gmp : sig
+  type t = external "gmp"
+
+  val of_int : int -> t
+  val add : t -> t -> t
+  (* ... *)
+end = struct[@ellipsis]
+  type t = external "gmp"
+  let of_int _ = assert false
+  let add _ _ = assert false
+end
+\end{caml_example*}
+
+We say that "Gmp.t" is an external type of name "gmp". External names
+are not unique, it is possible to define two (distinct) external types
+with the same name. On the other hand, the type-system enforces that
+two external types with distinct names are different.
+
+Before external types were available, users could use an abstract type
+for this purpose, just with "type gmp". But this is less informative,
+as the OCaml compiler must assume that abstract types could be defined
+in an arbitrary way, and in particular an abstract type from another
+module could be equal to any type.
+
+\paragraph{Predefined types}
+
+External types can be used in particular to define the built-in types
+such as "float", "string", etc.
+
+\begin{caml_example*}{verbatim}
+type float = external "float"
+type string = external "string"
+type 'a array = external "array"
+type +'a iarray = external "iarray"
+(* ... *)
+\end{caml_example*}
+We know for example that "float" and "string" are distinct types, as
+they have different names.
+
+Remark: This is useful in particular when using predefined types as
+GADT indices, incompatible constructors can be ruled out. See
+\ref{s:types-used-as-gadt-indices} for a discussion of GADT indices.
+
+\paragraph{Variance and injectivity} Like abstract types, the variance
+of the parameters of external types must be specified by users, with
+invariance assumed by default. Unlike abstract types, external types
+are always injective.

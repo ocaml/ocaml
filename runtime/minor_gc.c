@@ -758,7 +758,7 @@ static void ephe_clean_minor (caml_domain_state* domain)
     } else {
       /* collected */
       v = caml_ephe_none;
-      Ephe_data(re->ephe) = caml_ephe_none;
+      atomic_store_relaxed(Ephe_data_addr(re->ephe), caml_ephe_none);
     }
     atomic_store_release(Op_atomic_val(re->ephe) + re->offset, v);
   }

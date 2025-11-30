@@ -75,6 +75,7 @@ struct caml_ephe_info {
 
 #define Ephe_link(e) (*(Op_val(e) + CAML_EPHE_LINK_OFFSET))
 #define Ephe_data(e) (*(Op_val(e) + CAML_EPHE_DATA_OFFSET))
+#define Ephe_data_addr(e) (Op_atomic_val(e) + CAML_EPHE_DATA_OFFSET)
 
 value caml_ephe_await_key(value ephe, uintnat i);
 

@@ -33,4 +33,6 @@
 #define HAS_UNISTD 1
 #endif
 
+#define HAS_SOCKLEN_T 1
+
 #endif  /* CAML_COMPATIBILITY_H */

@@ -73,8 +73,6 @@ Shims:
   so must be explicitly invoked via `ocamlrun`
 - Both toplevels contain the absolute location of the Standard Library,
   requiring `OCAMLLIB` to be set
-- `ld.conf` contains the absolute location of the `stublibs` directory,
-  requiring `CAML_LD_LIBRARY_PATH` to be adjusted
 
 ### Loading archives/plugins (.cma / .cmxs) with `Dynlink`
 
@@ -89,9 +87,8 @@ Shims:
   requiring `OCAMLLIB` to be set
 - The executable created by `ocamlc` contains the absolute location of
   `ocamlrun`, so must be both explicitly invoked via `ocamlrun` and also have
-  `CAML_LD_LIBRARY_PATH` adjusted, as that `ocamlrun` will either not load
-  `ld.conf` or (with `OCAMLLIB` set) will be pointed to an `ld.conf` containing
-  the absolute location of the `stublibs` directory
+  `CAML_LD_LIBRARY_PATH` or `OCAMLLIB` adjusted, as that `ocamlrun` will not be
+  able to find `ld.conf`
 
 ### Executing installed bytecode binaries with `-vnum`
 

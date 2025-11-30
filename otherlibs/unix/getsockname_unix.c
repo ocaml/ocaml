@@ -24,13 +24,13 @@
 CAMLprim value caml_unix_getsockname(value sock)
 {
   int retcode;
-  union sock_addr_union addr;
-  socklen_param_type addr_len;
+  struct sockaddr_storage addr;
+  socklen_t addr_len;
 
   addr_len = sizeof(addr);
-  retcode = getsockname(Int_val(sock), &addr.s_gen, &addr_len);
+  retcode = getsockname(Int_val(sock), (struct sockaddr *) &addr, &addr_len);
   if (retcode == -1) caml_uerror("getsockname", Nothing);
-  return caml_unix_alloc_sockaddr(&addr, addr_len, -1);
+  return caml_unix_alloc_sockaddr((struct sockaddr *) &addr, addr_len, -1);
 }
 
 #else

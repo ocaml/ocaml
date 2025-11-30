@@ -202,7 +202,7 @@ let slot_for_literal cst =
   let n = GlobalMap.incr global_table in
   literal_table := (n, cst) :: !literal_table;
   n
-#283 "bytecomp/symtable.ml"
+#282 "bytecomp/symtable.ml"
 (* Relocate a block of object bytecode *)
 
 let patch_int buff pos n =
@@ -229,7 +229,7 @@ let patch_object buff patchlist =
       | (Reloc_primitive name, pos) ->
           patch_int buff pos (of_prim name))
     patchlist
-#328 "bytecomp/symtable.ml"
+#327 "bytecomp/symtable.ml"
 (* Functions for toplevel use *)
 
 (* Update the in-core table of globals *)
@@ -240,7 +240,7 @@ external global_data : unit -> Obj.t array = "caml_get_global_data"
 external realloc_global_data : int -> unit = "caml_realloc_global"
 #242 "otherlibs/dynlink/byte/dynlink_symtable.ml"
 end
-#332 "bytecomp/symtable.ml"
+#331 "bytecomp/symtable.ml"
 let update_global_table () =
   let ng = !global_table.cnt in
   if ng > Array.length(Meta.global_data()) then Meta.realloc_global_data ng;
@@ -266,14 +266,14 @@ let init_toplevel () =
   global_table := sect.symb;
 #268 "otherlibs/dynlink/byte/dynlink_symtable.ml"
   Dll.init ~dllpaths:sect.dlpt ~prims:sect.prim;
-#358 "bytecomp/symtable.ml"
+#357 "bytecomp/symtable.ml"
   sect.crcs
 
 (* Find the value of a global identifier *)
-#364 "bytecomp/symtable.ml"
+#363 "bytecomp/symtable.ml"
 let get_global_value global =
   (Meta.global_data()).(slot_for_getglobal global)
-#369 "bytecomp/symtable.ml"
+#368 "bytecomp/symtable.ml"
 (* Check that all compilation units referenced in the given patch list
    have already been initialized *)
 
@@ -314,17 +314,17 @@ let check_global_initialized patchlist =
 type global_map = GlobalMap.t
 
 let current_state () = !global_table
-#412 "bytecomp/symtable.ml"
+#411 "bytecomp/symtable.ml"
 let hide_additions (st : global_map) =
   if st.cnt > !global_table.cnt then
 #321 "otherlibs/dynlink/byte/dynlink_symtable.ml"
     failwith "Symtable.hide_additions";
-#415 "bytecomp/symtable.ml"
+#414 "bytecomp/symtable.ml"
   global_table :=
     {GlobalMap.
       cnt = !global_table.cnt;
       tbl = st.tbl }
-#434 "bytecomp/symtable.ml"
+#433 "bytecomp/symtable.ml"
 let is_defined_in_global_map (gmap : global_map) global =
   Global.Map.mem global gmap.tbl
 

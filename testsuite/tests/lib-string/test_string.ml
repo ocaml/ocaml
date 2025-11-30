@@ -132,3 +132,123 @@ let () =
   test ~max_dist ["abc"] "a" [];
   test ~max_dist ["abc"; "ab"; "b"] "a" ["ab"; "b"];
   ()
+
+let () =
+  (* Some functions of the string module assume this holds *)
+  assert (Sys.max_string_length - 1 < max_int)
+
+let () =
+  (* Test splitting with magnitudes *)
+  (* String.take_first *)
+  assert (String.take_first (-1) "" = "");
+  assert (String.take_first (-1) "a" = "");
+  assert (String.take_first (-1) "ab" = "");
+  assert (String.take_first 0 "" = "");
+  assert (String.take_first 0 "a" = "");
+  assert (String.take_first 0 "ab" = "");
+  assert (String.take_first 1 "" = "");
+  assert (String.take_first 1 "a" = "a");
+  assert (String.take_first 1 "ab" = "a");
+  assert (String.take_first 2 "" = "");
+  assert (String.take_first 2 "a" = "a");
+  assert (String.take_first 2 "ab" = "ab");
+  (* String.take_last *)
+  assert (String.take_last (-1) "" = "");
+  assert (String.take_last (-1) "a" = "");
+  assert (String.take_last (-1) "ab" = "");
+  assert (String.take_last 0 "" = "");
+  assert (String.take_last 0 "a" = "");
+  assert (String.take_last 0 "ab" = "");
+  assert (String.take_last 1 "" = "");
+  assert (String.take_last 1 "a" = "a");
+  assert (String.take_last 1 "ab" = "b");
+  assert (String.take_last 2 "" = "");
+  assert (String.take_last 2 "a" = "a");
+  assert (String.take_last 2 "ab" = "ab");
+  (* String.drop_first *)
+  assert (String.drop_first (-1) "" = "");
+  assert (String.drop_first (-1) "a" = "a");
+  assert (String.drop_first (-1) "ab" = "ab");
+  assert (String.drop_first 0 "" = "");
+  assert (String.drop_first 0 "a" = "a");
+  assert (String.drop_first 0 "ab" = "ab");
+  assert (String.drop_first 1 "" = "");
+  assert (String.drop_first 1 "a" = "");
+  assert (String.drop_first 1 "ab" = "b");
+  assert (String.drop_first 2 "" = "");
+  assert (String.drop_first 2 "a" = "");
+  assert (String.drop_first 2 "ab" = "");
+  (* String.drop_last *)
+  assert (String.drop_last (-1) "" = "");
+  assert (String.drop_last (-1) "a" = "a");
+  assert (String.drop_last (-1) "ab" = "ab");
+  assert (String.drop_last 0 "" = "");
+  assert (String.drop_last 0 "a" = "a");
+  assert (String.drop_last 0 "ab" = "ab");
+  assert (String.drop_last 1 "" = "");
+  assert (String.drop_last 1 "a" = "");;
+  assert (String.drop_last 1 "ab" = "a");
+  assert (String.drop_last 2 "" = "");
+  assert (String.drop_last 2 "a" = "");
+  assert (String.drop_last 2 "ab" = "");
+  (* String.cut_first *)
+  assert (String.cut_first (-1) "" = ("", ""));
+  assert (String.cut_first (-1) "a" = ("", "a"));
+  assert (String.cut_first (-1) "ab" = ("", "ab"));
+  assert (String.cut_first 0 "" = ("", ""));
+  assert (String.cut_first 0 "a" = ("", "a"));
+  assert (String.cut_first 0 "ab" = ("", "ab"));
+  assert (String.cut_first 1 "" = ("", ""));
+  assert (String.cut_first 1 "a" = ("a", ""));
+  assert (String.cut_first 1 "ab" = ("a", "b"));
+  assert (String.cut_first 2 "" = ("", ""));
+  assert (String.cut_first 2 "a" = ("a", ""));
+  assert (String.cut_first 2 "ab" = ("ab", ""));
+  (* String.cut_last *)
+  assert (String.cut_last (-1) "" = ("", ""));
+  assert (String.cut_last (-1) "a" = ("a", ""));
+  assert (String.cut_last (-1) "ab" = ("ab", ""));
+  assert (String.cut_last 0 "" = ("", ""));
+  assert (String.cut_last 0 "a" = ("a", ""));
+  assert (String.cut_last 0 "ab" = ("ab", ""));
+  assert (String.cut_last 1 "" = ("", ""));
+  assert (String.cut_last 1 "a" = ("", "a"));
+  assert (String.cut_last 1 "ab" = ("a", "b"));
+  assert (String.cut_last 2 "" = ("", ""));
+  assert (String.cut_last 2 "a" = ("", "a"));
+  assert (String.cut_last 2 "ab" = ("", "ab"));
+  ()
+
+let () =
+  (* Test splitting with predicates *)
+  (* String.take_first_while *)
+  assert (String.take_first_while Char.Ascii.is_white "" = "");
+  assert (String.take_first_while Char.Ascii.is_white "  " = "  ");
+  assert (String.take_first_while Char.Ascii.is_white "abc" = "");
+  assert (String.take_first_while Char.Ascii.is_white "  abc" = "  ");
+  (* String.drop_first_while *)
+  assert (String.drop_first_while Char.Ascii.is_white "" = "");
+  assert (String.drop_first_while Char.Ascii.is_white "  " = "");
+  assert (String.drop_first_while Char.Ascii.is_white "abc" = "abc");
+  assert (String.drop_first_while Char.Ascii.is_white "  abc" = "abc");
+  (* String.cut_first_while *)
+  assert (String.cut_first_while Char.Ascii.is_white "" = ("", ""));
+  assert (String.cut_first_while Char.Ascii.is_white "  " = ("  ", ""));
+  assert (String.cut_first_while Char.Ascii.is_white "abc" = ("", "abc"));
+  assert (String.cut_first_while Char.Ascii.is_white "  abc" = ("  ", "abc"));
+  (* String.take_last_while *)
+  assert (String.take_last_while Char.Ascii.is_white "" = "");
+  assert (String.take_last_while Char.Ascii.is_white "  " = "  ");
+  assert (String.take_last_while Char.Ascii.is_white "abc" = "");
+  assert (String.take_last_while Char.Ascii.is_white "abc  " = "  ");
+  (* String.drop_last_while *)
+  assert (String.drop_last_while Char.Ascii.is_white "" = "");
+  assert (String.drop_last_while Char.Ascii.is_white "  " = "");
+  assert (String.drop_last_while Char.Ascii.is_white "abc" = "abc");
+  assert (String.drop_last_while Char.Ascii.is_white "abc  " = "abc");
+  (* String.cut_last_while *)
+  assert (String.cut_last_while Char.Ascii.is_white "" = ("", ""));
+  assert (String.cut_last_while Char.Ascii.is_white "  " = ("", "  "));
+  assert (String.cut_last_while Char.Ascii.is_white "abc" = ("abc", ""));
+  assert (String.cut_last_while Char.Ascii.is_white "abc  " = ("abc", "  "));
+  ()

@@ -304,8 +304,137 @@ end
 let x : int = let Eq = M.e in M.x
 \end{caml_example*}
 
-Of course, not all abstract types can be refined, as this would
-contradict the exhaustiveness check. Namely, builtin types (those
-defined by the compiler itself, such as "int" or "array"), and
-abstract types defined by the local module, are non-instantiable, and
-as such cause a type error rather than introduce an equation.
+
+\section{s:types-used-as-gadt-indices}{Types used as GADT indices}
+
+In our discussion of refutation cases (\ref{s:gadt-refutation-cases}), we used the following example:
+
+\begin{caml_example*}{verbatim}
+type _ t =
+  | Int : int t
+  | Bool : bool t
+
+let deep : (char t * int) option -> char = function
+  | None -> 'c'
+  | _ -> .
+\end{caml_example*}
+
+The type-checker is able to verify that the "Some _" case is
+impossible because the type "char t" is empty. This relies on the fact
+that the types occurring in the GADT index are known to be distinct:
+the constructor "Int" returns an "int t", and we know that "int" and
+"char" are distinct types, so "Int" is impossible at type "char t" --
+and similarly for "Bool". In other words, checking that a GADT case is
+impossible (at a specific type) requires reasoning on inequalities
+between types.
+
+For this reason, using abstract types as GADT indices does not work as
+intended. Consider for instance:
+
+\begin{caml_example*}{verbatim}
+(* type-level natural numbers, in unary notation *)
+module TypeNat = struct
+  type zero
+  type !'a succ
+end
+
+type ('a, _) sized_list =
+  | Nil : ('a, TypeNat.zero) sized_list
+  | Cons : 'a * ('a, 'n) sized_list -> ('a, 'n TypeNat.succ) sized_list
+\end{caml_example*}
+
+This definition does not allow to rule out certain cases as impossible
+as we intended, for example the following fails:
+\begin{caml_example}{verbatim}[error]
+let of_singleton : ('a, TypeNat.(zero succ)) sized_list -> 'a = function
+  | Cons (v, Nil) -> v
+  | _ -> .
+\end{caml_example}
+
+Because "zero" and "succ" are abstract types, the compiler assumes
+that their definition is unknown, and that they might in fact be the
+same type. In particular, with this signature the types "zero" and "zero succ"
+are not known to be distinct (even if their implementations
+are distinct) and the compiler cannot agree that the "Nil" case is
+impossible at type "zero succ":\footnote{We also needed an explicit
+  injectivity annotation, "type !'a succ", otherwise the definition of
+  "sized_list" is also rejected because "succ" is abstract.}
+
+One way to reason about this is that a module with the same signature
+\emph{could} have been implemented as follows, where clearly "zero"
+and "zero succ" are not incompatible:
+\begin{caml_example*}{verbatim}
+module OtherTypeNat : sig
+  type zero
+  type !'a succ
+end = struct
+  type zero = unit
+  type 'a succ = 'a
+end
+\end{caml_example*}
+
+The recommended way to avoid this problem is to give a concrete
+definition to types such as "zero" and "succ", that are only meant to
+be used in GADT indices. (This is counter-intuitive, as we will never
+manipulate values of this type.) You could use:
+\begin{caml_example*}{verbatim}
+module TypeNat = struct
+  type zero = Zero
+  type 'a succ = Succ
+end
+\end{caml_example*}
+The types are now incompatibles as their constructor names are exposed
+and distinct.
+
+As an additional refinement, we can define those index types using
+using a "private" annotation, which clarifies that they are not meant
+to be used to build values:
+\begin{caml_example*}{verbatim}
+module TypeNat = struct
+  type zero = private Zero
+  type 'a succ = private Succ
+end
+\end{caml_example*}
+
+Remark: Usually "private" is meant to be used in interfaces, not in
+implementations; see the documentation of private types in
+\ref{s:private-types}. The constructors of a datatype that is
+\emph{defined} as "private" cannot be used to build values, so the
+type is effectively empty. This makes it more explicit that the types
+are only intended to be used as GADT indices.
+
+\subsection{s:abstract-types-current-module}{Legacy behavior: types in the current module}
+
+Early versions of OCaml, up to OCaml 5.4, had a special handling of
+types defined in the current module. This special case does not apply
+to the definitions of "succ" and "zero" discussed above, which are in
+separate submodules.
+
+So the following definitions used to suffice to define "sized_list",
+as the compiler would accept that "zero" and "'a succ" are always
+distinct:
+
+\begin{caml_example*}{verbatim}
+type zero
+type !'a succ
+\end{caml_example*}
+
+The reasoning was that while in general abstract types could be
+defined as anything somewhere in the program, abstract types that we
+just introduced are not defined at all, so it is correct to assume
+that they are distinct. Similarly, datatypes defined in the current
+module were considered distinct even if they used the exact same
+constructors or field names.
+
+This special case made the system more complex and less modular. For
+example, GADT examples would work well when everything is defined in
+the same module, but function definitions located in another module
+would fail, which is very confusing to users.
+
+Programs using this previously-supported feature can always be
+rewritten to use explicit definitions instead:
+
+\begin{caml_example*}{verbatim}
+type zero = private Zero
+type 'a succ = private Succ
+\end{caml_example*}

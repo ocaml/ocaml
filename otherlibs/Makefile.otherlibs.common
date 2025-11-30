@@ -98,10 +98,9 @@ lib$(CLIBNAME_NATIVE).$(A): $(COBJS)
 INSTALL_LIBDIR_LIBNAME = $(INSTALL_LIBDIR)/$(LIBNAME)
 
 install::
-	if test -f dll$(CLIBNAME_BYTECODE)$(EXT_DLL); then \
-	  $(INSTALL_PROG) \
-	    dll$(CLIBNAME_BYTECODE)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
-	fi
+ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
+	$(INSTALL_PROG) dll$(CLIBNAME_BYTECODE)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"
+endif
 ifneq "$(STUBSLIB_BYTECODE)" ""
 	$(INSTALL_DATA) $(STUBSLIB_BYTECODE) "$(INSTALL_LIBDIR)/"
 endif
@@ -132,10 +131,9 @@ installopt:
 	if test -f $(LIBNAME).cmxs; then \
 	  $(INSTALL_PROG) $(LIBNAME).cmxs "$(INSTALL_LIBDIR_LIBNAME)"; \
 	fi
-	if test -f dll$(CLIBNAME_NATIVE)$(EXT_DLL); then \
-	  $(INSTALL_PROG) \
-	    dll$(CLIBNAME_NATIVE)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
-	fi
+ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
+	$(INSTALL_PROG) dll$(CLIBNAME_NATIVE)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"
+endif
 ifneq "$(STUBSLIB_NATIVE)" ""
 	$(INSTALL_DATA) $(STUBSLIB_NATIVE) "$(INSTALL_LIBDIR)/"
 endif
@@ -172,9 +170,15 @@ distclean:: clean
 
 ifeq "$(COMPUTE_DEPS)" "true"
 ifneq "$(COBJS_BYTECODE)" ""
-include $(addprefix $(DEPDIR)/, $(COBJS_BYTECODE:.b.$(O)=.$(D)))
+include $(addprefix $(DEPDIR)/, $(COBJS_BYTECODE:.$(O)=.$(D)))
+ifeq "$(NATIVE_COMPILER)" "true"
+include $(addprefix $(DEPDIR)/, $(COBJS_NATIVE:.$(O)=.$(D)))
+endif
 endif
 endif
 
-$(DEPDIR)/%.$(D): %.c | $(DEPDIR)
-	$(V_CCDEPS)$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@
+$(DEPDIR)/%.b.$(D): %.c | $(DEPDIR)
+	$(V_CCDEPS)$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.b.$(O)' -MF $@
+
+$(DEPDIR)/%.n.$(D): %.c | $(DEPDIR)
+	$(V_CCDEPS)$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.n.$(O)' -MF $@

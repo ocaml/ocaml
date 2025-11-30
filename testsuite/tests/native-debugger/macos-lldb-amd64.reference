@@ -14,11 +14,11 @@ Breakpoint created for regex camlMeander[.$]c_to_ocaml*.
 (lldb) create ocaml_to_c
 Breakpoint created for regex ocaml_to_c.
 (lldb) run
+Process XXXX launched: 'XXXX' ($ARCH)
 Process XXXX stopped
 * thread #1, queue = 'XXXX', stop reason = breakpoint 1.1
     frame #0: 0x00000000000000 meander`caml_start_program
 Target 0: (meander) stopped.
-Process XXXX launched: 'XXXX' ($ARCH)
 (lldb) backtrace
 frame 0: meander`caml_start_program
 frame 1: meander`caml_startup_common
@@ -46,7 +46,7 @@ frame 7: dyld`start
 Process XXXX resuming
 Process XXXX stopped
 * thread #1, queue = 'XXXX', stop reason = breakpoint 4.1
-    frame #0: 0x00000000000000 meander`ocaml_to_c(unit=1) at meander_c.c:XX [opt]
+    frame #0: 0x00000000000000 meander`ocaml_to_c(unit=1) at meander_c.c:XX
    2   	#include <caml/callback.h>
    3
    4   	value ocaml_to_c (value unit) {

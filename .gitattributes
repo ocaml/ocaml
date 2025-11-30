@@ -214,6 +214,9 @@ runtime/caml/sizeclasses.h typo.missing-header
 
 /tools/gdb_ocamlrun.py typo.long-line
 
+/tools/opam/gen_ocaml-system_config.ml.in typo.missing-header
+/tools/opam/gen_ocaml_config.ml.in typo.very-long-line typo.missing-header
+
 # Tests which include references spanning multiple lines fail with \r\n
 # endings, so use \n endings only, even on Windows.
 testsuite/tests/basic-modules/anonymous.ml text eol=lf

@@ -25,7 +25,8 @@ module Raw = struct
 
   type 'a state =
     | Running
-    | Finished of ('a, exn) result [@warning "-unused-constructor"]
+    | Finished of ('a, exn * Printexc.raw_backtrace) result
+    [@warning "-unused-constructor"]
 
   type 'a term_sync = {
     (* protected by [mut] *)
@@ -299,7 +300,7 @@ let join { term_sync ; _ } =
   in
   match Mutex.protect term_sync.mut loop with
   | Ok x -> x
-  | Error ex -> raise ex
+  | Error (ex, bt) -> Printexc.raise_with_backtrace ex bt
 
 let count = Raw.get_domain_count
 let recommended_domain_count = Raw.get_recommended_domain_count

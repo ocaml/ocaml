@@ -139,7 +139,7 @@ static void do_check_key_clean(value e, mlsize_t offset)
     if (Tag_val(elt) == Infix_tag) elt -= Infix_offset_val(elt);
     if (is_unmarked(elt)) {
       Field(e, offset) = caml_ephe_none;
-      Field(e,CAML_EPHE_DATA_OFFSET) = caml_ephe_none;
+      atomic_store_relaxed(Ephe_data_addr(e), caml_ephe_none);
     }
   }
 }
@@ -183,7 +183,7 @@ void caml_ephe_clean (value v) {
   child = Ephe_data(v);
   if (child != caml_ephe_none) {
     if (release_data) {
-      Field(v, CAML_EPHE_DATA_OFFSET) = caml_ephe_none;
+      atomic_store_relaxed(Ephe_data_addr(v), caml_ephe_none);
     }
 #ifdef DEBUG
     else if (Is_block (child) && !Is_young (child)) {

@@ -390,7 +390,7 @@ static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
   caml_plat_unlock(&pool_freelist.lock);
 
   if( !r && adopted_pool ) {
-    Caml_state->major_work_done_between_slices +=
+    Caml_state->sweep_work_done_between_slices +=
       pool_sweep(local, &local->full_pools[sz], sz, 0);
     r = local->avail_pools[sz];
   }
@@ -409,7 +409,7 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
 
   /* Otherwise, try to sweep until we find one */
   while (!local->avail_pools[sz] && local->unswept_avail_pools[sz]) {
-    Caml_state->major_work_done_between_slices +=
+    Caml_state->sweep_work_done_between_slices +=
       pool_sweep(local, &local->unswept_avail_pools[sz], sz, 0);
   }
 
@@ -536,7 +536,7 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
 /* Sweeping of the major heap shared pools */
 static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
                          sizeclass sz, int release_to_global_pool) {
-  intnat work;
+  uintnat work = 0;
   pool* a = *plist;
   if (!a) return 0;
   *plist = a->next;
@@ -553,10 +553,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
 
     a->next_obj = 0;
 
-    /* note that the below will have to be changed for the new GC pacing
-      logic */
-    work = end - p;
-    do {
+    while (p + wh <= end) {
       header_t hd = (header_t)atomic_load_relaxed((atomic_uintnat*)p);
 
       if( (char*)p + caml_plat_pagesize < (char*)end ) {
@@ -640,9 +637,10 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
         /* there's still a live block, the pool can't be released to the global
             freelist */
         release_to_global_pool = 0;
+        work += wh;
       }
       p += wh;
-    } while (p + wh <= end);
+    }
     CAMLassert(p == end);
 
     if( !all_used ) {
@@ -666,8 +664,11 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
     }
   }
 
+  /* Return the amount of GC budget consumed in units of words */
   return work;
 }
+
+/* Sweep one large block. Returns the block's size. */
 
 static intnat large_alloc_sweep(struct caml_heap_state* local) {
   value* p;
@@ -725,20 +726,14 @@ intnat caml_sweep(struct caml_heap_state* local, intnat work) {
   /* Sweep local pools */
   while (work > 0 && local->next_to_sweep < NUM_SIZECLASSES) {
     sizeclass sz = local->next_to_sweep;
-    intnat full_sweep_work = 0;
-    intnat avail_sweep_work =
-      pool_sweep(local, &local->unswept_avail_pools[sz], sz, 1);
-    work -= avail_sweep_work;
+    work -= pool_sweep(local, &local->unswept_avail_pools[sz], sz, 1);
 
     if (work > 0) {
-      full_sweep_work = pool_sweep(local,
-                                   &local->unswept_full_pools[sz],
-                                   sz, 1);
-
-      work -= full_sweep_work;
+      work -= pool_sweep(local, &local->unswept_full_pools[sz], sz, 1);
     }
 
-    if(full_sweep_work+avail_sweep_work == 0) {
+    if (local->unswept_avail_pools[sz] == NULL &&
+        local->unswept_full_pools[sz] == NULL) {
       local->next_to_sweep++;
     }
   }

@@ -26,8 +26,13 @@ val version: string
 val bindir: string
 (** The directory containing the binary programs *)
 
+val standard_library_default: string
+(** The configured value for the directory containing the standard libraries
+
+    @since 5.5 *)
+
 val standard_library: string
-(** The directory containing the standard libraries *)
+(** The effective directory containing the standard libraries *)
 
 val ccomp_type: string
 (** The "kind" of the C compiler, assembler and linker used: one of

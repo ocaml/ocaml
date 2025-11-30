@@ -1,0 +1,15 @@
+Raised at Stdlib.failwith in file "stdlib.ml", line 29, characters 17-33
+Called from Backtrace_domain_join.bar in file "backtrace_domain_join.ml", line 10, characters 7-16
+Called from Backtrace_domain_join.foo in file "backtrace_domain_join.ml", line 14, characters 7-16
+Called from Backtrace_domain_join.bar in file "backtrace_domain_join.ml", line 10, characters 7-16
+Called from Backtrace_domain_join.foo in file "backtrace_domain_join.ml", line 14, characters 7-16
+Called from Backtrace_domain_join.bar in file "backtrace_domain_join.ml", line 10, characters 7-16
+Called from Backtrace_domain_join.foo in file "backtrace_domain_join.ml", line 14, characters 7-16
+Called from Backtrace_domain_join.bar in file "backtrace_domain_join.ml", line 10, characters 7-16
+Called from Backtrace_domain_join.foo in file "backtrace_domain_join.ml", line 14, characters 7-16
+Called from Backtrace_domain_join.bar in file "backtrace_domain_join.ml", line 10, characters 7-16
+Called from Backtrace_domain_join.foo in file "backtrace_domain_join.ml", line 14, characters 7-16
+Called from Stdlib__Domain.spawn.body in file "domain.ml", line 270, characters 16-20
+Re-raised at Stdlib__Domain.spawn.body in file "domain.ml", line 286, characters 8-17
+Re-raised at Stdlib__Domain.join in file "domain.ml", line 303, characters 22-57
+Called from Backtrace_domain_join in file "backtrace_domain_join.ml", line 19, characters 8-37

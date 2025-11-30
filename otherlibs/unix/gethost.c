@@ -46,7 +46,7 @@ static value alloc_one_addr_16(char const *a)
 static value alloc_host_entry(struct hostent *entry)
 {
   CAMLparam0();
-  CAMLlocal4(name, aliases, addr_list, adr);
+  CAMLlocal3(name, aliases, addr_list);
   value (*alloc_one_addr)(char const *);
   value res;
 
@@ -79,7 +79,7 @@ static value alloc_host_entry(struct hostent *entry)
 
 CAMLprim value caml_unix_gethostbyaddr(value a)
 {
-  const char * adr;
+  const char * addr;
   struct in_addr in4;
   struct hostent * hp;
   int addr_type = AF_INET;
@@ -90,11 +90,11 @@ CAMLprim value caml_unix_gethostbyaddr(value a)
     addr_type = AF_INET6;
     addr_len = 16;
     in6 = GET_INET6_ADDR(a);
-    adr = (char *)&in6;
+    addr = (char *)&in6;
   } else {
 #endif
     in4 = GET_INET_ADDR(a);
-    adr = (char *)&in4;
+    addr = (char *)&in4;
 #if HAS_IPV6
   }
 #endif
@@ -102,7 +102,7 @@ CAMLprim value caml_unix_gethostbyaddr(value a)
 #ifdef _WIN32
   caml_enter_blocking_section();
 #endif
-  hp = gethostbyaddr(adr, addr_len, addr_type);
+  hp = gethostbyaddr(addr, addr_len, addr_type);
 #ifdef _WIN32
   caml_leave_blocking_section();
 #endif
@@ -111,7 +111,7 @@ CAMLprim value caml_unix_gethostbyaddr(value a)
   char buffer[NETDB_BUFFER_SIZE];
   int h_errnop;
   caml_enter_blocking_section();
-  hp = gethostbyaddr_r(adr, addr_len, addr_type,
+  hp = gethostbyaddr_r(addr, addr_len, addr_type,
                        &h, buffer, sizeof(buffer), &h_errnop);
   caml_leave_blocking_section();
 #elif HAS_GETHOSTBYADDR_R == 8
@@ -119,7 +119,7 @@ CAMLprim value caml_unix_gethostbyaddr(value a)
   char buffer[NETDB_BUFFER_SIZE];
   int h_errnop, rc;
   caml_enter_blocking_section();
-  rc = gethostbyaddr_r(adr, addr_len, addr_type,
+  rc = gethostbyaddr_r(addr, addr_len, addr_type,
                        &h, buffer, sizeof(buffer), &hp, &h_errnop);
   caml_leave_blocking_section();
   if (rc != 0) hp = NULL;

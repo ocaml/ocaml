@@ -1510,6 +1510,111 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
   @since 4.03
 *)
 
+(** Formatted Pretty-Printing with heterogeneous argument lists.
+
+  The following functions behave the same as their non-'l' counter-parts, but
+  receive their arguments bundled in a single heterogeneous list.
+
+  The heterogeneous list serves as a syntactically-delimited
+  collection of arguments, eliminating the need for continuation variants.
+  This approach also improves the clarity of type error messages,
+  especially when there is a mismatch between the format string and the
+  number of arguments provided.
+
+  For example:
+  {[
+    Format.lprintf "%s %d %.02f %c\n" [ "ocaml"; 42; 3.14; 'c' ]
+  ]}
+*)
+
+module Args : sig
+  type ('a, 'r) t =
+    | [] : ('r, 'r) t
+    | (::) : 'a * ('b, 'r) t -> ('a -> 'b, 'r) t
+
+  val apply : 'a -> ('a, 'r) t -> 'r
+
+  val ( @ ) : ('a, 'r1) t -> ('r1, 'r2) t -> ('a, 'r2) t
+end
+(** The [Args] module defines a heterogeneous list type, which can be
+    used as the argument of [printf]-like functions.
+
+    It is not required to open this module when using the functions
+    that accept an [Args.t]. Thanks to type-based disambiguation, the type
+    is inferred automatically, so the list syntax [[x; y; z]] can be used
+    directly for heterogeneous lists.
+
+    An example:
+  {[
+    (* without opening Args *)
+    Format.lprintf "%s %d %.02f@." [ "ocaml"; 42; 3.14 ]
+
+    (* or with explicit construction *)
+    let lst = let open Format.Args in "ocaml" :: [ 42; 3.14 ] @ [ 'c' ] in
+    Format.lprintf "%s %d %.02f %c@." lst
+  ]}
+
+  @since 5.5
+*)
+
+val lfprintf :
+  formatter -> ('a, formatter, unit) format ->
+  ('a, unit) Args.t -> unit
+(** Same as [fprintf] above, but with the arguments bundled in a single
+    heterogeneous list.
+
+    For example:
+  {[
+    let out = Format.formatter_of_out_channel @@ open_out "some/file.txt" in
+    Format.lfprintf out "@[%s@ %d@]@." [ "x ="; 1 ]
+  ]}
+
+  @since 5.5
+*)
+
+val lprintf :
+  ('a, formatter, unit) format ->
+  ('a, unit) Args.t -> unit
+(** Same as [printf] above, but with the arguments bundled in a single
+    heterogeneous list.
+
+  @since 5.5
+*)
+
+val leprintf :
+  ('a, formatter, unit) format ->
+  ('a, unit) Args.t -> unit
+(** Same as [eprintf] above, but with the arguments bundled in a single
+    heterogeneous list.
+
+  @since 5.5
+*)
+
+val lasprintf :
+  ('a, formatter, unit, string) format4 ->
+  ('a, string) Args.t -> string
+(** Same as [asprintf] above, but with the arguments bundled in a single
+    heterogeneous list.
+
+  @since 5.5
+*)
+
+val ldprintf :
+  ('a, formatter, unit, unit) format4 ->
+  ('a, unit) Args.t -> formatter -> unit
+(** Same as [dprintf] above, but with the arguments bundled in a single
+    heterogeneous list.
+
+    For example:
+  {[
+    let t = Format.ldprintf "%i@ %i@ %i" [ 1; 2; 3 ] in
+    ...
+    Format.lprintf "@[<v>%t@]" [ t ]
+  ]}
+
+  @since 5.5
+*)
+
 (** {1:examples Examples}
 
   A few warmup examples to get an idea of how Format is used.

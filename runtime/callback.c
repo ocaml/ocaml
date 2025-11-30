@@ -69,7 +69,7 @@ Caml_inline void restore_stack_parent(caml_domain_state* domain_state,
 {
   CAMLassert(Stack_parent(domain_state->current_stack) == NULL);
   if (Is_block(cont)) {
-    struct stack_info* parent_stack = Ptr_val(Op_val(cont)[0]);
+    struct stack_info* parent_stack = Ptr_val(caml_continuation_use(cont));
     Stack_parent(domain_state->current_stack) = parent_stack;
   }
 }

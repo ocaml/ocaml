@@ -29,7 +29,7 @@ Working version
   past behavior of discriminating abstract types defined in the current module.
   (Takafumi Saikawa, Jacques Garrigue, review by Richard Eisenberg)
 
-- #13806 Enable the use of function parameters with polymorphic types.
+- #13806: Enable the use of function parameters with polymorphic types.
   (Ulysse Gérard, Leo White, review by Florian Angeletti, Samuel Vivien, Gabriel
   Scherer and Jacques Garrigue)
 
@@ -71,6 +71,17 @@ Working version
   (Tim McGilchrist, review by Nick Barnes, Sadiq Jaffer and
   Gabriel Scherer)
 
+* #14243: Explicit relative paths in ld.conf (".", "..", "./<path...>",
+  "../<path...>") are interpreted as being relative to the directory ld.conf
+  was loaded from, and the default ld.conf now uses relative paths, rather than
+  embedding the absolute path to the Standard Library. The brave may continue to
+  put implicit paths in ld.conf. The interpretation of CAML_LD_LIBRARY_PATH is
+  unaltered. Additionally, ld.conf is loaded from all of $OCAMLLIB/ld.conf,
+  $CAMLLIB/ld.conf and standard_library_default/ld.conf rather than just the
+  first one found. ld.conf files with CRLF line endings are now consistently
+  normalised on both Windows and Unix.
+  (David Allsopp, review by Jonah Beckford, Damien Doligez and Hugo Heuzard)
+
 - #12269, #12410, #13063: Fix unsafety, deadlocks, and/or leaks should
   rare errors happen during domain creation and thread
   creation/registration.
@@ -85,9 +96,30 @@ Working version
   (Jack Nørskov Jørgensen, review by Gabriel Scherer,
    Guillaume Munch-Maccagnoni)
 
+- #14337: Fix potential segfault due to the C callback mechanism dropping
+  continuations without calling `caml_continuation_use`.
+  (Max Slater, review by Nick Barnes and Stephen Dolan)
+
 ### Code generation and optimizations:
 
 ### Standard library:
+
+- #14362: Add String.{drop,take,cut}_{first,last}_while
+  (Daniel Bünzli, review by Nicolás Ojeda Bär and David Allsopp)
+
+- #14363: Preserve the backtrace at exceptional domain termination. Domain.join
+  on an exceptionally terminated domain re-raises the exception with the
+  backtrace.
+  (KC Sivaramakrishnan, report by Nathan Taylor, review by Gabriel Scherer,
+  David Allsopp)
+
+- #13372: New Format and Printf printf-like functions that accept a
+   heterogeneous list as arguments.
+  (Leonardo Santos, review by Florian Angeletti and Gabriel Scherer)
+
+- #14352: Add String.{drop,take,cut}_{first,last}.
+  (Daniel Bünzli, review by David Allsopp, Nicolás Ojeda Bär and
+  Vincent Laviron)
 
 - #14185: List.split_map
   (Jeremy Yallop, review by Daniel Bünzli, Nicolás Ojeda Bär and Damien Doligez)
@@ -179,6 +211,10 @@ Working version
   instead of ENOENT if the command string is not a valid C string.
   (Antonin Décimo, review by Gabriel Scherer and Nicolás Ojeda Bär)
 
+- #14310: Deprecate union sock_addr_union for struct sockaddr_storage
+  and socklen_param_type for socklen_t.
+  (Antonin Décimo, review by Nicolás Ojeda Bär, David Allsopp and Samuel Hym)
+
 ### Tools:
 
 - #14055: Invert BUILD_PATH_PREFIX_MAP in directories loaded at startup
@@ -259,6 +295,10 @@ Working version
   recursive modules.
   (Shivam Acharya, review by Gabriel Scherer and Florian Angeletti)
 
+- #13994: documentation for external types
+  (Gabriel Scherer, review by Jan Midtgaard, Jacques Garrigue
+   and Florian Angeletti)
+
 - #14076, 14111: error messages, add a short explanation for mismatched
   universal variables and universal quantifications.
   (Florian Angeletti, review by Gabriel Scherer)
@@ -333,6 +373,10 @@ Working version
 - #14198 Constraints on module unpacking are not ghost
   (Thomas Refis, review by Nicolás Ojeda Bär)
 
+- #14243: ocamlc now uses the same code as the runtime to parse ld.conf (via a
+  C primitive), eliminating some highly obscure corner cases.
+  (David Allsopp, review by Jonah Beckford, Damien Doligez and Hugo Heuzard)
+
 - #14260: Refactor Lambda.structured_constant to avoid duplicate
   representations for string constants
   (Vincent Laviron, review by Nicolás Ojeda Bär and Gabriel Scherer)
@@ -355,6 +399,12 @@ Working version
 
 - #13810: Support build of cross compilers to native freestanding targets
   (Samuel Hym, review by Antonin Décimo and Romain Calascibetta)
+
+- #14243: New configure option --with-additional-stublibsdir allows an
+  additional directory to be added to the start of ld.conf. Additionally, the
+  stublibs subdirectory is no longer created, nor added to ld.conf, when
+  building OCaml with --disable-shared.
+  (David Allsopp, review by Jonah Beckford, Damien Doligez and Hugo Heuzard)
 
 ### Bug fixes:
 
@@ -389,6 +439,10 @@ Working version
   uses of libraries bundled with the compiler (unix,re,threads,dynlink)
   (Florian Angeletti, report by Ali Caglayan, review by Gabriel Scherer)
 
+- #14210: fix TSan-reported data race in weak pointers runtime
+  (Gabriel Scherer and Damien Doligez, report by Olivier Nicole,
+   review by KC Sivaramakrishnan)
+
 - #14213: Fix shadow-stack-related crashes with TSan
   (Olivier Nicole, report by Nathan Taylor, review by Gabriel Scherer and
    Stefan Muenzel)
@@ -414,6 +468,9 @@ Working version
 
 - #14332: Fix missing TSan instrumentation in subexpressions
   (Vincent Laviron, review by Gabriel Scherer and Olivier Nicole)
+
+- #14370: Fix headers for C++ inclusion.
+  (Antonin Décimo, review by Gabriel Scherer)
 
 OCaml 5.4.0 (9 October 2025)
 ----------------------------
@@ -1169,6 +1226,10 @@ OCaml 5.4.0 (9 October 2025)
 - #14287: Bugfix for GC root mishandling in memprof.c
   (Stephen Dolan, review by Leo White)
 
+- #14368: Bugfix for Simplif substituting under lambda
+  (Stephen Dolan, review by Vincent Laviron
+   and Gabriel Scherer)
+
 OCaml 5.3.0 (8 January 2025)
 ----------------------------
 
@@ -1452,6 +1513,10 @@ OCaml 5.3.0 (8 January 2025)
 - #13136: Rewrite GDB extensions and macros in debugger-agnostic Python, and add
   LLDB support for them.
   (Nick Barnes, review by Tim McGilchrist and Gabriel Scherer)
+
+- #14375: More accurate error message in the ocamldebug in case of incorrect or
+  missing magic number.
+  (Alex Asafov, review by Gabriel Scherer)
 
 ### Toplevel:
 

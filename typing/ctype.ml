@@ -3416,8 +3416,6 @@ type filter_arrow_failure =
       }
   | Not_a_function
 
-exception Filter_arrow_failed of filter_arrow_failure
-
 type filtered_arrow =
   { ty_param : type_expr;
     ty_ret : type_expr;
@@ -3444,29 +3442,28 @@ let filter_arrow env t l ~param_hole =
     let t' = newty2 ~level (Tarrow (l, t1, t2, commu_ok)) in
     t', t1, t2
   in
-  let t =
-    try expand_head_trace env t
-    with Unify_trace trace ->
+  match expand_head_trace env t with
+  | t ->
+    begin
+      match get_desc t with
+      | Tvar _ ->
+          let t', ty_param, ty_ret = function_type (get_level t) in
+          link_type t t';
+          Ok { ty_param; ty_ret }
+      | Tarrow(l', ty_param, ty_ret, _) ->
+          if l = l' || !Clflags.classic && l = Nolabel && not (is_optional l')
+          then Ok { ty_param; ty_ret }
+          else Error (Label_mismatch
+                          { got = l; expected = l'; expected_type = t })
+      | _ ->
+          Error Not_a_function
+    end
+  | exception Unify_trace trace ->
       let t', _, _ = function_type (get_level t) in
-      raise (Filter_arrow_failed
-               (Unification_error
-                  (expand_to_unification_error
-                     env
-                     (Diff { got = t'; expected = t } :: trace))))
-  in
-  match get_desc t with
-  | Tvar _ ->
-      let t', ty_param, ty_ret = function_type (get_level t) in
-      link_type t t';
-      { ty_param; ty_ret }
-  | Tarrow(l', ty_param, ty_ret, _) ->
-      if l = l' || !Clflags.classic && l = Nolabel && not (is_optional l')
-      then { ty_param; ty_ret }
-      else raise (Filter_arrow_failed
-                    (Label_mismatch
-                       { got = l; expected = l'; expected_type = t }))
-  | _ ->
-      raise (Filter_arrow_failed Not_a_function)
+      Error (Unification_error
+              (expand_to_unification_error
+                  env
+                  (Diff { got = t'; expected = t } :: trace)))
 
 let is_really_poly env ty =
   let snap = Btype.snapshot () in

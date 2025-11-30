@@ -592,14 +592,10 @@ let compile_test usr_bin_sh config env test test_program description =
              need to be invoked via ocamlrun in the Renamed phase *)
           let runtime =
             mode = Bytecode && Harness.ocamlc_fails_after_rename config in
-          (* If shared libraries are being used, ocamlc will need to be able to
-             load the stub libraries to check the primitives table *)
-          let stubs = with_unix && tendered in
           (* In the Renamed phase, Config.standard_library will still point to
              the Original location *)
           let stdlib = true in
-          Environment.run_process
-            ~fails ~runtime ~stubs ~stdlib env compiler args
+          Environment.run_process ~fails ~runtime ~stdlib env compiler args
         in
         Environment.display_output output;
         exit_code

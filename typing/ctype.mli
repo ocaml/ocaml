@@ -308,8 +308,17 @@ type filtered_arrow =
     ty_ret : type_expr;
   }
 
+type filter_arrow_failure =
+  | Unification_error of Errortrace.unification_error
+  | Label_mismatch of
+      { got           : arg_label
+      ; expected      : arg_label
+      ; expected_type : type_expr
+      }
+  | Not_a_function
+
 val filter_arrow: Env.t -> type_expr -> arg_label -> param_hole:bool ->
-        filtered_arrow
+        (filtered_arrow, filter_arrow_failure) result
         (* A special case of unification with [l:'a -> 'b]. If [param_hole] is
            true then ['a] might be initialized with a [Tvar _] hole to be filled
            later by a [Tpoly _].
@@ -340,17 +349,6 @@ val reify_univars : Env.t -> Types.type_expr -> Types.type_expr
         (* Replaces all the variables of a type by a univar. *)
 
 (* Exceptions for special cases of unify *)
-
-type filter_arrow_failure =
-  | Unification_error of Errortrace.unification_error
-  | Label_mismatch of
-      { got           : arg_label
-      ; expected      : arg_label
-      ; expected_type : type_expr
-      }
-  | Not_a_function
-
-exception Filter_arrow_failed of filter_arrow_failure
 
 type filter_method_failure =
   | Unification_error of Errortrace.unification_error
