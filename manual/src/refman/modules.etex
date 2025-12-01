@@ -30,14 +30,17 @@ module-expr:
 module-items:
         { ';;' } ( definition || expr ) { { ';;' } ( definition || ';;' expr) } { ';;' }
 ;
+module-definition:
+          'module' module-name { '(' module-name ':' module-type ')' }
+                   [ ':' module-type ] \\ '=' module-expr
+;
 local-definition:
           'external' value-name ':' typexpr '=' external-declaration
         | type-definition
         | exception-definition
         | class-definition
         | classtype-definition
-        | 'module' module-name { '(' module-name ':' module-type ')' }
-                   [ ':' module-type ] \\ '=' module-expr
+        | module-definition
         | 'module' 'type' modtype-name '=' module-type
         | 'open' module-path
 ;
