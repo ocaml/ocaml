@@ -395,7 +395,7 @@ let run_one (~runtime, ~quiet, ~fails, ~program, ~argv0, ~args,
   let lines =
     let ic = Unix.in_channel_of_descr stdout in
     (* Some of the tests send lines of text which end with '\r'. On native
-       Windows, this will _correctly_ cause "\r\r\n" to be be sent down
+       Windows, this will _correctly_ cause "\r\r\n" to be sent down
        the pipe and text mode will _correctly_ translate that to "\r\n"
        (and the caller receives a line ending with '\r').
        On Cygwin, where the process sending the text is a Unix process,

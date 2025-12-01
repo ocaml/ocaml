@@ -16,7 +16,7 @@
 (** Representation and manipulation of exceptions. *)
 
 (** This module has an implementation although it declares only types.
-    This is because other modules use the let module construct ot access it
+    This is because other modules use the let module construct to access it
     so it is needed as a real module. *)
 
 module Name = Odoc_name

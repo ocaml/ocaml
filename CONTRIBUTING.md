@@ -372,7 +372,7 @@ example:
   our ability to change it in the future.
 
 Doing this collective maintenance work is a selfless task, and we
-typically have much fewer people willing to to do it than people
+typically have much fewer people willing to do it than people
 willing to submit new language features or generally evolve the
 codebase for their own specific needs. Without a collective effort to
 participate, we end up with a handful of people doing the vast

@@ -95,7 +95,7 @@ and the compiler will emit warning 50.
 
 Comments which appear {\em immediately after} a labelled argument,
 record field, variant constructor, object method or polymorphic variant
-constructor are are converted into @attribute@s. Immediately
+constructor are converted into @attribute@s. Immediately
 after means that there must be no blank lines or other documentation
 comments between them. For example:
 

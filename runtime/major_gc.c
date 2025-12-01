@@ -1146,7 +1146,7 @@ static void realloc_mark_stack (struct mark_stack* stk)
   uintnat local_heap_bsize = caml_heap_size(Caml_state->shared_heap);
 
   /* When the mark stack might not increase, we count the large mark entries
-     to adjust our alloaction. This is needed because large mark stack entries
+     to adjust our allocation. This is needed because large mark stack entries
      will not compress and because we are using a domain local heap bound we
      need to fit large blocks into the local mark stack. See PR#11284 */
   if (mark_stack_bsize >= local_heap_bsize / 32) {

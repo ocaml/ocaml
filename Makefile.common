@@ -252,7 +252,7 @@ MERGEMANIFESTEXE = $(call if_file_exists, $(1).manifest, \
 # Macros and rules to compile OCaml programs and libraries
 
 # The following variable is used to accumulate a list of all the CMX
-# files that get built. Is is then used in the root Makefile to express
+# files that get built. It is then used in the root Makefile to express
 # the dependency on all these files on the native compiler, so that
 # they get rebuilt if the native compiler is updated
 

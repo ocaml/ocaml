@@ -823,7 +823,7 @@ let simplify_local_functions lam =
   let static_id = Hashtbl.create 16 in (* function id -> static id *)
   let static = LamTbl.create 16 in (* scope -> static function on that scope *)
   (* We keep track of the current "tail scope", identified
-     by the outermost lambda for which the the current lambda
+     by the outermost lambda for which the current lambda
      is in tail position. *)
   let current_scope = ref lam in
   (* PR11383: We will only apply the transformation if we don't have to move

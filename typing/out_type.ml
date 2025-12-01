@@ -248,7 +248,7 @@ let enable b = enabled := b
      type r = Avoid__me.t
    end
   }]
-  It is is important that in the definition of [t] that the outer type [t] is
+  It is important that in the definition of [t] that the outer type [t] is
   printed as [t/2] reserving the name [t] to the type being defined in the
   current recursive definition.
      Contrarily, in the definition of [r], one should not shorten the

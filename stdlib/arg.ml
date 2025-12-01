@@ -252,7 +252,7 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
             f (List.rev !acc)
         | Expand f ->
             if not allow_expand then
-              raise (Invalid_argument "Arg.Expand is is only allowed with \
+              raise (Invalid_argument "Arg.Expand is only allowed with \
                                        Arg.parse_and_expand_argv_dynamic");
             let arg = get_arg () in
             let newarg = f arg in

@@ -813,7 +813,7 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
 (* Create two instances with identical variables but independent structure.
    NB: [generic_instance] can only be used if the variables of the
    original type are not at [generic_level], but in the [cty_type] of
-   [build_as_type_extra], they are at at [generic_level].
+   [build_as_type_extra], they are at [generic_level].
    If we used [generic_instance] we would lose the sharing between variables
    in the returned types. *)
 let instance_unshared ty =

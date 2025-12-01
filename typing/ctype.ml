@@ -231,7 +231,7 @@ let with_local_level_gen ~begin_def ~structure ?before_generalize f =
     if ty.level = generic_level then () else
     match ty.desc with
     | Tvar _ when structure ->
-        (* In structure mode, we do do not generalize type variables,
+        (* In structure mode, we do not generalize type variables,
            so we need to lower their level, and move them to an outer pool.
            The goal of this mode is to allow unsharing inner nodes
            without introducing polymorphism.

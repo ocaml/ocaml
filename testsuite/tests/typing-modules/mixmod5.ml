@@ -6,7 +6,7 @@
 
 (* The types involved in our recursion *)
 module type ET = sig type exp end
-(* The recursive operations on our our types *)
+(* The recursive operations on our types *)
 module type E =
   sig
     include ET
