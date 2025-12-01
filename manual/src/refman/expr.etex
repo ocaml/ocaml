@@ -1360,6 +1360,20 @@ let gen () = let exception A in A
 let () = assert(gen () = gen ());;
 \end{caml_example}
 
+General extensible types can also be introduced in this way. The example below
+exhibits a function that uses a local effect to convert an iterator into a
+sequence (``inversion of control'').
+
+\begin{caml_example}{toplevel}
+let invert (type a) ~(iter : (a -> unit) -> unit) : a Seq.t =
+  let type _ Effect.t += Yield : a -> unit Effect.t in
+  let yield v = Effect.perform (Yield v) in
+  fun () -> match iter yield with
+  | () -> Seq.Nil
+  | effect Yield v, k -> Seq.Cons (v, Effect.Deep.continue k)
+;;
+\end{caml_example}
+
 \subsubsection{sss:expr-let-type}{Local types}
 \ikwd{let\@\texttt{type}}
 
@@ -1382,20 +1396,6 @@ let f x y =
   let twice p = {x = p.x +. p.x; y = p.y +. p.y} in
   twice {x; y}
 [@@expect error];;
-\end{caml_example}
-
-Extensible types can also be introduced in this way. The example below exhibits
-a function that uses a local effect to convert an iterator into a sequence
-(``inversion of control'').
-
-\begin{caml_example}{toplevel}
-let invert (type a) ~(iter : (a -> unit) -> unit) : a Seq.t =
-  let type _ Effect.t += Yield : a -> unit Effect.t in
-  let yield v = Effect.perform (Yield v) in
-  fun () -> match iter yield with
-  | () -> Seq.Nil
-  | effect Yield v, k -> Seq.Cons (v, Effect.Deep.continue k)
-;;
 \end{caml_example}
 
 \subsection{ss:expr-other}{Other}
