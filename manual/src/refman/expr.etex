@@ -1269,7 +1269,8 @@ constrained arguments in type definitions.
 
 
 \subsection{ss:expr-local-items}{Local structure items}
-(Introduced in OCaml 5.5)
+(General case introduced in OCaml 5.5, "let" "open", "let" "exception", and
+"let" "module" were supported earlier.)
 
 It is possible to introduce any structure item (see~\ref{ss:mexpr-structures})
 defined by @local-definition@ in a local scope: the expression
