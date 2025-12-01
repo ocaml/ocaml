@@ -1377,8 +1377,9 @@ let invert (type a) ~(iter : (a -> unit) -> unit) : a Seq.t =
 \subsubsection{sss:expr-let-type}{Local types}
 \ikwd{let\@\texttt{type}}
 
-The form @"let" typedef { "and" typedef } "in" expr@ introduces a type (or a
-collection of mutually recursive types) in the scope of an expression:
+The form @"let" ["nonrec"] typedef { "and" typedef } "in" expr@ introduces a
+type (or a collection of mutually recursive types) in the scope of an
+expression:
 
 \begin{caml_example}{toplevel}
 let f x y =
