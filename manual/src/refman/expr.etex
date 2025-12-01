@@ -1358,9 +1358,9 @@ let gen () = let exception A in A
 let () = assert(gen () = gen ());;
 \end{caml_example}
 
-General extensible types and type constructors can also be introduced in this
-way. The example below exhibits a function that uses a local effect to convert
-an iterator into a sequence (``inversion of control'').
+Extensible variant types (see~\ref{s:extensible-variants}) can also be
+introduced in this way. The example below exhibits a function that uses a local
+effect to convert an iterator into a sequence (``inversion of control'').
 
 \begin{caml_example}{toplevel}
 let invert (type a) ~(iter : (a -> unit) -> unit) : a Seq.t =
