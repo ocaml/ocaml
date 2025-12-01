@@ -48,3 +48,21 @@ let _ =
 [%%expect{|
 - : 'a -> 'a = <fun>
 |}];;
+
+let _ =
+  let type t = A of int | B in
+  let _ = [A 42; B] in
+  let type t = .. in
+  let type t += A of string in
+  let _ = A "hello" in
+  let class c = object method f = 42 end in
+  let class type ct = object method f : int end in
+  let class d : ct = object (self) inherit c initializer print_int (self # f) end in
+  let external f : 'a -> 'a = "%identity" in
+  let [@@@warning "-unused-var"] in
+  let v = (42, 12) in
+  assert (f v == v);
+  "OK"
+[%%expect{|
+- : string = "OK"
+|}]
