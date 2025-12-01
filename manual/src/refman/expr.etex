@@ -1278,11 +1278,12 @@ defined by @local-definition@ in a local scope: the expression
 @"let" local-definition "in" expr@
 \end{center}
 introduces the structure item @local-definition@ during the evaluation of
-@expr@. This construction is equivalent to:
+@expr@. This construction is equivalent to locally introducing the structure
 \begin{center}
-@"let" "module" M = "struct" local-definition "let" body "=" expr "end" "in" M.body@
+@"struct" local-definition "let" body "=" expr "end"@
 \end{center}
-without the overhead of creating the actual module @M@ nor the binding @body@.
+in the context of the "let" expression and returning the value of "body" as
+result.
 
 The rest of this section contains remarks and examples specific to particular
 cases of this construction.
