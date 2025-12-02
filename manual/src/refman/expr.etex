@@ -1271,13 +1271,11 @@ constrained arguments in type definitions.
 (General case introduced in OCaml 5.5, "let" "open", "let" "exception", and
 "let" "module" were supported earlier.)
 
-It is possible to introduce any structure item (see~\ref{ss:mexpr-structures})
-defined by @local-definition@ in a local scope: the expression
-\begin{center}
-@"let" local-definition "in" expr@
-\end{center}
-introduces the structure item @local-definition@ during the evaluation of
-@expr@. This construction is equivalent to locally introducing the structure
+The form @"let" local-definition "in" expr@ brings the structure item
+(see~\ref{ss:mexpr-structures}) @local-definition@ into scope during the
+evaluation of @expr@.
+
+This construction is equivalent to locally introducing the structure
 \begin{center}
 @"struct" local-definition "let" body "=" expr "end"@
 \end{center}
@@ -1375,7 +1373,7 @@ let invert (type a) ~(iter : (a -> unit) -> unit) : a Seq.t =
 \subsubsection{sss:expr-let-type}{Local types}
 \ikwd{let\@\texttt{type}}
 
-The form @"let" ["nonrec"] typedef { "and" typedef } "in" expr@ introduces a
+The form @"let" type-definition "in" expr@ introduces a
 type (or a collection of mutually recursive types) in the scope of an
 expression:
 

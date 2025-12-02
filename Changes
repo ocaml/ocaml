@@ -5,11 +5,6 @@ Working version
 
 ### Language features:
 
-- #14040: generalize the constructs `let module`, `let exception` and `let open`
-  to most other structure items, eg `let type t = ... in ...`, `let type t +=
-  ... in ...`, etc.
-  (Nicolás Ojeda Bär)
-
 * #14009: infix extension points/attributes appearing in local structure items,
   eg `let module%foo[@bar] ... in ...` are attached to the AST node of the
   corresponding structure item (similar to their global counterparts) and no
@@ -32,6 +27,11 @@ Working version
 - #13806: Enable the use of function parameters with polymorphic types.
   (Ulysse Gérard, Leo White, review by Florian Angeletti, Samuel Vivien, Gabriel
   Scherer and Jacques Garrigue)
+
+- #14040: generalize the constructs `let module`, `let exception` and `let open`
+  to most other structure items, eg `let type t = ... in ...`, `let type t +=
+  ... in ...`, etc.
+  (Nicolás Ojeda Bär, review by Valentin Gatien-Baron)
 
 ### Runtime system:
 
