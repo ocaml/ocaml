@@ -20,7 +20,5 @@
 (* This is a repro case for #12697 *)
 
 let () =
-  let { ast; source_file = _ } : _ Pparse.ast_result =
-    Pparse.parse_implementation ~tool_name:"test" "foo.ml"
-  in
+  let ast = Pparse.parse_implementation ~tool_name:"test" "foo.ml" in
   Pparse.write_ast Pparse.Structure "foo.marshalled.ml" ast
