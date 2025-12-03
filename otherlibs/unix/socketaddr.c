@@ -71,16 +71,18 @@ void caml_unix_get_sockaddr(value vaddr,
       memmove(s_unix->sun_path, String_val(path), len + 1);
       /*Unnamed socket*/
       if (len == 0)  {
-        /*sizeof(sun_family) on linux,  to trigger autobind according to https://man7.org/linux/man-pages/man7/unix.7.html*/
+        /*sizeof(sun_family) on linux,  to trigger autobind according to
+	  https://man7.org/linux/man-pages/man7/unix.7.html*/
         /*sizeof(sun_family) + sizeof(sun_len) on Haiku*/
-        *addr_len = offsetof(struct sockaddr_un, sun_path); 
+        *addr_len = offsetof(struct sockaddr_un, sun_path);
       } else {
         if (Byte(path, 0) == 0) {
           /*Abstract socket*/
           *addr_len = offsetof(struct sockaddr_un, sun_path) + len;
         } else {
-          /*Regular name socket, count the trailing 0 according to https://man7.org/linux/man-pages/man7/unix.7.html*/
-          *addr_len = offsetof(struct sockaddr_un, sun_path) + len + 1 ;
+          /*Regular name socket, count the trailing 0 according to
+	   https://man7.org/linux/man-pages/man7/unix.7.html*/
+          *addr_len = offsetof(struct sockaddr_un, sun_path) + len + 1;
         }
       }
       break;
