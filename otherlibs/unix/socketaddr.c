@@ -88,15 +88,15 @@ void caml_unix_get_sockaddr(value vaddr,
   case 1:                       /* ADDR_INET */
 #ifdef HAS_IPV6
     if (caml_string_length(Field(vaddr, 0)) == 16) {
-        struct sockaddr_in6 *s_inet6 = (struct sockaddr_in6 *) addr;
-	      memset(s_inet6, 0, sizeof(struct sockaddr_in6));
-	      s_inet6->sin6_family = AF_INET6;
-	      s_inet6->sin6_addr = GET_INET6_ADDR(Field(vaddr, 0));
-	      s_inet6->sin6_port = htons(Int_val(Field(vaddr, 1)));
+       struct sockaddr_in6 *s_inet6 = (struct sockaddr_in6 *) addr;
+	     memset(s_inet6, 0, sizeof(struct sockaddr_in6));
+	     s_inet6->sin6_family = AF_INET6;
+	     s_inet6->sin6_addr = GET_INET6_ADDR(Field(vaddr, 0));
+	     s_inet6->sin6_port = htons(Int_val(Field(vaddr, 1)));
 #ifdef SIN6_LEN
-	      s_inet6->sin6_len = sizeof(struct sockaddr_in6);
+	     s_inet6->sin6_len = sizeof(struct sockaddr_in6);
 #endif
-	      *addr_len = sizeof(struct sockaddr_in6);
+	     *addr_len = sizeof(struct sockaddr_in6);
      } else {
 #endif
       struct sockaddr_in *s_inet = (struct sockaddr_in *) addr;
