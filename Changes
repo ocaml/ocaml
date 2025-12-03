@@ -196,6 +196,8 @@ Working version
 
 ### Other libraries:
 
+- Better handling of address length for unix sockets (names, unnamed, abstract)
+
 * #14046: On Windows, `Unix.kill pid Sys.sigkill` causes the receiving process
   to exit with code ERROR_PROCESS_ABORTED (1067) instead of 0.
   (Nicolás Ojeda Bär, review by Miod Vallat, Antonin Décimo and David Allsopp)
