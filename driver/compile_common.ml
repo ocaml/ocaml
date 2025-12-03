@@ -47,7 +47,8 @@ module Parse_result = struct
     in
     { ast; info = { info with target = new_target } }
 
-  let map_ast { ast; info } ~f = { ast = f ast info; info }
+  let print_ast_if flag ppf { ast; info } =
+    { ast = print_if info.ppf_dump flag ppf ast; info }
 end
 
 (** Compile a .mli file *)
@@ -57,10 +58,8 @@ let parse_intf i =
     ~tool_name:i.tool_name
     (Unit_info.human_source_file i.target)
   |> Parse_result.update_unit_info ~info:i
-  |> Parse_result.map_ast
-       ~f:(fun ast i -> print_if i.ppf_dump Clflags.dump_parsetree Printast.interface ast)
-  |> Parse_result.map_ast
-       ~f:(fun ast i -> print_if i.ppf_dump Clflags.dump_source Pprintast.signature ast)
+  |> Parse_result.print_ast_if Clflags.dump_parsetree Printast.interface
+  |> Parse_result.print_ast_if Clflags.dump_source Pprintast.signature
 
 let typecheck_intf { Parse_result.ast; info } =
   Profile.(record_call typing) @@ fun () ->
@@ -108,11 +107,8 @@ let parse_impl i =
     ~tool_name:i.tool_name
     (Unit_info.human_source_file i.target)
   |> Parse_result.update_unit_info ~info:i
-  |> Parse_result.map_ast
-       ~f:(fun ast i ->
-            print_if i.ppf_dump Clflags.dump_parsetree Printast.implementation ast)
-  |> Parse_result.map_ast
-       ~f:(fun ast i -> print_if i.ppf_dump Clflags.dump_source Pprintast.structure ast)
+  |> Parse_result.print_ast_if Clflags.dump_parsetree Printast.implementation
+  |> Parse_result.print_ast_if Clflags.dump_source Pprintast.structure
 
 let typecheck_impl { Parse_result.ast = parsetree; info = i } =
   parsetree
