@@ -236,6 +236,9 @@ Working version
 
 ### Manual and documentation:
 
+- #14397: Improve documentation of type-directed disambiguation of array
+  literals (Alicia Michael review by Olivier Nicole and Florian Angeletti)
+
 - #14293: Improve documentation of Runtime_events.Timestamp (Raphaël Proust,
   review by Gabriel Scherer)
 
