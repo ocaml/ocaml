@@ -23,16 +23,16 @@
   produce all-constant arrays.  The exception is the sorting functions, which
   are given a copying API to replace the in-place one.
 
-  Immutable arrays can be constructed from array literals by type
+  Immutable arrays can be constructed from array literals by type-based
   disambiguation similar to that used for record fields. For example, when
   assigning to a type-annotated binding or parameter binding, or by directly
   type-annotating the literal.
 
   {[
-  let a : _ iarray = [|1;2;3|]
-  let b = let f (a : _ iarray) = a in
+  let a : _ Iarray.t = [|1;2;3|]
+  let b = let f (a : _ Iarray.t) = a in
     f [|1;2;3|]
-  let c = ([|1;2;3|] : _ iarray)
+  let c = ([|1;2;3|] : _ Iarray.t)
   ]}
 
   @since 5.4 *)
