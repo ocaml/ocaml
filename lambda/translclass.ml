@@ -237,10 +237,13 @@ let lsequence l1 l2 =
 let lfield v i = Lprim(Pfield (i, Pointer, Mutable),
                        [Lvar v], Loc_unknown)
 
+let lfield_atomic v i =
+  Lprim(Patomic_load, [Lvar v; const_int i], Loc_unknown)
+
 let transl_label l = share (Const_immstring l)
 
 let transl_meth_list lst =
-  if lst = [] then Lconst (const_int 0) else
+  if lst = [] then const_int 0 else
   share (Const_block
             (0, List.map (fun lab -> Const_immstring lab) lst))
 
@@ -677,7 +680,7 @@ let rec build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl =
            Llet (Strict, Pgenval, inh,
                  mkappl(oo_prim "inherits", narrow_args @
                         [path_lam;
-                         Lconst(const_int (if top then 1 else 0))]),
+                         const_int (if top then 1 else 0)]),
                  Llet(StrictOpt, Pgenval, obj_init, lfield inh 0, cl_init)))
       | _ ->
           let core cl_init =
@@ -847,7 +850,7 @@ let rec builtin_meths self env env2 body =
     | Lprim(Parrayrefu _, [Lvar s; Lvar n], _) when List.mem s self ->
         "var", [Lvar n]
     | Lprim(Pfield(n, _, _), [Lvar e], _) when Ident.same e env ->
-        "env", [Lvar env2; Lconst(const_int n)]
+        "env", [Lvar env2; const_int n]
     | Lsend(Self, met, Lvar s, [], _) when List.mem s self ->
         "meth", [met]
     | _ -> raise Not_found
@@ -918,7 +921,7 @@ module M = struct
     | "send_env"   -> SendEnv
     | "send_meth"  -> SendMeth
     | _ -> assert false
-    in Lconst(const_int (Obj.magic tag)) :: args
+    in const_int (Obj.magic tag) :: args
 end
 open M
 
@@ -1208,8 +1211,15 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
                    ~loc:Loc_unknown
                    ~body:(def_ids cla cl_init), lam)
   and lset cached i lam =
-    Lprim(Psetfield(i, Pointer, Assignment),
-          [Lvar cached; lam], Loc_unknown)
+    let prim =
+      Primitive.simple
+        ~name:"caml_atomic_exchange_field" ~arity:3 ~alloc:false
+    in
+    Lprim (
+      Pignore,
+      [Lprim (Pccall prim, [Lvar cached; const_int i; lam], Loc_unknown)],
+      Loc_unknown
+    )
   in
   let ldirect () =
     ltable cla
@@ -1239,7 +1249,7 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
          so that the program's behaviour does not change between runs *)
       lupdate_cache
     else
-      Lifthenelse(lfield cached 0, lambda_unit, lupdate_cache) in
+      Lifthenelse(lfield_atomic cached 0, lambda_unit, lupdate_cache) in
   let lcache (lam, rkind) =
     let lam = Lsequence (lcheck_cache, lam) in
     let lam =
@@ -1258,14 +1268,14 @@ let transl_class ~scopes ids cl_id pub_meths cl vflag =
   lcache (
   make_envs (
   if ids = []
-  then mkappl (lfield cached 0, [lenvs]), Dynamic
+  then mkappl (lfield_atomic cached 0, [lenvs]), Dynamic
   else
     Lprim(Pmakeblock(0, Immutable, None),
         (if concrete then
-          [mkappl (lfield cached 0, [lenvs]);
-           lfield cached 1;
+          [mkappl (lfield_atomic cached 0, [lenvs]);
+           lfield_atomic cached 1;
            lenvs]
-        else [lambda_unit; lfield cached 0; lenvs]),
+        else [lambda_unit; lfield_atomic cached 0; lenvs]),
         Loc_unknown
        ),
     Static)))

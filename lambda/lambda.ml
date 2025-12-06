@@ -374,11 +374,9 @@ type program =
     required_globals : Ident.Set.t;
     code : lambda }
 
-let const_int n = Const_int n
+let const_int n = Lconst (Const_int n)
 
-let const_unit = const_int 0
-
-let dummy_constant = Lconst (const_int (0xBBBB / 2))
+let dummy_constant = const_int (0xBBBB / 2)
 
 let lambda_of_const (c : Asttypes.constant) =
   match c with
@@ -402,7 +400,7 @@ let lfunction' ~kind ~params ~return ~body ~attr ~loc =
 let lfunction ~kind ~params ~return ~body ~attr ~loc =
   Lfunction (lfunction' ~kind ~params ~return ~body ~attr ~loc)
 
-let lambda_unit = Lconst const_unit
+let lambda_unit = const_int 0
 
 let default_function_attribute = {
   inline = Default_inline;

@@ -387,8 +387,7 @@ type program =
 (* Sharing key *)
 val make_key: lambda -> lambda option
 
-val const_unit: structured_constant
-val const_int : int -> structured_constant
+val const_int : int -> lambda
 val lambda_unit: lambda
 
 val lambda_of_const : Asttypes.constant -> lambda

@@ -145,13 +145,13 @@ let close_const t (const : Lambda.structured_constant)
   | Symbol s, name ->
     Symbol s, name
 
-let lambda_const_bool b : Lambda.structured_constant =
+let lambda_const_bool b : Lambda.lambda =
   if b then
     Lambda.const_int 1
   else
     Lambda.const_int 0
 
-let lambda_const_int i : Lambda.structured_constant =
+let lambda_const_int i : Lambda.lambda =
   Lambda.const_int i
 
 let rec close t env (lam : Lambda.lambda) : Flambda.t =
@@ -398,12 +398,12 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         | Ostype_cygwin ->
             lambda_const_bool (String.equal Config.target_os_type "Cygwin")
         | Backend_type ->
-            Lambda.const_int 0 (* tag 0 is the same as Native *)
+            lambda_const_int 0 (* tag 0 is the same as Native *)
         end
       in
       close t env
         (Lambda.Llet(Strict, Pgenval, Ident.create_local "dummy",
-                     arg, Lconst const))
+                     arg, const))
   | Lprim (Pfield _, [Lprim (Pgetglobal id, [],_)], _)
       when Ident.same id t.current_unit_id ->
     Misc.fatal_errorf "[Pfield (Pgetglobal ...)] for the current compilation \
