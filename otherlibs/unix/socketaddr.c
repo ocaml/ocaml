@@ -57,6 +57,7 @@ void caml_unix_get_sockaddr(value vaddr,
   case 0:                       /* ADDR_UNIX */
     { value path;
       mlsize_t len;
+      int is_path;
       struct sockaddr_un *s_unix = (struct sockaddr_un *) addr;
       path = Field(vaddr, 0);
       len = caml_string_length(path);
@@ -64,27 +65,15 @@ void caml_unix_get_sockaddr(value vaddr,
       if (len >= sizeof(s_unix->sun_path)) {
         caml_unix_error(ENAMETOOLONG, "", path);
       }
-      /* "Abstract" sockets in Linux have names starting with '\0' */
-      if (Byte(path, 0) != 0 && ! caml_string_is_c_safe(path)) {
+      /* Pathname sockets have a non-empty name not starting with NULL, see
+         unix(7). */
+      is_path = Byte(path, 0) != 0;
+      if (is_path && ! caml_string_is_c_safe(path)) {
         caml_unix_error(ENOENT, "", path);
       }
       memmove(s_unix->sun_path, String_val(path), len + 1);
-      /* Unnamed socket */
-      if (len == 0)  {
-        /* sizeof(sun_family) on linux,  to trigger autobind according to
-           https://man7.org/linux/man-pages/man7/unix.7.html
-           sizeof(sun_family) + sizeof(sun_len) on Haiku */
-        *addr_len = offsetof(struct sockaddr_un, sun_path);
-      } else {
-        if (Byte(path, 0) == 0) {
-          /* Abstract socket */
-          *addr_len = offsetof(struct sockaddr_un, sun_path) + len;
-        } else {
-          /* Regular name socket, count the trailing 0 according to
-            https://man7.org/linux/man-pages/man7/unix.7.html */
-          *addr_len = offsetof(struct sockaddr_un, sun_path) + len + 1;
-        }
-      }
+      /* Pathname sockets should include the trailing NULL, see unix(7). */
+      *addr_len = offsetof(struct sockaddr_un, sun_path) + len + is_path ? 1 : 0;
       break;
     }
   case 1:                       /* ADDR_INET */
