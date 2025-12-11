@@ -65,14 +65,14 @@ void caml_unix_get_sockaddr(value vaddr,
       if (len >= sizeof(s_unix->sun_path)) {
         caml_unix_error(ENAMETOOLONG, "", path);
       }
-      /* Pathname sockets have a non-empty name not starting with NULL, see
+      /* Pathname sockets have a non-empty name not starting with NUL, see
          unix(7). */
       is_path = Byte(path, 0) != 0;
       if (is_path && ! caml_string_is_c_safe(path)) {
         caml_unix_error(ENOENT, "", path);
       }
       memmove(s_unix->sun_path, String_val(path), len + 1);
-      /* Pathname sockets should include the trailing NULL, see unix(7). */
+      /* Pathname sockets should include the trailing NUL, see unix(7). */
       *addr_len = offsetof(struct sockaddr_un, sun_path) + len + is_path ? 1 : 0;
       break;
     }
