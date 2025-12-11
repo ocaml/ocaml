@@ -73,7 +73,8 @@ void caml_unix_get_sockaddr(value vaddr,
       }
       memmove(s_unix->sun_path, String_val(path), len + 1);
       /* Pathname sockets should include the trailing NUL, see unix(7). */
-      *addr_len = offsetof(struct sockaddr_un, sun_path) + len + (is_path ? 1 : 0);
+      *addr_len =
+        offsetof(struct sockaddr_un, sun_path) + len + (is_path ? 1 : 0);
       break;
     }
   case 1:                       /* ADDR_INET */
